@@ -28,6 +28,7 @@ import { StripeWebhookProcessor } from '../payments/stripe/stripe-webhook.proces
 import { FinancialAlertService } from '../common/financial-alert.service';
 import { validateNoInternalAccess } from '../common/utils/url-validator';
 import { ChannelTransportRegistry } from '../kloel/channel-transport.registry';
+import { Metrics } from '../observability/metrics';
 import { PrismaService } from '../prisma/prisma.service';
 import { WebhooksService } from './webhooks.service';
 import { StripeWebhookLedgerService } from './stripe-webhook-ledger.service';
@@ -122,6 +123,8 @@ export class PaymentWebhookStripeController {
     @Headers('x-event-id') eventId: string | undefined,
     @Body() body: StripeEventLike,
   ) {
+    const start = Date.now();
+    try {
     const primarySecret = process.env.STRIPE_WEBHOOK_SECRET;
     const endpointSecrets = Array.from(
       new Set(
@@ -311,7 +314,14 @@ export class PaymentWebhookStripeController {
         );
       });
     }
+    Metrics.endpoint.success('webhook.stripe', { event_type: event?.type ?? 'unknown' });
+    Metrics.endpoint.duration('webhook.stripe', Date.now() - start, { event_type: event?.type ?? 'unknown' });
     return { received: true };
+    } catch (err: unknown) {
+      const code = (err as { code?: string })?.code ?? 'unknown';
+      Metrics.endpoint.failure('webhook.stripe', { event_type: event?.type ?? 'unknown', code });
+      throw err;
+    }
   }
 
   private async ensureIdempotent(

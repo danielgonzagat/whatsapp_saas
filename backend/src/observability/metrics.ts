@@ -142,12 +142,41 @@ export const Metrics = {
       gauge('wallet.balance_cents', balanceCents, t);
     },
   },
+  brain: {
+    decide(workspaceId: string, durationMs: number, source: string, t?: Record<string, string>) {
+      increment('brain.decide', { ...t, workspace_id: workspaceId, source });
+      histogram('brain.decide.duration_ms', durationMs, { ...t, source });
+    },
+    decideFailed(workspaceId: string, reason: string, t?: Record<string, string>) {
+      increment('brain.decide.failed', { ...t, workspace_id: workspaceId, reason });
+    },
+  },
+  autopilot: {
+    cycleStarted(workspaceId: string, t?: Record<string, string>) {
+      increment('autopilot.cycle.started', { ...t, workspace_id: workspaceId });
+    },
+    cycleCompleted(workspaceId: string, durationMs: number, t?: Record<string, string>) {
+      increment('autopilot.cycle.completed', { ...t, workspace_id: workspaceId });
+      histogram('autopilot.cycle.duration_ms', durationMs, { ...t });
+    },
+  },
   ledger: {
     reconciliationDrift(amountCents: number, t?: Record<string, string>) {
       gauge('ledger.reconciliation_drift_cents', amountCents, t);
     },
     reconciliationRun(t?: Record<string, string>) {
       increment('ledger.reconciliation.run', t);
+    },
+  },
+  endpoint: {
+    success(name: string, t?: Record<string, string>) {
+      increment(`endpoint.${name}.success`, t);
+    },
+    failure(name: string, t?: Record<string, string>) {
+      increment(`endpoint.${name}.failure`, t);
+    },
+    duration(name: string, ms: number, t?: Record<string, string>) {
+      histogram(`endpoint.${name}.duration_ms`, ms, t);
     },
   },
 } as const;

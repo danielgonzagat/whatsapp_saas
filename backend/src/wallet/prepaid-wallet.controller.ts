@@ -4,6 +4,7 @@ import * as Sentry from '@sentry/node';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { Idempotent } from '../common/idempotency.guard';
+import { Metrics } from '../observability/metrics';
 import { PrismaService } from '../prisma/prisma.service';
 
 import { WalletService } from './wallet.service';
@@ -66,27 +67,35 @@ export class PrepaidWalletController {
       buyerIp?: string;
     },
   ) {
+    const start = Date.now();
     const amountCents = BigInt(body.amountCents ?? 0);
     if (amountCents <= 0n) {
       throw new RangeError('amountCents must be greater than 0');
     }
     const method = body.method === 'card' ? 'card' : 'pix';
 
-    const result = await this.walletService.createTopupIntent({
-      workspaceId,
-      amountCents,
-      method,
-      buyerEmail: body.buyerEmail ?? null,
-      buyerCpf: body.buyerCpf ?? null,
-      buyerIp: body.buyerIp ?? null,
-    });
-
-    return {
-      paymentIntentId: result.paymentIntentId,
-      clientSecret: result.clientSecret,
-      pixQrCode: result.pixQrCode ?? null,
-      pixQrCodeUrl: result.pixQrCodeUrl ?? null,
-    };
+    try {
+      const result = await this.walletService.createTopupIntent({
+        workspaceId,
+        amountCents,
+        method,
+        buyerEmail: body.buyerEmail ?? null,
+        buyerCpf: body.buyerCpf ?? null,
+        buyerIp: body.buyerIp ?? null,
+      });
+      Metrics.endpoint.success('wallet.createTopup', { workspaceId });
+      Metrics.endpoint.duration('wallet.createTopup', Date.now() - start, { workspaceId });
+      return {
+        paymentIntentId: result.paymentIntentId,
+        clientSecret: result.clientSecret,
+        pixQrCode: result.pixQrCode ?? null,
+        pixQrCodeUrl: result.pixQrCodeUrl ?? null,
+      };
+    } catch (err: unknown) {
+      const code = (err as { code?: string })?.code ?? 'unknown';
+      Metrics.endpoint.failure('wallet.createTopup', { workspaceId, code });
+      throw err;
+    }
   }
 
   @Get(':workspaceId/transactions')
@@ -199,6 +208,7 @@ export class PrepaidWalletController {
       metadata?: Record<string, unknown>;
     },
   ) {
+    const start = Date.now();
     try {
       const result = await this.walletService.chargeForUsage({
         workspaceId,
@@ -211,6 +221,8 @@ export class PrepaidWalletController {
         ...(body.metadata !== undefined ? { metadata: body.metadata } : {}),
       });
 
+      Metrics.endpoint.success('wallet.spend', { workspaceId });
+      Metrics.endpoint.duration('wallet.spend', Date.now() - start, { workspaceId });
       return {
         success: true,
         newBalanceCents: result.newBalanceCents.toString(),
@@ -219,6 +231,7 @@ export class PrepaidWalletController {
       };
     } catch (err: unknown) {
       if (err instanceof InsufficientWalletBalanceError) {
+        Metrics.endpoint.failure('wallet.spend', { workspaceId, code: 'insufficient_balance' });
         Sentry.captureException(err, {
           extra: {
             walletId: err.walletId,
@@ -235,6 +248,8 @@ export class PrepaidWalletController {
           requestedCents: err.requestedCents.toString(),
         };
       }
+      const code = (err as { code?: string })?.code ?? 'unknown';
+      Metrics.endpoint.failure('wallet.spend', { workspaceId, code });
       throw err;
     }
   }

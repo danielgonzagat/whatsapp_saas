@@ -19,6 +19,7 @@ import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { toPrismaJsonValue } from '../common/prisma/prisma-json.util';
 import { AuthenticatedRequest } from '../common/interfaces';
 import { syncAllWorkspaceCheckoutCouponsForProduct } from '../kloel/product-coupon-sync.util';
+import { Metrics } from '../observability/metrics';
 import { PrismaService } from '../prisma/prisma.service';
 import { CheckoutService } from './checkout.service';
 import { CreateBumpDto } from './dto/create-bump.dto';
@@ -127,7 +128,8 @@ export class CheckoutController {
   // ─── Products ──────────────────────────────────────────────────────────────
 
   @Post('products')
-  createProduct(@Request() req: AuthenticatedRequest, @Body() dto: CreateProductDto) {
+  async createProduct(@Request() req: AuthenticatedRequest, @Body() dto: CreateProductDto) {
+    const start = Date.now();
     const workspaceId = req.user?.workspaceId;
 
     // Auto-generate slug from name if not provided
@@ -140,7 +142,16 @@ export class CheckoutController {
         .replace(PATTERN_RE, '')}-${Date.now().toString(36)}`;
     }
 
-    return this.checkoutService.createProduct(workspaceId, dto);
+    try {
+      const result = await this.checkoutService.createProduct(workspaceId, dto);
+      Metrics.endpoint.success('checkout.createProduct', { workspaceId });
+      Metrics.endpoint.duration('checkout.createProduct', Date.now() - start, { workspaceId });
+      return result;
+    } catch (err: unknown) {
+      const code = (err as { code?: string })?.code ?? 'unknown';
+      Metrics.endpoint.failure('checkout.createProduct', { workspaceId, code });
+      throw err;
+    }
   }
 
   /** List products. */
@@ -186,6 +197,7 @@ export class CheckoutController {
     @Param('productId') productId: string,
     @Body() dto: CreatePlanDto,
   ) {
+    const start = Date.now();
     const workspaceId = req.user?.workspaceId;
     const product = await this.prisma.product.findFirst({
       where: { id: productId, workspaceId },
@@ -197,9 +209,17 @@ export class CheckoutController {
       dto.slug || `${product.slug || product.name || 'checkout'}-${dto.name || 'oferta'}`,
     );
     dto.brandName = dto.brandName || product.name;
-    const createdPlan = await this.checkoutService.createPlan(productId, dto, workspaceId);
-    await syncAllWorkspaceCheckoutCouponsForProduct(this.prisma, workspaceId, productId);
-    return createdPlan;
+    try {
+      const createdPlan = await this.checkoutService.createPlan(productId, dto, workspaceId);
+      await syncAllWorkspaceCheckoutCouponsForProduct(this.prisma, workspaceId, productId);
+      Metrics.endpoint.success('checkout.createPlan', { workspaceId });
+      Metrics.endpoint.duration('checkout.createPlan', Date.now() - start, { workspaceId });
+      return createdPlan;
+    } catch (err: unknown) {
+      const code = (err as { code?: string })?.code ?? 'unknown';
+      Metrics.endpoint.failure('checkout.createPlan', { workspaceId, code });
+      throw err;
+    }
   }
 
   /** Update plan. */
@@ -236,6 +256,7 @@ export class CheckoutController {
     @Param('productId') productId: string,
     @Body() dto: CreatePlanDto,
   ) {
+    const start = Date.now();
     const workspaceId = req.user?.workspaceId;
     const product = await this.prisma.product.findFirst({
       where: { id: productId, workspaceId },
@@ -247,7 +268,16 @@ export class CheckoutController {
       dto.slug || `${product.slug || product.name || 'checkout'}-${dto.name || 'layout'}`,
     );
     dto.brandName = dto.brandName || product.name;
-    return this.checkoutService.createCheckout(productId, dto, workspaceId);
+    try {
+      const result = await this.checkoutService.createCheckout(productId, dto, workspaceId);
+      Metrics.endpoint.success('checkout.createCheckout', { workspaceId });
+      Metrics.endpoint.duration('checkout.createCheckout', Date.now() - start, { workspaceId });
+      return result;
+    } catch (err: unknown) {
+      const code = (err as { code?: string })?.code ?? 'unknown';
+      Metrics.endpoint.failure('checkout.createCheckout', { workspaceId, code });
+      throw err;
+    }
   }
 
   /** Duplicate checkout. */
@@ -430,9 +460,19 @@ export class CheckoutController {
 
   /** Create coupon. */
   @Post('coupons')
-  createCoupon(@Request() req: AuthenticatedRequest, @Body() dto: CreateCouponDto) {
+  async createCoupon(@Request() req: AuthenticatedRequest, @Body() dto: CreateCouponDto) {
+    const start = Date.now();
     const workspaceId = req.user?.workspaceId;
-    return this.checkoutService.createCoupon(workspaceId, dto);
+    try {
+      const result = await this.checkoutService.createCoupon(workspaceId, dto);
+      Metrics.endpoint.success('checkout.createCoupon', { workspaceId });
+      Metrics.endpoint.duration('checkout.createCoupon', Date.now() - start, { workspaceId });
+      return result;
+    } catch (err: unknown) {
+      const code = (err as { code?: string })?.code ?? 'unknown';
+      Metrics.endpoint.failure('checkout.createCoupon', { workspaceId, code });
+      throw err;
+    }
   }
 
   /** Update coupon. */
@@ -502,17 +542,28 @@ export class CheckoutController {
 
   /** Update order status. */
   @Patch('orders/:id/status')
-  updateOrderStatus(
+  async updateOrderStatus(
     @Request() req: AuthenticatedRequest,
     @Param('id') id: string,
     @Body() dto: UpdateOrderStatusDto,
   ) {
+    const start = Date.now();
+    const workspaceId = req.user?.workspaceId;
     const { status, ...extra } = dto;
-    return this.checkoutService.updateOrderStatus(
-      id,
-      req.user?.workspaceId,
-      status,
-      Object.keys(extra).length > 0 ? extra : undefined,
-    );
+    try {
+      const result = await this.checkoutService.updateOrderStatus(
+        id,
+        workspaceId,
+        status,
+        Object.keys(extra).length > 0 ? extra : undefined,
+      );
+      Metrics.endpoint.success('checkout.updateOrderStatus', { workspaceId });
+      Metrics.endpoint.duration('checkout.updateOrderStatus', Date.now() - start, { workspaceId });
+      return result;
+    } catch (err: unknown) {
+      const code = (err as { code?: string })?.code ?? 'unknown';
+      Metrics.endpoint.failure('checkout.updateOrderStatus', { workspaceId, code });
+      throw err;
+    }
   }
 }

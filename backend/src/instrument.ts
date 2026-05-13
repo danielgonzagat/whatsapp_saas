@@ -81,7 +81,7 @@ const isProduction = process.env.NODE_ENV === 'production';
 
 Sentry.init({
   dsn,
-  enabled: Boolean(dsn),
+  enabled: Boolean(dsn) && process.env.NODE_ENV !== 'test',
   environment: process.env.SENTRY_ENVIRONMENT || process.env.NODE_ENV || 'development',
   release,
 
