@@ -91,6 +91,11 @@ interface ToolSearchAgentMemoryArgs {
   limit?: number;
 }
 
+interface ToolSearchAgentSessionsArgs {
+  query: string;
+  limit?: number;
+}
+
 interface ToolUpsertAgentSkillArgs {
   id: string;
   title: string;
@@ -567,6 +572,21 @@ export class KloelChatToolsService {
       return { success: false, error: 'missing_agent_memory_query' };
     }
     const result = await this.agentSessions.search(workspaceId, query, args.limit ?? 6);
+    return { success: true, ...result };
+  }
+
+  async toolSearchAgentSessions(
+    workspaceId: string,
+    args: ToolSearchAgentSessionsArgs,
+  ): Promise<ToolResult> {
+    if (!this.agentSessions) {
+      return { success: false, error: 'agent_memory_unavailable' };
+    }
+    const query = safeStr(args.query).trim();
+    if (!query) {
+      return { success: false, error: 'missing_agent_session_query' };
+    }
+    const result = await this.agentSessions.searchSessions(workspaceId, query, args.limit ?? 3);
     return { success: true, ...result };
   }
 

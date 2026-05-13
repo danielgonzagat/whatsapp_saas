@@ -52,6 +52,7 @@ describe('KloelChatToolsService', () => {
   };
   let agentSessions: {
     search: jest.Mock;
+    searchSessions: jest.Mock;
   };
   let agentSkills: {
     upsertSkill: jest.Mock;
@@ -103,6 +104,9 @@ describe('KloelChatToolsService', () => {
     };
     agentSessions = {
       search: jest.fn().mockResolvedValue({ query: 'checkout', totalFound: 0, memories: [] }),
+      searchSessions: jest
+        .fn()
+        .mockResolvedValue({ query: 'checkout', totalFound: 0, sessions: [] }),
     };
     agentSkills = {
       upsertSkill: jest.fn().mockResolvedValue({ ok: true, reasons: [] }),
@@ -273,6 +277,13 @@ describe('KloelChatToolsService', () => {
 
       expect(result.success).toBe(true);
       expect(agentSessions.search).toHaveBeenCalledWith(wsId, 'checkout', 3);
+    });
+
+    it('searches persistent agent sessions by workspace', async () => {
+      const result = await service.toolSearchAgentSessions(wsId, { query: 'checkout', limit: 2 });
+
+      expect(result.success).toBe(true);
+      expect(agentSessions.searchSessions).toHaveBeenCalledWith(wsId, 'checkout', 2);
     });
 
     it('upserts procedural agent skills with sanitized id and typed risk', async () => {

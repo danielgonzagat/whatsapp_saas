@@ -376,6 +376,7 @@ export const KLOEL_SAFE_READ_TOOL_NAMES = [
   'get_dashboard_summary',
   'list_agent_jobs',
   'search_agent_memory',
+  'search_agent_sessions',
   'get_whatsapp_status',
   'list_whatsapp_contacts',
   'list_whatsapp_chats',

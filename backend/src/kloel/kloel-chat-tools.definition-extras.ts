@@ -103,6 +103,22 @@ export const KLOEL_CHAT_TOOLS_SETTINGS_CAMPAIGNS: ChatCompletionTool[] = [
   {
     type: 'function',
     function: {
+      name: 'search_agent_sessions',
+      description:
+        'Busca conversas e sessões passadas do Kloel agrupadas por thread, sessão ou contato, com janela focada no assunto pesquisado',
+      parameters: {
+        type: 'object',
+        properties: {
+          query: { type: 'string', description: 'Assunto para recall de sessão/conversa passada' },
+          limit: { type: 'number', description: 'Quantidade máxima de sessões retornadas' },
+        },
+        required: ['query'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
       name: 'upsert_agent_skill',
       description:
         'Registra ou atualiza uma skill procedural governada para o Kloel reutilizar em tarefas futuras',
