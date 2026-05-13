@@ -1,9 +1,11 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { StructuredLogger } from '../logging/structured-logger';
 import OpenAI from 'openai';
 import type { ChatCompletionMessageParam } from 'openai/resources/chat';
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { AuditService } from '../audit/audit.service';
+import { createTextLlmClient } from '../lib/llm-provider';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
 import { PrismaService } from '../prisma/prisma.service';
 import { chatCompletionWithFallback } from './openai-wrapper';
@@ -11,6 +13,7 @@ import { forEachSequential } from '../common/async-sequence';
 import { UnifiedAgentContextService } from './unified-agent-context.service';
 import { UnifiedAgentResponseService } from './unified-agent-response.service';
 import { UnifiedAgentActionsService } from './unified-agent-actions.service';
+import { AgentRuntimeContextService } from './agent-runtime';
 export type { ToolArgs, ActionEntry } from './unified-agent.types';
 import type { ToolArgs, ActionEntry, PredecidedAction } from './unified-agent.types';
 import {
@@ -25,7 +28,7 @@ function isAllowedTool(toolName: string, allowedTools?: string[]): boolean {
 }
 
 const UNIFIED_AGENT_PROVIDER_CONFIG_REQUIRED =
-  'OpenAI configuration is required for unified agent generation';
+  'Primary LLM configuration is required for unified agent generation';
 
 function formatPromptValue(value: unknown): string {
   if (value === null) {
@@ -64,7 +67,7 @@ function formatPromptValue(value: unknown): string {
 /** Idempotency: enforced at HTTP layer via @Idempotent() guard + Stripe idempotencyKey. */
 @Injectable()
 export class UnifiedAgentService {
-  private readonly logger = new Logger(UnifiedAgentService.name);
+  private readonly logger = StructuredLogger.from(UnifiedAgentService.name);
   private readonly openai: OpenAI | null;
   private readonly primaryBrainModel: string;
   private readonly fallbackBrainModel: string;
@@ -79,9 +82,9 @@ export class UnifiedAgentService {
     private readonly ctx: UnifiedAgentContextService,
     private readonly response: UnifiedAgentResponseService,
     private readonly actions: UnifiedAgentActionsService,
+    @Optional() private readonly agentRuntime?: AgentRuntimeContextService,
   ) {
-    const apiKey = this.config.get<string>('OPENAI_API_KEY');
-    this.openai = apiKey ? new OpenAI({ apiKey }) : null;
+    this.openai = createTextLlmClient(this.config);
     this.primaryBrainModel = resolveBackendOpenAIModel('brain', this.config);
     this.fallbackBrainModel = resolveBackendOpenAIModel('brain_fallback', this.config);
     this.writerModel = resolveBackendOpenAIModel('writer', this.config);
@@ -199,7 +202,17 @@ export class UnifiedAgentService {
     });
 
     // 2. Build system prompt and style instruction
-    const systemPrompt = this.ctx.buildSystemPrompt(workspace, products, aiConfigs);
+    const agentRuntimeContext = await this.buildAgentRuntimeContext({
+      workspaceId,
+      channel: this.ctx.readText(context?.channel, 'whatsapp'),
+      message,
+      contactId,
+      ...(params.allowedTools !== undefined ? { allowedTools: params.allowedTools } : {}),
+    });
+    const systemPrompt = [
+      this.ctx.buildSystemPrompt(workspace, products, aiConfigs),
+      agentRuntimeContext.systemPromptBlock,
+    ].join('\n\n');
     const stylePolicy = this.response.buildReplyStyleInstruction(
       message,
       conversationHistory.length,
@@ -254,6 +267,21 @@ Mensagem: ${message}`,
           historyTurns: conversationHistory.length,
         },
       );
+
+      await this.recordAgentRuntimeTurn({
+        workspaceId,
+        channel: this.ctx.readText(context?.channel, 'whatsapp'),
+        userMessage: message,
+        ...(draftedReply !== undefined ? { assistantMessage: draftedReply } : {}),
+        contactId,
+        intent,
+        confidence: actionsList.length > 0 ? 0.85 : 0.55,
+        actions: actionsList.map((action) => ({
+          toolName: action.tool,
+          success: this.actionSucceeded(action.result),
+          result: action.result,
+        })),
+      });
 
       return {
         actions: actionsList,
@@ -354,6 +382,21 @@ Mensagem: ${message}`,
       },
     );
 
+    await this.recordAgentRuntimeTurn({
+      workspaceId,
+      channel: this.ctx.readText(context?.channel, 'whatsapp'),
+      userMessage: message,
+      ...(draftedReply !== undefined ? { assistantMessage: draftedReply } : {}),
+      contactId,
+      intent,
+      confidence,
+      actions: actionsList.map((action) => ({
+        toolName: action.tool,
+        success: this.actionSucceeded(action.result),
+        result: action.result,
+      })),
+    });
+
     return {
       actions: actionsList,
       ...(draftedReply !== undefined ? { response: draftedReply } : {}),
@@ -407,6 +450,10 @@ Mensagem: ${message}`,
     context?: UnknownRecord,
   ): Promise<unknown> {
     this.logger.log(`Executing tool: ${tool}`, { args });
+    const envelope = this.buildAgentToolEnvelope({
+      workspaceId,
+      toolName: tool,
+    });
 
     switch (tool) {
       case 'send_message':
@@ -535,7 +582,54 @@ Mensagem: ${message}`,
         return this.actions.actionReactivateGhost(workspaceId, contactId, phone, args, context);
       default:
         this.logger.warn(`Unknown tool: ${tool}`);
-        return { success: false, error: 'Unknown tool' };
+        return { success: false, error: 'Unknown tool', policyEnvelope: envelope };
     }
+  }
+
+  private actionSucceeded(result: unknown): boolean {
+    if (!result || typeof result !== 'object' || Array.isArray(result)) {
+      return false;
+    }
+    const record = result as Record<string, unknown>;
+    return record.success === true || record.ok === true || record.executed === true;
+  }
+
+  private async buildAgentRuntimeContext(params: {
+    workspaceId: string;
+    channel: string;
+    message: string;
+    contactId?: string;
+    allowedTools?: string[];
+  }): Promise<{ systemPromptBlock: string }> {
+    if (!this.agentRuntime) {
+      return { systemPromptBlock: '' };
+    }
+    return this.agentRuntime.buildContext(params);
+  }
+
+  private async recordAgentRuntimeTurn(params: {
+    workspaceId: string;
+    channel: string;
+    userMessage: string;
+    assistantMessage?: string;
+    contactId?: string;
+    intent?: string;
+    confidence?: number;
+    actions?: Array<{ toolName: string; success: boolean; result?: unknown }>;
+  }): Promise<void> {
+    await this.agentRuntime?.recordTurnOutcome(params);
+  }
+
+  private buildAgentToolEnvelope(params: {
+    workspaceId: string;
+    toolName: string;
+  }): { id: string; toolName: string; allowed: boolean } {
+    return (
+      this.agentRuntime?.buildToolEnvelope(params) ?? {
+        id: 'agent-runtime-unavailable',
+        toolName: params.toolName,
+        allowed: true,
+      }
+    );
   }
 }

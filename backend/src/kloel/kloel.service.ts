@@ -1,4 +1,5 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { Prisma } from '@prisma/client';
 import { Response } from 'express';
 import { PlanLimitsService } from '../billing/plan-limits.service';
@@ -10,6 +11,7 @@ import { KloelThreadService } from './kloel-thread.service';
 import { KloelThinkerService, ThinkRequest, ThinkSyncResult } from './kloel-thinker.service';
 import { KloelToolDispatcherService } from './kloel-tool-dispatcher.service';
 import { KloelWorkspaceContextService } from './kloel-workspace-context.service';
+import { AgentRuntimeContextService } from './agent-runtime';
 
 type ComposerCapability = 'create_image' | 'create_site' | 'search_web';
 type UnknownRecord = Record<string, unknown>;
@@ -65,7 +67,7 @@ export interface FollowupListItem {
 /** Kloel main service — thin orchestrator over focused sub-services. */
 @Injectable()
 export class KloelService {
-  private readonly logger = new Logger(KloelService.name);
+  private readonly logger = StructuredLogger.from(KloelService.name);
   private readonly conversationStore: KloelConversationStore;
 
   constructor(
@@ -77,6 +79,7 @@ export class KloelService {
     private readonly thinkerService: KloelThinkerService,
     private readonly replyEngineService: KloelReplyEngineService,
     private readonly toolDispatcher: KloelToolDispatcherService,
+    @Optional() private readonly agentRuntime?: AgentRuntimeContextService,
   ) {
     this.conversationStore = new KloelConversationStore(prisma, this.logger);
   }
@@ -248,8 +251,25 @@ export class KloelService {
       mode,
       message,
     );
+    const runtimeAddendum = await this.buildAgentRuntimePromptBlock({
+      ...(workspaceId !== undefined ? { workspaceId } : {}),
+      message,
+      mode,
+      ...(request.userId !== undefined ? { userId: request.userId } : {}),
+      ...(request.conversationId !== undefined ? { conversationId: request.conversationId } : {}),
+    });
     const effectiveCompanyContext =
-      [enrichedCompanyContext, marketingAddendum].filter(Boolean).join('\n\n') || undefined;
+      [enrichedCompanyContext, marketingAddendum, runtimeAddendum].filter(Boolean).join('\n\n') ||
+      undefined;
+    if (workspaceId) {
+      await this.agentRuntime?.recordTurnOutcome({
+        workspaceId,
+        channel: `dashboard:${mode}`,
+        userMessage: message,
+        ...(request.userId !== undefined ? { userId: request.userId } : {}),
+        ...(request.conversationId !== undefined ? { threadId: request.conversationId } : {}),
+      });
+    }
     return this.thinkerService.think(
       request,
       res,
@@ -280,15 +300,36 @@ export class KloelService {
       mode,
       message,
     );
+    const runtimeAddendum = await this.buildAgentRuntimePromptBlock({
+      ...(workspaceId !== undefined ? { workspaceId } : {}),
+      message,
+      mode,
+      ...(request.userId !== undefined ? { userId: request.userId } : {}),
+      ...(request.conversationId !== undefined ? { conversationId: request.conversationId } : {}),
+    });
     const effectiveCompanyContext =
-      [enrichedCompanyContext, marketingAddendum].filter(Boolean).join('\n\n') || undefined;
-    return this.thinkerService.thinkSync(
+      [enrichedCompanyContext, marketingAddendum, runtimeAddendum].filter(Boolean).join('\n\n') ||
+      undefined;
+    const result = await this.thinkerService.thinkSync(
       request,
       composerCapability,
       enrichedCompanyContext,
       effectiveCompanyContext,
       this.executeTool.bind(this),
     );
+    if (workspaceId) {
+      await this.agentRuntime?.recordTurnOutcome({
+        workspaceId,
+        channel: `dashboard:${mode}`,
+        userMessage: message,
+        assistantMessage: result.response,
+        ...(request.userId !== undefined ? { userId: request.userId } : {}),
+        ...(result.conversationId ?? request.conversationId
+          ? { threadId: result.conversationId ?? request.conversationId }
+          : {}),
+      });
+    }
+    return result;
   }
 
   /** Regenerate assistant message. */
@@ -506,5 +547,25 @@ export class KloelService {
     data: { type: string; name: string; credentials: Prisma.InputJsonValue },
   ) {
     return this.prisma.integration.create({ data: { workspaceId, ...data } });
+  }
+
+  private async buildAgentRuntimePromptBlock(params: {
+    workspaceId?: string;
+    userId?: string;
+    conversationId?: string;
+    message: string;
+    mode: ThinkRequest['mode'];
+  }): Promise<string | undefined> {
+    if (!this.agentRuntime || !params.workspaceId) {
+      return undefined;
+    }
+    const context = await this.agentRuntime.buildContext({
+      workspaceId: params.workspaceId,
+      channel: `dashboard:${params.mode ?? 'chat'}`,
+      message: params.message,
+      ...(params.userId !== undefined ? { userId: params.userId } : {}),
+      ...(params.conversationId !== undefined ? { threadId: params.conversationId } : {}),
+    });
+    return context.systemPromptBlock;
   }
 }
