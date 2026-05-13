@@ -35,6 +35,10 @@ export const silent24hResolverWorker = new Worker(
 
       const now = new Date();
 
+      // Cap the batch — unbounded findMany can OOM after extended downtime
+      // when thousands of outcomes accumulate. 500 per 5-min tick = 6000/h,
+      // enough to drain any realistic backlog in a couple of hours.
+      const BATCH_CAP = 500;
       const openOutcomes = await prisma.decisionOutcome.findMany({
         where: { outcomeAt: null },
         select: {
@@ -48,7 +52,16 @@ export const silent24hResolverWorker = new Worker(
           contextSnapshot: true,
           createdAt: true,
         },
+        orderBy: { createdAt: 'asc' },
+        take: BATCH_CAP,
       });
+
+      if (openOutcomes.length === BATCH_CAP) {
+        ctxLog.warn('silent_24h_batch_cap_hit', {
+          batchCap: BATCH_CAP,
+          hint: 'Backlog larger than 500 — next ticks will drain remainder',
+        });
+      }
 
       const pastWindow = openOutcomes.filter((d) => {
         const deadline = new Date(d.createdAt.getTime() + d.expectedWindow * 3600 * 1000);
@@ -59,16 +72,25 @@ export const silent24hResolverWorker = new Worker(
       let silent = 0;
 
       for (const decision of pastWindow) {
-        const replyEvent = await prisma.decisionOutcomeEvent.findFirst({
-          where: {
-            workspaceId: decision.workspaceId,
-            eventType: 'inbound.received',
-            createdAt: { gt: decision.createdAt },
-          },
-          select: { id: true },
-        });
-
         const contactId = extractContactId(decision.contextSnapshot);
+        // Note: decisionOutcomeEvent table is currently unwired — no service emits
+        // 'inbound.received' yet (see DecisionOutcomeService.recordEvent: no callers).
+        // Until wired, this query returns null for every decision and all expired
+        // outcomes close as silent_24h. This is fail-safe (no false 'replied' wins),
+        // but loses real-reply attribution. The contactId filter via correlation
+        // JSON path is included now so resolution is correct once events are wired.
+        const replyEvent = contactId
+          ? await prisma.decisionOutcomeEvent.findFirst({
+              where: {
+                workspaceId: decision.workspaceId,
+                eventType: 'inbound.received',
+                createdAt: { gt: decision.createdAt },
+                correlation: { path: ['contactId'], equals: contactId },
+              },
+              select: { id: true },
+            })
+          : null;
+
         const metaPayload = {
           outcomeKey: decision.outcomeKey,
           decisionType: decision.decisionType,
