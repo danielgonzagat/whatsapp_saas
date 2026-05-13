@@ -77,6 +77,36 @@ describe('AgentRuntimeSessionStore', () => {
     });
   });
 
+  describe('recordRuntimeEvent', () => {
+    it('persists provider lifecycle events as agent_event memory', async () => {
+      const { store, prisma } = makeStore();
+      const key = await store.recordRuntimeEvent({
+        workspaceId: 'ws_1',
+        eventType: 'delegation',
+        sessionId: 'parent_1',
+        content: 'task: inspect worker result',
+        metadata: { childSessionId: 'child_1' },
+      });
+      expect(key).toMatch(/^agent_runtime:delegation:parent_1:/);
+      expect(prisma.kloelMemory.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            workspaceId: 'ws_1',
+            category: 'agent_event',
+            type: 'delegation',
+            key: expect.stringMatching(/^agent_runtime:delegation:parent_1:/),
+            metadata: expect.objectContaining({
+              kind: 'agent_runtime_event',
+              eventType: 'delegation',
+              sessionId: 'parent_1',
+              childSessionId: 'child_1',
+            }),
+          }),
+        }),
+      );
+    });
+  });
+
   describe('search', () => {
     it('returns empty result for missing workspaceId', async () => {
       const { store } = makeStore();

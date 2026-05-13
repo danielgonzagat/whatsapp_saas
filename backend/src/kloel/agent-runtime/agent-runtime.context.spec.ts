@@ -65,6 +65,10 @@ describe('AgentRuntimeContextService', () => {
       { selectSkills: jest.fn().mockResolvedValue(selectedSkills) },
       { buildSelfModel: jest.fn().mockReturnValue(pulse) },
       { buildEnvelope: jest.fn() },
+      {
+        buildSystemPrompt: jest.fn().mockResolvedValue('<kloel-memory-provider name="builtin" />'),
+        prefetchAll: jest.fn().mockResolvedValue('<memory-context provider="builtin">checkout</memory-context>'),
+      },
     );
 
     const context = await service.buildContext({
@@ -77,5 +81,7 @@ describe('AgentRuntimeContextService', () => {
     expect(context.systemPromptBlock).toContain('pulse.canDeclareComplete=false');
     expect(context.systemPromptBlock).toContain('checkout-recovery');
     expect(context.systemPromptBlock).toContain('user asked about checkout recovery');
+    expect(context.systemPromptBlock).toContain('memoryProviders:');
+    expect(context.systemPromptBlock).toContain('prefetchedMemory:');
   });
 });

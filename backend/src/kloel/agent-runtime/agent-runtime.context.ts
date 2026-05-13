@@ -4,6 +4,7 @@ import { AgentRuntimeSkillRegistry } from './agent-runtime.skill-registry';
 import { AgentRuntimePulseSelfModelService } from './agent-runtime.pulse-self-model';
 import { AgentRuntimePolicyService } from './agent-runtime.policy';
 import { sanitizeAgentRuntimeText } from './agent-runtime.sanitizer';
+import { AgentRuntimeMemoryManagerService } from './agent-runtime.memory-manager';
 import type { AgentRuntimeContext, AgentRuntimeContextRequest } from './agent-runtime.types';
 
 @Injectable()
@@ -13,12 +14,17 @@ export class AgentRuntimeContextService {
     private readonly skills: AgentRuntimeSkillRegistry,
     private readonly pulse: AgentRuntimePulseSelfModelService,
     private readonly policy: AgentRuntimePolicyService,
+    private readonly memoryManager: AgentRuntimeMemoryManagerService,
   ) {}
 
   async buildContext(request: AgentRuntimeContextRequest): Promise<AgentRuntimeContext> {
-    const [recall, selectedSkills] = await Promise.all([
+    const [recall, selectedSkills, memoryProviderPrompt, memoryProviderPrefetch] = await Promise.all([
       this.sessions.search(request.workspaceId, request.message, 6),
       this.skills.selectSkills(request.workspaceId, request.message, 4),
+      this.memoryManager.buildSystemPrompt(request.workspaceId),
+      this.memoryManager.prefetchAll(request.workspaceId, request.message, {
+        sessionId: request.threadId,
+      }),
     ]);
     const pulse = this.pulse.buildSelfModel();
     const authorityMode = pulse.canWorkNow ? 'tool_limited' : 'advisory';
@@ -33,6 +39,8 @@ export class AgentRuntimeContextService {
         selectedSkills,
         pulse,
         authorityMode,
+        memoryProviderPrompt,
+        memoryProviderPrefetch,
       }),
     };
   }
@@ -60,7 +68,12 @@ export class AgentRuntimeContextService {
     return this.policy.buildEnvelope(params);
   }
 
-  private renderSystemPromptBlock(context: Omit<AgentRuntimeContext, 'systemPromptBlock'>): string {
+  private renderSystemPromptBlock(
+    context: Omit<AgentRuntimeContext, 'systemPromptBlock'> & {
+      memoryProviderPrompt: string;
+      memoryProviderPrefetch: string;
+    },
+  ): string {
     const pulse = context.pulse;
     const recallLines = context.recall.memories.map(
       (memory) =>
@@ -94,6 +107,10 @@ export class AgentRuntimeContextService {
       ...(recallLines.length ? recallLines : ['- none']),
       'proceduralSkills:',
       ...(skillLines.length ? skillLines : ['- none']),
+      'memoryProviders:',
+      context.memoryProviderPrompt.trim() ? context.memoryProviderPrompt : '- none',
+      'prefetchedMemory:',
+      context.memoryProviderPrefetch.trim() ? context.memoryProviderPrefetch : '- none',
       '</kloel-agent-runtime>',
     ].join('\n');
   }

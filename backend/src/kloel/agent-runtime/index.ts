@@ -1,4 +1,6 @@
 export * from './agent-runtime.context';
+export * from './agent-runtime.memory-manager';
+export * from './agent-runtime.memory-provider';
 export * from './agent-runtime.policy';
 export * from './agent-runtime.pulse-self-model';
 export * from './agent-runtime.scheduler';

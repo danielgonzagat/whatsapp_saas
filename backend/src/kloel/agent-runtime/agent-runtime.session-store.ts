@@ -54,6 +54,43 @@ export class AgentRuntimeSessionStore {
     }
   }
 
+  async recordRuntimeEvent(params: {
+    workspaceId: string;
+    eventType: string;
+    sessionId: string;
+    content: string;
+    metadata?: Record<string, unknown>;
+  }): Promise<string | null> {
+    const id = randomUUID();
+    const key = `agent_runtime:${params.eventType}:${params.sessionId}:${id}`;
+    try {
+      await this.prisma.kloelMemory.create({
+        data: {
+          workspaceId: params.workspaceId,
+          key,
+          category: 'agent_event',
+          type: params.eventType,
+          content: sanitizeAgentRuntimeText(params.content, 6000),
+          value: toInputJsonValue({
+            eventType: params.eventType,
+            sessionId: params.sessionId,
+          }),
+          metadata: {
+            kind: 'agent_runtime_event',
+            eventType: sanitizeAgentRuntimeText(params.eventType, 120),
+            sessionId: sanitizeAgentRuntimeText(params.sessionId, 160),
+            ...(toInputJsonValue(params.metadata ?? {}) as Prisma.InputJsonObject),
+          } satisfies Prisma.InputJsonObject,
+        },
+      });
+      return key;
+    } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(error, 'AgentRuntimeSessionStore.recordRuntimeEvent');
+      this.logger.warn(`Failed to record agent runtime event: ${this.messageFor(error)}`);
+      return null;
+    }
+  }
+
   private static readonly SEARCH_CATEGORIES = [
     'agent_event',
     'agent_skill',

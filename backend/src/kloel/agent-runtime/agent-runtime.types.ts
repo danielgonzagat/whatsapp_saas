@@ -29,6 +29,56 @@ export interface AgentRuntimeRecallResult {
   memories: AgentRuntimeMemoryItem[];
 }
 
+export interface AgentRuntimeMemoryToolSchema {
+  name: string;
+  description: string;
+  parameters: Record<string, unknown>;
+}
+
+export interface AgentRuntimeMemoryProviderInit {
+  workspaceId: string;
+  sessionId: string;
+  channel: string;
+  agentContext: 'primary' | 'subagent' | 'scheduled' | 'flush';
+  parentSessionId?: string;
+  userId?: string;
+}
+
+export interface AgentRuntimeMemoryTurnStart {
+  workspaceId: string;
+  sessionId: string;
+  turnNumber: number;
+  message: string;
+  channel: string;
+  model?: string;
+  remainingTokens?: number;
+  toolCount?: number;
+}
+
+export interface AgentRuntimeMemoryWrite {
+  workspaceId: string;
+  sessionId: string;
+  action: string;
+  target: string;
+  content: string;
+  metadata?: Record<string, unknown>;
+}
+
+export interface AgentRuntimeDelegationObservation {
+  workspaceId: string;
+  sessionId: string;
+  task: string;
+  result: string;
+  childSessionId?: string;
+  metadata?: Record<string, unknown>;
+}
+
+export interface AgentRuntimeCompressionObservation {
+  workspaceId: string;
+  sessionId: string;
+  messages: Array<{ role: string; content: string }>;
+}
+
 export interface AgentSkillDefinition {
   id: string;
   title: string;

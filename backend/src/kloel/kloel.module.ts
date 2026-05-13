@@ -160,6 +160,8 @@ import { MindWorkspaceStateService } from './mind-workspace-state.service';
 import { AgentRuntimeJobRunnerService } from './agent-runtime/agent-runtime.job-runner';
 import {
   AgentRuntimeContextService,
+  AgentRuntimeBuiltinMemoryProvider,
+  AgentRuntimeMemoryManagerService,
   AgentRuntimePolicyService,
   AgentRuntimePulseSelfModelService,
   AgentRuntimeSchedulerService,
@@ -329,6 +331,8 @@ import {
     MindWorkspaceStateService,
     PulseArtifactService,
     AgentRuntimeContextService,
+    AgentRuntimeBuiltinMemoryProvider,
+    AgentRuntimeMemoryManagerService,
     AgentRuntimeJobRunnerService,
     AgentRuntimePolicyService,
     AgentRuntimePulseSelfModelService,
@@ -395,6 +399,8 @@ import {
     MindVerbalizerService,
     DecisionOutcomeService,
     AgentRuntimeContextService,
+    AgentRuntimeBuiltinMemoryProvider,
+    AgentRuntimeMemoryManagerService,
     AgentRuntimeJobRunnerService,
     AgentRuntimePolicyService,
     AgentRuntimePulseSelfModelService,
