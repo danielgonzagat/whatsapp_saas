@@ -21,7 +21,7 @@
   },
   "dependencies": {
     "@prisma/client": "5.22.0",
-    "@sentry/node": "10.53.0",
+    "@sentry/node": "10.53.1",
     "@types/puppeteer": "5.4.7",
     "axios": "1.16.0",
     "bullmq": "5.76.8",
