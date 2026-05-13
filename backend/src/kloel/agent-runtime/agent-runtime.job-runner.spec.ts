@@ -54,6 +54,7 @@ describe('AgentRuntimeJobRunnerService', () => {
         workspaceId: 'ws_1',
         mode: 'chat',
         message: 'Review operational memory.',
+        allowedTools: ['search_agent_memory'],
         companyContext: expect.stringContaining('<scheduled-agent-job>'),
       }),
     );

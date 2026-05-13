@@ -213,6 +213,7 @@ export async function buildAssistantReplyImpl(
     userName?: string;
     mode?: 'chat' | 'onboarding' | 'sales';
     companyContext?: string;
+    allowedTools?: string[];
     conversationState?: { summary?: string; recentMessages: ReplyMessage[]; totalMessages: number };
     onTraceEvent?: (event: KloelStreamEvent) => void;
     executeLocalTool?: LocalToolExecutor;
@@ -226,6 +227,7 @@ export async function buildAssistantReplyImpl(
     userName: reqUserName,
     mode = 'chat',
     companyContext,
+    allowedTools,
     conversationState,
     onTraceEvent,
     executeLocalTool,
@@ -304,13 +306,14 @@ export async function buildAssistantReplyImpl(
   }
 
   const isChatMode = mode === 'chat';
+  const chatTools = filterChatToolsByAllowedTools(allowedTools);
   const response = await chatCompletionWithFallback(
     openai,
     {
       model: resolveBackendOpenAIModel(isChatMode ? 'brain' : 'writer'),
       messages,
-      ...(isChatMode ? { tools: KLOEL_CHAT_TOOLS } : {}),
-      ...(isChatMode ? { tool_choice: 'auto' as const } : {}),
+      ...(isChatMode ? { tools: chatTools } : {}),
+      ...(isChatMode ? { tool_choice: chatTools.length > 0 ? ('auto' as const) : ('none' as const) } : {}),
       temperature: responseTemperature,
       top_p: 0.95,
       frequency_penalty: 0.3,
@@ -334,6 +337,7 @@ export async function buildAssistantReplyImpl(
       assistantMessage: initialMsg,
       workspaceId,
       ...(userId !== undefined ? { userId } : {}),
+      ...(allowedTools !== undefined ? { allowedTools } : {}),
       ...(onTraceEvent !== undefined ? { safeWrite: onTraceEvent } : {}),
       executeLocalTool,
     });
@@ -369,6 +373,17 @@ export async function buildAssistantReplyImpl(
 
   onTraceEvent?.(createKloelStatusEvent('streaming_token'));
   return assistantMessage;
+}
+
+function filterChatToolsByAllowedTools(allowedTools?: string[]): typeof KLOEL_CHAT_TOOLS {
+  if (allowedTools === undefined) {
+    return KLOEL_CHAT_TOOLS;
+  }
+  const allowed = new Set(allowedTools);
+  return KLOEL_CHAT_TOOLS.filter((tool) => {
+    const name = 'function' in tool ? tool.function?.name : undefined;
+    return typeof name === 'string' && allowed.has(name);
+  });
 }
 
 export function buildKloelDashboardPrompt(params: {

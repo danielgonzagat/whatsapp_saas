@@ -44,6 +44,7 @@ interface ExecuteAssistantToolCallsInput {
   };
   workspaceId: string;
   userId?: string;
+  allowedTools?: string[];
   safeWrite?: (event: KloelStreamEvent) => void;
   executeLocalTool: (
     workspaceId: string,
@@ -126,25 +127,38 @@ export class KloelToolRouter {
       input.safeWrite?.(createKloelToolCallEvent(callId, toolName, toolArgs));
 
       let result = toResultRecord(null);
+      const isAllowed =
+        input.allowedTools === undefined ? true : input.allowedTools.includes(toolName);
 
-      try {
-        result = toResultRecord(
-          await this.unifiedAgentService.executeTool(toolName, toolArgs, {
-            workspaceId: input.workspaceId,
-            phone: stringArgument(toolArgs.phone),
-            contactId: stringArgument(toolArgs.contactId),
-          }),
-        );
-      } catch (error: unknown) {
-        this.logger.warn(
-          `UnifiedAgent tool ${toolName} falhou: ${error instanceof Error ? error.message : 'unknown_error'}`,
-        );
+      if (!isAllowed) {
+        result = {
+          success: false,
+          error: 'tool_not_allowed',
+          toolName,
+          allowedTools: input.allowedTools,
+        };
       }
 
-      if (!result || result?.error === 'Unknown tool') {
-        result = toResultRecord(
-          await input.executeLocalTool(input.workspaceId, toolName, toolArgs, input.userId),
-        );
+      if (isAllowed) {
+        try {
+          result = toResultRecord(
+            await this.unifiedAgentService.executeTool(toolName, toolArgs, {
+              workspaceId: input.workspaceId,
+              phone: stringArgument(toolArgs.phone),
+              contactId: stringArgument(toolArgs.contactId),
+            }),
+          );
+        } catch (error: unknown) {
+          this.logger.warn(
+            `UnifiedAgent tool ${toolName} falhou: ${error instanceof Error ? error.message : 'unknown_error'}`,
+          );
+        }
+
+        if (!result || result?.error === 'Unknown tool') {
+          result = toResultRecord(
+            await input.executeLocalTool(input.workspaceId, toolName, toolArgs, input.userId),
+          );
+        }
       }
 
       const success =

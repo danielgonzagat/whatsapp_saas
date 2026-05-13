@@ -191,6 +191,7 @@ export async function runToolPlanningBranch(
   responseTemperature: number,
   responseMaxTokens: number,
   executeLocalTool: LocalToolExecutor,
+  requestedAllowedTools: string[] | undefined,
   signal: AbortSignal | undefined,
   streamWriterResponse: (
     msgs: ChatCompletionMessageParam[],
@@ -206,7 +207,13 @@ export async function runToolPlanningBranch(
   }
   safeWrite(createKloelStatusEvent('thinking'));
   await planLimits.ensureTokenBudget(workspaceId ?? '');
-  const allowedTools = KLOEL_SAFE_READ_TOOLS;
+  const allowedTools =
+    requestedAllowedTools === undefined
+      ? KLOEL_SAFE_READ_TOOLS
+      : KLOEL_SAFE_READ_TOOLS.filter((tool) => {
+          const name = 'function' in tool ? tool.function?.name : undefined;
+          return typeof name === 'string' && requestedAllowedTools.includes(name);
+        });
   const initialResponse = await chatCompletionWithFallback(
     replyEngine.openai!,
     {
@@ -234,6 +241,7 @@ export async function runToolPlanningBranch(
       assistantMessage: assistantMsg,
       workspaceId: workspaceId ?? '',
       ...(userId !== undefined ? { userId } : {}),
+      ...(requestedAllowedTools !== undefined ? { allowedTools: requestedAllowedTools } : {}),
       safeWrite,
       executeLocalTool,
     });

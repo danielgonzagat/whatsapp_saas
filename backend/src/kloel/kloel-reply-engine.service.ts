@@ -310,6 +310,7 @@ export class KloelReplyEngineService {
     userName?: string;
     mode?: 'chat' | 'onboarding' | 'sales';
     companyContext?: string;
+    allowedTools?: string[];
     conversationState?: { summary?: string; recentMessages: ReplyMessage[]; totalMessages: number };
     onTraceEvent?: (event: KloelStreamEvent) => void;
     executeLocalTool?: LocalToolExecutor;

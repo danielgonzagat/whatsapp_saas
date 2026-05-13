@@ -77,8 +77,9 @@ export async function thinkSyncImpl(
       ...(workspaceId ? { workspaceId } : {}),
       ...(userId ? { userId } : {}),
       ...(reqUserName ? { userName: reqUserName } : {}),
-      mode,
-      ...(effectiveCompanyContext !== undefined ? { companyContext: effectiveCompanyContext } : {}),
+    mode,
+    ...(effectiveCompanyContext !== undefined ? { companyContext: effectiveCompanyContext } : {}),
+      ...(request.allowedTools !== undefined ? { allowedTools: request.allowedTools } : {}),
       conversationState: historyState,
     }));
 

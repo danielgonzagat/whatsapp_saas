@@ -226,6 +226,18 @@ export class KloelService {
     return this.toolDispatcher.executeTool(workspaceId, toolName, args, userId);
   }
 
+  private buildScopedToolExecutor(allowedTools?: string[]): typeof this.executeTool {
+    if (allowedTools === undefined) {
+      return this.executeTool.bind(this);
+    }
+    return async (workspaceId, toolName, args, userId) => {
+      if (!allowedTools.includes(toolName)) {
+        return { success: false, error: 'tool_not_allowed', toolName, allowedTools };
+      }
+      return this.executeTool(workspaceId, toolName, args, userId);
+    };
+  }
+
   // ── Public API ──
 
   /** Streaming SSE think. */
@@ -276,7 +288,7 @@ export class KloelService {
       composerCapability,
       enrichedCompanyContext,
       effectiveCompanyContext,
-      this.executeTool.bind(this),
+      this.buildScopedToolExecutor(request.allowedTools),
       opts,
     );
   }
@@ -315,7 +327,7 @@ export class KloelService {
       composerCapability,
       enrichedCompanyContext,
       effectiveCompanyContext,
-      this.executeTool.bind(this),
+      this.buildScopedToolExecutor(request.allowedTools),
     );
     if (workspaceId) {
       await this.agentRuntime?.recordTurnOutcome({

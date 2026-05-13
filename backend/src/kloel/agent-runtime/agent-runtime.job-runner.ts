@@ -97,6 +97,7 @@ export class AgentRuntimeJobRunnerService {
         mode: 'chat',
         message: payload.prompt,
         companyContext: this.buildCompanyContext(payload, event),
+        allowedTools: payload.toolScope,
       });
 
       await this.sessions.recordTurn({

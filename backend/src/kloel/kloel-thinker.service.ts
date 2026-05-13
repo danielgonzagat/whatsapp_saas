@@ -72,6 +72,7 @@ export class KloelThinkerService {
       conversationId,
       mode = 'chat',
       metadata,
+      allowedTools,
     } = request;
     const signal = opts?.signal;
     const isAborted = () => !!signal?.aborted;
@@ -261,6 +262,7 @@ export class KloelThinkerService {
           responseTemperature,
           responseMaxTokens,
           executeLocalTool,
+          allowedTools,
           signal,
           streamWriterResponse,
           branchCtx,

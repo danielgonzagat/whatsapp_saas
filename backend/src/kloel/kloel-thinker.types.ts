@@ -14,6 +14,7 @@ export interface ThinkRequest {
   mode?: 'chat' | 'onboarding' | 'sales';
   companyContext?: string;
   metadata?: Prisma.InputJsonValue;
+  allowedTools?: string[];
 }
 
 export interface ThinkSyncResult {
