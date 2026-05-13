@@ -126,6 +126,9 @@ model Workspace {
   jitterMin Int @default(5)
   jitterMax Int @default(15)
 
+  // Kloel MIND global prior opt-out
+  globalPriorOptOut Boolean @default(false)
+
   // Provider Configs (Meta, WPP, Evolution, etc)
   providerSettings Json @default("{}")
 
@@ -138,6 +141,7 @@ model Workspace {
 
   // Relations
   contacts           Contact[]
+  identityLinks      ContactIdentityLink[]
   channelIdentifiers ChannelIdentifier[]
   flows              Flow[]
   flowExecutions     FlowExecution[]
@@ -409,6 +413,9 @@ model Contact {
   insights           ContactInsight[]
   channelIdentifiers ChannelIdentifier[]
 
+  identityLinksAsSource  ContactIdentityLink[] @relation("IdentityLinksAsSource")
+  identityLinksAsLinked  ContactIdentityLink[] @relation("IdentityLinksAsLinked")
+
   workspaceId String
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
@@ -440,6 +447,28 @@ model ContactInsight {
   createdAt DateTime @default(now())
 
   @@map("RAC_ContactInsight")
+}
+
+model ContactIdentityLink {
+  id              String   @id @default(uuid())
+  workspaceId     String
+  contactId       String
+  linkedContactId String
+  workspace       Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  contact         Contact   @relation("IdentityLinksAsSource", fields: [contactId, workspaceId], references: [id, workspaceId], onDelete: Cascade)
+  linkedContact   Contact   @relation("IdentityLinksAsLinked", fields: [linkedContactId, workspaceId], references: [id, workspaceId], onDelete: Cascade)
+  confidence      Float    @default(1.0)
+  matchReason     String?   // phone_match, email_match, operator_merge
+  merged          Boolean   @default(false)
+  mergedAt        DateTime?
+  mergedBy        String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([workspaceId, contactId, linkedContactId])
+  @@index([workspaceId, contactId])
+  @@index([workspaceId, linkedContactId])
+  @@map("RAC_ContactIdentityLink")
 }
 
 model ChannelIdentifier {
@@ -3726,6 +3755,20 @@ model MindGlobalPrior {
   @@unique([domain, predicate, context])
   @@index([domain, predicate])
   @@map("RAC_MindGlobalPrior")
+}
+
+model KloelGlobalPrior {
+  id           String   @id @default(cuid())
+  channel      String
+  decisionType String
+  action       String
+  observations Int      @default(0)
+  successes    Int      @default(0)
+  updatedAt    DateTime @updatedAt
+
+  @@unique([channel, decisionType, action])
+  @@index([channel, decisionType])
+  @@map("RAC_KloelGlobalPrior")
 }
 
 model FbMessage {

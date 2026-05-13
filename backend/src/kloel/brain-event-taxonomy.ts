@@ -46,6 +46,7 @@ export const BRAIN_EVENT_TAXONOMY = [
   'pipeline.auto_fallback',
   'pipeline.shadow_recorded',
   'identity.contact.merged',
+  'identity.contact.resolved',
   'identity.merge_candidate.created',
 ] as const;
 
@@ -181,7 +182,7 @@ export interface ChannelEventPayload extends CommercialEventPayload {
 }
 
 export interface IdentityEventPayload extends CommercialEventPayload {
-  eventType: 'identity.contact.merged' | 'identity.merge_candidate.created';
+  eventType: 'identity.contact.merged' | 'identity.contact.resolved' | 'identity.merge_candidate.created';
   payload: {
     sourceContactId: string;
     targetContactId: string;
