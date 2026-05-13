@@ -1,6 +1,5 @@
 [build]
 builder = "DOCKERFILE"
-dockerfilePath = "Dockerfile"
 
 [deploy]
 startCommand = "xvfb-run --server-args='-screen 0 1440x900x24 -ac' npm run start:prod"
