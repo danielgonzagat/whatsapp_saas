@@ -1,10 +1,16 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { MailboxProvider, MailboxStatus, Prisma } from '@prisma/client';
+import { createTransport } from 'nodemailer';
 import net from 'node:net';
 import tls from 'node:tls';
 import { Metrics } from '../observability/metrics';
 import { PrismaService } from '../prisma/prisma.service';
-import { encryptMailboxToken } from './mailbox-token-crypto';
+import {
+  buildUnsubscribeFooterHtml,
+  buildUnsubscribeFooterText,
+  buildListUnsubscribeHeader,
+} from '../common/utils/unsubscribe-footer.util';
+import { decryptMailboxToken, encryptMailboxToken } from './mailbox-token-crypto';
 
 interface ImapSmtpConnectInput {
   email?: unknown;
@@ -320,5 +326,150 @@ export class MailboxImapSmtpService {
 
   private quoteImap(value: string): string {
     return `"${value.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`;
+  }
+
+  async sendMessageFromMailbox(
+    workspaceId: string,
+    input: {
+      toEmail: string;
+      subject?: string;
+      html?: string;
+      proactive?: boolean;
+    },
+  ) {
+    const toEmail = String(input.toEmail || '')
+      .trim()
+      .toLowerCase();
+    if (!toEmail || !toEmail.includes('@')) {
+      throw new BadRequestException('imap_smtp_recipient_required');
+    }
+    if (input.proactive !== false && (await this.isSuppressedRecipient(workspaceId, toEmail))) {
+      Metrics.mailbox.sendSuppressed('imap_smtp', { workspace_id: workspaceId });
+      return {
+        provider: 'imap_smtp',
+        status: 'suppressed',
+        sent: false,
+        toEmail,
+        reason: 'recipient_unsubscribed',
+      };
+    }
+
+    const connection = await this.getActiveImapSmtpConnection(workspaceId);
+    if (!connection) {
+      Metrics.mailbox.sendFailed('imap_smtp', 'not_connected', {
+        workspace_id: workspaceId,
+      });
+      return { provider: 'imap_smtp', status: 'not_connected', sent: false };
+    }
+
+    const smtpPassword = decryptMailboxToken(connection.smtpPassword);
+    if (!smtpPassword || !connection.smtpHost) {
+      throw new BadRequestException('imap_smtp_credentials_missing');
+    }
+
+    const subject = String(input.subject || 'Kloel CIA - mensagem de teste')
+      .trim()
+      .slice(0, 160);
+    const baseHtml =
+      input.html ||
+      '<p>Esta mensagem foi enviada pela CIA usando a caixa IMAP/SMTP conectada ao workspace.</p>';
+    const html =
+      input.proactive === false
+        ? baseHtml
+        : `${baseHtml}${buildUnsubscribeFooterHtml({ email: toEmail })}`;
+    const textHtml =
+      input.proactive === false
+        ? baseHtml.replace(/<[^>]*>/g, '')
+        : `${baseHtml.replace(/<[^>]*>/g, '')}${buildUnsubscribeFooterText({ email: toEmail })}`;
+    const proactive = input.proactive !== false;
+
+    const transport = createTransport({
+      host: connection.smtpHost,
+      port: connection.smtpPort ?? (connection.smtpSecure ? 465 : 587),
+      secure: connection.smtpSecure,
+      auth: {
+        user: decryptMailboxToken(connection.smtpUsername) || connection.email,
+        pass: smtpPassword,
+      },
+      connectionTimeout: 15_000,
+      greetingTimeout: 10_000,
+      socketTimeout: 15_000,
+    });
+
+    try {
+      const headers: Record<string, string> = {};
+      if (proactive) {
+        headers['List-Unsubscribe'] = buildListUnsubscribeHeader({
+          email: toEmail,
+        });
+      }
+
+      const info = await transport.sendMail({
+        from: connection.email,
+        to: toEmail,
+        subject,
+        html,
+        text: textHtml,
+        headers,
+      });
+
+      Metrics.mailbox.sendCompleted('imap_smtp', { workspace_id: workspaceId });
+      return {
+        provider: 'imap_smtp',
+        status: 'sent',
+        sent: true,
+        email: connection.email,
+        toEmail,
+        messageId: info.messageId || `smtp:${Date.now()}`,
+      };
+    } catch (error) {
+      const reason = error instanceof Error ? error.message.slice(0, 100) : 'smtp_send_failed';
+      await this.prisma.mailboxConnection.update({
+        where: { id: connection.id },
+        data: {
+          lastErrorAt: new Date(),
+          lastError: reason,
+        },
+      });
+      Metrics.mailbox.sendFailed('imap_smtp', reason, {
+        workspace_id: workspaceId,
+      });
+      throw new BadRequestException('imap_smtp_send_failed');
+    } finally {
+      transport.close();
+    }
+  }
+
+  private async getActiveImapSmtpConnection(workspaceId: string) {
+    return this.prisma.mailboxConnection.findFirst({
+      where: {
+        workspaceId,
+        provider: MailboxProvider.IMAP_SMTP,
+        status: MailboxStatus.ACTIVE,
+      },
+      orderBy: { connectedAt: 'desc' },
+      select: {
+        id: true,
+        workspaceId: true,
+        email: true,
+        smtpHost: true,
+        smtpPort: true,
+        smtpSecure: true,
+        smtpUsername: true,
+        smtpPassword: true,
+      },
+    });
+  }
+
+  private async isSuppressedRecipient(workspaceId: string, email: string): Promise<boolean> {
+    const contact = await this.prisma.contact.findFirst({
+      where: {
+        workspaceId,
+        email: { equals: email, mode: 'insensitive' },
+        optIn: false,
+      },
+      select: { id: true, optedOutAt: true },
+    });
+    return Boolean(contact);
   }
 }
