@@ -18,6 +18,19 @@ const OUTCOME_MAP: Record<string, { outcomeName: string; success: boolean }> = {
 
 const log = new WorkerLogger('decision-outcome-resolver');
 
+function extractChannel(contextSnapshot: unknown): string | undefined {
+  if (
+    contextSnapshot &&
+    typeof contextSnapshot === 'object' &&
+    !Array.isArray(contextSnapshot)
+  ) {
+    const ctx = contextSnapshot as Record<string, unknown>;
+    const channel = ctx.channel;
+    return typeof channel === 'string' ? channel : undefined;
+  }
+  return undefined;
+}
+
 export const decisionOutcomeWorker = new Worker(
   'decision-outcome',
   async (job: Job) => {
@@ -42,9 +55,15 @@ export const decisionOutcomeWorker = new Worker(
 
       if (job.name === 'resolve-event') {
         const mapping = OUTCOME_MAP[data.eventType];
+        const wonVsBaseline = mapping?.success ?? false;
 
         if (data.outcomeKey) {
-          await prisma.decisionOutcome.updateMany({
+          const openRows = await prisma.decisionOutcome.findMany({
+            where: { outcomeKey: data.outcomeKey, outcomeAt: null },
+            select: { id: true, contextSnapshot: true, decisionType: true, chosenAction: true },
+          });
+
+          const updateResult = await prisma.decisionOutcome.updateMany({
             where: { outcomeKey: data.outcomeKey, outcomeAt: null },
             data: {
               outcomeAt: new Date(),
@@ -52,6 +71,45 @@ export const decisionOutcomeWorker = new Worker(
               wonVsBaseline: mapping?.success ?? null,
             },
           });
+
+          if (updateResult.count > 0) {
+            for (const row of openRows) {
+              const gChannel = extractChannel(row.contextSnapshot);
+              if (gChannel) {
+                try {
+                  await prisma.kloelGlobalPrior.upsert({
+                    where: {
+                      channel_decisionType_action: {
+                        channel: gChannel,
+                        decisionType: row.decisionType,
+                        action: row.chosenAction,
+                      },
+                    },
+                    create: {
+                      channel: gChannel,
+                      decisionType: row.decisionType,
+                      action: row.chosenAction,
+                      observations: 1,
+                      successes: wonVsBaseline ? 1 : 0,
+                    },
+                    update: {
+                      observations: { increment: 1 },
+                      ...(wonVsBaseline ? { successes: { increment: 1 } } : {}),
+                    },
+                  });
+                } catch (err: unknown) {
+                  ctxLog.warn('global_prior_upsert_failed', {
+                    outcomeKey: data.outcomeKey,
+                    channel: gChannel,
+                    decisionType: row.decisionType,
+                    chosenAction: row.chosenAction,
+                    error: err instanceof Error ? err.message : String(err),
+                  });
+                }
+              }
+            }
+          }
+
           ctxLog.info('outcome_resolved', {
             outcomeKey: data.outcomeKey,
             eventType: data.eventType,
@@ -79,18 +137,53 @@ export const decisionOutcomeWorker = new Worker(
 
         const expired = await prisma.decisionOutcome.findMany({
           where: { workspaceId, outcomeAt: null, createdAt: { lt: cutoff } },
-          select: { id: true },
+          select: { id: true, contextSnapshot: true, decisionType: true, chosenAction: true },
         });
 
         if (expired.length > 0) {
           await prisma.decisionOutcome.updateMany({
-            where: { id: { in: expired.map((e: { id: string }) => e.id) } },
+            where: { id: { in: expired.map((e) => e.id) } },
             data: {
               outcomeAt: new Date(),
               outcomeName: 'inbound.silent_24h',
               wonVsBaseline: false,
             },
           });
+
+          for (const row of expired) {
+            const gChannel = extractChannel(row.contextSnapshot);
+            if (gChannel) {
+              try {
+                await prisma.kloelGlobalPrior.upsert({
+                  where: {
+                    channel_decisionType_action: {
+                      channel: gChannel,
+                      decisionType: row.decisionType,
+                      action: row.chosenAction,
+                    },
+                  },
+                  create: {
+                    channel: gChannel,
+                    decisionType: row.decisionType,
+                    action: row.chosenAction,
+                    observations: 1,
+                    successes: 0,
+                  },
+                  update: {
+                    observations: { increment: 1 },
+                  },
+                });
+              } catch (err: unknown) {
+                ctxLog.warn('global_prior_upsert_failed_on_sweep', {
+                  channel: gChannel,
+                  decisionType: row.decisionType,
+                  chosenAction: row.chosenAction,
+                  error: err instanceof Error ? err.message : String(err),
+                });
+              }
+            }
+          }
+
           ctxLog.info('expired_outcomes_swept', { count: expired.length });
         }
       }

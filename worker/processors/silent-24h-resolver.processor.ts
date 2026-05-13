@@ -19,13 +19,18 @@ function extractContactId(contextSnapshot: unknown): string | undefined {
   return undefined;
 }
 
-// TODO(P6.4 wiring): KloelGlobalPrior.recordObservation has zero callers
-// across the codebase — the global prior table never gets data, which means
-// MindPolicyService cold-start mix is currently a no-op. The right home for
-// this side-effect is DecisionOutcomeService.closeOutcome (backend), which
-// also has zero external callers today. Both need wiring at the same time.
-// Doing it from the worker would require duplicating the model in worker's
-// Prisma schema and crossing the domain boundary the wrong way.
+function extractChannel(contextSnapshot: unknown): string | undefined {
+  if (
+    contextSnapshot &&
+    typeof contextSnapshot === 'object' &&
+    !Array.isArray(contextSnapshot)
+  ) {
+    const ctx = contextSnapshot as Record<string, unknown>;
+    const channel = ctx.channel;
+    return typeof channel === 'string' ? channel : undefined;
+  }
+  return undefined;
+}
 
 export const silent24hResolverWorker = new Worker(
   'silent-24h-resolver',
@@ -128,6 +133,40 @@ export const silent24hResolverWorker = new Worker(
             outcomeKey: decision.outcomeKey,
           });
           continue;
+        }
+
+        const gChannel = extractChannel(decision.contextSnapshot);
+        if (gChannel) {
+          try {
+            await prisma.kloelGlobalPrior.upsert({
+              where: {
+                channel_decisionType_action: {
+                  channel: gChannel,
+                  decisionType: decision.decisionType,
+                  action: decision.chosenAction,
+                },
+              },
+              create: {
+                channel: gChannel,
+                decisionType: decision.decisionType,
+                action: decision.chosenAction,
+                observations: 1,
+                successes: updateData.wonVsBaseline ? 1 : 0,
+              },
+              update: {
+                observations: { increment: 1 },
+                ...(updateData.wonVsBaseline ? { successes: { increment: 1 } } : {}),
+              },
+            });
+          } catch (err: unknown) {
+            ctxLog.warn('global_prior_upsert_failed', {
+              outcomeKey: decision.outcomeKey,
+              channel: gChannel,
+              decisionType: decision.decisionType,
+              chosenAction: decision.chosenAction,
+              error: err instanceof Error ? err.message : String(err),
+            });
+          }
         }
 
         await prisma.autopilotEvent.create({
