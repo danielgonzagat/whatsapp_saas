@@ -192,18 +192,15 @@ export class ConnectPayoutApprovalService {
         currency: payload.currency.toLowerCase(),
       });
     } catch (error: unknown) {
-      this.logger.error(
-        {
-          workspaceId: payload.workspaceId,
-          externalId: payload.requestId,
-          operation: 'approve_payout',
-          approvalRequestId: approval.id,
-          stripeAccountId: payload.stripeAccountId,
-          amountCents: payload.amountCents,
-        },
-        'Financial operation failed: approve_payout',
-        error,
-      );
+      this.logger.error('Financial operation failed: approve_payout', {
+        workspaceId: payload.workspaceId,
+        externalId: payload.requestId,
+        operation: 'approve_payout',
+        approvalRequestId: approval.id,
+        stripeAccountId: payload.stripeAccountId,
+        amountCents: payload.amountCents,
+        error: error instanceof Error ? error.message : String(error),
+      });
 
       await this.prisma.approvalRequest.updateMany({
         where: { id: approval.id, workspaceId: approval.workspaceId },
