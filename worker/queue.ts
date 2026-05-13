@@ -330,6 +330,8 @@ export const crmQueue = lazyQueue('crm-jobs');
 export const autopilotQueue = lazyQueue('autopilot-jobs');
 /** Webhook queue. */
 export const webhookQueue = lazyQueue('webhook-jobs');
+/** Silent 24h resolver queue. */
+export const silent24hResolverQueue = lazyQueue('silent-24h-resolver');
 
 // queueOptions is built lazily so reading it does not trigger
 // connection creation unless someone actually consumes it.
@@ -353,6 +355,7 @@ export const queueRegistry: BullQueue[] = [
   crmQueue,
   autopilotQueue,
   webhookQueue,
+  silent24hResolverQueue,
 ];
 
 // ─── DLQ webhook notifier ─────────────────────────────────────────────────

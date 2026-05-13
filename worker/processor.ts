@@ -9,7 +9,7 @@ import {
   resolveFlowDefinition,
   runSubscriptionAndRateGuards,
 } from './processor-flow-guards';
-import { autopilotQueue, buildQueueOptions, shutdownQueueSystem } from './queue';
+import { autopilotQueue, buildQueueOptions, shutdownQueueSystem, silent24hResolverQueue } from './queue';
 import './campaign-processor'; // Start Campaign Worker
 import './scraper-processor'; // Start Scraper Worker
 import './media-processor'; // Start Media Worker
@@ -17,6 +17,7 @@ import './voice-processor'; // Start Voice Worker
 import './processors/memory-processor'; // Start Memory Worker
 import './processors/webhook-processor'; // Start Webhook Worker
 import './processors/crm-processor'; // Start CRM Worker
+import './processors/silent-24h-resolver.processor'; // Start Silent 24h Resolver Worker
 import './metrics-server'; // Expose /metrics and /health
 import './dlq-monitor'; // Monitor DLQs and alert ops
 import { redisPub } from './redis-client';
@@ -97,6 +98,23 @@ if (SHOULD_SCHEDULE) {
       reason: 'proactive_outreach_disabled',
     });
   }
+
+  void (async () => {
+    try {
+      await silent24hResolverQueue.add(
+        'resolve-expired',
+        {},
+        {
+          jobId: 'silent-24h-resolve-expired',
+          repeat: { pattern: '*/5 * * * *' },
+          removeOnComplete: true,
+        },
+      );
+      log.info('silent_24h_resolver_scheduled', { pattern: '*/5 * * * *' });
+    } catch (err: unknown) {
+      log.warn('silent_24h_resolver_schedule_failed', { error: getErrorMessage(err) });
+    }
+  })();
 
   log.info('cia_main_loop_disabled', {
     reason: 'observer_reactive_only',
