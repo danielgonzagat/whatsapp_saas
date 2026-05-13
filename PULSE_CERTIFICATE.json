@@ -1,9 +1,9 @@
 {
   "projectId": "kloel",
   "projectName": "KLOEL",
-  "commitSha": "7ef98991f83d57ddacc0f152279a89cbd0925aa7",
+  "commitSha": "dc2466f8aeb825d7560394bdac1b76c18473fbf8",
   "environment": "scan",
-  "timestamp": "2026-05-13T02:52:55.122Z",
+  "timestamp": "2026-05-13T03:06:49.971Z",
   "status": "NOT_CERTIFIED",
   "humanReplacementStatus": "NOT_READY",
   "profile": null,
@@ -136,7 +136,7 @@
     },
     "executionMatrixCompletePass": {
       "status": "pass",
-      "reason": "Execution matrix classified 6350 path(s) with zero unknown and zero non-terminal paths.",
+      "reason": "Execution matrix classified 6353 path(s) with zero unknown and zero non-terminal paths.",
       "evidenceMode": "inferred",
       "confidence": "high"
     },
@@ -203,21 +203,21 @@
     "Codacy still reports 2225 HIGH issue(s).",
     "Observed external high-impact signals remain active: 3.",
     "Proof readiness still has non-observed production proof: status=executable_unproved, canAdvance=false, planned=2245, inferred=0, not_available=0, nonObserved=2245, executableUnproved=2245.",
-    "No-hardcoded-reality state still has hardcoded reality authority: 222223 hardcoded reality event(s) across 533 scanned PULSE file(s). Top files: scripts/pulse/convergence-plan.ts, scripts/pulse/__companions__/autopilot-processor.companion.ts, scripts/pulse/property-tester.ts, scripts/pulse/types.ts, scripts/pulse/certification.ts, scripts/pulse/observability-coverage.ts, scripts/pulse/chaos-engine.ts, scripts/pulse/behavior-graph.ts. First event: scripts/pulse/__kernel_additions__/discoverAutonomyConceptTypeLabels.ts:9.."
+    "No-hardcoded-reality state still has hardcoded reality authority: 222227 hardcoded reality event(s) across 533 scanned PULSE file(s). Top files: scripts/pulse/convergence-plan.ts, scripts/pulse/__companions__/autopilot-processor.companion.ts, scripts/pulse/property-tester.ts, scripts/pulse/types.ts, scripts/pulse/certification.ts, scripts/pulse/observability-coverage.ts, scripts/pulse/chaos-engine.ts, scripts/pulse/behavior-graph.ts. First event: scripts/pulse/__kernel_additions__/discoverAutonomyConceptTypeLabels.ts:9.."
   ],
   "noHardcodedRealityState": {
     "artifact": "PULSE_NO_HARDCODED_REALITY",
     "version": 1,
-    "generatedAt": "2026-05-13T02:52:55.122Z",
+    "generatedAt": "2026-05-13T03:06:49.971Z",
     "operationalIdentity": "dynamic_hardcode_evidence_event",
     "scannedFiles": 533,
-    "totalEvents": 222223,
+    "totalEvents": 222227,
     "summary": {
-      "totalFindings": 222223,
+      "totalFindings": 222227,
       "byKind": {
         "hardcoded_literal_surface_risk": 15229,
         "hardcoded_const_declaration_risk": 8234,
-        "hardcoded_numeric_surface_risk": 4425,
+        "hardcoded_numeric_surface_risk": 4427,
         "hardcoded_predeclared_authority_context_risk": 216,
         "hardcoded_regex_surface_risk": 1092,
         "hardcoded_boolean_surface_risk": 1272,
@@ -231,7 +231,7 @@
         "hardcoded_sql_reality_table_risk": 2,
         "hardcoded_parser_rule_blocker_risk": 5,
         "hardcoded_auditor_mutation_risk": 1,
-        "hardcoded_replacement_cheat_risk": 190410
+        "hardcoded_replacement_cheat_risk": 190412
       },
       "topFiles": [
         {
@@ -1531,8 +1531,8 @@
   },
   "selfTrustReport": null,
   "scopeStateSummary": {
-    "totalFiles": 5148,
-    "totalLines": 869880,
+    "totalFiles": 5151,
+    "totalLines": 870561,
     "runtimeCriticalFiles": 3317,
     "userFacingFiles": 1386,
     "governedValidationFiles": 0,
@@ -1543,19 +1543,19 @@
       "worker": 0,
       "prisma": 80,
       "e2e": 61,
-      "scripts": 2643,
+      "scripts": 2644,
       "docs": 434,
       "infra": 3,
       "governance": 127,
       "root-config": 24,
       "artifacts": 3,
-      "misc": 386
+      "misc": 388
     },
     "kindCounts": {
       "source": 3232,
-      "spec": 721,
+      "spec": 722,
       "migration": 58,
-      "config": 680,
+      "config": 682,
       "document": 454,
       "artifact": 3
     },
@@ -1786,7 +1786,7 @@
       "yamllint"
     ],
     "inventoryCoverage": 100,
-    "classificationCoverage": 93,
+    "classificationCoverage": 92,
     "structuralGraphCoverage": 0,
     "testCoverage": 0,
     "scenarioCoverage": 0,
@@ -7932,6 +7932,23 @@
         "highestObservedSeverity": null
       },
       {
+        "path": "artifacts/opencode-fleet/wave2-pulse-triage-2026-05-13T03-02-34-399Z/pids.json",
+        "extension": ".json",
+        "lineCount": 7,
+        "surface": "misc",
+        "kind": "config",
+        "runtimeCritical": false,
+        "userFacing": false,
+        "ownerLane": "platform",
+        "executionMode": "ai_safe",
+        "protectedByGovernance": false,
+        "codacyTracked": true,
+        "moduleCandidate": "pids",
+        "observedCodacyIssueCount": 0,
+        "highSeverityIssueCount": 0,
+        "highestObservedSeverity": null
+      },
+      {
         "path": "artifacts/opencode-fleet/wave3-organism-20260512T215049/pids.json",
         "extension": ".json",
         "lineCount": 5,
@@ -8002,7 +8019,7 @@
       {
         "path": "artifacts/opencode-fleet/wave5-organism-20260512T234028/pids.json",
         "extension": ".json",
-        "lineCount": 8,
+        "lineCount": 5,
         "surface": "misc",
         "kind": "config",
         "runtimeCritical": false,
@@ -8012,6 +8029,23 @@
         "protectedByGovernance": false,
         "codacyTracked": true,
         "moduleCandidate": "pids",
+        "observedCodacyIssueCount": 0,
+        "highSeverityIssueCount": 0,
+        "highestObservedSeverity": null
+      },
+      {
+        "path": "artifacts/opencode-fleet/wave5-organism-20260512T234028/summary.json",
+        "extension": ".json",
+        "lineCount": 50,
+        "surface": "misc",
+        "kind": "config",
+        "runtimeCritical": false,
+        "userFacing": false,
+        "ownerLane": "platform",
+        "executionMode": "ai_safe",
+        "protectedByGovernance": false,
+        "codacyTracked": true,
+        "moduleCandidate": "summary",
         "observedCodacyIssueCount": 0,
         "highSeverityIssueCount": 0,
         "highestObservedSeverity": null
@@ -8362,7 +8396,7 @@
     "snapshotAvailable": true,
     "sourcePath": "/Users/danielpenin/whatsapp_saas/PULSE_CODACY_STATE.json",
     "syncedAt": "2026-05-13T01:28:55.048Z",
-    "ageMinutes": 83,
+    "ageMinutes": 97,
     "stale": false,
     "loc": 632153,
     "totalIssues": 12025,
@@ -9546,7 +9580,7 @@
       "impactScore": 0.8,
       "confidence": 0.95,
       "summary": "7 HIGH Codacy issue(s) remain in backend/prisma/migrations/20251209150035_init_baseline/migration.sql.",
-      "observedAt": "2026-05-13T02:52:24.635Z",
+      "observedAt": "2026-05-13T03:06:09.241Z",
       "relatedFiles": [
         "backend/prisma/migrations/20251209150035_init_baseline/migration.sql"
       ],
@@ -9605,7 +9639,7 @@
       "impactScore": 0.55,
       "confidence": 0.95,
       "summary": "17 HIGH Codacy issue(s) remain in scripts/__parts__/obsidian-mirror-daemon-content.mjs.",
-      "observedAt": "2026-05-13T02:52:24.635Z",
+      "observedAt": "2026-05-13T03:06:09.241Z",
       "relatedFiles": [
         "scripts/__parts__/obsidian-mirror-daemon-content.mjs"
       ],
@@ -9679,7 +9713,7 @@
       "impactScore": 0.55,
       "confidence": 0.95,
       "summary": "5 HIGH Codacy issue(s) remain in scripts/__parts__/obsidian-mirror-daemon-utils.mjs.",
-      "observedAt": "2026-05-13T02:52:24.635Z",
+      "observedAt": "2026-05-13T03:06:09.241Z",
       "relatedFiles": [
         "scripts/__parts__/obsidian-mirror-daemon-utils.mjs"
       ],
@@ -9723,7 +9757,7 @@
       "impactScore": 0.55,
       "confidence": 0.95,
       "summary": "1 HIGH Codacy issue(s) remain in backend/src/meta/__parts__/meta-auth-helpers.ts.",
-      "observedAt": "2026-05-13T02:52:24.635Z",
+      "observedAt": "2026-05-13T03:06:09.241Z",
       "relatedFiles": [
         "backend/src/meta/__parts__/meta-auth-helpers.ts"
       ],
@@ -9906,7 +9940,7 @@
       "impactScore": 0.55,
       "confidence": 0.95,
       "summary": "1 HIGH Codacy issue(s) remain in backend/src/meta/__parts__/meta-oauth-url.helpers.ts.",
-      "observedAt": "2026-05-13T02:52:24.635Z",
+      "observedAt": "2026-05-13T03:06:09.241Z",
       "relatedFiles": [
         "backend/src/meta/__parts__/meta-oauth-url.helpers.ts"
       ],
@@ -10058,7 +10092,7 @@
       "impactScore": 0.55,
       "confidence": 0.95,
       "summary": "1 HIGH Codacy issue(s) remain in package.json.",
-      "observedAt": "2026-05-13T02:52:24.635Z",
+      "observedAt": "2026-05-13T03:06:09.241Z",
       "relatedFiles": [
         "package.json"
       ],
@@ -10102,7 +10136,7 @@
       "impactScore": 0.55,
       "confidence": 0.95,
       "summary": "2 HIGH Codacy issue(s) remain in scripts/__parts__/obsidian-mirror-daemon-indexes.mjs.",
-      "observedAt": "2026-05-13T02:52:24.635Z",
+      "observedAt": "2026-05-13T03:06:09.241Z",
       "relatedFiles": [
         "scripts/__parts__/obsidian-mirror-daemon-indexes.mjs"
       ],
@@ -13043,7 +13077,7 @@
     }
   ],
   "productVision": {
-    "generatedAt": "2026-05-13T02:53:43.362Z",
+    "generatedAt": "2026-05-13T03:08:08.064Z",
     "truthMode": "aspirational",
     "evidenceBasis": {
       "observed": 44,
@@ -38815,7 +38849,7 @@
       ]
     },
     "worldState": {
-      "generatedAt": "2026-05-13T02:52:59.057Z",
+      "generatedAt": "2026-05-13T03:06:55.947Z",
       "actorProfiles": [
         "synthetic-customer",
         "synthetic-operator",
@@ -38923,9 +38957,9 @@
       ]
     },
     "executionTrace": {
-      "runId": "pulse-cert-1778640779058",
-      "generatedAt": "2026-05-13T02:52:59.058Z",
-      "updatedAt": "2026-05-13T02:52:59.058Z",
+      "runId": "pulse-cert-1778641615947",
+      "generatedAt": "2026-05-13T03:06:55.947Z",
+      "updatedAt": "2026-05-13T03:06:55.947Z",
       "environment": "scan",
       "certificationTarget": {
         "tier": null,
@@ -38951,7 +38985,7 @@
           "PULSE_CERTIFICATE.json"
         ],
         "metrics": {
-          "inventoryFiles": 5148,
+          "inventoryFiles": 5151,
           "codacyObservedFiles": 63,
           "codacyObservedFilesCovered": 44,
           "confidence": "low"
@@ -39515,7 +39549,7 @@
         ],
         "metrics": {
           "codacySnapshotAvailable": true,
-          "codacyAgeMinutes": 83,
+          "codacyAgeMinutes": 97,
           "codacyStale": false,
           "externalStaleAdapters": 0,
           "externalMissingAdapters": 0
@@ -39526,12 +39560,12 @@
       {
         "kind": "artifact",
         "executed": true,
-        "summary": "Execution matrix classified 6350 path(s); unknown=0.",
+        "summary": "Execution matrix classified 6353 path(s); unknown=0.",
         "artifactPaths": [
           "PULSE_EXECUTION_MATRIX.json"
         ],
         "metrics": {
-          "totalPaths": 6350,
+          "totalPaths": 6353,
           "unknownPaths": 0,
           "coveragePercent": 100
         }
@@ -39592,12 +39626,12 @@
       {
         "kind": "artifact",
         "executed": true,
-        "summary": "No-hardcoded-reality state blocks completion: 222223 hardcoded reality event(s) across 533 scanned PULSE file(s). Top files: scripts/pulse/convergence-plan.ts, scripts/pulse/__companions__/autopilot-processor.companion.ts, scripts/pulse/property-tester.ts, scripts/pulse/types.ts, scripts/pulse/certification.ts, scripts/pulse/observability-coverage.ts, scripts/pulse/chaos-engine.ts, scripts/pulse/behavior-graph.ts. First event: scripts/pulse/__kernel_additions__/discoverAutonomyConceptTypeLabels.ts:9.",
+        "summary": "No-hardcoded-reality state blocks completion: 222227 hardcoded reality event(s) across 533 scanned PULSE file(s). Top files: scripts/pulse/convergence-plan.ts, scripts/pulse/__companions__/autopilot-processor.companion.ts, scripts/pulse/property-tester.ts, scripts/pulse/types.ts, scripts/pulse/certification.ts, scripts/pulse/observability-coverage.ts, scripts/pulse/chaos-engine.ts, scripts/pulse/behavior-graph.ts. First event: scripts/pulse/__kernel_additions__/discoverAutonomyConceptTypeLabels.ts:9.",
         "artifactPaths": [
           "PULSE_NO_HARDCODED_REALITY.json"
         ],
         "metrics": {
-          "totalEvents": 222223,
+          "totalEvents": 222227,
           "scannedFiles": 533
         }
       }
@@ -39606,7 +39640,7 @@
   "pulseMachineReadiness": {
     "scope": "pulse_machine_not_kloel_product",
     "status": "NOT_READY",
-    "generatedAt": "2026-05-13T02:52:55.122Z",
+    "generatedAt": "2026-05-13T03:06:49.971Z",
     "productCertificationStatus": "NOT_CERTIFIED",
     "productCertificationExcludedFromVerdict": true,
     "canRunBoundedAutonomousCycle": false,
@@ -39635,9 +39669,9 @@
       {
         "id": "execution_matrix",
         "status": "pass",
-        "reason": "Execution matrix classified 6350 path(s) with zero unknown and zero non-terminal paths.",
+        "reason": "Execution matrix classified 6353 path(s) with zero unknown and zero non-terminal paths.",
         "evidence": {
-          "totalPaths": 6350,
+          "totalPaths": 6353,
           "unknownPaths": 0,
           "criticalUnobservedPaths": 0,
           "impreciseBreakpoints": 0,
@@ -39714,6 +39748,6 @@
       "critical_path_terminal: 4572 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:account-agent, matrix:capability:capability:ad-rules, matrix:capability:capability:admin-accounts, matrix:capability:capability:admin-audit, matrix:capability:capability:admin-auth, matrix:capability:capability:admin-brain, matrix:capability:capability:admin-carteira, matrix:capability:capability:admin-chat. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json."
     ]
   },
-  "runId": "719ab675-3896-4b0d-8ff6-5cd60e235a6b",
-  "generatedAt": "2026-05-13T03:00:46.160Z"
+  "runId": "84799ea0-fd5c-4cf0-a2ac-a33c71fd3ad8",
+  "generatedAt": "2026-05-13T03:08:25.349Z"
 }

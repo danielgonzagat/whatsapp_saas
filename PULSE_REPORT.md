@@ -1,4 +1,4 @@
-# PULSE REPORT — 2026-05-13T02:52:55.122Z
+# PULSE REPORT — 2026-05-13T03:06:49.971Z
 
 ## PULSE VERDICT
 
@@ -19,7 +19,7 @@
 - Can declare Kloel product certified: NAO
 - bounded_run: PASS - Bounded next autonomous cycle exposes 8 ai_safe unit(s).
 - artifact_consistency: FAIL - Cross-artifact consistency has not produced a passing check.
-- execution_matrix: PASS - Execution matrix classified 6350 path(s) with zero unknown and zero non-terminal paths.
+- execution_matrix: PASS - Execution matrix classified 6353 path(s) with zero unknown and zero non-terminal paths.
 - critical_path_terminal: FAIL - 4572 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:account-agent, matrix:capability:capability:ad-rules, matrix:capability:capability:admin-accounts, matrix:capability:capability:admin-audit, matrix:capability:capability:admin-auth, matrix:capability:capability:admin-brain, matrix:capability:capability:admin-carteira, matrix:capability:capability:admin-chat. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.
 - breakpoint_precision: PASS - Every observed failure in the execution matrix has a breakpoint.
 - external_reality: PASS - Required external adapters are fresh and available for PULSE-machine decisions.
@@ -37,7 +37,7 @@
 - Capabilities: real=0, partial=422, latent=12, phantom=0
 - Capability maturity: foundational=2, connected=432, operational=0, productionReady=0
 - Flows: real=0, partial=48, latent=0, phantom=0
-- Execution matrix: paths=6350, observedPass=0, observedFail=27, criticalUnobserved=0, unknown=0
+- Execution matrix: paths=6353, observedPass=0, observedFail=27, criticalUnobserved=0, unknown=0
 - Structural parity gaps: total=49, critical=0, high=48
 - Finding events: totalSignals=166, uniqueEvents=166, observed=0, confirmedStatic=166, weakSignals=0
 - Codacy HIGH issues: 2225
@@ -59,9 +59,9 @@
 ## Coverage Truth
 
 - Inventory Coverage: 100%
-- Classification Coverage: 93%
-- Structural Graph Coverage: 33% (1321/4057 connected)
-  Reason: 1321/4057 structural files connected.
+- Classification Coverage: 92%
+- Structural Graph Coverage: 33% (1321/4058 connected)
+  Reason: 1321/4058 structural files connected.
 - Test Coverage: 16%
   Reason: 502/3231 source modules have spec files.
 - Scenario Coverage: 100% (declared=100%, executed=100%, passed=0%)
@@ -69,7 +69,7 @@
   Reason: No runtime probes executed.
 - Production Proof Coverage: 0%
   Reason: 0/434 capabilities real.
-- Unknown Files: 386
+- Unknown Files: 388
 - Orphan Files: 200
 - Excluded Directories: 24
 - Manifest role: semantic overlay, NOT scope boundary
@@ -274,7 +274,7 @@
 
 - Canonical dir: /Users/danielpenin/whatsapp_saas/.pulse/current
 - Mirrors: PULSE_ADMIN_EVIDENCE.json, PULSE_AGENT_ORCHESTRATION_STATE.json, PULSE_ARTIFACT_INDEX.json, PULSE_AUTONOMY_STATE.json, PULSE_BEADS_STATE.json, PULSE_BROWSER_EVIDENCE.json, PULSE_CAPABILITY_STATE.json, PULSE_CERTIFICATE.json, PULSE_CLI_DIRECTIVE.json, PULSE_CODACY_EVIDENCE.json, PULSE_CODEBASE_TRUTH.json, PULSE_CONTEXT_BROADCAST.json, PULSE_CONTEXT_DELTA.json, PULSE_CONVERGENCE_PLAN.json, PULSE_CUSTOMER_EVIDENCE.json, PULSE_EXECUTION_MATRIX.json, PULSE_EXECUTION_TRACE.json, PULSE_EXTERNAL_SIGNAL_STATE.json, PULSE_FLOW_EVIDENCE.json, PULSE_FLOW_PROJECTION.json, PULSE_GITNEXUS_STATE.json, PULSE_HEALTH.json, PULSE_INVARIANT_EVIDENCE.json, PULSE_MACHINE_READINESS.json, PULSE_OBSERVABILITY_EVIDENCE.json, PULSE_OPERATOR_EVIDENCE.json, PULSE_PARITY_GAPS.json, PULSE_PRODUCT_GRAPH.json, PULSE_PRODUCT_VISION.json, PULSE_RECOVERY_EVIDENCE.json, PULSE_REPORT.md, PULSE_RESOLVED_MANIFEST.json, PULSE_RUNTIME_EVIDENCE.json, PULSE_RUNTIME_PROBES.json, PULSE_SCENARIO_COVERAGE.json, PULSE_SCOPE_STATE.json, PULSE_SOAK_EVIDENCE.json, PULSE_STRUCTURAL_GRAPH.json, PULSE_WORKER_LEASES.json, PULSE_WORLD_STATE.json
-- Removed legacy artifacts this run: 3
+- Removed legacy artifacts this run: 4
 
 ## Truth Model
 
