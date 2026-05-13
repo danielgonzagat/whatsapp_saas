@@ -62,6 +62,8 @@ import { PrismaModule } from '../prisma/prisma.module';
 import { WalletModule } from '../wallet/wallet.module';
 import { WhatsappModule } from '../whatsapp/whatsapp.module';
 import { InboxModule } from '../inbox/inbox.module';
+import { ContactsModule } from '../contacts/contacts.module';
+import { ContactIdentityResolverService } from '../contacts/contact-identity-resolver.service';
 import { WebhooksService } from '../webhooks/webhooks.service';
 import { WebhookDispatcherService } from '../webhooks/webhook-dispatcher.service';
 import { AdRulesEngineService } from './ad-rules-engine.service';
@@ -128,6 +130,7 @@ import { ChannelSetupController } from './channel-setup.controller';
 import { ChannelSetupService } from './channel-setup.service';
 import { CommercialDecisionOrchestratorService } from './commercial-decision-orchestrator.service';
 import { DailyLimitService } from './daily-limit.service';
+import { KloelGlobalPriorService } from './kloel-global-prior.service';
 import { MindBeliefService } from './mind-belief.service';
 import { MindBanditService } from './mind-bandit.service';
 import { MindCaseMemoryService } from './mind-case-memory.service';
@@ -171,6 +174,7 @@ import { MindWorkspaceStateService } from './mind-workspace-state.service';
     KloelAudioModule,
     KloelRulesModule,
     InboxModule,
+    ContactsModule,
   ],
   controllers: [
     KloelController,
@@ -284,11 +288,13 @@ import { MindWorkspaceStateService } from './mind-workspace-state.service';
     ChannelTransportRegistry,
     ChannelSetupService,
     CommercialDecisionOrchestratorService,
+    ContactIdentityResolverService,
     DailyLimitService,
     MindBeliefService,
     MindBanditService,
     MindCaseMemoryService,
     MindConceptService,
+    KloelGlobalPriorService,
     MindGlobalPriorService,
     MindEventProcessorService,
     MindGuardContextBuilderService,
@@ -357,6 +363,7 @@ import { MindWorkspaceStateService } from './mind-workspace-state.service';
     CommercialDecisionOrchestratorService,
     MindBeliefService,
     MindBanditService,
+    KloelGlobalPriorService,
     MindGlobalPriorService,
     MindPolicyService,
     MindService,

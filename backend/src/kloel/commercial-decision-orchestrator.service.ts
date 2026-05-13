@@ -7,6 +7,7 @@ import { attributeHierarchy } from './economic-hierarchy';
 import { MindConceptService } from './mind-concepts.service';
 import { MindService } from './mind.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { ContactIdentityResolverService } from '../contacts/contact-identity-resolver.service';
 import type { PredecidedAction } from './unified-agent.types';
 
 type ConceptRow = { concept: string; confidence?: number };
@@ -178,6 +179,7 @@ export class CommercialDecisionOrchestratorService {
     private readonly mind: MindService,
     private readonly concepts: MindConceptService,
     private readonly events: BrainEventSpineService,
+    private readonly identity: ContactIdentityResolverService,
     private readonly setup: ChannelSetupService,
     private readonly prisma: PrismaService,
   ) {}
@@ -186,6 +188,25 @@ export class CommercialDecisionOrchestratorService {
     const channel = normalizeChannel(input.channel);
     const subject = input.contactId ? `contact:${input.contactId}` : `channel:${channel}`;
     const inboundKey = stableInboundKey(input, subject, channel);
+
+    const resolvedIdentity = await this.resolveContactIdentity(input, channel);
+    const resolvedContactId = resolvedIdentity.contactId;
+    const effectiveSubject = `contact:${resolvedContactId}`;
+
+    if (resolvedIdentity.wasResolved) {
+      await this.events.recordCommercial({
+        workspaceId: input.workspaceId,
+        subject: effectiveSubject,
+        eventType: 'identity.contact.resolved',
+        occurredAt: new Date(),
+        idempotencyKey: `identity-resolved:${inboundKey}`,
+        payload: {
+          sourceContactId: resolvedIdentity.resolvedFromContactId ?? resolvedContactId,
+          targetContactId: resolvedContactId,
+          confidence: 1.0,
+        },
+      });
+    }
 
     const pipelineState = await this.prisma.pipelineState.findUnique({
       where: { workspaceId: input.workspaceId },
@@ -213,7 +234,7 @@ export class CommercialDecisionOrchestratorService {
       return await this.executeOrchestration(
         input,
         channel,
-        subject,
+        effectiveSubject,
         inboundKey,
         pipelineMode,
       );
@@ -225,6 +246,31 @@ export class CommercialDecisionOrchestratorService {
       await this.handleOrchestrationFallback(input.workspaceId, channel, pipelineMode);
       throw error;
     }
+  }
+
+  private async resolveContactIdentity(
+    input: InboundOrchestrationInput,
+    channel: string,
+  ) {
+    return this.identity
+      .resolve({
+        workspaceId: input.workspaceId,
+        channel,
+        externalId: input.contactId ?? `unknown:${channel}`,
+      })
+      .catch((error) => {
+        this.logger.warn(
+          `Identity resolution failed for ${input.workspaceId}:${channel} — proceeding with inbound contactId`,
+          error instanceof Error ? error.message : String(error),
+        );
+        return {
+          contactId: input.contactId ?? `unresolved:${channel}`,
+          channelIdentifierId: '',
+          wasCreated: false,
+          wasResolved: false,
+          resolvedFromContactId: undefined,
+        };
+      });
   }
 
   private async executeOrchestration(

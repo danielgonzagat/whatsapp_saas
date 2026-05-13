@@ -15,6 +15,9 @@ describe('CommercialDecisionOrchestratorService', () => {
   };
   const concepts = { detect: jest.fn() };
   const events = { recordCommercial: jest.fn() };
+  const identity = {
+    resolve: jest.fn(),
+  };
   const setup = { getState: jest.fn() };
   const prisma = {
     pipelineState: {
@@ -65,6 +68,12 @@ describe('CommercialDecisionOrchestratorService', () => {
       fallback: false,
     });
     events.recordCommercial.mockResolvedValue(undefined);
+    identity.resolve.mockResolvedValue({
+      contactId: 'contact-1',
+      channelIdentifierId: 'ci-1',
+      wasCreated: false,
+      wasResolved: false,
+    });
     setup.getState.mockResolvedValue({
       arsenal: [{ id: 'asset-1', type: 'text' }, { id: 'asset-2', type: 'image' }],
       config: { tone: 'direto' },
@@ -82,6 +91,7 @@ describe('CommercialDecisionOrchestratorService', () => {
       mind as never,
       concepts as never,
       events as never,
+      identity as never,
       setup as never,
       prisma as never,
     );
