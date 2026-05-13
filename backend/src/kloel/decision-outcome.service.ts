@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 import type { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
@@ -33,7 +33,7 @@ export class DecisionOutcomeService {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly globalPrior: KloelGlobalPriorService,
+    @Optional() private readonly globalPrior?: KloelGlobalPriorService,
   ) {}
 
   async recordDecision(input: RecordDecisionInput) {
@@ -70,7 +70,7 @@ export class DecisionOutcomeService {
         select: { contextSnapshot: true, decisionType: true, chosenAction: true },
       });
 
-      if (closed) {
+      if (closed && this.globalPrior) {
         const channel = extractChannel(closed.contextSnapshot as Record<string, unknown>);
         if (channel) {
           try {

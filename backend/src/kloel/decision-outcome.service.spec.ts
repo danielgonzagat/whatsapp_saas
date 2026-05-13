@@ -15,6 +15,7 @@ describe('DecisionOutcomeService', () => {
           useValue: {
             decisionOutcome: {
               create: jest.fn().mockResolvedValue({ id: 'do-1' }),
+              findFirst: jest.fn().mockResolvedValue(null),
               findMany: jest.fn().mockResolvedValue([]),
               updateMany: jest.fn().mockResolvedValue({ count: 1 }),
             },
@@ -104,11 +105,12 @@ describe('DecisionOutcomeService', () => {
           chosenAction: 'top_seller',
           outcomeKey: 'k:c',
           expectedWindow: 48,
-          contextSnapshot: { channel: 'instagram', token: symbol as never },
+          contextSnapshot: { channel: 'instagram', token: symbol },
         }),
       ).resolves.toBeUndefined();
       const lastCall = (prisma.decisionOutcome.create as jest.Mock).mock.calls.at(-1);
-      const ctx = (lastCall![0].data as { contextSnapshot: Record<string, unknown> }).contextSnapshot;
+      const ctx = (lastCall![0].data as { contextSnapshot: Record<string, unknown> })
+        .contextSnapshot;
       expect(ctx.token).toBeUndefined();
       expect(ctx.channel).toBe('instagram');
     });
@@ -121,21 +123,27 @@ describe('DecisionOutcomeService', () => {
         outcomeName: 'payment.succeeded',
         outcomeValue: { amount: 99.9, currency: 'BRL' },
       });
-      const data = (prisma.decisionOutcome.updateMany as jest.Mock).mock.calls.at(-1)![0]
-        .data as { outcomeValue?: { amount: number } };
+      const data = (prisma.decisionOutcome.updateMany as jest.Mock).mock.calls.at(-1)![0].data as {
+        outcomeValue?: { amount: number };
+      };
       expect(data.outcomeValue).toEqual({ amount: 99.9, currency: 'BRL' });
     });
 
     it('defaults economicValue to null when not provided', async () => {
       await service.closeOutcome({ outcomeKey: 'k1', outcomeName: 'inbound.received' });
-      const data = (prisma.decisionOutcome.updateMany as jest.Mock).mock.calls.at(-1)![0]
-        .data as { economicValue: number | null; wonVsBaseline: boolean | null };
+      const data = (prisma.decisionOutcome.updateMany as jest.Mock).mock.calls.at(-1)![0].data as {
+        economicValue: number | null;
+        wonVsBaseline: boolean | null;
+      };
       expect(data.economicValue).toBeNull();
       expect(data.wonVsBaseline).toBeNull();
     });
 
     it('only updates rows still open (outcomeAt: null) — closed rows untouched', async () => {
-      await service.closeOutcome({ outcomeKey: 'k-already-closed', outcomeName: 'payment.succeeded' });
+      await service.closeOutcome({
+        outcomeKey: 'k-already-closed',
+        outcomeName: 'payment.succeeded',
+      });
       const call = (prisma.decisionOutcome.updateMany as jest.Mock).mock.calls.at(-1);
       expect(call![0].where).toEqual({ outcomeKey: 'k-already-closed', outcomeAt: null });
     });
