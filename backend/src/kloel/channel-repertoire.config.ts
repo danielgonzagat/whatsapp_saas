@@ -36,6 +36,11 @@ function tiktokOutboundApproved(): boolean {
   return String(process.env.TIKTOK_OUTBOUND_APPROVED || '').trim().toLowerCase() === 'true';
 }
 
+/** Override TikTok proactive outbound based on resolved marketing mode. */
+export function setTikTokOutboundForMode(mode: 'sell' | 'listen' | 'blocked') {
+  CHANNEL_REPERTOIRE.tiktok.proactiveOutboundAllowed = mode === 'sell';
+}
+
 export const CHANNEL_REPERTOIRE: Record<ChannelKey, ChannelRepertoire> = {
   whatsapp: {
     channel: 'whatsapp',

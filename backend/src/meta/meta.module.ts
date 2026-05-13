@@ -13,6 +13,7 @@ import { MessengerService } from './messenger/messenger.service';
 import { MetaAuthController } from './meta-auth.controller';
 import { MetaSdkService } from './meta-sdk.service';
 import { MetaWhatsAppService } from './meta-whatsapp.service';
+import { MetaConnectionStateService } from './meta-connection-state.service';
 import { MetaWebhookController as MetaCoreWebhookController } from './webhooks/meta-webhook.controller';
 import { MetaWebhookController } from './meta-webhook.controller';
 
@@ -32,6 +33,7 @@ import { MetaWebhookController } from './meta-webhook.controller';
   providers: [
     MetaSdkService,
     MetaWhatsAppService,
+    MetaConnectionStateService,
     InstagramService,
     MessengerService,
     MetaAdsService,
@@ -40,6 +42,7 @@ import { MetaWebhookController } from './meta-webhook.controller';
   exports: [
     MetaSdkService,
     MetaWhatsAppService,
+    MetaConnectionStateService,
     InstagramService,
     MessengerService,
     MetaAdsService,

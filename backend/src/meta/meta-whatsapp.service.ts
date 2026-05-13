@@ -1,4 +1,4 @@
-import { Injectable, Logger, Optional } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, Optional } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
@@ -56,18 +56,44 @@ function normalizeMetaChannel(channel?: string | null): MetaChannel {
 }
 
 function readChannelConfigId(channel: MetaChannel): string {
+  const lookup = (
+    primary: string,
+    legacy: string,
+  ): string => {
+    const val =
+      process.env[primary] ||
+      process.env[legacy] ||
+      process.env.META_CONFIG_ID ||
+      '';
+    return String(val).trim();
+  };
+
   if (channel === 'whatsapp') {
-    return String(process.env.META_CONFIG_ID_WHATSAPP || process.env.META_CONFIG_ID || '').trim();
+    const result = lookup('META_WHATSAPP_CONFIG_ID', 'META_CONFIG_ID_WHATSAPP');
+    if (!result) {
+      throw new BadRequestException('meta-config-id-missing-for-channel');
+    }
+    return result;
   }
   if (channel === 'instagram') {
-    return String(process.env.META_CONFIG_ID_INSTAGRAM || process.env.META_CONFIG_ID || '').trim();
+    const result = lookup('META_INSTAGRAM_CONFIG_ID', 'META_CONFIG_ID_INSTAGRAM');
+    if (!result) {
+      throw new BadRequestException('meta-config-id-missing-for-channel');
+    }
+    return result;
   }
-  return String(
-    process.env.META_CONFIG_ID_MESSENGER ||
-      process.env.META_CONFIG_ID_FACEBOOK ||
-      process.env.META_CONFIG_ID ||
-      '',
-  ).trim();
+  const result =
+    String(
+      process.env.META_FACEBOOK_CONFIG_ID ||
+        process.env.META_CONFIG_ID_MESSENGER ||
+        process.env.META_CONFIG_ID_FACEBOOK ||
+        process.env.META_CONFIG_ID ||
+        '',
+    ).trim();
+  if (!result) {
+    throw new BadRequestException('meta-config-id-missing-for-channel');
+  }
+  return result;
 }
 
 // cache.invalidate — Meta connections fetched live from DB; no Redis cache to invalidate
@@ -118,6 +144,17 @@ export class MetaWhatsAppService {
     }
 
     return `https://www.facebook.com/${version}/dialog/oauth?${params.toString()}`;
+  }
+
+  safeBuildEmbeddedSignupUrl(
+    workspaceId: string,
+    options?: { channel?: string | null; returnTo?: string | null },
+  ): string {
+    try {
+      return this.buildEmbeddedSignupUrl(workspaceId, options);
+    } catch {
+      return '';
+    }
   }
 
   /** Get o auth redirect uri. */
@@ -252,7 +289,7 @@ export class MetaWhatsAppService {
     degradedReason?: string | null;
   }> {
     const resolved = await this.resolveConnection(workspaceId);
-    const authUrl = this.buildEmbeddedSignupUrl(workspaceId);
+    const authUrl = this.safeBuildEmbeddedSignupUrl(workspaceId);
 
     if (!resolved.accessToken) {
       return {

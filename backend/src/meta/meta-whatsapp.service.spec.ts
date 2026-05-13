@@ -17,9 +17,13 @@ describe('MetaWhatsAppService', () => {
   beforeEach(() => {
     delete process.env.META_APP_ID;
     delete process.env.META_CONFIG_ID;
+    delete process.env.META_WHATSAPP_CONFIG_ID;
+    delete process.env.META_INSTAGRAM_CONFIG_ID;
+    delete process.env.META_FACEBOOK_CONFIG_ID;
     delete process.env.META_CONFIG_ID_FACEBOOK;
     delete process.env.META_CONFIG_ID_MESSENGER;
     delete process.env.META_CONFIG_ID_INSTAGRAM;
+    delete process.env.META_CONFIG_ID_WHATSAPP;
     delete process.env.META_GRAPH_API_VERSION;
     delete process.env.PUBLIC_BACKEND_URL;
     delete process.env.API_PUBLIC_URL;
@@ -50,9 +54,13 @@ describe('MetaWhatsAppService', () => {
   afterEach(() => {
     delete process.env.META_APP_ID;
     delete process.env.META_CONFIG_ID;
-    delete process.env.META_CONFIG_ID_WHATSAPP;
-    delete process.env.META_CONFIG_ID_INSTAGRAM;
+    delete process.env.META_WHATSAPP_CONFIG_ID;
+    delete process.env.META_INSTAGRAM_CONFIG_ID;
+    delete process.env.META_FACEBOOK_CONFIG_ID;
+    delete process.env.META_CONFIG_ID_FACEBOOK;
     delete process.env.META_CONFIG_ID_MESSENGER;
+    delete process.env.META_CONFIG_ID_INSTAGRAM;
+    delete process.env.META_CONFIG_ID_WHATSAPP;
     delete process.env.META_GRAPH_API_VERSION;
     delete process.env.BACKEND_PUBLIC_URL;
   });
@@ -60,7 +68,7 @@ describe('MetaWhatsAppService', () => {
   it('builds WhatsApp Embedded Signup with channel-specific config and minimal scopes', () => {
     process.env.META_APP_ID = 'meta-app-id';
     process.env.META_CONFIG_ID = 'generic-config';
-    process.env.META_CONFIG_ID_WHATSAPP = 'whatsapp-config';
+    process.env.META_WHATSAPP_CONFIG_ID = 'whatsapp-config';
     process.env.META_GRAPH_API_VERSION = 'v21.0';
     process.env.BACKEND_PUBLIC_URL = 'https://api.kloel.test/';
 
@@ -95,7 +103,7 @@ describe('MetaWhatsAppService', () => {
   it('uses Instagram-specific config and scopes for Instagram OAuth', () => {
     process.env.META_APP_ID = 'meta-app-id';
     process.env.META_CONFIG_ID = 'generic-config';
-    process.env.META_CONFIG_ID_INSTAGRAM = 'instagram-config';
+    process.env.META_INSTAGRAM_CONFIG_ID = 'instagram-config';
     process.env.BACKEND_PUBLIC_URL = 'api.kloel.test';
 
     const authUrl = new URL(

@@ -332,6 +332,7 @@ export class MetaAuthController {
         whatsappBusinessId: whatsappAssets.whatsappBusinessId || null,
         adAccountId,
         status: 'connected',
+        channel: parsedState.channel || null,
       };
       const connectionUpdate: Prisma.MetaConnectionUpdateInput = {
         accessToken: encryptMetaToken(accessToken) || accessToken,
@@ -346,6 +347,7 @@ export class MetaAuthController {
         adAccountId,
         status: 'connected',
         updatedAt: new Date(),
+        channel: parsedState.channel || null,
       };
       await this.prisma.metaConnection.upsert({
         where: { workspaceId },
@@ -358,6 +360,7 @@ export class MetaAuthController {
       return res.redirect(
         this.buildFrontendRedirect(returnTo, parsedState.channel, {
           meta: 'success',
+          channel: parsedState.channel || '',
         }),
       );
     } catch (err: unknown) {

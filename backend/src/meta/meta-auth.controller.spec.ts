@@ -1,4 +1,5 @@
 import type { PrismaService } from '../prisma/prisma.service';
+import { BadRequestException } from '@nestjs/common';
 import { MetaAuthController } from './meta-auth.controller';
 
 describe('MetaAuthController', () => {
@@ -74,7 +75,7 @@ describe('MetaAuthController', () => {
   describe('parseState', () => {
     it('parses JSON state from encoded URI', () => {
       const result = (
-        controller as {
+        controller as unknown as {
           parseState: (s: string) => {
             workspaceId: string;
             channel?: string | null;
@@ -91,7 +92,7 @@ describe('MetaAuthController', () => {
 
     it('falls back to raw string when not JSON', () => {
       const result = (
-        controller as {
+        controller as unknown as {
           parseState: (s: string) => { workspaceId: string };
         }
       ).parseState('plain-state');
@@ -101,7 +102,7 @@ describe('MetaAuthController', () => {
 
     it('returns empty workspaceId for empty state', () => {
       const result = (
-        controller as {
+        controller as unknown as {
           parseState: (s: string) => { workspaceId: string };
         }
       ).parseState('');
@@ -116,6 +117,71 @@ describe('MetaAuthController', () => {
 
       expect(result.url).toBeDefined();
       expect(mockMetaWhatsApp.buildEmbeddedSignupUrl).toHaveBeenCalled();
+    });
+
+    it('passes channel and returnTo to buildEmbeddedSignupUrl', () => {
+      controller.getAuthUrl(authReq as never, 'instagram', '/marketing/instagram');
+
+      expect(mockMetaWhatsApp.buildEmbeddedSignupUrl).toHaveBeenCalledWith(
+        'ws-1',
+        expect.objectContaining({
+          channel: 'instagram',
+          returnTo: '/marketing/instagram',
+        }),
+      );
+    });
+
+    it('throws BadRequestException when config_id is missing for channel', () => {
+      mockMetaWhatsApp.buildEmbeddedSignupUrl.mockImplementation(() => {
+        throw new BadRequestException('meta-config-id-missing-for-channel');
+      });
+
+      expect(() => controller.getAuthUrl(authReq as never, 'whatsapp')).toThrow(
+        'meta-config-id-missing-for-channel',
+      );
+    });
+  });
+
+  describe('sanitizeReturnTo', () => {
+    it('uses channel to build marketing route when no explicit returnTo', () => {
+      const result = (
+        controller as unknown as {
+          sanitizeReturnTo: (r?: string | null, c?: string | null) => string;
+        }
+      ).sanitizeReturnTo(null, 'instagram');
+
+      expect(result).toBe('/marketing/instagram');
+    });
+
+    it('uses explicit returnTo when provided', () => {
+      const result = (
+        controller as unknown as {
+          sanitizeReturnTo: (r?: string | null, c?: string | null) => string;
+        }
+      ).sanitizeReturnTo('/custom/path', 'whatsapp');
+
+      expect(result).toBe('/custom/path');
+    });
+  });
+
+  describe('buildFrontendRedirect', () => {
+    it('includes channel param in redirect URL', () => {
+      const url = (
+        controller as unknown as {
+          buildFrontendRedirect: (
+            r?: string | null,
+            c?: string | null,
+            p?: Record<string, string>,
+          ) => string;
+        }
+      ).buildFrontendRedirect('/marketing/instagram', 'instagram', {
+        meta: 'success',
+        channel: 'instagram',
+      });
+
+      expect(url).toContain('/marketing/instagram');
+      expect(url).toContain('meta=success');
+      expect(url).toContain('channel=instagram');
     });
   });
 
