@@ -66,4 +66,31 @@ describe('KloelToolRouter', () => {
       expect.objectContaining({ name: 'search_agent_memory', success: true }),
     );
   });
+
+  it('truncates oversized tool messages before returning them to the LLM', async () => {
+    const logger = { warn: jest.fn() };
+    const unifiedAgentService = {
+      executeTool: jest.fn().mockResolvedValue({ success: true, data: 'x'.repeat(7000) }),
+    };
+    const router = new KloelToolRouter(logger, unifiedAgentService);
+
+    const result = await router.executeAssistantToolCalls({
+      assistantMessage: {
+        tool_calls: [
+          {
+            id: 'call_1',
+            function: { name: 'search_agent_memory', arguments: '{"query":"checkout"}' },
+          },
+        ],
+      },
+      workspaceId: 'ws_1',
+      allowedTools: ['search_agent_memory'],
+      executeLocalTool: jest.fn(),
+    });
+
+    const content = JSON.parse(result.toolMessages[0]?.content ?? '{}') as Record<string, unknown>;
+    expect(content.truncated).toBe(true);
+    expect(content.originalChars).toEqual(expect.any(Number));
+    expect(String(content.preview).length).toBeLessThanOrEqual(6000);
+  });
 });

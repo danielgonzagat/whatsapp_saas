@@ -12,6 +12,7 @@ type UnknownRecord = Record<string, unknown>;
 
 const PATTERN_RE = /[_-]+/g;
 const S_RE = /\s+/g;
+const MAX_TOOL_MESSAGE_CONTENT_CHARS = 6000;
 type ToolMessage = {
   role: 'tool';
   tool_call_id: string;
@@ -83,6 +84,19 @@ function toResultRecord(value: unknown): Record<string, unknown> | null {
     return value as UnknownRecord;
   }
   return { value };
+}
+
+function stringifyToolMessageContent(result: Record<string, unknown> | null): string {
+  const content = JSON.stringify(result ?? null);
+  if (content.length <= MAX_TOOL_MESSAGE_CONTENT_CHARS) {
+    return content;
+  }
+  return JSON.stringify({
+    success: result?.success === true,
+    truncated: true,
+    originalChars: content.length,
+    preview: content.slice(0, MAX_TOOL_MESSAGE_CONTENT_CHARS),
+  });
 }
 
 /** Kloel tool router. */
@@ -187,7 +201,7 @@ export class KloelToolRouter {
         role: 'tool',
         tool_call_id: callId,
         name: toolName,
-        content: JSON.stringify(result ?? null),
+        content: stringifyToolMessageContent(result),
       });
 
       input.safeWrite?.(
