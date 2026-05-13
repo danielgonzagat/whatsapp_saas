@@ -1,9 +1,10 @@
+import { Logger } from '@nestjs/common';
 import type { CheckoutOrderSupport } from './checkout-order-support';
 import type { CheckoutPaymentService } from './checkout-payment.service';
 import type { CheckoutPaymentE2EStubResult } from './checkout-payment-e2e-guard';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
-import type { Logger } from '@nestjs/common';
+
 import { processOrderPostPayment } from './checkout-order-payment.helpers';
 
 export interface ProcessOrderPostPaymentParams {

@@ -3,10 +3,10 @@ import {
   BadRequestException,
   ConflictException,
   Injectable,
-  Logger,
   Optional,
   ServiceUnavailableException,
 } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { Prisma } from '@prisma/client';
 import type { Agent, Workspace } from '@prisma/client';
 import { AuditService } from '../audit/audit.service';
@@ -31,7 +31,7 @@ function asJsonObject(value: Prisma.JsonValue | null | undefined): Record<string
 /** Handles partner invite resolution and registration finalization. */
 @Injectable()
 export class AuthPartnerService {
-  private readonly logger = new Logger(AuthPartnerService.name);
+  private readonly logger = StructuredLogger.from(AuthPartnerService.name);
 
   constructor(
     private readonly prisma: PrismaService,

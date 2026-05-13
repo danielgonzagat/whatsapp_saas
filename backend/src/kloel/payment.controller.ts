@@ -8,7 +8,6 @@ import {
   Get,
   Headers,
   HttpCode,
-  Logger,
   NotFoundException,
   Param,
   Post,
@@ -16,6 +15,7 @@ import {
   Req,
   UseGuards,
 } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { type WebhookEvent } from '@prisma/client';
 import type { Redis } from 'ioredis';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -34,7 +34,7 @@ type PaymentWebhookMetadata = { workspaceId?: string; [key: string]: unknown };
 @Controller('kloel/payments')
 @RouteClass('mutate')
 export class PaymentController {
-  private readonly logger = new Logger(PaymentController.name);
+  private readonly logger = StructuredLogger.from(PaymentController.name);
 
   constructor(
     private readonly paymentService: PaymentService,

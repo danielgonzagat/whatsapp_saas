@@ -3,7 +3,6 @@ import {
   Controller,
   FileTypeValidator,
   Get,
-  Logger,
   MaxFileSizeValidator,
   Param,
   ParseFilePipe,
@@ -15,6 +14,7 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { StructuredLogger } from '../logging/structured-logger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Roles } from '../auth/roles.decorator';
 import { resolveWorkspaceId } from '../auth/workspace-access';
@@ -43,7 +43,7 @@ const APPLICATION__PDF_TEXT_RE = /^(application\/pdf|text\/plain|text\/csv|appli
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
 @RouteClass('ai')
 export class KnowledgeBaseController {
-  private readonly logger = new Logger(KnowledgeBaseController.name);
+  private readonly logger = StructuredLogger.from(KnowledgeBaseController.name);
 
   constructor(
     private readonly kb: KnowledgeBaseService,

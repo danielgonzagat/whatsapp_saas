@@ -3,7 +3,6 @@ import {
   Controller,
   Delete,
   Get,
-  Logger,
   NotFoundException,
   Param,
   Post,
@@ -12,6 +11,7 @@ import {
   UseGuards,
   Optional,
 } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { AuditService } from '../audit/audit.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
@@ -25,7 +25,7 @@ import { RouteClass } from '../common/throttler/route-class.decorator';
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
 @RouteClass('ai')
 export class AdRulesController {
-  private readonly logger = new Logger(AdRulesController.name);
+  private readonly logger = StructuredLogger.from(AdRulesController.name);
   constructor(
     private readonly prisma: PrismaService,
     private readonly auditService: AuditService,

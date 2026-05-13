@@ -3,9 +3,9 @@ import {
   BadRequestException,
   ConflictException,
   Injectable,
-  Logger,
   NotFoundException,
 } from '@nestjs/common';
+import { StructuredLogger } from '../../logging/structured-logger';
 import type { Prisma } from '@prisma/client';
 
 import { toPrismaJsonValue } from '../../common/prisma/prisma-json.util';
@@ -29,7 +29,7 @@ export class ConnectPayoutApprovalService {
     private readonly connectPayoutService: ConnectPayoutService,
   ) {}
 
-  private readonly logger = new Logger(ConnectPayoutApprovalService.name);
+  private readonly logger = StructuredLogger.from(ConnectPayoutApprovalService.name);
 
   /** Create request. */
   async createRequest(

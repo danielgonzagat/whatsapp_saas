@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
-import { BadRequestException, Inject, Injectable, Logger, forwardRef } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable, forwardRef } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { Prisma } from '@prisma/client';
 import { toPrismaJsonArray } from '../common/prisma/prisma-json.util';
 import { PrismaService } from '../prisma/prisma.service';
@@ -28,7 +29,7 @@ const DEFAULT_MARKETPLACE_FEE_PERCENT = 9.9;
 /** Manages order lifecycle: create, query, status transitions, upsell accept/decline. */
 @Injectable()
 export class CheckoutOrderService {
-  private readonly logger = new Logger(CheckoutOrderService.name);
+  private readonly logger = StructuredLogger.from(CheckoutOrderService.name);
   private readonly orderSupport: CheckoutOrderSupport;
 
   constructor(

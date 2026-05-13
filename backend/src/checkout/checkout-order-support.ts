@@ -1,4 +1,5 @@
-import { BadRequestException, Logger, NotFoundException } from '@nestjs/common';
+import { Logger } from '@nestjs/common';
+import { BadRequestException, NotFoundException  } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import * as Sentry from '@sentry/node';
 import { PrismaService } from '../prisma/prisma.service';

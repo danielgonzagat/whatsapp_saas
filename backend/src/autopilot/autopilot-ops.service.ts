@@ -3,9 +3,9 @@ import {
   BadRequestException,
   ForbiddenException,
   Injectable,
-  Logger,
   NotFoundException,
 } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { createRedisClient } from '../common/redis/redis.util';
 import { pollUntil } from '../common/async-sequence';
 import { PrismaService } from '../prisma/prisma.service';
@@ -18,7 +18,7 @@ const D_RE_OPS = /\D/g;
 /** Autopilot operational methods: pipeline status, smoke test, enqueue. Retry/conversion delegated to AutopilotOpsConversionService. */
 @Injectable()
 export class AutopilotOpsService {
-  private readonly logger = new Logger(AutopilotOpsService.name);
+  private readonly logger = StructuredLogger.from(AutopilotOpsService.name);
   private readonly redisClient: ReturnType<typeof createRedisClient>;
 
   constructor(

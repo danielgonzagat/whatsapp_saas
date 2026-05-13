@@ -1,3 +1,4 @@
+import { Logger } from '@nestjs/common';
 /**
  * Messaging operations for WhatsApp provider registry.
  *
@@ -8,7 +9,7 @@
  * as SendMessageOptions before delegating.
  */
 
-import { Logger } from '@nestjs/common';
+
 import { OpsAlertService } from '../../observability/ops-alert.service';
 import { WahaProvider } from './waha.provider';
 import { WhatsAppApiProvider } from './whatsapp-api.provider';

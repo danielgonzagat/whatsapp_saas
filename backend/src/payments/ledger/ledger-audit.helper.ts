@@ -1,4 +1,5 @@
-import type { Logger } from '@nestjs/common';
+import { Logger } from '@nestjs/common';
+
 import { Prisma } from '@prisma/client';
 
 /**

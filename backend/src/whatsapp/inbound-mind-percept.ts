@@ -1,4 +1,5 @@
 import { Logger } from '@nestjs/common';
+
 import { ChannelInboundHookService } from '../omnichannel/channel-inbound-hook.service';
 import type { InboundMessage } from './inbound-processor.helpers';
 

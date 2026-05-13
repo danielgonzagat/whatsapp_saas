@@ -1,10 +1,10 @@
 import {
   Injectable,
-  Logger,
   NotFoundException,
   ServiceUnavailableException,
   UnauthorizedException,
 } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { CheckoutSocialLeadStatus, CheckoutSocialProvider } from '@prisma/client';
 import { AppleAuthService } from '../auth/apple-auth.service';
 import { FacebookAuthService } from '../auth/facebook-auth.service';
@@ -62,7 +62,7 @@ type CheckoutSocialLeadPrefill = {
 /** Checkout social lead service. */
 @Injectable()
 export class CheckoutSocialLeadService {
-  private readonly logger = new Logger(CheckoutSocialLeadService.name);
+  private readonly logger = StructuredLogger.from(CheckoutSocialLeadService.name);
 
   constructor(
     private readonly prisma: PrismaService,

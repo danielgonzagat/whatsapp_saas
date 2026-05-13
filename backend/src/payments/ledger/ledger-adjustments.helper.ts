@@ -1,4 +1,5 @@
-import type { Logger } from '@nestjs/common';
+import { Logger } from '@nestjs/common';
+
 import type { ConnectLedgerEntry } from '@prisma/client';
 
 import type { PrismaService } from '../../prisma/prisma.service';

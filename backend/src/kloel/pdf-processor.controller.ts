@@ -4,7 +4,6 @@ import {
   FileTypeValidator,
   HttpException,
   HttpStatus,
-  Logger,
   MaxFileSizeValidator,
   Param,
   ParseFilePipe,
@@ -16,6 +15,7 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiBody, ApiConsumes, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
+import { StructuredLogger } from '../logging/structured-logger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
 import {
@@ -37,6 +37,7 @@ import {
 } from './pdf-processor.service';
 
 import { RouteClass } from '../common/throttler/route-class.decorator';
+import { InternalEndpoint } from '../common/decorators/internal-endpoint.decorator';
 const PDF_TXT_RE = /\.(pdf|txt)$/i;
 const APPLICATION__PDF_OR_TEXT_RE = /^(application\/pdf|text\/plain)$/;
 
@@ -50,7 +51,7 @@ function countAnalysisItems(value: unknown): number {
 @UseGuards(JwtAuthGuard)
 @RouteClass('ai')
 export class PdfProcessorController {
-  private readonly logger = new Logger(PdfProcessorController.name);
+  private readonly logger = StructuredLogger.from(PdfProcessorController.name);
 
   constructor(
     private readonly pdfProcessor: PdfProcessorService,
@@ -193,6 +194,7 @@ export class PdfProcessorController {
   }
 
   /** Upload pdf. */
+  @InternalEndpoint('PDF upload handler')
   @Post(':workspaceId/upload')
   @ApiOperation({ summary: 'Upload e processa PDF' })
   @ApiParam({ name: 'workspaceId', description: 'ID do workspace' })

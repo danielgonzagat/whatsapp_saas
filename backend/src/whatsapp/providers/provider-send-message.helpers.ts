@@ -1,7 +1,8 @@
+import { Logger } from '@nestjs/common';
 import { OpsAlertService } from '../../observability/ops-alert.service';
 import { WahaProvider } from './waha.provider';
 import { WhatsAppApiProvider } from './whatsapp-api.provider';
-import type { Logger } from '@nestjs/common';
+
 
 interface SendMessageDeps {
   isWahaMode: () => boolean;

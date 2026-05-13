@@ -4,7 +4,6 @@ import {
   Controller,
   Delete,
   Get,
-  Logger,
   NotFoundException,
   Param,
   Post,
@@ -14,6 +13,7 @@ import {
   UseGuards,
   Optional,
 } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { normalizeStorageUrlForRequest } from '../common/storage/public-storage-url.util';
@@ -84,7 +84,7 @@ interface UpdateProductDto extends Partial<CreateProductDto> {
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
 @RouteClass('mutate')
 export class ProductController {
-  private readonly logger = new Logger(ProductController.name);
+  private readonly logger = StructuredLogger.from(ProductController.name);
 
   constructor(
     private readonly prisma: PrismaService,

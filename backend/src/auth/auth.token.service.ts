@@ -1,11 +1,11 @@
 import { randomUUID } from 'node:crypto';
 import {
-  Logger,
   Optional,
   ServiceUnavailableException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import { StructuredLogger } from '../logging/structured-logger';
 import { Prisma } from '@prisma/client';
 import type { Redis } from 'ioredis';
 import { OpsAlertService } from '../observability/ops-alert.service';
@@ -26,7 +26,7 @@ type TokenAgent = {
 
 /** Internal collaborator that owns JWT/refresh-token issuance and refresh-token rotation. */
 export class AuthTokenService {
-  private readonly logger = new Logger(AuthTokenService.name);
+  private readonly logger = StructuredLogger.from(AuthTokenService.name);
 
   constructor(
     private readonly prisma: PrismaService,

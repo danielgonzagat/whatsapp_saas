@@ -1,4 +1,5 @@
 import { Logger } from '@nestjs/common';
+
 import { getTraceHeaders } from '../common/trace-headers';
 import { validateNoInternalAccess } from '../common/utils/url-validator';
 import type { SessionHealth } from './whatsapp-watchdog.types';

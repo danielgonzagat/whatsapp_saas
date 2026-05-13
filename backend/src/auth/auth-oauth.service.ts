@@ -2,10 +2,10 @@ import {
   BadRequestException,
   HttpException,
   Injectable,
-  Logger,
   ServiceUnavailableException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { StructuredLogger } from '../logging/structured-logger';
 import { encryptString } from '../lib/crypto';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
@@ -24,7 +24,7 @@ function buildAuthLogMessage(event: string, payload: Record<string, unknown>) {
 /** Handles all OAuth / social-login flows for AuthService. */
 @Injectable()
 export class AuthOAuthService {
-  private readonly logger = new Logger(AuthOAuthService.name);
+  private readonly logger = StructuredLogger.from(AuthOAuthService.name);
 
   constructor(
     private readonly prisma: PrismaService,

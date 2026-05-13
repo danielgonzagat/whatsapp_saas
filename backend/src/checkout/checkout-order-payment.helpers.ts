@@ -1,9 +1,10 @@
+import { Logger } from '@nestjs/common';
 import * as Sentry from '@sentry/node';
 import { Prisma } from '@prisma/client';
 import { CheckoutOrderSupport } from './checkout-order-support';
 import { CheckoutPaymentService } from './checkout-payment.service';
 import type { CheckoutPaymentE2EStubResult } from './checkout-payment-e2e-guard';
-import { Logger } from '@nestjs/common';
+
 import { PrismaService } from '../prisma/prisma.service';
 
 /** Parameters for processOrderPostPayment. */

@@ -3,7 +3,6 @@ import {
   Body,
   Controller,
   Get,
-  Logger,
   NotFoundException,
   Param,
   Post,
@@ -13,6 +12,7 @@ import {
   UseGuards,
   Optional,
 } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { Prisma } from '@prisma/client';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { AuthenticatedRequest } from '../common/interfaces';
@@ -26,7 +26,7 @@ import { RouteClass } from '../common/throttler/route-class.decorator';
 @Controller('sales')
 @RouteClass('read')
 export class SalesSubscriptionsController {
-  private readonly logger = new Logger(SalesSubscriptionsController.name);
+  private readonly logger = StructuredLogger.from(SalesSubscriptionsController.name);
 
   constructor(
     private readonly prisma: PrismaService,

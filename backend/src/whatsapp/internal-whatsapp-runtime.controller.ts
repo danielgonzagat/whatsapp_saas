@@ -5,13 +5,13 @@ import {
   Get,
   Headers,
   Inject,
-  Logger,
   Optional,
   Post,
   Query,
   UnauthorizedException,
   forwardRef,
 } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { Public } from '../auth/public.decorator';
 import { ChannelTransportRegistry } from '../kloel/channel-transport.registry';
 import { OpsAlertService } from '../observability/ops-alert.service';
@@ -22,6 +22,8 @@ import { toPrismaJsonValue } from '../common/prisma/prisma-json.util';
 import type { ContactCustomFields } from '../contacts/contact-custom-fields.types';
 import { WhatsappService } from './whatsapp.service';
 import { RouteClass } from '../common/throttler/route-class.decorator';
+import { WebhookEndpoint } from '../common/decorators/webhook-endpoint.decorator';
+import { InternalEndpoint } from '../common/decorators/internal-endpoint.decorator';
 
 const D_RE = /\D/g;
 
@@ -29,7 +31,7 @@ const D_RE = /\D/g;
 @Controller('internal/whatsapp-runtime')
 @RouteClass('mutate')
 export class InternalWhatsAppRuntimeController {
-  private readonly logger = new Logger(InternalWhatsAppRuntimeController.name);
+  private readonly logger = StructuredLogger.from(InternalWhatsAppRuntimeController.name);
 
   constructor(
     private readonly inboundProcessor: InboundProcessorService,
@@ -42,6 +44,7 @@ export class InternalWhatsAppRuntimeController {
   ) {}
 
   /** Ingest inbound. */
+  @WebhookEndpoint('WhatsApp runtime inbound messages webhook')
   @Post('inbound')
   @Public()
   async ingestInbound(
@@ -69,6 +72,7 @@ export class InternalWhatsAppRuntimeController {
   }
 
   /** Session connected. */
+  @WebhookEndpoint('WhatsApp session connected webhook')
   @Post('session-connected')
   @Public()
   async sessionConnected(
@@ -132,7 +136,7 @@ export class InternalWhatsAppRuntimeController {
     }
   }
 
-  // messageLimit: enforced via PlanLimitsService.trackMessageSend
+  @InternalEndpoint('worker whatsapp send-text handler')
   @Post('send-text')
   @Public()
   async sendText(
@@ -154,7 +158,7 @@ export class InternalWhatsAppRuntimeController {
     });
   }
 
-  // messageLimit: enforced via PlanLimitsService.trackMessageSend
+  @InternalEndpoint('worker whatsapp send-media handler')
   @Post('send-media')
   @Public()
   async sendMedia(
@@ -185,7 +189,7 @@ export class InternalWhatsAppRuntimeController {
     });
   }
 
-  /** Get status. */
+  @InternalEndpoint('worker whatsapp status probe')
   @Get('status')
   @Public()
   async getStatus(
@@ -196,7 +200,7 @@ export class InternalWhatsAppRuntimeController {
     return this.whatsappService.getConnectionStatus(workspaceId);
   }
 
-  /** Get chats. */
+  @InternalEndpoint('worker whatsapp chats query')
   @Get('chats')
   @Public()
   async getChats(
@@ -207,7 +211,7 @@ export class InternalWhatsAppRuntimeController {
     return this.whatsappService.listChats(workspaceId);
   }
 
-  /** Get messages. */
+  @InternalEndpoint('worker whatsapp messages query')
   @Get('messages')
   @Public()
   async getMessages(
@@ -226,7 +230,7 @@ export class InternalWhatsAppRuntimeController {
     });
   }
 
-  /** Read chat. */
+  @InternalEndpoint('worker whatsapp read chat handler')
   @Post('read')
   @Public()
   async readChat(
@@ -237,7 +241,7 @@ export class InternalWhatsAppRuntimeController {
     return this.whatsappService.setPresence(body.workspaceId, body.chatId, 'seen');
   }
 
-  /** Sync contact. */
+  @InternalEndpoint('worker whatsapp sync-contact handler')
   @Post('sync-contact')
   @Public()
   async syncContact(

@@ -1,10 +1,10 @@
 import {
   BadRequestException,
   Injectable,
-  Logger,
 } from '@nestjs/common';
 import { MailboxStatus } from '@prisma/client';
 import { ConfigService } from '@nestjs/config';
+import { StructuredLogger } from '../../logging/structured-logger';
 import { PrismaService } from '../../prisma/prisma.service';
 import { decryptMailboxToken, encryptMailboxToken } from '../mailbox-token-crypto';
 import { expiresAtFromSeconds } from './oauth-state';
@@ -24,7 +24,7 @@ import type {
 
 @Injectable()
 export class GmailClientService {
-  private readonly logger = new Logger(GmailClientService.name);
+  private readonly logger = StructuredLogger.from(GmailClientService.name);
 
   constructor(
     private readonly prisma: PrismaService,

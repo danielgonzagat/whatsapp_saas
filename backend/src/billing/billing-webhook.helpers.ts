@@ -1,8 +1,9 @@
+import { Logger } from '@nestjs/common';
 /**
  * Pure helper functions for BillingWebhookService.
  * Extracted to keep the service file under the architecture line budget.
  */
-import { Logger } from '@nestjs/common';
+
 import { FinancialAlertService } from '../common/financial-alert.service';
 import { getTraceHeaders } from '../common/trace-headers';
 import { PrismaService } from '../prisma/prisma.service';

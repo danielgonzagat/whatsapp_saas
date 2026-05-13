@@ -1,4 +1,5 @@
 import { Logger } from '@nestjs/common';
+
 import type { WahaSessionOverview } from './waha-types';
 import { resolveWahaSessionState } from './waha-types';
 

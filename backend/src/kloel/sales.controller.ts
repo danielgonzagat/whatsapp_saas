@@ -4,7 +4,6 @@ import {
   Controller,
   Get,
   Headers,
-  Logger,
   NotFoundException,
   Param,
   Post,
@@ -13,6 +12,7 @@ import {
   UseGuards,
   Optional,
 } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { StripeService } from '../billing/stripe.service';
 import { AuthenticatedRequest } from '../common/interfaces';
@@ -30,7 +30,7 @@ type RefundSaleBody = {
 @Controller('sales')
 @RouteClass('read')
 export class SalesController {
-  private readonly logger = new Logger(SalesController.name);
+  private readonly logger = StructuredLogger.from(SalesController.name);
 
   constructor(
     private readonly prisma: PrismaService,

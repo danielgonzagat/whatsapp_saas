@@ -1,5 +1,6 @@
+import { Logger } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
-import { Logger, ServiceUnavailableException, UnauthorizedException } from '@nestjs/common';
+import { ServiceUnavailableException, UnauthorizedException  } from '@nestjs/common';
 import type { JwtService } from '@nestjs/jwt';
 import type { PrismaService } from '../prisma/prisma.service';
 import { DbInitErrorService } from './db-init-error.service';

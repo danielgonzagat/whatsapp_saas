@@ -2,10 +2,10 @@ import { createHash } from 'node:crypto';
 import {
   BadRequestException,
   Injectable,
-  Logger,
   Optional,
   ServiceUnavailableException,
 } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { AuditService } from '../audit/audit.service';
 import { StripeService } from '../billing/stripe.service';
 import type { StripePaymentIntent } from '../billing/stripe-types';
@@ -111,7 +111,7 @@ function buildPaymentIdempotencyKey(data: {
 /** Payment service. */
 @Injectable()
 export class PaymentService {
-  private readonly logger = new Logger(PaymentService.name);
+  private readonly logger = StructuredLogger.from(PaymentService.name);
 
   constructor(
     private readonly prisma: PrismaService,

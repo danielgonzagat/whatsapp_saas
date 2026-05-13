@@ -6,7 +6,6 @@ import {
   Get,
   HttpException,
   HttpStatus,
-  Logger,
   NotFoundException,
   Param,
   Post,
@@ -16,6 +15,7 @@ import {
   UseGuards,
   Optional,
 } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { AuditService } from '../audit/audit.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { AuthenticatedRequest } from '../common/interfaces';
@@ -51,7 +51,7 @@ type SiteProvider = 'openai' | 'anthropic';
 @Controller('kloel/site')
 @RouteClass('mutate')
 export class SiteController {
-  private readonly logger = new Logger(SiteController.name);
+  private readonly logger = StructuredLogger.from(SiteController.name);
 
   constructor(
     private readonly prisma: PrismaService,

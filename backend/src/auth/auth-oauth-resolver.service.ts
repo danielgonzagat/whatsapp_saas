@@ -4,8 +4,8 @@ import {
   ConflictException,
   Injectable,
   InternalServerErrorException,
-  Logger,
 } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { Prisma } from '@prisma/client';
 import { DbInitErrorService } from './db-init-error.service';
 import { UserNameDerivationService } from './user-name-derivation.service';
@@ -49,7 +49,7 @@ export function _buildAuthLogMessage(event: string, payload: Record<string, unkn
  */
 @Injectable()
 export class AuthOAuthResolverService {
-  private readonly logger = new Logger(AuthOAuthResolverService.name);
+  private readonly logger = StructuredLogger.from(AuthOAuthResolverService.name);
 
   constructor(private readonly prisma: PrismaService) {}
 

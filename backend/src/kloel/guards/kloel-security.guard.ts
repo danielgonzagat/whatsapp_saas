@@ -5,12 +5,12 @@ import {
   HttpException,
   HttpStatus,
   Injectable,
-  Logger,
   OnModuleDestroy,
   SetMetadata,
   UnauthorizedException,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
+import { StructuredLogger } from '../../logging/structured-logger';
 import { IS_PUBLIC_METADATA } from '../../auth/public.decorator';
 import { PrismaService } from '../../prisma/prisma.service';
 import { asProviderSettings } from '../../whatsapp/provider-settings.types';
@@ -82,7 +82,7 @@ function getUserSubject(user: unknown): string | undefined {
  */
 @Injectable()
 export class KloelSecurityGuard implements CanActivate, OnModuleDestroy {
-  private readonly logger = new Logger(KloelSecurityGuard.name);
+  private readonly logger = StructuredLogger.from(KloelSecurityGuard.name);
   private rateLimitCache: Map<string, RateLimitEntry> = new Map();
 
   private cleanupInterval?: NodeJS.Timeout | undefined;
@@ -337,7 +337,7 @@ export class KloelSecurityGuard implements CanActivate, OnModuleDestroy {
  */
 @Injectable()
 export class WorkspaceAccessGuard implements CanActivate {
-  private readonly logger = new Logger(WorkspaceAccessGuard.name);
+  private readonly logger = StructuredLogger.from(WorkspaceAccessGuard.name);
 
   constructor(private readonly prisma: PrismaService) {}
 

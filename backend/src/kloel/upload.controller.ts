@@ -3,7 +3,6 @@ import {
   Controller,
   HttpException,
   HttpStatus,
-  Logger,
   Post,
   Req,
   UploadedFiles,
@@ -13,6 +12,7 @@ import {
 } from '@nestjs/common';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { StructuredLogger } from '../logging/structured-logger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { resolveWorkspaceId } from '../auth/workspace-access';
 import { forEachSequential } from '../common/async-sequence';
@@ -46,6 +46,7 @@ import {
 } from './upload-helpers';
 
 import { RouteClass } from '../common/throttler/route-class.decorator';
+import { InternalEndpoint } from '../common/decorators/internal-endpoint.decorator';
 const JPG_JPEG_PNG_GIF_WEBP_RE = /\.(jpg|jpeg|png|gif|webp|pdf|txt|doc|docx|xls|xlsx)$/i;
 const DOC_DOCX_RE = /\.(doc|docx)$/i;
 
@@ -80,7 +81,7 @@ function countAnalysisItems(value: unknown): number {
 @Controller('kloel/upload')
 @RouteClass('mutate')
 export class UploadController {
-  private readonly logger = new Logger(UploadController.name);
+  private readonly logger = StructuredLogger.from(UploadController.name);
 
   constructor(
     private readonly pdfProcessor: PdfProcessorService,
@@ -228,6 +229,7 @@ export class UploadController {
   /**
    * Upload de múltiplos arquivos
    */
+  @InternalEndpoint('multiple file upload')
   @Post('multiple')
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, WorkspaceGuard)

@@ -1,11 +1,11 @@
 import {
   Injectable,
-  Logger,
   Optional,
   ServiceUnavailableException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { StructuredLogger } from '../logging/structured-logger';
 import { getTraceHeaders } from '../common/trace-headers';
 import { GoogleVerifiedProfile } from './google-auth.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
@@ -87,7 +87,7 @@ function buildSyntheticTikTokEmail(providerId: string): string {
 /** TikTok auth service. */
 @Injectable()
 export class TikTokAuthService {
-  private readonly logger = new Logger(TikTokAuthService.name);
+  private readonly logger = StructuredLogger.from(TikTokAuthService.name);
 
   constructor(
     private readonly config: ConfigService,

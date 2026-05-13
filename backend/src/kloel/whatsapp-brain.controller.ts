@@ -8,7 +8,6 @@ import {
   ForbiddenException,
   Get,
   HttpCode,
-  Logger,
   Param,
   Post,
   Query,
@@ -16,6 +15,7 @@ import {
   Res,
   UnauthorizedException,
 } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { type WebhookEvent } from '@prisma/client';
 import type { Redis } from 'ioredis';
 import { Request, Response } from 'express';
@@ -32,7 +32,7 @@ import { RouteClass } from '../common/throttler/route-class.decorator';
 @Controller('kloel/whatsapp')
 @RouteClass('ai')
 export class WhatsAppBrainController {
-  private readonly logger = new Logger(WhatsAppBrainController.name);
+  private readonly logger = StructuredLogger.from(WhatsAppBrainController.name);
 
   constructor(
     private readonly whatsappBrain: WhatsAppBrainService,

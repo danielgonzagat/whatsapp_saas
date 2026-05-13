@@ -1,10 +1,10 @@
 import {
   Injectable,
-  Logger,
   ServiceUnavailableException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { StructuredLogger } from '../logging/structured-logger';
 import { createPublicKey, createSign, createVerify } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { getTraceHeaders } from '../common/trace-headers';
@@ -60,7 +60,7 @@ function buildClientSecret(input: {
 
 @Injectable()
 export class AppleAuthService {
-  private readonly logger = new Logger(AppleAuthService.name);
+  private readonly logger = StructuredLogger.from(AppleAuthService.name);
   private jwksCache: { expiresAt: number; keys: AppleJwk[] } | null = null;
 
   constructor(private readonly config: ConfigService) {}

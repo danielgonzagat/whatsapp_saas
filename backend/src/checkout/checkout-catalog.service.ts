@@ -1,10 +1,10 @@
 import {
   BadRequestException,
   Injectable,
-  Logger,
   NotFoundException,
   Optional,
 } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { Prisma } from '@prisma/client';
 import { AuditService } from '../audit/audit.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -20,7 +20,7 @@ import {
 /** Idempotency: enforced at HTTP layer via @Idempotent() guard + Stripe idempotencyKey. */
 @Injectable()
 export class CheckoutCatalogService {
-  private readonly logger = new Logger(CheckoutCatalogService.name);
+  private readonly logger = StructuredLogger.from(CheckoutCatalogService.name);
 
   constructor(
     private readonly prisma: PrismaService,

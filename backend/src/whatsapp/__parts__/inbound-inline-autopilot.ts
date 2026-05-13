@@ -1,4 +1,5 @@
-import type { Logger } from '@nestjs/common';
+import { Logger } from '@nestjs/common';
+
 import type { OpsAlertService } from '../../observability/ops-alert.service';
 import { toPrismaJsonValue } from '../../common/prisma/prisma-json.util';
 import type { ChannelTransportRegistry } from '../../kloel/channel-transport.registry';

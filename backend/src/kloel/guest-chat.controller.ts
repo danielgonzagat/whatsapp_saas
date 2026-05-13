@@ -5,11 +5,11 @@ import {
   ForbiddenException,
   Get,
   Headers,
-  Logger,
   Post,
   Req,
   Res,
 } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { Request, Response } from 'express';
 import { Public } from '../auth/public.decorator';
 import { GuestChatService } from './guest-chat.service';
@@ -38,7 +38,7 @@ interface GuestChatDto {
 @Controller('chat')
 @RouteClass('ai')
 export class GuestChatController {
-  private readonly logger = new Logger(GuestChatController.name);
+  private readonly logger = StructuredLogger.from(GuestChatController.name);
 
   constructor(private readonly guestChatService: GuestChatService) {}
 

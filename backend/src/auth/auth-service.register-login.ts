@@ -1,3 +1,4 @@
+import { Logger } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 
 import { ConflictException, UnauthorizedException } from '@nestjs/common';
@@ -25,7 +26,7 @@ import {
   finalizePartnerInviteRegistration,
 } from './auth-service.partner-invite';
 import { issueTokens, type TokenIssuanceResult } from './auth-service.tokens';
-import type { Logger } from '@nestjs/common';
+
 
 export interface AuthPartsDeps {
   prisma: PrismaService;

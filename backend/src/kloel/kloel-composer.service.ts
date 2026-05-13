@@ -3,9 +3,9 @@ import {
   Injectable,
   Inject,
   InternalServerErrorException,
-  Logger,
   NotFoundException,
 } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import type { ImagesResponse, ImageGenerateParamsNonStreaming } from 'openai/resources/images';
 import OpenAI from 'openai';
 import { Prisma } from '@prisma/client';
@@ -84,7 +84,7 @@ function asUnknownRecord(value: unknown): Record<string, unknown> | null {
 /** Handles composer capabilities: web search, image generation, site generation. */
 @Injectable()
 export class KloelComposerService {
-  private readonly logger = new Logger(KloelComposerService.name);
+  private readonly logger = StructuredLogger.from(KloelComposerService.name);
   private readonly openai: OpenAI | null;
 
   constructor(
