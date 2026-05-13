@@ -97,6 +97,7 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
   const [affiliateInviteWorkspaceName, setAffiliateInviteWorkspaceName] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isAppleLoading, setIsAppleLoading] = useState(false);
   const [error, setError] = useState('');
   const [forgotSent, setForgotSent] = useState(false);
   const [magicLinkSent, setMagicLinkSent] = useState('');
@@ -302,14 +303,14 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
   }, [email, requestMagicLink, resolveNextPath]);
 
   const handleApple = async () => {
-    setIsLoading(true);
+    setIsAppleLoading(true);
     try {
       const destination = new URL('/api/auth/apple/start', window.location.origin);
       destination.searchParams.set('next', resolveNextPath('/'));
       window.location.href = destination.toString();
     } catch {
       setError('Login com Apple indisponível no momento.');
-      setIsLoading(false);
+      setIsAppleLoading(false);
     }
   };
 
@@ -453,6 +454,7 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
             <SocialButtons
               googleButtonRef={googleButtonRef}
               isLoading={isLoading}
+              isAppleLoading={isAppleLoading}
               onAppleClick={handleApple}
               onFacebookClick={() => void facebookSignIn.signIn()}
               facebookAvailable={facebookSignIn.available}

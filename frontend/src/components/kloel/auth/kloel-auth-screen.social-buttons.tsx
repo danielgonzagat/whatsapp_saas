@@ -1,13 +1,15 @@
 'use client';
 import { colors } from '@/lib/design-tokens';
 import { kloelT } from '@/lib/i18n/t';
-import { AppleIcon, FacebookIcon, GoogleIcon, TikTokIcon } from './kloel-auth-screen.icons';
+import { FacebookIcon, GoogleIcon, TikTokIcon } from './kloel-auth-screen.icons';
+import { AppleSignInButton } from '@/components/login/AppleSignInButton';
 
 const sora = "var(--font-sora), 'Sora', sans-serif";
 
 interface SocialButtonsProps {
   googleButtonRef: React.RefObject<HTMLDivElement | null>;
   isLoading: boolean;
+  isAppleLoading?: boolean;
   onAppleClick: () => void;
   onFacebookClick?: () => void;
   facebookAvailable?: boolean;
@@ -34,6 +36,7 @@ const socialBtnBase: React.CSSProperties = {
 export function SocialButtons({
   googleButtonRef,
   isLoading,
+  isAppleLoading = false,
   onAppleClick,
   onFacebookClick = () => {},
   facebookAvailable = false,
@@ -128,24 +131,7 @@ export function SocialButtons({
         </button>
       ) : null}
 
-      <button
-        type="button"
-        onClick={onAppleClick}
-        disabled={isLoading}
-        style={{
-          ...socialBtnBase,
-          cursor: 'pointer',
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.borderColor = colors.border.glow;
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.borderColor = colors.background.border;
-        }}
-      >
-        <AppleIcon />
-        {kloelT(`Continuar com Apple`)}
-      </button>
+      <AppleSignInButton onClick={onAppleClick} isLoading={isAppleLoading} />
     </div>
   );
 }
