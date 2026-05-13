@@ -182,10 +182,10 @@ export const silent24hResolverWorker = new Worker(
         });
 
         if (replyEvent) {
-          replied++;
+          replied += 1;
           ctxLog.info('outcome_resolved_replied', { outcomeKey: decision.outcomeKey });
         } else {
-          silent++;
+          silent += 1;
           ctxLog.info('outcome_resolved_silent_24h', { outcomeKey: decision.outcomeKey });
         }
       }

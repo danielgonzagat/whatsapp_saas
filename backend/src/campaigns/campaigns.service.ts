@@ -236,10 +236,10 @@ export class CampaignsService {
             },
           });
           if (!delivered) {
-            failed++;
+            failed += 1;
             return;
           }
-          sent++;
+          sent += 1;
           return;
         }
 
@@ -254,21 +254,21 @@ export class CampaignsService {
             bodyText,
           );
           if (!delivered.success) {
-            failed++;
+            failed += 1;
             return;
           }
-          sent++;
+          sent += 1;
           return;
         }
 
         this.logger.warn(
           `Campaign ${campaign.name}: no channel available for ${contact.name || contact.id}`,
         );
-        failed++;
+        failed += 1;
       } catch (e: unknown) {
         void this.opsAlert?.alertOnCriticalError(e, 'CampaignsService.processCampaignJob');
         this.logger.error(`Campaign send failed for contact ${contact.id}: ${String(e)}`);
-        failed++;
+        failed += 1;
       }
     });
 

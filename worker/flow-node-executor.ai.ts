@@ -116,7 +116,7 @@ export async function executeAiNode(
       return;
     }
 
-    iterations++;
+    iterations += 1;
     const responseMessage = await ai.generateChatResponse(messages, aiRole, tools);
 
     messages.push(responseMessage);

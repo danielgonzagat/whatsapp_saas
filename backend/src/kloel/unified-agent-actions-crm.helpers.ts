@@ -18,7 +18,7 @@ export async function actionImportContacts(
     }
     const header = headerRow.split(',').map((h: string) => h.trim().toLowerCase());
     const contacts: Array<{ phone: string; name?: string; email?: string }> = [];
-    for (let i = 1; i < lines.length; i++) {
+    for (let i = 1; i < lines.length; i += 1) {
       const line = lines[i];
       if (!line) {
         continue;
@@ -61,7 +61,7 @@ export async function actionImportContacts(
             ...(c.email ? { email: c.email } : {}),
           },
         });
-        created++;
+        created += 1;
       } catch {
         /* expected on re-import */
       }

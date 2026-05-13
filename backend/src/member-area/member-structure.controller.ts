@@ -206,7 +206,7 @@ export class MemberStructureController {
               position: modData.position,
             },
           });
-          totalModulesCreated++;
+          totalModulesCreated += 1;
 
           await forEachSequential(modData.lessons, async (lessonData) => {
             await tx.memberLesson.create({
@@ -217,7 +217,7 @@ export class MemberStructureController {
                 position: lessonData.position,
               },
             });
-            totalLessonsCreated++;
+            totalLessonsCreated += 1;
           });
         });
 

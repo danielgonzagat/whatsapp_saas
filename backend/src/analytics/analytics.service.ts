@@ -85,11 +85,11 @@ export class AnalyticsService {
         const scoreStats = { high: 0, medium: 0, low: 0 };
         leadScore.forEach((c) => {
           if (c.leadScore > 70) {
-            scoreStats.high++;
+            scoreStats.high += 1;
           } else if (c.leadScore > 30) {
-            scoreStats.medium++;
+            scoreStats.medium += 1;
           } else {
-            scoreStats.low++;
+            scoreStats.low += 1;
           }
         });
 
@@ -154,7 +154,7 @@ export class AnalyticsService {
     const activity: Record<string, { inbound: number; outbound: number }> = {};
 
     // Initialize last 7 days
-    for (let i = 0; i < 7; i++) {
+    for (let i = 0; i < 7; i += 1) {
       const d = new Date();
       d.setDate(d.getDate() - i);
       const key = d.toISOString().slice(0, 10);
@@ -168,9 +168,9 @@ export class AnalyticsService {
       }
       if (activity[key]) {
         if (m.direction === 'INBOUND') {
-          activity[key].inbound++;
+          activity[key].inbound += 1;
         } else {
-          activity[key].outbound++;
+          activity[key].outbound += 1;
         }
       }
     });
@@ -392,7 +392,7 @@ export class AnalyticsService {
       if (recent.length >= 2) {
         const sorted = recent.map((m) => m.createdAt.getTime()).sort((a, b) => a - b);
         const intervals: number[] = [];
-        for (let i = 1; i < sorted.length; i++) {
+        for (let i = 1; i < sorted.length; i += 1) {
           const curr = sorted[i];
           const prev = sorted[i - 1];
           if (curr === undefined || prev === undefined) {

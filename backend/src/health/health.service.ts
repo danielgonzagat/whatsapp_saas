@@ -85,7 +85,7 @@ export class HealthService {
       metricsList.forEach((e) => {
         const [ok, lat] = e.split(':');
         if (ok === '1') {
-          successCount++;
+          successCount += 1;
         }
         totalLatency += Number(lat);
       });

@@ -265,9 +265,9 @@ export class TikTokEventsApiService {
     for (const event of events) {
       const result = await this.sendEvent(workspaceId, pixelCode, event);
       if (result.success) {
-        successCount++;
+        successCount += 1;
       } else {
-        failureCount++;
+        failureCount += 1;
         if (result.error) {
           errors.push(result.error);
         }

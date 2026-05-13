@@ -69,8 +69,8 @@ export class SmartTimeService {
     // 5. Build heatmap: normalize hour×day scores to [0, 1]
     const maxCount = Math.max(...hourBuckets, 1);
     const heatmap: Array<{ hour: number; day: string; score: number }> = [];
-    for (let h = 0; h < 24; h++) {
-      for (let d = 0; d < 7; d++) {
+    for (let h = 0; h < 24; h += 1) {
+      for (let d = 0; d < 7; d += 1) {
         const count = hourBuckets[h] * (dayBuckets[d] / total) * 24;
         const score = Math.round((count / maxCount) * 100) / 100;
         if (score > 0) {

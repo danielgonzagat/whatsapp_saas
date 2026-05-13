@@ -56,7 +56,7 @@ export class VectorService {
     let normA = 0;
     let normB = 0;
 
-    for (let i = 0; i < vecA.length; i++) {
+    for (let i = 0; i < vecA.length; i += 1) {
       const a = vecA[i];
       const b = vecB[i];
       if (a === undefined || b === undefined) {

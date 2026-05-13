@@ -48,7 +48,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
           failCount = 0;
         })
         .catch(() => {
-          failCount++;
+          failCount += 1;
           if (failCount >= 3) {
             clearInterval(timer);
             this.presenceHeartbeats.delete(workspaceId);

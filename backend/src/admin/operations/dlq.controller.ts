@@ -126,7 +126,7 @@ export class DlqController {
       const retryOpts = { ...job.opts, jobId: `dlq-retry:${job.id || Date.now()}` };
       await main.add(job.name || 'default', job.data, retryOpts);
       await job.remove();
-      reprocessed++;
+      reprocessed += 1;
     }
 
     this.logger.log(
@@ -172,7 +172,7 @@ export class DlqController {
       const job = await dlq.getJob(jobId);
       if (job) {
         await job.remove();
-        discarded++;
+        discarded += 1;
       }
     });
 

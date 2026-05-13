@@ -154,7 +154,7 @@ export class DashboardService {
       events.forEach((e) => {
         const [ok, lat] = e.split(':');
         if (ok === '1') {
-          success++;
+          success += 1;
         }
         totalLatency += Number(lat || 0);
       });

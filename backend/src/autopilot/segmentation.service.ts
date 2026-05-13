@@ -476,8 +476,8 @@ export class SegmentationService {
 
     await forEachSequential(contacts, async (contact) => {
       const { level } = await this.calculateEngagementScore(contact.id, workspaceId);
-      results[level]++;
-      results.processed++;
+      results[level] += 1;
+      results.processed += 1;
     });
 
     this.logger.log(

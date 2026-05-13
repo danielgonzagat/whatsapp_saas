@@ -86,7 +86,7 @@ export function makePrismaStub(wallets: PrepaidWallet[] = []) {
             return Promise.resolve(merged);
           }
           const row = {
-            id: `pwl_${nextWalletId++}`,
+            id: (() => { const id = `pwl_${nextWalletId}`; nextWalletId += 1; return id; })(),
             balanceCents: 0n,
             currency: 'BRL',
             autoRechargeEnabled: false,
@@ -144,7 +144,7 @@ export function makePrismaStub(wallets: PrepaidWallet[] = []) {
       count: jest.fn(() => Promise.resolve(transactions.length)),
       create: jest.fn(({ data }: { data: Omit<PrepaidWalletTransaction, 'id' | 'createdAt'> }) => {
         const row = {
-          id: `pwt_${nextTxId++}`,
+          id: (() => { const id = `pwt_${nextTxId}`; nextTxId += 1; return id; })(),
           createdAt: new Date(),
           ...data,
         };

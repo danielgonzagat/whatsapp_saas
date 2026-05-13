@@ -165,7 +165,7 @@ export class RuntimeConversationTracerService {
       throw new Error(`Missing tracer steps: ${missing.join(', ')}. Actual: ${actual.join(', ')}`);
     }
     const actualIndices = new Map(actual.map((step, index) => [step, index]));
-    for (let i = 1; i < expected.length; i++) {
+    for (let i = 1; i < expected.length; i += 1) {
       const prev = expected[i - 1];
       const curr = expected[i];
       if (!prev || !curr) continue;

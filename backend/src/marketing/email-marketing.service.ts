@@ -293,7 +293,7 @@ export class EmailMarketingService implements OnModuleInit, OnModuleDestroy {
     let sentCount = 0;
     let failedCount = 0;
 
-    for (let i = 0; i < campaign.recipients.length; i++) {
+    for (let i = 0; i < campaign.recipients.length; i += 1) {
       const recipient = campaign.recipients[i]!;
       if (recipient.status === 'UNSUBSCRIBED') {
         continue;
@@ -327,7 +327,7 @@ export class EmailMarketingService implements OnModuleInit, OnModuleDestroy {
         });
 
         if (success) {
-          sentCount++;
+          sentCount += 1;
           await this.recordDeliveryEvent({
             campaignId,
             recipientId: recipient.id,
@@ -335,7 +335,7 @@ export class EmailMarketingService implements OnModuleInit, OnModuleDestroy {
             event: 'SENT',
           });
         } else {
-          failedCount++;
+          failedCount += 1;
           await this.recordDeliveryEvent({
             campaignId,
             recipientId: recipient.id,
@@ -349,7 +349,7 @@ export class EmailMarketingService implements OnModuleInit, OnModuleDestroy {
           await new Promise((resolve) => setTimeout(resolve, 100));
         }
       } catch (err: unknown) {
-        failedCount++;
+        failedCount += 1;
         const errorMsg = err instanceof Error ? err.message : 'unknown_error';
         void this.opsAlert?.alertOnCriticalError(err, 'EmailMarketingService.processCampaignSend');
         this.logger.error(`Failed to send to ${recipient.email}: ${errorMsg}`);

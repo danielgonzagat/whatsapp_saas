@@ -25,7 +25,7 @@ const asMock = <T>(value: unknown): T => value as T;
 
 export function makePrismaStub(initial: FraudBlacklist[] = []) {
   const rows = [...initial];
-  const nextId = () => `fb_${++fraudRowSeq}`;
+  const nextId = () => { fraudRowSeq += 1; return `fb_${fraudRowSeq}`; };
   return {
     rows,
     prisma: asMock<PrismaService>({
@@ -152,7 +152,7 @@ export async function buildEngine(
 }
 
 export const seedRow = (overrides: Partial<FraudBlacklist>): FraudBlacklist => ({
-  id: overrides.id ?? `fb_${++fraudRowSeq}`,
+  id: overrides.id ?? (() => { fraudRowSeq += 1; return `fb_${fraudRowSeq}`; })(),
   type: overrides.type ?? 'CPF',
   value: overrides.value ?? '12345678900',
   reason: overrides.reason ?? 'manual_block',

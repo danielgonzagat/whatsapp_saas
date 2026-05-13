@@ -104,7 +104,7 @@ export class NeuroCrmService {
 
     const k = Math.min(3, Math.max(1, points.length));
     let centroids = points.slice(0, k).map((p) => ({ x: p.x, y: p.y }));
-    for (let iter = 0; iter < 5; iter++) {
+    for (let iter = 0; iter < 5; iter += 1) {
       const buckets: ClusterPoint[][] = Array.from({ length: k }, () => []);
       for (const p of points) {
         let best = 0;

@@ -139,7 +139,7 @@ export class SalesController {
     });
 
     const chart: number[] = [];
-    for (let i = 29; i >= 0; i--) {
+    for (let i = 29; i >= 0; i -= 1) {
       const dayStart = new Date();
       dayStart.setHours(0, 0, 0, 0);
       dayStart.setDate(dayStart.getDate() - i);

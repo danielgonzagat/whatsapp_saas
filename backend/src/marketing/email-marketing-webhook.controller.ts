@@ -159,7 +159,7 @@ export class EmailMarketingWebhookController {
           event: mappedEvent,
           metadata: eventObj,
         });
-        processed++;
+        processed += 1;
       } catch (err: unknown) {
         void this.opsAlert?.alertOnCriticalError(
           err,

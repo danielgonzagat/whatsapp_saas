@@ -235,7 +235,7 @@ export class WhatsAppWatchdogSessionService {
     normalizedStatus: string,
     now: Date,
   ): Promise<void> {
-    health.consecutiveFailures++;
+    health.consecutiveFailures += 1;
 
     this.logger.warn(
       `Session disconnected: ${workspaceName || workspaceId} ` +
@@ -320,7 +320,7 @@ export class WhatsAppWatchdogSessionService {
           : typeof error === 'string'
             ? error
             : 'unknown error';
-      health.consecutiveFailures++;
+      health.consecutiveFailures += 1;
       health.lastCheck = now;
       this.healthCheckCounter.inc({ workspaceId, status: 'error' });
       this.logger.error(`Check failed for ${workspaceName || workspaceId}: ${msg}`);

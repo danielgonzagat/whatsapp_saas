@@ -188,7 +188,7 @@ export class OnboardingService {
       throw new Error(`Invalid onboarding step index: ${state.currentStep}`);
     }
     state.data[currentStep.field] = response;
-    state.currentStep++;
+    state.currentStep += 1;
 
     if (state.currentStep >= this.steps.length) {
       state.completed = true;

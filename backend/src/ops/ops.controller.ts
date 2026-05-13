@@ -67,7 +67,7 @@ export class OpsController {
       const retryOpts = { ...job.opts, jobId: `dlq-retry:${job.id || Date.now()}` };
       await main.add(job.name || 'default', job.data, retryOpts);
       await job.remove();
-      retried++;
+      retried += 1;
     });
 
     return { queue: name, retried };

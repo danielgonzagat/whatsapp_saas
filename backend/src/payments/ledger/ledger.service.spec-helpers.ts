@@ -85,7 +85,7 @@ export function makePrismaStub(initial: ConnectAccountBalance[] = []): PrismaStu
       ),
       create: jest.fn(({ data }: { data: Omit<EntryRow, 'id' | 'createdAt'> }) => {
         const row: EntryRow = {
-          id: `cle_${nextEntryId++}`,
+          id: (() => { const id = `cle_${nextEntryId}`; nextEntryId += 1; return id; })(),
           createdAt: new Date('2026-04-17T00:00:00Z'),
           ...data,
         };

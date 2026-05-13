@@ -238,7 +238,7 @@ export class MindSyntheticGeneratorService {
   generateScenarios(workspaceId: string, count: number, seed?: number): ReplayScenarioInput[] {
     const effectiveSeed = seed ?? this._seed;
     const scenarios: ReplayScenarioInput[] = [];
-    for (let i = 0; i < count; i++) {
+    for (let i = 0; i < count; i += 1) {
       scenarios.push(this.generateScenario(workspaceId, effectiveSeed + i * 1000));
     }
     return scenarios;

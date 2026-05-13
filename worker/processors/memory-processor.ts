@@ -172,7 +172,7 @@ const processIngestSource = async (job: Job, ctxLog: WorkerLogger): Promise<void
   let processed = 0;
   await forEachSequential(chunks, async (chunk) => {
     actualInputTokens += BigInt(await insertChunkVector(openai, chunk, sourceId));
-    processed++;
+    processed += 1;
     if (chunks.length > 0) {
       await job.updateProgress(10 + Math.floor((80 * processed) / chunks.length));
     }

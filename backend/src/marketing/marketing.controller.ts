@@ -314,7 +314,7 @@ export class MarketingController {
         const reply = firstReplyByConv.get(cid);
         if (reply && reply > msg.createdAt) {
           totalResponseMs += reply.getTime() - msg.createdAt.getTime();
-          responseCount++;
+          responseCount += 1;
         }
       }
     }
@@ -478,9 +478,9 @@ export class MarketingController {
             signal: AbortSignal.timeout(30000),
           });
           if (res.ok) {
-            sent++;
+            sent += 1;
           } else {
-            failed++;
+            failed += 1;
           }
         } else if (provider === 'sendgrid') {
           // Not SSRF: hardcoded SendGrid API endpoint
@@ -500,18 +500,18 @@ export class MarketingController {
             signal: AbortSignal.timeout(30000),
           });
           if (res.ok || res.status === 202) {
-            sent++;
+            sent += 1;
           } else {
-            failed++;
+            failed += 1;
           }
         } else {
           this.logger.log(`[DEV] Would send to ${recipient.email}: ${subject}`);
-          sent++;
+          sent += 1;
         }
         // Rate limit: 100ms between sends
         await new Promise((r) => setTimeout(r, 100));
       } catch {
-        failed++;
+        failed += 1;
       }
     });
 

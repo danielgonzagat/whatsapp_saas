@@ -371,7 +371,7 @@ export class GuestChatService implements OnModuleDestroy {
     for (const [sessionId, conversation] of this.conversations.entries()) {
       if (now - conversation.lastMessageAt.getTime() > maxAge) {
         this.conversations.delete(sessionId);
-        cleaned++;
+        cleaned += 1;
       }
     }
 

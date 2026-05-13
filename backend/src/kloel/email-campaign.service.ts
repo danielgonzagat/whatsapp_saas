@@ -135,9 +135,9 @@ export class EmailCampaignService {
           'List-Unsubscribe-Post': `List-Unsubscribe=One-Click`,
         });
         if (success) {
-          sent++;
+          sent += 1;
         } else {
-          failed++;
+          failed += 1;
           errors.push(`Failed to send to ${recipient.email}`);
         }
 
@@ -147,7 +147,7 @@ export class EmailCampaignService {
         }
       } catch (err: unknown) {
         void this.opsAlert?.alertOnCriticalError(err, 'EmailCampaignService.push');
-        failed++;
+        failed += 1;
         errors.push(`${recipient.email}: ${err instanceof Error ? err.message : 'unknown_error'}`);
       }
     });

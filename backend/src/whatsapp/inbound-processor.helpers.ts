@@ -139,7 +139,7 @@ export async function checkDuplicateExt(
     return cached;
   }
   if (cached === 'processing') {
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < 3; i += 1) {
       await sleep(150);
       const r = await deps.redis.get(cacheKey);
       if (r && r !== 'processing') {

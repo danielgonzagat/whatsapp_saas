@@ -301,7 +301,7 @@ export class KloelSecurityGuard implements CanActivate, OnModuleDestroy {
       return false;
     }
 
-    entry.count++;
+    entry.count += 1;
     return true;
   }
 

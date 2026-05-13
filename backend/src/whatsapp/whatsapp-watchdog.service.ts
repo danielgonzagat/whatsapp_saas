@@ -178,11 +178,11 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
 
       const workspaceId = workspaceBySessionName.get(session.name);
       if (!workspaceId) {
-        orphanLiveSessions++;
+        orphanLiveSessions += 1;
         continue;
       }
 
-      syncedLiveSessions++;
+      syncedLiveSessions += 1;
       workspaceIdsToRefresh.add(workspaceId);
     }
 

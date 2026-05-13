@@ -105,7 +105,7 @@ export function aggregateTopProducts(paidSales: readonly ReportSale[]) {
     if (!productMap[name]) {
       productMap[name] = { name, sales: 0, revenue: 0 };
     }
-    productMap[name].sales++;
+    productMap[name].sales += 1;
     productMap[name].revenue += s.amount;
   });
   return Object.values(productMap)
@@ -120,7 +120,7 @@ export function aggregatePaymentMethods(paidSales: readonly ReportSale[]) {
     if (!paymentMap[method]) {
       paymentMap[method] = { method, count: 0, revenue: 0 };
     }
-    paymentMap[method].count++;
+    paymentMap[method].count += 1;
     paymentMap[method].revenue += s.amount;
   });
   return Object.values(paymentMap);
