@@ -136,7 +136,7 @@ function ModeBadge({ mode }: { mode: TikTokMode }) {
   const c = colorMap[mode] || colorMap.blocked;
   return (
     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 10, fontFamily: MONO, color: c.fg, background: c.bg, padding: '2px 8px', borderRadius: 16 }}>
-      <span style={{ width: 6, height: 6, borderRadius: '50%', background: c.fg }} />
+      <span style={{ width: 6, height: 6, borderRadius: 8, background: c.fg }} />
       {c.label}
     </span>
   );
