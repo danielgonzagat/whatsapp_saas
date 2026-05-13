@@ -78,6 +78,48 @@ describe('EmailService', () => {
     });
   });
 
+  describe('unsubscribe footer presence', () => {
+    let serviceWithJwt: EmailService;
+
+    beforeEach(async () => {
+      process.env.JWT_SECRET = 'test-footer-jwt';
+      process.env.FRONTEND_URL = 'https://test.kloel.com';
+
+      const module: TestingModule = await Test.createTestingModule({
+        providers: [EmailService],
+      }).compile();
+
+      serviceWithJwt = module.get<EmailService>(EmailService);
+    });
+
+    afterEach(() => {
+      delete process.env.JWT_SECRET;
+      delete process.env.FRONTEND_URL;
+    });
+
+    it('appends unsubscribe footer to welcome emails', async () => {
+      const result = await serviceWithJwt.sendWelcomeEmail(
+        'test@example.com',
+        'AgentName',
+        'Workspace',
+        'ws-footer',
+      );
+
+      expect(result).toBe(true);
+    });
+
+    it('appends unsubscribe footer to onboarding emails', async () => {
+      const result = await serviceWithJwt.sendOnboardingEmail(
+        'test@example.com',
+        'AgentName',
+        'onboarding-day1',
+        'ws-footer',
+      );
+
+      expect(result).toBe(true);
+    });
+  });
+
   describe('provider selection', () => {
     it('should select resend when RESEND_API_KEY is set', async () => {
       process.env.RESEND_API_KEY = 'test-resend-key';

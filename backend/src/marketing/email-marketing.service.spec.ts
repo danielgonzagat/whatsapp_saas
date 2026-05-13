@@ -539,4 +539,33 @@ describe('EmailMarketingService', () => {
       );
     });
   });
+
+  describe('unsubscribe footer presence', () => {
+    it('appends unsubscribe footer HTML to campaign emails', async () => {
+      campaignFindFirst.mockResolvedValue({
+        id: 'camp-1',
+        workspaceId: 'ws-1',
+        name: 'Test',
+        subject: 'Hello',
+        htmlBody: '<p>Hi</p>',
+        status: 'SCHEDULED',
+        recipients: [{ id: 'r-1', email: 'a@test.com', name: 'Alice', status: 'PENDING' }],
+      });
+      campaignUpdate.mockResolvedValue({});
+      deliveryCreate.mockResolvedValue({});
+      recipientUpdate.mockResolvedValue({});
+      sendEmail.mockResolvedValue(true);
+
+      if (!workerCallback) {
+        throw new Error('Worker callback was not captured');
+      }
+      await workerCallback({ data: { campaignId: 'camp-1', workspaceId: 'ws-1' } });
+
+      expect(sendEmail).toHaveBeenCalledWith(
+        expect.objectContaining({
+          html: expect.stringContaining('footer-unsub'),
+        }),
+      );
+    });
+  });
 });
