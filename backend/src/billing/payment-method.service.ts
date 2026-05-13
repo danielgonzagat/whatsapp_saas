@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { StructuredLogger } from '../logging/structured-logger';
 import * as Sentry from '@sentry/node';
 import { PrismaService } from '../prisma/prisma.service';
 import { StripeRuntime } from './stripe-runtime';
@@ -19,7 +20,7 @@ const ERROR_PAYMENT_METHOD_NOT_OWNED = 'Método de pagamento não pertence a est
  */
 @Injectable()
 export class PaymentMethodService {
-  private readonly logger = new Logger(PaymentMethodService.name);
+  private readonly logger = StructuredLogger.from(PaymentMethodService.name);
   private stripe: StripeClient | null = null;
 
   constructor(

@@ -3,6 +3,7 @@ import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Public } from '../auth/public.decorator';
 import { UnifiedAgentService } from './unified-agent.service';
 import { RouteClass } from '../common/throttler/route-class.decorator';
+import { InternalEndpoint } from '../common/decorators/internal-endpoint.decorator';
 
 /** Unified agent controller. */
 @ApiTags('unified-agent')
@@ -12,6 +13,7 @@ export class UnifiedAgentController {
   constructor(private readonly agent: UnifiedAgentService) {}
 
   /** Process message. */
+  @InternalEndpoint('unified agent processing')
   @Post(':workspaceId/process')
   @Public()
   @ApiOperation({

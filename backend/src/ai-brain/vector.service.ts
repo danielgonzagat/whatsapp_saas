@@ -1,5 +1,6 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { StructuredLogger } from '../logging/structured-logger';
 import OpenAI from 'openai';
 
 const N_RE = /\n/g;
@@ -9,7 +10,7 @@ type EmbeddingResult = { embedding: number[]; tokensUsed: number };
 /** Vector service. */
 @Injectable()
 export class VectorService {
-  private readonly logger = new Logger(VectorService.name);
+  private readonly logger = StructuredLogger.from(VectorService.name);
   private openai: OpenAI | null = null;
 
   constructor(private configService: ConfigService) {

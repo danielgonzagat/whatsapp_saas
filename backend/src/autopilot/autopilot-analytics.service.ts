@@ -1,4 +1,5 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { PrismaService } from '../prisma/prisma.service';
 import { AutopilotAnalyticsInsightsService } from './autopilot-analytics-insights.service';
 import { AutopilotAnalyticsReportService } from './autopilot-analytics-report.service';
@@ -6,7 +7,7 @@ import { AutopilotAnalyticsReportService } from './autopilot-analytics-report.se
 /** Analytics for Autopilot: stats delegated to report/insights companion services. */
 @Injectable()
 export class AutopilotAnalyticsService {
-  private readonly logger = new Logger(AutopilotAnalyticsService.name);
+  private readonly logger = StructuredLogger.from(AutopilotAnalyticsService.name);
 
   constructor(
     private readonly prisma: PrismaService,

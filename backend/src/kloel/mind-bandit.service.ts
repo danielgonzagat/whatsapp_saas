@@ -1,4 +1,5 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import type { Prisma } from '@prisma/client';
 import { randomUUID } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
@@ -30,7 +31,7 @@ function score(alpha: number, beta: number, pulls: number, totalPulls: number): 
 
 @Injectable()
 export class MindBanditService {
-  private readonly logger = new Logger(MindBanditService.name);
+  private readonly logger = StructuredLogger.from(MindBanditService.name);
 
   constructor(private readonly prisma: PrismaService) {}
 

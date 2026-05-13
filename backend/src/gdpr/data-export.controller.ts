@@ -2,6 +2,7 @@ import { BadRequestException, Controller, Post, Req, UseGuards } from '@nestjs/c
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { AuthenticatedRequest } from '../common/interfaces/authenticated-request.interface';
 import { RouteClass } from '../common/throttler/route-class.decorator';
+import { WebhookEndpoint } from '../common/decorators/webhook-endpoint.decorator';
 import { GdprService } from './gdpr.service';
 
 /**
@@ -16,6 +17,7 @@ export class DataExportController {
   constructor(private readonly gdprService: GdprService) {}
 
   /** Export data. */
+  @WebhookEndpoint('GDPR external data export request')
   @Post('export')
   @UseGuards(JwtAuthGuard)
   async exportData(@Req() req: AuthenticatedRequest) {

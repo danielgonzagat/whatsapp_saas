@@ -1,4 +1,5 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { Prisma } from '@prisma/client';
 import { filterLegacyProducts } from '../common/products/legacy-products.util';
 import { PrismaService } from '../prisma/prisma.service';
@@ -79,7 +80,7 @@ function centsFromUnknown(value: unknown): number {
 /** Handles product, flow, dashboard, payment, and misc AI chat tools. */
 @Injectable()
 export class KloelChatToolsService {
-  private readonly logger = new Logger(KloelChatToolsService.name);
+  private readonly logger = StructuredLogger.from(KloelChatToolsService.name);
 
   constructor(
     private readonly prisma: PrismaService,

@@ -1,4 +1,5 @@
-import { Injectable, Logger, Optional } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { randomUUID } from 'node:crypto';
 import type { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
@@ -29,7 +30,7 @@ export interface CloseOutcomeInput {
 
 @Injectable()
 export class DecisionOutcomeService {
-  private readonly logger = new Logger(DecisionOutcomeService.name);
+  private readonly logger = StructuredLogger.from(DecisionOutcomeService.name);
 
   constructor(
     private readonly prisma: PrismaService,

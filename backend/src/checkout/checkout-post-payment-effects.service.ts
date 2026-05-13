@@ -1,4 +1,5 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { Prisma } from '@prisma/client';
 import * as Sentry from '@sentry/node';
 import { forEachSequential } from '../common/async-sequence';
@@ -35,7 +36,7 @@ type CheckoutOrderForEffects = {
 /** Checkout post payment effects service. */
 @Injectable()
 export class CheckoutPostPaymentEffectsService {
-  private readonly logger = new Logger(CheckoutPostPaymentEffectsService.name);
+  private readonly logger = StructuredLogger.from(CheckoutPostPaymentEffectsService.name);
 
   constructor(
     private readonly prisma: PrismaService,

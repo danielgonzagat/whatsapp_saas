@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
-import { Injectable, Logger, Optional } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { StructuredLogger } from '../logging/structured-logger';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { PaymentService } from './payment.service';
@@ -27,7 +28,7 @@ type ProductMemoryValue = {
  */
 @Injectable()
 export class UnifiedAgentActionsCommerceService {
-  private readonly logger = new Logger(UnifiedAgentActionsCommerceService.name);
+  private readonly logger = StructuredLogger.from(UnifiedAgentActionsCommerceService.name);
 
   constructor(
     private readonly prisma: PrismaService,

@@ -1,5 +1,6 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { StructuredLogger } from '../logging/structured-logger';
 import OpenAI from 'openai';
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { chatCompletionWithRetry } from '../kloel/openai-wrapper';
@@ -12,7 +13,7 @@ import { PrismaService } from '../prisma/prisma.service';
  */
 @Injectable()
 export class AutopilotAnalyticsInsightsService {
-  private readonly logger = new Logger(AutopilotAnalyticsInsightsService.name);
+  private readonly logger = StructuredLogger.from(AutopilotAnalyticsInsightsService.name);
 
   constructor(
     private readonly prisma: PrismaService,

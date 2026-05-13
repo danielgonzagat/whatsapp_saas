@@ -1,6 +1,7 @@
-import { Injectable, Logger, Optional } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { ModuleRef } from '@nestjs/core';
+import { StructuredLogger } from '../logging/structured-logger';
 import { Prisma } from '@prisma/client';
 import * as Sentry from '@sentry/node';
 import { FinancialAlertService } from '../common/financial-alert.service';
@@ -30,7 +31,7 @@ import { syncSubscriptionStatus } from './billing-webhook.sync-subscription';
  */
 @Injectable()
 export class BillingWebhookService {
-  private readonly logger = new Logger(BillingWebhookService.name);
+  private readonly logger = StructuredLogger.from(BillingWebhookService.name);
   private stripe!: StripeClient;
   private whatsappService: WhatsappNotifier | null = null;
 

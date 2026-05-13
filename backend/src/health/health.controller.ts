@@ -2,6 +2,7 @@ import { Controller, Get, Param, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { HealthService } from './health.service';
 import { RouteClass } from '../common/throttler/route-class.decorator';
+import { WebhookEndpoint } from '../common/decorators/webhook-endpoint.decorator';
 
 /** Health controller. */
 @Controller('health')
@@ -10,6 +11,7 @@ export class HealthController {
   constructor(private healthService: HealthService) {}
 
   /** Get health. */
+  @WebhookEndpoint('External health check endpoint')
   @Get(':workspaceId')
   @UseGuards(JwtAuthGuard)
   async getHealth(@Param('workspaceId') workspaceId: string) {

@@ -1,10 +1,12 @@
-import { Injectable, Logger, Optional } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { Prisma } from '@prisma/client';
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { UnifiedAgentService } from './unified-agent.service';
 import { SmartPaymentService } from './smart-payment.service';
 import { chatCompletionWithFallback } from './openai-wrapper';
+import { createTextLlmClient } from '../lib/llm-provider';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
 import { KLOEL_SALES_PROMPT } from './kloel.prompts';
 import {
@@ -38,7 +40,7 @@ export interface FollowupListItem {
 /** Handles WhatsApp message processing, lead lifecycle, and follow-ups. */
 @Injectable()
 export class KloelLeadProcessorService {
-  private readonly logger = new Logger(KloelLeadProcessorService.name);
+  private readonly logger = StructuredLogger.from(KloelLeadProcessorService.name);
   private readonly openai: OpenAI;
 
   constructor(
@@ -48,7 +50,7 @@ export class KloelLeadProcessorService {
     private readonly planLimits: PlanLimitsService,
     @Optional() private readonly opsAlert?: OpsAlertService,
   ) {
-    this.openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+    this.openai = createTextLlmClient() ?? new OpenAI({ apiKey: '' });
   }
 
   async processWhatsAppMessage(

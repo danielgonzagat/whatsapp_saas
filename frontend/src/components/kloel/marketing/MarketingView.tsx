@@ -1,6 +1,6 @@
 'use client';
 
-import { kloelError } from '@/lib/i18n/t';
+import { kloelT, kloelError } from '@/lib/i18n/t';
 import { KLOEL_THEME } from '@/lib/kloel-theme';
 import { useAuth } from '@/components/kloel/auth/auth-provider';
 import {
@@ -315,12 +315,12 @@ export default function MarketingView({ defaultTab = 'conversas' }: { defaultTab
   );
 
   const TABS = Object.freeze([
-    { id: 'conversas', label: 'Conversas', icon: IC.zap },
-    { id: 'whatsapp', label: 'WhatsApp', icon: IC.wa },
-    { id: 'instagram', label: 'Instagram', icon: IC.ig },
-    { id: 'tiktok', label: 'TikTok', icon: IC.tt },
-    { id: 'facebook', label: 'Facebook', icon: IC.fb },
-    { id: 'email', label: 'Email', icon: IC.em },
+    { id: 'conversas', label: kloelT('Conversas'), icon: IC.zap },
+    { id: 'whatsapp', label: kloelT('WhatsApp'), icon: IC.wa },
+    { id: 'instagram', label: kloelT('Instagram'), icon: IC.ig },
+    { id: 'tiktok', label: kloelT('TikTok'), icon: IC.tt },
+    { id: 'facebook', label: kloelT('Facebook'), icon: IC.fb },
+    { id: 'email', label: kloelT('Email'), icon: IC.em },
   ]);
 
   const switchTab = useCallback(

@@ -3,6 +3,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { TikTokMarketingService, type TikTokCompleteBody } from './tiktok-marketing.service';
 import { RouteClass } from '../common/throttler/route-class.decorator';
+import { WebhookEndpoint } from '../common/decorators/webhook-endpoint.decorator';
 
 type TikTokKind = 'creator' | 'advertiser';
 
@@ -22,11 +23,13 @@ export class TikTokMarketingController {
     return this.tiktokMarketing.generateAuthUrl(req.user.workspaceId, rawKind);
   }
 
+  @WebhookEndpoint('TikTok OAuth callback')
   @Post('complete')
   complete(@Request() req: { user: { workspaceId: string } }, @Body() body: TikTokCompleteBody) {
     return this.tiktokMarketing.completeOAuth(req.user.workspaceId, body);
   }
 
+  @WebhookEndpoint('tiktok disconnect')
   @Post('disconnect')
   disconnect(@Request() req: { user: { workspaceId: string } }) {
     return this.tiktokMarketing.disconnect(req.user.workspaceId);

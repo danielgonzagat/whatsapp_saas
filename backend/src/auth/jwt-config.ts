@@ -1,8 +1,9 @@
+import { StructuredLogger } from '../logging/structured-logger';
 import { randomBytes } from 'node:crypto';
-import { Logger } from '@nestjs/common';
+
 import type { SignOptions } from 'jsonwebtoken';
 
-const logger = new Logger('JwtConfig');
+const logger = StructuredLogger.from('JwtConfig');
 
 let devFallbackCache: string | null = null;
 

@@ -1,5 +1,6 @@
 import { InjectRedis } from '@nestjs-modules/ioredis';
-import { ForbiddenException, Injectable, Logger, Optional } from '@nestjs/common';
+import { ForbiddenException, Injectable, Optional } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import type { Redis } from 'ioredis';
 import { PrismaService } from '../prisma/prisma.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
@@ -64,7 +65,7 @@ const planConfig: Record<
 /** Plan limits service. */
 @Injectable()
 export class PlanLimitsService {
-  private readonly logger = new Logger(PlanLimitsService.name);
+  private readonly logger = StructuredLogger.from(PlanLimitsService.name);
 
   constructor(
     private readonly prisma: PrismaService,

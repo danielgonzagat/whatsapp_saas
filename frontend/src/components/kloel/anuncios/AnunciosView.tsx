@@ -1,5 +1,6 @@
 'use client';
 
+import { kloelT } from '@/lib/i18n/t';
 import { useResponsiveViewport } from '@/hooks/useResponsiveViewport';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useState, useEffect, useRef, startTransition, useCallback } from 'react';
@@ -183,7 +184,7 @@ export default function AnunciosView({ defaultTab = 'visao' }: { defaultTab?: st
             animation: 'fadeIn 0.5s ease',
           }}>
             <div style={{ marginBottom: 12, fontSize: 14, color: 'var(--app-text-secondary)' }}>
-              Conecte sua conta Meta para visualizar campanhas e insights reais.
+              {kloelT('Conecte sua conta Meta para visualizar campanhas e insights reais.')}
             </div>
             <button
               type="button"
@@ -200,7 +201,7 @@ export default function AnunciosView({ defaultTab = 'visao' }: { defaultTab?: st
                 fontFamily: SORA,
               }}
             >
-              Conectar Meta Ads
+              {kloelT('Conectar Meta Ads')}
             </button>
           </div>
         ) : lastSyncAt ? (
@@ -210,7 +211,7 @@ export default function AnunciosView({ defaultTab = 'visao' }: { defaultTab?: st
             color: 'var(--app-text-tertiary)',
             textAlign: 'right',
           }}>
-            Última sincronização: {lastSyncAt}
+            {kloelT('Última sincronização:')} {lastSyncAt}
           </div>
         ) : null}
         {tab === 'visao' && (

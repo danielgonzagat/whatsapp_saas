@@ -7,6 +7,7 @@ import { Idempotent } from '../common/idempotency.guard';
 import { Metrics } from '../observability/metrics';
 import { PrismaService } from '../prisma/prisma.service';
 
+import { InternalEndpoint } from '../common/decorators/internal-endpoint.decorator';
 import { WalletService } from './wallet.service';
 import { InsufficientWalletBalanceError } from './wallet.types';
 import { RouteClass } from '../common/throttler/route-class.decorator';
@@ -20,6 +21,7 @@ export class PrepaidWalletController {
     private readonly prisma: PrismaService,
   ) {}
 
+  @InternalEndpoint('wallet balance check')
   @Get(':workspaceId/balance')
   async getBalance(@Param('workspaceId') workspaceId: string) {
     const wallet = await this.prisma.prepaidWallet.findUnique({
@@ -54,6 +56,7 @@ export class PrepaidWalletController {
     };
   }
 
+  @InternalEndpoint('wallet topup')
   @Post(':workspaceId/topup')
   @Idempotent()
   async createTopup(
@@ -98,6 +101,7 @@ export class PrepaidWalletController {
     }
   }
 
+  @InternalEndpoint('wallet transactions')
   @Get(':workspaceId/transactions')
   async getTransactions(
     @Param('workspaceId') workspaceId: string,
@@ -148,6 +152,7 @@ export class PrepaidWalletController {
     };
   }
 
+  @InternalEndpoint('wallet auto-recharge settings')
   @Patch(':workspaceId/auto-recharge')
   @Idempotent()
   async configureAutoRecharge(
@@ -195,6 +200,7 @@ export class PrepaidWalletController {
     };
   }
 
+  @InternalEndpoint('wallet spend')
   @Post(':workspaceId/spend')
   @Idempotent()
   async spend(

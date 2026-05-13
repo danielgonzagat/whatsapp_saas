@@ -230,4 +230,37 @@ export class ChannelIdentifierService {
       }),
     ]);
   }
+
+  /**
+   * Mark a (workspace, channel, value) identifier as verified.
+   * Sets verifiedAt = now if the row exists; activates cross-channel match
+   * eligibility in ContactIdentityResolverService.findCrossChannelMatch.
+   * Returns the updated row or null if no matching identifier.
+   */
+  async markVerified(
+    workspaceId: string,
+    channel: string,
+    value: string,
+  ): Promise<{
+    id: string;
+    channel: string;
+    value: string;
+    contactId: string;
+    workspaceId: string;
+    isPrimary: boolean;
+  } | null> {
+    const normalizedChannel = normalizeChannelIdentifierChannel(channel);
+    const existing = await this.prisma.channelIdentifier.findUnique({
+      where: {
+        workspaceId_channel_value: { workspaceId, channel: normalizedChannel, value },
+      },
+      select: { id: true, channel: true, value: true, contactId: true, workspaceId: true, isPrimary: true },
+    });
+    if (!existing) return null;
+    await this.prisma.channelIdentifier.update({
+      where: { id: existing.id },
+      data: { verifiedAt: new Date() },
+    });
+    return existing;
+  }
 }

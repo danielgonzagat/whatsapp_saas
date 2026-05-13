@@ -4,6 +4,7 @@ import { AdminAuthGuard } from '../admin/auth/guards/admin-auth.guard';
 import { Public } from '../auth/public.decorator';
 import { SystemHealthService } from './system-health.service';
 import { RouteClass } from '../common/throttler/route-class.decorator';
+import { WebhookEndpoint } from '../common/decorators/webhook-endpoint.decorator';
 
 @ApiTags('System')
 @Controller('health')
@@ -54,6 +55,7 @@ export class SystemHealthController {
   }
 
   @UseGuards(AdminAuthGuard)
+  @WebhookEndpoint('External deep health check')
   @Get('deep')
   @ApiOperation({
     summary: 'Deep diagnostic — admin-only with queue depths and performance metrics',

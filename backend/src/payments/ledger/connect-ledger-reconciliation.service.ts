@@ -1,5 +1,6 @@
-import { Injectable, Logger, Optional } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
+import { StructuredLogger } from '../../logging/structured-logger';
 
 import { FinancialAlertService } from '../../common/financial-alert.service';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -87,7 +88,7 @@ function toBigInt(value: unknown): bigint {
 /** Connect ledger reconciliation service. */
 @Injectable()
 export class ConnectLedgerReconciliationService {
-  private readonly logger = new Logger(ConnectLedgerReconciliationService.name);
+  private readonly logger = StructuredLogger.from(ConnectLedgerReconciliationService.name);
 
   constructor(
     private readonly prisma: PrismaService,

@@ -16,9 +16,9 @@ const FONT_SANS = "'Sora', sans-serif";
 const FONT_MONO = "'JetBrains Mono', monospace";
 
 const PERIOD_OPTIONS: Array<{ key: DashboardHomePeriod; label: string }> = [
-  { key: 'today', label: 'Hoje' },
-  { key: '30d', label: '30 dias' },
-  { key: 'custom', label: 'Personalizado' },
+  { key: 'today', label: kloelT('Hoje') },
+  { key: '30d', label: kloelT('30 dias') },
+  { key: 'custom', label: kloelT('Personalizado') },
 ];
 
 function getGreeting(referenceDate?: Date | null) {
@@ -153,7 +153,7 @@ export function HomeView() {
           .split('-')
           .reverse()
           .join('/')}`
-      : home?.range.label || 'Últimos 7 dias';
+      : home?.range.label || kloelT('Últimos 7 dias');
 
   return (
     <div
@@ -203,7 +203,7 @@ export function HomeView() {
                   marginBottom: 10,
                 }}
               >
-                {formattedReferenceDate || 'Painel operacional'}
+                {formattedReferenceDate || kloelT('Painel operacional')}
               </div>
               <h1
                 style={{

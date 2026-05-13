@@ -19,6 +19,7 @@ import { AuthenticatedRequest } from '../common/interfaces/authenticated-request
 import { AddGroupDto, CreateLauncherDto } from './dto/create-launcher.dto';
 import { LaunchService } from './launch.service';
 import { RouteClass } from '../common/throttler/route-class.decorator';
+import { InternalEndpoint } from '../common/decorators/internal-endpoint.decorator';
 
 /** Launch controller. */
 @ApiTags('Launchpad')
@@ -29,6 +30,7 @@ export class LaunchController {
   constructor(private readonly launchService: LaunchService) {}
 
   /** List launchers. */
+  @InternalEndpoint('launch launchers listing')
   @Get('launchers')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'List all launchers for the workspace' })

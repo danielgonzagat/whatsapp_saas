@@ -4,6 +4,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { resolveWorkspaceId } from '../auth/workspace-access';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { AuthenticatedRequest } from '../common/interfaces/authenticated-request.interface';
+import { InternalEndpoint } from '../common/decorators/internal-endpoint.decorator';
 import { ProductCategoriesService } from './product-categories.service';
 
 import { RouteClass } from '../common/throttler/route-class.decorator';
@@ -15,6 +16,7 @@ import { RouteClass } from '../common/throttler/route-class.decorator';
 export class ProductCategoriesController {
   constructor(private readonly service: ProductCategoriesService) {}
 
+  @InternalEndpoint('product categories listing')
   @Get()
   async list(@Req() req: AuthenticatedRequest) {
     const workspaceId = resolveWorkspaceId(req);

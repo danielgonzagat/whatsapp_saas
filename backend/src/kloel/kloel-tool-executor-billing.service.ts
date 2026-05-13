@@ -1,4 +1,5 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { StripeRuntime } from '../billing/stripe-runtime';
 import { PrismaService } from '../prisma/prisma.service';
 import type {
@@ -26,7 +27,7 @@ const VALID_PLANS = ['starter', 'pro', 'enterprise', 'free'] as const;
 /** Billing tool implementations for KloelToolExecutorService. */
 @Injectable()
 export class KloelToolExecutorBillingService {
-  private readonly logger = new Logger(KloelToolExecutorBillingService.name);
+  private readonly logger = StructuredLogger.from(KloelToolExecutorBillingService.name);
 
   constructor(private readonly prisma: PrismaService) {}
 

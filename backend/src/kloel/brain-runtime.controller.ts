@@ -5,6 +5,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import type { AuthenticatedRequest } from '../common/interfaces';
 import { Metrics } from '../observability/metrics';
+import { InternalEndpoint } from '../common/decorators/internal-endpoint.decorator';
 import { BrainAutonomyService } from './brain-autonomy.service';
 import { BrainDecideDto, BrainObserveDto } from './brain-runtime.dto';
 import { BrainCommercialGraphService } from './brain-commercial-graph.service';
@@ -42,31 +43,37 @@ export class BrainRuntimeController {
     private readonly autonomy: BrainAutonomyService,
   ) {}
 
+  @InternalEndpoint('brain capabilities endpoint')
   @Get('capabilities')
   capabilities() {
     return this.brain.listCapabilities();
   }
 
+  @InternalEndpoint('brain event taxonomy')
   @Get('events/taxonomy')
   eventTaxonomy() {
     return this.brain.eventTaxonomy();
   }
 
+  @InternalEndpoint('brain commercial graph')
   @Get('graph/commercial')
   commercialGraph(@Request() req: AuthenticatedRequest) {
     return this.graph.buildWorkspaceGraph(req.workspaceId || req.user.workspaceId);
   }
 
+  @InternalEndpoint('brain recommendations')
   @Get('graph/recommendations')
   graphRecommendations(@Request() req: AuthenticatedRequest) {
     return this.graph.recommendNextActions(req.workspaceId || req.user.workspaceId);
   }
 
+  @InternalEndpoint('brain autonomy proposals')
   @Get('autonomy/proposals')
   autonomyProposals(@Request() req: AuthenticatedRequest) {
     return this.autonomy.propose(req.workspaceId || req.user.workspaceId);
   }
 
+  @InternalEndpoint('brain decision endpoint')
   @Post('decide')
   async decide(@Body() body: BrainDecideDto, @Request() req: AuthenticatedRequest) {
     const start = Date.now();
@@ -87,6 +94,7 @@ export class BrainRuntimeController {
     }
   }
 
+  @InternalEndpoint('brain observation endpoint')
   @Post('observe')
   async observe(@Body() body: BrainObserveDto, @Request() req: AuthenticatedRequest) {
     const start = Date.now();
@@ -107,6 +115,7 @@ export class BrainRuntimeController {
     }
   }
 
+  @InternalEndpoint('brain stream endpoint')
   @Post('stream')
   async stream(
     @Body() body: BrainDecideDto,

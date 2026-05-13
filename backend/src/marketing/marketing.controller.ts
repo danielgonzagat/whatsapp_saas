@@ -20,6 +20,7 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 
 import { RouteClass } from '../common/throttler/route-class.decorator';
+import { InternalEndpoint } from '../common/decorators/internal-endpoint.decorator';
 const NAME_RE = /\{\{name\}\}/g;
 
 const CHANNELS = ['WHATSAPP', 'INSTAGRAM', 'MESSENGER', 'EMAIL', 'TIKTOK'];
@@ -86,6 +87,7 @@ export class MarketingController {
   /**
    * Channel status — for each channel, count messages and derive status
    */
+  @InternalEndpoint('marketing channels listing')
   @Get('channels')
   async getChannels(@Request() req: { user: { workspaceId: string; email?: string } }) {
     const workspaceId = req.user.workspaceId;
@@ -337,6 +339,7 @@ export class MarketingController {
   /**
    * Send email campaign to a list of recipients
    */
+  @InternalEndpoint('marketing email send')
   @Post('email/send')
   async sendEmailCampaign(
     @Request() req: { user: { workspaceId: string; email?: string } },

@@ -19,6 +19,7 @@ import { CreateEmailCampaignDto } from './dto/create-email-campaign.dto';
 import { EmailMarketingService } from './email-marketing.service';
 
 import { RouteClass } from '../common/throttler/route-class.decorator';
+import { InternalEndpoint } from '../common/decorators/internal-endpoint.decorator';
 @Controller('marketing/email')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
 @RouteClass('mutate')
@@ -55,6 +56,7 @@ export class EmailMarketingController {
     }
   }
 
+  @InternalEndpoint('email marketing campaigns listing')
   @Get('campaigns')
   async listCampaigns(@Request() req: { user: { workspaceId: string; email?: string } }) {
     const workspaceId = req.user.workspaceId;

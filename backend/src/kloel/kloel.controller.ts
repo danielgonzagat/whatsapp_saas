@@ -51,6 +51,7 @@ import {
 } from './kloel-upload.controller-helpers';
 
 import { RouteClass } from '../common/throttler/route-class.decorator';
+import { InternalEndpoint } from '../common/decorators/internal-endpoint.decorator';
 interface ThinkDto {
   message: string;
   workspaceId?: string;
@@ -243,6 +244,7 @@ export class KloelController {
   }
 
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
+  @InternalEndpoint('approval request approve')
   @Post('approvals/:approvalRequestId/approve')
   async approveApprovalRequest(
     @Param('approvalRequestId') approvalRequestId: string,
@@ -272,6 +274,7 @@ export class KloelController {
   }
 
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
+  @InternalEndpoint('approval request reject')
   @Post('approvals/:approvalRequestId/reject')
   async rejectApprovalRequest(
     @Param('approvalRequestId') approvalRequestId: string,
@@ -287,6 +290,7 @@ export class KloelController {
   }
 
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
+  @InternalEndpoint('approval request adjust')
   @Post('approvals/:approvalRequestId/adjust')
   async adjustApprovalRequest(
     @Param('approvalRequestId') approvalRequestId: string,
@@ -331,6 +335,7 @@ export class KloelController {
   }
 
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
+  @InternalEndpoint('PDF processing trigger')
   @Post('pdf/process')
   async processPdf(
     @Body() dto: { workspaceId: string; content: string },
@@ -550,6 +555,7 @@ export class KloelController {
   }
 
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
+  @InternalEndpoint('thread search')
   @Get('threads/search')
   @Get('conversations/search')
   async searchThreads(
@@ -583,6 +589,7 @@ export class KloelController {
   }
 
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
+  @InternalEndpoint('thread message creation')
   @Post('threads/:id/messages')
   async addChatThreadMessage(
     @Param('id') id: string,
@@ -654,6 +661,7 @@ export class KloelController {
   }
 
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
+  @InternalEndpoint('data export trigger')
   @Get('data/export')
   async handleDataExport(@Request() req: AuthenticatedRequest) {
     return exportData({ prisma: this.prisma }, req.workspaceId || req.user?.workspaceId);

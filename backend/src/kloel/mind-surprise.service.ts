@@ -1,4 +1,5 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { PrismaService } from '../prisma/prisma.service';
 import { MindBeliefService } from './mind-belief.service';
 import { MindPredictorService } from './mind-predictor.service';
@@ -6,7 +7,7 @@ import type { MindPrediction } from './mind.types';
 
 @Injectable()
 export class MindSurpriseService {
-  private readonly logger = new Logger(MindSurpriseService.name);
+  private readonly logger = StructuredLogger.from(MindSurpriseService.name);
 
   constructor(
     private readonly prisma: PrismaService,

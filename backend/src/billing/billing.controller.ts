@@ -20,6 +20,7 @@ import { BillingService } from './billing.service';
 import { BillingCheckoutDto } from './dto/billing-checkout.dto';
 
 /** Billing controller. */
+import { InternalEndpoint } from '../common/decorators/internal-endpoint.decorator';
 import { RouteClass } from '../common/throttler/route-class.decorator';
 @Controller('billing')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
@@ -69,6 +70,7 @@ export class BillingController {
   }
 
   /** Get subscription. */
+  @InternalEndpoint('billing subscription status')
   @Get('subscription')
   async getSubscription(
     @Req() req: AuthenticatedRequest,

@@ -1,4 +1,5 @@
-import { Inject, Injectable, Logger, Optional, forwardRef } from '@nestjs/common';
+import { Inject, Injectable, Optional, forwardRef } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { Prisma } from '@prisma/client';
 import OpenAI from 'openai';
 import { AuditService } from '../audit/audit.service';
@@ -37,7 +38,7 @@ type UnknownRecord = Record<string, unknown>;
 /** Idempotency: enforced at HTTP layer via @Idempotent() guard + Stripe idempotencyKey. */
 @Injectable()
 export class UnifiedAgentActionsService {
-  private readonly logger = new Logger(UnifiedAgentActionsService.name);
+  private readonly logger = StructuredLogger.from(UnifiedAgentActionsService.name);
 
   constructor(
     private readonly prisma: PrismaService,

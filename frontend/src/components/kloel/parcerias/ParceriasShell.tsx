@@ -13,9 +13,9 @@ import AffiliateDirectory from './AffiliateDirectory';
 import PartnerChatRoom from './PartnerChatRoom';
 
 const TABS: { key: string; label: string; icon: (s: number) => React.ReactElement }[] = [
-  { key: 'colaboradores', label: 'Central de Colaboradores', icon: IC.shield },
-  { key: 'afiliados', label: 'Afiliados e Produtores', icon: IC.users },
-  { key: 'chat', label: 'Chat', icon: IC.chat },
+  { key: 'colaboradores', label: kloelT('Central de Colaboradores'), icon: IC.shield },
+  { key: 'afiliados', label: kloelT('Afiliados e Produtores'), icon: IC.users },
+  { key: 'chat', label: kloelT('Chat'), icon: IC.chat },
 ];
 
 export default function ParceriasShell({ defaultTab = 'colaboradores' }: { defaultTab?: string }) {

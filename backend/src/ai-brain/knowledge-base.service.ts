@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
-import { BadRequestException, Injectable, Logger, Optional } from '@nestjs/common';
+import { BadRequestException, Injectable, Optional } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { Parser } from 'htmlparser2';
 import { AuditService } from '../audit/audit.service';
 import { getTraceHeaders } from '../common/trace-headers'; // propagates X-Request-ID
@@ -116,7 +117,7 @@ class KnowledgeBaseWalletAccessError extends Error {
 /** Knowledge base service. */
 @Injectable()
 export class KnowledgeBaseService {
-  private readonly logger = new Logger(KnowledgeBaseService.name);
+  private readonly logger = StructuredLogger.from(KnowledgeBaseService.name);
 
   constructor(
     private prisma: PrismaService,

@@ -1,4 +1,5 @@
-import { BadRequestException, Injectable, Logger, Optional } from '@nestjs/common';
+import { BadRequestException, Injectable, Optional } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { PrismaService } from '../prisma/prisma.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { forEachSequential } from '../common/async-sequence';
@@ -15,7 +16,7 @@ const PATTERN_RE = /-/g;
 
 @Injectable()
 export class WhatsappSessionService {
-  private readonly logger = new Logger(WhatsappSessionService.name);
+  private readonly logger = StructuredLogger.from(WhatsappSessionService.name);
 
   constructor(
     private readonly providerRegistry: WhatsAppProviderRegistry,

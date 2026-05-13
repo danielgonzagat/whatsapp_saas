@@ -1,4 +1,5 @@
-import { Injectable, Logger, Optional } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { WhatsAppProviderRegistry } from '../whatsapp/providers/provider-registry';
@@ -24,7 +25,7 @@ const NON_DIGIT_RE = /\D/g;
 /** WhatsApp messaging tool implementations for KloelToolExecutorService. */
 @Injectable()
 export class KloelToolExecutorWhatsAppService {
-  private readonly logger = new Logger(KloelToolExecutorWhatsAppService.name);
+  private readonly logger = StructuredLogger.from(KloelToolExecutorWhatsAppService.name);
 
   constructor(
     private readonly prisma: PrismaService,

@@ -1,4 +1,5 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import type { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import type { MindJson } from './mind.types';
@@ -52,7 +53,7 @@ function hasGlobalPriorDelegate(
 
 @Injectable()
 export class MindGlobalPriorService {
-  private readonly logger = new Logger(MindGlobalPriorService.name);
+  private readonly logger = StructuredLogger.from(MindGlobalPriorService.name);
 
   constructor(private readonly prisma: PrismaService) {}
 

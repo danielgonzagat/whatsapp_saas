@@ -1,4 +1,5 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import type { ChatCompletionMessageParam } from 'openai/resources/chat';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -13,7 +14,7 @@ type ProductMemoryEntry = { name?: string; [key: string]: unknown };
  */
 @Injectable()
 export class UnifiedAgentContextDataService {
-  private readonly logger = new Logger(UnifiedAgentContextDataService.name);
+  private readonly logger = StructuredLogger.from(UnifiedAgentContextDataService.name);
 
   constructor(private readonly prisma: PrismaService) {
     this.logger.log('UnifiedAgentContextDataService initialized');

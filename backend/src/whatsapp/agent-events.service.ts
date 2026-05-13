@@ -1,5 +1,6 @@
 import { InjectRedis } from '@nestjs-modules/ioredis';
-import { Injectable, Logger, OnModuleDestroy, OnModuleInit, Optional } from '@nestjs/common';
+import { Injectable, OnModuleDestroy, OnModuleInit, Optional  } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import type { Redis } from 'ioredis';
 import { AuditService } from '../audit/audit.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
@@ -91,7 +92,7 @@ function normalizeAgentMessage(event: NormalizableAgentEvent) {
 /** Agent events service. */
 @Injectable()
 export class AgentEventsService implements OnModuleInit, OnModuleDestroy {
-  private readonly logger = new Logger(AgentEventsService.name);
+  private readonly logger = StructuredLogger.from(AgentEventsService.name);
   private subscriber: Redis | null = null;
   private readonly listeners = new Map<string, Set<AgentListener>>();
   private readonly history = new Map<string, AgentStreamEvent[]>();

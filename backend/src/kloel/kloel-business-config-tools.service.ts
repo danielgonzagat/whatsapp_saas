@@ -1,4 +1,5 @@
-import { Injectable, Logger, Optional } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { Prisma } from '@prisma/client';
 import { StripeRuntime } from '../billing/stripe-runtime';
 import { PrismaService } from '../prisma/prisma.service';
@@ -56,7 +57,7 @@ interface ToolChangePlanArgs {
 /** Handles CRM, business config, campaign, and billing AI chat tools. */
 @Injectable()
 export class KloelBusinessConfigToolsService {
-  private readonly logger = new Logger(KloelBusinessConfigToolsService.name);
+  private readonly logger = StructuredLogger.from(KloelBusinessConfigToolsService.name);
 
   constructor(
     private readonly prisma: PrismaService,

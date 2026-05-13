@@ -31,6 +31,8 @@ import {
 } from './connect.types';
 import { CONNECT_LEDGER_ENTRY_TYPES, parseSkip, parseTake } from './connect-helpers';
 import { RouteClass } from '../../common/throttler/route-class.decorator';
+import { WebhookEndpoint } from '../../common/decorators/webhook-endpoint.decorator';
+import { InternalEndpoint } from '../../common/decorators/internal-endpoint.decorator';
 
 const CONNECT_ACCOUNT_TYPES = Object.values(ConnectAccountType);
 
@@ -81,6 +83,7 @@ export class ConnectController {
   }
 
   /** Create account. */
+  @WebhookEndpoint('Stripe Connect account webhook')
   @Post(':workspaceId/accounts')
   @Idempotent()
   async createAccount(
@@ -129,6 +132,7 @@ export class ConnectController {
   }
 
   /** Submit onboarding data directly from Kloel's UI. */
+  @WebhookEndpoint('Stripe Connect onboarding submit')
   @Post(':workspaceId/accounts/:accountBalanceId/onboarding')
   @Idempotent()
   async submitOnboardingProfile(
@@ -232,13 +236,13 @@ export class ConnectController {
     };
   }
 
-  /** Reconcile workspace. */
+  @InternalEndpoint('admin ledger reconciliation trigger')
   @Get(':workspaceId/reconcile')
   async reconcileWorkspace(@Param('workspaceId') workspaceId: string) {
     return this.connectLedgerReconciliationService.reconcile({ workspaceId });
   }
 
-  /** List payout requests. */
+  @InternalEndpoint('admin payout requests listing')
   @Get(':workspaceId/payout-requests')
   async listPayoutRequests(
     @Param('workspaceId') workspaceId: string,
@@ -274,7 +278,7 @@ export class ConnectController {
     return this.connectPayoutApprovalService.listWorkspaceRequests(payload);
   }
 
-  /** List payouts. */
+  @InternalEndpoint('admin payouts listing')
   @Get(':workspaceId/payouts')
   async listPayouts(
     @Param('workspaceId') workspaceId: string,
@@ -366,7 +370,7 @@ export class ConnectController {
     };
   }
 
-  /** List ledger. */
+  @InternalEndpoint('admin ledger entries listing')
   @Get(':workspaceId/ledger')
   async listLedger(
     @Param('workspaceId') workspaceId: string,
@@ -455,7 +459,7 @@ export class ConnectController {
     };
   }
 
-  /** Create payout approval request through the legacy payout route. */
+  @InternalEndpoint('admin payout creation handler')
   @Post(':workspaceId/payouts')
   @Idempotent()
   async createPayout(
@@ -499,7 +503,7 @@ export class ConnectController {
     };
   }
 
-  /** Create payout request. */
+  @InternalEndpoint('admin payout request creation')
   @Post(':workspaceId/payout-requests')
   @Idempotent()
   async createPayoutRequest(

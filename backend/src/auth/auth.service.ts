@@ -1,6 +1,7 @@
-import { forwardRef, Inject, Injectable, Logger, Optional } from '@nestjs/common';
+import { forwardRef, Inject, Injectable, Optional } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
+import { StructuredLogger } from '../logging/structured-logger';
 import { InjectRedis } from '@nestjs-modules/ioredis';
 import type { Redis } from 'ioredis';
 import { AuditService } from '../audit/audit.service';
@@ -38,7 +39,7 @@ import {
 /** Auth service. */
 @Injectable()
 export class AuthService {
-  private readonly logger = new Logger(AuthService.name);
+  private readonly logger = StructuredLogger.from(AuthService.name);
 
   constructor(
     private readonly prisma: PrismaService,

@@ -1,4 +1,5 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { PrismaService } from '../prisma/prisma.service';
 import { BrainEventSpineService } from './brain-event-spine.service';
 import { PlanLimitsService } from '../billing/plan-limits.service';
@@ -22,7 +23,7 @@ function readOptionalStr(value: unknown, fb = ''): string {
 
 @Injectable()
 export class BrainCapabilityExecutorService {
-  private readonly logger = new Logger(BrainCapabilityExecutorService.name);
+  private readonly logger = StructuredLogger.from(BrainCapabilityExecutorService.name);
 
   constructor(
     private readonly prisma: PrismaService,

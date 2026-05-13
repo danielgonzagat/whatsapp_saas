@@ -1,4 +1,5 @@
-import { Injectable, Logger, Optional } from '@nestjs/common';
+import { Injectable, Optional  } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { WhatsAppProviderRegistry } from '../whatsapp/providers/provider-registry';
 import type {
   ChannelCapability,
@@ -11,7 +12,7 @@ import type {
 @Injectable()
 export class WhatsAppChannelTransport implements ChannelTransportProvider {
   readonly channel: ChannelName = 'whatsapp';
-  private readonly logger = new Logger(WhatsAppChannelTransport.name);
+  private readonly logger = StructuredLogger.from(WhatsAppChannelTransport.name);
 
   constructor(@Optional() private readonly whatsappRegistry?: WhatsAppProviderRegistry) {}
 

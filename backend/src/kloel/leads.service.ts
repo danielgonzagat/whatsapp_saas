@@ -1,4 +1,5 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { PrismaService } from '../prisma/prisma.service';
 
 type LeadRow = {
@@ -77,7 +78,7 @@ function mapLead(lead: LeadRow): LeadOutput {
 /** Leads service with commercial scoring. */
 @Injectable()
 export class LeadsService {
-  private readonly logger = new Logger(LeadsService.name);
+  private readonly logger = StructuredLogger.from(LeadsService.name);
 
   constructor(private readonly prisma: PrismaService) {
     this.logger.log('LeadsService initialized');

@@ -1,4 +1,5 @@
-import { Inject, Injectable, Logger, forwardRef } from '@nestjs/common';
+import { Inject, Injectable, forwardRef } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { WhatsappCatchupOrchestratorService } from './whatsapp-catchup-orchestrator.service';
 
 type CatchupRunSummary = {
@@ -10,7 +11,7 @@ type CatchupRunSummary = {
 
 @Injectable()
 export class WhatsAppCatchupService {
-  private readonly logger = new Logger(WhatsAppCatchupService.name);
+  private readonly logger = StructuredLogger.from(WhatsAppCatchupService.name);
 
   constructor(
     @Inject(forwardRef(() => WhatsappCatchupOrchestratorService))

@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
-import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { PrismaService } from '../prisma/prisma.service';
 import { CheckoutCatalogService } from './checkout-catalog.service';
 import { CheckoutOrderService } from './checkout-order.service';
@@ -19,7 +20,7 @@ type CheckoutConfigRecord = Record<string, unknown>;
 /** Idempotency: enforced at HTTP layer via @Idempotent() guard + Stripe idempotencyKey. */
 @Injectable()
 export class CheckoutService {
-  private readonly logger = new Logger(CheckoutService.name);
+  private readonly logger = StructuredLogger.from(CheckoutService.name);
   private readonly publicPayloadBuilder: CheckoutPublicPayloadBuilder;
 
   constructor(

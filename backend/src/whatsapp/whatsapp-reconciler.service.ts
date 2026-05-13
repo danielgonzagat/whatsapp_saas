@@ -1,5 +1,5 @@
 import { InjectRedis } from '@nestjs-modules/ioredis';
-import { Inject, Injectable, Logger, Optional, forwardRef } from '@nestjs/common';
+import { Inject, Injectable, Optional, forwardRef } from '@nestjs/common';
 import Redis from 'ioredis';
 import { forEachSequential } from '../common/async-sequence';
 import { createRedisClient } from '../common/redis/redis.util';
@@ -29,7 +29,7 @@ const D_RE = /\D/g;
 
 @Injectable()
 export class WhatsappReconcilerService {
-  private readonly logger = new Logger(WhatsappReconcilerService.name);
+  private readonly logger = StructuredLogger.from(WhatsappReconcilerService.name);
   private readonly slog = new StructuredLogger('whatsapp-reconciler');
   private readonly contactDebounceMs = Math.max(
     500,

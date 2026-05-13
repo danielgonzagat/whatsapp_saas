@@ -1,5 +1,7 @@
-import { Injectable, Logger, Optional } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { PlanLimitsService } from '../billing/plan-limits.service';
+import { hasTextLlmApiKey } from '../lib/llm-provider';
 import { PrismaService } from '../prisma/prisma.service';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
 import { chatCompletionWithFallback } from './openai-wrapper';
@@ -17,7 +19,7 @@ const _COMO_ESTRATEGIA_F_RE =
 /** Handles AI-powered thread title generation and conversation summarization. */
 @Injectable()
 export class KloelThreadSummaryService {
-  private readonly logger = new Logger(KloelThreadSummaryService.name);
+  private readonly logger = StructuredLogger.from(KloelThreadSummaryService.name);
   private readonly recentThreadMessageLimit = 20;
   private readonly threadSummaryRefreshEvery = 6;
 
@@ -82,7 +84,7 @@ export class KloelThreadSummaryService {
     openai?: OpenAI,
   ): Promise<string> {
     const fallbackTitle = this.buildFallbackThreadTitle(message);
-    if (!openai || (!process.env.OPENAI_API_KEY && !process.env.ANTHROPIC_API_KEY)) {
+    if (!openai || (!hasTextLlmApiKey() && !process.env.ANTHROPIC_API_KEY)) {
       return fallbackTitle;
     }
     try {
@@ -200,7 +202,7 @@ export class KloelThreadSummaryService {
     const fallbackSummary = transcript.slice(-2200);
     let summary = fallbackSummary;
 
-    if (openai && process.env.OPENAI_API_KEY) {
+    if (openai && hasTextLlmApiKey()) {
       try {
         await this.planLimits.ensureTokenBudget(workspaceId);
         const response = await chatCompletionWithFallback(

@@ -1,4 +1,5 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { buildCheckoutMarketplacePricing } from './checkout-marketplace-pricing.util';
@@ -10,7 +11,7 @@ const DEFAULT_MARKETPLACE_FEE_PERCENT = 9.9;
 /** Idempotency: enforced at HTTP layer via @Idempotent() guard + Stripe idempotencyKey. */
 @Injectable()
 export class CheckoutProductConfigService {
-  private readonly logger = new Logger(CheckoutProductConfigService.name);
+  private readonly logger = StructuredLogger.from(CheckoutProductConfigService.name);
 
   constructor(private readonly prisma: PrismaService) {}
 

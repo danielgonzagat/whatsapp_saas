@@ -27,6 +27,7 @@ import { WhatsAppApiProvider } from '../providers/whatsapp-api.provider';
 import { WhatsAppCatchupService } from '../whatsapp-catchup.service';
 import { WhatsAppWatchdogService } from '../whatsapp-watchdog.service';
 import { WhatsappService } from '../whatsapp.service';
+import { InternalEndpoint } from '../../common/decorators/internal-endpoint.decorator';
 import { RouteClass } from '../../common/throttler/route-class.decorator';
 type BacklogMode = Exclude<Parameters<CiaRuntimePort['startBacklogRun']>[1], undefined>;
 
@@ -100,11 +101,13 @@ export class WhatsAppApiController {
     };
   }
   /** Get diagnostics. */
+  @InternalEndpoint('whatsapp session diagnostics')
   @Get('session/diagnostics')
   async getDiagnostics(@Req() req: AuthenticatedRequest) {
     return this.getSessionDiagnostics(req.workspaceId!);
   }
   /** Force check. */
+  @InternalEndpoint('whatsapp session force-check')
   @Post('session/force-check')
   async forceCheck(@Req() req: AuthenticatedRequest) {
     const workspace = await this.workspaces.getWorkspace(req.workspaceId!);
@@ -118,6 +121,7 @@ export class WhatsAppApiController {
     };
   }
   /** Force reconnect. */
+  @InternalEndpoint('whatsapp session force-reconnect')
   @Post('session/force-reconnect')
   async forceReconnect(@Req() req: AuthenticatedRequest) {
     const diagnosticsBefore = await this.getSessionDiagnostics(req.workspaceId!);
@@ -133,7 +137,7 @@ export class WhatsAppApiController {
     };
   }
   /** Repair config. */
-  /** Repair config. */
+  @InternalEndpoint('whatsapp session repair-config')
   @Post('session/repair-config')
   async repairConfig(@Req() req: AuthenticatedRequest) {
     const providerType = await this.providerRegistry.getProviderType(req.workspaceId!);
@@ -146,11 +150,13 @@ export class WhatsAppApiController {
     };
   }
   /** Bootstrap session. */
+  @InternalEndpoint('whatsapp session bootstrap')
   @Post('session/bootstrap')
   async bootstrapSession(@Req() req: AuthenticatedRequest) {
     return this.ciaRuntime.bootstrap(req.workspaceId!);
   }
   /** Start backlog. */
+  @InternalEndpoint('whatsapp session backlog start')
   @Post('session/backlog/start')
   async startBacklog(
     @Req() req: AuthenticatedRequest,
@@ -166,6 +172,7 @@ export class WhatsAppApiController {
     );
   }
   /** Start backlog. */
+  @InternalEndpoint('whatsapp CIA intelligence')
   @Get('cia/intelligence')
   async getOperationalIntelligence(@Req() req: AuthenticatedRequest) {
     return this.ciaRuntime.getOperationalIntelligence(req.workspaceId!);
@@ -366,6 +373,7 @@ export class WhatsAppApiController {
   }
   // messageLimit: enforced via PlanLimitsService.trackMessageSend
   /** Check registration. */
+  @InternalEndpoint('whatsapp phone check')
   @Get('check/:phone')
   async checkRegistration(@Req() req: AuthenticatedRequest, @Param('phone') phone: string) {
     const workspaceId = req.workspaceId!;
@@ -374,6 +382,7 @@ export class WhatsAppApiController {
     return { phone, registered: isRegistered };
   }
   /** Health check. */
+  @InternalEndpoint('whatsapp health check')
   @Get('health')
   async healthCheck() {
     const health = await this.providerRegistry.healthCheck();
@@ -385,6 +394,7 @@ export class WhatsAppApiController {
     };
   }
   /** Get provider status. */
+  @InternalEndpoint('whatsapp provider status')
   @Get('provider-status')
   async getProviderStatus(@Req() req: AuthenticatedRequest) {
     const workspaceId = req.workspaceId!;

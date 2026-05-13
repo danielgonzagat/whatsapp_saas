@@ -31,6 +31,7 @@ import { WebhooksService } from './webhooks.service';
  * and the request URL (used when emitting ops alerts on duplicates).
  */
 import { RouteClass } from '../common/throttler/route-class.decorator';
+import { WebhookEndpoint } from '../common/decorators/webhook-endpoint.decorator';
 interface WebhookRequestLike {
   body?: unknown;
   rawBody?: string | Buffer;
@@ -167,6 +168,7 @@ export class WebhooksController {
 
   /** Recent finance. */
   @UseGuards(JwtAuthGuard)
+  @WebhookEndpoint('Stripe/payment webhook forwarder')
   @Post('finance/:workspaceId/recent')
   async recentFinance(
     @Param('workspaceId') workspaceId: string,

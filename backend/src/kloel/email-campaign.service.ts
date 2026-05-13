@@ -1,4 +1,5 @@
-import { Injectable, Logger, Optional } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { forEachSequential } from '../common/async-sequence';
 import { getTraceHeaders } from '../common/trace-headers';
 import { OpsAlertService } from '../observability/ops-alert.service';
@@ -43,7 +44,7 @@ function resolveEnvSmtpConfig(): EmailSmtpDeliveryOverride | undefined {
  */
 @Injectable()
 export class EmailCampaignService {
-  private readonly logger = new Logger(EmailCampaignService.name);
+  private readonly logger = StructuredLogger.from(EmailCampaignService.name);
   private readonly fromEmail = process.env.EMAIL_FROM || 'noreply@kloel.com';
   private readonly fromName = process.env.EMAIL_FROM_NAME || 'KLOEL';
 

@@ -1,12 +1,13 @@
-import { Logger } from '@nestjs/common';
+
 import { ConfigService } from '@nestjs/config';
 import { ModuleRef } from '@nestjs/core';
+import { StructuredLogger } from '../logging/structured-logger';
 import { PrismaService } from '../prisma/prisma.service';
 import type { StripeClient } from './stripe-types';
 import { BillingCheckoutHelperService } from './billing-checkout-helper.service';
 
 export class BillingSubscriptionService {
-  private readonly logger = new Logger(BillingSubscriptionService.name);
+  private readonly logger = StructuredLogger.from(BillingSubscriptionService.name);
   private stripe: StripeClient | undefined;
 
   constructor(

@@ -14,6 +14,7 @@ import { AuditService } from '../audit/audit.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { PrismaService } from '../prisma/prisma.service';
 import { RouteClass } from '../common/throttler/route-class.decorator';
+import { InternalEndpoint } from '../common/decorators/internal-endpoint.decorator';
 
 /**
  * CRUD for outbound webhookEvent subscription URLs.
@@ -30,6 +31,7 @@ export class WebhookSettingsController {
   ) {}
 
   /** List. */
+  @InternalEndpoint('webhook settings listing')
   @Get()
   async list(@Request() req: { user: { workspaceId: string } }) {
     return this.prisma.webhookSubscription.findMany({
@@ -38,6 +40,7 @@ export class WebhookSettingsController {
   }
 
   /** Create. */
+  @InternalEndpoint('webhook settings creation')
   @Post()
   async create(
     @Request() req: { user: { workspaceId: string } },
@@ -65,6 +68,7 @@ export class WebhookSettingsController {
   }
 
   /** Delete. */
+  @InternalEndpoint('webhook settings deletion')
   @Delete(':id')
   async delete(@Request() req: { user: { workspaceId: string } }, @Param('id') id: string) {
     await this.auditService.log({

@@ -1,5 +1,6 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { StructuredLogger } from '../logging/structured-logger';
 import OpenAI from 'openai';
 import { chatCompletionWithRetry } from '../kloel/openai-wrapper';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
@@ -7,7 +8,7 @@ import { resolveBackendOpenAIModel } from '../lib/openai-models';
 /** Hidden data extractor service. */
 @Injectable()
 export class HiddenDataExtractorService {
-  private readonly logger = new Logger(HiddenDataExtractorService.name);
+  private readonly logger = StructuredLogger.from(HiddenDataExtractorService.name);
   private openai: OpenAI | null;
 
   constructor(private config: ConfigService) {

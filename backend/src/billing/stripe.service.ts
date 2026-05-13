@@ -1,5 +1,6 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { StructuredLogger } from '../logging/structured-logger';
 
 import { STRIPE_API_VERSION } from './stripe.constants';
 import { StripeRuntime } from './stripe-runtime';
@@ -17,7 +18,7 @@ import type { StripeBalance, StripeClient } from './stripe-types';
  */
 @Injectable()
 export class StripeService {
-  private readonly logger = new Logger(StripeService.name);
+  private readonly logger = StructuredLogger.from(StripeService.name);
   private client: StripeClient | null = null;
 
   constructor(private readonly config: ConfigService) {}

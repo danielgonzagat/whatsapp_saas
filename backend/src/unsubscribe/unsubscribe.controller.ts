@@ -1,5 +1,6 @@
 import { Controller, Get, Logger, Query, Res } from '@nestjs/common';
 import type { Response } from 'express';
+import { WebhookEndpoint } from '../common/decorators/webhook-endpoint.decorator';
 import { UnsubscribeService } from './unsubscribe.service';
 
 const FRONTEND_URL = process.env.FRONTEND_URL || 'https://kloel.com';
@@ -10,6 +11,7 @@ export class UnsubscribeController {
 
   constructor(private readonly unsubscribeService: UnsubscribeService) {}
 
+  @WebhookEndpoint('Email unsubscribe external link')
   @Get()
   async unsubscribe(@Query('token') token: string, @Res() res: Response) {
     if (!token || typeof token !== 'string' || !token.trim()) {

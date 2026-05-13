@@ -1,5 +1,6 @@
-import { Injectable, Logger, Optional } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
+import { StructuredLogger } from '../logging/structured-logger';
 import { CheckoutSocialLeadStatus, Prisma } from '@prisma/client';
 import { EmailService } from '../auth/email.service';
 import { forEachSequential } from '../common/async-sequence';
@@ -35,7 +36,7 @@ type WorkspaceChannelState = {
 /** Checkout social recovery service with deterministic channel constraints. */
 @Injectable()
 export class CheckoutSocialRecoveryService {
-  private readonly logger = new Logger(CheckoutSocialRecoveryService.name);
+  private readonly logger = StructuredLogger.from(CheckoutSocialRecoveryService.name);
   private readonly workspaceChannels = new Map<
     string,
     { state: WorkspaceChannelState; fetchedAt: number }

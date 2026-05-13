@@ -64,7 +64,7 @@ export function OnboardingForm({
             color: colors.text.silver,
           }}
         >
-          KLOEL
+          {kloelT('KLOEL')}
         </span>
 
         <h1
@@ -140,7 +140,7 @@ export function OnboardingForm({
             opacity: loading ? 0.7 : 1,
           }}
         >
-          {loading ? 'Entrando...' : 'CONTINUAR'}
+          {loading ? kloelT('Entrando...') : kloelT('CONTINUAR')}
         </button>
 
         <p
@@ -174,7 +174,7 @@ export function OnboardingForm({
           <Link href="/terms" style={{ color: colors.text.dim, textDecoration: 'none' }}>
             {kloelT(`Central de ajuda`)}
           </Link>
-          <span>•</span>
+          <span>{kloelT('•')}</span>
           <Link href="/terms" style={{ color: colors.text.dim, textDecoration: 'none' }}>
             {kloelT(`Termos e condições`)}
           </Link>

@@ -1,4 +1,5 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { PrismaService } from '../prisma/prisma.service';
 import { includesAnyPhrase, normalizeIntentText } from '../whatsapp/whatsapp-normalization.util';
 import { DecisionOutcomeService } from './decision-outcome.service';
@@ -23,7 +24,7 @@ interface IntentDetection {
 /** Whats app brain service. */
 @Injectable()
 export class WhatsAppBrainService {
-  private readonly logger = new Logger(WhatsAppBrainService.name);
+  private readonly logger = StructuredLogger.from(WhatsAppBrainService.name);
 
   constructor(
     private readonly prisma: PrismaService,

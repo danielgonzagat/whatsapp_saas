@@ -1,4 +1,5 @@
-import { ForbiddenException, Injectable, Logger } from '@nestjs/common';
+import { ForbiddenException, Injectable } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { buildQueueJobId } from '../queue/job-id.util';
@@ -12,7 +13,7 @@ const D_RE_CONV = /\D/g;
  */
 @Injectable()
 export class AutopilotOpsConversionService {
-  private readonly logger = new Logger(AutopilotOpsConversionService.name);
+  private readonly logger = StructuredLogger.from(AutopilotOpsConversionService.name);
 
   constructor(private readonly prisma: PrismaService) {}
 

@@ -1,4 +1,5 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { Queue } from 'bullmq';
 import { SmartTimeService } from '../analytics/smart-time/smart-time.service';
 import { forEachSequential } from '../common/async-sequence';
@@ -11,7 +12,7 @@ import { PrismaService } from '../prisma/prisma.service';
  */
 @Injectable()
 export class AutopilotCycleMoneyService {
-  private readonly logger = new Logger(AutopilotCycleMoneyService.name);
+  private readonly logger = StructuredLogger.from(AutopilotCycleMoneyService.name);
   private readonly campaignQueue: Queue;
 
   constructor(

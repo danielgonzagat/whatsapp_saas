@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
-import { Injectable, Logger, Optional } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { StructuredLogger } from '../logging/structured-logger';
 import OpenAI from 'openai';
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { chatCompletionWithRetry } from '../kloel/openai-wrapper';
@@ -36,7 +37,7 @@ interface ExecuteAiOperationArgs<T> {
 /** Agent assist service — sentiment, summary, reply suggestions and pitch generation. */
 @Injectable()
 export class AgentAssistService {
-  private readonly logger = new Logger(AgentAssistService.name);
+  private readonly logger = StructuredLogger.from(AgentAssistService.name);
   private openai: OpenAI | null;
 
   constructor(

@@ -1,12 +1,13 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { StructuredLogger } from '../logging/structured-logger';
 
 type WorkerRuntimePayload = { status?: string | number; [key: string]: unknown };
 
 /** Worker runtime service. */
 @Injectable()
 export class WorkerRuntimeService {
-  private readonly logger = new Logger(WorkerRuntimeService.name);
+  private readonly logger = StructuredLogger.from(WorkerRuntimeService.name);
   private lastCheckAt = 0;
   private lastKnownAvailability: boolean | null = null;
 

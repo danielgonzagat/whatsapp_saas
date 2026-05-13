@@ -1,4 +1,5 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { MindQualityService } from './mind-quality.service';
 import type { QualityReport } from './mind-quality.service';
 import { MindReplayService } from './mind-replay.service';
@@ -49,7 +50,7 @@ export interface SimulateReport {
 
 @Injectable()
 export class MindSimulatorService {
-  private readonly logger = new Logger(MindSimulatorService.name);
+  private readonly logger = StructuredLogger.from(MindSimulatorService.name);
 
   constructor(
     private readonly replay: MindReplayService,

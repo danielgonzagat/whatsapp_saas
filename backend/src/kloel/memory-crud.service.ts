@@ -1,4 +1,5 @@
-import { Injectable, Logger, Optional } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { Prisma } from '@prisma/client';
 import { AuditService } from '../audit/audit.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -8,7 +9,7 @@ import type { MemoryItem } from './memory.types';
 /** Memory CRUD service. */
 @Injectable()
 export class MemoryCrudService {
-  private readonly logger = new Logger(MemoryCrudService.name);
+  private readonly logger = StructuredLogger.from(MemoryCrudService.name);
 
   constructor(
     private readonly prisma: PrismaService,

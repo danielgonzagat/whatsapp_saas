@@ -1,4 +1,5 @@
-import { Injectable, Logger, Optional } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import type { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { formatBrlAmount } from './money-format.util';
@@ -79,7 +80,7 @@ function discountPercentFromMind(action: string | undefined, requestedPercent: n
  */
 @Injectable()
 export class UnifiedAgentActionsSalesService {
-  private readonly logger = new Logger(UnifiedAgentActionsSalesService.name);
+  private readonly logger = StructuredLogger.from(UnifiedAgentActionsSalesService.name);
 
   constructor(
     private readonly prisma: PrismaService,

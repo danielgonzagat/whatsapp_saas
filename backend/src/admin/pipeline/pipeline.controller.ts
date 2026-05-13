@@ -10,6 +10,7 @@ import { AdminAction, AdminModule } from '@prisma/client';
 import { RequireAdminPermission } from '../auth/decorators/admin-permission.decorator';
 import { AdminAuthGuard } from '../auth/guards/admin-auth.guard';
 import { AdminPermissionGuard } from '../auth/guards/admin-permission.guard';
+import { InternalEndpoint } from '../../common/decorators/internal-endpoint.decorator';
 import { PipelineService } from './pipeline.service';
 
 @Controller('admin/pipeline')
@@ -17,12 +18,14 @@ import { PipelineService } from './pipeline.service';
 export class PipelineController {
   constructor(private readonly service: PipelineService) {}
 
+  @InternalEndpoint('admin pipeline state')
   @Get('state')
   @RequireAdminPermission(AdminModule.RELATORIOS, AdminAction.VIEW)
   async state(@Query('workspaceId') workspaceId: string) {
     return this.service.getState(workspaceId);
   }
 
+  @InternalEndpoint('admin pipeline state update')
   @Post('state')
   @RequireAdminPermission(AdminModule.RELATORIOS, AdminAction.VIEW)
   async setState(
@@ -41,6 +44,7 @@ export class PipelineController {
     );
   }
 
+  @InternalEndpoint('admin pipeline health')
   @Get('health')
   @RequireAdminPermission(AdminModule.RELATORIOS, AdminAction.VIEW)
   async health(@Query('workspaceId') workspaceId: string) {

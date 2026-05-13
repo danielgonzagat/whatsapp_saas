@@ -16,6 +16,7 @@ import { MetaWhatsAppService } from '../meta/meta-whatsapp.service';
 import { normalizeMetaGraphSegment } from '../meta/meta-input.util';
 import { FacebookMessengerService } from './facebook-messenger.service';
 import { RouteClass } from '../common/throttler/route-class.decorator';
+import { InternalEndpoint } from '../common/decorators/internal-endpoint.decorator';
 
 @Controller('marketing/facebook-messenger')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
@@ -26,6 +27,7 @@ export class FacebookMessengerController {
     private readonly metaWhatsApp: MetaWhatsAppService,
   ) {}
 
+  @InternalEndpoint('facebook messenger send')
   @Post('send')
   async sendMessage(
     @Req() req: AuthenticatedRequest,
@@ -65,6 +67,7 @@ export class FacebookMessengerController {
     );
   }
 
+  @InternalEndpoint('facebook messenger messages')
   @Get('messages')
   async getMessages(
     @Req() req: AuthenticatedRequest,
@@ -97,6 +100,7 @@ export class FacebookMessengerController {
     return this.fbMessenger.getMessages(workspaceId, pageId, options);
   }
 
+  @InternalEndpoint('facebook messenger conversations')
   @Get('conversations')
   async getConversations(@Req() req: AuthenticatedRequest, @Query('pageId') pageIdQuery: string) {
     const workspaceId = resolveWorkspaceId(req);
@@ -116,6 +120,7 @@ export class FacebookMessengerController {
     return this.fbMessenger.getConversations(pageId, accessToken);
   }
 
+  @InternalEndpoint('facebook messenger status')
   @Get('status')
   async getStatus(@Req() req: AuthenticatedRequest) {
     const workspaceId = resolveWorkspaceId(req);

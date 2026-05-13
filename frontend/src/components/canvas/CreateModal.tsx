@@ -64,7 +64,7 @@ export function CreateModal({ open, onClose }: CreateModalProps) {
     >
       <button
         type="button"
-        aria-label="Fechar modal"
+        aria-label={kloelT('Fechar modal')}
         onClick={onClose}
         style={{ position: 'absolute', inset: 0, background: 'transparent', border: 'none' }}
       />
@@ -119,7 +119,7 @@ export function CreateModal({ open, onClose }: CreateModalProps) {
           >
             {IC.search(14)}
             <input
-              aria-label="O que voce gostaria de criar"
+              aria-label={kloelT('O que voce gostaria de criar')}
               placeholder={kloelT(`O que voce gostaria de criar?`)}
               style={{
                 flex: 1,

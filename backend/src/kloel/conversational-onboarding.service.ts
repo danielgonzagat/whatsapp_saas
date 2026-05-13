@@ -1,7 +1,9 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { Response } from 'express';
 import OpenAI from 'openai';
 import { PlanLimitsService } from '../billing/plan-limits.service';
+import { createTextLlmClient } from '../lib/llm-provider';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
 import { PrismaService } from '../prisma/prisma.service';
 import { chatCompletionWithRetry } from './openai-wrapper';
@@ -117,7 +119,7 @@ interface PrismaWithDynamicModels {
 /** Conversational onboarding service. */
 @Injectable()
 export class ConversationalOnboardingService {
-  private readonly logger = new Logger(ConversationalOnboardingService.name);
+  private readonly logger = StructuredLogger.from(ConversationalOnboardingService.name);
   private openai: OpenAI;
   private readonly prismaExt: PrismaWithDynamicModels;
 
@@ -127,7 +129,7 @@ export class ConversationalOnboardingService {
     private readonly toolsService: ConversationalOnboardingToolsService,
   ) {
     this.prismaExt = prisma as object as PrismaWithDynamicModels;
-    this.openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+    this.openai = createTextLlmClient() ?? new OpenAI({ apiKey: 'missing' });
   }
 
   private parseToolArguments(rawArguments: string, functionName: string): Record<string, unknown> {
@@ -150,7 +152,7 @@ export class ConversationalOnboardingService {
     role: 'brain' | 'writer',
   ): Promise<OpenAI.Chat.ChatCompletion> {
     await this.planLimits.ensureTokenBudget(workspaceId);
-    this.logger.log('Calling OpenAI for onboarding', {
+    this.logger.log('Calling primary LLM for onboarding', {
       context: 'ConversationalOnboardingService.runOnboardingCompletion',
       workspaceId,
       role,

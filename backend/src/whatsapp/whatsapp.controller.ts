@@ -6,6 +6,7 @@ import type { AuthenticatedRequest } from '../common/interfaces/authenticated-re
 import { WhatsappService } from './whatsapp.service';
 
 import { RouteClass } from '../common/throttler/route-class.decorator';
+import { WebhookEndpoint } from '../common/decorators/webhook-endpoint.decorator';
 type LegacySendBody = {
   to: string;
   message: string;
@@ -57,6 +58,7 @@ export class WhatsappController {
   }
 
   /** Incoming. */
+  @WebhookEndpoint('Meta WhatsApp webhook')
   @Post('incoming')
   @Idempotent()
   async incoming(

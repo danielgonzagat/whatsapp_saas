@@ -2,6 +2,7 @@ import { Body, Controller, Get, Param, Post, Req, UseGuards } from '@nestjs/comm
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { resolveWorkspaceId } from '../auth/workspace-access';
 import { AuthenticatedRequest } from '../common/interfaces/authenticated-request.interface';
+import { InternalEndpoint } from '../common/decorators/internal-endpoint.decorator';
 import { VideoService } from './video.service';
 import { RouteClass } from '../common/throttler/route-class.decorator';
 
@@ -30,6 +31,7 @@ export class VideoController {
   }
 
   /** Get job. */
+  @InternalEndpoint('video job status')
   @Get('job/:id')
   async getJob(@Req() req: AuthenticatedRequest, @Param('id') id: string) {
     const workspaceId = resolveWorkspaceId(req);

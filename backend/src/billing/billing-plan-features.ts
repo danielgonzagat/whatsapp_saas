@@ -1,6 +1,7 @@
-import { Logger } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 
-const logger = new Logger('BillingPlanFeatures');
+
+const logger = StructuredLogger.from('BillingPlanFeatures');
 
 const PLAN_LIMITS: Record<
   string,

@@ -1,6 +1,7 @@
-import { Logger } from '@nestjs/common';
+
 import { ConfigService } from '@nestjs/config';
 import { ModuleRef } from '@nestjs/core';
+import { StructuredLogger } from '../logging/structured-logger';
 import { Prisma } from '@prisma/client';
 import { FinancialAlertService } from '../common/financial-alert.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -8,7 +9,7 @@ import type { StripeClient, StripeSubscription } from './stripe-types';
 import type { WhatsappNotifier } from './billing-webhook.types';
 
 export class BillingCheckoutHelperService {
-  private readonly logger = new Logger(BillingCheckoutHelperService.name);
+  private readonly logger = StructuredLogger.from(BillingCheckoutHelperService.name);
 
   constructor(
     private prisma: PrismaService,

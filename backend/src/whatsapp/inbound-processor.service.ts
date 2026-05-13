@@ -1,5 +1,6 @@
 import { InjectRedis } from '@nestjs-modules/ioredis';
-import { Inject, Injectable, Logger, Optional, forwardRef } from '@nestjs/common';
+import { Inject, Injectable, Optional, forwardRef } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { Prisma } from '@prisma/client';
 import Redis from 'ioredis';
 import { INBOX_SERVICE } from '../inbox/inbox.token';
@@ -56,7 +57,7 @@ interface ProcessResult {
 
 @Injectable()
 export class InboundProcessorService {
-  private readonly logger = new Logger(InboundProcessorService.name);
+  private readonly logger = StructuredLogger.from(InboundProcessorService.name);
   private readonly contactDebounceMs = Math.max(
     500,
     Number.parseInt(process.env.AUTOPILOT_CONTACT_DEBOUNCE_MS || '2000', 10) || 2000,

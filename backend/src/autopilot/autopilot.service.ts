@@ -2,9 +2,9 @@ import {
   BadRequestException,
   ForbiddenException,
   Injectable,
-  Logger,
   Optional,
 } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { Prisma } from '@prisma/client';
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
@@ -17,7 +17,7 @@ import { AutopilotOpsService } from './autopilot-ops.service';
 /** Autopilot orchestration service — delegates to sub-services. */
 @Injectable()
 export class AutopilotService {
-  private readonly logger = new Logger(AutopilotService.name);
+  private readonly logger = StructuredLogger.from(AutopilotService.name);
 
   constructor(
     private readonly prisma: PrismaService,

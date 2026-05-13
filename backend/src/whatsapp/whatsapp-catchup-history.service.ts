@@ -1,4 +1,5 @@
-import { Inject, Injectable, Logger, Optional, forwardRef } from '@nestjs/common';
+import { Inject, Injectable, Optional, forwardRef } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { Prisma } from '@prisma/client';
 import { forEachSequential } from '../common/async-sequence';
 import { OpsAlertService } from '../observability/ops-alert.service';
@@ -60,7 +61,7 @@ export type CatchupBackfillCursor = {
 
 @Injectable()
 export class WhatsappCatchupHistoryService {
-  private readonly logger = new Logger(WhatsappCatchupHistoryService.name);
+  private readonly logger = StructuredLogger.from(WhatsappCatchupHistoryService.name);
   private readonly selfPhoneCacheTtlMs = Math.max(
     30_000,
     Number.parseInt(process.env.WAHA_SELF_IDENTITY_TTL_MS || '60000', 10) || 60_000,

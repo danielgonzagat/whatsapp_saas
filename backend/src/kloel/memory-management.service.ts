@@ -2,8 +2,9 @@
  * KLOEL MEMORY MANAGEMENT SERVICE — TTL expiration, dedup, priority, orphans.
  * @@index: optimistic lock via updatedAt — concurrent writes resolved by DB constraint
  */
-import { Injectable, Logger, Optional } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
+import { StructuredLogger } from '../logging/structured-logger';
 import { Counter, Gauge, register } from 'prom-client';
 import { AuditService } from '../audit/audit.service';
 import { forEachSequential } from '../common/async-sequence';
@@ -23,7 +24,7 @@ interface MemoryCleanupResult {
 // Cache.invalidate — memory cleanup runs via cron; no external Redis cache to invalidate
 @Injectable()
 export class MemoryManagementService {
-  private readonly logger = new Logger(MemoryManagementService.name);
+  private readonly logger = StructuredLogger.from(MemoryManagementService.name);
 
   // Configurações de expiração por categoria (em dias)
   private readonly EXPIRATION_DAYS: Record<string, number> = {

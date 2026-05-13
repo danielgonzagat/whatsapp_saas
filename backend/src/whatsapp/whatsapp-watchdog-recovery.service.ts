@@ -9,7 +9,8 @@
 
 import { randomUUID } from 'node:crypto';
 import { InjectRedis } from '@nestjs-modules/ioredis';
-import { Inject, Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import type Redis from 'ioredis';
 import * as Sentry from '@sentry/node';
 import { safeCompareStrings } from '../common/utils/crypto-compare.util';
@@ -25,7 +26,7 @@ import { alertOpsHelper } from './whatsapp-watchdog.helpers';
 /** Watchdog recovery and reconnect service. */
 @Injectable()
 export class WhatsAppWatchdogRecoveryService {
-  private readonly logger = new Logger(WhatsAppWatchdogRecoveryService.name);
+  private readonly logger = StructuredLogger.from(WhatsAppWatchdogRecoveryService.name);
 
   private readonly RECONNECT_COOLDOWN_MS = 60_000;
   private readonly MAX_RECONNECT_BACKOFF_MS = 15 * 60_000;

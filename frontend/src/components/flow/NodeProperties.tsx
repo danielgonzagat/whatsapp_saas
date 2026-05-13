@@ -59,7 +59,7 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
           type="button"
           onClick={onClose}
           className="p-1 hover:bg-gray-100 rounded-md transition-colors"
-          aria-label="Fechar painel de propriedades"
+          aria-label={kloelT(`Fechar painel de propriedades`)}
         >
           <X className="w-5 h-5 text-gray-500" aria-hidden="true" />
         </button>

@@ -20,6 +20,7 @@ import { VerifyEmailDto } from './dto/verify-email.dto';
 import { SendWhatsAppCodeDto, VerifyWhatsAppCodeDto } from './dto/whatsapp-auth.dto';
 import { Public } from './public.decorator';
 import { RouteClass } from '../common/throttler/route-class.decorator';
+import { InternalEndpoint } from '../common/decorators/internal-endpoint.decorator';
 
 /** Auth controller. */
 @Controller('auth')
@@ -297,6 +298,7 @@ export class AuthController {
    * Envia verificação de email para usuário logado
    * (Requer autenticação)
    */
+  @InternalEndpoint('auth verification email trigger')
   @Post('send-verification')
   async sendVerificationEmail(@Req() req: AuthenticatedRequest) {
     const agentId = req.user?.sub;

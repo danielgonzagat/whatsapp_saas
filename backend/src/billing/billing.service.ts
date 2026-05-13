@@ -1,6 +1,7 @@
-import { Injectable, Logger, Optional } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { ModuleRef } from '@nestjs/core';
+import { StructuredLogger } from '../logging/structured-logger';
 import { FinancialAlertService } from '../common/financial-alert.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { StripeRuntime } from './stripe-runtime';
@@ -11,7 +12,7 @@ import { BillingSubscriptionService } from './billing-subscription.service';
 
 @Injectable()
 export class BillingService {
-  private readonly logger = new Logger(BillingService.name);
+  private readonly logger = StructuredLogger.from(BillingService.name);
   private stripe!: StripeClient;
   private subsService: BillingSubscriptionService;
   private checkoutWebhook: BillingCheckoutWebhookService;

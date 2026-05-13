@@ -1,5 +1,6 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
+import { StructuredLogger } from '../../logging/structured-logger';
 
 import { forEachSequential } from '../../common/async-sequence';
 import { FinancialAlertService } from '../../common/financial-alert.service';
@@ -26,7 +27,7 @@ export interface ConnectLedgerMaturationResult {
  */
 @Injectable()
 export class ConnectLedgerMaturationService {
-  private readonly logger = new Logger(ConnectLedgerMaturationService.name);
+  private readonly logger = StructuredLogger.from(ConnectLedgerMaturationService.name);
 
   constructor(
     private readonly prisma: PrismaService,

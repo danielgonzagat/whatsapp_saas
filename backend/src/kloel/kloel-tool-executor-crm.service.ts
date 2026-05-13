@@ -1,4 +1,5 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { asProviderSettings } from '../whatsapp/provider-settings.types';
@@ -26,7 +27,7 @@ function centsFromUnknown(value: unknown): number {
 /** CRM, campaign, and business-config tool implementations for KloelToolExecutorService. */
 @Injectable()
 export class KloelToolExecutorCrmService {
-  private readonly logger = new Logger(KloelToolExecutorCrmService.name);
+  private readonly logger = StructuredLogger.from(KloelToolExecutorCrmService.name);
 
   constructor(private readonly prisma: PrismaService) {
     this.logger.log('KloelToolExecutorCrmService initialized');

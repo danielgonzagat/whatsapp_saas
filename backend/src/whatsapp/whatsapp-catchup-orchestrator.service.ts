@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { InjectRedis } from '@nestjs-modules/ioredis';
-import { Inject, Injectable, Logger, Optional, forwardRef } from '@nestjs/common';
+import { Inject, Injectable, Optional, forwardRef } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import Redis from 'ioredis';
 import { forEachSequential } from '../common/async-sequence';
 import { toPrismaJsonValue } from '../common/prisma/prisma-json.util';
@@ -80,7 +81,7 @@ type CatchupUpdatePayload = {
 
 @Injectable()
 export class WhatsappCatchupOrchestratorService {
-  private readonly logger = new Logger(WhatsappCatchupOrchestratorService.name);
+  private readonly logger = StructuredLogger.from(WhatsappCatchupOrchestratorService.name);
   private readonly lidMapCache = new Map<
     string,
     { expiresAt: number; mappings: Map<string, string> }

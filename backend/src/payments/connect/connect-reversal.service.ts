@@ -1,4 +1,5 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
+import { StructuredLogger } from '../../logging/structured-logger';
 
 import { StripeService } from '../../billing/stripe.service';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -191,7 +192,7 @@ function planProportionalReversals(
 /** Connect reversal service. */
 @Injectable()
 export class ConnectReversalService {
-  private readonly logger = new Logger(ConnectReversalService.name);
+  private readonly logger = StructuredLogger.from(ConnectReversalService.name);
 
   constructor(
     private readonly prisma: PrismaService,

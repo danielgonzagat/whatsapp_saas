@@ -14,11 +14,11 @@ type BackendOpenAIModelRole =
 type ConfigLike = Pick<ConfigService, 'get'> | undefined;
 
 const DEFAULT_MODELS: Record<BackendOpenAIModelRole, string> = {
-  brain: 'gpt-5.4',
-  brain_fallback: 'gpt-4.1',
-  writer: 'gpt-5.4-nano-2026-03-17',
-  writer_fallback: 'gpt-4.1',
-  guest_emergency: 'gpt-4o-mini',
+  brain: 'deepseek-v4-pro',
+  brain_fallback: 'deepseek-v4-flash',
+  writer: 'deepseek-v4-pro',
+  writer_fallback: 'deepseek-v4-flash',
+  guest_emergency: 'deepseek-v4-flash',
   image_generation: 'dall-e-3',
   audio_understanding: 'gpt-tempo-real-1.5',
   audio_understanding_fallback: 'gpt-4o-mini-transcribe',
@@ -26,11 +26,24 @@ const DEFAULT_MODELS: Record<BackendOpenAIModelRole, string> = {
 
 // Ordered ENV keys per role. First non-empty value wins.
 const MODEL_ENV_KEYS: Record<BackendOpenAIModelRole, readonly string[]> = {
-  brain: ['OPENAI_BRAIN_MODEL'],
-  brain_fallback: ['OPENAI_BRAIN_FALLBACK_MODEL'],
-  writer: ['OPENAI_WRITER_MODEL', 'OPENAI_MODEL'],
-  writer_fallback: ['OPENAI_WRITER_FALLBACK_MODEL', 'OPENAI_FALLBACK_MODEL'],
-  guest_emergency: ['OPENAI_GUEST_EMERGENCY_MODEL'],
+  brain: ['DEEPSEEK_BRAIN_MODEL', 'LLM_BRAIN_MODEL', 'OPENAI_BRAIN_MODEL'],
+  brain_fallback: [
+    'DEEPSEEK_BRAIN_FALLBACK_MODEL',
+    'LLM_BRAIN_FALLBACK_MODEL',
+    'OPENAI_BRAIN_FALLBACK_MODEL',
+  ],
+  writer: ['DEEPSEEK_WRITER_MODEL', 'LLM_WRITER_MODEL', 'OPENAI_WRITER_MODEL', 'OPENAI_MODEL'],
+  writer_fallback: [
+    'DEEPSEEK_WRITER_FALLBACK_MODEL',
+    'LLM_WRITER_FALLBACK_MODEL',
+    'OPENAI_WRITER_FALLBACK_MODEL',
+    'OPENAI_FALLBACK_MODEL',
+  ],
+  guest_emergency: [
+    'DEEPSEEK_GUEST_EMERGENCY_MODEL',
+    'LLM_GUEST_EMERGENCY_MODEL',
+    'OPENAI_GUEST_EMERGENCY_MODEL',
+  ],
   image_generation: ['OPENAI_IMAGE_MODEL'],
   audio_understanding: ['OPENAI_AUDIO_UNDERSTANDING_MODEL'],
   audio_understanding_fallback: ['OPENAI_AUDIO_UNDERSTANDING_FALLBACK_MODEL'],

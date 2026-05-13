@@ -1,4 +1,5 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { Prisma } from '@prisma/client';
 import { filterLegacyProducts, isLegacyProductName } from '../common/products/legacy-products.util';
 import { PrismaService } from '../prisma/prisma.service';
@@ -37,7 +38,7 @@ const LIMITS: KloelContextFormatterLimits = {
 /** Builds runtime workspace context strings for AI prompts. */
 @Injectable()
 export class KloelWorkspaceContextService {
-  private readonly logger = new Logger(KloelWorkspaceContextService.name);
+  private readonly logger = StructuredLogger.from(KloelWorkspaceContextService.name);
   readonly contextFormatter = new KloelContextFormatter(LIMITS);
   constructor(
     private readonly prisma: PrismaService,

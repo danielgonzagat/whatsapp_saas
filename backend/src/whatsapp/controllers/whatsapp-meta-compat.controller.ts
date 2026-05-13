@@ -1,6 +1,7 @@
 import { Body, Controller, Get, Post, Req, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../../common/guards/workspace.guard';
+import { InternalEndpoint } from '../../common/decorators/internal-endpoint.decorator';
 import { AuthenticatedRequest } from '../../common/interfaces';
 import { WhatsAppProviderRegistry } from '../providers/provider-registry';
 import { RouteClass } from '../../common/throttler/route-class.decorator';
@@ -26,6 +27,7 @@ export class WhatsAppMetaCompatController {
   }
 
   /** Link session. */
+  @InternalEndpoint('whatsapp session link')
   @Post('session/link')
   async linkSession(
     @Req() req: AuthenticatedRequest,
@@ -40,6 +42,7 @@ export class WhatsAppMetaCompatController {
   }
 
   /** Claim session. */
+  @InternalEndpoint('whatsapp session claim')
   @Post('session/claim')
   async claimSession(
     @Req() req: AuthenticatedRequest,
@@ -79,6 +82,7 @@ export class WhatsAppMetaCompatController {
   }
 
   /** Pause agent. */
+  @InternalEndpoint('whatsapp session pause agent')
   @Post('session/pause-agent')
   pauseAgent(@Req() req: AuthenticatedRequest, @Body() body: { paused?: boolean }) {
     void req;
@@ -87,6 +91,7 @@ export class WhatsAppMetaCompatController {
   }
 
   /** Reconcile session. */
+  @InternalEndpoint('whatsapp session reconcile')
   @Post('session/reconcile')
   reconcileSession(@Req() req: AuthenticatedRequest, @Body() body: { objective?: string }) {
     void req;
@@ -95,6 +100,7 @@ export class WhatsAppMetaCompatController {
   }
 
   /** Get session proofs. */
+  @InternalEndpoint('whatsapp session proofs')
   @Get('session/proofs')
   getSessionProofs(@Req() req: AuthenticatedRequest) {
     void req;
@@ -105,6 +111,7 @@ export class WhatsAppMetaCompatController {
   }
 
   /** Get session stream token. */
+  @InternalEndpoint('whatsapp session stream token')
   @Post('session/stream-token')
   getSessionStreamToken(@Req() req: AuthenticatedRequest) {
     void req;
@@ -112,6 +119,7 @@ export class WhatsAppMetaCompatController {
   }
 
   /** Get session stream health. */
+  @InternalEndpoint('whatsapp session stream health')
   @Get('session/stream-health')
   async getSessionStreamHealth(@Req() req: AuthenticatedRequest) {
     const providerType = await this.providerRegistry.getProviderType(req.workspaceId!);
@@ -125,6 +133,7 @@ export class WhatsAppMetaCompatController {
   }
 
   /** Run session action turn. */
+  @InternalEndpoint('whatsapp session action turn')
   @Post('session/action-turn')
   runSessionActionTurn(
     @Req() req: AuthenticatedRequest,

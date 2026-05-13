@@ -1,4 +1,5 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { extractThreadSearchTags, stripHtmlTags } from './thread-search.util';
@@ -27,7 +28,7 @@ export interface ThreadSearchResult {
 
 @Injectable()
 export class KloelThreadSearchService {
-  private readonly logger = new Logger(KloelThreadSearchService.name);
+  private readonly logger = StructuredLogger.from(KloelThreadSearchService.name);
 
   constructor(private readonly prisma: PrismaService) {}
 

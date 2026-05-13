@@ -1,4 +1,5 @@
-import { Injectable, Logger, Optional } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { Prisma } from '@prisma/client';
 import { randomUUID } from 'crypto';
 import { OpsAlertService } from '../observability/ops-alert.service';
@@ -54,7 +55,7 @@ function toInputJsonObject(payload: Record<string, unknown>): Prisma.InputJsonOb
 
 @Injectable()
 export class BrainEventSpineService {
-  private readonly logger = new Logger(BrainEventSpineService.name);
+  private readonly logger = StructuredLogger.from(BrainEventSpineService.name);
 
   constructor(
     private readonly prisma: PrismaService,

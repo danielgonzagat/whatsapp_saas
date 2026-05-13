@@ -1,8 +1,9 @@
 import * as fs from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { BadRequestException, Injectable, Logger, Optional } from '@nestjs/common';
+import { BadRequestException, Injectable, Optional } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { StructuredLogger } from '../logging/structured-logger';
 import OpenAI from 'openai';
 import { v4 as uuid } from 'uuid';
 import { PlanLimitsService } from '../billing/plan-limits.service';
@@ -20,7 +21,7 @@ const DATA_AUDIO___A_Z___BASE_RE = /^data:audio\/[a-z]+;base64,/;
 /** Audio service. */
 @Injectable()
 export class AudioService {
-  private readonly logger = new Logger(AudioService.name);
+  private readonly logger = StructuredLogger.from(AudioService.name);
   private openai: OpenAI;
 
   constructor(

@@ -1,4 +1,5 @@
 import { RouteClass } from '../common/throttler/route-class.decorator';
+import { WebhookEndpoint } from '../common/decorators/webhook-endpoint.decorator';
 import {
   Body,
   Controller,
@@ -103,6 +104,7 @@ export class MarketingConnectController {
     return this.getConnectStatus(req);
   }
 
+  @WebhookEndpoint('Gmail OAuth redirect initiator')
   @Get('connect/email/gmail/auth-url')
   getGmailAuthUrl(
     @Request() req: { user: { workspaceId: string; email?: string } },
@@ -111,6 +113,7 @@ export class MarketingConnectController {
     return this.gmailMailbox.buildAuthUrl(req.user.workspaceId, returnTo);
   }
 
+  @WebhookEndpoint('Gmail OAuth callback')
   @Post('connect/email/gmail/complete')
   async completeGmailOAuth(
     @Request() req: { user: { workspaceId: string; email?: string } },
@@ -123,6 +126,7 @@ export class MarketingConnectController {
     );
   }
 
+  @WebhookEndpoint('Microsoft OAuth redirect initiator')
   @Get('connect/email/microsoft/auth-url')
   getMicrosoftAuthUrl(
     @Request() req: { user: { workspaceId: string; email?: string } },
@@ -131,6 +135,7 @@ export class MarketingConnectController {
     return this.microsoftMailbox.buildAuthUrl(req.user.workspaceId, returnTo);
   }
 
+  @WebhookEndpoint('Microsoft OAuth callback')
   @Post('connect/email/microsoft/complete')
   async completeMicrosoftOAuth(
     @Request() req: { user: { workspaceId: string; email?: string } },
@@ -143,6 +148,7 @@ export class MarketingConnectController {
     );
   }
 
+  @WebhookEndpoint('IMAP/SMTP mailbox connect handler')
   @Post('connect/email/imap-smtp/connect')
   async connectImapSmtpMailbox(
     @Request() req: { user: { workspaceId: string; email?: string } },
@@ -151,6 +157,7 @@ export class MarketingConnectController {
     return this.imapSmtpMailbox.connectMailbox(req.user.workspaceId, body);
   }
 
+  @WebhookEndpoint('Gmail mailbox sync trigger')
   @Post('connect/email/gmail/sync')
   async syncGmailMailbox(
     @Request() req: { user: { workspaceId: string; email?: string } },
@@ -159,6 +166,7 @@ export class MarketingConnectController {
     return this.gmailMailbox.syncLatestInbox(req.user.workspaceId, Number(body.limit || 10));
   }
 
+  @WebhookEndpoint('Gmail mailbox send-test handler')
   @Post('connect/email/gmail/send-test')
   async sendGmailMailboxTest(
     @Request() req: { user: { workspaceId: string; email?: string } },
@@ -184,11 +192,13 @@ export class MarketingConnectController {
     );
   }
 
+  @WebhookEndpoint('Email connection status probe')
   @Get('connect/email/status')
   async getEmailStatus(@Request() req: { user: { workspaceId: string } }) {
     return this.emailConnect.getStatus(req.user.workspaceId);
   }
 
+  @WebhookEndpoint('Email account disconnect handler')
   @Post('connect/email/disconnect')
   async disconnectEmail(@Request() req: { user: { workspaceId: string } }) {
     const workspaceId = req.user.workspaceId;

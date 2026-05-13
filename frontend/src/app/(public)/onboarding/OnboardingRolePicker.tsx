@@ -1,5 +1,6 @@
 'use client';
 
+import { kloelT } from '@/lib/i18n/t';
 import { colors } from '@/lib/design-tokens';
 import { Bot, CreditCard, Package, ShoppingBag, Users } from 'lucide-react';
 
@@ -92,7 +93,7 @@ export function OnboardingRolePicker({ selected, onSelect }: OnboardingRolePicke
                   margin: 0,
                 }}
               >
-                {role.title}
+                {kloelT(role.title)}
               </p>
               <p
                 style={{
@@ -102,7 +103,7 @@ export function OnboardingRolePicker({ selected, onSelect }: OnboardingRolePicke
                   margin: '2px 0 0',
                 }}
               >
-                {role.description}
+                {kloelT(role.description)}
               </p>
             </div>
           </button>

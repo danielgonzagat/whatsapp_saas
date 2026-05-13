@@ -1,4 +1,5 @@
-import { Injectable, Logger, Optional } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { PrismaService } from '../prisma/prisma.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
 
@@ -15,7 +16,7 @@ function todayDay(): string {
 
 @Injectable()
 export class DailyLimitService {
-  private readonly logger = new Logger(DailyLimitService.name);
+  private readonly logger = StructuredLogger.from(DailyLimitService.name);
 
   constructor(
     private readonly prisma: PrismaService,

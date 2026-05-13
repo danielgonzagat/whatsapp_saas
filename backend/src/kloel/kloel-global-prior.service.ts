@@ -1,4 +1,5 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { PrismaService } from '../prisma/prisma.service';
 
 const BETA_PRIOR_ALPHA = 1;
@@ -11,7 +12,7 @@ export interface KloelGlobalPriorResult {
 
 @Injectable()
 export class KloelGlobalPriorService {
-  private readonly logger = new Logger(KloelGlobalPriorService.name);
+  private readonly logger = StructuredLogger.from(KloelGlobalPriorService.name);
 
   constructor(private readonly prisma: PrismaService) {}
 

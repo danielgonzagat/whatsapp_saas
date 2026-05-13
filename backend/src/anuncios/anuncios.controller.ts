@@ -3,6 +3,7 @@ import type { Request } from 'express';
 import { AnunciosService } from './anuncios.service';
 import { AdsSyncProcessor } from '../integrations/ads-sync.processor';
 import { RouteClass } from '../common/throttler/route-class.decorator';
+import { WebhookEndpoint } from '../common/decorators/webhook-endpoint.decorator';
 
 interface WorkspaceRequest extends Request {
   workspaceId?: string;
@@ -20,6 +21,7 @@ export class AnunciosController {
     return (req as WorkspaceRequest).workspaceId || '';
   }
 
+  @WebhookEndpoint('ads platform status check')
   @Get('status')
   async getStatus(@Req() req: Request) {
     const wsId = this.workspaceId(req);
@@ -27,6 +29,7 @@ export class AnunciosController {
     return { data: statuses };
   }
 
+  @WebhookEndpoint('meta ads sync status')
   @Get('sync-status/meta')
   async getMetaSyncStatus(@Req() req: Request) {
     const wsId = this.workspaceId(req);
@@ -34,6 +37,7 @@ export class AnunciosController {
     return { data: status };
   }
 
+  @WebhookEndpoint('google ads sync status')
   @Get('sync-status/google')
   async getGoogleSyncStatus(@Req() req: Request) {
     const wsId = this.workspaceId(req);
@@ -41,6 +45,7 @@ export class AnunciosController {
     return { data: status };
   }
 
+  @WebhookEndpoint('ads accounts listing')
   @Get('accounts')
   async getAccounts(@Req() req: Request, @Query('platform') platform?: string) {
     const wsId = this.workspaceId(req);
@@ -48,6 +53,7 @@ export class AnunciosController {
     return { data: accounts };
   }
 
+  @WebhookEndpoint('ads campaigns listing')
   @Get('campaigns')
   async getCampaigns(@Req() req: Request, @Query('platform') platform?: string) {
     const wsId = this.workspaceId(req);
@@ -55,6 +61,7 @@ export class AnunciosController {
     return { data: campaigns };
   }
 
+  @WebhookEndpoint('ads platform connect')
   @Get('connect/:platform')
   async getConnectUrl(@Req() req: Request, @Param('platform') platform: string) {
     const wsId = this.workspaceId(req);
@@ -62,6 +69,7 @@ export class AnunciosController {
     return { data: result };
   }
 
+  @WebhookEndpoint('ads platform disconnect')
   @Post('disconnect/:platform')
   async disconnect(@Req() req: Request, @Param('platform') platform: string) {
     const wsId = this.workspaceId(req);
@@ -69,6 +77,7 @@ export class AnunciosController {
     return { data: result };
   }
 
+  @WebhookEndpoint('ads account sync trigger')
   @Post('sync/accounts')
   async syncAccounts(@Req() req: Request) {
     const wsId = this.workspaceId(req);
@@ -76,6 +85,7 @@ export class AnunciosController {
     return { data: accounts };
   }
 
+  @WebhookEndpoint('ads campaign sync trigger')
   @Post('sync/campaigns')
   async syncCampaigns(@Req() req: Request) {
     const wsId = this.workspaceId(req);

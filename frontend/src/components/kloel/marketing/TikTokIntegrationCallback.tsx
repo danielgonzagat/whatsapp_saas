@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { apiFetch } from '@/lib/api';
+import { kloelT } from '@/lib/i18n/t';
 import { KLOEL_THEME } from '@/lib/kloel-theme';
 
 const TIKTOK_BRAND_COLOR = 'rgb(254 44 85)';
@@ -66,10 +67,10 @@ export function TikTokIntegrationCallback({ kind }: { kind: 'creator' | 'adverti
       }}
     >
       <div style={{ maxWidth: 520, textAlign: 'center' }}>
-        <h1>TikTok</h1>
+        <h1>{kloelT('TikTok')}</h1>
         <p>{status}</p>
         <Link href="/marketing/tiktok" style={{ color: TIKTOK_BRAND_COLOR, fontWeight: 700 }}>
-          Voltar para TikTok Marketing
+          {kloelT('Voltar para TikTok Marketing')}
         </Link>
       </div>
     </main>

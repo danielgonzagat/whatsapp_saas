@@ -13,6 +13,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "start:prod": "node dist/bootstrap.js",
     "test": "vitest run",
+    "test:cov": "vitest run --coverage",
     "test:coverage": "vitest run --coverage",
     "prisma:generate": "npx prisma generate --schema=prisma/schema.prisma",
     "prisma:validate": "npx prisma validate --schema=prisma/schema.prisma",

@@ -3,6 +3,7 @@ import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../../common/guards/workspace.guard';
 import { AuthenticatedRequest } from '../../common/interfaces';
 import { WhatsappService } from '../whatsapp.service';
+import { InternalEndpoint } from '../../common/decorators/internal-endpoint.decorator';
 import { RouteClass } from '../../common/throttler/route-class.decorator';
 
 /** Contacts, chats, catalog, and backlog operational endpoints. */
@@ -109,6 +110,7 @@ export class WhatsAppCatalogController {
   }
 
   /** Get catalog contacts. */
+  @InternalEndpoint('whatsapp catalog contacts')
   @Get('catalog/contacts')
   async getCatalogContacts(@Req() req: AuthenticatedRequest) {
     return this.whatsappService.listCatalogContacts(req.workspaceId!, {
@@ -120,6 +122,7 @@ export class WhatsAppCatalogController {
   }
 
   /** Get catalog ranking. */
+  @InternalEndpoint('whatsapp catalog ranking')
   @Get('catalog/ranking')
   async getCatalogRanking(@Req() req: AuthenticatedRequest) {
     return this.whatsappService.listPurchaseProbabilityRanking(req.workspaceId!, {
@@ -133,6 +136,7 @@ export class WhatsAppCatalogController {
   }
 
   /** Trigger catalog refresh. */
+  @InternalEndpoint('whatsapp catalog refresh')
   @Post('catalog/refresh')
   async triggerCatalogRefresh(
     @Req() req: AuthenticatedRequest,
@@ -145,6 +149,7 @@ export class WhatsAppCatalogController {
   }
 
   /** Trigger catalog score. */
+  @InternalEndpoint('whatsapp catalog score')
   @Post('catalog/score')
   async triggerCatalogScore(
     @Req() req: AuthenticatedRequest,
@@ -178,6 +183,7 @@ export class WhatsAppCatalogController {
   }
 
   /** Recreate session if invalid. */
+  @InternalEndpoint('whatsapp session recreate')
   @Post('session/recreate-if-invalid')
   async recreateSessionIfInvalid(@Req() req: AuthenticatedRequest) {
     return this.whatsappService.recreateSessionIfInvalid(req.workspaceId!);

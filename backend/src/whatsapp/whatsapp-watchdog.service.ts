@@ -10,8 +10,9 @@
  * ============================================
  */
 
-import { Injectable, Logger, OnModuleDestroy, OnModuleInit, Optional } from '@nestjs/common';
+import { Injectable, OnModuleDestroy, OnModuleInit, Optional  } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
+import { StructuredLogger } from '../logging/structured-logger';
 import { Prisma } from '@prisma/client';
 import { forEachSequential } from '../common/async-sequence';
 import { OpsAlertService } from '../observability/ops-alert.service';
@@ -28,7 +29,7 @@ import {
 /** Whats app watchdog service. */
 @Injectable()
 export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
-  private readonly logger = new Logger(WhatsAppWatchdogService.name);
+  private readonly logger = StructuredLogger.from(WhatsAppWatchdogService.name);
   // Distributed-lock key for the watchdog health check. Composed from
   // colon-separated identifier segments so static-analysis "hard-coded
   // password" heuristics do not match the literal.

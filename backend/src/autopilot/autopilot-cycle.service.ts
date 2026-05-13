@@ -1,4 +1,5 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { Prisma } from '@prisma/client';
 import { SmartTimeService } from '../analytics/smart-time/smart-time.service';
 import { forEachSequential } from '../common/async-sequence';
@@ -13,7 +14,7 @@ import { AutopilotCycleMoneyService } from './autopilot-cycle-money.service';
 /** Legacy autopilot execution cycle: conversation processing, compliance. */
 @Injectable()
 export class AutopilotCycleService {
-  private readonly logger = new Logger(AutopilotCycleService.name);
+  private readonly logger = StructuredLogger.from(AutopilotCycleService.name);
 
   constructor(
     private readonly prisma: PrismaService,

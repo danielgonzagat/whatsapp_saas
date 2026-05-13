@@ -1,4 +1,5 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { PrismaService } from '../prisma/prisma.service';
 import { KloelContextFormatter } from './kloel-context-formatter';
 import type { KloelContextFormatterLimits } from './kloel-context-formatter.types';
@@ -16,7 +17,7 @@ type AffiliateProductRecord = Record<string, unknown>;
  */
 @Injectable()
 export class KloelWorkspaceContextLinkedProductService {
-  private readonly logger = new Logger(KloelWorkspaceContextLinkedProductService.name);
+  private readonly logger = StructuredLogger.from(KloelWorkspaceContextLinkedProductService.name);
 
   constructor(private readonly prisma: PrismaService) {}
 

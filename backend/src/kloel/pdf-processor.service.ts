@@ -1,7 +1,9 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import OpenAI from 'openai';
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { forEachSequential } from '../common/async-sequence';
+import { createTextLlmClient } from '../lib/llm-provider';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
 import { MemoryService } from './memory.service';
 import { chatCompletionWithRetry } from './openai-wrapper';
@@ -43,14 +45,14 @@ Retorne JSON:
 /** Pdf processor service. */
 @Injectable()
 export class PdfProcessorService {
-  private readonly logger = new Logger(PdfProcessorService.name);
+  private readonly logger = StructuredLogger.from(PdfProcessorService.name);
   private openai: OpenAI;
 
   constructor(
     private readonly memoryService: MemoryService,
     private readonly planLimits: PlanLimitsService,
   ) {
-    this.openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+    this.openai = createTextLlmClient() ?? new OpenAI({ apiKey: 'missing' });
   }
 
   /**

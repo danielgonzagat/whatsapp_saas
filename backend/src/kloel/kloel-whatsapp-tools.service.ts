@@ -1,4 +1,5 @@
-import { Injectable, Logger, Optional } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -40,7 +41,7 @@ export type {
 /** Handles all WhatsApp-related tool calls from the AI chat. */
 @Injectable()
 export class KloelWhatsAppToolsService {
-  private readonly logger = new Logger(KloelWhatsAppToolsService.name);
+  private readonly logger = StructuredLogger.from(KloelWhatsAppToolsService.name);
 
   constructor(
     private readonly prisma: PrismaService,

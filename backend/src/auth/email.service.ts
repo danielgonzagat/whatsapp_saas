@@ -2,7 +2,8 @@ import { readFileSync } from 'node:fs';
 import { createConnection } from 'node:net';
 import { connect as tlsConnect } from 'node:tls';
 import { join } from 'node:path';
-import { Injectable, Logger, Optional } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { getTraceHeaders } from '../common/trace-headers';
@@ -62,7 +63,7 @@ const TEMPLATE_CACHE: Readonly<Record<TemplateName, string>> = (() => {
  */
 @Injectable()
 export class EmailService {
-  private readonly logger = new Logger(EmailService.name);
+  private readonly logger = StructuredLogger.from(EmailService.name);
   private readonly fromEmail = process.env.EMAIL_FROM || 'noreply@kloel.com';
 
   constructor(

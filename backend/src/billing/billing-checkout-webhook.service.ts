@@ -1,6 +1,7 @@
-import { Logger } from '@nestjs/common';
+
 import { ConfigService } from '@nestjs/config';
 import { ModuleRef } from '@nestjs/core';
+import { StructuredLogger } from '../logging/structured-logger';
 import { randomUUID } from 'crypto';
 import { FinancialAlertService } from '../common/financial-alert.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -17,7 +18,7 @@ type StripeSubscriptionWithPeriodEnd = StripeSubscription & {
 };
 
 export class BillingCheckoutWebhookService {
-  private readonly logger = new Logger(BillingCheckoutWebhookService.name);
+  private readonly logger = StructuredLogger.from(BillingCheckoutWebhookService.name);
   private stripe: StripeClient | undefined;
 
   constructor(

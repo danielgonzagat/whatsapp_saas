@@ -1,4 +1,5 @@
-import { Inject, Injectable, Logger, forwardRef, Optional } from '@nestjs/common';
+import { Inject, Injectable, forwardRef, Optional } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { WHATSAPP_MESSAGING } from '../whatsapp/whatsapp.tokens';
 import type { IWhatsappMessaging } from '../whatsapp/whatsapp.interfaces';
 import { AudioService } from './audio.service';
@@ -29,7 +30,7 @@ type GmailMailboxPort = {
  */
 @Injectable()
 export class UnifiedAgentActionsMessagingService {
-  private readonly logger = new Logger(UnifiedAgentActionsMessagingService.name);
+  private readonly logger = StructuredLogger.from(UnifiedAgentActionsMessagingService.name);
 
   constructor(
     @Inject(forwardRef(() => WHATSAPP_MESSAGING))

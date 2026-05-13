@@ -1,4 +1,5 @@
-import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import * as Sentry from '@sentry/node';
 import { Prisma } from '@prisma/client';
 import { AuditService } from '../audit/audit.service';
@@ -20,7 +21,7 @@ import { createCheckout as createCheckoutFn } from './checkout-product.create';
 /** Idempotency: enforced at HTTP layer via @Idempotent() guard + Stripe idempotencyKey. */
 @Injectable()
 export class CheckoutProductService {
-  private readonly logger = new Logger(CheckoutProductService.name);
+  private readonly logger = StructuredLogger.from(CheckoutProductService.name);
   private readonly planLinkManager: CheckoutPlanLinkManager;
 
   constructor(

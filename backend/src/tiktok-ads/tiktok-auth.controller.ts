@@ -22,6 +22,7 @@ import { TikTokAdsProvider } from '../integrations/tiktok-ads.provider';
 import { asProviderSettings } from '../whatsapp/provider-settings.types';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { RouteClass } from '../common/throttler/route-class.decorator';
+import { WebhookEndpoint } from '../common/decorators/webhook-endpoint.decorator';
 
 interface TikTokProviderSubsettings {
   connected?: boolean;
@@ -59,6 +60,7 @@ export class TikTokAuthController {
     return url.toString();
   }
 
+  @WebhookEndpoint('tiktok ads auth URL generator')
   @Get('url')
   @UseGuards(WorkspaceGuard)
   async getAuthUrl(
@@ -150,6 +152,7 @@ export class TikTokAuthController {
     }
   }
 
+  @WebhookEndpoint('tiktok ads disconnect')
   @Post('disconnect')
   @Idempotent()
   @UseGuards(WorkspaceGuard)
@@ -176,6 +179,7 @@ export class TikTokAuthController {
     return { status: result.status };
   }
 
+  @WebhookEndpoint('tiktok ads auth status')
   @Get('status')
   @UseGuards(WorkspaceGuard)
   async getStatus(@Req() req: AuthenticatedRequest) {

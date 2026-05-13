@@ -1,4 +1,5 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
+import { StructuredLogger } from '../../logging/structured-logger';
 import * as Sentry from '@sentry/node';
 
 import { StripeService } from '../../billing/stripe.service';
@@ -8,7 +9,7 @@ import { ConnectService } from '../connect/connect.service';
 import { LedgerService } from '../ledger/ledger.service';
 import type { SplitRole } from '../split/split.types';
 
-const stripeWebhookLogger = new Logger('StripeWebhookProcessor');
+const stripeWebhookLogger = StructuredLogger.from('StripeWebhookProcessor');
 
 interface PersistedSplitLine {
   role: SplitRole;
@@ -116,7 +117,7 @@ function asId(value: unknown): string | null {
  */
 @Injectable()
 export class StripeWebhookProcessor {
-  private readonly logger = new Logger(StripeWebhookProcessor.name);
+  private readonly logger = StructuredLogger.from(StripeWebhookProcessor.name);
 
   constructor(
     private readonly stripeService: StripeService,

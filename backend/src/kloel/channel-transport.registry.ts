@@ -1,4 +1,5 @@
-import { Injectable, Logger, Optional } from '@nestjs/common';
+import { Injectable, Optional  } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import {
   EmailChannelTransport,
   InstagramChannelTransport,
@@ -19,7 +20,7 @@ import type { MindActionContext } from './mind-code-native.types';
 
 @Injectable()
 export class ChannelTransportRegistry {
-  private readonly logger = new Logger(ChannelTransportRegistry.name);
+  private readonly logger = StructuredLogger.from(ChannelTransportRegistry.name);
   private readonly providers = new Map<ChannelName, ChannelTransportProvider>();
 
   constructor(

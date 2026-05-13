@@ -3,6 +3,7 @@ import type { Request } from 'express';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { RouteClass } from '../common/throttler/route-class.decorator';
+import { WebhookEndpoint } from '../common/decorators/webhook-endpoint.decorator';
 import { AnunciosService } from '../anuncios/anuncios.service';
 
 interface WorkspaceRequest extends Request {
@@ -19,6 +20,7 @@ export class GoogleAdsAuthController {
     return (req as WorkspaceRequest).workspaceId || '';
   }
 
+  @WebhookEndpoint('Google Ads OAuth redirect initiator')
   @Get('connect')
   async getConnectUrl(@Req() req: Request) {
     const wsId = this.workspaceId(req);
@@ -26,6 +28,7 @@ export class GoogleAdsAuthController {
     return { data: result };
   }
 
+  @WebhookEndpoint('Google Ads OAuth callback')
   @Get('callback')
   async oauthCallback(
     @Req() req: Request,
@@ -46,6 +49,7 @@ export class GoogleAdsAuthController {
     return { data: result };
   }
 
+  @WebhookEndpoint('Google Ads connection status check')
   @Get('status')
   async getStatus(@Req() req: Request) {
     const wsId = this.workspaceId(req);
@@ -62,6 +66,7 @@ export class GoogleAdsAuthController {
     };
   }
 
+  @WebhookEndpoint('Google Ads disconnect handler')
   @Post('disconnect')
   async disconnect(@Req() req: Request) {
     const wsId = this.workspaceId(req);

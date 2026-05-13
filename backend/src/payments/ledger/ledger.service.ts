@@ -1,4 +1,5 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
+import { StructuredLogger } from '../../logging/structured-logger';
 import type { ConnectLedgerEntry } from '@prisma/client';
 
 import { PrismaService } from '../../prisma/prisma.service';
@@ -35,7 +36,7 @@ import {
  */
 @Injectable()
 export class LedgerService {
-  private readonly logger = new Logger(LedgerService.name);
+  private readonly logger = StructuredLogger.from(LedgerService.name);
 
   constructor(private readonly prisma: PrismaService) {}
 

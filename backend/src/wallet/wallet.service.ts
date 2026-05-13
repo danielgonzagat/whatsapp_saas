@@ -1,4 +1,5 @@
-import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import type { Prisma, PrepaidWalletTransaction } from '@prisma/client';
 import * as Sentry from '@sentry/node';
 
@@ -37,7 +38,7 @@ interface PixNextAction {
  */
 @Injectable()
 export class WalletService {
-  private readonly logger = new Logger(WalletService.name);
+  private readonly logger = StructuredLogger.from(WalletService.name);
 
   constructor(
     private readonly stripeService: StripeService,

@@ -8,7 +8,8 @@
  * ============================================
  */
 
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { Counter, Gauge, register } from 'prom-client';
 import { PrismaService } from '../prisma/prisma.service';
 import { WhatsAppProviderRegistry } from './providers/provider-registry';
@@ -22,7 +23,7 @@ import type { SessionHealth } from './whatsapp-watchdog.types';
 /** Manages per-workspace session health state and check logic. */
 @Injectable()
 export class WhatsAppWatchdogSessionService {
-  private readonly logger = new Logger(WhatsAppWatchdogSessionService.name);
+  private readonly logger = StructuredLogger.from(WhatsAppWatchdogSessionService.name);
   private readonly sessionHealth = new Map<string, SessionHealth>();
 
   private readonly ALERT_THRESHOLD = 3;

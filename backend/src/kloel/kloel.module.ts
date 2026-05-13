@@ -59,6 +59,7 @@ import { FraudModule } from '../payments/fraud/fraud.module';
 import { MetricsModule } from '../metrics/metrics.module';
 import { PartnershipsModule } from '../partnerships/partnerships.module';
 import { PrismaModule } from '../prisma/prisma.module';
+import { PulseArtifactService } from '../pulse/pulse-artifact.service';
 import { WalletModule } from '../wallet/wallet.module';
 import { ContactsModule } from '../contacts/contacts.module';
 import { ContactIdentityResolverService } from '../contacts/contact-identity-resolver.service';
@@ -156,6 +157,14 @@ import { MindLiftReportService } from './mind-lift-report.service';
 import { MindSurpriseService } from './mind-surprise.service';
 import { MindVerbalizerService } from './mind-verbalizer.service';
 import { MindWorkspaceStateService } from './mind-workspace-state.service';
+import {
+  AgentRuntimeContextService,
+  AgentRuntimePolicyService,
+  AgentRuntimePulseSelfModelService,
+  AgentRuntimeSchedulerService,
+  AgentRuntimeSessionStore,
+  AgentRuntimeSkillRegistry,
+} from './agent-runtime';
 
 /** Kloel module. */
 @Module({
@@ -317,6 +326,13 @@ import { MindWorkspaceStateService } from './mind-workspace-state.service';
     MindLiftReportService,
     MindVerbalizerService,
     MindWorkspaceStateService,
+    PulseArtifactService,
+    AgentRuntimeContextService,
+    AgentRuntimePolicyService,
+    AgentRuntimePulseSelfModelService,
+    AgentRuntimeSchedulerService,
+    AgentRuntimeSessionStore,
+    AgentRuntimeSkillRegistry,
   ],
   exports: [
     KloelService,
@@ -376,6 +392,12 @@ import { MindWorkspaceStateService } from './mind-workspace-state.service';
     MindLiftReportService,
     MindVerbalizerService,
     DecisionOutcomeService,
+    AgentRuntimeContextService,
+    AgentRuntimePolicyService,
+    AgentRuntimePulseSelfModelService,
+    AgentRuntimeSchedulerService,
+    AgentRuntimeSessionStore,
+    AgentRuntimeSkillRegistry,
   ],
 })
 export class KloelModule {}

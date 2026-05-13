@@ -1,8 +1,10 @@
-import { Body, Controller, Logger, Param, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Param, Post, UseGuards } from '@nestjs/common';
+import { StructuredLogger } from '../../logging/structured-logger';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../../common/guards/workspace.guard';
 import { Idempotent } from '../../common/idempotency.guard';
 
+import { InternalEndpoint } from '../../common/decorators/internal-endpoint.decorator';
 import { SplitPreviewDto } from './dto/split-preview.dto';
 import { calculateSplit } from './split.engine';
 import type { SplitInput } from './split.types';
@@ -41,9 +43,10 @@ function dtoToSplitInput(dto: SplitPreviewDto): SplitInput {
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
 @RouteClass('mutate')
 export class SplitController {
-  private readonly logger = new Logger(SplitController.name);
+  private readonly logger = StructuredLogger.from(SplitController.name);
 
   /** Preview split. */
+  @InternalEndpoint('payment split preview')
   @Post(':workspaceId/preview')
   @Idempotent()
   preview(@Param('workspaceId') workspaceId: string, @Body() dto: SplitPreviewDto) {

@@ -1,4 +1,5 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
+import { StructuredLogger } from '../../logging/structured-logger';
 import { PrismaService } from '../../prisma/prisma.service';
 
 const WINDOW_MS = 15 * 60 * 1000;
@@ -14,7 +15,7 @@ const MAX_ATTEMPTS = 5;
  */
 @Injectable()
 export class AdminLoginAttemptsService {
-  private readonly logger = new Logger(AdminLoginAttemptsService.name);
+  private readonly logger = StructuredLogger.from(AdminLoginAttemptsService.name);
 
   constructor(private readonly prisma: PrismaService) {}
 

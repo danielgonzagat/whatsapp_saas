@@ -1,4 +1,5 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { forEachSequential } from '../common/async-sequence';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -8,7 +9,7 @@ import { PrismaService } from '../prisma/prisma.service';
  */
 @Injectable()
 export class AutopilotAnalyticsReportService {
-  private readonly logger = new Logger(AutopilotAnalyticsReportService.name);
+  private readonly logger = StructuredLogger.from(AutopilotAnalyticsReportService.name);
 
   constructor(private readonly prisma: PrismaService) {}
 

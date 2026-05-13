@@ -1,4 +1,5 @@
-import { Injectable, Logger, Optional } from '@nestjs/common';
+import { Injectable, Optional  } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { InstagramService } from '../meta/instagram/instagram.service';
 import { MetaWhatsAppService } from '../meta/meta-whatsapp.service';
 import { MessengerService } from '../meta/messenger/messenger.service';
@@ -41,7 +42,7 @@ function blockedResult(reason: string): ChannelSendResult {
 @Injectable()
 export class InstagramChannelTransport implements ChannelTransportProvider {
   readonly channel: ChannelName = 'instagram';
-  private readonly logger = new Logger(InstagramChannelTransport.name);
+  private readonly logger = StructuredLogger.from(InstagramChannelTransport.name);
 
   constructor(
     @Optional() private readonly instagram?: InstagramService,
@@ -115,7 +116,7 @@ export class InstagramChannelTransport implements ChannelTransportProvider {
 @Injectable()
 export class MessengerChannelTransport implements ChannelTransportProvider {
   readonly channel: ChannelName = 'messenger';
-  private readonly logger = new Logger(MessengerChannelTransport.name);
+  private readonly logger = StructuredLogger.from(MessengerChannelTransport.name);
 
   constructor(
     @Optional() private readonly messenger?: MessengerService,
@@ -189,7 +190,7 @@ export class MessengerChannelTransport implements ChannelTransportProvider {
 @Injectable()
 export class TikTokChannelTransport implements ChannelTransportProvider {
   readonly channel: ChannelName = 'tiktok';
-  private readonly logger = new Logger(TikTokChannelTransport.name);
+  private readonly logger = StructuredLogger.from(TikTokChannelTransport.name);
 
   isConfigured(): boolean {
     return false;
@@ -239,7 +240,7 @@ function hasEmailProvider(): 'resend' | 'sendgrid' | 'smtp' | null {
 @Injectable()
 export class EmailChannelTransport implements ChannelTransportProvider {
   readonly channel: ChannelName = 'email';
-  private readonly logger = new Logger(EmailChannelTransport.name);
+  private readonly logger = StructuredLogger.from(EmailChannelTransport.name);
 
   constructor(
     @Optional() private readonly emailCampaign?: EmailCampaignService,

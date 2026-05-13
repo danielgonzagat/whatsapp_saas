@@ -1,4 +1,5 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { DealStatus, Prisma } from '@prisma/client';
 import { forEachSequential } from '../common/async-sequence';
 import { PrismaService } from '../prisma/prisma.service';
@@ -146,7 +147,7 @@ export const PRESET_SEGMENTS = {
 /** Segmentation service. */
 @Injectable()
 export class SegmentationService {
-  private readonly logger = new Logger(SegmentationService.name);
+  private readonly logger = StructuredLogger.from(SegmentationService.name);
 
   constructor(private prisma: PrismaService) {}
 

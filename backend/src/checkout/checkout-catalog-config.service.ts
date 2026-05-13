@@ -1,11 +1,12 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { PrismaService } from '../prisma/prisma.service';
 import { buildCheckoutShippingQuote } from './checkout-shipping-profile.util';
 
 /** Handles shipping calculation and config reset for checkout catalog. */
 @Injectable()
 export class CheckoutCatalogConfigService {
-  private readonly logger = new Logger(CheckoutCatalogConfigService.name);
+  private readonly logger = StructuredLogger.from(CheckoutCatalogConfigService.name);
 
   constructor(private readonly prisma: PrismaService) {}
 

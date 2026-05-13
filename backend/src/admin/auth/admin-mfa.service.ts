@@ -1,5 +1,6 @@
-import { Inject, Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { StructuredLogger } from '../../logging/structured-logger';
 import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
 // `qrcode` is a CJS package; the Node resolver picks up its default export.
 
@@ -103,7 +104,7 @@ export interface MfaSetupResult {
 /** Admin mfa service. */
 @Injectable()
 export class AdminMfaService {
-  private readonly logger = new Logger(AdminMfaService.name);
+  private readonly logger = StructuredLogger.from(AdminMfaService.name);
   private readonly encryptionKey: string;
   private readonly issuer: string;
 

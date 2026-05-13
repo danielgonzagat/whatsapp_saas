@@ -1,10 +1,12 @@
 import { InjectRedis } from '@nestjs-modules/ioredis';
-import { Injectable, Logger, OnModuleDestroy, Optional } from '@nestjs/common';
+import { Injectable, OnModuleDestroy, Optional } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { StructuredLogger } from '../logging/structured-logger';
 import { Request, Response } from 'express';
 import type Redis from 'ioredis';
 import OpenAI from 'openai';
 import { findFirstSequential } from '../common/async-sequence';
+import { createTextLlmClient, resolveTextLlmApiKey } from '../lib/llm-provider';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
 import { KLOEL_GUEST_SYSTEM_PROMPT } from './kloel.prompts';
 import { chatCompletionWithFallback, chatCompletionWithRetry } from './openai-wrapper';
@@ -21,7 +23,7 @@ const GUEST_CONVERSATION_TTL_SECONDS = 24 * 60 * 60;
 // cache.invalidate — Redis is the primary guest conversation store; local Map is fallback.
 @Injectable()
 export class GuestChatService implements OnModuleDestroy {
-  private readonly logger = new Logger(GuestChatService.name);
+  private readonly logger = StructuredLogger.from(GuestChatService.name);
   private readonly openai: OpenAI;
   private readonly unavailableMessage =
     'Eu continuo aqui, mas a camada de IA esta instavel agora. Tenta de novo em alguns segundos que eu retomo de onde paramos.';
@@ -46,13 +48,11 @@ export class GuestChatService implements OnModuleDestroy {
         `GuestChatService initialized. API Key present: ${!!apiKey}, length: ${apiKey?.length || 0}`,
       );
       if (!apiKey) {
-        this.logger.error('OPENAI_API_KEY not found! Check your .env file.');
+        this.logger.error('Primary LLM API key not found! Check your .env file.');
       }
     }
 
-    this.openai = new OpenAI({
-      apiKey: apiKey,
-    });
+    this.openai = createTextLlmClient(this.configService) ?? new OpenAI({ apiKey: 'missing' });
 
     // Limpar conversas inativas (mais de 24h)
     if (!isTestEnv) {
@@ -71,9 +71,7 @@ export class GuestChatService implements OnModuleDestroy {
 
   /** Leitura unificada da chave OpenAI (process.env → ConfigService) */
   private getOpenAiKey(): string | undefined {
-    return (
-      process.env.OPENAI_API_KEY || this.configService.get<string>('OPENAI_API_KEY') || undefined
-    );
+    return resolveTextLlmApiKey(this.configService);
   }
 
   private writeStreamChunk(

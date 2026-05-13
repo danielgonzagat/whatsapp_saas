@@ -19,6 +19,8 @@ import { PrismaService } from '../prisma/prisma.service';
 import { SmartPaymentService } from './smart-payment.service';
 import { AuthenticatedRequest } from '../common/interfaces/authenticated-request.interface';
 import { RouteClass } from '../common/throttler/route-class.decorator';
+import { WebhookEndpoint } from '../common/decorators/webhook-endpoint.decorator';
+import { InternalEndpoint } from '../common/decorators/internal-endpoint.decorator';
 
 // All dates stored as UTC via Prisma DateTime (toISOString)
 @ApiTags('smart-payment')
@@ -161,6 +163,7 @@ export class SmartPaymentController {
   }
 
   /** Analyze recovery. */
+  @InternalEndpoint('admin payment recovery analysis')
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Get(':workspaceId/recovery/:paymentId')
   @ApiOperation({
@@ -188,6 +191,7 @@ export class SmartPaymentController {
 
   /** Process confirmation. */
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
+  @WebhookEndpoint('Payment gateway webhook confirmation')
   @Post(':workspaceId/webhook/confirm')
   @ApiOperation({
     summary: 'Processa confirmação de pagamento',

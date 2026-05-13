@@ -1,4 +1,5 @@
-import { BadRequestException, Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { Prisma } from '@prisma/client';
 import * as Sentry from '@sentry/node';
 
@@ -70,7 +71,7 @@ function toJsonValue(value: unknown): Prisma.InputJsonValue {
 /** Checkout payment service. */
 @Injectable()
 export class CheckoutPaymentService {
-  private readonly logger = new Logger(CheckoutPaymentService.name);
+  private readonly logger = StructuredLogger.from(CheckoutPaymentService.name);
 
   constructor(
     private readonly prisma: PrismaService,

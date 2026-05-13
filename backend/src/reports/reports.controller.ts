@@ -4,6 +4,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { AuthenticatedRequest } from '../common/interfaces';
 import { PrismaService } from '../prisma/prisma.service';
 import { ReportFiltersDto } from './dto/report-filters.dto';
+import { InternalEndpoint } from '../common/decorators/internal-endpoint.decorator';
 import { ReportsService } from './reports.service';
 
 import { RouteClass } from '../common/throttler/route-class.decorator';
@@ -25,12 +26,14 @@ export class ReportsController {
   }
 
   /** Get vendas. */
+  @InternalEndpoint('sales report')
   @Get('vendas')
   getVendas(@Query() f: ReportFiltersDto, @Request() req: AuthenticatedRequest) {
     return this.reportsService.getVendas(this.ws(req), f);
   }
 
   /** Get vendas summary. */
+  @InternalEndpoint('sales summary report')
   @Get('vendas/summary')
   getVendasSummary(@Query() f: ReportFiltersDto, @Request() req: AuthenticatedRequest) {
     return this.reportsService.getVendasSummary(this.ws(req), f);
@@ -61,24 +64,28 @@ export class ReportsController {
   }
 
   /** Get afiliados. */
+  @InternalEndpoint('affiliates report')
   @Get('afiliados')
   getAfiliados(@Query() f: ReportFiltersDto, @Request() req: AuthenticatedRequest) {
     return this.reportsService.getAfiliados(this.ws(req), f);
   }
 
   /** Get indicadores. */
+  @InternalEndpoint('indicators report')
   @Get('indicadores')
   getIndicadores(@Query() f: ReportFiltersDto, @Request() req: AuthenticatedRequest) {
     return this.reportsService.getIndicadores(this.ws(req), f);
   }
 
   /** Get assinaturas. */
+  @InternalEndpoint('subscriptions report')
   @Get('assinaturas')
   getAssinaturas(@Query() f: ReportFiltersDto, @Request() req: AuthenticatedRequest) {
     return this.reportsService.getAssinaturas(this.ws(req), f);
   }
 
   /** Get indicadores produto. */
+  @InternalEndpoint('product indicators report')
   @Get('indicadores-produto')
   getIndicadoresProduto(@Query() f: ReportFiltersDto, @Request() req: AuthenticatedRequest) {
     return this.reportsService.getIndicadoresProduto(this.ws(req), f);
@@ -91,6 +98,7 @@ export class ReportsController {
   }
 
   /** Get origem. */
+  @InternalEndpoint('source report')
   @Get('origem')
   getOrigem(@Query() f: ReportFiltersDto, @Request() req: AuthenticatedRequest) {
     return this.reportsService.getOrigem(this.ws(req), f);
@@ -131,6 +139,7 @@ export class ReportsController {
   }
 
   /** Get chargeback. */
+  @InternalEndpoint('chargeback report')
   @Get('chargeback')
   getChargeback(@Query() f: ReportFiltersDto, @Request() req: AuthenticatedRequest) {
     return this.reportsService.getChargeback(this.ws(req), f);

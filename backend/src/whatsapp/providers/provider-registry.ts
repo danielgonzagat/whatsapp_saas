@@ -1,4 +1,5 @@
-import { Injectable, Logger, Optional } from '@nestjs/common';
+import { Injectable, Optional  } from '@nestjs/common';
+import { StructuredLogger } from '../../logging/structured-logger';
 import { Prisma } from '@prisma/client';
 import { OpsAlertService } from '../../observability/ops-alert.service';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -53,7 +54,7 @@ export { SessionStatus } from './provider-registry.types';
 
 @Injectable()
 export class WhatsAppProviderRegistry {
-  private readonly logger = new Logger(WhatsAppProviderRegistry.name);
+  private readonly logger = StructuredLogger.from(WhatsAppProviderRegistry.name);
   private readonly defaultProvider: WhatsAppProviderType;
 
   constructor(

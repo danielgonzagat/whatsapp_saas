@@ -1,4 +1,5 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import type { Prisma } from '@prisma/client';
 import { forEachSequential } from '../common/async-sequence';
 import { toPrismaJsonValue } from '../common/prisma/prisma-json.util';
@@ -68,7 +69,7 @@ function isCompletedMemory(value: unknown): value is OnboardingCompletedMemory {
 /** Onboarding service. */
 @Injectable()
 export class OnboardingService {
-  private readonly logger = new Logger(OnboardingService.name);
+  private readonly logger = StructuredLogger.from(OnboardingService.name);
   private readonly steps = [
     {
       id: 'welcome',

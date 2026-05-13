@@ -28,6 +28,7 @@ import { UpdateFiscalDto } from './dto/update-fiscal.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { KycService } from './kyc.service';
 import { RouteClass } from '../common/throttler/route-class.decorator';
+import { InternalEndpoint } from '../common/decorators/internal-endpoint.decorator';
 
 const JPG_JPEG_PNG_GIF_WEBP_RE = /\.(jpg|jpeg|png|gif|webp)$/i;
 const IMAGE___JPEG_PNG_GIF_WE_RE = /^image\/(jpeg|png|gif|webp)$/;
@@ -196,12 +197,14 @@ export class KycController {
 
   // ═══ AUTO-APPROVAL & ADMIN ═══
 
+  @InternalEndpoint('KYC auto-check trigger')
   @Post('auto-check')
   async autoCheck(@Req() req: AuthenticatedRequest) {
     return this.kycService.autoApproveIfComplete(req.user.sub, req.user.workspaceId);
   }
 
   /** Admin approve. */
+  @InternalEndpoint('KYC agent approval')
   @Post(':agentId/approve')
   async adminApprove(@Req() req: AuthenticatedRequest, @Param('agentId') agentId: string) {
     if (req.user.role !== 'ADMIN') {

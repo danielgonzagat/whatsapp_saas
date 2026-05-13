@@ -1,4 +1,5 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
+import { StructuredLogger } from '../../logging/structured-logger';
 
 import { StripeService } from '../../billing/stripe.service';
 import type { StripePaymentIntent } from '../../billing/stripe-types';
@@ -16,7 +17,7 @@ import type { CreateSaleChargeInput, CreateSaleChargeResult } from './stripe-cha
  */
 @Injectable()
 export class StripeChargeService {
-  private readonly logger = new Logger(StripeChargeService.name);
+  private readonly logger = StructuredLogger.from(StripeChargeService.name);
 
   constructor(private readonly stripeService: StripeService) {}
 

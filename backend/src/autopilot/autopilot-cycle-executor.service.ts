@@ -1,5 +1,6 @@
-import { Injectable, Logger, Optional } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { StructuredLogger } from '../logging/structured-logger';
 import OpenAI from 'openai';
 import { Prisma } from '@prisma/client';
 import { PlanLimitsService } from '../billing/plan-limits.service';
@@ -59,7 +60,7 @@ const AUTOPILOT_ACTIONS = [
  */
 @Injectable()
 export class AutopilotCycleExecutorService {
-  private readonly logger = new Logger(AutopilotCycleExecutorService.name);
+  private readonly logger = StructuredLogger.from(AutopilotCycleExecutorService.name);
   private readonly openai: OpenAI | null;
 
   constructor(

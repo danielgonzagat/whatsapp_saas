@@ -4,6 +4,7 @@ import { resolveWorkspaceId } from '../auth/workspace-access';
 import { AuthenticatedRequest } from '../common/interfaces';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { ChatService } from './chat.service';
+import { InternalEndpoint } from '../common/decorators/internal-endpoint.decorator';
 import { CreateMessageDto } from './dto/create-message.dto';
 import { GetMessagesQueryDto } from './dto/get-messages-query.dto';
 import { RouteClass } from '../common/throttler/route-class.decorator';
@@ -14,6 +15,7 @@ import { RouteClass } from '../common/throttler/route-class.decorator';
 export class ChatController {
   constructor(private readonly chatService: ChatService) {}
 
+  @InternalEndpoint('chat conversation messages')
   @Get('conversations/:id/messages')
   async getMessages(
     @Param('id') id: string,
@@ -28,6 +30,7 @@ export class ChatController {
     );
   }
 
+  @InternalEndpoint('chat send message')
   @Post('conversations/:id/messages')
   async addMessage(
     @Param('id') id: string,

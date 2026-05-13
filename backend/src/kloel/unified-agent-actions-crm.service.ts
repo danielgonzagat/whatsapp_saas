@@ -1,4 +1,5 @@
-import { Injectable, Logger, Optional } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { PrismaService } from '../prisma/prisma.service';
 import { actionImportContacts as actionImportContactsCompanion } from './unified-agent-actions-crm.helpers';
 import { flowQueue } from '../queue/queue';
@@ -29,7 +30,7 @@ function isDeterministicPipeline(context?: UnknownRecord): boolean {
  */
 @Injectable()
 export class UnifiedAgentActionsCrmService {
-  private readonly logger = new Logger(UnifiedAgentActionsCrmService.name);
+  private readonly logger = StructuredLogger.from(UnifiedAgentActionsCrmService.name);
 
   constructor(
     private readonly prisma: PrismaService,

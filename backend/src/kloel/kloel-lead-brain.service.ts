@@ -1,4 +1,5 @@
-import { Injectable, Logger, Optional } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { KloelLead, Prisma } from '@prisma/client';
 import { LLMBudgetService, estimateChatCostCents } from './llm-budget.service';
 import { PlanLimitsService } from '../billing/plan-limits.service';
@@ -6,6 +7,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { UnifiedAgentService } from './unified-agent.service';
 import { SmartPaymentService } from './smart-payment.service';
 import { chatCompletionWithFallback } from './openai-wrapper';
+import { createTextLlmClient } from '../lib/llm-provider';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
 import { KLOEL_SALES_PROMPT } from './kloel.prompts';
 import OpenAI from 'openai';
@@ -30,7 +32,7 @@ type ProductMemoryValue = { name?: string; price?: number; [key: string]: unknow
  */
 @Injectable()
 export class KloelLeadBrainService {
-  private readonly logger = new Logger(KloelLeadBrainService.name);
+  private readonly logger = StructuredLogger.from(KloelLeadBrainService.name);
   private readonly openai: OpenAI;
 
   constructor(
@@ -41,11 +43,9 @@ export class KloelLeadBrainService {
     private readonly smartPaymentService: SmartPaymentService,
     @Optional() private readonly opsAlert?: OpsAlertService,
   ) {
-    this.openai = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
-      timeout: 60_000,
-      maxRetries: 0,
-    });
+    this.openai =
+      createTextLlmClient(undefined, { timeout: 60_000, maxRetries: 0 }) ??
+      new OpenAI({ apiKey: 'missing' });
   }
 
   async getOrCreateLead(workspaceId: string, phone: string): Promise<KloelLead> {

@@ -1,5 +1,6 @@
 import { InjectRedis } from '@nestjs-modules/ioredis';
-import { ForbiddenException, Injectable, Logger, Optional } from '@nestjs/common';
+import { ForbiddenException, Injectable, Optional } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import type Redis from 'ioredis';
 import { OpsAlertService } from '../observability/ops-alert.service';
 
@@ -47,7 +48,7 @@ import { OpsAlertService } from '../observability/ops-alert.service';
  */
 @Injectable()
 export class LLMBudgetService {
-  private readonly logger = new Logger(LLMBudgetService.name);
+  private readonly logger = StructuredLogger.from(LLMBudgetService.name);
 
   constructor(
     @InjectRedis() private readonly redis: Redis,

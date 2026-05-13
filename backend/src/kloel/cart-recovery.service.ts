@@ -1,5 +1,6 @@
-import { Injectable, Logger, Optional } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
+import { StructuredLogger } from '../logging/structured-logger';
 import { forEachSequential } from '../common/async-sequence';
 import { EmailService } from '../auth/email.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -89,7 +90,7 @@ function renderRecoveryEmail(productName: string, orderNumber: string, action: s
 /** Cart recovery service with MIND-driven recovery action decisions. */
 @Injectable()
 export class CartRecoveryService {
-  private readonly logger = new Logger(CartRecoveryService.name);
+  private readonly logger = StructuredLogger.from(CartRecoveryService.name);
   constructor(
     private readonly prisma: PrismaService,
     @Optional() private readonly opsAlert?: OpsAlertService,

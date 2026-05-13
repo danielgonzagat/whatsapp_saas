@@ -1,5 +1,6 @@
-import { ForbiddenException, Injectable, Logger, Optional } from '@nestjs/common';
+import { ForbiddenException, Injectable, Optional } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
+import { StructuredLogger } from '../logging/structured-logger';
 import type { Prisma } from '@prisma/client';
 import { forEachSequential } from '../common/async-sequence';
 import { FinancialAlertService } from '../common/financial-alert.service';
@@ -27,7 +28,7 @@ class KloelWalletNotFoundError extends Error {
 
 @Injectable()
 export class WalletService {
-  private readonly logger = new Logger(WalletService.name);
+  private readonly logger = StructuredLogger.from(WalletService.name);
 
   constructor(
     private readonly prisma: PrismaService,

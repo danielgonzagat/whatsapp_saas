@@ -1,4 +1,5 @@
-import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { Prisma } from '@prisma/client';
 import { AuditService } from '../audit/audit.service';
 import {
@@ -11,7 +12,7 @@ import { CHECKOUT_ORDER_STATUSES, type CheckoutOrderStatusValue } from './checko
 /** Handles read operations and status/upsell mutations on checkout orders. */
 @Injectable()
 export class CheckoutOrderQueryService {
-  private readonly logger = new Logger(CheckoutOrderQueryService.name);
+  private readonly logger = StructuredLogger.from(CheckoutOrderQueryService.name);
 
   constructor(
     private readonly prisma: PrismaService,

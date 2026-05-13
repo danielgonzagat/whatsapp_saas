@@ -1,4 +1,5 @@
-import { Injectable, Logger, Optional } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { Prisma } from '@prisma/client';
 import OpenAI from 'openai';
 import { PlanLimitsService } from '../billing/plan-limits.service';
@@ -36,7 +37,7 @@ function readRecord(value: unknown): UnknownRecord | null {
  */
 @Injectable()
 export class UnifiedAgentActionsWorkspaceService {
-  private readonly logger = new Logger(UnifiedAgentActionsWorkspaceService.name);
+  private readonly logger = StructuredLogger.from(UnifiedAgentActionsWorkspaceService.name);
 
   constructor(
     private readonly prisma: PrismaService,

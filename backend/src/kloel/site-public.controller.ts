@@ -1,4 +1,5 @@
-import { Controller, Get, HttpStatus, Logger, Param, Res } from '@nestjs/common';
+import { Controller, Get, HttpStatus, Param, Res } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { Response } from 'express';
 import { Public } from '../auth/public.decorator';
 import { PrismaService } from '../prisma/prisma.service';
@@ -9,7 +10,7 @@ import { RouteClass } from '../common/throttler/route-class.decorator';
 @Controller('s')
 @RouteClass('public-checkout')
 export class SitePublicController {
-  private readonly logger = new Logger(SitePublicController.name);
+  private readonly logger = StructuredLogger.from(SitePublicController.name);
   constructor(private readonly prisma: PrismaService) {}
 
   // GET /s/:slug — serve published site HTML (public, no auth)

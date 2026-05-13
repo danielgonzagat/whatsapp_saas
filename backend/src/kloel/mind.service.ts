@@ -1,4 +1,5 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { randomUUID } from 'crypto';
 import { MindBeliefService } from './mind-belief.service';
 import { MindCaseMemoryService } from './mind-case-memory.service';
@@ -28,7 +29,7 @@ import { KNOWN_DECISION_TYPES } from './mind-decision-baselines';
 
 @Injectable()
 export class MindService {
-  private readonly logger = new Logger(MindService.name);
+  private readonly logger = StructuredLogger.from(MindService.name);
   private readonly watermarks = new Map<string, Date>();
   private readonly activeTicks = new Set<string>();
 

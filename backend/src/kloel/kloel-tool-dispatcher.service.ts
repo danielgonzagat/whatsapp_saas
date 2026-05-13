@@ -1,4 +1,5 @@
-import { Injectable, Logger, Optional } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { Prisma } from '@prisma/client';
 import { AuditService } from '../audit/audit.service';
 import { PlanLimitsService } from '../billing/plan-limits.service';
@@ -27,7 +28,7 @@ type ApprovedToolExecutionResult = {
 /** Idempotency: enforced at HTTP layer via @Idempotent() guard + Stripe idempotencyKey. */
 @Injectable()
 export class KloelToolDispatcherService {
-  private readonly logger = new Logger(KloelToolDispatcherService.name);
+  private readonly logger = StructuredLogger.from(KloelToolDispatcherService.name);
 
   constructor(
     private readonly prisma: PrismaService,

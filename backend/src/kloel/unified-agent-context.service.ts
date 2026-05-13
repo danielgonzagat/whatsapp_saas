@@ -1,4 +1,5 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import type { ChatCompletionMessageParam } from 'openai/resources/chat';
 import { buildKloelLeadPrompt } from './kloel.prompts';
 import { UnifiedAgentContextDataService } from './unified-agent-context-data.service';
@@ -17,7 +18,7 @@ const TRAILING_PUNCT_G_RE = /[!?.]+/g;
  */
 @Injectable()
 export class UnifiedAgentContextService {
-  private readonly logger = new Logger(UnifiedAgentContextService.name);
+  private readonly logger = StructuredLogger.from(UnifiedAgentContextService.name);
 
   constructor(private readonly contextData: UnifiedAgentContextDataService) {}
 

@@ -1,5 +1,6 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { StructuredLogger } from '../logging/structured-logger';
 import * as Sentry from '@sentry/node';
 import OpenAI from 'openai';
 import { AuditService } from '../audit/audit.service';
@@ -147,7 +148,7 @@ interface PaymentNegotiation {
 /** Smart payment service. */
 @Injectable()
 export class SmartPaymentService {
-  private readonly logger = new Logger(SmartPaymentService.name);
+  private readonly logger = StructuredLogger.from(SmartPaymentService.name);
   private openai!: OpenAI;
 
   constructor(

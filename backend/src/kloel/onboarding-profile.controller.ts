@@ -5,6 +5,7 @@ import { AuthenticatedRequest } from '../common/interfaces';
 import { resolveWorkspaceId } from '../auth/workspace-access';
 import { OnboardingService } from './onboarding.service';
 import { RouteClass } from '../common/throttler/route-class.decorator';
+import { WebhookEndpoint } from '../common/decorators/webhook-endpoint.decorator';
 
 type OnboardingProfileDto = {
   userType?: string;
@@ -26,6 +27,7 @@ function readRequiredString(value: unknown, fallback: string): string {
 export class OnboardingProfileController {
   constructor(private readonly onboardingService: OnboardingService) {}
 
+  @WebhookEndpoint('Onboarding profile webhook/callback')
   @Post(':workspaceId/profile')
   async saveProfile(
     @Req() req: AuthenticatedRequest,

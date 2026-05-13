@@ -1,4 +1,5 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import OpenAI from 'openai';
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { extractFallbackTopic as extractFallbackTopicValue } from '../whatsapp/whatsapp-normalization.util';
@@ -29,7 +30,7 @@ import {
  */
 @Injectable()
 export class UnifiedAgentResponseService {
-  private readonly logger = new Logger(UnifiedAgentResponseService.name);
+  private readonly logger = StructuredLogger.from(UnifiedAgentResponseService.name);
   constructor(private readonly planLimits: PlanLimitsService) {}
   async composeWriterReply(
     openai: OpenAI | null,

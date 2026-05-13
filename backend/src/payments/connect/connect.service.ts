@@ -1,4 +1,5 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
+import { StructuredLogger } from '../../logging/structured-logger';
 import type { ConnectAccountBalance } from '@prisma/client';
 
 import { StripeService } from '../../billing/stripe.service';
@@ -285,7 +286,7 @@ function buildOnboardingAccountUpdate(
  */
 @Injectable()
 export class ConnectService {
-  private readonly logger = new Logger(ConnectService.name);
+  private readonly logger = StructuredLogger.from(ConnectService.name);
 
   constructor(
     private readonly stripeService: StripeService,

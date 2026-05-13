@@ -1,4 +1,5 @@
-import { Injectable, Logger, Optional } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { PrismaService } from '../prisma/prisma.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import type { SearchResult } from './memory.types';
@@ -6,7 +7,7 @@ import type { SearchResult } from './memory.types';
 /** Memory search service. */
 @Injectable()
 export class MemorySearchService {
-  private readonly logger = new Logger(MemorySearchService.name);
+  private readonly logger = StructuredLogger.from(MemorySearchService.name);
 
   constructor(
     private readonly prisma: PrismaService,

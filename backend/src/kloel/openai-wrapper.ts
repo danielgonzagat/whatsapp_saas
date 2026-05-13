@@ -1,10 +1,12 @@
+import { StructuredLogger } from '../logging/structured-logger';
 // via PlanLimitsService.ensureTokenBudget() before invoking these helpers.
 import { randomInt } from 'node:crypto';
-import { Logger } from '@nestjs/common';
+
 import OpenAI, { type Uploadable } from 'openai';
+import { isDeepSeekChatModel } from '../lib/llm-provider';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
 
-const logger = new Logger('OpenAIWrapper');
+const logger = StructuredLogger.from('OpenAIWrapper');
 const isTestEnv = !!process.env.JEST_WORKER_ID || process.env.NODE_ENV === 'test';
 type NonStreamingChatParams = OpenAI.Chat.ChatCompletionCreateParamsNonStreaming;
 type StreamingChatParams = OpenAI.Chat.ChatCompletionCreateParamsStreaming;
@@ -209,6 +211,15 @@ function assertMessagesFitInputLimit(messages: unknown): void {
   }
 }
 
+function shouldUseDeepSeekThinking(): boolean {
+  return process.env.DEEPSEEK_THINKING !== 'disabled';
+}
+
+function deepSeekThinkingMinTokens(): number {
+  const parsed = Number(process.env.DEEPSEEK_THINKING_MIN_TOKENS ?? 512);
+  return Number.isFinite(parsed) && parsed >= 64 ? Math.floor(parsed) : 512;
+}
+
 // enforcement happens before chatCompletionWithRetry/chatCompletionStreamWithRetry.
 export function normalizeChatCompletionParams(
   params: NonStreamingChatParams,
@@ -223,9 +234,22 @@ export function normalizeChatCompletionParams(params: AnyChatParams): AnyChatPar
 
   // --- Clamp 1: max output tokens ----------------------------------
   const rawMaxTokens = payload.max_tokens ?? payload.max_completion_tokens;
-  payload.max_completion_tokens = clampMaxCompletionTokens(rawMaxTokens);
-  if ('max_tokens' in payload) {
-    delete payload.max_tokens;
+  const clampedMaxTokens = clampMaxCompletionTokens(rawMaxTokens);
+  if (isDeepSeekChatModel(payload.model)) {
+    payload.max_tokens = shouldUseDeepSeekThinking()
+      ? Math.max(clampedMaxTokens, deepSeekThinkingMinTokens())
+      : clampedMaxTokens;
+    (payload as Record<string, unknown>).thinking = {
+      type: shouldUseDeepSeekThinking() ? 'enabled' : 'disabled',
+    };
+    if ('max_completion_tokens' in payload) {
+      delete payload.max_completion_tokens;
+    }
+  } else {
+    payload.max_completion_tokens = clampedMaxTokens;
+    if ('max_tokens' in payload) {
+      delete payload.max_tokens;
+    }
   }
 
   // --- Clamp 2: serialized input size -------------------------------

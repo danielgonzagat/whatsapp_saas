@@ -1,4 +1,5 @@
-import { Injectable, Logger, NestMiddleware, OnModuleDestroy, Optional } from '@nestjs/common';
+import { Injectable, NestMiddleware, OnModuleDestroy, Optional  } from '@nestjs/common';
+import { StructuredLogger } from '../../logging/structured-logger';
 import { NextFunction, Request, Response } from 'express';
 import { sanitizePayload } from '../../common/sanitize-payload';
 import { getTraceHeaders } from '../../common/trace-headers';
@@ -75,7 +76,7 @@ function matchesLoggedGetPath(path: string): boolean {
  */
 @Injectable()
 export class AuditLogMiddleware implements NestMiddleware, OnModuleDestroy {
-  private readonly logger = new Logger('AuditLog');
+  private readonly logger = StructuredLogger.from('AuditLog');
   private logBuffer: AuditLogEntry[] = [];
   private readonly BUFFER_SIZE = 50;
   private readonly FLUSH_INTERVAL_MS = 30000; // 30 segundos
@@ -315,7 +316,7 @@ export function AuditOperation(operationType: string) {
     const originalMethod = descriptor.value;
 
     descriptor.value = async function (this: { opsAlert?: OpsAlertService }, ...args: unknown[]) {
-      const logger = new Logger('AuditOperation');
+      const logger = StructuredLogger.from('AuditOperation');
       const startTime = Date.now();
 
       try {

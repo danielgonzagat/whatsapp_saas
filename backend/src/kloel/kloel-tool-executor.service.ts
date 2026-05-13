@@ -1,4 +1,5 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import type { Prisma } from '@prisma/client';
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -40,7 +41,7 @@ type UnknownRecord = Record<string, unknown>;
 /** Service that executes all AI-chat tool calls on behalf of KloelService. */
 @Injectable()
 export class KloelToolExecutorService {
-  private readonly logger = new Logger(KloelToolExecutorService.name);
+  private readonly logger = StructuredLogger.from(KloelToolExecutorService.name);
 
   constructor(
     private readonly prisma: PrismaService,

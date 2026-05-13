@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException  } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { Prisma } from '@prisma/client';
 import * as Sentry from '@sentry/node';
 import { toPrismaJsonValue } from '../common/prisma/prisma-json.util';
@@ -47,7 +48,7 @@ type AccountAgentMetadata = Record<string, unknown>;
 
 @Injectable()
 export class AccountAgentService {
-  private readonly logger = new Logger(AccountAgentService.name);
+  private readonly logger = StructuredLogger.from(AccountAgentService.name);
   constructor(
     private readonly prisma: PrismaService,
     private readonly agentEvents: AgentEventsService,
