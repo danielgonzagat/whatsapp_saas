@@ -28,6 +28,22 @@ All notable changes to this project will be documented in this file.
 - 13 nosemgrep/biome-ignore in scripts/ops
 - HTML lupa entity (replaced by lucide Search)
 
+## [0.5.0](https://github.com/danielgonzagat/whatsapp_saas/compare/v0.4.2...v0.5.0) (2026-05-12)
+
+
+### Features
+
+* **frontend:** allow NEXT_PUBLIC_PROD_ROOT_DOMAIN to override kloel.com ([de3f465](https://github.com/danielgonzagat/whatsapp_saas/commit/de3f465eb53f2ae28e3aa1b2789f0cff96df7133))
+* **meta:** /meta/auth/diagnostics + hardened sanitizeReturnTo + richer error mapping ([63fa20f](https://github.com/danielgonzagat/whatsapp_saas/commit/63fa20fe3304a7c4fc99cfb48cae02be93321bca))
+* **meta:** make Marketing &gt; WhatsApp/Facebook/Instagram OAuth robust + diagnose-able ([0b5ca92](https://github.com/danielgonzagat/whatsapp_saas/commit/0b5ca92dd4f9c5c8d4373436934881a12b059c47))
+* **meta:** pin OAuth redirect via META_OAUTH_REDIRECT_URI override ([d099545](https://github.com/danielgonzagat/whatsapp_saas/commit/d09954537fb7ac2254e2d641d391c6ef1f12fc23))
+* **meta:** startup validation + diagnostics scopes for MetaWhatsAppService ([cf17eac](https://github.com/danielgonzagat/whatsapp_saas/commit/cf17eacdd77e31cec617f8b478d390ca760ad0d4))
+
+
+### Bug Fixes
+
+* **meta:** satisfy architecture guardrails (no_new_any token + size &lt;600 LOC) ([3a2f1be](https://github.com/danielgonzagat/whatsapp_saas/commit/3a2f1bedc94706b02999e8be9d885b273d72591f))
+
 ## [0.4.2](https://github.com/danielgonzagat/whatsapp_saas/compare/v0.4.1...v0.4.2) (2026-05-12)
 
 

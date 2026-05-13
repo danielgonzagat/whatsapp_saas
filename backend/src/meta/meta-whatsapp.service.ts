@@ -1,12 +1,27 @@
-import { BadRequestException, Injectable, Logger, Optional } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  Logger,
+  Optional,
+  type OnModuleInit,
+} from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { MetaSdkService } from './meta-sdk.service';
 import { decryptMetaToken } from './meta-token-crypto';
 import { asProviderSettings } from '../whatsapp/provider-settings.types';
-import { readRecord, readStrictText } from './meta-read-helpers';
-import { resolvePublicBackendBaseUrl } from './meta-oauth-url.helpers';
+import { readRecord, readStrictText } from './__companions__/meta-read-helpers';
+import {
+  resolveOAuthRedirect,
+  resolvePublicBackendBaseUrl,
+  type ResolvedOAuthRedirect,
+} from './__parts__/meta-oauth-url.helpers';
+import { runMetaStartupCheck } from './__parts__/meta-startup-check';
+import {
+  getRequestedScopesForChannel,
+  type MetaMarketingChannel,
+} from './__parts__/meta-scopes.helpers';
 
 const D_RE = /\D/g;
 
@@ -90,7 +105,7 @@ function readChannelConfigId(channel: MetaChannel): string {
 
 // cache.invalidate — Meta connections fetched live from DB; no Redis cache to invalidate
 @Injectable()
-export class MetaWhatsAppService {
+export class MetaWhatsAppService implements OnModuleInit {
   private readonly logger = new Logger(MetaWhatsAppService.name);
 
   constructor(
@@ -98,6 +113,14 @@ export class MetaWhatsAppService {
     private readonly metaSdk: MetaSdkService,
     @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
+
+  onModuleInit(): void {
+    runMetaStartupCheck({
+      env: process.env,
+      resolved: this.resolveRedirect(),
+      logger: this.logger,
+    });
+  }
 
   buildEmbeddedSignupUrl(
     workspaceId: string,
@@ -151,8 +174,16 @@ export class MetaWhatsAppService {
 
   /** Get o auth redirect uri. */
   getOAuthRedirectUri(): string {
-    const publicBackendUrl = this.getPublicBackendBaseUrl();
-    return `${publicBackendUrl}/meta/auth/callback`;
+    return this.resolveRedirect().redirectUri;
+  }
+
+  /**
+   * Full resolution of the OAuth redirect URI plus its source. The source is
+   * exposed via the /meta/auth/diagnostics endpoint so operators can verify
+   * that the URL Meta receives matches what is registered in the App console.
+   */
+  resolveRedirect(): ResolvedOAuthRedirect {
+    return resolveOAuthRedirect(process.env);
   }
 
   /** Resolve connection. */
@@ -236,21 +267,20 @@ export class MetaWhatsAppService {
         accessToken,
       );
 
-      const firstBusiness = Array.isArray(businesses?.data) ? businesses.data[0] : null;
-      const firstWaba = Array.isArray(firstBusiness?.owned_whatsapp_business_accounts)
-        ? firstBusiness.owned_whatsapp_business_accounts[0]
-        : null;
-      const firstPhone = Array.isArray(firstWaba?.phone_numbers)
-        ? firstWaba.phone_numbers[0]
-        : null;
+      const businessRows = Array.isArray(businesses.data) ? businesses.data : [];
+      const firstBusiness = readRecord(businessRows[0]);
+      const ownedWhatsappAccounts = firstBusiness.owned_whatsapp_business_accounts;
+      const wabaRows = Array.isArray(ownedWhatsappAccounts) ? ownedWhatsappAccounts : [];
+      const firstWaba = readRecord(wabaRows[0]);
+      const phoneRows = Array.isArray(firstWaba.phone_numbers) ? firstWaba.phone_numbers : [];
+      const firstPhone = readRecord(phoneRows[0]);
 
       return {
-        whatsappBusinessId:
-          String(firstWaba?.id || discovered.whatsappBusinessId || '').trim() || null,
+        whatsappBusinessId: readStrictText(firstWaba.id) || discovered.whatsappBusinessId || null,
         whatsappPhoneNumberId:
-          String(firstPhone?.id || discovered.whatsappPhoneNumberId || '').trim() || null,
-        displayPhoneNumber: String(firstPhone?.display_phone_number || '').trim() || null,
-        verifiedName: String(firstPhone?.verified_name || '').trim() || null,
+          readStrictText(firstPhone.id) || discovered.whatsappPhoneNumberId || null,
+        displayPhoneNumber: readStrictText(firstPhone.display_phone_number) || null,
+        verifiedName: readStrictText(firstPhone.verified_name) || null,
       };
     } catch (error: unknown) {
       void this.opsAlert?.alertOnDegradation(
@@ -626,6 +656,11 @@ export class MetaWhatsAppService {
   /** Get public backend base url. */
   getPublicBackendBaseUrl(): string {
     return resolvePublicBackendBaseUrl(process.env);
+  }
+
+  /** Re-export from meta-scopes.helpers so the controller has a single accessor. */
+  getRequestedScopesForChannel(channel: MetaMarketingChannel): string[] {
+    return getRequestedScopesForChannel(channel);
   }
 
   private normalizePhone(value: string): string {

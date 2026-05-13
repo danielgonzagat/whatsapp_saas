@@ -81,6 +81,17 @@ function buildSyncInput() {
   };
 }
 
+function mockSyncSuccess() {
+  apiFetchMock.mockResolvedValue({
+    status: 200,
+    data: {
+      response: 'Resposta',
+      conversationId: 'thread-1',
+      title: 'Nova conversa',
+    },
+  });
+}
+
 describe('sendAuthenticatedKloelMessage', () => {
   beforeEach(() => {
     mutateMock.mockReset();
@@ -89,14 +100,7 @@ describe('sendAuthenticatedKloelMessage', () => {
 
   it('passes abort signals to authenticated sync requests', async () => {
     const controller = new AbortController();
-    apiFetchMock.mockResolvedValue({
-      status: 200,
-      data: {
-        response: 'Resposta',
-        conversationId: 'thread-1',
-        title: 'Nova conversa',
-      },
-    });
+    mockSyncSuccess();
 
     await expect(
       sendAuthenticatedKloelMessage(

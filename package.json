@@ -171,7 +171,7 @@
     "@commitlint/config-conventional": "^20.5.3",
     "@openai/agents": "^0.10.1",
     "husky": "^9.1.7",
-    "knip": "^6.13.0",
+    "knip": "^6.13.1",
     "lint-staged": "^16.2.6",
     "madge": "^8.0.0",
     "playwright": "^1.60.0",

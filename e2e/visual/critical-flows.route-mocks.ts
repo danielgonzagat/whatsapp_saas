@@ -80,6 +80,24 @@ async function seedAcceptedCookieConsent(page: Page) {
   });
 }
 
+async function mockSettingsAccountApis(page: Page) {
+  await page.route(/\/(?:api\/)?kyc\/profile(?:\?|$)/, async (requestRoute) => {
+    await requestRoute.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: jsonBody({}),
+    });
+  });
+
+  await page.route(/\/payments\/connect\/[^/]+\/accounts(?:\?|$)/, async (requestRoute) => {
+    await requestRoute.fulfill({
+      status: 500,
+      contentType: 'application/json',
+      body: jsonBody({ message: 'Failed to fetch' }),
+    });
+  });
+}
+
 export async function mockVisualRouteApis(page: Page, route: CriticalRoute) {
   if (route.name === 'checkout') {
     await page.route(
@@ -266,6 +284,11 @@ export async function mockVisualRouteApis(page: Page, route: CriticalRoute) {
         body: jsonBody({ products: [], count: 0 }),
       });
     });
+    return;
+  }
+
+  if (route.name === 'settings') {
+    await mockSettingsAccountApis(page);
     return;
   }
 

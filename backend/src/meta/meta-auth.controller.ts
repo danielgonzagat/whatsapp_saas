@@ -25,6 +25,12 @@ import { decryptMetaToken, encryptMetaToken } from './meta-token-crypto';
 import { MetaWhatsAppService } from './meta-whatsapp.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { RouteClass } from '../common/throttler/route-class.decorator';
+import {
+  buildDiagnosticsPayload,
+  humanizeMetaError,
+  sanitizeReturnTo as sanitizeReturnToHelper,
+} from './__parts__/meta-auth-helpers';
+import { readRecord, readStrictText } from './__companions__/meta-read-helpers';
 
 interface MetaAuthPage {
   id?: string;
@@ -94,11 +100,11 @@ export class MetaAuthController {
         continue;
       }
       try {
-        const parsed = JSON.parse(candidate);
+        const parsed = readRecord(JSON.parse(candidate) as unknown);
         return {
-          workspaceId: String(parsed?.workspaceId || '').trim(),
-          channel: parsed?.channel ? String(parsed.channel).trim() : null,
-          returnTo: parsed?.returnTo ? String(parsed.returnTo).trim() : null,
+          workspaceId: readStrictText(parsed.workspaceId)?.trim() || '',
+          channel: readStrictText(parsed.channel)?.trim() || null,
+          returnTo: readStrictText(parsed.returnTo)?.trim() || null,
         };
       } catch {
         continue;
@@ -109,19 +115,7 @@ export class MetaAuthController {
   }
 
   private sanitizeReturnTo(requestedReturnTo?: string | null, channel?: string | null): string {
-    const raw = String(requestedReturnTo || '').trim();
-    if (raw.startsWith('/') && !raw.startsWith('//')) {
-      return raw;
-    }
-
-    const marketingChannel = String(channel || '')
-      .trim()
-      .toLowerCase();
-    if (['whatsapp', 'instagram', 'facebook', 'email'].includes(marketingChannel)) {
-      return `/marketing/${marketingChannel}`;
-    }
-
-    return '/settings?section=apps';
+    return sanitizeReturnToHelper(requestedReturnTo, channel, this.frontendUrl);
   }
 
   private buildFrontendRedirect(
@@ -137,27 +131,8 @@ export class MetaAuthController {
     return url.toString();
   }
 
-  private humanizeMetaError(rawMessage: string): string {
-    const msg = rawMessage.toLowerCase();
-    if (msg.includes('redirect_uri') || msg.includes('redirect uri')) {
-      return 'A Meta nao autorizou o dominio de retorno. Ajuste os dominios do app Meta e tente novamente.';
-    }
-    if (msg.includes('expired') || msg.includes('code has expired')) {
-      return 'O codigo de autorizacao Meta expirou. Tente conectar novamente.';
-    }
-    if (msg.includes('invalid') && (msg.includes('code') || msg.includes('token'))) {
-      return 'Codigo de autorizacao Meta invalido ou ja usado. Tente conectar novamente.';
-    }
-    if (msg.includes('client_id') || msg.includes('app_id')) {
-      return 'A configuracao do app Meta nao foi aceita. Revise o app conectado e tente novamente.';
-    }
-    if (msg.includes('permission') || msg.includes('permissions')) {
-      return 'Permissoes insuficientes no app Meta. Verifique os scopes configurados no dashboard.';
-    }
-    if (msg.includes('rate') || msg.includes('limit')) {
-      return 'Limite de requisicoes da Meta atingido. Aguarde alguns minutos e tente novamente.';
-    }
-    return 'Nao foi possivel concluir a autenticacao Meta. Tente novamente em instantes.';
+  private humanizeMetaError(rawMessage: string, errorCode?: string | number | null): string {
+    return humanizeMetaError(rawMessage, errorCode);
   }
 
   // ─── Generate OAuth URL ──────────────────────────────────────────
@@ -176,6 +151,26 @@ export class MetaAuthController {
         ...(returnTo !== undefined ? { returnTo: this.sanitizeReturnTo(returnTo, channel) } : {}),
       }),
     };
+  }
+
+  // ─── Diagnostics ─────────────────────────────────────────────────
+  // Lets operators verify (1) which env var resolved the redirect URI,
+  // (2) that it matches what is registered in the Meta app, and
+  // (3) which scopes are requested per channel — all without dumping secrets.
+
+  @Get('diagnostics')
+  @UseGuards(WorkspaceGuard)
+  getDiagnostics() {
+    return buildDiagnosticsPayload({
+      env: process.env,
+      resolved: this.metaWhatsApp.resolveRedirect(),
+      frontendUrl: this.frontendUrl,
+      scopesByChannel: {
+        whatsapp: this.metaWhatsApp.getRequestedScopesForChannel('whatsapp'),
+        instagram: this.metaWhatsApp.getRequestedScopesForChannel('instagram'),
+        facebook: this.metaWhatsApp.getRequestedScopesForChannel('facebook'),
+      },
+    });
   }
 
   // ─── OAuth Callback ──────────────────────────────────────────────
@@ -226,12 +221,17 @@ export class MetaAuthController {
         headers: getTraceHeaders(),
         signal: AbortSignal.timeout(30000),
       });
-      const tokenData = await tokenRes.json();
+      const tokenData = readRecord(await tokenRes.json());
+      const tokenError = readRecord(tokenData.error);
 
-      if (tokenData.error) {
-        const rawMetaError = String(
-          tokenData.error.message || tokenData.error.error_user_msg || '',
-        );
+      if (Object.keys(tokenError).length > 0) {
+        const rawMetaError =
+          readStrictText(tokenError.message) || readStrictText(tokenError.error_user_msg) || '';
+        const errorCodeValue = tokenError.code ?? tokenError.type ?? null;
+        const rawErrorCode =
+          typeof errorCodeValue === 'string' || typeof errorCodeValue === 'number'
+            ? errorCodeValue
+            : null;
         this.logger.error(
           JSON.stringify({
             event: 'meta_oauth_token_exchange_failed',
@@ -240,7 +240,7 @@ export class MetaAuthController {
             operation: 'oauth_token_exchange',
             status: 'error',
             durationMs: Date.now() - startedAt,
-            errorCode: String(tokenData.error.code || tokenData.error.type || 'meta_oauth_error'),
+            errorCode: String(rawErrorCode ?? 'meta_oauth_error'),
             message: rawMetaError.slice(0, 512),
           }),
         );
@@ -248,12 +248,12 @@ export class MetaAuthController {
           this.buildFrontendRedirect(returnTo, parsedState.channel, {
             meta: 'error',
             reason: 'token_exchange',
-            meta_error: this.humanizeMetaError(rawMetaError),
+            meta_error: this.humanizeMetaError(rawMetaError, rawErrorCode),
           }),
         );
       }
 
-      const shortLivedToken = tokenData.access_token;
+      const shortLivedToken = readStrictText(tokenData.access_token) || '';
 
       // 2. Exchange for long-lived token
       const longLived = await this.metaSdk.exchangeToken(shortLivedToken);
@@ -356,7 +356,9 @@ export class MetaAuthController {
         update: connectionUpdate,
       });
 
-      this.logger.log(`Meta connected for workspace ${workspaceId} channel=${resolvedChannel} (page: ${pageName || 'none'})`);
+      this.logger.log(
+        `Meta connected for workspace ${workspaceId} channel=${resolvedChannel} (page: ${pageName || 'none'})`,
+      );
 
       return res.redirect(
         this.buildFrontendRedirect(returnTo, parsedState.channel, {
@@ -407,7 +409,9 @@ export class MetaAuthController {
 
     // Revoke permission on Meta's side (best-effort, use first token)
     const firstConnection = connections[0];
-    const resolvedAccessToken = firstConnection ? decryptMetaToken(firstConnection.accessToken) : null;
+    const resolvedAccessToken = firstConnection
+      ? decryptMetaToken(firstConnection.accessToken)
+      : null;
     if (resolvedAccessToken) {
       try {
         await this.metaSdk.graphApiDelete('me/permissions', resolvedAccessToken);
@@ -459,16 +463,36 @@ export class MetaAuthController {
 
     const merged = connections.reduce(
       (acc, c) => {
-        if (c.pageId) acc.pageId = c.pageId;
-        if (c.pageName) acc.pageName = c.pageName;
-        if (c.instagramAccountId) acc.instagramAccountId = c.instagramAccountId;
-        if (c.instagramUsername) acc.instagramUsername = c.instagramUsername;
-        if (c.whatsappPhoneNumberId) acc.whatsappPhoneNumberId = c.whatsappPhoneNumberId;
-        if (c.whatsappBusinessId) acc.whatsappBusinessId = c.whatsappBusinessId;
-        if (c.adAccountId) acc.adAccountId = c.adAccountId;
-        if (c.pixelId) acc.pixelId = c.pixelId;
-        if (c.catalogId) acc.catalogId = c.catalogId;
-        if (c.tokenExpiresAt) acc.tokenExpiresAt = c.tokenExpiresAt;
+        if (c.pageId) {
+          acc.pageId = c.pageId;
+        }
+        if (c.pageName) {
+          acc.pageName = c.pageName;
+        }
+        if (c.instagramAccountId) {
+          acc.instagramAccountId = c.instagramAccountId;
+        }
+        if (c.instagramUsername) {
+          acc.instagramUsername = c.instagramUsername;
+        }
+        if (c.whatsappPhoneNumberId) {
+          acc.whatsappPhoneNumberId = c.whatsappPhoneNumberId;
+        }
+        if (c.whatsappBusinessId) {
+          acc.whatsappBusinessId = c.whatsappBusinessId;
+        }
+        if (c.adAccountId) {
+          acc.adAccountId = c.adAccountId;
+        }
+        if (c.pixelId) {
+          acc.pixelId = c.pixelId;
+        }
+        if (c.catalogId) {
+          acc.catalogId = c.catalogId;
+        }
+        if (c.tokenExpiresAt) {
+          acc.tokenExpiresAt = c.tokenExpiresAt;
+        }
         return acc;
       },
       {} as Record<string, unknown>,
