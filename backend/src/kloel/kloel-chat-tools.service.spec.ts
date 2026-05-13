@@ -49,6 +49,7 @@ describe('KloelChatToolsService', () => {
   let agentScheduler: {
     upsertJob: jest.Mock;
     listJobs: jest.Mock;
+    setJobEnabled: jest.Mock;
   };
   let agentSessions: {
     search: jest.Mock;
@@ -101,6 +102,9 @@ describe('KloelChatToolsService', () => {
     agentScheduler = {
       upsertJob: jest.fn().mockResolvedValue({ ok: true, key: 'agent_job:daily' }),
       listJobs: jest.fn().mockResolvedValue([]),
+      setJobEnabled: jest
+        .fn()
+        .mockResolvedValue({ ok: true, key: 'agent_job:daily', enabled: false }),
     };
     agentSessions = {
       search: jest.fn().mockResolvedValue({ query: 'checkout', totalFound: 0, memories: [] }),
@@ -277,6 +281,20 @@ describe('KloelChatToolsService', () => {
 
       expect(result.success).toBe(true);
       expect(agentSessions.search).toHaveBeenCalledWith(wsId, 'checkout', 3);
+    });
+
+    it('pauses governed agent jobs without deleting them', async () => {
+      const result = await service.toolSetAgentJobEnabled(wsId, {
+        jobId: 'daily',
+        enabled: false,
+      });
+
+      expect(result.success).toBe(true);
+      expect(agentScheduler.setJobEnabled).toHaveBeenCalledWith({
+        workspaceId: wsId,
+        jobId: 'daily',
+        enabled: false,
+      });
     });
 
     it('searches persistent agent sessions by workspace', async () => {

@@ -87,6 +87,21 @@ export const KLOEL_CHAT_TOOLS_SETTINGS_CAMPAIGNS: ChatCompletionTool[] = [
   {
     type: 'function',
     function: {
+      name: 'set_agent_job_enabled',
+      description: 'Pausa ou reativa um job autônomo governado do Kloel sem apagar seu histórico',
+      parameters: {
+        type: 'object',
+        properties: {
+          jobId: { type: 'string', description: 'ID ou chave do job autônomo' },
+          enabled: { type: 'boolean', description: 'true para ativar, false para pausar' },
+        },
+        required: ['jobId', 'enabled'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
       name: 'search_agent_memory',
       description:
         'Busca memórias episódicas, operacionais e procedurais persistidas pelo runtime do Kloel',

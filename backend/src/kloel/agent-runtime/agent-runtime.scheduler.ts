@@ -151,6 +151,39 @@ export class AgentRuntimeSchedulerService {
       .filter((job): job is NonNullable<typeof job> => job !== null);
   }
 
+  async setJobEnabled(params: {
+    workspaceId: string;
+    jobId: string;
+    enabled: boolean;
+  }): Promise<{ ok: boolean; key: string; enabled: boolean; reason?: string }> {
+    const key = this.normalizeJobKey(params.jobId);
+    const row = await this.prisma.kloelMemory.findUnique({
+      where: { workspaceId_key: { workspaceId: params.workspaceId, key } },
+      select: { value: true },
+    });
+    const value = row ? this.parseJobValue(row.value) : null;
+    if (!value) {
+      return { ok: false, key, enabled: params.enabled, reason: 'job_not_found' };
+    }
+    const nextValue: AgentScheduledJobValue = {
+      ...value,
+      enabled: params.enabled,
+    };
+    await this.prisma.kloelMemory.updateMany({
+      where: { workspaceId: params.workspaceId, key, category: 'agent_job', type: 'scheduled' },
+      data: {
+        value: toInputJsonValue(nextValue),
+        metadata: {
+          kind: 'agent_job',
+          nextRunAt: nextValue.schedule.runAt,
+          lastRunAt: nextValue.lastRunAt,
+          enabled: params.enabled,
+        } satisfies Prisma.InputJsonObject,
+      },
+    });
+    return { ok: true, key, enabled: params.enabled };
+  }
+
   @Cron(CronExpression.EVERY_MINUTE)
   async auditDueJobs(): Promise<void> {
     try {
@@ -303,6 +336,11 @@ export class AgentRuntimeSchedulerService {
 
   private nextRunFor(everyMinutes: number, from = new Date()): Date {
     return new Date(from.getTime() + Math.max(1, everyMinutes) * 60_000);
+  }
+
+  private normalizeJobKey(jobId: string): string {
+    const sanitized = sanitizeAgentRuntimeText(jobId, 160);
+    return sanitized.startsWith('agent_job:') ? sanitized : `agent_job:${sanitized}`;
   }
 
   private messageFor(error: unknown): string {

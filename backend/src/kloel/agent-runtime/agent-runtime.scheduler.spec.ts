@@ -26,6 +26,7 @@ describe('AgentRuntimeSchedulerService', () => {
             },
           },
         ]),
+        findUnique: jest.fn().mockResolvedValue(null),
         updateMany: jest.fn().mockResolvedValue({ count: 1 }),
       },
       auditLog: {
@@ -84,5 +85,81 @@ describe('AgentRuntimeSchedulerService', () => {
       }),
     );
     jest.useRealTimers();
+  });
+
+  it('pauses an existing scheduled job without deleting its stored payload', async () => {
+    const prisma = {
+      kloelMemory: {
+        findUnique: jest.fn().mockResolvedValue({
+          value: {
+            kind: 'agent_job',
+            title: 'Daily audit',
+            prompt: 'Review memory',
+            schedule: {
+              kind: 'interval',
+              runAt: '2026-05-13T09:59:00.000Z',
+              everyMinutes: 60,
+            },
+            toolScope: ['search_agent_memory'],
+            enabled: true,
+            lastRunAt: null,
+          },
+        }),
+        updateMany: jest.fn().mockResolvedValue({ count: 1 }),
+      },
+    };
+    const service = new AgentRuntimeSchedulerService(
+      prisma as never,
+      { buildEnvelope: jest.fn() } as never,
+    );
+
+    const result = await service.setJobEnabled({
+      workspaceId: 'ws_1',
+      jobId: 'agent_job:daily',
+      enabled: false,
+    });
+
+    expect(result).toEqual({ ok: true, key: 'agent_job:daily', enabled: false });
+    expect(prisma.kloelMemory.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          workspaceId: 'ws_1',
+          key: 'agent_job:daily',
+          category: 'agent_job',
+          type: 'scheduled',
+        },
+        data: expect.objectContaining({
+          value: expect.objectContaining({ enabled: false }),
+          metadata: expect.objectContaining({ enabled: false }),
+        }),
+      }),
+    );
+  });
+
+  it('returns job_not_found when a scheduled job cannot be parsed', async () => {
+    const prisma = {
+      kloelMemory: {
+        findUnique: jest.fn().mockResolvedValue(null),
+        updateMany: jest.fn(),
+      },
+    };
+    const service = new AgentRuntimeSchedulerService(
+      prisma as never,
+      { buildEnvelope: jest.fn() } as never,
+    );
+
+    const result = await service.setJobEnabled({
+      workspaceId: 'ws_1',
+      jobId: 'missing',
+      enabled: false,
+    });
+
+    expect(result).toEqual({
+      ok: false,
+      key: 'agent_job:missing',
+      enabled: false,
+      reason: 'job_not_found',
+    });
+    expect(prisma.kloelMemory.updateMany).not.toHaveBeenCalled();
   });
 });

@@ -106,6 +106,8 @@ export class KloelToolDispatcherService {
           return await this.chatToolsService.toolCreateAgentJob(workspaceId, asToolArgs(args));
         case 'list_agent_jobs':
           return await this.chatToolsService.toolListAgentJobs(workspaceId);
+        case 'set_agent_job_enabled':
+          return await this.chatToolsService.toolSetAgentJobEnabled(workspaceId, asToolArgs(args));
         case 'search_agent_memory':
           return await this.chatToolsService.toolSearchAgentMemory(workspaceId, asToolArgs(args));
         case 'search_agent_sessions':

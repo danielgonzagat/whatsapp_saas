@@ -86,6 +86,11 @@ interface ToolCreateAgentJobArgs {
   toolScope?: string[];
 }
 
+interface ToolSetAgentJobEnabledArgs {
+  jobId: string;
+  enabled: boolean;
+}
+
 interface ToolSearchAgentMemoryArgs {
   query: string;
   limit?: number;
@@ -557,6 +562,30 @@ export class KloelChatToolsService {
       success: true,
       jobs,
       message: jobs.length ? `Jobs autônomos: ${jobs.length}` : 'Nenhum job autônomo registrado.',
+    };
+  }
+
+  async toolSetAgentJobEnabled(
+    workspaceId: string,
+    args: ToolSetAgentJobEnabledArgs,
+  ): Promise<ToolResult> {
+    if (!this.agentScheduler) {
+      return { success: false, error: 'agent_scheduler_unavailable' };
+    }
+    const jobId = safeStr(args.jobId).trim().slice(0, 160);
+    if (!jobId) {
+      return { success: false, error: 'missing_agent_job_id' };
+    }
+    const result = await this.agentScheduler.setJobEnabled({
+      workspaceId,
+      jobId,
+      enabled: args.enabled === true,
+    });
+    return {
+      success: result.ok,
+      key: result.key,
+      enabled: result.enabled,
+      ...(result.reason ? { error: result.reason } : {}),
     };
   }
 

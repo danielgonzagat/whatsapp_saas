@@ -58,6 +58,7 @@ describe('KloelToolDispatcherService', () => {
     | 'toolGetDashboardSummary'
     | 'toolCreateAgentJob'
     | 'toolListAgentJobs'
+    | 'toolSetAgentJobEnabled'
     | 'toolSearchAgentMemory'
     | 'toolSearchAgentSessions'
     | 'toolUpsertAgentSkill'
@@ -137,6 +138,7 @@ describe('KloelToolDispatcherService', () => {
       toolGetDashboardSummary: jest.fn().mockResolvedValue({ success: true, stats: {} }),
       toolCreateAgentJob: jest.fn().mockResolvedValue({ success: true, key: 'agent_job:daily' }),
       toolListAgentJobs: jest.fn().mockResolvedValue({ success: true, jobs: [] }),
+      toolSetAgentJobEnabled: jest.fn().mockResolvedValue({ success: true }),
       toolSearchAgentMemory: jest.fn().mockResolvedValue({ success: true, memories: [] }),
       toolSearchAgentSessions: jest.fn().mockResolvedValue({ success: true, sessions: [] }),
       toolUpsertAgentSkill: jest.fn().mockResolvedValue({ success: true, skillId: 'skill_1' }),
@@ -298,6 +300,17 @@ describe('KloelToolDispatcherService', () => {
       it('routes list_agent_jobs to chatToolsService', async () => {
         await service.executeTool(wsId, 'list_agent_jobs', {});
         expect(chatToolsService.toolListAgentJobs).toHaveBeenCalledWith(wsId);
+      });
+
+      it('routes set_agent_job_enabled to chatToolsService', async () => {
+        await service.executeTool(wsId, 'set_agent_job_enabled', {
+          jobId: 'daily',
+          enabled: false,
+        });
+        expect(chatToolsService.toolSetAgentJobEnabled).toHaveBeenCalledWith(
+          wsId,
+          expect.any(Object),
+        );
       });
 
       it('routes search_agent_memory to chatToolsService', async () => {
