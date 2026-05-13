@@ -1,4 +1,5 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { BrainEventSpineService } from './brain-event-spine.service';
 import { ChannelSetupService } from './channel-setup.service';
 import { MindConceptService } from './mind-concepts.service';
@@ -46,7 +47,7 @@ export { assertCustomerSafe, composeCustomerMessage } from './commercial-decisio
 
 @Injectable()
 export class CommercialDecisionOrchestratorService {
-  private readonly logger = new Logger(CommercialDecisionOrchestratorService.name);
+  private readonly logger = StructuredLogger.from(CommercialDecisionOrchestratorService.name);
 
   constructor(
     private readonly mind: MindService,
@@ -92,7 +93,7 @@ export class CommercialDecisionOrchestratorService {
     if (resolvedIdentity?.wasResolved) {
       await recordIdentityResolved(
         this.events, workspaceId, effectiveSubject, inboundKey,
-        resolvedContactId, resolvedIdentity.resolvedFromContactId,
+        resolvedIdentity.contactId, resolvedIdentity.resolvedFromContactId,
       );
     }
 
@@ -234,8 +235,8 @@ export class CommercialDecisionOrchestratorService {
       concept,
       effectiveAggressiveness: scored.effectiveAggressiveness,
       aggressiveness: scored.aggressiveness.aggressiveness,
-      couponAction: scored.couponAction,
-      productOffer: scored.productOffer,
+      ...(scored.couponAction !== undefined ? { couponAction: scored.couponAction } : {}),
+      ...(scored.productOffer !== undefined ? { productOffer: scored.productOffer } : {}),
       channelSetup,
       tone: tone.tone,
     });
@@ -245,10 +246,10 @@ export class CommercialDecisionOrchestratorService {
     traceComposerProduced({ ...traceCtx, messageLength: customerMessage.length, concept });
 
     const actions = buildActions({
-      couponDecision: scored.couponDecision,
+      ...(scored.couponDecision !== undefined ? { couponDecision: scored.couponDecision } : {}),
       discountPercentFromCoupon,
-      productOfferDecision: scored.productOfferDecision,
-      humanTransferDecision: scored.humanTransferDecision,
+      ...(scored.productOfferDecision !== undefined ? { productOfferDecision: scored.productOfferDecision } : {}),
+      ...(scored.humanTransferDecision !== undefined ? { humanTransferDecision: scored.humanTransferDecision } : {}),
       decisionTraceId: inboundKey,
       inboundKey,
       customerMessage,

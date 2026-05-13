@@ -29,11 +29,11 @@ export type ScoringOutput = {
   format: { format: string; confidence: number; fallback: boolean };
   channelChoice: { channel: string; confidence: number; fallback: boolean };
   audio: { choice: string; confidence: number; fallback: boolean };
-  couponDecision?: Record<string, unknown>;
-  couponAction?: string;
-  productOfferDecision?: Record<string, unknown>;
-  productOffer?: string;
-  humanTransferDecision?: Record<string, unknown>;
+  couponDecision?: Record<string, unknown> | undefined;
+  couponAction?: string | undefined;
+  productOfferDecision?: Record<string, unknown> | undefined;
+  productOffer?: string | undefined;
+  humanTransferDecision?: Record<string, unknown> | undefined;
   effectiveAggressiveness: string;
   decisions: Record<string, unknown>;
   concept: string;
