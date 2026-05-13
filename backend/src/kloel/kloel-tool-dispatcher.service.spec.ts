@@ -65,6 +65,10 @@ describe('KloelToolDispatcherService', () => {
     | 'toolUpsertAgentSkill'
     | 'toolRecordAgentSkillOutcome'
     | 'toolRecordAgentDelegation'
+    | 'toolRecordAgentEvidence'
+    | 'toolSearchAgentEvidence'
+    | 'toolListAgentEvidence'
+    | 'toolVerifyAgentEvidence'
     | 'toolCreatePaymentLink'
   >;
   let bizConfigToolsService: Pick<
@@ -148,6 +152,10 @@ describe('KloelToolDispatcherService', () => {
       toolUpsertAgentSkill: jest.fn().mockResolvedValue({ success: true, skillId: 'skill_1' }),
       toolRecordAgentSkillOutcome: jest.fn().mockResolvedValue({ success: true }),
       toolRecordAgentDelegation: jest.fn().mockResolvedValue({ success: true }),
+      toolRecordAgentEvidence: jest.fn().mockResolvedValue({ success: true }),
+      toolSearchAgentEvidence: jest.fn().mockResolvedValue({ success: true, evidence: [] }),
+      toolListAgentEvidence: jest.fn().mockResolvedValue({ success: true, evidence: [] }),
+      toolVerifyAgentEvidence: jest.fn().mockResolvedValue({ success: true }),
       toolCreatePaymentLink: jest
         .fn()
         .mockResolvedValue({ success: true, paymentUrl: 'https://pay.test' }),
@@ -374,6 +382,30 @@ describe('KloelToolDispatcherService', () => {
           wsId,
           expect.any(Object),
         );
+      });
+
+      it('routes agent evidence tools to chatToolsService', async () => {
+        await service.executeTool(wsId, 'record_agent_evidence', {
+          source: 'jest',
+          content: 'validated',
+        });
+        await service.executeTool(wsId, 'search_agent_evidence', { query: 'validated' });
+        await service.executeTool(wsId, 'list_agent_evidence', { type: 'validation' });
+        await service.executeTool(wsId, 'verify_agent_evidence', {});
+
+        expect(chatToolsService.toolRecordAgentEvidence).toHaveBeenCalledWith(
+          wsId,
+          expect.any(Object),
+        );
+        expect(chatToolsService.toolSearchAgentEvidence).toHaveBeenCalledWith(
+          wsId,
+          expect.any(Object),
+        );
+        expect(chatToolsService.toolListAgentEvidence).toHaveBeenCalledWith(
+          wsId,
+          expect.any(Object),
+        );
+        expect(chatToolsService.toolVerifyAgentEvidence).toHaveBeenCalledWith(wsId);
       });
     });
 

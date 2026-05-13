@@ -6,8 +6,11 @@ import { PrismaService } from '../prisma/prisma.service';
 import { SmartPaymentService } from './smart-payment.service';
 import {
   AgentRuntimeSchedulerService,
+  AgentRuntimeEvidenceStoreService,
   AgentRuntimeSessionStore,
   AgentRuntimeSkillRegistry,
+  type AgentEvidenceType,
+  type AgentEvidenceVerificationState,
   type AgentSkillDefinition,
   type AgentSkillLifecycleState,
   type AgentSkillProvenance,
@@ -140,6 +143,29 @@ interface ToolRecordAgentDelegationArgs {
   metadata?: Record<string, unknown>;
 }
 
+interface ToolRecordAgentEvidenceArgs {
+  source: string;
+  content: string;
+  type?: AgentEvidenceType;
+  actor?: string;
+  url?: string;
+  eventTimestamp?: string;
+  verification?: AgentEvidenceVerificationState;
+  notes?: string;
+  metadata?: Record<string, unknown>;
+}
+
+interface ToolSearchAgentEvidenceArgs {
+  query: string;
+  limit?: number;
+}
+
+interface ToolListAgentEvidenceArgs {
+  type?: AgentEvidenceType;
+  actor?: string;
+  limit?: number;
+}
+
 function centsFromUnknown(value: unknown): number {
   if (typeof value === 'bigint') {
     return Number(value);
@@ -161,6 +187,7 @@ export class KloelChatToolsService {
     @Optional() private readonly agentScheduler?: AgentRuntimeSchedulerService,
     @Optional() private readonly agentSessions?: AgentRuntimeSessionStore,
     @Optional() private readonly agentSkills?: AgentRuntimeSkillRegistry,
+    @Optional() private readonly agentEvidence?: AgentRuntimeEvidenceStoreService,
   ) {}
 
   async toolSaveProduct(workspaceId: string, args: ToolSaveProductArgs): Promise<ToolResult> {
@@ -792,6 +819,92 @@ export class KloelChatToolsService {
     };
   }
 
+  async toolRecordAgentEvidence(
+    workspaceId: string,
+    args: ToolRecordAgentEvidenceArgs,
+  ): Promise<ToolResult> {
+    if (!this.agentEvidence) {
+      return { success: false, error: 'agent_evidence_store_unavailable' };
+    }
+    const source = safeStr(args.source).trim().slice(0, 500);
+    const content = safeStr(args.content).trim().slice(0, 30_000);
+    if (!source || !content) {
+      return { success: false, error: 'missing_agent_evidence_source_or_content' };
+    }
+    const evidence = await this.agentEvidence.add({
+      workspaceId,
+      source,
+      content,
+      type: this.agentEvidenceType(args.type),
+      ...(args.actor ? { actor: safeStr(args.actor).trim().slice(0, 200) } : {}),
+      ...(args.url ? { url: safeStr(args.url).trim().slice(0, 1000) } : {}),
+      ...(args.eventTimestamp
+        ? { eventTimestamp: safeStr(args.eventTimestamp).trim().slice(0, 100) }
+        : {}),
+      verification: this.agentEvidenceVerification(args.verification),
+      ...(args.notes ? { notes: safeStr(args.notes).trim().slice(0, 2000) } : {}),
+      ...(args.metadata && typeof args.metadata === 'object' && !Array.isArray(args.metadata)
+        ? { metadata: args.metadata }
+        : {}),
+    });
+    return {
+      success: true,
+      evidence,
+      message: 'Evidência operacional registrada com hash de integridade.',
+    };
+  }
+
+  async toolSearchAgentEvidence(
+    workspaceId: string,
+    args: ToolSearchAgentEvidenceArgs,
+  ): Promise<ToolResult> {
+    if (!this.agentEvidence) {
+      return { success: false, error: 'agent_evidence_store_unavailable' };
+    }
+    const query = safeStr(args.query).trim();
+    if (!query) {
+      return { success: false, error: 'missing_agent_evidence_query' };
+    }
+    const evidence = await this.agentEvidence.query({
+      workspaceId,
+      keyword: query,
+      limit: args.limit,
+    });
+    return { success: true, evidence, totalFound: evidence.length };
+  }
+
+  async toolListAgentEvidence(
+    workspaceId: string,
+    args: ToolListAgentEvidenceArgs,
+  ): Promise<ToolResult> {
+    if (!this.agentEvidence) {
+      return { success: false, error: 'agent_evidence_store_unavailable' };
+    }
+    const evidence = await this.agentEvidence.list({
+      workspaceId,
+      ...(args.type ? { type: this.agentEvidenceType(args.type) } : {}),
+      ...(args.actor ? { actor: safeStr(args.actor).trim().slice(0, 200) } : {}),
+      limit: args.limit,
+    });
+    return { success: true, evidence, totalFound: evidence.length };
+  }
+
+  async toolVerifyAgentEvidence(workspaceId: string): Promise<ToolResult> {
+    if (!this.agentEvidence) {
+      return { success: false, error: 'agent_evidence_store_unavailable' };
+    }
+    const integrityIssues = await this.agentEvidence.verify(workspaceId);
+    const summary = await this.agentEvidence.summary(workspaceId);
+    return {
+      success: integrityIssues.length === 0,
+      integrityIssues,
+      summary,
+      message: integrityIssues.length
+        ? 'Evidências com hash divergente encontradas.'
+        : 'Todas as evidências verificadas mantêm integridade.',
+    };
+  }
+
   private stringList(value: unknown): string[] {
     return Array.isArray(value)
       ? value.filter((entry): entry is string => typeof entry === 'string')
@@ -834,5 +947,20 @@ export class KloelChatToolsService {
 
   private agentSkillLifecycle(value: unknown): AgentSkillLifecycleState | undefined {
     return value === 'active' || value === 'stale' || value === 'archived' ? value : undefined;
+  }
+
+  private agentEvidenceType(value: unknown): AgentEvidenceType {
+    return value === 'tool_result' ||
+      value === 'runtime_observation' ||
+      value === 'validation' ||
+      value === 'pulse' ||
+      value === 'commercial_event' ||
+      value === 'manual'
+      ? value
+      : 'runtime_observation';
+  }
+
+  private agentEvidenceVerification(value: unknown): AgentEvidenceVerificationState {
+    return value === 'single_source' || value === 'multi_source_verified' ? value : 'unverified';
   }
 }

@@ -1,6 +1,6 @@
 {
-  "runId": "cae3d8fa-bc5e-4b48-bda9-d5cffbe1f87a",
-  "generatedAt": "2026-05-13T01:39:59.724Z",
+  "runId": "cabebecb-4ccf-478e-9ff3-66df467aa749",
+  "generatedAt": "2026-05-13T16:58:29.005Z",
   "authorityMode": "advisory-only",
   "advisoryOnly": true,
   "authorityReasons": [
@@ -14,8 +14,8 @@
     "canDeclareKloelProductCertified": false,
     "blockers": [
       "artifact_consistency: Cross-artifact consistency has not produced a passing check.",
-      "critical_path_terminal: 4520 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:account-agent, matrix:capability:capability:ad-rules, matrix:capability:capability:admin-accounts, matrix:capability:capability:admin-audit, matrix:capability:capability:admin-auth, matrix:capability:capability:admin-carteira, matrix:capability:capability:admin-chat, matrix:capability:capability:admin-clients. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.",
-      "external_reality: 2 missing, 0 stale, and 0 invalid external adapter(s) remain."
+      "critical_path_terminal: 4614 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:account-agent, matrix:capability:capability:ad-rules, matrix:capability:capability:admin-accounts, matrix:capability:capability:admin-audit, matrix:capability:capability:admin-auth, matrix:capability:capability:admin-brain, matrix:capability:capability:admin-carteira, matrix:capability:capability:admin-chat. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.",
+      "external_reality: 0 missing, 2 stale, and 0 invalid external adapter(s) remain."
     ]
   },
   "cleanupPolicy": "enforced-single-state",
@@ -1072,10 +1072,30 @@
     "PULSE_WORLD_STATE.json"
   ],
   "removedLegacyPulseArtifacts": [
+    "AUDIT_FEATURE_MATRIX.md",
+    "PULSE_ADMIN_EVIDENCE.json",
+    "PULSE_BROWSER_EVIDENCE.json",
     "PULSE_CERTIFICATE.json",
     "PULSE_CLI_DIRECTIVE.json",
+    "PULSE_CODEBASE_TRUTH.json",
+    "PULSE_CONVERGENCE_PLAN.json",
+    "PULSE_CUSTOMER_EVIDENCE.json",
     "PULSE_EXECUTION_TRACE.json",
-    "PULSE_REPORT.md"
+    "PULSE_FLOW_EVIDENCE.json",
+    "PULSE_FLOW_PROJECTION.json",
+    "PULSE_HEALTH.json",
+    "PULSE_INVARIANT_EVIDENCE.json",
+    "PULSE_OBSERVABILITY_EVIDENCE.json",
+    "PULSE_OPERATOR_EVIDENCE.json",
+    "PULSE_RECOVERY_EVIDENCE.json",
+    "PULSE_REPORT.md",
+    "PULSE_RESOLVED_MANIFEST.json",
+    "PULSE_RUNTIME_EVIDENCE.json",
+    "PULSE_RUNTIME_PROBES.json",
+    "PULSE_SCENARIO_COVERAGE.json",
+    "PULSE_SCOPE_STATE.json",
+    "PULSE_SOAK_EVIDENCE.json",
+    "PULSE_WORLD_STATE.json"
   ],
   "rootStateMode": "local-only"
 }

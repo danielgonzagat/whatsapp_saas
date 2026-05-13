@@ -125,7 +125,8 @@
     "gitnexus:serve": "npx gitnexus serve",
     "gitnexus:check": "npx gitnexus status",
     "gitnexus:impact": "npx gitnexus impact",
-    "ops:verify-backup": "node scripts/ops/verify-backup.mjs"
+    "ops:verify-backup": "node scripts/ops/verify-backup.mjs",
+    "railway:runtime:check": "node scripts/ops/check-railway-runtime.mjs"
   },
   "lint-staged": {
     "*.{json,md,yml,yaml}": [

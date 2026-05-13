@@ -5,11 +5,13 @@ import path from 'node:path';
 
 const rootDir = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..', '..');
 
-const timeoutMs = Number.parseInt(process.env.PULSE_CI_TIMEOUT_MS || '', 10) || 300000;
+const timeoutMs = Number.parseInt(process.env.PULSE_CI_TIMEOUT_MS || '', 10) || 900000;
+const heartbeatMs = Number.parseInt(process.env.PULSE_CI_HEARTBEAT_MS || '', 10) || 60000;
 const isWindows = process.platform === 'win32';
 let timeoutTriggered = false;
 let forceKillTimer = null;
 let forceExitTimer = null;
+let heartbeatTimer = null;
 
 function killChildTree(pid, signal) {
   if (!pid) {
@@ -51,6 +53,15 @@ const child = spawn(
   },
 );
 
+function printHeartbeat() {
+  const elapsedMs = Date.now() - startedAt;
+  console.error(`[pulse-ci] still running after ${Math.round(elapsedMs / 1000)}s`);
+}
+
+const startedAt = Date.now();
+
+heartbeatTimer = setInterval(printHeartbeat, heartbeatMs);
+
 const timer = setTimeout(() => {
   timeoutTriggered = true;
   console.error(
@@ -70,6 +81,9 @@ const timer = setTimeout(() => {
 
 child.on('exit', (code, signal) => {
   clearTimeout(timer);
+  if (heartbeatTimer) {
+    clearInterval(heartbeatTimer);
+  }
   if (forceKillTimer) {
     clearTimeout(forceKillTimer);
   }
@@ -90,6 +104,9 @@ child.on('exit', (code, signal) => {
 
 child.on('error', (error) => {
   clearTimeout(timer);
+  if (heartbeatTimer) {
+    clearInterval(heartbeatTimer);
+  }
   if (forceKillTimer) {
     clearTimeout(forceKillTimer);
   }

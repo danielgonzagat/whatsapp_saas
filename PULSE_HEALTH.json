@@ -1,0 +1,132 @@
+{
+  "score": 100,
+  "totalNodes": 1834,
+  "breaks": [
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/admin/runtime-trace/runtime-trace.controller.ts",
+      "line": 15,
+      "description": "GET /admin/runtime/trace is not called by frontend code",
+      "detail": "Controller: getTrace",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-state-model-access-unobserved",
+      "severity": "medium",
+      "file": "backend/prisma/schema.prisma",
+      "line": 3761,
+      "description": "Model KloelGlobalPrior has no service or controller accessing it",
+      "detail": "Fields: id, channel, decisionType, action, observations...",
+      "source": "graph:confirmed_static:state_model_access_unobserved",
+      "surface": "state-access"
+    },
+    {
+      "type": "graph-ui-handler-effect-unobserved",
+      "severity": "medium",
+      "file": "frontend/src/app/(main)/ferramentas/launchpad/page.tsx",
+      "line": 221,
+      "description": "clickable \"onCreated\" has dead handler",
+      "detail": "Handler: () => mutate()",
+      "source": "graph:confirmed_static:ui_handler_effect_unobserved",
+      "surface": "ui-interaction"
+    },
+    {
+      "type": "graph-ui-handler-effect-unobserved",
+      "severity": "medium",
+      "file": "frontend/src/app/(main)/ferramentas/launchpad/page.tsx",
+      "line": 228,
+      "description": "clickable \"onAdded\" has dead handler",
+      "detail": "Handler: () => mutate()",
+      "source": "graph:confirmed_static:ui_handler_effect_unobserved",
+      "surface": "ui-interaction"
+    },
+    {
+      "type": "graph-ui-handler-effect-unobserved",
+      "severity": "medium",
+      "file": "frontend/src/app/(main)/vendas/gestao-vendas/page.tsx",
+      "line": 282,
+      "description": "clickable \"(sem texto)\" has dead handler",
+      "detail": "Handler: () => handleRemoveTag(phone, tag)",
+      "source": "graph:confirmed_static:ui_handler_effect_unobserved",
+      "surface": "ui-interaction"
+    },
+    {
+      "type": "graph-ui-handler-effect-unobserved",
+      "severity": "medium",
+      "file": "frontend/src/components/kloel/dashboard/KloelDashboard.tsx",
+      "line": 628,
+      "description": "clickable \"onTitle\" has dead handler",
+      "detail": "Handler: conversationTitle",
+      "source": "graph:confirmed_static:ui_handler_effect_unobserved",
+      "surface": "ui-interaction"
+    },
+    {
+      "type": "graph-ui-handler-effect-unobserved",
+      "severity": "medium",
+      "file": "frontend/src/components/plans/PlanOrderBumpTab.tsx",
+      "line": 326,
+      "description": "clickable \"(sem texto)\" has dead handler",
+      "detail": "Handler: () => handleDelete(bump.id)",
+      "source": "graph:confirmed_static:ui_handler_effect_unobserved",
+      "surface": "ui-interaction"
+    },
+    {
+      "type": "graph-route-target-unmatched",
+      "severity": "high",
+      "file": "frontend/src/lib/api/kloel.ts",
+      "line": 88,
+      "description": "POST /kloel/approvals/:approvalRequestId/:decision has no matching backend route",
+      "detail": "Pattern: apiFetch, endpoint: /kloel/approvals/${encodeURIComponent(approvalRequestId)}/${decision}",
+      "source": "graph:confirmed_static:route_target_unmatched",
+      "surface": "api-connectivity"
+    },
+    {
+      "type": "graph-route-target-unmatched",
+      "severity": "high",
+      "file": "scripts/pulse/parsers/hook-registry.ts",
+      "line": 122,
+      "description": "POST /api/v1/resource has no matching backend route",
+      "detail": "Pattern: apiFetch, endpoint: /api/v1/resource",
+      "source": "graph:confirmed_static:route_target_unmatched",
+      "surface": "api-connectivity"
+    },
+    {
+      "type": "graph-route-target-unmatched",
+      "severity": "high",
+      "file": "backend/src/health/system-health-external-probes.ts",
+      "line": 169,
+      "description": "POST /https:/api.anthropic.com/v1/messages has no matching backend route",
+      "detail": "Pattern: apiFetch, endpoint: https://api.anthropic.com/v1/messages",
+      "source": "graph:confirmed_static:route_target_unmatched",
+      "surface": "api-connectivity"
+    }
+  ],
+  "stats": {
+    "uiElements": 2061,
+    "uiDeadHandlers": 5,
+    "apiCalls": 797,
+    "apiNoRoute": 3,
+    "backendRoutes": 865,
+    "backendEmpty": 0,
+    "prismaModels": 172,
+    "modelOrphans": 1,
+    "facades": 0,
+    "facadesBySeverity": {
+      "high": 0,
+      "medium": 0,
+      "low": 0
+    },
+    "proxyRoutes": 84,
+    "proxyNoUpstream": 0,
+    "securityIssues": 5,
+    "dataSafetyIssues": 2,
+    "qualityIssues": 0,
+    "unavailableChecks": 0,
+    "unknownSurfaces": 0
+  },
+  "timestamp": "2026-05-13T16:50:42.415Z",
+  "runId": "cabebecb-4ccf-478e-9ff3-66df467aa749",
+  "generatedAt": "2026-05-13T16:58:29.005Z"
+}

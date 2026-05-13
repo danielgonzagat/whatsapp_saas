@@ -6,6 +6,7 @@ import {
   AgentRuntimeSchedulerService,
   AgentRuntimeSessionStore,
   AgentRuntimeSkillRegistry,
+  AgentRuntimeEvidenceStoreService,
 } from './agent-runtime';
 
 jest.mock('../common/products/legacy-products.util', () => ({
@@ -59,6 +60,13 @@ describe('KloelChatToolsService', () => {
   let agentSkills: {
     upsertSkill: jest.Mock;
     recordSkillUsage: jest.Mock;
+  };
+  let agentEvidence: {
+    add: jest.Mock;
+    query: jest.Mock;
+    list: jest.Mock;
+    verify: jest.Mock;
+    summary: jest.Mock;
   };
 
   const wsId = 'ws-1';
@@ -129,6 +137,18 @@ describe('KloelChatToolsService', () => {
         },
       }),
     };
+    agentEvidence = {
+      add: jest.fn().mockResolvedValue({
+        id: 'ev_1',
+        type: 'validation',
+        source: 'jest',
+        contentSha256: 'hash',
+      }),
+      query: jest.fn().mockResolvedValue([{ id: 'ev_1' }]),
+      list: jest.fn().mockResolvedValue([{ id: 'ev_1' }]),
+      verify: jest.fn().mockResolvedValue([]),
+      summary: jest.fn().mockResolvedValue({ total: 1, byType: { validation: 1 } }),
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -138,6 +158,7 @@ describe('KloelChatToolsService', () => {
         { provide: AgentRuntimeSchedulerService, useValue: agentScheduler },
         { provide: AgentRuntimeSessionStore, useValue: agentSessions },
         { provide: AgentRuntimeSkillRegistry, useValue: agentSkills },
+        { provide: AgentRuntimeEvidenceStoreService, useValue: agentEvidence },
       ],
     }).compile();
 
@@ -656,5 +677,51 @@ describe('KloelChatToolsService', () => {
       prisma.product.findMany.mockRejectedValue(new Error('DB down'));
       await expect(service.toolListProducts(wsId)).rejects.toThrow('DB down');
     });
+  });
+
+  it('records durable agent evidence with integrity metadata', async () => {
+    const result = await service.toolRecordAgentEvidence(wsId, {
+      source: 'jest',
+      content: 'agent runtime validation passed',
+      type: 'validation',
+      verification: 'single_source',
+    });
+
+    expect(result.success).toBe(true);
+    expect(agentEvidence.add).toHaveBeenCalledWith(
+      expect.objectContaining({
+        workspaceId: wsId,
+        source: 'jest',
+        content: 'agent runtime validation passed',
+        type: 'validation',
+        verification: 'single_source',
+      }),
+    );
+  });
+
+  it('searches and lists durable agent evidence by workspace', async () => {
+    const search = await service.toolSearchAgentEvidence(wsId, { query: 'validation' });
+    const list = await service.toolListAgentEvidence(wsId, { type: 'validation' });
+
+    expect(search.success).toBe(true);
+    expect(list.success).toBe(true);
+    expect(agentEvidence.query).toHaveBeenCalledWith({
+      workspaceId: wsId,
+      keyword: 'validation',
+      limit: undefined,
+    });
+    expect(agentEvidence.list).toHaveBeenCalledWith({
+      workspaceId: wsId,
+      type: 'validation',
+      limit: undefined,
+    });
+  });
+
+  it('verifies durable agent evidence integrity', async () => {
+    const result = await service.toolVerifyAgentEvidence(wsId);
+
+    expect(result.success).toBe(true);
+    expect(agentEvidence.verify).toHaveBeenCalledWith(wsId);
+    expect(agentEvidence.summary).toHaveBeenCalledWith(wsId);
   });
 });

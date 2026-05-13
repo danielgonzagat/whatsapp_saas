@@ -1,12 +1,10 @@
 [build]
-# Production deploys read railway.json so Dockerfile inheritance can be nulled.
 builder = "RAILPACK"
 buildCommand = "npm ci --include=dev && npm run prisma:generate && npm run build"
 watchPatterns = ["**"]
 
 [deploy]
 startCommand = "npm run start:prod"
-healthcheckPath = "/health"
-healthcheckTimeout = 300
+healthcheckPath = "/health/live"
 restartPolicyType = "ON_FAILURE"
-restartPolicyMaxRetries = 10
+restartPolicyMaxRetries = 3

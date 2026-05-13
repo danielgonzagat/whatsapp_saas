@@ -126,6 +126,14 @@ export class KloelToolDispatcherService {
             workspaceId,
             asToolArgs(args),
           );
+        case 'record_agent_evidence':
+          return await this.chatToolsService.toolRecordAgentEvidence(workspaceId, asToolArgs(args));
+        case 'search_agent_evidence':
+          return await this.chatToolsService.toolSearchAgentEvidence(workspaceId, asToolArgs(args));
+        case 'list_agent_evidence':
+          return await this.chatToolsService.toolListAgentEvidence(workspaceId, asToolArgs(args));
+        case 'verify_agent_evidence':
+          return await this.chatToolsService.toolVerifyAgentEvidence(workspaceId);
         case 'create_payment_link':
           return await this.dispatchCreatePaymentLink(workspaceId, args, userId);
         case 'connect_whatsapp':

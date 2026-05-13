@@ -140,6 +140,11 @@ check(
   'Root ops audit script is registered',
   'package.json must expose ops:audit',
 );
+check(
+  packageJson.scripts?.['railway:runtime:check'] === 'node scripts/ops/check-railway-runtime.mjs',
+  'Root Railway runtime check script is registered',
+  'package.json must expose railway:runtime:check',
+);
 for (const requiredScript of [
   'prepare',
   'lint',
@@ -160,6 +165,7 @@ for (const requiredScript of [
   'prisma:generate',
   'db:migrate:prod',
   'guard:db-push',
+  'railway:runtime:check',
   'prepush:scoped',
   'sync:install',
   'sync:run',

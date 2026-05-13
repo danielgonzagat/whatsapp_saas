@@ -239,4 +239,88 @@ export const KLOEL_CHAT_TOOLS_SETTINGS_CAMPAIGNS: ChatCompletionTool[] = [
       },
     },
   },
+  {
+    type: 'function',
+    function: {
+      name: 'record_agent_evidence',
+      description:
+        'Registra evidência operacional durável com hash de integridade para decisões, validações, PULSE, eventos comerciais ou resultados de ferramenta',
+      parameters: {
+        type: 'object',
+        properties: {
+          source: { type: 'string', description: 'Origem da evidência' },
+          content: { type: 'string', description: 'Conteúdo observado da evidência' },
+          type: {
+            type: 'string',
+            enum: [
+              'tool_result',
+              'runtime_observation',
+              'validation',
+              'pulse',
+              'commercial_event',
+              'manual',
+            ],
+          },
+          actor: { type: 'string', description: 'Ator associado, se houver' },
+          url: { type: 'string', description: 'URL da fonte, se houver' },
+          eventTimestamp: { type: 'string', description: 'Timestamp do evento observado' },
+          verification: {
+            type: 'string',
+            enum: ['unverified', 'single_source', 'multi_source_verified'],
+          },
+          notes: { type: 'string', description: 'Notas curtas de interpretação' },
+          metadata: { type: 'object', additionalProperties: true },
+        },
+        required: ['source', 'content'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'search_agent_evidence',
+      description: 'Busca evidências operacionais persistidas por palavra-chave',
+      parameters: {
+        type: 'object',
+        properties: {
+          query: { type: 'string', description: 'Termo a buscar em conteúdo, origem, ator ou URL' },
+          limit: { type: 'number', description: 'Quantidade máxima de evidências retornadas' },
+        },
+        required: ['query'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'list_agent_evidence',
+      description: 'Lista evidências operacionais persistidas com filtros opcionais',
+      parameters: {
+        type: 'object',
+        properties: {
+          type: {
+            type: 'string',
+            enum: [
+              'tool_result',
+              'runtime_observation',
+              'validation',
+              'pulse',
+              'commercial_event',
+              'manual',
+            ],
+          },
+          actor: { type: 'string', description: 'Ator associado' },
+          limit: { type: 'number', description: 'Quantidade máxima de evidências retornadas' },
+        },
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'verify_agent_evidence',
+      description: 'Verifica a integridade das evidências persistidas e retorna resumo por tipo',
+      parameters: { type: 'object', properties: {} },
+    },
+  },
 ];

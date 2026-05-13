@@ -35,6 +35,7 @@ console.log('[OK] [WORKER/REDIS-CLIENT] Using Redis:', maskRedisUrl(redisUrl));
 console.log('========================================');
 
 const redisOptions = {
+  family: 0,
   maxRetriesPerRequest: null,
   enableReadyCheck: true,
   retryStrategy(times: number) {
