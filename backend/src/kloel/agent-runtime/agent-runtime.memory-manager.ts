@@ -150,6 +150,12 @@ export class AgentRuntimeMemoryManagerService {
   private readonly logger = StructuredLogger.from(AgentRuntimeMemoryManagerService.name);
   private readonly providers: AgentRuntimeMemoryProvider[] = [];
   private readonly toolToProvider = new Map<string, AgentRuntimeMemoryProvider>();
+  private readonly toolSchemas = new Map<string, AgentRuntimeMemoryToolSchema>();
+  private readonly toolConflicts: Array<{
+    toolName: string;
+    existingProvider: string;
+    rejectedProvider: string;
+  }> = [];
   private hasExternalProvider = false;
 
   constructor(builtinProvider: AgentRuntimeBuiltinMemoryProvider) {
@@ -179,16 +185,49 @@ export class AgentRuntimeMemoryManagerService {
         continue;
       }
       if (this.toolToProvider.has(schema.name)) {
-        this.logger.warn(`Memory tool conflict ignored: ${schema.name}`);
+        const existing = this.toolToProvider.get(schema.name);
+        this.toolConflicts.push({
+          toolName: schema.name,
+          existingProvider: existing?.name ?? 'unknown',
+          rejectedProvider: provider.name,
+        });
+        this.logger.warn(
+          `Memory tool conflict: ${schema.name} (existing=${existing?.name} rejected=${provider.name})`,
+        );
         continue;
       }
       this.toolToProvider.set(schema.name, provider);
+      this.toolSchemas.set(schema.name, schema);
     }
     return true;
   }
 
   listProviders(): string[] {
     return this.providers.map((provider) => provider.name);
+  }
+
+  getToolConflicts(): ReadonlyArray<{
+    toolName: string;
+    existingProvider: string;
+    rejectedProvider: string;
+  }> {
+    return this.toolConflicts;
+  }
+
+  async getAvailableProviders(): Promise<string[]> {
+    const result: string[] = [];
+    for (const provider of this.providers) {
+      if (await this.checkAvailability(provider)) {
+        result.push(provider.name);
+      }
+    }
+    return result;
+  }
+
+  async getUnavailableProviders(): Promise<string[]> {
+    const all = new Set(this.providers.map((p) => p.name));
+    const available = new Set(await this.getAvailableProviders());
+    return [...all].filter((name) => !available.has(name));
   }
 
   async initializeAll(context: AgentRuntimeMemoryProviderInit): Promise<void> {
@@ -222,6 +261,9 @@ export class AgentRuntimeMemoryManagerService {
     const blocks: string[] = [];
     for (const provider of this.providers) {
       try {
+        if (!(await this.checkAvailability(provider))) {
+          continue;
+        }
         const context = await provider.prefetch(workspaceId, query, options);
         if (context.trim()) {
           blocks.push(this.wrapMemoryContext(provider.name, context));
@@ -238,7 +280,9 @@ export class AgentRuntimeMemoryManagerService {
     query: string,
     options?: { sessionId?: string },
   ): Promise<void> {
-    await this.runAll((provider) => provider.queuePrefetch(workspaceId, query, options), 'queue');
+    await this.runAll((provider) => provider.queuePrefetch(workspaceId, query, options), 'queue', {
+      skipUnavailable: true,
+    });
   }
 
   async syncTurnAll(params: {
@@ -255,11 +299,12 @@ export class AgentRuntimeMemoryManagerService {
           channel: params.channel,
         }),
       'syncTurn',
+      { skipUnavailable: true },
     );
   }
 
   getToolSchemas(): AgentRuntimeMemoryToolSchema[] {
-    return this.providers.flatMap((provider) => provider.getToolSchemas());
+    return [...this.toolSchemas.values()];
   }
 
   async handleToolCall(toolName: string, args: Record<string, unknown>): Promise<string> {
@@ -268,6 +313,9 @@ export class AgentRuntimeMemoryManagerService {
       return JSON.stringify({ ok: false, error: `unknown_memory_tool:${toolName}` });
     }
     try {
+      if (!(await this.checkAvailability(provider))) {
+        return JSON.stringify({ ok: false, error: `provider_unavailable:${provider.name}` });
+      }
       return await provider.handleToolCall(toolName, args);
     } catch (error: unknown) {
       this.logProviderFailure(provider, `tool:${toolName}`, error);
@@ -298,6 +346,9 @@ export class AgentRuntimeMemoryManagerService {
     const insights: string[] = [];
     for (const provider of this.providers) {
       try {
+        if (!(await this.checkAvailability(provider))) {
+          continue;
+        }
         const insight = await provider.onPreCompress(event);
         if (insight.trim()) {
           insights.push(this.wrapMemoryContext(provider.name, insight));
@@ -310,7 +361,9 @@ export class AgentRuntimeMemoryManagerService {
   }
 
   async onMemoryWrite(event: AgentRuntimeMemoryWrite): Promise<void> {
-    await this.runAll((provider) => provider.onMemoryWrite(event), 'onMemoryWrite');
+    await this.runAll((provider) => provider.onMemoryWrite(event), 'onMemoryWrite', {
+      skipUnavailable: true,
+    });
   }
 
   async onDelegation(event: AgentRuntimeDelegationObservation): Promise<void> {
@@ -324,16 +377,31 @@ export class AgentRuntimeMemoryManagerService {
   private async runAll(
     task: (provider: AgentRuntimeMemoryProvider) => void | Promise<void>,
     operation: string,
+    options?: { skipUnavailable?: boolean },
   ): Promise<void> {
     await Promise.all(
       this.providers.map(async (provider) => {
         try {
+          if (options?.skipUnavailable && !(await this.checkAvailability(provider))) {
+            return;
+          }
           await task(provider);
         } catch (error: unknown) {
           this.logProviderFailure(provider, operation, error);
         }
       }),
     );
+  }
+
+  private async checkAvailability(provider: AgentRuntimeMemoryProvider): Promise<boolean> {
+    try {
+      return await provider.isAvailable();
+    } catch {
+      this.logger.warn(
+        `Availability check failed for memory provider ${provider.name}, treating as unavailable`,
+      );
+      return false;
+    }
   }
 
   private wrapMemoryContext(providerName: string, rawContext: string): string {

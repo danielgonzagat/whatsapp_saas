@@ -60,6 +60,58 @@ class ExternalMemoryProvider extends AgentRuntimeMemoryProviderBase {
   }
 }
 
+class UnavailableMemoryProvider extends AgentRuntimeMemoryProviderBase {
+  readonly name: string;
+  readonly external = true;
+
+  constructor(name: string) {
+    super();
+    this.name = name;
+  }
+
+  override isAvailable() {
+    return false;
+  }
+
+  override systemPromptBlock(): string {
+    return `<unavailable-provider name="${this.name}" />`;
+  }
+
+  override getToolSchemas() {
+    return [
+      {
+        name: `${this.name}.search`,
+        description: 'Search unavailable provider memory.',
+        parameters: { type: 'object' },
+      },
+      {
+        name: 'overlap.tool',
+        description: 'Conflicting tool schema.',
+        parameters: { type: 'object' },
+      },
+    ];
+  }
+
+  override handleToolCall(): string {
+    return JSON.stringify({ ok: true, provider: this.name });
+  }
+}
+
+class ConflictingMemoryProvider extends AgentRuntimeMemoryProviderBase {
+  readonly name = 'conflicting';
+  readonly external = false;
+
+  override getToolSchemas() {
+    return [
+      {
+        name: 'first.search',
+        description: 'Conflicting local provider memory search.',
+        parameters: { type: 'object' },
+      },
+    ];
+  }
+}
+
 describe('AgentRuntimeMemoryManagerService', () => {
   it('registers builtin memory provider and renders fenced recall context', async () => {
     const sessions = makeSessionStore();
@@ -189,5 +241,142 @@ describe('AgentRuntimeMemoryManagerService', () => {
         threadId: 'thread_1',
       }),
     );
+  });
+
+  it('skips unavailable providers during prefetchAll', async () => {
+    const sessions = makeSessionStore();
+    const manager = new AgentRuntimeMemoryManagerService(
+      new AgentRuntimeBuiltinMemoryProvider(sessions as never),
+    );
+    manager.registerProvider(new UnavailableMemoryProvider('mem0'));
+
+    const result = await manager.prefetchAll('ws_1', 'checkout');
+
+    expect(result).toContain('<memory-context provider="builtin">');
+    expect(result).not.toContain('mem0');
+    expect(sessions.search).toHaveBeenCalledTimes(1);
+  });
+
+  it('returns provider_unavailable error for tool calls against unavailable providers', async () => {
+    const manager = new AgentRuntimeMemoryManagerService(
+      new AgentRuntimeBuiltinMemoryProvider(makeSessionStore() as never),
+    );
+    const unavailable = new UnavailableMemoryProvider('mem0');
+    manager.registerProvider(unavailable);
+
+    const result = await manager.handleToolCall('mem0.search', { query: 'checkout' });
+
+    expect(result).toContain('provider_unavailable');
+    expect(result).toContain('mem0');
+  });
+
+  it('fires lifecycle hooks even when provider is unavailable', async () => {
+    const sessions = makeSessionStore();
+    const manager = new AgentRuntimeMemoryManagerService(
+      new AgentRuntimeBuiltinMemoryProvider(sessions as never),
+    );
+    let delegationFired = false;
+    const silentUnavailable = new (class extends AgentRuntimeMemoryProviderBase {
+      readonly name = 'silent-unavailable';
+      readonly external = true;
+      override isAvailable() {
+        return false;
+      }
+      override onTurnStart() {
+        /* intentionally empty */
+      }
+      override onDelegation() {
+        delegationFired = true;
+      }
+    })();
+    manager.registerProvider(silentUnavailable);
+
+    await manager.onDelegation({
+      workspaceId: 'ws_1',
+      sessionId: 'parent_1',
+      task: 'test',
+      result: 'ok',
+    });
+
+    expect(delegationFired).toBe(true);
+  });
+
+  it('exposes unavailable providers via getUnavailableProviders', async () => {
+    const manager = new AgentRuntimeMemoryManagerService(
+      new AgentRuntimeBuiltinMemoryProvider(makeSessionStore() as never),
+    );
+    manager.registerProvider(new UnavailableMemoryProvider('mem0'));
+
+    const unavailable = await manager.getUnavailableProviders();
+
+    expect(unavailable).toEqual(['mem0']);
+  });
+
+  it('tracks tool schema conflicts via getToolConflicts', () => {
+    const manager = new AgentRuntimeMemoryManagerService(
+      new AgentRuntimeBuiltinMemoryProvider(makeSessionStore() as never),
+    );
+    const first = new ExternalMemoryProvider('first');
+    manager.registerProvider(first);
+    const second = new ConflictingMemoryProvider();
+    manager.registerProvider(second);
+
+    const conflicts = manager.getToolConflicts();
+
+    expect(conflicts.length).toBeGreaterThanOrEqual(1);
+    expect(conflicts[0].toolName).toBe('first.search');
+    expect(conflicts[0].rejectedProvider).toBe('conflicting');
+    expect(manager.getToolSchemas().map((schema) => schema.name)).toEqual(['first.search']);
+  });
+
+  it('skips unavailable providers for queuePrefetchAll and onMemoryWrite', async () => {
+    const sessions = makeSessionStore();
+    const manager = new AgentRuntimeMemoryManagerService(
+      new AgentRuntimeBuiltinMemoryProvider(sessions as never),
+    );
+    let queueCalled = false;
+    let writeCalled = false;
+    const unavailable = new (class extends AgentRuntimeMemoryProviderBase {
+      readonly name = 'broken';
+      readonly external = true;
+      override isAvailable() {
+        return false;
+      }
+      override queuePrefetch() {
+        queueCalled = true;
+      }
+      override onMemoryWrite() {
+        writeCalled = true;
+      }
+    })();
+    manager.registerProvider(unavailable);
+
+    await manager.queuePrefetchAll('ws_1', 'checkout');
+    expect(queueCalled).toBe(false);
+
+    await manager.onMemoryWrite({
+      workspaceId: 'ws_1',
+      sessionId: 'parent_1',
+      action: 'upsert',
+      target: 'test',
+      content: 'data',
+    });
+    expect(writeCalled).toBe(false);
+  });
+
+  it('skips unavailable providers during onPreCompress data collection', async () => {
+    const manager = new AgentRuntimeMemoryManagerService(
+      new AgentRuntimeBuiltinMemoryProvider(makeSessionStore() as never),
+    );
+    manager.registerProvider(new UnavailableMemoryProvider('mem0'));
+
+    const insight = await manager.onPreCompress({
+      workspaceId: 'ws_1',
+      sessionId: 'parent_1',
+      messages: [{ role: 'user', content: 'checkout failed' }],
+    });
+
+    expect(insight).toContain('provider-insight');
+    expect(insight).not.toContain('mem0');
   });
 });

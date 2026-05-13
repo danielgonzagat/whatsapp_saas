@@ -27,6 +27,7 @@ export interface AgentEvidenceInput {
   verification?: AgentEvidenceVerificationState;
   notes?: string;
   metadata?: Record<string, unknown>;
+  parentId?: string;
 }
 
 export interface AgentEvidenceRecord {
@@ -44,6 +45,7 @@ export interface AgentEvidenceRecord {
   verification: AgentEvidenceVerificationState;
   notes: string | null;
   metadata: Record<string, unknown> | null;
+  parentId: string | null;
 }
 
 export interface AgentEvidenceIntegrityIssue {
@@ -66,6 +68,7 @@ interface EvidenceValue {
   verification: AgentEvidenceVerificationState;
   notes: string | null;
   metadata: Record<string, unknown> | null;
+  parentId: string | null;
 }
 
 interface EvidenceRow {
@@ -83,6 +86,7 @@ export class AgentRuntimeEvidenceStoreService {
     const id = `ev_${randomUUID()}`;
     const now = new Date().toISOString();
     const content = sanitizeAgentRuntimeText(input.content, 30_000);
+    const parentId = input.parentId ? sanitizeAgentRuntimeText(input.parentId, 100) : null;
     const value: EvidenceValue = {
       kind: 'agent_evidence',
       id,
@@ -99,6 +103,7 @@ export class AgentRuntimeEvidenceStoreService {
       verification: this.verification(input.verification),
       notes: input.notes ? sanitizeAgentRuntimeText(input.notes, 2000) : null,
       metadata: input.metadata ?? null,
+      parentId,
     };
 
     const row = await this.prisma.kloelMemory.create({
@@ -115,6 +120,7 @@ export class AgentRuntimeEvidenceStoreService {
           evidenceType: value.type,
           contentSha256: value.contentSha256,
           verification: value.verification,
+          ...(value.parentId ? { parentId: value.parentId } : {}),
         },
       },
     });
@@ -215,6 +221,85 @@ export class AgentRuntimeEvidenceStoreService {
     };
   }
 
+  async exportMarkdown(workspaceId: string, limit = 100): Promise<string> {
+    const records = await this.list({ workspaceId, limit });
+    if (records.length === 0) {
+      return `# Agent Evidence Export\n\n**Workspace:** ${workspaceId}\n\n_No evidence records found._\n`;
+    }
+    const generatedAt = new Date().toISOString();
+    const lines: string[] = [
+      '# Agent Evidence Export',
+      '',
+      `**Workspace:** \`${workspaceId}\` | **Generated:** ${generatedAt}`,
+      `**Records:** ${records.length}`,
+      '',
+    ];
+    for (const record of records) {
+      lines.push('---', '');
+      lines.push(`## Evidence \`${record.id}\``);
+      lines.push('');
+      lines.push(`- **Type:** ${record.type}`);
+      lines.push(`- **Source:** ${record.source}`);
+      lines.push(`- **Actor:** ${record.actor ?? '_none_'}`);
+      lines.push(`- **Verification:** ${record.verification}`);
+      lines.push(`- **Collected:** ${record.collectedAt}`);
+      if (record.eventTimestamp) {
+        lines.push(`- **Event time:** ${record.eventTimestamp}`);
+      }
+      if (record.url) {
+        lines.push(`- **URL:** ${record.url}`);
+      }
+      if (record.parentId) {
+        lines.push(`- **Parent:** \`${record.parentId}\``);
+      }
+      lines.push(`- **SHA256:** \`${record.contentSha256}\``);
+      if (record.notes) {
+        lines.push(`- **Notes:** ${record.notes}`);
+      }
+      lines.push('', record.content, '');
+    }
+    return lines.join('\n');
+  }
+
+  async custody(workspaceId: string, evidenceId: string): Promise<AgentEvidenceRecord[]> {
+    const chain: AgentEvidenceRecord[] = [];
+    const seen = new Set<string>();
+    let pointer: string | null = evidenceId;
+    let iterations = 0;
+    while (pointer && iterations < 100) {
+      iterations += 1;
+      if (seen.has(pointer)) {
+        break;
+      }
+      seen.add(pointer);
+      const record = await this.findById(workspaceId, pointer);
+      if (!record) {
+        break;
+      }
+      chain.push(record);
+      pointer = record.parentId;
+    }
+    return chain;
+  }
+
+  private async findById(
+    workspaceId: string,
+    evidenceId: string,
+  ): Promise<AgentEvidenceRecord | null> {
+    const rows = await this.prisma.kloelMemory.findMany({
+      where: {
+        workspaceId,
+        category: 'agent_evidence',
+        key: this.evidenceKey(evidenceId),
+      },
+      take: 1,
+    });
+    if (rows.length === 0) {
+      return null;
+    }
+    return this.rowToRecord(rows[0] as EvidenceRow);
+  }
+
   private rowToRecord(row: EvidenceRow): AgentEvidenceRecord {
     const value = this.parseValue(row.value);
     const content = value?.content ?? sanitizeAgentRuntimeText(row.content ?? '', 30_000);
@@ -233,6 +318,7 @@ export class AgentRuntimeEvidenceStoreService {
       verification: this.verification(value?.verification),
       notes: value?.notes ?? null,
       metadata: value?.metadata ?? null,
+      parentId: value?.parentId ?? null,
     };
   }
 

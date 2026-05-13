@@ -15,6 +15,7 @@ function makeRow(params: {
   actor?: string | null;
   verification?: string;
   hash?: string;
+  parentId?: string | null;
 }) {
   const content = params.content ?? 'runtime observed checkout recovery result';
   const id = params.id ?? 'ev_1';
@@ -36,6 +37,7 @@ function makeRow(params: {
       verification: params.verification ?? 'single_source',
       notes: null,
       metadata: null,
+      parentId: params.parentId ?? null,
     },
   };
 }
@@ -186,5 +188,137 @@ describe('AgentRuntimeEvidenceStoreService', () => {
       byVerification: { single_source: 1, unverified: 1 },
       uniqueActors: ['codex'],
     });
+  });
+
+  it('carries parentId through add and record round-trip', async () => {
+    jest.useFakeTimers().setSystemTime(new Date('2026-05-13T12:00:00.000Z'));
+    type CreateEvidenceArg = {
+      data: {
+        workspaceId: string;
+        key: string;
+        category: string;
+        type: string | null;
+        content: string | null;
+        value: unknown;
+        metadata: Record<string, unknown>;
+      };
+    };
+    const createEvidence = jest.fn((arg: CreateEvidenceArg) => ({
+      workspaceId: arg.data.workspaceId,
+      key: arg.data.key,
+      content: arg.data.content,
+      value: arg.data.value,
+    }));
+    const prisma = {
+      kloelMemory: { create: createEvidence },
+    };
+    const service = new AgentRuntimeEvidenceStoreService(prisma as never);
+
+    const record = await service.add({
+      workspaceId: 'ws_1',
+      type: 'manual',
+      source: 'test',
+      content: 'chain link entry',
+      parentId: 'ev_parent_1',
+      actor: 'reviewer',
+    });
+
+    expect(record.parentId).toBe('ev_parent_1');
+    const createArg = createEvidence.mock.calls[0]?.[0];
+    expect(createArg?.data.metadata).toMatchObject({ parentId: 'ev_parent_1' });
+  });
+
+  it('exports evidence as markdown with structured sections', async () => {
+    const prisma = {
+      kloelMemory: {
+        findMany: jest.fn().mockResolvedValue([
+          makeRow({
+            id: 'ev_1',
+            type: 'validation',
+            source: 'jest',
+            content: 'all checks passed',
+            actor: 'codex',
+            parentId: null,
+          }),
+          makeRow({
+            id: 'ev_2',
+            type: 'pulse',
+            source: 'pulse-auditor',
+            content: 'integrity verified',
+            actor: 'worker',
+            parentId: 'ev_1',
+          }),
+        ]),
+      },
+    };
+    const service = new AgentRuntimeEvidenceStoreService(prisma as never);
+
+    const markdown = await service.exportMarkdown('ws_1', 10);
+
+    expect(markdown).toContain('# Agent Evidence Export');
+    expect(markdown).toContain('`ws_1`');
+    expect(markdown).toContain('**Records:** 2');
+    expect(markdown).toContain('## Evidence `ev_1`');
+    expect(markdown).toContain('- **Type:** validation');
+    expect(markdown).toContain('all checks passed');
+    expect(markdown).toContain('## Evidence `ev_2`');
+    expect(markdown).toContain('- **Parent:** `ev_1`');
+    expect(markdown).toContain('integrity verified');
+    expect(markdown).toContain('- **SHA256:**');
+  });
+
+  it('exportMarkdown handles empty workspace gracefully', async () => {
+    const prisma = {
+      kloelMemory: { findMany: jest.fn().mockResolvedValue([]) },
+    };
+    const service = new AgentRuntimeEvidenceStoreService(prisma as never);
+
+    const markdown = await service.exportMarkdown('ws_empty', 10);
+
+    expect(markdown).toContain('_No evidence records found._');
+    expect(markdown).toContain('ws_empty');
+  });
+
+  it('traces chain-of-custody from leaf back through parentId links', async () => {
+    const findMany = jest
+      .fn()
+      .mockImplementationOnce(() =>
+        Promise.resolve([
+          makeRow({ id: 'ev_3', type: 'manual', content: 'leaf evidence', parentId: 'ev_2' }),
+        ]),
+      )
+      .mockImplementationOnce(() =>
+        Promise.resolve([
+          makeRow({ id: 'ev_2', type: 'validation', content: 'middle link', parentId: 'ev_1' }),
+        ]),
+      )
+      .mockImplementationOnce(() =>
+        Promise.resolve([
+          makeRow({ id: 'ev_1', type: 'tool_result', content: 'root evidence', parentId: null }),
+        ]),
+      );
+    const prisma = {
+      kloelMemory: { findMany },
+    };
+    const service = new AgentRuntimeEvidenceStoreService(prisma as never);
+
+    const chain = await service.custody('ws_1', 'ev_3');
+
+    expect(chain).toHaveLength(3);
+    expect(chain.map((entry) => entry.id)).toEqual(['ev_3', 'ev_2', 'ev_1']);
+    expect(chain[0].content).toBe('leaf evidence');
+    expect(chain[2].content).toBe('root evidence');
+    expect(chain[2].parentId).toBeNull();
+  });
+
+  it('custody returns empty array when evidence not found', async () => {
+    const prisma = {
+      kloelMemory: { findMany: jest.fn().mockResolvedValue([]) },
+    };
+    const service = new AgentRuntimeEvidenceStoreService(prisma as never);
+
+    const chain = await service.custody('ws_1', 'nonexistent');
+
+    expect(chain).toEqual([]);
   });
 });
