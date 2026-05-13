@@ -180,4 +180,192 @@ describe('StructuredLogger', () => {
       errorSpy.mockRestore();
     });
   });
+
+  describe('legacy NestJS Logger signatures (compat shim)', () => {
+    let originalJest: string | undefined;
+    let originalNodeEnv: string | undefined;
+
+    beforeEach(() => {
+      originalJest = process.env.JEST_WORKER_ID;
+      originalNodeEnv = process.env.NODE_ENV;
+      delete process.env.JEST_WORKER_ID;
+      process.env.NODE_ENV = 'production';
+    });
+
+    afterEach(() => {
+      if (originalJest) {
+        process.env.JEST_WORKER_ID = originalJest;
+      } else {
+        delete process.env.JEST_WORKER_ID;
+      }
+      process.env.NODE_ENV = originalNodeEnv;
+    });
+
+    it('handles 2-arg log(message, contextString) — NestJS compat', () => {
+      const spy = jest.spyOn(console, 'log').mockImplementation(() => {});
+
+      logger.log('operation started', 'MyService.run');
+
+      const parsed = JSON.parse(spy.mock.calls[0][0] as string);
+      expect(parsed).toMatchObject({
+        level: 'info',
+        message: 'operation started',
+      });
+      expect(parsed.context).toBe('MyService.run');
+      spy.mockRestore();
+    });
+
+    it('handles 2-arg warn(message, contextString) — NestJS compat', () => {
+      const spy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+
+      logger.warn('deprecation warning', 'OldService.call');
+
+      const parsed = JSON.parse(spy.mock.calls[0][0] as string);
+      expect(parsed).toMatchObject({
+        level: 'warn',
+        message: 'deprecation warning',
+      });
+      expect(parsed.context).toBe('OldService.call');
+      spy.mockRestore();
+    });
+
+    it('handles 3-arg error(message, stack, context) — NestJS compat', () => {
+      const spy = jest.spyOn(console, 'error').mockImplementation(() => {});
+
+      logger.error('something broke', 'Error: boom\n  at foo.js:1', 'MyService');
+
+      const parsed = JSON.parse(spy.mock.calls[0][0] as string);
+      expect(parsed).toMatchObject({
+        level: 'error',
+        message: 'something broke',
+        stack: 'Error: boom\n  at foo.js:1',
+      });
+      expect(parsed.context).toBe('MyService');
+      spy.mockRestore();
+    });
+
+    it('handles 3-arg error(message, stack, extraObj) — auto-migrated compat', () => {
+      const spy = jest.spyOn(console, 'error').mockImplementation(() => {});
+
+      logger.error(
+        'Failed to decrypt MFA secret',
+        'Error: bad key',
+        { context: 'AdminMfaService.resumeSetup' },
+      );
+
+      const parsed = JSON.parse(spy.mock.calls[0][0] as string);
+      expect(parsed).toMatchObject({
+        level: 'error',
+        message: 'Failed to decrypt MFA secret',
+        stack: 'Error: bad key',
+        context: 'AdminMfaService.resumeSetup',
+      });
+      spy.mockRestore();
+    });
+
+    it('handles error(message, Error object) — unknown second arg', () => {
+      const spy = jest.spyOn(console, 'error').mockImplementation(() => {});
+
+      const err = new Error('connection refused');
+      logger.error('DB query failed', err);
+
+      const parsed = JSON.parse(spy.mock.calls[0][0] as string);
+      expect(parsed).toMatchObject({
+        level: 'error',
+        message: 'DB query failed',
+      });
+      expect(parsed.message).toBe('DB query failed');
+      spy.mockRestore();
+    });
+
+    it('handles pino-style log(dataObj, messageString)', () => {
+      const spy = jest.spyOn(console, 'log').mockImplementation(() => {});
+
+      logger.log({ workspaceId: 'ws-1', durationMs: 42 }, 'Autopilot impact succeeded');
+
+      const parsed = JSON.parse(spy.mock.calls[0][0] as string);
+      expect(parsed).toMatchObject({
+        level: 'info',
+        message: 'Autopilot impact succeeded',
+        workspaceId: 'ws-1',
+        durationMs: 42,
+      });
+      spy.mockRestore();
+    });
+
+    it('handles 3-arg warn(message, context, extraObj)', () => {
+      const spy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+
+      logger.warn(
+        'Failed to track AI usage',
+        'ConversationalOnboardingService',
+        { workspaceId: 'ws-2', retryable: true },
+      );
+
+      const parsed = JSON.parse(spy.mock.calls[0][0] as string);
+      expect(parsed).toMatchObject({
+        level: 'warn',
+        message: 'Failed to track AI usage',
+        workspaceId: 'ws-2',
+        retryable: true,
+      });
+      expect(parsed.context).toBeDefined();
+      spy.mockRestore();
+    });
+
+    it('handles error({data}, message, Error) — 3-arg pino with error', () => {
+      const spy = jest.spyOn(console, 'error').mockImplementation(() => {});
+
+      const err = new TypeError('invalid amount');
+      logger.error(
+        { workspaceId: 'ws-3', operation: 'approve_payout' },
+        'Financial operation failed',
+        err,
+      );
+
+      const parsed = JSON.parse(spy.mock.calls[0][0] as string);
+      expect(parsed).toMatchObject({
+        level: 'error',
+        message: 'Financial operation failed',
+        workspaceId: 'ws-3',
+        operation: 'approve_payout',
+        error: 'invalid amount',
+        errorName: 'TypeError',
+      });
+      spy.mockRestore();
+    });
+
+    it('handles error(message, undefined, extraObj) — explicit undefined stack', () => {
+      const spy = jest.spyOn(console, 'error').mockImplementation(() => {});
+
+      logger.error('split validation: field must be >= 0', undefined, {
+        field: 'saleValueCents',
+        value: '-1',
+      });
+
+      const parsed = JSON.parse(spy.mock.calls[0][0] as string);
+      expect(parsed).toMatchObject({
+        level: 'error',
+        message: 'split validation: field must be >= 0',
+        field: 'saleValueCents',
+        value: '-1',
+      });
+      expect(parsed.stack).toBeUndefined();
+      spy.mockRestore();
+    });
+
+    it('debug and verbose delegate to info with NestJS compat', () => {
+      const spy = jest.spyOn(console, 'log').mockImplementation(() => {});
+
+      logger.debug('debug message', 'DebugContext');
+      logger.verbose('verbose message', { detail: 42 });
+
+      expect(spy).toHaveBeenCalledTimes(2);
+      const debugParsed = JSON.parse(spy.mock.calls[0][0] as string);
+      expect(debugParsed).toMatchObject({ level: 'info', message: 'debug message' });
+      const verboseParsed = JSON.parse(spy.mock.calls[1][0] as string);
+      expect(verboseParsed).toMatchObject({ level: 'info', message: 'verbose message', detail: 42 });
+      spy.mockRestore();
+    });
+  });
 });
