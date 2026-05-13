@@ -124,4 +124,103 @@ describe('AgentRuntimeSkillRegistry', () => {
     expect(result[0].skill.id).toBe('objection-handling');
     expect(result[0].skill.summary).toBe('Workspace-specific objection handling');
   });
+
+  it('records procedural skill usage counters as durable memory', async () => {
+    const prisma = makePrisma();
+    const registry = new AgentRuntimeSkillRegistry(prisma as never);
+
+    const result = await registry.recordSkillUsage('ws_1', {
+      skillId: 'checkout-recovery',
+      outcome: 'succeeded',
+      reason: 'converted abandoned checkout',
+      provenance: 'background_review',
+      pinned: true,
+    });
+
+    expect(result.ok).toBe(true);
+    expect(result.stats).toEqual(
+      expect.objectContaining({
+        skillId: 'checkout-recovery',
+        successCount: 1,
+        selectedCount: 0,
+        provenance: 'background_review',
+        pinned: true,
+        lastOutcome: 'succeeded',
+      }),
+    );
+    expect(prisma.kloelMemory.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        create: expect.objectContaining({
+          key: 'agent_skill_usage:checkout-recovery',
+          category: 'agent_skill_usage',
+          content: expect.stringContaining('success=1'),
+          metadata: expect.objectContaining({
+            kind: 'agent_skill_usage',
+            provenance: 'background_review',
+            pinned: true,
+          }),
+        }),
+      }),
+    );
+  });
+
+  it('uses skill success and failure history when ranking procedural skills', async () => {
+    const storedA = makeSkill({
+      id: 'checkout-alpha',
+      title: 'Checkout Alpha',
+      summary: 'checkout recovery routine',
+      body: 'checkout recovery',
+    });
+    const storedB = makeSkill({
+      id: 'checkout-beta',
+      title: 'Checkout Beta',
+      summary: 'checkout recovery routine',
+      body: 'checkout recovery',
+    });
+    const prisma = makePrisma({
+      findMany: jest.fn().mockImplementation((query: { where: { category: string } }) => {
+        if (query.where.category === 'agent_skill') {
+          return Promise.resolve([{ value: storedA }, { value: storedB }]);
+        }
+        return Promise.resolve([
+          {
+            value: {
+              skillId: 'checkout-beta',
+              selectedCount: 2,
+              successCount: 8,
+              failureCount: 0,
+              patchCount: 0,
+              viewCount: 0,
+              pinned: true,
+              provenance: 'workspace',
+              lifecycleState: 'active',
+              lastUsedAt: '2026-05-13T00:00:00.000Z',
+              lastOutcome: 'succeeded',
+            },
+          },
+          {
+            value: {
+              skillId: 'checkout-alpha',
+              selectedCount: 2,
+              successCount: 0,
+              failureCount: 2,
+              patchCount: 0,
+              viewCount: 0,
+              pinned: false,
+              provenance: 'workspace',
+              lifecycleState: 'active',
+              lastUsedAt: '2026-05-13T00:00:00.000Z',
+              lastOutcome: 'failed',
+            },
+          },
+        ]);
+      }),
+    });
+    const registry = new AgentRuntimeSkillRegistry(prisma as never);
+
+    const result = await registry.selectSkills('ws_1', 'checkout recovery', 2);
+
+    expect(result[0].skill.id).toBe('checkout-beta');
+    expect(result[0].reasons).toEqual(expect.arrayContaining(['usage:success:8', 'usage:pinned']));
+  });
 });

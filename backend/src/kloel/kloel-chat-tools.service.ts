@@ -9,6 +9,9 @@ import {
   AgentRuntimeSessionStore,
   AgentRuntimeSkillRegistry,
   type AgentSkillDefinition,
+  type AgentSkillLifecycleState,
+  type AgentSkillProvenance,
+  type AgentSkillUsageOutcome,
 } from './agent-runtime';
 
 const NON_SLUG_CHAR_RE = /[^a-z0-9_:-]+/g;
@@ -113,6 +116,15 @@ interface ToolUpsertAgentSkillArgs {
   rollback?: string[];
   metrics?: string[];
   body?: string;
+}
+
+interface ToolRecordAgentSkillOutcomeArgs {
+  skillId: string;
+  outcome: AgentSkillUsageOutcome;
+  reason?: string;
+  provenance?: AgentSkillProvenance;
+  pinned?: boolean;
+  lifecycleState?: AgentSkillLifecycleState;
 }
 
 interface ToolRecordAgentDelegationArgs {
@@ -665,6 +677,36 @@ export class KloelChatToolsService {
     };
   }
 
+  async toolRecordAgentSkillOutcome(
+    workspaceId: string,
+    args: ToolRecordAgentSkillOutcomeArgs,
+  ): Promise<ToolResult> {
+    if (!this.agentSkills) {
+      return { success: false, error: 'agent_skill_registry_unavailable' };
+    }
+    const skillId = safeAgentRuntimeId(args.skillId, '');
+    if (!skillId) {
+      return { success: false, error: 'missing_agent_skill_id' };
+    }
+    const outcome = this.agentSkillUsageOutcome(args.outcome);
+    const result = await this.agentSkills.recordSkillUsage(workspaceId, {
+      skillId,
+      outcome,
+      reason: safeStr(args.reason).trim().slice(0, 300),
+      provenance: this.agentSkillProvenance(args.provenance),
+      pinned: args.pinned,
+      lifecycleState: this.agentSkillLifecycle(args.lifecycleState),
+    });
+    return {
+      success: result.ok,
+      skillId,
+      outcome,
+      stats: result.stats,
+      ...(result.reason ? { error: result.reason } : {}),
+      message: result.ok ? 'Uso da skill registrado.' : 'Uso da skill recusado.',
+    };
+  }
+
   async toolRecordAgentDelegation(
     workspaceId: string,
     args: ToolRecordAgentDelegationArgs,
@@ -687,11 +729,9 @@ export class KloelChatToolsService {
       workspaceId,
       sessionId: sessionId || 'kloel_delegation',
       eventType: 'delegation',
-      content: [
-        `childSessionId=${childSessionId}`,
-        `task: ${task}`,
-        `result: ${result}`,
-      ].join('\n'),
+      content: [`childSessionId=${childSessionId}`, `task: ${task}`, `result: ${result}`].join(
+        '\n',
+      ),
       metadata: {
         ...metadata,
         childSessionId: childSessionId || null,
@@ -712,7 +752,10 @@ export class KloelChatToolsService {
   }
 
   private agentSkillCategory(value: unknown): AgentSkillDefinition['category'] {
-    return value === 'commercial' || value === 'operational' || value === 'pulse' || value === 'workspace'
+    return value === 'commercial' ||
+      value === 'operational' ||
+      value === 'pulse' ||
+      value === 'workspace'
       ? value
       : 'operational';
   }
@@ -721,5 +764,28 @@ export class KloelChatToolsService {
     return value === 'safe' || value === 'normal' || value === 'high' || value === 'critical'
       ? value
       : 'normal';
+  }
+
+  private agentSkillUsageOutcome(value: unknown): AgentSkillUsageOutcome {
+    return value === 'succeeded' ||
+      value === 'failed' ||
+      value === 'patched' ||
+      value === 'viewed' ||
+      value === 'selected'
+      ? value
+      : 'selected';
+  }
+
+  private agentSkillProvenance(value: unknown): AgentSkillProvenance | undefined {
+    return value === 'default' ||
+      value === 'workspace' ||
+      value === 'background_review' ||
+      value === 'imported'
+      ? value
+      : undefined;
+  }
+
+  private agentSkillLifecycle(value: unknown): AgentSkillLifecycleState | undefined {
+    return value === 'active' || value === 'stale' || value === 'archived' ? value : undefined;
   }
 }

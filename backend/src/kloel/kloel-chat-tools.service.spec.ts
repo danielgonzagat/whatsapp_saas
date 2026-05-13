@@ -58,6 +58,7 @@ describe('KloelChatToolsService', () => {
   };
   let agentSkills: {
     upsertSkill: jest.Mock;
+    recordSkillUsage: jest.Mock;
   };
 
   const wsId = 'ws-1';
@@ -116,6 +117,17 @@ describe('KloelChatToolsService', () => {
     };
     agentSkills = {
       upsertSkill: jest.fn().mockResolvedValue({ ok: true, reasons: [] }),
+      recordSkillUsage: jest.fn().mockResolvedValue({
+        ok: true,
+        stats: {
+          skillId: 'checkout_recovery',
+          successCount: 1,
+          selectedCount: 0,
+          failureCount: 0,
+          patchCount: 0,
+          viewCount: 0,
+        },
+      }),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -325,6 +337,26 @@ describe('KloelChatToolsService', () => {
           allowedTools: ['list_products'],
         }),
       );
+    });
+
+    it('records procedural skill outcomes for future skill selection', async () => {
+      const result = await service.toolRecordAgentSkillOutcome(wsId, {
+        skillId: 'checkout recovery',
+        outcome: 'succeeded',
+        reason: 'Recovered abandoned checkout',
+        provenance: 'background_review',
+        pinned: true,
+      });
+
+      expect(result.success).toBe(true);
+      expect(agentSkills.recordSkillUsage).toHaveBeenCalledWith(wsId, {
+        skillId: 'checkout_recovery',
+        outcome: 'succeeded',
+        reason: 'Recovered abandoned checkout',
+        provenance: 'background_review',
+        pinned: true,
+        lifecycleState: undefined,
+      });
     });
 
     it('records governed delegation observations into runtime events', async () => {

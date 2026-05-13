@@ -137,6 +137,25 @@ export interface AgentSkillDefinition {
   updatedAt: string;
 }
 
+export type AgentSkillProvenance = 'default' | 'workspace' | 'background_review' | 'imported';
+export type AgentSkillLifecycleState = 'active' | 'stale' | 'archived';
+export type AgentSkillUsageOutcome = 'selected' | 'succeeded' | 'failed' | 'patched' | 'viewed';
+
+export interface AgentSkillUsageStats {
+  skillId: string;
+  provenance: AgentSkillProvenance;
+  lifecycleState: AgentSkillLifecycleState;
+  pinned: boolean;
+  selectedCount: number;
+  successCount: number;
+  failureCount: number;
+  patchCount: number;
+  viewCount: number;
+  lastUsedAt: string;
+  lastOutcome: AgentSkillUsageOutcome;
+  lastReason?: string;
+}
+
 export interface AgentSkillSelection {
   skill: AgentSkillDefinition;
   score: number;

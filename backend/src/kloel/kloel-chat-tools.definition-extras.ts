@@ -182,4 +182,39 @@ export const KLOEL_CHAT_TOOLS_SETTINGS_CAMPAIGNS: ChatCompletionTool[] = [
       },
     },
   },
+  {
+    type: 'function',
+    function: {
+      name: 'record_agent_skill_outcome',
+      description:
+        'Registra resultado observado de uma skill procedural para o Kloel aprender quais procedimentos funcionam melhor',
+      parameters: {
+        type: 'object',
+        properties: {
+          skillId: { type: 'string', description: 'Identificador da skill procedural' },
+          outcome: {
+            type: 'string',
+            enum: ['selected', 'succeeded', 'failed', 'patched', 'viewed'],
+            description: 'Resultado observado do uso da skill',
+          },
+          reason: { type: 'string', description: 'Resumo curto da evidência ou motivo' },
+          provenance: {
+            type: 'string',
+            enum: ['default', 'workspace', 'background_review', 'imported'],
+            description: 'Origem auditável da skill',
+          },
+          pinned: {
+            type: 'boolean',
+            description: 'Marca a skill como preferida quando houver evidência operacional',
+          },
+          lifecycleState: {
+            type: 'string',
+            enum: ['active', 'stale', 'archived'],
+            description: 'Estado operacional da skill',
+          },
+        },
+        required: ['skillId', 'outcome'],
+      },
+    },
+  },
 ];

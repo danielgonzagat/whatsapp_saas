@@ -43,6 +43,15 @@ export class AgentRuntimeContextService {
     ]);
     const pulse = this.pulse.buildSelfModel();
     const authorityMode = pulse.canWorkNow ? 'tool_limited' : 'advisory';
+    void Promise.allSettled(
+      selectedSkills.map((selection) =>
+        this.skills.recordSkillUsage(request.workspaceId, {
+          skillId: selection.skill.id,
+          outcome: 'selected',
+          reason: `context_selection:${request.channel}`,
+        }),
+      ),
+    );
 
     return {
       recall,
@@ -79,11 +88,7 @@ export class AgentRuntimeContextService {
     await this.memoryCurator.curateTurnOutcome(params);
   }
 
-  buildToolEnvelope(params: {
-    workspaceId: string;
-    toolName: string;
-    allowedTools?: string[];
-  }) {
+  buildToolEnvelope(params: { workspaceId: string; toolName: string; allowedTools?: string[] }) {
     return this.policy.buildEnvelope(params);
   }
 

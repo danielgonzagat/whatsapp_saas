@@ -62,6 +62,7 @@ describe('KloelToolDispatcherService', () => {
     | 'toolSearchAgentMemory'
     | 'toolSearchAgentSessions'
     | 'toolUpsertAgentSkill'
+    | 'toolRecordAgentSkillOutcome'
     | 'toolRecordAgentDelegation'
     | 'toolCreatePaymentLink'
   >;
@@ -143,6 +144,7 @@ describe('KloelToolDispatcherService', () => {
       toolSearchAgentMemory: jest.fn().mockResolvedValue({ success: true, memories: [] }),
       toolSearchAgentSessions: jest.fn().mockResolvedValue({ success: true, sessions: [] }),
       toolUpsertAgentSkill: jest.fn().mockResolvedValue({ success: true, skillId: 'skill_1' }),
+      toolRecordAgentSkillOutcome: jest.fn().mockResolvedValue({ success: true }),
       toolRecordAgentDelegation: jest.fn().mockResolvedValue({ success: true }),
       toolCreatePaymentLink: jest
         .fn()
@@ -293,10 +295,7 @@ describe('KloelToolDispatcherService', () => {
           title: 'Daily audit',
           prompt: 'Review memory',
         });
-        expect(chatToolsService.toolCreateAgentJob).toHaveBeenCalledWith(
-          wsId,
-          expect.any(Object),
-        );
+        expect(chatToolsService.toolCreateAgentJob).toHaveBeenCalledWith(wsId, expect.any(Object));
       });
 
       it('routes list_agent_jobs to chatToolsService', async () => {
@@ -338,6 +337,17 @@ describe('KloelToolDispatcherService', () => {
           summary: 'Recover checkout',
         });
         expect(chatToolsService.toolUpsertAgentSkill).toHaveBeenCalledWith(
+          wsId,
+          expect.any(Object),
+        );
+      });
+
+      it('routes record_agent_skill_outcome to chatToolsService', async () => {
+        await service.executeTool(wsId, 'record_agent_skill_outcome', {
+          skillId: 'checkout',
+          outcome: 'succeeded',
+        });
+        expect(chatToolsService.toolRecordAgentSkillOutcome).toHaveBeenCalledWith(
           wsId,
           expect.any(Object),
         );

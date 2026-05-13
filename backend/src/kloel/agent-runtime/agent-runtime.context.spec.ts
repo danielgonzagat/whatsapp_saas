@@ -83,12 +83,17 @@ describe('AgentRuntimeContextService', () => {
         searchSessions: jest.fn().mockResolvedValue(sessionRecall),
         recordTurn: jest.fn(),
       },
-      { selectSkills: jest.fn().mockResolvedValue(selectedSkills) },
+      {
+        selectSkills: jest.fn().mockResolvedValue(selectedSkills),
+        recordSkillUsage: jest.fn().mockResolvedValue({ ok: true }),
+      },
       { buildSelfModel: jest.fn().mockReturnValue(pulse) },
       { buildEnvelope: jest.fn() },
       {
         buildSystemPrompt: jest.fn().mockResolvedValue('<kloel-memory-provider name="builtin" />'),
-        prefetchAll: jest.fn().mockResolvedValue('<memory-context provider="builtin">checkout</memory-context>'),
+        prefetchAll: jest
+          .fn()
+          .mockResolvedValue('<memory-context provider="builtin">checkout</memory-context>'),
       },
       {
         loadCompressedContext: jest.fn().mockResolvedValue({
