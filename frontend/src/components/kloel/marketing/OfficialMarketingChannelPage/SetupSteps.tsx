@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { KLOEL_THEME } from '@/lib/kloel-theme';
 import type { ChannelKey } from '../OfficialMarketingChannelPage.helpers';
 import { CHANNEL_META } from '../OfficialMarketingChannelPage.helpers';
@@ -11,14 +12,37 @@ interface Props {
   onStepClick: (step: number) => void;
 }
 
+const MOBILE_BREAKPOINT = 640;
+
+function useMobileViewport(): boolean {
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
+      return;
+    }
+
+    const mediaQuery = window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT - 1}px)`);
+    const apply = () => setIsMobile(mediaQuery.matches);
+    apply();
+    mediaQuery.addEventListener?.('change', apply);
+    return () => mediaQuery.removeEventListener?.('change', apply);
+  }, []);
+
+  return isMobile;
+}
+
 export function SetupSteps({ currentStep, setupLoaded, channel, onStepClick }: Props) {
   const meta = CHANNEL_META[channel];
+  const isMobile = useMobileViewport();
 
   return (
     <ol
       style={{
         display: 'grid',
-        gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
+        gridTemplateColumns: isMobile
+          ? 'repeat(2, minmax(0, 1fr))'
+          : 'repeat(4, minmax(0, 1fr))',
         gap: 10,
         margin: '0 0 22px',
         padding: 0,
@@ -32,7 +56,7 @@ export function SetupSteps({ currentStep, setupLoaded, channel, onStepClick }: P
           aria-current={currentStep === index ? 'step' : undefined}
           style={{
             minHeight: 72,
-            minWidth: 170,
+            minWidth: isMobile ? 0 : 170,
           }}
         >
           <button
@@ -69,11 +93,20 @@ export function SetupSteps({ currentStep, setupLoaded, channel, onStepClick }: P
                 color: KLOEL_THEME.textOnAccent,
                 fontWeight: 800,
                 fontFamily: "'JetBrains Mono', monospace",
+                flexShrink: 0,
               }}
             >
               {index + 1}
             </span>
-            <span style={{ color: KLOEL_THEME.textPrimary, lineHeight: 1.45 }}>{step}</span>
+            <span
+              style={{
+                color: KLOEL_THEME.textPrimary,
+                lineHeight: 1.45,
+                fontSize: isMobile ? 14 : 16,
+              }}
+            >
+              {step}
+            </span>
           </button>
         </li>
       ))}
