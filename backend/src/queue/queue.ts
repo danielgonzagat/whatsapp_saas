@@ -90,9 +90,9 @@ function ensureInitialized() {
     return;
   }
 
-  log('🔌 [QUEUE] Inicializando conexão Redis (lazy)...');
+  log('[QUEUE] Inicializando conexão Redis (lazy)...');
   const redisUrl = getRedisUrl();
-  log('✅ [QUEUE] Conectando ao Redis:', maskRedisUrl(redisUrl));
+  log('[OK] [QUEUE] Conectando ao Redis:', maskRedisUrl(redisUrl));
 
   _connection = createRedisClient();
   _queueOptions = {
@@ -101,7 +101,7 @@ function ensureInitialized() {
   };
 
   _initialized = true;
-  log('✅ [QUEUE] Conexão Redis inicializada');
+  log('[OK] [QUEUE] Conexão Redis inicializada');
 }
 
 // Getters para acesso lazy
@@ -322,7 +322,7 @@ export function getDlqQueue(queue: BullQueue): BullQueue {
 
 function getOrCreateQueue(name: string): BullQueue {
   if (!_queues[name]) {
-    log(`📦 [QUEUE] Criando fila "${name}" (lazy)...`);
+    log(`[QUEUE] Criando fila "${name}" (lazy)...`);
     _queues[name] = new BullQueue(name, getQueueOptions());
     attachDlq(_queues[name]);
     queueRegistry[name] = _queues[name];
