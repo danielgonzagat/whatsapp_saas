@@ -134,6 +134,28 @@ export const KLOEL_CHAT_TOOLS_SETTINGS_CAMPAIGNS: ChatCompletionTool[] = [
   {
     type: 'function',
     function: {
+      name: 'get_agent_artifact',
+      description:
+        'Recupera o payload completo de um artefato durável criado quando uma ferramenta retornou dados grandes demais para o contexto',
+      parameters: {
+        type: 'object',
+        properties: {
+          artifactId: {
+            type: 'string',
+            description: 'ID retornado anteriormente em tool_result ou mensagem truncada',
+          },
+          maxChars: {
+            type: 'number',
+            description: 'Limite máximo de caracteres a recuperar nesta chamada',
+          },
+        },
+        required: ['artifactId'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
       name: 'upsert_agent_skill',
       description:
         'Registra ou atualiza uma skill procedural governada para o Kloel reutilizar em tarefas futuras',

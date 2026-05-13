@@ -61,6 +61,7 @@ describe('KloelToolDispatcherService', () => {
     | 'toolSetAgentJobEnabled'
     | 'toolSearchAgentMemory'
     | 'toolSearchAgentSessions'
+    | 'toolGetAgentArtifact'
     | 'toolUpsertAgentSkill'
     | 'toolRecordAgentSkillOutcome'
     | 'toolRecordAgentDelegation'
@@ -143,6 +144,7 @@ describe('KloelToolDispatcherService', () => {
       toolSetAgentJobEnabled: jest.fn().mockResolvedValue({ success: true }),
       toolSearchAgentMemory: jest.fn().mockResolvedValue({ success: true, memories: [] }),
       toolSearchAgentSessions: jest.fn().mockResolvedValue({ success: true, sessions: [] }),
+      toolGetAgentArtifact: jest.fn().mockResolvedValue({ success: true, content: '{}' }),
       toolUpsertAgentSkill: jest.fn().mockResolvedValue({ success: true, skillId: 'skill_1' }),
       toolRecordAgentSkillOutcome: jest.fn().mockResolvedValue({ success: true }),
       toolRecordAgentDelegation: jest.fn().mockResolvedValue({ success: true }),
@@ -325,6 +327,16 @@ describe('KloelToolDispatcherService', () => {
       it('routes search_agent_sessions to chatToolsService', async () => {
         await service.executeTool(wsId, 'search_agent_sessions', { query: 'checkout' });
         expect(chatToolsService.toolSearchAgentSessions).toHaveBeenCalledWith(
+          wsId,
+          expect.any(Object),
+        );
+      });
+
+      it('routes get_agent_artifact to chatToolsService', async () => {
+        await service.executeTool(wsId, 'get_agent_artifact', {
+          artifactId: 'tool_artifact:search_agent_memory:123:abcd',
+        });
+        expect(chatToolsService.toolGetAgentArtifact).toHaveBeenCalledWith(
           wsId,
           expect.any(Object),
         );

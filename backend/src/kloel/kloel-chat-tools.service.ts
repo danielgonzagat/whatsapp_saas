@@ -104,6 +104,11 @@ interface ToolSearchAgentSessionsArgs {
   limit?: number;
 }
 
+interface ToolGetAgentArtifactArgs {
+  artifactId: string;
+  maxChars?: number;
+}
+
 interface ToolUpsertAgentSkillArgs {
   id: string;
   title: string;
@@ -637,6 +642,48 @@ export class KloelChatToolsService {
     }
     const result = await this.agentSessions.searchSessions(workspaceId, query, args.limit ?? 3);
     return { success: true, ...result };
+  }
+
+  async toolGetAgentArtifact(
+    workspaceId: string,
+    args: ToolGetAgentArtifactArgs,
+  ): Promise<ToolResult> {
+    const artifactId = safeStr(args.artifactId).trim().slice(0, 220);
+    if (!artifactId || !artifactId.startsWith('tool_artifact:')) {
+      return { success: false, error: 'invalid_agent_artifact_id' };
+    }
+
+    const row = await this.prisma.kloelMemory.findUnique({
+      where: { workspaceId_key: { workspaceId, key: artifactId } },
+    });
+    if (!row || row.category !== 'tool_artifact') {
+      return { success: false, error: 'agent_artifact_not_found' };
+    }
+
+    const rawContent = safeStr(row.content);
+    const maxChars = Math.max(500, Math.min(Number(args.maxChars) || 12_000, 50_000));
+    const truncated = rawContent.length > maxChars;
+    let parsed: unknown = null;
+    try {
+      parsed = rawContent ? JSON.parse(rawContent) : null;
+    } catch {
+      parsed = null;
+    }
+
+    return {
+      success: true,
+      artifactId,
+      category: row.category,
+      type: row.type ?? null,
+      originalChars: rawContent.length,
+      truncated,
+      content: rawContent.slice(0, maxChars),
+      parsed: truncated ? null : parsed,
+      updatedAt: row.updatedAt,
+      message: truncated
+        ? 'Artefato recuperado parcialmente por limite de contexto.'
+        : 'Artefato recuperado da memória operacional.',
+    };
   }
 
   async toolUpsertAgentSkill(

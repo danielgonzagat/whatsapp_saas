@@ -318,6 +318,55 @@ describe('KloelChatToolsService', () => {
       expect(agentSessions.searchSessions).toHaveBeenCalledWith(wsId, 'checkout', 2);
     });
 
+    it('retrieves durable tool artifacts scoped to workspace', async () => {
+      prisma.kloelMemory.findUnique.mockResolvedValue({
+        key: 'tool_artifact:search_agent_memory:123:abcd',
+        category: 'tool_artifact',
+        type: null,
+        content: '{"success":true,"data":["a"]}',
+        updatedAt: new Date('2026-05-13T12:00:00.000Z'),
+      });
+
+      const result = await service.toolGetAgentArtifact(wsId, {
+        artifactId: 'tool_artifact:search_agent_memory:123:abcd',
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.parsed).toEqual({ success: true, data: ['a'] });
+      expect(prisma.kloelMemory.findUnique).toHaveBeenCalledWith({
+        where: {
+          workspaceId_key: {
+            workspaceId: wsId,
+            key: 'tool_artifact:search_agent_memory:123:abcd',
+          },
+        },
+      });
+    });
+
+    it('rejects artifact ids outside the tool artifact namespace', async () => {
+      const result = await service.toolGetAgentArtifact(wsId, {
+        artifactId: 'agent_turn:chat:abc',
+      });
+
+      expect(result).toEqual({ success: false, error: 'invalid_agent_artifact_id' });
+      expect(prisma.kloelMemory.findUnique).not.toHaveBeenCalled();
+    });
+
+    it('does not expose missing or non-artifact memory rows as artifacts', async () => {
+      prisma.kloelMemory.findUnique.mockResolvedValue({
+        key: 'tool_artifact:search_agent_memory:123:abcd',
+        category: 'agent_event',
+        content: '{}',
+        updatedAt: new Date(),
+      });
+
+      const result = await service.toolGetAgentArtifact(wsId, {
+        artifactId: 'tool_artifact:search_agent_memory:123:abcd',
+      });
+
+      expect(result).toEqual({ success: false, error: 'agent_artifact_not_found' });
+    });
+
     it('upserts procedural agent skills with sanitized id and typed risk', async () => {
       const result = await service.toolUpsertAgentSkill(wsId, {
         id: 'checkout recovery',

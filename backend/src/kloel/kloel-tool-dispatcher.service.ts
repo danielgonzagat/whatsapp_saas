@@ -112,6 +112,8 @@ export class KloelToolDispatcherService {
           return await this.chatToolsService.toolSearchAgentMemory(workspaceId, asToolArgs(args));
         case 'search_agent_sessions':
           return await this.chatToolsService.toolSearchAgentSessions(workspaceId, asToolArgs(args));
+        case 'get_agent_artifact':
+          return await this.chatToolsService.toolGetAgentArtifact(workspaceId, asToolArgs(args));
         case 'upsert_agent_skill':
           return await this.chatToolsService.toolUpsertAgentSkill(workspaceId, asToolArgs(args));
         case 'record_agent_skill_outcome':
