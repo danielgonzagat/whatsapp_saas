@@ -95,6 +95,7 @@ describe('AgentRuntimeContextService', () => {
           summary: '[CONTEXT COMPACTION - REFERENCE ONLY] previous checkout work',
         }),
       },
+      { curateTurnOutcome: jest.fn() },
     );
 
     const context = await service.buildContext({

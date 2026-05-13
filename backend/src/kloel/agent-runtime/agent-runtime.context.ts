@@ -6,6 +6,7 @@ import { AgentRuntimePolicyService } from './agent-runtime.policy';
 import { sanitizeAgentRuntimeText } from './agent-runtime.sanitizer';
 import { AgentRuntimeMemoryManagerService } from './agent-runtime.memory-manager';
 import { AgentRuntimeContextCompressorService } from './agent-runtime.context-compressor';
+import { AgentRuntimeMemoryCuratorService } from './agent-runtime.memory-curator';
 import type { AgentRuntimeContext, AgentRuntimeContextRequest } from './agent-runtime.types';
 
 @Injectable()
@@ -17,6 +18,7 @@ export class AgentRuntimeContextService {
     private readonly policy: AgentRuntimePolicyService,
     private readonly memoryManager: AgentRuntimeMemoryManagerService,
     private readonly contextCompressor: AgentRuntimeContextCompressorService,
+    private readonly memoryCurator: AgentRuntimeMemoryCuratorService,
   ) {}
 
   async buildContext(request: AgentRuntimeContextRequest): Promise<AgentRuntimeContext> {
@@ -74,6 +76,7 @@ export class AgentRuntimeContextService {
     actions?: Array<{ toolName: string; success: boolean; result?: unknown }>;
   }): Promise<void> {
     await this.sessions.recordTurn(params);
+    await this.memoryCurator.curateTurnOutcome(params);
   }
 
   buildToolEnvelope(params: {
