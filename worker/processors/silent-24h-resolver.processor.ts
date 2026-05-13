@@ -19,6 +19,14 @@ function extractContactId(contextSnapshot: unknown): string | undefined {
   return undefined;
 }
 
+// TODO(P6.4 wiring): KloelGlobalPrior.recordObservation has zero callers
+// across the codebase — the global prior table never gets data, which means
+// MindPolicyService cold-start mix is currently a no-op. The right home for
+// this side-effect is DecisionOutcomeService.closeOutcome (backend), which
+// also has zero external callers today. Both need wiring at the same time.
+// Doing it from the worker would require duplicating the model in worker's
+// Prisma schema and crossing the domain boundary the wrong way.
+
 export const silent24hResolverWorker = new Worker(
   'silent-24h-resolver',
   async (job: Job) => {
