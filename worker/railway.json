@@ -1,0 +1,15 @@
+{
+  "build": {
+    "builder": "RAILPACK",
+    "buildCommand": "npm ci --include=dev && npm run prisma:generate && npm run build",
+    "dockerfilePath": null,
+    "watchPatterns": ["**"]
+  },
+  "deploy": {
+    "startCommand": "npm run start:prod",
+    "healthcheckPath": "/health",
+    "healthcheckTimeout": 300,
+    "restartPolicyType": "ON_FAILURE",
+    "restartPolicyMaxRetries": 10
+  }
+}
