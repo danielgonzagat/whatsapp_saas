@@ -1,9 +1,9 @@
 {
   "projectId": "kloel",
   "projectName": "KLOEL",
-  "commitSha": "dc2466f8aeb825d7560394bdac1b76c18473fbf8",
+  "commitSha": "a90d83d28a2a0d13a57d6e2a502d369c35d932f1",
   "environment": "scan",
-  "timestamp": "2026-05-13T03:06:49.971Z",
+  "timestamp": "2026-05-13T03:14:53.306Z",
   "status": "NOT_CERTIFIED",
   "humanReplacementStatus": "NOT_READY",
   "profile": null,
@@ -208,7 +208,7 @@
   "noHardcodedRealityState": {
     "artifact": "PULSE_NO_HARDCODED_REALITY",
     "version": 1,
-    "generatedAt": "2026-05-13T03:06:49.971Z",
+    "generatedAt": "2026-05-13T03:14:53.306Z",
     "operationalIdentity": "dynamic_hardcode_evidence_event",
     "scannedFiles": 533,
     "totalEvents": 222227,
@@ -8396,7 +8396,7 @@
     "snapshotAvailable": true,
     "sourcePath": "/Users/danielpenin/whatsapp_saas/PULSE_CODACY_STATE.json",
     "syncedAt": "2026-05-13T01:28:55.048Z",
-    "ageMinutes": 97,
+    "ageMinutes": 105,
     "stale": false,
     "loc": 632153,
     "totalIssues": 12025,
@@ -9580,7 +9580,7 @@
       "impactScore": 0.8,
       "confidence": 0.95,
       "summary": "7 HIGH Codacy issue(s) remain in backend/prisma/migrations/20251209150035_init_baseline/migration.sql.",
-      "observedAt": "2026-05-13T03:06:09.241Z",
+      "observedAt": "2026-05-13T03:14:11.099Z",
       "relatedFiles": [
         "backend/prisma/migrations/20251209150035_init_baseline/migration.sql"
       ],
@@ -9639,7 +9639,7 @@
       "impactScore": 0.55,
       "confidence": 0.95,
       "summary": "17 HIGH Codacy issue(s) remain in scripts/__parts__/obsidian-mirror-daemon-content.mjs.",
-      "observedAt": "2026-05-13T03:06:09.241Z",
+      "observedAt": "2026-05-13T03:14:11.099Z",
       "relatedFiles": [
         "scripts/__parts__/obsidian-mirror-daemon-content.mjs"
       ],
@@ -9713,7 +9713,7 @@
       "impactScore": 0.55,
       "confidence": 0.95,
       "summary": "5 HIGH Codacy issue(s) remain in scripts/__parts__/obsidian-mirror-daemon-utils.mjs.",
-      "observedAt": "2026-05-13T03:06:09.241Z",
+      "observedAt": "2026-05-13T03:14:11.099Z",
       "relatedFiles": [
         "scripts/__parts__/obsidian-mirror-daemon-utils.mjs"
       ],
@@ -9757,7 +9757,7 @@
       "impactScore": 0.55,
       "confidence": 0.95,
       "summary": "1 HIGH Codacy issue(s) remain in backend/src/meta/__parts__/meta-auth-helpers.ts.",
-      "observedAt": "2026-05-13T03:06:09.241Z",
+      "observedAt": "2026-05-13T03:14:11.099Z",
       "relatedFiles": [
         "backend/src/meta/__parts__/meta-auth-helpers.ts"
       ],
@@ -9940,7 +9940,7 @@
       "impactScore": 0.55,
       "confidence": 0.95,
       "summary": "1 HIGH Codacy issue(s) remain in backend/src/meta/__parts__/meta-oauth-url.helpers.ts.",
-      "observedAt": "2026-05-13T03:06:09.241Z",
+      "observedAt": "2026-05-13T03:14:11.099Z",
       "relatedFiles": [
         "backend/src/meta/__parts__/meta-oauth-url.helpers.ts"
       ],
@@ -10092,7 +10092,7 @@
       "impactScore": 0.55,
       "confidence": 0.95,
       "summary": "1 HIGH Codacy issue(s) remain in package.json.",
-      "observedAt": "2026-05-13T03:06:09.241Z",
+      "observedAt": "2026-05-13T03:14:11.099Z",
       "relatedFiles": [
         "package.json"
       ],
@@ -10136,7 +10136,7 @@
       "impactScore": 0.55,
       "confidence": 0.95,
       "summary": "2 HIGH Codacy issue(s) remain in scripts/__parts__/obsidian-mirror-daemon-indexes.mjs.",
-      "observedAt": "2026-05-13T03:06:09.241Z",
+      "observedAt": "2026-05-13T03:14:11.099Z",
       "relatedFiles": [
         "scripts/__parts__/obsidian-mirror-daemon-indexes.mjs"
       ],
@@ -13077,7 +13077,7 @@
     }
   ],
   "productVision": {
-    "generatedAt": "2026-05-13T03:08:08.064Z",
+    "generatedAt": "2026-05-13T03:16:11.822Z",
     "truthMode": "aspirational",
     "evidenceBasis": {
       "observed": 44,
@@ -38849,7 +38849,7 @@
       ]
     },
     "worldState": {
-      "generatedAt": "2026-05-13T03:06:55.947Z",
+      "generatedAt": "2026-05-13T03:14:59.594Z",
       "actorProfiles": [
         "synthetic-customer",
         "synthetic-operator",
@@ -38957,9 +38957,9 @@
       ]
     },
     "executionTrace": {
-      "runId": "pulse-cert-1778641615947",
-      "generatedAt": "2026-05-13T03:06:55.947Z",
-      "updatedAt": "2026-05-13T03:06:55.947Z",
+      "runId": "pulse-cert-1778642099594",
+      "generatedAt": "2026-05-13T03:14:59.594Z",
+      "updatedAt": "2026-05-13T03:14:59.594Z",
       "environment": "scan",
       "certificationTarget": {
         "tier": null,
@@ -39549,7 +39549,7 @@
         ],
         "metrics": {
           "codacySnapshotAvailable": true,
-          "codacyAgeMinutes": 97,
+          "codacyAgeMinutes": 105,
           "codacyStale": false,
           "externalStaleAdapters": 0,
           "externalMissingAdapters": 0
@@ -39640,7 +39640,7 @@
   "pulseMachineReadiness": {
     "scope": "pulse_machine_not_kloel_product",
     "status": "NOT_READY",
-    "generatedAt": "2026-05-13T03:06:49.971Z",
+    "generatedAt": "2026-05-13T03:14:53.306Z",
     "productCertificationStatus": "NOT_CERTIFIED",
     "productCertificationExcludedFromVerdict": true,
     "canRunBoundedAutonomousCycle": false,
@@ -39748,6 +39748,6 @@
       "critical_path_terminal: 4572 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:account-agent, matrix:capability:capability:ad-rules, matrix:capability:capability:admin-accounts, matrix:capability:capability:admin-audit, matrix:capability:capability:admin-auth, matrix:capability:capability:admin-brain, matrix:capability:capability:admin-carteira, matrix:capability:capability:admin-chat. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json."
     ]
   },
-  "runId": "84799ea0-fd5c-4cf0-a2ac-a33c71fd3ad8",
-  "generatedAt": "2026-05-13T03:08:25.349Z"
+  "runId": "1f09b81d-9639-465a-a99c-c03ecc19727e",
+  "generatedAt": "2026-05-13T03:16:36.421Z"
 }

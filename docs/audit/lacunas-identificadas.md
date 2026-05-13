@@ -242,24 +242,86 @@ Tone fora do repertório é substituído com registro de override.
 
 ## L8 — PULSE em `NOT_CERTIFIED` / `humanReplacementStatus: NOT_READY`
 
-**Status:** documentada (Parte 9). Triagem necessária.
+**Status:** triada (Parte 9). 15 rotas classificadas, 0 removidas.
+
+**Triagem concluida em 2026-05-13:**
+
+- **15 rotas `route_caller_unobserved`** extraidas de PULSE_CERTIFICATE.json.
+- Nenhuma rota e EXTERNA (todas tem auth guard; PULSE infere externas via
+  `isPublic` = sem guard).
+- Nenhuma rota e HISTORICAL_DEAD (todos os 4 controladores tem outras rotas
+  com callers frontend ativos — WebhookSettings GET/POST, AdminMind POST
+  ask/report, Pipeline POST state, Anuncios POST disconnect/sync).
+- **15 rotas sao FRONTEND_INCOMPLETE**: contrato backend existe, servico
+  funcional, mas frontend ainda nao consome. Registradas abaixo.
 
 **Onde vive:**
 
-- `artifacts/pulse/` contém o último report.
-- Categoria predominante: `graph-route-caller-unobserved` — rotas backend
-  sem caller frontend rastreado.
+- `PULSE_REPORT.md` e `.pulse/current/PULSE_CERTIFICATE.json`.
+- 4 controladores afetados:
+  - `backend/src/webhooks/webhook-settings.controller.ts`
+  - `backend/src/admin/mind/admin-mind.controller.ts`
+  - `backend/src/admin/pipeline/pipeline.controller.ts`
+  - `backend/src/anuncios/anuncios.controller.ts`
 
-**Próximo passo:**
+### Bucket: FRONTEND_INCOMPLETE (15 rotas)
 
-1. Listar rotas marcadas `graph-route-caller-unobserved`.
-2. Triagem em 3 buckets:
-   - **Externas**: usadas via curl/webhook/integração externa → registro
-     em `docs/api/external-routes.md` + ignore declarado em PULSE.
-   - **Históricas órfãs**: nenhuma evidência de uso → remover do código.
-   - **Frontend incompleto**: contrato existe, frontend ainda não consome →
-     entra em `lacunas-identificadas.md` como dívida.
-3. Atingir READY ou READY_WITH_CAVEATS com cada caveat justificado.
+#### Grupo A: Webhook Settings — DELETE ausente
+
+| Metodo | Rota | Controller | Next Step |
+|--------|------|-----------|------------|
+| DELETE | `/settings/webhooks/:id` | webhook-settings.controller.ts:68 | Adicionar botao de remover no componente WebhookSettings do frontend (GET list e POST create ja tem callers). |
+
+#### Grupo B: Admin Mind — Queries de diagnostico ausentes
+
+| Metodo | Rota | Controller | Next Step |
+|--------|------|-----------|------------|
+| GET | `/admin/mind/:workspaceId/state` | admin-mind.controller.ts:19 | Pagina admin `/admin/mind` — criar aba State com grafico de PipelineState por workspace. |
+| GET | `/admin/mind/:workspaceId/surprise` | admin-mind.controller.ts:28 | Pagina admin `/admin/mind` — criar aba Surprise com tabela de decisoes anomalas. |
+| GET | `/admin/mind/:workspaceId/lift` | admin-mind.controller.ts:37 | Pagina admin `/admin/mind` — criar aba Lift com grafico de lift por decisionType. |
+| GET | `/admin/mind/:workspaceId/concepts` | admin-mind.controller.ts:43 | Pagina admin `/admin/mind` — criar aba Concepts com lista de crencas aprendidas. |
+| GET | `/admin/mind/:workspaceId/health` | admin-mind.controller.ts:52 | Pagina admin `/admin/mind` — criar aba Health com metricas de fallback/latencia. |
+| GET | `/admin/mind/:workspaceId/briefing` | admin-mind.controller.ts:58 | Pagina admin `/admin/mind` — criar aba Briefing com resumo executivo. |
+| GET | `/admin/mind/lift` | admin-mind.controller.ts:70 | Pagina admin `/admin/mind` — visao agregada de lift global. |
+
+**Callers existentes no mesmo controller:** POST `/admin/mind/:workspaceId/ask`,
+POST `/admin/mind/:workspaceId/report` (PULSE nao flagou — ja tem frontend).
+
+#### Grupo C: Admin Pipeline — Leitura de estado ausente
+
+| Metodo | Rota | Controller | Next Step |
+|--------|------|-----------|------------|
+| GET | `/admin/pipeline/state` | pipeline.controller.ts:20 | Pagina admin `/admin/pipeline` — exibir estado do pipeline (legacy/shadow/active). |
+| GET | `/admin/pipeline/health` | pipeline.controller.ts:44 | Pagina admin `/admin/pipeline` — exibir metricas de health do pipeline. |
+
+**Callers existentes no mesmo controller:** POST `/admin/pipeline/state`
+(PULSE nao flagou — ja tem frontend para transicao de estado).
+
+#### Grupo D: Anuncios/Ads — Leituras de status ausentes
+
+| Metodo | Rota | Controller | Next Step |
+|--------|------|-----------|------------|
+| GET | `/api/anuncios/status` | anuncios.controller.ts:23 | Painel Ads — exibir status das plataformas conectadas. |
+| GET | `/api/anuncios/sync-status/google` | anuncios.controller.ts:37 | Painel Ads — exibir status de sync do Google Ads. |
+| GET | `/api/anuncios/accounts` | anuncios.controller.ts:44 | Painel Ads — listar contas conectadas por plataforma. |
+| GET | `/api/anuncios/campaigns` | anuncios.controller.ts:51 | Painel Ads — listar campanhas ativas por plataforma. |
+| GET | `/api/anuncios/connect/:platform` | anuncios.controller.ts:58 | Painel Ads — gerar URL de OAuth para conectar plataforma. |
+
+**Callers existentes no mesmo controller:** POST `/api/anuncios/disconnect/:platform`,
+POST `/api/anuncios/sync/accounts`, POST `/api/anuncios/sync/campaigns`,
+GET `/api/anuncios/sync-status/meta` (PULSE nao flagou — ja tem frontend para
+mutacoes de ads).
+
+### Resumo P9/L8
+
+- Orphan count antes: 15 `route_caller_unobserved`
+- Orphan count depois: 0 (todas classificadas como FRONTEND_INCOMPLETE)
+- HISTORICAL_DEAD: 0 (nenhuma rota removida)
+- EXTERNAL: 0 (nenhuma rota com auth guard e externa)
+- FRONTEND_INCOMPLETE: 15
+- PULSE status delta: `route_caller_unobserved` findings agora tem `needs_context`
+  resolvido com documentacao de next steps. Score permanece 58/100 — PULSE
+  sobe quando frontend for wired.
 
 ---
 
@@ -361,6 +423,41 @@ Todo outbound de email comercial passa por `buildUnsubscribeFooterHtml` ou `buil
 2. Garantir que `buildUnsubscribeFooterHtml` é aplicado e o teste de unidade
    afirma footer presente.
 3. Endpoint público `/unsubscribe?token=...` funcional.
+
+---
+
+## L13 — PULSE nao tem accept-list explicito para rotas externas com guard
+
+**Status:** documentada (Parte 9). Sem fix imediato — depende de mudanca em
+`scripts/pulse/*` (governance surface).
+
+**Onde vive:**
+
+- `scripts/pulse/graph/graph-part1-core.ts:160` — `inferRouteHasExternalCaller`
+  decide que rota e externa apenas por `route.isPublic` (ausencia de guard).
+- Nao ha arquivo de config nem campo `externalRoutes` no manifest que permita
+  declarar que uma rota COM auth guard (ex: JwtAuthGuard) e chamada
+  exclusivamente por integracao externa (ex: webhook com HMAC, callback OAuth,
+  endpoint de health check autenticado).
+
+**Consequencia:**
+
+- Se uma rota com guard for chamada apenas por webhook/parceiro externo,
+  PULSE reportara como `route_caller_unobserved` falso positivo.
+- Hoje nenhuma das 15 rotas triadas cai nesse caso, mas o gap existe e pode
+  afetar futuras adicoes.
+
+**Proximo passo:**
+
+1. Humano cria `scripts/pulse/external-routes.json` (ou equivalente) com
+   schema: `{ "accept": [{ "method": "GET", "path": "/admin/health", "reason": "called by Railway health check" }] }`.
+2. `inferRouteHasExternalCaller` ou funcao auxiliar consulta essa lista
+   antes de emitir `route_caller_unobserved`.
+3. Referencia cruzada com `docs/api/external-routes.md` para single source
+   of truth.
+
+> **Nota de governance:** `scripts/pulse/*` e superficie protegida. IA CLI
+> nao pode editar estes arquivos. Este gap requer acao humana.
 
 ---
 
