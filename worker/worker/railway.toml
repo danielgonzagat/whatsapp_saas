@@ -1,6 +1,6 @@
 [build]
-builder = "DOCKERFILE"
-dockerfilePath = "worker/Dockerfile"
+builder = "RAILPACK"
+buildCommand = "npm ci --include=dev && npm run prisma:generate && npm run build"
 
 [deploy]
 startCommand = "npm run start:prod"
