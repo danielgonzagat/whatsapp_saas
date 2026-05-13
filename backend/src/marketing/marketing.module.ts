@@ -17,6 +17,7 @@ import { GmailClientService } from './mailbox-gmail-oauth/gmail-client.service';
 import { GmailOAuthHandshakeService } from './mailbox-gmail-oauth/oauth-handshake.service';
 import { GmailSyncService } from './mailbox-gmail-oauth/sync.service';
 import { GmailSendService } from './mailbox-gmail-oauth/send.service';
+import { GMAIL_OAUTH_TOKEN } from './tokens';
 import { MailboxImapSmtpService } from './mailbox-imap-smtp.service';
 import { MailboxMicrosoftOAuthCallbackController } from './mailbox-microsoft-oauth-callback.controller';
 import { MailboxMicrosoftOAuthService } from './mailbox-microsoft-oauth.service';
@@ -46,6 +47,7 @@ import { WhatsAppSummaryService } from './marketing-connect/whatsapp-summary.ser
     GmailSyncService,
     GmailSendService,
     MailboxGmailOAuthService,
+    { provide: GMAIL_OAUTH_TOKEN, useExisting: MailboxGmailOAuthService },
     MailboxMicrosoftOAuthService,
     MailboxImapSmtpService,
     MetaConnectService,

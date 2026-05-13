@@ -1,5 +1,3 @@
-import { ModuleRef } from '@nestjs/core';
-import { UnifiedAgentService } from '../kloel/unified-agent.service';
 import { OmnichannelService } from './omnichannel.service';
 
 describe('OmnichannelService', () => {
@@ -17,23 +15,19 @@ describe('OmnichannelService', () => {
     const storage = {
       upload: jest.fn(),
     };
-    const moduleRef = {
-      get: jest.fn((token) => {
-        if (token === UnifiedAgentService && overrides?.unifiedAgent) {
-          return overrides.unifiedAgent;
-        }
-        throw new Error('provider_not_found');
-      }),
+    const decisionOutcome = {
+      recordEvent: jest.fn(),
     };
 
     const service = new OmnichannelService(
       inbox as never,
       routing as never,
       storage as never,
-      moduleRef as never as ModuleRef,
+      decisionOutcome as never,
+      overrides?.unifiedAgent,
     );
 
-    return { service, inbox, moduleRef };
+    return { service, inbox };
   }
 
   it('saves Instagram inbound and dispatches perception to the unified agent without tools', async () => {

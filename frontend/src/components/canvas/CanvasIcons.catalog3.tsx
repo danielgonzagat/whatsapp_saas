@@ -1,6 +1,6 @@
 import { kloelT } from '@/lib/i18n/t';
 import type React from 'react';
-import { ColorIcon } from './CanvasIcons';
+import { ColorIcon } from './CanvasIcons.shared';
 
 export const IC3: Record<string, (s?: number) => React.ReactElement> = {
   down: (s = 10) => (

@@ -1,8 +1,6 @@
 import { Module, forwardRef } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
-import { CiaModule } from '../cia/cia.module';
-import { CiaRuntimeService } from '../cia/cia-runtime.service';
 import { BillingModule } from '../billing/billing.module';
 import { CrmModule } from '../crm/crm.module';
 import { InboxModule } from '../inbox/inbox.module';
@@ -55,7 +53,7 @@ import {
     forwardRef(() => CrmModule),
     PrismaModule,
     forwardRef(() => KloelModule),
-    forwardRef(() => CiaModule),
+    forwardRef(() => require('../cia/cia.module').CiaModule),
     forwardRef(() => OmnichannelModule),
   ],
   controllers: [
@@ -89,7 +87,7 @@ import {
     WhatsappChatBacklogService,
     { provide: WHATSAPP_MESSAGING, useExisting: WhatsappService },
     { provide: INBOUND_PROCESSOR, useExisting: InboundProcessorService },
-    { provide: CIA_RUNTIME, useExisting: CiaRuntimeService },
+    { provide: CIA_RUNTIME, useExisting: require('../cia/cia-runtime.service').CiaRuntimeService },
     { provide: CATCHUP_HISTORY, useExisting: WhatsappCatchupHistoryService },
   ],
   exports: [

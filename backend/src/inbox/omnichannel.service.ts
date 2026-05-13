@@ -1,5 +1,4 @@
 import { Injectable, Logger, Optional, Inject } from '@nestjs/common';
-import { ModuleRef } from '@nestjs/core';
 import { forEachSequential } from '../common/async-sequence';
 import { StorageService } from '../common/storage/storage.service';
 import { UNIFIED_AGENT_TOKEN } from '../kloel/tokens';
@@ -43,7 +42,6 @@ export class OmnichannelService {
     private readonly routing: SmartRoutingService,
     private readonly storage: StorageService,
     private readonly decisionOutcome: DecisionOutcomeService,
-    private readonly moduleRef: ModuleRef,
     @Optional() @Inject(UNIFIED_AGENT_TOKEN) private readonly _unifiedAgent?: UnifiedAgentPort,
   ) {}
 

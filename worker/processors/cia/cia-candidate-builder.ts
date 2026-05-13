@@ -1,4 +1,4 @@
-import type { CiaSeedConversation } from './build-state';
+import type { CiaSeedConversation } from './cia-types';
 import type { DemandState } from '../../providers/commercial-intelligence';
 import { computeDemandState } from '../../providers/commercial-intelligence';
 import { buildSeedCognitiveState } from './cognitive-state';

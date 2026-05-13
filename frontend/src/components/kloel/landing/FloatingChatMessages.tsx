@@ -3,8 +3,8 @@
 import { kloelT } from '@/lib/i18n/t';
 import { colors } from '@/lib/design-tokens';
 import { KloelMushroomVisual } from '@/components/kloel/KloelBrand';
-import { UserMessageRow, AssistantMessageRow } from './FloatingChat';
-import type { Message } from './FloatingChat';
+import { UserMessageRow, AssistantMessageRow } from './FloatingChatRows';
+import type { Message } from './FloatingChatRows';
 import type { RefObject } from 'react';
 
 const S = "var(--font-sora), 'Sora', sans-serif";

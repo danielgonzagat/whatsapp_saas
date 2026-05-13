@@ -1,11 +1,10 @@
 import { Inject, Injectable, Logger, forwardRef, Optional } from '@nestjs/common';
-import { ModuleRef } from '@nestjs/core';
 import { WHATSAPP_MESSAGING } from '../whatsapp/whatsapp.tokens';
 import type { IWhatsappMessaging } from '../whatsapp/whatsapp.interfaces';
 import { AudioService } from './audio.service';
 import type { ToolArgs } from './unified-agent.types';
 import { OpsAlertService } from '../observability/ops-alert.service';
-import { MailboxGmailOAuthService } from '../marketing/mailbox-gmail-oauth.service';
+import { GMAIL_OAUTH_TOKEN } from '../marketing/tokens';
 import { ChannelTransportRegistry } from './channel-transport.registry';
 import type { ChannelName, ChannelSendResult } from './channel-transport.types';
 import { buildUnsubscribeFooterHtml } from '../common/utils/unsubscribe-footer.util';
@@ -14,6 +13,15 @@ import { BrainEventSpineService } from './brain-event-spine.service';
 import { DailyLimitService } from './daily-limit.service';
 
 type UnknownRecord = Record<string, unknown>;
+
+type GmailMailboxPort = {
+  sendMessageFromMailbox(workspaceId: string, input: {
+    toEmail: string;
+    subject: string;
+    html: string;
+    proactive?: boolean;
+  }): Promise<{ sent: boolean; status?: string; messageId?: string }>;
+};
 
 /**
  * Handles all send/media/audio/transcription tool actions for the Unified Agent.
@@ -29,9 +37,9 @@ export class UnifiedAgentActionsMessagingService {
     private readonly audioService: AudioService,
     private readonly transports: ChannelTransportRegistry,
     private readonly dailyLimit: DailyLimitService,
-    @Optional() private readonly moduleRef?: ModuleRef,
     @Optional() private readonly opsAlert?: OpsAlertService,
     @Optional() private readonly events?: BrainEventSpineService,
+    @Optional() @Inject(GMAIL_OAUTH_TOKEN) private readonly _gmailMailbox?: GmailMailboxPort,
   ) {}
 
   // ───────── helpers ─────────
@@ -163,15 +171,8 @@ export class UnifiedAgentActionsMessagingService {
 
   // ───────── send actions ─────────
 
-  private resolveGmailMailbox(): MailboxGmailOAuthService | null {
-    if (!this.moduleRef) {
-      return null;
-    }
-    try {
-      return this.moduleRef.get(MailboxGmailOAuthService, { strict: false });
-    } catch {
-      return null;
-    }
+  private resolveGmailMailbox(): GmailMailboxPort | null {
+    return this._gmailMailbox ?? null;
   }
 
   private async actionSendEmailMessage(
@@ -272,10 +273,7 @@ export class UnifiedAgentActionsMessagingService {
       const outboundKind = String(context?.outboundKind ?? '').toLowerCase();
       if (outboundKind !== 'reply' && outboundKind !== 'inbound-reply') {
         const resolvedCh = this.resolveChannel(context);
-        const limitCheck = await this.dailyLimit.ensureProactiveDailyLimit(
-          workspaceId,
-          resolvedCh,
-        );
+        const limitCheck = await this.dailyLimit.ensureProactiveDailyLimit(workspaceId, resolvedCh);
         if (!limitCheck.allowed) {
           void this.opsAlert?.alertOnCriticalError(
             new Error(`daily-limit-exceeded: ws=${workspaceId} ch=${resolvedCh}`),

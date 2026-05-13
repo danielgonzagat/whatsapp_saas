@@ -1,4 +1,3 @@
-import { canvasPalette } from '@/lib/canvas-palette-tokens';
 import { kloelT } from '@/lib/i18n/t';
 /* ═══════════════════════════════════════════
    KLOEL CANVAS — SVG Icon Factory
@@ -6,30 +5,14 @@ import { kloelT } from '@/lib/i18n/t';
    ═══════════════════════════════════════════ */
 
 import type React from 'react';
-import { useId } from 'react';
 import { IC1 } from './CanvasIcons.catalog1';
 import { IC2 } from './CanvasIcons.catalog2';
 import { IC3 } from './CanvasIcons.catalog3';
+import { ColorIcon } from './CanvasIcons.shared';
 
 type IconFn = (s?: number) => React.ReactElement;
 
-/** Color icon needs useId for SVG gradient — must be a component */
-export function ColorIcon({ s = 16 }: { s?: number }) {
-  const gid = useId();
-  return (
-    <svg width={s} height={s} viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="1.5" />
-      <circle cx="12" cy="12" r="5" fill={`url(#${gid}-rg)`} />
-      <defs>
-        <radialGradient id={`${gid}-rg`}>
-          <stop stopColor={canvasPalette.gradientWarm} />
-          <stop offset="0.5" stopColor={canvasPalette.gradientTeal} />
-          <stop offset="1" stopColor={canvasPalette.gradientBlue} />
-        </radialGradient>
-      </defs>
-    </svg>
-  );
-}
+export { ColorIcon };
 
 export const IC: Record<string, IconFn> = {
   ...IC1,

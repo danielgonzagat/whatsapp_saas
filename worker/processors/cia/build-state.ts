@@ -24,6 +24,7 @@ import {
 } from '../../providers/commercial-intelligence';
 import { toCandidate } from './cia-candidate-builder';
 import type { CiaCandidate, CiaCluster } from './cia-candidate-builder';
+import type { CiaSeedConversation } from './cia-types';
 
 // Shape returned by the backlog scan query (lightweight select).
 type BacklogConversation = Prisma.ConversationGetPayload<{
@@ -98,6 +99,7 @@ function readAutopilotEventMeta(event: AutopilotEventRow): {
 }
 
 export type { CiaActionType, CiaCandidate, CiaCluster } from './cia-candidate-builder';
+export type { CiaSeedConversation } from './cia-types';
 
 /** Cia workspace state shape. */
 export interface CiaWorkspaceState {
@@ -115,30 +117,6 @@ export interface CiaWorkspaceState {
   candidates: CiaCandidate[];
   /** Clusters property. */
   clusters: Record<CiaCluster, CiaCandidate[]>;
-}
-
-/** Cia seed conversation shape. */
-export interface CiaSeedConversation {
-  /** Conversation id property. */
-  conversationId: string;
-  /** Contact id property. */
-  contactId?: string | undefined;
-  /** Phone property. */
-  phone?: string | undefined;
-  /** Contact name property. */
-  contactName?: string | undefined;
-  /** Unread count property. */
-  unreadCount?: number | undefined;
-  /** Pending property. */
-  pending?: boolean | undefined;
-  /** Last message at property. */
-  lastMessageAt?: Date | string | null | undefined;
-  /** Last message text property. */
-  lastMessageText?: string | null | undefined;
-  /** Lead score property. */
-  leadScore?: number | null | undefined;
-  /** Custom fields property. */
-  customFields?: Record<string, unknown> | null | undefined;
 }
 
 /** Build cia workspace state from seed. */
