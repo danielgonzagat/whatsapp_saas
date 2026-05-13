@@ -622,6 +622,7 @@ export class KloelChatToolsService {
     return {
       success: result.ok,
       skillId: skill.id,
+      version: result.version,
       reasons: result.reasons,
       message: result.ok ? 'Skill procedural registrada.' : 'Skill procedural recusada.',
     };

@@ -58,6 +58,9 @@ const DEFAULT_SKILLS: AgentSkillDefinition[] = [
   },
 ];
 
+const VALID_SKILL_ID_RE = /^[a-z0-9][a-z0-9._-]{0,63}$/;
+const MAX_SKILL_CONTENT_CHARS = 100_000;
+
 @Injectable()
 export class AgentRuntimeSkillRegistry {
   private readonly logger = StructuredLogger.from(AgentRuntimeSkillRegistry.name);
@@ -113,7 +116,12 @@ export class AgentRuntimeSkillRegistry {
   async upsertSkill(workspaceId: string, skill: AgentSkillDefinition): Promise<{
     ok: boolean;
     reasons: string[];
+    version?: number;
   }> {
+    const validationErrors = this.validateSkill(skill);
+    if (validationErrors.length > 0) {
+      return { ok: false, reasons: validationErrors };
+    }
     const content = this.skillContent(skill);
     const safety = classifyMemorySafety(content);
     if (!safety.safe) {
@@ -121,25 +129,49 @@ export class AgentRuntimeSkillRegistry {
     }
 
     try {
+      const existingRow = await this.prisma.kloelMemory.findUnique({
+        where: { workspaceId_key: { workspaceId, key: `agent_skill:${skill.id}` } },
+        select: { value: true },
+      });
+      const existingSkill = existingRow ? this.parseSkill(existingRow.value) : null;
+      const now = new Date().toISOString();
+      const version = existingSkill
+        ? Math.max(existingSkill.version + 1, skill.version || 1)
+        : Math.max(skill.version || 1, 1);
+      const persistedSkill: AgentSkillDefinition = {
+        ...skill,
+        version,
+        updatedAt: now,
+      };
+      const persistedContent = this.skillContent(persistedSkill);
+      const metadata = {
+        kind: 'agent_skill',
+        version,
+        previousVersion: existingSkill?.version ?? null,
+        riskLevel: persistedSkill.riskLevel,
+        category: persistedSkill.category,
+        updatedAt: now,
+      } satisfies Prisma.InputJsonObject;
+
       await this.prisma.kloelMemory.upsert({
         where: { workspaceId_key: { workspaceId, key: `agent_skill:${skill.id}` } },
         update: {
-          value: toInputJsonValue(skill),
-          content,
-          type: skill.category,
-          metadata: { kind: 'agent_skill', version: skill.version } satisfies Prisma.InputJsonObject,
+          value: toInputJsonValue(persistedSkill),
+          content: persistedContent,
+          type: persistedSkill.category,
+          metadata,
         },
         create: {
           workspaceId,
           key: `agent_skill:${skill.id}`,
           category: 'agent_skill',
-          type: skill.category,
-          value: toInputJsonValue(skill),
-          content,
-          metadata: { kind: 'agent_skill', version: skill.version } satisfies Prisma.InputJsonObject,
+          type: persistedSkill.category,
+          value: toInputJsonValue(persistedSkill),
+          content: persistedContent,
+          metadata,
         },
       });
-      return { ok: true, reasons: [] };
+      return { ok: true, reasons: [], version };
     } catch (error: unknown) {
       void this.opsAlert?.alertOnCriticalError(error, 'AgentRuntimeSkillRegistry.upsertSkill');
       this.logger.warn(`Failed to upsert agent skill: ${this.messageFor(error)}`);
@@ -185,8 +217,32 @@ export class AgentRuntimeSkillRegistry {
       `risk=${skill.riskLevel}`,
       `tools=${skill.allowedTools.join(', ') || 'none'}`,
       `evidence=${skill.requiredEvidence.join(', ') || 'none'}`,
+      `validation=${skill.validation.join(', ') || 'none'}`,
+      `rollback=${skill.rollback.join(', ') || 'none'}`,
+      `metrics=${skill.metrics.join(', ') || 'none'}`,
       skill.body,
     ].join('\n');
+  }
+
+  private validateSkill(skill: AgentSkillDefinition): string[] {
+    const errors: string[] = [];
+    if (!VALID_SKILL_ID_RE.test(skill.id)) {
+      errors.push('invalid_skill_id');
+    }
+    if (!skill.title.trim()) {
+      errors.push('missing_title');
+    }
+    if (!skill.summary.trim()) {
+      errors.push('missing_summary');
+    }
+    const content = this.skillContent(skill);
+    if (content.length > MAX_SKILL_CONTENT_CHARS) {
+      errors.push('skill_too_large');
+    }
+    if (skill.riskLevel === 'critical' && skill.validation.length === 0) {
+      errors.push('critical_skill_requires_validation');
+    }
+    return errors;
   }
 
   private stringArray(value: unknown): string[] {
