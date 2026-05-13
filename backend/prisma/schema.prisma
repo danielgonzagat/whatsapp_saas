@@ -3394,6 +3394,7 @@ model MetaConnection {
   pixelId               String?
   catalogId             String?
   status                String    @default("connected")
+  channel               String?
   connectedAt           DateTime  @default(now())
   updatedAt             DateTime  @updatedAt
 
