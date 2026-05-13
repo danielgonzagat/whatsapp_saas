@@ -79,6 +79,7 @@ describe('Runtime Conversation — 12-step tracer proof', () => {
 
   const concepts = { detect: jest.fn() };
   const events = { recordCommercial: jest.fn() };
+  const identity = { resolve: jest.fn() };
   const mind = {
     resolveAggressiveness: jest.fn(),
     resolveAudioVsText: jest.fn(),
@@ -115,7 +116,12 @@ describe('Runtime Conversation — 12-step tracer proof', () => {
     tracer = new RuntimeConversationTracerService();
 
     concepts.detect.mockImplementation(
-      async (input: { workspaceId: string; subject: string; text: string; features: Record<string, unknown> }): Promise<ConceptRow[]> => {
+      async (input: {
+        workspaceId: string;
+        subject: string;
+        text: string;
+        features: Record<string, unknown>;
+      }): Promise<ConceptRow[]> => {
         const results: ConceptRow[] = [];
         if (/car[oa]|pre[cç]o|desconto/i.test(input.text)) {
           results.push({ concept: 'price_objection', confidence: 0.8 });
@@ -145,18 +151,57 @@ describe('Runtime Conversation — 12-step tracer proof', () => {
     ]);
     mind.resolveAudioVsText.mockResolvedValue({ choice: 'text', confidence: 0.7, fallback: false });
     mind.resolveTone.mockResolvedValue({ tone: 'CONSULTIVE', confidence: 0.8, fallback: false });
-    mind.resolveAggressiveness.mockResolvedValue({ aggressiveness: 'MEDIUM', confidence: 0.75, fallback: false });
-    mind.resolveMessageFormat.mockResolvedValue({ format: 'text', confidence: 0.65, fallback: false });
-    mind.resolveChannelChoice.mockResolvedValue({ channel: 'whatsapp', confidence: 0.7, fallback: false });
+    mind.resolveAggressiveness.mockResolvedValue({
+      aggressiveness: 'MEDIUM',
+      confidence: 0.75,
+      fallback: false,
+    });
+    mind.resolveMessageFormat.mockResolvedValue({
+      format: 'text',
+      confidence: 0.65,
+      fallback: false,
+    });
+    mind.resolveChannelChoice.mockResolvedValue({
+      channel: 'whatsapp',
+      confidence: 0.7,
+      fallback: false,
+    });
     mind.resolveCoupon.mockResolvedValue({ action: 'coupon_10', confidence: 0.6, fallback: false });
-    mind.resolveObjectionResponse.mockResolvedValue({ strategy: 'value_focus', confidence: 0.68, fallback: false });
-    mind.resolveProductOffer.mockResolvedValue({ offer: 'top_seller', confidence: 0.72, fallback: false });
-    mind.resolveHumanTransfer.mockResolvedValue({ action: 'continue_ai', confidence: 0.74, fallback: false });
-    mind.lift.mockResolvedValue({ lift: 0.12, samples: 45, baselineOutcome: 0.3, chosenOutcome: 0.42 });
+    mind.resolveObjectionResponse.mockResolvedValue({
+      strategy: 'value_focus',
+      confidence: 0.68,
+      fallback: false,
+    });
+    mind.resolveProductOffer.mockResolvedValue({
+      offer: 'top_seller',
+      confidence: 0.72,
+      fallback: false,
+    });
+    mind.resolveHumanTransfer.mockResolvedValue({
+      action: 'continue_ai',
+      confidence: 0.74,
+      fallback: false,
+    });
+    mind.lift.mockResolvedValue({
+      lift: 0.12,
+      samples: 45,
+      baselineOutcome: 0.3,
+      chosenOutcome: 0.42,
+    });
 
     events.recordCommercial.mockResolvedValue(undefined);
+    identity.resolve.mockResolvedValue({
+      contactId: 'contact-resolved-1',
+      channelIdentifierId: 'ch-id-1',
+      wasCreated: false,
+      wasResolved: true,
+      resolvedFromContactId: CONTACT_ID,
+    });
     setup.getState.mockResolvedValue({
-      arsenal: [{ id: 'asset-1', type: 'text' }, { id: 'asset-2', type: 'image' }],
+      arsenal: [
+        { id: 'asset-1', type: 'text' },
+        { id: 'asset-2', type: 'image' },
+      ],
       config: { tone: 'direto' },
       selectedProductIds: ['product-1'],
     });
@@ -177,12 +222,18 @@ describe('Runtime Conversation — 12-step tracer proof', () => {
       mind as never,
       concepts as never,
       events as never,
+      identity as never,
       setup as never,
       prisma as never,
+      tracer as never,
     );
   }
 
-  function traceBeforeOrchestration(input: { workspaceId: string; contactId?: string; channel: string }) {
+  function traceBeforeOrchestration(input: {
+    workspaceId: string;
+    contactId?: string;
+    channel: string;
+  }) {
     tracer.record('step1_inbox_recorded', {
       workspaceId: input.workspaceId,
       channel: input.channel,
@@ -208,8 +259,12 @@ describe('Runtime Conversation — 12-step tracer proof', () => {
     });
 
     expect(decision.actions.length).toBeGreaterThanOrEqual(1);
-    expect(tracer.events.filter((e) => e.kind === 'step8_transport_invoked').length).toBeGreaterThanOrEqual(1);
-    expect(tracer.events.filter((e) => e.kind === 'step9_outcome_recorded').length).toBeGreaterThanOrEqual(1);
+    expect(
+      tracer.events.filter((e) => e.kind === 'step8_transport_invoked').length,
+    ).toBeGreaterThanOrEqual(1);
+    expect(
+      tracer.events.filter((e) => e.kind === 'step9_outcome_recorded').length,
+    ).toBeGreaterThanOrEqual(1);
 
     // --- Simulate steps 10-12 outside the orchestrator (outcome closure, belief update, evidence) ---
 
@@ -253,22 +308,40 @@ describe('Runtime Conversation — 12-step tracer proof', () => {
       'step12_evidence_consultable',
     ] as const;
 
-    tracer.assertSteps(expectedSteps as unknown as typeof expectedSteps);
+    tracer.assertSteps(expectedSteps);
 
     const allSteps = tracer.steps();
     for (const step of expectedSteps) {
       expect(allSteps).toContain(step);
     }
 
-    expect(allSteps.indexOf('step1_inbox_recorded')).toBeLessThan(allSteps.indexOf('step4_concept_classified'));
-    expect(allSteps.indexOf('step4_concept_classified')).toBeLessThan(allSteps.indexOf('step3_memory_queried'));
-    expect(allSteps.indexOf('step3_memory_queried')).toBeLessThan(allSteps.indexOf('step5_policy_chose'));
-    expect(allSteps.indexOf('step5_policy_chose')).toBeLessThan(allSteps.indexOf('step7_composer_produced'));
-    expect(allSteps.indexOf('step7_composer_produced')).toBeLessThan(allSteps.indexOf('step8_transport_invoked'));
-    expect(allSteps.indexOf('step8_transport_invoked')).toBeLessThan(allSteps.indexOf('step9_outcome_recorded'));
-    expect(allSteps.indexOf('step9_outcome_recorded')).toBeLessThan(allSteps.indexOf('step10_outcome_closed'));
-    expect(allSteps.indexOf('step10_outcome_closed')).toBeLessThan(allSteps.indexOf('step11_belief_updated'));
-    expect(allSteps.indexOf('step11_belief_updated')).toBeLessThan(allSteps.indexOf('step12_evidence_consultable'));
+    expect(allSteps.indexOf('step1_inbox_recorded')).toBeLessThan(
+      allSteps.indexOf('step4_concept_classified'),
+    );
+    expect(allSteps.indexOf('step4_concept_classified')).toBeLessThan(
+      allSteps.indexOf('step3_memory_queried'),
+    );
+    expect(allSteps.indexOf('step3_memory_queried')).toBeLessThan(
+      allSteps.indexOf('step5_policy_chose'),
+    );
+    expect(allSteps.indexOf('step5_policy_chose')).toBeLessThan(
+      allSteps.indexOf('step7_composer_produced'),
+    );
+    expect(allSteps.indexOf('step7_composer_produced')).toBeLessThan(
+      allSteps.indexOf('step8_transport_invoked'),
+    );
+    expect(allSteps.indexOf('step8_transport_invoked')).toBeLessThan(
+      allSteps.indexOf('step9_outcome_recorded'),
+    );
+    expect(allSteps.indexOf('step9_outcome_recorded')).toBeLessThan(
+      allSteps.indexOf('step10_outcome_closed'),
+    );
+    expect(allSteps.indexOf('step10_outcome_closed')).toBeLessThan(
+      allSteps.indexOf('step11_belief_updated'),
+    );
+    expect(allSteps.indexOf('step11_belief_updated')).toBeLessThan(
+      allSteps.indexOf('step12_evidence_consultable'),
+    );
   });
 
   it('produces steps 1-9 for hot_lead with product offer', async () => {
@@ -377,9 +450,9 @@ describe('Runtime Conversation — 12-step tracer proof', () => {
     expect(() =>
       assertCustomerSafe('Responder com tom consultivo e usar apenas os 3 produtos do arsenal'),
     ).toThrow('customer-safe-violation');
-    expect(() =>
-      assertCustomerSafe('priorizar o arsenal de imagens e vídeos'),
-    ).toThrow('customer-safe-violation');
+    expect(() => assertCustomerSafe('priorizar o arsenal de imagens e vídeos')).toThrow(
+      'customer-safe-violation',
+    );
     expect(() => assertCustomerSafe('')).toThrow('customer-safe-violation');
     expect(() =>
       assertCustomerSafe('Oi, tudo bem? Quero saber mais sobre o produto.'),

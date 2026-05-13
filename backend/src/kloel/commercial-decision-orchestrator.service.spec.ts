@@ -19,6 +19,7 @@ describe('CommercialDecisionOrchestratorService', () => {
     resolve: jest.fn(),
   };
   const setup = { getState: jest.fn() };
+  const tracer = { record: jest.fn(), getTrace: jest.fn(), listTraces: jest.fn() };
   const prisma = {
     pipelineState: {
       findUnique: jest.fn(),
@@ -75,7 +76,10 @@ describe('CommercialDecisionOrchestratorService', () => {
       wasResolved: false,
     });
     setup.getState.mockResolvedValue({
-      arsenal: [{ id: 'asset-1', type: 'text' }, { id: 'asset-2', type: 'image' }],
+      arsenal: [
+        { id: 'asset-1', type: 'text' },
+        { id: 'asset-2', type: 'image' },
+      ],
       config: { tone: 'direto' },
       selectedProductIds: ['product-1'],
     });
@@ -84,6 +88,7 @@ describe('CommercialDecisionOrchestratorService', () => {
     prisma.pipelineState.update.mockResolvedValue({ state: 'shadow', fallbackRate1h: 0 });
     prisma.decisionShadow.upsert.mockResolvedValue({ id: 'shadow-1' });
     prisma.decisionShadow.count.mockResolvedValue(0);
+    tracer.record.mockImplementation(() => undefined);
   });
 
   function makeService() {
@@ -94,6 +99,7 @@ describe('CommercialDecisionOrchestratorService', () => {
       identity as never,
       setup as never,
       prisma as never,
+      tracer as never,
     );
   }
 
@@ -154,7 +160,7 @@ describe('CommercialDecisionOrchestratorService', () => {
       message: 'Quero comprar, mas confio pouco.',
     });
 
-    const trace = decision.trace as Record<string, unknown>;
+    const trace = decision.trace;
     const decisions = trace.decisions as Record<string, Record<string, unknown>>;
     expect(decisions).toBeTruthy();
 
@@ -313,7 +319,10 @@ describe('CommercialDecisionOrchestratorService', () => {
 
   it('filters resolveMessageFormat candidates to arsenal-owned formats', async () => {
     setup.getState.mockResolvedValue({
-      arsenal: [{ id: 'a1', type: 'text' }, { id: 'a2', type: 'image' }],
+      arsenal: [
+        { id: 'a1', type: 'text' },
+        { id: 'a2', type: 'image' },
+      ],
       config: { tone: 'direto' },
       selectedProductIds: ['product-1'],
     });
@@ -326,12 +335,10 @@ describe('CommercialDecisionOrchestratorService', () => {
       message: 'Olá',
     });
 
-    expect(mind.resolveMessageFormat).toHaveBeenCalledWith(
-      'ws-1',
-      'whatsapp',
-      'general',
-      ['text', 'image'],
-    );
+    expect(mind.resolveMessageFormat).toHaveBeenCalledWith('ws-1', 'whatsapp', 'general', [
+      'text',
+      'image',
+    ]);
   });
 
   it('removes audio from format candidates when zero audio assets uploaded', async () => {
@@ -349,14 +356,14 @@ describe('CommercialDecisionOrchestratorService', () => {
       message: 'Olá',
     });
 
-    const formatsArg = (mind.resolveMessageFormat as jest.Mock).mock.calls[0][3];
+    const formatsArg = mind.resolveMessageFormat.mock.calls[0][3];
     expect(formatsArg).not.toContain('audio');
     expect(formatsArg).not.toContain('video');
     expect(formatsArg).not.toContain('document');
     expect(formatsArg).not.toContain('template');
     expect(formatsArg).toEqual(['text']);
 
-    const trace = decision.trace as Record<string, unknown>;
+    const trace = decision.trace;
     const decisions = trace.decisions as Record<string, unknown>;
     expect(decisions.arsenal_format_filter).toBeDefined();
   });
@@ -376,7 +383,7 @@ describe('CommercialDecisionOrchestratorService', () => {
       message: 'Olá',
     });
 
-    const trace = decision.trace as Record<string, unknown>;
+    const trace = decision.trace;
     const decisions = trace.decisions as Record<string, unknown>;
     const filter = decisions.arsenal_format_filter as Record<string, unknown>;
     expect(filter).toBeDefined();
@@ -407,7 +414,7 @@ describe('CommercialDecisionOrchestratorService', () => {
       message: 'Olá',
     });
 
-    const formatsArg = (mind.resolveMessageFormat as jest.Mock).mock.calls[0][3];
+    const formatsArg = mind.resolveMessageFormat.mock.calls[0][3];
     expect(formatsArg).toContain('text');
     expect(formatsArg).toContain('audio');
     expect(formatsArg).toContain('image');
@@ -427,7 +434,7 @@ describe('CommercialDecisionOrchestratorService', () => {
       message: 'Olá',
     });
 
-    const formatsArg = (mind.resolveMessageFormat as jest.Mock).mock.calls[0][3];
+    const formatsArg = mind.resolveMessageFormat.mock.calls[0][3];
     expect(formatsArg).toContain('audio');
     expect(formatsArg).toContain('image');
   });

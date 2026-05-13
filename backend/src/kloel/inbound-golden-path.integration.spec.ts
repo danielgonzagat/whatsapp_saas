@@ -119,6 +119,7 @@ describe('Inbound Golden Path — P12 WhatsApp integration proof', () => {
     },
     decisionOutcome: {
       create: jest.fn().mockResolvedValue({ id: 'do-1' }),
+      findFirst: jest.fn().mockResolvedValue(null),
       updateMany: jest.fn().mockResolvedValue({ count: 1 }),
       findMany: jest.fn().mockResolvedValue([]),
     },
@@ -269,6 +270,7 @@ describe('Inbound Golden Path — P12 WhatsApp integration proof', () => {
       identity as never,
       setupService as never,
       prisma as never,
+      tracer as never,
     );
   }
 
@@ -314,14 +316,10 @@ describe('Inbound Golden Path — P12 WhatsApp integration proof', () => {
       );
       expect(hasAction).toBe(true);
 
-      const transportEvents = tracer.events.filter(
-        (e) => e.kind === 'step8_transport_invoked',
-      );
+      const transportEvents = tracer.events.filter((e) => e.kind === 'step8_transport_invoked');
       expect(transportEvents.length).toBeGreaterThanOrEqual(1);
 
-      const outcomeEvents = tracer.events.filter(
-        (e) => e.kind === 'step9_outcome_recorded',
-      );
+      const outcomeEvents = tracer.events.filter((e) => e.kind === 'step9_outcome_recorded');
       expect(outcomeEvents.length).toBeGreaterThanOrEqual(1);
 
       const outcomeKey = buildDecisionOutcomeKey({
@@ -408,7 +406,7 @@ describe('Inbound Golden Path — P12 WhatsApp integration proof', () => {
         'step12_evidence_consultable',
       ] as const;
 
-      tracer.assertSteps(expectedSteps as unknown as typeof expectedSteps);
+      tracer.assertSteps(expectedSteps);
 
       const steps = tracer.steps();
       for (const step of expectedSteps) {
