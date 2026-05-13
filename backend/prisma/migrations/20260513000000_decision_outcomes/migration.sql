@@ -19,10 +19,10 @@ CREATE TABLE "RAC_DecisionOutcome" (
 );
 
 -- CreateIndex
-CREATE UNIQUE INDEX "RAC_DecisionOutcome_outcomeKey_key" ON "RAC_DecisionOutcome"("outcomeKey");
+CREATE UNIQUE INDEX "RAC_DecisionOutcome_outcomeKey_key" ON "RAC_DecisionOutcome" ("outcomeKey");
 
 -- CreateIndex
-CREATE INDEX "RAC_DecisionOutcome_workspaceId_decisionType_createdAt_idx" ON "RAC_DecisionOutcome"("workspaceId", "decisionType", "createdAt");
+CREATE INDEX "RAC_DecisionOutcome_workspaceId_decisionType_createdAt_idx" ON "RAC_DecisionOutcome" ("workspaceId", "decisionType", "createdAt");
 
 -- CreateTable
 CREATE TABLE "RAC_DecisionOutcomeEvent" (
@@ -39,7 +39,7 @@ CREATE TABLE "RAC_DecisionOutcomeEvent" (
 );
 
 -- CreateIndex
-CREATE INDEX "RAC_DecisionOutcomeEvent_workspaceId_eventType_createdAt_idx" ON "RAC_DecisionOutcomeEvent"("workspaceId", "eventType", "createdAt");
+CREATE INDEX "RAC_DecisionOutcomeEvent_workspaceId_eventType_createdAt_idx" ON "RAC_DecisionOutcomeEvent" ("workspaceId", "eventType", "createdAt");
 
 -- CreateIndex
-CREATE INDEX "RAC_DecisionOutcomeEvent_workspaceId_processed_createdAt_idx" ON "RAC_DecisionOutcomeEvent"("workspaceId", "processed", "createdAt");
+CREATE INDEX "RAC_DecisionOutcomeEvent_workspaceId_processed_createdAt_idx" ON "RAC_DecisionOutcomeEvent" ("workspaceId", "processed", "createdAt");

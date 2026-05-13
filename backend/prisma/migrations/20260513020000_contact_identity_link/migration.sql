@@ -17,27 +17,27 @@ CREATE TABLE "RAC_ContactIdentityLink" (
 
 -- CreateIndex
 CREATE UNIQUE INDEX "RAC_ContactIdentityLink_workspaceId_contactId_linkedContactId_key"
-ON "RAC_ContactIdentityLink"("workspaceId", "contactId", "linkedContactId");
+ON "RAC_ContactIdentityLink" ("workspaceId", "contactId", "linkedContactId");
 
 -- CreateIndex
 CREATE INDEX "RAC_ContactIdentityLink_workspaceId_contactId_idx"
-ON "RAC_ContactIdentityLink"("workspaceId", "contactId");
+ON "RAC_ContactIdentityLink" ("workspaceId", "contactId");
 
 -- CreateIndex
 CREATE INDEX "RAC_ContactIdentityLink_workspaceId_linkedContactId_idx"
-ON "RAC_ContactIdentityLink"("workspaceId", "linkedContactId");
+ON "RAC_ContactIdentityLink" ("workspaceId", "linkedContactId");
 
 -- AddForeignKey
 ALTER TABLE "RAC_ContactIdentityLink"
 ADD CONSTRAINT "RAC_ContactIdentityLink_workspaceId_fkey"
-FOREIGN KEY ("workspaceId") REFERENCES "RAC_Workspace"("id") ON DELETE CASCADE;
+FOREIGN KEY ("workspaceId") REFERENCES "RAC_Workspace" ("id") ON DELETE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "RAC_ContactIdentityLink"
 ADD CONSTRAINT "RAC_ContactIdentityLink_contactId_workspaceId_fkey"
-FOREIGN KEY ("contactId", "workspaceId") REFERENCES "RAC_Contact"("id", "workspaceId") ON DELETE CASCADE;
+FOREIGN KEY ("contactId", "workspaceId") REFERENCES "RAC_Contact" ("id", "workspaceId") ON DELETE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "RAC_ContactIdentityLink"
 ADD CONSTRAINT "RAC_ContactIdentityLink_linkedContactId_workspaceId_fkey"
-FOREIGN KEY ("linkedContactId", "workspaceId") REFERENCES "RAC_Contact"("id", "workspaceId") ON DELETE CASCADE;
+FOREIGN KEY ("linkedContactId", "workspaceId") REFERENCES "RAC_Contact" ("id", "workspaceId") ON DELETE CASCADE;

@@ -22,14 +22,13 @@ CREATE TABLE "RAC_FbMessage" (
 );
 
 -- CreateIndex
-CREATE UNIQUE INDEX "RAC_FbMessage_workspaceId_mid_key" ON "RAC_FbMessage"("workspaceId", "mid");
+CREATE UNIQUE INDEX "RAC_FbMessage_workspaceId_mid_key" ON "RAC_FbMessage" ("workspaceId", "mid");
 
 -- CreateIndex
-CREATE INDEX "RAC_FbMessage_workspaceId_pageId_createdAt_idx" ON "RAC_FbMessage"("workspaceId", "pageId", "createdAt");
+CREATE INDEX "RAC_FbMessage_workspaceId_pageId_createdAt_idx" ON "RAC_FbMessage" ("workspaceId", "pageId", "createdAt");
 
 -- CreateIndex
-CREATE INDEX "RAC_FbMessage_workspaceId_senderPsid_idx" ON "RAC_FbMessage"("workspaceId", "senderPsid");
+CREATE INDEX "RAC_FbMessage_workspaceId_senderPsid_idx" ON "RAC_FbMessage" ("workspaceId", "senderPsid");
 
 -- AddForeignKey
-ALTER TABLE "RAC_FbMessage" ADD CONSTRAINT "RAC_FbMessage_workspaceId_fkey" FOREIGN KEY ("workspaceId") REFERENCES "RAC_Workspace"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
+ALTER TABLE "RAC_FbMessage" ADD CONSTRAINT "RAC_FbMessage_workspaceId_fkey" FOREIGN KEY ("workspaceId") REFERENCES "RAC_Workspace" ("id") ON DELETE CASCADE ON UPDATE CASCADE;

@@ -233,7 +233,7 @@ CREATE TABLE IF NOT EXISTS "AffiliateProduct" (
     "productId" TEXT NOT NULL,
     "listed" BOOLEAN NOT NULL DEFAULT true,
     "category" TEXT,
-    "tags" TEXT[] DEFAULT ARRAY[]::TEXT[],
+    "tags" TEXT [] DEFAULT ARRAY[]::TEXT [],
     "commissionPct" DOUBLE PRECISION NOT NULL DEFAULT 30,
     "commissionType" TEXT NOT NULL DEFAULT 'PERCENTAGE',
     "commissionFixed" DOUBLE PRECISION,
@@ -352,32 +352,32 @@ END $$;
 -- INDEXES (idempotent)
 -- ============================================
 
-CREATE INDEX IF NOT EXISTS "FollowUp_workspaceId_status_scheduledFor_idx" ON "FollowUp"("workspaceId", "status", "scheduledFor");
-CREATE INDEX IF NOT EXISTS "FollowUp_workspaceId_contactId_idx" ON "FollowUp"("workspaceId", "contactId");
+CREATE INDEX IF NOT EXISTS "FollowUp_workspaceId_status_scheduledFor_idx" ON "FollowUp" ("workspaceId", "status", "scheduledFor");
+CREATE INDEX IF NOT EXISTS "FollowUp_workspaceId_contactId_idx" ON "FollowUp" ("workspaceId", "contactId");
 
-CREATE INDEX IF NOT EXISTS "ProductPlan_productId_active_idx" ON "ProductPlan"("productId", "active");
+CREATE INDEX IF NOT EXISTS "ProductPlan_productId_active_idx" ON "ProductPlan" ("productId", "active");
 
-CREATE INDEX IF NOT EXISTS "ProductCheckout_productId_idx" ON "ProductCheckout"("productId");
+CREATE INDEX IF NOT EXISTS "ProductCheckout_productId_idx" ON "ProductCheckout" ("productId");
 
-CREATE INDEX IF NOT EXISTS "ProductReview_productId_idx" ON "ProductReview"("productId");
+CREATE INDEX IF NOT EXISTS "ProductReview_productId_idx" ON "ProductReview" ("productId");
 
-CREATE INDEX IF NOT EXISTS "ProductCommission_productId_idx" ON "ProductCommission"("productId");
+CREATE INDEX IF NOT EXISTS "ProductCommission_productId_idx" ON "ProductCommission" ("productId");
 
-CREATE INDEX IF NOT EXISTS "ProductUrl_productId_active_idx" ON "ProductUrl"("productId", "active");
+CREATE INDEX IF NOT EXISTS "ProductUrl_productId_active_idx" ON "ProductUrl" ("productId", "active");
 
-CREATE INDEX IF NOT EXISTS "MemberArea_workspaceId_active_idx" ON "MemberArea"("workspaceId", "active");
+CREATE INDEX IF NOT EXISTS "MemberArea_workspaceId_active_idx" ON "MemberArea" ("workspaceId", "active");
 
-CREATE INDEX IF NOT EXISTS "MemberModule_memberAreaId_position_idx" ON "MemberModule"("memberAreaId", "position");
+CREATE INDEX IF NOT EXISTS "MemberModule_memberAreaId_position_idx" ON "MemberModule" ("memberAreaId", "position");
 
-CREATE INDEX IF NOT EXISTS "MemberLesson_moduleId_position_idx" ON "MemberLesson"("moduleId", "position");
+CREATE INDEX IF NOT EXISTS "MemberLesson_moduleId_position_idx" ON "MemberLesson" ("moduleId", "position");
 
-CREATE INDEX IF NOT EXISTS "AffiliateProduct_listed_category_idx" ON "AffiliateProduct"("listed", "category");
-CREATE INDEX IF NOT EXISTS "AffiliateProduct_temperature_idx" ON "AffiliateProduct"("temperature");
+CREATE INDEX IF NOT EXISTS "AffiliateProduct_listed_category_idx" ON "AffiliateProduct" ("listed", "category");
+CREATE INDEX IF NOT EXISTS "AffiliateProduct_temperature_idx" ON "AffiliateProduct" ("temperature");
 
-CREATE INDEX IF NOT EXISTS "AffiliateRequest_status_idx" ON "AffiliateRequest"("status");
+CREATE INDEX IF NOT EXISTS "AffiliateRequest_status_idx" ON "AffiliateRequest" ("status");
 
-CREATE INDEX IF NOT EXISTS "AffiliateLink_affiliateWorkspaceId_idx" ON "AffiliateLink"("affiliateWorkspaceId");
-CREATE INDEX IF NOT EXISTS "AffiliateLink_code_idx" ON "AffiliateLink"("code");
+CREATE INDEX IF NOT EXISTS "AffiliateLink_affiliateWorkspaceId_idx" ON "AffiliateLink" ("affiliateWorkspaceId");
+CREATE INDEX IF NOT EXISTS "AffiliateLink_code_idx" ON "AffiliateLink" ("code");
 
 -- ============================================
 -- FOREIGN KEYS (idempotent)

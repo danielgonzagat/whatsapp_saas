@@ -19,13 +19,13 @@ CREATE TABLE "ExternalPaymentLink" (
 );
 
 -- CreateIndex
-CREATE INDEX "ExternalPaymentLink_workspaceId_idx" ON "ExternalPaymentLink"("workspaceId");
+CREATE INDEX "ExternalPaymentLink_workspaceId_idx" ON "ExternalPaymentLink" ("workspaceId");
 
 -- CreateIndex
-CREATE INDEX "ExternalPaymentLink_workspaceId_platform_idx" ON "ExternalPaymentLink"("workspaceId", "platform");
+CREATE INDEX "ExternalPaymentLink_workspaceId_platform_idx" ON "ExternalPaymentLink" ("workspaceId", "platform");
 
 -- CreateIndex
-CREATE INDEX "ExternalPaymentLink_workspaceId_productName_idx" ON "ExternalPaymentLink"("workspaceId", "productName");
+CREATE INDEX "ExternalPaymentLink_workspaceId_productName_idx" ON "ExternalPaymentLink" ("workspaceId", "productName");
 
 -- AddForeignKey
-ALTER TABLE "ExternalPaymentLink" ADD CONSTRAINT "ExternalPaymentLink_workspaceId_fkey" FOREIGN KEY ("workspaceId") REFERENCES "Workspace"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "ExternalPaymentLink" ADD CONSTRAINT "ExternalPaymentLink_workspaceId_fkey" FOREIGN KEY ("workspaceId") REFERENCES "Workspace" ("id") ON DELETE RESTRICT ON UPDATE CASCADE;

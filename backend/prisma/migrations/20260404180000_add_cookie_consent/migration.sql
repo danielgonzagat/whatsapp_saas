@@ -10,8 +10,8 @@ CREATE TABLE "CookieConsent" (
     CONSTRAINT "CookieConsent_pkey" PRIMARY KEY ("id")
 );
 
-CREATE UNIQUE INDEX "CookieConsent_agentId_key" ON "CookieConsent"("agentId");
+CREATE UNIQUE INDEX "CookieConsent_agentId_key" ON "CookieConsent" ("agentId");
 
 ALTER TABLE "CookieConsent"
 ADD CONSTRAINT "CookieConsent_agentId_fkey"
-FOREIGN KEY ("agentId") REFERENCES "Agent"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+FOREIGN KEY ("agentId") REFERENCES "Agent" ("id") ON DELETE CASCADE ON UPDATE CASCADE;

@@ -17,7 +17,7 @@ CREATE TABLE "Document" (
 );
 
 -- CreateIndex
-CREATE INDEX "Document_workspaceId_isActive_idx" ON "Document"("workspaceId", "isActive");
+CREATE INDEX "Document_workspaceId_isActive_idx" ON "Document" ("workspaceId", "isActive");
 
 -- CreateIndex
-CREATE INDEX "Document_workspaceId_category_idx" ON "Document"("workspaceId", "category");
+CREATE INDEX "Document_workspaceId_category_idx" ON "Document" ("workspaceId", "category");

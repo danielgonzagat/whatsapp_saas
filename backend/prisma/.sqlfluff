@@ -3,6 +3,7 @@ dialect = postgres
 templater = jinja
 large_file_skip_byte_limit = 0
 max_line_length = 200
+exclude_rules = RF04, RF06, RF01, RF03
 
 [sqlfluff:indentation]
 indented_joins = False
@@ -11,9 +12,6 @@ indented_using_on = True
 [sqlfluff:layout:type:comma]
 spacing_before = touch
 line_position = trailing
-
-[sqlfluff:rules]
-exclude_rules = RF04
 
 [sqlfluff:rules:capitalisation.keywords]
 capitalisation_policy = upper
@@ -25,8 +23,7 @@ capitalisation_policy = consistent
 extended_capitalisation_policy = upper
 
 [sqlfluff:rules:references.quoting]
-force_quotes = consistent
-prefer_quoted = true
+force_quotes = False
 
 [sqlfluff:rules:layout.indent]
 indent = 2

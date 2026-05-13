@@ -8,24 +8,24 @@ ADD COLUMN IF NOT EXISTS "planChangedAt" TIMESTAMP(3),
 ADD COLUMN IF NOT EXISTS "previousPlanId" TEXT;
 
 CREATE TABLE IF NOT EXISTS "OrderAlert" (
-  "id" TEXT NOT NULL,
-  "workspaceId" TEXT NOT NULL,
-  "type" TEXT NOT NULL,
-  "title" TEXT NOT NULL,
-  "description" TEXT NOT NULL,
-  "orderId" TEXT,
-  "severity" TEXT NOT NULL,
-  "resolved" BOOLEAN NOT NULL DEFAULT false,
-  "resolvedAt" TIMESTAMP(3),
-  "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  CONSTRAINT "OrderAlert_pkey" PRIMARY KEY ("id")
+    "id" TEXT NOT NULL,
+    "workspaceId" TEXT NOT NULL,
+    "type" TEXT NOT NULL,
+    "title" TEXT NOT NULL,
+    "description" TEXT NOT NULL,
+    "orderId" TEXT,
+    "severity" TEXT NOT NULL,
+    "resolved" BOOLEAN NOT NULL DEFAULT false,
+    "resolvedAt" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "OrderAlert_pkey" PRIMARY KEY ("id")
 );
 
 CREATE INDEX IF NOT EXISTS "OrderAlert_workspaceId_resolved_createdAt_idx"
-ON "OrderAlert"("workspaceId", "resolved", "createdAt");
+ON "OrderAlert" ("workspaceId", "resolved", "createdAt");
 
 CREATE INDEX IF NOT EXISTS "OrderAlert_workspaceId_type_idx"
-ON "OrderAlert"("workspaceId", "type");
+ON "OrderAlert" ("workspaceId", "type");
 
 DO $$
 BEGIN

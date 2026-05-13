@@ -13,7 +13,7 @@ CREATE TABLE "RAC_DailyLimitCounter" (
 );
 
 -- CreateIndex
-CREATE UNIQUE INDEX "RAC_DailyLimitCounter_workspaceId_channel_day_key" ON "RAC_DailyLimitCounter"("workspaceId", "channel", "day");
+CREATE UNIQUE INDEX "RAC_DailyLimitCounter_workspaceId_channel_day_key" ON "RAC_DailyLimitCounter" ("workspaceId", "channel", "day");
 
 -- CreateIndex
-CREATE INDEX "RAC_DailyLimitCounter_workspaceId_channel_day_idx" ON "RAC_DailyLimitCounter"("workspaceId", "channel", "day");
+CREATE INDEX "RAC_DailyLimitCounter_workspaceId_channel_day_idx" ON "RAC_DailyLimitCounter" ("workspaceId", "channel", "day");

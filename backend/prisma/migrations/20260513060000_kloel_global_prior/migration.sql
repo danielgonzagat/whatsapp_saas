@@ -1,5 +1,5 @@
 -- AlterTable
-ALTER TABLE "RAC_Workspace" ADD COLUMN     "globalPriorOptOut" BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE "RAC_Workspace" ADD COLUMN "globalPriorOptOut" BOOLEAN NOT NULL DEFAULT false;
 
 -- CreateTable
 CREATE TABLE "RAC_KloelGlobalPrior" (
@@ -15,7 +15,7 @@ CREATE TABLE "RAC_KloelGlobalPrior" (
 );
 
 -- CreateIndex
-CREATE UNIQUE INDEX "RAC_KloelGlobalPrior_channel_decisionType_action_key" ON "RAC_KloelGlobalPrior"("channel", "decisionType", "action");
+CREATE UNIQUE INDEX "RAC_KloelGlobalPrior_channel_decisionType_action_key" ON "RAC_KloelGlobalPrior" ("channel", "decisionType", "action");
 
 -- CreateIndex
-CREATE INDEX "RAC_KloelGlobalPrior_channel_decisionType_idx" ON "RAC_KloelGlobalPrior"("channel", "decisionType");
+CREATE INDEX "RAC_KloelGlobalPrior_channel_decisionType_idx" ON "RAC_KloelGlobalPrior" ("channel", "decisionType");

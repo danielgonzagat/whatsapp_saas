@@ -12,10 +12,10 @@ CREATE TABLE "RAC_PipelineState" (
 );
 
 -- CreateIndex
-CREATE UNIQUE INDEX "RAC_PipelineState_workspaceId_key" ON "RAC_PipelineState"("workspaceId");
+CREATE UNIQUE INDEX "RAC_PipelineState_workspaceId_key" ON "RAC_PipelineState" ("workspaceId");
 
 -- CreateIndex
-CREATE INDEX "RAC_PipelineState_state_idx" ON "RAC_PipelineState"("state");
+CREATE INDEX "RAC_PipelineState_state_idx" ON "RAC_PipelineState" ("state");
 
 -- CreateTable
 CREATE TABLE "RAC_DecisionShadow" (
@@ -34,7 +34,7 @@ CREATE TABLE "RAC_DecisionShadow" (
 );
 
 -- CreateIndex
-CREATE INDEX "RAC_DecisionShadow_workspaceId_channel_createdAt_idx" ON "RAC_DecisionShadow"("workspaceId", "channel", "createdAt");
+CREATE INDEX "RAC_DecisionShadow_workspaceId_channel_createdAt_idx" ON "RAC_DecisionShadow" ("workspaceId", "channel", "createdAt");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "RAC_DecisionShadow_workspaceId_inboundCorrelationId_key" ON "RAC_DecisionShadow"("workspaceId", "inboundCorrelationId");
+CREATE UNIQUE INDEX "RAC_DecisionShadow_workspaceId_inboundCorrelationId_key" ON "RAC_DecisionShadow" ("workspaceId", "inboundCorrelationId");
