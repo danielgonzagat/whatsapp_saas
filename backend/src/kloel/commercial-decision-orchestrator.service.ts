@@ -1,7 +1,12 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { createHash } from 'node:crypto';
 import { BrainEventSpineService } from './brain-event-spine.service';
-import { allowedFormatsFor, allowedTonesFor, repertoireFor, type FormatId } from './channel-repertoire.config';
+import {
+  allowedFormatsFor,
+  allowedTonesFor,
+  repertoireFor,
+  type FormatId,
+} from './channel-repertoire.config';
 import { ChannelSetupService } from './channel-setup.service';
 import { attributeHierarchy } from './economic-hierarchy';
 import { MindConceptService } from './mind-concepts.service';
@@ -254,10 +259,7 @@ export class CommercialDecisionOrchestratorService {
     }
   }
 
-  private async resolveContactIdentity(
-    input: InboundOrchestrationInput,
-    channel: string,
-  ) {
+  private async resolveContactIdentity(input: InboundOrchestrationInput, channel: string) {
     // Caller guarantees input.contactId is set (checked in orchestrateInbound
     // before this method runs). If reached without it, treat as a bug.
     if (!input.contactId) {
@@ -344,7 +346,7 @@ export class CommercialDecisionOrchestratorService {
     for (const fmt of allowedFormats) {
       const fmtStr = String(fmt);
       if (arsenalFormatTypes.has(fmtStr)) {
-        arsenalAwareFormats.push(fmt as FormatId);
+        arsenalAwareFormats.push(fmt);
       } else {
         arsenalExcludedFormats.push(fmtStr);
       }
@@ -362,15 +364,14 @@ export class CommercialDecisionOrchestratorService {
     // P6 — if channel does not support audio format, force text without
     // consulting the mind. Record the reason so the trace is auditable.
     let audio: { choice: string; confidence: number; fallback: boolean };
-    if (!allowedFormats.includes('audio' as never)) {
+    if (!allowedFormats.includes('audio')) {
       audio = { choice: 'text', confidence: 1, fallback: false };
       decisions.audio_skipped = 'channel-no-audio';
     } else {
       audio = await this.mind.resolveAudioVsText(input.workspaceId, channel, audioRatio);
     }
 
-    const formatCandidates =
-      arsenalAwareFormats.length > 0 ? arsenalAwareFormats : allowedFormats;
+    const formatCandidates = arsenalAwareFormats.length > 0 ? arsenalAwareFormats : allowedFormats;
 
     const [toneRaw, aggressiveness, format, channelChoice] = await Promise.all([
       this.mind.resolveTone(input.workspaceId, channel, repliedRate, soldRate, concept),
@@ -381,12 +382,7 @@ export class CommercialDecisionOrchestratorService {
         repliedRate,
         0,
       ),
-      this.mind.resolveMessageFormat(
-        input.workspaceId,
-        channel,
-        concept,
-        formatCandidates,
-      ),
+      this.mind.resolveMessageFormat(input.workspaceId, channel, concept, formatCandidates),
       this.mind.resolveChannelChoice(
         input.workspaceId,
         [channel],
@@ -578,10 +574,7 @@ export class CommercialDecisionOrchestratorService {
         : aggressivenessRank(brainAggressiveness) === aggressivenessRank(aggressivenessCeiling)
           ? brainAggressiveness
           : brainAggressiveness;
-    if (
-      aggressivenessCeiling &&
-      effectiveAggressiveness !== brainAggressiveness
-    ) {
+    if (aggressivenessCeiling && effectiveAggressiveness !== brainAggressiveness) {
       decisions.aggressiveness_ceiling_applied = {
         brain: brainAggressiveness,
         ceiling: aggressivenessCeiling,
@@ -633,8 +626,10 @@ export class CommercialDecisionOrchestratorService {
     }
 
     const channelTone = channelSetup?.config?.tone;
-    const setupContext: { arsenalCount: number; productCount: number; tone?: string | null } | undefined = channelSetup
-      ? (channelTone != null
+    const setupContext:
+      | { arsenalCount: number; productCount: number; tone?: string | null }
+      | undefined = channelSetup
+      ? channelTone != null
         ? {
             arsenalCount: channelSetup.arsenal.length,
             productCount: channelSetup.selectedProductIds.length,
@@ -643,7 +638,7 @@ export class CommercialDecisionOrchestratorService {
         : {
             arsenalCount: channelSetup.arsenal.length,
             productCount: channelSetup.selectedProductIds.length,
-          })
+          }
       : undefined;
     const internalReplyPlan: InternalReplyPlan = {
       aggressiveness: effectiveAggressiveness || aggressiveness.aggressiveness,
@@ -727,13 +722,7 @@ export class CommercialDecisionOrchestratorService {
     this.logger.log(`Deterministic inbound actions built for ${input.workspaceId}:${channel}`);
 
     if (pipelineMode === 'shadow') {
-      await this.recordShadowExecution(
-        input.workspaceId,
-        channel,
-        inboundKey,
-        concept,
-        decisions,
-      );
+      await this.recordShadowExecution(input.workspaceId, channel, inboundKey, concept, decisions);
     }
 
     return {
@@ -776,13 +765,13 @@ export class CommercialDecisionOrchestratorService {
           workspaceId,
           channel,
           inboundCorrelationId: inboundKey,
-          orchestratorDecision: decisions as object,
-          legacyBaseline: buildLegacyBaseline(concept, channel) as object,
+          orchestratorDecision: JSON.parse(JSON.stringify(decisions)),
+          legacyBaseline: JSON.parse(JSON.stringify(buildLegacyBaseline(concept, channel))),
           outcomeKey: `shadow:${workspaceId}:${channel}:${concept}`,
         },
         update: {
-          orchestratorDecision: decisions as object,
-          legacyBaseline: buildLegacyBaseline(concept, channel) as object,
+          orchestratorDecision: JSON.parse(JSON.stringify(decisions)),
+          legacyBaseline: JSON.parse(JSON.stringify(buildLegacyBaseline(concept, channel))),
           outcomeKey: `shadow:${workspaceId}:${channel}:${concept}`,
         },
       });
@@ -825,11 +814,7 @@ export class CommercialDecisionOrchestratorService {
         select: { state: true, fallbackRate1h: true },
       });
 
-      if (
-        state &&
-        state.state === 'active' &&
-        state.fallbackRate1h >= 0.05
-      ) {
+      if (state && state.state === 'active' && state.fallbackRate1h >= 0.05) {
         await this.prisma.pipelineState.update({
           where: { workspaceId },
           data: {
