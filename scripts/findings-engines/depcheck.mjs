@@ -31,8 +31,8 @@ function runDepcheck(cwd) {
   // Try to use .depcheckrc if it exists in the workspace
   const cfgPath = resolve(cwd, '.depcheckrc');
   const cfgJsonPath = resolve(cwd, '.depcheckrc.json');
-  if (existsSync(cfgJsonPath)) configs.push('--config', cfgJsonPath);
-  else if (existsSync(cfgPath)) configs.push('--config', cfgPath);
+  if (existsSync(cfgJsonPath)) {configs.push('--config', cfgJsonPath);}
+  else if (existsSync(cfgPath)) {configs.push('--config', cfgPath);}
 
   const r = spawnSync('npx', ['--no-install', 'depcheck', '--json', ...configs], {
     cwd,
@@ -123,7 +123,7 @@ const allFindings = [];
 for (const ws of WORKSPACES) {
   const cwd = ws ? resolve(REPO_ROOT, ws) : REPO_ROOT;
   const packageJson = resolve(cwd, 'package.json');
-  if (!existsSync(packageJson)) continue;
+  if (!existsSync(packageJson)) {continue;}
   const pkgFile = relative(REPO_ROOT, packageJson).replace(/\\/g, '/');
 
   const r = runDepcheck(cwd);

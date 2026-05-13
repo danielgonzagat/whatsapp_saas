@@ -20,7 +20,8 @@ export interface PulseCertState {
   capabilities?: Array<{ health?: string }>;
 }
 
-export { type PulseAutonomyState } from './types';
+import type { PulseAutonomyState } from './types';
+export type { PulseAutonomyState };
 
 export interface PulseSandboxState {
   summary?: {

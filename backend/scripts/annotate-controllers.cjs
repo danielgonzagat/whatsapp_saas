@@ -180,7 +180,7 @@ function walk(dir, base) {
     const fp = path.join(dir, e.name);
     const rp = path.relative(base, fp);
     if (e.isDirectory()) {
-      if (e.name === 'node_modules') continue;
+      if (e.name === 'node_modules') {continue;}
       walk(fp, base);
     } else if (e.name.endsWith('.controller.ts')) {
       // Check if file has @Controller

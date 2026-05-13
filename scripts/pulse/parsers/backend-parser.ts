@@ -136,22 +136,40 @@ export function parseBackendRoutes(config: PulseConfig): BackendRoute[] {
       for (const block of controllerBlocks) {
         const controllerPath = block.path;
 
-        // Extract class-level guards and @Public() for this block
+        // Extract class-level guards, @Public(), @WebhookEndpoint(), @InternalEndpoint()
         const classGuards: string[] = [];
         let classIsPublic = false;
+        let classWebhookEndpoint: string | undefined;
+        let classInternalEndpoint: string | undefined;
         for (let j = block.startLine; j < Math.min(block.startLine + 5, block.endLine); j++) {
           if (/@Public\(\)/.test(lines[j])) {
             classIsPublic = true;
+          }
+          const wm = lines[j]?.match(/@WebhookEndpoint\((['"])(.+?)\1\)/);
+          if (wm) {
+            classWebhookEndpoint = wm[2];
+          }
+          const im = lines[j]?.match(/@InternalEndpoint\((['"])(.+?)\1\)/);
+          if (im) {
+            classInternalEndpoint = im[2];
           }
           const guardMatch = lines[j]?.match(/@UseGuards\(([^)]+)\)/);
           if (guardMatch) {
             classGuards.push(...guardMatch[1].split(',').map((g) => g.trim()));
           }
         }
-        // Also check lines ABOVE @Controller for guards and @Public()
+        // Also check lines ABOVE @Controller
         for (let j = Math.max(0, block.startLine - 3); j < block.startLine; j++) {
           if (/@Public\(\)/.test(lines[j])) {
             classIsPublic = true;
+          }
+          const wm = lines[j]?.match(/@WebhookEndpoint\((['"])(.+?)\1\)/);
+          if (wm && !classWebhookEndpoint) {
+            classWebhookEndpoint = wm[2];
+          }
+          const im = lines[j]?.match(/@InternalEndpoint\((['"])(.+?)\1\)/);
+          if (im && !classInternalEndpoint) {
+            classInternalEndpoint = im[2];
           }
           const guardMatch = lines[j]?.match(/@UseGuards\(([^)]+)\)/);
           if (guardMatch) {
@@ -172,13 +190,23 @@ export function parseBackendRoutes(config: PulseConfig): BackendRoute[] {
             const methodPath = match[1] || '';
             const fullPath = buildFullPath(controllerPath, methodPath);
 
-            // Check for @Public() in the 5 lines above + class-level
+            // Check for @Public(), @WebhookEndpoint(), @InternalEndpoint() in the 5 lines above + class-level
             let isPublic = classIsPublic;
+            let webhookEndpoint = classWebhookEndpoint;
+            let internalEndpoint = classInternalEndpoint;
             const guards = [...classGuards];
             for (let j = Math.max(block.startLine, i - 5); j < i; j++) {
               const above = lines[j].trim();
               if (/@Public\(\)/.test(above)) {
                 isPublic = true;
+              }
+              const wm = above.match(/@WebhookEndpoint\((['"])(.+?)\1\)/);
+              if (wm) {
+                webhookEndpoint = wm[2];
+              }
+              const im = above.match(/@InternalEndpoint\((['"])(.+?)\1\)/);
+              if (im) {
+                internalEndpoint = im[2];
               }
               const guardMatch = above.match(/@UseGuards\(([^)]+)\)/);
               if (guardMatch) {
@@ -224,7 +252,7 @@ export function parseBackendRoutes(config: PulseConfig): BackendRoute[] {
               }
             }
 
-            routes.push({
+            const route: BackendRoute = {
               file: relFile,
               line: i + 1,
               controllerPath,
@@ -235,7 +263,10 @@ export function parseBackendRoutes(config: PulseConfig): BackendRoute[] {
               guards,
               isPublic,
               serviceCalls,
-            });
+            };
+            if (webhookEndpoint !== undefined) route.webhookEndpoint = webhookEndpoint;
+            if (internalEndpoint !== undefined) route.internalEndpoint = internalEndpoint;
+            routes.push(route);
           }
         }
       }

@@ -33,7 +33,7 @@ function safeExec(command) {
 
 function collectPushRanges() {
   const stdin = readFileSync(0, 'utf8').trim();
-  if (!stdin) return [];
+  if (!stdin) {return [];}
 
   return stdin
     .split('\n')
@@ -44,7 +44,7 @@ function collectPushRanges() {
 }
 
 function resolveBaseSha(localSha, remoteSha) {
-  if (remoteSha && !ZERO_SHA.test(remoteSha)) return remoteSha;
+  if (remoteSha && !ZERO_SHA.test(remoteSha)) {return remoteSha;}
 
   return (
     safeExec(`git merge-base ${localSha} origin/main`) ||
@@ -59,7 +59,7 @@ function collectChangedFiles() {
 
   for (const { localSha, remoteSha } of ranges) {
     const baseSha = resolveBaseSha(localSha, remoteSha);
-    if (!baseSha) continue;
+    if (!baseSha) {continue;}
 
     const diff = safeExec(`git diff --name-only ${baseSha} ${localSha}`);
     for (const file of diff

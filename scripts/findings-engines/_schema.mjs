@@ -138,27 +138,27 @@ export function fingerprint(f) {
  * @returns {asserts obj is Finding}
  */
 export function assertFinding(obj) {
-  if (!obj || typeof obj !== 'object') throw new Error('finding: not an object');
+  if (!obj || typeof obj !== 'object') {throw new Error('finding: not an object');}
   const f = /** @type {Record<string, unknown>} */ (obj);
-  if (typeof f.file !== 'string' || !f.file.length) throw new Error('finding.file: missing');
+  if (typeof f.file !== 'string' || !f.file.length) {throw new Error('finding.file: missing');}
   if (f.line !== undefined && (typeof f.line !== 'number' || f.line < 1))
-    throw new Error('finding.line: invalid');
+    {throw new Error('finding.line: invalid');}
   if (
     typeof f.category !== 'string' ||
     !/** @type {readonly string[]} */ (CATEGORIES).includes(f.category)
   )
-    throw new Error(`finding.category: invalid (${String(f.category)})`);
+    {throw new Error(`finding.category: invalid (${String(f.category)})`);}
   if (
     typeof f.severity !== 'string' ||
     !/** @type {readonly string[]} */ (SEVERITIES).includes(f.severity)
   )
-    throw new Error(`finding.severity: invalid (${String(f.severity)})`);
-  if (typeof f.engine !== 'string' || !f.engine.length) throw new Error('finding.engine: missing');
-  if (typeof f.rule !== 'string' || !f.rule.length) throw new Error('finding.rule: missing');
+    {throw new Error(`finding.severity: invalid (${String(f.severity)})`);}
+  if (typeof f.engine !== 'string' || !f.engine.length) {throw new Error('finding.engine: missing');}
+  if (typeof f.rule !== 'string' || !f.rule.length) {throw new Error('finding.rule: missing');}
   if (typeof f.message !== 'string' || !f.message.length)
-    throw new Error('finding.message: missing');
+    {throw new Error('finding.message: missing');}
   if (typeof f.fingerprint !== 'string' || f.fingerprint.length !== 16)
-    throw new Error('finding.fingerprint: must be 16-char hex');
+    {throw new Error('finding.fingerprint: must be 16-char hex');}
 }
 
 /**
@@ -167,16 +167,16 @@ export function assertFinding(obj) {
  * @returns {asserts obj is EngineReport}
  */
 export function assertEngineReport(obj) {
-  if (!obj || typeof obj !== 'object') throw new Error('report: not an object');
+  if (!obj || typeof obj !== 'object') {throw new Error('report: not an object');}
   const r = /** @type {Record<string, unknown>} */ (obj);
-  if (typeof r.engine !== 'string') throw new Error('report.engine: missing');
-  if (typeof r.version !== 'string') throw new Error('report.version: missing');
-  if (typeof r.ranAt !== 'string') throw new Error('report.ranAt: missing');
-  if (typeof r.durationMs !== 'number') throw new Error('report.durationMs: missing');
+  if (typeof r.engine !== 'string') {throw new Error('report.engine: missing');}
+  if (typeof r.version !== 'string') {throw new Error('report.version: missing');}
+  if (typeof r.ranAt !== 'string') {throw new Error('report.ranAt: missing');}
+  if (typeof r.durationMs !== 'number') {throw new Error('report.durationMs: missing');}
   if (!['ok', 'partial', 'error'].includes(/** @type {string} */ (r.status)))
-    throw new Error('report.status: invalid');
-  if (!Array.isArray(r.findings)) throw new Error('report.findings: must be array');
-  for (const f of r.findings) assertFinding(f);
+    {throw new Error('report.status: invalid');}
+  if (!Array.isArray(r.findings)) {throw new Error('report.findings: must be array');}
+  for (const f of r.findings) {assertFinding(f);}
 }
 
 /**

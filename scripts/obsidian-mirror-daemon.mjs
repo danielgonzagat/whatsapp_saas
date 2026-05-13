@@ -333,7 +333,7 @@ function startWatch() {
     }
 
     for (const absPath of sources) {
-      if (!existsSync(absPath) || !isMirrorableSourceFile(absPath)) continue;
+      if (!existsSync(absPath) || !isMirrorableSourceFile(absPath)) {continue;}
       const relMirror = relative(SOURCE_MIRROR_DIR, sourceToMirrorPath(absPath));
       const entry = manifest.files[relMirror];
       const sourceContent = readFileSync(absPath, 'utf8');
@@ -406,14 +406,14 @@ function startWatch() {
     // Process changes/adds
     let updatedCount = 0;
     for (const absPath of toProcess) {
-      if (!existsSync(absPath)) continue;
+      if (!existsSync(absPath)) {continue;}
       let st;
       try {
         st = statSync(absPath);
       } catch {
         continue;
       }
-      if (st.isDirectory()) continue;
+      if (st.isDirectory()) {continue;}
       const rel = relative(REPO_ROOT, absPath);
       const result = mirrorFile(absPath, manifest);
       if (result.status === 'updated') {
@@ -434,7 +434,7 @@ function startWatch() {
     readGitDirtySources(true);
     readGitLocalCommitSources(true);
     const currentSignature = gitDirtySignature();
-    if (currentSignature === lastGitSignature) return;
+    if (currentSignature === lastGitSignature) {return;}
     lastGitSignature = currentSignature;
 
     let updatedCount = 0;
@@ -442,16 +442,16 @@ function startWatch() {
     const candidates = new Set();
 
     for (const entry of Object.values(manifest.files)) {
-      if (!entry.source) continue;
-      if (entry.git_dirty) candidates.add(join(REPO_ROOT, entry.source));
-      if (entry.git_local_commit) candidates.add(join(REPO_ROOT, entry.source));
+      if (!entry.source) {continue;}
+      if (entry.git_dirty) {candidates.add(join(REPO_ROOT, entry.source));}
+      if (entry.git_local_commit) {candidates.add(join(REPO_ROOT, entry.source));}
     }
     for (const rel of dirtySources) {
       candidates.add(join(REPO_ROOT, rel));
     }
 
     for (const absPath of candidates) {
-      if (!existsSync(absPath) || !isMirrorableSourceFile(absPath)) continue;
+      if (!existsSync(absPath) || !isMirrorableSourceFile(absPath)) {continue;}
       const result = mirrorFile(absPath, manifest);
       if (result.status === 'updated') {
         updatedCount++;
@@ -486,7 +486,7 @@ function startWatch() {
     }
 
     // Debounce
-    if (timer) clearTimeout(timer);
+    if (timer) {clearTimeout(timer);}
     timer = setTimeout(flushPending, DEBOUNCE_MS);
   }
 
@@ -499,7 +499,7 @@ function startWatch() {
 
   const watchers = watchTargets.map((target) =>
     watch(target.path, { recursive: target.recursive }, (event, filename) => {
-      if (!filename) return;
+      if (!filename) {return;}
       queueFsEvent(event, join(target.path, filename));
     }),
   );
@@ -514,22 +514,22 @@ function startWatch() {
   // Graceful shutdown
   process.on('SIGINT', () => {
     log('INFO', 'Shutting down watcher...');
-    if (timer) clearTimeout(timer);
+    if (timer) {clearTimeout(timer);}
     flushPending(); // final flush
     flushGitState();
     clearInterval(gitStateTimer);
     clearInterval(graphLensTimer);
-    for (const watcher of watchers) watcher.close();
+    for (const watcher of watchers) {watcher.close();}
     process.exit(0);
   });
 
   process.on('SIGTERM', () => {
-    if (timer) clearTimeout(timer);
+    if (timer) {clearTimeout(timer);}
     flushPending();
     flushGitState();
     clearInterval(gitStateTimer);
     clearInterval(graphLensTimer);
-    for (const watcher of watchers) watcher.close();
+    for (const watcher of watchers) {watcher.close();}
     process.exit(0);
   });
 }

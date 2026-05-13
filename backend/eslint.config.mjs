@@ -54,6 +54,7 @@ export default tseslint.config(
       'no-empty': 'error',
       '@typescript-eslint/no-unsafe-function-type': 'error',
       'no-useless-escape': 'error',
+      curly: ['error', 'all'],
       'prettier/prettier': ['error', { endOfLine: 'auto' }],
     },
   },

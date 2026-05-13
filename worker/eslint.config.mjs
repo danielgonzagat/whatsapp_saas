@@ -37,6 +37,7 @@ export default tseslint.config(
       'no-control-regex': 'error',
       'prefer-const': 'error',
       'no-var': 'error',
+      curly: ['error', 'all'],
       'prettier/prettier': ['error', { endOfLine: 'auto' }],
     },
   },

@@ -69,6 +69,10 @@ export interface BackendRoute {
   isPublic: boolean;
   /** Service calls property. */
   serviceCalls: string[];
+  /** PULSE: webhook endpoint reason (from @WebhookEndpoint decorator). */
+  webhookEndpoint?: string;
+  /** PULSE: internal endpoint reason (from @InternalEndpoint decorator). */
+  internalEndpoint?: string;
 }
 
 // ===== LAYER 4: Database Models =====

@@ -87,7 +87,7 @@ function runGit(args, allowFailure = false) {
       stdio: ['ignore', 'pipe', 'pipe'],
     }).trimEnd();
   } catch (error) {
-    if (allowFailure) return '';
+    if (allowFailure) {return '';}
     const stderr = error?.stderr?.toString?.() || error?.message || String(error);
     fail(`git ${args.join(' ')} failed:\n${stderr}`);
   }
@@ -126,8 +126,8 @@ const LOCKED_FILES = new Set([
 ]);
 
 function isRelevantPath(relPath) {
-  if (!SOURCE_FILE_RE.test(relPath)) return false;
-  if (LOCKED_FILES.has(relPath)) return false;
+  if (!SOURCE_FILE_RE.test(relPath)) {return false;}
+  if (LOCKED_FILES.has(relPath)) {return false;}
   const parts = relPath.split('/');
   return !parts.some((part) => IGNORED_SEGMENTS.has(part));
 }
@@ -202,7 +202,7 @@ function getChangedFiles() {
 
 function readFileLines(relPath) {
   const absPath = path.join(repoRoot, relPath);
-  if (!existsSync(absPath)) return [];
+  if (!existsSync(absPath)) {return [];}
   return readFileSync(absPath, 'utf8').split('\n');
 }
 
@@ -286,8 +286,8 @@ function main() {
     const addedLines = getAddedLines(relPath, status, diffBase, ciMode);
     for (const added of addedLines) {
       for (const rule of ADDED_LINE_RULES) {
-        if (rule.skip?.(added.content)) continue;
-        if (!rule.pattern.test(added.content)) continue;
+        if (rule.skip?.(added.content)) {continue;}
+        if (!rule.pattern.test(added.content)) {continue;}
 
         const finding = {
           rule: rule.rule,

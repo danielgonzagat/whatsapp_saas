@@ -55,12 +55,12 @@ export function listAllRepoFiles(rootDir, relPrefix) {
           entry.name === '.next' ||
           entry.name === '__pycache__'
         )
-          continue;
-        if (isSkippable(relPath + '/')) continue;
+          {continue;}
+        if (isSkippable(relPath + '/')) {continue;}
         stack.push({ dir: abs, rel: relPath });
       } else if (entry.isFile()) {
-        if (fileIsDotfileInRoot(relPath)) continue;
-        if (isSkippable(relPath)) continue;
+        if (fileIsDotfileInRoot(relPath)) {continue;}
+        if (isSkippable(relPath)) {continue;}
         files.push(relPath);
       }
     }
@@ -73,22 +73,22 @@ export function inferModule(relPath) {
 
   if (segments[0] === 'backend' && segments[1] === 'src' && segments[2]) {
     const dir = segments[2];
-    if (BACKEND_DIR_MAP[dir]) return BACKEND_DIR_MAP[dir];
+    if (BACKEND_DIR_MAP[dir]) {return BACKEND_DIR_MAP[dir];}
   }
 
   if (segments[0] === 'worker') {
     if (relPath.includes('whatsapp') || relPath.includes('waha') || relPath.includes('meta-'))
-      return 'WhatsApp';
+      {return 'WhatsApp';}
     return null;
   }
 
   if (segments[0] === 'frontend') {
     const srcIdx = segments.indexOf('src');
-    if (srcIdx === -1) return null;
+    if (srcIdx === -1) {return null;}
 
     for (let i = srcIdx + 1; i < segments.length; i++) {
       const seg = segments[i].toLowerCase();
-      if (FRONTEND_PATH_SEGMENTS[seg]) return FRONTEND_PATH_SEGMENTS[seg];
+      if (FRONTEND_PATH_SEGMENTS[seg]) {return FRONTEND_PATH_SEGMENTS[seg];}
     }
   }
 

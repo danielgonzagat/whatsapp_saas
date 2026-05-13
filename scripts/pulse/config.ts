@@ -4,11 +4,12 @@ import type { PulseConfig } from './types.manifest';
 import { pathExists, readDir, readTextFile } from './safe-fs';
 import { detectSourceRoots } from './source-root-detector/api';
 import type { DetectedSourceRoot } from './source-root-detector/types';
+import { walkFiles } from './parsers/utils';
 
 function hasMatchingFile(rootDir: string, matcher: (relativePath: string) => boolean): boolean {
   if (!pathExists(rootDir)) return false;
   try {
-    const files = walkUnskippedFiles(rootDir);
+    const files = walkFiles(rootDir, ['.ts', '.tsx', '.js', '.jsx']);
     return files.some((file) => matcher(String(file).split(path.sep).join('/')));
   } catch {
     return false;

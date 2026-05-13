@@ -79,7 +79,7 @@ function readBaseLines(baseSha, file) {
   // Returns the file content at the base ref, or null if the file did not
   // exist there (new file). git show errors out on missing paths; we catch
   // and return null to signal "no baseline, treat as 0 violations".
-  if (!baseSha) return null;
+  if (!baseSha) {return null;}
   try {
     const content = execFileSync('git', ['show', `${baseSha}:${file}`], {
       cwd: repoRoot,
@@ -101,7 +101,7 @@ function resolveBaseShaForDelta() {
     return null;
   }
   const match = range.match(/^([0-9a-f]+)\.\.\.HEAD$/i);
-  if (match) return match[1];
+  if (match) {return match[1];}
   return null;
 }
 

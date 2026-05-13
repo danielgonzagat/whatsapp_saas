@@ -106,9 +106,9 @@ const REDIS_KEY_METHODS = new Set([
 // ─── File discovery ───────────────────────────────────────────────────────
 
 function walkDir(dir, files = []) {
-  if (!existsSync(dir)) return files;
+  if (!existsSync(dir)) {return files;}
   for (const entry of readdirSync(dir)) {
-    if (entry === 'node_modules' || entry === 'dist' || entry === '.next') continue;
+    if (entry === 'node_modules' || entry === 'dist' || entry === '.next') {continue;}
     const full = path.join(dir, entry);
     const st = statSync(full);
     if (st.isDirectory()) {
@@ -129,7 +129,7 @@ function findRedisCalls(source) {
   const findings = [];
   for (const m of source.matchAll(REDIS_CALL_RE)) {
     const method = m[1];
-    if (!REDIS_KEY_METHODS.has(method)) continue;
+    if (!REDIS_KEY_METHODS.has(method)) {continue;}
 
     const matchStart = m.index ?? 0;
     const argStart = matchStart + m[0].length;
@@ -157,11 +157,11 @@ function extractFirstArg(source, startIdx) {
     const c = source[i];
     const prev = i > 0 ? source[i - 1] : '';
     if (inSingle) {
-      if (c === "'" && prev !== '\\') inSingle = false;
+      if (c === "'" && prev !== '\\') {inSingle = false;}
       continue;
     }
     if (inDouble) {
-      if (c === '"' && prev !== '\\') inDouble = false;
+      if (c === '"' && prev !== '\\') {inDouble = false;}
       continue;
     }
     if (inTemplate) {
@@ -174,12 +174,12 @@ function extractFirstArg(source, startIdx) {
       }
       continue;
     }
-    if (c === "'") inSingle = true;
-    else if (c === '"') inDouble = true;
-    else if (c === '`') inTemplate = true;
-    else if (c === '(' || c === '[' || c === '{') depth++;
+    if (c === "'") {inSingle = true;}
+    else if (c === '"') {inDouble = true;}
+    else if (c === '`') {inTemplate = true;}
+    else if (c === '(' || c === '[' || c === '{') {depth++;}
     else if (c === ')' || c === ']' || c === '}') {
-      if (depth === 0 && c === ')') return source.slice(startIdx, i);
+      if (depth === 0 && c === ')') {return source.slice(startIdx, i);}
       depth--;
     } else if (c === ',' && depth === 0) {
       return source.slice(startIdx, i);
@@ -192,7 +192,7 @@ function extractFirstArg(source, startIdx) {
 
 function classifyKey(keyArg) {
   // Empty or weird input
-  if (!keyArg) return { kind: 'PARAMETERIZED', reason: 'empty key' };
+  if (!keyArg) {return { kind: 'PARAMETERIZED', reason: 'empty key' };}
 
   // String literal: check for workspaceId / GLOBAL_KEY_PATTERNS
   const literal = extractStringLiteral(keyArg);
@@ -239,11 +239,11 @@ function extractStringLiteral(s) {
   // (template with no interpolation)
   const trimmed = s.trim();
   const single = trimmed.match(/^'([^'\\]*(?:\\.[^'\\]*)*)'$/);
-  if (single) return single[1];
+  if (single) {return single[1];}
   const double = trimmed.match(/^"([^"\\]*(?:\\.[^"\\]*)*)"$/);
-  if (double) return double[1];
+  if (double) {return double[1];}
   const template = trimmed.match(/^`([^`$\\]*(?:\\.[^`$\\]*)*)`$/);
-  if (template) return template[1];
+  if (template) {return template[1];}
   return null;
 }
 
@@ -251,7 +251,7 @@ function extractTemplatePrefix(s) {
   const trimmed = s.trim();
   // Template literal: get the part before the first interpolation
   const m = trimmed.match(/^`([^$]*)/);
-  if (m) return m[1];
+  if (m) {return m[1];}
   return null;
 }
 
@@ -361,7 +361,7 @@ function main() {
     for (const f of remainingBugs.slice(0, 80)) {
       console.log(`  ${f.file}:${f.line}  ${f.method}(${f.keyArg.slice(0, 60)})`);
     }
-    if (remainingBugs.length > 80) console.log(`  ... and ${remainingBugs.length - 80} more`);
+    if (remainingBugs.length > 80) {console.log(`  ... and ${remainingBugs.length - 80} more`);}
     console.log('');
   }
 

@@ -57,6 +57,33 @@ export async function httpDelete(
   return { ok: res.ok, status: res.status, body };
 }
 
+export async function httpGetProduct(
+  productId: string,
+  options: { jwt?: string | null },
+): Promise<HttpResponse> {
+  return httpGet(`/products/${productId}`, options);
+}
+
+export async function httpGetProducts(
+  options: { jwt?: string | null },
+): Promise<HttpResponse> {
+  return httpGet('/products', options);
+}
+
+export async function httpPostProduct(
+  data: Record<string, unknown>,
+  options: { jwt?: string | null },
+): Promise<HttpResponse> {
+  return httpPost('/products', data, options);
+}
+
+export async function httpDeleteProduct(
+  productId: string,
+  options: { jwt?: string | null },
+): Promise<HttpResponse> {
+  return httpDelete(`/products/${productId}`, options);
+}
+
 interface JwtPayload {
   sub: string;
   userId: string;

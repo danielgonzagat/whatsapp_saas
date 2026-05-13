@@ -1,0 +1,45 @@
+{
+  "runId": "pr276-wave-3",
+  "concurrency": 4,
+  "timeoutSec": 5400,
+  "staggerMs": 12000,
+  "dir": "/Users/danielpenin/whatsapp_saas",
+  "skipPermissions": true,
+  "tasks": [
+    {
+      "id": "decomp-commercial-decision",
+      "title": "decomp commercial-decision-orchestrator 863->modules",
+      "promptFile": "/Users/danielpenin/whatsapp_saas/artifacts/opencode-fleet/pr276-w3-prompts/decomp-commercial-decision.md"
+    },
+    {
+      "id": "remove-emojis-worker",
+      "title": "remove 28 emojis in worker logs",
+      "promptFile": "/Users/danielpenin/whatsapp_saas/artifacts/opencode-fleet/pr276-w3-prompts/remove-emojis-worker.md"
+    },
+    {
+      "id": "init-baseline-sql-format",
+      "title": "format init_baseline migration (101 codacy issues)",
+      "promptFile": "/Users/danielpenin/whatsapp_saas/artifacts/opencode-fleet/pr276-w3-prompts/init-baseline-sql-format.md"
+    },
+    {
+      "id": "docs-runbook-deploy",
+      "title": "create RUNBOOK + PRODUCTION_DEPLOY + CHANGELOG",
+      "promptFile": "/Users/danielpenin/whatsapp_saas/artifacts/opencode-fleet/pr276-w3-prompts/docs-runbook-deploy.md"
+    },
+    {
+      "id": "coverage-backend-frontend",
+      "title": "coverage gate backend + frontend 80%/75%",
+      "promptFile": "/Users/danielpenin/whatsapp_saas/artifacts/opencode-fleet/pr276-w3-prompts/coverage-backend-frontend.md"
+    },
+    {
+      "id": "observability-instrumentation",
+      "title": "Sentry + DD + StructuredLogger + correlation-id",
+      "promptFile": "/Users/danielpenin/whatsapp_saas/artifacts/opencode-fleet/pr276-w3-prompts/observability-instrumentation.md"
+    },
+    {
+      "id": "pulse-recert-3-cycles",
+      "title": "regenerate PULSE artifacts + 3 cycles",
+      "promptFile": "/Users/danielpenin/whatsapp_saas/artifacts/opencode-fleet/pr276-w3-prompts/pulse-recert-3-cycles.md"
+    }
+  ]
+}

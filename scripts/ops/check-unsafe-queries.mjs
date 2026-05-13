@@ -215,22 +215,22 @@ function extractObjectLiteral(source, startIdx) {
     const prev = index > 0 ? source[index - 1] : '';
 
     if (inSingle) {
-      if (char === "'" && prev !== '\\') inSingle = false;
+      if (char === "'" && prev !== '\\') {inSingle = false;}
       continue;
     }
     if (inDouble) {
-      if (char === '"' && prev !== '\\') inDouble = false;
+      if (char === '"' && prev !== '\\') {inDouble = false;}
       continue;
     }
     if (inTemplate) {
-      if (char === '`' && prev !== '\\') inTemplate = false;
+      if (char === '`' && prev !== '\\') {inTemplate = false;}
       continue;
     }
 
-    if (char === "'") inSingle = true;
-    else if (char === '"') inDouble = true;
-    else if (char === '`') inTemplate = true;
-    else if (char === '{') depth += 1;
+    if (char === "'") {inSingle = true;}
+    else if (char === '"') {inDouble = true;}
+    else if (char === '`') {inTemplate = true;}
+    else if (char === '{') {depth += 1;}
     else if (char === '}') {
       depth -= 1;
       if (depth === 0) {

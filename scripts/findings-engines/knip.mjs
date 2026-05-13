@@ -168,7 +168,7 @@ try {
 const findings = [];
 
 function processEntryList(issueFile, entries, mapping) {
-  if (!Array.isArray(entries)) return;
+  if (!Array.isArray(entries)) {return;}
   for (const entry of entries) {
     addFinding(findings, issueFile, entry, mapping);
   }

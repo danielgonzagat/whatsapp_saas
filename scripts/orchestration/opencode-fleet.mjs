@@ -78,7 +78,7 @@ const activePids = new Set();
 let pidsFile = null;
 
 function persistActivePids() {
-  if (!pidsFile) return;
+  if (!pidsFile) {return;}
   try {
     writeFileSync(
       pidsFile,
@@ -94,13 +94,13 @@ function persistActivePids() {
 }
 
 function registerActivePid(pid) {
-  if (!Number.isFinite(pid)) return;
+  if (!Number.isFinite(pid)) {return;}
   activePids.add(pid);
   persistActivePids();
 }
 
 function unregisterActivePid(pid) {
-  if (!Number.isFinite(pid)) return;
+  if (!Number.isFinite(pid)) {return;}
   activePids.delete(pid);
   persistActivePids();
 }
@@ -155,9 +155,9 @@ function runOne(task, runDir, opts) {
     writeFileSync(promptPath, prompt);
 
     const args = ['run', '-m', REQUIRED_MODEL, '--variant', 'max', '--format', 'default'];
-    if (task.title) args.push('--title', task.title);
-    if (opts.dir) args.push('--dir', opts.dir);
-    if (opts.skipPermissions !== false) args.push('--dangerously-skip-permissions');
+    if (task.title) {args.push('--title', task.title);}
+    if (opts.dir) {args.push('--dir', opts.dir);}
+    if (opts.skipPermissions !== false) {args.push('--dangerously-skip-permissions');}
     args.push(prompt);
 
     const start = nowMs();
@@ -201,7 +201,7 @@ function runOne(task, runDir, opts) {
         : null;
 
     child.on('exit', (code, signal) => {
-      if (timeout) clearTimeout(timeout);
+      if (timeout) {clearTimeout(timeout);}
       unregisterActivePid(child.pid);
       const durationMs = nowMs() - start;
       writeFileSync(exitPath, String(code ?? -1));

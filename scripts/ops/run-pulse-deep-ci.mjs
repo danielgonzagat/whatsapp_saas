@@ -20,7 +20,7 @@ function log(msg) {
 }
 
 function ensureDir(dir) {
-  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+  if (!fs.existsSync(dir)) {fs.mkdirSync(dir, { recursive: true });}
 }
 
 function runCmd(cmd, opts = {}) {
@@ -29,7 +29,7 @@ function runCmd(cmd, opts = {}) {
 }
 
 function killChildTree(pid, signal) {
-  if (!pid) return;
+  if (!pid) {return;}
   try {
     process.kill(-pid, signal);
   } catch {
@@ -52,7 +52,7 @@ async function waitForBackend(url, maxRetries = 90) {
         return true;
       }
     } catch { /* not ready */ }
-    if (i % 5 === 0) log(`Waiting for backend... (attempt ${i + 1}/${maxRetries})`);
+    if (i % 5 === 0) {log(`Waiting for backend... (attempt ${i + 1}/${maxRetries})`);}
     await sleep(2000);
   }
   return false;
@@ -60,7 +60,7 @@ async function waitForBackend(url, maxRetries = 90) {
 
 function readCertificate(jsonPath) {
   try {
-    if (!fs.existsSync(jsonPath)) return null;
+    if (!fs.existsSync(jsonPath)) {return null;}
     const raw = fs.readFileSync(jsonPath, 'utf-8');
     return JSON.parse(raw);
   } catch {
@@ -69,7 +69,7 @@ function readCertificate(jsonPath) {
 }
 
 function gateStatusLabel(gate) {
-  if (!gate) return 'MISSING';
+  if (!gate) {return 'MISSING';}
   return gate.status === 'pass' ? 'PASS' : 'FAIL';
 }
 
@@ -79,19 +79,19 @@ function countExecutedRuntimeProbes(cert) {
 }
 
 function allGatesPass(cert) {
-  if (!cert?.gates) return false;
+  if (!cert?.gates) {return false;}
   return Object.values(cert.gates).every((g) => g?.status === 'pass');
 }
 
 function findFailingGates(cert) {
-  if (!cert?.gates) return ['NO_GATES'];
+  if (!cert?.gates) {return ['NO_GATES'];}
   return Object.entries(cert.gates)
     .filter(([, g]) => g?.status !== 'pass')
     .map(([name]) => name);
 }
 
 function findRegressions(prevGates, currGates) {
-  if (!prevGates || !currGates) return [];
+  if (!prevGates || !currGates) {return [];}
   const regressions = [];
   for (const name of Object.keys(currGates)) {
     const prev = prevGates[name];
@@ -104,12 +104,12 @@ function findRegressions(prevGates, currGates) {
 }
 
 function countPassedGates(cert) {
-  if (!cert?.gates) return 0;
+  if (!cert?.gates) {return 0;}
   return Object.values(cert.gates).filter((g) => g?.status === 'pass').length;
 }
 
 function totalGates(cert) {
-  if (!cert?.gates) return 0;
+  if (!cert?.gates) {return 0;}
   return Object.keys(cert.gates).length;
 }
 
@@ -122,8 +122,8 @@ async function spawnProcess(cmd, argsList, envExtra = {}) {
       env: { ...process.env, ...envExtra },
     });
     proc.on('exit', (code, signal) => {
-      if (signal) resolve(124);
-      else resolve(code ?? 1);
+      if (signal) {resolve(124);}
+      else {resolve(code ?? 1);}
     });
     proc.on('error', () => resolve(1));
   });
@@ -323,7 +323,7 @@ function buildAssertionReport(cycleResults) {
   for (let i = 1; i < cycleResults.length; i++) {
     const prevCert = cycleResults[i - 1].cert;
     const currCert = cycleResults[i].cert;
-    if (!prevCert || !currCert) continue;
+    if (!prevCert || !currCert) {continue;}
     const regressions = findRegressions(prevCert.gates, currCert.gates);
     if (regressions.length > 0) {
       report.assertions.no_regression.passed = false;
@@ -466,7 +466,7 @@ async function main() {
         for (const [cycle, gates] of Object.entries(
           report.assertions.all_subgates_pass.failing_gates_by_cycle,
         )) {
-          if (gates.length > 0) log(`    ${cycle}: ${gates.join(', ')}`);
+          if (gates.length > 0) {log(`    ${cycle}: ${gates.join(', ')}`);}
         }
       }
       if (!report.assertions.no_regression.passed) {

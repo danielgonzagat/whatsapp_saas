@@ -62,7 +62,7 @@ for (const [rel, routeClass] of CLASSIFICATION) {
   // Compute relative import path
   const fromDir = path.dirname(fp);
   let importRel = path.relative(fromDir, path.join(SRC, 'common/throttler/route-class.decorator'));
-  if (!importRel.startsWith('.')) importRel = './' + importRel;
+  if (!importRel.startsWith('.')) {importRel = './' + importRel;}
   const importLine = `import { RouteClass } from '${importRel}';`;
 
   // Insert import before the first non-import, non-comment line (after all imports)
@@ -85,7 +85,7 @@ for (const [rel, routeClass] of CLASSIFICATION) {
       insertIdx = i + 1;
       continue;
     }
-    if (inMultiLineImport) continue;
+    if (inMultiLineImport) {continue;}
     break;
   }
   lines.splice(insertIdx, 0, importLine);

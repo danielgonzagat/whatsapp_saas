@@ -7,7 +7,7 @@ const CANONICAL = join(REPO_ROOT, '.pulse', 'current');
 
 function resolveFirst(...candidates) {
   for (const p of candidates) {
-    if (existsSync(p)) return p;
+    if (existsSync(p)) {return p;}
   }
   return null;
 }
@@ -49,10 +49,10 @@ function buildCaveats(humanStatus, severity) {
   const { critical, high, medium, low } = severity;
 
   if (humanStatus === 'NOT_READY') {
-    if (critical > 0) caveats.push(`Critical breaks: ${critical}`);
-    if (high > 0) caveats.push(`High-severity breaks: ${high}`);
-    if (medium > 0) caveats.push(`Medium-severity breaks: ${medium}`);
-    if (low > 0 && critical === 0 && high === 0) caveats.push(`Low-severity breaks only: ${low}`);
+    if (critical > 0) {caveats.push(`Critical breaks: ${critical}`);}
+    if (high > 0) {caveats.push(`High-severity breaks: ${high}`);}
+    if (medium > 0) {caveats.push(`Medium-severity breaks: ${medium}`);}
+    if (low > 0 && critical === 0 && high === 0) {caveats.push(`Low-severity breaks only: ${low}`);}
     if (critical === 0 && high === 0 && medium === 0 && low === 0) {
       caveats.push('NOT_READY with zero breaks — may be gate-level or external-signal blockers');
     }
@@ -105,7 +105,7 @@ function main() {
     sources.push(reportPath);
     const report = parseReportMD(reportPath);
     humanStatus = report.humanReplacementStatus;
-    if (!healthPath) score = report.score;
+    if (!healthPath) {score = report.score;}
   }
 
   const caveats = buildCaveats(humanStatus, severity);
@@ -130,7 +130,7 @@ function main() {
 
   if (caveats.length > 0) {
     console.log('Caveats:');
-    for (const c of caveats) console.log(`  - ${c}`);
+    for (const c of caveats) {console.log(`  - ${c}`);}
   }
 
   if (effectiveStatus === 'NOT_READY') {

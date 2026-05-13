@@ -26,6 +26,7 @@ const eslintConfig = defineConfig([
       'react-hooks/exhaustive-deps': 'error',
       '@next/next/no-img-element': 'error',
       'jsx-a11y/alt-text': 'error',
+      curly: ['error', 'all'],
     },
   },
 ]);

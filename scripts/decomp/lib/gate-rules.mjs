@@ -102,9 +102,9 @@ export const SELF_IMMUTABLE_FILES = new Set([
 ]);
 
 export function isProtectedPath(relPath) {
-  if (PROTECTED_FILES.has(relPath)) return true;
+  if (PROTECTED_FILES.has(relPath)) {return true;}
   for (const prefix of PROTECTED_PREFIXES) {
-    if (relPath.startsWith(prefix)) return true;
+    if (relPath.startsWith(prefix)) {return true;}
   }
   return false;
 }
@@ -125,11 +125,11 @@ export function isUnderForbiddenSegment(relPath) {
 export function getLockedFiles(repoRoot) {
   const archCheck = ['scripts', 'ops', 'check-architecture-guardrails.mjs'].join('/');
   const gatePath = path.join(repoRoot, archCheck);
-  if (!existsSync(gatePath)) return new Set();
+  if (!existsSync(gatePath)) {return new Set();}
   try {
     const src = readFileSync(gatePath, 'utf8');
     const m = src.match(/const\s+LOCKED_FILES\s*=\s*new\s+Set\s*\(\s*\[([\s\S]*?)\]\s*\)/);
-    if (!m) return new Set();
+    if (!m) {return new Set();}
     return new Set(
       m[1]
         .split(/[,\n]/)
@@ -152,17 +152,17 @@ export function findForbiddenToken(content) {
     const raw = lines[i];
     const trimmed = raw.trim();
     if (inBlockComment) {
-      if (/\*\//.test(raw)) inBlockComment = false;
+      if (/\*\//.test(raw)) {inBlockComment = false;}
       continue;
     }
     if (/^\/\*/.test(trimmed)) {
-      if (!/\*\//.test(trimmed)) inBlockComment = true;
+      if (!/\*\//.test(trimmed)) {inBlockComment = true;}
       continue;
     }
-    if (/^\/\//.test(trimmed)) continue;
+    if (/^\/\//.test(trimmed)) {continue;}
     for (const tok of FORBIDDEN_TOKENS) {
       if (tok.pattern.test(raw))
-        return { tokenId: tok.id, label: tok.label, lineNumber: i + 1, line: raw };
+        {return { tokenId: tok.id, label: tok.label, lineNumber: i + 1, line: raw };}
     }
     if (ANY_TYPE_PATTERN.test(raw)) {
       return { tokenId: 'untyped', label: ':' + ' ' + _ANY, lineNumber: i + 1, line: raw };
@@ -173,9 +173,9 @@ export function findForbiddenToken(content) {
 
 export function evaluateContent({ relPath, content, isNewFile, lockedFiles = new Set() }) {
   const violations = [];
-  if (!isSourcePath(relPath)) return violations;
-  if (isUnderIgnoredSegment(relPath)) return violations;
-  if (lockedFiles.has(relPath)) return violations;
+  if (!isSourcePath(relPath)) {return violations;}
+  if (isUnderIgnoredSegment(relPath)) {return violations;}
+  if (lockedFiles.has(relPath)) {return violations;}
   if (isUnderForbiddenSegment(relPath)) {
     violations.push({
       rule: 'forbidden-directory',
@@ -214,7 +214,7 @@ export function evaluateContent({ relPath, content, isNewFile, lockedFiles = new
 }
 
 export function simulateToolEdit({ toolName, toolInput, repoRoot }) {
-  if (!toolInput || !toolInput.file_path) return null;
+  if (!toolInput || !toolInput.file_path) {return null;}
   const filePath = path.isAbsolute(toolInput.file_path)
     ? toolInput.file_path
     : path.join(repoRoot, toolInput.file_path);
@@ -225,7 +225,7 @@ export function simulateToolEdit({ toolName, toolInput, repoRoot }) {
     isNewFile = !exists;
     resulting = String(toolInput.content == null ? '' : toolInput.content);
   } else if (toolName === 'Edit') {
-    if (!exists) return null;
+    if (!exists) {return null;}
     const cur = readFileSync(filePath, 'utf8');
     const oldStr = String(toolInput.old_string == null ? '' : toolInput.old_string);
     const newStr = String(toolInput.new_string == null ? '' : toolInput.new_string);
@@ -233,11 +233,11 @@ export function simulateToolEdit({ toolName, toolInput, repoRoot }) {
       resulting = cur.split(oldStr).join(newStr);
     } else {
       const idx = cur.indexOf(oldStr);
-      if (idx === -1) return null;
+      if (idx === -1) {return null;}
       resulting = cur.slice(0, idx) + newStr + cur.slice(idx + oldStr.length);
     }
   } else if (toolName === 'MultiEdit') {
-    if (!exists) return null;
+    if (!exists) {return null;}
     resulting = readFileSync(filePath, 'utf8');
     for (const e of toolInput.edits || []) {
       const oldStr = String(e.old_string == null ? '' : e.old_string);
@@ -246,7 +246,7 @@ export function simulateToolEdit({ toolName, toolInput, repoRoot }) {
         resulting = resulting.split(oldStr).join(newStr);
       } else {
         const idx = resulting.indexOf(oldStr);
-        if (idx === -1) continue;
+        if (idx === -1) {continue;}
         resulting = resulting.slice(0, idx) + newStr + resulting.slice(idx + oldStr.length);
       }
     }
@@ -266,7 +266,7 @@ export function extractExports(content) {
   const names = new Set();
   let m;
   EXPORT_DECL_RE.lastIndex = 0;
-  while ((m = EXPORT_DECL_RE.exec(content)) !== null) names.add(m[1]);
+  while ((m = EXPORT_DECL_RE.exec(content)) !== null) {names.add(m[1]);}
   EXPORT_LIST_RE.lastIndex = 0;
   while ((m = EXPORT_LIST_RE.exec(content)) !== null) {
     for (const tok of m[1].split(',')) {
@@ -276,10 +276,10 @@ export function extractExports(content) {
         .split(/\s+as\s+/i)
         .pop()
         .trim();
-      if (/^[A-Za-z_][A-Za-z0-9_]*$/.test(cleaned)) names.add(cleaned);
+      if (/^[A-Za-z_][A-Za-z0-9_]*$/.test(cleaned)) {names.add(cleaned);}
     }
   }
   const def = content.match(EXPORT_DEFAULT_RE);
-  if (def) names.add('default:' + def[1]);
+  if (def) {names.add('default:' + def[1]);}
   return names;
 }

@@ -31,15 +31,15 @@ export function parseLcov(content) {
     if (line.startsWith('SF:')) {
       const file = line.slice(3);
       if (!map.has(file))
-        map.set(file, { linesHit: 0, linesFound: 0, branchesHit: 0, branchesFound: 0 });
+        {map.set(file, { linesHit: 0, linesFound: 0, branchesHit: 0, branchesFound: 0 });}
       current = map.get(file);
       continue;
     }
-    if (!current) continue;
+    if (!current) {continue;}
     if (line.startsWith('DA:')) {
       const parts = line.slice(3).split(',');
       current.linesFound++;
-      if (Number(parts[1]) > 0) current.linesHit++;
+      if (Number(parts[1]) > 0) {current.linesHit++;}
     } else if (line.startsWith('LH:')) {
       linesHit = Number(line.slice(3));
     } else if (line.startsWith('LF:')) {
@@ -67,7 +67,7 @@ export function parseIstanbul(content) {
     if (stats.s) {
       for (const v of Object.values(stats.s)) {
         linesFound++;
-        if (Number(v) > 0) linesHit++;
+        if (Number(v) > 0) {linesHit++;}
       }
     }
     if (stats.b) {

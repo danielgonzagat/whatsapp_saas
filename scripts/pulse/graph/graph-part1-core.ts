@@ -158,6 +158,10 @@ export function inferCallRunsInsideFrontendRuntime(
 }
 
 export function inferRouteHasExternalCaller(route: BackendRoute): boolean {
+  if (route.webhookEndpoint || route.internalEndpoint) {
+    return true;
+  }
+
   const routeTokens = tokenizeGraphEvidence(
     `${route.controllerPath} ${route.methodPath} ${route.fullPath} ${route.methodName}`,
   );

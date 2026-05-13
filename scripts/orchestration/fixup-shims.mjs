@@ -72,7 +72,7 @@ function extractNamedExports(content) {
   const exports = new Set();
   const reDecl =
     /^\s*export\s+(?:async\s+)?(?:function|class|const|let|var|type|interface|enum)\s+([A-Za-z_$][\w$]*)/gm;
-  for (const m of content.matchAll(reDecl)) exports.add(m[1]);
+  for (const m of content.matchAll(reDecl)) {exports.add(m[1]);}
 
   const reList = /^\s*export\s*\{\s*([^}]+?)\s*\}/gm;
   for (const m of content.matchAll(reList)) {
@@ -83,10 +83,10 @@ function extractNamedExports(content) {
     for (const item of items) {
       const parts = item.split(/\s+as\s+/);
       const name = parts[parts.length - 1].trim();
-      if (name && /^[A-Za-z_$][\w$]*$/.test(name)) exports.add(name);
+      if (name && /^[A-Za-z_$][\w$]*$/.test(name)) {exports.add(name);}
     }
   }
-  if (/^\s*export\s+default\b/m.test(content)) exports.add('default');
+  if (/^\s*export\s+default\b/m.test(content)) {exports.add('default');}
   return [...exports];
 }
 
@@ -99,12 +99,12 @@ function isSpecFile(filePath) {
 }
 
 function fileLines(absPath) {
-  if (!existsSync(absPath)) return 0;
+  if (!existsSync(absPath)) {return 0;}
   return readFileSync(absPath, 'utf8').split('\n').length;
 }
 
 function findPartFiles(partsDir) {
-  if (!existsSync(partsDir)) return [];
+  if (!existsSync(partsDir)) {return [];}
   const entries = readdirSync(partsDir);
   const files = [];
   for (const e of entries) {
@@ -112,7 +112,7 @@ function findPartFiles(partsDir) {
     const st = statSync(full);
     if (st.isDirectory()) {
       for (const e2 of readdirSync(full)) {
-        if (/\.(ts|tsx|mjs)$/.test(e2)) files.push(join(full, e2));
+        if (/\.(ts|tsx|mjs)$/.test(e2)) {files.push(join(full, e2));}
       }
     } else if (/\.(ts|tsx|mjs)$/.test(e)) {
       files.push(full);
@@ -132,7 +132,7 @@ function buildShim(originalRel, partFiles, worktreeRoot) {
     const content = readFileSync(partAbs, 'utf8');
     const partExports = extractNamedExports(content);
     const partHasStar = hasStarReexport(content);
-    if (partExports.length === 0 && !partHasStar) continue;
+    if (partExports.length === 0 && !partHasStar) {continue;}
 
     const partRelToWorktree = partAbs.replace(worktreeRoot + '/', '');
     let fromOrigin;

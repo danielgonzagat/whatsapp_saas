@@ -4,8 +4,8 @@ import {
   buildTableNameMap,
   collectModelsFromIncludeSelect,
   collectModelsFromRawSql,
-} from '../orphan-prisma/enhanced-detector';
-import type { PrismaModel } from '../types.core';
+} from '../enhanced-detector';
+import type { PrismaModel } from '../../types.core';
 
 // Build sample models
 const sampleModels: PrismaModel[] = [

@@ -187,10 +187,10 @@ function checkChangedFiles() {
   ];
 
   for (const file of changed) {
-    if (!isTextFile(file)) continue;
+    if (!isTextFile(file)) {continue;}
     const content = addedTextForFile(file);
     for (const { pattern, label, productionOnly = false } of forbiddenPatterns) {
-      if (productionOnly && isTestFile(file)) continue;
+      if (productionOnly && isTestFile(file)) {continue;}
       if (pattern.test(content)) {
         fail(`${file} contem ${label}; a constituicao proibe bypass/supressao.`);
       }
@@ -210,12 +210,12 @@ function addedTextForFile(file) {
       .filter((line) => line.startsWith('+') && !line.startsWith('+++'))
       .map((line) => line.slice(1))
       .join('\n');
-    if (added.trim()) return added;
+    if (added.trim()) {return added;}
   } catch {
     // Fall back below for untracked files or unusual git states.
   }
 
-  if (isTracked(file)) return '';
+  if (isTracked(file)) {return '';}
   return readRepo(file);
 }
 
@@ -232,7 +232,7 @@ function isTracked(file) {
 }
 
 function isTextFile(file) {
-  if (statSync(path.join(repoRoot, file)).size > 2 * 1024 * 1024) return false;
+  if (statSync(path.join(repoRoot, file)).size > 2 * 1024 * 1024) {return false;}
   return /\.(?:js|mjs|cjs|ts|tsx|jsx|json|md|yml|yaml|sh|css|scss|html|txt)$/.test(file);
 }
 

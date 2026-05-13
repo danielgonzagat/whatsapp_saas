@@ -26,7 +26,8 @@ import {
 
 // ─── AST Graph Context ────────────────────────────────────────────────────────
 
-export { type AstGraphContext, type StructuralGraphContext } from './types';
+import type { AstGraphContext, StructuralGraphContext } from './types';
+export type { AstGraphContext, StructuralGraphContext };
 
 /**
  * Load the AST call graph from the canonical artifact directory.

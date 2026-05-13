@@ -75,15 +75,15 @@ for (const { label, tsconfig } of WORKSPACE_CONFIGS) {
     let fileMutated = false;
 
     sourceFile.forEachDescendant((node) => {
-      if (node.getKind() !== SyntaxKind.CatchClause) return;
+      if (node.getKind() !== SyntaxKind.CatchClause) {return;}
       const catchClause = node.asKindOrThrow(SyntaxKind.CatchClause);
       const variableDeclaration = catchClause.getVariableDeclaration();
-      if (!variableDeclaration) return;
+      if (!variableDeclaration) {return;}
 
       const typeNode = variableDeclaration.getTypeNode();
-      if (!typeNode) return;
+      if (!typeNode) {return;}
       // Only target explicit `any`. Leave `unknown`, `Error`, etc. alone.
-      if (typeNode.getText() !== 'any') return;
+      if (typeNode.getText() !== 'any') {return;}
 
       totalCatchesScanned += 1;
 
@@ -107,9 +107,9 @@ for (const { label, tsconfig } of WORKSPACE_CONFIGS) {
       const hasMemberAccess = block
         .getDescendantsOfKind(SyntaxKind.Identifier)
         .some((identifier) => {
-          if (identifier.getText() !== name) return false;
+          if (identifier.getText() !== name) {return false;}
           const parent = identifier.getParent();
-          if (!parent) return false;
+          if (!parent) {return false;}
           const parentKind = parent.getKind();
           if (
             parentKind !== SyntaxKind.PropertyAccessExpression &&

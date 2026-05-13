@@ -15,7 +15,6 @@ import {
   inferKindFromPackage,
   inferFrameworksFromPackage,
   uniqueSorted,
-  walkUnskippedFiles,
 } from './helpers';
 import {
   addRoot,

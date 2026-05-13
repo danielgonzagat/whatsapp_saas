@@ -68,9 +68,9 @@ function compareMetric(name, baseline, current) {
 }
 
 function formatSample(sample) {
-  if (!sample) return '';
-  if (sample.lines) return `${sample.file} (${sample.lines} lines)`;
-  if (sample.line) return `${sample.file}:${sample.line} :: ${sample.content}`;
+  if (!sample) {return '';}
+  if (sample.lines) {return `${sample.file} (${sample.lines} lines)`;}
+  if (sample.line) {return `${sample.file}:${sample.line} :: ${sample.content}`;}
   return sample.file || JSON.stringify(sample);
 }
 
@@ -89,7 +89,7 @@ function printFailures(failures, details) {
 }
 
 function printImprovements(improvements) {
-  if (improvements.length === 0) return;
+  if (improvements.length === 0) {return;}
   console.log('[ratchet] Improvements detected:');
   for (const improvement of improvements) {
     console.log(`- ${improvement.name}: ${improvement.previous} -> ${improvement.current}`);
@@ -97,7 +97,7 @@ function printImprovements(improvements) {
 }
 
 function printNewMetrics(metricNames, measurement) {
-  if (metricNames.length === 0) return;
+  if (metricNames.length === 0) {return;}
   console.log('[ratchet] New metrics discovered:');
   for (const name of metricNames) {
     console.log(`- ${name}: ${measurement.ratchet[name]}`);

@@ -6,7 +6,7 @@ export function buildFileSignalMap(breaks, repoRoot) {
     if (file.startsWith(repoRoot + '/')) {
       file = file.slice(repoRoot.length + 1);
     }
-    if (!file) continue;
+    if (!file) {continue;}
 
     let entry = map.get(file);
     if (!entry) {
@@ -50,15 +50,15 @@ export function buildFileSignalMap(breaks, repoRoot) {
 }
 
 export function buildModuleStateMap() {
-  if (!existsSync(PULSE_MANIFEST_PATH)) return new Map();
+  if (!existsSync(PULSE_MANIFEST_PATH)) {return new Map();}
   try {
     const manifest = JSON.parse(readFileSync(PULSE_MANIFEST_PATH, 'utf8'));
     const map = new Map();
     for (const mod of manifest.modules || []) {
-      if (mod.name) map.set(mod.name.toLowerCase(), mod.state);
+      if (mod.name) {map.set(mod.name.toLowerCase(), mod.state);}
     }
     for (const mod of manifest.legacyModules || []) {
-      if (mod.name) map.set(mod.name.toLowerCase(), mod.state);
+      if (mod.name) {map.set(mod.name.toLowerCase(), mod.state);}
     }
     return map;
   } catch {
@@ -75,14 +75,14 @@ export function inferTier(relPath, signalEntry, testsExist, sourceSize, entryFie
   const hardSignals = deadHandlers + stubSignals + fakeData;
 
   const evidence = [];
-  if (deadHandlers > 0) evidence.push(`pulse:${deadHandlers} dead-handler(s)`);
-  if (stubSignals > 0) evidence.push(`pulse:${stubSignals} stub signal(s)`);
-  if (fakeData > 0) evidence.push(`pulse:${fakeData} fake-data signal(s)`);
-  if (weakSignals > 0) evidence.push(`pulse:${weakSignals} weak signal(s)`);
+  if (deadHandlers > 0) {evidence.push(`pulse:${deadHandlers} dead-handler(s)`);}
+  if (stubSignals > 0) {evidence.push(`pulse:${stubSignals} stub signal(s)`);}
+  if (fakeData > 0) {evidence.push(`pulse:${fakeData} fake-data signal(s)`);}
+  if (weakSignals > 0) {evidence.push(`pulse:${weakSignals} weak signal(s)`);}
   if (totalBreaks > 0 && evidence.length === 0) {
     evidence.push(`pulse:${totalBreaks} diagnostic break(s)`);
   }
-  if (testsExist) evidence.push('test:exists');
+  if (testsExist) {evidence.push('test:exists');}
 
   if (sourceSize < SHELL_SIZE_THRESHOLD) {
     return {

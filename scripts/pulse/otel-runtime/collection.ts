@@ -139,7 +139,7 @@ export function collectRuntimeTraces(
 
   const nodesAndFiles = Object.entries(structCtx.nodeFiles).map(([nodeId, filePath]) => ({
     nodeId,
-    filePath,
+    filePath: String(filePath ?? ''),
   }));
 
   const allSpans = traces.flatMap((t) => t.spans);

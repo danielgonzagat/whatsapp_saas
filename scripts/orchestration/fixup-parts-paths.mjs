@@ -33,7 +33,7 @@ const WORKTREE = WORKTREE_ARG
 
 function findPartsFiles(dir) {
   const out = [];
-  if (!existsSync(dir)) return out;
+  if (!existsSync(dir)) {return out;}
   const stack = [dir];
   while (stack.length) {
     const cur = stack.pop();
@@ -52,7 +52,7 @@ function findPartsFiles(dir) {
         continue;
       }
       if (st.isDirectory()) {
-        if (e === 'node_modules' || e === '.git' || e === 'dist' || e === '.next') continue;
+        if (e === 'node_modules' || e === '.git' || e === 'dist' || e === '.next') {continue;}
         stack.push(full);
       } else if (st.isFile() && /\.(ts|tsx|mjs)$/.test(e) && full.includes('/__parts__/')) {
         out.push(full);
@@ -80,7 +80,7 @@ function fixImports(content, fileAbs, worktreeRoot) {
       importPath + '/index.tsx',
     ];
     const exists = candidates.some((c) => existsSync(resolve(fileDir, c)));
-    if (exists) return match;
+    if (exists) {return match;}
 
     // try adding one more ../
     const lifted = importPath.startsWith('../') ? '../' + importPath : importPath;

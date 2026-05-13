@@ -31,6 +31,11 @@ export function buildApiModuleMap(
     .map((frontendDir) => safeJoin(frontendDir, 'lib', 'api'))
     .filter((apiDir) => pathExists(apiDir));
 
+  const adminApiDir = path.resolve(config.rootDir, 'frontend-admin', 'src', 'lib', 'api');
+  if (pathExists(adminApiDir)) {
+    apiDirs.push(adminApiDir);
+  }
+
   const files = apiDirs.flatMap((apiDir) =>
     walkFiles(apiDir, [...discoverSourceExtensionsFromObservedTypescript()]),
   );
@@ -109,6 +114,11 @@ function collectScanDirs(config: PulseConfig): string[] {
 
   for (const dir of getFrontendSourceDirs(config)) {
     if (pathExists(dir)) dirs.push(dir);
+  }
+
+  const adminDir = path.resolve(config.rootDir, 'frontend-admin', 'src');
+  if (pathExists(adminDir)) {
+    dirs.push(adminDir);
   }
 
   if (config.workerDir && pathExists(config.workerDir)) {

@@ -13,6 +13,7 @@ const pulseHealthPath = path.join(repoRoot, 'PULSE_HEALTH.json');
 const pulseCertificatePath = path.join(repoRoot, 'PULSE_CERTIFICATE.json');
 const pulseCodacyStatePath = path.join(repoRoot, 'PULSE_CODACY_STATE.json');
 const ratchetBaselinePath = path.join(repoRoot, 'ratchet.json');
+const COVERAGE_PACKAGES = ['backend', 'frontend', 'worker'];
 
 const CODE_PATHS = ['backend/src', 'frontend/src', 'worker', 'scripts'];
 const PRODUCT_CODE_PATHS = ['backend/src', 'frontend/src', 'worker'];
@@ -181,14 +182,14 @@ function countExplicitAnyMetrics(files) {
   for (const relPath of files) {
     const lines = readLines(relPath);
     lines.forEach((line, index) => {
-      if (COMMENT_ONLY_RE.test(line)) return;
+      if (COMMENT_ONLY_RE.test(line)) {return;}
 
       let lineCount = 0;
       for (const pattern of EXPLICIT_ANY_PATTERNS) {
         lineCount += countRegexMatches(line, pattern);
       }
 
-      if (lineCount === 0) return;
+      if (lineCount === 0) {return;}
       total += lineCount;
       if (samples.length < 20) {
         samples.push(sampleEntry(relPath, index + 1, line));
@@ -216,8 +217,8 @@ function countCommentDirective(files, directive) {
   for (const relPath of files) {
     const lines = readLines(relPath);
     lines.forEach((line, index) => {
-      if (!Boolean(line.match(directive))) return;
-      if (!COMMENT_MARKERS_RE.test(line)) return;
+      if (!Boolean(line.match(directive))) {return;}
+      if (!COMMENT_MARKERS_RE.test(line)) {return;}
       total += 1;
       if (samples.length < 20) {
         samples.push(sampleEntry(relPath, index + 1, line));
@@ -236,7 +237,7 @@ function countHardcodedAiSpeech(files) {
     const lines = readLines(relPath);
     lines.forEach((line, index) => {
       const matched = AI_SPEECH_PATTERNS.some((pattern) => Boolean(line.match(pattern)));
-      if (!matched) return;
+      if (!matched) {return;}
       total += 1;
       if (samples.length < 20) {
         samples.push(sampleEntry(relPath, index + 1, line));
@@ -254,11 +255,11 @@ function countEmojiOccurrences(files) {
   for (const relPath of files) {
     const lines = readLines(relPath);
     lines.forEach((line, index) => {
-      if (COMMENT_ONLY_RE.test(line)) return;
+      if (COMMENT_ONLY_RE.test(line)) {return;}
       const sanitizedLine = line.replace(LINE_SUFFIX_COMMENT_RE, '');
-      if (!STRING_OR_JSX_CHAR_RE.test(sanitizedLine)) return;
+      if (!STRING_OR_JSX_CHAR_RE.test(sanitizedLine)) {return;}
       const matches = sanitizedLine.match(EMOJI_RE);
-      if (!matches || matches.length === 0) return;
+      if (!matches || matches.length === 0) {return;}
       total += matches.length;
       if (samples.length < 20) {
         samples.push(
@@ -280,7 +281,7 @@ function countHardcodedHexColors(files) {
     lines.forEach((line, index) => {
       const matches = line.match(HEX_COLOR_RE) || [];
       const violating = matches.filter((match) => !ALLOWED_HEX_COLORS.has(normalizedHex(match)));
-      if (violating.length === 0) return;
+      if (violating.length === 0) {return;}
       total += violating.length;
       if (samples.length < 20) {
         samples.push(sampleEntry(relPath, index + 1, line, { matches: violating }));
@@ -296,7 +297,7 @@ function countChatFontsBelow16(files) {
   const samples = [];
 
   for (const relPath of files) {
-    if (!CHAT_FILE_HINT_RE.test(relPath)) continue;
+    if (!CHAT_FILE_HINT_RE.test(relPath)) {continue;}
 
     const lines = readLines(relPath);
     lines.forEach((line, index) => {
@@ -340,7 +341,7 @@ function countFilesOverLimit(files, maxLines) {
 
   for (const relPath of files) {
     const lineCount = readLines(relPath).length;
-    if (lineCount <= maxLines) continue;
+    if (lineCount <= maxLines) {continue;}
     total += 1;
     if (samples.length < 20) {
       samples.push({ file: relPath, lines: lineCount });
@@ -518,6 +519,53 @@ function collectPulseMetrics({ refreshPulse = false } = {}) {
   };
 }
 
+function collectCoverageMetrics() {
+  const pcts = { lines: [], branches: [] };
+  const packageDetails = {};
+
+  for (const pkg of COVERAGE_PACKAGES) {
+    const summaryPath = path.join(repoRoot, pkg, 'coverage', 'coverage-summary.json');
+    if (!existsSync(summaryPath)) {
+      packageDetails[pkg] = { lines: 'missing', branches: 'missing', reason: 'coverage-summary.json not found' };
+      continue;
+    }
+
+    try {
+      const summary = JSON.parse(readFileSync(summaryPath, 'utf8'));
+      const total = summary.total || {};
+
+      const linesPct = typeof total.lines?.pct === 'number' ? total.lines.pct : null;
+      const branchesPct = typeof total.branches?.pct === 'number' ? total.branches.pct : null;
+
+      packageDetails[pkg] = {
+        lines: linesPct,
+        branches: branchesPct,
+        linesTotal: total.lines?.total ?? 0,
+        linesCovered: total.lines?.covered ?? 0,
+        branchesTotal: total.branches?.total ?? 0,
+        branchesCovered: total.branches?.covered ?? 0,
+      };
+
+      if (linesPct !== null) {pcts.lines.push(linesPct);}
+      if (branchesPct !== null) {pcts.branches.push(branchesPct);}
+    } catch (error) {
+      packageDetails[pkg] = {
+        lines: 'error',
+        branches: 'error',
+        reason: error instanceof Error ? error.message : String(error),
+      };
+    }
+  }
+
+  const linesMin = pcts.lines.length > 0 ? Math.min(...pcts.lines) : 0;
+  const branchesMin = pcts.branches.length > 0 ? Math.min(...pcts.branches) : 0;
+
+  return {
+    linesMin: createMetric(linesMin, 'min', [], { packageDetails }),
+    branchesMin: createMetric(branchesMin, 'min', [], { packageDetails }),
+  };
+}
+
 function collectCodacyMetrics() {
   // PULSE_CODACY_STATE.json is produced by scripts/ops/sync-codacy-issues.mjs
   // on the nightly workflow (and on-demand locally). It is the source of
@@ -601,6 +649,7 @@ export function collectRatchetMetrics(options = {}) {
   const knipMetrics = collectKnipIssues();
   const madgeMetrics = collectMadgeCycles();
   const codacyMetrics = collectCodacyMetrics();
+  const coverageMetrics = collectCoverageMetrics();
 
   return {
     generatedAt: new Date().toISOString(),
@@ -636,6 +685,8 @@ export function collectRatchetMetrics(options = {}) {
       codacy_total_issues_max: codacyMetrics.total.value,
       codacy_high_severity_issues_max: codacyMetrics.high.value,
       codacy_medium_severity_issues_max: codacyMetrics.medium.value,
+      coverage_lines_min: coverageMetrics.linesMin.value,
+      coverage_branches_min: coverageMetrics.branchesMin.value,
     },
     details: {
       pulse_score_min: pulseMetrics.pulseScore,
@@ -696,6 +747,8 @@ export function collectRatchetMetrics(options = {}) {
       codacy_total_issues_max: codacyMetrics.total,
       codacy_high_severity_issues_max: codacyMetrics.high,
       codacy_medium_severity_issues_max: codacyMetrics.medium,
+      coverage_lines_min: coverageMetrics.linesMin,
+      coverage_branches_min: coverageMetrics.branchesMin,
     },
     inputs: {
       pulseHealthPath: path.relative(repoRoot, pulseHealthPath),

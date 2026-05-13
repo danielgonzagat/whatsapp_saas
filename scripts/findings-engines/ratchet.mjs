@@ -93,9 +93,9 @@ function computeSeverity(name, baseline, current) {
 
   if (HIGH_AT_20PCT_METRICS.has(name)) {
     // _max metrics: an INCREASE is worse
-    if (baseline === 0) return current > 0 ? 'high' : 'medium';
+    if (baseline === 0) {return current > 0 ? 'high' : 'medium';}
     const pctChange = ((current - baseline) / baseline) * 100;
-    if (pctChange > 20) return 'high';
+    if (pctChange > 20) {return 'high';}
     return 'medium';
   }
 
@@ -152,7 +152,7 @@ function main() {
   try {
     const parsed = JSON.parse(readFileSync(currentPath, 'utf8'));
     current = parsed?.ratchet && typeof parsed.ratchet === 'object' ? parsed.ratchet : parsed;
-    if (!current || typeof current !== 'object') throw new Error('shape: missing ratchet object');
+    if (!current || typeof current !== 'object') {throw new Error('shape: missing ratchet object');}
   } catch (err) {
     const report = buildReport('ratchet', getVersion(), [], {
       status: 'error',

@@ -135,7 +135,7 @@ async function fetchRepositorySummary(token) {
 
 async function fetchIssuesPage(token, cursor) {
   const qs = new URLSearchParams({ limit: String(PAGE_LIMIT) });
-  if (cursor) qs.set('cursor', cursor);
+  if (cursor) {qs.set('cursor', cursor);}
   const url = `${API_BASE}/analysis/organizations/${PROVIDER}/${ORGANIZATION}/repositories/${REPOSITORY}/issues/search?${qs.toString()}`;
   return fetchWithRetry(url, {
     method: 'POST',

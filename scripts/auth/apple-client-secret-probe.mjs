@@ -9,7 +9,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = resolve(__dirname, '..', '..');
 
 function redact(value) {
-  if (typeof value !== 'string' || value.length < 8) return '[redacted]';
+  if (typeof value !== 'string' || value.length < 8) {return '[redacted]';}
   return value.slice(0, 3) + '[redacted]' + value.slice(-3);
 }
 
@@ -45,11 +45,11 @@ function resolveEnv() {
   }
 
   const missing = [];
-  if (!teamId) missing.push('APPLE_TEAM_ID');
-  if (!keyId) missing.push('APPLE_KEY_ID');
-  if (!privateKey) missing.push('APPLE_PRIVATE_KEY_P8 (or APPLE_PRIVATE_KEY_PATH / APPLE_PRIVATE_KEY)');
-  if (!serviceId) missing.push('APPLE_SERVICE_ID (or APPLE_CLIENT_ID)');
-  if (!redirectUri) missing.push('APPLE_REDIRECT_URI (or APPLE_CALLBACK_URL)');
+  if (!teamId) {missing.push('APPLE_TEAM_ID');}
+  if (!keyId) {missing.push('APPLE_KEY_ID');}
+  if (!privateKey) {missing.push('APPLE_PRIVATE_KEY_P8 (or APPLE_PRIVATE_KEY_PATH / APPLE_PRIVATE_KEY)');}
+  if (!serviceId) {missing.push('APPLE_SERVICE_ID (or APPLE_CLIENT_ID)');}
+  if (!redirectUri) {missing.push('APPLE_REDIRECT_URI (or APPLE_CALLBACK_URL)');}
 
   const configured = [...new Set([
     ...Object.keys(process.env).filter((k) => k.startsWith('APPLE_')).sort(),

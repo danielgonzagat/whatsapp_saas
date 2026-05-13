@@ -20,7 +20,6 @@ import {
   inferFrameworksFromFileEvidence,
   inferKindFromFileEvidence,
   inferKind,
-  walkUnskippedFiles,
 } from './helpers';
 
 export function staticPrefixFromPattern(pattern: string): string | null {
