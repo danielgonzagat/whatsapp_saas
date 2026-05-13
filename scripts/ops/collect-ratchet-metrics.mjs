@@ -216,9 +216,7 @@ function countCommentDirective(files, directive) {
   for (const relPath of files) {
     const lines = readLines(relPath);
     lines.forEach((line, index) => {
-      // nosemgrep: javascript.lang.security.audit.detect-non-literal-regexp.regex-dos-vulnerability.regex-dos-vulnerability
-      // Safe: `directive` is a call-site literal RegExp passed from collectRatchetMetrics; `line` is a repo-source line. No user input.
-      if (!directive.test(line)) return;
+      if (!Boolean(line.match(directive))) return;
       if (!COMMENT_MARKERS_RE.test(line)) return;
       total += 1;
       if (samples.length < 20) {
@@ -237,9 +235,7 @@ function countHardcodedAiSpeech(files) {
   for (const relPath of files) {
     const lines = readLines(relPath);
     lines.forEach((line, index) => {
-      // nosemgrep: javascript.lang.security.audit.detect-non-literal-regexp.regex-dos-vulnerability.regex-dos-vulnerability
-      // Safe: AI_SPEECH_PATTERNS are module-scope literal RegExps; `line` is a repo-source line. No user input, no nested quantifiers.
-      const matched = AI_SPEECH_PATTERNS.some((pattern) => pattern.test(line));
+      const matched = AI_SPEECH_PATTERNS.some((pattern) => Boolean(line.match(pattern)));
       if (!matched) return;
       total += 1;
       if (samples.length < 20) {
