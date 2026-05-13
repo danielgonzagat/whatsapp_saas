@@ -37,6 +37,7 @@ import { maskRedisUrl, resolveRedisUrl } from './resolve-redis-url';
 // ─── Lazy Redis connection ────────────────────────────────────────────────
 
 const redisOpts = {
+  family: 0,
   maxRetriesPerRequest: null as null,
   enableReadyCheck: true,
   retryStrategy(times: number) {

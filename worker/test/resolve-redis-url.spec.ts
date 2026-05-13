@@ -72,6 +72,16 @@ describe('resolveRedisUrl', () => {
     expect(() => resolveRedisUrl()).toThrow(/public proxy/i);
   });
 
+  it('prefers Railway internal components over an unsafe explicit proxy URL', () => {
+    process.env.RAILWAY_SERVICE_ID = 'svc_123';
+    process.env.REDIS_URL = 'redis://default:secret@mainline.proxy.rlwy.net:12345';
+    process.env.REDISHOST = 'redis.railway.internal';
+    process.env.REDISPORT = '6379';
+    process.env.REDISPASSWORD = 'internal-secret';
+
+    expect(resolveRedisUrl()).toBe('redis://default:internal-secret@redis.railway.internal:6379');
+  });
+
   it('does not assemble passwordless Redis hosts in Railway runtimes', () => {
     process.env.RAILWAY_ENVIRONMENT_ID = 'env_123';
     process.env.REDIS_HOST = 'redis.internal';
