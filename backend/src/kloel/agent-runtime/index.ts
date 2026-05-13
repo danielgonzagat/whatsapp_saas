@@ -1,6 +1,7 @@
 export * from './agent-runtime.context-compressor';
 export * from './agent-runtime.context';
 export * from './agent-runtime.delegation';
+export * from './agent-runtime.evidence-store';
 export * from './agent-runtime.memory-curator';
 export * from './agent-runtime.memory-manager';
 export * from './agent-runtime.memory-provider';
