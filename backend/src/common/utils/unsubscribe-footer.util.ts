@@ -31,6 +31,7 @@ interface UnsubscribeUrlOptions {
   email: string;
   workspaceId?: string;
   campaignId?: string;
+  contactId?: string;
 }
 
 /** Generate the full unsubscribe URL for a marketing email. */
@@ -46,6 +47,12 @@ function buildUnsubscribeUrl(opts: UnsubscribeUrlOptions): string {
 /** Generate the unsubscribe footer HTML fragment to append to marketing emails. */
 export function buildUnsubscribeFooterHtml(opts: UnsubscribeUrlOptions): string {
   return renderUnsubscribeFooter(buildUnsubscribeUrl(opts));
+}
+
+/** Generate a plain-text unsubscribe footer for use in text/plain email parts. */
+export function buildUnsubscribeFooterText(opts: UnsubscribeUrlOptions): string {
+  const url = buildUnsubscribeUrl(opts);
+  return `\n--\nPara cancelar o recebimento, acesse: ${url}`;
 }
 
 /** One-click unsubscribe mailto address per RFC 8058 / RFC 2369. */

@@ -332,7 +332,20 @@ Tone fora do repertório é substituído com registro de override.
 
 ## L12 — Email: footer de unsubscribe obrigatório
 
-**Status:** documentada (Parte 8.4).
+**RESOLVIDA** — `backend/src/unsubscribe/unsubscribe.controller.ts` GET endpoint funcional com token HMAC-signed. `buildUnsubscribeFooterHtml` e `buildUnsubscribeFooterText` exportados de `unsubscribe-footer.util.ts`. Todos os senders comerciais auditados:
+- `email-campaign.service.ts` (footer + List-Unsubscribe header)
+- `email-marketing.service.ts` (footer + List-Unsubscribe header)
+- `auth/email.service.ts` (welcome/onboarding footer)
+- `marketing/marketing.controller.ts` (direct send footer)
+- `checkout/checkout-social-recovery.service.ts` (recovery footer)
+- `campaigns/campaigns.service.ts` (campaign broadcast footer)
+- `marketing/marketing-connect.controller.ts` (test email footer)
+- `mailbox-gmail-oauth.service.ts` (Gmail proactive footer)
+- `unified-agent-actions-messaging.service.ts` (defense-in-depth guard)
+
+Todo outbound de email comercial passa por `buildUnsubscribeFooterHtml` ou `buildUnsubscribeFooterText` e specs correspondentes afirmam presença do footer. GET `/unsubscribe?token=...` verifica token HMAC, flips `Contact.optIn=false` via `UnsubscribeService.processUnsubscribeToken`, redireciona para `/unsubscribed` (ou `/unsubscribed?error=invalid_token`).
+
+**Status:** documentada (Parte 8.4). **RESOLVIDA.**
 
 **Onde vive:**
 
