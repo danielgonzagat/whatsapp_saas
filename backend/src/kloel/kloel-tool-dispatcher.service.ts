@@ -102,6 +102,14 @@ export class KloelToolDispatcherService {
           return await this.chatToolsService.toolListFlows(workspaceId);
         case 'get_dashboard_summary':
           return await this.chatToolsService.toolGetDashboardSummary(workspaceId, asToolArgs(args));
+        case 'create_agent_job':
+          return await this.chatToolsService.toolCreateAgentJob(workspaceId, asToolArgs(args));
+        case 'list_agent_jobs':
+          return await this.chatToolsService.toolListAgentJobs(workspaceId);
+        case 'search_agent_memory':
+          return await this.chatToolsService.toolSearchAgentMemory(workspaceId, asToolArgs(args));
+        case 'upsert_agent_skill':
+          return await this.chatToolsService.toolUpsertAgentSkill(workspaceId, asToolArgs(args));
         case 'create_payment_link':
           return await this.dispatchCreatePaymentLink(workspaceId, args, userId);
         case 'connect_whatsapp':

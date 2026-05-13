@@ -12,6 +12,7 @@ import OpenAI from 'openai';
 
 const LEGACY_PRIMARY_MODEL = ['gpt', '-4'].join('');
 const LEGACY_FALLBACK_MODEL = ['gpt', '-4.1'].join('');
+const DEEPSEEK_PRIMARY_MODEL = 'deepseek-v4-pro';
 
 // Mock do OpenAI
 jest.mock('openai');
@@ -306,6 +307,21 @@ describe('OpenAI Wrapper', () => {
           max_tokens: 100,
         }),
       ).not.toThrow();
+    });
+
+    it('enables DeepSeek thinking and high reasoning effort by default', () => {
+      const out = normalizeChatCompletionParams({
+        model: DEEPSEEK_PRIMARY_MODEL,
+        messages: baseMessages,
+        max_tokens: 128,
+      });
+
+      expect(out.max_tokens).toBeGreaterThanOrEqual(512);
+      expect('max_completion_tokens' in out).toBe(false);
+      expect(out).toMatchObject({
+        thinking: { type: 'enabled' },
+        reasoning_effort: 'high',
+      });
     });
   });
 });

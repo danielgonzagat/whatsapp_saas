@@ -2,6 +2,11 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { KloelChatToolsService } from './kloel-chat-tools.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { SmartPaymentService } from './smart-payment.service';
+import {
+  AgentRuntimeSchedulerService,
+  AgentRuntimeSessionStore,
+  AgentRuntimeSkillRegistry,
+} from './agent-runtime';
 
 jest.mock('../common/products/legacy-products.util', () => ({
   filterLegacyProducts: jest.fn((products: unknown[]) => products),
@@ -41,6 +46,16 @@ describe('KloelChatToolsService', () => {
   let service: KloelChatToolsService;
   let prisma: ChatToolsPrismaMock;
   let smartPayment: Pick<SmartPaymentService, 'createSmartPayment'>;
+  let agentScheduler: {
+    upsertJob: jest.Mock;
+    listJobs: jest.Mock;
+  };
+  let agentSessions: {
+    search: jest.Mock;
+  };
+  let agentSkills: {
+    upsertSkill: jest.Mock;
+  };
 
   const wsId = 'ws-1';
 
@@ -82,12 +97,25 @@ describe('KloelChatToolsService', () => {
     smartPayment = {
       createSmartPayment: jest.fn().mockResolvedValue({ paymentUrl: 'https://pay.test' }),
     };
+    agentScheduler = {
+      upsertJob: jest.fn().mockResolvedValue({ ok: true, key: 'agent_job:daily' }),
+      listJobs: jest.fn().mockResolvedValue([]),
+    };
+    agentSessions = {
+      search: jest.fn().mockResolvedValue({ query: 'checkout', totalFound: 0, memories: [] }),
+    };
+    agentSkills = {
+      upsertSkill: jest.fn().mockResolvedValue({ ok: true, reasons: [] }),
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         KloelChatToolsService,
         { provide: PrismaService, useValue: prisma },
         { provide: SmartPaymentService, useValue: smartPayment },
+        { provide: AgentRuntimeSchedulerService, useValue: agentScheduler },
+        { provide: AgentRuntimeSessionStore, useValue: agentSessions },
+        { provide: AgentRuntimeSkillRegistry, useValue: agentSkills },
       ],
     }).compile();
 
@@ -215,6 +243,55 @@ describe('KloelChatToolsService', () => {
         expect.objectContaining({
           where: { workspaceId_key: { workspaceId: wsId, key: 'brandVoice' } },
           create: expect.objectContaining({ workspaceId: wsId }),
+        }),
+      );
+    });
+  });
+
+  describe('agent runtime tools', () => {
+    it('creates governed agent jobs through the runtime scheduler', async () => {
+      const result = await service.toolCreateAgentJob(wsId, {
+        title: 'Daily memory audit',
+        prompt: 'Review operational memory and report stale facts.',
+        everyMinutes: 1440,
+        toolScope: ['search_agent_memory'],
+      });
+
+      expect(result.success).toBe(true);
+      expect(agentScheduler.upsertJob).toHaveBeenCalledWith(
+        expect.objectContaining({
+          workspaceId: wsId,
+          jobId: 'daily_memory_audit',
+          schedule: { kind: 'interval', everyMinutes: 1440 },
+          toolScope: ['search_agent_memory'],
+        }),
+      );
+    });
+
+    it('searches persistent agent memory by workspace', async () => {
+      const result = await service.toolSearchAgentMemory(wsId, { query: 'checkout', limit: 3 });
+
+      expect(result.success).toBe(true);
+      expect(agentSessions.search).toHaveBeenCalledWith(wsId, 'checkout', 3);
+    });
+
+    it('upserts procedural agent skills with sanitized id and typed risk', async () => {
+      const result = await service.toolUpsertAgentSkill(wsId, {
+        id: 'checkout recovery',
+        title: 'Checkout Recovery',
+        summary: 'Recover abandoned checkouts with governed follow-up.',
+        riskLevel: 'normal',
+        allowedTools: ['list_products'],
+      });
+
+      expect(result.success).toBe(true);
+      expect(agentSkills.upsertSkill).toHaveBeenCalledWith(
+        wsId,
+        expect.objectContaining({
+          id: 'checkout_recovery',
+          title: 'Checkout Recovery',
+          riskLevel: 'normal',
+          allowedTools: ['list_products'],
         }),
       );
     });

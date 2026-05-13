@@ -56,6 +56,10 @@ describe('KloelToolDispatcherService', () => {
     | 'toolCreateFlow'
     | 'toolListFlows'
     | 'toolGetDashboardSummary'
+    | 'toolCreateAgentJob'
+    | 'toolListAgentJobs'
+    | 'toolSearchAgentMemory'
+    | 'toolUpsertAgentSkill'
     | 'toolCreatePaymentLink'
   >;
   let bizConfigToolsService: Pick<
@@ -130,6 +134,10 @@ describe('KloelToolDispatcherService', () => {
       toolCreateFlow: jest.fn().mockResolvedValue({ success: true, flow: {} }),
       toolListFlows: jest.fn().mockResolvedValue({ success: true, flows: [] }),
       toolGetDashboardSummary: jest.fn().mockResolvedValue({ success: true, stats: {} }),
+      toolCreateAgentJob: jest.fn().mockResolvedValue({ success: true, key: 'agent_job:daily' }),
+      toolListAgentJobs: jest.fn().mockResolvedValue({ success: true, jobs: [] }),
+      toolSearchAgentMemory: jest.fn().mockResolvedValue({ success: true, memories: [] }),
+      toolUpsertAgentSkill: jest.fn().mockResolvedValue({ success: true, skillId: 'skill_1' }),
       toolCreatePaymentLink: jest
         .fn()
         .mockResolvedValue({ success: true, paymentUrl: 'https://pay.test' }),
@@ -272,6 +280,42 @@ describe('KloelToolDispatcherService', () => {
       it('routes list_flows to chatToolsService', async () => {
         await service.executeTool(wsId, 'list_flows', {});
         expect(chatToolsService.toolListFlows).toHaveBeenCalledWith(wsId);
+      });
+
+      it('routes create_agent_job to chatToolsService', async () => {
+        await service.executeTool(wsId, 'create_agent_job', {
+          title: 'Daily audit',
+          prompt: 'Review memory',
+        });
+        expect(chatToolsService.toolCreateAgentJob).toHaveBeenCalledWith(
+          wsId,
+          expect.any(Object),
+        );
+      });
+
+      it('routes list_agent_jobs to chatToolsService', async () => {
+        await service.executeTool(wsId, 'list_agent_jobs', {});
+        expect(chatToolsService.toolListAgentJobs).toHaveBeenCalledWith(wsId);
+      });
+
+      it('routes search_agent_memory to chatToolsService', async () => {
+        await service.executeTool(wsId, 'search_agent_memory', { query: 'checkout' });
+        expect(chatToolsService.toolSearchAgentMemory).toHaveBeenCalledWith(
+          wsId,
+          expect.any(Object),
+        );
+      });
+
+      it('routes upsert_agent_skill to chatToolsService', async () => {
+        await service.executeTool(wsId, 'upsert_agent_skill', {
+          id: 'checkout',
+          title: 'Checkout',
+          summary: 'Recover checkout',
+        });
+        expect(chatToolsService.toolUpsertAgentSkill).toHaveBeenCalledWith(
+          wsId,
+          expect.any(Object),
+        );
       });
     });
 

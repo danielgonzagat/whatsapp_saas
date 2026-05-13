@@ -220,6 +220,10 @@ function deepSeekThinkingMinTokens(): number {
   return Number.isFinite(parsed) && parsed >= 64 ? Math.floor(parsed) : 512;
 }
 
+function deepSeekReasoningEffort(): 'high' | 'max' {
+  return process.env.DEEPSEEK_REASONING_EFFORT === 'max' ? 'max' : 'high';
+}
+
 // enforcement happens before chatCompletionWithRetry/chatCompletionStreamWithRetry.
 export function normalizeChatCompletionParams(
   params: NonStreamingChatParams,
@@ -242,6 +246,9 @@ export function normalizeChatCompletionParams(params: AnyChatParams): AnyChatPar
     (payload as Record<string, unknown>).thinking = {
       type: shouldUseDeepSeekThinking() ? 'enabled' : 'disabled',
     };
+    if (shouldUseDeepSeekThinking()) {
+      (payload as Record<string, unknown>).reasoning_effort = deepSeekReasoningEffort();
+    }
     if ('max_completion_tokens' in payload) {
       delete payload.max_completion_tokens;
     }

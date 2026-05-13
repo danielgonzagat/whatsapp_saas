@@ -52,4 +52,80 @@ export const KLOEL_CHAT_TOOLS_SETTINGS_CAMPAIGNS: ChatCompletionTool[] = [
       },
     },
   },
+  {
+    type: 'function',
+    function: {
+      name: 'create_agent_job',
+      description:
+        'Agenda um job autônomo governado do Kloel para lembrar, auditar ou revisar algo no tempo',
+      parameters: {
+        type: 'object',
+        properties: {
+          jobId: { type: 'string', description: 'Identificador estável opcional do job' },
+          title: { type: 'string', description: 'Título curto do job' },
+          prompt: { type: 'string', description: 'Tarefa operacional que o Kloel deve executar' },
+          everyMinutes: { type: 'number', description: 'Intervalo em minutos para recorrência' },
+          runAt: { type: 'string', description: 'Data ISO para execução única' },
+          toolScope: {
+            type: 'array',
+            items: { type: 'string' },
+            description: 'Ferramentas permitidas para o job',
+          },
+        },
+        required: ['title', 'prompt'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'list_agent_jobs',
+      description: 'Lista jobs autônomos governados registrados na memória operacional do Kloel',
+      parameters: { type: 'object', properties: {} },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'search_agent_memory',
+      description:
+        'Busca memórias episódicas, operacionais e procedurais persistidas pelo runtime do Kloel',
+      parameters: {
+        type: 'object',
+        properties: {
+          query: { type: 'string', description: 'Consulta textual sobre memória passada' },
+          limit: { type: 'number', description: 'Quantidade máxima de memórias retornadas' },
+        },
+        required: ['query'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'upsert_agent_skill',
+      description:
+        'Registra ou atualiza uma skill procedural governada para o Kloel reutilizar em tarefas futuras',
+      parameters: {
+        type: 'object',
+        properties: {
+          id: { type: 'string', description: 'Identificador da skill' },
+          title: { type: 'string', description: 'Nome da skill' },
+          summary: { type: 'string', description: 'Resumo do procedimento' },
+          category: {
+            type: 'string',
+            enum: ['commercial', 'operational', 'pulse', 'workspace'],
+          },
+          riskLevel: { type: 'string', enum: ['safe', 'normal', 'high', 'critical'] },
+          allowedTools: { type: 'array', items: { type: 'string' } },
+          requiredEvidence: { type: 'array', items: { type: 'string' } },
+          validation: { type: 'array', items: { type: 'string' } },
+          rollback: { type: 'array', items: { type: 'string' } },
+          metrics: { type: 'array', items: { type: 'string' } },
+          body: { type: 'string', description: 'Passos do procedimento' },
+        },
+        required: ['id', 'title', 'summary'],
+      },
+    },
+  },
 ];

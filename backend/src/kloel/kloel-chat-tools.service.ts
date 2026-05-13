@@ -1,9 +1,15 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
 import { StructuredLogger } from '../logging/structured-logger';
 import { Prisma } from '@prisma/client';
 import { filterLegacyProducts } from '../common/products/legacy-products.util';
 import { PrismaService } from '../prisma/prisma.service';
 import { SmartPaymentService } from './smart-payment.service';
+import {
+  AgentRuntimeSchedulerService,
+  AgentRuntimeSessionStore,
+  AgentRuntimeSkillRegistry,
+  type AgentSkillDefinition,
+} from './agent-runtime';
 
 const NON_SLUG_CHAR_RE = /[^a-z0-9_:-]+/g;
 
@@ -15,6 +21,10 @@ function safeStr(value: unknown, fallback = ''): string {
     return String(value);
   }
   return fallback;
+}
+
+function safeAgentRuntimeId(value: unknown, fallback: string): string {
+  return safeStr(value, fallback).trim().toLowerCase().replace(NON_SLUG_CHAR_RE, '_').slice(0, 80);
 }
 
 /** Generic tool result shape. */
@@ -67,6 +77,34 @@ interface ToolDashboardSummaryArgs {
   period?: 'today' | 'week' | 'month';
 }
 
+interface ToolCreateAgentJobArgs {
+  jobId?: string;
+  title: string;
+  prompt: string;
+  everyMinutes?: number;
+  runAt?: string;
+  toolScope?: string[];
+}
+
+interface ToolSearchAgentMemoryArgs {
+  query: string;
+  limit?: number;
+}
+
+interface ToolUpsertAgentSkillArgs {
+  id: string;
+  title: string;
+  summary: string;
+  category?: AgentSkillDefinition['category'];
+  riskLevel?: AgentSkillDefinition['riskLevel'];
+  allowedTools?: string[];
+  requiredEvidence?: string[];
+  validation?: string[];
+  rollback?: string[];
+  metrics?: string[];
+  body?: string;
+}
+
 function centsFromUnknown(value: unknown): number {
   if (typeof value === 'bigint') {
     return Number(value);
@@ -85,6 +123,9 @@ export class KloelChatToolsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly smartPaymentService: SmartPaymentService,
+    @Optional() private readonly agentScheduler?: AgentRuntimeSchedulerService,
+    @Optional() private readonly agentSessions?: AgentRuntimeSessionStore,
+    @Optional() private readonly agentSkills?: AgentRuntimeSkillRegistry,
   ) {}
 
   async toolSaveProduct(workspaceId: string, args: ToolSaveProductArgs): Promise<ToolResult> {
@@ -473,5 +514,114 @@ export class KloelChatToolsService {
       phone: '',
     });
     return { success: true, ...paymentResult };
+  }
+
+  async toolCreateAgentJob(workspaceId: string, args: ToolCreateAgentJobArgs): Promise<ToolResult> {
+    if (!this.agentScheduler) {
+      return { success: false, error: 'agent_scheduler_unavailable' };
+    }
+    const title = safeStr(args.title).trim().slice(0, 200);
+    const prompt = safeStr(args.prompt).trim().slice(0, 4000);
+    if (!title || !prompt) {
+      return { success: false, error: 'missing_agent_job_title_or_prompt' };
+    }
+    const everyMinutes = Number(args.everyMinutes);
+    const runAt = args.runAt ? new Date(args.runAt) : undefined;
+    const hasValidRunAt = runAt && !Number.isNaN(runAt.getTime());
+    const result = await this.agentScheduler.upsertJob({
+      workspaceId,
+      jobId: safeAgentRuntimeId(args.jobId, title) || 'job',
+      title,
+      prompt,
+      schedule: hasValidRunAt
+        ? { kind: 'once', runAt }
+        : { kind: 'interval', everyMinutes: Number.isFinite(everyMinutes) ? everyMinutes : 60 },
+      toolScope: Array.isArray(args.toolScope)
+        ? args.toolScope.filter((tool): tool is string => typeof tool === 'string')
+        : [],
+    });
+    return { success: true, message: 'Job autônomo registrado com governança.', ...result };
+  }
+
+  async toolListAgentJobs(workspaceId: string): Promise<ToolResult> {
+    if (!this.agentScheduler) {
+      return { success: false, error: 'agent_scheduler_unavailable' };
+    }
+    const jobs = await this.agentScheduler.listJobs(workspaceId);
+    return {
+      success: true,
+      jobs,
+      message: jobs.length ? `Jobs autônomos: ${jobs.length}` : 'Nenhum job autônomo registrado.',
+    };
+  }
+
+  async toolSearchAgentMemory(
+    workspaceId: string,
+    args: ToolSearchAgentMemoryArgs,
+  ): Promise<ToolResult> {
+    if (!this.agentSessions) {
+      return { success: false, error: 'agent_memory_unavailable' };
+    }
+    const query = safeStr(args.query).trim();
+    if (!query) {
+      return { success: false, error: 'missing_agent_memory_query' };
+    }
+    const result = await this.agentSessions.search(workspaceId, query, args.limit ?? 6);
+    return { success: true, ...result };
+  }
+
+  async toolUpsertAgentSkill(
+    workspaceId: string,
+    args: ToolUpsertAgentSkillArgs,
+  ): Promise<ToolResult> {
+    if (!this.agentSkills) {
+      return { success: false, error: 'agent_skill_registry_unavailable' };
+    }
+    const id = safeAgentRuntimeId(args.id, '');
+    const title = safeStr(args.title).trim().slice(0, 200);
+    const summary = safeStr(args.summary).trim().slice(0, 500);
+    if (!id || !title || !summary) {
+      return { success: false, error: 'missing_agent_skill_identity' };
+    }
+    const skill: AgentSkillDefinition = {
+      id,
+      title,
+      summary,
+      category: this.agentSkillCategory(args.category),
+      riskLevel: this.agentSkillRisk(args.riskLevel),
+      allowedTools: this.stringList(args.allowedTools),
+      requiredEvidence: this.stringList(args.requiredEvidence),
+      validation: this.stringList(args.validation),
+      rollback: this.stringList(args.rollback),
+      metrics: this.stringList(args.metrics),
+      body: safeStr(args.body).trim().slice(0, 4000),
+      version: 1,
+      updatedAt: new Date().toISOString(),
+    };
+    const result = await this.agentSkills.upsertSkill(workspaceId, skill);
+    return {
+      success: result.ok,
+      skillId: skill.id,
+      reasons: result.reasons,
+      message: result.ok ? 'Skill procedural registrada.' : 'Skill procedural recusada.',
+    };
+  }
+
+  private stringList(value: unknown): string[] {
+    return Array.isArray(value)
+      ? value.filter((entry): entry is string => typeof entry === 'string')
+      : [];
+  }
+
+  private agentSkillCategory(value: unknown): AgentSkillDefinition['category'] {
+    return value === 'commercial' || value === 'operational' || value === 'pulse' || value === 'workspace'
+      ? value
+      : 'operational';
+  }
+
+  private agentSkillRisk(value: unknown): AgentSkillDefinition['riskLevel'] {
+    return value === 'safe' || value === 'normal' || value === 'high' || value === 'critical'
+      ? value
+      : 'normal';
   }
 }
