@@ -1,61 +1,107 @@
 import { BadRequestException } from '@nestjs/common';
 import { MarketingConnectController } from './marketing-connect.controller';
+import { MetaConnectService } from './marketing-connect/meta-connect.service';
+import { EmailConnectService } from './marketing-connect/email-connect.service';
+import { ChannelSetupService } from './marketing-connect/channel-setup.service';
+import { WhatsAppSummaryService } from './marketing-connect/whatsapp-summary.service';
 
 describe('MarketingConnectController channel setup', () => {
-  const update = jest.fn();
-  const findUnique = jest.fn();
-  const channelSetupFindUnique = jest.fn();
-  const channelSetupUpsert = jest.fn();
-  const prisma = {
-    workspace: {
-      findUnique,
-      update,
-    },
-    metaConnection: {
-      findUnique: jest.fn(),
-    },
-    channelSetup: {
-      findUnique: channelSetupFindUnique,
-      upsert: channelSetupUpsert,
-    },
-    channelConfig: {
-      findUnique: jest.fn(async () => null),
-    },
-    channelProduct: {
-      findMany: jest.fn(async () => []),
-      deleteMany: jest.fn(),
-      create: jest.fn(),
-    },
-    channelArsenal: {
-      findMany: jest.fn(async () => []),
-    },
-    product: {
-      findMany: jest.fn(async () => []),
-    },
-    $transaction: jest.fn(async (operations: unknown) => {
-      if (typeof operations === 'function') {
-        return (operations as (tx: typeof prisma) => Promise<unknown>)(prisma);
-      }
-      return Promise.all(operations as Promise<unknown>[]);
-    }),
-  };
-  const metaWhatsApp = {
-    buildEmbeddedSignupUrl: jest.fn(() => 'https://www.facebook.com/v21.0/dialog/oauth'),
-    safeBuildEmbeddedSignupUrl: jest.fn(() => 'https://www.facebook.com/v21.0/dialog/oauth'),
-  };
-  const metaConnectionState = {
-    forWorkspace: jest.fn(async () => ({
-      instagram: { connected: false },
-      facebook: { connected: false },
-      whatsapp: { connected: false },
+  const metaConnect = {
+    getStatus: jest.fn(async () => ({
+      meta: {
+        connected: true,
+        tokenExpired: false,
+        pageId: 'page_1',
+        pageName: 'Kloel Page',
+        instagramUsername: 'kloel_ig',
+        updatedAt: '2026-05-11T12:00:00.000Z',
+      },
+      whatsapp: {
+        provider: 'meta-cloud',
+        connected: false,
+        status: 'disconnected',
+        authUrl: 'https://www.facebook.com/v21.0/dialog/oauth',
+        phoneNumberId: null,
+        whatsappBusinessId: null,
+        phoneNumber: null,
+        pushName: null,
+        degradedReason: 'not connected',
+      },
+      instagram: {
+        connected: false,
+        status: 'disconnected',
+        authUrl: 'https://www.facebook.com/v21.0/dialog/oauth',
+        instagramAccountId: null,
+        username: null,
+        pageName: null,
+      },
+      facebook: {
+        connected: false,
+        status: 'disconnected',
+        authUrl: 'https://www.facebook.com/v21.0/dialog/oauth',
+        pageId: null,
+        pageName: null,
+      },
     })),
   };
-  const whatsappProviders = {
-    getProviderType: jest.fn(async () => 'meta-cloud'),
-    getSessionStatus: jest.fn(async () => null),
+
+  const emailConnect = {
+    getStatus: jest.fn(async () => ({
+      connected: false,
+      status: 'unavailable',
+      enabled: false,
+      provider: 'log',
+      providerAvailable: false,
+      fromEmail: 'noreply@kloel.com',
+      fromName: 'KLOEL',
+      mailboxConnectionId: null,
+      mailboxProvider: null,
+      mailboxStatus: null,
+      lastSyncAt: null,
+      lastErrorAt: null,
+      lastError: null,
+      workspaceName: 'Workspace Teste',
+    })),
+    connect: jest.fn(async () => undefined),
+    disconnect: jest.fn(async () => undefined),
+    sendTest: jest.fn(async () => ({
+      success: true,
+      workspaceId: 'ws_1',
+      toEmail: 'owner@kloel.test',
+      provider: 'resend',
+    })),
   };
+
+  const channelSetup = {
+    getSetup: jest.fn(),
+    saveSetup: jest.fn(),
+    completeSetup: jest.fn(),
+  };
+
+  const whatsappSummary = {
+    getSummary: jest.fn(),
+  };
+
+  const tiktokMarketing = {
+    getConnectionStatus: jest.fn(async () => ({ connected: false })),
+    getStatus: jest.fn(async () => ({ connected: false, status: 'disconnected' })),
+  };
+  const tiktokMode = {
+    resolveMode: jest.fn(async () => ({
+      mode: 'listen',
+      details: {
+        clientConfigured: true,
+        secretConfigured: true,
+        outboundApproved: false,
+        tokenValid: true,
+        recentOutbound: false,
+        missingVariables: [],
+        requiredSteps: [],
+      },
+    })),
+  };
+
   const gmailMailbox = {
-    getPrimaryGmailStatus: jest.fn(async () => null),
     buildAuthUrl: jest.fn(() => ({
       provider: 'gmail',
       status: 'pending_oauth',
@@ -80,7 +126,6 @@ describe('MarketingConnectController channel setup', () => {
     })),
   };
   const microsoftMailbox = {
-    getPrimaryMicrosoftStatus: jest.fn(async () => null),
     buildAuthUrl: jest.fn(() => ({
       provider: 'microsoft',
       status: 'pending_oauth',
@@ -94,7 +139,6 @@ describe('MarketingConnectController channel setup', () => {
     })),
   };
   const imapSmtpMailbox = {
-    getPrimaryImapSmtpStatus: jest.fn(async () => null),
     connectMailbox: jest.fn(async () => ({
       connected: true,
       provider: 'imap_smtp',
@@ -102,38 +146,17 @@ describe('MarketingConnectController channel setup', () => {
       email: 'owner@kloel.test',
     })),
   };
-  const emailCampaign = {
-    sendTestEmail: jest.fn(async () => ({ sent: true, messageId: 'em-1' })),
-  };
-  const tiktokMarketing = {
-    getConnectionStatus: jest.fn(async () => ({ connected: false })),
-    getStatus: jest.fn(async () => ({ connected: false, status: 'disconnected' })),
-  };
-  const tiktokMode = {
-    resolveMode: jest.fn(async () => ({
-      mode: 'listen',
-      details: {
-        clientConfigured: true,
-        secretConfigured: true,
-        outboundApproved: false,
-        tokenValid: true,
-        recentOutbound: false,
-        missingVariables: [],
-        requiredSteps: [],
-      },
-    })),
-  };
+
   const controller = new MarketingConnectController(
-    prisma as never,
-    metaWhatsApp as never,
-    metaConnectionState as never,
-    whatsappProviders as never,
+    metaConnect as unknown as MetaConnectService,
+    emailConnect as unknown as EmailConnectService,
+    channelSetup as unknown as ChannelSetupService,
+    whatsappSummary as unknown as WhatsAppSummaryService,
+    tiktokMarketing as never,
+    tiktokMode as never,
     gmailMailbox as never,
     microsoftMailbox as never,
     imapSmtpMailbox as never,
-    emailCampaign as never,
-    tiktokMarketing as never,
-    tiktokMode as never,
   );
   const req = { user: { workspaceId: 'ws_1', email: 'owner@kloel.test' } };
 
@@ -142,11 +165,19 @@ describe('MarketingConnectController channel setup', () => {
   });
 
   it('persists a four-step setup under the selected channel key', async () => {
-    findUnique.mockResolvedValueOnce({
-      providerSettings: {
-        marketingChannelSetup: {
-          whatsapp: { currentStep: 1, selectedProductIds: ['old'] },
+    channelSetup.saveSetup.mockResolvedValueOnce({
+      channel: 'email',
+      setup: {
+        currentStep: 3,
+        selectedProductIds: ['prod_1', 'prod_2'],
+        arsenal: ['FAQ principal', 'Garantia de 7 dias'],
+        config: {
+          tone: 'consultivo',
+          aggressiveness: 'moderado',
+          followUpEnabled: true,
+          proactiveDailyLimit: 25,
         },
+        updatedAt: '2026-05-11T12:00:00.000Z',
       },
     });
 
@@ -177,23 +208,23 @@ describe('MarketingConnectController channel setup', () => {
         }),
       }),
     );
-    expect(update).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: { id: 'ws_1' },
-        data: {
-          providerSettings: expect.objectContaining({
-            marketingChannelSetup: expect.objectContaining({
-              whatsapp: { currentStep: 1, selectedProductIds: ['old'] },
-              email: expect.objectContaining({ currentStep: 3 }),
-            }),
-          }),
-        },
-      }),
-    );
+    expect(channelSetup.saveSetup).toHaveBeenCalledWith('ws_1', expect.objectContaining({
+      channel: 'email',
+      currentStep: 3,
+    }));
   });
 
   it('returns default setup when the channel has no persisted setup', async () => {
-    findUnique.mockResolvedValueOnce({ providerSettings: {} });
+    channelSetup.getSetup.mockResolvedValueOnce({
+      channel: 'instagram',
+      setup: {
+        currentStep: 0,
+        selectedProductIds: [],
+        arsenal: [],
+        config: {},
+      },
+      completedAt: null,
+    });
 
     const result = await controller.getChannelSetup(req, 'instagram');
 
@@ -205,13 +236,13 @@ describe('MarketingConnectController channel setup', () => {
         arsenal: [],
         config: {},
       },
-      // P1.2 wire-wizard: getChannelSetup now also returns completedAt from
-      // ChannelSetup table so the frontend can gate the operational dashboard.
       completedAt: null,
     });
   });
 
   it('rejects invalid channel names', async () => {
+    channelSetup.getSetup.mockRejectedValueOnce(new BadRequestException('invalid_marketing_channel'));
+
     await expect(controller.getChannelSetup(req, 'sms')).rejects.toBeInstanceOf(
       BadRequestException,
     );
@@ -268,20 +299,57 @@ describe('MarketingConnectController channel setup', () => {
   });
 
   it('uses Microsoft mailbox status in the Email channel overlay when connected', async () => {
-    findUnique.mockResolvedValueOnce({
-      providerSettings: { email: { enabled: false } },
-      name: 'Workspace Teste',
+    metaConnect.getStatus.mockResolvedValueOnce({
+      meta: {
+        connected: false,
+        tokenExpired: false,
+        pageId: null,
+        pageName: null,
+        instagramUsername: null,
+        updatedAt: null,
+      },
+      whatsapp: {
+        provider: 'meta-cloud',
+        connected: false,
+        status: 'disconnected',
+        authUrl: 'https://www.facebook.com/v21.0/dialog/oauth',
+        phoneNumberId: null,
+        whatsappBusinessId: null,
+        phoneNumber: null,
+        pushName: null,
+        degradedReason: null,
+      },
+      instagram: {
+        connected: false,
+        status: 'disconnected',
+        authUrl: 'https://www.facebook.com/v21.0/dialog/oauth',
+        instagramAccountId: null,
+        username: null,
+        pageName: null,
+      },
+      facebook: {
+        connected: false,
+        status: 'disconnected',
+        authUrl: 'https://www.facebook.com/v21.0/dialog/oauth',
+        pageId: null,
+        pageName: null,
+      },
     });
-    prisma.metaConnection.findUnique.mockResolvedValueOnce(null);
-    microsoftMailbox.getPrimaryMicrosoftStatus.mockResolvedValueOnce({
-      id: 'mailbox-ms-1',
-      email: 'owner@kloel.test',
-      provider: 'MICROSOFT',
-      status: 'ACTIVE',
-      connectedAt: new Date('2026-05-11T12:00:00.000Z'),
-      lastSyncAt: new Date('2026-05-11T12:05:00.000Z'),
+    emailConnect.getStatus.mockResolvedValueOnce({
+      connected: true,
+      status: 'connected',
+      enabled: false,
+      provider: 'microsoft',
+      providerAvailable: true,
+      fromEmail: 'owner@kloel.test',
+      fromName: 'KLOEL',
+      mailboxConnectionId: 'mailbox-ms-1',
+      mailboxProvider: 'MICROSOFT',
+      mailboxStatus: 'ACTIVE',
+      lastSyncAt: '2026-05-11T12:05:00.000Z',
       lastErrorAt: null,
       lastError: null,
+      workspaceName: 'Workspace Teste',
     });
 
     const result = await controller.getConnectStatus(req);

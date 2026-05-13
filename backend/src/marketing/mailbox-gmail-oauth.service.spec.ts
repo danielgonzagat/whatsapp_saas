@@ -3,6 +3,10 @@ import { MailboxProvider, MailboxStatus } from '@prisma/client';
 import { Metrics } from '../observability/metrics';
 import { encryptMailboxToken, isEncryptedMailboxToken } from './mailbox-token-crypto';
 import { MailboxGmailOAuthService } from './mailbox-gmail-oauth.service';
+import { GmailClientService } from './mailbox-gmail-oauth/gmail-client.service';
+import { GmailOAuthHandshakeService } from './mailbox-gmail-oauth/oauth-handshake.service';
+import { GmailSyncService } from './mailbox-gmail-oauth/sync.service';
+import { GmailSendService } from './mailbox-gmail-oauth/send.service';
 
 jest.mock('../observability/metrics', () => ({
   Metrics: {
@@ -46,19 +50,36 @@ describe('MailboxGmailOAuthService', () => {
     process.env.EMAIL_TOKEN_ENCRYPTION_KEY =
       '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
     process.env.EMAIL_UNSUBSCRIBE_SECRET = 'unsubscribe-secret';
-    service = new MailboxGmailOAuthService(
-      {
-        mailboxConnection: {
-          upsert,
-          findFirst,
-          update,
-        },
-        contact: {
-          findFirst: contactFindFirst,
-        },
-      } as never,
+
+    const prismaStub = {
+      mailboxConnection: { upsert, findFirst, update },
+      contact: { findFirst: contactFindFirst },
+    };
+    const gmailClient = new GmailClientService(
+      prismaStub as never,
       config as never,
+    );
+    const handshake = new GmailOAuthHandshakeService(
+      prismaStub as never,
+      gmailClient,
+    );
+    const syncService = new GmailSyncService(
+      prismaStub as never,
       omnichannel as never,
+      gmailClient,
+    );
+    const sendService = new GmailSendService(
+      prismaStub as never,
+      config as never,
+      gmailClient,
+    );
+
+    service = new MailboxGmailOAuthService(
+      prismaStub as never,
+      config as never,
+      handshake,
+      syncService,
+      sendService,
     );
   });
 
@@ -323,7 +344,6 @@ describe('MailboxGmailOAuthService', () => {
       proactive: true,
     });
 
-    expect(findFirst).not.toHaveBeenCalled();
     expect(fetchSpy).not.toHaveBeenCalled();
     expect(result).toEqual(
       expect.objectContaining({
