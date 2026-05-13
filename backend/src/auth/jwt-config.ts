@@ -1,8 +1,17 @@
+import { randomBytes } from 'node:crypto';
 import { Logger } from '@nestjs/common';
 import type { SignOptions } from 'jsonwebtoken';
 
 const logger = new Logger('JwtConfig');
-const DEV_JWT_FALLBACK = ['dev', ['se', 'cret'].join(''), 'insecure'].join('-');
+
+let devFallbackCache: string | null = null;
+
+function generateDevSecret(): string {
+  if (!devFallbackCache) {
+    devFallbackCache = `dev-${randomBytes(32).toString('hex')}`;
+  }
+  return devFallbackCache;
+}
 
 let warnedAboutDevSecret = false;
 
@@ -22,7 +31,7 @@ export function getJwtSecret(): string {
     logger.warn('JWT_SECRET not set, using weak dev-secret (dev only). Configure JWT_SECRET.');
   }
 
-  return DEV_JWT_FALLBACK;
+  return generateDevSecret();
 }
 
 /** Get jwt expires in. */

@@ -322,7 +322,7 @@ export function PlanThankYouTab({ planId, productId }: { planId: string; product
         <button
           type="button"
           onClick={() => {
-            window.open(`/preview/${planId}`, '_blank');
+            window.open(`/preview/${planId}`, '_blank', 'noopener,noreferrer');
           }}
           style={{
             flex: 1,

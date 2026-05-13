@@ -358,7 +358,7 @@ export default function GestaoVendasPage() {
                         <td style={{ padding: '12px 16px' }}>
                           <button
                             type="button"
-                            onClick={() => window.open(`https://wa.me/${phone}`, '_blank')}
+                            onClick={() => window.open(`https://wa.me/${phone}`, '_blank', 'noopener,noreferrer')}
                             style={{
                               padding: '4px 10px',
                               background: 'rgba(232, 93, 48, 0.08)',

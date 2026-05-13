@@ -425,7 +425,9 @@ async function bootstrap() {
       res.setHeader('Access-Control-Allow-Origin', matched);
       return true;
     }
-    console.log('[CORS] Blocked origin: %s on %s %s', rawOrigin, req.method, req.path);
+    if (process.env.NODE_ENV !== 'production') {
+      console.log(`[CORS] Blocked origin: ${rawOrigin} on ${req.method} ${req.path}`);
+    }
     const isPreflight = req.method === 'OPTIONS';
     return !isPreflight;
   };

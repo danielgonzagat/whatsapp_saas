@@ -135,6 +135,7 @@ export function DetailActions({
             window.open(
               `https://www.linkcorreios.com.br/?id=${trackingCode}`,
               '_blank',
+              'noopener,noreferrer',
             )
           }
           icon={IC.map(12)}
