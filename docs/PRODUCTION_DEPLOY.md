@@ -39,6 +39,7 @@ Confirm production env vars are set in Railway/Vercel:
 ### Backend (Railway: project `whatsapp_saas`, service `backend`)
 
 Required:
+
 - `DATABASE_URL` — production Postgres
 - `REDIS_URL` — production Redis
 - `JWT_SECRET` — 32+ bytes
@@ -71,6 +72,7 @@ Required:
 Same secrets as backend.
 
 Confirm via:
+
 ```bash
 railway variables --service backend | grep -E "DATABASE_URL|STRIPE_SECRET_KEY|META_APP_ID"
 # Should show keys without values printed.
@@ -152,16 +154,23 @@ railway run --service backend -- npx prisma migrate status
 Must show "Database schema is up to date".
 
 If migration was part of this deploy:
+
 - Verify the new tables/columns exist via `psql $DATABASE_URL -c "\d <table_name>"`.
 - Confirm no data loss vs pre-migration state.
 
 ## Migration rules
 
 - **Forward-only.** Never run `prisma migrate reset` in production.
-- **Additive first.** New columns must default to `NULL` or have a default value; never required without backfill.
-- **Index concurrently.** For large tables, create indexes with `CREATE INDEX CONCURRENTLY` (Prisma migration must use raw SQL for this).
-- **Backfill in batches.** Never `UPDATE ... WHERE` on a table > 100k rows in one transaction. Use a BullMQ batch processor.
-- **Two-phase rename.** To rename a column: add new column, dual-write in app, backfill, switch reads, drop old column in next deploy.
+- **Additive first.** New columns must default to `NULL` or have a
+  default value; never required without backfill.
+- **Index concurrently.** For large tables, create indexes with
+  `CREATE INDEX CONCURRENTLY` (Prisma migration must use raw SQL
+  for this).
+- **Backfill in batches.** Never `UPDATE ... WHERE` on a table >
+  100k rows in one transaction. Use a BullMQ batch processor.
+- **Two-phase rename.** To rename a column: add new column,
+  dual-write in app, backfill, switch reads, drop old column in
+  next deploy.
 - **No DROP TABLE in deploy migration.** Mark deprecated, drop in next deploy after confirming no callers.
 
 ## Database migration deploy procedure

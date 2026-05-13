@@ -2,6 +2,32 @@
 
 All notable changes to this project will be documented in this file.
 
+## chore/purga-total-debt (PR #276)
+
+### Added
+
+- Brain spine-audit service + admin endpoint
+- Contact identity resolver + merge
+- Kloel global prior (cross-workspace cold-start Bayesian)
+- Silent_24h outcome resolver (P11)
+- Runtime conversation tracer
+- Marketing decomp (mailbox-gmail-oauth, marketing-connect)
+- Frontend page decomp (OfficialMarketingChannelPage)
+
+### Fixed
+
+- DI bug in 3 mailbox-gmail-oauth files (import type)
+- Race condition in silent_24h resolver (atomic claim)
+- BadRequest validation on brain spine-audit since param
+- Wave-1 visual contract regression (globals.css revert)
+
+### Removed
+
+- `__wave_m_detail__.ts` debug helper
+- 14 emojis backend log/template
+- 13 nosemgrep/biome-ignore in scripts/ops
+- HTML lupa entity (replaced by lucide Search)
+
 ## [0.4.2](https://github.com/danielgonzagat/whatsapp_saas/compare/v0.4.1...v0.4.2) (2026-05-12)
 
 
