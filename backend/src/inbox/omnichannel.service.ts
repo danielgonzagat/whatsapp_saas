@@ -1,8 +1,9 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional, Inject } from '@nestjs/common';
 import { ModuleRef } from '@nestjs/core';
 import { forEachSequential } from '../common/async-sequence';
 import { StorageService } from '../common/storage/storage.service';
-import { UnifiedAgentService } from '../kloel/unified-agent.service';
+import { UNIFIED_AGENT_TOKEN } from '../kloel/tokens';
+import { DecisionOutcomeService } from '../kloel/decision-outcome.service';
 import { InboxService } from './inbox.service';
 import {
   buildAttachmentContent,
@@ -20,6 +21,18 @@ import { SmartRoutingService } from './smart-routing.service';
 
 export type { MessageAttachment, NormalizedMessage, ProcessedAttachment };
 
+type UnifiedAgentPort = {
+  processIncomingMessage(input: {
+    workspaceId: string;
+    phone: string;
+    message: string;
+    contactId: string;
+    channel: string;
+    executeTools?: boolean;
+    context?: { deliveryMode?: string; externalId?: string; fromName?: string; metadata?: Record<string, unknown> };
+  }): Promise<void>;
+};
+
 /** Omnichannel ingestion service — normalizes messages from every channel. */
 @Injectable()
 export class OmnichannelService {
@@ -29,7 +42,9 @@ export class OmnichannelService {
     private readonly inbox: InboxService,
     private readonly routing: SmartRoutingService,
     private readonly storage: StorageService,
+    private readonly decisionOutcome: DecisionOutcomeService,
     private readonly moduleRef: ModuleRef,
+    @Optional() @Inject(UNIFIED_AGENT_TOKEN) private readonly _unifiedAgent?: UnifiedAgentPort,
   ) {}
 
   /** Unified entry point for ALL channels — saves, triggers CIA, and (optionally) routes. */
@@ -54,17 +69,23 @@ export class OmnichannelService {
 
     void this.routing;
 
+    void this.decisionOutcome.recordEvent({
+      workspaceId: msg.workspaceId,
+      eventType: 'inbound.received',
+      eventKey: savedMsg.id,
+      correlation: {
+        contactId: savedMsg.contactId ?? identifier,
+        channel: msg.channel.toLowerCase(),
+      },
+    });
+
     await this.maybeDispatchToUnifiedAgent(msg, identifier, content, savedMsg.contactId);
 
     return savedMsg;
   }
 
-  private resolveUnifiedAgent(): UnifiedAgentService | null {
-    try {
-      return this.moduleRef.get(UnifiedAgentService, { strict: false });
-    } catch {
-      return null;
-    }
+  private resolveUnifiedAgent(): UnifiedAgentPort | null {
+    return this._unifiedAgent ?? null;
   }
 
   private async maybeDispatchToUnifiedAgent(

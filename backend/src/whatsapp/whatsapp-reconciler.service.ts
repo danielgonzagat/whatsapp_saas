@@ -12,6 +12,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { buildQueueDedupId, buildQueueJobId } from '../queue/job-id.util';
 import { autopilotQueue, flowQueue } from '../queue/queue';
 import { WorkspaceService } from '../workspaces/workspace.service';
+import { DecisionOutcomeService } from '../kloel/decision-outcome.service';
 import { WhatsAppProviderRegistry } from './providers/provider-registry';
 import { isPlaceholderContactName as isPlaceholderName } from './whatsapp-normalization.util';
 import { TAG_DEFAULT_COLORS } from '../common/kloel-colors';
@@ -42,6 +43,7 @@ export class WhatsappReconcilerService {
     private readonly neuroCrm: NeuroCrmService,
     private readonly prisma: PrismaService,
     private readonly providerRegistry: WhatsAppProviderRegistry,
+    private readonly decisionOutcome: DecisionOutcomeService,
     @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
 
@@ -110,6 +112,15 @@ export class WhatsappReconcilerService {
       phone: from,
       content: message,
       direction: 'INBOUND',
+    });
+    void this.decisionOutcome.recordEvent({
+      workspaceId,
+      eventType: 'inbound.received',
+      eventKey: saved.id,
+      correlation: {
+        contactId: saved.contactId ?? from,
+        channel: 'whatsapp',
+      },
     });
     const nPhone = this.normalizeNumber(from);
     const ctxKey = `reply:${nPhone}`;

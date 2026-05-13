@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { includesAnyPhrase, normalizeIntentText } from '../whatsapp/whatsapp-normalization.util';
+import { DecisionOutcomeService } from './decision-outcome.service';
 import { KloelService } from './kloel.service';
 
 interface WebhookMessage {
@@ -27,6 +28,7 @@ export class WhatsAppBrainService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly kloelService: KloelService,
+    private readonly decisionOutcome: DecisionOutcomeService,
   ) {}
 
   /** Process webhook. */
@@ -97,6 +99,16 @@ export class WhatsAppBrainService {
   /** Handle incoming message. */
   async handleIncomingMessage(msg: WebhookMessage): Promise<string> {
     this.logger.log(`Mensagem de ${msg.from}: ${msg.message.substring(0, 50)}...`);
+
+    void this.decisionOutcome.recordEvent({
+      workspaceId: msg.workspaceId,
+      eventType: 'inbound.received',
+      eventKey: msg.messageId,
+      correlation: {
+        contactId: msg.from,
+        channel: 'whatsapp',
+      },
+    });
 
     const lead = await this.getOrCreateLead(msg.workspaceId, msg.from);
     const intent = this.detectIntent(msg.message);

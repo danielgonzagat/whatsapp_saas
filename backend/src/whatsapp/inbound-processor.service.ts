@@ -5,6 +5,7 @@ import Redis from 'ioredis';
 import { INBOX_SERVICE } from '../inbox/inbox.token';
 import type { IInboxService } from '../inbox/inbox.interface';
 import { UnifiedAgentService } from '../kloel/unified-agent.service';
+import { DecisionOutcomeService } from '../kloel/decision-outcome.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { ChannelInboundHookService } from '../omnichannel/channel-inbound-hook.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -74,6 +75,7 @@ export class InboundProcessorService {
     private readonly unifiedAgent: UnifiedAgentService,
     @Inject(forwardRef(() => WHATSAPP_MESSAGING))
     private readonly whatsappService: IWhatsappMessaging,
+    private readonly decisionOutcome: DecisionOutcomeService,
     @Optional() private readonly opsAlert?: OpsAlertService,
     @Optional() private readonly mindHook?: ChannelInboundHookService,
   ) {}
@@ -204,6 +206,17 @@ export class InboundProcessorService {
       300,
     );
     const isCatchup = msg.ingestMode === 'catchup';
+
+    void this.decisionOutcome.recordEvent({
+      workspaceId: msg.workspaceId,
+      eventType: 'inbound.received',
+      eventKey: savedMessage.id,
+      correlation: {
+        contactId: contact.id,
+        channel: 'whatsapp',
+      },
+    });
+
     if (!isCatchup) {
       await this.deliverToFlowContext(phone, processedContent, msg.workspaceId);
     }
