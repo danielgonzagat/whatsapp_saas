@@ -2,6 +2,7 @@ import { AgentRuntimeContextService } from './agent-runtime.context';
 import type {
   AgentRuntimePulseSelfModel,
   AgentRuntimeRecallResult,
+  AgentRuntimeSessionRecallResult,
   AgentSkillSelection,
 } from './agent-runtime.types';
 
@@ -38,6 +39,22 @@ describe('AgentRuntimeContextService', () => {
       nextSafeUnits: ['recover-admin-whatsapp-session-control'],
       generatedAt: '2026-05-13T00:00:00.000Z',
     };
+    const sessionRecall: AgentRuntimeSessionRecallResult = {
+      query: 'checkout',
+      tokens: ['checkout'],
+      totalFound: 1,
+      sessions: [
+        {
+          sessionId: 'thread_1',
+          source: 'thread',
+          matchCount: 2,
+          updatedAt: '2026-05-13T00:00:00.000Z',
+          summary: 'checkout recovery had pending webhook proof',
+          transcriptWindow: 'pending webhook proof',
+          messages: [],
+        },
+      ],
+    };
     const selectedSkills: AgentSkillSelection[] = [
       {
         skill: {
@@ -61,7 +78,11 @@ describe('AgentRuntimeContextService', () => {
     ];
 
     const service = new AgentRuntimeContextService(
-      { search: jest.fn().mockResolvedValue(recall), recordTurn: jest.fn() },
+      {
+        search: jest.fn().mockResolvedValue(recall),
+        searchSessions: jest.fn().mockResolvedValue(sessionRecall),
+        recordTurn: jest.fn(),
+      },
       { selectSkills: jest.fn().mockResolvedValue(selectedSkills) },
       { buildSelfModel: jest.fn().mockReturnValue(pulse) },
       { buildEnvelope: jest.fn() },
@@ -87,6 +108,8 @@ describe('AgentRuntimeContextService', () => {
     expect(context.systemPromptBlock).toContain('pulse.canDeclareComplete=false');
     expect(context.systemPromptBlock).toContain('checkout-recovery');
     expect(context.systemPromptBlock).toContain('user asked about checkout recovery');
+    expect(context.systemPromptBlock).toContain('sessionRecall:');
+    expect(context.systemPromptBlock).toContain('pending webhook proof');
     expect(context.systemPromptBlock).toContain('memoryProviders:');
     expect(context.systemPromptBlock).toContain('prefetchedMemory:');
     expect(context.systemPromptBlock).toContain('compressedContext:');

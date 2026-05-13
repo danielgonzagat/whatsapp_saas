@@ -5,7 +5,12 @@ import { StructuredLogger } from '../../logging/structured-logger';
 import { OpsAlertService } from '../../observability/ops-alert.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { sanitizeAgentRuntimeText, toInputJsonValue } from './agent-runtime.sanitizer';
-import type { AgentRuntimeRecallResult, AgentRuntimeTurnRecord } from './agent-runtime.types';
+import type {
+  AgentRuntimeRecallResult,
+  AgentRuntimeSessionRecallGroup,
+  AgentRuntimeSessionRecallResult,
+  AgentRuntimeTurnRecord,
+} from './agent-runtime.types';
 
 @Injectable()
 export class AgentRuntimeSessionStore {
@@ -173,6 +178,97 @@ export class AgentRuntimeSessionStore {
     };
   }
 
+  async searchSessions(
+    workspaceId: string,
+    query: string,
+    limit = 3,
+  ): Promise<AgentRuntimeSessionRecallResult> {
+    const normalizedQuery = sanitizeAgentRuntimeText(query, 500).trim();
+    if (!workspaceId || !normalizedQuery) {
+      return { query: normalizedQuery, tokens: [], totalFound: 0, sessions: [] };
+    }
+
+    const tokens = this.tokenize(normalizedQuery);
+    if (tokens.length === 0) {
+      return { query: normalizedQuery, tokens, totalFound: 0, sessions: [] };
+    }
+
+    const safeLimit = Math.max(1, Math.min(limit, 8));
+    const fetchLimit = safeLimit * 16;
+    const orConditions = tokens.flatMap((token) => [
+      { content: { contains: token, mode: 'insensitive' as const } },
+      { key: { contains: token, mode: 'insensitive' as const } },
+    ]);
+
+    const rows = await this.prisma.kloelMemory.findMany({
+      where: {
+        workspaceId,
+        category: { in: [...AgentRuntimeSessionStore.SEARCH_CATEGORIES] },
+        OR: orConditions,
+      },
+      orderBy: { updatedAt: 'desc' },
+      take: fetchLimit,
+      select: {
+        id: true,
+        key: true,
+        category: true,
+        content: true,
+        metadata: true,
+        updatedAt: true,
+      },
+    });
+
+    const groups = new Map<string, AgentRuntimeSessionRecallGroup>();
+    for (const row of rows) {
+      const matchable = `${row.key ?? ''} ${row.content ?? ''}`.toLowerCase();
+      const matchCount = tokens.filter((token) => matchable.includes(token.toLowerCase())).length;
+      if (matchCount === 0) {
+        continue;
+      }
+
+      const groupKey = this.sessionGroupKey(row.metadata, row.key);
+      const existing = groups.get(groupKey.id);
+      const message = {
+        id: row.id,
+        key: row.key,
+        category: row.category,
+        content: row.content ?? '',
+        snippet: this.extractMatchWindow(row.content ?? '', normalizedQuery, tokens, 360),
+        updatedAt: row.updatedAt.toISOString(),
+      };
+
+      if (existing) {
+        existing.matchCount += matchCount;
+        existing.messages.push(message);
+        if (row.updatedAt.toISOString() > existing.updatedAt) {
+          existing.updatedAt = row.updatedAt.toISOString();
+        }
+      } else {
+        groups.set(groupKey.id, {
+          sessionId: groupKey.id,
+          source: groupKey.source,
+          matchCount,
+          updatedAt: row.updatedAt.toISOString(),
+          summary: '',
+          transcriptWindow: '',
+          messages: [message],
+        });
+      }
+    }
+
+    const sessions = [...groups.values()]
+      .map((group) => this.finalizeSessionRecallGroup(group, normalizedQuery, tokens))
+      .sort((a, b) => b.matchCount - a.matchCount || b.updatedAt.localeCompare(a.updatedAt))
+      .slice(0, safeLimit);
+
+    return {
+      query: normalizedQuery,
+      tokens,
+      totalFound: sessions.length,
+      sessions,
+    };
+  }
+
   private tokenize(query: string): string[] {
     return query
       .toLowerCase()
@@ -205,6 +301,129 @@ export class AgentRuntimeSessionStore {
       snippet = `${snippet}…`;
     }
     return snippet;
+  }
+
+  private extractMatchWindow(
+    content: string,
+    query: string,
+    tokens: string[],
+    maxChars: number,
+  ): string {
+    if (!content || content.length <= maxChars) {
+      return content;
+    }
+    const lower = content.toLowerCase();
+    const queryLower = query.toLowerCase();
+    const positions: number[] = [];
+    let phraseIndex = lower.indexOf(queryLower);
+    while (phraseIndex !== -1) {
+      positions.push(phraseIndex);
+      phraseIndex = lower.indexOf(queryLower, phraseIndex + queryLower.length);
+    }
+    if (positions.length === 0 && tokens.length > 1) {
+      const termPositions = tokens.map((token) => ({
+        token,
+        positions: this.matchPositions(lower, token.toLowerCase()),
+      }));
+      const rarest = [...termPositions].sort((a, b) => a.positions.length - b.positions.length)[0];
+      for (const position of rarest?.positions ?? []) {
+        if (
+          termPositions.every((entry) =>
+            entry.positions.some((candidate) => Math.abs(candidate - position) < 200),
+          )
+        ) {
+          positions.push(position);
+        }
+      }
+    }
+    if (positions.length === 0) {
+      for (const token of tokens) {
+        positions.push(...this.matchPositions(lower, token.toLowerCase()));
+      }
+    }
+    if (positions.length === 0) {
+      return `${content.slice(0, maxChars)}…`;
+    }
+
+    positions.sort((a, b) => a - b);
+    let bestStart = 0;
+    let bestCount = 0;
+    for (const position of positions) {
+      const start = Math.max(0, position - Math.floor(maxChars / 4));
+      const end = Math.min(content.length, start + maxChars);
+      const covered = positions.filter((candidate) => candidate >= start && candidate < end).length;
+      if (covered > bestCount) {
+        bestCount = covered;
+        bestStart = Math.max(0, Math.min(start, content.length - maxChars));
+      }
+    }
+    const end = Math.min(content.length, bestStart + maxChars);
+    return `${bestStart > 0 ? '…' : ''}${content.slice(bestStart, end)}${
+      end < content.length ? '…' : ''
+    }`;
+  }
+
+  private matchPositions(contentLower: string, tokenLower: string): number[] {
+    const positions: number[] = [];
+    let index = contentLower.indexOf(tokenLower);
+    while (index !== -1) {
+      positions.push(index);
+      index = contentLower.indexOf(tokenLower, index + tokenLower.length);
+    }
+    return positions;
+  }
+
+  private sessionGroupKey(
+    metadata: Prisma.JsonValue | null,
+    key: string,
+  ): { id: string; source: AgentRuntimeSessionRecallGroup['source'] } {
+    const record = this.asRecord(metadata);
+    const threadId = this.asString(record.threadId);
+    if (threadId) {
+      return { id: threadId, source: 'thread' };
+    }
+    const sessionId = this.asString(record.sessionId);
+    if (sessionId) {
+      return { id: sessionId, source: 'session' };
+    }
+    const contactId = this.asString(record.contactId);
+    if (contactId) {
+      return { id: contactId, source: 'contact' };
+    }
+    return { id: key, source: 'memory' };
+  }
+
+  private finalizeSessionRecallGroup(
+    group: AgentRuntimeSessionRecallGroup,
+    query: string,
+    tokens: string[],
+  ): AgentRuntimeSessionRecallGroup {
+    const orderedMessages = [...group.messages]
+      .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
+      .slice(0, 8);
+    const transcript = orderedMessages
+      .map((message) => `[${message.category}] ${message.snippet || message.content}`)
+      .join('\n\n');
+    const transcriptWindow = this.extractMatchWindow(transcript, query, tokens, 2000);
+    return {
+      ...group,
+      messages: orderedMessages,
+      transcriptWindow,
+      summary: sanitizeAgentRuntimeText(
+        `session=${group.sessionId}; source=${group.source}; matches=${group.matchCount}; latest=${group.updatedAt}; focus=${query}; evidence=${transcriptWindow}`,
+        2400,
+      ),
+    };
+  }
+
+  private asRecord(value: unknown): Record<string, unknown> {
+    return typeof value === 'object' && value !== null && !Array.isArray(value)
+      ? (value as Record<string, unknown>)
+      : {};
+  }
+
+  private asString(value: unknown): string | null {
+    return typeof value === 'string' && value.trim() ? value.trim() : null;
   }
 
   private confidenceFromMatches(matched: number, total: number): number {

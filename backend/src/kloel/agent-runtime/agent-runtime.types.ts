@@ -29,6 +29,32 @@ export interface AgentRuntimeRecallResult {
   memories: AgentRuntimeMemoryItem[];
 }
 
+export interface AgentRuntimeSessionRecallMessage {
+  id: string;
+  key: string;
+  category: string;
+  content: string;
+  snippet: string;
+  updatedAt: string;
+}
+
+export interface AgentRuntimeSessionRecallGroup {
+  sessionId: string;
+  source: 'thread' | 'session' | 'contact' | 'memory';
+  matchCount: number;
+  updatedAt: string;
+  summary: string;
+  transcriptWindow: string;
+  messages: AgentRuntimeSessionRecallMessage[];
+}
+
+export interface AgentRuntimeSessionRecallResult {
+  query: string;
+  tokens: string[];
+  totalFound: number;
+  sessions: AgentRuntimeSessionRecallGroup[];
+}
+
 export interface AgentRuntimeMemoryToolSchema {
   name: string;
   description: string;
@@ -153,6 +179,7 @@ export interface AgentRuntimeContextRequest {
 export interface AgentRuntimeContext {
   systemPromptBlock: string;
   recall: AgentRuntimeRecallResult;
+  sessionRecall: AgentRuntimeSessionRecallResult;
   selectedSkills: AgentSkillSelection[];
   pulse: AgentPulseSelfModel;
   authorityMode: AgentRuntimeAuthorityMode;

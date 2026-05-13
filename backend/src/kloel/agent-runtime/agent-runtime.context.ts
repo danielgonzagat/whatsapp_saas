@@ -22,12 +22,14 @@ export class AgentRuntimeContextService {
   async buildContext(request: AgentRuntimeContextRequest): Promise<AgentRuntimeContext> {
     const [
       recall,
+      sessionRecall,
       selectedSkills,
       memoryProviderPrompt,
       memoryProviderPrefetch,
       compressedContext,
     ] = await Promise.all([
       this.sessions.search(request.workspaceId, request.message, 6),
+      this.sessions.searchSessions(request.workspaceId, request.message, 3),
       this.skills.selectSkills(request.workspaceId, request.message, 4),
       this.memoryManager.buildSystemPrompt(request.workspaceId),
       this.memoryManager.prefetchAll(request.workspaceId, request.message, {
@@ -42,11 +44,13 @@ export class AgentRuntimeContextService {
 
     return {
       recall,
+      sessionRecall,
       selectedSkills,
       pulse,
       authorityMode,
       systemPromptBlock: this.renderSystemPromptBlock({
         recall,
+        sessionRecall,
         selectedSkills,
         pulse,
         authorityMode,
@@ -92,6 +96,10 @@ export class AgentRuntimeContextService {
       (memory) =>
         `- [${memory.category}] ${sanitizeAgentRuntimeText(memory.content, 500)} (${memory.source.truthMode}, ${memory.source.source})`,
     );
+    const sessionRecallLines = context.sessionRecall.sessions.map(
+      (session) =>
+        `- ${session.sessionId} (${session.source}, matches=${session.matchCount}): ${sanitizeAgentRuntimeText(session.summary, 700)}`,
+    );
     const skillLines = context.selectedSkills.map(
       (selection) =>
         `- ${selection.skill.id}: ${selection.skill.summary}; risk=${selection.skill.riskLevel}; tools=${selection.skill.allowedTools.join(', ') || 'none'}`,
@@ -118,6 +126,8 @@ export class AgentRuntimeContextService {
       '- Never claim production readiness unless PULSE canDeclareComplete is true.',
       'recall:',
       ...(recallLines.length ? recallLines : ['- none']),
+      'sessionRecall:',
+      ...(sessionRecallLines.length ? sessionRecallLines : ['- none']),
       'proceduralSkills:',
       ...(skillLines.length ? skillLines : ['- none']),
       'memoryProviders:',
