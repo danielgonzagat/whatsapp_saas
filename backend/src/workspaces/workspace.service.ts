@@ -245,4 +245,17 @@ export class WorkspaceService {
         this.getDefaultWhatsAppProvider(),
     };
   }
+
+  async setGlobalPriorOptOut(id: string, optOut: boolean) {
+    await this.invalidateWorkspaceCache(id);
+    return this.prisma.workspace.update({
+      where: { id },
+      data: { globalPriorOptOut: optOut },
+    });
+  }
+
+  async getGlobalPriorOptOut(id: string): Promise<boolean> {
+    const ws = await this.getWorkspace(id);
+    return ws.globalPriorOptOut;
+  }
 }

@@ -19,6 +19,7 @@ export interface MindPolicyHarnessResult {
 export interface MindPolicyInput {
   baseline?: string;
   baselineActionQuiet?: string;
+  channel?: string;
   context: MindJson;
   decisionType: string;
   epsilon?: number;
@@ -85,6 +86,8 @@ export function buildFallbackDecision(input: {
     reasonInternal: `FALLBACK: MIND underperforming baseline (lift=${harnessResult.lift.toFixed(3)} < 0)`,
     utilityFail,
     utilitySuccess,
+    usedGlobalPrior: false,
+    priorWeight: 0,
   };
 }
 
@@ -179,6 +182,8 @@ export function buildPolicyDecision(input: {
       reasonInternal: 'FALLBACK: no action candidates available for MIND policy decision',
       utilityFail: input.utilityFail,
       utilitySuccess: input.utilitySuccess,
+      usedGlobalPrior: false,
+      priorWeight: 0,
     };
   }
   return {
@@ -198,6 +203,8 @@ export function buildPolicyDecision(input: {
     reasonInternal: `efe=${winner.efe.toFixed(3)} economic=${(winner.economicScore ?? 0).toFixed(3)} pragmatic=${winner.pragmatic.toFixed(3)} epistemic=${winner.epistemic.toFixed(3)} variance=${winner.uncertaintyAtChoice.toFixed(3)}`,
     utilityFail: input.utilityFail,
     utilitySuccess: input.utilitySuccess,
+    usedGlobalPrior: false,
+    priorWeight: 0,
   };
 }
 

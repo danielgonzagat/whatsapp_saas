@@ -93,6 +93,8 @@ export interface MindPolicyDecision {
   utilityFail: number;
   utilitySuccess: number;
   workspaceId: string;
+  usedGlobalPrior: boolean;
+  priorWeight: number;
 }
 
 export interface MindPolicyCalcStep {

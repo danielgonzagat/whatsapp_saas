@@ -13,6 +13,9 @@ describe('MindPolicyService', () => {
   ) => ({
     $executeRaw: jest.fn().mockResolvedValue(1),
     $queryRaw: jest.fn().mockResolvedValue(harnessRows),
+    workspace: {
+      findUnique: jest.fn().mockResolvedValue({ globalPriorOptOut: false }),
+    },
     mindPolicy: {
       findMany: jest
         .fn()
