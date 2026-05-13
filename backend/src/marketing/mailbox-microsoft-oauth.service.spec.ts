@@ -1,13 +1,16 @@
 import { BadRequestException } from '@nestjs/common';
 import { MailboxProvider, MailboxStatus } from '@prisma/client';
 import { Metrics } from '../observability/metrics';
-import { isEncryptedMailboxToken } from './mailbox-token-crypto';
+import { encryptMailboxToken, isEncryptedMailboxToken } from './mailbox-token-crypto';
 import { MailboxMicrosoftOAuthService } from './mailbox-microsoft-oauth.service';
 
 jest.mock('../observability/metrics', () => ({
   Metrics: {
     mailbox: {
       connected: jest.fn(),
+      sendCompleted: jest.fn(),
+      sendFailed: jest.fn(),
+      sendSuppressed: jest.fn(),
     },
   },
 }));
@@ -15,6 +18,8 @@ jest.mock('../observability/metrics', () => ({
 describe('MailboxMicrosoftOAuthService', () => {
   const upsert = jest.fn();
   const findFirst = jest.fn();
+  const update = jest.fn();
+  const contactFindFirst = jest.fn();
   const config = {
     get: jest.fn((key: string) => {
       const values: Record<string, string> = {
@@ -33,14 +38,18 @@ describe('MailboxMicrosoftOAuthService', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    contactFindFirst.mockResolvedValue(null);
     process.env.EMAIL_TOKEN_ENCRYPTION_KEY =
       '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
+    process.env.EMAIL_UNSUBSCRIBE_SECRET = 'unsubscribe-secret';
     service = new MailboxMicrosoftOAuthService(
       {
         mailboxConnection: {
           upsert,
           findFirst,
+          update,
         },
+        contact: { findFirst: contactFindFirst },
       } as never,
       config as never,
     );
@@ -48,6 +57,7 @@ describe('MailboxMicrosoftOAuthService', () => {
 
   afterEach(() => {
     delete process.env.EMAIL_TOKEN_ENCRYPTION_KEY;
+    delete process.env.EMAIL_UNSUBSCRIBE_SECRET;
     jest.restoreAllMocks();
   });
 
@@ -176,5 +186,154 @@ describe('MailboxMicrosoftOAuthService', () => {
       }),
     );
     expect(status).toEqual(expect.objectContaining({ email: 'owner@example.com' }));
+  });
+
+  it('sends Microsoft Graph outbound from the connected customer mailbox with List-Unsubscribe header', async () => {
+    findFirst.mockResolvedValueOnce({
+      id: 'mailbox-1',
+      workspaceId: 'ws-1',
+      email: 'owner@example.com',
+      accessToken: encryptMailboxToken('usable-access-token'),
+      refreshToken: null,
+      expiresAt: new Date(Date.now() + 3600_000),
+      metadata: {},
+    });
+    jest.spyOn(global, 'fetch').mockResolvedValueOnce({
+      ok: true,
+      status: 202,
+      text: async () => '',
+      json: async () => ({}),
+    } as Response);
+
+    const result = await service.sendMessageFromMailbox('ws-1', {
+      toEmail: 'lead@example.com',
+      subject: 'Oferta especial',
+      html: '<p>Oferta</p>',
+      proactive: true,
+    });
+
+    const fetchCall = (global.fetch as jest.Mock).mock.calls[0];
+    expect(fetchCall[0]).toBe('https://graph.microsoft.com/v1.0/me/sendMail');
+    const body = JSON.parse(String(fetchCall[1].body)) as Record<string, unknown>;
+    const message = body.message as Record<string, unknown>;
+    expect(message.subject).toBe('Oferta especial');
+    expect(message.body).toEqual({ contentType: 'HTML', content: expect.stringContaining('Oferta') });
+    const headers = message.internetMessageHeaders as Array<{ name: string; value: string }>;
+    expect(headers[0].name).toBe('List-Unsubscribe');
+    expect(headers[0].value).toContain('<https://kloel.com/unsubscribe');
+    expect(result).toEqual(
+      expect.objectContaining({
+        provider: 'microsoft',
+        status: 'sent',
+        sent: true,
+        email: 'owner@example.com',
+      }),
+    );
+    expect(mailboxMetrics.sendCompleted).toHaveBeenCalledWith('microsoft', {
+      workspace_id: 'ws-1',
+    });
+  });
+
+  it('sends Microsoft Graph outbound without footer when proactive is false', async () => {
+    findFirst.mockResolvedValueOnce({
+      id: 'mailbox-1',
+      workspaceId: 'ws-1',
+      email: 'owner@example.com',
+      accessToken: encryptMailboxToken('usable-access-token'),
+      refreshToken: null,
+      expiresAt: new Date(Date.now() + 3600_000),
+      metadata: {},
+    });
+    jest.spyOn(global, 'fetch').mockResolvedValueOnce({
+      ok: true,
+      status: 202,
+      text: async () => '',
+      json: async () => ({}),
+    } as Response);
+
+    const result = await service.sendMessageFromMailbox('ws-1', {
+      toEmail: 'lead@example.com',
+      subject: 'Resposta manual',
+      html: '<p>Resposta</p>',
+      proactive: false,
+    });
+
+    const fetchCall = (global.fetch as jest.Mock).mock.calls[0];
+    const body = JSON.parse(String(fetchCall[1].body)) as Record<string, unknown>;
+    const message = body.message as Record<string, unknown>;
+    expect(message.internetMessageHeaders).toBeUndefined();
+    expect(message.body.content).not.toContain('cancelar');
+    expect(result).toEqual(expect.objectContaining({ sent: true }));
+  });
+
+  it('suppresses proactive Microsoft outbound when the contact opted out', async () => {
+    contactFindFirst.mockResolvedValueOnce({ id: 'contact-1', optedOutAt: new Date() });
+    const fetchSpy = jest.spyOn(global, 'fetch');
+
+    const result = await service.sendMessageFromMailbox('ws-1', {
+      toEmail: 'lead@example.com',
+      subject: 'Oferta',
+      html: '<p>Oferta</p>',
+      proactive: true,
+    });
+
+    expect(fetchSpy).not.toHaveBeenCalled();
+    expect(result).toEqual(
+      expect.objectContaining({
+        provider: 'microsoft',
+        status: 'suppressed',
+        sent: false,
+        reason: 'recipient_unsubscribed',
+      }),
+    );
+    expect(mailboxMetrics.sendSuppressed).toHaveBeenCalledWith('microsoft', {
+      workspace_id: 'ws-1',
+    });
+  });
+
+  it('refreshes an expired Microsoft access token before sending', async () => {
+    findFirst.mockResolvedValueOnce({
+      id: 'mailbox-1',
+      workspaceId: 'ws-1',
+      email: 'owner@example.com',
+      accessToken: encryptMailboxToken('expired-access-token'),
+      refreshToken: encryptMailboxToken('plain-refresh-token'),
+      expiresAt: new Date(Date.now() - 1000),
+      metadata: {},
+    });
+    jest
+      .spyOn(global, 'fetch')
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          access_token: 'fresh-access-token',
+          expires_in: 3600,
+          token_type: 'Bearer',
+        }),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 202,
+        text: async () => '',
+        json: async () => ({}),
+      } as Response);
+
+    const result = await service.sendMessageFromMailbox('ws-1', {
+      toEmail: 'lead@example.com',
+      subject: 'Oferta',
+      html: '<p>Oferta</p>',
+      proactive: true,
+    });
+
+    expect(update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 'mailbox-1' },
+        data: expect.objectContaining({
+          accessToken: expect.not.stringContaining('fresh-access-token'),
+          status: MailboxStatus.ACTIVE,
+        }),
+      }),
+    );
+    expect(result.sent).toBe(true);
   });
 });

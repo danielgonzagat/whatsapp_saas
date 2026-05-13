@@ -9,10 +9,15 @@ import { ConfigService } from '@nestjs/config';
 import { MailboxProvider, MailboxStatus, Prisma } from '@prisma/client';
 import { Metrics } from '../observability/metrics';
 import { PrismaService } from '../prisma/prisma.service';
-import { encryptMailboxToken } from './mailbox-token-crypto';
+import {
+  buildUnsubscribeFooterHtml,
+  buildListUnsubscribeHeader,
+} from '../common/utils/unsubscribe-footer.util';
+import { decryptMailboxToken, encryptMailboxToken } from './mailbox-token-crypto';
 
 const MICROSOFT_AUTH_BASE = 'https://login.microsoftonline.com';
 const MICROSOFT_GRAPH_ME_URL = 'https://graph.microsoft.com/v1.0/me';
+const MICROSOFT_GRAPH_SEND_URL = 'https://graph.microsoft.com/v1.0/me/sendMail';
 const STATE_TTL_MS = 10 * 60 * 1000;
 
 const MICROSOFT_MAILBOX_SCOPES = [
@@ -385,5 +390,200 @@ export class MailboxMicrosoftOAuthService {
     } catch {
       return null;
     }
+  }
+
+  async sendMessageFromMailbox(
+    workspaceId: string,
+    input: {
+      toEmail: string;
+      subject?: string;
+      html?: string;
+      proactive?: boolean;
+    },
+  ) {
+    const toEmail = String(input.toEmail || '')
+      .trim()
+      .toLowerCase();
+    if (!toEmail || !toEmail.includes('@')) {
+      throw new BadRequestException('microsoft_recipient_required');
+    }
+    if (input.proactive !== false && (await this.isSuppressedRecipient(workspaceId, toEmail))) {
+      Metrics.mailbox.sendSuppressed('microsoft', { workspace_id: workspaceId });
+      return {
+        provider: 'microsoft',
+        status: 'suppressed',
+        sent: false,
+        toEmail,
+        reason: 'recipient_unsubscribed',
+      };
+    }
+
+    const connection = await this.getActiveMicrosoftConnection(workspaceId);
+    if (!connection) {
+      Metrics.mailbox.sendFailed('microsoft', 'not_connected', {
+        workspace_id: workspaceId,
+      });
+      return { provider: 'microsoft', status: 'not_connected', sent: false };
+    }
+
+    const accessToken = await this.resolveMicrosoftAccessToken(connection);
+    const subject = String(input.subject || 'Kloel CIA - mensagem de teste')
+      .trim()
+      .slice(0, 160);
+    const baseHtml =
+      input.html ||
+      '<p>Esta mensagem foi enviada pela CIA usando a caixa Microsoft conectada ao workspace.</p>';
+    const html =
+      input.proactive === false
+        ? baseHtml
+        : `${baseHtml}${buildUnsubscribeFooterHtml({ email: toEmail })}`;
+    const proactive = input.proactive !== false;
+
+    const messagePayload: Record<string, unknown> = {
+      subject,
+      body: { contentType: 'HTML', content: html },
+      toRecipients: [{ emailAddress: { address: toEmail } }],
+    };
+
+    if (proactive) {
+      const listUnsubscribe = buildListUnsubscribeHeader({ email: toEmail });
+      messagePayload.internetMessageHeaders = [
+        { name: 'List-Unsubscribe', value: listUnsubscribe },
+      ];
+    }
+
+    const response = await fetch(MICROSOFT_GRAPH_SEND_URL, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        message: messagePayload,
+        saveToSentItems: true,
+      }),
+      signal: AbortSignal.timeout(30000),
+    });
+
+    if (!response.ok) {
+      const errorBody = await response.text().catch(() => '');
+      this.logger.warn(
+        `Microsoft sendMail failed: status=${response.status} body=${errorBody.slice(0, 200)}`,
+      );
+      await this.prisma.mailboxConnection.update({
+        where: { id: connection.id },
+        data: {
+          lastErrorAt: new Date(),
+          lastError: 'microsoft_send_failed',
+        },
+      });
+      Metrics.mailbox.sendFailed('microsoft', 'microsoft_send_failed', {
+        workspace_id: workspaceId,
+      });
+      throw new BadRequestException('microsoft_send_failed');
+    }
+
+    Metrics.mailbox.sendCompleted('microsoft', { workspace_id: workspaceId });
+    return {
+      provider: 'microsoft',
+      status: 'sent',
+      sent: true,
+      email: connection.email,
+      toEmail,
+      messageId: `graph:${Date.now()}`,
+    };
+  }
+
+  private async getActiveMicrosoftConnection(workspaceId: string) {
+    return this.prisma.mailboxConnection.findFirst({
+      where: {
+        workspaceId,
+        provider: MailboxProvider.MICROSOFT,
+        status: MailboxStatus.ACTIVE,
+      },
+      orderBy: { connectedAt: 'desc' },
+      select: {
+        id: true,
+        workspaceId: true,
+        email: true,
+        accessToken: true,
+        refreshToken: true,
+        expiresAt: true,
+        metadata: true,
+      },
+    });
+  }
+
+  private async resolveMicrosoftAccessToken(
+    connection: NonNullable<
+      Awaited<ReturnType<MailboxMicrosoftOAuthService['getActiveMicrosoftConnection']>>
+    >,
+  ): Promise<string> {
+    const currentAccessToken = decryptMailboxToken(connection.accessToken);
+    if (currentAccessToken && this.tokenStillUsable(connection.expiresAt)) {
+      return currentAccessToken;
+    }
+
+    const refreshToken = decryptMailboxToken(connection.refreshToken);
+    if (!refreshToken) {
+      throw new BadRequestException('microsoft_refresh_token_missing');
+    }
+
+    const body = new URLSearchParams();
+    body.set('client_id', this.requireClientId());
+    body.set('client_secret', this.requireClientSecret());
+    body.set('refresh_token', refreshToken);
+    body.set('grant_type', 'refresh_token');
+
+    const response = await fetch(this.resolveTokenUrl(), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body,
+      signal: AbortSignal.timeout(30000),
+    });
+    const payload = (await response.json().catch(() => ({}))) as MicrosoftTokenResponse;
+    if (!response.ok || !payload.access_token) {
+      await this.prisma.mailboxConnection.update({
+        where: { id: connection.id },
+        data: {
+          status: MailboxStatus.ERROR,
+          lastErrorAt: new Date(),
+          lastError: 'microsoft_refresh_failed',
+        },
+      });
+      throw new BadRequestException('microsoft_refresh_failed');
+    }
+
+    await this.prisma.mailboxConnection.update({
+      where: { id: connection.id },
+      data: {
+        accessToken: encryptMailboxToken(payload.access_token) ?? null,
+        expiresAt: expiresAtFromSeconds(payload.expires_in),
+        status: MailboxStatus.ACTIVE,
+        lastErrorAt: null,
+        lastError: null,
+      },
+    });
+
+    return payload.access_token;
+  }
+
+  private tokenStillUsable(expiresAt: Date | null): boolean {
+    if (!expiresAt) {
+      return true;
+    }
+    return expiresAt.getTime() - Date.now() > 60_000;
+  }
+
+  private async isSuppressedRecipient(workspaceId: string, email: string): Promise<boolean> {
+    const contact = await this.prisma.contact.findFirst({
+      where: {
+        workspaceId,
+        email: { equals: email, mode: 'insensitive' },
+        optIn: false,
+      },
+      select: { id: true, optedOutAt: true },
+    });
+    return Boolean(contact);
   }
 }
