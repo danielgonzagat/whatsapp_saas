@@ -189,25 +189,6 @@ export class CommercialDecisionOrchestratorService {
     const subject = input.contactId ? `contact:${input.contactId}` : `channel:${channel}`;
     const inboundKey = stableInboundKey(input, subject, channel);
 
-    const resolvedIdentity = await this.resolveContactIdentity(input, channel);
-    const resolvedContactId = resolvedIdentity.contactId;
-    const effectiveSubject = `contact:${resolvedContactId}`;
-
-    if (resolvedIdentity.wasResolved) {
-      await this.events.recordCommercial({
-        workspaceId: input.workspaceId,
-        subject: effectiveSubject,
-        eventType: 'identity.contact.resolved',
-        occurredAt: new Date(),
-        idempotencyKey: `identity-resolved:${inboundKey}`,
-        payload: {
-          sourceContactId: resolvedIdentity.resolvedFromContactId ?? resolvedContactId,
-          targetContactId: resolvedContactId,
-          confidence: 1.0,
-        },
-      });
-    }
-
     const pipelineState = await this.prisma.pipelineState.findUnique({
       where: { workspaceId: input.workspaceId },
       select: { state: true, fallbackRate1h: true },
@@ -228,6 +209,31 @@ export class CommercialDecisionOrchestratorService {
           delegatedToLegacy: true,
         },
       };
+    }
+
+    // Identity resolution runs only after legacy-mode short-circuit to avoid
+    // creating Contact rows for workspaces still on the legacy pipeline.
+    // Without input.contactId there's no external identifier to anchor on —
+    // skip rather than pollute Contact.phone with placeholder strings.
+    const resolvedIdentity = input.contactId
+      ? await this.resolveContactIdentity(input, channel)
+      : null;
+    const resolvedContactId = resolvedIdentity?.contactId ?? input.contactId;
+    const effectiveSubject = resolvedContactId ? `contact:${resolvedContactId}` : subject;
+
+    if (resolvedIdentity?.wasResolved) {
+      await this.events.recordCommercial({
+        workspaceId: input.workspaceId,
+        subject: effectiveSubject,
+        eventType: 'identity.contact.resolved',
+        occurredAt: new Date(),
+        idempotencyKey: `identity-resolved:${inboundKey}`,
+        payload: {
+          sourceContactId: resolvedIdentity.resolvedFromContactId ?? resolvedContactId,
+          targetContactId: resolvedContactId,
+          confidence: 1.0,
+        },
+      });
     }
 
     try {
@@ -252,11 +258,16 @@ export class CommercialDecisionOrchestratorService {
     input: InboundOrchestrationInput,
     channel: string,
   ) {
+    // Caller guarantees input.contactId is set (checked in orchestrateInbound
+    // before this method runs). If reached without it, treat as a bug.
+    if (!input.contactId) {
+      throw new Error('resolveContactIdentity called without contactId');
+    }
     return this.identity
       .resolve({
         workspaceId: input.workspaceId,
         channel,
-        externalId: input.contactId ?? `unknown:${channel}`,
+        externalId: input.contactId,
       })
       .catch((error) => {
         this.logger.warn(
