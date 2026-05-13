@@ -9,6 +9,10 @@ import { KloelService } from '../kloel.service';
 import { AgentRuntimeSessionStore } from './agent-runtime.session-store';
 import { sanitizeAgentRuntimeText, toInputJsonValue } from './agent-runtime.sanitizer';
 
+const MAX_RETRIES = 3;
+const BACKOFF_BASE_MS = 60_000;
+const MAX_BACKOFF_MS = 30 * 60_000;
+
 type AgentJobPayload = {
   jobKey: string;
   title: string;
@@ -26,6 +30,17 @@ type ClaimedAgentJobEvent = {
   occurredAt: Date;
   attempts: number;
   lastError: string | null;
+};
+
+type AgentJobExecutionHistory = {
+  attempt: number;
+  status: 'succeeded' | 'failed' | 'dead_lettered';
+  startedAt: string;
+  finishedAt: string;
+  message: string;
+  error?: string;
+  eventId: string;
+  idempotencyKey: string;
 };
 
 @Injectable()
@@ -55,7 +70,10 @@ export class AgentRuntimeJobRunnerService {
         await this.runPendingJobsForWorkspace(row.workspaceId, 5);
       }
     } catch (error: unknown) {
-      void this.opsAlert?.alertOnCriticalError(error, 'AgentRuntimeJobRunnerService.runAllPendingAgentJobs');
+      void this.opsAlert?.alertOnCriticalError(
+        error,
+        'AgentRuntimeJobRunnerService.runAllPendingAgentJobs',
+      );
       this.logger.warn(`Failed to run pending agent jobs: ${this.messageFor(error)}`);
     }
   }
@@ -64,11 +82,7 @@ export class AgentRuntimeJobRunnerService {
     workspaceId: string,
     limit = 5,
   ): Promise<{ claimed: number; succeeded: number; failed: number }> {
-    const { events } = await this.brainEvents.claimPendingEvents({
-      workspaceId,
-      eventType: 'agent.job.due',
-      limit,
-    });
+    const events = await this.claimDueAgentJobEvents(workspaceId, limit);
     let succeeded = 0;
     let failed = 0;
 
@@ -84,12 +98,71 @@ export class AgentRuntimeJobRunnerService {
     return { claimed: events.length, succeeded, failed };
   }
 
+  private async claimDueAgentJobEvents(
+    workspaceId: string,
+    limit: number,
+  ): Promise<ClaimedAgentJobEvent[]> {
+    const now = new Date();
+
+    const rows = await this.prisma.mindOutboxEvent.findMany({
+      where: { workspaceId, eventType: 'agent.job.due', status: 'pending' },
+      orderBy: { createdAt: 'asc' },
+      take: limit,
+      select: { id: true, payload: true },
+    });
+
+    const dueIds = rows
+      .filter((row) => {
+        const record = this.extractPayloadRecord(row.payload);
+        if (!record) {
+          return true;
+        }
+        const nextRetryAt =
+          typeof record.nextRetryAt === 'string' ? new Date(record.nextRetryAt) : null;
+        return !nextRetryAt || Number.isNaN(nextRetryAt.getTime()) || nextRetryAt <= now;
+      })
+      .map((row) => row.id);
+
+    if (dueIds.length === 0) {
+      return [];
+    }
+
+    await this.prisma.mindOutboxEvent.updateMany({
+      where: { id: { in: dueIds }, workspaceId, eventType: 'agent.job.due', status: 'pending' },
+      data: {
+        status: 'processing',
+        dispatchedAt: null,
+        attempts: { increment: 1 },
+        lastError: null,
+      },
+    });
+
+    const claimedEvents = await this.prisma.mindOutboxEvent.findMany({
+      where: { id: { in: dueIds }, workspaceId, eventType: 'agent.job.due', status: 'processing' },
+      orderBy: { createdAt: 'asc' },
+      select: {
+        id: true,
+        eventType: true,
+        subject: true,
+        payload: true,
+        idempotencyKey: true,
+        occurredAt: true,
+        attempts: true,
+        lastError: true,
+      },
+    });
+
+    return claimedEvents;
+  }
+
   private async runClaimedJob(workspaceId: string, event: ClaimedAgentJobEvent): Promise<boolean> {
     const payload = this.parsePayload(event.payload, event.subject);
     if (!payload.prompt) {
       await this.brainEvents.markDispatchFailed(event.id, workspaceId, 'missing_agent_job_prompt');
       return false;
     }
+
+    const startedAt = new Date();
 
     try {
       const result = await this.kloel.thinkSync({
@@ -124,6 +197,15 @@ export class AgentRuntimeJobRunnerService {
         message: result.response,
       });
       await this.brainEvents.markDispatchSucceeded(event.id, workspaceId);
+      await this.recordJobHistory(workspaceId, event, payload, {
+        attempt: event.attempts,
+        status: 'succeeded',
+        startedAt: startedAt.toISOString(),
+        finishedAt: new Date().toISOString(),
+        message: sanitizeAgentRuntimeText(result.response, 1000),
+        eventId: event.id,
+        idempotencyKey: event.idempotencyKey,
+      });
       return true;
     } catch (error: unknown) {
       const message = this.messageFor(error);
@@ -147,8 +229,170 @@ export class AgentRuntimeJobRunnerService {
         eventId: event.id,
         message,
       });
-      await this.brainEvents.markDispatchFailed(event.id, workspaceId, message);
+
+      if (event.attempts < MAX_RETRIES) {
+        await this.retryJob(event, workspaceId, message);
+        await this.recordJobHistory(workspaceId, event, payload, {
+          attempt: event.attempts,
+          status: 'failed',
+          startedAt: startedAt.toISOString(),
+          finishedAt: new Date().toISOString(),
+          message: `failed_retrying: ${message}`,
+          error: message,
+          eventId: event.id,
+          idempotencyKey: event.idempotencyKey,
+        });
+      } else {
+        await this.deadLetterJob(event, workspaceId, message);
+        await this.recordJobHistory(workspaceId, event, payload, {
+          attempt: event.attempts,
+          status: 'dead_lettered',
+          startedAt: startedAt.toISOString(),
+          finishedAt: new Date().toISOString(),
+          message: `dead_lettered: ${message}`,
+          error: message,
+          eventId: event.id,
+          idempotencyKey: event.idempotencyKey,
+        });
+      }
+
       return false;
+    }
+  }
+
+  private async retryJob(
+    event: ClaimedAgentJobEvent,
+    workspaceId: string,
+    error: string,
+  ): Promise<void> {
+    const backoffMs = this.computeBackoffMs(event.attempts);
+    const nextRetryAt = new Date(Date.now() + backoffMs).toISOString();
+
+    const payloadRecord = this.extractPayloadRecord(event.payload) ?? {};
+    const mergedPayload = {
+      ...payloadRecord,
+      nextRetryAt,
+      lastAttemptAt: new Date().toISOString(),
+      lastAttemptError: sanitizeAgentRuntimeText(error, 500),
+    };
+
+    try {
+      await this.prisma.mindOutboxEvent.updateMany({
+        where: { id: event.id, workspaceId, status: 'processing' },
+        data: {
+          status: 'pending',
+          lastError: sanitizeAgentRuntimeText(error, 500),
+          payload: toInputJsonValue(mergedPayload),
+          dispatchedAt: null,
+        },
+      });
+    } catch (retryError: unknown) {
+      void this.opsAlert?.alertOnCriticalError(retryError, 'AgentRuntimeJobRunnerService.retryJob');
+      this.logger.warn(
+        `Failed to retry agent job ${event.subject}: ${this.messageFor(retryError)}`,
+      );
+    }
+  }
+
+  private async deadLetterJob(
+    event: ClaimedAgentJobEvent,
+    workspaceId: string,
+    error: string,
+  ): Promise<void> {
+    const sanitized = sanitizeAgentRuntimeText(error, 500);
+
+    try {
+      await this.prisma.mindOutboxEvent.updateMany({
+        where: { id: event.id, workspaceId, status: 'processing' },
+        data: {
+          status: 'dead_lettered',
+          lastError: sanitized,
+          dispatchedAt: null,
+        },
+      });
+
+      await this.prisma.auditLog.create({
+        data: {
+          workspaceId,
+          action: 'KLOEL_AGENT_JOB_DEAD_LETTERED',
+          resource: 'KloelAgentRuntime',
+          resourceId: event.subject,
+          details: toInputJsonValue({
+            eventId: event.id,
+            idempotencyKey: event.idempotencyKey,
+            attempts: event.attempts,
+            lastError: sanitized,
+            deadLetteredAt: new Date().toISOString(),
+          }) as Prisma.InputJsonObject,
+        },
+      });
+    } catch (deadLetterError: unknown) {
+      void this.opsAlert?.alertOnCriticalError(
+        deadLetterError,
+        'AgentRuntimeJobRunnerService.deadLetterJob',
+      );
+      this.logger.warn(
+        `Failed to dead-letter agent job ${event.subject}: ${this.messageFor(deadLetterError)}`,
+      );
+    }
+  }
+
+  private async recordJobHistory(
+    workspaceId: string,
+    event: ClaimedAgentJobEvent,
+    payload: AgentJobPayload,
+    entry: AgentJobExecutionHistory,
+  ): Promise<void> {
+    const historyKey = `agent_job_history:${event.subject}`;
+
+    try {
+      const existing = await this.prisma.kloelMemory.findUnique({
+        where: { workspaceId_key: { workspaceId, key: historyKey } },
+        select: { value: true },
+      });
+
+      const existingValue = this.extractPayloadRecord(existing?.value ?? null);
+      const history: AgentJobExecutionHistory[] = Array.isArray(existingValue?.history)
+        ? (existingValue.history as AgentJobExecutionHistory[])
+        : [];
+
+      history.push(entry);
+
+      await this.prisma.kloelMemory.upsert({
+        where: { workspaceId_key: { workspaceId, key: historyKey } },
+        update: {
+          value: toInputJsonValue({
+            subject: event.subject,
+            eventType: event.eventType,
+            jobKey: payload.jobKey,
+            maxRetries: MAX_RETRIES,
+            history,
+          }),
+          content: `job=${event.subject} attempt=${entry.attempt} status=${entry.status}`,
+        },
+        create: {
+          workspaceId,
+          key: historyKey,
+          category: 'agent_job_history',
+          type: 'execution_log',
+          value: toInputJsonValue({
+            subject: event.subject,
+            eventType: event.eventType,
+            jobKey: payload.jobKey,
+            maxRetries: MAX_RETRIES,
+            history,
+          }),
+          content: `job=${event.subject} attempt=${entry.attempt} status=${entry.status}`,
+        },
+      });
+    } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(
+        error,
+        'AgentRuntimeJobRunnerService.recordJobHistory',
+      );
+      this.logger.warn(
+        `Failed to record agent job history for ${event.subject}: ${this.messageFor(error)}`,
+      );
     }
   }
 
@@ -183,7 +427,9 @@ export class AgentRuntimeJobRunnerService {
             lastResultStatus: result.status,
             lastResultSummary: sanitizeAgentRuntimeText(result.message, 1000),
             lastError:
-              result.status === 'failed' ? sanitizeAgentRuntimeText(result.message, 500) : undefined,
+              result.status === 'failed'
+                ? sanitizeAgentRuntimeText(result.message, 500)
+                : undefined,
           }),
           metadata: {
             ...metadata,
@@ -237,6 +483,18 @@ export class AgentRuntimeJobRunnerService {
       '- Do not claim completion without observed proof.',
       '</scheduled-agent-job>',
     ].join('\n');
+  }
+
+  private extractPayloadRecord(payload: Prisma.JsonValue): Record<string, unknown> | null {
+    if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+      return null;
+    }
+    return payload;
+  }
+
+  private computeBackoffMs(attempts: number): number {
+    const exponent = Math.max(0, attempts - 1);
+    return Math.min(BACKOFF_BASE_MS * Math.pow(2, exponent), MAX_BACKOFF_MS);
   }
 
   private messageFor(error: unknown): string {

@@ -3,6 +3,15 @@ import type { Prisma } from '@prisma/client';
 export type AgentRuntimeTruthMode = 'observed' | 'inferred' | 'projected';
 export type AgentRuntimeRiskLevel = 'safe' | 'normal' | 'high' | 'critical';
 export type AgentRuntimeAuthorityMode = 'advisory' | 'tool_limited' | 'human_required';
+export type AgentRuntimeSourceProvenance =
+  | 'kloel_memory'
+  | 'agent_curated'
+  | 'agent_event'
+  | 'agent_skill'
+  | 'product'
+  | 'objection'
+  | 'compressed_context';
+export type AgentRuntimeHygieneState = 'fresh' | 'aging' | 'stale' | 'expired' | 'retired';
 
 export interface AgentRuntimeSourceStamp {
   source: string;
@@ -10,6 +19,20 @@ export interface AgentRuntimeSourceStamp {
   freshness: 'fresh' | 'stale' | 'missing';
   truthMode: AgentRuntimeTruthMode;
   observedAt: string;
+  provenance?: AgentRuntimeSourceProvenance;
+  ttlMs?: number;
+  expiresAt?: string;
+  retentionScore?: number;
+}
+
+export interface AgentRuntimeHygieneResult {
+  workspaceId: string;
+  inspected: number;
+  expired: number;
+  retained: number;
+  staleKeys: string[];
+  errors: number;
+  completedAt: string;
 }
 
 export interface AgentRuntimeMemoryItem {

@@ -48,7 +48,17 @@ export class KloelReplyEngineService {
     @Optional() private readonly mindService?: MindService,
   ) {
     this.openai = createTextLlmClient(undefined, { timeout: 60_000, maxRetries: 0 });
-    this.toolRouter = new KloelToolRouter(this.logger, this.unifiedAgentService);
+    this.toolRouter = new KloelToolRouter(
+      this.logger,
+      this.unifiedAgentService,
+      async (workspaceId, key, content) => {
+        await this.prisma.kloelMemory.upsert({
+          where: { workspaceId_key: { workspaceId, key } },
+          update: { content, value: {}, category: 'tool_artifact', updatedAt: new Date() },
+          create: { workspaceId, key, value: {}, content, category: 'tool_artifact' },
+        });
+      },
+    );
   }
 
   get contextFormatter(): KloelContextFormatter {
@@ -264,7 +274,9 @@ export class KloelReplyEngineService {
     workspaceId?: string;
     expertiseLevel: ExpertiseLevel;
   }): Promise<string | null> {
-    if (!params.workspaceId || !this.mindService) return null;
+    if (!params.workspaceId || !this.mindService) {
+      return null;
+    }
 
     try {
       const channel = 'kloel_chat';
@@ -315,7 +327,9 @@ export class KloelReplyEngineService {
     onTraceEvent?: (event: KloelStreamEvent) => void;
     executeLocalTool?: LocalToolExecutor;
   }): Promise<string> {
-    if (!this.openai) return this.unavailableMessage;
+    if (!this.openai) {
+      return this.unavailableMessage;
+    }
     return buildAssistantReplyImpl(params, {
       openai: this.openai,
       prisma: this.prisma,

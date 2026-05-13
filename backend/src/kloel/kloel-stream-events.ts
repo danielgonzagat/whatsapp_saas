@@ -65,6 +65,8 @@ interface KloelToolResultEvent {
   result: unknown;
   /** Error property. */
   error?: string;
+  /** Artifact id property. */
+  artifactId?: string;
   /** Done property. */
   done: false;
 }
@@ -158,6 +160,7 @@ export function createKloelToolResultEvent(input: {
   success: boolean;
   result: unknown;
   error?: string;
+  artifactId?: string;
 }): KloelToolResultEvent {
   return {
     type: 'tool_result',
@@ -166,6 +169,7 @@ export function createKloelToolResultEvent(input: {
     success: input.success,
     result: input.result,
     ...(input.error !== undefined ? { error: input.error } : {}),
+    ...(input.artifactId !== undefined ? { artifactId: input.artifactId } : {}),
     done: false,
   };
 }

@@ -6,9 +6,12 @@ import { OpsAlertService } from '../../observability/ops-alert.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { sanitizeAgentRuntimeText, toInputJsonValue } from './agent-runtime.sanitizer';
 import type {
+  AgentRuntimeHygieneState,
   AgentRuntimeRecallResult,
   AgentRuntimeSessionRecallGroup,
   AgentRuntimeSessionRecallResult,
+  AgentRuntimeSourceProvenance,
+  AgentRuntimeSourceStamp,
   AgentRuntimeTurnRecord,
 } from './agent-runtime.types';
 
@@ -90,7 +93,10 @@ export class AgentRuntimeSessionStore {
       });
       return key;
     } catch (error: unknown) {
-      void this.opsAlert?.alertOnCriticalError(error, 'AgentRuntimeSessionStore.recordRuntimeEvent');
+      void this.opsAlert?.alertOnCriticalError(
+        error,
+        'AgentRuntimeSessionStore.recordRuntimeEvent',
+      );
       this.logger.warn(`Failed to record agent runtime event: ${this.messageFor(error)}`);
       return null;
     }
@@ -105,6 +111,27 @@ export class AgentRuntimeSessionStore {
   ] as const;
 
   private static readonly SNIPPET_RADIUS = 120;
+
+  private static readonly TTL_BY_CATEGORY: Record<string, number> = {
+    agent_curated: 365 * 24 * 60 * 60 * 1000,
+    agent_skill: 180 * 24 * 60 * 60 * 1000,
+    agent_event: 90 * 24 * 60 * 60 * 1000,
+    product: 30 * 24 * 60 * 60 * 1000,
+    objection: 60 * 24 * 60 * 60 * 1000,
+    compressed_context: 30 * 24 * 60 * 60 * 1000,
+  };
+
+  private static readonly DEFAULT_TTL_MS = 30 * 24 * 60 * 60 * 1000;
+
+  private static readonly PROVENANCE_WEIGHT: Record<AgentRuntimeSourceProvenance, number> = {
+    agent_curated: 1.0,
+    agent_skill: 0.92,
+    compressed_context: 0.85,
+    agent_event: 0.78,
+    product: 0.65,
+    objection: 0.65,
+    kloel_memory: 0.5,
+  };
 
   async search(workspaceId: string, query: string, limit = 6): Promise<AgentRuntimeRecallResult> {
     const normalizedQuery = sanitizeAgentRuntimeText(query, 500).trim();
@@ -139,6 +166,7 @@ export class AgentRuntimeSessionStore {
         category: true,
         content: true,
         value: true,
+        createdAt: true,
         updatedAt: true,
       },
     });
@@ -147,10 +175,19 @@ export class AgentRuntimeSessionStore {
       .map((row) => {
         const matchable = `${row.key ?? ''} ${row.content ?? ''}`.toLowerCase();
         const matchCount = tokens.filter((t) => matchable.includes(t.toLowerCase())).length;
-        const recencyHours = (Date.now() - row.updatedAt.getTime()) / (1000 * 60 * 60);
-        const recencyBoost = Math.max(0, 1 - recencyHours / 720);
-        const score = matchCount * 10 + recencyBoost;
-        return { row, score, matchCount };
+        const provenance = this.mapCategoryToProvenance(row.category);
+        const ageMs = Date.now() - row.createdAt.getTime();
+        const ttlMs = this.ttlForCategory(row.category);
+        const freshnessDecay = this.computeFreshnessDecay(ageMs, ttlMs);
+        const provenanceWeight = AgentRuntimeSessionStore.PROVENANCE_WEIGHT[provenance];
+        const confidence = this.computeSourceConfidence(
+          matchCount,
+          tokens.length,
+          provenanceWeight,
+          freshnessDecay,
+        );
+        const score = matchCount * 10 + freshnessDecay * 5 + provenanceWeight * 3;
+        return { row, score, matchCount, confidence, provenance, ttlMs, ageMs, freshnessDecay };
       })
       .filter((entry) => entry.matchCount > 0)
       .sort((a, b) => b.score - a.score)
@@ -160,21 +197,26 @@ export class AgentRuntimeSessionStore {
       query: normalizedQuery,
       tokens,
       totalFound: scored.length,
-      memories: scored.map(({ row, matchCount }) => ({
-        id: row.id,
-        key: row.key,
-        category: row.category,
-        content: row.content ?? '',
-        value: row.value,
-        snippet: this.extractSnippet(row.content ?? '', tokens),
-        source: {
-          source: 'kloel_memory',
-          confidence: this.confidenceFromMatches(matchCount, tokens.length),
-          freshness: this.freshnessFromDate(row.updatedAt),
-          truthMode: 'observed',
-          observedAt: row.updatedAt.toISOString(),
-        },
-      })),
+      memories: scored.map(
+        ({ row, matchCount, confidence, provenance, ttlMs, ageMs, freshnessDecay }) => ({
+          id: row.id,
+          key: row.key,
+          category: row.category,
+          content: row.content ?? '',
+          value: row.value,
+          snippet: this.extractSnippet(row.content ?? '', tokens),
+          source: this.buildSourceStamp(
+            row,
+            matchCount,
+            tokens.length,
+            provenance,
+            ttlMs,
+            ageMs,
+            freshnessDecay,
+            confidence,
+          ),
+        }),
+      ),
     };
   }
 
@@ -426,32 +468,105 @@ export class AgentRuntimeSessionStore {
     return typeof value === 'string' && value.trim() ? value.trim() : null;
   }
 
-  private confidenceFromMatches(matched: number, total: number): number {
+  private mapCategoryToProvenance(category: string): AgentRuntimeSourceProvenance {
+    const mapping: Record<string, AgentRuntimeSourceProvenance> = {
+      agent_event: 'agent_event',
+      agent_skill: 'agent_skill',
+      agent_curated: 'agent_curated',
+      product: 'product',
+      objection: 'objection',
+    };
+    return mapping[category] ?? 'kloel_memory';
+  }
+
+  private ttlForCategory(category: string): number {
+    return (
+      AgentRuntimeSessionStore.TTL_BY_CATEGORY[category] ?? AgentRuntimeSessionStore.DEFAULT_TTL_MS
+    );
+  }
+
+  private computeFreshnessDecay(ageMs: number, ttlMs: number): number {
+    if (ttlMs <= 0) {
+      return 1;
+    }
+    const ratio = Math.min(1, ageMs / ttlMs);
+    return 1 - Math.pow(ratio, 0.45);
+  }
+
+  private computeSourceConfidence(
+    matched: number,
+    total: number,
+    provenanceWeight: number,
+    freshnessDecay: number,
+  ): number {
     if (total === 0) {
       return 0;
     }
-    const ratio = matched / total;
-    if (ratio >= 1) {
-      return 0.92;
-    }
-    if (ratio >= 0.66) {
-      return 0.78;
-    }
-    if (ratio >= 0.33) {
-      return 0.55;
-    }
-    return 0.35;
+    const matchRatio = matched / total;
+    const baseConfidence =
+      matchRatio >= 1 ? 0.92 : matchRatio >= 0.66 ? 0.78 : matchRatio >= 0.33 ? 0.55 : 0.35;
+    const weighted = baseConfidence * 0.45 + provenanceWeight * 0.35 + freshnessDecay * 0.2;
+    return Math.round(weighted * 100) / 100;
   }
 
-  private freshnessFromDate(date: Date): 'fresh' | 'stale' | 'missing' {
-    const hours = (Date.now() - date.getTime()) / (1000 * 60 * 60);
-    if (hours <= 24) {
+  private computeRetentionScore(
+    provenanceWeight: number,
+    freshnessDecay: number,
+    matchCount: number,
+  ): number {
+    const score = provenanceWeight * 0.4 + freshnessDecay * 0.35 + Math.min(matchCount, 5) * 0.05;
+    return Math.round(score * 100) / 100;
+  }
+
+  private computeHygieneState(ageMs: number, ttlMs: number): AgentRuntimeHygieneState {
+    if (ttlMs <= 0) {
       return 'fresh';
     }
-    if (hours <= 168) {
+    const ratio = ageMs / ttlMs;
+    if (ratio < 0.3) {
+      return 'fresh';
+    }
+    if (ratio < 0.6) {
+      return 'aging';
+    }
+    if (ratio < 0.9) {
       return 'stale';
     }
-    return 'missing';
+    if (ratio < 1.0) {
+      return 'expired';
+    }
+    return 'retired';
+  }
+
+  private buildSourceStamp(
+    row: { category: string; createdAt: Date },
+    matchCount: number,
+    _totalTokens: number,
+    provenance: AgentRuntimeSourceProvenance,
+    ttlMs: number,
+    ageMs: number,
+    freshnessDecay: number,
+    confidence: number,
+  ): AgentRuntimeSourceStamp {
+    const hygieneState = this.computeHygieneState(ageMs, ttlMs);
+    const freshnessLabel =
+      hygieneState === 'fresh' ? 'fresh' : hygieneState === 'aging' ? 'fresh' : 'stale';
+    const retentionScore = this.computeRetentionScore(
+      AgentRuntimeSessionStore.PROVENANCE_WEIGHT[provenance],
+      freshnessDecay,
+      matchCount,
+    );
+    return {
+      source: provenance,
+      confidence,
+      freshness: freshnessLabel,
+      truthMode: 'observed',
+      observedAt: row.createdAt.toISOString(),
+      provenance,
+      ttlMs,
+      expiresAt: new Date(row.createdAt.getTime() + ttlMs).toISOString(),
+      retentionScore,
+    };
   }
 
   private buildTurnContent(turn: AgentRuntimeTurnRecord): string {

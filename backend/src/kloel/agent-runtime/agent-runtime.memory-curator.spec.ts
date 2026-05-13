@@ -1,9 +1,12 @@
 import { AgentRuntimeMemoryCuratorService } from './agent-runtime.memory-curator';
 
-function makePrisma() {
+function makePrisma(overrides: Record<string, unknown> = {}) {
   return {
     kloelMemory: {
       upsert: jest.fn().mockResolvedValue({}),
+      findMany: jest.fn().mockResolvedValue([]),
+      update: jest.fn().mockResolvedValue({}),
+      ...overrides,
     },
   };
 }
@@ -78,5 +81,153 @@ describe('AgentRuntimeMemoryCuratorService', () => {
     });
 
     expect(key).toBeNull();
+  });
+
+  it('includes confidence and retentionScore in curated memory value', async () => {
+    const prisma = makePrisma();
+    const curator = new AgentRuntimeMemoryCuratorService(prisma as never);
+
+    await curator.curateTurnOutcome({
+      workspaceId: 'ws_1',
+      channel: 'whatsapp',
+      userMessage: 'checkout',
+      assistantMessage: 'Webhook proof is pending.',
+    });
+
+    expect(prisma.kloelMemory.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        create: expect.objectContaining({
+          value: expect.objectContaining({
+            confidence: expect.any(Number),
+            retentionScore: expect.any(Number),
+          }),
+          metadata: expect.objectContaining({
+            curatedConfidence: expect.any(Number),
+            ttlMs: expect.any(Number),
+            retentionScore: expect.any(Number),
+          }),
+        }),
+      }),
+    );
+  });
+
+  it('assigns higher confidence to action_failure than unresolved context', async () => {
+    const prisma = makePrisma();
+    const curator = new AgentRuntimeMemoryCuratorService(prisma as never);
+
+    await curator.curateTurnOutcome({
+      workspaceId: 'ws_1',
+      channel: 'whatsapp',
+      userMessage: 'test',
+      assistantMessage: 'Webhook proof is pending.',
+    });
+    const unresolvedCall = prisma.kloelMemory.upsert.mock.calls[0][0];
+
+    await curator.curateTurnOutcome({
+      workspaceId: 'ws_1',
+      channel: 'whatsapp',
+      userMessage: 'test',
+      assistantMessage: 'failed',
+      actions: [{ toolName: 'send_message', success: false }],
+    });
+    const failureCall = prisma.kloelMemory.upsert.mock.calls[1][0];
+
+    const unresolvedC = (unresolvedCall.create.value as Record<string, unknown>)
+      .confidence as number;
+    const failureC = (failureCall.create.value as Record<string, unknown>).confidence as number;
+    expect(failureC).toBeGreaterThan(unresolvedC);
+  });
+
+  describe('cleanupStaleMemories', () => {
+    it('returns empty hygiene result when no curated memories exist', async () => {
+      const prisma = makePrisma();
+      const curator = new AgentRuntimeMemoryCuratorService(prisma as never);
+
+      const result = await curator.cleanupStaleMemories('ws_1');
+
+      expect(result.inspected).toBe(0);
+      expect(result.expired).toBe(0);
+      expect(result.retained).toBe(0);
+      expect(result.staleKeys).toEqual([]);
+      expect(result.errors).toBe(0);
+    });
+
+    it('marks retired memories with low retention as expired', async () => {
+      const oldDate = new Date(Date.now() - 200 * 24 * 60 * 60 * 1000);
+      const prisma = makePrisma({
+        findMany: jest.fn().mockResolvedValue([
+          {
+            id: 'mem_a',
+            key: 'agent_curated_turn:abc123',
+            createdAt: oldDate,
+            metadata: { ttlMs: 90 * 24 * 60 * 60 * 1000, retentionScore: 0.1 },
+          },
+        ]),
+      });
+      const curator = new AgentRuntimeMemoryCuratorService(prisma as never);
+
+      const result = await curator.cleanupStaleMemories('ws_1', { minRetentionScore: 0.3 });
+
+      expect(result.inspected).toBe(1);
+      expect(result.expired).toBe(1);
+      expect(result.staleKeys).toContain('agent_curated_turn:abc123');
+      expect(prisma.kloelMemory.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 'mem_a' },
+          data: expect.objectContaining({
+            metadata: expect.objectContaining({
+              hygieneState: 'retired',
+              retiredAt: expect.any(String),
+            }),
+          }),
+        }),
+      );
+    });
+
+    it('retains fresh memories', async () => {
+      const freshDate = new Date(Date.now() - 1 * 24 * 60 * 60 * 1000);
+      const prisma = makePrisma({
+        findMany: jest.fn().mockResolvedValue([
+          {
+            id: 'mem_fresh',
+            key: 'agent_curated_turn:fresh',
+            createdAt: freshDate,
+            metadata: { ttlMs: 180 * 24 * 60 * 60 * 1000, retentionScore: 0.5 },
+          },
+        ]),
+      });
+      const curator = new AgentRuntimeMemoryCuratorService(prisma as never);
+
+      const result = await curator.cleanupStaleMemories('ws_1');
+
+      expect(result.inspected).toBe(1);
+      expect(result.expired).toBe(0);
+      expect(result.retained).toBe(1);
+    });
+
+    it('handles prisma errors gracefully', async () => {
+      const prisma = makePrisma({
+        findMany: jest.fn().mockRejectedValue(new Error('db down')),
+      });
+      const curator = new AgentRuntimeMemoryCuratorService(prisma as never);
+
+      const result = await curator.cleanupStaleMemories('ws_1');
+
+      expect(result.errors).toBe(1);
+      expect(result.completedAt).toBeDefined();
+    });
+
+    it('respects maxItems option', async () => {
+      const prisma = makePrisma();
+      const curator = new AgentRuntimeMemoryCuratorService(prisma as never);
+
+      await curator.cleanupStaleMemories('ws_1', { maxItems: 10 });
+
+      expect(prisma.kloelMemory.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          take: 10,
+        }),
+      );
+    });
   });
 });

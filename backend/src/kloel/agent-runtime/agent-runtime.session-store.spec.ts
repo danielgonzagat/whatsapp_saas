@@ -20,9 +20,11 @@ function makeMemoryRow(
     content: string;
     value: unknown;
     metadata: unknown;
+    createdAt: Date;
     updatedAt: Date;
   }> = {},
 ) {
+  const now = new Date();
   return {
     id: overrides.id ?? 'mem_1',
     key: overrides.key ?? 'agent_event:turn_1',
@@ -30,9 +32,12 @@ function makeMemoryRow(
     content: overrides.content ?? 'user asked about pricing plans',
     value: overrides.value ?? null,
     metadata: overrides.metadata ?? null,
-    updatedAt: overrides.updatedAt ?? new Date(),
+    createdAt: overrides.createdAt ?? new Date(now.getTime() - 60 * 60 * 1000),
+    updatedAt: overrides.updatedAt ?? new Date(now.getTime() - 60 * 60 * 1000),
   };
 }
+
+const MILLIS_PER_DAY = 24 * 60 * 60 * 1000;
 
 describe('AgentRuntimeSessionStore', () => {
   describe('recordTurn', () => {
@@ -218,45 +223,130 @@ describe('AgentRuntimeSessionStore', () => {
       expect(result.memories[0].snippet).toBe('');
     });
 
-    it('assigns confidence 0.92 for full token match', async () => {
+    it('assigns provenance-weighted confidence for full token match', async () => {
       const { store } = makeStore({
         findMany: jest
           .fn()
           .mockResolvedValue([makeMemoryRow({ id: 'a', content: 'pricing enterprise discount' })]),
       });
       const result = await store.search('ws_1', 'pricing enterprise discount', 1);
-      expect(result.memories[0].source.confidence).toBe(0.92);
+      expect(result.memories[0].source.confidence).toBeGreaterThan(0.8);
+      expect(result.memories[0].source.confidence).toBeLessThanOrEqual(1);
     });
 
-    it('assigns confidence 0.55 for single-token partial match', async () => {
+    it('assigns confidence weighted by provenance and freshness for single-token partial match', async () => {
       const { store } = makeStore({
         findMany: jest
           .fn()
           .mockResolvedValue([makeMemoryRow({ id: 'a', content: 'pricing info' })]),
       });
       const result = await store.search('ws_1', 'pricing enterprise discount', 1);
-      expect(result.memories[0].source.confidence).toBe(0.55);
+      expect(result.memories[0].source.confidence).toBeGreaterThan(0.5);
     });
 
-    it('classifies freshness based on age', async () => {
+    it('assigns TTL-aware freshness based on age vs category TTL', async () => {
       const now = new Date();
-      const freshDate = new Date(now.getTime() - 1 * 60 * 60 * 1000);
-      const staleDate = new Date(now.getTime() - 48 * 60 * 60 * 1000);
-      const missingDate = new Date(now.getTime() - 200 * 60 * 60 * 1000);
+      const freshDate = new Date(now.getTime() - 1 * MILLIS_PER_DAY);
+      const oldDate = new Date(now.getTime() - 60 * MILLIS_PER_DAY);
 
       const { store } = makeStore({
-        findMany: jest
-          .fn()
-          .mockResolvedValue([
-            makeMemoryRow({ id: 'a', content: 'pricing', updatedAt: freshDate }),
-            makeMemoryRow({ id: 'b', content: 'pricing', updatedAt: staleDate }),
-            makeMemoryRow({ id: 'c', content: 'pricing', updatedAt: missingDate }),
-          ]),
+        findMany: jest.fn().mockResolvedValue([
+          makeMemoryRow({
+            id: 'a',
+            content: 'pricing',
+            createdAt: freshDate,
+            category: 'agent_event',
+          }),
+          makeMemoryRow({
+            id: 'b',
+            content: 'pricing',
+            createdAt: oldDate,
+            category: 'agent_event',
+          }),
+        ]),
       });
       const result = await store.search('ws_1', 'pricing', 3);
       expect(result.memories[0].source.freshness).toBe('fresh');
       expect(result.memories[1].source.freshness).toBe('stale');
-      expect(result.memories[2].source.freshness).toBe('missing');
+    });
+
+    it('includes provenance field matching the memory category', async () => {
+      const { store } = makeStore({
+        findMany: jest
+          .fn()
+          .mockResolvedValue([
+            makeMemoryRow({ id: 'a', content: 'pricing', category: 'agent_curated' }),
+            makeMemoryRow({ id: 'b', content: 'pricing', category: 'agent_event' }),
+            makeMemoryRow({ id: 'c', content: 'pricing', category: 'product' }),
+          ]),
+      });
+      const result = await store.search('ws_1', 'pricing', 6);
+      expect(result.memories[0].source.provenance).toBe('agent_curated');
+      expect(result.memories[1].source.provenance).toBe('agent_event');
+      expect(result.memories[2].source.provenance).toBe('product');
+    });
+
+    it('ranks curated memories higher than events for the same match count', async () => {
+      const { store } = makeStore({
+        findMany: jest
+          .fn()
+          .mockResolvedValue([
+            makeMemoryRow({ id: 'a', content: 'pricing plans', category: 'agent_event' }),
+            makeMemoryRow({ id: 'b', content: 'pricing plans', category: 'agent_curated' }),
+          ]),
+      });
+      const result = await store.search('ws_1', 'pricing plans', 6);
+      expect(result.totalFound).toBe(2);
+      expect(result.memories[0].id).toBe('b');
+    });
+
+    it('sets expiresAt in source stamp as createdAt + TTL', async () => {
+      const now = new Date();
+      const created = new Date(now.getTime() - 10 * MILLIS_PER_DAY);
+      const { store } = makeStore({
+        findMany: jest.fn().mockResolvedValue([
+          makeMemoryRow({
+            id: 'a',
+            content: 'pricing',
+            category: 'agent_curated',
+            createdAt: created,
+          }),
+        ]),
+      });
+      const result = await store.search('ws_1', 'pricing', 1);
+      expect(result.memories[0].source.expiresAt).toBeDefined();
+      const expectedExpiry = new Date(created.getTime() + 365 * MILLIS_PER_DAY);
+      expect(new Date(result.memories[0].source.expiresAt!).getTime()).toBe(
+        expectedExpiry.getTime(),
+      );
+    });
+
+    it('includes retentionScore in source stamp', async () => {
+      const { store } = makeStore({
+        findMany: jest.fn().mockResolvedValue([
+          makeMemoryRow({
+            id: 'a',
+            content: 'pricing plans detailed',
+            category: 'agent_curated',
+          }),
+        ]),
+      });
+      const result = await store.search('ws_1', 'pricing', 1);
+      expect(result.memories[0].source.retentionScore).toBeDefined();
+      expect(typeof result.memories[0].source.retentionScore).toBe('number');
+      expect(result.memories[0].source.retentionScore!).toBeGreaterThan(0);
+    });
+
+    it('includes ttlMs in source stamp', async () => {
+      const { store } = makeStore({
+        findMany: jest
+          .fn()
+          .mockResolvedValue([
+            makeMemoryRow({ id: 'a', content: 'pricing', category: 'agent_skill' }),
+          ]),
+      });
+      const result = await store.search('ws_1', 'pricing', 1);
+      expect(result.memories[0].source.ttlMs).toBe(180 * MILLIS_PER_DAY);
     });
 
     it('respects the limit parameter', async () => {

@@ -67,12 +67,13 @@ describe('KloelToolRouter', () => {
     );
   });
 
-  it('truncates oversized tool messages before returning them to the LLM', async () => {
+  it('truncates oversized tool messages and creates durable artifact handle', async () => {
     const logger = { warn: jest.fn() };
     const unifiedAgentService = {
       executeTool: jest.fn().mockResolvedValue({ success: true, data: 'x'.repeat(7000) }),
     };
-    const router = new KloelToolRouter(logger, unifiedAgentService);
+    const storeToolArtifact = jest.fn().mockResolvedValue(undefined);
+    const router = new KloelToolRouter(logger, unifiedAgentService, storeToolArtifact);
 
     const result = await router.executeAssistantToolCalls({
       assistantMessage: {
@@ -92,5 +93,111 @@ describe('KloelToolRouter', () => {
     expect(content.truncated).toBe(true);
     expect(content.originalChars).toEqual(expect.any(Number));
     expect(String(content.preview).length).toBeLessThanOrEqual(6000);
+    expect(typeof content.artifactId).toBe('string');
+    expect(String(content.artifactId)).toMatch(/^tool_artifact:search_agent_memory:\d+:[a-f0-9]+$/);
+    expect(content.hint).toEqual(expect.any(String));
+
+    expect(storeToolArtifact).toHaveBeenCalledTimes(1);
+    expect(storeToolArtifact).toHaveBeenCalledWith(
+      'ws_1',
+      content.artifactId,
+      expect.stringContaining('"success":true'),
+    );
+    expect(result.receipts[0]?.artifactId).toBe(content.artifactId);
+  });
+
+  it('gracefully degrades when artifact store fails', async () => {
+    const logger = { warn: jest.fn() };
+    const unifiedAgentService = {
+      executeTool: jest.fn().mockResolvedValue({ success: true, data: 'x'.repeat(7000) }),
+    };
+    const storeToolArtifact = jest.fn().mockRejectedValue(new Error('db down'));
+    const router = new KloelToolRouter(logger, unifiedAgentService, storeToolArtifact);
+
+    const result = await router.executeAssistantToolCalls({
+      assistantMessage: {
+        tool_calls: [
+          {
+            id: 'call_1',
+            function: { name: 'search_agent_memory', arguments: '{"query":"checkout"}' },
+          },
+        ],
+      },
+      workspaceId: 'ws_1',
+      allowedTools: ['search_agent_memory'],
+      executeLocalTool: jest.fn(),
+    });
+
+    const content = JSON.parse(result.toolMessages[0]?.content ?? '{}') as Record<string, unknown>;
+    expect(content.truncated).toBe(true);
+    expect(content.artifactId).toBeUndefined();
+    expect(content.hint).toBeUndefined();
+    expect(logger.warn).toHaveBeenCalledWith(
+      expect.stringContaining('Falha ao armazenar artefato'),
+    );
+    expect(result.receipts[0]?.artifactId).toBeUndefined();
+  });
+
+  it('does not create artifact for small tool outputs', async () => {
+    const logger = { warn: jest.fn() };
+    const unifiedAgentService = {
+      executeTool: jest.fn().mockResolvedValue({ success: true, data: 'ok' }),
+    };
+    const storeToolArtifact = jest.fn();
+    const router = new KloelToolRouter(logger, unifiedAgentService, storeToolArtifact);
+
+    const result = await router.executeAssistantToolCalls({
+      assistantMessage: {
+        tool_calls: [
+          {
+            id: 'call_1',
+            function: { name: 'search_agent_memory', arguments: '{"query":"checkout"}' },
+          },
+        ],
+      },
+      workspaceId: 'ws_1',
+      allowedTools: ['search_agent_memory'],
+      executeLocalTool: jest.fn(),
+    });
+
+    const content = JSON.parse(result.toolMessages[0]?.content ?? '{}') as Record<string, unknown>;
+    expect(content.truncated).toBeUndefined();
+    expect(storeToolArtifact).not.toHaveBeenCalled();
+    expect(result.receipts[0]?.artifactId).toBeUndefined();
+  });
+
+  it('emits artifactId in tool_result SSE event when truncated', async () => {
+    const logger = { warn: jest.fn() };
+    const unifiedAgentService = {
+      executeTool: jest.fn().mockResolvedValue({ success: true, data: 'x'.repeat(7000) }),
+    };
+    const storeToolArtifact = jest.fn().mockResolvedValue(undefined);
+    const router = new KloelToolRouter(logger, unifiedAgentService, storeToolArtifact);
+    const safeWrite = jest.fn();
+
+    await router.executeAssistantToolCalls({
+      assistantMessage: {
+        tool_calls: [
+          {
+            id: 'call_1',
+            function: { name: 'search_agent_memory', arguments: '{"query":"checkout"}' },
+          },
+        ],
+      },
+      workspaceId: 'ws_1',
+      allowedTools: ['search_agent_memory'],
+      executeLocalTool: jest.fn(),
+      safeWrite,
+    });
+
+    const toolResultCalls = safeWrite.mock.calls.filter(
+      ([event]: unknown[]) => (event as Record<string, unknown>)?.type === 'tool_result',
+    );
+    expect(toolResultCalls.length).toBe(1);
+    const toolResultEvent = toolResultCalls[0][0] as Record<string, unknown>;
+    expect(typeof toolResultEvent.artifactId).toBe('string');
+    expect(String(toolResultEvent.artifactId)).toMatch(
+      /^tool_artifact:search_agent_memory:\d+:[a-f0-9]+$/,
+    );
   });
 });
