@@ -244,7 +244,7 @@ model Workspace {
   integrationCredential IntegrationCredential?
 
   // Meta Platform Connection
-  metaConnection MetaConnection?
+  metaConnections MetaConnection[]
 
   // Channel setup - operational wizard state
   channelSetups   ChannelSetup[]
@@ -3408,7 +3408,7 @@ model Webinar {
 
 model MetaConnection {
   id                    String    @id @default(uuid())
-  workspaceId           String    @unique
+  workspaceId           String
   workspace             Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   accessToken           String
   tokenExpiresAt        DateTime?
@@ -3423,10 +3423,11 @@ model MetaConnection {
   pixelId               String?
   catalogId             String?
   status                String    @default("connected")
-  channel               String?
+  channel               String    @default("whatsapp")
   connectedAt           DateTime  @default(now())
   updatedAt             DateTime  @updatedAt
 
+  @@unique([workspaceId, channel])
   @@map("RAC_MetaConnection")
 }
 
