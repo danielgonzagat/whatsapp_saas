@@ -7,7 +7,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { BrainEventSpineService } from '../brain-event-spine.service';
 import { KloelService } from '../kloel.service';
 import { AgentRuntimeSessionStore } from './agent-runtime.session-store';
-import { sanitizeAgentRuntimeText } from './agent-runtime.sanitizer';
+import { sanitizeAgentRuntimeText, toInputJsonValue } from './agent-runtime.sanitizer';
 
 type AgentJobPayload = {
   jobKey: string;
@@ -118,6 +118,11 @@ export class AgentRuntimeJobRunnerService {
           },
         ],
       });
+      await this.recordJobExecutionSnapshot(workspaceId, payload, {
+        status: 'succeeded',
+        eventId: event.id,
+        message: result.response,
+      });
       await this.brainEvents.markDispatchSucceeded(event.id, workspaceId);
       return true;
     } catch (error: unknown) {
@@ -137,8 +142,67 @@ export class AgentRuntimeJobRunnerService {
           },
         ],
       });
+      await this.recordJobExecutionSnapshot(workspaceId, payload, {
+        status: 'failed',
+        eventId: event.id,
+        message,
+      });
       await this.brainEvents.markDispatchFailed(event.id, workspaceId, message);
       return false;
+    }
+  }
+
+  private async recordJobExecutionSnapshot(
+    workspaceId: string,
+    payload: AgentJobPayload,
+    result: { status: 'succeeded' | 'failed'; eventId: string; message: string },
+  ): Promise<void> {
+    const key = payload.jobKey.startsWith('agent_job:')
+      ? payload.jobKey
+      : `agent_job:${payload.jobKey}`;
+    try {
+      const row = await this.prisma.kloelMemory.findUnique({
+        where: { workspaceId_key: { workspaceId, key } },
+        select: { value: true, metadata: true },
+      });
+      const now = new Date().toISOString();
+      const value =
+        row?.value && typeof row.value === 'object' && !Array.isArray(row.value)
+          ? (row.value as Record<string, unknown>)
+          : {};
+      const metadata =
+        row?.metadata && typeof row.metadata === 'object' && !Array.isArray(row.metadata)
+          ? (row.metadata as Record<string, unknown>)
+          : {};
+      await this.prisma.kloelMemory.updateMany({
+        where: { workspaceId, key, category: 'agent_job', type: 'scheduled' },
+        data: {
+          value: toInputJsonValue({
+            ...value,
+            lastResultAt: now,
+            lastResultStatus: result.status,
+            lastResultSummary: sanitizeAgentRuntimeText(result.message, 1000),
+            lastError:
+              result.status === 'failed' ? sanitizeAgentRuntimeText(result.message, 500) : undefined,
+          }),
+          metadata: {
+            ...metadata,
+            kind: 'agent_job',
+            lastResultAt: now,
+            lastResultStatus: result.status,
+            lastEventId: result.eventId,
+            ...(result.status === 'failed'
+              ? { lastError: sanitizeAgentRuntimeText(result.message, 500) }
+              : { lastError: null }),
+          } satisfies Prisma.InputJsonObject,
+        },
+      });
+    } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(
+        error,
+        'AgentRuntimeJobRunnerService.recordJobExecutionSnapshot',
+      );
+      this.logger.warn(`Failed to persist agent job execution snapshot: ${this.messageFor(error)}`);
     }
   }
 

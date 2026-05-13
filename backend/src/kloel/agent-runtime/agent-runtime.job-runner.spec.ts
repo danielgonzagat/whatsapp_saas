@@ -22,6 +22,17 @@ describe('AgentRuntimeJobRunnerService', () => {
       mindOutboxEvent: {
         findMany: jest.fn(),
       },
+      kloelMemory: {
+        findUnique: jest.fn().mockResolvedValue({
+          value: {
+            kind: 'agent_job',
+            title: 'Daily memory audit',
+            prompt: 'Review operational memory.',
+          },
+          metadata: { kind: 'agent_job', nextRunAt: '2026-05-13T11:00:00.000Z' },
+        }),
+        updateMany: jest.fn().mockResolvedValue({ count: 1 }),
+      },
     };
     const brainEvents = {
       claimPendingEvents: jest.fn().mockResolvedValue({ events: [event] }),
@@ -66,6 +77,26 @@ describe('AgentRuntimeJobRunnerService', () => {
         actions: [expect.objectContaining({ toolName: 'agent.job.due', success: true })],
       }),
     );
+    expect(prisma.kloelMemory.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          workspaceId: 'ws_1',
+          key: 'agent_job:daily',
+          category: 'agent_job',
+          type: 'scheduled',
+        },
+        data: expect.objectContaining({
+          value: expect.objectContaining({
+            lastResultStatus: 'succeeded',
+            lastResultSummary: 'Memory is current.',
+          }),
+          metadata: expect.objectContaining({
+            lastResultStatus: 'succeeded',
+            lastEventId: 'outbox_1',
+          }),
+        }),
+      }),
+    );
     expect(brainEvents.markDispatchSucceeded).toHaveBeenCalledWith('outbox_1', 'ws_1');
   });
 
@@ -98,7 +129,16 @@ describe('AgentRuntimeJobRunnerService', () => {
       thinkSync: jest.fn().mockRejectedValue(new Error('provider unavailable')),
     };
     const service = new AgentRuntimeJobRunnerService(
-      { mindOutboxEvent: { findMany: jest.fn() } } as never,
+      {
+        mindOutboxEvent: { findMany: jest.fn() },
+        kloelMemory: {
+          findUnique: jest.fn().mockResolvedValue({
+            value: { kind: 'agent_job', title: 'Daily memory audit' },
+            metadata: { kind: 'agent_job' },
+          }),
+          updateMany: jest.fn().mockResolvedValue({ count: 1 }),
+        },
+      } as never,
       brainEvents as never,
       sessions as never,
       kloel as never,

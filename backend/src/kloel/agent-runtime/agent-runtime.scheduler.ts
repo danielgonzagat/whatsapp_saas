@@ -34,6 +34,10 @@ type AgentScheduledJobValue = {
   toolScope: string[];
   enabled: boolean;
   lastRunAt: string | null;
+  lastResultAt?: string | null;
+  lastResultStatus?: 'succeeded' | 'failed' | null;
+  lastResultSummary?: string | null;
+  lastError?: string | null;
 };
 
 type DueAgentJob = {
@@ -120,6 +124,10 @@ export class AgentRuntimeSchedulerService {
       prompt: string;
       enabled: boolean;
       nextRunAt: string | null;
+      lastRunAt: string | null;
+      lastResultAt: string | null;
+      lastResultStatus: string | null;
+      lastError: string | null;
       toolScope: string[];
     }>
   > {
@@ -143,6 +151,13 @@ export class AgentRuntimeSchedulerService {
           prompt: typeof value.prompt === 'string' ? value.prompt : '',
           enabled: value.enabled !== false,
           nextRunAt: typeof schedule?.runAt === 'string' ? schedule.runAt : null,
+          lastRunAt: typeof value.lastRunAt === 'string' ? value.lastRunAt : null,
+          lastResultAt: typeof value.lastResultAt === 'string' ? value.lastResultAt : null,
+          lastResultStatus:
+            value.lastResultStatus === 'succeeded' || value.lastResultStatus === 'failed'
+              ? value.lastResultStatus
+              : null,
+          lastError: typeof value.lastError === 'string' ? value.lastError : null,
           toolScope: Array.isArray(value.toolScope)
             ? value.toolScope.filter((tool): tool is string => typeof tool === 'string')
             : [],
@@ -262,6 +277,14 @@ export class AgentRuntimeSchedulerService {
         : [],
       enabled: record.enabled !== false,
       lastRunAt: typeof record.lastRunAt === 'string' ? record.lastRunAt : null,
+      lastResultAt: typeof record.lastResultAt === 'string' ? record.lastResultAt : null,
+      lastResultStatus:
+        record.lastResultStatus === 'succeeded' || record.lastResultStatus === 'failed'
+          ? record.lastResultStatus
+          : null,
+      lastResultSummary:
+        typeof record.lastResultSummary === 'string' ? record.lastResultSummary : null,
+      lastError: typeof record.lastError === 'string' ? record.lastError : null,
     };
   }
 

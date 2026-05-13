@@ -136,6 +136,50 @@ describe('AgentRuntimeSchedulerService', () => {
     );
   });
 
+  it('lists execution snapshots for scheduled jobs', async () => {
+    const prisma = {
+      kloelMemory: {
+        findMany: jest.fn().mockResolvedValue([
+          {
+            key: 'agent_job:daily',
+            value: {
+              kind: 'agent_job',
+              title: 'Daily audit',
+              prompt: 'Review memory',
+              schedule: {
+                kind: 'interval',
+                runAt: '2026-05-13T11:00:00.000Z',
+                everyMinutes: 60,
+              },
+              toolScope: ['search_agent_memory'],
+              enabled: true,
+              lastRunAt: '2026-05-13T10:00:00.000Z',
+              lastResultAt: '2026-05-13T10:00:10.000Z',
+              lastResultStatus: 'succeeded',
+              lastError: null,
+            },
+          },
+        ]),
+      },
+    };
+    const service = new AgentRuntimeSchedulerService(
+      prisma as never,
+      { buildEnvelope: jest.fn() } as never,
+    );
+
+    const jobs = await service.listJobs('ws_1');
+
+    expect(jobs).toEqual([
+      expect.objectContaining({
+        key: 'agent_job:daily',
+        lastRunAt: '2026-05-13T10:00:00.000Z',
+        lastResultAt: '2026-05-13T10:00:10.000Z',
+        lastResultStatus: 'succeeded',
+        lastError: null,
+      }),
+    ]);
+  });
+
   it('returns job_not_found when a scheduled job cannot be parsed', async () => {
     const prisma = {
       kloelMemory: {
