@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useReducer } from 'react';
 import { swrFetcher } from '@/lib/fetcher';
 import useSWR from 'swr';
 import type { AppleDiagnosticResponse } from '@/lib/api/apple';
@@ -12,6 +12,20 @@ export interface AppleDiagnosticState {
   configured: boolean;
   lastProbeAt: Date | null;
   lastProbeResult: 'PASS' | 'FAIL' | null;
+}
+
+interface ReadyAction {
+  type: 'RECALC';
+  configured: boolean;
+  lastProbeAt: Date | null;
+  lastProbeResult: 'PASS' | 'FAIL' | null;
+}
+
+function readyReducer(_prev: boolean, action: ReadyAction): boolean {
+  if (!action.configured || !action.lastProbeAt || action.lastProbeResult !== 'PASS') {
+    return false;
+  }
+  return Date.now() - action.lastProbeAt.getTime() <= SEVEN_DAYS_MS;
 }
 
 export function useAppleDiagnostic(): AppleDiagnosticState {
@@ -30,33 +44,25 @@ export function useAppleDiagnostic(): AppleDiagnosticState {
 
   const lastProbeAt = useMemo(
     () => (probe?.at ? new Date(probe.at) : null),
-    [probe?.at],
+    [probe],
   );
+  const lastProbeResult =
+    probe?.result === 'PASS' || probe?.result === 'FAIL'
+      ? (probe.result as 'PASS' | 'FAIL')
+      : null;
 
-  const lastProbeResult = useMemo(
-    () =>
-      probe?.result === 'PASS' || probe?.result === 'FAIL'
-        ? (probe.result as 'PASS' | 'FAIL')
-        : null,
-    [probe?.result],
-  );
-
-  const [ready, setReady] = useState(false);
+  const [ready, dispatch] = useReducer(readyReducer, false);
 
   useEffect(() => {
+    dispatch({ type: 'RECALC', configured, lastProbeAt, lastProbeResult });
+
     if (!configured || !lastProbeAt || lastProbeResult !== 'PASS') {
-      setReady(false);
       return;
     }
 
-    const probeMs = lastProbeAt.getTime();
-
-    const check = () => {
-      setReady(Date.now() - probeMs <= SEVEN_DAYS_MS);
-    };
-
-    check();
-    const interval = setInterval(check, 30000);
+    const interval = setInterval(() => {
+      dispatch({ type: 'RECALC', configured, lastProbeAt, lastProbeResult });
+    }, 30000);
     return () => clearInterval(interval);
   }, [configured, lastProbeAt, lastProbeResult]);
 
