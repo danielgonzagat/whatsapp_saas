@@ -77,6 +77,15 @@ describe('AgentRuntimeContextService', () => {
       },
     ];
 
+    const memoryManager = {
+      initializeAll: jest.fn().mockResolvedValue(undefined),
+      buildSystemPrompt: jest.fn().mockResolvedValue('<kloel-memory-provider name="builtin" />'),
+      prefetchAll: jest
+        .fn()
+        .mockResolvedValue('<memory-context provider="builtin">checkout</memory-context>'),
+      queuePrefetchAll: jest.fn().mockResolvedValue(undefined),
+      syncTurnAll: jest.fn().mockResolvedValue(undefined),
+    };
     const service = new AgentRuntimeContextService(
       {
         search: jest.fn().mockResolvedValue(recall),
@@ -89,12 +98,7 @@ describe('AgentRuntimeContextService', () => {
       },
       { buildSelfModel: jest.fn().mockReturnValue(pulse) },
       { buildEnvelope: jest.fn() },
-      {
-        buildSystemPrompt: jest.fn().mockResolvedValue('<kloel-memory-provider name="builtin" />'),
-        prefetchAll: jest
-          .fn()
-          .mockResolvedValue('<memory-context provider="builtin">checkout</memory-context>'),
-      },
+      memoryManager,
       {
         loadCompressedContext: jest.fn().mockResolvedValue({
           summary: '[CONTEXT COMPACTION - REFERENCE ONLY] previous checkout work',
@@ -120,5 +124,60 @@ describe('AgentRuntimeContextService', () => {
     expect(context.systemPromptBlock).toContain('prefetchedMemory:');
     expect(context.systemPromptBlock).toContain('compressedContext:');
     expect(context.systemPromptBlock).toContain('previous checkout work');
+    expect(memoryManager.initializeAll).toHaveBeenCalledWith(
+      expect.objectContaining({
+        workspaceId: 'ws_1',
+        sessionId: 'thread_1',
+        channel: 'whatsapp',
+        agentContext: 'primary',
+      }),
+    );
+    expect(memoryManager.queuePrefetchAll).toHaveBeenCalledWith('ws_1', 'checkout', {
+      sessionId: 'thread_1',
+    });
+  });
+
+  it('syncs turn outcomes through the memory manager provider pipeline', async () => {
+    const memoryManager = {
+      initializeAll: jest.fn(),
+      buildSystemPrompt: jest.fn(),
+      prefetchAll: jest.fn(),
+      queuePrefetchAll: jest.fn(),
+      syncTurnAll: jest.fn().mockResolvedValue(undefined),
+    };
+    const memoryCurator = { curateTurnOutcome: jest.fn().mockResolvedValue(undefined) };
+    const sessionStore = { search: jest.fn(), searchSessions: jest.fn(), recordTurn: jest.fn() };
+    const service = new AgentRuntimeContextService(
+      sessionStore,
+      { selectSkills: jest.fn(), recordSkillUsage: jest.fn() },
+      { buildSelfModel: jest.fn() },
+      { buildEnvelope: jest.fn() },
+      memoryManager,
+      { loadCompressedContext: jest.fn() },
+      memoryCurator,
+    );
+
+    await service.recordTurnOutcome({
+      workspaceId: 'ws_1',
+      channel: 'chat',
+      threadId: 'thread_1',
+      userMessage: 'recover checkout',
+      assistantMessage: 'vou verificar',
+    });
+
+    expect(sessionStore.recordTurn).not.toHaveBeenCalled();
+    expect(memoryManager.syncTurnAll).toHaveBeenCalledWith({
+      workspaceId: 'ws_1',
+      userContent: 'recover checkout',
+      assistantContent: 'vou verificar',
+      sessionId: 'thread_1',
+      channel: 'chat',
+    });
+    expect(memoryCurator.curateTurnOutcome).toHaveBeenCalledWith(
+      expect.objectContaining({
+        workspaceId: 'ws_1',
+        userMessage: 'recover checkout',
+      }),
+    );
   });
 });

@@ -22,6 +22,14 @@ export class AgentRuntimeContextService {
   ) {}
 
   async buildContext(request: AgentRuntimeContextRequest): Promise<AgentRuntimeContext> {
+    await this.memoryManager.initializeAll({
+      workspaceId: request.workspaceId,
+      sessionId: request.threadId ?? 'kloel_primary_session',
+      channel: request.channel,
+      agentContext: 'primary',
+      ...(request.userId !== undefined ? { userId: request.userId } : {}),
+    });
+
     const [
       recall,
       sessionRecall,
@@ -52,6 +60,9 @@ export class AgentRuntimeContextService {
         }),
       ),
     );
+    void this.memoryManager.queuePrefetchAll(request.workspaceId, request.message, {
+      sessionId: request.threadId,
+    });
 
     return {
       recall,
@@ -84,7 +95,13 @@ export class AgentRuntimeContextService {
     confidence?: number;
     actions?: Array<{ toolName: string; success: boolean; result?: unknown }>;
   }): Promise<void> {
-    await this.sessions.recordTurn(params);
+    await this.memoryManager.syncTurnAll({
+      workspaceId: params.workspaceId,
+      userContent: params.userMessage,
+      assistantContent: params.assistantMessage ?? '',
+      sessionId: params.threadId,
+      channel: params.channel,
+    });
     await this.memoryCurator.curateTurnOutcome(params);
   }
 

@@ -353,7 +353,9 @@ export class AgentRuntimeMemoryManagerService {
     operation: string,
     error: unknown,
   ): void {
-    this.logger.warn(`Memory provider ${provider.name} ${operation} failed: ${this.errorMessage(error)}`);
+    this.logger.warn(
+      `Memory provider ${provider.name} ${operation} failed: ${this.errorMessage(error)}`,
+    );
   }
 
   private errorMessage(error: unknown): string {
