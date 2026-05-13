@@ -157,6 +157,7 @@ import { MindLiftReportService } from './mind-lift-report.service';
 import { MindSurpriseService } from './mind-surprise.service';
 import { MindVerbalizerService } from './mind-verbalizer.service';
 import { MindWorkspaceStateService } from './mind-workspace-state.service';
+import { AgentRuntimeJobRunnerService } from './agent-runtime/agent-runtime.job-runner';
 import {
   AgentRuntimeContextService,
   AgentRuntimePolicyService,
@@ -328,6 +329,7 @@ import {
     MindWorkspaceStateService,
     PulseArtifactService,
     AgentRuntimeContextService,
+    AgentRuntimeJobRunnerService,
     AgentRuntimePolicyService,
     AgentRuntimePulseSelfModelService,
     AgentRuntimeSchedulerService,
@@ -393,6 +395,7 @@ import {
     MindVerbalizerService,
     DecisionOutcomeService,
     AgentRuntimeContextService,
+    AgentRuntimeJobRunnerService,
     AgentRuntimePolicyService,
     AgentRuntimePulseSelfModelService,
     AgentRuntimeSchedulerService,

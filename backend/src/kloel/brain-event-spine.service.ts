@@ -195,6 +195,76 @@ export class BrainEventSpineService {
     return { dispatched: result.count };
   }
 
+  async claimPendingEvents(params: {
+    workspaceId: string;
+    eventType: string;
+    limit?: number;
+  }): Promise<{
+    events: Array<{
+      id: string;
+      eventType: string;
+      subject: string;
+      payload: Prisma.JsonValue;
+      idempotencyKey: string;
+      occurredAt: Date;
+      attempts: number;
+      lastError: string | null;
+    }>;
+  }> {
+    const rows = await this.prisma.mindOutboxEvent.findMany({
+      where: {
+        workspaceId: params.workspaceId,
+        eventType: params.eventType,
+        status: 'pending',
+      },
+      orderBy: { createdAt: 'asc' },
+      take: Math.max(1, Math.min(params.limit ?? 25, 100)),
+      select: { id: true },
+    });
+
+    if (rows.length === 0) {
+      return { events: [] };
+    }
+
+    const ids = rows.map((row) => row.id);
+    await this.prisma.mindOutboxEvent.updateMany({
+      where: {
+        id: { in: ids },
+        workspaceId: params.workspaceId,
+        eventType: params.eventType,
+        status: 'pending',
+      },
+      data: {
+        status: 'processing',
+        dispatchedAt: null,
+        attempts: { increment: 1 },
+        lastError: null,
+      },
+    });
+
+    const events = await this.prisma.mindOutboxEvent.findMany({
+      where: {
+        id: { in: ids },
+        workspaceId: params.workspaceId,
+        eventType: params.eventType,
+        status: 'processing',
+      },
+      orderBy: { createdAt: 'asc' },
+      select: {
+        id: true,
+        eventType: true,
+        subject: true,
+        payload: true,
+        idempotencyKey: true,
+        occurredAt: true,
+        attempts: true,
+        lastError: true,
+      },
+    });
+
+    return { events };
+  }
+
   async markDispatchSucceeded(eventId: string, workspaceId: string): Promise<void> {
     await this.prisma.mindOutboxEvent.updateMany({
       where: { id: eventId, workspaceId, status: 'processing' },

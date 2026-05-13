@@ -9,6 +9,7 @@ describe('AgentRuntimeContextService', () => {
   it('renders frozen operational context with recall, skills, and PULSE truth boundary', async () => {
     const recall: AgentRuntimeRecallResult = {
       query: 'checkout',
+      tokens: ['checkout'],
       totalFound: 1,
       memories: [
         {

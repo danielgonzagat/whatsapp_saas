@@ -19,10 +19,12 @@ export interface AgentRuntimeMemoryItem {
   content: string;
   value: Prisma.JsonValue;
   source: AgentRuntimeSourceStamp;
+  snippet?: string;
 }
 
 export interface AgentRuntimeRecallResult {
   query: string;
+  tokens: string[];
   totalFound: number;
   memories: AgentRuntimeMemoryItem[];
 }
