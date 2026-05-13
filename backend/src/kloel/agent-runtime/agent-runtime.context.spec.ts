@@ -69,12 +69,18 @@ describe('AgentRuntimeContextService', () => {
         buildSystemPrompt: jest.fn().mockResolvedValue('<kloel-memory-provider name="builtin" />'),
         prefetchAll: jest.fn().mockResolvedValue('<memory-context provider="builtin">checkout</memory-context>'),
       },
+      {
+        loadCompressedContext: jest.fn().mockResolvedValue({
+          summary: '[CONTEXT COMPACTION - REFERENCE ONLY] previous checkout work',
+        }),
+      },
     );
 
     const context = await service.buildContext({
       workspaceId: 'ws_1',
       channel: 'whatsapp',
       message: 'checkout',
+      threadId: 'thread_1',
     });
 
     expect(context.systemPromptBlock).toContain('<kloel-agent-runtime>');
@@ -83,5 +89,7 @@ describe('AgentRuntimeContextService', () => {
     expect(context.systemPromptBlock).toContain('user asked about checkout recovery');
     expect(context.systemPromptBlock).toContain('memoryProviders:');
     expect(context.systemPromptBlock).toContain('prefetchedMemory:');
+    expect(context.systemPromptBlock).toContain('compressedContext:');
+    expect(context.systemPromptBlock).toContain('previous checkout work');
   });
 });

@@ -5,6 +5,7 @@ import { AgentRuntimePulseSelfModelService } from './agent-runtime.pulse-self-mo
 import { AgentRuntimePolicyService } from './agent-runtime.policy';
 import { sanitizeAgentRuntimeText } from './agent-runtime.sanitizer';
 import { AgentRuntimeMemoryManagerService } from './agent-runtime.memory-manager';
+import { AgentRuntimeContextCompressorService } from './agent-runtime.context-compressor';
 import type { AgentRuntimeContext, AgentRuntimeContextRequest } from './agent-runtime.types';
 
 @Injectable()
@@ -15,16 +16,26 @@ export class AgentRuntimeContextService {
     private readonly pulse: AgentRuntimePulseSelfModelService,
     private readonly policy: AgentRuntimePolicyService,
     private readonly memoryManager: AgentRuntimeMemoryManagerService,
+    private readonly contextCompressor: AgentRuntimeContextCompressorService,
   ) {}
 
   async buildContext(request: AgentRuntimeContextRequest): Promise<AgentRuntimeContext> {
-    const [recall, selectedSkills, memoryProviderPrompt, memoryProviderPrefetch] = await Promise.all([
+    const [
+      recall,
+      selectedSkills,
+      memoryProviderPrompt,
+      memoryProviderPrefetch,
+      compressedContext,
+    ] = await Promise.all([
       this.sessions.search(request.workspaceId, request.message, 6),
       this.skills.selectSkills(request.workspaceId, request.message, 4),
       this.memoryManager.buildSystemPrompt(request.workspaceId),
       this.memoryManager.prefetchAll(request.workspaceId, request.message, {
         sessionId: request.threadId,
       }),
+      request.threadId
+        ? this.contextCompressor.loadCompressedContext(request.workspaceId, request.threadId)
+        : Promise.resolve(null),
     ]);
     const pulse = this.pulse.buildSelfModel();
     const authorityMode = pulse.canWorkNow ? 'tool_limited' : 'advisory';
@@ -41,6 +52,7 @@ export class AgentRuntimeContextService {
         authorityMode,
         memoryProviderPrompt,
         memoryProviderPrefetch,
+        compressedContextSummary: compressedContext?.summary ?? '',
       }),
     };
   }
@@ -72,6 +84,7 @@ export class AgentRuntimeContextService {
     context: Omit<AgentRuntimeContext, 'systemPromptBlock'> & {
       memoryProviderPrompt: string;
       memoryProviderPrefetch: string;
+      compressedContextSummary: string;
     },
   ): string {
     const pulse = context.pulse;
@@ -111,6 +124,10 @@ export class AgentRuntimeContextService {
       context.memoryProviderPrompt.trim() ? context.memoryProviderPrompt : '- none',
       'prefetchedMemory:',
       context.memoryProviderPrefetch.trim() ? context.memoryProviderPrefetch : '- none',
+      'compressedContext:',
+      context.compressedContextSummary.trim()
+        ? sanitizeAgentRuntimeText(context.compressedContextSummary, 6500)
+        : '- none',
       '</kloel-agent-runtime>',
     ].join('\n');
   }

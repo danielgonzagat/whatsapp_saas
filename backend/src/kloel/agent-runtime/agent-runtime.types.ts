@@ -79,6 +79,22 @@ export interface AgentRuntimeCompressionObservation {
   messages: Array<{ role: string; content: string }>;
 }
 
+export interface AgentRuntimeCompressionMessage {
+  role: 'system' | 'user' | 'assistant' | 'tool';
+  content: string;
+  toolName?: string;
+  createdAt?: string;
+}
+
+export interface AgentRuntimeCompressedContext {
+  key: string;
+  workspaceId: string;
+  sessionId: string;
+  summary: string;
+  messageCount: number;
+  source: AgentRuntimeSourceStamp;
+}
+
 export interface AgentSkillDefinition {
   id: string;
   title: string;
