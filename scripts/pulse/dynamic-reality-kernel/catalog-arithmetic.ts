@@ -97,7 +97,7 @@ export function discoverPropertyUnexecutedStatusFromExecutionEvidence(): Set<str
 }
 export function discoverBoundaryStrategiesFromTypeEvidence(): Set<string> {
   const all = deriveStringUnionMembersFromTypeContract(
-    'scripts/pulse/dynamic-reality-kernel.ts',
+    'scripts/pulse/dynamic-reality-kernel/profile-derivations.ts',
     'DerivedFuzzStrategy',
   );
   const boundaryNames = new Set(['boundary', 'both']);
@@ -194,7 +194,7 @@ export type DerivedPropertyKind =
 function deriveAllPropertyKindsFromObservedEvidence(): string[] {
   return [
     ...deriveStringUnionMembersFromTypeContract(
-      'scripts/pulse/dynamic-reality-kernel.ts',
+      'scripts/pulse/dynamic-reality-kernel/catalog-arithmetic.ts',
       'DerivedPropertyKind',
     ),
   ];

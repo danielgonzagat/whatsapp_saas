@@ -20,7 +20,7 @@ describe('mind-belief-by-channel', () => {
         { hour: 14 },
       );
 
-      expect(result).toBeDefined();
+      expect(result).toMatchObject({ id: 'b1', workspaceId: 'ws-1', mean: 0.5 });
       expect(beliefs.getOrInit).toHaveBeenCalledWith(
         'ws-1',
         'contact:1',

@@ -138,10 +138,10 @@ describe('CheckoutOrderQueryService', () => {
 
       await service.listOrders('ws_1', { status: 'PAID' });
 
-      const callArgs = prisma.$transaction.mock.calls[0] as unknown[];
-      const queries = callArgs[0] as Array<{ args: { where: Record<string, unknown> } }>;
-      expect(queries[0].args.where).toEqual(
-        expect.objectContaining({ workspaceId: 'ws_1', status: 'PAID' }),
+      expect(prisma.checkoutOrder.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({ workspaceId: 'ws_1', status: 'PAID' }),
+        }),
       );
     });
 
@@ -150,9 +150,9 @@ describe('CheckoutOrderQueryService', () => {
 
       await service.listOrders('ws_1');
 
-      const callArgs = prisma.$transaction.mock.calls[0] as unknown[];
-      const queries = callArgs[0] as Array<{ args: { where: Record<string, unknown> } }>;
-      expect(queries[0].args.where).toEqual(expect.objectContaining({ workspaceId: 'ws_1' }));
+      expect(prisma.checkoutOrder.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ where: expect.objectContaining({ workspaceId: 'ws_1' }) }),
+      );
     });
 
     it('handles page and limit parameters', async () => {
@@ -187,7 +187,11 @@ describe('CheckoutOrderQueryService', () => {
 
       const result = await service.updateOrderStatus('order_1', 'ws_1', 'PROCESSING');
 
-      expect(result).toBeDefined();
+      expect(result).toMatchObject({
+        id: 'order_1',
+        workspaceId: 'ws_1',
+        status: 'PROCESSING',
+      });
       expect(auditService.log).toHaveBeenCalledWith(
         expect.objectContaining({
           workspaceId: 'ws_1',
@@ -217,7 +221,11 @@ describe('CheckoutOrderQueryService', () => {
 
       const result = await service.updateOrderStatus('order_1', 'ws_1', 'PAID');
 
-      expect(result).toBeDefined();
+      expect(result).toMatchObject({
+        id: 'order_1',
+        workspaceId: 'ws_1',
+        status: 'PAID',
+      });
     });
 
     it('rejects invalid status value', async () => {
@@ -324,9 +332,7 @@ describe('CheckoutOrderQueryService', () => {
 
       expect(result.accepted).toBe(true);
       expect(result.chargeType).toBe('ONE_CLICK');
-      const createArgs = (prisma.upsellOrder as jest.Mock).create.mock.calls[0] as Array<
-        Record<string, unknown>
-      >;
+      const createArgs = prisma.upsellOrder.create.mock.calls[0] as Array<Record<string, unknown>>;
       const callData = createArgs[0] as Record<string, unknown>;
       expect(callData.data).toEqual(
         expect.objectContaining({
@@ -355,7 +361,7 @@ describe('CheckoutOrderQueryService', () => {
       const result = await service.acceptUpsell('order_1', 'upsell_2');
 
       expect(result.chargeType).toBe('NEW_PAYMENT');
-      const createArgsNew = (prisma.upsellOrder as jest.Mock).create.mock.calls[0] as Array<
+      const createArgsNew = prisma.upsellOrder.create.mock.calls[0] as Array<
         Record<string, unknown>
       >;
       const callDataNew = createArgsNew[0] as Record<string, unknown>;

@@ -7,6 +7,7 @@ import { Project, Node, type Decorator } from 'ts-morph';
 import { pathExists } from '../safe-fs';
 import { sourceGlobsForTsMorph } from '../source-root-detector/api';
 import type { AstCallGraph, AstCallEdge, AstResolvedSymbol } from '../types.ast-graph';
+import { deriveUnitValue } from '../dynamic-reality-kernel/catalog-arithmetic';
 import { deriveStringUnionMembersFromTypeContract } from '../dynamic-reality-kernel/type-contract-labels';
 import {
   type FrameworkDecoratorMeta,

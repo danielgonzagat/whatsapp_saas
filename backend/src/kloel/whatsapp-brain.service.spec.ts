@@ -200,7 +200,7 @@ describe('WhatsAppBrainService', () => {
       });
 
       expect(includesAnyPhrase).toHaveBeenCalled();
-      expect(result).toBeDefined();
+      expect(result).toMatchObject({ response: 'Olá! Como posso ajudar?' });
     });
 
     it('detects support intent', async () => {
@@ -216,7 +216,7 @@ describe('WhatsAppBrainService', () => {
         workspaceId: wsId,
       });
 
-      expect(result).toBeDefined();
+      expect(result).toMatchObject({ response: 'Olá! Como posso ajudar?' });
     });
 
     it('detects return intent', async () => {
@@ -232,7 +232,7 @@ describe('WhatsAppBrainService', () => {
         workspaceId: wsId,
       });
 
-      expect(result).toBeDefined();
+      expect(result).toMatchObject({ response: 'Olá! Como posso ajudar?' });
     });
 
     it('detects status intent', async () => {
@@ -248,7 +248,7 @@ describe('WhatsAppBrainService', () => {
         workspaceId: wsId,
       });
 
-      expect(result).toBeDefined();
+      expect(result).toMatchObject({ response: 'Olá! Como posso ajudar?' });
     });
 
     it('falls back to general intent', async () => {
@@ -264,7 +264,7 @@ describe('WhatsAppBrainService', () => {
         workspaceId: wsId,
       });
 
-      expect(result).toBeDefined();
+      expect(result).toMatchObject({ response: 'Olá! Como posso ajudar?' });
     });
   });
 

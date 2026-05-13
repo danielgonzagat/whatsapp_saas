@@ -40,7 +40,7 @@ describe('ProviderRegistry tenant filter', () => {
 
     const result = await ProviderRegistry.getProviderForUser('+5511999999999', undefined);
 
-    expect(result).toBeDefined();
+    expect(result.name).toBe('auto');
     expect(mockContactFindFirst).not.toHaveBeenCalled();
     expect(mockContactFindUnique).not.toHaveBeenCalled();
   });
@@ -60,7 +60,7 @@ describe('ProviderRegistry tenant filter', () => {
         }),
       }),
     );
-    expect(result).toBeDefined();
+    expect(result.name).toBe('auto');
   });
 
   it('resolves contact workspace when found', async () => {

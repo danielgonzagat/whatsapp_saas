@@ -184,7 +184,11 @@ describe('EmailMarketingService', () => {
           include: { recipients: true },
         }),
       );
-      expect(result).toBeDefined();
+      expect(result).toMatchObject({
+        id: 'camp-1',
+        workspaceId: 'ws-1',
+        recipients: [{ id: 'r-1', email: 'a@test.com' }],
+      });
     });
 
     it('returns null when campaign not found', async () => {
@@ -211,7 +215,10 @@ describe('EmailMarketingService', () => {
           include: { recipients: { include: { deliveries: true } } },
         }),
       );
-      expect(result).toBeDefined();
+      expect(result).toMatchObject({
+        id: 'camp-1',
+        recipients: [{ id: 'r-1', deliveries: [{ id: 'd-1', event: 'SENT' }] }],
+      });
     });
   });
 
@@ -432,7 +439,11 @@ describe('EmailMarketingService', () => {
       const sendingCall = finalCalls.find(
         (c: unknown[]) => (c[0] as Record<string, unknown>)?.data !== undefined,
       );
-      expect(sendingCall).toBeDefined();
+      expect(sendingCall?.[0]).toEqual(
+        expect.objectContaining({
+          data: expect.objectContaining({ status: 'SENDING' }),
+        }),
+      );
     });
 
     it('skips UNSUBSCRIBED recipients', async () => {

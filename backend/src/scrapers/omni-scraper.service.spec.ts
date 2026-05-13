@@ -12,7 +12,7 @@ describe('OmniScraperService', () => {
     const caps = service.getCapabilities();
     expect(caps).toHaveLength(3);
     const names = caps.map((c) => c.name).sort();
-    expect(names.length).toBe(3);
+    expect(names).toEqual(['GOOGLE_MAPS', 'INSTAGRAM', 'LINKEDIN']);
   });
 
   it('returns capability objects with a status field', () => {
@@ -29,17 +29,23 @@ describe('OmniScraperService', () => {
     );
   });
 
-  it('throws NotImplementedException for strategies not in available/available_direct status', async () => {
+  it('throws NotImplementedException for worker-only and unavailable strategies', async () => {
     const caps = service.getCapabilities();
-    const unavailable = caps.find(
-      (c) => c.status !== 'available' && c.status !== 'available_direct',
+    const nonDirectCapabilities = caps.filter(
+      (capability) =>
+        capability.status !== 'available' && capability.status !== 'available_direct',
     );
-    if (unavailable) {
-      await expect(service.scrape(unavailable.name, 'q', {})).rejects.toThrow(
+
+    expect(nonDirectCapabilities.map((capability) => capability.name).sort()).toEqual([
+      'GOOGLE_MAPS',
+      'INSTAGRAM',
+      'LINKEDIN',
+    ]);
+
+    for (const capability of nonDirectCapabilities) {
+      await expect(service.scrape(capability.name, 'q', {})).rejects.toThrow(
         NotImplementedException,
       );
-    } else {
-      expect(true).toBe(true);
     }
   });
 });

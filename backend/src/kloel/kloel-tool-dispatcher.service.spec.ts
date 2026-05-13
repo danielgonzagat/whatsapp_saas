@@ -343,9 +343,6 @@ describe('KloelToolDispatcherService', () => {
 
       it('routes change_plan to bizConfigToolsService', async () => {
         const result = await service.executeTool(wsId, 'change_plan', { plan: 'pro' });
-        // Verify the dispatch completes without error; the service call may
-        // return success from a mocked path in this test setup.
-        expect(result).toBeDefined();
         expect(result.success).toBe(true);
       });
     });

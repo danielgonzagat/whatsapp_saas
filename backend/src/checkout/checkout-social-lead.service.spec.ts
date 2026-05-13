@@ -130,10 +130,10 @@ describe('CheckoutSocialLeadService', () => {
     };
 
     service = new CheckoutSocialLeadService(
-      prisma as PrismaService,
-      googleAuth as GoogleAuthService,
-      facebookAuth as FacebookAuthService,
-      appleAuth as AppleAuthService,
+      prisma as unknown as PrismaService,
+      googleAuth as unknown as GoogleAuthService,
+      facebookAuth as unknown as FacebookAuthService,
+      appleAuth as unknown as AppleAuthService,
     );
   });
 
@@ -213,7 +213,12 @@ describe('CheckoutSocialLeadService', () => {
         capturedLeadId: 'lead-1',
       });
 
-      expect(result).toBeDefined();
+      expect(result).toMatchObject({
+        id: 'lead-1',
+        workspaceId: 'ws-1',
+        status: 'CONVERTED',
+        convertedOrderId: 'order-1',
+      });
       expect(mockUpdate).toHaveBeenCalledWith(
         expect.objectContaining({
           data: expect.objectContaining({

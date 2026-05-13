@@ -41,7 +41,7 @@ describe('UnifiedAgentResponseService', () => {
         historyTurns: 0,
       });
 
-      expect(result).toBeDefined();
+      expect(result).toContain('Olá');
     });
 
     it('returns undefined when draft and message are empty', async () => {
@@ -76,7 +76,7 @@ describe('UnifiedAgentResponseService', () => {
         },
       );
 
-      expect(result).toBeDefined();
+      expect(result).toContain('ajudar');
       expect(chatCompletionWithFallback).toHaveBeenCalled();
       expect(planLimits.ensureTokenBudget).toHaveBeenCalledWith(wsId);
     });
@@ -97,7 +97,7 @@ describe('UnifiedAgentResponseService', () => {
         },
       );
 
-      expect(result).toBeDefined();
+      expect(result).toContain('Olá');
     });
 
     it('tracks AI usage when workspaceId provided', async () => {
@@ -143,7 +143,7 @@ describe('UnifiedAgentResponseService', () => {
         10,
       );
 
-      expect(result).toBeDefined();
+      expect(result).toContain('Frase um.');
       expect(result!.length).toBeLessThan(longReply.length);
     });
   });

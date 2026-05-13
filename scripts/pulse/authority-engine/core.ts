@@ -7,8 +7,8 @@ import { deriveStringUnionMembersFromTypeContract } from '../dynamic-reality-ker
 import {
   deriveUnitValue,
   deriveZeroValue,
-  discoverPropertyPassedStatusFromTypeEvidence,
 } from '../dynamic-reality-kernel/catalog-arithmetic';
+import { discoverGateResultStatusLabels } from '../dynamic-reality-kernel/type-contract-engines';
 import { discoverAllObservedArtifactFilenames } from '../dynamic-reality-kernel/token-evidence';
 import type { PulseGateName } from '../types.manifest';
 import type { PulseCertification } from '../types.evidence';
@@ -38,14 +38,9 @@ export function isMemberOfAuthorityContract(value: string): value is AuthorityLe
 }
 
 export function isPassStatus(status: string): boolean {
-  const statusMembers = deriveStringUnionMembersFromTypeContract(
-    'scripts/pulse/types.evidence.ts',
-    'status',
-  );
+  const statusMembers = discoverGateResultStatusLabels();
   if (!statusMembers.has(status)) return false;
-  return [...discoverPropertyPassedStatusFromTypeEvidence()].some((passed) =>
-    passed.includes(status),
-  );
+  return [...statusMembers].some((passed) => passed === status && passed.includes('pass'));
 }
 
 export const ADVANCEMENT_LEVEL_COUNT = Math.max(
@@ -133,7 +128,8 @@ export function authorityAdvancementRank(level: AuthorityLevel): number {
 }
 
 export function gateOrderFromCertificate(certificate: PulseCertification): PulseGateName[] {
-  const tierGateOrder = certificate.tierStatus.flatMap((tier) => tier.gates);
+  const tierStatus = Array.isArray(certificate.tierStatus) ? certificate.tierStatus : [];
+  const tierGateOrder = tierStatus.flatMap((tier) => tier.gates);
   if (tierGateOrder.length > 0) {
     return uniqueGateNames(tierGateOrder);
   }
@@ -149,7 +145,9 @@ export function requiredGatesForCertificateLevel(
     return [];
   }
 
-  const tiers = [...certificate.tierStatus].sort((left, right) => left.id - right.id);
+  const tiers = (Array.isArray(certificate.tierStatus) ? certificate.tierStatus : []).sort(
+    (left, right) => left.id - right.id,
+  );
   if (tiers.length > deriveZeroValue()) {
     const tierEnd = Math.min(rank - deriveUnitValue(), tiers.length - deriveUnitValue());
     return uniqueGateNames(tiers.slice(0, tierEnd + 1).flatMap((tier) => tier.gates));
@@ -233,7 +231,9 @@ export function checkFullE2E(certificate: PulseCertification): {
   passed: boolean;
   evidence: string[];
 } {
-  const terminalTier = [...certificate.tierStatus].sort((left, right) => right.id - left.id)[0];
+  const terminalTier = (Array.isArray(certificate.tierStatus) ? certificate.tierStatus : []).sort(
+    (left, right) => right.id - left.id,
+  )[0];
   const evidenceGateNames = gateOrderFromCertificate(certificate);
   const candidateGateNames = terminalTier?.gates.length ? terminalTier.gates : evidenceGateNames;
   const results = candidateGateNames.map((gateName) =>

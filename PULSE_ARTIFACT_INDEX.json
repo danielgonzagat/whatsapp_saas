@@ -1,6 +1,6 @@
 {
-  "runId": "94f45942-f1fa-49a0-afe7-279e2af5c009",
-  "generatedAt": "2026-05-10T16:57:29.365Z",
+  "runId": "cae3d8fa-bc5e-4b48-bda9-d5cffbe1f87a",
+  "generatedAt": "2026-05-13T01:39:59.724Z",
   "authorityMode": "advisory-only",
   "advisoryOnly": true,
   "authorityReasons": [
@@ -14,7 +14,7 @@
     "canDeclareKloelProductCertified": false,
     "blockers": [
       "artifact_consistency: Cross-artifact consistency has not produced a passing check.",
-      "critical_path_terminal: 3931 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:ad-insights, matrix:capability:capability:ad-rules, matrix:capability:capability:admin-chat, matrix:capability:capability:admin-clients, matrix:capability:capability:admin-compliance, matrix:capability:capability:admin-config, matrix:capability:capability:admin-dashboard, matrix:capability:capability:admin-destructive. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.",
+      "critical_path_terminal: 4520 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:account-agent, matrix:capability:capability:ad-rules, matrix:capability:capability:admin-accounts, matrix:capability:capability:admin-audit, matrix:capability:capability:admin-auth, matrix:capability:capability:admin-carteira, matrix:capability:capability:admin-chat, matrix:capability:capability:admin-clients. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.",
       "external_reality: 2 missing, 0 stale, and 0 invalid external adapter(s) remain."
     ]
   },
@@ -278,7 +278,8 @@
         "./cross-artifact-consistency-check/loaders",
         "./execution-matrix/grammar",
         "./probabilistic-risk/model",
-        "./signal-mapper"
+        "./signal-mapper",
+        "./unified-readiness-report"
       ],
       "freshness": {
         "mode": "run"
@@ -862,9 +863,13 @@
       },
       "consumers": [
         "./artifact-gc",
+        "./cert-evidence-defaults",
         "./cert-gate-evidence",
         "./execution-matrix/grammar",
-        "./runtime-probes/main"
+        "./runtime-probes/executor",
+        "./runtime-probes/main",
+        "./runtime-probes/probe-definitions",
+        "./runtime-probes/run"
       ],
       "freshness": {
         "mode": "preserved"
@@ -884,7 +889,6 @@
         "exportName": "writeRegisteredArtifact.runtime-probes"
       },
       "consumers": [
-        "./__parts__/runtime-probes/main",
         "./artifact-gc",
         "./cert-gate-evidence",
         "./production-proof/dimensions",
@@ -1068,29 +1072,10 @@
     "PULSE_WORLD_STATE.json"
   ],
   "removedLegacyPulseArtifacts": [
-    "PULSE_ADMIN_EVIDENCE.json",
-    "PULSE_BROWSER_EVIDENCE.json",
     "PULSE_CERTIFICATE.json",
     "PULSE_CLI_DIRECTIVE.json",
-    "PULSE_CODEBASE_TRUTH.json",
-    "PULSE_CONVERGENCE_PLAN.json",
-    "PULSE_CUSTOMER_EVIDENCE.json",
     "PULSE_EXECUTION_TRACE.json",
-    "PULSE_FLOW_EVIDENCE.json",
-    "PULSE_FLOW_PROJECTION.json",
-    "PULSE_HEALTH.json",
-    "PULSE_INVARIANT_EVIDENCE.json",
-    "PULSE_OBSERVABILITY_EVIDENCE.json",
-    "PULSE_OPERATOR_EVIDENCE.json",
-    "PULSE_RECOVERY_EVIDENCE.json",
-    "PULSE_REPORT.md",
-    "PULSE_RESOLVED_MANIFEST.json",
-    "PULSE_RUNTIME_EVIDENCE.json",
-    "PULSE_RUNTIME_PROBES.json",
-    "PULSE_SCENARIO_COVERAGE.json",
-    "PULSE_SCOPE_STATE.json",
-    "PULSE_SOAK_EVIDENCE.json",
-    "PULSE_WORLD_STATE.json"
+    "PULSE_REPORT.md"
   ],
   "rootStateMode": "local-only"
 }

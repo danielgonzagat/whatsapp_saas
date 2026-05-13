@@ -273,7 +273,7 @@ export function deriveMoneyProbeStringsFromObservedCatalog(
     String(undefined),
     String(null),
     '',
-    String(Object.create(null)),
+    Object.prototype.toString.call(Object.create(null)),
     String([]),
     `-${fd(u, 0)}`,
     `${fb(u, 0)}${tok}`,

@@ -36,6 +36,9 @@ type PrismaMock = {
   marketplaceFee: {
     findMany: jest.Mock;
   };
+  contact: {
+    findFirst: jest.Mock;
+  };
   $transaction: jest.Mock;
 };
 
@@ -126,6 +129,7 @@ describe('CheckoutOrderService', () => {
       upsell: { findMany: jest.fn().mockResolvedValue([]), findUnique: jest.fn() },
       upsellOrder: { create: jest.fn() },
       marketplaceFee: { findMany: jest.fn().mockResolvedValue([]) },
+      contact: { findFirst: jest.fn().mockResolvedValue(null) },
       $transaction: jest.fn(),
     };
     paymentService = {
@@ -239,7 +243,12 @@ describe('CheckoutOrderService', () => {
 
       const result = await service.createOrder(baseCreateOrderInput);
 
-      expect(result).toBeDefined();
+      expect(result).toMatchObject({
+        id: 'order_1',
+        workspaceId: 'ws_1',
+        orderNumber: 'ORD-001',
+        status: 'PENDING',
+      });
       expect(prisma.$transaction).toHaveBeenCalled();
     });
 
@@ -309,7 +318,11 @@ describe('CheckoutOrderService', () => {
 
       const result = await service.createOrder(baseCreateOrderInput);
 
-      expect(result).toBeDefined();
+      expect(result).toMatchObject({
+        id: 'order_1',
+        correlationId: 'corr_test_1',
+        status: 'PENDING',
+      });
       expect(prisma.$transaction).toHaveBeenCalled();
     });
 

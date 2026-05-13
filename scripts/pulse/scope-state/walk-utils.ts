@@ -171,7 +171,7 @@ export function walkScopeFiles(
       continue;
     }
 
-    if (!isScannableFile(relPath, observedGeneratedArtifactPaths)) {
+    if (!isScannableFile(relPath, observedGeneratedArtifactPaths) && !codacy.observedFiles.includes(relPath)) {
       continue;
     }
 
