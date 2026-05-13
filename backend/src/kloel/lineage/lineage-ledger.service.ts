@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import {
   GENESIS_EVENT,
   computeGenesisHash,
@@ -14,6 +14,7 @@ import {
   LineageLedgerRepository,
   ZERO_HASH,
 } from './lineage-ledger.types';
+import { LINEAGE_LEDGER_REPOSITORY } from './lineage.tokens';
 
 /**
  * UTP-LINEAGE-002 — Lineage Ledger append-only service.
@@ -37,7 +38,10 @@ import {
 export class LineageLedgerService {
   private readonly logger = new Logger(LineageLedgerService.name);
 
-  public constructor(private readonly repository: LineageLedgerRepository) {}
+  public constructor(
+    @Inject(LINEAGE_LEDGER_REPOSITORY)
+    private readonly repository: LineageLedgerRepository,
+  ) {}
 
   /**
    * Compute the canonical hash of a ledger entry. Excludes the `hash` field

@@ -87,6 +87,7 @@ import { ObservabilityModule } from './common/observability/observability.module
 import { OpsAlertModule } from './observability/ops-alert.module';
 import { OpsModule } from './ops/ops.module';
 import { PartnershipsModule } from './partnerships/partnerships.module';
+import { LineageModule } from './kloel/lineage/lineage.module';
 import { PipelineModule } from './pipeline/pipeline.module';
 import { ProductCategoriesModule } from './product-categories/product-categories.module';
 import { PublicApiModule } from './public-api/public-api.module';
@@ -245,6 +246,7 @@ function setRedisClientListenerBudget(client: Redis): void {
     ComplianceModule, // OAuth/Meta/LGPD compliance callbacks and user rights endpoints
     FinancialAlertModule, // Financial alerting (global)
     OpsAlertModule, // OPS critical error alerting (global)
+    LineageModule, // 🧬 Camada I — Genesis + Lineage Ledger + Identity Projector (cognitive organism)
     PulseModule, // PULSE live organism collector
     AnunciosModule, // 📊 Anuncios — Meta/Google/TikTok ad accounts, campaigns, insights
     TikTokAdsModule, // 🎵 TikTok Ads — OAuth + Events API + sync

@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import {
   GENESIS_EVENT,
   ORGANISM_CANONICAL_NAME,
@@ -10,6 +10,7 @@ import {
   LineageLedgerRepository,
   ZERO_HASH,
 } from './lineage-ledger.types';
+import { LINEAGE_LEDGER_REPOSITORY } from './lineage.tokens';
 
 /**
  * UTP-LINEAGE-003 — Identity Lineage Guard.
@@ -50,7 +51,10 @@ export interface LineageGuardVerdict {
 export class LineageGuardService {
   private readonly logger = new Logger(LineageGuardService.name);
 
-  public constructor(private readonly repository: LineageLedgerRepository) {}
+  public constructor(
+    @Inject(LINEAGE_LEDGER_REPOSITORY)
+    private readonly repository: LineageLedgerRepository,
+  ) {}
 
   /**
    * Verify the entire ledger. Returns a verdict — does NOT throw on
