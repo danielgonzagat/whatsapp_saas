@@ -1,3 +1,4 @@
+import { BadRequestException } from '@nestjs/common';
 import { BrainAuditController } from './brain-audit.controller';
 import { BrainSpineAuditService, SpineAuditResult } from '../../brain/brain-spine-audit.service';
 
@@ -51,6 +52,27 @@ describe('BrainAuditController', () => {
       await controller.spineAudit();
 
       expect(audit.audit).toHaveBeenCalledWith(expect.any(String));
+    });
+
+    it('rejects malformed since with BadRequestException', async () => {
+      const { controller } = buildController();
+      await expect(controller.spineAudit('not-an-iso-date')).rejects.toBeInstanceOf(
+        BadRequestException,
+      );
+    });
+
+    it('normalizes since to canonical ISO before delegating', async () => {
+      const { controller, audit } = buildController();
+      audit.audit = jest.fn().mockResolvedValue({
+        capabilities: [],
+        totalMismatch: 0,
+        windowFrom: '2026-05-11T00:00:00.000Z',
+        windowTo: '2026-05-12T00:00:00.000Z',
+      });
+
+      await controller.spineAudit('2026-05-11T00:00:00Z');
+
+      expect(audit.audit).toHaveBeenCalledWith('2026-05-11T00:00:00.000Z');
     });
 
     it('passes through mismatch counts when present', async () => {
