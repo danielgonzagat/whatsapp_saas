@@ -48,7 +48,7 @@ export async function thinkSyncImpl(
   if (!replyEngine.hasOpenAiKey() && !process.env.ANTHROPIC_API_KEY) {
     return {
       response:
-        'Assistente IA não disponível no momento. Configure OPENAI_API_KEY ou ANTHROPIC_API_KEY para habilitar o Kloel.',
+        'Assistente IA não disponível no momento. Configure DEEPSEEK_API_KEY, LLM_API_KEY, OPENAI_API_KEY ou ANTHROPIC_API_KEY para habilitar o Kloel.',
     };
   }
   const thread =
@@ -122,13 +122,13 @@ export async function thinkSyncImpl(
           ...(capabilityResult?.metadata || {}),
         }),
       );
-      await threadService.maybeRefreshThreadSummary(thread.id, workspaceId, replyEngine.openai);
+      await threadService.maybeRefreshThreadSummary(thread.id, workspaceId, replyEngine.openai ?? undefined);
       resolvedTitle = await threadService.maybeGenerateThreadTitle(
         thread.id,
         thread.title,
         message,
         workspaceId,
-        replyEngine.openai,
+        replyEngine.openai ?? undefined,
       );
     }
     await conversationStore.saveMessage(workspaceId, 'user', message);
@@ -345,7 +345,7 @@ export async function regenerateThreadAssistantResponseImpl(
   if (!updatedMessage) {
     throw buildRegenerationError(ERR_ASSISTANT_MSG_NOT_FOUND);
   }
-  await threadService.maybeRefreshThreadSummary(conversationId, workspaceId, replyEngine.openai);
+  await threadService.maybeRefreshThreadSummary(conversationId, workspaceId, replyEngine.openai ?? undefined);
   return {
     id: updatedMessage.id,
     threadId: updatedMessage.threadId,

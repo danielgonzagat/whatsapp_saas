@@ -1,5 +1,7 @@
-import { Injectable, Logger, Optional } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import OpenAI from 'openai';
+import { createTextLlmClient, hasTextLlmApiKey } from '../lib/llm-provider';
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { KloelContextFormatter } from './kloel-context-formatter';
@@ -30,8 +32,8 @@ import type { ExpertiseLevel, ReplyMessage, LocalToolExecutor } from './kloel-re
 /** Provides reply-building helpers: prompt assembly, expertise detection, context enrichment. */
 @Injectable()
 export class KloelReplyEngineService {
-  private readonly logger = new Logger(KloelReplyEngineService.name);
-  readonly openai: OpenAI;
+  private readonly logger = StructuredLogger.from(KloelReplyEngineService.name);
+  readonly openai: OpenAI | null;
   readonly toolRouter: KloelToolRouter;
   readonly unavailableMessage =
     'Eu fiquei sem acesso ao motor de resposta agora. Me chama de novo em instantes que eu retomo sem te fazer repetir tudo.';
@@ -45,11 +47,7 @@ export class KloelReplyEngineService {
     @Optional() private readonly marketingSkillService?: MarketingSkillService,
     @Optional() private readonly mindService?: MindService,
   ) {
-    this.openai = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
-      timeout: 60_000,
-      maxRetries: 0,
-    });
+    this.openai = createTextLlmClient(undefined, { timeout: 60_000, maxRetries: 0 });
     this.toolRouter = new KloelToolRouter(this.logger, this.unifiedAgentService);
   }
 
@@ -58,7 +56,7 @@ export class KloelReplyEngineService {
   }
 
   hasOpenAiKey(): boolean {
-    return !!String(process.env.OPENAI_API_KEY || '').trim();
+    return hasTextLlmApiKey();
   }
 
   buildDashboardPrompt(params?: {
@@ -316,6 +314,7 @@ export class KloelReplyEngineService {
     onTraceEvent?: (event: KloelStreamEvent) => void;
     executeLocalTool?: LocalToolExecutor;
   }): Promise<string> {
+    if (!this.openai) return this.unavailableMessage;
     return buildAssistantReplyImpl(params, {
       openai: this.openai,
       prisma: this.prisma,

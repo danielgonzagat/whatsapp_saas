@@ -1,4 +1,5 @@
-import { Injectable, Inject, Logger } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { Prisma } from '@prisma/client';
 import { Response } from 'express';
 import { LLMBudgetService, estimateChatCostCents } from './llm-budget.service';
@@ -37,7 +38,7 @@ import type { ThinkRequest, ThinkSyncResult } from './kloel-thinker.types';
 /** Orchestrates the Kloel thinking loop — SSE streaming and sync variants. */
 @Injectable()
 export class KloelThinkerService {
-  private readonly logger = new Logger(KloelThinkerService.name);
+  private readonly logger = StructuredLogger.from(KloelThinkerService.name);
   private readonly conversationStore: KloelConversationStore;
 
   constructor(
@@ -93,7 +94,7 @@ export class KloelThinkerService {
         safeWrite(
           createKloelErrorEvent({
             content:
-              'Assistente IA não disponível no momento. Configure OPENAI_API_KEY ou ANTHROPIC_API_KEY para habilitar o Kloel.',
+              'Assistente IA não disponível no momento. Configure DEEPSEEK_API_KEY, LLM_API_KEY, OPENAI_API_KEY ou ANTHROPIC_API_KEY para habilitar o Kloel.',
             error: 'ai_api_key_missing',
             done: true,
           }),
@@ -244,7 +245,7 @@ export class KloelThinkerService {
         temperature: number,
       ) =>
         streamWriter.streamModelResponse({
-          openai: this.replyEngine.openai,
+          openai: this.replyEngine.openai!,
           writerMessages,
           temperature,
           responseMaxTokens,

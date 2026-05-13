@@ -96,13 +96,13 @@ export async function finalizeSuccessfulReply(
         processingSummary: threadService.buildProcessingTraceSummary(processingTraceEntries),
       }),
     );
-    await threadService.maybeRefreshThreadSummary(thread.id, workspaceId, replyEngine.openai);
+    await threadService.maybeRefreshThreadSummary(thread.id, workspaceId, replyEngine.openai ?? undefined);
     const title = await threadService.maybeGenerateThreadTitle(
       thread.id,
       thread.title ?? '',
       message,
       workspaceId,
-      replyEngine.openai,
+      replyEngine.openai ?? undefined,
     );
     safeWrite(createKloelThreadEvent(thread.id, title));
   }
@@ -163,13 +163,13 @@ export async function runComposerCapabilityBranch(
         ...(capResult.metadata || {}),
       }),
     );
-    await threadService.maybeRefreshThreadSummary(thread.id, workspaceId, replyEngine.openai);
+    await threadService.maybeRefreshThreadSummary(thread.id, workspaceId, replyEngine.openai ?? undefined);
     const title = await threadService.maybeGenerateThreadTitle(
       thread.id,
       thread.title ?? '',
       message,
       workspaceId,
-      replyEngine.openai,
+      replyEngine.openai ?? undefined,
     );
     safeWrite(createKloelThreadEvent(thread.id, title));
   }
@@ -208,7 +208,7 @@ export async function runToolPlanningBranch(
   await planLimits.ensureTokenBudget(workspaceId ?? '');
   const allowedTools = KLOEL_SAFE_READ_TOOLS;
   const initialResponse = await chatCompletionWithFallback(
-    replyEngine.openai,
+    replyEngine.openai!,
     {
       model: resolveBackendOpenAIModel('brain'),
       messages,
