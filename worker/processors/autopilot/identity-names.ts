@@ -2,6 +2,7 @@ import { NON_DIGIT_RE, type UnknownRecord } from './shared';
 
 const WHITESPACE_G_RE = /\s+/g;
 const D__D_S____S_DOE_RE = /^\+?\d[\d\s-]*\s+doe$/i;
+const DOE_PLACEHOLDER_RE = /^(?:john\s+)?doe$/i;
 const MEU_NOME____S_E__S_RE =
   /(?:meu nome(?:\s+e|\s+é)?|me chamo|sou o|sou a|aqui e o|aqui é o|aqui e a|aqui é a|pode me chamar de)\s+([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ'`.-]*(?:\s+[A-Za-zÀ-ÿ][A-Za-zÀ-ÿ'`.-]*){0,3})/iu;
 const ASSINADO______S__ATEN_RE =
@@ -38,6 +39,7 @@ export function extractCatalogChatName(chat: UnknownRecord, fallbackPhone?: stri
     const lowered = normalized.toLowerCase();
     const isPlaceholder =
       !normalized ||
+      DOE_PLACEHOLDER_RE.test(normalized) ||
       lowered === 'doe' ||
       lowered === 'unknown' ||
       lowered === 'desconhecido' ||
@@ -61,7 +63,12 @@ export function isPlaceholderCatalogName(value: unknown, fallbackPhone?: string 
     return true;
   }
 
-  if (lowered === 'doe' || lowered === 'unknown' || lowered === 'desconhecido') {
+  if (
+    DOE_PLACEHOLDER_RE.test(normalized) ||
+    lowered === 'doe' ||
+    lowered === 'unknown' ||
+    lowered === 'desconhecido'
+  ) {
     return true;
   }
 
@@ -196,7 +203,7 @@ export function buildConversationLedger(history: ConversationHistoryEntry[]): {
           .filter(Boolean);
         for (const question of questions) {
           if (content.includes('?')) {
-            askedQuestions.add(question);
+            askedQuestions.add(question.endsWith('?') ? question : `${question}?`);
           }
         }
       }

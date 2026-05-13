@@ -7,6 +7,8 @@ import {
   LINON_DIGIT_RE,
 } from './shared';
 
+const NON_LID_KEY_CHARS_RE = /[^a-z0-9]/gi;
+
 const workspaceSelfIdentityCache = new Map<
   string,
   { expiresAt: number; identity: WorkspaceSelfIdentity }
@@ -29,7 +31,7 @@ export function expandComparablePhoneVariants(value: string | null | undefined):
   if (digits.startsWith('55') && digits.length > 11) {
     variants.add(digits.slice(2));
   }
-  if (!digits.startsWith('55') && digits.length >= 10 && digits.length <= 11) {
+  if (!digits.startsWith('55') && digits.length === 11) {
     variants.add(`55${digits}`);
   }
 
@@ -157,6 +159,7 @@ export function buildLidMap(
 
     normalized.set(lid, pn);
     normalized.set(lid.replace(LINON_DIGIT_RE, ''), pn);
+    normalized.set(lid.replace(NON_LID_KEY_CHARS_RE, ''), pn);
   }
 
   return normalized;
@@ -168,10 +171,11 @@ export function resolveCanonicalChatId(chatId: string, lidMap?: Map<string, stri
     return '';
   }
 
-  if (LINON_DIGIT_RE.test(normalizedChatId) && lidMap) {
+  if (lidMap) {
     const mapped =
       lidMap.get(normalizedChatId) ||
       lidMap.get(normalizedChatId.replace(LINON_DIGIT_RE, '')) ||
+      lidMap.get(normalizedChatId.replace(NON_LID_KEY_CHARS_RE, '')) ||
       '';
     if (mapped) {
       return mapped;

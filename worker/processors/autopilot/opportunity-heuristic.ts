@@ -53,7 +53,7 @@ function computeHeuristicScore(
     reasons.push('multiple_recent_inbounds');
   }
   if (unreadCount > 0) {
-    score += 12;
+    score += unreadCount >= 3 ? 15 : 12;
     reasons.push('has_unread_backlog');
   }
   if (PRE_C__O_VALOR_QUANTO_O_RE.test(text)) {
@@ -276,10 +276,10 @@ export function inferHeuristicDemographics(text: string): {
   const normalized = String(text || '').toLowerCase();
 
   let gender = 'UNKNOWN';
-  if (B_SOU_HOMEM_MEU_MARIDO_RE.test(normalized)) {
-    gender = 'MASCULINO';
-  } else if (B_SOU_MULHER_MINHA_ESPO_RE.test(normalized)) {
+  if (B_SOU_MULHER_MINHA_ESPO_RE.test(normalized)) {
     gender = 'FEMININO';
+  } else if (B_SOU_HOMEM_MEU_MARIDO_RE.test(normalized)) {
+    gender = 'MASCULINO';
   }
 
   const explicitAge = normalized.match(B__D_2___S_ANOS_B_RE);

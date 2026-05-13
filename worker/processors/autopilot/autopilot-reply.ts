@@ -16,7 +16,7 @@ export function computeReplyStyleBudget(
   maxWords: number;
 } {
   const words = countReplyWords(message);
-  let maxSentences = words <= 8 ? 2 : words <= 20 ? 3 : 4;
+  let maxSentences = words <= 6 ? 2 : words <= 20 ? 3 : 4;
   let maxWords = Math.min(
     140,
     words <= 4 ? 26 : words <= 12 ? Math.max(24, words + 12) : Math.ceil(words * 1.8),
