@@ -1,7 +1,9 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 import type { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { KloelGlobalPriorService } from './kloel-global-prior.service';
+import { extractChannel } from './mind-belief-by-channel';
 
 function inputJson(value: unknown): Prisma.InputJsonValue {
   return JSON.parse(JSON.stringify(value)) as Prisma.InputJsonValue;
@@ -27,7 +29,12 @@ export interface CloseOutcomeInput {
 
 @Injectable()
 export class DecisionOutcomeService {
-  constructor(private readonly prisma: PrismaService) {}
+  private readonly logger = new Logger(DecisionOutcomeService.name);
+
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly globalPrior: KloelGlobalPriorService,
+  ) {}
 
   async recordDecision(input: RecordDecisionInput) {
     await this.prisma.decisionOutcome.create({
@@ -45,7 +52,7 @@ export class DecisionOutcomeService {
   }
 
   async closeOutcome(input: CloseOutcomeInput) {
-    await this.prisma.decisionOutcome.updateMany({
+    const result = await this.prisma.decisionOutcome.updateMany({
       where: { outcomeKey: input.outcomeKey, outcomeAt: null },
       data: {
         outcomeAt: new Date(),
@@ -55,6 +62,33 @@ export class DecisionOutcomeService {
         wonVsBaseline: input.wonVsBaseline ?? null,
       },
     });
+
+    if (result.count > 0) {
+      const closed = await this.prisma.decisionOutcome.findFirst({
+        where: { outcomeKey: input.outcomeKey },
+        orderBy: { outcomeAt: 'desc' },
+        select: { contextSnapshot: true, decisionType: true, chosenAction: true },
+      });
+
+      if (closed) {
+        const channel = extractChannel(closed.contextSnapshot as Record<string, unknown>);
+        if (channel) {
+          try {
+            await this.globalPrior.recordObservation(
+              channel,
+              closed.decisionType,
+              closed.chosenAction,
+              input.wonVsBaseline ?? false,
+            );
+          } catch (err: unknown) {
+            this.logger.error('Failed to record global prior observation from closeOutcome', {
+              outcomeKey: input.outcomeKey,
+              error: err instanceof Error ? err.message : String(err),
+            });
+          }
+        }
+      }
+    }
   }
 
   async findOpenByWorkspace(workspaceId: string) {
@@ -64,11 +98,7 @@ export class DecisionOutcomeService {
     });
   }
 
-  async findClosedByDecisionType(
-    workspaceId: string,
-    decisionType: string,
-    since: Date,
-  ) {
+  async findClosedByDecisionType(workspaceId: string, decisionType: string, since: Date) {
     return this.prisma.decisionOutcome.findMany({
       where: {
         workspaceId,
