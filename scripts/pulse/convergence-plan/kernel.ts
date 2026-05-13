@@ -28,7 +28,8 @@ import {
 } from '../dynamic-reality-kernel/type-contract-labels';
 import {
   discoverTruthModeLabels,
-  discoverScenarioStatusLabels,
+  discoverAsyncExpectationStatusLabels,
+  discoverGateResultStatusLabels,
 } from '../dynamic-reality-kernel/type-contract-engines';
 import { discoverCapabilityStatusLabels } from '../__kernel_additions__/discoverCapabilityStatusLabels';
 import { discoverFlowProjectionStatusLabels } from '../__kernel_additions__/discoverFlowProjectionStatusLabels';
@@ -51,7 +52,8 @@ let PARITY_GAP_KINDS = discoverParityGapKindLabels();
 let PARITY_GAP_SEVERITIES = discoverParityGapSeverityLabels();
 let CAPABILITY_STATUSES = discoverCapabilityStatusLabels();
 let FLOW_STATUSES = discoverFlowProjectionStatusLabels();
-let SCENARIO_STATUSES = discoverScenarioStatusLabels();
+let ASYNC_EXPECTATION_STATUSES = discoverAsyncExpectationStatusLabels();
+let GATE_RESULT_STATUSES = discoverGateResultStatusLabels();
 let OBSERVED_EXTERNAL_SIGNAL_SOURCE_LABELS = discoverExternalSignalSourceLabels();
 
 export {
@@ -72,7 +74,8 @@ export {
   PARITY_GAP_SEVERITIES,
   CAPABILITY_STATUSES,
   FLOW_STATUSES,
-  SCENARIO_STATUSES,
+  ASYNC_EXPECTATION_STATUSES,
+  GATE_RESULT_STATUSES,
   OBSERVED_EXTERNAL_SIGNAL_SOURCE_LABELS,
 };
 

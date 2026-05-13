@@ -1,7 +1,7 @@
 import type { PulseConvergencePlan } from '../types.convergence';
 import type { PulseGateName } from '../types.manifest';
 import type { BuildPulseConvergencePlanInput } from './kernel';
-import { SCENARIO_STATUSES } from './kernel';
+import { ASYNC_EXPECTATION_STATUSES, GATE_RESULT_STATUSES } from './kernel';
 import {
   applyDerivedPriorities,
   compactText,
@@ -79,8 +79,11 @@ export function buildConvergencePlan(input: BuildPulseConvergencePlanInput): Pul
   let p2 = observedP2Priority;
   let p3 = observedP3Priority;
   let observationOnlyMode = observedObservationOnlyMode;
-  let failStatus = deriveObservedConvergenceEvidenceLabel<string>(SCENARIO_STATUSES, 'fail');
-  let satisfiedStatus = deriveObservedConvergenceEvidenceLabel<string>(SCENARIO_STATUSES, 'satisfied');
+  let failStatus = deriveObservedConvergenceEvidenceLabel<string>(GATE_RESULT_STATUSES, 'fail');
+  let satisfiedStatus = deriveObservedConvergenceEvidenceLabel<string>(
+    ASYNC_EXPECTATION_STATUSES,
+    'satisfied',
+  );
   return {
     generatedAt: input.certification.timestamp,
     commitSha: input.certification.commitSha,

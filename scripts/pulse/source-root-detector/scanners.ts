@@ -8,6 +8,7 @@ import {
   SourceRootEvidenceBasis,
   CONVENTIONAL_SOURCE_DIR_NAMES,
   BUILD_CONFIG_FILES,
+  SKIP_DIR_NAMES,
 } from './types';
 import {
   normalizeRelative,

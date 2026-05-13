@@ -120,6 +120,15 @@ export interface PulseWorldStateSession {
   passedScenarios: number;
 }
 
+/** Pulse async expectation status type. */
+export type PulseAsyncExpectationStatus =
+  | 'pending'
+  | 'satisfied'
+  | 'failed'
+  | 'timed_out'
+  | 'missing_evidence'
+  | 'not_executed';
+
 /** Pulse world state shape. */
 export interface PulseWorldState {
   /** Generated at property. */
@@ -140,7 +149,7 @@ export interface PulseWorldState {
   asyncExpectationsStatus: Array<{
     scenarioId: string;
     expectation: string;
-    status: 'pending' | 'satisfied' | 'failed' | 'timed_out' | 'missing_evidence' | 'not_executed';
+    status: PulseAsyncExpectationStatus;
   }>;
   /** Artifacts by scenario property. */
   artifactsByScenario: Record<string, string[]>;
@@ -234,7 +243,7 @@ export interface PulseExecutionEvidence {
 /** Pulse gate result shape. */
 export interface PulseGateResult {
   /** Status property. */
-  status: 'pass' | 'fail';
+  status: PulseGateResultStatus;
   /** Reason property. */
   reason: string;
   /** Failure class property. */
@@ -248,6 +257,9 @@ export interface PulseGateResult {
   /** Affected flow ids property. */
   affectedFlowIds?: string[];
 }
+
+/** Pulse gate result status type. */
+export type PulseGateResultStatus = 'pass' | 'fail';
 
 /** Pulse certification tier status shape. */
 export interface PulseCertificationTierStatus {

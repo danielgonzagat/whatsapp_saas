@@ -5,7 +5,10 @@ import {
   discoverGateFailureClassLabels,
   deriveStringUnionMembersFromTypeContract,
 } from '../dynamic-reality-kernel/type-contract-labels';
-import { discoverTruthModeLabels } from '../dynamic-reality-kernel/type-contract-engines';
+import {
+  discoverGateResultStatusLabels,
+  discoverTruthModeLabels,
+} from '../dynamic-reality-kernel/type-contract-engines';
 import {
   deriveUnitValue,
   deriveZeroValue,
@@ -84,16 +87,12 @@ function _observedTruthModeLabel(): PulseTruthMode {
 const NO_HARDCODED_REALITY_ARTIFACT = discoverAllObservedArtifactFilenames().noHardcodedReality;
 
 function _gatePassLabel(): PulseGateResult['status'] {
-  const members = [
-    ...deriveStringUnionMembersFromTypeContract('scripts/pulse/types.evidence.ts', 'status'),
-  ];
+  const members = [...discoverGateResultStatusLabels()];
   return members[deriveZeroValue()] as PulseGateResult['status'];
 }
 
 function _gateFailLabel(): PulseGateResult['status'] {
-  const members = [
-    ...deriveStringUnionMembersFromTypeContract('scripts/pulse/types.evidence.ts', 'status'),
-  ];
+  const members = [...discoverGateResultStatusLabels()];
   return members[deriveUnitValue()] as PulseGateResult['status'];
 }
 

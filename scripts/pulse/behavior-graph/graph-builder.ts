@@ -1,7 +1,8 @@
 import * as path from 'path';
-import { readTextFile, readDir, ensureDir, writeTextFile, pathExists } from '../safe-fs';
+import { readTextFile, ensureDir, writeTextFile, pathExists } from '../safe-fs';
 import { safeJoin } from '../safe-path';
 import { detectSourceRoots } from '../source-root-detector/api';
+import { normalizeRelative, walkUnskippedFiles } from '../source-root-detector/helpers';
 import type { DetectedSourceRoot } from '../source-root-detector/types';
 import type { BehaviorGraph, BehaviorNode, BehaviorGraphSummary } from '../types.behavior-graph';
 import {

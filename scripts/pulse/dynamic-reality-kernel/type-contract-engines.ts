@@ -168,6 +168,20 @@ export function discoverScenarioStatusLabels(): Set<string> {
   );
 }
 
+export function discoverAsyncExpectationStatusLabels(): Set<string> {
+  return deriveStringUnionMembersFromTypeContract(
+    'scripts/pulse/types.evidence.ts',
+    'PulseAsyncExpectationStatus',
+  );
+}
+
+export function discoverGateResultStatusLabels(): Set<string> {
+  return deriveStringUnionMembersFromTypeContract(
+    'scripts/pulse/types.evidence.ts',
+    'PulseGateResultStatus',
+  );
+}
+
 // ── Execution harness type-union label discovery ───────────────────────────
 
 export function discoverHarnessTargetKindLabels(): Set<string> {
