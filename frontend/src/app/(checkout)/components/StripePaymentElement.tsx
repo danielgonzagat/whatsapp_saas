@@ -17,6 +17,7 @@ import {
   type ReactElement,
 } from 'react';
 
+import { kloelT } from '@/lib/i18n/t';
 import { getStripeClient } from '@/lib/stripe-client';
 
 const STRIPE_PAYMENT_DRAFT_STORAGE_NAME = 'kloel:stripe-payment-form:draft';
@@ -137,13 +138,13 @@ function PaymentForm({ returnUrl, onSuccess, onError }: PaymentFormProps): React
     }
     if (!isOnline) {
       saveStripeDraftMarker('offline_before_confirm');
-      publishError('Conexao indisponivel. Seus dados do checkout foram preservados para retomar.');
+      publishError(kloelT('Conexao indisponivel. Seus dados do checkout foram preservados para retomar.'));
       return { ok: false as const };
     }
 
     const { error: submitError } = await elements.submit();
     if (submitError) {
-      publishError(submitError.message ?? 'Falha ao validar os dados do pagamento.');
+      publishError(submitError.message ?? kloelT('Falha ao validar os dados do pagamento.'));
       return { ok: false as const };
     }
 
@@ -154,7 +155,7 @@ function PaymentForm({ returnUrl, onSuccess, onError }: PaymentFormProps): React
     });
 
     if (error) {
-      publishError(error.message ?? 'Falha ao processar pagamento.');
+      publishError(error.message ?? kloelT('Falha ao processar pagamento.'));
       return { ok: false as const };
     }
 
@@ -223,7 +224,7 @@ function PaymentForm({ returnUrl, onSuccess, onError }: PaymentFormProps): React
       </div>
       {walletReady ? (
         <div className="kloel-stripe-payment-form__divider" aria-hidden="true">
-          <span>ou pagar com cartão</span>
+          <span>{kloelT('ou pagar com cartão')}</span>
         </div>
       ) : null}
       <PaymentElement />
@@ -234,7 +235,7 @@ function PaymentForm({ returnUrl, onSuccess, onError }: PaymentFormProps): React
       ) : null}
       {!isOnline ? (
         <p role="status" className="kloel-stripe-payment-form__error">
-          Sem conexao agora. O checkout mantém o rascunho local para voce retomar.
+          {kloelT('Sem conexao agora. O checkout mantém o rascunho local para voce retomar.')}
         </p>
       ) : null}
       <button
@@ -242,7 +243,7 @@ function PaymentForm({ returnUrl, onSuccess, onError }: PaymentFormProps): React
         disabled={!stripe || submitting || !isOnline}
         className="kloel-stripe-payment-form__submit"
       >
-        {submitting ? 'Processando…' : 'Pagar agora'}
+        {submitting ? kloelT('Processando…') : kloelT('Pagar agora')}
       </button>
     </form>
   );

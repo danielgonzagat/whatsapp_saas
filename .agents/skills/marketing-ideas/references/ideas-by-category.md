@@ -24,55 +24,76 @@ Complete list of proven marketing approaches organized by category.
 
 ## Content & SEO (1-10)
 
-1. **Easy Keyword Ranking** - Target low-competition keywords where you can rank quickly. Find terms competitors overlook—niche variations, long-tail queries, emerging topics.
+1. **Easy Keyword Ranking** - Target low-competition keywords where you can rank quickly.
+  Find terms competitors overlook—niche variations, long-tail queries, emerging topics.
 
-2. **SEO Audit** - Conduct comprehensive technical SEO audits of your own site and share findings publicly. Document fixes and improvements to build authority.
+2. **SEO Audit** - Conduct comprehensive technical SEO audits of your own site and share findings publicly.
+  Document fixes and improvements to build authority.
 
-3. **Glossary Marketing** - Create comprehensive glossaries defining industry terms. Each term becomes an SEO-optimized page targeting "what is X" searches.
+3. **Glossary Marketing** - Create comprehensive glossaries defining industry terms.
+  Each term becomes an SEO-optimized page targeting "what is X" searches.
 
-4. **Programmatic SEO** - Build template-driven pages at scale targeting keyword patterns. Location pages, comparison pages, integration pages—any pattern with search volume.
+4. **Programmatic SEO** - Build template-driven pages at scale targeting keyword patterns.
+  Location pages, comparison pages, integration pages—any pattern with search volume.
 
-5. **Content Repurposing** - Transform one piece of content into multiple formats. Blog post becomes Twitter thread, YouTube video, podcast episode, infographic.
+5. **Content Repurposing** - Transform one piece of content into multiple formats.
+  Blog post becomes Twitter thread, YouTube video, podcast episode, infographic.
 
-6. **Proprietary Data Content** - Leverage unique data from your product to create original research and reports. Data competitors can't replicate creates linkable assets.
+6. **Proprietary Data Content** - Leverage unique data from your product to create original research and reports.
+  Data competitors can't replicate creates linkable assets.
 
-7. **Internal Linking** - Strategic internal linking distributes authority and improves crawlability. Build topical clusters connecting related content.
+7. **Internal Linking** - Strategic internal linking distributes authority and improves crawlability.
+  Build topical clusters connecting related content.
 
-8. **Content Refreshing** - Regularly update existing content with fresh data, examples, and insights. Refreshed content often outperforms new content.
+8. **Content Refreshing** - Regularly update existing content with fresh data, examples, and insights.
+  Refreshed content often outperforms new content.
 
-9. **Knowledge Base SEO** - Optimize help documentation for search. Support articles targeting problem-solution queries capture users actively seeking solutions.
+9. **Knowledge Base SEO** - Optimize help documentation for search.
+  Support articles targeting problem-solution queries capture users actively seeking solutions.
 
-10. **Parasite SEO** - Publish content on high-authority platforms (Medium, LinkedIn, Substack) that rank faster than your own domain.
+10. **Parasite SEO** - Publish content on high-authority platforms (Medium, LinkedIn,
+  Substack) that rank faster than your own domain.
 
 ---
 
 ## Competitor & Comparison (11-13)
 
-1. **Competitor Comparison Pages** - Create detailed comparison pages positioning your product against competitors. "[Your Product] vs [Competitor]" pages capture high-intent searchers.
+1. **Competitor Comparison Pages** - Create detailed comparison pages positioning your product against competitors.
+  "[Your Product] vs [Competitor]" pages capture high-intent searchers.
 
-2. **Marketing Jiu-Jitsu** - Turn competitor weaknesses into your strengths. When competitors raise prices, launch affordability campaigns.
+2. **Marketing Jiu-Jitsu** - Turn competitor weaknesses into your strengths.
+  When competitors raise prices, launch affordability campaigns.
 
-3. **Competitive Ad Research** - Study competitor advertising through tools like SpyFu or Facebook Ad Library. Learn what messaging resonates.
+3. **Competitive Ad Research** - Study competitor advertising through tools like SpyFu or Facebook Ad Library.
+  Learn what messaging resonates.
 
 ---
 
 ## Free Tools & Engineering (14-22)
 
-1. **Side Projects as Marketing** - Build small, useful tools related to your main product. Side projects attract users who may later convert.
+1. **Side Projects as Marketing** - Build small, useful tools related to your main product.
+  Side projects attract users who may later convert.
 
-2. **Engineering as Marketing** - Build free tools that solve real problems. Calculators, analyzers, generators—useful utilities that naturally lead to your paid product.
+2. **Engineering as Marketing** - Build free tools that solve real problems.
+  Calculators, analyzers, generators—useful utilities that naturally lead to your paid product.
 
-3. **Importers as Marketing** - Build import tools for competitor data. "Import from [Competitor]" reduces switching friction.
+3. **Importers as Marketing** - Build import tools for competitor data.
+  "Import from [Competitor]" reduces switching friction.
 
-4. **Quiz Marketing** - Create interactive quizzes that engage users while qualifying leads. Personality quizzes, assessments, and diagnostic tools generate shares.
+4. **Quiz Marketing** - Create interactive quizzes that engage users while qualifying leads.
+  Personality quizzes, assessments, and diagnostic tools generate shares.
 
-5. **Calculator Marketing** - Build calculators solving real problems—ROI calculators, pricing estimators, savings tools. Calculators attract links and rank well.
+5. **Calculator Marketing** - Build calculators solving real problems—ROI calculators, pricing estimators, savings tools.
+  Calculators attract links and rank well.
 
-6. **Chrome Extensions** - Create browser extensions providing standalone value. Chrome Web Store becomes another distribution channel.
+6. **Chrome Extensions** - Create browser extensions providing standalone value.
+  Chrome Web Store becomes another distribution channel.
 
-7. **Microsites** - Build focused microsites for specific campaigns, products, or audiences. Dedicated domains can rank faster.
+7. **Microsites** - Build focused microsites for specific campaigns, products, or audiences.
+  Dedicated domains can rank faster.
 
-8. **Scanners** - Build free scanning tools that audit or analyze something. Website scanners, security checkers, performance analyzers.
+8. **Scanners** - Build free scanning tools that audit or analyze something.
+  Website scanners, security checkers, performance analyzers.
 
 9. **Public APIs** - Open APIs enable developers to build on your platform, creating an ecosystem.
 
@@ -84,9 +105,11 @@ Complete list of proven marketing approaches organized by category.
 
 2. **Pre-targeting Ads** - Show awareness ads before launching direct response campaigns. Warm audiences convert better.
 
-3. **Facebook Ads** - Meta's detailed targeting reaches specific audiences. Test creative variations and leverage retargeting.
+3. **Facebook Ads** - Meta's detailed targeting reaches specific audiences.
+  Test creative variations and leverage retargeting.
 
-4. **Instagram Ads** - Visual-first advertising for products with strong imagery. Stories and Reels ads capture attention.
+4. **Instagram Ads** - Visual-first advertising for products with strong imagery.
+  Stories and Reels ads capture attention.
 
 5. **Twitter Ads** - Reach engaged professionals discussing industry topics. Promoted tweets and follower campaigns.
 
@@ -98,7 +121,8 @@ Complete list of proven marketing approaches organized by category.
 
 9. **Google Ads** - Capture high-intent search queries. Brand terms, competitor terms, and category terms.
 
-10. **YouTube Ads** - Video ads with detailed targeting. Pre-roll and discovery ads reach users consuming related content.
+10. **YouTube Ads** - Video ads with detailed targeting. Pre-roll and discovery ads reach users consuming related
+  content.
 
 11. **Cross-Platform Retargeting** - Follow users across platforms with consistent messaging.
 
@@ -108,9 +132,11 @@ Complete list of proven marketing approaches organized by category.
 
 ## Social Media & Community (35-44)
 
-1. **Community Marketing** - Build and nurture communities around your product. Slack groups, Discord servers, Facebook groups.
+1. **Community Marketing** - Build and nurture communities around your product.
+  Slack groups, Discord servers, Facebook groups.
 
-2. **Quora Marketing** - Answer relevant questions with genuine expertise. Include product mentions where naturally appropriate.
+2. **Quora Marketing** - Answer relevant questions with genuine expertise.
+  Include product mentions where naturally appropriate.
 
 3. **Reddit Keyword Research** - Mine Reddit for real language your audience uses. Discover pain points and desires.
 
@@ -132,7 +158,8 @@ Complete list of proven marketing approaches organized by category.
 
 ## Email Marketing (45-53)
 
-1. **Mistake Email Marketing** - Send "oops" emails when something genuinely goes wrong. Authenticity generates engagement.
+1. **Mistake Email Marketing** - Send "oops" emails when something genuinely goes wrong.
+  Authenticity generates engagement.
 
 2. **Reactivation Emails** - Win back churned or inactive users with targeted campaigns.
 
@@ -365,3 +392,4 @@ Complete list of proven marketing approaches organized by category.
 2. **Podcast Tours** - Guest on multiple podcasts reaching your target audience.
 
 3. **Customer Language** - Use the exact words your customers use in marketing.
+

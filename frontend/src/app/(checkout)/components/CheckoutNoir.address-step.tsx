@@ -115,7 +115,7 @@ export function NoirAddressStep({
         <div style={{ fontSize: 13, color: C.text2, lineHeight: 1.6 }}>
           <strong style={{ color: C.text }}>{kloelT(`Endereço para entrega:`)}</strong>
           <br />
-          {form.street || 'Endereço'}, {form.number || 'S/N'} - {form.neighborhood}
+          {form.street || kloelT('Endereço')}, {form.number || kloelT('S/N')} - {form.neighborhood}
           <br />
           {form.complement ? (
             <>
@@ -129,8 +129,8 @@ export function NoirAddressStep({
             {kloelT(`Forma de entrega:`)}
           </strong>
           {shippingInCents === 0
-            ? 'Frete padrão Grátis'
-            : `Frete padrão ${fmt.brl(shippingInCents)}`}
+            ? `${kloelT('Frete padrão')} ${kloelT('Grátis')}`
+            : `${kloelT('Frete padrão')} ${fmt.brl(shippingInCents)}`}
         </div>
       </div>
     );
@@ -161,7 +161,7 @@ export function NoirAddressStep({
         <div style={{ display: 'flex', gap: 12, alignItems: 'flex-end' }}>
           <div style={{ minWidth: 180 }}>
             <label htmlFor={`${fid}-cep`} style={L}>
-              CEP
+              {kloelT(`CEP`)}
             </label>
             <SharedValidationInput
               theme={inputTheme}
@@ -238,14 +238,14 @@ export function NoirAddressStep({
           </div>
           <div style={{ flex: '0 0 24%' }}>
             <label htmlFor={`${fid}-state`} style={L}>
-              UF
+              {kloelT(`UF`)}
             </label>
             <SharedValidationInput
               theme={inputTheme}
               id={`${fid}-state`}
               value={form.state}
               onChange={updateField('state')}
-              placeholder="UF"
+              placeholder={kloelT(`UF`)}
             />
           </div>
         </div>
@@ -290,7 +290,7 @@ export function NoirAddressStep({
         <span
           style={{ fontSize: 14, fontWeight: 700, color: shippingInCents === 0 ? C.green : C.text }}
         >
-          {shippingInCents === 0 ? 'Grátis' : fmt.brl(shippingInCents)}
+          {shippingInCents === 0 ? kloelT('Grátis') : fmt.brl(shippingInCents)}
         </span>
       </div>
       {submitError && step === 2 ? (
@@ -312,7 +312,7 @@ export function NoirAddressStep({
           boxShadow: '0 4px 16px rgba(212,165,116,0.2)',
         }}
       >
-        {btnStep2Text || 'Ir para Pagamento'}
+        {btnStep2Text || kloelT('Ir para Pagamento')}
       </button>
     </div>
   );

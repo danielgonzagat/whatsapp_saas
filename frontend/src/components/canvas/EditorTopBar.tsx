@@ -281,9 +281,9 @@ export function EditorTopBar({
             <div style={ddSep} />
             <div style={{ padding: '8px 12px', display: 'flex', alignItems: 'center', gap: 6 }}>
               <input
-                aria-label="Largura personalizada"
+                aria-label={kloelT(`Largura personalizada`)}
                 type="number"
-                placeholder="L"
+                placeholder={kloelT(`L`)}
                 value={customW}
                 onChange={(e) => setCustomW(e.target.value)}
                 style={{
@@ -301,9 +301,9 @@ export function EditorTopBar({
               />
               <span style={{ color: colors.text.dim, fontSize: 11 }}>x</span>
               <input
-                aria-label="Altura personalizada"
+                aria-label={kloelT(`Altura personalizada`)}
                 type="number"
-                placeholder="A"
+                placeholder={kloelT(`A`)}
                 value={customH}
                 onChange={(e) => setCustomH(e.target.value)}
                 style={{
@@ -460,7 +460,7 @@ export function EditorTopBar({
         }}
       >
         <input
-          aria-label="Nome do design"
+          aria-label={kloelT(`Nome do design`)}
           value={designName}
           onChange={(e) => onNameChange(e.target.value)}
           style={{

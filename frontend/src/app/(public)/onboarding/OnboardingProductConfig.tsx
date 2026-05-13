@@ -1,5 +1,6 @@
 'use client';
 
+import { kloelT } from '@/lib/i18n/t';
 import { colors } from '@/lib/design-tokens';
 import { Mail, MessageCircle, Users } from 'lucide-react';
 
@@ -52,7 +53,7 @@ export function OnboardingProductConfig({
     <div style={{ marginTop: 24, display: 'grid', gap: 16 }}>
       <div>
         <p style={{ margin: '0 0 8px', color: colors.text.silver, fontSize: 13, fontWeight: 600 }}>
-          Tipo de produto
+          {kloelT('Tipo de produto')}
         </p>
         <div
           style={{
@@ -75,7 +76,7 @@ export function OnboardingProductConfig({
                 fontSize: 13,
               }}
             >
-              {item.label}
+              {kloelT(item.label)}
             </button>
           ))}
         </div>
@@ -83,7 +84,7 @@ export function OnboardingProductConfig({
 
       <div>
         <p style={{ margin: '0 0 8px', color: colors.text.silver, fontSize: 13, fontWeight: 600 }}>
-          Canal principal
+          {kloelT('Canal principal')}
         </p>
         <div
           style={{
@@ -114,7 +115,7 @@ export function OnboardingProductConfig({
                 }}
               >
                 <Icon size={15} />
-                {item.label}
+                {kloelT(item.label)}
               </button>
             );
           })}
@@ -123,7 +124,7 @@ export function OnboardingProductConfig({
 
       <div>
         <p style={{ margin: '0 0 8px', color: colors.text.silver, fontSize: 13, fontWeight: 600 }}>
-          Estrutura atual
+          {kloelT('Estrutura atual')}
         </p>
         <label
           style={{
@@ -139,7 +140,7 @@ export function OnboardingProductConfig({
             checked={hasProduct}
             onChange={(event) => onHasProductChange(event.target.checked)}
           />
-          Já tenho produto
+          {kloelT('Já tenho produto')}
         </label>
         <label
           style={{
@@ -156,13 +157,13 @@ export function OnboardingProductConfig({
             checked={hasCheckout}
             onChange={(event) => onHasCheckoutChange(event.target.checked)}
           />
-          Já tenho checkout
+          {kloelT('Já tenho checkout')}
         </label>
       </div>
 
       <div>
         <p style={{ margin: '0 0 8px', color: colors.text.silver, fontSize: 13, fontWeight: 600 }}>
-          Uso inicial da IA
+          {kloelT('Uso inicial da IA')}
         </p>
         <div
           style={{
@@ -185,7 +186,7 @@ export function OnboardingProductConfig({
                 fontSize: 13,
               }}
             >
-              {item.label}
+              {kloelT(item.label)}
             </button>
           ))}
         </div>

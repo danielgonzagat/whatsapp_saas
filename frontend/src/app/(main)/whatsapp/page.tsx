@@ -112,7 +112,7 @@ function ChannelCard({
             color: connected ? colors.semantic.successText : colors.semantic.errorText,
           }}
         >
-          {connected ? 'Conectado' : 'Nao conectado'}
+          {connected ? kloelT('Conectado') : kloelT('Nao conectado')}
         </span>
       </div>
       <p className="text-sm" style={{ color: colors.text.faint }}>
@@ -346,8 +346,8 @@ export default function WhatsAppPage() {
                   {kloelT(`Meta Auth`)}
                 </div>
                 <div className="mt-2">
-                  {metaStatus?.connected ? 'Conectado' : 'Pendente'}
-                  {metaStatus?.tokenExpired ? ' com token expirado' : ''}
+                  {metaStatus?.connected ? kloelT('Conectado') : kloelT('Pendente')}
+                  {metaStatus?.tokenExpired ? kloelT(' com token expirado') : ''}
                 </div>
               </div>
               <div
@@ -360,7 +360,7 @@ export default function WhatsAppPage() {
                 >
                   {kloelT(`Provider ativo`)}
                 </div>
-                <div className="mt-2">API oficial da Meta</div>
+                <div className="mt-2">{kloelT('API oficial da Meta')}</div>
               </div>
               <div
                 className="rounded-2xl border px-4 py-3"
@@ -372,7 +372,7 @@ export default function WhatsAppPage() {
                 >
                   {kloelT(`Runtime degradado`)}
                 </div>
-                <div className="mt-2">{whatsAppStatus?.degraded ? 'Sim' : 'Nao'}</div>
+                <div className="mt-2">{whatsAppStatus?.degraded ? kloelT('Sim') : kloelT('Nao')}</div>
               </div>
               <div
                 className="rounded-2xl border px-4 py-3"

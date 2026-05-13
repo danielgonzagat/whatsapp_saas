@@ -9,6 +9,7 @@ import {
 } from '@/lib/api/member-area-public';
 import { BookOpen, CheckCircle2, Clock, Download, LockKeyhole, PlayCircle } from 'lucide-react';
 import { use, useEffect, useState } from 'react';
+import { kloelT } from '@/lib/i18n/t';
 
 export default function PublicMemberAreaPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = use(params);
@@ -76,7 +77,7 @@ export default function PublicMemberAreaPage({ params }: { params: Promise<{ slu
         <div className="mx-auto flex min-h-screen max-w-5xl items-center justify-center px-6 text-center">
           <div>
             <LockKeyhole className="mx-auto mb-4 h-10 w-10 text-orange-400" />
-            <h1 className="text-2xl font-semibold">Area indisponivel</h1>
+            <h1 className="text-2xl font-semibold">{kloelT('Area indisponivel')}</h1>
             <p className="mt-2 text-sm text-zinc-400">{error}</p>
           </div>
         </div>
@@ -101,7 +102,7 @@ export default function PublicMemberAreaPage({ params }: { params: Promise<{ slu
                   <BookOpen className="h-6 w-6 text-orange-400" />
                 </div>
               )}
-              <span className="text-sm font-medium text-orange-300">Kloel Members</span>
+              <span className="text-sm font-medium text-orange-300">{kloelT('Kloel Members')}</span>
             </div>
             <h1 className="max-w-3xl text-4xl font-semibold tracking-normal text-white md:text-5xl">
               {area.name}
@@ -112,23 +113,23 @@ export default function PublicMemberAreaPage({ params }: { params: Promise<{ slu
             <div className="mt-8 flex flex-wrap gap-3 text-sm text-zinc-300">
               <span className="inline-flex items-center gap-2 rounded border border-zinc-800 px-3 py-2">
                 <BookOpen className="h-4 w-4 text-orange-400" />
-                {area.totalModules ?? 0} modulos
+                {area.totalModules ?? 0} {kloelT('modulos')}
               </span>
               <span className="inline-flex items-center gap-2 rounded border border-zinc-800 px-3 py-2">
                 <PlayCircle className="h-4 w-4 text-orange-400" />
-                {area.totalLessons ?? 0} aulas
+                {area.totalLessons ?? 0} {kloelT('aulas')}
               </span>
             </div>
           </div>
 
           <form onSubmit={requestAccess} className="rounded border border-zinc-800 bg-zinc-900 p-6">
             <LockKeyhole className="mb-4 h-8 w-8 text-orange-400" />
-            <h2 className="text-xl font-semibold">Acessar conteudo</h2>
+            <h2 className="text-xl font-semibold">{kloelT('Acessar conteudo')}</h2>
             <p className="mt-2 text-sm leading-6 text-zinc-400">
-              Use o mesmo e-mail informado na compra para liberar seus modulos e aulas.
+              {kloelT('Use o mesmo e-mail informado na compra para liberar seus modulos e aulas.')}
             </p>
             <label className="mt-6 block text-sm font-medium text-zinc-200" htmlFor="student-email">
-              E-mail da compra
+              {kloelT('E-mail da compra')}
             </label>
             <input
               id="student-email"
@@ -146,7 +147,7 @@ export default function PublicMemberAreaPage({ params }: { params: Promise<{ slu
               className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded bg-orange-500 px-4 py-3 text-sm font-semibold text-zinc-950 disabled:cursor-not-allowed disabled:opacity-60"
             >
               <CheckCircle2 className="h-4 w-4" />
-              {submitting ? 'Verificando...' : 'Entrar'}
+              {submitting ? kloelT('Verificando...') : kloelT('Entrar')}
             </button>
           </form>
         </section>
@@ -194,7 +195,7 @@ export default function PublicMemberAreaPage({ params }: { params: Promise<{ slu
               <div className="mb-4 flex flex-wrap items-center gap-3 text-xs text-zinc-400">
                 <span className="inline-flex items-center gap-1">
                   <Clock className="h-4 w-4" />
-                  {selectedLesson.durationMin ? `${selectedLesson.durationMin} min` : 'Aula'}
+                  {selectedLesson.durationMin ? `${selectedLesson.durationMin} min` : kloelT('Aula')}
                 </span>
                 <span>{selectedLesson.type}</span>
               </div>
@@ -224,13 +225,13 @@ export default function PublicMemberAreaPage({ params }: { params: Promise<{ slu
                   className="mt-6 inline-flex items-center gap-2 rounded border border-zinc-700 px-4 py-2 text-sm text-zinc-200 hover:border-orange-500"
                 >
                   <Download className="h-4 w-4" />
-                  Baixar material
+                  {kloelT('Baixar material')}
                 </a>
               )}
             </article>
           ) : (
             <div className="flex min-h-[420px] items-center justify-center text-center text-zinc-400">
-              Nenhuma aula publicada nesta area ainda.
+              {kloelT('Nenhuma aula publicada nesta area ainda.')}
             </div>
           )}
         </section>

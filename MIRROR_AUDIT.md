@@ -11,10 +11,20 @@
 
 O sistema atual já é mais sofisticado do que a missão sugere:
 
-1. **Watcher existe.** `scripts/obsidian-mirror-daemon.mjs:413` usa `node:fs.watch(REPO_ROOT, { recursive: true })` com debounce de 250ms. **Não é "estático".** O que falta é **operacionalização** (nenhum npm script, nenhum hook dispara o daemon em watch por padrão).
-2. **Detecção de erros existe**, mas é **regex-level / pattern-level**, não AST. Conta `throw`/`catch`/`try` para classificar `effect-intensity:errors:*`. Não há tipos, não há lint integrado, não há SAST.
-3. **Coloração no graph é nativa Obsidian** (sem plugin custom). Tags YAML no frontmatter casam com `colorGroups` em `.obsidian/graph.json`. **Não é multi-dot por nó — é um nó, uma cor.** A missão pede "pontos coloridos", o que significa que vai precisar **ou** de um plugin custom **ou** de uma reinterpretação visual (cor do nó = severidade dominante; tags = categorias filtráveis).
-4. **Pontos de extensão existem e estão bem isolados.** O daemon e seus 4 módulos são **constitution-locked**. Adicionamos via sidecar JSON (`FINDINGS_AGGREGATE.json`) ingerido por novo módulo não-protegido — sem tocar a casca lockada.
+1. **Watcher existe.** `scripts/obsidian-mirror-daemon.mjs:413` usa `node:fs.watch(REPO_ROOT,
+{ recursive: true })` com debounce de 250ms. **Não é "estático".** O que falta é **operacionalização** (nenhum npm
+   script, nenhum hook dispara o daemon em watch por padrão).
+2. **Detecção de erros existe**, mas é **regex-level / pattern-level**, não AST.
+   Conta `throw`/`catch`/`try` para classificar `effect-intensity:errors:*`.
+   Não há tipos, não há lint integrado, não há SAST.
+3. **Coloração no graph é nativa Obsidian** (sem plugin custom).
+   Tags YAML no frontmatter casam com `colorGroups` em `.obsidian/graph.json`.
+   **Não é multi-dot por nó — é um nó, uma cor.** A missão pede "pontos coloridos",
+   o que significa que vai precisar **ou** de um plugin custom **ou** de uma reinterpretação visual (cor do nó = severidade
+   dominante; tags = categorias filtráveis).
+4. **Pontos de extensão existem e estão bem isolados.** O daemon e seus 4 módulos são **constitution-locked**.
+   Adicionamos via sidecar JSON (`FINDINGS_AGGREGATE.json`) ingerido por novo módulo não-protegido — sem tocar a casca
+   lockada.
 
 ---
 
@@ -96,14 +106,16 @@ O sistema atual já é mais sofisticado do que a missão sugere:
 | `~/Documents/Obsidian Vault/.obsidian/plugins/codex-obsidian-bridge/` | Bridge localhost para Codex inspecionar vault                                             | JS compilado | ✗      | ~136KB |
 
 **Total LOC do core mirror (locked): 4.352 linhas.**
-**Constitution-protected per CLAUDE.md "ARQUIVOS PROTEGIDOS"**: estes 6 arquivos `.mjs` não podem ser editados por IA — apenas o dono.
+**Constitution-protected per CLAUDE.md "ARQUIVOS PROTEGIDOS"**: estes 6 arquivos `.mjs` não podem ser editados por IA —
+apenas o dono.
 
 ### 1.3 Pipeline ponta-a-ponta
 
 #### Ingestão
 
 - **Estratégia**: `fs.watch(REPO_ROOT, { recursive: true })` em watch mode (`obsidian-mirror-daemon.mjs:413`); `collectAllSourceFiles()` em `--rebuild`.
-- **Filtros**: `isCandidateSourcePath()` + `isMirrorableSourceFile()` em `utils.mjs` (regex de skip patterns + extensões em `constants.mjs`).
+- **Filtros**: `isCandidateSourcePath()` + `isMirrorableSourceFile()` em `utils.mjs` (regex de skip patterns + extensões
+  em `constants.mjs`).
 - **Debounce**: 250ms (`DEBOUNCE_MS`).
 - **Tamanho máximo**: 5MB (`MAX_FILE_SIZE`); arquivos maiores entram como `mirror/metadata-only`.
 - **Lock**: `.obsidian-mirror-daemon.lock` na raiz do repo, stale após 120s, poll 75ms, timeout de aquisição 30s.
@@ -113,7 +125,8 @@ O sistema atual já é mais sofisticado do que a missão sugere:
 Para `/repo/foo/bar.ts`:
 
 - **Output path**: `/Vault/Kloel/99 - Espelho do Codigo/_source/foo/bar.ts.md` (via `sourceToMirrorPath`).
-- **Conteúdo**: frontmatter YAML com 13+ campos + corpo com source code embedded (até `SOURCE_BODY_MIRROR_MAX_BYTES`, default unlimited).
+- **Conteúdo**: frontmatter YAML com 13+ campos + corpo com source code embedded (até `SOURCE_BODY_MIRROR_MAX_BYTES`,
+  default unlimited).
 - **Wiki-links**: helpers em `utils.mjs` (formato `[[...]]` para conexões entre mirror nodes).
 
 **Frontmatter real (sample colhido pelo subagente C, arquivo `_source/.backup-manifest.json.md`):**
@@ -169,7 +182,8 @@ visual_facts: # ← rich detection output (non-rendered, queryable)
 | `--status`            | Sumário do estado do mirror                              |
 | (nenhum)              | Provavelmente exibe help (linha 469)                     |
 
-**Operacionalização**: ZERO npm script (`grep "obsidian\|mirror" package.json` retornou só uma referência ao path). ZERO hook husky/CI dispara o daemon. **É invocado manualmente, ou esquecido.**
+**Operacionalização**: ZERO npm script (`grep "obsidian\|mirror" package.json` retornou só uma referência ao path).
+ZERO hook husky/CI dispara o daemon. **É invocado manualmente, ou esquecido.**
 
 #### Idempotência
 
@@ -235,20 +249,26 @@ visual_facts: # ← rich detection output (non-rendered, queryable)
 | **God files (>500 linhas)**      | ✗ parcial     | `bytes` no frontmatter; checker existe; não vira tag         | —                                                                           |
 | **Doc ausente em API pública**   | ✗             | —                                                            | —                                                                           |
 
-**Resumo**: das 11 categorias mínimas exigidas pela missão, **zero estão totalmente cobertas**, **algumas têm sinais parciais via regex/contagem**. O motor existente é forte para **classificação semântica** (effect-_, surface-_, risk-\*) mas fraco para **detecção de erros reais**.
+**Resumo**: das 11 categorias mínimas exigidas pela missão, **zero estão totalmente cobertas**,
+**algumas têm sinais parciais via regex/contagem**. O motor existente é forte para **classificação semântica** (effect-_,
+surface-_, risk-\*) mas fraco para **detecção de erros reais**.
 
 ### 2.3 Mecânica de visualização atual
 
 - **Native Obsidian** `colorGroups` em `.obsidian/graph.json` (27 grupos).
 - Cada grupo: query do tipo `tag:#foo` → cor RGB.
-- **Renderização**: nó inteiro pinta da cor do PRIMEIRO `colorGroups` cuja query casa (Obsidian core behavior). **Não é multi-dot.**
+- **Renderização**: nó inteiro pinta da cor do PRIMEIRO `colorGroups` cuja query casa (Obsidian core behavior).
+  **Não é multi-dot.**
 - Sem CSS snippet em `.obsidian/snippets/`.
 - Sem plugin custom de graph rendering.
 
-**Implicação para a missão**: o requisito "**ponto colorido por erro**, com cor por severidade, múltiplos erros = múltiplos pontos no mesmo nó" **não é alcançável só com configuração**. Vai exigir **uma das três rotas**:
+**Implicação para a missão**: o requisito "**ponto colorido por erro**, com cor por severidade,
+múltiplos erros = múltiplos pontos no mesmo nó" **não é alcançável só com configuração**.
+Vai exigir **uma das três rotas**:
 
 1. **Plugin custom Obsidian** que renderiza badges/dots sobre o nó na graph view (extends `GraphView`).
-2. **Reinterpretação visual**: cor do nó = severidade dominante (max), tags adicionais filtram. Mantém native colorGroups.
+2. **Reinterpretação visual**: cor do nó = severidade dominante (max), tags adicionais filtram.
+   Mantém native colorGroups.
 3. **CSS snippet + DOM injection** via plugin custom (workaround mais frágil).
 
 A escolha precisa ser do dono do repo.
@@ -283,7 +303,8 @@ O daemon **não consome sidecar JSON de findings hoje**. Mas:
 
 **Estratégia segura** (não toca locked):
 
-1. Criar `scripts/findings-engines/` (não-locked) com um wrapper por engine: `tsc.mjs`, `eslint.mjs`, `knip.mjs`, `madge.mjs`, `semgrep.mjs`, etc. Cada um produz JSON normalizado:
+1. Criar `scripts/findings-engines/` (não-locked) com um wrapper por engine: `tsc.mjs`, `eslint.mjs`, `knip.mjs`,
+   `madge.mjs`, `semgrep.mjs`, etc. Cada um produz JSON normalizado:
    ```json
    {
      "engine": "tsc",
@@ -302,8 +323,10 @@ O daemon **não consome sidecar JSON de findings hoje**. Mas:
    ```
 2. Criar `scripts/ops/aggregate-findings.mjs` que agrega tudo em `FINDINGS_AGGREGATE.json` (raiz do repo, gitignored).
 3. **Como o daemon vai ler isso?** Duas opções:
-   - **Opção A — sidecar passive**: gerar `_source/<file>.findings.json` paralelo a cada `<file>.md`; um futuro plugin custom Obsidian lê esse JSON e renderiza os dots na graph view.
-   - **Opção B — pedir ao dono do repo** uma alteração mínima no daemon locked para anexar findings ao frontmatter (`findings: [...]`). Requer autorização explícita por ser arquivo protegido.
+   - **Opção A — sidecar passive**: gerar `_source/<file>.findings.json` paralelo a cada `<file>.md`;
+     um futuro plugin custom Obsidian lê esse JSON e renderiza os dots na graph view.
+   - **Opção B — pedir ao dono do repo** uma alteração mínima no daemon locked para anexar findings ao frontmatter
+     (`findings: [...]`). Requer autorização explícita por ser arquivo protegido.
 
 **Recomendação**: começar com **Opção A** (zero alteração em locked). Avaliar Opção B só se a UX provar limitação.
 
@@ -313,9 +336,11 @@ O daemon **não consome sidecar JSON de findings hoje**. Mas:
 - `fs.watch` tem limitações conhecidas: macOS dispara events duplicados, falha em renames atômicos editor-side, não atravessa symlinks de forma confiável.
 - **Trade-off**:
   - Manter `fs.watch` do daemon e adicionar engines como reação: simples, zero deps, herda os bugs do `fs.watch`.
-  - Adicionar `chokidar` num **novo** script `scripts/findings-watch.mjs` paralelo ao daemon (não-locked): mais robusto cross-platform; consome o mesmo lockfile? Decidir.
+  - Adicionar `chokidar` num **novo** script `scripts/findings-watch.mjs` paralelo ao daemon (não-locked): mais robusto
+    cross-platform; consome o mesmo lockfile? Decidir.
 - **Conflitos**: husky pre-push roda `prepush:scoped` (não toca mirror). Sem conflito.
-- **Watchers existentes**: `backend start:dev` (NestJS), `worker start:watch` (nodemon), `frontend test:watch` (vitest). Nenhum mexe no vault. Sem risco de double-write.
+- **Watchers existentes**: `backend start:dev` (NestJS), `worker start:watch` (nodemon), `frontend test:watch` (vitest).
+  Nenhum mexe no vault. Sem risco de double-write.
 
 ### 3.4 CI hooks
 
@@ -331,24 +356,31 @@ O daemon **não consome sidecar JSON de findings hoje**. Mas:
 
 ### Fase 1 — Compilador de erros expandido
 
-1. **Criar `scripts/findings-engines/`** (non-locked) com módulos isolados por engine — começar com `tsc`, `eslint`, `knip`, `madge`, `semgrep` (via Codacy cache), `architecture-guard`, `ratchet`.
+1. **Criar `scripts/findings-engines/`** (non-locked) com módulos isolados por engine — começar com `tsc`, `eslint`,
+   `knip`, `madge`, `semgrep` (via Codacy cache), `architecture-guard`, `ratchet`.
 2. **Schema único** `Finding`:
    ```ts
    { file, line, column?, category, severity: 'critical'|'high'|'medium'|'low',
      engine, rule, message, fingerprint }
    ```
 3. **Aggregator** `scripts/ops/aggregate-findings.mjs` → `FINDINGS_AGGREGATE.json` (gitignored).
-4. **Sidecar emit**: `scripts/ops/emit-findings-sidecars.mjs` lê o aggregate e escreve `_source/<path>.findings.json` paralelo a cada mirror node. **Não toca o `.md` locked nem o daemon.**
+4. **Sidecar emit**: `scripts/ops/emit-findings-sidecars.mjs` lê o aggregate e escreve `_source/<path>.findings.json`
+   paralelo a cada mirror node. **Não toca o `.md` locked nem o daemon.**
 5. **Visualização**: precisa decisão sobre rota (plugin custom vs reinterpretação de cor — ver §2.3).
-6. **Filtros**: tags `#err/<categoria>`, `#err/sev/<severidade>` adicionadas pelo plugin custom OU como tags extra no `.md` se autorizarmos alterar o daemon.
+6. **Filtros**: tags `#err/<categoria>`, `#err/sev/<severidade>` adicionadas pelo plugin custom OU como tags extra no
+   `.md` se autorizarmos alterar o daemon.
 
 ### Fase 2 — Espelhamento dinâmico
 
-1. **Operacionalizar o que já existe**: criar `npm run mirror:watch`, `mirror:status`, `mirror:rebuild` no `package.json` raiz. Documentar.
-2. **Novo watcher de findings**: `scripts/findings-watch.mjs` com `chokidar` (debounce 300ms, conforme missão), reanalisa só o arquivo + dependentes via Madge, atualiza sidecar.
-3. **Coordenação com daemon**: usar lockfile compartilhado `.obsidian-mirror-daemon.lock` ou criar `.findings-watch.lock` separado (decidir).
+1. **Operacionalizar o que já existe**: criar `npm run mirror:watch`, `mirror:status`,
+   `mirror:rebuild` no `package.json` raiz. Documentar.
+2. **Novo watcher de findings**: `scripts/findings-watch.mjs` com `chokidar` (debounce 300ms, conforme missão),
+   reanalisa só o arquivo + dependentes via Madge, atualiza sidecar.
+3. **Coordenação com daemon**: usar lockfile compartilhado `.obsidian-mirror-daemon.lock` ou criar
+   `.findings-watch.lock` separado (decidir).
 4. **CLI uniforme**: `start | stop | pause | resume | rescan-full`.
-5. **`.mirrorignore`**: opcional além de `.gitignore`. Onde plugar isso sem editar locked? `utils.mjs` faz o filtering — alteração requer autorização.
+5. **`.mirrorignore`**: opcional além de `.gitignore`. Onde plugar isso sem editar locked? `utils.mjs` faz o filtering —
+   alteração requer autorização.
 
 ### Decisões pendentes (precisam de você)
 
@@ -366,12 +398,16 @@ O daemon **não consome sidecar JSON de findings hoje**. Mas:
 
 **Esta auditoria conclui a Fase 0 da missão.** Conforme protocolo:
 
-> "Entregue um relatório `MIRROR_AUDIT.md` com: diagrama textual da arquitetura atual, tabela de cobertura de detecção, pontos de extensão identificados para Fase 1 e Fase 2. **PARE aqui. Aguarde validação explícita antes de seguir.**"
+> "Entregue um relatório `MIRROR_AUDIT.md` com: diagrama textual da arquitetura atual, tabela de cobertura de detecção,
+> pontos de extensão identificados para Fase 1 e Fase 2. **PARE aqui. Aguarde validação explícita antes de seguir.**"
 
 Para destravar Fase 1, preciso de:
 
 1. **Aprovação geral** desta auditoria (ou correções).
 2. **Decisões D1–D5** acima.
-3. **Confirmação** de que vou trabalhar com OpenCode/DeepSeek V4 Pro como substrato exclusivo de subagentes (Claude `Agent` tool proibido — regra salva em memória permanente em 2026-05-02).
+3. **Confirmação** de que vou trabalhar com OpenCode/DeepSeek V4 Pro como substrato exclusivo de subagentes (Claude
+   `Agent` tool proibido — regra salva em memória permanente em 2026-05-02).
 
-Quando autorizar, disparo a Fase 1 com fan-out OpenCode: um subagente DeepSeek por engine (`tsc`, `eslint`, `knip`, `madge`, `semgrep`, `architecture-guard`, `ratchet-bridge`), em paralelo, cada um produzindo seu wrapper + tests. Eu fico só na orquestração e na síntese final.
+Quando autorizar, disparo a Fase 1 com fan-out OpenCode: um subagente DeepSeek por engine (`tsc`, `eslint`, `knip`,
+`madge`, `semgrep`, `architecture-guard`, `ratchet-bridge`), em paralelo, cada um produzindo seu wrapper + tests.
+Eu fico só na orquestração e na síntese final.

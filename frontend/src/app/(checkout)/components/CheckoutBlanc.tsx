@@ -270,7 +270,7 @@ export default function CheckoutBlanc({
                   color: BLANC.white,
                 }}
               >
-                PAGAMENTO
+                {kloelT('PAGAMENTO')}
               </div>
               <div
                 style={{
@@ -516,7 +516,7 @@ export default function CheckoutBlanc({
                   lineHeight: 1.1,
                 }}
               >
-                PAGAMENTO
+                {kloelT('PAGAMENTO')}
               </div>
               <div
                 style={{

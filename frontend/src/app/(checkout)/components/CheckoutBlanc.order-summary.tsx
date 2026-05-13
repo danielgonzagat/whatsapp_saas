@@ -207,7 +207,7 @@ export function BlancDesktopSidebar({
           boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
         }}
       >
-        <h3 style={{ fontSize: 20, fontWeight: 800, marginBottom: 20 }}>RESUMO</h3>
+        <h3 style={{ fontSize: 20, fontWeight: 800, marginBottom: 20 }}>{kloelT('RESUMO')}</h3>
 
         {enableCoupon !== false ? (
           <>

@@ -155,7 +155,7 @@ export default function PrivacyPage() {
           marketing opcional e cumprimento de obrigações legais.`)}
         </p>
         <LegalTable
-          headers={['Tratamento', 'Finalidade', 'Base legal']}
+          headers={[kloelT(`Tratamento`), kloelT(`Finalidade`), kloelT(`Base legal`)]}
           rows={legalContentTables.legalBases}
         />
       </LegalSection>
@@ -167,7 +167,7 @@ export default function PrivacyPage() {
           monitorar segurança e executar integrações autorizadas por você.`)}
         </p>
         <LegalTable
-          headers={['Terceiro', 'Finalidade', 'Região', 'Base da transferência']}
+          headers={[kloelT(`Terceiro`), kloelT(`Finalidade`), kloelT(`Região`), kloelT(`Base da transferência`)]}
           rows={legalContentTables.thirdParties}
         />
         <p>
@@ -194,7 +194,7 @@ export default function PrivacyPage() {
           serviço.`)}
         </p>
         <LegalTable
-          headers={['Categoria', 'Prazo', 'Justificativa']}
+          headers={[kloelT(`Categoria`), kloelT(`Prazo`), kloelT(`Justificativa`)]}
           rows={legalContentTables.retention}
         />
       </LegalSection>
@@ -202,11 +202,11 @@ export default function PrivacyPage() {
       <LegalSection id="seguranca" title={kloelT(`7. Segurança`)}>
         <LegalList
           items={[
-            'TLS para dados em trânsito entre navegador, APIs, provedores e painéis administrativos.',
-            'Criptografia em repouso para bancos, backups, segredos e material sensível mantido pela plataforma.',
-            'Princípio de least privilege para credenciais internas, service accounts e integrações.',
-            'Logs de auditoria, trilhas de eventos críticos, rate limiting e políticas de resposta a incidentes.',
-            'Suporte a 2FA e mecanismos de revogação de sessões, refresh tokens e integrações revogadas.',
+            kloelT(`TLS para dados em trânsito entre navegador, APIs, provedores e painéis administrativos.`),
+            kloelT(`Criptografia em repouso para bancos, backups, segredos e material sensível mantido pela plataforma.`),
+            kloelT(`Princípio de least privilege para credenciais internas, service accounts e integrações.`),
+            kloelT(`Logs de auditoria, trilhas de eventos críticos, rate limiting e políticas de resposta a incidentes.`),
+            kloelT(`Suporte a 2FA e mecanismos de revogação de sessões, refresh tokens e integrações revogadas.`),
           ]}
         />
         <p>
@@ -288,7 +288,7 @@ export default function PrivacyPage() {
           Google, incluindo os requisitos de Uso Limitado (Limited Use).`)}
         </p>
         <LegalTable
-          headers={['Escopo', 'Dado acessado', 'Finalidade', 'Armazenamento']}
+          headers={[kloelT(`Escopo`), kloelT(`Dado acessado`), kloelT(`Finalidade`), kloelT(`Armazenamento`)]}
           rows={legalContentTables.googleScopes}
         />
         <p>
@@ -306,7 +306,7 @@ export default function PrivacyPage() {
           ativos empresariais autorizados e operar canais oficiais dentro da plataforma.`)}
         </p>
         <LegalTable
-          headers={['Permissão', 'Finalidade']}
+          headers={[kloelT(`Permissão`), kloelT(`Finalidade`)]}
           rows={legalContentTables.metaPermissions}
         />
         <p>

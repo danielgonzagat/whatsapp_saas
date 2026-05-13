@@ -12,7 +12,9 @@ let forceKillTimer = null;
 let forceExitTimer = null;
 
 function killChildTree(pid, signal) {
-  if (!pid) return;
+  if (!pid) {
+    return;
+  }
 
   try {
     if (isWindows) {
@@ -68,8 +70,12 @@ const timer = setTimeout(() => {
 
 child.on('exit', (code, signal) => {
   clearTimeout(timer);
-  if (forceKillTimer) clearTimeout(forceKillTimer);
-  if (forceExitTimer) clearTimeout(forceExitTimer);
+  if (forceKillTimer) {
+    clearTimeout(forceKillTimer);
+  }
+  if (forceExitTimer) {
+    clearTimeout(forceExitTimer);
+  }
 
   if (signal) {
     process.exit(124);
@@ -84,8 +90,12 @@ child.on('exit', (code, signal) => {
 
 child.on('error', (error) => {
   clearTimeout(timer);
-  if (forceKillTimer) clearTimeout(forceKillTimer);
-  if (forceExitTimer) clearTimeout(forceExitTimer);
+  if (forceKillTimer) {
+    clearTimeout(forceKillTimer);
+  }
+  if (forceExitTimer) {
+    clearTimeout(forceExitTimer);
+  }
   console.error(`Failed to start PULSE CI: ${error.message}`);
   process.exit(1);
 });

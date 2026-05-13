@@ -4,13 +4,37 @@ Updated: 2026-05-12T16:32:10-03:00
 
 ## Onde parou exatamente
 
-Wave 0 discovery artifacts are active and W1-W9 have focused code-side slices delivered with evidence, but completion remains blocked by external provider smokes and open dependency-register items. W1 persists the official channel four-step wizard spine through `Workspace.providerSettings.marketingChannelSetup`; Playwright proves four steps at desktop/mobile widths, product persistence, and Meta disconnect double-confirmation. W2 hardens code-side Meta OAuth URL generation with channel-specific Config IDs/scopes, adds the `facebook` status alias, and rejects unsigned Meta webhook POSTs when `META_APP_SECRET` is configured. W3 hardens TikTok webhook signature handling and adds backend disconnect. W4 delivers code-side Gmail/Microsoft/IMAP mailbox foundations through EMAIL-10, including encrypted token storage, Gmail sync/send, Microsoft OAuth base, IMAP+SMTP validation, suppression checks, and mailbox metrics, while live mailbox smokes remain external. W5/W6 route TikTok/Omnichannel perception toward the same `UnifiedAgentService` and prove owner strategic policy persistence into CIA prompt context. W7/W8 add checkout-paid wallet/chat context and high-risk `ApprovalRequest` gates. On 2026-05-12, after the merge from `origin/main`, this orchestrator recovered the frontend TypeScript gate, ran Batch 17 read-only audits for V23 anti-fake/provider readiness, implemented frontend V23 truthfulness fixes, verified the external backend strict-mode repair after its OpenCode process exited, verified the guest-chat Redis persistence slice, aligned checkout boleto UI with the backend's current card/PIX-only rail, removed remaining active-product boleto copy/link badges, hardened the direct boleto route to show a no-boleto state, added a billing mock-mode guard regression spec, refreshed V19/V23 traceability, aligned the owner smart-payment modal with the backend's current Pix result contract, removed active boleto thank-you/reminder settings from product/plan tabs, disabled checkout fake-stock publication until real inventory backs it, removed the SMS soon stub from customer-facing Marketing navigation, replaced the legacy media video `{ ok: true }` ping placeholder with a truthful MediaJob capability contract, and recovered the focused frontend tests that blocked the pre-push path after the visual-contract gate passed.
+Wave 0 discovery artifacts are active and W1-W9 have focused code-side slices delivered with evidence,
+but completion remains blocked by external provider smokes and open dependency-register items.
+W1 persists the official channel four-step wizard spine through `Workspace.providerSettings.marketingChannelSetup`;
+Playwright proves four steps at desktop/mobile widths, product persistence, and Meta disconnect double-confirmation.
+W2 hardens code-side Meta OAuth URL generation with channel-specific Config IDs/scopes, adds the `facebook` status alias,
+and rejects unsigned Meta webhook POSTs when `META_APP_SECRET` is configured.
+W3 hardens TikTok webhook signature handling and adds backend disconnect.
+W4 delivers code-side Gmail/Microsoft/IMAP mailbox foundations through EMAIL-10, including encrypted token storage,
+Gmail sync/send, Microsoft OAuth base, IMAP+SMTP validation, suppression checks, and mailbox metrics,
+while live mailbox smokes remain external. W5/W6 route TikTok/Omnichannel perception toward the same
+`UnifiedAgentService` and prove owner strategic policy persistence into CIA prompt context.
+W7/W8 add checkout-paid wallet/chat context and high-risk `ApprovalRequest` gates.
+On 2026-05-12, after the merge from `origin/main`, this orchestrator recovered the frontend TypeScript gate,
+ran Batch 17 read-only audits for V23 anti-fake/provider readiness, implemented frontend V23 truthfulness fixes,
+verified the external backend strict-mode repair after its OpenCode process exited,
+verified the guest-chat Redis persistence slice, aligned checkout boleto UI with the backend's current card/PIX-only
+rail, removed remaining active-product boleto copy/link badges,
+hardened the direct boleto route to show a no-boleto state, added a billing mock-mode guard regression spec,
+refreshed V19/V23 traceability, aligned the owner smart-payment modal with the backend's current Pix result contract,
+removed active boleto thank-you/reminder settings from product/plan tabs,
+disabled checkout fake-stock publication until real inventory backs it,
+removed the SMS soon stub from customer-facing Marketing navigation,
+replaced the legacy media video `{ ok: true }` ping placeholder with a truthful MediaJob capability contract,
+and recovered the focused frontend tests that blocked the pre-push path after the visual-contract gate passed.
 
 ## Branch atual e ultimo commit
 
 - Branch: `chore/purga-total-debt`
 - HEAD: `3dddfb6a6 [W9] Remover stub SMS do marketing`
-- Note: prior handoff referenced `feat/kloel-cia-convergence`, but the live checkout is currently `chore/purga-total-debt`; do not infer branch state from older docs.
+- Note: prior handoff referenced `feat/kloel-cia-convergence`,
+  but the live checkout is currently `chore/purga-total-debt`; do not infer branch state from older docs.
 
 ## Gates passados na sessao
 
@@ -239,18 +263,37 @@ Wave 0 discovery artifacts are active and W1-W9 have focused code-side slices de
 
 ## Subagents ativos no momento da pausa
 
-No `opencode run` process remains active after workspace stabilization. The previous external backend repair process exited; its remaining backend diff was verified by aggregate typecheck and focused mind/unified-agent tests.
+No `opencode run` process remains active after workspace stabilization.
+The previous external backend repair process exited; its remaining backend diff was verified by aggregate typecheck and
+focused mind/unified-agent tests.
 
 ## Subagents concluidos nao revisados
 
-`kloel-cia-batch-15-frontend-typecheck-2026-05-12` is rejected as a subagent-complete delivery because task `A-frontend-typecheck-recovery` ended with SIGKILL after 600s. Its partial frontend diff was manually reviewed, completed, formatted and validated by this orchestrator. `kloel-cia-batch-16-readonly-readiness-2026-05-12` ended 1/3 ok: accepted `A-golden-path-readiness-audit` as read-only Golden Path mapping; rejected `B-anti-fake-ui-endpoint-audit` and `C-provider-readiness-audit` as incomplete because both timed out/SIGKILL without final reports. Batch 17 live read-only OpenCode outputs are reviewed: accepted `v23-anti-fake.out` with manual corrections, accepted `provider-readiness.out`, rejected `obsidian-macro.out` as completed subagent evidence because external-vault reads were denied. Batch 18 read-only OpenCode outputs under `artifacts/opencode-live/kloel-cia-batch-18-v23-readonly-2026-05-12/` are rejected as complete evidence because all three workers exited with code `-1` and produced only partial progress lines. Older accepted/rejected fleet statuses from 2026-05-11 remain as previously recorded.
+`kloel-cia-batch-15-frontend-typecheck-2026-05-12` is rejected as a subagent-complete delivery because task
+`A-frontend-typecheck-recovery` ended with SIGKILL after 600s.
+Its partial frontend diff was manually reviewed, completed, formatted and validated by this orchestrator.
+`kloel-cia-batch-16-readonly-readiness-2026-05-12` ended 1/3 ok: accepted `A-golden-path-readiness-audit` as read-only
+Golden Path mapping; rejected `B-anti-fake-ui-endpoint-audit` and `C-provider-readiness-audit` as incomplete because
+both timed out/SIGKILL without final reports. Batch 17 live read-only OpenCode outputs are reviewed: accepted
+`v23-anti-fake.out` with manual corrections, accepted `provider-readiness.out`,
+rejected `obsidian-macro.out` as completed subagent evidence because external-vault reads were denied.
+Batch 18 read-only OpenCode outputs under `artifacts/opencode-live/kloel-cia-batch-18-v23-readonly-2026-05-12/` are
+rejected as complete evidence because all three workers exited with code `-1` and produced only partial progress lines.
+Older accepted/rejected fleet statuses from 2026-05-11 remain as previously recorded.
 
 ## Bloqueios externos vigentes
 
 - `EXT-ENV-001`: missing `RAILWAY_TOKEN` and `VERCEL_TOKEN` for live env inventory.
 - Meta/TikTok/Google/Microsoft/payment/test-account dependencies are registered in `kloel-cia-external-dependencies.md`.
-- Obsidian HUD/mirror is currently stale for prioritization: `00-HUD` notes were generated on 2026-05-06, `node scripts/obsidian-graph-lens.mjs --status` reports active graph lens `custom`, and the mirror daemon log shows `ERR_MODULE_NOT_FOUND` for `scripts/__parts__/obsidian-mirror-daemon-utils.mjs`. Use it as historical context only until the mirror pipeline is repaired/refreshed.
+- Obsidian HUD/mirror is currently stale for prioritization: `00-HUD` notes were generated on 2026-05-06,
+  `node scripts/obsidian-graph-lens.mjs --status` reports active graph lens `custom`,
+  and the mirror daemon log shows `ERR_MODULE_NOT_FOUND` for `scripts/__parts__/obsidian-mirror-daemon-utils.mjs`.
+  Use it as historical context only until the mirror pipeline is repaired/refreshed.
 
 ## Proxima acao exata
 
-Next action: commit the frontend pre-push recovery slice, then retry `git push origin chore/purga-total-debt` without bypass. If full frontend tests uncover additional failures, stabilize those exact failures before returning to the V23 anti-fake scan, prioritizing business-state `localStorage` and remaining placeholder/fake runtime strings that are not tests or design placeholders. Leave `AGENTS.md` and untracked OpenCode prompt drafts out of CIA commits unless explicitly brought into the current slice.
+Next action: commit the frontend pre-push recovery slice, then retry `git push origin chore/purga-total-debt` without
+bypass. If full frontend tests uncover additional failures, stabilize those exact failures before returning to the V23
+anti-fake scan, prioritizing business-state `localStorage` and remaining placeholder/fake runtime strings that are not
+tests or design placeholders. Leave `AGENTS.md` and untracked OpenCode prompt drafts out of CIA commits unless
+explicitly brought into the current slice.

@@ -109,8 +109,8 @@ export function CommandPalette({ open, onClose, initialSearch, className }: Comm
 
   const hasQuery = query.trim().length > 0;
   const footerLabel = hasQuery
-    ? `${results.length} conversa${results.length === 1 ? '' : 's'}`
-    : `${results.length} recente${results.length === 1 ? '' : 's'}`;
+    ? kloelT(`${results.length} conversa${results.length === 1 ? '' : 's'}`)
+    : kloelT(`${results.length} recente${results.length === 1 ? '' : 's'}`);
 
   // itemRefsRef.current slots are set by per-item ref callbacks below;
   // stale indices are harmless because navigation only reads current[selectedIndex].
@@ -127,7 +127,7 @@ export function CommandPalette({ open, onClose, initialSearch, className }: Comm
           onKeyDown={handleKeyDown}
           role="dialog"
           aria-modal="true"
-          aria-label="Buscar conversas"
+          aria-label={kloelT(`Buscar conversas`)}
         >
           <div className="kloel-search-header">
             <Search size={18} color="var(--app-text-secondary)" aria-hidden="true" />
@@ -151,13 +151,13 @@ export function CommandPalette({ open, onClose, initialSearch, className }: Comm
                   setQuery('');
                   setSelectedIndex(0);
                 }}
-                aria-label="Limpar busca"
+                aria-label={kloelT(`Limpar busca`)}
               >
                 <X size={12} aria-hidden="true" />
               </button>
             )}
             <button type="button" className="kloel-search-pill" onClick={onClose}>
-              ESC
+              {kloelT(`ESC`)}
             </button>
           </div>
 
@@ -170,12 +170,12 @@ export function CommandPalette({ open, onClose, initialSearch, className }: Comm
                   <Search size={18} aria-hidden="true" />
                 </div>
                 <div className="kloel-search-empty-title">
-                  {hasQuery ? 'Nenhuma conversa encontrada' : 'Nenhuma conversa recente'}
+                  {hasQuery ? kloelT(`Nenhuma conversa encontrada`) : kloelT(`Nenhuma conversa recente`)}
                 </div>
                 <div className="kloel-search-empty-copy">
                   {hasQuery
-                    ? `Nada apareceu para “${query.trim()}”. Tenta outro termo ou uma palavra que esteja no conteúdo da conversa.`
-                    : 'Assim que você conversar com a Kloel, os históricos aparecem aqui para busca imediata.'}
+                    ? kloelT(`Nada apareceu para \u201C${query.trim()}\u201D. Tenta outro termo ou uma palavra que esteja no conteúdo da conversa.`)
+                    : kloelT(`Assim que você conversar com a Kloel, os históricos aparecem aqui para busca imediata.`)}
                 </div>
               </div>
             ) : (
@@ -210,15 +210,15 @@ export function CommandPalette({ open, onClose, initialSearch, className }: Comm
             <div className="kloel-search-hints">
               <span className="kloel-search-hint">
                 <span className="kloel-search-pill">{kloelT(`↑↓`)}</span>
-                navegar
+                {kloelT(`navegar`)}
               </span>
               <span className="kloel-search-hint">
                 <span className="kloel-search-pill">↵</span>
-                abrir
+                {kloelT(`abrir`)}
               </span>
               <span className="kloel-search-hint">
-                <span className="kloel-search-pill">esc</span>
-                fechar
+                <span className="kloel-search-pill">{kloelT(`esc`)}</span>
+                {kloelT(`fechar`)}
               </span>
             </div>
             <span className="kloel-search-hint">{footerLabel}</span>

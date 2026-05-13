@@ -124,18 +124,39 @@ Tags: `[VERIFICADO_NO_REPO]`, `[PROVAVEL_MAS_PRECISA_CONFIRMAR]`, `[HIPOTESE_DA_
 1. `[VERIFICADO_NO_REPO]` Service that receives inbound by channel:
    - WhatsApp Cloud events route through `backend/src/meta/webhooks/meta-webhook.controller.ts` into `backend/src/whatsapp/inbound-processor.service.ts`.
    - Instagram webhook events route through `backend/src/meta/webhooks/meta-webhook.controller.ts` into `backend/src/inbox/omnichannel.service.ts`.
-   - Messenger/Page events route through `backend/src/meta/webhooks/meta-webhook.controller.ts`; full Messenger CIA loop still needs focused proof.
-   - TikTok webhook receiver exists at `backend/src/webhooks/tiktok-webhook.controller.ts`, but TikTok inbound to CIA/inbox was not proven in Wave 0.
-   - Email inbound mailbox-to-CIA does not exist yet as a customer mailbox path; current email is campaign/fallback/provider-owned.
-2. `[VERIFICADO_NO_REPO]` Canonical internal message/perception surfaces include `Conversation`, `Message`, `AutopilotEvent`, and `AutonomyExecution` in `backend/prisma/schema.prisma`; inbox writes are mediated by `backend/src/inbox/inbox.service.ts` and WhatsApp inbound writes messages before autopilot.
-3. `[VERIFICADO_NO_REPO]` Reactive decision service exists at `backend/src/kloel/unified-agent.service.ts`; it loads workspace/contact/history/products/context, calls the LLM/tool stack, and returns actions/responses.
+   - Messenger/Page events route through `backend/src/meta/webhooks/meta-webhook.controller.ts`;
+     full Messenger CIA loop still needs focused proof.
+   - TikTok webhook receiver exists at `backend/src/webhooks/tiktok-webhook.controller.ts`,
+     but TikTok inbound to CIA/inbox was not proven in Wave 0.
+   - Email inbound mailbox-to-CIA does not exist yet as a customer mailbox path;
+     current email is campaign/fallback/provider-owned.
+2. `[VERIFICADO_NO_REPO]` Canonical internal message/perception surfaces include `Conversation`, `Message`,
+   `AutopilotEvent`, and `AutonomyExecution` in `backend/prisma/schema.prisma`;
+   inbox writes are mediated by `backend/src/inbox/inbox.service.ts` and WhatsApp inbound writes messages before autopilot.
+3. `[VERIFICADO_NO_REPO]` Reactive decision service exists at `backend/src/kloel/unified-agent.service.ts`;
+   it loads workspace/contact/history/products/context, calls the LLM/tool stack, and returns actions/responses.
 4. `[VERIFICADO_NO_REPO]` Proactive/symbolic worker planning exists under `worker/processors/cia/brain.ts`, `worker/processors/cia/build-state.ts`, `worker/processors/cia/conversation-policy.ts`, and `worker/processors/autopilot/**`.
-5. `[EXISTE_MAS_INCOMPLETO]` Explicit belief/prediction/case-memory lifecycle was not fully mapped. Wave 6 must prove where beliefs, predictions, surprise, bandit learning, and case memories are written and read, or reclassify those vision terms as gaps/backlog.
-6. `[VERIFICADO_NO_REPO]` Owner/workspace memory/context surfaces exist through `KloelMemory`, `Workspace.providerSettings`, product AI config, and `backend/src/kloel/unified-agent-context.service.ts` / Kloel context formatters.
-7. `[VERIFICADO_NO_REPO]` Outbound action dispatcher exists at `backend/src/kloel/unified-agent-actions.service.ts` and related executor sub-services; WhatsApp messaging is wired through messaging helpers/providers. Non-WhatsApp outbound from the same brain remains unproven.
-8. `[VERIFICADO_NO_REPO]` Human approval surfaces exist via `ApprovalRequest` and finance/admin approval services. W8 now makes the owner chat tool dispatcher create an `ApprovalRequest` for high-risk `create_campaign` and `change_plan` tool calls instead of executing immediately; `GET /kloel/approvals/pending` exposes open approval requests for the authenticated workspace; `POST /kloel/approvals/:id/{approve,reject,adjust}` transitions open workspace approvals; the owner chat dashboard has a small real-data approval strip wired through `frontend/src/lib/api/kloel.ts`; approved `kloel_tool:create_campaign` and `kloel_tool:change_plan` approvals now execute their original tool and mark the approval `COMPLETED`.
-9. `[VERIFICADO_NO_REPO]` Brain/autopilot observability uses `AutopilotEvent`, `AutonomyExecution`, cognition logs, and worker metrics. A full inbound-to-action trace with request correlation has not been executed.
-10. `[VERIFICADO_NO_REPO]` Internal owner chat bridge exists at `backend/src/kloel/kloel.controller.ts` and `backend/src/kloel/kloel-tool-dispatcher.service.ts`; tools include product, dashboard, autopilot, brand voice, memory, payment link, WhatsApp and business-context operations.
+5. `[EXISTE_MAS_INCOMPLETO]` Explicit belief/prediction/case-memory lifecycle was not fully mapped.
+   Wave 6 must prove where beliefs, predictions, surprise, bandit learning, and case memories are written and read,
+   or reclassify those vision terms as gaps/backlog.
+6. `[VERIFICADO_NO_REPO]` Owner/workspace memory/context surfaces exist through `KloelMemory`,
+   `Workspace.providerSettings`, product AI config, and `backend/src/kloel/unified-agent-context.service.ts` / Kloel
+   context formatters.
+7. `[VERIFICADO_NO_REPO]` Outbound action dispatcher exists at `backend/src/kloel/unified-agent-actions.service.ts` and
+   related executor sub-services; WhatsApp messaging is wired through messaging helpers/providers.
+   Non-WhatsApp outbound from the same brain remains unproven.
+8. `[VERIFICADO_NO_REPO]` Human approval surfaces exist via `ApprovalRequest` and finance/admin approval services.
+   W8 now makes the owner chat tool dispatcher create an `ApprovalRequest` for high-risk `create_campaign` and
+   `change_plan` tool calls instead of executing immediately; `GET /kloel/approvals/pending` exposes open approval requests
+   for the authenticated workspace; `POST /kloel/approvals/:id/{approve,reject,adjust}` transitions open workspace
+   approvals; the owner chat dashboard has a small real-data approval strip wired through `frontend/src/lib/api/kloel.ts`;
+   approved `kloel_tool:create_campaign` and `kloel_tool:change_plan` approvals now execute their original tool and mark
+   the approval `COMPLETED`.
+9. `[VERIFICADO_NO_REPO]` Brain/autopilot observability uses `AutopilotEvent`, `AutonomyExecution`, cognition logs,
+   and worker metrics. A full inbound-to-action trace with request correlation has not been executed.
+10. `[VERIFICADO_NO_REPO]` Internal owner chat bridge exists at `backend/src/kloel/kloel.controller.ts` and
+    `backend/src/kloel/kloel-tool-dispatcher.service.ts`; tools include product, dashboard, autopilot, brand voice, memory,
+    payment link, WhatsApp and business-context operations.
 11. `[ENTREGUE_PARCIAL_COM_EVIDENCIA]` Same-CIA strategic-policy proof is code-side complete for chat tool -> `Workspace.providerSettings.autopilot.salesPolicy` -> unified-agent prompt context. `backend/src/kloel/kloel-chat-tools.service.spec.ts`, `backend/src/kloel/kloel-tool-dispatcher.service.spec.ts`, and `backend/src/kloel/unified-agent-context.service.spec.ts` prove persistence, dispatch, and prompt injection. Live channel output diff remains a W9/provider-smoke item.
 
 ### W6 bridge update

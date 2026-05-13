@@ -29,7 +29,9 @@ function findForbiddenTags(text) {
 
 function assertNoForbiddenTags(text, label) {
   const found = findForbiddenTags(text);
-  if (found.length === 0) return;
+  if (found.length === 0) {
+    return;
+  }
 
   fail(
     `${label} contem skip tags proibidas para Codacy/CI: ${found.join(', ')}. ` +

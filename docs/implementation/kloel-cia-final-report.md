@@ -5,60 +5,69 @@ Updated: 2026-05-12T13:10:00-03:00
 
 ## 1. Resumo executivo
 
-Esta execucao convergiu uma parte grande do Kloel CIA para provas locais auditaveis: wizard oficial de canais, bases de Meta/TikTok/Email mailbox, inbox/bridge CIA, aprovacoes de alto risco, checkout-paid effects, admin/GDPR hardening, webhook secret gates, correlacao de webhooks para filas/worker e um trace local inbound WhatsApp -> UnifiedAgent -> outbound action -> AutopilotEvent. Apos o merge de `origin/main` em 2026-05-12, a frente frontend foi recuperada e validada com typecheck/build/test/lint focado. O produto ainda nao pode ser declarado 100% pronto em producao: ha bloqueios externos abertos para Railway/Vercel env inventory, dashboards/contas de Meta/TikTok/Google/Microsoft, contas reais de teste e gateway sandbox/live; alem disso, o worktree contem mudancas em arquivos protegidos de governance, backend/worker esta em reparo por outro agente, e gates globais de lint/governance ainda falham.
+Esta execucao convergiu uma parte grande do Kloel CIA para provas locais auditaveis: wizard oficial de canais,
+bases de Meta/TikTok/Email mailbox, inbox/bridge CIA, aprovacoes de alto risco, checkout-paid effects,
+admin/GDPR hardening, webhook secret gates, correlacao de webhooks para filas/worker e um trace local inbound WhatsApp
+-> UnifiedAgent -> outbound action -> AutopilotEvent. Apos o merge de `origin/main` em 2026-05-12,
+a frente frontend foi recuperada e validada com typecheck/build/test/lint focado.
+O produto ainda nao pode ser declarado 100% pronto em producao: ha bloqueios externos abertos para Railway/Vercel env
+inventory, dashboards/contas de Meta/TikTok/Google/Microsoft, contas reais de teste e gateway sandbox/live;
+alem disso, o worktree contem mudancas em arquivos protegidos de governance,
+backend/worker esta em reparo por outro agente, e gates globais de lint/governance ainda falham.
 
 ## 2. Ondas
 
-| Onda | Status | Evidencia |
-|---|---|---|
-| W0 Auditoria/base | Parcial com artefatos | `kloel-cia-gap-inventory.md`, `kloel-cia-rule-applicability.md`, `kloel-cia-envs-matrix.md`, `kloel-cia-external-dependencies.md` |
-| W1 Wizard Marketing | Entregue parcial com evidencia local | E2E local dos cinco canais oficiais e indicador 1-2-3-4 registrado no ledger |
-| W2 Meta OAuth | Codigo/env local parcial; externo bloqueado | Config/scopes/callback/webhook hardening local; dashboard Meta e Graph smoke bloqueados |
-| W3 TikTok | Codigo local parcial; externo bloqueado | OAuth/status/webhook hardening e adapter para Omnichannel; app review/sandbox bloqueado |
-| W4 Email mailbox | Codigo local parcial | Gmail OAuth/storage/inbound/outbound, Microsoft OAuth base, IMAP+SMTP validation/storage, compliance/metrics; live smokes bloqueados |
-| W5 Inbox unificada | Parcial com evidencia local | TikTok/Facebook/email routes/adapters locais; cinco canais reais ainda sem smoke completo |
-| W6 CIA bridge | Parcial com evidencia local | Omnichannel -> UnifiedAgent e CIA send_message local; comando estrategico parcialmente provado |
-| W7 Ciclo comercial minimo | Parcial com evidencia local | Checkout paid effects, wallet credit, chat summary local; gateway sandbox bloqueado |
-| W8 Admin/compliance/hardening | Parcial com evidencia local | Admin session revocation, GDPR export/delete, admin build, webhook secret gates |
-| W9 Validacao final | Relatorio honesto produzido e atualizado apos merge | Este relatorio; Golden Path live 10/10 nao passou por bloqueios externos; frontend local passou typecheck/build/test/lint focado em 2026-05-12 |
+| Onda                          | Status                                              | Evidencia                                                                                                                                      |
+| ----------------------------- | --------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| W0 Auditoria/base             | Parcial com artefatos                               | `kloel-cia-gap-inventory.md`, `kloel-cia-rule-applicability.md`, `kloel-cia-envs-matrix.md`, `kloel-cia-external-dependencies.md`              |
+| W1 Wizard Marketing           | Entregue parcial com evidencia local                | E2E local dos cinco canais oficiais e indicador 1-2-3-4 registrado no ledger                                                                   |
+| W2 Meta OAuth                 | Codigo/env local parcial; externo bloqueado         | Config/scopes/callback/webhook hardening local; dashboard Meta e Graph smoke bloqueados                                                        |
+| W3 TikTok                     | Codigo local parcial; externo bloqueado             | OAuth/status/webhook hardening e adapter para Omnichannel; app review/sandbox bloqueado                                                        |
+| W4 Email mailbox              | Codigo local parcial                                | Gmail OAuth/storage/inbound/outbound, Microsoft OAuth base, IMAP+SMTP validation/storage, compliance/metrics; live smokes bloqueados           |
+| W5 Inbox unificada            | Parcial com evidencia local                         | TikTok/Facebook/email routes/adapters locais; cinco canais reais ainda sem smoke completo                                                      |
+| W6 CIA bridge                 | Parcial com evidencia local                         | Omnichannel -> UnifiedAgent e CIA send_message local; comando estrategico parcialmente provado                                                 |
+| W7 Ciclo comercial minimo     | Parcial com evidencia local                         | Checkout paid effects, wallet credit, chat summary local; gateway sandbox bloqueado                                                            |
+| W8 Admin/compliance/hardening | Parcial com evidencia local                         | Admin session revocation, GDPR export/delete, admin build, webhook secret gates                                                                |
+| W9 Validacao final            | Relatorio honesto produzido e atualizado apos merge | Este relatorio; Golden Path live 10/10 nao passou por bloqueios externos; frontend local passou typecheck/build/test/lint focado em 2026-05-12 |
 
 ## 3. Criterios de aceite
 
-| Categoria | Status |
-|---|---|
-| Globais G1-G3 | Parcial. Wizard e builds locais existem; conta nova/onboarding/home em producao nao foram provados nesta shell. |
-| Canais C-WA/C-IG/C-FB/C-TT/C-EM | Parcial. Codigo local e testes existem, mas OAuth/webhooks/mensagens reais dependem de dashboards, envs e contas de teste. |
-| Dominios D-CHAT/D-PROD/D-CKO/D-WALLET/D-REPORT/D-INBOX | Parcial. Fluxos locais de chat/CIA/checkout/wallet/inbox foram reforcados; sandbox provider E2E nao foi executado. |
-| Seguranca S1-S6 | Parcial. Webhook secret gates e startup guard adicionados; `npm run check:security` passa localmente com warnings nao bloqueantes; live log redaction e provider smokes ainda nao foram fechados. |
-| Observabilidade O1-O2 | Parcial. Correlation ID agora propaga para filas/worker em testes locais; alertas/live trace dependem de env/log access. |
-| UX U1-U3 | Parcial. Wizard visual local foi tratado; auditoria visual/acessibilidade final ampla nao foi fechada. |
-| Persistencia P1-P2 | Parcial. Varios paths UI/API/DB locais provados; rollback completo de todas migrations novas nao esta registrado como final. |
-| IA/CIA I1-I5 | Parcial. Trace local inbound->outbound e politicas existem; cinco canais reais e nao-alucinacao runtime ampla ainda pendem. |
-| Nao-regressao R1-R3 | Parcial. Frontend typecheck/build passam apos o merge; aggregate `npm run typecheck` nao esta reivindicado neste momento porque backend segue em reparo externo. Lint e governance globais ainda falham. |
-| Zero Semantic Loss Z1-Z3 | Parcial. 24 IDs mapeados; Golden Path SOTA Slice live 10/10 nao passou. |
+| Categoria                                              | Status                                                                                                                                                                                                   |
+| ------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Globais G1-G3                                          | Parcial. Wizard e builds locais existem; conta nova/onboarding/home em producao nao foram provados nesta shell.                                                                                          |
+| Canais C-WA/C-IG/C-FB/C-TT/C-EM                        | Parcial. Codigo local e testes existem, mas OAuth/webhooks/mensagens reais dependem de dashboards, envs e contas de teste.                                                                               |
+| Dominios D-CHAT/D-PROD/D-CKO/D-WALLET/D-REPORT/D-INBOX | Parcial. Fluxos locais de chat/CIA/checkout/wallet/inbox foram reforcados; sandbox provider E2E nao foi executado.                                                                                       |
+| Seguranca S1-S6                                        | Parcial. Webhook secret gates e startup guard adicionados; `npm run check:security` passa localmente com warnings nao bloqueantes; live log redaction e provider smokes ainda nao foram fechados.        |
+| Observabilidade O1-O2                                  | Parcial. Correlation ID agora propaga para filas/worker em testes locais; alertas/live trace dependem de env/log access.                                                                                 |
+| UX U1-U3                                               | Parcial. Wizard visual local foi tratado; auditoria visual/acessibilidade final ampla nao foi fechada.                                                                                                   |
+| Persistencia P1-P2                                     | Parcial. Varios paths UI/API/DB locais provados; rollback completo de todas migrations novas nao esta registrado como final.                                                                             |
+| IA/CIA I1-I5                                           | Parcial. Trace local inbound->outbound e politicas existem; cinco canais reais e nao-alucinacao runtime ampla ainda pendem.                                                                              |
+| Nao-regressao R1-R3                                    | Parcial. Frontend typecheck/build passam apos o merge; aggregate `npm run typecheck` nao esta reivindicado neste momento porque backend segue em reparo externo. Lint e governance globais ainda falham. |
+| Zero Semantic Loss Z1-Z3                               | Parcial. 24 IDs mapeados; Golden Path SOTA Slice live 10/10 nao passou.                                                                                                                                  |
 
 ## 4. Status da Vision Traceability
 
 Nenhum item foi apagado. Todos os IDs V01-V24 permanecem em `kloel-cia-vision-traceability.md`.
 
-- Entregue pendente de bloqueio externo: V01, V03, V04, V05, V06, V07, V08, V10, V11, V12, V13, V14, V15, V17, V18, V19, V20, V22.
+- Entregue pendente de bloqueio externo: V01, V03, V04, V05, V06, V07, V08, V10, V11, V12, V13, V14, V15, V17, V18, V19,
+  V20, V22.
 - Backlog governado para proxima execucao: V02, V09, V16, V21, V23, V24.
 - Entregue provado 100% em producao: nenhum.
 
 ## 5. Golden Path SOTA Slice
 
-| Marco | Status |
-|---|---|
-| 1 Conta/workspace real | Bloqueado por smoke de producao/env |
-| 2 Onboarding conversacional real | Bloqueado por smoke de producao/env |
-| 3 Produto digital real | Parcial local |
-| 4 Canal Meta real conectado | Bloqueado externo Meta/env/conta |
-| 5 Email mailbox real conectado | Bloqueado externo Google/Microsoft/IMAP contas/env |
-| 6 Inbound Meta no inbox | Bloqueado externo |
-| 7 Inbound Email no inbox | Bloqueado externo |
-| 8 CIA responde no canal Meta correto | Parcial local via UnifiedAgent/WhatsApp mock; live bloqueado |
-| 9 CIA responde email pelo endereco do cliente | Parcial local Gmail bridge; live bloqueado |
-| 10 Checkout sandbox -> wallet/report/chat | Parcial local; gateway sandbox/env bloqueado |
+| Marco                                         | Status                                                       |
+| --------------------------------------------- | ------------------------------------------------------------ |
+| 1 Conta/workspace real                        | Bloqueado por smoke de producao/env                          |
+| 2 Onboarding conversacional real              | Bloqueado por smoke de producao/env                          |
+| 3 Produto digital real                        | Parcial local                                                |
+| 4 Canal Meta real conectado                   | Bloqueado externo Meta/env/conta                             |
+| 5 Email mailbox real conectado                | Bloqueado externo Google/Microsoft/IMAP contas/env           |
+| 6 Inbound Meta no inbox                       | Bloqueado externo                                            |
+| 7 Inbound Email no inbox                      | Bloqueado externo                                            |
+| 8 CIA responde no canal Meta correto          | Parcial local via UnifiedAgent/WhatsApp mock; live bloqueado |
+| 9 CIA responde email pelo endereco do cliente | Parcial local Gmail bridge; live bloqueado                   |
+| 10 Checkout sandbox -> wallet/report/chat     | Parcial local; gateway sandbox/env bloqueado                 |
 
 Resultado: Golden Path SOTA Slice nao passou 10/10. Ha provas locais importantes, mas faltam smokes externos reais.
 
@@ -110,7 +119,8 @@ Principais comandos recentes com resultado verde:
 - `npm --prefix frontend-admin test -- --run`: passou.
 - `NEXT_PUBLIC_ADMIN_API_URL=http://localhost:3001 npm --prefix frontend-admin run build`: passou.
 
-Lint backend local foi reduzido em fatias sem supressoes: de 362 arquivos / 3495 erros para 314 arquivos / 2987 erros. O lint global ainda nao esta verde.
+Lint backend local foi reduzido em fatias sem supressoes: de 362 arquivos / 3495 erros para 314 arquivos / 2987 erros.
+O lint global ainda nao esta verde.
 
 Gates ainda falhando:
 
@@ -121,11 +131,15 @@ Gates ainda falhando:
 
 ## 9. Variaveis de ambiente
 
-`kloel-cia-envs-matrix.md` lista os nomes requeridos sem valores. O inventario live em Railway/Vercel nao foi possivel porque `RAILWAY_TOKEN` e `VERCEL_TOKEN` nao estao definidos nesta shell. A startup production guard agora exige segredos criticos de webhooks/tokens antes de bootar em producao.
+`kloel-cia-envs-matrix.md` lista os nomes requeridos sem valores.
+O inventario live em Railway/Vercel nao foi possivel porque `RAILWAY_TOKEN` e `VERCEL_TOKEN` nao estao definidos nesta
+shell. A startup production guard agora exige segredos criticos de webhooks/tokens antes de bootar em producao.
 
 ## 10. Migrations e rollback
 
-Houve trabalho local envolvendo schema/Prisma em ondas anteriores, especialmente mailbox e checkout paid effects. Este relatorio nao registra uma validacao final completa de rollback de todas migrations. Qualquer deploy de banco em producao permanece proibido sem confirmacao humana explicita e preflight de staging.
+Houve trabalho local envolvendo schema/Prisma em ondas anteriores, especialmente mailbox e checkout paid effects.
+Este relatorio nao registra uma validacao final completa de rollback de todas migrations.
+Qualquer deploy de banco em producao permanece proibido sem confirmacao humana explicita e preflight de staging.
 
 ## 11. Riscos remanescentes
 
@@ -144,6 +158,9 @@ Houve trabalho local envolvendo schema/Prisma em ondas anteriores, especialmente
 3. Completar checklists externos Meta, Google, Microsoft, TikTok e gateway sandbox.
 4. Rodar Golden Path SOTA Slice com contas reais de teste e registrar cada marco no ledger.
 5. Atacar lint global por lotes, sem relaxar regras.
-6. Produzir PR apenas quando governance, typecheck, lint aplicavel, testes e smokes necessarios estiverem verdes ou bloqueios externos estiverem explicitamente aceitos.
+6. Produzir PR apenas quando governance, typecheck, lint aplicavel,
+   testes e smokes necessarios estiverem verdes ou bloqueios externos estiverem explicitamente aceitos.
 
-Conclusao: X de Y criterios passaram parcialmente com evidencia local; os criterios dependentes de provedores/producao permanecem bloqueados por dependencias externas enumeradas acima. Este estado nao e 100% pronto em producao.
+Conclusao: X de Y criterios passaram parcialmente com evidencia local;
+os criterios dependentes de provedores/producao permanecem bloqueados por dependencias externas enumeradas acima.
+Este estado nao e 100% pronto em producao.

@@ -203,7 +203,7 @@ export function NoirDesktopSidebar({
           boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
         }}
       >
-        <h3 style={{ fontSize: 20, fontWeight: 800, marginBottom: 20 }}>RESUMO</h3>
+        <h3 style={{ fontSize: 20, fontWeight: 800, marginBottom: 20 }}>{kloelT('RESUMO')}</h3>
 
         {enableCoupon !== false ? (
           <>

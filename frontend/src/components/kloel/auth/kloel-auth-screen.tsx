@@ -399,7 +399,7 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
                   textTransform: 'uppercase',
                 }}
               >
-                {mode === 'login' ? 'Acesso seguro' : 'Nova conta'}
+                {mode === 'login' ? kloelT('Acesso seguro') : kloelT('Nova conta')}
               </span>
               <h1
                 style={{
@@ -412,7 +412,7 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
                   textWrap: 'balance',
                 }}
               >
-                {mode === 'login' ? 'Entrar' : 'Criar conta'}
+                {mode === 'login' ? kloelT('Entrar') : kloelT('Criar conta')}
               </h1>
               <p
                 style={{
@@ -426,8 +426,8 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
                 }}
               >
                 {mode === 'login'
-                  ? 'Acesse sua conta.'
-                  : 'Crie sua conta e comece a usar a inteligencia comercial autonoma.'}
+                  ? kloelT('Acesse sua conta.')
+                  : kloelT('Crie sua conta e comece a usar a inteligencia comercial autonoma.')}
               </p>
               {mode === 'register' && affiliateInviteToken ? (
                 <p
@@ -443,8 +443,8 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
                   }}
                 >
                   {affiliateInviteWorkspaceName
-                    ? `Convite de afiliado para ${affiliateInviteWorkspaceName}`
-                    : 'Convite de afiliado detectado'}
+                    ? kloelT(`Convite de afiliado para ${affiliateInviteWorkspaceName}`)
+                    : kloelT('Convite de afiliado detectado')}
                 </p>
               ) : null}
             </div>
@@ -472,7 +472,7 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
                   textTransform: 'lowercase',
                 }}
               >
-                ou
+                {kloelT('ou')}
               </span>
               <div style={{ flex: 1, height: 1, background: colors.border.space }} />
             </div>
