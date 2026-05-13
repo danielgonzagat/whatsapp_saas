@@ -208,7 +208,7 @@ export const WhatsAppEngine = {
     const normalizedWorkspace = normalizeWorkspace(workspace);
     return withWorkspaceActionLock(normalizedWorkspace.id, async () => {
       console.log(
-        `\n⚡ [UWE-Ω] Enviando mensagem | workspace=${normalizedWorkspace.id} | provider=${normalizedWorkspace.whatsappProvider}`,
+        `\n[UWE-Ω] Enviando mensagem | workspace=${normalizedWorkspace.id} | provider=${normalizedWorkspace.whatsappProvider}`,
       );
 
       const subStatus = await PlanLimitsProvider.checkSubscriptionStatus(normalizedWorkspace.id);
@@ -238,7 +238,7 @@ export const WhatsAppEngine = {
         });
         return assertProviderSendResult(result, 'text');
       } catch (error: unknown) {
-        console.error(`❌ [UWE-Ω] Error sending message: ${errorMessage(error)}`);
+        console.error(`[ERROR] [UWE-Ω] Error sending message: ${errorMessage(error)}`);
 
         const status = errorStatus(error);
         const messageText = errorMessage(error);
@@ -246,7 +246,7 @@ export const WhatsAppEngine = {
         const isServerErr = typeof status === 'number' && status >= 500;
 
         if (isRateLimit) {
-          console.warn(`⏳ [UWE-Ω] Rate Limit detected. Waiting 10s before retry...`);
+          console.warn(`[UWE-Ω] Rate Limit detected. Waiting 10s before retry...`);
           await sleep(10000);
           await HealthMonitor.pushAlert(normalizedWorkspace.id, 'rate_limit', {
             provider: normalizedWorkspace.whatsappProvider,
@@ -290,7 +290,7 @@ export const WhatsAppEngine = {
     const normalizedWorkspace = normalizeWorkspace(workspace);
     return withWorkspaceActionLock(normalizedWorkspace.id, async () => {
       console.log(
-        `\n⚡ [UWE-Ω] Enviando Mídia (${type}) | workspace=${normalizedWorkspace.id} | provider=${normalizedWorkspace.whatsappProvider}`,
+        `\n[UWE-Ω] Enviando Mídia (${type}) | workspace=${normalizedWorkspace.id} | provider=${normalizedWorkspace.whatsappProvider}`,
       );
 
       const subStatus = await PlanLimitsProvider.checkSubscriptionStatus(normalizedWorkspace.id);
@@ -325,7 +325,7 @@ export const WhatsAppEngine = {
         );
         return assertProviderSendResult(result, 'media');
       } catch (error: unknown) {
-        console.error(`❌ [UWE-Ω] Error sending media: ${errorMessage(error)}`);
+        console.error(`[ERROR] [UWE-Ω] Error sending media: ${errorMessage(error)}`);
 
         try {
           const fallback = await autoProvider.sendMedia(

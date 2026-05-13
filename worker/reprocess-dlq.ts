@@ -34,7 +34,7 @@ async function main() {
         },
       });
       await job.remove();
-      console.log(`✔ Requeued ${job.id} -> ${targetQueueName}:${name}`);
+      console.log(`[OK] Requeued ${job.id} -> ${targetQueueName}:${name}`);
     } catch (err: unknown) {
       console.error(
         'Failed to requeue DLQ job',

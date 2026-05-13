@@ -97,7 +97,7 @@ function installIoredisDefaultUrlGuard(redisUrl: string): void {
 }
 
 console.log('========================================');
-console.log('🚀 [WORKER BOOTSTRAP] Resolving Redis configuration...');
+console.log('[BOOT] [WORKER BOOTSTRAP] Resolving Redis configuration...');
 console.log('NODE_ENV:', process.env.NODE_ENV);
 
 let resolvedUrl: string | null;
@@ -105,7 +105,7 @@ try {
   resolvedUrl = resolveRedisUrl();
 } catch (err) {
   if (err instanceof RedisConfigurationError) {
-    console.error('❌ [WORKER BOOTSTRAP] FATAL: Redis is required but unresolvable.');
+    console.error('[ERROR] [WORKER BOOTSTRAP] FATAL: Redis is required but unresolvable.');
     console.error(`   ${err.message}`);
     process.exit(1);
   }
@@ -117,13 +117,13 @@ if (resolvedUrl) {
   // reads process.env.REDIS_URL.
   process.env.REDIS_URL = resolvedUrl;
   installIoredisDefaultUrlGuard(resolvedUrl);
-  console.log(`✅ [WORKER BOOTSTRAP] Redis URL: ${maskRedisUrl(resolvedUrl)}`);
+  console.log(`[OK] [WORKER BOOTSTRAP] Redis URL: ${maskRedisUrl(resolvedUrl)}`);
 
   if (resolvedUrl.includes('.railway.internal')) {
     console.log('[WORKER BOOTSTRAP] Redis is using Railway internal networking.');
   }
 } else {
-  console.error('❌ [WORKER BOOTSTRAP] FATAL: REDIS_MODE=disabled but worker requires Redis.');
+  console.error('[ERROR] [WORKER BOOTSTRAP] FATAL: REDIS_MODE=disabled but worker requires Redis.');
   console.error(
     '   The worker exists to process BullMQ jobs. Without Redis there is no queue to process.',
   );
@@ -132,7 +132,7 @@ if (resolvedUrl) {
 }
 
 console.log('========================================');
-console.log('🚀 [WORKER BOOTSTRAP] Starting processor...');
+console.log('[BOOT] [WORKER BOOTSTRAP] Starting processor...');
 console.log('========================================');
 
 // Dynamic import: ensures process.env is fully populated before any

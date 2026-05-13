@@ -31,7 +31,7 @@ if (!redisUrl) {
 }
 
 console.log('========================================');
-console.log('✅ [WORKER/REDIS-CLIENT] Using Redis:', maskRedisUrl(redisUrl));
+console.log('[OK] [WORKER/REDIS-CLIENT] Using Redis:', maskRedisUrl(redisUrl));
 console.log('========================================');
 
 const redisOptions = {
@@ -45,22 +45,22 @@ const redisOptions = {
 // Cliente para comandos gerais
 export const redis = new Redis(redisUrl, redisOptions);
 redis.on('error', (err) => {
-  console.error('❌ [WORKER/redis] Redis error:', err.message);
+  console.error('[ERROR] [WORKER/redis] Redis error:', err.message);
 });
 redis.on('ready', () => {
-  console.log('✅ [WORKER/redis] Redis pronto');
+  console.log('[OK] [WORKER/redis] Redis pronto');
 });
 
 // Cliente para Pub/Sub (Subscriber precisa de conexão exclusiva)
 export const redisSub = new Redis(redisUrl, redisOptions);
 redisSub.on('error', (err) => {
-  console.error('❌ [WORKER/redisSub] Redis error:', err.message);
+  console.error('[ERROR] [WORKER/redisSub] Redis error:', err.message);
 });
 
 // Cliente para Pub/Sub (Publisher)
 export const redisPub = new Redis(redisUrl, redisOptions);
 redisPub.on('error', (err) => {
-  console.error('❌ [WORKER/redisPub] Redis error:', err.message);
+  console.error('[ERROR] [WORKER/redisPub] Redis error:', err.message);
 });
 
 // Exporta flag para verificação em outros módulos. After P2-3 this is

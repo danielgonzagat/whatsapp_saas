@@ -59,7 +59,7 @@ const resolveRequiredRedisUrl = (context: string): string => {
   const resolved = resolveRedisUrl();
   if (!resolved) {
     console.error(
-      `❌ [QUEUE] Redis URL is null while creating ${context}. Worker bootstrap should have prevented this. Exiting.`,
+      `[ERROR] [QUEUE] Redis URL is null while creating ${context}. Worker bootstrap should have prevented this. Exiting.`,
     );
     process.exit(1);
   }
@@ -94,13 +94,13 @@ const createRedisConnection = (
 
   if (attachQueueLogs) {
     client.on('error', (err) => {
-      console.error('❌ [QUEUE] Redis error:', err.message);
+      console.error('[ERROR] [QUEUE] Redis error:', err.message);
     });
     client.on('connect', () => {
-      console.log('📡 [QUEUE] Conectado ao Redis');
+      console.log('[QUEUE] Conectado ao Redis');
     });
     client.on('ready', () => {
-      console.log('✅ [QUEUE] Redis pronto para comandos');
+      console.log('[OK] [QUEUE] Redis pronto para comandos');
     });
   }
 
@@ -120,7 +120,7 @@ function getConnection(): Redis {
   const resolved = resolveRequiredRedisUrl('shared BullMQ connection');
 
   console.log('========================================');
-  console.log(`✅ [QUEUE] Connecting to Redis: ${maskRedisUrl(resolved)}`);
+  console.log(`[OK] [QUEUE] Connecting to Redis: ${maskRedisUrl(resolved)}`);
   console.log('========================================');
 
   _connection = createRedisConnection('shared BullMQ connection', {}, true);
@@ -378,7 +378,7 @@ export class Queue {
     this.name = name;
     this.queue = new BullQueue(name, buildQueueOptions());
     attachQueueErrorLogger(this.queue, `legacyQueue:${name}`);
-    console.log(`📦 [Queue] Criada fila "${name}" com conexão Redis configurada`);
+    console.log(`[PKG] [Queue] Criada fila "${name}" com conexão Redis configurada`);
   }
 
   /** Push. */
@@ -398,7 +398,7 @@ export class Queue {
       );
       attachWorkerErrorLogger(this.worker, `legacyWorker:${this.name}`);
       additionalWorkers.push(this.worker);
-      console.log(`👷 [Queue] Worker criado para fila "${this.name}"`);
+      console.log(`[Queue] Worker criado para fila "${this.name}"`);
     }
   }
 
@@ -491,5 +491,5 @@ export async function shutdownQueueSystem(timeoutMs = 10_000): Promise<void> {
   await awaitCloserOrTimeout(closers, timeoutMs);
   await closeSharedConnection();
   resetQueueRegistries();
-  console.log('✅ [QUEUE] shutdownQueueSystem complete');
+  console.log('[OK] [QUEUE] shutdownQueueSystem complete');
 }
