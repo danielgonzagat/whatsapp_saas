@@ -6,9 +6,1399 @@
    Identidade: Precision. Monochrome + Ember.
    ═══════════════════════════════════════════════ */
 
-@import './globals/tokens.css';
-@import './globals/base.css';
-@import './globals/app-shell.css';
-@import './globals/overrides.css';
-@import './globals/animations.css';
-@import './globals/radius-responsive.css';
+:root {
+  /* ═══ MONITOR BACKGROUND SYSTEM ═══ */
+  --background: rgb(10, 10, 12);
+  --foreground: rgb(224, 221, 216);
+  --card: rgb(17, 17, 19);
+  --card-foreground: rgb(224, 221, 216);
+  --popover: rgb(17, 17, 19);
+  --popover-foreground: rgb(224, 221, 216);
+
+  /* ═══ MONITOR ACCENT — EMBER ═══ */
+  --primary: rgb(232, 93, 48);
+  --primary-foreground: rgb(10, 10, 12);
+  --secondary: rgb(25, 25, 28);
+  --secondary-foreground: rgb(224, 221, 216);
+  --muted: rgb(25, 25, 28);
+  --muted-foreground: rgb(58, 58, 63);
+  --accent: rgb(34, 34, 38);
+  --accent-foreground: rgb(224, 221, 216);
+
+  /* ═══ MONITOR STATE ═══ */
+  --destructive: rgb(232, 93, 48);
+  --destructive-foreground: rgb(232, 93, 48);
+
+  /* ═══ MONITOR BORDERS ═══ */
+  --border: rgb(34, 34, 38);
+  --input: rgb(17, 17, 19);
+  --ring: rgb(232, 93, 48);
+
+  /* ═══ MONITOR CHARTS ═══ */
+  --chart-1: rgb(232, 93, 48);
+  --chart-2: rgb(224, 221, 216);
+  --chart-3: rgb(110, 110, 115);
+  --chart-4: rgb(58, 58, 63);
+  --chart-5: rgb(34, 34, 38);
+
+  /* ═══ RADIUS — MAX 6px ═══ */
+  --radius: 0.375rem;
+
+  /* ═══ MONITOR SIDEBAR ═══ */
+  --sidebar: rgb(10, 10, 12);
+  --sidebar-foreground: rgb(224, 221, 216);
+  --sidebar-primary: rgb(232, 93, 48);
+  --sidebar-primary-foreground: rgb(10, 10, 12);
+  --sidebar-accent: rgba(232, 93, 48, 0.06);
+  --sidebar-accent-foreground: rgb(224, 221, 216);
+  --sidebar-border: rgb(25, 25, 28);
+  --sidebar-ring: rgb(232, 93, 48);
+
+  /* ═══ MONITOR CUSTOM PROPERTIES ═══ */
+  --bg-void: rgb(10, 10, 12);
+  --bg-surface: rgb(17, 17, 19);
+  --bg-elevated: rgb(25, 25, 28);
+  --bg-border: rgb(34, 34, 38);
+
+  /* Legacy aliases */
+  --bg-space: rgb(17, 17, 19);
+  --bg-nebula: rgb(25, 25, 28);
+  --bg-stellar: rgb(25, 25, 28);
+  --bg-corona: rgb(34, 34, 38);
+  --text-silver: rgb(224, 221, 216);
+  --text-muted: rgb(110, 110, 115);
+  --text-dim: rgb(58, 58, 63);
+
+  /* Legacy aliases */
+  --text-starlight: rgb(224, 221, 216);
+  --text-moonlight: rgb(110, 110, 115);
+  --text-dust: rgb(58, 58, 63);
+  --text-void: rgb(58, 58, 63);
+  --ember: rgb(232, 93, 48);
+  --ember-bg: rgba(232, 93, 48, 0.06);
+  --ember-glow10: rgba(232, 93, 48, 0.1);
+  --ember-glow30: rgba(232, 93, 48, 0.3);
+
+  /* Legacy accent aliases */
+  --accent-webb: rgb(232, 93, 48);
+  --accent-webb-hover: rgb(232, 93, 48);
+  --accent-webb-active: rgb(232, 93, 48);
+  --accent-webb-glow: rgba(232, 93, 48, 0.1);
+  --accent-gold: rgb(232, 93, 48);
+  --accent-gold-dim: rgba(232, 93, 48, 0.06);
+  --accent-nebula: rgb(232, 93, 48);
+  --state-success: rgb(224, 221, 216);
+  --state-warning: rgb(110, 110, 115);
+  --state-error: rgb(232, 93, 48);
+  --border-void: rgb(25, 25, 28);
+  --border-space: rgb(34, 34, 38);
+  --border-glow: rgb(51, 51, 56);
+
+  /* ═══ SIDEBAR DIMENSIONS ═══ */
+  --sidebar-width-collapsed: 52px;
+  --sidebar-width-expanded: 240px;
+
+  /* ═══ CHAT ═══ */
+  --chat-max-width: 660px;
+  --chat-bubble-ai: rgb(17, 17, 19);
+  --chat-bubble-user: rgb(232, 93, 48);
+  --chat-bubble-ai-border: rgb(34, 34, 38);
+  --message-spacing: 16px;
+
+  /* ═══ SPACING ═══ */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+  --space-2xl: 48px;
+
+  /* ═══ TYPOGRAPHY ═══ */
+  --font-display: var(--font-sora), 'Sora', sans-serif;
+  --font-body: var(--font-sora), 'Sora', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+  --font-size-xs: 11px;
+  --font-size-sm: 13px;
+  --font-size-base: 15px;
+  --font-size-lg: 18px;
+  --font-size-xl: 24px;
+  --font-size-2xl: 28px;
+  --font-size-3xl: 36px;
+  --tracking-tight: -0.01em;
+  --tracking-normal: 0;
+  --tracking-wide: 0.05em;
+  --tracking-wider: 0.08em;
+  --tracking-widest: 0.12em;
+
+  /* ═══ TRANSITIONS — 150ms ease ONLY ═══ */
+  --ease-default: ease;
+  --transition-fast: 150ms ease;
+  --transition-normal: 150ms ease;
+  --transition-slow: 150ms ease;
+
+  /* Legacy aliases */
+  --ease-gravity: ease;
+  --ease-orbit: ease;
+  --transition-drift: 150ms ease;
+}
+
+/* ═══ Keep .dark class pointing to same values ═══ */
+.dark {
+  --background: rgb(10, 10, 12);
+  --foreground: rgb(224, 221, 216);
+  --card: rgb(17, 17, 19);
+  --card-foreground: rgb(224, 221, 216);
+  --popover: rgb(17, 17, 19);
+  --popover-foreground: rgb(224, 221, 216);
+  --primary: rgb(232, 93, 48);
+  --primary-foreground: rgb(10, 10, 12);
+  --secondary: rgb(25, 25, 28);
+  --secondary-foreground: rgb(224, 221, 216);
+  --muted: rgb(25, 25, 28);
+  --muted-foreground: rgb(58, 58, 63);
+  --accent: rgb(34, 34, 38);
+  --accent-foreground: rgb(224, 221, 216);
+  --destructive: rgb(232, 93, 48);
+  --destructive-foreground: rgb(232, 93, 48);
+  --border: rgb(34, 34, 38);
+  --input: rgb(17, 17, 19);
+  --ring: rgb(232, 93, 48);
+  --chart-1: rgb(232, 93, 48);
+  --chart-2: rgb(224, 221, 216);
+  --chart-3: rgb(110, 110, 115);
+  --chart-4: rgb(58, 58, 63);
+  --chart-5: rgb(34, 34, 38);
+  --sidebar: rgb(10, 10, 12);
+  --sidebar-foreground: rgb(224, 221, 216);
+  --sidebar-primary: rgb(232, 93, 48);
+  --sidebar-primary-foreground: rgb(10, 10, 12);
+  --sidebar-accent: rgba(232, 93, 48, 0.06);
+  --sidebar-accent-foreground: rgb(224, 221, 216);
+  --sidebar-border: rgb(25, 25, 28);
+  --sidebar-ring: rgb(232, 93, 48);
+}
+
+/* ═══ COOKIE THEME TOKENS — global because cookie UI lives outside the app shell ═══ */
+:root {
+  --cookie-bg-primary: rgb(255, 255, 255);
+  --cookie-bg-surface: rgb(255, 255, 255);
+  --cookie-bg-elevated: rgb(245, 245, 247);
+  --cookie-border: rgb(224, 224, 226);
+  --cookie-text-primary: rgb(10, 10, 12);
+  --cookie-text-secondary: rgb(107, 107, 112);
+  --cookie-text-tertiary: rgb(155, 155, 160);
+  --cookie-text-on-accent: rgb(255, 255, 255);
+  --cookie-accent: rgb(232, 93, 48);
+  --cookie-accent-hover: rgb(212, 82, 42);
+  --cookie-accent-light: rgba(232, 93, 48, 0.08);
+  --cookie-accent-medium: rgba(232, 93, 48, 0.15);
+  --cookie-button-bg: rgb(245, 245, 247);
+  --cookie-button-bg-hover: rgb(236, 236, 239);
+  --cookie-overlay: rgba(9, 11, 18, 0.36);
+  --cookie-shadow: 0 8px 32px rgba(15, 23, 42, 0.14);
+}
+
+:root[data-kloel-app-theme='dark'] {
+  --cookie-bg-primary: rgb(10, 10, 12);
+  --cookie-bg-surface: rgb(17, 17, 19);
+  --cookie-bg-elevated: rgb(25, 25, 28);
+  --cookie-border: rgb(42, 42, 46);
+  --cookie-text-primary: rgb(224, 221, 216);
+  --cookie-text-secondary: rgb(110, 110, 115);
+  --cookie-text-tertiary: rgb(58, 58, 63);
+  --cookie-text-on-accent: rgb(10, 10, 12);
+  --cookie-accent: rgb(232, 93, 48);
+  --cookie-accent-hover: rgb(240, 106, 61);
+  --cookie-accent-light: rgba(232, 93, 48, 0.08);
+  --cookie-accent-medium: rgba(232, 93, 48, 0.2);
+  --cookie-button-bg: rgb(30, 30, 34);
+  --cookie-button-bg-hover: rgb(37, 37, 40);
+  --cookie-overlay: rgba(0, 0, 0, 0.7);
+  --cookie-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+/* ═══ APP THEME TOKENS — authenticated app only ═══ */
+.kloel-app-theme-root {
+  --app-bg-primary: rgb(255, 255, 255);
+  --app-bg-secondary: rgb(245, 245, 247);
+  --app-bg-tertiary: rgb(234, 234, 236);
+  --app-bg-elevated: rgb(255, 255, 255);
+  --app-bg-hover: rgb(240, 240, 242);
+  --app-bg-active: rgb(232, 232, 234);
+  --app-bg-sidebar: rgb(248, 248, 250);
+  --app-bg-input: rgb(255, 255, 255);
+  --app-bg-card: rgb(255, 255, 255);
+  --app-bg-overlay: rgba(9, 11, 18, 0.36);
+  --app-border-primary: rgb(224, 224, 226);
+  --app-border-secondary: rgb(208, 208, 210);
+  --app-border-subtle: rgb(234, 234, 236);
+  --app-border-input: rgb(208, 208, 210);
+  --app-border-focus: rgb(232, 93, 48);
+  --app-text-primary: rgb(10, 10, 12);
+  --app-text-secondary: rgb(107, 107, 112);
+  --app-text-tertiary: rgb(155, 155, 160);
+  --app-text-inverse: rgb(255, 255, 255);
+  --app-text-on-accent: rgb(255, 255, 255);
+  --app-text-placeholder: rgb(173, 173, 176);
+  --app-accent: rgb(232, 93, 48);
+  --app-accent-hover: rgb(212, 82, 42);
+  --app-accent-light: rgba(232, 93, 48, 0.08);
+  --app-accent-medium: rgba(232, 93, 48, 0.15);
+  --app-success: rgb(34, 197, 94);
+  --app-success-bg: rgba(34, 197, 94, 0.08);
+  --app-warning: rgb(245, 158, 11);
+  --app-warning-bg: rgba(245, 158, 11, 0.08);
+  --app-error: rgb(239, 68, 68);
+  --app-error-bg: rgba(239, 68, 68, 0.08);
+  --app-info: rgb(59, 130, 246);
+  --app-info-bg: rgba(59, 130, 246, 0.08);
+  --app-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --app-shadow-md: 0 4px 12px rgba(15, 23, 42, 0.06);
+  --app-shadow-lg: 0 8px 24px rgba(15, 23, 42, 0.08);
+  --app-shadow-xl: 0 16px 48px rgba(15, 23, 42, 0.12);
+  --app-scrollbar-track: rgb(240, 240, 242);
+  --app-scrollbar-thumb: rgb(205, 204, 208);
+  --app-scrollbar-thumb-hover: rgb(173, 173, 176);
+  --app-ring-focus: 0 0 0 2px rgba(232, 93, 48, 0.3);
+  --app-transition-theme:
+    background-color 0.28s ease, color 0.28s ease, border-color 0.28s ease, box-shadow 0.28s ease,
+    fill 0.28s ease, stroke 0.28s ease;
+
+  /* make Tailwind token-based surfaces theme aware inside the app shell */
+  --background: var(--app-bg-primary);
+  --foreground: var(--app-text-primary);
+  --card: var(--app-bg-card);
+  --card-foreground: var(--app-text-primary);
+  --popover: var(--app-bg-card);
+  --popover-foreground: var(--app-text-primary);
+  --primary: var(--app-accent);
+  --primary-foreground: var(--app-text-on-accent);
+  --secondary: var(--app-bg-secondary);
+  --secondary-foreground: var(--app-text-primary);
+  --muted: var(--app-bg-tertiary);
+  --muted-foreground: var(--app-text-secondary);
+  --accent: var(--app-bg-hover);
+  --accent-foreground: var(--app-text-primary);
+  --destructive: var(--app-error);
+  --destructive-foreground: var(--app-text-on-accent);
+  --border: var(--app-border-primary);
+  --input: var(--app-bg-input);
+  --ring: var(--app-accent);
+  --sidebar: var(--app-bg-sidebar);
+  --sidebar-foreground: var(--app-text-primary);
+  --sidebar-primary: var(--app-accent);
+  --sidebar-primary-foreground: var(--app-text-on-accent);
+  --sidebar-accent: var(--app-accent-light);
+  --sidebar-accent-foreground: var(--app-text-primary);
+  --sidebar-border: var(--app-border-subtle);
+  --sidebar-ring: var(--app-accent);
+
+  /* compatibility aliases used across the app */
+  --bg-void: var(--app-bg-primary);
+  --bg-surface: var(--app-bg-card);
+  --bg-elevated: var(--app-bg-secondary);
+  --bg-border: var(--app-border-primary);
+  --bg-space: var(--app-bg-card);
+  --bg-nebula: var(--app-bg-secondary);
+  --bg-stellar: var(--app-bg-tertiary);
+  --bg-corona: var(--app-bg-hover);
+  --text-silver: var(--app-text-primary);
+  --text-muted: var(--app-text-secondary);
+  --text-dim: var(--app-text-tertiary);
+  --text-starlight: var(--app-text-primary);
+  --text-moonlight: var(--app-text-secondary);
+  --text-dust: var(--app-text-tertiary);
+  --text-void: var(--app-text-tertiary);
+  --ember: var(--app-accent);
+  --ember-bg: var(--app-accent-light);
+  --ember-glow10: var(--app-accent-light);
+  --ember-glow30: var(--app-accent-medium);
+  --border-void: var(--app-border-subtle);
+  --border-space: var(--app-border-primary);
+  --border-glow: var(--app-border-secondary);
+
+  color-scheme: light;
+  background: var(--app-bg-primary);
+  color: var(--app-text-primary);
+}
+
+:root[data-kloel-app-theme='dark'] .kloel-app-theme-root {
+  --app-bg-primary: rgb(10, 10, 12);
+  --app-bg-secondary: rgb(17, 17, 19);
+  --app-bg-tertiary: rgb(25, 25, 28);
+  --app-bg-elevated: rgb(21, 21, 24);
+  --app-bg-hover: rgb(30, 30, 34);
+  --app-bg-active: rgb(37, 37, 40);
+  --app-bg-sidebar: rgb(14, 14, 16);
+  --app-bg-input: rgb(17, 17, 19);
+  --app-bg-card: rgb(17, 17, 19);
+  --app-bg-overlay: rgba(0, 0, 0, 0.7);
+  --app-border-primary: rgb(42, 42, 46);
+  --app-border-secondary: rgb(58, 58, 62);
+  --app-border-subtle: rgb(30, 30, 34);
+  --app-border-input: rgb(42, 42, 46);
+  --app-border-focus: rgb(232, 93, 48);
+  --app-text-primary: rgb(224, 221, 216);
+  --app-text-secondary: rgb(110, 110, 115);
+  --app-text-tertiary: rgb(58, 58, 63);
+  --app-text-inverse: rgb(10, 10, 12);
+  --app-text-on-accent: rgb(10, 10, 12);
+  --app-text-placeholder: rgb(85, 85, 88);
+  --app-accent: rgb(232, 93, 48);
+  --app-accent-hover: rgb(240, 106, 61);
+  --app-accent-light: rgba(232, 93, 48, 0.08);
+  --app-accent-medium: rgba(232, 93, 48, 0.2);
+  --app-success: rgb(34, 197, 94);
+  --app-success-bg: rgba(34, 197, 94, 0.12);
+  --app-warning: rgb(245, 158, 11);
+  --app-warning-bg: rgba(245, 158, 11, 0.12);
+  --app-error: rgb(239, 68, 68);
+  --app-error-bg: rgba(239, 68, 68, 0.12);
+  --app-info: rgb(59, 130, 246);
+  --app-info-bg: rgba(59, 130, 246, 0.12);
+  --app-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --app-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+  --app-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.5);
+  --app-shadow-xl: 0 16px 48px rgba(0, 0, 0, 0.6);
+  --app-scrollbar-track: rgb(17, 17, 20);
+  --app-scrollbar-thumb: rgb(42, 42, 46);
+  --app-scrollbar-thumb-hover: rgb(58, 58, 62);
+
+  color-scheme: dark;
+}
+
+/* ═══ TAILWIND THEME INLINE ═══ */
+@theme inline {
+  --font-sans: var(--font-body);
+  --font-serif: var(--font-display);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --radius-sm: calc(var(--radius) - 2px);
+  --radius-md: var(--radius);
+  --radius-lg: var(--radius);
+  --radius-xl: var(--radius);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+/* ═══ BASE LAYER ═══ */
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* ═══ GLOBAL MONITOR STYLES ═══ */
+html {
+  scroll-behavior: smooth;
+  color-scheme: dark;
+  background: rgb(10, 10, 12);
+  color: rgb(224, 221, 216);
+}
+
+body {
+  background: rgb(10, 10, 12);
+  font-family: Sora, sans-serif;
+}
+
+.kloel-app-theme-root,
+.kloel-app-theme-root *::before,
+.kloel-app-theme-root *::after,
+.kloel-app-theme-root * {
+  transition: var(--app-transition-theme);
+}
+
+.kloel-app-theme-root ::-webkit-scrollbar-track {
+  background: var(--app-scrollbar-track);
+}
+
+.kloel-app-theme-root ::-webkit-scrollbar-thumb {
+  background: var(--app-scrollbar-thumb);
+}
+
+.kloel-app-theme-root ::-webkit-scrollbar-thumb:hover {
+  background: var(--app-scrollbar-thumb-hover);
+}
+
+.kloel-app-theme-root ::selection {
+  background: var(--app-accent-medium);
+  color: var(--app-text-primary);
+}
+
+.kloel-app-theme-root input::placeholder,
+.kloel-app-theme-root textarea::placeholder {
+  color: var(--app-text-placeholder) !important;
+}
+
+/* app-scoped legacy utility remapping */
+.kloel-app-theme-root .bg-white {
+  background-color: var(--app-bg-card) !important;
+}
+
+.kloel-app-theme-root .bg-gray-50 {
+  background-color: var(--app-bg-secondary) !important;
+}
+
+.kloel-app-theme-root .bg-gray-100 {
+  background-color: var(--app-bg-tertiary) !important;
+}
+
+.kloel-app-theme-root .bg-gray-200 {
+  background-color: var(--app-bg-active) !important;
+}
+
+.kloel-app-theme-root .bg-gray-300 {
+  background-color: var(--app-border-primary) !important;
+}
+
+.kloel-app-theme-root .border-gray-100 {
+  border-color: var(--app-border-subtle) !important;
+}
+
+.kloel-app-theme-root .border-gray-200 {
+  border-color: var(--app-border-primary) !important;
+}
+
+.kloel-app-theme-root .border-gray-300 {
+  border-color: var(--app-border-secondary) !important;
+}
+
+.kloel-app-theme-root .text-gray-900 {
+  color: var(--app-text-primary) !important;
+}
+
+.kloel-app-theme-root .text-gray-800 {
+  color: var(--app-text-primary) !important;
+}
+
+.kloel-app-theme-root .text-gray-700 {
+  color: var(--app-text-primary) !important;
+}
+
+.kloel-app-theme-root .text-gray-600 {
+  color: var(--app-text-secondary) !important;
+}
+
+.kloel-app-theme-root .text-gray-500 {
+  color: var(--app-text-tertiary) !important;
+}
+
+.kloel-app-theme-root .text-gray-400 {
+  color: var(--app-text-tertiary) !important;
+}
+
+.kloel-app-theme-root .text-gray-300 {
+  color: var(--app-text-tertiary) !important;
+}
+
+.kloel-app-theme-root .text-white {
+  color: var(--app-text-primary) !important;
+}
+
+.kloel-app-theme-root .hover\:text-white:hover {
+  color: var(--app-text-primary) !important;
+}
+
+.kloel-app-theme-root .bg-\[\rgb(10, 10, 12)\] {
+  background-color: var(--app-bg-primary) !important;
+}
+
+.kloel-app-theme-root .bg-\[\rgb(11, 15, 20)\] {
+  background-color: var(--app-bg-card) !important;
+}
+
+.kloel-app-theme-root .bg-\[\rgb(17, 17, 19)\],
+.kloel-app-theme-root .bg-\[\rgb(17, 17, 20)\] {
+  background-color: var(--app-bg-card) !important;
+}
+
+.kloel-app-theme-root .bg-\[\rgb(25, 25, 28)\],
+.kloel-app-theme-root .bg-\[\rgb(26, 26, 30)\],
+.kloel-app-theme-root .bg-\[\rgb(21, 21, 24)\],
+.kloel-app-theme-root .bg-\[\rgb(14, 14, 16)\] {
+  background-color: var(--app-bg-secondary) !important;
+}
+
+.kloel-app-theme-root .bg-\[\rgb(30, 30, 34)\],
+.kloel-app-theme-root .bg-\[\rgb(37, 37, 40)\] {
+  background-color: var(--app-bg-hover) !important;
+}
+
+.kloel-app-theme-root .bg-white\/5,
+.kloel-app-theme-root .bg-white\/10,
+.kloel-app-theme-root .bg-white\/\[0\.03\],
+.kloel-app-theme-root .bg-white\/\[0\.02\] {
+  background-color: var(--app-bg-secondary) !important;
+}
+
+.kloel-app-theme-root .bg-black\/20,
+.kloel-app-theme-root .bg-black\/30,
+.kloel-app-theme-root .bg-black\/40 {
+  background-color: color-mix(
+    in srgb,
+    var(--app-bg-secondary) 88%,
+    var(--app-bg-primary)
+  ) !important;
+}
+
+.kloel-app-theme-root .border-\[\rgb(25, 25, 28)\] {
+  border-color: var(--app-border-subtle) !important;
+}
+
+.kloel-app-theme-root .border-\[\rgb(34, 34, 38)\],
+.kloel-app-theme-root .border-\[\rgb(42, 42, 46)\] {
+  border-color: var(--app-border-primary) !important;
+}
+
+.kloel-app-theme-root .border-\[\rgb(58, 58, 62)\] {
+  border-color: var(--app-border-secondary) !important;
+}
+
+.kloel-app-theme-root .border-white\/8,
+.kloel-app-theme-root .border-white\/10,
+.kloel-app-theme-root .border-white\/20 {
+  border-color: color-mix(in srgb, var(--app-border-primary) 90%, transparent) !important;
+}
+
+.kloel-app-theme-root .text-\[\rgb(224, 221, 216)\],
+.kloel-app-theme-root .text-\[\rgb(234, 234, 240)\],
+.kloel-app-theme-root .text-\[\rgb(240, 240, 242)\] {
+  color: var(--app-text-primary) !important;
+}
+
+.kloel-app-theme-root .hover\:text-\[\rgb(224, 221, 216)\]:hover {
+  color: var(--app-text-primary) !important;
+}
+
+.kloel-app-theme-root .text-\[\rgb(201, 205, 212)\],
+.kloel-app-theme-root .text-\[\rgb(217, 221, 227)\],
+.kloel-app-theme-root .text-\[\rgb(247, 247, 245)\],
+.kloel-app-theme-root .text-\[\rgb(240, 240, 240)\] {
+  color: var(--app-text-primary) !important;
+}
+
+.kloel-app-theme-root .text-\[\rgb(110, 110, 115)\],
+.kloel-app-theme-root .text-\[\rgb(107, 107, 112)\] {
+  color: var(--app-text-secondary) !important;
+}
+
+.kloel-app-theme-root .text-\[\rgb(141, 150, 162)\] {
+  color: var(--app-text-secondary) !important;
+}
+
+.kloel-app-theme-root .text-\[\rgb(58, 58, 63)\],
+.kloel-app-theme-root .text-\[\rgb(155, 155, 160)\] {
+  color: var(--app-text-tertiary) !important;
+}
+
+.kloel-app-theme-root .hover\:bg-\[\rgb(25, 25, 28)\]:hover,
+.kloel-app-theme-root .hover\:bg-\[\rgb(30, 30, 34)\]:hover,
+.kloel-app-theme-root .hover\:bg-\[\rgb(34, 34, 38)\]:hover,
+.kloel-app-theme-root .hover\:bg-white\/5:hover,
+.kloel-app-theme-root .hover\:bg-white\/\[0\.02\]:hover {
+  background-color: var(--app-bg-hover) !important;
+}
+
+.kloel-app-theme-root .placeholder\:text-\[\rgb(58, 58, 63)\]::placeholder {
+  color: var(--app-text-placeholder) !important;
+}
+
+.kloel-app-theme-root .focus\:ring-\[\rgb(232, 93, 48)\] {
+  --tw-ring-color: var(--app-accent) !important;
+}
+
+.kloel-app-theme-root .focus-visible\:ring-\[\rgb(232, 93, 48)\]\/15:focus-visible {
+  --tw-ring-color: color-mix(in srgb, var(--app-accent) 15%, transparent) !important;
+}
+
+:root:not([data-kloel-app-theme='dark']) .kloel-app-theme-root .bg-\[\rgb(224, 221, 216)\] {
+  background-color: var(--app-accent) !important;
+}
+
+:root:not([data-kloel-app-theme='dark']) .kloel-app-theme-root .hover\:bg-\[\rgb(224, 221, 216)\]:hover {
+  background-color: var(--app-accent-hover) !important;
+}
+
+:root:not([data-kloel-app-theme='dark']) .kloel-app-theme-root .bg-\[\rgb(224, 221, 216)\]\/8,
+:root:not([data-kloel-app-theme='dark']) .kloel-app-theme-root .bg-\[\rgb(224, 221, 216)\]\/10,
+:root:not([data-kloel-app-theme='dark']) .kloel-app-theme-root .bg-\[\rgb(224, 221, 216)\]\/15 {
+  background-color: var(--app-accent-light) !important;
+}
+
+:root:not([data-kloel-app-theme='dark']) .kloel-app-theme-root .text-\[\rgb(10, 10, 12)\],
+:root:not([data-kloel-app-theme='dark']) .kloel-app-theme-root .text-\[\rgb(17, 17, 19)\] {
+  color: var(--app-text-on-accent) !important;
+}
+
+/* ═══ MONITOR SCROLLBAR — 4px, minimal ═══ */
+::-webkit-scrollbar {
+  width: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgb(34, 34, 38);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgb(51, 51, 56);
+}
+
+/* ═══ MONITOR SELECTION ═══ */
+::selection {
+  background: rgba(232, 93, 48, 0.3);
+  color: rgb(224, 221, 216);
+}
+
+/* ═══ MONITOR INPUT PLACEHOLDERS ═══ */
+input::placeholder,
+textarea::placeholder {
+  color: rgb(58, 58, 63) !important;
+}
+
+/* ═══ GLOBAL OVERRIDES — Map legacy classes to Monitor ═══ */
+.bg-white {
+  background-color: rgb(17, 17, 19) !important;
+}
+
+.bg-gray-50 {
+  background-color: rgb(17, 17, 19) !important;
+}
+
+.bg-gray-100 {
+  background-color: rgb(25, 25, 28) !important;
+}
+
+.bg-gray-200 {
+  background-color: rgb(25, 25, 28) !important;
+}
+
+.bg-gray-300 {
+  background-color: rgb(34, 34, 38) !important;
+}
+
+.border-gray-100 {
+  border-color: rgb(25, 25, 28) !important;
+}
+
+.border-gray-200 {
+  border-color: rgb(34, 34, 38) !important;
+}
+
+.border-gray-300 {
+  border-color: rgb(51, 51, 56) !important;
+}
+
+.text-gray-900 {
+  color: rgb(224, 221, 216) !important;
+}
+
+.text-gray-800 {
+  color: rgb(224, 221, 216) !important;
+}
+
+.text-gray-700 {
+  color: rgb(224, 221, 216) !important;
+}
+
+.text-gray-600 {
+  color: rgb(110, 110, 115) !important;
+}
+
+.text-gray-500 {
+  color: rgb(58, 58, 63) !important;
+}
+
+.text-gray-400 {
+  color: rgb(58, 58, 63) !important;
+}
+
+.text-gray-300 {
+  color: rgb(58, 58, 63) !important;
+}
+
+/* Override teal/green/blue to Ember for active states, rgb(17, 17, 19) for backgrounds */
+.bg-teal-600 {
+  background-color: rgb(232, 93, 48) !important;
+}
+
+.bg-teal-700 {
+  background-color: rgb(232, 93, 48) !important;
+}
+
+.bg-emerald-500 {
+  background-color: rgb(232, 93, 48) !important;
+}
+
+.bg-emerald-600 {
+  background-color: rgb(232, 93, 48) !important;
+}
+
+.text-teal-600 {
+  color: rgb(232, 93, 48) !important;
+}
+
+.text-teal-700 {
+  color: rgb(232, 93, 48) !important;
+}
+
+.text-emerald-500 {
+  color: rgb(232, 93, 48) !important;
+}
+
+.text-emerald-600 {
+  color: rgb(232, 93, 48) !important;
+}
+
+.border-teal-600 {
+  border-color: rgb(232, 93, 48) !important;
+}
+
+.ring-teal-600 {
+  --tw-ring-color: rgb(232, 93, 48) !important;
+}
+
+.accent-teal-600 {
+  accent-color: rgb(232, 93, 48) !important;
+}
+
+/* ═══ BADGE / STATE COLOR OVERRIDES ═══ */
+.bg-blue-50 {
+  background-color: rgba(232, 93, 48, 0.06) !important;
+}
+
+.bg-blue-100 {
+  background-color: rgba(232, 93, 48, 0.1) !important;
+}
+
+.bg-green-50 {
+  background-color: rgb(17, 17, 19) !important;
+}
+
+.bg-green-100 {
+  background-color: rgb(17, 17, 19) !important;
+}
+
+.bg-red-50 {
+  background-color: rgba(232, 93, 48, 0.06) !important;
+}
+
+.bg-red-100 {
+  background-color: rgba(232, 93, 48, 0.1) !important;
+}
+
+.bg-yellow-50 {
+  background-color: rgb(17, 17, 19) !important;
+}
+
+.bg-yellow-100 {
+  background-color: rgb(17, 17, 19) !important;
+}
+
+.bg-rose-50 {
+  background-color: rgba(232, 93, 48, 0.06) !important;
+}
+
+.bg-emerald-50 {
+  background-color: rgb(17, 17, 19) !important;
+}
+
+.bg-indigo-100 {
+  background-color: rgb(17, 17, 19) !important;
+}
+
+.bg-teal-100 {
+  background-color: rgba(232, 93, 48, 0.06) !important;
+}
+
+.bg-purple-100 {
+  background-color: rgb(17, 17, 19) !important;
+}
+
+/* Text colors for state badges */
+.text-blue-600 {
+  color: rgb(232, 93, 48) !important;
+}
+
+.text-blue-700 {
+  color: rgb(232, 93, 48) !important;
+}
+
+.text-green-600 {
+  color: rgb(224, 221, 216) !important;
+}
+
+.text-green-700 {
+  color: rgb(224, 221, 216) !important;
+}
+
+.text-red-600 {
+  color: rgb(232, 93, 48) !important;
+}
+
+.text-red-700 {
+  color: rgb(232, 93, 48) !important;
+}
+
+.text-yellow-600 {
+  color: rgb(110, 110, 115) !important;
+}
+
+.text-yellow-700 {
+  color: rgb(110, 110, 115) !important;
+}
+
+.text-rose-700 {
+  color: rgb(232, 93, 48) !important;
+}
+
+.text-emerald-700 {
+  color: rgb(224, 221, 216) !important;
+}
+
+.text-indigo-600 {
+  color: rgb(232, 93, 48) !important;
+}
+
+.text-teal-600 {
+  color: rgb(232, 93, 48) !important;
+}
+
+/* Border state overrides */
+.border-blue-500 {
+  border-color: rgb(232, 93, 48) !important;
+}
+
+.border-green-500 {
+  border-color: rgb(34, 34, 38) !important;
+}
+
+.border-red-500 {
+  border-color: rgb(232, 93, 48) !important;
+}
+
+/* Slate overrides */
+.bg-slate-50 {
+  background-color: rgb(17, 17, 19) !important;
+}
+
+.bg-slate-100 {
+  background-color: rgb(25, 25, 28) !important;
+}
+
+.bg-slate-200 {
+  background-color: rgb(25, 25, 28) !important;
+}
+
+.border-slate-200 {
+  border-color: rgb(34, 34, 38) !important;
+}
+
+.border-slate-300 {
+  border-color: rgb(51, 51, 56) !important;
+}
+
+.text-slate-500 {
+  color: rgb(58, 58, 63) !important;
+}
+
+.text-slate-600 {
+  color: rgb(110, 110, 115) !important;
+}
+
+.text-slate-700 {
+  color: rgb(224, 221, 216) !important;
+}
+
+.text-slate-800 {
+  color: rgb(224, 221, 216) !important;
+}
+
+.text-slate-900 {
+  color: rgb(224, 221, 216) !important;
+}
+
+.hover\:bg-slate-50:hover {
+  background-color: rgb(17, 17, 19) !important;
+}
+
+.border-rose-100 {
+  border-color: rgba(232, 93, 48, 0.15) !important;
+}
+
+/* Override hardcoded light backgrounds */
+[style*='background: rgb(248, 248, 248)'],
+[style*='background-color: rgb(248, 248, 248)'],
+[style*='background: rgb(248, 248, 248)'],
+[style*='background-color: rgb(248, 248, 248)'],
+[style*='background: rgb(250, 250, 250)'],
+[style*='background-color: rgb(250, 250, 250)'] {
+  background: rgb(10, 10, 12) !important;
+  background-color: rgb(10, 10, 12) !important;
+}
+
+/* ═══ MONITOR ANIMATIONS — Core ═══ */
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0%;
+    transform: translateY(14px);
+  }
+
+  to {
+    opacity: 100%;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 100%;
+  }
+
+  50% {
+    opacity: 50%;
+  }
+}
+
+/* ═══ CHAT V2 — Transitions & Effects ═══ */
+@keyframes blink {
+  0%,
+  100% {
+    opacity: 100%;
+  }
+
+  50% {
+    opacity: 0%;
+  }
+}
+
+@keyframes homeExit {
+  0% {
+    opacity: 100%;
+    transform: scale(1) translateY(0);
+    filter: blur(0);
+  }
+
+  60% {
+    opacity: 20%;
+    transform: scale(0.97) translateY(-20px);
+    filter: blur(3px);
+  }
+
+  100% {
+    opacity: 0%;
+    transform: scale(0.94) translateY(-40px);
+    filter: blur(6px);
+  }
+}
+
+@keyframes chatEnter {
+  from {
+    opacity: 0%;
+    transform: translateY(30px);
+  }
+
+  to {
+    opacity: 100%;
+    transform: translateY(0);
+  }
+}
+
+@keyframes thinkPulse {
+  0%,
+  100% {
+    opacity: 35%;
+  }
+
+  50% {
+    opacity: 75%;
+  }
+}
+
+/* ═══ KLOEL Chat — hover actions ═══ */
+.kloel-msg-user:hover .kloel-msg-actions,
+.kloel-msg-assistant:hover .kloel-msg-actions {
+  opacity: 100% !important;
+}
+
+@keyframes fadeSlideUp {
+  from {
+    opacity: 0%;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 100%;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeSlideDown {
+  from {
+    opacity: 0%;
+    transform: translateY(-12px);
+  }
+
+  to {
+    opacity: 100%;
+    transform: translateY(0);
+  }
+}
+
+/* ═══ LANDING V2 — WhatsApp Demo ═══ */
+@keyframes msgAppear {
+  from {
+    opacity: 0%;
+    transform: translateY(8px) scale(0.97);
+  }
+
+  to {
+    opacity: 100%;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes saleSlide {
+  from {
+    opacity: 0%;
+    transform: translateX(40px) scale(0.95);
+  }
+
+  to {
+    opacity: 100%;
+    transform: translateX(0) scale(1);
+  }
+}
+
+@keyframes typingBounce {
+  0%,
+  60%,
+  100% {
+    transform: translateY(0);
+  }
+
+  30% {
+    transform: translateY(-4px);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+/* ═══ LANDING V2 — NerveCenter ═══ */
+@keyframes termBlink {
+  0%,
+  100% {
+    opacity: 100%;
+  }
+
+  50% {
+    opacity: 0%;
+  }
+}
+
+@keyframes ncFadeIn {
+  from {
+    opacity: 0%;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 100%;
+    transform: translateY(0);
+  }
+}
+
+@keyframes ncPanelIn {
+  from {
+    opacity: 0%;
+    transform: scale(0.92);
+  }
+
+  to {
+    opacity: 100%;
+    transform: scale(1);
+  }
+}
+
+@keyframes ncLineIn {
+  from {
+    opacity: 0%;
+    transform: translateX(-6px);
+  }
+
+  to {
+    opacity: 100%;
+    transform: translateX(0);
+  }
+}
+
+/* ═══ OPTIONAL — Legacy (kept for compatibility) ═══ */
+@keyframes avatarPulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.05);
+  }
+}
+
+@keyframes ringPulse {
+  0% {
+    transform: scale(1);
+    opacity: 60%;
+  }
+
+  100% {
+    transform: scale(1.6);
+    opacity: 0%;
+  }
+}
+
+@keyframes messageSlideIn {
+  from {
+    opacity: 0%;
+    transform: translateY(12px) scale(0.97);
+  }
+
+  to {
+    opacity: 100%;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Force max 6px radius on all UI elements */
+.rounded-lg {
+  border-radius: 6px !important;
+}
+
+.rounded-xl {
+  border-radius: 6px !important;
+}
+
+.rounded-2xl {
+  border-radius: 6px !important;
+}
+
+.rounded-3xl {
+  border-radius: 6px !important;
+}
+
+.rounded-full {
+  border-radius: 6px !important;
+}
+
+/* ═══ MARKETING COMMAND CENTER ═══ */
+@keyframes slideIn {
+  from {
+    opacity: 0%;
+    transform: translateY(-8px);
+  }
+
+  to {
+    opacity: 100%;
+    transform: translateY(0);
+  }
+}
+
+@keyframes glow {
+  0%,
+  100% {
+    box-shadow: 0 0 0 rgba(232, 93, 48, 0);
+  }
+
+  50% {
+    box-shadow: 0 0 20px rgba(232, 93, 48, 0.1);
+  }
+}
+
+@keyframes tickerUp {
+  from {
+    opacity: 0%;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 100%;
+    transform: translateY(0);
+  }
+}
+
+/* ═══ RESPONSIVE — Grid & Layout ═══ */
+@media (width <= 768px) {
+  .grid4 {
+    grid-template-columns: 1fr !important;
+  }
+
+  .grid3 {
+    grid-template-columns: 1fr !important;
+  }
+
+  .grid2 {
+    grid-template-columns: 1fr !important;
+    gap: 32px !important;
+  }
+
+  .dash-grid {
+    grid-template-columns: 1fr 1fr !important;
+  }
+
+  .wa-sidebar {
+    display: none !important;
+  }
+
+  /* ═══ Section padding reduction ═══ */
+  .sec-wrapper {
+    padding-top: 64px !important;
+    padding-bottom: 64px !important;
+  }
+
+  .sec-wrapper-lg {
+    padding-top: 80px !important;
+    padding-bottom: 80px !important;
+  }
+
+  .sec-wrapper-md {
+    padding-top: 64px !important;
+    padding-bottom: 64px !important;
+  }
+
+  .section-intro {
+    margin-bottom: 32px !important;
+  }
+
+  /* ═══ Hero / CTA email rows: stack vertically ═══ */
+  .hero-email-row,
+  .cta-email-row {
+    flex-direction: column !important;
+  }
+
+  .hero-email-row input,
+  .hero-email-row button,
+  .cta-email-row input,
+  .cta-email-row button {
+    width: 100% !important;
+  }
+
+  /* ═══ Stats numbers: scale down ═══ */
+  .stat-number {
+    font-size: 36px !important;
+  }
+
+  .nerve-revenue {
+    font-size: 36px !important;
+  }
+
+  /* ═══ Landing footer: stack ═══ */
+  .landing-footer-inner {
+    flex-direction: column !important;
+    gap: 16px !important;
+    text-align: center !important;
+  }
+
+  .landing-footer-links {
+    justify-content: center !important;
+  }
+
+  /* ═══ Auth form mobile ═══ */
+  .kloel-auth-form {
+    padding: 24px 16px !important;
+  }
+
+  .kloel-auth-topbar {
+    margin-bottom: 24px !important;
+  }
+
+  /* ═══ Header CTA tighter on mobile ═══ */
+  .header-cta {
+    padding: 8px 14px !important;
+    font-size: 12px !important;
+  }
+}
+
+/* ═══ RESPONSIVE — Extra small screens ═══ */
+@media (width <= 480px) {
+  .stat-number {
+    font-size: 28px !important;
+  }
+
+  .nerve-revenue {
+    font-size: 28px !important;
+  }
+
+  .header-cta {
+    padding: 6px 10px !important;
+    font-size: 11px !important;
+  }
+}
+
+/* ═══ Mobile responsive fixes ═══ */
+@media (width <= 768px) {
+  /* Modal max width */
+  [style*='position: fixed'][style*='width: 360'] {
+    width: 100vw !important;
+    max-width: 100vw !important;
+  }
+
+  /* Tabs scroll horizontally without scrollbar */
+  [style*='overflow-x: auto'] {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  [style*='overflow-x: auto']::-webkit-scrollbar {
+    display: none;
+  }
+}

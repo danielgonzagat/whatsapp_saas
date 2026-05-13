@@ -45,7 +45,7 @@ export function TikTokModeBadge({ mode }: Props) {
             display: 'inline-block',
             width: 8,
             height: 8,
-            borderRadius: '50%',
+            borderRadius: 8,
             background: c.fg,
             marginRight: 4,
             verticalAlign: 'middle',
