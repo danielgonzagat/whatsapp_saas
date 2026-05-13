@@ -25,6 +25,200 @@ export type DashboardMessage = {
   metadata?: JsonRecord | null;
 };
 
+function BrainOperatorResult({ metadata }: { metadata: JsonRecord }) {
+  const intent = typeof metadata.brainIntent === 'string' ? metadata.brainIntent : '';
+  const result = isRecord(metadata.brainResult) ? metadata.brainResult : null;
+
+  if (!result) {
+    return null;
+  }
+
+  const data = result.data;
+
+  if (intent === 'list_products') {
+    const products = Array.isArray(data) ? data : [];
+    if (products.length === 0) {
+      return <p style={{ color: MUTED, fontSize: 14 }}>Nenhum produto encontrado no workspace.</p>;
+    }
+    return (
+      <div style={{ marginTop: 12, overflowX: 'auto' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, fontFamily: F }}>
+          <thead>
+            <tr style={{ borderBottom: `1px solid ${DIVIDER}`, textAlign: 'left' }}>
+              <th style={{ padding: '8px 10px', color: MUTED, fontWeight: 600 }}>Nome</th>
+              <th style={{ padding: '8px 10px', color: MUTED, fontWeight: 600 }}>Preco</th>
+              <th style={{ padding: '8px 10px', color: MUTED, fontWeight: 600 }}>Ativo</th>
+            </tr>
+          </thead>
+          <tbody>
+            {products.map((p: Record<string, unknown>, i: number) => (
+              <tr key={i} style={{ borderBottom: `1px solid ${DIVIDER}` }}>
+                <td style={{ padding: '8px 10px', color: TEXT }}>{String(p.name ?? '-')}</td>
+                <td style={{ padding: '8px 10px', color: TEXT }}>
+                  {typeof p.price === 'number' ? `R$ ${(p.price / 100).toFixed(2)}` : '-'}
+                </td>
+                <td style={{ padding: '8px 10px', color: p.active ? EMBER : MUTED }}>
+                  {p.active ? 'Sim' : 'Nao'}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    );
+  }
+
+  if (intent === 'search_contact') {
+    const contacts = Array.isArray(data) ? data : [];
+    if (contacts.length === 0) {
+      return <p style={{ color: MUTED, fontSize: 14 }}>Nenhum contato encontrado.</p>;
+    }
+    return (
+      <div style={{ marginTop: 12 }}>
+        {contacts.map((c: Record<string, unknown>, i: number) => (
+          <div
+            key={i}
+            style={{
+              padding: '10px 14px',
+              borderBottom: `1px solid ${DIVIDER}`,
+              fontSize: 14,
+              color: TEXT,
+            }}
+          >
+            <strong>{String(c.name ?? '-')}</strong>
+            <span style={{ color: MUTED, marginLeft: 8 }}>{String(c.phone ?? '')}</span>
+            {c.email ? (
+              <span style={{ color: MUTED, marginLeft: 8 }}>{String(c.email)}</span>
+            ) : null}
+            {c.leadScore ? (
+              <span style={{ marginLeft: 8, color: EMBER, fontSize: 12 }}>
+                Score: {String(c.leadScore)}
+              </span>
+            ) : null}
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  if (intent === 'list_conversations') {
+    const conversations = Array.isArray(data) ? data : [];
+    if (conversations.length === 0) {
+      return <p style={{ color: MUTED, fontSize: 14 }}>Nenhuma conversa recente.</p>;
+    }
+    return (
+      <div style={{ marginTop: 12 }}>
+        {conversations.map((conv: Record<string, unknown>, i: number) => {
+          const contact = isRecord(conv.contact) ? conv.contact : null;
+          const agent = isRecord(conv.agent) ? conv.agent : null;
+          return (
+            <div
+              key={i}
+              style={{
+                padding: '10px 14px',
+                borderBottom: `1px solid ${DIVIDER}`,
+                fontSize: 14,
+                color: TEXT,
+              }}
+            >
+              <strong>{contact ? String(contact.name ?? contact.phone ?? '-') : '-'}</strong>
+              <span style={{ color: MUTED, marginLeft: 8, fontSize: 13 }}>
+                {String(conv.lastMessagePreview ?? '').slice(0, 80)}
+              </span>
+              <span
+                style={{
+                  marginLeft: 8,
+                  color: conv.status === 'closed' ? MUTED : EMBER,
+                  fontSize: 12,
+                }}
+              >
+                {String(conv.status ?? '-')}
+              </span>
+              {agent ? (
+                <span style={{ marginLeft: 8, color: MUTED, fontSize: 12 }}>
+                  {String(agent.name ?? '')}
+                </span>
+              ) : null}
+            </div>
+          );
+        })}
+      </div>
+    );
+  }
+
+  if (intent === 'query_revenue_summary') {
+    const summary = isRecord(data) ? data : null;
+    if (!summary) {
+      return <p style={{ color: MUTED, fontSize: 14 }}>Dados de receita indisponiveis.</p>;
+    }
+    return (
+      <div style={{ marginTop: 12, overflowX: 'auto' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, fontFamily: F }}>
+          <thead>
+            <tr style={{ borderBottom: `1px solid ${DIVIDER}`, textAlign: 'left' }}>
+              <th style={{ padding: '8px 10px', color: MUTED, fontWeight: 600 }}>Metrica</th>
+              <th style={{ padding: '8px 10px', color: MUTED, fontWeight: 600 }}>Valor</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style={{ borderBottom: `1px solid ${DIVIDER}` }}>
+              <td style={{ padding: '8px 10px', color: TEXT }}>Receita Total</td>
+              <td style={{ padding: '8px 10px', color: TEXT }}>
+                R$ {((Number(summary.totalRevenue) || 0) / 100).toFixed(2)}
+              </td>
+            </tr>
+            <tr style={{ borderBottom: `1px solid ${DIVIDER}` }}>
+              <td style={{ padding: '8px 10px', color: TEXT }}>Ticket Medio</td>
+              <td style={{ padding: '8px 10px', color: TEXT }}>
+                R$ {((Number(summary.ticketMedio) || 0) / 100).toFixed(2)}
+              </td>
+            </tr>
+            <tr style={{ borderBottom: `1px solid ${DIVIDER}` }}>
+              <td style={{ padding: '8px 10px', color: TEXT }}>Total de Pedidos</td>
+              <td style={{ padding: '8px 10px', color: TEXT }}>{String(summary.totalCount ?? 0)}</td>
+            </tr>
+            <tr style={{ borderBottom: `1px solid ${DIVIDER}` }}>
+              <td style={{ padding: '8px 10px', color: TEXT }}>Pedidos Pagos</td>
+              <td style={{ padding: '8px 10px', color: TEXT }}>{String(summary.paidCount ?? 0)}</td>
+            </tr>
+            <tr style={{ borderBottom: `1px solid ${DIVIDER}` }}>
+              <td style={{ padding: '8px 10px', color: TEXT }}>Conversao</td>
+              <td style={{ padding: '8px 10px', color: TEXT }}>{String(summary.conversao ?? 0)}%</td>
+            </tr>
+            <tr>
+              <td style={{ padding: '8px 10px', color: TEXT }}>Periodo</td>
+              <td style={{ padding: '8px 10px', color: TEXT }}>{String(summary.periodDays ?? 30)} dias</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    );
+  }
+
+  if (intent === 'send_message_via_channel') {
+    const info = isRecord(data) ? data : null;
+    return (
+      <div style={{ marginTop: 12, fontSize: 14, color: TEXT }}>
+        <p>
+          Mensagem enviada para <strong>{String(info?.phone ?? '-')}</strong> via{' '}
+          {String(info?.channel ?? 'whatsapp')}.
+        </p>
+        <p style={{ color: MUTED, fontSize: 13 }}>{String(info?.messagePreview ?? '')}</p>
+      </div>
+    );
+  }
+
+  return null;
+}
+
+function BrainFallbackMessage() {
+  return (
+    <div style={{ marginTop: 12, padding: '10px 14px', background: 'rgba(232,93,48,0.08)', borderRadius: 6, fontSize: 14, color: EMBER }}>
+      Ainda nao consigo executar isso. Esta sugestao foi registrada para analise futura.
+    </div>
+  );
+}
+
 export function MessageBlock({
   message,
   isStreaming = false,
@@ -274,6 +468,10 @@ export function MessageBlock({
       <AssistantAssetBlock
         {...(message.metadata !== undefined ? { metadata: message.metadata } : {})}
       />
+      {message.metadata?.brainOperator ? (
+        <BrainOperatorResult metadata={message.metadata} />
+      ) : null}
+      {message.metadata?.brainFallback ? <BrainFallbackMessage /> : null}
       <KloelMarkdown content={visibleAssistantText} />
       {isStreaming ? (
         <span

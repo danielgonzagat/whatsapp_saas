@@ -2,6 +2,7 @@ export const BRAIN_EVENT_TAXONOMY = [
   'brain.decide',
   'brain.observe',
   'brain.autonomy.propose',
+  'brain.capability.invoked',
   'capability.executed',
   'capability.failed',
   'sale.created',

@@ -152,7 +152,7 @@ export const UNIFIED_AGENT_TOOLS_SALES: ChatCompletionTool[] = [
     type: 'function',
     function: {
       name: 'schedule_followup',
-      description: 'Agenda um follow-up automático',
+      description: 'Agenda um follow-up automatico',
       parameters: {
         type: 'object',
         properties: {
@@ -161,6 +161,34 @@ export const UNIFIED_AGENT_TOOLS_SALES: ChatCompletionTool[] = [
           reason: { type: 'string' },
         },
         required: ['delayHours'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'search_contact',
+      description: 'Busca contatos do workspace por nome, telefone ou email',
+      parameters: {
+        type: 'object',
+        properties: {
+          query: { type: 'string', description: 'Termo de busca (nome, telefone ou email)' },
+          limit: { type: 'number', description: 'Maximo de resultados (padrao 20)' },
+        },
+        required: ['query'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'query_revenue_summary',
+      description: 'Retorna resumo de receita do workspace no periodo atual',
+      parameters: {
+        type: 'object',
+        properties: {
+          days: { type: 'number', description: 'Dias para tras a consultar (padrao 30)' },
+        },
       },
     },
   },

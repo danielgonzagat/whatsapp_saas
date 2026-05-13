@@ -111,6 +111,7 @@ import { WebinarController } from './webinar.controller';
 import { BrainCapabilityRegistryService } from './brain-capability-registry.service';
 import { BrainCapabilityExecutorService } from './brain-capability-executor.service';
 import { BrainAutonomyService } from './brain-autonomy.service';
+import { LacunasController } from './lacunas.controller';
 import { BrainCommercialGraphService } from './brain-commercial-graph.service';
 import { BrainEventSpineService } from './brain-event-spine.service';
 import { BrainRuntimeController } from './brain-runtime.controller';
@@ -205,6 +206,7 @@ import { MindWorkspaceStateService } from './mind-workspace-state.service';
     WebinarController,
     ChannelSetupController,
     BrainRuntimeController,
+    LacunasController,
     MindController,
   ],
   providers: [

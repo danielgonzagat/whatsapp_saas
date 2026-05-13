@@ -63,14 +63,43 @@ describe('UnifiedAgentActionsMessagingService', () => {
       ensureProactiveDailyLimit: jest.fn().mockResolvedValue({ allowed: true, remaining: 24, capAtDay: 25 }),
       isReply: jest.fn().mockResolvedValue(false),
     };
-    transports = {
-      send: jest.fn().mockResolvedValue({
+    // Delegate transports.send to whatsappService.sendMessage so legacy
+    // assertions on whatsappService keep firing while the new architecture
+    // (transport registry) is exercised end-to-end.
+    const delegatingSend = jest.fn(async (wid, params) => {
+      const guardContext = (params?.guardContext ?? {}) as Record<string, unknown>;
+      const fullContext = {
+        ...guardContext,
+        complianceMode:
+          guardContext.deliveryMode === 'reactive' ? 'reactive' : 'proactive',
+        forceDirect: guardContext.forceDirect === true,
+        ...(params.mediaUrl !== undefined ? { mediaUrl: params.mediaUrl } : {}),
+        ...(params.mediaType !== undefined ? { mediaType: params.mediaType } : {}),
+      };
+      const r = await whatsappService.sendMessage(
+        wid,
+        params.recipientId,
+        params.content,
+        fullContext,
+      );
+      const result = r as Record<string, unknown>;
+      if (result.error) {
+        return {
+          success: false,
+          blocked: false,
+          error: (result.message as string) || 'send_failed',
+        };
+      }
+      const delivery = result.delivery === 'queued' ? 'queued' : 'sent';
+      return {
         success: true,
         blocked: false,
-        delivery: 'sent',
-        messageId: 'wamid.123',
-      } as ChannelSendResult),
-    };
+        delivery,
+        ...(result.messageId !== undefined ? { messageId: result.messageId } : {}),
+        ...(result.direct !== undefined ? { direct: result.direct } : {}),
+      };
+    });
+    transports = { send: delegatingSend as never };
     events = {
       record: jest.fn().mockResolvedValue(undefined),
     };

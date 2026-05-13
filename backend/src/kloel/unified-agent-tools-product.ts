@@ -208,6 +208,21 @@ export const UNIFIED_AGENT_TOOLS_PRODUCT: ChatCompletionTool[] = [
   {
     type: 'function',
     function: {
+      name: 'list_products',
+      description:
+        'Lista todos os produtos do workspace com nome, preco e status ativo',
+      parameters: {
+        type: 'object',
+        properties: {
+          search: { type: 'string', description: 'Filtro opcional por nome' },
+          limit: { type: 'number', description: 'Maximo de resultados (padrao 50)' },
+        },
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
       name: 'configure_ai_persona',
       description: 'Configura a persona e tom de voz da IA',
       parameters: {
