@@ -63,7 +63,6 @@ import {
   takeEvidenceBatch,
   uniqueStrings,
 } from './utils';
-
 export function buildScenarioUnits(input: BuildPulseConvergencePlanInput): PulseConvergenceUnit[] {
   let scenarioSpecById = new Map(
     input.resolvedManifest.scenarioSpecs.map((spec) => [spec.id, spec] as const),

@@ -1,36 +1,29 @@
 'use client';
-
 import { useEffect, useRef, useState } from 'react';
 import { colors } from '@/lib/design-tokens';
 import { secureRandomFloat } from '@/lib/secure-random';
 import { usePrefersReducedMotion } from './usePrefersReducedMotion';
 import { runSequentialRange } from './KloelLanding.helpers';
-
 const F = "var(--font-sora), 'Sora', sans-serif";
 const E = colors.ember.primary;
 const GC = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%&!?<>{}|/\\~';
 const rc = () => GC[Math.floor(secureRandomFloat() * GC.length)];
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
-
 const HERO_LOOP_PRIMARY = 'O Marketing Digital';
 const HERO_LOOP_DEATH_SUFFIX = ' acabou.';
 const HERO_LOOP_RESURRECTED = 'O Marketing Artificial começou.';
-
 type HeroLoopPhase = 'idle' | 'typing' | 'strike' | 'death' | 'hidden';
-
 type ViewState = {
   text: string;
   strike: number;
   suffix: string;
   phase: HeroLoopPhase;
 };
-
 type GlitchSlice = {
   top: number;
   h: number;
   off: number;
 };
-
 type GlitchState = {
   on: boolean;
   text: string;
@@ -39,14 +32,12 @@ type GlitchState = {
   slices: GlitchSlice[];
   flash: boolean;
 };
-
 function scrambleText(src: string, chaos: number) {
   return src
     .split('')
     .map((c) => (c === ' ' ? ' ' : secureRandomFloat() < chaos ? rc() : c))
     .join('');
 }
-
 function buildGlitchSlices(): GlitchSlice[] {
   return Array.from({ length: 5 }, () => ({
     top: secureRandomFloat() * 100,
@@ -54,7 +45,6 @@ function buildGlitchSlices(): GlitchSlice[] {
     off: (secureRandomFloat() - 0.5) * 28,
   }));
 }
-
 export function HeroLoop() {
   const [vis, setVis] = useState<ViewState>({
     text: '',
@@ -75,20 +65,16 @@ export function HeroLoop() {
   const gxRef = useRef<boolean>(false);
   const m = useRef<boolean>(true);
   const prefersReducedMotion = usePrefersReducedMotion();
-
   useEffect(() => {
     if (prefersReducedMotion) {
       return;
     }
-
     gxRef.current = gx.on;
   }, [gx.on, prefersReducedMotion]);
-
   useEffect(() => {
     if (prefersReducedMotion) {
       return;
     }
-
     const cv = noiseRef.current;
     if (!cv) {
       return;
@@ -126,7 +112,6 @@ export function HeroLoop() {
       cancelAnimationFrame(raf2);
     };
   }, [prefersReducedMotion]);
-
   useEffect(() => {
     if (prefersReducedMotion) {
       setVis({ text: '', strike: 0, suffix: '', phase: 'hidden' });
@@ -134,20 +119,16 @@ export function HeroLoop() {
       setResurrected(true);
       return;
     }
-
     const run = async () => {
       if (!m.current) {
         return;
       }
-
       const full = HERO_LOOP_PRIMARY + HERO_LOOP_DEATH_SUFFIX;
-
       const continueWhileMounted = () => m.current;
       const cycle = async (): Promise<void> => {
         if (!continueWhileMounted()) {
           return;
         }
-
         setResurrected(false);
         setGx({ on: false, text: '', shk: [0, 0], chr: 0, slices: [], flash: false });
         await runSequentialRange(
@@ -313,7 +294,6 @@ export function HeroLoop() {
         }
         await cycle();
       };
-
       await cycle();
     };
     run();
@@ -321,7 +301,6 @@ export function HeroLoop() {
       m.current = false;
     };
   }, [prefersReducedMotion]);
-
   const ts = {
     fontSize: 'clamp(18px,5vw,50px)',
     fontWeight: 800,
@@ -330,7 +309,6 @@ export function HeroLoop() {
     lineHeight: 1.2,
     whiteSpace: 'nowrap' as const,
   };
-
   if (prefersReducedMotion) {
     return (
       <div
@@ -347,7 +325,6 @@ export function HeroLoop() {
       </div>
     );
   }
-
   return (
     <div
       style={{

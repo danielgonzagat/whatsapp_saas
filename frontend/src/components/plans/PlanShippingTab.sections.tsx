@@ -4,7 +4,6 @@ import { colors, typography } from '@/lib/design-tokens';
 import { Plus } from 'lucide-react';
 import React, { useId } from 'react';
 import { PACKAGE_TYPES, CARRIERS, REGIONS, PRAZO_OPTIONS, OBS_OPTIONS, SHIP_FROM } from './PlanShippingTab.constants';
-
 const cosmosLabelStyle: React.CSSProperties = {
   fontFamily: typography.fontFamily.display,
   fontSize: '11px',
@@ -13,25 +12,20 @@ const cosmosLabelStyle: React.CSSProperties = {
   letterSpacing: '0.08em',
   textTransform: 'uppercase' as const,
 };
-
 const cardStyle: React.CSSProperties = {
   background: colors.background.space,
   border: `1px solid ${colors.border.space}`,
   borderRadius: '6px',
 };
-
 const inputStyle: React.CSSProperties = {
   background: colors.background.nebula,
   border: `1px solid ${colors.border.space}`,
   color: colors.text.starlight,
   borderRadius: '6px',
 };
-
 const selectClass = 'w-full rounded-lg px-4 py-2.5 text-sm focus:outline-none';
 const inputClass = selectClass;
-
 const labelStyle = cosmosLabelStyle;
-
 const sectionTitle = (t: string) => (
   <h3
     className="mb-4 text-sm font-semibold uppercase"
@@ -44,7 +38,6 @@ const sectionTitle = (t: string) => (
     {t}
   </h3>
 );
-
 const CosmosRadioGroup = ({
   value,
   onChange,
@@ -88,7 +81,6 @@ const CosmosRadioGroup = ({
     </fieldset>
   );
 };
-
 interface SectionProps {
   fid: string;
   packageType: string;
@@ -118,7 +110,6 @@ interface SectionProps {
   regionPrazos: Record<string, { prazo: string; obs: string }>;
   setRegionPrazos: React.Dispatch<React.SetStateAction<Record<string, { prazo: string; obs: string }>>>;
 }
-
 export function PlanShippingSections(p: SectionProps) {
   return (
     <>
@@ -213,7 +204,6 @@ export function PlanShippingSections(p: SectionProps) {
           </button>
         </div>
       </div>
-
       {/* Logistics */}
       <div className="rounded-xl p-5" style={cardStyle}>
         {sectionTitle('Logística de envio')}
@@ -313,7 +303,6 @@ export function PlanShippingSections(p: SectionProps) {
           </div>
         </div>
       </div>
-
       {/* Region Deadlines */}
       <div className="rounded-xl p-5" style={cardStyle}>
         {sectionTitle('Prazos de entrega por região')}
@@ -396,7 +385,6 @@ export function PlanShippingSections(p: SectionProps) {
           </table>
         </div>
       </div>
-
       {/* Tracking */}
       <div className="rounded-xl p-5" style={cardStyle}>
         <CosmosRadioGroup

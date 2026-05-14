@@ -30,7 +30,6 @@ import { discoverConvergenceExecutionModeLabels } from '../__kernel_additions__/
 import { discoverConvergenceRiskLevelLabels } from '../__kernel_additions__/discoverConvergenceRiskLevelLabels';
 import { discoverExecutionMatrixPathStatusLabels } from '../__kernel_additions__/discoverExecutionMatrixPathStatusLabels';
 import { discoverExecutionMatrixPathSourceLabels } from '../dynamic-reality-kernel/type-contract-engines';
-
 export interface BuildExecutionMatrixInput {
   structuralGraph: PulseStructuralGraph;
   scopeState: PulseScopeState;
@@ -40,19 +39,15 @@ export interface BuildExecutionMatrixInput {
   executionEvidence: PulseExecutionEvidence;
   externalSignalState?: PulseExternalSignalState | undefined;
 }
-
 type MatrixEvidence = PulseExecutionMatrixObservedEvidence;
 type MatrixArtifactGrammar = MatrixEvidence['source'];
 type MatrixPathRisk = PulseExecutionMatrixPath['risk'];
-
 export function terminalStatusGrammar(): PulseExecutionMatrixPathStatus[] {
   return [...discoverExecutionMatrixPathStatusLabels()] as PulseExecutionMatrixPathStatus[];
 }
-
 export function matrixSourceGrammar(): PulseExecutionMatrixPathSource[] {
   return [...discoverExecutionMatrixPathSourceLabels()] as PulseExecutionMatrixPathSource[];
 }
-
 export function artifactGrammar(source: MatrixArtifactGrammar | 'static'): string {
   return {
     runtime: 'PULSE_RUNTIME_EVIDENCE.json',
@@ -63,37 +58,30 @@ export function artifactGrammar(source: MatrixArtifactGrammar | 'static'): strin
     static: 'PULSE_CERTIFICATE.json',
   }[source];
 }
-
 export function sameGrammar<T extends string | number | null | undefined>(
   value: T,
   expected: T,
 ): boolean {
   return value === expected;
 }
-
 export function differsGrammar<T extends string | number | null | undefined>(
   value: T,
   expected: T,
 ): boolean {
   return value !== expected;
 }
-
 export function hasItemsGrammar(value: { length: number }): boolean {
   return value.length > deriveZeroValue();
 }
-
 export function isFailureGrammar(status: MatrixEvidence['status']): boolean {
   return sameGrammar(status, 'failed');
 }
-
 export function isMappedStaticGrammar(entry: MatrixEvidence): boolean {
   return sameGrammar(entry.source, 'static') || sameGrammar(entry.status, 'mapped');
 }
-
 export function isElevatedRiskGrammar(risk: MatrixPathRisk): boolean {
   return discoverConvergenceRiskLevelLabels().has(risk) && risk !== 'medium';
 }
-
 export function riskOrderGrammar(risk: MatrixPathRisk): number {
   return isElevatedRiskGrammar(risk) ? 1 : 0;
 }

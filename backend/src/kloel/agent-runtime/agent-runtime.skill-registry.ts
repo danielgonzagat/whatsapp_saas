@@ -16,7 +16,6 @@ import type {
   AgentSkillUsageOutcome,
   AgentSkillUsageStats,
 } from './agent-runtime.types';
-
 const DEFAULT_SKILLS: AgentSkillDefinition[] = [
   {
     id: 'checkout-recovery',
@@ -64,19 +63,15 @@ const DEFAULT_SKILLS: AgentSkillDefinition[] = [
     updatedAt: new Date(0).toISOString(),
   },
 ];
-
 const VALID_SKILL_ID_RE = /^[a-z0-9][a-z0-9._-]{0,63}$/;
 const MAX_SKILL_CONTENT_CHARS = 100_000;
-
 @Injectable()
 export class AgentRuntimeSkillRegistry {
   private readonly logger = StructuredLogger.from(AgentRuntimeSkillRegistry.name);
-
   constructor(
     private readonly prisma: PrismaService,
     @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
-
   async listSkills(workspaceId: string): Promise<AgentSkillDefinition[]> {
     const rows = await this.prisma.kloelMemory.findMany({
       where: { workspaceId, category: 'agent_skill' },
@@ -84,13 +79,11 @@ export class AgentRuntimeSkillRegistry {
       take: 100,
       select: { value: true },
     });
-
     const stored = rows
       .map((row) => this.parseSkill(row.value))
       .filter((skill): skill is AgentSkillDefinition => skill !== null);
     return this.mergeDefaults(stored);
   }
-
   async selectSkills(
     workspaceId: string,
     message: string,
@@ -151,7 +144,6 @@ export class AgentRuntimeSkillRegistry {
       .sort((a, b) => b.score - a.score)
       .slice(0, Math.max(1, Math.min(limit, 8)));
   }
-
   async upsertSkill(
     workspaceId: string,
     skill: AgentSkillDefinition,
@@ -169,7 +161,6 @@ export class AgentRuntimeSkillRegistry {
     if (!safety.safe) {
       return { ok: false, reasons: safety.reasons };
     }
-
     try {
       const existingRow = await this.prisma.kloelMemory.findUnique({
         where: { workspaceId_key: { workspaceId, key: `agent_skill:${skill.id}` } },
@@ -194,7 +185,6 @@ export class AgentRuntimeSkillRegistry {
         category: persistedSkill.category,
         updatedAt: now,
       } satisfies Prisma.InputJsonObject;
-
       await this.prisma.kloelMemory.upsert({
         where: { workspaceId_key: { workspaceId, key: `agent_skill:${skill.id}` } },
         update: {
@@ -220,7 +210,6 @@ export class AgentRuntimeSkillRegistry {
       return { ok: false, reasons: ['persistence_failed'] };
     }
   }
-
   async recordSkillUsage(
     workspaceId: string,
     params: {
@@ -239,7 +228,6 @@ export class AgentRuntimeSkillRegistry {
     if (!this.isUsageOutcome(params.outcome)) {
       return { ok: false, reason: 'invalid_usage_outcome' };
     }
-
     try {
       const key = `agent_skill_usage:${skillId}`;
       const existingRow = await this.prisma.kloelMemory.findUnique({
@@ -285,7 +273,6 @@ export class AgentRuntimeSkillRegistry {
         pinned: next.pinned,
         updatedAt: now,
       } satisfies Prisma.InputJsonObject;
-
       await this.prisma.kloelMemory.upsert({
         where: { workspaceId_key: { workspaceId, key } },
         update: {
@@ -311,7 +298,6 @@ export class AgentRuntimeSkillRegistry {
       return { ok: false, reason: 'persistence_failed' };
     }
   }
-
   private mergeDefaults(stored: AgentSkillDefinition[]): AgentSkillDefinition[] {
     const byId = new Map<string, AgentSkillDefinition>();
     for (const skill of DEFAULT_SKILLS) {
@@ -322,7 +308,6 @@ export class AgentRuntimeSkillRegistry {
     }
     return [...byId.values()];
   }
-
   private parseSkill(value: Prisma.JsonValue): AgentSkillDefinition | null {
     if (!value || typeof value !== 'object' || Array.isArray(value)) {
       return null;
@@ -347,7 +332,6 @@ export class AgentRuntimeSkillRegistry {
       updatedAt: typeof record.updatedAt === 'string' ? record.updatedAt : new Date().toISOString(),
     };
   }
-
   private async loadUsageStats(workspaceId: string): Promise<Map<string, AgentSkillUsageStats>> {
     const rows = await this.prisma.kloelMemory.findMany({
       where: { workspaceId, category: 'agent_skill_usage' },
@@ -364,7 +348,6 @@ export class AgentRuntimeSkillRegistry {
     }
     return stats;
   }
-
   private parseUsageStats(
     value: Prisma.JsonValue,
     fallbackSkillId?: string,
@@ -397,7 +380,6 @@ export class AgentRuntimeSkillRegistry {
       ...(typeof record.lastReason === 'string' ? { lastReason: record.lastReason } : {}),
     };
   }
-
   private skillContent(skill: AgentSkillDefinition): string {
     return [
       `${skill.title}: ${skill.summary}`,
@@ -410,7 +392,6 @@ export class AgentRuntimeSkillRegistry {
       skill.body,
     ].join('\n');
   }
-
   private validateSkill(skill: AgentSkillDefinition): string[] {
     const errors: string[] = [];
     if (!VALID_SKILL_ID_RE.test(skill.id)) {
@@ -431,13 +412,11 @@ export class AgentRuntimeSkillRegistry {
     }
     return errors;
   }
-
   private stringArray(value: unknown): string[] {
     return Array.isArray(value)
       ? value.filter((entry): entry is string => typeof entry === 'string')
       : [];
   }
-
   private categoryFor(value: unknown): AgentSkillDefinition['category'] {
     return value === 'commercial' ||
       value === 'operational' ||
@@ -446,13 +425,11 @@ export class AgentRuntimeSkillRegistry {
       ? value
       : 'operational';
   }
-
   private riskFor(value: unknown): AgentSkillDefinition['riskLevel'] {
     return value === 'safe' || value === 'normal' || value === 'high' || value === 'critical'
       ? value
       : 'normal';
   }
-
   private provenanceFor(value: unknown): AgentSkillProvenance {
     return value === 'default' ||
       value === 'workspace' ||
@@ -461,11 +438,9 @@ export class AgentRuntimeSkillRegistry {
       ? value
       : 'workspace';
   }
-
   private lifecycleFor(value: unknown): AgentSkillLifecycleState {
     return value === 'active' || value === 'stale' || value === 'archived' ? value : 'active';
   }
-
   private isUsageOutcome(value: unknown): value is AgentSkillUsageOutcome {
     return (
       value === 'selected' ||
@@ -475,11 +450,9 @@ export class AgentRuntimeSkillRegistry {
       value === 'viewed'
     );
   }
-
   private nonNegativeNumber(value: unknown): number {
     return typeof value === 'number' && Number.isFinite(value) && value > 0 ? Math.trunc(value) : 0;
   }
-
   private messageFor(error: unknown): string {
     return error instanceof Error ? error.message : String(error);
   }

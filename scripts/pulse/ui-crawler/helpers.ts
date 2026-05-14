@@ -9,37 +9,31 @@ import {
   ROLE_NAMES,
   SHADCN_ELEMENTS,
 } from './constants';
-
 function isWhitespaceChar(c: string | undefined): boolean {
   if (!c) return false;
   return c === ' ' || c === '\t' || c === '\n' || c === '\r' || c === '\f' || c === '\v';
 }
-
 /** Extract the handler expression from a JSX prop assignment like `onClick={handler}`. */
 export function extractJSXHandler(line: string, eventName: string): string | null {
   let searchFrom = 0;
   while (searchFrom < line.length) {
     const eventIndex = line.indexOf(eventName, searchFrom);
     if (eventIndex < 0) return null;
-
     let cursor = eventIndex + eventName.length;
     while (isWhitespaceChar(line[cursor])) cursor++;
     if (line[cursor] !== '=') {
       searchFrom = cursor;
       continue;
     }
-
     cursor++;
     while (isWhitespaceChar(line[cursor])) cursor++;
     if (line[cursor] !== '{') {
       searchFrom = cursor;
       continue;
     }
-
     const start = cursor + 1;
     let depth = 1;
     let i = start;
-
     while (i < line.length && depth > 0) {
       const ch = line[i];
       if (ch === '"' || ch === "'" || ch === '`') {
@@ -57,7 +51,6 @@ export function extractJSXHandler(line: string, eventName: string): string | nul
       }
       i++;
     }
-
     if (depth > 0 && start < line.length) {
       return line.substring(start).trim();
     }
@@ -65,7 +58,6 @@ export function extractJSXHandler(line: string, eventName: string): string | nul
   }
   return null;
 }
-
 /** Extract a visible label from a JSX line. */
 export function extractLabel(line: string, lines: string[], idx: number): string {
   const textMatch = line.match(/>([^<]{1,80})</);

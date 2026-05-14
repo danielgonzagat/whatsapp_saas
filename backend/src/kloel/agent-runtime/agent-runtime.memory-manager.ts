@@ -12,16 +12,13 @@ import type {
   AgentRuntimeMemoryTurnStart,
   AgentRuntimeMemoryWrite,
 } from './agent-runtime.types';
-
 @Injectable()
 export class AgentRuntimeBuiltinMemoryProvider extends AgentRuntimeMemoryProviderBase {
   readonly name = 'builtin';
   override readonly external = false;
-
   constructor(private readonly sessions: AgentRuntimeSessionStore) {
     super();
   }
-
   override systemPromptBlock(): string {
     return [
       '<kloel-memory-provider name="builtin">',
@@ -31,7 +28,6 @@ export class AgentRuntimeBuiltinMemoryProvider extends AgentRuntimeMemoryProvide
       '</kloel-memory-provider>',
     ].join('\n');
   }
-
   override async prefetch(workspaceId: string, query: string): Promise<string> {
     const recall = await this.sessions.search(workspaceId, query, 6);
     if (recall.memories.length === 0) {
@@ -48,7 +44,6 @@ export class AgentRuntimeBuiltinMemoryProvider extends AgentRuntimeMemoryProvide
     );
     return ['<memory-context provider="builtin">', ...lines, '</memory-context>'].join('\n');
   }
-
   override async syncTurn(
     workspaceId: string,
     userContent: string,
@@ -63,7 +58,6 @@ export class AgentRuntimeBuiltinMemoryProvider extends AgentRuntimeMemoryProvide
       threadId: options?.sessionId,
     });
   }
-
   override async onTurnStart(event: AgentRuntimeMemoryTurnStart): Promise<void> {
     await this.sessions.recordRuntimeEvent({
       workspaceId: event.workspaceId,
@@ -78,7 +72,6 @@ export class AgentRuntimeBuiltinMemoryProvider extends AgentRuntimeMemoryProvide
       },
     });
   }
-
   override async onSessionEnd(workspaceId: string, sessionId: string): Promise<void> {
     await this.sessions.recordRuntimeEvent({
       workspaceId,
@@ -87,7 +80,6 @@ export class AgentRuntimeBuiltinMemoryProvider extends AgentRuntimeMemoryProvide
       content: `session ended: ${sanitizeAgentRuntimeText(sessionId, 160)}`,
     });
   }
-
   override async onSessionSwitch(
     workspaceId: string,
     newSessionId: string,
@@ -104,7 +96,6 @@ export class AgentRuntimeBuiltinMemoryProvider extends AgentRuntimeMemoryProvide
       },
     });
   }
-
   override async onPreCompress(event: AgentRuntimeCompressionObservation): Promise<string> {
     const content = event.messages
       .slice(-8)
@@ -119,7 +110,6 @@ export class AgentRuntimeBuiltinMemoryProvider extends AgentRuntimeMemoryProvide
     });
     return content ? `<provider-insight name="builtin">\n${content}\n</provider-insight>` : '';
   }
-
   override async onMemoryWrite(event: AgentRuntimeMemoryWrite): Promise<void> {
     await this.sessions.recordRuntimeEvent({
       workspaceId: event.workspaceId,
@@ -129,7 +119,6 @@ export class AgentRuntimeBuiltinMemoryProvider extends AgentRuntimeMemoryProvide
       metadata: event.metadata,
     });
   }
-
   override async onDelegation(event: AgentRuntimeDelegationObservation): Promise<void> {
     await this.sessions.recordRuntimeEvent({
       workspaceId: event.workspaceId,
@@ -144,7 +133,6 @@ export class AgentRuntimeBuiltinMemoryProvider extends AgentRuntimeMemoryProvide
     });
   }
 }
-
 @Injectable()
 export class AgentRuntimeMemoryManagerService {
   private readonly logger = StructuredLogger.from(AgentRuntimeMemoryManagerService.name);
@@ -157,17 +145,14 @@ export class AgentRuntimeMemoryManagerService {
     rejectedProvider: string;
   }> = [];
   private hasExternalProvider = false;
-
   constructor(builtinProvider: AgentRuntimeBuiltinMemoryProvider) {
     this.registerProvider(builtinProvider);
   }
-
   registerProvider(provider: AgentRuntimeMemoryProvider): boolean {
     if (this.providers.some((existing) => existing.name === provider.name)) {
       this.logger.warn(`Memory provider already registered: ${provider.name}`);
       return false;
     }
-
     if (provider.external) {
       if (this.hasExternalProvider) {
         const existing = this.providers.find((candidate) => candidate.external)?.name ?? 'unknown';
@@ -178,7 +163,6 @@ export class AgentRuntimeMemoryManagerService {
       }
       this.hasExternalProvider = true;
     }
-
     this.providers.push(provider);
     for (const schema of provider.getToolSchemas()) {
       if (!schema.name) {
@@ -201,11 +185,9 @@ export class AgentRuntimeMemoryManagerService {
     }
     return true;
   }
-
   listProviders(): string[] {
     return this.providers.map((provider) => provider.name);
   }
-
   getToolConflicts(): ReadonlyArray<{
     toolName: string;
     existingProvider: string;
@@ -213,7 +195,6 @@ export class AgentRuntimeMemoryManagerService {
   }> {
     return this.toolConflicts;
   }
-
   async getAvailableProviders(): Promise<string[]> {
     const result: string[] = [];
     for (const provider of this.providers) {
@@ -223,17 +204,14 @@ export class AgentRuntimeMemoryManagerService {
     }
     return result;
   }
-
   async getUnavailableProviders(): Promise<string[]> {
     const all = new Set(this.providers.map((p) => p.name));
     const available = new Set(await this.getAvailableProviders());
     return [...all].filter((name) => !available.has(name));
   }
-
   async initializeAll(context: AgentRuntimeMemoryProviderInit): Promise<void> {
     await this.runAll((provider) => provider.initialize(context), 'initialize');
   }
-
   async buildSystemPrompt(workspaceId: string): Promise<string> {
     const blocks: string[] = [];
     for (const provider of this.providers) {
@@ -252,7 +230,6 @@ export class AgentRuntimeMemoryManagerService {
     }
     return blocks.join('\n\n');
   }
-
   async prefetchAll(
     workspaceId: string,
     query: string,
@@ -274,7 +251,6 @@ export class AgentRuntimeMemoryManagerService {
     }
     return blocks.join('\n\n');
   }
-
   async queuePrefetchAll(
     workspaceId: string,
     query: string,
@@ -284,7 +260,6 @@ export class AgentRuntimeMemoryManagerService {
       skipUnavailable: true,
     });
   }
-
   async syncTurnAll(params: {
     workspaceId: string;
     userContent: string;
@@ -302,11 +277,9 @@ export class AgentRuntimeMemoryManagerService {
       { skipUnavailable: true },
     );
   }
-
   getToolSchemas(): AgentRuntimeMemoryToolSchema[] {
     return [...this.toolSchemas.values()];
   }
-
   async handleToolCall(toolName: string, args: Record<string, unknown>): Promise<string> {
     const provider = this.toolToProvider.get(toolName);
     if (!provider) {
@@ -322,15 +295,12 @@ export class AgentRuntimeMemoryManagerService {
       return JSON.stringify({ ok: false, error: this.errorMessage(error) });
     }
   }
-
   async onTurnStart(event: AgentRuntimeMemoryTurnStart): Promise<void> {
     await this.runAll((provider) => provider.onTurnStart(event), 'onTurnStart');
   }
-
   async onSessionEnd(workspaceId: string, sessionId: string): Promise<void> {
     await this.runAll((provider) => provider.onSessionEnd(workspaceId, sessionId), 'onSessionEnd');
   }
-
   async onSessionSwitch(
     workspaceId: string,
     newSessionId: string,
@@ -341,7 +311,6 @@ export class AgentRuntimeMemoryManagerService {
       'onSessionSwitch',
     );
   }
-
   async onPreCompress(event: AgentRuntimeCompressionObservation): Promise<string> {
     const insights: string[] = [];
     for (const provider of this.providers) {
@@ -359,21 +328,17 @@ export class AgentRuntimeMemoryManagerService {
     }
     return insights.join('\n\n');
   }
-
   async onMemoryWrite(event: AgentRuntimeMemoryWrite): Promise<void> {
     await this.runAll((provider) => provider.onMemoryWrite(event), 'onMemoryWrite', {
       skipUnavailable: true,
     });
   }
-
   async onDelegation(event: AgentRuntimeDelegationObservation): Promise<void> {
     await this.runAll((provider) => provider.onDelegation(event), 'onDelegation');
   }
-
   async shutdownAll(): Promise<void> {
     await this.runAll((provider) => provider.shutdown(), 'shutdown');
   }
-
   private async runAll(
     task: (provider: AgentRuntimeMemoryProvider) => void | Promise<void>,
     operation: string,
@@ -392,7 +357,6 @@ export class AgentRuntimeMemoryManagerService {
       }),
     );
   }
-
   private async checkAvailability(provider: AgentRuntimeMemoryProvider): Promise<boolean> {
     try {
       return await provider.isAvailable();
@@ -403,7 +367,6 @@ export class AgentRuntimeMemoryManagerService {
       return false;
     }
   }
-
   private wrapMemoryContext(providerName: string, rawContext: string): string {
     const sanitized = sanitizeAgentRuntimeText(rawContext, 8000)
       .replace(/<\/?memory-context[^>]*>/gi, '')

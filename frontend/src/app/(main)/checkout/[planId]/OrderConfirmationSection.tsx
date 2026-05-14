@@ -1,5 +1,4 @@
 'use client';
-
 import { kloelT } from '@/lib/i18n/t';
 import type { CheckoutConfig } from '@/hooks/useCheckoutEditor';
 import {
@@ -20,7 +19,6 @@ import {
   smallBtnStyle,
   Toggle,
 } from './checkout-editor-shared';
-
 export interface OrderConfirmationSectionProps {
   config: CheckoutConfig;
   patch: (p: Partial<CheckoutConfig>) => Promise<void>;
@@ -28,7 +26,6 @@ export interface OrderConfirmationSectionProps {
   highlightActive: boolean;
   orderBumpsRef: RefObject<HTMLDivElement | null>;
 }
-
 function sectionCardStyle(
   key: string,
   highlightActive: boolean,
@@ -41,7 +38,6 @@ function sectionCardStyle(
       : null),
   };
 }
-
 export function OrderConfirmationSection({
   config,
   patch,
@@ -50,7 +46,6 @@ export function OrderConfirmationSection({
   orderBumpsRef,
 }: OrderConfirmationSectionProps) {
   const localFid = useId();
-
   return (
     <>
       {/* ── 14. Order Bumps ── */}
@@ -151,7 +146,6 @@ export function OrderConfirmationSection({
           {kloelT('Adicionar order bump')}
         </button>
       </div>
-
       {/* ── 15. Upsells ── */}
       <div style={sectionStyle}>
         <h3 style={sectionTitleStyle}>{kloelT('Upsells')}</h3>
@@ -250,7 +244,6 @@ export function OrderConfirmationSection({
           {kloelT('Adicionar upsell')}
         </button>
       </div>
-
       {/* ── 16. Exit Intent ── */}
       <div style={sectionStyle}>
         <h3 style={sectionTitleStyle}>{kloelT('Exit Intent')}</h3>
@@ -276,7 +269,6 @@ export function OrderConfirmationSection({
           </>
         )}
       </div>
-
       {/* ── 17. Floating Bar ── */}
       <div style={sectionStyle}>
         <h3 style={sectionTitleStyle}>{kloelT('Barra Flutuante')}</h3>
@@ -294,7 +286,6 @@ export function OrderConfirmationSection({
           />
         )}
       </div>
-
       {/* ── 18. SEO ── */}
       <div style={sectionStyle}>
         <h3 style={sectionTitleStyle}>SEO</h3>
@@ -318,7 +309,6 @@ export function OrderConfirmationSection({
           placeholder="https://..."
         />
       </div>
-
       {/* ── 19. Custom CSS ── */}
       <div style={sectionStyle}>
         <h3 style={sectionTitleStyle}>{kloelT('CSS Personalizado')}</h3>
@@ -336,7 +326,6 @@ export function OrderConfirmationSection({
           }}
         />
       </div>
-
       {/* ── 20. Pixels ── */}
       <div style={sectionStyle}>
         <h3 style={sectionTitleStyle}>{kloelT('Pixels de Rastreamento')}</h3>
@@ -432,7 +421,6 @@ export function OrderConfirmationSection({
           {kloelT('Adicionar pixel')}
         </button>
       </div>
-
       {/* Bottom spacer */}
       <div style={{ height: 40 }} />
     </>

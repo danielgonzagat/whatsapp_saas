@@ -1,6 +1,5 @@
 'use client';
 import { colors } from '@/lib/design-tokens';
-
 import { kloelT } from '@/lib/i18n/t';
 import { useEffect, useRef, useState } from 'react';
 import { useFiscalMutations } from '@/hooks/useKyc';
@@ -16,7 +15,6 @@ import {
   mergeCepIntoForm,
   mergeCnpjIntoForm,
 } from './ContaView.helpers';
-
 function EnderecoFiscalFields({
   form,
   set,
@@ -107,9 +105,7 @@ function EnderecoFiscalFields({
     </div>
   );
 }
-
 type FiscalFormState = ReturnType<typeof fiscalToFormState>;
-
 function useFiscalForm(fiscal: KycFiscal | null) {
   const [tipo, setTipo] = useState<'PF' | 'PJ'>('PF');
   const [form, setForm] = useState<FiscalFormState>({
@@ -130,19 +126,15 @@ function useFiscalForm(fiscal: KycFiscal | null) {
     cidade: '',
     uf: '',
   });
-
   useEffect(() => {
     if (fiscal) {
       setTipo(fiscal.type === 'PJ' || fiscal.cnpj ? 'PJ' : 'PF');
       setForm(fiscalToFormState(fiscal));
     }
   }, [fiscal]);
-
   const set = (k: string, v: string) => setForm((prev) => ({ ...prev, [k]: v }));
-
   return { tipo, setTipo, form, set, setForm };
 }
-
 export default function DadosFiscaisSection({
   fiscal,
   mutate,
@@ -158,7 +150,6 @@ export default function DadosFiscaisSection({
   const [saveStatus, setSaveStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [cnpjLoading, setCnpjLoading] = useState(false);
   const [cepLoading, setCepLoading] = useState(false);
-
   useEffect(
     () => () => {
       if (saveTimer.current) {
@@ -167,9 +158,7 @@ export default function DadosFiscaisSection({
     },
     [],
   );
-
   const { tipo, setTipo, form, set, setForm } = useFiscalForm(fiscal);
-
   const lookupCnpj = async (cnpj: string) => {
     const clean = cnpj.replace(D_RE, '');
     if (clean.length !== 14) {
@@ -189,7 +178,6 @@ export default function DadosFiscaisSection({
       setCnpjLoading(false);
     }
   };
-
   const lookupCep = async (cep: string) => {
     const clean = cep.replace(D_RE, '');
     if (clean.length !== 8) {
@@ -212,7 +200,6 @@ export default function DadosFiscaisSection({
       setCepLoading(false);
     }
   };
-
   const handleSave = async () => {
     setError('');
     setSaveStatus('idle');
@@ -256,7 +243,6 @@ export default function DadosFiscaisSection({
     }
     setSaving(false);
   };
-
   const btnStyle = (active: boolean): React.CSSProperties => ({
     flex: 1,
     padding: '10px 0',
@@ -270,7 +256,6 @@ export default function DadosFiscaisSection({
     fontFamily: SORA,
     transition: 'all 150ms ease',
   });
-
   return (
     <SectionCard
       title={kloelT(`Dados fiscais`)}
@@ -284,7 +269,6 @@ export default function DadosFiscaisSection({
           {kloelT(`Pessoa Juridica (CNPJ)`)}
         </button>
       </div>
-
       <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 14 }}>
         {tipo === 'PF' ? (
           <>
@@ -407,9 +391,7 @@ export default function DadosFiscaisSection({
           </>
         )}
       </div>
-
       <EnderecoFiscalFields form={form} set={set} cepLoading={cepLoading} lookupCep={lookupCep} />
-
       <SaveActions error={error} saveStatus={saveStatus} saving={saving} onSave={handleSave} />
     </SectionCard>
   );

@@ -2,7 +2,6 @@ import { Injectable, Logger } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 import { PrismaService } from '../../prisma/prisma.service';
 import { sanitizeAgentRuntimeText, toInputJsonValue } from './agent-runtime.sanitizer';
-
 export type AgentDelegationStatus =
   | 'pending'
   | 'accepted'
@@ -10,7 +9,6 @@ export type AgentDelegationStatus =
   | 'completed'
   | 'failed'
   | 'cancelled';
-
 export interface AgentDelegationInput {
   workspaceId: string;
   parentSessionId: string;
@@ -19,7 +17,6 @@ export interface AgentDelegationInput {
   childSessionId?: string;
   metadata?: Record<string, unknown>;
 }
-
 export interface AgentDelegationRecord {
   id: string;
   workspaceId: string;
@@ -35,12 +32,10 @@ export interface AgentDelegationRecord {
   updatedAt: string;
   completedAt: string | null;
 }
-
 export interface AgentDelegationListResult {
   delegations: AgentDelegationRecord[];
   total: number;
 }
-
 const VALID_STATUSES: ReadonlySet<AgentDelegationStatus> = new Set([
   'pending',
   'accepted',
@@ -49,13 +44,11 @@ const VALID_STATUSES: ReadonlySet<AgentDelegationStatus> = new Set([
   'failed',
   'cancelled',
 ]);
-
 const TERMINAL_STATUSES: ReadonlySet<AgentDelegationStatus> = new Set([
   'completed',
   'failed',
   'cancelled',
 ]);
-
 interface InnerDelegationValue {
   kind: 'agent_delegation';
   parentSessionId: string;
@@ -70,13 +63,10 @@ interface InnerDelegationValue {
   updatedAt: string;
   completedAt: string | null;
 }
-
 @Injectable()
 export class AgentRuntimeDelegationService {
   private readonly logger = new Logger(AgentRuntimeDelegationService.name);
-
   constructor(private readonly prisma: PrismaService) {}
-
   async create(input: AgentDelegationInput): Promise<AgentDelegationRecord> {
     const id = randomUUID();
     const key = this.delegationKey(id);
@@ -95,7 +85,6 @@ export class AgentRuntimeDelegationService {
       updatedAt: now,
       completedAt: null,
     };
-
     const created = await this.prisma.kloelMemory.create({
       data: {
         workspaceId: input.workspaceId,
@@ -112,10 +101,8 @@ export class AgentRuntimeDelegationService {
         },
       },
     });
-
     return this.rowToRecord(created);
   }
-
   async accept(params: {
     workspaceId: string;
     parentSessionId: string;
@@ -143,7 +130,6 @@ export class AgentRuntimeDelegationService {
     }
     return this.rowToRecord(updated);
   }
-
   async transitionToRunning(params: {
     workspaceId: string;
     childSessionId: string;
@@ -166,7 +152,6 @@ export class AgentRuntimeDelegationService {
     }
     return this.rowToRecord(updated);
   }
-
   async completeWithSummary(params: {
     workspaceId: string;
     childSessionId: string;
@@ -186,7 +171,6 @@ export class AgentRuntimeDelegationService {
     }
     return this.finish(params.workspaceId, params.childSessionId, extra);
   }
-
   async markFailed(params: {
     workspaceId: string;
     childSessionId: string;
@@ -197,7 +181,6 @@ export class AgentRuntimeDelegationService {
       error: sanitizeAgentRuntimeText(params.error, 2000),
     });
   }
-
   async cancel(params: {
     workspaceId: string;
     parentSessionId: string;
@@ -221,7 +204,6 @@ export class AgentRuntimeDelegationService {
     }
     return this.rowToRecord(updated);
   }
-
   async getById(params: {
     workspaceId: string;
     delegationId: string;
@@ -235,7 +217,6 @@ export class AgentRuntimeDelegationService {
     }
     return this.rowToRecord(row);
   }
-
   async listByParentSession(params: {
     workspaceId: string;
     parentSessionId: string;
@@ -248,16 +229,13 @@ export class AgentRuntimeDelegationService {
       orderBy: { updatedAt: 'desc' },
       take: limit,
     });
-
     const records = rows
       .map((row) => this.rowToRecord(row))
       .filter((r) => r.parentSessionId === params.parentSessionId)
       .filter((r) => !params.status || r.status === params.status)
       .slice(0, limit);
-
     return { delegations: records, total: records.length };
   }
-
   async listByChildSession(params: {
     workspaceId: string;
     childSessionId: string;
@@ -266,14 +244,11 @@ export class AgentRuntimeDelegationService {
       where: { workspaceId: params.workspaceId, category: 'agent_delegation', type: 'delegation' },
       orderBy: { updatedAt: 'desc' },
     });
-
     const records = rows
       .map((row) => this.rowToRecord(row))
       .filter((r) => r.childSessionId === params.childSessionId);
-
     return { delegations: records, total: records.length };
   }
-
   private async findPendingByParent(
     workspaceId: string,
     parentSessionId: string,
@@ -287,7 +262,6 @@ export class AgentRuntimeDelegationService {
       orderBy: { createdAt: 'desc' },
       take: 20,
     });
-
     for (const row of rows) {
       const value = this.parseValue(row.value);
       if (
@@ -300,7 +274,6 @@ export class AgentRuntimeDelegationService {
     }
     return null;
   }
-
   private async findByChildSession(
     workspaceId: string,
     childSessionId: string,
@@ -314,7 +287,6 @@ export class AgentRuntimeDelegationService {
       orderBy: { createdAt: 'desc' },
       take: 20,
     });
-
     for (const row of rows) {
       const value = this.parseValue(row.value);
       if (value && value.childSessionId === childSessionId) {
@@ -323,7 +295,6 @@ export class AgentRuntimeDelegationService {
     }
     return null;
   }
-
   private async finish(
     workspaceId: string,
     childSessionId: string,
@@ -357,7 +328,6 @@ export class AgentRuntimeDelegationService {
     }
     return this.rowToRecord(updated);
   }
-
   private async applyValue(
     workspaceId: string,
     key: string,
@@ -390,7 +360,6 @@ export class AgentRuntimeDelegationService {
       return null;
     }
   }
-
   private rowToRecord(row: {
     workspaceId: string;
     key: string;
@@ -400,7 +369,6 @@ export class AgentRuntimeDelegationService {
     const id = row.key.startsWith('agent_delegation:')
       ? row.key.slice('agent_delegation:'.length)
       : row.key;
-
     return {
       id,
       workspaceId: row.workspaceId,
@@ -417,7 +385,6 @@ export class AgentRuntimeDelegationService {
       completedAt: value?.completedAt ?? null,
     };
   }
-
   private parseValue(raw: unknown): InnerDelegationValue | null {
     if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
       return null;
@@ -452,14 +419,12 @@ export class AgentRuntimeDelegationService {
       completedAt: typeof v.completedAt === 'string' ? v.completedAt : null,
     };
   }
-
   private normalizeStatus(raw: unknown): AgentDelegationStatus {
     if (typeof raw === 'string' && VALID_STATUSES.has(raw as AgentDelegationStatus)) {
       return raw as AgentDelegationStatus;
     }
     return 'pending';
   }
-
   private delegationKey(id: string): string {
     const sanitized = sanitizeAgentRuntimeText(id, 160);
     return sanitized.startsWith('agent_delegation:') ? sanitized : `agent_delegation:${sanitized}`;

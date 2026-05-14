@@ -13,36 +13,30 @@ import type {
   DisconnectResult,
   RefreshTokenResult,
 } from './ad-provider.interface';
-
 interface MetaTokenResponse {
   access_token?: string;
   [key: string]: unknown;
 }
-
 interface MetaAdAccount {
   id?: string;
   name?: string;
   account_id?: string;
   [key: string]: unknown;
 }
-
 interface MetaAdAccountsResponse {
   data?: MetaAdAccount[];
   [key: string]: unknown;
 }
-
 interface MetaAccountInfo {
   name?: string;
   id?: string;
   account_status?: string;
   [key: string]: unknown;
 }
-
 interface MetaCampaignResponse {
   data?: MetaCampaignData[];
   [key: string]: unknown;
 }
-
 interface MetaCampaignData {
   id?: string;
   name?: string;
@@ -50,7 +44,6 @@ interface MetaCampaignData {
   objective?: string;
   [key: string]: unknown;
 }
-
 interface MetaInsightData {
   impressions?: string;
   clicks?: string;
@@ -62,30 +55,25 @@ interface MetaInsightData {
   actions?: string;
   [key: string]: unknown;
 }
-
 interface MetaInsightsResponse {
   data?: MetaInsightData[];
   [key: string]: unknown;
 }
-
 function maskToken(token: string): string {
   if (!token || token.length < 8) {
     return '****';
   }
   return `${token.slice(0, 4)}****${token.slice(-4)}`;
 }
-
 @Injectable()
 export class MetaMarketingProvider implements AdProvider {
   readonly platform = 'meta';
   private readonly logger = new Logger(MetaMarketingProvider.name);
-
   constructor(
     private readonly prisma: PrismaService,
     private readonly metaSdk: MetaSdkService,
     private readonly metaAds: MetaAdsService,
   ) {}
-
   async connect(_workspaceId: string, redirectUri: string): Promise<OAuthConnectResult> {
     await Promise.resolve();
     const appId = String(process.env.META_APP_ID || '').trim();
@@ -98,7 +86,6 @@ export class MetaMarketingProvider implements AdProvider {
       : `https://www.facebook.com/v22.0/dialog/oauth?client_id=${appId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=ads_management,ads_read,business_management&state=${_workspaceId}`;
     return { connected: false, status: 'pending_oauth', authUrl };
   }
-
   async completeOAuth(
     workspaceId: string,
     code: string,
@@ -110,7 +97,6 @@ export class MetaMarketingProvider implements AdProvider {
       if (!appId || !appSecret) {
         return { connected: false, status: 'meta_credentials_not_configured' };
       }
-
       const tokenResponse = await this.metaSdk.graphApiGet(
         'oauth/access_token',
         {
@@ -120,12 +106,10 @@ export class MetaMarketingProvider implements AdProvider {
         },
         '',
       );
-
       const accessToken = (tokenResponse as MetaTokenResponse).access_token;
       if (!accessToken) {
         return { connected: false, status: 'token_exchange_failed' };
       }
-
       this.logger.log(
         `Meta marketing OAuth token obtained: ${maskToken(accessToken)} workspace=${workspaceId}`,
       );
