@@ -96,7 +96,7 @@ describe('InboxController', () => {
 
       await controller.assignAgent(req as never, 'conv-2', 'agent-2');
 
-      expect(resolveWorkspaceIdMock).toHaveBeenCalledWith(req, undefined);
+      expect(resolveWorkspaceIdMock).toHaveBeenCalledWith(req);
       expect(assignAgent).toHaveBeenCalledWith('ws-99', 'conv-2', 'agent-2');
     });
   });
