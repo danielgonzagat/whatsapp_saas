@@ -20,17 +20,17 @@ describe('SpineEmitterService', () => {
     return new SpineEmitterService(new ValenceTaggerService(), opts);
   }
 
-  it('stamps eventId, timestamp, environment on every emit', () => {
+  it('stamps eventId, timestamp, environment on every emit', async () => {
     const svc = build();
-    const env = svc.emit(baseInput);
+    const env = await svc.emit(baseInput);
     expect(env.eventId).toMatch(/^evt_/);
     expect(env.timestamp).toMatch(/^\d{4}-\d{2}-\d{2}T/);
     expect(['dev', 'staging', 'prod']).toContain(env.provenance.environment);
   });
 
-  it('preserves explicit valence', () => {
+  it('preserves explicit valence', async () => {
     const svc = build();
-    const env = svc.emit({
+    const env = await svc.emit({
       ...baseInput,
       eventName: 'commerce.payment.approved',
       valence: 'ambiguous',
@@ -38,25 +38,25 @@ describe('SpineEmitterService', () => {
     expect(env.valence).toBe('ambiguous');
   });
 
-  it('auto-tags terminal valence via ValenceTaggerService', () => {
+  it('auto-tags terminal valence via ValenceTaggerService', async () => {
     const svc = build();
-    const env = svc.emit({
+    const env = await svc.emit({
       ...baseInput,
       eventName: 'commerce.payment.refunded',
     });
     expect(env.valence).toBe('negative');
   });
 
-  it('does not tag non-terminal events', () => {
+  it('does not tag non-terminal events', async () => {
     const svc = build();
-    const env = svc.emit({ ...baseInput, eventName: 'commerce.lead.contacted' });
+    const env = await svc.emit({ ...baseInput, eventName: 'commerce.lead.contacted' });
     expect(env.valence).toBeUndefined();
   });
 
-  it('ring buffer overwrites oldest when capacity exceeded', () => {
+  it('ring buffer overwrites oldest when capacity exceeded', async () => {
     const svc = build({ ringCapacity: 64 });
     for (let i = 0; i < 100; i += 1) {
-      svc.emit({ ...baseInput, eventName: `commerce.lead.replied`, payload: { i } });
+      await svc.emit({ ...baseInput, eventName: `commerce.lead.replied`, payload: { i } });
     }
     const recent = svc.recentEvents();
     expect(recent).toHaveLength(64);
@@ -64,39 +64,39 @@ describe('SpineEmitterService', () => {
     expect(recent[63]?.payload?.['i']).toBe(99);
   });
 
-  it('recentEvents(limit) returns the tail slice', () => {
+  it('recentEvents(limit) returns the tail slice', async () => {
     const svc = build();
-    for (let i = 0; i < 10; i += 1) svc.emit({ ...baseInput, payload: { i } });
+    for (let i = 0; i < 10; i += 1) await svc.emit({ ...baseInput, payload: { i } });
     const last3 = svc.recentEvents(3);
     expect(last3).toHaveLength(3);
     expect(last3[2]?.payload?.['i']).toBe(9);
   });
 
-  it('subscribe + unsubscribe receive new events', () => {
+  it('subscribe + unsubscribe receive new events', async () => {
     const svc = build();
     const seen: string[] = [];
     const off = svc.subscribe((e) => seen.push(e.eventName));
-    svc.emit({ ...baseInput, eventName: 'commerce.lead.replied' });
-    svc.emit({ ...baseInput, eventName: 'commerce.payment.approved' });
+    await svc.emit({ ...baseInput, eventName: 'commerce.lead.replied' });
+    await svc.emit({ ...baseInput, eventName: 'commerce.payment.approved' });
     off();
-    svc.emit({ ...baseInput, eventName: 'commerce.crm.deal_won' });
+    await svc.emit({ ...baseInput, eventName: 'commerce.crm.deal_won' });
     expect(seen).toEqual(['commerce.lead.replied', 'commerce.payment.approved']);
   });
 
-  it('subscriber throw does not break emission or other subscribers', () => {
+  it('subscriber throw does not break emission or other subscribers', async () => {
     const svc = build();
     svc.subscribe(() => {
       throw new Error('boom');
     });
     const seen: string[] = [];
     svc.subscribe((e) => seen.push(e.eventName));
-    expect(() => svc.emit(baseInput)).not.toThrow();
+    await expect(svc.emit(baseInput)).resolves.toBeDefined();
     expect(seen).toEqual(['commerce.lead.replied']);
   });
 
-  it('recentEventsAsRef adapts envelopes for MIND consumption', () => {
+  it('recentEventsAsRef adapts envelopes for MIND consumption', async () => {
     const svc = build();
-    svc.emit({
+    await svc.emit({
       ...baseInput,
       eventName: 'commerce.payment.approved',
       payload: { amountCents: 1000 },
@@ -109,22 +109,29 @@ describe('SpineEmitterService', () => {
     expect(refs[0]?.correlationId).toBe('c1');
   });
 
-  it('stats reports buffered/capacity/subscribers', () => {
+  it('stats reports buffered/capacity/subscribers', async () => {
     const svc = build({ ringCapacity: 100 });
     expect(svc.stats()).toEqual({ buffered: 0, capacity: 100, subscribers: 0 });
     svc.subscribe(() => {});
-    svc.emit(baseInput);
+    await svc.emit(baseInput);
     expect(svc.stats()).toEqual({ buffered: 1, capacity: 100, subscribers: 1 });
   });
 
-  it('different correlationIds produce distinct envelopes', () => {
+  it('different correlationIds produce distinct envelopes', async () => {
     const svc = build();
-    svc.emit({ ...baseInput, correlationId: 'a' });
-    svc.emit({ ...baseInput, correlationId: 'b' });
+    await svc.emit({ ...baseInput, correlationId: 'a' });
+    await svc.emit({ ...baseInput, correlationId: 'b' });
     const recent = svc.recentEvents();
     expect(recent).toHaveLength(2);
     expect(recent[0]?.correlationId).toBe('a');
     expect(recent[1]?.correlationId).toBe('b');
     expect(recent[0]?.eventId).not.toBe(recent[1]?.eventId);
+  });
+
+  it('ringSize tracks buffered count', async () => {
+    const svc = build({ ringCapacity: 5 });
+    expect(svc.ringSize()).toBe(0);
+    for (let i = 0; i < 3; i += 1) await svc.emit(baseInput);
+    expect(svc.ringSize()).toBe(3);
   });
 });

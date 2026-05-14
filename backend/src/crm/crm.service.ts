@@ -1,10 +1,11 @@
-import { ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { ForbiddenException, Injectable, Logger, NotFoundException, Optional } from '@nestjs/common';
 import { DealStatus, Prisma } from '@prisma/client';
 import { AuditService } from '../audit/audit.service';
 import { getTraceHeaders } from '../common/trace-headers';
 import { validateNoInternalAccess } from '../common/utils/url-validator';
 import { PrismaService } from '../prisma/prisma.service';
 import { PIPELINE_STAGE_COLORS } from '../common/kloel-colors';
+import { CrmEventEmitterService } from '../kloel/crm-emitter/crm-event-emitter.service';
 
 /** Crm service. */
 @Injectable()
@@ -14,6 +15,7 @@ export class CrmService {
   constructor(
     private prisma: PrismaService,
     private auditService: AuditService,
+    @Optional() private readonly crmEmitter?: CrmEventEmitterService,
   ) {}
 
   // ============================================================
@@ -339,6 +341,16 @@ export class CrmService {
       data,
     });
 
+    if (data.status === 'WON') {
+      void this.crmEmitter
+        ?.emitDealWon(workspaceId, dealId, data.value ?? updated.value, deal.contactId)
+        .catch(() => {});
+    } else if (data.status === 'LOST') {
+      void this.crmEmitter
+        ?.emitDealLost(workspaceId, dealId, undefined, deal.contactId)
+        .catch(() => {});
+    }
+
     // Atribuição de receita (Money Machine) quando status vira WON
     if (data.status === 'WON') {
       const cf = (deal.contact?.customFields || {}) as Record<string, string>;
@@ -443,8 +455,29 @@ export class CrmService {
       }
     }
 
+    const fromStageName = deal.stage?.name ?? 'unknown';
+    const toStageName = updatedDeal.stage?.name ?? 'unknown';
+
+    void this.crmEmitter
+      ?.emitStageChanged(workspaceId, dealId, fromStageName, toStageName, deal.contact?.id)
+      .catch(() => {});
+
     const lower = (updatedDeal.stage?.name || '').toLowerCase();
     const isWon = lower.includes('won') || lower.includes('venda') || lower.includes('fechado');
+    const isLost = lower.includes('lost') || lower.includes('perdido');
+
+    if (isWon || isLost) {
+      if (isWon) {
+        void this.crmEmitter
+          ?.emitDealWon(workspaceId, dealId, updatedDeal.value, deal.contact?.id)
+          .catch(() => {});
+      } else {
+        void this.crmEmitter
+          ?.emitDealLost(workspaceId, dealId, toStageName, deal.contact?.id)
+          .catch(() => {});
+      }
+    }
+
     if (isWon) {
       const cf = (deal.contact?.customFields || {}) as Record<string, string>;
       const campaignId = cf.lastCampaignId;

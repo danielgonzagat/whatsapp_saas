@@ -12,6 +12,7 @@ import { BCRYPT_ROUNDS } from '../common/constants';
 import { ConnectService } from '../payments/connect/connect.service';
 import { StorageService } from '../common/storage/storage.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { KycEventEmitterService } from '../kloel/kyc-emitter/kyc-event-emitter.service';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { UpdateBankDto } from './dto/update-bank.dto';
 import { UpdateFiscalDto } from './dto/update-fiscal.dto';
@@ -43,6 +44,7 @@ export class KycService {
     private readonly storage: StorageService,
     private readonly auditService: AuditService,
     private readonly connectService: ConnectService,
+    private readonly kycEventEmitter: KycEventEmitterService,
   ) {}
 
   private get syncDeps() {
@@ -399,8 +401,18 @@ export class KycService {
     });
     await syncSellerConnectOnboarding(this.syncDeps, agentId, workspaceId, context);
 
+    this.kycEventEmitter.emitDocumentSubmitted({
+      agentId,
+      workspaceId,
+    });
+
     const autoResult = await this.autoApproveIfComplete(agentId, workspaceId);
     if (autoResult.approved) {
+      this.kycEventEmitter.emitApproved({
+        agentId,
+        workspaceId,
+        autoApproved: true,
+      });
       return {
         success: true,
         status: 'approved',
@@ -421,6 +433,16 @@ export class KycService {
   }
 
   async adminApprove(agentId: string) {
-    return doAdminApprove({ prisma: this.prisma }, agentId);
+    const agent = await this.prisma.agent.findUnique({
+      where: { id: agentId },
+      select: { workspaceId: true },
+    });
+    const result = await doAdminApprove({ prisma: this.prisma }, agentId);
+    this.kycEventEmitter.emitApproved({
+      agentId,
+      workspaceId: agent?.workspaceId ?? '',
+      autoApproved: false,
+    });
+    return result;
   }
 }

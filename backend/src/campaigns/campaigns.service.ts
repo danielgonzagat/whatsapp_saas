@@ -17,6 +17,7 @@ import {
 } from '../common/utils/unsubscribe-footer.util';
 import { chatCompletionWithRetry } from '../kloel/openai-wrapper';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
+import { CampaignEventEmitterService } from '../kloel/campaign-emitter/campaign-event-emitter.service';
 import { MetaWhatsAppService } from '../meta/meta-whatsapp.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
@@ -34,6 +35,7 @@ export class CampaignsService {
     private prisma: PrismaService,
     private audit: AuditService,
     private smartTime: SmartTimeService,
+    private campaignEmitter: CampaignEventEmitterService,
     @Optional() private readonly opsAlert?: OpsAlertService,
     @Optional() private readonly metaWhatsApp?: MetaWhatsAppService,
   ) {
@@ -280,6 +282,13 @@ export class CampaignsService {
       },
     });
 
+    this.campaignEmitter.emitAudienceReached({
+      workspaceId,
+      campaignId,
+      metric: 'sent',
+      value: sent,
+    });
+
     this.logger.log(
       `Campaign ${campaign.name} (${campaignId}) completed — sent: ${sent}, failed: ${failed}`,
     );
@@ -422,6 +431,16 @@ export class CampaignsService {
       where: { workspaceId, parentId: parent.id, ...(bestId ? { NOT: { id: bestId } } : {}) },
       data: { status: 'PAUSED' },
     });
+
+    if (bestId && bestId !== parent.id) {
+      this.campaignEmitter.emitCreativeSwapped({
+        workspaceId,
+        campaignId: parent.id,
+        fromCreativeId: parent.id,
+        toCreativeId: bestId,
+        swappedBy: 'darwin',
+      });
+    }
 
     return {
       winner: bestId,

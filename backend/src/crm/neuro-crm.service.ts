@@ -1,4 +1,4 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, Optional } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Prisma } from '@prisma/client';
 import OpenAI from 'openai';
@@ -6,6 +6,7 @@ import { PlanLimitsService } from '../billing/plan-limits.service';
 import { chatCompletionWithRetry } from '../kloel/openai-wrapper';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
 import { PrismaService } from '../prisma/prisma.service';
+import { CrmEventEmitterService } from '../kloel/crm-emitter/crm-event-emitter.service';
 import { buildFallbackAnalysis, normalizeAnalysis } from './neuro-crm.helpers';
 import { type AnalysisContact, type AnalysisResult, type RawAnalysis } from './neuro-crm.types';
 
@@ -31,6 +32,7 @@ export class NeuroCrmService {
     private readonly prisma: PrismaService,
     private readonly config: ConfigService,
     private readonly planLimits: PlanLimitsService,
+    @Optional() private readonly crmEmitter?: CrmEventEmitterService,
   ) {
     const apiKey = this.config.get<string>('OPENAI_API_KEY');
     this.openai = apiKey ? new OpenAI({ apiKey }) : null;
@@ -229,6 +231,15 @@ Simule um diálogo de 6 turnos Lead/Agente com foco em conversão.`;
       history,
       contact.customFields,
     );
+
+    if (result.intent === 'COMPLAINT' || result.sentiment === 'NEGATIVE') {
+      const objectionKind =
+        result.intent === 'COMPLAINT' ? 'complaint' : 'negative_sentiment';
+      void this.crmEmitter
+        ?.emitObjectionRaised(workspaceId, contactId, objectionKind)
+        .catch(() => {});
+    }
+
     await this.createInsightIfSignificant(contactId, workspaceId, analysisContact, result);
     return result;
   }

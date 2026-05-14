@@ -45,6 +45,7 @@ const TERMINAL_EVENT_NAMES: ReadonlySet<string> = new Set([
   'commerce.lead.qualified',
   'commerce.lead.lost',
   'commerce.lead.converted',
+  'commerce.lead.objection_raised',
   // commerce.kyc.*
   'commerce.kyc.approved',
   'commerce.kyc.rejected',
@@ -55,6 +56,10 @@ const TERMINAL_EVENT_NAMES: ReadonlySet<string> = new Set([
   'commerce.post_sale.first_value_obtained',
   'commerce.post_sale.churn_risk_detected',
   'commerce.post_sale.win_back_window_opened',
+  // commerce.whatsapp.* — operational signals carry a baseline valence so
+  // ValenceTaggerService can satisfy V5 coverage on inbox traffic.
+  'commerce.whatsapp.message_received',
+  'commerce.whatsapp.handoff_to_human',
 ]);
 
 export function isTerminalEvent(eventName: string): boolean {
@@ -75,6 +80,7 @@ const DEFAULT_TERMINAL_VALENCE: ReadonlyMap<string, AbiValence> = new Map([
   ['commerce.lead.qualified', 'positive'],
   ['commerce.lead.lost', 'negative'],
   ['commerce.lead.converted', 'positive'],
+  ['commerce.lead.objection_raised', 'negative'],
   ['commerce.kyc.approved', 'positive'],
   ['commerce.kyc.rejected', 'negative'],
   ['commerce.member_area.enrolled', 'positive'],
@@ -82,6 +88,8 @@ const DEFAULT_TERMINAL_VALENCE: ReadonlyMap<string, AbiValence> = new Map([
   ['commerce.post_sale.first_value_obtained', 'positive'],
   ['commerce.post_sale.churn_risk_detected', 'negative'],
   ['commerce.post_sale.win_back_window_opened', 'neutral'],
+  ['commerce.whatsapp.message_received', 'neutral'],
+  ['commerce.whatsapp.handoff_to_human', 'negative'],
 ]);
 
 export function defaultValenceFor(eventName: string): AbiValence | undefined {

@@ -177,16 +177,24 @@ export function buildService(options?: {
     }),
   };
 
+  const kycEventEmitter = {
+    emitDocumentSubmitted: jest.fn(),
+    emitApproved: jest.fn(),
+    emitRejected: jest.fn(),
+  };
+
   return {
     prisma,
     storage,
     auditService,
     connectService,
+    kycEventEmitter,
     service: new KycService(
       prisma as never,
       storage as never,
       auditService as never,
       connectService as never,
+      kycEventEmitter as never,
     ),
   };
 }

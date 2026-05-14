@@ -7,6 +7,7 @@ import { InboxModule } from '../inbox/inbox.module';
 import { OmnichannelModule } from '../omnichannel/omnichannel.module';
 import { PrismaModule } from '../prisma/prisma.module';
 import { WorkspaceModule } from '../workspaces/workspace.module';
+import { WhatsAppEventEmitterModule } from '../kloel/whatsapp-emitter/whatsapp-event-emitter.module';
 
 const { KloelModule } = require('../kloel/kloel.module');
 import { AccountAgentService } from './account-agent.service';
@@ -55,6 +56,7 @@ import {
     forwardRef(() => KloelModule),
     forwardRef(() => require('../cia/cia.module').CiaModule),
     forwardRef(() => OmnichannelModule),
+    WhatsAppEventEmitterModule,
   ],
   controllers: [
     WhatsAppApiController,

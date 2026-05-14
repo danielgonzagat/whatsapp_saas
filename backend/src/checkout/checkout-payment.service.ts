@@ -1,4 +1,4 @@
-import { BadRequestException, Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable, NotFoundException, Optional } from '@nestjs/common';
 import { StructuredLogger } from '../logging/structured-logger';
 import { Prisma } from '@prisma/client';
 import * as Sentry from '@sentry/node';
@@ -13,6 +13,7 @@ import { StripeChargeService } from '../payments/stripe/stripe-charge.service';
 import { PrismaService } from '../prisma/prisma.service';
 
 import { CheckoutPostPaymentEffectsService } from './checkout-post-payment-effects.service';
+import { CheckoutEventEmitterService } from '../kloel/checkout-emitter/checkout-event-emitter.service';
 
 type CheckoutPaymentMethod = 'CREDIT_CARD' | 'PIX' | 'BOLETO';
 type CheckoutPaymentStatus = 'APPROVED' | 'DECLINED' | 'PENDING' | 'PROCESSING' | 'CANCELED';
@@ -82,6 +83,8 @@ export class CheckoutPaymentService {
     private readonly auditService: AuditService,
     private readonly postPaymentEffects: CheckoutPostPaymentEffectsService,
     @Inject(CHECKOUT_PAYMENT_E2E_GUARD) private readonly e2EGuard: CheckoutPaymentE2EGuard,
+    @Optional()
+    private readonly eventEmitter?: CheckoutEventEmitterService,
   ) {}
 
   private async logFraudDecision(params: {
@@ -411,7 +414,23 @@ export class CheckoutPaymentService {
 
       const payment = await this.persistPayment(params, charge, paymentStatus, pixData, amount);
 
+      void this.eventEmitter?.paymentInitiated({
+        workspaceId: params.workspaceId,
+        orderId: params.orderId,
+        paymentIntentId: charge.paymentIntentId,
+        paymentMethod: params.paymentMethod,
+        amountInCents: chargedTotalInCents,
+        correlationId: params.idempotencyKey,
+      });
+
       if (approved) {
+        void this.eventEmitter?.paymentApproved({
+          workspaceId: params.workspaceId,
+          orderId: params.orderId,
+          paymentIntentId: charge.paymentIntentId,
+          amountInCents: chargedTotalInCents,
+          correlationId: params.idempotencyKey,
+        });
         await this.postPaymentEffects
           .markLeadConverted(order, params.workspaceId)
           .catch((error) => {
@@ -440,6 +459,13 @@ export class CheckoutPaymentService {
         boletoExpiresAt: null,
       };
     } catch (error: unknown) {
+      void this.eventEmitter?.paymentDeclined({
+        workspaceId: params.workspaceId,
+        orderId: params.orderId,
+        paymentIntentId: undefined,
+        correlationId: params.idempotencyKey,
+        reason: error instanceof Error ? error.message : String(error),
+      });
       this.logger.error(
         `Stripe payment processing failed for order ${params.orderId}: ${error instanceof Error ? error.message : String(error)}`,
       );

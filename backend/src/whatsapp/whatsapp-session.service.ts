@@ -10,6 +10,7 @@ import {
 } from './providers/whatsapp-api.provider';
 import { normalizeJsonObjExt } from './whatsapp-service.helpers';
 import type { ProviderSettings } from './provider-settings.types';
+import { WhatsAppEventEmitterService } from '../kloel/whatsapp-emitter/whatsapp-event-emitter.service';
 
 const D_RE = /\D/g;
 const PATTERN_RE = /-/g;
@@ -23,6 +24,7 @@ export class WhatsappSessionService {
     private readonly whatsappApi: WhatsAppApiProvider,
     private readonly prisma: PrismaService,
     @Optional() private readonly opsAlert?: OpsAlertService,
+    @Optional() private readonly whatsappEmitter?: WhatsAppEventEmitterService,
   ) {}
 
   private readText(v: unknown): string {
@@ -59,9 +61,24 @@ export class WhatsappSessionService {
     }
     const qr = await this.providerRegistry.getQrCode(ws);
     if (qr.success && qr.qr) {
+      if (this.whatsappEmitter) {
+        this.whatsappEmitter.emitSessionLifecycle({
+          workspaceId: ws,
+          event: 'qr',
+          reason: 'session_created',
+        });
+      }
       return { status: 'qr_pending', code: qr.qr, qrCode: qr.qr };
     }
     const status = await this.providerRegistry.getSessionStatus(ws);
+    if (status.connected && this.whatsappEmitter) {
+      this.whatsappEmitter.emitSessionLifecycle({
+        workspaceId: ws,
+        event: 'connected',
+        phoneNumber: status.phoneNumber ?? undefined,
+        reason: 'session_already_connected',
+      });
+    }
     return {
       status: status.connected ? 'already_connected' : status.status,
       qrCode: status.qrCode,
@@ -113,6 +130,13 @@ export class WhatsappSessionService {
 
   async disconnect(ws: string) {
     await this.providerRegistry.disconnect(ws);
+    if (this.whatsappEmitter) {
+      this.whatsappEmitter.emitSessionLifecycle({
+        workspaceId: ws,
+        event: 'disconnected',
+        reason: 'manual_disconnect',
+      });
+    }
   }
 
   async setPresence(
@@ -223,5 +247,11 @@ export class WhatsappSessionService {
     await forEachSequential(cs, async (c) => {
       await this.providerRegistry.readChatMessages(ws, c).catch(() => {});
     });
+    if (this.whatsappEmitter) {
+      this.whatsappEmitter.emitMessageRead({
+        workspaceId: ws,
+        chatId: chatIdOrPhone,
+      });
+    }
   }
 }

@@ -7,10 +7,13 @@
  */
 import type { AbiTruthMode, AbiValence } from '../abi/abi-schema';
 
+// Optional fields explicitly allow `undefined` so callers under
+// `exactOptionalPropertyTypes: true` can pass `field: someMaybeUndefined`
+// without a guard. The runtime treats undefined as absent.
 export interface SpineEventInput {
   readonly eventName: string;
-  readonly workspaceId?: string;
-  readonly entityRef?: { readonly entityType: string; readonly entityId: string };
+  readonly workspaceId?: string | undefined;
+  readonly entityRef?: { readonly entityType: string; readonly entityId: string } | undefined;
   readonly truthMode: AbiTruthMode;
   readonly provenance: {
     readonly source: 'synthetic' | 'production';
@@ -18,11 +21,11 @@ export interface SpineEventInput {
     readonly processorVersion: string;
     readonly schemaVersion: string;
   };
-  readonly valence?: AbiValence;
-  readonly payload?: Readonly<Record<string, unknown>>;
-  readonly causedBy?: readonly string[];
-  readonly correlationId?: string;
-  readonly occurredAt?: string;
+  readonly valence?: AbiValence | undefined;
+  readonly payload?: Readonly<Record<string, unknown>> | undefined;
+  readonly causedBy?: readonly string[] | undefined;
+  readonly correlationId?: string | undefined;
+  readonly occurredAt?: string | undefined;
 }
 
 export interface SpineEventEnvelope {
@@ -30,14 +33,14 @@ export interface SpineEventEnvelope {
   readonly eventName: string;
   readonly timestamp: string;
   readonly occurredAt: string;
-  readonly workspaceId?: string;
-  readonly entityRef?: { readonly entityType: string; readonly entityId: string };
+  readonly workspaceId?: string | undefined;
+  readonly entityRef?: { readonly entityType: string; readonly entityId: string } | undefined;
   readonly truthMode: AbiTruthMode;
   readonly provenance: SpineEventInput['provenance'] & {
     readonly environment: 'dev' | 'staging' | 'prod';
   };
-  readonly valence?: AbiValence;
-  readonly payload?: Readonly<Record<string, unknown>>;
-  readonly causedBy?: readonly string[];
-  readonly correlationId?: string;
+  readonly valence?: AbiValence | undefined;
+  readonly payload?: Readonly<Record<string, unknown>> | undefined;
+  readonly causedBy?: readonly string[] | undefined;
+  readonly correlationId?: string | undefined;
 }

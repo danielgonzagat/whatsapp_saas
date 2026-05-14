@@ -5,6 +5,8 @@ import { FollowUpModule } from '../followup/followup.module';
 import { PaymentsModule } from '../payments/payments.module';
 import { MarketplaceTreasuryModule } from '../marketplace-treasury/marketplace-treasury.module';
 import { PrismaModule } from '../prisma/prisma.module';
+import { SpineModule } from '../kloel/spine/spine.module';
+import { CheckoutEventEmitterService } from '../kloel/checkout-emitter/checkout-event-emitter.service';
 import { CheckoutCatalogConfigService } from './checkout-catalog-config.service';
 import { CheckoutCatalogService } from './checkout-catalog.service';
 import { CheckoutOrderQueryService } from './checkout-order-query.service';
@@ -34,6 +36,7 @@ import { FacebookCAPIService } from './facebook-capi.service';
     AuthModule,
     FollowUpModule,
     PaymentsModule,
+    SpineModule,
   ],
   controllers: [CheckoutController, CheckoutPublicController],
   providers: [
@@ -50,6 +53,7 @@ import { FacebookCAPIService } from './facebook-capi.service';
     CheckoutSocialLeadService,
     CheckoutSocialRecoveryService,
     FacebookCAPIService,
+    CheckoutEventEmitterService,
   ],
   exports: [
     CheckoutService,
@@ -58,6 +62,7 @@ import { FacebookCAPIService } from './facebook-capi.service';
     CheckoutOrderService,
     CheckoutPaymentService,
     CheckoutSocialLeadService,
+    CheckoutEventEmitterService,
   ],
 })
 export class CheckoutModule {}
