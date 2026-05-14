@@ -64,6 +64,7 @@ import { mirrorFile } from './__parts__/obsidian-mirror-daemon-content.mjs';
 import {
   persistManifestState,
   cleanupStaleMirrorFiles,
+  writeDynamicWorkspaceStatus,
 } from './__parts__/obsidian-mirror-daemon-indexes.mjs';
 
 // ── Cleanup Helpers ─────────────────────────────────────────────────────────
@@ -470,6 +471,15 @@ function startWatch() {
     ensureGraphLensSettings();
   }
 
+  function refreshDynamicWorkspaceStatus() {
+    readGitDirtySources(true);
+    readGitLocalCommitSources(true);
+    const changed = writeDynamicWorkspaceStatus(manifest);
+    if (changed) {
+      log('INFO', 'Dynamic workspace mirror heartbeat refreshed.');
+    }
+  }
+
   function queueFsEvent(event, absPath) {
     if (!isConfiguredSourcePath(absPath)) {
       return;
@@ -510,6 +520,7 @@ function startWatch() {
   );
 
   const gitStateTimer = setInterval(flushGitState, GIT_STATE_POLL_MS);
+  const dynamicStatusTimer = setInterval(refreshDynamicWorkspaceStatus, GIT_STATE_POLL_MS);
   const graphLensTimer = setInterval(enforceGraphLens, GRAPH_LENS_ENFORCE_MS);
 
   // Graceful shutdown
@@ -518,7 +529,9 @@ function startWatch() {
     if (timer) {clearTimeout(timer);}
     flushPending(); // final flush
     flushGitState();
+    refreshDynamicWorkspaceStatus();
     clearInterval(gitStateTimer);
+    clearInterval(dynamicStatusTimer);
     clearInterval(graphLensTimer);
     for (const watcher of watchers) {watcher.close();}
     process.exit(0);
@@ -528,7 +541,9 @@ function startWatch() {
     if (timer) {clearTimeout(timer);}
     flushPending();
     flushGitState();
+    refreshDynamicWorkspaceStatus();
     clearInterval(gitStateTimer);
+    clearInterval(dynamicStatusTimer);
     clearInterval(graphLensTimer);
     for (const watcher of watchers) {watcher.close();}
     process.exit(0);

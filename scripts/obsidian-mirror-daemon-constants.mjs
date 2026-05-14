@@ -121,6 +121,8 @@ export const MACHINE_DIR = '_machine';
 export const CAMERA_DIR = '_camera';
 export const OBRA_DIR = '_obra';
 export const CLUSTER_DIR = '_clusters';
+export const WORKSPACE_DYNAMIC_DIR = '_workspace';
+export const WORKSPACE_DYNAMIC_NOTE = 'current.md';
 export const VISUAL_FACT_DIR = '_visual';
 
 export const CODE_STATE_COLOR_GROUPS = [

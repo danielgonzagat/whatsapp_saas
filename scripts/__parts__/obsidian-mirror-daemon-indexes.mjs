@@ -12,12 +12,16 @@ import { dirname, join, relative } from 'node:path';
 
 import {
   CLUSTER_DIR,
+  DIRTY_WORKSPACE_TAG,
+  LOCAL_COMMIT_TAG,
   MACHINE_DIR,
   MANIFEST_PATH,
   MIRROR_FORMAT_VERSION,
   MIRROR_ROOT,
   REPO_ROOT,
   SOURCE_MIRROR_DIR,
+  WORKSPACE_DYNAMIC_DIR,
+  WORKSPACE_DYNAMIC_NOTE,
 } from '../obsidian-mirror-daemon-constants.mjs';
 
 import { normalizePath, obsidianLink, writeManifest } from './obsidian-mirror-daemon-utils.mjs';
@@ -85,6 +89,75 @@ function clusterNote(cluster, entries) {
   ].join('\n');
 }
 
+function workspaceStateEntries(manifest, fieldName) {
+  return Object.entries(manifest.files || {})
+    .filter(([, entry]) => Boolean(entry[fieldName]))
+    .sort((a, b) => a[1].source.localeCompare(b[1].source));
+}
+
+function recentlyUpdatedEntries(manifest) {
+  return Object.entries(manifest.files || {})
+    .filter(([, entry]) => entry.updated)
+    .sort((a, b) => String(b[1].updated).localeCompare(String(a[1].updated)))
+    .slice(0, 80);
+}
+
+function workspaceDynamicNote(manifest) {
+  const entries = Object.entries(manifest.files || {});
+  const dirty = workspaceStateEntries(manifest, 'git_dirty');
+  const localCommit = workspaceStateEntries(manifest, 'git_local_commit');
+  const recent = recentlyUpdatedEntries(manifest);
+  const generatedAt = new Date().toISOString();
+  const tags = ['mirror/metadata-only', 'graph/molecule'];
+  if (dirty.length > 0) {
+    tags.push(DIRTY_WORKSPACE_TAG);
+  }
+  if (localCommit.length > 0) {
+    tags.push(LOCAL_COMMIT_TAG);
+  }
+
+  return [
+    '---',
+    `source: _generated/${WORKSPACE_DYNAMIC_DIR}/${WORKSPACE_DYNAMIC_NOTE}`,
+    `repo_root: ${REPO_ROOT}`,
+    `mirror_format: ${MIRROR_FORMAT_VERSION}`,
+    'tags:',
+    ...tags.map((tag) => `  - ${tag}`),
+    `dynamic_mirror: true`,
+    `mirrored: ${generatedAt}`,
+    `tracked_files: ${entries.length}`,
+    `dirty_files: ${dirty.length}`,
+    `local_commit_files: ${localCommit.length}`,
+    '---',
+    '',
+    '# Workspace Vivo',
+    '',
+    `Atualizado: ${generatedAt}`,
+    '',
+    'Este no e o sensor dinamico do workspace. Ele nao declara saude funcional; apenas reflete o estado atual do codigo espelhado, arquivos dirty e commits locais.',
+    '',
+    '## Dirty agora',
+    '',
+    ...(dirty.length
+      ? dirty.slice(0, 200).map(([relMirror, entry]) => `- ${obsidianLink(notePath(relMirror), entry.source)}`)
+      : ['Nenhum arquivo dirty no manifesto atual.']),
+    '',
+    '## Local commits',
+    '',
+    ...(localCommit.length
+      ? localCommit.slice(0, 200).map(([relMirror, entry]) => `- ${obsidianLink(notePath(relMirror), entry.source)}`)
+      : ['Nenhum arquivo em commit local no manifesto atual.']),
+    '',
+    '## Atualizados recentemente',
+    '',
+    ...recent.map(
+      ([relMirror, entry]) =>
+        `- ${obsidianLink(notePath(relMirror), entry.source)} - ${entry.workspace_state || 'NO_LOCAL_DIFF'} - ${entry.updated}`,
+    ),
+    '',
+  ].join('\n');
+}
+
 function writeGeneratedIndexes(manifest) {
   const entries = Object.entries(manifest.files || {});
   const bySurface = new Map();
@@ -115,11 +188,19 @@ function writeGeneratedIndexes(manifest) {
   }
 }
 
+export function writeDynamicWorkspaceStatus(manifest) {
+  return writeAtomicIfChanged(
+    join(MIRROR_ROOT, WORKSPACE_DYNAMIC_DIR, WORKSPACE_DYNAMIC_NOTE),
+    workspaceDynamicNote(manifest),
+  );
+}
+
 export function persistManifestState(manifest) {
   manifest.version = manifest.version || 2;
   manifest.generated = new Date().toISOString();
   manifest.repo_root = REPO_ROOT;
   writeGeneratedIndexes(manifest);
+  writeDynamicWorkspaceStatus(manifest);
   writeManifest(manifest);
 }
 
