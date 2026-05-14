@@ -89,9 +89,12 @@ import { OpsModule } from './ops/ops.module';
 import { PartnershipsModule } from './partnerships/partnerships.module';
 import { GoalFieldModule } from './kloel/goal-field/goal-field.module';
 import { ColdstartModule } from './kloel/coldstart/coldstart.module';
+import { HypproofModule } from './kloel/hypproof/hypproof.module';
 import { InsightModule } from './kloel/insight/insight.module';
+import { OfferModule } from './kloel/offer/offer.module';
 import { PostsaleConsumersModule } from './kloel/postsale-consumers/postsale-consumers.module';
 import { RecoveryModule } from './kloel/recovery/recovery.module';
+import { DelegationModule } from './kloel/delegation/delegation.module';
 import { LineageModule } from './kloel/lineage/lineage.module';
 import { LocalIdentityModule } from './kloel/local-identity/local-identity.module';
 import { MaturityModule } from './kloel/maturity/maturity.module';
@@ -100,6 +103,8 @@ import { SpineModule } from './kloel/spine/spine.module';
 import { TeamModule as KloelTeamModule } from './kloel/team/team.module';
 import { TrustModule } from './kloel/trust/trust.module';
 import { WisdomModule } from './kloel/wisdom/wisdom.module';
+import { HealthyMoneyModule } from './kloel/healthy-money/healthy-money.module';
+import { ClarityModule } from './kloel/clarity/clarity.module';
 import { WowModule } from './kloel/wow/wow.module';
 import { PipelineModule } from './pipeline/pipeline.module';
 import { ProductCategoriesModule } from './product-categories/product-categories.module';
@@ -264,15 +269,20 @@ function setRedisClientListenerBudget(client: Redis): void {
     LocalIdentityModule, // 🏷️ Camada V — Per-workspace operational profile (UTP-LOCAL-IDENT-001..007)
     GoalFieldModule, // 🎯 Camada III — Dynamic Goal Field (29 detectors + emerge/select/survive/shadow)
     InsightModule, // 💡 Camada VII — Strategic Insight Engine (detectors + ranker + confidence + delivery)
+    OfferModule, // 🎯 Camada XV — Offer Evolution Intelligence (bonus, promise, versioning, positioning, pricing)
     MaturityModule, // 📊 Camada VIII — Commercial Maturity Recognition (signals + classify + filter + guard)
     SpineModule, // 🧪 Spine — in-process event spine (B17 surface emitters publish here)
     RecoveryModule, // 🛡️ Camada XIV — Mature Failure Recovery (self-detection, acknowledgment, explanation, non-repeat, tactics, narrative, trust-after-error)
+    DelegationModule, // ⚖️ Camada XIII — Delegation Confidence Tracking (state tracker, graduation, suggestions, rollback, evidence)
     TrustModule, // 🛡️ Camada IX — Trust Capital Protection (fatigue, desperation, brand, silence, handoff, recovery)
     KloelTeamModule, // 👥 Camada XII — Team Augmentation (pre-call context, next-best-action, forgotten-followup, blind-spot, handoff)
     ColdstartModule, // 🚀 Camada XVII — Cold-Start Discovery (no-history → first truth in ≤30 days)
+    HypproofModule, // 🧪 Camada XX — Hypothesis → Experiment → Proof → Belief → Narrative (UTP-HYPPROOF-001..008)
     PostsaleConsumersModule, // 📦 Camada XVIII — Post-Sale & LTV Engine (anti-remorse, activation, LV, churn, retention, win-back, LTV)
     WisdomModule, // 🧠 Camada VI — Cross-Workspace Commercial Wisdom (k-anonymity, diff-privacy, patterns)
     WowModule, // ⚡ Camada XI — First-Hour Wow (cold-start ingestion, pattern detection, evidence delivery)
+    HealthyMoneyModule, // 💰 Camada XIX — Healthy Money Optimization (revenue quality, margin, refund risk, brand wear, sale blocking)
+    ClarityModule, // 🎯 Camada XX — Clarity Cognitive Prioritization (attention ranking, hierarchy projection, noise filter, anxiety detection, feedback loop, short narrative)
     PulseModule, // PULSE live organism collector
     AnunciosModule, // 📊 Anuncios — Meta/Google/TikTok ad accounts, campaigns, insights
     TikTokAdsModule, // 🎵 TikTok Ads — OAuth + Events API + sync
