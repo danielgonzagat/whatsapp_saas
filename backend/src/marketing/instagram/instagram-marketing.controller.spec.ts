@@ -63,13 +63,23 @@ describe('InstagramMarketingController', () => {
       expect(result).toBe(mockResult);
     });
 
-    it('clamps limit between 1 and 100 and offset to non-negative', async () => {
+    it('falls back to default 25 when limit is 0 (Number||25), and clamps offset >= 0', async () => {
       const mockResult = { posts: [], total: 0 };
       listPosts.mockResolvedValueOnce(mockResult);
 
-      await controller.listPosts(req, '-1', '-5');
+      await controller.listPosts(req, '0', '-5');
 
-      expect(listPosts).toHaveBeenCalledWith('ws-1', 1, 0);
+      // controller uses `Number(limit) || 25` so '0' becomes default 25; offset clamped to 0
+      expect(listPosts).toHaveBeenCalledWith('ws-1', 25, 0);
+    });
+
+    it('clamps limit at 100 when overflow value supplied', async () => {
+      const mockResult = { posts: [], total: 0 };
+      listPosts.mockResolvedValueOnce(mockResult);
+
+      await controller.listPosts(req, '500', '0');
+
+      expect(listPosts).toHaveBeenCalledWith('ws-1', 100, 0);
     });
   });
 

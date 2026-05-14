@@ -13,8 +13,6 @@ jest.mock('../common/decorators/internal-endpoint.decorator', () => ({
 import { resolveWorkspaceId } from '../auth/workspace-access';
 import { LaunchController } from './launch.controller';
 
-import { NotFoundException } from '@nestjs/common';
-
 const resolveWorkspaceIdMock = resolveWorkspaceId as jest.Mock;
 
 describe('LaunchController', () => {
@@ -159,3 +157,7 @@ describe('LaunchController', () => {
   });
 });
 
+// NestJS exceptions used in joinLaunch validation
+class NotFoundException extends Error {
+  constructor(message: string) { super(message); this.name = 'NotFoundException'; }
+}
