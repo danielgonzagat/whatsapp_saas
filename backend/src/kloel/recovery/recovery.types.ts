@@ -48,6 +48,10 @@ export interface Acknowledgment {
   readonly message: string;
   readonly channel: 'whatsapp' | 'dashboard' | 'email' | 'silent';
   readonly generatedAt: string;
+  readonly whatKloelKnows: string;
+  readonly whatKloelDoesNotKnow: string;
+  readonly safeNextStep: string;
+  readonly repairStance: 'non_defensive' | 'investigating' | 'correcting';
 }
 
 export interface ErrorExplanation {
@@ -56,6 +60,10 @@ export interface ErrorExplanation {
   readonly whatHappened: string;
   readonly why: string;
   readonly generatedAt: string;
+  readonly evidenceConfidence: 'observed' | 'inferred' | 'uncertain';
+  readonly evidenceGaps: string;
+  readonly safeNextStep: string;
+  readonly certaintyLevel: 'high' | 'moderate' | 'low';
 }
 
 export interface RecoveryTactic {

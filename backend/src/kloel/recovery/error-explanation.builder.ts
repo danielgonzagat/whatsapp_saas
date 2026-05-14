@@ -105,11 +105,24 @@ function summaryFor(error: DetectedError): string {
  */
 export function buildExplanation(error: DetectedError): ErrorExplanation {
   const { whatHappened, why } = explanationFor(error.category);
+  const severity = error.severity ?? 'low';
+  const certaintyLevel: 'high' | 'moderate' | 'low' =
+    severity === 'high'
+      ? 'high'
+      : severity === 'medium'
+        ? 'moderate'
+        : 'low';
   return {
     errorId: error.errorId,
     summary: summaryFor(error),
     whatHappened,
     why,
     generatedAt: new Date().toISOString(),
+    evidenceConfidence: 'observed',
+    evidenceGaps:
+      'underlying cause is described by category template, not by direct observation of the failure trace',
+    safeNextStep:
+      'surface to operator with the explanation and pause similar operations until acknowledged',
+    certaintyLevel,
   };
 }
