@@ -67,9 +67,7 @@ export class ActivationCompanionService {
     const activationLikely = percentComplete >= 60 && stalledDays <= STALL_THRESHOLD_DAYS;
 
     const currentMilestone =
-      completedSteps < totalSteps
-        ? ACTIVATION_MILESTONES[completedSteps]
-        : undefined;
+      completedSteps < totalSteps ? ACTIVATION_MILESTONES[completedSteps] : undefined;
 
     return {
       workspaceId: input.workspaceId,

@@ -30,7 +30,9 @@ export class FirstValueDetector {
     if (conversion && daysSince(conversion.occurredAt, nowMs) < DETECTION_WINDOW_DAYS) {
       confidence += 0.3;
       evidenceEventIds.push(conversion.eventId);
-      if (!kind) kind = 'conversion';
+      if (!kind) {
+        kind = 'conversion';
+      }
     }
 
     const payment = latestEvent(wsEvents, 'commerce.payment.approved');
@@ -50,14 +52,18 @@ export class FirstValueDetector {
     if (memberProgressed && daysSince(memberProgressed.occurredAt, nowMs) < DETECTION_WINDOW_DAYS) {
       confidence += 0.15;
       evidenceEventIds.push(memberProgressed.eventId);
-      if (!kind) kind = 'course_progress';
+      if (!kind) {
+        kind = 'course_progress';
+      }
     }
 
     const dealWon = latestEvent(wsEvents, 'commerce.crm.deal_won');
     if (dealWon && daysSince(dealWon.occurredAt, nowMs) < DETECTION_WINDOW_DAYS) {
       confidence += 0.2;
       evidenceEventIds.push(dealWon.eventId);
-      if (!kind) kind = 'deal_closed';
+      if (!kind) {
+        kind = 'deal_closed';
+      }
     }
 
     confidence = clamp(confidence, 0, 1);
@@ -71,7 +77,7 @@ export class FirstValueDetector {
       workspaceId: input.workspaceId,
       entityRef,
       valueObtained,
-      kind: valueObtained ? kind ?? 'multi_signal' : undefined,
+      kind: valueObtained ? (kind ?? 'multi_signal') : undefined,
       evidenceEventIds,
       confidence: Math.round(confidence * 100) / 100,
       assessedAt: new Date(nowMs).toISOString(),

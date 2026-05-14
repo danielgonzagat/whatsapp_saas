@@ -14,7 +14,7 @@ import { generateId } from './types';
 
 function determineImmediateAction(
   urgency: string,
-  affectedPolicies: readonly string[],
+  _affectedPolicies: readonly string[],
 ): string {
   if (urgency === 'emergency') {
     return 'EMERGENCY: Stop affected operations immediately. Legal team must respond within 2 hours.';

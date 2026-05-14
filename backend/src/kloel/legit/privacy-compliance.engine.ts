@@ -17,24 +17,8 @@ import type {
 } from './types';
 import {
   CCPA_REQUIRED_DISCLOSURES,
-  GDPR_REQUIRED_CONSENT_PURPOSES,
-  LGPD_REQUIRED_CONSENT_PURPOSES,
   generateId,
 } from './types';
-
-function requiredConsentPurposes(jurisdiction: Jurisdiction): readonly string[] {
-  switch (jurisdiction) {
-    case 'BR':
-      return LGPD_REQUIRED_CONSENT_PURPOSES;
-    case 'EU':
-    case 'UK':
-      return GDPR_REQUIRED_CONSENT_PURPOSES;
-    case 'US':
-      return [];
-    default:
-      return GDPR_REQUIRED_CONSENT_PURPOSES;
-  }
-}
 
 function requiresConsentForJurisdiction(jurisdiction: Jurisdiction): boolean {
   return jurisdiction === 'BR' || jurisdiction === 'EU' || jurisdiction === 'UK';

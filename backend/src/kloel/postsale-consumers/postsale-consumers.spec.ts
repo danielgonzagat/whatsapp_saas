@@ -13,8 +13,7 @@ import { ChurnRiskDetector } from './churn-risk.detector';
 import { RetentionHonestTactics } from './retention-honest.tactics';
 import { WinBackWindowAdvisor } from './winback-window.advisor';
 import { LtvProjectionService } from './ltv-projection.service';
-import type { DetectionInput } from './postsale-consumers.types';
-import { clamp, filterByWorkspace } from './postsale-consumers.types';
+import type { DetectionInput, LtvProjection } from './postsale-consumers.types';
 
 function makeEvent(
   eventName: string,
@@ -39,11 +38,7 @@ function makeSpine(): SpineEmitterService {
   return new SpineEmitterService(new ValenceTaggerService());
 }
 
-function baseInput(
-  events: SpineEventRef[],
-  workspaceId: string,
-  nowMs?: number,
-): DetectionInput {
+function baseInput(events: SpineEventRef[], workspaceId: string, nowMs?: number): DetectionInput {
   return { events, workspaceId, nowMs: nowMs ?? Date.now() };
 }
 
@@ -110,7 +105,11 @@ describe('POSTSALE-002 — Activation Companion', () => {
   test('detects activation_started as first milestone', () => {
     const now = Date.now();
     const events = [
-      makeEvent('commerce.post_sale.activation_started', 'wks_001', new Date(now - 10_000).toISOString()),
+      makeEvent(
+        'commerce.post_sale.activation_started',
+        'wks_001',
+        new Date(now - 10_000).toISOString(),
+      ),
     ];
     const result = svc.track(baseInput(events, 'wks_001', now));
     expect(result.completedSteps).toBeGreaterThanOrEqual(1);
@@ -119,9 +118,21 @@ describe('POSTSALE-002 — Activation Companion', () => {
   test('activationLikely is true when progress high and recent activity', () => {
     const now = Date.now();
     const events = [
-      makeEvent('commerce.post_sale.activation_started', 'wks_001', new Date(now - 10_000).toISOString()),
-      makeEvent('commerce.post_sale.first_value_obtained', 'wks_001', new Date(now - 10_000).toISOString()),
-      makeEvent('commerce.whatsapp.message_replied', 'wks_001', new Date(now - 10_000).toISOString()),
+      makeEvent(
+        'commerce.post_sale.activation_started',
+        'wks_001',
+        new Date(now - 10_000).toISOString(),
+      ),
+      makeEvent(
+        'commerce.post_sale.first_value_obtained',
+        'wks_001',
+        new Date(now - 10_000).toISOString(),
+      ),
+      makeEvent(
+        'commerce.whatsapp.message_replied',
+        'wks_001',
+        new Date(now - 10_000).toISOString(),
+      ),
     ];
     const result = svc.track(baseInput(events, 'wks_001', now));
     expect(result.activationLikely).toBe(true);
@@ -130,7 +141,11 @@ describe('POSTSALE-002 — Activation Companion', () => {
   test('stalledDays reflects gap since last activity', () => {
     const now = Date.now();
     const events = [
-      makeEvent('commerce.post_sale.activation_started', 'wks_001', new Date(now - 10 * 86400_000).toISOString()),
+      makeEvent(
+        'commerce.post_sale.activation_started',
+        'wks_001',
+        new Date(now - 10 * 86400_000).toISOString(),
+      ),
     ];
     const result = svc.track(baseInput(events, 'wks_001', now));
     expect(result.stalledDays).toBeGreaterThanOrEqual(9);
@@ -189,7 +204,9 @@ describe('POSTSALE-003 — First Value Detector', () => {
     ];
     await svc.detect(baseInput(events, 'wks_001', now));
     const spineEvents = spine.recentEvents();
-    expect(spineEvents.filter((e) => e.eventName === 'commerce.post_sale.first_value_obtained')).toHaveLength(0);
+    expect(
+      spineEvents.filter((e) => e.eventName === 'commerce.post_sale.first_value_obtained'),
+    ).toHaveLength(0);
   });
 });
 
@@ -217,10 +234,30 @@ describe('POSTSALE-004 — Satisfaction Collector', () => {
 
   test('aggregate returns correct NPS from multiple signals', () => {
     const events: SpineEventRef[] = [
-      makeEvent('commerce.post_sale.satisfaction_signal_observed', 'wks_001', '2026-05-01T00:00:00Z', { payload: { score: 10 } }),
-      makeEvent('commerce.post_sale.satisfaction_signal_observed', 'wks_001', '2026-05-02T00:00:00Z', { payload: { score: 9 } }),
-      makeEvent('commerce.post_sale.satisfaction_signal_observed', 'wks_001', '2026-05-03T00:00:00Z', { payload: { score: 5 } }),
-      makeEvent('commerce.post_sale.satisfaction_signal_observed', 'wks_001', '2026-05-04T00:00:00Z', { payload: { score: 3 } }),
+      makeEvent(
+        'commerce.post_sale.satisfaction_signal_observed',
+        'wks_001',
+        '2026-05-01T00:00:00Z',
+        { payload: { score: 10 } },
+      ),
+      makeEvent(
+        'commerce.post_sale.satisfaction_signal_observed',
+        'wks_001',
+        '2026-05-02T00:00:00Z',
+        { payload: { score: 9 } },
+      ),
+      makeEvent(
+        'commerce.post_sale.satisfaction_signal_observed',
+        'wks_001',
+        '2026-05-03T00:00:00Z',
+        { payload: { score: 5 } },
+      ),
+      makeEvent(
+        'commerce.post_sale.satisfaction_signal_observed',
+        'wks_001',
+        '2026-05-04T00:00:00Z',
+        { payload: { score: 3 } },
+      ),
     ];
     const agg = svc.aggregate(events, 'wks_001');
     expect(agg.signalCount).toBe(4);
@@ -264,9 +301,22 @@ describe('POSTSALE-005 — Testimonial Timing Advisor', () => {
   test('ready when purchase mature + positive satisfaction', () => {
     const now = Date.now();
     const events = [
-      makeEvent('commerce.payment.approved', 'wks_001', new Date(now - 14 * 86400_000).toISOString()),
-      makeEvent('commerce.post_sale.satisfaction_signal_observed', 'wks_001', new Date(now - 3600_000).toISOString(), { payload: { sentimentLabel: 'positive' } }),
-      makeEvent('commerce.post_sale.first_value_obtained', 'wks_001', new Date(now - 3600_000).toISOString()),
+      makeEvent(
+        'commerce.payment.approved',
+        'wks_001',
+        new Date(now - 14 * 86400_000).toISOString(),
+      ),
+      makeEvent(
+        'commerce.post_sale.satisfaction_signal_observed',
+        'wks_001',
+        new Date(now - 3600_000).toISOString(),
+        { payload: { sentimentLabel: 'positive' } },
+      ),
+      makeEvent(
+        'commerce.post_sale.first_value_obtained',
+        'wks_001',
+        new Date(now - 3600_000).toISOString(),
+      ),
     ];
     const result = svc.assess(baseInput(events, 'wks_001', now));
     expect(result.ready).toBe(true);
@@ -276,9 +326,22 @@ describe('POSTSALE-005 — Testimonial Timing Advisor', () => {
   test('suggested channel matches readiness score', () => {
     const now = Date.now();
     const events = [
-      makeEvent('commerce.payment.approved', 'wks_001', new Date(now - 14 * 86400_000).toISOString()),
-      makeEvent('commerce.post_sale.satisfaction_signal_observed', 'wks_001', new Date(now - 3600_000).toISOString(), { payload: { sentimentLabel: 'positive' } }),
-      makeEvent('commerce.post_sale.first_value_obtained', 'wks_001', new Date(now - 3600_000).toISOString()),
+      makeEvent(
+        'commerce.payment.approved',
+        'wks_001',
+        new Date(now - 14 * 86400_000).toISOString(),
+      ),
+      makeEvent(
+        'commerce.post_sale.satisfaction_signal_observed',
+        'wks_001',
+        new Date(now - 3600_000).toISOString(),
+        { payload: { sentimentLabel: 'positive' } },
+      ),
+      makeEvent(
+        'commerce.post_sale.first_value_obtained',
+        'wks_001',
+        new Date(now - 3600_000).toISOString(),
+      ),
     ];
     const result = svc.assess(baseInput(events, 'wks_001', now));
     expect(['whatsapp', 'email', 'dashboard', 'silent']).toContain(result.suggestedChannel);
@@ -309,9 +372,22 @@ describe('POSTSALE-006 — Referral Prompt Timing', () => {
   test('ready with matured purchase + value + positive satisfaction', () => {
     const now = Date.now();
     const events = [
-      makeEvent('commerce.payment.approved', 'wks_001', new Date(now - 10 * 86400_000).toISOString()),
-      makeEvent('commerce.post_sale.first_value_obtained', 'wks_001', new Date(now - 3600_000).toISOString()),
-      makeEvent('commerce.post_sale.satisfaction_signal_observed', 'wks_001', new Date(now - 3600_000).toISOString(), { payload: { sentimentLabel: 'positive' } }),
+      makeEvent(
+        'commerce.payment.approved',
+        'wks_001',
+        new Date(now - 10 * 86400_000).toISOString(),
+      ),
+      makeEvent(
+        'commerce.post_sale.first_value_obtained',
+        'wks_001',
+        new Date(now - 3600_000).toISOString(),
+      ),
+      makeEvent(
+        'commerce.post_sale.satisfaction_signal_observed',
+        'wks_001',
+        new Date(now - 3600_000).toISOString(),
+        { payload: { sentimentLabel: 'positive' } },
+      ),
     ];
     const result = svc.assess(baseInput(events, 'wks_001', now));
     expect(result.ready).toBe(true);
@@ -335,11 +411,32 @@ describe('POSTSALE-007 — Repurchase Window Detector', () => {
   test('window open with mature payment + satisfaction + progress', async () => {
     const now = Date.now();
     const events = [
-      makeEvent('commerce.payment.approved', 'wks_001', new Date(now - 30 * 86400_000).toISOString()),
-      makeEvent('commerce.post_sale.satisfaction_signal_observed', 'wks_001', new Date(now - 3600_000).toISOString(), { payload: { sentimentLabel: 'positive' } }),
-      makeEvent('commerce.post_sale.first_value_obtained', 'wks_001', new Date(now - 3600_000).toISOString()),
-      makeEvent('commerce.member_area.progressed', 'wks_001', new Date(now - 3600_000).toISOString()),
-      makeEvent('commerce.member_area.progressed', 'wks_001', new Date(now - 7200_000).toISOString()),
+      makeEvent(
+        'commerce.payment.approved',
+        'wks_001',
+        new Date(now - 30 * 86400_000).toISOString(),
+      ),
+      makeEvent(
+        'commerce.post_sale.satisfaction_signal_observed',
+        'wks_001',
+        new Date(now - 3600_000).toISOString(),
+        { payload: { sentimentLabel: 'positive' } },
+      ),
+      makeEvent(
+        'commerce.post_sale.first_value_obtained',
+        'wks_001',
+        new Date(now - 3600_000).toISOString(),
+      ),
+      makeEvent(
+        'commerce.member_area.progressed',
+        'wks_001',
+        new Date(now - 3600_000).toISOString(),
+      ),
+      makeEvent(
+        'commerce.member_area.progressed',
+        'wks_001',
+        new Date(now - 7200_000).toISOString(),
+      ),
     ];
     const result = await svc.detect(baseInput(events, 'wks_001', now));
     expect(result.windowOpen).toBe(true);
@@ -348,16 +445,37 @@ describe('POSTSALE-007 — Repurchase Window Detector', () => {
   test('emits repurchase_window_opened on spine when window opens', async () => {
     const now = Date.now();
     const events = [
-      makeEvent('commerce.payment.approved', 'wks_001', new Date(now - 30 * 86400_000).toISOString()),
-      makeEvent('commerce.post_sale.satisfaction_signal_observed', 'wks_001', new Date(now - 3600_000).toISOString(), { payload: { sentimentLabel: 'positive' } }),
-      makeEvent('commerce.post_sale.first_value_obtained', 'wks_001', new Date(now - 3600_000).toISOString()),
-      makeEvent('commerce.member_area.progressed', 'wks_001', new Date(now - 3600_000).toISOString()),
-      makeEvent('commerce.member_area.progressed', 'wks_001', new Date(now - 7200_000).toISOString()),
+      makeEvent(
+        'commerce.payment.approved',
+        'wks_001',
+        new Date(now - 30 * 86400_000).toISOString(),
+      ),
+      makeEvent(
+        'commerce.post_sale.satisfaction_signal_observed',
+        'wks_001',
+        new Date(now - 3600_000).toISOString(),
+        { payload: { sentimentLabel: 'positive' } },
+      ),
+      makeEvent(
+        'commerce.post_sale.first_value_obtained',
+        'wks_001',
+        new Date(now - 3600_000).toISOString(),
+      ),
+      makeEvent(
+        'commerce.member_area.progressed',
+        'wks_001',
+        new Date(now - 3600_000).toISOString(),
+      ),
+      makeEvent(
+        'commerce.member_area.progressed',
+        'wks_001',
+        new Date(now - 7200_000).toISOString(),
+      ),
     ];
     await svc.detect(baseInput(events, 'wks_001', now));
-    const windowEvents = spine.recentEvents().filter(
-      (e) => e.eventName === 'commerce.post_sale.repurchase_window_opened',
-    );
+    const windowEvents = spine
+      .recentEvents()
+      .filter((e) => e.eventName === 'commerce.post_sale.repurchase_window_opened');
     expect(windowEvents.length).toBeGreaterThan(0);
   });
 });
@@ -380,17 +498,34 @@ describe('POSTSALE-008 — Expansion Fit Detector', () => {
     const events: SpineEventRef[] = [];
     for (let i = 0; i < 3; i++) {
       events.push(
-        makeEvent('commerce.member_area.progressed', 'wks_001', new Date(now - (i + 1) * 86400_000).toISOString()),
+        makeEvent(
+          'commerce.member_area.progressed',
+          'wks_001',
+          new Date(now - (i + 1) * 86400_000).toISOString(),
+        ),
       );
     }
     for (let i = 0; i < 2; i++) {
       events.push(
-        makeEvent('commerce.payment.approved', 'wks_001', new Date(now - (i + 1) * 86400_000).toISOString()),
+        makeEvent(
+          'commerce.payment.approved',
+          'wks_001',
+          new Date(now - (i + 1) * 86400_000).toISOString(),
+        ),
       );
     }
     events.push(
-      makeEvent('commerce.post_sale.satisfaction_signal_observed', 'wks_001', new Date(now - 3600_000).toISOString(), { payload: { sentimentLabel: 'positive' } }),
-      makeEvent('commerce.post_sale.first_value_obtained', 'wks_001', new Date(now - 3600_000).toISOString()),
+      makeEvent(
+        'commerce.post_sale.satisfaction_signal_observed',
+        'wks_001',
+        new Date(now - 3600_000).toISOString(),
+        { payload: { sentimentLabel: 'positive' } },
+      ),
+      makeEvent(
+        'commerce.post_sale.first_value_obtained',
+        'wks_001',
+        new Date(now - 3600_000).toISOString(),
+      ),
     );
     const result = svc.assess(baseInput(events, 'wks_001', now));
     expect(result.expansionReady).toBe(true);
@@ -402,17 +537,44 @@ describe('POSTSALE-008 — Expansion Fit Detector', () => {
     const now = Date.now();
     const events: SpineEventRef[] = [];
     for (let i = 0; i < 3; i++) {
-      events.push(makeEvent('commerce.member_area.progressed', 'wks_001', new Date(now - (i + 1) * 86400_000).toISOString()));
+      events.push(
+        makeEvent(
+          'commerce.member_area.progressed',
+          'wks_001',
+          new Date(now - (i + 1) * 86400_000).toISOString(),
+        ),
+      );
     }
     for (let i = 0; i < 3; i++) {
-      events.push(makeEvent('commerce.payment.approved', 'wks_001', new Date(now - (i + 1) * 86400_000).toISOString()));
+      events.push(
+        makeEvent(
+          'commerce.payment.approved',
+          'wks_001',
+          new Date(now - (i + 1) * 86400_000).toISOString(),
+        ),
+      );
     }
     for (let i = 0; i < 2; i++) {
-      events.push(makeEvent('commerce.crm.deal_won', 'wks_001', new Date(now - (i + 1) * 86400_000).toISOString()));
+      events.push(
+        makeEvent(
+          'commerce.crm.deal_won',
+          'wks_001',
+          new Date(now - (i + 1) * 86400_000).toISOString(),
+        ),
+      );
     }
     events.push(
-      makeEvent('commerce.post_sale.satisfaction_signal_observed', 'wks_001', new Date(now - 3600_000).toISOString(), { payload: { sentimentLabel: 'positive' } }),
-      makeEvent('commerce.post_sale.first_value_obtained', 'wks_001', new Date(now - 3600_000).toISOString()),
+      makeEvent(
+        'commerce.post_sale.satisfaction_signal_observed',
+        'wks_001',
+        new Date(now - 3600_000).toISOString(),
+        { payload: { sentimentLabel: 'positive' } },
+      ),
+      makeEvent(
+        'commerce.post_sale.first_value_obtained',
+        'wks_001',
+        new Date(now - 3600_000).toISOString(),
+      ),
     );
     const result = svc.assess(baseInput(events, 'wks_001', now));
     expect(result.suggestedExpansionOffer).toBe('premium_plan');
@@ -431,7 +593,11 @@ describe('POSTSALE-009 — Churn Risk Detector', () => {
   test('low risk with active events', async () => {
     const now = Date.now();
     const events = [
-      makeEvent('commerce.whatsapp.message_replied', 'wks_001', new Date(now - 3600_000).toISOString()),
+      makeEvent(
+        'commerce.whatsapp.message_replied',
+        'wks_001',
+        new Date(now - 3600_000).toISOString(),
+      ),
       makeEvent('commerce.payment.approved', 'wks_001', new Date(now - 3600_000).toISOString()),
     ];
     const result = await svc.assess(baseInput(events, 'wks_001', now));
@@ -442,11 +608,31 @@ describe('POSTSALE-009 — Churn Risk Detector', () => {
   test('critical risk with inactivity + refund + declined', async () => {
     const now = Date.now();
     const events = [
-      makeEvent('commerce.payment.refunded', 'wks_001', new Date(now - 5 * 86400_000).toISOString()),
-      makeEvent('commerce.payment.declined', 'wks_001', new Date(now - 5 * 86400_000).toISOString()),
-      makeEvent('commerce.whatsapp.handoff_to_human', 'wks_001', new Date(now - 5 * 86400_000).toISOString()),
-      makeEvent('commerce.whatsapp.handoff_to_human', 'wks_001', new Date(now - 3 * 86400_000).toISOString()),
-      makeEvent('commerce.whatsapp.handoff_to_human', 'wks_001', new Date(now - 1 * 86400_000).toISOString()),
+      makeEvent(
+        'commerce.payment.refunded',
+        'wks_001',
+        new Date(now - 5 * 86400_000).toISOString(),
+      ),
+      makeEvent(
+        'commerce.payment.declined',
+        'wks_001',
+        new Date(now - 5 * 86400_000).toISOString(),
+      ),
+      makeEvent(
+        'commerce.whatsapp.handoff_to_human',
+        'wks_001',
+        new Date(now - 5 * 86400_000).toISOString(),
+      ),
+      makeEvent(
+        'commerce.whatsapp.handoff_to_human',
+        'wks_001',
+        new Date(now - 3 * 86400_000).toISOString(),
+      ),
+      makeEvent(
+        'commerce.whatsapp.handoff_to_human',
+        'wks_001',
+        new Date(now - 1 * 86400_000).toISOString(),
+      ),
     ];
     const result = await svc.assess(baseInput(events, 'wks_001', now));
     expect(result.riskProbability).toBeGreaterThan(0.3);
@@ -458,18 +644,47 @@ describe('POSTSALE-009 — Churn Risk Detector', () => {
   test('emits churn_risk_detected on high risk', async () => {
     const now = Date.now();
     const events = [
-      makeEvent('commerce.payment.refunded', 'wks_001', new Date(now - 5 * 86400_000).toISOString()),
-      makeEvent('commerce.payment.declined', 'wks_001', new Date(now - 5 * 86400_000).toISOString()),
-      makeEvent('commerce.member_area.dropped_out', 'wks_001', new Date(now - 3 * 86400_000).toISOString()),
-      makeEvent('commerce.post_sale.satisfaction_signal_observed', 'wks_001', new Date(now - 5 * 86400_000).toISOString(), { payload: { sentimentLabel: 'negative' } }),
-      makeEvent('commerce.whatsapp.handoff_to_human', 'wks_001', new Date(now - 5 * 86400_000).toISOString()),
-      makeEvent('commerce.whatsapp.handoff_to_human', 'wks_001', new Date(now - 3 * 86400_000).toISOString()),
-      makeEvent('commerce.whatsapp.handoff_to_human', 'wks_001', new Date(now - 1 * 86400_000).toISOString()),
+      makeEvent(
+        'commerce.payment.refunded',
+        'wks_001',
+        new Date(now - 5 * 86400_000).toISOString(),
+      ),
+      makeEvent(
+        'commerce.payment.declined',
+        'wks_001',
+        new Date(now - 5 * 86400_000).toISOString(),
+      ),
+      makeEvent(
+        'commerce.member_area.dropped_out',
+        'wks_001',
+        new Date(now - 3 * 86400_000).toISOString(),
+      ),
+      makeEvent(
+        'commerce.post_sale.satisfaction_signal_observed',
+        'wks_001',
+        new Date(now - 5 * 86400_000).toISOString(),
+        { payload: { sentimentLabel: 'negative' } },
+      ),
+      makeEvent(
+        'commerce.whatsapp.handoff_to_human',
+        'wks_001',
+        new Date(now - 5 * 86400_000).toISOString(),
+      ),
+      makeEvent(
+        'commerce.whatsapp.handoff_to_human',
+        'wks_001',
+        new Date(now - 3 * 86400_000).toISOString(),
+      ),
+      makeEvent(
+        'commerce.whatsapp.handoff_to_human',
+        'wks_001',
+        new Date(now - 1 * 86400_000).toISOString(),
+      ),
     ];
     await svc.assess(baseInput(events, 'wks_001', now));
-    const churnEvents = spine.recentEvents().filter(
-      (e) => e.eventName === 'commerce.post_sale.churn_risk_detected',
-    );
+    const churnEvents = spine
+      .recentEvents()
+      .filter((e) => e.eventName === 'commerce.post_sale.churn_risk_detected');
     expect(churnEvents.length).toBeGreaterThan(0);
   });
 });
@@ -569,9 +784,9 @@ describe('POSTSALE-011 — Win-Back Window Advisor', () => {
     const plan = await svc.assess(risk, baseInput([], 'wks_001'));
     expect(plan.windowOpen).toBe(true);
     expect(plan.tacticKind).toBe('conditional_return_offer');
-    const winbackEvents = spine.recentEvents().filter(
-      (e) => e.eventName === 'commerce.post_sale.win_back_window_opened',
-    );
+    const winbackEvents = spine
+      .recentEvents()
+      .filter((e) => e.eventName === 'commerce.post_sale.win_back_window_opened');
     expect(winbackEvents.length).toBeGreaterThan(0);
   });
 
@@ -627,9 +842,14 @@ describe('POSTSALE-012 — LTV Projection', () => {
     const events: SpineEventRef[] = [];
     for (let i = 0; i < 10; i++) {
       events.push(
-        makeEvent('commerce.payment.approved', 'wks_001', new Date(Date.now() - i * 7 * 86400_000).toISOString(), {
-          payload: { amountCents: 9900 },
-        }),
+        makeEvent(
+          'commerce.payment.approved',
+          'wks_001',
+          new Date(Date.now() - i * 7 * 86400_000).toISOString(),
+          {
+            payload: { amountCents: 9900 },
+          },
+        ),
       );
     }
     const result = svc.project(baseInput(events, 'wks_001'), 'cohort_a', 9900);
@@ -642,7 +862,11 @@ describe('POSTSALE-012 — LTV Projection', () => {
     const events: SpineEventRef[] = [];
     for (let i = 0; i < 10; i++) {
       events.push(
-        makeEvent('commerce.payment.approved', 'wks_001', new Date(Date.now() - i * 7 * 86400_000).toISOString()),
+        makeEvent(
+          'commerce.payment.approved',
+          'wks_001',
+          new Date(Date.now() - i * 7 * 86400_000).toISOString(),
+        ),
       );
     }
     const lowChurn = svc.project(baseInput(events, 'wks_001'), 'low', 10000, 0.01);
@@ -655,7 +879,9 @@ describe('POSTSALE-012 — LTV Projection', () => {
     expect(result).toHaveLength(3);
     const [low, mid, high] = result;
     expect(low?.projectedLtvCents).toBeGreaterThanOrEqual((mid as LtvProjection).projectedLtvCents);
-    expect(mid?.projectedLtvCents).toBeGreaterThanOrEqual((high as LtvProjection).projectedLtvCents);
+    expect(mid?.projectedLtvCents).toBeGreaterThanOrEqual(
+      (high as LtvProjection).projectedLtvCents,
+    );
   });
 
   test('confidence grows with event volume', () => {
@@ -663,15 +889,17 @@ describe('POSTSALE-012 — LTV Projection', () => {
     const events: SpineEventRef[] = [];
     for (let i = 0; i < 30; i++) {
       events.push(
-        makeEvent('commerce.payment.approved', 'wks_001', new Date(Date.now() - i * 86400_000).toISOString(), {
-          payload: { amountCents: 9900 },
-        }),
+        makeEvent(
+          'commerce.payment.approved',
+          'wks_001',
+          new Date(Date.now() - i * 86400_000).toISOString(),
+          {
+            payload: { amountCents: 9900 },
+          },
+        ),
       );
     }
     const highVolume = svc.project(baseInput(events, 'wks_001'), 'c2', 5000, 0.05);
     expect(highVolume.confidence).toBeGreaterThan(lowVolume.confidence);
   });
 });
-
-// Re-import for type in projectByChurnLevels test
-import type { LtvProjection } from './postsale-consumers.types';

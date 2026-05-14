@@ -51,13 +51,6 @@ export const DEFAULT_CREATOR_TRUST_CONFIG: CreatorTrustConfig = {
 const INITIAL_TRUST_CAPITAL = 0.6;
 const TRUST_CAPITAL_FLOOR = 0.0;
 const TRUST_CAPITAL_CEILING = 1.0;
-const POSITIVE_EVENT_BOOST = 0.02;
-const NEGATIVE_EVENT_DECAY = 0.04;
-const SILENCE_PENALTY = 0.06;
-const OBJECTION_PENALTY = 0.03;
-const CONVERSION_BOOST = 0.05;
-const WENT_SILENT_PENALTY = 0.08;
-const POSITIVE_REPLY_BOOST = 0.01;
 
 function computeAudienceTrust(
   trustStates: readonly TrustState[],

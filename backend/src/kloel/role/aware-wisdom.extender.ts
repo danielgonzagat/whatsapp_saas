@@ -16,7 +16,6 @@
 
 import type { WisdomPattern } from '../wisdom/wisdom.types';
 import type { Role } from './types';
-import { ALL_ROLES } from './types';
 
 /**
  * Which signal kinds are relevant to each role.

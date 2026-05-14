@@ -13,11 +13,7 @@
 
 import type { SpineEventRef } from '../mind/mind.types';
 import type { Role, RoleDetection, RoleDetectorInput } from './types';
-import {
-  ALL_ROLES,
-  clampConfidence,
-  makeRoleDetectionId,
-} from './types';
+import { clampConfidence } from './types';
 
 const PRODUCER_EVENTS = new Set([
   'commerce.product.created',
@@ -195,7 +191,7 @@ export function detectRoles(input: RoleDetectorInput): readonly RoleDetection[] 
         confidence: Math.round(conf * 100) / 100,
         detectedFromSignals: r.signals,
         workspaceId: input.workspaceId,
-        truthMode: 'inferred',
+        truthMode: 'inferred' as const,
         detectedAt,
       };
     })

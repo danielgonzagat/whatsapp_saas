@@ -1,5 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
-import type { SpineEventRef } from '../mind/mind.types';
+import { Injectable } from '@nestjs/common';
 import type { TestimonialReadiness, DetectionInput } from './postsale-consumers.types';
 import { clamp, daysSince, filterByWorkspace, latestEvent } from './postsale-consumers.types';
 
@@ -10,8 +9,6 @@ const RECENCY_BONUS_DAYS = 21;
 
 @Injectable()
 export class TestimonialTimingAdvisor {
-  private readonly logger = new Logger(TestimonialTimingAdvisor.name);
-
   public assess(input: DetectionInput): TestimonialReadiness {
     const nowMs = input.nowMs ?? Date.now();
     const wsEvents = filterByWorkspace(input.events, input.workspaceId);
@@ -21,7 +18,15 @@ export class TestimonialTimingAdvisor {
 
     const payment = latestEvent(wsEvents, 'commerce.payment.approved');
     if (!payment) {
-      return finalize(input.workspaceId, entityRef, false, 0, ['no_purchase_detected'], 'silent', nowMs);
+      return finalize(
+        input.workspaceId,
+        entityRef,
+        false,
+        0,
+        ['no_purchase_detected'],
+        'silent',
+        nowMs,
+      );
     }
 
     const daysSincePayment = daysSince(payment.occurredAt, nowMs);
@@ -42,14 +47,8 @@ export class TestimonialTimingAdvisor {
       readinessScore += 0.1;
     }
 
-    const satisfaction = latestEvent(
-      wsEvents,
-      'commerce.post_sale.satisfaction_signal_observed',
-    );
-    if (
-      satisfaction &&
-      daysSince(satisfaction.occurredAt, nowMs) < SATISFACTION_WINDOW_DAYS
-    ) {
+    const satisfaction = latestEvent(wsEvents, 'commerce.post_sale.satisfaction_signal_observed');
+    if (satisfaction && daysSince(satisfaction.occurredAt, nowMs) < SATISFACTION_WINDOW_DAYS) {
       const payloadSentiment = satisfaction.payload?.['sentimentLabel'];
       if (payloadSentiment === 'positive') {
         readinessScore += 0.4;
@@ -60,10 +59,7 @@ export class TestimonialTimingAdvisor {
       }
     }
 
-    const firstValue = latestEvent(
-      wsEvents,
-      'commerce.post_sale.first_value_obtained',
-    );
+    const firstValue = latestEvent(wsEvents, 'commerce.post_sale.first_value_obtained');
     if (firstValue && daysSince(firstValue.occurredAt, nowMs) < RECENCY_BONUS_DAYS) {
       readinessScore += 0.25;
       reasons.push('first_value_obtained');
@@ -71,8 +67,7 @@ export class TestimonialTimingAdvisor {
 
     const memberProgress = wsEvents.filter(
       (e) =>
-        e.eventName === 'commerce.member_area.progressed' &&
-        daysSince(e.occurredAt, nowMs) < 30,
+        e.eventName === 'commerce.member_area.progressed' && daysSince(e.occurredAt, nowMs) < 30,
     ).length;
     if (memberProgress >= 3) {
       readinessScore += 0.15;
@@ -82,9 +77,18 @@ export class TestimonialTimingAdvisor {
     readinessScore = clamp(readinessScore, 0, 1);
 
     const ready = readinessScore >= 0.5;
-    const suggestedChannel = readinessScore >= 0.7 ? 'whatsapp' : readinessScore >= 0.5 ? 'email' : 'silent';
+    const suggestedChannel =
+      readinessScore >= 0.7 ? 'whatsapp' : readinessScore >= 0.5 ? 'email' : 'silent';
 
-    return finalize(input.workspaceId, entityRef, ready, readinessScore, reasons, suggestedChannel, nowMs);
+    return finalize(
+      input.workspaceId,
+      entityRef,
+      ready,
+      readinessScore,
+      reasons,
+      suggestedChannel,
+      nowMs,
+    );
   }
 }
 

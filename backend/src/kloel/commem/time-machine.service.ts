@@ -1,7 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import type {
   MemoryDimension,
-  MemoryProjection,
   TimeMachineQuery,
   TimeMachineResult,
 } from './commem.types';

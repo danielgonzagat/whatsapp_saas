@@ -1,7 +1,11 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { SpineEmitterService } from '../spine/spine-emitter.service';
-import type { ChurnRiskAssessment, WinBackPlan, WinBackTacticKind, DetectionInput } from './postsale-consumers.types';
-import { daysSince, filterByWorkspace, latestEvent } from './postsale-consumers.types';
+import type {
+  ChurnRiskAssessment,
+  WinBackPlan,
+  WinBackTacticKind,
+  DetectionInput,
+} from './postsale-consumers.types';
 
 const PROCESSOR_NAME = 'winback-window-advisor';
 const PROCESSOR_VERSION = '1.0.0';
@@ -13,13 +17,9 @@ export class WinBackWindowAdvisor {
 
   public constructor(private readonly spine: SpineEmitterService) {}
 
-  public async assess(
-    risk: ChurnRiskAssessment,
-    input: DetectionInput,
-  ): Promise<WinBackPlan> {
-    const nowMs = input.nowMs ?? Date.now();
-    const wsEvents = filterByWorkspace(input.events, input.workspaceId);
-    const entityRef = input.entityRef ?? risk.entityRef;
+  public async assess(risk: ChurnRiskAssessment, _input: DetectionInput): Promise<WinBackPlan> {
+    const nowMs = _input.nowMs ?? Date.now();
+    const entityRef = _input.entityRef ?? risk.entityRef;
 
     let windowDays = 0;
     let tacticKind: WinBackTacticKind;
@@ -30,25 +30,29 @@ export class WinBackWindowAdvisor {
     if (risk.riskLevel === 'critical') {
       windowDays = 7;
       tacticKind = 'conditional_return_offer';
-      description = 'Offer a structured return path with clear conditions and no pressure — the customer decides the terms.';
+      description =
+        'Offer a structured return path with clear conditions and no pressure — the customer decides the terms.';
       suggestedChannel = 'email';
       windowOpen = true;
     } else if (risk.riskLevel === 'high') {
       windowDays = 14;
       tacticKind = 'departure_survey';
-      description = 'Send a brief departure survey asking what could have been better. No offer attached — pure listening.';
+      description =
+        'Send a brief departure survey asking what could have been better. No offer attached — pure listening.';
       suggestedChannel = 'email';
       windowOpen = true;
     } else if (risk.riskLevel === 'moderate') {
       windowDays = 30;
       tacticKind = 'product_evolution_update';
-      description = 'Inform the customer of relevant product improvements made since their last interaction. Informational, not promotional.';
+      description =
+        'Inform the customer of relevant product improvements made since their last interaction. Informational, not promotional.';
       suggestedChannel = 'email';
       windowOpen = true;
     } else {
       windowDays = 90;
       tacticKind = 'reengagement_content';
-      description = 'Share educational content aligned with the customer\'s original interest — no offer, no urgency.';
+      description =
+        "Share educational content aligned with the customer's original interest — no offer, no urgency.";
       suggestedChannel = 'silent';
       windowOpen = false;
     }

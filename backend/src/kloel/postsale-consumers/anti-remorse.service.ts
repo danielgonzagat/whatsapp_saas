@@ -31,8 +31,7 @@ export class AntiRemorseService {
 
     const hasSupportContact = wsEvents.some(
       (e) =>
-        e.eventName === 'commerce.whatsapp.handoff_to_human' &&
-        daysSince(e.occurredAt, nowMs) < 1,
+        e.eventName === 'commerce.whatsapp.handoff_to_human' && daysSince(e.occurredAt, nowMs) < 1,
     );
     if (hasSupportContact) {
       remorseRiskScore += 0.2;

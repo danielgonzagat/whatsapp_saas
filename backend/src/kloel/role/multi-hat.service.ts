@@ -13,7 +13,6 @@
 
 import { Injectable, Logger } from '@nestjs/common';
 import type { MultiHatProfile, Role, RoleDetection } from './types';
-import { makeProfileUpdateId } from './types';
 import { getLeversForRole } from './leverage-map.service';
 
 @Injectable()

@@ -1,6 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { SpineEmitterService } from '../spine/spine-emitter.service';
-import type { ChurnRiskAssessment, ChurnSignalKind, DetectionInput } from './postsale-consumers.types';
+import type {
+  ChurnRiskAssessment,
+  ChurnSignalKind,
+  DetectionInput,
+} from './postsale-consumers.types';
 import { clamp, daysSince, filterByWorkspace } from './postsale-consumers.types';
 
 const RISK_WINDOW_DAYS = 30;
@@ -28,9 +32,13 @@ export class ChurnRiskDetector {
     let daysSinceLastActivity = Infinity;
     for (const e of wsEvents) {
       const d = daysSince(e.occurredAt, nowMs);
-      if (d < daysSinceLastActivity) daysSinceLastActivity = d;
+      if (d < daysSinceLastActivity) {
+        daysSinceLastActivity = d;
+      }
     }
-    if (!Number.isFinite(daysSinceLastActivity)) daysSinceLastActivity = 0;
+    if (!Number.isFinite(daysSinceLastActivity)) {
+      daysSinceLastActivity = 0;
+    }
 
     if (daysSinceLastActivity > CRITICAL_INACTIVITY_DAYS) {
       riskProbability += 0.4;
@@ -92,14 +100,8 @@ export class ChurnRiskDetector {
       contributingSignals.push('member_dropout');
     }
 
-    const firstValue = this.findLastEvent(
-      wsEvents,
-      'commerce.post_sale.first_value_obtained',
-    );
-    if (
-      !firstValue ||
-      daysSince(firstValue.occurredAt, nowMs) > RISK_WINDOW_DAYS
-    ) {
+    const firstValue = this.findLastEvent(wsEvents, 'commerce.post_sale.first_value_obtained');
+    if (!firstValue || daysSince(firstValue.occurredAt, nowMs) > RISK_WINDOW_DAYS) {
       riskProbability += 0.1;
     }
 
@@ -133,13 +135,25 @@ export class ChurnRiskDetector {
   }
 
   private findLastEvent(
-    events: readonly { eventName: string; occurredAt: string; payload?: Readonly<Record<string, unknown>> }[],
+    events: readonly {
+      eventName: string;
+      occurredAt: string;
+      payload?: Readonly<Record<string, unknown>>;
+    }[],
     name: string,
-  ): { eventName: string; occurredAt: string; payload?: Readonly<Record<string, unknown>> } | undefined {
-    let last: { eventName: string; occurredAt: string; payload?: Readonly<Record<string, unknown>> } | undefined;
+  ):
+    | { eventName: string; occurredAt: string; payload?: Readonly<Record<string, unknown>> }
+    | undefined {
+    let last:
+      | { eventName: string; occurredAt: string; payload?: Readonly<Record<string, unknown>> }
+      | undefined;
     for (const e of events) {
-      if (e.eventName !== name) continue;
-      if (!last || e.occurredAt > last.occurredAt) last = e;
+      if (e.eventName !== name) {
+        continue;
+      }
+      if (!last || e.occurredAt > last.occurredAt) {
+        last = e;
+      }
     }
     return last;
   }

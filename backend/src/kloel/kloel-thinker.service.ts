@@ -1,4 +1,4 @@
-import { Injectable, Inject } from '@nestjs/common';
+import { Injectable, Inject, Optional } from '@nestjs/common';
 import { StructuredLogger } from '../logging/structured-logger';
 import { Prisma } from '@prisma/client';
 import { Response } from 'express';
@@ -17,7 +17,9 @@ import {
 import { KloelStreamWriter } from './kloel-stream-writer';
 import { KloelThreadService, StoredProcessingTraceEntry } from './kloel-thread.service';
 import { KloelWorkspaceContextService } from './kloel-workspace-context.service';
-import { KLOEL_ONBOARDING_PROMPT, KLOEL_SALES_PROMPT } from './kloel.prompts';
+import { CANONICAL_FALLBACK_SYSTEM_PROMPT } from './kloel.prompts';
+import { AbiBuilderService } from './abi/abi-builder.service';
+import { validateAbiPayload } from './abi/abi-validator';
 import { ChatCompletionMessageParam } from 'openai/resources/chat';
 import { KloelReplyEngineService, LocalToolExecutor } from './kloel-reply-engine.service';
 import { thinkSyncImpl, regenerateThreadAssistantResponseImpl } from './kloel-thinker.helpers';
@@ -35,6 +37,9 @@ type ComposerCapability = 'create_image' | 'create_site' | 'search_web';
 export type { ChatMessage, ThinkRequest, ThinkSyncResult } from './kloel-thinker.types';
 import type { ThinkRequest, ThinkSyncResult } from './kloel-thinker.types';
 
+const CANONICAL_FALLBACK_SYSTEM =
+  'Estado cognitivo distribuído. Verbalize a partir do estado abaixo. Nunca invente fato fora do estado.';
+
 /** Orchestrates the Kloel thinking loop — SSE streaming and sync variants. */
 @Injectable()
 export class KloelThinkerService {
@@ -50,6 +55,7 @@ export class KloelThinkerService {
     private readonly composerService: KloelComposerService,
     private readonly replyEngine: KloelReplyEngineService,
     @Inject(KLOEL_LLM_E2E_GUARD) private readonly llmE2EGuard: KloelLLME2EGuard,
+    @Optional() private readonly abiBuilder?: AbiBuilderService,
   ) {
     this.conversationStore = new KloelConversationStore(prisma, this.logger);
   }
@@ -175,16 +181,62 @@ export class KloelThinkerService {
       const responseMaxTokens = usesLongFormBudget ? 4096 : 2048;
       const clientRequestId = this.threadService.resolveClientRequestId(metadata);
 
+      void context;
       const systemPrompt =
         mode === 'onboarding'
-          ? KLOEL_ONBOARDING_PROMPT
+          ? CANONICAL_FALLBACK_SYSTEM_PROMPT
           : mode === 'sales'
-            ? KLOEL_SALES_PROMPT(companyName, context)
+            ? CANONICAL_FALLBACK_SYSTEM_PROMPT
             : this.replyEngine.buildDashboardPrompt({
                 userName,
                 workspaceName: companyName,
                 expertiseLevel,
               });
+
+      let finalSystemPrompt = systemPrompt;
+      let finalUserMessage = message;
+
+      const useAbi = process.env['KLOEL_THINKER_USE_ABI'] === 'on';
+      if (useAbi && this.abiBuilder) {
+        try {
+          const abiResult = await this.abiBuilder.build({
+            audience: 'public',
+            currentInput: {
+              raw: message,
+              channel: 'web',
+              arrivalTimestamp: new Date().toISOString(),
+            },
+            perceptionSnapshot: {
+              channel: 'web',
+            },
+          });
+
+          if (abiResult.status !== 'ok') {
+            this.logger.warn(
+              `ABI build failed: ${abiResult.reason}, falling back to legacy thinker prompt`,
+            );
+          } else {
+            const validation = validateAbiPayload(abiResult.abi);
+
+            if (validation.status === 'FAIL') {
+              this.logger.warn(
+                `ABI validation failed: ${JSON.stringify(validation.issues)}, falling back to legacy thinker prompt`,
+              );
+            } else {
+              finalSystemPrompt = CANONICAL_FALLBACK_SYSTEM;
+              finalUserMessage = `Estado cognitivo (ABI): ${JSON.stringify(abiResult.abi)}\n\n${message}`;
+            }
+          }
+        } catch (error: unknown) {
+          const msg =
+            error instanceof Error
+              ? error.message
+              : typeof error === 'string'
+                ? error
+                : 'unknown error';
+          this.logger.warn(`ABI build exception: ${msg}, falling back to legacy thinker prompt`);
+        }
+      }
 
       if (thread?.id) {
         safeWrite(createKloelThreadEvent(thread.id, thread.title));
@@ -233,13 +285,13 @@ export class KloelThinkerService {
         return;
       }
 
-      const messages = this.replyEngine.buildChatModelMessages({
-        systemPrompt,
+      const messages = await this.replyEngine.buildChatModelMessages({
+        systemPrompt: finalSystemPrompt,
         dynamicContext,
         marketingPromptAddendum,
         summaryMessage,
         recentMessages: historyState.recentMessages,
-        userMessage: message,
+        userMessage: finalUserMessage,
       });
       const streamWriterResponse = (
         writerMessages: ChatCompletionMessageParam[],

@@ -14,6 +14,8 @@ import { UnifiedAgentContextService } from './unified-agent-context.service';
 import { UnifiedAgentResponseService } from './unified-agent-response.service';
 import { UnifiedAgentActionsService } from './unified-agent-actions.service';
 import { AgentRuntimeContextService } from './agent-runtime';
+import { AbiBuilderService } from './abi/abi-builder.service';
+import { validateAbiPayload } from './abi/abi-validator';
 export type { ToolArgs, ActionEntry } from './unified-agent.types';
 import type { ToolArgs, ActionEntry, PredecidedAction } from './unified-agent.types';
 import {
@@ -29,6 +31,9 @@ function isAllowedTool(toolName: string, allowedTools?: string[]): boolean {
 
 const UNIFIED_AGENT_PROVIDER_CONFIG_REQUIRED =
   'Primary LLM configuration is required for unified agent generation';
+
+const CANONICAL_FALLBACK_SYSTEM =
+  'Estado cognitivo distribuído. Verbalize a partir do estado abaixo. Nunca invente fato fora do estado.';
 
 function formatPromptValue(value: unknown): string {
   if (value === null) {
@@ -83,6 +88,7 @@ export class UnifiedAgentService {
     private readonly response: UnifiedAgentResponseService,
     private readonly actions: UnifiedAgentActionsService,
     @Optional() private readonly agentRuntime?: AgentRuntimeContextService,
+    @Optional() private readonly abiBuilder?: AbiBuilderService,
   ) {
     this.openai = createTextLlmClient(this.config);
     this.primaryBrainModel = resolveBackendOpenAIModel('brain', this.config);
@@ -225,12 +231,7 @@ export class UnifiedAgentService {
 
     // 3. Build messages array
     const additionalContext = context ? formatPromptValue(context) : '';
-    const messages: ChatCompletionMessageParam[] = [
-      { role: 'system', content: systemPrompt },
-      ...conversationHistory,
-      {
-        role: 'user',
-        content: `[Contato: ${contactName}]
+    const legacyUserContent = `[Contato: ${contactName}]
 [Sentiment: ${contactSentiment}]
 [Lead Score: ${leadScore}]
 [Tags: ${tagNames}]
@@ -239,7 +240,63 @@ export class UnifiedAgentService {
 [Instrução tática: ${tacticalHint || 'responder com clareza, valor concreto e próximo passo.'}]
 [Política de resposta: ${stylePolicy}]
 
-Mensagem: ${message}`,
+Mensagem: ${message}`;
+
+    const useAbi = process.env['KLOEL_UNIFIED_AGENT_USE_ABI'] === 'on';
+    let abiPayload: string | undefined;
+    let effectiveSystemPrompt = systemPrompt;
+    let effectiveUserContent = legacyUserContent;
+
+    if (useAbi && this.abiBuilder) {
+      const abiResult = await this.abiBuilder.build({
+        audience: 'public',
+        currentInput: {
+          raw: message,
+          channel: this.ctx.readText(context?.channel, 'whatsapp'),
+          arrivalTimestamp: new Date().toISOString(),
+        },
+        perceptionSnapshot: {
+          channel: this.ctx.readText(context?.channel, 'whatsapp'),
+        },
+      });
+
+      if (abiResult.status !== 'ok') {
+        this.logger.warn(
+          `ABI build failed: ${abiResult.reason}, falling back to legacy system prompt`,
+        );
+      } else {
+        const abi = abiResult.abi;
+        const validation = validateAbiPayload(abi);
+
+        if (validation.status === 'FAIL') {
+          this.logger.warn(
+            `ABI validation failed: ${JSON.stringify(validation.issues)}, falling back to legacy system prompt`,
+          );
+        } else {
+          abiPayload = JSON.stringify(abi);
+          effectiveSystemPrompt = CANONICAL_FALLBACK_SYSTEM;
+          effectiveUserContent = `[Contato: ${contactName}]
+[Sentiment: ${contactSentiment}]
+[Lead Score: ${leadScore}]
+[Tags: ${tagNames}]
+  [Memória comprimida: ${compressedContext || 'nenhuma'}]
+  ${additionalContext ? `[Contexto adicional: ${additionalContext}]` : ''}
+[Instrução tática: ${tacticalHint || 'responder com clareza, valor concreto e próximo passo.'}]
+[Política de resposta: ${stylePolicy}]
+
+Estado cognitivo (ABI): ${abiPayload}
+
+Mensagem: ${message}`;
+        }
+      }
+    }
+
+    const messages: ChatCompletionMessageParam[] = [
+      { role: 'system', content: effectiveSystemPrompt },
+      ...conversationHistory,
+      {
+        role: 'user',
+        content: effectiveUserContent,
       },
     ];
 

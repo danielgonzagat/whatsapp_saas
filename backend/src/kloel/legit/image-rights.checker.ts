@@ -9,7 +9,7 @@
  * Pure function — stateless image rights validation.
  */
 
-import type { ImageRightsInput, ImageRightsResult, PolicyViolation } from './types';
+import type { ImageRightsInput, ImageRightsResult, ImageRightsStatus, PolicyViolation } from './types';
 import { generateId } from './types';
 
 function isValidUrl(url: string): boolean {
@@ -58,7 +58,7 @@ export function checkImageRights(input: ImageRightsInput): ImageRightsResult {
     };
   }
 
-  let status = 'pending_review' as const;
+  let status: ImageRightsStatus = 'pending_review';
 
   if (input.source === 'stock' && input.licenseRef) {
     status = 'verified';

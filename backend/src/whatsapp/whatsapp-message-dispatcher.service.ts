@@ -283,7 +283,7 @@ export class WhatsappMessageDispatcherService {
       this.whatsappEmitter.emitMessageReplied({
         workspaceId: ws,
         to,
-        contactId: phone,
+        contactId: to,
         messageId: extId ?? undefined,
         author: 'autopilot',
         content: message,

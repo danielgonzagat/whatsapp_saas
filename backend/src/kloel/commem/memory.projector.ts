@@ -16,8 +16,6 @@ const DIMENSION_WEIGHTS: Readonly<Record<MemoryDimension, number>> = {
   semantic: 0.8,
 };
 
-const DIMENSION_PROMOTION_HOURS_MS = 24 * 60 * 60 * 1000;
-
 function determinDimension(event: SpineEventRef): MemoryDimension {
   const hoursSince = (Date.now() - new Date(event.occurredAt).getTime()) / 3600_000;
   if (hoursSince < 6) return 'working';
@@ -109,7 +107,7 @@ export class MemoryProjector {
 
   public promoteToWorking(
     projections: readonly MemoryProjection[],
-    workspaceId: string,
+    _workspaceId: string,
     threshold: number,
   ): readonly MemoryProjection[] {
     return projections.map((p) => {

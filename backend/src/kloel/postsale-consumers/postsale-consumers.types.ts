@@ -178,14 +178,13 @@ export function clamp(value: number, min: number, max: number): number {
 
 export function daysSince(iso: string, nowMs: number): number {
   const ts = Date.parse(iso);
-  if (!Number.isFinite(ts)) return 0;
+  if (!Number.isFinite(ts)) {
+    return 0;
+  }
   return Math.max(0, (nowMs - ts) / (1000 * 60 * 60 * 24));
 }
 
-export function countByEventName(
-  events: readonly SpineEventRef[],
-  name: string,
-): number {
+export function countByEventName(events: readonly SpineEventRef[], name: string): number {
   return events.filter((e) => e.eventName === name).reduce((c) => c + 1, 0);
 }
 
@@ -202,8 +201,12 @@ export function latestEvent(
 ): SpineEventRef | undefined {
   let latest: SpineEventRef | undefined;
   for (const e of events) {
-    if (e.eventName !== name) continue;
-    if (!latest || e.occurredAt > latest.occurredAt) latest = e;
+    if (e.eventName !== name) {
+      continue;
+    }
+    if (!latest || e.occurredAt > latest.occurredAt) {
+      latest = e;
+    }
   }
   return latest;
 }

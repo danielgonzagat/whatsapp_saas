@@ -9,9 +9,11 @@ import { SmartPaymentService } from './smart-payment.service';
 import { chatCompletionWithFallback } from './openai-wrapper';
 import { createTextLlmClient } from '../lib/llm-provider';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
-import { KLOEL_SALES_PROMPT } from './kloel.prompts';
+import { CANONICAL_FALLBACK_SYSTEM_PROMPT } from './kloel.prompts';
 import OpenAI from 'openai';
 import { OpsAlertService } from '../observability/ops-alert.service';
+import { AbiBuilderService } from './abi/abi-builder.service';
+import { validateAbiPayload } from './abi/abi-validator';
 
 import { asProviderSettings } from '../whatsapp/provider-settings.types';
 import {
@@ -25,6 +27,9 @@ export { NON_DIGIT_RE, safeStr, asUnknownRecord, detectBuyIntent };
 export type { ChatMessage };
 
 type ProductMemoryValue = { name?: string; price?: number; [key: string]: unknown };
+
+const CANONICAL_FALLBACK_SYSTEM =
+  'Estado cognitivo distribuído. Verbalize a partir do estado abaixo. Nunca invente fato fora do estado.';
 
 /**
  * Handles WhatsApp autopilot lead processing, buy-intent detection,
@@ -42,6 +47,7 @@ export class KloelLeadBrainService {
     private readonly unifiedAgentService: UnifiedAgentService,
     private readonly smartPaymentService: SmartPaymentService,
     @Optional() private readonly opsAlert?: OpsAlertService,
+    @Optional() private readonly abiBuilder?: AbiBuilderService,
   ) {
     this.openai =
       createTextLlmClient(undefined, { timeout: 60_000, maxRetries: 0 }) ??
@@ -275,11 +281,50 @@ export class KloelLeadBrainService {
 
       const conversationHistory = await this.getLeadConversationHistory(lead.id, workspaceId);
       const context = await getWorkspaceContext(workspaceId);
-      const salesSystemPrompt = KLOEL_SALES_PROMPT(workspace?.name || 'nossa empresa', context);
+      void workspace;
+      void context;
+      const salesSystemPrompt = CANONICAL_FALLBACK_SYSTEM_PROMPT;
+
+      const useAbi = process.env['KLOEL_LEAD_BRAIN_USE_ABI'] === 'on';
+      let effectiveSystemPrompt = salesSystemPrompt;
+      let effectiveUserContent = message;
+
+      if (useAbi && this.abiBuilder) {
+        const abiResult = await this.abiBuilder.build({
+          audience: 'public',
+          currentInput: {
+            raw: message,
+            channel: 'whatsapp',
+            arrivalTimestamp: new Date().toISOString(),
+          },
+          perceptionSnapshot: {
+            channel: 'whatsapp',
+          },
+        });
+
+        if (abiResult.status !== 'ok') {
+          this.logger.warn(
+            `ABI build failed: ${abiResult.reason}, falling back to legacy lead brain prompt`,
+          );
+        } else {
+          const abi = abiResult.abi;
+          const validation = validateAbiPayload(abi);
+
+          if (validation.status === 'FAIL') {
+            this.logger.warn(
+              `ABI validation failed: ${JSON.stringify(validation.issues)}, falling back to legacy lead brain prompt`,
+            );
+          } else {
+            effectiveSystemPrompt = CANONICAL_FALLBACK_SYSTEM;
+            effectiveUserContent = `Estado cognitivo (ABI): ${JSON.stringify(abi)}\n\nMensagem: ${message}`;
+          }
+        }
+      }
+
       const messages: ChatMessage[] = [
-        { role: 'system', content: salesSystemPrompt },
+        { role: 'system', content: effectiveSystemPrompt },
         ...conversationHistory,
-        { role: 'user', content: message },
+        { role: 'user', content: effectiveUserContent },
       ];
 
       await this.planLimits.ensureTokenBudget(workspaceId);

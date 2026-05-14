@@ -8,7 +8,7 @@ import OpenAI from 'openai';
 import { findFirstSequential } from '../common/async-sequence';
 import { createTextLlmClient, resolveTextLlmApiKey } from '../lib/llm-provider';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
-import { KLOEL_GUEST_SYSTEM_PROMPT } from './kloel.prompts';
+import { CANONICAL_FALLBACK_SYSTEM_PROMPT } from './kloel.prompts';
 import { chatCompletionWithFallback, chatCompletionWithRetry } from './openai-wrapper';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { AbiBuilderService } from './abi/abi-builder.service';
@@ -134,7 +134,7 @@ export class GuestChatService implements OnModuleDestroy {
     }
 
     const contextMessages = [
-      { role: 'system' as const, content: KLOEL_GUEST_SYSTEM_PROMPT },
+      { role: 'system' as const, content: CANONICAL_FALLBACK_SYSTEM_PROMPT },
       ...conversation.messages.slice(-10),
     ];
 

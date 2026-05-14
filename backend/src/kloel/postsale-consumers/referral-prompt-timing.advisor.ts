@@ -45,10 +45,7 @@ export class ReferralPromptTimingAdvisor {
     }
 
     const satisfaction = latestEvent(wsEvents, 'commerce.post_sale.satisfaction_signal_observed');
-    if (
-      satisfaction &&
-      daysSince(satisfaction.occurredAt, nowMs) < REFERRAL_COOLDOWN_DAYS
-    ) {
+    if (satisfaction && daysSince(satisfaction.occurredAt, nowMs) < REFERRAL_COOLDOWN_DAYS) {
       const sentiment = satisfaction.payload?.['sentimentLabel'];
       if (sentiment === 'positive') {
         readinessScore += 0.35;
@@ -59,9 +56,7 @@ export class ReferralPromptTimingAdvisor {
     }
 
     const hasRecentPayment = wsEvents.some(
-      (e) =>
-        e.eventName === 'commerce.payment.approved' &&
-        daysSince(e.occurredAt, nowMs) < 90,
+      (e) => e.eventName === 'commerce.payment.approved' && daysSince(e.occurredAt, nowMs) < 90,
     );
     if (hasRecentPayment) {
       readinessScore += 0.15;
@@ -70,9 +65,18 @@ export class ReferralPromptTimingAdvisor {
 
     readinessScore = clamp(readinessScore, 0, 1);
     const ready = readinessScore >= 0.55;
-    const channel = readinessScore >= 0.7 ? 'whatsapp' : readinessScore >= 0.55 ? 'email' : 'silent';
+    const channel =
+      readinessScore >= 0.7 ? 'whatsapp' : readinessScore >= 0.55 ? 'email' : 'silent';
 
-    return buildResult(input.workspaceId, entityRef, ready, readinessScore, reasons, channel, nowMs);
+    return buildResult(
+      input.workspaceId,
+      entityRef,
+      ready,
+      readinessScore,
+      reasons,
+      channel,
+      nowMs,
+    );
   }
 }
 

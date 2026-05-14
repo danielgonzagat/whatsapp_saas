@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import type { SpineEventRef } from '../mind/mind.types';
 import type { LtvProjection, DetectionInput } from './postsale-consumers.types';
 import { clamp, daysSince, filterByWorkspace } from './postsale-consumers.types';
 
@@ -51,34 +52,34 @@ export class LtvProjectionService {
   }
 
   public projectByChurnLevels(
-    events: readonly { eventName: string; occurredAt: string; payload?: Readonly<Record<string, unknown>>; entityRef?: { readonly entityType: string; readonly entityId: string }; workspaceId?: string }[],
+    events: readonly SpineEventRef[],
     workspaceId: string,
     cohortKey: string,
     nowMs?: number,
   ): readonly LtvProjection[] {
-    const input: DetectionInput = { events: events as readonly Parameters<typeof filterByWorkspace>[0], workspaceId, nowMs };
+    const input: DetectionInput = {
+      events,
+      workspaceId,
+      ...(nowMs !== undefined ? { nowMs } : {}),
+    };
     const low = this.project(input, `${cohortKey}_low_churn`, undefined, 0.02);
     const mid = this.project(input, `${cohortKey}_mid_churn`, undefined, 0.05);
-    const high = this.project(input, `${cohortKey}_high_churn`, undefined, 0.10);
+    const high = this.project(input, `${cohortKey}_high_churn`, undefined, 0.1);
     return [low, mid, high];
   }
 
-  private uniqueEntityCount(events: readonly { entityRef?: { readonly entityType: string; readonly entityId: string } }[]): number {
+  private uniqueEntityCount(events: readonly SpineEventRef[]): number {
     const ids = new Set(
-      events
-        .map((e) => e.entityRef?.entityId)
-        .filter((id): id is string => id !== undefined),
+      events.map((e) => e.entityRef?.entityId).filter((id): id is string => id !== undefined),
     );
     return ids.size || events.length;
   }
 
-  private computeAverageRevenue(
-    events: readonly { eventName: string; payload?: Readonly<Record<string, unknown>> }[],
-  ): number {
-    const paymentEvents = events.filter(
-      (e) => e.eventName === 'commerce.payment.approved',
-    );
-    if (paymentEvents.length === 0) return 0;
+  private computeAverageRevenue(events: readonly SpineEventRef[]): number {
+    const paymentEvents = events.filter((e) => e.eventName === 'commerce.payment.approved');
+    if (paymentEvents.length === 0) {
+      return 0;
+    }
 
     let total = 0;
     for (const e of paymentEvents) {
@@ -90,30 +91,20 @@ export class LtvProjectionService {
     return total / paymentEvents.length;
   }
 
-  private computeChurnRate(
-    events: readonly { eventName: string }[],
-  ): number {
-    const paymentCount = events.filter(
-      (e) => e.eventName === 'commerce.payment.approved',
-    ).length;
-    const refundCount = events.filter(
-      (e) => e.eventName === 'commerce.payment.refunded',
-    ).length;
+  private computeChurnRate(events: readonly SpineEventRef[]): number {
+    const paymentCount = events.filter((e) => e.eventName === 'commerce.payment.approved').length;
+    const refundCount = events.filter((e) => e.eventName === 'commerce.payment.refunded').length;
     const churnSignals = events.filter(
       (e) => e.eventName === 'commerce.post_sale.churn_risk_detected',
     ).length;
 
     const rawRate =
-      paymentCount > 0
-        ? (refundCount + churnSignals * 0.5) / paymentCount
-        : DEFAULT_CHURN_RATE;
+      paymentCount > 0 ? (refundCount + churnSignals * 0.5) / paymentCount : DEFAULT_CHURN_RATE;
 
     return clamp(rawRate, 0, 1);
   }
 
-  private computeGrowthRate(
-    events: readonly { occurredAt: string }[],
-  ): number {
+  private computeGrowthRate(events: readonly SpineEventRef[]): number {
     const nowMs = Date.now();
     const firstHalf = events.filter(
       (e) =>
@@ -124,14 +115,22 @@ export class LtvProjectionService {
       (e) => daysSince(e.occurredAt, nowMs) < OBSERVATION_WINDOW_DAYS / 2,
     ).length;
 
-    if (firstHalf === 0) return 0;
+    if (firstHalf === 0) {
+      return 0;
+    }
     return (secondHalf - firstHalf) / firstHalf;
   }
 
   private computeConfidence(eventCount: number, churnRate: number): number {
-    if (eventCount < 10) return 0.1;
-    if (eventCount < 50) return 0.3;
-    if (churnRate > 0.3) return 0.2;
+    if (eventCount < 10) {
+      return 0.1;
+    }
+    if (eventCount < 50) {
+      return 0.3;
+    }
+    if (churnRate > 0.3) {
+      return 0.2;
+    }
     return clamp(eventCount / 200, 0.3, 0.95);
   }
 }

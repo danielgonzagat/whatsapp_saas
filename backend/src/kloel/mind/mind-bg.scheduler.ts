@@ -57,10 +57,10 @@ export class MindBackgroundScheduler
 
     this.worker = new Worker(
       MIND_BG_QUEUE,
-      () => {
-        this.executeTick();
+      async () => {
+        await this.executeTick();
       },
-      { connection, removeOnComplete: true },
+      { connection, removeOnComplete: { count: 0 } },
     );
 
     await this.queue.add('tick', {}, { repeat: { every: SHORT_INTERVAL_MS } });
@@ -98,7 +98,7 @@ export class MindBackgroundScheduler
     }
   }
 
-  private executeTick() {
+  private async executeTick(): Promise<void> {
     this.processor.tick({
       nowMs: Date.now(),
       recentEvents: this.spine.recentEventsAsRef(500),

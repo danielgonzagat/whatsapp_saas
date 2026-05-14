@@ -1,7 +1,11 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { SpineEmitterService } from '../spine/spine-emitter.service';
 import type { SpineEventRef } from '../mind/mind.types';
-import type { SatisfactionSignal, SatisfactionMethod, DetectionInput } from './postsale-consumers.types';
+import type {
+  SatisfactionSignal,
+  SatisfactionMethod,
+  DetectionInput,
+} from './postsale-consumers.types';
 import { daysSince, filterByWorkspace } from './postsale-consumers.types';
 
 const PROCESSOR_NAME = 'satisfaction-collector';
@@ -27,7 +31,13 @@ export class SatisfactionCollectorService {
     const nowMs = input.nowMs ?? Date.now();
     const entityRef = input.entityRef ?? { entityType: 'customer', entityId: 'unknown' };
 
-    const sentimentLabel = this.deriveSentiment(method, score, input.events, input.workspaceId, nowMs);
+    const sentimentLabel = this.deriveSentiment(
+      method,
+      score,
+      input.events,
+      input.workspaceId,
+      nowMs,
+    );
 
     const signal: SatisfactionSignal = {
       workspaceId: input.workspaceId,
@@ -61,7 +71,9 @@ export class SatisfactionCollectorService {
     const scores: number[] = [];
     for (const e of satisfactionEvents) {
       const s = e.payload?.['score'];
-      if (typeof s === 'number' && Number.isFinite(s)) scores.push(s);
+      if (typeof s === 'number' && Number.isFinite(s)) {
+        scores.push(s);
+      }
     }
 
     if (scores.length === 0) {
@@ -92,10 +104,18 @@ export class SatisfactionCollectorService {
       return this.deriveBehavioralSentiment(events, workspaceId, nowMs);
     }
 
-    if (score === undefined) return 'neutral';
-    if (score >= NPS_PROMOTER_THRESHOLD) return 'positive';
-    if (score <= 4) return 'negative';
-    if (score <= NPS_DETRACTOR_THRESHOLD) return 'mixed';
+    if (score === undefined) {
+      return 'neutral';
+    }
+    if (score >= NPS_PROMOTER_THRESHOLD) {
+      return 'positive';
+    }
+    if (score <= 4) {
+      return 'negative';
+    }
+    if (score <= NPS_DETRACTOR_THRESHOLD) {
+      return 'mixed';
+    }
     return 'neutral';
   }
 
@@ -109,7 +129,9 @@ export class SatisfactionCollectorService {
     let negativeSignals = 0;
 
     for (const e of wsEvents) {
-      if (daysSince(e.occurredAt, nowMs) > 30) continue;
+      if (daysSince(e.occurredAt, nowMs) > 30) {
+        continue;
+      }
 
       if (
         e.eventName === 'commerce.member_area.progressed' ||
@@ -129,9 +151,15 @@ export class SatisfactionCollectorService {
     }
 
     const total = positiveSignals + negativeSignals;
-    if (total === 0) return 'neutral';
-    if (positiveSignals >= negativeSignals * 2) return 'positive';
-    if (negativeSignals >= positiveSignals * 2) return 'negative';
+    if (total === 0) {
+      return 'neutral';
+    }
+    if (positiveSignals >= negativeSignals * 2) {
+      return 'positive';
+    }
+    if (negativeSignals >= positiveSignals * 2) {
+      return 'negative';
+    }
     return 'mixed';
   }
 

@@ -11,7 +11,6 @@
 
 import type { AbiRoleContext, AbiRoleDetection } from '../abi/abi-schema';
 import type { RoleDetection, RoleMetricSnapshot } from './types';
-import { ALL_ROLES } from './types';
 import { getRelevantMetricsForRole } from './role-metric.registry';
 import { getLeversForRole } from './leverage-map.service';
 

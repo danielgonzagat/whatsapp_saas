@@ -76,11 +76,7 @@ export class ExpansionFitDetector {
     const expansionReady = fitScore >= 0.5;
 
     const suggestedExpansionOffer =
-      fitScore >= 0.7
-        ? 'premium_plan'
-        : fitScore >= 0.5
-          ? 'add_on_module'
-          : undefined;
+      fitScore >= 0.7 ? 'premium_plan' : fitScore >= 0.5 ? 'add_on_module' : undefined;
 
     return build(
       input.workspaceId,

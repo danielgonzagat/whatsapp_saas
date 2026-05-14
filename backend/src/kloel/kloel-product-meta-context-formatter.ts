@@ -1,4 +1,3 @@
-import { buildProductAIConfigPrompt } from './kloel.prompts';
 import { KloelContextBaseFormatter } from './kloel-context-base-formatter';
 import type { KloelContextFormatterLimits } from './kloel-context-formatter.types';
 
@@ -211,19 +210,7 @@ export class KloelProductMetaContextFormatter {
   }
 
   buildProductMarketingContext(aiConfig: unknown): string | null {
-    if (!aiConfig || typeof aiConfig !== 'object') {
-      return null;
-    }
-    const prompt = buildProductAIConfigPrompt(
-      aiConfig as Parameters<typeof buildProductAIConfigPrompt>[0],
-    )
-      .split('\n')
-      .map((line) => this.base.truncatePromptText(line, 220))
-      .filter(Boolean)
-      .slice(0, 10);
-    if (prompt.length === 0) {
-      return null;
-    }
-    return prompt.map((line) => `  - ${line}`).join('\n');
+    void aiConfig;
+    return null;
   }
 }

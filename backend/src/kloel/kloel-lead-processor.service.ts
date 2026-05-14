@@ -8,7 +8,7 @@ import { SmartPaymentService } from './smart-payment.service';
 import { chatCompletionWithFallback } from './openai-wrapper';
 import { createTextLlmClient } from '../lib/llm-provider';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
-import { KLOEL_SALES_PROMPT } from './kloel.prompts';
+import { CANONICAL_FALLBACK_SYSTEM_PROMPT } from './kloel.prompts';
 import {
   NON_DIGIT_RE,
   safeStr,
@@ -23,6 +23,8 @@ import {
 } from './kloel-lead-processor-helpers';
 import OpenAI from 'openai';
 import { OpsAlertService } from '../observability/ops-alert.service';
+import { AbiBuilderService } from './abi/abi-builder.service';
+import { validateAbiPayload } from './abi/abi-validator';
 
 export interface FollowupListItem {
   id: string;
@@ -37,6 +39,9 @@ export interface FollowupListItem {
   executedAt?: unknown;
 }
 
+const CANONICAL_FALLBACK_SYSTEM =
+  'Estado cognitivo distribuído. Verbalize a partir do estado abaixo. Nunca invente fato fora do estado.';
+
 /** Handles WhatsApp message processing, lead lifecycle, and follow-ups. */
 @Injectable()
 export class KloelLeadProcessorService {
@@ -49,6 +54,7 @@ export class KloelLeadProcessorService {
     private readonly smartPaymentService: SmartPaymentService,
     private readonly planLimits: PlanLimitsService,
     @Optional() private readonly opsAlert?: OpsAlertService,
+    @Optional() private readonly abiBuilder?: AbiBuilderService,
   ) {
     this.openai = createTextLlmClient() ?? new OpenAI({ apiKey: '' });
   }
@@ -130,11 +136,50 @@ export class KloelLeadProcessorService {
 
       const conversationHistory = await getLeadConversationHistory(this.prisma, lead.id);
       const context = await getWorkspaceContextFn(workspaceId);
-      const salesSystemPrompt = KLOEL_SALES_PROMPT(workspace?.name || 'nossa empresa', context);
+      void workspace;
+      void context;
+      const salesSystemPrompt = CANONICAL_FALLBACK_SYSTEM_PROMPT;
+
+      const useAbi = process.env['KLOEL_LEAD_PROCESSOR_USE_ABI'] === 'on';
+      let effectiveSystemPrompt = salesSystemPrompt;
+      let effectiveUserContent = message;
+
+      if (useAbi && this.abiBuilder) {
+        const abiResult = await this.abiBuilder.build({
+          audience: 'public',
+          currentInput: {
+            raw: message,
+            channel: 'whatsapp',
+            arrivalTimestamp: new Date().toISOString(),
+          },
+          perceptionSnapshot: {
+            channel: 'whatsapp',
+          },
+        });
+
+        if (abiResult.status !== 'ok') {
+          this.logger.warn(
+            `ABI build failed: ${abiResult.reason}, falling back to legacy lead processor prompt`,
+          );
+        } else {
+          const abi = abiResult.abi;
+          const validation = validateAbiPayload(abi);
+
+          if (validation.status === 'FAIL') {
+            this.logger.warn(
+              `ABI validation failed: ${JSON.stringify(validation.issues)}, falling back to legacy lead processor prompt`,
+            );
+          } else {
+            effectiveSystemPrompt = CANONICAL_FALLBACK_SYSTEM;
+            effectiveUserContent = `Estado cognitivo (ABI): ${JSON.stringify(abi)}\n\nMensagem: ${message}`;
+          }
+        }
+      }
+
       const messages: ChatMessage[] = [
-        { role: 'system', content: salesSystemPrompt },
+        { role: 'system', content: effectiveSystemPrompt },
         ...conversationHistory,
-        { role: 'user', content: message },
+        { role: 'user', content: effectiveUserContent },
       ];
 
       if (workspaceId) {

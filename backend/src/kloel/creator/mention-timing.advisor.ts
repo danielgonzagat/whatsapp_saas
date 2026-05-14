@@ -151,7 +151,7 @@ function buildReason(
   saturationIndex: number,
   receptivity: number,
   recentPromotions: number,
-  engagementSinceLast: number,
+  _engagementSinceLast: number,
 ): string {
   switch (recommendation) {
     case 'now':

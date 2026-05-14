@@ -136,10 +136,6 @@ export function detectAudienceSaturation(
     : 0;
 
   const negativeCount = countNegativeSignals(sampledEvents);
-  const negativeRatio = sampledEvents.length > 0
-    ? negativeCount / Math.max(1, sampledEvents.length)
-    : 0;
-
   const trend = computeDisengagementTrend(sampledEvents);
 
   const saturationIndex = Math.min(1,

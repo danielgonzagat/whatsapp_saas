@@ -414,6 +414,7 @@ function startWatch() {
         continue;
       }
       if (st.isDirectory()) {continue;}
+      if (!isMirrorableSourceFile(absPath)) {continue;}
       const rel = relative(REPO_ROOT, absPath);
       const result = mirrorFile(absPath, manifest);
       if (result.status === 'updated') {

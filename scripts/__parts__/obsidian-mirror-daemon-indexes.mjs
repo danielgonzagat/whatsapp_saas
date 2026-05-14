@@ -140,7 +140,7 @@ export function cleanupStaleMirrorFiles(manifest) {
         visit(fullPath);
         continue;
       }
-      if (!entry.name.endsWith('.md')) {
+      if (entry.name === 'manifest.json') {
         continue;
       }
       const rel = normalizePath(relative(SOURCE_MIRROR_DIR, fullPath));

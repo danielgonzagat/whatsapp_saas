@@ -16,7 +16,6 @@
 
 import type { AttentionRanking, DecisionTier } from '../clarity/clarity.types';
 import type { Role } from './types';
-import { ALL_ROLES } from './types';
 
 /**
  * Role-specific tier boost multipliers.
