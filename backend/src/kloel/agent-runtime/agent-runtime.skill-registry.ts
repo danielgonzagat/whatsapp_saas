@@ -8,6 +8,7 @@ import {
   sanitizeAgentRuntimeText,
   toInputJsonValue,
 } from './agent-runtime.sanitizer';
+import { DEFAULT_SKILLS } from './agent-runtime.skill-registry.defaults';
 import type {
   AgentSkillDefinition,
   AgentSkillLifecycleState,
@@ -16,53 +17,6 @@ import type {
   AgentSkillUsageOutcome,
   AgentSkillUsageStats,
 } from './agent-runtime.types';
-const DEFAULT_SKILLS: AgentSkillDefinition[] = [
-  {
-    id: 'checkout-recovery',
-    title: 'Checkout Recovery',
-    summary: 'Recupera intenção de compra com memória do lead, produto e política comercial.',
-    category: 'commercial',
-    riskLevel: 'normal',
-    allowedTools: ['get_lead_details', 'list_products', 'create_payment_link'],
-    requiredEvidence: ['lead_status', 'product_offer', 'payment_policy'],
-    validation: ['workspace_isolation', 'no_fake_discount', 'payment_link_audit'],
-    rollback: ['do_not_send_without_consent', 'cancel_scheduled_followup_if_requested'],
-    metrics: ['conversion_rate', 'response_rate', 'refund_rate'],
-    body: 'Use histórico observado do lead e dados reais de produto. Se faltar preço, estoque, garantia ou forma de pagamento, peça dado faltante antes de prometer.',
-    version: 1,
-    updatedAt: new Date(0).toISOString(),
-  },
-  {
-    id: 'objection-handling',
-    title: 'Objection Handling',
-    summary: 'Responde objeções usando memória de produto, casos anteriores e limites de desconto.',
-    category: 'commercial',
-    riskLevel: 'normal',
-    allowedTools: ['get_lead_details', 'list_products', 'remember_user_info'],
-    requiredEvidence: ['objection_text', 'product_claims', 'sales_policy'],
-    validation: ['do_not_invent_claims', 'respect_discount_limit'],
-    rollback: ['mark_lead_for_human_review_when_claim_uncertain'],
-    metrics: ['objection_resolution_rate', 'handoff_rate'],
-    body: 'Valide a emoção, responda com evidência real e avance um próximo passo simples. Não invente escassez, garantia ou resultado.',
-    version: 1,
-    updatedAt: new Date(0).toISOString(),
-  },
-  {
-    id: 'pulse-self-check',
-    title: 'PULSE Self Check',
-    summary: 'Consulta o estado operacional PULSE antes de planejar ação autônoma.',
-    category: 'pulse',
-    riskLevel: 'safe',
-    allowedTools: [],
-    requiredEvidence: ['pulse_certificate', 'machine_readiness', 'directive'],
-    validation: ['no_overclaim', 'authority_boundary'],
-    rollback: ['stop_when_pulse_degraded'],
-    metrics: ['blocked_overclaims', 'safe_next_units'],
-    body: 'Trate PULSE como fonte de verdade operacional. Diferencie canWorkNow de canDeclareComplete.',
-    version: 1,
-    updatedAt: new Date(0).toISOString(),
-  },
-];
 const VALID_SKILL_ID_RE = /^[a-z0-9][a-z0-9._-]{0,63}$/;
 const MAX_SKILL_CONTENT_CHARS = 100_000;
 @Injectable()
@@ -394,22 +348,13 @@ export class AgentRuntimeSkillRegistry {
   }
   private validateSkill(skill: AgentSkillDefinition): string[] {
     const errors: string[] = [];
-    if (!VALID_SKILL_ID_RE.test(skill.id)) {
-      errors.push('invalid_skill_id');
-    }
-    if (!skill.title.trim()) {
-      errors.push('missing_title');
-    }
-    if (!skill.summary.trim()) {
-      errors.push('missing_summary');
-    }
+    if (!VALID_SKILL_ID_RE.test(skill.id)) errors.push('invalid_skill_id');
+    if (!skill.title.trim()) errors.push('missing_title');
+    if (!skill.summary.trim()) errors.push('missing_summary');
     const content = this.skillContent(skill);
-    if (content.length > MAX_SKILL_CONTENT_CHARS) {
-      errors.push('skill_too_large');
-    }
-    if (skill.riskLevel === 'critical' && skill.validation.length === 0) {
+    if (content.length > MAX_SKILL_CONTENT_CHARS) errors.push('skill_too_large');
+    if (skill.riskLevel === 'critical' && skill.validation.length === 0)
       errors.push('critical_skill_requires_validation');
-    }
     return errors;
   }
   private stringArray(value: unknown): string[] {
@@ -418,10 +363,7 @@ export class AgentRuntimeSkillRegistry {
       : [];
   }
   private categoryFor(value: unknown): AgentSkillDefinition['category'] {
-    return value === 'commercial' ||
-      value === 'operational' ||
-      value === 'pulse' ||
-      value === 'workspace'
+    return value === 'commercial' || value === 'operational' || value === 'pulse' || value === 'workspace'
       ? value
       : 'operational';
   }
@@ -431,10 +373,7 @@ export class AgentRuntimeSkillRegistry {
       : 'normal';
   }
   private provenanceFor(value: unknown): AgentSkillProvenance {
-    return value === 'default' ||
-      value === 'workspace' ||
-      value === 'background_review' ||
-      value === 'imported'
+    return value === 'default' || value === 'workspace' || value === 'background_review' || value === 'imported'
       ? value
       : 'workspace';
   }
@@ -442,13 +381,7 @@ export class AgentRuntimeSkillRegistry {
     return value === 'active' || value === 'stale' || value === 'archived' ? value : 'active';
   }
   private isUsageOutcome(value: unknown): value is AgentSkillUsageOutcome {
-    return (
-      value === 'selected' ||
-      value === 'succeeded' ||
-      value === 'failed' ||
-      value === 'patched' ||
-      value === 'viewed'
-    );
+    return value === 'selected' || value === 'succeeded' || value === 'failed' || value === 'patched' || value === 'viewed';
   }
   private nonNegativeNumber(value: unknown): number {
     return typeof value === 'number' && Number.isFinite(value) && value > 0 ? Math.trunc(value) : 0;

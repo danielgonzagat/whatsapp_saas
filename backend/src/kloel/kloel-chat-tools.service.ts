@@ -26,6 +26,19 @@ import {
   runListAgentEvidence,
   runVerifyAgentEvidence,
 } from './kloel-chat-tools.agent-runtime.helpers';
+import {
+  type ToolCreateAgentJobArgs,
+  type ToolGetAgentArtifactArgs,
+  type ToolSearchAgentMemoryArgs,
+  type ToolSearchAgentSessionsArgs,
+  type ToolSetAgentJobEnabledArgs,
+  runCreateAgentJob,
+  runGetAgentArtifact,
+  runListAgentJobs,
+  runSearchAgentMemory,
+  runSearchAgentSessions,
+  runSetAgentJobEnabled,
+} from './kloel-chat-tools.agent-jobs.helpers';
 
 const NON_SLUG_CHAR_RE = /[^a-z0-9_:-]+/g;
 
@@ -37,10 +50,6 @@ function safeStr(value: unknown, fallback = ''): string {
     return String(value);
   }
   return fallback;
-}
-
-function safeAgentRuntimeId(value: unknown, fallback: string): string {
-  return safeStr(value, fallback).trim().toLowerCase().replace(NON_SLUG_CHAR_RE, '_').slice(0, 80);
 }
 
 interface ToolSaveProductArgs {
@@ -83,35 +92,6 @@ interface ToolCreateFlowArgs {
 
 interface ToolDashboardSummaryArgs {
   period?: 'today' | 'week' | 'month';
-}
-
-interface ToolCreateAgentJobArgs {
-  jobId?: string;
-  title: string;
-  prompt: string;
-  everyMinutes?: number;
-  runAt?: string;
-  toolScope?: string[];
-}
-
-interface ToolSetAgentJobEnabledArgs {
-  jobId: string;
-  enabled: boolean;
-}
-
-interface ToolSearchAgentMemoryArgs {
-  query: string;
-  limit?: number;
-}
-
-interface ToolSearchAgentSessionsArgs {
-  query: string;
-  limit?: number;
-}
-
-interface ToolGetAgentArtifactArgs {
-  artifactId: string;
-  maxChars?: number;
 }
 
 function centsFromUnknown(value: unknown): number {
@@ -527,138 +507,39 @@ export class KloelChatToolsService {
   }
 
   async toolCreateAgentJob(workspaceId: string, args: ToolCreateAgentJobArgs): Promise<ToolResult> {
-    if (!this.agentScheduler) {
-      return { success: false, error: 'agent_scheduler_unavailable' };
-    }
-    const title = safeStr(args.title).trim().slice(0, 200);
-    const prompt = safeStr(args.prompt).trim().slice(0, 4000);
-    if (!title || !prompt) {
-      return { success: false, error: 'missing_agent_job_title_or_prompt' };
-    }
-    const everyMinutes = Number(args.everyMinutes);
-    const runAt = args.runAt ? new Date(args.runAt) : undefined;
-    const hasValidRunAt = runAt && !Number.isNaN(runAt.getTime());
-    const result = await this.agentScheduler.upsertJob({
-      workspaceId,
-      jobId: safeAgentRuntimeId(args.jobId, title) || 'job',
-      title,
-      prompt,
-      schedule: hasValidRunAt
-        ? { kind: 'once', runAt }
-        : { kind: 'interval', everyMinutes: Number.isFinite(everyMinutes) ? everyMinutes : 60 },
-      toolScope: Array.isArray(args.toolScope)
-        ? args.toolScope.filter((tool): tool is string => typeof tool === 'string')
-        : [],
-    });
-    return { success: true, message: 'Job autônomo registrado com governança.', ...result };
+    return runCreateAgentJob(this.agentScheduler, workspaceId, args);
   }
 
   async toolListAgentJobs(workspaceId: string): Promise<ToolResult> {
-    if (!this.agentScheduler) {
-      return { success: false, error: 'agent_scheduler_unavailable' };
-    }
-    const jobs = await this.agentScheduler.listJobs(workspaceId);
-    return {
-      success: true,
-      jobs,
-      message: jobs.length ? `Jobs autônomos: ${jobs.length}` : 'Nenhum job autônomo registrado.',
-    };
+    return runListAgentJobs(this.agentScheduler, workspaceId);
   }
 
   async toolSetAgentJobEnabled(
     workspaceId: string,
     args: ToolSetAgentJobEnabledArgs,
   ): Promise<ToolResult> {
-    if (!this.agentScheduler) {
-      return { success: false, error: 'agent_scheduler_unavailable' };
-    }
-    const jobId = safeStr(args.jobId).trim().slice(0, 160);
-    if (!jobId) {
-      return { success: false, error: 'missing_agent_job_id' };
-    }
-    const result = await this.agentScheduler.setJobEnabled({
-      workspaceId,
-      jobId,
-      enabled: args.enabled === true,
-    });
-    return {
-      success: result.ok,
-      key: result.key,
-      enabled: result.enabled,
-      ...(result.reason ? { error: result.reason } : {}),
-    };
+    return runSetAgentJobEnabled(this.agentScheduler, workspaceId, args);
   }
 
   async toolSearchAgentMemory(
     workspaceId: string,
     args: ToolSearchAgentMemoryArgs,
   ): Promise<ToolResult> {
-    if (!this.agentSessions) {
-      return { success: false, error: 'agent_memory_unavailable' };
-    }
-    const query = safeStr(args.query).trim();
-    if (!query) {
-      return { success: false, error: 'missing_agent_memory_query' };
-    }
-    const result = await this.agentSessions.search(workspaceId, query, args.limit ?? 6);
-    return { success: true, ...result };
+    return runSearchAgentMemory(this.agentSessions, workspaceId, args);
   }
 
   async toolSearchAgentSessions(
     workspaceId: string,
     args: ToolSearchAgentSessionsArgs,
   ): Promise<ToolResult> {
-    if (!this.agentSessions) {
-      return { success: false, error: 'agent_memory_unavailable' };
-    }
-    const query = safeStr(args.query).trim();
-    if (!query) {
-      return { success: false, error: 'missing_agent_session_query' };
-    }
-    const result = await this.agentSessions.searchSessions(workspaceId, query, args.limit ?? 3);
-    return { success: true, ...result };
+    return runSearchAgentSessions(this.agentSessions, workspaceId, args);
   }
 
   async toolGetAgentArtifact(
     workspaceId: string,
     args: ToolGetAgentArtifactArgs,
   ): Promise<ToolResult> {
-    const artifactId = safeStr(args.artifactId).trim().slice(0, 220);
-    if (!artifactId || !artifactId.startsWith('tool_artifact:')) {
-      return { success: false, error: 'invalid_agent_artifact_id' };
-    }
-
-    const row = await this.prisma.kloelMemory.findUnique({
-      where: { workspaceId_key: { workspaceId, key: artifactId } },
-    });
-    if (!row || row.category !== 'tool_artifact') {
-      return { success: false, error: 'agent_artifact_not_found' };
-    }
-
-    const rawContent = safeStr(row.content);
-    const maxChars = Math.max(500, Math.min(Number(args.maxChars) || 12_000, 50_000));
-    const truncated = rawContent.length > maxChars;
-    let parsed: unknown = null;
-    try {
-      parsed = rawContent ? JSON.parse(rawContent) : null;
-    } catch {
-      parsed = null;
-    }
-
-    return {
-      success: true,
-      artifactId,
-      category: row.category,
-      type: row.type ?? null,
-      originalChars: rawContent.length,
-      truncated,
-      content: rawContent.slice(0, maxChars),
-      parsed: truncated ? null : parsed,
-      updatedAt: row.updatedAt,
-      message: truncated
-        ? 'Artefato recuperado parcialmente por limite de contexto.'
-        : 'Artefato recuperado da memória operacional.',
-    };
+    return runGetAgentArtifact(this.prisma, workspaceId, args);
   }
 
   toolUpsertAgentSkill(workspaceId: string, args: ToolUpsertAgentSkillArgs): Promise<ToolResult> {

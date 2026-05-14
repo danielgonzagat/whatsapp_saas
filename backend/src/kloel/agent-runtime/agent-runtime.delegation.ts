@@ -2,67 +2,15 @@ import { Injectable, Logger } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 import { PrismaService } from '../../prisma/prisma.service';
 import { sanitizeAgentRuntimeText, toInputJsonValue } from './agent-runtime.sanitizer';
-export type AgentDelegationStatus =
-  | 'pending'
-  | 'accepted'
-  | 'running'
-  | 'completed'
-  | 'failed'
-  | 'cancelled';
-export interface AgentDelegationInput {
-  workspaceId: string;
-  parentSessionId: string;
-  task: string;
-  toolScope: string[];
-  childSessionId?: string;
-  metadata?: Record<string, unknown>;
-}
-export interface AgentDelegationRecord {
-  id: string;
-  workspaceId: string;
-  parentSessionId: string;
-  childSessionId: string | null;
-  task: string;
-  toolScope: string[];
-  status: AgentDelegationStatus;
-  resultSummary: string | null;
-  error: string | null;
-  metadata: Record<string, unknown> | null;
-  createdAt: string;
-  updatedAt: string;
-  completedAt: string | null;
-}
-export interface AgentDelegationListResult {
-  delegations: AgentDelegationRecord[];
-  total: number;
-}
-const VALID_STATUSES: ReadonlySet<AgentDelegationStatus> = new Set([
-  'pending',
-  'accepted',
-  'running',
-  'completed',
-  'failed',
-  'cancelled',
-]);
-const TERMINAL_STATUSES: ReadonlySet<AgentDelegationStatus> = new Set([
-  'completed',
-  'failed',
-  'cancelled',
-]);
-interface InnerDelegationValue {
-  kind: 'agent_delegation';
-  parentSessionId: string;
-  childSessionId: string | null;
-  task: string;
-  toolScope: string[];
-  status: AgentDelegationStatus;
-  resultSummary: string | null;
-  error: string | null;
-  metadata: Record<string, unknown> | null;
-  createdAt: string;
-  updatedAt: string;
-  completedAt: string | null;
-}
+import {
+  TERMINAL_STATUSES,
+  VALID_STATUSES,
+  type AgentDelegationInput,
+  type AgentDelegationListResult,
+  type AgentDelegationRecord,
+  type AgentDelegationStatus,
+  type InnerDelegationValue,
+} from './agent-runtime.delegation.types';
 @Injectable()
 export class AgentRuntimeDelegationService {
   private readonly logger = new Logger(AgentRuntimeDelegationService.name);

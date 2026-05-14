@@ -13,20 +13,22 @@ import {
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { authApi, workspaceApi } from '@/lib/api';
-import { Camera, Eye, EyeOff, Laptop, Monitor, Smartphone } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { Camera, Eye, EyeOff } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { SettingsCard, SettingsSwitchRow, kloelSettingsClass } from './contract';
 import { buildAccountSettingsPayload } from './account-settings-section.helpers';
+import {
+  type PasswordStrength,
+  evalPasswordStrength,
+  PasswordStrengthBar,
+  SessionsList,
+  FeedbackBanner,
+} from './account-settings-section.parts';
 
-const A_Z_RE = /[A-Z]/;
-const RX_0_9_RE = /[0-9]/;
-const A_ZA_Z0_9_RE = /[^A-Za-z0-9]/;
-
-/** Account settings section. */
 export function AccountSettingsSection() {
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
-  const [passwordStrength, setPasswordStrength] = useState<'weak' | 'medium' | 'strong'>('weak');
+  const [passwordStrength, setPasswordStrength] = useState<PasswordStrength>('weak');
   const [profile, setProfile] = useState({
     name: '',
     email: '',
@@ -52,45 +54,6 @@ export function AccountSettingsSection() {
   const [savingChannels, setSavingChannels] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-
-  const sessions = [
-    {
-      device: 'Chrome em MacBook Pro',
-      location: 'São Paulo, Brasil',
-      time: 'Agora (sessão atual)',
-      icon: Laptop,
-      current: true,
-    },
-    {
-      device: 'Safari em iPhone 15',
-      location: 'São Paulo, Brasil',
-      time: 'Há 2 dias',
-      icon: Smartphone,
-      current: false,
-    },
-    {
-      device: 'Firefox em Windows',
-      location: 'Rio de Janeiro, Brasil',
-      time: 'Há 5 dias',
-      icon: Monitor,
-      current: false,
-    },
-  ];
-
-  const checkPasswordStrength = (password: string) => {
-    if (
-      password.length >= 12 &&
-      A_Z_RE.test(password) &&
-      RX_0_9_RE.test(password) &&
-      A_ZA_Z0_9_RE.test(password)
-    ) {
-      setPasswordStrength('strong');
-    } else if (password.length >= 8) {
-      setPasswordStrength('medium');
-    } else {
-      setPasswordStrength('weak');
-    }
-  };
 
   useEffect(() => {
     let cancelled = false;
@@ -137,16 +100,6 @@ export function AccountSettingsSection() {
       cancelled = true;
     };
   }, []);
-
-  const feedbackTone = useMemo(() => {
-    if (error) {
-      return 'border-[var(--semantic-error-soft)]/25 bg-[var(--semantic-error-soft)]/10 text-[var(--semantic-error-text)]';
-    }
-    if (feedback) {
-      return 'border-[var(--app-border-primary)] bg-[var(--app-bg-card)] text-[var(--app-text-primary)]';
-    }
-    return '';
-  }, [error, feedback]);
 
   const handleSaveAccount = async () => {
     setSavingAccount(true);
@@ -218,17 +171,11 @@ export function AccountSettingsSection() {
         </p>
       </div>
 
-      {feedback || error ? (
-        <div className={`rounded-md border px-4 py-3 text-sm ${feedbackTone}`}>
-          {error || feedback}
-        </div>
-      ) : null}
+      <FeedbackBanner message={feedback} error={error} />
 
-      {/* Profile Card */}
       <SettingsCard>
         <h4 className={`mb-4 ${kloelSettingsClass.cardTitle}`}>{kloelT(`Perfil`)}</h4>
 
-        {/* Avatar */}
         <div className="mb-6 flex items-center gap-4">
           <div className="relative">
             <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[var(--app-bg-secondary)] text-xl font-semibold text-[var(--app-text-secondary)]">
@@ -319,14 +266,12 @@ export function AccountSettingsSection() {
         </div>
       </SettingsCard>
 
-      {/* Security Card */}
       <SettingsCard>
         <h4 className={`mb-1 ${kloelSettingsClass.cardTitle}`}>{kloelT(`Segurança e acesso`)}</h4>
         <p className={`mb-4 ${kloelSettingsClass.cardDescription}`}>
           {kloelT(`Proteja sua conta.`)}
         </p>
 
-        {/* Change Password */}
         <div className="mb-6 space-y-4">
           <h5 className="text-sm font-medium text-[var(--app-text-primary)]">
             {kloelT(`Alterar senha`)}
@@ -354,7 +299,7 @@ export function AccountSettingsSection() {
               <Input
                 type={showNewPassword ? 'text' : 'password'}
                 placeholder={kloelT(`Nova senha`)}
-                onChange={(e) => checkPasswordStrength(e.target.value)}
+                onChange={(e) => setPasswordStrength(evalPasswordStrength(e.target.value))}
                 className={`${kloelSettingsClass.input} pr-10`}
               />
               <button
@@ -374,84 +319,19 @@ export function AccountSettingsSection() {
               placeholder={kloelT(`Confirmar nova senha`)}
               className={kloelSettingsClass.input}
             />
-
-            {/* Password Strength */}
-            <div className="space-y-1">
-              <div className="flex gap-1">
-                <div
-                  className={`h-1 flex-1 rounded-full ${passwordStrength === 'weak' ? 'bg-red-400' : passwordStrength === 'medium' ? 'bg-yellow-400' : 'bg-green-400'}`}
-                />
-                <div
-                  className={`h-1 flex-1 rounded-full ${passwordStrength === 'medium' || passwordStrength === 'strong' ? (passwordStrength === 'medium' ? 'bg-yellow-400' : 'bg-green-400') : 'bg-[var(--app-border-primary)]'}`}
-                />
-                <div
-                  className={`h-1 flex-1 rounded-full ${passwordStrength === 'strong' ? 'bg-green-400' : 'bg-[var(--app-border-primary)]'}`}
-                />
-              </div>
-              <p className="text-xs text-[var(--app-text-secondary)]">
-                {kloelT(`Força:`)}{' '}
-                {passwordStrength === 'weak'
-                  ? 'Fraca'
-                  : passwordStrength === 'medium'
-                    ? 'Média'
-                    : 'Forte'}
-              </p>
-            </div>
+            <PasswordStrengthBar strength={passwordStrength} />
           </div>
         </div>
 
-        {/* Reset Password */}
         <div className="mb-6">
           <Button variant="outline" className={`text-sm ${kloelSettingsClass.outlineButton}`}>
             {kloelT(`Enviar link de redefinição para meu e-mail`)}
           </Button>
         </div>
 
-        {/* Active Sessions */}
-        <div>
-          <h5 className="mb-3 text-sm font-medium text-[var(--app-text-primary)]">
-            {kloelT(`Sessões ativas`)}
-          </h5>
-          <div className="space-y-2">
-            {sessions.map((session) => {
-              const Icon = session.icon;
-              return (
-                <div
-                  key={session.device}
-                  className={`flex items-center justify-between rounded-md p-3 ${session.current ? 'bg-[var(--app-accent-light)]' : 'bg-[var(--app-bg-secondary)]'}`}
-                >
-                  <div className="flex items-center gap-3">
-                    <Icon
-                      className={`h-5 w-5 ${session.current ? 'text-[var(--app-accent)]' : 'text-[var(--app-text-secondary)]'}`}
-                    />
-                    <div>
-                      <p className="text-sm font-medium text-[var(--app-text-primary)]">
-                        {session.device}
-                      </p>
-                      <p className="text-xs text-[var(--app-text-secondary)]">
-                        {session.location} · {session.time}
-                      </p>
-                    </div>
-                  </div>
-                  {session.current && (
-                    <span className="rounded-full bg-[var(--app-accent-light)] px-2 py-0.5 text-xs font-medium text-[var(--app-accent)]">
-                      {kloelT(`Atual`)}
-                    </span>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-          <Button
-            variant="outline"
-            className={`mt-3 w-full text-sm ${kloelSettingsClass.dangerButton}`}
-          >
-            {kloelT(`Encerrar outras sessões`)}
-          </Button>
-        </div>
+        <SessionsList />
       </SettingsCard>
 
-      {/* Preferences Card */}
       <SettingsCard>
         <h4 className={`mb-4 ${kloelSettingsClass.cardTitle}`}>{kloelT(`Preferências gerais`)}</h4>
 

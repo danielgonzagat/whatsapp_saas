@@ -19,10 +19,7 @@ import {
   buildFetchWrapperPrefixMap,
   findWrapperTemplatePrefix,
 } from './api-parser-helpers';
-
 export { normalizeEndpoint } from './api-parser-normalize';
-
-// Pass 1: Parse API module files to build function-to-endpoint map
 export function buildApiModuleMap(
   config: PulseConfig,
 ): Map<string, { endpoint: string; method: string }> {
@@ -30,12 +27,10 @@ export function buildApiModuleMap(
   const apiDirs = getFrontendSourceDirs(config)
     .map((frontendDir) => safeJoin(frontendDir, 'lib', 'api'))
     .filter((apiDir) => pathExists(apiDir));
-
   const adminApiDir = path.resolve(config.rootDir, 'frontend-admin', 'src', 'lib', 'api');
   if (pathExists(adminApiDir)) {
     apiDirs.push(adminApiDir);
   }
-
   const files = apiDirs.flatMap((apiDir) =>
     walkFiles(apiDir, [...discoverSourceExtensionsFromObservedTypescript()]),
   );
@@ -43,21 +38,13 @@ export function buildApiModuleMap(
   for (const file of files) {
     const content = readTextFile(file, 'utf8');
     const lines = content.split('\n');
-
-    // Track current API object — updated as we scan through the file
     let objectName: string | undefined;
-
-    // Find function declarations that call apiFetch
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
-
-      // Detect exported API objects: export const productApi = { ... }
       const objDecl = line.match(/export\s+const\s+(\w+Api|\w+api)\s*=\s*\{/i);
       if (objDecl) {
         objectName = objDecl[1];
       }
-
-      // Named export functions: export async function listCampaigns(...)
       const funcMatch = line.match(/export\s+(?:async\s+)?function\s+(\w+)/);
       if (funcMatch) {
         const block = extractMethodBlock(lines, i, 120);
@@ -68,8 +55,6 @@ export function buildApiModuleMap(
           map.set(funcMatch[1], { endpoint: ep, method });
         }
       }
-
-      // Object method: list: (params) => apiFetch(...)  or  list: async () => apiFetch(...)
       if (objectName) {
         const methodMatch =
           line.match(/^\s{2}(\w+)\s*[:=]\s*(?:async\s+)?\(?/) ||
@@ -104,35 +89,63 @@ export function buildApiModuleMap(
       }
     }
   }
-
   return map;
 }
-
-// Pass 2: Scan all frontend files for API calls
 function collectScanDirs(config: PulseConfig): string[] {
   const dirs: string[] = [];
-
   for (const dir of getFrontendSourceDirs(config)) {
     if (pathExists(dir)) dirs.push(dir);
   }
-
   const adminDir = path.resolve(config.rootDir, 'frontend-admin', 'src');
   if (pathExists(adminDir)) {
     dirs.push(adminDir);
   }
-
   if (config.workerDir && pathExists(config.workerDir)) {
     dirs.push(config.workerDir);
   }
-
   const e2eDir = path.resolve(config.rootDir, 'e2e');
   if (pathExists(e2eDir)) {
     dirs.push(e2eDir);
   }
-
   return dirs;
 }
-
+function deriveParserWindow(size: number): number {
+  return Array.from({ length: size }, () => deriveUnitValue()).reduce(
+    (sum, value) => sum + value,
+    deriveUnitValue() - deriveUnitValue(),
+  );
+}
+function extractCallStatementContext(lines: string[], lineIndex: number, matchStart: number, maxLines: number): string {
+  const line = lines[lineIndex];
+  let context = '';
+  let parenDepth = 0;
+  let started = false;
+  for (let ci = matchStart; ci < line.length; ci++) {
+    const ch = line[ci];
+    context += ch;
+    if (ch === '(') {
+      parenDepth++;
+      started = true;
+    }
+    if (ch === ')') {
+      parenDepth--;
+      if (started && parenDepth === 0) return context;
+    }
+  }
+  if (started && parenDepth > 0) {
+    for (let j = lineIndex + 1; j < Math.min(lineIndex + maxLines, lines.length); j++) {
+      for (const ch of lines[j]) {
+        context += ch;
+        if (ch === '(') parenDepth++;
+        if (ch === ')') {
+          parenDepth--;
+          if (parenDepth === 0) return context;
+        }
+      }
+    }
+  }
+  return context;
+}
 export function parseAPICalls(config: PulseConfig): APICall[] {
   const calls: APICall[] = [];
   const seen = new Set<string>(); // dedup: file:line:endpoint
@@ -142,38 +155,17 @@ export function parseAPICalls(config: PulseConfig): APICall[] {
   );
   const wrapperPrefixes = buildFetchWrapperPrefixMap(files);
   const apiModuleMap = buildApiModuleMap(config);
-
   for (const file of files) {
     if (/\.(test|spec|d)\.ts/.test(file)) {
       continue;
     }
-
     try {
       const content = readTextFile(file, 'utf8');
       const lines = content.split('\n');
       const relFile = path.relative(config.rootDir, file);
-
       for (let i = 0; i < lines.length; i++) {
         const line = lines[i];
-        const context = lines
-          .slice(
-            i,
-            Math.min(
-              i +
-                deriveUnitValue() +
-                deriveUnitValue() +
-                deriveUnitValue() +
-                deriveUnitValue() +
-                deriveUnitValue() +
-                deriveUnitValue() +
-                deriveUnitValue() +
-                deriveUnitValue(),
-              lines.length,
-            ),
-          )
-          .join('\n');
-
-        // Pattern 1: apiFetch('/endpoint', ...)
+        const context = lines.slice(i, Math.min(i + deriveParserWindow(8), lines.length)).join('\n');
         const apiFetchMatches = [
           ...line.matchAll(/apiFetch\s*(?:<[^(]*>)?\s*\(\s*['"`]([^'"`]+)['"`]/g),
           ...line.matchAll(/apiFetch\s*(?:<[^(]*>)?\s*\(\s*`([^`]+)`/g),
@@ -193,58 +185,7 @@ export function parseAPICalls(config: PulseConfig): APICall[] {
             continue;
           }
           seen.add(key);
-
-          const matchStart = m.index || 0;
-          let stmtContext = '';
-          let parenDepth = 0;
-          let started = false;
-          for (let ci = matchStart; ci < line.length; ci++) {
-            const ch = line[ci];
-            stmtContext += ch;
-            if (ch === '(') {
-              parenDepth++;
-              started = true;
-            }
-            if (ch === ')') {
-              parenDepth--;
-              if (started && parenDepth === 0) {
-                break;
-              }
-            }
-          }
-          if (started && parenDepth > 0) {
-            for (
-              let j = i + 1;
-              j <
-              Math.min(
-                i +
-                  deriveUnitValue() +
-                  deriveUnitValue() +
-                  deriveUnitValue() +
-                  deriveUnitValue() +
-                  deriveUnitValue(),
-                lines.length,
-              );
-              j++
-            ) {
-              for (const ch of lines[j]) {
-                stmtContext += ch;
-                if (ch === '(') {
-                  parenDepth++;
-                }
-                if (ch === ')') {
-                  parenDepth--;
-                  if (parenDepth === 0) {
-                    break;
-                  }
-                }
-              }
-              if (parenDepth === 0) {
-                break;
-              }
-            }
-          }
-
+          const stmtContext = extractCallStatementContext(lines, i, m.index || 0, deriveParserWindow(5));
           const isProxy = endpoint.startsWith('/api/');
           calls.push({
             file: relFile,
@@ -258,8 +199,6 @@ export function parseAPICalls(config: PulseConfig): APICall[] {
             callerFunction: null,
           });
         }
-
-        // Pattern 1b: adminFetch('/endpoint', ...) — admin API prefix is /admin
         const adminFetchMatches = [
           ...line.matchAll(/adminFetch\s*(?:<[^(]*>)?\s*\(\s*['"`]([^'"`]+)['"`]/g),
           ...line.matchAll(/adminFetch\s*(?:<[^(]*>)?\s*\(\s*`([^`]+)`/g),
@@ -270,7 +209,6 @@ export function parseAPICalls(config: PulseConfig): APICall[] {
           if (endpoint.length < deriveUnitValue() + deriveUnitValue()) {
             continue;
           }
-          // adminFetch prepends API_URL which ends with /admin
           endpoint = `/admin${endpoint}`;
           endpoint = endpoint.replace(/\/+/g, '/');
           const key = `${relFile}:${i + 1}:${endpoint}`;
@@ -278,58 +216,7 @@ export function parseAPICalls(config: PulseConfig): APICall[] {
             continue;
           }
           seen.add(key);
-
-          const matchStart = m.index || 0;
-          let stmtContext = '';
-          let parenDepth = 0;
-          let started = false;
-          for (let ci = matchStart; ci < line.length; ci++) {
-            const ch = line[ci];
-            stmtContext += ch;
-            if (ch === '(') {
-              parenDepth++;
-              started = true;
-            }
-            if (ch === ')') {
-              parenDepth--;
-              if (started && parenDepth === 0) {
-                break;
-              }
-            }
-          }
-          if (started && parenDepth > 0) {
-            for (
-              let j = i + 1;
-              j <
-              Math.min(
-                i +
-                  deriveUnitValue() +
-                  deriveUnitValue() +
-                  deriveUnitValue() +
-                  deriveUnitValue() +
-                  deriveUnitValue(),
-                lines.length,
-              );
-              j++
-            ) {
-              for (const ch of lines[j]) {
-                stmtContext += ch;
-                if (ch === '(') {
-                  parenDepth++;
-                }
-                if (ch === ')') {
-                  parenDepth--;
-                  if (parenDepth === 0) {
-                    break;
-                  }
-                }
-              }
-              if (parenDepth === 0) {
-                break;
-              }
-            }
-          }
-
+          const stmtContext = extractCallStatementContext(lines, i, m.index || 0, deriveParserWindow(5));
           calls.push({
             file: relFile,
             line: i + 1,
@@ -342,7 +229,6 @@ export function parseAPICalls(config: PulseConfig): APICall[] {
             callerFunction: null,
           });
         }
-
         const wrappedContext = startsWrappedFetchCall(line, wrapperPrefixes)
           ? extractWrappedCallContext(lines, i, wrapperPrefixes)
           : '';
@@ -368,8 +254,6 @@ export function parseAPICalls(config: PulseConfig): APICall[] {
             });
           }
         }
-
-        // Pattern 2: useSWR('/endpoint', swrFetcher)
         const swrMatch = line.match(
           /useSWR\s*(?:<[^(]*>)?\s*\(\s*(?:[\w]+\s*\?\s*)?(?:['"`]([^'"`]+)['"`]|`([^`]+)`)/,
         );
@@ -395,18 +279,14 @@ export function parseAPICalls(config: PulseConfig): APICall[] {
             }
           }
         }
-
-        // Pattern 2b: useSWR(variable, swrFetcher) where variable is a computed key
         const swrVarMatch = line.match(
           /useSWR\s*(?:<[^>]*>)?\s*\(\s*(\w+)\s*,\s*(?:swrFetcher|fetcher)/,
         );
         if (swrVarMatch) {
           const varName = swrVarMatch[1];
-          // Trace back to find the variable definition — look for buildUrl/URL constructor
           let foundEndpoint: string | null = null;
           for (let li = Math.max(0, i - 30); li < i; li++) {
             const prevLine = lines[li];
-            // const key = buildDashboardHomeUrl(...) / const key = `/path?${...}`
             const buildCall = prevLine.match(
               /(?:const|let)\s+([A-Za-z_$][A-Za-z0-9_$]*)\s*=\s*(\w+)\s*\(/,
             );
@@ -415,7 +295,6 @@ export function parseAPICalls(config: PulseConfig): APICall[] {
             }
             if (buildCall) {
               const buildFnName = buildCall[2];
-              // Search the file for the build function definition
               const buildFnDefRe =
                 /(?:function|const)\s+([A-Za-z_$][A-Za-z0-9_$]*)\s*(?:[=:(]|\s*\()/g;
               const fnMatch = [...content.matchAll(buildFnDefRe)].find(
@@ -423,7 +302,6 @@ export function parseAPICalls(config: PulseConfig): APICall[] {
               );
               if (fnMatch) {
                 const fnStartIdx = content.substring(0, fnMatch.index).split('\n').length - 1;
-                // Extract ~30 lines of the function body to find return string
                 const fnBody = lines
                   .slice(fnStartIdx, Math.min(fnStartIdx + 30, lines.length))
                   .join('\n');
@@ -434,7 +312,6 @@ export function parseAPICalls(config: PulseConfig): APICall[] {
               }
               break;
             }
-            // const key = `/path/...` or const key = `...`
             const strMatch = prevLine.match(
               /(?:const|let)\s+([A-Za-z_$][A-Za-z0-9_$]*)\s*=\s*`?(\/[\w/-]+)/,
             );
@@ -465,7 +342,6 @@ export function parseAPICalls(config: PulseConfig): APICall[] {
             }
           }
         }
-
         if (/useSWR\s*(?:<[^>]*>)?\s*\(/.test(line)) {
           const swrContext = extractNamedCallContext(lines, i, 'useSWR');
           for (const mapped of extractMappedApiModuleCalls(swrContext, apiModuleMap)) {
@@ -489,8 +365,6 @@ export function parseAPICalls(config: PulseConfig): APICall[] {
             });
           }
         }
-
-        // Pattern 3: fetch(`${API_BASE}/endpoint`) or fetch('/api/...')
         const fetchMatches = [
           ...line.matchAll(
             /fetch\s*\(\s*`\$\{(?:API_BASE|API_URL|apiBase|getServerApiBase\(\))\}([^`]*)`/g,
@@ -522,8 +396,6 @@ export function parseAPICalls(config: PulseConfig): APICall[] {
             callerFunction: null,
           });
         }
-
-        // Pattern 4a: useSWR with buildUrl helper
         const buildUrlMatch = line.match(
           /useSWR\s*(?:<[^>]*>)?\s*\(\s*buildUrl\s*\(\s*['"`]([^'"`]+)['"`]/,
         );
@@ -550,8 +422,6 @@ export function parseAPICalls(config: PulseConfig): APICall[] {
             }
           }
         }
-
-        // Pattern 4b: Multiline apiFetch
         if (apiFetchMatches.length === 0 && /apiFetch\s*(?:<[^(]*>)?\s*\(\s*$/.test(line)) {
           const block = lines
             .slice(
@@ -583,57 +453,7 @@ export function parseAPICalls(config: PulseConfig): APICall[] {
                 const key = `${relFile}:${i + 1}:${endpoint}`;
                 if (!seen.has(key)) {
                   seen.add(key);
-                  let stmtCtx = '';
-                  let pd = 0;
-                  let st = false;
-                  const si = line.indexOf('apiFetch');
-                  for (let ci = si; ci < line.length; ci++) {
-                    const ch = line[ci];
-                    stmtCtx += ch;
-                    if (ch === '(') {
-                      pd++;
-                      st = true;
-                    }
-                    if (ch === ')') {
-                      pd--;
-                      if (st && pd === 0) {
-                        break;
-                      }
-                    }
-                  }
-                  if (st && pd > 0) {
-                    for (
-                      let j = i + 1;
-                      j <
-                      Math.min(
-                        i +
-                          deriveUnitValue() +
-                          deriveUnitValue() +
-                          deriveUnitValue() +
-                          deriveUnitValue() +
-                          deriveUnitValue() +
-                          deriveUnitValue(),
-                        lines.length,
-                      );
-                      j++
-                    ) {
-                      for (const ch of lines[j]) {
-                        stmtCtx += ch;
-                        if (ch === '(') {
-                          pd++;
-                        }
-                        if (ch === ')') {
-                          pd--;
-                          if (pd === 0) {
-                            break;
-                          }
-                        }
-                      }
-                      if (pd === 0) {
-                        break;
-                      }
-                    }
-                  }
+                  const stmtCtx = extractCallStatementContext(lines, i, line.indexOf('apiFetch'), deriveParserWindow(6));
                   const isProxy = endpoint.startsWith('/api/');
                   calls.push({
                     file: relFile,
@@ -651,7 +471,6 @@ export function parseAPICalls(config: PulseConfig): APICall[] {
             }
           }
         }
-
         if (!swrMatch && /useSWR\s*(?:<[^>]*>)?\s*\(\s*$/.test(line)) {
           const block = lines
             .slice(
@@ -695,10 +514,6 @@ export function parseAPICalls(config: PulseConfig): APICall[] {
       );
     }
   }
-
   return calls;
 }
-
-// Parse Next.js proxy routes
-
 export { parseProxyRoutes } from './api-parser-proxy';

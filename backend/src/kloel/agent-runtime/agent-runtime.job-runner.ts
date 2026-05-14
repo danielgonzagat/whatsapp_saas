@@ -8,40 +8,17 @@ import { BrainEventSpineService } from '../brain-event-spine.service';
 import { KloelService } from '../kloel.service';
 import { AgentRuntimeSessionStore } from './agent-runtime.session-store';
 import { sanitizeAgentRuntimeText, toInputJsonValue } from './agent-runtime.sanitizer';
+import {
+  recordJobExecutionSnapshot,
+  recordJobHistory,
+  type AgentJobExecutionHistory,
+  type AgentJobPayload,
+  type ClaimedAgentJobEvent,
+} from './agent-runtime.job-runner.persistence';
 
 const MAX_RETRIES = 3;
 const BACKOFF_BASE_MS = 60_000;
 const MAX_BACKOFF_MS = 30 * 60_000;
-
-type AgentJobPayload = {
-  jobKey: string;
-  title: string;
-  prompt: string;
-  toolScope: string[];
-  envelope: unknown;
-};
-
-type ClaimedAgentJobEvent = {
-  id: string;
-  eventType: string;
-  subject: string;
-  payload: Prisma.JsonValue;
-  idempotencyKey: string;
-  occurredAt: Date;
-  attempts: number;
-  lastError: string | null;
-};
-
-type AgentJobExecutionHistory = {
-  attempt: number;
-  status: 'succeeded' | 'failed' | 'dead_lettered';
-  startedAt: string;
-  finishedAt: string;
-  message: string;
-  error?: string;
-  eventId: string;
-  idempotencyKey: string;
-};
 
 @Injectable()
 export class AgentRuntimeJobRunnerService {
@@ -343,57 +320,7 @@ export class AgentRuntimeJobRunnerService {
     payload: AgentJobPayload,
     entry: AgentJobExecutionHistory,
   ): Promise<void> {
-    const historyKey = `agent_job_history:${event.subject}`;
-
-    try {
-      const existing = await this.prisma.kloelMemory.findUnique({
-        where: { workspaceId_key: { workspaceId, key: historyKey } },
-        select: { value: true },
-      });
-
-      const existingValue = this.extractPayloadRecord(existing?.value ?? null);
-      const history: AgentJobExecutionHistory[] = Array.isArray(existingValue?.history)
-        ? (existingValue.history as AgentJobExecutionHistory[])
-        : [];
-
-      history.push(entry);
-
-      await this.prisma.kloelMemory.upsert({
-        where: { workspaceId_key: { workspaceId, key: historyKey } },
-        update: {
-          value: toInputJsonValue({
-            subject: event.subject,
-            eventType: event.eventType,
-            jobKey: payload.jobKey,
-            maxRetries: MAX_RETRIES,
-            history,
-          }),
-          content: `job=${event.subject} attempt=${entry.attempt} status=${entry.status}`,
-        },
-        create: {
-          workspaceId,
-          key: historyKey,
-          category: 'agent_job_history',
-          type: 'execution_log',
-          value: toInputJsonValue({
-            subject: event.subject,
-            eventType: event.eventType,
-            jobKey: payload.jobKey,
-            maxRetries: MAX_RETRIES,
-            history,
-          }),
-          content: `job=${event.subject} attempt=${entry.attempt} status=${entry.status}`,
-        },
-      });
-    } catch (error: unknown) {
-      void this.opsAlert?.alertOnCriticalError(
-        error,
-        'AgentRuntimeJobRunnerService.recordJobHistory',
-      );
-      this.logger.warn(
-        `Failed to record agent job history for ${event.subject}: ${this.messageFor(error)}`,
-      );
-    }
+    return recordJobHistory(this.prisma, this.opsAlert, this.logWarn, workspaceId, event, payload, entry);
   }
 
   private async recordJobExecutionSnapshot(
@@ -401,55 +328,7 @@ export class AgentRuntimeJobRunnerService {
     payload: AgentJobPayload,
     result: { status: 'succeeded' | 'failed'; eventId: string; message: string },
   ): Promise<void> {
-    const key = payload.jobKey.startsWith('agent_job:')
-      ? payload.jobKey
-      : `agent_job:${payload.jobKey}`;
-    try {
-      const row = await this.prisma.kloelMemory.findUnique({
-        where: { workspaceId_key: { workspaceId, key } },
-        select: { value: true, metadata: true },
-      });
-      const now = new Date().toISOString();
-      const value =
-        row?.value && typeof row.value === 'object' && !Array.isArray(row.value)
-          ? (row.value as Record<string, unknown>)
-          : {};
-      const metadata =
-        row?.metadata && typeof row.metadata === 'object' && !Array.isArray(row.metadata)
-          ? (row.metadata as Record<string, unknown>)
-          : {};
-      await this.prisma.kloelMemory.updateMany({
-        where: { workspaceId, key, category: 'agent_job', type: 'scheduled' },
-        data: {
-          value: toInputJsonValue({
-            ...value,
-            lastResultAt: now,
-            lastResultStatus: result.status,
-            lastResultSummary: sanitizeAgentRuntimeText(result.message, 1000),
-            lastError:
-              result.status === 'failed'
-                ? sanitizeAgentRuntimeText(result.message, 500)
-                : undefined,
-          }),
-          metadata: {
-            ...metadata,
-            kind: 'agent_job',
-            lastResultAt: now,
-            lastResultStatus: result.status,
-            lastEventId: result.eventId,
-            ...(result.status === 'failed'
-              ? { lastError: sanitizeAgentRuntimeText(result.message, 500) }
-              : { lastError: null }),
-          } satisfies Prisma.InputJsonObject,
-        },
-      });
-    } catch (error: unknown) {
-      void this.opsAlert?.alertOnCriticalError(
-        error,
-        'AgentRuntimeJobRunnerService.recordJobExecutionSnapshot',
-      );
-      this.logger.warn(`Failed to persist agent job execution snapshot: ${this.messageFor(error)}`);
-    }
+    return recordJobExecutionSnapshot(this.prisma, this.opsAlert, this.logWarn, workspaceId, payload, result);
   }
 
   private parsePayload(payload: Prisma.JsonValue, fallbackKey: string): AgentJobPayload {
@@ -500,4 +379,8 @@ export class AgentRuntimeJobRunnerService {
   private messageFor(error: unknown): string {
     return error instanceof Error ? error.message : String(error);
   }
+
+  private readonly logWarn = (message: string): void => {
+    this.logger.warn(message);
+  };
 }

@@ -1,5 +1,4 @@
 #!/usr/bin/env ts-node
-
 /**
  * unified-readiness-report.ts — SINGLE SOURCE pipeline for KLOEL production readiness.
  *
@@ -15,16 +14,13 @@
  * All 4 artifacts carry the same unified verdict field.
  * A self-consistency gate runs after generation and fails the pipeline on divergence.
  */
-
 import { writeFileSync, readFileSync } from 'node:fs';
-
 import {
   safeRepoPath,
   readJsonOptional,
   runAllRuntimeChecks,
   type RuntimeChecks,
 } from './readiness-runtime-checks';
-
 import {
   buildChecklistCategories,
   computeChecklistSummary,
@@ -37,108 +33,23 @@ import {
   type CriticalGap,
   type ChecklistCategory,
 } from './readiness-builders';
-
 import { buildMarkdownReport } from './readiness-markdown';
-
-// ---------------------------------------------------------------------------
-// PULSE Certificate types (canonical source)
-// ---------------------------------------------------------------------------
-
-interface PulseCertificateGate {
-  status: string;
-  reason: string;
-  failureClass?: string;
-  affectedCapabilityIds?: string[];
-  affectedFlowIds?: string[];
-  evidenceMode?: string;
-  confidence?: string;
-}
-
-interface PulseCertificateNoHardcodedReality {
-  artifact: string;
-  version: number;
-  generatedAt: string;
-  operationalIdentity: string;
-  scannedFiles: number;
-  totalEvents: number;
-  summary: {
-    totalFindings: number;
-    byKind: Record<string, number>;
-    topFiles: Array<{ filePath: string; findings: number }>;
-    totalPredicates: number;
-    byPredicateKind: Record<string, number>;
-  };
-  hardcodeEvents: unknown[];
-}
-
-interface PulseCertificate {
-  projectId: string;
-  projectName: string;
-  commitSha: string;
-  environment: string;
-  timestamp: string;
-  status: string;
-  humanReplacementStatus: string;
-  profile: unknown;
-  certificationScope: unknown;
-  score: number;
-  rawScore: number;
-  certificationTarget: {
-    tier: unknown;
-    final: boolean;
-    profile: unknown;
-    certificationScope: unknown;
-  };
-  blockingTier: number;
-  gates: Record<string, PulseCertificateGate>;
-  criticalFailures: string[];
-  dynamicBlockingReasons: string[];
-  noHardcodedRealityState: PulseCertificateNoHardcodedReality | null;
-}
-
-// ---------------------------------------------------------------------------
-// Blocker Rank types (artifact 4)
-// ---------------------------------------------------------------------------
-
-interface BlockerEntry {
-  rank: number;
-  gate: string;
-  severity: string;
-  reason: string;
-  failureClass: string;
-}
-
-interface BlockerRank {
-  schema: string;
-  computedAt: string;
-  pipeline: string;
-  unifiedVerdict: string;
-  totalBlockers: number;
-  gateSummary: {
-    total: number;
-    pass: number;
-    fail: number;
-  };
-  blockers: BlockerEntry[];
-}
-
-// ---------------------------------------------------------------------------
-// Unified Verdict type
-// ---------------------------------------------------------------------------
-
-type UnifiedVerdict = 'READY_FOR_PRODUCTION' | 'NOT_READY_FOR_PRODUCTION';
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
+import type {
+  ArtifactVerdict,
+  BlockerEntry,
+  BlockerRank,
+  PulseCertificate,
+  RawPulseCodacyState,
+  RawPulseHealth,
+  RawPulseWorldState,
+  UnifiedVerdict,
+} from './unified-readiness-report.types';
 function computeUnifiedVerdict(
   cert: PulseCertificate,
 ): UnifiedVerdict {
   const gates = cert.gates;
   const gateNames = Object.keys(gates);
   const failedGates = gateNames.filter((g) => gates[g].status === 'fail');
-
   if (
     cert.status === 'CERTIFIED' &&
     failedGates.length === 0 &&
@@ -148,7 +59,6 @@ function computeUnifiedVerdict(
   }
   return 'NOT_READY_FOR_PRODUCTION';
 }
-
 function buildBlockerRank(
   cert: PulseCertificate,
   generatedAt: string,
@@ -158,10 +68,8 @@ function buildBlockerRank(
   const gateNames = Object.keys(gates);
   const failedGates = gateNames.filter((g) => gates[g].status === 'fail');
   const passedGates = gateNames.filter((g) => gates[g].status === 'pass');
-
   const blockers: BlockerEntry[] = [];
   let rank = 0;
-
   for (const gateName of gateNames) {
     const gate = gates[gateName];
     if (gate.status === 'fail') {
@@ -175,7 +83,6 @@ function buildBlockerRank(
       });
     }
   }
-
   return {
     schema: 'kloel.blocker-rank.v2',
     computedAt: generatedAt,
@@ -190,21 +97,9 @@ function buildBlockerRank(
     blockers,
   };
 }
-
 function writeJsonArtifact(filePath: string, data: unknown): void {
   writeFileSync(filePath, JSON.stringify(data, null, 2) + '\n');
 }
-
-// ---------------------------------------------------------------------------
-// Consistency validation
-// ---------------------------------------------------------------------------
-
-interface ArtifactVerdict {
-  path: string;
-  verdict: string;
-  source: string;
-}
-
 function extractVerdictFromArtifacts(
   auditPath: string,
   checklistPath: string,
@@ -212,8 +107,6 @@ function extractVerdictFromArtifacts(
   blockerPath: string,
 ): ArtifactVerdict[] {
   const results: ArtifactVerdict[] = [];
-
-  // production-readiness-audit.json
   try {
     const audit = JSON.parse(readFileSync(auditPath, 'utf8')) as Record<string, unknown>;
     results.push({
@@ -224,8 +117,6 @@ function extractVerdictFromArtifacts(
   } catch {
     results.push({ path: auditPath, verdict: 'ERROR', source: 'production-readiness-audit.json' });
   }
-
-  // final-production-checklist.json
   try {
     const checklist = JSON.parse(readFileSync(checklistPath, 'utf8')) as Record<string, unknown>;
     results.push({
@@ -236,8 +127,6 @@ function extractVerdictFromArtifacts(
   } catch {
     results.push({ path: checklistPath, verdict: 'ERROR', source: 'final-production-checklist.json' });
   }
-
-  // PULSE_REPORT.md
   try {
     const reportContent = readFileSync(reportPath, 'utf8');
     const verdictMatch = reportContent.match(/UNIFIED\s+VERDICT:\s+(READY_FOR_PRODUCTION|NOT_READY_FOR_PRODUCTION)/);
@@ -249,8 +138,6 @@ function extractVerdictFromArtifacts(
   } catch {
     results.push({ path: reportPath, verdict: 'ERROR', source: 'PULSE_REPORT.md' });
   }
-
-  // BLOCKER_RANK.json
   try {
     const blocker = JSON.parse(readFileSync(blockerPath, 'utf8')) as Record<string, unknown>;
     results.push({
@@ -261,67 +148,24 @@ function extractVerdictFromArtifacts(
   } catch {
     results.push({ path: blockerPath, verdict: 'ERROR', source: 'BLOCKER_RANK.json' });
   }
-
   return results;
 }
-
 function validateArtifactConsistency(verdicts: ArtifactVerdict[]): boolean {
   const uniqueVerdicts = new Set(verdicts.map((v) => v.verdict));
   const allSame = uniqueVerdicts.size === 1;
   const firstVerdict = verdicts[0]?.verdict ?? 'UNKNOWN';
-
   console.log('\nArtifact consistency check:');
   for (const v of verdicts) {
     const icon = v.verdict === firstVerdict ? 'PASS' : 'DIVERGE';
     console.log(`  [${icon}] ${v.source}: ${v.verdict}`);
   }
-
   if (!allSame) {
     console.error(
       `\nDIVERGENCE DETECTED: Not all artifacts agree on verdict. Found: ${[...uniqueVerdicts].join(', ')}`,
     );
   }
-
   return allSame;
 }
-
-// ---------------------------------------------------------------------------
-// Raw PULSE file types (actual on-disk schemas)
-// ---------------------------------------------------------------------------
-
-interface RawPulseHealth {
-  score: number;
-  totalNodes: number;
-  breaks: Array<{ type: string; severity: string; file: string; line: number; description: string }>;
-}
-
-interface RawPulseWorldState {
-  generatedAt: string;
-  actorProfiles: string[];
-  executedScenarios: string[];
-  pendingAsyncExpectations: string[];
-  entities: Record<string, unknown>;
-  asyncExpectationsStatus: Array<{
-    scenarioId: string;
-    expectation: string;
-    status: string;
-  }>;
-}
-
-interface RawPulseCodacyState {
-  version: number;
-  syncedAt: string;
-  totalIssues: number;
-  bySeverity: Record<string, number>;
-  byCategory: Record<string, number>;
-  repositorySummary: {
-    grade: number;
-    gradeLetter: string;
-    issuesCount: number;
-    issuesPercentage: number;
-  };
-}
-
 function adaptHealth(raw: RawPulseHealth | null, cert: PulseCertificate, generatedAt: string): PulseHealth {
   const score = raw?.score ?? cert.score;
   return {
@@ -331,12 +175,10 @@ function adaptHealth(raw: RawPulseHealth | null, cert: PulseCertificate, generat
     certification: { status: cert.status, gaps: cert.criticalFailures },
   };
 }
-
 function adaptWorldState(raw: RawPulseWorldState | null, generatedAt: string): PulseWorldState {
   if (!raw) {
     return { generatedAt, executedScenarios: [], pendingAsyncExpectations: [], asyncExpectationsStatus: [], sessions: [] };
   }
-
   const scenarioIds = new Set(raw.asyncExpectationsStatus.map((e) => e.scenarioId));
   const sessions = Array.from(scenarioIds).map((sid) => {
     const items = raw.asyncExpectationsStatus.filter((e) => e.scenarioId === sid);
@@ -349,7 +191,6 @@ function adaptWorldState(raw: RawPulseWorldState | null, generatedAt: string): P
       passedScenarios: resolved,
     };
   });
-
   return {
     generatedAt: raw.generatedAt,
     executedScenarios: raw.executedScenarios,
@@ -362,7 +203,6 @@ function adaptWorldState(raw: RawPulseWorldState | null, generatedAt: string): P
     sessions,
   };
 }
-
 function adaptCodacyState(raw: RawPulseCodacyState | null, generatedAt: string): PulseCodacyState {
   if (!raw) {
     return {
@@ -381,48 +221,31 @@ function adaptCodacyState(raw: RawPulseCodacyState | null, generatedAt: string):
     repositorySummary: raw.repositorySummary,
   };
 }
-
-// ---------------------------------------------------------------------------
-// Main
-// ---------------------------------------------------------------------------
-
 function main(): void {
   const generatedAt = new Date().toISOString();
-
-  // --------------- canonical source ---------------
   const certPath = safeRepoPath('PULSE_CERTIFICATE.json');
   const healthPath = safeRepoPath('PULSE_HEALTH.json');
   const worldStatePath = safeRepoPath('PULSE_WORLD_STATE.json');
   const codacyStatePath = safeRepoPath('PULSE_CODACY_STATE.json');
-
   const cert = readJsonOptional<PulseCertificate>(certPath);
   const rawHealth = readJsonOptional<RawPulseHealth>(healthPath);
   const rawWorldState = readJsonOptional<RawPulseWorldState>(worldStatePath);
   const rawCodacyState = readJsonOptional<RawPulseCodacyState>(codacyStatePath);
-
   if (!cert) {
     console.error(`FATAL: Canonical source ${certPath} not found. Cannot generate readiness report.`);
     process.exit(1);
   }
-
   const runtime: RuntimeChecks = runAllRuntimeChecks();
-
-  // --------------- unified verdict ---------------
   const verdict = computeUnifiedVerdict(cert);
-
   console.log(`\nUnified pipeline: scripts/pulse/unified-readiness-report.ts`);
   console.log(`Canonical source: PULSE_CERTIFICATE.json (${cert.timestamp})`);
   console.log(`Unified verdict:  ${verdict}`);
   console.log(`Cert status:      ${cert.status}`);
   console.log(`Score:            ${cert.score}/100`);
   console.log(`Gates:            ${Object.keys(cert.gates).filter((g) => cert.gates[g].status === 'pass').length}/${Object.keys(cert.gates).length} passing`);
-
-  // --------------- adapt real file data → builder-expected shapes ---------------
   const resolvedHealth = adaptHealth(rawHealth, cert, generatedAt);
   const resolvedWorldState = adaptWorldState(rawWorldState, generatedAt);
   const resolvedCodacyState = adaptCodacyState(rawCodacyState, generatedAt);
-
-  // --------------- artifact 2: final-production-checklist.json ---------------
   const categories: ChecklistCategory[] = buildChecklistCategories(
     resolvedHealth,
     resolvedWorldState,
@@ -430,7 +253,6 @@ function main(): void {
     runtime,
   );
   const checklistSummary = computeChecklistSummary(categories);
-
   const checklist: FinalProductionChecklist & { unifiedVerdict: string } = {
     generatedAt,
     unifiedVerdict: verdict,
@@ -442,8 +264,6 @@ function main(): void {
     summary: checklistSummary,
     categories,
   };
-
-  // --------------- artifact 1: production-readiness-audit.json ---------------
   const runtimeFailures: string[] = [];
   if (!runtime.build.pass) runtimeFailures.push(`Build: ${runtime.build.detail}`);
   if (!runtime.testCoverage.pass)
@@ -451,19 +271,16 @@ function main(): void {
   if (!runtime.envFiles.pass) runtimeFailures.push(`Env files: ${runtime.envFiles.detail}`);
   if (!runtime.hooksIntegrity.pass)
     runtimeFailures.push(`Hooks: ${runtime.hooksIntegrity.detail}`);
-
   const readinessStatus =
     checklistSummary.fail === 0
       ? `pass (${checklistSummary.pass} passes, ${checklistSummary.warn} warnings)`
       : `fail (${checklistSummary.pass} passes, ${checklistSummary.fail} failures, ${checklistSummary.warn} warnings)`;
-
   const criticalGaps: CriticalGap[] = buildCriticalGaps(
     resolvedHealth,
     resolvedWorldState,
     resolvedCodacyState,
     runtime,
   );
-
   const audit: ProductionReadinessAudit & { unifiedVerdict: string; certificateStatus: string } = {
     generatedAt,
     pipeline: 'scripts/pulse/unified-readiness-report.ts',
@@ -495,8 +312,6 @@ function main(): void {
     runtimeChecks: runtime,
     criticalGaps,
   };
-
-  // --------------- artifact 3: PULSE_REPORT.md ---------------
   const markdown = buildMarkdownReport(
     resolvedHealth,
     resolvedWorldState,
@@ -505,45 +320,31 @@ function main(): void {
     checklist as FinalProductionChecklist,
     audit as ProductionReadinessAudit,
   );
-
-  // Prepend unified verdict banner to markdown
   const markdownWithVerdict =
     `<!-- UNIFIED VERDICT: ${verdict} -->\n` +
     `# UNIFIED VERDICT: ${verdict}\n\n` +
     markdown;
-
-  // --------------- artifact 4: BLOCKER_RANK.json ---------------
   const blockerRank = buildBlockerRank(cert, generatedAt, verdict);
-
-  // --------------- write all 4 artifacts ---------------
   const auditPath = safeRepoPath('production-readiness-audit.json');
   const checklistPath = safeRepoPath('final-production-checklist.json');
   const reportPath = safeRepoPath('PULSE_REPORT.md');
   const blockerPath = safeRepoPath('BLOCKER_RANK.json');
-
   writeJsonArtifact(auditPath, audit);
   writeJsonArtifact(checklistPath, checklist);
   writeFileSync(reportPath, markdownWithVerdict + '\n');
   writeJsonArtifact(blockerPath, blockerRank);
-
   const totalItems = checklistSummary.pass + checklistSummary.fail + checklistSummary.warn;
-
   console.log('\nGenerated 4 artifacts from single pipeline:');
   console.log(`  [1] production-readiness-audit.json  (verdict: ${verdict}, ${criticalGaps.length} gaps)`);
   console.log(`  [2] final-production-checklist.json  (verdict: ${verdict}, ${totalItems} items)`);
   console.log(`  [3] PULSE_REPORT.md                   (verdict: ${verdict})`);
   console.log(`  [4] BLOCKER_RANK.json                 (verdict: ${verdict}, ${blockerRank.totalBlockers} blockers)`);
-
-  // --------------- self-consistency validation ---------------
   const verdicts = extractVerdictFromArtifacts(auditPath, checklistPath, reportPath, blockerPath);
   const consistent = validateArtifactConsistency(verdicts);
-
   if (!consistent) {
     console.error('\nArtifact divergence detected. Pipeline FAILED.');
     process.exit(1);
   }
-
   console.log('\nAll 4 artifacts agree on unified verdict. Pipeline PASSED.');
 }
-
 main();
