@@ -19,10 +19,10 @@ import { GateMode, GateName } from './pulse-gates.types';
  */
 
 export const GATE_DEFAULT_MODE: Record<GateName, GateMode> = {
-  // Onda 1 — log_only (calibration phase)
-  'no-roleplay': 'log_only',
-  'identity-projection': 'log_only',
-  'no-overclaim': 'log_only',
+  // Onda 2 — hard_fail (promoted per PCI.4 §7)
+  'no-roleplay': 'hard_fail',
+  'identity-projection': 'hard_fail',
+  'no-overclaim': 'hard_fail',
   'truth-mode-honesty': 'hard_fail',
   'evidence-provenance': 'hard_fail',
   'prompt-leakage': 'hard_fail',

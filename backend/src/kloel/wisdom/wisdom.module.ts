@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { WisdomPatternExtractorService } from './wisdom-pattern-extractor.service';
 import { WisdomProjectorService } from './wisdom-projector.service';
 import { WisdomOptService } from './wisdom-opt';
+import { WisdomPrivacyGuardService } from './wisdom-privacy-guard.service';
 
 /**
  * WisdomModule — Camada VI (UTP-WISDOM-001..008).
@@ -12,18 +13,21 @@ import { WisdomOptService } from './wisdom-opt';
  * and enforces opt-in/out + attribution guard.
  *
  * Exports: WisdomPatternExtractorService, WisdomProjectorService,
- * WisdomOptService for ABI builder and relevance filter consumption.
+ * WisdomOptService, WisdomPrivacyGuardService for ABI builder
+ * and relevance filter consumption.
  */
 @Module({
   providers: [
     WisdomPatternExtractorService,
     WisdomProjectorService,
     WisdomOptService,
+    WisdomPrivacyGuardService,
   ],
   exports: [
     WisdomPatternExtractorService,
     WisdomProjectorService,
     WisdomOptService,
+    WisdomPrivacyGuardService,
   ],
 })
 export class WisdomModule {}

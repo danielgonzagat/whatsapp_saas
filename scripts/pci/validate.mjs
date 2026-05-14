@@ -13,10 +13,12 @@
  *   1  — integrity failure
  *   2  — divergence in repo (event/ABI/gate name not in canonical list)
  *   3  — checksum mismatch (PCI was tampered after freeze)
+ *   4  — divergence scanner error (--scan-divergences crashed)
  *
  * Usage:
  *   node scripts/pci/validate.mjs              # baseline checks
- *   node scripts/pci/validate.mjs --strict     # also fail on divergence
+ *   node scripts/pci/validate.mjs --strict     # also fail on fast divergence
+ *   node scripts/pci/validate.mjs --scan-divergences  # thorough kloel/ scan
  *   node scripts/pci/validate.mjs --verify-checksums   # require CHECKSUMS.txt
  *   node scripts/pci/validate.mjs --json       # machine-readable output
  */
@@ -50,6 +52,7 @@ const args = new Set(process.argv.slice(2));
 const STRICT = args.has('--strict');
 const REQUIRE_CHECKSUMS = args.has('--verify-checksums');
 const JSON_OUTPUT = args.has('--json');
+const SCAN_DIVERGENCES = args.has('--scan-divergences');
 
 const report = {
   timestamp: new Date().toISOString(),
@@ -243,6 +246,7 @@ function summarize() {
     warnings: report.warnings.length,
     checksumMismatches: report.checksums.mismatches.length,
     divergences: report.divergences.length,
+    divergenceScan: report.divergenceScan || null,
   };
   return summary;
 }
@@ -250,9 +254,17 @@ function summarize() {
 async function main() {
   await checkPciFiles();
   await checkChecksums();
+
+  // Fast in-process divergence scan (--strict, backward compatible)
   if (STRICT) {
     await scanForDivergence();
   }
+
+  // Thorough kloel/ divergence scan via dedicated scanner (--scan-divergences)
+  if (SCAN_DIVERGENCES) {
+    await runDivergenceScanner();
+  }
+
   const summary = summarize();
   if (JSON_OUTPUT) {
     process.stdout.write(JSON.stringify({ summary, report }, null, 2) + '\n');
@@ -263,11 +275,76 @@ async function main() {
     log(`warnings:   ${summary.warnings}`);
     log(`checksum mismatches: ${summary.checksumMismatches}`);
     log(`divergences (strict mode): ${summary.divergences}`);
+    if (summary.divergenceScan) {
+      log(`divergences (kloel/ scan): ${summary.divergenceScan.total}`);
+    }
   }
   if (summary.checksumMismatches > 0) process.exit(3);
   if (STRICT && summary.divergences > 0) process.exit(2);
+  if (summary.divergenceScan && summary.divergenceScan.total > 0) process.exit(2);
   if (summary.errors > 0) process.exit(1);
   process.exit(0);
+}
+
+async function runDivergenceScanner() {
+  try {
+    const { loadCanonicalSets, divergences, CANONICAL_EVENTS, CANONICAL_ABI_FIELDS, CANONICAL_GATES } = await import(resolve(__dirname, 'divergence-scan.mjs'));
+
+    await loadCanonicalSets();
+
+    // Walk and scan all files in backend/src/kloel/
+    const { readdir } = await import('node:fs/promises');
+    const SCAN_ROOT = resolve(REPO_ROOT, 'backend', 'src', 'kloel');
+
+    async function* walk(dir) {
+      for (const entry of await readdir(dir, { withFileTypes: true })) {
+        const full = join(dir, entry.name);
+        if (entry.isDirectory()) { yield* walk(full); }
+        else if (/\.(ts|tsx)$/.test(entry.name)) { yield full; }
+      }
+    }
+
+    const { scanFile } = await import(resolve(__dirname, 'divergence-scan.mjs'));
+
+    divergences.length = 0;
+    for await (const fp of walk(SCAN_ROOT)) {
+      await scanFile(fp);
+    }
+
+    report.divergenceScan = {
+      canonical: {
+        eventNames: CANONICAL_EVENTS.size,
+        abiFields: CANONICAL_ABI_FIELDS.size,
+        gates: CANONICAL_GATES.size,
+      },
+      divergences: divergences.map(d => ({ ...d })),
+      total: divergences.length,
+    };
+
+    if (!JSON_OUTPUT) {
+      if (divergences.length === 0) {
+        log('divergence scan: no divergences found');
+      } else {
+        log(`divergence scan: ${divergences.length} divergence(s) in backend/src/kloel/`);
+        for (const d of divergences.slice(0, 10)) {
+          log(`  [${d.kind}] ${d.file}:${d.line} — ${d.name}`);
+        }
+        if (divergences.length > 10) log(`  ... and ${divergences.length - 10} more`);
+      }
+    }
+
+    if (divergences.length > 0) {
+      report.errors.push({
+        file: 'divergence-scan.mjs',
+        msg: `${divergences.length} divergence(s) found in backend/src/kloel/ — see report.divergenceScan.divergences for details`,
+      });
+    }
+  } catch (err) {
+    report.errors.push({
+      file: 'divergence-scan.mjs',
+      msg: `scanner failed: ${err.stack || err.message}`,
+    });
+  }
 }
 
 main().catch((err) => {

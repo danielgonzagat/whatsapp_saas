@@ -86,7 +86,7 @@ describe('PULSE gates — payload-scoped (no-roleplay, identity-projection, no-o
     const payload = validAbi();
     expect(makeNoRoleplayGate().check(payload).status).toBe('PASS');
     expect(makeIdentityProjectionGate().check(payload).status).toBe('PASS');
-    expect(makeNoOverclaimGate().check(payload).status).toBe('PASS');
+    expect(makeNoOverclaimGate().check({ abiPayload: payload }).status).toBe('PASS');
     const leakageVerdict = makePromptLeakageGate().check(payload);
     expect(leakageVerdict.status).toBe('PASS');
     expect(leakageVerdict.mode).toBe('hard_fail');
@@ -102,21 +102,21 @@ describe('PULSE gates — payload-scoped (no-roleplay, identity-projection, no-o
     expect(v.reason).toMatch(/prompt-leakage pattern/);
   });
 
-  it('no-roleplay FAIL on persona declaration', () => {
+  it('no-roleplay FAIL on persona declaration in identityProjection', () => {
     const tampered = validAbi() as Record<string, unknown>;
-    (tampered['currentInput'] as Record<string, unknown>)['raw'] = 'Você é um vendedor experiente.';
+    (tampered['identityProjection'] as Record<string, unknown>)['roleNote'] = 'Você é um vendedor experiente.';
     const v = makeNoRoleplayGate('hard_fail').check(tampered);
     expect(v.status).toBe('FAIL');
     expect(v.mode).toBe('hard_fail');
-    expect(v.reason).toMatch(/behavioral instruction/i);
+    expect(v.reason).toMatch(/roleplay pattern/);
   });
 
   it('no-overclaim FAIL on capability with 0 evidence', () => {
     const tampered = validAbi() as Record<string, unknown>;
     (tampered['capabilities'] as Record<string, unknown>)['available'] = [
-      { capabilityId: 'magic', maturity: 'developing', runtimeEvidencePct: 0 },
+      { capabilityId: 'magic', maturity: 'operational', runtimeEvidencePct: 0 },
     ];
-    const v = makeNoOverclaimGate().check(tampered);
+    const v = makeNoOverclaimGate().check({ abiPayload: tampered });
     expect(v.status).toBe('FAIL');
   });
 
@@ -288,7 +288,7 @@ describe('evidence-provenance gate', () => {
 
 describe('gate mode controller (UTP-PULSE-008)', () => {
   it('exposes the canonical default mode for every gate', () => {
-    expect(GATE_DEFAULT_MODE['no-roleplay']).toBe('log_only');
+    expect(GATE_DEFAULT_MODE['no-roleplay']).toBe('hard_fail');
     expect(GATE_DEFAULT_MODE['prompt-leakage']).toBe('hard_fail');
     expect(GATE_DEFAULT_MODE['lineage-integrity']).toBe('hard_fail');
     expect(GATE_DEFAULT_MODE['origin-immutability']).toBe('hard_fail');
@@ -297,13 +297,13 @@ describe('gate mode controller (UTP-PULSE-008)', () => {
   });
 
   it('resolveGateMode returns the canonical default when no override is set', () => {
-    expect(resolveGateMode('no-roleplay')).toBe('log_only');
+    expect(resolveGateMode('no-roleplay')).toBe('hard_fail');
     expect(resolveGateMode('lineage-integrity')).toBe('hard_fail');
   });
 
   it('effectiveGateModes returns a frozen snapshot', () => {
     const snap = effectiveGateModes();
     expect(Object.isFrozen(snap)).toBe(true);
-    expect(snap['no-roleplay']).toBe('log_only');
+    expect(snap['no-roleplay']).toBe('hard_fail');
   });
 });
