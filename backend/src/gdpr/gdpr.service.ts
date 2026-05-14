@@ -9,9 +9,6 @@
  * generation, signed_request parsing) are extracted to gdpr.helpers.ts.
  */
 
-import * as fs from 'node:fs';
-import * as os from 'node:os';
-import * as path from 'node:path';
 import {
   BadRequestException,
   Injectable,
@@ -22,18 +19,20 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { GdprStatus, GdprType, Prisma } from '@prisma/client';
+import { GdprStatus, GdprType } from '@prisma/client';
 import { Queue, Worker, type Job } from 'bullmq';
 import { createRedisClient } from '../common/redis/redis.util';
 import { StorageService } from '../common/storage/storage.service';
 import { EmailService } from '../auth/email.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { createZip, generateCode, parseFacebookSignedRequest, writeJson } from './gdpr.helpers';
+import { generateCode, parseFacebookSignedRequest } from './gdpr.helpers';
+import {
+  processGdprDeletion,
+  processGdprExport,
+  sendGdprVerificationEmail,
+} from './gdpr-processing.helpers';
 
 const GDPR_QUEUE = 'gdpr-processing';
-const VERIFICATION_TOKEN_EXPIRY = '24h';
-const SIGNED_URL_EXPIRY_SECONDS = 7 * 24 * 60 * 60;
-const DELETION_MAX_DAYS = 30;
 
 type GdprJobData = {
   requestId: string;
@@ -278,262 +277,12 @@ export class GdprService implements OnModuleInit, OnModuleDestroy {
 
   /** Process export: sweep data, generate ZIP, upload, return signed URL. */
   async processExport(requestId: string): Promise<void> {
-    const request = await this.prisma.gdprRequest.findUniqueOrThrow({
-      where: { id: requestId },
-      select: { id: true, userId: true, workspaceId: true },
-    });
-
-    await this.prisma.gdprRequest.update({
-      where: { id: requestId },
-      data: { status: GdprStatus.PROCESSING },
-    });
-
-    try {
-      const exportDir = path.join(os.tmpdir(), `gdpr-export-${requestId}`);
-      fs.mkdirSync(exportDir, { recursive: true });
-
-      await this.sweepUserData(request.userId, request.workspaceId, exportDir);
-
-      const zipPath = path.join(os.tmpdir(), `gdpr-export-${requestId}.zip`);
-      await createZip(exportDir, zipPath);
-
-      const zipBuffer = fs.readFileSync(zipPath);
-      const uploadResult = await this.storage.upload(zipBuffer, {
-        filename: `gdpr-export-${requestId}.zip`,
-        mimeType: 'application/zip',
-        folder: 'gdpr-exports',
-        workspaceId: request.workspaceId,
-      });
-
-      const signedUrl = this.storage.getSignedUrl(uploadResult.path, {
-        expiresInSeconds: SIGNED_URL_EXPIRY_SECONDS,
-        downloadName: `data-export-${requestId}.zip`,
-      });
-
-      fs.unlinkSync(zipPath);
-      fs.rmSync(exportDir, { recursive: true, force: true });
-
-      await this.prisma.gdprRequest.update({
-        where: { id: requestId },
-        data: {
-          status: GdprStatus.COMPLETE,
-          completedAt: new Date(),
-          evidenceUrl: signedUrl,
-        },
-      });
-
-      this.logger.log(`Export completed for request ${requestId}`);
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err);
-      this.logger.error(`Export failed for request ${requestId}: ${msg}`);
-      throw err;
-    }
+    await processGdprExport(this.processingContext(), requestId);
   }
 
   /** Process deletion: cascade delete across all user data bases. */
   async processDeletion(requestId: string): Promise<void> {
-    const request = await this.prisma.gdprRequest.findUniqueOrThrow({
-      where: { id: requestId },
-      select: { id: true, userId: true, workspaceId: true, requestedAt: true },
-    });
-
-    const daysSinceRequest = (Date.now() - request.requestedAt.getTime()) / (1000 * 60 * 60 * 24);
-
-    if (daysSinceRequest > DELETION_MAX_DAYS) {
-      await this.prisma.gdprRequest.update({
-        where: { id: requestId },
-        data: { status: GdprStatus.FAILED, completedAt: new Date() },
-      });
-      this.logger.warn(`Deletion request ${requestId} exceeded 30-day window`);
-      return;
-    }
-
-    await this.prisma.gdprRequest.update({
-      where: { id: requestId },
-      data: { status: GdprStatus.PROCESSING },
-    });
-
-    try {
-      await this.cascadeDeleteUserData(request.userId, request.workspaceId, requestId);
-
-      await this.prisma.gdprRequest.update({
-        where: { id: requestId },
-        data: {
-          status: GdprStatus.COMPLETE,
-          completedAt: new Date(),
-        },
-      });
-
-      this.logger.log(`Deletion completed for request ${requestId}`);
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err);
-      this.logger.error(`Deletion failed for request ${requestId}: ${msg}`);
-      throw err;
-    }
-  }
-
-  // ─── Data Sweep Methods ────────────────────────────────────────
-
-  private async sweepUserData(userId: string, workspaceId: string, exportDir: string) {
-    const data: Record<string, unknown> = {};
-
-    const agent = await this.prisma.agent.findUnique({
-      where: { id: userId },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        role: true,
-        phone: true,
-        bio: true,
-        website: true,
-        instagram: true,
-        publicName: true,
-        displayRole: true,
-        createdAt: true,
-      },
-    });
-    data.agent = agent;
-    writeJson(exportDir, 'agent.json', agent);
-
-    if (agent && (agent as { email?: string }).email) {
-      await this.email.sendDataDeletionConfirmationEmail((agent as { email: string }).email);
-    }
-
-    const conversations = await this.prisma.conversation.findMany({
-      where: { workspaceId, assignedAgentId: userId },
-      select: {
-        id: true,
-        status: true,
-        channel: true,
-        lastMessageAt: true,
-        createdAt: true,
-      },
-      take: 10000,
-    });
-    data.conversations = conversations;
-    writeJson(exportDir, 'conversations.json', conversations);
-
-    const messages = await this.prisma.message.findMany({
-      where: { agentId: userId, workspaceId },
-      select: {
-        id: true,
-        content: true,
-        direction: true,
-        createdAt: true,
-      },
-      take: 10000,
-    });
-    data.messages = messages;
-    writeJson(exportDir, 'messages.json', messages);
-
-    const chatMessages = await this.prisma.chatMessage.findMany({
-      where: { workspaceId, userId },
-      select: {
-        id: true,
-        threadId: true,
-        role: true,
-        content: true,
-        metadata: true,
-        createdAt: true,
-      },
-      take: 10000,
-    });
-    data.chatMessages = chatMessages;
-    writeJson(exportDir, 'chat_messages.json', chatMessages);
-
-    writeJson(exportDir, 'manifest.json', {
-      exportDate: new Date().toISOString(),
-      userId,
-      workspaceId,
-      tables: Object.keys(data),
-    });
-  }
-
-  private async cascadeDeleteUserData(userId: string, workspaceId: string, requestId: string) {
-    await this.prisma.$transaction(
-      async (tx) => {
-        await tx.refreshToken.updateMany({
-          where: { agentId: userId, revoked: false },
-          data: { revoked: true },
-        });
-
-        await tx.socialAccount.updateMany({
-          where: { agentId: userId },
-          data: {
-            revokedAt: new Date(),
-            accessToken: null,
-            refreshToken: null,
-            tokenExpiresAt: null,
-          },
-        });
-
-        await tx.magicLinkToken.updateMany({
-          where: { agentId: userId, usedAt: null },
-          data: { usedAt: new Date() },
-        });
-
-        const chatMessages = await tx.chatMessage.updateMany({
-          where: { workspaceId, userId, deletedAt: null },
-          data: {
-            userId: null,
-            content: '[deleted by GDPR request]',
-            metadata: Prisma.JsonNull,
-            deletedAt: new Date(),
-          },
-        });
-
-        const conversations = await tx.conversation.updateMany({
-          where: { workspaceId, assignedAgentId: userId },
-          data: { assignedAgentId: null },
-        });
-
-        const messages = await tx.message.updateMany({
-          where: { workspaceId, agentId: userId },
-          data: { agentId: null },
-        });
-
-        await tx.agent.update({
-          where: { id: userId },
-          data: {
-            name: 'Deleted User',
-            email: `deleted-${userId}@removed.local`,
-            phone: null,
-            avatarUrl: null,
-            provider: null,
-            providerId: null,
-            emailVerified: false,
-            disabledAt: new Date(),
-            deletedAt: new Date(),
-          },
-        });
-
-        await tx.auditLog.create({
-          data: {
-            workspaceId,
-            action: 'GDPR_DELETE',
-            resource: 'GdprRequest',
-            resourceId: requestId,
-            details: {
-              userId,
-              deletedAt: new Date().toISOString(),
-              requestId,
-              chatMessagesAnonymized: chatMessages.count,
-              conversationsUnassigned: conversations.count,
-              messagesUnassigned: messages.count,
-            },
-          },
-        });
-      },
-      { isolationLevel: 'ReadCommitted' },
-    );
-
-    await this.prisma.gdprRequest.update({
-      where: { id: requestId },
-      data: {
-        evidenceUrl: `gdpr-deletion:${requestId}:${userId}:audit-trail`,
-      },
-    });
+    await processGdprDeletion(this.processingContext(), requestId);
   }
 
   // ─── Helpers ───────────────────────────────────────────────────
@@ -571,35 +320,13 @@ export class GdprService implements OnModuleInit, OnModuleDestroy {
     code: string,
     type: string,
   ) {
-    const agent = await this.prisma.agent.findUnique({
-      where: { id: userId },
-      select: { email: true, name: true },
-    });
-
-    if (!agent) {
-      return;
-    }
-
-    const token = this.jwt.sign(
-      { sub: userId, requestId },
-      { expiresIn: VERIFICATION_TOKEN_EXPIRY },
-    );
-
-    const siteUrl = process.env.FRONTEND_URL || 'https://kloel.com';
-    const statusUrl = `${siteUrl.replace(/\/$/, '')}/data-deletion/status/${code}?token=${token}`;
-
-    const typeLabel = type === 'EXPORT' ? 'exportação de dados' : 'exclusão de dados';
-    const subject = `Confirmação de ${typeLabel} - KLOEL`;
-
-    const { renderEmailTemplate } = await import('../common/utils/email-template-renderer.util');
-    const html = renderEmailTemplate('data-request-confirmation', {
-      agentName: agent.name,
-      typeLabel,
+    await sendGdprVerificationEmail(
+      { prisma: this.prisma, email: this.email, jwt: this.jwt },
+      userId,
+      requestId,
       code,
-      statusUrl,
-    });
-
-    await this.email.sendEmail({ to: agent.email, subject, html });
+      type,
+    );
   }
 
   private async markRequestFailed(requestId: string, errorMessage: string) {
@@ -615,5 +342,14 @@ export class GdprService implements OnModuleInit, OnModuleDestroy {
     } catch {
       this.logger.error(`Failed to mark GdprRequest ${requestId} as FAILED`);
     }
+  }
+
+  private processingContext() {
+    return {
+      prisma: this.prisma,
+      storage: this.storage,
+      email: this.email,
+      logger: this.logger,
+    };
   }
 }
