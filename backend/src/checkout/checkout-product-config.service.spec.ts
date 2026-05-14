@@ -1,7 +1,6 @@
 import { NotFoundException } from '@nestjs/common';
 import { CheckoutProductConfigService } from './checkout-product-config.service';
 import { CheckoutPlanLinkManager } from './checkout-plan-link.manager';
-
 type PrismaMock = {
   checkoutProductPlan: {
     findUnique: jest.Mock;
@@ -16,7 +15,6 @@ type PrismaMock = {
   marketplaceFee: { findMany: jest.Mock };
   $transaction: jest.Mock;
 };
-
 const makePlan = (overrides: Record<string, unknown> = {}) => ({
   id: 'plan_1',
   productId: 'prod_1',
@@ -34,11 +32,9 @@ const makePlan = (overrides: Record<string, unknown> = {}) => ({
   product: { id: 'prod_1', workspaceId: 'ws_1', name: 'Test Product' },
   ...overrides,
 });
-
 describe('CheckoutProductConfigService', () => {
   let service: CheckoutProductConfigService;
   let prisma: PrismaMock;
-
   beforeEach(() => {
     prisma = {
       checkoutProductPlan: {
@@ -56,21 +52,17 @@ describe('CheckoutProductConfigService', () => {
     };
     service = new CheckoutProductConfigService(prisma as never);
   });
-
   describe('buildDefaultCheckoutConfigInput', () => {
     it('returns default config with brand name', () => {
       const result = service.buildDefaultCheckoutConfigInput('MyBrand');
-
       expect(result.brandName).toBe('MyBrand');
       expect(result.enableCreditCard).toBe(true);
       expect(result.enablePix).toBe(true);
       expect(result.enableBoleto).toBe(false);
       expect(result.enableCoupon).toBe(true);
     });
-
     it('falls back to "Checkout" when brand name is empty', () => {
       const result = service.buildDefaultCheckoutConfigInput('');
-
       expect(result.brandName).toBe('Checkout');
     });
   });

@@ -2,7 +2,6 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { KloelBusinessConfigToolsService } from './kloel-business-config-tools.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
-
 jest.mock('../billing/stripe-runtime', () => ({
   StripeRuntime: jest.fn().mockImplementation(() => ({
     billingPortal: {
@@ -12,7 +11,6 @@ jest.mock('../billing/stripe-runtime', () => ({
     },
   })),
 }));
-
 type ContactRecord = {
   id: string;
   name: string | null;
@@ -27,7 +25,6 @@ type ContactRecord = {
     messages: Array<{ content: string; direction: string; createdAt: Date }>;
   }>;
 };
-
 type WorkspaceRecord = {
   id: string;
   name: string;
@@ -35,7 +32,6 @@ type WorkspaceRecord = {
   stripeCustomerId: string | null;
   subscription: { plan: string; stripeId: string | null } | null;
 };
-
 type CampaignRecord = {
   id: string;
   name: string;
@@ -44,7 +40,6 @@ type CampaignRecord = {
   scheduledAt: Date | null;
   filters: Record<string, unknown>;
 };
-
 type BusinessConfigPrismaMock = {
   contact: { findMany: jest.Mock; findFirst: jest.Mock; count: jest.Mock };
   workspace: { findUnique: jest.Mock; update: jest.Mock };
@@ -52,14 +47,11 @@ type BusinessConfigPrismaMock = {
   subscription: { upsert: jest.Mock };
   $transaction: jest.Mock;
 };
-
 describe('KloelBusinessConfigToolsService', () => {
   let service: KloelBusinessConfigToolsService;
   let prisma: BusinessConfigPrismaMock;
   let opsAlert: Pick<OpsAlertService, 'alertOnCriticalError'>;
-
   const wsId = 'ws-1';
-
   beforeEach(async () => {
     prisma = {
       contact: {
@@ -81,7 +73,6 @@ describe('KloelBusinessConfigToolsService', () => {
       }),
     };
     opsAlert = { alertOnCriticalError: jest.fn() };
-
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         KloelBusinessConfigToolsService,
@@ -89,25 +80,19 @@ describe('KloelBusinessConfigToolsService', () => {
         { provide: OpsAlertService, useValue: opsAlert },
       ],
     }).compile();
-
     service = module.get<KloelBusinessConfigToolsService>(KloelBusinessConfigToolsService);
   });
-
   afterEach(() => {
     jest.clearAllMocks();
   });
-
   describe('toolListLeads', () => {
     it('returns empty list when no contacts exist', async () => {
       prisma.contact.findMany.mockResolvedValue([]);
-
       const result = await service.toolListLeads(wsId, {});
-
       expect(result.success).toBe(true);
       expect(result.count).toBe(0);
       expect(result.message).toContain('0 lead');
     });
-
     it('filters by workspaceId and returns mapped leads', async () => {
       const contacts: ContactRecord[] = [
         {
@@ -124,45 +109,33 @@ describe('KloelBusinessConfigToolsService', () => {
         },
       ];
       prisma.contact.findMany.mockResolvedValue(contacts);
-
       const result = await service.toolListLeads(wsId, { limit: 5 });
-
       expect(prisma.contact.findMany).toHaveBeenCalledWith(
         expect.objectContaining({ where: expect.objectContaining({ workspaceId: wsId }) }),
       );
       expect(result.leads).toHaveLength(1);
       expect((result.leads as Array<{ name: string }>)[0].name).toBe('João');
     });
-
     it('filters qualified leads by score >= 70', async () => {
       prisma.contact.findMany.mockResolvedValue([]);
-
       await service.toolListLeads(wsId, { status: 'qualified' });
-
       const whereArg = prisma.contact.findMany.mock.calls[0][0].where;
       expect(whereArg.leadScore).toEqual({ gte: 70 });
     });
-
     it('filters cold leads by score < 30', async () => {
       prisma.contact.findMany.mockResolvedValue([]);
-
       await service.toolListLeads(wsId, { status: 'cold' });
-
       const whereArg = prisma.contact.findMany.mock.calls[0][0].where;
       expect(whereArg.leadScore).toEqual({ lt: 30 });
     });
   });
-
   describe('toolGetLeadDetails', () => {
     it('returns success false when lead not found', async () => {
       prisma.contact.findFirst.mockResolvedValue(null);
-
       const result = await service.toolGetLeadDetails(wsId, { leadId: 'no-exist' });
-
       expect(result.success).toBe(false);
       expect(result.error).toBe('Lead não encontrado.');
     });
-
     it('finds lead by id with workspaceId filter', async () => {
       const contact = {
         id: 'c-1',
@@ -175,7 +148,6 @@ describe('KloelBusinessConfigToolsService', () => {
         conversations: [],
       } as ContactRecord;
       prisma.contact.findFirst.mockResolvedValue(contact);
-
       const result = await service.toolGetLeadDetails(wsId, { leadId: 'c-1' });
 
       expect(prisma.contact.findFirst).toHaveBeenCalledWith(

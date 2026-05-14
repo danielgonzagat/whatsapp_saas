@@ -1,7 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { KloelToolExecutorCrmService } from './kloel-tool-executor-crm.service';
 import { PrismaService } from '../prisma/prisma.service';
-
 type CrmPrismaMock = {
   contact: { findMany: jest.Mock; findFirst: jest.Mock; count: jest.Mock };
   workspace: { findUnique: jest.Mock; update: jest.Mock };
@@ -12,13 +11,10 @@ type CrmPrismaMock = {
   message: { count: jest.Mock };
   $transaction: jest.Mock;
 };
-
 describe('KloelToolExecutorCrmService', () => {
   let service: KloelToolExecutorCrmService;
   let prisma: CrmPrismaMock;
-
   const wsId = 'ws-crm-1';
-
   beforeEach(async () => {
     prisma = {
       contact: {
@@ -47,24 +43,18 @@ describe('KloelToolExecutorCrmService', () => {
         return Promise.resolve(undefined);
       }),
     };
-
     const module: TestingModule = await Test.createTestingModule({
       providers: [KloelToolExecutorCrmService, { provide: PrismaService, useValue: prisma }],
     }).compile();
-
     service = module.get<KloelToolExecutorCrmService>(KloelToolExecutorCrmService);
   });
-
   afterEach(() => {
     jest.clearAllMocks();
   });
-
   describe('toolListLeads', () => {
     it('returns empty list when no contacts exist', async () => {
       prisma.contact.findMany.mockResolvedValue([]);
-
       const result = await service.toolListLeads(wsId, {});
-
       expect(result.success).toBe(true);
       expect(result.count).toBe(0);
       expect(result.message).toContain('0 lead');
@@ -72,7 +62,6 @@ describe('KloelToolExecutorCrmService', () => {
         expect.objectContaining({ where: { workspaceId: wsId } }),
       );
     });
-
     it('filters qualified leads with leadScore >= 70', async () => {
       const contacts = [
         {
@@ -86,9 +75,7 @@ describe('KloelToolExecutorCrmService', () => {
         },
       ];
       prisma.contact.findMany.mockResolvedValue(contacts);
-
       const result = await service.toolListLeads(wsId, { status: 'qualified' });
-
       expect(result.count).toBe(1);
       expect(result.leads[0].score).toBe(85);
       expect(prisma.contact.findMany).toHaveBeenCalledWith(
@@ -97,7 +84,6 @@ describe('KloelToolExecutorCrmService', () => {
         }),
       );
     });
-
     it('filters cold leads with leadScore < 30', async () => {
       prisma.contact.findMany.mockResolvedValue([]);
 

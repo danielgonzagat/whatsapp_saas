@@ -4,7 +4,6 @@ import { MetaConnectService } from './marketing-connect/meta-connect.service';
 import { EmailConnectService } from './marketing-connect/email-connect.service';
 import { ChannelSetupService } from './marketing-connect/channel-setup.service';
 import { WhatsAppSummaryService } from './marketing-connect/whatsapp-summary.service';
-
 describe('MarketingConnectController channel setup', () => {
   const metaConnect = {
     getStatus: jest.fn(async () => ({
@@ -44,7 +43,6 @@ describe('MarketingConnectController channel setup', () => {
       },
     })),
   };
-
   const emailConnect = {
     getStatus: jest.fn(async () => ({
       connected: false,
@@ -71,17 +69,14 @@ describe('MarketingConnectController channel setup', () => {
       provider: 'resend',
     })),
   };
-
   const channelSetup = {
     getSetup: jest.fn(),
     saveSetup: jest.fn(),
     completeSetup: jest.fn(),
   };
-
   const whatsappSummary = {
     getSummary: jest.fn(),
   };
-
   const tiktokMarketing = {
     getConnectionStatus: jest.fn(async () => ({ connected: false })),
     getStatus: jest.fn(async () => ({ connected: false, status: 'disconnected' })),
@@ -100,7 +95,6 @@ describe('MarketingConnectController channel setup', () => {
       },
     })),
   };
-
   const gmailMailbox = {
     buildAuthUrl: jest.fn(() => ({
       provider: 'gmail',
@@ -146,7 +140,6 @@ describe('MarketingConnectController channel setup', () => {
       email: 'owner@kloel.test',
     })),
   };
-
   const controller = new MarketingConnectController(
     metaConnect as unknown as MetaConnectService,
     emailConnect as unknown as EmailConnectService,
@@ -159,11 +152,9 @@ describe('MarketingConnectController channel setup', () => {
     imapSmtpMailbox as never,
   );
   const req = { user: { workspaceId: 'ws_1', email: 'owner@kloel.test' } };
-
   beforeEach(() => {
     jest.clearAllMocks();
   });
-
   it('persists a four-step setup under the selected channel key', async () => {
     channelSetup.saveSetup.mockResolvedValueOnce({
       channel: 'email',
@@ -180,7 +171,6 @@ describe('MarketingConnectController channel setup', () => {
         updatedAt: '2026-05-11T12:00:00.000Z',
       },
     });
-
     const result = await controller.saveChannelSetup(req, {
       channel: 'email',
       currentStep: 3,
@@ -193,7 +183,6 @@ describe('MarketingConnectController channel setup', () => {
         proactiveDailyLimit: 25,
       },
     });
-
     expect(result.channel).toBe('email');
     expect(result.setup).toEqual(
       expect.objectContaining({
@@ -213,7 +202,6 @@ describe('MarketingConnectController channel setup', () => {
       currentStep: 3,
     }));
   });
-
   it('returns default setup when the channel has no persisted setup', async () => {
     channelSetup.getSetup.mockResolvedValueOnce({
       channel: 'instagram',
@@ -225,9 +213,7 @@ describe('MarketingConnectController channel setup', () => {
       },
       completedAt: null,
     });
-
     const result = await controller.getChannelSetup(req, 'instagram');
-
     expect(result).toEqual({
       channel: 'instagram',
       setup: {

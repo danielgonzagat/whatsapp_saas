@@ -3,21 +3,16 @@ import { MemoryService } from './memory.service';
 import { MemoryCrudService } from './memory-crud.service';
 import { MemorySearchService } from './memory-search.service';
 import type { MemoryItem, SearchResult } from './memory.types';
-
 type MemoryCrudMock = Pick<
   MemoryCrudService,
   'saveMemory' | 'listMemories' | 'getMemoryStats' | 'deleteMemory'
 >;
-
 type MemorySearchMock = Pick<MemorySearchService, 'searchMemory' | 'getSalesContext'>;
-
 describe('MemoryService', () => {
   let service: MemoryService;
   let memoryCrud: MemoryCrudMock;
   let memorySearch: MemorySearchMock;
-
   const wsId = 'ws-1';
-
   const sampleMemoryItem: MemoryItem = {
     id: 'm-1',
     workspaceId: wsId,
@@ -26,13 +21,11 @@ describe('MemoryService', () => {
     category: 'product',
     content: 'Curso description',
   };
-
   const sampleSearchResult: SearchResult = {
     memories: [sampleMemoryItem],
     totalFound: 1,
     searchTime: 5,
   };
-
   beforeEach(async () => {
     memoryCrud = {
       saveMemory: jest.fn().mockResolvedValue(sampleMemoryItem),
@@ -47,12 +40,10 @@ describe('MemoryService', () => {
       }),
       deleteMemory: jest.fn().mockResolvedValue(true),
     };
-
     memorySearch = {
       searchMemory: jest.fn().mockResolvedValue(sampleSearchResult),
       getSalesContext: jest.fn().mockResolvedValue(''),
     };
-
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         MemoryService,
@@ -60,14 +51,11 @@ describe('MemoryService', () => {
         { provide: MemorySearchService, useValue: memorySearch },
       ],
     }).compile();
-
     service = module.get<MemoryService>(MemoryService);
   });
-
   afterEach(() => {
     jest.clearAllMocks();
   });
-
   describe('saveMemory', () => {
     it('delegates to memoryCrud.saveMemory', async () => {
       const result = await service.saveMemory(

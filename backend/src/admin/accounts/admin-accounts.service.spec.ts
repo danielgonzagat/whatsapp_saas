@@ -6,11 +6,9 @@ import { AdminAccountsService } from './admin-accounts.service';
 import { AdminAccountStateAction } from './dto/update-account-state.dto';
 import { AdminKycService } from './kyc/admin-kyc.service';
 import { AdminAuditService } from '../audit/admin-audit.service';
-
 const mockListAccounts = jest.fn<Promise<unknown>, unknown[]>();
 const mockGetDetail = jest.fn<Promise<unknown>, unknown[]>();
 const mockListKycQueue = jest.fn<Promise<unknown>, unknown[]>();
-
 jest.mock('./queries/list-accounts.query', () => ({
   listAdminAccounts: (...args: unknown[]) => mockListAccounts(...args),
 }));
@@ -20,28 +18,22 @@ jest.mock('./queries/detail-account.query', () => ({
 jest.mock('./queries/kyc-queue.query', () => ({
   listKycQueue: (...args: unknown[]) => mockListKycQueue(...args),
 }));
-
 const mockAsProviderSettings = jest.fn<Record<string, unknown>, unknown[]>();
 jest.mock('../../whatsapp/provider-settings.types', () => ({
   asProviderSettings: (...args: unknown[]) => mockAsProviderSettings(...args),
 }));
-
 describe('AdminAccountsService', () => {
   let service: AdminAccountsService;
-
   const actorId = 'admin_1';
-
   const mockTxWorkspaceFindUnique = jest.fn<Promise<unknown>, unknown[]>();
   const mockTxWorkspaceUpdate = jest.fn<Promise<unknown>, unknown[]>();
   const mockTxAuditLogCreate = jest.fn<Promise<unknown>, unknown[]>();
   const mockTxAgentUpdateMany = jest.fn<Promise<unknown>, unknown[]>();
-
   const mockPrismaTx: Record<string, Record<string, jest.Mock>> = {
     workspace: { findUnique: mockTxWorkspaceFindUnique, update: mockTxWorkspaceUpdate },
     adminAuditLog: { create: mockTxAuditLogCreate },
     agent: { updateMany: mockTxAgentUpdateMany },
   };
-
   const mockAuth = {
     issueTokensForAgentId: jest.fn<Promise<unknown>, unknown[]>(),
   };
