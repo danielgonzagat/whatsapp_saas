@@ -14,60 +14,26 @@ import type {
   DisconnectResult,
   RefreshTokenResult,
 } from './ad-provider.interface';
-
-interface TikTokProviderSubsettings {
-  connected?: boolean;
-  status?: string;
-  kind?: string;
-  accessToken?: string;
-  refreshToken?: string | null;
-  openId?: string | null;
-  advertiserIds?: string[];
-  scope?: string | null;
-  expiresAt?: string | null;
-  connectedAt?: string;
-  [key: string]: unknown;
-}
-
-interface TikTokTokenResponse {
-  access_token?: string;
-  refresh_token?: string;
-  expires_in?: number;
-  advertiser_ids?: string[];
-  data?: {
-    access_token?: string;
-    refresh_token?: string;
-    expires_in?: number;
-    advertiser_ids?: string[];
-  };
-  message?: string;
-  error?: string;
-}
-
-const PLATFORM = 'tiktok';
-const ADVERTISER_AUTH_URL = 'https://business-api.tiktok.com/portal/auth';
-const ADVERTISER_TOKEN_URL = 'https://business-api.tiktok.com/open_api/v1.3/oauth2/access_token/';
-const REVOKE_URL = 'https://business-api.tiktok.com/open_api/v1.3/oauth2/revoke/';
-
-function maskToken(token: string): string {
-  if (!token || token.length < 8) {
-    return '****';
-  }
-  return `${token.slice(0, 4)}****${token.slice(-4)}`;
-}
-
-function resolveEnv(name: string): string {
-  return String(process.env[name] || '').trim();
-}
-
-function readTikTokSubsettings(workspaceProviderSettings: unknown): TikTokProviderSubsettings {
-  const settings = asProviderSettings(workspaceProviderSettings);
-  return (settings.tiktok || {}) as TikTokProviderSubsettings;
-}
+import {
+  mapTikTokCampaign,
+  mapTikTokInsight,
+  maskTikTokToken,
+  readTikTokSubsettings,
+  readTikTokStatus,
+  resolveTikTokAccessToken,
+  resolveTikTokEnv,
+  resolveTikTokRedirectUri,
+  syncTikTokAccountsFromSettings,
+  TIKTOK_ADS_PLATFORM,
+  TIKTOK_ADVERTISER_AUTH_URL,
+  TIKTOK_ADVERTISER_TOKEN_URL,
+  TIKTOK_REVOKE_URL,
+  type TikTokTokenResponse,
+} from './tiktok-ads.helpers';
 
 @Injectable()
 export class TikTokAdsProvider implements AdProvider {
-  readonly platform = PLATFORM;
+  readonly platform = TIKTOK_ADS_PLATFORM;
   private readonly logger = new Logger(TikTokAdsProvider.name);
 
   constructor(
@@ -75,48 +41,12 @@ export class TikTokAdsProvider implements AdProvider {
     private readonly tiktokAds: TikTokAdsService,
   ) {}
 
-  private resolveRedirectUri(explicit?: string): string {
-    if (explicit) {
-      return explicit;
-    }
-    const frontendUrl = resolveEnv('FRONTEND_URL') || 'https://app.kloel.com';
-    return `${frontendUrl.replace(/\/+$/, '')}/integrations/tiktok/callback`;
-  }
-
-  private async resolveAccessToken(
-    workspaceId: string,
-  ): Promise<{ accessToken: string; advertiserIds: string[] }> {
-    const workspace = await this.prisma.workspace.findUnique({
-      where: { id: workspaceId },
-      select: { providerSettings: true },
-    });
-    const settings = asProviderSettings(workspace?.providerSettings);
-    const tiktok = (settings.tiktok || {}) as TikTokProviderSubsettings;
-
-    const encrypted = tiktok.accessToken;
-    const accessToken = decryptTikTokToken(encrypted) || encrypted;
-    const advertiserIds = Array.isArray(tiktok.advertiserIds) ? tiktok.advertiserIds : [];
-
-    if (!accessToken) {
-      throw new Error(
-        'tiktok_ads_not_configured: no access token found — complete OAuth via TikTok Business Center first',
-      );
-    }
-
-    if (!advertiserIds.length) {
-      throw new Error(
-        'tiktok_ads_not_configured: no advertiser IDs found — grant advertiser access in TikTok Business Center',
-      );
-    }
-
-    return { accessToken: String(accessToken), advertiserIds };
-  }
-
   // ── OAuth Connect ──────────────────────────────────────────────────
 
   async connect(workspaceId: string, redirectUri: string): Promise<OAuthConnectResult> {
     await Promise.resolve();
-    const appId = resolveEnv('TIKTOK_CLIENT_KEY') || resolveEnv('NEXT_PUBLIC_TIKTOK_CLIENT_KEY');
+    const appId =
+      resolveTikTokEnv('TIKTOK_CLIENT_KEY') || resolveTikTokEnv('NEXT_PUBLIC_TIKTOK_CLIENT_KEY');
     if (!appId) {
       return { connected: false, status: 'tiktok_app_id_not_configured' };
     }
@@ -125,10 +55,10 @@ export class TikTokAdsProvider implements AdProvider {
       'base64url',
     );
 
-    const url = new URL(ADVERTISER_AUTH_URL);
+    const url = new URL(TIKTOK_ADVERTISER_AUTH_URL);
     url.searchParams.set('app_id', appId);
     url.searchParams.set('state', state);
-    url.searchParams.set('redirect_uri', this.resolveRedirectUri(redirectUri));
+    url.searchParams.set('redirect_uri', resolveTikTokRedirectUri(redirectUri));
 
     return { connected: false, status: 'pending_oauth', authUrl: url.toString() };
   }
@@ -138,22 +68,23 @@ export class TikTokAdsProvider implements AdProvider {
     code: string,
     redirectUri: string,
   ): Promise<OAuthConnectResult> {
-    const appId = resolveEnv('TIKTOK_CLIENT_KEY') || resolveEnv('NEXT_PUBLIC_TIKTOK_CLIENT_KEY');
-    const appSecret = resolveEnv('TIKTOK_CLIENT_SECRET');
+    const appId =
+      resolveTikTokEnv('TIKTOK_CLIENT_KEY') || resolveTikTokEnv('NEXT_PUBLIC_TIKTOK_CLIENT_KEY');
+    const appSecret = resolveTikTokEnv('TIKTOK_CLIENT_SECRET');
 
     if (!appId || !appSecret) {
       return { connected: false, status: 'tiktok_credentials_not_configured' };
     }
 
     try {
-      const response = await fetch(ADVERTISER_TOKEN_URL, {
+      const response = await fetch(TIKTOK_ADVERTISER_TOKEN_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           app_id: appId,
           secret: appSecret,
           auth_code: code,
-          redirect_uri: this.resolveRedirectUri(redirectUri),
+          redirect_uri: resolveTikTokRedirectUri(redirectUri),
         }),
         signal: AbortSignal.timeout(30000),
       });
@@ -177,7 +108,7 @@ export class TikTokAdsProvider implements AdProvider {
       }
 
       this.logger.log(
-        `TikTok Ads OAuth token obtained: ${maskToken(accessToken)} workspace=${workspaceId}`,
+        `TikTok Ads OAuth token obtained: ${maskTikTokToken(accessToken)} workspace=${workspaceId}`,
       );
 
       const encryptedAccessToken = encryptTikTokToken(accessToken);
@@ -226,20 +157,7 @@ export class TikTokAdsProvider implements AdProvider {
   // ── Status ─────────────────────────────────────────────────────────
 
   async getStatus(workspaceId: string): Promise<OAuthStatusResult> {
-    const workspace = await this.prisma.workspace.findUnique({
-      where: { id: workspaceId },
-      select: { providerSettings: true },
-    });
-    const tiktok = readTikTokSubsettings(workspace?.providerSettings);
-
-    const result: OAuthStatusResult = {
-      connected: Boolean(tiktok.connected),
-      status: tiktok.connected ? 'connected' : 'disconnected',
-    };
-    if (tiktok.advertiserIds?.[0]) {
-      result.accountId = tiktok.advertiserIds[0];
-    }
-    return result;
+    return readTikTokStatus(this.prisma, workspaceId);
   }
 
   // ── Disconnect ─────────────────────────────────────────────────────
@@ -258,12 +176,13 @@ export class TikTokAdsProvider implements AdProvider {
     const resolvedToken = decryptTikTokToken(tiktok.accessToken) || tiktok.accessToken;
 
     if (resolvedToken && resolvedToken !== tiktok.accessToken) {
-      const appId = resolveEnv('TIKTOK_CLIENT_KEY') || resolveEnv('NEXT_PUBLIC_TIKTOK_CLIENT_KEY');
-      const appSecret = resolveEnv('TIKTOK_CLIENT_SECRET');
+      const appId =
+        resolveTikTokEnv('TIKTOK_CLIENT_KEY') || resolveTikTokEnv('NEXT_PUBLIC_TIKTOK_CLIENT_KEY');
+      const appSecret = resolveTikTokEnv('TIKTOK_CLIENT_SECRET');
 
       if (appId && appSecret) {
         try {
-          await fetch(REVOKE_URL, {
+          await fetch(TIKTOK_REVOKE_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -313,8 +232,9 @@ export class TikTokAdsProvider implements AdProvider {
       return null;
     }
 
-    const appId = resolveEnv('TIKTOK_CLIENT_KEY') || resolveEnv('NEXT_PUBLIC_TIKTOK_CLIENT_KEY');
-    const appSecret = resolveEnv('TIKTOK_CLIENT_SECRET');
+    const appId =
+      resolveTikTokEnv('TIKTOK_CLIENT_KEY') || resolveTikTokEnv('NEXT_PUBLIC_TIKTOK_CLIENT_KEY');
+    const appSecret = resolveTikTokEnv('TIKTOK_CLIENT_SECRET');
 
     if (!appId || !appSecret) {
       this.logger.warn(
@@ -326,7 +246,7 @@ export class TikTokAdsProvider implements AdProvider {
     const resolvedRefreshToken = decryptTikTokToken(tiktok.refreshToken) || tiktok.refreshToken;
 
     try {
-      const response = await fetch(ADVERTISER_TOKEN_URL, {
+      const response = await fetch(TIKTOK_ADVERTISER_TOKEN_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -394,23 +314,7 @@ export class TikTokAdsProvider implements AdProvider {
   // ── Sync Accounts ──────────────────────────────────────────────────
 
   async syncAccounts(workspaceId: string): Promise<SyncAccountsResult> {
-    const workspace = await this.prisma.workspace.findUnique({
-      where: { id: workspaceId },
-      select: { providerSettings: true },
-    });
-    const tiktok = readTikTokSubsettings(workspace?.providerSettings);
-
-    if (!tiktok.connected || !tiktok.advertiserIds?.length) {
-      return { accounts: [] };
-    }
-
-    const accounts = tiktok.advertiserIds.map((id) => ({
-      platform: PLATFORM,
-      accountId: id,
-      accountName: `TikTok Ads Account ${id}`,
-    }));
-
-    return { accounts };
+    return syncTikTokAccountsFromSettings(this.prisma, workspaceId);
   }
 
   // ── Sync Campaigns ─────────────────────────────────────────────────
@@ -419,7 +323,7 @@ export class TikTokAdsProvider implements AdProvider {
     let auth: { accessToken: string; advertiserIds: string[] };
 
     try {
-      auth = await this.resolveAccessToken(workspaceId);
+      auth = await resolveTikTokAccessToken(this.prisma, workspaceId);
     } catch (err) {
       this.logger.error('TikTok syncCampaigns — authentication failed', err);
       return { campaigns: [] };
@@ -434,23 +338,7 @@ export class TikTokAdsProvider implements AdProvider {
           advertiserId,
         );
 
-        for (const c of fetched) {
-          campaigns.push({
-            platform: PLATFORM,
-            accountId: c.advertiserId,
-            campaignId: c.campaignId,
-            campaignName: c.campaignName,
-            status: c.status,
-            spend: 0,
-            revenue: 0,
-            roas: 0,
-            conversions: 0,
-            impressions: 0,
-            clicks: 0,
-            ctr: 0,
-            cpc: 0,
-          });
-        }
+        campaigns.push(...fetched.map(mapTikTokCampaign));
       } catch (err) {
         this.logger.error(`TikTok campaign sync failed for advertiser ${advertiserId}`, err);
       }
@@ -468,7 +356,7 @@ export class TikTokAdsProvider implements AdProvider {
     let auth: { accessToken: string; advertiserIds: string[] };
 
     try {
-      auth = await this.resolveAccessToken(workspaceId);
+      auth = await resolveTikTokAccessToken(this.prisma, workspaceId);
     } catch (err) {
       this.logger.error('TikTok syncInsights — authentication failed', err);
       return { insights: [] };
@@ -488,21 +376,7 @@ export class TikTokAdsProvider implements AdProvider {
           endDate,
         );
 
-        for (const row of rows) {
-          insights.push({
-            platform: PLATFORM,
-            accountId: row.advertiserId,
-            date: new Date(row.date),
-            spend: row.spend,
-            revenue: 0,
-            roas: row.spend > 0 ? 0 : 0,
-            conversions: row.conversions,
-            impressions: row.impressions,
-            clicks: row.clicks,
-            ctr: row.ctr,
-            cpc: row.cpc,
-          });
-        }
+        insights.push(...rows.map(mapTikTokInsight));
       } catch (err) {
         this.logger.error(`TikTok insights sync failed for advertiser ${advertiserId}`, err);
       }
