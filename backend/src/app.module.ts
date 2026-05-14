@@ -88,6 +88,8 @@ import { OpsAlertModule } from './observability/ops-alert.module';
 import { OpsModule } from './ops/ops.module';
 import { PartnershipsModule } from './partnerships/partnerships.module';
 import { AffilModule } from './kloel/affil/affil.module';
+import { LegitModule } from './kloel/legit/legit.module';
+import { MoveModule } from './kloel/move/move.module';
 import { GoalFieldModule } from './kloel/goal-field/goal-field.module';
 import { ColdstartModule } from './kloel/coldstart/coldstart.module';
 import { CashModule } from './kloel/cash/cash.module';
@@ -113,6 +115,9 @@ import { CreatorModule } from './kloel/creator/creator.module';
 import { RoleModule } from './kloel/role/role.module';
 import { WowModule } from './kloel/wow/wow.module';
 import { ChannelModule } from './kloel/channel/channel.module';
+import { DefensModule } from './kloel/defens/defens.module';
+import { EvolModule } from './kloel/evol/evol.module';
+import { IncentModule } from './kloel/incent/incent.module';
 import { PipelineModule } from './pipeline/pipeline.module';
 import { ProductCategoriesModule } from './product-categories/product-categories.module';
 import { PublicApiModule } from './public-api/public-api.module';
@@ -296,7 +301,12 @@ function setRedisClientListenerBudget(client: Redis): void {
     CreatorModule, // 🎬 Camada XXVI — Creator Intelligence (audience-partner fit, mention timing, saturation, authenticity, engagement-vs-conversion, trust capital)
     RoleModule, // 🎭 Camada XXIII — Role-Aware Commercial Intelligence (role detection, leverage map, recommendation guard, multi-hat, hierarchy/wisdom extenders) (UTP-ROLE-001..008)
     AffilModule, // 🤝 Camada XXIII — Affiliate Intelligence & Protection (offer quality, producer trust, audience fit, angle, fatigue, waste, budget, account, commission, switch, scale vs abandon, discovery loop) (UTP-AFFIL-001..012)
+    MoveModule, // 🏃 Camada XXXI — Real Movement (friction detection, step decomposition, tiny action suggestion, partial execution, alternative routes, pattern learning, no-blame tone) (UTP-MOVE-001..007)
     ChannelModule, // 📡 Camada XXVIII — Channel Survival Intelligence (concentration, health, ban-risk, policy, contingency, migration, diversification)
+    DefensModule, // 🛡️ Camada XXX — Defensibility Assets (asset registry, growth, owned audience, social proof, case library, positioning, authority, tradeoffs, narrative)
+    EvolModule, // 🧬 Camada XXXII — Self-Evolution (gap detection, proposals, human authorization, agent dispatch, experiment runner, rollback, firewall, codacy enforcement, audit)
+    IncentModule, // 🤝 Camada XXXIV — Incentive Integrity (explain, detect conflict, silence, monitor bias, disclose, audit, feedback, attribution)
+    LegitModule, // ⚖️ Camada LEGIT — Legal & Regulatory Compliance (LGPD/GDPR/CCPA, policies, consent, regulated content, image rights, risk flags, legal consult)
     PulseModule, // PULSE live organism collector
     AnunciosModule, // 📊 Anuncios — Meta/Google/TikTok ad accounts, campaigns, insights
     TikTokAdsModule, // 🎵 TikTok Ads — OAuth + Events API + sync
