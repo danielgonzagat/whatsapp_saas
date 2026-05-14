@@ -23,10 +23,7 @@ import type {
   EmailCampaignDelivery,
   Prisma,
 } from '@prisma/client';
-type EmailCampaignJob = {
-  campaignId: string;
-  workspaceId: string;
-};
+type EmailCampaignJob = { campaignId: string; workspaceId: string };
 type EmailDeliveryLog = {
   campaignId: string;
   recipientId: string;
