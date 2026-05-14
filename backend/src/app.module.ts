@@ -88,6 +88,7 @@ import { OpsAlertModule } from './observability/ops-alert.module';
 import { OpsModule } from './ops/ops.module';
 import { PartnershipsModule } from './partnerships/partnerships.module';
 import { AffilModule } from './kloel/affil/affil.module';
+import { EcosysModule } from './kloel/ecosys/ecosys.module';
 import { LegitModule } from './kloel/legit/legit.module';
 import { MoveModule } from './kloel/move/move.module';
 import { GoalFieldModule } from './kloel/goal-field/goal-field.module';
@@ -306,6 +307,7 @@ function setRedisClientListenerBudget(client: Redis): void {
     DefensModule, // 🛡️ Camada XXX — Defensibility Assets (asset registry, growth, owned audience, social proof, case library, positioning, authority, tradeoffs, narrative)
     EvolModule, // 🧬 Camada XXXII — Self-Evolution (gap detection, proposals, human authorization, agent dispatch, experiment runner, rollback, firewall, codacy enforcement, audit)
     IncentModule, // 🤝 Camada XXXIV — Incentive Integrity (explain, detect conflict, silence, monitor bias, disclose, audit, feedback, attribution)
+    EcosysModule, // 🤝 Camada XXVII — Ecosystem Intelligence (cross-role fits, privacy guard, conflict detector, suggestion delivery)
     LegitModule, // ⚖️ Camada LEGIT — Legal & Regulatory Compliance (LGPD/GDPR/CCPA, policies, consent, regulated content, image rights, risk flags, legal consult)
     PulseModule, // PULSE live organism collector
     AnunciosModule, // 📊 Anuncios — Meta/Google/TikTok ad accounts, campaigns, insights

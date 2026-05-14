@@ -52,7 +52,9 @@ const CLOSER_EVENTS = new Set([
 const CREATOR_EVENTS = new Set([
   'commerce.content.published',
   'commerce.campaign.created',
-  'commerce.lead.created',
+  // commerce.lead.created intentionally NOT here — it's a generic operational
+  // event that every role triggers; counting it as creator-only signal
+  // would prevent gestor fallback detection.
   'commerce.whatsapp.message_sent',
 ]);
 
