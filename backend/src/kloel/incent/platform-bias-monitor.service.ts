@@ -27,8 +27,8 @@ export class PlatformBiasMonitorService {
 
     const biasDetected = Math.abs(delta) > PlatformBiasMonitorService.MITIGATION_THRESHOLD;
     const level = biasLevelFromDelta(delta);
-    const mitigationApplied = biasDetected &&
-      Math.abs(delta) >= PlatformBiasMonitorService.STRONG_MITIGATION_THRESHOLD;
+    const mitigationApplied =
+      biasDetected && Math.abs(delta) >= PlatformBiasMonitorService.STRONG_MITIGATION_THRESHOLD;
 
     const source = this.classifyBiasSource(input);
 
@@ -48,30 +48,27 @@ export class PlatformBiasMonitorService {
     };
   }
 
-  public auditBatch(
-    inputs: readonly BiasAuditInput[],
-  ): readonly PlatformBias[] {
+  public auditBatch(inputs: readonly BiasAuditInput[]): readonly PlatformBias[] {
     return inputs.map((inp) => this.audit(inp));
   }
 
-  public biasAlerts(
-    audits: readonly PlatformBias[],
-  ): readonly PlatformBias[] {
+  public biasAlerts(audits: readonly PlatformBias[]): readonly PlatformBias[] {
     return audits.filter((a) => a.biasDetected);
   }
 
   public overallBiasScore(audits: readonly PlatformBias[]): number {
-    if (audits.length === 0) return 0;
+    if (audits.length === 0) {
+      return 0;
+    }
     const deltas = audits.map((a) => Math.abs(a.weightDelta));
     return deltas.reduce((sum, d) => sum + d, 0) / audits.length;
   }
 
-  public dominanceRatio(
-    audits: readonly PlatformBias[],
-    source: BiasSource,
-  ): number {
+  public dominanceRatio(audits: readonly PlatformBias[], source: BiasSource): number {
     const relevant = audits.filter((a) => a.source === source);
-    if (relevant.length === 0) return 0;
+    if (relevant.length === 0) {
+      return 0;
+    }
     return relevant.filter((a) => a.biasDetected).length / relevant.length;
   }
 
@@ -87,12 +84,18 @@ export class PlatformBiasMonitorService {
   }
 
   private classifyBiasSource(input: BiasAuditInput): BiasSource {
-    if (input.biasSource) return input.biasSource;
+    if (input.biasSource) {
+      return input.biasSource;
+    }
     if (input.internalRevenueWeight && input.internalRevenueWeight > 0.5) {
       return 'internal_revenue';
     }
-    if (input.exclusivePartner) return 'exclusivity_clause';
-    if (input.marketplaceRanking) return 'marketplace_ranking';
+    if (input.exclusivePartner) {
+      return 'exclusivity_clause';
+    }
+    if (input.marketplaceRanking) {
+      return 'marketplace_ranking';
+    }
     return 'commission_structure';
   }
 
@@ -110,9 +113,7 @@ export class PlatformBiasMonitorService {
       platform_lock_in: 'lock-in de plataforma',
       exclusivity_clause: 'cláusula de exclusividade',
     };
-    const mitigatedText = mitigated
-      ? ' Mitigação automática aplicada.'
-      : '';
+    const mitigatedText = mitigated ? ' Mitigação automática aplicada.' : '';
     return `Viés de nível [${level}] detectado (delta=${deltaPct}%) originado em ${sourceLabel[source] ?? source}.${mitigatedText}`;
   }
 }

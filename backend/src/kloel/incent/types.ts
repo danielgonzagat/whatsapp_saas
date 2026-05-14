@@ -52,7 +52,11 @@ export interface ConflictDetection {
   readonly detectedAt: string;
 }
 
-export type SilenceRule = 'structural_conflict' | 'lack_of_disclosure' | 'platform_bias_alert' | 'user_override';
+export type SilenceRule =
+  | 'structural_conflict'
+  | 'lack_of_disclosure'
+  | 'platform_bias_alert'
+  | 'user_override';
 
 export interface SilenceUnderConflict {
   readonly id: string;
@@ -212,17 +216,29 @@ export function makeIncidentId(prefix: string, seq: number): string {
 
 export function biasLevelFromDelta(delta: number): BiasLevel {
   const absDelta = Math.abs(delta);
-  if (absDelta >= 0.4) return 'extreme';
-  if (absDelta >= 0.25) return 'high';
-  if (absDelta >= 0.12) return 'moderate';
-  if (absDelta >= 0.03) return 'low';
+  if (absDelta >= 0.4) {
+    return 'extreme';
+  }
+  if (absDelta >= 0.25) {
+    return 'high';
+  }
+  if (absDelta >= 0.12) {
+    return 'moderate';
+  }
+  if (absDelta >= 0.03) {
+    return 'low';
+  }
   return 'none';
 }
 
 export function weightedAverage(values: readonly number[], weights: readonly number[]): number {
-  if (values.length === 0) return 0;
+  if (values.length === 0) {
+    return 0;
+  }
   const totalWeight = weights.reduce((a, b) => a + b, 0);
-  if (totalWeight === 0) return 0;
+  if (totalWeight === 0) {
+    return 0;
+  }
   const weighted = values.reduce((sum, v, i) => sum + v * (weights[i] ?? 0), 0);
   return weighted / totalWeight;
 }

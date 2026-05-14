@@ -34,10 +34,7 @@ export class ThirdPartyAuditExportService {
     const disclosuresIssued = allDisclosures.length;
     const feedbackCorrectionsApplied = allFeedback.filter((f) => f.appliedToModel).length;
 
-    const healthyCount = totalRecommendations -
-      conflictsDetected -
-      silenceEvents -
-      biasAlerts;
+    const healthyCount = totalRecommendations - conflictsDetected - silenceEvents - biasAlerts;
 
     return {
       workspaceId: input.workspaceId,
@@ -61,42 +58,30 @@ export class ThirdPartyAuditExportService {
         disclosuresIssued,
         feedbackCorrectionsApplied,
         healthyRecommendationRate:
-          totalRecommendations > 0
-            ? Number((healthyCount / totalRecommendations).toFixed(4))
-            : 1,
+          totalRecommendations > 0 ? Number((healthyCount / totalRecommendations).toFixed(4)) : 1,
       },
     };
   }
 
-  public compareAudits(
-    a: ThirdPartyAuditExport,
-    b: ThirdPartyAuditExport,
-  ): AuditComparison {
+  public compareAudits(a: ThirdPartyAuditExport, b: ThirdPartyAuditExport): AuditComparison {
     return {
       trend: this.computeTrend(a, b),
-      deltaConflicts:
-        b.summary.conflictsDetected - a.summary.conflictsDetected,
-      deltaBias:
-        b.summary.biasAlerts - a.summary.biasAlerts,
-      deltaSilence:
-        b.summary.silenceEvents - a.summary.silenceEvents,
-      deltaHealthy:
-        Number(
-          (
-            b.summary.healthyRecommendationRate -
-            a.summary.healthyRecommendationRate
-          ).toFixed(4),
-        ),
+      deltaConflicts: b.summary.conflictsDetected - a.summary.conflictsDetected,
+      deltaBias: b.summary.biasAlerts - a.summary.biasAlerts,
+      deltaSilence: b.summary.silenceEvents - a.summary.silenceEvents,
+      deltaHealthy: Number(
+        (b.summary.healthyRecommendationRate - a.summary.healthyRecommendationRate).toFixed(4),
+      ),
     };
   }
 
   public integrityScore(audit: ThirdPartyAuditExport): number {
     const { summary: s } = audit;
-    if (s.totalRecommendations === 0) return 1;
+    if (s.totalRecommendations === 0) {
+      return 1;
+    }
     const issues =
-      (s.conflictsDetected +
-        s.biasAlerts +
-        Math.floor(s.silenceEvents * 0.5)) /
+      (s.conflictsDetected + s.biasAlerts + Math.floor(s.silenceEvents * 0.5)) /
       s.totalRecommendations;
     return Number((1 - Math.min(issues, 1)).toFixed(4));
   }
@@ -105,10 +90,13 @@ export class ThirdPartyAuditExportService {
     a: ThirdPartyAuditExport,
     b: ThirdPartyAuditExport,
   ): 'improving' | 'stable' | 'declining' {
-    const delta = b.summary.healthyRecommendationRate -
-      a.summary.healthyRecommendationRate;
-    if (delta > 0.02) return 'improving';
-    if (delta < -0.02) return 'declining';
+    const delta = b.summary.healthyRecommendationRate - a.summary.healthyRecommendationRate;
+    if (delta > 0.02) {
+      return 'improving';
+    }
+    if (delta < -0.02) {
+      return 'declining';
+    }
     return 'stable';
   }
 

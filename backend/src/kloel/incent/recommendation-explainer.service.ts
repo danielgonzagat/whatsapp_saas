@@ -42,9 +42,7 @@ export class RecommendationExplainerService {
     };
   }
 
-  public explainBatch(
-    inputs: readonly ExplainInput[],
-  ): readonly RecommendationExplanation[] {
+  public explainBatch(inputs: readonly ExplainInput[]): readonly RecommendationExplanation[] {
     return inputs.map((inp) => this.explain(inp));
   }
 
@@ -62,7 +60,7 @@ export class RecommendationExplainerService {
       recommendationId: input.recommendationId,
       summary: input.summary,
       reason: input.reason,
-      preferredFormat: formats[level],
+      preferredFormat: formats[level]!,
       ...(input.evidence ? { evidence: input.evidence } : {}),
       ...(input.preferredTone ? { preferredTone: input.preferredTone } : {}),
       ...(input.confidence !== undefined ? { confidence: input.confidence } : {}),
@@ -70,9 +68,15 @@ export class RecommendationExplainerService {
   }
 
   private chooseFormat(input: ExplainInput): ExplanationFormat {
-    if (input.preferredFormat) return input.preferredFormat;
-    if (input.evidence && input.evidence.length >= 3) return 'long';
-    if (input.evidence && input.evidence.length >= 1) return 'medium';
+    if (input.preferredFormat) {
+      return input.preferredFormat;
+    }
+    if (input.evidence && input.evidence.length >= 3) {
+      return 'long';
+    }
+    if (input.evidence && input.evidence.length >= 1) {
+      return 'medium';
+    }
     return 'short';
   }
 }

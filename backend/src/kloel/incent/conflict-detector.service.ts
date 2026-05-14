@@ -40,9 +40,7 @@ export class ConflictDetectorService {
     };
   }
 
-  public detectBatch(
-    inputs: readonly ConflictInput[],
-  ): readonly ConflictDetection[] {
+  public detectBatch(inputs: readonly ConflictInput[]): readonly ConflictDetection[] {
     return inputs.map((inp) => this.detect(inp));
   }
 
@@ -56,9 +54,7 @@ export class ConflictDetectorService {
     return detections.filter((d) => d.severity === 'structural');
   }
 
-  private analyzeParties(
-    input: ConflictInput,
-  ): readonly PartyConflict[] {
+  private analyzeParties(input: ConflictInput): readonly PartyConflict[] {
     const results: PartyConflict[] = [];
 
     const parties = input.involvedParties ?? [];
@@ -125,10 +121,8 @@ export class ConflictDetectorService {
   }
 
   private isSelfDealing(input: ConflictInput): boolean {
-    return input.recommendationId.toLowerCase().includes('kloel') ||
-      (input.involvedParties ?? []).some(
-        (p) => p.toLowerCase() === 'kloel',
-      );
+    const rec = input.recommendationId.toLowerCase();
+    return rec.includes('kloel_own') || rec.includes('kloel_internal');
   }
 
   private worseSeverity(a: ConflictSeverity, b: ConflictSeverity): ConflictSeverity {

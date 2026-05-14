@@ -43,9 +43,7 @@ export class RecommendationAttributionBuilderService {
     };
   }
 
-  public buildBatch(
-    inputs: readonly AttributionInput[],
-  ): readonly RecommendationAttribution[] {
+  public buildBatch(inputs: readonly AttributionInput[]): readonly RecommendationAttribution[] {
     return inputs.map((inp) => this.build(inp));
   }
 
@@ -55,9 +53,7 @@ export class RecommendationAttributionBuilderService {
     return attributions.filter((a) => a.isCrossRecommendation);
   }
 
-  public transparencyReport(
-    attributions: readonly RecommendationAttribution[],
-  ): AttributionReport {
+  public transparencyReport(attributions: readonly RecommendationAttribution[]): AttributionReport {
     if (attributions.length === 0) {
       return {
         averageTransparency: 1,
@@ -67,11 +63,10 @@ export class RecommendationAttributionBuilderService {
       };
     }
 
-    const avg = attributions.reduce((s, a) => s + a.transparencyScore, 0) /
-      attributions.length;
+    const avg = attributions.reduce((s, a) => s + a.transparencyScore, 0) / attributions.length;
     const opaque = attributions.filter((a) => a.transparencyScore < 0.4).length;
-    const crossRate = attributions.filter((a) => a.isCrossRecommendation).length /
-      attributions.length;
+    const crossRate =
+      attributions.filter((a) => a.isCrossRecommendation).length / attributions.length;
 
     const sourceFreq = new Map<AttributionKind, number>();
     for (const a of attributions) {
@@ -90,9 +85,7 @@ export class RecommendationAttributionBuilderService {
     };
   }
 
-  private buildEntries(
-    input: AttributionInput,
-  ): readonly AttributionEntry[] {
+  private buildEntries(input: AttributionInput): readonly AttributionEntry[] {
     const entries: AttributionEntry[] = [];
 
     for (const source of input.sources ?? []) {
@@ -107,21 +100,23 @@ export class RecommendationAttributionBuilderService {
     return entries;
   }
 
-  private primaryKind(
-    entries: readonly AttributionEntry[],
-  ): AttributionKind {
-    if (entries.length === 0) return 'business_rule';
+  private primaryKind(entries: readonly AttributionEntry[]): AttributionKind {
+    if (entries.length === 0) {
+      return 'business_rule';
+    }
     let best = entries[0]!;
     for (const e of entries) {
-      if (e.weight > best.weight) best = e;
+      if (e.weight > best.weight) {
+        best = e;
+      }
     }
     return best.kind;
   }
 
-  private computeTransparency(
-    entries: readonly AttributionEntry[],
-  ): number {
-    if (entries.length === 0) return 0;
+  private computeTransparency(entries: readonly AttributionEntry[]): number {
+    if (entries.length === 0) {
+      return 0;
+    }
     const baseScore = entries.length >= 2 ? 0.7 : 0.4;
 
     const weightSum = entries.reduce((s, e) => s + e.weight, 0);
@@ -129,9 +124,7 @@ export class RecommendationAttributionBuilderService {
 
     const opaqueKinds: AttributionKind[] = ['business_rule', 'platform_data'];
     const opaqueCount = entries.filter((e) => opaqueKinds.includes(e.kind)).length;
-    const opaquePenalty = entries.length > 0
-      ? (opaqueCount / entries.length) * 0.3
-      : 0;
+    const opaquePenalty = entries.length > 0 ? (opaqueCount / entries.length) * 0.3 : 0;
 
     return clamp(baseScore - normalizedPenalty - opaquePenalty, 0, 1);
   }

@@ -29,19 +29,15 @@ export class DisclosureEngineService {
 
   public disclose(input: DisclosureInput): Disclosure {
     this.seq += 1;
-    const description = input.customDescription ??
-      this.relationshipDescriptions[input.relationshipType];
+    const description =
+      input.customDescription ?? this.relationshipDescriptions[input.relationshipType];
 
     const disclosureText = [
       DisclosureEngineService.DISCLOSURE_PREFIX,
       `Relação: ${input.relationshipType}`,
       description,
-      input.compensationModel
-        ? `Modelo de compensação: ${input.compensationModel}`
-        : '',
-      input.financialNature
-        ? 'Esta recomendação pode ter natureza financeira para a Kloel.'
-        : '',
+      input.compensationModel ? `Modelo de compensação: ${input.compensationModel}` : '',
+      input.financialNature ? 'Esta recomendação pode ter natureza financeira para a Kloel.' : '',
     ]
       .filter(Boolean)
       .join(' ');
@@ -57,12 +53,10 @@ export class DisclosureEngineService {
       ...(input.compensationModel ? { compensationModel: input.compensationModel } : {}),
       disclosedAt: new Date().toISOString(),
       disclosureText,
-    } as Disclosure;
+    };
   }
 
-  public discloseBatch(
-    inputs: readonly DisclosureInput[],
-  ): readonly Disclosure[] {
+  public discloseBatch(inputs: readonly DisclosureInput[]): readonly Disclosure[] {
     return inputs.map((inp) => this.disclose(inp));
   }
 
@@ -70,9 +64,7 @@ export class DisclosureEngineService {
     disclosures: readonly Disclosure[],
     recommendationId: string,
   ): readonly Disclosure[] {
-    return disclosures.filter(
-      (d) => d.recommendationId === recommendationId,
-    );
+    return disclosures.filter((d) => d.recommendationId === recommendationId);
   }
 
   public undisclosedRelationships(
@@ -87,20 +79,26 @@ export class DisclosureEngineService {
     recommendations: readonly string[],
     disclosures: readonly Disclosure[],
   ): number {
-    if (recommendations.length === 0) return 1;
+    if (recommendations.length === 0) {
+      return 1;
+    }
     const disclosed = new Set(disclosures.map((d) => d.recommendationId));
     let count = 0;
     for (const rec of recommendations) {
-      if (disclosed.has(rec)) count += 1;
+      if (disclosed.has(rec)) {
+        count += 1;
+      }
     }
     return count / recommendations.length;
   }
 
   private isFinancial(type: RelationshipType): boolean {
-    return type === 'commission' ||
+    return (
+      type === 'commission' ||
       type === 'affiliate' ||
       type === 'ownership' ||
-      type === 'sponsorship';
+      type === 'sponsorship'
+    );
   }
 }
 

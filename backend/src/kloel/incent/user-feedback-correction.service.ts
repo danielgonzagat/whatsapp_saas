@@ -35,9 +35,7 @@ export class UserFeedbackCorrectionService {
     };
   }
 
-  public recordBatch(
-    inputs: readonly FeedbackInput[],
-  ): readonly UserFeedbackCorrection[] {
+  public recordBatch(inputs: readonly FeedbackInput[]): readonly UserFeedbackCorrection[] {
     return inputs.map((inp) => this.record(inp));
   }
 
@@ -52,7 +50,9 @@ export class UserFeedbackCorrectionService {
     corrections: readonly UserFeedbackCorrection[],
     totalRecommendations: number,
   ): number {
-    if (totalRecommendations === 0) return 0;
+    if (totalRecommendations === 0) {
+      return 0;
+    }
     return corrections.length / totalRecommendations;
   }
 
@@ -62,10 +62,7 @@ export class UserFeedbackCorrectionService {
   ): readonly string[] {
     const freq = new Map<string, number>();
     for (const c of corrections) {
-      freq.set(
-        c.recommendationId,
-        (freq.get(c.recommendationId) ?? 0) + 1,
-      );
+      freq.set(c.recommendationId, (freq.get(c.recommendationId) ?? 0) + 1);
     }
     return [...freq.entries()]
       .sort(([, a], [, b]) => b - a)
@@ -73,16 +70,12 @@ export class UserFeedbackCorrectionService {
       .map(([id]) => id);
   }
 
-  public accuracyRate(
-    corrections: readonly UserFeedbackCorrection[],
-  ): number {
-    if (corrections.length === 0) return 1;
-    const inaccurate = corrections.filter(
-      (c) => c.feedbackKind === 'inaccurate',
-    ).length;
-    return Number(
-      ((corrections.length - inaccurate) / corrections.length).toFixed(4),
-    );
+  public accuracyRate(corrections: readonly UserFeedbackCorrection[]): number {
+    if (corrections.length === 0) {
+      return 1;
+    }
+    const inaccurate = corrections.filter((c) => c.feedbackKind === 'inaccurate').length;
+    return Number(((corrections.length - inaccurate) / corrections.length).toFixed(4));
   }
 
   private extractSignal(input: FeedbackInput): string {
@@ -97,8 +90,12 @@ export class UserFeedbackCorrectionService {
   }
 
   private shouldApplyToModel(input: FeedbackInput): boolean {
-    if (input.kind === 'corrected' || input.kind === 'modified') return true;
-    if (input.kind === 'inaccurate' && input.userNote) return true;
+    if (input.kind === 'corrected' || input.kind === 'modified') {
+      return true;
+    }
+    if (input.kind === 'inaccurate' && input.userNote) {
+      return true;
+    }
     return false;
   }
 }

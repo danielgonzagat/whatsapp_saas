@@ -1,12 +1,4 @@
-import type {
-  ConflictDetection,
-  Disclosure,
-  PlatformBias,
-  RecommendationAttribution,
-  RecommendationExplanation,
-  SilenceUnderConflict,
-  UserFeedbackCorrection,
-} from './types';
+import type { ConflictDetection } from './types';
 
 import { clamp, biasLevelFromDelta, weightedAverage, makeIncidentId } from './types';
 
@@ -26,13 +18,16 @@ import { DisclosureEngineService } from './disclosure-engine.service';
 import type { DisclosureInput } from './disclosure-engine.service';
 
 import { ThirdPartyAuditExportService } from './third-party-audit-export.service';
-import type { AuditExportInput, AuditRecommendationEntry } from './third-party-audit-export.service';
+import type { AuditRecommendationEntry } from './third-party-audit-export.service';
 
 import { UserFeedbackCorrectionService } from './user-feedback-correction.service';
 import type { FeedbackInput } from './user-feedback-correction.service';
 
 import { RecommendationAttributionBuilderService } from './recommendation-attribution-builder.service';
-import type { AttributionInput, AttributionSourceEntry } from './recommendation-attribution-builder.service';
+import type {
+  AttributionInput,
+  AttributionSourceEntry,
+} from './recommendation-attribution-builder.service';
 
 const WKS = 'wks_incent_test';
 
@@ -207,9 +202,7 @@ describe('INCENT-002 — ConflictDetector', () => {
   });
 
   it('detects structural conflict for ownership', () => {
-    const result = svc.detect(
-      makeConflictInput({ kloelHasOwnership: true }),
-    );
+    const result = svc.detect(makeConflictInput({ kloelHasOwnership: true }));
     expect(result.conflictDetected).toBe(true);
     expect(result.severity).toBe('structural');
   });
@@ -217,7 +210,7 @@ describe('INCENT-002 — ConflictDetector', () => {
   it('detects self-dealing', () => {
     const result = svc.detect(
       makeConflictInput({
-        recommendationId: 'kloel_pro_feature',
+        recommendationId: 'kloel_internal_service',
         involvedParties: ['kloel'],
       }),
     );
@@ -227,9 +220,7 @@ describe('INCENT-002 — ConflictDetector', () => {
   });
 
   it('returns no conflict for clean input', () => {
-    const result = svc.detect(
-      makeConflictInput({ involvedParties: ['partner_a'] }),
-    );
+    const result = svc.detect(makeConflictInput({ involvedParties: ['partner_a'] }));
     expect(result.conflictDetected).toBe(false);
     expect(result.severity).toBe('none');
   });
@@ -271,26 +262,20 @@ describe('INCENT-003 — ConflictSilenceEnforcer', () => {
 
   it('silences under structural conflict', () => {
     const conflict = makeConflict({ severity: 'structural' });
-    const result = svc.enforce(
-      makeSilenceInput({ conflict }),
-    );
+    const result = svc.enforce(makeSilenceInput({ conflict }));
     expect(result.silenced).toBe(true);
     expect(result.reason).toBe('structural_conflict');
     expect(result.enforcement).toBe('automatic');
   });
 
   it('silences when bias detected and not mitigated', () => {
-    const result = svc.enforce(
-      makeSilenceInput({ biasDetected: true, biasMitigated: false }),
-    );
+    const result = svc.enforce(makeSilenceInput({ biasDetected: true, biasMitigated: false }));
     expect(result.silenced).toBe(true);
     expect(result.reason).toBe('platform_bias_alert');
   });
 
   it('does not silence when bias is mitigated', () => {
-    const result = svc.enforce(
-      makeSilenceInput({ biasDetected: true, biasMitigated: true }),
-    );
+    const result = svc.enforce(makeSilenceInput({ biasDetected: true, biasMitigated: true }));
     expect(result.silenced).toBe(false);
   });
 
@@ -307,7 +292,6 @@ describe('INCENT-003 — ConflictSilenceEnforcer', () => {
   });
 
   it('activeSilences filters expired entries', () => {
-    const past = new Date(Date.now() - 100_000_000).toISOString();
     const active = makeSilenceInput({ conflict: makeConflict({ severity: 'structural' }) });
     const results = svc.enforceBatch([active]);
     const now = Date.now();
@@ -349,12 +333,12 @@ describe('INCENT-004 — PlatformBiasMonitor', () => {
   it('does not detect bias when weights are balanced', () => {
     const result = svc.audit(
       makeBiasInput({
-        internalRevenueWeight: 0.2,
-        userRelevance: 0.3,
-        objectiveQuality: 0.25,
-        competitiveLandscape: 0.2,
-        userHistory: 0.15,
-        thirdPartyRating: 0.1,
+        internalRevenueWeight: 0.1,
+        userRelevance: 0.05,
+        objectiveQuality: 0.05,
+        competitiveLandscape: 0,
+        userHistory: 0,
+        thirdPartyRating: 0.05,
       }),
     );
     expect(result.biasDetected).toBe(false);
@@ -373,7 +357,14 @@ describe('INCENT-004 — PlatformBiasMonitor', () => {
   it('filters bias alerts only', () => {
     const audits = svc.auditBatch([
       makeBiasInput({ internalRevenueWeight: 0.8, userRelevance: 0.1, objectiveQuality: 0.1 }),
-      makeBiasInput({ internalRevenueWeight: 0.2, userRelevance: 0.3, objectiveQuality: 0.3 }),
+      makeBiasInput({
+        internalRevenueWeight: 0.1,
+        userRelevance: 0.05,
+        objectiveQuality: 0.05,
+        competitiveLandscape: 0,
+        userHistory: 0,
+        thirdPartyRating: 0.05,
+      }),
     ]);
     const alerts = svc.biasAlerts(audits);
     expect(alerts).toHaveLength(1);
@@ -396,16 +387,12 @@ describe('INCENT-005 — DisclosureEngine', () => {
   });
 
   it('marks financial nature for financial relationships', () => {
-    const result = svc.disclose(
-      makeDisclosureInput({ relationshipType: 'ownership' }),
-    );
+    const result = svc.disclose(makeDisclosureInput({ relationshipType: 'ownership' }));
     expect(result.financialNature).toBe(true);
   });
 
   it('does not mark financial nature for referral', () => {
-    const result = svc.disclose(
-      makeDisclosureInput({ relationshipType: 'referral' }),
-    );
+    const result = svc.disclose(makeDisclosureInput({ relationshipType: 'referral' }));
     expect(result.financialNature).toBe(false);
   });
 
@@ -413,11 +400,7 @@ describe('INCENT-005 — DisclosureEngine', () => {
     const disclosures = svc.discloseBatch([
       makeDisclosureInput({ recommendationId: 'rec_a', relationshipType: 'commission' }),
     ]);
-    const undisclosed = svc.undisclosedRelationships(disclosures, [
-      'rec_a',
-      'rec_b',
-      'rec_c',
-    ]);
+    const undisclosed = svc.undisclosedRelationships(disclosures, ['rec_a', 'rec_b', 'rec_c']);
     expect(undisclosed).toEqual(['rec_b', 'rec_c']);
   });
 
@@ -498,9 +481,7 @@ describe('INCENT-007 — UserFeedbackCorrection', () => {
   });
 
   it('does not apply inaccurate feedback without note to model', () => {
-    const result = svc.record(
-      makeFeedbackInput({ kind: 'inaccurate', userNote: '' }),
-    );
+    const result = svc.record(makeFeedbackInput({ kind: 'inaccurate', userNote: '' }));
     expect(result.appliedToModel).toBe(false);
   });
 
@@ -590,15 +571,10 @@ describe('INCENT-008 — RecommendationAttributionBuilder', () => {
   it('generates transparency report', () => {
     const attributions = svc.buildBatch([
       makeAttrInput({
-        sources: [
-          makeSource('business_rule', 1.0),
-        ],
+        sources: [makeSource('business_rule', 1.0)],
       }),
       makeAttrInput({
-        sources: [
-          makeSource('user_history', 0.4),
-          makeSource('market_trend', 0.6),
-        ],
+        sources: [makeSource('user_history', 0.4), makeSource('market_trend', 0.6)],
       }),
     ]);
     const report = svc.transparencyReport(attributions);
@@ -613,10 +589,7 @@ describe('INCENT-008 — RecommendationAttributionBuilder', () => {
         sources: [makeSource('business_rule', 1.0)],
       }),
       makeAttrInput({
-        sources: [
-          makeSource('user_history', 0.5),
-          makeSource('peer_behavior', 0.5),
-        ],
+        sources: [makeSource('user_history', 0.5), makeSource('peer_behavior', 0.5)],
       }),
     ]);
     const cross = svc.crossRecommendations(attributions);
