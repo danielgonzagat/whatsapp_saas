@@ -42,6 +42,13 @@
     "expires": "2026-05-19"
   },
   {
+    "file": "backend/src/lib/openai-models.ts",
+    "rule": "governanceChange",
+    "reason": "Human approval granted in chat on 2026-05-14 to publish PR276 protected-file model routing changes while preserving zero bypasses, allowlists, and suppressions.",
+    "issue": "user-approved-pr276-protected-model-routing-change-2026-05-14",
+    "expires": "2026-05-21"
+  },
+  {
     "file": "frontend/eslint.config.mjs",
     "rule": "governanceChange",
     "reason": "Human approval granted in chat on 2026-05-12 to commit and push accumulated Kloel CIA work including protected governance changes.",
