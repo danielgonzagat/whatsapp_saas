@@ -32,7 +32,6 @@ import { KloelThreadSearchService } from './kloel-thread-search.service';
 import { KloelToolDispatcherService } from './kloel-tool-dispatcher.service';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { StorageService } from '../common/storage/storage.service';
-
 import {
   listThreads,
   createThread,
@@ -43,13 +42,7 @@ import {
   updateThreadMessage,
   updateMessageFeedback,
 } from './kloel-thread.controller-helpers';
-import {
-  handleUploadFile,
-  handleUploadChatFile,
-  requestDataDeletion,
-  exportData,
-} from './kloel-upload.controller-helpers';
-
+import { handleUploadFile, handleUploadChatFile } from './kloel-upload.controller-helpers';
 import { RouteClass } from '../common/throttler/route-class.decorator';
 import { InternalEndpoint } from '../common/decorators/internal-endpoint.decorator';
 interface ThinkDto {
@@ -72,15 +65,11 @@ interface ApprovalDecisionDto {
   note?: string;
   adjustment?: Prisma.InputJsonValue;
 }
-
 const KLOEL_UPLOAD_GENERIC_MIME_RE =
   /^(image\/(jpeg|png|gif|webp)|application\/pdf|application\/msword|application\/vnd\.openxmlformats-officedocument\.wordprocessingml\.document)$/;
 const KLOEL_UPLOAD_CHAT_MIME_RE =
   /^(image\/(jpeg|png|gif|webp)|application\/pdf|application\/msword|application\/vnd\.openxmlformats-officedocument\.wordprocessingml\.document|application\/vnd\.ms-excel|application\/vnd\.openxmlformats-officedocument\.spreadsheetml\.sheet|text\/plain|text\/csv|audio\/(mpeg|wav|webm|ogg|mp4|x-m4a))$/;
-
 const UPLOAD_MAX = 25 * 1024 * 1024;
-
-/** Kloel controller. */
 @Controller('kloel')
 @RouteClass('ai')
 export class KloelController {
@@ -92,7 +81,6 @@ export class KloelController {
     private readonly threadSearchService: KloelThreadSearchService,
     private readonly toolDispatcher: KloelToolDispatcherService,
   ) {}
-
   private readUserId(user: unknown) {
     if (!user || typeof user !== 'object') {
       return undefined;
@@ -104,7 +92,6 @@ export class KloelController {
     const legacyId = 'id' in user ? user.id : undefined;
     return typeof legacyId === 'string' && legacyId.trim() ? legacyId : undefined;
   }
-
   private readWorkspaceId(req: AuthenticatedRequest) {
     const workspaceId = req.workspaceId || req.user?.workspaceId;
     if (!workspaceId) {
@@ -112,11 +99,9 @@ export class KloelController {
     }
     return workspaceId;
   }
-
   private normalizeApprovalNote(body?: ApprovalDecisionDto) {
     return typeof body?.note === 'string' && body.note.trim() ? body.note.trim() : null;
   }
-
   private async transitionApprovalRequest(input: {
     approvalRequestId: string;
     req: AuthenticatedRequest;
@@ -138,7 +123,6 @@ export class KloelController {
     if (approval.state !== 'OPEN') {
       throw new BadRequestException('approval_request_not_open');
     }
-
     const userId = this.readUserId(input.req.user);
     const response: Prisma.InputJsonObject = {
       action: input.state.toLowerCase(),
@@ -149,7 +133,6 @@ export class KloelController {
         ? { adjustment: input.body?.adjustment ?? null }
         : {}),
     };
-
     const result = await this.prisma.approvalRequest.updateMany({
       where: { id: approvalRequestId, workspaceId, state: 'OPEN' },
       data: {
@@ -167,9 +150,6 @@ export class KloelController {
       state: input.state,
     };
   }
-
-  // ═══ THINK ═══
-
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Post('think')
   async think(
@@ -208,13 +188,11 @@ export class KloelController {
       clearTimeout(timeout);
     }
   }
-
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Get('history')
   async getHistory(@Request() req: AuthenticatedRequest): Promise<unknown[]> {
     return this.kloelService.getHistory(req.user?.workspaceId);
   }
-
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Get('approvals/pending')
   async getPendingApprovals(@Request() req: AuthenticatedRequest) {
@@ -242,7 +220,6 @@ export class KloelController {
     });
     return { approvals };
   }
-
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @InternalEndpoint('approval request approve')
   @Post('approvals/:approvalRequestId/approve')
@@ -272,7 +249,6 @@ export class KloelController {
         }
       : transition;
   }
-
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @InternalEndpoint('approval request reject')
   @Post('approvals/:approvalRequestId/reject')
@@ -288,7 +264,6 @@ export class KloelController {
       body,
     });
   }
-
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @InternalEndpoint('approval request adjust')
   @Post('approvals/:approvalRequestId/adjust')
@@ -304,7 +279,6 @@ export class KloelController {
       body,
     });
   }
-
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Post('think/sync')
   async thinkSync(@Body() dto: ThinkDto, @Request() req: AuthenticatedRequest) {
@@ -321,7 +295,6 @@ export class KloelController {
       ...(metadata !== undefined ? { metadata } : {}),
     });
   }
-
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Post('memory/save')
   async saveMemory(@Body() dto: MemoryDto, @Request() req: AuthenticatedRequest) {
@@ -333,7 +306,6 @@ export class KloelController {
     );
     return { success: true };
   }
-
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @InternalEndpoint('PDF processing trigger')
   @Post('pdf/process')
@@ -348,15 +320,11 @@ export class KloelController {
       ),
     };
   }
-
   @Public()
   @Get('health')
   health() {
     return { status: 'online', identity: 'KLOEL - Inteligência Comercial Autônoma' };
   }
-
-  // ═══ UPLOADS ═══
-
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Post('upload-generic')
   @UseInterceptors(
@@ -401,7 +369,6 @@ export class KloelController {
       req,
     );
   }
-
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Post('upload-chat')
   @UseInterceptors(
@@ -455,9 +422,6 @@ export class KloelController {
       req,
     );
   }
-
-  // ═══ ONBOARDING ═══
-
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Post('onboarding/:workspaceId/start')
   async startConversationalOnboarding(
@@ -468,7 +432,6 @@ export class KloelController {
       message: await this.conversationalOnboarding.start(resolveWorkspaceId(req, workspaceId)),
     };
   }
-
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Post('onboarding/:workspaceId/chat')
   async chatOnboarding(
@@ -483,7 +446,6 @@ export class KloelController {
       )) as string,
     };
   }
-
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Post('onboarding/:workspaceId/chat/stream')
   async chatOnboardingStream(
@@ -498,7 +460,6 @@ export class KloelController {
       res,
     );
   }
-
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Get('onboarding/:workspaceId/status')
   async getOnboardingStatus(
@@ -507,15 +468,11 @@ export class KloelController {
   ) {
     return this.conversationalOnboarding.getStatus(resolveWorkspaceId(req, workspaceId));
   }
-
-  // ═══ FOLLOWUPS ═══
-
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Get('followups')
   async listFollowups(@Req() req: AuthenticatedRequest) {
     return this.kloelService.listFollowups(resolveWorkspaceId(req));
   }
-
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Get('followups/:contactId')
   async listContactFollowups(
@@ -524,9 +481,6 @@ export class KloelController {
   ) {
     return this.kloelService.listFollowups(resolveWorkspaceId(req), contactId);
   }
-
-  // ═══ THREADS ═══
-
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Get('threads')
   async listChatThreads(
@@ -544,7 +498,6 @@ export class KloelController {
       paginated: Boolean(limit || cursor),
     });
   }
-
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Post('threads')
   async createChatThread(
@@ -553,7 +506,6 @@ export class KloelController {
   ) {
     return createThread({ prisma: this.prisma }, resolveWorkspaceId(req), dto);
   }
-
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @InternalEndpoint('thread search')
   @Get('threads/search')
@@ -565,7 +517,6 @@ export class KloelController {
   ) {
     return this.threadSearchService.search(resolveWorkspaceId(req), q, limit);
   }
-
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Put('threads/:id')
   async updateChatThread(
@@ -575,19 +526,16 @@ export class KloelController {
   ) {
     return updateThread({ prisma: this.prisma }, id, dto.title, resolveWorkspaceId(req));
   }
-
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Delete('threads/:id')
   async deleteChatThread(@Param('id') id: string, @Req() req: AuthenticatedRequest) {
     return deleteThread({ prisma: this.prisma }, id, resolveWorkspaceId(req));
   }
-
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Get('threads/:id/messages')
   async getChatThreadMessages(@Param('id') id: string, @Req() req: AuthenticatedRequest) {
     return getThreadMessages({ prisma: this.prisma }, id, resolveWorkspaceId(req));
   }
-
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @InternalEndpoint('thread message creation')
   @Post('threads/:id/messages')
@@ -604,7 +552,6 @@ export class KloelController {
   ) {
     return addThreadMessage({ prisma: this.prisma }, id, dto, resolveWorkspaceId(req));
   }
-
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Put('messages/:id')
   async updateChatThreadMessage(
@@ -614,7 +561,6 @@ export class KloelController {
   ) {
     return updateThreadMessage({ prisma: this.prisma }, id, dto, resolveWorkspaceId(req));
   }
-
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Post('messages/:id/feedback')
   async updateChatMessageFeedback(
@@ -624,7 +570,6 @@ export class KloelController {
   ) {
     return updateMessageFeedback({ prisma: this.prisma }, id, dto, resolveWorkspaceId(req));
   }
-
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Post('conversations/:id/regenerate')
   async regenerateConversationMessage(
@@ -645,25 +590,5 @@ export class KloelController {
       ...(userId !== undefined ? { userId } : {}),
       ...(userName !== undefined ? { userName } : {}),
     });
-  }
-
-  // ═══ LGPD ═══
-
-  @UseGuards(JwtAuthGuard, WorkspaceGuard)
-  @Post('data/request-deletion')
-  async handleDataDeletion(@Request() req: AuthenticatedRequest) {
-    await requestDataDeletion(
-      { prisma: this.prisma },
-      req.workspaceId || req.user?.workspaceId,
-      req.user?.sub,
-    );
-    return { success: true, message: 'Dados pessoais anonimizados conforme LGPD' };
-  }
-
-  @UseGuards(JwtAuthGuard, WorkspaceGuard)
-  @InternalEndpoint('data export trigger')
-  @Get('data/export')
-  async handleDataExport(@Request() req: AuthenticatedRequest) {
-    return exportData({ prisma: this.prisma }, req.workspaceId || req.user?.workspaceId);
   }
 }

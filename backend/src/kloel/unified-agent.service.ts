@@ -20,16 +20,12 @@ import {
   buildPredecidedActionDraft,
   executePredecidedAgentActions,
 } from './unified-agent-predecided-actions.part';
-
 type UnknownRecord = Record<string, unknown>;
-
 function isAllowedTool(toolName: string, allowedTools?: string[]): boolean {
   return !allowedTools || allowedTools.includes(toolName);
 }
-
 const UNIFIED_AGENT_PROVIDER_CONFIG_REQUIRED =
   'Primary LLM configuration is required for unified agent generation';
-
 function formatPromptValue(value: unknown): string {
   if (value === null) {
     return 'null';
@@ -55,16 +51,6 @@ function formatPromptValue(value: unknown): string {
   }
   return Object.prototype.toString.call(value);
 }
-
-/**
- * KLOEL Unified Agent Service — orchestrator.
- *
- * This service coordinates context loading, LLM calls, tool dispatch, and
- * response composition. All heavy logic lives in the sub-services injected
- * here. The constructor, processMessage, and executeToolAction router are the
- * only concerns of this file.
- */
-/** Idempotency: enforced at HTTP layer via @Idempotent() guard + Stripe idempotencyKey. */
 @Injectable()
 export class UnifiedAgentService {
   private readonly logger = StructuredLogger.from(UnifiedAgentService.name);
@@ -73,7 +59,6 @@ export class UnifiedAgentService {
   private readonly fallbackBrainModel: string;
   private readonly writerModel: string;
   private readonly fallbackWriterModel: string;
-
   constructor(
     private readonly prisma: PrismaService,
     private readonly config: ConfigService,
@@ -90,7 +75,6 @@ export class UnifiedAgentService {
     this.writerModel = resolveBackendOpenAIModel('writer', this.config);
     this.fallbackWriterModel = resolveBackendOpenAIModel('writer_fallback', this.config);
   }
-
   async processIncomingMessage(params: {
     workspaceId: string;
     phone: string;
@@ -117,7 +101,6 @@ export class UnifiedAgentService {
         ...(params.context || {}),
       },
     });
-
     return {
       actions: result.actions,
       intent: result.intent,
@@ -127,7 +110,6 @@ export class UnifiedAgentService {
         : {}),
     };
   }
-
   async processMessage(params: {
     allowedTools?: string[];
     predecidedActions?: PredecidedAction[];
@@ -143,23 +125,17 @@ export class UnifiedAgentService {
     confidence: number;
   }> {
     const { workspaceId, contactId, phone, message, context } = params;
-
     const predecidedActions = params.predecidedActions ?? [];
-
     if (!this.openai && predecidedActions.length === 0) {
       this.logger.warn('OpenAI not configured');
       return this.response.buildFallbackResult(message);
     }
-
-    // 1. Load workspace / contact / history / products in parallel
     const [workspace, contact, conversationHistory, products] = await Promise.all([
       this.ctx.getWorkspaceContext(workspaceId),
       this.ctx.getContactContext(workspaceId, contactId, phone),
       this.ctx.getConversationHistory(workspaceId, contactId, 0, phone),
       this.ctx.getProducts(workspaceId),
     ]);
-
-    // 1b. Load AI config per product (commercial brain)
     const productIds = products
       .map((product: UnknownRecord) => {
         const productValue = this.ctx.readRecord(product.value);
@@ -184,11 +160,8 @@ export class UnifiedAgentService {
             salesArguments: true,
           },
         });
-      } catch {
-        /* ProductAIConfig may not exist yet */
-      }
+      } catch {}
     }
-
     const compressedContext = await this.ctx.buildAndPersistCompressedContext(
       workspaceId,
       contactId,
@@ -200,8 +173,6 @@ export class UnifiedAgentService {
       currentMessage: message,
       conversationHistory,
     });
-
-    // 2. Build system prompt and style instruction
     const agentRuntimeContext = await this.buildAgentRuntimeContext({
       workspaceId,
       channel: this.ctx.readText(context?.channel, 'whatsapp'),
@@ -222,8 +193,6 @@ export class UnifiedAgentService {
     const contactSentiment = this.ctx.readText(contactData.sentiment).trim() || 'NEUTRAL';
     const leadScore = this.ctx.readText(contactData.leadScore, '0');
     const tagNames = this.ctx.readTagList(contactData.tags);
-
-    // 3. Build messages array
     const additionalContext = context ? formatPromptValue(context) : '';
     const messages: ChatCompletionMessageParam[] = [
       { role: 'system', content: systemPrompt },
@@ -238,11 +207,9 @@ export class UnifiedAgentService {
   ${additionalContext ? `[Contexto adicional: ${additionalContext}]` : ''}
 [Instrução tática: ${tacticalHint || 'responder com clareza, valor concreto e próximo passo.'}]
 [Política de resposta: ${stylePolicy}]
-
 Mensagem: ${message}`,
       },
     ];
-
     if (predecidedActions.length > 0) {
       const actionsList = await executePredecidedAgentActions({
         ...(params.allowedTools !== undefined ? { allowedTools: params.allowedTools } : {}),
@@ -267,7 +234,6 @@ Mensagem: ${message}`,
           historyTurns: conversationHistory.length,
         },
       );
-
       await this.recordAgentRuntimeTurn({
         workspaceId,
         channel: this.ctx.readText(context?.channel, 'whatsapp'),
@@ -282,7 +248,6 @@ Mensagem: ${message}`,
           result: action.result,
         })),
       });
-
       return {
         actions: actionsList,
         ...(draftedReply !== undefined ? { response: draftedReply } : {}),
@@ -290,8 +255,6 @@ Mensagem: ${message}`,
         confidence: actionsList.length > 0 ? 0.85 : 0.55,
       };
     }
-
-    // 4. Ask the LLM to verbalize only; code-native actions enter via predecidedActions.
     let llmResponse: OpenAI.Chat.ChatCompletion;
     try {
       await this.planLimits.ensureTokenBudget(params.workspaceId);
@@ -326,11 +289,8 @@ Mensagem: ${message}`,
     await this.planLimits
       .trackAiUsage(params.workspaceId, llmResponse.usage?.total_tokens ?? 500)
       .catch(() => {});
-
     const assistantMessage = firstChoice.message;
     const actionsList: ActionEntry[] = [];
-
-    // 5. Process tool calls
     const executeTools = context?.executeTools !== false;
     if (executeTools && assistantMessage.tool_calls && assistantMessage.tool_calls.length > 0) {
       await forEachSequential(assistantMessage.tool_calls, async (toolCall) => {
@@ -365,8 +325,6 @@ Mensagem: ${message}`,
         await this.actions.logAutopilotEvent(workspaceId, contactId, toolName, toolArgs, result);
       });
     }
-
-    // 6. Extract intent, confidence, and compose final reply
     const intent = this.response.extractIntent(actionsList, message);
     const confidence = this.response.calculateConfidence(actionsList, llmResponse);
     const draftedReply = await this.response.composeWriterReply(
@@ -381,7 +339,6 @@ Mensagem: ${message}`,
         historyTurns: conversationHistory.length,
       },
     );
-
     await this.recordAgentRuntimeTurn({
       workspaceId,
       channel: this.ctx.readText(context?.channel, 'whatsapp'),
@@ -396,7 +353,6 @@ Mensagem: ${message}`,
         result: action.result,
       })),
     });
-
     return {
       actions: actionsList,
       ...(draftedReply !== undefined ? { response: draftedReply } : {}),
@@ -404,10 +360,6 @@ Mensagem: ${message}`,
       confidence,
     };
   }
-
-  /**
-   * Public API: execute a single named tool directly.
-   */
   async executeTool(
     tool: string,
     args: ToolArgs,
@@ -421,8 +373,6 @@ Mensagem: ${message}`,
       args,
     );
   }
-
-  /** Build quoted reply plan (delegates to response service). */
   async buildQuotedReplyPlan(params: {
     workspaceId: string;
     contactId?: string;
@@ -438,9 +388,6 @@ Mensagem: ${message}`,
       params,
     );
   }
-
-  // ───────── tool router ─────────
-
   private async executeToolAction(
     workspaceId: string,
     contactId: string,
@@ -454,7 +401,6 @@ Mensagem: ${message}`,
       workspaceId,
       toolName: tool,
     });
-
     switch (tool) {
       case 'send_message':
         return this.actions.actionSendMessage(workspaceId, phone, args, context);
@@ -585,7 +531,6 @@ Mensagem: ${message}`,
         return { success: false, error: 'Unknown tool', policyEnvelope: envelope };
     }
   }
-
   private actionSucceeded(result: unknown): boolean {
     if (!result || typeof result !== 'object' || Array.isArray(result)) {
       return false;
@@ -593,7 +538,6 @@ Mensagem: ${message}`,
     const record = result as Record<string, unknown>;
     return record.success === true || record.ok === true || record.executed === true;
   }
-
   private async buildAgentRuntimeContext(params: {
     workspaceId: string;
     channel: string;
@@ -606,7 +550,6 @@ Mensagem: ${message}`,
     }
     return this.agentRuntime.buildContext(params);
   }
-
   private async recordAgentRuntimeTurn(params: {
     workspaceId: string;
     channel: string;
@@ -619,11 +562,11 @@ Mensagem: ${message}`,
   }): Promise<void> {
     await this.agentRuntime?.recordTurnOutcome(params);
   }
-
-  private buildAgentToolEnvelope(params: {
-    workspaceId: string;
+  private buildAgentToolEnvelope(params: { workspaceId: string; toolName: string }): {
+    id: string;
     toolName: string;
-  }): { id: string; toolName: string; allowed: boolean } {
+    allowed: boolean;
+  } {
     return (
       this.agentRuntime?.buildToolEnvelope(params) ?? {
         id: 'agent-runtime-unavailable',
