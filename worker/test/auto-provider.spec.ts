@@ -39,11 +39,7 @@ describe('auto-provider', () => {
     it('delegates to unifiedWhatsAppProvider with env provider', async () => {
       mockSendText.mockResolvedValue({ id: 'msg-1', status: 'SENT' });
       const { autoProvider } = await import('../providers/auto-provider');
-      const result = await autoProvider.sendText(
-        { id: 'ws1' },
-        '+5511999999999',
-        'Hello',
-      );
+      const result = await autoProvider.sendText({ id: 'ws1' }, '+5511999999999', 'Hello');
       expect(result).toEqual({ id: 'msg-1', status: 'SENT' });
       expect(mockGetWhatsAppProviderFromEnv).toHaveBeenCalled();
       expect(mockSendText).toHaveBeenCalledWith(
@@ -56,33 +52,21 @@ describe('auto-provider', () => {
     it('tracks provider error when result has error', async () => {
       mockSendText.mockResolvedValue({ error: 'timeout' });
       const { autoProvider } = await import('../providers/auto-provider');
-      const result = await autoProvider.sendText(
-        { id: 'ws1' },
-        '+5511999999999',
-        'Hello',
-      );
+      const result = await autoProvider.sendText({ id: 'ws1' }, '+5511999999999', 'Hello');
       expect(result).toEqual({ error: 'timeout' });
     });
 
     it('returns error on thrown exception', async () => {
       mockSendText.mockRejectedValue(new Error('network error'));
       const { autoProvider } = await import('../providers/auto-provider');
-      const result = await autoProvider.sendText(
-        { id: 'ws1' },
-        '+5511999999999',
-        'Hello',
-      );
+      const result = await autoProvider.sendText({ id: 'ws1' }, '+5511999999999', 'Hello');
       expect(result).toEqual({ error: 'network error' });
     });
 
     it('returns fallback error for non-Error throws', async () => {
       mockSendText.mockRejectedValue('boom');
       const { autoProvider } = await import('../providers/auto-provider');
-      const result = await autoProvider.sendText(
-        { id: 'ws1' },
-        '+5511999999999',
-        'Hello',
-      );
+      const result = await autoProvider.sendText({ id: 'ws1' }, '+5511999999999', 'Hello');
       expect(result).toEqual({ error: 'meta_send_failed' });
     });
   });
@@ -158,7 +142,7 @@ describe('auto-provider', () => {
       );
       expect(result).toEqual({ id: 'tmpl-1', status: 'SENT' });
       expect(mockSendText).toHaveBeenCalledWith(
-        expect.any(Object),
+        expect.objectContaining({ id: 'ws1', whatsappProvider: 'meta-cloud' }),
         '+5511999999999',
         'Template hello_world (pt_BR; 1 componente(s))',
       );
@@ -167,15 +151,9 @@ describe('auto-provider', () => {
     it('omits component suffix when no components', async () => {
       mockSendText.mockResolvedValue({ id: 'tmpl-2', status: 'SENT' });
       const { autoProvider } = await import('../providers/auto-provider');
-      await autoProvider.sendTemplate(
-        { id: 'ws1' },
-        '+5511999999999',
-        'hello_world',
-        'en',
-        [],
-      );
+      await autoProvider.sendTemplate({ id: 'ws1' }, '+5511999999999', 'hello_world', 'en', []);
       expect(mockSendText).toHaveBeenCalledWith(
-        expect.any(Object),
+        expect.objectContaining({ id: 'ws1', whatsappProvider: 'meta-cloud' }),
         '+5511999999999',
         'Template hello_world',
       );
@@ -184,14 +162,9 @@ describe('auto-provider', () => {
     it('omits component suffix when components undefined', async () => {
       mockSendText.mockResolvedValue({ id: 'tmpl-3', status: 'SENT' });
       const { autoProvider } = await import('../providers/auto-provider');
-      await autoProvider.sendTemplate(
-        { id: 'ws1' },
-        '+5511999999999',
-        'hello_world',
-        'en',
-      );
+      await autoProvider.sendTemplate({ id: 'ws1' }, '+5511999999999', 'hello_world', 'en');
       expect(mockSendText).toHaveBeenCalledWith(
-        expect.any(Object),
+        expect.objectContaining({ id: 'ws1', whatsappProvider: 'meta-cloud' }),
         '+5511999999999',
         'Template hello_world',
       );

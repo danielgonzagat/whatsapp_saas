@@ -1,12 +1,12 @@
-import { CiaBootstrapService } from './cia-bootstrap.service';
-import { CiaChatFilterService } from './cia-chat-filter.service';
+import { CiaBootstrapService } from '../cia/cia-bootstrap.service';
+import { CiaChatFilterService } from '../cia/cia-chat-filter.service';
 import type {
   PrismaMock,
   ProviderRegistryMock,
   CatchupServiceMock,
   AgentEventsMock,
 } from './cia-runtime.fixtures';
-import type { CiaRuntimeStateMock } from './cia-runtime.service.fixtures';
+import type { CiaRuntimeStateMock } from '../cia/cia-runtime.service.fixtures';
 
 type CiaBootstrapOverrides = {
   prisma: PrismaMock;

@@ -1,5 +1,6 @@
 import { CopilotGateway } from './copilot.gateway';
 import type { Socket } from 'socket.io';
+import type { OpsAlertService } from '../observability/ops-alert.service';
 
 jest.mock('../common/redis/redis.util', () => ({
   createRedisClient: jest.fn(),
@@ -7,22 +8,24 @@ jest.mock('../common/redis/redis.util', () => ({
 
 import { createRedisClient } from '../common/redis/redis.util';
 
-function mockSocket(overrides: Record<string, any> = {}): Socket {
-  return { id: 'test-socket-id', ...overrides } as any as Socket;
+type SocketOverrides = Partial<Pick<Socket, 'id' | 'handshake' | 'join'>>;
+
+function mockSocket(overrides: SocketOverrides = {}): Socket {
+  return { id: 'test-socket-id', ...overrides } as unknown as Socket;
 }
 
 describe('CopilotGateway', () => {
   let gateway: CopilotGateway;
   let mockServer: {
-    to: jest.Mock;
-    emit: jest.Mock;
+    to: jest.Mock<{ emit: jest.Mock<void, [string, unknown]> }, [string]>;
+    emit: jest.Mock<void, [string, unknown]>;
   };
   let mockSub: {
-    psubscribe: jest.Mock;
-    on: jest.Mock;
+    psubscribe: jest.Mock<Promise<void>, [string]>;
+    on: jest.Mock<void, [string, (pattern: string, channel: string, message: string) => void]>;
   };
   let mockOpsAlert: {
-    alertOnCriticalError: jest.Mock;
+    alertOnCriticalError: jest.Mock<Promise<void>, [Error, string]>;
   };
 
   beforeEach(() => {
@@ -44,8 +47,8 @@ describe('CopilotGateway', () => {
 
     (createRedisClient as jest.Mock).mockReturnValue(mockSub);
 
-    gateway = new CopilotGateway(mockOpsAlert as never);
-    (gateway as never as Record<string, unknown>).server = mockServer;
+    gateway = new CopilotGateway(mockOpsAlert as unknown as OpsAlertService);
+    (gateway as unknown as { server: typeof mockServer }).server = mockServer;
   });
 
   describe('onModuleInit', () => {
@@ -98,8 +101,7 @@ describe('CopilotGateway', () => {
 
     it('does not crash when opsAlert is not injected and parse error occurs', async () => {
       const gatewayNoAlert = new CopilotGateway();
-      const gwAny = gatewayNoAlert as never as Record<string, unknown>;
-      gwAny.server = mockServer;
+      (gatewayNoAlert as unknown as { server: typeof mockServer }).server = mockServer;
 
       await gatewayNoAlert.onModuleInit();
 
@@ -123,36 +125,39 @@ describe('CopilotGateway', () => {
 
   describe('handleConnection', () => {
     it('joins client to workspace room when workspaceId is provided', () => {
+      const joinMock = jest.fn();
       const socket = mockSocket({
         id: 'socket-cp-1',
         handshake: { query: { workspaceId: 'ws-1' } },
-        join: jest.fn(),
+        join: joinMock,
       });
 
       gateway.handleConnection(socket);
 
-      expect(socket.join).toHaveBeenCalledWith('workspace:ws-1');
+      expect(joinMock).toHaveBeenCalledWith('workspace:ws-1');
     });
 
     it('handles connection without workspaceId gracefully', () => {
+      const joinMock = jest.fn();
       const socket = mockSocket({
         id: 'socket-cp-2',
         handshake: { query: {} },
-        join: jest.fn(),
+        join: joinMock,
       });
 
       expect(() => {
         gateway.handleConnection(socket);
       }).not.toThrow();
 
-      expect(socket.join).not.toHaveBeenCalled();
+      expect(joinMock).not.toHaveBeenCalled();
     });
 
     it('handles missing workspaceId in query gracefully', () => {
+      const joinMock = jest.fn();
       const socket = mockSocket({
         id: 'socket-cp-3',
         handshake: { query: {} },
-        join: jest.fn(),
+        join: joinMock,
       });
 
       expect(() => {

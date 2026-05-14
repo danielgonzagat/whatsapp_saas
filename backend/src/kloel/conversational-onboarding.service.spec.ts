@@ -120,7 +120,7 @@ describe('ConversationalOnboardingService', () => {
       expect(toolsService.saveOnboardingMessage).toHaveBeenCalledWith(
         'ws-1',
         'assistant',
-        expect.any(String),
+        expect.stringMatching(/.+/),
       );
     });
 
@@ -226,8 +226,8 @@ describe('ConversationalOnboardingService', () => {
       expect(toolsService.getOnboardingHistory).toHaveBeenCalledWith('ws-tenant');
       expect(toolsService.saveOnboardingMessage).toHaveBeenCalledWith(
         'ws-tenant',
-        expect.any(String),
-        expect.any(String),
+        expect.stringMatching('assistant|user'),
+        expect.stringMatching(/.+/),
       );
     });
   });

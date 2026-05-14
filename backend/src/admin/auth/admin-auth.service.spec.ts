@@ -324,7 +324,7 @@ describe('AdminAuthService', () => {
       const result = await service.changePassword(changeAdmin, 'NewP@ss1', ip, userAgent);
 
       expect(mockBcryptHash).toHaveBeenCalledWith('NewP@ss1', 12);
-      expect(mockUserUpdate).toHaveBeenCalledWith(
+      expect(mockTx.adminUser.update).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { id: 'admin_1' },
           data: expect.objectContaining({
@@ -551,9 +551,13 @@ describe('AdminAuthService', () => {
       expect(mockTx.adminSession.updateMany).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { id: 'sess_1', revokedAt: null },
-          data: { revokedAt: expect.any(Date) },
+          data: expect.objectContaining({}),
         }),
       );
+      const logoutArg = mockTx.adminSession.updateMany.mock.calls[0][0] as {
+        data: { revokedAt: Date };
+      };
+      expect(logoutArg.data.revokedAt).toBeInstanceOf(Date);
     });
 
     it('writes audit log on logout', async () => {

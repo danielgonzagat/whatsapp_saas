@@ -107,11 +107,12 @@ describe('MemoryCrudService', () => {
       const result = await service.saveMemory(wsId, 'prefs', { lang: 'pt' });
 
       expect(result.key).toBe('prefs');
+      const expectedStringifiedCreate: Record<string, unknown> = expect.objectContaining({
+        content: '{"lang":"pt"}',
+      });
       expect(prisma.kloelMemory.upsert).toHaveBeenCalledWith(
         expect.objectContaining({
-          create: expect.objectContaining({
-            content: '{"lang":"pt"}',
-          }),
+          create: expectedStringifiedCreate,
         }),
       );
     });
@@ -130,11 +131,12 @@ describe('MemoryCrudService', () => {
       const result = await service.saveMemory(wsId, 'note', 'just a note');
 
       expect(result.key).toBe('note');
+      const expectedStringCreate: Record<string, unknown> = expect.objectContaining({
+        content: 'just a note',
+      });
       expect(prisma.kloelMemory.upsert).toHaveBeenCalledWith(
         expect.objectContaining({
-          create: expect.objectContaining({
-            content: 'just a note',
-          }),
+          create: expectedStringCreate,
         }),
       );
     });

@@ -93,7 +93,7 @@ describe('notifyOps', () => {
     await notifyOps({ queue: 'ops-test' });
     expect(mockFetch).toHaveBeenCalledWith(
       'https://hooks.slack.com/services/OPS/BOT',
-      expect.any(Object),
+      expect.objectContaining({}),
     );
   });
 
@@ -101,17 +101,13 @@ describe('notifyOps', () => {
     process.env.DLQ_WEBHOOK_URL = 'https://hooks.slack.com/services/TEST';
     mockFetch.mockRejectedValue(new Error('network error'));
     const { notifyOps } = await import('../queue-dlq-notifier');
-    await expect(
-      notifyOps({ queue: 'test', jobId: '1' }),
-    ).resolves.toBeUndefined();
+    await expect(notifyOps({ queue: 'test', jobId: '1' })).resolves.toBeUndefined();
   });
 
   it('handles non-Error fetch rejections', async () => {
     process.env.DLQ_WEBHOOK_URL = 'https://hooks.slack.com/services/TEST';
     mockFetch.mockRejectedValue('ECONNREFUSED');
     const { notifyOps } = await import('../queue-dlq-notifier');
-    await expect(
-      notifyOps({ queue: 'test', jobId: '2' }),
-    ).resolves.toBeUndefined();
+    await expect(notifyOps({ queue: 'test', jobId: '2' })).resolves.toBeUndefined();
   });
 });

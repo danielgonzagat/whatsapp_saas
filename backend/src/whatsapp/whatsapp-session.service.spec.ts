@@ -174,9 +174,9 @@ describe('WhatsappSessionService', () => {
     });
 
     it('throws on invalid presence', async () => {
-      await expect(
-        service.setPresence('ws-1', '5511@c.us', 'invalid' as 'typing'),
-      ).rejects.toThrow(BadRequestException);
+      await expect(service.setPresence('ws-1', '5511@c.us', 'invalid' as 'typing')).rejects.toThrow(
+        BadRequestException,
+      );
     });
   });
 
@@ -194,7 +194,9 @@ describe('WhatsappSessionService', () => {
 
   describe('collectMessagingRuntimeIssues', () => {
     it('returns empty issues when everything is healthy', async () => {
-      const result = await service.collectMessagingRuntimeIssues('ws-1', { whatsappProvider: 'meta-cloud' });
+      const result = await service.collectMessagingRuntimeIssues('ws-1', {
+        whatsappProvider: 'meta-cloud',
+      });
       expect(result.issues).toEqual([]);
       expect(result.diagnostics).toBeDefined();
     });
@@ -217,7 +219,9 @@ describe('WhatsappSessionService', () => {
         connected: false,
         status: 'DISCONNECTED',
       });
-      const result = await service.collectMessagingRuntimeIssues('ws-1', { whatsappProvider: 'meta-cloud' });
+      const result = await service.collectMessagingRuntimeIssues('ws-1', {
+        whatsappProvider: 'meta-cloud',
+      });
       expect(result.issues.some((i) => i.includes('session'))).toBe(true);
     });
   });

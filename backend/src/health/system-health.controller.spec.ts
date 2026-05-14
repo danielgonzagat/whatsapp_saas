@@ -1,5 +1,6 @@
 import { ServiceUnavailableException } from '@nestjs/common';
 import { SystemHealthController } from './system-health.controller';
+import type { SystemHealthService } from './system-health.service';
 
 jest.mock('@sentry/node', () => ({
   captureException: jest.fn(),
@@ -30,7 +31,7 @@ describe('SystemHealthController', () => {
       deepDiagnostic: mockDeepDiagnostic,
     };
 
-    controller = new SystemHealthController(healthService as never);
+    controller = new SystemHealthController(healthService as SystemHealthService);
     jest.clearAllMocks();
   });
 

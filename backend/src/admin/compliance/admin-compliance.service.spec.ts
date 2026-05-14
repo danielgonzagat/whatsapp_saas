@@ -257,12 +257,15 @@ describe('AdminComplianceService', () => {
     it('passes period to range util', async () => {
       await service.overview('CUSTOM', new Date('2026-04-01'), new Date('2026-05-01'));
 
-      expect(mockResolveAdminHomeRange).toHaveBeenCalledWith({
-        period: 'CUSTOM',
-        compare: 'NONE',
-        from: expect.any(Date) as unknown,
-        to: expect.any(Date) as unknown,
-      });
+      expect(mockResolveAdminHomeRange).toHaveBeenCalledWith(
+        expect.objectContaining({
+          period: 'CUSTOM',
+          compare: 'NONE',
+        }),
+      );
+      const callArgs = mockResolveAdminHomeRange.mock.calls[0][0] as Record<string, unknown>;
+      expect(callArgs.from).toBeInstanceOf(Date);
+      expect(callArgs.to).toBeInstanceOf(Date);
     });
   });
 });

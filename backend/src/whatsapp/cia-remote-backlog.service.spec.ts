@@ -1,5 +1,5 @@
-import { CiaRemoteBacklogService } from './cia-remote-backlog.service';
-import { CiaChatFilterService } from './cia-chat-filter.service';
+import { CiaRemoteBacklogService } from '../cia/cia-remote-backlog.service';
+import { CiaChatFilterService } from '../cia/cia-chat-filter.service';
 import type { WahaChatSummary } from './providers/whatsapp-api.provider';
 
 function makeChat(overrides: Partial<WahaChatSummary> = {}): WahaChatSummary {

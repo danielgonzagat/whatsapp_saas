@@ -74,12 +74,12 @@ describe('MemoryManagementService', () => {
       workspace: {
         findMany: jest.fn().mockResolvedValue([]),
       },
-      $transaction: jest.fn().mockImplementation((arg: unknown) => {
+      $transaction: jest.fn<Promise<unknown>>().mockImplementation((arg) => {
         if (typeof arg === 'function') {
-          return arg(prisma);
+          return (arg as (client: typeof prisma) => Promise<unknown>)(prisma);
         }
         return Promise.resolve(undefined);
-      }),
+      }) as jest.Mock,
       $queryRaw: jest.fn().mockResolvedValue([]),
     };
 
@@ -286,12 +286,13 @@ describe('MemoryManagementService', () => {
       expect(count).toBe(2);
       expect(prisma.kloelMemory.deleteMany).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: expect.objectContaining({
-            workspaceId: wsId,
-            updatedAt: { lt: expect.any(Date) },
-          }),
+          where: expect.objectContaining({ workspaceId: wsId }),
         }),
       );
+      const deleteArg = prisma.kloelMemory.deleteMany.mock.calls[0][0] as {
+        where: { updatedAt: { lt: Date } };
+      };
+      expect(deleteArg.where.updatedAt.lt).toBeInstanceOf(Date);
     });
 
     it('logs audit when memories are deleted', async () => {
@@ -299,11 +300,14 @@ describe('MemoryManagementService', () => {
 
       await service.cleanupWorkspace(wsId);
 
+      const workspaceAuditDetails: Record<string, unknown> = expect.objectContaining({
+        deletedCount: 7,
+      });
       expect(auditService.log).toHaveBeenCalledWith(
         expect.objectContaining({
           workspaceId: wsId,
           action: 'DELETE_WORKSPACE_MEMORIES',
-          details: expect.objectContaining({ deletedCount: 7 }),
+          details: workspaceAuditDetails,
         }),
       );
     });
@@ -387,15 +391,16 @@ describe('MemoryManagementService', () => {
 
       await service.normalizeSemanticDuplicates('ws-1', 'product');
 
+      const semanticAuditDetails: Record<string, unknown> = expect.objectContaining({
+        category: 'product',
+        mergedCount: 1,
+      });
       expect(auditService.log).toHaveBeenCalledWith(
         expect.objectContaining({
           workspaceId: 'ws-1',
           action: 'DELETE_SEMANTIC_DUPLICATES',
           resource: 'KloelMemory',
-          details: expect.objectContaining({
-            category: 'product',
-            mergedCount: 1,
-          }),
+          details: semanticAuditDetails,
         }),
       );
     });
@@ -515,11 +520,12 @@ describe('MemoryManagementService', () => {
 
       await service.setMemoryPriority('ws-tenant', 'key', 'high');
 
+      const priorityWhere: Record<string, unknown> = expect.objectContaining({
+        workspaceId: 'ws-tenant',
+        key: 'key',
+      });
       expect(prisma.kloelMemory.findFirst).toHaveBeenCalledWith({
-        where: expect.objectContaining({
-          workspaceId: 'ws-tenant',
-          key: 'key',
-        }),
+        where: priorityWhere,
       });
     });
   });

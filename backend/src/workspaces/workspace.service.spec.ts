@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { NotFoundException } from '@nestjs/common';
+import type { Workspace } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CacheService } from '../common/cache/cache.service';
 import { WorkspaceService } from './workspace.service';
@@ -122,7 +123,7 @@ describe('WorkspaceService', () => {
         jitterMin: 100,
         jitterMax: 500,
         providerSettings: { whatsappProvider: 'meta-cloud' },
-      } as never;
+      } as unknown as Workspace;
       const result = service.toEngineWorkspace(ws);
       expect(result.id).toBe('ws-1');
       expect(result.jitterMin).toBe(100);

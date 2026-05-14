@@ -14,8 +14,8 @@ describe('BrainCapabilityRegistryService', () => {
     for (const cap of svc.list()) {
       expect(cap).toEqual(
         expect.objectContaining({
-          name: expect.any(String),
-          description: expect.any(String),
+          name: expect.stringMatching(/.+/),
+          description: expect.stringMatching(/.+/),
           domain: expect.stringMatching(/^(control|messaging|product|sales)$/),
         }),
       );

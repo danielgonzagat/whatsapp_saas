@@ -1,16 +1,19 @@
 import { BadRequestException } from '@nestjs/common';
 import { BrainAuditController } from './brain-audit.controller';
-import { BrainSpineAuditService, SpineAuditResult } from '../../brain/brain-spine-audit.service';
+import {
+  BrainSpineAuditService,
+  type SpineAuditResult,
+} from '../../brain/brain-spine-audit.service';
 
 describe('BrainAuditController', () => {
   function buildController() {
-    const audit = {
+    const audit: Pick<BrainSpineAuditService, 'audit'> = {
       audit: jest.fn(),
-    } as unknown as BrainSpineAuditService;
+    };
 
     return {
       audit,
-      controller: new BrainAuditController(audit),
+      controller: new BrainAuditController(audit as BrainSpineAuditService),
     };
   }
 

@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { PrismaService } from '../prisma/prisma.service';
 import { AgentEventsService } from '../whatsapp/agent-events.service';
+import type { AgentStreamEvent } from '../whatsapp/agent-events.service';
 import { CiaChatFilterService } from './cia-chat-filter.service';
 import { CiaRuntimeStateService } from './cia-runtime-state.service';
 import { CiaSendHelpersService } from './cia-send-helpers.service';
@@ -9,11 +10,16 @@ import { UnifiedAgentService } from '../kloel/unified-agent.service';
 
 const REDIS_TOKEN = 'default_IORedisModuleConnectionToken';
 
-jest.mock('../queue/queue', () => ({ autopilotQueue: { add: jest.fn().mockResolvedValue(undefined) } }));
+jest.mock('../queue/queue', () => ({
+  autopilotQueue: { add: jest.fn().mockResolvedValue(undefined) },
+}));
 
 describe('CiaInlineFallbackService', () => {
   let service: CiaInlineFallbackService;
-  let prisma: { contact: { findFirst: jest.Mock }; message: { findFirst: jest.Mock; findMany: jest.Mock } };
+  let prisma: {
+    contact: { findFirst: jest.Mock };
+    message: { findFirst: jest.Mock; findMany: jest.Mock };
+  };
   let agentEvents: { publish: jest.Mock };
   let chatFilter: { isRecentRemoteBatch: jest.Mock; resolveInlineBacklogFallbackLimit: jest.Mock };
   let runtimeState: {
@@ -31,7 +37,13 @@ describe('CiaInlineFallbackService', () => {
     buildInlineFallbackReply: jest.Mock;
     sendCiaMessageWithDailyLimit: jest.Mock;
   };
-  let redis: { set: jest.Mock; del: jest.Mock; incr: jest.Mock; decr: jest.Mock; expire: jest.Mock };
+  let redis: {
+    set: jest.Mock;
+    del: jest.Mock;
+    incr: jest.Mock;
+    decr: jest.Mock;
+    expire: jest.Mock;
+  };
 
   beforeEach(async () => {
     prisma = {
@@ -66,7 +78,9 @@ describe('CiaInlineFallbackService', () => {
       releaseSharedReplyLock: jest.fn().mockResolvedValue(undefined),
       hasOutboundAction: jest.fn().mockReturnValue(false),
       buildInlineFallbackReply: jest.fn().mockReturnValue('Oi, sou da Kloel!'),
-      sendCiaMessageWithDailyLimit: jest.fn().mockResolvedValue({ success: true, messageId: 'msg-1' }),
+      sendCiaMessageWithDailyLimit: jest
+        .fn()
+        .mockResolvedValue({ success: true, messageId: 'msg-1' }),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -121,10 +135,19 @@ describe('CiaInlineFallbackService', () => {
 
   describe('runBacklogInlineFallback', () => {
     it('completes immediately when conversations list is empty', async () => {
-      const result = await service.runBacklogInlineFallback('ws-1', 'run-1', 'reply_all_recent_first', []);
+      const result = await service.runBacklogInlineFallback(
+        'ws-1',
+        'run-1',
+        'reply_all_recent_first',
+        [],
+      );
       expect(result.processed).toBe(0);
       expect(result.skipped).toBe(0);
-      expect(runtimeState.updateAutonomyRunStatus).toHaveBeenCalledWith('ws-1', 'run-1', 'COMPLETED');
+      expect(runtimeState.updateAutonomyRunStatus).toHaveBeenCalledWith(
+        'ws-1',
+        'run-1',
+        'COMPLETED',
+      );
       expect(runtimeState.finalizeSilentLiveMode).toHaveBeenCalled();
     });
 
@@ -138,7 +161,12 @@ describe('CiaInlineFallbackService', () => {
         },
       ];
 
-      const result = await service.runBacklogInlineFallback('ws-1', 'run-1', 'reply_all_recent_first', conversations);
+      const result = await service.runBacklogInlineFallback(
+        'ws-1',
+        'run-1',
+        'reply_all_recent_first',
+        conversations,
+      );
       expect(result.skipped).toBe(1);
       expect(result.processed).toBe(0);
     });
@@ -159,11 +187,17 @@ describe('CiaInlineFallbackService', () => {
       ]);
       sendHelpers.hasOutboundAction.mockReturnValueOnce(true);
 
-      await service.runBacklogInlineFallback('ws-1', 'run-1', 'reply_all_recent_first', conversations);
-
-      const statusCalls = agentEvents.publish.mock.calls.filter(
-        (c: any) => c[0]?.phase === 'backlog_inline_fallback',
+      await service.runBacklogInlineFallback(
+        'ws-1',
+        'run-1',
+        'reply_all_recent_first',
+        conversations,
       );
+
+      const statusCalls = agentEvents.publish.mock.calls.filter((callArgs: unknown[]) => {
+        const maybeEvent = callArgs[0] as AgentStreamEvent | undefined;
+        return maybeEvent?.phase === 'backlog_inline_fallback';
+      });
       expect(statusCalls.length).toBe(1);
       expect(statusCalls[0][0].meta.total).toBe(1);
     });

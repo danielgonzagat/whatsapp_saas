@@ -1,5 +1,5 @@
-import { CiaInlineFallbackService } from './cia-inline-fallback.service';
-import { CiaChatFilterService } from './cia-chat-filter.service';
+import { CiaInlineFallbackService } from '../cia/cia-inline-fallback.service';
+import { CiaChatFilterService } from '../cia/cia-chat-filter.service';
 
 interface PrismaMock {
   message: { findFirst: jest.Mock; findMany: jest.Mock; create: jest.Mock };

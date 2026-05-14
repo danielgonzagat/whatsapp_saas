@@ -164,12 +164,13 @@ describe('LeadsService', () => {
         phone: '5511999999999',
         name: 'Maria',
         email: null,
+        commercialScore: null,
         status: 'new',
         lastIntent: 'general',
         totalMessages: 0,
-        lastInteraction: expect.any(Date),
+        lastInteraction: new Date('2026-01-01'),
         metadata: {},
-        createdAt: expect.any(Date),
+        createdAt: new Date('2026-01-01'),
         updatedAt: null,
       });
     });

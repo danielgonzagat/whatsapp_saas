@@ -98,6 +98,10 @@ describe('DailyLimitService', () => {
           day: expect.any(Date),
         },
       });
+      const whereDay = callArgs.where.workspaceId_channel_day.day;
+      expect(whereDay).toBeInstanceOf(Date);
+      expect(isNaN(whereDay.getTime())).toBe(false);
+
       expect(callArgs.create).toMatchObject({
         workspaceId: wsId,
         channel: ch,
@@ -105,6 +109,9 @@ describe('DailyLimitService', () => {
         used: 1,
         capAtDay: 5,
       });
+      const createDay = callArgs.create.day as Date;
+      expect(createDay).toBeInstanceOf(Date);
+      expect(isNaN(createDay.getTime())).toBe(false);
     });
 
     it('falls back to allowed=true on DB error', async () => {

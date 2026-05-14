@@ -7,10 +7,14 @@ const REDIS_TOKEN = 'default_IORedisModuleConnectionToken';
 
 describe('InboxEventsService', () => {
   let service: InboxEventsService;
-  let subscriber: { subscribe: jest.Mock; on: jest.Mock; quit: jest.Mock };
-  let redis: { duplicate: jest.Mock };
-  let gateway: { emitToWorkspace: jest.Mock };
-  let opsAlert: { alertOnCriticalError: jest.Mock };
+  let subscriber: {
+    subscribe: jest.Mock<Promise<void>, [string]>;
+    on: jest.Mock<void, [string, (channel: string, message: string) => void]>;
+    quit: jest.Mock<Promise<void>>;
+  };
+  let redis: { duplicate: jest.Mock<typeof subscriber> };
+  let gateway: { emitToWorkspace: jest.Mock<void, [string, string, unknown]> };
+  let opsAlert: { alertOnCriticalError: jest.Mock<Promise<void>, [Error, string]> };
 
   beforeEach(async () => {
     subscriber = {

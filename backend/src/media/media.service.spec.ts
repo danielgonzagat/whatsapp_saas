@@ -26,11 +26,24 @@ jest.mock('../common/utils/url-validator', () => ({
 describe('MediaService', () => {
   let service: MediaService;
   let prisma: {
-    mediaJob: { create: jest.Mock; findFirst: jest.Mock };
-    document: { create: jest.Mock; findMany: jest.Mock; findFirst: jest.Mock; updateMany: jest.Mock };
+    mediaJob: {
+      create: jest.Mock<Promise<unknown>, [unknown]>;
+      findFirst: jest.Mock<Promise<unknown | null>>;
+    };
+    document: {
+      create: jest.Mock<Promise<unknown>, [unknown]>;
+      findMany: jest.Mock<Promise<unknown[]>>;
+      findFirst: jest.Mock<Promise<unknown | null>>;
+      updateMany: jest.Mock<Promise<unknown>>;
+    };
   };
-  let config: { get: jest.Mock };
-  let storage: { upload: jest.Mock; isLocalDriver: jest.Mock; readLocalFile: jest.Mock; getSignedUrl: jest.Mock };
+  let config: { get: jest.Mock<unknown, [string]> };
+  let storage: {
+    upload: jest.Mock<Promise<unknown>, [unknown]>;
+    isLocalDriver: jest.Mock<boolean>;
+    readLocalFile: jest.Mock<Buffer>;
+    getSignedUrl: jest.Mock<string, [string]>;
+  };
 
   beforeEach(() => {
     queueAddMock.mockClear();
@@ -41,7 +54,9 @@ describe('MediaService', () => {
         findFirst: jest.fn().mockResolvedValue(null),
       },
       document: {
-        create: jest.fn().mockResolvedValue({ id: 'doc-1', name: 'test', filePath: '/uploads/test.pdf' }),
+        create: jest
+          .fn()
+          .mockResolvedValue({ id: 'doc-1', name: 'test', filePath: '/uploads/test.pdf' }),
         findMany: jest.fn().mockResolvedValue([]),
         findFirst: jest.fn().mockResolvedValue(null),
         updateMany: jest.fn().mockResolvedValue({ count: 1 }),
@@ -49,16 +64,18 @@ describe('MediaService', () => {
     };
     config = { get: jest.fn().mockReturnValue(undefined) };
     storage = {
-      upload: jest.fn().mockResolvedValue({ path: '/uploads/doc.pdf', url: 'https://s3.example.com/doc.pdf' }),
+      upload: jest
+        .fn()
+        .mockResolvedValue({ path: '/uploads/doc.pdf', url: 'https://s3.example.com/doc.pdf' }),
       isLocalDriver: jest.fn().mockReturnValue(true),
       readLocalFile: jest.fn().mockReturnValue(Buffer.from('data')),
       getSignedUrl: jest.fn().mockReturnValue('https://signed.url/doc.pdf'),
     };
 
     service = new MediaService(
-      prisma as PrismaService,
-      config as ConfigService,
-      storage as StorageService,
+      prisma as unknown as PrismaService,
+      config as unknown as ConfigService,
+      storage as unknown as StorageService,
     );
   });
 
@@ -85,15 +102,13 @@ describe('MediaService', () => {
           }),
         }),
       );
-      expect(queueAddMock).toHaveBeenCalledWith('generate-video', expect.any(Object));
+      expect(queueAddMock).toHaveBeenCalledWith('generate-video', expect.objectContaining({}));
     });
   });
 
   describe('getJobStatus', () => {
     it('throws NotFoundException when job does not exist', async () => {
-      await expect(service.getJobStatus('nonexistent', 'ws-1')).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.getJobStatus('nonexistent', 'ws-1')).rejects.toThrow(NotFoundException);
     });
 
     it('returns job data when found', async () => {
@@ -108,7 +123,7 @@ describe('MediaService', () => {
   describe('uploadDocument', () => {
     it('throws BadRequestException when file has no buffer', async () => {
       await expect(
-        service.uploadDocument('ws-1', {} as never, {}),
+        service.uploadDocument('ws-1', {} as unknown as { buffer: Buffer }, {}),
       ).rejects.toThrow(BadRequestException);
     });
 

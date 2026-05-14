@@ -201,19 +201,24 @@ describe('KloelThreadService', () => {
         'Mensagem do usuário',
       );
 
+      const createDataMatcher: Record<string, unknown> = expect.objectContaining({
+        role: 'user',
+        content: 'Mensagem do usuário',
+        workspaceId: wsId,
+      });
       expect(prisma.chatMessage.create).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: expect.objectContaining({
-            role: 'user',
-            content: 'Mensagem do usuário',
-            workspaceId: wsId,
-          }),
+          data: createDataMatcher,
         }),
       );
       expect(prisma.chatThread.updateMany).toHaveBeenCalledWith({
         where: { id: 'thread-1', workspaceId: wsId },
-        data: { updatedAt: expect.any(Date) },
+        data: expect.objectContaining({}),
       });
+      const touchCall = prisma.chatThread.updateMany.mock.calls[0][0] as {
+        data: { updatedAt: Date };
+      };
+      expect(touchCall.data.updatedAt).toBeInstanceOf(Date);
       expect(result).toEqual({ id: 'msg-1' });
     });
 
@@ -222,9 +227,10 @@ describe('KloelThreadService', () => {
 
       await service.persistUserThreadMessage('thread-1', wsId, 'Hello', metadata);
 
+      const metadataDataMatcher: Record<string, unknown> = expect.objectContaining({ metadata });
       expect(prisma.chatMessage.create).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: expect.objectContaining({ metadata }),
+          data: metadataDataMatcher,
         }),
       );
     });
@@ -239,12 +245,13 @@ describe('KloelThreadService', () => {
     it('creates assistant message with correct role', async () => {
       await service.persistAssistantThreadMessage('thread-1', wsId, 'Resposta do assistente');
 
+      const assistantDataMatcher: Record<string, unknown> = expect.objectContaining({
+        role: 'assistant',
+        content: 'Resposta do assistente',
+      });
       expect(prisma.chatMessage.create).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: expect.objectContaining({
-            role: 'assistant',
-            content: 'Resposta do assistente',
-          }),
+          data: assistantDataMatcher,
         }),
       );
     });
@@ -382,28 +389,38 @@ describe('KloelThreadService', () => {
   describe('tenant isolation', () => {
     it('resolveThread creates thread with correct workspaceId', async () => {
       await service.resolveThread('ws-tenant');
+      const resolveDataMatcher: Record<string, unknown> = expect.objectContaining({
+        workspaceId: 'ws-tenant',
+      });
       expect(prisma.chatThread.create).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: expect.objectContaining({ workspaceId: 'ws-tenant' }),
+          data: resolveDataMatcher,
         }),
       );
     });
 
     it('persistUserThreadMessage uses correct workspaceId', async () => {
       await service.persistUserThreadMessage('thread-1', 'ws-tenant', 'msg');
+      const persistDataMatcher: Record<string, unknown> = expect.objectContaining({
+        workspaceId: 'ws-tenant',
+      });
       expect(prisma.chatMessage.create).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: expect.objectContaining({ workspaceId: 'ws-tenant' }),
+          data: persistDataMatcher,
         }),
       );
     });
 
     it('touchThread filters by workspaceId', async () => {
-      (service as any).touchThread('thread-1', 'ws-tenant');
+      await service.touchThread('thread-1', 'ws-tenant');
       expect(prisma.chatThread.updateMany).toHaveBeenCalledWith({
         where: { id: 'thread-1', workspaceId: 'ws-tenant' },
-        data: { updatedAt: expect.any(Date) },
+        data: expect.objectContaining({}),
       });
+      const touchCall = prisma.chatThread.updateMany.mock.calls[0][0] as {
+        data: { updatedAt: Date };
+      };
+      expect(touchCall.data.updatedAt).toBeInstanceOf(Date);
     });
   });
 

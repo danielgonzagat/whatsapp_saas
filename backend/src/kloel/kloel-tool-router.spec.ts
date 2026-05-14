@@ -1,5 +1,18 @@
 import { KloelToolRouter } from './kloel-tool-router';
 
+interface TruncatedToolMessageContent {
+  truncated: true;
+  originalChars: number;
+  preview: string;
+  artifactId?: string;
+  hint?: string;
+}
+
+interface ToolResultSSEEvent {
+  type: 'tool_result';
+  artifactId: string;
+}
+
 describe('KloelToolRouter', () => {
   it('blocks assistant tool calls outside an explicit allowedTools scope', async () => {
     const logger = { warn: jest.fn() };
@@ -89,13 +102,14 @@ describe('KloelToolRouter', () => {
       executeLocalTool: jest.fn(),
     });
 
-    const content = JSON.parse(result.toolMessages[0]?.content ?? '{}') as Record<string, unknown>;
+    const raw = result.toolMessages[0]?.content ?? '{}';
+    const content: TruncatedToolMessageContent = JSON.parse(raw);
     expect(content.truncated).toBe(true);
-    expect(content.originalChars).toEqual(expect.any(Number));
-    expect(String(content.preview).length).toBeLessThanOrEqual(6000);
+    expect(content.originalChars).toBeGreaterThan(6000);
+    expect(content.preview.length).toBeLessThanOrEqual(6000);
     expect(typeof content.artifactId).toBe('string');
-    expect(String(content.artifactId)).toMatch(/^tool_artifact:search_agent_memory:\d+:[a-f0-9]+$/);
-    expect(content.hint).toEqual(expect.any(String));
+    expect(content.artifactId).toMatch(/^tool_artifact:search_agent_memory:\d+:[a-f0-9]+$/);
+    expect(content.hint.length).toBeGreaterThan(0);
 
     expect(storeToolArtifact).toHaveBeenCalledTimes(1);
     expect(storeToolArtifact).toHaveBeenCalledWith(
@@ -128,7 +142,8 @@ describe('KloelToolRouter', () => {
       executeLocalTool: jest.fn(),
     });
 
-    const content = JSON.parse(result.toolMessages[0]?.content ?? '{}') as Record<string, unknown>;
+    const raw = result.toolMessages[0]?.content ?? '{}';
+    const content: TruncatedToolMessageContent = JSON.parse(raw);
     expect(content.truncated).toBe(true);
     expect(content.artifactId).toBeUndefined();
     expect(content.hint).toBeUndefined();
@@ -160,8 +175,9 @@ describe('KloelToolRouter', () => {
       executeLocalTool: jest.fn(),
     });
 
-    const content = JSON.parse(result.toolMessages[0]?.content ?? '{}') as Record<string, unknown>;
-    expect(content.truncated).toBeUndefined();
+    const raw = result.toolMessages[0]?.content ?? '{}';
+    const parsed = JSON.parse(raw);
+    expect(parsed.truncated).toBeUndefined();
     expect(storeToolArtifact).not.toHaveBeenCalled();
     expect(result.receipts[0]?.artifactId).toBeUndefined();
   });
@@ -190,14 +206,18 @@ describe('KloelToolRouter', () => {
       safeWrite,
     });
 
-    const toolResultCalls = safeWrite.mock.calls.filter(
-      ([event]: unknown[]) => (event as Record<string, unknown>)?.type === 'tool_result',
-    );
+    const toolResultCalls = safeWrite.mock.calls.filter((call: unknown[]) => {
+      const event = call[0];
+      return (
+        typeof event === 'object' &&
+        event !== null &&
+        'type' in event &&
+        (event as ToolResultSSEEvent).type === 'tool_result'
+      );
+    });
     expect(toolResultCalls.length).toBe(1);
-    const toolResultEvent = toolResultCalls[0][0] as Record<string, unknown>;
+    const toolResultEvent = toolResultCalls[0][0] as ToolResultSSEEvent;
     expect(typeof toolResultEvent.artifactId).toBe('string');
-    expect(String(toolResultEvent.artifactId)).toMatch(
-      /^tool_artifact:search_agent_memory:\d+:[a-f0-9]+$/,
-    );
+    expect(toolResultEvent.artifactId).toMatch(/^tool_artifact:search_agent_memory:\d+:[a-f0-9]+$/);
   });
 });

@@ -7,19 +7,21 @@ jest.mock('../common/redis/redis.util', () => ({
 
 import { createRedisClient } from '../common/redis/redis.util';
 
-function mockSocket(overrides: Record<string, any> = {}): Socket {
-  return { id: 'test-socket-id', ...overrides } as any as Socket;
+type SocketOverrides = Partial<Pick<Socket, 'id' | 'handshake' | 'join'>>;
+
+function mockSocket(overrides: SocketOverrides = {}): Socket {
+  return { id: 'test-socket-id', ...overrides } as unknown as Socket;
 }
 
 describe('AlertsGateway', () => {
   let gateway: AlertsGateway;
   let mockServer: {
-    to: jest.Mock;
-    emit: jest.Mock;
+    to: jest.Mock<{ emit: jest.Mock<void, [string, unknown]> }, [string]>;
+    emit: jest.Mock<void, [string, unknown]>;
   };
   let mockSub: {
-    subscribe: jest.Mock;
-    on: jest.Mock;
+    subscribe: jest.Mock<Promise<void>, [string]>;
+    on: jest.Mock<void, [string, (channel: string, message: string) => void]>;
   };
 
   beforeEach(() => {
@@ -36,7 +38,7 @@ describe('AlertsGateway', () => {
     (createRedisClient as jest.Mock).mockReturnValue(mockSub);
 
     gateway = new AlertsGateway();
-    (gateway as never as Record<string, unknown>).server = mockServer;
+    (gateway as unknown as { server: typeof mockServer }).server = mockServer;
   });
 
   describe('onModuleInit', () => {
@@ -98,22 +100,24 @@ describe('AlertsGateway', () => {
 
   describe('handleConnection', () => {
     it('joins client to workspace room when workspaceId is provided', () => {
+      const joinMock = jest.fn();
       const socket = mockSocket({
         id: 'socket-1',
         handshake: { query: { workspaceId: 'ws-1' } },
-        join: jest.fn(),
+        join: joinMock,
       });
 
       gateway.handleConnection(socket);
 
-      expect(socket.join).toHaveBeenCalledWith('workspace:ws-1');
+      expect(joinMock).toHaveBeenCalledWith('workspace:ws-1');
     });
 
     it('handles connection without workspaceId gracefully', () => {
+      const joinMock = jest.fn();
       const socket = mockSocket({
         id: 'socket-2',
         handshake: { query: {} },
-        join: jest.fn(),
+        join: joinMock,
       });
 
       expect(() => {
@@ -122,15 +126,16 @@ describe('AlertsGateway', () => {
     });
 
     it('does not join room when workspaceId is empty string', () => {
+      const joinMock = jest.fn();
       const socket = mockSocket({
         id: 'socket-3',
         handshake: { query: { workspaceId: '' } },
-        join: jest.fn(),
+        join: joinMock,
       });
 
       gateway.handleConnection(socket);
 
-      expect(socket.join).not.toHaveBeenCalled();
+      expect(joinMock).not.toHaveBeenCalled();
     });
   });
 

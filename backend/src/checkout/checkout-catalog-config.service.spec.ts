@@ -210,10 +210,10 @@ describe('CheckoutCatalogConfigService', () => {
 
       await service.resetConfig('plan_1');
 
-      expect(prisma.$transaction).toHaveBeenCalledWith(
-        expect.any(Function),
-        expect.objectContaining({ isolationLevel: 'ReadCommitted' }),
-      );
+      expect(prisma.$transaction).toHaveBeenCalled();
+      const [fnArg, opts] = prisma.$transaction.mock.calls[0] as [unknown, unknown];
+      expect(fnArg).toBeInstanceOf(Function);
+      expect(opts).toEqual(expect.objectContaining({ isolationLevel: 'ReadCommitted' }));
     });
   });
 
@@ -221,7 +221,7 @@ describe('CheckoutCatalogConfigService', () => {
     it('propagates unexpected Prisma errors in calculateShipping', async () => {
       prisma.checkoutProductPlan.findUnique.mockRejectedValue(new Error('DB connection lost'));
 
-      await expect(service.calculateShipping('any', '00000000')).rejects.toThrow(
+      await expect(service.calculateShipping('test-plan', '00000000')).rejects.toThrow(
         'DB connection lost',
       );
     });

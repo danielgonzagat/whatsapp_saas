@@ -77,10 +77,13 @@ describe('AdminLoginAttemptsService', () => {
 
       await service.isLocked(email, ip);
 
-      const [emailQuery, ipQuery] = prismaMock.$transaction.mock.calls[0][0];
-      expect(emailQuery.where.success).toBe(false);
-      expect(ipQuery.where.success).toBe(false);
-      expect(emailQuery.where.createdAt.gte).toBeInstanceOf(Date);
+      expect(mockAttemptCount).toHaveBeenCalledTimes(2);
+      const emailCall = mockAttemptCount.mock.calls[0][0] as Record<string, unknown>;
+      const ipCall = mockAttemptCount.mock.calls[1][0] as Record<string, unknown>;
+      expect(emailCall.where).toEqual(expect.objectContaining({ email, success: false }));
+      expect(ipCall.where).toEqual(expect.objectContaining({ ip, success: false }));
+      const emailWhere = emailCall.where as { createdAt: { gte: Date } };
+      expect(emailWhere.createdAt.gte).toBeInstanceOf(Date);
     });
 
     it('counts email and IP independently', async () => {
@@ -88,9 +91,11 @@ describe('AdminLoginAttemptsService', () => {
 
       await service.isLocked(email, ip);
 
-      const [emailQuery, ipQuery] = prismaMock.$transaction.mock.calls[0][0];
-      expect(emailQuery.where.email).toBe(email);
-      expect(ipQuery.where.ip).toBe(ip);
+      expect(mockAttemptCount).toHaveBeenCalledTimes(2);
+      const emailCall = mockAttemptCount.mock.calls[0][0] as Record<string, unknown>;
+      const ipCall = mockAttemptCount.mock.calls[1][0] as Record<string, unknown>;
+      expect(emailCall.where).toEqual(expect.objectContaining({ email }));
+      expect(ipCall.where).toEqual(expect.objectContaining({ ip }));
     });
 
     it('uses read-committed isolation for consistent counts', async () => {

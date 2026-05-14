@@ -108,9 +108,11 @@ describe('AdminSessionsService', () => {
       expect(mockSessionUpdate).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { id: 'session_1' },
-          data: { revokedAt: expect.any(Date) as unknown },
+          data: expect.objectContaining({}),
         }),
       );
+      const revokeArg = mockSessionUpdate.mock.calls[0][0] as { data: { revokedAt: Date } };
+      expect(revokeArg.data.revokedAt).toBeInstanceOf(Date);
       expect(mockAuditLogCreate).toHaveBeenCalledWith(
         expect.objectContaining({
           data: expect.objectContaining({
