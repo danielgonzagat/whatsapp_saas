@@ -11,6 +11,10 @@ import type {
   NextBestAction,
   SuggestionDismissal,
   OperatorAction,
+  TeamDelegationRiskClass,
+  TeamDelegationMode,
+  TeamRollbackAction,
+  LeadOutcomeGuardrail,
 } from './team.types';
 
 const SUGGESTION_FRAME_PREFIX =
@@ -23,21 +27,37 @@ export function formatSuggestionForDisplay(
     `(confidence: ${(suggestion.confidence * 100).toFixed(0)}%)`;
 }
 
-export function buildSuggestionMessage(
-  suggestion: NextBestAction,
-): {
+export interface SuggestionMessage {
   readonly frame: string;
   readonly action: string;
   readonly rationale: string;
   readonly guardrails: readonly string[];
   readonly dismissible: boolean;
-} {
+  readonly delegation: {
+    readonly riskClass: TeamDelegationRiskClass;
+    readonly delegationMode: TeamDelegationMode;
+    readonly safeNextStep: string;
+    readonly rollback: readonly TeamRollbackAction[];
+    readonly leadOutcomeGuardrail: LeadOutcomeGuardrail;
+  };
+}
+
+export function buildSuggestionMessage(
+  suggestion: NextBestAction,
+): SuggestionMessage {
   return {
     frame: SUGGESTION_FRAME_PREFIX,
     action: suggestion.action,
     rationale: suggestion.rationale,
     guardrails: suggestion.guardrails,
     dismissible: true,
+    delegation: {
+      riskClass: suggestion.r1Contract.riskClass,
+      delegationMode: suggestion.r1Contract.delegationMode,
+      safeNextStep: suggestion.r1Contract.safeNextStep,
+      rollback: suggestion.r1Contract.rollback,
+      leadOutcomeGuardrail: suggestion.r1Contract.leadOutcomeGuardrail,
+    },
   };
 }
 

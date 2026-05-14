@@ -17,6 +17,9 @@ import {
 const TOP_N = 5;
 const PEAK_HOURS_COUNT = 3;
 const VOCABULARY_TOP_N = 10;
+const OPERATOR_FEEDBACK_REPETITION_THRESHOLD = 2;
+const OPERATOR_FEEDBACK_DECISION_SLOT_COUNT = 1;
+const OPERATOR_FEEDBACK_NEXT_STEP_PREFIX = 'learn_from_operator_feedback';
 
 const VOCABULARY_STOP_WORDS: ReadonlySet<string> = new Set([
   'o', 'a', 'os', 'as', 'de', 'do', 'da', 'dos', 'das', 'em', 'no', 'na',
@@ -269,6 +272,7 @@ function deriveTemporal(events: readonly SpineEventRef[]): DerivedTemporal {
 function deriveDecisionPatterns(events: readonly SpineEventRef[]): DerivedDecisionPatterns {
   const nextStepCounts = new Map<string, number>();
   const escalationCounts = new Map<string, number>();
+  const operatorNoteCounts = new Map<string, number>();
 
   for (const event of events) {
     if (event.eventName === 'commerce.crm.next_step_defined') {
@@ -283,6 +287,22 @@ function deriveDecisionPatterns(events: readonly SpineEventRef[]): DerivedDecisi
       if (typeof reason === 'string') {
         escalationCounts.set(reason, (escalationCounts.get(reason) ?? 0) + 1);
       }
+    } else if (event.eventName === 'cognition.valence_assigned') {
+      const isOperatorRef = event.entityRef?.entityType === 'operator';
+      if (!isOperatorRef || !event.payload) continue;
+      const p = event.payload as Record<string, unknown>;
+      const accepted = p['accepted'];
+      const operatorNote = p['operatorNote'];
+      const learningFraming = p['learningFraming'];
+      const trimmedNote = typeof operatorNote === 'string' ? operatorNote.trim() : '';
+      if (
+        accepted === false &&
+        trimmedNote.length > 0 &&
+        typeof learningFraming === 'string' &&
+        learningFraming.includes('not human performance scoring')
+      ) {
+        operatorNoteCounts.set(trimmedNote, (operatorNoteCounts.get(trimmedNote) ?? 0) + 1);
+      }
     }
   }
 
@@ -291,12 +311,24 @@ function deriveDecisionPatterns(events: readonly SpineEventRef[]): DerivedDecisi
     .slice(0, TOP_N)
     .map(([step]) => step);
 
+  const repeatedOperatorNotes = Array.from(operatorNoteCounts.entries())
+    .filter(([, count]) => count >= OPERATOR_FEEDBACK_REPETITION_THRESHOLD)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, OPERATOR_FEEDBACK_DECISION_SLOT_COUNT)
+    .map(([note]) => `${OPERATOR_FEEDBACK_NEXT_STEP_PREFIX}: ${note}`);
+
+  const retainedNextSteps = typicalNextSteps.slice(
+    0,
+    Math.max(0, TOP_N - repeatedOperatorNotes.length),
+  );
+  const allNextSteps = [...retainedNextSteps, ...repeatedOperatorNotes];
+
   const typicalEscalations = Array.from(escalationCounts.entries())
     .sort((a, b) => b[1] - a[1])
     .slice(0, TOP_N)
     .map(([reason]) => reason);
 
-  return { typicalNextSteps, typicalEscalations };
+  return { typicalNextSteps: allNextSteps, typicalEscalations };
 }
 
 @Injectable()

@@ -6,7 +6,11 @@ import type {
   SatisfactionMethod,
   DetectionInput,
 } from './postsale-consumers.types';
-import { daysSince, filterByWorkspace } from './postsale-consumers.types';
+import {
+  daysSince,
+  filterByWorkspace,
+  filterByWorkspaceAndEntity,
+} from './postsale-consumers.types';
 
 const PROCESSOR_NAME = 'satisfaction-collector';
 const PROCESSOR_VERSION = '1.0.0';
@@ -36,6 +40,7 @@ export class SatisfactionCollectorService {
       score,
       input.events,
       input.workspaceId,
+      entityRef,
       nowMs,
     );
 
@@ -98,10 +103,11 @@ export class SatisfactionCollectorService {
     score: number | undefined,
     events: readonly SpineEventRef[],
     workspaceId: string,
+    entityRef: { readonly entityType: string; readonly entityId: string },
     nowMs: number,
   ): SatisfactionSignal['sentimentLabel'] {
     if (method === 'behavioral') {
-      return this.deriveBehavioralSentiment(events, workspaceId, nowMs);
+      return this.deriveBehavioralSentiment(events, workspaceId, entityRef, nowMs);
     }
 
     if (score === undefined) {
@@ -122,9 +128,10 @@ export class SatisfactionCollectorService {
   private deriveBehavioralSentiment(
     events: readonly SpineEventRef[],
     workspaceId: string,
+    entityRef: { readonly entityType: string; readonly entityId: string },
     nowMs: number,
   ): SatisfactionSignal['sentimentLabel'] {
-    const wsEvents = filterByWorkspace(events, workspaceId);
+    const wsEvents = filterByWorkspaceAndEntity(events, workspaceId, entityRef);
     let positiveSignals = 0;
     let negativeSignals = 0;
 

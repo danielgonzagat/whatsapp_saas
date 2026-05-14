@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import type { SpineEventRef } from '../mind/mind.types';
 import type { LtvProjection, DetectionInput } from './postsale-consumers.types';
-import { clamp, daysSince, filterByWorkspace } from './postsale-consumers.types';
+import { clamp, daysSince, filterByWorkspaceAndEntity } from './postsale-consumers.types';
 
 const PROJECTION_MONTHS = 24;
 const DEFAULT_CHURN_RATE = 0.05;
@@ -16,7 +16,7 @@ export class LtvProjectionService {
     churnRateOverride?: number,
   ): LtvProjection {
     const nowMs = input.nowMs ?? Date.now();
-    const wsEvents = filterByWorkspace(input.events, input.workspaceId);
+    const wsEvents = filterByWorkspaceAndEntity(input.events, input.workspaceId, input.entityRef);
 
     const cohortEvents = wsEvents.filter(
       (e) => daysSince(e.occurredAt, nowMs) < OBSERVATION_WINDOW_DAYS,

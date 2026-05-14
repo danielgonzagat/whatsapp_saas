@@ -141,4 +141,52 @@ describe('BrainCommercialGraphService', () => {
     );
     expect(result.recommendations[0]?.reason).toContain('Priorizar correção');
   });
+
+  it('prioritizes toxic or regressive policy outcomes before healthy scaling', async () => {
+    const prisma = {
+      mindPolicy: {
+        findMany: jest.fn().mockResolvedValue([
+          {
+            decisionType: 'post_sale_offer',
+            chosen: 'upsell_after_refund_risk',
+            outcome: -0.4,
+            baselineOutcome: 0.2,
+          },
+          {
+            decisionType: 'objection_response',
+            chosen: 'send_message',
+            outcome: 0.7,
+            baselineOutcome: 0.3,
+          },
+        ]),
+      },
+      autopilotEvent: {
+        findMany: jest.fn().mockResolvedValue([
+          { action: 'send_message', status: 'executed' },
+          { action: 'send_message', status: 'executed' },
+          { action: 'upsell_after_refund_risk', status: 'completed' },
+        ]),
+      },
+      $transaction: jest.fn((queries: Array<Promise<unknown>>) => Promise.all(queries)),
+    };
+    const service = new BrainCommercialGraphService(prisma as never);
+
+    const result = await service.recommendNextActions('ws-1');
+
+    expect(result.recommendations[0]).toEqual(
+      expect.objectContaining({
+        action: 'upsell_after_refund_risk',
+        confidence: 0.35,
+        toxicityFlag: 'regression',
+        toxicPolicyCount: 1,
+      }),
+    );
+    expect(result.recommendations[0]?.reason).toContain('toxicidade detectada');
+    expect(result.recommendations.find((r) => r.action === 'send_message')).toEqual(
+      expect.objectContaining({
+        confidence: 1,
+        toxicityFlag: 'healthy',
+      }),
+    );
+  });
 });

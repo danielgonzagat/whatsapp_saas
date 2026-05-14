@@ -19,11 +19,19 @@ const PROMPTS_PATH = path.resolve(__dirname, 'kloel.prompts.ts');
 
 const FORBIDDEN_TOKENS = [
   'voce e',
+  'você é',
   'you are',
   'always',
   'always ',
   'never',
   'never ',
+  'nunca',
+  'sempre',
+  'verbalize',
+  'responda',
+  'você deve',
+  'voce deve',
+  'seu trabalho',
   'Kloel',
   'IDENTIDADE',
   'PERSONALIDADE',
@@ -48,7 +56,19 @@ describe('UTP-ABI-009 — Prompt emptied', () => {
 
     it('exports CANONICAL_FALLBACK_SYSTEM_PROMPT as the only export', () => {
       expect(CANONICAL_FALLBACK_SYSTEM_PROMPT).toBe(
-        'Estado cognitivo distribuído. Verbalize a partir do estado abaixo. Nunca invente fato fora do estado.',
+        'cognitive_state_boundary=distributed; verbalization_source=state_payload; fact_boundary=state_payload',
+      );
+    });
+
+    it('keeps the canonical fallback structural instead of behavioral', () => {
+      expect(CANONICAL_FALLBACK_SYSTEM_PROMPT).not.toMatch(
+        /\b(nunca|sempre|verbalize|responda|never|always|you\s+must|você\s+deve|voce\s+deve|seu\s+trabalho)\b/i,
+      );
+      expect(CANONICAL_FALLBACK_SYSTEM_PROMPT).toContain(
+        'cognitive_state_boundary=distributed',
+      );
+      expect(CANONICAL_FALLBACK_SYSTEM_PROMPT).toContain(
+        'fact_boundary=state_payload',
       );
     });
 

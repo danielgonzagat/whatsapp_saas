@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { SpineEmitterService } from '../spine/spine-emitter.service';
 import type {
   ChurnRiskAssessment,
+  PostSaleDecisionControl,
   WinBackPlan,
   WinBackTacticKind,
   DetectionInput,
@@ -69,6 +70,7 @@ export class WinBackWindowAdvisor {
       tacticKind,
       description,
       suggestedChannel,
+      control: buildControl(risk, { windowOpen, suggestedChannel, tacticKind }),
       assessedAt: new Date(nowMs).toISOString(),
     };
   }
@@ -98,4 +100,52 @@ export class WinBackWindowAdvisor {
       );
     }
   }
+}
+
+function buildControl(
+  risk: ChurnRiskAssessment,
+  plan: Pick<WinBackPlan, 'windowOpen' | 'suggestedChannel' | 'tacticKind'>,
+): PostSaleDecisionControl {
+  if (!plan.windowOpen || plan.suggestedChannel === 'silent') {
+    return {
+      riskClass: 'R1',
+      delegationMode: 'silent_monitoring',
+      safeNextStep:
+        'Keep the win-back window closed and do not contact the customer without stronger recovery evidence.',
+      uncertainty:
+        'Risk is not strong enough to justify re-opening a customer conversation.',
+      leadOutcomeGuardrail:
+        'Customer should not receive a reactivation message just because Kloel can send one.',
+      rollback:
+        'Reassess only when churn, refund, satisfaction, or explicit return-intent evidence changes.',
+    };
+  }
+
+  if (plan.tacticKind === 'conditional_return_offer') {
+    return {
+      riskClass: 'R2',
+      delegationMode: 'owner_review',
+      safeNextStep:
+        'Draft return conditions for owner review after listening to the churn reason; do not lead with discount.',
+      uncertainty:
+        'Critical churn means relationship damage is possible, but the right repair path is not known yet.',
+      leadOutcomeGuardrail:
+        'Customer must get a fair path back or out, without urgency, guilt, or hidden tradeoffs.',
+      rollback:
+        'If terms are unclear or the owner cannot honor them, do not send the offer; use a listening survey or human support instead.',
+    };
+  }
+
+  return {
+    riskClass: risk.riskLevel === 'high' ? 'R2' : 'R1',
+    delegationMode: risk.riskLevel === 'high' ? 'owner_review' : 'allowed_alone',
+    safeNextStep:
+      'Use the win-back window to listen or inform; attach no discount, deadline, or pressure unless the owner approves it.',
+    uncertainty:
+      'Win-back timing is inferred from risk, not from explicit customer permission to be sold again.',
+    leadOutcomeGuardrail:
+      'Customer should leave clearer or heard, even if they never return.',
+    rollback:
+      'If the customer ignores, objects, or shows frustration, close the window and stop follow-up until fresh intent appears.',
+  };
 }

@@ -7,7 +7,11 @@
  * Default budget: 72 hours. Configurable per call.
  */
 
-import type { ForgottenFollowup, ForgottenFollowupInput } from './team.types';
+import type {
+  ForgottenFollowup,
+  ForgottenFollowupInput,
+  SuggestionR1Contract,
+} from './team.types';
 import type { SpineEventRef } from '../mind/mind.types';
 
 const DEFAULT_BUDGET_HOURS = 72;
@@ -81,6 +85,40 @@ function findLastOperatorAction(
   ).occurredAt;
 }
 
+function hasQualifiedSilenceContext(
+  events: readonly SpineEventRef[],
+  leadId: string,
+  silentAt: string,
+): boolean {
+  const silentAtMs = parseTimestampMs(silentAt);
+  return events.some(
+    (e) =>
+      e.entityRef?.entityType === 'lead' &&
+      e.entityRef.entityId === leadId &&
+      parseTimestampMs(e.occurredAt) <= silentAtMs &&
+      (e.eventName === 'commerce.lead.objection_raised' ||
+        e.eventName === 'commerce.cart.abandoned'),
+  );
+}
+
+function buildForgottenFollowupContract(
+  qualifiedSilence: boolean,
+): SuggestionR1Contract {
+  return {
+    riskClass: 'R1',
+    delegationMode: 'allowed_alone',
+    safeNextStep: qualifiedSilence
+      ? 'surface an honest follow-up suggestion for owner review; do not send'
+      : 'review timeline before suggesting any follow-up',
+    rollback: ['dismiss_suggestion', 'snooze_suggestion'],
+    leadOutcomeGuardrail: {
+      antiPressureLanguage: true,
+      respectsSilenceWindow: true,
+      requiresContextQualification: !qualifiedSilence,
+    },
+  };
+}
+
 function computeUrgency(
   silentDurationHours: number,
   budgetHours: number,
@@ -115,6 +153,12 @@ export function rescueForgottenFollowups(
       if (sinceAction < budgetHours * 0.5) continue;
     }
 
+    const qualifiedSilence = hasQualifiedSilenceContext(
+      input.events,
+      entry.leadId,
+      entry.silentAt,
+    );
+
     results.push({
       leadId: entry.leadId,
       workspaceId: entry.workspaceId,
@@ -123,16 +167,7 @@ export function rescueForgottenFollowups(
       budgetHours,
       ...(lastOperatorAction !== undefined ? { lastOperatorActionAt: lastOperatorAction } : {}),
       urgency: computeUrgency(silentDurationHours, budgetHours),
-      r1Contract: {
-        riskClass: 'normal',
-        delegationMode: 'allowed_alone',
-        rollback: ['dismiss', 'snooze'],
-        leadOutcomeGuardrail: {
-          antiPressureLanguage: true,
-          respectsSilenceWindow: true,
-          requiresContextQualification: true,
-        },
-      },
+      r1Contract: buildForgottenFollowupContract(qualifiedSilence),
     });
   }
 

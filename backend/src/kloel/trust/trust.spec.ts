@@ -262,6 +262,83 @@ describe('SilenceAsAction (UTP-TRUST-006)', () => {
     });
     expect(decision.remainSilent).toBe(true);
   });
+
+  it('carries operational delegation contract on every decision', () => {
+    const decision = decideSilence(healthyState);
+    expect(decision.riskClass).toBe('R1');
+    expect(decision.delegationMode).toBe('allowed_alone');
+    expect(typeof decision.safeNextStep).toBe('string');
+    expect(decision.safeNextStep.length).toBeGreaterThan(0);
+    expect(typeof decision.rollback).toBe('string');
+    expect(decision.rollback.length).toBeGreaterThan(0);
+    expect(typeof decision.leadOutcomeGuardrail).toBe('string');
+    expect(decision.leadOutcomeGuardrail.length).toBeGreaterThan(0);
+  });
+
+  it('returns safeNextStep with wait when fatigue is high', () => {
+    const decision = decideSilence({
+      ...healthyState,
+      fatigueLevel: 0.9,
+    });
+    expect(decision.remainSilent).toBe(true);
+    expect(decision.safeNextStep.toLowerCase()).toContain('wait');
+    expect(decision.rollback.toLowerCase()).toContain('resume');
+    expect(decision.leadOutcomeGuardrail.toLowerCase()).toContain('fatigue');
+  });
+
+  it('returns safeNextStep with wait when desperation is high', () => {
+    const decision = decideSilence({
+      ...healthyState,
+      desperationLevel: 0.85,
+    });
+    expect(decision.remainSilent).toBe(true);
+    expect(decision.safeNextStep.toLowerCase()).toContain('wait');
+    expect(decision.leadOutcomeGuardrail.toLowerCase()).toContain('discount');
+  });
+
+  it('returns safeNextStep with escalate when trust floor breached with fatigue', () => {
+    const decision = decideSilence({
+      ...healthyState,
+      trustScore: 0.1,
+      fatigueLevel: 0.5,
+    });
+    expect(decision.remainSilent).toBe(true);
+    expect(decision.safeNextStep.toLowerCase()).toContain('escalate');
+    expect(decision.rollback.toLowerCase()).toContain('human');
+    expect(decision.leadOutcomeGuardrail.toLowerCase()).toContain('human');
+  });
+
+  it('returns safeNextStep with escalate when brand risk and low trust', () => {
+    const decision = decideSilence({
+      ...healthyState,
+      trustScore: 0.25,
+      brandRiskFlags: [
+        { kind: 'false_promise', confidence: 0.8, matchedPattern: 'test' },
+      ],
+    });
+    expect(decision.remainSilent).toBe(true);
+    expect(decision.safeNextStep.toLowerCase()).toContain('escalate');
+    expect(decision.leadOutcomeGuardrail.toLowerCase()).toContain('brand risk');
+  });
+
+  it('returns safeNextStep with wait when silent interactions exceed max', () => {
+    const decision = decideSilence({
+      ...healthyState,
+      silentInteractionsCount: 10,
+    });
+    expect(decision.remainSilent).toBe(true);
+    expect(decision.safeNextStep.toLowerCase()).toContain('wait');
+    expect(decision.leadOutcomeGuardrail.toLowerCase()).toContain('lead');
+  });
+
+  it('returns proceed tone guidance when state is healthy', () => {
+    const decision = decideSilence(healthyState);
+    expect(decision.remainSilent).toBe(false);
+    expect(decision.safeNextStep.toLowerCase()).toContain('tone');
+    expect(decision.safeNextStep.toLowerCase()).toContain('frequency');
+    expect(decision.rollback.toLowerCase()).toContain('re-evaluate');
+    expect(decision.leadOutcomeGuardrail.toLowerCase()).toContain('no-pressure');
+  });
 });
 
 // ─── TRUST-007: Human Handoff ──────────────────────────────────────

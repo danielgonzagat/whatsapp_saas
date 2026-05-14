@@ -17,7 +17,14 @@ const ASSET_EVENT_SIGNALS: Readonly<Record<string, { readonly kind: AssetKind; r
   'commerce.crm.deal_won': { kind: 'case_library', label: 'Success Cases', baseScore: 0.1 },
   'commerce.lead.converted': { kind: 'switching_cost', label: 'Conversion Track Record', baseScore: 0.08 },
   'commerce.campaign.audience_reached': { kind: 'owned_audience', label: 'Campaign Audience', baseScore: 0.05 },
+  'commerce.error.recovery_proof_packaged': { kind: 'switching_cost', label: 'Recovery Proof Trail', baseScore: 0.12 },
 };
+
+interface AssetSignal {
+  readonly kind: AssetKind;
+  readonly label: string;
+  readonly baseScore: number;
+}
 
 @Injectable()
 export class AssetRegistry {
@@ -31,42 +38,79 @@ export class AssetRegistry {
     const added: DefensibleAsset[] = [];
 
     for (const event of wsEvents) {
-      const signal = ASSET_EVENT_SIGNALS[event.eventName];
+      const signal = this.resolveSignal(event);
       if (!signal) continue;
 
-      const assetId = this.makeAssetId(input.workspaceId, signal.kind, signal.label);
-      const existing = wsAssets.get(assetId);
-
-      if (existing) {
-        const newScore = Math.min(1, existing.score + signal.baseScore);
-        const updatedEvidence = [...existing.evidence, event.eventId].slice(-50);
-        const updated: DefensibleAsset = {
-          ...existing,
-          score: newScore,
-          strength: assetStrengthFromScore(newScore),
-          lastUpdatedAt: nowIso,
-          evidence: updatedEvidence,
-        };
-        wsAssets.set(assetId, updated);
-        added.push(updated);
-      } else {
-        const asset: DefensibleAsset = {
-          workspaceId: input.workspaceId,
-          assetId,
-          kind: signal.kind,
-          label: signal.label,
-          strength: assetStrengthFromScore(signal.baseScore),
-          score: signal.baseScore,
-          firstRecordedAt: nowIso,
-          lastUpdatedAt: nowIso,
-          evidence: [event.eventId],
-        };
-        wsAssets.set(assetId, asset);
-        added.push(asset);
-      }
+      const asset = this.upsertAsset(wsAssets, input.workspaceId, signal, event.eventId, nowIso);
+      if (asset) added.push(asset);
     }
 
     return added;
+  }
+
+  private resolveSignal(event: EvidenceInput['events'][number]): AssetSignal | undefined {
+    const staticSignal = ASSET_EVENT_SIGNALS[event.eventName];
+    if (staticSignal) return staticSignal;
+
+  if (
+    event.eventName === 'cognition.valence_assigned' &&
+    event.entityRef?.entityType === 'operator'
+  ) {
+    const p = event.payload;
+    const operatorNote = typeof p?.['operatorNote'] === 'string'
+      ? p['operatorNote'].trim()
+      : '';
+    if (
+      p &&
+      p['accepted'] === false &&
+      operatorNote.length > 0 &&
+      typeof p['learningFraming'] === 'string' &&
+      p['learningFraming'].includes('not human performance scoring')
+      ) {
+        return { kind: 'switching_cost', label: 'Owner Criterion Memory', baseScore: 0.1 };
+      }
+    }
+
+    return undefined;
+  }
+
+  private upsertAsset(
+    wsAssets: Map<string, DefensibleAsset>,
+    workspaceId: string,
+    signal: AssetSignal,
+    eventId: string,
+    nowIso: string,
+  ): DefensibleAsset | undefined {
+    const assetId = this.makeAssetId(workspaceId, signal.kind, signal.label);
+    const existing = wsAssets.get(assetId);
+
+    if (existing) {
+      const newScore = Math.min(1, existing.score + signal.baseScore);
+      const updatedEvidence = [...existing.evidence, eventId].slice(-50);
+      const updated: DefensibleAsset = {
+        ...existing,
+        score: newScore,
+        strength: assetStrengthFromScore(newScore),
+        lastUpdatedAt: nowIso,
+        evidence: updatedEvidence,
+      };
+      wsAssets.set(assetId, updated);
+      return updated;
+    }
+
+    const asset: DefensibleAsset = {
+      workspaceId,
+      assetId,
+      kind: signal.kind,
+      label: signal.label,
+      strength: assetStrengthFromScore(signal.baseScore),
+      score: signal.baseScore,
+      firstRecordedAt: nowIso,
+      lastUpdatedAt: nowIso,
+      evidence: [eventId],
+    };
+    wsAssets.set(assetId, asset);
+    return asset;
   }
 
   list(workspaceId: string): readonly DefensibleAsset[] {

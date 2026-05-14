@@ -113,6 +113,213 @@ describe('AssetRegistry (UTP-DEFENS-001)', () => {
     const asset = registry.get('wks_unknown', 'fake_id');
     expect(asset).toBeUndefined();
   });
+
+  it('registers switching_cost from commerce.error.recovery_proof_packaged events', () => {
+    const events: SpineEventRef[] = [
+      baseSpineEvent({ eventName: 'commerce.error.recovery_proof_packaged', workspaceId: 'wks_a' }),
+    ];
+    const added = registry.register(wsInput('wks_a', events));
+    expect(added.length).toBe(1);
+    expect(added[0]?.kind).toBe('switching_cost');
+    expect(added[0]?.label).toBe('Recovery Proof Trail');
+    expect(added[0]?.strength).toBe('nascent');
+    expect(added[0]?.evidence).toContain(events[0]?.eventId);
+  });
+
+  it('accumulates Recovery Proof Trail score from repeat events', () => {
+    const events: SpineEventRef[] = Array.from({ length: 3 }, () =>
+      baseSpineEvent({ eventName: 'commerce.error.recovery_proof_packaged', workspaceId: 'wks_a' }),
+    );
+    const all = registry.register(wsInput('wks_a', events));
+    const asset = all[all.length - 1];
+    expect(asset?.kind).toBe('switching_cost');
+    expect(asset?.label).toBe('Recovery Proof Trail');
+    expect(asset?.score).toBe(0.36);
+  });
+
+  it('registers switching_cost from matching cognition.valence_assigned events', () => {
+    const events: SpineEventRef[] = [
+      baseSpineEvent({
+        eventName: 'cognition.valence_assigned',
+        workspaceId: 'wks_a',
+        entityRef: { entityType: 'operator', entityId: 'op_1' },
+        payload: {
+          accepted: false,
+          operatorNote: 'Team lead override: this is not a performance failure',
+          learningFraming: 'not human performance scoring - criterion refinement cycle',
+        },
+      }),
+    ];
+    const added = registry.register(wsInput('wks_a', events));
+    expect(added.length).toBe(1);
+    expect(added[0]?.kind).toBe('switching_cost');
+    expect(added[0]?.label).toBe('Owner Criterion Memory');
+    expect(added[0]?.strength).toBe('nascent');
+    expect(added[0]?.evidence).toContain(events[0]?.eventId);
+  });
+
+  it('accumulates Owner Criterion Memory score from multiple matching valence_assigned events', () => {
+    const makeEvent = (): SpineEventRef =>
+      baseSpineEvent({
+        eventName: 'cognition.valence_assigned',
+        workspaceId: 'wks_a',
+        entityRef: { entityType: 'operator', entityId: 'op_1' },
+        payload: {
+          accepted: false,
+          operatorNote: 'Correction registered: not a scoring metric',
+          learningFraming: 'not human performance scoring - team calibration',
+        },
+      });
+    const all = registry.register(wsInput('wks_a', [makeEvent(), makeEvent(), makeEvent()]));
+    const asset = all[all.length - 1];
+    expect(asset?.kind).toBe('switching_cost');
+    expect(asset?.label).toBe('Owner Criterion Memory');
+    expect(asset?.score).toBeCloseTo(0.3, 6);
+  });
+
+  it('rejects cognition.valence_assigned when accepted is true', () => {
+    const events: SpineEventRef[] = [
+      baseSpineEvent({
+        eventName: 'cognition.valence_assigned',
+        workspaceId: 'wks_a',
+        entityRef: { entityType: 'operator', entityId: 'op_1' },
+        payload: {
+          accepted: true,
+          operatorNote: 'Looks fine',
+          learningFraming: 'not human performance scoring',
+        },
+      }),
+    ];
+    const added = registry.register(wsInput('wks_a', events));
+    expect(added).toHaveLength(0);
+  });
+
+  it('rejects cognition.valence_assigned when operatorNote is empty', () => {
+    const events: SpineEventRef[] = [
+      baseSpineEvent({
+        eventName: 'cognition.valence_assigned',
+        workspaceId: 'wks_a',
+        entityRef: { entityType: 'operator', entityId: 'op_1' },
+        payload: {
+          accepted: false,
+          operatorNote: '   ',
+          learningFraming: 'not human performance scoring',
+        },
+      }),
+    ];
+    const added = registry.register(wsInput('wks_a', events));
+    expect(added).toHaveLength(0);
+  });
+
+  it('rejects cognition.valence_assigned when learningFraming lacks the required phrase', () => {
+    const events: SpineEventRef[] = [
+      baseSpineEvent({
+        eventName: 'cognition.valence_assigned',
+        workspaceId: 'wks_a',
+        entityRef: { entityType: 'operator', entityId: 'op_1' },
+        payload: {
+          accepted: false,
+          operatorNote: 'This needs refinement',
+          learningFraming: 'scoring adjustment for campaign',
+        },
+      }),
+    ];
+    const added = registry.register(wsInput('wks_a', events));
+    expect(added).toHaveLength(0);
+  });
+
+  it('rejects cognition.valence_assigned without payload', () => {
+    const events: SpineEventRef[] = [
+      baseSpineEvent({ eventName: 'cognition.valence_assigned', workspaceId: 'wks_a' }),
+    ];
+    const added = registry.register(wsInput('wks_a', events));
+    expect(added).toHaveLength(0);
+  });
+
+  it('ignores owner criterion memory without operator entityRef while preserving recovery proof', () => {
+    const events: SpineEventRef[] = [
+      baseSpineEvent({ eventName: 'commerce.error.recovery_proof_packaged', workspaceId: 'wks_a' }),
+      baseSpineEvent({
+        eventName: 'cognition.valence_assigned',
+        workspaceId: 'wks_a',
+        payload: {
+          accepted: false,
+          operatorNote: 'Criterion refinement event',
+          learningFraming: 'not human performance scoring - context calibration',
+        },
+      }),
+    ];
+    const added = registry.register(wsInput('wks_a', events));
+    expect(added).toHaveLength(1);
+    expect(added[0]?.label).toBe('Recovery Proof Trail');
+  });
+
+  it('requires operator entityRef for owner criterion memory', () => {
+    const events: SpineEventRef[] = [
+      baseSpineEvent({
+        eventName: 'cognition.valence_assigned',
+        workspaceId: 'wks_a',
+        entityRef: { entityType: 'lead', entityId: 'lead_1' },
+        payload: {
+          accepted: false,
+          operatorNote: 'Criterion refinement event',
+          learningFraming: 'not human performance scoring - context calibration',
+        },
+      }),
+    ];
+    const added = registry.register(wsInput('wks_a', events));
+    expect(added).toHaveLength(0);
+  });
+
+  it('both new switching_cost assets coexist under the same workspace', () => {
+    const events: SpineEventRef[] = [
+      baseSpineEvent({ eventName: 'commerce.error.recovery_proof_packaged', workspaceId: 'wks_a' }),
+      baseSpineEvent({
+        eventName: 'cognition.valence_assigned',
+        workspaceId: 'wks_a',
+        entityRef: { entityType: 'operator', entityId: 'op_1' },
+        payload: {
+          accepted: false,
+          operatorNote: 'Criterion refinement event',
+          learningFraming: 'not human performance scoring - context calibration',
+        },
+      }),
+    ];
+    const added = registry.register(wsInput('wks_a', events));
+    expect(added).toHaveLength(2);
+    const labels = added.map((a) => a.label);
+    expect(labels).toContain('Recovery Proof Trail');
+    expect(labels).toContain('Owner Criterion Memory');
+    const allSwitching = added.every((a) => a.kind === 'switching_cost');
+    expect(allSwitching).toBe(true);
+  });
+
+  it('switching_cost assets remain emerging (nascent) with single event', () => {
+    const recoveryEvents: SpineEventRef[] = [
+      baseSpineEvent({ eventName: 'commerce.error.recovery_proof_packaged', workspaceId: 'wks_a' }),
+    ];
+    const criterionEvents: SpineEventRef[] = [
+      baseSpineEvent({
+        eventName: 'cognition.valence_assigned',
+        workspaceId: 'wks_a',
+        entityRef: { entityType: 'operator', entityId: 'op_1' },
+        payload: {
+          accepted: false,
+          operatorNote: 'Criterion memory stored',
+          learningFraming: 'not human performance scoring - owner calibration',
+        },
+      }),
+    ];
+    const recoveryAdded = registry.register(wsInput('wks_a', recoveryEvents));
+    const criterionAdded = registry.register(wsInput('wks_a', criterionEvents));
+
+    expect(recoveryAdded[0]?.strength).toBe('nascent');
+    expect(criterionAdded[0]?.strength).toBe('nascent');
+
+    const list = registry.list('wks_a');
+    const switching = list.filter((a) => a.kind === 'switching_cost');
+    expect(switching).toHaveLength(2);
+  });
 });
 
 // ─── DEFENS-002: Growth Tracker ──────────────────────────────────────
@@ -249,6 +456,18 @@ describe('SocialProofHarvester (UTP-DEFENS-004)', () => {
     const proofs = harvester.harvest(wsInput('wks_a', events));
     expect(proofs.length).toBeGreaterThan(0);
     expect(proofs.every((p) => p.kind === 'numeric_result')).toBe(true);
+  });
+
+  it('does not treat member-area progress as testimonial proof', () => {
+    const events = [
+      baseSpineEvent({ eventName: 'commerce.member_area.enrolled', workspaceId: 'wks_a' }),
+      baseSpineEvent({ eventName: 'commerce.member_area.progressed', workspaceId: 'wks_a' }),
+    ];
+
+    const proofs = harvester.harvest(wsInput('wks_a', events));
+
+    expect(proofs).toHaveLength(0);
+    expect(harvester.aggregate('wks_a').proofCount).toBe(0);
   });
 
   it('returns empty for workspace with no proof signals', () => {
@@ -430,6 +649,7 @@ describe('DefensibilityNarrativeBuilder (UTP-DEFENS-009)', () => {
     expect(narrative.defensibilityScore).toBe(0);
     expect(narrative.moatType).toContain('No Moat');
     expect(narrative.narrativeText.length).toBeGreaterThan(0);
+    expect(narrative.narrativeText).toContain('Switching-cost proof is not yet established');
   });
 
   it('generates building-moat narrative with moderate assets', () => {
@@ -486,6 +706,91 @@ describe('DefensibilityNarrativeBuilder (UTP-DEFENS-009)', () => {
     expect(narrative.defensibilityScore).toBeLessThanOrEqual(1);
     expect(narrative.summary.length).toBeGreaterThan(0);
     expect(narrative.narrativeText.length).toBeGreaterThan(20);
+  });
+
+  it('keeps replacement pain honest when switching-cost evidence is still partial', () => {
+    const assets: DefensibleAsset[] = [{
+      workspaceId: 'wks_a',
+      assetId: 'switching_1',
+      kind: 'switching_cost',
+      label: 'Conversion Track Record',
+      strength: 'building',
+      score: 0.32,
+      firstRecordedAt: new Date().toISOString(),
+      lastUpdatedAt: new Date().toISOString(),
+      evidence: ['evt_conversion_1', 'evt_conversion_2'],
+    }];
+
+    const narrative = narrativeBuilder.build('wks_a', assets, [], [], []);
+
+    expect(narrative.narrativeText).toContain('Replacement pain is emerging');
+    expect(narrative.narrativeText).toContain('Conversion Track Record');
+    expect(narrative.narrativeText).toContain('generic SaaS');
+    expect(narrative.replacementPain).toHaveLength(5);
+    expect(narrative.replacementPain).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ dimension: 'memory', evidenceLevel: 'emerging' }),
+        expect.objectContaining({ dimension: 'context', evidenceLevel: 'emerging' }),
+        expect.objectContaining({ dimension: 'criterion', evidenceLevel: 'not_yet_proven' }),
+        expect.objectContaining({ dimension: 'judgment', evidenceLevel: 'not_yet_proven' }),
+        expect.objectContaining({ dimension: 'commercial_capital', evidenceLevel: 'not_yet_proven' }),
+      ]),
+    );
+    expect(narrative.replacementPainNarrative).toContain('commercial capital remains not_yet_proven');
+    expect(narrative.switchingCostReasoning).toContain('Emerging switching-cost evidence');
+  });
+
+  it('requires compounded evidence families before commercial capital becomes replacement pain', () => {
+    const now = new Date().toISOString();
+    const assets: DefensibleAsset[] = [
+      {
+        workspaceId: 'wks_a',
+        assetId: 'switching_conversion',
+        kind: 'switching_cost',
+        label: 'Conversion Track Record',
+        strength: 'established',
+        score: 0.7,
+        firstRecordedAt: now,
+        lastUpdatedAt: now,
+        evidence: ['evt_conversion_1', 'evt_conversion_2'],
+      },
+      {
+        workspaceId: 'wks_a',
+        assetId: 'switching_recovery',
+        kind: 'switching_cost',
+        label: 'Recovery Proof Trail',
+        strength: 'building',
+        score: 0.5,
+        firstRecordedAt: now,
+        lastUpdatedAt: now,
+        evidence: ['evt_recovery_1', 'evt_recovery_2'],
+      },
+      {
+        workspaceId: 'wks_a',
+        assetId: 'switching_criterion',
+        kind: 'switching_cost',
+        label: 'Owner Criterion Memory',
+        strength: 'building',
+        score: 0.4,
+        firstRecordedAt: now,
+        lastUpdatedAt: now,
+        evidence: ['evt_criterion_1'],
+      },
+    ];
+
+    const narrative = narrativeBuilder.build('wks_a', assets, [], [], []);
+
+    expect(narrative.replacementPain).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ dimension: 'memory', evidenceLevel: 'emerging' }),
+        expect.objectContaining({ dimension: 'criterion', evidenceLevel: 'emerging' }),
+        expect.objectContaining({ dimension: 'context', evidenceLevel: 'emerging' }),
+        expect.objectContaining({ dimension: 'judgment', evidenceLevel: 'emerging' }),
+        expect.objectContaining({ dimension: 'commercial_capital', evidenceLevel: 'emerging' }),
+      ]),
+    );
+    expect(narrative.replacementPainNarrative).toContain('commercial capital remains emerging');
+    expect(narrative.switchingCostReasoning).toContain('only evidenced dimensions');
   });
 });
 

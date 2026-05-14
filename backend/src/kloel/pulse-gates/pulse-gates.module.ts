@@ -17,13 +17,17 @@ import { makePromptLeakageGate } from './prompt-leakage.gate';
 import { makeTruthModeHonestyGate } from './truth-mode-honesty.gate';
 import type { Gate } from './pulse-gates.types';
 
-function staticGate(): Gate<unknown> {
+function staticGate(name: 'protected-files-firewall' | 'codacy-rigor-enforcer'): Gate<unknown> {
   return {
+    name,
+    mode: 'hard_fail',
     check: () => ({
-      gateName: 'protected-files-firewall',
+      gateName: name,
       mode: 'hard_fail',
       status: 'PASS',
-      reason: 'protected-files-firewall is enforced at hook level, not runtime',
+      reason: `${name} is enforced at hook level, not runtime`,
+      measuredAt: new Date().toISOString(),
+      measuredBy: 'pulse-gates.module:static-shim',
     }),
   };
 }
@@ -84,11 +88,11 @@ function staticGate(): Gate<unknown> {
     },
     {
       provide: 'GATE:protected-files-firewall',
-      useFactory: () => staticGate(),
+      useFactory: () => staticGate('protected-files-firewall'),
     },
     {
       provide: 'GATE:codacy-rigor-enforcer',
-      useFactory: () => staticGate(),
+      useFactory: () => staticGate('codacy-rigor-enforcer'),
     },
   ],
   exports: [PulseSpineBridge],

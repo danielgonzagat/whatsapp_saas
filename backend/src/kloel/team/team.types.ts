@@ -44,6 +44,33 @@ export interface PreCallContext {
   readonly assembledAt: string;
 }
 
+export type TeamDelegationRiskClass = 'R1' | 'R2' | 'R3' | 'R4';
+
+export type TeamDelegationMode =
+  | 'allowed_alone'
+  | 'requires_review'
+  | 'human_only';
+
+export type TeamRollbackAction =
+  | 'dismiss_suggestion'
+  | 'snooze_suggestion'
+  | 'manual_review';
+
+export interface LeadOutcomeGuardrail {
+  readonly antiPressureLanguage: boolean;
+  readonly respectsSilenceWindow: boolean;
+  readonly requiresContextQualification: boolean;
+  readonly maxFollowupAttempts?: number;
+}
+
+export interface SuggestionR1Contract {
+  readonly riskClass: TeamDelegationRiskClass;
+  readonly delegationMode: TeamDelegationMode;
+  readonly safeNextStep: string;
+  readonly rollback: readonly TeamRollbackAction[];
+  readonly leadOutcomeGuardrail: LeadOutcomeGuardrail;
+}
+
 export interface NextBestAction {
   readonly rank: number;
   readonly action: string;
@@ -51,6 +78,7 @@ export interface NextBestAction {
   readonly confidence: number;
   readonly evidenceRefs: readonly string[];
   readonly guardrails: readonly string[];
+  readonly r1Contract: SuggestionR1Contract;
 }
 
 export interface ForgottenFollowup {
@@ -61,6 +89,7 @@ export interface ForgottenFollowup {
   readonly budgetHours: number;
   readonly lastOperatorActionAt?: string;
   readonly urgency: 'low' | 'medium' | 'high';
+  readonly r1Contract: SuggestionR1Contract;
 }
 
 export interface BlindSpotEntry {

@@ -27,6 +27,51 @@ jest.mock('../auth/email.service', () => ({
   })),
 }));
 
+function makeStubGuards(result: Record<string, unknown> = { allowed: true }) {
+  return {
+    evaluate: jest.fn().mockResolvedValue(result),
+  };
+}
+
+function makeStubTransport(options: {
+  sendAvailable?: boolean;
+  sendResult?: Record<string, unknown>;
+} = {}) {
+  return {
+    getCapability: jest.fn().mockResolvedValue({
+      sendAvailable: options.sendAvailable ?? true,
+    }),
+    send: jest.fn().mockResolvedValue(options.sendResult ?? { success: true }),
+  };
+}
+
+function makeStubBandit(options: { arm?: string } = {}) {
+  return {
+    register: jest.fn().mockResolvedValue(undefined),
+    choose: jest
+      .fn()
+      .mockResolvedValue(options.arm ? { arm: options.arm } : null),
+  };
+}
+
+function makeStubMindPolicy(action: string) {
+  return {
+    choose: jest.fn().mockResolvedValue({
+      chosen: action,
+      decision: {
+        fallbackActive: false,
+        reasonInternal: `test selected ${action}`,
+        candidates: [
+          {
+            action,
+            beliefMean: 0.8,
+          },
+        ],
+      },
+    }),
+  };
+}
+
 describe('CartRecoveryService', () => {
   let prisma: MockPrisma;
   let service: CartRecoveryService;
@@ -118,6 +163,21 @@ describe('CartRecoveryService', () => {
           },
         }),
       );
+    });
+
+    it('uses honest no-pressure recovery copy in direct email fallback', async () => {
+      prisma.checkoutOrder.findMany.mockResolvedValue([pendingOrder()]);
+
+      await service.checkAbandonedCarts();
+
+      const payload = sendEmail.mock.calls[0][0];
+      expect(payload.subject).toContain('Seu pedido ainda esta aberto');
+      expect(payload.html).toContain('Sua compra ficou em aberto');
+      expect(payload.html).toContain('sem pressa');
+      expect(payload.html).not.toContain('Voce deixou algo');
+      expect(payload.html).not.toContain('Garanta agora');
+      expect(payload.html).not.toContain('VOLTEI10');
+      expect(payload.html).not.toContain('Centenas de clientes');
     });
   });
 
@@ -240,7 +300,7 @@ describe('CartRecoveryService', () => {
         expect.objectContaining({
           channel: 'email',
           recipientId: 'cliente@kloel.test',
-          content: expect.stringContaining('Voce esqueceu algo'),
+          content: expect.stringContaining('Sua compra ficou em aberto'),
           guardContext: expect.objectContaining({
             channel: 'email',
             withinComplianceWindow: true,
@@ -309,6 +369,27 @@ describe('CartRecoveryService', () => {
       const updatePayload = prisma.checkoutOrder.updateMany.mock.calls[0][0].data.metadata;
       expect(updatePayload.banditArm).toBe('proof');
       expect(updatePayload.mindRecoveryAction).toBe('proof');
+    });
+
+    it('keeps proof and discount recovery copy non-manipulative', async () => {
+      for (const action of ['proof', 'discount', 'urgency']) {
+        sendEmail.mockClear();
+        prisma.checkoutOrder.findMany.mockResolvedValue([pendingOrder()]);
+        const stubMindPolicy = makeStubMindPolicy(action);
+        service = new CartRecoveryService(
+          prisma as never,
+          undefined,
+          stubMindPolicy as never,
+        );
+
+        await service.checkAbandonedCarts();
+
+        const payload = sendEmail.mock.calls[0][0];
+        expect(payload.html).not.toContain('Garanta agora');
+        expect(payload.html).not.toContain('antes que acabe');
+        expect(payload.html).not.toContain('VOLTEI10');
+        expect(payload.html).not.toContain('Centenas de clientes');
+      }
     });
 
     it('falls back gracefully when bandit choose returns null', async () => {

@@ -4,11 +4,11 @@ import { UnifiedAgentContextDataService } from './unified-agent-context-data.ser
 
 jest.mock('./kloel.prompts', () => ({
   CANONICAL_FALLBACK_SYSTEM_PROMPT:
-    'Estado cognitivo distribuído. Verbalize a partir do estado abaixo. Nunca invente fato fora do estado.',
+    'cognitive_state_boundary=distributed; verbalization_source=state_payload; fact_boundary=state_payload',
 }));
 
 const CANONICAL_FALLBACK_SYSTEM_PROMPT =
-  'Estado cognitivo distribuído. Verbalize a partir do estado abaixo. Nunca invente fato fora do estado.';
+  'cognitive_state_boundary=distributed; verbalization_source=state_payload; fact_boundary=state_payload';
 
 type ContextDataMock = {
   getWorkspaceContext: jest.Mock;

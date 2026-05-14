@@ -38,6 +38,13 @@ export type CorrectionKind =
   | 'action_reversal'
   | 'policy_adjustment';
 
+export interface FutureBehaviorChange {
+  readonly declarativeRule: string;
+  readonly targetDomain: string;
+  readonly behaviorConstraint: string;
+  readonly confidence: number;
+}
+
 export interface CorrectionObservation {
   readonly observationId: string;
   readonly workspaceId: string;
@@ -48,6 +55,9 @@ export interface CorrectionObservation {
   readonly observedAt: string;
   readonly evidenceEventIds: readonly string[];
   readonly confidence: number;
+  readonly learnedCriterion: string;
+  readonly futureBehaviorChange: FutureBehaviorChange;
+  readonly acceptedWithoutDefense: boolean;
 }
 
 export interface ToneObservation {

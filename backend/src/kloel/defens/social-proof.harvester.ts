@@ -15,8 +15,6 @@ const PROOF_SIGNAL_MAP: Readonly<Record<string, ProofKind>> = {
   'commerce.lead.converted': 'numeric_result',
   'commerce.affiliate.performance_measured': 'numeric_result',
   'commerce.campaign.conversion_associated': 'numeric_result',
-  'commerce.member_area.enrolled': 'testimonial',
-  'commerce.member_area.progressed': 'testimonial',
 };
 
 @Injectable()
@@ -112,8 +110,6 @@ export class SocialProofHarvester {
       'commerce.lead.converted': 'Lead converted — conversion track record',
       'commerce.affiliate.performance_measured': 'Affiliate performance result',
       'commerce.campaign.conversion_associated': 'Campaign-driven conversion',
-      'commerce.member_area.enrolled': 'Member enrolled — user commitment signal',
-      'commerce.member_area.progressed': 'Member progressed — ongoing value proof',
     };
     return summaries[eventName] ?? `Proof event: ${eventName}`;
   }

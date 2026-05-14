@@ -1,18 +1,19 @@
 import { Injectable } from '@nestjs/common';
 import type {
   ChurnRiskAssessment,
+  PostSaleDecisionControl,
   RetentionTactic,
   RetentionTacticKind,
   DetectionInput,
 } from './postsale-consumers.types';
-import { daysSince, filterByWorkspace, latestEvent } from './postsale-consumers.types';
+import { daysSince, filterByWorkspaceAndEntity, latestEvent } from './postsale-consumers.types';
 
 @Injectable()
 export class RetentionHonestTactics {
   public suggest(risk: ChurnRiskAssessment, input: DetectionInput): RetentionTactic {
     const nowMs = input.nowMs ?? Date.now();
-    const wsEvents = filterByWorkspace(input.events, input.workspaceId);
     const entityRef = input.entityRef ?? risk.entityRef;
+    const wsEvents = filterByWorkspaceAndEntity(input.events, input.workspaceId, entityRef);
 
     let tacticKind: RetentionTacticKind;
     let description: string;
@@ -101,6 +102,7 @@ export class RetentionHonestTactics {
       channel,
       suggestedAt: new Date(nowMs).toISOString(),
       requiresHumanApproval,
+      control: buildControl(risk, { urgency, channel, requiresHumanApproval }),
     };
   }
 
@@ -108,4 +110,52 @@ export class RetentionHonestTactics {
     const approvalTag = tactic.requiresHumanApproval ? ' [REQUIRES HUMAN APPROVAL]' : '';
     return `${tactic.tacticKind}: ${tactic.description}${approvalTag} (urgency=${tactic.urgency}, channel=${tactic.channel})`;
   }
+}
+
+function buildControl(
+  risk: ChurnRiskAssessment,
+  tactic: Pick<RetentionTactic, 'urgency' | 'channel' | 'requiresHumanApproval'>,
+): PostSaleDecisionControl {
+  if (tactic.requiresHumanApproval || risk.riskLevel === 'critical') {
+    return {
+      riskClass: 'R2',
+      delegationMode: 'owner_review',
+      safeNextStep:
+        'Prepare a human-reviewed retention action focused on understanding friction before offering any commercial concession.',
+      uncertainty:
+        'Churn risk explains that something may be wrong, not which promise failed or what the customer wants now.',
+      leadOutcomeGuardrail:
+        'Customer must feel heard and clearer about options; do not pressure, guilt, or hide refund/downgrade paths.',
+      rollback:
+        'If the owner rejects the action or the customer signals refund/escalation, stop retention automation and move to human recovery.',
+    };
+  }
+
+  if (tactic.channel === 'silent') {
+    return {
+      riskClass: 'R1',
+      delegationMode: 'silent_monitoring',
+      safeNextStep:
+        'Stay silent and keep monitoring until a concrete retention signal appears.',
+      uncertainty:
+        'Current evidence is insufficient for an outbound retention action.',
+      leadOutcomeGuardrail:
+        'Avoid creating customer noise when the relationship does not need intervention.',
+      rollback:
+        'Reassess when churn, support, satisfaction, or first-value evidence changes.',
+    };
+  }
+
+  return {
+    riskClass: 'R1',
+    delegationMode: 'allowed_alone',
+    safeNextStep:
+      'Surface the retention suggestion as informational support, not as a sales or urgency message.',
+    uncertainty:
+      'The tactic is low-risk but still inferred from behavior; do not claim customer intent.',
+    leadOutcomeGuardrail:
+      'Customer should get help or clarity without being pushed toward another purchase.',
+    rollback:
+      'If any negative response, refund signal, or support escalation appears, pause the tactic and move to owner review.',
+  };
 }

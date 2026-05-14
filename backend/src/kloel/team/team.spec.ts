@@ -19,10 +19,12 @@ import {
   buildSuggestionId,
   TEAM_RESPECT_RULES,
 } from './team-respect.protocol';
+import type { SuggestionR1Contract } from './team.types';
 import {
   buildFeedbackEntry,
   feedbackToValence,
   computeOperatorAccuracy,
+  summarizeOperatorFeedbackForLearning,
   extractFeedbackFromEvents,
   feedbackToSpineInput,
 } from './operator-feedback.loop';
@@ -155,6 +157,33 @@ describe('PreCallContextBuilder (UTP-TEAM-001)', () => {
     expect(ctxA.leadId).toBe(leadA);
   });
 
+  it('detects post-sale churn risk as human-only value-gap open question', () => {
+    const events: SpineEventRef[] = [
+      baseEvent({
+        eventName: 'commerce.post_sale.churn_risk_detected',
+        entityRef: leadRef(leadA),
+        valence: 'negative',
+      }),
+    ];
+
+    const ctx = buildPreCallContext({
+      leadId: leadA,
+      conversationId: convId,
+      workspaceId: wks,
+      events,
+    });
+
+    expect(ctx.leadHistory.length).toBe(1);
+    expect(ctx.leadHistory[0]!.eventName).toBe(
+      'commerce.post_sale.churn_risk_detected',
+    );
+    expect(ctx.openQuestions.length).toBe(1);
+    expect(ctx.openQuestions[0]).toContain('first value');
+    expect(ctx.openQuestions[0]).toContain('human review only');
+    expect(ctx.openQuestions[0]).not.toContain('failure');
+    expect(ctx.openQuestions[0]).not.toContain('blame');
+  });
+
   it('extracts current CRM stage from stage_changed events', () => {
     const events: SpineEventRef[] = [
       baseEvent({
@@ -225,6 +254,101 @@ describe('NextBestActionSuggester (UTP-TEAM-002)', () => {
     const suggestions = suggestNextBestActions({ context: minimalCtx });
     expect(suggestions.length).toBeGreaterThanOrEqual(1);
   });
+
+  it('treats qualified silence as R1 suggestion without sending', () => {
+    const context: PreCallContext = {
+      ...minimalCtx,
+      leadHistory: [
+        {
+          eventId: 'evt_silent',
+          eventName: 'commerce.lead.went_silent',
+          occurredAt: new Date().toISOString(),
+          summary: 'silent',
+        },
+        {
+          eventId: 'evt_objection',
+          eventName: 'commerce.lead.objection_raised',
+          occurredAt: new Date().toISOString(),
+          summary: 'objection',
+        },
+      ],
+      openQuestions: [
+        'lead went silent after raising objection - re-engagement requires understanding of unresolved concern',
+      ],
+    };
+
+    const suggestions = suggestNextBestActions({ context });
+    const action = suggestions.find(
+      (s) => s.action === 'reengage_silent_lead',
+    );
+
+    expect(action).toBeDefined();
+    expect(action!.r1Contract.riskClass).toBe('R1');
+    expect(action!.r1Contract.delegationMode).toBe('allowed_alone');
+    expect(action!.r1Contract.safeNextStep).toContain('do not send');
+    expect(action!.r1Contract.leadOutcomeGuardrail.antiPressureLanguage).toBe(
+      true,
+    );
+    expect(action!.r1Contract.rollback).toContain('dismiss_suggestion');
+  });
+
+  it('does not re-engage unqualified silence as if it were a hot lead', () => {
+    const context: PreCallContext = {
+      ...minimalCtx,
+      leadHistory: [
+        {
+          eventId: 'evt_silent',
+          eventName: 'commerce.lead.went_silent',
+          occurredAt: new Date().toISOString(),
+          summary: 'silent',
+        },
+      ],
+      openQuestions: [
+        'lead entered silent state without clear context - review timeline before assuming disinterest',
+      ],
+    };
+
+    const suggestions = suggestNextBestActions({ context });
+
+    expect(
+      suggestions.some((s) => s.action === 'reengage_silent_lead'),
+    ).toBe(false);
+    expect(suggestions[0]!.action).toBe('review_silent_lead');
+    expect(suggestions[0]!.r1Contract.riskClass).toBe('R1');
+    expect(suggestions[0]!.r1Contract.safeNextStep).toContain(
+      'review timeline',
+    );
+  });
+
+  it('routes post-sale churn risk to human-only value-gap review without blaming the team', () => {
+    const context: PreCallContext = {
+      ...minimalCtx,
+      leadHistory: [
+        {
+          eventId: 'evt_post_sale_risk',
+          eventName: 'commerce.post_sale.churn_risk_detected',
+          occurredAt: new Date().toISOString(),
+          summary: 'post-sale churn risk from first_value_missing',
+          valence: 'negative',
+        },
+      ],
+      openQuestions: ['customer has not reached first value yet'],
+    };
+
+    const suggestions = suggestNextBestActions({ context });
+    const action = suggestions.find(
+      (s) => s.action === 'review_post_sale_value_gap',
+    );
+
+    expect(action).toBeDefined();
+    expect(action!.rationale).toContain('first value');
+    expect(action!.guardrails).toContain(
+      'frame as customer support, not team failure',
+    );
+    expect(action!.r1Contract.riskClass).toBe('R2');
+    expect(action!.r1Contract.delegationMode).toBe('human_only');
+    expect(action!.r1Contract.safeNextStep).toContain('verify delivery');
+  });
 });
 
 // ─── TEAM-003: Forgotten-Followup Rescuer ───────────────────────────
@@ -266,6 +390,41 @@ describe('ForgottenFollowupRescuer (UTP-TEAM-003)', () => {
     const r = results[0]!;
     expect(r.leadId).toBe(leadA);
     expect(r.urgency).toBeDefined();
+  });
+
+  it('adds an R1 delegation contract to forgotten follow-up candidates', () => {
+    const silentAt = new Date(
+      Date.now() - 4 * 24 * 60 * 60 * 1000,
+    ).toISOString();
+    const events: SpineEventRef[] = [
+      baseEvent({
+        eventName: 'commerce.lead.objection_raised',
+        entityRef: leadRef(leadA),
+        workspaceId: wks,
+        occurredAt: new Date(
+          Date.now() - 5 * 24 * 60 * 60 * 1000,
+        ).toISOString(),
+      }),
+      baseEvent({
+        eventName: 'commerce.lead.went_silent',
+        entityRef: leadRef(leadA),
+        workspaceId: wks,
+        occurredAt: silentAt,
+      }),
+    ];
+
+    const results = rescueForgottenFollowups({
+      workspaceId: wks,
+      events,
+      budgetHours: 24,
+    });
+
+    expect(results[0]!.r1Contract.riskClass).toBe('R1');
+    expect(results[0]!.r1Contract.delegationMode).toBe('allowed_alone');
+    expect(results[0]!.r1Contract.safeNextStep).toContain('do not send');
+    expect(results[0]!.r1Contract.leadOutcomeGuardrail.antiPressureLanguage).toBe(
+      true,
+    );
   });
 
   it('skips leads with recent operator action', () => {
@@ -430,11 +589,55 @@ describe('SmartHandoffService (UTP-TEAM-005)', () => {
 
     expect(pkgA.leadId).not.toBe(pkgB.leadId);
   });
+
+  it('packages raw post-sale churn risk into value-gap context and human-only action', () => {
+    const service = new SmartHandoffService();
+
+    const pkg = service.buildPackage({
+      leadId: leadA,
+      conversationId: convId,
+      workspaceId: wks,
+      events: [
+        baseEvent({
+          eventName: 'commerce.post_sale.churn_risk_detected',
+          entityRef: leadRef(leadA),
+          valence: 'negative',
+          payload: { signals: ['first_value_missing'] },
+        }),
+      ],
+    });
+
+    expect(pkg.preCallContext.leadHistory).toHaveLength(1);
+    expect(pkg.preCallContext.openQuestions[0]).toContain('first value');
+
+    const action = pkg.suggestedActions.find(
+      (s) => s.action === 'review_post_sale_value_gap',
+    );
+
+    expect(action).toBeDefined();
+    expect(action!.r1Contract.riskClass).toBe('R2');
+    expect(action!.r1Contract.delegationMode).toBe('human_only');
+    expect(action!.guardrails).toContain(
+      'frame as customer support, not team failure',
+    );
+  });
 });
 
 // ─── TEAM-006: Team Respect Protocol ────────────────────────────────
 
 describe('TeamRespectProtocol (UTP-TEAM-006)', () => {
+  const mockR1Contract: SuggestionR1Contract = {
+    riskClass: 'R1',
+    delegationMode: 'allowed_alone',
+    safeNextStep: 'show suggestion only; do not send',
+    rollback: ['dismiss_suggestion', 'snooze_suggestion'],
+    leadOutcomeGuardrail: {
+      antiPressureLanguage: true,
+      respectsSilenceWindow: true,
+      requiresContextQualification: false,
+    },
+  };
+
   const mockSuggestion: NextBestAction = {
     rank: 1,
     action: 'make_initial_contact',
@@ -442,6 +645,7 @@ describe('TeamRespectProtocol (UTP-TEAM-006)', () => {
     confidence: 0.82,
     evidenceRefs: [],
     guardrails: ['verify lead uniqueness'],
+    r1Contract: mockR1Contract,
   };
 
   it('formats suggestion for display', () => {
@@ -455,6 +659,141 @@ describe('TeamRespectProtocol (UTP-TEAM-006)', () => {
     expect(msg.dismissible).toBe(true);
     expect(msg.action).toBe('make_initial_contact');
     expect(msg.guardrails.length).toBeGreaterThan(0);
+  });
+
+  it('carries observable delegation control from r1Contract', () => {
+    const msg = buildSuggestionMessage(mockSuggestion);
+    expect(msg.delegation).toBeDefined();
+    expect(msg.delegation.riskClass).toBe(mockSuggestion.r1Contract.riskClass);
+    expect(msg.delegation.delegationMode).toBe(
+      mockSuggestion.r1Contract.delegationMode,
+    );
+    expect(msg.delegation.safeNextStep).toBe(
+      mockSuggestion.r1Contract.safeNextStep,
+    );
+    expect(msg.delegation.rollback).toEqual(
+      mockSuggestion.r1Contract.rollback,
+    );
+    expect(msg.delegation.leadOutcomeGuardrail).toEqual(
+      mockSuggestion.r1Contract.leadOutcomeGuardrail,
+    );
+  });
+
+  it('exposes riskClass so operators see delegation risk level', () => {
+    const r1: SuggestionR1Contract = {
+      ...mockR1Contract,
+      riskClass: 'R2',
+      delegationMode: 'requires_review',
+    };
+    const suggestion: NextBestAction = {
+      ...mockSuggestion,
+      r1Contract: r1,
+    };
+    const msg = buildSuggestionMessage(suggestion);
+    expect(msg.delegation.riskClass).toBe('R2');
+    expect(msg.delegation.delegationMode).toBe('requires_review');
+  });
+
+  it('exposes safeNextStep for every risk class', () => {
+    const r2: SuggestionR1Contract = {
+      riskClass: 'R2',
+      delegationMode: 'human_only',
+      safeNextStep: 'ask human to verify delivery',
+      rollback: ['dismiss_suggestion', 'manual_review'],
+      leadOutcomeGuardrail: {
+        antiPressureLanguage: true,
+        respectsSilenceWindow: false,
+        requiresContextQualification: false,
+      },
+    };
+    const suggestion: NextBestAction = {
+      ...mockSuggestion,
+      r1Contract: r2,
+    };
+    const msg = buildSuggestionMessage(suggestion);
+    expect(msg.delegation.delegationMode).toBe('human_only');
+    expect(msg.delegation.safeNextStep).toContain('verify delivery');
+    expect(msg.delegation.rollback).toContain('manual_review');
+  });
+
+  it('exposes leadOutcomeGuardrail so operators see anti-pressure and silence rules', () => {
+    const guard = buildSuggestionMessage(mockSuggestion).delegation
+      .leadOutcomeGuardrail;
+    expect(guard.antiPressureLanguage).toBe(true);
+    expect(guard.respectsSilenceWindow).toBe(true);
+    expect(guard.requiresContextQualification).toBe(false);
+  });
+
+  it('preserves suggestion-not-command framing alongside delegation visibility', () => {
+    const r2: SuggestionR1Contract = {
+      riskClass: 'R2',
+      delegationMode: 'human_only',
+      safeNextStep: 'human-only review required',
+      rollback: ['dismiss_suggestion', 'manual_review'],
+      leadOutcomeGuardrail: {
+        antiPressureLanguage: true,
+        respectsSilenceWindow: true,
+        requiresContextQualification: true,
+      },
+    };
+    const suggestion: NextBestAction = {
+      ...mockSuggestion,
+      r1Contract: r2,
+    };
+    const msg = buildSuggestionMessage(suggestion);
+
+    expect(msg.frame).toContain('suggestion (not command)');
+    expect(msg.dismissible).toBe(true);
+    expect(msg.delegation.delegationMode).toBe('human_only');
+    expect(msg.delegation.leadOutcomeGuardrail.antiPressureLanguage).toBe(true);
+    expect(msg.guardrails.length).toBeGreaterThan(0);
+  });
+
+  it('builds distinct delegation messages for silent qualified vs unqualified contexts', () => {
+    const qualified: SuggestionR1Contract = {
+      riskClass: 'R1',
+      delegationMode: 'allowed_alone',
+      safeNextStep:
+        'surface an honest re-engagement suggestion for owner review; do not send',
+      rollback: ['dismiss_suggestion', 'snooze_suggestion'],
+      leadOutcomeGuardrail: {
+        antiPressureLanguage: true,
+        respectsSilenceWindow: true,
+        requiresContextQualification: true,
+      },
+    };
+    const unqualified: SuggestionR1Contract = {
+      riskClass: 'R1',
+      delegationMode: 'allowed_alone',
+      safeNextStep:
+        'review timeline and gather context before any re-engagement suggestion',
+      rollback: ['dismiss_suggestion', 'snooze_suggestion'],
+      leadOutcomeGuardrail: {
+        antiPressureLanguage: true,
+        respectsSilenceWindow: true,
+        requiresContextQualification: false,
+      },
+    };
+
+    const msgQ = buildSuggestionMessage({
+      ...mockSuggestion,
+      r1Contract: qualified,
+    });
+    const msgU = buildSuggestionMessage({
+      ...mockSuggestion,
+      r1Contract: unqualified,
+    });
+
+    expect(msgQ.delegation.safeNextStep).toContain('do not send');
+    expect(msgU.delegation.safeNextStep).toContain('review timeline');
+    expect(msgQ.delegation.leadOutcomeGuardrail.requiresContextQualification).toBe(
+      true,
+    );
+    expect(msgU.delegation.leadOutcomeGuardrail.requiresContextQualification).toBe(
+      false,
+    );
+    expect(msgQ.dismissible).toBe(true);
+    expect(msgU.dismissible).toBe(true);
   });
 
   it('validates operator dismissal', () => {
@@ -543,6 +882,9 @@ describe('OperatorFeedbackLoop (UTP-TEAM-007)', () => {
     expect(spine.workspaceId).toBe(wks);
     expect(spine.truthMode).toBe('observed');
     expect(spine.provenance.processor).toBeTruthy();
+    expect(spine.payload['learningFraming']).toContain(
+      'not human performance scoring',
+    );
   });
 
   it('computes operator accuracy from feedback entries', () => {
@@ -572,6 +914,35 @@ describe('OperatorFeedbackLoop (UTP-TEAM-007)', () => {
 
   it('computes zero accuracy for empty feedback', () => {
     expect(computeOperatorAccuracy([])).toBe(0);
+  });
+
+  it('summarizes operator feedback as Kloel learning, not human scoring', () => {
+    const entries = [
+      buildFeedbackEntry({
+        suggestionId: 'sugg_001',
+        accepted: true,
+        operatorId: 'op_test',
+        workspaceId: wks,
+        operatorNote: 'good timing',
+      }),
+      buildFeedbackEntry({
+        suggestionId: 'sugg_002',
+        accepted: false,
+        operatorId: 'op_test',
+        workspaceId: wks,
+        operatorNote: 'customer needs delivery help before retention',
+      }),
+    ];
+
+    const summary = summarizeOperatorFeedbackForLearning(entries);
+
+    expect(summary.totalFeedback).toBe(2);
+    expect(summary.acceptedSuggestions).toBe(1);
+    expect(summary.correctionSignals).toBe(1);
+    expect(summary.learningSignals).toContain(
+      'customer needs delivery help before retention',
+    );
+    expect(summary.framing).toContain('not human performance scoring');
   });
 
   it('extracts feedback from spine events', () => {

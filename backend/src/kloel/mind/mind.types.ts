@@ -54,7 +54,9 @@ const TERMINAL_EVENT_NAMES: ReadonlySet<string> = new Set([
   'commerce.member_area.dropped_out',
   // commerce.post_sale.*
   'commerce.post_sale.first_value_obtained',
+  'commerce.post_sale.satisfaction_signal_observed',
   'commerce.post_sale.churn_risk_detected',
+  'commerce.post_sale.repurchase_window_opened',
   'commerce.post_sale.win_back_window_opened',
   // commerce.whatsapp.* — operational signals carry a baseline valence so
   // ValenceTaggerService can satisfy V5 coverage on inbox traffic.
@@ -86,7 +88,9 @@ const DEFAULT_TERMINAL_VALENCE: ReadonlyMap<string, AbiValence> = new Map([
   ['commerce.member_area.enrolled', 'positive'],
   ['commerce.member_area.dropped_out', 'negative'],
   ['commerce.post_sale.first_value_obtained', 'positive'],
+  ['commerce.post_sale.satisfaction_signal_observed', 'neutral'],
   ['commerce.post_sale.churn_risk_detected', 'negative'],
+  ['commerce.post_sale.repurchase_window_opened', 'positive'],
   ['commerce.post_sale.win_back_window_opened', 'neutral'],
   ['commerce.whatsapp.message_received', 'neutral'],
   ['commerce.whatsapp.handoff_to_human', 'negative'],

@@ -46,6 +46,13 @@ describe('ValenceTaggerService (UTP-MIND-VALENCE-001)', () => {
     expect(tagger.tag(e).valence).toBe('negative');
   });
 
+  it('tags post-sale satisfaction and repurchase terminals with honest defaults', () => {
+    const satisfaction = baseEvent({ eventName: 'commerce.post_sale.satisfaction_signal_observed' });
+    const repurchase = baseEvent({ eventName: 'commerce.post_sale.repurchase_window_opened' });
+    expect(tagger.tag(satisfaction).valence).toBe('neutral');
+    expect(tagger.tag(repurchase).valence).toBe('positive');
+  });
+
   it('does not tag non-terminal events', () => {
     const e = baseEvent({ eventName: 'commerce.lead.contacted' });
     expect(tagger.tag(e).valence).toBeUndefined();

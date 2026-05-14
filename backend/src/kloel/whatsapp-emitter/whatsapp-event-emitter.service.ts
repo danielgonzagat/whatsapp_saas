@@ -41,6 +41,13 @@ export interface ConversationResumedInput extends WhatsAppEmitInput {
   readonly resumeTrigger: string;
 }
 
+export interface LeadWentSilentInput extends WhatsAppEmitInput {
+  readonly contactId: string;
+  readonly lastMessageAt: string;
+  readonly silenceHours: number;
+  readonly reason: string;
+}
+
 export interface SessionLifecycleInput extends WhatsAppEmitInput {
   readonly event: 'qr' | 'connected' | 'disconnected' | 'banned';
   readonly phoneNumber?: string;
@@ -133,6 +140,27 @@ export class WhatsAppEventEmitterService {
         entityId: input.contactId,
       },
       {
+        reason: input.reason,
+        ...(input.payload ?? {}),
+      },
+      input.causedBy,
+      input.correlationId,
+      input.occurredAt,
+    );
+  }
+
+  emitLeadWentSilent(input: LeadWentSilentInput): void {
+    void this.safeEmit(
+      'commerce.lead.went_silent',
+      'inferred',
+      input.workspaceId,
+      {
+        entityType: 'contact',
+        entityId: input.contactId,
+      },
+      {
+        lastMessageAt: input.lastMessageAt,
+        silenceHours: input.silenceHours,
         reason: input.reason,
         ...(input.payload ?? {}),
       },

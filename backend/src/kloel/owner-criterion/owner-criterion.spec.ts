@@ -73,11 +73,183 @@ describe('OwnerCriterion observers (UTP-OWNER-CRIT-001..006)', () => {
   });
 });
 
+describe('correction observer — explicit evidence gating (UTP-OWNER-CRIT-002)', () => {
+  const wks = 'wks_owner';
+  const nowValue = Date.now();
+
+  function correctionInput(events: readonly SpineEventRef[]): ObserverInput {
+    return { workspaceId: wks, events, nowMs: nowValue, windowDays: 7 };
+  }
+
+  it('common message_replied without ownerCorrected does NOT generate correction', () => {
+    const events = [
+      ev({ eventName: 'commerce.whatsapp.message_replied', payload: { text: 'hello' } }),
+      ev({ eventName: 'commerce.whatsapp.message_replied', payload: { text: 'bye' } }),
+    ];
+    const result = observeCorrections(correctionInput(events));
+    expect(result.filter((o) => o.correctionKind === 'message_rewrite')).toHaveLength(0);
+  });
+
+  it('ownerCorrected without original and corrected outputs does NOT generate correction', () => {
+    const events = [
+      ev({ eventName: 'commerce.whatsapp.message_replied', payload: { ownerCorrected: true } }),
+      ev({ eventName: 'commerce.whatsapp.message_replied', payload: { ownerCorrected: true } }),
+    ];
+    const result = observeCorrections(correctionInput(events));
+    expect(result.filter((o) => o.correctionKind === 'message_rewrite')).toHaveLength(0);
+  });
+
+  it('two message_replied with ownerCorrected=true generate message_rewrite observation', () => {
+    const events = [
+      ev({
+        eventName: 'commerce.whatsapp.message_replied',
+        payload: { ownerCorrected: true, originalOutput: 'wrong', correctedOutput: 'right' },
+      }),
+      ev({
+        eventName: 'commerce.whatsapp.message_replied',
+        payload: { ownerCorrected: true, originalOutput: 'wrong2', correctedOutput: 'right2' },
+      }),
+    ];
+    const result = observeCorrections(correctionInput(events));
+    const rewrites = result.filter((o) => o.correctionKind === 'message_rewrite');
+    expect(rewrites).toHaveLength(1);
+    expect(rewrites[0].correctedTarget).toBe('auto_reply');
+    expect(rewrites[0].originalOutput).toBe('wrong');
+    expect(rewrites[0].correctedOutput).toBe('right');
+    expect(rewrites[0].evidenceEventIds).toHaveLength(2);
+  });
+
+  it('classification_fix still requires causedByEventId — missing signal yields zero', () => {
+    const events = [
+      ev({ eventName: 'commerce.lead.objection_raised', payload: { text: 'expensive' } }),
+      ev({ eventName: 'commerce.lead.objection_raised', payload: { text: 'not now' } }),
+    ];
+    const result = observeCorrections(correctionInput(events));
+    expect(result.filter((o) => o.correctionKind === 'classification_fix')).toHaveLength(0);
+  });
+
+  it('two objection_raised with causedByEventId generate classification_fix observation', () => {
+    const events = [
+      ev({ eventName: 'commerce.lead.objection_raised', payload: { causedByEventId: 'e1' } }),
+      ev({ eventName: 'commerce.lead.objection_raised', payload: { causedByEventId: 'e2' } }),
+    ];
+    const result = observeCorrections(correctionInput(events));
+    const fixes = result.filter((o) => o.correctionKind === 'classification_fix');
+    expect(fixes).toHaveLength(1);
+    expect(fixes[0].correctedTarget).toBe('lead_classification');
+    expect(fixes[0].evidenceEventIds).toHaveLength(2);
+  });
+
+  it('action_reversal preserved via cognition.belief_updated with updateKind=reversal', () => {
+    const events = [
+      ev({ eventName: 'cognition.belief_updated', payload: { updateKind: 'reversal' } }),
+      ev({ eventName: 'cognition.belief_updated', payload: { updateKind: 'reversal', reason: 'override' } }),
+    ];
+    const result = observeCorrections(correctionInput(events));
+    const reversals = result.filter((o) => o.correctionKind === 'action_reversal');
+    expect(reversals).toHaveLength(1);
+    expect(reversals[0].correctedTarget).toBe('belief');
+    expect(reversals[0].evidenceEventIds).toHaveLength(2);
+  });
+
+  it('single operator feedback correction does NOT generate policy_adjustment', () => {
+    const events = [
+      ev({
+        eventName: 'cognition.valence_assigned',
+        entityRef: { entityType: 'operator', entityId: 'op_test' },
+        payload: {
+          suggestionId: 'sugg_001',
+          accepted: false,
+          operatorNote: 'customer needs delivery help before retention',
+          learningFraming:
+            'operator feedback teaches Kloel owner criteria; it is not human performance scoring',
+        },
+      }),
+    ];
+
+    const result = observeCorrections(correctionInput(events));
+
+    expect(result.filter((o) => o.correctionKind === 'policy_adjustment')).toHaveLength(0);
+  });
+
+  it('two operator feedback corrections generate non-punitive policy_adjustment', () => {
+    const feedbackPayload = {
+      accepted: false,
+      operatorNote: 'customer needs delivery help before retention',
+      learningFraming:
+        'operator feedback teaches Kloel owner criteria; it is not human performance scoring',
+    };
+    const events = [
+      ev({
+        eventName: 'cognition.valence_assigned',
+        entityRef: { entityType: 'operator', entityId: 'op_a' },
+        payload: { ...feedbackPayload, suggestionId: 'sugg_001' },
+      }),
+      ev({
+        eventName: 'cognition.valence_assigned',
+        entityRef: { entityType: 'operator', entityId: 'op_b' },
+        payload: { ...feedbackPayload, suggestionId: 'sugg_002' },
+      }),
+    ];
+
+    const result = observeCorrections(correctionInput(events));
+    const adjustments = result.filter((o) => o.correctionKind === 'policy_adjustment');
+
+    expect(adjustments).toHaveLength(1);
+    expect(adjustments[0].correctedTarget).toBe('operator_feedback');
+    expect(adjustments[0].learnedCriterion).toContain('human performance scoring');
+    expect(adjustments[0].futureBehaviorChange.targetDomain).toBe('operator_feedback');
+    expect(adjustments[0].acceptedWithoutDefense).toBe(true);
+  });
+});
+
 describe('OwnerCriterionProjector (UTP-OWNER-CRIT-007)', () => {
   it('exposes a callable build method', () => {
     const projector = new OwnerCriterionProjector();
     expect(typeof projector).toBe('object');
     // Smoke: any projector class should not throw on instantiation.
+  });
+
+  it('projects repeated operator feedback corrections as policy_adjustment pattern', () => {
+    const projector = new OwnerCriterionProjector();
+    const corrections: CorrectionObservation[] = [
+      {
+        observationId: 'cor_operator_1',
+        workspaceId: 'wks_owner',
+        correctedTarget: 'operator_feedback',
+        originalOutput: 'suggestion sugg_001',
+        correctedOutput: 'customer needs delivery help before retention',
+        correctionKind: 'policy_adjustment',
+        observedAt: '2026-05-13T20:00:00.000Z',
+        evidenceEventIds: ['evt_1', 'evt_2'],
+        confidence: 0.4,
+        learnedCriterion:
+          'Operator/team feedback corrected Kloel criteria without human performance scoring.',
+        futureBehaviorChange: {
+          declarativeRule:
+            'When team feedback corrects a suggestion, system must treat the note as Kloel learning.',
+          targetDomain: 'operator_feedback',
+          behaviorConstraint:
+            'Future suggestions in this domain must incorporate repeated operator correction notes.',
+          confidence: 0.45,
+        },
+        acceptedWithoutDefense: true,
+      },
+    ];
+
+    projector.accumulateCorrections(corrections);
+    const projection = projector.project(
+      'wks_owner',
+      Date.parse('2026-05-13T20:00:00.000Z'),
+    );
+
+    expect(projection.correctionPattern.mostFrequentCorrectionKind).toBe(
+      'policy_adjustment',
+    );
+    expect(projection.correctionPattern.topCorrectedTargets).toContain(
+      'operator_feedback',
+    );
+    expect(projection.totalObservations).toBe(1);
   });
 });
 
@@ -165,5 +337,46 @@ describe('OwnerCriterionEvidenceBuilder (UTP-OWNER-CRIT-008)', () => {
     });
     expect(bundle.decisionEvidence).toEqual(decisions);
     expect(bundle.correctionEvidence).toEqual([]);
+  });
+
+  it('preserves operator feedback policy_adjustment correction evidence', () => {
+    const corrections: CorrectionObservation[] = [
+      {
+        observationId: 'cor_operator_1',
+        workspaceId: 'wks_owner',
+        correctedTarget: 'operator_feedback',
+        originalOutput: 'suggestion sugg_001',
+        correctedOutput: 'customer needs delivery help before retention',
+        correctionKind: 'policy_adjustment',
+        observedAt: '2026-05-13T20:00:00.000Z',
+        evidenceEventIds: ['evt_1', 'evt_2'],
+        confidence: 0.4,
+        learnedCriterion:
+          'Operator/team feedback corrected Kloel criteria without human performance scoring.',
+        futureBehaviorChange: {
+          declarativeRule:
+            'When team feedback corrects a suggestion, system must treat the note as Kloel learning.',
+          targetDomain: 'operator_feedback',
+          behaviorConstraint:
+            'Future suggestions in this domain must incorporate repeated operator correction notes.',
+          confidence: 0.45,
+        },
+        acceptedWithoutDefense: true,
+      },
+    ];
+
+    const bundle = build().build({
+      workspaceId: 'wks_owner',
+      decisions: [],
+      corrections,
+      tones: [],
+      risks: [],
+      ethicals: [],
+      approvals: [],
+    });
+
+    expect(bundle.correctionEvidence).toEqual(corrections);
+    expect(bundle.correctionEvidence[0]?.correctionKind).toBe('policy_adjustment');
+    expect(bundle.correctionEvidence[0]?.correctedTarget).toBe('operator_feedback');
   });
 });

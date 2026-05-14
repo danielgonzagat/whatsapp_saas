@@ -162,6 +162,21 @@ export interface DefensibleVsTacticalTradeoff {
   readonly assessedAt: string;
 }
 
+export type SwitchingCostDimension =
+  | 'memory'
+  | 'criterion'
+  | 'context'
+  | 'judgment'
+  | 'commercial_capital';
+
+export interface ReplacementPainItem {
+  readonly dimension: SwitchingCostDimension;
+  readonly label: string;
+  readonly evidenceLevel: 'proven' | 'emerging' | 'not_yet_proven';
+  readonly reasoning: string;
+  readonly nextEvidenceToCapture?: string;
+}
+
 export interface DefensibilityNarrative {
   readonly workspaceId: string;
   readonly summary: string;
@@ -171,6 +186,9 @@ export interface DefensibilityNarrative {
   readonly moatType: string;
   readonly narrativeText: string;
   readonly assessedAt: string;
+  readonly switchingCostReasoning: string;
+  readonly replacementPain: readonly ReplacementPainItem[];
+  readonly replacementPainNarrative: string;
 }
 
 export interface EvidenceInput {

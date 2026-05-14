@@ -6,6 +6,7 @@ import {
   type MessageReadInput,
   type MessageRepliedInput,
   type HandoffToHumanInput,
+  type LeadWentSilentInput,
   type ConversationResumedInput,
   type SessionLifecycleInput,
 } from './whatsapp-event-emitter.service';
@@ -137,6 +138,32 @@ describe('WhatsAppEventEmitterService', () => {
       expect(ev!.payload).toMatchObject({ resumeTrigger: 'lead_replied_after_silence' });
     });
 
+    it('lead_went_silent — correct eventName, truthMode inferred, payload carries lastMessageAt/silenceHours/reason', () => {
+      const input: LeadWentSilentInput = {
+        workspaceId: WS,
+        contactId: CONTACT_ID,
+        lastMessageAt: '2026-05-13T10:00:00.000Z',
+        silenceHours: 48,
+        reason: 'no_response_after_objection',
+      };
+
+      emitter.emitLeadWentSilent(input);
+
+      const events = spine.recentEvents();
+      const ev = events.find((e) => e.eventName === 'commerce.lead.went_silent');
+      expect(ev).toBeDefined();
+      expect(ev!.workspaceId).toBe(WS);
+      expect(ev!.entityRef).toEqual({ entityType: 'contact', entityId: CONTACT_ID });
+      expect(ev!.truthMode).toBe('inferred');
+      expect(ev!.provenance.source).toBe('production');
+      expect(ev!.provenance.processor).toBe('whatsapp-event-emitter');
+      expect(ev!.payload).toMatchObject({
+        lastMessageAt: '2026-05-13T10:00:00.000Z',
+        silenceHours: 48,
+        reason: 'no_response_after_objection',
+      });
+    });
+
     it('session_lifecycle — correct eventName, workspaceId, event in payload', () => {
       const input: SessionLifecycleInput = {
         workspaceId: WS,
@@ -261,6 +288,16 @@ describe('WhatsAppEventEmitterService', () => {
           workspaceId: WS,
           contactId: CONTACT_ID,
           resumeTrigger: 'test',
+        });
+      }).not.toThrow();
+
+      expect(() => {
+        emitter.emitLeadWentSilent({
+          workspaceId: WS,
+          contactId: CONTACT_ID,
+          lastMessageAt: '2026-05-13T10:00:00.000Z',
+          silenceHours: 48,
+          reason: 'test',
         });
       }).not.toThrow();
 

@@ -102,10 +102,20 @@ export interface TimingResult {
 
 /**
  * Result of silence-as-action policy.
+ *
+ * SilenceDecision carries an operational delegation contract so the
+ * organism does not treat silence as passive inactivity. Every silence
+ * decision includes a safe next step, a rollback path, and a guardrail
+ * for lead outcome to prevent overreach after the decision.
  */
 export interface SilenceDecision {
   readonly remainSilent: boolean;
   readonly reason: string;
+  readonly riskClass: 'R1';
+  readonly delegationMode: 'allowed_alone';
+  readonly safeNextStep: string;
+  readonly rollback: string;
+  readonly leadOutcomeGuardrail: string;
 }
 
 /**

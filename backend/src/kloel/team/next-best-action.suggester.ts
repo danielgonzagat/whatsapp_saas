@@ -6,7 +6,12 @@
  * when they are not provided.
  */
 
-import type { NextBestAction, PreCallContext, SuggestInput } from './team.types';
+import type {
+  NextBestAction,
+  PreCallContext,
+  SuggestInput,
+  SuggestionR1Contract,
+} from './team.types';
 
 const MIN_CONFIDENCE = 0.15;
 const MAX_SUGGESTIONS = 3;
@@ -18,6 +23,7 @@ interface ActionTemplate {
   readonly baseConfidence: number;
   readonly guardrails: readonly string[];
   readonly evidencePattern: readonly string[];
+  readonly r1Contract: SuggestionR1Contract;
 }
 
 function hasEvent(ctx: PreCallContext, eventName: string): boolean {
@@ -29,35 +35,161 @@ function daysSince(iso: string, nowIso: string): number {
   return ms / (1000 * 60 * 60 * 24);
 }
 
+const R1_ALLOWED_ALONE: SuggestionR1Contract = {
+  riskClass: 'R1',
+  delegationMode: 'allowed_alone',
+  safeNextStep: 'show suggestion only; do not send or change deal state',
+  rollback: ['dismiss_suggestion', 'snooze_suggestion'],
+  leadOutcomeGuardrail: {
+    antiPressureLanguage: false,
+    respectsSilenceWindow: false,
+    requiresContextQualification: false,
+  },
+};
+
+const R1_REVIEW_DEFAULT: SuggestionR1Contract = {
+  riskClass: 'R1',
+  delegationMode: 'allowed_alone',
+  safeNextStep: 'review lead status before suggesting any outbound action',
+  rollback: ['dismiss_suggestion', 'snooze_suggestion'],
+  leadOutcomeGuardrail: {
+    antiPressureLanguage: false,
+    respectsSilenceWindow: false,
+    requiresContextQualification: false,
+  },
+};
+
+const R1_SILENT_QUALIFIED: SuggestionR1Contract = {
+  riskClass: 'R1',
+  delegationMode: 'allowed_alone',
+  safeNextStep:
+    'surface an honest re-engagement suggestion for owner review; do not send',
+  rollback: ['dismiss_suggestion', 'snooze_suggestion'],
+  leadOutcomeGuardrail: {
+    antiPressureLanguage: true,
+    respectsSilenceWindow: true,
+    requiresContextQualification: true,
+  },
+};
+
+const R1_SILENT_UNQUALIFIED: SuggestionR1Contract = {
+  riskClass: 'R1',
+  delegationMode: 'allowed_alone',
+  safeNextStep:
+    'review timeline and gather context before any re-engagement suggestion',
+  rollback: ['dismiss_suggestion', 'snooze_suggestion'],
+  leadOutcomeGuardrail: {
+    antiPressureLanguage: true,
+    respectsSilenceWindow: true,
+    requiresContextQualification: false,
+  },
+};
+
+const R2_HANDLE_OBJECTION: SuggestionR1Contract = {
+  riskClass: 'R2',
+  delegationMode: 'requires_review',
+  safeNextStep: 'draft objection response for explicit owner review',
+  rollback: ['dismiss_suggestion', 'snooze_suggestion', 'manual_review'],
+  leadOutcomeGuardrail: {
+    antiPressureLanguage: true,
+    respectsSilenceWindow: false,
+    requiresContextQualification: true,
+  },
+};
+
+const R2_RECOVER_REVENUE: SuggestionR1Contract = {
+  riskClass: 'R2',
+  delegationMode: 'requires_review',
+  safeNextStep:
+    'prepare recovery recommendation with no discount or urgency pressure',
+  rollback: ['dismiss_suggestion', 'snooze_suggestion', 'manual_review'],
+  leadOutcomeGuardrail: {
+    antiPressureLanguage: true,
+    respectsSilenceWindow: false,
+    requiresContextQualification: true,
+  },
+};
+
+const R2_POST_SALE: SuggestionR1Contract = {
+  riskClass: 'R2',
+  delegationMode: 'human_only',
+  safeNextStep: 'ask human to verify delivery before any post-sale message',
+  rollback: ['dismiss_suggestion', 'snooze_suggestion', 'manual_review'],
+  leadOutcomeGuardrail: {
+    antiPressureLanguage: true,
+    respectsSilenceWindow: false,
+    requiresContextQualification: false,
+  },
+};
+
+const R2_CLOSE_QUALIFIED: SuggestionR1Contract = {
+  riskClass: 'R2',
+  delegationMode: 'requires_review',
+  safeNextStep: 'draft next closing step for explicit owner review',
+  rollback: ['dismiss_suggestion', 'snooze_suggestion', 'manual_review'],
+  leadOutcomeGuardrail: {
+    antiPressureLanguage: true,
+    respectsSilenceWindow: false,
+    requiresContextQualification: false,
+  },
+};
+
 const ACTION_TEMPLATES: readonly ActionTemplate[] = [
   {
     condition: (ctx) =>
       !hasEvent(ctx, 'commerce.lead.contacted') &&
       hasEvent(ctx, 'commerce.lead.created'),
     action: 'make_initial_contact',
-    rationale: 'lead created but never contacted — first touch needed',
+    rationale: 'lead created but never contacted - first touch needed',
     baseConfidence: 0.82,
     guardrails: ['verify lead is not duplicated', 'check workspace reply policy'],
     evidencePattern: ['commerce.lead.created'],
+    r1Contract: R1_ALLOWED_ALONE,
   },
   {
     condition: (ctx) =>
       hasEvent(ctx, 'commerce.lead.went_silent') &&
-      !hasEvent(ctx, 'commerce.lead.replied'),
+      !hasEvent(ctx, 'commerce.lead.replied') &&
+      (hasEvent(ctx, 'commerce.lead.objection_raised') ||
+        hasEvent(ctx, 'commerce.cart.abandoned')),
     action: 'reengage_silent_lead',
-    rationale: 'lead went silent without replying — re-engagement recommended',
+    rationale:
+      'lead went silent after commercial context (objection or cart) - qualified re-engagement recommended',
     baseConfidence: 0.75,
-    guardrails: ['respect silence window', 'avoid desperate tone'],
+    guardrails: [
+      'respect silence window',
+      'acknowledge prior concern or hesitation directly',
+      'no urgency pressure - timing must be lead-driven',
+    ],
     evidencePattern: ['commerce.lead.went_silent'],
+    r1Contract: R1_SILENT_QUALIFIED,
+  },
+  {
+    condition: (ctx) =>
+      hasEvent(ctx, 'commerce.lead.went_silent') &&
+      !(hasEvent(ctx, 'commerce.lead.objection_raised') ||
+        hasEvent(ctx, 'commerce.cart.abandoned')),
+    action: 'review_silent_lead',
+    rationale:
+      'lead went silent without clear commercial context - review timeline before assuming disinterest',
+    baseConfidence: 0.55,
+    guardrails: [
+      'do not assume disinterest - silence may be external',
+      'anti-pressure language required: no urgency framing',
+      'seek additional signals before re-engagement',
+    ],
+    evidencePattern: ['commerce.lead.went_silent'],
+    r1Contract: R1_SILENT_UNQUALIFIED,
   },
   {
     condition: (ctx) =>
       hasEvent(ctx, 'commerce.lead.objection_raised'),
     action: 'handle_objection',
-    rationale: 'lead raised objection — address before advancing',
+    rationale: 'lead raised objection - address before advancing',
     baseConfidence: 0.8,
     guardrails: ['understand objection type', 'do not dismiss concern'],
     evidencePattern: ['commerce.lead.objection_raised'],
+    r1Contract: R2_HANDLE_OBJECTION,
   },
   {
     condition: (ctx) =>
@@ -68,54 +200,75 @@ const ACTION_TEMPLATES: readonly ActionTemplate[] = [
     baseConfidence: 0.85,
     guardrails: ['reply within response window', 'maintain conversation tone'],
     evidencePattern: ['commerce.lead.replied'],
+    r1Contract: R1_ALLOWED_ALONE,
   },
   {
     condition: (ctx) =>
       ctx.currentStage !== undefined &&
       hasEvent(ctx, 'commerce.crm.stage_changed'),
     action: 'advance_pipeline_stage',
-    rationale: 'lead is in active pipeline stage — define next CRM step',
+    rationale: 'lead is in active pipeline stage - define next CRM step',
     baseConfidence: 0.78,
     guardrails: ['stage-appropriate actions only', 'respect deal velocity'],
     evidencePattern: ['commerce.crm.stage_changed'],
+    r1Contract: R1_ALLOWED_ALONE,
   },
   {
     condition: (ctx) =>
       hasEvent(ctx, 'commerce.cart.abandoned') ||
       hasEvent(ctx, 'commerce.payment.declined'),
     action: 'recover_revenue',
-    rationale: 'revenue signal detected — recovery opportunity',
+    rationale: 'revenue signal detected - recovery opportunity',
     baseConfidence: 0.8,
     guardrails: ['avoid desperation pattern', 'offer genuine help'],
     evidencePattern: ['commerce.cart.abandoned', 'commerce.payment.declined'],
+    r1Contract: R2_RECOVER_REVENUE,
+  },
+  {
+    condition: (ctx) =>
+      hasEvent(ctx, 'commerce.post_sale.churn_risk_detected'),
+    action: 'review_post_sale_value_gap',
+    rationale:
+      'post-sale churn risk detected - verify whether the customer reached first value before any retention action',
+    baseConfidence: 0.9,
+    guardrails: [
+      'frame as customer support, not team failure',
+      'verify first value before win-back or upsell',
+      'do not send retention message without human review',
+    ],
+    evidencePattern: ['commerce.post_sale.churn_risk_detected'],
+    r1Contract: R2_POST_SALE,
   },
   {
     condition: (ctx) =>
       hasEvent(ctx, 'commerce.payment.approved') &&
       !ctx.openQuestions.some((q) => q.includes('onboarding')),
     action: 'ensure_post_sale_activation',
-    rationale: 'payment approved — confirm delivery and activation',
+    rationale: 'payment approved - confirm delivery and activation',
     baseConfidence: 0.88,
     guardrails: ['do not up-sell during onboarding', 'verify delivery first'],
     evidencePattern: ['commerce.payment.approved'],
+    r1Contract: R2_POST_SALE,
   },
   {
     condition: (ctx) =>
       hasEvent(ctx, 'commerce.lead.qualified') &&
       !hasEvent(ctx, 'commerce.lead.converted'),
     action: 'close_qualified_lead',
-    rationale: 'lead qualified but not converted — closing window open',
+    rationale: 'lead qualified but not converted - closing window open',
     baseConfidence: 0.83,
     guardrails: ['match closing style to lead profile', 'do not pressure'],
     evidencePattern: ['commerce.lead.qualified'],
+    r1Contract: R2_CLOSE_QUALIFIED,
   },
   {
     condition: () => true,
     action: 'review_lead_status',
-    rationale: 'no specific action signal — review lead status and next steps',
+    rationale: 'no specific action signal - review lead status and next steps',
     baseConfidence: 0.4,
     guardrails: ['stay within operator role boundaries'],
     evidencePattern: ['commerce.lead.created'],
+    r1Contract: R1_REVIEW_DEFAULT,
   },
 ];
 
@@ -186,6 +339,7 @@ export function suggestNextBestActions(input: SuggestInput): readonly NextBestAc
       confidence: Math.round(confidence * 100) / 100,
       evidenceRefs: evidence,
       guardrails: [...t.guardrails],
+      r1Contract: t.r1Contract,
       scoreOrder: i,
     };
   });
@@ -206,6 +360,7 @@ export function suggestNextBestActions(input: SuggestInput): readonly NextBestAc
       confidence: item.confidence,
       evidenceRefs: item.evidenceRefs,
       guardrails: item.guardrails,
+      r1Contract: item.r1Contract,
     }),
   );
 }

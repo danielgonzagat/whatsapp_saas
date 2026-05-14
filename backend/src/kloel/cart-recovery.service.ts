@@ -39,25 +39,25 @@ function resolvePriceBand(price: unknown): string {
 function renderRecoveryEmail(productName: string, orderNumber: string, action: string): string {
   const bodyByAction: Record<string, string> = {
     proof:
-      '<p style="color: #666; line-height: 1.6; margin-bottom: 24px;">Centenas de clientes ja transformaram seus resultados com <strong>' +
+      '<p style="color: #666; line-height: 1.6; margin-bottom: 24px;">Se a sua duvida for confianca, podemos te mostrar informacoes claras sobre <strong>' +
       productName +
-      '</strong>. Junte-se a eles!</p>',
+      '</strong> para voce decidir com calma.</p>',
     urgency:
       '<p style="color: #666; line-height: 1.6; margin-bottom: 24px;">Seu pedido de <strong>' +
       productName +
-      '</strong> expira em breve. Garanta agora antes que acabe!</p>',
+      '</strong> ficou em aberto. Se ainda fizer sentido para voce, pode retomar quando estiver pronto.</p>',
     help:
       '<p style="color: #666; line-height: 1.6; margin-bottom: 24px;">Notamos que voce iniciou a compra de <strong>' +
       productName +
-      '</strong> mas nao finalizou. Seu pedido ainda esta disponivel.</p>',
+      '</strong> mas nao finalizou. Se ficou alguma duvida real, responda este email e ajudamos sem pressa.</p>',
     faq:
       '<p style="color: #666; line-height: 1.6; margin-bottom: 24px;">Tem duvidas sobre <strong>' +
       productName +
       '</strong>? Acesse nossa pagina de perguntas frequentes ou responda este email.</p>',
     discount:
-      '<p style="color: #666; line-height: 1.6; margin-bottom: 24px;">Temos uma oferta especial para voce! Use o codigo <strong>VOLTEI10</strong> e ganhe 10% de desconto em <strong>' +
+      '<p style="color: #666; line-height: 1.6; margin-bottom: 24px;">Se o valor foi a principal duvida sobre <strong>' +
       productName +
-      '</strong>.</p>',
+      '</strong>, responda este email para avaliarmos a melhor condicao disponivel antes de voce decidir.</p>',
     pause:
       '<p style="color: #666; line-height: 1.6; margin-bottom: 24px;">Seu pedido de <strong>' +
       productName +
@@ -78,7 +78,7 @@ function renderRecoveryEmail(productName: string, orderNumber: string, action: s
     '<div style="' + outerStyle + '">',
     '<div style="' + containerStyle + '">',
     '<div style="' + brandStyle + '">KLOEL</div>',
-    '<h1 style="' + titleStyle + '">Voce deixou algo no carrinho!</h1>',
+    '<h1 style="' + titleStyle + '">Sua compra ficou em aberto</h1>',
     body,
     '<p style="' + orderStyle + '">Pedido #' + orderNumber + '</p>',
     '<div style="' + footerStyle + '"><p>KLOEL - Inteligencia Comercial Autonoma</p></div>',
@@ -254,7 +254,7 @@ export class CartRecoveryService {
             const emailService = new EmailService();
             await emailService.sendEmail({
               to: customerEmail,
-              subject: `Voce esqueceu algo — ${productName}`,
+              subject: `Seu pedido ainda esta aberto - ${productName}`,
               html,
               headers: {
                 'List-Unsubscribe': listUnsubscribe,

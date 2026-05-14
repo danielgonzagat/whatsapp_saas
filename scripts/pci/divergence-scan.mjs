@@ -306,3 +306,9 @@ if (isDirect) {
 }
 
 export { loadCanonicalSets, CANONICAL_EVENTS, CANONICAL_ABI_FIELDS, CANONICAL_GATES, divergences, scanFile };
+
+async function loadCanonicalSets() {
+  await loadEventTaxonomy();
+  await loadAbiSchema();
+  await loadPulseGates();
+}

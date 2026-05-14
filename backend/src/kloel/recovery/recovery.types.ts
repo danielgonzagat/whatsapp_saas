@@ -72,7 +72,23 @@ export interface RecoveryTactic {
   readonly action: RecoveryAction;
   readonly description: string;
   readonly estimatedCostCents: number;
+  readonly safetyContract: RecoverySafetyContract;
   readonly generatedAt: string;
+}
+
+export type RecoveryDelegationRiskClass = 'R1' | 'R2' | 'R3' | 'R4';
+
+export type RecoveryDelegationMode =
+  | 'allowed_alone'
+  | 'requires_review'
+  | 'human_only';
+
+export interface RecoverySafetyContract {
+  readonly riskClass: RecoveryDelegationRiskClass;
+  readonly delegationMode: RecoveryDelegationMode;
+  readonly safeNextStep: string;
+  readonly rollback: readonly string[];
+  readonly leadOutcomeGuardrail: string;
 }
 
 export type RecoveryAction =
@@ -135,6 +151,35 @@ export const ERROR_RECOVERY_EVENT_NAMES: ReadonlySet<string> = new Set([
   'commerce.post_sale.churn_risk_detected',
   'pulse.gate_failed',
 ]);
+
+export interface NonRepeatCommitment {
+  readonly learnedFrom: string;
+  readonly preventiveChange: string;
+  readonly commitmentStatement: string;
+  readonly guardActive: boolean;
+  readonly repeatBlockedUntil: string | null;
+}
+
+export interface RecoveryProofPackage {
+  readonly proofId: string;
+  readonly errorId: string;
+  readonly workspaceId: string;
+  readonly generatedAt: string;
+  readonly acknowledgment: Acknowledgment;
+  readonly explanation: ErrorExplanation;
+  readonly tactic: RecoveryTactic;
+  readonly nonRepeatCommitment: NonRepeatCommitment;
+  readonly whatKloelKnows: string;
+  readonly whatKloelDoesNotKnow: string;
+  readonly safeNextStep: string;
+  readonly repairStance: Acknowledgment['repairStance'];
+  readonly riskClass: RecoveryDelegationRiskClass;
+  readonly delegationMode: RecoveryDelegationMode;
+  readonly rollback: readonly string[];
+  readonly autonomyRaised: false;
+  readonly messageSent: false;
+  readonly concessionOffered: false;
+}
 
 export function hashEventPattern(events: readonly SpineEventRef[]): string {
   const names = events.map((e) => e.eventName).sort().join('|');

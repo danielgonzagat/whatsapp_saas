@@ -12,6 +12,7 @@ import { ChurnRiskDetector } from './churn-risk.detector';
 import { RetentionHonestTactics } from './retention-honest.tactics';
 import { WinBackWindowAdvisor } from './winback-window.advisor';
 import { LtvProjectionService } from './ltv-projection.service';
+import { NoRegretPipelineService } from './no-regret-pipeline.service';
 
 /**
  * PostsaleConsumersModule — Camada XVIII (UTP-POSTSALE-001..012).
@@ -39,6 +40,7 @@ import { LtvProjectionService } from './ltv-projection.service';
     RetentionHonestTactics,
     WinBackWindowAdvisor,
     LtvProjectionService,
+    NoRegretPipelineService,
   ],
   exports: [
     AntiRemorseService,
@@ -53,6 +55,7 @@ import { LtvProjectionService } from './ltv-projection.service';
     RetentionHonestTactics,
     WinBackWindowAdvisor,
     LtvProjectionService,
+    NoRegretPipelineService,
   ],
 })
 export class PostsaleConsumersModule {}

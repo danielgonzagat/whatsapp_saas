@@ -9,7 +9,12 @@
  */
 
 import { randomUUID } from 'node:crypto';
-import type { DetectedError, RecoveryAction, RecoveryTactic } from './recovery.types';
+import type {
+  DetectedError,
+  RecoveryAction,
+  RecoverySafetyContract,
+  RecoveryTactic,
+} from './recovery.types';
 
 interface TacticTemplate {
   readonly action: RecoveryAction;
@@ -141,6 +146,49 @@ function selectTactic(
   return options[options.length - 1] ?? options[0]!;
 }
 
+function safetyContractFor(
+  error: DetectedError,
+  tactic: TacticTemplate,
+): RecoverySafetyContract {
+  switch (tactic.action) {
+    case 'silence':
+    case 'priority_review':
+    case 'manual_review':
+      return {
+        riskClass: 'R1',
+        delegationMode: 'allowed_alone',
+        safeNextStep: 'surface the recovery recommendation without contacting the lead',
+        rollback: ['dismiss_recovery_tactic', 'snooze_recovery_tactic'],
+        leadOutcomeGuardrail:
+          'no new pressure is applied to the lead while the issue is reviewed',
+      };
+    case 'apologize':
+    case 'follow_up_personal':
+    case 'expedited_handling':
+      return {
+        riskClass: 'R2',
+        delegationMode: 'requires_review',
+        safeNextStep:
+          'prepare a human-reviewed repair message with no urgency pressure',
+        rollback: ['discard_draft', 'escalate_to_human'],
+        leadOutcomeGuardrail:
+          'repair language must acknowledge the issue and avoid conversion pressure',
+      };
+    case 'small_concession':
+    case 'discount_offer':
+    case 'free_extension':
+      return {
+        riskClass: error.severity === 'high' ? 'R3' : 'R2',
+        delegationMode: 'requires_review',
+        safeNextStep:
+          'request explicit owner approval before offering any commercial concession',
+        rollback: ['do_not_offer_concession', 'escalate_to_owner'],
+        leadOutcomeGuardrail:
+          'commercial concession must repair trust, not manufacture urgency or pressure',
+      };
+  }
+}
+
 /**
  * Propose a recovery action based on error category and severity.
  *
@@ -155,6 +203,7 @@ export function proposeRecoveryTactic(error: DetectedError): RecoveryTactic {
     action: tactic.action,
     description: tactic.description,
     estimatedCostCents: tactic.estimatedCostCents,
+    safetyContract: safetyContractFor(error, tactic),
     generatedAt: new Date().toISOString(),
   };
 }

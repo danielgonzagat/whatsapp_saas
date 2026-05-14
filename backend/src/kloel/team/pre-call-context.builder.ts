@@ -36,6 +36,7 @@ const LEAD_RELEVANT_EVENTS: ReadonlySet<string> = new Set([
   'commerce.payment.approved',
   'commerce.payment.declined',
   'commerce.cart.abandoned',
+  'commerce.post_sale.churn_risk_detected',
 ]);
 
 const MAX_HISTORY_ENTRIES = 20;
@@ -99,12 +100,31 @@ function findOpenQuestions(events: readonly SpineEventRef[]): readonly string[] 
 
   const silent = events.some((e) => e.eventName === 'commerce.lead.went_silent');
   if (silent) {
-    questions.push('lead entered silent state — re-engagement strategy needed');
+    const hasObjection = events.some(
+      (e) => e.eventName === 'commerce.lead.objection_raised',
+    );
+    const hasCartAbandoned = events.some(
+      (e) => e.eventName === 'commerce.cart.abandoned',
+    );
+
+    if (hasObjection) {
+      questions.push(
+        'lead went silent after raising objection - re-engagement requires understanding of unresolved concern',
+      );
+    } else if (hasCartAbandoned) {
+      questions.push(
+        'lead went silent after abandoning cart - re-engagement requires understanding of purchase hesitation',
+      );
+    } else {
+      questions.push(
+        'lead entered silent state without clear context - review timeline before assuming disinterest',
+      );
+    }
   }
 
   const objection = events.some((e) => e.eventName === 'commerce.lead.objection_raised');
   if (objection) {
-    questions.push('lead raised objection — resolution pending');
+    questions.push('lead raised objection - resolution pending');
   }
 
   const hasStageChange = events.some((e) => e.eventName === 'commerce.crm.stage_changed');
@@ -115,7 +135,16 @@ function findOpenQuestions(events: readonly SpineEventRef[]): readonly string[] 
 
   const hasPayment = events.some((e) => e.eventName === 'commerce.payment.approved');
   if (hasPayment) {
-    questions.push('payment completed — verify onboarding/delivery status');
+    questions.push('payment completed - verify onboarding/delivery status');
+  }
+
+  const hasChurnRisk = events.some(
+    (e) => e.eventName === 'commerce.post_sale.churn_risk_detected',
+  );
+  if (hasChurnRisk) {
+    questions.push(
+      'post-sale churn risk flagged - confirm whether customer reached first value before any retention action; human review only',
+    );
   }
 
   return questions;

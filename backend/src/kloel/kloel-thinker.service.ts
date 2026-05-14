@@ -38,7 +38,7 @@ export type { ChatMessage, ThinkRequest, ThinkSyncResult } from './kloel-thinker
 import type { ThinkRequest, ThinkSyncResult } from './kloel-thinker.types';
 
 const CANONICAL_FALLBACK_SYSTEM =
-  'Estado cognitivo distribuído. Verbalize a partir do estado abaixo. Nunca invente fato fora do estado.';
+  'cognitive_state_boundary=distributed; verbalization_source=state_payload; fact_boundary=state_payload';
 
 /** Orchestrates the Kloel thinking loop — SSE streaming and sync variants. */
 @Injectable()

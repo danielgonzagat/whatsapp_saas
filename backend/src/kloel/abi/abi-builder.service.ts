@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
 import {
   IdentityAudience,
   IdentityProjectorService,
@@ -8,9 +8,11 @@ import {
   ABI_VERSION,
   AbiCurrentInput,
   AbiPerceptionSnapshot,
+  AbiPulseTruth,
   AbiTruthMode,
   CognitiveStateAbi,
 } from './abi-schema';
+import type { PulseTruthSnapshot } from './pulse-truth-snapshot.service';
 
 /**
  * UTP-ABI-002 — Cognitive State ABI builder (shadow mode).
@@ -48,7 +50,10 @@ export type AbiBuildResult =
 
 @Injectable()
 export class AbiBuilderService {
-  public constructor(private readonly projector: IdentityProjectorService) {}
+  public constructor(
+    private readonly projector: IdentityProjectorService,
+    @Optional() private readonly pulseTruthSnapshot?: PulseTruthSnapshot,
+  ) {}
 
   public async build(input: AbiBuildInput): Promise<AbiBuildResult> {
     const projectOpts: Parameters<IdentityProjectorService['project']>[0] = {
@@ -126,20 +131,28 @@ export class AbiBuilderService {
           windowHours: 24,
         },
       },
-      pulseTruth: {
-        noOverclaimStatus: 'PASS',
-        capabilityHealthScore: 1,
-        gates: [],
-        certificationVerdict: {
-          verdict: 'INSUFFICIENT_EVIDENCE',
-          score: 0,
-          measuredAt,
-        },
-        overclaimRisk: 0,
-      },
+      pulseTruth: this.buildPulseTruth(measuredAt),
       currentInput: input.currentInput,
     };
 
     return { status: 'ok', abi };
+  }
+
+  private buildPulseTruth(measuredAt: string): AbiPulseTruth {
+    if (this.pulseTruthSnapshot) {
+      return this.pulseTruthSnapshot.snapshot();
+    }
+
+    return {
+      noOverclaimStatus: 'PASS',
+      capabilityHealthScore: 0,
+      gates: [],
+      certificationVerdict: {
+        verdict: 'INSUFFICIENT_EVIDENCE',
+        score: 0,
+        measuredAt,
+      },
+      overclaimRisk: 0,
+    };
   }
 }

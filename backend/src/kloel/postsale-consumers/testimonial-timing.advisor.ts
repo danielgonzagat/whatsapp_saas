@@ -1,6 +1,10 @@
 import { Injectable } from '@nestjs/common';
-import type { TestimonialReadiness, DetectionInput } from './postsale-consumers.types';
-import { clamp, daysSince, filterByWorkspace, latestEvent } from './postsale-consumers.types';
+import type {
+  DetectionInput,
+  PostSaleDecisionControl,
+  TestimonialReadiness,
+} from './postsale-consumers.types';
+import { clamp, daysSince, filterByWorkspaceAndEntity, latestEvent } from './postsale-consumers.types';
 
 const MIN_DAYS_SINCE_PURCHASE = 7;
 const MAX_DAYS_SINCE_PURCHASE = 60;
@@ -11,8 +15,8 @@ const RECENCY_BONUS_DAYS = 21;
 export class TestimonialTimingAdvisor {
   public assess(input: DetectionInput): TestimonialReadiness {
     const nowMs = input.nowMs ?? Date.now();
-    const wsEvents = filterByWorkspace(input.events, input.workspaceId);
     const entityRef = input.entityRef ?? { entityType: 'customer', entityId: 'unknown' };
+    const wsEvents = filterByWorkspaceAndEntity(input.events, input.workspaceId, input.entityRef);
     const reasons: string[] = [];
     let readinessScore = 0;
 
@@ -35,9 +39,30 @@ export class TestimonialTimingAdvisor {
       return finalize(input.workspaceId, entityRef, false, 0, reasons, 'silent', nowMs);
     }
 
+    if (hasRecentPostSaleRisk(wsEvents, nowMs)) {
+      reasons.push('recent_post_sale_risk');
+      return finalize(input.workspaceId, entityRef, false, 0, reasons, 'silent', nowMs);
+    }
+
     if (daysSincePayment > MAX_DAYS_SINCE_PURCHASE) {
       reasons.push('purchase_too_old');
       return finalize(input.workspaceId, entityRef, false, 0.1, reasons, 'silent', nowMs);
+    }
+
+    const firstValue = latestEvent(wsEvents, 'commerce.post_sale.first_value_obtained');
+    if (!firstValue || daysSince(firstValue.occurredAt, nowMs) >= RECENCY_BONUS_DAYS) {
+      reasons.push('no_first_value_evidence');
+      return finalize(input.workspaceId, entityRef, false, 0, reasons, 'silent', nowMs);
+    }
+
+    const satisfaction = latestEvent(wsEvents, 'commerce.post_sale.satisfaction_signal_observed');
+    if (
+      !satisfaction ||
+      daysSince(satisfaction.occurredAt, nowMs) >= SATISFACTION_WINDOW_DAYS ||
+      satisfaction.payload?.['sentimentLabel'] !== 'positive'
+    ) {
+      reasons.push('no_positive_satisfaction_evidence');
+      return finalize(input.workspaceId, entityRef, false, 0, reasons, 'silent', nowMs);
     }
 
     if (daysSincePayment <= RECENCY_BONUS_DAYS) {
@@ -47,23 +72,10 @@ export class TestimonialTimingAdvisor {
       readinessScore += 0.1;
     }
 
-    const satisfaction = latestEvent(wsEvents, 'commerce.post_sale.satisfaction_signal_observed');
-    if (satisfaction && daysSince(satisfaction.occurredAt, nowMs) < SATISFACTION_WINDOW_DAYS) {
-      const payloadSentiment = satisfaction.payload?.['sentimentLabel'];
-      if (payloadSentiment === 'positive') {
-        readinessScore += 0.4;
-        reasons.push('recent_positive_satisfaction');
-      } else if (payloadSentiment === 'mixed') {
-        readinessScore += 0.1;
-        reasons.push('recent_mixed_satisfaction');
-      }
-    }
-
-    const firstValue = latestEvent(wsEvents, 'commerce.post_sale.first_value_obtained');
-    if (firstValue && daysSince(firstValue.occurredAt, nowMs) < RECENCY_BONUS_DAYS) {
-      readinessScore += 0.25;
-      reasons.push('first_value_obtained');
-    }
+    readinessScore += 0.4;
+    reasons.push('recent_positive_satisfaction');
+    readinessScore += 0.25;
+    reasons.push('first_value_obtained');
 
     const memberProgress = wsEvents.filter(
       (e) =>
@@ -92,6 +104,30 @@ export class TestimonialTimingAdvisor {
   }
 }
 
+function hasRecentPostSaleRisk(
+  events: readonly { readonly eventName: string; readonly occurredAt: string; readonly payload?: Readonly<Record<string, unknown>> }[],
+  nowMs: number,
+): boolean {
+  return events.some((event) => {
+    if (daysSince(event.occurredAt, nowMs) > SATISFACTION_WINDOW_DAYS) {
+      return false;
+    }
+
+    if (
+      event.eventName === 'commerce.payment.refunded' ||
+      event.eventName === 'commerce.lead.objection_raised' ||
+      event.eventName === 'commerce.post_sale.churn_risk_detected'
+    ) {
+      return true;
+    }
+
+    return (
+      event.eventName === 'commerce.post_sale.satisfaction_signal_observed' &&
+      event.payload?.['sentimentLabel'] === 'negative'
+    );
+  });
+}
+
 function finalize(
   workspaceId: string,
   entityRef: { readonly entityType: string; readonly entityId: string },
@@ -101,6 +137,7 @@ function finalize(
   channel: TestimonialReadiness['suggestedChannel'],
   nowMs: number,
 ): TestimonialReadiness {
+  const control = buildControl(ready, score, reasons, 'testimonial');
   return {
     workspaceId,
     entityRef,
@@ -108,6 +145,42 @@ function finalize(
     readinessScore: Math.round(score * 100) / 100,
     reasons,
     suggestedChannel: channel,
+    control,
     assessedAt: new Date(nowMs).toISOString(),
+  };
+}
+
+function buildControl(
+  ready: boolean,
+  score: number,
+  reasons: readonly string[],
+  artifact: 'testimonial',
+): PostSaleDecisionControl {
+  void score;
+  if (ready) {
+    return {
+      riskClass: 'R2',
+      delegationMode: 'owner_review',
+      safeNextStep: `Draft a ${artifact} request for owner review after confirming the customer already reached value.`,
+      uncertainty:
+        'Readiness is inferred from satisfaction and first-value evidence, not an explicit customer offer to endorse.',
+      leadOutcomeGuardrail:
+        'The request must feel optional and appreciative, never transactional or pressured.',
+      rollback:
+        'Cancel the request and return to silent monitoring if the customer hesitates, objects, or reports unresolved friction.',
+    };
+  }
+
+  return {
+    riskClass: 'R1',
+    delegationMode: 'silent_monitoring',
+    safeNextStep: `Do not ask for a ${artifact}; keep observing until value and positive satisfaction are explicit.`,
+    uncertainty:
+      reasons.length > 0
+        ? `Blocked by ${reasons.join(', ')}.`
+        : `There is not enough evidence for a ${artifact} request.`,
+    leadOutcomeGuardrail:
+      'The customer should leave the interaction feeling valued, not mined for proof.',
+    rollback: 'Keep the request silent and route any owner desire for proof back to customer success first.',
   };
 }

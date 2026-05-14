@@ -92,6 +92,7 @@ describe('UnifiedAgentService', () => {
   let paymentService: { createPayment: jest.Mock };
   let configMock: ConfigService;
   let planLimits: { ensureTokenBudget: jest.Mock; trackAiUsage: jest.Mock };
+  let dailyLimit: { ensureProactiveDailyLimit: jest.Mock };
   let service: UnifiedAgentService;
   let ctx: UnifiedAgentContextService;
   let response: UnifiedAgentResponseService;
@@ -173,13 +174,22 @@ describe('UnifiedAgentService', () => {
       ensureTokenBudget: jest.fn().mockResolvedValue(undefined),
       trackAiUsage: jest.fn().mockResolvedValue(undefined),
     };
+    dailyLimit = {
+      ensureProactiveDailyLimit: jest.fn().mockResolvedValue({
+        allowed: true,
+        capAtDay: 100,
+        remaining: 99,
+      }),
+    };
 
     const contextData = new UnifiedAgentContextDataService(prisma as never);
     ctx = new UnifiedAgentContextService(contextData);
     response = new UnifiedAgentResponseService(planLimits as never);
     const messaging = new UnifiedAgentActionsMessagingService(
-      transportRegistry as never,
+      whatsappService as never,
       {} as never,
+      transportRegistry as never,
+      dailyLimit as never,
     );
     const commerce = new UnifiedAgentActionsCommerceService(
       prisma as never,
@@ -286,11 +296,13 @@ describe('UnifiedAgentService', () => {
       executeTools: true,
     });
 
-    expect(whatsappService.sendMessage).toHaveBeenCalledWith(
+    expect(transportRegistry.send).toHaveBeenCalledWith(
       'ws-1',
-      '5511999999999',
-      'Claro. O produto custa R$ 890.',
-      expect.objectContaining({ complianceMode: 'reactive' }),
+      expect.objectContaining({
+        channel: 'whatsapp',
+        content: 'Claro. O produto custa R$ 890.',
+        recipientId: '5511999999999',
+      }),
     );
     expect(prisma.autopilotEvent.create).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -435,7 +447,15 @@ describe('UnifiedAgentService', () => {
       {
         tool: 'create_payment_link',
         args: { amount: 100, productName: 'Produto X' },
-        result: { blocked: true, reason: 'capability_not_allowed' },
+        result: {
+          blocked: true,
+          reason: 'capability_not_allowed',
+          riskClass: 'R3',
+          approvalRequired: true,
+          escalation: 'human_operator_required',
+          safeNextStep: 'redirect_to_manual_checkout',
+          rollback: 'not_executed',
+        },
       },
     ]);
   });
@@ -460,7 +480,15 @@ describe('UnifiedAgentService', () => {
       {
         tool: 'send_message',
         args: { message: 'Nao deve enviar.' },
-        result: { blocked: true, reason: 'capability_not_allowed' },
+        result: {
+          blocked: true,
+          reason: 'capability_not_allowed',
+          riskClass: 'R2',
+          approvalRequired: true,
+          escalation: 'workspace_owner_review',
+          safeNextStep: 'respond_without_tool',
+          rollback: 'not_executed',
+        },
       },
     ]);
   });
@@ -535,7 +563,7 @@ describe('UnifiedAgentService', () => {
     );
 
     expect(prompt).toBe(
-      'Estado cognitivo distribuído. Verbalize a partir do estado abaixo. Nunca invente fato fora do estado.',
+      'cognitive_state_boundary=distributed; verbalization_source=state_payload; fact_boundary=state_payload',
     );
   });
 

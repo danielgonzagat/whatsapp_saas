@@ -14,6 +14,8 @@ import type { FeedbackEntry, FeedbackInput } from './team.types';
 const FEEDBACK_PROCESSOR = 'operator-feedback-loop';
 const FEEDBACK_PROCESSOR_VERSION = '1.0.0';
 const FEEDBACK_SCHEMA_VERSION = '1.0.0';
+const LEARNING_FRAMING =
+  'operator feedback teaches Kloel owner criteria; it is not human performance scoring';
 
 export interface FeedbackSpineInput {
   readonly eventName: string;
@@ -29,6 +31,14 @@ export interface FeedbackSpineInput {
   readonly payload: Readonly<Record<string, unknown>>;
   readonly entityRef?: { readonly entityType: string; readonly entityId: string };
   readonly correlationId?: string;
+}
+
+export interface OperatorFeedbackLearningSummary {
+  readonly totalFeedback: number;
+  readonly acceptedSuggestions: number;
+  readonly correctionSignals: number;
+  readonly learningSignals: readonly string[];
+  readonly framing: string;
 }
 
 export function buildFeedbackEntry(input: FeedbackInput): FeedbackEntry {
@@ -69,6 +79,7 @@ export function feedbackToSpineInput(
       suggestionId: entry.suggestionId,
       accepted: entry.accepted,
       operatorId: entry.operatorId,
+      learningFraming: LEARNING_FRAMING,
       ...(entry.operatorNote !== undefined
         ? { operatorNote: entry.operatorNote }
         : {}),
@@ -87,6 +98,23 @@ export function computeOperatorAccuracy(
   if (feedbacks.length === 0) return 0;
   const accepted = feedbacks.filter((f) => f.accepted).length;
   return Math.round((accepted / feedbacks.length) * 100) / 100;
+}
+
+export function summarizeOperatorFeedbackForLearning(
+  feedbacks: readonly FeedbackEntry[],
+): OperatorFeedbackLearningSummary {
+  const acceptedSuggestions = feedbacks.filter((f) => f.accepted).length;
+  const learningSignals = feedbacks
+    .map((f) => f.operatorNote?.trim())
+    .filter((note): note is string => note !== undefined && note.length > 0);
+
+  return {
+    totalFeedback: feedbacks.length,
+    acceptedSuggestions,
+    correctionSignals: feedbacks.length - acceptedSuggestions,
+    learningSignals,
+    framing: LEARNING_FRAMING,
+  };
 }
 
 export function extractFeedbackFromEvents(
