@@ -9,7 +9,6 @@ import { SmartPaymentService } from './smart-payment.service';
 import { chatCompletionWithFallback } from './openai-wrapper';
 import { createTextLlmClient } from '../lib/llm-provider';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
-import { CANONICAL_FALLBACK_SYSTEM_PROMPT } from './kloel.prompts';
 import OpenAI from 'openai';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { AbiBuilderService } from './abi/abi-builder.service';
@@ -27,9 +26,6 @@ export { NON_DIGIT_RE, safeStr, asUnknownRecord, detectBuyIntent };
 export type { ChatMessage };
 
 type ProductMemoryValue = { name?: string; price?: number; [key: string]: unknown };
-
-const CANONICAL_FALLBACK_SYSTEM =
-  'Estado cognitivo distribuído. Verbalize a partir do estado abaixo. Nunca invente fato fora do estado.';
 
 /**
  * Handles WhatsApp autopilot lead processing, buy-intent detection,
@@ -76,7 +72,9 @@ export class KloelLeadBrainService {
         take: 30,
         select: { role: true, content: true },
       });
-      return messages.map((m) => ({ role: m.role as 'user' | 'assistant', content: m.content }));
+      return messages
+        .filter((m) => m.role === 'user' || m.role === 'assistant')
+        .map((m) => ({ role: m.role as 'user' | 'assistant', content: m.content }));
     } catch (_error: unknown) {
       return [];
     }
@@ -282,21 +280,25 @@ export class KloelLeadBrainService {
       const conversationHistory = await this.getLeadConversationHistory(lead.id, workspaceId);
       const context = await getWorkspaceContext(workspaceId);
       void workspace;
-      void context;
-      const salesSystemPrompt = CANONICAL_FALLBACK_SYSTEM_PROMPT;
+      const currentInput = {
+        raw: message,
+        channel: 'whatsapp',
+        arrivalTimestamp: new Date().toISOString(),
+      };
+      let effectiveUserContent = JSON.stringify({
+        cognitiveState: {
+          abiStatus: this.abiBuilder ? 'unavailable_or_invalid' : 'builder_not_injected',
+          audience: 'public',
+          workspaceContext: context,
+          perceptionSnapshot: { channel: 'whatsapp' },
+        },
+        currentInput,
+      });
 
-      const useAbi = process.env['KLOEL_LEAD_BRAIN_USE_ABI'] === 'on';
-      let effectiveSystemPrompt = salesSystemPrompt;
-      let effectiveUserContent = message;
-
-      if (useAbi && this.abiBuilder) {
+      if (this.abiBuilder) {
         const abiResult = await this.abiBuilder.build({
           audience: 'public',
-          currentInput: {
-            raw: message,
-            channel: 'whatsapp',
-            arrivalTimestamp: new Date().toISOString(),
-          },
+          currentInput,
           perceptionSnapshot: {
             channel: 'whatsapp',
           },
@@ -304,7 +306,7 @@ export class KloelLeadBrainService {
 
         if (abiResult.status !== 'ok') {
           this.logger.warn(
-            `ABI build failed: ${abiResult.reason}, falling back to legacy lead brain prompt`,
+            `ABI build failed: ${abiResult.reason}, using structured lead brain fallback`,
           );
         } else {
           const abi = abiResult.abi;
@@ -312,17 +314,19 @@ export class KloelLeadBrainService {
 
           if (validation.status === 'FAIL') {
             this.logger.warn(
-              `ABI validation failed: ${JSON.stringify(validation.issues)}, falling back to legacy lead brain prompt`,
+              `ABI validation failed: ${JSON.stringify(validation.issues)}, using structured lead brain fallback`,
             );
           } else {
-            effectiveSystemPrompt = CANONICAL_FALLBACK_SYSTEM;
-            effectiveUserContent = `Estado cognitivo (ABI): ${JSON.stringify(abi)}\n\nMensagem: ${message}`;
+            effectiveUserContent = JSON.stringify({
+              cognitiveState: abi,
+              workspaceContext: context,
+              currentInput,
+            });
           }
         }
       }
 
       const messages: ChatMessage[] = [
-        { role: 'system', content: effectiveSystemPrompt },
         ...conversationHistory,
         { role: 'user', content: effectiveUserContent },
       ];

@@ -32,9 +32,6 @@ function isAllowedTool(toolName: string, allowedTools?: string[]): boolean {
 const UNIFIED_AGENT_PROVIDER_CONFIG_REQUIRED =
   'Primary LLM configuration is required for unified agent generation';
 
-const CANONICAL_FALLBACK_SYSTEM =
-  'Estado cognitivo distribuído. Verbalize a partir do estado abaixo. Nunca invente fato fora do estado.';
-
 function formatPromptValue(value: unknown): string {
   if (value === null) {
     return 'null';
@@ -231,38 +228,29 @@ export class UnifiedAgentService {
 
     // 3. Build messages array
     const additionalContext = context ? formatPromptValue(context) : '';
-    const legacyUserContent = `[Contato: ${contactName}]
-[Sentiment: ${contactSentiment}]
-[Lead Score: ${leadScore}]
-[Tags: ${tagNames}]
-  [Memória comprimida: ${compressedContext || 'nenhuma'}]
-  ${additionalContext ? `[Contexto adicional: ${additionalContext}]` : ''}
-[Instrução tática: ${tacticalHint || 'responder com clareza, valor concreto e próximo passo.'}]
-[Política de resposta: ${stylePolicy}]
+    const currentInput = {
+      raw: message,
+      channel: this.ctx.readText(context?.channel, 'whatsapp'),
+      arrivalTimestamp: new Date().toISOString(),
+    };
+    let cognitiveState: Record<string, unknown> = {
+      abiStatus: this.abiBuilder ? 'unavailable_or_invalid' : 'builder_not_injected',
+      audience: 'public',
+      perceptionSnapshot: { channel: currentInput.channel },
+    };
 
-Mensagem: ${message}`;
-
-    const useAbi = process.env['KLOEL_UNIFIED_AGENT_USE_ABI'] === 'on';
-    let abiPayload: string | undefined;
-    let effectiveSystemPrompt = systemPrompt;
-    let effectiveUserContent = legacyUserContent;
-
-    if (useAbi && this.abiBuilder) {
+    if (this.abiBuilder) {
       const abiResult = await this.abiBuilder.build({
         audience: 'public',
-        currentInput: {
-          raw: message,
-          channel: this.ctx.readText(context?.channel, 'whatsapp'),
-          arrivalTimestamp: new Date().toISOString(),
-        },
+        currentInput,
         perceptionSnapshot: {
-          channel: this.ctx.readText(context?.channel, 'whatsapp'),
+          channel: currentInput.channel,
         },
       });
 
       if (abiResult.status !== 'ok') {
         this.logger.warn(
-          `ABI build failed: ${abiResult.reason}, falling back to legacy system prompt`,
+          `ABI build failed: ${abiResult.reason}, using structured unified agent fallback`,
         );
       } else {
         const abi = abiResult.abi;
@@ -270,33 +258,36 @@ Mensagem: ${message}`;
 
         if (validation.status === 'FAIL') {
           this.logger.warn(
-            `ABI validation failed: ${JSON.stringify(validation.issues)}, falling back to legacy system prompt`,
+            `ABI validation failed: ${JSON.stringify(validation.issues)}, using structured unified agent fallback`,
           );
         } else {
-          abiPayload = JSON.stringify(abi);
-          effectiveSystemPrompt = CANONICAL_FALLBACK_SYSTEM;
-          effectiveUserContent = `[Contato: ${contactName}]
-[Sentiment: ${contactSentiment}]
-[Lead Score: ${leadScore}]
-[Tags: ${tagNames}]
-  [Memória comprimida: ${compressedContext || 'nenhuma'}]
-  ${additionalContext ? `[Contexto adicional: ${additionalContext}]` : ''}
-[Instrução tática: ${tacticalHint || 'responder com clareza, valor concreto e próximo passo.'}]
-[Política de resposta: ${stylePolicy}]
-
-Estado cognitivo (ABI): ${abiPayload}
-
-Mensagem: ${message}`;
+          cognitiveState = abi as unknown as Record<string, unknown>;
         }
       }
     }
 
     const messages: ChatCompletionMessageParam[] = [
-      { role: 'system', content: effectiveSystemPrompt },
       ...conversationHistory,
       {
         role: 'user',
-        content: effectiveUserContent,
+        content: JSON.stringify({
+          cognitiveState,
+          runtimeContext: {
+            workspaceProductContext: systemPrompt,
+            compressedMemory: compressedContext || null,
+            additionalContext,
+            tacticalHint:
+              tacticalHint || 'responder com clareza, valor concreto e próximo passo.',
+            responsePolicy: stylePolicy,
+          },
+          contact: {
+            name: contactName,
+            sentiment: contactSentiment,
+            leadScore,
+            tags: tagNames,
+          },
+          currentInput,
+        }),
       },
     ];
 

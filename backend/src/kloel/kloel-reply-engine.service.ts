@@ -31,9 +31,6 @@ type ChatCompletionMessageParam = OpenAI.Chat.ChatCompletionMessageParam;
 export type { ExpertiseLevel, ReplyMessage, LocalToolExecutor } from './kloel-reply-engine.types';
 import type { ExpertiseLevel, ReplyMessage, LocalToolExecutor } from './kloel-reply-engine.types';
 
-const CANONICAL_FALLBACK_SYSTEM =
-  'Estado cognitivo distribuído. Verbalize a partir do estado abaixo. Nunca invente fato fora do estado.';
-
 /** Provides reply-building helpers: prompt assembly, expertise detection, context enrichment. */
 @Injectable()
 export class KloelReplyEngineService {
@@ -189,19 +186,23 @@ export class KloelReplyEngineService {
     };
     toolMessages?: Array<{ role?: 'tool'; tool_call_id: string; name: string; content: string }>;
   }): Promise<ChatCompletionMessageParam[]> {
-    const useAbi = process.env['KLOEL_REPLY_ENGINE_USE_ABI'] === 'on';
-    let effectiveSystemPrompt = params.systemPrompt;
-    let effectiveUserMessage = params.userMessage;
+    const currentInput = {
+      raw: params.userMessage,
+      channel: 'web',
+      arrivalTimestamp: new Date().toISOString(),
+    };
+    void params.systemPrompt;
+    let cognitiveState: Record<string, unknown> = {
+      abiStatus: this.abiBuilder ? 'unavailable_or_invalid' : 'builder_not_injected',
+      audience: 'public',
+      perceptionSnapshot: { channel: 'web' },
+    };
 
-    if (useAbi && this.abiBuilder) {
+    if (this.abiBuilder) {
       try {
         const abiResult = await this.abiBuilder.build({
           audience: 'public',
-          currentInput: {
-            raw: params.userMessage,
-            channel: 'web',
-            arrivalTimestamp: new Date().toISOString(),
-          },
+          currentInput,
           perceptionSnapshot: {
             channel: 'web',
           },
@@ -209,45 +210,60 @@ export class KloelReplyEngineService {
 
         if (abiResult.status !== 'ok') {
           this.logger.warn(
-            `ABI build failed: ${abiResult.reason}, falling back to legacy reply prompt`,
+            `ABI build failed: ${abiResult.reason}, using structured reply fallback`,
           );
         } else {
           const validation = validateAbiPayload(abiResult.abi);
 
           if (validation.status === 'FAIL') {
             this.logger.warn(
-              `ABI validation failed: ${JSON.stringify(validation.issues)}, falling back to legacy reply prompt`,
+              `ABI validation failed: ${JSON.stringify(validation.issues)}, using structured reply fallback`,
             );
           } else {
-            effectiveSystemPrompt = CANONICAL_FALLBACK_SYSTEM;
-            effectiveUserMessage = `Estado cognitivo (ABI): ${JSON.stringify(abiResult.abi)}\n\n${params.userMessage}`;
+            cognitiveState = abiResult.abi as unknown as Record<string, unknown>;
           }
         }
       } catch (error: unknown) {
         const msg =
           error instanceof Error
             ? error.message
-            : typeof error === 'string'
-              ? error
-              : 'unknown error';
-        this.logger.warn(`ABI build exception: ${msg}, falling back to legacy reply prompt`);
+              : typeof error === 'string'
+                ? error
+                : 'unknown error';
+        this.logger.warn(`ABI build exception: ${msg}, using structured reply fallback`);
       }
     }
 
     const msgs: ChatCompletionMessageParam[] = [
-      { role: 'system', content: effectiveSystemPrompt },
-      { role: 'system', content: params.dynamicContext },
+      {
+        role: 'user',
+        content: JSON.stringify({
+          runtimeContext: {
+            dynamicContext: params.dynamicContext,
+            marketingContext: params.marketingPromptAddendum ?? null,
+          },
+        }),
+      },
     ];
-    if (params.marketingPromptAddendum) {
-      msgs.push({ role: 'system', content: params.marketingPromptAddendum });
-    }
     if (params.summaryMessage) {
-      msgs.push(params.summaryMessage);
+      msgs.push({
+        role: 'user',
+        content: JSON.stringify({
+          conversationSummary:
+            typeof params.summaryMessage.content === 'string' ? params.summaryMessage.content : '',
+        }),
+      });
     }
     for (const entry of params.recentMessages) {
       msgs.push({ role: entry.role as 'user' | 'assistant', content: entry.content });
     }
-    msgs.push({ role: 'user', content: effectiveUserMessage });
+    msgs.push({
+      role: 'user',
+      content: JSON.stringify({
+        cognitiveState,
+        currentInput,
+      }),
+    });
     if (params.assistantMessage) {
       const toolCalls = Array.isArray(params.assistantMessage.tool_calls)
         ? params.assistantMessage.tool_calls

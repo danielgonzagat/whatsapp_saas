@@ -400,6 +400,61 @@ describe('UnifiedAgentActionsWorkspaceService', () => {
       );
     });
 
+    it('sends structured data only without persona or system role', async () => {
+      const { chatCompletionWithFallback } = require('./openai-wrapper');
+      const fakeCompletion = {
+        choices: [
+          {
+            message: {
+              content: JSON.stringify({
+                name: 'Sales Flow',
+                nodes: [{ id: 'n1', type: 'message' }],
+                edges: [],
+              }),
+            },
+          },
+        ],
+        usage: { total_tokens: 100 },
+      };
+      chatCompletionWithFallback.mockResolvedValue(fakeCompletion);
+
+      await service.actionCreateFlowFromDescription(
+        wsId,
+        { description: 'Sell product', objective: 'convert' },
+        { apiKey: 'fake' } as never,
+        'gpt-4',
+        'gpt-3.5-turbo',
+      );
+
+      expect(chatCompletionWithFallback).toHaveBeenCalled();
+      const callArgs = chatCompletionWithFallback.mock.calls[0] as [
+        unknown,
+        { messages?: Array<{ role: string; content: string }> },
+      ];
+      const messages = callArgs[1].messages;
+
+      expect(Array.isArray(messages)).toBe(true);
+      if (!messages) {
+        throw new Error('missing LLM messages');
+      }
+      const hasSystemRole = messages.some((m) => m.role === 'system');
+      expect(hasSystemRole).toBe(false);
+
+      const userMessage = messages.find((m) => m.role === 'user');
+      expect(userMessage).toBeDefined();
+      if (!userMessage) {
+        throw new Error('missing user message');
+      }
+      const content = userMessage.content;
+      expect(content).not.toContain('Você é');
+      expect(content).not.toContain('especialista');
+      expect(content).not.toContain('Retorne APENAS');
+      expect(content).not.toContain('Crie um fluxo');
+      expect(content).toContain('Descrição:');
+      expect(content).toContain('Objetivo:');
+      expect(content).toContain('Tipos de nós disponíveis');
+    });
+
     it('handles OpenAI error gracefully', async () => {
       const { chatCompletionWithFallback } = require('./openai-wrapper');
       chatCompletionWithFallback.mockRejectedValue(new Error('API error'));

@@ -203,43 +203,67 @@ describe('KloelReplyEngineService', () => {
   });
 
   describe('buildChatModelMessages', () => {
-    it('builds messages array with system prompts and user message', () => {
-      const messages = service.buildChatModelMessages({
+    it('builds structured context and user payload without system roles', async () => {
+      const messages = await service.buildChatModelMessages({
         systemPrompt: 'System prompt',
         dynamicContext: 'Dynamic context',
         recentMessages: [],
         userMessage: 'Hello',
       });
-      expect(messages).toHaveLength(3);
-      expect(messages[0].role).toBe('system');
-      expect(messages[2].role).toBe('user');
-      expect(messages[2].content).toBe('Hello');
+      expect(messages).toEqual(
+        expect.not.arrayContaining([expect.objectContaining({ role: 'system' })]),
+      );
+      expect(messages).toHaveLength(2);
+      expect(messages[0]).toEqual(expect.objectContaining({ role: 'user' }));
+      expect(messages[1]).toEqual(expect.objectContaining({ role: 'user' }));
+      const runtimeContext = JSON.parse(String(messages[0].content)) as Record<string, unknown>;
+      const userPayload = JSON.parse(String(messages[1].content)) as Record<string, unknown>;
+      expect(runtimeContext).toEqual(
+        expect.objectContaining({
+          runtimeContext: expect.objectContaining({ dynamicContext: 'Dynamic context' }),
+        }),
+      );
+      expect(userPayload).toEqual(
+        expect.objectContaining({
+          cognitiveState: expect.objectContaining({ abiStatus: 'builder_not_injected' }),
+          currentInput: expect.objectContaining({ raw: 'Hello', channel: 'web' }),
+        }),
+      );
     });
 
-    it('includes marketing addendum when provided', () => {
-      const messages = service.buildChatModelMessages({
+    it('includes marketing addendum in structured runtime context', async () => {
+      const messages = await service.buildChatModelMessages({
         systemPrompt: 'S',
         dynamicContext: 'D',
         marketingPromptAddendum: 'Marketing',
         recentMessages: [],
         userMessage: 'Hello',
       });
-      expect(messages).toHaveLength(4);
+      expect(messages).toHaveLength(2);
+      const runtimeContext = JSON.parse(String(messages[0].content)) as {
+        runtimeContext: { marketingContext?: string };
+      };
+      expect(runtimeContext.runtimeContext.marketingContext).toBe('Marketing');
     });
 
-    it('includes summary message when provided', () => {
-      const messages = service.buildChatModelMessages({
+    it('converts summary message to structured user context', async () => {
+      const messages = await service.buildChatModelMessages({
         systemPrompt: 'S',
         dynamicContext: 'D',
         summaryMessage: { role: 'system', content: 'Summary' },
         recentMessages: [],
         userMessage: 'Hello',
       });
-      expect(messages).toHaveLength(4);
+      expect(messages).toEqual(
+        expect.not.arrayContaining([expect.objectContaining({ role: 'system' })]),
+      );
+      expect(messages).toHaveLength(3);
+      const summaryPayload = JSON.parse(String(messages[1].content)) as Record<string, unknown>;
+      expect(summaryPayload).toEqual(expect.objectContaining({ conversationSummary: 'Summary' }));
     });
 
-    it('includes recent history', () => {
-      const messages = service.buildChatModelMessages({
+    it('includes recent history', async () => {
+      const messages = await service.buildChatModelMessages({
         systemPrompt: 'S',
         dynamicContext: 'D',
         recentMessages: [
@@ -248,7 +272,9 @@ describe('KloelReplyEngineService', () => {
         ],
         userMessage: 'New Q',
       });
-      expect(messages).toHaveLength(5);
+      expect(messages).toHaveLength(4);
+      expect(messages[1]).toEqual(expect.objectContaining({ role: 'user', content: 'Q' }));
+      expect(messages[2]).toEqual(expect.objectContaining({ role: 'assistant', content: 'A' }));
     });
   });
 

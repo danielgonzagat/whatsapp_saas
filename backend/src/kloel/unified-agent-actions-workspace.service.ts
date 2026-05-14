@@ -459,17 +459,16 @@ export class UnifiedAgentActionsWorkspaceService {
     if (!openai) {
       return { success: false, error: 'OpenAI não configurada' };
     }
-    const prompt = `Você é um especialista em automação comercial.\nCrie um fluxo de automação para WhatsApp com base na descrição:\n"${description}"\n\nObjetivo: ${objective}\n\nRetorne APENAS um JSON válido com nós e arestas.\n\nTipos de nós disponíveis: message, wait, condition, aiNode, mediaNode, endNode`;
+    const prompt = `Descrição: "${description}"
+Objetivo: "${objective}"
+Tipos de nós disponíveis: message, wait, condition, aiNode, mediaNode, endNode`;
     try {
       await this.planLimits.ensureTokenBudget(workspaceId);
       const completion = await chatCompletionWithFallback(
         openai,
         {
           model: primaryBrainModel,
-          messages: [
-            { role: 'system', content: 'Você gera estruturas de fluxo em JSON.' },
-            { role: 'user', content: prompt },
-          ],
+          messages: [{ role: 'user', content: prompt }],
           response_format: { type: 'json_object' },
         },
         fallbackBrainModel,

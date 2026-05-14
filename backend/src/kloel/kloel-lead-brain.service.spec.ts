@@ -5,6 +5,7 @@ import { PlanLimitsService } from '../billing/plan-limits.service';
 import { LLMBudgetService } from './llm-budget.service';
 import { UnifiedAgentService } from './unified-agent.service';
 import { SmartPaymentService } from './smart-payment.service';
+import { chatCompletionWithFallback } from './openai-wrapper';
 
 jest.mock('./openai-wrapper', () => ({
   chatCompletionWithFallback: jest.fn().mockResolvedValue({
@@ -263,6 +264,33 @@ describe('KloelLeadBrainService', () => {
         () => Promise.resolve('contexto'),
       );
       expect(result).toContain('Resposta');
+    });
+
+    it('sends structured lead state without a system role', async () => {
+      await service.processWhatsAppMessage(wsId, '5511999999999', 'Quero ajuda', () =>
+        Promise.resolve('contexto do workspace'),
+      );
+
+      const completionInput = (chatCompletionWithFallback as jest.Mock).mock.calls.at(-1)?.[1];
+      expect(completionInput.messages).toEqual(
+        expect.not.arrayContaining([expect.objectContaining({ role: 'system' })]),
+      );
+
+      const lastMessage = completionInput.messages.at(-1);
+      expect(lastMessage).toEqual(expect.objectContaining({ role: 'user' }));
+      const payload = JSON.parse(lastMessage.content) as Record<string, unknown>;
+      expect(payload).toEqual(
+        expect.objectContaining({
+          cognitiveState: expect.objectContaining({
+            abiStatus: 'builder_not_injected',
+            workspaceContext: 'contexto do workspace',
+          }),
+          currentInput: expect.objectContaining({
+            raw: 'Quero ajuda',
+            channel: 'whatsapp',
+          }),
+        }),
+      );
     });
 
     it('processes message with autopilot enabled', async () => {

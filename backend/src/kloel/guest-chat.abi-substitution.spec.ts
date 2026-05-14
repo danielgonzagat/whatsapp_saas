@@ -3,10 +3,11 @@
  *
  * Implements PCI.2 §8 (docs/contracts/pci/02-abi-schema.md).
  *
- * Validates the feature-flag gated ABI substitution in GuestChatService:
- *  - Flag OFF: legacy system prompt is sent unchanged.
- *  - Flag ON: system slot = canonical fallback; user message = JSON ABI.
- *  - No behavioral instruction pattern in any message when flag is ON.
+ * Validates the ABI substitution in GuestChatService:
+ *  - AbiBuilderService available: user message = structured JSON ABI payload.
+ *  - AbiBuilderService unavailable/invalid: user message = honest structured fallback.
+ *  - No `role: system` message is sent from this guest chat path.
+ *  - No behavioral instruction pattern is emitted as a prompt message.
  *  - ABI payload validates via validateAbiPayload.
  *  - AbiBuilderService is called with audience=public.
  *  - Empty input returns early without LLM call.
@@ -16,8 +17,6 @@ import { GuestChatService } from './guest-chat.service';
 import { AbiBuilderService } from './abi/abi-builder.service';
 import { validateAbiPayload } from './abi/abi-validator';
 import { ABI_VERSION } from './abi/abi-schema';
-
-let capturedMessages: { role: string; content: string }[] = [];
 
 jest.mock('./openai-wrapper', () => ({
   chatCompletionWithFallback: jest.fn(),
@@ -99,17 +98,39 @@ function createService(mockAbiBuilder?: AbiBuilderService): GuestChatService {
   return new GuestChatService(configService, undefined, undefined, mockAbiBuilder);
 }
 
-function setFlag(on: boolean) {
-  if (on) {
-    process.env['KLOEL_GUEST_CHAT_USE_ABI'] = 'on';
-  } else {
-    delete process.env['KLOEL_GUEST_CHAT_USE_ABI'];
+type GuestContextMessage = { role: 'user' | 'assistant'; content: string };
+
+async function buildGuestMessages(
+  service: GuestChatService,
+  message: string,
+  sessionId: string,
+): Promise<{ contextMessages: GuestContextMessage[] }> {
+  return (
+    service as unknown as {
+      buildGuestMessages: (
+        message: string,
+        sessionId: string,
+      ) => Promise<{ contextMessages: GuestContextMessage[] }>;
+    }
+  ).buildGuestMessages(message, sessionId);
+}
+
+function expectNoSystemMessages(messages: GuestContextMessage[]) {
+  expect(messages).toEqual(expect.not.arrayContaining([expect.objectContaining({ role: 'system' })]));
+}
+
+function parseLastUserPayload(messages: GuestContextMessage[]): Record<string, unknown> {
+  const userMsgs = messages.filter((m) => m.role === 'user');
+  const lastUserMsg = userMsgs[userMsgs.length - 1];
+  if (!lastUserMsg) {
+    throw new Error('missing user message');
   }
+
+  return JSON.parse(lastUserMsg.content) as Record<string, unknown>;
 }
 
 describe('GuestChatService ABI substitution (UTP-ABI-005)', () => {
   beforeEach(() => {
-    capturedMessages = [];
     jest.clearAllMocks();
     delete process.env['KLOEL_GUEST_CHAT_USE_ABI'];
   });
@@ -118,34 +139,42 @@ describe('GuestChatService ABI substitution (UTP-ABI-005)', () => {
     delete process.env['KLOEL_GUEST_CHAT_USE_ABI'];
   });
 
-  describe('flag OFF — legacy path', () => {
-    it('sends the legacy system prompt (KLOEL_GUEST_SYSTEM_PROMPT)', async () => {
-      setFlag(false);
+  describe('ABI builder unavailable — structured fallback', () => {
+    it('sends structured cognitive fallback without a system role', async () => {
       const service = createService();
-      const result = await (
-        service as unknown as { buildGuestMessages: (typeof service)['buildGuestMessages'] }
-      ).buildGuestMessages('Hello guest', 'session-legacy-1');
+      const result = await buildGuestMessages(service, 'Hello guest', 'session-fallback-1');
 
-      const sysMsg = result.contextMessages.find((m) => m.role === 'system');
-      expect(sysMsg).toBeDefined();
-      expect(sysMsg!.content).toContain('MODO VISITANTE');
-      expect(sysMsg!.content).toContain('Você é Kloel');
+      expectNoSystemMessages(result.contextMessages);
+      const payload = parseLastUserPayload(result.contextMessages);
+      expect(payload).toEqual(
+        expect.objectContaining({
+          cognitiveState: expect.objectContaining({
+            abiStatus: 'builder_not_injected',
+            audience: 'public',
+          }),
+          currentInput: expect.objectContaining({
+            raw: 'Hello guest',
+            channel: 'web',
+          }),
+        }),
+      );
     });
 
-    it('includes the user message in the messages array', async () => {
-      setFlag(false);
+    it('preserves the user input in the structured payload', async () => {
       const service = createService();
-      const result = await (
-        service as unknown as { buildGuestMessages: (typeof service)['buildGuestMessages'] }
-      ).buildGuestMessages('Hello guest', 'session-legacy-2');
+      const result = await buildGuestMessages(service, 'Hello guest', 'session-fallback-2');
 
-      const userMsgs = result.contextMessages.filter((m) => m.role === 'user');
-      const lastUserMsg = userMsgs[userMsgs.length - 1];
-      expect(lastUserMsg.content).toBe('Hello guest');
+      const payload = parseLastUserPayload(result.contextMessages);
+      expect(payload.currentInput).toEqual(
+        expect.objectContaining({
+          raw: 'Hello guest',
+          channel: 'web',
+        }),
+      );
     });
   });
 
-  describe('flag ON — ABI substitution', () => {
+  describe('ABI substitution', () => {
     let mockAbiBuilder: jest.Mocked<AbiBuilderService>;
 
     beforeEach(() => {
@@ -157,131 +186,103 @@ describe('GuestChatService ABI substitution (UTP-ABI-005)', () => {
       } as unknown as jest.Mocked<AbiBuilderService>;
     });
 
-    it('system slot contains ONLY the canonical fallback string', async () => {
-      setFlag(true);
+    it('does not send any system message', async () => {
       const service = createService(mockAbiBuilder);
-      const result = await (
-        service as unknown as { buildGuestMessages: (typeof service)['buildGuestMessages'] }
-      ).buildGuestMessages('Hello guest', 'session-abi-1');
+      const result = await buildGuestMessages(service, 'Hello guest', 'session-abi-1');
 
-      const sysMsg = result.contextMessages.find((m) => m.role === 'system');
-      expect(sysMsg).toBeDefined();
-      expect(sysMsg!.content).toBe(
-        'Estado cognitivo distribuído. Verbalize a partir do estado abaixo. Nunca invente fato fora do estado.',
-      );
+      expectNoSystemMessages(result.contextMessages);
     });
 
-    it('system slot contains NO behavioral instruction patterns (per PCI.4 prompt-leakage gate)', async () => {
-      setFlag(true);
+    it('contains NO behavioral instruction patterns in emitted messages', async () => {
       const service = createService(mockAbiBuilder);
-      const result = await (
-        service as unknown as { buildGuestMessages: (typeof service)['buildGuestMessages'] }
-      ).buildGuestMessages('Hello guest', 'session-abi-2');
+      const result = await buildGuestMessages(service, 'Hello guest', 'session-abi-2');
 
-      const sysMsg = result.contextMessages.find((m) => m.role === 'system');
-      expect(sysMsg).toBeDefined();
-
-      const sysContent = sysMsg!.content;
+      const emittedContent = result.contextMessages.map((m) => m.content).join('\n');
       // PCI.4 §3.8 patterns — persona declarations + roleplay instructions
-      expect(sysContent).not.toMatch(/\bvoc[êe]\s+(é|es)(?=[\s.,;:!?'"]|$)/i);
-      expect(sysContent).not.toMatch(/\byou are\s+(an?|the)\b/i);
-      expect(sysContent).not.toMatch(/\bseu\s+papel\b/i);
-      expect(sysContent).not.toMatch(/\byour\s+role\b/i);
-      expect(sysContent).not.toMatch(/\bact\s+as\s+(an?|the)\b/i);
-      expect(sysContent).not.toMatch(/\baja\s+como\s+(um|uma|o|a)\b/i);
-      expect(sysContent).not.toMatch(/\bsempre\s+(faça|fala|use|seja|responda)\b/i);
-      expect(sysContent).not.toMatch(/\balways\s+(do|use|be|respond)\b/i);
-      expect(sysContent).not.toMatch(/\bnunca\s+(faça|fale|use|seja|responda)\b/i);
-      expect(sysContent).not.toMatch(/\bnever\s+(do|use|be|respond)\b/i);
-      expect(sysContent).not.toMatch(
+      expect(emittedContent).not.toMatch(/\bvoc[êe]\s+(é|es)(?=[\s.,;:!?'"]|$)/i);
+      expect(emittedContent).not.toMatch(/\byou are\s+(an?|the)\b/i);
+      expect(emittedContent).not.toMatch(/\bseu\s+papel\b/i);
+      expect(emittedContent).not.toMatch(/\byour\s+role\b/i);
+      expect(emittedContent).not.toMatch(/\bact\s+as\s+(an?|the)\b/i);
+      expect(emittedContent).not.toMatch(/\baja\s+como\s+(um|uma|o|a)\b/i);
+      expect(emittedContent).not.toMatch(/\bsempre\s+(faça|fala|use|seja|responda)\b/i);
+      expect(emittedContent).not.toMatch(/\balways\s+(do|use|be|respond)\b/i);
+      expect(emittedContent).not.toMatch(/\bnunca\s+(faça|fale|use|seja|responda)\b/i);
+      expect(emittedContent).not.toMatch(/\bnever\s+(do|use|be|respond)\b/i);
+      expect(emittedContent).not.toMatch(
         /\brespond\s+in\s+(json|markdown|format|portuguese|english)\b/i,
       );
-      expect(sysContent).not.toMatch(
+      expect(emittedContent).not.toMatch(
         /\bresponda\s+em\s+(json|markdown|formato|português|inglês)\b/i,
       );
-      expect(sysContent).not.toMatch(/\bKloel\s+(é|is|acts|acta|behaves|fala)\s+/i);
-      expect(sysContent).not.toMatch(/\b(User:|Assistant:|System:)\s/m);
+      expect(emittedContent).not.toMatch(/\bKloel\s+(é|is|acts|acta|behaves|fala)\s+/i);
+      expect(emittedContent).not.toMatch(/\b(User:|Assistant:|System:)\s/m);
     });
 
     it('user message contains JSON-stringified ABI payload', async () => {
-      setFlag(true);
       const service = createService(mockAbiBuilder);
-      const result = await (
-        service as unknown as { buildGuestMessages: (typeof service)['buildGuestMessages'] }
-      ).buildGuestMessages('Hello guest', 'session-abi-3');
+      const result = await buildGuestMessages(service, 'Hello guest', 'session-abi-3');
 
-      const userMsgs = result.contextMessages.filter((m) => m.role === 'user');
-      const lastUserMsg = userMsgs[userMsgs.length - 1];
-
-      let parsed: unknown;
-      expect(() => {
-        parsed = JSON.parse(lastUserMsg.content);
-      }).not.toThrow();
-
-      const abi = parsed as Record<string, unknown>;
-      expect(abi).toHaveProperty('abiVersion');
-      expect(abi).toHaveProperty('lineage');
-      expect(abi).toHaveProperty('currentInput');
+      const payload = parseLastUserPayload(result.contextMessages);
+      expect(payload).toHaveProperty('cognitiveState');
+      expect(payload).toHaveProperty('currentInput');
+      expect(payload.cognitiveState).toEqual(
+        expect.objectContaining({
+          abiVersion: ABI_VERSION,
+          lineage: expect.any(Object),
+        }),
+      );
     });
 
     it('ABI payload validates as PASS via validateAbiPayload', async () => {
-      setFlag(true);
       const abi = makeValidAbi();
       mockAbiBuilder.build.mockResolvedValue({ status: 'ok', abi });
 
       const service = createService(mockAbiBuilder);
-      const result = await (
-        service as unknown as { buildGuestMessages: (typeof service)['buildGuestMessages'] }
-      ).buildGuestMessages('Hello guest', 'session-abi-4');
+      const result = await buildGuestMessages(service, 'Hello guest', 'session-abi-4');
 
-      const userMsgs = result.contextMessages.filter((m) => m.role === 'user');
-      const lastUserMsg = userMsgs[userMsgs.length - 1];
-      const parsed = JSON.parse(lastUserMsg.content);
-      const verdict = validateAbiPayload(parsed);
+      const parsed = parseLastUserPayload(result.contextMessages);
+      const verdict = validateAbiPayload(parsed.cognitiveState);
       expect(verdict.status).toBe('PASS');
     });
 
     it('calls AbiBuilderService.build with audience=public', async () => {
-      setFlag(true);
       const service = createService(mockAbiBuilder);
-      await (
-        service as unknown as { buildGuestMessages: (typeof service)['buildGuestMessages'] }
-      ).buildGuestMessages('Hello guest', 'session-abi-5');
+      await buildGuestMessages(service, 'Hello guest', 'session-abi-5');
 
       expect(mockAbiBuilder.build).toHaveBeenCalledTimes(1);
       const callArg = mockAbiBuilder.build.mock.calls[0][0];
       expect(callArg.audience).toBe('public');
     });
 
-    it('falls back to legacy path when AbiBuilderService is not injected', async () => {
-      setFlag(true);
+    it('uses structured fallback when AbiBuilderService is not injected', async () => {
       const service = createService(undefined); // no abiBuilder
-      const result = await (
-        service as unknown as { buildGuestMessages: (typeof service)['buildGuestMessages'] }
-      ).buildGuestMessages('Hello guest', 'session-abi-fallback');
+      const result = await buildGuestMessages(service, 'Hello guest', 'session-abi-fallback');
 
-      const sysMsg = result.contextMessages.find((m) => m.role === 'system');
-      expect(sysMsg!.content).toContain('MODO VISITANTE');
+      expectNoSystemMessages(result.contextMessages);
+      const payload = parseLastUserPayload(result.contextMessages);
+      expect(payload.cognitiveState).toEqual(
+        expect.objectContaining({ abiStatus: 'builder_not_injected' }),
+      );
     });
 
-    it('falls back to legacy path when ABI build returns lineage_compromised', async () => {
-      setFlag(true);
+    it('uses structured fallback when ABI build returns lineage_compromised', async () => {
       mockAbiBuilder.build.mockResolvedValue({
         status: 'lineage_compromised',
         reason: 'test compromise',
       } as const);
 
       const service = createService(mockAbiBuilder);
-      const result = await (
-        service as unknown as { buildGuestMessages: (typeof service)['buildGuestMessages'] }
-      ).buildGuestMessages('Hello guest', 'session-abi-compromised');
+      const result = await buildGuestMessages(service, 'Hello guest', 'session-abi-compromised');
 
-      const sysMsg = result.contextMessages.find((m) => m.role === 'system');
-      expect(sysMsg!.content).toContain('MODO VISITANTE');
+      expectNoSystemMessages(result.contextMessages);
+      const payload = parseLastUserPayload(result.contextMessages);
+      expect(payload.cognitiveState).toEqual(
+        expect.objectContaining({ abiStatus: 'unavailable_or_invalid' }),
+      );
     });
 
-    it('falls back to legacy path when ABI validation fails', async () => {
-      setFlag(true);
+    it('uses structured fallback when ABI validation fails', async () => {
       const badAbi = { ...makeValidAbi() } as Record<string, unknown>;
       delete badAbi['abiVersion'];
 
@@ -291,25 +292,24 @@ describe('GuestChatService ABI substitution (UTP-ABI-005)', () => {
       } as ReturnType<AbiBuilderService['build']>);
 
       const service = createService(mockAbiBuilder);
-      const result = await (
-        service as unknown as { buildGuestMessages: (typeof service)['buildGuestMessages'] }
-      ).buildGuestMessages('Hello guest', 'session-abi-bad');
+      const result = await buildGuestMessages(service, 'Hello guest', 'session-abi-bad');
 
-      const sysMsg = result.contextMessages.find((m) => m.role === 'system');
-      expect(sysMsg!.content).toContain('MODO VISITANTE');
+      expectNoSystemMessages(result.contextMessages);
+      const payload = parseLastUserPayload(result.contextMessages);
+      expect(payload.cognitiveState).toEqual(
+        expect.objectContaining({ abiStatus: 'unavailable_or_invalid' }),
+      );
     });
   });
 
   describe('empty input — early return', () => {
     it('chatSync returns empty string for empty input', async () => {
-      setFlag(false);
       const service = createService();
       const result = await service.chatSync('', 'session-empty');
       expect(result).toBe('');
     });
 
     it('chatSync returns empty string for whitespace-only input', async () => {
-      setFlag(false);
       const service = createService();
       const result = await service.chatSync('   ', 'session-whitespace');
       expect(result).toBe('');

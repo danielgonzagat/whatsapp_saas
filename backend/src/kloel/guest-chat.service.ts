@@ -8,20 +8,16 @@ import OpenAI from 'openai';
 import { findFirstSequential } from '../common/async-sequence';
 import { createTextLlmClient, resolveTextLlmApiKey } from '../lib/llm-provider';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
-import { CANONICAL_FALLBACK_SYSTEM_PROMPT } from './kloel.prompts';
 import { chatCompletionWithFallback, chatCompletionWithRetry } from './openai-wrapper';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { AbiBuilderService } from './abi/abi-builder.service';
 import { validateAbiPayload } from './abi/abi-validator';
 
 interface GuestConversation {
-  messages: { role: 'user' | 'assistant' | 'system'; content: string }[];
+  messages: { role: 'user' | 'assistant'; content: string }[];
   createdAt: Date;
   lastMessageAt: Date;
 }
-
-const CANONICAL_FALLBACK_SYSTEM =
-  'Estado cognitivo distribuído. Verbalize a partir do estado abaixo. Nunca invente fato fora do estado.';
 
 const GUEST_CONVERSATION_TTL_SECONDS = 24 * 60 * 60;
 
@@ -93,16 +89,17 @@ export class GuestChatService implements OnModuleDestroy {
     conversation.lastMessageAt = new Date();
     await this.persistConversation(sessionId, conversation);
 
-    const useAbi = process.env['KLOEL_GUEST_CHAT_USE_ABI'] === 'on';
+    const historyMessages = conversation.messages.slice(0, -1).slice(-9);
+    const currentInput = {
+      raw: message,
+      channel: 'web',
+      arrivalTimestamp: new Date().toISOString(),
+    };
 
-    if (useAbi && this.abiBuilder) {
+    if (this.abiBuilder) {
       const abiResult = await this.abiBuilder.build({
         audience: 'public',
-        currentInput: {
-          raw: message,
-          channel: 'web',
-          arrivalTimestamp: new Date().toISOString(),
-        },
+        currentInput,
         perceptionSnapshot: {
           channel: 'web',
         },
@@ -110,7 +107,7 @@ export class GuestChatService implements OnModuleDestroy {
 
       if (abiResult.status !== 'ok') {
         this.logger.warn(
-          `ABI build failed: ${abiResult.reason}, falling back to legacy guest prompt`,
+          `ABI build failed: ${abiResult.reason}, using structured guest fallback`,
         );
       } else {
         const abi = abiResult.abi;
@@ -118,14 +115,18 @@ export class GuestChatService implements OnModuleDestroy {
 
         if (validation.status === 'FAIL') {
           this.logger.warn(
-            `ABI validation failed: ${JSON.stringify(validation.issues)}, falling back to legacy guest prompt`,
+            `ABI validation failed: ${JSON.stringify(validation.issues)}, using structured guest fallback`,
           );
         } else {
-          const historyMessages = conversation.messages.slice(0, -1).slice(-9);
           const contextMessages = [
-            { role: 'system' as const, content: CANONICAL_FALLBACK_SYSTEM },
             ...historyMessages,
-            { role: 'user' as const, content: JSON.stringify(abi) },
+            {
+              role: 'user' as const,
+              content: JSON.stringify({
+                cognitiveState: abi,
+                currentInput,
+              }),
+            },
           ];
 
           return { conversation, contextMessages };
@@ -134,8 +135,18 @@ export class GuestChatService implements OnModuleDestroy {
     }
 
     const contextMessages = [
-      { role: 'system' as const, content: CANONICAL_FALLBACK_SYSTEM_PROMPT },
-      ...conversation.messages.slice(-10),
+      ...historyMessages,
+      {
+        role: 'user' as const,
+        content: JSON.stringify({
+          cognitiveState: {
+            abiStatus: this.abiBuilder ? 'unavailable_or_invalid' : 'builder_not_injected',
+            audience: 'public',
+            perceptionSnapshot: { channel: 'web' },
+          },
+          currentInput,
+        }),
+      },
     ];
 
     return {
@@ -152,7 +163,7 @@ export class GuestChatService implements OnModuleDestroy {
 
   private async generateGuestReply(
     contextMessages: {
-      role: 'user' | 'assistant' | 'system';
+      role: 'user' | 'assistant';
       content: string;
     }[],
     sessionId: string,
@@ -354,7 +365,10 @@ export class GuestChatService implements OnModuleDestroy {
         return null;
       }
       return {
-        messages: parsed.messages,
+        messages: parsed.messages.filter(
+          (message): message is GuestConversation['messages'][number] =>
+            message.role === 'user' || message.role === 'assistant',
+        ),
         createdAt: parsed.createdAt ? new Date(parsed.createdAt) : new Date(),
         lastMessageAt: parsed.lastMessageAt ? new Date(parsed.lastMessageAt) : new Date(),
       };

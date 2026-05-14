@@ -210,6 +210,7 @@ describe('UnifiedAgentService', () => {
       response,
       actions,
     );
+    Reflect.set(service, 'openai', {});
   });
 
   afterEach(() => {
@@ -278,6 +279,28 @@ describe('UnifiedAgentService', () => {
       }),
     ]);
     expect(result.response).toBe('Claro. O produto custa R$ 890.');
+
+    const firstCompletionInput = (chatCompletionWithFallback as jest.Mock).mock.calls[0]?.[1];
+    expect(firstCompletionInput.messages).toEqual(
+      expect.not.arrayContaining([expect.objectContaining({ role: 'system' })]),
+    );
+    const lastUserMessage = firstCompletionInput.messages.at(-1);
+    expect(lastUserMessage).toEqual(expect.objectContaining({ role: 'user' }));
+    const payload = JSON.parse(String(lastUserMessage.content)) as Record<string, unknown>;
+    expect(payload).toEqual(
+      expect.objectContaining({
+        cognitiveState: expect.objectContaining({ abiStatus: 'builder_not_injected' }),
+        runtimeContext: expect.objectContaining({
+          responsePolicy: expect.any(String),
+        }),
+        contact: expect.objectContaining({ name: '5511999999999' }),
+        currentInput: expect.objectContaining({
+          raw: 'quanto custa?',
+          channel: 'whatsapp',
+        }),
+      }),
+    );
+    expect(payload.runtimeContext).toHaveProperty('compressedMemory');
   });
 
   it('send_product_info always sends the generated product answer to WhatsApp', async () => {
@@ -466,7 +489,7 @@ describe('UnifiedAgentService', () => {
     expect(reply).not.toContain('😊');
   });
 
-  it('never exposes Guest Workspace as the company identity in the system prompt', () => {
+  it('keeps deprecated system prompt construction on the canonical fallback', () => {
     const prompt = ctx.buildSystemPrompt(
       {
         name: 'Guest Workspace',
@@ -479,9 +502,9 @@ describe('UnifiedAgentService', () => {
       [],
     );
 
-    expect(prompt).toContain('EMPRESA: Branding Caps');
-    expect(prompt).not.toContain('EMPRESA: Guest Workspace');
-    expect(prompt).toContain('Nunca se apresente como "Guest Workspace"');
+    expect(prompt).toBe(
+      'Estado cognitivo distribuído. Verbalize a partir do estado abaixo. Nunca invente fato fora do estado.',
+    );
   });
 
   it('does not cut the reply in the middle of a sentence', () => {
