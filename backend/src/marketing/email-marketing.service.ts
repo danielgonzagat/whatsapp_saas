@@ -9,20 +9,20 @@ import {
 import { Queue, Worker } from 'bullmq';
 import { EmailService } from '../auth/email.service';
 import { getRedisUrl } from '../common/redis/redis.util';
-import {
-  buildListUnsubscribeHeader,
-  buildUnsubscribeFooterHtml,
-} from '../common/utils/unsubscribe-footer.util';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { PrismaService } from '../prisma/prisma.service';
 import type { CreateEmailCampaignDto } from './dto/create-email-campaign.dto';
+import {
+  buildCampaignEmail,
+  buildCampaignStatUpdate,
+  resolveEmailMarketingProvider,
+} from './email-marketing.helpers';
 import type {
   EmailCampaign,
   EmailCampaignRecipient,
   EmailCampaignDelivery,
   Prisma,
 } from '@prisma/client';
-const NAME_RE = /\{\{name\}\}/g;
 type EmailCampaignJob = {
   campaignId: string;
   workspaceId: string;
@@ -112,20 +112,8 @@ export class EmailMarketingService implements OnModuleInit, OnModuleDestroy {
     }
   }
   private getProvider(): 'resend' | 'sendgrid' | 'smtp' | 'log' {
-    if (process.env.RESEND_API_KEY) {
-      return 'resend';
-    }
-    if (process.env.SENDGRID_API_KEY) {
-      return 'sendgrid';
-    }
-    if (process.env.SMTP_HOST) {
-      return 'smtp';
-    }
-    return 'log';
+    return resolveEmailMarketingProvider();
   }
-  // ========================================
-  // CAMPAIGN CRUD
-  // ========================================
   async createCampaign(workspaceId: string, dto: CreateEmailCampaignDto): Promise<EmailCampaign> {
     const provider = this.getProvider();
     const fromEmail = dto.fromEmail || this.fromEmail;
@@ -199,9 +187,6 @@ export class EmailMarketingService implements OnModuleInit, OnModuleDestroy {
       },
     });
   }
-  // ========================================
-  // SEND FLOW
-  // ========================================
   async enqueueSend(campaignId: string, workspaceId: string): Promise<EmailCampaign> {
     const campaign = await this.prisma.emailCampaign.findFirst({
       where: { id: campaignId, workspaceId },
@@ -260,27 +245,14 @@ export class EmailMarketingService implements OnModuleInit, OnModuleDestroy {
         continue;
       }
       try {
-        const personalizedHtml = campaign.htmlBody.replace(NAME_RE, recipient.name || 'Cliente');
-        const footerHtml = buildUnsubscribeFooterHtml({
-          email: recipient.email,
-          workspaceId,
-        });
-        const htmlWithUnsub = `${personalizedHtml}${footerHtml}`;
-        const listUnsubscribe = buildListUnsubscribeHeader({
-          email: recipient.email,
-          workspaceId,
-        });
-        const headers: Record<string, string> = {};
-        if (listUnsubscribe) {
-          headers['List-Unsubscribe'] = listUnsubscribe;
-          headers['List-Unsubscribe-Post'] = 'List-Unsubscribe=One-Click';
-        }
-        const success = await this.emailService.sendEmail({
-          to: recipient.email,
+        const email = buildCampaignEmail({
+          htmlBody: campaign.htmlBody,
           subject: campaign.subject,
-          html: htmlWithUnsub,
-          headers,
+          recipientEmail: recipient.email,
+          recipientName: recipient.name,
+          workspaceId,
         });
+        const success = await this.emailService.sendEmail(email);
         if (success) {
           sentCount += 1;
           await this.recordDeliveryEvent({
@@ -369,9 +341,6 @@ export class EmailMarketingService implements OnModuleInit, OnModuleDestroy {
       }),
     ]);
   }
-  // ========================================
-  // WEBHOOK RECONCILIATION
-  // ========================================
   async reconcileDeliveryFromWebhook(params: {
     providerMessageId: string;
     event:
@@ -385,7 +354,6 @@ export class EmailMarketingService implements OnModuleInit, OnModuleDestroy {
     metadata?: Record<string, unknown>;
   }): Promise<boolean> {
     const { providerMessageId, event, metadata } = params;
-    // @AllowCrossWorkspace: webhook delivers providerMessageId globally; campaign include scopes
     const recipient = await this.prisma.emailCampaignRecipient.findFirst({
       where: { providerMessageId },
       include: { campaign: true },
@@ -405,7 +373,7 @@ export class EmailMarketingService implements OnModuleInit, OnModuleDestroy {
       UNSUBSCRIBED: { status: 'UNSUBSCRIBED', unsubscribedAt: new Date() },
     };
     const recipientUpdate = statusMap[event] || {};
-    const campaignUpdate = this.buildCampaignStatUpdate(event);
+    const campaignUpdate = buildCampaignStatUpdate(event);
     await this.prisma.emailCampaignDelivery.create({
       data: {
         campaignId,
@@ -428,25 +396,5 @@ export class EmailMarketingService implements OnModuleInit, OnModuleDestroy {
     }
     this.logger.log(`Webhook reconciled: ${event} for ${recipient.email} (campaign ${campaignId})`);
     return true;
-  }
-  private buildCampaignStatUpdate(
-    event: string,
-  ): Partial<Record<string, { increment: number }>> | null {
-    switch (event) {
-      case 'DELIVERED':
-        return { deliveredCount: { increment: 1 } };
-      case 'OPENED':
-        return { openedCount: { increment: 1 } };
-      case 'CLICKED':
-        return { clickedCount: { increment: 1 } };
-      case 'REPLIED':
-        return { repliedCount: { increment: 1 } };
-      case 'BOUNCED':
-        return { bouncedCount: { increment: 1 } };
-      case 'UNSUBSCRIBED':
-        return { unsubscribedCount: { increment: 1 } };
-      default:
-        return null;
-    }
   }
 }
