@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import type { Prisma } from '@prisma/client';
 import { randomUUID } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
@@ -6,7 +7,11 @@ import type { MindTick } from './mind.types';
 
 @Injectable()
 export class MindWorkspaceStateService {
-  constructor(private readonly prisma: PrismaService) {}
+  private readonly logger = StructuredLogger.from(MindWorkspaceStateService.name);
+
+  constructor(private readonly prisma: PrismaService) {
+    this.logger.debug?.(`MindWorkspaceStateService initialized`);
+  }
 
   async tryAcquireTickLease(
     workspaceId: string,

@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { MailboxProvider, MailboxStatus, Prisma } from '@prisma/client';
 import { createTransport } from 'nodemailer';
 import { Metrics } from '../observability/metrics';
@@ -31,7 +31,7 @@ const MAX_HOST_LENGTH = 255;
 const MAX_USERNAME_LENGTH = 320;
 const MAX_PASSWORD_LENGTH = 1000;
 function cleanText(value: unknown, maxLength: number): string {
-  return String(value || '')
+  return String(typeof value === 'string' || typeof value === 'number' ? value : '')
     .trim()
     .slice(0, maxLength);
 }
@@ -68,7 +68,11 @@ function cleanCredential(value: unknown, field: string): string {
 }
 @Injectable()
 export class MailboxImapSmtpService {
-  constructor(private readonly prisma: PrismaService) {}
+  private readonly logger = new Logger(MailboxImapSmtpService.name);
+
+  constructor(private readonly prisma: PrismaService) {
+    this.logger.debug?.(`MailboxImapSmtpService initialized`);
+  }
   async connectMailbox(workspaceId: string, input: ImapSmtpConnectInput) {
     const email = cleanEmail(input.email);
     const imap = this.readImapConfig(input);

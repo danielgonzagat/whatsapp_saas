@@ -1,4 +1,4 @@
-import { Inject, Injectable, Optional, forwardRef } from '@nestjs/common';
+import { Inject, Injectable, Optional, forwardRef, Logger } from '@nestjs/common';
 import { buildConversationOperationalState } from '../whatsapp/agent-conversation-state.util';
 import { AgentEventsService } from '../whatsapp/agent-events.service';
 import { CiaChatFilterService } from './cia-chat-filter.service';
@@ -28,6 +28,8 @@ export { CIA_BOOTSTRAP_AUTO_CONTINUE_LIMIT };
  */
 @Injectable()
 export class CiaBootstrapService {
+  private readonly logger = new Logger(CiaBootstrapService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly providerRegistry: WhatsAppProviderRegistry,
@@ -37,7 +39,9 @@ export class CiaBootstrapService {
     @Inject(forwardRef(() => WhatsAppCatchupService))
     private readonly catchupService: WhatsAppCatchupService,
     @Optional() private readonly opsAlert?: OpsAlertService,
-  ) {}
+  ) {
+    this.logger.debug?.(`CiaBootstrapService initialized`);
+  }
 
   async listPendingConversations(workspaceId: string, limit: number) {
     const conversations =

@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AdminAuditService } from '../audit/admin-audit.service';
 import { adminErrors } from '../common/admin-api-errors';
@@ -32,10 +32,14 @@ export interface DeleteSessionInput {
 
 @Injectable()
 export class AdminChatSessionService {
+  private readonly logger = new Logger(AdminChatSessionService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AdminAuditService,
-  ) {}
+  ) {
+    this.logger.debug?.(`AdminChatSessionService initialized`);
+  }
 
   async createSession(input: CreateSessionInput) {
     const session = await this.prisma.adminChatSession.create({

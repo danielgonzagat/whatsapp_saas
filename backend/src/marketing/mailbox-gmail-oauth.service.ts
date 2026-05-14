@@ -1,7 +1,4 @@
-import {
-  BadRequestException,
-  Injectable,
-} from '@nestjs/common';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { MailboxProvider, MailboxStatus } from '@prisma/client';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
@@ -12,24 +9,24 @@ import {
   resolveRedirectUri,
   readStateSecret,
 } from './mailbox-gmail-oauth/config-resolver';
-import {
-  normalizeReturnTo,
-  signState,
-  verifyState,
-} from './mailbox-gmail-oauth/oauth-state';
+import { normalizeReturnTo, signState, verifyState } from './mailbox-gmail-oauth/oauth-state';
 import { GmailOAuthHandshakeService } from './mailbox-gmail-oauth/oauth-handshake.service';
 import { GmailSyncService } from './mailbox-gmail-oauth/sync.service';
 import { GmailSendService } from './mailbox-gmail-oauth/send.service';
 
 @Injectable()
 export class MailboxGmailOAuthService {
+  private readonly logger = new Logger(MailboxGmailOAuthService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly config: ConfigService,
     private readonly handshake: GmailOAuthHandshakeService,
     private readonly syncService: GmailSyncService,
     private readonly sendService: GmailSendService,
-  ) {}
+  ) {
+    this.logger.debug?.(`MailboxGmailOAuthService initialized`);
+  }
 
   buildAuthUrl(workspaceId: string, returnTo?: string) {
     const clientId = requireClientId(this.config);

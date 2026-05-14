@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
 import { DecisionOutcomeService } from './decision-outcome.service';
@@ -9,7 +10,9 @@ import { DecisionOutcomeService } from './decision-outcome.service';
 // `MIND_REPORTS_DIR` override for tests and prod overrides.
 function resolveReportsDir(): string {
   const override = process.env.MIND_REPORTS_DIR?.trim();
-  if (override) return resolve(override);
+  if (override) {
+    return resolve(override);
+  }
   // Prefer `<cwd>/artifacts/mind-reports` if it exists (repo-root invocation),
   // otherwise fall back to `<cwd>/../artifacts/mind-reports` (backend cwd).
   const direct = resolve(process.cwd(), 'artifacts', 'mind-reports');
@@ -53,12 +56,19 @@ export interface LiftReport {
   rows: LiftRow[];
 }
 
-function wilsonInterval(successes: number, trials: number, z = 1.96): { lower: number; upper: number } {
-  if (trials === 0) return { lower: 0, upper: 0 };
+function wilsonInterval(
+  successes: number,
+  trials: number,
+  z = 1.96,
+): { lower: number; upper: number } {
+  if (trials === 0) {
+    return { lower: 0, upper: 0 };
+  }
   const p = successes / trials;
   const denominator = 1 + (z * z) / trials;
   const centre = (p + (z * z) / (2 * trials)) / denominator;
-  const margin = (z / denominator) * Math.sqrt((p * (1 - p)) / trials + (z * z) / (4 * trials * trials));
+  const margin =
+    (z / denominator) * Math.sqrt((p * (1 - p)) / trials + (z * z) / (4 * trials * trials));
   return {
     lower: Math.max(0, centre - margin),
     upper: Math.min(1, centre + margin),
@@ -68,7 +78,10 @@ function wilsonInterval(successes: number, trials: number, z = 1.96): { lower: n
 function extractChannel(contextSnapshot: unknown): string {
   if (contextSnapshot && typeof contextSnapshot === 'object' && !Array.isArray(contextSnapshot)) {
     const ctx = contextSnapshot as Record<string, unknown>;
-    return String(ctx.channel ?? ctx.source ?? 'unknown');
+    const candidate = ctx.channel ?? ctx.source;
+    if (typeof candidate === 'string' || typeof candidate === 'number') {
+      return String(candidate);
+    }
   }
   return 'unknown';
 }
@@ -80,7 +93,11 @@ function isSingleSuccess(outcome: OutcomeRow): boolean {
 
 @Injectable()
 export class MindLiftReportService {
-  constructor(private readonly decisionOutcome: DecisionOutcomeService) {}
+  private readonly logger = StructuredLogger.from(MindLiftReportService.name);
+
+  constructor(private readonly decisionOutcome: DecisionOutcomeService) {
+    this.logger.debug?.(`MindLiftReportService initialized`);
+  }
 
   async aggregate(sinceDays = 14): Promise<LiftReport> {
     const since = new Date(Date.now() - sinceDays * 86400 * 1000);
@@ -147,8 +164,12 @@ export class MindLiftReportService {
     lines.push(`Total decision-channel pairs: ${report.rows.length}`);
     lines.push('');
 
-    lines.push('| Decision Type | Channel | Total | Closed | Success Rate | 95% CI | Won vs Baseline |');
-    lines.push('|---------------|---------|-------|--------|-------------|--------|----------------|');
+    lines.push(
+      '| Decision Type | Channel | Total | Closed | Success Rate | 95% CI | Won vs Baseline |',
+    );
+    lines.push(
+      '|---------------|---------|-------|--------|-------------|--------|----------------|',
+    );
 
     for (const row of report.rows) {
       const ciStr = `${(row.lowerCI * 100).toFixed(1)}%-${(row.upperCI * 100).toFixed(1)}%`;

@@ -1,4 +1,5 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
+import { StructuredLogger } from '../../logging/structured-logger';
 import { MailboxProvider, MailboxStatus } from '@prisma/client';
 import { ConfigService } from '@nestjs/config';
 import { Metrics } from '../../observability/metrics';
@@ -11,11 +12,15 @@ import type { GmailMailboxRecord, GmailSendResponse } from './types';
 
 @Injectable()
 export class GmailSendService {
+  private readonly logger = StructuredLogger.from(GmailSendService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly config: ConfigService,
     private readonly gmailClient: GmailClientService,
-  ) {}
+  ) {
+    this.logger.debug?.(`GmailSendService initialized`);
+  }
 
   async sendMessageFromMailbox(
     workspaceId: string,
@@ -32,10 +37,7 @@ export class GmailSendService {
     if (!toEmail || !toEmail.includes('@')) {
       throw new BadRequestException('gmail_recipient_required');
     }
-    if (
-      input.proactive !== false &&
-      (await this.isSuppressedRecipient(workspaceId, toEmail))
-    ) {
+    if (input.proactive !== false && (await this.isSuppressedRecipient(workspaceId, toEmail))) {
       Metrics.mailbox.sendSuppressed('gmail', { workspace_id: workspaceId });
       return {
         provider: 'gmail',
@@ -46,8 +48,7 @@ export class GmailSendService {
       };
     }
 
-    const connection =
-      await this.getActiveGmailConnection(workspaceId);
+    const connection = await this.getActiveGmailConnection(workspaceId);
     if (!connection) {
       Metrics.mailbox.sendFailed('gmail', 'not_connected', {
         workspace_id: workspaceId,
@@ -55,11 +56,8 @@ export class GmailSendService {
       return { provider: 'gmail', status: 'not_connected', sent: false };
     }
 
-    const accessToken =
-      await this.gmailClient.resolveAccessToken(connection);
-    const subject = String(
-      input.subject || 'Kloel CIA - mensagem de teste',
-    )
+    const accessToken = await this.gmailClient.resolveAccessToken(connection);
+    const subject = String(input.subject || 'Kloel CIA - mensagem de teste')
       .trim()
       .slice(0, 160);
     const baseHtml =
@@ -116,9 +114,7 @@ export class GmailSendService {
     };
   }
 
-  private async getActiveGmailConnection(
-    workspaceId: string,
-  ): Promise<GmailMailboxRecord | null> {
+  private async getActiveGmailConnection(workspaceId: string): Promise<GmailMailboxRecord | null> {
     return this.prisma.mailboxConnection.findFirst({
       where: {
         workspaceId,
@@ -138,10 +134,7 @@ export class GmailSendService {
     });
   }
 
-  private async isSuppressedRecipient(
-    workspaceId: string,
-    email: string,
-  ): Promise<boolean> {
+  private async isSuppressedRecipient(workspaceId: string, email: string): Promise<boolean> {
     const contact = await this.prisma.contact.findFirst({
       where: {
         workspaceId,

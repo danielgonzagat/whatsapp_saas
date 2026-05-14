@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
 interface SpineRow {
@@ -26,15 +26,17 @@ export interface SpineAuditResult {
 
 @Injectable()
 export class BrainSpineAuditService {
-  constructor(private readonly prisma: PrismaService) {}
+  private readonly logger = new Logger(BrainSpineAuditService.name);
+
+  constructor(private readonly prisma: PrismaService) {
+    this.logger.debug?.(`BrainSpineAuditService initialized`);
+  }
 
   async audit(sinceIso: string): Promise<SpineAuditResult> {
     const windowFrom = sinceIso;
     const windowTo = new Date().toISOString();
 
-    const rows: SpineRow[] = await this.prisma.$queryRawUnsafe<
-      SpineRow[]
-    >(
+    const rows: SpineRow[] = await this.prisma.$queryRawUnsafe<SpineRow[]>(
       `
       SELECT
         COALESCE(
@@ -53,10 +55,20 @@ export class BrainSpineAuditService {
       windowFrom,
     );
 
-    const capabilityMap = new Map<string, { invoked: number; executed: number; failed: number; samples: Array<{ traceId: string; at: string }> }>();
+    const capabilityMap = new Map<
+      string,
+      {
+        invoked: number;
+        executed: number;
+        failed: number;
+        samples: Array<{ traceId: string; at: string }>;
+      }
+    >();
 
     for (const row of rows) {
-      if (!row.capability) continue;
+      if (!row.capability) {
+        continue;
+      }
 
       let entry = capabilityMap.get(row.capability);
       if (!entry) {

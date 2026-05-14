@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { randomUUID } from 'crypto';
 import type { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
@@ -7,10 +8,14 @@ import type { MindContext, MindJson, MindPrediction } from './mind.types';
 
 @Injectable()
 export class MindPredictorService {
+  private readonly logger = StructuredLogger.from(MindPredictorService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly beliefs: MindBeliefService,
-  ) {}
+  ) {
+    this.logger.debug?.(`MindPredictorService initialized`);
+  }
 
   async predictReply(ctx: MindContext, horizonSec: number): Promise<MindPrediction> {
     return this.predict(

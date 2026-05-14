@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import type { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { asProviderSettings } from '../../whatsapp/provider-settings.types';
@@ -14,7 +14,11 @@ import {
 
 @Injectable()
 export class ChannelSetupService {
-  constructor(private readonly prisma: PrismaService) {}
+  private readonly logger = new Logger(ChannelSetupService.name);
+
+  constructor(private readonly prisma: PrismaService) {
+    this.logger.debug?.(`ChannelSetupService initialized`);
+  }
 
   async getSetup(workspaceId: string, rawChannel?: string) {
     const channel = assertMarketingChannel(rawChannel);
