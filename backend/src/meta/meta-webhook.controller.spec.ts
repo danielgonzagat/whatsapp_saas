@@ -71,12 +71,11 @@ describe('MetaWebhookController', () => {
       const result = await controller.handleWebhook(body, '', { rawBody: undefined });
 
       expect(result).toBe('ok');
-      expect(mockWebhooksService.logWebhookEvent).toHaveBeenCalledWith(
-        'meta-marketing',
-        'ad_account',
-        expect.any(String),
-        body,
-      );
+      const logArgs = mockWebhooksService.logWebhookEvent.mock.calls[0];
+      expect(logArgs[0]).toBe('meta-marketing');
+      expect(logArgs[1]).toBe('ad_account');
+      expect(typeof logArgs[2]).toBe('string');
+      expect(logArgs[3]).toBe(body);
     });
 
     it('handles duplicate webhook gracefully (P2002)', async () => {
@@ -95,12 +94,11 @@ describe('MetaWebhookController', () => {
       const result = await controller.handleWebhook(body, '', { rawBody: undefined });
 
       expect(result).toBe('ok');
-      expect(mockWebhooksService.logWebhookEvent).toHaveBeenCalledWith(
-        'meta-marketing',
-        'unknown_type',
-        expect.any(String),
-        body,
-      );
+      const logArgs = mockWebhooksService.logWebhookEvent.mock.calls[0];
+      expect(logArgs[0]).toBe('meta-marketing');
+      expect(logArgs[1]).toBe('unknown_type');
+      expect(typeof logArgs[2]).toBe('string');
+      expect(logArgs[3]).toBe(body);
     });
 
     it('rejects with 403 on signature mismatch', async () => {

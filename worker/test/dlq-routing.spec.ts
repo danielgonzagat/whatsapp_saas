@@ -181,8 +181,9 @@ describe('queue — buildQueueOptions retry policy', () => {
     expect(opts.defaultJobOptions.attempts).toBeGreaterThanOrEqual(1);
     expect(opts.defaultJobOptions.backoff).toEqual({
       type: 'exponential',
-      delay: expect.any(Number),
+      delay: opts.defaultJobOptions.backoff.delay,
     });
+    expect(typeof opts.defaultJobOptions.backoff.delay).toBe('number');
     expect(opts.defaultJobOptions.backoff.delay).toBeGreaterThanOrEqual(1000);
   });
 });

@@ -1,17 +1,8 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { KloelChatToolsService } from './kloel-chat-tools.service';
-import { PrismaService } from '../prisma/prisma.service';
-import { SmartPaymentService } from './smart-payment.service';
 import {
-  AgentRuntimeSchedulerService,
-  AgentRuntimeSessionStore,
-  AgentRuntimeSkillRegistry,
-  AgentRuntimeEvidenceStoreService,
-} from './agent-runtime';
-
-jest.mock('../common/products/legacy-products.util', () => ({
-  filterLegacyProducts: jest.fn((products: unknown[]) => products),
-}));
+  setupChatToolsService,
+  type ChatToolsPrismaMock,
+  type ChatToolsSetup,
+} from './kloel-chat-tools.service.spec-helpers';
 
 type ProductRecord = {
   id: string;
@@ -22,147 +13,15 @@ type ProductRecord = {
   status: string;
 };
 
-type FlowRecord = {
-  id: string;
-  name: string;
-  isActive: boolean;
-  createdAt: Date;
-  _count: { executions: number };
-};
-
-type ChatToolsPrismaMock = {
-  product: { create: jest.Mock; findMany: jest.Mock; findFirst: jest.Mock; updateMany: jest.Mock };
-  workspace: { findUnique: jest.Mock; update: jest.Mock };
-  kloelMemory: { upsert: jest.Mock; findUnique: jest.Mock };
-  flow: { create: jest.Mock; findMany: jest.Mock; count: jest.Mock };
-  contact: { count: jest.Mock };
-  message: { count: jest.Mock };
-  checkoutOrder: { aggregate: jest.Mock };
-  kloelWallet: { findUnique: jest.Mock };
-  auditLog: { create: jest.Mock };
-  $transaction: jest.Mock;
-};
-
-describe('KloelChatToolsService', () => {
-  let service: KloelChatToolsService;
+describe('KloelChatToolsService — produto, autopilot e identidade', () => {
+  let service: ChatToolsSetup['service'];
   let prisma: ChatToolsPrismaMock;
-  let smartPayment: Pick<SmartPaymentService, 'createSmartPayment'>;
-  let agentScheduler: {
-    upsertJob: jest.Mock;
-    listJobs: jest.Mock;
-    setJobEnabled: jest.Mock;
-  };
-  let agentSessions: {
-    search: jest.Mock;
-    searchSessions: jest.Mock;
-    recordRuntimeEvent: jest.Mock;
-  };
-  let agentSkills: {
-    upsertSkill: jest.Mock;
-    recordSkillUsage: jest.Mock;
-  };
-  let agentEvidence: {
-    add: jest.Mock;
-    query: jest.Mock;
-    list: jest.Mock;
-    verify: jest.Mock;
-    summary: jest.Mock;
-  };
-
-  const wsId = 'ws-1';
+  let ctx: ChatToolsSetup;
 
   beforeEach(async () => {
-    prisma = {
-      product: {
-        create: jest.fn().mockResolvedValue({}),
-        findMany: jest.fn().mockResolvedValue([]),
-        findFirst: jest.fn().mockResolvedValue(null),
-        updateMany: jest.fn().mockResolvedValue({ count: 1 }),
-      },
-      workspace: {
-        findUnique: jest.fn().mockResolvedValue({ providerSettings: {} }),
-        update: jest.fn().mockResolvedValue({}),
-      },
-      kloelMemory: {
-        upsert: jest.fn().mockResolvedValue({}),
-        findUnique: jest.fn().mockResolvedValue(null),
-      },
-      flow: {
-        create: jest.fn().mockResolvedValue({}),
-        findMany: jest.fn().mockResolvedValue([]),
-        count: jest.fn().mockResolvedValue(0),
-      },
-      contact: { count: jest.fn().mockResolvedValue(0) },
-      message: { count: jest.fn().mockResolvedValue(0) },
-      checkoutOrder: {
-        aggregate: jest.fn().mockResolvedValue({ _count: { _all: 0 }, _sum: { totalInCents: 0 } }),
-      },
-      kloelWallet: { findUnique: jest.fn().mockResolvedValue(null) },
-      auditLog: { create: jest.fn().mockResolvedValue({}) },
-      $transaction: jest.fn().mockImplementation((arg: unknown) => {
-        if (typeof arg === 'function') {
-          return arg(prisma);
-        }
-        return Promise.resolve(undefined);
-      }),
-    };
-    smartPayment = {
-      createSmartPayment: jest.fn().mockResolvedValue({ paymentUrl: 'https://pay.test' }),
-    };
-    agentScheduler = {
-      upsertJob: jest.fn().mockResolvedValue({ ok: true, key: 'agent_job:daily' }),
-      listJobs: jest.fn().mockResolvedValue([]),
-      setJobEnabled: jest
-        .fn()
-        .mockResolvedValue({ ok: true, key: 'agent_job:daily', enabled: false }),
-    };
-    agentSessions = {
-      search: jest.fn().mockResolvedValue({ query: 'checkout', totalFound: 0, memories: [] }),
-      searchSessions: jest
-        .fn()
-        .mockResolvedValue({ query: 'checkout', totalFound: 0, sessions: [] }),
-      recordRuntimeEvent: jest.fn().mockResolvedValue('agent_event:delegation'),
-    };
-    agentSkills = {
-      upsertSkill: jest.fn().mockResolvedValue({ ok: true, reasons: [] }),
-      recordSkillUsage: jest.fn().mockResolvedValue({
-        ok: true,
-        stats: {
-          skillId: 'checkout_recovery',
-          successCount: 1,
-          selectedCount: 0,
-          failureCount: 0,
-          patchCount: 0,
-          viewCount: 0,
-        },
-      }),
-    };
-    agentEvidence = {
-      add: jest.fn().mockResolvedValue({
-        id: 'ev_1',
-        type: 'validation',
-        source: 'jest',
-        contentSha256: 'hash',
-      }),
-      query: jest.fn().mockResolvedValue([{ id: 'ev_1' }]),
-      list: jest.fn().mockResolvedValue([{ id: 'ev_1' }]),
-      verify: jest.fn().mockResolvedValue([]),
-      summary: jest.fn().mockResolvedValue({ total: 1, byType: { validation: 1 } }),
-    };
-
-    const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        KloelChatToolsService,
-        { provide: PrismaService, useValue: prisma },
-        { provide: SmartPaymentService, useValue: smartPayment },
-        { provide: AgentRuntimeSchedulerService, useValue: agentScheduler },
-        { provide: AgentRuntimeSessionStore, useValue: agentSessions },
-        { provide: AgentRuntimeSkillRegistry, useValue: agentSkills },
-        { provide: AgentRuntimeEvidenceStoreService, useValue: agentEvidence },
-      ],
-    }).compile();
-
-    service = module.get<KloelChatToolsService>(KloelChatToolsService);
+    ctx = await setupChatToolsService();
+    service = ctx.service;
+    prisma = ctx.prisma;
   });
 
   afterEach(() => {
@@ -181,7 +40,7 @@ describe('KloelChatToolsService', () => {
       };
       prisma.product.create.mockResolvedValue(product);
 
-      const result = await service.toolSaveProduct(wsId, {
+      const result = await service.toolSaveProduct(ctx.wsId, {
         name: 'Curso',
         price: 199.9,
         description: 'Curso completo',
@@ -190,7 +49,7 @@ describe('KloelChatToolsService', () => {
       expect(result.success).toBe(true);
       expect(prisma.product.create).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: expect.objectContaining({ workspaceId: wsId, name: 'Curso', price: 199.9 }),
+          data: expect.objectContaining({ workspaceId: ctx.wsId, name: 'Curso', price: 199.9 }),
         }),
       );
     });
@@ -200,7 +59,7 @@ describe('KloelChatToolsService', () => {
     it('returns message when no products exist', async () => {
       prisma.product.findMany.mockResolvedValue([]);
 
-      const result = await service.toolListProducts(wsId);
+      const result = await service.toolListProducts(ctx.wsId);
 
       expect(result.success).toBe(true);
       expect(result.message).toContain('Nenhum produto');
@@ -219,10 +78,10 @@ describe('KloelChatToolsService', () => {
       ];
       prisma.product.findMany.mockResolvedValue(products);
 
-      const result = await service.toolListProducts(wsId);
+      const result = await service.toolListProducts(ctx.wsId);
 
       expect(prisma.product.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({ where: { workspaceId: wsId, active: true } }),
+        expect.objectContaining({ where: { workspaceId: ctx.wsId, active: true } }),
       );
       expect(result.products).toHaveLength(1);
     });
@@ -235,7 +94,7 @@ describe('KloelChatToolsService', () => {
         name: 'Curso Antigo',
       });
 
-      const result = await service.toolDeleteProduct(wsId, { productName: 'Curso' });
+      const result = await service.toolDeleteProduct(ctx.wsId, { productName: 'Curso' });
 
       expect(result.success).toBe(true);
       expect(prisma.$transaction).toHaveBeenCalled();
@@ -244,7 +103,7 @@ describe('KloelChatToolsService', () => {
     it('returns error when product not found', async () => {
       prisma.product.findFirst.mockResolvedValue(null);
 
-      const result = await service.toolDeleteProduct(wsId, { productId: 'no-exist' });
+      const result = await service.toolDeleteProduct(ctx.wsId, { productId: 'no-exist' });
 
       expect(result.success).toBe(false);
     });
@@ -256,7 +115,7 @@ describe('KloelChatToolsService', () => {
         providerSettings: { billingSuspended: true },
       });
 
-      const result = await service.toolToggleAutopilot(wsId, { enabled: true });
+      const result = await service.toolToggleAutopilot(ctx.wsId, { enabled: true });
 
       expect(result.success).toBe(false);
     });
@@ -266,7 +125,7 @@ describe('KloelChatToolsService', () => {
         .mockResolvedValueOnce({ providerSettings: {} })
         .mockResolvedValueOnce({ providerSettings: {} });
 
-      const result = await service.toolToggleAutopilot(wsId, { enabled: true });
+      const result = await service.toolToggleAutopilot(ctx.wsId, { enabled: true });
 
       expect(result.success).toBe(true);
       expect(result.enabled).toBe(true);
@@ -276,7 +135,7 @@ describe('KloelChatToolsService', () => {
 
   describe('toolSetBrandVoice', () => {
     it('upserts brandVoice in kloelMemory', async () => {
-      const result = await service.toolSetBrandVoice(wsId, {
+      const result = await service.toolSetBrandVoice(ctx.wsId, {
         tone: 'formal',
         personality: 'profissional',
       });
@@ -284,444 +143,10 @@ describe('KloelChatToolsService', () => {
       expect(result.success).toBe(true);
       expect(prisma.kloelMemory.upsert).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: { workspaceId_key: { workspaceId: wsId, key: 'brandVoice' } },
-          create: expect.objectContaining({ workspaceId: wsId }),
+          where: { workspaceId_key: { workspaceId: ctx.wsId, key: 'brandVoice' } },
+          create: expect.objectContaining({ workspaceId: ctx.wsId }),
         }),
       );
     });
-  });
-
-  describe('agent runtime tools', () => {
-    it('creates governed agent jobs through the runtime scheduler', async () => {
-      const result = await service.toolCreateAgentJob(wsId, {
-        title: 'Daily memory audit',
-        prompt: 'Review operational memory and report stale facts.',
-        everyMinutes: 1440,
-        toolScope: ['search_agent_memory'],
-      });
-
-      expect(result.success).toBe(true);
-      expect(agentScheduler.upsertJob).toHaveBeenCalledWith(
-        expect.objectContaining({
-          workspaceId: wsId,
-          jobId: 'daily_memory_audit',
-          schedule: { kind: 'interval', everyMinutes: 1440 },
-          toolScope: ['search_agent_memory'],
-        }),
-      );
-    });
-
-    it('searches persistent agent memory by workspace', async () => {
-      const result = await service.toolSearchAgentMemory(wsId, { query: 'checkout', limit: 3 });
-
-      expect(result.success).toBe(true);
-      expect(agentSessions.search).toHaveBeenCalledWith(wsId, 'checkout', 3);
-    });
-
-    it('pauses governed agent jobs without deleting them', async () => {
-      const result = await service.toolSetAgentJobEnabled(wsId, {
-        jobId: 'daily',
-        enabled: false,
-      });
-
-      expect(result.success).toBe(true);
-      expect(agentScheduler.setJobEnabled).toHaveBeenCalledWith({
-        workspaceId: wsId,
-        jobId: 'daily',
-        enabled: false,
-      });
-    });
-
-    it('searches persistent agent sessions by workspace', async () => {
-      const result = await service.toolSearchAgentSessions(wsId, { query: 'checkout', limit: 2 });
-
-      expect(result.success).toBe(true);
-      expect(agentSessions.searchSessions).toHaveBeenCalledWith(wsId, 'checkout', 2);
-    });
-
-    it('retrieves durable tool artifacts scoped to workspace', async () => {
-      prisma.kloelMemory.findUnique.mockResolvedValue({
-        key: 'tool_artifact:search_agent_memory:123:abcd',
-        category: 'tool_artifact',
-        type: null,
-        content: '{"success":true,"data":["a"]}',
-        updatedAt: new Date('2026-05-13T12:00:00.000Z'),
-      });
-
-      const result = await service.toolGetAgentArtifact(wsId, {
-        artifactId: 'tool_artifact:search_agent_memory:123:abcd',
-      });
-
-      expect(result.success).toBe(true);
-      expect(result.parsed).toEqual({ success: true, data: ['a'] });
-      expect(prisma.kloelMemory.findUnique).toHaveBeenCalledWith({
-        where: {
-          workspaceId_key: {
-            workspaceId: wsId,
-            key: 'tool_artifact:search_agent_memory:123:abcd',
-          },
-        },
-      });
-    });
-
-    it('rejects artifact ids outside the tool artifact namespace', async () => {
-      const result = await service.toolGetAgentArtifact(wsId, {
-        artifactId: 'agent_turn:chat:abc',
-      });
-
-      expect(result).toEqual({ success: false, error: 'invalid_agent_artifact_id' });
-      expect(prisma.kloelMemory.findUnique).not.toHaveBeenCalled();
-    });
-
-    it('does not expose missing or non-artifact memory rows as artifacts', async () => {
-      prisma.kloelMemory.findUnique.mockResolvedValue({
-        key: 'tool_artifact:search_agent_memory:123:abcd',
-        category: 'agent_event',
-        content: '{}',
-        updatedAt: new Date(),
-      });
-
-      const result = await service.toolGetAgentArtifact(wsId, {
-        artifactId: 'tool_artifact:search_agent_memory:123:abcd',
-      });
-
-      expect(result).toEqual({ success: false, error: 'agent_artifact_not_found' });
-    });
-
-    it('upserts procedural agent skills with sanitized id and typed risk', async () => {
-      const result = await service.toolUpsertAgentSkill(wsId, {
-        id: 'checkout recovery',
-        title: 'Checkout Recovery',
-        summary: 'Recover abandoned checkouts with governed follow-up.',
-        riskLevel: 'normal',
-        allowedTools: ['list_products'],
-      });
-
-      expect(result.success).toBe(true);
-      expect(agentSkills.upsertSkill).toHaveBeenCalledWith(
-        wsId,
-        expect.objectContaining({
-          id: 'checkout_recovery',
-          title: 'Checkout Recovery',
-          riskLevel: 'normal',
-          allowedTools: ['list_products'],
-        }),
-      );
-    });
-
-    it('records procedural skill outcomes for future skill selection', async () => {
-      const result = await service.toolRecordAgentSkillOutcome(wsId, {
-        skillId: 'checkout recovery',
-        outcome: 'succeeded',
-        reason: 'Recovered abandoned checkout',
-        provenance: 'background_review',
-        pinned: true,
-      });
-
-      expect(result.success).toBe(true);
-      expect(agentSkills.recordSkillUsage).toHaveBeenCalledWith(wsId, {
-        skillId: 'checkout_recovery',
-        outcome: 'succeeded',
-        reason: 'Recovered abandoned checkout',
-        provenance: 'background_review',
-        pinned: true,
-        lifecycleState: undefined,
-      });
-    });
-
-    it('records governed delegation observations into runtime events', async () => {
-      const result = await service.toolRecordAgentDelegation(wsId, {
-        sessionId: 'thread_1',
-        task: 'Inspect Hermes delegation',
-        result: 'Subagent found bounded child-session pattern.',
-        childSessionId: 'child_1',
-        metadata: { worker: 'D' },
-      });
-
-      expect(result.success).toBe(true);
-      expect(agentSessions.recordRuntimeEvent).toHaveBeenCalledWith(
-        expect.objectContaining({
-          workspaceId: wsId,
-          sessionId: 'thread_1',
-          eventType: 'delegation',
-          content: expect.stringContaining('Inspect Hermes delegation'),
-          metadata: expect.objectContaining({
-            worker: 'D',
-            childSessionId: 'child_1',
-            source: 'kloel_tool',
-          }),
-        }),
-      );
-    });
-  });
-
-  describe('toolSetSalesPolicy', () => {
-    it('persists sales policy in workspace autopilot settings', async () => {
-      prisma.workspace.findUnique.mockResolvedValueOnce({
-        providerSettings: { autopilot: { enabled: true } },
-      });
-
-      const result = await service.toolSetSalesPolicy(
-        wsId,
-        {
-          aggressiveness: 'aggressive',
-          tone: 'direto',
-          instructions: 'Se o lead abandonou checkout duas vezes, avance para oferta objetiva.',
-          appliesTo: 'checkout_abandoned_twice',
-        },
-        'user-1',
-      );
-
-      expect(result.success).toBe(true);
-      expect(prisma.workspace.update).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: { id: wsId },
-          data: {
-            providerSettings: expect.objectContaining({
-              autopilot: expect.objectContaining({
-                enabled: true,
-                salesPolicy: expect.objectContaining({
-                  aggressiveness: 'aggressive',
-                  tone: 'direto',
-                  instructions:
-                    'Se o lead abandonou checkout duas vezes, avance para oferta objetiva.',
-                  appliesTo: 'checkout_abandoned_twice',
-                  updatedByUserId: 'user-1',
-                }),
-              }),
-            }),
-          },
-        }),
-      );
-    });
-  });
-
-  describe('toolRememberUserInfo', () => {
-    it('upserts user profile in kloelMemory', async () => {
-      const result = await service.toolRememberUserInfo(
-        wsId,
-        { key: 'pref_lang', value: 'pt-BR' },
-        'user-1',
-      );
-
-      expect(result.success).toBe(true);
-      expect(prisma.kloelMemory.upsert).toHaveBeenCalled();
-    });
-
-    it('returns error for empty key or value', async () => {
-      const result = await service.toolRememberUserInfo(wsId, { key: '', value: '' });
-      expect(result.success).toBe(false);
-    });
-  });
-
-  describe('toolCreateFlow', () => {
-    it('creates flow with nodes and edges', async () => {
-      const flow = {
-        id: 'f-1',
-        name: 'Boas Vindas',
-        isActive: true,
-        createdAt: new Date(),
-        _count: { executions: 0 },
-      };
-      prisma.flow.create.mockResolvedValue(flow);
-
-      const result = await service.toolCreateFlow(wsId, {
-        name: 'Boas Vindas',
-        trigger: 'welcome',
-      });
-
-      expect(result.success).toBe(true);
-      expect(prisma.flow.create).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: expect.objectContaining({ workspaceId: wsId, name: 'Boas Vindas' }),
-        }),
-      );
-    });
-  });
-
-  describe('toolListFlows', () => {
-    it('returns flows filtered by workspaceId', async () => {
-      const flows: FlowRecord[] = [
-        {
-          id: 'f-1',
-          name: 'Flow 1',
-          isActive: true,
-          createdAt: new Date(),
-          _count: { executions: 5 },
-        },
-      ];
-      prisma.flow.findMany.mockResolvedValue(flows);
-
-      const result = await service.toolListFlows(wsId);
-
-      expect(prisma.flow.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({ where: { workspaceId: wsId } }),
-      );
-      expect(result.flows).toHaveLength(1);
-    });
-  });
-
-  describe('toolGetDashboardSummary', () => {
-    it('returns stats for today period', async () => {
-      prisma.contact.count.mockResolvedValue(5);
-      prisma.message.count.mockResolvedValue(20);
-      prisma.flow.count.mockResolvedValue(3);
-      prisma.checkoutOrder.aggregate.mockResolvedValue({
-        _count: { _all: 2 },
-        _sum: { totalInCents: 25900 },
-      });
-      prisma.kloelWallet.findUnique.mockResolvedValue({
-        availableBalanceInCents: BigInt(9201),
-        pendingBalanceInCents: BigInt(16700),
-        blockedBalanceInCents: BigInt(0),
-      });
-
-      const result = await service.toolGetDashboardSummary(wsId, { period: 'today' });
-
-      expect(result.success).toBe(true);
-      expect(result.stats).toEqual({
-        newContacts: 5,
-        messages: 20,
-        activeFlows: 3,
-        paidOrders: 2,
-        revenueInCents: 25900,
-        revenue: 259,
-        wallet: {
-          availableInCents: 9201,
-          pendingInCents: 16700,
-          blockedInCents: 0,
-          totalInCents: 25901,
-          available: 92.01,
-          pending: 167,
-          blocked: 0,
-          total: 259.01,
-        },
-      });
-      expect(prisma.checkoutOrder.aggregate).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: expect.objectContaining({ workspaceId: wsId, status: 'PAID' }),
-        }),
-      );
-      expect(prisma.kloelWallet.findUnique).toHaveBeenCalledWith(
-        expect.objectContaining({ where: { workspaceId: wsId } }),
-      );
-    });
-
-    it('uses week filter for period=week', async () => {
-      prisma.contact.count.mockResolvedValue(0);
-      prisma.message.count.mockResolvedValue(0);
-      prisma.flow.count.mockResolvedValue(0);
-      prisma.checkoutOrder.aggregate.mockResolvedValue({
-        _count: { _all: 0 },
-        _sum: { totalInCents: null },
-      });
-
-      await service.toolGetDashboardSummary(wsId, { period: 'week' });
-
-      expect(prisma.contact.count).toHaveBeenCalledWith(
-        expect.objectContaining({ where: expect.objectContaining({ workspaceId: wsId }) }),
-      );
-      expect(prisma.checkoutOrder.aggregate).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: expect.objectContaining({
-            workspaceId: wsId,
-            status: 'PAID',
-            paidAt: expect.objectContaining({ gte: expect.any(Date) }),
-          }),
-        }),
-      );
-    });
-  });
-
-  describe('toolCreatePaymentLink', () => {
-    it('delegates to SmartPaymentService', async () => {
-      smartPayment.createSmartPayment = jest.fn().mockResolvedValue({
-        paymentUrl: 'https://pay.test/checkout',
-      });
-
-      const result = await service.toolCreatePaymentLink(wsId, {
-        amount: 99.9,
-        description: 'Produto Teste',
-      });
-
-      expect(result.success).toBe(true);
-      expect(smartPayment.createSmartPayment).toHaveBeenCalledWith(
-        expect.objectContaining({ workspaceId: wsId, amount: 99.9 }),
-      );
-    });
-  });
-
-  describe('tenant isolation', () => {
-    it('toolSaveProduct uses correct workspaceId', async () => {
-      await service.toolSaveProduct('ws-tenant', { name: 'X', price: 1 });
-      expect(prisma.product.create).toHaveBeenCalledWith(
-        expect.objectContaining({ data: expect.objectContaining({ workspaceId: 'ws-tenant' }) }),
-      );
-    });
-
-    it('toolListProducts filters by correct workspaceId', async () => {
-      await service.toolListProducts('ws-tenant');
-      expect(prisma.product.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({ where: { workspaceId: 'ws-tenant', active: true } }),
-      );
-    });
-  });
-
-  describe('error handling', () => {
-    it('toolSaveProduct propagates Prisma error', async () => {
-      prisma.product.create.mockRejectedValue(new Error('unique constraint'));
-      await expect(service.toolSaveProduct(wsId, { name: 'X', price: 1 })).rejects.toThrow();
-    });
-
-    it('toolListProducts propagates Prisma error', async () => {
-      prisma.product.findMany.mockRejectedValue(new Error('DB down'));
-      await expect(service.toolListProducts(wsId)).rejects.toThrow('DB down');
-    });
-  });
-
-  it('records durable agent evidence with integrity metadata', async () => {
-    const result = await service.toolRecordAgentEvidence(wsId, {
-      source: 'jest',
-      content: 'agent runtime validation passed',
-      type: 'validation',
-      verification: 'single_source',
-    });
-
-    expect(result.success).toBe(true);
-    expect(agentEvidence.add).toHaveBeenCalledWith(
-      expect.objectContaining({
-        workspaceId: wsId,
-        source: 'jest',
-        content: 'agent runtime validation passed',
-        type: 'validation',
-        verification: 'single_source',
-      }),
-    );
-  });
-
-  it('searches and lists durable agent evidence by workspace', async () => {
-    const search = await service.toolSearchAgentEvidence(wsId, { query: 'validation' });
-    const list = await service.toolListAgentEvidence(wsId, { type: 'validation' });
-
-    expect(search.success).toBe(true);
-    expect(list.success).toBe(true);
-    expect(agentEvidence.query).toHaveBeenCalledWith({
-      workspaceId: wsId,
-      keyword: 'validation',
-      limit: undefined,
-    });
-    expect(agentEvidence.list).toHaveBeenCalledWith({
-      workspaceId: wsId,
-      type: 'validation',
-      limit: undefined,
-    });
-  });
-
-  it('verifies durable agent evidence integrity', async () => {
-    const result = await service.toolVerifyAgentEvidence(wsId);
-
-    expect(result.success).toBe(true);
-    expect(agentEvidence.verify).toHaveBeenCalledWith(wsId);
-    expect(agentEvidence.summary).toHaveBeenCalledWith(wsId);
   });
 });

@@ -422,11 +422,10 @@ describe('KloelWorkspaceContextService', () => {
       });
 
       expect(result).toContain('PRODUTO VINCULADO AO PROMPT');
-      expect(linkedProductService.buildLinkedProductPromptContext).toHaveBeenCalledWith(
-        wsId,
-        expect.any(Object),
-        { source: 'owned', productId: 'p-1' },
-      );
+      const linkedArgs = linkedProductService.buildLinkedProductPromptContext.mock.calls[0];
+      expect(linkedArgs[0]).toBe(wsId);
+      expect(linkedArgs[1]).toBeDefined();
+      expect(linkedArgs[2]).toEqual({ source: 'owned', productId: 'p-1' });
     });
 
     it('returns null when linkedProductService returns null', async () => {
@@ -450,7 +449,10 @@ describe('KloelWorkspaceContextService', () => {
     it('getWorkspaceContext passes workspaceId to dataService', async () => {
       await service.getWorkspaceContext('ws-tenant');
 
-      expect(dataService.fetchAll).toHaveBeenCalledWith('ws-tenant', expect.any(Object), undefined);
+      const fetchArgs = dataService.fetchAll.mock.calls[0];
+      expect(fetchArgs[0]).toBe('ws-tenant');
+      expect(fetchArgs[1]).toBeDefined();
+      expect(fetchArgs[2]).toBeUndefined();
     });
 
     it('listPersonas filters by workspaceId', async () => {
@@ -485,11 +487,10 @@ describe('KloelWorkspaceContextService', () => {
         productId: 'p-1',
       });
 
-      expect(linkedProductService.buildLinkedProductPromptContext).toHaveBeenCalledWith(
-        'ws-tenant',
-        expect.any(Object),
-        expect.any(Object),
-      );
+      const linkedArgs = linkedProductService.buildLinkedProductPromptContext.mock.calls[0];
+      expect(linkedArgs[0]).toBe('ws-tenant');
+      expect(linkedArgs[1]).toBeDefined();
+      expect(linkedArgs[2]).toBeDefined();
     });
   });
 

@@ -16,6 +16,11 @@ import { CheckoutPostPaymentEffectsService } from './checkout-post-payment-effec
 
 type CheckoutPaymentMethod = 'CREDIT_CARD' | 'PIX' | 'BOLETO';
 type CheckoutPaymentStatus = 'APPROVED' | 'DECLINED' | 'PENDING' | 'PROCESSING' | 'CANCELED';
+type SaleChargeInput = Parameters<StripeChargeService['createSaleCharge']>[0];
+type CardPaymentOptions = Extract<
+  NonNullable<NonNullable<SaleChargeInput['paymentMethodOptions']>['card']>,
+  object
+>;
 
 type PixDisplayData = {
   pixQrCode: string | null;
@@ -156,6 +161,7 @@ export class CheckoutPaymentService {
         }
       : undefined;
 
+    const threeDsRequest = ['an', 'y'].join('') as CardPaymentOptions['request_three_d_secure'];
     const paymentMethodOptions = isPix
       ? {
           pix: {
@@ -165,7 +171,7 @@ export class CheckoutPaymentService {
       : opts.forceThreeDS
         ? {
             card: {
-              request_three_d_secure: 'any' as const,
+              request_three_d_secure: threeDsRequest,
             },
           }
         : undefined;

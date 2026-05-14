@@ -77,7 +77,9 @@ describe('TikTokMarketingModeService', () => {
 
       expect(result.mode).toBe('blocked');
       expect(result.details.tokenValid).toBe(false);
-      expect(result.details.requiredSteps.some((s) => s.includes('expirado') || s.includes('revogado'))).toBe(true);
+      expect(
+        result.details.requiredSteps.some((s) => s.includes('expirado') || s.includes('revogado')),
+      ).toBe(true);
     });
 
     it('returns blocked when client key is present only via NEXT_PUBLIC_ fallback', async () => {
@@ -105,7 +107,9 @@ describe('TikTokMarketingModeService', () => {
       expect(result.details.outboundApproved).toBe(false);
       expect(result.details.missingVariables).toContain('TIKTOK_OUTBOUND_APPROVED');
       expect(result.details.tokenValid).toBe(true);
-      expect(result.details.requiredSteps.some((s) => s.includes('ainda nao foi aprovado'))).toBe(true);
+      expect(result.details.requiredSteps.some((s) => s.includes('ainda nao foi aprovado'))).toBe(
+        true,
+      );
     });
 
     it('returns listen when outbound is approved but no recent outbound activity', async () => {
@@ -166,11 +170,14 @@ describe('TikTokMarketingModeService', () => {
             workspaceId: 'ws_1',
             direction: 'OUTBOUND',
             status: { in: ['SENT', 'DELIVERED', 'READ'] },
-            createdAt: expect.objectContaining({ gte: expect.any(Date) }),
+            createdAt: expect.objectContaining({
+              gte: messageCount.mock.calls[0][0].where.createdAt.gte,
+            }),
             conversation: { channel: 'TIKTOK' },
           }),
         }),
       );
+      expect(messageCount.mock.calls[0][0].where.createdAt.gte).toBeInstanceOf(Date);
     });
 
     it('stays in listen when only paid sales exist but no TikTok outbound message — sales alone are not TikTok-scoped', async () => {

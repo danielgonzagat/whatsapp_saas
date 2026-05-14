@@ -184,189 +184,110 @@ describe('GdprService', () => {
     service = module.get<GdprService>(GdprService);
   });
 
-  describe('requestExport', () => {
-    it('creates an export request and sends verification email', async () => {
-      const result = await service.requestExport('agent_1', 'ws_1');
+  describe('processDeletion', () => {
+    it('completes deletion cascade within 30-day window', async () => {
+      await service.processDeletion('gdpr_1');
 
-      expect(result).toEqual({
-        code: result.code,
-        status: GdprStatus.PENDING,
-        requestedAt,
-      });
-      expect(typeof result.code).toBe('string');
-      expect(prismaMock.gdprRequest.create).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: expect.objectContaining({
-            userId: 'agent_1',
-            workspaceId: 'ws_1',
-            type: GdprType.EXPORT,
-            status: GdprStatus.PENDING,
-          }),
-        }),
-      );
-      expect(emailMock.sendEmail).toHaveBeenCalled();
-    });
-
-    it('generates a unique random code for each request', async () => {
-      const result = await service.requestExport('agent_1', 'ws_1');
-
-      expect(result.code).toMatch(/^[a-f0-9]{16}$/);
-    });
-  });
-
-  describe('requestDeletion', () => {
-    it('filters deletion lookup by workspaceId to prevent cross-tenant leak', async () => {
-      prismaMock.gdprRequest.findFirst.mockResolvedValueOnce(null);
-
-      await service.requestDeletion('agent_1', 'ws_1');
-
-      expect(prismaMock.gdprRequest.findFirst).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: expect.objectContaining({
-            workspaceId: 'ws_1',
-            userId: 'agent_1',
-          }),
-        }),
-      );
-    });
-
-    it('creates a new deletion request when no existing one', async () => {
-      const result = await service.requestDeletion('agent_1', 'ws_1');
-
-      expect(result).toEqual({
-        code: result.code,
-        status: GdprStatus.PENDING,
-        requestedAt,
-      });
-      expect(typeof result.code).toBe('string');
-      expect(prismaMock.gdprRequest.create).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: expect.objectContaining({
-            type: GdprType.DELETE,
-          }),
-        }),
-      );
-    });
-
-    it('returns existing pending deletion request without creating new one', async () => {
-      const existing = {
-        ...gdprRecord,
-        type: GdprType.DELETE,
-        code: 'existing',
-        status: GdprStatus.PENDING,
-      };
-      prismaMock.gdprRequest.findFirst.mockResolvedValueOnce(existing);
-
-      const result = await service.requestDeletion('agent_1', 'ws_1');
-
-      expect(result).toEqual({
-        code: 'existing',
-        status: GdprStatus.PENDING,
-        requestedAt,
-        message: 'Solicitação de exclusão já existe.',
-      });
-      expect(prismaMock.gdprRequest.create).not.toHaveBeenCalled();
-    });
-
-    it('throws when a complete deletion already exists', async () => {
-      prismaMock.gdprRequest.findFirst.mockResolvedValueOnce({
-        ...gdprRecord,
-        type: GdprType.DELETE,
-        status: GdprStatus.COMPLETE,
-      });
-
-      await expect(service.requestDeletion('agent_1', 'ws_1')).rejects.toThrow(BadRequestException);
-    });
-
-    it('returns existing request when status is PROCESSING', async () => {
-      const processing = {
-        ...gdprRecord,
-        type: GdprType.DELETE,
-        code: 'processing-code',
-        status: GdprStatus.PROCESSING,
-      };
-      prismaMock.gdprRequest.findFirst.mockResolvedValueOnce(processing);
-
-      const result = await service.requestDeletion('agent_1', 'ws_1');
-
-      expect(result.code).toBe('processing-code');
-      expect(prismaMock.gdprRequest.create).not.toHaveBeenCalled();
-    });
-  });
-
-  describe('verifyIdentity', () => {
-    it('verifies and enqueues processing', async () => {
-      const result = await service.verifyIdentity('abc123', 'valid-token');
-
-      expect(result).toEqual({
-        code: 'abc123',
-        status: 'PROCESSING',
-        message: 'Solicitação verificada e em processamento.',
-      });
-      expect(jwtMock.verify).toHaveBeenCalledWith('valid-token');
       expect(prismaMock.gdprRequest.update).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { id: 'gdpr_1' },
-          data: { status: GdprStatus.VERIFYING },
+          data: expect.objectContaining({ status: GdprStatus.PROCESSING }),
         }),
       );
-    });
-
-    it('throws UnauthorizedException for invalid token', async () => {
-      jwtMock.verify.mockImplementationOnce(() => {
-        throw new Error('jwt malformed');
-      });
-
-      await expect(service.verifyIdentity('abc123', 'bad-token')).rejects.toThrow(
-        UnauthorizedException,
-      );
-    });
-
-    it('throws NotFoundException for unknown code', async () => {
-      prismaMock.gdprRequest.findUnique.mockResolvedValueOnce(null);
-
-      await expect(service.verifyIdentity('unknown', 'valid-token')).rejects.toThrow(
-        NotFoundException,
-      );
-    });
-
-    it('throws UnauthorizedException when token does not match request', async () => {
-      jwtMock.verify.mockReturnValueOnce({ sub: 'other_agent', requestId: 'other_gdpr' });
-
-      await expect(service.verifyIdentity('abc123', 'valid-token')).rejects.toThrow(
-        UnauthorizedException,
-      );
-    });
-
-    it('throws BadRequestException when request is not in PENDING state', async () => {
-      prismaMock.gdprRequest.findUnique.mockResolvedValueOnce({
-        ...gdprRecord,
-        status: GdprStatus.VERIFYING,
-      });
-
-      await expect(service.verifyIdentity('abc123', 'valid-token')).rejects.toThrow(
-        BadRequestException,
-      );
-    });
-  });
-
-  describe('getStatus', () => {
-    it('returns status for a valid code', async () => {
-      const result = await service.getStatus('abc123');
-
-      expect(result).toEqual(
+      expect(prismaMock.$transaction).toHaveBeenCalled();
+      expect(prismaMock.gdprRequest.update).toHaveBeenCalledWith(
         expect.objectContaining({
-          code: 'abc123',
-          type: GdprType.EXPORT,
-          status: GdprStatus.PENDING,
+          where: { id: 'gdpr_1' },
+          data: expect.objectContaining({ status: GdprStatus.COMPLETE }),
         }),
       );
     });
 
-    it('throws NotFoundException for unknown code', async () => {
-      prismaMock.gdprRequest.findUnique.mockResolvedValueOnce(null);
+    it('marks as FAILED when request exceeds 30-day window', async () => {
+      const oldRequest = {
+        ...gdprRecord,
+        requestedAt: new Date(Date.now() - 31 * 24 * 60 * 60 * 1000),
+      };
+      prismaMock.gdprRequest.findUniqueOrThrow.mockResolvedValueOnce(oldRequest);
 
-      await expect(service.getStatus('unknown')).rejects.toThrow(NotFoundException);
+      await service.processDeletion('gdpr_1');
+
+      expect(prismaMock.gdprRequest.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 'gdpr_1' },
+          data: expect.objectContaining({ status: GdprStatus.FAILED }),
+        }),
+      );
+      expect(prismaMock.$transaction).not.toHaveBeenCalled();
+    });
+
+    it('executes transaction for cascade anonymization', async () => {
+      await service.processDeletion('gdpr_1');
+
+      const txCall = prismaMock.$transaction.mock.calls[0]?.[0] as (
+        tx: typeof prismaMock,
+      ) => unknown;
+      expect(txCall).toBeDefined();
+    });
+
+    it('sets evidenceUrl after cascade completion', async () => {
+      await service.processDeletion('gdpr_1');
+
+      const evidenceCall = prismaMock.gdprRequest.update.mock.calls.find((call: unknown[]) => {
+        const arg = call[0] as { data?: { evidenceUrl?: string } };
+        return Boolean(arg?.data?.evidenceUrl);
+      });
+      expect(evidenceCall).toBeDefined();
+    });
+
+    it('anonymizes owner chat messages and records the count in audit details', async () => {
+      prismaMock.chatMessage.updateMany.mockResolvedValueOnce({ count: 3 });
+
+      await service.processDeletion('gdpr_1');
+
+      const updateArgs = prismaMock.chatMessage.updateMany.mock.calls[0][0];
+      expect(updateArgs).toEqual({
+        where: { workspaceId: 'ws_1', userId: 'agent_1', deletedAt: null },
+        data: expect.objectContaining({
+          userId: null,
+          content: '[deleted by GDPR request]',
+          deletedAt: updateArgs.data.deletedAt,
+        }),
+      });
+      expect(updateArgs.data.deletedAt).toBeInstanceOf(Date);
+      expect(prismaMock.auditLog.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            details: expect.objectContaining({ chatMessagesAnonymized: 3 }),
+          }),
+        }),
+      );
+    });
+
+    it('unassigns agent-linked conversations and messages while preserving records', async () => {
+      prismaMock.conversation.updateMany.mockResolvedValueOnce({ count: 2 });
+      prismaMock.message.updateMany.mockResolvedValueOnce({ count: 5 });
+
+      await service.processDeletion('gdpr_1');
+
+      expect(prismaMock.conversation.updateMany).toHaveBeenCalledWith({
+        where: { workspaceId: 'ws_1', assignedAgentId: 'agent_1' },
+        data: { assignedAgentId: null },
+      });
+      expect(prismaMock.message.updateMany).toHaveBeenCalledWith({
+        where: { workspaceId: 'ws_1', agentId: 'agent_1' },
+        data: { agentId: null },
+      });
+      expect(prismaMock.auditLog.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            details: expect.objectContaining({
+              conversationsUnassigned: 2,
+              messagesUnassigned: 5,
+            }),
+          }),
+        }),
+      );
     });
   });
 });

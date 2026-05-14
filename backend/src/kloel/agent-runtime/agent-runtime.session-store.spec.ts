@@ -62,8 +62,8 @@ describe('AgentRuntimeSessionStore', () => {
             key: expect.stringMatching(/^agent_turn:whatsapp:/),
             content: expect.stringContaining('Quanto custa'),
             value: expect.objectContaining({
-              userMessage: expect.any(String),
-              assistantMessage: expect.any(String),
+              userMessage: expect.stringContaining('Quanto custa'),
+              assistantMessage: expect.stringContaining('R$'),
             }),
           }),
         }),

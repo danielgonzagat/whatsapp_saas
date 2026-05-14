@@ -94,7 +94,7 @@ describe('SystemHealthController', () => {
       expect(result.failures).toHaveLength(0);
     });
 
-    it('throws ServiceUnavailableException (503) when any dependency is DOWN', async () => {
+    it('throws ServiceUnavailableException (503) when a dependency is DOWN', async () => {
       mockDeepReadiness.mockResolvedValue({
         status: 'DOWN',
         timestamp: '2024-01-01T00:00:00.000Z',

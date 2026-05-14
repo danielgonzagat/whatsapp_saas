@@ -46,9 +46,9 @@ describe('AlertsGateway', () => {
       await gateway.onModuleInit();
 
       expect(mockSub.subscribe).toHaveBeenCalledWith('alerts');
-      expect(mockSub.on).toHaveBeenCalledWith('message', expect.any(Function));
-
       const handler = mockSub.on.mock.calls[0][1];
+      expect(mockSub.on.mock.calls[0][0]).toBe('message');
+      expect(typeof handler).toBe('function');
       handler('alerts', JSON.stringify({ workspaceId: 'ws-1', type: 'rate-limit' }));
 
       expect(mockServer.to).toHaveBeenCalledWith('workspace:ws-1');

@@ -56,9 +56,9 @@ describe('CopilotGateway', () => {
       await gateway.onModuleInit();
 
       expect(mockSub.psubscribe).toHaveBeenCalledWith('ws:copilot:*');
-      expect(mockSub.on).toHaveBeenCalledWith('pmessage', expect.any(Function));
-
       const handler = mockSub.on.mock.calls[0][1];
+      expect(mockSub.on.mock.calls[0][0]).toBe('pmessage');
+      expect(typeof handler).toBe('function');
       const roomEmit = jest.fn();
       mockServer.to.mockReturnValue({ emit: roomEmit });
 
@@ -93,10 +93,9 @@ describe('CopilotGateway', () => {
         handler('ws:copilot:*', 'ws:copilot:ws-1', 'broken-{{{json}}');
       }).not.toThrow();
 
-      expect(mockOpsAlert.alertOnCriticalError).toHaveBeenCalledWith(
-        expect.any(Error),
-        'CopilotGateway.emit',
-      );
+      const [error, context] = mockOpsAlert.alertOnCriticalError.mock.calls[0];
+      expect(error).toBeInstanceOf(Error);
+      expect(context).toBe('CopilotGateway.emit');
     });
 
     it('does not crash when opsAlert is not injected and parse error occurs', async () => {

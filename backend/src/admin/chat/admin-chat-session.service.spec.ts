@@ -148,12 +148,9 @@ describe('AdminChatSessionService', () => {
         adminUserId,
       });
 
-      expect(mockUpdate).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: { id: 'session_1' },
-          data: { deletedAt: expect.any(Date) },
-        }),
-      );
+      const updateArgs = mockUpdate.mock.calls[0][0];
+      expect(updateArgs.where).toEqual({ id: 'session_1' });
+      expect(updateArgs.data.deletedAt).toBeInstanceOf(Date);
     });
 
     it('throws forbidden when trying to delete session from another workspace', async () => {

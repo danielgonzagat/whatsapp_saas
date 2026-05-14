@@ -54,7 +54,9 @@ describe('BrainAuditController', () => {
 
       await controller.spineAudit();
 
-      expect(audit.audit).toHaveBeenCalledWith(expect.any(String));
+      const [since] = audit.audit.mock.calls[0];
+      expect(typeof since).toBe('string');
+      expect(Number.isNaN(Date.parse(since))).toBe(false);
     });
 
     it('rejects malformed since with BadRequestException', async () => {

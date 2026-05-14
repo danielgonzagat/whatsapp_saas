@@ -116,14 +116,14 @@ describe('UnifiedAgentActionsBillingService', () => {
 
       expect(result.success).toBe(true);
       expect(result.data.total).toBe(100);
-      expect(prisma.message.count).toHaveBeenCalledWith(
+      const messageCountArgs = prisma.message.count.mock.calls[0][0];
+      expect(messageCountArgs.where).toEqual(
         expect.objectContaining({
-          where: expect.objectContaining({
-            workspaceId: wsId,
-            createdAt: expect.any(Object),
-          }),
+          workspaceId: wsId,
+          createdAt: messageCountArgs.where.createdAt,
         }),
       );
+      expect(messageCountArgs.where.createdAt).toBeDefined();
     });
 
     it('returns contact counts for metric=contacts', async () => {
@@ -142,15 +142,13 @@ describe('UnifiedAgentActionsBillingService', () => {
         period: 'week',
       });
 
-      expect(prisma.autopilotEvent.count).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: {
-            workspaceId: wsId,
-            action: 'PAYMENT_RECEIVED',
-            createdAt: expect.any(Object),
-          },
-        }),
-      );
+      const eventCountArgs = prisma.autopilotEvent.count.mock.calls[0][0];
+      expect(eventCountArgs.where).toEqual({
+        workspaceId: wsId,
+        action: 'PAYMENT_RECEIVED',
+        createdAt: eventCountArgs.where.createdAt,
+      });
+      expect(eventCountArgs.where.createdAt).toBeDefined();
       expect(result.success).toBe(true);
     });
 

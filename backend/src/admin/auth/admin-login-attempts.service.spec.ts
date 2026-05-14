@@ -103,10 +103,9 @@ describe('AdminLoginAttemptsService', () => {
 
       await service.isLocked(email, ip);
 
-      expect(prismaMock.$transaction).toHaveBeenCalledWith(
-        expect.any(Array),
-        expect.objectContaining({ isolationLevel: 'ReadCommitted' }),
-      );
+      const [queries, options] = prismaMock.$transaction.mock.calls[0];
+      expect(Array.isArray(queries)).toBe(true);
+      expect(options).toEqual(expect.objectContaining({ isolationLevel: 'ReadCommitted' }));
     });
   });
 

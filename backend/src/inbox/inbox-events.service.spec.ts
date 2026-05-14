@@ -41,7 +41,9 @@ describe('InboxEventsService', () => {
     await service.onModuleInit();
     expect(redis.duplicate).toHaveBeenCalled();
     expect(subscriber.subscribe).toHaveBeenCalledWith('ws:inbox');
-    expect(subscriber.on).toHaveBeenCalledWith('message', expect.any(Function));
+    const [event, handler] = subscriber.on.mock.calls[0];
+    expect(event).toBe('message');
+    expect(typeof handler).toBe('function');
   });
 
   it('routes message:new to gateway with workspace scoping', async () => {

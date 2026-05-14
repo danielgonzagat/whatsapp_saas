@@ -132,9 +132,8 @@ describe('CiaBootstrapService', () => {
 
     it('clamps the limit between 1 and 2000', async () => {
       await service.listPendingConversations('ws-a', 0);
-      expect(prisma.conversation.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({ take: expect.any(Number) }),
-      );
+      const [firstFindMany] = prisma.conversation.findMany.mock.calls[0];
+      expect(typeof firstFindMany.take).toBe('number');
 
       await service.listPendingConversations('ws-a', 5000);
       expect(prisma.conversation.findMany).toHaveBeenCalledWith(
@@ -279,10 +278,10 @@ describe('CiaBootstrapService', () => {
 
       await service.run('ws-a', startBacklogRun, startPresenceHeartbeat, stopPresenceHeartbeat);
 
-      expect(startBacklogRun).toHaveBeenCalledWith(
-        'ws-a',
-        'reply_all_recent_first',
-        expect.any(Number),
+      const backlogArgs = startBacklogRun.mock.calls[0];
+      expect(backlogArgs.slice(0, 2)).toEqual(['ws-a', 'reply_all_recent_first']);
+      expect(typeof backlogArgs[2]).toBe('number');
+      expect(backlogArgs[3]).toEqual(
         expect.objectContaining({ autoStarted: true, triggeredBy: 'autopilot_total' }),
       );
     });

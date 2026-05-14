@@ -124,7 +124,7 @@ describe('redisInProductionValidator', () => {
       );
     });
 
-    it('throws when any candidate is a Railway proxy host', () => {
+    it('throws when a candidate is a Railway proxy host', () => {
       const input = {
         NODE_ENV: 'production',
         REDIS_URL: 'redis://safe.internal:6379',

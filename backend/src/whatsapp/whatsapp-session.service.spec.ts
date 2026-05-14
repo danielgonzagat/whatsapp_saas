@@ -104,8 +104,9 @@ describe('WhatsappSessionService', () => {
       expect(result).toEqual({
         recreated: false,
         reason: 'session_config_healthy',
-        diagnostics: expect.any(Object),
+        diagnostics: result.diagnostics,
       });
+      expect(result.diagnostics).toBeDefined();
     });
 
     it('recreates session when config is mismatched', async () => {

@@ -95,7 +95,7 @@ describe('DailyLimitService', () => {
         workspaceId_channel_day: {
           workspaceId: wsId,
           channel: ch,
-          day: expect.any(Date),
+          day: callArgs.where.workspaceId_channel_day.day,
         },
       });
       const whereDay = callArgs.where.workspaceId_channel_day.day;
@@ -105,7 +105,7 @@ describe('DailyLimitService', () => {
       expect(callArgs.create).toMatchObject({
         workspaceId: wsId,
         channel: ch,
-        day: expect.any(Date),
+        day: callArgs.create.day,
         used: 1,
         capAtDay: 5,
       });

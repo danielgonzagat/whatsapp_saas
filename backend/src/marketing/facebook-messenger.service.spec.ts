@@ -10,6 +10,7 @@ describe('FacebookMessengerService', () => {
   const fbMessageUpsert = jest.fn();
   const fbMessageUpdateMany = jest.fn();
   const metaConnectionFindUnique = jest.fn();
+  const metaConnectionFindFirst = jest.fn();
 
   let service: FacebookMessengerService;
 
@@ -25,6 +26,7 @@ describe('FacebookMessengerService', () => {
           updateMany: fbMessageUpdateMany,
         },
         metaConnection: {
+          findFirst: metaConnectionFindFirst,
           findUnique: metaConnectionFindUnique,
         },
       } as never,
@@ -174,10 +176,11 @@ describe('FacebookMessengerService', () => {
           },
           data: expect.objectContaining({
             deliveryStatus: 'DELIVERED',
-            deliveredAt: expect.any(Date),
+            deliveredAt: fbMessageUpdateMany.mock.calls[0][0].data.deliveredAt,
           }),
         }),
       );
+      expect(fbMessageUpdateMany.mock.calls[0][0].data.deliveredAt).toBeInstanceOf(Date);
     });
 
     it('skips update when mids array is empty', async () => {
@@ -213,10 +216,11 @@ describe('FacebookMessengerService', () => {
           },
           data: expect.objectContaining({
             deliveryStatus: 'READ',
-            readAt: expect.any(Date),
+            readAt: fbMessageUpdateMany.mock.calls[0][0].data.readAt,
           }),
         }),
       );
+      expect(fbMessageUpdateMany.mock.calls[0][0].data.readAt).toBeInstanceOf(Date);
     });
 
     it('skips when watermark is absent', async () => {
@@ -323,7 +327,7 @@ describe('FacebookMessengerService', () => {
 
   describe('getStatus', () => {
     it('returns connected true with page info', async () => {
-      metaConnectionFindUnique.mockResolvedValue({
+      metaConnectionFindFirst.mockResolvedValue({
         pageId: 'page-1',
         pageName: 'My Page',
       });
@@ -338,7 +342,7 @@ describe('FacebookMessengerService', () => {
     });
 
     it('returns connected false when no page connection exists', async () => {
-      metaConnectionFindUnique.mockResolvedValue(null);
+      metaConnectionFindFirst.mockResolvedValue(null);
 
       const result = await service.getStatus('ws-1');
 

@@ -204,10 +204,10 @@ describe('GdprController', () => {
 
       expect(response.body).toEqual(
         expect.objectContaining({
-          confirmation_code: expect.any(String),
           url: expect.stringContaining('/data-deletion/status/'),
         }),
       );
+      expect(typeof response.body.confirmation_code).toBe('string');
     });
 
     it('returns not_found when facebook user is not in the system', async () => {

@@ -256,14 +256,14 @@ describe('KloelToolExecutorCrmService', () => {
         targetAudience: 'novos',
       });
 
-      expect(prisma.contact.count).toHaveBeenCalledWith(
+      const countArgs = prisma.contact.count.mock.calls[0][0];
+      expect(countArgs.where).toEqual(
         expect.objectContaining({
-          where: expect.objectContaining({
-            workspaceId: wsId,
-            createdAt: { gte: expect.any(Date) },
-          }),
+          workspaceId: wsId,
+          createdAt: { gte: countArgs.where.createdAt.gte },
         }),
       );
+      expect(countArgs.where.createdAt.gte).toBeInstanceOf(Date);
     });
   });
 
@@ -313,11 +313,12 @@ describe('KloelToolExecutorCrmService', () => {
 
       await service.toolGetDashboardSummary(wsId, 'week');
 
-      expect(prisma.contact.count).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: { workspaceId: wsId, createdAt: { gte: expect.any(Date) } },
-        }),
-      );
+      const countArgs = prisma.contact.count.mock.calls[0][0];
+      expect(countArgs.where).toEqual({
+        workspaceId: wsId,
+        createdAt: { gte: countArgs.where.createdAt.gte },
+      });
+      expect(countArgs.where.createdAt.gte).toBeInstanceOf(Date);
     });
 
     it('uses month date filter', async () => {

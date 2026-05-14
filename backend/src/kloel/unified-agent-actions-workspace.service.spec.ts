@@ -384,7 +384,7 @@ describe('UnifiedAgentActionsWorkspaceService', () => {
       const result = await service.actionCreateFlowFromDescription(
         wsId,
         { description: 'Sell product', objective: 'convert', autoActivate: true },
-        { apiKey: 'fake' } as any,
+        { apiKey: 'fake' },
         'gpt-4',
         'gpt-3.5-turbo',
       );
@@ -407,7 +407,7 @@ describe('UnifiedAgentActionsWorkspaceService', () => {
       const result = await service.actionCreateFlowFromDescription(
         wsId,
         { description: 'test', objective: 'sell' },
-        { apiKey: 'fake' } as any,
+        { apiKey: 'fake' },
         'gpt-4',
         'gpt-3.5-turbo',
       );

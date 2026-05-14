@@ -254,12 +254,8 @@ describe('CiaRemoteBacklogService', () => {
           workspaceId: 'ws-1',
         }),
       );
-      expect(result).toEqual(
-        expect.objectContaining({
-          processed: expect.any(Number) as number,
-          skipped: expect.any(Number) as number,
-        }),
-      );
+      expect(typeof result.processed).toBe('number');
+      expect(typeof result.skipped).toBe('number');
     });
 
     it('skips chats that fail to load remote batch', async () => {

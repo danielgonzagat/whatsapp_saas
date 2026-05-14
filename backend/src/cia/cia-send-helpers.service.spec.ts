@@ -74,7 +74,9 @@ describe('CiaSendHelpersService', () => {
     it('sets 48h TTL on first increment', async () => {
       redis.incr.mockResolvedValue(1);
       await service.reserveDailyMessageLimit('ws-1');
-      expect(redis.expire).toHaveBeenCalledWith(expect.any(String), 60 * 60 * 48);
+      const [ttlKey, ttlSeconds] = redis.expire.mock.calls[0];
+      expect(typeof ttlKey).toBe('string');
+      expect(ttlSeconds).toBe(60 * 60 * 48);
     });
 
     it('rolls back and emits error event when limit reached', async () => {

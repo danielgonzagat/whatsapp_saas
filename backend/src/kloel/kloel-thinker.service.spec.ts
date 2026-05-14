@@ -313,14 +313,15 @@ describe('KloelThinkerService', () => {
         assistantMessageId: 'msg-1',
       });
 
-      expect(regenerateThreadAssistantResponseImpl).toHaveBeenCalledWith(
+      const [regenerateInput, regenerateDeps] = regenerateThreadAssistantResponseImpl.mock.calls[0];
+      expect(regenerateInput).toEqual(
         expect.objectContaining({
           workspaceId: wsId,
           conversationId: 'conv-1',
           assistantMessageId: 'msg-1',
         }),
-        expect.any(Object),
       );
+      expect(regenerateDeps).toBeDefined();
       expect(result).toEqual(mockRegenerated);
     });
 

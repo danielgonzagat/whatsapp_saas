@@ -401,12 +401,9 @@ describe('KloelService', () => {
     it('passes workspaceId to leadBrainService', async () => {
       await service.processWhatsAppMessage('ws-1', '5511', 'hello');
 
-      expect(mocks.leadBrainService.processWhatsAppMessage).toHaveBeenCalledWith(
-        'ws-1',
-        '5511',
-        'hello',
-        expect.any(Function),
-      );
+      const args = mocks.leadBrainService.processWhatsAppMessage.mock.calls[0];
+      expect(args.slice(0, 3)).toEqual(['ws-1', '5511', 'hello']);
+      expect(typeof args[3]).toBe('function');
     });
   });
 
@@ -414,12 +411,9 @@ describe('KloelService', () => {
     it('passes workspaceId to leadBrainService', async () => {
       await service.processWhatsAppMessageWithPayment('ws-1', '5511', 'hello');
 
-      expect(mocks.leadBrainService.processWhatsAppMessageWithPayment).toHaveBeenCalledWith(
-        'ws-1',
-        '5511',
-        'hello',
-        expect.any(Function),
-      );
+      const args = mocks.leadBrainService.processWhatsAppMessageWithPayment.mock.calls[0];
+      expect(args.slice(0, 3)).toEqual(['ws-1', '5511', 'hello']);
+      expect(typeof args[3]).toBe('function');
     });
   });
 

@@ -65,9 +65,10 @@ describe('WorkspaceService', () => {
         name: 'X',
         providerSettings: {},
       });
-      expect(cache.wrap).toHaveBeenCalledWith('cache:workspace:ws-1', expect.any(Function), {
-        ttl: 30,
-      });
+      const [cacheKey, loader, options] = cache.wrap.mock.calls[0];
+      expect(cacheKey).toBe('cache:workspace:ws-1');
+      expect(typeof loader).toBe('function');
+      expect(options).toEqual({ ttl: 30 });
     });
 
     it('throws NotFoundException when workspace missing', async () => {

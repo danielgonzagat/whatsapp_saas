@@ -21,6 +21,7 @@ jest.mock('bullmq', () => ({
 }));
 
 jest.mock('../queue/queue', () => ({
+  getDlqQueue: jest.fn(() => mockDlqQueue),
   queueRegistry: {
     get default() {
       return mockMainQueue;
@@ -122,7 +123,10 @@ describe('OpsController', () => {
     });
 
     it('throws BadRequestException for unknown queue name', () => {
-      expect(() => (controller as any)['getQueue']('nonexistent')).toThrow(BadRequestException);
+      const controllerWithPrivateQueue = controller as unknown as {
+        getQueue(name: string): unknown;
+      };
+      expect(() => controllerWithPrivateQueue.getQueue('nonexistent')).toThrow(BadRequestException);
     });
 
     it('clamps limit to valid range', async () => {

@@ -136,10 +136,9 @@ describe('AdminSalesService', () => {
     it('passes search filter to transaction query', async () => {
       await service.overview({ search: 'KLOEL' });
 
-      expect(mockListAdminTransactions).toHaveBeenCalledWith(
-        expect.any(Object),
-        expect.objectContaining({ search: 'KLOEL' }),
-      );
+      const [query, filters] = mockListAdminTransactions.mock.calls.at(-1) ?? [];
+      expect(query).toBeDefined();
+      expect(filters).toEqual(expect.objectContaining({ search: 'KLOEL' }));
     });
 
     it('passes status/method/gateway filters', async () => {
@@ -149,8 +148,8 @@ describe('AdminSalesService', () => {
         gateway: 'stripe',
       });
 
-      expect(mockListAdminTransactions).toHaveBeenCalledWith(
-        expect.any(Object),
+      const [, filters] = mockListAdminTransactions.mock.calls.at(-1) ?? [];
+      expect(filters).toEqual(
         expect.objectContaining({
           status: OrderStatus.PAID,
           method: PaymentMethod.CREDIT_CARD,

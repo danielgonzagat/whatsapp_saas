@@ -29,7 +29,9 @@ describe('AutopilotOpsConversionService', () => {
       workspace: { findUnique: jest.fn().mockResolvedValue({ id: 'ws-1', providerSettings: {} }) },
       subscription: { findUnique: jest.fn().mockResolvedValue({ status: 'ACTIVE' }) },
       contact: {
-        findFirst: jest.fn().mockResolvedValue({ id: 'ct-1', customFields: null, phone: '5511999999999' }),
+        findFirst: jest
+          .fn()
+          .mockResolvedValue({ id: 'ct-1', customFields: null, phone: '5511999999999' }),
         findUnique: jest.fn().mockResolvedValue({ id: 'ct-1', phone: '5511999999999' }),
         updateMany: jest.fn().mockResolvedValue({ count: 1 }),
       },
@@ -41,10 +43,7 @@ describe('AutopilotOpsConversionService', () => {
     };
 
     const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        AutopilotOpsConversionService,
-        { provide: PrismaService, useValue: prisma },
-      ],
+      providers: [AutopilotOpsConversionService, { provide: PrismaService, useValue: prisma }],
     }).compile();
 
     service = module.get(AutopilotOpsConversionService);
@@ -63,8 +62,9 @@ describe('AutopilotOpsConversionService', () => {
         queued: true,
         scheduled: true,
         reason: 'rate_limited_error_1h',
-        delayMs: expect.any(Number),
+        delayMs: result.delayMs,
       });
+      expect(typeof result.delayMs).toBe('number');
       expect(prisma.autopilotEvent.create).toHaveBeenCalled();
     });
 
@@ -89,13 +89,18 @@ describe('AutopilotOpsConversionService', () => {
       expect(result).toEqual({
         queued: false,
         reason: 'retry_already_scheduled',
-        nextRetryAt: expect.any(String),
+        nextRetryAt: result.nextRetryAt,
       });
+      expect(typeof result.nextRetryAt).toBe('string');
     });
 
     it('throws ForbiddenException for billing-suspended workspace (tenant isolation)', async () => {
-      prisma.workspace.findUnique.mockResolvedValue({ providerSettings: { billingSuspended: true } });
-      await expect(service.retryContact('ws-suspended', 'ct-1')).rejects.toThrow(ForbiddenException);
+      prisma.workspace.findUnique.mockResolvedValue({
+        providerSettings: { billingSuspended: true },
+      });
+      await expect(service.retryContact('ws-suspended', 'ct-1')).rejects.toThrow(
+        ForbiddenException,
+      );
     });
 
     it('throws ForbiddenException for CANCELED subscription', async () => {
@@ -106,7 +111,11 @@ describe('AutopilotOpsConversionService', () => {
 
   describe('markConversion', () => {
     it('creates autopilot event and returns ok', async () => {
-      const result = await service.markConversion({ workspaceId: 'ws-1', contactId: 'ct-1', reason: 'test' });
+      const result = await service.markConversion({
+        workspaceId: 'ws-1',
+        contactId: 'ct-1',
+        reason: 'test',
+      });
       expect(result).toEqual({ ok: true, contactId: 'ct-1' });
       expect(prisma.autopilotEvent.create).toHaveBeenCalled();
     });
@@ -118,7 +127,10 @@ describe('AutopilotOpsConversionService', () => {
     });
 
     it('dedupes by orderId when existing conversion event found', async () => {
-      prisma.autopilotEvent.findFirst.mockResolvedValue({ id: 'evt-existing', contactId: 'ct-dedup' });
+      prisma.autopilotEvent.findFirst.mockResolvedValue({
+        id: 'evt-existing',
+        contactId: 'ct-dedup',
+      });
       const result = await service.markConversion({
         workspaceId: 'ws-1',
         contactId: 'ct-1',
@@ -128,13 +140,19 @@ describe('AutopilotOpsConversionService', () => {
     });
 
     it('throws ForbiddenException for billing-suspended workspace (tenant isolation)', async () => {
-      prisma.workspace.findUnique.mockResolvedValue({ providerSettings: { billingSuspended: true } });
-      await expect(service.markConversion({ workspaceId: 'ws-suspended', contactId: 'ct-1' })).rejects.toThrow(ForbiddenException);
+      prisma.workspace.findUnique.mockResolvedValue({
+        providerSettings: { billingSuspended: true },
+      });
+      await expect(
+        service.markConversion({ workspaceId: 'ws-suspended', contactId: 'ct-1' }),
+      ).rejects.toThrow(ForbiddenException);
     });
 
     it('rethrows upstream error from prisma', async () => {
       prisma.workspace.findUnique.mockRejectedValue(new Error('connection lost'));
-      await expect(service.markConversion({ workspaceId: 'ws-1', contactId: 'ct-err' })).rejects.toThrow('connection lost');
+      await expect(
+        service.markConversion({ workspaceId: 'ws-1', contactId: 'ct-err' }),
+      ).rejects.toThrow('connection lost');
     });
   });
 });

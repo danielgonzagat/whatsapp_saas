@@ -327,13 +327,12 @@ BENEFÍCIOS: A, B`,
         price: 10,
       });
 
-      expect(memoryCrud.saveMemory).toHaveBeenCalledWith(
-        'ws-tenant',
-        expect.any(String),
-        expect.any(Object),
-        'product',
-        expect.any(String),
-      );
+      const saveArgs = memoryCrud.saveMemory.mock.calls[0];
+      expect(saveArgs[0]).toBe('ws-tenant');
+      expect(typeof saveArgs[1]).toBe('string');
+      expect(saveArgs[2]).toBeDefined();
+      expect(saveArgs[3]).toBe('product');
+      expect(typeof saveArgs[4]).toBe('string');
     });
 
     it('listMemories delegates with correct workspaceId', async () => {

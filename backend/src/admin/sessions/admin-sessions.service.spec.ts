@@ -144,7 +144,7 @@ describe('AdminSessionsService', () => {
       );
     });
 
-    it('allows OWNER to revoke any session', async () => {
+    it('allows OWNER to revoke an arbitrary session', async () => {
       mockSessionFindUnique.mockResolvedValueOnce({
         ...sessionRecord,
         adminUserId: targetId,

@@ -60,7 +60,9 @@ describe('UnifiedAgentActionsMessagingService', () => {
       alertOnCriticalError: jest.fn(),
     };
     dailyLimit = {
-      ensureProactiveDailyLimit: jest.fn().mockResolvedValue({ allowed: true, remaining: 24, capAtDay: 25 }),
+      ensureProactiveDailyLimit: jest
+        .fn()
+        .mockResolvedValue({ allowed: true, remaining: 24, capAtDay: 25 }),
       isReply: jest.fn().mockResolvedValue(false),
     };
     // Delegate transports.send to whatsappService.sendMessage so legacy
@@ -70,8 +72,7 @@ describe('UnifiedAgentActionsMessagingService', () => {
       const guardContext = (params?.guardContext ?? {}) as Record<string, unknown>;
       const fullContext = {
         ...guardContext,
-        complianceMode:
-          guardContext.deliveryMode === 'reactive' ? 'reactive' : 'proactive',
+        complianceMode: guardContext.deliveryMode === 'reactive' ? 'reactive' : 'proactive',
         forceDirect: guardContext.forceDirect === true,
         ...(params.mediaUrl !== undefined ? { mediaUrl: params.mediaUrl } : {}),
         ...(params.mediaType !== undefined ? { mediaType: params.mediaType } : {}),
@@ -442,12 +443,9 @@ describe('UnifiedAgentActionsMessagingService', () => {
         message: 'Test',
       });
 
-      expect(whatsappService.sendMessage).toHaveBeenCalledWith(
-        'ws-tenant',
-        phone,
-        'Test',
-        expect.any(Object),
-      );
+      const sendArgs = whatsappService.sendMessage.mock.calls[0];
+      expect(sendArgs.slice(0, 3)).toEqual(['ws-tenant', phone, 'Test']);
+      expect(sendArgs[3]).toBeDefined();
     });
 
     it('actionSendMedia passes workspaceId to WhatsApp service', async () => {
@@ -455,12 +453,10 @@ describe('UnifiedAgentActionsMessagingService', () => {
         url: 'https://img.test',
       });
 
-      expect(whatsappService.sendMessage).toHaveBeenCalledWith(
-        'ws-tenant',
-        phone,
-        expect.any(String),
-        expect.any(Object),
-      );
+      const mediaArgs = whatsappService.sendMessage.mock.calls[0];
+      expect(mediaArgs.slice(0, 2)).toEqual(['ws-tenant', phone]);
+      expect(typeof mediaArgs[2]).toBe('string');
+      expect(mediaArgs[3]).toBeDefined();
     });
 
     it('actionSendVoiceNote passes workspaceId to audio service', async () => {

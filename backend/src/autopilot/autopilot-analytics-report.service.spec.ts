@@ -151,9 +151,12 @@ describe('AutopilotAnalyticsReportService', () => {
 
       await service.getMoneyReport(ws);
 
-      expect(mockPrisma.campaign.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({ where: { workspaceId: ws, createdAt: expect.any(Object) } }),
-      );
+      const campaignArgs = mockPrisma.campaign.findMany.mock.calls[0][0];
+      expect(campaignArgs.where).toEqual({
+        workspaceId: ws,
+        createdAt: campaignArgs.where.createdAt,
+      });
+      expect(campaignArgs.where.createdAt).toBeDefined();
       expect(mockPrisma.deal.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
           where: expect.objectContaining({ contact: { workspaceId: ws } }),
@@ -257,7 +260,8 @@ describe('AutopilotAnalyticsReportService', () => {
           meta: { confidence: 0.9 },
         },
       ]);
-      mockPrisma.contact.findMany.mockImplementation(async () => [
+      mockPrisma.contact.findMany.mockReset();
+      mockPrisma.contact.findMany.mockResolvedValueOnce([
         { id: 'c-1', phone: '5511999999999', name: 'João', customFields: null },
       ]);
 

@@ -145,12 +145,9 @@ describe('ChatService', () => {
         data: { threadId: conversationId, workspaceId, userId, role: 'user', content: 'hello' },
         select: { id: true, role: true, content: true, createdAt: true, userId: true },
       });
-      expect(mockPrisma.chatThread.updateMany).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: { id: conversationId, workspaceId },
-          data: { updatedAt: expect.any(Date) },
-        }),
-      );
+      const updateArgs = mockPrisma.chatThread.updateMany.mock.calls[0][0];
+      expect(updateArgs.where).toEqual({ id: conversationId, workspaceId });
+      expect(updateArgs.data.updatedAt).toBeInstanceOf(Date);
       expect(result.id).toBe('msg-1');
       expect(result.role).toBe('user');
       expect(result.content).toBe('hello');
