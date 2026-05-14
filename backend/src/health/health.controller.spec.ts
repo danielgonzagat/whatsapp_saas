@@ -49,7 +49,9 @@ describe('HealthController', () => {
     });
 
     it('isolates calls by workspaceId — independent health per workspace', async () => {
-      getHealth.mockResolvedValueOnce({ status: 'UP' }).mockResolvedValueOnce({ status: 'DOWN' });
+      getHealth
+        .mockResolvedValueOnce({ status: 'UP' })
+        .mockResolvedValueOnce({ status: 'DOWN' });
 
       const upResult = await controller.getHealth('ws-a');
       const downResult = await controller.getHealth('ws-b');

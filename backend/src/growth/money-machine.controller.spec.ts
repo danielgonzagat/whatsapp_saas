@@ -62,10 +62,7 @@ describe('MoneyMachineController', () => {
   describe('identity propagation', () => {
     it('passes distinct workspaceIds from different users to separate service calls', async () => {
       const adminReq = { user: { sub: 'admin-1', workspaceId: 'ws-admin' }, headers: {} } as never;
-      const memberReq = {
-        user: { sub: 'member-2', workspaceId: 'ws-member' },
-        headers: {},
-      } as never;
+      const memberReq = { user: { sub: 'member-2', workspaceId: 'ws-member' }, headers: {} } as never;
 
       activateMachine.mockResolvedValue({ status: 'IDLE' });
 

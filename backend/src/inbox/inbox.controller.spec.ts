@@ -60,7 +60,9 @@ describe('InboxController', () => {
       const error = new Error('Service down');
       getMessages.mockRejectedValue(error);
 
-      await expect(controller.getMessages(req as never, 'conv-99')).rejects.toThrow('Service down');
+      await expect(controller.getMessages(req as never, 'conv-99')).rejects.toThrow(
+        'Service down',
+      );
     });
   });
 
@@ -94,7 +96,7 @@ describe('InboxController', () => {
 
       await controller.assignAgent(req as never, 'conv-2', 'agent-2');
 
-      expect(resolveWorkspaceIdMock).toHaveBeenCalledWith(req);
+      expect(resolveWorkspaceIdMock).toHaveBeenCalledWith(req, undefined);
       expect(assignAgent).toHaveBeenCalledWith('ws-99', 'conv-2', 'agent-2');
     });
   });
