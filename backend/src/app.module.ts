@@ -87,8 +87,10 @@ import { ObservabilityModule } from './common/observability/observability.module
 import { OpsAlertModule } from './observability/ops-alert.module';
 import { OpsModule } from './ops/ops.module';
 import { PartnershipsModule } from './partnerships/partnerships.module';
+import { AffilModule } from './kloel/affil/affil.module';
 import { GoalFieldModule } from './kloel/goal-field/goal-field.module';
 import { ColdstartModule } from './kloel/coldstart/coldstart.module';
+import { CashModule } from './kloel/cash/cash.module';
 import { HypproofModule } from './kloel/hypproof/hypproof.module';
 import { InsightModule } from './kloel/insight/insight.module';
 import { OfferModule } from './kloel/offer/offer.module';
@@ -103,9 +105,14 @@ import { SpineModule } from './kloel/spine/spine.module';
 import { TeamModule as KloelTeamModule } from './kloel/team/team.module';
 import { TrustModule } from './kloel/trust/trust.module';
 import { WisdomModule } from './kloel/wisdom/wisdom.module';
+import { AgencyModule } from './kloel/agency/agency.module';
 import { HealthyMoneyModule } from './kloel/healthy-money/healthy-money.module';
 import { ClarityModule } from './kloel/clarity/clarity.module';
+import { CommemModule } from './kloel/commem/commem.module';
+import { CreatorModule } from './kloel/creator/creator.module';
+import { RoleModule } from './kloel/role/role.module';
 import { WowModule } from './kloel/wow/wow.module';
+import { ChannelModule } from './kloel/channel/channel.module';
 import { PipelineModule } from './pipeline/pipeline.module';
 import { ProductCategoriesModule } from './product-categories/product-categories.module';
 import { PublicApiModule } from './public-api/public-api.module';
@@ -277,12 +284,19 @@ function setRedisClientListenerBudget(client: Redis): void {
     TrustModule, // 🛡️ Camada IX — Trust Capital Protection (fatigue, desperation, brand, silence, handoff, recovery)
     KloelTeamModule, // 👥 Camada XII — Team Augmentation (pre-call context, next-best-action, forgotten-followup, blind-spot, handoff)
     ColdstartModule, // 🚀 Camada XVII — Cold-Start Discovery (no-history → first truth in ≤30 days)
+    CashModule, // 💰 Camada XXII — Cash Protection (track, project, runway, risk, volatility, protective actions, unsafe operation blocking)
     HypproofModule, // 🧪 Camada XX — Hypothesis → Experiment → Proof → Belief → Narrative (UTP-HYPPROOF-001..008)
     PostsaleConsumersModule, // 📦 Camada XVIII — Post-Sale & LTV Engine (anti-remorse, activation, LV, churn, retention, win-back, LTV)
     WisdomModule, // 🧠 Camada VI — Cross-Workspace Commercial Wisdom (k-anonymity, diff-privacy, patterns)
     WowModule, // ⚡ Camada XI — First-Hour Wow (cold-start ingestion, pattern detection, evidence delivery)
     HealthyMoneyModule, // 💰 Camada XIX — Healthy Money Optimization (revenue quality, margin, refund risk, brand wear, sale blocking)
+    AgencyModule, // 🏢 Camada XXV — Agency Intelligence (portfolio state, per-client context, priority ranking, margin, churn risk, load balance, knowledge leak guard, handoff)
     ClarityModule, // 🎯 Camada XX — Clarity Cognitive Prioritization (attention ranking, hierarchy projection, noise filter, anxiety detection, feedback loop, short narrative)
+    CommemModule, // 🧠 Camada XXI — Commem: Memory Exporter (ledger aggregation, memory projection, capsule export, time machine, value quantification, narrative, attribution guard)
+    CreatorModule, // 🎬 Camada XXVI — Creator Intelligence (audience-partner fit, mention timing, saturation, authenticity, engagement-vs-conversion, trust capital)
+    RoleModule, // 🎭 Camada XXIII — Role-Aware Commercial Intelligence (role detection, leverage map, recommendation guard, multi-hat, hierarchy/wisdom extenders) (UTP-ROLE-001..008)
+    AffilModule, // 🤝 Camada XXIII — Affiliate Intelligence & Protection (offer quality, producer trust, audience fit, angle, fatigue, waste, budget, account, commission, switch, scale vs abandon, discovery loop) (UTP-AFFIL-001..012)
+    ChannelModule, // 📡 Camada XXVIII — Channel Survival Intelligence (concentration, health, ban-risk, policy, contingency, migration, diversification)
     PulseModule, // PULSE live organism collector
     AnunciosModule, // 📊 Anuncios — Meta/Google/TikTok ad accounts, campaigns, insights
     TikTokAdsModule, // 🎵 TikTok Ads — OAuth + Events API + sync
