@@ -153,6 +153,7 @@ import { MindSimulatorService } from './mind-simulator.service';
 import { MindSyntheticGeneratorService } from './mind-synthetic-generator.service';
 import { MindService } from './mind.service';
 import { DecisionOutcomeService } from './decision-outcome.service';
+import { DriftModule } from './drift/drift.module';
 import { MindLiftReportService } from './mind-lift-report.service';
 import { MindSurpriseService } from './mind-surprise.service';
 import { MindVerbalizerService } from './mind-verbalizer.service';
@@ -171,6 +172,8 @@ import {
   AgentRuntimeSessionStore,
   AgentRuntimeSkillRegistry,
 } from './agent-runtime';
+import { AbiBuilderService } from './abi/abi-builder.service';
+import { LineageModule } from './lineage/lineage.module';
 
 /** Kloel module. */
 @Module({
@@ -190,6 +193,8 @@ import {
     KloelRulesModule,
     forwardRef(() => require('../inbox/inbox.module').InboxModule),
     ContactsModule,
+    LineageModule,
+    DriftModule,
   ],
   controllers: [
     KloelController,
@@ -252,6 +257,7 @@ import {
     OnboardingService,
     ConversationalOnboardingService,
     ConversationalOnboardingToolsService,
+    AbiBuilderService,
     KloelToolExecutorBillingService,
     KloelToolExecutorCrmService,
     KloelToolExecutorWhatsAppService,

@@ -11,12 +11,17 @@ import { resolveBackendOpenAIModel } from '../lib/openai-models';
 import { KLOEL_GUEST_SYSTEM_PROMPT } from './kloel.prompts';
 import { chatCompletionWithFallback, chatCompletionWithRetry } from './openai-wrapper';
 import { OpsAlertService } from '../observability/ops-alert.service';
+import { AbiBuilderService } from './abi/abi-builder.service';
+import { validateAbiPayload } from './abi/abi-validator';
 
 interface GuestConversation {
   messages: { role: 'user' | 'assistant' | 'system'; content: string }[];
   createdAt: Date;
   lastMessageAt: Date;
 }
+
+const CANONICAL_FALLBACK_SYSTEM =
+  'Estado cognitivo distribuído. Verbalize a partir do estado abaixo. Nunca invente fato fora do estado.';
 
 const GUEST_CONVERSATION_TTL_SECONDS = 24 * 60 * 60;
 
@@ -38,6 +43,7 @@ export class GuestChatService implements OnModuleDestroy {
     private readonly configService: ConfigService,
     @Optional() private readonly opsAlert?: OpsAlertService,
     @Optional() @InjectRedis() private readonly redis?: Redis,
+    @Optional() private readonly abiBuilder?: AbiBuilderService,
   ) {
     const isTestEnv = !!process.env.JEST_WORKER_ID || process.env.NODE_ENV === 'test';
 
@@ -86,6 +92,46 @@ export class GuestChatService implements OnModuleDestroy {
     conversation.messages.push({ role: 'user', content: message });
     conversation.lastMessageAt = new Date();
     await this.persistConversation(sessionId, conversation);
+
+    const useAbi = process.env['KLOEL_GUEST_CHAT_USE_ABI'] === 'on';
+
+    if (useAbi && this.abiBuilder) {
+      const abiResult = await this.abiBuilder.build({
+        audience: 'public',
+        currentInput: {
+          raw: message,
+          channel: 'web',
+          arrivalTimestamp: new Date().toISOString(),
+        },
+        perceptionSnapshot: {
+          channel: 'web',
+        },
+      });
+
+      if (abiResult.status !== 'ok') {
+        this.logger.warn(
+          `ABI build failed: ${abiResult.reason}, falling back to legacy guest prompt`,
+        );
+      } else {
+        const abi = abiResult.abi;
+        const validation = validateAbiPayload(abi);
+
+        if (validation.status === 'FAIL') {
+          this.logger.warn(
+            `ABI validation failed: ${JSON.stringify(validation.issues)}, falling back to legacy guest prompt`,
+          );
+        } else {
+          const historyMessages = conversation.messages.slice(0, -1).slice(-9);
+          const contextMessages = [
+            { role: 'system' as const, content: CANONICAL_FALLBACK_SYSTEM },
+            ...historyMessages,
+            { role: 'user' as const, content: JSON.stringify(abi) },
+          ];
+
+          return { conversation, contextMessages };
+        }
+      }
+    }
 
     const contextMessages = [
       { role: 'system' as const, content: KLOEL_GUEST_SYSTEM_PROMPT },
@@ -195,6 +241,12 @@ export class GuestChatService implements OnModuleDestroy {
     res.flushHeaders();
 
     try {
+      if (!message || message.trim().length === 0) {
+        res.write(`data: [DONE]\n\n`);
+        res.end();
+        return;
+      }
+
       const apiKey = this.getOpenAiKey();
       if (!apiKey) {
         this.writeStreamChunk(res, {
@@ -247,6 +299,10 @@ export class GuestChatService implements OnModuleDestroy {
    */
   async chatSync(message: string, sessionId: string): Promise<string> {
     try {
+      if (!message || message.trim().length === 0) {
+        return '';
+      }
+
       const apiKey = this.getOpenAiKey();
       if (!apiKey) {
         this.logger.error('OPENAI_API_KEY not configured');

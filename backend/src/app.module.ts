@@ -88,12 +88,15 @@ import { OpsAlertModule } from './observability/ops-alert.module';
 import { OpsModule } from './ops/ops.module';
 import { PartnershipsModule } from './partnerships/partnerships.module';
 import { GoalFieldModule } from './kloel/goal-field/goal-field.module';
+import { InsightModule } from './kloel/insight/insight.module';
 import { LineageModule } from './kloel/lineage/lineage.module';
 import { LocalIdentityModule } from './kloel/local-identity/local-identity.module';
 import { MaturityModule } from './kloel/maturity/maturity.module';
 import { MindModule } from './kloel/mind/mind.module';
 import { SpineModule } from './kloel/spine/spine.module';
+import { TeamModule as KloelTeamModule } from './kloel/team/team.module';
 import { TrustModule } from './kloel/trust/trust.module';
+import { WisdomModule } from './kloel/wisdom/wisdom.module';
 import { PipelineModule } from './pipeline/pipeline.module';
 import { ProductCategoriesModule } from './product-categories/product-categories.module';
 import { PublicApiModule } from './public-api/public-api.module';
@@ -256,9 +259,12 @@ function setRedisClientListenerBudget(client: Redis): void {
     MindModule, // 🧠 MIND substrate — valence/attention/hebbian/consolidation/multi-timescale/BG (UTP-MIND-*)
     LocalIdentityModule, // 🏷️ Camada V — Per-workspace operational profile (UTP-LOCAL-IDENT-001..007)
     GoalFieldModule, // 🎯 Camada III — Dynamic Goal Field (29 detectors + emerge/select/survive/shadow)
+    InsightModule, // 💡 Camada VII — Strategic Insight Engine (detectors + ranker + confidence + delivery)
     MaturityModule, // 📊 Camada VIII — Commercial Maturity Recognition (signals + classify + filter + guard)
     SpineModule, // 🧪 Spine — in-process event spine (B17 surface emitters publish here)
     TrustModule, // 🛡️ Camada IX — Trust Capital Protection (fatigue, desperation, brand, silence, handoff, recovery)
+    KloelTeamModule, // 👥 Camada XII — Team Augmentation (pre-call context, next-best-action, forgotten-followup, blind-spot, handoff)
+    WisdomModule, // 🧠 Camada VI — Cross-Workspace Commercial Wisdom (k-anonymity, diff-privacy, patterns)
     PulseModule, // PULSE live organism collector
     AnunciosModule, // 📊 Anuncios — Meta/Google/TikTok ad accounts, campaigns, insights
     TikTokAdsModule, // 🎵 TikTok Ads — OAuth + Events API + sync
