@@ -31,7 +31,7 @@ import {
   WalletNotFoundError,
 } from '../wallet/wallet.types';
 import {
-  PDF_ANALYSIS_SYSTEM_PROMPT,
+  PDF_ANALYSIS_OUTPUT_CONTRACT,
   PdfProcessorService,
   buildPdfAnalysisPrompt,
 } from './pdf-processor.service';
@@ -69,7 +69,7 @@ export class PdfProcessorController {
       return estimateOpenAiChatQuoteCostCents({
         model,
         messages: [
-          { role: 'system', content: PDF_ANALYSIS_SYSTEM_PROMPT },
+          { role: 'user', content: JSON.stringify({ contract: PDF_ANALYSIS_OUTPUT_CONTRACT }) },
           { role: 'user', content: buildPdfAnalysisPrompt(text, sourceName) },
         ],
       });

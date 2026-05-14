@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { PrismaModule } from '../prisma/prisma.module';
+import { SpineModule } from '../kloel/spine/spine.module';
 import { MemberAreaEventEmitterService } from '../kloel/member-area-emitter/member-area-event-emitter.service';
 import { MemberAreaStatsService } from './member-area-stats.service';
 import { MemberAreasController } from './member-areas.controller';
@@ -23,7 +24,7 @@ import { MemberStructureController } from './member-structure.controller';
  * lives in MemberAreaStatsService.
  */
 @Module({
-  imports: [PrismaModule],
+  imports: [PrismaModule, SpineModule],
   controllers: [
     MemberAreasController,
     MemberModulesController,

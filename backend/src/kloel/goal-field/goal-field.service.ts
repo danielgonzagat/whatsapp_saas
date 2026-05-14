@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional, Inject } from '@nestjs/common';
 import type { SpineEventRef } from '../mind/mind.types';
 import { COGNITIVE_DETECTORS } from './detectors/cognitive.detectors';
 import { COMMERCIAL_DETECTORS } from './detectors/commercial.detectors';
@@ -38,15 +38,15 @@ export class GoalFieldService {
   private readonly defaultDetectors: readonly Detector[];
 
   public constructor(
-    detectors: readonly Detector[] = [
+    @Optional() @Inject('GOAL_FIELD_DETECTORS') detectors?: readonly Detector[],
+  ) {
+    this.defaultDetectors = detectors ?? [
       ...COMMERCIAL_DETECTORS,
       ...COGNITIVE_DETECTORS,
       ...STRUCTURAL_DETECTORS,
       ...FINANCIAL_DETECTORS,
       ...OPS_UX_DETECTORS,
-    ],
-  ) {
-    this.defaultDetectors = detectors;
+    ];
   }
 
   public registeredDetectors(): readonly Detector[] {

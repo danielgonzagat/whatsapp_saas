@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger, Optional } from '@nestjs/common';
 
 /**
  * UTP-MIND-MULTI-001 — Multi-timescale coordinator.
@@ -35,12 +35,15 @@ export class MultiTimescaleCoordinator {
   private readonly lastFireMsByScale = new Map<Timescale, number>();
   private readonly config: Readonly<Record<Timescale, TimescaleConfig>>;
 
-  public constructor(config: Partial<Record<Timescale, TimescaleConfig>> = {}) {
+  public constructor(
+    @Optional() @Inject('MULTI_TIMESCALE_CONFIG') config?: Partial<Record<Timescale, TimescaleConfig>>,
+  ) {
+    const cfg = config ?? {};
     this.config = Object.freeze({
-      immediate: { ...TIMESCALE_DEFAULTS.immediate, ...config.immediate },
-      short: { ...TIMESCALE_DEFAULTS.short, ...config.short },
-      medium: { ...TIMESCALE_DEFAULTS.medium, ...config.medium },
-      long: { ...TIMESCALE_DEFAULTS.long, ...config.long },
+      immediate: { ...TIMESCALE_DEFAULTS.immediate, ...cfg.immediate },
+      short: { ...TIMESCALE_DEFAULTS.short, ...cfg.short },
+      medium: { ...TIMESCALE_DEFAULTS.medium, ...cfg.medium },
+      long: { ...TIMESCALE_DEFAULTS.long, ...cfg.long },
     });
   }
 

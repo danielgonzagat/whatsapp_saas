@@ -107,6 +107,21 @@ describe('PdfProcessorService', () => {
       );
     });
 
+    it('sends the PDF analysis contract without a system role', async () => {
+      await service.processText(wsId, 'Texto do PDF', 'doc.pdf');
+
+      const completionInput = mockChatCompletionWithRetry.mock.calls[0][1];
+      expect(completionInput.messages).toEqual(
+        expect.not.arrayContaining([expect.objectContaining({ role: 'system' })]),
+      );
+      expect(completionInput.messages[0]).toEqual(
+        expect.objectContaining({
+          role: 'user',
+          content: expect.stringContaining('contract'),
+        }),
+      );
+    });
+
     it('saves products to memory via memoryService', async () => {
       await service.processText(wsId, 'Texto do PDF', 'documento.pdf');
 

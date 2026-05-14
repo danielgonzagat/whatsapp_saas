@@ -217,6 +217,38 @@ describe('UnifiedAgentService', () => {
     jest.clearAllMocks();
   });
 
+  it('sends structured unified-agent state without a system role', async () => {
+    (chatCompletionWithFallback as jest.Mock).mockResolvedValueOnce({
+      choices: [{ message: { content: 'Resposta estruturada' } }],
+      usage: { total_tokens: 24 },
+    });
+
+    await service.processIncomingMessage({
+      workspaceId: 'ws-1',
+      contactId: 'contact-1',
+      phone: '5511999999999',
+      message: 'quanto custa?',
+      channel: 'whatsapp',
+      context: { deliveryMode: 'reactive' },
+      executeTools: false,
+    });
+
+    const completionInput = (chatCompletionWithFallback as jest.Mock).mock.calls[0]?.[1];
+    expect(completionInput.messages).toEqual(
+      expect.not.arrayContaining([expect.objectContaining({ role: 'system' })]),
+    );
+    const lastUserMessage = completionInput.messages.at(-1);
+    expect(lastUserMessage).toEqual(expect.objectContaining({ role: 'user' }));
+    const payload = JSON.parse(String(lastUserMessage.content)) as Record<string, unknown>;
+    expect(payload).toEqual(
+      expect.objectContaining({
+        cognitiveState: expect.objectContaining({ abiStatus: 'builder_not_injected' }),
+        runtimeContext: expect.objectContaining({ responsePolicy: expect.any(String) }),
+        currentInput: expect.objectContaining({ raw: 'quanto custa?', channel: 'whatsapp' }),
+      }),
+    );
+  });
+
   it('turns inbound WhatsApp intent into an outbound send_message action through the unified CIA loop', async () => {
     (chatCompletionWithFallback as jest.Mock)
       .mockResolvedValueOnce({

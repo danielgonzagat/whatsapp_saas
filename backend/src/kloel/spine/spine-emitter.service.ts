@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger, Optional } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 import { ValenceTaggerService } from '../mind/valence-tagger.service';
 import type { SpineEventRef } from '../mind/mind.types';
@@ -36,11 +36,11 @@ export class SpineEmitterService {
   private readonly subscribers: Array<(e: SpineEventEnvelope) => void> = [];
 
   public constructor(
-    valenceTagger?: ValenceTaggerService,
-    opts: { readonly ringCapacity?: number } = {},
+    @Optional() valenceTagger?: ValenceTaggerService,
+    @Optional() @Inject('SPINE_EMITTER_OPTS') opts?: { readonly ringCapacity?: number },
   ) {
     this.valenceTagger = valenceTagger ?? new ValenceTaggerService();
-    this.ringCapacity = Math.max(1, opts.ringCapacity ?? DEFAULT_RING_CAPACITY);
+    this.ringCapacity = Math.max(1, opts?.ringCapacity ?? DEFAULT_RING_CAPACITY);
   }
 
   public async emit(input: SpineEventInput): Promise<SpineEventEnvelope> {
