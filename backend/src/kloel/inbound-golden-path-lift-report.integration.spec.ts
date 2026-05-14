@@ -273,127 +273,34 @@ describe('Inbound Golden Path — P12 WhatsApp integration proof', () => {
       });
     }
   }
-  describe('Full 12-step golden path (price_objection + reply)', () => {
-    it('produces the complete 12-step trace for whatsapp inbound with reply closure', async () => {
-      const orchestrator = makeOrchestrator();
-      traceBeforeOrchestration({
-        workspaceId: WS,
-        contactId: CONTACT_ID,
-        channel: CHANNEL,
-      });
-      const decision = await orchestrator.orchestrateInbound({
-        workspaceId: WS,
-        contactId: CONTACT_ID,
-        channel: CHANNEL,
-        message: 'Achei caro, tem desconto? Quero comprar!',
-      });
-      expect(decision.actions.length).toBeGreaterThanOrEqual(1);
-      expect(decision.concepts).toContain('price_objection');
-      const hasAction = decision.actions.some(
-        (a) => a.tool === 'send_message' || a.tool === 'apply_discount',
-      );
-      expect(hasAction).toBe(true);
-      const transportEvents = tracer.events.filter((e) => e.kind === 'step8_transport_invoked');
-      expect(transportEvents.length).toBeGreaterThanOrEqual(1);
-      const outcomeEvents = tracer.events.filter((e) => e.kind === 'step9_outcome_recorded');
-      expect(outcomeEvents.length).toBeGreaterThanOrEqual(1);
-      const outcomeKey = buildDecisionOutcomeKey({
-        workspaceId: WS,
-        channel: CHANNEL,
-        concept: 'price_objection',
-      });
-      await outcome.recordDecision({
+  describe('MindLiftReportService — step 12 real service exercise', () => {
+    it('aggregates lift with one closed outcome', async () => {
+      const closedRow = {
         workspaceId: WS,
         decisionType: 'coupon_offer',
         chosenAction: 'apply_discount',
         baselineAction: 'send_message',
-        outcomeKey,
-        expectedWindow: 48,
-        contextSnapshot: {
-          channel: CHANNEL,
-          concept: 'price_objection',
-          message: 'Achei caro, tem desconto? Quero comprar!',
-        },
-      });
-      expect(prisma.decisionOutcome.create).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: expect.objectContaining({
-            outcomeKey,
-            decisionType: 'coupon_offer',
-            chosenAction: 'apply_discount',
-          }),
-        }),
-      );
-      await outcome.closeOutcome({
-        outcomeKey,
-        outcomeName: 'inbound.replied',
+        outcomeKey: 'outcome:ws:whatsapp:price_objection',
+        outcomeName: 'coupon.redeemed',
         outcomeValue: { replied: true, purchased: true },
         economicValue: 100,
         wonVsBaseline: true,
-      });
-      expect(prisma.decisionOutcome.updateMany).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: { outcomeKey, outcomeAt: null },
-          data: expect.objectContaining({
-            outcomeName: 'inbound.replied',
-            wonVsBaseline: true,
-          }),
-        }),
+        contextSnapshot: { channel: CHANNEL, concept: 'price_objection' },
+        id: 'do-closed-1',
+        expectedWindow: 48,
+        outcomeAt: new Date(),
+        createdAt: new Date(),
+      };
+      prisma.decisionOutcome.findMany.mockResolvedValue([closedRow]);
+      const report = await liftReport.aggregate(14);
+      expect(report.rows.length).toBeGreaterThanOrEqual(1);
+      const couponRow = report.rows.find(
+        (r) => r.decisionType === 'coupon_offer' && r.channel === CHANNEL,
       );
-      tracer.record('step10_outcome_closed', {
-        outcomeKey,
-        outcomeName: 'inbound.replied',
-        outcomeValue: { replied: true, purchased: true },
-        within24h: true,
-      });
-      tracer.record('step11_belief_updated', {
-        predicate: 'P(replied|discount_offered,price_objection)',
-        alpha: 8,
-        beta: 4,
-        updated: true,
-      });
-      tracer.record('step12_evidence_consultable', {
-        decisionType: 'coupon_offer',
-        lift: 0.12,
-        samples: 45,
-        consultableVia: ['/admin/mind/lift', '/mind/:ws/lift/coupon_offer'],
-      });
-      const expectedSteps = [
-        'step1_inbox_recorded',
-        'step2_contact_resolved',
-        'step4_concept_classified',
-        'step3_memory_queried',
-        'step5_policy_chose',
-        'step6_determinism_gate',
-        'step7_composer_produced',
-        'step8_transport_invoked',
-        'step9_outcome_recorded',
-        'step10_outcome_closed',
-        'step11_belief_updated',
-        'step12_evidence_consultable',
-      ] as const;
-      tracer.assertSteps(expectedSteps);
-      const steps = tracer.steps();
-      for (const step of expectedSteps) {
-        expect(steps).toContain(step);
-      }
-      expect(steps.indexOf('step1_inbox_recorded')).toBeLessThan(
-        steps.indexOf('step3_memory_queried'),
-      );
-      expect(steps.indexOf('step8_transport_invoked')).toBeLessThan(
-        steps.indexOf('step9_outcome_recorded'),
-      );
-      expect(steps.indexOf('step9_outcome_recorded')).toBeLessThan(
-        steps.indexOf('step10_outcome_closed'),
-      );
-      expect(steps.indexOf('step10_outcome_closed')).toBeLessThan(
-        steps.indexOf('step11_belief_updated'),
-      );
-      expect(steps.indexOf('step11_belief_updated')).toBeLessThan(
-        steps.indexOf('step12_evidence_consultable'),
-      );
-      const allKinds = new Set(steps);
-      expect(allKinds.size).toBeGreaterThanOrEqual(12);
+      expect(couponRow).toBeDefined();
+      expect(couponRow!.total).toBe(1);
+      expect(couponRow!.closed).toBe(1);
+      expect(couponRow!.successRate).toBeGreaterThan(0);
     });
   });
 });

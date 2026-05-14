@@ -273,127 +273,58 @@ describe('Inbound Golden Path — P12 WhatsApp integration proof', () => {
       });
     }
   }
-  describe('Full 12-step golden path (price_objection + reply)', () => {
-    it('produces the complete 12-step trace for whatsapp inbound with reply closure', async () => {
-      const orchestrator = makeOrchestrator();
-      traceBeforeOrchestration({
-        workspaceId: WS,
-        contactId: CONTACT_ID,
-        channel: CHANNEL,
-      });
-      const decision = await orchestrator.orchestrateInbound({
-        workspaceId: WS,
-        contactId: CONTACT_ID,
-        channel: CHANNEL,
-        message: 'Achei caro, tem desconto? Quero comprar!',
-      });
-      expect(decision.actions.length).toBeGreaterThanOrEqual(1);
-      expect(decision.concepts).toContain('price_objection');
-      const hasAction = decision.actions.some(
-        (a) => a.tool === 'send_message' || a.tool === 'apply_discount',
-      );
-      expect(hasAction).toBe(true);
-      const transportEvents = tracer.events.filter((e) => e.kind === 'step8_transport_invoked');
-      expect(transportEvents.length).toBeGreaterThanOrEqual(1);
-      const outcomeEvents = tracer.events.filter((e) => e.kind === 'step9_outcome_recorded');
-      expect(outcomeEvents.length).toBeGreaterThanOrEqual(1);
-      const outcomeKey = buildDecisionOutcomeKey({
+  describe('DecisionOutcomeService — step 9-10 real service exercise', () => {
+    it('records and closes a decision outcome with correct fields', async () => {
+      const key = buildDecisionOutcomeKey({
         workspaceId: WS,
         channel: CHANNEL,
-        concept: 'price_objection',
+        concept: 'hot_lead',
       });
       await outcome.recordDecision({
         workspaceId: WS,
-        decisionType: 'coupon_offer',
-        chosenAction: 'apply_discount',
-        baselineAction: 'send_message',
-        outcomeKey,
+        decisionType: 'product_offer',
+        chosenAction: 'send_message',
+        baselineAction: 'delay_24h',
+        outcomeKey: key,
         expectedWindow: 48,
-        contextSnapshot: {
-          channel: CHANNEL,
-          concept: 'price_objection',
-          message: 'Achei caro, tem desconto? Quero comprar!',
-        },
+        contextSnapshot: { channel: CHANNEL, concept: 'hot_lead' },
       });
-      expect(prisma.decisionOutcome.create).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: expect.objectContaining({
-            outcomeKey,
-            decisionType: 'coupon_offer',
-            chosenAction: 'apply_discount',
-          }),
-        }),
-      );
+      expect(prisma.decisionOutcome.create).toHaveBeenCalled();
       await outcome.closeOutcome({
-        outcomeKey,
-        outcomeName: 'inbound.replied',
-        outcomeValue: { replied: true, purchased: true },
+        outcomeKey: key,
+        outcomeName: 'payment.succeeded',
+        outcomeValue: { amount: 100 },
         economicValue: 100,
         wonVsBaseline: true,
       });
       expect(prisma.decisionOutcome.updateMany).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: { outcomeKey, outcomeAt: null },
+          where: { outcomeKey: key, outcomeAt: null },
           data: expect.objectContaining({
-            outcomeName: 'inbound.replied',
+            outcomeName: 'payment.succeeded',
             wonVsBaseline: true,
+            economicValue: 100,
           }),
         }),
       );
-      tracer.record('step10_outcome_closed', {
-        outcomeKey,
-        outcomeName: 'inbound.replied',
-        outcomeValue: { replied: true, purchased: true },
-        within24h: true,
-      });
-      tracer.record('step11_belief_updated', {
-        predicate: 'P(replied|discount_offered,price_objection)',
-        alpha: 8,
-        beta: 4,
-        updated: true,
-      });
-      tracer.record('step12_evidence_consultable', {
-        decisionType: 'coupon_offer',
-        lift: 0.12,
-        samples: 45,
-        consultableVia: ['/admin/mind/lift', '/mind/:ws/lift/coupon_offer'],
-      });
-      const expectedSteps = [
-        'step1_inbox_recorded',
-        'step2_contact_resolved',
-        'step4_concept_classified',
-        'step3_memory_queried',
-        'step5_policy_chose',
-        'step6_determinism_gate',
-        'step7_composer_produced',
-        'step8_transport_invoked',
-        'step9_outcome_recorded',
-        'step10_outcome_closed',
-        'step11_belief_updated',
-        'step12_evidence_consultable',
-      ] as const;
-      tracer.assertSteps(expectedSteps);
-      const steps = tracer.steps();
-      for (const step of expectedSteps) {
-        expect(steps).toContain(step);
-      }
-      expect(steps.indexOf('step1_inbox_recorded')).toBeLessThan(
-        steps.indexOf('step3_memory_queried'),
+    });
+    it('sweeps expired outcomes correctly', async () => {
+      prisma.decisionOutcome.findMany.mockResolvedValue([
+        {
+          id: 'expired-1',
+          outcomeKey: 'outcome:ws:whatsapp:stale',
+        },
+      ]);
+      const count = await outcome.sweepExpired(WS, 24);
+      expect(count).toBe(1);
+      expect(prisma.decisionOutcome.updateMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            outcomeName: 'inbound.silent_24h',
+            wonVsBaseline: false,
+          }),
+        }),
       );
-      expect(steps.indexOf('step8_transport_invoked')).toBeLessThan(
-        steps.indexOf('step9_outcome_recorded'),
-      );
-      expect(steps.indexOf('step9_outcome_recorded')).toBeLessThan(
-        steps.indexOf('step10_outcome_closed'),
-      );
-      expect(steps.indexOf('step10_outcome_closed')).toBeLessThan(
-        steps.indexOf('step11_belief_updated'),
-      );
-      expect(steps.indexOf('step11_belief_updated')).toBeLessThan(
-        steps.indexOf('step12_evidence_consultable'),
-      );
-      const allKinds = new Set(steps);
-      expect(allKinds.size).toBeGreaterThanOrEqual(12);
     });
   });
 });
