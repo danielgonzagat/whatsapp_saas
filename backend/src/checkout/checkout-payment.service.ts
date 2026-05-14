@@ -161,8 +161,10 @@ export class CheckoutPaymentService {
         }
       : undefined;
 
-    const threeDsRequest = ['an', 'y'].join('') as CardPaymentOptions['request_three_d_secure'];
-    const paymentMethodOptions = isPix
+    const threeDsRequest = ['an', 'y'].join('') as NonNullable<
+      CardPaymentOptions['request_three_d_secure']
+    >;
+    const paymentMethodOptions: SaleChargeInput['paymentMethodOptions'] | undefined = isPix
       ? {
           pix: {
             expires_after_seconds: 30 * 60,

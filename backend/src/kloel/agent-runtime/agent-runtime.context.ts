@@ -30,6 +30,8 @@ export class AgentRuntimeContextService {
       ...(request.userId !== undefined ? { userId: request.userId } : {}),
     });
 
+    const memoryPrefetchOptions =
+      request.threadId !== undefined ? { sessionId: request.threadId } : undefined;
     const [
       recall,
       sessionRecall,
@@ -42,9 +44,7 @@ export class AgentRuntimeContextService {
       this.sessions.searchSessions(request.workspaceId, request.message, 3),
       this.skills.selectSkills(request.workspaceId, request.message, 4),
       this.memoryManager.buildSystemPrompt(request.workspaceId),
-      this.memoryManager.prefetchAll(request.workspaceId, request.message, {
-        sessionId: request.threadId,
-      }),
+      this.memoryManager.prefetchAll(request.workspaceId, request.message, memoryPrefetchOptions),
       request.threadId
         ? this.contextCompressor.loadCompressedContext(request.workspaceId, request.threadId)
         : Promise.resolve(null),
@@ -60,9 +60,11 @@ export class AgentRuntimeContextService {
         }),
       ),
     );
-    void this.memoryManager.queuePrefetchAll(request.workspaceId, request.message, {
-      sessionId: request.threadId,
-    });
+    void this.memoryManager.queuePrefetchAll(
+      request.workspaceId,
+      request.message,
+      memoryPrefetchOptions,
+    );
 
     return {
       recall,
@@ -99,8 +101,8 @@ export class AgentRuntimeContextService {
       workspaceId: params.workspaceId,
       userContent: params.userMessage,
       assistantContent: params.assistantMessage ?? '',
-      sessionId: params.threadId,
       channel: params.channel,
+      ...(params.threadId !== undefined ? { sessionId: params.threadId } : {}),
     });
     await this.memoryCurator.curateTurnOutcome(params);
   }

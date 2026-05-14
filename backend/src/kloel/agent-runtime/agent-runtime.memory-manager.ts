@@ -55,7 +55,7 @@ export class AgentRuntimeBuiltinMemoryProvider extends AgentRuntimeMemoryProvide
       channel: options?.channel ?? 'agent-runtime',
       userMessage: userContent,
       assistantMessage: assistantContent,
-      threadId: options?.sessionId,
+      ...(options?.sessionId !== undefined ? { threadId: options.sessionId } : {}),
     });
   }
   override async onTurnStart(event: AgentRuntimeMemoryTurnStart): Promise<void> {
@@ -91,8 +91,10 @@ export class AgentRuntimeBuiltinMemoryProvider extends AgentRuntimeMemoryProvide
       eventType: 'session_switch',
       content: `session=${sanitizeAgentRuntimeText(newSessionId, 160)} parent=${sanitizeAgentRuntimeText(options?.parentSessionId ?? '', 160)}`,
       metadata: {
-        parentSessionId: options?.parentSessionId,
         reset: options?.reset ?? false,
+        ...(options?.parentSessionId !== undefined
+          ? { parentSessionId: options.parentSessionId }
+          : {}),
       },
     });
   }
@@ -116,7 +118,7 @@ export class AgentRuntimeBuiltinMemoryProvider extends AgentRuntimeMemoryProvide
       sessionId: event.sessionId,
       eventType: 'memory_write',
       content: `${event.action}:${event.target}\n${sanitizeAgentRuntimeText(event.content, 2000)}`,
-      metadata: event.metadata,
+      ...(event.metadata !== undefined ? { metadata: event.metadata } : {}),
     });
   }
   override async onDelegation(event: AgentRuntimeDelegationObservation): Promise<void> {
@@ -129,7 +131,7 @@ export class AgentRuntimeBuiltinMemoryProvider extends AgentRuntimeMemoryProvide
         `task: ${sanitizeAgentRuntimeText(event.task, 2000)}`,
         `result: ${sanitizeAgentRuntimeText(event.result, 3000)}`,
       ].join('\n'),
-      metadata: event.metadata,
+      ...(event.metadata !== undefined ? { metadata: event.metadata } : {}),
     });
   }
 }
@@ -268,11 +270,18 @@ export class AgentRuntimeMemoryManagerService {
     channel?: string;
   }): Promise<void> {
     await this.runAll(
-      (provider) =>
-        provider.syncTurn(params.workspaceId, params.userContent, params.assistantContent, {
-          sessionId: params.sessionId,
-          channel: params.channel,
-        }),
+      (provider) => {
+        const options = {
+          ...(params.sessionId !== undefined ? { sessionId: params.sessionId } : {}),
+          ...(params.channel !== undefined ? { channel: params.channel } : {}),
+        };
+        return provider.syncTurn(
+          params.workspaceId,
+          params.userContent,
+          params.assistantContent,
+          options,
+        );
+      },
       'syncTurn',
       { skipUnavailable: true },
     );
