@@ -1,7 +1,3 @@
-jest.mock('../observability/ops-alert.service', () => ({
-  OpsAlertService: jest.fn(),
-  AlertSeverity: { INFO: 'info', WARN: 'warn', CRITICAL: 'critical' },
-}));
 
 jest.mock('@sentry/node', () => ({}), { virtual: true });
 

@@ -6,10 +6,6 @@ jest.mock('./scrapers.service', () => ({
 
 jest.mock('@sentry/node', () => ({}), { virtual: true });
 
-jest.mock('../observability/ops-alert.service', () => ({
-  OpsAlertService: jest.fn(),
-  AlertSeverity: { INFO: 'info', WARN: 'warn', CRITICAL: 'critical' },
-}));
 
 describe('ScrapersController', () => {
   const createJob = jest.fn();
