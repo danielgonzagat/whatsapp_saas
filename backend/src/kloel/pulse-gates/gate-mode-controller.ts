@@ -32,7 +32,7 @@ export const GATE_DEFAULT_MODE: Record<GateName, GateMode> = {
   'protected-files-firewall': 'hard_fail',
   'codacy-rigor-enforcer': 'hard_fail',
   // Future — log_only on introduction
-  'ecosystem-privacy-guard': 'log_only',
+  'ecosystem-privacy-guard': 'hard_fail',
   'internal-knowledge-leak-guard': 'log_only',
   'platform-bias-monitor': 'log_only',
   'disclosure-engine': 'log_only',
