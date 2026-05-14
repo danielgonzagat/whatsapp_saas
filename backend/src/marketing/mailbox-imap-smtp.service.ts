@@ -1,8 +1,6 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { MailboxProvider, MailboxStatus, Prisma } from '@prisma/client';
 import { createTransport } from 'nodemailer';
-import net from 'node:net';
-import tls from 'node:tls';
 import { Metrics } from '../observability/metrics';
 import { PrismaService } from '../prisma/prisma.service';
 import {
@@ -10,6 +8,11 @@ import {
   buildUnsubscribeFooterText,
   buildListUnsubscribeHeader,
 } from '../common/utils/unsubscribe-footer.util';
+import {
+  MailboxSocketConfig,
+  validateImapSocket,
+  validateSmtpSocket,
+} from './mailbox-imap-smtp-socket.helpers';
 import { decryptMailboxToken, encryptMailboxToken } from './mailbox-token-crypto';
 interface ImapSmtpConnectInput {
   email?: unknown;
@@ -24,14 +27,6 @@ interface ImapSmtpConnectInput {
   smtpUsername?: unknown;
   smtpPassword?: unknown;
 }
-interface MailboxSocketConfig {
-  host: string;
-  port: number;
-  secure: boolean;
-  username: string;
-  password: string;
-}
-const SOCKET_TIMEOUT_MS = 15000;
 const MAX_HOST_LENGTH = 255;
 const MAX_USERNAME_LENGTH = 320;
 const MAX_PASSWORD_LENGTH = 1000;
@@ -194,114 +189,10 @@ export class MailboxImapSmtpService {
     } satisfies Prisma.InputJsonObject;
   }
   private async validateImapConnection(config: MailboxSocketConfig): Promise<void> {
-    await this.withMailboxSocket(config, async (socket) => {
-      await this.readUntil(socket, (line) => line.includes('* OK'));
-      await this.writeLine(
-        socket,
-        `A1 LOGIN ${this.quoteImap(config.username)} ${this.quoteImap(config.password)}`,
-      );
-      await this.readUntil(socket, (line) => line.includes('A1 OK'));
-      await this.writeLine(socket, 'A2 LIST "" "*"');
-      await this.readUntil(socket, (line) => line.includes('A2 OK'));
-      await this.writeLine(socket, 'A3 LOGOUT');
-    }).catch(() => {
-      throw new BadRequestException('imap_validation_failed');
-    });
+    await validateImapSocket(config);
   }
   private async validateSmtpConnection(config: MailboxSocketConfig): Promise<void> {
-    await this.withMailboxSocket(config, async (socket) => {
-      await this.readUntil(socket, (line) => line.startsWith('220'));
-      await this.writeLine(socket, 'EHLO kloel.local');
-      await this.readUntil(socket, (line) => line.startsWith('250'));
-      await this.writeLine(socket, 'AUTH LOGIN');
-      await this.readUntil(socket, (line) => line.startsWith('334'));
-      await this.writeLine(socket, Buffer.from(config.username, 'utf8').toString('base64'));
-      await this.readUntil(socket, (line) => line.startsWith('334'));
-      await this.writeLine(socket, Buffer.from(config.password, 'utf8').toString('base64'));
-      await this.readUntil(socket, (line) => line.startsWith('235'));
-      await this.writeLine(socket, 'QUIT');
-    }).catch(() => {
-      throw new BadRequestException('smtp_validation_failed');
-    });
-  }
-  private withMailboxSocket(
-    config: MailboxSocketConfig,
-    handler: (socket: net.Socket | tls.TLSSocket) => Promise<void>,
-  ): Promise<void> {
-    return new Promise((resolve, reject) => {
-      const socket = config.secure
-        ? tls.connect({
-            host: config.host,
-            port: config.port,
-            servername: config.host,
-            timeout: SOCKET_TIMEOUT_MS,
-          })
-        : net.connect({ host: config.host, port: config.port, timeout: SOCKET_TIMEOUT_MS });
-      let settled = false;
-      const finish = (error?: Error) => {
-        if (settled) {
-          return;
-        }
-        settled = true;
-        socket.destroy();
-        if (error) {
-          reject(error);
-        } else {
-          resolve();
-        }
-      };
-      socket.once('error', finish);
-      socket.once('timeout', () => finish(new Error('mailbox_socket_timeout')));
-      socket.once(config.secure ? 'secureConnect' : 'connect', () => {
-        handler(socket).then(() => finish(), finish);
-      });
-    });
-  }
-  private readUntil(
-    socket: net.Socket | tls.TLSSocket,
-    predicate: (line: string) => boolean,
-  ): Promise<string> {
-    return new Promise((resolve, reject) => {
-      let buffer = '';
-      const timeout = setTimeout(() => {
-        cleanup();
-        reject(new Error('mailbox_protocol_timeout'));
-      }, SOCKET_TIMEOUT_MS);
-      const cleanup = () => {
-        clearTimeout(timeout);
-        socket.off('data', onData);
-        socket.off('error', onError);
-      };
-      const onError = (error: Error) => {
-        cleanup();
-        reject(error);
-      };
-      const onData = (chunk: Buffer) => {
-        buffer += chunk.toString('utf8');
-        const lines = buffer.split(/\r?\n/).filter(Boolean);
-        const matched = lines.find(predicate);
-        if (matched) {
-          cleanup();
-          resolve(matched);
-        }
-      };
-      socket.on('data', onData);
-      socket.once('error', onError);
-    });
-  }
-  private writeLine(socket: net.Socket | tls.TLSSocket, line: string): Promise<void> {
-    return new Promise((resolve, reject) => {
-      socket.write(`${line}\r\n`, (error) => {
-        if (error) {
-          reject(error);
-        } else {
-          resolve();
-        }
-      });
-    });
-  }
-  private quoteImap(value: string): string {
-    return `"${value.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`;
+    await validateSmtpSocket(config);
   }
   async sendMessageFromMailbox(
     workspaceId: string,
