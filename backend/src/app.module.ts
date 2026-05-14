@@ -87,11 +87,13 @@ import { ObservabilityModule } from './common/observability/observability.module
 import { OpsAlertModule } from './observability/ops-alert.module';
 import { OpsModule } from './ops/ops.module';
 import { PartnershipsModule } from './partnerships/partnerships.module';
+import { AbiAbModule } from './kloel/abi-ab/abi-ab.module';
 import { AffilModule } from './kloel/affil/affil.module';
 import { EcosysModule } from './kloel/ecosys/ecosys.module';
 import { LegitModule } from './kloel/legit/legit.module';
 import { MoveModule } from './kloel/move/move.module';
 import { GoalFieldModule } from './kloel/goal-field/goal-field.module';
+import { DailyDashboardModule } from './kloel/daily-dashboard/daily-dashboard.module';
 import { ColdstartModule } from './kloel/coldstart/coldstart.module';
 import { CashModule } from './kloel/cash/cash.module';
 import { HypproofModule } from './kloel/hypproof/hypproof.module';
@@ -105,19 +107,23 @@ import { LocalIdentityModule } from './kloel/local-identity/local-identity.modul
 import { MaturityModule } from './kloel/maturity/maturity.module';
 import { MindModule } from './kloel/mind/mind.module';
 import { SpineModule } from './kloel/spine/spine.module';
+import { VtierModule } from './kloel/v-tier/v-tier.module';
 import { TeamModule as KloelTeamModule } from './kloel/team/team.module';
 import { TrustModule } from './kloel/trust/trust.module';
 import { WisdomModule } from './kloel/wisdom/wisdom.module';
 import { AgencyModule } from './kloel/agency/agency.module';
 import { HealthyMoneyModule } from './kloel/healthy-money/healthy-money.module';
+import { CapabilityRegistryModule } from './kloel/capability-registry/capability-registry.module';
 import { ClarityModule } from './kloel/clarity/clarity.module';
 import { CommemModule } from './kloel/commem/commem.module';
 import { CreatorModule } from './kloel/creator/creator.module';
 import { RoleModule } from './kloel/role/role.module';
 import { WowModule } from './kloel/wow/wow.module';
 import { ChannelModule } from './kloel/channel/channel.module';
+import { ChannelPolicyModule } from './kloel/channel-policy/channel-policy.module';
 import { DefensModule } from './kloel/defens/defens.module';
 import { EvolModule } from './kloel/evol/evol.module';
+import { PulseGatesModule } from './kloel/pulse-gates/pulse-gates.module';
 import { IncentModule } from './kloel/incent/incent.module';
 import { PipelineModule } from './pipeline/pipeline.module';
 import { ProductCategoriesModule } from './product-categories/product-categories.module';
@@ -277,14 +283,18 @@ function setRedisClientListenerBudget(client: Redis): void {
     ComplianceModule, // OAuth/Meta/LGPD compliance callbacks and user rights endpoints
     FinancialAlertModule, // Financial alerting (global)
     OpsAlertModule, // OPS critical error alerting (global)
+    CapabilityRegistryModule, // 📋 Capability Registry — real runtime evidence for no-overclaim gate (PCI.4 §3.4)
+    AbiAbModule, // 🔬 UTP-ABI-005 — A/B telemetry for ABI substitution decisions
     LineageModule, // 🧬 Camada I — Genesis + Lineage Ledger + Identity Projector (cognitive organism)
     MindModule, // 🧠 MIND substrate — valence/attention/hebbian/consolidation/multi-timescale/BG (UTP-MIND-*)
     LocalIdentityModule, // 🏷️ Camada V — Per-workspace operational profile (UTP-LOCAL-IDENT-001..007)
     GoalFieldModule, // 🎯 Camada III — Dynamic Goal Field (29 detectors + emerge/select/survive/shadow)
+    DailyDashboardModule, // 📊 R6 — Daily commercial dashboard (hot leads, abandoned carts, mood, opportunities)
     InsightModule, // 💡 Camada VII — Strategic Insight Engine (detectors + ranker + confidence + delivery)
     OfferModule, // 🎯 Camada XV — Offer Evolution Intelligence (bonus, promise, versioning, positioning, pricing)
     MaturityModule, // 📊 Camada VIII — Commercial Maturity Recognition (signals + classify + filter + guard)
     SpineModule, // 🧪 Spine — in-process event spine (B17 surface emitters publish here)
+    PulseGatesModule, // 🛡️ PULSE gates — bridge gate verdicts into spine events (UTP-PULSE-SPINE-001)
     RecoveryModule, // 🛡️ Camada XIV — Mature Failure Recovery (self-detection, acknowledgment, explanation, non-repeat, tactics, narrative, trust-after-error)
     DelegationModule, // ⚖️ Camada XIII — Delegation Confidence Tracking (state tracker, graduation, suggestions, rollback, evidence)
     TrustModule, // 🛡️ Camada IX — Trust Capital Protection (fatigue, desperation, brand, silence, handoff, recovery)
@@ -304,12 +314,14 @@ function setRedisClientListenerBudget(client: Redis): void {
     AffilModule, // 🤝 Camada XXIII — Affiliate Intelligence & Protection (offer quality, producer trust, audience fit, angle, fatigue, waste, budget, account, commission, switch, scale vs abandon, discovery loop) (UTP-AFFIL-001..012)
     MoveModule, // 🏃 Camada XXXI — Real Movement (friction detection, step decomposition, tiny action suggestion, partial execution, alternative routes, pattern learning, no-blame tone) (UTP-MOVE-001..007)
     ChannelModule, // 📡 Camada XXVIII — Channel Survival Intelligence (concentration, health, ban-risk, policy, contingency, migration, diversification)
+    ChannelPolicyModule, // 📋 Per-channel terminal valence + truthMode policy registry
     DefensModule, // 🛡️ Camada XXX — Defensibility Assets (asset registry, growth, owned audience, social proof, case library, positioning, authority, tradeoffs, narrative)
     EvolModule, // 🧬 Camada XXXII — Self-Evolution (gap detection, proposals, human authorization, agent dispatch, experiment runner, rollback, firewall, codacy enforcement, audit)
     IncentModule, // 🤝 Camada XXXIV — Incentive Integrity (explain, detect conflict, silence, monitor bias, disclose, audit, feedback, attribution)
     EcosysModule, // 🤝 Camada XXVII — Ecosystem Intelligence (cross-role fits, privacy guard, conflict detector, suggestion delivery)
     LegitModule, // ⚖️ Camada LEGIT — Legal & Regulatory Compliance (LGPD/GDPR/CCPA, policies, consent, regulated content, image rights, risk flags, legal consult)
     PulseModule, // PULSE live organism collector
+    VtierModule, // V-tier certification — V1..V16 runtime verification (cognitive organism)
     AnunciosModule, // 📊 Anuncios — Meta/Google/TikTok ad accounts, campaigns, insights
     TikTokAdsModule, // 🎵 TikTok Ads — OAuth + Events API + sync
     AdminModule, // adm.kloel.com identity, audit, permissions (SP-0..2)
