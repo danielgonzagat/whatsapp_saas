@@ -47,6 +47,18 @@ export class RuntimeMetricsService {
     });
   }
 
+  wireToSpine(spine: SpineEmitterService): void {
+    if (this.unsubscribeSpine) {
+      return;
+    }
+    this.unsubscribeSpine = spine.subscribe((envelope: SpineEventEnvelope) => {
+      this.spineEventsTotal += 1;
+      if (envelope.valence !== undefined) {
+        this.valenceTaggedEventsTotal += 1;
+      }
+    });
+  }
+
   getMetrics(): RuntimeMetricsSnapshot {
     const eventsToOperationsRatio =
       this.operationsTotal > 0
