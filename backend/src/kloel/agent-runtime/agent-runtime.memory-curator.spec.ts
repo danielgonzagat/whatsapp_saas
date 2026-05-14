@@ -94,21 +94,13 @@ describe('AgentRuntimeMemoryCuratorService', () => {
       assistantMessage: 'Webhook proof is pending.',
     });
 
-    expect(prisma.kloelMemory.upsert).toHaveBeenCalledWith(
-      expect.objectContaining({
-        create: expect.objectContaining({
-          value: expect.objectContaining({
-            confidence: expect.any(Number),
-            retentionScore: expect.any(Number),
-          }),
-          metadata: expect.objectContaining({
-            curatedConfidence: expect.any(Number),
-            ttlMs: expect.any(Number),
-            retentionScore: expect.any(Number),
-          }),
-        }),
-      }),
-    );
+    expect(prisma.kloelMemory.upsert).toHaveBeenCalled();
+    const callArg = prisma.kloelMemory.upsert.mock.calls[0][0];
+    expect(typeof callArg.create.value.confidence).toBe('number');
+    expect(typeof callArg.create.value.retentionScore).toBe('number');
+    expect(typeof callArg.create.metadata.curatedConfidence).toBe('number');
+    expect(typeof callArg.create.metadata.ttlMs).toBe('number');
+    expect(typeof callArg.create.metadata.retentionScore).toBe('number');
   });
 
   it('assigns higher confidence to action_failure than unresolved context', async () => {
@@ -171,17 +163,17 @@ describe('AgentRuntimeMemoryCuratorService', () => {
       expect(result.inspected).toBe(1);
       expect(result.expired).toBe(1);
       expect(result.staleKeys).toContain('agent_curated_turn:abc123');
-      expect(prisma.kloelMemory.update).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: { id: 'mem_a' },
-          data: expect.objectContaining({
-            metadata: expect.objectContaining({
-              hygieneState: 'retired',
-              retiredAt: expect.any(String),
-            }),
-          }),
-        }),
-      );
+      expect(prisma.kloelMemory.update).toHaveBeenCalledTimes(1);
+      const updateCall = prisma.kloelMemory.update.mock.calls[0][0];
+      expect(updateCall).toMatchObject({
+        where: { id: 'mem_a' },
+        data: {
+          metadata: {
+            hygieneState: 'retired',
+          },
+        },
+      });
+      expect(typeof updateCall.data.metadata.retiredAt).toBe('string');
     });
 
     it('retains fresh memories', async () => {

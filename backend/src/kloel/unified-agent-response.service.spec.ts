@@ -1,19 +1,28 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { UnifiedAgentResponseService } from './unified-agent-response.service';
 import { PlanLimitsService } from '../billing/plan-limits.service';
+import OpenAI from 'openai';
+import type { ActionEntry } from './unified-agent.types';
 
 jest.mock('./openai-wrapper', () => ({
   chatCompletionWithFallback: jest.fn(),
 }));
 
+jest.mock('openai', () => ({
+  default: jest.fn().mockImplementation(() => ({
+    apiKey: 'mock-key',
+  })),
+}));
+
 describe('UnifiedAgentResponseService', () => {
   let service: UnifiedAgentResponseService;
-  let planLimits: Pick<PlanLimitsService, 'ensureTokenBudget' | 'trackAiUsage'>;
+  let planLimits: PlanLimitsService;
+  let planLimitsMock: { ensureTokenBudget: jest.Mock; trackAiUsage: jest.Mock };
 
   const wsId = 'ws-1';
 
   beforeEach(async () => {
-    planLimits = {
+    planLimitsMock = {
       ensureTokenBudget: jest.fn().mockResolvedValue(undefined),
       trackAiUsage: jest.fn().mockResolvedValue(undefined),
     };
@@ -21,11 +30,12 @@ describe('UnifiedAgentResponseService', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         UnifiedAgentResponseService,
-        { provide: PlanLimitsService, useValue: planLimits },
+        { provide: PlanLimitsService, useValue: planLimitsMock },
       ],
     }).compile();
 
     service = module.get<UnifiedAgentResponseService>(UnifiedAgentResponseService);
+    planLimits = module.get<PlanLimitsService>(PlanLimitsService);
   });
 
   afterEach(() => {
@@ -64,7 +74,7 @@ describe('UnifiedAgentResponseService', () => {
       chatCompletionWithFallback.mockResolvedValue(fakeCompletion);
 
       const result = await service.composeWriterReply(
-        { apiKey: 'fake' } as any,
+        new OpenAI({ apiKey: 'test-key' }),
         'gpt-4',
         'gpt-3.5',
         {
@@ -78,7 +88,7 @@ describe('UnifiedAgentResponseService', () => {
 
       expect(result).toContain('ajudar');
       expect(chatCompletionWithFallback).toHaveBeenCalled();
-      expect(planLimits.ensureTokenBudget).toHaveBeenCalledWith(wsId);
+      expect(planLimitsMock.ensureTokenBudget).toHaveBeenCalledWith(wsId);
     });
 
     it('falls back on OpenAI error', async () => {
@@ -86,7 +96,7 @@ describe('UnifiedAgentResponseService', () => {
       chatCompletionWithFallback.mockRejectedValue(new Error('API error'));
 
       const result = await service.composeWriterReply(
-        { apiKey: 'fake' } as any,
+        new OpenAI({ apiKey: 'test-key' }),
         'gpt-4',
         'gpt-3.5',
         {
@@ -107,7 +117,7 @@ describe('UnifiedAgentResponseService', () => {
         usage: { total_tokens: 200 },
       });
 
-      await service.composeWriterReply({ apiKey: 'fake' } as any, 'gpt-4', 'gpt-3.5', {
+      await service.composeWriterReply(new OpenAI({ apiKey: 'test-key' }), 'gpt-4', 'gpt-3.5', {
         workspaceId: wsId,
         customerMessage: 'Oi',
         assistantDraft: null,
@@ -115,7 +125,7 @@ describe('UnifiedAgentResponseService', () => {
         historyTurns: 0,
       });
 
-      expect(planLimits.trackAiUsage).toHaveBeenCalledWith(wsId, 200);
+      expect(planLimitsMock.trackAiUsage).toHaveBeenCalledWith(wsId, 200);
     });
   });
 
@@ -150,33 +160,21 @@ describe('UnifiedAgentResponseService', () => {
 
   describe('buildQuotedReplyPlan', () => {
     it('returns empty array for empty messages', async () => {
-      const result = await service.buildQuotedReplyPlan(
-        null,
-        'gpt-4',
-        'gpt-3.5',
-        planLimits as PlanLimitsService,
-        {
-          workspaceId: wsId,
-          draftReply: 'Oi',
-          customerMessages: [],
-        },
-      );
+      const result = await service.buildQuotedReplyPlan(null, 'gpt-4', 'gpt-3.5', planLimits, {
+        workspaceId: wsId,
+        draftReply: 'Oi',
+        customerMessages: [],
+      });
 
       expect(result).toEqual([]);
     });
 
     it('uses fallback for single message', async () => {
-      const result = await service.buildQuotedReplyPlan(
-        null,
-        'gpt-4',
-        'gpt-3.5',
-        planLimits as PlanLimitsService,
-        {
-          workspaceId: wsId,
-          draftReply: 'Olá, como vai?',
-          customerMessages: [{ content: 'Oi', quotedMessageId: 'msg-1' }],
-        },
-      );
+      const result = await service.buildQuotedReplyPlan(null, 'gpt-4', 'gpt-3.5', planLimits, {
+        workspaceId: wsId,
+        draftReply: 'Olá, como vai?',
+        customerMessages: [{ content: 'Oi', quotedMessageId: 'msg-1' }],
+      });
 
       expect(result).toHaveLength(1);
       expect(result[0].quotedMessageId).toBe('msg-1');
@@ -197,10 +195,10 @@ describe('UnifiedAgentResponseService', () => {
       });
 
       const result = await service.buildQuotedReplyPlan(
-        { apiKey: 'fake' } as any,
+        new OpenAI({ apiKey: 'test-key' }),
         'gpt-4',
         'gpt-3.5',
-        planLimits as PlanLimitsService,
+        planLimits,
         {
           workspaceId: wsId,
           draftReply: 'Respostas',
@@ -219,10 +217,10 @@ describe('UnifiedAgentResponseService', () => {
       chatCompletionWithFallback.mockRejectedValue(new Error('API error'));
 
       const result = await service.buildQuotedReplyPlan(
-        { apiKey: 'fake' } as any,
+        new OpenAI({ apiKey: 'test-key' }),
         'gpt-4',
         'gpt-3.5',
-        planLimits as PlanLimitsService,
+        planLimits,
         {
           workspaceId: wsId,
           draftReply: 'Respostas',
@@ -248,10 +246,10 @@ describe('UnifiedAgentResponseService', () => {
       });
 
       const result = await service.buildQuotedReplyPlan(
-        { apiKey: 'fake' } as any,
+        new OpenAI({ apiKey: 'test-key' }),
         'gpt-4',
         'gpt-3.5',
-        planLimits as PlanLimitsService,
+        planLimits,
         {
           workspaceId: wsId,
           draftReply: 'Respostas',
@@ -305,7 +303,7 @@ describe('UnifiedAgentResponseService', () => {
 
   describe('extractIntent', () => {
     it('returns IDLE for empty actions', () => {
-      const intent = service.extractIntent([], 'any message');
+      const intent = service.extractIntent([], 'mensagem neutra');
       expect(intent).toBe('IDLE');
     });
 
@@ -325,17 +323,31 @@ describe('UnifiedAgentResponseService', () => {
 
   describe('calculateConfidence', () => {
     it('calculates confidence based on actions and tool calls', () => {
-      const response = {
+      const response: OpenAI.Chat.Completions.ChatCompletion = {
+        id: 'cmpl-test-1',
+        created: Math.floor(Date.now() / 1000),
+        model: 'gpt-4',
+        object: 'chat.completion',
         choices: [
           {
+            finish_reason: 'tool_calls',
+            index: 0,
+            logprobs: null,
             message: {
+              content: null,
+              refusal: null,
+              role: 'assistant',
               tool_calls: [
-                { id: 't1', type: 'function', function: { name: 'test', arguments: '{}' } },
+                {
+                  id: 't1',
+                  type: 'function' as const,
+                  function: { name: 'test', arguments: '{}' },
+                },
               ],
             },
           },
         ],
-      } as any;
+      };
 
       const confidence = service.calculateConfidence(
         [{ tool: 'send_message', args: {}, result: 'ok' }],
@@ -347,12 +359,36 @@ describe('UnifiedAgentResponseService', () => {
     });
 
     it('caps confidence at 1', () => {
-      const response = {
-        choices: [{ message: { tool_calls: Array(10).fill({}) } }],
-      } as any;
+      const toolCalls: Array<OpenAI.Chat.Completions.ChatCompletionMessageToolCall> = Array.from(
+        { length: 10 },
+        (_, i) => ({
+          id: `tc-${i + 1}`,
+          type: 'function' as const,
+          function: { name: `tool${i + 1}`, arguments: '{}' },
+        }),
+      );
+      const response: OpenAI.Chat.Completions.ChatCompletion = {
+        id: 'cmpl-test-2',
+        created: Math.floor(Date.now() / 1000),
+        model: 'gpt-4',
+        object: 'chat.completion',
+        choices: [
+          {
+            finish_reason: 'tool_calls',
+            index: 0,
+            logprobs: null,
+            message: {
+              content: null,
+              refusal: null,
+              role: 'assistant',
+              tool_calls: toolCalls,
+            },
+          },
+        ],
+      };
 
       const confidence = service.calculateConfidence(
-        Array(20).fill({ tool: 't', args: {}, result: 'ok' }),
+        Array.from<ActionEntry>({ length: 20 }, () => ({ tool: 't', args: {}, result: 'ok' })),
         response,
       );
 

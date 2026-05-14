@@ -10,8 +10,11 @@ import { CiaBootstrapService } from './cia-bootstrap.service';
 import { WorkerRuntimeService } from '../whatsapp/worker-runtime.service';
 import { WhatsAppCatchupService } from '../whatsapp/whatsapp-catchup.service';
 import { CiaBacklogRunService } from './cia-backlog-run.service';
+import { AUTOPILOT_SWEEP_UNREAD_CONVERSATIONS_JOB } from '../contracts/autopilot-jobs';
 
-jest.mock('../queue/queue', () => ({ autopilotQueue: { add: jest.fn().mockResolvedValue(undefined) } }));
+jest.mock('../queue/queue', () => ({
+  autopilotQueue: { add: jest.fn().mockResolvedValue(undefined) },
+}));
 
 describe('CiaBacklogRunService', () => {
   let service: CiaBacklogRunService;
@@ -57,8 +60,8 @@ describe('CiaBacklogRunService', () => {
     agentEvents = { publish: jest.fn().mockResolvedValue(undefined) };
     chatFilter = {
       resolveInlineBacklogFallbackLimit: jest.fn().mockReturnValue(50),
-      normalizeChats: jest.fn().mockImplementation((chats: any) => chats || []),
-      selectRemotePendingChats: jest.fn().mockImplementation((chats: any) => chats || []),
+      normalizeChats: jest.fn().mockReturnValue([]),
+      selectRemotePendingChats: jest.fn().mockReturnValue([]),
     };
     runtimeState = {
       createAutonomyRun: jest.fn().mockResolvedValue(undefined),
@@ -68,10 +71,16 @@ describe('CiaBacklogRunService', () => {
       scheduleContactCatalogRefresh: jest.fn().mockResolvedValue(undefined),
     };
     workerRuntime = { isAvailable: jest.fn().mockResolvedValue(true) };
-    inlineFallback = { runBacklogInlineFallback: jest.fn().mockResolvedValue({ processed: 0, skipped: 0, message: '' }) };
+    inlineFallback = {
+      runBacklogInlineFallback: jest
+        .fn()
+        .mockResolvedValue({ processed: 0, skipped: 0, message: '' }),
+    };
     remoteBacklog = {
       listRemotePendingChats: jest.fn().mockResolvedValue([]),
-      runRemoteBacklogInlineFallback: jest.fn().mockResolvedValue({ processed: 0, skipped: 0, message: '' }),
+      runRemoteBacklogInlineFallback: jest
+        .fn()
+        .mockResolvedValue({ processed: 0, skipped: 0, message: '' }),
     };
     bootstrapService = {
       listPendingConversations: jest.fn().mockResolvedValue([]),
@@ -115,7 +124,11 @@ describe('CiaBacklogRunService', () => {
 
       expect(result.queued).toBe(true);
       expect(result.mode).toBe('reply_only_new');
-      expect(runtimeState.updateAutonomyRunStatus).toHaveBeenCalledWith('ws-1', expect.any(String), 'COMPLETED');
+      expect(runtimeState.updateAutonomyRunStatus).toHaveBeenCalledWith(
+        'ws-1',
+        expect.stringMatching(/^[0-9a-f-]{36}$/),
+        'COMPLETED',
+      );
     });
 
     it('falls back to inline when worker is unavailable', async () => {
@@ -160,7 +173,7 @@ describe('CiaBacklogRunService', () => {
 
       expect(result.queued).toBe(true);
       expect(autopilotQueue.add).toHaveBeenCalledWith(
-        expect.any(String),
+        AUTOPILOT_SWEEP_UNREAD_CONVERSATIONS_JOB,
         expect.objectContaining({ workspaceId: 'ws-1' }),
         expect.objectContaining({ removeOnComplete: true }),
       );

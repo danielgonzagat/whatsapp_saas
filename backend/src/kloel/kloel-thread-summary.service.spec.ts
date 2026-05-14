@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import OpenAI from 'openai';
 import { KloelThreadSummaryService } from './kloel-thread-summary.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { PlanLimitsService } from '../billing/plan-limits.service';
@@ -12,16 +13,34 @@ jest.mock('../lib/openai-models', () => ({
   resolveBackendOpenAIModel: jest.fn().mockReturnValue('gpt-4o-mini'),
 }));
 
+type UpdateManyArg = {
+  where: { id: string; workspaceId: string };
+  data: Record<string, unknown>;
+};
+
 type SummaryPrismaMock = {
   chatThread: { findFirst: jest.Mock; updateMany: jest.Mock };
   chatMessage: { count: jest.Mock; findMany: jest.Mock };
 };
 
+type SummaryPrismaMock = {
+  chatThread: {
+    findFirst: jest.Mock<Promise<PrismaCallArg | null>, [PrismaCallArg]>;
+    updateMany: jest.Mock<Promise<{ count: number }>, [UpdateManyArg]>;
+  };
+  chatMessage: {
+    count: jest.Mock<Promise<number>, [PrismaCallArg]>;
+    findMany: jest.Mock<Promise<PrismaCallArg[]>, [PrismaCallArg]>;
+  };
+};
+
+const mockOpenai: OpenAI = new OpenAI({ apiKey: 'test-key' });
+
 describe('KloelThreadSummaryService', () => {
   let service: KloelThreadSummaryService;
   let prisma: SummaryPrismaMock;
-  let planLimits: Pick<PlanLimitsService, 'ensureTokenBudget' | 'trackAiUsage'>;
-  let opsAlert: Pick<OpsAlertService, 'alertOnCriticalError'>;
+  let planLimits: { ensureTokenBudget: jest.Mock; trackAiUsage: jest.Mock };
+  let opsAlert: { alertOnCriticalError: jest.Mock };
   const { chatCompletionWithFallback } = require('./openai-wrapper');
   const { resolveBackendOpenAIModel } = require('../lib/openai-models');
   const wsId = 'ws-1';
@@ -138,7 +157,7 @@ describe('KloelThreadSummaryService', () => {
     });
 
     it('returns fallback when no API keys are set', async () => {
-      const openai = {} as any;
+      const openai = mockOpenai;
       jest.replaceProperty(process, 'env', {
         ...process.env,
         OPENAI_API_KEY: '',
@@ -158,7 +177,7 @@ describe('KloelThreadSummaryService', () => {
         OPENAI_API_KEY: 'sk-test',
         ANTHROPIC_API_KEY: '',
       });
-      const openai = {} as any;
+      const openai = mockOpenai;
 
       const title = await service.generateConversationTitle(
         'Preciso de ajuda com a configuração do sistema',
@@ -173,17 +192,18 @@ describe('KloelThreadSummaryService', () => {
 
     it('tracks AI usage after title generation', async () => {
       jest.replaceProperty(process, 'env', { ...process.env, OPENAI_API_KEY: 'sk-test' });
-      const openai = {} as any;
+      const openai = mockOpenai;
 
       await service.generateConversationTitle('Mensagem de teste', wsId, openai);
 
-      expect(planLimits.trackAiUsage).toHaveBeenCalledWith(wsId, expect.any(Number));
+      const [[, trackTokenCount]] = planLimits.trackAiUsage.mock.calls as [[string, number]];
+      expect(typeof trackTokenCount).toBe('number');
     });
 
     it('returns fallback when OpenAI call fails', async () => {
       jest.replaceProperty(process, 'env', { ...process.env, OPENAI_API_KEY: 'sk-test' });
       chatCompletionWithFallback.mockRejectedValueOnce(new Error('API error'));
-      const openai = {} as any;
+      const openai = mockOpenai;
 
       const title = await service.generateConversationTitle(
         'Mensagem com conteúdo suficiente para fallback',
@@ -203,7 +223,7 @@ describe('KloelThreadSummaryService', () => {
         'Suporte Técnico',
         'Mensagem qualquer',
         wsId,
-        {} as any,
+        mockOpenai,
       );
       expect(result).toBe('Suporte Técnico');
     });
@@ -214,7 +234,7 @@ describe('KloelThreadSummaryService', () => {
         'Nova conversa',
         'oi',
         wsId,
-        {} as any,
+        mockOpenai,
       );
       expect(result).toBe('Nova conversa');
     });
@@ -227,7 +247,7 @@ describe('KloelThreadSummaryService', () => {
         'Nova conversa',
         'Preciso de ajuda com a configuração do sistema',
         wsId,
-        {} as any,
+        mockOpenai,
       );
 
       expect(result).toBe('Título da conversa');
@@ -242,7 +262,7 @@ describe('KloelThreadSummaryService', () => {
 
   describe('maybeRefreshThreadSummary', () => {
     it('returns early when threadId is null', async () => {
-      await service.maybeRefreshThreadSummary(null, wsId, {} as any);
+      await service.maybeRefreshThreadSummary(null, wsId, mockOpenai);
       expect(prisma.chatThread.findFirst).not.toHaveBeenCalled();
     });
 
@@ -259,7 +279,7 @@ describe('KloelThreadSummaryService', () => {
       });
       prisma.chatMessage.count = jest.fn().mockResolvedValue(10);
 
-      await service.maybeRefreshThreadSummary('thread-1', wsId, {} as any);
+      await service.maybeRefreshThreadSummary('thread-1', wsId, mockOpenai);
 
       expect(prisma.chatMessage.findMany).not.toHaveBeenCalled();
     });
@@ -279,18 +299,13 @@ describe('KloelThreadSummaryService', () => {
         })),
       );
 
-      await service.maybeRefreshThreadSummary('thread-1', wsId, {} as any);
+      await service.maybeRefreshThreadSummary('thread-1', wsId, mockOpenai);
 
       expect(chatCompletionWithFallback).toHaveBeenCalled();
-      expect(prisma.chatThread.updateMany).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: { id: 'thread-1', workspaceId: wsId },
-          data: expect.objectContaining({
-            summary: expect.any(String),
-            summaryUpdatedAt: expect.any(Date),
-          }),
-        }),
-      );
+      const [[refreshUpdateArg]] = prisma.chatThread.updateMany.mock.calls as [[UpdateManyArg]];
+      expect(refreshUpdateArg.where).toEqual({ id: 'thread-1', workspaceId: wsId });
+      expect(typeof refreshUpdateArg.data.summary).toBe('string');
+      expect(refreshUpdateArg.data.summaryUpdatedAt).toBeInstanceOf(Date);
     });
   });
 
@@ -303,7 +318,7 @@ describe('KloelThreadSummaryService', () => {
         'Nova conversa',
         'Mensagem substantiva suficiente para gerar título',
         'ws-isolated',
-        {} as any,
+        mockOpenai,
       );
 
       expect(prisma.chatThread.updateMany).toHaveBeenCalledWith(
@@ -323,7 +338,7 @@ describe('KloelThreadSummaryService', () => {
       prisma.chatMessage.count = jest.fn().mockResolvedValue(30);
       prisma.chatMessage.findMany.mockResolvedValueOnce([{ role: 'user', content: 'test' }]);
 
-      await service.maybeRefreshThreadSummary('thread-1', 'ws-isolated', {} as any);
+      await service.maybeRefreshThreadSummary('thread-1', 'ws-isolated', mockOpenai);
 
       expect(prisma.chatThread.findFirst).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -337,7 +352,7 @@ describe('KloelThreadSummaryService', () => {
     it('generateConversationTitle falls back when OpenAI throws', async () => {
       jest.replaceProperty(process, 'env', { ...process.env, OPENAI_API_KEY: 'sk-test' });
       chatCompletionWithFallback.mockRejectedValue(new Error('Network error'));
-      const openai = {} as any;
+      const openai = mockOpenai;
 
       const title = await service.generateConversationTitle(
         'Mensagem com conteúdo suficiente',
