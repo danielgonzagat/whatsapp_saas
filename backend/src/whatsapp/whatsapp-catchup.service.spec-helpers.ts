@@ -71,6 +71,10 @@ type CatchupOrchestratorInternals = {
   runCatchup: (workspaceId: string, reason: string, lockToken: string) => Promise<unknown>;
 };
 
+function readPrivate(target: object, key: string): unknown {
+  return Reflect.get(target, key);
+}
+
 /** Run catchup. */
 export function runCatchup(
   service: WhatsAppCatchupService,
@@ -78,13 +82,8 @@ export function runCatchup(
   reason: string,
   lockToken: string,
 ) {
-  const orchestrator = (service as unknown as { orchestrator: WhatsappCatchupOrchestratorService })
-    .orchestrator;
-  return (orchestrator as unknown as CatchupOrchestratorInternals).runCatchup(
-    workspaceId,
-    reason,
-    lockToken,
-  );
+  const orchestrator = readPrivate(service, 'orchestrator') as CatchupOrchestratorInternals;
+  return orchestrator.runCatchup(workspaceId, reason, lockToken);
 }
 
 /** Apply catchup environment defaults used across spec setups. */

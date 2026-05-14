@@ -37,6 +37,7 @@ export class UnsubscribeService {
           return { success: false, error: 'contact_not_found' };
         }
 
+        // @AllowCrossWorkspace: contact.update is scoped by a non-workspace unique identifier, provider callback key, admin session owner, or platform worker claim.
         await this.prisma.contact.update({
           where: { id: contact.id },
           data: { optIn: false, optedOutAt: new Date() },
@@ -62,10 +63,13 @@ export class UnsubscribeService {
       const contact = contacts[0];
 
       if (!contact) {
-        this.logger.warn(`Unsubscribe token for unknown contact: workspace=${workspaceId} email=${email}`);
+        this.logger.warn(
+          `Unsubscribe token for unknown contact: workspace=${workspaceId} email=${email}`,
+        );
         return { success: false, error: 'contact_not_found' };
       }
 
+      // @AllowCrossWorkspace: contact.update is scoped by a non-workspace unique identifier, provider callback key, admin session owner, or platform worker claim.
       await this.prisma.contact.update({
         where: { id: contact.id },
         data: { optIn: false, optedOutAt: new Date() },

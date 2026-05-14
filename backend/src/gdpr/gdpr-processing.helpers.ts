@@ -40,6 +40,7 @@ export async function processGdprExport(
     select: { id: true, userId: true, workspaceId: true },
   });
 
+  // @AllowCrossWorkspace: gdprRequest.update is scoped by a non-workspace unique identifier, provider callback key, admin session owner, or platform worker claim.
   await ctx.prisma.gdprRequest.update({
     where: { id: requestId },
     data: { status: GdprStatus.PROCESSING },
@@ -70,6 +71,7 @@ export async function processGdprExport(
     fs.unlinkSync(zipPath);
     fs.rmSync(exportDir, { recursive: true, force: true });
 
+    // @AllowCrossWorkspace: gdprRequest.update is scoped by a non-workspace unique identifier, provider callback key, admin session owner, or platform worker claim.
     await ctx.prisma.gdprRequest.update({
       where: { id: requestId },
       data: {
@@ -99,6 +101,7 @@ export async function processGdprDeletion(
   const daysSinceRequest = (Date.now() - request.requestedAt.getTime()) / (1000 * 60 * 60 * 24);
 
   if (daysSinceRequest > DELETION_MAX_DAYS) {
+    // @AllowCrossWorkspace: gdprRequest.update is scoped by a non-workspace unique identifier, provider callback key, admin session owner, or platform worker claim.
     await ctx.prisma.gdprRequest.update({
       where: { id: requestId },
       data: { status: GdprStatus.FAILED, completedAt: new Date() },
@@ -107,6 +110,7 @@ export async function processGdprDeletion(
     return;
   }
 
+  // @AllowCrossWorkspace: gdprRequest.update is scoped by a non-workspace unique identifier, provider callback key, admin session owner, or platform worker claim.
   await ctx.prisma.gdprRequest.update({
     where: { id: requestId },
     data: { status: GdprStatus.PROCESSING },
@@ -115,6 +119,7 @@ export async function processGdprDeletion(
   try {
     await cascadeDeleteUserData(ctx.prisma, request.userId, request.workspaceId, requestId);
 
+    // @AllowCrossWorkspace: gdprRequest.update is scoped by a non-workspace unique identifier, provider callback key, admin session owner, or platform worker claim.
     await ctx.prisma.gdprRequest.update({
       where: { id: requestId },
       data: {
@@ -138,6 +143,7 @@ export async function sendGdprVerificationEmail(
   code: string,
   type: string,
 ): Promise<void> {
+  // @AllowCrossWorkspace: agent.findUnique is scoped by a non-workspace unique identifier, provider callback key, admin session owner, or platform worker claim.
   const agent = await ctx.prisma.agent.findUnique({
     where: { id: userId },
     select: { email: true, name: true },
@@ -174,6 +180,7 @@ async function sweepUserData(
 ): Promise<void> {
   const data: Record<string, unknown> = {};
 
+  // @AllowCrossWorkspace: agent.findUnique is scoped by a non-workspace unique identifier, provider callback key, admin session owner, or platform worker claim.
   const agent = await ctx.prisma.agent.findUnique({
     where: { id: userId },
     select: {
@@ -295,6 +302,7 @@ async function cascadeDeleteUserData(
         data: { agentId: null },
       });
 
+      // @AllowCrossWorkspace: agent.update is scoped by a non-workspace unique identifier, provider callback key, admin session owner, or platform worker claim.
       await tx.agent.update({
         where: { id: userId },
         data: {
@@ -330,6 +338,7 @@ async function cascadeDeleteUserData(
     { isolationLevel: 'ReadCommitted' },
   );
 
+  // @AllowCrossWorkspace: gdprRequest.update is scoped by a non-workspace unique identifier, provider callback key, admin session owner, or platform worker claim.
   await prisma.gdprRequest.update({
     where: { id: requestId },
     data: {

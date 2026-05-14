@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { StructuredLogger } from '../logging/structured-logger';
 import { ConflictException, Injectable, Optional, UnauthorizedException } from '@nestjs/common';
 import { Agent, Prisma, Workspace } from '@prisma/client';
 import { compare as bcryptCompare, hash as bcryptHash } from 'bcrypt';
@@ -28,13 +29,17 @@ type LoginAgent = {
  *  guest creation, and identity-resolution lookups. */
 @Injectable()
 export class AuthPasswordService {
+  private readonly logger = StructuredLogger.from(AuthPasswordService.name);
+
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly tokenService: AuthTokenService,
     private readonly authPartnerService: AuthPartnerService,
     private readonly rateLimitService: RateLimitService,
     @Optional() private readonly opsAlert?: OpsAlertService,
-  ) {}
+  ) {
+    this.logger.debug?.(`AuthPasswordService initialized`);}
 
   async checkEmail(email: string): Promise<{ exists: boolean }> {
     try {

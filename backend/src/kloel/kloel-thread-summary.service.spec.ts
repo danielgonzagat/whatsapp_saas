@@ -4,19 +4,24 @@ import { KloelThreadSummaryService } from './kloel-thread-summary.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
+const mockBackendAiModelIds = jest.requireActual<typeof import('../lib/openai-models')>(
+  '../lib/openai-models',
+).BACKEND_AI_MODEL_IDS;
 
 jest.mock('./openai-wrapper', () => ({
   chatCompletionWithFallback: jest.fn(),
 }));
 
 jest.mock('../lib/openai-models', () => ({
-  resolveBackendOpenAIModel: jest.fn().mockReturnValue('gpt-4o-mini'),
+  resolveBackendOpenAIModel: jest.fn().mockReturnValue(mockBackendAiModelIds.GPT_4O_MINI),
 }));
 
 type UpdateManyArg = {
   where: { id: string; workspaceId: string };
   data: Record<string, unknown>;
 };
+
+type PrismaCallArg = Record<string, unknown>;
 
 type SummaryPrismaMock = {
   chatThread: { findFirst: jest.Mock; updateMany: jest.Mock };
@@ -67,7 +72,7 @@ describe('KloelThreadSummaryService', () => {
     };
 
     jest.clearAllMocks();
-    resolveBackendOpenAIModel.mockReturnValue('gpt-4o-mini');
+    resolveBackendOpenAIModel.mockReturnValue(mockBackendAiModelIds.GPT_4O_MINI);
     chatCompletionWithFallback.mockResolvedValue({
       choices: [{ message: { content: 'Título da conversa' } }],
       usage: { total_tokens: 64 },

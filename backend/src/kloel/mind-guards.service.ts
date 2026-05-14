@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import type { Prisma } from '@prisma/client';
 import { randomUUID } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
@@ -23,10 +24,13 @@ function toGuardReasonTag(ruleId: string | null): GuardReasonTag {
 
 @Injectable()
 export class MindGuardsService {
+  private readonly logger = StructuredLogger.from(MindGuardsService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly engine: KloelRuleEngineService,
-  ) {}
+  ) {
+    this.logger.debug?.(`MindGuardsService initialized`);}
 
   async evaluate(input: {
     action: string;

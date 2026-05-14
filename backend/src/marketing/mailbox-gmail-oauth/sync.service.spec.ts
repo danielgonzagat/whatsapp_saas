@@ -1,9 +1,5 @@
 import { GmailSyncService } from './sync.service';
-import type {
-  GmailMailboxRecord,
-  GmailListResponse,
-  GmailMessageResponse,
-} from './types';
+import type { GmailMailboxRecord, GmailListResponse, GmailMessageResponse } from './types';
 
 jest.mock('../../observability/metrics', () => ({
   Metrics: {
@@ -14,9 +10,7 @@ jest.mock('../../observability/metrics', () => ({
   },
 }));
 
-function buildConnection(
-  overrides: Partial<GmailMailboxRecord> = {},
-): GmailMailboxRecord {
+function buildConnection(overrides: Partial<GmailMailboxRecord> = {}): GmailMailboxRecord {
   return {
     id: 'mb-1',
     workspaceId: 'ws-1',
@@ -29,9 +23,7 @@ function buildConnection(
   };
 }
 
-function buildListResponse(
-  ids: string[],
-): GmailListResponse {
+function buildListResponse(ids: string[]): GmailListResponse {
   return { messages: ids.map((id) => ({ id })) };
 }
 
@@ -95,9 +87,7 @@ describe('GmailSyncService', () => {
   describe('syncLatestInbox', () => {
     it('syncs new messages and updates metadata', async () => {
       const connection = buildConnection();
-      gmailClientMock.listMessages.mockResolvedValue(
-        buildListResponse(['msg-1', 'msg-2']),
-      );
+      gmailClientMock.listMessages.mockResolvedValue(buildListResponse(['msg-1', 'msg-2']));
       gmailClientMock.getMessage.mockResolvedValue(
         buildMessageResponse(
           'msg-1',
@@ -109,13 +99,8 @@ describe('GmailSyncService', () => {
 
       const result = await service.syncLatestInbox(connection);
 
-      expect(gmailClientMock.resolveAccessToken).toHaveBeenCalledWith(
-        connection,
-      );
-      expect(gmailClientMock.listMessages).toHaveBeenCalledWith(
-        'fake-access-token',
-        10,
-      );
+      expect(gmailClientMock.resolveAccessToken).toHaveBeenCalledWith(connection);
+      expect(gmailClientMock.listMessages).toHaveBeenCalledWith('fake-access-token', 10);
       expect(gmailClientMock.getMessage).toHaveBeenCalledTimes(2);
       expect(omnichannelMock.handleIncomingMessage).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -163,18 +148,13 @@ describe('GmailSyncService', () => {
       await service.syncLatestInbox(connection);
 
       expect(gmailClientMock.getMessage).toHaveBeenCalledTimes(1);
-      expect(gmailClientMock.getMessage).toHaveBeenCalledWith(
-        'fake-access-token',
-        'msg-3',
-      );
+      expect(gmailClientMock.getMessage).toHaveBeenCalledWith('fake-access-token', 'msg-3');
       expect(omnichannelMock.handleIncomingMessage).toHaveBeenCalledTimes(1);
     });
 
     it('skips messages without content or from own mailbox', async () => {
       const connection = buildConnection({ email: 'owner@example.com' });
-      gmailClientMock.listMessages.mockResolvedValue(
-        buildListResponse(['msg-1', 'msg-2']),
-      );
+      gmailClientMock.listMessages.mockResolvedValue(buildListResponse(['msg-1', 'msg-2']));
       gmailClientMock.getMessage
         .mockResolvedValueOnce(
           buildMessageResponse(
@@ -206,17 +186,13 @@ describe('GmailSyncService', () => {
     });
 
     it('throws when connection is null (current behavior: TypeError in catch — real bug to fix in service)', async () => {
-      gmailClientMock.resolveAccessToken.mockRejectedValue(
-        new Error('No mailbox record'),
-      );
+      gmailClientMock.resolveAccessToken.mockRejectedValue(new Error('No mailbox record'));
 
       // BUG: service catch block reads connection.workspaceId before checking
       // connection is non-null, so caller gets a TypeError instead of the
       // upstream error. This test documents the current behavior; service
       // should null-check connection before referencing workspaceId.
-      await expect(
-        service.syncLatestInbox(null as unknown as GmailMailboxRecord),
-      ).rejects.toThrow(TypeError);
+      await expect(service.syncLatestInbox(null as GmailMailboxRecord)).rejects.toThrow(TypeError);
 
       expect(gmailClientMock.listMessages).not.toHaveBeenCalled();
       expect(omnichannelMock.handleIncomingMessage).not.toHaveBeenCalled();
@@ -225,13 +201,9 @@ describe('GmailSyncService', () => {
 
     it('throws on gmail list error without partial state writes', async () => {
       const connection = buildConnection();
-      gmailClientMock.listMessages.mockRejectedValue(
-        new Error('Gmail API error'),
-      );
+      gmailClientMock.listMessages.mockRejectedValue(new Error('Gmail API error'));
 
-      await expect(
-        service.syncLatestInbox(connection),
-      ).rejects.toThrow('Gmail API error');
+      await expect(service.syncLatestInbox(connection)).rejects.toThrow('Gmail API error');
 
       expect(omnichannelMock.handleIncomingMessage).not.toHaveBeenCalled();
       expect(prismaMock.mailboxConnection.update).not.toHaveBeenCalled();
@@ -239,9 +211,7 @@ describe('GmailSyncService', () => {
 
     it('passes workspaceId from the mailbox row to omnichannel', async () => {
       const connection = buildConnection({ workspaceId: 'ws-tenant-99' });
-      gmailClientMock.listMessages.mockResolvedValue(
-        buildListResponse(['msg-1']),
-      );
+      gmailClientMock.listMessages.mockResolvedValue(buildListResponse(['msg-1']));
       gmailClientMock.getMessage.mockResolvedValue(
         buildMessageResponse(
           'msg-1',
@@ -260,68 +230,38 @@ describe('GmailSyncService', () => {
 
     it('respects requestedLimit parameter', async () => {
       const connection = buildConnection();
-      gmailClientMock.listMessages.mockResolvedValue(
-        buildListResponse(['msg-1']),
-      );
+      gmailClientMock.listMessages.mockResolvedValue(buildListResponse(['msg-1']));
       gmailClientMock.getMessage.mockResolvedValue(
-        buildMessageResponse(
-          'msg-1',
-          { name: 'S', email: 's@e.com' },
-          'S',
-          'B',
-        ),
+        buildMessageResponse('msg-1', { name: 'S', email: 's@e.com' }, 'S', 'B'),
       );
 
       await service.syncLatestInbox(connection, 5);
 
-      expect(gmailClientMock.listMessages).toHaveBeenCalledWith(
-        'fake-access-token',
-        5,
-      );
+      expect(gmailClientMock.listMessages).toHaveBeenCalledWith('fake-access-token', 5);
     });
 
     it('caps limit at 25', async () => {
       const connection = buildConnection();
-      gmailClientMock.listMessages.mockResolvedValue(
-        buildListResponse(['msg-1']),
-      );
+      gmailClientMock.listMessages.mockResolvedValue(buildListResponse(['msg-1']));
       gmailClientMock.getMessage.mockResolvedValue(
-        buildMessageResponse(
-          'msg-1',
-          { name: 'S', email: 's@e.com' },
-          'S',
-          'B',
-        ),
+        buildMessageResponse('msg-1', { name: 'S', email: 's@e.com' }, 'S', 'B'),
       );
 
       await service.syncLatestInbox(connection, 100);
 
-      expect(gmailClientMock.listMessages).toHaveBeenCalledWith(
-        'fake-access-token',
-        25,
-      );
+      expect(gmailClientMock.listMessages).toHaveBeenCalledWith('fake-access-token', 25);
     });
 
     it('defaults limit to 10 when requestedLimit is 0', async () => {
       const connection = buildConnection();
-      gmailClientMock.listMessages.mockResolvedValue(
-        buildListResponse(['msg-1']),
-      );
+      gmailClientMock.listMessages.mockResolvedValue(buildListResponse(['msg-1']));
       gmailClientMock.getMessage.mockResolvedValue(
-        buildMessageResponse(
-          'msg-1',
-          { name: 'S', email: 's@e.com' },
-          'S',
-          'B',
-        ),
+        buildMessageResponse('msg-1', { name: 'S', email: 's@e.com' }, 'S', 'B'),
       );
 
       await service.syncLatestInbox(connection, 0);
 
-      expect(gmailClientMock.listMessages).toHaveBeenCalledWith(
-        'fake-access-token',
-        10,
-      );
+      expect(gmailClientMock.listMessages).toHaveBeenCalledWith('fake-access-token', 10);
     });
   });
 });

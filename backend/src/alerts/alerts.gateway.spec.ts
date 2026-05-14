@@ -10,7 +10,7 @@ import { createRedisClient } from '../common/redis/redis.util';
 type SocketOverrides = Partial<Pick<Socket, 'id' | 'handshake' | 'join'>>;
 
 function mockSocket(overrides: SocketOverrides = {}): Socket {
-  return { id: 'test-socket-id', ...overrides } as unknown as Socket;
+  return { id: 'test-socket-id', ...overrides } as Socket;
 }
 
 describe('AlertsGateway', () => {
@@ -38,7 +38,7 @@ describe('AlertsGateway', () => {
     (createRedisClient as jest.Mock).mockReturnValue(mockSub);
 
     gateway = new AlertsGateway();
-    (gateway as unknown as { server: typeof mockServer }).server = mockServer;
+    (gateway as { server: typeof mockServer }).server = mockServer;
   });
 
   describe('onModuleInit', () => {

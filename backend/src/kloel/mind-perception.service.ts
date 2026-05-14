@@ -1,10 +1,14 @@
 import { Injectable } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { PrismaService } from '../prisma/prisma.service';
 import type { MindPerceptEvent } from './mind.types';
 
 @Injectable()
 export class MindPerceptionService {
-  constructor(private readonly prisma: PrismaService) {}
+  private readonly logger = StructuredLogger.from(MindPerceptionService.name);
+
+  constructor(private readonly prisma: PrismaService) {
+    this.logger.debug?.(`MindPerceptionService initialized`);}
 
   async since(workspaceId: string, watermark: Date): Promise<MindPerceptEvent[]> {
     const [autopilot, messages, sales, orders] = await Promise.all([

@@ -46,7 +46,7 @@ describe('extractCatalogChatName', () => {
   });
 
   it('handles null chat', () => {
-    expect(extractCatalogChatName(null as unknown as Record<string, unknown>)).toBe('');
+    expect(extractCatalogChatName(null as Record<string, unknown>)).toBe('');
   });
 
   it('reads from lastMessage._data.notifyName', () => {
@@ -111,7 +111,11 @@ describe('extractTrustedNameFromRemoteMessage', () => {
   });
 
   it('returns empty when all placeholder', () => {
-    const msg = { pushName: 'John Doe', notifyName: 'Unknown', _data: { notifyName: 'Desconhecido' } };
+    const msg = {
+      pushName: 'John Doe',
+      notifyName: 'Unknown',
+      _data: { notifyName: 'Desconhecido' },
+    };
     expect(extractTrustedNameFromRemoteMessage(msg)).toBe('');
   });
 });
@@ -185,7 +189,7 @@ describe('buildConversationLedger', () => {
   });
 
   it('returns empty transcript for non-array input', () => {
-    const result = buildConversationLedger(null as unknown as never[]);
+    const result = buildConversationLedger(null as never[]);
     expect(result.transcript).toBe('');
   });
 
@@ -221,7 +225,11 @@ describe('buildConversationLedger', () => {
 
   it('detects email addresses', () => {
     const result = buildConversationLedger([
-      { content: 'meu email e joao@teste.com', direction: 'INBOUND', createdAt: new Date('2026-01-01') },
+      {
+        content: 'meu email e joao@teste.com',
+        direction: 'INBOUND',
+        createdAt: new Date('2026-01-01'),
+      },
     ]);
     expect(result.factsText).toContain('joao@teste.com');
   });
@@ -242,7 +250,11 @@ describe('buildConversationLedger', () => {
 
   it('detects covered topics: prazo', () => {
     const result = buildConversationLedger([
-      { content: 'qual o prazo de entrega?', direction: 'INBOUND', createdAt: new Date('2026-01-01') },
+      {
+        content: 'qual o prazo de entrega?',
+        direction: 'INBOUND',
+        createdAt: new Date('2026-01-01'),
+      },
     ]);
     expect(result.factsText).toContain('prazo');
   });

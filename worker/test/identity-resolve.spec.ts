@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import {
   normalizeCatalogPhone,
   expandComparablePhoneVariants,
@@ -30,7 +30,7 @@ describe('normalizeCatalogPhone', () => {
   });
 
   it('handles null/undefined', () => {
-    expect(normalizeCatalogPhone(null as unknown as string)).toBe('');
+    expect(normalizeCatalogPhone(null as string)).toBe('');
   });
 });
 
@@ -160,7 +160,7 @@ describe('buildLidMap', () => {
   });
 
   it('handles null array', () => {
-    const map = buildLidMap(null as unknown as []);
+    const map = buildLidMap(null as []);
     expect(map.size).toBe(0);
   });
 });
@@ -207,15 +207,13 @@ describe('resolveLastMessageFromMe', () => {
   });
 
   it('reads chat.lastMessage._data.id.fromMe', () => {
-    expect(
-      resolveLastMessageFromMe({ lastMessage: { _data: { id: { fromMe: true } } } }),
-    ).toBe(true);
+    expect(resolveLastMessageFromMe({ lastMessage: { _data: { id: { fromMe: true } } } })).toBe(
+      true,
+    );
   });
 
   it('reads chat.lastMessage.id.fromMe', () => {
-    expect(
-      resolveLastMessageFromMe({ lastMessage: { id: { fromMe: false } } }),
-    ).toBe(false);
+    expect(resolveLastMessageFromMe({ lastMessage: { id: { fromMe: false } } })).toBe(false);
   });
 
   it('returns null when fromMe not found', () => {
@@ -223,7 +221,7 @@ describe('resolveLastMessageFromMe', () => {
   });
 
   it('returns null for null chat', () => {
-    expect(resolveLastMessageFromMe(null as unknown as Record<string, unknown>)).toBeNull();
+    expect(resolveLastMessageFromMe(null as Record<string, unknown>)).toBeNull();
   });
 });
 

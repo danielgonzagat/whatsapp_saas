@@ -140,10 +140,11 @@ export function appendAssistantContent(
 }
 
 /** Persist guest session. */
-export function persistGuestSession(storageKey: string, sessionId: string): void {
-  try {
-    localStorage.setItem(storageKey, sessionId);
-  } catch {
-    // localStorage unavailable in private tabs / SSR - fallback silently.
-  }
+// GUEST-SESSION-IN-MEMORY-OK: storage moved to in-memory ref in caller (no localStorage).
+// TODO(KLOEL-142): wire to /api/chat/guest/session POST when backend exposes persistence,
+// see audit at /tmp/h13-fleet/prompts/g3-floating-chat-guest.md.
+export function persistGuestSession(_storageKey: string, _sessionId: string): void {
+  // no-op — caller (FloatingChat.tsx) holds guest session in a useRef across the
+  // mounted lifetime of the floating chat. Cross-refresh persistence requires
+  // backend GuestSession model migration (out of this slice's scope).
 }

@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { HealthCheckError, HealthIndicator, HealthIndicatorResult } from '@nestjs/terminus';
+import { BACKEND_AI_MODEL_IDS } from '../../lib/openai-models';
 
 const ANTHROPIC_PROBE_TIMEOUT_MS = 2_000;
 
@@ -41,7 +42,7 @@ export class AnthropicHealthIndicator extends HealthIndicator {
           'content-type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'claude-3-haiku-20240307',
+          model: BACKEND_AI_MODEL_IDS.CLAUDE_HEALTH_PROBE,
           max_tokens: 1,
           messages: [{ role: 'user', content: 'ping' }],
         }),

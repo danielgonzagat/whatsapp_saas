@@ -2,6 +2,7 @@ import { Logger } from '@nestjs/common';
 
 import { Prisma } from '@prisma/client';
 import { FinancialAlertService } from '../common/financial-alert.service';
+import { toPrismaJsonValue } from '../common/prisma/prisma-json.util';
 import { PrismaService } from '../prisma/prisma.service';
 import { asProviderSettings } from '../whatsapp/provider-settings.types';
 import type { StripeClient, StripeSubscription } from './stripe-types';
@@ -13,6 +14,14 @@ export interface MarkSubscriptionStatusDeps {
   financialAlert: FinancialAlertService | undefined;
   resolveWorkspaceId: (subscription: StripeSubscription) => Promise<string | null>;
   notifyOps: (event: string, payload: Record<string, unknown>) => Promise<void>;
+}
+
+function toInputJsonObject(value: Record<string, unknown>): Prisma.InputJsonObject {
+  return Object.fromEntries(
+    Object.entries(value)
+      .filter(([, entry]) => typeof entry !== 'undefined')
+      .map(([key, entry]) => [key, toPrismaJsonValue(entry)]),
+  );
 }
 
 export async function markSubscriptionStatusHelper(
@@ -67,7 +76,7 @@ export async function markSubscriptionStatusHelper(
         await tx.subscription.update({ where: { workspaceId }, data: { status } });
         await tx.workspace.update({
           where: { id: workspaceId },
-          data: { providerSettings: nextSettings as unknown as Prisma.InputJsonObject },
+          data: { providerSettings: toInputJsonObject(nextSettings) },
         });
         await tx.auditLog.create({
           data: {

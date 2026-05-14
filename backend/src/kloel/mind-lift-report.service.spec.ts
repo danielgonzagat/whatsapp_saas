@@ -51,7 +51,7 @@ describe('MindLiftReportService', () => {
           wonVsBaseline: true,
           createdAt: new Date(),
           ...overrides,
-        } as unknown as Awaited<ReturnType<typeof decisionOutcome.findAllClosedSince>>[number]);
+        } as Awaited<ReturnType<typeof decisionOutcome.findAllClosedSince>>[number]);
 
       jest.spyOn(decisionOutcome, 'findAllClosedSince').mockResolvedValue([
         row({}),

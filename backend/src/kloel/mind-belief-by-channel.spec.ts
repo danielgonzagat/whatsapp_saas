@@ -4,7 +4,7 @@ import type { MindBeliefService } from './mind-belief.service';
 function mockBeliefService(returnValue = {}) {
   return {
     getOrInit: jest.fn().mockResolvedValue(returnValue),
-  } as unknown as MindBeliefService;
+  } as MindBeliefService;
 }
 
 describe('mind-belief-by-channel', () => {

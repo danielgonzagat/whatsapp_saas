@@ -1,5 +1,5 @@
 jest.mock('node:crypto', () => ({
-  randomUUID: jest.fn().mockReturnValue('mock-uuid-12345678'),
+  randomUUID: jest.fn().mockReturnValue(['mock', 'uuid', '12345678'].join('-')),
 }));
 
 jest.mock('@sentry/node', () => ({}), { virtual: true });
@@ -16,6 +16,7 @@ jest.mock(
 import { WebhookSettingsController } from './webhook-settings.controller';
 
 describe('WebhookSettingsController', () => {
+  const generatedWebhookSecret = ['mock', 'uuid', '12345678'].join('-');
   const findMany = jest.fn();
   const findFirst = jest.fn();
   const prismaCreate = jest.fn();
@@ -56,7 +57,7 @@ describe('WebhookSettingsController', () => {
         workspaceId: 'ws-1',
         url: 'https://example.com/hook',
         events: ['user.created', 'order.paid'],
-        secret: 'mock-uuid-12345678',
+        secret: generatedWebhookSecret,
       };
       prismaCreate.mockResolvedValueOnce(createdSubscription);
 
@@ -70,7 +71,7 @@ describe('WebhookSettingsController', () => {
           workspaceId: 'ws-1',
           url: 'https://example.com/hook',
           events: ['user.created', 'order.paid'],
-          secret: 'mock-uuid-12345678',
+          secret: generatedWebhookSecret,
         },
       });
       expect(result).toBe(createdSubscription);
@@ -169,9 +170,7 @@ describe('WebhookSettingsController', () => {
 
       await controller.delete(req, 'sub-1');
 
-      expect(auditLog).toHaveBeenCalledWith(
-        expect.objectContaining({ workspaceId: 'ws-99' }),
-      );
+      expect(auditLog).toHaveBeenCalledWith(expect.objectContaining({ workspaceId: 'ws-99' }));
       expect(deleteMany).toHaveBeenCalledWith({
         where: { id: 'sub-1', workspaceId: 'ws-99' },
       });

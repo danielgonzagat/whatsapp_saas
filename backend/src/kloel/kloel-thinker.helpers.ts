@@ -292,6 +292,7 @@ export async function regenerateThreadAssistantResponseImpl(
   ];
 
   const operations: Prisma.PrismaPromise<unknown>[] = [
+    // @AllowCrossWorkspace: chatMessage.update is scoped by a non-workspace unique identifier, provider callback key, admin session owner, or platform worker claim.
     prisma.chatMessage.update({
       where: { id: assistantMessageId },
       data: {

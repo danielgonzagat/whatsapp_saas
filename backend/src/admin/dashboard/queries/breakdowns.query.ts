@@ -87,8 +87,7 @@ export async function queryMethodBreakdown(
   from: Date,
   to: Date,
 ): Promise<MethodBreakdownRow[]> {
-  // @AdminGlobalOperation: GMV breakdown by method, platform-wide
-  const grouped = (await prisma.checkoutOrder.groupBy({
+  const groupByArgs = Prisma.validator<Prisma.CheckoutOrderGroupByArgs>()({
     by: ['paymentMethod'],
     where: {
       status: { in: PAID_STATUSES },
@@ -96,11 +95,10 @@ export async function queryMethodBreakdown(
     },
     _sum: { totalInCents: true },
     _count: { _all: true },
-  })) as unknown as Array<{
-    paymentMethod: PaymentMethod;
-    _sum: { totalInCents: bigint | number | string | null };
-    _count: { _all: number };
-  }>;
+  });
+
+  // @AdminGlobalOperation: GMV breakdown by method, platform-wide
+  const grouped = await prisma.checkoutOrder.groupBy(groupByArgs);
 
   return grouped
     .map((row) => ({

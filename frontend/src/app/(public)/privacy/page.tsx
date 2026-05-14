@@ -21,7 +21,7 @@ export const metadata = buildLegalMetadata({
   locale: 'pt_BR',
 });
 
-const toc = [
+const toc = Object.freeze([
   { id: 'quem-somos', label: '1. Quem somos' },
   { id: 'dados-coletados', label: '2. Dados que coletamos' },
   { id: 'finalidades-bases', label: '3. Finalidades e bases legais' },
@@ -36,7 +36,7 @@ const toc = [
   { id: 'contato', label: '12. Contato, ANPD e canais de privacidade' },
   { id: 'google-use', label: '13. Uso de informações do Google' },
   { id: 'meta-use', label: '14. Uso de informações da Meta' },
-];
+]);
 
 /** Privacy page. */
 export default function PrivacyPage() {

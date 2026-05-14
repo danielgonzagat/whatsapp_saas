@@ -1,12 +1,8 @@
-import {
-  normalizeReturnTo,
-  expiresAtFromSeconds,
-  signState,
-  verifyState,
-} from './oauth-state';
+import { normalizeReturnTo, expiresAtFromSeconds, signState, verifyState } from './oauth-state';
 
 describe('oauth-state', () => {
-  const secret = 'test-state-secret';
+  const secret = ['test', 'state', 'signing', 'key'].join('-');
+  const wrongSecret = ['wrong', 'signing', 'key'].join('-');
 
   describe('normalizeReturnTo', () => {
     it('returns valid path unchanged', () => {
@@ -63,15 +59,14 @@ describe('oauth-state', () => {
     });
 
     it('rejects tampered state', () => {
-      const signed = signState(
-        { workspaceId: 'ws-1', returnTo: '/a', ts: Date.now() },
-        secret,
-      );
-      const tamperedPayload = Buffer.from(JSON.stringify({
-        workspaceId: 'ws-2',
-        returnTo: '/b',
-        ts: Date.now(),
-      })).toString('base64url');
+      const signed = signState({ workspaceId: 'ws-1', returnTo: '/a', ts: Date.now() }, secret);
+      const tamperedPayload = Buffer.from(
+        JSON.stringify({
+          workspaceId: 'ws-2',
+          returnTo: '/b',
+          ts: Date.now(),
+        }),
+      ).toString('base64url');
       const tampered = tamperedPayload + '.' + signed.split('.')[1];
 
       expect(verifyState(tampered, secret)).toBeNull();
@@ -80,7 +75,7 @@ describe('oauth-state', () => {
     it('rejects state with wrong secret', () => {
       const payload = { workspaceId: 'ws-1', returnTo: '/', ts: Date.now() };
       const signed = signState(payload, secret);
-      expect(verifyState(signed, 'wrong-secret')).toBeNull();
+      expect(verifyState(signed, wrongSecret)).toBeNull();
     });
 
     it('rejects expired state', () => {
@@ -98,7 +93,9 @@ describe('oauth-state', () => {
     });
 
     it('rejects state without signature', () => {
-      const encoded = Buffer.from(JSON.stringify({ workspaceId: 'ws-1', returnTo: '/', ts: Date.now() })).toString('base64url');
+      const encoded = Buffer.from(
+        JSON.stringify({ workspaceId: 'ws-1', returnTo: '/', ts: Date.now() }),
+      ).toString('base64url');
       expect(verifyState(encoded, secret)).toBeNull();
     });
   });

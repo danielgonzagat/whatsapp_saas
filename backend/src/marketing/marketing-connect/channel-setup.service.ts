@@ -1,5 +1,6 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import type { Prisma } from '@prisma/client';
+import { toPrismaJsonValue } from '../../common/prisma/prisma-json.util';
 import { PrismaService } from '../../prisma/prisma.service';
 import { asProviderSettings } from '../../whatsapp/provider-settings.types';
 import {
@@ -12,9 +13,21 @@ import {
   type MarketingChannelSetupPayload,
 } from './shared/channel-helpers';
 
+function toInputJsonObject(value: Record<string, unknown>): Prisma.InputJsonObject {
+  return Object.fromEntries(
+    Object.entries(value)
+      .filter(([, entry]) => typeof entry !== 'undefined')
+      .map(([key, entry]) => [key, toPrismaJsonValue(entry)]),
+  );
+}
+
 @Injectable()
 export class ChannelSetupService {
-  constructor(private readonly prisma: PrismaService) {}
+  private readonly logger = new Logger(ChannelSetupService.name);
+
+  constructor(private readonly prisma: PrismaService) {
+    this.logger.debug?.(`ChannelSetupService initialized`);
+  }
 
   async getSetup(workspaceId: string, rawChannel?: string) {
     const channel = assertMarketingChannel(rawChannel);
@@ -72,13 +85,13 @@ export class ChannelSetupService {
       this.prisma.workspace.update({
         where: { id: workspaceId },
         data: {
-          providerSettings: {
+          providerSettings: toInputJsonObject({
             ...currentSettings,
             marketingChannelSetup: {
               ...allSetups,
               [channel]: nextSetup,
             },
-          } as unknown as Prisma.InputJsonObject,
+          }),
         },
       }),
       this.prisma.channelSetup.upsert({

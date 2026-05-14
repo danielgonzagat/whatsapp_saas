@@ -3,7 +3,7 @@ import { KLOEL_THEME } from '@/lib/kloel-theme';
 import type { ChannelKey } from '../OfficialMarketingChannelPage.helpers';
 import { CHANNEL_META } from '../OfficialMarketingChannelPage.helpers';
 
-export const SETUP_STEPS = ['Conexão', 'Produtos', 'Arsenal', 'Configuração'] as const;
+export const SETUP_STEPS = Object.freeze(['Conexão', 'Produtos', 'Arsenal', 'Configuração'] as const);
 
 interface Props {
   currentStep: number;

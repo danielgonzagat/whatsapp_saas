@@ -22,13 +22,13 @@ describe('AdminContactVerifyController', () => {
   function buildController() {
     const channelIdentifier = {
       markVerified: jest.fn() as FlexMock<ChannelIdentifierService['markVerified']>,
-    } as unknown as ChannelIdentifierService;
+    } as ChannelIdentifierService;
 
     const prisma = {
       contact: {
         findUnique: jest.fn(),
       },
-    } as unknown as PrismaService;
+    } as PrismaService;
 
     return {
       channelIdentifier,
@@ -41,7 +41,7 @@ describe('AdminContactVerifyController', () => {
     it('marks a channel identifier as verified and returns success', async () => {
       const { controller, channelIdentifier, prisma } = buildController();
 
-      (prisma.contact as unknown as { findUnique: jest.Mock }).findUnique.mockResolvedValue({
+      (prisma.contact as { findUnique: jest.Mock }).findUnique.mockResolvedValue({
         id: 'contact-1',
         workspaceId: 'ws-1',
       });
@@ -73,7 +73,7 @@ describe('AdminContactVerifyController', () => {
     it('throws NotFoundException when contact does not exist', async () => {
       const { controller, prisma } = buildController();
 
-      (prisma.contact as unknown as { findUnique: jest.Mock }).findUnique.mockResolvedValue(null);
+      (prisma.contact as { findUnique: jest.Mock }).findUnique.mockResolvedValue(null);
 
       await expect(
         controller.verifyChannel('nonexistent', {
@@ -86,7 +86,7 @@ describe('AdminContactVerifyController', () => {
     it('returns { success: false } when channel identifier is not found', async () => {
       const { controller, channelIdentifier, prisma } = buildController();
 
-      (prisma.contact as unknown as { findUnique: jest.Mock }).findUnique.mockResolvedValue({
+      (prisma.contact as { findUnique: jest.Mock }).findUnique.mockResolvedValue({
         id: 'contact-1',
         workspaceId: 'ws-1',
       });

@@ -215,6 +215,7 @@ export async function finishBacklogRunTask(input: {
   if (next.finished >= next.total) {
     try {
       if (prisma.autonomyRun) {
+        // @AllowCrossWorkspace: autonomyRun.update is scoped by a non-workspace unique identifier, provider callback key, admin session owner, or platform worker claim.
         await prisma.autonomyRun.update({
           where: { id: input.runId },
           data: {

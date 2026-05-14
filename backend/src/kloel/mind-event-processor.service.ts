@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { MindCaseMemoryService } from './mind-case-memory.service';
 import { MindConceptService } from './mind-concepts.service';
 import { messageTemplate, toStableString } from './mind-decision-baselines';
@@ -27,13 +28,16 @@ const AUTOPILOT_SUCCESS_INTENTS = new Set(['lead_qualified', 'meeting_booked', '
 
 @Injectable()
 export class MindEventProcessorService {
+  private readonly logger = StructuredLogger.from(MindEventProcessorService.name);
+
   constructor(
     private readonly predictor: MindPredictorService,
     private readonly surprise: MindSurpriseService,
     private readonly policy: MindPolicyService,
     private readonly cases: MindCaseMemoryService,
     private readonly concepts: MindConceptService,
-  ) {}
+  ) {
+    this.logger.debug?.(`MindEventProcessorService initialized`);}
 
   async process(event: MindPerceptEvent): Promise<MindEventProcessResult> {
     const result: MindEventProcessAccumulator = {

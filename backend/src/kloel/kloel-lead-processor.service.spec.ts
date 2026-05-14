@@ -4,6 +4,9 @@ import { PrismaService } from '../prisma/prisma.service';
 import { UnifiedAgentService } from './unified-agent.service';
 import { SmartPaymentService } from './smart-payment.service';
 import { PlanLimitsService } from '../billing/plan-limits.service';
+const mockBackendAiModelIds = jest.requireActual<typeof import('../lib/openai-models')>(
+  '../lib/openai-models',
+).BACKEND_AI_MODEL_IDS;
 
 jest.mock('./openai-wrapper', () => ({
   chatCompletionWithFallback: jest.fn().mockResolvedValue({
@@ -13,7 +16,7 @@ jest.mock('./openai-wrapper', () => ({
 }));
 
 jest.mock('../lib/openai-models', () => ({
-  resolveBackendOpenAIModel: jest.fn().mockReturnValue('gpt-4o'),
+  resolveBackendOpenAIModel: jest.fn().mockReturnValue(mockBackendAiModelIds.GPT_4O),
 }));
 
 jest.mock('openai', () => ({

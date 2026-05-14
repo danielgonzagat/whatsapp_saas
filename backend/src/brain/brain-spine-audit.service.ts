@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import {  Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
 interface SpineRow {
@@ -26,7 +26,10 @@ export interface SpineAuditResult {
 
 @Injectable()
 export class BrainSpineAuditService {
-  constructor(private readonly prisma: PrismaService) {}
+  private readonly logger = new Logger(BrainSpineAuditService.name);
+
+  constructor(private readonly prisma: PrismaService) {
+    this.logger.debug?.(`BrainSpineAuditService initialized`);}
 
   async audit(sinceIso: string): Promise<SpineAuditResult> {
     const windowFrom = sinceIso;

@@ -1,9 +1,16 @@
-import { Injectable } from '@nestjs/common';
+import {  Injectable, Logger } from '@nestjs/common';
 import { KLOEL_RULE_CATALOG } from './kloel-rules.catalog';
 import type { RuleContext, RuleTrace, RuleVerdict } from './kloel-rules.types';
 
 @Injectable()
 export class KloelRuleEngineService {
+  private readonly logger = new Logger(KloelRuleEngineService.name);
+
+  constructor() {
+    this.logger.debug?.(`KloelRuleEngineService initialized`);
+  }
+
+
   private readonly catalog = KLOEL_RULE_CATALOG;
 
   evaluate(ctx: RuleContext): RuleTrace {

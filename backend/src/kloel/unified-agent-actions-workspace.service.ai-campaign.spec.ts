@@ -3,6 +3,7 @@ import { UnifiedAgentActionsWorkspaceService } from './unified-agent-actions-wor
 import { PrismaService } from '../prisma/prisma.service';
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
+import { BACKEND_AI_MODEL_IDS } from '../lib/openai-models';
 jest.mock('./openai-wrapper', () => ({
   chatCompletionWithFallback: jest.fn(),
 }));
@@ -86,8 +87,8 @@ describe('UnifiedAgentActionsWorkspaceService', () => {
         wsId,
         { description: 'test', objective: 'sell' },
         null,
-        'gpt-4',
-        'gpt-3.5-turbo',
+        BACKEND_AI_MODEL_IDS.GPT_4,
+        BACKEND_AI_MODEL_IDS.GPT_35_TURBO,
       );
       expect(result.success).toBe(false);
       expect(result.error).toContain('OpenAI');
@@ -113,8 +114,8 @@ describe('UnifiedAgentActionsWorkspaceService', () => {
         wsId,
         { description: 'Sell product', objective: 'convert', autoActivate: true },
         { apiKey: 'fake' },
-        'gpt-4',
-        'gpt-3.5-turbo',
+        BACKEND_AI_MODEL_IDS.GPT_4,
+        BACKEND_AI_MODEL_IDS.GPT_35_TURBO,
       );
       expect(result.success).toBe(true);
       expect(result.flowId).toBeDefined();
@@ -133,8 +134,8 @@ describe('UnifiedAgentActionsWorkspaceService', () => {
         wsId,
         { description: 'test', objective: 'sell' },
         { apiKey: 'fake' },
-        'gpt-4',
-        'gpt-3.5-turbo',
+        BACKEND_AI_MODEL_IDS.GPT_4,
+        BACKEND_AI_MODEL_IDS.GPT_35_TURBO,
       );
       expect(result.success).toBe(false);
     });

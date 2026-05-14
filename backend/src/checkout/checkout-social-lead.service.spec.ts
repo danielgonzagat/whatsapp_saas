@@ -130,10 +130,10 @@ describe('CheckoutSocialLeadService', () => {
     };
 
     service = new CheckoutSocialLeadService(
-      prisma as unknown as PrismaService,
-      googleAuth as unknown as GoogleAuthService,
-      facebookAuth as unknown as FacebookAuthService,
-      appleAuth as unknown as AppleAuthService,
+      prisma as PrismaService,
+      googleAuth as GoogleAuthService,
+      facebookAuth as FacebookAuthService,
+      appleAuth as AppleAuthService,
     );
   });
 

@@ -1,4 +1,5 @@
 import { Injectable, Optional } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import type { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { KloelGlobalPriorService } from './kloel-global-prior.service';
@@ -26,11 +27,15 @@ const COLD_START_THRESHOLD = 30;
 
 @Injectable()
 export class MindPolicyService {
+  private readonly logger = StructuredLogger.from(MindPolicyService.name);
+
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly beliefs: MindBeliefService,
     @Optional() private readonly globalPrior?: KloelGlobalPriorService,
-  ) {}
+  ) {
+    this.logger.debug?.(`MindPolicyService initialized`);}
 
   async choose(input: MindPolicyInput): Promise<{ chosen: string; decision: MindPolicyDecision }> {
     const utilitySuccess = input.utilitySuccess ?? 1;

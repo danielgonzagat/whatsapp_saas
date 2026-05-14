@@ -124,7 +124,7 @@ describe('WorkspaceService', () => {
         jitterMin: 100,
         jitterMax: 500,
         providerSettings: { whatsappProvider: 'meta-cloud' },
-      } as unknown as Workspace;
+      } as Workspace;
       const result = service.toEngineWorkspace(ws);
       expect(result.id).toBe('ws-1');
       expect(result.jitterMin).toBe(100);

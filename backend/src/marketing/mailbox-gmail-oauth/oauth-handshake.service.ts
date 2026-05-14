@@ -1,4 +1,5 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
+import { StructuredLogger } from '../../logging/structured-logger';
 import { MailboxProvider, MailboxStatus } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { Metrics } from '../../observability/metrics';
@@ -10,10 +11,13 @@ import type { SignedGmailState } from './types';
 
 @Injectable()
 export class GmailOAuthHandshakeService {
+  private readonly logger = StructuredLogger.from(GmailOAuthHandshakeService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly gmailClient: GmailClientService,
-  ) {}
+  ) {
+    this.logger.debug?.(`GmailOAuthHandshakeService initialized`);}
 
   async persistOAuthResult(parsedState: SignedGmailState, code: string) {
     const token = await this.gmailClient.exchangeCode(code);

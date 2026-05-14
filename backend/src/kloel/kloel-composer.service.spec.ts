@@ -3,6 +3,9 @@ import { KloelComposerService } from './kloel-composer.service';
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { StorageService } from '../common/storage/storage.service';
 import { KLOEL_COMPOSER_E2E_GUARD, KloelComposerE2EGuard } from './kloel-composer-e2e-guard';
+const mockBackendAiModelIds = jest.requireActual<typeof import('../lib/openai-models')>(
+  '../lib/openai-models',
+).BACKEND_AI_MODEL_IDS;
 
 jest.mock('openai', () => ({
   default: jest.fn().mockImplementation(() => ({
@@ -15,12 +18,12 @@ jest.mock('openai', () => ({
 jest.mock('../lib/ai-models', () => ({
   resolveKloelCapabilityModel: jest.fn((capability: string) => {
     if (capability === 'search_web') {
-      return 'gpt-4o';
+      return mockBackendAiModelIds.GPT_4O;
     }
     if (capability === 'create_image') {
-      return 'dall-e-3';
+      return mockBackendAiModelIds.DALL_E_3;
     }
-    return 'claude-sonnet';
+    return mockBackendAiModelIds.CLAUDE_SONNET_ALIAS;
   }),
 }));
 

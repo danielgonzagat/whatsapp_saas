@@ -7,7 +7,7 @@ describe('UnsubscribeController', () => {
   let service: UnsubscribeService;
 
   const mockRedirect = jest.fn();
-  const mockResponse = { redirect: mockRedirect } as unknown as Response;
+  const mockResponse = { redirect: mockRedirect } as Response;
 
   beforeEach(async () => {
     jest.clearAllMocks();
@@ -67,7 +67,7 @@ describe('UnsubscribeController', () => {
     });
 
     it('redirects to error page on null/undefined token', async () => {
-      await controller.unsubscribe(undefined as unknown as string, mockResponse as never);
+      await controller.unsubscribe(undefined as string, mockResponse as never);
 
       expect(mockRedirect).toHaveBeenCalledWith(
         expect.stringContaining('/unsubscribed?error=missing_token'),

@@ -1,10 +1,16 @@
 import { describe, it, expect } from 'vitest';
 
-function extractContactId(contextSnapshot: Record<string, unknown> | null | undefined): string | undefined {
+function extractContactId(
+  contextSnapshot: Record<string, unknown> | null | undefined,
+): string | undefined {
   if (!contextSnapshot || typeof contextSnapshot !== 'object' || Array.isArray(contextSnapshot)) {
     return undefined;
   }
-  const id = contextSnapshot.contactId ?? contextSnapshot.contact_id ?? contextSnapshot.userId ?? contextSnapshot.phone;
+  const id =
+    contextSnapshot.contactId ??
+    contextSnapshot.contact_id ??
+    contextSnapshot.userId ??
+    contextSnapshot.phone;
   return typeof id === 'string' ? id : undefined;
 }
 
@@ -17,7 +23,7 @@ describe('Silent 24h Resolver', () => {
     it('returns undefined for non-object input', () => {
       expect(extractContactId(null)).toBeUndefined();
       expect(extractContactId(undefined)).toBeUndefined();
-      expect(extractContactId([] as unknown as Record<string, unknown>)).toBeUndefined();
+      expect(extractContactId([] as Record<string, unknown>)).toBeUndefined();
     });
 
     it('extracts contactId from contextSnapshot', () => {

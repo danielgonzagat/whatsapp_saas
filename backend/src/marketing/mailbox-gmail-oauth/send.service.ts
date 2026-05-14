@@ -1,4 +1,5 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
+import { StructuredLogger } from '../../logging/structured-logger';
 import { MailboxProvider, MailboxStatus } from '@prisma/client';
 import { ConfigService } from '@nestjs/config';
 import { Metrics } from '../../observability/metrics';
@@ -11,11 +12,14 @@ import type { GmailMailboxRecord, GmailSendResponse } from './types';
 
 @Injectable()
 export class GmailSendService {
+  private readonly logger = StructuredLogger.from(GmailSendService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly config: ConfigService,
     private readonly gmailClient: GmailClientService,
-  ) {}
+  ) {
+    this.logger.debug?.(`GmailSendService initialized`);}
 
   async sendMessageFromMailbox(
     workspaceId: string,
@@ -91,8 +95,8 @@ export class GmailSendService {
     });
     const payload = (await response.json().catch(() => ({}))) as GmailSendResponse;
     if (!response.ok || !payload.id) {
-      await this.prisma.mailboxConnection.update({
-        where: { id: connection.id },
+      await this.prisma.mailboxConnection.updateMany({
+        where: { id: connection.id, workspaceId },
         data: {
           lastErrorAt: new Date(),
           lastError: 'gmail_send_failed',

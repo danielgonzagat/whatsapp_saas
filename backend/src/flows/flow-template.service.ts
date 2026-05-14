@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {  Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { forEachSequential } from '../common/async-sequence';
 import { PrismaService } from '../prisma/prisma.service';
@@ -12,7 +12,10 @@ type CreateFlowTemplateInput = RecommendedFlowTemplate;
 /** Flow template service. */
 @Injectable()
 export class FlowTemplateService {
-  constructor(private readonly prisma: PrismaService) {}
+  private readonly logger = new Logger(FlowTemplateService.name);
+
+  constructor(private readonly prisma: PrismaService) {
+    this.logger.debug?.(`FlowTemplateService initialized`);}
 
   /**
    * Retorna um conjunto de templates recomendados para uso inicial.

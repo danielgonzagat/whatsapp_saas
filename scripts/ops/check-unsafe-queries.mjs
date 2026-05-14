@@ -28,6 +28,8 @@ const SCAN_METHODS = new Set([
 ]);
 const SIMPLE_RE = /\b(?:this\.)?prisma(?:Any)?\.(\w+)\.(\w+)\s*\(/g;
 const TX_RE = /\btx\.(\w+)\.(\w+)\s*\(/g;
+const INLINE_GLOBAL_SCOPE_CONTRACT_RE =
+  /@(AdminGlobalOperation|PlatformGlobalOperation|PublicMetric|AllowCrossWorkspace|CrossWorkspaceMaintenance)\b/;
 
 const approvals = loadApprovalEntries(
   'ops/unsafe-query-exceptions.json',
@@ -53,20 +55,8 @@ if (files.length === 0) {
 
 const findings = [];
 
-// Structural boundaries that intrinsically operate across workspaces.
-// These files express an explicit, narrow contract in the code itself
-// (class name, directory, JSDoc) so the checker can accept their
-// prisma calls without a per-line allowlist entry. See the class JSDoc
-// in each listed file for the enforced invariants.
-const STRUCTURAL_BOUNDARY_FILES = new Set([
-  // Platform-level aggregate counts for Prometheus/diagnostics/health.
-  // Only scalar counters; no PII, no per-workspace data returned.
-  'backend/src/metrics/observability-queries.service.ts',
-]);
-
 for (const file of files) {
   const content = readRepoFile(file);
-  const isStructuralBoundary = STRUCTURAL_BOUNDARY_FILES.has(file);
   for (const finding of [
     ...findPrismaCalls(content, SIMPLE_RE),
     ...findPrismaCalls(content, TX_RE),
@@ -80,7 +70,7 @@ for (const file of files) {
     if (hasWorkspaceScopedWhereVariable(content, finding)) {
       continue;
     }
-    if (isStructuralBoundary) {
+    if (hasInlineGlobalScopeContract(content, finding)) {
       continue;
     }
     if (
@@ -192,6 +182,12 @@ function variableObjectContainsWorkspaceId(source, variableName) {
 
   const objectLiteral = extractObjectLiteral(source, lastMatch.index + lastMatch[0].length);
   return Boolean((objectLiteral?.body ?? '').match(/\bworkspaceId\b/));
+}
+
+function hasInlineGlobalScopeContract(source, finding) {
+  const lines = source.slice(0, finding.start).split('\n');
+  const nearby = lines.slice(Math.max(0, lines.length - 6)).join('\n');
+  return INLINE_GLOBAL_SCOPE_CONTRACT_RE.test(nearby);
 }
 
 function escapeRegex(value) {

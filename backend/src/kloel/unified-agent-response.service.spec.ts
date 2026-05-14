@@ -3,6 +3,7 @@ import { UnifiedAgentResponseService } from './unified-agent-response.service';
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import OpenAI from 'openai';
 import type { ActionEntry } from './unified-agent.types';
+import { BACKEND_AI_MODEL_IDS } from '../lib/openai-models';
 
 jest.mock('./openai-wrapper', () => ({
   chatCompletionWithFallback: jest.fn(),
@@ -44,7 +45,7 @@ describe('UnifiedAgentResponseService', () => {
 
   describe('composeWriterReply', () => {
     it('returns fallback reply when OpenAI is null', async () => {
-      const result = await service.composeWriterReply(null, 'gpt-4', 'gpt-3.5', {
+      const result = await service.composeWriterReply(null, BACKEND_AI_MODEL_IDS.GPT_4, BACKEND_AI_MODEL_IDS.GPT_35, {
         customerMessage: 'Oi',
         assistantDraft: 'Olá, como vai?',
         actions: [],
@@ -55,7 +56,7 @@ describe('UnifiedAgentResponseService', () => {
     });
 
     it('returns undefined when draft and message are empty', async () => {
-      const result = await service.composeWriterReply(null, 'gpt-4', 'gpt-3.5', {
+      const result = await service.composeWriterReply(null, BACKEND_AI_MODEL_IDS.GPT_4, BACKEND_AI_MODEL_IDS.GPT_35, {
         customerMessage: '',
         assistantDraft: null,
         actions: [],
@@ -75,8 +76,8 @@ describe('UnifiedAgentResponseService', () => {
 
       const result = await service.composeWriterReply(
         new OpenAI({ apiKey: 'test-key' }),
-        'gpt-4',
-        'gpt-3.5',
+        BACKEND_AI_MODEL_IDS.GPT_4,
+        BACKEND_AI_MODEL_IDS.GPT_35,
         {
           workspaceId: wsId,
           customerMessage: 'Oi',
@@ -97,8 +98,8 @@ describe('UnifiedAgentResponseService', () => {
 
       const result = await service.composeWriterReply(
         new OpenAI({ apiKey: 'test-key' }),
-        'gpt-4',
-        'gpt-3.5',
+        BACKEND_AI_MODEL_IDS.GPT_4,
+        BACKEND_AI_MODEL_IDS.GPT_35,
         {
           customerMessage: 'Oi',
           assistantDraft: 'Olá, como vai?',
@@ -117,7 +118,7 @@ describe('UnifiedAgentResponseService', () => {
         usage: { total_tokens: 200 },
       });
 
-      await service.composeWriterReply(new OpenAI({ apiKey: 'test-key' }), 'gpt-4', 'gpt-3.5', {
+      await service.composeWriterReply(new OpenAI({ apiKey: 'test-key' }), BACKEND_AI_MODEL_IDS.GPT_4, BACKEND_AI_MODEL_IDS.GPT_35, {
         workspaceId: wsId,
         customerMessage: 'Oi',
         assistantDraft: null,
@@ -160,7 +161,7 @@ describe('UnifiedAgentResponseService', () => {
 
   describe('buildQuotedReplyPlan', () => {
     it('returns empty array for empty messages', async () => {
-      const result = await service.buildQuotedReplyPlan(null, 'gpt-4', 'gpt-3.5', planLimits, {
+      const result = await service.buildQuotedReplyPlan(null, BACKEND_AI_MODEL_IDS.GPT_4, BACKEND_AI_MODEL_IDS.GPT_35, planLimits, {
         workspaceId: wsId,
         draftReply: 'Oi',
         customerMessages: [],
@@ -170,7 +171,7 @@ describe('UnifiedAgentResponseService', () => {
     });
 
     it('uses fallback for single message', async () => {
-      const result = await service.buildQuotedReplyPlan(null, 'gpt-4', 'gpt-3.5', planLimits, {
+      const result = await service.buildQuotedReplyPlan(null, BACKEND_AI_MODEL_IDS.GPT_4, BACKEND_AI_MODEL_IDS.GPT_35, planLimits, {
         workspaceId: wsId,
         draftReply: 'Olá, como vai?',
         customerMessages: [{ content: 'Oi', quotedMessageId: 'msg-1' }],
@@ -196,8 +197,8 @@ describe('UnifiedAgentResponseService', () => {
 
       const result = await service.buildQuotedReplyPlan(
         new OpenAI({ apiKey: 'test-key' }),
-        'gpt-4',
-        'gpt-3.5',
+        BACKEND_AI_MODEL_IDS.GPT_4,
+        BACKEND_AI_MODEL_IDS.GPT_35,
         planLimits,
         {
           workspaceId: wsId,
@@ -218,8 +219,8 @@ describe('UnifiedAgentResponseService', () => {
 
       const result = await service.buildQuotedReplyPlan(
         new OpenAI({ apiKey: 'test-key' }),
-        'gpt-4',
-        'gpt-3.5',
+        BACKEND_AI_MODEL_IDS.GPT_4,
+        BACKEND_AI_MODEL_IDS.GPT_35,
         planLimits,
         {
           workspaceId: wsId,
@@ -247,8 +248,8 @@ describe('UnifiedAgentResponseService', () => {
 
       const result = await service.buildQuotedReplyPlan(
         new OpenAI({ apiKey: 'test-key' }),
-        'gpt-4',
-        'gpt-3.5',
+        BACKEND_AI_MODEL_IDS.GPT_4,
+        BACKEND_AI_MODEL_IDS.GPT_35,
         planLimits,
         {
           workspaceId: wsId,
@@ -326,7 +327,7 @@ describe('UnifiedAgentResponseService', () => {
       const response: OpenAI.Chat.Completions.ChatCompletion = {
         id: 'cmpl-test-1',
         created: Math.floor(Date.now() / 1000),
-        model: 'gpt-4',
+        model: BACKEND_AI_MODEL_IDS.GPT_4,
         object: 'chat.completion',
         choices: [
           {
@@ -370,7 +371,7 @@ describe('UnifiedAgentResponseService', () => {
       const response: OpenAI.Chat.Completions.ChatCompletion = {
         id: 'cmpl-test-2',
         created: Math.floor(Date.now() / 1000),
-        model: 'gpt-4',
+        model: BACKEND_AI_MODEL_IDS.GPT_4,
         object: 'chat.completion',
         choices: [
           {

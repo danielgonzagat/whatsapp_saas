@@ -20,23 +20,24 @@ const OUTCOME_WEIGHTS: Record<string, number> = {
   'inbound.silent_24h': -0.1,
 };
 
-function wilsonInterval(successes: number, trials: number, z = 1.96): { lower: number; upper: number } {
-  if (trials === 0) return { lower: 0, upper: 0 };
+function wilsonInterval(
+  successes: number,
+  trials: number,
+  z = 1.96,
+): { lower: number; upper: number } {
+  if (trials === 0) {
+    return { lower: 0, upper: 0 };
+  }
   const p = successes / trials;
   const denominator = 1 + (z * z) / trials;
   const centre = (p + (z * z) / (2 * trials)) / denominator;
   const margin =
-    (z / denominator) *
-    Math.sqrt((p * (1 - p)) / trials + (z * z) / (4 * trials * trials));
+    (z / denominator) * Math.sqrt((p * (1 - p)) / trials + (z * z) / (4 * trials * trials));
   return { lower: Math.max(0, centre - margin), upper: Math.min(1, centre + margin) };
 }
 
 function extractChannel(contextSnapshot: unknown): string {
-  if (
-    contextSnapshot &&
-    typeof contextSnapshot === 'object' &&
-    !Array.isArray(contextSnapshot)
-  ) {
+  if (contextSnapshot && typeof contextSnapshot === 'object' && !Array.isArray(contextSnapshot)) {
     const ctx = contextSnapshot as Record<string, unknown>;
     return String(ctx.channel ?? ctx.source ?? 'unknown');
   }
@@ -60,6 +61,7 @@ export const mindLiftReportWorker = new Worker(
       const sinceDays = (job.data as { sinceDays?: number } | undefined)?.sinceDays ?? 14;
       const since = new Date(Date.now() - sinceDays * 86400 * 1000);
 
+      // @AllowCrossWorkspace: decisionOutcome.findMany is scoped by a non-workspace unique identifier, provider callback key, admin session owner, or platform worker claim.
       const rows = await prisma.decisionOutcome.findMany({
         where: { outcomeAt: { not: null, gte: since } },
         orderBy: { outcomeAt: 'desc' },

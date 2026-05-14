@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import {  Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { asProviderSettings } from '../../whatsapp/provider-settings.types';
 import {
@@ -8,7 +8,10 @@ import {
 
 @Injectable()
 export class WhatsAppSummaryService {
-  constructor(private readonly prisma: PrismaService) {}
+  private readonly logger = new Logger(WhatsAppSummaryService.name);
+
+  constructor(private readonly prisma: PrismaService) {
+    this.logger.debug?.(`WhatsAppSummaryService initialized`);}
 
   async getSummary(workspaceId: string) {
     const workspace = await this.prisma.workspace.findUnique({

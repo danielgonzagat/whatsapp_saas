@@ -20,12 +20,12 @@ export default function AffiliateMetricsGrid({
   const totalRevenue = perfData?.totalRevenue ?? a.revenue ?? 0;
   const commission = perfData?.commission ?? a.commission ?? 0;
 
-  const cards = [
+  const cards = Object.freeze([
     { label: kloelT(`Vendas`), value: totalSales, icon: IC.box, color: C.text },
     { label: kloelT(`Comissao`), value: `${commission}%`, icon: IC.dollar, color: C.ember },
     { label: kloelT(`Receita`), value: 'R$ ' + Number(totalRevenue).toLocaleString('pt-BR', { minimumFractionDigits: 0 }), icon: IC.trend, color: C.text },
     { label: kloelT(`Temperatura`), value: `${a.temperature || 0}`, icon: IC.star, color: (a.temperature || 0) > 70 ? colors.semantic.success : colors.semantic.warning },
-  ];
+  ]);
 
   return (
     <div

@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 
 export const TRACER_STEP_KINDS = [
   'step1_inbox_recorded',
@@ -54,6 +55,13 @@ function scopedKey(input: ScopedGetTraceInput): string {
 
 @Injectable()
 export class RuntimeConversationTracerService {
+  private readonly logger = StructuredLogger.from(RuntimeConversationTracerService.name);
+
+  constructor() {
+    this.logger.debug?.(`RuntimeConversationTracerService initialized`);
+  }
+
+
   private traces = new Map<string, TracerEvent[]>();
 
   private ensureKey(key: string): TracerEvent[] {

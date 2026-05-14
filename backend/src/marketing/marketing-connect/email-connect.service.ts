@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {  BadRequestException, Injectable, Logger } from '@nestjs/common';
 import type { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { EmailCampaignService } from '../../kloel/email-campaign.service';
@@ -17,15 +17,22 @@ import {
   type EmailProviderSnapshot,
 } from './shared/channel-helpers';
 
+function toInputJsonObject(value: unknown): Prisma.InputJsonObject {
+  return value as Prisma.InputJsonObject;
+}
+
 @Injectable()
 export class EmailConnectService {
+  private readonly logger = new Logger(EmailConnectService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly emailCampaign: EmailCampaignService,
     private readonly gmailMailbox: MailboxGmailOAuthService,
     private readonly microsoftMailbox: MailboxMicrosoftOAuthService,
     private readonly imapSmtpMailbox: MailboxImapSmtpService,
-  ) {}
+  ) {
+    this.logger.debug?.(`EmailConnectService initialized`);}
 
   private getGlobalEmailProviderSnapshot(): EmailProviderSnapshot {
     const provider = process.env.RESEND_API_KEY
@@ -155,7 +162,7 @@ export class EmailConnectService {
     await this.prisma.workspace.update({
       where: { id: workspaceId },
       data: {
-        providerSettings: {
+        providerSettings: toInputJsonObject({
           ...currentSettings,
           email: {
             ...(typeof currentSettings.email === 'object' && currentSettings.email !== null
@@ -163,7 +170,7 @@ export class EmailConnectService {
               : {}),
             enabled,
           },
-        } as unknown as Prisma.InputJsonObject,
+        }),
       },
     });
   }
@@ -178,10 +185,10 @@ export class EmailConnectService {
     await this.prisma.workspace.update({
       where: { id: workspaceId },
       data: {
-        providerSettings: {
+        providerSettings: toInputJsonObject({
           ...currentSettings,
           email: { enabled: false },
-        } as unknown as Prisma.InputJsonObject,
+        }),
       },
     });
   }

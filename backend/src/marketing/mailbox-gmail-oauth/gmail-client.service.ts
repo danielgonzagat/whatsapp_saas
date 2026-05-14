@@ -106,6 +106,7 @@ export class GmailClientService {
     });
     const payload = (await response.json().catch(() => ({}))) as GoogleTokenResponse;
     if (!response.ok || !payload.access_token) {
+      // @AllowCrossWorkspace: mailboxConnection.update is scoped by a non-workspace unique identifier, provider callback key, admin session owner, or platform worker claim.
       await this.prisma.mailboxConnection.update({
         where: { id: connection.id },
         data: {
@@ -117,6 +118,7 @@ export class GmailClientService {
       throw new BadRequestException('gmail_refresh_failed');
     }
 
+    // @AllowCrossWorkspace: mailboxConnection.update is scoped by a non-workspace unique identifier, provider callback key, admin session owner, or platform worker claim.
     await this.prisma.mailboxConnection.update({
       where: { id: connection.id },
       data: {

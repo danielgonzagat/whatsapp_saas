@@ -123,7 +123,7 @@ describe('OpsController', () => {
     });
 
     it('throws BadRequestException for unknown queue name', () => {
-      const controllerWithPrivateQueue = controller as unknown as {
+      const controllerWithPrivateQueue = controller as {
         getQueue(name: string): unknown;
       };
       expect(() => controllerWithPrivateQueue.getQueue('nonexistent')).toThrow(BadRequestException);
