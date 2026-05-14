@@ -96,15 +96,15 @@ describe('ProductUrlController', () => {
     });
 
     it('throws BadRequestException when description is missing', async () => {
-      await expect(controller.create('prod-1', { url: 'https://x.com' }, req)).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(
+        controller.create('prod-1', { url: 'https://x.com' }, req),
+      ).rejects.toThrow(BadRequestException);
     });
 
     it('throws BadRequestException when url is missing', async () => {
-      await expect(controller.create('prod-1', { description: 'No url' }, req)).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(
+        controller.create('prod-1', { description: 'No url' }, req),
+      ).rejects.toThrow(BadRequestException);
     });
   });
 
@@ -157,9 +157,9 @@ describe('ProductUrlController', () => {
     it('throws NotFoundException when URL to delete does not exist', async () => {
       productUrlFindFirst.mockResolvedValue(null);
 
-      await expect(controller.delete('prod-1', 'url-missing', req)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(
+        controller.delete('prod-1', 'url-missing', req),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 

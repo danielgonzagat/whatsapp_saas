@@ -13,7 +13,10 @@ import {
   serializeProductAiConfig,
   normalizeProductAiConfigInput,
 } from './helpers/ai-config.helpers';
-import { ensureWorkspaceProductAccess, getWorkspaceId } from './helpers/common.helpers';
+import {
+  ensureWorkspaceProductAccess,
+  getWorkspaceId,
+} from './helpers/common.helpers';
 
 const serializeProductAiConfigMock = serializeProductAiConfig as jest.Mock;
 const normalizeProductAiConfigInputMock = normalizeProductAiConfigInput as jest.Mock;
@@ -38,8 +41,7 @@ describe('ProductAIConfigController', () => {
   } as never;
 
   beforeEach(() => {
-    jest.resetAllMocks();
-    ensureWorkspaceProductAccessMock.mockResolvedValue(undefined);
+    jest.clearAllMocks();
     controller = new ProductAIConfigController(mockPrismaService);
   });
 
@@ -66,7 +68,9 @@ describe('ProductAIConfigController', () => {
     });
 
     it('should propagate error when access check fails (error path)', async () => {
-      ensureWorkspaceProductAccessMock.mockRejectedValue(new Error('Forbidden'));
+      ensureWorkspaceProductAccessMock.mockRejectedValueOnce(
+        new Error('Forbidden'),
+      );
 
       await expect(controller.get('prod-1', req)).rejects.toThrow('Forbidden');
     });
@@ -103,7 +107,10 @@ describe('ProductAIConfigController', () => {
         'prod-1',
         'ws-1',
       );
-      expect(normalizeProductAiConfigInputMock).toHaveBeenCalledWith(body, null);
+      expect(normalizeProductAiConfigInputMock).toHaveBeenCalledWith(
+        body,
+        null,
+      );
       expect(mockUpsert).toHaveBeenCalled();
       expect(serializeProductAiConfigMock).toHaveBeenCalledWith(saved);
       expect(result).toEqual({ tone: 'friendly' });

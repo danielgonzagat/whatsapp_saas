@@ -35,7 +35,13 @@ describe('MemoryController', () => {
         content: 'text',
       });
 
-      expect(saveMemory).toHaveBeenCalledWith('ws-1', 'k1', { x: 1 }, 'custom', 'text');
+      expect(saveMemory).toHaveBeenCalledWith(
+        'ws-1',
+        'k1',
+        { x: 1 },
+        'custom',
+        'text',
+      );
       expect(result).toEqual({ status: 'saved', memory: item });
     });
   });
@@ -55,9 +61,9 @@ describe('MemoryController', () => {
     it('propagates service rejection to caller', async () => {
       saveMemory.mockRejectedValue(new Error('db error'));
 
-      await expect(controller.saveMemory('ws-1', { key: 'k', value: 'v' })).rejects.toThrow(
-        'db error',
-      );
+      await expect(
+        controller.saveMemory('ws-1', { key: 'k', value: 'v' }),
+      ).rejects.toThrow('db error');
     });
   });
 

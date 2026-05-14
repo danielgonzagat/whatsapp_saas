@@ -24,7 +24,11 @@ describe('KloelDataController', () => {
     it('calls requestDataDeletion with prisma, workspaceId, and userId then returns success response', async () => {
       const result = await controller.handleDataDeletion(req);
 
-      expect(requestDataDeletionMock).toHaveBeenCalledWith({ prisma: prismaMock }, 'ws-1', 'u-1');
+      expect(requestDataDeletionMock).toHaveBeenCalledWith(
+        { prisma: prismaMock },
+        'ws-1',
+        'u-1',
+      );
       expect(result).toEqual({
         success: true,
         message: 'Dados pessoais anonimizados conforme LGPD',
@@ -43,12 +47,7 @@ describe('KloelDataController', () => {
     const req = { user: { sub: 'u-2', workspaceId: 'ws-2' }, headers: {} } as never;
 
     it('calls exportData with prisma and workspaceId then returns the exported data', async () => {
-      const mockData = {
-        contacts: [],
-        messages: [],
-        sales: [],
-        exportedAt: '2026-01-01T00:00:00.000Z',
-      };
+      const mockData = { contacts: [], messages: [], sales: [], exportedAt: '2026-01-01T00:00:00.000Z' };
       exportDataMock.mockResolvedValue(mockData);
 
       const result = await controller.handleDataExport(req);

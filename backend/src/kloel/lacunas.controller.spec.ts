@@ -94,9 +94,10 @@ describe('LacunasController', () => {
 
       await controller.suggest(body, req);
 
-      expect(fsMkdirSync).toHaveBeenCalledWith(expect.stringContaining('artifacts'), {
-        recursive: true,
-      });
+      expect(fsMkdirSync).toHaveBeenCalledWith(
+        expect.stringContaining('artifacts'),
+        { recursive: true },
+      );
       expect(fsAppendFileSync).toHaveBeenCalledTimes(1);
     });
 
@@ -152,7 +153,9 @@ describe('LacunasController', () => {
       expect(loggerWarn).toHaveBeenCalledWith(
         `Failed to persist lacuna suggestion: ${fsError.message}`,
       );
-      expect(loggerLog).toHaveBeenCalledWith('Lacuna suggestion recorded: error-test from ws-1');
+      expect(loggerLog).toHaveBeenCalledWith(
+        'Lacuna suggestion recorded: error-test from ws-1',
+      );
       expect(result).toEqual({ ok: true });
     });
   });

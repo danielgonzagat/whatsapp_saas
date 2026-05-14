@@ -42,12 +42,7 @@ describe('ProductCommissionController', () => {
 
     findMany.mockResolvedValue([{ id: 'c-1', role: 'AFFILIATE', percentage: 30 }]);
     create.mockResolvedValue({ id: 'c-1', productId: 'prod-1', role: 'AFFILIATE', percentage: 30 });
-    findFirst.mockResolvedValue({
-      id: 'c-1',
-      productId: 'prod-1',
-      role: 'AFFILIATE',
-      percentage: 30,
-    });
+    findFirst.mockResolvedValue({ id: 'c-1', productId: 'prod-1', role: 'AFFILIATE', percentage: 30 });
     update.mockResolvedValue({ id: 'c-1', role: 'AFFILIATE', percentage: 50 });
     del.mockResolvedValue({ id: 'c-1' });
 
