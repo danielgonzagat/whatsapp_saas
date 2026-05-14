@@ -83,10 +83,6 @@ function clamp01(value: number): number {
   return value;
 }
 
-function invert01(value: number): number {
-  return clamp01(1 - value);
-}
-
 function extractClaimsFromText(text: string): AbClaimEvidence[] {
   const claims: AbClaimEvidence[] = [];
   const sentences = text.split(/[.!?]+/).filter((s) => s.trim().length > 10);
