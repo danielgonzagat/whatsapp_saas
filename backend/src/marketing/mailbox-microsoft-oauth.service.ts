@@ -28,16 +28,13 @@ import {
   verifyMicrosoftState,
 } from './mailbox-microsoft-oauth.helpers';
 import { encryptMailboxToken } from './mailbox-token-crypto';
-
 @Injectable()
 export class MailboxMicrosoftOAuthService {
   private readonly logger = new Logger(MailboxMicrosoftOAuthService.name);
-
   constructor(
     private readonly prisma: PrismaService,
     private readonly config: ConfigService,
   ) {}
-
   buildAuthUrl(workspaceId: string, returnTo?: string) {
     const tenantId = this.resolveTenantId();
     const clientId = this.requireClientId();
@@ -47,7 +44,6 @@ export class MailboxMicrosoftOAuthService {
       returnTo: normalizeReturnTo(returnTo),
       ts: Date.now(),
     });
-
     const url = new URL(
       `${MICROSOFT_AUTH_BASE}/${encodeURIComponent(tenantId)}/oauth2/v2.0/authorize`,
     );
@@ -58,7 +54,6 @@ export class MailboxMicrosoftOAuthService {
     url.searchParams.set('scope', MICROSOFT_MAILBOX_SCOPES.join(' '));
     url.searchParams.set('state', state);
     url.searchParams.set('prompt', 'select_account');
-
     return {
       provider: 'microsoft',
       status: 'pending_oauth',
@@ -67,25 +62,20 @@ export class MailboxMicrosoftOAuthService {
       scopes: MICROSOFT_MAILBOX_SCOPES,
     };
   }
-
   async completeOAuth(workspaceId: string, code: string, state: string) {
     const parsedState = this.verifyState(state);
     if (!parsedState || parsedState.workspaceId !== workspaceId) {
       throw new BadRequestException('invalid_microsoft_oauth_state');
     }
-
     return this.persistOAuthResult(parsedState, code);
   }
-
   async completeOAuthCallback(code: string, state: string) {
     const parsedState = this.verifyState(state);
     if (!parsedState) {
       throw new BadRequestException('invalid_microsoft_oauth_state');
     }
-
     return this.persistOAuthResult(parsedState, code);
   }
-
   async getPrimaryMicrosoftStatus(workspaceId: string) {
     return this.prisma.mailboxConnection.findFirst({
       where: {
@@ -106,7 +96,6 @@ export class MailboxMicrosoftOAuthService {
       },
     });
   }
-
   private async persistOAuthResult(parsedState: SignedMicrosoftState, code: string) {
     const token = await this.exchangeCode(code);
     if (!token.access_token) {
@@ -115,7 +104,6 @@ export class MailboxMicrosoftOAuthService {
     if (!token.refresh_token) {
       throw new BadRequestException('microsoft_refresh_token_not_granted');
     }
-
     const profile = await this.fetchProfile(token.access_token);
     const email = String(profile.mail || profile.userPrincipalName || '')
       .trim()
@@ -123,7 +111,6 @@ export class MailboxMicrosoftOAuthService {
     if (!email || !email.includes('@')) {
       throw new BadRequestException('microsoft_mailbox_email_not_found');
     }
-
     const connection = await this.prisma.mailboxConnection.upsert({
       where: {
         workspaceId_provider_email: {
@@ -168,9 +155,7 @@ export class MailboxMicrosoftOAuthService {
         expiresAt: true,
       },
     });
-
     Metrics.mailbox.connected('microsoft', { workspace_id: parsedState.workspaceId });
-
     return {
       connected: true,
       provider: 'microsoft',
@@ -181,20 +166,17 @@ export class MailboxMicrosoftOAuthService {
       expiresAt: connection.expiresAt,
     };
   }
-
   private async exchangeCode(code: string): Promise<MicrosoftTokenResponse> {
     const cleanCode = String(code || '').trim();
     if (!cleanCode) {
       throw new BadRequestException('microsoft_oauth_code_required');
     }
-
     const body = new URLSearchParams();
     body.set('client_id', this.requireClientId());
     body.set('client_secret', this.requireClientSecret());
     body.set('code', cleanCode);
     body.set('grant_type', 'authorization_code');
     body.set('redirect_uri', this.resolveRedirectUri());
-
     const response = await fetch(this.resolveTokenUrl(), {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -208,10 +190,8 @@ export class MailboxMicrosoftOAuthService {
       );
       throw new BadRequestException('microsoft_token_exchange_failed');
     }
-
     return payload;
   }
-
   private async fetchProfile(accessToken: string): Promise<MicrosoftProfileResponse> {
     const response = await fetch(MICROSOFT_GRAPH_ME_URL, {
       headers: { Authorization: `Bearer ${accessToken}` },
@@ -226,39 +206,30 @@ export class MailboxMicrosoftOAuthService {
     }
     return payload;
   }
-
   private resolveRedirectUri(): string {
     return resolveMicrosoftRedirectUri(this.config);
   }
-
   private resolveTenantId(): string {
     return resolveMicrosoftTenantId(this.config);
   }
-
   private resolveTokenUrl(): string {
     return `${MICROSOFT_AUTH_BASE}/${encodeURIComponent(this.resolveTenantId())}/oauth2/v2.0/token`;
   }
-
   private requireClientId(): string {
     return requireMicrosoftClientId(this.config);
   }
-
   private requireClientSecret(): string {
     return requireMicrosoftClientSecret(this.config);
   }
-
   private readStateSecret(): string {
     return readMicrosoftStateSecret(this.config);
   }
-
   private signState(payload: SignedMicrosoftState): string {
     return signMicrosoftState(payload, this.readStateSecret());
   }
-
   private verifyState(rawState: string): SignedMicrosoftState | null {
     return verifyMicrosoftState(rawState, this.readStateSecret());
   }
-
   async sendMessageFromMailbox(
     workspaceId: string,
     input: {
@@ -284,7 +255,6 @@ export class MailboxMicrosoftOAuthService {
         reason: 'recipient_unsubscribed',
       };
     }
-
     const connection = await this.getActiveMicrosoftConnection(workspaceId);
     if (!connection) {
       Metrics.mailbox.sendFailed('microsoft', 'not_connected', {
@@ -292,7 +262,6 @@ export class MailboxMicrosoftOAuthService {
       });
       return { provider: 'microsoft', status: 'not_connected', sent: false };
     }
-
     const accessToken = await resolveMicrosoftAccessToken({
       connection,
       prisma: this.prisma,
@@ -311,20 +280,17 @@ export class MailboxMicrosoftOAuthService {
         ? baseHtml
         : `${baseHtml}${buildUnsubscribeFooterHtml({ email: toEmail })}`;
     const proactive = input.proactive !== false;
-
     const messagePayload: Record<string, unknown> = {
       subject,
       body: { contentType: 'HTML', content: html },
       toRecipients: [{ emailAddress: { address: toEmail } }],
     };
-
     if (proactive) {
       const listUnsubscribe = buildListUnsubscribeHeader({ email: toEmail });
       messagePayload.internetMessageHeaders = [
         { name: 'List-Unsubscribe', value: listUnsubscribe },
       ];
     }
-
     const response = await fetch(MICROSOFT_GRAPH_SEND_URL, {
       method: 'POST',
       headers: {
@@ -337,7 +303,6 @@ export class MailboxMicrosoftOAuthService {
       }),
       signal: AbortSignal.timeout(30000),
     });
-
     if (!response.ok) {
       const errorBody = await response.text().catch(() => '');
       this.logger.warn(
@@ -355,7 +320,6 @@ export class MailboxMicrosoftOAuthService {
       });
       throw new BadRequestException('microsoft_send_failed');
     }
-
     Metrics.mailbox.sendCompleted('microsoft', { workspace_id: workspaceId });
     return {
       provider: 'microsoft',
@@ -366,7 +330,6 @@ export class MailboxMicrosoftOAuthService {
       messageId: `graph:${Date.now()}`,
     };
   }
-
   private async getActiveMicrosoftConnection(workspaceId: string) {
     return this.prisma.mailboxConnection.findFirst({
       where: {
@@ -386,7 +349,6 @@ export class MailboxMicrosoftOAuthService {
       },
     });
   }
-
   private async isSuppressedRecipient(workspaceId: string, email: string): Promise<boolean> {
     const contact = await this.prisma.contact.findFirst({
       where: {
