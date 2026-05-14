@@ -1,5 +1,6 @@
 import { Injectable, Logger, Optional, Inject } from '@nestjs/common';
 import type { SpineEventRef } from '../mind/mind.types';
+import type { GoalFieldShadowAccumulatorService } from './goal-field.shadow-accumulator.service';
 import { COGNITIVE_DETECTORS } from './detectors/cognitive.detectors';
 import { COMMERCIAL_DETECTORS } from './detectors/commercial.detectors';
 import { FINANCIAL_DETECTORS } from './detectors/financial.detectors';
@@ -39,6 +40,7 @@ export class GoalFieldService {
 
   public constructor(
     @Optional() @Inject('GOAL_FIELD_DETECTORS') detectors?: readonly Detector[],
+    @Optional() private readonly shadowAccumulator?: GoalFieldShadowAccumulatorService,
   ) {
     this.defaultDetectors = detectors ?? [
       ...COMMERCIAL_DETECTORS,
@@ -81,7 +83,8 @@ export class GoalFieldService {
     const candidates = this.emerge(aggregated, emergenceThreshold, nowMs);
     const selected = this.select(candidates, promotionTopK);
 
-    const promoted = mode === 'active' ? selected : [];
+    const promoted =
+      mode === 'active' ? this.gateByShadowEligibility(selected, nowMs) : [];
     if (mode === 'active') {
       for (const g of promoted) {
         this.liveGoals.set(g.goalId, { ...g, lastSeenMs: nowMs });
@@ -205,6 +208,37 @@ export class GoalFieldService {
       this.logger.log(`goal-field demoted ${stale.length} stale goal(s)`);
     }
     return stale;
+  }
+
+  /**
+   * UTP-GOAL-SHADOW-001 / UTP-GOAL-PROMOTE-001:
+   * When a workspace has a shadow accumulator, only goals belonging to
+   * promotion-eligible workspaces (or global goals with no workspaceId)
+   * pass through. Goals tied to non-eligible workspaces stay in shadow.
+   */
+  private gateByShadowEligibility(
+    candidates: readonly GoalCandidate[],
+    nowMs: number,
+  ): readonly GoalCandidate[] {
+    if (!this.shadowAccumulator) return candidates;
+    const promoted: GoalCandidate[] = [];
+    const blocked: GoalCandidate[] = [];
+    for (const c of candidates) {
+      if (
+        !c.workspaceId ||
+        this.shadowAccumulator.isPromotionEligible(c.workspaceId, nowMs)
+      ) {
+        promoted.push(c);
+      } else {
+        blocked.push(c);
+      }
+    }
+    if (blocked.length > 0) {
+      this.logger.log(
+        `goal-field shadow gate blocked ${blocked.length} goal(s) — workspace(s) not promotion-eligible`,
+      );
+    }
+    return promoted;
   }
 
   public liveGoalCount(): number {

@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="jest tests" tests="23" failures="1" errors="0" time="58.438">
+  <testsuite name="truth-mode-honesty gate — POSITIVE (PASS)" errors="0" failures="1" skipped="0" timestamp="2026-05-14T15:49:50" time="56.947" tests="23">
+    <testcase classname="truth-mode-honesty gate — POSITIVE (PASS) PASS: observed / direct" name="truth-mode-honesty gate — POSITIVE (PASS) PASS: observed / direct" time="0.003">
+    </testcase>
+    <testcase classname="truth-mode-honesty gate — POSITIVE (PASS) PASS: inferred / classifier" name="truth-mode-honesty gate — POSITIVE (PASS) PASS: inferred / classifier" time="0">
+    </testcase>
+    <testcase classname="truth-mode-honesty gate — POSITIVE (PASS) PASS: inferred / model" name="truth-mode-honesty gate — POSITIVE (PASS) PASS: inferred / model" time="0.001">
+    </testcase>
+    <testcase classname="truth-mode-honesty gate — POSITIVE (PASS) PASS: projected / model" name="truth-mode-honesty gate — POSITIVE (PASS) PASS: projected / model" time="0">
+    </testcase>
+    <testcase classname="truth-mode-honesty gate — POSITIVE (PASS) PASS: projected / simulation" name="truth-mode-honesty gate — POSITIVE (PASS) PASS: projected / simulation" time="0">
+    </testcase>
+    <testcase classname="truth-mode-honesty gate — POSITIVE (PASS) PASS: array of 5 valid items" name="truth-mode-honesty gate — POSITIVE (PASS) PASS: array of 5 valid items" time="0">
+    </testcase>
+    <testcase classname="truth-mode-honesty gate — POSITIVE (PASS) PASS: ABI with valid truthMode + technical audience (etymology allowed)" name="truth-mode-honesty gate — POSITIVE (PASS) PASS: ABI with valid truthMode + technical audience (etymology allowed)" time="0">
+    </testcase>
+    <testcase classname="truth-mode-honesty gate — POSITIVE (PASS) PASS: cognition entries with consistent truthMode per key + terminal with valence" name="truth-mode-honesty gate — POSITIVE (PASS) PASS: cognition entries with consistent truthMode per key + terminal with valence" time="0">
+    </testcase>
+    <testcase classname="truth-mode-honesty gate — NEGATIVE (FAIL) FAIL: classifier mislabeled as observed" name="truth-mode-honesty gate — NEGATIVE (FAIL) FAIL: classifier mislabeled as observed" time="0.001">
+    </testcase>
+    <testcase classname="truth-mode-honesty gate — NEGATIVE (FAIL) FAIL: simulation mislabeled as observed" name="truth-mode-honesty gate — NEGATIVE (FAIL) FAIL: simulation mislabeled as observed" time="0.014">
+    </testcase>
+    <testcase classname="truth-mode-honesty gate — NEGATIVE (FAIL) FAIL: ABI identityProjection without truthMode" name="truth-mode-honesty gate — NEGATIVE (FAIL) FAIL: ABI identityProjection without truthMode" time="0.001">
+    </testcase>
+    <testcase classname="truth-mode-honesty gate — NEGATIVE (FAIL) FAIL: etymology leaking into public audience" name="truth-mode-honesty gate — NEGATIVE (FAIL) FAIL: etymology leaking into public audience" time="0">
+    </testcase>
+    <testcase classname="truth-mode-honesty gate — NEGATIVE (FAIL) FAIL: origin leaking into public audience" name="truth-mode-honesty gate — NEGATIVE (FAIL) FAIL: origin leaking into public audience" time="0.001">
+    </testcase>
+    <testcase classname="truth-mode-honesty gate — NEGATIVE (FAIL) FAIL: mixed truthModes under same cognition key" name="truth-mode-honesty gate — NEGATIVE (FAIL) FAIL: mixed truthModes under same cognition key" time="0.002">
+      <failure>Error: expect(received).toMatch(expected)
+
+Expected pattern: /mixed truthModes/i
+Received string:  &quot;1 truthMode dishonesty issue(s)&quot;
+    at Object.&lt;anonymous&gt; (/Users/danielpenin/whatsapp_saas/backend/src/kloel/pulse-gates/truth-mode-honesty.gate.spec.ts:180:22)
+    at Promise.finally.completed (/Users/danielpenin/whatsapp_saas/backend/node_modules/jest-circus/build/jestAdapterInit.js:1561:28)
+    at new Promise (&lt;anonymous&gt;)
+    at callAsyncCircusFn (/Users/danielpenin/whatsapp_saas/backend/node_modules/jest-circus/build/jestAdapterInit.js:1501:10)
+    at _callCircusTest (/Users/danielpenin/whatsapp_saas/backend/node_modules/jest-circus/build/jestAdapterInit.js:1011:40)
+    at _runTest (/Users/danielpenin/whatsapp_saas/backend/node_modules/jest-circus/build/jestAdapterInit.js:951:3)
+    at /Users/danielpenin/whatsapp_saas/backend/node_modules/jest-circus/build/jestAdapterInit.js:853:7
+    at _runTestsForDescribeBlock (/Users/danielpenin/whatsapp_saas/backend/node_modules/jest-circus/build/jestAdapterInit.js:866:11)
+    at _runTestsForDescribeBlock (/Users/danielpenin/whatsapp_saas/backend/node_modules/jest-circus/build/jestAdapterInit.js:861:11)
+    at run (/Users/danielpenin/whatsapp_saas/backend/node_modules/jest-circus/build/jestAdapterInit.js:765:3)
+    at runAndTransformResultsToJestFormat (/Users/danielpenin/whatsapp_saas/backend/node_modules/jest-circus/build/jestAdapterInit.js:1993:21)
+    at jestAdapter (/Users/danielpenin/whatsapp_saas/backend/node_modules/jest-circus/build/runner.js:111:19)
+    at runTestInternal (/Users/danielpenin/whatsapp_saas/backend/node_modules/jest-runner/build/index.js:276:16)
+    at runTest (/Users/danielpenin/whatsapp_saas/backend/node_modules/jest-runner/build/index.js:344:7)</failure>
+    </testcase>
+    <testcase classname="truth-mode-honesty gate — NEGATIVE (FAIL) FAIL: terminal event without valence" name="truth-mode-honesty gate — NEGATIVE (FAIL) FAIL: terminal event without valence" time="0">
+    </testcase>
+    <testcase classname="truth-mode-honesty gate — EDGE empty cognitive check (no items, abi, entries) → PASS" name="truth-mode-honesty gate — EDGE empty cognitive check (no items, abi, entries) → PASS" time="0.001">
+    </testcase>
+    <testcase classname="truth-mode-honesty gate — EDGE cognitive check with multiple offense categories reports all" name="truth-mode-honesty gate — EDGE cognitive check with multiple offense categories reports all" time="0">
+    </testcase>
+    <testcase classname="truth-mode-honesty gate — EDGE array of items — one FAIL, one PASS, overall FAIL" name="truth-mode-honesty gate — EDGE array of items — one FAIL, one PASS, overall FAIL" time="0">
+    </testcase>
+    <testcase classname="truth-mode-honesty gate — EDGE invalid truthMode literal in ABI (not observed/inferred/projected)" name="truth-mode-honesty gate — EDGE invalid truthMode literal in ABI (not observed/inferred/projected)" time="0">
+    </testcase>
+    <testcase classname="truth-mode-honesty gate — EDGE PASS: ABI with public audience, no lineage → no leak" name="truth-mode-honesty gate — EDGE PASS: ABI with public audience, no lineage → no leak" time="0.001">
+    </testcase>
+    <testcase classname="truth-mode-honesty gate — EDGE PASS: cognition entries with single-key single-mode (not mixed)" name="truth-mode-honesty gate — EDGE PASS: cognition entries with single-key single-mode (not mixed)" time="0">
+    </testcase>
+    <testcase classname="truth-mode-honesty gate — EDGE PASS: cognition entry with valence present but not terminal → no requirement" name="truth-mode-honesty gate — EDGE PASS: cognition entry with valence present but not terminal → no requirement" time="0">
+    </testcase>
+    <testcase classname="truth-mode-honesty gate — EDGE FAIL: direct measurement declared as inferred (under-claim)" name="truth-mode-honesty gate — EDGE FAIL: direct measurement declared as inferred (under-claim)" time="0">
+    </testcase>
+  </testsuite>
+</testsuites>

@@ -23,9 +23,9 @@ export const GATE_DEFAULT_MODE: Record<GateName, GateMode> = {
   'no-roleplay': 'log_only',
   'identity-projection': 'log_only',
   'no-overclaim': 'log_only',
-  'truth-mode-honesty': 'log_only',
-  'evidence-provenance': 'log_only',
-  'prompt-leakage': 'log_only',
+  'truth-mode-honesty': 'hard_fail',
+  'evidence-provenance': 'hard_fail',
+  'prompt-leakage': 'hard_fail',
   // Critical — hard_fail since Onda 1
   'lineage-integrity': 'hard_fail',
   'origin-immutability': 'hard_fail',
