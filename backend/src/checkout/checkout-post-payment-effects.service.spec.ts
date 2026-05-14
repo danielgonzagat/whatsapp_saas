@@ -1,6 +1,5 @@
 import { PrismaService } from '../prisma/prisma.service';
 import { CheckoutPostPaymentEffectsService } from './checkout-post-payment-effects.service';
-
 type CheckoutOrderForEffects = {
   id?: string;
   orderNumber?: string | null;
@@ -25,7 +24,6 @@ type CheckoutOrderForEffects = {
     } | null;
   } | null;
 };
-
 const makeOrder = (overrides: Partial<CheckoutOrderForEffects> = {}): CheckoutOrderForEffects => ({
   id: 'order_1',
   orderNumber: 'ORD-001',
@@ -53,11 +51,10 @@ const makeOrder = (overrides: Partial<CheckoutOrderForEffects> = {}): CheckoutOr
   },
   ...overrides,
 });
-
 describe('CheckoutPostPaymentEffectsService', () => {
   let service: CheckoutPostPaymentEffectsService;
   let prisma: {
-    memberArea: { findMany: jest.Mock };
+    memberArea: { findMany: jest.Mock; updateMany: jest.Mock };
     memberEnrollment: {
       findFirst: jest.Mock;
       create: jest.Mock;
@@ -67,11 +64,13 @@ describe('CheckoutPostPaymentEffectsService', () => {
   let facebookCAPI: { sendEvent: jest.Mock };
   let checkoutSocialLeadService: { markConvertedFromOrder: jest.Mock };
   let memberAreaUpdateMock: jest.Mock;
-
   beforeEach(() => {
     memberAreaUpdateMock = jest.fn().mockResolvedValue({ count: 1 });
     prisma = {
-      memberArea: { findMany: jest.fn().mockResolvedValue([]) },
+      memberArea: {
+        findMany: jest.fn().mockResolvedValue([]),
+        updateMany: memberAreaUpdateMock,
+      },
       memberEnrollment: {
         findFirst: jest.fn().mockResolvedValue(null),
         create: jest.fn().mockResolvedValue({ id: 'enr_1' }),
@@ -85,25 +84,16 @@ describe('CheckoutPostPaymentEffectsService', () => {
     checkoutSocialLeadService = {
       markConvertedFromOrder: jest.fn().mockResolvedValue(undefined),
     };
-
-    const prismaAny = prisma as PrismaService & {
-      memberAreaUpdate: { updateMany: jest.Mock };
-    };
-    prismaAny.memberAreaUpdate = { updateMany: memberAreaUpdateMock };
-
     service = new CheckoutPostPaymentEffectsService(
-      prismaAny,
+      prisma as unknown as PrismaService,
       facebookCAPI as never,
       checkoutSocialLeadService as never,
     );
   });
-
   describe('markLeadConverted', () => {
     it('calls social lead service with order metadata', async () => {
       const order = makeOrder();
-
       await service.markLeadConverted(order, 'ws_1');
-
       expect(checkoutSocialLeadService.markConvertedFromOrder).toHaveBeenCalledWith(
         expect.objectContaining({
           workspaceId: 'ws_1',
@@ -111,36 +101,26 @@ describe('CheckoutPostPaymentEffectsService', () => {
           capturedLeadId: 'lead_1',
           customerEmail: 'test@example.com',
           customerPhone: '11999999999',
-          deviceFingerprint: undefined,
         }),
       );
     });
-
     it('no-ops when workspaceId is missing', async () => {
       const order = makeOrder();
-
       await service.markLeadConverted(order);
-
       expect(checkoutSocialLeadService.markConvertedFromOrder).not.toHaveBeenCalled();
     });
-
     it('no-ops when order.id is missing', async () => {
       const order = makeOrder({ id: undefined });
-
       await service.markLeadConverted(order, 'ws_1');
-
       expect(checkoutSocialLeadService.markConvertedFromOrder).not.toHaveBeenCalled();
     });
-
     it('handles social lead service error gracefully', async () => {
       checkoutSocialLeadService.markConvertedFromOrder.mockRejectedValue(
         new Error('Social lead service down'),
       );
       const order = makeOrder();
-
       await expect(service.markLeadConverted(order, 'ws_1')).resolves.toBeUndefined();
     });
-
     it('reads deviceFingerprint from metadata when present', async () => {
       const order = makeOrder({
         metadata: {
@@ -149,29 +129,20 @@ describe('CheckoutPostPaymentEffectsService', () => {
           correlationId: 'corr_1',
         },
       });
-
       await service.markLeadConverted(order, 'ws_1');
-
       expect(checkoutSocialLeadService.markConvertedFromOrder).toHaveBeenCalledWith(
         expect.objectContaining({
           deviceFingerprint: 'fp_abc123',
         }),
       );
     });
-
     it('handles null/undefined metadata gracefully', async () => {
       const order = makeOrder({ metadata: null });
-
       await service.markLeadConverted(order, 'ws_1');
-
-      expect(checkoutSocialLeadService.markConvertedFromOrder).toHaveBeenCalledWith(
-        expect.objectContaining({
-          capturedLeadId: null,
-          deviceFingerprint: null,
-        }),
-      );
+      const [payload] = checkoutSocialLeadService.markConvertedFromOrder.mock.calls[0];
+      expect(payload).not.toHaveProperty('capturedLeadId');
+      expect(payload).not.toHaveProperty('deviceFingerprint');
     });
-
     it('calls auto-enrollment for member areas', async () => {
       prisma.memberArea.findMany.mockResolvedValue([
         {
@@ -182,11 +153,8 @@ describe('CheckoutPostPaymentEffectsService', () => {
           name: 'Course A',
         },
       ]);
-
       const order = makeOrder();
-
       await service.markLeadConverted(order, 'ws_1');
-
       expect(prisma.memberArea.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { workspaceId: 'ws_1', productId: 'prod_1', active: true },
@@ -194,13 +162,10 @@ describe('CheckoutPostPaymentEffectsService', () => {
       );
     });
   });
-
   describe('sendPurchaseSignals', () => {
     it('sends Facebook purchase event for active pixels', async () => {
       const order = makeOrder();
-
       await service.sendPurchaseSignals(order, 9900);
-
       expect(facebookCAPI.sendEvent).toHaveBeenCalledWith(
         expect.objectContaining({
           pixelId: 'fb_pixel_1',
@@ -214,7 +179,6 @@ describe('CheckoutPostPaymentEffectsService', () => {
         }),
       );
     });
-
     it('skips inactive pixels', async () => {
       const order = makeOrder({
         plan: {
@@ -233,12 +197,9 @@ describe('CheckoutPostPaymentEffectsService', () => {
           },
         },
       });
-
       await service.sendPurchaseSignals(order, 9900);
-
       expect(facebookCAPI.sendEvent).not.toHaveBeenCalled();
     });
-
     it('skips non-FACEBOOK pixels', async () => {
       const order = makeOrder({
         plan: {
@@ -257,12 +218,9 @@ describe('CheckoutPostPaymentEffectsService', () => {
           },
         },
       });
-
       await service.sendPurchaseSignals(order, 9900);
-
       expect(facebookCAPI.sendEvent).not.toHaveBeenCalled();
     });
-
     it('skips pixels without accessToken', async () => {
       const order = makeOrder({
         plan: {
@@ -281,19 +239,14 @@ describe('CheckoutPostPaymentEffectsService', () => {
           },
         },
       });
-
       await service.sendPurchaseSignals(order, 9900);
-
       expect(facebookCAPI.sendEvent).not.toHaveBeenCalled();
     });
-
     it('handles Facebook CAPI error gracefully', async () => {
       facebookCAPI.sendEvent.mockRejectedValue(new Error('CAPI timeout'));
       const order = makeOrder();
-
       await expect(service.sendPurchaseSignals(order, 9900)).resolves.toBeUndefined();
     });
-
     it('handles empty pixels array', async () => {
       const order = makeOrder({
         plan: {
@@ -302,12 +255,9 @@ describe('CheckoutPostPaymentEffectsService', () => {
           checkoutConfig: { pixels: [] },
         },
       });
-
       await service.sendPurchaseSignals(order, 9900);
-
       expect(facebookCAPI.sendEvent).not.toHaveBeenCalled();
     });
-
     it('handles null checkoutConfig gracefully', async () => {
       const order = makeOrder({
         plan: {

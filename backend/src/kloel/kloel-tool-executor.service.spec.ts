@@ -7,7 +7,6 @@ import { KloelToolExecutorBillingService } from './kloel-tool-executor-billing.s
 import { KloelToolExecutorCrmService } from './kloel-tool-executor-crm.service';
 import { KloelToolExecutorWhatsAppService } from './kloel-tool-executor-whatsapp.service';
 import { asProviderSettings } from '../whatsapp/provider-settings.types';
-
 jest.mock('./kloel-tool-executor.helpers', () => ({
   toolSaveProduct: jest.fn().mockResolvedValue({ success: true, message: 'Produto salvo.' }),
   toolListProducts: jest.fn().mockResolvedValue({ success: true, products: [] }),
@@ -16,7 +15,6 @@ jest.mock('./kloel-tool-executor.helpers', () => ({
   toolRememberUserInfo: jest.fn().mockResolvedValue({ success: true }),
   toolCreateFlow: jest.fn().mockResolvedValue({ success: true }),
 }));
-
 jest.mock('./openai-wrapper', () => ({}));
 jest.mock('../lib/openai-models', () => ({
   resolveBackendOpenAIModel: jest.fn().mockReturnValue('gpt-4o'),
@@ -24,12 +22,10 @@ jest.mock('../lib/openai-models', () => ({
 jest.mock('../common/products/legacy-products.util', () => ({
   filterLegacyProducts: jest.fn((products: unknown[]) => products),
 }));
-
 type ExecutorPrismaMock = {
   workspace: { findUnique: jest.Mock; update: jest.Mock };
   $transaction: jest.Mock;
 };
-
 describe('KloelToolExecutorService', () => {
   let service: KloelToolExecutorService;
   let prisma: ExecutorPrismaMock;
@@ -42,9 +38,7 @@ describe('KloelToolExecutorService', () => {
   let whatsappTools: Partial<KloelToolExecutorWhatsAppService>;
   let billingTools: Partial<KloelToolExecutorBillingService>;
   let crmTools: Partial<KloelToolExecutorCrmService>;
-
   const wsId = 'ws-exec-1';
-
   beforeEach(async () => {
     prisma = {
       workspace: {
@@ -58,20 +52,17 @@ describe('KloelToolExecutorService', () => {
         return Promise.resolve(undefined);
       }),
     };
-
     smartPayment = {
       createSmartPayment: jest.fn().mockResolvedValue({
         paymentId: 'pay-1',
         paymentUrl: 'https://pay.test',
       }),
     };
-
     planLimits = {
       ensureDailyMessageQuota: jest.fn().mockResolvedValue(undefined),
       ensureTokenBudget: jest.fn().mockResolvedValue(undefined),
       trackAiUsage: jest.fn().mockResolvedValue(undefined),
     };
-
     whatsappTools = {
       toolConnectWhatsapp: jest.fn().mockResolvedValue({ success: true, connected: true }),
       toolGetWhatsAppStatus: jest.fn().mockResolvedValue({ success: true, connected: true }),
@@ -87,7 +78,6 @@ describe('KloelToolExecutorService', () => {
       toolSendDocument: jest.fn().mockResolvedValue({ success: true }),
       toolTranscribeAudio: jest.fn().mockResolvedValue({ success: true }),
     };
-
     billingTools = {
       toolUpdateBillingInfo: jest
         .fn()
@@ -97,7 +87,6 @@ describe('KloelToolExecutorService', () => {
         .mockResolvedValue({ success: true, plan: 'FREE', status: 'ACTIVE' }),
       toolChangePlan: jest.fn().mockResolvedValue({ success: true, newPlan: 'PRO' }),
     };
-
     crmTools = {
       toolListFlows: jest.fn().mockResolvedValue({ success: true, flows: [] }),
       toolGetDashboardSummary: jest.fn().mockResolvedValue({ success: true, stats: {} }),
@@ -107,7 +96,6 @@ describe('KloelToolExecutorService', () => {
       toolListLeads: jest.fn().mockResolvedValue({ success: true, leads: [] }),
       toolGetLeadDetails: jest.fn().mockResolvedValue({ success: true }),
     };
-
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         KloelToolExecutorService,
@@ -119,53 +107,42 @@ describe('KloelToolExecutorService', () => {
         { provide: KloelToolExecutorCrmService, useValue: crmTools },
       ],
     }).compile();
-
     service = module.get<KloelToolExecutorService>(KloelToolExecutorService);
   });
-
   afterEach(() => {
     jest.clearAllMocks();
   });
-
   describe('executeTool routing', () => {
     it('routes save_product to helper', async () => {
       const result = await service.executeTool(wsId, 'save_product', { name: 'X', price: 10 });
       expect(result.success).toBe(true);
     });
-
     it('routes list_products to helper', async () => {
       const result = await service.executeTool(wsId, 'list_products', {});
       expect(result.success).toBe(true);
     });
-
     it('routes delete_product to helper', async () => {
       const result = await service.executeTool(wsId, 'delete_product', { productId: 'p-1' });
       expect(result.success).toBe(true);
     });
-
     it('routes toggle_autopilot — enables via transaction', async () => {
       const result = await service.executeTool(wsId, 'toggle_autopilot', { enabled: true });
       expect(result.success).toBe(true);
       expect(result.enabled).toBe(true);
       expect(prisma.$transaction).toHaveBeenCalled();
     });
-
     it('routes toggle_autopilot — blocks when billing suspended', async () => {
       prisma.workspace.findUnique.mockResolvedValue({
         providerSettings: { billingSuspended: true },
       });
-
       const result = await service.executeTool(wsId, 'toggle_autopilot', { enabled: true });
-
       expect(result.success).toBe(false);
       expect(result.error).toContain('suspenso');
     });
-
     it('routes set_brand_voice to helper', async () => {
       const result = await service.executeTool(wsId, 'set_brand_voice', { tone: 'casual' });
       expect(result.success).toBe(true);
     });
-
     it('routes remember_user_info to helper', async () => {
       const result = await service.executeTool(
         wsId,
@@ -175,25 +152,21 @@ describe('KloelToolExecutorService', () => {
       );
       expect(result.success).toBe(true);
     });
-
     it('routes search_web — missing query', async () => {
       const result = await service.executeTool(wsId, 'search_web', {});
       expect(result.success).toBe(false);
       expect(result.error).toBe('missing_query');
     });
-
     it('routes search_web — no search function provided', async () => {
       const result = await service.executeTool(wsId, 'search_web', { query: 'test' });
       expect(result.success).toBe(false);
       expect(result.error).toBe('web_search_unavailable');
     });
-
     it('routes search_web — executes with searchWebFn', async () => {
       const searchFn = jest.fn().mockResolvedValue({
         answer: 'Resultado',
         sources: [{ title: 'Site', url: 'https://test.com' }],
       });
-
       const result = await service.executeTool(
         wsId,
         'search_web',
@@ -201,12 +174,10 @@ describe('KloelToolExecutorService', () => {
         undefined,
         searchFn,
       );
-
       expect(result.success).toBe(true);
       expect(result.summary).toBe('Resultado');
       expect(planLimits.ensureTokenBudget).toHaveBeenCalledWith(wsId);
     });
-
     it('routes create_flow to helper', async () => {
       const result = await service.executeTool(wsId, 'create_flow', {
         name: 'Flow',
@@ -214,27 +185,22 @@ describe('KloelToolExecutorService', () => {
       });
       expect(result.success).toBe(true);
     });
-
     it('routes list_flows to crmTools', async () => {
       await service.executeTool(wsId, 'list_flows', {});
       expect(crmTools.toolListFlows).toHaveBeenCalledWith(wsId);
     });
-
     it('routes get_dashboard_summary to crmTools', async () => {
       await service.executeTool(wsId, 'get_dashboard_summary', { period: 'week' });
       expect(crmTools.toolGetDashboardSummary).toHaveBeenCalledWith(wsId, 'week');
     });
-
     it('routes save_business_info to crmTools', async () => {
       await service.executeTool(wsId, 'save_business_info', { businessName: 'Loja' });
       expect(crmTools.toolSaveBusinessInfo).toHaveBeenCalledWith(wsId, { businessName: 'Loja' });
     });
-
     it('routes set_business_hours to crmTools', async () => {
       await service.executeTool(wsId, 'set_business_hours', { weekdayStart: '09:00' });
       expect(crmTools.toolSetBusinessHours).toHaveBeenCalledWith(wsId, { weekdayStart: '09:00' });
     });
-
     it('routes create_campaign to crmTools', async () => {
       await service.executeTool(wsId, 'create_campaign', { name: 'Camp', message: 'msg' });
       expect(crmTools.toolCreateCampaign).toHaveBeenCalledWith(wsId, {
@@ -242,23 +208,19 @@ describe('KloelToolExecutorService', () => {
         message: 'msg',
       });
     });
-
     it('routes list_leads to crmTools', async () => {
       await service.executeTool(wsId, 'list_leads', {});
       expect(crmTools.toolListLeads).toHaveBeenCalledWith(wsId, {});
     });
-
     it('routes get_lead_details to crmTools', async () => {
       await service.executeTool(wsId, 'get_lead_details', { leadId: 'l-1' });
       expect(crmTools.toolGetLeadDetails).toHaveBeenCalledWith(wsId, { leadId: 'l-1' });
     });
-
     it('routes create_payment_link to SmartPaymentService', async () => {
       const result = await service.executeTool(wsId, 'create_payment_link', {
         amount: 99.9,
         description: 'Produto',
       });
-
       expect(result.success).toBe(true);
       expect(smartPayment.createSmartPayment).toHaveBeenCalledWith({
         workspaceId: wsId,
@@ -268,17 +230,14 @@ describe('KloelToolExecutorService', () => {
         phone: '',
       });
     });
-
     it('routes connect_whatsapp to whatsappTools', async () => {
       await service.executeTool(wsId, 'connect_whatsapp', {});
       expect(whatsappTools.toolConnectWhatsapp).toHaveBeenCalledWith(wsId);
     });
-
     it('routes get_whatsapp_status to whatsappTools', async () => {
       await service.executeTool(wsId, 'get_whatsapp_status', {});
       expect(whatsappTools.toolGetWhatsAppStatus).toHaveBeenCalledWith(wsId);
     });
-
     it('routes send_whatsapp_message to whatsappTools', async () => {
       await service.executeTool(wsId, 'send_whatsapp_message', { phone: '5511', message: 'Test' });
       expect(whatsappTools.toolSendWhatsAppMessage).toHaveBeenCalledWith(wsId, {
@@ -286,22 +245,18 @@ describe('KloelToolExecutorService', () => {
         message: 'Test',
       });
     });
-
     it('routes list_whatsapp_contacts to whatsappTools', async () => {
       await service.executeTool(wsId, 'list_whatsapp_contacts', {});
       expect(whatsappTools.toolListWhatsAppContacts).toHaveBeenCalledWith(wsId, {});
     });
-
     it('routes create_whatsapp_contact to whatsappTools', async () => {
       await service.executeTool(wsId, 'create_whatsapp_contact', { phone: '5511' });
       expect(whatsappTools.toolCreateWhatsAppContact).toHaveBeenCalledWith(wsId, { phone: '5511' });
     });
-
     it('routes list_whatsapp_chats to whatsappTools', async () => {
       await service.executeTool(wsId, 'list_whatsapp_chats', {});
       expect(whatsappTools.toolListWhatsAppChats).toHaveBeenCalledWith(wsId, {});
     });
-
     it('routes get_whatsapp_messages to whatsappTools', async () => {
       await service.executeTool(wsId, 'get_whatsapp_messages', { chatId: 'c1' });
       expect(whatsappTools.toolGetWhatsAppMessages).toHaveBeenCalledWith(wsId, { chatId: 'c1' });

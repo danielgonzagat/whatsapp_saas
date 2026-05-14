@@ -4,29 +4,24 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { MetaSdkService } from './meta-sdk.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { REDIS_MODULE_CONNECTION_TOKEN, REDIS_MODULE_CONNECTION } from '@nestjs-modules/ioredis';
-
 function buildSignature(secret: string, payload: string): string {
   return `sha256=${createHmac('sha256', secret).update(payload).digest('hex')}`;
 }
-
 function createMockFetch() {
   return jest.fn<typeof fetch>();
 }
-
 function createMockRedis() {
   return {
     incr: jest.fn<(...args: unknown[]) => Promise<number>>(),
     expire: jest.fn<(...args: unknown[]) => Promise<number>>(),
   };
 }
-
 function createMockOpsAlert() {
   return {
     alertOnCriticalError: jest.fn<(...args: unknown[]) => Promise<void>>(),
     alertOnDegradation: jest.fn<(...args: unknown[]) => Promise<void>>(),
   };
 }
-
 async function buildModule(
   appId = 'test-app-id',
   appSecret = 'test-app-secret',
@@ -37,10 +32,8 @@ async function buildModule(
 }> {
   const redis = createMockRedis();
   const opsAlert = createMockOpsAlert();
-
   process.env.META_APP_ID = appId;
   process.env.META_APP_SECRET = appSecret;
-
   const module = await Test.createTestingModule({
     providers: [
       MetaSdkService,
@@ -51,40 +44,32 @@ async function buildModule(
       { provide: OpsAlertService, useValue: opsAlert },
     ],
   }).compile();
-
   return { module, redis, opsAlert };
 }
-
 describe('MetaSdkService', () => {
   let service: MetaSdkService;
   let mockRedis: ReturnType<typeof createMockRedis>;
   let mockOpsAlert: ReturnType<typeof createMockOpsAlert>;
-
   beforeEach(async () => {
     const result = await buildModule();
     service = result.module.get<MetaSdkService>(MetaSdkService);
     mockRedis = result.redis;
     mockOpsAlert = result.opsAlert;
   });
-
   // ── graphApiGet ──
-
   describe('graphApiGet', () => {
     it('returns parsed JSON on success', async () => {
       const mockFetch = createMockFetch().mockResolvedValue(
         new Response(JSON.stringify({ data: [{ id: '1' }] })),
       );
       globalThis.fetch = mockFetch;
-
       const result = await service.graphApiGet('me', {}, 'token');
-
       expect(result).toEqual({ data: [{ id: '1' }] });
       expect(mockFetch).toHaveBeenCalledTimes(1);
       const urlArg = mockFetch.mock.calls[0][0] as string;
       expect(urlArg).toContain('graph.facebook.com');
       expect(urlArg).toContain('access_token=token');
     });
-
     it('returns error object when Graph API responds with error', async () => {
       const errorBody = {
         error: { message: 'Invalid token', type: 'OAuthException', code: 190 },
@@ -93,51 +78,40 @@ describe('MetaSdkService', () => {
         new Response(JSON.stringify(errorBody)),
       );
       globalThis.fetch = mockFetch;
-
       const result = await service.graphApiGet('me', {}, 'bad-token');
-
       expect(result).toEqual(errorBody);
       expect(result.error).toBeDefined();
       expect(result.error!.message).toBe('Invalid token');
     });
-
     it('throws and alerts on network failure', async () => {
       const networkError = new Error('ECONNREFUSED');
       const mockFetch = createMockFetch().mockRejectedValue(networkError);
       globalThis.fetch = mockFetch;
-
       await expect(service.graphApiGet('me', {}, 'token')).rejects.toThrow('ECONNREFUSED');
       expect(mockOpsAlert.alertOnCriticalError).toHaveBeenCalledWith(
         networkError,
         'MetaSdkService.graphApiGet',
       );
     });
-
     it('passes query params correctly to the URL', async () => {
       const mockFetch = createMockFetch().mockResolvedValue(
         new Response(JSON.stringify({ data: [] })),
       );
       globalThis.fetch = mockFetch;
-
       await service.graphApiGet('me', { fields: 'id,name', limit: '10' }, 'token');
-
       const urlArg = mockFetch.mock.calls[0][0] as string;
       expect(urlArg).toContain('fields=id%2Cname');
       expect(urlArg).toContain('limit=10');
     });
   });
-
   // ── graphApiPost ──
-
   describe('graphApiPost', () => {
     it('sends POST with JSON body and returns parsed response', async () => {
       const mockFetch = createMockFetch().mockResolvedValue(
         new Response(JSON.stringify({ id: '123', success: true })),
       );
       globalThis.fetch = mockFetch;
-
       const result = await service.graphApiPost('me/feed', { message: 'hello' }, 'token');
-
       expect(result).toEqual({ id: '123', success: true });
       expect(mockFetch).toHaveBeenCalledTimes(1);
       const [, options] = mockFetch.mock.calls[0] as [string, RequestInit];
@@ -147,7 +121,6 @@ describe('MetaSdkService', () => {
       expect(body.access_token).toBe('token');
       expect(body.message).toBe('hello');
     });
-
     it('returns error object on Graph API error response', async () => {
       const errorBody = {
         error: {
@@ -160,18 +133,14 @@ describe('MetaSdkService', () => {
         new Response(JSON.stringify(errorBody)),
       );
       globalThis.fetch = mockFetch;
-
       const result = await service.graphApiPost('me/feed', { message: 'x' }, 'token');
-
       expect(result.error).toBeDefined();
       expect(result.error!.message).toBe('Permission denied');
     });
-
     it('throws and alerts on network failure', async () => {
       const networkError = new Error('ENOTFOUND');
       const mockFetch = createMockFetch().mockRejectedValue(networkError);
       globalThis.fetch = mockFetch;
-
       await expect(service.graphApiPost('me/feed', {}, 'token')).rejects.toThrow('ENOTFOUND');
       expect(mockOpsAlert.alertOnCriticalError).toHaveBeenCalledWith(
         networkError,
@@ -179,24 +148,19 @@ describe('MetaSdkService', () => {
       );
     });
   });
-
   // ── graphApiDelete ──
-
   describe('graphApiDelete', () => {
     it('sends DELETE and returns parsed response', async () => {
       const mockFetch = createMockFetch().mockResolvedValue(
         new Response(JSON.stringify({ success: true })),
       );
       globalThis.fetch = mockFetch;
-
       const result = await service.graphApiDelete('me/permissions', 'token');
-
       expect(result).toEqual({ success: true });
       expect(mockFetch).toHaveBeenCalledTimes(1);
       const [, options] = mockFetch.mock.calls[0] as [string, RequestInit];
       expect(options.method).toBe('DELETE');
     });
-
     it('returns error object on Graph API error response', async () => {
       const errorBody = {
         error: {
@@ -209,18 +173,14 @@ describe('MetaSdkService', () => {
         new Response(JSON.stringify(errorBody)),
       );
       globalThis.fetch = mockFetch;
-
       const result = await service.graphApiDelete('nonexistent', 'token');
-
       expect(result.error).toBeDefined();
       expect(result.error!.code).toBe(100);
     });
-
     it('throws and alerts on network failure', async () => {
       const networkError = new Error('ETIMEDOUT');
       const mockFetch = createMockFetch().mockRejectedValue(networkError);
       globalThis.fetch = mockFetch;
-
       await expect(service.graphApiDelete('me/permissions', 'token')).rejects.toThrow('ETIMEDOUT');
       expect(mockOpsAlert.alertOnCriticalError).toHaveBeenCalledWith(
         networkError,
@@ -228,9 +188,7 @@ describe('MetaSdkService', () => {
       );
     });
   });
-
   // ── exchangeToken ──
-
   describe('exchangeToken', () => {
     it('returns long-lived token data on success', async () => {
       const tokenResponse = {
@@ -242,7 +200,6 @@ describe('MetaSdkService', () => {
         new Response(JSON.stringify(tokenResponse)),
       );
       globalThis.fetch = mockFetch;
-
       const result = await service.exchangeToken('short-token');
 
       expect(result.access_token).toBe('long-lived-token-abc');

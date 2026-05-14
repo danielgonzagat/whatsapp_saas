@@ -3,7 +3,6 @@ import { MemoryCrudService } from './memory-crud.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
-
 type MemoryCrudPrismaMock = {
   kloelMemory: {
     upsert: jest.Mock;
@@ -13,15 +12,12 @@ type MemoryCrudPrismaMock = {
     deleteMany: jest.Mock;
   };
 };
-
 describe('MemoryCrudService', () => {
   let service: MemoryCrudService;
   let prisma: MemoryCrudPrismaMock;
   let auditService: Pick<AuditService, 'log'>;
   let opsAlert: Pick<OpsAlertService, 'alertOnCriticalError'>;
-
   const wsId = 'ws-1';
-
   beforeEach(async () => {
     prisma = {
       kloelMemory: {
@@ -32,15 +28,12 @@ describe('MemoryCrudService', () => {
         deleteMany: jest.fn().mockResolvedValue({ count: 0 }),
       },
     };
-
     auditService = {
       log: jest.fn().mockResolvedValue(undefined),
     };
-
     opsAlert = {
       alertOnCriticalError: jest.fn(),
     };
-
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         MemoryCrudService,
@@ -49,14 +42,11 @@ describe('MemoryCrudService', () => {
         { provide: OpsAlertService, useValue: opsAlert },
       ],
     }).compile();
-
     service = module.get<MemoryCrudService>(MemoryCrudService);
   });
-
   afterEach(() => {
     jest.clearAllMocks();
   });
-
   describe('saveMemory', () => {
     it('upserts memory scoped to workspaceId', async () => {
       const memoryRow = {
@@ -68,7 +58,6 @@ describe('MemoryCrudService', () => {
         content: 'brandVoice content',
       };
       prisma.kloelMemory.upsert.mockResolvedValue(memoryRow);
-
       const result = await service.saveMemory(
         wsId,
         'brandVoice',
@@ -76,7 +65,6 @@ describe('MemoryCrudService', () => {
         'general',
         'brandVoice content',
       );
-
       expect(result.id).toBe('m-1');
       expect(result.workspaceId).toBe(wsId);
       expect(result.key).toBe('brandVoice');
@@ -92,7 +80,6 @@ describe('MemoryCrudService', () => {
         }),
       );
     });
-
     it('stringifies non-string values for content when no content given', async () => {
       const memoryRow = {
         id: 'm-2',
@@ -103,9 +90,7 @@ describe('MemoryCrudService', () => {
         content: '{"lang":"pt"}',
       };
       prisma.kloelMemory.upsert.mockResolvedValue(memoryRow);
-
       const result = await service.saveMemory(wsId, 'prefs', { lang: 'pt' });
-
       expect(result.key).toBe('prefs');
       const expectedStringifiedCreate: Record<string, unknown> = expect.objectContaining({
         content: '{"lang":"pt"}',
@@ -116,7 +101,6 @@ describe('MemoryCrudService', () => {
         }),
       );
     });
-
     it('uses string value directly when no content and value is string', async () => {
       const memoryRow = {
         id: 'm-3',
@@ -127,9 +111,7 @@ describe('MemoryCrudService', () => {
         content: 'just a note',
       };
       prisma.kloelMemory.upsert.mockResolvedValue(memoryRow);
-
       const result = await service.saveMemory(wsId, 'note', 'just a note');
-
       expect(result.key).toBe('note');
       const expectedStringCreate: Record<string, unknown> = expect.objectContaining({
         content: 'just a note',
@@ -140,11 +122,9 @@ describe('MemoryCrudService', () => {
         }),
       );
     });
-
     it('alerts and rethrows on upsert failure', async () => {
       const error = new Error('unique constraint');
       prisma.kloelMemory.upsert.mockRejectedValue(error);
-
       await expect(service.saveMemory(wsId, 'key', 'value')).rejects.toThrow('unique constraint');
       expect(opsAlert.alertOnCriticalError).toHaveBeenCalledWith(
         error,
@@ -152,7 +132,6 @@ describe('MemoryCrudService', () => {
       );
     });
   });
-
   describe('listMemories', () => {
     it('returns paginated memories filtered by workspaceId', async () => {
       const memoryRows = [
@@ -167,9 +146,7 @@ describe('MemoryCrudService', () => {
       ];
       prisma.kloelMemory.findMany.mockResolvedValue(memoryRows);
       prisma.kloelMemory.count.mockResolvedValue(1);
-
       const result = await service.listMemories(wsId);
-
       expect(result.memories).toHaveLength(1);
       expect(result.total).toBe(1);
       expect(prisma.kloelMemory.findMany).toHaveBeenCalledWith(
@@ -181,13 +158,10 @@ describe('MemoryCrudService', () => {
         }),
       );
     });
-
     it('filters by category when provided', async () => {
       prisma.kloelMemory.findMany.mockResolvedValue([]);
       prisma.kloelMemory.count.mockResolvedValue(0);
-
       await service.listMemories(wsId, 'product');
-
       expect(prisma.kloelMemory.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { workspaceId: wsId, category: 'product' },
@@ -199,13 +173,10 @@ describe('MemoryCrudService', () => {
         }),
       );
     });
-
     it('respects pagination parameters', async () => {
       prisma.kloelMemory.findMany.mockResolvedValue([]);
       prisma.kloelMemory.count.mockResolvedValue(42);
-
       await service.listMemories(wsId, undefined, 3, 10);
-
       expect(prisma.kloelMemory.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
           skip: 20,
@@ -213,17 +184,13 @@ describe('MemoryCrudService', () => {
         }),
       );
     });
-
     it('returns empty result when no memories exist', async () => {
       prisma.kloelMemory.findMany.mockResolvedValue([]);
       prisma.kloelMemory.count.mockResolvedValue(0);
-
       const result = await service.listMemories(wsId);
-
       expect(result.memories).toHaveLength(0);
       expect(result.total).toBe(0);
     });
-
     it('preserves content as empty string when row content is null', async () => {
       const rows = [
         {
@@ -237,13 +204,10 @@ describe('MemoryCrudService', () => {
       ];
       prisma.kloelMemory.findMany.mockResolvedValue(rows);
       prisma.kloelMemory.count.mockResolvedValue(1);
-
       const result = await service.listMemories(wsId);
-
       expect(result.memories[0].content).toBe('');
     });
   });
-
   describe('getMemoryStats', () => {
     it('returns stats grouped by category scoped to workspaceId', async () => {
       const memories = [
@@ -261,7 +225,6 @@ describe('MemoryCrudService', () => {
         },
       ];
       prisma.kloelMemory.findMany.mockResolvedValue(memories);
-
       const result = (await service.getMemoryStats(wsId)) as {
         totalMemories: number;
         byCategory: Record<string, number>;

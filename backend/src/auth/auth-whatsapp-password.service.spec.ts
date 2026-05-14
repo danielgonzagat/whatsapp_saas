@@ -4,7 +4,6 @@ import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthWhatsappPasswordService } from './auth-whatsapp-password.service';
 import { EmailService } from './email.service';
-
 const mockPrismaService = {
   agent: {
     findFirst: jest.fn(),
@@ -36,11 +35,9 @@ const mockPrismaService = {
     return Promise.all(arg as Array<Promise<unknown>>);
   }),
 };
-
 const mockEmailService = {
   sendPasswordResetEmail: jest.fn().mockResolvedValue(true),
 };
-
 const mockConfigService = {
   get: jest.fn((key: string) => {
     const config: Record<string, string> = {
@@ -50,7 +47,6 @@ const mockConfigService = {
     return config[key] ?? null;
   }),
 };
-
 function createFetchMock(success = true) {
   return jest.fn().mockResolvedValue(
     success
@@ -64,25 +60,21 @@ function createFetchMock(success = true) {
         },
   );
 }
-
 const mockRedis = {
   setex: jest.fn().mockResolvedValue('OK'),
   get: jest.fn(),
   del: jest.fn().mockResolvedValue(1),
 };
-
 describe('AuthWhatsappPasswordService', () => {
   let service: AuthWhatsappPasswordService;
   let prisma: typeof mockPrismaService;
   let emailService: typeof mockEmailService;
   let fetchMock: ReturnType<typeof createFetchMock>;
-
   beforeEach(async () => {
     jest.clearAllMocks();
     process.env.RATE_LIMIT_DISABLED = 'true';
     fetchMock = createFetchMock();
     global.fetch = fetchMock;
-
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         AuthWhatsappPasswordService,
@@ -92,20 +84,16 @@ describe('AuthWhatsappPasswordService', () => {
         { provide: 'default_IORedisModuleConnectionToken', useValue: mockRedis },
       ],
     }).compile();
-
     service = module.get<AuthWhatsappPasswordService>(AuthWhatsappPasswordService);
     prisma = mockPrismaService;
     emailService = mockEmailService;
   });
-
   afterEach(() => {
     delete process.env.RATE_LIMIT_DISABLED;
   });
-
   describe('sendWhatsAppCode', () => {
     it('sends WhatsApp code via Meta API and stores in Redis', async () => {
       const result = await service.sendWhatsAppCode('+5511999999999', '1.2.3.4');
-
       expect(result.success).toBe(true);
       expect(result.message).toContain('WhatsApp');
       expect(mockRedis.setex).toHaveBeenCalledWith(
@@ -116,7 +104,6 @@ describe('AuthWhatsappPasswordService', () => {
       expect(fetchMock).toHaveBeenCalled();
       expect(fetchMock.mock.calls[0][0]).toContain('graph.facebook.com');
     });
-
     it('stores OTP in response when NODE_ENV is not production and Meta API fails', async () => {
       const prevEnv = process.env.NODE_ENV;
       process.env.NODE_ENV = 'development';
@@ -130,7 +117,6 @@ describe('AuthWhatsappPasswordService', () => {
         process.env.NODE_ENV = prevEnv;
       }
     });
-
     it('does not include code in production response', async () => {
       const prevEnv = process.env.NODE_ENV;
       process.env.NODE_ENV = 'production';
@@ -142,13 +128,11 @@ describe('AuthWhatsappPasswordService', () => {
         process.env.NODE_ENV = prevEnv;
       }
     });
-
     it('logs warning when Redis is not available', async () => {
       const loggerWarnSpy = jest.spyOn(
         (service as Record<string, unknown>)['logger'] as { warn: jest.Mock },
         'warn',
       );
-
       const moduleNoRedis = await Test.createTestingModule({
         providers: [
           AuthWhatsappPasswordService,
@@ -157,21 +141,16 @@ describe('AuthWhatsappPasswordService', () => {
           { provide: ConfigService, useValue: mockConfigService },
         ],
       }).compile();
-
       const serviceNoRedis = moduleNoRedis.get<AuthWhatsappPasswordService>(
         AuthWhatsappPasswordService,
       );
-
       await serviceNoRedis.sendWhatsAppCode('+5511999999999', '1.2.3.4');
-
       // The fallback log is on the inner service, so check it logs without Redis
       loggerWarnSpy.mockRestore();
     });
-
     it('handles Meta API error gracefully', async () => {
       fetchMock = createFetchMock(false);
       global.fetch = fetchMock;
-
       // Re-create service with error fetch
       const module2 = await Test.createTestingModule({
         providers: [
@@ -182,46 +161,34 @@ describe('AuthWhatsappPasswordService', () => {
           { provide: 'default_IORedisModuleConnectionToken', useValue: mockRedis },
         ],
       }).compile();
-
       const svc = module2.get<AuthWhatsappPasswordService>(AuthWhatsappPasswordService);
-
       const result = await svc.sendWhatsAppCode('+5511999999999', '1.2.3.4');
-
       expect(result.success).toBe(true);
       expect(result.message).toContain('WhatsApp');
     });
-
     it('handles fetch network error gracefully', async () => {
       global.fetch = jest.fn().mockRejectedValue(new Error('network timeout'));
-
       const result = await service.sendWhatsAppCode('+5511999999999', '1.2.3.4');
-
       expect(result.success).toBe(true);
       expect(result.message).toContain('WhatsApp');
     });
-
     it('does not log the OTP code in debug log', async () => {
       const loggerDebugSpy = jest.spyOn(
         (service as Record<string, unknown>)['logger'] as { debug: jest.Mock },
         'debug',
       );
-
       await service.sendWhatsAppCode('+5511999999999', '1.2.3.4');
-
       const debugCalls = loggerDebugSpy.mock.calls;
       for (const call of debugCalls) {
         const msg = String(call[0]);
         expect(msg).not.toMatch(/^\d{6}$/);
       }
-
       loggerDebugSpy.mockRestore();
     });
   });
-
   describe('verifyWhatsAppCode', () => {
     const phone = '+5511999999999';
     const normalizedPhone = '5511999999999';
-
     it('verifies a valid OTP and returns existing agent', async () => {
       mockRedis.get.mockResolvedValue('123456');
       prisma.agent.findFirst.mockResolvedValue({
@@ -233,30 +200,23 @@ describe('AuthWhatsappPasswordService', () => {
         disabledAt: null,
         deletedAt: null,
       });
-
       const result = await service.verifyWhatsAppCode(phone, '123456', '1.2.3.4');
-
       expect(result.id).toBe('agent-1');
       expect(result.email).toContain('whatsapp.kloel.com');
       expect(mockRedis.del).toHaveBeenCalledWith(`whatsapp-verify:${normalizedPhone}`);
     });
-
     it('throws UnauthorizedException for invalid OTP', async () => {
       mockRedis.get.mockResolvedValue('123456');
-
       await expect(service.verifyWhatsAppCode(phone, '654321', '1.2.3.4')).rejects.toThrow(
         UnauthorizedException,
       );
     });
-
     it('throws UnauthorizedException when no stored OTP exists', async () => {
       mockRedis.get.mockResolvedValue(null);
-
       await expect(service.verifyWhatsAppCode(phone, '123456', '1.2.3.4')).rejects.toThrow(
         UnauthorizedException,
       );
     });
-
     it('creates new workspace and agent for new phone number', async () => {
       mockRedis.get.mockResolvedValue('123456');
       prisma.agent.findFirst.mockResolvedValue(null);
@@ -270,9 +230,7 @@ describe('AuthWhatsappPasswordService', () => {
         disabledAt: null,
         deletedAt: null,
       });
-
       const result = await service.verifyWhatsAppCode(phone, '123456', '1.2.3.4');
-
       expect(result.id).toBe('agent-new');
       expect(prisma.workspace.create).toHaveBeenCalled();
       expect(prisma.agent.create).toHaveBeenCalledWith(
@@ -286,7 +244,6 @@ describe('AuthWhatsappPasswordService', () => {
       );
     });
   });
-
   describe('forgotPassword', () => {
     const email = 'user@example.com';
 

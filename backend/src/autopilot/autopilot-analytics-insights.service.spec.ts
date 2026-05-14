@@ -5,21 +5,17 @@ import { AutopilotAnalyticsInsightsService } from './autopilot-analytics-insight
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { chatCompletionWithRetry } from '../kloel/openai-wrapper';
-
 type FlexMock = jest.Mock & {
   mockResolvedValue: (v: unknown) => FlexMock;
   mockResolvedValueOnce: (v: unknown) => FlexMock;
   mockRejectedValue: (err: unknown) => FlexMock;
 };
-
 jest.mock('../kloel/openai-wrapper', () => ({
   chatCompletionWithRetry: jest.fn(),
 }));
-
 jest.mock('../lib/openai-models', () => ({
   resolveBackendOpenAIModel: jest.fn(() => 'gpt-4o-mock'),
 }));
-
 jest.mock('openai', () => {
   const mockCreate = jest.fn();
   return {
@@ -29,10 +25,8 @@ jest.mock('openai', () => {
     __mockOpenaiCreate: mockCreate,
   };
 });
-
 describe('AutopilotAnalyticsInsightsService', () => {
   let service: AutopilotAnalyticsInsightsService;
-
   type MockedPrisma = {
     autopilotEvent: {
       findMany: FlexMock;
@@ -44,7 +38,6 @@ describe('AutopilotAnalyticsInsightsService', () => {
     message: { findMany: FlexMock };
     deal: { aggregate: FlexMock };
   };
-
   const mockPrisma: MockedPrisma = {
     autopilotEvent: {
       findMany: jest.fn() as FlexMock,
@@ -56,18 +49,15 @@ describe('AutopilotAnalyticsInsightsService', () => {
     message: { findMany: jest.fn() as FlexMock },
     deal: { aggregate: jest.fn() as FlexMock },
   };
-
   const mockConfig = {
     get: jest.fn<() => unknown>(),
   };
-
   const mockPlanLimits = {
     ensureTokenBudget: jest
       .fn<(...args: unknown[]) => Promise<void>>()
       .mockResolvedValue(undefined),
     trackAiUsage: jest.fn<(...args: unknown[]) => Promise<void>>().mockResolvedValue(undefined),
   };
-
   beforeEach(async () => {
     jest.clearAllMocks();
     const module: TestingModule = await Test.createTestingModule({
@@ -80,7 +70,6 @@ describe('AutopilotAnalyticsInsightsService', () => {
     }).compile();
     service = module.get<AutopilotAnalyticsInsightsService>(AutopilotAnalyticsInsightsService);
   });
-
   describe('getImpact', () => {
     it('computes reply rate and conversion rate from events and messages', async () => {
       const contactId = 'c-1';
@@ -96,9 +85,7 @@ describe('AutopilotAnalyticsInsightsService', () => {
       mockPrisma.message.findMany
         .mockResolvedValueOnce([{ contactId, createdAt: new Date('2026-05-11T11:00:00Z') }])
         .mockResolvedValueOnce([]);
-
       const result = await service.getImpact('ws-1');
-
       expect(result.workspaceId).toBe('ws-1');
       expect(result.windowDays).toBe(7);
       expect(result.actionsAnalyzed).toBe(3);
@@ -108,13 +95,10 @@ describe('AutopilotAnalyticsInsightsService', () => {
       expect(result.replyRate).toBeCloseTo(1 / 3, 2);
       expect(result.samples).toHaveLength(1);
     });
-
     it('returns zero rates when no events found', async () => {
       mockPrisma.autopilotEvent.findMany.mockResolvedValue([]);
       mockPrisma.message.findMany.mockResolvedValue([]);
-
       const result = await service.getImpact('ws-1');
-
       expect(result.actionsAnalyzed).toBe(0);
       expect(result.repliedContacts).toBe(0);
       expect(result.replyRate).toBe(0);
@@ -122,7 +106,6 @@ describe('AutopilotAnalyticsInsightsService', () => {
       expect(result.conversionRate).toBe(0);
       expect(result.samples).toEqual([]);
     });
-
     it('filters out events with null contactId from contactActions map', async () => {
       mockPrisma.autopilotEvent.findMany.mockResolvedValue([
         { contactId: null, createdAt: new Date(), action: 'SYSTEM' },
@@ -130,16 +113,13 @@ describe('AutopilotAnalyticsInsightsService', () => {
       ]);
       mockPrisma.contact.findMany.mockResolvedValue([{ id: 'c-1', phone: '5511', name: 'Maria' }]);
       mockPrisma.message.findMany.mockResolvedValue([]);
-
       const result = await service.getImpact('ws-1');
-
       expect(result.actionsAnalyzed).toBe(2);
       expect(result.samples).toHaveLength(0);
       expect(mockPrisma.contact.findMany).toHaveBeenCalledWith(
         expect.objectContaining({ where: expect.objectContaining({ id: { in: ['c-1'] } }) }),
       );
     });
-
     it('deduplicates contact actions by latest timestamp in contactActions map', async () => {
       const contactId = 'c-1';
       mockPrisma.autopilotEvent.findMany.mockResolvedValue([
@@ -148,37 +128,28 @@ describe('AutopilotAnalyticsInsightsService', () => {
       ]);
       mockPrisma.contact.findMany.mockResolvedValue([{ id: 'c-1', phone: '5511', name: 'X' }]);
       mockPrisma.message.findMany.mockResolvedValue([]);
-
       const result = await service.getImpact('ws-1');
-
       expect(result.actionsAnalyzed).toBe(2);
       expect(mockPrisma.contact.findMany).toHaveBeenCalledWith(
         expect.objectContaining({ where: expect.objectContaining({ id: { in: ['c-1'] } }) }),
       );
     });
-
     it('skips message queries when no contact ids found', async () => {
       mockPrisma.autopilotEvent.findMany.mockResolvedValue([]);
-
       const result = await service.getImpact('ws-1');
-
       expect(mockPrisma.message.findMany).not.toHaveBeenCalled();
       expect(result.actionsAnalyzed).toBe(0);
     });
-
     it('respects workspace isolation in all queries', async () => {
       const ws = 'ws-isolated';
       mockPrisma.autopilotEvent.findMany.mockResolvedValue([]);
       mockPrisma.contact.findMany.mockResolvedValue([]);
       mockPrisma.message.findMany.mockResolvedValue([]);
-
       await service.getImpact(ws);
-
       expect(mockPrisma.autopilotEvent.findMany).toHaveBeenCalledWith(
         expect.objectContaining({ where: expect.objectContaining({ workspaceId: ws }) }),
       );
     });
-
     it('includes keyword-based conversions from messages', async () => {
       const contactId = 'c-3';
       mockPrisma.autopilotEvent.findMany.mockResolvedValue([
@@ -186,19 +157,14 @@ describe('AutopilotAnalyticsInsightsService', () => {
       ]);
       mockPrisma.contact.findMany.mockResolvedValue([{ id: 'c-3', phone: '5511', name: 'Lead' }]);
       mockPrisma.message.findMany.mockResolvedValueOnce([]).mockResolvedValueOnce([{ contactId }]);
-
       const result = await service.getImpact('ws-1');
-
       expect(result.conversions).toBe(1);
     });
-
     it('survives upstream error', async () => {
       mockPrisma.autopilotEvent.findMany.mockRejectedValue(new Error('DB crash'));
-
       await expect(service.getImpact('ws-1')).rejects.toThrow('DB crash');
     });
   });
-
   describe('getInsights', () => {
     it('aggregates event stats with deal data', async () => {
       mockPrisma.autopilotEvent.findMany.mockResolvedValue([
@@ -210,9 +176,7 @@ describe('AutopilotAnalyticsInsightsService', () => {
         _sum: { value: 500 },
         _count: { id: 3 },
       });
-
       const result = await service.getInsights('ws-1');
-
       expect(result.executed).toBe(2);
       expect(result.errors).toBe(1);
       expect(result.intents.BUYING).toBe(2);
@@ -220,33 +184,25 @@ describe('AutopilotAnalyticsInsightsService', () => {
       expect(result.dealsWon).toBe(3);
       expect(result.revenueWon).toBe(500);
     });
-
     it('handles UNKNOWN intent when intent is null', async () => {
       mockPrisma.autopilotEvent.findMany.mockResolvedValue([
         { createdAt: new Date(), intent: null, action: 'SEND_OFFER', status: 'executed' },
       ]);
       mockPrisma.deal.aggregate.mockResolvedValue({ _sum: { value: 0 }, _count: { id: 0 } });
-
       const result = await service.getInsights('ws-1');
-
       expect(result.intents.UNKNOWN).toBe(1);
     });
-
     it('handles UNKNOWN action when action is null', async () => {
       mockPrisma.autopilotEvent.findMany.mockResolvedValue([
         { createdAt: new Date(), intent: 'X', action: null, status: 'executed' },
       ]);
       mockPrisma.deal.aggregate.mockResolvedValue({ _sum: { value: 0 }, _count: { id: 0 } });
-
       const result = await service.getInsights('ws-1');
-
       expect(result.actions.UNKNOWN).toBe(1);
     });
-
     it('filters deals by workspaceId via contact relation', async () => {
       mockPrisma.autopilotEvent.findMany.mockResolvedValue([]);
       mockPrisma.deal.aggregate.mockResolvedValue({ _sum: { value: 0 }, _count: { id: 0 } });
-
       await service.getInsights('ws-isolated');
 
       expect(mockPrisma.deal.aggregate).toHaveBeenCalledWith(

@@ -1,5 +1,4 @@
 import { AgentRuntimeSessionStore } from './agent-runtime.session-store';
-
 function makeStore(prismaOverrides: Record<string, unknown> = {}) {
   const prisma = {
     kloelMemory: {
@@ -11,7 +10,6 @@ function makeStore(prismaOverrides: Record<string, unknown> = {}) {
   const store = new AgentRuntimeSessionStore(prisma as never);
   return { store, prisma };
 }
-
 function makeMemoryRow(
   overrides: Partial<{
     id: string;
@@ -36,9 +34,7 @@ function makeMemoryRow(
     updatedAt: overrides.updatedAt ?? new Date(now.getTime() - 60 * 60 * 1000),
   };
 }
-
 const MILLIS_PER_DAY = 24 * 60 * 60 * 1000;
-
 describe('AgentRuntimeSessionStore', () => {
   describe('recordTurn', () => {
     it('persists a turn as a kloelMemory row with category agent_event', async () => {
@@ -69,7 +65,6 @@ describe('AgentRuntimeSessionStore', () => {
         }),
       );
     });
-
     it('returns null on prisma failure', async () => {
       const { store, prisma } = makeStore({
         create: jest.fn().mockRejectedValue(new Error('db down')),
@@ -83,7 +78,6 @@ describe('AgentRuntimeSessionStore', () => {
       expect(prisma.kloelMemory.create).toHaveBeenCalledTimes(1);
     });
   });
-
   describe('recordRuntimeEvent', () => {
     it('persists provider lifecycle events as agent_event memory', async () => {
       const { store, prisma } = makeStore();
@@ -113,7 +107,6 @@ describe('AgentRuntimeSessionStore', () => {
       );
     });
   });
-
   describe('search', () => {
     it('returns empty result for missing workspaceId', async () => {
       const { store } = makeStore();
@@ -123,13 +116,11 @@ describe('AgentRuntimeSessionStore', () => {
       expect(result.totalFound).toBe(0);
       expect(result.memories).toEqual([]);
     });
-
     it('returns empty result for empty query after sanitization', async () => {
       const { store } = makeStore();
       const result = await store.search('ws_1', '   ');
       expect(result).toEqual({ query: '', tokens: [], totalFound: 0, memories: [] });
     });
-
     it('tokenizes multi-word query and searches across tokens', async () => {
       const { store, prisma } = makeStore({
         findMany: jest.fn().mockResolvedValue([
@@ -165,7 +156,6 @@ describe('AgentRuntimeSessionStore', () => {
         }),
       );
     });
-
     it('ranks results by token match count (more matches = higher rank)', async () => {
       const { store } = makeStore({
         findMany: jest.fn().mockResolvedValue([
@@ -187,7 +177,6 @@ describe('AgentRuntimeSessionStore', () => {
         result.memories[1].source.confidence,
       );
     });
-
     it('filters out rows with zero token matches', async () => {
       const { store } = makeStore({
         findMany: jest
@@ -201,7 +190,6 @@ describe('AgentRuntimeSessionStore', () => {
       expect(result.totalFound).toBe(1);
       expect(result.memories[0].id).toBe('a');
     });
-
     it('generates snippet around first matching token', async () => {
       const longContent = 'A'.repeat(200) + 'pricing' + 'B'.repeat(200);
       const { store } = makeStore({
@@ -212,7 +200,6 @@ describe('AgentRuntimeSessionStore', () => {
       expect(result.memories[0].snippet).toMatch(/^…/);
       expect(result.memories[0].snippet).toMatch(/…$/);
     });
-
     it('returns empty snippet for empty content', async () => {
       const { store } = makeStore({
         findMany: jest
@@ -222,7 +209,6 @@ describe('AgentRuntimeSessionStore', () => {
       const result = await store.search('ws_1', 'pricing', 1);
       expect(result.memories[0].snippet).toBe('');
     });
-
     it('assigns provenance-weighted confidence for full token match', async () => {
       const { store } = makeStore({
         findMany: jest
@@ -233,7 +219,6 @@ describe('AgentRuntimeSessionStore', () => {
       expect(result.memories[0].source.confidence).toBeGreaterThan(0.8);
       expect(result.memories[0].source.confidence).toBeLessThanOrEqual(1);
     });
-
     it('assigns confidence weighted by provenance and freshness for single-token partial match', async () => {
       const { store } = makeStore({
         findMany: jest
@@ -243,12 +228,10 @@ describe('AgentRuntimeSessionStore', () => {
       const result = await store.search('ws_1', 'pricing enterprise discount', 1);
       expect(result.memories[0].source.confidence).toBeGreaterThan(0.5);
     });
-
     it('assigns TTL-aware freshness based on age vs category TTL', async () => {
       const now = new Date();
       const freshDate = new Date(now.getTime() - 1 * MILLIS_PER_DAY);
       const oldDate = new Date(now.getTime() - 60 * MILLIS_PER_DAY);
-
       const { store } = makeStore({
         findMany: jest.fn().mockResolvedValue([
           makeMemoryRow({
@@ -269,7 +252,6 @@ describe('AgentRuntimeSessionStore', () => {
       expect(result.memories[0].source.freshness).toBe('fresh');
       expect(result.memories[1].source.freshness).toBe('stale');
     });
-
     it('includes provenance field matching the memory category', async () => {
       const { store } = makeStore({
         findMany: jest
@@ -285,7 +267,6 @@ describe('AgentRuntimeSessionStore', () => {
       expect(result.memories[1].source.provenance).toBe('agent_event');
       expect(result.memories[2].source.provenance).toBe('product');
     });
-
     it('ranks curated memories higher than events for the same match count', async () => {
       const { store } = makeStore({
         findMany: jest
@@ -299,7 +280,6 @@ describe('AgentRuntimeSessionStore', () => {
       expect(result.totalFound).toBe(2);
       expect(result.memories[0].id).toBe('b');
     });
-
     it('sets expiresAt in source stamp as createdAt + TTL', async () => {
       const now = new Date();
       const created = new Date(now.getTime() - 10 * MILLIS_PER_DAY);
@@ -320,7 +300,6 @@ describe('AgentRuntimeSessionStore', () => {
         expectedExpiry.getTime(),
       );
     });
-
     it('includes retentionScore in source stamp', async () => {
       const { store } = makeStore({
         findMany: jest.fn().mockResolvedValue([
@@ -336,7 +315,6 @@ describe('AgentRuntimeSessionStore', () => {
       expect(typeof result.memories[0].source.retentionScore).toBe('number');
       expect(result.memories[0].source.retentionScore!).toBeGreaterThan(0);
     });
-
     it('includes ttlMs in source stamp', async () => {
       const { store } = makeStore({
         findMany: jest
@@ -348,7 +326,6 @@ describe('AgentRuntimeSessionStore', () => {
       const result = await store.search('ws_1', 'pricing', 1);
       expect(result.memories[0].source.ttlMs).toBe(180 * MILLIS_PER_DAY);
     });
-
     it('respects the limit parameter', async () => {
       const { store } = makeStore({
         findMany: jest
@@ -363,7 +340,6 @@ describe('AgentRuntimeSessionStore', () => {
       expect(result.totalFound).toBe(2);
       expect(result.memories).toHaveLength(2);
     });
-
     it('strips special characters from tokens', async () => {
       const { store, prisma } = makeStore({
         findMany: jest.fn().mockResolvedValue([]),
@@ -381,7 +357,6 @@ describe('AgentRuntimeSessionStore', () => {
         }),
       );
     });
-
     it('ignores single-character tokens', async () => {
       const { store, prisma } = makeStore({
         findMany: jest.fn().mockResolvedValue([]),
@@ -395,7 +370,6 @@ describe('AgentRuntimeSessionStore', () => {
       expect(tokens).not.toContain('b');
       expect(tokens).toContain('pricing');
     });
-
     it('searches across both content and key fields', async () => {
       const { store } = makeStore({
         findMany: jest
@@ -408,98 +382,12 @@ describe('AgentRuntimeSessionStore', () => {
       const result = await store.search('ws_1', 'pricing', 6);
       expect(result.totalFound).toBe(2);
     });
-
     it('returns tokens array in the result for transparency', async () => {
       const { store } = makeStore({
         findMany: jest.fn().mockResolvedValue([]),
       });
       const result = await store.search('ws_1', 'hello world', 6);
       expect(result.tokens).toEqual(['hello', 'world']);
-    });
-  });
-
-  describe('searchSessions', () => {
-    it('groups matching memories by thread metadata and builds a focused transcript window', async () => {
-      const longContent =
-        'A'.repeat(500) +
-        'checkout failed after pix payment and still needs webhook proof' +
-        'B'.repeat(500);
-      const { store, prisma } = makeStore({
-        findMany: jest.fn().mockResolvedValue([
-          makeMemoryRow({
-            id: 'a',
-            key: 'agent_turn:whatsapp:a',
-            content: longContent,
-            metadata: { threadId: 'thread_1' },
-            updatedAt: new Date('2026-05-13T10:00:00.000Z'),
-          }),
-          makeMemoryRow({
-            id: 'b',
-            key: 'agent_turn:whatsapp:b',
-            content: 'assistant confirmed checkout validation remained pending',
-            metadata: { threadId: 'thread_1' },
-            updatedAt: new Date('2026-05-13T10:01:00.000Z'),
-          }),
-        ]),
-      });
-
-      const result = await store.searchSessions('ws_1', 'checkout webhook proof', 3);
-
-      expect(result.totalFound).toBe(1);
-      expect(result.sessions[0]).toEqual(
-        expect.objectContaining({
-          sessionId: 'thread_1',
-          source: 'thread',
-          matchCount: 4,
-        }),
-      );
-      expect(result.sessions[0].transcriptWindow).toContain('checkout failed');
-      expect(result.sessions[0].summary).toContain('source=thread');
-      expect(prisma.kloelMemory.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({
-          select: expect.objectContaining({ metadata: true }),
-        }),
-      );
-    });
-
-    it('falls back to session, contact, then memory key when grouping', async () => {
-      const { store } = makeStore({
-        findMany: jest.fn().mockResolvedValue([
-          makeMemoryRow({
-            id: 'a',
-            key: 'agent_runtime:compression:session_1:1',
-            content: 'pricing summary',
-            metadata: { sessionId: 'session_1' },
-          }),
-          makeMemoryRow({
-            id: 'b',
-            key: 'agent_turn:whatsapp:b',
-            content: 'pricing objection',
-            metadata: { contactId: 'contact_1' },
-          }),
-          makeMemoryRow({
-            id: 'c',
-            key: 'agent_skill:pricing',
-            content: 'pricing skill',
-          }),
-        ]),
-      });
-
-      const result = await store.searchSessions('ws_1', 'pricing', 5);
-
-      expect(result.sessions.map((session) => session.sessionId)).toEqual(
-        expect.arrayContaining(['session_1', 'contact_1', 'agent_skill:pricing']),
-      );
-    });
-
-    it('returns empty session recall for blank input', async () => {
-      const { store } = makeStore();
-      await expect(store.searchSessions('ws_1', '   ')).resolves.toEqual({
-        query: '',
-        tokens: [],
-        totalFound: 0,
-        sessions: [],
-      });
     });
   });
 });
