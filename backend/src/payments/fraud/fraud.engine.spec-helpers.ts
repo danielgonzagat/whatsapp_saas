@@ -12,7 +12,7 @@ import type { FraudCheckoutContext } from './fraud.types';
  * Provides an in-memory Prisma stub for `fraudBlacklist`, a Redis stub for
  * the velocity counters, and seed/context builders. Sibling spec files
  * import everything they need from this module so each topic can live in a
- * file under the architecture-allowlist budget.
+ * file under the architecture line budget.
  */
 
 let fraudRowSeq = 0;
@@ -25,7 +25,10 @@ const asMock = <T>(value: unknown): T => value as T;
 
 export function makePrismaStub(initial: FraudBlacklist[] = []) {
   const rows = [...initial];
-  const nextId = () => { fraudRowSeq += 1; return `fb_${fraudRowSeq}`; };
+  const nextId = () => {
+    fraudRowSeq += 1;
+    return `fb_${fraudRowSeq}`;
+  };
   return {
     rows,
     prisma: asMock<PrismaService>({
@@ -152,7 +155,12 @@ export async function buildEngine(
 }
 
 export const seedRow = (overrides: Partial<FraudBlacklist>): FraudBlacklist => ({
-  id: overrides.id ?? (() => { fraudRowSeq += 1; return `fb_${fraudRowSeq}`; })(),
+  id:
+    overrides.id ??
+    (() => {
+      fraudRowSeq += 1;
+      return `fb_${fraudRowSeq}`;
+    })(),
   type: overrides.type ?? 'CPF',
   value: overrides.value ?? '12345678900',
   reason: overrides.reason ?? 'manual_block',

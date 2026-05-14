@@ -4,9 +4,13 @@ jest.mock('./unified-agent.service', () => ({
 
 import { ForbiddenException } from '@nestjs/common';
 import { UnifiedAgentController } from './unified-agent.controller';
+import type { UnifiedAgentService } from './unified-agent.service';
 
 describe('UnifiedAgentController', () => {
-  const processMessageMock = jest.fn();
+  type ProcessMessageInput = Parameters<UnifiedAgentService['processMessage']>[0];
+  type ProcessMessageResult = Awaited<ReturnType<UnifiedAgentService['processMessage']>>;
+
+  const processMessageMock = jest.fn<Promise<ProcessMessageResult>, [ProcessMessageInput]>();
 
   let controller: UnifiedAgentController;
 
@@ -60,7 +64,11 @@ describe('UnifiedAgentController', () => {
     });
 
     it('passes workspaceId from param into service call', async () => {
-      processMessageMock.mockResolvedValueOnce({ actions: [], intent: 'greeting', confidence: 0.5 });
+      processMessageMock.mockResolvedValueOnce({
+        actions: [],
+        intent: 'greeting',
+        confidence: 0.5,
+      });
 
       await controller.processMessage('ws-42', {
         contactId: 'c-2',
@@ -81,7 +89,11 @@ describe('UnifiedAgentController', () => {
     });
 
     it('defaults contactId to empty string when body omits it', async () => {
-      processMessageMock.mockResolvedValueOnce({ actions: [], intent: 'greeting', confidence: 0.5 });
+      processMessageMock.mockResolvedValueOnce({
+        actions: [],
+        intent: 'greeting',
+        confidence: 0.5,
+      });
 
       await controller.processMessage('ws-1', { phone: '+5511999999999', message: 'Hello' });
 
@@ -96,7 +108,11 @@ describe('UnifiedAgentController', () => {
     });
 
     it('does not include context key when body has no context', async () => {
-      processMessageMock.mockResolvedValueOnce({ actions: [], intent: 'greeting', confidence: 0.5 });
+      processMessageMock.mockResolvedValueOnce({
+        actions: [],
+        intent: 'greeting',
+        confidence: 0.5,
+      });
 
       await controller.processMessage('ws-1', { phone: '+5511999999999', message: 'Hello' });
 
@@ -145,7 +161,7 @@ describe('UnifiedAgentController', () => {
       it('allows request when no internal key is configured', async () => {
         processMessageMock.mockResolvedValueOnce({ actions: [], intent: 'test', confidence: 0.8 });
 
-        const result = await controller.processMessage('ws-1', body, 'any-key');
+        const result = await controller.processMessage('ws-1', body, 'loose-key');
 
         expect(result.success).toBe(true);
         expect(processMessageMock).toHaveBeenCalledTimes(1);

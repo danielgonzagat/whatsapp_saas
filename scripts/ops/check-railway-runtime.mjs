@@ -8,6 +8,17 @@
  * no-op deployment reported as SKIPPED can still be evaluated against the real
  * currently-running service and runtime logs.
  */
+import {
+  deriveSystemHealthUrl,
+  fetchJsonOrText,
+  messageFor,
+  normalizeName,
+  printSummary,
+  railwayRequest,
+  readPositiveInteger,
+  stripAnsi,
+  truncate,
+} from './check-railway-runtime.helpers.mjs';
 
 const RAILWAY_GRAPHQL_ENDPOINTS = [
   'https://backboard.railway.com/graphql/v2',
@@ -112,7 +123,7 @@ async function createRailwayClient() {
   let lastError = null;
   for (const endpoint of RAILWAY_GRAPHQL_ENDPOINTS) {
     try {
-      const data = await railwayRequest(endpoint, 'query { projectToken { projectId } }');
+      const data = await railwayRequest(endpoint, 'query { projectToken { projectId } }', {}, projectToken);
       const tokenProjectId = data?.projectToken?.projectId;
       if (tokenProjectId && tokenProjectId !== projectId) {
         throw new Error(
@@ -340,90 +351,5 @@ function assertSystemHealth(url, system) {
 }
 
 async function gql(client, query, variables = {}) {
-  return railwayRequest(client.endpoint, query, variables);
-}
-
-async function railwayRequest(endpoint, query, variables = {}) {
-  const response = await fetch(endpoint, {
-    method: 'POST',
-    headers: {
-      'content-type': 'application/json',
-      'Project-Access-Token': projectToken,
-    },
-    body: JSON.stringify({ query, variables }),
-  });
-
-  const payload = await response.json().catch(() => null);
-  if (!response.ok) {
-    throw new Error(`Railway API HTTP ${response.status}`);
-  }
-  if (payload?.errors?.length) {
-    throw new Error(payload.errors.map((error) => error.message).join('; '));
-  }
-  return payload?.data;
-}
-
-async function fetchJsonOrText(url) {
-  const response = await fetch(url, { headers: { accept: 'application/json,text/plain,*/*' } });
-  const text = await response.text();
-  if (!response.ok) {
-    throw new Error(`${url} returned HTTP ${response.status}: ${truncate(text)}`);
-  }
-  try {
-    return JSON.parse(text);
-  } catch {
-    return { status: 'ok', body: text.slice(0, 200) };
-  }
-}
-
-function deriveSystemHealthUrl(backendHealthUrl) {
-  if (!backendHealthUrl) {
-    return '';
-  }
-  try {
-    const url = new URL(backendHealthUrl);
-    url.pathname = '/health/system';
-    url.search = '';
-    url.hash = '';
-    return url.toString();
-  } catch {
-    return '';
-  }
-}
-
-function printSummary(deployments, health) {
-  console.log('[railway-runtime] PASS');
-  for (const deployment of deployments) {
-    const skipped = deployment.skippedNoChanges ? ' latest=SKIPPED(no changes)' : '';
-    console.log(
-      `[railway-runtime] ${deployment.service}: active=${deployment.activeDeploymentId} latest=${deployment.latestDeploymentId} status=${deployment.latestStatus}${skipped}`,
-    );
-  }
-  const systemStatus = health?.system?.status || health?.system?.details?.status || 'not_checked';
-  console.log(`[railway-runtime] system health: ${systemStatus}`);
-}
-
-function readPositiveInteger(name, fallback) {
-  const parsed = Number.parseInt(process.env[name] || '', 10);
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
-}
-
-function normalizeName(value) {
-  return String(value || '')
-    .trim()
-    .toLowerCase();
-}
-
-function stripAnsi(value) {
-  return value.replace(/\u001b\[[0-9;]*m/g, '');
-}
-
-function truncate(value) {
-  return String(value || '')
-    .replace(/\s+/g, ' ')
-    .slice(0, 500);
-}
-
-function messageFor(error) {
-  return error instanceof Error ? error.message : String(error);
+  return railwayRequest(client.endpoint, query, variables, projectToken);
 }

@@ -1,5 +1,12 @@
 [
   {
+    "file": "scripts/ops/architecture-allowlist.json",
+    "rule": "governanceDelete",
+    "reason": "Human approval granted in chat on 2026-05-14 to remove the retired PR276 architecture exception mechanism after replacing it with strict guardrail enforcement.",
+    "issue": "user-approved-pr276-zero-exception-architecture-gate-2026-05-14",
+    "expires": "2026-05-21"
+  },
+  {
     "file": ".codacy.yml",
     "rule": "governanceChange",
     "reason": "Human approval granted in chat on 2026-05-12 to commit and push accumulated Kloel CIA work including protected governance changes.",

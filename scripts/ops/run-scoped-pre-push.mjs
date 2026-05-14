@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { execSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
 
 const ZERO_SHA = /^0+$/;
 const WHITESPACE_SPLIT_RE = /\s+/;
@@ -125,6 +125,9 @@ const FRONTEND_BUILD_ENV =
   'NEXT_PUBLIC_SENTRY_DSN=';
 
 const changedFiles = collectChangedFiles();
+const changedFilesEnvPath = `/tmp/kloel-prepush-changed-files-${process.pid}.txt`;
+writeFileSync(changedFilesEnvPath, `${changedFiles.join('\n')}\n`);
+const changedFilesEnv = `KLOEL_CHANGED_FILES_FILE=${JSON.stringify(changedFilesEnvPath)} `;
 
 if (changedFiles.length === 0) {
   console.log('[pre-push] Nenhuma mudanca detectada para validar.');
@@ -162,7 +165,7 @@ const workerChanged =
 
 runStep('Guard DB push', 'npm run guard:db-push');
 runStep('Guard commit messages', 'npm run commit-msg:check');
-runStep('Changed-code hard gates', 'npm run guard:new-code');
+runStep('Changed-code hard gates', `${changedFilesEnv}npm run guard:new-code`);
 
 if (backendChanged) {
   runStep('Prisma validate', `${CI_LIKE_ENV} npm run prisma:validate`);

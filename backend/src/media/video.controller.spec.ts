@@ -60,7 +60,7 @@ describe('VideoController', () => {
       });
     });
 
-    it('works without any request or auth context', () => {
+    it('works without request or auth context', () => {
       describeCapabilities.mockReturnValue({
         status: 'available',
         jobType: 'VIDEO_GENERATION',

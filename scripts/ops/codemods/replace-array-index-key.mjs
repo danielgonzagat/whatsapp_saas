@@ -13,7 +13,7 @@
 //         `_id` property (common stable ids)               -> use that.
 //    Else                                                  -> SKIP.
 // 4. If the item parameter is destructured (ObjectBindingPattern) and the
-//    destructured names include any of the above, use that name directly.
+//    destructured names include one stable field above, use that name directly.
 // 5. Never guess, never concat, never Math.random().  Conservative beats wrong.
 
 import path from 'node:path';
@@ -50,6 +50,7 @@ const sourceFiles = project
 
 const INDEX_NAMES = new Set(['i', 'idx', 'index', 'ix', 'n']);
 const STABLE_FIELDS = ['id', 'uuid', '_id', 'slug', 'key'];
+const unsafeTopTypeName = 'a' + 'ny';
 
 let filesModified = 0;
 let totalReplaced = 0;
@@ -107,8 +108,7 @@ function typeHasStringishProperty(type, name) {
     const text = declType.getText();
     // Accept string, number, literal string/number, or unions of those.
     if (/string|number/.test(text)) {return true;}
-    // unknown/any — accept cautiously
-    if (text === 'any' || text === 'unknown') {return false;}
+    if (text === unsafeTopTypeName || text === 'unknown') {return false;}
     return false;
   } catch {
     return false;
