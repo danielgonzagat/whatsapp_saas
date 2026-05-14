@@ -1,3 +1,4 @@
+import { Inject, Injectable, Optional } from '@nestjs/common';
 import type { GateName, GateMode, GateStatus, GateVerdict } from './pulse-gates.types';
 
 export type CertificationVerdict = 'CERTIFIED' | 'AT_RISK' | 'INSUFFICIENT_EVIDENCE';
@@ -25,10 +26,15 @@ function clampScore(value: number): number {
   return Math.round(value * 10000) / 10000;
 }
 
+@Injectable()
 export class PulseTruthSnapshotService {
   private readonly descriptors: readonly GateDescriptor[];
 
-  constructor(descriptors?: readonly GateDescriptor[]) {
+  constructor(
+    @Optional()
+    @Inject('PULSE_TRUTH_SNAPSHOT_DESCRIPTORS')
+    descriptors?: readonly GateDescriptor[],
+  ) {
     this.descriptors = descriptors ?? [];
   }
 
