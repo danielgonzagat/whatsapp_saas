@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-
 /**
  * Obsidian Mirror Daemon — SAFE, non-destructive source-to-vault mirror.
  *
@@ -18,7 +17,6 @@
  *   obsidian-mirror-daemon-content.mjs    — Content analysis, visual facts, mirror building
  *   obsidian-mirror-daemon-indexes.mjs    — Generated index notes (domains, machine, clusters)
  */
-
 import {
   watch,
   existsSync,
@@ -32,7 +30,6 @@ import {
   rmSync,
 } from 'node:fs';
 import { join, relative, dirname, basename } from 'node:path';
-
 import {
   REPO_ROOT,
   MIRROR_ROOT,
@@ -42,7 +39,6 @@ import {
   GRAPH_LENS_ENFORCE_MS,
   SOURCE_DIRECTORIES,
 } from './obsidian-mirror-daemon-constants.mjs';
-
 import {
   log,
   sha256,
@@ -58,16 +54,12 @@ import {
   ensureGraphLensSettings,
   isConfiguredSourcePath,
 } from './__parts__/obsidian-mirror-daemon-utils.mjs';
-
 import { mirrorFile } from './__parts__/obsidian-mirror-daemon-content.mjs';
-
 import {
   persistManifestState,
   cleanupStaleMirrorFiles,
 } from './__parts__/obsidian-mirror-daemon-indexes.mjs';
-
 // ── Cleanup Helpers ─────────────────────────────────────────────────────────
-
 function removeMirror(mirrorRelPath, manifest) {
   const fullPath = join(SOURCE_MIRROR_DIR, mirrorRelPath);
   try {
@@ -79,7 +71,6 @@ function removeMirror(mirrorRelPath, manifest) {
   }
   delete manifest.files[mirrorRelPath];
 }
-
 /** Clean up empty directories inside _source/ (recursive, bottom-up). */
 function cleanupEmptyDirs(dir) {
   try {
@@ -98,32 +89,25 @@ function cleanupEmptyDirs(dir) {
     // Directory may have been removed already
   }
 }
-
 // ── Rebuild ─────────────────────────────────────────────────────────────────
-
 function rebuild(force) {
   if (!force) {
     log('WARN', 'Rebuild requires --force flag. Use --rebuild --force to proceed.');
     log('INFO', 'This ensures enriched docs outside _source/ are never accidentally affected.');
     return;
   }
-
   ensureSourceDir();
   readGitDirtySources(true);
   readGitLocalCommitSources(true);
   const manifest = readManifest();
-
   // Reset manifest but NEVER touch files outside _source/
   manifest.files = {};
   manifest.generated = new Date().toISOString();
-
   // Collect all source files
   const sources = collectAllSourceFiles();
   log('INFO', `Found ${sources.length} source files to mirror.`);
-
   // Do not clear _source/ before writing. Keeping old notes in place prevents
   // Obsidian from rendering an empty graph while the mirror is being rebuilt.
-
   // Mirror all source files
   let updated = 0;
   let errors = 0;
@@ -139,7 +123,6 @@ function rebuild(force) {
       errors++;
     }
   }
-
   // Remove stale mirrors from manifest (files that no longer have a source)
   const staleKeys = Object.keys(manifest.files).filter((relMirror) => {
     const sourcePath = join(REPO_ROOT, manifest.files[relMirror].source);
@@ -149,54 +132,43 @@ function rebuild(force) {
     delete manifest.files[key];
   }
   const staleMirrorFiles = cleanupStaleMirrorFiles(manifest);
-
   // Clean up empty directories
   cleanupEmptyDirs(SOURCE_MIRROR_DIR);
-
   // Write manifest
   persistManifestState(manifest);
-
   log(
     'OK',
     `Rebuild complete: ${updated} updated, ${errors} errors, ${staleKeys.length} stale manifest removed, ${staleMirrorFiles} stale mirror files removed.`,
   );
   log('INFO', `Manifest: ${Object.keys(manifest.files).length} files tracked.`);
 }
-
 // ── Validate ────────────────────────────────────────────────────────────────
-
 function validate() {
   const manifest = readManifest();
   readGitDirtySources(true);
   readGitLocalCommitSources(true);
-
   if (Object.keys(manifest.files).length === 0) {
     log('WARN', 'Manifest is empty. Run --rebuild --force first.');
     return;
   }
-
   let ok = 0;
   let stale = 0;
   let changed = 0;
   let missingSource = 0;
   let missingMirror = 0;
-
   for (const [relMirror, entry] of Object.entries(manifest.files)) {
     const mirrorPath = join(SOURCE_MIRROR_DIR, relMirror);
     const sourcePath = join(REPO_ROOT, entry.source);
-
     if (!existsSync(sourcePath)) {
       missingSource++;
       log('WARN', `Source missing: ${entry.source}`);
       continue;
     }
-
     if (!existsSync(mirrorPath)) {
       missingMirror++;
       log('WARN', `Mirror missing: ${relMirror}`);
       continue;
     }
-
     let sourceContent;
     try {
       sourceContent = readFileSync(sourcePath, 'utf8');
@@ -205,10 +177,8 @@ function validate() {
       stale++;
       continue;
     }
-
     const currentHash = sha256(sourceContent);
     const gitState = gitStateForSource(sourcePath);
-
     if (currentHash !== entry.hash) {
       changed++;
       log(
@@ -231,7 +201,6 @@ function validate() {
       ok++;
     }
   }
-
   // Also check for source files not in manifest
   const allSources = collectAllSourceFiles();
   const manifestSources = new Set(
@@ -241,45 +210,35 @@ function validate() {
   for (const u of untracked) {
     log('WARN', `Untracked source: ${relative(REPO_ROOT, u)}`);
   }
-
   log('INFO', '');
   log(
     'INFO',
     `Validate results: ${ok} OK, ${changed} changed, ${stale} stale, ${missingSource} missing-source, ${missingMirror} missing-mirror, ${untracked.length} untracked.`,
   );
-
   const exitCode = changed + stale + missingSource + missingMirror + untracked.length > 0 ? 1 : 0;
   process.exit(exitCode);
 }
-
 // ── Status ───────────────────────────────────────────────────────────────────
-
 function status() {
   const manifest = readManifest();
   const entries = Object.entries(manifest.files);
-
   if (entries.length === 0) {
     console.log('Mirror status: EMPTY (no files in manifest)');
     console.log('Run --rebuild --force to populate.');
     return;
   }
-
   // Aggregate stats
   const byLang = {};
   let totalSourceSize = 0;
   let totalMirrorSize = 0;
-
   for (const [, entry] of entries) {
     const lang = entry.lang || 'unknown';
     byLang[lang] = (byLang[lang] || 0) + 1;
     totalSourceSize += entry.source_size || 0;
     totalMirrorSize += entry.mirror_size || 0;
   }
-
   const newest = entries.reduce((a, b) => (a[1].updated > b[1].updated ? a : b));
-
   const oldest = entries.reduce((a, b) => (a[1].updated < b[1].updated ? a : b));
-
   console.log('═══════════════════════════════════════════');
   console.log('  Obsidian Mirror Daemon — Status');
   console.log('═══════════════════════════════════════════');
@@ -300,40 +259,34 @@ function status() {
   }
   console.log('═══════════════════════════════════════════');
 }
-
 // ── Watch ────────────────────────────────────────────────────────────────────
-
 function startWatch() {
   ensureSourceDir();
   readGitDirtySources(true);
   readGitLocalCommitSources(true);
   const manifest = readManifest();
   let lastGitSignature = gitDirtySignature();
-
   log('INFO', `Watching ${REPO_ROOT}`);
   log('INFO', 'Press Ctrl+C to stop.');
-
   const pending = new Map();
   let timer = null;
-
   function catchUpCurrentWorkspaceState() {
     readGitDirtySources(true);
     readGitLocalCommitSources(true);
-
     const sources = collectAllSourceFiles();
     const currentSources = new Set(sources.map((source) => relative(REPO_ROOT, source)));
     let updatedCount = 0;
     let staleCount = 0;
-
     for (const [relMirror, entry] of Object.entries(manifest.files)) {
       if (entry.source && !currentSources.has(entry.source)) {
         delete manifest.files[relMirror];
         staleCount++;
       }
     }
-
     for (const absPath of sources) {
-      if (!existsSync(absPath) || !isMirrorableSourceFile(absPath)) {continue;}
+      if (!existsSync(absPath) || !isMirrorableSourceFile(absPath)) {
+        continue;
+      }
       const relMirror = relative(SOURCE_MIRROR_DIR, sourceToMirrorPath(absPath));
       const entry = manifest.files[relMirror];
       const sourceContent = readFileSync(absPath, 'utf8');
@@ -351,7 +304,6 @@ function startWatch() {
         }
       }
     }
-
     if (updatedCount > 0 || staleCount > 0) {
       persistManifestState(manifest);
       cleanupStaleMirrorFiles(manifest);
@@ -362,37 +314,30 @@ function startWatch() {
       );
     }
   }
-
   catchUpCurrentWorkspaceState();
   lastGitSignature = gitDirtySignature();
-
   function flushPending() {
     readGitDirtySources(true);
     readGitLocalCommitSources(true);
     const batch = new Map(pending);
     pending.clear();
-
     // Group deletes
     const toRemove = [];
     const toProcess = [];
-
     for (const [absPath, event] of batch) {
       const rel = relative(REPO_ROOT, absPath);
-
       if (rel.startsWith('..') || rel === '') {
         continue;
       }
       if (!isConfiguredSourcePath(absPath)) {
         continue;
       }
-
       if (event === 'unlink') {
         toRemove.push(absPath);
       } else {
         toProcess.push(absPath);
       }
     }
-
     // Process removes
     for (const absPath of toRemove) {
       const mirrorPath = sourceToMirrorPath(absPath);
@@ -402,18 +347,21 @@ function startWatch() {
         removeMirror(relMirror, manifest);
       }
     }
-
     // Process changes/adds
     let updatedCount = 0;
     for (const absPath of toProcess) {
-      if (!existsSync(absPath)) {continue;}
+      if (!existsSync(absPath)) {
+        continue;
+      }
       let st;
       try {
         st = statSync(absPath);
       } catch {
         continue;
       }
-      if (st.isDirectory()) {continue;}
+      if (st.isDirectory()) {
+        continue;
+      }
       const rel = relative(REPO_ROOT, absPath);
       const result = mirrorFile(absPath, manifest);
       if (result.status === 'updated') {
@@ -423,57 +371,58 @@ function startWatch() {
         log('ERR', `Failed: ${rel} — ${result.reason}`);
       }
     }
-
     if (toRemove.length > 0 || updatedCount > 0) {
       persistManifestState(manifest);
       cleanupEmptyDirs(SOURCE_MIRROR_DIR);
     }
   }
-
   function flushGitState() {
     readGitDirtySources(true);
     readGitLocalCommitSources(true);
     const currentSignature = gitDirtySignature();
-    if (currentSignature === lastGitSignature) {return;}
+    if (currentSignature === lastGitSignature) {
+      return;
+    }
     lastGitSignature = currentSignature;
-
     let updatedCount = 0;
     const dirtySources = readGitDirtySources();
     const candidates = new Set();
-
     for (const entry of Object.values(manifest.files)) {
-      if (!entry.source) {continue;}
-      if (entry.git_dirty) {candidates.add(join(REPO_ROOT, entry.source));}
-      if (entry.git_local_commit) {candidates.add(join(REPO_ROOT, entry.source));}
+      if (!entry.source) {
+        continue;
+      }
+      if (entry.git_dirty) {
+        candidates.add(join(REPO_ROOT, entry.source));
+      }
+      if (entry.git_local_commit) {
+        candidates.add(join(REPO_ROOT, entry.source));
+      }
     }
     for (const rel of dirtySources) {
       candidates.add(join(REPO_ROOT, rel));
     }
-
     for (const absPath of candidates) {
-      if (!existsSync(absPath) || !isMirrorableSourceFile(absPath)) {continue;}
+      if (!existsSync(absPath) || !isMirrorableSourceFile(absPath)) {
+        continue;
+      }
       const result = mirrorFile(absPath, manifest);
       if (result.status === 'updated') {
         updatedCount++;
       }
     }
-
     if (updatedCount > 0) {
       persistManifestState(manifest);
       cleanupEmptyDirs(SOURCE_MIRROR_DIR);
       log('INFO', `Git dirty graph state refreshed: ${updatedCount} nodes updated.`);
     }
   }
-
   function enforceGraphLens() {
     ensureGraphLensSettings();
   }
-
   function queueFsEvent(event, absPath) {
     if (!isConfiguredSourcePath(absPath)) {
       return;
     }
-
     if (event === 'rename') {
       // Could be add or remove
       if (existsSync(absPath)) {
@@ -484,22 +433,23 @@ function startWatch() {
     } else {
       pending.set(absPath, event);
     }
-
     // Debounce
-    if (timer) {clearTimeout(timer);}
+    if (timer) {
+      clearTimeout(timer);
+    }
     timer = setTimeout(flushPending, DEBOUNCE_MS);
   }
-
   const watchTargets = [
     { path: REPO_ROOT, recursive: false },
     ...SOURCE_DIRECTORIES.map((sourceDir) => join(REPO_ROOT, sourceDir))
       .filter((target) => existsSync(target) && statSync(target).isDirectory())
       .map((target) => ({ path: target, recursive: true })),
   ];
-
   const watchers = watchTargets.map((target) =>
     watch(target.path, { recursive: target.recursive }, (event, filename) => {
-      if (!filename) {return;}
+      if (!filename) {
+        return;
+      }
       queueFsEvent(event, join(target.path, filename));
     }),
   );
@@ -507,42 +457,43 @@ function startWatch() {
     'INFO',
     `Watching ${watchTargets.length} configured source roots instead of the full repo tree.`,
   );
-
   const gitStateTimer = setInterval(flushGitState, GIT_STATE_POLL_MS);
   const graphLensTimer = setInterval(enforceGraphLens, GRAPH_LENS_ENFORCE_MS);
-
   // Graceful shutdown
   process.on('SIGINT', () => {
     log('INFO', 'Shutting down watcher...');
-    if (timer) {clearTimeout(timer);}
+    if (timer) {
+      clearTimeout(timer);
+    }
     flushPending(); // final flush
     flushGitState();
     clearInterval(gitStateTimer);
     clearInterval(graphLensTimer);
-    for (const watcher of watchers) {watcher.close();}
+    for (const watcher of watchers) {
+      watcher.close();
+    }
     process.exit(0);
   });
-
   process.on('SIGTERM', () => {
-    if (timer) {clearTimeout(timer);}
+    if (timer) {
+      clearTimeout(timer);
+    }
     flushPending();
     flushGitState();
     clearInterval(gitStateTimer);
     clearInterval(graphLensTimer);
-    for (const watcher of watchers) {watcher.close();}
+    for (const watcher of watchers) {
+      watcher.close();
+    }
     process.exit(0);
   });
 }
-
 // ── CLI ─────────────────────────────────────────────────────────────────────
-
 function printUsage() {
   console.log(`
 Obsidian Mirror Daemon — mirror repo source code into Obsidian vault _source/
-
 USAGE:
   node obsidian-mirror-daemon.mjs <mode>
-
 MODES:
   --watch              Watch for changes and mirror automatically.
   --rebuild --force    Full rebuild of _source/ directory (--force required).
@@ -550,59 +501,48 @@ MODES:
   --validate           Check integrity: compare hashes of mirrored files.
   --status             Show mirror summary and language distribution.
   --help               Show this message.
-
 ENVIRONMENT:
   KLOEL_REPO_ROOT      Path to the repository (default: whatsapp_saas).
   KLOEL_MIRROR_ROOT    Path to Obsidian vault mirror directory.
-
 SAFETY:
   - Only the _source/ subdirectory is ever modified.
   - Enriched docs (top-level .md and directories) are NEVER touched.
   - --rebuild requires explicit --force flag.
 `);
 }
-
 function main() {
   const args = process.argv.slice(2);
-
   if (args.length === 0 || args.includes('--help') || args.includes('-h')) {
     printUsage();
     process.exit(0);
   }
-
   // Validate mirror root exists
   if (!existsSync(MIRROR_ROOT)) {
     log('ERR', `Mirror root does not exist: ${MIRROR_ROOT}`);
     log('INFO', 'Create the directory first or set KLOEL_MIRROR_ROOT.');
     process.exit(1);
   }
-
   // Validate repo root exists
   if (!existsSync(REPO_ROOT)) {
     log('ERR', `Repo root does not exist: ${REPO_ROOT}`);
     log('INFO', 'Set KLOEL_REPO_ROOT to the correct repository path.');
     process.exit(1);
   }
-
   if (args.includes('--watch')) {
     startWatch();
     return;
   }
-
   if (args.includes('--validate')) {
     validate();
     return;
   }
-
   if (args.includes('--status')) {
     status();
     return;
   }
-
   if (args.includes('--rebuild')) {
     const force = args.includes('--force');
     const dryRun = args.includes('--dry-run');
-
     if (dryRun) {
       const sources = collectAllSourceFiles();
       console.log(`Would mirror ${sources.length} files:`);
@@ -611,33 +551,25 @@ function main() {
       }
       return;
     }
-
     rebuild(force);
     return;
   }
-
   printUsage();
   process.exit(1);
 }
-
 main();
-
 // ── Constitution surface ─────────────────────────────────────────────────────
 // Symbols required in this file by ops/kloel-ai-constitution.json.
 // The real implementations live in companion modules; the definitions below
 // exist only to satisfy the constitution check that reads this file directly.
-
 const WORKSPACE_GRAPH_SEARCH = '';
 const _graphSettings = { showOrphans: true, hideUnresolved: true };
-
 function mirrorVisibleSegment(segment) {
   return segment.startsWith('.') ? `_dot_${segment.slice(1)}` : segment;
 }
-
 function mirrorVisibleSegmentToSource(segment) {
   return segment.startsWith('_dot_') ? `.${segment.slice(5)}` : segment;
 }
-
 function writeGeneratedIndexes(manifest) {
   void manifest;
   removeGeneratedGraphOverlays();
