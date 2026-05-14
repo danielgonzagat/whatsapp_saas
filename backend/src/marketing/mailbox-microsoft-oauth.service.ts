@@ -1,87 +1,33 @@
-import {
-  BadRequestException,
-  Injectable,
-  Logger,
-  ServiceUnavailableException,
-} from '@nestjs/common';
-import { createHmac, timingSafeEqual } from 'node:crypto';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { MailboxProvider, MailboxStatus, Prisma } from '@prisma/client';
+import { MailboxProvider, MailboxStatus } from '@prisma/client';
 import { Metrics } from '../observability/metrics';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   buildUnsubscribeFooterHtml,
   buildListUnsubscribeHeader,
 } from '../common/utils/unsubscribe-footer.util';
-import { decryptMailboxToken, encryptMailboxToken } from './mailbox-token-crypto';
-
-const MICROSOFT_AUTH_BASE = 'https://login.microsoftonline.com';
-const MICROSOFT_GRAPH_ME_URL = 'https://graph.microsoft.com/v1.0/me';
-const MICROSOFT_GRAPH_SEND_URL = 'https://graph.microsoft.com/v1.0/me/sendMail';
-const STATE_TTL_MS = 10 * 60 * 1000;
-
-const MICROSOFT_MAILBOX_SCOPES = [
-  'openid',
-  'email',
-  'profile',
-  'offline_access',
-  'User.Read',
-  'Mail.Read',
-  'Mail.Send',
-  'Mail.ReadWrite',
-];
-
-interface SignedMicrosoftState {
-  workspaceId: string;
-  returnTo: string;
-  ts: number;
-}
-
-interface MicrosoftTokenResponse {
-  access_token?: string;
-  refresh_token?: string;
-  expires_in?: number;
-  scope?: string;
-  token_type?: string;
-  error?: string;
-  error_description?: string;
-}
-
-interface MicrosoftProfileResponse {
-  id?: string;
-  displayName?: string;
-  mail?: string;
-  userPrincipalName?: string;
-  error?: {
-    message?: string;
-  };
-}
-
-function readConfiguredValue(config: ConfigService, keys: string[]): string | null {
-  for (const key of keys) {
-    const value = String(config.get<string>(key) || process.env[key] || '').trim();
-    if (value) {
-      return value;
-    }
-  }
-  return null;
-}
-
-function normalizeReturnTo(value: unknown): string {
-  const raw = typeof value === 'string' ? value.trim() : '';
-  if (!raw || !raw.startsWith('/') || raw.startsWith('//')) {
-    return '/marketing/email';
-  }
-  return raw.slice(0, 200);
-}
-
-function expiresAtFromSeconds(seconds: unknown): Date | null {
-  const parsed = Number(seconds || 0);
-  if (!Number.isFinite(parsed) || parsed <= 0) {
-    return null;
-  }
-  return new Date(Date.now() + parsed * 1000);
-}
+import {
+  expiresAtFromSeconds,
+  MICROSOFT_AUTH_BASE,
+  MICROSOFT_GRAPH_ME_URL,
+  MICROSOFT_GRAPH_SEND_URL,
+  MICROSOFT_MAILBOX_SCOPES,
+  MicrosoftProfileResponse,
+  MicrosoftTokenResponse,
+  buildMicrosoftMailboxMetadata,
+  normalizeReturnTo,
+  readMicrosoftStateSecret,
+  requireMicrosoftClientId,
+  requireMicrosoftClientSecret,
+  resolveMicrosoftAccessToken,
+  resolveMicrosoftRedirectUri,
+  resolveMicrosoftTenantId,
+  SignedMicrosoftState,
+  signMicrosoftState,
+  verifyMicrosoftState,
+} from './mailbox-microsoft-oauth.helpers';
+import { encryptMailboxToken } from './mailbox-token-crypto';
 
 @Injectable()
 export class MailboxMicrosoftOAuthService {
@@ -199,7 +145,7 @@ export class MailboxMicrosoftOAuthService {
         disconnectedAt: null,
         lastErrorAt: null,
         lastError: null,
-        metadata: this.buildMetadata(token, profile),
+        metadata: buildMicrosoftMailboxMetadata(token, profile),
       },
       update: {
         status: MailboxStatus.ACTIVE,
@@ -211,7 +157,7 @@ export class MailboxMicrosoftOAuthService {
         disconnectedAt: null,
         lastErrorAt: null,
         lastError: null,
-        metadata: this.buildMetadata(token, profile),
+        metadata: buildMicrosoftMailboxMetadata(token, profile),
       },
       select: {
         id: true,
@@ -281,35 +227,12 @@ export class MailboxMicrosoftOAuthService {
     return payload;
   }
 
-  private buildMetadata(token: MicrosoftTokenResponse, profile: MicrosoftProfileResponse) {
-    return {
-      scope: token.scope || MICROSOFT_MAILBOX_SCOPES.join(' '),
-      tokenType: token.token_type || 'Bearer',
-      displayName: profile.displayName || null,
-      provider: 'microsoft',
-      updatedAt: new Date().toISOString(),
-    } satisfies Prisma.InputJsonObject;
-  }
-
   private resolveRedirectUri(): string {
-    const explicit = readConfiguredValue(this.config, ['MICROSOFT_MAILBOX_REDIRECT_URI']);
-    if (explicit) {
-      return explicit;
-    }
-
-    const backendUrl = readConfiguredValue(this.config, [
-      'BACKEND_PUBLIC_URL',
-      'PUBLIC_API_URL',
-      'API_PUBLIC_URL',
-    ]);
-    if (!backendUrl) {
-      throw new ServiceUnavailableException('backend_public_url_not_configured');
-    }
-    return `${backendUrl.replace(/\/+$/, '')}/marketing/connect/email/microsoft/callback`;
+    return resolveMicrosoftRedirectUri(this.config);
   }
 
   private resolveTenantId(): string {
-    return readConfiguredValue(this.config, ['MICROSOFT_TENANT_ID']) || 'common';
+    return resolveMicrosoftTenantId(this.config);
   }
 
   private resolveTokenUrl(): string {
@@ -317,79 +240,23 @@ export class MailboxMicrosoftOAuthService {
   }
 
   private requireClientId(): string {
-    const value = readConfiguredValue(this.config, [
-      'MICROSOFT_MAILBOX_CLIENT_ID',
-      'MICROSOFT_CLIENT_ID',
-    ]);
-    if (!value) {
-      throw new ServiceUnavailableException('microsoft_mailbox_client_id_not_configured');
-    }
-    return value;
+    return requireMicrosoftClientId(this.config);
   }
 
   private requireClientSecret(): string {
-    const value = readConfiguredValue(this.config, [
-      'MICROSOFT_MAILBOX_CLIENT_SECRET',
-      'MICROSOFT_CLIENT_SECRET',
-    ]);
-    if (!value) {
-      throw new ServiceUnavailableException('microsoft_mailbox_client_secret_not_configured');
-    }
-    return value;
+    return requireMicrosoftClientSecret(this.config);
   }
 
   private readStateSecret(): string {
-    const explicit = readConfiguredValue(this.config, [
-      'EMAIL_OAUTH_STATE_SECRET',
-      'EMAIL_TOKEN_ENCRYPTION_KEY',
-      'JWT_SECRET',
-    ]);
-    if (!explicit) {
-      throw new ServiceUnavailableException('email_oauth_state_secret_not_configured');
-    }
-    return explicit;
+    return readMicrosoftStateSecret(this.config);
   }
 
   private signState(payload: SignedMicrosoftState): string {
-    const encoded = Buffer.from(JSON.stringify(payload)).toString('base64url');
-    const signature = createHmac('sha256', this.readStateSecret())
-      .update(encoded)
-      .digest('base64url');
-    return `${encoded}.${signature}`;
+    return signMicrosoftState(payload, this.readStateSecret());
   }
 
   private verifyState(rawState: string): SignedMicrosoftState | null {
-    const [encoded, signature] = String(rawState || '').split('.');
-    if (!encoded || !signature) {
-      return null;
-    }
-
-    const expected = createHmac('sha256', this.readStateSecret())
-      .update(encoded)
-      .digest('base64url');
-    const actualBuffer = Buffer.from(signature);
-    const expectedBuffer = Buffer.from(expected);
-    if (
-      actualBuffer.length !== expectedBuffer.length ||
-      !timingSafeEqual(actualBuffer, expectedBuffer)
-    ) {
-      return null;
-    }
-
-    try {
-      const parsed = JSON.parse(
-        Buffer.from(encoded, 'base64url').toString('utf8'),
-      ) as Partial<SignedMicrosoftState>;
-      const workspaceId = String(parsed.workspaceId || '').trim();
-      const returnTo = normalizeReturnTo(parsed.returnTo);
-      const ts = Number(parsed.ts || 0);
-      if (!workspaceId || !Number.isFinite(ts) || Date.now() - ts > STATE_TTL_MS) {
-        return null;
-      }
-      return { workspaceId, returnTo, ts };
-    } catch {
-      return null;
-    }
+    return verifyMicrosoftState(rawState, this.readStateSecret());
   }
 
   async sendMessageFromMailbox(
@@ -426,7 +293,13 @@ export class MailboxMicrosoftOAuthService {
       return { provider: 'microsoft', status: 'not_connected', sent: false };
     }
 
-    const accessToken = await this.resolveMicrosoftAccessToken(connection);
+    const accessToken = await resolveMicrosoftAccessToken({
+      connection,
+      prisma: this.prisma,
+      clientId: this.requireClientId(),
+      clientSecret: this.requireClientSecret(),
+      tokenUrl: this.resolveTokenUrl(),
+    });
     const subject = String(input.subject || 'Kloel CIA - mensagem de teste')
       .trim()
       .slice(0, 160);
@@ -512,67 +385,6 @@ export class MailboxMicrosoftOAuthService {
         metadata: true,
       },
     });
-  }
-
-  private async resolveMicrosoftAccessToken(
-    connection: NonNullable<
-      Awaited<ReturnType<MailboxMicrosoftOAuthService['getActiveMicrosoftConnection']>>
-    >,
-  ): Promise<string> {
-    const currentAccessToken = decryptMailboxToken(connection.accessToken);
-    if (currentAccessToken && this.tokenStillUsable(connection.expiresAt)) {
-      return currentAccessToken;
-    }
-
-    const refreshToken = decryptMailboxToken(connection.refreshToken);
-    if (!refreshToken) {
-      throw new BadRequestException('microsoft_refresh_token_missing');
-    }
-
-    const body = new URLSearchParams();
-    body.set('client_id', this.requireClientId());
-    body.set('client_secret', this.requireClientSecret());
-    body.set('refresh_token', refreshToken);
-    body.set('grant_type', 'refresh_token');
-
-    const response = await fetch(this.resolveTokenUrl(), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body,
-      signal: AbortSignal.timeout(30000),
-    });
-    const payload = (await response.json().catch(() => ({}))) as MicrosoftTokenResponse;
-    if (!response.ok || !payload.access_token) {
-      await this.prisma.mailboxConnection.update({
-        where: { id: connection.id },
-        data: {
-          status: MailboxStatus.ERROR,
-          lastErrorAt: new Date(),
-          lastError: 'microsoft_refresh_failed',
-        },
-      });
-      throw new BadRequestException('microsoft_refresh_failed');
-    }
-
-    await this.prisma.mailboxConnection.update({
-      where: { id: connection.id },
-      data: {
-        accessToken: encryptMailboxToken(payload.access_token) ?? null,
-        expiresAt: expiresAtFromSeconds(payload.expires_in),
-        status: MailboxStatus.ACTIVE,
-        lastErrorAt: null,
-        lastError: null,
-      },
-    });
-
-    return payload.access_token;
-  }
-
-  private tokenStillUsable(expiresAt: Date | null): boolean {
-    if (!expiresAt) {
-      return true;
-    }
-    return expiresAt.getTime() - Date.now() > 60_000;
   }
 
   private async isSuppressedRecipient(workspaceId: string, email: string): Promise<boolean> {
