@@ -87,6 +87,7 @@ import { ObservabilityModule } from './common/observability/observability.module
 import { OpsAlertModule } from './observability/ops-alert.module';
 import { OpsModule } from './ops/ops.module';
 import { PartnershipsModule } from './partnerships/partnerships.module';
+import { GoalFieldModule } from './kloel/goal-field/goal-field.module';
 import { LineageModule } from './kloel/lineage/lineage.module';
 import { MindModule } from './kloel/mind/mind.module';
 import { PipelineModule } from './pipeline/pipeline.module';
@@ -249,6 +250,7 @@ function setRedisClientListenerBudget(client: Redis): void {
     OpsAlertModule, // OPS critical error alerting (global)
     LineageModule, // 🧬 Camada I — Genesis + Lineage Ledger + Identity Projector (cognitive organism)
     MindModule, // 🧠 MIND substrate — valence/attention/hebbian/consolidation/multi-timescale/BG (UTP-MIND-*)
+    GoalFieldModule, // 🎯 Camada III — Dynamic Goal Field (29 detectors + emerge/select/survive/shadow)
     PulseModule, // PULSE live organism collector
     AnunciosModule, // 📊 Anuncios — Meta/Google/TikTok ad accounts, campaigns, insights
     TikTokAdsModule, // 🎵 TikTok Ads — OAuth + Events API + sync
