@@ -123,6 +123,16 @@ export function rescueForgottenFollowups(
       budgetHours,
       ...(lastOperatorAction !== undefined ? { lastOperatorActionAt: lastOperatorAction } : {}),
       urgency: computeUrgency(silentDurationHours, budgetHours),
+      r1Contract: {
+        riskClass: 'normal',
+        delegationMode: 'allowed_alone',
+        rollback: ['dismiss', 'snooze'],
+        leadOutcomeGuardrail: {
+          antiPressureLanguage: true,
+          respectsSilenceWindow: true,
+          requiresContextQualification: true,
+        },
+      },
     });
   }
 
