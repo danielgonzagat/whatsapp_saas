@@ -88,7 +88,10 @@ import { OpsAlertModule } from './observability/ops-alert.module';
 import { OpsModule } from './ops/ops.module';
 import { PartnershipsModule } from './partnerships/partnerships.module';
 import { GoalFieldModule } from './kloel/goal-field/goal-field.module';
+import { ColdstartModule } from './kloel/coldstart/coldstart.module';
 import { InsightModule } from './kloel/insight/insight.module';
+import { PostsaleConsumersModule } from './kloel/postsale-consumers/postsale-consumers.module';
+import { RecoveryModule } from './kloel/recovery/recovery.module';
 import { LineageModule } from './kloel/lineage/lineage.module';
 import { LocalIdentityModule } from './kloel/local-identity/local-identity.module';
 import { MaturityModule } from './kloel/maturity/maturity.module';
@@ -97,6 +100,7 @@ import { SpineModule } from './kloel/spine/spine.module';
 import { TeamModule as KloelTeamModule } from './kloel/team/team.module';
 import { TrustModule } from './kloel/trust/trust.module';
 import { WisdomModule } from './kloel/wisdom/wisdom.module';
+import { WowModule } from './kloel/wow/wow.module';
 import { PipelineModule } from './pipeline/pipeline.module';
 import { ProductCategoriesModule } from './product-categories/product-categories.module';
 import { PublicApiModule } from './public-api/public-api.module';
@@ -262,9 +266,13 @@ function setRedisClientListenerBudget(client: Redis): void {
     InsightModule, // 💡 Camada VII — Strategic Insight Engine (detectors + ranker + confidence + delivery)
     MaturityModule, // 📊 Camada VIII — Commercial Maturity Recognition (signals + classify + filter + guard)
     SpineModule, // 🧪 Spine — in-process event spine (B17 surface emitters publish here)
+    RecoveryModule, // 🛡️ Camada XIV — Mature Failure Recovery (self-detection, acknowledgment, explanation, non-repeat, tactics, narrative, trust-after-error)
     TrustModule, // 🛡️ Camada IX — Trust Capital Protection (fatigue, desperation, brand, silence, handoff, recovery)
     KloelTeamModule, // 👥 Camada XII — Team Augmentation (pre-call context, next-best-action, forgotten-followup, blind-spot, handoff)
+    ColdstartModule, // 🚀 Camada XVII — Cold-Start Discovery (no-history → first truth in ≤30 days)
+    PostsaleConsumersModule, // 📦 Camada XVIII — Post-Sale & LTV Engine (anti-remorse, activation, LV, churn, retention, win-back, LTV)
     WisdomModule, // 🧠 Camada VI — Cross-Workspace Commercial Wisdom (k-anonymity, diff-privacy, patterns)
+    WowModule, // ⚡ Camada XI — First-Hour Wow (cold-start ingestion, pattern detection, evidence delivery)
     PulseModule, // PULSE live organism collector
     AnunciosModule, // 📊 Anuncios — Meta/Google/TikTok ad accounts, campaigns, insights
     TikTokAdsModule, // 🎵 TikTok Ads — OAuth + Events API + sync
