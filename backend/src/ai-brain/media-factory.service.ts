@@ -22,14 +22,13 @@ export class MediaFactoryService {
       throw new ServiceUnavailableException('Image generation requires OPENAI_API_KEY');
     }
 
-    const model = resolveBackendOpenAIModel('image_generation', this.config);
     // tokenBudget: non-workspace context, budget tracked at caller level
     this.logger.log('Calling OpenAI image generation', {
       context: 'MediaFactoryService.generateImage',
-      model,
+      model: 'dall-e-3',
     });
     const response = await this.openai.images.generate({
-      model,
+      model: resolveBackendOpenAIModel('image_generation', this.config),
       prompt: prompt,
       n: 1,
       size: '1024x1024',

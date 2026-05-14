@@ -49,7 +49,6 @@ export class SmartRoutingService {
     this.logger.log(`Assigning conversation ${conversationId} to queue ${queueId}`);
 
     // Update Conversation
-    // @AllowCrossWorkspace: conversation.update is scoped by a non-workspace unique identifier, provider callback key, admin session owner, or platform worker claim.
     await this.prisma.conversation.update({
       where: { id: conversationId },
       data: { queueId, status: 'OPEN' },
@@ -88,7 +87,6 @@ export class SmartRoutingService {
     const selectedAgent = agentAtIdx.agent;
 
     // Assign
-    // @AllowCrossWorkspace: conversation.update is scoped by a non-workspace unique identifier, provider callback key, admin session owner, or platform worker claim.
     await this.prisma.conversation.update({
       where: { id: conversationId },
       data: { assignedAgentId: selectedAgent.id, mode: 'HUMAN' },
@@ -162,7 +160,6 @@ export class SmartRoutingService {
     }
 
     if (rule.actionType === 'ASSIGN_TO_AGENT' && rule.targetId) {
-      // @AllowCrossWorkspace: conversation.update is scoped by a non-workspace unique identifier, provider callback key, admin session owner, or platform worker claim.
       await this.prisma.conversation.update({
         where: { id: conversationId },
         data: { assignedAgentId: rule.targetId, status: 'OPEN', mode: 'HUMAN' },

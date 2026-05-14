@@ -203,7 +203,6 @@ export async function updateThreadMessage(
   };
   const [message] = await deps.prisma.$transaction(
     [
-      // @AllowCrossWorkspace: chatMessage.update is scoped by a non-workspace unique identifier, provider callback key, admin session owner, or platform worker claim.
       deps.prisma.chatMessage.update({ where: { id }, data: { content, metadata: nextMetadata } }),
       deps.prisma.chatThread.updateMany({
         where: { id: existing.threadId, workspaceId },
@@ -246,7 +245,6 @@ export async function updateMessageFeedback(
       ...normalizeMessageMetadata(existing.metadata),
       feedback: type ? { type, updatedAt: new Date().toISOString() } : null,
     };
-    // @AllowCrossWorkspace: chatMessage.update is scoped by a non-workspace unique identifier, provider callback key, admin session owner, or platform worker claim.
     return tx.chatMessage.update({ where: { id }, data: { metadata: nextMetadata } });
   });
 }

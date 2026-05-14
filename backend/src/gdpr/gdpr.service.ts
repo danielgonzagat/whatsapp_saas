@@ -188,7 +188,6 @@ export class GdprService implements OnModuleInit, OnModuleDestroy {
       throw new BadRequestException(`Solicitação já está em estado ${request.status}.`);
     }
 
-    // @AllowCrossWorkspace: gdprRequest.update is scoped by a non-workspace unique identifier, provider callback key, admin session owner, or platform worker claim.
     await this.prisma.gdprRequest.update({
       where: { id: request.id },
       data: { status: GdprStatus.VERIFYING },
@@ -205,7 +204,6 @@ export class GdprService implements OnModuleInit, OnModuleDestroy {
 
   /** Get status by code. */
   async getStatus(code: string) {
-    // @AllowCrossWorkspace: gdprRequest.findUnique is scoped by a non-workspace unique identifier, provider callback key, admin session owner, or platform worker claim.
     const request = await this.prisma.gdprRequest.findUnique({
       where: { code: String(code || '').trim() },
       select: {
@@ -333,7 +331,6 @@ export class GdprService implements OnModuleInit, OnModuleDestroy {
 
   private async markRequestFailed(requestId: string, errorMessage: string) {
     try {
-      // @AllowCrossWorkspace: gdprRequest.update is scoped by a non-workspace unique identifier, provider callback key, admin session owner, or platform worker claim.
       await this.prisma.gdprRequest.update({
         where: { id: requestId },
         data: {

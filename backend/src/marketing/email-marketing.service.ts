@@ -195,7 +195,6 @@ export class EmailMarketingService implements OnModuleInit, OnModuleDestroy {
       throw new Error(`Cannot send campaign in status: ${campaign.status}`);
     }
     await this.assertCampaignSendApproved(campaignId, workspaceId);
-    // @AllowCrossWorkspace: emailCampaign.update is scoped by a non-workspace unique identifier, provider callback key, admin session owner, or platform worker claim.
     await this.prisma.emailCampaign.update({
       where: { id: campaignId },
       data: { status: 'SCHEDULED' },
@@ -225,7 +224,6 @@ export class EmailMarketingService implements OnModuleInit, OnModuleDestroy {
       return;
     }
     const provider = this.getProvider();
-    // @AllowCrossWorkspace: emailCampaign.update is scoped by a non-workspace unique identifier, provider callback key, admin session owner, or platform worker claim.
     await this.prisma.emailCampaign.update({
       where: { id: campaignId },
       data: {
@@ -287,7 +285,6 @@ export class EmailMarketingService implements OnModuleInit, OnModuleDestroy {
         });
       }
     }
-    // @AllowCrossWorkspace: emailCampaign.update is scoped by a non-workspace unique identifier, provider callback key, admin session owner, or platform worker claim.
     await this.prisma.emailCampaign.update({
       where: { id: campaignId },
       data: {
@@ -329,7 +326,6 @@ export class EmailMarketingService implements OnModuleInit, OnModuleDestroy {
           ...(log.providerMessageId ? { providerMessageId: log.providerMessageId } : {}),
         },
       }),
-      // @AllowCrossWorkspace: emailCampaignRecipient.update is scoped by a non-workspace unique identifier, provider callback key, admin session owner, or platform worker claim.
       this.prisma.emailCampaignRecipient.update({
         where: { id: log.recipientId },
         data: isSent
@@ -355,7 +351,6 @@ export class EmailMarketingService implements OnModuleInit, OnModuleDestroy {
     metadata?: Record<string, unknown>;
   }): Promise<boolean> {
     const { providerMessageId, event, metadata } = params;
-    // @AllowCrossWorkspace: emailCampaignRecipient.findFirst is scoped by a non-workspace unique identifier, provider callback key, admin session owner, or platform worker claim.
     const recipient = await this.prisma.emailCampaignRecipient.findFirst({
       where: { providerMessageId },
       include: { campaign: true },
@@ -386,13 +381,11 @@ export class EmailMarketingService implements OnModuleInit, OnModuleDestroy {
         ...(metadata ? { metadata: metadata as Prisma.InputJsonObject } : {}),
       },
     });
-    // @AllowCrossWorkspace: emailCampaignRecipient.update is scoped by a non-workspace unique identifier, provider callback key, admin session owner, or platform worker claim.
     await this.prisma.emailCampaignRecipient.update({
       where: { id: recipient.id },
       data: recipientUpdate,
     });
     if (campaignUpdate) {
-      // @AllowCrossWorkspace: emailCampaign.update is scoped by a non-workspace unique identifier, provider callback key, admin session owner, or platform worker claim.
       await this.prisma.emailCampaign.update({
         where: { id: campaignId },
         data: campaignUpdate,

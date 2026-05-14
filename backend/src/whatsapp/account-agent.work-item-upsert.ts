@@ -65,7 +65,6 @@ export async function upsertWorkItem(deps: AccountDeps, workspaceId: string, inp
     evidence: toJson(input.evidence),
     metadata: toJson(input.metadata),
   };
-  // @AllowCrossWorkspace: agentWorkItem.upsert is scoped by a non-workspace unique identifier, provider callback key, admin session owner, or platform worker claim.
   await deps.prisma.agentWorkItem.upsert({
     where: { id },
     update: upd,

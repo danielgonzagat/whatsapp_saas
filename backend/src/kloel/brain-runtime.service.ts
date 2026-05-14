@@ -1,5 +1,4 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { StructuredLogger } from '../logging/structured-logger';
 import { Prisma } from '@prisma/client';
 import { randomUUID } from 'crypto';
 import {
@@ -65,8 +64,6 @@ const OPERATOR_CAPABILITIES = [
 
 @Injectable()
 export class BrainRuntimeService {
-  private readonly logger = StructuredLogger.from(BrainRuntimeService.name);
-
   constructor(
     private readonly unifiedAgent: UnifiedAgentService,
     private readonly contextData: UnifiedAgentContextDataService,
@@ -75,8 +72,7 @@ export class BrainRuntimeService {
     private readonly threads: KloelThreadService,
     private readonly graph: BrainCommercialGraphService,
     private readonly executor: BrainCapabilityExecutorService,
-  ) {
-    this.logger.debug?.(`BrainRuntimeService initialized`);}
+  ) {}
 
   listCapabilities() {
     return {
@@ -317,7 +313,7 @@ export class BrainRuntimeService {
         brainIntent: intent,
         brainRequestId: requestId,
         brainSource: params.source,
-        actions: actions as Prisma.InputJsonValue,
+        actions: actions as unknown as Prisma.InputJsonValue,
         confidence: capabilityResult.ok ? 1 : 0,
       } satisfies Prisma.InputJsonObject);
     }
@@ -332,7 +328,7 @@ export class BrainRuntimeService {
         requestId,
         userId: params.userId,
         conversationId: thread?.id,
-        action: action as Prisma.InputJsonValue,
+        action: action as unknown as Prisma.InputJsonValue,
       },
     });
 

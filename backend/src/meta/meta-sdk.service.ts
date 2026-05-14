@@ -54,26 +54,13 @@ export class MetaSdkService {
         headers: getTraceHeaders(),
         signal: AbortSignal.timeout(30000),
       });
-      const json = (await res.json()) as GraphApiResponse;
+      const json = await res.json();
 
       if (json.error) {
-        // Meta error code 190 = OAuth access token invalid/expired. Treat HTTP
-        // 401 the same way. Caller should trigger token refresh via
-        // AdsSyncProcessor.enqueueMetaRefreshToken(workspaceId) when this fires.
-        const errCode = json.error.code;
-        const errMessage = json.error.message ?? '';
-        const isAuthError =
-          errCode === 190 || res.status === 401 || /access token/i.test(errMessage);
-        if (isAuthError) {
-          this.logger.warn(
-            `Meta Graph API auth error (token rotation needed) — endpoint=${endpoint} code=${errCode} status=${res.status} message=${errMessage}`,
-          );
-        } else {
-          this.logger.warn(`Graph API ${endpoint} error: ${errMessage}`);
-        }
+        this.logger.warn(`Graph API GET /${endpoint} error: ${json.error.message}`);
       }
 
-      return json;
+      return json as GraphApiResponse;
     } catch (err: unknown) {
       void this.opsAlert?.alertOnCriticalError(err, 'MetaSdkService.graphApiGet');
       this.logger.error(
@@ -99,23 +86,13 @@ export class MetaSdkService {
         body: JSON.stringify({ ...data, access_token: accessToken }),
         signal: AbortSignal.timeout(30000),
       });
-      const json = (await res.json()) as GraphApiResponse;
+      const json = await res.json();
 
       if (json.error) {
-        const errCode = json.error.code;
-        const errMessage = json.error.message ?? '';
-        const isAuthError =
-          errCode === 190 || res.status === 401 || /access token/i.test(errMessage);
-        if (isAuthError) {
-          this.logger.warn(
-            `Meta Graph API auth error (token rotation needed) — endpoint=${endpoint} code=${errCode} status=${res.status} message=${errMessage}`,
-          );
-        } else {
-          this.logger.warn(`Graph API POST /${endpoint} error: ${errMessage}`);
-        }
+        this.logger.warn(`Graph API POST /${endpoint} error: ${json.error.message}`);
       }
 
-      return json;
+      return json as GraphApiResponse;
     } catch (err: unknown) {
       void this.opsAlert?.alertOnCriticalError(err, 'MetaSdkService.graphApiPost');
       this.logger.error(
@@ -143,7 +120,7 @@ export class MetaSdkService {
         this.logger.warn(`Graph API DELETE /${endpoint} error: ${json.error.message}`);
       }
 
-      return json;
+      return json as GraphApiResponse;
     } catch (err: unknown) {
       void this.opsAlert?.alertOnCriticalError(err, 'MetaSdkService.graphApiDelete');
       this.logger.error(

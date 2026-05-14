@@ -3,9 +3,6 @@ import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { FlowOptimizerService } from './flow-optimizer.service';
-const mockBackendAiModelIds = jest.requireActual<typeof import('../lib/openai-models')>(
-  '../lib/openai-models',
-).BACKEND_AI_MODEL_IDS;
 
 const chatCompletionWithRetryMock = jest.fn();
 jest.mock('../kloel/openai-wrapper', () => ({
@@ -16,7 +13,7 @@ jest.mock('openai', () => ({
   default: jest.fn().mockImplementation(() => ({})),
 }));
 jest.mock('../lib/openai-models', () => ({
-  resolveBackendOpenAIModel: () => mockBackendAiModelIds.GPT_STUB,
+  resolveBackendOpenAIModel: () => 'gpt-stub',
 }));
 
 describe('FlowOptimizerService', () => {

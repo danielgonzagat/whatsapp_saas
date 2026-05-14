@@ -7,9 +7,6 @@ import { KloelToolExecutorBillingService } from './kloel-tool-executor-billing.s
 import { KloelToolExecutorCrmService } from './kloel-tool-executor-crm.service';
 import { KloelToolExecutorWhatsAppService } from './kloel-tool-executor-whatsapp.service';
 import { asProviderSettings } from '../whatsapp/provider-settings.types';
-const mockBackendAiModelIds = jest.requireActual<typeof import('../lib/openai-models')>(
-  '../lib/openai-models',
-).BACKEND_AI_MODEL_IDS;
 jest.mock('./kloel-tool-executor.helpers', () => ({
   toolSaveProduct: jest.fn().mockResolvedValue({ success: true, message: 'Produto salvo.' }),
   toolListProducts: jest.fn().mockResolvedValue({ success: true, products: [] }),
@@ -20,7 +17,7 @@ jest.mock('./kloel-tool-executor.helpers', () => ({
 }));
 jest.mock('./openai-wrapper', () => ({}));
 jest.mock('../lib/openai-models', () => ({
-  resolveBackendOpenAIModel: jest.fn().mockReturnValue(mockBackendAiModelIds.GPT_4O),
+  resolveBackendOpenAIModel: jest.fn().mockReturnValue('gpt-4o'),
 }));
 jest.mock('../common/products/legacy-products.util', () => ({
   filterLegacyProducts: jest.fn((products: unknown[]) => products),

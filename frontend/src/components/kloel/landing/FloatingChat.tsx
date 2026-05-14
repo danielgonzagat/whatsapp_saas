@@ -79,11 +79,17 @@ export function FloatingChat({
     [onToggle],
   );
 
-  // GUEST-SESSION-IN-MEMORY-OK: guest session id lives in component state across
-  // the mounted lifetime; cross-refresh persistence requires backend GuestSession
-  // model + /api/chat/guest/session endpoints (see audit g3 in /tmp/h13-fleet/).
-  // The previous localStorage-based recovery was removed to comply with
-  // CLAUDE.md "REGRA DE FRONTEND" no-localStorage-as-database policy.
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+    try {
+      const sid = localStorage.getItem(GUEST_SESSION_SLOT);
+      if (sid) {
+        setGuestSessionId(sid);
+      }
+    } catch {}
+  }, []);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });

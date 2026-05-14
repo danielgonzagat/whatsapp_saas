@@ -238,7 +238,6 @@ export class AgentRuntimeMemoryCuratorService {
           const hygieneState = this.computeHygieneState(ageMs, ttlMs);
 
           if (hygieneState === 'retired' && retentionScore < minRetention) {
-            // @AllowCrossWorkspace: kloelMemory.update is scoped by a non-workspace unique identifier, provider callback key, admin session owner, or platform worker claim.
             await this.prisma.kloelMemory.update({
               where: { id: row.id },
               data: {
@@ -254,7 +253,6 @@ export class AgentRuntimeMemoryCuratorService {
             result.expired += 1;
             result.staleKeys.push(row.key);
           } else if (hygieneState === 'expired') {
-            // @AllowCrossWorkspace: kloelMemory.update is scoped by a non-workspace unique identifier, provider callback key, admin session owner, or platform worker claim.
             await this.prisma.kloelMemory.update({
               where: { id: row.id },
               data: {

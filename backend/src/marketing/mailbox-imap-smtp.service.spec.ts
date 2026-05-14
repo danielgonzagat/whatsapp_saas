@@ -54,7 +54,7 @@ describe('MailboxImapSmtpService', () => {
       },
       contact: { findFirst: contactFindFirst },
     } as never);
-    validationSpies = service as {
+    validationSpies = service as unknown as {
       validateImapConnection: jest.Mock;
       validateSmtpConnection: jest.Mock;
     };

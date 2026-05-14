@@ -283,7 +283,6 @@ export class AdminChatService {
       }
     }
 
-    // @AllowCrossWorkspace: adminChatSession.update is scoped by a non-workspace unique identifier, provider callback key, admin session owner, or platform worker claim.
     await this.prisma.adminChatSession.update({
       where: { id: session.id },
       data: { lastUsedAt: new Date() },
@@ -311,7 +310,6 @@ export class AdminChatService {
 
   /** Get session. */
   async getSession(adminUserId: string, sessionId: string): Promise<ChatSessionView> {
-    // @AllowCrossWorkspace: adminChatSession.findUnique is scoped by a non-workspace unique identifier, provider callback key, admin session owner, or platform worker claim.
     const session = await this.prisma.adminChatSession.findUnique({
       where: { id: sessionId },
       include: { messages: { orderBy: { createdAt: 'asc' } } },
@@ -326,7 +324,6 @@ export class AdminChatService {
 
   private async ensureSession(adminUserId: string, sessionId: string | null) {
     if (sessionId) {
-      // @AllowCrossWorkspace: adminChatSession.findUnique is scoped by a non-workspace unique identifier, provider callback key, admin session owner, or platform worker claim.
       const existing = await this.prisma.adminChatSession.findUnique({
         where: { id: sessionId },
       });
@@ -448,7 +445,6 @@ export class AdminChatService {
   }
 
   private async loadSessionView(sessionId: string): Promise<ChatSessionView> {
-    // @AllowCrossWorkspace: adminChatSession.findUnique is scoped by a non-workspace unique identifier, provider callback key, admin session owner, or platform worker claim.
     const session = await this.prisma.adminChatSession.findUnique({
       where: { id: sessionId },
       include: { messages: { orderBy: { createdAt: 'asc' } } },

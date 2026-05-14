@@ -31,7 +31,7 @@ describe('AuditController', () => {
     it('clamps limit to [1, 100] and offset to ≥ 0', async () => {
       getLogsMock.mockResolvedValue({ data: [], total: 0, page: 1, lastPage: 1 });
 
-      await controller.getLogs(buildReq(), 'ws-1', undefined as string, undefined as string);
+      await controller.getLogs(buildReq(), 'ws-1', undefined as unknown as string, undefined as unknown as string);
       expect(getLogsMock).toHaveBeenCalledWith('ws-1', 50, 0);
 
       jest.clearAllMocks();

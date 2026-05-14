@@ -7,7 +7,11 @@ import { checkIdempotent, endJob, logError, markCompleted, startJob } from '../p
 const log = new WorkerLogger('silent-24h-resolver');
 
 function extractContactId(contextSnapshot: unknown): string | undefined {
-  if (contextSnapshot && typeof contextSnapshot === 'object' && !Array.isArray(contextSnapshot)) {
+  if (
+    contextSnapshot &&
+    typeof contextSnapshot === 'object' &&
+    !Array.isArray(contextSnapshot)
+  ) {
     const ctx = contextSnapshot as Record<string, unknown>;
     const id = ctx.contactId ?? ctx.contact_id ?? ctx.userId ?? ctx.phone;
     return typeof id === 'string' ? id : undefined;
@@ -16,7 +20,11 @@ function extractContactId(contextSnapshot: unknown): string | undefined {
 }
 
 function extractChannel(contextSnapshot: unknown): string | undefined {
-  if (contextSnapshot && typeof contextSnapshot === 'object' && !Array.isArray(contextSnapshot)) {
+  if (
+    contextSnapshot &&
+    typeof contextSnapshot === 'object' &&
+    !Array.isArray(contextSnapshot)
+  ) {
     const ctx = contextSnapshot as Record<string, unknown>;
     const channel = ctx.channel;
     return typeof channel === 'string' ? channel : undefined;
@@ -115,7 +123,6 @@ export const silent24hResolverWorker = new Worker(
         // Atomic claim — only the worker that flips outcomeAt: null -> now wins.
         // Subsequent autopilotEvent.create runs only on win, avoiding duplicate
         // outcome.silent_24h_closed events when concurrency > 1.
-        // @AllowCrossWorkspace: decisionOutcome.updateMany is scoped by a non-workspace unique identifier, provider callback key, admin session owner, or platform worker claim.
         const claim = await prisma.decisionOutcome.updateMany({
           where: { id: decision.id, outcomeAt: null },
           data: updateData,

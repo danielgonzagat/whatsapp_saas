@@ -1,5 +1,4 @@
 import { Injectable } from '@nestjs/common';
-import { StructuredLogger } from '../logging/structured-logger';
 import type { Prisma } from '@prisma/client';
 import { createHash, randomUUID } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
@@ -43,13 +42,10 @@ function stableConceptKey(input: {
 
 @Injectable()
 export class MindConceptService {
-  private readonly logger = StructuredLogger.from(MindConceptService.name);
-
   constructor(
     private readonly prisma: PrismaService,
     private readonly events: BrainEventSpineService,
-  ) {
-    this.logger.debug?.(`MindConceptService initialized`);}
+  ) {}
 
   async detect(input: {
     features?: Record<string, unknown>;

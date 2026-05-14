@@ -1,5 +1,4 @@
 import { Injectable } from '@nestjs/common';
-import { StructuredLogger } from '../logging/structured-logger';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
 import { DecisionOutcomeService } from './decision-outcome.service';
@@ -81,10 +80,7 @@ function isSingleSuccess(outcome: OutcomeRow): boolean {
 
 @Injectable()
 export class MindLiftReportService {
-  private readonly logger = StructuredLogger.from(MindLiftReportService.name);
-
-  constructor(private readonly decisionOutcome: DecisionOutcomeService) {
-    this.logger.debug?.(`MindLiftReportService initialized`);}
+  constructor(private readonly decisionOutcome: DecisionOutcomeService) {}
 
   async aggregate(sinceDays = 14): Promise<LiftReport> {
     const since = new Date(Date.now() - sinceDays * 86400 * 1000);

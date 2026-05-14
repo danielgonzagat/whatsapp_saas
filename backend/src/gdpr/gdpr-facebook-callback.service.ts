@@ -1,14 +1,11 @@
-import {  BadRequestException, Injectable, Logger } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { GdprStatus, GdprType } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { generateCode, parseFacebookSignedRequest } from './gdpr.helpers';
 
 @Injectable()
 export class GdprFacebookCallbackService {
-  private readonly logger = new Logger(GdprFacebookCallbackService.name);
-
-  constructor(private readonly prisma: PrismaService) {
-    this.logger.debug?.(`GdprFacebookCallbackService initialized`);}
+  constructor(private readonly prisma: PrismaService) {}
 
   async handleFacebookCallback(signedRequest: string) {
     const payload = parseFacebookSignedRequest(signedRequest);

@@ -1,5 +1,4 @@
 import { Injectable, Optional } from '@nestjs/common';
-import { StructuredLogger } from '../logging/structured-logger';
 import type { MindActionContext } from './mind-code-native.types';
 import type { ReplayInput, ReplayCandidate, ReplayScenarioInput } from './mind-replay.service';
 
@@ -180,13 +179,9 @@ const BUILTIN_RECIPES: Record<string, SyntheticDecisionRecipe> = {
 
 @Injectable()
 export class MindSyntheticGeneratorService {
-  private readonly logger = StructuredLogger.from(MindSyntheticGeneratorService.name);
-
-
   private _seed: number;
 
   constructor(@Optional() seed?: number) {
-    this.logger.debug?.(`MindSyntheticGeneratorService initialized`);
     this._seed = seed ?? 42;
   }
 

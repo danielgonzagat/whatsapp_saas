@@ -100,7 +100,7 @@ describe('processor-base — idempotency & structured logging', () => {
     const job = {
       data: { workspaceId: 'ws-123', other: 'data' },
     };
-    expect(extractWorkspaceId(job as Job)).toBe('ws-123');
+    expect(extractWorkspaceId(job as unknown as Job)).toBe('ws-123');
   });
 
   it('extractWorkspaceId returns workspaceId from nested workspace.id', async () => {
@@ -108,13 +108,13 @@ describe('processor-base — idempotency & structured logging', () => {
     const job = {
       data: { workspace: { id: 'ws-nested' } },
     };
-    expect(extractWorkspaceId(job as Job)).toBe('ws-nested');
+    expect(extractWorkspaceId(job as unknown as Job)).toBe('ws-nested');
   });
 
   it('extractWorkspaceId returns "unknown" when no id present', async () => {
     const { extractWorkspaceId } = await import('../processor-base');
     const job = { data: { foo: 'bar' } };
-    expect(extractWorkspaceId(job as Job)).toBe('unknown');
+    expect(extractWorkspaceId(job as unknown as Job)).toBe('unknown');
   });
 
   it('startJob preserves an upstream correlationId from job data', async () => {
@@ -127,7 +127,7 @@ describe('processor-base — idempotency & structured logging', () => {
       data: { workspaceId: 'ws-1', correlationId: 'corr-upstream-1' },
     };
 
-    const meta = startJob(job as Job, log as WorkerLogger);
+    const meta = startJob(job as unknown as Job, log as unknown as WorkerLogger);
 
     expect(meta.correlationId).toBe('corr-upstream-1');
     expect(meta.workspaceId).toBe('ws-1');
@@ -145,7 +145,7 @@ describe('processor-base — idempotency & structured logging', () => {
     mockRedisGet.mockResolvedValue(null);
     const { checkIdempotent } = await import('../processor-base');
     const job = { id: 'job-1', queueName: 'test-q', data: {} };
-    const result = await checkIdempotent(job as Job);
+    const result = await checkIdempotent(job as unknown as Job);
     expect(result).toBe(false);
   });
 
@@ -153,7 +153,7 @@ describe('processor-base — idempotency & structured logging', () => {
     mockRedisGet.mockResolvedValue('1');
     const { checkIdempotent } = await import('../processor-base');
     const job = { id: 'job-1', queueName: 'test-q', data: {} };
-    const result = await checkIdempotent(job as Job);
+    const result = await checkIdempotent(job as unknown as Job);
     expect(result).toBe(true);
   });
 
@@ -165,7 +165,7 @@ describe('processor-base — idempotency & structured logging', () => {
       queueName: 'test-q',
       data: { dedupKey: 'ext-key-42' },
     };
-    await checkIdempotent(job as Job);
+    await checkIdempotent(job as unknown as Job);
     expect(mockRedisGet).toHaveBeenCalledWith(expect.stringContaining('ext-key-42'));
   });
 });

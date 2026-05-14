@@ -258,7 +258,6 @@ export class AuthService {
   }
 
   async completeOnboarding(agentId: string) {
-    // @AllowCrossWorkspace: agent.update is scoped by a non-workspace unique identifier, provider callback key, admin session owner, or platform worker claim.
     const agent = await this.prisma.agent.update({
       where: { id: agentId },
       data: { onboardingCompletedAt: new Date() },

@@ -11,7 +11,7 @@ import { createRedisClient } from '../common/redis/redis.util';
 type SocketOverrides = Partial<Pick<Socket, 'id' | 'handshake' | 'join'>>;
 
 function mockSocket(overrides: SocketOverrides = {}): Socket {
-  return { id: 'test-socket-id', ...overrides } as Socket;
+  return { id: 'test-socket-id', ...overrides } as unknown as Socket;
 }
 
 describe('CopilotGateway', () => {
@@ -47,8 +47,8 @@ describe('CopilotGateway', () => {
 
     (createRedisClient as jest.Mock).mockReturnValue(mockSub);
 
-    gateway = new CopilotGateway(mockOpsAlert as OpsAlertService);
-    (gateway as { server: typeof mockServer }).server = mockServer;
+    gateway = new CopilotGateway(mockOpsAlert as unknown as OpsAlertService);
+    (gateway as unknown as { server: typeof mockServer }).server = mockServer;
   });
 
   describe('onModuleInit', () => {
@@ -100,7 +100,7 @@ describe('CopilotGateway', () => {
 
     it('does not crash when opsAlert is not injected and parse error occurs', async () => {
       const gatewayNoAlert = new CopilotGateway();
-      (gatewayNoAlert as { server: typeof mockServer }).server = mockServer;
+      (gatewayNoAlert as unknown as { server: typeof mockServer }).server = mockServer;
 
       await gatewayNoAlert.onModuleInit();
 

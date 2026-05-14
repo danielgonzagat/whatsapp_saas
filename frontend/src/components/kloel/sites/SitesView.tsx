@@ -26,7 +26,7 @@ export default function SitesView({ defaultTab = 'visao-geral' }: { defaultTab?:
 
   const rawMode = searchParams?.get('mode') ?? null;
 
-  const TABS = Object.freeze([
+  const TABS = [
     { id: 'visao-geral', label: 'Visao Geral', icon: IC.globe },
     { id: 'dominios', label: 'Dominios', icon: IC.link },
     { id: 'hospedagem', label: 'Hospedagem', icon: IC.server },
@@ -34,7 +34,7 @@ export default function SitesView({ defaultTab = 'visao-geral' }: { defaultTab?:
     { id: 'editar', label: 'Editar Site', icon: IC.edit },
     { id: 'apps', label: 'Apps', icon: IC.puzzle },
     { id: 'protecao', label: 'Protecao', icon: IC.shield },
-  ]);
+  ];
 
   const switchTab = useCallback((id: string) => {
     setTab(id);

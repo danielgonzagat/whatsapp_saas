@@ -1,4 +1,4 @@
-import {  Injectable, NotFoundException, Logger } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { MindBeliefService } from '../../kloel/mind-belief.service';
 import { MindLiftReportService } from '../../kloel/mind-lift-report.service';
@@ -22,8 +22,6 @@ function severityLabel(surprise: number): string {
 
 @Injectable()
 export class AdminMindService {
-  private readonly logger = new Logger(AdminMindService.name);
-
   constructor(
     private readonly prisma: PrismaService,
     private readonly beliefs: MindBeliefService,
@@ -31,8 +29,7 @@ export class AdminMindService {
     private readonly policy: MindPolicyService,
     private readonly observability: MindObservabilityService,
     private readonly reports: MindReportService,
-  ) {
-    this.logger.debug?.(`AdminMindService initialized`);}
+  ) {}
 
   async getState(workspaceId: string, _decisionType?: string) {
     const workspace = await this.prisma.workspace.findUnique({

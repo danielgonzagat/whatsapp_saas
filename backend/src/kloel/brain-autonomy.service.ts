@@ -1,5 +1,4 @@
 import { Injectable } from '@nestjs/common';
-import { StructuredLogger } from '../logging/structured-logger';
 import { BrainCommercialGraphService } from './brain-commercial-graph.service';
 import { BrainEventSpineService } from './brain-event-spine.service';
 
@@ -13,13 +12,10 @@ export interface BrainAutonomyProposal {
 
 @Injectable()
 export class BrainAutonomyService {
-  private readonly logger = StructuredLogger.from(BrainAutonomyService.name);
-
   constructor(
     private readonly graph: BrainCommercialGraphService,
     private readonly events: BrainEventSpineService,
-  ) {
-    this.logger.debug?.(`BrainAutonomyService initialized`);}
+  ) {}
 
   async propose(workspaceId: string): Promise<{
     proposals: BrainAutonomyProposal[];

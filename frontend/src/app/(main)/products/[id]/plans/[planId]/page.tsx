@@ -28,7 +28,7 @@ import { useState } from 'react';
 // SUB-TABS
 // ============================================
 
-const SUB_TABS = Object.freeze([
+const SUB_TABS = [
   { id: 'store', label: 'Loja', icon: Store },
   { id: 'payment', label: 'Pagamento', icon: CreditCard },
   { id: 'packaging', label: 'Embalagem', icon: Package },
@@ -37,7 +37,7 @@ const SUB_TABS = Object.freeze([
   { id: 'orderbump', label: 'Order Bump', icon: ShoppingCart },
   { id: 'terms', label: 'Termos', icon: ScrollText },
   { id: 'ai', label: 'IA', icon: Brain },
-]);
+];
 
 // ============================================
 // MAIN PAGE

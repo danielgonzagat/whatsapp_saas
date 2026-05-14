@@ -1,6 +1,5 @@
 import { Controller, Get, Logger, Query, Res } from '@nestjs/common';
 import type { Response } from 'express';
-import { Public } from '../auth/public.decorator';
 import { WebhookEndpoint } from '../common/decorators/webhook-endpoint.decorator';
 import { UnsubscribeService } from './unsubscribe.service';
 
@@ -13,7 +12,6 @@ export class UnsubscribeController {
   constructor(private readonly unsubscribeService: UnsubscribeService) {}
 
   @WebhookEndpoint('Email unsubscribe external link')
-  @Public()
   @Get()
   async unsubscribe(@Query('token') token: string, @Res() res: Response) {
     if (!token || typeof token !== 'string' || !token.trim()) {

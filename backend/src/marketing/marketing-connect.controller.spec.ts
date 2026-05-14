@@ -141,10 +141,10 @@ describe('MarketingConnectController channel setup', () => {
     })),
   };
   const controller = new MarketingConnectController(
-    metaConnect as MetaConnectService,
-    emailConnect as EmailConnectService,
-    channelSetup as ChannelSetupService,
-    whatsappSummary as WhatsAppSummaryService,
+    metaConnect as unknown as MetaConnectService,
+    emailConnect as unknown as EmailConnectService,
+    channelSetup as unknown as ChannelSetupService,
+    whatsappSummary as unknown as WhatsAppSummaryService,
     tiktokMarketing as never,
     tiktokMode as never,
     gmailMailbox as never,

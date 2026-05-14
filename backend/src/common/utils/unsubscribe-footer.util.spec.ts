@@ -6,8 +6,6 @@ import {
 } from './unsubscribe-footer.util';
 
 describe('unsubscribe-footer.util', () => {
-  const unsubscribeTokenParam = ['unsubscribe?', 'token', '='].join('');
-
   beforeAll(() => {
     process.env.JWT_SECRET = 'test-jwt-secret-for-footer-tests';
     process.env.FRONTEND_URL = 'https://kloel.test';
@@ -18,7 +16,7 @@ describe('unsubscribe-footer.util', () => {
       const html = buildUnsubscribeFooterHtml({ email: 'user@example.com' });
 
       expect(html).toContain('Cancelar inscricao');
-      expect(html).toContain(unsubscribeTokenParam);
+      expect(html).toContain('unsubscribe?token=');
     });
 
     it('includes workspaceId in the token if provided', () => {
@@ -27,7 +25,7 @@ describe('unsubscribe-footer.util', () => {
         workspaceId: 'ws-1',
       });
 
-      expect(html).toContain(unsubscribeTokenParam);
+      expect(html).toContain('unsubscribe?token=');
     });
 
     it('renders with campaignId if provided', () => {
@@ -37,7 +35,7 @@ describe('unsubscribe-footer.util', () => {
         campaignId: 'camp-1',
       });
 
-      expect(html).toContain(unsubscribeTokenParam);
+      expect(html).toContain('unsubscribe?token=');
     });
   });
 
@@ -46,7 +44,7 @@ describe('unsubscribe-footer.util', () => {
       const text = buildUnsubscribeFooterText({ email: 'user@example.com' });
 
       expect(text).toContain('Para cancelar o recebimento');
-      expect(text).toContain(unsubscribeTokenParam);
+      expect(text).toContain('unsubscribe?token=');
     });
 
     it('is distinct from the HTML version', () => {

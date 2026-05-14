@@ -2,9 +2,6 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { PdfProcessorService } from './pdf-processor.service';
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { MemoryService } from './memory.service';
-const mockBackendAiModelIds = jest.requireActual<typeof import('../lib/openai-models')>(
-  '../lib/openai-models',
-).BACKEND_AI_MODEL_IDS;
 jest.mock('openai', () => ({
   default: jest.fn().mockImplementation(() => ({
     chat: { completions: { create: jest.fn() } },
@@ -16,7 +13,7 @@ jest.mock('./openai-wrapper', () => ({
 }));
 
 jest.mock('../lib/openai-models', () => ({
-  resolveBackendOpenAIModel: jest.fn().mockReturnValue(mockBackendAiModelIds.GPT_4O),
+  resolveBackendOpenAIModel: jest.fn().mockReturnValue('gpt-4o'),
 }));
 
 jest.mock('../common/async-sequence', () => ({
@@ -100,7 +97,7 @@ describe('PdfProcessorService', () => {
       const [clientArg, requestArg] = mockChatCompletionWithRetry.mock.calls[0] ?? [];
       expect(clientArg).toBeDefined();
       expect(requestArg).toMatchObject({
-        model: mockBackendAiModelIds.GPT_4O,
+        model: 'gpt-4o',
         temperature: 0.3,
       });
     });

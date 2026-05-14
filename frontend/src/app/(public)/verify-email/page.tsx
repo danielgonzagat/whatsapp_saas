@@ -28,8 +28,6 @@ function VerifyEmailContent() {
       return;
     }
     calledRef.current = true;
-    let cancelled = false;
-    let redirectTimer: ReturnType<typeof setTimeout> | undefined;
 
     if (!token) {
       setState('error');
@@ -46,9 +44,6 @@ function VerifyEmailContent() {
         });
 
         const data: { message?: string } = await res.json().catch(() => ({}));
-        if (cancelled) {
-          return;
-        }
 
         if (!res.ok) {
           setState('error');
@@ -57,26 +52,16 @@ function VerifyEmailContent() {
         }
 
         setState('success');
-        redirectTimer = setTimeout(() => {
+        setTimeout(() => {
           router.push('/login');
         }, 3000);
       } catch {
-        if (cancelled) {
-          return;
-        }
         setState('error');
         setErrorMessage('Erro de conexao. Tente novamente.');
       }
     };
 
     verify();
-
-    return () => {
-      cancelled = true;
-      if (redirectTimer) {
-        clearTimeout(redirectTimer);
-      }
-    };
   }, [token, router]);
 
   return (

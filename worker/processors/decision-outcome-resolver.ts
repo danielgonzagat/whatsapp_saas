@@ -19,7 +19,11 @@ const OUTCOME_MAP: Record<string, { outcomeName: string; success: boolean }> = {
 const log = new WorkerLogger('decision-outcome-resolver');
 
 function extractChannel(contextSnapshot: unknown): string | undefined {
-  if (contextSnapshot && typeof contextSnapshot === 'object' && !Array.isArray(contextSnapshot)) {
+  if (
+    contextSnapshot &&
+    typeof contextSnapshot === 'object' &&
+    !Array.isArray(contextSnapshot)
+  ) {
     const ctx = contextSnapshot as Record<string, unknown>;
     const channel = ctx.channel;
     return typeof channel === 'string' ? channel : undefined;
@@ -54,13 +58,11 @@ export const decisionOutcomeWorker = new Worker(
         const wonVsBaseline = mapping?.success ?? false;
 
         if (data.outcomeKey) {
-          // @AllowCrossWorkspace: decisionOutcome.findMany is scoped by a non-workspace unique identifier, provider callback key, admin session owner, or platform worker claim.
           const openRows = await prisma.decisionOutcome.findMany({
             where: { outcomeKey: data.outcomeKey, outcomeAt: null },
             select: { id: true, contextSnapshot: true, decisionType: true, chosenAction: true },
           });
 
-          // @AllowCrossWorkspace: decisionOutcome.updateMany is scoped by a non-workspace unique identifier, provider callback key, admin session owner, or platform worker claim.
           const updateResult = await prisma.decisionOutcome.updateMany({
             where: { outcomeKey: data.outcomeKey, outcomeAt: null },
             data: {
@@ -129,7 +131,7 @@ export const decisionOutcomeWorker = new Worker(
       }
 
       if (job.name === 'sweep-expired') {
-        const sweepData = job.data as { workspaceId: string; maxAgeHours?: number };
+        const sweepData = job.data as unknown as { workspaceId: string; maxAgeHours?: number };
         const { workspaceId, maxAgeHours } = sweepData;
         const cutoff = new Date(Date.now() - (maxAgeHours ?? 48) * 3600 * 1000);
 
@@ -139,7 +141,6 @@ export const decisionOutcomeWorker = new Worker(
         });
 
         if (expired.length > 0) {
-          // @AllowCrossWorkspace: decisionOutcome.updateMany is scoped by a non-workspace unique identifier, provider callback key, admin session owner, or platform worker claim.
           await prisma.decisionOutcome.updateMany({
             where: { id: { in: expired.map((e) => e.id) } },
             data: {

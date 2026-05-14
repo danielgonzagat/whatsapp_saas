@@ -1,8 +1,5 @@
 import { NotFoundException, ServiceUnavailableException } from '@nestjs/common';
 import { CanvasController } from './canvas.controller';
-const mockBackendAiModelIds = jest.requireActual<typeof import('../lib/openai-models')>(
-  '../lib/openai-models',
-).BACKEND_AI_MODEL_IDS;
 
 jest.mock('openai', () => ({
   default: jest.fn().mockImplementation(() => ({
@@ -15,7 +12,7 @@ jest.mock('openai', () => ({
 }));
 
 jest.mock('../lib/ai-models', () => ({
-  resolveKloelCapabilityModel: jest.fn().mockReturnValue(mockBackendAiModelIds.DALL_E_3),
+  resolveKloelCapabilityModel: jest.fn().mockReturnValue('dall-e-3'),
 }));
 
 describe('CanvasController', () => {

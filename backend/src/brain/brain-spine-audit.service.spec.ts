@@ -6,7 +6,7 @@ describe('BrainSpineAuditService', () => {
   let service: BrainSpineAuditService;
 
   function buildAuditService(queryRawMock: jest.Mock) {
-    const prisma = { $queryRawUnsafe: queryRawMock } as PrismaService;
+    const prisma = { $queryRawUnsafe: queryRawMock } as unknown as PrismaService;
     return new BrainSpineAuditService(prisma);
   }
 

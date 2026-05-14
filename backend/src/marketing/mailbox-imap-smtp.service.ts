@@ -1,4 +1,4 @@
-import {  BadRequestException, Injectable, Logger } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { MailboxProvider, MailboxStatus, Prisma } from '@prisma/client';
 import { createTransport } from 'nodemailer';
 import { Metrics } from '../observability/metrics';
@@ -68,10 +68,7 @@ function cleanCredential(value: unknown, field: string): string {
 }
 @Injectable()
 export class MailboxImapSmtpService {
-  private readonly logger = new Logger(MailboxImapSmtpService.name);
-
-  constructor(private readonly prisma: PrismaService) {
-    this.logger.debug?.(`MailboxImapSmtpService initialized`);}
+  constructor(private readonly prisma: PrismaService) {}
   async connectMailbox(workspaceId: string, input: ImapSmtpConnectInput) {
     const email = cleanEmail(input.email);
     const imap = this.readImapConfig(input);
@@ -286,8 +283,8 @@ export class MailboxImapSmtpService {
       };
     } catch (error) {
       const reason = error instanceof Error ? error.message.slice(0, 100) : 'smtp_send_failed';
-      await this.prisma.mailboxConnection.updateMany({
-        where: { id: connection.id, workspaceId },
+      await this.prisma.mailboxConnection.update({
+        where: { id: connection.id },
         data: {
           lastErrorAt: new Date(),
           lastError: reason,

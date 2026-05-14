@@ -1,5 +1,4 @@
 import { Injectable } from '@nestjs/common';
-import { StructuredLogger } from '../logging/structured-logger';
 import { PrismaService } from '../prisma/prisma.service';
 import type { ChannelSendRequest } from './channel-transport.types';
 import type { MindActionContext } from './mind-code-native.types';
@@ -8,10 +7,7 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 
 @Injectable()
 export class MindGuardContextBuilderService {
-  private readonly logger = StructuredLogger.from(MindGuardContextBuilderService.name);
-
-  constructor(private readonly prisma: PrismaService) {
-    this.logger.debug?.(`MindGuardContextBuilderService initialized`);}
+  constructor(private readonly prisma: PrismaService) {}
 
   async buildForSend(
     workspaceId: string,

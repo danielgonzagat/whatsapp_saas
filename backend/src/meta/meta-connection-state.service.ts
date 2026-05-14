@@ -1,4 +1,4 @@
-import {  Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
 export interface ChannelState {
@@ -35,10 +35,7 @@ const ISO = (d: Date | null | undefined): string | null => (d ? d.toISOString() 
 
 @Injectable()
 export class MetaConnectionStateService {
-  private readonly logger = new Logger(MetaConnectionStateService.name);
-
-  constructor(private readonly prisma: PrismaService) {
-    this.logger.debug?.(`MetaConnectionStateService initialized`);}
+  constructor(private readonly prisma: PrismaService) {}
 
   async forWorkspace(workspaceId: string): Promise<MetaConnectionState> {
     const connections = await this.prisma.metaConnection.findMany({

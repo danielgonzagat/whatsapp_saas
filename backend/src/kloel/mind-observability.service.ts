@@ -1,5 +1,4 @@
 import { Injectable } from '@nestjs/common';
-import { StructuredLogger } from '../logging/structured-logger';
 import { PrismaService } from '../prisma/prisma.service';
 import { MIND_DECISION_CATALOG } from './mind-decision-catalog';
 import { MindBanditService } from './mind-bandit.service';
@@ -14,8 +13,6 @@ function isUnknownRecord(value: unknown): value is Record<string, unknown> {
 
 @Injectable()
 export class MindObservabilityService {
-  private readonly logger = StructuredLogger.from(MindObservabilityService.name);
-
   constructor(
     private readonly prisma: PrismaService,
     _beliefs: MindBeliefService,
@@ -23,8 +20,7 @@ export class MindObservabilityService {
     private readonly verbalizer: MindVerbalizerService,
     private readonly reports: MindReportService,
     private readonly bandits: MindBanditService,
-  ) {
-    this.logger.debug?.(`MindObservabilityService initialized`);}
+  ) {}
 
   async state(workspaceId: string) {
     const [runtime, strongest, uncertain] = await Promise.all([

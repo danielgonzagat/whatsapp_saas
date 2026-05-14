@@ -1,5 +1,4 @@
 import { Injectable } from '@nestjs/common';
-import { StructuredLogger } from '../logging/structured-logger';
 import type { Prisma } from '@prisma/client';
 import { randomUUID } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
@@ -29,10 +28,7 @@ function featureOverlap(left: Record<string, unknown>, right: Record<string, unk
 
 @Injectable()
 export class MindCaseMemoryService {
-  private readonly logger = StructuredLogger.from(MindCaseMemoryService.name);
-
-  constructor(private readonly prisma: PrismaService) {
-    this.logger.debug?.(`MindCaseMemoryService initialized`);}
+  constructor(private readonly prisma: PrismaService) {}
 
   async recordCase(input: {
     action: string;

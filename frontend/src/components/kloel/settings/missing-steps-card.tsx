@@ -33,7 +33,7 @@ export function MissingStepsCard({
   hasOpeningMessage = false,
   hasWhatsApp = false,
 }: MissingStepsCardProps) {
-  const steps = Object.freeze([
+  const steps = [
     { label: 'Cadastrar produtos', done: hasProducts, icon: Package },
     { label: 'Enviar arquivos', done: hasFiles, icon: FileText },
     { label: 'Configurar planos de checkout', done: hasCheckout, icon: CreditCard },
@@ -41,7 +41,7 @@ export function MissingStepsCard({
     { label: 'Adicionar perguntas frequentes', done: hasFaq, icon: HelpCircle },
     { label: 'Configurar mensagem de abertura', done: hasOpeningMessage, icon: MessageSquare },
     { label: 'Conectar WhatsApp', done: hasWhatsApp, icon: Smartphone },
-  ]);
+  ];
 
   const completedCount = steps.filter((s) => s.done).length;
   const allCompleted = completedCount === steps.length;

@@ -1,30 +1,40 @@
-import { BadRequestException, forwardRef, Inject, Injectable } from '@nestjs/common';
-import { StructuredLogger } from '../../logging/structured-logger';
+import {
+  BadRequestException,
+  forwardRef,
+  Inject,
+  Injectable,
+} from '@nestjs/common';
 import { Metrics } from '../../observability/metrics';
 import { PrismaService } from '../../prisma/prisma.service';
 import { OmnichannelService } from '../../inbox/omnichannel.service';
 import { GmailClientService } from './gmail-client.service';
 import { normalizeGmailMessage } from './message-parser';
-import { mergeSyncMetadata, readSyncedMessageIds } from './metadata-helpers';
+import {
+  mergeSyncMetadata,
+  readSyncedMessageIds,
+} from './metadata-helpers';
 import type { GmailMailboxRecord } from './types';
 
 @Injectable()
 export class GmailSyncService {
-  private readonly logger = StructuredLogger.from(GmailSyncService.name);
-
   constructor(
     private readonly prisma: PrismaService,
     @Inject(forwardRef(() => OmnichannelService))
     private readonly omnichannel: OmnichannelService,
     private readonly gmailClient: GmailClientService,
-  ) {
-    this.logger.debug?.(`GmailSyncService initialized`);
-  }
+  ) {}
 
-  async syncLatestInbox(connection: GmailMailboxRecord, requestedLimit?: number) {
+  async syncLatestInbox(
+    connection: GmailMailboxRecord,
+    requestedLimit?: number,
+  ) {
     try {
-      const accessToken = await this.gmailClient.resolveAccessToken(connection);
-      const limit = Math.min(25, Math.max(1, Number(requestedLimit || 10) || 10));
+      const accessToken =
+        await this.gmailClient.resolveAccessToken(connection);
+      const limit = Math.min(
+        25,
+        Math.max(1, Number(requestedLimit || 10) || 10),
+      );
       const list = await this.gmailClient.listMessages(accessToken, limit);
       const syncedIds = readSyncedMessageIds(connection.metadata);
       const nextSyncedIds = new Set(syncedIds);
@@ -36,7 +46,10 @@ export class GmailSyncService {
           continue;
         }
 
-        const message = await this.gmailClient.getMessage(accessToken, messageId);
+        const message = await this.gmailClient.getMessage(
+          accessToken,
+          messageId,
+        );
         const normalized = normalizeGmailMessage(connection, message);
         if (!normalized.content || normalized.from === connection.email) {
           nextSyncedIds.add(messageId);
@@ -48,13 +61,16 @@ export class GmailSyncService {
         imported += 1;
       }
 
-      await this.prisma.mailboxConnection.updateMany({
-        where: { id: connection.id, workspaceId: connection.workspaceId },
+      await this.prisma.mailboxConnection.update({
+        where: { id: connection.id },
         data: {
           lastSyncAt: new Date(),
           lastErrorAt: null,
           lastError: null,
-          metadata: mergeSyncMetadata(connection.metadata, Array.from(nextSyncedIds)),
+          metadata: mergeSyncMetadata(
+            connection.metadata,
+            Array.from(nextSyncedIds),
+          ),
         },
       });
 
@@ -71,9 +87,11 @@ export class GmailSyncService {
         seen,
       };
     } catch (error: unknown) {
-      Metrics.mailbox.syncFailed('gmail', this.metricReason(error), {
-        workspace_id: connection.workspaceId,
-      });
+      Metrics.mailbox.syncFailed(
+        'gmail',
+        this.metricReason(error),
+        { workspace_id: connection.workspaceId },
+      );
       throw error;
     }
   }
@@ -86,7 +104,9 @@ export class GmailSyncService {
       }
       if (response && typeof response === 'object' && 'message' in response) {
         const message = (response as { message: unknown }).message;
-        return Array.isArray(message) ? String(message[0] || 'bad_request') : String(message);
+        return Array.isArray(message)
+          ? String(message[0] || 'bad_request')
+          : String(message);
       }
       return 'bad_request';
     }

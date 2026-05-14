@@ -1,5 +1,4 @@
 import { Injectable } from '@nestjs/common';
-import { StructuredLogger } from '../logging/structured-logger';
 import { MemoryCrudService } from './memory-crud.service';
 import { MemorySearchService } from './memory-search.service';
 import type { MemoryItem, SearchResult } from './memory.types';
@@ -9,13 +8,10 @@ export type { MemoryItem, SearchResult };
 /** Memory service. */
 @Injectable()
 export class MemoryService {
-  private readonly logger = StructuredLogger.from(MemoryService.name);
-
   constructor(
     private readonly memoryCrud: MemoryCrudService,
     private readonly memorySearch: MemorySearchService,
-  ) {
-    this.logger.debug?.(`MemoryService initialized`);}
+  ) {}
 
   /**
    * 💾 Salva memória com embedding

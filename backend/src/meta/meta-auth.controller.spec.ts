@@ -75,7 +75,7 @@ describe('MetaAuthController', () => {
   describe('parseState', () => {
     it('parses JSON state from encoded URI', () => {
       const result = (
-        controller as {
+        controller as unknown as {
           parseState: (s: string) => {
             workspaceId: string;
             channel?: string | null;
@@ -92,7 +92,7 @@ describe('MetaAuthController', () => {
 
     it('falls back to raw string when not JSON', () => {
       const result = (
-        controller as {
+        controller as unknown as {
           parseState: (s: string) => { workspaceId: string };
         }
       ).parseState('plain-state');
@@ -102,7 +102,7 @@ describe('MetaAuthController', () => {
 
     it('returns empty workspaceId for empty state', () => {
       const result = (
-        controller as {
+        controller as unknown as {
           parseState: (s: string) => { workspaceId: string };
         }
       ).parseState('');
@@ -145,7 +145,7 @@ describe('MetaAuthController', () => {
   describe('sanitizeReturnTo', () => {
     it('uses channel to build marketing route when no explicit returnTo', () => {
       const result = (
-        controller as {
+        controller as unknown as {
           sanitizeReturnTo: (r?: string | null, c?: string | null) => string;
         }
       ).sanitizeReturnTo(null, 'instagram');
@@ -155,7 +155,7 @@ describe('MetaAuthController', () => {
 
     it('uses explicit returnTo when provided', () => {
       const result = (
-        controller as {
+        controller as unknown as {
           sanitizeReturnTo: (r?: string | null, c?: string | null) => string;
         }
       ).sanitizeReturnTo('/custom/path', 'whatsapp');
@@ -167,7 +167,7 @@ describe('MetaAuthController', () => {
   describe('buildFrontendRedirect', () => {
     it('includes channel param in redirect URL', () => {
       const url = (
-        controller as {
+        controller as unknown as {
           buildFrontendRedirect: (
             r?: string | null,
             c?: string | null,

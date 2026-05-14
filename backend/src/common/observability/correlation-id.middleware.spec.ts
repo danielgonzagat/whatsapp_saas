@@ -62,7 +62,7 @@ describe('CorrelationIdMiddleware', () => {
       const res = makeFakeRes();
       const next = jest.fn() as NextFunction;
 
-      middleware.use(req as Request, res as Response, next);
+      middleware.use(req as unknown as Request, res as unknown as Response, next);
 
       expect(req.headers['x-correlation-id']).toBe('inbound-abc-123');
       expect(next).toHaveBeenCalled();
@@ -73,7 +73,7 @@ describe('CorrelationIdMiddleware', () => {
       const res = makeFakeRes();
       const next = jest.fn() as NextFunction;
 
-      middleware.use(req as Request, res as Response, next);
+      middleware.use(req as unknown as Request, res as unknown as Response, next);
 
       expect(req.headers['x-correlation-id']).toBe('req-id-456');
       expect(next).toHaveBeenCalled();
@@ -84,7 +84,7 @@ describe('CorrelationIdMiddleware', () => {
       const res = makeFakeRes();
       const next = jest.fn() as NextFunction;
 
-      middleware.use(req as Request, res as Response, next);
+      middleware.use(req as unknown as Request, res as unknown as Response, next);
 
       const id = req.headers['x-correlation-id'];
       expect(id).toBeDefined();
@@ -100,7 +100,7 @@ describe('CorrelationIdMiddleware', () => {
       const res = makeFakeRes();
       const next = jest.fn() as NextFunction;
 
-      middleware.use(req as Request, res as Response, next);
+      middleware.use(req as unknown as Request, res as unknown as Response, next);
 
       expect(res.setHeader).toHaveBeenCalledWith('x-correlation-id', 'resp-test-789');
       expect(res.setHeader).toHaveBeenCalledWith('x-request-id', 'resp-test-789');
@@ -111,7 +111,7 @@ describe('CorrelationIdMiddleware', () => {
       const res = makeFakeRes({ headersSent: true });
       const next = jest.fn() as NextFunction;
 
-      middleware.use(req as Request, res as Response, next);
+      middleware.use(req as unknown as Request, res as unknown as Response, next);
 
       expect(res.setHeader).not.toHaveBeenCalled();
     });
@@ -123,7 +123,7 @@ describe('CorrelationIdMiddleware', () => {
       const res = makeFakeRes();
       const next = jest.fn() as NextFunction;
 
-      middleware.use(req as Request, res as Response, next);
+      middleware.use(req as unknown as Request, res as unknown as Response, next);
 
       expect(req.id).toBe('with-id');
     });
@@ -133,7 +133,7 @@ describe('CorrelationIdMiddleware', () => {
       const res = makeFakeRes();
       const next = jest.fn() as NextFunction;
 
-      middleware.use(req as Request, res as Response, next);
+      middleware.use(req as unknown as Request, res as unknown as Response, next);
 
       expect(req.id).toBe('existing-req-id');
     });
@@ -145,7 +145,7 @@ describe('CorrelationIdMiddleware', () => {
       const res = makeFakeRes();
       const next = jest.fn() as NextFunction;
 
-      middleware.use(req as Request, res as Response, next);
+      middleware.use(req as unknown as Request, res as unknown as Response, next);
 
       expect(req.headers['x-correlation-id']).toBe('prop-001');
       expect(req.headers['x-request-id']).toBe('prop-001');
@@ -156,7 +156,7 @@ describe('CorrelationIdMiddleware', () => {
       const res = makeFakeRes();
       const next = jest.fn() as NextFunction;
 
-      middleware.use(req as Request, res as Response, next);
+      middleware.use(req as unknown as Request, res as unknown as Response, next);
 
       expect(res.setHeader).toHaveBeenCalledWith('x-correlation-id', 'match-me');
       expect(res.setHeader).toHaveBeenCalledWith('x-request-id', 'match-me');

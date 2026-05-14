@@ -2,7 +2,6 @@ import { Injectable } from '@nestjs/common';
 import { StructuredLogger } from '../logging/structured-logger';
 import type { Prisma } from '@prisma/client';
 import { PlanLimitsService } from '../billing/plan-limits.service';
-import { toPrismaJsonValue } from '../common/prisma/prisma-json.util';
 import { PrismaService } from '../prisma/prisma.service';
 import { SmartPaymentService } from './smart-payment.service';
 import { KloelToolExecutorBillingService } from './kloel-tool-executor-billing.service';
@@ -38,14 +37,6 @@ import type {
 import { asProviderSettings } from '../whatsapp/provider-settings.types';
 
 type UnknownRecord = Record<string, unknown>;
-
-function toInputJsonObject(value: Record<string, unknown>): Prisma.InputJsonObject {
-  return Object.fromEntries(
-    Object.entries(value)
-      .filter(([, entry]) => typeof entry !== 'undefined')
-      .map(([key, entry]) => [key, toPrismaJsonValue(entry)]),
-  );
-}
 
 /** Service that executes all AI-chat tool calls on behalf of KloelService. */
 @Injectable()
@@ -233,7 +224,7 @@ export class KloelToolExecutorService {
       };
       await tx.workspace.update({
         where: { id: workspaceId },
-        data: { providerSettings: toInputJsonObject(newSettings) },
+        data: { providerSettings: newSettings as unknown as Prisma.InputJsonObject },
       });
       return {
         success: true,

@@ -308,7 +308,6 @@ export class MailboxMicrosoftOAuthService {
       this.logger.warn(
         `Microsoft sendMail failed: status=${response.status} body=${errorBody.slice(0, 200)}`,
       );
-      // @AllowCrossWorkspace: mailboxConnection.update is scoped by a non-workspace unique identifier, provider callback key, admin session owner, or platform worker claim.
       await this.prisma.mailboxConnection.update({
         where: { id: connection.id },
         data: {

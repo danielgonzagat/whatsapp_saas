@@ -30,7 +30,6 @@ import { ConfigService } from '@nestjs/config';
 import { ServiceUnavailableException } from '@nestjs/common';
 import { MediaFactoryService } from './media-factory.service';
 import { chatCompletionWithRetry } from '../kloel/openai-wrapper';
-import { BACKEND_AI_MODEL_IDS } from '../lib/openai-models';
 
 describe('MediaFactoryService', () => {
   let service: MediaFactoryService;
@@ -58,7 +57,7 @@ describe('MediaFactoryService', () => {
       const result = await service.generateImage('a beautiful sunset');
 
       expect(mockImagesGenerate).toHaveBeenCalledWith({
-        model: BACKEND_AI_MODEL_IDS.DALL_E_3,
+        model: 'dall-e-3',
         prompt: 'a beautiful sunset',
         n: 1,
         size: '1024x1024',

@@ -1,5 +1,4 @@
 import { Injectable } from '@nestjs/common';
-import { StructuredLogger } from '../logging/structured-logger';
 import type { MindActionContext } from './mind-code-native.types';
 
 export type QualityInvariant =
@@ -38,13 +37,6 @@ function pass(invariant: QualityInvariant, detail: string): QualityCheck {
 
 @Injectable()
 export class MindQualityService {
-  private readonly logger = StructuredLogger.from(MindQualityService.name);
-
-  constructor() {
-    this.logger.debug?.(`MindQualityService initialized`);
-  }
-
-
   checkCrossWorkspaceReads(
     workspaceId: string,
     records: Array<{ workspaceId: string }>,

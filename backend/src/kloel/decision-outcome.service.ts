@@ -53,7 +53,6 @@ export class DecisionOutcomeService {
   }
 
   async closeOutcome(input: CloseOutcomeInput) {
-    // @AllowCrossWorkspace: decisionOutcome.updateMany is scoped by a non-workspace unique identifier, provider callback key, admin session owner, or platform worker claim.
     const result = await this.prisma.decisionOutcome.updateMany({
       where: { outcomeKey: input.outcomeKey, outcomeAt: null },
       data: {
@@ -66,7 +65,6 @@ export class DecisionOutcomeService {
     });
 
     if (result.count > 0) {
-      // @AllowCrossWorkspace: decisionOutcome.findFirst is scoped by a non-workspace unique identifier, provider callback key, admin session owner, or platform worker claim.
       const closed = await this.prisma.decisionOutcome.findFirst({
         where: { outcomeKey: input.outcomeKey },
         orderBy: { outcomeAt: 'desc' },
@@ -113,7 +111,6 @@ export class DecisionOutcomeService {
   }
 
   async findAllClosedSince(since: Date) {
-    // @AllowCrossWorkspace: decisionOutcome.findMany is scoped by a non-workspace unique identifier, provider callback key, admin session owner, or platform worker claim.
     return this.prisma.decisionOutcome.findMany({
       where: { outcomeAt: { not: null, gte: since } },
       orderBy: { outcomeAt: 'desc' },
@@ -150,7 +147,6 @@ export class DecisionOutcomeService {
     });
 
     if (expired.length > 0) {
-      // @AllowCrossWorkspace: decisionOutcome.updateMany is scoped by a non-workspace unique identifier, provider callback key, admin session owner, or platform worker claim.
       await this.prisma.decisionOutcome.updateMany({
         where: { id: { in: expired.map((e) => e.id) } },
         data: {

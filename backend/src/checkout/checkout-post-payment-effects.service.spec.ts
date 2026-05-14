@@ -85,7 +85,7 @@ describe('CheckoutPostPaymentEffectsService', () => {
       markConvertedFromOrder: jest.fn().mockResolvedValue(undefined),
     };
     service = new CheckoutPostPaymentEffectsService(
-      prisma as PrismaService,
+      prisma as unknown as PrismaService,
       facebookCAPI as never,
       checkoutSocialLeadService as never,
     );

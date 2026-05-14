@@ -1,6 +1,5 @@
 import { ConfigService } from '@nestjs/config';
 import { StripeService } from '../billing/stripe.service';
-import { BACKEND_AI_MODEL_IDS } from '../lib/openai-models';
 
 export async function probeStripe(stripeService: StripeService | undefined): Promise<{
   dependency: string;
@@ -175,7 +174,7 @@ export async function probeAnthropic(config: ConfigService): Promise<{
           'content-type': 'application/json',
         },
         body: JSON.stringify({
-          model: BACKEND_AI_MODEL_IDS.CLAUDE_HEALTH_PROBE,
+          model: 'claude-3-haiku-20240307',
           max_tokens: 1,
           messages: [{ role: 'user', content: 'ping' }],
         }),

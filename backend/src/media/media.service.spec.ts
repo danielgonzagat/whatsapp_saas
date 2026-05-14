@@ -73,9 +73,9 @@ describe('MediaService', () => {
     };
 
     service = new MediaService(
-      prisma as PrismaService,
-      config as ConfigService,
-      storage as StorageService,
+      prisma as unknown as PrismaService,
+      config as unknown as ConfigService,
+      storage as unknown as StorageService,
     );
   });
 
@@ -123,7 +123,7 @@ describe('MediaService', () => {
   describe('uploadDocument', () => {
     it('throws BadRequestException when file has no buffer', async () => {
       await expect(
-        service.uploadDocument('ws-1', {} as { buffer: Buffer }, {}),
+        service.uploadDocument('ws-1', {} as unknown as { buffer: Buffer }, {}),
       ).rejects.toThrow(BadRequestException);
     });
 

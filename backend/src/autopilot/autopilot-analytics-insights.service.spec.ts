@@ -5,9 +5,6 @@ import { AutopilotAnalyticsInsightsService } from './autopilot-analytics-insight
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { chatCompletionWithRetry } from '../kloel/openai-wrapper';
-const mockBackendAiModelIds = jest.requireActual<typeof import('../lib/openai-models')>(
-  '../lib/openai-models',
-).BACKEND_AI_MODEL_IDS;
 type FlexMock = jest.Mock & {
   mockResolvedValue: (v: unknown) => FlexMock;
   mockResolvedValueOnce: (v: unknown) => FlexMock;
@@ -17,7 +14,7 @@ jest.mock('../kloel/openai-wrapper', () => ({
   chatCompletionWithRetry: jest.fn(),
 }));
 jest.mock('../lib/openai-models', () => ({
-  resolveBackendOpenAIModel: jest.fn(() => mockBackendAiModelIds.GPT_4O_MOCK),
+  resolveBackendOpenAIModel: jest.fn(() => 'gpt-4o-mock'),
 }));
 jest.mock('openai', () => {
   const mockCreate = jest.fn();
@@ -296,7 +293,7 @@ describe('AutopilotAnalyticsInsightsService', () => {
         ],
         id: 'chatcmpl-mock',
         created: 1700000000,
-        model: mockBackendAiModelIds.GPT_4O_MINI,
+        model: 'gpt-4o-mini',
         object: 'chat.completion',
         usage: {
           total_tokens: 100,
@@ -366,7 +363,7 @@ describe('AutopilotAnalyticsInsightsService', () => {
         ],
         id: 'chatcmpl-mock',
         created: 1700000000,
-        model: mockBackendAiModelIds.GPT_4O_MINI,
+        model: 'gpt-4o-mini',
         object: 'chat.completion',
         usage: {
           total_tokens: 50,

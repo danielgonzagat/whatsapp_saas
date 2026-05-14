@@ -233,7 +233,6 @@ export async function resolveMicrosoftAccessToken(input: {
   });
   const payload = (await response.json().catch(() => ({}))) as MicrosoftTokenResponse;
   if (!response.ok || !payload.access_token) {
-    // @AllowCrossWorkspace: mailboxConnection.update is scoped by a non-workspace unique identifier, provider callback key, admin session owner, or platform worker claim.
     await input.prisma.mailboxConnection.update({
       where: { id: input.connection.id },
       data: {
@@ -244,7 +243,6 @@ export async function resolveMicrosoftAccessToken(input: {
     });
     throw new BadRequestException('microsoft_refresh_failed');
   }
-  // @AllowCrossWorkspace: mailboxConnection.update is scoped by a non-workspace unique identifier, provider callback key, admin session owner, or platform worker claim.
   await input.prisma.mailboxConnection.update({
     where: { id: input.connection.id },
     data: {
