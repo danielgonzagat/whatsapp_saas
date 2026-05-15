@@ -14,7 +14,8 @@ async function adminAuthRouteFetch<TResponse = unknown, TBody = unknown>(
   path: string,
   options: AdminAuthRouteOptions<TBody> = {},
 ): Promise<TResponse> {
-  const response = await fetch(`/api/admin/auth${path}`, {
+  const routePath = path.startsWith('/') ? path.slice(1) : path;
+  const response = await fetch(`/api/admin/auth/${routePath}`, {
     method: 'POST',
     headers: {
       Accept: 'application/json',

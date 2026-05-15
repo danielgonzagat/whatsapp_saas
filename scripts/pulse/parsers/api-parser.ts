@@ -5,7 +5,7 @@ import type { PulseConfig } from '../types.manifest';
 import { walkFiles } from './utils';
 import { pathExists, readTextFile } from '../safe-fs';
 import { getFrontendSourceDirs } from '../frontend-roots';
-import { normalizeEndpoint } from './api-parser-normalize';
+import { isExternalEndpoint, normalizeEndpoint } from './api-parser-normalize';
 import { detectMethod } from './api-parser-string-utils';
 import { deriveUnitValue } from '../dynamic-reality-kernel/catalog-arithmetic';
 import { discoverSourceExtensionsFromObservedTypescript } from '../dynamic-reality-kernel/token-evidence';
@@ -115,6 +115,77 @@ function deriveParserWindow(size: number): number {
     deriveUnitValue() - deriveUnitValue(),
   );
 }
+
+function stripCommentsPreserveLines(source: string): string {
+  let output = '';
+  let quote: '"' | "'" | '`' | null = null;
+  let escaped = false;
+  let inLineComment = false;
+  let inBlockComment = false;
+
+  for (let index = 0; index < source.length; index++) {
+    const char = source[index];
+    const next = source[index + 1];
+
+    if (inLineComment) {
+      if (char === '\n') {
+        inLineComment = false;
+        output += char;
+      } else {
+        output += ' ';
+      }
+      continue;
+    }
+
+    if (inBlockComment) {
+      if (char === '*' && next === '/') {
+        output += '  ';
+        index++;
+        inBlockComment = false;
+      } else {
+        output += char === '\n' ? char : ' ';
+      }
+      continue;
+    }
+
+    if (quote) {
+      output += char;
+      if (escaped) {
+        escaped = false;
+      } else if (char === '\\') {
+        escaped = true;
+      } else if (char === quote) {
+        quote = null;
+      }
+      continue;
+    }
+
+    if (char === '"' || char === "'" || char === '`') {
+      quote = char;
+      output += char;
+      continue;
+    }
+
+    if (char === '/' && next === '/') {
+      output += '  ';
+      index++;
+      inLineComment = true;
+      continue;
+    }
+
+    if (char === '/' && next === '*') {
+      output += '  ';
+      index++;
+      inBlockComment = true;
+      continue;
+    }
+
+    output += char;
+  }
+
+  return output;
+}
+
 function extractCallStatementContext(lines: string[], lineIndex: number, matchStart: number, maxLines: number): string {
   const line = lines[lineIndex];
   let context = '';
@@ -160,7 +231,7 @@ export function parseAPICalls(config: PulseConfig): APICall[] {
       continue;
     }
     try {
-      const content = readTextFile(file, 'utf8');
+      const content = stripCommentsPreserveLines(readTextFile(file, 'utf8'));
       const lines = content.split('\n');
       const relFile = path.relative(config.rootDir, file);
       for (let i = 0; i < lines.length; i++) {
@@ -172,6 +243,9 @@ export function parseAPICalls(config: PulseConfig): APICall[] {
         ];
         for (const m of apiFetchMatches) {
           const raw = m[1];
+          if (isExternalEndpoint(raw)) {
+            continue;
+          }
           const endpoint = normalizeEndpoint(raw);
           if (
             /^\/api:[a-z]/i.test(endpoint) ||
@@ -205,6 +279,9 @@ export function parseAPICalls(config: PulseConfig): APICall[] {
         ];
         for (const m of adminFetchMatches) {
           const raw = m[1];
+          if (isExternalEndpoint(raw)) {
+            continue;
+          }
           let endpoint = normalizeEndpoint(raw);
           if (endpoint.length < deriveUnitValue() + deriveUnitValue()) {
             continue;
@@ -443,7 +520,7 @@ export function parseAPICalls(config: PulseConfig): APICall[] {
           );
           if (multiMatch) {
             const raw = multiMatch[1] || multiMatch[2];
-            if (raw) {
+            if (raw && !isExternalEndpoint(raw)) {
               const endpoint = normalizeEndpoint(raw);
               if (
                 !/^\/api:[a-z]/i.test(endpoint) &&

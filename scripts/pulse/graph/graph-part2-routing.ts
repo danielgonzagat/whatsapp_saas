@@ -27,6 +27,19 @@ export function buildRouteLookup(
   return map;
 }
 
+function pathSegmentsMatch(leftPath: string, rightPath: string): boolean {
+  const left = normalizeForMatch(leftPath).split('/').filter(Boolean);
+  const right = normalizeForMatch(rightPath).split('/').filter(Boolean);
+  if (left.length !== right.length) {
+    return false;
+  }
+
+  return left.every((segment, index) => {
+    const other = right[index];
+    return segment === other || segment === ':_' || other === ':_';
+  });
+}
+
 export function matchApiCallToRoute(
   call: APICall,
   routeLookup: Map<RouteKey, BackendRoute>,
@@ -54,12 +67,17 @@ export function matchApiCallToRoute(
   }
 
   for (const [routeKey, route] of routeLookup) {
-    const [rMethod, rPath] = routeKey.split(':');
+    const separator = routeKey.indexOf(':');
+    const rMethod = routeKey.slice(0, separator);
+    const rPath = routeKey.slice(separator + 1);
     if (rMethod !== call.method) {
       continue;
     }
     const normalTarget = normalizeForMatch(targetPath);
     if (rPath === normalTarget) {
+      return route;
+    }
+    if (pathSegmentsMatch(normalTarget, rPath)) {
       return route;
     }
     if (normalTarget.startsWith(rPath + '/') || rPath.startsWith(normalTarget + '/')) {
