@@ -35,10 +35,11 @@ import {
 import { deriveUnitValue } from '../dynamic-reality-kernel/catalog-arithmetic';
 import {
   isSameState,
+  normalizeSearchToken,
   observedThreshold,
   splitWords,
   uniqueStrings,
-} from './__parts__/utils-core';
+} from './utils-core';
 export {
   buildScenarioVisionDelta,
   buildScopeVisionDelta,
@@ -63,11 +64,8 @@ export {
   deriveScenarioGateNamesFromEvidence,
   deriveValidationArtifactsFromGateEvidence,
   buildValidationArtifacts,
-} from './__parts__/utils-extract';
-export * from './__parts__/utils-core';
-export function normalizeSearchToken(value: string): string {
-  return value.toLowerCase().replace(/[^a-z0-9]+/g, '');
-}
+} from './utils-extract';
+export * from './utils-core';
 export function buildSearchTerms(
   scenarioId: string,
   moduleKeys: string[],

@@ -1,12 +1,12 @@
-import type { DoDRiskLevel } from '../../types.dod-engine';
+import type { DoDRiskLevel } from '../types.dod-engine';
 import {
   dodStructuralEvidenceKernelGrammar,
-} from '../grammar';
-import type { CheckRequirement } from '../grammar';
+} from './grammar';
+import type { CheckRequirement } from './grammar';
 import {
   isApplicableRequirement,
   scanFilesForPattern,
-} from '../classification';
+} from './classification';
 
 interface CapabilityInput {
   id: string;

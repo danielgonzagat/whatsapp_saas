@@ -1,15 +1,15 @@
 import type {
   PulseCertification,
   PulseGateResult,
-} from '../../types.evidence';
+} from '../types.evidence';
 import type {
   PulseEnvironment,
   PulseGateName,
   PulseManifest,
-} from '../../types.manifest';
+} from '../types.manifest';
 import type {
   ComputeCertificationInput,
-} from '../helpers';
+} from './helpers';
 import {
   _checkerGapLabel,
   _missingEvidenceLabel,
@@ -17,67 +17,67 @@ import {
   _gatePassLabel,
   _observedTruthModeLabel,
   _highConfidenceLabel,
-} from '../helpers';
+} from './helpers';
 import {
   getCertificationTarget,
   filterCodacyIssues,
   isCodacySecurityIssue,
   isCodacyIsolationIssue,
-} from '../../cert-helpers';
-import { CERTIFICATION_FINDING_PREDICATES } from '../../cert-constants';
-import { gateFail } from '../../cert-gate-evaluators/gate-fail';
+} from '../cert-helpers';
+import { CERTIFICATION_FINDING_PREDICATES } from '../cert-constants';
+import { gateFail } from '../cert-gate-evaluators/gate-fail';
 import {
   evaluateEvidenceFreshGate,
   evaluateScopeGate,
   evaluateStaticGate,
   evaluateRuntimeGate,
   evaluateChangeRiskGate,
-} from '../../cert-gate-evaluators/main';
+} from '../cert-gate-evaluators/main';
 import {
   evaluateTruthExtractionGate,
   evaluatePulseSelfTrustGate,
-} from '../../cert-gate-evaluators/truth-gates';
-import { evaluateBrowserGate } from '../../cert-gate-browser';
+} from '../cert-gate-evaluators/truth-gates';
+import { evaluateBrowserGate } from '../cert-gate-browser';
 import {
   evaluatePatternGate,
   evaluateProductionDecisionGate,
   evaluateRecoveryGate,
   evaluateObservabilityGate,
   withTemporaryGateAcceptance,
-} from '../../cert-gate-pattern';
+} from '../cert-gate-pattern';
 import {
   evaluateFlowGate,
   evaluateInvariantGate,
   evaluateSyntheticCoverageGate,
-} from '../../cert-gate-evaluators-actor';
+} from '../cert-gate-evaluators-actor';
 import {
   evaluateBreakpointPrecisionGate,
   evaluateCriticalPathObservedGate,
   evaluateExecutionMatrixCompleteGate,
-} from '../../cert-gate-execution-matrix';
+} from '../cert-gate-execution-matrix';
 import {
   detectPlaceholderTests,
   detectWeakStatusAssertions,
   detectTypeEscapeHatches,
-} from '../../test-honesty/main';
-import { deriveZeroValue } from '../../dynamic-reality-kernel/catalog-arithmetic';
+} from '../test-honesty/main';
+import { deriveZeroValue } from '../dynamic-reality-kernel/catalog-arithmetic';
 import {
   certificationTargetRequiresGate,
   evaluateActorGateForCurrentObjective,
-} from '../compute-helpers';
-import { evaluateNoOverclaimPassForCurrentRun } from '../compute-gate-evaluation';
+} from './compute-helpers';
+import { evaluateNoOverclaimPassForCurrentRun } from './compute-gate-evaluation';
 export interface GateComputeContext {
   manifest: PulseManifest | null;
   certificationTarget: ReturnType<typeof getCertificationTarget>;
-  certificationTiers: ReturnType<typeof import('../../cert-helpers').getCertificationTiers>;
+  certificationTiers: ReturnType<typeof import('../cert-helpers').getCertificationTiers>;
   env: PulseEnvironment;
   evidenceSummary: PulseCertification['evidenceSummary'];
   gateEvidence: PulseCertification['gateEvidence'];
-  pathCoverage: ReturnType<typeof import('../helpers').loadPathCoverageGateState>;
-  proofReadinessSummary: ReturnType<typeof import('../helpers').loadProofReadinessSummary>;
+  pathCoverage: ReturnType<typeof import('./helpers').loadPathCoverageGateState>;
+  proofReadinessSummary: ReturnType<typeof import('./helpers').loadProofReadinessSummary>;
   productionProofReadinessGap: boolean;
   noHardcodedRealityState: PulseCertification['noHardcodedRealityState'];
-  noHardcodedRealitySummary: ReturnType<typeof import('../../no-hardcoded-reality-state').summarizeNoHardcodedRealityState>;
+  noHardcodedRealitySummary: ReturnType<typeof import('../no-hardcoded-reality-state').summarizeNoHardcodedRealityState>;
   noHardcodedRealityGap: boolean;
   multiCycleConvergenceResult: PulseGateResult;
 }

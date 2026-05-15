@@ -1,24 +1,24 @@
-import type { PulseGateName } from '../../types.manifest';
-import type { PulseCapabilityState } from '../../types.capabilities/03-capability';
-import type { PulseParityGapsArtifact } from '../../types.capabilities.parity';
-import type { PulseFlowProjection } from '../../types.capabilities/04-flow-projection';
-import type { PulseCertification } from '../../types.evidence';
+import type { PulseGateName } from '../types.manifest';
+import type { PulseCapabilityState } from '../types.capabilities/03-capability';
+import type { PulseParityGapsArtifact } from '../types.capabilities.parity';
+import type { PulseFlowProjection } from '../types.capabilities/04-flow-projection';
+import type { PulseCertification } from '../types.evidence';
 import type {
   PulseConvergenceUnit,
   PulseConvergenceUnitPriority,
   PulseEvidenceRecord,
-} from '../../types.convergence';
-import type { PulseWorldState } from '../../types.evidence';
-import type { PulseScenarioResult } from '../../types.scenario-result';
+} from '../types.convergence';
+import type { PulseWorldState } from '../types.evidence';
+import type { PulseScenarioResult } from '../types.scenario-result';
 
 import {
   OBSERVED_ARTIFACTS,
   OBSERVED_EXTERNAL_SIGNAL_SOURCE_LABELS,
-} from '../kernel';
+} from './kernel';
 import {
   deriveObservedConvergenceEvidenceLabel,
-} from '../builder-labels';
-import type { BuildPulseConvergencePlanInput, ScenarioPriorityContext } from '../kernel';
+} from './builder-labels';
+import type { BuildPulseConvergencePlanInput, ScenarioPriorityContext } from './kernel';
 
 import {
   observedP0Priority,
@@ -36,7 +36,7 @@ import {
   observedRuntimeKind,
   observedChangeKind,
   observedDependencyKind,
-} from '../builder-labels';
+} from './builder-labels';
 import {
   hasObservedItems,
   lacksObservedItems,
@@ -47,7 +47,7 @@ import {
   splitWords,
   compactText,
   normalizeSearchToken,
-} from '../utils';
+} from './utils-core';
 
 export function buildScenarioVisionDelta(
   scenarioId: string,

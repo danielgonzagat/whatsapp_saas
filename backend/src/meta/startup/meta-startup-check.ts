@@ -1,5 +1,5 @@
 import type { Logger } from '@nestjs/common';
-import type { ResolvedOAuthRedirect } from './meta-oauth-url.helpers';
+import type { ResolvedOAuthRedirect } from '../oauth/meta-oauth-url.helpers';
 
 export interface MetaStartupCheckInput {
   env: NodeJS.ProcessEnv;

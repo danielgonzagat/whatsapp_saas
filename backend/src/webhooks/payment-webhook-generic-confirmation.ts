@@ -1,6 +1,6 @@
 import { Logger } from '@nestjs/common';
-import type { GenericPaymentWebhookBody } from '../payment-webhook-types';
-import type { PaymentWebhookNotifier } from '../payment-webhook-stripe.deps';
+import type { GenericPaymentWebhookBody } from './payment-webhook-types';
+import type { PaymentWebhookNotifier } from './payment-webhook-stripe.deps';
 
 export async function sendGenericConfirmationViaTransport(
   whatsapp: PaymentWebhookNotifier,

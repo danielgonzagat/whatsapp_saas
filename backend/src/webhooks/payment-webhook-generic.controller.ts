@@ -36,7 +36,7 @@ import {
 import {
   updateSaleAndPaymentHelper,
 } from './payment-webhook-generic.helpers';
-import { sendGenericConfirmationViaTransport } from './__parts__/payment-webhook-generic.confirmation';
+import { sendGenericConfirmationViaTransport } from './payment-webhook-generic-confirmation';
 
 /**
  * Handles generic, Shopify, PagHiper, and WooCommerce payment webhooks.

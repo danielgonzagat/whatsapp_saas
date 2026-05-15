@@ -1,10 +1,10 @@
-import type { Break } from '../../types.manifest';
+import type { Break } from '../types.manifest';
 import type {
   PulseConvergenceUnit,
   PulseConvergenceUnitPriority,
-} from '../../types.convergence';
-import { CHECKER_GAP_TYPES, SECURITY_FINDING_EVENT_KERNEL_GRAMMAR } from '../../cert-constants';
-import { isBlockingDynamicFinding, summarizeDynamicFindingEvents } from '../../finding-identity';
+} from '../types.convergence';
+import { CHECKER_GAP_TYPES, SECURITY_FINDING_EVENT_KERNEL_GRAMMAR } from '../cert-constants';
+import { isBlockingDynamicFinding, summarizeDynamicFindingEvents } from '../finding-identity';
 import {
   observedCriticalRisk,
   observedObservationOnlyMode,
@@ -12,7 +12,7 @@ import {
   observedProductFailureClass,
   observedTransformationalImpact,
   observedTruthObservedMode,
-} from '../builder-labels';
+} from './builder-labels';
 
 export function evidenceBatchSize(
   ...collections: Array<{ length: number } | null | undefined>
@@ -140,6 +140,10 @@ export function splitWords(value: string): string[] {
     .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
     .split(/[\s\-_]+/g)
     .filter(Boolean);
+}
+
+export function normalizeSearchToken(value: string): string {
+  return value.toLowerCase().replace(/[^a-z0-9]+/g, '');
 }
 
 export function slugify(value: string): string {
