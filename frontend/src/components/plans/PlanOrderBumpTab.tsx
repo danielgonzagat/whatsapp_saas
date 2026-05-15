@@ -7,12 +7,7 @@ import { useOrderBumps } from '@/hooks/useCheckoutPlans';
 import { useState, useId } from 'react';
 
 import { GiftIcon, EditIcon, TrashIcon, PlusIcon } from './PlanOrderBumpTab.icons';
-import {
-  BumpFormPanel,
-  type BumpFormData,
-  defaultForm,
-  cardStyle,
-} from './PlanOrderBumpTab.Form';
+import { BumpFormPanel, type BumpFormData, defaultForm, cardStyle } from './PlanOrderBumpTab.Form';
 
 /* ── Design Tokens ── */
 
@@ -299,6 +294,7 @@ export function PlanOrderBumpTab({ planId }: { planId: string }) {
                 <div style={{ display: 'flex', gap: '4px', flexShrink: 0 }}>
                   <button
                     type="button"
+                    aria-label={`Editar order bump ${title || productName}`}
                     onClick={() => handleEdit(bump)}
                     style={{
                       background: 'transparent',
@@ -323,6 +319,7 @@ export function PlanOrderBumpTab({ planId }: { planId: string }) {
                   </button>
                   <button
                     type="button"
+                    aria-label={`Excluir order bump ${title || productName}`}
                     onClick={() => handleDelete(bump.id)}
                     style={{
                       background: 'transparent',
