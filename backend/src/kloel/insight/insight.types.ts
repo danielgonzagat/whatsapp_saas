@@ -1,8 +1,12 @@
 /**
  * UTP-INSIGHT-001..011 — Camada VII (Strategic Insight Engine).
  *
- * Detects revenue leaks and ranks them by financial impact with a
- * confidence floor, delivering insights at the right moment and channel.
+ * Detectors: funnel-bottleneck, offer-fit, objection-pattern,
+ * qualification-leak, cooling-window, pricing-elasticity,
+ * channel-roi, product-positioning. Ranked by financial impact
+ * with confidence floor, delivered at the right moment and channel.
+ *
+ * R10 target: >= 1 strategic insight confirmed per workspace per month.
  *
  * Implements PCI conventions: truthMode on inferred insights,
  * workspaceId on all per-tenant data, provenance tracking.
@@ -109,6 +113,44 @@ export const INSIGHT_EVENT_NAMES: ReadonlySet<string> = new Set([
   'commerce.post_sale.win_back_window_opened',
 ]);
 
+export const FUNNEL_STEP_ORDER = [
+  'commerce.lead.created',
+  'commerce.lead.contacted',
+  'commerce.lead.replied',
+  'commerce.lead.qualified',
+  'commerce.cart.created',
+  'commerce.cart.checkout_initiated',
+  'commerce.payment.approved',
+] as const;
+
+export type FunnelStep = (typeof FUNNEL_STEP_ORDER)[number];
+
+export const FUNNEL_RELEVANT_EVENTS: ReadonlySet<string> = new Set(FUNNEL_STEP_ORDER);
+
+export interface FunnelBottleneckResult {
+  readonly workspaceId: string;
+  readonly bottleneckStep: FunnelStep | 'no_data';
+  readonly dropRate: number;
+  readonly eventCount: number;
+  readonly suggestedAction: string;
+  readonly financialImpactEstimateCents: number;
+  readonly confidence: number;
+  readonly truthMode: AbiTruthMode;
+}
+
+export interface FunnelBottleneckInput {
+  readonly events: readonly SpineEventRef[];
+  readonly workspaceId: string;
+  readonly nowMs?: number;
+  readonly windowDays?: number;
+}
+
+export interface FunnelStepCounts {
+  readonly step: FunnelStep;
+  readonly count: number;
+  readonly dropFromPrevious: number;
+}
+
 export function timestampMs(iso: string): number {
   return Date.parse(iso);
 }
@@ -120,9 +162,13 @@ export function withinWindow(iso: string, nowMs: number, windowDays: number): bo
 }
 
 export function median(values: number[]): number {
-  if (values.length === 0) return 0;
+  if (values.length === 0) {
+    return 0;
+  }
   const sorted = [...values].sort((a, b) => a - b);
   const mid = Math.floor(sorted.length / 2);
-  if (sorted.length % 2 !== 0) return sorted[mid] ?? 0;
+  if (sorted.length % 2 !== 0) {
+    return sorted[mid] ?? 0;
+  }
   return ((sorted[mid - 1] ?? 0) + (sorted[mid] ?? 0)) / 2;
 }

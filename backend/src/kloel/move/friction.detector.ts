@@ -1,178 +1,185 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { randomUUID } from 'crypto';
-import type { ExecutionFriction } from './types';
-
-interface FrictionDetectInput {
-  readonly workspaceId: string;
-  readonly targetAction: string;
-  readonly actionSize: 'tiny' | 'small' | 'medium' | 'large' | 'giant';
-  readonly clarityScore: number;
-  readonly hasPriorKnowledge: boolean;
-  readonly hasExternalDependency: boolean;
-  readonly paralellOptions: number;
-  readonly recentAbandonmentCount: number;
-}
+import type { OwnerAction, FrictionDetection, FrictionKind } from './move.types';
+import { HOURS_24_MS } from './move.types';
 
 @Injectable()
 export class FrictionDetectorService {
   private readonly logger = new Logger(FrictionDetectorService.name);
 
-  detect(input: FrictionDetectInput): ExecutionFriction {
-    const signals = this.gatherSignals(input);
-    const frictionType = this.classifyFrictionType(input, signals);
-    const frictionScore = this.computeScore(input, frictionType);
-    const recommendation = this.buildRecommendation(frictionType, frictionScore);
+  detectStuck(actions: readonly OwnerAction[]): FrictionDetection[] {
+    const now = Date.now();
+    const stuck = actions.filter((a) => this.isStuck(a, now));
 
-    this.logger.debug(
-      `Friction detected: ${frictionType} (score=${frictionScore.toFixed(2)}) for action "${input.targetAction.slice(0, 40)}"`,
-    );
+    this.logger.debug(`Scanned ${actions.length} actions, ${stuck.length} stuck >24h`);
+
+    return stuck.map((action) => this.buildDetection(action, now));
+  }
+
+  private isStuck(action: OwnerAction, now: number): boolean {
+    const createdMs = new Date(action.createdAt).getTime();
+    const ageMs = now - createdMs;
+
+    if (ageMs < HOURS_24_MS) {
+      return false;
+    }
+
+    if (action.lastProgressAt === null) {
+      return true;
+    }
+
+    const lastProgressMs = new Date(action.lastProgressAt).getTime();
+    const stalledMs = now - lastProgressMs;
+
+    return stalledMs >= HOURS_24_MS;
+  }
+
+  private buildDetection(action: OwnerAction, now: number): FrictionDetection {
+    const createdMs = new Date(action.createdAt).getTime();
+    const hoursStuck = this.calcHoursStuck(action, now);
+    const frictionKind = this.classifyFrictionKind(action, createdMs);
+    const signals = this.gatherSignals(action, frictionKind, hoursStuck);
+    const frictionScore = this.computeScore(action, frictionKind, hoursStuck);
+    const recommendation = this.buildRecommendation(frictionKind, frictionScore, action);
 
     return {
       id: randomUUID(),
-      workspaceId: input.workspaceId,
-      targetAction: input.targetAction,
-      frictionType,
+      workspaceId: action.workspaceId,
+      actionId: action.id,
+      actionDescription: action.description,
+      hoursStuck: Math.round(hoursStuck * 10) / 10,
+      frictionKind,
       frictionScore: Math.round(frictionScore * 1000) / 1000,
-      detectedSignals: signals,
+      signals,
       recommendation,
       detectedAt: new Date().toISOString(),
     };
   }
 
-  private gatherSignals(input: FrictionDetectInput): string[] {
+  private calcHoursStuck(action: OwnerAction, now: number): number {
+    const createdMs = new Date(action.createdAt).getTime();
+    if (action.lastProgressAt === null) {
+      return (now - createdMs) / (1000 * 60 * 60);
+    }
+    const lastProgressMs = new Date(action.lastProgressAt).getTime();
+    return (now - lastProgressMs) / (1000 * 60 * 60);
+  }
+
+  private classifyFrictionKind(action: OwnerAction, createdMs: number): FrictionKind {
+    void createdMs;
+    if (action.lastProgressAt === null) {
+      return 'never_started';
+    }
+
+    const lastProgressMs = new Date(action.lastProgressAt).getTime();
+    const stalledHours = (Date.now() - lastProgressMs) / (1000 * 60 * 60);
+
+    if (action.hasExternalDependency) {
+      return 'blocked';
+    }
+
+    if (stalledHours >= 72) {
+      return 'abandoned';
+    }
+
+    if (action.estimatedMinutes > 120) {
+      return 'overwhelmed';
+    }
+
+    return 'stalled';
+  }
+
+  private gatherSignals(action: OwnerAction, kind: FrictionKind, hoursStuck: number): string[] {
     const signals: string[] = [];
 
-    if (input.actionSize === 'large' || input.actionSize === 'giant') {
-      signals.push('large_or_giant_action');
+    signals.push(`stuck_${Math.floor(hoursStuck / 24)}_days`);
+
+    if (action.lastProgressAt === null) {
+      signals.push('never_had_progress');
     }
-    if (input.clarityScore < 0.4) {
-      signals.push('low_clarity_score');
+
+    if (action.hasExternalDependency) {
+      signals.push('external_dependency');
     }
-    if (input.clarityScore >= 0.6 && input.recentAbandonmentCount > 0) {
-      signals.push('high_clarity_but_no_action');
+
+    if (action.estimatedMinutes > 120) {
+      signals.push('large_action');
     }
-    if (!input.hasPriorKnowledge) {
-      signals.push('no_prior_knowledge');
+
+    if (action.estimatedMinutes > 480) {
+      signals.push('giant_action');
     }
-    if (input.hasExternalDependency) {
-      signals.push('has_external_dependency');
+
+    if (action.priority === 'critical') {
+      signals.push('critical_priority');
     }
-    if (input.paralellOptions > 3) {
-      signals.push('many_parallel_options');
+
+    if (kind === 'abandoned') {
+      signals.push('likely_abandoned');
     }
-    if (input.paralellOptions > 1 && input.actionSize !== 'tiny') {
-      signals.push('action_not_atomic');
-    }
-    if (input.recentAbandonmentCount >= 3) {
-      signals.push('high_abandonment_count');
-    }
-    if (input.recentAbandonmentCount > 0 && input.actionSize !== 'giant') {
-      signals.push('recent_abandonment_history');
-    }
-    if (input.actionSize !== 'tiny' && input.recentAbandonmentCount === 0 && input.clarityScore < 0.3) {
-      signals.push('unclear_outcome');
+
+    if (kind === 'overwhelmed') {
+      signals.push('action_too_large');
     }
 
     return signals;
   }
 
-  private classifyFrictionType(input: FrictionDetectInput, signals: readonly string[]): ExecutionFriction['frictionType'] {
-    const signalSet = new Set(signals);
-
-    if (signalSet.has('has_external_dependency')) {
-      if (signalSet.has('large_or_giant_action') || signalSet.has('low_clarity_score')) {
-        return 'external_blocker';
-      }
-      if (input.clarityScore >= 0.5) {
-        return 'external_blocker';
-      }
-    }
-
-    if (signalSet.has('large_or_giant_action') && signalSet.has('low_clarity_score')) {
-      return 'overwhelm';
-    }
-
-    if (signalSet.has('low_clarity_score') && signalSet.has('no_prior_knowledge')) {
-      if (signalSet.has('large_or_giant_action')) {
-        return 'unknown_first_step';
-      }
-      if (input.actionSize !== 'tiny') {
-        return 'ambiguity';
-      }
-    }
-
-    if (signalSet.has('high_clarity_but_no_action') && signalSet.has('recent_abandonment_history')) {
-      return 'perfectionism';
-    }
-
-    if (signalSet.has('many_parallel_options') && signalSet.has('action_not_atomic')) {
-      if (input.recentAbandonmentCount >= 1) {
-        return 'scope_creep';
-      }
-    }
-
-    if (signalSet.has('low_clarity_score') && input.actionSize !== 'tiny') {
-      if (signalSet.has('high_abandonment_count')) {
-        return 'overwhelm';
-      }
-      return 'ambiguity';
-    }
-
-    if (signalSet.has('large_or_giant_action') || signalSet.has('high_abandonment_count')) {
-      return 'overwhelm';
-    }
-
-    if (signalSet.has('no_prior_knowledge')) {
-      return 'unknown_first_step';
-    }
-
-    return 'ambiguity';
-  }
-
-  private computeScore(input: FrictionDetectInput, type: ExecutionFriction['frictionType']): number {
+  private computeScore(action: OwnerAction, kind: FrictionKind, hoursStuck: number): number {
     let score = 0;
 
-    switch (input.actionSize) {
-      case 'tiny': score += 0.05; break;
-      case 'small': score += 0.2; break;
-      case 'medium': score += 0.4; break;
-      case 'large': score += 0.7; break;
-      case 'giant': score += 0.9; break;
+    score += Math.min(hoursStuck / 168, 1) * 0.5;
+
+    if (action.lastProgressAt === null) {
+      score += 0.15;
     }
 
-    score += (1 - input.clarityScore) * 0.5;
+    if (action.hasExternalDependency) {
+      score += 0.1;
+    }
 
-    if (!input.hasPriorKnowledge) score += 0.2;
-    if (input.hasExternalDependency) score += 0.15;
-    if (input.paralellOptions > 3) score += 0.2;
-    if (input.recentAbandonmentCount >= 5) score += 0.3;
-    else if (input.recentAbandonmentCount >= 3) score += 0.2;
-    else if (input.recentAbandonmentCount >= 1) score += 0.1;
+    const estimatedHours = action.estimatedMinutes / 60;
+    score += Math.min(estimatedHours / 20, 1) * 0.2;
 
-    if (type === 'external_blocker') score = Math.min(score * 1.1, 1);
-    if (type === 'perfectionism') score = Math.min(score * 0.9, 1);
+    switch (action.priority) {
+      case 'critical':
+        score += 0.15;
+        break;
+      case 'high':
+        score += 0.08;
+        break;
+      default:
+        break;
+    }
 
-    return Math.round(Math.min(Math.max(score, 0), 1) * 1000) / 1000;
+    if (kind === 'abandoned') {
+      score = Math.min(score + 0.1, 1);
+    }
+
+    return Math.min(Math.max(score, 0), 1);
   }
 
-  private buildRecommendation(type: ExecutionFriction['frictionType'], score: number): string {
-    const urgency = score >= 0.7 ? 'stop_and_decompose_first' : 'reduce_and_proceed';
+  private buildRecommendation(kind: FrictionKind, score: number, action: OwnerAction): string {
+    const urgency = score >= 0.7 ? 'immediate' : score >= 0.4 ? 'soon' : 'watch';
 
-    switch (type) {
-      case 'overwhelm':
-        return urgency === 'stop_and_decompose_first'
-          ? 'Decompose into actions of 15 minutes or less before proceeding'
-          : 'Reduce scope to a single next step';
-      case 'ambiguity':
-        return 'Offer a partial execution version that preserves core value';
-      case 'unknown_first_step':
-        return 'Suggest a tiny, atomic first action with a clear completion signal';
-      case 'perfectionism':
-        return 'Acknowledge the high standard, then offer a small safe-to-fail version';
-      case 'scope_creep':
-        return 'Narrow to one atomic deliverable with explicit boundaries';
-      case 'external_blocker':
-        return 'Identify the smallest action possible without the blocked resource';
+    if (kind === 'never_started') {
+      return urgency === 'immediate'
+        ? 'Decompose into a single tiny first step of 15 min or less and execute today'
+        : 'Define the smallest possible first action and schedule it';
     }
+
+    if (kind === 'abandoned') {
+      return 'Reassess whether this action is still relevant. If yes, restart with a single atomic step';
+    }
+
+    if (kind === 'overwhelmed') {
+      return `Break down "${action.description}" into steps of 15 min or less. Start with step 1 only`;
+    }
+
+    if (kind === 'blocked') {
+      return 'Identify the smallest action possible without the blocked resource and execute it';
+    }
+
+    return 'Resume with the next atomic step. Consider if the remaining work can be simplified';
   }
 }

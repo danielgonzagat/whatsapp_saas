@@ -1,21 +1,11 @@
 import { Module } from '@nestjs/common';
+import { AttentionRankerService } from './attention-ranker.service';
 
 /**
- * ClarityModule — Camada XX (UTP-CLARITY-001..006).
- *
- * Reduzir o mundo a poucas decisoes certas agora.
- * Default is silence. Anxiety collapses everything to AGORA.
- *
- * All core logic is pure functions exported from their respective
- * files. This module serves as the wiring point for NestJS DI
- * when stateful services are added in future waves.
- *
- * Implements the Clarity family: attention ranking, hierarchy
- * projection, noise filtering, anxiety mode detection, feedback
- * loop application, and short narrative generation.
+ * Camada XXII — Decision Clarity module.
  */
 @Module({
-  providers: [],
-  exports: [],
+  providers: [AttentionRankerService],
+  exports: [AttentionRankerService],
 })
 export class ClarityModule {}

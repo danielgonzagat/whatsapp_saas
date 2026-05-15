@@ -6,14 +6,14 @@ import { AngleSuggesterService } from './angle.suggester';
 import { AudienceFitDetectorService } from './audience-fit.detector';
 import { BudgetProtectionService } from './budget.protection';
 import { CommissionComparatorService } from './commission.comparator';
-import { OfferQualityScorerService } from './offer-quality.scorer';
+import { OfferQualityScorerService } from './offer-quality.scorer.service';
 import { OfferSwitchSuggesterService } from './offer-switch.suggester';
-import { ProducerTrustScorerService } from './producer-trust.scorer';
+import { ProducerTrustScorerService } from './producer-trust.scorer.service';
 import { ScaleVsAbandonAdvisorService } from './scale-vs-abandon.advisor';
 import { TrafficWasteDetectorService } from './traffic-waste.detector';
 
 /**
- * Affil module — Camada XXII: Affiliate Intelligence & Protection.
+ * Affil module — Camada XXIV: Affiliate Intelligence & Protection.
  *
  * Caçador de oportunidade + protetor de verba e conta para afiliados.
  *

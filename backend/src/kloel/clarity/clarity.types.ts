@@ -1,14 +1,32 @@
 /**
- * UTP-CLARITY-001..006 — Camada XX (Clarity — Cognitive Prioritization).
+ * Camada XXII — Decision Clarity types.
  *
- * Reduzir o mundo a poucas decisoes certas agora.
- * Default is silence. Anxiety collapses everything to AGORA.
- *
- * Types: AttentionRanking, DecisionTier, NoiseFilter, AnxietyMode,
- * ClarityFeedback, ShortNarrative.
+ * AttentionRankerService classifies decision items by
+ * urgency × impact × (1 - reversibility) into a 4-tier
+ * hierarchy. Default is silence when nothing crosses threshold.
+ * B-rules: B0.10. R: R26.
  */
 
+/** ── utility ── */
+
+export function clampScore(value: number): number {
+  if (value < 0) return 0;
+  if (value > 1) return 1;
+  return value;
+}
+
+/** ── pre-existing shared types ── */
+
 export type DecisionTier = 'AGORA' | 'ESTA_SEMANA' | 'PARA_SABER' | 'ARQUIVO';
+
+export interface RankingInput {
+  readonly itemId: string;
+  readonly workspaceId: string;
+  readonly label: string;
+  readonly urgency: number;
+  readonly impact: number;
+  readonly reversibility: number;
+}
 
 export interface AttentionRanking {
   readonly itemId: string;
@@ -22,6 +40,10 @@ export interface AttentionRanking {
   readonly rankedAt: string;
 }
 
+/** ── noise filter ── */
+
+export const DEFAULT_NOISE_THRESHOLD = 0.1;
+
 export interface NoiseFilter {
   readonly threshold: number;
   readonly silent: boolean;
@@ -30,50 +52,31 @@ export interface NoiseFilter {
   readonly lastFilteredAt: string;
 }
 
-export interface AnxietyMode {
-  readonly active: boolean;
-  readonly triggeredAt: string | null;
-  readonly triggerReason: string | null;
-  readonly cooldownUntil: string | null;
-}
-
-export interface ClarityFeedback {
-  readonly feedbackId: string;
-  readonly itemId: string;
-  readonly workspaceId: string;
-  readonly rating: -1 | 0 | 1;
-  readonly comment: string | null;
-  readonly receivedAt: string;
-  readonly appliedToRanking: boolean;
-}
-
-export interface ShortNarrative {
-  readonly narrativeId: string;
-  readonly workspaceId: string;
-  readonly topItems: readonly AttentionRanking[];
-  readonly message: string;
-  readonly generatedAt: string;
-  readonly anxietyActive: boolean;
-}
-
-export interface RankingInput {
-  readonly itemId: string;
-  readonly workspaceId: string;
-  readonly label: string;
-  readonly urgency: number;
-  readonly impact: number;
-  readonly reversibility: number;
-}
-
-export interface HierarchyProjectionInput {
-  readonly rankings: readonly AttentionRanking[];
-}
-
 export interface NoiseFilterInput {
   readonly rankings: readonly AttentionRanking[];
   readonly threshold: number;
   readonly silent: boolean;
   readonly nowMs: number;
+}
+
+/** ── hierarchy projector ── */
+
+export interface HierarchyProjectionInput {
+  readonly rankings: readonly AttentionRanking[];
+}
+
+/** ── anxiety mode detector ── */
+
+export const ANXIETY_OVERLOAD_FACTOR_THRESHOLD = 0.5;
+export const ANXIETY_URGENT_COUNT_THRESHOLD = 3;
+export const ANXIETY_BACKLOG_THRESHOLD = 5;
+export const ANXIETY_COOLDOWN_MS = 10 * 60 * 1000;
+
+export interface AnxietyMode {
+  readonly active: boolean;
+  readonly triggeredAt: string | null;
+  readonly triggerReason: string | null;
+  readonly cooldownUntil: string | null;
 }
 
 export interface AnxietyTrigger {
@@ -84,10 +87,33 @@ export interface AnxietyTrigger {
   readonly nowMs: number;
 }
 
+/** ── feedback loop ── */
+
+export interface ClarityFeedback {
+  readonly feedbackId: string;
+  readonly itemId: string;
+  readonly workspaceId: string;
+  readonly rating: number;
+  readonly comment: string | null;
+  readonly receivedAt: string;
+  readonly appliedToRanking: boolean;
+}
+
 export interface FeedbackInput {
   readonly feedback: ClarityFeedback;
   readonly rankings: readonly AttentionRanking[];
   readonly nowMs: number;
+}
+
+/** ── narrative builder ── */
+
+export interface ShortNarrative {
+  readonly narrativeId: string;
+  readonly workspaceId: string;
+  readonly topItems: readonly AttentionRanking[];
+  readonly message: string;
+  readonly generatedAt: string;
+  readonly anxietyActive: boolean;
 }
 
 export interface NarrativeInput {
@@ -97,16 +123,28 @@ export interface NarrativeInput {
   readonly nowMs: number;
 }
 
-export const DEFAULT_NOISE_THRESHOLD = 0.3;
-export const ANXIETY_OVERLOAD_FACTOR_THRESHOLD = 0.7;
-export const ANXIETY_URGENT_COUNT_THRESHOLD = 5;
-export const ANXIETY_BACKLOG_THRESHOLD = 15;
-export const ANXIETY_COOLDOWN_MS = 30 * 60 * 1000;
+/** ── AttentionRankerService (UTP-CLARITY-001) new types ── */
 
-export function clamp(value: number, min: number, max: number): number {
-  return Math.max(min, Math.min(max, value));
+export interface AttentionItem {
+  readonly id: string;
+  readonly urgency: number;
+  readonly impact: number;
+  readonly reversibility: number;
+  readonly evidenceLevel: number;
 }
 
-export function clampScore(value: number): number {
-  return clamp(value, 0, 1);
+export interface RankedItem {
+  readonly id: string;
+  readonly score: number;
+  readonly tier: DecisionTier;
+  readonly urgency: number;
+  readonly impact: number;
+  readonly reversibility: number;
+  readonly evidenceLevel: number;
+}
+
+export interface AttentionRankingResult {
+  readonly ranked: readonly RankedItem[];
+  readonly silent: boolean;
+  readonly dominatedTier: DecisionTier | null;
 }
