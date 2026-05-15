@@ -2,6 +2,11 @@ import { HttpException } from '@nestjs/common';
 
 import { InsufficientWalletBalanceError } from '../wallet/wallet.types';
 
+jest.mock('../wallet/provider-llm-billing', () => ({
+  estimateOpenAiChatQuoteCostCents: jest.fn(() => BigInt(1000)),
+  quoteOpenAiChatActualCostCents: jest.fn(() => BigInt(1200)),
+}));
+
 import { PdfProcessorController } from './pdf-processor.controller';
 
 describe('PdfProcessorController', () => {

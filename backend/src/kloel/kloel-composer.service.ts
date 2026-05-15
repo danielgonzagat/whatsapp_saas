@@ -139,21 +139,16 @@ export class KloelComposerService {
       return { answer: '', sources: [] };
     }
 
+    // E2E test harness: must check the guard before the openai
+    // null-guard because tests run without an OPENAI_API_KEY and
+    // openai is null in that environment.
+    if (this.e2EGuard.isEnabled()) {
+      return this.e2EGuard.buildSearchResult(normalizedQuery);
+    }
+
     if (!this.openai) {
       this.logger.warn('searchWeb falling back to code-native — no OpenAI client');
       return this.codeNativeSearchWeb(normalizedQuery);
-    }
-
-    // E2E test harness: the workflow runs with OPENAI_API_KEY=e2e-dummy-key
-    // so any real OpenAI Responses API call fails. The chat composer e2e
-    // spec `kloel-chat-composer-real.spec.ts:289` exercises the web-search
-    // capability and asserts the assistant message exposes
-    // metadata.webSources plus content matching /openai\.com/i. Returning
-    // a deterministic digest keeps the rest of the pipeline (capability
-    // dispatcher, token accounting, message metadata) intact.
-    // Production never reaches this branch — guarded by NODE_ENV.
-    if (this.e2EGuard.isEnabled()) {
-      return this.e2EGuard.buildSearchResult(normalizedQuery);
     }
 
     const response = await this.openai.responses.create({

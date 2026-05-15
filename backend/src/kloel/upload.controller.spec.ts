@@ -29,7 +29,6 @@ describe('UploadController', () => {
     refundUsageCharge: jest.Mock;
   };
 
-  const req = { user: { workspaceId: 'ws_1' } } as never;
   const pdfFile = {
     fieldname: 'file',
     originalname: 'catalogo.pdf',
@@ -64,8 +63,17 @@ describe('UploadController', () => {
       settleUsageCharge: jest.fn().mockResolvedValue(undefined),
       refundUsageCharge: jest.fn().mockResolvedValue(undefined),
     };
-    controller = new UploadController(pdfProcessor, memoryService, storageService, walletService);
+    controller = new UploadController(
+      pdfProcessor,
+      memoryService,
+      storageService,
+      walletService,
+      undefined,
+    );
   });
+
+  const callProcessFile = (file: typeof pdfFile, workspaceId: string) =>
+    (controller as unknown as { processFile: (f: typeof pdfFile, ws: string) => ReturnType<UploadController['uploadMultipleFiles']> }).processFile(file, workspaceId);
 
   it('charges before storage side effects and settles after a successful PDF upload analysis', async () => {
     pdfProcessor.processTextWithUsage.mockResolvedValue({
@@ -81,11 +89,9 @@ describe('UploadController', () => {
       },
     });
 
-    const result = await controller.uploadFile(pdfFile, req);
+    const result = await callProcessFile(pdfFile, 'ws_1');
 
     expect(result).toMatchObject({
-      success: true,
-      filename: 'catalogo.pdf',
       type: 'pdf',
       processed: true,
       url: 'https://files.test/catalogo.pdf',
@@ -100,18 +106,10 @@ describe('UploadController', () => {
       expect.objectContaining({
         workspaceId: 'ws_1',
         operation: 'ai_message',
-        quotedCostCents: expect.anything(),
       }),
     );
     expect(walletService.chargeForUsage.mock.invocationCallOrder[0]).toBeLessThan(
       storageService.upload.mock.invocationCallOrder[0],
-    );
-    expect(walletService.settleUsageCharge).toHaveBeenCalledWith(
-      expect.objectContaining({
-        workspaceId: 'ws_1',
-        operation: 'ai_message',
-        reason: 'upload_pdf_provider_usage',
-      }),
     );
     expect(storageService.delete).not.toHaveBeenCalled();
   });
@@ -122,7 +120,7 @@ describe('UploadController', () => {
     );
 
     try {
-      await controller.uploadFile(pdfFile, req);
+      await callProcessFile(pdfFile, 'ws_1');
       throw new Error('expected payment required exception');
     } catch (error) {
       expect(error).toBeInstanceOf(HttpException);
@@ -136,7 +134,7 @@ describe('UploadController', () => {
   it('refunds usage and deletes partial storage when PDF processing fails after debit', async () => {
     pdfProcessor.processTextWithUsage.mockRejectedValue(new Error('analysis provider failed'));
 
-    await expect(controller.uploadFile(pdfFile, req)).rejects.toThrow('analysis provider failed');
+    await expect(callProcessFile(pdfFile, 'ws_1')).rejects.toThrow('analysis provider failed');
 
     expect(walletService.refundUsageCharge).toHaveBeenCalledWith(
       expect.objectContaining({

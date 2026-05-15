@@ -350,16 +350,23 @@ describe('UnifiedAgentActionsService', () => {
 
     it('actionScheduleFollowup delegates to crm service', async () => {
       await service.actionScheduleFollowup(wsId, contactId, phone, { delayHours: 1 });
-      expect(crm.actionScheduleFollowup).toHaveBeenCalledWith(wsId, contactId, phone, {
-        delayHours: 1,
-      });
+      expect(crm.actionScheduleFollowup).toHaveBeenCalledWith(
+        wsId,
+        contactId,
+        phone,
+        { delayHours: 1 },
+        undefined,
+      );
     });
 
     it('actionTransferToHuman delegates to crm service', async () => {
       await service.actionTransferToHuman(wsId, contactId, { reason: 'complex' });
-      expect(crm.actionTransferToHuman).toHaveBeenCalledWith(wsId, contactId, {
-        reason: 'complex',
-      });
+      expect(crm.actionTransferToHuman).toHaveBeenCalledWith(
+        wsId,
+        contactId,
+        { reason: 'complex' },
+        undefined,
+      );
     });
 
     it('actionSearchKnowledgeBase delegates to crm service', async () => {
@@ -411,7 +418,7 @@ describe('UnifiedAgentActionsService', () => {
 
     it('actionCreateBroadcast delegates to workspace service', async () => {
       await service.actionCreateBroadcast(wsId, { name: 'B' });
-      expect(workspace.actionCreateBroadcast).toHaveBeenCalledWith(wsId, { name: 'B' });
+      expect(workspace.actionCreateBroadcast).toHaveBeenCalledWith(wsId, { name: 'B' }, undefined);
     });
 
     it('actionConfigureAIPersona delegates to workspace service', async () => {

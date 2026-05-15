@@ -6,6 +6,7 @@ import { WhatsAppProviderRegistry } from '../whatsapp/providers/provider-registr
 import { AudioService } from './audio.service';
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
+import { ChannelTransportRegistry } from './channel-transport.registry';
 
 jest.mock('../whatsapp/providers/provider-registry');
 jest.mock('../whatsapp/whatsapp.service');
@@ -52,6 +53,7 @@ describe('KloelWhatsAppToolsService', () => {
   let audioService: AudioServiceMock;
   let planLimits: PlanLimitsMock;
   let opsAlert: { alertOnCriticalError: jest.Mock };
+  let transports: Pick<ChannelTransportRegistry, 'send'>;
 
   const wsId = 'ws-1';
 
@@ -115,12 +117,17 @@ describe('KloelWhatsAppToolsService', () => {
       alertOnCriticalError: jest.fn().mockResolvedValue(undefined),
     };
 
+    transports = {
+      send: jest.fn().mockResolvedValue({ success: true }),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         KloelWhatsAppToolsService,
         { provide: PrismaService, useValue: prisma },
         { provide: WhatsAppProviderRegistry, useValue: providerRegistry },
         { provide: WhatsappService, useValue: whatsappService },
+        { provide: ChannelTransportRegistry, useValue: transports },
         { provide: AudioService, useValue: audioService },
         { provide: PlanLimitsService, useValue: planLimits },
         { provide: OpsAlertService, useValue: opsAlert },
@@ -210,7 +217,12 @@ describe('KloelWhatsAppToolsService', () => {
         where: { workspaceId: wsId, phone: { contains: normalizedPhone } },
       });
       expect(planLimits.ensureDailyMessageQuota).toHaveBeenCalledWith(wsId);
-      expect(whatsappService.sendMessage).toHaveBeenCalledWith(wsId, normalizedPhone, 'Olá!');
+      expect(transports.send).toHaveBeenCalledWith(wsId, {
+        workspaceId: wsId,
+        channel: 'whatsapp',
+        recipientId: normalizedPhone,
+        content: 'Olá!',
+      });
       expect(prisma.message.updateMany).toHaveBeenCalledWith({
         where: { id: 'm-1', workspaceId: wsId },
         data: { status: 'SENT' },
@@ -241,11 +253,12 @@ describe('KloelWhatsAppToolsService', () => {
     });
 
     it('marks message as FAILED on send error', async () => {
-      whatsappService.sendMessage.mockRejectedValue(new Error('rate limit'));
+      transports.send.mockRejectedValue(new Error('rate limit'));
 
       const result = await service.toolSendWhatsAppMessage(wsId, { phone, message: 'Olá!' });
 
       expect(result.success).toBe(false);
+      expect(result.error).toContain('rate limit');
       expect(prisma.message.updateMany).toHaveBeenCalledWith({
         where: { id: 'm-1', workspaceId: wsId },
         data: { status: 'FAILED' },
@@ -443,7 +456,7 @@ describe('KloelWhatsAppToolsService', () => {
       expect(result.success).toBe(true);
       expect(audioService.textToSpeech).toHaveBeenCalledWith('Olá, bem-vindo!', 'nova', wsId);
       expect(planLimits.ensureDailyMessageQuota).toHaveBeenCalledWith(wsId);
-      expect(whatsappService.sendMessage).toHaveBeenCalled();
+      expect(transports.send).toHaveBeenCalled();
     });
 
     it('returns error when textToSpeech fails', async () => {
@@ -467,11 +480,14 @@ describe('KloelWhatsAppToolsService', () => {
       });
 
       expect(result.success).toBe(true);
-      expect(whatsappService.sendMessage).toHaveBeenCalledWith(
+      expect(transports.send).toHaveBeenCalledWith(
         wsId,
-        '5511999999999',
-        'Seu documento',
-        { mediaUrl: 'https://cdn.test/doc.pdf', mediaType: 'document', caption: 'Seu documento' },
+        expect.objectContaining({
+          channel: 'whatsapp',
+          recipientId: '5511999999999',
+          mediaUrl: 'https://cdn.test/doc.pdf',
+          mediaType: 'document',
+        }),
       );
     });
 

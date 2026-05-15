@@ -165,12 +165,14 @@ describe('LeadsService', () => {
         name: 'Maria',
         email: null,
         status: 'new',
+        stage: null,
         lastIntent: 'general',
         totalMessages: 0,
         lastInteraction: expect.any(Date),
         metadata: {},
         createdAt: expect.any(Date),
         updatedAt: null,
+        commercialScore: null,
       });
     });
 
@@ -221,6 +223,7 @@ describe('LeadsService', () => {
             name: true,
             email: true,
             status: true,
+            stage: true,
             lastIntent: true,
             totalMessages: true,
             metadata: true,

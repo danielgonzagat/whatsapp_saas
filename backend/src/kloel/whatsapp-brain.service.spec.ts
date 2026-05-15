@@ -18,6 +18,7 @@ jest.mock('../whatsapp/whatsapp-normalization.util', () => ({
 import { WhatsAppBrainService } from './whatsapp-brain.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { KloelService } from './kloel.service';
+import { DecisionOutcomeService } from './decision-outcome.service';
 
 type BrainPrismaMock = {
   kloelLead: { findFirst: jest.Mock; create: jest.Mock };
@@ -47,6 +48,10 @@ describe('WhatsAppBrainService', () => {
         WhatsAppBrainService,
         { provide: PrismaService, useValue: prisma },
         { provide: KloelService, useValue: kloelService },
+        {
+          provide: DecisionOutcomeService,
+          useValue: { recordEvent: jest.fn().mockResolvedValue(undefined) },
+        },
       ],
     }).compile();
 
@@ -200,7 +205,7 @@ describe('WhatsAppBrainService', () => {
       });
 
       expect(includesAnyPhrase).toHaveBeenCalled();
-      expect(result).toMatchObject({ response: 'Olá! Como posso ajudar?' });
+      expect(result).toBe('Olá! Como posso ajudar?');
     });
 
     it('detects support intent', async () => {
@@ -216,7 +221,7 @@ describe('WhatsAppBrainService', () => {
         workspaceId: wsId,
       });
 
-      expect(result).toMatchObject({ response: 'Olá! Como posso ajudar?' });
+      expect(result).toBe('Olá! Como posso ajudar?');
     });
 
     it('detects return intent', async () => {
@@ -232,7 +237,7 @@ describe('WhatsAppBrainService', () => {
         workspaceId: wsId,
       });
 
-      expect(result).toMatchObject({ response: 'Olá! Como posso ajudar?' });
+      expect(result).toBe('Olá! Como posso ajudar?');
     });
 
     it('detects status intent', async () => {
@@ -248,7 +253,7 @@ describe('WhatsAppBrainService', () => {
         workspaceId: wsId,
       });
 
-      expect(result).toMatchObject({ response: 'Olá! Como posso ajudar?' });
+      expect(result).toBe('Olá! Como posso ajudar?');
     });
 
     it('falls back to general intent', async () => {
@@ -264,7 +269,7 @@ describe('WhatsAppBrainService', () => {
         workspaceId: wsId,
       });
 
-      expect(result).toMatchObject({ response: 'Olá! Como posso ajudar?' });
+      expect(result).toBe('Olá! Como posso ajudar?');
     });
   });
 

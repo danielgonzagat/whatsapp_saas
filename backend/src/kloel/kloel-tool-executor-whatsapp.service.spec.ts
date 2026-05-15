@@ -5,6 +5,7 @@ import { PlanLimitsService } from '../billing/plan-limits.service';
 import { WhatsAppProviderRegistry } from '../whatsapp/providers/provider-registry';
 import { WhatsappService } from '../whatsapp/whatsapp.service';
 import { AudioService } from './audio.service';
+import { ChannelTransportRegistry } from './channel-transport.registry';
 import { OpsAlertService } from '../observability/ops-alert.service';
 
 type WhatsAppPrismaMock = {
@@ -41,6 +42,7 @@ describe('KloelToolExecutorWhatsAppService', () => {
     trackAiUsage: jest.Mock;
   };
   let opsAlert: { alertOnCriticalError: jest.Mock };
+  let transports: { send: jest.Mock };
 
   const wsId = 'ws-whatsapp-1';
 
@@ -91,12 +93,15 @@ describe('KloelToolExecutorWhatsAppService', () => {
 
     opsAlert = { alertOnCriticalError: jest.fn() };
 
+    transports = { send: jest.fn().mockResolvedValue({ success: true }) };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         KloelToolExecutorWhatsAppService,
         { provide: PrismaService, useValue: prisma },
         { provide: WhatsappService, useValue: whatsappService },
         { provide: WhatsAppProviderRegistry, useValue: providerRegistry },
+        { provide: ChannelTransportRegistry, useValue: transports },
         { provide: AudioService, useValue: audioService },
         { provide: PlanLimitsService, useValue: planLimits },
         { provide: OpsAlertService, useValue: opsAlert },
@@ -207,11 +212,12 @@ describe('KloelToolExecutorWhatsAppService', () => {
         data: { workspaceId: wsId, phone: '5511999999999', name: 'Via KLOEL' },
       });
       expect(planLimits.ensureDailyMessageQuota).toHaveBeenCalledWith(wsId);
-      expect(whatsappService.sendMessage).toHaveBeenCalledWith(
-        wsId,
-        '5511999999999',
-        'Olá, cliente!',
-      );
+      expect(transports.send).toHaveBeenCalledWith(wsId, {
+        workspaceId: wsId,
+        channel: 'whatsapp',
+        recipientId: '5511999999999',
+        content: 'Olá, cliente!',
+      });
     });
 
     it('finds existing contact without creating', async () => {
@@ -236,7 +242,7 @@ describe('KloelToolExecutorWhatsAppService', () => {
       providerRegistry.getSessionStatus.mockResolvedValue({ connected: true });
       prisma.contact.findFirst.mockResolvedValue({ id: 'c-1', phone: '5511', name: 'Test' });
       prisma.message.create.mockResolvedValue({ id: 'm-3' });
-      whatsappService.sendMessage.mockRejectedValue(new Error('send failed'));
+      transports.send.mockResolvedValue({ success: false, error: 'send failed' });
 
       const result = await service.toolSendWhatsAppMessage(wsId, {
         phone: '5511',
@@ -392,7 +398,7 @@ describe('KloelToolExecutorWhatsAppService', () => {
       expect(result.success).toBe(true);
       expect(audioService.textToSpeech).toHaveBeenCalledWith('Mensagem de voz', 'nova', wsId);
       expect(planLimits.ensureDailyMessageQuota).toHaveBeenCalledWith(wsId);
-      expect(whatsappService.sendMessage).toHaveBeenCalled();
+      expect(transports.send).toHaveBeenCalled();
     });
 
     it('returns error when phone or text missing', async () => {
@@ -424,7 +430,11 @@ describe('KloelToolExecutorWhatsAppService', () => {
 
       expect(result.success).toBe(true);
       expect(planLimits.ensureDailyMessageQuota).toHaveBeenCalledWith(wsId);
-      expect(whatsappService.sendMessage).toHaveBeenCalledWith(wsId, '5511', 'Segue documento', {
+      expect(transports.send).toHaveBeenCalledWith(wsId, {
+        workspaceId: wsId,
+        channel: 'whatsapp',
+        recipientId: '5511',
+        content: 'Segue documento',
         mediaUrl: 'https://cdn.test/doc.pdf',
         mediaType: 'document',
         caption: 'Segue documento',
@@ -464,7 +474,7 @@ describe('KloelToolExecutorWhatsAppService', () => {
     });
 
     it('returns error on send failure', async () => {
-      whatsappService.sendMessage.mockRejectedValue(new Error('upload failed'));
+      transports.send.mockResolvedValue({ success: false, error: 'upload failed' });
 
       const result = await service.toolSendDocument(wsId, {
         phone: '5511',
