@@ -83,7 +83,6 @@ describe('InboundProcessorService', () => {
   let transports: MockTransports;
   let decisionOutcome: MockDecisionOutcome;
   let mindHook: MockMindHook;
-  let decisionOutcome: MockDecisionOutcome;
   let mockAutopilotAdd: jest.Mock;
 
   beforeEach(() => {
@@ -198,9 +197,6 @@ describe('InboundProcessorService', () => {
     };
     mindHook = {
       onMessageReceived: jest.fn().mockResolvedValue(undefined),
-    };
-    decisionOutcome = {
-      recordEvent: jest.fn().mockResolvedValue(undefined),
     };
 
     service = new InboundProcessorService(

@@ -38,9 +38,9 @@ export class CopilotController {
   suggest(@Req() req: CopilotRequest, @Body() body: CopilotSuggestBody = {}) {
     return this.copilot.suggest({
       workspaceId: resolveWorkspaceId(req),
-      contactId: body.contactId,
-      phone: body.phone,
-      kbSnippet: body.kbSnippet,
+      ...(body.contactId !== undefined ? { contactId: body.contactId } : {}),
+      ...(body.phone !== undefined ? { phone: body.phone } : {}),
+      ...(body.kbSnippet !== undefined ? { kbSnippet: body.kbSnippet } : {}),
     });
   }
 
@@ -49,9 +49,9 @@ export class CopilotController {
   suggestMultiple(@Req() req: CopilotRequest, @Body() body: CopilotSuggestMultipleBody = {}) {
     return this.copilot.suggestMultiple({
       workspaceId: resolveWorkspaceId(req),
-      contactId: body.contactId,
-      phone: body.phone,
-      kbSnippet: body.kbSnippet,
+      ...(body.contactId !== undefined ? { contactId: body.contactId } : {}),
+      ...(body.phone !== undefined ? { phone: body.phone } : {}),
+      ...(body.kbSnippet !== undefined ? { kbSnippet: body.kbSnippet } : {}),
       count: body.count || 3,
     });
   }
