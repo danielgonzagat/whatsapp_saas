@@ -1,0 +1,62 @@
+import { JwtService } from '@nestjs/jwt';
+import { GdprStatus, GdprType } from '@prisma/client';
+import { EmailService } from '../auth/email.service';
+import { StorageService } from '../common/storage/storage.service';
+import { PrismaService } from '../prisma/prisma.service';
+import { GdprService } from './gdpr.service';
+
+jest.mock('../common/redis/redis.util', () => ({
+  createRedisClient: jest.fn(() => {
+    const { RedisConfigurationError } = jest.requireActual<
+      typeof import('../common/redis/resolve-redis-url')
+    >('../common/redis/resolve-redis-url');
+    throw new RedisConfigurationError('Redis not available in test');
+  }),
+}));
+
+describe('GdprService getStatus', () => {
+  const requestedAt = new Date('2026-05-10T12:00:00.000Z');
+  const prismaMock = {
+    gdprRequest: {
+      findFirst: jest.fn(),
+    },
+  };
+  const service = new GdprService(
+    prismaMock as unknown as PrismaService,
+    {} as JwtService,
+    {} as StorageService,
+    {} as EmailService,
+  );
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    prismaMock.gdprRequest.findFirst.mockResolvedValue({
+      id: 'gdpr_1',
+      workspaceId: 'ws_1',
+      userId: 'agent_1',
+      type: GdprType.EXPORT,
+      code: 'abc123',
+      status: GdprStatus.PENDING,
+      requestedAt,
+      completedAt: null,
+    });
+  });
+
+  it('returns status for a valid code', async () => {
+    const result = await service.getStatus('abc123');
+
+    expect(result).toEqual(
+      expect.objectContaining({
+        code: 'abc123',
+        type: GdprType.EXPORT,
+        status: GdprStatus.PENDING,
+      }),
+    );
+  });
+
+  it('throws NotFoundException for unknown code', async () => {
+    prismaMock.gdprRequest.findFirst.mockResolvedValueOnce(null);
+
+    await expect(service.getStatus('unknown')).rejects.toThrow('Solicitação não encontrada.');
+  });
+});

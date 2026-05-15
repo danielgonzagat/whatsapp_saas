@@ -386,24 +386,4 @@ describe('GdprService', () => {
       );
     });
   });
-
-  describe('getStatus', () => {
-    it('returns status for a valid code', async () => {
-      const result = await service.getStatus('abc123');
-
-      expect(result).toEqual(
-        expect.objectContaining({
-          code: 'abc123',
-          type: GdprType.EXPORT,
-          status: GdprStatus.PENDING,
-        }),
-      );
-    });
-
-    it('throws NotFoundException for unknown code', async () => {
-      prismaMock.gdprRequest.findFirst.mockResolvedValueOnce(null);
-
-      await expect(service.getStatus('unknown')).rejects.toThrow(NotFoundException);
-    });
-  });
 });
