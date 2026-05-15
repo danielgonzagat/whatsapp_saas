@@ -1,3 +1,4 @@
+import { Test, TestingModule } from '@nestjs/testing';
 import OpenAI from 'openai';
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { CANONICAL_MODEL_IDS } from '../lib/openai-models';
@@ -5,10 +6,24 @@ import { UnifiedAgentResponseService } from './unified-agent-response.service';
 import type { ActionEntry } from './unified-agent.types';
 
 describe('UnifiedAgentResponseService calculateConfidence', () => {
-  const service = new UnifiedAgentResponseService({
-    ensureTokenBudget: jest.fn(),
-    trackAiUsage: jest.fn(),
-  } as unknown as PlanLimitsService);
+  let service: UnifiedAgentResponseService;
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        UnifiedAgentResponseService,
+        {
+          provide: PlanLimitsService,
+          useValue: {
+            ensureTokenBudget: jest.fn(),
+            trackAiUsage: jest.fn(),
+          },
+        },
+      ],
+    }).compile();
+
+    service = module.get<UnifiedAgentResponseService>(UnifiedAgentResponseService);
+  });
 
   it('calculates confidence based on actions and tool calls', () => {
     const response: OpenAI.Chat.Completions.ChatCompletion = {

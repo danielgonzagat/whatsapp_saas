@@ -1,4 +1,5 @@
 import { JwtService } from '@nestjs/jwt';
+import { Test, TestingModule } from '@nestjs/testing';
 import { GdprStatus, GdprType } from '@prisma/client';
 import { EmailService } from '../auth/email.service';
 import { StorageService } from '../common/storage/storage.service';
@@ -15,20 +16,15 @@ jest.mock('../common/redis/redis.util', () => ({
 }));
 
 describe('GdprService getStatus', () => {
+  let service: GdprService;
   const requestedAt = new Date('2026-05-10T12:00:00.000Z');
   const prismaMock = {
     gdprRequest: {
       findFirst: jest.fn(),
     },
   };
-  const service = new GdprService(
-    prismaMock as unknown as PrismaService,
-    {} as JwtService,
-    {} as StorageService,
-    {} as EmailService,
-  );
 
-  beforeEach(() => {
+  beforeEach(async () => {
     jest.clearAllMocks();
     prismaMock.gdprRequest.findFirst.mockResolvedValue({
       id: 'gdpr_1',
@@ -40,6 +36,17 @@ describe('GdprService getStatus', () => {
       requestedAt,
       completedAt: null,
     });
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        GdprService,
+        { provide: PrismaService, useValue: prismaMock },
+        { provide: JwtService, useValue: {} },
+        { provide: StorageService, useValue: {} },
+        { provide: EmailService, useValue: {} },
+      ],
+    }).compile();
+
+    service = module.get<GdprService>(GdprService);
   });
 
   it('returns status for a valid code', async () => {

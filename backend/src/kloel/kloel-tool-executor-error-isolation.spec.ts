@@ -1,3 +1,4 @@
+import { Test, TestingModule } from '@nestjs/testing';
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { KloelToolExecutorBillingService } from './kloel-tool-executor-billing.service';
@@ -35,12 +36,12 @@ function isTransactionCallback(arg: unknown): arg is (tx: ExecutorPrismaMock) =>
   return typeof arg === 'function';
 }
 
-function buildSubject(): {
+async function buildSubject(): Promise<{
   service: KloelToolExecutorService;
   prisma: ExecutorPrismaMock;
   whatsappTools: Partial<KloelToolExecutorWhatsAppService>;
   crmTools: Partial<KloelToolExecutorCrmService>;
-} {
+}> {
   const prisma: ExecutorPrismaMock = {
     workspace: {
       findUnique: jest.fn().mockResolvedValue({ providerSettings: {} }),
@@ -60,20 +61,29 @@ function buildSubject(): {
   const crmTools: Partial<KloelToolExecutorCrmService> = {
     toolListLeads: jest.fn().mockResolvedValue({ success: true, leads: [] }),
   };
-  const service = new KloelToolExecutorService(
-    prisma as unknown as PrismaService,
-    {} as SmartPaymentService,
-    {
-      ensureDailyMessageQuota: jest.fn().mockResolvedValue(undefined),
-      ensureTokenBudget: jest.fn().mockResolvedValue(undefined),
-      trackAiUsage: jest.fn().mockResolvedValue(undefined),
-    } as unknown as PlanLimitsService,
-    whatsappTools as KloelToolExecutorWhatsAppService,
-    {} as KloelToolExecutorBillingService,
-    crmTools as KloelToolExecutorCrmService,
-  );
+  const planLimits = {
+    ensureDailyMessageQuota: jest.fn().mockResolvedValue(undefined),
+    ensureTokenBudget: jest.fn().mockResolvedValue(undefined),
+    trackAiUsage: jest.fn().mockResolvedValue(undefined),
+  };
+  const module: TestingModule = await Test.createTestingModule({
+    providers: [
+      KloelToolExecutorService,
+      { provide: PrismaService, useValue: prisma },
+      { provide: SmartPaymentService, useValue: {} },
+      { provide: PlanLimitsService, useValue: planLimits },
+      { provide: KloelToolExecutorWhatsAppService, useValue: whatsappTools },
+      { provide: KloelToolExecutorBillingService, useValue: {} },
+      { provide: KloelToolExecutorCrmService, useValue: crmTools },
+    ],
+  }).compile();
 
-  return { service, prisma, whatsappTools, crmTools };
+  return {
+    service: module.get<KloelToolExecutorService>(KloelToolExecutorService),
+    prisma,
+    whatsappTools,
+    crmTools,
+  };
 }
 
 describe('KloelToolExecutorService error and isolation paths', () => {
@@ -84,7 +94,7 @@ describe('KloelToolExecutorService error and isolation paths', () => {
   });
 
   it('returns error for unknown tool name', async () => {
-    const { service } = buildSubject();
+    const { service } = await buildSubject();
 
     const result = await service.executeTool(wsId, 'nonexistent_tool', {});
 
@@ -93,7 +103,7 @@ describe('KloelToolExecutorService error and isolation paths', () => {
   });
 
   it('catches errors and returns structured error result', async () => {
-    const { service, whatsappTools } = buildSubject();
+    const { service, whatsappTools } = await buildSubject();
     whatsappTools.toolSendWhatsAppMessage = jest
       .fn()
       .mockRejectedValue(new Error('WhatsApp timeout'));
@@ -108,7 +118,7 @@ describe('KloelToolExecutorService error and isolation paths', () => {
   });
 
   it('handles non-Error thrown values', async () => {
-    const { service, whatsappTools } = buildSubject();
+    const { service, whatsappTools } = await buildSubject();
     whatsappTools.toolConnectWhatsapp = jest.fn().mockRejectedValue('string error');
 
     const result = await service.executeTool(wsId, 'connect_whatsapp', {});
@@ -118,7 +128,7 @@ describe('KloelToolExecutorService error and isolation paths', () => {
   });
 
   it('handles null/undefined thrown values gracefully', async () => {
-    const { service, crmTools } = buildSubject();
+    const { service, crmTools } = await buildSubject();
     crmTools.toolListLeads = jest.fn().mockRejectedValue(null);
 
     const result = await service.executeTool(wsId, 'list_leads', {});
@@ -128,7 +138,7 @@ describe('KloelToolExecutorService error and isolation paths', () => {
   });
 
   it('toggle_autopilot queries providerSettings for correct workspace', async () => {
-    const { service, prisma } = buildSubject();
+    const { service, prisma } = await buildSubject();
 
     await service.executeTool('ws-tenant', 'toggle_autopilot', { enabled: true });
 
@@ -138,7 +148,7 @@ describe('KloelToolExecutorService error and isolation paths', () => {
   });
 
   it('passes correct workspaceId to sub-services', async () => {
-    const { service, crmTools } = buildSubject();
+    const { service, crmTools } = await buildSubject();
 
     await service.executeTool('ws-tenant', 'list_leads', {});
 
