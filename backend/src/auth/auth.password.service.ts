@@ -43,9 +43,8 @@ export class AuthPasswordService {
 
   async checkEmail(email: string): Promise<{ exists: boolean }> {
     try {
-      const where: Prisma.AgentWhereInput = { email, workspaceId: { not: '' } };
       const agent = await this.prisma.agent.findFirst({
-        where,
+        where: { email, workspaceId: { not: '' } },
       });
       return { exists: !!agent };
     } catch (error: unknown) {
@@ -109,7 +108,7 @@ export class AuthPasswordService {
   ): Promise<{ id: string; workspaceId: string } | null> {
     try {
       return await this.prisma.agent.findFirst({
-        where: { email: normalizedEmail },
+        where: { email: normalizedEmail, workspaceId: { not: '' } },
         select: { id: true, workspaceId: true },
       });
     } catch (error: unknown) {

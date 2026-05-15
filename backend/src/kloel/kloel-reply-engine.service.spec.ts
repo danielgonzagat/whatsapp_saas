@@ -6,7 +6,6 @@ import { KloelThreadService } from './kloel-thread.service';
 import { KloelWorkspaceContextService } from './kloel-workspace-context.service';
 import { UnifiedAgentService } from './unified-agent.service';
 import { MarketingSkillService } from './marketing-skills/marketing-skill.service';
-import { CANONICAL_MODEL_IDS } from '../lib/openai-models';
 
 jest.mock('openai', () => ({
   default: jest.fn().mockImplementation(() => ({
@@ -22,9 +21,14 @@ jest.mock('./openai-wrapper', () => ({
   }),
 }));
 
-jest.mock('../lib/openai-models', () => ({
-  resolveBackendOpenAIModel: jest.fn().mockReturnValue(CANONICAL_MODEL_IDS.openAiTextOmni),
-}));
+jest.mock('../lib/openai-models', () => {
+  const actual = jest.requireActual<typeof import('../lib/openai-models')>('../lib/openai-models');
+
+  return {
+    ...actual,
+    resolveBackendOpenAIModel: jest.fn().mockReturnValue(actual.CANONICAL_MODEL_IDS.openAiTextOmni),
+  };
+});
 
 jest.mock('./kloel-reply-engine.helpers', () => ({
   WHITESPACE_RE: /\s+/,

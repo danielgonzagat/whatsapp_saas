@@ -1,7 +1,3 @@
-jest.mock('./openai-wrapper', () => ({
-  chatCompletionWithFallback: jest.fn(),
-}));
-
 import { ConfigService } from '@nestjs/config';
 import { UnifiedAgentActionsCommerceService } from './unified-agent-actions-commerce.service';
 import { UnifiedAgentActionsMessagingService } from './unified-agent-actions-messaging.service';
@@ -10,7 +6,6 @@ import { UnifiedAgentContextDataService } from './unified-agent-context-data.ser
 import { UnifiedAgentContextService } from './unified-agent-context.service';
 import { chatCompletionWithFallback } from './openai-wrapper';
 import { UnifiedAgentResponseService } from './unified-agent-response.service';
-import { chatCompletionWithFallback } from './openai-wrapper';
 import { UnifiedAgentService } from './unified-agent.service';
 
 jest.mock('./openai-wrapper', () => ({
@@ -92,6 +87,7 @@ describe('UnifiedAgentService', () => {
   let paymentService: { createPayment: jest.Mock };
   let configMock: ConfigService;
   let planLimits: { ensureTokenBudget: jest.Mock; trackAiUsage: jest.Mock };
+  let dailyLimit: { ensureProactiveDailyLimit: jest.Mock };
   let service: UnifiedAgentService;
   let ctx: UnifiedAgentContextService;
   let response: UnifiedAgentResponseService;
@@ -133,7 +129,12 @@ describe('UnifiedAgentService', () => {
       sendMessage: jest.fn().mockResolvedValue({ error: false, delivery: 'sent', direct: true }),
     };
     transportRegistry = {
-      send: jest.fn().mockResolvedValue({ success: true, blocked: false, messageId: 'msg-1' }),
+      send: jest.fn().mockResolvedValue({
+        success: true,
+        blocked: false,
+        messageId: 'msg-1',
+        delivery: 'sent',
+      }),
     };
 
     paymentService = {
@@ -173,13 +174,22 @@ describe('UnifiedAgentService', () => {
       ensureTokenBudget: jest.fn().mockResolvedValue(undefined),
       trackAiUsage: jest.fn().mockResolvedValue(undefined),
     };
+    dailyLimit = {
+      ensureProactiveDailyLimit: jest.fn().mockResolvedValue({
+        allowed: true,
+        capAtDay: 1000,
+        remaining: 999,
+      }),
+    };
 
     const contextData = new UnifiedAgentContextDataService(prisma as never);
     ctx = new UnifiedAgentContextService(contextData);
     response = new UnifiedAgentResponseService(planLimits as never);
     const messaging = new UnifiedAgentActionsMessagingService(
-      transportRegistry as never,
+      whatsappService as never,
       {} as never,
+      transportRegistry as never,
+      dailyLimit as never,
     );
     const commerce = new UnifiedAgentActionsCommerceService(
       prisma as never,
@@ -253,11 +263,13 @@ describe('UnifiedAgentService', () => {
       executeTools: true,
     });
 
-    expect(whatsappService.sendMessage).toHaveBeenCalledWith(
+    expect(transportRegistry.send).toHaveBeenCalledWith(
       'ws-1',
-      '5511999999999',
-      'Claro. O produto custa R$ 890.',
-      expect.objectContaining({ complianceMode: 'reactive' }),
+      expect.objectContaining({
+        channel: 'whatsapp',
+        recipientId: '5511999999999',
+        content: 'Claro. O produto custa R$ 890.',
+      }),
     );
     expect(prisma.autopilotEvent.create).toHaveBeenCalledWith(
       expect.objectContaining({

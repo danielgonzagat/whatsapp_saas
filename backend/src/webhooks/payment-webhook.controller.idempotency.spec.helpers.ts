@@ -19,6 +19,7 @@ export function registerWooCommerceIdempotencyTests(): void {
         set: jest.fn().mockResolvedValue('OK'),
         lpush: jest.fn().mockResolvedValue(1),
         ltrim: jest.fn().mockResolvedValue('OK'),
+        publish: jest.fn().mockResolvedValue(1),
       };
       const webhooksService = {
         logWebhookEvent: jest.fn().mockResolvedValue({ id: 'we_woo_1' }),
@@ -63,12 +64,16 @@ export function registerWooCommerceIdempotencyTests(): void {
         JSON.parse(rawBody) as never,
       );
 
-      expect(redis.set).toHaveBeenCalledWith('webhook:payment:evt_woo_dupe', '1', 'EX', 300, 'NX');
+      expect(redis.set).toHaveBeenCalledWith(
+        'webhook:payment:generic:evt_woo_dupe',
+        '1',
+        'EX',
+        86400,
+        'NX',
+      );
       expect(result).toEqual({
         ok: true,
-        received: true,
         duplicate: true,
-        reason: 'duplicate_event',
       });
       expect(prisma.workspace.findUnique).not.toHaveBeenCalled();
     });
@@ -102,8 +107,17 @@ export function registerWooCommerceIdempotencyTests(): void {
         JSON.parse(rawBody) as never,
       );
 
-      expect(redis.set).toHaveBeenCalledWith('webhook:payment:evt_woo_new', '1', 'EX', 300, 'NX');
-      expect(prisma.workspace.findUnique).toHaveBeenCalledWith({ where: { id: 'ws-woo' } });
+      expect(redis.set).toHaveBeenCalledWith(
+        'webhook:payment:generic:evt_woo_new',
+        '1',
+        'EX',
+        86400,
+        'NX',
+      );
+      expect(prisma.workspace.findUnique).toHaveBeenCalledWith({
+        where: { id: 'ws-woo' },
+        select: { id: true },
+      });
       expect(autopilot.markConversion).toHaveBeenCalledWith(
         expect.objectContaining({ reason: 'woocommerce_paid' }),
       );

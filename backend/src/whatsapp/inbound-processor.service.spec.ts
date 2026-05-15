@@ -58,6 +58,10 @@ type MockTransports = {
   send: FlexMock;
 };
 
+type MockDecisionOutcome = {
+  recordEvent: FlexMock;
+};
+
 type MockMindHook = {
   onMessageReceived: FlexMock;
 };
@@ -72,6 +76,7 @@ describe('InboundProcessorService', () => {
   let unifiedAgent: MockUnifiedAgent;
   let whatsappService: MockWhatsappService;
   let transports: MockTransports;
+  let decisionOutcome: MockDecisionOutcome;
   let mindHook: MockMindHook;
   let mockAutopilotAdd: jest.Mock;
 
@@ -163,13 +168,27 @@ describe('InboundProcessorService', () => {
         ),
     };
 
-    // messageLimit: enforced via PlanLimitsService.trackMessageSend
-    whatsappService = {
-      sendMessage: jest.fn().mockResolvedValue({ ok: true, direct: true }),
-      syncRemoteContactProfile: jest.fn().mockResolvedValue(true),
-    };
     transports = {
       send: jest.fn().mockResolvedValue({ success: true, blocked: false }),
+    };
+    // messageLimit: enforced via PlanLimitsService.trackMessageSend
+    whatsappService = {
+      sendMessage: jest
+        .fn()
+        .mockImplementation(async (workspaceId: string, to: string, message: string, opts?: Record<string, unknown>) => {
+          await transports.send(workspaceId, {
+            workspaceId,
+            channel: 'whatsapp',
+            recipientId: to,
+            content: message,
+            ...(opts || {}),
+          });
+          return { ok: true, direct: true };
+        }),
+      syncRemoteContactProfile: jest.fn().mockResolvedValue(true),
+    };
+    decisionOutcome = {
+      recordEvent: jest.fn().mockResolvedValue(undefined),
     };
     mindHook = {
       onMessageReceived: jest.fn().mockResolvedValue(undefined),
@@ -183,6 +202,9 @@ describe('InboundProcessorService', () => {
       workerRuntime as never,
       unifiedAgent as never,
       whatsappService,
+      decisionOutcome as never,
+      undefined,
+      mindHook as never,
     );
   });
 

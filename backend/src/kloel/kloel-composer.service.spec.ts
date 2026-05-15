@@ -3,7 +3,6 @@ import { KloelComposerService } from './kloel-composer.service';
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { StorageService } from '../common/storage/storage.service';
 import { KLOEL_COMPOSER_E2E_GUARD, KloelComposerE2EGuard } from './kloel-composer-e2e-guard';
-import { CANONICAL_MODEL_IDS } from '../lib/openai-models';
 
 jest.mock('openai', () => ({
   default: jest.fn().mockImplementation(() => ({
@@ -13,25 +12,33 @@ jest.mock('openai', () => ({
   })),
 }));
 
-jest.mock('../lib/ai-models', () => ({
-  resolveKloelCapabilityModel: jest.fn((capability: string) => {
-    if (capability === 'search_web') {
-      return CANONICAL_MODEL_IDS.openAiTextOmni;
-    }
-    if (capability === 'create_image') {
-      return CANONICAL_MODEL_IDS.imageGeneration;
-    }
-    return CANONICAL_MODEL_IDS.anthropicSonnetTest;
-  }),
-}));
+jest.mock('../lib/ai-models', () => {
+  const { CANONICAL_MODEL_IDS } =
+    jest.requireActual<typeof import('../lib/openai-models')>('../lib/openai-models');
+
+  return {
+    resolveKloelCapabilityModel: jest.fn((capability: string) => {
+      if (capability === 'search_web') {
+        return CANONICAL_MODEL_IDS.openAiTextOmni;
+      }
+      if (capability === 'create_image') {
+        return CANONICAL_MODEL_IDS.imageGeneration;
+      }
+      return CANONICAL_MODEL_IDS.anthropicSonnetTest;
+    }),
+  };
+});
 
 describe('KloelComposerService', () => {
   let service: KloelComposerService;
   let planLimits: Pick<PlanLimitsService, 'ensureTokenBudget' | 'trackAiUsage'>;
   let storageService: Pick<StorageService, 'upload' | 'uploadFromUrl'>;
   let e2EGuard: Pick<KloelComposerE2EGuard, 'isEnabled' | 'buildSearchResult' | 'buildImageResult'>;
+  let originalOpenAiApiKey: string | undefined;
 
   beforeEach(async () => {
+    originalOpenAiApiKey = process.env.OPENAI_API_KEY;
+    process.env.OPENAI_API_KEY = 'test-openai-key';
     planLimits = {
       ensureTokenBudget: jest.fn().mockResolvedValue(undefined),
       trackAiUsage: jest.fn().mockResolvedValue(undefined),
@@ -67,6 +74,11 @@ describe('KloelComposerService', () => {
 
   afterEach(() => {
     jest.clearAllMocks();
+    if (originalOpenAiApiKey === undefined) {
+      delete process.env.OPENAI_API_KEY;
+    } else {
+      process.env.OPENAI_API_KEY = originalOpenAiApiKey;
+    }
   });
 
   describe('buildCapabilityPrompt', () => {

@@ -354,7 +354,12 @@ export function createMockPrisma(stores: AccountAgentMockStores): MockPrisma {
           },
         ),
       create: jest.fn().mockImplementation(({ data }: { data: { id: string } }) => {
-        const next = { ...data };
+        const workspaceConnect = (data as { workspace?: { connect?: { id?: string } } }).workspace
+          ?.connect;
+        const next = {
+          ...data,
+          ...(workspaceConnect?.id ? { workspaceId: workspaceConnect.id } : {}),
+        };
         workItems.set(data.id, next);
         return Promise.resolve(next);
       }),

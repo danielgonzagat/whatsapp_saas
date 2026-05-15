@@ -64,7 +64,11 @@ describe('GmailSendService', () => {
     });
 
     expect(result).toEqual(
-      expect.objectContaining({ status: 'suppressed', sent: false, reason: 'recipient_unsubscribed' }),
+      expect.objectContaining({
+        status: 'suppressed',
+        sent: false,
+        reason: 'recipient_unsubscribed',
+      }),
     );
     expect(connectionFindFirst).not.toHaveBeenCalled();
   });
@@ -150,8 +154,10 @@ describe('GmailSendService', () => {
 
     expect(connectionUpdate).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { id: 'mb-1' },
-        data: expect.objectContaining({ lastError: 'gmail_send_failed' }),
+        where: { id: 'mb-1', workspaceId: 'ws-1' },
+        data: expect.objectContaining({
+          lastError: 'gmail_send_failed',
+        }),
       }),
     );
   });

@@ -262,8 +262,8 @@ describe('PipelineService', () => {
         data: {
           title,
           value,
-          contactId,
-          stageId: 's-1',
+          contact: { connect: { id: contactId } },
+          stage: { connect: { id: 's-1' } },
           sourceCampaignId: 'camp-99',
         },
       });
@@ -304,8 +304,8 @@ describe('PipelineService', () => {
         data: {
           title: '',
           value: 0,
-          contactId,
-          stageId: 's-1',
+          contact: { connect: { id: contactId } },
+          stage: { connect: { id: 's-1' } },
         },
       });
     });
@@ -326,8 +326,8 @@ describe('PipelineService', () => {
         data: {
           title,
           value,
-          contactId,
-          stageId: 's-1',
+          contact: { connect: { id: contactId } },
+          stage: { connect: { id: 's-1' } },
         },
       });
     });

@@ -352,7 +352,7 @@ describe('DestructiveIntentService', () => {
           status: 'EXECUTED',
           reversible: true,
           undoTokenHash: 'hash:correct',
-          undoExpiresAt: new Date('2026-05-11T12:02:00Z'),
+          undoExpiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
         }),
       );
 

@@ -14,9 +14,13 @@ type FlexMock = jest.Mock & {
 jest.mock('../kloel/openai-wrapper', () => ({
   chatCompletionWithRetry: jest.fn(),
 }));
-jest.mock('../lib/openai-models', () => ({
-  resolveBackendOpenAIModel: jest.fn(() => CANONICAL_MODEL_IDS.openAiTextMock),
-}));
+jest.mock('../lib/openai-models', () => {
+  const actual = jest.requireActual<typeof import('../lib/openai-models')>('../lib/openai-models');
+  return {
+    ...actual,
+    resolveBackendOpenAIModel: jest.fn(() => actual.CANONICAL_MODEL_IDS.openAiTextMock),
+  };
+});
 jest.mock('openai', () => {
   const mockCreate = jest.fn();
   return {
@@ -387,7 +391,6 @@ describe('AutopilotAnalyticsInsightsService', () => {
         _count: { id: 0 },
       });
       mockPrisma.autopilotEvent.create.mockRejectedValue(new Error('insert failed'));
-
       const result = await service.askInsights('ws-1', 'Q');
 
       expect(result.answer).toContain('Resumo:');

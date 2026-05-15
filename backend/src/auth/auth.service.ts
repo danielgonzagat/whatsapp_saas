@@ -162,6 +162,10 @@ export class AuthService {
   }) {
     const result = await loginWithAppleCredential(this.buildDeps(), {
       identityToken: data.identityToken,
+      ...(data.authorizationCode !== undefined
+        ? { authorizationCode: data.authorizationCode }
+        : {}),
+      ...(data.redirectUri !== undefined ? { redirectUri: data.redirectUri } : {}),
       ...(data.user !== undefined ? { user: data.user } : {}),
       ...(data.ip !== undefined ? { ip: data.ip } : {}),
     });

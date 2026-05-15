@@ -1,4 +1,9 @@
 import { WhatsappService } from './whatsapp.service';
+import { WhatsappMessageDispatcherService } from './whatsapp-message-dispatcher.service';
+import { WhatsappReconcilerService } from './whatsapp-reconciler.service';
+import { WhatsappSessionService } from './whatsapp-session.service';
+import { WhatsappChatBacklogService } from './whatsapp.service.chats.backlog';
+import { WhatsappChatMessagesService } from './whatsapp.service.chats.messages';
 import {
   localContactsSeed,
   buildMockProviderRegistry,
@@ -49,6 +54,7 @@ describe('WhatsappService', () => {
     publish: jest.Mock;
     rpush: jest.Mock;
     expire: jest.Mock;
+    del: jest.Mock;
   };
   let neuroCrm: { analyzeContact: jest.Mock };
   let prisma: MockPrisma;
@@ -57,6 +63,12 @@ describe('WhatsappService', () => {
   let catchupService: { triggerCatchup: jest.Mock };
   let ciaRuntime: { startBacklogRun: jest.Mock };
   let workerRuntime: { isAvailable: jest.Mock };
+  let decisionOutcome: { recordEvent: jest.Mock };
+  let sessionService: WhatsappSessionService;
+  let messageDispatcher: WhatsappMessageDispatcherService;
+  let reconciler: WhatsappReconcilerService;
+  let chatMessagesService: WhatsappChatMessagesService;
+  let chatBacklogService: WhatsappChatBacklogService;
 
   beforeEach(() => {
     jest.useFakeTimers({ doNotFake: ['nextTick', 'setImmediate'] });
@@ -91,6 +103,7 @@ describe('WhatsappService', () => {
       publish: jest.fn().mockResolvedValue(1),
       rpush: jest.fn().mockResolvedValue(1),
       expire: jest.fn().mockResolvedValue(1),
+      del: jest.fn().mockResolvedValue(1),
     };
     neuroCrm = { analyzeContact: jest.fn().mockResolvedValue(undefined) };
     prisma = buildMockPrisma(localContactsSeed);
@@ -114,22 +127,47 @@ describe('WhatsappService', () => {
     };
     ciaRuntime = { startBacklogRun: jest.fn().mockResolvedValue({ queued: true, runId: 'run-1' }) };
     workerRuntime = { isAvailable: jest.fn().mockResolvedValue(true) };
+    decisionOutcome = { recordEvent: jest.fn().mockResolvedValue(undefined) };
+    sessionService = new WhatsappSessionService(
+      providerRegistry as never,
+      whatsappApi as never,
+      prisma as never,
+    );
+    messageDispatcher = new WhatsappMessageDispatcherService(
+      planLimits as never,
+      workspaceService as never,
+      prisma as never,
+      providerRegistry as never,
+      inboxService,
+      workerRuntime as never,
+      sessionService,
+      redis as never,
+    );
+    reconciler = new WhatsappReconcilerService(
+      workspaceService as never,
+      inboxService,
+      redis as never,
+      neuroCrm as never,
+      prisma as never,
+      providerRegistry as never,
+      decisionOutcome as never,
+    );
+    chatMessagesService = new WhatsappChatMessagesService();
+    chatBacklogService = new WhatsappChatBacklogService();
 
     mockAutopilotAdd.mockResolvedValue(undefined);
     mockFlowAdd.mockResolvedValue(undefined);
 
     service = new WhatsappService(
-      workspaceService as never,
-      inboxService as never,
-      planLimits as never,
-      redis as never,
-      neuroCrm as never,
       prisma as never,
       providerRegistry as never,
-      whatsappApi as never,
       catchupService as never,
       ciaRuntime as never,
-      workerRuntime,
+      sessionService,
+      messageDispatcher,
+      reconciler,
+      chatMessagesService,
+      chatBacklogService,
     );
   });
 
@@ -415,7 +453,7 @@ describe('WhatsappService', () => {
       'ws-1',
       '5511999991111',
       'Mensagem sem worker',
-      expect.objectContaining({ mediaUrl: undefined }),
+      {},
     );
     expect(mockFlowAdd).not.toHaveBeenCalledWith('send-message', expect.anything());
   });

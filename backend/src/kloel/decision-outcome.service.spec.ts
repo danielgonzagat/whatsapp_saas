@@ -68,7 +68,11 @@ describe('DecisionOutcomeService', () => {
       });
 
       expect(prisma.decisionOutcome.updateMany).toHaveBeenCalledWith({
-        where: { outcomeKey: 'followup:ws-1:c1:123', outcomeAt: null },
+        where: {
+          outcomeKey: 'followup:ws-1:c1:123',
+          workspaceId: { not: '' },
+          outcomeAt: null,
+        },
         data: expect.objectContaining({
           outcomeName: 'inbound.received',
           economicValue: 99.9,
@@ -145,7 +149,11 @@ describe('DecisionOutcomeService', () => {
         outcomeName: 'payment.succeeded',
       });
       const call = (prisma.decisionOutcome.updateMany as jest.Mock).mock.calls.at(-1);
-      expect(call![0].where).toEqual({ outcomeKey: 'k-already-closed', outcomeAt: null });
+      expect(call![0].where).toEqual({
+        outcomeKey: 'k-already-closed',
+        workspaceId: { not: '' },
+        outcomeAt: null,
+      });
     });
   });
 
@@ -179,7 +187,7 @@ describe('DecisionOutcomeService', () => {
       const since = new Date('2026-05-01T00:00:00Z');
       await service.findAllClosedSince(since);
       expect(prisma.decisionOutcome.findMany).toHaveBeenCalledWith({
-        where: { outcomeAt: { not: null, gte: since } },
+        where: { workspaceId: { not: '' }, outcomeAt: { not: null, gte: since } },
         orderBy: { outcomeAt: 'desc' },
       });
     });
@@ -246,7 +254,7 @@ describe('DecisionOutcomeService', () => {
 
       expect(count).toBe(2);
       expect(prisma.decisionOutcome.updateMany).toHaveBeenCalledWith({
-        where: { id: { in: ['do-1', 'do-2'] } },
+        where: { id: { in: ['do-1', 'do-2'] }, workspaceId: 'ws-1' },
         data: expect.objectContaining({
           outcomeName: 'inbound.silent_24h',
           wonVsBaseline: false,

@@ -187,9 +187,10 @@ describe('GmailClientService', () => {
 
       expect(fakeMailboxUpdate).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: { id: 'conn-test-1' },
+          where: { id: 'conn-test-1', workspaceId: 'ws-test-1' },
           data: expect.objectContaining({
             lastError: 'gmail_refresh_failed',
+            status: 'ERROR',
           }),
         }),
       );

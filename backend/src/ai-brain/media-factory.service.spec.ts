@@ -79,10 +79,9 @@ describe('MediaFactoryService', () => {
       buildService('sk-test');
       mockImagesGenerate.mockResolvedValueOnce({ data: [] });
 
-      await expect(service.generateImage('prompt')).rejects.toThrow(ServiceUnavailableException);
-      await expect(service.generateImage('prompt')).rejects.toThrow(
-        'Image generation returned no URL',
-      );
+      const promise = service.generateImage('prompt');
+      await expect(promise).rejects.toThrow(ServiceUnavailableException);
+      await expect(promise).rejects.toThrow('Image generation returned no URL');
     });
 
     it('throws ServiceUnavailableException when first data entry has no url', async () => {
@@ -91,10 +90,9 @@ describe('MediaFactoryService', () => {
         data: [{ revised_prompt: 'revised prompt' }],
       });
 
-      await expect(service.generateImage('prompt')).rejects.toThrow(ServiceUnavailableException);
-      await expect(service.generateImage('prompt')).rejects.toThrow(
-        'Image generation returned no URL',
-      );
+      const promise = service.generateImage('prompt');
+      await expect(promise).rejects.toThrow(ServiceUnavailableException);
+      await expect(promise).rejects.toThrow('Image generation returned no URL');
     });
   });
 

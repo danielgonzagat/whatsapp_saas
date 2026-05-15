@@ -333,7 +333,7 @@ describe('Inbound Golden Path — P12 WhatsApp integration proof', () => {
       });
       expect(prisma.decisionOutcome.updateMany).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: { outcomeKey, outcomeAt: null },
+          where: { outcomeKey, workspaceId: { not: '' }, outcomeAt: null },
           data: expect.objectContaining({
             outcomeName: 'inbound.replied',
             wonVsBaseline: true,

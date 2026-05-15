@@ -94,11 +94,13 @@ describe('GdprService', () => {
       findUniqueOrThrow: jest.fn(),
       findFirst: jest.fn(),
       update: jest.fn(),
+      updateMany: jest.fn(),
     },
     agent: {
       findUnique: jest.fn(),
       findFirst: jest.fn(),
       update: jest.fn(),
+      updateMany: jest.fn(),
     },
     refreshToken: {
       updateMany: jest.fn(),
@@ -155,7 +157,7 @@ describe('GdprService', () => {
       status: GdprStatus.PROCESSING,
     });
     prismaMock.agent.findUnique.mockResolvedValue(agentRecord);
-    prismaMock.agent.findFirst.mockResolvedValue(null);
+    prismaMock.agent.findFirst.mockResolvedValue(agentRecord);
     prismaMock.conversation.findMany.mockResolvedValue([]);
     prismaMock.conversation.updateMany.mockResolvedValue({ count: 0 });
     prismaMock.message.findMany.mockResolvedValue([]);
@@ -272,9 +274,9 @@ describe('GdprService', () => {
     it('completes full export pipeline: sweep, zip, upload, signed URL, cleanup', async () => {
       await service.processExport('gdpr_1');
 
-      expect(prismaMock.gdprRequest.update).toHaveBeenCalledWith(
+      expect(prismaMock.gdprRequest.updateMany).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: { id: 'gdpr_1' },
+          where: { id: 'gdpr_1', workspaceId: 'ws_1' },
           data: expect.objectContaining({ status: GdprStatus.PROCESSING }),
         }),
       );
@@ -285,9 +287,9 @@ describe('GdprService', () => {
       expect(storageMock.getSignedUrl).toHaveBeenCalled();
       expect(fs.unlinkSync).toHaveBeenCalled();
       expect(fs.rmSync).toHaveBeenCalled();
-      expect(prismaMock.gdprRequest.update).toHaveBeenCalledWith(
+      expect(prismaMock.gdprRequest.updateMany).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: { id: 'gdpr_1' },
+          where: { id: 'gdpr_1', workspaceId: 'ws_1' },
           data: expect.objectContaining({ status: GdprStatus.COMPLETE }),
         }),
       );
@@ -319,7 +321,11 @@ describe('GdprService', () => {
 
       await service.processExport('gdpr_1');
 
-      expect(prismaMock.agent.findUnique).toHaveBeenCalled();
+      expect(prismaMock.agent.findFirst).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 'agent_1', workspaceId: 'ws_1' },
+        }),
+      );
       expect(prismaMock.conversation.findMany).toHaveBeenCalled();
       expect(prismaMock.message.findMany).toHaveBeenCalledWith(
         expect.objectContaining({

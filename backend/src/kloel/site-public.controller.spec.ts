@@ -1,7 +1,7 @@
 import { SitePublicController } from './site-public.controller';
 
 const findFirst = jest.fn();
-const update = jest.fn();
+const updateMany = jest.fn();
 
 jest.mock('../logging/structured-logger', () => ({
   StructuredLogger: {
@@ -17,14 +17,19 @@ describe('SitePublicController', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     controller = new SitePublicController({
-      kloelSite: { findFirst, update },
+      kloelSite: { findFirst, updateMany },
     } as never);
   });
 
   describe('serveSite', () => {
     it('returns HTML content for a published site and increments visits', async () => {
-      findFirst.mockResolvedValue({ id: 'site-1', slug: 'mysite', htmlContent: '<h1>Hello</h1>' });
-      update.mockResolvedValue({});
+      findFirst.mockResolvedValue({
+        id: 'site-1',
+        workspaceId: 'ws-1',
+        slug: 'mysite',
+        htmlContent: '<h1>Hello</h1>',
+      });
+      updateMany.mockResolvedValue({ count: 1 });
 
       const res = {
         setHeader: jest.fn(),
@@ -35,10 +40,10 @@ describe('SitePublicController', () => {
       await controller.serveSite('mysite', res as never);
 
       expect(findFirst).toHaveBeenCalledWith({
-        where: { slug: 'mysite', published: true },
+        where: { slug: 'mysite', workspaceId: { not: '' }, published: true },
       });
-      expect(update).toHaveBeenCalledWith({
-        where: { id: 'site-1' },
+      expect(updateMany).toHaveBeenCalledWith({
+        where: { id: 'site-1', workspaceId: 'ws-1' },
         data: { visits: { increment: 1 } },
       });
       expect(res.setHeader).toHaveBeenCalledWith('Content-Type', 'text/html; charset=utf-8');
@@ -57,12 +62,17 @@ describe('SitePublicController', () => {
 
       expect(res.status).toHaveBeenCalledWith(404);
       expect(res.send).toHaveBeenCalledWith(expect.stringContaining('Pagina nao encontrada'));
-      expect(update).not.toHaveBeenCalled();
+      expect(updateMany).not.toHaveBeenCalled();
     });
 
     it('returns HTML content even when visit increment fails', async () => {
-      findFirst.mockResolvedValue({ id: 'site-1', slug: 'mysite', htmlContent: '<h1>Hello</h1>' });
-      update.mockRejectedValueOnce(new Error('DB error'));
+      findFirst.mockResolvedValue({
+        id: 'site-1',
+        workspaceId: 'ws-1',
+        slug: 'mysite',
+        htmlContent: '<h1>Hello</h1>',
+      });
+      updateMany.mockRejectedValueOnce(new Error('DB error'));
 
       const res = {
         setHeader: jest.fn(),
@@ -77,8 +87,13 @@ describe('SitePublicController', () => {
     });
 
     it('propagates found site id into the visit-increment update call', async () => {
-      findFirst.mockResolvedValue({ id: 'site-99', slug: 'prop-test', htmlContent: '<p>Test</p>' });
-      update.mockResolvedValue({});
+      findFirst.mockResolvedValue({
+        id: 'site-99',
+        workspaceId: 'ws-99',
+        slug: 'prop-test',
+        htmlContent: '<p>Test</p>',
+      });
+      updateMany.mockResolvedValue({ count: 1 });
 
       const res = {
         setHeader: jest.fn(),
@@ -89,10 +104,10 @@ describe('SitePublicController', () => {
       await controller.serveSite('prop-test', res as never);
 
       expect(findFirst).toHaveBeenCalledWith({
-        where: { slug: 'prop-test', published: true },
+        where: { slug: 'prop-test', workspaceId: { not: '' }, published: true },
       });
-      expect(update).toHaveBeenCalledWith({
-        where: { id: 'site-99' },
+      expect(updateMany).toHaveBeenCalledWith({
+        where: { id: 'site-99', workspaceId: 'ws-99' },
         data: { visits: { increment: 1 } },
       });
     });

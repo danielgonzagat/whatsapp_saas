@@ -6,6 +6,7 @@ import { EmailService } from './email.service';
 import { ConfigService } from '@nestjs/config';
 import { FacebookAuthService } from './facebook-auth.service';
 import { GoogleAuthService } from './google-auth.service';
+import { AppleAuthService } from './apple-auth.service';
 import { ConnectService } from '../payments/connect/connect.service';
 import { TikTokAuthService } from './tiktok-auth.service';
 import { RateLimitService } from './rate-limit.service';
@@ -70,6 +71,10 @@ const mockGoogleAuth = {
   verifyIdToken: jest.fn(),
 };
 
+const mockAppleAuth = {
+  verifyCredential: jest.fn(),
+};
+
 const mockFacebookAuth = {
   verifyAccessToken: jest.fn(),
 };
@@ -106,6 +111,7 @@ describe('AuthFlows', () => {
         { provide: EmailService, useValue: mockEmail },
         { provide: ConfigService, useValue: mockConfig },
         { provide: GoogleAuthService, useValue: mockGoogleAuth },
+        { provide: AppleAuthService, useValue: mockAppleAuth },
         { provide: FacebookAuthService, useValue: mockFacebookAuth },
         { provide: TikTokAuthService, useValue: mockTikTokAuth },
         { provide: ConnectService, useValue: mockConnect },

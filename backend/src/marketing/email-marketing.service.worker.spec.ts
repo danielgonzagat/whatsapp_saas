@@ -40,7 +40,7 @@ describe('EmailMarketingService', () => {
   const campaignFindFirstOrThrow = jest.fn();
   const campaignUpdate = jest.fn();
   const deliveryCreate = jest.fn();
-  const recipientUpdate = jest.fn();
+  const recipientUpdateMany = jest.fn();
   const recipientFindFirst = jest.fn();
   const approvalFindFirst = jest.fn();
 
@@ -68,7 +68,7 @@ describe('EmailMarketingService', () => {
           create: deliveryCreate,
         },
         emailCampaignRecipient: {
-          update: recipientUpdate,
+          updateMany: recipientUpdateMany,
           findFirst: recipientFindFirst,
         },
         approvalRequest: {
@@ -97,7 +97,7 @@ describe('EmailMarketingService', () => {
       });
       campaignUpdate.mockResolvedValue({});
       deliveryCreate.mockResolvedValue({});
-      recipientUpdate.mockResolvedValue({});
+      recipientUpdateMany.mockResolvedValue({ count: 1 });
       sendEmail.mockResolvedValue(true);
 
       if (!workerCallback) {
@@ -132,7 +132,7 @@ describe('EmailMarketingService', () => {
       });
       campaignUpdate.mockResolvedValue({});
       deliveryCreate.mockResolvedValue({});
-      recipientUpdate.mockResolvedValue({});
+      recipientUpdateMany.mockResolvedValue({ count: 1 });
       sendEmail.mockResolvedValue(true);
 
       if (!workerCallback) {
@@ -156,7 +156,7 @@ describe('EmailMarketingService', () => {
       });
       campaignUpdate.mockResolvedValue({});
       deliveryCreate.mockResolvedValue({});
-      recipientUpdate.mockResolvedValue({});
+      recipientUpdateMany.mockResolvedValue({ count: 1 });
       sendEmail.mockResolvedValue(false);
 
       if (!workerCallback) {
@@ -173,7 +173,7 @@ describe('EmailMarketingService', () => {
           }),
         }),
       );
-      expect(recipientUpdate).toHaveBeenCalledWith(
+      expect(recipientUpdateMany).toHaveBeenCalledWith(
         expect.objectContaining({
           data: expect.objectContaining({
             status: 'FAILED',
@@ -195,7 +195,7 @@ describe('EmailMarketingService', () => {
       });
       campaignUpdate.mockResolvedValue({});
       deliveryCreate.mockResolvedValue({});
-      recipientUpdate.mockResolvedValue({});
+      recipientUpdateMany.mockResolvedValue({ count: 1 });
       sendEmail.mockRejectedValue(new Error('SMTP connection refused'));
 
       if (!workerCallback) {
@@ -211,7 +211,7 @@ describe('EmailMarketingService', () => {
           }),
         }),
       );
-      expect(recipientUpdate).toHaveBeenCalledWith(
+      expect(recipientUpdateMany).toHaveBeenCalledWith(
         expect.objectContaining({
           data: expect.objectContaining({
             status: 'FAILED',
@@ -235,7 +235,7 @@ describe('EmailMarketingService', () => {
       });
       campaignUpdate.mockResolvedValue({});
       deliveryCreate.mockResolvedValue({});
-      recipientUpdate.mockResolvedValue({});
+      recipientUpdateMany.mockResolvedValue({ count: 1 });
       sendEmail.mockResolvedValue(true);
 
       if (!workerCallback) {

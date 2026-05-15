@@ -6,8 +6,9 @@ const prismaMock = {
     findMany: jest.fn(),
     create: jest.fn(),
     findFirst: jest.fn(),
-    update: jest.fn(),
-    delete: jest.fn(),
+    findFirstOrThrow: jest.fn(),
+    updateMany: jest.fn(),
+    deleteMany: jest.fn(),
   },
 };
 
@@ -121,7 +122,8 @@ describe('WebinarController', () => {
       const existing = { id: 'w-1', title: 'Old', workspaceId: 'ws-1' };
       const updated = { id: 'w-1', title: 'New Title' };
       prismaMock.webinar.findFirst.mockResolvedValueOnce(existing);
-      prismaMock.webinar.update.mockResolvedValueOnce(updated);
+      prismaMock.webinar.updateMany.mockResolvedValueOnce({ count: 1 });
+      prismaMock.webinar.findFirstOrThrow.mockResolvedValueOnce(updated);
 
       const req = {
         user: { sub: 'u-1', workspaceId: 'ws-1', email: 'a@test.com', role: 'user' },
@@ -135,9 +137,12 @@ describe('WebinarController', () => {
       expect(prismaMock.webinar.findFirst).toHaveBeenCalledWith({
         where: { id: 'w-1', workspaceId: 'ws-1' },
       });
-      expect(prismaMock.webinar.update).toHaveBeenCalledWith({
-        where: { id: 'w-1' },
+      expect(prismaMock.webinar.updateMany).toHaveBeenCalledWith({
+        where: { id: 'w-1', workspaceId: 'ws-1' },
         data: { title: 'New Title' },
+      });
+      expect(prismaMock.webinar.findFirstOrThrow).toHaveBeenCalledWith({
+        where: { id: 'w-1', workspaceId: 'ws-1' },
       });
       expect(result).toEqual({ webinar: updated, success: true });
     });
@@ -160,7 +165,7 @@ describe('WebinarController', () => {
     it('deletes a webinar and audits the deletion', async () => {
       const existing = { id: 'w-1', title: 'To Delete', workspaceId: 'ws-1' };
       prismaMock.webinar.findFirst.mockResolvedValueOnce(existing);
-      prismaMock.webinar.delete.mockResolvedValueOnce({});
+      prismaMock.webinar.deleteMany.mockResolvedValueOnce({ count: 1 });
       auditServiceMock.log.mockResolvedValueOnce(undefined);
 
       const req = {
@@ -180,8 +185,8 @@ describe('WebinarController', () => {
         resourceId: 'w-1',
         details: { deletedBy: 'user', title: 'To Delete' },
       });
-      expect(prismaMock.webinar.delete).toHaveBeenCalledWith({
-        where: { id: 'w-1' },
+      expect(prismaMock.webinar.deleteMany).toHaveBeenCalledWith({
+        where: { id: 'w-1', workspaceId: 'ws-1' },
       });
       expect(result).toEqual({ success: true });
     });

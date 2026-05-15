@@ -94,11 +94,13 @@ describe('GdprService', () => {
       findUniqueOrThrow: jest.fn(),
       findFirst: jest.fn(),
       update: jest.fn(),
+      updateMany: jest.fn(),
     },
     agent: {
       findUnique: jest.fn(),
       findFirst: jest.fn(),
       update: jest.fn(),
+      updateMany: jest.fn(),
     },
     refreshToken: {
       updateMany: jest.fn(),
@@ -188,16 +190,16 @@ describe('GdprService', () => {
     it('completes deletion cascade within 30-day window', async () => {
       await service.processDeletion('gdpr_1');
 
-      expect(prismaMock.gdprRequest.update).toHaveBeenCalledWith(
+      expect(prismaMock.gdprRequest.updateMany).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: { id: 'gdpr_1' },
+          where: { id: 'gdpr_1', workspaceId: 'ws_1' },
           data: expect.objectContaining({ status: GdprStatus.PROCESSING }),
         }),
       );
       expect(prismaMock.$transaction).toHaveBeenCalled();
-      expect(prismaMock.gdprRequest.update).toHaveBeenCalledWith(
+      expect(prismaMock.gdprRequest.updateMany).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: { id: 'gdpr_1' },
+          where: { id: 'gdpr_1', workspaceId: 'ws_1' },
           data: expect.objectContaining({ status: GdprStatus.COMPLETE }),
         }),
       );
@@ -212,9 +214,9 @@ describe('GdprService', () => {
 
       await service.processDeletion('gdpr_1');
 
-      expect(prismaMock.gdprRequest.update).toHaveBeenCalledWith(
+      expect(prismaMock.gdprRequest.updateMany).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: { id: 'gdpr_1' },
+          where: { id: 'gdpr_1', workspaceId: 'ws_1' },
           data: expect.objectContaining({ status: GdprStatus.FAILED }),
         }),
       );
@@ -233,7 +235,7 @@ describe('GdprService', () => {
     it('sets evidenceUrl after cascade completion', async () => {
       await service.processDeletion('gdpr_1');
 
-      const evidenceCall = prismaMock.gdprRequest.update.mock.calls.find((call: unknown[]) => {
+      const evidenceCall = prismaMock.gdprRequest.updateMany.mock.calls.find((call: unknown[]) => {
         const arg = call[0] as { data?: { evidenceUrl?: string } };
         return Boolean(arg?.data?.evidenceUrl);
       });

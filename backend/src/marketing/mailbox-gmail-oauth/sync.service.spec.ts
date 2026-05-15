@@ -130,7 +130,7 @@ describe('GmailSyncService', () => {
         }),
       );
       const [updateCall] = prismaMock.mailboxConnection.update.mock.calls[0]!;
-      expect(updateCall.where).toEqual({ id: 'mb-1' });
+      expect(updateCall.where).toEqual({ id: 'mb-1', workspaceId: 'ws-1' });
       expect(updateCall.data.lastSyncAt).toBeInstanceOf(Date);
       expect(updateCall.data.metadata?.syncedMessageIds).toEqual(
         expect.arrayContaining(['msg-1', 'msg-2']),
@@ -191,7 +191,7 @@ describe('GmailSyncService', () => {
 
       expect(omnichannelMock.handleIncomingMessage).not.toHaveBeenCalled();
       const [updateCall] = prismaMock.mailboxConnection.update.mock.calls[0]!;
-      expect(updateCall.where).toEqual({ id: 'mb-1' });
+      expect(updateCall.where).toEqual({ id: 'mb-1', workspaceId: 'ws-1' });
       expect(updateCall.data.metadata?.syncedMessageIds).toEqual(
         expect.arrayContaining(['msg-1', 'msg-2']),
       );

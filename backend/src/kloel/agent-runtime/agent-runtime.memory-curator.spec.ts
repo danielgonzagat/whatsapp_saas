@@ -6,6 +6,7 @@ function makePrisma(overrides: Record<string, unknown> = {}) {
       upsert: jest.fn().mockResolvedValue({}),
       findMany: jest.fn().mockResolvedValue([]),
       update: jest.fn().mockResolvedValue({}),
+      updateMany: jest.fn().mockResolvedValue({ count: 1 }),
       ...overrides,
     },
   };
@@ -163,10 +164,10 @@ describe('AgentRuntimeMemoryCuratorService', () => {
       expect(result.inspected).toBe(1);
       expect(result.expired).toBe(1);
       expect(result.staleKeys).toContain('agent_curated_turn:abc123');
-      expect(prisma.kloelMemory.update).toHaveBeenCalledTimes(1);
-      const updateCall = prisma.kloelMemory.update.mock.calls[0][0];
+      expect(prisma.kloelMemory.updateMany).toHaveBeenCalledTimes(1);
+      const updateCall = prisma.kloelMemory.updateMany.mock.calls[0][0];
       expect(updateCall).toMatchObject({
-        where: { id: 'mem_a' },
+        where: { id: 'mem_a', workspaceId: 'ws_1' },
         data: {
           metadata: {
             hygieneState: 'retired',

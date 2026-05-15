@@ -74,6 +74,50 @@ describe('CartRecoveryService', () => {
     };
   }
 
+  function makeStubGuards(overrides?: { allowed?: boolean; guardName?: string; reason?: string }) {
+    return {
+      evaluate: jest.fn().mockResolvedValue({
+        allowed: overrides?.allowed ?? true,
+        guardName: overrides?.guardName ?? 'ok',
+        reason: overrides?.reason ?? null,
+      }),
+    };
+  }
+
+  function makeStubTransport(overrides?: { sendAvailable?: boolean; sendResult?: unknown }) {
+    return {
+      getCapability: jest.fn().mockResolvedValue({
+        sendAvailable: overrides?.sendAvailable ?? true,
+      }),
+      send: jest.fn().mockResolvedValue(
+        overrides?.sendResult ?? {
+          success: true,
+          blocked: false,
+        },
+      ),
+    };
+  }
+
+  function makeStubBandit(overrides?: { arm?: string }) {
+    return {
+      register: jest.fn().mockResolvedValue(undefined),
+      choose: jest.fn().mockResolvedValue(overrides?.arm ? { arm: overrides.arm } : null),
+    };
+  }
+
+  function makeStubMindPolicy(chosen = 'help') {
+    return {
+      choose: jest.fn().mockResolvedValue({
+        chosen,
+        decision: {
+          fallbackActive: false,
+          reasonInternal: 'test-policy',
+          candidates: [{ action: chosen, beliefMean: 0.8 }],
+        },
+      }),
+    };
+  }
+
   describe('legacy behavior (no guard, no transport, no bandit)', () => {
     it('ignores malformed metadata when marking recovery email as sent', async () => {
       prisma.checkoutOrder.findMany.mockResolvedValue([pendingOrder({ metadata: 'corrupted' })]);
@@ -240,7 +284,7 @@ describe('CartRecoveryService', () => {
         expect.objectContaining({
           channel: 'email',
           recipientId: 'cliente@kloel.test',
-          content: expect.stringContaining('Voce esqueceu algo'),
+          content: expect.stringContaining('Voce deixou algo'),
           guardContext: expect.objectContaining({
             channel: 'email',
             withinComplianceWindow: true,

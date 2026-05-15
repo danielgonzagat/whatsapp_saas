@@ -39,12 +39,11 @@ export class BrainCapabilityExecutorService {
     try {
       const search = readOptionalStr(args?.search);
       const limit = Math.min(readOptionalNum(args?.limit, 50), 100);
-      const where: Record<string, unknown> = { workspaceId };
-      if (search) {
-        where.name = { contains: search, mode: 'insensitive' };
-      }
       const products = await this.prisma.product.findMany({
-        where,
+        where: {
+          workspaceId,
+          ...(search ? { name: { contains: search, mode: 'insensitive' as const } } : {}),
+        },
         select: { id: true, name: true, price: true, active: true, createdAt: true },
         orderBy: { createdAt: 'desc' },
         take: limit,
@@ -101,16 +100,14 @@ export class BrainCapabilityExecutorService {
     try {
       const limit = Math.min(readOptionalNum(args?.limit, 20), 50);
       const statusFilter = readOptionalStr(args?.status, 'all');
-      const where: Record<string, unknown> = { workspaceId };
-      if (statusFilter === 'open') {
-        where.status = { not: 'closed' };
-      } else if (statusFilter === 'closed') {
-        where.status = 'closed';
-      }
       // lastMessagePreview doesn't exist on Conversation in current schema;
       // surface a derived preview by joining the most recent message text.
       const conversations = await this.prisma.conversation.findMany({
-        where,
+        where: {
+          workspaceId,
+          ...(statusFilter === 'open' ? { status: { not: 'closed' } } : {}),
+          ...(statusFilter === 'closed' ? { status: 'closed' } : {}),
+        },
         select: {
           id: true,
           contact: { select: { id: true, name: true, phone: true } },

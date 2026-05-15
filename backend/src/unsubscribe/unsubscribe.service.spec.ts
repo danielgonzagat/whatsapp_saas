@@ -42,7 +42,7 @@ describe('UnsubscribeService', () => {
       take: 1,
     });
     expect(update).toHaveBeenCalledWith({
-      where: { id: 'c-1' },
+      where: { id: 'c-1', workspaceId: 'ws-1' },
       data: expect.objectContaining({ optIn: false }),
     });
   });

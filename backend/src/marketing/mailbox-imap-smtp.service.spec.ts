@@ -386,7 +386,7 @@ describe('MailboxImapSmtpService', () => {
     ).rejects.toThrow('imap_smtp_send_failed');
 
     const [updateCall] = update.mock.calls[0]!;
-    expect(updateCall.where).toEqual({ id: 'mailbox-1' });
+    expect(updateCall.where).toEqual({ id: 'mailbox-1', workspaceId: 'ws-1' });
     expect(updateCall.data.lastError).toBe('SMTP connection refused');
     expect(mailboxMetrics.sendFailed.mock.calls).toContainEqual([
       'imap_smtp',
