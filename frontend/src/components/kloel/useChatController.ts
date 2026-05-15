@@ -5,7 +5,7 @@ import { useToast } from '@/components/kloel/ToastProvider';
 import { billingApi, tokenStorage } from '@/lib/api';
 import { loadKloelThreadMessages } from '@/lib/kloel-conversations';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { AgentActivity, AgentStats } from './AgentConsole';
 import { useAuth } from './auth/auth-provider';
 import { applyAgentStatsEvent, mapThreadMessageToChatMessage, normalizeMessageMeta, createClientRequestId } from './chat-container.helpers';
@@ -280,7 +280,9 @@ export function useChatController({
       showToast(errMsg, 'error');
     }
   };
-  handleSendMessageRef.current = handleSendMessage;
+  useEffect(() => {
+    handleSendMessageRef.current = handleSendMessage;
+  });
 
   const {
     handleMessageRetry,
