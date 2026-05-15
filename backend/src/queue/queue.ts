@@ -123,16 +123,6 @@ export const connection = new Proxy({} as ReturnType<typeof createRedisClient>, 
   },
 });
 
-/** Queue options. */
-export const queueOptions = new Proxy(
-  {},
-  {
-    get(_, prop) {
-      return (getQueueOptions() as Record<string | symbol, unknown>)[prop];
-    },
-  },
-);
-
 /** Queue registry. */
 export const queueRegistry: Record<string, BullQueue> = {};
 
@@ -419,7 +409,3 @@ export const webhookQueue = lazyQueueProxy('webhook-jobs');
 export const googleAdsSyncQueue = lazyQueueProxy('google-ads-sync-jobs');
 /** Meta Ads sync queue (retry 5x exponential backoff, 200 calls/hr rate limit). */
 export const metaAdsSyncQueue = lazyQueueProxy('ads-sync-meta');
-/** Meta Ads sync DLQ (dead letter queue after 5 retry failures). */
-export const metaAdsSyncDlq = lazyQueueProxy('ads-sync-meta-dlq');
-/** TikTok Ads sync queue (retry 5x exponential backoff, 200 calls/hr rate limit). */
-export const tiktokAdsSyncQueue = lazyQueueProxy('ads-sync-tiktok');

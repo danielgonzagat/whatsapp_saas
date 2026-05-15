@@ -30,7 +30,3 @@ export const KLOEL_RULE_CATALOG: RuleDefinition[] = [
   DUPLICATE_PAYMENT_RULE,
   PAYMENT_AMOUNT_EXCEEDED_RULE,
 ] as const satisfies RuleDefinition[];
-
-export function findRuleDefinition(ruleId: string): RuleDefinition | null {
-  return KLOEL_RULE_CATALOG.find((rule) => rule.id === ruleId) ?? null;
-}

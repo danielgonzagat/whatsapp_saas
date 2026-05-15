@@ -20,7 +20,7 @@ import { defineConfig, devices } from '@playwright/test';
  */
 export default defineConfig({
   testDir: './',
-  testMatch: ['specs/**/*.spec.ts', 'visual/**/*.spec.ts'],
+  testMatch: ['specs/**/*.spec.ts', 'visual/**/*.spec.ts', 'flow*.spec.ts'],
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 2,
@@ -47,7 +47,7 @@ export default defineConfig({
   projects: [
     {
       name: 'chromium',
-      testMatch: 'specs/**/*.spec.ts',
+      testMatch: ['specs/**/*.spec.ts', 'flow*.spec.ts'],
       use: {
         ...devices['Desktop Chrome'],
         launchOptions: {

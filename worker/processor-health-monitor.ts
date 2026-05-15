@@ -64,7 +64,7 @@ async function maybeAlertFailedJobs(
   await sendOpsAlert(log, 'Autopilot queue has failed jobs', { failed, waiting });
 }
 
-export async function checkAutopilotQueueHealth(log: WorkerLogger): Promise<void> {
+async function checkAutopilotQueueHealth(log: WorkerLogger): Promise<void> {
   try {
     const counts = await autopilotQueue.getJobCounts();
     const waiting = (counts.waiting || 0) + (counts.delayed || 0);

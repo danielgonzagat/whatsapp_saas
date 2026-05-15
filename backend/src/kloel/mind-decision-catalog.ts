@@ -134,7 +134,3 @@ export const MIND_DECISION_CATALOG: MindDecisionSpec[] = [
 ];
 
 export const MIND_DECISION_TYPES = MIND_DECISION_CATALOG.map((spec) => spec.decisionType);
-
-export function findMindDecisionSpec(decisionType: string): MindDecisionSpec | null {
-  return MIND_DECISION_CATALOG.find((spec) => spec.decisionType === decisionType) ?? null;
-}
