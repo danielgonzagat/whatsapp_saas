@@ -87,6 +87,14 @@ npx tsx scripts/mcp/atomic-edit/smoke.ts   # expect: 47 passed, 0 failed
   combined into every subagent prompt. The fleet's `opencode run` subagents
   inherit it automatically — no per-invocation flag. Verify with
   `opencode mcp list` (expect `✓ atomic-edit connected`).
+- **Codex CLI (universal, same shared tool):** registered in
+  `~/.codex/config.toml` `[mcp_servers.atomic-edit]` pointing at the *same*
+  launcher; `~/.codex/AGENTS.md` carries the universal doctrine (mainstream
+  banned, shared MCP atomic is default; the old local cjs is offline fallback
+  only). Verify with `codex mcp list` (expect `atomic-edit … enabled`). Note:
+  `~/.local/bin/codex` is a shim routing `codex exec`→OpenCode; the real Codex
+  is `/opt/homebrew/bin/codex` and `codex mcp` targets the real config.
+- One shared tool, three CLIs — see `ATOMIC_EDIT_CLI_ACTIVATION_MATRIX.md`.
 
 Runtime is plain `node dist/server.js` (launcher self-builds on staleness; no
 tsx/npx). Full design + tool reference: `scripts/mcp/atomic-edit/README.md`.
