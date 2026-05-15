@@ -81,6 +81,23 @@ export function buildServiceModelMap(traces: ServiceTrace[]): Map<string, string
   return map;
 }
 
+function tracesForServiceCall(serviceCall: string, allTraces: ServiceTrace[]): ServiceTrace[] {
+  const [svcProp, methodName] = serviceCall.split('.');
+  if (!methodName) {
+    return [];
+  }
+
+  return allTraces.filter((trace) => {
+    if (`${trace.serviceName}.${trace.methodName}` === serviceCall) {
+      return true;
+    }
+
+    const shortSvc = trace.serviceName.replace(/Service$/i, '').toLowerCase();
+    const shortProp = svcProp.replace(/Service$/i, '').toLowerCase();
+    return shortSvc === shortProp && trace.methodName === methodName;
+  });
+}
+
 export function resolveRouteModels(
   route: BackendRoute,
   serviceModelMap: Map<string, string[]>,
@@ -89,7 +106,7 @@ export function resolveRouteModels(
   const models = new Set<string>();
 
   for (const svcCall of route.serviceCalls) {
-    const [svcProp, methodName] = svcCall.split('.');
+    const [, methodName] = svcCall.split('.');
     if (!methodName) {
       continue;
     }
@@ -100,11 +117,45 @@ export function resolveRouteModels(
       continue;
     }
 
-    for (const trace of allTraces) {
-      const shortSvc = trace.serviceName.replace(/Service$/i, '').toLowerCase();
-      const shortProp = svcProp.replace(/Service$/i, '').toLowerCase();
-      if (shortSvc === shortProp && trace.methodName === methodName) {
-        trace.prismaModels.forEach((m) => models.add(m));
+    for (const trace of tracesForServiceCall(svcCall, allTraces)) {
+      trace.prismaModels.forEach((m) => models.add(m));
+    }
+  }
+
+  return [...models];
+}
+
+export function expandConsumedServiceModelClosure(
+  consumedServiceCalls: Set<string>,
+  serviceModelMap: Map<string, string[]>,
+  allTraces: ServiceTrace[],
+): string[] {
+  const models = new Set<string>();
+  const visitedCalls = new Set<string>();
+  const pendingCalls = [...consumedServiceCalls];
+
+  while (pendingCalls.length > 0) {
+    const serviceCall = pendingCalls.shift();
+    if (!serviceCall || visitedCalls.has(serviceCall)) {
+      continue;
+    }
+
+    visitedCalls.add(serviceCall);
+    const directModels = serviceModelMap.get(serviceCall);
+    if (directModels) {
+      directModels.forEach((model) => models.add(model));
+    }
+
+    for (const trace of tracesForServiceCall(serviceCall, allTraces)) {
+      trace.prismaModels.forEach((model) => models.add(model));
+
+      for (const downstreamCall of trace.serviceCalls ?? []) {
+        if (!consumedServiceCalls.has(downstreamCall)) {
+          consumedServiceCalls.add(downstreamCall);
+        }
+        if (!visitedCalls.has(downstreamCall)) {
+          pendingCalls.push(downstreamCall);
+        }
       }
     }
   }

@@ -132,6 +132,11 @@ console.log('\n═══ Smoke Test: Real Orphan Detection ═══');
 
 // Test that the expandUsedModelsWithRelations function is transitive
 import { expandUsedModelsWithRelations } from '../../graph/graph-part1-core';
+import {
+  buildServiceModelMap,
+  expandConsumedServiceModelClosure,
+} from '../../graph/graph-part2-routing';
+import type { ServiceTrace } from '../../types.core';
 
 const allModels = [
   makeModel('Product', [
@@ -149,6 +154,36 @@ expandUsedModelsWithRelations(used, allModels);
 assert(used.has('productCheckout'), 'indirectly used model detected via relation');
 assert(used.has('checkoutConfig'), 'transitive relation detected');
 assert(!used.has('trulyOrphan'), 'truly orphan model still reported');
+
+const serviceTraces: ServiceTrace[] = [
+  {
+    file: 'backend/src/kloel/decision-outcome.service.ts',
+    serviceName: 'DecisionOutcomeService',
+    methodName: 'closeOutcome',
+    line: 70,
+    prismaModels: ['decisionOutcome'],
+    serviceCalls: ['KloelGlobalPriorService.recordObservation'],
+  },
+  {
+    file: 'backend/src/kloel/kloel-global-prior.service.ts',
+    serviceName: 'KloelGlobalPriorService',
+    methodName: 'recordObservation',
+    line: 79,
+    prismaModels: ['kloelGlobalPrior'],
+    serviceCalls: [],
+  },
+];
+const consumedCalls = new Set<string>(['DecisionOutcomeService.closeOutcome']);
+const transitiveModels = expandConsumedServiceModelClosure(
+  consumedCalls,
+  buildServiceModelMap(serviceTraces),
+  serviceTraces,
+);
+assert(transitiveModels.includes('kloelGlobalPrior'), 'transitive service model is used');
+assert(
+  consumedCalls.has('KloelGlobalPriorService.recordObservation'),
+  'transitive service call is consumed',
+);
 
 console.log('\n═══ Results ═══');
 const failed = process.exitCode === 1;

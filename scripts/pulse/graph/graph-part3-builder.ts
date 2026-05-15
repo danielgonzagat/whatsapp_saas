@@ -25,6 +25,7 @@ import {
   matchApiCallToRoute,
   buildServiceModelMap,
   resolveRouteModels,
+  expandConsumedServiceModelClosure,
   type PulseGraphInput,
 } from './graph-part2-routing';
 import { buildApiModuleMap } from '../parsers/api-parser';
@@ -147,6 +148,12 @@ export function buildGraph(input: PulseGraphInput): PulseHealth {
       ];
     }
   }
+
+  expandConsumedServiceModelClosure(
+    consumedServiceCalls,
+    serviceModelMap,
+    serviceTraces,
+  ).forEach((model) => usedModels.add(model));
 
   expandUsedModelsWithRelations(usedModels, prismaModels);
 
