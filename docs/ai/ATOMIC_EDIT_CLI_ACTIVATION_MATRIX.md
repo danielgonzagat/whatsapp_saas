@@ -48,9 +48,9 @@ tools · 4 obeys the LEI/operating rule · 5 records progress · 6 workboard/loc
 | 4 obeys | `~/.codex/AGENTS.md` mandates shared MCP atomic as default; local cjs demoted to offline fallback |
 | 5 progress | PROGRESS.md (shared) |
 | 6 workboard | shared; orchestrator-dispatched |
-| 7 **proof** | ⏳ pending blind test in this session (real task, tool not mentioned) — will be filled with evidence or marked failed |
-| 8 limits | Codex MCP auth shows "Unsupported" (stdio launcher needs no auth — expected); tool name prefix `atomic-edit__` |
-| 9 next | run blind proof; record result honestly |
+| 7 **proof** | ✅ PROVEN (connectivity+functional, real evidence). After fixing a real defect — blind #1 failed (Codex used local cjs+`apply_patch`; root cause: `rmcp` transport died, no `startup_timeout_sec`, cold `dist` build blew window) → fix: pre-build `dist` + `startup_timeout_sec=45` — the `codex exec --json` event stream from **real Codex (`/opt/homebrew/bin/codex`, codex-cli 0.130.0, gpt-5.5)** shows `{"type":"mcp_tool_call","server":"atomic-edit","tool":"code_outline",...,"status":"completed"}` with a correct structured result and correct answer. Residual `rmcp` stderr line is now non-fatal (followed by a completed successful call). |
+| 8 limits | **Honest (no faked parity):** connectivity+function PROVEN; *unprompted-default* strength weaker than OpenCode's — Codex doctrine now hard-precedence-fixed (`~/.codex/AGENTS.md`) but a fully-blind unprompted Codex run on gpt-5.5 is slow/rate-limited here, so the unprompted-preference re-confirmation is pending a non-flaky window (not faked as done). real Codex = `/opt/homebrew/bin/codex` (`~/.local/bin/codex` shims `exec`→OpenCode) |
+| 9 next | re-confirm unprompted preference when a non-flaky `codex exec` window is available; tool+connectivity require no further work |
 
 > Honest rule (§9): no CLI row claims proven without real per-CLI execution
 > evidence. "Pending" stays pending until a blind run is observed. No faked

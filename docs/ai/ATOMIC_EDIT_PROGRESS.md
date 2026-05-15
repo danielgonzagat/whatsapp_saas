@@ -42,8 +42,23 @@ persistence, War Room→campaigns). Those are product engineering, deferred by
 Daniel for the production-proof phase. Kill-switch respected: tooling is not
 being over-built — this session only closed the real Codex gap + proved.
 
+## Codex connection — RESOLVED with real evidence (2026-05-15)
+
+Defect found & fixed: `rmcp` transport died on cold connect (no
+`startup_timeout_sec`, cold dist build). Fix: pre-build `dist` +
+`startup_timeout_sec=45` in `~/.codex/config.toml`. Proven via `codex exec
+--json` event stream — real Codex (gpt-5.5) called shared
+`atomic-edit/code_outline` and got a correct structured result. Doctrine
+hard-precedence-fixed in `~/.codex/AGENTS.md`. Honest residue: unprompted-
+default re-confirmation on gpt-5.5 pending a non-flaky window — NOT faked.
+
+All 3 CLIs now functionally operate the ONE shared tool:
+Claude ✅ (self-edit) · OpenCode ✅ (blind unprompted, repeated) · Codex ✅
+(connectivity+function proven; unprompted-strength caveat above).
+
 ## Next action
 
-Run the Codex blind execution proof; record result here honestly. Then: no
-more tool-building (D-ladder satisfied for the tool); next real work is
-product/integration, not infra.
+Tool + 3-CLI connectivity = COMPLETE (kill-switch: stop tool-building). The
+remaining scope is the explicitly-deferred production phase (the 4 named Kloel
+integrations / R-tier against real services), per Daniel's own deferral. No
+more atomic-edit infra work — that would be the banned meta-fuga.
