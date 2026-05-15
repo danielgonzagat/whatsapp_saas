@@ -54,11 +54,13 @@ describe('GdprController', () => {
       findUniqueOrThrow: jest.fn(),
       findFirst: jest.fn(),
       update: jest.fn(),
+      updateMany: jest.fn(),
     },
     agent: {
       findUnique: jest.fn(),
       findFirst: jest.fn(),
       update: jest.fn(),
+      updateMany: jest.fn(),
     },
     refreshToken: {
       updateMany: jest.fn(),
@@ -124,7 +126,7 @@ describe('GdprController', () => {
     prismaMock.gdprRequest.create.mockResolvedValue(gdprRecord);
     prismaMock.gdprRequest.findUnique.mockResolvedValue(gdprRecord);
     prismaMock.gdprRequest.findUniqueOrThrow.mockResolvedValue(gdprRecord);
-    prismaMock.gdprRequest.findFirst.mockResolvedValue(null);
+    prismaMock.gdprRequest.findFirst.mockResolvedValue(gdprRecord);
     prismaMock.gdprRequest.update.mockResolvedValue({
       ...gdprRecord,
       status: GdprStatus.PROCESSING,
@@ -165,7 +167,7 @@ describe('GdprController', () => {
     });
 
     it('returns 404 for unknown code', async () => {
-      prismaMock.gdprRequest.findUnique.mockResolvedValueOnce(null);
+      prismaMock.gdprRequest.findFirst.mockResolvedValueOnce(null);
 
       await request(app.getHttpServer()).get('/gdpr/status/unknown').expect(404);
     });
@@ -204,10 +206,10 @@ describe('GdprController', () => {
 
       expect(response.body).toEqual(
         expect.objectContaining({
-          confirmation_code: expect.any(String),
           url: expect.stringContaining('/data-deletion/status/'),
         }),
       );
+      expect(typeof response.body.confirmation_code).toBe('string');
     });
 
     it('returns not_found when facebook user is not in the system', async () => {

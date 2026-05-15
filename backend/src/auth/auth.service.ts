@@ -1,4 +1,4 @@
-import { forwardRef, Inject, Injectable, Optional } from '@nestjs/common';
+import { forwardRef, Inject, Injectable, NotFoundException, Optional } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { StructuredLogger } from '../logging/structured-logger';
@@ -162,6 +162,10 @@ export class AuthService {
   }) {
     const result = await loginWithAppleCredential(this.buildDeps(), {
       identityToken: data.identityToken,
+      ...(data.authorizationCode !== undefined
+        ? { authorizationCode: data.authorizationCode }
+        : {}),
+      ...(data.redirectUri !== undefined ? { redirectUri: data.redirectUri } : {}),
       ...(data.user !== undefined ? { user: data.user } : {}),
       ...(data.ip !== undefined ? { ip: data.ip } : {}),
     });
@@ -258,12 +262,20 @@ export class AuthService {
   }
 
   async completeOnboarding(agentId: string) {
-    const agent = await this.prisma.agent.update({
-      where: { id: agentId },
-      data: { onboardingCompletedAt: new Date() },
-      select: { id: true, onboardingCompletedAt: true },
+    const existing = await this.prisma.agent.findFirst({
+      where: { id: agentId, workspaceId: { not: '' } },
+      select: { workspaceId: true },
     });
-    return { onboardingCompletedAt: agent.onboardingCompletedAt };
+    if (!existing) {
+      throw new NotFoundException('Usuario nao encontrado.');
+    }
+
+    const onboardingCompletedAt = new Date();
+    await this.prisma.agent.updateMany({
+      where: { id: agentId, workspaceId: existing.workspaceId },
+      data: { onboardingCompletedAt },
+    });
+    return { onboardingCompletedAt };
   }
 
   async getMe(agentId: string) {

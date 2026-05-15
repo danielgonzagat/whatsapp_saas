@@ -1,15 +1,18 @@
-import { Controller, Get, Post, Query, Req, Param } from '@nestjs/common';
+import { Controller, Get, Post, Query, Req, Param, UseGuards } from '@nestjs/common';
 import type { Request } from 'express';
 import { AnunciosService } from './anuncios.service';
 import { AdsSyncProcessor } from '../integrations/ads-sync.processor';
 import { RouteClass } from '../common/throttler/route-class.decorator';
 import { WebhookEndpoint } from '../common/decorators/webhook-endpoint.decorator';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { WorkspaceGuard } from '../common/guards/workspace.guard';
 
 interface WorkspaceRequest extends Request {
   workspaceId?: string;
 }
 
 @Controller('api/anuncios')
+@UseGuards(JwtAuthGuard, WorkspaceGuard)
 @RouteClass('mutate')
 export class AnunciosController {
   constructor(

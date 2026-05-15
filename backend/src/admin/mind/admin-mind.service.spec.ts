@@ -5,6 +5,7 @@ import { MindBeliefService } from '../../kloel/mind-belief.service';
 import { MindPolicyService } from '../../kloel/mind-policy.service';
 import { MindObservabilityService } from '../../kloel/mind-observability.service';
 import { MindReportService } from '../../kloel/mind-report.service';
+import { MindLiftReportService } from '../../kloel/mind-lift-report.service';
 import { AdminMindService } from './admin-mind.service';
 
 describe('AdminMindService', () => {
@@ -23,6 +24,7 @@ describe('AdminMindService', () => {
     ask: jest.Mock;
   };
   let reports: { generateDaily: jest.Mock };
+  let liftReport: { aggregate: jest.Mock };
 
   beforeEach(async () => {
     prisma = {
@@ -39,12 +41,14 @@ describe('AdminMindService', () => {
       ask: jest.fn().mockResolvedValue({ answer: 'a' }),
     };
     reports = { generateDaily: jest.fn().mockResolvedValue({ ok: true }) };
+    liftReport = { aggregate: jest.fn().mockResolvedValue({ rows: [] }) };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         AdminMindService,
         { provide: PrismaService, useValue: prisma },
         { provide: MindBeliefService, useValue: beliefs },
+        { provide: MindLiftReportService, useValue: liftReport },
         { provide: MindPolicyService, useValue: policy },
         { provide: MindObservabilityService, useValue: observability },
         { provide: MindReportService, useValue: reports },

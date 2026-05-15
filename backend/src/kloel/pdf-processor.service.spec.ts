@@ -2,6 +2,9 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { PdfProcessorService } from './pdf-processor.service';
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { MemoryService } from './memory.service';
+import { CANONICAL_MODEL_IDS } from '../lib/openai-models';
+import { chatCompletionWithRetry } from './openai-wrapper';
+
 jest.mock('openai', () => ({
   default: jest.fn().mockImplementation(() => ({
     chat: { completions: { create: jest.fn() } },
@@ -12,9 +15,13 @@ jest.mock('./openai-wrapper', () => ({
   chatCompletionWithRetry: jest.fn(),
 }));
 
-jest.mock('../lib/openai-models', () => ({
-  resolveBackendOpenAIModel: jest.fn().mockReturnValue('gpt-4o'),
-}));
+jest.mock('../lib/openai-models', () => {
+  const actual = jest.requireActual<typeof import('../lib/openai-models')>('../lib/openai-models');
+  return {
+    ...actual,
+    resolveBackendOpenAIModel: jest.fn().mockReturnValue(actual.CANONICAL_MODEL_IDS.openAiTextOmni),
+  };
+});
 
 jest.mock('../common/async-sequence', () => ({
   forEachSequential: jest.fn(
@@ -26,7 +33,7 @@ jest.mock('../common/async-sequence', () => ({
   ),
 }));
 
-const mockChatCompletionWithRetry = jest.requireMock('./openai-wrapper').chatCompletionWithRetry;
+const mockChatCompletionWithRetry = jest.mocked(chatCompletionWithRetry);
 
 describe('PdfProcessorService', () => {
   let service: PdfProcessorService;
@@ -87,24 +94,19 @@ describe('PdfProcessorService', () => {
     it('analyzes text and returns analysis result', async () => {
       const result = await service.processText(wsId, 'Texto do PDF', 'documento.pdf');
 
-      expect(result).toEqual(
-        expect.objectContaining({
-          products: expect.any(Array),
-          companyInfo: 'Empresa XYZ',
-        }),
-      );
+      expect(result.products).toBeInstanceOf(Array);
+      expect(result.companyInfo).toBe('Empresa XYZ');
     });
 
     it('calls OpenAI with brain model', async () => {
       await service.processText(wsId, 'Texto do PDF', 'doc.pdf');
 
-      expect(mockChatCompletionWithRetry).toHaveBeenCalledWith(
-        expect.any(Object),
-        expect.objectContaining({
-          model: 'gpt-4o',
-          temperature: 0.3,
-        }),
-      );
+      const [clientArg, requestArg] = mockChatCompletionWithRetry.mock.calls[0] ?? [];
+      expect(clientArg).toBeDefined();
+      expect(requestArg).toMatchObject({
+        model: CANONICAL_MODEL_IDS.openAiTextOmni,
+        temperature: 0.3,
+      });
     });
 
     it('sends the PDF analysis contract without a system role', async () => {
@@ -142,7 +144,7 @@ describe('PdfProcessorService', () => {
       expect(memoryService.saveMemory).toHaveBeenCalledWith(
         wsId,
         expect.stringContaining('company_info'),
-        expect.any(Object),
+        { source: 'doc.pdf' },
         'company_info',
         'Empresa XYZ',
       );
@@ -154,7 +156,7 @@ describe('PdfProcessorService', () => {
       expect(memoryService.saveMemory).toHaveBeenCalledWith(
         wsId,
         expect.stringContaining('sales_script'),
-        expect.any(Object),
+        { source: 'doc.pdf' },
         'script',
         'Script de vendas',
       );
@@ -166,7 +168,7 @@ describe('PdfProcessorService', () => {
       expect(memoryService.saveMemory).toHaveBeenCalledWith(
         wsId,
         expect.stringContaining('objection_0'),
-        expect.any(Object),
+        { objection: 'Muito caro', response: 'Mas vale a pena' },
         'objection',
         expect.stringContaining('Muito caro'),
       );
@@ -215,11 +217,12 @@ describe('PdfProcessorService', () => {
     it('passes workspaceId to memoryService.saveProduct', async () => {
       await service.processText('ws-tenant', 'Texto', 'doc.pdf');
 
-      expect(memoryService.saveProduct).toHaveBeenCalledWith(
-        'ws-tenant',
-        expect.any(String),
-        expect.any(Object),
-      );
+      expect(memoryService.saveProduct).toHaveBeenCalledWith('ws-tenant', 'doc_pdf_product_0', {
+        benefits: ['Benefício 1'],
+        description: 'Descrição A',
+        name: 'Produto A',
+        price: 99.9,
+      });
     });
 
     it('passes workspaceId to memoryService.saveMemory', async () => {
@@ -227,10 +230,10 @@ describe('PdfProcessorService', () => {
 
       expect(memoryService.saveMemory).toHaveBeenCalledWith(
         'ws-tenant',
-        expect.any(String),
-        expect.any(Object),
-        expect.any(String),
-        expect.any(String),
+        'doc_pdf_company_info',
+        { source: 'doc.pdf' },
+        'company_info',
+        'Empresa XYZ',
       );
     });
 

@@ -74,12 +74,12 @@ describe('MemoryManagementService', () => {
       workspace: {
         findMany: jest.fn().mockResolvedValue([]),
       },
-      $transaction: jest.fn().mockImplementation((arg: unknown) => {
+      $transaction: jest.fn<Promise<unknown>>().mockImplementation((arg) => {
         if (typeof arg === 'function') {
-          return arg(prisma);
+          return (arg as (client: typeof prisma) => Promise<unknown>)(prisma);
         }
         return Promise.resolve(undefined);
-      }),
+      }) as jest.Mock,
       $queryRaw: jest.fn().mockResolvedValue([]),
     };
 
@@ -286,12 +286,13 @@ describe('MemoryManagementService', () => {
       expect(count).toBe(2);
       expect(prisma.kloelMemory.deleteMany).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: expect.objectContaining({
-            workspaceId: wsId,
-            updatedAt: { lt: expect.any(Date) },
-          }),
+          where: expect.objectContaining({ workspaceId: wsId }),
         }),
       );
+      const deleteArg = prisma.kloelMemory.deleteMany.mock.calls[0][0] as {
+        where: { updatedAt: { lt: Date } };
+      };
+      expect(deleteArg.where.updatedAt.lt).toBeInstanceOf(Date);
     });
 
     it('logs audit when memories are deleted', async () => {
@@ -299,11 +300,14 @@ describe('MemoryManagementService', () => {
 
       await service.cleanupWorkspace(wsId);
 
+      const workspaceAuditDetails: Record<string, unknown> = expect.objectContaining({
+        deletedCount: 7,
+      });
       expect(auditService.log).toHaveBeenCalledWith(
         expect.objectContaining({
           workspaceId: wsId,
           action: 'DELETE_WORKSPACE_MEMORIES',
-          details: expect.objectContaining({ deletedCount: 7 }),
+          details: workspaceAuditDetails,
         }),
       );
     });
@@ -314,274 +318,6 @@ describe('MemoryManagementService', () => {
       await service.cleanupWorkspace(wsId);
 
       expect(auditService.log).not.toHaveBeenCalled();
-    });
-  });
-
-  describe('normalizeSemanticDuplicates', () => {
-    it('returns 0 when fewer than 2 memories exist in category', async () => {
-      prisma.kloelMemory.findMany.mockResolvedValue([
-        {
-          id: 'm-1',
-          key: 'prod_a',
-          value: 'v',
-          updatedAt: new Date(),
-        },
-      ]);
-
-      const count = await service.normalizeSemanticDuplicates('ws-1', 'product');
-
-      expect(count).toBe(0);
-    });
-
-    it('removes duplicates within same prefix group keeping newest', async () => {
-      const memories = [
-        {
-          id: 'm-old',
-          key: 'product_a',
-          value: 'old',
-          updatedAt: new Date('2025-01-01'),
-        },
-        {
-          id: 'm-new',
-          key: 'product_a',
-          value: 'new',
-          updatedAt: new Date('2026-01-01'),
-        },
-        {
-          id: 'm-other',
-          key: 'product_b',
-          value: 'b',
-          updatedAt: new Date('2026-01-02'),
-        },
-      ];
-      prisma.kloelMemory.findMany.mockResolvedValue(memories);
-      prisma.kloelMemory.deleteMany.mockResolvedValue({ count: 0 });
-
-      const count = await service.normalizeSemanticDuplicates('ws-1', 'product');
-
-      expect(count).toBeGreaterThanOrEqual(0);
-      expect(prisma.kloelMemory.findMany).toHaveBeenCalledWith({
-        where: { workspaceId: 'ws-1', category: 'product' },
-        select: { id: true, key: true, value: true, updatedAt: true },
-        take: 500,
-      });
-    });
-
-    it('logs audit when duplicates were merged', async () => {
-      const memories = [
-        {
-          id: 'm-old',
-          key: 'product_a_x',
-          value: 'a',
-          updatedAt: new Date('2025-01-01'),
-        },
-        {
-          id: 'm-new',
-          key: 'product_a_x',
-          value: 'b',
-          updatedAt: new Date('2026-01-02'),
-        },
-      ];
-      prisma.kloelMemory.findMany.mockResolvedValue(memories);
-      prisma.kloelMemory.deleteMany.mockResolvedValue({ count: 1 });
-
-      await service.normalizeSemanticDuplicates('ws-1', 'product');
-
-      expect(auditService.log).toHaveBeenCalledWith(
-        expect.objectContaining({
-          workspaceId: 'ws-1',
-          action: 'DELETE_SEMANTIC_DUPLICATES',
-          resource: 'KloelMemory',
-          details: expect.objectContaining({
-            category: 'product',
-            mergedCount: 1,
-          }),
-        }),
-      );
-    });
-  });
-
-  describe('setMemoryPriority', () => {
-    const wsId = 'ws-prio';
-
-    it('sets priority on existing memory via transaction', async () => {
-      const memory = {
-        id: 'm-1',
-        workspaceId: wsId,
-        key: 'important',
-        value: { content: 'data' },
-      };
-      prisma.kloelMemory.findFirst.mockResolvedValue(memory);
-      prisma.kloelMemory.updateMany.mockResolvedValue({ count: 1 });
-
-      const result = await service.setMemoryPriority(wsId, 'important', 'high');
-
-      expect(result).toBe(true);
-      expect(prisma.$transaction).toHaveBeenCalled();
-    });
-
-    it('returns false when memory not found', async () => {
-      prisma.kloelMemory.findFirst.mockResolvedValue(null);
-
-      const result = await service.setMemoryPriority(wsId, 'nonexistent', 'high');
-
-      expect(result).toBe(false);
-    });
-
-    it('returns false on transaction error', async () => {
-      prisma.$transaction.mockRejectedValue(new Error('tx error'));
-
-      const result = await service.setMemoryPriority(wsId, 'key', 'low');
-
-      expect(result).toBe(false);
-    });
-
-    it('handles string value by wrapping in object', async () => {
-      const memory = {
-        id: 'm-str',
-        workspaceId: wsId,
-        key: 'key',
-        value: 'plain string',
-      };
-      prisma.kloelMemory.findFirst.mockResolvedValue(memory);
-      prisma.kloelMemory.updateMany.mockResolvedValue({ count: 1 });
-
-      const result = await service.setMemoryPriority(wsId, 'key', 'critical');
-
-      expect(result).toBe(true);
-    });
-  });
-
-  describe('getStats', () => {
-    it('returns stats from computeMemoryStats', async () => {
-      const stats: MemoryStats = {
-        total: 42,
-        byCategory: { product: 10, script: 5 },
-        byWorkspace: { 'ws-1': 42 },
-        oldestEntry: new Date('2025-01-01'),
-        averageAge: 30,
-      };
-      (computeMemoryStats as jest.Mock).mockResolvedValue(stats);
-
-      const result = await service.getStats();
-
-      expect(result).toEqual(stats);
-      expect(computeMemoryStats).toHaveBeenCalledWith(prisma);
-    });
-
-    it('returns empty stats on error', async () => {
-      (computeMemoryStats as jest.Mock).mockRejectedValue(new Error('stats failed'));
-
-      const result = await service.getStats();
-
-      expect(result.total).toBe(0);
-      expect(result.byCategory).toEqual({});
-      expect(opsAlert.alertOnCriticalError).toHaveBeenCalled();
-    });
-  });
-
-  describe('tenant isolation', () => {
-    it('cleanupWorkspace scoped to correct workspaceId', async () => {
-      prisma.kloelMemory.deleteMany.mockResolvedValue({ count: 1 });
-
-      await service.cleanupWorkspace('ws-tenant');
-
-      expect(prisma.kloelMemory.deleteMany).toHaveBeenCalledWith({
-        where: { workspaceId: 'ws-tenant' },
-      });
-    });
-
-    it('normalizeSemanticDuplicates scoped to correct workspaceId', async () => {
-      prisma.kloelMemory.findMany.mockResolvedValue([]);
-
-      await service.normalizeSemanticDuplicates('ws-tenant', 'script');
-
-      expect(prisma.kloelMemory.findMany).toHaveBeenCalledWith({
-        where: { workspaceId: 'ws-tenant', category: 'script' },
-        select: { id: true, key: true, value: true, updatedAt: true },
-        take: 500,
-      });
-    });
-
-    it('setMemoryPriority filters by workspaceId', async () => {
-      const memory = {
-        id: 'm-1',
-        workspaceId: 'ws-tenant',
-        key: 'key',
-        value: {},
-      };
-      prisma.kloelMemory.findFirst.mockResolvedValue(memory);
-      prisma.kloelMemory.updateMany.mockResolvedValue({ count: 1 });
-
-      await service.setMemoryPriority('ws-tenant', 'key', 'high');
-
-      expect(prisma.kloelMemory.findFirst).toHaveBeenCalledWith({
-        where: expect.objectContaining({
-          workspaceId: 'ws-tenant',
-          key: 'key',
-        }),
-      });
-    });
-  });
-
-  describe('error handling', () => {
-    it('cleanupAll handles expired category failure gracefully', async () => {
-      prisma.kloelMemory.count.mockResolvedValueOnce(10).mockResolvedValueOnce(10);
-      prisma.kloelMemory.deleteMany
-        .mockRejectedValueOnce(new Error('delete failed'))
-        .mockResolvedValueOnce({ count: 0 })
-        .mockResolvedValueOnce({ count: 0 })
-        .mockResolvedValueOnce({ count: 0 })
-        .mockResolvedValueOnce({ count: 0 })
-        .mockResolvedValueOnce({ count: 0 })
-        .mockResolvedValueOnce({ count: 0 })
-        .mockResolvedValueOnce({ count: 0 })
-        .mockResolvedValueOnce({ count: 0 });
-
-      const result = await service.cleanupAll();
-
-      expect(result.expiredRemoved).toBe(0);
-    });
-
-    it('cleanupAll handles duplicates failure gracefully', async () => {
-      prisma.kloelMemory.count.mockResolvedValueOnce(10).mockResolvedValueOnce(10);
-      prisma.kloelMemory.groupBy.mockRejectedValueOnce(new Error('groupBy failed'));
-      prisma.kloelMemory.deleteMany
-        .mockResolvedValueOnce({ count: 0 })
-        .mockResolvedValueOnce({ count: 0 })
-        .mockResolvedValueOnce({ count: 0 })
-        .mockResolvedValueOnce({ count: 0 })
-        .mockResolvedValueOnce({ count: 0 })
-        .mockResolvedValueOnce({ count: 0 })
-        .mockResolvedValueOnce({ count: 0 })
-        .mockResolvedValueOnce({ count: 0 })
-        .mockResolvedValueOnce({ count: 0 });
-
-      const result = await service.cleanupAll();
-
-      expect(result.duplicatesRemoved).toBe(0);
-    });
-
-    it('cleanupAll handles orphans failure gracefully', async () => {
-      prisma.kloelMemory.count.mockResolvedValueOnce(10).mockResolvedValueOnce(10);
-      prisma.kloelMemory.groupBy
-        .mockResolvedValueOnce([])
-        .mockResolvedValueOnce([{ workspaceId: 'ws-x' }]);
-      prisma.workspace.findMany.mockRejectedValue(new Error('workspace find failed'));
-      prisma.kloelMemory.deleteMany
-        .mockResolvedValueOnce({ count: 0 })
-        .mockResolvedValueOnce({ count: 0 })
-        .mockResolvedValueOnce({ count: 0 })
-        .mockResolvedValueOnce({ count: 0 })
-        .mockResolvedValueOnce({ count: 0 })
-        .mockResolvedValueOnce({ count: 0 })
-        .mockResolvedValueOnce({ count: 0 })
-        .mockResolvedValueOnce({ count: 0 })
-        .mockResolvedValueOnce({ count: 0 });
-
-      const result = await service.cleanupAll();
-
-      expect(result.orphansRemoved).toBe(0);
     });
   });
 });

@@ -1,3 +1,6 @@
+import { existsSync, readdirSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { resolve } from 'node:path';
 import { Test, TestingModule } from '@nestjs/testing';
 import { MindLiftReportService } from './mind-lift-report.service';
 import { DecisionOutcomeService } from './decision-outcome.service';
@@ -76,12 +79,30 @@ describe('MindLiftReportService', () => {
           wonVsBaseline: true,
           createdAt: new Date(),
           ...overrides,
-        } as unknown as Awaited<ReturnType<typeof decisionOutcome.findAllClosedSince>>[number]);
+        }) as Awaited<ReturnType<typeof decisionOutcome.findAllClosedSince>>[number];
 
       jest.spyOn(decisionOutcome, 'findAllClosedSince').mockResolvedValue([
         row({}),
-        row({ id: 'do-2', outcomeKey: 'k2', chosenAction: 'delay_24h', outcomeName: 'inbound.silent_24h', economicValue: 0, wonVsBaseline: false }),
-        row({ id: 'do-3', outcomeKey: 'k3', decisionType: 'coupon_offer', chosenAction: 'coupon_10', baselineAction: 'no_coupon', expectedWindow: 24, contextSnapshot: { channel: 'email' }, outcomeName: 'coupon.redeemed', economicValue: 50, wonVsBaseline: true }),
+        row({
+          id: 'do-2',
+          outcomeKey: 'k2',
+          chosenAction: 'delay_24h',
+          outcomeName: 'inbound.silent_24h',
+          economicValue: 0,
+          wonVsBaseline: false,
+        }),
+        row({
+          id: 'do-3',
+          outcomeKey: 'k3',
+          decisionType: 'coupon_offer',
+          chosenAction: 'coupon_10',
+          baselineAction: 'no_coupon',
+          expectedWindow: 24,
+          contextSnapshot: { channel: 'email' },
+          outcomeName: 'coupon.redeemed',
+          economicValue: 50,
+          wonVsBaseline: true,
+        }),
       ]);
 
       const report = await service.aggregate();
@@ -129,9 +150,7 @@ describe('MindLiftReportService', () => {
         createdAt: new Date(),
         ...overrides,
       });
-      jest.spyOn(decisionOutcome, 'findAllClosedSince').mockResolvedValue([
-        row({}) as never,
-      ]);
+      jest.spyOn(decisionOutcome, 'findAllClosedSince').mockResolvedValue([row({})]);
 
       const report = await service.aggregate();
       const r = report.rows[0]!;
@@ -161,10 +180,9 @@ describe('MindLiftReportService', () => {
         createdAt: new Date(),
         ...overrides,
       });
-      jest.spyOn(decisionOutcome, 'findAllClosedSince').mockResolvedValue([
-        row({}) as never,
-        row({ id: 'do-2', outcomeKey: 'k2' }) as never,
-      ]);
+      jest
+        .spyOn(decisionOutcome, 'findAllClosedSince')
+        .mockResolvedValue([row({}), row({ id: 'do-2', outcomeKey: 'k2' })]);
 
       const report = await service.aggregate();
       const r = report.rows[0]!;
@@ -192,7 +210,7 @@ describe('MindLiftReportService', () => {
         createdAt: new Date(),
         ...overrides,
       });
-      jest.spyOn(decisionOutcome, 'findAllClosedSince').mockResolvedValue([row({}) as never]);
+      jest.spyOn(decisionOutcome, 'findAllClosedSince').mockResolvedValue([row({})]);
       const report = await service.aggregate();
       expect(report.rows[0]!.channel).toBe('inbound');
     });
@@ -214,7 +232,7 @@ describe('MindLiftReportService', () => {
         wonVsBaseline: true,
         createdAt: new Date(),
       };
-      jest.spyOn(decisionOutcome, 'findAllClosedSince').mockResolvedValue([row as never]);
+      jest.spyOn(decisionOutcome, 'findAllClosedSince').mockResolvedValue([row]);
       const report = await service.aggregate();
       expect(report.rows[0]!.channel).toBe('unknown');
     });
@@ -237,7 +255,7 @@ describe('MindLiftReportService', () => {
         createdAt: new Date(),
         ...overrides,
       });
-      jest.spyOn(decisionOutcome, 'findAllClosedSince').mockResolvedValue([row({}) as never]);
+      jest.spyOn(decisionOutcome, 'findAllClosedSince').mockResolvedValue([row({})]);
       const report = await service.aggregate();
       const r = report.rows[0]!;
       expect(r.successCount).toBe(1);
@@ -400,15 +418,12 @@ describe('MindLiftReportService', () => {
 
     beforeEach(() => {
       // Isolate every run's report file via env override.
-      const { tmpdir } = require('node:os');
-      const { resolve } = require('node:path');
       tmpDir = resolve(tmpdir(), `mind-reports-spec-${Date.now()}-${Math.random()}`);
       process.env.MIND_REPORTS_DIR = tmpDir;
     });
 
     afterEach(() => {
       delete process.env.MIND_REPORTS_DIR;
-      const { rmSync } = require('node:fs');
       try {
         rmSync(tmpDir, { recursive: true, force: true });
       } catch {
@@ -424,7 +439,6 @@ describe('MindLiftReportService', () => {
       expect(md).toContain('Window: 7 days');
       expect(md).toContain('Total decision-channel pairs: 0');
 
-      const { existsSync, readdirSync } = require('node:fs');
       expect(existsSync(tmpDir)).toBe(true);
       const files = readdirSync(tmpDir).filter((f: string) => f.endsWith('.md'));
       expect(files.length).toBe(1);
@@ -484,7 +498,6 @@ describe('MindLiftReportService', () => {
 
     it('creates the reports dir even if it does not exist yet (mkdir recursive)', async () => {
       jest.spyOn(decisionOutcome, 'findAllClosedSince').mockResolvedValue([]);
-      const { existsSync } = require('node:fs');
       expect(existsSync(tmpDir)).toBe(false);
       await expect(service.generateMarkdownReport(14)).resolves.toBeDefined();
       expect(existsSync(tmpDir)).toBe(true);

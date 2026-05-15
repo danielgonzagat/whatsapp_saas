@@ -1,7 +1,6 @@
 import { Inject, Injectable, Optional, forwardRef } from '@nestjs/common';
 import { StructuredLogger } from '../logging/structured-logger';
 import { Prisma } from '@prisma/client';
-import { forEachSequential } from '../common/async-sequence';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { INBOX_SERVICE } from '../inbox/inbox.token';
 import type { IInboxService } from '../inbox/inbox.interface';
@@ -19,39 +18,18 @@ import {
   getLidPnMapExt,
   resolveCanonicalPhoneExt,
 } from './whatsapp-catchup.helpers';
-
-const D__D_S____S_DOE_RE = /^\+?\d[\d\s-]*\s+doe$/i;
-
-function safeStr(v: unknown, fb = ''): string {
-  return typeof v === 'string'
-    ? v
-    : typeof v === 'number' || typeof v === 'boolean'
-      ? String(v)
-      : fb;
-}
-function normalizeOptionalText(value: unknown): string {
-  if (typeof value === 'string') {
-    return value.trim();
-  }
-  if (typeof value === 'number' || typeof value === 'boolean') {
-    return String(value).trim();
-  }
-  return '';
-}
-
-type BackfillCursorData = {
-  chatId?: string;
-  activityTimestamp?: number;
-  timestamp?: number;
-  updatedAt?: unknown;
-  [key: string]: unknown;
-};
-type WahaMessagePayload = {
-  _data?: { key?: { remoteJidAlt?: string; remoteJid?: string }; [key: string]: unknown };
-  key?: { remoteJidAlt?: string; remoteJid?: string };
-  [key: string]: unknown;
-};
-type NormalizedJsonObj = Record<string, unknown>;
+import {
+  reconcileRemoteChatState as reconcileRemoteChatStateHelper,
+  sanitizePlaceholderContacts as sanitizePlaceholderContactsHelper,
+} from './whatsapp-catchup-history-state.helpers';
+import {
+  type BackfillCursorData,
+  isDoePlaceholderName,
+  type NormalizedJsonObj,
+  normalizeOptionalText,
+  safeStr,
+  type WahaMessagePayload,
+} from './whatsapp-catchup-history.shared';
 
 export type CatchupBackfillCursor = {
   chatId: string;
@@ -128,7 +106,7 @@ export class WhatsappCatchupHistoryService {
     if (l === 'doe' || l === 'unknown' || l === 'desconhecido') {
       return true;
     }
-    if (D__D_S____S_DOE_RE.test(n)) {
+    if (isDoePlaceholderName(n)) {
       return true;
     }
     if (pd && l === `${pd} doe`) {
@@ -373,190 +351,34 @@ export class WhatsappCatchupHistoryService {
   }
 
   async reconcileRemoteChatState(ws: string, chat: WahaChatSummary): Promise<void> {
-    const cid = String(chat.id || '').trim();
-    if (!cid || cid.includes('@g.us')) {
-      return;
-    }
-    const phone = await this.resolveCanonicalPhone(ws, cid);
-    if (!phone) {
-      return;
-    }
-    const ec = await this.prisma.contact.findUnique({
-      where: { workspaceId_phone: { workspaceId: ws, phone } },
-      select: { id: true, name: true, customFields: true },
-    });
-    const ecf = this.normalizeJsonObject(ec?.customFields);
-    const erp = safeStr(ecf.remotePushName).trim();
-    const esn = String(ec?.name || '').trim();
-    const rpn =
-      this.resolveRemoteContactName(chat) ||
-      (!this.isPlaceholderContactName(erp, phone) ? erp : '') ||
-      null;
-    const cn = rpn || (!this.isPlaceholderContactName(esn, phone) ? esn : '') || null;
-    const mappings = await this.getLidPnMap(ws);
-    const rcid = this.resolveCanonicalChatId(cid, mappings);
-    const contact = await this.prisma.contact.upsert({
-      where: { workspaceId_phone: { workspaceId: ws, phone } },
-      update: {
-        name: cn,
-        customFields: JSON.parse(
-          JSON.stringify({
-            ...ecf,
-            remotePushName: rpn || undefined,
-            remotePushNameUpdatedAt: rpn
-              ? new Date().toISOString()
-              : ecf.remotePushNameUpdatedAt || undefined,
-            lastRemoteChatId: cid,
-            lastResolvedChatId: rcid || cid,
-          }),
-        ) as Prisma.InputJsonObject,
+    await reconcileRemoteChatStateHelper(
+      {
+        prisma: this.prisma,
+        providerRegistry: this.providerRegistry,
+        logger: this.logger,
+        getLidPnMap: (workspaceId) => this.getLidPnMap(workspaceId),
+        resolveCanonicalPhone: (workspaceId, chatId) =>
+          this.resolveCanonicalPhone(workspaceId, chatId),
+        resolveCanonicalChatId: (chatId, mappings) => this.resolveCanonicalChatId(chatId, mappings),
+        resolveRemoteContactName: (remoteChat) => this.resolveRemoteContactName(remoteChat),
+        isPlaceholderContactName: (value, phone) => this.isPlaceholderContactName(value, phone),
+        normalizeJsonObject: (value) => this.normalizeJsonObject(value),
+        normalizeTimestamp: (value) => this.normalizeTimestamp(value),
+        resolveChatActivityTimestamp: (remoteChat) => this.resolveChatActivityTimestamp(remoteChat),
       },
-      create: {
-        workspaceId: ws,
-        phone,
-        name: cn,
-        customFields: JSON.parse(
-          JSON.stringify({
-            remotePushName: rpn || undefined,
-            remotePushNameUpdatedAt: rpn ? new Date().toISOString() : undefined,
-            lastRemoteChatId: cid,
-            lastResolvedChatId: rcid || cid,
-          }),
-        ) as Prisma.InputJsonObject,
-      },
-      select: { id: true },
-    });
-    const saved = cn
-      ? await this.providerRegistry
-          .upsertContactProfile(ws, { phone, name: cn })
-          .catch((e: unknown) => {
-            this.logger.warn(
-              `upsertContactProfile failed for ws=${ws} phone=${phone}: ${e instanceof Error ? e.message : 'unknown'}`,
-            );
-            return false;
-          })
-      : false;
-    if (saved) {
-      await this.prisma.contact.updateMany({
-        where: { id: contact.id, workspaceId: ws },
-        data: {
-          customFields: JSON.parse(
-            JSON.stringify({
-              ...this.normalizeJsonObject(
-                (
-                  await this.prisma.contact.findFirst({
-                    where: { id: contact.id, workspaceId: ws },
-                    select: { customFields: true },
-                  })
-                )?.customFields,
-              ),
-              whatsappSavedAt: new Date().toISOString(),
-              lastRemoteChatId: cid,
-              lastResolvedChatId: rcid || cid,
-              remotePushName: rpn || undefined,
-            }),
-          ) as Prisma.InputJsonObject,
-        },
-      });
-    }
-    const rAt = this.normalizeTimestamp(this.resolveChatActivityTimestamp(chat));
-    const exC = await this.prisma.conversation.findFirst({
-      where: { workspaceId: ws, contactId: contact.id },
-      orderBy: { updatedAt: 'desc' },
-      select: { id: true, unreadCount: true, lastMessageAt: true },
-    });
-    if (!exC) {
-      await this.prisma.conversation.create({
-        data: {
-          workspaceId: ws,
-          contactId: contact.id,
-          status: 'OPEN',
-          priority: 'MEDIUM',
-          channel: 'WHATSAPP',
-          mode: 'AI',
-          unreadCount: Math.max(0, Number(chat.unreadCount || 0) || 0),
-          lastMessageAt: rAt || new Date(),
-        },
-      });
-      return;
-    }
-    const clm =
-      exC.lastMessageAt instanceof Date
-        ? exC.lastMessageAt
-        : this.normalizeTimestamp(exC.lastMessageAt);
-    await this.prisma.conversation.updateMany({
-      where: { id: exC.id, workspaceId: ws },
-      data: {
-        unreadCount: Math.max(
-          0,
-          Number(exC.unreadCount || 0) || 0,
-          Number(chat.unreadCount || 0) || 0,
-        ),
-        lastMessageAt: rAt && (!clm || rAt > clm) ? rAt : clm || new Date(),
-      },
-    });
+      ws,
+      chat,
+    );
   }
 
   async sanitizePlaceholderContacts(ws: string): Promise<void> {
-    if (typeof this.prisma.contact?.findMany !== 'function') {
-      return;
-    }
-    const contacts = await this.prisma.contact.findMany({
-      take: 5000,
-      where: { workspaceId: ws },
-      select: {
-        id: true,
-        phone: true,
-        name: true,
-        customFields: true,
-        _count: {
-          select: {
-            messages: true,
-            conversations: true,
-            deals: true,
-            executions: true,
-            autopilotEvents: true,
-            insights: true,
-          },
-        },
+    await sanitizePlaceholderContactsHelper(
+      {
+        prisma: this.prisma,
+        normalizeJsonObject: (value) => this.normalizeJsonObject(value),
+        isPlaceholderContactName: (value, phone) => this.isPlaceholderContactName(value, phone),
       },
-      orderBy: { updatedAt: 'desc' },
-    });
-    await forEachSequential(contacts, async (contact) => {
-      const cf = this.normalizeJsonObject(contact.customFields);
-      const sn = String(contact.name || '').trim();
-      const rp = safeStr(cf.remotePushName).trim();
-      const tn =
-        (!this.isPlaceholderContactName(rp, contact.phone) ? rp : '') ||
-        (!this.isPlaceholderContactName(sn, contact.phone) ? sn : '');
-      const hp =
-        this.isPlaceholderContactName(sn, contact.phone) ||
-        this.isPlaceholderContactName(rp, contact.phone);
-      if (!hp) {
-        return;
-      }
-      const ncf = { ...cf };
-      const rc =
-        Number(contact._count?.messages || 0) +
-        Number(contact._count?.conversations || 0) +
-        Number(contact._count?.deals || 0) +
-        Number(contact._count?.executions || 0) +
-        Number(contact._count?.autopilotEvents || 0) +
-        Number(contact._count?.insights || 0);
-      if (this.isPlaceholderContactName(rp, contact.phone)) {
-        delete ncf.remotePushName;
-        delete ncf.remotePushNameUpdatedAt;
-      } else if (tn) {
-        ncf.remotePushName = tn;
-        ncf.remotePushNameUpdatedAt = ncf.remotePushNameUpdatedAt || new Date().toISOString();
-      }
-      ncf.placeholderSanitizedAt = new Date().toISOString();
-      ncf.placeholderRelationCount = rc;
-      ncf.nameResolutionStatus = tn ? 'resolved' : 'pending';
-      await this.prisma.contact.updateMany({
-        where: { id: contact.id, workspaceId: ws },
-        data: { name: tn || null, customFields: ncf as Prisma.InputJsonValue },
-      });
-    });
+      ws,
+    );
   }
 }

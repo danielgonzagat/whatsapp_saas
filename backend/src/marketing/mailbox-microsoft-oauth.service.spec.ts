@@ -15,6 +15,39 @@ jest.mock('../observability/metrics', () => ({
   },
 }));
 
+function firstCallArg<T>(mock: { mock: { calls: Array<[unknown, ...unknown[]]> } }): T {
+  const [arg] = mock.mock.calls[0] ?? [];
+  return arg as T;
+}
+
+type MailboxUpsertArgs = {
+  where?: {
+    workspaceId_provider_email?: {
+      workspaceId: string;
+      provider: MailboxProvider;
+      email: string;
+    };
+  };
+  create?: {
+    accessToken?: string;
+    refreshToken?: string;
+    providerAccountId?: string;
+    status?: MailboxStatus;
+  };
+  update?: {
+    accessToken?: string;
+    refreshToken?: string;
+    status?: MailboxStatus;
+  };
+};
+
+function requestBodyFrom(init: RequestInit | undefined): string {
+  if (typeof init?.body !== 'string') {
+    throw new Error('Expected request body string');
+  }
+  return init.body;
+}
+
 describe('MailboxMicrosoftOAuthService', () => {
   const upsert = jest.fn();
   const findFirst = jest.fn();
@@ -112,31 +145,25 @@ describe('MailboxMicrosoftOAuthService', () => {
 
     const result = await service.completeOAuth('ws-1', 'auth-code', state);
 
-    expect(upsert).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: {
-          workspaceId_provider_email: {
-            workspaceId: 'ws-1',
-            provider: MailboxProvider.MICROSOFT,
-            email: 'owner@example.com',
-          },
-        },
-        create: expect.objectContaining({
-          accessToken: expect.not.stringContaining('plain-access-token'),
-          refreshToken: expect.not.stringContaining('plain-refresh-token'),
-          providerAccountId: 'microsoft-account-1',
-          status: MailboxStatus.ACTIVE,
-        }),
-        update: expect.objectContaining({
-          accessToken: expect.not.stringContaining('plain-access-token'),
-          refreshToken: expect.not.stringContaining('plain-refresh-token'),
-          status: MailboxStatus.ACTIVE,
-        }),
-      }),
-    );
-    const call = upsert.mock.calls[0]?.[0];
-    expect(isEncryptedMailboxToken(call.create.accessToken)).toBe(true);
-    expect(isEncryptedMailboxToken(call.create.refreshToken)).toBe(true);
+    const call = firstCallArg<MailboxUpsertArgs>(upsert);
+    expect(call.where).toEqual({
+      workspaceId_provider_email: {
+        workspaceId: 'ws-1',
+        provider: MailboxProvider.MICROSOFT,
+        email: 'owner@example.com',
+      },
+    });
+    expect(call.create).toMatchObject({
+      providerAccountId: 'microsoft-account-1',
+      status: MailboxStatus.ACTIVE,
+    });
+    expect(call.update).toMatchObject({ status: MailboxStatus.ACTIVE });
+    expect(call.create?.accessToken).not.toContain('plain-access-token');
+    expect(call.create?.refreshToken).not.toContain('plain-refresh-token');
+    expect(call.update?.accessToken).not.toContain('plain-access-token');
+    expect(call.update?.refreshToken).not.toContain('plain-refresh-token');
+    expect(isEncryptedMailboxToken(String(call.create?.accessToken))).toBe(true);
+    expect(isEncryptedMailboxToken(String(call.create?.refreshToken))).toBe(true);
     expect(result).toEqual(
       expect.objectContaining({
         connected: true,
@@ -145,9 +172,12 @@ describe('MailboxMicrosoftOAuthService', () => {
         connectionId: 'mailbox-1',
       }),
     );
-    expect(mailboxMetrics.connected).toHaveBeenCalledWith('microsoft', {
-      workspace_id: 'ws-1',
-    });
+    expect(mailboxMetrics.connected.mock.calls).toContainEqual([
+      'microsoft',
+      {
+        workspace_id: 'ws-1',
+      },
+    ]);
   });
 
   it('rejects callbacks when Microsoft does not grant a refresh token', async () => {
@@ -212,13 +242,25 @@ describe('MailboxMicrosoftOAuthService', () => {
       proactive: true,
     });
 
-    const fetchCall = (global.fetch as jest.Mock).mock.calls[0];
-    expect(fetchCall[0]).toBe('https://graph.microsoft.com/v1.0/me/sendMail');
-    const body = JSON.parse(String(fetchCall[1].body)) as Record<string, unknown>;
-    const message = body.message as Record<string, unknown>;
+    const fetchSpy = jest.mocked(global.fetch);
+    const [fetchUrl, fetchInit] = fetchSpy.mock.calls[0] ?? [];
+    expect(fetchUrl).toBe('https://graph.microsoft.com/v1.0/me/sendMail');
+    const body = JSON.parse(requestBodyFrom(fetchInit)) as {
+      message?: {
+        subject?: string;
+        body?: { content?: string; contentType?: string };
+        internetMessageHeaders?: Array<{ name: string; value: string }>;
+      };
+    };
+    const message = body.message;
+    expect(message).toBeDefined();
+    if (!message) {
+      throw new Error('Expected Microsoft payload message');
+    }
     expect(message.subject).toBe('Oferta especial');
-    expect(message.body).toEqual({ contentType: 'HTML', content: expect.stringContaining('Oferta') });
-    const headers = message.internetMessageHeaders as Array<{ name: string; value: string }>;
+    expect(message.body?.contentType).toBe('HTML');
+    expect(message.body?.content).toContain('Oferta');
+    const headers = message.internetMessageHeaders ?? [];
     expect(headers[0].name).toBe('List-Unsubscribe');
     expect(headers[0].value).toContain('<https://kloel.com/unsubscribe');
     expect(result).toEqual(
@@ -229,9 +271,12 @@ describe('MailboxMicrosoftOAuthService', () => {
         email: 'owner@example.com',
       }),
     );
-    expect(mailboxMetrics.sendCompleted).toHaveBeenCalledWith('microsoft', {
-      workspace_id: 'ws-1',
-    });
+    expect(mailboxMetrics.sendCompleted.mock.calls).toContainEqual([
+      'microsoft',
+      {
+        workspace_id: 'ws-1',
+      },
+    ]);
   });
 
   it('sends Microsoft Graph outbound without footer when proactive is false', async () => {
@@ -258,11 +303,18 @@ describe('MailboxMicrosoftOAuthService', () => {
       proactive: false,
     });
 
-    const fetchCall = (global.fetch as jest.Mock).mock.calls[0];
-    const body = JSON.parse(String(fetchCall[1].body)) as Record<string, unknown>;
-    const message = body.message as Record<string, unknown>;
+    const fetchSpy = jest.mocked(global.fetch);
+    const [, fetchInit] = fetchSpy.mock.calls[0] ?? [];
+    const body = JSON.parse(requestBodyFrom(fetchInit)) as {
+      message?: { body?: { content?: string }; internetMessageHeaders?: unknown };
+    };
+    const message = body.message;
+    expect(message).toBeDefined();
+    if (!message) {
+      throw new Error('Expected Microsoft payload message');
+    }
     expect(message.internetMessageHeaders).toBeUndefined();
-    expect(message.body.content).not.toContain('cancelar');
+    expect(message.body?.content).not.toContain('cancelar');
     expect(result).toEqual(expect.objectContaining({ sent: true }));
   });
 
@@ -286,9 +338,12 @@ describe('MailboxMicrosoftOAuthService', () => {
         reason: 'recipient_unsubscribed',
       }),
     );
-    expect(mailboxMetrics.sendSuppressed).toHaveBeenCalledWith('microsoft', {
-      workspace_id: 'ws-1',
-    });
+    expect(mailboxMetrics.sendSuppressed.mock.calls).toContainEqual([
+      'microsoft',
+      {
+        workspace_id: 'ws-1',
+      },
+    ]);
   });
 
   it('refreshes an expired Microsoft access token before sending', async () => {
@@ -325,15 +380,13 @@ describe('MailboxMicrosoftOAuthService', () => {
       proactive: true,
     });
 
-    expect(update).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: { id: 'mailbox-1' },
-        data: expect.objectContaining({
-          accessToken: expect.not.stringContaining('fresh-access-token'),
-          status: MailboxStatus.ACTIVE,
-        }),
-      }),
-    );
+    const updateArgs = firstCallArg<{
+      where?: { id?: string; workspaceId?: string };
+      data?: { accessToken?: string; status?: MailboxStatus };
+    }>(update);
+    expect(updateArgs.where).toEqual({ id: 'mailbox-1', workspaceId: 'ws-1' });
+    expect(updateArgs.data).toMatchObject({ status: MailboxStatus.ACTIVE });
+    expect(updateArgs.data?.accessToken).not.toContain('fresh-access-token');
     expect(result.sent).toBe(true);
   });
 });

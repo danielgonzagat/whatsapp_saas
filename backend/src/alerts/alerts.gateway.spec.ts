@@ -7,36 +7,43 @@ jest.mock('../common/redis/redis.util', () => ({
 
 import { createRedisClient } from '../common/redis/redis.util';
 
-function mockSocket(overrides: Record<string, any> = {}): Socket {
-  return { id: 'test-socket-id', ...overrides } as any as Socket;
+type SocketOverrides = Partial<Pick<Socket, 'id' | 'handshake' | 'join'>>;
+type AlertRoomTarget = { emit: jest.Mock<void, [string, unknown]> };
+
+function mockSocket(overrides: SocketOverrides = {}): Socket {
+  return { id: 'test-socket-id', ...overrides } as Socket;
+}
+
+function makeAlertRoomTarget(): AlertRoomTarget {
+  return { emit: jest.fn<void, [string, unknown]>() };
 }
 
 describe('AlertsGateway', () => {
   let gateway: AlertsGateway;
   let mockServer: {
-    to: jest.Mock;
-    emit: jest.Mock;
+    to: jest.Mock<AlertRoomTarget, [string]>;
+    emit: jest.Mock<void, [string, unknown]>;
   };
   let mockSub: {
-    subscribe: jest.Mock;
-    on: jest.Mock;
+    subscribe: jest.Mock<Promise<void>, [string]>;
+    on: jest.Mock<void, [string, (channel: string, message: string) => void]>;
   };
 
   beforeEach(() => {
     mockServer = {
-      to: jest.fn().mockReturnValue({ emit: jest.fn() }),
-      emit: jest.fn(),
+      to: jest.fn<AlertRoomTarget, [string]>().mockReturnValue(makeAlertRoomTarget()),
+      emit: jest.fn<void, [string, unknown]>(),
     };
 
     mockSub = {
-      subscribe: jest.fn().mockResolvedValue(undefined),
-      on: jest.fn(),
+      subscribe: jest.fn<Promise<void>, [string]>().mockResolvedValue(undefined),
+      on: jest.fn<void, [string, (channel: string, message: string) => void]>(),
     };
 
     (createRedisClient as jest.Mock).mockReturnValue(mockSub);
 
     gateway = new AlertsGateway();
-    (gateway as never as Record<string, unknown>).server = mockServer;
+    (gateway as { server: typeof mockServer }).server = mockServer;
   });
 
   describe('onModuleInit', () => {
@@ -44,9 +51,9 @@ describe('AlertsGateway', () => {
       await gateway.onModuleInit();
 
       expect(mockSub.subscribe).toHaveBeenCalledWith('alerts');
-      expect(mockSub.on).toHaveBeenCalledWith('message', expect.any(Function));
-
       const handler = mockSub.on.mock.calls[0][1];
+      expect(mockSub.on.mock.calls[0][0]).toBe('message');
+      expect(typeof handler).toBe('function');
       handler('alerts', JSON.stringify({ workspaceId: 'ws-1', type: 'rate-limit' }));
 
       expect(mockServer.to).toHaveBeenCalledWith('workspace:ws-1');
@@ -72,7 +79,7 @@ describe('AlertsGateway', () => {
     });
 
     it('emits alert:event via room target for workspace-scoped messages', async () => {
-      const roomEmit = jest.fn();
+      const roomEmit = jest.fn<void, [string, unknown]>();
       mockServer.to.mockReturnValue({ emit: roomEmit });
 
       await gateway.onModuleInit();
@@ -98,22 +105,24 @@ describe('AlertsGateway', () => {
 
   describe('handleConnection', () => {
     it('joins client to workspace room when workspaceId is provided', () => {
+      const joinMock = jest.fn();
       const socket = mockSocket({
         id: 'socket-1',
         handshake: { query: { workspaceId: 'ws-1' } },
-        join: jest.fn(),
+        join: joinMock,
       });
 
       gateway.handleConnection(socket);
 
-      expect(socket.join).toHaveBeenCalledWith('workspace:ws-1');
+      expect(joinMock).toHaveBeenCalledWith('workspace:ws-1');
     });
 
     it('handles connection without workspaceId gracefully', () => {
+      const joinMock = jest.fn();
       const socket = mockSocket({
         id: 'socket-2',
         handshake: { query: {} },
-        join: jest.fn(),
+        join: joinMock,
       });
 
       expect(() => {
@@ -122,15 +131,16 @@ describe('AlertsGateway', () => {
     });
 
     it('does not join room when workspaceId is empty string', () => {
+      const joinMock = jest.fn();
       const socket = mockSocket({
         id: 'socket-3',
         handshake: { query: { workspaceId: '' } },
-        join: jest.fn(),
+        join: joinMock,
       });
 
       gateway.handleConnection(socket);
 
-      expect(socket.join).not.toHaveBeenCalled();
+      expect(joinMock).not.toHaveBeenCalled();
     });
   });
 

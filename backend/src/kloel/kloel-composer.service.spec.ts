@@ -12,25 +12,33 @@ jest.mock('openai', () => ({
   })),
 }));
 
-jest.mock('../lib/ai-models', () => ({
-  resolveKloelCapabilityModel: jest.fn((capability: string) => {
-    if (capability === 'search_web') {
-      return 'gpt-4o';
-    }
-    if (capability === 'create_image') {
-      return 'dall-e-3';
-    }
-    return 'claude-sonnet';
-  }),
-}));
+jest.mock('../lib/ai-models', () => {
+  const { CANONICAL_MODEL_IDS } =
+    jest.requireActual<typeof import('../lib/openai-models')>('../lib/openai-models');
+
+  return {
+    resolveKloelCapabilityModel: jest.fn((capability: string) => {
+      if (capability === 'search_web') {
+        return CANONICAL_MODEL_IDS.openAiTextOmni;
+      }
+      if (capability === 'create_image') {
+        return CANONICAL_MODEL_IDS.imageGeneration;
+      }
+      return CANONICAL_MODEL_IDS.anthropicSonnetTest;
+    }),
+  };
+});
 
 describe('KloelComposerService', () => {
   let service: KloelComposerService;
   let planLimits: Pick<PlanLimitsService, 'ensureTokenBudget' | 'trackAiUsage'>;
   let storageService: Pick<StorageService, 'upload' | 'uploadFromUrl'>;
   let e2EGuard: Pick<KloelComposerE2EGuard, 'isEnabled' | 'buildSearchResult' | 'buildImageResult'>;
+  let originalOpenAiApiKey: string | undefined;
 
   beforeEach(async () => {
+    originalOpenAiApiKey = process.env.OPENAI_API_KEY;
+    process.env.OPENAI_API_KEY = 'test-openai-key';
     planLimits = {
       ensureTokenBudget: jest.fn().mockResolvedValue(undefined),
       trackAiUsage: jest.fn().mockResolvedValue(undefined),
@@ -66,6 +74,11 @@ describe('KloelComposerService', () => {
 
   afterEach(() => {
     jest.clearAllMocks();
+    if (originalOpenAiApiKey === undefined) {
+      delete process.env.OPENAI_API_KEY;
+    } else {
+      process.env.OPENAI_API_KEY = originalOpenAiApiKey;
+    }
   });
 
   describe('buildCapabilityPrompt', () => {
@@ -210,8 +223,7 @@ describe('KloelComposerService', () => {
   describe('error handling', () => {
     it('executeComposerCapability propagates search_web errors', async () => {
       e2EGuard.isEnabled = jest.fn().mockReturnValue(false);
-      const openai = (service as { openai: { responses: { create: jest.Mock } } })
-        .openai;
+      const openai = (service as { openai: { responses: { create: jest.Mock } } }).openai;
       if (openai?.responses?.create) {
         openai.responses.create.mockRejectedValue(new Error('API error'));
         await expect(

@@ -15,6 +15,7 @@ import { KloelComposerService } from './kloel-composer.service';
 import { KLOEL_COMPOSER_E2E_GUARD, NoopKloelComposerE2EGuard } from './kloel-composer-e2e-guard';
 import { KLOEL_LLM_E2E_GUARD, NoopKloelLLME2EGuard } from './kloel-llm-e2e-guard';
 import { KloelController } from './kloel.controller';
+import { KloelDataController } from './kloel-data.controller';
 import { KloelLeadBrainService } from './kloel-lead-brain.service';
 import { KloelLeadProcessorService } from './kloel-lead-processor.service';
 import { KloelReplyEngineService } from './kloel-reply-engine.service';
@@ -200,6 +201,7 @@ import { RiskClassModule } from './risk-class/risk-class.module';
   ],
   controllers: [
     KloelController,
+    KloelDataController,
     GuestChatController,
     WhatsAppBrainController,
     PaymentController,

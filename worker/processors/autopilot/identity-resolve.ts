@@ -14,7 +14,7 @@ const workspaceSelfIdentityCache = new Map<
   { expiresAt: number; identity: WorkspaceSelfIdentity }
 >();
 
-export function normalizeCatalogPhone(phone: string): string {
+export function normalizeCatalogPhone(phone: string | null | undefined): string {
   return String(phone || '')
     .replace(NON_DIGIT_RE, '')
     .replace('@c.us', '')
@@ -146,7 +146,7 @@ export function isWorkspaceSelfTarget(input: {
 }
 
 export function buildLidMap(
-  mappings: Array<{ lid?: string | null; pn?: string | null }>,
+  mappings: Array<{ lid?: string | null; pn?: string | null }> | null | undefined,
 ): Map<string, string> {
   const normalized = new Map<string, string>();
 
@@ -192,7 +192,7 @@ export function resolveCatalogPhoneFromChatId(
   return normalizeCatalogPhone(resolveCanonicalChatId(chatId, lidMap));
 }
 
-export function resolveLastMessageFromMe(chat: UnknownRecord): boolean | null {
+export function resolveLastMessageFromMe(chat: UnknownRecord | null | undefined): boolean | null {
   if (typeof chat?.lastMessage?.fromMe === 'boolean') {
     return chat.lastMessage.fromMe;
   }

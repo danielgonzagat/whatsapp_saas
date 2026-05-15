@@ -94,7 +94,8 @@ export class WebinarController {
     if (data.date && typeof data.date === 'string') {
       data.date = new Date(data.date);
     }
-    const webinar = await this.prisma.webinar.update({ where: { id }, data });
+    await this.prisma.webinar.updateMany({ where: { id, workspaceId }, data });
+    const webinar = await this.prisma.webinar.findFirstOrThrow({ where: { id, workspaceId } });
     return { webinar, success: true };
   }
 
@@ -115,7 +116,7 @@ export class WebinarController {
       resourceId: id,
       details: { deletedBy: 'user', title: existing.title },
     });
-    await this.prisma.webinar.delete({ where: { id } });
+    await this.prisma.webinar.deleteMany({ where: { id, workspaceId } });
     return { success: true };
   }
 }

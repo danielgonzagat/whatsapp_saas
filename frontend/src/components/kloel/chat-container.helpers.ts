@@ -2,6 +2,9 @@
 // complexity on the SSE reader path. Behaviour is byte-identical to the
 // original inline implementation.
 
+import { secureRandomFloat } from '@/lib/secure-random';
+import type { Message } from './chat-message.types';
+
 export interface GuestStreamLineUpdate {
   /** Delta to append to the assistant buffer, if any. */
   delta?: string;
@@ -98,4 +101,33 @@ export function parseGuestStreamLine(line: string): GuestStreamLineUpdate | null
   } catch {
     return {};
   }
+}
+
+/** Normalize message meta. */
+export function normalizeMessageMeta(metadata: unknown): Record<string, unknown> | undefined {
+  if (!metadata || typeof metadata !== 'object' || Array.isArray(metadata)) {return undefined;}
+  return metadata as Record<string, unknown>;
+}
+
+/** Create client request id. */
+export function createClientRequestId() {
+  return (
+    globalThis.crypto?.randomUUID?.() ||
+    `kloel_${Date.now()}_${secureRandomFloat().toString(36).slice(2, 10)}`
+  );
+}
+
+/** Map thread message to chat message. */
+export function mapThreadMessageToChatMessage(message: {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  metadata?: Record<string, unknown> | null;
+}): Message {
+  return {
+    id: message.id,
+    role: message.role,
+    content: message.content,
+    meta: message.metadata || undefined,
+  } satisfies Message;
 }

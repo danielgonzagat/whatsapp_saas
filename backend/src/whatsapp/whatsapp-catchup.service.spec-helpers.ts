@@ -71,6 +71,10 @@ type CatchupOrchestratorInternals = {
   runCatchup: (workspaceId: string, reason: string, lockToken: string) => Promise<unknown>;
 };
 
+function readObjectProperty(target: object, propertyKey: PropertyKey): unknown {
+  return Reflect.get(target, propertyKey) as unknown;
+}
+
 /** Run catchup. */
 export function runCatchup(
   service: WhatsAppCatchupService,
@@ -78,9 +82,16 @@ export function runCatchup(
   reason: string,
   lockToken: string,
 ) {
-  const orchestrator = (service as unknown as { orchestrator: WhatsappCatchupOrchestratorService })
-    .orchestrator;
-  return (orchestrator as unknown as CatchupOrchestratorInternals).runCatchup(
+  const orchestrator = readObjectProperty(service, 'orchestrator');
+  if (!(orchestrator instanceof WhatsappCatchupOrchestratorService)) {
+    throw new Error('catchup_orchestrator_unavailable');
+  }
+  const runCatchupMethod = readObjectProperty(orchestrator, 'runCatchup');
+  if (typeof runCatchupMethod !== 'function') {
+    throw new Error('catchup_run_method_unavailable');
+  }
+  return (runCatchupMethod as CatchupOrchestratorInternals['runCatchup']).call(
+    orchestrator,
     workspaceId,
     reason,
     lockToken,

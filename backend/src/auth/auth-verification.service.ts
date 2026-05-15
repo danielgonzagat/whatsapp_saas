@@ -1,4 +1,5 @@
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
+import { StructuredLogger } from '../logging/structured-logger';
 import { InjectRedis } from '@nestjs-modules/ioredis';
 import { BadRequestException, Injectable, Optional, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -17,6 +18,8 @@ import { UserNameDerivationService } from './user-name-derivation.service';
  */
 @Injectable()
 export class AuthVerificationService {
+  private readonly logger = StructuredLogger.from(AuthVerificationService.name);
+
   private readonly rateLimitService: RateLimitService;
 
   constructor(
@@ -27,6 +30,7 @@ export class AuthVerificationService {
     @Optional() private readonly opsAlert?: OpsAlertService,
     @Optional() @InjectRedis() private readonly redis?: Redis,
   ) {
+    this.logger.debug?.(`AuthVerificationService initialized`);
     this.rateLimitService = new RateLimitService(this.redis || null);
   }
 

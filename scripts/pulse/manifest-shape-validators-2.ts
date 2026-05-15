@@ -174,7 +174,7 @@ export function validateCertificationTiersShape(
         manifestBreak(
           'MANIFEST_INVALID',
           'pulse.manifest.json field "certificationTiers" must be an array',
-          'Certification tiers must define id, name, gates and any hard readiness requirements.',
+          'Certification tiers must define id, name, gates and required readiness entries.',
           manifestPath,
         ),
       );

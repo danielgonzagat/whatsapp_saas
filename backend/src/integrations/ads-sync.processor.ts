@@ -5,6 +5,12 @@ import { GoogleAdsProvider } from './google-ads.provider';
 import { MetaMarketingProvider } from './meta-marketing.provider';
 import { googleAdsSyncQueue, metaAdsSyncQueue } from '../queue/queue';
 import { createRedisClient } from '../common/redis/redis.util';
+import {
+  persistAdAccounts,
+  persistAdCampaigns,
+  persistAdInsights,
+  readAdsSyncStatus,
+} from './ads-sync-persistence.helpers';
 import type {
   AdAccountSyncResult,
   AdCampaignSyncResult,
@@ -249,161 +255,21 @@ export class AdsSyncProcessor implements OnModuleDestroy {
   // ── Persistence helpers ────────────────────────────────────────────
 
   private async persistAccounts(workspaceId: string, accounts: AdAccountSyncResult[]) {
-    for (const acc of accounts) {
-      await this.prisma.adAccount.upsert({
-        where: {
-          workspaceId_platform_accountId: {
-            workspaceId,
-            platform: acc.platform,
-            accountId: acc.accountId,
-          },
-        },
-        create: {
-          workspaceId,
-          platform: acc.platform,
-          accountId: acc.accountId,
-          accountName: acc.accountName ?? null,
-          status: 'connected',
-          lastSyncAt: new Date(),
-        },
-        update: {
-          accountName: acc.accountName ?? null,
-          status: 'connected',
-          lastSyncAt: new Date(),
-        },
-      });
-    }
+    return persistAdAccounts(this.prisma, workspaceId, accounts);
   }
 
   private async persistCampaigns(workspaceId: string, campaigns: AdCampaignSyncResult[]) {
-    for (const camp of campaigns) {
-      await this.prisma.adCampaign.upsert({
-        where: {
-          workspaceId_platform_campaignId: {
-            workspaceId,
-            platform: camp.platform,
-            campaignId: camp.campaignId,
-          },
-        },
-        create: {
-          workspaceId,
-          accountId: camp.accountId,
-          platform: camp.platform,
-          campaignId: camp.campaignId,
-          campaignName: camp.campaignName ?? null,
-          status: camp.status ?? null,
-          spend: camp.spend,
-          revenue: camp.revenue,
-          roas: camp.roas,
-          conversions: camp.conversions,
-          impressions: camp.impressions,
-          clicks: camp.clicks,
-          ctr: camp.ctr,
-          cpc: camp.cpc,
-          lastSyncAt: new Date(),
-        },
-        update: {
-          campaignName: camp.campaignName ?? null,
-          status: camp.status ?? null,
-          spend: camp.spend,
-          revenue: camp.revenue,
-          roas: camp.roas,
-          conversions: camp.conversions,
-          impressions: camp.impressions,
-          clicks: camp.clicks,
-          ctr: camp.ctr,
-          cpc: camp.cpc,
-          lastSyncAt: new Date(),
-        },
-      });
-    }
+    return persistAdCampaigns(this.prisma, workspaceId, campaigns);
   }
 
   private async persistInsights(workspaceId: string, insights: AdInsightSyncResult[]) {
-    for (const insight of insights) {
-      const date = insight.date instanceof Date ? insight.date : new Date(insight.date);
-      await this.prisma.adInsight.upsert({
-        where: {
-          workspaceId_platform_accountId_date: {
-            workspaceId,
-            platform: insight.platform,
-            accountId: insight.accountId,
-            date,
-          },
-        },
-        update: {
-          spend: insight.spend,
-          revenue: insight.revenue,
-          roas: insight.roas,
-          conversions: insight.conversions,
-          impressions: insight.impressions,
-          clicks: insight.clicks,
-          ctr: insight.ctr,
-          cpc: insight.cpc,
-        },
-        create: {
-          workspace: { connect: { id: workspaceId } },
-          accountId: insight.accountId,
-          platform: insight.platform,
-          date,
-          spend: insight.spend,
-          revenue: insight.revenue,
-          roas: insight.roas,
-          conversions: insight.conversions,
-          impressions: insight.impressions,
-          clicks: insight.clicks,
-          ctr: insight.ctr,
-          cpc: insight.cpc,
-        },
-      });
-    }
+    return persistAdInsights(this.prisma, workspaceId, insights);
   }
 
   // ── Sync status reader ────────────────────────────────────────────
 
   async getSyncStatus(workspaceId: string) {
-    const metaConn = await this.prisma.metaConnection.findFirst({
-      where: { workspaceId },
-      select: { adAccountId: true, status: true },
-    });
-
-    const latestAccount = await this.prisma.adAccount.findFirst({
-      where: { workspaceId, platform: 'meta' },
-      orderBy: { lastSyncAt: 'desc' },
-      select: { lastSyncAt: true },
-    });
-
-    const latestCampaign = await this.prisma.adCampaign.findFirst({
-      where: { workspaceId, platform: 'meta' },
-      orderBy: { lastSyncAt: 'desc' },
-      select: { lastSyncAt: true },
-    });
-
-    const latestTikTokAccount = await this.prisma.adAccount.findFirst({
-      where: { workspaceId, platform: 'tiktok' },
-      orderBy: { lastSyncAt: 'desc' },
-      select: { lastSyncAt: true },
-    });
-
-    const latestTikTokCampaign = await this.prisma.adCampaign.findFirst({
-      where: { workspaceId, platform: 'tiktok' },
-      orderBy: { lastSyncAt: 'desc' },
-      select: { lastSyncAt: true },
-    });
-
-    return {
-      workspaceId,
-      meta: {
-        connected: metaConn?.status === 'connected',
-        adAccountId: metaConn?.adAccountId || null,
-        lastAccountSync: latestAccount?.lastSyncAt?.toISOString() || null,
-        lastCampaignSync: latestCampaign?.lastSyncAt?.toISOString() || null,
-      },
-      tiktok: {
-        lastAccountSync: latestTikTokAccount?.lastSyncAt?.toISOString() || null,
-        lastCampaignSync: latestTikTokCampaign?.lastSyncAt?.toISOString() || null,
-      },
-    };
+    return readAdsSyncStatus(this.prisma, workspaceId);
   }
 
   // ── Static enqueue helpers (Google) ───────────────────────────────

@@ -8,6 +8,7 @@ type BackendOpenAIModelRole =
   | 'writer_fallback'
   | 'guest_emergency'
   | 'image_generation'
+  | 'audio_speech'
   | 'audio_understanding'
   | 'audio_understanding_fallback';
 
@@ -20,9 +21,23 @@ const DEFAULT_MODELS: Record<BackendOpenAIModelRole, string> = {
   writer_fallback: 'deepseek-v4-flash',
   guest_emergency: 'deepseek-v4-flash',
   image_generation: 'dall-e-3',
+  audio_speech: 'gpt-4o-mini-tts',
   audio_understanding: 'gpt-tempo-real-1.5',
   audio_understanding_fallback: 'gpt-4o-mini-transcribe',
 };
+
+export const CANONICAL_MODEL_IDS = {
+  imageGeneration: DEFAULT_MODELS.image_generation,
+  openAiTextMini: 'gpt-4o-mini',
+  openAiTextOmni: 'gpt-4o',
+  openAiTextMock: 'gpt-4o-mock',
+  openAiTextStub: 'gpt-stub',
+  openAiLegacyGpt4: 'gpt-4',
+  openAiLegacyGpt35: 'gpt-3.5',
+  openAiLegacyGpt35Turbo: 'gpt-3.5-turbo',
+  anthropicHealthProbe: 'claude-3-haiku-20240307',
+  anthropicSonnetTest: 'claude-sonnet',
+} as const;
 
 // Ordered ENV keys per role. First non-empty value wins.
 const MODEL_ENV_KEYS: Record<BackendOpenAIModelRole, readonly string[]> = {
@@ -45,6 +60,7 @@ const MODEL_ENV_KEYS: Record<BackendOpenAIModelRole, readonly string[]> = {
     'OPENAI_GUEST_EMERGENCY_MODEL',
   ],
   image_generation: ['OPENAI_IMAGE_MODEL'],
+  audio_speech: ['OPENAI_TTS_MODEL'],
   audio_understanding: ['OPENAI_AUDIO_UNDERSTANDING_MODEL'],
   audio_understanding_fallback: ['OPENAI_AUDIO_UNDERSTANDING_FALLBACK_MODEL'],
 };

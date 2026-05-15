@@ -1,5 +1,6 @@
 import { Controller, Get, Logger, Query, Res } from '@nestjs/common';
 import type { Response } from 'express';
+import { Public } from '../auth/public.decorator';
 import { WebhookEndpoint } from '../common/decorators/webhook-endpoint.decorator';
 import { UnsubscribeService } from './unsubscribe.service';
 
@@ -11,6 +12,7 @@ export class UnsubscribeController {
 
   constructor(private readonly unsubscribeService: UnsubscribeService) {}
 
+  @Public()
   @WebhookEndpoint('Email unsubscribe external link')
   @Get()
   async unsubscribe(@Query('token') token: string, @Res() res: Response) {
@@ -22,7 +24,9 @@ export class UnsubscribeController {
     const result = await this.unsubscribeService.processUnsubscribeToken(token.trim());
 
     if (result.success) {
-      this.logger.log(`Unsubscribe successful: email=${result.email} contactId=${result.contactId}`);
+      this.logger.log(
+        `Unsubscribe successful: email=${result.email} contactId=${result.contactId}`,
+      );
       return res.redirect(`${FRONTEND_URL}/unsubscribed`);
     }
 

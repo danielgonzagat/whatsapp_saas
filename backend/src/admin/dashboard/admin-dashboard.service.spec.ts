@@ -43,6 +43,37 @@ describe('AdminDashboardService', () => {
 
   const mockQueryRaw = jest.fn();
   const mockConversationCount = jest.fn();
+  const recurringMetricsRow = {
+    mrrProjectedInCents: 50000n,
+    baseAtStart: 40n,
+    canceledInRange: 2n,
+  };
+  const responseTimeRow = { avg_minutes: 12.5 };
+
+  function readRawQueryText(query: unknown): string {
+    if (
+      query &&
+      typeof query === 'object' &&
+      'strings' in query &&
+      Array.isArray((query as { strings?: unknown }).strings)
+    ) {
+      return (query as { strings: string[] }).strings.join(' ');
+    }
+    return '';
+  }
+
+  function mockRawAdminMetrics(
+    recurring = recurringMetricsRow,
+    responseTime: { avg_minutes: number | null } = responseTimeRow,
+  ) {
+    mockQueryRaw.mockImplementation((query: unknown) => {
+      const rawQueryText = readRawQueryText(query);
+      if (rawQueryText.includes('RAC_CustomerSubscription')) {
+        return Promise.resolve([recurring]);
+      }
+      return Promise.resolve([responseTime]);
+    });
+  }
 
   const prismaMock = {
     $queryRaw: mockQueryRaw,
@@ -105,15 +136,7 @@ describe('AdminDashboardService', () => {
       },
     });
 
-    mockQueryRaw
-      .mockResolvedValueOnce([
-        {
-          mrrProjectedInCents: 50000n,
-          baseAtStart: 40n,
-          canceledInRange: 2n,
-        },
-      ])
-      .mockResolvedValueOnce([{ avg_minutes: 12.5 }]);
+    mockRawAdminMetrics();
 
     mockConversationCount.mockResolvedValue(100);
 
@@ -172,15 +195,14 @@ describe('AdminDashboardService', () => {
 
     it('handles missing churnRate (baseAtStart=0)', async () => {
       mockQueryRaw.mockReset();
-      mockQueryRaw
-        .mockResolvedValueOnce([
-          {
-            mrrProjectedInCents: 0n,
-            baseAtStart: 0n,
-            canceledInRange: 0n,
-          },
-        ])
-        .mockResolvedValueOnce([{ avg_minutes: null }]);
+      mockRawAdminMetrics(
+        {
+          mrrProjectedInCents: 0n,
+          baseAtStart: 0n,
+          canceledInRange: 0n,
+        },
+        { avg_minutes: null },
+      );
 
       const result = await service.getHome('30D', 'PREVIOUS');
 
@@ -225,7 +247,7 @@ describe('AdminDashboardService', () => {
     it('handles raw query ($queryRaw) for recurring metrics', async () => {
       await service.getHome('30D', 'PREVIOUS');
 
-      expect(mockQueryRaw).toHaveBeenCalledTimes(2);
+      expect(mockQueryRaw).toHaveBeenCalledTimes(4);
       const firstCall = mockQueryRaw.mock.calls[0][0] as { strings: string[] };
       expect(firstCall.strings.join(' ')).toContain('RAC_CustomerSubscription');
     });

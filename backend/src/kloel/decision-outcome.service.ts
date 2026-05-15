@@ -54,7 +54,7 @@ export class DecisionOutcomeService {
 
   async closeOutcome(input: CloseOutcomeInput) {
     const result = await this.prisma.decisionOutcome.updateMany({
-      where: { outcomeKey: input.outcomeKey, outcomeAt: null },
+      where: { outcomeKey: input.outcomeKey, workspaceId: { not: '' }, outcomeAt: null },
       data: {
         outcomeAt: new Date(),
         outcomeName: input.outcomeName,
@@ -66,7 +66,7 @@ export class DecisionOutcomeService {
 
     if (result.count > 0) {
       const closed = await this.prisma.decisionOutcome.findFirst({
-        where: { outcomeKey: input.outcomeKey },
+        where: { outcomeKey: input.outcomeKey, workspaceId: { not: '' } },
         orderBy: { outcomeAt: 'desc' },
         select: { contextSnapshot: true, decisionType: true, chosenAction: true },
       });
@@ -110,9 +110,11 @@ export class DecisionOutcomeService {
     });
   }
 
+  // @CrossWorkspaceAnalytics — used by MindLiftReportService to aggregate
+  // lift across all workspaces. Not a workspace-scoped endpoint.
   async findAllClosedSince(since: Date) {
     return this.prisma.decisionOutcome.findMany({
-      where: { outcomeAt: { not: null, gte: since } },
+      where: { workspaceId: { not: '' }, outcomeAt: { not: null, gte: since } },
       orderBy: { outcomeAt: 'desc' },
     });
   }
@@ -149,7 +151,7 @@ export class DecisionOutcomeService {
     if (expired.length > 0) {
       const outcomeKeys = expired.map((e) => e.outcomeKey);
       await this.prisma.decisionOutcome.updateMany({
-        where: { id: { in: expired.map((e) => e.id) } },
+        where: { id: { in: expired.map((e) => e.id) }, workspaceId },
         data: {
           outcomeAt: new Date(),
           outcomeName: 'inbound.silent_24h',

@@ -4,6 +4,7 @@ import { StructuredLogger } from '../logging/structured-logger';
 import OpenAI from 'openai';
 import { chatCompletionWithRetry } from '../kloel/openai-wrapper';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
+import { CANONICAL_MODEL_IDS } from '../lib/openai-models';
 
 /** Media factory service. */
 @Injectable()
@@ -25,7 +26,7 @@ export class MediaFactoryService {
     // tokenBudget: non-workspace context, budget tracked at caller level
     this.logger.log('Calling OpenAI image generation', {
       context: 'MediaFactoryService.generateImage',
-      model: 'dall-e-3',
+      model: CANONICAL_MODEL_IDS.imageGeneration,
     });
     const response = await this.openai.images.generate({
       model: resolveBackendOpenAIModel('image_generation', this.config),

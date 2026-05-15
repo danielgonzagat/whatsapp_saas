@@ -7,7 +7,7 @@ describe('AdsSyncProcessor', () => {
     adAccount: { upsert: jest.Mock; findFirst: jest.Mock };
     adCampaign: { upsert: jest.Mock; findFirst: jest.Mock };
     adInsight: { upsert: jest.Mock };
-    metaConnection: { findUnique: jest.Mock };
+    metaConnection: { findFirst: jest.Mock };
   };
   let mockGoogleAds: {
     syncAccounts: jest.Mock;
@@ -31,7 +31,7 @@ describe('AdsSyncProcessor', () => {
         findFirst: jest.fn().mockResolvedValue(null),
       },
       adInsight: { upsert: jest.fn().mockResolvedValue({}) },
-      metaConnection: { findUnique: jest.fn().mockResolvedValue(null) },
+      metaConnection: { findFirst: jest.fn().mockResolvedValue(null) },
     };
 
     mockGoogleAds = {

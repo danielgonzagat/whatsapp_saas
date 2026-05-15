@@ -46,7 +46,7 @@ import {
 /**
  * Convert an OpenTelemetry error span into a {@link RuntimeSignal}.
  *
- * Each error span (status === 'error') from PULSE_OTEL_RUNTIME.json becomes
+ * Each observed error span becomes
  * a runtime error signal with file path and service context so it can be
  * mapped to capabilities.
  */

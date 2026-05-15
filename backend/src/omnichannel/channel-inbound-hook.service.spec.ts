@@ -20,11 +20,7 @@ describe('ChannelInboundHookService', () => {
       }),
     };
     const eventSpine = { recordCommercial: jest.fn().mockResolvedValue('event-1') };
-    const service = new ChannelInboundHookService(
-      mindEvents as never,
-      undefined,
-      eventSpine as never,
-    );
+    const service = new ChannelInboundHookService(mindEvents as never, eventSpine as never);
 
     await service.onMessageReceived(msg, 'contact-1', 'message-1');
 
@@ -61,11 +57,7 @@ describe('ChannelInboundHookService', () => {
       }),
     };
     const eventSpine = { recordCommercial: jest.fn().mockResolvedValue('event-1') };
-    const service = new ChannelInboundHookService(
-      mindEvents as never,
-      undefined,
-      eventSpine as never,
-    );
+    const service = new ChannelInboundHookService(mindEvents as never, eventSpine as never);
 
     await service.onMessageReceived(msg, 'contact-1', 'message-1');
 
@@ -75,7 +67,7 @@ describe('ChannelInboundHookService', () => {
 
   it('records the durable event even when the immediate processor is unavailable', async () => {
     const eventSpine = { recordCommercial: jest.fn().mockResolvedValue('event-1') };
-    const service = new ChannelInboundHookService(undefined, undefined, eventSpine as never);
+    const service = new ChannelInboundHookService(undefined, eventSpine as never);
 
     await service.onMessageReceived(msg, 'contact-1', 'message-1');
 

@@ -154,7 +154,7 @@ describe('CheckoutService — duplicateCheckout', () => {
       expect.objectContaining({ name: 'Plano Principal (Copia)', priceInCents: 19990 }),
       'ws_1',
     );
-    expect(productSvc.updateConfig).toHaveBeenCalledWith('dup_1', expect.any(Object));
+    expect(productSvc.updateConfig).toHaveBeenCalledWith('dup_1', expect.objectContaining({}));
     const createManyCall = (
       prisma.checkoutPixel.createMany.mock as { calls: Array<[Record<string, unknown>]> }
     ).calls[0][0] as { data: Array<{ type: string; pixelId: string }> };
@@ -247,7 +247,7 @@ describe('CheckoutService — duplicateCheckout', () => {
 
     const result = await service.duplicateCheckout('chk_1', 'ws_1');
 
-    expect(productSvc.updateConfig).toHaveBeenCalledWith('dup_1', expect.any(Object));
+    expect(productSvc.updateConfig).toHaveBeenCalledWith('dup_1', expect.objectContaining({}));
     expect(prisma.checkoutPixel.createMany).not.toHaveBeenCalled();
     expect(result).toEqual(expect.objectContaining({ id: 'dup_1' }));
   });
@@ -325,7 +325,7 @@ describe('CheckoutService — getCheckoutBySlug', () => {
 
     expect(internal.publicPayloadBuilder.build).toHaveBeenCalledWith(
       checkoutLink.plan,
-      expect.any(Object),
+      expect.objectContaining({}),
     );
     expect(result).toEqual(expect.objectContaining({ id: 'payload', slug: 'test' }));
   });

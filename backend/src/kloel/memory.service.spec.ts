@@ -3,21 +3,16 @@ import { MemoryService } from './memory.service';
 import { MemoryCrudService } from './memory-crud.service';
 import { MemorySearchService } from './memory-search.service';
 import type { MemoryItem, SearchResult } from './memory.types';
-
 type MemoryCrudMock = Pick<
   MemoryCrudService,
   'saveMemory' | 'listMemories' | 'getMemoryStats' | 'deleteMemory'
 >;
-
 type MemorySearchMock = Pick<MemorySearchService, 'searchMemory' | 'getSalesContext'>;
-
 describe('MemoryService', () => {
   let service: MemoryService;
   let memoryCrud: MemoryCrudMock;
   let memorySearch: MemorySearchMock;
-
   const wsId = 'ws-1';
-
   const sampleMemoryItem: MemoryItem = {
     id: 'm-1',
     workspaceId: wsId,
@@ -26,13 +21,11 @@ describe('MemoryService', () => {
     category: 'product',
     content: 'Curso description',
   };
-
   const sampleSearchResult: SearchResult = {
     memories: [sampleMemoryItem],
     totalFound: 1,
     searchTime: 5,
   };
-
   beforeEach(async () => {
     memoryCrud = {
       saveMemory: jest.fn().mockResolvedValue(sampleMemoryItem),
@@ -47,12 +40,10 @@ describe('MemoryService', () => {
       }),
       deleteMemory: jest.fn().mockResolvedValue(true),
     };
-
     memorySearch = {
       searchMemory: jest.fn().mockResolvedValue(sampleSearchResult),
       getSalesContext: jest.fn().mockResolvedValue(''),
     };
-
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         MemoryService,
@@ -60,14 +51,11 @@ describe('MemoryService', () => {
         { provide: MemorySearchService, useValue: memorySearch },
       ],
     }).compile();
-
     service = module.get<MemoryService>(MemoryService);
   });
-
   afterEach(() => {
     jest.clearAllMocks();
   });
-
   describe('saveMemory', () => {
     it('delegates to memoryCrud.saveMemory', async () => {
       const result = await service.saveMemory(
@@ -327,13 +315,12 @@ BENEFÍCIOS: A, B`,
         price: 10,
       });
 
-      expect(memoryCrud.saveMemory).toHaveBeenCalledWith(
-        'ws-tenant',
-        expect.any(String),
-        expect.any(Object),
-        'product',
-        expect.any(String),
-      );
+      const saveArgs = memoryCrud.saveMemory.mock.calls[0];
+      expect(saveArgs[0]).toBe('ws-tenant');
+      expect(typeof saveArgs[1]).toBe('string');
+      expect(saveArgs[2]).toBeDefined();
+      expect(saveArgs[3]).toBe('product');
+      expect(typeof saveArgs[4]).toBe('string');
     });
 
     it('listMemories delegates with correct workspaceId', async () => {

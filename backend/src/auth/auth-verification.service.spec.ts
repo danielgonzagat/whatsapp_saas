@@ -5,7 +5,6 @@ import { PrismaService } from '../prisma/prisma.service';
 import { AuthVerificationService } from './auth-verification.service';
 import { AuthWhatsappPasswordService } from './auth-whatsapp-password.service';
 import { EmailService } from './email.service';
-
 const mockPrismaService = {
   agent: {
     findFirst: jest.fn(),
@@ -32,12 +31,10 @@ const mockPrismaService = {
     return Promise.all(arg as Array<Promise<unknown>>);
   }),
 };
-
 const mockEmailService = {
   sendMagicLinkEmail: jest.fn().mockResolvedValue(true),
   sendVerificationEmail: jest.fn().mockResolvedValue(true),
 };
-
 const mockConfigService = {
   get: jest.fn((key: string) => {
     const config: Record<string, string> = {
@@ -46,23 +43,19 @@ const mockConfigService = {
     return config[key];
   }),
 };
-
 const mockAuthWhatsappPasswordService = {
   sendWhatsAppCode: jest.fn(),
   verifyWhatsAppCode: jest.fn(),
   forgotPassword: jest.fn(),
   resetPassword: jest.fn(),
 };
-
 describe('AuthVerificationService', () => {
   let service: AuthVerificationService;
   let prisma: typeof mockPrismaService;
   let emailService: typeof mockEmailService;
-
   beforeEach(async () => {
     jest.clearAllMocks();
     process.env.RATE_LIMIT_DISABLED = 'true';
-
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         AuthVerificationService,
@@ -72,15 +65,12 @@ describe('AuthVerificationService', () => {
         { provide: AuthWhatsappPasswordService, useValue: mockAuthWhatsappPasswordService },
       ],
     }).compile();
-
     service = module.get<AuthVerificationService>(AuthVerificationService);
     prisma = mockPrismaService;
     emailService = mockEmailService;
   });
-
   describe('requestMagicLink', () => {
     const email = 'user@example.com';
-
     beforeEach(() => {
       prisma.agent.findFirst.mockResolvedValue({ id: 'agent-1', workspaceId: 'ws-1' });
       prisma.magicLinkToken.create.mockResolvedValue({
@@ -89,10 +79,8 @@ describe('AuthVerificationService', () => {
         tokenHash: 'hashed-token',
       });
     });
-
     it('creates magic link token and sends email', async () => {
       const result = await service.requestMagicLink({ email });
-
       expect(result.success).toBe(true);
       expect(result.message).toContain('Se o email for válido');
       expect(prisma.magicLinkToken.create).toHaveBeenCalledWith(
@@ -107,7 +95,6 @@ describe('AuthVerificationService', () => {
       expect(magicLinkUrl).toContain('/magic-link');
       expect(new URL(magicLinkUrl).searchParams.has('token')).toBe(true);
     });
-
     it('includes token in dev response body', async () => {
       const prevEnv = process.env.NODE_ENV;
       process.env.NODE_ENV = 'development';
@@ -119,7 +106,6 @@ describe('AuthVerificationService', () => {
         process.env.NODE_ENV = prevEnv;
       }
     });
-
     it('does not leak token in production response', async () => {
       const prevEnv = process.env.NODE_ENV;
       process.env.NODE_ENV = 'production';
@@ -130,14 +116,11 @@ describe('AuthVerificationService', () => {
         process.env.NODE_ENV = prevEnv;
       }
     });
-
     it('throws BadRequestException for empty email', async () => {
       await expect(service.requestMagicLink({ email: '' })).rejects.toThrow(BadRequestException);
     });
-
     it('stores redirectTo when provided', async () => {
       await service.requestMagicLink({ email, redirectTo: '/settings' });
-
       expect(prisma.magicLinkToken.create).toHaveBeenCalledWith(
         expect.objectContaining({
           data: expect.objectContaining({
@@ -147,18 +130,14 @@ describe('AuthVerificationService', () => {
       );
     });
   });
-
   describe('verifyMagicLink', () => {
     it('throws BadRequestException for empty token', async () => {
       await expect(service.verifyMagicLink('')).rejects.toThrow(BadRequestException);
     });
-
     it('throws UnauthorizedException for invalid token', async () => {
       prisma.magicLinkToken.findUnique.mockResolvedValue(null);
-
       await expect(service.verifyMagicLink('invalid-token')).rejects.toThrow(UnauthorizedException);
     });
-
     it('throws UnauthorizedException for expired token', async () => {
       prisma.magicLinkToken.findUnique.mockResolvedValue({
         id: 'ml-1',
@@ -169,10 +148,8 @@ describe('AuthVerificationService', () => {
         redirectTo: '/dashboard',
         agent: null,
       });
-
       await expect(service.verifyMagicLink('expired-token')).rejects.toThrow(UnauthorizedException);
     });
-
     it('throws UnauthorizedException for already used token', async () => {
       prisma.magicLinkToken.findUnique.mockResolvedValue({
         id: 'ml-1',
@@ -183,10 +160,8 @@ describe('AuthVerificationService', () => {
         redirectTo: '/dashboard',
         agent: null,
       });
-
       await expect(service.verifyMagicLink('used-token')).rejects.toThrow(UnauthorizedException);
     });
-
     it('creates new workspace + agent for first-time magic link user', async () => {
       prisma.magicLinkToken.findUnique.mockResolvedValue({
         id: 'ml-1',
@@ -212,9 +187,7 @@ describe('AuthVerificationService', () => {
         deletedAt: null,
       });
       prisma.magicLinkToken.update.mockResolvedValue({ id: 'ml-1' });
-
       const result = await service.verifyMagicLink('valid-token');
-
       expect(result.isNewUser).toBe(true);
       expect(result.redirectTo).toBe('/onboarding');
       expect(result.agent.email).toBe('new@example.com');
@@ -228,7 +201,6 @@ describe('AuthVerificationService', () => {
         }),
       );
     });
-
     it('returns existing agent for returning magic link user', async () => {
       prisma.magicLinkToken.findUnique.mockResolvedValue({
         id: 'ml-2',
@@ -251,15 +223,12 @@ describe('AuthVerificationService', () => {
           deletedAt: null,
         },
       });
-
       const result = await service.verifyMagicLink('valid-token');
-
       expect(result.isNewUser).toBe(false);
       expect(result.agent.id).toBe('agent-2');
       expect(prisma.agent.create).not.toHaveBeenCalled();
     });
   });
-
   describe('sendVerificationEmail', () => {
     it('sends verification email to unverified agent', async () => {
       prisma.agent.findUnique.mockResolvedValue({

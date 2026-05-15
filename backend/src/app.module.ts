@@ -68,6 +68,7 @@ import { getRedisUrl, isRedisConfigured } from './common/redis/redis.util';
 import { StorageModule } from './common/storage/storage.module';
 import { CookieConsentModule } from './cookie-consent/cookie-consent.module';
 import { ComplianceModule } from './compliance/compliance.module';
+import { CopilotModule } from './copilot/copilot.module';
 
 import { FollowUpModule } from './followup/followup.module';
 import { GdprModule } from './gdpr/gdpr.module';
@@ -263,6 +264,7 @@ function setRedisClientListenerBudget(client: Redis): void {
     GrowthModule,
     CalendarModule, // 📅 Integração com calendários
     ChatModule, // 💬 Chat conversation persistence
+    CopilotModule, // 💬 Sales copilot HTTP + socket surface
     KloelModule, // 🧠 KLOEL - IA Comercial Autônoma
     CiaModule, // 🧠 CIA Runtime Surface
     FollowUpModule, // 📅 Agendamento de follow-ups

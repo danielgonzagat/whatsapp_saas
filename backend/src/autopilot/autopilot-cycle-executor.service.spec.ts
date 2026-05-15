@@ -10,6 +10,7 @@ import { OpsAlertService } from '../observability/ops-alert.service';
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { chatCompletionWithRetry } from '../kloel/openai-wrapper';
+import { CANONICAL_MODEL_IDS } from '../lib/openai-models';
 
 type FlexMock = jest.Mock & {
   mockResolvedValue: (v: unknown) => FlexMock;
@@ -21,9 +22,13 @@ jest.mock('../kloel/openai-wrapper', () => ({
   chatCompletionWithRetry: jest.fn(),
 }));
 
-jest.mock('../lib/openai-models', () => ({
-  resolveBackendOpenAIModel: jest.fn(() => 'gpt-4o-mock'),
-}));
+jest.mock('../lib/openai-models', () => {
+  const actual = jest.requireActual<typeof import('../lib/openai-models')>('../lib/openai-models');
+  return {
+    ...actual,
+    resolveBackendOpenAIModel: jest.fn(() => actual.CANONICAL_MODEL_IDS.openAiTextMock),
+  };
+});
 
 jest.mock('../queue/queue', () => ({
   flowQueue: { add: jest.fn<(...args: unknown[]) => Promise<unknown>>() },
@@ -144,7 +149,7 @@ describe('AutopilotCycleExecutorService', () => {
         ],
         id: 'chatcmpl-mock',
         created: 1700000000,
-        model: 'gpt-4o-mini',
+        model: CANONICAL_MODEL_IDS.openAiTextMini,
         object: 'chat.completion',
         usage: {
           total_tokens: 100,
@@ -192,7 +197,7 @@ describe('AutopilotCycleExecutorService', () => {
         ],
         id: 'chatcmpl-mock',
         created: 1700000000,
-        model: 'gpt-4o-mini',
+        model: CANONICAL_MODEL_IDS.openAiTextMini,
         object: 'chat.completion',
         usage: {
           total_tokens: 10,
@@ -214,61 +219,65 @@ describe('AutopilotCycleExecutorService', () => {
   describe('decideAction', () => {
     const conv = makeConv();
 
-    it('returns auto_reply_night when isNight and no buying signal', () => {
+    it('returns auto_reply_night when isNight and no buying signal', async () => {
+      jest.useFakeTimers().setSystemTime(new Date('2026-05-13T03:00:00.000Z'));
       const analysis: ConversationAnalysis = { intent: 'greeting', buyingSignal: false };
-      const result = service.decideAction(analysis, conv, false);
+      const result = await service.decideAction(analysis, conv, false);
 
       expect(result).toBe('auto_reply_night');
+      jest.useRealTimers();
     });
 
-    it('returns soft_close_night when isNight with buying signal', () => {
+    it('returns soft_close_night when isNight with buying signal', async () => {
+      jest.useFakeTimers().setSystemTime(new Date('2026-05-13T03:00:00.000Z'));
       const analysis: ConversationAnalysis = { intent: 'buying', buyingSignal: true };
-      const result = service.decideAction(analysis, conv, false);
+      const result = await service.decideAction(analysis, conv, false);
 
       expect(result).toBe('soft_close_night');
+      jest.useRealTimers();
     });
 
-    it('returns send_offer when buying signal at optimal time', () => {
+    it('returns send_offer when buying signal at optimal time', async () => {
       const analysis: ConversationAnalysis = { buyingSignal: true };
-      const result = service.decideAction(analysis, conv, true);
+      const result = await service.decideAction(analysis, conv, true);
 
       expect(result).toBe('send_offer');
     });
 
-    it('returns send_offer_soft when buying signal at non-optimal time', () => {
+    it('returns send_offer_soft when buying signal at non-optimal time', async () => {
       const analysis: ConversationAnalysis = { buyingSignal: true };
-      const result = service.decideAction(analysis, conv, false);
+      const result = await service.decideAction(analysis, conv, false);
 
       expect(result).toBe('send_offer_soft');
     });
 
-    it('maps question_price to send_price', () => {
-      const result = service.decideAction({ intent: 'question_price' }, conv, true);
+    it('maps question_price to send_price', async () => {
+      const result = await service.decideAction({ intent: 'question_price' }, conv, true);
       expect(result).toBe('send_price');
     });
 
-    it('maps scheduling to send_calendar', () => {
-      const result = service.decideAction({ intent: 'scheduling' }, conv, true);
+    it('maps scheduling to send_calendar', async () => {
+      const result = await service.decideAction({ intent: 'scheduling' }, conv, true);
       expect(result).toBe('send_calendar');
     });
 
-    it('maps complaint to handover_human', () => {
-      const result = service.decideAction({ intent: 'complaint' }, conv, true);
+    it('maps complaint to handover_human', async () => {
+      const result = await service.decideAction({ intent: 'complaint' }, conv, true);
       expect(result).toBe('handover_human');
     });
 
-    it('maps objection to handle_objection', () => {
-      const result = service.decideAction({ intent: 'objection' }, conv, true);
+    it('maps objection to handle_objection', async () => {
+      const result = await service.decideAction({ intent: 'objection' }, conv, true);
       expect(result).toBe('handle_objection');
     });
 
-    it('returns qualify for new stage', () => {
-      const result = service.decideAction({ stage: 'new' }, conv, true);
+    it('returns qualify for new stage', async () => {
+      const result = await service.decideAction({ stage: 'new' }, conv, true);
       expect(result).toBe('qualify');
     });
 
-    it('returns try_upsell for closing with positive sentiment and no buyingSignal', () => {
-      const result = service.decideAction(
+    it('returns try_upsell for closing with positive sentiment and no buyingSignal', async () => {
+      const result = await service.decideAction(
         { stage: 'closing', sentiment: 'positive', buyingSignal: false },
         conv,
         true,
@@ -276,13 +285,17 @@ describe('AutopilotCycleExecutorService', () => {
       expect(result).toBe('try_upsell');
     });
 
-    it('returns send_cta for closing with non-positive sentiment', () => {
-      const result = service.decideAction({ stage: 'closing', sentiment: 'neutral' }, conv, true);
+    it('returns send_cta for closing with non-positive sentiment', async () => {
+      const result = await service.decideAction(
+        { stage: 'closing', sentiment: 'neutral' },
+        conv,
+        true,
+      );
       expect(result).toBe('send_cta');
     });
 
-    it('defaults to ai_chat when no rule matches', () => {
-      const result = service.decideAction(
+    it('defaults to ai_chat when no rule matches', async () => {
+      const result = await service.decideAction(
         { intent: 'greeting', stage: 'support', sentiment: 'neutral' },
         conv,
         true,
@@ -369,14 +382,18 @@ describe('AutopilotCycleExecutorService', () => {
 
       await service.executeAction('auto_reply_night', conv, compliance);
 
-      expect(mockFlowQueueAdd).toHaveBeenCalledWith(
-        'send-message',
+      const [, payload] = mockFlowQueueAdd.mock.calls[0] as [
+        string,
+        { message: string; to: string; workspaceId: string },
+      ];
+      expect(payload).toEqual(
         expect.objectContaining({
           workspaceId: conv.workspaceId,
           to: conv.contact.phone,
-          message: expect.any(String),
+          message: payload.message,
         }),
       );
+      expect(typeof payload.message).toBe('string');
     });
 
     it('handles flowQueue.add failure gracefully', async () => {
@@ -426,18 +443,20 @@ describe('AutopilotCycleExecutorService', () => {
   });
 
   describe('decideAction edge cases', () => {
-    it('returns send_offer_soft for buying signal when isNight is false but not optimal', () => {
+    it('returns send_offer_soft for buying signal when isNight is false but not optimal', async () => {
       const conv = makeConv();
-      const result = service.decideAction({ buyingSignal: true }, conv, false);
+      const result = await service.decideAction({ buyingSignal: true }, conv, false);
 
       expect(result).toBe('send_offer_soft');
     });
 
-    it('prefers night+noBuying auto_reply_night over buying path', () => {
+    it('prefers night+noBuying auto_reply_night over buying path', async () => {
+      jest.useFakeTimers().setSystemTime(new Date('2026-05-13T03:00:00.000Z'));
       const conv = makeConv();
-      const result = service.decideAction({ buyingSignal: false }, conv, false);
+      const result = await service.decideAction({ buyingSignal: false }, conv, false);
 
       expect(result).toBe('auto_reply_night');
+      jest.useRealTimers();
     });
   });
 

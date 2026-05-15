@@ -280,25 +280,25 @@ describe('AccountAgentService', () => {
     expect(runtime.capabilityCount).toBe(registry.items.length);
     expect(runtime.conversationActionCount).toBe(conversationRegistry.items.length);
     expect(runtime.noLegalActions).toBe(false);
-    expect(prisma.agentWorkItem.upsert).toHaveBeenCalledWith(
+    expect(prisma.agentWorkItem.create).toHaveBeenCalledWith(
       expect.objectContaining({
-        create: expect.objectContaining({
+        data: expect.objectContaining({
           kind: 'api_key_gap',
           state: 'OPEN',
         }),
       }),
     );
-    expect(prisma.agentWorkItem.upsert).toHaveBeenCalledWith(
+    expect(prisma.agentWorkItem.create).toHaveBeenCalledWith(
       expect.objectContaining({
-        create: expect.objectContaining({
+        data: expect.objectContaining({
           kind: 'webhook_gap',
           state: 'OPEN',
         }),
       }),
     );
-    expect(prisma.agentWorkItem.upsert).toHaveBeenCalledWith(
+    expect(prisma.agentWorkItem.create).toHaveBeenCalledWith(
       expect.objectContaining({
-        create: expect.objectContaining({
+        data: expect.objectContaining({
           kind: 'team_configuration_gap',
           state: 'OPEN',
         }),

@@ -1,10 +1,7 @@
 import type { PulseGateName } from '../types.manifest';
 import type { PulseConvergenceUnit } from '../types.convergence';
 import type { BuildPulseConvergencePlanInput } from './kernel';
-import {
-  OBSERVED_ARTIFACTS,
-  OBSERVED_EXTERNAL_SIGNAL_SOURCE_LABELS,
-} from './kernel';
+import { OBSERVED_ARTIFACTS, OBSERVED_EXTERNAL_SIGNAL_SOURCE_LABELS } from './kernel';
 import {
   deriveObservedConvergenceEvidenceLabel,
   observedPulseSource,
@@ -25,11 +22,7 @@ import {
   observedTruthObservedMode,
   observedTruthInferredMode,
 } from './builder-labels';
-import {
-  formatNoHardcodedRealityBlocker,
-  hasNoHardcodedRealityBlocker,
-  summarizeNoHardcodedRealityState,
-} from '../no-hardcoded-reality-state';
+import { formatNoHardcodedRealityBlocker, hasNoHardcodedRealityBlocker, summarizeNoHardcodedRealityState } from '../no-hardcoded-reality-state';
 import {
   buildExternalVisionDelta,
   buildScenarioVisionDelta,
@@ -63,7 +56,6 @@ import {
   takeEvidenceBatch,
   uniqueStrings,
 } from './utils';
-
 export function buildScenarioUnits(input: BuildPulseConvergencePlanInput): PulseConvergenceUnit[] {
   let scenarioSpecById = new Map(
     input.resolvedManifest.scenarioSpecs.map((spec) => [spec.id, spec] as const),

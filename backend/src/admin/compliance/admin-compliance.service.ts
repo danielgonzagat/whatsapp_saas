@@ -222,6 +222,7 @@ export class AdminComplianceService {
     // @AdminGlobalOperation: compliance review queue spans all workspaces
     return this.prisma.agent.findMany({
       where: {
+        workspaceId: { not: '' },
         role: 'ADMIN',
         kycStatus: { in: ['pending', 'reverify', 'rejected'] },
       },

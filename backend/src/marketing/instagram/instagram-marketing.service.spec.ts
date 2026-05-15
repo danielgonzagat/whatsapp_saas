@@ -287,17 +287,10 @@ describe('InstagramMarketingService', () => {
 
       await service.listInsights('ws-1', undefined, '2026-01-01', '2026-01-31');
 
-      expect(igInsightFindMany).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: expect.objectContaining({
-            workspaceId: 'ws-1',
-            date: expect.objectContaining({
-              gte: expect.any(Date),
-              lte: expect.any(Date),
-            }),
-          }),
-        }),
-      );
+      const findManyArgs = igInsightFindMany.mock.calls[0][0];
+      expect(findManyArgs.where.workspaceId).toBe('ws-1');
+      expect(findManyArgs.where.date.gte).toBeInstanceOf(Date);
+      expect(findManyArgs.where.date.lte).toBeInstanceOf(Date);
     });
 
     it('returns insights without account filter when igAccountId not provided', async () => {

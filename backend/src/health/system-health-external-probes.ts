@@ -1,5 +1,6 @@
 import { ConfigService } from '@nestjs/config';
 import { StripeService } from '../billing/stripe.service';
+import { CANONICAL_MODEL_IDS } from '../lib/openai-models';
 
 export async function probeStripe(stripeService: StripeService | undefined): Promise<{
   dependency: string;
@@ -17,12 +18,8 @@ export async function probeStripe(stripeService: StripeService | undefined): Pro
         latencyMs: Date.now() - startedAt,
       };
     }
-    try {
-      await stripeService.retrieveBalance();
-      return { dependency: 'stripe', status: 'UP', latencyMs: Date.now() - startedAt };
-    } catch (err) {
-      throw err;
-    }
+    await stripeService.retrieveBalance();
+    return { dependency: 'stripe', status: 'UP', latencyMs: Date.now() - startedAt };
   } catch (err: unknown) {
     return {
       dependency: 'stripe',
@@ -174,7 +171,7 @@ export async function probeAnthropic(config: ConfigService): Promise<{
           'content-type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'claude-3-haiku-20240307',
+          model: CANONICAL_MODEL_IDS.anthropicHealthProbe,
           max_tokens: 1,
           messages: [{ role: 'user', content: 'ping' }],
         }),
@@ -202,7 +199,7 @@ export async function probeAnthropic(config: ConfigService): Promise<{
   }
 }
 
-export async function probeEmail(): Promise<{
+export function probeEmail(): Promise<{
   dependency: string;
   status: 'UP' | 'DOWN';
   error?: string;
@@ -217,29 +214,29 @@ export async function probeEmail(): Promise<{
   const configured = hasResend || hasSendGrid || hasSmtp;
 
   if (!configured && isProduction) {
-    return {
+    return Promise.resolve({
       dependency: 'email',
       status: 'DOWN',
       error: 'No email provider configured: RESEND_API_KEY, SENDGRID_API_KEY, or SMTP_HOST missing',
       latencyMs: Date.now() - startedAt,
-    };
+    });
   }
 
-  return { dependency: 'email', status: 'UP', latencyMs: Date.now() - startedAt };
+  return Promise.resolve({ dependency: 'email', status: 'UP', latencyMs: Date.now() - startedAt });
 }
 
 export function checkOpenAI(config: ConfigService) {
-  const key = config.get('OPENAI_API_KEY');
+  const key = config.get<string>('OPENAI_API_KEY');
   return { status: key ? 'CONFIGURED' : 'MISSING' };
 }
 
 export function checkAnthropic(config: ConfigService) {
-  const key = config.get('ANTHROPIC_API_KEY');
+  const key = config.get<string>('ANTHROPIC_API_KEY');
   return { status: key ? 'CONFIGURED' : 'MISSING' };
 }
 
 export function checkStripe(config: ConfigService) {
-  const key = config.get('STRIPE_SECRET_KEY');
+  const key = config.get<string>('STRIPE_SECRET_KEY');
   return { status: key ? 'CONFIGURED' : 'MISSING' };
 }
 
@@ -276,7 +273,7 @@ function getConfiguredGoogleClientIds(config: ConfigService) {
 
 export function checkGoogleAuth(config: ConfigService) {
   const clientIds = getConfiguredGoogleClientIds(config);
-  const clientSecret = config.get('GOOGLE_CLIENT_SECRET');
+  const clientSecret = config.get<string>('GOOGLE_CLIENT_SECRET');
 
   if (clientIds.length) {
     return {

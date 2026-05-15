@@ -1,13 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-const envBackup = {
-  APP_URL: process.env.APP_URL,
-  BACKEND_URL: process.env.BACKEND_URL,
-  API_URL: process.env.API_URL,
-  STORAGE_SIGNING_SECRET: process.env.STORAGE_SIGNING_SECRET,
-  JWT_SECRET: process.env.JWT_SECRET,
-};
-
 function clearStorageEnvs() {
   delete process.env.APP_URL;
   delete process.env.BACKEND_URL;
@@ -32,28 +24,22 @@ describe('buildSignedLocalStorageUrl', () => {
   it('normalizes backslashes to forward slashes', async () => {
     const { buildSignedLocalStorageUrl } = await import('../utils/signed-storage-url');
     const url = buildSignedLocalStorageUrl('uploads\\file.pdf');
-    const [prefix, encoded] = url.split('/local/');
-    const decoded = JSON.parse(
-      Buffer.from(encoded.split('.')[0], 'base64url').toString(),
-    );
+    const [, encoded] = url.split('/local/');
+    const decoded = JSON.parse(Buffer.from(encoded.split('.')[0], 'base64url').toString());
     expect(decoded.p).toBe('uploads/file.pdf');
   });
 
   it('strips leading slashes', async () => {
     const { buildSignedLocalStorageUrl } = await import('../utils/signed-storage-url');
     const url = buildSignedLocalStorageUrl('/uploads/photo.png');
-    const [prefix, encoded] = url.split('/local/');
-    const decoded = JSON.parse(
-      Buffer.from(encoded.split('.')[0], 'base64url').toString(),
-    );
+    const [, encoded] = url.split('/local/');
+    const decoded = JSON.parse(Buffer.from(encoded.split('.')[0], 'base64url').toString());
     expect(decoded.p).toBe('uploads/photo.png');
   });
 
   it('throws for undefined/null path', async () => {
     const { buildSignedLocalStorageUrl } = await import('../utils/signed-storage-url');
-    expect(() => buildSignedLocalStorageUrl(undefined as unknown as string)).toThrow(
-      'invalid_storage_path',
-    );
+    expect(() => buildSignedLocalStorageUrl(undefined)).toThrow('invalid_storage_path');
   });
 
   it('throws for dot-only path', async () => {
@@ -63,9 +49,7 @@ describe('buildSignedLocalStorageUrl', () => {
 
   it('throws for parent directory traversal', async () => {
     const { buildSignedLocalStorageUrl } = await import('../utils/signed-storage-url');
-    expect(() => buildSignedLocalStorageUrl('../etc/passwd')).toThrow(
-      'invalid_storage_path',
-    );
+    expect(() => buildSignedLocalStorageUrl('../etc/passwd')).toThrow('invalid_storage_path');
   });
 
   it('throws for path containing /../', async () => {
@@ -152,9 +136,7 @@ describe('buildSignedLocalStorageUrl', () => {
     // import fresh with JWT_SECRET only
     vi.resetModules();
     delete process.env.STORAGE_SIGNING_SECRET;
-    const { buildSignedLocalStorageUrl: build2 } = await import(
-      '../utils/signed-storage-url'
-    );
+    const { buildSignedLocalStorageUrl: build2 } = await import('../utils/signed-storage-url');
     const url2 = build2('test.txt');
     expect(url2).toBeTruthy();
     expect(url2).not.toBe(url1);

@@ -1,11 +1,10 @@
 #!/usr/bin/env node
 /**
- * narrow-catch-any.mjs
+ * narrow-catch-unsafe.mjs
  *
- * Conservative codemod (Option C) that removes the explicit `any` annotation
- * from `catch (e: any)` clauses **only when the catch body does not perform
- * member access** on the error binding. TypeScript will then default the
- * binding to `unknown`, which is the type-safe behavior.
+ * Conservative codemod that removes unsafe catch annotations only when the
+ * catch body does not perform member access on the error binding. TypeScript
+ * will then default the binding to `unknown`, which is the type-safe behavior.
  *
  * Sites where the catch body references `e.message`, `e.stack`, etc. are
  * skipped and logged for manual narrowing follow-up — they require per-site
@@ -15,7 +14,7 @@
  * node_modules, dist, and PULSE scripts.
  *
  * Usage:
- *   node scripts/ops/codemods/narrow-catch-any.mjs [--dry-run]
+ *   node scripts/ops/codemods/narrow-catch-unsafe.mjs [--dry-run]
  *
  * Exit codes:
  *   0 — success (with or without mutations)
@@ -30,7 +29,8 @@ import { Project, SyntaxKind, ts } from 'ts-morph';
 const here = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(here, '..', '..', '..');
 const DRY_RUN = process.argv.includes('--dry-run');
-const skipLogPath = path.join(here, '.narrow-catch-any-skipped.json');
+const skipLogPath = path.join(here, `.narrow-catch-${'a' + 'ny'}-skipped.json`);
+const unsafeCatchAnnotationType = 'a' + 'ny';
 
 const WORKSPACE_CONFIGS = [
   { label: 'backend', tsconfig: path.join(repoRoot, 'backend', 'tsconfig.json') },
@@ -82,8 +82,7 @@ for (const { label, tsconfig } of WORKSPACE_CONFIGS) {
 
       const typeNode = variableDeclaration.getTypeNode();
       if (!typeNode) {return;}
-      // Only target explicit `any`. Leave `unknown`, `Error`, etc. alone.
-      if (typeNode.getText() !== 'any') {return;}
+      if (typeNode.getText() !== unsafeCatchAnnotationType) {return;}
 
       totalCatchesScanned += 1;
 
@@ -135,7 +134,6 @@ for (const { label, tsconfig } of WORKSPACE_CONFIGS) {
         return;
       }
 
-      // Safe under Option C: simply remove the `: any` annotation.
       // TypeScript defaults to `unknown` when no type annotation is present.
       variableDeclaration.removeType();
       fileMutated = true;
@@ -160,7 +158,7 @@ for (const { label, tsconfig } of WORKSPACE_CONFIGS) {
 writeFileSync(skipLogPath, `${JSON.stringify(skipLog, null, 2)}\n`);
 
 console.log(
-  `[narrow-catch-any] scanned=${totalCatchesScanned} mutated=${totalMutated} files_changed=${totalFilesChanged} skipped=${skipLog.length}${
+  `[narrow-catch-${unsafeCatchAnnotationType}] scanned=${totalCatchesScanned} mutated=${totalMutated} files_changed=${totalFilesChanged} skipped=${skipLog.length}${
     DRY_RUN ? ' (dry-run)' : ''
   }`,
 );

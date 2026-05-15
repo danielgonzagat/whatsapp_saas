@@ -32,6 +32,7 @@ const LIST_RE = /^\/list\b/i;
 
 const SESSION_TTL_MS = 24 * 60 * 60 * 1000;
 const MAX_MESSAGE_LENGTH = 4000;
+const ADMIN_CHAT_WORKSPACE_ID = '__admin__';
 
 const ACTIVE_RESPONSE =
   'Assistente administrativo ativo. Hoje eu já consigo consultar ferramentas diretas do painel. ' +
@@ -283,12 +284,12 @@ export class AdminChatService {
       }
     }
 
-    await this.prisma.adminChatSession.update({
-      where: { id: session.id },
+    await this.prisma.adminChatSession.updateMany({
+      where: { id: session.id, workspaceId: session.workspaceId },
       data: { lastUsedAt: new Date() },
     });
 
-    return this.loadSessionView(session.id);
+    return this.loadSessionView(session.id, session.workspaceId);
   }
 
   /** List sessions. */
@@ -309,12 +310,20 @@ export class AdminChatService {
   }
 
   /** Get session. */
-  async getSession(adminUserId: string, sessionId: string): Promise<ChatSessionView> {
-    const session = await this.prisma.adminChatSession.findUnique({
-      where: { id: sessionId },
+  async getSession(
+    adminUserId: string,
+    sessionId: string,
+    workspaceId?: string,
+  ): Promise<ChatSessionView> {
+    const session = await this.prisma.adminChatSession.findFirst({
+      where: {
+        id: sessionId,
+        adminUserId,
+        workspaceId: workspaceId ?? { not: '' },
+      },
       include: { messages: { orderBy: { createdAt: 'asc' } } },
     });
-    if (!session || session.adminUserId !== adminUserId) {
+    if (!session) {
       throw adminErrors.forbidden();
     }
     return toSessionView(session);
@@ -322,18 +331,24 @@ export class AdminChatService {
 
   // ---- internals ----------------------------------------------------------
 
-  private async ensureSession(adminUserId: string, sessionId: string | null) {
+  private async ensureSession(adminUserId: string, sessionId: string | null, workspaceId?: string) {
     if (sessionId) {
-      const existing = await this.prisma.adminChatSession.findUnique({
-        where: { id: sessionId },
+      const existing = await this.prisma.adminChatSession.findFirst({
+        where: {
+          id: sessionId,
+          adminUserId,
+          workspaceId: workspaceId ?? { not: '' },
+          expiresAt: { gt: new Date() },
+        },
       });
-      if (existing && existing.adminUserId === adminUserId && existing.expiresAt > new Date()) {
+      if (existing) {
         return existing;
       }
     }
     return this.prisma.adminChatSession.create({
       data: {
         adminUserId,
+        workspaceId: workspaceId ?? ADMIN_CHAT_WORKSPACE_ID,
         expiresAt: new Date(Date.now() + SESSION_TTL_MS),
       },
     });
@@ -444,9 +459,9 @@ export class AdminChatService {
     ].join('\n');
   }
 
-  private async loadSessionView(sessionId: string): Promise<ChatSessionView> {
-    const session = await this.prisma.adminChatSession.findUnique({
-      where: { id: sessionId },
+  private async loadSessionView(sessionId: string, workspaceId: string): Promise<ChatSessionView> {
+    const session = await this.prisma.adminChatSession.findFirst({
+      where: { id: sessionId, workspaceId },
       include: { messages: { orderBy: { createdAt: 'asc' } } },
     });
     if (!session) {

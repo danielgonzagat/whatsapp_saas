@@ -1,8 +1,6 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { MailboxProvider, MailboxStatus, Prisma } from '@prisma/client';
 import { createTransport } from 'nodemailer';
-import net from 'node:net';
-import tls from 'node:tls';
 import { Metrics } from '../observability/metrics';
 import { PrismaService } from '../prisma/prisma.service';
 import {
@@ -10,8 +8,12 @@ import {
   buildUnsubscribeFooterText,
   buildListUnsubscribeHeader,
 } from '../common/utils/unsubscribe-footer.util';
+import {
+  MailboxSocketConfig,
+  validateImapSocket,
+  validateSmtpSocket,
+} from './mailbox-imap-smtp-socket.helpers';
 import { decryptMailboxToken, encryptMailboxToken } from './mailbox-token-crypto';
-
 interface ImapSmtpConnectInput {
   email?: unknown;
   imapHost?: unknown;
@@ -25,26 +27,14 @@ interface ImapSmtpConnectInput {
   smtpUsername?: unknown;
   smtpPassword?: unknown;
 }
-
-interface MailboxSocketConfig {
-  host: string;
-  port: number;
-  secure: boolean;
-  username: string;
-  password: string;
-}
-
-const SOCKET_TIMEOUT_MS = 15000;
 const MAX_HOST_LENGTH = 255;
 const MAX_USERNAME_LENGTH = 320;
 const MAX_PASSWORD_LENGTH = 1000;
-
 function cleanText(value: unknown, maxLength: number): string {
-  return String(value || '')
+  return String(typeof value === 'string' || typeof value === 'number' ? value : '')
     .trim()
     .slice(0, maxLength);
 }
-
 function cleanEmail(value: unknown): string {
   const email = cleanText(value, MAX_USERNAME_LENGTH).toLowerCase();
   if (!email || !email.includes('@')) {
@@ -52,7 +42,6 @@ function cleanEmail(value: unknown): string {
   }
   return email;
 }
-
 function cleanHost(value: unknown, field: string): string {
   const host = cleanText(value, MAX_HOST_LENGTH);
   if (!host || host.includes('/') || host.includes('\\')) {
@@ -60,7 +49,6 @@ function cleanHost(value: unknown, field: string): string {
   }
   return host;
 }
-
 function cleanPort(value: unknown, fallback: number, field: string): number {
   const port = Number(value || fallback);
   if (!Number.isInteger(port) || port < 1 || port > 65535) {
@@ -68,7 +56,6 @@ function cleanPort(value: unknown, fallback: number, field: string): number {
   }
   return port;
 }
-
 function cleanCredential(value: unknown, field: string): string {
   const credential = cleanText(
     value,
@@ -79,18 +66,18 @@ function cleanCredential(value: unknown, field: string): string {
   }
   return credential;
 }
-
 @Injectable()
 export class MailboxImapSmtpService {
-  constructor(private readonly prisma: PrismaService) {}
+  private readonly logger = new Logger(MailboxImapSmtpService.name);
 
+  constructor(private readonly prisma: PrismaService) {
+    this.logger.debug?.(`MailboxImapSmtpService initialized`);
+  }
   async connectMailbox(workspaceId: string, input: ImapSmtpConnectInput) {
     const email = cleanEmail(input.email);
     const imap = this.readImapConfig(input);
     const smtp = this.readSmtpConfig(input);
-
     await Promise.all([this.validateImapConnection(imap), this.validateSmtpConnection(smtp)]);
-
     const connection = await this.prisma.mailboxConnection.upsert({
       where: {
         workspaceId_provider_email: {
@@ -146,9 +133,7 @@ export class MailboxImapSmtpService {
         connectedAt: true,
       },
     });
-
     Metrics.mailbox.connected('imap_smtp', { workspace_id: workspaceId });
-
     return {
       connected: true,
       provider: 'imap_smtp',
@@ -157,7 +142,6 @@ export class MailboxImapSmtpService {
       connectionId: connection.id,
     };
   }
-
   async getPrimaryImapSmtpStatus(workspaceId: string) {
     return this.prisma.mailboxConnection.findFirst({
       where: {
@@ -178,7 +162,6 @@ export class MailboxImapSmtpService {
       },
     });
   }
-
   private readImapConfig(input: ImapSmtpConnectInput): MailboxSocketConfig {
     const secure = input.imapSecure !== false;
     return {
@@ -189,7 +172,6 @@ export class MailboxImapSmtpService {
       password: cleanCredential(input.imapPassword, 'imapPassword'),
     };
   }
-
   private readSmtpConfig(input: ImapSmtpConnectInput): MailboxSocketConfig {
     const secure = input.smtpSecure !== false;
     return {
@@ -200,7 +182,6 @@ export class MailboxImapSmtpService {
       password: cleanCredential(input.smtpPassword, 'smtpPassword'),
     };
   }
-
   private buildMetadata() {
     return {
       provider: 'imap_smtp',
@@ -211,123 +192,12 @@ export class MailboxImapSmtpService {
       },
     } satisfies Prisma.InputJsonObject;
   }
-
   private async validateImapConnection(config: MailboxSocketConfig): Promise<void> {
-    await this.withMailboxSocket(config, async (socket) => {
-      await this.readUntil(socket, (line) => line.includes('* OK'));
-      await this.writeLine(
-        socket,
-        `A1 LOGIN ${this.quoteImap(config.username)} ${this.quoteImap(config.password)}`,
-      );
-      await this.readUntil(socket, (line) => line.includes('A1 OK'));
-      await this.writeLine(socket, 'A2 LIST "" "*"');
-      await this.readUntil(socket, (line) => line.includes('A2 OK'));
-      await this.writeLine(socket, 'A3 LOGOUT');
-    }).catch(() => {
-      throw new BadRequestException('imap_validation_failed');
-    });
+    await validateImapSocket(config);
   }
-
   private async validateSmtpConnection(config: MailboxSocketConfig): Promise<void> {
-    await this.withMailboxSocket(config, async (socket) => {
-      await this.readUntil(socket, (line) => line.startsWith('220'));
-      await this.writeLine(socket, 'EHLO kloel.local');
-      await this.readUntil(socket, (line) => line.startsWith('250'));
-      await this.writeLine(socket, 'AUTH LOGIN');
-      await this.readUntil(socket, (line) => line.startsWith('334'));
-      await this.writeLine(socket, Buffer.from(config.username, 'utf8').toString('base64'));
-      await this.readUntil(socket, (line) => line.startsWith('334'));
-      await this.writeLine(socket, Buffer.from(config.password, 'utf8').toString('base64'));
-      await this.readUntil(socket, (line) => line.startsWith('235'));
-      await this.writeLine(socket, 'QUIT');
-    }).catch(() => {
-      throw new BadRequestException('smtp_validation_failed');
-    });
+    await validateSmtpSocket(config);
   }
-
-  private withMailboxSocket(
-    config: MailboxSocketConfig,
-    handler: (socket: net.Socket | tls.TLSSocket) => Promise<void>,
-  ): Promise<void> {
-    return new Promise((resolve, reject) => {
-      const socket = config.secure
-        ? tls.connect({
-            host: config.host,
-            port: config.port,
-            servername: config.host,
-            timeout: SOCKET_TIMEOUT_MS,
-          })
-        : net.connect({ host: config.host, port: config.port, timeout: SOCKET_TIMEOUT_MS });
-      let settled = false;
-      const finish = (error?: Error) => {
-        if (settled) {
-          return;
-        }
-        settled = true;
-        socket.destroy();
-        if (error) {
-          reject(error);
-        } else {
-          resolve();
-        }
-      };
-      socket.once('error', finish);
-      socket.once('timeout', () => finish(new Error('mailbox_socket_timeout')));
-      socket.once(config.secure ? 'secureConnect' : 'connect', () => {
-        handler(socket).then(() => finish(), finish);
-      });
-    });
-  }
-
-  private readUntil(
-    socket: net.Socket | tls.TLSSocket,
-    predicate: (line: string) => boolean,
-  ): Promise<string> {
-    return new Promise((resolve, reject) => {
-      let buffer = '';
-      const timeout = setTimeout(() => {
-        cleanup();
-        reject(new Error('mailbox_protocol_timeout'));
-      }, SOCKET_TIMEOUT_MS);
-      const cleanup = () => {
-        clearTimeout(timeout);
-        socket.off('data', onData);
-        socket.off('error', onError);
-      };
-      const onError = (error: Error) => {
-        cleanup();
-        reject(error);
-      };
-      const onData = (chunk: Buffer) => {
-        buffer += chunk.toString('utf8');
-        const lines = buffer.split(/\r?\n/).filter(Boolean);
-        const matched = lines.find(predicate);
-        if (matched) {
-          cleanup();
-          resolve(matched);
-        }
-      };
-      socket.on('data', onData);
-      socket.once('error', onError);
-    });
-  }
-
-  private writeLine(socket: net.Socket | tls.TLSSocket, line: string): Promise<void> {
-    return new Promise((resolve, reject) => {
-      socket.write(`${line}\r\n`, (error) => {
-        if (error) {
-          reject(error);
-        } else {
-          resolve();
-        }
-      });
-    });
-  }
-
-  private quoteImap(value: string): string {
-    return `"${value.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`;
-  }
-
   async sendMessageFromMailbox(
     workspaceId: string,
     input: {
@@ -353,7 +223,6 @@ export class MailboxImapSmtpService {
         reason: 'recipient_unsubscribed',
       };
     }
-
     const connection = await this.getActiveImapSmtpConnection(workspaceId);
     if (!connection) {
       Metrics.mailbox.sendFailed('imap_smtp', 'not_connected', {
@@ -361,12 +230,10 @@ export class MailboxImapSmtpService {
       });
       return { provider: 'imap_smtp', status: 'not_connected', sent: false };
     }
-
     const smtpPassword = decryptMailboxToken(connection.smtpPassword);
     if (!smtpPassword || !connection.smtpHost) {
       throw new BadRequestException('imap_smtp_credentials_missing');
     }
-
     const subject = String(input.subject || 'Kloel CIA - mensagem de teste')
       .trim()
       .slice(0, 160);
@@ -382,7 +249,6 @@ export class MailboxImapSmtpService {
         ? baseHtml.replace(/<[^>]*>/g, '')
         : `${baseHtml.replace(/<[^>]*>/g, '')}${buildUnsubscribeFooterText({ email: toEmail })}`;
     const proactive = input.proactive !== false;
-
     const transport = createTransport({
       host: connection.smtpHost,
       port: connection.smtpPort ?? (connection.smtpSecure ? 465 : 587),
@@ -395,7 +261,6 @@ export class MailboxImapSmtpService {
       greetingTimeout: 10_000,
       socketTimeout: 15_000,
     });
-
     try {
       const headers: Record<string, string> = {};
       if (proactive) {
@@ -403,7 +268,6 @@ export class MailboxImapSmtpService {
           email: toEmail,
         });
       }
-
       const info = await transport.sendMail({
         from: connection.email,
         to: toEmail,
@@ -412,7 +276,6 @@ export class MailboxImapSmtpService {
         text: textHtml,
         headers,
       });
-
       Metrics.mailbox.sendCompleted('imap_smtp', { workspace_id: workspaceId });
       return {
         provider: 'imap_smtp',
@@ -425,7 +288,7 @@ export class MailboxImapSmtpService {
     } catch (error) {
       const reason = error instanceof Error ? error.message.slice(0, 100) : 'smtp_send_failed';
       await this.prisma.mailboxConnection.update({
-        where: { id: connection.id },
+        where: { id: connection.id, workspaceId: connection.workspaceId },
         data: {
           lastErrorAt: new Date(),
           lastError: reason,
@@ -439,7 +302,6 @@ export class MailboxImapSmtpService {
       transport.close();
     }
   }
-
   private async getActiveImapSmtpConnection(workspaceId: string) {
     return this.prisma.mailboxConnection.findFirst({
       where: {
@@ -460,7 +322,6 @@ export class MailboxImapSmtpService {
       },
     });
   }
-
   private async isSuppressedRecipient(workspaceId: string, email: string): Promise<boolean> {
     const contact = await this.prisma.contact.findFirst({
       where: {

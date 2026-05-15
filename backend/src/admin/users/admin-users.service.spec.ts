@@ -275,14 +275,17 @@ describe('AdminUsersService', () => {
 
       await service.update('user_1', { ...patch, role: AdminRole.STAFF });
 
-      expect(mockAdminSessionUpdateMany).toHaveBeenCalledWith({
+      const roleChangeSessionUpdate = mockAdminSessionUpdateMany.mock.calls[0][0];
+      expect(roleChangeSessionUpdate).toEqual({
         where: {
           adminUserId: 'user_1',
           revokedAt: null,
-          expiresAt: { gt: expect.any(Date) },
+          expiresAt: { gt: roleChangeSessionUpdate.where.expiresAt.gt },
         },
-        data: { revokedAt: expect.any(Date) },
+        data: { revokedAt: roleChangeSessionUpdate.data.revokedAt },
       });
+      expect(roleChangeSessionUpdate.where.expiresAt.gt).toBeInstanceOf(Date);
+      expect(roleChangeSessionUpdate.data.revokedAt).toBeInstanceOf(Date);
       expect(mockTx.adminAuditLog.create).toHaveBeenCalledWith(
         expect.objectContaining({
           data: expect.objectContaining({
@@ -297,14 +300,17 @@ describe('AdminUsersService', () => {
 
       await service.update('user_1', { ...patch, status: AdminUserStatus.SUSPENDED });
 
-      expect(mockAdminSessionUpdateMany).toHaveBeenCalledWith({
+      const statusChangeSessionUpdate = mockAdminSessionUpdateMany.mock.calls[0][0];
+      expect(statusChangeSessionUpdate).toEqual({
         where: {
           adminUserId: 'user_1',
           revokedAt: null,
-          expiresAt: { gt: expect.any(Date) },
+          expiresAt: { gt: statusChangeSessionUpdate.where.expiresAt.gt },
         },
-        data: { revokedAt: expect.any(Date) },
+        data: { revokedAt: statusChangeSessionUpdate.data.revokedAt },
       });
+      expect(statusChangeSessionUpdate.where.expiresAt.gt).toBeInstanceOf(Date);
+      expect(statusChangeSessionUpdate.data.revokedAt).toBeInstanceOf(Date);
     });
   });
 

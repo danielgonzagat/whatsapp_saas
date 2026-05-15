@@ -2,6 +2,7 @@ import { Logger } from '@nestjs/common';
 
 import { Prisma } from '@prisma/client';
 import { FinancialAlertService } from '../common/financial-alert.service';
+import { toPrismaJsonValue } from '../common/prisma/prisma-json.util';
 import { PrismaService } from '../prisma/prisma.service';
 import { asProviderSettings } from '../whatsapp/provider-settings.types';
 import type { StripeClient, StripeSubscription } from './stripe-types';
@@ -67,7 +68,7 @@ export async function markSubscriptionStatusHelper(
         await tx.subscription.update({ where: { workspaceId }, data: { status } });
         await tx.workspace.update({
           where: { id: workspaceId },
-          data: { providerSettings: nextSettings as unknown as Prisma.InputJsonObject },
+          data: { providerSettings: toPrismaJsonValue(nextSettings) },
         });
         await tx.auditLog.create({
           data: {
@@ -112,7 +113,7 @@ export async function markSubscriptionStatusHelper(
         if (settings.billingSuspended) {
           await tx.workspace.update({
             where: { id: workspaceId },
-            data: { providerSettings: nextSettings as Prisma.InputJsonValue },
+            data: { providerSettings: toPrismaJsonValue(nextSettings) },
           });
         }
         await tx.auditLog.create({

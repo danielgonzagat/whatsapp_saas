@@ -1,34 +1,27 @@
 import * as crypto from 'node:crypto';
-
 jest.mock('../whatsapp/inbound-processor.service', () => ({
   InboundProcessorService: jest.fn().mockImplementation(() => ({
     process: jest.fn().mockResolvedValue(undefined),
   })),
 }));
-
 jest.mock('../whatsapp/whatsapp.service', () => ({
   WhatsappService: jest.fn().mockImplementation(() => ({
     sendMessage: jest.fn().mockResolvedValue(undefined),
   })),
 }));
-
 jest.mock('../autopilot/autopilot.service', () => ({
   AutopilotService: jest.fn().mockImplementation(() => ({
     markConversion: jest.fn().mockResolvedValue(undefined),
     triggerPostPurchaseFlow: jest.fn().mockResolvedValue(undefined),
   })),
 }));
-
 jest.mock('../autopilot/autopilot-analytics.service', () => ({
   AutopilotAnalyticsService: jest.fn(),
 }));
-
 jest.mock('../autopilot/autopilot-cycle.service', () => ({
   AutopilotCycleService: jest.fn(),
 }));
-
 // ── WebhooksController replay tests ──
-
 describe('WebhooksController — replay safety', () => {
   let controller: InstanceType<typeof import('./webhooks.controller').WebhooksController>;
   let redis: { setnx: jest.Mock; expire: jest.Mock; lpush: jest.Mock; ltrim: jest.Mock };
@@ -41,14 +34,12 @@ describe('WebhooksController — replay safety', () => {
   };
   let prisma: { workspace: { findUnique: jest.Mock }; auditLog: { create: jest.Mock } };
   let ControllerClass: typeof import('./webhooks.controller').WebhooksController;
-
   beforeAll(async () => {
     process.env.HOOKS_WEBHOOK_SECRET = 'test-hooks-secret';
     process.env.NODE_ENV = 'test';
     const { WebhooksController } = await import('./webhooks.controller');
     ControllerClass = WebhooksController;
   });
-
   beforeEach(() => {
     redis = {
       setnx: jest.fn(),
@@ -67,7 +58,6 @@ describe('WebhooksController — replay safety', () => {
       workspace: { findUnique: jest.fn().mockResolvedValue({ providerSettings: {} }) },
       auditLog: { create: jest.fn().mockResolvedValue({}) },
     };
-
     controller = new ControllerClass(webhooksService as never, redis as never, prisma as never);
   });
 

@@ -1,5 +1,6 @@
 import { ServiceUnavailableException } from '@nestjs/common';
 import { SystemHealthController } from './system-health.controller';
+import type { SystemHealthService } from './system-health.service';
 
 jest.mock('@sentry/node', () => ({
   captureException: jest.fn(),
@@ -30,7 +31,7 @@ describe('SystemHealthController', () => {
       deepDiagnostic: mockDeepDiagnostic,
     };
 
-    controller = new SystemHealthController(healthService as never);
+    controller = new SystemHealthController(healthService as SystemHealthService);
     jest.clearAllMocks();
   });
 
@@ -93,7 +94,7 @@ describe('SystemHealthController', () => {
       expect(result.failures).toHaveLength(0);
     });
 
-    it('throws ServiceUnavailableException (503) when any dependency is DOWN', async () => {
+    it('throws ServiceUnavailableException (503) when a dependency is DOWN', async () => {
       mockDeepReadiness.mockResolvedValue({
         status: 'DOWN',
         timestamp: '2024-01-01T00:00:00.000Z',

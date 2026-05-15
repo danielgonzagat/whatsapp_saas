@@ -1,27 +1,32 @@
 'use client';
 import { colors } from '@/lib/design-tokens';
-
 import { kloelT } from '@/lib/i18n/t';
 import { useToast } from '@/components/kloel/ToastProvider';
 import { useCheckoutConfig } from '@/hooks/useCheckoutPlans';
 import { useResponsiveViewport } from '@/hooks/useResponsiveViewport';
 import { useNerveCenterContext } from './product-nerve-center.context';
 import {
-  Bg,
   Bt,
   Dv,
   Fd,
-  M,
-  Modal,
-  PanelLoadingState,
   Tg,
   V,
   cs,
-  formatBrlCents,
   is,
   type JsonRecord,
 } from './product-nerve-center.shared';
 import { useCheckoutConfigForm } from './ProductNerveCenterCheckoutsTab.hooks';
+import {
+  CheckoutConfigLoading,
+  CheckoutConfigInfo,
+  PaymentCheckboxes,
+  CouponSelector,
+  TimerConfig,
+  ColorPickerField,
+  SocialProofSection,
+  ExitConfirmModal,
+} from './ProductNerveCenterCheckoutsTab.sections';
+import { PlanLinkingSection } from './ProductNerveCenterCheckoutsTab.plan-linking';
 
 interface CheckoutConfigPanelProps {
   ckEdit: string;
@@ -93,30 +98,10 @@ export function CheckoutConfigPanel({
         </span>
       </div>
       {ckLoading ? (
-        <PanelLoadingState
-          compact
-          label={kloelT(`Sincronizando checkout`)}
-          description={kloelT(
-            `O shell do produto permanece montado enquanto a configuração comercial é carregada.`,
-          )}
-        />
+        <CheckoutConfigLoading />
       ) : (
         <div style={{ ...cs, padding: isMobile ? 16 : 24 }}>
-          <div
-            style={{
-              padding: '12px 14px',
-              marginBottom: 16,
-              background: V.e,
-              border: `1px solid ${V.b}`,
-              borderRadius: 6,
-            }}
-          >
-            <div style={{ fontSize: 12, color: V.t2, lineHeight: 1.7 }}>
-              {kloelT(`Configure o checkout por preenchimento manual: nome comercial, meios de pagamento,
-              cupom, urgência e planos vinculados. Ao voltar, o painel pergunta se deseja salvar as
-              alterações desta edição.`)}
-            </div>
-          </div>
+          <CheckoutConfigInfo />
           <Fd
             label={kloelT(`Nome / Descrição *`)}
             value={String(ckLocal.brandName ?? '')}
@@ -124,222 +109,32 @@ export function CheckoutConfigPanel({
             full
           />
           <Dv />
-          <h4 style={{ fontSize: 14, fontWeight: 600, color: V.t, margin: '0 0 12px' }}>
-            {kloelT(`Pagamento`)}
-          </h4>
-          <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginBottom: 14 }}>
-            <label
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 6,
-                fontSize: 12,
-                color: V.t2,
-                cursor: 'pointer',
-              }}
-            >
-              <input
-                type="checkbox"
-                checked={ckLocal.enableCreditCard !== false}
-                onChange={(event) => patch('enableCreditCard', event.target.checked)}
-                style={{ accentColor: V.em, width: 16, height: 16 }}
-              />
-
-              {kloelT(`Cartão de crédito`)}
-            </label>
-            <label
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 6,
-                fontSize: 12,
-                color: V.t2,
-                cursor: 'pointer',
-              }}
-            >
-              <input
-                type="checkbox"
-                checked={ckLocal.enablePix !== false}
-                onChange={(event) => patch('enablePix', event.target.checked)}
-                style={{ accentColor: V.em, width: 16, height: 16 }}
-              />
-
-              {kloelT(`Pix`)}
-            </label>
-            <label
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 6,
-                fontSize: 12,
-                color: V.t2,
-                cursor: 'pointer',
-              }}
-            >
-              <input
-                type="checkbox"
-                checked={Boolean(ckLocal.enableBoleto)}
-                onChange={(event) => patch('enableBoleto', event.target.checked)}
-                style={{ accentColor: V.em, width: 16, height: 16 }}
-              />
-
-              {kloelT(`Boleto`)}
-            </label>
-          </div>
+          <PaymentCheckboxes ckLocal={ckLocal} patch={patch} />
           <Dv />
-          <Tg
-            label={kloelT(`Cupom de desconto?`)}
-            checked={ckLocal.enableCoupon !== false}
-            onChange={(value) => patch('enableCoupon', value)}
-          />
-          {ckLocal.enableCoupon !== false ? (
-            <Fd label={kloelT(`Cupom automático`)}>
-              <select
-                style={is}
-                value={String(ckLocal.autoCouponCode ?? '')}
-                onChange={(event) => patch('autoCouponCode', event.target.value)}
-              >
-                <option value="">{kloelT(`Selecione um cupom...`)}</option>
-                {COUPONS.map((coupon) => (
-                  <option key={coupon.id} value={coupon.code}>
-                    {coupon.code} ({coupon.type}
-                    {coupon.type === '%'
-                      ? `${coupon.val}% OFF`
-                      : 'R$ ' +
-                        Number(coupon.val || 0).toLocaleString('pt-BR', {
-                          minimumFractionDigits: 2,
-                          maximumFractionDigits: 2,
-                        }) +
-                        ' OFF'}
-                    )
-                  </option>
-                ))}
-              </select>
-            </Fd>
-          ) : null}
+          <CouponSelector ckLocal={ckLocal} patch={patch} coupons={COUPONS} />
           <Dv />
-          <h4 style={{ fontSize: 14, fontWeight: 600, color: V.t, margin: '0 0 12px' }}>
-            {kloelT(`Contador`)}
-          </h4>
-          <Tg
-            label={kloelT(`Usar contador?`)}
-            checked={Boolean(ckLocal.enableTimer)}
-            onChange={(value) => patch('enableTimer', value)}
-          />
-          {ckLocal.enableTimer ? (
-            <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: 16 }}>
-              <Fd
-                label={kloelT(`Minutos`)}
-                value={String(ckLocal.timerMinutes || 15)}
-                onChange={(value) => patch('timerMinutes', Number.parseInt(value, 10) || 15)}
-              />
-              <Fd
-                label={kloelT(`Mensagem`)}
-                value={String(ckLocal.timerMessage ?? '')}
-                onChange={(value) => patch('timerMessage', value)}
-              />
-            </div>
-          ) : null}
+          <TimerConfig ckLocal={ckLocal} patch={patch} isMobile={isMobile} />
           <Dv />
           <h4 style={{ fontSize: 14, fontWeight: 600, color: V.t, margin: '0 0 12px' }}>
             {kloelT(`Personalizar`)}
           </h4>
-          <div style={{ marginBottom: 12 }}>
-            <span
-              style={{
-                fontSize: 11,
-                fontWeight: 600,
-                color: V.t3,
-                marginBottom: 4,
-                display: 'block',
-              }}
-            >
-              {kloelT(`Cor principal`)}
-            </span>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <input
-                type="color"
-                value={String(ckLocal.accentColor ?? 'colors.ember.primary')}
-                onChange={(e) => patch('accentColor', e.target.value)}
-                style={{
-                  width: 36,
-                  height: 36,
-                  padding: 0,
-                  border: `1px solid ${V.b}`,
-                  borderRadius: 6,
-                  backgroundColor: 'transparent',
-                  cursor: 'pointer',
-                }}
-              />
-              <input
-                type="text"
-                value={String(ckLocal.accentColor ?? 'colors.ember.primary')}
-                onChange={(e) => patch('accentColor', e.target.value)}
-                style={{
-                  flex: 1,
-                  background: V.e,
-                  border: `1px solid ${V.b}`,
-                  borderRadius: 6,
-                  padding: '8px 10px',
-                  color: V.t,
-                  fontSize: 13,
-                  fontFamily: 'JetBrains Mono, monospace',
-                }}
-                placeholder={kloelT(`colors.ember.primary`)}
-              />
-            </div>
-          </div>
-          <div style={{ marginBottom: 12 }}>
-            <span
-              style={{
-                fontSize: 11,
-                fontWeight: 600,
-                color: V.t3,
-                marginBottom: 4,
-                display: 'block',
-              }}
-            >
-              {kloelT(`Cor fundo`)}
-            </span>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <input
-                type="color"
-                value={String(
-                  ckLocal.backgroundColor ||
-                    (ckLocal.theme === 'NOIR' ? 'colors.background.void' : colors.text.silver),
-                )}
-                onChange={(e) => patch('backgroundColor', e.target.value)}
-                style={{
-                  width: 36,
-                  height: 36,
-                  padding: 0,
-                  border: `1px solid ${V.b}`,
-                  borderRadius: 6,
-                  backgroundColor: 'transparent',
-                  cursor: 'pointer',
-                }}
-              />
-              <input
-                type="text"
-                value={String(
-                  ckLocal.backgroundColor ||
-                    (ckLocal.theme === 'NOIR' ? 'colors.background.void' : colors.text.silver),
-                )}
-                onChange={(e) => patch('backgroundColor', e.target.value)}
-                style={{
-                  flex: 1,
-                  background: V.e,
-                  border: `1px solid ${V.b}`,
-                  borderRadius: 6,
-                  padding: '8px 10px',
-                  color: V.t,
-                  fontSize: 13,
-                  fontFamily: 'JetBrains Mono, monospace',
-                }}
-                placeholder={ckLocal.theme === 'NOIR' ? 'colors.background.void' : colors.text.silver}
-              />
-            </div>
-          </div>
+          <ColorPickerField
+            label={kloelT(`Cor principal`)}
+            value={String(ckLocal.accentColor ?? 'colors.ember.primary')}
+            placeholder={kloelT(`colors.ember.primary`)}
+            onChange={(value) => patch('accentColor', value)}
+          />
+          <ColorPickerField
+            label={kloelT(`Cor fundo`)}
+            value={String(
+              ckLocal.backgroundColor ||
+                (ckLocal.theme === 'NOIR' ? 'colors.background.void' : colors.text.silver),
+            )}
+            placeholder={
+              ckLocal.theme === 'NOIR' ? 'colors.background.void' : colors.text.silver
+            }
+            onChange={(value) => patch('backgroundColor', value)}
+          />
           <Fd
             label={kloelT(`Texto do botão`)}
             value={String(ckLocal.btnFinalizeText ?? 'Finalizar compra')}
@@ -357,125 +152,14 @@ export function CheckoutConfigPanel({
             </select>
           </Fd>
           <Dv />
-          <h4 style={{ fontSize: 14, fontWeight: 600, color: V.t, margin: '0 0 12px' }}>
-            {kloelT(`Planos vinculados`)}
-          </h4>
-          {selectedPlans.length > 0 ? (
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 14 }}>
-              {selectedPlans.map((planCandidate) => (
-                <button
-                  key={String(planCandidate.id)}
-                  type="button"
-                  onClick={() =>
-                    setLinkedPlanIds((current) =>
-                      current.filter((candidateId) => candidateId !== String(planCandidate.id)),
-                    )
-                  }
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: 8,
-                    padding: '7px 12px',
-                    borderRadius: 16,
-                    border: `1px solid ${V.em}35`,
-                    background: `${V.em}12`,
-                    color: V.t,
-                    fontSize: 11,
-                    fontWeight: 600,
-                  }}
-                >
-                  <span>{String(planCandidate.name)}</span>
-                  <span style={{ color: V.em, fontFamily: M }}>
-                    {formatBrlCents(Number(planCandidate.priceInCents || 0))}
-                  </span>
-                  <span style={{ color: V.t3 }}>×</span>
-                </button>
-              ))}
-            </div>
-          ) : (
-            <div style={{ ...cs, padding: 14, marginBottom: 14, background: V.e }}>
-              <span style={{ display: 'block', fontSize: 12, color: V.t, marginBottom: 6 }}>
-                {kloelT(`Nenhum plano vinculado`)}
-              </span>
-              <span style={{ display: 'block', fontSize: 11, color: V.t2, lineHeight: 1.6 }}>
-                {kloelT(`Este checkout ainda não gera links públicos. Vincule pelo menos um plano para
-                liberar URLs de compra em \`Planos → Ver links\`.`)}
-              </span>
-            </div>
-          )}
-          {rawPlans.length === 0 ? (
-            <div
-              style={{
-                ...cs,
-                padding: 14,
-                background: `${V.y}10`,
-                border: `1px solid ${V.y}25`,
-                marginBottom: 14,
-              }}
-            >
-              <span style={{ display: 'block', fontSize: 12, fontWeight: 600, color: V.t }}>
-                {kloelT(`Nenhum plano criado`)}
-              </span>
-              <span style={{ display: 'block', fontSize: 11, color: V.t2, lineHeight: 1.6 }}>
-                {kloelT(`Crie ao menos um plano em`)}{' '}
-                <strong style={{ color: V.t }}>{kloelT(`Planos`)}</strong>{' '}
-                {kloelT(`antes de
-                vincular este checkout.`)}
-              </span>
-            </div>
-          ) : null}
-          {availablePlans.length > 0 ? (
-            <div style={{ display: 'grid', gap: 8, marginBottom: 10 }}>
-              {availablePlans.map((planCandidate) => (
-                <button
-                  key={String(planCandidate.id)}
-                  type="button"
-                  onClick={() =>
-                    setLinkedPlanIds((current) => {
-                      const pid = String(planCandidate.id);
-                      return current.includes(pid) ? current : [...current, pid];
-                    })
-                  }
-                  style={{
-                    ...cs,
-                    padding: '12px 14px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    gap: 12,
-                    background: V.e,
-                    textAlign: 'left',
-                  }}
-                >
-                  <div style={{ display: 'grid', gap: 4 }}>
-                    <span style={{ fontSize: 12, fontWeight: 600, color: V.t }}>
-                      {String(planCandidate.name)}
-                    </span>
-                    <span style={{ fontSize: 10, color: V.t3 }}>
-                      {formatBrlCents(Number(planCandidate.priceInCents || 0))} ·{' '}
-                      {Number(planCandidate.quantity || 1)} item
-                      {Number(planCandidate.quantity || 1) === 1 ? '' : 's'}
-                    </span>
-                  </div>
-                  <Bg color={V.g2}>{kloelT(`Adicionar`)}</Bg>
-                </button>
-              ))}
-            </div>
-          ) : null}
+          <PlanLinkingSection
+            selectedPlans={selectedPlans}
+            availablePlans={availablePlans}
+            rawPlans={rawPlans}
+            setLinkedPlanIds={setLinkedPlanIds}
+          />
           <Dv />
-          <h4 style={{ fontSize: 14, fontWeight: 600, color: V.t, margin: '0 0 12px' }}>
-            {kloelT(`Social Proof`)}
-          </h4>
-          <Tg
-            label={kloelT(`Depoimentos?`)}
-            checked={ckLocal.enableTestimonials !== false}
-            onChange={(value) => patch('enableTestimonials', value)}
-          />
-          <Tg
-            label={kloelT(`Garantia?`)}
-            checked={ckLocal.enableGuarantee !== false}
-            onChange={(value) => patch('enableGuarantee', value)}
-          />
+          <SocialProofSection ckLocal={ckLocal} patch={patch} />
           <Dv />
           <Tg
             label={kloelT(`Popup Exit Intent?`)}
@@ -516,25 +200,12 @@ export function CheckoutConfigPanel({
         </div>
       )}
       {showExitConfirm ? (
-        <Modal title={kloelT(`Salvar alterações?`)} onClose={() => setShowExitConfirm(false)}>
-          <div style={{ fontSize: 12, color: V.t2, lineHeight: 1.7 }}>
-            {kloelT(`Se voce sair agora sem salvar, as alteracoes desta edicao serao descartadas.`)}
-          </div>
-          <div
-            style={{
-              display: 'flex',
-              flexDirection: isMobile ? 'column-reverse' : 'row',
-              gap: 10,
-              marginTop: 18,
-              justifyContent: 'flex-end',
-            }}
-          >
-            <Bt onClick={() => void handleBack(false)}>{kloelT(`Nao`)}</Bt>
-            <Bt primary onClick={() => void handleBack(true)}>
-              {kloelT(`Sim`)}
-            </Bt>
-          </div>
-        </Modal>
+        <ExitConfirmModal
+          isMobile={isMobile}
+          onClose={() => setShowExitConfirm(false)}
+          onStay={() => void handleBack(false)}
+          onDiscard={() => void handleBack(true)}
+        />
       ) : null}
     </>
   );

@@ -7,11 +7,7 @@ import { checkIdempotent, endJob, logError, markCompleted, startJob } from '../p
 const log = new WorkerLogger('silent-24h-resolver');
 
 function extractContactId(contextSnapshot: unknown): string | undefined {
-  if (
-    contextSnapshot &&
-    typeof contextSnapshot === 'object' &&
-    !Array.isArray(contextSnapshot)
-  ) {
+  if (contextSnapshot && typeof contextSnapshot === 'object' && !Array.isArray(contextSnapshot)) {
     const ctx = contextSnapshot as Record<string, unknown>;
     const id = ctx.contactId ?? ctx.contact_id ?? ctx.userId ?? ctx.phone;
     return typeof id === 'string' ? id : undefined;
@@ -20,11 +16,7 @@ function extractContactId(contextSnapshot: unknown): string | undefined {
 }
 
 function extractChannel(contextSnapshot: unknown): string | undefined {
-  if (
-    contextSnapshot &&
-    typeof contextSnapshot === 'object' &&
-    !Array.isArray(contextSnapshot)
-  ) {
+  if (contextSnapshot && typeof contextSnapshot === 'object' && !Array.isArray(contextSnapshot)) {
     const ctx = contextSnapshot as Record<string, unknown>;
     const channel = ctx.channel;
     return typeof channel === 'string' ? channel : undefined;
@@ -51,6 +43,11 @@ export const silent24hResolverWorker = new Worker(
       // Cap the batch — unbounded findMany can OOM after extended downtime
       // when thousands of outcomes accumulate. 500 per 5-min tick = 6000/h,
       // enough to drain any realistic backlog in a couple of hours.
+      // @CrossWorkspaceMaintenance — this resolver scans ALL workspaces for
+      // open outcomes past their expected window. It must operate globally
+      // because silent-24h expiration is a platform-wide cron, not a
+      // per-tenant request. Each outcome carries its own workspaceId for
+      // downstream scoping (autopilotEvent.create, globalPrior.upsert).
       const BATCH_CAP = 500;
       const openOutcomes = await prisma.decisionOutcome.findMany({
         where: { outcomeAt: null },
@@ -124,7 +121,7 @@ export const silent24hResolverWorker = new Worker(
         // Subsequent autopilotEvent.create runs only on win, avoiding duplicate
         // outcome.silent_24h_closed events when concurrency > 1.
         const claim = await prisma.decisionOutcome.updateMany({
-          where: { id: decision.id, outcomeAt: null },
+          where: { id: decision.id, workspaceId: decision.workspaceId, outcomeAt: null },
           data: updateData,
         });
 

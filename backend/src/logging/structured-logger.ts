@@ -15,7 +15,9 @@ export class StructuredLogger extends Logger {
     this.correlationId = getCorrelationId();
   }
 
-  static from(context: string | { name?: string; constructor?: { name?: string } }): StructuredLogger {
+  static from(
+    context: string | { name?: string; constructor?: { name?: string } },
+  ): StructuredLogger {
     const name =
       typeof context === 'string'
         ? context
@@ -74,7 +76,10 @@ export class StructuredLogger extends Logger {
   info(message: string, err: unknown): void;
   info(a: string | LogExtra, b?: string | LogExtra | unknown): void {
     if (this.isTestEnv()) return;
-    const { message, extra } = this.normalize(a as string | LogExtra, b as string | LogExtra | undefined);
+    const { message, extra } = this.normalize(
+      a as string | LogExtra,
+      b as string | LogExtra | undefined,
+    );
     console.log(this.serialize('info', message, extra));
   }
 
@@ -83,7 +88,11 @@ export class StructuredLogger extends Logger {
   override warn(data: LogExtra, message?: string): void;
   override warn(message: string, err: unknown): void;
   override warn(message: string, context: string, extra: LogExtra): void;
-  override warn(a: string | LogExtra, b?: string | LogExtra | unknown, c?: string | LogExtra): void {
+  override warn(
+    a: string | LogExtra,
+    b?: string | LogExtra | unknown,
+    c?: string | LogExtra,
+  ): void {
     if (this.isTestEnv()) return;
     if (c !== undefined) {
       let extra: LogExtra = {};
@@ -94,7 +103,10 @@ export class StructuredLogger extends Logger {
       console.warn(this.serialize('warn', a as string, extra));
       return;
     }
-    const { message, extra } = this.normalize(a as string | LogExtra, b as string | LogExtra | undefined);
+    const { message, extra } = this.normalize(
+      a as string | LogExtra,
+      b as string | LogExtra | undefined,
+    );
     console.warn(this.serialize('warn', message, extra));
   }
 
@@ -104,8 +116,12 @@ export class StructuredLogger extends Logger {
   override error(message: string, err: unknown): void;
   override error(data: LogExtra, message?: string): void;
   override error(data: LogExtra, stack?: string, context?: string | unknown): void;
-  override error(message: any, extra?: LogExtra): void;
-  override error(a: string | LogExtra | any, b?: string | LogExtra | unknown, c?: string | LogExtra): void {
+  override error(message: unknown, extra?: LogExtra): void;
+  override error(
+    a: string | LogExtra | unknown,
+    b?: string | LogExtra | unknown,
+    c?: string | LogExtra,
+  ): void {
     if (this.isTestEnv()) return;
     let message: string;
     let extra: LogExtra = {};
@@ -140,7 +156,7 @@ export class StructuredLogger extends Logger {
         message = typeof b === 'string' ? b : '';
       }
     } else {
-      message = a instanceof Error ? (a.message || 'Unknown error') : String(a);
+      message = a instanceof Error ? a.message || 'Unknown error' : String(a);
       if (b && typeof b === 'object' && !(typeof b === 'string')) {
         extra = { ...b, errorName: a instanceof Error ? a.constructor.name : undefined };
       } else if (typeof b === 'string') {

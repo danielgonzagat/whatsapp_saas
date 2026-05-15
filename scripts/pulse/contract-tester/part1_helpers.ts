@@ -2,7 +2,6 @@
  * Part 1: Shared utility/helper functions.
  * Depends only on part0_constants and external modules.
  */
-
 import * as path from 'path';
 import * as ts from 'typescript';
 import type { ContractProvider, ProviderContract } from '../types.contract-tester';
@@ -20,13 +19,10 @@ import {
   NESTJS_DECORATOR_NAMES,
   resolveAuthLabel,
 } from './part0_constants';
-
 // ── Path/filesystem helpers ─────────────────────────────────────────────────
-
 export function uniqueStrings(values: string[]): string[] {
   return [...new Set(values.filter((value) => value.trim().length > deriveZeroValue()))];
 }
-
 export function dedupeContracts(contracts: ProviderContract[]): ProviderContract[] {
   const byKey = new Map<string, ProviderContract>();
   for (const contract of contracts) {
@@ -58,7 +54,6 @@ export function dedupeContracts(contracts: ProviderContract[]): ProviderContract
   }
   return [...byKey.values()];
 }
-
 export function findBackendDir(rootDir: string): string | null {
   const candidates = ['backend/src', 'server/src', 'api/src', 'src'];
   for (const candidate of candidates) {
@@ -67,7 +62,6 @@ export function findBackendDir(rootDir: string): string | null {
   }
   return null;
 }
-
 export function findMigrationsDir(rootDir: string): string | null {
   for (const candidate of MIGRATIONS_DIRS) {
     const full = safeJoin(rootDir, candidate);
@@ -75,21 +69,17 @@ export function findMigrationsDir(rootDir: string): string | null {
   }
   return null;
 }
-
 // ── TypeScript AST helpers ──────────────────────────────────────────────────
-
 export function parseSourceFile(filePath: string, content: string): ts.SourceFile {
   const sk =
     filePath.endsWith('.tsx') || filePath.endsWith('.jsx') ? ts.ScriptKind.TSX : ts.ScriptKind.TS;
   return ts.createSourceFile(filePath, content, ts.ScriptTarget.Latest, true, sk);
 }
-
 export function readPropertyName(name: ts.PropertyName): string | null {
   if (ts.isIdentifier(name) || ts.isStringLiteral(name) || ts.isNumericLiteral(name))
     return name.text;
   return null;
 }
-
 export function readStaticStringExpression(
   node: ts.Node | undefined,
   source: ts.SourceFile,
@@ -99,13 +89,10 @@ export function readStaticStringExpression(
   if (ts.isTemplateExpression(node)) return node.getText(source).slice(1, -1);
   return null;
 }
-
 export function readDecoratorCall(decorator: ts.Decorator): ts.CallExpression | null {
   return ts.isCallExpression(decorator.expression) ? decorator.expression : null;
 }
-
 // ── Route helpers ───────────────────────────────────────────────────────────
-
 export function normalizeRoute(route: string): string {
   const sep = discoverRouteSeparatorFromRuntime();
   return (
@@ -115,14 +102,11 @@ export function normalizeRoute(route: string): string {
       .replace(/\/$/, '') || sep
   );
 }
-
 export function normalizeHttpMethod(value: string): string | null {
   const upper = value.toUpperCase();
   return HTTP_METHOD_PATTERN.test(upper) ? upper : null;
 }
-
 // ── Decorator scanners ──────────────────────────────────────────────────────
-
 export function findControllerPrefix(source: ts.SourceFile): string {
   const classes = source.statements.filter(ts.isClassDeclaration);
   for (const classDeclaration of classes) {
@@ -135,7 +119,6 @@ export function findControllerPrefix(source: ts.SourceFile): string {
   }
   return '';
 }
-
 export function collectRouteDecorators(
   source: ts.SourceFile,
 ): Array<{ method: string; route: string }> {
@@ -155,9 +138,7 @@ export function collectRouteDecorators(
   visit(source);
   return routes;
 }
-
 // ── URL provider helpers ────────────────────────────────────────────────────
-
 export function providerFromUrl(raw: string): ContractProvider | null {
   if (!/^https?:\/\//i.test(raw)) return null;
   try {
@@ -167,7 +148,6 @@ export function providerFromUrl(raw: string): ContractProvider | null {
     return null;
   }
 }
-
 export function normalizeEndpoint(raw: string, _provider: ContractProvider): string {
   let result = raw.replace(/https?:\/\/[^/]+/, '');
   if (result.startsWith('/')) result = result.slice(1);
@@ -182,7 +162,6 @@ export function normalizeEndpoint(raw: string, _provider: ContractProvider): str
     });
   return '/' + normalized.join('/');
 }
-
 export function inferExpectedHeaders(content: string, url: string): string[] {
   const context = surroundingText(content, url, 500);
   const headers = new Set<string>();
@@ -194,7 +173,6 @@ export function inferExpectedHeaders(content: string, url: string): string[] {
   }
   return [...headers];
 }
-
 export function inferAuthType(content: string, url: string): ProviderContract['authType'] {
   const context = surroundingText(content, url, 500);
   if (/signature|x-hub|x-signature/i.test(context))
@@ -206,7 +184,6 @@ export function inferAuthType(content: string, url: string): ProviderContract['a
   if (/oauth/i.test(context)) return resolveAuthLabel((l) => l.startsWith('oauth'));
   return resolveAuthLabel((l) => l === 'none');
 }
-
 export function surroundingText(content: string, needle: string, radius: number): string {
   const index = content.indexOf(needle);
   if (index < deriveZeroValue()) return '';
@@ -215,7 +192,6 @@ export function surroundingText(content: string, needle: string, radius: number)
     Math.min(content.length, index + needle.length + radius),
   );
 }
-
 export function extractMethod(content: string, match: RegExpExecArray): string {
   if (match[2] && match[1] && /^(get|put|delete|patch)$/i.test(match[1])) {
     return match[1].toUpperCase();
@@ -227,9 +203,7 @@ export function extractMethod(content: string, match: RegExpExecArray): string {
   if (methodMatch) return methodMatch[1].toUpperCase();
   return 'POST';
 }
-
 // ── OpenAPI helpers ─────────────────────────────────────────────────────────
-
 export function isOpenApiSpecFile(rootDir: string, filePath: string): boolean {
   const relative = path.relative(rootDir, filePath);
   if (relative.startsWith('..')) return false;
@@ -238,7 +212,6 @@ export function isOpenApiSpecFile(rootDir: string, filePath: string): boolean {
   const firstNameSegment = parsed.name.toLowerCase().split('.')[0];
   return firstNameSegment === 'openapi' || firstNameSegment === 'swagger';
 }
-
 export function providerFromOpenApiSpec(spec: Record<string, unknown>): string | null {
   const servers = Array.isArray(spec.servers) ? spec.servers : [];
   for (const server of servers) {
@@ -251,7 +224,6 @@ export function providerFromOpenApiSpec(spec: Record<string, unknown>): string |
   }
   return null;
 }
-
 export function extractOpenApiRequestSchema(
   operation: Record<string, unknown>,
 ): Record<string, unknown> {
@@ -259,7 +231,6 @@ export function extractOpenApiRequestSchema(
   if (!requestBody || typeof requestBody !== 'object' || Array.isArray(requestBody)) return {};
   return { requestBody };
 }
-
 export function extractOpenApiResponseSchema(
   operation: Record<string, unknown>,
 ): Record<string, unknown> {
@@ -267,7 +238,6 @@ export function extractOpenApiResponseSchema(
   if (!responses || typeof responses !== 'object' || Array.isArray(responses)) return {};
   return { responses };
 }
-
 export function inferOpenApiAuthType(
   spec: Record<string, unknown>,
   operation: Record<string, unknown>,
@@ -285,7 +255,6 @@ export function inferOpenApiAuthType(
     return resolveAuthLabel((l) => l.includes('api'));
   return resolveAuthLabel((l) => l.includes('api'));
 }
-
 export function isPulseRuntimeArtifactFile(fileName: string): boolean {
   return (
     fileName.startsWith('PULSE_') &&

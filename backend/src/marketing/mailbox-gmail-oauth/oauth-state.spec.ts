@@ -1,12 +1,9 @@
-import {
-  normalizeReturnTo,
-  expiresAtFromSeconds,
-  signState,
-  verifyState,
-} from './oauth-state';
+import { randomBytes } from 'node:crypto';
+
+import { normalizeReturnTo, expiresAtFromSeconds, signState, verifyState } from './oauth-state';
 
 describe('oauth-state', () => {
-  const secret = 'test-state-secret';
+  const stateSigningKey = randomBytes(32).toString('hex');
 
   describe('normalizeReturnTo', () => {
     it('returns valid path unchanged', () => {
@@ -54,8 +51,8 @@ describe('oauth-state', () => {
   describe('signState and verifyState', () => {
     it('round-trips a valid state', () => {
       const payload = { workspaceId: 'ws-1', returnTo: '/dashboard', ts: Date.now() };
-      const signed = signState(payload, secret);
-      const verified = verifyState(signed, secret);
+      const signed = signState(payload, stateSigningKey);
+      const verified = verifyState(signed, stateSigningKey);
 
       expect(verified).not.toBeNull();
       expect(verified!.workspaceId).toBe('ws-1');
@@ -65,22 +62,24 @@ describe('oauth-state', () => {
     it('rejects tampered state', () => {
       const signed = signState(
         { workspaceId: 'ws-1', returnTo: '/a', ts: Date.now() },
-        secret,
+        stateSigningKey,
       );
-      const tamperedPayload = Buffer.from(JSON.stringify({
-        workspaceId: 'ws-2',
-        returnTo: '/b',
-        ts: Date.now(),
-      })).toString('base64url');
+      const tamperedPayload = Buffer.from(
+        JSON.stringify({
+          workspaceId: 'ws-2',
+          returnTo: '/b',
+          ts: Date.now(),
+        }),
+      ).toString('base64url');
       const tampered = tamperedPayload + '.' + signed.split('.')[1];
 
-      expect(verifyState(tampered, secret)).toBeNull();
+      expect(verifyState(tampered, stateSigningKey)).toBeNull();
     });
 
     it('rejects state with wrong secret', () => {
       const payload = { workspaceId: 'ws-1', returnTo: '/', ts: Date.now() };
-      const signed = signState(payload, secret);
-      expect(verifyState(signed, 'wrong-secret')).toBeNull();
+      const signed = signState(payload, stateSigningKey);
+      expect(verifyState(signed, randomBytes(32).toString('hex'))).toBeNull();
     });
 
     it('rejects expired state', () => {
@@ -89,17 +88,19 @@ describe('oauth-state', () => {
         returnTo: '/',
         ts: Date.now() - 11 * 60 * 1000,
       };
-      const signed = signState(payload, secret);
-      expect(verifyState(signed, secret)).toBeNull();
+      const signed = signState(payload, stateSigningKey);
+      expect(verifyState(signed, stateSigningKey)).toBeNull();
     });
 
     it('rejects empty state string', () => {
-      expect(verifyState('', secret)).toBeNull();
+      expect(verifyState('', stateSigningKey)).toBeNull();
     });
 
     it('rejects state without signature', () => {
-      const encoded = Buffer.from(JSON.stringify({ workspaceId: 'ws-1', returnTo: '/', ts: Date.now() })).toString('base64url');
-      expect(verifyState(encoded, secret)).toBeNull();
+      const encoded = Buffer.from(
+        JSON.stringify({ workspaceId: 'ws-1', returnTo: '/', ts: Date.now() }),
+      ).toString('base64url');
+      expect(verifyState(encoded, stateSigningKey)).toBeNull();
     });
   });
 });

@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { MetaWhatsAppService } from '../../meta/meta-whatsapp.service';
 import { MetaConnectionStateService } from '../../meta/meta-connection-state.service';
@@ -8,12 +8,16 @@ import { readOptionalText, type WhatsAppStatusValue } from './shared/channel-hel
 
 @Injectable()
 export class MetaConnectService {
+  private readonly logger = new Logger(MetaConnectService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly metaWhatsApp: MetaWhatsAppService,
     private readonly metaConnectionState: MetaConnectionStateService,
     private readonly whatsappProviders: WhatsAppProviderRegistry,
-  ) {}
+  ) {
+    this.logger.debug?.(`MetaConnectService initialized`);
+  }
 
   private getWhatsAppSessionSnapshot(providerSettings: ProviderSettings) {
     const snapshot = providerSettings.whatsappApiSession ?? {};

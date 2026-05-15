@@ -1,20 +1,21 @@
 #!/usr/bin/env node
 
-import { execFileSync, spawnSync } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { collectMadgeCycles } from './check-madge-cycles.mjs';
+import {
+  collectCodacyMetrics,
+  collectCoverageMetrics,
+  collectPulseMetrics,
+} from './collect-ratchet-metrics.artifacts.mjs';
 import { collectKnipIssues } from './collect-knip-issues.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(here, '..', '..');
 const pulseHealthPath = path.join(repoRoot, 'PULSE_HEALTH.json');
 const pulseCertificatePath = path.join(repoRoot, 'PULSE_CERTIFICATE.json');
-const pulseCodacyStatePath = path.join(repoRoot, 'PULSE_CODACY_STATE.json');
-const ratchetBaselinePath = path.join(repoRoot, 'ratchet.json');
-const COVERAGE_PACKAGES = ['backend', 'frontend', 'worker'];
-
 const CODE_PATHS = ['backend/src', 'frontend/src', 'worker', 'scripts'];
 const PRODUCT_CODE_PATHS = ['backend/src', 'frontend/src', 'worker'];
 const FRONTEND_PATHS = ['frontend/src'];
@@ -79,15 +80,6 @@ const ALLOWED_HEX_COLORS = new Set([
   '#3A3A3F',
   '#E85D30',
   '#F5F5F5',
-]);
-const DEAD_CODE_BREAK_TYPES = new Set(['DEAD_EXPORT', 'DEAD_COMPONENT']);
-const CIRCULAR_BREAK_TYPES = new Set(['CIRCULAR_IMPORT', 'CIRCULAR_MODULE_DEPENDENCY']);
-const ANTI_HARDCODE_BREAK_TYPES = new Set(['AI_PSEUDO_THINKING_HARDCODED']);
-const VISUAL_CONTRACT_BREAK_TYPES = new Set([
-  'VISUAL_CONTRACT_FONT_BELOW_MIN',
-  'VISUAL_CONTRACT_HEX_OUTSIDE_TOKENS',
-  'VISUAL_CONTRACT_EMOJI_UI',
-  'VISUAL_CONTRACT_GENERIC_SPINNER',
 ]);
 const IGNORED_TRACKED_SEGMENTS = new Set([
   'node_modules',
@@ -349,278 +341,6 @@ function countFilesOverLimit(files, maxLines) {
   }
 
   return createMetric(total, 'max', samples, { limit: maxLines });
-}
-
-function ensurePulseArtifacts({ refreshPulse = false, ciSafeMode = false } = {}) {
-  if (!refreshPulse && existsSync(pulseHealthPath) && existsSync(pulseCertificatePath)) {
-    return true;
-  }
-
-  if (ciSafeMode) {
-    return false;
-  }
-
-  const result = spawnSync(
-    process.execPath,
-    [path.join(repoRoot, 'scripts', 'pulse', 'run.js'), '--report'],
-    {
-      cwd: repoRoot,
-      encoding: 'utf8',
-      env: {
-        ...process.env,
-        PULSE_EXECUTION_TRACE_PATH:
-          process.env.PULSE_EXECUTION_TRACE_PATH ||
-          path.join(repoRoot, 'PULSE_EXECUTION_TRACE.json'),
-      },
-      maxBuffer: 64 * 1024 * 1024,
-    },
-  );
-
-  if (result.status !== 0) {
-    throw new Error(
-      `PULSE refresh failed with exit code ${result.status ?? 1}.\n${result.stdout || ''}\n${result.stderr || ''}`.trim(),
-    );
-  }
-
-  return true;
-}
-
-function readPulseArtifacts() {
-  const health = JSON.parse(readFileSync(pulseHealthPath, 'utf8'));
-  const certificate = JSON.parse(readFileSync(pulseCertificatePath, 'utf8'));
-  return { health, certificate };
-}
-
-function readRatchetBaseline() {
-  if (!existsSync(ratchetBaselinePath)) {
-    return {};
-  }
-
-  try {
-    const parsed = JSON.parse(readFileSync(ratchetBaselinePath, 'utf8'));
-    return parsed?.ratchet || {};
-  } catch {
-    return {};
-  }
-}
-
-function collectPulseMetrics({ refreshPulse = false } = {}) {
-  const artifactsReady = ensurePulseArtifacts({
-    refreshPulse,
-    ciSafeMode: !refreshPulse && process.env.CI === 'true',
-  });
-
-  if (!artifactsReady) {
-    const baseline = readRatchetBaseline();
-    return {
-      pulseScore: createMetric(Number(baseline.pulse_score_min || 0), 'min', [], {
-        rawScore: null,
-        environment: 'ci-baseline-fallback',
-        fallback: 'ratchet.json',
-      }),
-      facadeCount: createMetric(Number(baseline.facade_count_max || 0), 'max', [], {
-        fallback: 'ratchet.json',
-      }),
-      deadCodeFiles: createMetric(Number(baseline.dead_code_files_max || 0), 'max', [], {
-        fallback: 'ratchet.json',
-      }),
-      orphanPrismaModels: createMetric(Number(baseline.orphan_prisma_models_max || 0), 'max', [], {
-        fallback: 'ratchet.json',
-      }),
-      circularImports: createMetric(Number(baseline.circular_imports_max || 0), 'max', [], {
-        fallback: 'ratchet.json',
-      }),
-      antiHardcodeBreaks: createMetric(Number(baseline.anti_hardcode_breaks_max || 0), 'max', [], {
-        fallback: 'ratchet.json',
-      }),
-      visualContractBreaks: createMetric(
-        Number(baseline.visual_contract_breaks_max || 0),
-        'max',
-        [],
-        { fallback: 'ratchet.json' },
-      ),
-      browserStressPassRate: createMetric(
-        Number(baseline.browser_stress_pass_rate_min || 0),
-        'min',
-        [],
-        {
-          executed: false,
-          fallback: 'ratchet.json',
-        },
-      ),
-    };
-  }
-
-  const { health, certificate } = readPulseArtifacts();
-  const deadCodeFiles = [
-    ...new Set(
-      (health.breaks || [])
-        .filter((item) => DEAD_CODE_BREAK_TYPES.has(item.type))
-        .map((item) => item.file),
-    ),
-  ];
-  const circularBreaks = (health.breaks || []).filter((item) =>
-    CIRCULAR_BREAK_TYPES.has(item.type),
-  );
-  const antiHardcodeBreaks = (health.breaks || []).filter((item) =>
-    ANTI_HARDCODE_BREAK_TYPES.has(item.type),
-  );
-  const visualContractBreaks = (health.breaks || []).filter((item) =>
-    VISUAL_CONTRACT_BREAK_TYPES.has(item.type),
-  );
-
-  return {
-    pulseScore: createMetric(Number(certificate.score || 0), 'min', [], {
-      rawScore: Number(certificate.rawScore || 0),
-      environment: certificate.environment || 'unknown',
-    }),
-    facadeCount: createMetric(Number(health.stats?.facades || 0), 'max'),
-    deadCodeFiles: createMetric(
-      deadCodeFiles.length,
-      'max',
-      deadCodeFiles.slice(0, 20).map((file) => ({ file })),
-    ),
-    orphanPrismaModels: createMetric(Number(health.stats?.modelOrphans || 0), 'max'),
-    circularImports: createMetric(
-      circularBreaks.length,
-      'max',
-      circularBreaks.slice(0, 20).map((item) => ({
-        file: item.file,
-        line: item.line,
-        content: item.description,
-      })),
-    ),
-    antiHardcodeBreaks: createMetric(
-      antiHardcodeBreaks.length,
-      'max',
-      antiHardcodeBreaks.slice(0, 20).map((item) => ({
-        file: item.file,
-        line: item.line,
-        content: item.description,
-      })),
-    ),
-    visualContractBreaks: createMetric(
-      visualContractBreaks.length,
-      'max',
-      visualContractBreaks.slice(0, 20).map((item) => ({
-        file: item.file,
-        line: item.line,
-        content: item.description,
-      })),
-    ),
-    browserStressPassRate: createMetric(
-      Number(certificate.evidenceSummary?.browser?.passRate || 0),
-      'min',
-      [],
-      {
-        executed: Boolean(certificate.evidenceSummary?.browser?.executed),
-      },
-    ),
-  };
-}
-
-function collectCoverageMetrics() {
-  const pcts = { lines: [], branches: [] };
-  const packageDetails = {};
-
-  for (const pkg of COVERAGE_PACKAGES) {
-    const summaryPath = path.join(repoRoot, pkg, 'coverage', 'coverage-summary.json');
-    if (!existsSync(summaryPath)) {
-      packageDetails[pkg] = { lines: 'missing', branches: 'missing', reason: 'coverage-summary.json not found' };
-      continue;
-    }
-
-    try {
-      const summary = JSON.parse(readFileSync(summaryPath, 'utf8'));
-      const total = summary.total || {};
-
-      const linesPct = typeof total.lines?.pct === 'number' ? total.lines.pct : null;
-      const branchesPct = typeof total.branches?.pct === 'number' ? total.branches.pct : null;
-
-      packageDetails[pkg] = {
-        lines: linesPct,
-        branches: branchesPct,
-        linesTotal: total.lines?.total ?? 0,
-        linesCovered: total.lines?.covered ?? 0,
-        branchesTotal: total.branches?.total ?? 0,
-        branchesCovered: total.branches?.covered ?? 0,
-      };
-
-      if (linesPct !== null) {pcts.lines.push(linesPct);}
-      if (branchesPct !== null) {pcts.branches.push(branchesPct);}
-    } catch (error) {
-      packageDetails[pkg] = {
-        lines: 'error',
-        branches: 'error',
-        reason: error instanceof Error ? error.message : String(error),
-      };
-    }
-  }
-
-  const linesMin = pcts.lines.length > 0 ? Math.min(...pcts.lines) : 0;
-  const branchesMin = pcts.branches.length > 0 ? Math.min(...pcts.branches) : 0;
-
-  return {
-    linesMin: createMetric(linesMin, 'min', [], { packageDetails }),
-    branchesMin: createMetric(branchesMin, 'min', [], { packageDetails }),
-  };
-}
-
-function collectCodacyMetrics() {
-  // PULSE_CODACY_STATE.json is produced by scripts/ops/sync-codacy-issues.mjs
-  // on the nightly workflow (and on-demand locally). It is the source of
-  // truth for Codacy-reported issue counts because the Codacy REST API is
-  // rate-limited and intermittently reports stale totals; we only ever read
-  // the committed snapshot here so ratchet checks are deterministic.
-  if (!existsSync(pulseCodacyStatePath)) {
-    const fallback = readRatchetBaseline();
-    return {
-      total: createMetric(Number(fallback.codacy_total_issues_max || 0), 'max', [], {
-        fallback: 'ratchet.json',
-        reason: 'PULSE_CODACY_STATE.json missing',
-      }),
-      high: createMetric(Number(fallback.codacy_high_severity_issues_max || 0), 'max', [], {
-        fallback: 'ratchet.json',
-      }),
-      medium: createMetric(Number(fallback.codacy_medium_severity_issues_max || 0), 'max', [], {
-        fallback: 'ratchet.json',
-      }),
-    };
-  }
-
-  try {
-    const parsed = JSON.parse(readFileSync(pulseCodacyStatePath, 'utf8'));
-    const total = Number(parsed.totalIssues || 0);
-    const bySeverity = parsed.bySeverity || {};
-    const topFiles = Array.isArray(parsed.topFiles) ? parsed.topFiles : [];
-    const topFileSamples = topFiles.slice(0, 20).map((entry) => ({
-      file: entry.file,
-      lines: entry.count,
-    }));
-    return {
-      total: createMetric(total, 'max', topFileSamples, {
-        syncedAt: parsed.syncedAt || null,
-        apiTotal: parsed.totalIssuesFromApi ?? null,
-      }),
-      high: createMetric(Number(bySeverity.HIGH || 0), 'max'),
-      medium: createMetric(Number(bySeverity.MEDIUM || 0), 'max'),
-    };
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    const fallback = readRatchetBaseline();
-    return {
-      total: createMetric(Number(fallback.codacy_total_issues_max || 0), 'max', [], {
-        fallback: 'ratchet.json',
-        reason: `PULSE_CODACY_STATE.json invalid: ${message}`,
-      }),
-      high: createMetric(Number(fallback.codacy_high_severity_issues_max || 0), 'max', [], {
-        fallback: 'ratchet.json',
-      }),
-      medium: createMetric(Number(fallback.codacy_medium_severity_issues_max || 0), 'max', [], {
-        fallback: 'ratchet.json',
-      }),
-    };
-  }
 }
 
 export function collectRatchetMetrics(options = {}) {

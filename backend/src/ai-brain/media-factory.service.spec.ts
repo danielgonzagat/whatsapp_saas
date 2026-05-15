@@ -30,6 +30,7 @@ import { ConfigService } from '@nestjs/config';
 import { ServiceUnavailableException } from '@nestjs/common';
 import { MediaFactoryService } from './media-factory.service';
 import { chatCompletionWithRetry } from '../kloel/openai-wrapper';
+import { CANONICAL_MODEL_IDS } from '../lib/openai-models';
 
 describe('MediaFactoryService', () => {
   let service: MediaFactoryService;
@@ -57,7 +58,7 @@ describe('MediaFactoryService', () => {
       const result = await service.generateImage('a beautiful sunset');
 
       expect(mockImagesGenerate).toHaveBeenCalledWith({
-        model: 'dall-e-3',
+        model: CANONICAL_MODEL_IDS.imageGeneration,
         prompt: 'a beautiful sunset',
         n: 1,
         size: '1024x1024',
@@ -78,10 +79,9 @@ describe('MediaFactoryService', () => {
       buildService('sk-test');
       mockImagesGenerate.mockResolvedValueOnce({ data: [] });
 
-      await expect(service.generateImage('prompt')).rejects.toThrow(ServiceUnavailableException);
-      await expect(service.generateImage('prompt')).rejects.toThrow(
-        'Image generation returned no URL',
-      );
+      const promise = service.generateImage('prompt');
+      await expect(promise).rejects.toThrow(ServiceUnavailableException);
+      await expect(promise).rejects.toThrow('Image generation returned no URL');
     });
 
     it('throws ServiceUnavailableException when first data entry has no url', async () => {
@@ -90,10 +90,9 @@ describe('MediaFactoryService', () => {
         data: [{ revised_prompt: 'revised prompt' }],
       });
 
-      await expect(service.generateImage('prompt')).rejects.toThrow(ServiceUnavailableException);
-      await expect(service.generateImage('prompt')).rejects.toThrow(
-        'Image generation returned no URL',
-      );
+      const promise = service.generateImage('prompt');
+      await expect(promise).rejects.toThrow(ServiceUnavailableException);
+      await expect(promise).rejects.toThrow('Image generation returned no URL');
     });
   });
 

@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { StructuredLogger } from '../logging/structured-logger';
 import { Prisma } from '@prisma/client';
+import { toPrismaJsonValue } from '../common/prisma/prisma-json.util';
 import { PrismaService } from '../prisma/prisma.service';
 import { asProviderSettings } from '../whatsapp/provider-settings.types';
 import type {
@@ -133,11 +134,11 @@ export class KloelToolExecutorCrmService {
         await tx.workspace.update({
           where: { id: workspaceId },
           data: {
-            providerSettings: {
+            providerSettings: toPrismaJsonValue({
               ...currentSettings,
               businessDescription: description,
               businessSegment: segment,
-            } as unknown as Prisma.InputJsonObject,
+            }),
             ...(businessName ? { name: businessName } : {}),
           },
         });
@@ -163,10 +164,10 @@ export class KloelToolExecutorCrmService {
       await tx.workspace.update({
         where: { id: workspaceId },
         data: {
-          providerSettings: {
+          providerSettings: toPrismaJsonValue({
             ...currentSettings,
             businessHours,
-          } as unknown as Prisma.InputJsonObject,
+          }),
         },
       });
     });

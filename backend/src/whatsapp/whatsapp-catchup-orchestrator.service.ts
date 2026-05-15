@@ -4,19 +4,11 @@ import { Inject, Injectable, Optional, forwardRef } from '@nestjs/common';
 import { StructuredLogger } from '../logging/structured-logger';
 import Redis from 'ioredis';
 import { forEachSequential } from '../common/async-sequence';
-import { toPrismaJsonValue } from '../common/prisma/prisma-json.util';
 import { OpsAlertService } from '../observability/ops-alert.service';
-import {
-  AUTOPILOT_SWEEP_UNREAD_CONVERSATIONS_JOB,
-  buildSweepUnreadConversationsJobData,
-} from '../contracts/autopilot-jobs';
 import { PrismaService } from '../prisma/prisma.service';
-import { buildQueueJobId } from '../queue/job-id.util';
-import { autopilotQueue } from '../queue/queue';
 import { AgentEventsService } from './agent-events.service';
 import { asProviderSettings, type ProviderSessionSnapshot } from './provider-settings.types';
 import { WhatsAppProviderRegistry } from './providers/provider-registry';
-import { type WahaChatMessage, type WahaChatSummary } from './providers/whatsapp-api.provider';
 import { WorkerRuntimeService } from './worker-runtime.service';
 import {
   normalizeTimestampExt,
@@ -37,9 +29,6 @@ import type {
 } from './whatsapp.interfaces';
 import {
   safeStr,
-  normalizeOptionalText,
-  type GuestCheckSettings,
-  CATCHUP_SWEEP_LIMIT,
   CATCHUP_LOCK_TTL_SECONDS,
   CATCHUP_MIN_TRIGGER_INTERVAL_SECONDS,
   CATCHUP_MAX_CHATS,
@@ -56,29 +45,15 @@ import {
 import { getLockKey, getCooldownKey, releaseLock } from './whatsapp-catchup-lock.helpers';
 import { selectCandidateChats } from './whatsapp-catchup-chat-selector';
 import { loadCatchupMessages } from './whatsapp-catchup-message-loader';
-
-type CatchupRunSummary = {
-  importedMessages: number;
-  touchedChats: number;
-  processedChats: number;
-  overflow: boolean;
-};
-type CatchupLifecycle = {
-  catchupEnabled?: boolean;
-  autoManage?: boolean;
-  autoCatchup?: boolean;
-  [key: string]: unknown;
-};
-type CatchupUpdatePayload = {
-  status?: string;
-  lastCatchupAt?: string | null;
-  lastCatchupError?: string | null;
-  lastCatchupFailedAt?: string | null;
-  recoveryBlockedReason?: string | null;
-  recoveryBlockedAt?: string | null;
-  [key: string]: unknown;
-};
-
+import {
+  getCatchupBlockReason as resolveCatchupBlockReason,
+  getLifecycleBlockReason,
+  isSessionMissingError,
+  persistCatchupSnapshot,
+  scheduleUnreadSweep,
+  type CatchupRunSummary,
+  type CatchupUpdatePayload,
+} from './whatsapp-catchup-orchestrator.helpers';
 @Injectable()
 export class WhatsappCatchupOrchestratorService {
   private readonly logger = StructuredLogger.from(WhatsappCatchupOrchestratorService.name);
@@ -86,7 +61,6 @@ export class WhatsappCatchupOrchestratorService {
     string,
     { expiresAt: number; mappings: Map<string, string> }
   >();
-
   constructor(
     private readonly prisma: PrismaService,
     private readonly providerRegistry: WhatsAppProviderRegistry,
@@ -99,78 +73,6 @@ export class WhatsappCatchupOrchestratorService {
     @Inject(forwardRef(() => CATCHUP_HISTORY)) private readonly history: ICatchupHistory,
     @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
-
-  // ═══ thin wrappers ═══
-  private isNowebStoreMisconfigured(error: unknown): boolean {
-    return isNowebStoreMisconfiguredExt(error);
-  }
-  private isSessionMissingError(error: unknown): boolean {
-    const m = String(
-      typeof error === 'string'
-        ? error
-        : error instanceof Error
-          ? error.message
-          : normalizeOptionalText(error),
-    ).toLowerCase();
-    return (
-      m.includes('session') &&
-      (m.includes('does not exist') || m.includes('not found') || m.includes('404'))
-    );
-  }
-  private isGuestWorkspace(name?: string, s?: GuestCheckSettings | null): boolean {
-    const n = String(name || '')
-      .trim()
-      .toLowerCase();
-    if (n === 'guest workspace') {
-      return true;
-    }
-    return (
-      s?.guestMode === true ||
-      s?.anonymousGuest === true ||
-      s?.workspaceMode === 'guest' ||
-      s?.authMode === 'anonymous' ||
-      s?.auth?.anonymous === true
-    );
-  }
-  private getLifecycleBlockReason(
-    name?: string,
-    s?: Record<string, unknown> | null,
-  ): string | null {
-    const lc = (s?.whatsappLifecycle || {}) as CatchupLifecycle;
-    if (this.isGuestWorkspace(name, s)) {
-      return 'guest_workspace_disabled';
-    }
-    if (lc.catchupEnabled === false || lc.autoManage === false || lc.autoCatchup === false) {
-      return 'catchup_disabled';
-    }
-    return null;
-  }
-  private resolveTimestamp(value: unknown): number {
-    return resolveTimestampExt(value);
-  }
-  private normalizeTimestamp(value?: Date | string | number | null): Date | null {
-    return normalizeTimestampExt(value);
-  }
-  private resolveCanonicalChatId(chatId: string, mappings: Map<string, string>): string {
-    return resolveCanonicalChatIdExt(chatId, mappings);
-  }
-  private isWorkspaceSelfChatId(
-    chatId: string,
-    selfPhone: string | null,
-    selfIds: string[],
-    mappings: Map<string, string>,
-  ): boolean {
-    return isWorkspaceSelfChatIdExt(chatId, selfPhone, selfIds, mappings);
-  }
-  private normalizeChats(raw: unknown): WahaChatSummary[] {
-    return normalizeChatsExt(raw);
-  }
-  private normalizeMessages(raw: unknown, fallbackChatId: string): WahaChatMessage[] {
-    return normalizeMessagesExt(raw, fallbackChatId);
-  }
-  private resolveChatActivityTimestamp(chat: WahaChatSummary): number {
-    return resolveChatActivityTimestampExt(chat);
-  }
   private async getLidPnMap(ws: string): Promise<Map<string, string>> {
     return getLidPnMapExt(
       { providerRegistry: this.providerRegistry },
@@ -179,8 +81,6 @@ export class WhatsappCatchupOrchestratorService {
       this.lidMapCache,
     );
   }
-
-  // ═══ PUBLIC ═══
   async triggerCatchup(ws: string, reason = 'unknown') {
     const br = await this.getCatchupBlockReason(ws);
     if (br) {
@@ -202,7 +102,6 @@ export class WhatsappCatchupOrchestratorService {
     );
     return { scheduled: true };
   }
-
   async runCatchupNow(
     ws: string,
     reason = 'manual_sync',
@@ -219,7 +118,6 @@ export class WhatsappCatchupOrchestratorService {
     const s = await this.runCatchup(ws, reason, t);
     return { scheduled: true, ...s };
   }
-
   private async runCatchup(ws: string, reason: string, token: string): Promise<CatchupRunSummary> {
     let im = 0,
       tc = 0,
@@ -238,13 +136,13 @@ export class WhatsappCatchupOrchestratorService {
       await this.history.sanitizePlaceholderContacts(ws);
       const s = asProviderSettings(w.providerSettings);
       await this.providerRegistry.getProviderType(ws);
-      const lb = this.getLifecycleBlockReason(w.name || undefined, s);
+      const lb = getLifecycleBlockReason(w.name || undefined, s);
       if (lb) {
         this.logger.debug(`Skipping catchup for ${ws}: ${lb}`);
         return { importedMessages: im, touchedChats: tc, processedChats: pc, overflow: ho };
       }
       const sm = s.whatsappApiSession || {};
-      const firstSync = !this.normalizeTimestamp(sm.lastCatchupAt);
+      const firstSync = !normalizeTimestampExt(sm.lastCatchupAt);
       const bc = this.history.resolveBackfillCursor(
         sm as { backfillCursor?: unknown; [key: string]: unknown },
       );
@@ -268,9 +166,9 @@ export class WhatsappCatchupOrchestratorService {
           return;
         }
         const raw = await this.providerRegistry.getChats(ws);
-        const pending = this.normalizeChats(raw)
+        const pending = normalizeChatsExt(raw)
           .filter((c) => !!c.id)
-          .filter((c) => !this.isWorkspaceSelfChatId(c.id, selfPhone, selfIds, mappings))
+          .filter((c) => !isWorkspaceSelfChatIdExt(c.id, selfPhone, selfIds, mappings))
           .filter((c) => !processedChatIds.has(c.id));
         const { chats: ccs, fallbackChatIds } = selectCandidateChats(
           pending,
@@ -278,7 +176,7 @@ export class WhatsappCatchupOrchestratorService {
           this.history,
           CATCHUP_INCLUDE_ZERO_UNREAD_ACTIVITY,
           CATCHUP_FALLBACK_CHATS_PER_PASS,
-          (c) => this.resolveChatActivityTimestamp(c),
+          (c) => resolveChatActivityTimestampExt(c),
           nbc,
         );
         if (pass === 0) {
@@ -307,7 +205,7 @@ export class WhatsappCatchupOrchestratorService {
           if (fallbackChatIds.has(chat.id)) {
             nbc = {
               chatId: chat.id,
-              activityTimestamp: this.resolveChatActivityTimestamp(chat),
+              activityTimestamp: resolveChatActivityTimestampExt(chat),
               updatedAt: new Date().toISOString(),
             };
           }
@@ -325,10 +223,10 @@ export class WhatsappCatchupOrchestratorService {
             maxPagesPerChat: CATCHUP_MAX_PAGES_PER_CHAT,
             fallbackPagesPerChat: CATCHUP_FALLBACK_PAGES_PER_CHAT,
             maxMessagesPerChat: CATCHUP_MAX_MESSAGES_PER_CHAT,
-            normalizeMessages: (r, fcid) => this.normalizeMessages(r, fcid),
-            resolveTimestamp: (v) => this.resolveTimestamp(v),
+            normalizeMessages: (r, fcid) => normalizeMessagesExt(r, fcid),
+            resolveTimestamp: (v) => resolveTimestampExt(v),
             getLidPnMap: (w) => this.getLidPnMap(w),
-            resolveCanonicalChatId: (cid, m) => this.resolveCanonicalChatId(cid, m),
+            resolveCanonicalChatId: (cid, m) => resolveCanonicalChatIdExt(cid, m),
             fallbackScan: fallbackChatIds.has(chat.id),
             firstSync,
           });
@@ -406,11 +304,18 @@ export class WhatsappCatchupOrchestratorService {
             : 'Sincronização concluída. Não encontrei mensagens novas para importar.',
         meta: { importedMessages: im, touchedChats: tc, processedChats: pc, overflow: ho, reason },
       });
-      await this.scheduleUnreadSweep(ws, { reason, processedChats: pc, touchedChats: tc }).catch(
-        (e: unknown) =>
-          this.logger.warn(
-            `catchup_sweep_schedule_failed ws=${ws}: ${e instanceof Error ? e.message : String(e)}`,
-          ),
+      await scheduleUnreadSweep({
+        ws,
+        reason,
+        processedChats: pc,
+        touchedChats: tc,
+        workerRuntime: this.workerRuntime,
+        ciaRuntime: this.ciaRuntime,
+        agentEvents: this.agentEvents,
+      }).catch((e: unknown) =>
+        this.logger.warn(
+          `catchup_sweep_schedule_failed ws=${ws}: ${e instanceof Error ? e.message : String(e)}`,
+        ),
       );
       return { importedMessages: im, touchedChats: tc, processedChats: pc, overflow: ho };
     } catch (error: unknown) {
@@ -423,9 +328,8 @@ export class WhatsappCatchupOrchestratorService {
           : new Error(typeof error === 'string' ? error : 'unknown error')
         ).message || 'erro desconhecido',
       );
-      const sess = this.isSessionMissingError(error);
-      const rb =
-        !sess && this.isNowebStoreMisconfigured(error) ? 'noweb_store_misconfigured' : null;
+      const sess = isSessionMissingError(error);
+      const rb = !sess && isNowebStoreMisconfiguredExt(error) ? 'noweb_store_misconfigured' : null;
       await this.persistCatchupSnapshot(ws, {
         ...(sess
           ? {
@@ -470,112 +374,14 @@ export class WhatsappCatchupOrchestratorService {
       await releaseLock(this.redis, ws, token);
     }
   }
-
   private resolveCatchupSince(sm: ProviderSessionSnapshot): Date {
-    const lca = this.normalizeTimestamp(sm.lastCatchupAt);
+    const lca = normalizeTimestampExt(sm.lastCatchupAt);
     return lca || new Date(Date.now() - CATCHUP_FIRST_RUN_LOOKBACK_MS);
   }
-
   private async persistCatchupSnapshot(ws: string, update: CatchupUpdatePayload) {
-    await this.prisma.$transaction(async (tx) => {
-      const w = await tx.workspace.findUnique({
-        where: { id: ws },
-        select: { providerSettings: true },
-      });
-      if (!w) {
-        return;
-      }
-      const s = asProviderSettings(w.providerSettings);
-      const sm = s.whatsappApiSession || {};
-      await tx.workspace.update({
-        where: { id: ws },
-        data: {
-          providerSettings: toPrismaJsonValue({
-            ...s,
-            ...(typeof update.status === 'string' ? { connectionStatus: update.status } : {}),
-            whatsappApiSession: { ...sm, ...update },
-          }),
-        },
-      });
-    });
+    await persistCatchupSnapshot(this.prisma, ws, update);
   }
-
-  private async scheduleUnreadSweep(
-    ws: string,
-    input: { reason: string; processedChats: number; touchedChats: number },
-  ): Promise<void> {
-    if (!ws) {
-      return;
-    }
-    const workerOk = await this.workerRuntime.isAvailable().catch(() => false);
-    const triggeredBy = `catchup:${input.reason}`;
-    if (!workerOk) {
-      await this.ciaRuntime.startBacklogRun(ws, 'reply_all_recent_first', CATCHUP_SWEEP_LIMIT, {
-        autoStarted: true,
-        runtimeState: 'EXECUTING_BACKLOG',
-        triggeredBy,
-      });
-      await this.agentEvents.publish({
-        type: 'status',
-        workspaceId: ws,
-        phase: 'sync_queue_unread',
-        persistent: true,
-        message:
-          'Sincronização concluída. O worker não está saudável, então vou zerar as conversas não lidas diretamente pelo fallback inline.',
-        meta: {
-          reason: input.reason,
-          processedChats: input.processedChats,
-          touchedChats: input.touchedChats,
-          limit: CATCHUP_SWEEP_LIMIT,
-          inlineFallback: true,
-        },
-      });
-      return;
-    }
-    await autopilotQueue.add(
-      AUTOPILOT_SWEEP_UNREAD_CONVERSATIONS_JOB,
-      buildSweepUnreadConversationsJobData({
-        workspaceId: ws,
-        runId: randomUUID(),
-        limit: CATCHUP_SWEEP_LIMIT,
-        mode: 'reply_all_recent_first',
-        triggeredBy,
-      }),
-      { jobId: buildQueueJobId('catchup-sweep-unread', ws), removeOnComplete: true },
-    );
-    await this.agentEvents.publish({
-      type: 'status',
-      workspaceId: ws,
-      phase: 'sync_queue_unread',
-      persistent: true,
-      message:
-        input.processedChats > 0
-          ? 'Sincronização concluída. Vou começar imediatamente a zerar as conversas não lidas.'
-          : 'Sincronização concluída. Vou conferir imediatamente se ainda restam conversas não lidas no WAHA.',
-      meta: {
-        reason: input.reason,
-        processedChats: input.processedChats,
-        touchedChats: input.touchedChats,
-        limit: CATCHUP_SWEEP_LIMIT,
-      },
-    });
-  }
-
   private async getCatchupBlockReason(ws: string): Promise<string | null> {
-    const w = await this.prisma.workspace.findUnique({
-      where: { id: ws },
-      select: { name: true, providerSettings: true },
-    });
-    if (!w) {
-      return null;
-    }
-    const s = asProviderSettings(w.providerSettings);
-    const lb = this.getLifecycleBlockReason(w.name || undefined, s);
-    if (lb) {
-      return lb;
-    }
-    const sm = s.whatsappApiSession || {};
-    const rb = safeStr(sm.recoveryBlockedReason).trim();
-    return this.isNowebStoreMisconfigured(rb) ? rb || 'noweb_store_misconfigured' : null;
+    return resolveCatchupBlockReason(this.prisma, ws);
   }
 }

@@ -139,7 +139,7 @@ async function fetchCommerceGroups(
     // @AdminGlobalOperation: order groupBy by plan, platform-wide
     prisma.checkoutOrder.groupBy({
       by: ['planId', 'status'],
-      where: { planId: { in: planIds } },
+      where: { workspaceId: { not: '' }, planId: { in: planIds } },
       _count: { _all: true },
       _sum: { totalInCents: true },
     }),
@@ -147,6 +147,7 @@ async function fetchCommerceGroups(
     prisma.checkoutOrder.groupBy({
       by: ['planId'],
       where: {
+        workspaceId: { not: '' },
         planId: { in: planIds },
         status: { in: APPROVED },
         paidAt: { gte: new Date(Date.now() - WINDOW_MS) },

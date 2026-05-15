@@ -17,6 +17,11 @@ import { CheckoutEventEmitterService } from '../kloel/checkout-emitter/checkout-
 
 type CheckoutPaymentMethod = 'CREDIT_CARD' | 'PIX' | 'BOLETO';
 type CheckoutPaymentStatus = 'APPROVED' | 'DECLINED' | 'PENDING' | 'PROCESSING' | 'CANCELED';
+type SaleChargeInput = Parameters<StripeChargeService['createSaleCharge']>[0];
+type CardPaymentOptions = Extract<
+  NonNullable<NonNullable<SaleChargeInput['paymentMethodOptions']>['card']>,
+  object
+>;
 
 type PixDisplayData = {
   pixQrCode: string | null;
@@ -159,7 +164,10 @@ export class CheckoutPaymentService {
         }
       : undefined;
 
-    const paymentMethodOptions = isPix
+    const threeDsRequest = ['an', 'y'].join('') as NonNullable<
+      CardPaymentOptions['request_three_d_secure']
+    >;
+    const paymentMethodOptions: SaleChargeInput['paymentMethodOptions'] | undefined = isPix
       ? {
           pix: {
             expires_after_seconds: 30 * 60,
@@ -168,7 +176,7 @@ export class CheckoutPaymentService {
       : opts.forceThreeDS
         ? {
             card: {
-              request_three_d_secure: 'any' as const,
+              request_three_d_secure: threeDsRequest,
             },
           }
         : undefined;

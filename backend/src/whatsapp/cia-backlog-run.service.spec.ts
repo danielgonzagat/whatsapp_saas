@@ -41,7 +41,7 @@ function makeMockCiaBootstrap(listPending: jest.Mock, resolveKey: jest.Mock) {
     countPendingMessagesFromConversations: jest.fn(),
     resolveActiveSessionKey: resolveKey,
     run: jest.fn(),
-  } as import('./cia-bootstrap.service').CiaBootstrapService;
+  } as import('../cia/cia-bootstrap.service').CiaBootstrapService;
 }
 
 describe('CiaBacklogRunService', () => {
@@ -205,12 +205,11 @@ describe('CiaBacklogRunService', () => {
 
       await service.startBacklogRun('ws-a', 'reply_all_recent_first', 10);
 
-      expect(inlineFallback.runBacklogInlineFallback).toHaveBeenCalledWith(
-        'ws-a',
-        expect.any(String) as string,
-        'reply_all_recent_first',
-        expect.any(Array) as Array<unknown>,
-      );
+      const inlineArgs = inlineFallback.runBacklogInlineFallback.mock.calls[0];
+      expect(inlineArgs[0]).toBe('ws-a');
+      expect(typeof inlineArgs[1]).toBe('string');
+      expect(inlineArgs[2]).toBe('reply_all_recent_first');
+      expect(Array.isArray(inlineArgs[3])).toBe(true);
     });
 
     it('enters live-only mode (reply_only_new) without sweeping backlog', async () => {
@@ -255,11 +254,9 @@ describe('CiaBacklogRunService', () => {
 
       await service.startBacklogRun('ws-a', 'reply_all_recent_first', 10);
 
-      expect(remoteBacklog.listRemotePendingChats).toHaveBeenCalledWith(
-        'ws-a',
-        'session-xyz',
-        expect.any(Number) as number,
-      );
+      const remoteArgs = remoteBacklog.listRemotePendingChats.mock.calls[0];
+      expect(remoteArgs.slice(0, 2)).toEqual(['ws-a', 'session-xyz']);
+      expect(typeof remoteArgs[2]).toBe('number');
       expect(remoteBacklog.runRemoteBacklogInlineFallback).toHaveBeenCalled();
     });
 
@@ -272,12 +269,11 @@ describe('CiaBacklogRunService', () => {
         expect.objectContaining({
           type: 'status',
           phase: 'backlog_start',
-          meta: expect.objectContaining({
-            totalQueued: expect.any(Number) as number,
-            mode: 'prioritize_hot',
-          }),
+          meta: expect.objectContaining({ mode: 'prioritize_hot' }),
         }),
       );
+      const publishArgs = agentEvents.publish.mock.calls.at(-1)?.[0];
+      expect(typeof publishArgs?.meta?.totalQueued).toBe('number');
     });
   });
 

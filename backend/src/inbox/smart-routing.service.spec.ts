@@ -10,7 +10,7 @@ describe('SmartRoutingService', () => {
     queue: { findFirst: jest.Mock };
     routingRule: { findMany: jest.Mock };
     agentQueue: { findMany: jest.Mock };
-    conversation: { update: jest.Mock };
+    conversation: { updateMany: jest.Mock };
   };
   let redis: { get: jest.Mock; set: jest.Mock; expire: jest.Mock };
 
@@ -19,7 +19,7 @@ describe('SmartRoutingService', () => {
       queue: { findFirst: jest.fn().mockResolvedValue(null) },
       routingRule: { findMany: jest.fn().mockResolvedValue([]) },
       agentQueue: { findMany: jest.fn().mockResolvedValue([]) },
-      conversation: { update: jest.fn().mockResolvedValue({}) },
+      conversation: { updateMany: jest.fn().mockResolvedValue({ count: 1 }) },
     };
     redis = {
       get: jest.fn().mockResolvedValue(null),
@@ -49,8 +49,8 @@ describe('SmartRoutingService', () => {
   it('falls back to General queue when no rule matches', async () => {
     prisma.queue.findFirst.mockResolvedValue({ id: 'q-general' });
     await service.routeConversation('ws-1', 'conv-1');
-    expect(prisma.conversation.update).toHaveBeenCalledWith({
-      where: { id: 'conv-1' },
+    expect(prisma.conversation.updateMany).toHaveBeenCalledWith({
+      where: { id: 'conv-1', workspaceId: 'ws-1' },
       data: { queueId: 'q-general', status: 'OPEN' },
     });
   });
@@ -68,7 +68,7 @@ describe('SmartRoutingService', () => {
     ]);
     prisma.queue.findFirst.mockResolvedValue(null);
     await service.routeConversation('ws-1', 'conv-1', { channel: 'email' });
-    expect(prisma.conversation.update).not.toHaveBeenCalled();
+    expect(prisma.conversation.updateMany).not.toHaveBeenCalled();
   });
 
   it('routes by keyword (case-insensitive)', async () => {
@@ -85,8 +85,8 @@ describe('SmartRoutingService', () => {
     await service.routeConversation('ws-1', 'conv-1', {
       messageBody: 'I want a REFUND please',
     });
-    expect(prisma.conversation.update).toHaveBeenCalledWith({
-      where: { id: 'conv-1' },
+    expect(prisma.conversation.updateMany).toHaveBeenCalledWith({
+      where: { id: 'conv-1', workspaceId: 'ws-1' },
       data: { queueId: 'q1', status: 'OPEN' },
     });
   });
@@ -102,8 +102,8 @@ describe('SmartRoutingService', () => {
       },
     ]);
     await service.routeConversation('ws-1', 'conv-1', {});
-    expect(prisma.conversation.update).toHaveBeenCalledWith({
-      where: { id: 'conv-1' },
+    expect(prisma.conversation.updateMany).toHaveBeenCalledWith({
+      where: { id: 'conv-1', workspaceId: 'ws-1' },
       data: { assignedAgentId: 'agent-7', status: 'OPEN', mode: 'HUMAN' },
     });
   });
@@ -117,7 +117,7 @@ describe('SmartRoutingService', () => {
     prisma.queue.findFirst.mockResolvedValue({ id: 'q-general' });
     await service.routeConversation('ws-1', 'conv-1');
     // first update queueId, then update assignedAgentId
-    expect(prisma.conversation.update.mock.calls[1][0].data.assignedAgentId).toBe('a1');
+    expect(prisma.conversation.updateMany.mock.calls[1][0].data.assignedAgentId).toBe('a1');
     expect(redis.set).toHaveBeenCalledWith('queue:q-general:rr_index', 1);
     expect(redis.expire).toHaveBeenCalledWith('queue:q-general:rr_index', 86400);
   });

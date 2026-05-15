@@ -18,7 +18,7 @@ describe('CiaService', () => {
       findFirst: jest.Mock;
     };
     metaConnection: {
-      findUnique: jest.Mock;
+      findMany: jest.Mock;
     };
     integration: {
       findMany: jest.Mock;
@@ -63,7 +63,7 @@ describe('CiaService', () => {
         findFirst: jest.fn(),
       },
       metaConnection: {
-        findUnique: jest.fn().mockResolvedValue(null),
+        findMany: jest.fn().mockResolvedValue([]),
       },
       integration: {
         findMany: jest.fn().mockResolvedValue([]),
@@ -193,12 +193,14 @@ describe('CiaService', () => {
     });
 
     it('uses WhatsApp-specific subtitle when only WhatsApp is connected', async () => {
-      prisma.metaConnection.findMany.mockResolvedValue([{
-        whatsappPhoneNumberId: '5511999999999',
-        whatsappBusinessId: '123',
-        instagramAccountId: null,
-        pageId: null,
-      });
+      prisma.metaConnection.findMany.mockResolvedValue([
+        {
+          whatsappPhoneNumberId: '5511999999999',
+          whatsappBusinessId: '123',
+          instagramAccountId: null,
+          pageId: null,
+        },
+      ]);
       prisma.integration.findMany.mockResolvedValue([]);
 
       const surface = await service.getSurface('ws-1');
@@ -207,12 +209,14 @@ describe('CiaService', () => {
     });
 
     it('uses Instagram subtitle when only Instagram is connected', async () => {
-      prisma.metaConnection.findMany.mockResolvedValue([{
-        whatsappPhoneNumberId: null,
-        whatsappBusinessId: null,
-        instagramAccountId: '12345',
-        pageId: null,
-      }]);
+      prisma.metaConnection.findMany.mockResolvedValue([
+        {
+          whatsappPhoneNumberId: null,
+          whatsappBusinessId: null,
+          instagramAccountId: '12345',
+          pageId: null,
+        },
+      ]);
       prisma.integration.findMany.mockResolvedValue([]);
 
       const surface = await service.getSurface('ws-1');
@@ -221,20 +225,30 @@ describe('CiaService', () => {
     });
 
     it('uses Facebook subtitle when only Facebook is connected', async () => {
-      prisma.metaConnection.findMany.mockResolvedValue([{
-        whatsappPhoneNumberId: '5511999999999',
-        whatsappBusinessId: '123',
-        instagramAccountId: '12345',
-        pageId: 'fb-page-123',
-      }]);
+      prisma.metaConnection.findMany.mockResolvedValue([
+        {
+          whatsappPhoneNumberId: null,
+          whatsappBusinessId: null,
+          instagramAccountId: null,
+          pageId: 'fb-page-123',
+        },
+      ]);
+      prisma.integration.findMany.mockResolvedValue([]);
+
+      const surface = await service.getSurface('ws-1');
+
+      expect(surface.subtitle).toBe('Cuidando do seu negócio no Facebook');
+    });
 
     it('uses omnichannel subtitle when multiple channels are connected', async () => {
-      prisma.metaConnection.findMany.mockResolvedValue([{
-        whatsappPhoneNumberId: '5511999999999',
-        whatsappBusinessId: '123',
-        instagramAccountId: null,
-        pageId: null,
-      }]);
+      prisma.metaConnection.findMany.mockResolvedValue([
+        {
+          whatsappPhoneNumberId: '5511999999999',
+          whatsappBusinessId: '123',
+          instagramAccountId: '12345',
+          pageId: 'fb-page-123',
+        },
+      ]);
       prisma.integration.findMany.mockResolvedValue([]);
 
       const surface = await service.getSurface('ws-1');
@@ -243,12 +257,14 @@ describe('CiaService', () => {
     });
 
     it('combines MetaConnection and Integration channels without duplicates', async () => {
-      prisma.metaConnection.findMany.mockResolvedValue([{
-        whatsappPhoneNumberId: '5511999999999',
-        whatsappBusinessId: '123',
-        instagramAccountId: null,
-        pageId: null,
-      }]);
+      prisma.metaConnection.findMany.mockResolvedValue([
+        {
+          whatsappPhoneNumberId: '5511999999999',
+          whatsappBusinessId: '123',
+          instagramAccountId: null,
+          pageId: null,
+        },
+      ]);
       prisma.integration.findMany.mockResolvedValue([{ type: 'INSTAGRAM' }, { type: 'STRIPE' }]);
 
       const surface = await service.getSurface('ws-1');

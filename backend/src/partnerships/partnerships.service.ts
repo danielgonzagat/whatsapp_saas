@@ -324,7 +324,7 @@ export class PartnershipsService {
         affiliateCode: code,
         affiliateLink: buildPayCheckoutUrl(undefined, code),
         productIds: data.productIds || [],
-        ...(inviteTokenHash !== undefined
+        ...(inviteTokenHash !== null
           ? {
               metadata: {
                 inviteTokenHash,

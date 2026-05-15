@@ -10,107 +10,18 @@ import {
   statusText,
   trustedExternalUrl,
 } from '../OfficialMarketingChannelPage.helpers';
-
-export interface ProductOption {
-  id: string;
-  name: string;
-}
-
-export interface ChannelSetup {
-  currentStep: number;
-  selectedProductIds: string[];
-  arsenal: string[];
-  config: {
-    tone: string;
-    aggressiveness: string;
-    workingHours: string;
-    followUpEnabled: boolean;
-    proactiveDailyLimit: number;
-    language: string;
-    handoffCriteria: string;
-  };
-}
-
-const DEFAULT_SETUP: ChannelSetup = {
-  currentStep: 0,
-  selectedProductIds: [],
-  arsenal: [],
-  config: {
-    tone: 'consultivo',
-    aggressiveness: 'moderado',
-    workingHours: '08:00-22:00',
-    followUpEnabled: true,
-    proactiveDailyLimit: 25,
-    language: 'pt-BR',
-    handoffCriteria: '',
-  },
-};
-
-function normalizeSetup(raw: unknown): ChannelSetup {
-  const record =
-    raw && typeof raw === 'object' && !Array.isArray(raw) ? (raw as Record<string, unknown>) : {};
-  const config =
-    record.config && typeof record.config === 'object' && !Array.isArray(record.config)
-      ? (record.config as Record<string, unknown>)
-      : {};
-  const currentStep = Number(record.currentStep);
-  return {
-    currentStep: Number.isInteger(currentStep) ? Math.min(3, Math.max(0, currentStep)) : 0,
-    selectedProductIds: Array.isArray(record.selectedProductIds)
-      ? record.selectedProductIds.map((id) => String(id || '').trim()).filter(Boolean)
-      : [],
-    arsenal: Array.isArray(record.arsenal)
-      ? record.arsenal.map((item) => String(item || '').trim()).filter(Boolean)
-      : [],
-    config: {
-      ...DEFAULT_SETUP.config,
-      tone: typeof config.tone === 'string' ? config.tone : DEFAULT_SETUP.config.tone,
-      aggressiveness:
-        typeof config.aggressiveness === 'string'
-          ? config.aggressiveness
-          : DEFAULT_SETUP.config.aggressiveness,
-      workingHours:
-        typeof config.workingHours === 'string'
-          ? config.workingHours
-          : DEFAULT_SETUP.config.workingHours,
-      followUpEnabled:
-        typeof config.followUpEnabled === 'boolean'
-          ? config.followUpEnabled
-          : DEFAULT_SETUP.config.followUpEnabled,
-      proactiveDailyLimit:
-        typeof config.proactiveDailyLimit === 'number'
-          ? config.proactiveDailyLimit
-          : DEFAULT_SETUP.config.proactiveDailyLimit,
-      language:
-        typeof config.language === 'string' ? config.language : DEFAULT_SETUP.config.language,
-      handoffCriteria:
-        typeof config.handoffCriteria === 'string'
-          ? config.handoffCriteria
-          : DEFAULT_SETUP.config.handoffCriteria,
-    },
-  };
-}
-
-function normalizeProduct(raw: unknown): ProductOption | null {
-  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
-    return null;
-  }
-  const record = raw as Record<string, unknown>;
-  const id = String(record.id || '').trim();
-  if (!id) {
-    return null;
-  }
-  return {
-    id,
-    name: typeof record.name === 'string' && record.name.trim() ? record.name.trim() : 'Produto',
-  };
-}
-
+import {
+  type ProductOption,
+  type ChannelSetup,
+  DEFAULT_SETUP,
+  normalizeSetup,
+  normalizeProduct,
+} from './use-official-marketing-channel.helpers';
+export type { ProductOption, ChannelSetup };
 interface UseOfficialMarketingChannelOptions {
   channel: ChannelKey;
   initialStep?: number | undefined;
 }
-
 export function useOfficialMarketingChannel({ channel, initialStep }: UseOfficialMarketingChannelOptions) {
   const { products } = useProducts();
   const [status, setStatus] = useState<ConnectStatus | null>(null);
@@ -126,7 +37,6 @@ export function useOfficialMarketingChannel({ channel, initialStep }: UseOfficia
   const [completeBusy, setCompleteBusy] = useState(false);
   const [completeMessage, setCompleteMessage] = useState<string | null>(null);
   const initialStepApplied = useRef(false);
-
   const productOptions = useMemo(() => {
     if (!Array.isArray(products)) {
       return [];
@@ -136,7 +46,6 @@ export function useOfficialMarketingChannel({ channel, initialStep }: UseOfficia
       return normalized ? [normalized] : [];
     });
   }, [products]);
-
   const connection = useMemo(() => {
     if (channel === 'tiktok') {
       return {
@@ -149,7 +58,6 @@ export function useOfficialMarketingChannel({ channel, initialStep }: UseOfficia
       | undefined;
     return channelStatus?.[channel] || null;
   }, [channel, status, tiktokStatus]);
-
   const refresh = useCallback(async () => {
     setIsLoading(true);
     setSetupLoaded(false);
@@ -185,7 +93,6 @@ export function useOfficialMarketingChannel({ channel, initialStep }: UseOfficia
       setIsLoading(false);
     }
   }, [channel]);
-
   const persistSetup = useCallback(
     async (nextSetup: ChannelSetup, successMessage?: string) => {
       setBusy('setup');
@@ -211,7 +118,6 @@ export function useOfficialMarketingChannel({ channel, initialStep }: UseOfficia
     },
     [channel],
   );
-
   const setCurrentStep = useCallback(
     (nextStep: number) => {
       const normalized = Math.min(3, Math.max(0, nextStep));
@@ -223,7 +129,6 @@ export function useOfficialMarketingChannel({ channel, initialStep }: UseOfficia
     },
     [persistSetup],
   );
-
   const toggleProduct = useCallback(
     (productId: string) => {
       const selected = new Set(setup.selectedProductIds);
@@ -236,15 +141,12 @@ export function useOfficialMarketingChannel({ channel, initialStep }: UseOfficia
     },
     [setup],
   );
-
   const updateConfig = useCallback((patch: Partial<ChannelSetup['config']>) => {
     setSetup((current) => ({ ...current, config: { ...current.config, ...patch } }));
   }, []);
-
   useEffect(() => {
     void refresh();
   }, [refresh]);
-
   useEffect(() => {
     if (
       initialStep !== undefined &&
@@ -256,7 +158,6 @@ export function useOfficialMarketingChannel({ channel, initialStep }: UseOfficia
       setCurrentStep(initialStep);
     }
   }, [initialStep, setup.currentStep, setupLoaded, setCurrentStep]);
-
   const openMeta = useCallback(async () => {
     setBusy('meta');
     setMessage(null);
@@ -286,7 +187,6 @@ export function useOfficialMarketingChannel({ channel, initialStep }: UseOfficia
       setBusy(null);
     }
   }, [channel]);
-
   const disconnectMeta = useCallback(async () => {
     if (!disconnectArmed) {
       setDisconnectArmed(true);
@@ -313,7 +213,6 @@ export function useOfficialMarketingChannel({ channel, initialStep }: UseOfficia
     setMessage('Conexão Meta revogada.');
     await refresh();
   }, [disconnectArmed, refresh]);
-
   const toggleEmail = useCallback(
     async (enabled: boolean) => {
       setBusy('email');
@@ -332,7 +231,6 @@ export function useOfficialMarketingChannel({ channel, initialStep }: UseOfficia
     },
     [refresh],
   );
-
   const sendEmailTest = useCallback(async () => {
     setBusy('email-test');
     setMessage(null);
@@ -345,7 +243,6 @@ export function useOfficialMarketingChannel({ channel, initialStep }: UseOfficia
       response.error || `Email de teste enviado via ${response.data?.provider || 'provider'}.`,
     );
   }, []);
-
   const openTikTok = useCallback(async (kind: 'creator' | 'advertiser') => {
     setBusy(`tiktok-${kind}`);
     setMessage(null);
@@ -365,7 +262,6 @@ export function useOfficialMarketingChannel({ channel, initialStep }: UseOfficia
       setBusy(null);
     }
   }, []);
-
   const handleComplete = useCallback(async () => {
     setCompleteBusy(true);
     setCompleteMessage(null);
@@ -383,18 +279,15 @@ export function useOfficialMarketingChannel({ channel, initialStep }: UseOfficia
     setSetupLoaded(true);
     await refresh();
   }, [channel, setup, refresh]);
-
   const details = channel === 'tiktok' ? tiktokStatus : connection;
   const setupUnavailable =
     connection?.status === 'server_not_configured' || connection?.status === 'unavailable';
   const badgeStatus = isLoading
     ? 'Carregando'
     : statusText(connection?.connected, connection?.status);
-
   const handleAdvanceStep = useCallback(() => {
     setCurrentStep(setup.currentStep + 1);
   }, [setCurrentStep, setup.currentStep]);
-
   const handleArsenalChange = useCallback((value: string) => {
     setSetup((current) => ({
       ...current,
@@ -404,7 +297,6 @@ export function useOfficialMarketingChannel({ channel, initialStep }: UseOfficia
         .filter(Boolean),
     }));
   }, []);
-
   return {
     productOptions,
     connection,

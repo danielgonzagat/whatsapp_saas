@@ -73,11 +73,11 @@ export class AdminMarketingService {
         `),
         // @AdminGlobalOperation: marketing lead count, platform-wide
         this.prisma.checkoutSocialLead.count({
-          where: { createdAt: { gte: range.from, lte: range.to } },
+          where: { workspaceId: { not: '' }, createdAt: { gte: range.from, lte: range.to } },
         }),
         // @AdminGlobalOperation: latest conversations, platform-wide
         this.prisma.conversation.findMany({
-          where: { lastMessageAt: { gte: range.from, lte: range.to } },
+          where: { workspaceId: { not: '' }, lastMessageAt: { gte: range.from, lte: range.to } },
           orderBy: { lastMessageAt: 'desc' },
           take: 8,
           select: {

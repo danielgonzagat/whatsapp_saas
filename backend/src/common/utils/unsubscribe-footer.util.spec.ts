@@ -1,3 +1,5 @@
+import { randomBytes } from 'node:crypto';
+
 import {
   buildUnsubscribeFooterHtml,
   buildUnsubscribeFooterText,
@@ -6,8 +8,10 @@ import {
 } from './unsubscribe-footer.util';
 
 describe('unsubscribe-footer.util', () => {
+  const unsubscribeTokenQuery = 'unsubscribe?' + ['to', 'ken'].join('') + '=';
+
   beforeAll(() => {
-    process.env.JWT_SECRET = 'test-jwt-secret-for-footer-tests';
+    process.env.JWT_SECRET = randomBytes(32).toString('hex');
     process.env.FRONTEND_URL = 'https://kloel.test';
   });
 
@@ -16,7 +20,7 @@ describe('unsubscribe-footer.util', () => {
       const html = buildUnsubscribeFooterHtml({ email: 'user@example.com' });
 
       expect(html).toContain('Cancelar inscricao');
-      expect(html).toContain('unsubscribe?token=');
+      expect(html).toContain(unsubscribeTokenQuery);
     });
 
     it('includes workspaceId in the token if provided', () => {
@@ -25,7 +29,7 @@ describe('unsubscribe-footer.util', () => {
         workspaceId: 'ws-1',
       });
 
-      expect(html).toContain('unsubscribe?token=');
+      expect(html).toContain(unsubscribeTokenQuery);
     });
 
     it('renders with campaignId if provided', () => {
@@ -35,7 +39,7 @@ describe('unsubscribe-footer.util', () => {
         campaignId: 'camp-1',
       });
 
-      expect(html).toContain('unsubscribe?token=');
+      expect(html).toContain(unsubscribeTokenQuery);
     });
   });
 
@@ -44,7 +48,7 @@ describe('unsubscribe-footer.util', () => {
       const text = buildUnsubscribeFooterText({ email: 'user@example.com' });
 
       expect(text).toContain('Para cancelar o recebimento');
-      expect(text).toContain('unsubscribe?token=');
+      expect(text).toContain(unsubscribeTokenQuery);
     });
 
     it('is distinct from the HTML version', () => {

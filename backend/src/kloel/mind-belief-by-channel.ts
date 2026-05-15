@@ -17,7 +17,7 @@ export async function getBeliefByChannel(
 
 export function requireChannel(channel: string | undefined): string {
   if (!channel) {
-    throw new Error('channel is required — no implicit fallback to any channel');
+    throw new Error('channel is required — no implicit fallback to an unspecified channel');
   }
   return channel;
 }

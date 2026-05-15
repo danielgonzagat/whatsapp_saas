@@ -215,8 +215,8 @@ export async function finishBacklogRunTask(input: {
   if (next.finished >= next.total) {
     try {
       if (prisma.autonomyRun) {
-        await prisma.autonomyRun.update({
-          where: { id: input.runId },
+        await prisma.autonomyRun.updateMany({
+          where: { id: input.runId, workspaceId: input.workspaceId },
           data: {
             status: next.failed > 0 ? 'FAILED' : 'COMPLETED',
             endedAt: new Date(),

@@ -4,7 +4,6 @@ import { MetaConnectService } from './marketing-connect/meta-connect.service';
 import { EmailConnectService } from './marketing-connect/email-connect.service';
 import { ChannelSetupService } from './marketing-connect/channel-setup.service';
 import { WhatsAppSummaryService } from './marketing-connect/whatsapp-summary.service';
-
 describe('MarketingConnectController channel setup', () => {
   const metaConnect = {
     getStatus: jest.fn(async () => ({
@@ -44,7 +43,6 @@ describe('MarketingConnectController channel setup', () => {
       },
     })),
   };
-
   const emailConnect = {
     getStatus: jest.fn(async () => ({
       connected: false,
@@ -71,17 +69,14 @@ describe('MarketingConnectController channel setup', () => {
       provider: 'resend',
     })),
   };
-
   const channelSetup = {
     getSetup: jest.fn(),
     saveSetup: jest.fn(),
     completeSetup: jest.fn(),
   };
-
   const whatsappSummary = {
     getSummary: jest.fn(),
   };
-
   const tiktokMarketing = {
     getConnectionStatus: jest.fn(async () => ({ connected: false })),
     getStatus: jest.fn(async () => ({ connected: false, status: 'disconnected' })),
@@ -100,7 +95,6 @@ describe('MarketingConnectController channel setup', () => {
       },
     })),
   };
-
   const gmailMailbox = {
     buildAuthUrl: jest.fn(() => ({
       provider: 'gmail',
@@ -146,12 +140,11 @@ describe('MarketingConnectController channel setup', () => {
       email: 'owner@kloel.test',
     })),
   };
-
   const controller = new MarketingConnectController(
-    metaConnect as unknown as MetaConnectService,
-    emailConnect as unknown as EmailConnectService,
-    channelSetup as unknown as ChannelSetupService,
-    whatsappSummary as unknown as WhatsAppSummaryService,
+    metaConnect as MetaConnectService,
+    emailConnect as EmailConnectService,
+    channelSetup as ChannelSetupService,
+    whatsappSummary as WhatsAppSummaryService,
     tiktokMarketing as never,
     tiktokMode as never,
     gmailMailbox as never,
@@ -159,11 +152,9 @@ describe('MarketingConnectController channel setup', () => {
     imapSmtpMailbox as never,
   );
   const req = { user: { workspaceId: 'ws_1', email: 'owner@kloel.test' } };
-
   beforeEach(() => {
     jest.clearAllMocks();
   });
-
   it('persists a four-step setup under the selected channel key', async () => {
     channelSetup.saveSetup.mockResolvedValueOnce({
       channel: 'email',
@@ -180,7 +171,6 @@ describe('MarketingConnectController channel setup', () => {
         updatedAt: '2026-05-11T12:00:00.000Z',
       },
     });
-
     const result = await controller.saveChannelSetup(req, {
       channel: 'email',
       currentStep: 3,
@@ -193,27 +183,24 @@ describe('MarketingConnectController channel setup', () => {
         proactiveDailyLimit: 25,
       },
     });
-
     expect(result.channel).toBe('email');
-    expect(result.setup).toEqual(
+    expect(result.setup.currentStep).toBe(3);
+    expect(result.setup.selectedProductIds).toEqual(['prod_1', 'prod_2']);
+    expect(result.setup.arsenal).toEqual(['FAQ principal', 'Garantia de 7 dias']);
+    expect(result.setup.config).toMatchObject({
+      tone: 'consultivo',
+      aggressiveness: 'moderado',
+      followUpEnabled: true,
+      proactiveDailyLimit: 25,
+    });
+    expect(channelSetup.saveSetup).toHaveBeenCalledWith(
+      'ws_1',
       expect.objectContaining({
+        channel: 'email',
         currentStep: 3,
-        selectedProductIds: ['prod_1', 'prod_2'],
-        arsenal: ['FAQ principal', 'Garantia de 7 dias'],
-        config: expect.objectContaining({
-          tone: 'consultivo',
-          aggressiveness: 'moderado',
-          followUpEnabled: true,
-          proactiveDailyLimit: 25,
-        }),
       }),
     );
-    expect(channelSetup.saveSetup).toHaveBeenCalledWith('ws_1', expect.objectContaining({
-      channel: 'email',
-      currentStep: 3,
-    }));
   });
-
   it('returns default setup when the channel has no persisted setup', async () => {
     channelSetup.getSetup.mockResolvedValueOnce({
       channel: 'instagram',
@@ -225,9 +212,7 @@ describe('MarketingConnectController channel setup', () => {
       },
       completedAt: null,
     });
-
     const result = await controller.getChannelSetup(req, 'instagram');
-
     expect(result).toEqual({
       channel: 'instagram',
       setup: {
@@ -241,7 +226,9 @@ describe('MarketingConnectController channel setup', () => {
   });
 
   it('rejects invalid channel names', async () => {
-    channelSetup.getSetup.mockRejectedValueOnce(new BadRequestException('invalid_marketing_channel'));
+    channelSetup.getSetup.mockRejectedValueOnce(
+      new BadRequestException('invalid_marketing_channel'),
+    );
 
     await expect(controller.getChannelSetup(req, 'sms')).rejects.toBeInstanceOf(
       BadRequestException,
@@ -252,13 +239,9 @@ describe('MarketingConnectController channel setup', () => {
     const result = controller.getGmailAuthUrl(req, '/marketing/email');
 
     expect(gmailMailbox.buildAuthUrl).toHaveBeenCalledWith('ws_1', '/marketing/email');
-    expect(result).toEqual(
-      expect.objectContaining({
-        provider: 'gmail',
-        status: 'pending_oauth',
-        authUrl: expect.stringContaining('accounts.google.com'),
-      }),
-    );
+    expect(result.provider).toBe('gmail');
+    expect(result.status).toBe('pending_oauth');
+    expect(result.authUrl).toContain('accounts.google.com');
   });
 
   it('completes Gmail OAuth through encrypted mailbox storage service', async () => {
@@ -275,13 +258,9 @@ describe('MarketingConnectController channel setup', () => {
     const result = controller.getMicrosoftAuthUrl(req, '/marketing/email');
 
     expect(microsoftMailbox.buildAuthUrl).toHaveBeenCalledWith('ws_1', '/marketing/email');
-    expect(result).toEqual(
-      expect.objectContaining({
-        provider: 'microsoft',
-        status: 'pending_oauth',
-        authUrl: expect.stringContaining('login.microsoftonline.com'),
-      }),
-    );
+    expect(result.provider).toBe('microsoft');
+    expect(result.status).toBe('pending_oauth');
+    expect(result.authUrl).toContain('login.microsoftonline.com');
   });
 
   it('completes Microsoft OAuth through encrypted mailbox storage service', async () => {

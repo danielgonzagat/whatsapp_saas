@@ -77,8 +77,8 @@ export async function thinkSyncImpl(
       ...(workspaceId ? { workspaceId } : {}),
       ...(userId ? { userId } : {}),
       ...(reqUserName ? { userName: reqUserName } : {}),
-    mode,
-    ...(effectiveCompanyContext !== undefined ? { companyContext: effectiveCompanyContext } : {}),
+      mode,
+      ...(effectiveCompanyContext !== undefined ? { companyContext: effectiveCompanyContext } : {}),
       ...(request.allowedTools !== undefined ? { allowedTools: request.allowedTools } : {}),
       conversationState: historyState,
     }));
@@ -123,7 +123,11 @@ export async function thinkSyncImpl(
           ...(capabilityResult?.metadata || {}),
         }),
       );
-      await threadService.maybeRefreshThreadSummary(thread.id, workspaceId, replyEngine.openai ?? undefined);
+      await threadService.maybeRefreshThreadSummary(
+        thread.id,
+        workspaceId,
+        replyEngine.openai ?? undefined,
+      );
       resolvedTitle = await threadService.maybeGenerateThreadTitle(
         thread.id,
         thread.title,
@@ -159,6 +163,14 @@ export async function regenerateThreadAssistantResponseImpl(
         findFirst: (args: unknown) => Promise<{ id: string; summary: string | null } | null>;
       };
       chatMessage: {
+        findFirst: (args: unknown) => Promise<{
+          id: string;
+          threadId: string;
+          role: string;
+          content: string;
+          metadata: Prisma.JsonValue | null;
+          createdAt: Date;
+        } | null>;
         findMany: (args: unknown) => Promise<
           Array<{
             id: string;
@@ -169,14 +181,7 @@ export async function regenerateThreadAssistantResponseImpl(
             createdAt: Date;
           }>
         >;
-        update: (args: unknown) => Promise<{
-          id: string;
-          threadId: string;
-          role: string;
-          content: string;
-          metadata: Prisma.JsonValue | null;
-          createdAt: Date;
-        }>;
+        updateMany: (args: unknown) => Promise<unknown>;
         deleteMany: (args: unknown) => Promise<unknown>;
       };
       auditLog: { create: (args: unknown) => Promise<unknown> };
@@ -291,22 +296,24 @@ export async function regenerateThreadAssistantResponseImpl(
     } satisfies StoredResponseVersion,
   ];
 
+  const updatedMetadata = threadService.buildThreadMessageMetadata(
+    currentMetadata as Prisma.InputJsonValue,
+    {
+      regeneratedAt: new Date().toISOString(),
+      regeneratedFromUserMessageId: sourceUserMessage.id,
+      responseVersions,
+      activeResponseVersionIndex: Math.max(responseVersions.length - 1, 0),
+      processingTrace: regeneratedTraceEntries,
+      processingSummary: threadService.buildProcessingTraceSummary(regeneratedTraceEntries),
+    },
+  );
+
   const operations: Prisma.PrismaPromise<unknown>[] = [
-    prisma.chatMessage.update({
-      where: { id: assistantMessageId },
+    prisma.chatMessage.updateMany({
+      where: { id: assistantMessageId, workspaceId },
       data: {
         content: regeneratedContent,
-        metadata: threadService.buildThreadMessageMetadata(
-          currentMetadata as Prisma.InputJsonValue,
-          {
-            regeneratedAt: new Date().toISOString(),
-            regeneratedFromUserMessageId: sourceUserMessage.id,
-            responseVersions,
-            activeResponseVersionIndex: Math.max(responseVersions.length - 1, 0),
-            processingTrace: regeneratedTraceEntries,
-            processingSummary: threadService.buildProcessingTraceSummary(regeneratedTraceEntries),
-          },
-        ),
+        metadata: (updatedMetadata ?? null) as Prisma.JsonValue | null,
       },
     }) as Prisma.PrismaPromise<unknown>,
   ];
@@ -332,21 +339,26 @@ export async function regenerateThreadAssistantResponseImpl(
   }
   operations.push(threadService.touchThread(conversationId, workspaceId));
 
-  const [updatedMessage] = (await prisma.$transaction(operations)) as Array<{
-    id: string;
-    threadId: string;
-    role: string;
-    content: string;
-    metadata: Prisma.JsonValue | null;
-    createdAt: Date;
-  }>;
-  if (!updatedMessage) {
-    throw new Error('Transaction failed to return updated message');
-  }
+  await prisma.$transaction(operations);
+  const updatedMessage = await prisma.chatMessage.findFirst({
+    where: { id: assistantMessageId, workspaceId },
+    select: {
+      id: true,
+      threadId: true,
+      role: true,
+      content: true,
+      metadata: true,
+      createdAt: true,
+    },
+  });
   if (!updatedMessage) {
     throw buildRegenerationError(ERR_ASSISTANT_MSG_NOT_FOUND);
   }
-  await threadService.maybeRefreshThreadSummary(conversationId, workspaceId, replyEngine.openai ?? undefined);
+  await threadService.maybeRefreshThreadSummary(
+    conversationId,
+    workspaceId,
+    replyEngine.openai ?? undefined,
+  );
   return {
     id: updatedMessage.id,
     threadId: updatedMessage.threadId,

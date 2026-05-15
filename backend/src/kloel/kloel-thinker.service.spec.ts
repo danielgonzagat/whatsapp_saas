@@ -189,10 +189,12 @@ describe('KloelThinkerService', () => {
       shouldUseLongFormBudget: jest.fn().mockReturnValue(false),
       isClientDisconnected: jest.fn().mockReturnValue(false),
       buildStreamAbortMessage: jest.fn().mockReturnValue('timeout'),
-      openai: {},
+      openai: {} as Pick<KloelReplyEngineService, 'openai'>['openai'],
       unavailableMessage: 'Indisponível no momento.',
-      contextFormatter: { sanitizeUserNameForAssistant: jest.fn().mockReturnValue('User') },
-    } as typeof replyEngine;
+      contextFormatter: {
+        sanitizeUserNameForAssistant: jest.fn().mockReturnValue('User'),
+      } as Pick<KloelReplyEngineService, 'contextFormatter'>['contextFormatter'],
+    };
 
     llmE2EGuard = {
       isEnabled: jest.fn().mockReturnValue(false),
@@ -311,14 +313,15 @@ describe('KloelThinkerService', () => {
         assistantMessageId: 'msg-1',
       });
 
-      expect(regenerateThreadAssistantResponseImpl).toHaveBeenCalledWith(
+      const [regenerateInput, regenerateDeps] = regenerateThreadAssistantResponseImpl.mock.calls[0];
+      expect(regenerateInput).toEqual(
         expect.objectContaining({
           workspaceId: wsId,
           conversationId: 'conv-1',
           assistantMessageId: 'msg-1',
         }),
-        expect.any(Object),
       );
+      expect(regenerateDeps).toBeDefined();
       expect(result).toEqual(mockRegenerated);
     });
 

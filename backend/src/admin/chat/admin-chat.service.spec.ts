@@ -13,6 +13,19 @@ const sessionViewShape = {
   messages: [],
 };
 
+function firstCallArg<T>(mock: { mock: { calls: Array<[unknown, ...unknown[]]> } }): T {
+  const [arg] = mock.mock.calls[0] ?? [];
+  return arg as T;
+}
+
+type AdminChatSessionQueryArgs = {
+  where?: {
+    id?: string;
+    adminUserId?: string;
+    workspaceId?: string | { not: string };
+  };
+};
+
 describe('AdminChatService', () => {
   let service: AdminChatService;
 
@@ -34,8 +47,10 @@ describe('AdminChatService', () => {
 
   const mockSessionCreate = jest.fn();
   const mockSessionFindMany = jest.fn();
+  const mockSessionFindFirst = jest.fn();
   const mockSessionFindUnique = jest.fn();
   const mockSessionUpdate = jest.fn();
+  const mockSessionUpdateMany = jest.fn();
   const mockMsgCreate = jest.fn();
   const mockAgentFindUnique = jest.fn();
   const mockPermissionsAllows = jest.fn();
@@ -48,8 +63,10 @@ describe('AdminChatService', () => {
     adminChatSession: {
       create: mockSessionCreate,
       findMany: mockSessionFindMany,
+      findFirst: mockSessionFindFirst,
       findUnique: mockSessionFindUnique,
       update: mockSessionUpdate,
+      updateMany: mockSessionUpdateMany,
     },
     adminChatMessage: {
       create: mockMsgCreate,
@@ -75,8 +92,10 @@ describe('AdminChatService', () => {
 
     mockSessionCreate.mockResolvedValue(sessionRecord);
     mockSessionFindMany.mockResolvedValue([sessionRecord]);
+    mockSessionFindFirst.mockResolvedValue(sessionRecord);
     mockSessionFindUnique.mockResolvedValue(sessionRecord);
     mockSessionUpdate.mockResolvedValue(sessionRecord);
+    mockSessionUpdateMany.mockResolvedValue({ count: 1 });
     mockMsgCreate.mockResolvedValue({ id: 'msg_1' });
     mockAgentFindUnique.mockResolvedValue(null);
     mockPermissionsAllows.mockResolvedValue(true);
@@ -102,26 +121,15 @@ describe('AdminChatService', () => {
 
       expect(result).toHaveLength(1);
       expect(result[0].id).toBe(sessionViewShape.id);
-      expect(mockSessionFindMany).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: expect.objectContaining({
-            adminUserId,
-          }),
-        }),
-      );
+      const args = firstCallArg<AdminChatSessionQueryArgs>(mockSessionFindMany);
+      expect(args.where).toMatchObject({ adminUserId });
     });
 
     it('additionally filters by workspaceId when provided', async () => {
       await service.listSessions(adminUserId, workspaceId);
 
-      expect(mockSessionFindMany).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: expect.objectContaining({
-            adminUserId,
-            workspaceId,
-          }),
-        }),
-      );
+      const args = firstCallArg<AdminChatSessionQueryArgs>(mockSessionFindMany);
+      expect(args.where).toMatchObject({ adminUserId, workspaceId });
     });
 
     it('does not return sessions from other admins', async () => {
@@ -141,12 +149,11 @@ describe('AdminChatService', () => {
     });
 
     it('throws forbidden when adminUserId does not match', async () => {
-      mockSessionFindUnique.mockResolvedValueOnce({
-        ...sessionRecord,
-        adminUserId: 'other_admin',
-      });
+      mockSessionFindFirst.mockResolvedValueOnce(null);
 
       await expect(service.getSession(adminUserId, 'session_1')).rejects.toThrow(/acesso negado/i);
+      const args = firstCallArg<AdminChatSessionQueryArgs>(mockSessionFindFirst);
+      expect(args.where).toEqual({ id: 'session_1', adminUserId, workspaceId: { not: '' } });
     });
   });
 });

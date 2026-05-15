@@ -1,5 +1,0 @@
-{
-  "generatedAt": "2026-05-11T15:42:00.000Z",
-  "note": "Wave A purge — PR #276 closure mandate. All architecture exceptions removed. Every entry that lived here must be replaced by a real decomposition (Wave C). Re-adding requires explicit human approval recorded outside this file.",
-  "entries": []
-}

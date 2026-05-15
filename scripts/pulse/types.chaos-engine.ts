@@ -64,7 +64,7 @@ export interface ChaosScenario {
   errorsObserved: string[];
 }
 
-/** Chaos evidence artifact stored at .pulse/current/PULSE_CHAOS_EVIDENCE.json. */
+/** Chaos evidence artifact stored by the current PULSE run. */
 export interface ChaosEvidence {
   /** Generation timestamp. */
   generatedAt: string;

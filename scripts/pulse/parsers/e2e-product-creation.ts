@@ -24,8 +24,8 @@
  * REQUIRES:
  * - Running backend (PULSE_BACKEND_URL)
  * - Running DB with migrations applied
- * - Valid test JWT with OWNER role (PULSE_TEST_JWT)
- * - Test workspace (PULSE_TEST_WORKSPACE_ID)
+ * - Valid OWNER-role JWT from the test runtime environment
+ * - Test workspace id from the test runtime environment
  *
  * BREAK TYPES:
  * - E2E_PRODUCT_BROKEN (critical) — every step in product→plan→checkout config

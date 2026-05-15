@@ -10,6 +10,8 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import type { Job } from 'bullmq';
+import { WorkerLogger } from '../logger';
 
 // Must set up hoisted mocks before any imports
 const { mockRedisGet, mockRedisSet, mockBullQueueAdd } = vi.hoisted(() => ({
@@ -98,7 +100,7 @@ describe('processor-base — idempotency & structured logging', () => {
     const job = {
       data: { workspaceId: 'ws-123', other: 'data' },
     };
-    expect(extractWorkspaceId(job as never)).toBe('ws-123');
+    expect(extractWorkspaceId(job as Job)).toBe('ws-123');
   });
 
   it('extractWorkspaceId returns workspaceId from nested workspace.id', async () => {
@@ -106,13 +108,13 @@ describe('processor-base — idempotency & structured logging', () => {
     const job = {
       data: { workspace: { id: 'ws-nested' } },
     };
-    expect(extractWorkspaceId(job as never)).toBe('ws-nested');
+    expect(extractWorkspaceId(job as Job)).toBe('ws-nested');
   });
 
   it('extractWorkspaceId returns "unknown" when no id present', async () => {
     const { extractWorkspaceId } = await import('../processor-base');
     const job = { data: { foo: 'bar' } };
-    expect(extractWorkspaceId(job as never)).toBe('unknown');
+    expect(extractWorkspaceId(job as Job)).toBe('unknown');
   });
 
   it('startJob preserves an upstream correlationId from job data', async () => {
@@ -125,7 +127,7 @@ describe('processor-base — idempotency & structured logging', () => {
       data: { workspaceId: 'ws-1', correlationId: 'corr-upstream-1' },
     };
 
-    const meta = startJob(job as never, log as never);
+    const meta = startJob(job as Job, log as WorkerLogger);
 
     expect(meta.correlationId).toBe('corr-upstream-1');
     expect(meta.workspaceId).toBe('ws-1');
@@ -143,7 +145,7 @@ describe('processor-base — idempotency & structured logging', () => {
     mockRedisGet.mockResolvedValue(null);
     const { checkIdempotent } = await import('../processor-base');
     const job = { id: 'job-1', queueName: 'test-q', data: {} };
-    const result = await checkIdempotent(job as never);
+    const result = await checkIdempotent(job as Job);
     expect(result).toBe(false);
   });
 
@@ -151,7 +153,7 @@ describe('processor-base — idempotency & structured logging', () => {
     mockRedisGet.mockResolvedValue('1');
     const { checkIdempotent } = await import('../processor-base');
     const job = { id: 'job-1', queueName: 'test-q', data: {} };
-    const result = await checkIdempotent(job as never);
+    const result = await checkIdempotent(job as Job);
     expect(result).toBe(true);
   });
 
@@ -163,7 +165,7 @@ describe('processor-base — idempotency & structured logging', () => {
       queueName: 'test-q',
       data: { dedupKey: 'ext-key-42' },
     };
-    await checkIdempotent(job as never);
+    await checkIdempotent(job as Job);
     expect(mockRedisGet).toHaveBeenCalledWith(expect.stringContaining('ext-key-42'));
   });
 });
@@ -179,8 +181,9 @@ describe('queue — buildQueueOptions retry policy', () => {
     expect(opts.defaultJobOptions.attempts).toBeGreaterThanOrEqual(1);
     expect(opts.defaultJobOptions.backoff).toEqual({
       type: 'exponential',
-      delay: expect.any(Number),
+      delay: opts.defaultJobOptions.backoff.delay,
     });
+    expect(typeof opts.defaultJobOptions.backoff.delay).toBe('number');
     expect(opts.defaultJobOptions.backoff.delay).toBeGreaterThanOrEqual(1000);
   });
 });

@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import type { ChatCompletionFunctionTool, ChatCompletionTool } from 'openai/resources/chat';
 import { UNIFIED_AGENT_TOOLS_CONTROL } from './unified-agent-tools-control';
 import { UNIFIED_AGENT_TOOLS_MESSAGING } from './unified-agent-tools-messaging';
@@ -34,6 +35,12 @@ const TOOL_GROUPS: Array<{
 
 @Injectable()
 export class BrainCapabilityRegistryService {
+  private readonly logger = StructuredLogger.from(BrainCapabilityRegistryService.name);
+
+  constructor() {
+    this.logger.debug?.(`BrainCapabilityRegistryService initialized`);
+  }
+
   list(): BrainCapabilityDefinition[] {
     return TOOL_GROUPS.flatMap((group) =>
       group.tools

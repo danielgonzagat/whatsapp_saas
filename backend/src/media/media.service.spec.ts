@@ -4,7 +4,34 @@ import { PrismaService } from '../prisma/prisma.service';
 import { StorageService } from '../common/storage/storage.service';
 import { MediaService } from './media.service';
 
-const queueAddMock = jest.fn().mockResolvedValue(undefined);
+type MediaJobRecord = {
+  id: string;
+  status: string;
+  workspaceId?: string;
+};
+
+type DocumentRecord = {
+  id: string;
+  name: string;
+  filePath: string;
+  [key: string]: unknown;
+};
+
+type MediaJobCreateArgs = {
+  data: {
+    workspaceId: string;
+    type: string;
+    status: string;
+    inputUrl: string;
+    prompt?: string;
+  };
+};
+
+type FindFirstArgs = { where: Record<string, unknown> };
+type DocumentCreateArgs = { data: Record<string, unknown> };
+type StorageUploadResult = { path: string; url: string };
+
+const queueAddMock = jest.fn<Promise<void>, [string, unknown]>().mockResolvedValue(undefined);
 
 jest.mock('bullmq', () => ({
   Queue: jest.fn().mockImplementation(() => ({ add: queueAddMock })),
@@ -26,33 +53,61 @@ jest.mock('../common/utils/url-validator', () => ({
 describe('MediaService', () => {
   let service: MediaService;
   let prisma: {
-    mediaJob: { create: jest.Mock; findFirst: jest.Mock };
-    document: { create: jest.Mock; findMany: jest.Mock; findFirst: jest.Mock; updateMany: jest.Mock };
+    mediaJob: {
+      create: jest.Mock<Promise<MediaJobRecord>, [MediaJobCreateArgs]>;
+      findFirst: jest.Mock<Promise<MediaJobRecord | null>, [FindFirstArgs]>;
+    };
+    document: {
+      create: jest.Mock<Promise<DocumentRecord>, [DocumentCreateArgs]>;
+      findMany: jest.Mock<Promise<DocumentRecord[]>, [unknown?]>;
+      findFirst: jest.Mock<Promise<DocumentRecord | null>, [FindFirstArgs]>;
+      updateMany: jest.Mock<Promise<{ count: number }>, [unknown?]>;
+    };
   };
-  let config: { get: jest.Mock };
-  let storage: { upload: jest.Mock; isLocalDriver: jest.Mock; readLocalFile: jest.Mock; getSignedUrl: jest.Mock };
+  let config: { get: jest.Mock<string | undefined, [string, string?]> };
+  let storage: {
+    upload: jest.Mock<Promise<StorageUploadResult>, [Buffer, Record<string, unknown>]>;
+    isLocalDriver: jest.Mock<boolean, []>;
+    readLocalFile: jest.Mock<Buffer, [string]>;
+    getSignedUrl: jest.Mock<string, [string]>;
+  };
 
   beforeEach(() => {
     queueAddMock.mockClear();
 
     prisma = {
       mediaJob: {
-        create: jest.fn().mockResolvedValue({ id: 'job-1', status: 'PENDING' }),
-        findFirst: jest.fn().mockResolvedValue(null),
+        create: jest.fn<Promise<MediaJobRecord>, [MediaJobCreateArgs]>().mockResolvedValue({
+          id: 'job-1',
+          status: 'PENDING',
+        }),
+        findFirst: jest
+          .fn<Promise<MediaJobRecord | null>, [FindFirstArgs]>()
+          .mockResolvedValue(null),
       },
       document: {
-        create: jest.fn().mockResolvedValue({ id: 'doc-1', name: 'test', filePath: '/uploads/test.pdf' }),
-        findMany: jest.fn().mockResolvedValue([]),
-        findFirst: jest.fn().mockResolvedValue(null),
-        updateMany: jest.fn().mockResolvedValue({ count: 1 }),
+        create: jest.fn<Promise<DocumentRecord>, [DocumentCreateArgs]>().mockResolvedValue({
+          id: 'doc-1',
+          name: 'test',
+          filePath: '/uploads/test.pdf',
+        }),
+        findMany: jest.fn<Promise<DocumentRecord[]>, [unknown?]>().mockResolvedValue([]),
+        findFirst: jest
+          .fn<Promise<DocumentRecord | null>, [FindFirstArgs]>()
+          .mockResolvedValue(null),
+        updateMany: jest
+          .fn<Promise<{ count: number }>, [unknown?]>()
+          .mockResolvedValue({ count: 1 }),
       },
     };
-    config = { get: jest.fn().mockReturnValue(undefined) };
+    config = { get: jest.fn<string | undefined, [string, string?]>().mockReturnValue(undefined) };
     storage = {
-      upload: jest.fn().mockResolvedValue({ path: '/uploads/doc.pdf', url: 'https://s3.example.com/doc.pdf' }),
-      isLocalDriver: jest.fn().mockReturnValue(true),
-      readLocalFile: jest.fn().mockReturnValue(Buffer.from('data')),
-      getSignedUrl: jest.fn().mockReturnValue('https://signed.url/doc.pdf'),
+      upload: jest
+        .fn<Promise<StorageUploadResult>, [Buffer, Record<string, unknown>]>()
+        .mockResolvedValue({ path: '/uploads/doc.pdf', url: 'https://s3.example.com/doc.pdf' }),
+      isLocalDriver: jest.fn<boolean, []>().mockReturnValue(true),
+      readLocalFile: jest.fn<Buffer, [string]>().mockReturnValue(Buffer.from('data')),
+      getSignedUrl: jest.fn<string, [string]>().mockReturnValue('https://signed.url/doc.pdf'),
     };
 
     service = new MediaService(
@@ -76,24 +131,17 @@ describe('MediaService', () => {
       });
 
       expect(result).toMatchObject({ id: 'job-1', status: 'PENDING' });
-      expect(prisma.mediaJob.create).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: expect.objectContaining({
-            workspaceId: 'ws-1',
-            type: 'VIDEO_GENERATION',
-            inputUrl: 'https://cdn.example.com/image.png',
-          }),
-        }),
-      );
-      expect(queueAddMock).toHaveBeenCalledWith('generate-video', expect.any(Object));
+      const [createArgs] = prisma.mediaJob.create.mock.calls[0]!;
+      expect(createArgs.data.workspaceId).toBe('ws-1');
+      expect(createArgs.data.type).toBe('VIDEO_GENERATION');
+      expect(createArgs.data.inputUrl).toBe('https://cdn.example.com/image.png');
+      expect(queueAddMock).toHaveBeenCalledWith('generate-video', expect.objectContaining({}));
     });
   });
 
   describe('getJobStatus', () => {
     it('throws NotFoundException when job does not exist', async () => {
-      await expect(service.getJobStatus('nonexistent', 'ws-1')).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.getJobStatus('nonexistent', 'ws-1')).rejects.toThrow(NotFoundException);
     });
 
     it('returns job data when found', async () => {
@@ -107,9 +155,9 @@ describe('MediaService', () => {
 
   describe('uploadDocument', () => {
     it('throws BadRequestException when file has no buffer', async () => {
-      await expect(
-        service.uploadDocument('ws-1', {} as never, {}),
-      ).rejects.toThrow(BadRequestException);
+      await expect(service.uploadDocument('ws-1', {} as { buffer: Buffer }, {})).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('uploads document successfully with valid file buffer', async () => {

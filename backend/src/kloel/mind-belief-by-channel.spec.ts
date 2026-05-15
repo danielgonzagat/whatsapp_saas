@@ -2,17 +2,23 @@ import { extractChannel, getBeliefByChannel, requireChannel } from './mind-belie
 import type { MindBeliefService } from './mind-belief.service';
 
 function mockBeliefService(returnValue = {}) {
+  const getOrInit = jest.fn().mockResolvedValue(returnValue);
   return {
-    getOrInit: jest.fn().mockResolvedValue(returnValue),
-  } as unknown as MindBeliefService;
+    beliefService: { getOrInit } as MindBeliefService,
+    getOrInit,
+  };
 }
 
 describe('mind-belief-by-channel', () => {
   describe('getBeliefByChannel', () => {
     it('calls getOrInit with channel merged into context', async () => {
-      const beliefs = mockBeliefService({ id: 'b1', workspaceId: 'ws-1', mean: 0.5 });
+      const { beliefService, getOrInit } = mockBeliefService({
+        id: 'b1',
+        workspaceId: 'ws-1',
+        mean: 0.5,
+      });
       const result = await getBeliefByChannel(
-        beliefs,
+        beliefService,
         'ws-1',
         'whatsapp',
         'contact:1',
@@ -21,19 +27,17 @@ describe('mind-belief-by-channel', () => {
       );
 
       expect(result).toMatchObject({ id: 'b1', workspaceId: 'ws-1', mean: 0.5 });
-      expect(beliefs.getOrInit).toHaveBeenCalledWith(
-        'ws-1',
-        'contact:1',
-        'P(reply)',
-        { hour: 14, channel: 'whatsapp' },
-      );
+      expect(getOrInit).toHaveBeenCalledWith('ws-1', 'contact:1', 'P(reply)', {
+        hour: 14,
+        channel: 'whatsapp',
+      });
     });
 
     it('throws when channel is empty', async () => {
-      const beliefs = mockBeliefService();
-      await expect(
-        getBeliefByChannel(beliefs, 'ws-1', '', 's', 'p', {}),
-      ).rejects.toThrow('channel is required');
+      const { beliefService } = mockBeliefService();
+      await expect(getBeliefByChannel(beliefService, 'ws-1', '', 's', 'p', {})).rejects.toThrow(
+        'channel is required',
+      );
     });
   });
 

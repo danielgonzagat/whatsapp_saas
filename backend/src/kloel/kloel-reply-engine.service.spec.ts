@@ -21,9 +21,14 @@ jest.mock('./openai-wrapper', () => ({
   }),
 }));
 
-jest.mock('../lib/openai-models', () => ({
-  resolveBackendOpenAIModel: jest.fn().mockReturnValue('gpt-4o'),
-}));
+jest.mock('../lib/openai-models', () => {
+  const actual = jest.requireActual<typeof import('../lib/openai-models')>('../lib/openai-models');
+
+  return {
+    ...actual,
+    resolveBackendOpenAIModel: jest.fn().mockReturnValue(actual.CANONICAL_MODEL_IDS.openAiTextOmni),
+  };
+});
 
 jest.mock('./kloel-reply-engine.helpers', () => ({
   WHITESPACE_RE: /\s+/,

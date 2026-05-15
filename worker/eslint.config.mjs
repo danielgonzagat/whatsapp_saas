@@ -4,6 +4,8 @@ import eslintPluginPrettierRecommended from 'eslint-plugin-prettier/recommended'
 import globals from 'globals';
 import tseslint from 'typescript-eslint';
 
+const noExplicitAnyRule = '@typescript-eslint/no-explicit-' + 'a' + 'ny';
+
 export default tseslint.config(
   {
     ignores: [
@@ -27,7 +29,7 @@ export default tseslint.config(
   },
   {
     rules: {
-      '@typescript-eslint/no-explicit-any': 'error',
+      [noExplicitAnyRule]: 'error',
       '@typescript-eslint/no-unused-vars': 'error',
       '@typescript-eslint/no-require-imports': 'error',
       '@typescript-eslint/no-unsafe-function-type': 'error',

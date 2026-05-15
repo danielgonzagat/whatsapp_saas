@@ -3,81 +3,17 @@
 import { kloelT } from '@/lib/i18n/t';
 import { Button } from '@/components/kloel';
 import { colors } from '@/lib/design-tokens';
-import {
-  Database,
-  Play,
-  Save,
-  Server,
-  Settings2,
-  XCircle,
-} from 'lucide-react';
+import { Database, Play, Server } from 'lucide-react';
+import { StatusPill } from './AutopilotSafetyBrakesHelpers';
+import AutopilotSafetyBrakesConfigPanel from './AutopilotSafetyBrakesConfigPanel';
+import type {
+  AutopilotSmokeResultLike,
+  QueueStatsLike,
+  RuntimeConfigLike,
+  AutopilotConfigLike,
+} from './AutopilotSafetyBrakes.types';
 
-export interface AutopilotSmokeResultLike {
-  smokeTestId: string;
-  mode: 'dry-run' | 'live';
-  phone: string;
-  message: string;
-  result?: {
-    status?: string;
-    stage?: string;
-    error?: string;
-    previewText?: string;
-    mode?: 'dry-run' | 'live';
-    reason?: string;
-  };
-  queue?: { waiting?: number; active?: number; delayed?: number; failed?: number };
-}
-
-export interface QueueStatsLike {
-  waiting?: number;
-  active?: number;
-  delayed?: number;
-  completed?: number;
-  failed?: number;
-  paused?: number;
-}
-
-export interface RuntimeConfigLike {
-  [key: string]: unknown;
-}
-
-export interface AutopilotConfigLike {
-  conversionFlowId?: string | null;
-  currencyDefault?: string;
-  recoveryTemplateName?: string | null;
-}
-
-function statusTone(status?: string) {
-  const normalized = String(status || '').toUpperCase();
-  if (['UP', 'CONFIGURED', 'COMPLETED'].includes(normalized)) {
-    return { color: colors.brand.green, bg: `${colors.brand.green}20` };
-  }
-  if (['DEGRADED', 'PARTIAL', 'QUEUED', 'PROCESSING'].includes(normalized)) {
-    return { color: colors.semantic.warning, bg: 'rgba(245, 158, 11, 0.15)' };
-  }
-  if (['DOWN', 'FAILED', 'ERROR', 'SKIPPED', 'DISABLED', 'BILLING_SUSPENDED', 'MISSING'].includes(normalized)) {
-    return { color: colors.semantic.error, bg: 'rgba(239, 68, 68, 0.12)' };
-  }
-  return { color: colors.brand.cyan, bg: `${colors.brand.cyan}18` };
-}
-
-function StatusPill({ label, status }: { label: string; status?: string | undefined }) {
-  const tone = statusTone(status);
-  return (
-    <div
-      className="px-3 py-2 rounded-lg border text-sm flex items-center justify-between gap-3"
-      style={{ backgroundColor: colors.background.surface2, borderColor: colors.stroke }}
-    >
-      <span style={{ color: colors.text.secondary }}>{label}</span>
-      <span
-        className="px-2 py-1 rounded-md text-xs font-semibold uppercase tracking-wide"
-        style={{ color: tone.color, backgroundColor: tone.bg }}
-      >
-        {status || 'unknown'}
-      </span>
-    </div>
-  );
-}
+export type { AutopilotSmokeResultLike, QueueStatsLike, RuntimeConfigLike, AutopilotConfigLike };
 
 export default function AutopilotSafetyBrakes({
   queueStats,
@@ -119,7 +55,10 @@ export default function AutopilotSafetyBrakes({
   onSaveConfig: () => void;
 }) {
   const queueTotal = queueStats
-    ? (queueStats.waiting || 0) + (queueStats.active || 0) + (queueStats.delayed || 0) + (queueStats.failed || 0)
+    ? (queueStats.waiting || 0) +
+      (queueStats.active || 0) +
+      (queueStats.delayed || 0) +
+      (queueStats.failed || 0)
     : 0;
 
   const queueHealthStatus = (() => {
@@ -147,7 +86,9 @@ export default function AutopilotSafetyBrakes({
               {kloelT(`Testar Autopilot`)}
             </h2>
             <p className="text-sm" style={{ color: colors.text.muted }}>
-              {kloelT(`Executa um smoke test do pipeline ponta a ponta. O padrão é dry-run, sem enviar nada ao cliente.`)}
+              {kloelT(
+                `Executa um smoke test do pipeline ponta a ponta. O padrão é dry-run, sem enviar nada ao cliente.`,
+              )}
             </p>
           </div>
           <Button
@@ -157,7 +98,11 @@ export default function AutopilotSafetyBrakes({
             isLoading={isTesting}
             leftIcon={!isTesting ? <Play size={16} aria-hidden="true" /> : undefined}
           >
-            {isTesting ? 'Executando teste...' : testLiveSend ? 'Testar com envio real' : 'Testar Autopilot'}
+            {isTesting
+              ? 'Executando teste...'
+              : testLiveSend
+                ? 'Testar com envio real'
+                : 'Testar Autopilot'}
           </Button>
         </div>
 
@@ -169,7 +114,11 @@ export default function AutopilotSafetyBrakes({
               onChange={(e) => onTestPhoneChange(e.target.value)}
               placeholder="5511999999999"
               className="px-4 py-3 rounded-lg border outline-none"
-              style={{ backgroundColor: colors.background.surface2, borderColor: colors.stroke, color: colors.text.primary }}
+              style={{
+                backgroundColor: colors.background.surface2,
+                borderColor: colors.stroke,
+                color: colors.text.primary,
+              }}
             />
           </label>
           <label className="flex items-center gap-3 text-sm mt-7 md:mt-0">
@@ -178,7 +127,9 @@ export default function AutopilotSafetyBrakes({
               checked={testLiveSend}
               onChange={(e) => onTestLiveSendChange(e.target.checked)}
             />
-            <span style={{ color: colors.text.secondary }}>{kloelT(`Enviar de verdade para esse número`)}</span>
+            <span style={{ color: colors.text.secondary }}>
+              {kloelT(`Enviar de verdade para esse número`)}
+            </span>
           </label>
         </div>
 
@@ -189,7 +140,11 @@ export default function AutopilotSafetyBrakes({
             onChange={(e) => onTestMessageChange(e.target.value)}
             rows={3}
             className="px-4 py-3 rounded-lg border outline-none resize-none"
-            style={{ backgroundColor: colors.background.surface2, borderColor: colors.stroke, color: colors.text.primary }}
+            style={{
+              backgroundColor: colors.background.surface2,
+              borderColor: colors.stroke,
+              color: colors.text.primary,
+            }}
           />
         </label>
 
@@ -201,8 +156,14 @@ export default function AutopilotSafetyBrakes({
             <div className="flex flex-wrap items-center gap-3 mb-3">
               <StatusPill label={kloelT(`Modo`)} status={smokeResult.mode} />
               <StatusPill label={kloelT(`Resultado`)} status={smokeResult.result?.status} />
-              <StatusPill label={kloelT(`Fila waiting`)} status={String(smokeResult.queue?.waiting ?? 0)} />
-              <StatusPill label={kloelT(`Fila failed`)} status={String(smokeResult.queue?.failed ?? 0)} />
+              <StatusPill
+                label={kloelT(`Fila waiting`)}
+                status={String(smokeResult.queue?.waiting ?? 0)}
+              />
+              <StatusPill
+                label={kloelT(`Fila failed`)}
+                status={String(smokeResult.queue?.failed ?? 0)}
+              />
             </div>
             <div className="space-y-2 text-sm">
               <p style={{ color: colors.text.primary }}>
@@ -216,7 +177,13 @@ export default function AutopilotSafetyBrakes({
                   <p className="mb-1" style={{ color: colors.text.secondary }}>
                     {kloelT(`Preview da resposta do Kloel`)}
                   </p>
-                  <div className="p-3 rounded-lg" style={{ backgroundColor: colors.background.obsidian, color: colors.text.primary }}>
+                  <div
+                    className="p-3 rounded-lg"
+                    style={{
+                      backgroundColor: colors.background.obsidian,
+                      color: colors.text.primary,
+                    }}
+                  >
                     {smokeResult.result.previewText}
                   </div>
                 </div>
@@ -257,20 +224,29 @@ export default function AutopilotSafetyBrakes({
               className="px-3 py-1 rounded-full text-xs font-semibold uppercase"
               style={{
                 backgroundColor:
-                  queueHealthStatus === 'healthy' ? `${colors.brand.green}20`
-                    : queueHealthStatus === 'degraded' ? 'rgba(245, 158, 11, 0.15)'
-                      : queueHealthStatus === 'critical' ? 'rgba(239, 68, 68, 0.12)'
+                  queueHealthStatus === 'healthy'
+                    ? `${colors.brand.green}20`
+                    : queueHealthStatus === 'degraded'
+                      ? 'rgba(245, 158, 11, 0.15)'
+                      : queueHealthStatus === 'critical'
+                        ? 'rgba(239, 68, 68, 0.12)'
                         : `${colors.brand.cyan}18`,
                 color:
-                  queueHealthStatus === 'healthy' ? colors.brand.green
-                    : queueHealthStatus === 'degraded' ? colors.semantic.warning
-                      : queueHealthStatus === 'critical' ? colors.semantic.error
+                  queueHealthStatus === 'healthy'
+                    ? colors.brand.green
+                    : queueHealthStatus === 'degraded'
+                      ? colors.semantic.warning
+                      : queueHealthStatus === 'critical'
+                        ? colors.semantic.error
                         : colors.brand.cyan,
               }}
             >
-              {queueHealthStatus === 'healthy' ? 'Saudável'
-                : queueHealthStatus === 'degraded' ? 'Degradado'
-                  : queueHealthStatus === 'critical' ? 'Crítico'
+              {queueHealthStatus === 'healthy'
+                ? 'Saudável'
+                : queueHealthStatus === 'degraded'
+                  ? 'Degradado'
+                  : queueHealthStatus === 'critical'
+                    ? 'Crítico'
                     : 'Desconhecido'}
             </div>
           </div>
@@ -285,20 +261,41 @@ export default function AutopilotSafetyBrakes({
               </div>
               {(queueStats.completed != null || queueStats.paused != null) && (
                 <div className="grid grid-cols-2 gap-3">
-                  {queueStats.completed != null && <StatusPill label={kloelT(`Completadas`)} status={String(queueStats.completed)} />}
-                  {queueStats.paused != null && <StatusPill label={kloelT(`Pausadas`)} status={String(queueStats.paused)} />}
+                  {queueStats.completed != null && (
+                    <StatusPill
+                      label={kloelT(`Completadas`)}
+                      status={String(queueStats.completed)}
+                    />
+                  )}
+                  {queueStats.paused != null && (
+                    <StatusPill label={kloelT(`Pausadas`)} status={String(queueStats.paused)} />
+                  )}
                 </div>
               )}
-              <div className="flex items-center justify-between p-3 rounded-lg text-sm" style={{ backgroundColor: colors.background.surface2 }}>
+              <div
+                className="flex items-center justify-between p-3 rounded-lg text-sm"
+                style={{ backgroundColor: colors.background.surface2 }}
+              >
                 <span style={{ color: colors.text.secondary }}>{kloelT(`Total na fila`)}</span>
-                <span className="font-semibold" style={{ color: colors.text.primary, fontFamily: "'JetBrains Mono', monospace" }}>
+                <span
+                  className="font-semibold"
+                  style={{ color: colors.text.primary, fontFamily: "'JetBrains Mono', monospace" }}
+                >
                   {queueTotal}
                 </span>
               </div>
             </div>
           ) : (
-            <div className="p-6 rounded-lg text-center" style={{ backgroundColor: colors.background.surface2 }}>
-              <Server size={32} className="mx-auto mb-2" style={{ color: colors.text.muted }} aria-hidden="true" />
+            <div
+              className="p-6 rounded-lg text-center"
+              style={{ backgroundColor: colors.background.surface2 }}
+            >
+              <Server
+                size={32}
+                className="mx-auto mb-2"
+                style={{ color: colors.text.muted }}
+                aria-hidden="true"
+              />
               <p className="text-sm" style={{ color: colors.text.muted }}>
                 {kloelT(`Dados da fila indisponíveis`)}
               </p>
@@ -332,14 +329,20 @@ export default function AutopilotSafetyBrakes({
                   className="flex items-center justify-between p-3 rounded-lg"
                   style={{ backgroundColor: colors.background.surface2 }}
                 >
-                  <span className="text-sm" style={{ color: colors.text.secondary }}>{key}</span>
+                  <span className="text-sm" style={{ color: colors.text.secondary }}>
+                    {key}
+                  </span>
                   <span
                     className="text-sm font-medium"
                     style={{
-                      color: value === true ? colors.brand.green
-                        : value === false ? colors.semantic.error
-                          : colors.text.primary,
-                      fontFamily: typeof value === 'number' ? "'JetBrains Mono', monospace" : undefined,
+                      color:
+                        value === true
+                          ? colors.brand.green
+                          : value === false
+                            ? colors.semantic.error
+                            : colors.text.primary,
+                      fontFamily:
+                        typeof value === 'number' ? "'JetBrains Mono', monospace" : undefined,
                     }}
                   >
                     {value === true ? 'true' : value === false ? 'false' : String(value ?? '—')}
@@ -348,8 +351,16 @@ export default function AutopilotSafetyBrakes({
               ))}
             </div>
           ) : (
-            <div className="p-6 rounded-lg text-center" style={{ backgroundColor: colors.background.surface2 }}>
-              <Database size={32} className="mx-auto mb-2" style={{ color: colors.text.muted }} aria-hidden="true" />
+            <div
+              className="p-6 rounded-lg text-center"
+              style={{ backgroundColor: colors.background.surface2 }}
+            >
+              <Database
+                size={32}
+                className="mx-auto mb-2"
+                style={{ color: colors.text.muted }}
+                aria-hidden="true"
+              />
               <p className="text-sm" style={{ color: colors.text.muted }}>
                 {kloelT(`Configuracao de runtime indisponivel`)}
               </p>
@@ -357,105 +368,15 @@ export default function AutopilotSafetyBrakes({
           )}
         </div>
 
-        <div
-          className="p-5 rounded-xl border"
-          style={{ backgroundColor: colors.background.surface1, borderColor: colors.stroke }}
-        >
-          <div className="flex items-center justify-between gap-3 mb-5">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg" style={{ backgroundColor: `${colors.brand.green}20` }}>
-                <Settings2 size={20} style={{ color: colors.brand.green }} aria-hidden="true" />
-              </div>
-              <div>
-                <h2 className="text-lg font-semibold" style={{ color: colors.text.primary }}>
-                  {kloelT(`Configuração`)}
-                </h2>
-                <p className="text-sm" style={{ color: colors.text.muted }}>
-                  {kloelT(`Ajustes do Autopilot`)}
-                </p>
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={onToggleEditingConfig}
-              className="p-2 rounded-lg transition-colors hover:bg-white/5"
-              style={{ color: isEditingConfig ? colors.semantic.error : colors.text.muted }}
-            >
-              {isEditingConfig ? <XCircle size={18} aria-hidden="true" /> : <Settings2 size={18} aria-hidden="true" />}
-            </button>
-          </div>
-
-          {config ? (
-            <div className="space-y-3">
-              <label className="flex flex-col gap-1.5 text-sm">
-                <span style={{ color: colors.text.secondary }}>{kloelT(`Flow de Conversão (ID)`)}</span>
-                <input
-                  value={configDraft.conversionFlowId || ''}
-                  onChange={(e) => onConfigDraftChange((prev) => ({ ...prev, conversionFlowId: e.target.value || null }))}
-                  disabled={!isEditingConfig}
-                  placeholder={kloelT(`ID do flow`)}
-                  className="px-3 py-2.5 rounded-lg border outline-none text-sm"
-                  style={{
-                    backgroundColor: isEditingConfig ? colors.background.surface2 : colors.background.obsidian,
-                    borderColor: colors.stroke,
-                    color: colors.text.primary,
-                    opacity: isEditingConfig ? 1 : 0.7,
-                  }}
-                />
-              </label>
-              <label className="flex flex-col gap-1.5 text-sm">
-                <span style={{ color: colors.text.secondary }}>{kloelT(`Moeda Padrão`)}</span>
-                <input
-                  value={configDraft.currencyDefault || ''}
-                  onChange={(e) => onConfigDraftChange((prev) => ({ ...prev, currencyDefault: e.target.value }))}
-                  disabled={!isEditingConfig}
-                  placeholder="BRL"
-                  className="px-3 py-2.5 rounded-lg border outline-none text-sm"
-                  style={{
-                    backgroundColor: isEditingConfig ? colors.background.surface2 : colors.background.obsidian,
-                    borderColor: colors.stroke,
-                    color: colors.text.primary,
-                    opacity: isEditingConfig ? 1 : 0.7,
-                  }}
-                />
-              </label>
-              <label className="flex flex-col gap-1.5 text-sm">
-                <span style={{ color: colors.text.secondary }}>{kloelT(`Template de Recuperação`)}</span>
-                <input
-                  value={configDraft.recoveryTemplateName || ''}
-                  onChange={(e) => onConfigDraftChange((prev) => ({ ...prev, recoveryTemplateName: e.target.value || null }))}
-                  disabled={!isEditingConfig}
-                  placeholder={kloelT(`Nome do template`)}
-                  className="px-3 py-2.5 rounded-lg border outline-none text-sm"
-                  style={{
-                    backgroundColor: isEditingConfig ? colors.background.surface2 : colors.background.obsidian,
-                    borderColor: colors.stroke,
-                    color: colors.text.primary,
-                    opacity: isEditingConfig ? 1 : 0.7,
-                  }}
-                />
-              </label>
-              {isEditingConfig && (
-                <div className="flex gap-3 pt-2">
-                  <Button variant="primary" size="sm" onClick={onSaveConfig} isLoading={isSavingConfig}
-                    leftIcon={!isSavingConfig ? <Save size={14} aria-hidden="true" /> : undefined}>
-                    {isSavingConfig ? 'Salvando...' : 'Salvar'}
-                  </Button>
-                  <Button variant="ghost" size="sm" onClick={onToggleEditingConfig}>
-                    {kloelT(`Cancelar`)}
-                  </Button>
-                </div>
-              )}
-            </div>
-          ) : (
-            <div className="p-6 rounded-lg text-center" style={{ backgroundColor: colors.background.surface2 }}>
-              <Settings2 size={32} className="mx-auto mb-2" style={{ color: colors.text.muted }} aria-hidden="true" />
-              <p className="text-sm" style={{ color: colors.text.muted }}>
-                {kloelT(`Configuração indisponível`)}
-              </p>
-            </div>
-          )}
-        </div>
+        <AutopilotSafetyBrakesConfigPanel
+          config={config}
+          isEditingConfig={isEditingConfig}
+          configDraft={configDraft}
+          isSavingConfig={isSavingConfig}
+          onConfigDraftChange={onConfigDraftChange}
+          onToggleEditingConfig={onToggleEditingConfig}
+          onSaveConfig={onSaveConfig}
+        />
       </div>
     </>
   );
