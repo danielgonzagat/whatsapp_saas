@@ -3,16 +3,7 @@ import type { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
-
-const VALID_PIXEL_TYPES = [
-  'FACEBOOK',
-  'GOOGLE_ADS',
-  'GOOGLE_ANALYTICS',
-  'TIKTOK',
-  'KWAI',
-  'TABOOLA',
-  'CUSTOM',
-];
+import { VALID_PIXEL_TYPES } from './checkout-catalog.helpers';
 
 export async function createCheckoutPixel(
   deps: { prisma: PrismaService },
