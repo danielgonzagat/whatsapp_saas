@@ -10,13 +10,13 @@
  * three, each producing a syntactically validated, all-or-nothing change set.
  */
 
-import * as fs from "node:fs";
-import * as path from "node:path";
-import * as ts from "typescript";
-import { validate, type ValidationResult } from "./engine.js";
-import { resolveSymbol } from "./symbols.js";
+import * as fs from 'node:fs';
+import * as path from 'node:path';
+import * as ts from 'typescript';
+import { validate, type ValidationResult } from './engine.js';
+import { resolveSymbol } from './symbols.js';
 
-export type SymbolOp = "replace" | "insert_after" | "remove";
+export type SymbolOp = 'replace' | 'insert_after' | 'remove';
 
 export interface SymbolEditResult {
   newText: string;
@@ -28,9 +28,9 @@ export interface SymbolEditResult {
 }
 
 function leadingIndent(text: string, atOffset: number): string {
-  const lineStart = text.lastIndexOf("\n", atOffset - 1) + 1;
+  const lineStart = text.lastIndexOf('\n', atOffset - 1) + 1;
   const m = /^[ \t]*/.exec(text.slice(lineStart, atOffset + 200));
-  return m ? m[0] : "";
+  return m ? m[0] : '';
 }
 
 /**
@@ -41,10 +41,10 @@ function leadingIndent(text: string, atOffset: number): string {
  * top-level symbol (indent === "") the code is returned unchanged.
  */
 function reindent(code: string, indent: string): string {
-  if (indent === "") return code;
-  const lines = code.split("\n");
+  if (indent === '') return code;
+  const lines = code.split('\n');
   if (lines.length === 1) return code;
-  return lines.map((l, i) => (i === 0 || l === "" ? l : indent + l)).join("\n");
+  return lines.map((l, i) => (i === 0 || l === '' ? l : indent + l)).join('\n');
 }
 
 /**
@@ -59,7 +59,7 @@ export async function editSymbol(
   op: SymbolOp,
   code?: string,
 ): Promise<SymbolEditResult> {
-  const { Project } = await import("ts-morph");
+  const { Project } = await import('ts-morph');
   const project = new Project({
     useInMemoryFileSystem: true,
     compilerOptions: { allowJs: true, jsx: ts.JsxEmit.Preserve, noEmit: true },
@@ -71,15 +71,15 @@ export async function editSymbol(
   const indent = leadingIndent(original, start);
 
   let next: string;
-  if (op === "remove") {
+  if (op === 'remove') {
     // Drop the node, its own line's leading indentation, and the trailing
     // newline so no blank gap is left behind.
-    const lineStart = original.lastIndexOf("\n", start - 1) + 1;
-    const cutStart = original.slice(lineStart, start).trim() === "" ? lineStart : start;
+    const lineStart = original.lastIndexOf('\n', start - 1) + 1;
+    const cutStart = original.slice(lineStart, start).trim() === '' ? lineStart : start;
     let cutEnd = end;
-    if (original[cutEnd] === "\n") cutEnd++;
+    if (original[cutEnd] === '\n') cutEnd++;
     next = original.slice(0, cutStart) + original.slice(cutEnd);
-  } else if (op === "replace") {
+  } else if (op === 'replace') {
     if (code == null) throw new Error(`op "replace" requires code`);
     next = original.slice(0, start) + reindent(code, indent) + original.slice(end);
   } else {
@@ -108,7 +108,7 @@ export interface CrossFileRenameResult {
 function findNearestTsconfig(absFile: string, repoRoot: string): string | undefined {
   let dir = path.dirname(absFile);
   for (;;) {
-    const cand = path.join(dir, "tsconfig.json");
+    const cand = path.join(dir, 'tsconfig.json');
     if (fs.existsSync(cand)) return cand;
     if (dir === repoRoot || dir === path.dirname(dir)) return undefined;
     dir = path.dirname(dir);
@@ -132,11 +132,12 @@ export async function renameSymbolCrossFile(
     throw new Error(`invalid identifier: ${JSON.stringify(newName)}`);
   }
   const tsconfig = findNearestTsconfig(absFile, repoRoot);
-  const { Project } = await import("ts-morph");
+  const { Project } = await import('ts-morph');
   const project = tsconfig
     ? new Project({ tsConfigFilePath: tsconfig })
     : new Project({ compilerOptions: { allowJs: true, noEmit: true } });
-  if (!tsconfig) project.addSourceFilesAtPaths(path.join(path.dirname(absFile), "**/*.{ts,tsx,js,jsx}"));
+  if (!tsconfig)
+    project.addSourceFilesAtPaths(path.join(path.dirname(absFile), '**/*.{ts,tsx,js,jsx}'));
 
   const sf = project.getSourceFile(absFile) ?? project.addSourceFileAtPath(absFile);
   const original = new Map<string, string>();
@@ -145,7 +146,7 @@ export async function renameSymbolCrossFile(
   const text = sf.getFullText();
   let offset = 0;
   for (let l = 1; l < line; l++) {
-    const nl = text.indexOf("\n", offset);
+    const nl = text.indexOf('\n', offset);
     if (nl === -1) throw new Error(`line ${line} out of range`);
     offset = nl + 1;
   }
@@ -153,10 +154,10 @@ export async function renameSymbolCrossFile(
   const node = sf.getDescendantAtPos(offset);
   if (!node) throw new Error(`no node at ${line}:${column}`);
   const id =
-    node.getKindName() === "Identifier"
+    node.getKindName() === 'Identifier'
       ? node
       : node.getFirstAncestorByKind?.(ts.SyntaxKind.Identifier);
-  if (!id || id.getKindName() !== "Identifier") {
+  if (!id || id.getKindName() !== 'Identifier') {
     throw new Error(`position ${line}:${column} is not an identifier (got ${node.getKindName()})`);
   }
   const oldName = id.getText();
@@ -168,13 +169,13 @@ export async function renameSymbolCrossFile(
   renameable.rename(newName);
 
   const changes = new Map<string, string>();
-  const validations: CrossFileRenameResult["validations"] = [];
+  const validations: CrossFileRenameResult['validations'] = [];
   for (const f of project.getSourceFiles()) {
     const p = f.getFilePath();
-    const before = original.get(p) ?? "";
+    const before = original.get(p) ?? '';
     const after = f.getFullText();
     if (after === before) continue;
-    const rel = path.relative(repoRoot, p).split(path.sep).join("/");
+    const rel = path.relative(repoRoot, p).split(path.sep).join('/');
     const v = validate(rel, before, after);
     validations.push({ file: rel, ok: v.ok, introduced: v.introduced });
     changes.set(rel, after);
@@ -186,16 +187,16 @@ export async function renameSymbolCrossFile(
 //        semantic-edit, but routed through validate()+atomic write so they
 //        cannot persist broken code, unlike the original). ───────────────────
 
-const TS_EXT = new Set([".ts", ".tsx", ".mts", ".cts", ".js", ".jsx", ".mjs", ".cjs"]);
+const TS_EXT = new Set(['.ts', '.tsx', '.mts', '.cts', '.js', '.jsx', '.mjs', '.cjs']);
 
 function assertTs(file: string, op: string): void {
-  const i = file.lastIndexOf(".");
-  const ext = i < 0 ? "" : file.slice(i).toLowerCase();
-  if (!TS_EXT.has(ext)) throw new Error(`${op} only supports TS/JS files, got ${ext || "(none)"}`);
+  const i = file.lastIndexOf('.');
+  const ext = i < 0 ? '' : file.slice(i).toLowerCase();
+  if (!TS_EXT.has(ext)) throw new Error(`${op} only supports TS/JS files, got ${ext || '(none)'}`);
 }
 
 async function tsmProject(file: string, text: string) {
-  const { Project } = await import("ts-morph");
+  const { Project } = await import('ts-morph');
   const project = new Project({
     useInMemoryFileSystem: true,
     compilerOptions: { allowJs: true, jsx: ts.JsxEmit.Preserve, noEmit: true },
@@ -231,7 +232,13 @@ function guardedMutation(
     if (/manipulation|syntax|parse|Error replacing/i.test(msg)) {
       return {
         newText: original,
-        validation: { language: "ts", before: 0, after: 1, ok: false, introduced: msg.split("\n")[0] },
+        validation: {
+          language: 'ts',
+          before: 0,
+          after: 1,
+          ok: false,
+          introduced: msg.split('\n')[0],
+        },
         detail,
       };
     }
@@ -247,28 +254,47 @@ export async function addNamedImport(
   name: string,
   alias?: string,
 ): Promise<SemanticEditResult> {
-  assertTs(file, "add_import");
+  assertTs(file, 'add_import');
   const sf = await tsmProject(file, original);
-  const decls = sf.getImportDeclarations().filter((d) => d.getModuleSpecifierValue() === moduleSpecifier);
-  if (decls.length > 1) throw new Error(`module "${moduleSpecifier}" has ${decls.length} import declarations; ambiguous`);
+  const decls = sf
+    .getImportDeclarations()
+    .filter((d) => d.getModuleSpecifierValue() === moduleSpecifier);
+  if (decls.length > 1)
+    throw new Error(
+      `module "${moduleSpecifier}" has ${decls.length} import declarations; ambiguous`,
+    );
   const local = alias ?? name;
   if (decls.length === 1) {
     const exists = decls[0]
       .getNamedImports()
-      .some((ni) => ni.getName() === name && (ni.getAliasNode()?.getText() ?? ni.getName()) === local);
+      .some(
+        (ni) => ni.getName() === name && (ni.getAliasNode()?.getText() ?? ni.getName()) === local,
+      );
     if (exists) {
-      return { newText: original, validation: validate(file, original, original), detail: { action: "already-present", moduleSpecifier, name } };
+      return {
+        newText: original,
+        validation: validate(file, original, original),
+        detail: { action: 'already-present', moduleSpecifier, name },
+      };
     }
   }
-  const action = decls.length === 0 ? "created-declaration" : "added-specifier";
-  return guardedMutation(file, original, { action, moduleSpecifier, name, alias: alias ?? null }, () => {
-    if (decls.length === 0) {
-      sf.addImportDeclaration({ moduleSpecifier, namedImports: [alias ? { name, alias } : { name }] });
-    } else {
-      decls[0].addNamedImport(alias ? { name, alias } : { name });
-    }
-    return sf.getFullText();
-  });
+  const action = decls.length === 0 ? 'created-declaration' : 'added-specifier';
+  return guardedMutation(
+    file,
+    original,
+    { action, moduleSpecifier, name, alias: alias ?? null },
+    () => {
+      if (decls.length === 0) {
+        sf.addImportDeclaration({
+          moduleSpecifier,
+          namedImports: [alias ? { name, alias } : { name }],
+        });
+      } else {
+        decls[0].addNamedImport(alias ? { name, alias } : { name });
+      }
+      return sf.getFullText();
+    },
+  );
 }
 
 /** Remove a named import by imported-or-local name; drops the declaration if it was the last. */
@@ -278,19 +304,24 @@ export async function removeNamedImport(
   moduleSpecifier: string,
   name: string,
 ): Promise<SemanticEditResult> {
-  assertTs(file, "remove_import");
+  assertTs(file, 'remove_import');
   const sf = await tsmProject(file, original);
-  const decls = sf.getImportDeclarations().filter((d) => d.getModuleSpecifierValue() === moduleSpecifier);
-  if (decls.length !== 1) throw new Error(`module "${moduleSpecifier}" matched ${decls.length} import declarations`);
+  const decls = sf
+    .getImportDeclarations()
+    .filter((d) => d.getModuleSpecifierValue() === moduleSpecifier);
+  if (decls.length !== 1)
+    throw new Error(`module "${moduleSpecifier}" matched ${decls.length} import declarations`);
   const decl = decls[0];
   const named = decl.getNamedImports();
-  const target = named.find((ni) => ni.getName() === name || (ni.getAliasNode()?.getText() ?? ni.getName()) === name);
+  const target = named.find(
+    (ni) => ni.getName() === name || (ni.getAliasNode()?.getText() ?? ni.getName()) === name,
+  );
   if (!target) throw new Error(`named import "${name}" not found for "${moduleSpecifier}"`);
   const dropDecl = named.length === 1 && !decl.getDefaultImport() && !decl.getNamespaceImport();
   return guardedMutation(
     file,
     original,
-    { action: dropDecl ? "removed-declaration" : "removed-specifier", moduleSpecifier, name },
+    { action: dropDecl ? 'removed-declaration' : 'removed-specifier', moduleSpecifier, name },
     () => {
       if (dropDecl) decl.remove();
       else target.remove();
@@ -311,27 +342,28 @@ export async function replacePropertyValue(
   valueCode: string,
   selector?: string,
 ): Promise<SemanticEditResult> {
-  assertTs(file, "replace_property_value");
-  const { SyntaxKind } = await import("ts-morph");
+  assertTs(file, 'replace_property_value');
+  const { SyntaxKind } = await import('ts-morph');
   const sf = await tsmProject(file, original);
   const scopeNode = selector ? resolveSymbol(sf, selector).node : sf;
-  const hits = scopeNode
-    .getDescendantsOfKind(SyntaxKind.PropertyAssignment)
-    .filter((pa) => {
-      const n = pa.getNameNode();
-      const k = n.getKind();
-      const nm =
-        k === SyntaxKind.Identifier || k === SyntaxKind.StringLiteral || k === SyntaxKind.NumericLiteral
-          ? n.getText().replace(/^['"]|['"]$/g, "")
-          : null;
-      return nm === property;
-    });
-  if (hits.length === 0) throw new Error(`property "${property}" not found${selector ? ` in ${selector}` : ""}`);
+  const hits = scopeNode.getDescendantsOfKind(SyntaxKind.PropertyAssignment).filter((pa) => {
+    const n = pa.getNameNode();
+    const k = n.getKind();
+    const nm =
+      k === SyntaxKind.Identifier ||
+      k === SyntaxKind.StringLiteral ||
+      k === SyntaxKind.NumericLiteral
+        ? n.getText().replace(/^['"]|['"]$/g, '')
+        : null;
+    return nm === property;
+  });
+  if (hits.length === 0)
+    throw new Error(`property "${property}" not found${selector ? ` in ${selector}` : ''}`);
   if (hits.length > 1) {
     throw new Error(
       `property "${property}" matched ${hits.length} assignments (lines ${hits
         .map((h) => h.getStartLineNumber())
-        .join(", ")}); pass a selector to disambiguate`,
+        .join(', ')}); pass a selector to disambiguate`,
     );
   }
   const line = hits[0].getStartLineNumber();
@@ -345,8 +377,8 @@ export async function replacePropertyValue(
  * itself is atomic; this is just so the agent/human can verify before
  * commit, addressing the "blind edit" failure mode). */
 export function previewDiff(before: string, after: string, label: string): string {
-  const a = before.split("\n");
-  const b = after.split("\n");
+  const a = before.split('\n');
+  const b = after.split('\n');
   // simple LCS-free context diff: find first/last divergence
   let head = 0;
   while (head < a.length && head < b.length && a[head] === b[head]) head++;
@@ -363,5 +395,100 @@ export function previewDiff(before: string, after: string, label: string): strin
   for (let i = head; i <= tailA; i++) lines.push(`- ${a[i]}`);
   for (let i = head; i <= tailB; i++) lines.push(`+ ${b[i]}`);
   for (let i = tailA + 1; i <= Math.min(a.length - 1, tailA + ctx); i++) lines.push(`  ${a[i]}`);
-  return lines.join("\n");
+  return lines.join('\n');
+}
+
+// ─── Atomic char-level diff ──────────────────────────────────────────────
+// previewDiff above is the line-oriented +/- block the CLI harness already
+// paints (whole line red / whole line green even for a 1-char change).
+// characterDiff below is the TRUE atomic proof: preserved chars stay
+// neutral, removed chars are red inside [- -], added chars green inside
+// {+ +}. A whole line only shows as line-removed/added when the whole line
+// was genuinely born or destroyed. ANSI-colored AND bracket-marked so it
+// stays legible on no-color terminals (git --word-diff convention). This
+// is returned in every mutating tool's payload, so the operator SEES the
+// atomicity in the tool output even though the harness's own +/- block
+// (which we cannot disable) keeps rendering line-level beside it.
+
+const ESC = '[';
+const RESET = `${ESC}0m`;
+const RED = `${ESC}31m`;
+const GREEN = `${ESC}32m`;
+const DIM = `${ESC}2m`;
+
+// LCS char-diff is O(n*m); only the divergent line block is fed to it, but
+// cap it so a genuine large rewrite falls back to line markers (honest
+// there — the whole block really did change) instead of blowing memory.
+const CHAR_DIFF_CAP = 6000;
+
+/** LCS over characters → inline [-removed-]{+added+} segments with ANSI. */
+function renderCharDiff(oldStr: string, newStr: string): string {
+  const n = oldStr.length;
+  const m = newStr.length;
+  const dp: number[][] = Array.from({ length: n + 1 }, () => new Array<number>(m + 1).fill(0));
+  for (let i = n - 1; i >= 0; i--) {
+    for (let j = m - 1; j >= 0; j--) {
+      dp[i][j] =
+        oldStr[i] === newStr[j] ? dp[i + 1][j + 1] + 1 : Math.max(dp[i + 1][j], dp[i][j + 1]);
+    }
+  }
+  let i = 0;
+  let j = 0;
+  let out = '';
+  let delBuf = '';
+  let addBuf = '';
+  const flush = (): void => {
+    if (delBuf) out += `${RED}[-${delBuf}-]${RESET}`;
+    if (addBuf) out += `${GREEN}{+${addBuf}+}${RESET}`;
+    delBuf = '';
+    addBuf = '';
+  };
+  while (i < n && j < m) {
+    if (oldStr[i] === newStr[j]) {
+      flush();
+      out += oldStr[i];
+      i++;
+      j++;
+    } else if (dp[i + 1][j] >= dp[i][j + 1]) {
+      delBuf += oldStr[i++];
+    } else {
+      addBuf += newStr[j++];
+    }
+  }
+  while (i < n) delBuf += oldStr[i++];
+  while (j < m) addBuf += newStr[j++];
+  flush();
+  return out;
+}
+
+/**
+ * Character-granular inline diff of `before`→`after`. Trims common leading
+ * and trailing lines, char-diffs only the divergent block, and prints it
+ * with 2 lines of neutral context for orientation.
+ */
+export function characterDiff(before: string, after: string, label: string): string {
+  if (before === after) return `${DIM}= ${label} (no change)${RESET}`;
+  const a = before.split('\n');
+  const b = after.split('\n');
+  let head = 0;
+  while (head < a.length && head < b.length && a[head] === b[head]) head++;
+  let tailA = a.length - 1;
+  let tailB = b.length - 1;
+  while (tailA >= head && tailB >= head && a[tailA] === b[tailB]) {
+    tailA--;
+    tailB--;
+  }
+  const oldBlock = a.slice(head, tailA + 1).join('\n');
+  const newBlock = b.slice(head, tailB + 1).join('\n');
+  const ctx = 2;
+  const out: string[] = [`${DIM}--- ${label} (atomic char-level)${RESET}`];
+  for (let i = Math.max(0, head - ctx); i < head; i++) out.push(`  ${a[i]}`);
+  if (oldBlock.length + newBlock.length > CHAR_DIFF_CAP) {
+    for (let i = head; i <= tailA; i++) out.push(`${RED}- ${a[i]}${RESET}`);
+    for (let i = head; i <= tailB; i++) out.push(`${GREEN}+ ${b[i]}${RESET}`);
+  } else {
+    for (const ln of renderCharDiff(oldBlock, newBlock).split('\n')) out.push(`  ${ln}`);
+  }
+  for (let i = tailA + 1; i <= Math.min(a.length - 1, tailA + ctx); i++) out.push(`  ${a[i]}`);
+  return out.join('\n');
 }
