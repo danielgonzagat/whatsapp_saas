@@ -4,6 +4,7 @@ import { RequireAdminPermission } from '../auth/decorators/admin-permission.deco
 import { AdminAuthGuard } from '../auth/guards/admin-auth.guard';
 import { AdminPermissionGuard } from '../auth/guards/admin-permission.guard';
 import { RuntimeConversationTracerService } from '../../kloel/runtime-conversation-tracer.service';
+import { InternalEndpoint } from '../../common/decorators/internal-endpoint.decorator';
 
 @Controller('admin/runtime')
 @UseGuards(AdminAuthGuard, AdminPermissionGuard)
@@ -12,6 +13,7 @@ export class RuntimeTraceController {
 
   constructor(private readonly tracer: RuntimeConversationTracerService) {}
 
+  @InternalEndpoint('admin runtime trace lookup')
   @Get('trace')
   @RequireAdminPermission(AdminModule.RELATORIOS, AdminAction.VIEW)
   getTrace(

@@ -2,6 +2,7 @@ import { Body, Controller, Post, Req, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { resolveWorkspaceId } from '../auth/workspace-access';
+import { InternalEndpoint } from '../common/decorators/internal-endpoint.decorator';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { RouteClass } from '../common/throttler/route-class.decorator';
 import { CopilotService } from './copilot.service';
@@ -33,6 +34,7 @@ type CopilotSuggestMultipleBody = CopilotSuggestBody & {
 export class CopilotController {
   constructor(private readonly copilot: CopilotService) {}
 
+  @InternalEndpoint('sales copilot single suggestion')
   @Post('suggest')
   @ApiOperation({ summary: 'Generate one sales copilot suggestion' })
   suggest(@Req() req: CopilotRequest, @Body() body: CopilotSuggestBody = {}) {
@@ -44,6 +46,7 @@ export class CopilotController {
     });
   }
 
+  @InternalEndpoint('sales copilot suggestion batch')
   @Post('suggest/multiple')
   @ApiOperation({ summary: 'Generate multiple sales copilot suggestions' })
   suggestMultiple(@Req() req: CopilotRequest, @Body() body: CopilotSuggestMultipleBody = {}) {
