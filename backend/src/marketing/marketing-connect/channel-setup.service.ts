@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
-import type { Prisma } from '@prisma/client';
+import { toPrismaJsonValue } from '../../common/prisma/prisma-json.util';
 import { PrismaService } from '../../prisma/prisma.service';
 import { asProviderSettings } from '../../whatsapp/provider-settings.types';
 import {
@@ -76,13 +76,13 @@ export class ChannelSetupService {
       this.prisma.workspace.update({
         where: { id: workspaceId },
         data: {
-          providerSettings: {
+          providerSettings: toPrismaJsonValue({
             ...currentSettings,
             marketingChannelSetup: {
               ...allSetups,
               [channel]: nextSetup,
             },
-          } as unknown as Prisma.InputJsonObject,
+          }),
         },
       }),
       this.prisma.channelSetup.upsert({

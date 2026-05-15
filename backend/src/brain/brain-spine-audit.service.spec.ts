@@ -1,12 +1,9 @@
-import { Test, TestingModule } from '@nestjs/testing';
 import { PrismaService } from '../prisma/prisma.service';
 import { BrainSpineAuditService, SpineAuditResult } from './brain-spine-audit.service';
 
 describe('BrainSpineAuditService', () => {
-  let service: BrainSpineAuditService;
-
   function buildAuditService(queryRawMock: jest.Mock) {
-    const prisma = { $queryRawUnsafe: queryRawMock } as unknown as PrismaService;
+    const prisma = { $queryRawUnsafe: queryRawMock } as PrismaService;
     return new BrainSpineAuditService(prisma);
   }
 
@@ -87,9 +84,27 @@ describe('BrainSpineAuditService', () => {
 
     it('sorts capabilities by mismatch desc then invocations desc', async () => {
       const mock = jest.fn().mockResolvedValue([
-        { capability: 'a', action: 'capability.executed', traceId: 'x1', at: '2026-05-12T10:00:00.000Z', requestId: 'r1' },
-        { capability: 'b', action: 'capability.executed', traceId: 'x2', at: '2026-05-12T10:00:00.000Z', requestId: 'r2' },
-        { capability: 'b', action: 'brain.capability.invoked', traceId: 'x3', at: '2026-05-12T10:00:00.000Z', requestId: 'r2' },
+        {
+          capability: 'a',
+          action: 'capability.executed',
+          traceId: 'x1',
+          at: '2026-05-12T10:00:00.000Z',
+          requestId: 'r1',
+        },
+        {
+          capability: 'b',
+          action: 'capability.executed',
+          traceId: 'x2',
+          at: '2026-05-12T10:00:00.000Z',
+          requestId: 'r2',
+        },
+        {
+          capability: 'b',
+          action: 'brain.capability.invoked',
+          traceId: 'x3',
+          at: '2026-05-12T10:00:00.000Z',
+          requestId: 'r2',
+        },
       ]);
 
       const svc = buildAuditService(mock);
@@ -104,12 +119,48 @@ describe('BrainSpineAuditService', () => {
 
     it('covers multiple capabilities with mixed outcomes', async () => {
       const mock = jest.fn().mockResolvedValue([
-        { capability: 'list_products', action: 'brain.capability.invoked', traceId: 'e1', at: '2026-05-12T10:00:00.000Z', requestId: 'r1' },
-        { capability: 'list_products', action: 'capability.executed', traceId: 'e2', at: '2026-05-12T10:00:01.000Z', requestId: 'r1' },
-        { capability: 'search_contact', action: 'brain.capability.invoked', traceId: 'e3', at: '2026-05-12T10:01:00.000Z', requestId: 'r2' },
-        { capability: 'search_contact', action: 'capability.failed', traceId: 'e4', at: '2026-05-12T10:01:01.000Z', requestId: 'r2' },
-        { capability: 'query_revenue_summary', action: 'capability.executed', traceId: 'e5', at: '2026-05-12T10:02:00.000Z', requestId: 'r3' },
-        { capability: 'query_revenue_summary', action: 'capability.executed', traceId: 'e6', at: '2026-05-12T10:03:00.000Z', requestId: 'r4' },
+        {
+          capability: 'list_products',
+          action: 'brain.capability.invoked',
+          traceId: 'e1',
+          at: '2026-05-12T10:00:00.000Z',
+          requestId: 'r1',
+        },
+        {
+          capability: 'list_products',
+          action: 'capability.executed',
+          traceId: 'e2',
+          at: '2026-05-12T10:00:01.000Z',
+          requestId: 'r1',
+        },
+        {
+          capability: 'search_contact',
+          action: 'brain.capability.invoked',
+          traceId: 'e3',
+          at: '2026-05-12T10:01:00.000Z',
+          requestId: 'r2',
+        },
+        {
+          capability: 'search_contact',
+          action: 'capability.failed',
+          traceId: 'e4',
+          at: '2026-05-12T10:01:01.000Z',
+          requestId: 'r2',
+        },
+        {
+          capability: 'query_revenue_summary',
+          action: 'capability.executed',
+          traceId: 'e5',
+          at: '2026-05-12T10:02:00.000Z',
+          requestId: 'r3',
+        },
+        {
+          capability: 'query_revenue_summary',
+          action: 'capability.executed',
+          traceId: 'e6',
+          at: '2026-05-12T10:03:00.000Z',
+          requestId: 'r4',
+        },
       ]);
 
       const svc = buildAuditService(mock);

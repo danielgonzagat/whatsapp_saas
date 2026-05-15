@@ -24,6 +24,16 @@ type CheckoutOrderForEffects = {
     } | null;
   } | null;
 };
+type ConvertedLeadPayload = {
+  capturedLeadId?: unknown;
+  deviceFingerprint?: unknown;
+  [key: string]: unknown;
+};
+type MemberEnrollmentCreateArgs = { data: Record<string, unknown> };
+type MemberAreaUpdateManyArgs = {
+  where: { id: string; workspaceId: string };
+  data: { totalStudents: number; avgCompletion: number };
+};
 const makeOrder = (overrides: Partial<CheckoutOrderForEffects> = {}): CheckoutOrderForEffects => ({
   id: 'order_1',
   orderNumber: 'ORD-001',
@@ -54,18 +64,25 @@ const makeOrder = (overrides: Partial<CheckoutOrderForEffects> = {}): CheckoutOr
 describe('CheckoutPostPaymentEffectsService', () => {
   let service: CheckoutPostPaymentEffectsService;
   let prisma: {
-    memberArea: { findMany: jest.Mock; updateMany: jest.Mock };
+    memberArea: {
+      findMany: jest.Mock;
+      updateMany: jest.Mock<Promise<{ count: number }>, [MemberAreaUpdateManyArgs]>;
+    };
     memberEnrollment: {
       findFirst: jest.Mock;
-      create: jest.Mock;
+      create: jest.Mock<Promise<{ id: string }>, [MemberEnrollmentCreateArgs]>;
       aggregate: jest.Mock;
     };
   };
   let facebookCAPI: { sendEvent: jest.Mock };
-  let checkoutSocialLeadService: { markConvertedFromOrder: jest.Mock };
-  let memberAreaUpdateMock: jest.Mock;
+  let checkoutSocialLeadService: {
+    markConvertedFromOrder: jest.Mock<Promise<void>, [ConvertedLeadPayload]>;
+  };
+  let memberAreaUpdateMock: jest.Mock<Promise<{ count: number }>, [MemberAreaUpdateManyArgs]>;
   beforeEach(() => {
-    memberAreaUpdateMock = jest.fn().mockResolvedValue({ count: 1 });
+    memberAreaUpdateMock = jest
+      .fn<Promise<{ count: number }>, [MemberAreaUpdateManyArgs]>()
+      .mockResolvedValue({ count: 1 });
     prisma = {
       memberArea: {
         findMany: jest.fn().mockResolvedValue([]),
@@ -73,7 +90,9 @@ describe('CheckoutPostPaymentEffectsService', () => {
       },
       memberEnrollment: {
         findFirst: jest.fn().mockResolvedValue(null),
-        create: jest.fn().mockResolvedValue({ id: 'enr_1' }),
+        create: jest.fn<Promise<{ id: string }>, [MemberEnrollmentCreateArgs]>().mockResolvedValue({
+          id: 'enr_1',
+        }),
         aggregate: jest.fn().mockResolvedValue({
           _count: { _all: 0 },
           _avg: { progress: 0 },
@@ -82,10 +101,12 @@ describe('CheckoutPostPaymentEffectsService', () => {
     };
     facebookCAPI = { sendEvent: jest.fn().mockResolvedValue(undefined) };
     checkoutSocialLeadService = {
-      markConvertedFromOrder: jest.fn().mockResolvedValue(undefined),
+      markConvertedFromOrder: jest
+        .fn<Promise<void>, [ConvertedLeadPayload]>()
+        .mockResolvedValue(undefined),
     };
     service = new CheckoutPostPaymentEffectsService(
-      prisma as unknown as PrismaService,
+      prisma as PrismaService,
       facebookCAPI as never,
       checkoutSocialLeadService as never,
     );
@@ -139,7 +160,7 @@ describe('CheckoutPostPaymentEffectsService', () => {
     it('handles null/undefined metadata gracefully', async () => {
       const order = makeOrder({ metadata: null });
       await service.markLeadConverted(order, 'ws_1');
-      const [payload] = checkoutSocialLeadService.markConvertedFromOrder.mock.calls[0];
+      const [payload] = checkoutSocialLeadService.markConvertedFromOrder.mock.calls[0]!;
       expect(payload).not.toHaveProperty('capturedLeadId');
       expect(payload).not.toHaveProperty('deviceFingerprint');
     });
@@ -294,7 +315,7 @@ describe('CheckoutPostPaymentEffectsService', () => {
 
       await service.markLeadConverted(order, 'ws_1');
 
-      const createCall = prisma.memberEnrollment.create.mock.calls[0][0] as Record<string, unknown>;
+      const [createCall] = prisma.memberEnrollment.create.mock.calls[0]!;
       expect(createCall.data).toEqual(
         expect.objectContaining({
           workspaceId: 'ws_1',
@@ -303,15 +324,10 @@ describe('CheckoutPostPaymentEffectsService', () => {
           studentName: 'Test Customer',
         }),
       );
-      expect(memberAreaUpdateMock).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: { id: 'ma_1', workspaceId: 'ws_1' },
-          data: expect.objectContaining({
-            totalStudents: 1,
-            avgCompletion: 50,
-          }),
-        }),
-      );
+      const [memberAreaUpdateCall] = memberAreaUpdateMock.mock.calls[0]!;
+      expect(memberAreaUpdateCall.where).toEqual({ id: 'ma_1', workspaceId: 'ws_1' });
+      expect(memberAreaUpdateCall.data.totalStudents).toBe(1);
+      expect(memberAreaUpdateCall.data.avgCompletion).toBe(50);
     });
 
     it('skips enrollment when enrollment already exists', async () => {
@@ -348,7 +364,7 @@ describe('CheckoutPostPaymentEffectsService', () => {
 
       await service.markLeadConverted(order, 'ws_1');
 
-      const createCall = prisma.memberEnrollment.create.mock.calls[0][0] as Record<string, unknown>;
+      const [createCall] = prisma.memberEnrollment.create.mock.calls[0]!;
       expect(createCall.data).toEqual(
         expect.objectContaining({
           studentName: 'Aluno',

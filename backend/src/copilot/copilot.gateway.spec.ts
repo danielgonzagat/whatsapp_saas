@@ -9,15 +9,20 @@ jest.mock('../common/redis/redis.util', () => ({
 import { createRedisClient } from '../common/redis/redis.util';
 
 type SocketOverrides = Partial<Pick<Socket, 'id' | 'handshake' | 'join'>>;
+type CopilotRoomTarget = { emit: jest.Mock<void, [string, unknown]> };
 
 function mockSocket(overrides: SocketOverrides = {}): Socket {
-  return { id: 'test-socket-id', ...overrides } as unknown as Socket;
+  return { id: 'test-socket-id', ...overrides } as Socket;
+}
+
+function makeCopilotRoomTarget(): CopilotRoomTarget {
+  return { emit: jest.fn<void, [string, unknown]>() };
 }
 
 describe('CopilotGateway', () => {
   let gateway: CopilotGateway;
   let mockServer: {
-    to: jest.Mock<{ emit: jest.Mock<void, [string, unknown]> }, [string]>;
+    to: jest.Mock<CopilotRoomTarget, [string]>;
     emit: jest.Mock<void, [string, unknown]>;
   };
   let mockSub: {
@@ -32,23 +37,23 @@ describe('CopilotGateway', () => {
     jest.clearAllMocks();
 
     mockServer = {
-      to: jest.fn().mockReturnValue({ emit: jest.fn() }),
-      emit: jest.fn(),
+      to: jest.fn<CopilotRoomTarget, [string]>().mockReturnValue(makeCopilotRoomTarget()),
+      emit: jest.fn<void, [string, unknown]>(),
     };
 
     mockSub = {
-      psubscribe: jest.fn().mockResolvedValue(undefined),
-      on: jest.fn(),
+      psubscribe: jest.fn<Promise<void>, [string]>().mockResolvedValue(undefined),
+      on: jest.fn<void, [string, (pattern: string, channel: string, message: string) => void]>(),
     };
 
     mockOpsAlert = {
-      alertOnCriticalError: jest.fn().mockResolvedValue(undefined),
+      alertOnCriticalError: jest.fn<Promise<void>, [Error, string]>().mockResolvedValue(undefined),
     };
 
     (createRedisClient as jest.Mock).mockReturnValue(mockSub);
 
-    gateway = new CopilotGateway(mockOpsAlert as unknown as OpsAlertService);
-    (gateway as unknown as { server: typeof mockServer }).server = mockServer;
+    gateway = new CopilotGateway(mockOpsAlert as OpsAlertService);
+    (gateway as { server: typeof mockServer }).server = mockServer;
   });
 
   describe('onModuleInit', () => {
@@ -59,7 +64,7 @@ describe('CopilotGateway', () => {
       const handler = mockSub.on.mock.calls[0][1];
       expect(mockSub.on.mock.calls[0][0]).toBe('pmessage');
       expect(typeof handler).toBe('function');
-      const roomEmit = jest.fn();
+      const roomEmit = jest.fn<void, [string, unknown]>();
       mockServer.to.mockReturnValue({ emit: roomEmit });
 
       handler(
@@ -100,7 +105,7 @@ describe('CopilotGateway', () => {
 
     it('does not crash when opsAlert is not injected and parse error occurs', async () => {
       const gatewayNoAlert = new CopilotGateway();
-      (gatewayNoAlert as unknown as { server: typeof mockServer }).server = mockServer;
+      (gatewayNoAlert as { server: typeof mockServer }).server = mockServer;
 
       await gatewayNoAlert.onModuleInit();
 

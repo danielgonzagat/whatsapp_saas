@@ -1,7 +1,4 @@
-import {
-  NotFoundException,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { CheckoutSocialProvider } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { GoogleAuthService } from '../auth/google-auth.service';
@@ -130,10 +127,10 @@ describe('CheckoutSocialLeadService', () => {
     };
 
     service = new CheckoutSocialLeadService(
-      prisma as unknown as PrismaService,
-      googleAuth as unknown as GoogleAuthService,
-      facebookAuth as unknown as FacebookAuthService,
-      appleAuth as unknown as AppleAuthService,
+      prisma as PrismaService,
+      googleAuth as GoogleAuthService,
+      facebookAuth as FacebookAuthService,
+      appleAuth as AppleAuthService,
     );
   });
 
@@ -146,9 +143,7 @@ describe('CheckoutSocialLeadService', () => {
     });
 
     it('throws UnauthorizedException when Google verification fails', async () => {
-      googleAuth.verifyCredential.mockRejectedValueOnce(
-        new UnauthorizedException('Invalid token'),
-      );
+      googleAuth.verifyCredential.mockRejectedValueOnce(new UnauthorizedException('Invalid token'));
       await expect(
         service.captureLead({ slug: 'test-plan', provider: 'google', credential: 'bad' } as never),
       ).rejects.toThrow(UnauthorizedException);
@@ -197,13 +192,24 @@ describe('CheckoutSocialLeadService', () => {
 
   describe('markConvertedFromOrder', () => {
     it('marks a lead as CONVERTED by capturedLeadId', async () => {
-      const mockUpdate = jest.fn().mockResolvedValue({
-        id: 'lead-1',
-        workspaceId: 'ws-1',
-        status: 'CONVERTED',
-        convertedAt: new Date(),
-        convertedOrderId: 'order-1',
-      });
+      const mockUpdate = jest
+        .fn<
+          Promise<{
+            id: string;
+            workspaceId: string;
+            status: string;
+            convertedAt: Date;
+            convertedOrderId: string;
+          }>,
+          [{ data: { status: string; convertedOrderId: string } }]
+        >()
+        .mockResolvedValue({
+          id: 'lead-1',
+          workspaceId: 'ws-1',
+          status: 'CONVERTED',
+          convertedAt: new Date(),
+          convertedOrderId: 'order-1',
+        });
       prisma.checkoutSocialLead.findFirst = jest.fn().mockResolvedValue({ id: 'lead-1' });
       prisma.checkoutSocialLead.update = mockUpdate;
 
@@ -219,14 +225,9 @@ describe('CheckoutSocialLeadService', () => {
         status: 'CONVERTED',
         convertedOrderId: 'order-1',
       });
-      expect(mockUpdate).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: expect.objectContaining({
-            status: 'CONVERTED',
-            convertedOrderId: 'order-1',
-          }),
-        }),
-      );
+      const [updateArgs] = mockUpdate.mock.calls[0]!;
+      expect(updateArgs.data.status).toBe('CONVERTED');
+      expect(updateArgs.data.convertedOrderId).toBe('order-1');
     });
   });
 });

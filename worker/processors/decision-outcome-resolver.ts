@@ -19,16 +19,26 @@ const OUTCOME_MAP: Record<string, { outcomeName: string; success: boolean }> = {
 const log = new WorkerLogger('decision-outcome-resolver');
 
 function extractChannel(contextSnapshot: unknown): string | undefined {
-  if (
-    contextSnapshot &&
-    typeof contextSnapshot === 'object' &&
-    !Array.isArray(contextSnapshot)
-  ) {
+  if (contextSnapshot && typeof contextSnapshot === 'object' && !Array.isArray(contextSnapshot)) {
     const ctx = contextSnapshot as Record<string, unknown>;
     const channel = ctx.channel;
     return typeof channel === 'string' ? channel : undefined;
   }
   return undefined;
+}
+
+function isSweepExpiredJobData(
+  value: unknown,
+): value is { workspaceId: string; maxAgeHours?: number } {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return false;
+  }
+  const data = value as Record<string, unknown>;
+  const hasWorkspaceId = typeof data.workspaceId === 'string' && data.workspaceId.trim() !== '';
+  const hasValidMaxAge =
+    data.maxAgeHours === undefined ||
+    (typeof data.maxAgeHours === 'number' && Number.isFinite(data.maxAgeHours));
+  return hasWorkspaceId && hasValidMaxAge;
 }
 
 export const decisionOutcomeWorker = new Worker(
@@ -131,7 +141,10 @@ export const decisionOutcomeWorker = new Worker(
       }
 
       if (job.name === 'sweep-expired') {
-        const sweepData = job.data as unknown as { workspaceId: string; maxAgeHours?: number };
+        if (!isSweepExpiredJobData(job.data)) {
+          throw new Error('invalid_sweep_expired_job_payload');
+        }
+        const sweepData = job.data;
         const { workspaceId, maxAgeHours } = sweepData;
         const cutoff = new Date(Date.now() - (maxAgeHours ?? 48) * 3600 * 1000);
 

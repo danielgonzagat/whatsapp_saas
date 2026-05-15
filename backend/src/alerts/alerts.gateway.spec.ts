@@ -8,15 +8,20 @@ jest.mock('../common/redis/redis.util', () => ({
 import { createRedisClient } from '../common/redis/redis.util';
 
 type SocketOverrides = Partial<Pick<Socket, 'id' | 'handshake' | 'join'>>;
+type AlertRoomTarget = { emit: jest.Mock<void, [string, unknown]> };
 
 function mockSocket(overrides: SocketOverrides = {}): Socket {
-  return { id: 'test-socket-id', ...overrides } as unknown as Socket;
+  return { id: 'test-socket-id', ...overrides } as Socket;
+}
+
+function makeAlertRoomTarget(): AlertRoomTarget {
+  return { emit: jest.fn<void, [string, unknown]>() };
 }
 
 describe('AlertsGateway', () => {
   let gateway: AlertsGateway;
   let mockServer: {
-    to: jest.Mock<{ emit: jest.Mock<void, [string, unknown]> }, [string]>;
+    to: jest.Mock<AlertRoomTarget, [string]>;
     emit: jest.Mock<void, [string, unknown]>;
   };
   let mockSub: {
@@ -26,19 +31,19 @@ describe('AlertsGateway', () => {
 
   beforeEach(() => {
     mockServer = {
-      to: jest.fn().mockReturnValue({ emit: jest.fn() }),
-      emit: jest.fn(),
+      to: jest.fn<AlertRoomTarget, [string]>().mockReturnValue(makeAlertRoomTarget()),
+      emit: jest.fn<void, [string, unknown]>(),
     };
 
     mockSub = {
-      subscribe: jest.fn().mockResolvedValue(undefined),
-      on: jest.fn(),
+      subscribe: jest.fn<Promise<void>, [string]>().mockResolvedValue(undefined),
+      on: jest.fn<void, [string, (channel: string, message: string) => void]>(),
     };
 
     (createRedisClient as jest.Mock).mockReturnValue(mockSub);
 
     gateway = new AlertsGateway();
-    (gateway as unknown as { server: typeof mockServer }).server = mockServer;
+    (gateway as { server: typeof mockServer }).server = mockServer;
   });
 
   describe('onModuleInit', () => {
@@ -74,7 +79,7 @@ describe('AlertsGateway', () => {
     });
 
     it('emits alert:event via room target for workspace-scoped messages', async () => {
-      const roomEmit = jest.fn();
+      const roomEmit = jest.fn<void, [string, unknown]>();
       mockServer.to.mockReturnValue({ emit: roomEmit });
 
       await gateway.onModuleInit();

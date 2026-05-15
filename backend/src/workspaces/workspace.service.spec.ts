@@ -16,6 +16,7 @@ describe('WorkspaceService', () => {
       };
     },
   ];
+  type CacheWrapCall = [string, () => Promise<unknown>, { ttl: number }];
 
   let service: WorkspaceService;
   let prisma: {
@@ -25,7 +26,10 @@ describe('WorkspaceService', () => {
       delete: jest.Mock;
     };
   };
-  let cache: { wrap: jest.Mock; del: jest.Mock };
+  let cache: {
+    wrap: jest.Mock<Promise<unknown>, CacheWrapCall>;
+    del: jest.Mock<Promise<number>, [string]>;
+  };
 
   beforeEach(async () => {
     prisma = {
@@ -39,8 +43,8 @@ describe('WorkspaceService', () => {
     };
     // cache.wrap default: re-invoke fn (no cache)
     cache = {
-      wrap: jest.fn().mockImplementation(async (_key: string, fn: () => Promise<unknown>) => fn()),
-      del: jest.fn().mockResolvedValue(0),
+      wrap: jest.fn<Promise<unknown>, CacheWrapCall>().mockImplementation(async (_key, fn) => fn()),
+      del: jest.fn<Promise<number>, [string]>().mockResolvedValue(0),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -124,7 +128,7 @@ describe('WorkspaceService', () => {
         jitterMin: 100,
         jitterMax: 500,
         providerSettings: { whatsappProvider: 'meta-cloud' },
-      } as unknown as Workspace;
+      } as Workspace;
       const result = service.toEngineWorkspace(ws);
       expect(result.id).toBe('ws-1');
       expect(result.jitterMin).toBe(100);

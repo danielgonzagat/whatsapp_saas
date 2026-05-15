@@ -1,6 +1,8 @@
 import { BadRequestException } from '@nestjs/common';
 import { MailboxProvider, MailboxStatus } from '@prisma/client';
+import { createTransport } from 'nodemailer';
 import { Metrics } from '../observability/metrics';
+import type { MailboxSocketConfig } from './mailbox-imap-smtp-socket.helpers';
 import { encryptMailboxToken, isEncryptedMailboxToken } from './mailbox-token-crypto';
 import { MailboxImapSmtpService } from './mailbox-imap-smtp.service';
 
@@ -17,32 +19,112 @@ jest.mock('../observability/metrics', () => ({
   },
 }));
 
-describe('MailboxImapSmtpService', () => {
-  const upsert = jest.fn();
-  const findFirst = jest.fn();
-  const update = jest.fn();
-  const contactFindFirst = jest.fn();
-  let service: MailboxImapSmtpService;
-  let validationSpies: {
-    validateImapConnection: jest.Mock;
-    validateSmtpConnection: jest.Mock;
+type MailboxConnectionUpsertArgs = {
+  where: {
+    workspaceId_provider_email: {
+      workspaceId: string;
+      provider: MailboxProvider;
+      email: string;
+    };
   };
+  create: {
+    provider: MailboxProvider;
+    status: MailboxStatus;
+    imapPassword: string | null;
+    smtpPassword: string | null;
+    [key: string]: unknown;
+  };
+  update: {
+    status: MailboxStatus;
+    imapPassword: string | null;
+    smtpPassword: string | null;
+    [key: string]: unknown;
+  };
+  select?: Record<string, boolean>;
+};
+
+type MailboxConnectionRecord = {
+  id: string;
+  workspaceId?: string;
+  email: string;
+  provider?: MailboxProvider;
+  status?: MailboxStatus;
+  connectedAt?: Date;
+  lastSyncAt?: Date | null;
+  lastErrorAt?: Date | null;
+  lastError?: string | null;
+  smtpHost?: string | null;
+  smtpPort?: number | null;
+  smtpSecure?: boolean;
+  smtpUsername?: string | null;
+  smtpPassword?: string | null;
+};
+
+type MailboxConnectionFindFirstArgs = {
+  where: Record<string, unknown>;
+  orderBy?: Record<string, unknown>;
+  select?: Record<string, boolean>;
+};
+
+type MailboxConnectionUpdateArgs = {
+  where: { id: string };
+  data: {
+    lastErrorAt?: Date;
+    lastError?: string;
+  };
+};
+
+type ContactFindFirstArgs = {
+  where: Record<string, unknown>;
+  select?: Record<string, boolean>;
+};
+
+type SendMailArgs = {
+  from?: string;
+  to?: string;
+  subject?: string;
+  html?: string;
+  text?: string;
+  headers?: Record<string, string>;
+};
+
+type MailboxValidationInternals = {
+  validateImapConnection(config: MailboxSocketConfig): Promise<void>;
+  validateSmtpConnection(config: MailboxSocketConfig): Promise<void>;
+};
+
+describe('MailboxImapSmtpService', () => {
+  const upsert = jest.fn<Promise<MailboxConnectionRecord>, [MailboxConnectionUpsertArgs]>();
+  const findFirst = jest.fn<
+    Promise<MailboxConnectionRecord | null>,
+    [MailboxConnectionFindFirstArgs]
+  >();
+  const update = jest.fn<Promise<MailboxConnectionRecord>, [MailboxConnectionUpdateArgs]>();
+  const contactFindFirst = jest.fn<
+    Promise<{ id: string; optedOutAt: Date | null } | null>,
+    [ContactFindFirstArgs]
+  >();
+  let service: MailboxImapSmtpService;
+  let validateImapConnectionSpy: jest.SpiedFunction<
+    MailboxValidationInternals['validateImapConnection']
+  >;
+  let validateSmtpConnectionSpy: jest.SpiedFunction<
+    MailboxValidationInternals['validateSmtpConnection']
+  >;
   const mailboxMetrics = Metrics.mailbox as jest.Mocked<typeof Metrics.mailbox>;
-  let sendMailMock: jest.Mock;
-  let closeMock: jest.Mock;
-  let createTransportMock: jest.Mock;
+  const createTransportMock = jest.mocked(createTransport);
+  let sendMailMock: jest.Mock<Promise<{ messageId?: string }>, [SendMailArgs]>;
+  let closeMock: jest.Mock<void, []>;
 
   beforeEach(() => {
     jest.clearAllMocks();
     contactFindFirst.mockResolvedValue(null);
-    sendMailMock = jest.fn();
-    closeMock = jest.fn();
-    createTransportMock = (jest.requireMock('nodemailer') as { createTransport: jest.Mock })
-      .createTransport;
+    sendMailMock = jest.fn<Promise<{ messageId?: string }>, [SendMailArgs]>();
+    closeMock = jest.fn<void, []>();
     createTransportMock.mockReturnValue({
       sendMail: sendMailMock,
       close: closeMock,
-    });
+    } as ReturnType<typeof createTransport>);
     process.env.EMAIL_TOKEN_ENCRYPTION_KEY =
       '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
     process.env.EMAIL_UNSUBSCRIBE_SECRET = 'unsubscribe-secret';
@@ -54,12 +136,13 @@ describe('MailboxImapSmtpService', () => {
       },
       contact: { findFirst: contactFindFirst },
     } as never);
-    validationSpies = service as unknown as {
-      validateImapConnection: jest.Mock;
-      validateSmtpConnection: jest.Mock;
-    };
-    jest.spyOn(validationSpies, 'validateImapConnection').mockResolvedValue(undefined);
-    jest.spyOn(validationSpies, 'validateSmtpConnection').mockResolvedValue(undefined);
+    const validationInternals = service as MailboxValidationInternals;
+    validateImapConnectionSpy = jest
+      .spyOn(validationInternals, 'validateImapConnection')
+      .mockResolvedValue(undefined);
+    validateSmtpConnectionSpy = jest
+      .spyOn(validationInternals, 'validateSmtpConnection')
+      .mockResolvedValue(undefined);
   });
 
   afterEach(() => {
@@ -91,7 +174,7 @@ describe('MailboxImapSmtpService', () => {
       smtpPassword: 'plain-smtp-password',
     });
 
-    expect(validationSpies.validateImapConnection).toHaveBeenCalledWith(
+    expect(validateImapConnectionSpy).toHaveBeenCalledWith(
       expect.objectContaining({
         host: 'imap.example.com',
         port: 993,
@@ -100,7 +183,7 @@ describe('MailboxImapSmtpService', () => {
         password: 'plain-imap-password',
       }),
     );
-    expect(validationSpies.validateSmtpConnection).toHaveBeenCalledWith(
+    expect(validateSmtpConnectionSpy).toHaveBeenCalledWith(
       expect.objectContaining({
         host: 'smtp.example.com',
         port: 465,
@@ -109,29 +192,19 @@ describe('MailboxImapSmtpService', () => {
         password: 'plain-smtp-password',
       }),
     );
-    expect(upsert).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: {
-          workspaceId_provider_email: {
-            workspaceId: 'ws-1',
-            provider: MailboxProvider.IMAP_SMTP,
-            email: 'owner@example.com',
-          },
-        },
-        create: expect.objectContaining({
-          provider: MailboxProvider.IMAP_SMTP,
-          status: MailboxStatus.ACTIVE,
-          imapPassword: expect.not.stringContaining('plain-imap-password'),
-          smtpPassword: expect.not.stringContaining('plain-smtp-password'),
-        }),
-        update: expect.objectContaining({
-          status: MailboxStatus.ACTIVE,
-          imapPassword: expect.not.stringContaining('plain-imap-password'),
-          smtpPassword: expect.not.stringContaining('plain-smtp-password'),
-        }),
-      }),
-    );
-    const call = upsert.mock.calls[0]?.[0];
+    const [call] = upsert.mock.calls[0]!;
+    expect(call.where.workspaceId_provider_email).toEqual({
+      workspaceId: 'ws-1',
+      provider: MailboxProvider.IMAP_SMTP,
+      email: 'owner@example.com',
+    });
+    expect(call.create.provider).toBe(MailboxProvider.IMAP_SMTP);
+    expect(call.create.status).toBe(MailboxStatus.ACTIVE);
+    expect(call.create.imapPassword).not.toContain('plain-imap-password');
+    expect(call.create.smtpPassword).not.toContain('plain-smtp-password');
+    expect(call.update.status).toBe(MailboxStatus.ACTIVE);
+    expect(call.update.imapPassword).not.toContain('plain-imap-password');
+    expect(call.update.smtpPassword).not.toContain('plain-smtp-password');
     expect(isEncryptedMailboxToken(call.create.imapPassword)).toBe(true);
     expect(isEncryptedMailboxToken(call.create.smtpPassword)).toBe(true);
     expect(result).toEqual(
@@ -142,9 +215,10 @@ describe('MailboxImapSmtpService', () => {
         connectionId: 'mailbox-1',
       }),
     );
-    expect(mailboxMetrics.connected).toHaveBeenCalledWith('imap_smtp', {
-      workspace_id: 'ws-1',
-    });
+    expect(mailboxMetrics.connected.mock.calls).toContainEqual([
+      'imap_smtp',
+      { workspace_id: 'ws-1' },
+    ]);
   });
 
   it('uses default IMAP and SMTP ports from the selected secure flags', async () => {
@@ -165,17 +239,17 @@ describe('MailboxImapSmtpService', () => {
       smtpPassword: 'smtp-password',
     });
 
-    expect(validationSpies.validateImapConnection).toHaveBeenCalledWith(
+    expect(validateImapConnectionSpy).toHaveBeenCalledWith(
       expect.objectContaining({ port: 143, secure: false }),
     );
-    expect(validationSpies.validateSmtpConnection).toHaveBeenCalledWith(
+    expect(validateSmtpConnectionSpy).toHaveBeenCalledWith(
       expect.objectContaining({ port: 587, secure: false }),
     );
   });
 
   it('does not persist credentials when validation fails', async () => {
     jest
-      .spyOn(validationSpies, 'validateImapConnection')
+      .spyOn(service as MailboxValidationInternals, 'validateImapConnection')
       .mockRejectedValueOnce(new BadRequestException('imap_validation_failed'));
 
     await expect(
@@ -240,17 +314,12 @@ describe('MailboxImapSmtpService', () => {
         auth: { user: 'owner@example.com', pass: 'plain-smtp-password' },
       }),
     );
-    expect(sendMailMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        from: 'owner@example.com',
-        to: 'lead@example.com',
-        subject: 'Oferta especial',
-        html: expect.stringContaining('Oferta'),
-        headers: expect.objectContaining({
-          'List-Unsubscribe': expect.stringContaining('unsubscribe'),
-        }),
-      }),
-    );
+    const [sendMailArgs] = sendMailMock.mock.calls[0]!;
+    expect(sendMailArgs.from).toBe('owner@example.com');
+    expect(sendMailArgs.to).toBe('lead@example.com');
+    expect(sendMailArgs.subject).toBe('Oferta especial');
+    expect(sendMailArgs.html).toContain('Oferta');
+    expect(sendMailArgs.headers?.['List-Unsubscribe']).toContain('unsubscribe');
     expect(result).toEqual(
       expect.objectContaining({
         provider: 'imap_smtp',
@@ -260,9 +329,10 @@ describe('MailboxImapSmtpService', () => {
         messageId: '<smtp-msg-1@kloel.test>',
       }),
     );
-    expect(mailboxMetrics.sendCompleted).toHaveBeenCalledWith('imap_smtp', {
-      workspace_id: 'ws-1',
-    });
+    expect(mailboxMetrics.sendCompleted.mock.calls).toContainEqual([
+      'imap_smtp',
+      { workspace_id: 'ws-1' },
+    ]);
     expect(closeMock).toHaveBeenCalled();
   });
 
@@ -286,7 +356,7 @@ describe('MailboxImapSmtpService', () => {
       proactive: false,
     });
 
-    const sendCall = sendMailMock.mock.calls[0][0];
+    const [sendCall] = sendMailMock.mock.calls[0]!;
     expect(sendCall.html).not.toContain('cancelar');
     expect(sendCall.headers).toEqual({});
     expect(result.sent).toBe(true);
@@ -311,9 +381,10 @@ describe('MailboxImapSmtpService', () => {
         reason: 'recipient_unsubscribed',
       }),
     );
-    expect(mailboxMetrics.sendSuppressed).toHaveBeenCalledWith('imap_smtp', {
-      workspace_id: 'ws-1',
-    });
+    expect(mailboxMetrics.sendSuppressed.mock.calls).toContainEqual([
+      'imap_smtp',
+      { workspace_id: 'ws-1' },
+    ]);
   });
 
   it('marks the mailbox as errored when SMTP send fails', async () => {
@@ -338,18 +409,13 @@ describe('MailboxImapSmtpService', () => {
       }),
     ).rejects.toThrow('imap_smtp_send_failed');
 
-    expect(update).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: { id: 'mailbox-1' },
-        data: expect.objectContaining({
-          lastError: 'SMTP connection refused',
-        }),
-      }),
-    );
-    expect(mailboxMetrics.sendFailed).toHaveBeenCalledWith(
+    const [updateCall] = update.mock.calls[0]!;
+    expect(updateCall.where).toEqual({ id: 'mailbox-1' });
+    expect(updateCall.data.lastError).toBe('SMTP connection refused');
+    expect(mailboxMetrics.sendFailed.mock.calls).toContainEqual([
       'imap_smtp',
       'SMTP connection refused',
       { workspace_id: 'ws-1' },
-    );
+    ]);
   });
 });

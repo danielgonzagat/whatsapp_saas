@@ -87,26 +87,30 @@ export async function queryMethodBreakdown(
   from: Date,
   to: Date,
 ): Promise<MethodBreakdownRow[]> {
-  // @AdminGlobalOperation: GMV breakdown by method, platform-wide
-  const grouped = (await prisma.checkoutOrder.groupBy({
-    by: ['paymentMethod'],
-    where: {
-      status: { in: PAID_STATUSES },
-      paidAt: { gte: from, lte: to },
-    },
-    _sum: { totalInCents: true },
-    _count: { _all: true },
-  })) as unknown as Array<{
-    paymentMethod: PaymentMethod;
-    _sum: { totalInCents: bigint | number | string | null };
-    _count: { _all: number };
-  }>;
+  const rows = await prisma.$queryRaw<
+    Array<{
+      paymentMethod: PaymentMethod;
+      gmvInCents: bigint | number | string;
+      count: bigint | number | string;
+    }>
+  >(Prisma.sql`
+    SELECT
+      o."paymentMethod" AS "paymentMethod",
+      COALESCE(SUM(o."totalInCents"), 0)::bigint AS "gmvInCents",
+      COUNT(*)::bigint AS count
+    FROM "RAC_CheckoutOrder" o
+    WHERE o.status IN (${Prisma.join(PAID_STATUSES)})
+      AND o."paidAt" >= ${from}
+      AND o."paidAt" <= ${to}
+    GROUP BY o."paymentMethod"
+    ORDER BY "gmvInCents" DESC
+  `);
 
-  return grouped
+  return rows
     .map((row) => ({
       method: row.paymentMethod,
-      gmvInCents: toSafeNumber(row._sum.totalInCents ?? 0),
-      count: row._count._all,
+      gmvInCents: toSafeNumber(row.gmvInCents),
+      count: toSafeNumber(row.count),
     }))
     .sort((a, b) => b.gmvInCents - a.gmvInCents);
 }

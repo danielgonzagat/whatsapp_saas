@@ -20,18 +20,22 @@ function makeIdentifierResult(overrides: Record<string, unknown> = {}) {
 
 describe('AdminContactVerifyController', () => {
   function buildController() {
+    const markVerified = jest.fn() as FlexMock<ChannelIdentifierService['markVerified']>;
+    const findUnique = jest.fn();
     const channelIdentifier = {
-      markVerified: jest.fn() as FlexMock<ChannelIdentifierService['markVerified']>,
-    } as unknown as ChannelIdentifierService;
+      markVerified,
+    } as ChannelIdentifierService;
 
     const prisma = {
       contact: {
-        findUnique: jest.fn(),
+        findUnique,
       },
-    } as unknown as PrismaService;
+    } as PrismaService;
 
     return {
       channelIdentifier,
+      markVerified,
+      findUnique,
       prisma,
       controller: new AdminContactVerifyController(channelIdentifier, prisma),
     };
@@ -39,31 +43,27 @@ describe('AdminContactVerifyController', () => {
 
   describe('POST :contactId/verify-channel', () => {
     it('marks a channel identifier as verified and returns success', async () => {
-      const { controller, channelIdentifier, prisma } = buildController();
+      const { controller, markVerified, findUnique } = buildController();
 
-      (prisma.contact as unknown as { findUnique: jest.Mock }).findUnique.mockResolvedValue({
+      findUnique.mockResolvedValue({
         id: 'contact-1',
         workspaceId: 'ws-1',
       });
 
       const identifierResult = makeIdentifierResult();
-      (channelIdentifier.markVerified as jest.Mock).mockResolvedValue(identifierResult);
+      markVerified.mockResolvedValue(identifierResult);
 
       const result = await controller.verifyChannel('contact-1', {
         channel: 'WHATSAPP',
         value: '5511999999999',
       });
 
-      expect(prisma.contact.findUnique).toHaveBeenCalledWith({
+      expect(findUnique).toHaveBeenCalledWith({
         where: { id: 'contact-1' },
         select: { id: true, workspaceId: true },
       });
 
-      expect(channelIdentifier.markVerified).toHaveBeenCalledWith(
-        'ws-1',
-        'WHATSAPP',
-        '5511999999999',
-      );
+      expect(markVerified).toHaveBeenCalledWith('ws-1', 'WHATSAPP', '5511999999999');
 
       expect(result.success).toBe(true);
       expect(result.channelIdentifier.id).toBe('ci-1');
@@ -71,9 +71,9 @@ describe('AdminContactVerifyController', () => {
     });
 
     it('throws NotFoundException when contact does not exist', async () => {
-      const { controller, prisma } = buildController();
+      const { controller, findUnique } = buildController();
 
-      (prisma.contact as unknown as { findUnique: jest.Mock }).findUnique.mockResolvedValue(null);
+      findUnique.mockResolvedValue(null);
 
       await expect(
         controller.verifyChannel('nonexistent', {
@@ -84,14 +84,14 @@ describe('AdminContactVerifyController', () => {
     });
 
     it('returns { success: false } when channel identifier is not found', async () => {
-      const { controller, channelIdentifier, prisma } = buildController();
+      const { controller, markVerified, findUnique } = buildController();
 
-      (prisma.contact as unknown as { findUnique: jest.Mock }).findUnique.mockResolvedValue({
+      findUnique.mockResolvedValue({
         id: 'contact-1',
         workspaceId: 'ws-1',
       });
 
-      (channelIdentifier.markVerified as jest.Mock).mockResolvedValue(null);
+      markVerified.mockResolvedValue(null);
 
       const result = await controller.verifyChannel('contact-1', {
         channel: 'WHATSAPP',

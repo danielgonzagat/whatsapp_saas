@@ -22,7 +22,10 @@ type ConversationHistoryEntry = {
   createdAt?: Date | string | null;
 };
 
-export function extractCatalogChatName(chat: UnknownRecord, fallbackPhone?: string | null): string {
+export function extractCatalogChatName(
+  chat: UnknownRecord | null | undefined,
+  fallbackPhone?: string | null,
+): string {
   const phoneDigits = String(fallbackPhone || '').replace(NON_DIGIT_RE, '');
   const candidates = [
     chat?.name,
@@ -166,7 +169,7 @@ export function extractRemoteMessageText(message: UnknownRecord): string {
     .trim();
 }
 
-export function buildConversationLedger(history: ConversationHistoryEntry[]): {
+export function buildConversationLedger(history: ConversationHistoryEntry[] | null | undefined): {
   transcript: string;
   factsText: string;
 } {

@@ -1,5 +1,4 @@
 import { randomUUID } from 'node:crypto';
-import { type Job } from 'bullmq';
 import { WorkerLogger } from './logger';
 import { redis } from './redis-client';
 
@@ -23,18 +22,34 @@ export interface JobMeta {
   start: bigint;
 }
 
+export interface WorkerJobInput {
+  data?: unknown;
+  id?: string | number | null;
+  name?: string;
+  queueName?: string;
+}
+
+type WorkerJobData = Record<string, unknown>;
+
 export function generateCorrelationId(): string {
   return randomUUID();
 }
 
-function extractCorrelationId(job: Job): string | undefined {
-  const d = job.data as Record<string, unknown> | undefined;
+function readJobData(job: WorkerJobInput): WorkerJobData | undefined {
+  if (!job.data || typeof job.data !== 'object' || Array.isArray(job.data)) {
+    return undefined;
+  }
+  return job.data as WorkerJobData;
+}
+
+function extractCorrelationId(job: WorkerJobInput): string | undefined {
+  const d = readJobData(job);
   const value = d?.correlationId;
   return typeof value === 'string' && value.trim() ? value.trim() : undefined;
 }
 
-export function extractWorkspaceId(job: Job): string {
-  const d = job.data as Record<string, unknown> | undefined;
+export function extractWorkspaceId(job: WorkerJobInput): string {
+  const d = readJobData(job);
   if (!d) {
     return 'unknown';
   }
@@ -50,13 +65,12 @@ export function extractWorkspaceId(job: Job): string {
   return 'unknown';
 }
 
-function buildDedupKey(job: Job): string {
-  const dedupId =
-    (job.data as Record<string, unknown> | undefined)?.dedupKey ?? job.id ?? 'unknown';
-  return `${DEDUP_KEY_PREFIX}${job.queueName}:${String(dedupId)}`;
+function buildDedupKey(job: WorkerJobInput): string {
+  const dedupId = readJobData(job)?.dedupKey ?? job.id ?? 'unknown';
+  return `${DEDUP_KEY_PREFIX}${job.queueName ?? 'unknown'}:${String(dedupId)}`;
 }
 
-export async function checkIdempotent(job: Job): Promise<boolean> {
+export async function checkIdempotent(job: WorkerJobInput): Promise<boolean> {
   const key = buildDedupKey(job);
   try {
     const existing = await redis.get(key);
@@ -66,7 +80,7 @@ export async function checkIdempotent(job: Job): Promise<boolean> {
   }
 }
 
-export async function markCompleted(job: Job, ttl = DEFAULT_DEDUP_TTL): Promise<void> {
+export async function markCompleted(job: WorkerJobInput, ttl = DEFAULT_DEDUP_TTL): Promise<void> {
   const key = buildDedupKey(job);
   try {
     await redis.set(key, '1', 'EX', ttl);
@@ -75,7 +89,7 @@ export async function markCompleted(job: Job, ttl = DEFAULT_DEDUP_TTL): Promise<
   }
 }
 
-export function startJob(job: Job, log: WorkerLogger): JobMeta {
+export function startJob(job: WorkerJobInput, log: WorkerLogger): JobMeta {
   const correlationId = extractCorrelationId(job) ?? generateCorrelationId();
   const workspaceId = extractWorkspaceId(job);
   log.info('job_start', {
