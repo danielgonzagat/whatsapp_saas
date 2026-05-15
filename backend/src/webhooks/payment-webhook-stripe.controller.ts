@@ -124,6 +124,7 @@ export class PaymentWebhookStripeController {
     @Body() body: StripeEventLike,
   ) {
     const start = Date.now();
+    let event: StripeEventLike | undefined;
     try {
     const primarySecret = process.env.STRIPE_WEBHOOK_SECRET;
     const endpointSecrets = Array.from(
@@ -138,7 +139,7 @@ export class PaymentWebhookStripeController {
       throw new ForbiddenException('STRIPE_WEBHOOK_SECRET not configured');
     }
 
-    let event: StripeEventLike = body;
+    event = body;
     if (endpointSecrets.length > 0) {
       if (!stripeSignature) {
         throw new BadRequestException('Missing stripe-signature header');

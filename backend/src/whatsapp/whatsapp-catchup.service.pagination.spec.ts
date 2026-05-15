@@ -10,6 +10,16 @@ jest.mock('../queue/queue', () => ({
   autopilotQueue: { add: jest.fn().mockResolvedValue(undefined) },
 }));
 
+jest.mock('./whatsapp-catchup-config', () => {
+  const actual = jest.requireActual<typeof import('./whatsapp-catchup-config')>(
+    './whatsapp-catchup-config',
+  );
+  return {
+    ...actual,
+    CATCHUP_MAX_MESSAGES_PER_CHAT: 2,
+  };
+});
+
 const { autopilotQueue: _autopilotQueue } = jest.requireMock('../queue/queue');
 
 import type { InboundMessage } from './inbound-processor.service';

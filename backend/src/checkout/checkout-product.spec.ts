@@ -10,8 +10,6 @@ jest.mock('./checkout-code.util', () => ({
   generateUniquePublicCheckoutCode: jest.fn().mockResolvedValue('CODE001'),
 }));
 
-const txPrisma = {} as typeof prisma;
-
 let prisma: {
   product: {
     create: jest.Mock;
@@ -86,7 +84,7 @@ beforeEach(() => {
       update: jest.fn(),
       findUnique: jest.fn(),
     },
-    $transaction: jest.fn().mockImplementation(async (fn) => fn(txPrisma)),
+    $transaction: jest.fn().mockImplementation(async (fn) => fn(prisma)),
   };
 
   auditService = { log: jest.fn().mockResolvedValue(undefined) };
@@ -204,7 +202,7 @@ describe('CheckoutProductService', () => {
     it('throws NotFoundException inside transaction when product not found', async () => {
       prisma.$transaction.mockImplementation(async (fn) => {
         prisma.product.findFirst.mockResolvedValue(null);
-        return fn(txPrisma);
+        return fn(prisma);
       });
 
       await expect(service.deleteProduct('prod_1', 'ws_1')).rejects.toThrow(NotFoundException);

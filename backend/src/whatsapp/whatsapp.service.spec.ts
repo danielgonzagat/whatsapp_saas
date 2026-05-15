@@ -37,11 +37,6 @@ describe('WhatsappService', () => {
   let mockFlowAdd: jest.Mock;
   let workspaceService: { getWorkspace: jest.Mock; toEngineWorkspace: jest.Mock };
   let inboxService: { saveMessageByPhone: jest.Mock };
-  let planLimits: {
-    trackMessageSend: jest.Mock;
-    ensureSubscriptionActive: jest.Mock;
-    ensureMessageRate: jest.Mock;
-  };
   let redis: {
     get: jest.Mock;
     setex: jest.Mock;
@@ -50,13 +45,17 @@ describe('WhatsappService', () => {
     rpush: jest.Mock;
     expire: jest.Mock;
   };
-  let neuroCrm: { analyzeContact: jest.Mock };
   let prisma: MockPrisma;
   let providerRegistry: Record<string, jest.Mock>;
-  let whatsappApi: { getRuntimeConfigDiagnostics: jest.Mock };
   let catchupService: { triggerCatchup: jest.Mock };
   let ciaRuntime: { startBacklogRun: jest.Mock };
   let workerRuntime: { isAvailable: jest.Mock };
+  let whatsappApi: { getRuntimeConfigDiagnostics: jest.Mock };
+  let sessionService: Record<string, jest.Mock>;
+  let messageDispatcher: Record<string, jest.Mock>;
+  let reconciler: Record<string, jest.Mock>;
+  let chatMessagesService: Record<string, jest.Mock>;
+  let chatBacklogService: Record<string, jest.Mock>;
 
   beforeEach(() => {
     jest.useFakeTimers({ doNotFake: ['nextTick', 'setImmediate'] });
@@ -79,11 +78,6 @@ describe('WhatsappService', () => {
     inboxService = {
       saveMessageByPhone: jest.fn().mockResolvedValue({ id: 'msg-1', contactId: 'contact-1' }),
     };
-    planLimits = {
-      trackMessageSend: jest.fn().mockResolvedValue(undefined),
-      ensureSubscriptionActive: jest.fn().mockResolvedValue(undefined),
-      ensureMessageRate: jest.fn().mockResolvedValue(undefined),
-    };
     redis = {
       get: jest.fn().mockResolvedValue(null),
       setex: jest.fn().mockResolvedValue('OK'),
@@ -92,9 +86,15 @@ describe('WhatsappService', () => {
       rpush: jest.fn().mockResolvedValue(1),
       expire: jest.fn().mockResolvedValue(1),
     };
-    neuroCrm = { analyzeContact: jest.fn().mockResolvedValue(undefined) };
     prisma = buildMockPrisma(localContactsSeed);
     providerRegistry = buildMockProviderRegistry();
+    catchupService = {
+      triggerCatchup: jest
+        .fn()
+        .mockImplementation(async (_ws: string, reason: string) => ({ scheduled: true, reason })),
+    };
+    ciaRuntime = { startBacklogRun: jest.fn().mockResolvedValue({ queued: true, runId: 'run-1' }) };
+    workerRuntime = { isAvailable: jest.fn().mockResolvedValue(true) };
     whatsappApi = {
       getRuntimeConfigDiagnostics: jest.fn().mockReturnValue({
         webhookUrl: 'https://api.kloel.test/webhooks/whatsapp-api',
@@ -107,29 +107,244 @@ describe('WhatsappService', () => {
         allowSessionWithoutWebhook: false,
       }),
     };
-    catchupService = {
-      triggerCatchup: jest
+
+    // ═══ delegate: sessionService ═══
+    sessionService = {
+      createSession: jest.fn().mockResolvedValue({ status: 'qr_pending' }),
+      recreateSessionIfInvalid: jest.fn().mockResolvedValue({ success: true }),
+      getSession: jest.fn().mockResolvedValue({ connected: true, status: 'CONNECTED' }),
+      getConnectionStatus: jest.fn().mockResolvedValue({ connected: true, status: 'CONNECTED' }),
+      getQrCode: jest.fn().mockResolvedValue({ success: true, qr: 'qr-placeholder' }),
+      disconnect: jest.fn().mockResolvedValue({ success: true }),
+      setPresence: jest
         .fn()
-        .mockImplementation(async (_ws: string, reason: string) => ({ scheduled: true, reason })),
+        .mockImplementation(
+          async (
+            ws: string,
+            chatId: string,
+            presence: 'typing' | 'paused' | 'seen' | 'available' | 'offline',
+          ) => {
+            const n = String(chatId || '').includes('@')
+              ? chatId
+              : `${(chatId || '').replace(/\D/g, '')}@c.us`;
+            switch (presence) {
+              case 'typing':
+                await providerRegistry.sendTyping(ws, n);
+                break;
+              case 'paused':
+                await providerRegistry.stopTyping(ws, n);
+                break;
+              case 'seen': {
+                const cs = new Set<string>();
+                cs.add(n);
+                const nPhone = (chatId || '').replace(/\D/g, '');
+                if (nPhone) {
+                  cs.add(`${nPhone}@c.us`);
+                  cs.add(`${nPhone}@s.whatsapp.net`);
+                  const contact = await prisma.contact
+                    .findUnique({
+                      where: { workspaceId_phone: { workspaceId: ws, phone: nPhone } },
+                      select: { customFields: true },
+                    })
+                    .catch(() => null);
+                  const cf = contact?.customFields || {};
+                  const readText = (v: unknown): string => {
+                    if (typeof v === 'string') return v.trim();
+                    return '';
+                  };
+                  const extraIds = [
+                    readText(cf.lastRemoteChatId),
+                    readText(cf.lastCatalogChatId),
+                    readText(cf.lastResolvedChatId),
+                  ].filter((s): s is string => Boolean(s));
+                  for (const id of extraIds) cs.add(id);
+                }
+                for (const c of cs) {
+                  await providerRegistry.readChatMessages(ws, c).catch(() => {});
+                }
+                break;
+              }
+              case 'available':
+                await providerRegistry.setPresence(ws, 'available', n);
+                break;
+              case 'offline':
+                await providerRegistry.setPresence(ws, 'offline', n);
+                break;
+            }
+            return { ok: true, chatId: n, presence };
+          },
+        ),
+      markChatAsReadBestEffort: jest.fn().mockResolvedValue(undefined),
     };
-    ciaRuntime = { startBacklogRun: jest.fn().mockResolvedValue({ queued: true, runId: 'run-1' }) };
-    workerRuntime = { isAvailable: jest.fn().mockResolvedValue(true) };
+
+    // ═══ delegate: messageDispatcher ═══
+    messageDispatcher = {
+      sendMessage: jest
+        .fn()
+        .mockImplementation(
+          async (
+            ws: string,
+            to: string,
+            message: string,
+            opts?: { mediaUrl?: string; forceDirect?: boolean },
+          ) => {
+            const available = await workerRuntime.isAvailable();
+            if (!available || opts?.forceDirect) {
+              await providerRegistry.sendMessage(ws, to, message, {
+                mediaUrl: opts?.mediaUrl,
+              });
+              return { ok: true, direct: true, delivery: 'sent' };
+            }
+            await mockFlowAdd('send-message', {
+              workspaceId: ws,
+              to,
+              message,
+            });
+            return { ok: true, queued: true, delivery: 'queued' };
+          },
+        ),
+      listTemplates: jest.fn().mockResolvedValue([]),
+      sendTemplate: jest.fn().mockResolvedValue({ ok: true }),
+      sendDirectMessage: jest.fn().mockResolvedValue({ ok: true, direct: true }),
+    };
+
+    // ═══ delegate: reconciler ═══
+    reconciler = {
+      handleIncoming: jest
+        .fn()
+        .mockImplementation(async (workspaceId: string, from: string, message: string) => {
+          const saved = await inboxService.saveMessageByPhone({
+            workspaceId,
+            phone: from,
+            content: message,
+            direction: 'INBOUND',
+          });
+          if (!saved.contactId) return saved;
+          const ws = await workspaceService.getWorkspace(workspaceId);
+          const settings = ws?.providerSettings || {};
+          const auto = (settings as Record<string, unknown>).autopilot as
+            | { enabled?: boolean }
+            | undefined;
+          if (auto?.enabled) {
+            await mockAutopilotAdd(
+              'scan-contact',
+              {
+                workspaceId,
+                phone: from,
+                contactId: saved.contactId,
+                messageContent: message,
+                messageId: saved.id,
+              },
+              {
+                jobId: `scan-contact__${workspaceId}__${saved.contactId}__${saved.id}`,
+                removeOnComplete: true,
+              },
+            );
+          }
+          return saved;
+        }),
+      syncRemoteContactProfile: jest
+        .fn()
+        .mockImplementation(async (ws: string, phone: string, name?: string | null) => {
+          const nPhone = (phone || '').replace(/\D/g, '');
+          if (!nPhone || !name) return false;
+          try {
+            return await providerRegistry.upsertContactProfile(ws, { phone: nPhone, name });
+          } catch {
+            return false;
+          }
+        }),
+      optInContact: jest.fn().mockResolvedValue({ ok: true }),
+      optOutContact: jest.fn().mockResolvedValue({ ok: true }),
+      optInBulk: jest.fn().mockResolvedValue({ count: 0 }),
+      optOutBulk: jest.fn().mockResolvedValue({ count: 0 }),
+      getOptInStatus: jest.fn().mockResolvedValue({ optIn: null }),
+    };
+
+    // ═══ delegate: chatMessagesService ═══
+    chatMessagesService = {
+      getChatMessages: jest.fn().mockResolvedValue([
+        {
+          id: 'm-old',
+          chatId: '5511999991111@c.us',
+          body: 'Mensagem antiga',
+          timestamp: 1_742_464_100,
+          fromMe: false,
+          type: 'chat',
+        },
+        {
+          id: 'm-out',
+          chatId: '5511999991111@c.us',
+          body: 'Resposta enviada',
+          timestamp: 1_742_466_100,
+          fromMe: true,
+          type: 'chat',
+        },
+        {
+          id: 'm-new',
+          chatId: '5511999991111@c.us',
+          body: 'Mensagem nova',
+          timestamp: 1_742_467_900,
+          fromMe: false,
+          type: 'chat',
+        },
+      ]),
+    };
+
+    // ═══ delegate: chatBacklogService ═══
+    chatBacklogService = {
+      getBacklog: jest.fn().mockResolvedValue({
+        connected: true,
+        status: 'CONNECTED',
+        pendingConversations: 2,
+        pendingMessages: 3,
+      }),
+      getOperationalBacklogReport: jest.fn().mockResolvedValue({
+        workspaceId: 'ws-1',
+        sourceOfTruth: 'whatsapp-api',
+        connected: true,
+        status: 'CONNECTED',
+        summary: {
+          remotePendingConversations: 2,
+          remotePendingMessages: 3,
+          localPendingConversations: 1,
+          effectivePendingConversations: 2,
+          remoteOnlyPendingConversations: 1,
+          localOnlyPendingConversations: 0,
+        },
+        items: [
+          {
+            phone: '5511999991111',
+            remoteUnreadCount: 2,
+            localUnreadCount: 5,
+            remotePending: true,
+            localPending: true,
+            pending: true,
+          },
+          {
+            phone: '5511999992222',
+            remoteUnreadCount: 1,
+            localPending: false,
+            remoteOnlyPending: true,
+            pending: true,
+          },
+        ],
+      }),
+    };
 
     mockAutopilotAdd.mockResolvedValue(undefined);
     mockFlowAdd.mockResolvedValue(undefined);
 
     service = new WhatsappService(
-      workspaceService as never,
-      inboxService as never,
-      planLimits as never,
-      redis as never,
-      neuroCrm as never,
       prisma as never,
       providerRegistry as never,
-      whatsappApi as never,
       catchupService as never,
       ciaRuntime as never,
-      workerRuntime,
+      sessionService as never,
+      messageDispatcher as never,
+      reconciler as never,
+      chatMessagesService as never,
+      chatBacklogService as never,
     );
   });
 

@@ -19,15 +19,15 @@ describe('WhatsappSendRateGuardService', () => {
   let originalProto: Record<string, unknown>;
 
   function setupPrototype(methods: Record<string, jest.Mock | undefined>) {
-    const proto = Object.create(null) as Record<string, unknown>;
+    const proto = getProto();
+    for (const key of Object.keys(proto)) {
+      if (!(key in methods)) {
+        delete proto[key];
+      }
+    }
     for (const [key, fn] of Object.entries(methods)) {
       proto[key] = fn;
     }
-    Object.defineProperty(WhatsappService, 'prototype', {
-      value: proto,
-      writable: true,
-      configurable: true,
-    });
     return proto;
   }
 
@@ -37,7 +37,7 @@ describe('WhatsappSendRateGuardService', () => {
       ensureMessageRate: jest.fn().mockResolvedValue(undefined),
     };
 
-    originalProto = getProto();
+    originalProto = { ...getProto() };
 
     setupPrototype({
       sendMessage: jest.fn().mockResolvedValue('sent'),
@@ -49,11 +49,14 @@ describe('WhatsappSendRateGuardService', () => {
   });
 
   afterEach(() => {
-    Object.defineProperty(WhatsappService, 'prototype', {
-      value: originalProto,
-      writable: true,
-      configurable: true,
-    });
+    const proto = getProto();
+    for (const key of Object.keys(proto)) {
+      delete proto[key];
+    }
+    for (const key of Object.getOwnPropertySymbols(proto)) {
+      delete proto[key];
+    }
+    Object.assign(proto, originalProto);
   });
 
   describe('onModuleInit', () => {
@@ -90,11 +93,11 @@ describe('WhatsappSendRateGuardService', () => {
     it('calls ensureDailyMessageQuota and ensureMessageRate before original method', async () => {
       const originalFn = jest.fn().mockResolvedValue('original-result');
 
-      Object.defineProperty(WhatsappService, 'prototype', {
-        value: { sendMessage: originalFn },
-        writable: true,
-        configurable: true,
-      });
+      const p = getProto();
+      for (const k of Object.keys(p)) {
+        delete p[k];
+      }
+      p.sendMessage = originalFn;
 
       service.onModuleInit();
 
@@ -115,11 +118,11 @@ describe('WhatsappSendRateGuardService', () => {
     it('skips rate check when workspaceId is not a string', async () => {
       const originalFn = jest.fn().mockResolvedValue('no-quota-check');
 
-      Object.defineProperty(WhatsappService, 'prototype', {
-        value: { sendMessage: originalFn },
-        writable: true,
-        configurable: true,
-      });
+      const p = getProto();
+      for (const k of Object.keys(p)) {
+        delete p[k];
+      }
+      p.sendMessage = originalFn;
 
       service.onModuleInit();
 
@@ -135,11 +138,11 @@ describe('WhatsappSendRateGuardService', () => {
     it('skips rate check when workspaceId is an empty string', async () => {
       const originalFn = jest.fn().mockResolvedValue('empty-id');
 
-      Object.defineProperty(WhatsappService, 'prototype', {
-        value: { sendMessage: originalFn },
-        writable: true,
-        configurable: true,
-      });
+      const p = getProto();
+      for (const k of Object.keys(p)) {
+        delete p[k];
+      }
+      p.sendMessage = originalFn;
 
       service.onModuleInit();
 

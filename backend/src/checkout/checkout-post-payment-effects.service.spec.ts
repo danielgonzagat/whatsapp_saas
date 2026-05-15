@@ -73,7 +73,7 @@ describe('CheckoutPostPaymentEffectsService', () => {
   beforeEach(() => {
     memberAreaUpdateMock = jest.fn().mockResolvedValue({ count: 1 });
     prisma = {
-      memberArea: { findMany: jest.fn().mockResolvedValue([]) },
+      memberArea: { findMany: jest.fn().mockResolvedValue([]), updateMany: memberAreaUpdateMock },erArea: { findMany: jest.fn().mockResolvedValue([]) },
       memberEnrollment: {
         findFirst: jest.fn().mockResolvedValue(null),
         create: jest.fn().mockResolvedValue({ id: 'enr_1' }),
@@ -117,7 +117,6 @@ describe('CheckoutPostPaymentEffectsService', () => {
           capturedLeadId: 'lead_1',
           customerEmail: 'test@example.com',
           customerPhone: '11999999999',
-          deviceFingerprint: undefined,
         }),
       );
     });
@@ -240,12 +239,12 @@ describe('CheckoutPostPaymentEffectsService', () => {
 
       await service.markLeadConverted(order, 'ws_1');
 
-      expect(checkoutSocialLeadService.markConvertedFromOrder).toHaveBeenCalledWith(
-        expect.objectContaining({
-          capturedLeadId: null,
-          deviceFingerprint: null,
-        }),
-      );
+      expect(checkoutSocialLeadService.markConvertedFromOrder).toHaveBeenCalledWith({
+        workspaceId: 'ws_1',
+        orderId: 'order_1',
+        customerEmail: 'test@example.com',
+        customerPhone: '11999999999',
+      });
     });
 
     it('calls auto-enrollment for member areas', async () => {

@@ -18,6 +18,9 @@ describe('CheckoutSocialRecoveryService', () => {
       findFirst: jest.Mock;
       findUnique: jest.Mock;
     };
+    workspace: {
+      findMany: jest.Mock;
+    };
     $transaction: jest.Mock;
   };
   let emailService: { sendEmail: jest.Mock };
@@ -56,6 +59,17 @@ describe('CheckoutSocialRecoveryService', () => {
         update: jest.fn().mockResolvedValue({ id: 'lead-1', workspaceId: 'ws-1' }),
         findFirst: jest.fn().mockResolvedValue(null),
         findUnique: jest.fn().mockResolvedValue(null),
+      },
+      workspace: {
+        findMany: jest.fn().mockResolvedValue([
+          {
+            id: 'ws-1',
+            providerSettings: {
+              whatsappProvider: 'meta',
+              connectionStatus: 'connected',
+            },
+          },
+        ]),
       },
       $transaction: jest.fn().mockImplementation(async (fn: unknown) => {
         if (typeof fn === 'function') {

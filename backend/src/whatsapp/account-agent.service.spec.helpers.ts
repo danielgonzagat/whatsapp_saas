@@ -71,6 +71,20 @@ export function createMockStores(): AccountAgentMockStores {
 
 const memoryKey = (workspaceId: string, key: string) => `${workspaceId}:${key}`;
 
+function normalizeWorkspaceId(record: Record<string, unknown>): Record<string, unknown> {
+  if (
+    record.workspace &&
+    typeof record.workspace === 'object' &&
+    !Array.isArray(record.workspace) &&
+    'connect' in record.workspace
+  ) {
+    const connect = (record.workspace as { connect: { id: string } }).connect;
+    const { workspace, ...rest } = record;
+    return { ...rest, workspaceId: connect.id };
+  }
+  return record;
+}
+
 export function createMockPrisma(stores: AccountAgentMockStores): MockPrisma {
   const { memoryStore, products, externalLinks, approvalRequests, inputSessions, workItems } =
     stores;
@@ -348,14 +362,16 @@ export function createMockPrisma(stores: AccountAgentMockStores): MockPrisma {
             update: Record<string, unknown>;
           }) => {
             const existing = workItems.get(where.id);
-            const next = existing ? { ...existing, ...update } : { ...create };
+            const next = existing
+              ? normalizeWorkspaceId({ ...existing, ...update })
+              : normalizeWorkspaceId({ ...create });
             workItems.set(where.id, next);
             return Promise.resolve(next);
           },
         ),
-      create: jest.fn().mockImplementation(({ data }: { data: { id: string } }) => {
-        const next = { ...data };
-        workItems.set(data.id, next);
+      create: jest.fn().mockImplementation(({ data }: { data: Record<string, unknown> }) => {
+        const next = normalizeWorkspaceId({ ...data });
+        workItems.set(data.id as string, next);
         return Promise.resolve(next);
       }),
       updateMany: jest

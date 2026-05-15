@@ -3,8 +3,8 @@ jest.mock('../queue/queue', () => ({
   buildQueueJobId: jest.fn().mockReturnValue('cia-backlog:ws-test:run-test'),
 }));
 
-import { CiaBacklogRunService } from './cia-backlog-run.service';
-import { CiaChatFilterService } from './cia-chat-filter.service';
+import { CiaBacklogRunService } from '../cia/cia-backlog-run.service';
+import { CiaChatFilterService } from '../cia/cia-chat-filter.service';
 import type { PrismaMock, ProviderRegistryMock, WorkerRuntimeMock } from './cia-runtime.fixtures';
 
 interface AutopilotQueueMock {

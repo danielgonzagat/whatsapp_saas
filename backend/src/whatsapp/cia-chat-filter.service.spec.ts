@@ -1,4 +1,4 @@
-import { CiaChatFilterService } from './cia-chat-filter.service';
+import { CiaChatFilterService } from '../cia/cia-chat-filter.service';
 import type { WahaChatSummary } from './providers/whatsapp-api.provider';
 
 function makeChat(overrides: Partial<WahaChatSummary> = {}): WahaChatSummary {

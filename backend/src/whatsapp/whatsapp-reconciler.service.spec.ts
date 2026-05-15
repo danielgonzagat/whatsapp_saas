@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import Redis from 'ioredis';
 import { INBOX_SERVICE } from '../inbox/inbox.token';
 import type { IInboxService } from '../inbox/inbox.interface';
+import { DecisionOutcomeService } from '../kloel/decision-outcome.service';
 import { NeuroCrmService } from '../crm/neuro-crm.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -76,6 +77,7 @@ describe('WhatsappReconcilerService', () => {
         { provide: NeuroCrmService, useValue: neuroCrm },
         { provide: PrismaService, useValue: prisma },
         { provide: WhatsAppProviderRegistry, useValue: providerRegistry },
+        { provide: DecisionOutcomeService, useValue: { recordEvent: jest.fn().mockResolvedValue(undefined) } },
         { provide: OpsAlertService, useValue: { alertOnCriticalError: jest.fn() } },
       ],
     }).compile();

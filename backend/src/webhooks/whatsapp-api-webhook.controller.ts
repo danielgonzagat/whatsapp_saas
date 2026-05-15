@@ -20,6 +20,8 @@ import { WhatsAppApiProvider } from '../whatsapp/providers/whatsapp-api.provider
 import { WhatsAppCatchupService } from '../whatsapp/whatsapp-catchup.service';
 
 import { RouteClass } from '../common/throttler/route-class.decorator';
+import { Throttle } from "@nestjs/throttler";
+
 interface WahaWebhookPayload {
   event?: string;
   session?: string;
@@ -59,6 +61,7 @@ export class WhatsAppApiWebhookController {
   }
 
   /** Handle webhook. */
+  @Throttle({ default: { limit: 2000, ttl: 60000 } })
   @Public()
   @Post()
   @HttpCode(200)

@@ -164,7 +164,7 @@ describe('CheckoutProductConfigService', () => {
       const callArg = prisma.marketplaceFee.findMany.mock.calls[0][0] as Record<string, unknown>;
       expect(callArg.where).toEqual(
         expect.objectContaining({
-          volumeFloorInCents: { lte: 999n },
+          volumeFloorInCents: { lte: 1000n },
         }),
       );
     });
@@ -186,8 +186,8 @@ describe('CheckoutProductConfigService', () => {
       const result = await service.buildPricingPreview(10000);
 
       expect(result).toHaveProperty('sellerReceivableInCents');
-      expect(result).toHaveProperty('platformFeeInCents');
-      expect(result).toHaveProperty('gatewayFeeInCents');
+      expect(result).toHaveProperty('marketplaceFeeInCents');
+      expect(result).toHaveProperty('estimatedGatewayFeeInCents');
       expect(typeof result.sellerReceivableInCents).toBe('number');
     });
   });

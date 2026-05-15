@@ -19,6 +19,8 @@ import {
   type CheckoutPaymentTxCallback,
   type CheckoutPaymentPrismaMock,
 } from './checkout-payment.service.fixtures';
+import { CHECKOUT_PAYMENT_E2E_GUARD } from "./checkout-payment-e2e-guard";
+import { CheckoutEventEmitterService } from "../kloel/checkout-emitter/checkout-event-emitter.service";
 
 describe('CheckoutPaymentService.processPayment — Stripe-only', () => {
   let service: CheckoutPaymentService;
@@ -98,6 +100,8 @@ describe('CheckoutPaymentService.processPayment — Stripe-only', () => {
         { provide: FinancialAlertService, useValue: financialAlert },
         { provide: AuditService, useValue: auditService },
         { provide: CheckoutSocialLeadService, useValue: socialLeadService },
+        { provide: CHECKOUT_PAYMENT_E2E_GUARD, useValue: { isEnabled: jest.fn().mockReturnValue(false), buildResult: jest.fn() } },
+        { provide: CheckoutEventEmitterService, useValue: { paymentInitiated: jest.fn().mockResolvedValue(undefined), paymentApproved: jest.fn().mockResolvedValue(undefined), paymentDeclined: jest.fn().mockResolvedValue(undefined) } },
         { provide: CheckoutPostPaymentEffectsService, useValue: postPaymentEffects },
       ],
     }).compile();

@@ -1,5 +1,6 @@
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { CheckoutCatalogService } from './checkout-catalog.service';
+import { Prisma } from "@prisma/client";
 
 type PrismaMock = {
   checkoutProductPlan: { findUnique: jest.Mock };
@@ -141,9 +142,9 @@ describe('CheckoutCatalogService', () => {
     });
 
     it('throws NotFoundException on P2025 error', async () => {
-      const error = Object.assign(new Error('Record not found'), {
+      const error = new Prisma.PrismaClientKnownRequestError('Record not found', {
         code: 'P2025',
-        name: 'PrismaClientKnownRequestError',
+        clientVersion: '5',
       });
       prisma.orderBump.update.mockRejectedValue(error);
 
@@ -280,9 +281,9 @@ describe('CheckoutCatalogService', () => {
     });
 
     it('throws NotFoundException on P2025', async () => {
-      const error = Object.assign(new Error('Not found'), {
+      const error = new Prisma.PrismaClientKnownRequestError('Not found', {
         code: 'P2025',
-        name: 'PrismaClientKnownRequestError',
+        clientVersion: '5',
       });
       prisma.upsell.update.mockRejectedValue(error);
 
@@ -410,9 +411,9 @@ describe('CheckoutCatalogService', () => {
     });
 
     it('throws NotFoundException on P2025', async () => {
-      const error = Object.assign(new Error('Not found'), {
+      const error = new Prisma.PrismaClientKnownRequestError('Not found', {
         code: 'P2025',
-        name: 'PrismaClientKnownRequestError',
+        clientVersion: '5',
       });
       prisma.checkoutCoupon.update.mockRejectedValue(error);
 
@@ -553,9 +554,9 @@ describe('CheckoutCatalogService', () => {
     });
 
     it('throws NotFoundException on P2025', async () => {
-      const error = Object.assign(new Error('Not found'), {
+      const error = new Prisma.PrismaClientKnownRequestError('Not found', {
         code: 'P2025',
-        name: 'PrismaClientKnownRequestError',
+        clientVersion: '5',
       });
       prisma.checkoutPixel.update.mockRejectedValue(error);
 
