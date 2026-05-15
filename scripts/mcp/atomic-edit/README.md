@@ -57,14 +57,26 @@ npx tsx scripts/mcp/atomic-edit/smoke.ts
 #   + governance-guard refusal of CLAUDE.md
 ```
 
-## Activation across sessions
+## Runtime
 
-Registered in `.mcp.json` as `atomic-edit` (committed → every clone/session).
-A new project MCP server needs **one-time trust approval** on next session
-start (or add `"atomic-edit"` to this project's `enabledMcpServers` in
-`~/.claude.json`). After that the `mcp__atomic-edit__*` tools load
-automatically in all sessions. Operating guidance for future sessions:
-`docs/ai/ATOMIC_EDIT_OPERATING_GUIDE.md`.
+No tsx / no npx / no network. The launcher compiles the server graph once to
+`dist/` with the already-installed `typescript` (`build.mjs`) and runs plain
+`node dist/server.js` (sub-second cold start). It self-rebuilds **only** when a
+source `.ts` is newer than `dist/server.js`, so it always reflects the latest
+source with no manual build step. `dist/` is gitignored (regenerable).
+
+## Activation across sessions & tools
+
+- **Claude Code:** registered in `.mcp.json` as `atomic-edit` (committed). New
+  project MCP server needs one-time trust approval on next session start.
+- **OpenCode (all agents + subagents):** registered in project `opencode.json`
+  and global `~/.config/opencode/opencode.json`; the operating rule is in
+  global `~/.config/opencode/AGENTS.md` and the `instructions` key, so every
+  CLI model run via OpenCode (incl. the fleet's `opencode run` subagents)
+  loads the tools and the prefer-atomic standard automatically. Verified:
+  `opencode mcp list` → `✓ atomic-edit connected`.
+
+Operating guidance: `docs/ai/ATOMIC_EDIT_OPERATING_GUIDE.md`.
 
 ## Honest scope
 

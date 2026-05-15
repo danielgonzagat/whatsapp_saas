@@ -76,7 +76,14 @@ npx tsx scripts/mcp/atomic-edit/smoke.ts   # expect: 43 passed, 0 failed
 
 ## Activation
 
-`.mcp.json` carries it to every session. A fresh session needs one-time MCP
-trust approval (or `"atomic-edit"` in this project's `enabledMcpServers` in
-`~/.claude.json`). Full design + tool reference:
-`scripts/mcp/atomic-edit/README.md`.
+- **Claude Code:** `.mcp.json` carries it to every session (one-time MCP
+  trust approval on a fresh session).
+- **OpenCode (all agents + subagents, permanent default):** registered in
+  project `opencode.json` + global `~/.config/opencode/opencode.json`; the
+  prefer-atomic rule lives in global `~/.config/opencode/AGENTS.md` and is
+  combined into every subagent prompt. The fleet's `opencode run` subagents
+  inherit it automatically — no per-invocation flag. Verify with
+  `opencode mcp list` (expect `✓ atomic-edit connected`).
+
+Runtime is plain `node dist/server.js` (launcher self-builds on staleness; no
+tsx/npx). Full design + tool reference: `scripts/mcp/atomic-edit/README.md`.

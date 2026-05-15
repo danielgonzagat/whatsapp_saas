@@ -13,8 +13,10 @@
  */
 
 import * as path from "node:path";
+import { fileURLToPath } from "node:url";
 
-export const REPO_ROOT = path.resolve(__dirname, "..", "..", "..");
+const HERE = path.dirname(fileURLToPath(import.meta.url));
+export const REPO_ROOT = path.resolve(HERE, "..", "..", "..");
 
 /** Exact repo-relative paths that no AI CLI may modify. */
 const PROTECTED_FILES = new Set<string>([
