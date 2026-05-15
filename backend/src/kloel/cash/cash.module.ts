@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { CashPositionTracker } from './cash-position.tracker';
+import { CashPositionTrackerService } from './cash-position.tracker.service';
 import { ReceivablesProjector } from './receivables.projector';
 import { PayablesProjector } from './payables.projector';
 import { RunwayCalculator } from './runway.calculator';
@@ -22,6 +23,7 @@ import { UnsafeOperationBlocker } from './unsafe-operation.blocker';
 @Module({
   providers: [
     CashPositionTracker,
+    CashPositionTrackerService,
     ReceivablesProjector,
     PayablesProjector,
     RunwayCalculator,
@@ -32,6 +34,7 @@ import { UnsafeOperationBlocker } from './unsafe-operation.blocker';
   ],
   exports: [
     CashPositionTracker,
+    CashPositionTrackerService,
     ReceivablesProjector,
     PayablesProjector,
     RunwayCalculator,

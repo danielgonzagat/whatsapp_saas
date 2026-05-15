@@ -1,6 +1,12 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
-import type { Hypothesis, MicroExperiment } from './types';
+import type {
+  AutonomyMode,
+  CommercialRiskClass,
+  Hypothesis,
+  MicroExperiment,
+  ProofTargetLevel,
+} from './types';
 
 interface ExperimentTemplate {
   readonly minEvidence: number;
@@ -8,6 +14,13 @@ interface ExperimentTemplate {
   readonly riskAssessment: 'safe' | 'normal' | 'high';
   readonly targetMetric: string;
   readonly descriptionTemplate: (hypothesis: Hypothesis) => string;
+  readonly commercialWork: string;
+  readonly riskClass: CommercialRiskClass;
+  readonly autonomyMode: AutonomyMode;
+  readonly proofLevelTarget: ProofTargetLevel;
+  readonly validationScene: string;
+  readonly noFaithProofSignal: string;
+  readonly leadLeavesBetterCheck: string;
 }
 
 const DOMAIN_TEMPLATES: ReadonlyMap<string, ExperimentTemplate> = new Map([
@@ -16,10 +29,19 @@ const DOMAIN_TEMPLATES: ReadonlyMap<string, ExperimentTemplate> = new Map([
     {
       minEvidence: 5,
       maxDurationMs: 3 * 24 * 60 * 60 * 1000,
-      riskAssessment: 'normal',
+      riskAssessment: 'safe',
       targetMetric: 'lead_reengagement_rate',
       descriptionTemplate: (h) =>
-        `Measure whether re-engagement strategy improves lead response rate. Hypothesis: ${h.statement}`,
+        `Decide the safest next test before contacting an insecure lead. Hypothesis: ${h.statement}`,
+      commercialWork:
+        'decide whether to wait, explain, escalate, or test a low-risk recovery before sending a message',
+      riskClass: 'R1',
+      autonomyMode: 'alone',
+      proofLevelTarget: 'N3',
+      validationScene: 'Lead interessado, mas inseguro / silencio apos objecao real',
+      noFaithProofSignal: 'owner sees a concrete next-step decision before any lead-facing action',
+      leadLeavesBetterCheck:
+        'test must not add pressure, fabricated urgency, or discount framing before diagnosis',
     },
   ],
   [
@@ -31,6 +53,15 @@ const DOMAIN_TEMPLATES: ReadonlyMap<string, ExperimentTemplate> = new Map([
       targetMetric: 'churn_reduction_rate',
       descriptionTemplate: (h) =>
         `Measure whether churn prevention tactic reduces customer loss. Hypothesis: ${h.statement}`,
+      commercialWork:
+        'decide the safest retention test before contacting a customer with regret risk',
+      riskClass: 'R2',
+      autonomyMode: 'approval',
+      proofLevelTarget: 'N3',
+      validationScene: 'Cliente pos-compra com risco de arrependimento',
+      noFaithProofSignal: 'owner sees the reason for a retention move before approval',
+      leadLeavesBetterCheck:
+        'message must clarify expectation and reduce regret instead of trapping the customer',
     },
   ],
   [
@@ -42,6 +73,13 @@ const DOMAIN_TEMPLATES: ReadonlyMap<string, ExperimentTemplate> = new Map([
       targetMetric: 'deal_acceleration_days',
       descriptionTemplate: (h) =>
         `Measure whether next-step discipline accelerates deal closure. Hypothesis: ${h.statement}`,
+      commercialWork: 'decide the next measurable deal step without adding extra dashboard work',
+      riskClass: 'R1',
+      autonomyMode: 'alone',
+      proofLevelTarget: 'N3',
+      validationScene: 'Dono perdido sem saber o que fazer agora',
+      noFaithProofSignal: 'owner receives a next step with deadline and reason',
+      leadLeavesBetterCheck: 'next step must clarify decision criteria instead of pushing urgency',
     },
   ],
   [
@@ -53,6 +91,14 @@ const DOMAIN_TEMPLATES: ReadonlyMap<string, ExperimentTemplate> = new Map([
       targetMetric: 'handoff_reduction_rate',
       descriptionTemplate: (h) =>
         `Measure whether bot role clarity reduces human handoff. Hypothesis: ${h.statement}`,
+      commercialWork: 'decide when the system should hand off without making the human look worse',
+      riskClass: 'R1',
+      autonomyMode: 'alone',
+      proofLevelTarget: 'N3',
+      validationScene: 'Time humano esquecendo follow-up',
+      noFaithProofSignal: 'handoff reason is visible without understanding architecture',
+      leadLeavesBetterCheck:
+        'handoff must preserve context and dignity instead of blaming the team',
     },
   ],
 ]);
@@ -86,6 +132,13 @@ export class MicroExperimentDesignerService {
       maxDurationMs: template.maxDurationMs,
       designedAt: new Date().toISOString(),
       correlationId,
+      commercialWork: template.commercialWork,
+      riskClass: template.riskClass,
+      autonomyMode: template.autonomyMode,
+      proofLevelTarget: template.proofLevelTarget,
+      validationScene: template.validationScene,
+      noFaithProofSignal: template.noFaithProofSignal,
+      leadLeavesBetterCheck: template.leadLeavesBetterCheck,
     };
   }
 }
