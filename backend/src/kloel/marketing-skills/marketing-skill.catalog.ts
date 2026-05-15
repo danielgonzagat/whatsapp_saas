@@ -49,13 +49,6 @@ const DEFINITIONS: Record<
       'Prefer concise PT-BR outreach that sounds operator-native, not SDR-template translated.',
     ],
   },
-  'community-marketing': {
-    summary: 'Use community loops to create distribution and retention.',
-    keywords: ['comunidade', 'grupo', 'community', 'grupo de clientes'],
-    brazilNotes: [
-      'Brazilian launch groups and WhatsApp/Telegram communities matter more than forum-heavy defaults.',
-    ],
-  },
   'competitor-alternatives': {
     summary: 'Position against competitors and alternatives.',
     keywords: ['concorrente', 'alternativa', 'vs', 'comparativo'],
