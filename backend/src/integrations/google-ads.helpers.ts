@@ -4,10 +4,10 @@ import { NotConfiguredException } from './exceptions/not-configured.exception';
 import { encryptGoogleAdsToken, decryptGoogleAdsToken } from './google-ads-token-crypto';
 
 export const GOOGLE_ADS_PLATFORM = 'google';
-export const GOOGLE_ADS_AUTH_URL = 'https://accounts.google.com/o/oauth2/v2/auth';
-export const GOOGLE_ADS_TOKEN_URL = 'https://oauth2.googleapis.com/token';
+const GOOGLE_ADS_AUTH_URL = 'https://accounts.google.com/o/oauth2/v2/auth';
+const GOOGLE_ADS_TOKEN_URL = 'https://oauth2.googleapis.com/token';
 export const GOOGLE_ADS_REVOKE_URL = 'https://oauth2.googleapis.com/revoke';
-export const GOOGLE_ADS_SCOPE = 'https://www.googleapis.com/auth/adwords';
+const GOOGLE_ADS_SCOPE = 'https://www.googleapis.com/auth/adwords';
 export const GOOGLE_ADS_CURRENT_KEY_VERSION = 1;
 
 export interface GoogleTokenResponse {

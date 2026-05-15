@@ -222,7 +222,7 @@ export function resolveRedisUrl(): string | null {
  * Useful for callers that want to log "Redis configured" without
  * triggering full URL resolution.
  */
-function isRedisConfigured(): boolean {
+export function isRedisConfigured(): boolean {
   if (process.env.REDIS_URL) {
     return true;
   }

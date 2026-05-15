@@ -35,7 +35,7 @@ export function twoProportionZScore(
   return standardError > 0 ? (mindMean - baselineMean) / standardError : 0;
 }
 
-export function inputJson(value: unknown): Prisma.InputJsonValue {
+function inputJson(value: unknown): Prisma.InputJsonValue {
   return JSON.parse(JSON.stringify(value)) as Prisma.InputJsonValue;
 }
 

@@ -1,5 +1,6 @@
 import { Logger } from '@nestjs/common';
 import Redis, { RedisOptions } from 'ioredis';
+import RedisMock from 'ioredis-mock';
 import {
   RedisConfigurationError,
   resolveRedisUrl as canonicalResolveRedisUrl,
@@ -14,7 +15,7 @@ function resolveRedisClientListenerBudget(): number {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : DEFAULT_REDIS_CLIENT_LISTENER_BUDGET;
 }
 
-export function setRedisClientListenerBudget(client: Redis): void {
+function setRedisClientListenerBudget(client: Redis): void {
   const listenerBudget = resolveRedisClientListenerBudget();
   client.setMaxListeners(Math.max(client.getMaxListeners(), listenerBudget));
 }
@@ -68,7 +69,6 @@ export function getRedisUrl(): string {
  */
 export function createRedisClient(options?: RedisOptions): Redis {
   if (process.env.JEST_WORKER_ID) {
-    const RedisMock = require('ioredis-mock') as typeof Redis;
     return new RedisMock();
   }
 

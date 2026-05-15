@@ -5,7 +5,7 @@ export type EmailSubSettings = Record<string, unknown> & { enabled?: boolean };
 export type WhatsAppStatusValue = Record<string, unknown>;
 export type MarketingChannelKey = 'whatsapp' | 'instagram' | 'facebook' | 'tiktok' | 'email';
 
-export const MARKETING_CHANNEL_KEYS = new Set<MarketingChannelKey>([
+const MARKETING_CHANNEL_KEYS = new Set<MarketingChannelKey>([
   'whatsapp',
   'instagram',
   'facebook',

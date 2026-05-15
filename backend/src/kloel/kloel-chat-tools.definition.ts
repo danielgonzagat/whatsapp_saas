@@ -370,7 +370,7 @@ export const KLOEL_CHAT_TOOLS: ChatCompletionTool[] = [
   ...KLOEL_CHAT_TOOLS_SETTINGS_CAMPAIGNS,
 ];
 
-export const KLOEL_SAFE_READ_TOOL_NAMES = [
+const KLOEL_SAFE_READ_TOOL_NAMES = [
   'list_products',
   'search_web',
   'get_dashboard_summary',

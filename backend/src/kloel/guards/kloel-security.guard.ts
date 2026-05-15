@@ -6,7 +6,6 @@ import {
   HttpStatus,
   Injectable,
   OnModuleDestroy,
-  SetMetadata,
   UnauthorizedException,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
@@ -19,16 +18,10 @@ import { asProviderSettings } from '../../whatsapp/provider-settings.types';
  * Decorator para marcar rotas como públicas do KLOEL
  */
 const KLOEL_PUBLIC_METADATA = ['kloel', 'public'].join('_');
-/** Kloel public. */
-export const KloelPublic = () => SetMetadata(KLOEL_PUBLIC_METADATA, true);
-
 /**
  * Decorator para definir rate limit customizado
  */
 const KLOEL_RATE_LIMIT_METADATA = ['kloel', 'rate', 'limit'].join('_');
-/** Kloel rate limit. */
-export const KloelRateLimit = (requests: number, windowMs: number) =>
-  SetMetadata(KLOEL_RATE_LIMIT_METADATA, { requests, windowMs });
 
 interface RateLimitEntry {
   count: number;
@@ -65,10 +58,6 @@ function getWorkspaceId(request: KloelGuardRequest): string | undefined {
     readStringProperty(request.params, 'workspaceId') ??
     readStringProperty(request.body, 'workspaceId')
   );
-}
-
-function getUserSubject(user: unknown): string | undefined {
-  return readStringProperty(user, 'sub');
 }
 
 /**
@@ -328,88 +317,5 @@ export class KloelSecurityGuard implements CanActivate, OnModuleDestroy {
     });
 
     return count;
-  }
-}
-
-/**
- * Guard para verificar acesso ao workspace específico.
- * Verifica se o usuário é membro do workspace.
- */
-@Injectable()
-export class WorkspaceAccessGuard implements CanActivate {
-  private readonly logger = StructuredLogger.from(WorkspaceAccessGuard.name);
-
-  constructor(private readonly prisma: PrismaService) {}
-
-  /** Can activate. */
-  async canActivate(context: ExecutionContext): Promise<boolean> {
-    const request = context.switchToHttp().getRequest<KloelGuardRequest>();
-    const user = request.user;
-    const workspaceId = getWorkspaceId(request);
-
-    if (!workspaceId) {
-      return true; // Sem workspace específico, delegar para outros guards
-    }
-
-    if (!user) {
-      // Se AUTH_OPTIONAL, permitir (útil para desenvolvimento)
-      if (process.env.AUTH_OPTIONAL === 'true' && process.env.NODE_ENV !== 'production') {
-        return true;
-      }
-      throw new UnauthorizedException('User not authenticated');
-    }
-    const userId = getUserSubject(user);
-    if (!userId) {
-      throw new UnauthorizedException('User not authenticated');
-    }
-
-    // Verificar se usuário é membro do workspace
-    const membership = await this.prisma.agent.findFirst({
-      where: {
-        id: userId,
-        workspaceId,
-      },
-      select: { id: true, role: true },
-    });
-
-    if (!membership) {
-      this.logger.warn('Unauthorized workspace access attempt', {
-        userId,
-        workspaceId,
-      });
-      throw new ForbiddenException('Not a member of this workspace');
-    }
-
-    // Adicionar role ao request
-    request.userRole = membership.role;
-
-    return true;
-  }
-}
-
-/**
- * Guard para endpoints que modificam dados sensíveis.
- * Requer confirmação ou 2FA.
- */
-@Injectable()
-export class SensitiveOperationGuard implements CanActivate {
-  /** Can activate. */
-  canActivate(context: ExecutionContext): boolean {
-    const request = context.switchToHttp().getRequest<KloelGuardRequest>();
-
-    // Verificar header de confirmação
-    const confirmationToken = request.headers['x-confirm-action'];
-
-    if (!confirmationToken) {
-      throw new ForbiddenException({
-        message: 'This operation requires confirmation',
-        code: 'CONFIRMATION_REQUIRED',
-        action: 'Please include X-Confirm-Action header',
-      });
-    }
-
-    // Em produção, validar o token de confirmação
-    // Por enquanto, aceitar qualquer valor
-    return true;
   }
 }

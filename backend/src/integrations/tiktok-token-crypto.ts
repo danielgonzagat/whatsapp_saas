@@ -107,7 +107,3 @@ export function decryptTikTokToken(token: string | null | undefined): string | n
     return token;
   }
 }
-
-export function isEncryptedTikTokToken(token: string): boolean {
-  return /^v\d+\.[A-Za-z0-9+/]+=*$/.test(String(token));
-}

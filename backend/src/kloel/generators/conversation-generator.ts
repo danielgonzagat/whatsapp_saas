@@ -3,7 +3,7 @@ import { createSeededRandom } from './random';
 
 const INTENTS = ['duvida', 'preco', 'compra', 'confianca', 'abandono'] as const;
 
-export interface GeneratedConversationTurn {
+interface GeneratedConversationTurn {
   intent: string;
   minuteOffset: number;
   text: string;

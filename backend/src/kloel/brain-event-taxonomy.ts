@@ -134,62 +134,6 @@ export interface ProductEventPayload extends CommercialEventPayload {
   };
 }
 
-export interface BrainEventPayload extends CommercialEventPayload {
-  eventType: 'brain.decide' | 'brain.observe' | 'brain.autonomy.propose';
-  payload: Record<string, unknown>;
-}
-
-export interface MindEventPayload extends CommercialEventPayload {
-  eventType:
-    | 'mind.decision.created'
-    | 'mind.decision.resolved'
-    | 'mind.prediction.created'
-    | 'mind.prediction.resolved'
-    | 'mind.surprise.recorded';
-  payload: {
-    decisionId?: string;
-    predictionId?: string;
-    confidence?: number;
-    domain?: string;
-  };
-}
-
-export interface CapabilityEventPayload extends CommercialEventPayload {
-  eventType: 'capability.executed' | 'capability.failed';
-  payload: {
-    capabilityId: string;
-    errorMessage?: string;
-    durationMs?: number;
-  };
-}
-
-export interface ContactEventPayload extends CommercialEventPayload {
-  eventType: 'contact.segmented';
-  payload: {
-    contactId: string;
-    segmentKey: string;
-    segmentValue: string;
-  };
-}
-
-export interface ChannelEventPayload extends CommercialEventPayload {
-  eventType: 'channel.connected' | 'channel.disconnected' | 'channel.externally_blocked';
-  payload: {
-    channelId: string;
-    channelType: string;
-    reason?: string;
-  };
-}
-
-export interface IdentityEventPayload extends CommercialEventPayload {
-  eventType: 'identity.contact.merged' | 'identity.contact.resolved' | 'identity.merge_candidate.created';
-  payload: {
-    sourceContactId: string;
-    targetContactId: string;
-    confidence?: number;
-  };
-}
-
 export interface ConceptEventPayload extends CommercialEventPayload {
   eventType: 'concept.detected';
   payload: {
