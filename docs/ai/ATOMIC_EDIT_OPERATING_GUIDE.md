@@ -32,6 +32,9 @@ built-in `Edit` does not.
    with its exact range returned.
 3. Edit with the narrowest operator that expresses the intention:
    - one literal → `atomic_replace_literal`
+   - any multi-line / block / verbatim-text edit → `atomic_replace_text`
+     (builtin-`edit` ergonomics, no coordinates, but syntax-validated +
+     atomic + guarded). Never fall back to builtin `edit`/`patch` for code.
    - a token / sub-expression at a known range → `atomic_replace_range` /
      `atomic_insert_at` / `atomic_delete_range`
    - several sites, one intention → `atomic_apply_edits` (LSP `TextEdit[]`)
@@ -71,7 +74,7 @@ built-in `Edit` does not.
 ## Verify after touching the server
 
 ```sh
-npx tsx scripts/mcp/atomic-edit/smoke.ts   # expect: 43 passed, 0 failed
+npx tsx scripts/mcp/atomic-edit/smoke.ts   # expect: 47 passed, 0 failed
 ```
 
 ## Activation

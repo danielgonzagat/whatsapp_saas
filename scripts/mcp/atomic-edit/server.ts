@@ -24,6 +24,7 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { z } from "zod";
 import {
   applyEdits,
+  replaceText,
   renameSymbol,
   replaceLiteral,
   type TextEditSpec,
@@ -186,6 +187,46 @@ server.registerTool(
           newText: a.newText,
         },
       ]);
+      return commit(relPath, absPath, before, r, {}, a.preview ?? false);
+    } catch (e) {
+      return fail(e instanceof Error ? e.message : String(e));
+    }
+  },
+);
+
+server.registerTool(
+  "atomic_replace_text",
+  {
+    title: "Replace exact text (builtin-edit ergonomics + validation)",
+    description:
+      "Replace a verbatim oldText block with newText — same ergonomics as the blunt builtin edit/str_replace " +
+      "(no coordinates needed), BUT syntax-regression-validated + atomic-write + governance-guarded like every " +
+      "atomic op. PREFER THIS over the builtin edit for any multi-line/block change: it is just as easy and it " +
+      "refuses to persist broken code. Requires a unique match (add surrounding context) or an explicit " +
+      "occurrence index. Supports preview + expectedSha256.",
+    inputSchema: {
+      file: z.string(),
+      oldText: z.string().describe("exact verbatim text to replace, including whitespace/indentation"),
+      newText: z.string(),
+      occurrence: z
+        .number()
+        .int()
+        .min(1)
+        .optional()
+        .describe("1-based; omit to require a unique match (refuses ambiguity)"),
+      expectedSha256: z
+        .string()
+        .optional()
+        .describe("optimistic-concurrency guard: refuse if the file's sha256 differs"),
+      preview: z.boolean().optional().describe("dry-run: validate + return diff, do not write"),
+    },
+  },
+  async (a) => {
+    try {
+      const { absPath, relPath } = resolveSafeTarget(a.file);
+      const before = readUtf8(absPath);
+      guardSha(before, a.expectedSha256);
+      const r = replaceText(relPath, before, a.oldText, a.newText, a.occurrence);
       return commit(relPath, absPath, before, r, {}, a.preview ?? false);
     } catch (e) {
       return fail(e instanceof Error ? e.message : String(e));

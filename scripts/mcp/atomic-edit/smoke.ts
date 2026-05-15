@@ -12,7 +12,7 @@
 import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
-import { applyEdits, renameSymbol, replaceLiteral, posToOffset } from "./engine.js";
+import { applyEdits, replaceText, renameSymbol, replaceLiteral, posToOffset } from "./engine.js";
 import { outline, readSymbol } from "./nav.js";
 import {
   editSymbol,
@@ -97,6 +97,32 @@ async function partA(): Promise<void> {
     check("batch applies both", r.newText === "const a = 10;\nconst b = 20;\n", JSON.stringify(r.newText));
   }
 
+  // replace_text: unique exact match, validated
+  {
+    const r = replaceText("a.ts", "const port = 3000;\n", "3000", "8080");
+    check("replace_text unique match", r.newText === "const port = 8080;\n" && r.validation.ok, JSON.stringify(r.newText));
+  }
+  // replace_text: ambiguity refused without occurrence
+  {
+    let threw = false;
+    try {
+      replaceText("a.ts", "let x=1;\nlet x=1;\n", "x=1", "x=2");
+    } catch {
+      threw = true;
+    }
+    check("replace_text refuses ambiguity", threw);
+  }
+  // replace_text: occurrence index targets the Nth
+  {
+    const r = replaceText("a.ts", "a();\na();\na();\n", "a()", "b()", 2);
+    check("replace_text occurrence=2", r.newText === "a();\nb();\na();\n", JSON.stringify(r.newText));
+  }
+  // replace_text: syntax-regression refused (the whole point vs builtin edit)
+  {
+    const r = replaceText("a.ts", "function f() { return 1; }\n", "return 1;", "return = = {");
+    check("replace_text refuses syntax regression", r.validation.ok === false, JSON.stringify(r.validation));
+  }
+
   // overlap rejected
   {
     let threw = false;
@@ -169,8 +195,9 @@ async function partB(): Promise<void> {
     const tools = await client.listTools();
     const names = tools.tools.map((t) => t.name).sort();
     check(
-      "server lists all 14 v3 tools",
-      names.length === 14 &&
+      "server lists all 15 tools (incl. atomic_replace_text)",
+      names.length === 15 &&
+        names.includes("atomic_replace_text") &&
         names.includes("code_outline") &&
         names.includes("atomic_edit_symbol") &&
         names.includes("atomic_add_import") &&

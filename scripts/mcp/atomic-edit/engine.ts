@@ -364,4 +364,59 @@ export async function replaceLiteral(
   return { newText: next, matched, validation: validate(file, original, next) };
 }
 
+/**
+ * Exact-string replacement with the ergonomics of the blunt builtin `edit`
+ * (oldText -> newText, uniqueness-checked) BUT routed through the same
+ * no-syntax-regression validation + Expansion-Factor metric as every other
+ * atomic op. This is the primitive whose absence made swarm agents abandon
+ * the atomic suite and fall back to the unsafe builtin for multi-line edits.
+ *
+ * occurrence: 1-based. Omit → require exactly one match (refuse ambiguity,
+ * exactly like builtin edit's uniqueness contract). Provide → target the Nth.
+ */
+export function replaceText(
+  file: string,
+  original: string,
+  oldText: string,
+  newText: string,
+  occurrence?: number,
+): ApplyResult {
+  if (oldText.length === 0) throw new Error("oldText must be non-empty");
+  if (oldText === newText) throw new Error("oldText and newText are identical");
+
+  const offsets: number[] = [];
+  for (let i = original.indexOf(oldText); i !== -1; i = original.indexOf(oldText, i + 1)) {
+    offsets.push(i);
+  }
+  if (offsets.length === 0) {
+    throw new Error(`oldText not found (verbatim, incl. whitespace): ${JSON.stringify(oldText.slice(0, 80))}`);
+  }
+  let start: number;
+  if (occurrence == null) {
+    if (offsets.length > 1) {
+      throw new Error(
+        `ambiguous: ${offsets.length} occurrences of oldText; add surrounding context to make it unique, ` +
+          `or pass occurrence (1-${offsets.length})`,
+      );
+    }
+    start = offsets[0];
+  } else {
+    if (occurrence < 1 || occurrence > offsets.length) {
+      throw new Error(`occurrence ${occurrence} out of range (1-${offsets.length})`);
+    }
+    start = offsets[occurrence - 1];
+  }
+  const end = start + oldText.length;
+  const next = original.slice(0, start) + newText + original.slice(end);
+  const lineSurfaceChars = lineSurface(original, start, end);
+  const changedChars = Math.max(end - start, newText.length);
+  return {
+    newText: next,
+    validation: validate(file, original, next),
+    changedChars,
+    lineSurfaceChars,
+    expansionFactor: Number((lineSurfaceChars / Math.max(changedChars, 1)).toFixed(2)),
+  };
+}
+
 export { offsetToLine };
