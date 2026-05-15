@@ -29,7 +29,6 @@ import type { SelfTrustReport } from './self-trust/checks-core';
 import { formatSelfTrustReport } from './self-trust/runner';
 import { readTextFile } from './safe-fs';
 import type { flags } from './cli-args';
-import { refreshProofReadinessArtifact } from './proof-readiness-artifact';
 
 export interface DerivedOutputsInput {
   config: PulseConfig;
@@ -45,9 +44,7 @@ function generateArtifactsWithProofReadiness(
   snapshot: PulseArtifactSnapshot,
   rootDir: string,
 ): PulseArtifactPaths {
-  const artifactPaths = generateArtifacts(snapshot, rootDir);
-  refreshProofReadinessArtifact(rootDir);
-  return artifactPaths;
+  return generateArtifacts(snapshot, rootDir);
 }
 
 export async function runDerivedOutputs(input: DerivedOutputsInput): Promise<void> {
@@ -92,10 +89,11 @@ export async function runDerivedOutputs(input: DerivedOutputsInput): Promise<voi
   const datadogAppKey = process.env.DATADOG_APP_KEY;
   const datadogSite = process.env.DATADOG_SITE;
   const prometheusBaseUrl = process.env.PROMETHEUS_BASE_URL || process.env.PULSE_PROMETHEUS_URL;
-  const prometheusBearerToken = process.env.PROMETHEUS_BEARER_TOKEN || process.env.PULSE_PROMETHEUS_TOKEN;
+  const prometheusBearerToken =
+    process.env.PROMETHEUS_BEARER_TOKEN || process.env.PULSE_PROMETHEUS_TOKEN;
   const prometheusQuery = process.env.PROMETHEUS_QUERY;
   const codecovToken = process.env.CODECOV_TOKEN;
-  const dependabotToken = process.env.GITHUB_TOKEN; 
+  const dependabotToken = process.env.GITHUB_TOKEN;
 
   // Run external sources orchestration
   const externalSourcesConfig: ExternalSourcesConfig = {
@@ -131,7 +129,9 @@ export async function runDerivedOutputs(input: DerivedOutputsInput): Promise<voi
       repo: process.env.GITHUB_REPO || '',
     },
     ...(config.certificationProfile != null ? { profile: config.certificationProfile } : {}),
-    ...(config.certificationProfile != null ? { certificationScope: config.certificationProfile } : {}),
+    ...(config.certificationProfile != null
+      ? { certificationScope: config.certificationProfile }
+      : {}),
   };
   const externalSourcesTask = runExternalSourcesOrchestrator(externalSourcesConfig).catch(
     () => null,

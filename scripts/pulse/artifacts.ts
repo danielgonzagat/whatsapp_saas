@@ -41,6 +41,7 @@ function __artifact_registry_discovery_stubs__(registry: PulseArtifactRegistry):
   writeRegisteredArtifact(registry, 'structural-graph', '');
   writeRegisteredArtifact(registry, 'execution-chains', '');
   writeRegisteredArtifact(registry, 'execution-matrix', '');
+  writeRegisteredArtifact(registry, 'path-coverage', '');
   writeRegisteredArtifact(registry, 'product-graph', '');
   writeRegisteredArtifact(registry, 'capability-state', '');
   writeRegisteredArtifact(registry, 'flow-projection', '');

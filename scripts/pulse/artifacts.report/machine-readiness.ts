@@ -3,6 +3,7 @@
  */
 import { buildAutonomyQueue } from '../artifacts.queue';
 import { buildAutonomyCycleProof } from '../artifacts.autonomy/readiness';
+import { runCrossArtifactConsistencyCheck } from '../cross-artifact-consistency-check';
 import type {
   PulseArtifactSnapshot,
   PulseMachineReadiness,
@@ -15,10 +16,7 @@ import { discoverAllObservedArtifactFilenames } from '../dynamic-reality-kernel/
 import { discoverConvergenceRiskLevelLabels } from '../__kernel_additions__/discoverConvergenceRiskLevelLabels';
 import { discoverDoDGateStatusLabels } from '../dynamic-reality-kernel/type-contract-engines';
 import { discoverExecutionMatrixPathStatusLabels } from '../__kernel_additions__/discoverExecutionMatrixPathStatusLabels';
-import {
-  deriveUnitValue,
-  deriveZeroValue,
-} from '../dynamic-reality-kernel/catalog-arithmetic';
+import { deriveUnitValue, deriveZeroValue } from '../dynamic-reality-kernel/catalog-arithmetic';
 
 export function getProductFacingCapabilities(
   snapshot: PulseArtifactSnapshot,
@@ -106,6 +104,14 @@ function getTerminalCriticalPathDiagnostics(paths: PulseExecutionMatrixPath[]): 
   };
 }
 
+function currentCrossArtifactConsistencyPass(): boolean {
+  try {
+    return runCrossArtifactConsistencyCheck().pass === true;
+  } catch {
+    return false;
+  }
+}
+
 export function buildPulseMachineReadiness(
   snapshot: PulseArtifactSnapshot,
   convergencePlan: PulseConvergencePlan,
@@ -122,7 +128,9 @@ export function buildPulseMachineReadiness(
   const consistencyCheck = snapshot.certification.selfTrustReport?.checks?.find(
     (check) => check.id === 'cross-artifact-consistency',
   );
-  const artifactConsistencyPass = consistencyCheck?.pass === true;
+  const artifactConsistencyPass =
+    consistencyCheck?.pass === true ||
+    (consistencyCheck === undefined && currentCrossArtifactConsistencyPass());
   const executionMatrixGate = snapshot.certification.gates.executionMatrixCompletePass;
   const criticalPathGate = snapshot.certification.gates.criticalPathObservedPass;
   const breakpointGate = snapshot.certification.gates.breakpointPrecisionPass;

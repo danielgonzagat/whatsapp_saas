@@ -4,10 +4,7 @@ import {
   buildPulseAutonomyStateSeed,
 } from '../autonomy-loop.state-io/seed-builders';
 import { buildPulseAutonomyMemoryState } from '../autonomy-loop.memory';
-import {
-  buildArtifactRegistry,
-  resolveArtifactRelativePath,
-} from '../artifact-registry/registry';
+import { buildArtifactRegistry, resolveArtifactRelativePath } from '../artifact-registry/registry';
 import type { PulseArtifactRegistry } from '../artifact-registry/discovery';
 import { cleanupPulseArtifacts } from '../artifact-gc';
 import { buildConvergencePlan } from '../convergence-plan/plan';
@@ -20,6 +17,8 @@ import { buildArtifactIndex } from '../artifacts.directive/directive-index';
 import { normalizeCanonicalArtifactValue } from '../artifacts.queue';
 import { deriveAuthorityState } from '../artifacts.autonomy/authority';
 import { buildRuntimeProbesArtifact } from '../runtime-probes/main';
+import { buildPathCoverageState } from '../path-coverage-engine/build-coverage-state';
+import { refreshProofReadinessArtifact } from '../proof-readiness-artifact';
 import { createRunIdentity, type PulseRunIdentity } from '../run-identity';
 import { buildFindingEventSurface } from '../finding-event-surface';
 import { synthesizeDiagnosticFromBreaks } from '../legacy-break-adapter';
@@ -361,6 +360,7 @@ export function generateArtifacts(
     JSON.stringify(normalizeCanonicalArtifactValue(snapshot.executionMatrix), null, INDENT),
     identity,
   );
+  buildPathCoverageState(rootDir, snapshot.executionMatrix, { identity });
   writeRegisteredArtifact(
     registry,
     'product-graph',
@@ -578,6 +578,47 @@ export function generateArtifacts(
     registry,
     'resolved-manifest',
     JSON.stringify(snapshot.resolvedManifest, null, INDENT),
+    identity,
+  );
+  refreshProofReadinessArtifact(rootDir, { generatedAt: identity.generatedAt });
+
+  const machineReadinessWithSelfTrust = buildPulseMachineReadiness(
+    snapshotWithNoHardcodedRealityState,
+    convergencePlan,
+    previousAutonomyState,
+  );
+  writeRegisteredArtifact(
+    registry,
+    'certificate',
+    buildCertificate(snapshotWithNoHardcodedRealityState, convergencePlan, previousAutonomyState),
+    identity,
+  );
+  writeRegisteredArtifact(
+    registry,
+    'machine-readiness',
+    JSON.stringify(machineReadinessWithSelfTrust, null, INDENT),
+    identity,
+  );
+  writeRegisteredArtifact(
+    registry,
+    'report',
+    buildReport(
+      snapshotWithNoHardcodedRealityState,
+      convergencePlan,
+      cleanupReport,
+      previousAutonomyState,
+    ),
+  );
+  writeRegisteredArtifact(
+    registry,
+    'artifact-index',
+    buildArtifactIndex(
+      registry,
+      cleanupReport,
+      authority,
+      identity,
+      machineReadinessWithSelfTrust as unknown as Parameters<typeof buildArtifactIndex>[4],
+    ),
     identity,
   );
 

@@ -44,10 +44,12 @@ export const SCANNABLE_EXTENSIONS = new Set([
 ]);
 
 const IMPORT_REGEX =
-  /(?:(?:import\s+(?:[\s\S]*?)\s+from\s+)|(?:import\s+))['"]([^'"]+)['"]|require\(['"]([^'"]+)['"]\)|(?:export\s+(?:[\s\S]*?)\s+from\s+)['"]([^'"]+)['"]/g;
+  /(?:(?:import\s*(?:type\s+)?[\w*$\s{},]*?\s*from\s*)|(?:import\s*))['"]([^'"]+)['"]|require\(['"]([^'"]+)['"]\)|(?:export\s+(?:type\s+)?(?:[\w*$\s{},]*?|\*)\s+from\s*)['"]([^'"]+)['"]|import\(['"]([^'"]+)['"]\)/g;
 
 const EXPORT_REGEX =
   /\bexport\s+(?:default\s+|const\s+|function\s+|class\s+|let\s+|var\s+|async\s+function\s+|type\s+|interface\s+|enum\s+|abstract\s+class\s+|\*)/g;
+
+const RESOURCE_REF_REGEX = /\b(?:src|href)=["']([^"']+)["']/g;
 
 export function classifyFileExtension(filePath: string): string {
   const ext = path.extname(filePath).toLowerCase();
@@ -215,12 +217,23 @@ export function extractImports(_filePath: string, content: string): string[] {
   const regex = new RegExp(IMPORT_REGEX.source, 'g');
 
   while ((match = regex.exec(content)) !== null) {
-    const importPath = match[1] || match[2] || match[3];
+    const importPath = match[1] || match[2] || match[3] || match[4];
     if (!importPath || importPath.startsWith('@types/')) continue;
     imports.push(importPath);
   }
 
+  const resourceRegex = new RegExp(RESOURCE_REF_REGEX.source, 'g');
+  while ((match = resourceRegex.exec(content)) !== null) {
+    const resourcePath = match[1];
+    if (!resourcePath || isExternalResourceReference(resourcePath)) continue;
+    imports.push(resourcePath);
+  }
+
   return imports;
+}
+
+function isExternalResourceReference(resourcePath: string): boolean {
+  return /^(https?:|data:|mailto:|tel:|#)/u.test(resourcePath);
 }
 
 export function hasExports(content: string): boolean {
@@ -232,17 +245,45 @@ export function resolveImportPath(
   importSpec: string,
   importerDir: string,
   allKnownPaths: Set<string>,
+  aliasCandidates: ReadonlyArray<string> = [],
 ): string | null {
   if (importSpec.startsWith('.')) {
-    const rawCandidate = path.resolve(importerDir, importSpec);
-    for (const ext of discoverResolvableSourceExtensions()) {
-      const candidate = rawCandidate + ext;
-      if (allKnownPaths.has(candidate)) return candidate;
-    }
-    if (allKnownPaths.has(rawCandidate)) return rawCandidate;
-    return null;
+    return resolveKnownPath(path.resolve(importerDir, importSpec), allKnownPaths);
   }
-  return importSpec;
+
+  if (importSpec.startsWith('/')) {
+    return resolvePublicResourcePath(importSpec, allKnownPaths);
+  }
+
+  for (const rawCandidate of aliasCandidates) {
+    const resolved = resolveKnownPath(rawCandidate, allKnownPaths);
+    if (resolved) return resolved;
+  }
+
+  return null;
+}
+
+function resolvePublicResourcePath(
+  importSpec: string,
+  allKnownPaths: Set<string>,
+): string | null {
+  const normalizedImport = importSpec.split(path.sep).join('/');
+  for (const knownPath of allKnownPaths) {
+    const normalizedKnownPath = knownPath.split(path.sep).join('/');
+    if (normalizedKnownPath.endsWith(`/public${normalizedImport}`)) {
+      return knownPath;
+    }
+  }
+  return null;
+}
+
+function resolveKnownPath(rawCandidate: string, allKnownPaths: Set<string>): string | null {
+  if (allKnownPaths.has(rawCandidate)) return rawCandidate;
+  for (const ext of discoverResolvableSourceExtensions()) {
+    const candidate = rawCandidate + ext;
+    if (allKnownPaths.has(candidate)) return candidate;
+  }
+  return null;
 }
 
 function discoverResolvableSourceExtensions(): string[] {

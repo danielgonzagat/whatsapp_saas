@@ -151,6 +151,13 @@ function shouldMirrorToRoot(artifactPath: string, context: ArtifactDiscoveryCont
   if (context.rootArtifacts.has(artifactPath)) {
     return true;
   }
+  if (
+    referencesFor(context.repoReferences, artifactPath).some((moduleRef) =>
+      moduleRef.includes('cross-artifact-consistency-check'),
+    )
+  ) {
+    return true;
+  }
   return referencesFor(context.repoReferences, artifactPath).some(
     (moduleRef) => !moduleRef.startsWith('./') && !moduleRef.includes('/__tests__/'),
   );

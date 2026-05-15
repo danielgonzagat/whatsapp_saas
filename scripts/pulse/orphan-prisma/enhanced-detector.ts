@@ -203,6 +203,21 @@ function checkSqlText(
 }
 
 /**
+ * Build a map from table name (from @@map on PrismaModel.tableName) to model accessor name.
+ * Uses already-parsed PrismaModel[] instead of re-parsing schema text with regex.
+ */
+export function buildTableNameMapFromModels(models: PrismaModel[]): Map<string, string> {
+  const map = new Map<string, string>();
+  for (const model of models) {
+    if (model.tableName) {
+      const accessor = model.accessorName ?? model.name.charAt(0).toLowerCase() + model.name.slice(1);
+      map.set(model.tableName.toLowerCase(), accessor);
+    }
+  }
+  return map;
+}
+
+/**
  * Enhanced model collection: extends the existing model detection with
  * include/select relation detection and raw SQL detection.
  *

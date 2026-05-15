@@ -137,11 +137,14 @@ export function pathProofReadinessInputsExist(rootDir: string): boolean {
   );
 }
 
-export function refreshProofReadinessArtifact(rootDir: string): ProofReadinessArtifact | null {
+export function refreshProofReadinessArtifact(
+  rootDir: string,
+  input: BuildProofReadinessArtifactInput = {},
+): ProofReadinessArtifact | null {
   if (!pathProofReadinessInputsExist(rootDir)) {
     return null;
   }
-  return buildProofReadinessArtifact(rootDir);
+  return buildProofReadinessArtifact(rootDir, input);
 }
 
 export function buildProofReadinessArtifact(

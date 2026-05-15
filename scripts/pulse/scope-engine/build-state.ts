@@ -1,24 +1,11 @@
 import * as crypto from 'crypto';
 import * as path from 'path';
 import { safeJoin } from '../lib/safe-path';
-import {
-  ensureDir,
-  readDir,
-  readTextFile,
-  statPath,
-  writeTextFile,
-} from '../safe-fs';
-import { IGNORED_DIRECTORIES } from '../scope-state.constants/main';
-import { loadGovernanceBoundary } from '../scope-state-classify';
-import {
-  discoverAllObservedArtifactFilenames,
-  discoverDirectorySkipHintsFromEvidence,
-} from '../dynamic-reality-kernel/token-evidence';
-import type {
-  ScopeEngineState,
-  ScopeEngineSummary,
-  ScopeFileEntry,
-} from '../types.scope-engine';
+import { ensureDir, readDir, readTextFile, statPath, writeTextFile } from '../safe-fs';
+import { IGNORED_DIRECTORIES, ROOT_CONFIG_FILES } from '../scope-state.constants/main';
+import { loadGovernanceBoundary, type GovernanceBoundary } from '../scope-state-classify';
+import { discoverDirectorySkipHintsFromEvidence } from '../dynamic-reality-kernel/token-evidence';
+import type { ScopeEngineState, ScopeEngineSummary, ScopeFileEntry } from '../types.scope-engine';
 import {
   classifyFileExtension,
   classifyFileRole,
@@ -39,7 +26,12 @@ export function computeContentHash(content: string): string {
   return crypto.createHash('sha256').update(content).digest('hex');
 }
 
-export function walkFiles(dir: string, files: string[]): void {
+interface WalkFilesOptions {
+  rootDir: string;
+  observableHiddenDirectories: ReadonlySet<string>;
+}
+
+export function walkFiles(dir: string, files: string[], options?: WalkFilesOptions): void {
   let entries: string[];
   try {
     entries = readDir(dir);
@@ -57,31 +49,306 @@ export function walkFiles(dir: string, files: string[]): void {
       continue;
     }
     if (stats.isDirectory()) {
-      if (!entry.startsWith('.') && !discoverDirectorySkipHintsFromEvidence().has(entry)) {
-        walkFiles(fullPath, files);
+      if (shouldDescendDirectory(entry, options) && !discoverDirectorySkipHintsFromEvidence().has(entry)) {
+        walkFiles(fullPath, files, options);
       }
     } else if (stats.isFile()) {
-      const ext = path.extname(entry).toLowerCase();
-      if (SCANNABLE_EXTENSIONS.has(ext)) {
+      if (isScannableScopeEngineFile(fullPath, entry, options)) {
         files.push(fullPath);
       }
     }
   }
 }
 
+function shouldDescendDirectory(entry: string, options?: WalkFilesOptions): boolean {
+  if (IGNORED_DIRECTORIES.has(entry)) return false;
+  if (!entry.startsWith('.')) return true;
+  return Boolean(options?.observableHiddenDirectories.has(entry));
+}
+
+function isScannableScopeEngineFile(
+  filePath: string,
+  basename: string,
+  options?: WalkFilesOptions,
+): boolean {
+  const ext = path.extname(basename).toLowerCase();
+  if (SCANNABLE_EXTENSIONS.has(ext)) return true;
+  if (ROOT_CONFIG_FILES.has(basename)) return true;
+  if (basename === 'Dockerfile' || basename.startsWith('Dockerfile.')) return true;
+  if (!options) return false;
+  const relativePath = normalizeRelativePath(options.rootDir, filePath);
+  const firstSegment = relativePath.split('/')[0] ?? '';
+  return options.observableHiddenDirectories.has(firstSegment);
+}
+
 export function getOrphanFiles(state: ScopeEngineState): ScopeFileEntry[] {
-  return state.files.filter((f) => f.connections.length === 0 && f.connectedFrom.length === 0);
+  return state.files.filter((f) => !hasScopeGraphEvidence(f));
 }
 
 export function getCriticalOrphans(state: ScopeEngineState): ScopeFileEntry[] {
   return state.files.filter(
-    (f) =>
-      f.isSource &&
-      !f.isTest &&
-      !f.isGenerated &&
-      f.connections.length === 0 &&
-      f.connectedFrom.length === 0,
+    (f) => f.isSource && !f.isTest && !f.isGenerated && !hasScopeGraphEvidence(f),
   );
+}
+
+interface TsconfigPathAlias {
+  configDir: string;
+  baseDir: string;
+  importPattern: string;
+  targetPatterns: string[];
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function readTsconfigPathAliases(filePaths: string[]): TsconfigPathAlias[] {
+  const aliases: TsconfigPathAlias[] = [];
+
+  for (const filePath of filePaths) {
+    if (!path.basename(filePath).startsWith('tsconfig') || path.extname(filePath) !== '.json') {
+      continue;
+    }
+
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(readTextFile(filePath));
+    } catch {
+      continue;
+    }
+
+    if (!isRecord(parsed) || !isRecord(parsed.compilerOptions)) {
+      continue;
+    }
+
+    const compilerOptions = parsed.compilerOptions;
+    if (!isRecord(compilerOptions.paths)) {
+      continue;
+    }
+
+    const configDir = path.dirname(filePath);
+    const baseUrl = typeof compilerOptions.baseUrl === 'string' ? compilerOptions.baseUrl : '.';
+    const baseDir = path.resolve(configDir, baseUrl);
+
+    for (const [importPattern, targetValue] of Object.entries(compilerOptions.paths)) {
+      if (!Array.isArray(targetValue)) {
+        continue;
+      }
+
+      const targetPatterns = targetValue.filter(
+        (target): target is string => typeof target === 'string',
+      );
+      if (targetPatterns.length === 0) {
+        continue;
+      }
+
+      aliases.push({
+        configDir,
+        baseDir,
+        importPattern,
+        targetPatterns,
+      });
+    }
+  }
+
+  return aliases;
+}
+
+function isWithinDirectory(candidatePath: string, directoryPath: string): boolean {
+  const relative = path.relative(directoryPath, candidatePath);
+  return relative === '' || (!relative.startsWith('..') && !path.isAbsolute(relative));
+}
+
+function matchImportPattern(importSpec: string, pattern: string): string | null {
+  const wildcardIndex = pattern.indexOf('*');
+  if (wildcardIndex === -1) {
+    return importSpec === pattern ? '' : null;
+  }
+
+  const prefix = pattern.slice(0, wildcardIndex);
+  const suffix = pattern.slice(wildcardIndex + 1);
+  if (!importSpec.startsWith(prefix) || !importSpec.endsWith(suffix)) {
+    return null;
+  }
+
+  return importSpec.slice(prefix.length, importSpec.length - suffix.length);
+}
+
+function applyTargetPattern(targetPattern: string, wildcardValue: string): string {
+  return targetPattern.includes('*') ? targetPattern.replace('*', wildcardValue) : targetPattern;
+}
+
+function resolveTsconfigAliasCandidates(
+  importSpec: string,
+  importerDir: string,
+  aliases: ReadonlyArray<TsconfigPathAlias>,
+): string[] {
+  const candidates: string[] = [];
+
+  for (const alias of aliases) {
+    if (!isWithinDirectory(importerDir, alias.configDir)) {
+      continue;
+    }
+
+    const wildcardValue = matchImportPattern(importSpec, alias.importPattern);
+    if (wildcardValue === null) {
+      continue;
+    }
+
+    for (const targetPattern of alias.targetPatterns) {
+      candidates.push(
+        path.resolve(alias.baseDir, applyTargetPattern(targetPattern, wildcardValue)),
+      );
+    }
+  }
+
+  return candidates;
+}
+
+function discoverObservableHiddenDirectories(boundary: GovernanceBoundary): Set<string> {
+  const directories = new Set<string>();
+  for (const protectedPath of [...boundary.protectedExact, ...boundary.protectedPrefixes]) {
+    const firstSegment = protectedPath.split('/')[0] ?? '';
+    if (firstSegment.startsWith('.') && !IGNORED_DIRECTORIES.has(firstSegment)) {
+      directories.add(firstSegment);
+    }
+  }
+  return directories;
+}
+
+function hasScopeGraphEvidence(entry: ScopeFileEntry): boolean {
+  return (
+    entry.connections.length > 0 ||
+    entry.connectedFrom.length > 0 ||
+    entry.capabilityIds.length > 0 ||
+    entry.flowIds.length > 0 ||
+    entry.nodeIds.length > 0
+  );
+}
+
+function normalizeRelativePath(rootDir: string, filePath: string): string {
+  return path.relative(rootDir, filePath).split(path.sep).join('/');
+}
+
+function basenameWithoutKnownSourceSuffix(relativePath: string): string {
+  return path
+    .basename(relativePath)
+    .replace(/\.(d\.)?(ts|tsx|js|jsx|mjs|cjs)$/u, '')
+    .toLowerCase();
+}
+
+function isNextAppRouterEntrypoint(relativePath: string): boolean {
+  if (!relativePath.includes('/src/app/') && !relativePath.includes('/app/')) {
+    return false;
+  }
+
+  return new Set([
+    'page',
+    'route',
+    'layout',
+    'loading',
+    'error',
+    'global-error',
+    'not-found',
+    'template',
+    'default',
+  ]).has(basenameWithoutKnownSourceSuffix(relativePath));
+}
+
+function isNextRuntimeConventionEntrypoint(relativePath: string): boolean {
+  return new Set([
+    'next.config',
+    'next-env',
+    'instrumentation',
+    'instrumentation-client',
+    'middleware',
+    'proxy',
+  ]).has(basenameWithoutKnownSourceSuffix(relativePath));
+}
+
+function isPrismaRuntimeEntrypoint(relativePath: string): boolean {
+  const basename = basenameWithoutKnownSourceSuffix(relativePath);
+  return (
+    basename === 'prisma.config' ||
+    relativePath.includes('/prisma/') ||
+    relativePath.startsWith('prisma/') ||
+    basename.startsWith('seed') ||
+    basename.includes('migration')
+  );
+}
+
+function isTestSupportEntrypoint(relativePath: string): boolean {
+  const segments = relativePath.split('/');
+  return segments.includes('test') || segments.includes('tests') || segments.includes('__mocks__');
+}
+
+function isTypeDeclarationEntrypoint(relativePath: string): boolean {
+  const basename = path.basename(relativePath).toLowerCase();
+  return basename.endsWith('.d.ts') || basename === 'types.ts' || basename.startsWith('types.');
+}
+
+function isRuntimeConfigEntrypoint(relativePath: string): boolean {
+  const basename = path.basename(relativePath);
+  const lowerBasename = basename.toLowerCase();
+  return (
+    ROOT_CONFIG_FILES.has(basename) ||
+    lowerBasename.startsWith('tsconfig') ||
+    lowerBasename === 'nest-cli.json' ||
+    lowerBasename === 'package.json' ||
+    lowerBasename === 'package-lock.json'
+  );
+}
+
+function isPublicRuntimeAsset(relativePath: string, content: string): boolean {
+  return (
+    relativePath.includes('/public/') &&
+    /\.(js|mjs|cjs)$/u.test(relativePath) &&
+    /\b(window|document|navigator|localStorage|sessionStorage)\b/u.test(content)
+  );
+}
+
+function isOperationalScriptEntrypoint(relativePath: string, content: string): boolean {
+  if (!/(\.ts|\.js|\.mjs|\.cjs)$/u.test(relativePath)) {
+    return false;
+  }
+
+  const segments = relativePath.split('/');
+  const isScriptPath =
+    segments[0] === 'scripts' ||
+    (segments.length > 1 && segments[0] === 'backend' && segments[1] === 'scripts');
+  if (!isScriptPath) {
+    return false;
+  }
+
+  const basename = basenameWithoutKnownSourceSuffix(relativePath);
+  return (
+    content.startsWith('#!') ||
+    /^(run|smoke|agent|create|generate|validate|check|audit|seed|backup|sync|emit|build|watch|start|stop|deploy|repair|reconcile|ensure|collect|scan|inspect|publish|test|verify|orchestrate|bootstrap)(-|$)/u.test(
+      basename,
+    ) ||
+    basename.endsWith('-orchestrator')
+  );
+}
+
+function deriveEntrypointNodeIds(rootDir: string, filePath: string, content: string): string[] {
+  const relativePath = normalizeRelativePath(rootDir, filePath);
+  const nodeIds: string[] = [];
+
+  if (isNextAppRouterEntrypoint(relativePath)) nodeIds.push('framework:next-app-router');
+  if (isNextRuntimeConventionEntrypoint(relativePath)) {
+    nodeIds.push('framework:next-runtime-convention');
+  }
+  if (isPrismaRuntimeEntrypoint(relativePath)) nodeIds.push('runtime:prisma-entrypoint');
+  if (isTestSupportEntrypoint(relativePath)) nodeIds.push('test:test-support-surface');
+  if (isTypeDeclarationEntrypoint(relativePath)) nodeIds.push('contract:type-declaration');
+  if (isRuntimeConfigEntrypoint(relativePath)) nodeIds.push('runtime:config-entrypoint');
+  if (isPublicRuntimeAsset(relativePath, content)) nodeIds.push('runtime:public-browser-asset');
+  if (relativePath.includes('/vendor/')) nodeIds.push('runtime:vendored-shim');
+  if (isOperationalScriptEntrypoint(relativePath, content)) {
+    nodeIds.push('runtime:operational-script');
+  }
+
+  return nodeIds;
 }
 
 export function buildScopeEngineState(
@@ -89,10 +356,14 @@ export function buildScopeEngineState(
   previousState?: ScopeEngineState,
 ): ScopeEngineState {
   const allFilePaths: string[] = [];
-  walkFiles(rootDir, allFilePaths);
-
   const governanceBoundary = loadGovernanceBoundary(rootDir);
+  walkFiles(rootDir, allFilePaths, {
+    rootDir,
+    observableHiddenDirectories: discoverObservableHiddenDirectories(governanceBoundary),
+  });
+
   const knownPaths = new Set(allFilePaths);
+  const tsconfigAliases = readTsconfigPathAliases(allFilePaths);
   const entries: ScopeFileEntry[] = [];
   const previousMap = new Map<string, ScopeFileEntry>();
 
@@ -132,6 +403,10 @@ export function buildScopeEngineState(
     const rawImports = extractImports(filePath, content);
     rawImportsMap.set(filePath, rawImports);
     const now = new Date().toISOString();
+    const nodeIds = deriveEntrypointNodeIds(rootDir, filePath, content);
+    if (isTest) {
+      nodeIds.push('test:test-runner-entrypoint');
+    }
 
     let status: ScopeFileEntry['status'] = 'classified';
     if (role === 'unknown' && isSourceFile(filePath, extension, content)) {
@@ -177,7 +452,7 @@ export function buildScopeEngineState(
       connectedFrom: [],
       capabilityIds: [],
       flowIds: [],
-      nodeIds: [],
+      nodeIds,
       firstSeen: prev?.firstSeen ?? now,
       lastModified: contentHash !== prev?.contentHash ? now : (prev?.lastModified ?? now),
       contentHash,
@@ -196,7 +471,12 @@ export function buildScopeEngineState(
     const importerDir = path.dirname(entry.filePath);
 
     for (const importSpec of rawImports) {
-      const resolved = resolveImportPath(importSpec, importerDir, knownPaths);
+      const aliasCandidates = resolveTsconfigAliasCandidates(
+        importSpec,
+        importerDir,
+        tsconfigAliases,
+      );
+      const resolved = resolveImportPath(importSpec, importerDir, knownPaths, aliasCandidates);
       if (resolved) {
         entry.connections.push(resolved);
       }
@@ -218,8 +498,7 @@ export function buildScopeEngineState(
   let filesWithoutConnections = 0;
 
   for (const entry of entries) {
-    const hasConnection = entry.connections.length > 0 || entry.connectedFrom.length > 0;
-    if (!hasConnection) {
+    if (!hasScopeGraphEvidence(entry)) {
       orphanCount++;
       filesWithoutConnections++;
       if (entry.isSource && !entry.isTest && !entry.isGenerated) {
@@ -231,7 +510,7 @@ export function buildScopeEngineState(
   }
 
   for (const entry of entries) {
-    if (entry.connections.length === 0 && entry.connectedFrom.length === 0) {
+    if (!hasScopeGraphEvidence(entry)) {
       entry.status = 'orphan';
     }
   }
@@ -291,7 +570,7 @@ export function buildScopeEngineState(
 
   const outDir = safeJoin(rootDir, '.pulse', 'current');
   ensureDir(outDir, { recursive: true });
-  const outPath = safeJoin(outDir, discoverAllObservedArtifactFilenames().scopeState);
+  const outPath = safeJoin(outDir, 'PULSE_SCOPE_ENGINE_STATE.json');
   const json = JSON.stringify(state, null, 2);
   writeTextFile(outPath, json);
 

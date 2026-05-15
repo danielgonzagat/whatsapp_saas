@@ -9,6 +9,7 @@ import { buildPathProofPlan } from '../path-proof-runner/main';
 import { buildPathProofEvidenceArtifact } from '../path-proof-evidence/main';
 import { readJsonFile, writeTextFile, ensureDir, pathExists } from '../safe-fs';
 import { safeJoin } from '../safe-path';
+import { injectRunIdentity, type PulseRunIdentity } from '../run-identity';
 import { loadGovernanceBoundary } from '../scope-state-classify';
 import {
   _ARTIFACT_NAMES,
@@ -35,6 +36,11 @@ import {
   buildArtifactLinks,
 } from './terminal-proof';
 import { generateProbeFileContent } from './probe-generation';
+
+interface BuildPathCoverageStateOptions {
+  identity?: PulseRunIdentity;
+  mirrorToRoot?: boolean;
+}
 
 export function generateTestForPath(
   mp: PulseExecutionMatrixPath,
@@ -75,6 +81,7 @@ export function generateTestForPath(
 export function buildPathCoverageState(
   rootDir: string,
   matrixOverride?: PulseExecutionMatrix,
+  options: BuildPathCoverageStateOptions = {},
 ): PathCoverageState {
   const executionMatrixArtifact = _ARTIFACT_NAMES.executionMatrix ?? 'PULSE_EXECUTION_MATRIX.json';
   const pathCoverageArtifact = _ARTIFACT_NAMES.pathCoverage ?? 'PULSE_PATH_COVERAGE.json';
@@ -161,8 +168,9 @@ export function buildPathCoverageState(
   ).length;
   const coveragePercent = computeCoveragePercent(entries);
 
+  const generatedAt = options.identity?.generatedAt ?? new Date().toISOString();
   const state: PathCoverageState = {
-    generatedAt: new Date().toISOString(),
+    generatedAt,
     summary: {
       totalPaths: entries.length,
       observedPass,
@@ -182,17 +190,23 @@ export function buildPathCoverageState(
 
   const outputDir = safeJoin(rootDir, '.pulse', 'current');
   ensureDir(outputDir, { recursive: true });
-  writeTextFile(safeJoin(outputDir, pathCoverageArtifact), JSON.stringify(state, null, 2));
+  const serializedState = options.identity
+    ? injectRunIdentity(JSON.stringify(state, null, 2), options.identity)
+    : JSON.stringify(state, null, 2);
+  writeTextFile(safeJoin(outputDir, pathCoverageArtifact), serializedState);
+  if (options.mirrorToRoot ?? Boolean(options.identity)) {
+    writeTextFile(safeJoin(rootDir, pathCoverageArtifact), serializedState);
+  }
   if (matrix) {
     const pathProofPlan = buildPathProofPlan(rootDir, {
       matrix,
       pathCoverage: state,
-      generatedAt: state.generatedAt,
+      generatedAt,
     });
     buildPathProofEvidenceArtifact(rootDir, {
       plan: pathProofPlan,
       runnerResults: [],
-      generatedAt: state.generatedAt,
+      generatedAt,
     });
   }
 

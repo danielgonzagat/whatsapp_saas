@@ -7,7 +7,7 @@ import { readTextFile } from '../safe-fs';
 import { discoverReservedJsKeywords } from '../dynamic-reality-kernel/catalog-arithmetic';
 import {
   buildRelationFieldMap,
-  buildTableNameMap,
+  buildTableNameMapFromModels,
   collectModelsFromIncludeSelect,
   collectModelsFromRawSql,
 } from '../orphan-prisma/enhanced-detector';
@@ -456,10 +456,9 @@ export function traceServices(config: PulseConfig): ServiceTrace[] {
   let tableNameMap: Map<string, string> | undefined;
   if (config.schemaPath) {
     try {
-      const schemaContent = readTextFile(config.schemaPath, 'utf8');
       const prismaModels: PrismaModel[] = parseSchema(config);
       relationFieldMap = buildRelationFieldMap(prismaModels);
-      tableNameMap = buildTableNameMap(schemaContent);
+      tableNameMap = buildTableNameMapFromModels(prismaModels);
     } catch {
       // Schema unavailable — skip enhanced detection
     }
