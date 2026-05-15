@@ -1,6 +1,6 @@
 import { ConfigService } from '@nestjs/config';
-import { generateKeyPairSync, createSign, type JsonWebKey } from 'node:crypto';
-import { AppleAuthService } from './apple-auth.service';
+import { createSign, createVerify, generateKeyPairSync, type JsonWebKey } from 'node:crypto';
+import { AppleAuthService, buildClientSecret } from './apple-auth.service';
 
 function encodeJson(value: Record<string, unknown>): string {
   return Buffer.from(JSON.stringify(value)).toString('base64url');
@@ -69,6 +69,44 @@ describe('AppleAuthService', () => {
 
     expect(payload.sub).toBe('apple-user-1');
     expect(payload.email).toBe('buyer@kloel.com');
+  });
+
+  it('builds an Apple client secret with ES256 claims for operational validation', () => {
+    const pair = generateKeyPairSync('ec', { namedCurve: 'P-256' });
+    const applePrivateKey = pair.privateKey.export({ type: 'pkcs8', format: 'pem' }).toString();
+
+    const clientSecret = buildClientSecret({
+      clientId,
+      keyId: testKeyId,
+      privateKey: applePrivateKey,
+      teamId: 'TEAMKLOEL1',
+    });
+    const [encodedHeader, encodedPayload, encodedSignature] = clientSecret.split('.');
+
+    expect(encodedHeader).toBeDefined();
+    expect(encodedPayload).toBeDefined();
+    expect(encodedSignature).toBeDefined();
+    expect(JSON.parse(Buffer.from(encodedHeader || '', 'base64url').toString('utf8'))).toEqual({
+      alg: 'ES256',
+      kid: testKeyId,
+    });
+    expect(JSON.parse(Buffer.from(encodedPayload || '', 'base64url').toString('utf8'))).toEqual(
+      expect.objectContaining({
+        aud: 'https://appleid.apple.com',
+        iss: 'TEAMKLOEL1',
+        sub: clientId,
+      }),
+    );
+
+    const verifier = createVerify('SHA256');
+    verifier.update(`${encodedHeader}.${encodedPayload}`);
+    verifier.end();
+    expect(
+      verifier.verify(
+        { key: pair.publicKey, dsaEncoding: 'ieee-p1363' },
+        Buffer.from(encodedSignature || '', 'base64url'),
+      ),
+    ).toBe(true);
   });
 
   it('rejects Apple identity tokens for another client id', async () => {

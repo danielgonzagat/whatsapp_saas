@@ -3,10 +3,17 @@ import { BeliefUpdateService } from './belief-update';
 import { DiscoveryNarrativeBuilderService } from './discovery-narrative.builder';
 import { ExperimentRunnerService } from './experiment-runner';
 import { HypothesisFormulatorService } from './hypothesis-formulator';
+import { MarketEntryDecisionService } from './market-entry-decision.service';
 import { MicroExperimentDesignerService } from './micro-experiment.designer';
 import { ObservationCollectorService } from './observation.collector';
 import { ProofEvaluatorService } from './proof-evaluator';
-import type { SpineSignal, Hypothesis, MicroExperiment, Observation, ProofEvaluation } from './types';
+import type {
+  SpineSignal,
+  Hypothesis,
+  MicroExperiment,
+  Observation,
+  ProofEvaluation,
+} from './types';
 import { SpineEmitterService } from '../spine/spine-emitter.service';
 
 function makeSignal(overrides: Partial<SpineSignal> = {}): SpineSignal {
@@ -19,7 +26,7 @@ function makeSignal(overrides: Partial<SpineSignal> = {}): SpineSignal {
   };
 }
 
-describe('Hypproof module (UTP-HYPPROOF-001..008)', () => {
+describe('Hypproof module (UTP-HYPPROOF-001..009)', () => {
   describe('HypothesisFormulatorService (HYPPROOF-001)', () => {
     const svc = new HypothesisFormulatorService();
 
@@ -30,24 +37,25 @@ describe('Hypproof module (UTP-HYPPROOF-001..008)', () => {
       expect(result[0]!.domain).toBe('lead_response');
       expect(result[0]!.status).toBe('pending');
       expect(result[0]!.confidence).toBeGreaterThan(0.5);
+      expect(result[0]!.marketEntryId).toBe('producer-validation-infoproduct-direct-checkout');
+      expect(result[0]!.commercialStage).toBe('validacao');
+      expect(result[0]!.flagshipJourney).toContain('lead inseguro');
+      expect(result[0]!.payablePain).toContain('perder lead quente');
     });
 
     it('generates hypothesis for churn risk signal', () => {
-      const signals = [
-        makeSignal({ eventName: 'commerce.post_sale.churn_risk_detected' }),
-      ];
+      const signals = [makeSignal({ eventName: 'commerce.post_sale.churn_risk_detected' })];
       const result = svc.formulate(signals);
       expect(result).toHaveLength(1);
       expect(result[0]!.domain).toBe('churn_prevention');
     });
 
     it('generates hypothesis for objection raised signal', () => {
-      const signals = [
-        makeSignal({ eventName: 'commerce.lead.objection_raised' }),
-      ];
+      const signals = [makeSignal({ eventName: 'commerce.lead.objection_raised' })];
       const result = svc.formulate(signals);
       expect(result).toHaveLength(1);
       expect(result[0]!.domain).toBe('lead_response');
+      expect(result[0]!.payablePain).toContain('responder objecao');
     });
 
     it('returns empty for signals without matching patterns', () => {
@@ -93,7 +101,13 @@ describe('Hypproof module (UTP-HYPPROOF-001..008)', () => {
       expect(result).not.toBeNull();
       expect(result!.hypothesisId).toBe('hyp-1');
       expect(result!.targetMetric).toBe('lead_reengagement_rate');
-      expect(result!.riskAssessment).toBe('normal');
+      expect(result!.riskAssessment).toBe('safe');
+      expect(result!.riskClass).toBe('R1');
+      expect(result!.autonomyMode).toBe('alone');
+      expect(result!.proofLevelTarget).toBe('N3');
+      expect(result!.commercialWork).toContain('decide whether to wait');
+      expect(result!.noFaithProofSignal).toContain('concrete next-step');
+      expect(result!.leadLeavesBetterCheck).toContain('fake urgency');
     });
 
     it('rejects hypothesis with unknown domain', () => {
@@ -124,6 +138,36 @@ describe('Hypproof module (UTP-HYPPROOF-001..008)', () => {
         status: 'pending',
       };
       expect(svc.design(hypothesis)).toBeNull();
+    });
+  });
+
+  describe('MarketEntryDecisionService (HYPPROOF-009)', () => {
+    const svc = new MarketEntryDecisionService(
+      new HypothesisFormulatorService(),
+      new MicroExperimentDesignerService(),
+    );
+
+    it('turns lead silence into a safe owner decision before contacting the lead', () => {
+      const result = svc.decideFromSignals([
+        makeSignal({ eventName: 'commerce.lead.went_silent', workspaceId: 'ws-1' }),
+      ]);
+
+      expect(result).toHaveLength(1);
+      expect(result[0]!.marketEntryId).toBe('producer-validation-infoproduct-direct-checkout');
+      expect(result[0]!.shouldContactLeadNow).toBe(false);
+      expect(result[0]!.ownerDecision).toContain('risk=R1');
+      expect(result[0]!.ownerDecision).toContain('autonomy=alone');
+      expect(result[0]!.nextSafeStep).toContain('concrete next-step');
+      expect(result[0]!.uncertaintyStatement).toContain('not observed user proof yet');
+      expect(result[0]!.validationNeeded).toContain('Lead interessado');
+    });
+
+    it('ignores non-market-entry hypotheses', () => {
+      const result = svc.decideFromSignals([
+        makeSignal({ eventName: 'commerce.post_sale.churn_risk_detected', workspaceId: 'ws-1' }),
+      ]);
+
+      expect(result).toHaveLength(0);
     });
   });
 

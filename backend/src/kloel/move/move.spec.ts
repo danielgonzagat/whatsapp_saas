@@ -1,435 +1,282 @@
 import { FrictionDetectorService } from './friction.detector';
-import { StepDecomposerService } from './step.decomposer';
-import { TinyActionSuggesterService } from './tiny-action.suggester';
-import { PartialExecutionOfferService } from './partial-execution.offer';
-import { AlternativeRouteBuilderService } from './alternative-route.builder';
-import { PatternLearnerService } from './pattern.learner';
-import { NoBlameToneGuardService } from './no-blame-tone.guard';
+import { StepDecomposerService } from './step-decomposer.service';
+import { HOURS_24_MS } from './move.types';
+import type { OwnerAction, ComplexActionInput } from './move.types';
 
-describe('Move module (UTP-MOVE-001..007)', () => {
+const now = Date.now();
+
+function pastHours(hours: number): string {
+  return new Date(now - hours * 60 * 60 * 1000).toISOString();
+}
+
+function pastDays(days: number): string {
+  return pastHours(days * 24);
+}
+
+function makeAction(overrides: Partial<OwnerAction> = {}): OwnerAction {
+  return {
+    id: 'action-1',
+    workspaceId: 'ws-1',
+    description: 'Set up email automation',
+    createdAt: pastDays(3),
+    lastProgressAt: null,
+    priority: 'high',
+    category: 'technical',
+    estimatedMinutes: 60,
+    hasExternalDependency: false,
+    externalDependencyDescription: null,
+    ...overrides,
+  };
+}
+
+describe('Move module (Layer XXXI — Real Movement)', () => {
   describe('FrictionDetectorService (MOVE-001)', () => {
     const svc = new FrictionDetectorService();
 
-    it('detects overwhelm for large action with low clarity', () => {
-      const result = svc.detect({
-        workspaceId: 'ws-1',
-        targetAction: 'Launch entire marketing campaign across all channels',
-        actionSize: 'giant',
-        clarityScore: 0.2,
-        hasPriorKnowledge: false,
-        hasExternalDependency: false,
-        paralellOptions: 5,
-        recentAbandonmentCount: 3,
-      });
-      expect(result.frictionType).toBe('overwhelm');
-      expect(result.frictionScore).toBeGreaterThan(0.6);
+    it('flags action never started and created >24h ago', () => {
+      const results = svc.detectStuck([
+        makeAction({ id: 'a1', createdAt: pastDays(2), lastProgressAt: null }),
+      ]);
+      expect(results).toHaveLength(1);
+      expect(results[0].frictionKind).toBe('never_started');
+      expect(results[0].hoursStuck).toBeGreaterThanOrEqual(48);
     });
 
-    it('detects ambiguity for moderate action with no prior knowledge', () => {
-      const result = svc.detect({
-        workspaceId: 'ws-1',
-        targetAction: 'Set up affiliate tracking',
-        actionSize: 'medium',
-        clarityScore: 0.3,
-        hasPriorKnowledge: false,
-        hasExternalDependency: false,
-        paralellOptions: 1,
-        recentAbandonmentCount: 0,
-      });
-      expect(result.frictionType).toBe('ambiguity');
-      expect(result.frictionScore).toBeGreaterThan(0.3);
+    it('flags action with last progress >24h ago', () => {
+      const results = svc.detectStuck([
+        makeAction({ id: 'a2', createdAt: pastDays(5), lastProgressAt: pastDays(3) }),
+      ]);
+      expect(results).toHaveLength(1);
+      expect(results[0].frictionKind).toBe('abandoned');
+      expect(results[0].signals).toContain('likely_abandoned');
     });
 
-    it('detects external_blocker when dependency exists', () => {
-      const result = svc.detect({
-        workspaceId: 'ws-1',
-        targetAction: 'Integrate payment gateway',
-        actionSize: 'large',
-        clarityScore: 0.7,
-        hasPriorKnowledge: true,
-        hasExternalDependency: true,
-        paralellOptions: 1,
-        recentAbandonmentCount: 0,
-      });
-      expect(result.frictionType).toBe('external_blocker');
+    it('does NOT flag action created less than 24h ago', () => {
+      const results = svc.detectStuck([
+        makeAction({ id: 'a3', createdAt: pastHours(2), lastProgressAt: null }),
+      ]);
+      expect(results).toHaveLength(0);
     });
 
-    it('detects perfectionism with high clarity but abandonment', () => {
-      const result = svc.detect({
-        workspaceId: 'ws-1',
-        targetAction: 'Write perfect landing page copy',
-        actionSize: 'small',
-        clarityScore: 0.8,
-        hasPriorKnowledge: true,
-        hasExternalDependency: false,
-        paralellOptions: 1,
-        recentAbandonmentCount: 4,
-      });
-      expect(result.frictionType).toBe('perfectionism');
+    it('does NOT flag action with recent progress (<24h)', () => {
+      const results = svc.detectStuck([
+        makeAction({ id: 'a4', createdAt: pastDays(10), lastProgressAt: pastHours(1) }),
+      ]);
+      expect(results).toHaveLength(0);
     });
 
-    it('detects scope_creep with too many options', () => {
-      const result = svc.detect({
-        workspaceId: 'ws-1',
-        targetAction: 'Optimize all ad campaigns',
-        actionSize: 'medium',
-        clarityScore: 0.5,
-        hasPriorKnowledge: true,
-        hasExternalDependency: false,
-        paralellOptions: 7,
-        recentAbandonmentCount: 2,
-      });
-      expect(result.frictionType).toBe('scope_creep');
+    it('classifies action with external dependency as blocked', () => {
+      const results = svc.detectStuck([
+        makeAction({
+          id: 'a5',
+          createdAt: pastDays(4),
+          lastProgressAt: pastDays(2),
+          hasExternalDependency: true,
+        }),
+      ]);
+      expect(results).toHaveLength(1);
+      expect(results[0].frictionKind).toBe('blocked');
+      expect(results[0].signals).toContain('external_dependency');
     });
 
-    it('returns low friction score for tiny action with high clarity', () => {
-      const result = svc.detect({
-        workspaceId: 'ws-1',
-        targetAction: 'Change one headline',
-        actionSize: 'tiny',
-        clarityScore: 0.9,
-        hasPriorKnowledge: true,
-        hasExternalDependency: false,
-        paralellOptions: 1,
-        recentAbandonmentCount: 0,
-      });
-      expect(result.frictionScore).toBeLessThan(0.3);
+    it('classifies large action (>120min) as overwhelmed', () => {
+      const results = svc.detectStuck([
+        makeAction({
+          id: 'a6',
+          createdAt: pastDays(3),
+          lastProgressAt: pastDays(2),
+          estimatedMinutes: 300,
+        }),
+      ]);
+      expect(results).toHaveLength(1);
+      expect(results[0].frictionKind).toBe('overwhelmed');
+      expect(results[0].signals).toContain('large_action');
+      expect(results[0].signals).toContain('action_too_large');
+    });
+
+    it('returns empty array when no actions are stuck', () => {
+      const results = svc.detectStuck([
+        makeAction({ id: 'a7', createdAt: pastHours(5), lastProgressAt: pastHours(2) }),
+        makeAction({ id: 'a8', createdAt: pastHours(10), lastProgressAt: null }),
+      ]);
+      expect(results).toHaveLength(0);
+    });
+
+    it('scores critical priority higher than low priority', () => {
+      const critical = svc.detectStuck([
+        makeAction({ id: 'c1', createdAt: pastDays(2), lastProgressAt: null, priority: 'critical' }),
+      ]);
+      const low = svc.detectStuck([
+        makeAction({ id: 'l1', createdAt: pastDays(2), lastProgressAt: null, priority: 'low' }),
+      ]);
+      expect(critical[0].frictionScore).toBeGreaterThan(low[0].frictionScore);
+    });
+
+    it('detects multiple stuck actions in a single batch', () => {
+      const results = svc.detectStuck([
+        makeAction({ id: 'b1', createdAt: pastDays(3), lastProgressAt: null }),
+        makeAction({ id: 'b2', createdAt: pastDays(5), lastProgressAt: pastDays(3) }),
+        makeAction({ id: 'b3', createdAt: pastHours(5), lastProgressAt: null }),
+      ]);
+      expect(results).toHaveLength(2);
+    });
+
+    it('produces recommendation for never_started with high score', () => {
+      const results = svc.detectStuck([
+        makeAction({ id: 'd1', createdAt: pastDays(5), lastProgressAt: null, priority: 'critical', estimatedMinutes: 300 }),
+      ]);
+      expect(results).toHaveLength(1);
+      expect(results[0].recommendation).toContain('15 min');
+      expect(results[0].frictionScore).toBeGreaterThan(0.6);
     });
   });
 
   describe('StepDecomposerService (MOVE-002)', () => {
     const svc = new StepDecomposerService();
 
-    it('decomposes a 2-hour complex action into multiple steps', () => {
+    it('decomposes a complex action into multiple steps', () => {
       const result = svc.decompose({
         workspaceId: 'ws-1',
-        actionDescription: 'Build lead capture funnel',
-        totalEstimatedHours: 2,
+        actionDescription: 'Build lead capture funnel with A/B testing',
+        totalEstimatedMinutes: 90,
         complexity: 'complex',
         hasDependencies: false,
         priorKnowledgeLevel: 'partial',
+        availableTools: [],
       });
       expect(result.steps.length).toBeGreaterThanOrEqual(3);
       expect(result.totalEstimatedMinutes).toBeGreaterThan(0);
       expect(result.firstStepMinutes).toBeGreaterThan(0);
     });
 
-    it('produces steps under 15 minutes each', () => {
+    it('every step is <=15 minutes', () => {
       const result = svc.decompose({
         workspaceId: 'ws-1',
-        actionDescription: 'Write email sequence',
-        totalEstimatedHours: 1,
-        complexity: 'simple',
+        actionDescription: 'Write email onboarding sequence',
+        totalEstimatedMinutes: 60,
+        complexity: 'moderate',
         hasDependencies: false,
         priorKnowledgeLevel: 'full',
+        availableTools: [],
       });
       for (const step of result.steps) {
         expect(step.estimatedMinutes).toBeLessThanOrEqual(15);
       }
     });
 
-    it('produces at least one step even for very small actions', () => {
+    it('steps have sequential prerequisites', () => {
       const result = svc.decompose({
         workspaceId: 'ws-1',
-        actionDescription: 'Small task',
-        totalEstimatedHours: 0.05,
+        actionDescription: 'Set up affiliate tracking system',
+        totalEstimatedMinutes: 120,
+        complexity: 'moderate',
+        hasDependencies: true,
+        priorKnowledgeLevel: 'none',
+        availableTools: [],
+      });
+      for (let i = 1; i < result.steps.length; i++) {
+        expect(result.steps[i].prerequisites.length).toBeGreaterThanOrEqual(1);
+      }
+    });
+
+    it('first step has no prerequisites', () => {
+      const result = svc.decompose({
+        workspaceId: 'ws-1',
+        actionDescription: 'Configure payment gateway integration',
+        totalEstimatedMinutes: 30,
         complexity: 'simple',
         hasDependencies: false,
         priorKnowledgeLevel: 'full',
+        availableTools: [],
+      });
+      if (result.steps.length > 0) {
+        expect(result.steps[0].prerequisites).toHaveLength(0);
+      }
+    });
+
+    it('steps have hasAssistedExecutionOption=true when tools are available', () => {
+      const result = svc.decompose({
+        workspaceId: 'ws-1',
+        actionDescription: 'Create landing page variants',
+        totalEstimatedMinutes: 45,
+        complexity: 'moderate',
+        hasDependencies: false,
+        priorKnowledgeLevel: 'partial',
+        availableTools: ['ChatGPT', 'Canva', 'Google Analytics'],
+      });
+      const assistedSteps = result.steps.filter((s) => s.hasAssistedExecutionOption);
+      expect(assistedSteps.length).toBeGreaterThanOrEqual(1);
+      const firstAssisted = assistedSteps[0];
+      expect(firstAssisted.assistedExecutionDescription).toBeTruthy();
+    });
+
+    it('handles very small actions producing at least 1 step', () => {
+      const result = svc.decompose({
+        workspaceId: 'ws-1',
+        actionDescription: 'Update one headline',
+        totalEstimatedMinutes: 3,
+        complexity: 'simple',
+        hasDependencies: false,
+        priorKnowledgeLevel: 'full',
+        availableTools: [],
       });
       expect(result.steps.length).toBeGreaterThanOrEqual(1);
     });
 
-    it('handles very complex actions with many steps', () => {
+    it('handles very large actions producing many steps', () => {
       const result = svc.decompose({
         workspaceId: 'ws-1',
-        actionDescription: 'Rebuild entire checkout flow',
-        totalEstimatedHours: 30,
+        actionDescription: 'Rebuild complete checkout flow with multi-currency support',
+        totalEstimatedMinutes: 2400,
         complexity: 'very_complex',
         hasDependencies: true,
         priorKnowledgeLevel: 'none',
+        availableTools: [],
       });
       expect(result.steps.length).toBeGreaterThan(10);
     });
-  });
 
-  describe('TinyActionSuggesterService (MOVE-003)', () => {
-    const svc = new TinyActionSuggesterService();
-
-    it('suggests a tiny technical action', () => {
-      const result = svc.suggest({
+    it('hasAssistedExecutionDescription is null when no tools are available', () => {
+      const result = svc.decompose({
         workspaceId: 'ws-1',
-        parentAction: 'Implement authentication',
-        actionCategory: 'technical',
-        timeAvailableMinutes: 10,
-        energyLevel: 'medium',
-        contextSummary: 'set up JWT auth for the admin panel',
+        actionDescription: 'Review quarterly metrics',
+        totalEstimatedMinutes: 30,
+        complexity: 'simple',
+        hasDependencies: false,
+        priorKnowledgeLevel: 'full',
+        availableTools: [],
       });
-      expect(result.description).toBeTruthy();
-      expect(result.estimatedMinutes).toBeLessThanOrEqual(15);
-      expect(result.estimatedMinutes).toBeGreaterThanOrEqual(2);
-      expect(result.motivationAnchor).toBeTruthy();
+      for (const step of result.steps) {
+        expect(step.hasAssistedExecutionOption).toBe(false);
+        expect(step.assistedExecutionDescription).toBeNull();
+      }
     });
 
-    it('adjusts minute estimate for low energy', () => {
-      const result = svc.suggest({
+    it('firstStepMinutes reflects real step 1 duration', () => {
+      const result = svc.decompose({
         workspaceId: 'ws-1',
-        parentAction: 'Write ad copy',
-        actionCategory: 'creative',
-        timeAvailableMinutes: 15,
-        energyLevel: 'low',
-        contextSummary: 'Facebook ad for new product',
+        actionDescription: 'Design social media calendar',
+        totalEstimatedMinutes: 40,
+        complexity: 'moderate',
+        hasDependencies: false,
+        priorKnowledgeLevel: 'partial',
+        availableTools: [],
       });
-      expect(result.estimatedMinutes).toBeLessThanOrEqual(15);
-      expect(result.contextHelp).toContain('smallest possible');
+      expect(result.firstStepMinutes).toBe(result.steps[0].estimatedMinutes);
     });
 
-    it('suggests a strategic tiny action', () => {
-      const result = svc.suggest({
+    it('totalEstimatedMinutes equals sum of step minutes', () => {
+      const result = svc.decompose({
         workspaceId: 'ws-1',
-        parentAction: 'Define quarterly goals',
-        actionCategory: 'strategic',
-        timeAvailableMinutes: 5,
-        energyLevel: 'high',
-        contextSummary: 'Q3 revenue targets for the marketing team',
+        actionDescription: 'Write product descriptions for catalog',
+        totalEstimatedMinutes: 75,
+        complexity: 'simple',
+        hasDependencies: false,
+        priorKnowledgeLevel: 'full',
+        availableTools: ['ChatGPT'],
       });
-      expect(result.description).toBeTruthy();
-      expect(result.estimatedMinutes).toBeGreaterThanOrEqual(2);
-    });
-  });
-
-  describe('PartialExecutionOfferService (MOVE-004)', () => {
-    const svc = new PartialExecutionOfferService();
-
-    it('offers partial execution for a large action', () => {
-      const result = svc.offer({
-        workspaceId: 'ws-1',
-        originalAction: 'Build complete affiliate dashboard',
-        fullEstimatedMinutes: 480,
-        coreValueDescription: 'affiliate commission summary',
-        niceToHaveDescription: 'real-time charts and exports',
-        minimumViableOutcome: 'shows commission totals per affiliate',
-      });
-      expect(result).not.toBeNull();
-      expect(result!.savedTimePercent).toBeGreaterThan(0);
-      expect(result!.valueRetainedPercent).toBeGreaterThan(50);
-    });
-
-    it('returns null for actions under 10 minutes', () => {
-      const result = svc.offer({
-        workspaceId: 'ws-1',
-        originalAction: 'Tiny task',
-        fullEstimatedMinutes: 5,
-        coreValueDescription: 'core',
-        niceToHaveDescription: 'nice',
-        minimumViableOutcome: 'done',
-      });
-      expect(result).toBeNull();
-    });
-
-    it('retains high value percentage for reasonable actions', () => {
-      const result = svc.offer({
-        workspaceId: 'ws-1',
-        originalAction: 'Write 10 email variants',
-        fullEstimatedMinutes: 180,
-        coreValueDescription: 'first 3 variants',
-        niceToHaveDescription: 'remaining 7 variants',
-        minimumViableOutcome: '3 top variants ready to test',
-      });
-      expect(result).not.toBeNull();
-      expect(result!.valueRetainedPercent).toBeGreaterThanOrEqual(55);
-    });
-  });
-
-  describe('AlternativeRouteBuilderService (MOVE-005)', () => {
-    const svc = new AlternativeRouteBuilderService();
-
-    it('builds alternative route around a blocker', () => {
-      const result = svc.build({
-        workspaceId: 'ws-1',
-        blockedAction: 'Launch Facebook ads campaign',
-        blocker: 'Facebook ad account not approved yet',
-        blockedActionEffortMinutes: 120,
-        availableResources: ['Google Ads account'],
-        constraints: ['budget limit $100/day'],
-        desiredOutcome: 'generate leads this week',
-      });
-      expect(result).not.toBeNull();
-      expect(result!.effortRatio).toBeLessThanOrEqual(1);
-      expect(result!.outcomeProximity).toBeGreaterThanOrEqual(0.5);
-    });
-
-    it('returns null when no viable routes exist', () => {
-      const result = svc.build({
-        workspaceId: 'ws-1',
-        blockedAction: 'Do something',
-        blocker: 'all paths blocked',
-        blockedActionEffortMinutes: 10,
-        availableResources: [],
-        constraints: ['no access', 'no budget', 'no permission'],
-        desiredOutcome: 'impossible outcome',
-      });
-      expect(result).toBeNull();
-    });
-
-    it('prefers delegate route when resources available', () => {
-      const result = svc.build({
-        workspaceId: 'ws-1',
-        blockedAction: 'Write product descriptions',
-        blocker: 'No copywriter available',
-        blockedActionEffortMinutes: 240,
-        availableResources: ['AI content generator'],
-        constraints: [],
-        desiredOutcome: 'product descriptions live on site',
-      });
-      expect(result).not.toBeNull();
-      expect(result!.effortRatio).toBeLessThan(0.5);
-    });
-  });
-
-  describe('PatternLearnerService (MOVE-006)', () => {
-    const svc = new PatternLearnerService();
-
-    it('learns analysis paralysis pattern', () => {
-      const results = svc.learn({
-        workspaceId: 'ws-1',
-        recentFrictionTypes: ['ambiguity', 'overwhelm', 'ambiguity', 'overwhelm', 'ambiguity'],
-        actionAbandonmentRate: 0.6,
-        averageTimeToStartMinutes: 120,
-        mostCommonBlocker: 'too many priorities',
-        mostCommonResponse: 'reduce to one focus',
-        totalEventsObserved: 10,
-      });
-      expect(results.length).toBeGreaterThan(0);
-      const pattern = results.find((p) => p.patternType === 'analysis_paralysis');
-      expect(pattern).toBeDefined();
-      expect(pattern!.ownerCriterionFeed).toBeTruthy();
-    });
-
-    it('learns waiting on external pattern', () => {
-      const results = svc.learn({
-        workspaceId: 'ws-1',
-        recentFrictionTypes: ['external_blocker', 'external_blocker', 'overwhelm'],
-        actionAbandonmentRate: 0.3,
-        averageTimeToStartMinutes: 45,
-        mostCommonBlocker: 'waiting for API key',
-        mostCommonResponse: 'start without it',
-        totalEventsObserved: 5,
-      });
-      const pattern = results.find((p) => p.patternType === 'waiting_on_external');
-      expect(pattern).toBeDefined();
-    });
-
-    it('returns empty for insufficient events', () => {
-      const results = svc.learn({
-        workspaceId: 'ws-1',
-        recentFrictionTypes: ['ambiguity'],
-        actionAbandonmentRate: 0.2,
-        averageTimeToStartMinutes: 10,
-        mostCommonBlocker: 'unknown',
-        mostCommonResponse: 'ask for help',
-        totalEventsObserved: 1,
-      });
-      expect(results).toHaveLength(0);
-    });
-
-    it('learns fear of imperfect pattern', () => {
-      const results = svc.learn({
-        workspaceId: 'ws-1',
-        recentFrictionTypes: ['perfectionism', 'perfectionism', 'ambiguity'],
-        actionAbandonmentRate: 0.4,
-        averageTimeToStartMinutes: 30,
-        mostCommonBlocker: 'wanting it perfect',
-        mostCommonResponse: 'ship the draft',
-        totalEventsObserved: 6,
-      });
-      const pattern = results.find((p) => p.patternType === 'fear_of_imperfect');
-      expect(pattern).toBeDefined();
-      expect(pattern!.frequency).toBeGreaterThanOrEqual(2);
-    });
-
-    it('getDominantPattern returns highest frequency pattern', () => {
-      const results = svc.learn({
-        workspaceId: 'ws-1',
-        recentFrictionTypes: ['overwhelm', 'overwhelm', 'overwhelm', 'overwhelm', 'overwhelm', 'ambiguity', 'ambiguity'],
-        actionAbandonmentRate: 0.7,
-        averageTimeToStartMinutes: 200,
-        mostCommonBlocker: 'too many things',
-        mostCommonResponse: 'delegate',
-        totalEventsObserved: 12,
-      });
-      const dominant = svc.getDominantPattern(results);
-      expect(dominant).not.toBeNull();
-    });
-
-    it('getDominantPattern returns null for empty array', () => {
-      expect(svc.getDominantPattern([])).toBeNull();
-    });
-
-    it('getPatternCount returns correct count', () => {
-      const results = svc.learn({
-        workspaceId: 'ws-1',
-        recentFrictionTypes: ['ambiguity', 'overwhelm', 'ambiguity', 'overwhelm', 'ambiguity', 'perfectionism', 'perfectionism'],
-        actionAbandonmentRate: 0.5,
-        averageTimeToStartMinutes: 90,
-        mostCommonBlocker: 'overthinking',
-        mostCommonResponse: 'start small',
-        totalEventsObserved: 10,
-      });
-      expect(svc.getPatternCount(results)).toBeGreaterThan(0);
-    });
-  });
-
-  describe('NoBlameToneGuardService (MOVE-007)', () => {
-    const svc = new NoBlameToneGuardService();
-
-    it('removes blame markers from text', () => {
-      const result = svc.guard({
-        text: 'You should have started this campaign last week.',
-        context: 'friction_feedback',
-      });
-      expect(result.blameMarkersRemoved.length).toBeGreaterThan(0);
-      expect(result.rewrittenText).not.toContain('you should have');
-      expect(result.toneShift).toBe('accusatory_to_observational');
-    });
-
-    it('preserves text without blame markers unchanged', () => {
-      const result = svc.guard({
-        text: 'The next step is to review the campaign metrics.',
-        context: 'action_suggestion',
-      });
-      expect(result.blameMarkersRemoved.length).toBe(0);
-      expect(result.rewrittenText).toBe('The next step is to review the campaign metrics.');
-    });
-
-    it('detects blame markers in text', () => {
-      expect(svc.hasBlameMarkers('You forgot to check the results')).toBe(true);
-      expect(svc.hasBlameMarkers('Let us review the results together')).toBe(false);
-    });
-
-    it('handles multiple blame markers', () => {
-      const result = svc.guard({
-        text: 'You did not follow up and you forgot the deadline.',
-        context: 'pattern_report',
-      });
-      expect(result.blameMarkersRemoved.length).toBeGreaterThanOrEqual(2);
-      expect(result.toneShift).toBe('past_focus_to_future_focus');
-    });
-
-    it('applies directive_to_invitational for action suggestions', () => {
-      const result = svc.guard({
-        text: 'You should have configured the webhook first.',
-        context: 'action_suggestion',
-      });
-      expect(result.toneShift).toBe('directive_to_invitational');
-    });
-
-    it('applies absolute_to_contextual for alternative routes', () => {
-      const result = svc.guard({
-        text: 'You cannot use this integration.',
-        context: 'alternative_route',
-      });
-      expect(result.toneShift).toBe('absolute_to_contextual');
+      const sum = result.steps.reduce((acc, s) => acc + s.estimatedMinutes, 0);
+      expect(result.totalEstimatedMinutes).toBe(sum);
     });
   });
 });

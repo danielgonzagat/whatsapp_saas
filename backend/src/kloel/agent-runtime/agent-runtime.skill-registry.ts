@@ -15,6 +15,7 @@ import type {
   AgentSkillSelection,
   AgentSkillUsageOutcome,
   AgentSkillUsageStats,
+  AgentToolDelegationRule,
 } from './agent-runtime.types';
 
 const DEFAULT_SKILLS: AgentSkillDefinition[] = [
@@ -23,12 +24,32 @@ const DEFAULT_SKILLS: AgentSkillDefinition[] = [
     title: 'Checkout Recovery',
     summary: 'Recupera intenção de compra com memória do lead, produto e política comercial.',
     category: 'commercial',
-    riskLevel: 'normal',
+    riskLevel: 'high',
     allowedTools: ['get_lead_details', 'list_products', 'create_payment_link'],
     requiredEvidence: ['lead_status', 'product_offer', 'payment_policy'],
     validation: ['workspace_isolation', 'no_fake_discount', 'payment_link_audit'],
     rollback: ['do_not_send_without_consent', 'cancel_scheduled_followup_if_requested'],
     metrics: ['conversion_rate', 'response_rate', 'refund_rate'],
+    delegationRules: [
+      {
+        toolName: 'get_lead_details',
+        riskClass: 'R1',
+        permission: 'allowed_alone',
+        rollback: [],
+      },
+      {
+        toolName: 'list_products',
+        riskClass: 'R1',
+        permission: 'allowed_alone',
+        rollback: [],
+      },
+      {
+        toolName: 'create_payment_link',
+        riskClass: 'R3',
+        permission: 'escalate',
+        rollback: ['cancel_payment_link', 'do_not_send_without_consent'],
+      },
+    ],
     body: 'Use histórico observado do lead e dados reais de produto. Se faltar preço, estoque, garantia ou forma de pagamento, peça dado faltante antes de prometer.',
     version: 1,
     updatedAt: new Date(0).toISOString(),
@@ -44,6 +65,26 @@ const DEFAULT_SKILLS: AgentSkillDefinition[] = [
     validation: ['do_not_invent_claims', 'respect_discount_limit'],
     rollback: ['mark_lead_for_human_review_when_claim_uncertain'],
     metrics: ['objection_resolution_rate', 'handoff_rate'],
+    delegationRules: [
+      {
+        toolName: 'get_lead_details',
+        riskClass: 'R1',
+        permission: 'allowed_alone',
+        rollback: [],
+      },
+      {
+        toolName: 'list_products',
+        riskClass: 'R1',
+        permission: 'allowed_alone',
+        rollback: [],
+      },
+      {
+        toolName: 'remember_user_info',
+        riskClass: 'R1',
+        permission: 'allowed_alone',
+        rollback: [],
+      },
+    ],
     body: 'Valide a emoção, responda com evidência real e avance um próximo passo simples. Não invente escassez, garantia ou resultado.',
     version: 1,
     updatedAt: new Date(0).toISOString(),
@@ -59,6 +100,7 @@ const DEFAULT_SKILLS: AgentSkillDefinition[] = [
     validation: ['no_overclaim', 'authority_boundary'],
     rollback: ['stop_when_pulse_degraded'],
     metrics: ['blocked_overclaims', 'safe_next_units'],
+    delegationRules: [],
     body: 'Trate PULSE como fonte de verdade operacional. Diferencie canWorkNow de canDeclareComplete.',
     version: 1,
     updatedAt: new Date(0).toISOString(),
@@ -342,6 +384,7 @@ export class AgentRuntimeSkillRegistry {
       validation: this.stringArray(record.validation),
       rollback: this.stringArray(record.rollback),
       metrics: this.stringArray(record.metrics),
+      delegationRules: this.parseDelegationRules(record.delegationRules),
       body: typeof record.body === 'string' ? record.body : '',
       version: typeof record.version === 'number' ? record.version : 1,
       updatedAt: typeof record.updatedAt === 'string' ? record.updatedAt : new Date().toISOString(),
@@ -399,6 +442,10 @@ export class AgentRuntimeSkillRegistry {
   }
 
   private skillContent(skill: AgentSkillDefinition): string {
+    const delegationLines = skill.delegationRules.map(
+      (rule) =>
+        `delegation=${rule.toolName}:${rule.riskClass}:${rule.permission}${rule.rollback.length ? ` ro:${rule.rollback.join(',')}` : ''}`,
+    );
     return [
       `${skill.title}: ${skill.summary}`,
       `risk=${skill.riskLevel}`,
@@ -407,6 +454,7 @@ export class AgentRuntimeSkillRegistry {
       `validation=${skill.validation.join(', ') || 'none'}`,
       `rollback=${skill.rollback.join(', ') || 'none'}`,
       `metrics=${skill.metrics.join(', ') || 'none'}`,
+      ...delegationLines,
       skill.body,
     ].join('\n');
   }
@@ -429,6 +477,13 @@ export class AgentRuntimeSkillRegistry {
     if (skill.riskLevel === 'critical' && skill.validation.length === 0) {
       errors.push('critical_skill_requires_validation');
     }
+    const allowedTools = new Set(skill.allowedTools);
+    for (const rule of skill.delegationRules) {
+      if (!allowedTools.has(rule.toolName)) {
+        errors.push('delegation_rule_tool_not_allowed');
+        break;
+      }
+    }
     return errors;
   }
 
@@ -436,6 +491,24 @@ export class AgentRuntimeSkillRegistry {
     return Array.isArray(value)
       ? value.filter((entry): entry is string => typeof entry === 'string')
       : [];
+  }
+
+  private parseDelegationRules(value: unknown): AgentToolDelegationRule[] {
+    if (!Array.isArray(value)) {
+      return [];
+    }
+    return value
+      .filter(
+        (entry): entry is Record<string, unknown> =>
+          typeof entry === 'object' && entry !== null && !Array.isArray(entry),
+      )
+      .map((entry) => ({
+        toolName: typeof entry.toolName === 'string' ? entry.toolName : '',
+        riskClass: this.delegationRiskClass(entry.riskClass),
+        permission: this.delegationPermission(entry.permission),
+        rollback: this.stringArray(entry.rollback),
+      }))
+      .filter((rule) => rule.toolName.length > 0);
   }
 
   private categoryFor(value: unknown): AgentSkillDefinition['category'] {
@@ -451,6 +524,19 @@ export class AgentRuntimeSkillRegistry {
     return value === 'safe' || value === 'normal' || value === 'high' || value === 'critical'
       ? value
       : 'normal';
+  }
+
+  private delegationRiskClass(value: unknown): AgentToolDelegationRule['riskClass'] {
+    return value === 'R1' || value === 'R2' || value === 'R3' || value === 'R4' ? value : 'R1';
+  }
+
+  private delegationPermission(value: unknown): AgentToolDelegationRule['permission'] {
+    return value === 'allowed_alone' ||
+      value === 'with_approval' ||
+      value === 'escalate' ||
+      value === 'prohibited'
+      ? value
+      : 'allowed_alone';
   }
 
   private provenanceFor(value: unknown): AgentSkillProvenance {

@@ -138,7 +138,7 @@ export function detectFunnelBottleneck(input: FunnelBottleneckInput): FunnelBott
   const totalCount = totalEvents(eventCounts);
 
   if (maxDrop === 0 && totalCount > 0) {
-    bottleneckStep = FUNNEL_STEP_ORDER[FUNNEL_STEP_ORDER.length - 1];
+    bottleneckStep = FUNNEL_STEP_ORDER[FUNNEL_STEP_ORDER.length - 1] ?? 'no_data';
   }
 
   const confidence = computeConfidence(stepCounts, totalCount, maxDrop, secondMaxDrop);

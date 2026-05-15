@@ -5,7 +5,12 @@ import type {
   DetectionInput,
   PostSaleDecisionControl,
 } from './postsale-consumers.types';
-import { clamp, daysSince, filterByWorkspaceAndEntity, latestEvent } from './postsale-consumers.types';
+import {
+  clamp,
+  daysSince,
+  filterByWorkspaceAndEntity,
+  latestEvent,
+} from './postsale-consumers.types';
 
 const DETECTION_WINDOW_DAYS = 30;
 const VALUE_THRESHOLD_CONFIDENCE = 0.7;
@@ -58,9 +63,7 @@ export class FirstValueDetector {
     if (memberProgressed && daysSince(memberProgressed.occurredAt, nowMs) < DETECTION_WINDOW_DAYS) {
       confidence += 0.15;
       evidenceEventIds.push(memberProgressed.eventId);
-      if (!kind) {
-        kind = 'course_progress';
-      }
+      kind = 'course_progress';
       hasValueSignal = true;
     }
 
@@ -201,8 +204,7 @@ function buildControl(input: {
       delegationMode: 'silent_monitoring',
       safeNextStep:
         'Do not emit first value yet; wait for member progress, positive satisfaction, or another concrete value signal.',
-      uncertainty:
-        `Payment/conversion context reached confidence ${Math.round(input.confidence * 100)}%, but value delivery is not evidenced.`,
+      uncertainty: `Payment/conversion context reached confidence ${Math.round(input.confidence * 100)}%, but value delivery is not evidenced.`,
       leadOutcomeGuardrail:
         'Avoid congratulating or upselling the customer before there is evidence they received value.',
       rollback:
@@ -216,8 +218,7 @@ function buildControl(input: {
       delegationMode: 'silent_monitoring',
       safeNextStep:
         'Do not emit first value yet; wait for member progress to stabilize or satisfaction risk to clear before marking value obtained.',
-      uncertainty:
-        `Value evidence exists, but confidence is only ${Math.round(input.confidence * 100)}% after risk signals.`,
+      uncertainty: `Value evidence exists, but confidence is only ${Math.round(input.confidence * 100)}% after risk signals.`,
       leadOutcomeGuardrail:
         'Customer should receive recovery or support before Kloel treats the post-sale as successful.',
       rollback:

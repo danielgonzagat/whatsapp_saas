@@ -33,6 +33,10 @@ export function attributeHierarchy(decision: HierarchyDecision): HierarchyJustif
       ruleHumanTransferUx(decision),
       ruleDiscountComplianceMargin(decision),
       ruleProactiveOutboundCompliance(decision),
+      ruleRefundLegitimacy(decision),
+      ruleChurnRetention(decision),
+      ruleAntiRemorseRetention(decision),
+      rulePostSaleSatisfactionRetention(decision),
       ruleAggressivenessCeilingUx(decision),
       ruleAudioPreferenceUx(decision),
       ruleHighestMarginOffer(decision),
@@ -105,6 +109,77 @@ function ruleProactiveOutboundCompliance(decision: HierarchyDecision): Hierarchy
     return {
       level: 'compliance',
       reason: `proactive outbound at ${dailySent}/${dailyLimit} daily messages — blocked by compliance ceiling`,
+    };
+  }
+  return null;
+}
+
+// R10 — refund_request with legitimate reason → compliance (legitimacy before conversion)
+function ruleRefundLegitimacy(decision: HierarchyDecision): HierarchyJustification | null {
+  if (decision.type !== 'refund_request') return null;
+  const concepts = extractConcepts(decision.context);
+  const legitimateReasons = [
+    'defective_product',
+    'not_as_described',
+    'never_received',
+    'duplicate_charge',
+    'cancelled_within_window',
+  ];
+  for (const reason of legitimateReasons) {
+    if (concepts.has(reason)) {
+      return {
+        level: 'compliance',
+        reason: `refund requested with legitimate reason "${reason}" — compliance/legitimacy requires honoring before any conversion attempt`,
+      };
+    }
+  }
+  return null;
+}
+
+// R11 — churn_signal detected → retention (anti-churn: don't poison with new conversion offers)
+function ruleChurnRetention(decision: HierarchyDecision): HierarchyJustification | null {
+  if (decision.type !== 'churn_signal') return null;
+  const churnRisk = Number(decision.context.churnRisk ?? 0);
+  const satisfactionScore = Number(decision.context.satisfactionScore ?? 1);
+
+  if (churnRisk >= 0.5 || satisfactionScore < 0.4) {
+    return {
+      level: 'retention',
+      reason: `churn risk ${churnRisk} / satisfaction ${satisfactionScore} — retention priority blocks poisonous conversion`,
+    };
+  }
+  return null;
+}
+
+// R12 — buyer_remorse detected within 7d of purchase → retention (anti-remorse before conversion)
+function ruleAntiRemorseRetention(decision: HierarchyDecision): HierarchyJustification | null {
+  if (decision.type !== 'buyer_remorse') return null;
+  const daysSincePurchase = Number(decision.context.daysSincePurchase ?? -1);
+  const remorseScore = Number(decision.context.remorseScore ?? -1);
+
+  const withinWindow = daysSincePurchase >= 0 && daysSincePurchase <= 7;
+  const highRemorse = remorseScore >= 0 && remorseScore >= 0.6;
+
+  if (withinWindow || highRemorse) {
+    return {
+      level: 'retention',
+      reason: `buyer remorse detected (${daysSincePurchase >= 0 ? `${daysSincePurchase}d post-purchase` : 'unknown timing'}, score ${remorseScore >= 0 ? remorseScore : 'N/A'}) — retention/anti-remorse must precede any conversion attempt`,
+    };
+  }
+  return null;
+}
+
+// R13 — post_sale_offer with low satisfaction/NPS → retention (don't cross-sell unhappy customers)
+function rulePostSaleSatisfactionRetention(decision: HierarchyDecision): HierarchyJustification | null {
+  if (decision.type !== 'post_sale_offer') return null;
+  const nps = Number(decision.context.nps ?? 10);
+  const satisfaction = Number(decision.context.satisfaction ?? 1);
+  const concepts = extractConcepts(decision.context);
+
+  if (nps < 6 || satisfaction < 0.5 || concepts.has('unresolved_complaint')) {
+    return {
+      level: 'retention',
+      reason: `post-sale offer blocked — NPS ${nps} / satisfaction ${satisfaction} below threshold, retention/legitimacy gates before conversion`,
     };
   }
   return null;

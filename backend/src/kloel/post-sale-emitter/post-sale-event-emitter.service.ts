@@ -51,6 +51,12 @@ export class PostSaleEventEmitterService {
     return this.safeEmit('commerce.post_sale.first_value_obtained', 'observed', params);
   }
 
+  public async emitNoRegretConfirmed(
+    params: PostSaleEmitParams,
+  ): Promise<SpineEventEnvelope | undefined> {
+    return this.safeEmit('commerce.post_sale.no_regret_confirmed', 'inferred', params);
+  }
+
   public async emitSatisfactionSignalObserved(
     params: PostSaleEmitParams,
   ): Promise<SpineEventEnvelope | undefined> {
@@ -99,9 +105,7 @@ export class PostSaleEventEmitterService {
           schemaVersion: SCHEMA_VERSION,
         },
         ...(params.payload !== undefined ? { payload: params.payload } : {}),
-        ...(params.correlationId !== undefined
-          ? { correlationId: params.correlationId }
-          : {}),
+        ...(params.correlationId !== undefined ? { correlationId: params.correlationId } : {}),
         ...(params.occurredAt !== undefined ? { occurredAt: params.occurredAt } : {}),
         ...(params.causedBy !== undefined ? { causedBy: params.causedBy } : {}),
       };

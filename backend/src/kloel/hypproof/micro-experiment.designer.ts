@@ -41,7 +41,7 @@ const DOMAIN_TEMPLATES: ReadonlyMap<string, ExperimentTemplate> = new Map([
       validationScene: 'Lead interessado, mas inseguro / silencio apos objecao real',
       noFaithProofSignal: 'owner sees a concrete next-step decision before any lead-facing action',
       leadLeavesBetterCheck:
-        'test must not add pressure, fabricated urgency, or discount framing before diagnosis',
+        'test must not add pressure, fake urgency, or discount framing before diagnosis',
     },
   ],
   [

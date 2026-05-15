@@ -21,7 +21,16 @@ export interface Hypothesis {
   readonly truthMode: AbiTruthMode;
   readonly generatedAt: string;
   readonly status: 'pending' | 'authorized' | 'rejected' | 'running' | 'evaluated';
+  readonly marketEntryId?: string;
+  readonly commercialStage?: 'validacao' | 'tracao' | 'crescimento' | 'maturidade' | 'otimizacao';
+  readonly businessModel?: string;
+  readonly flagshipJourney?: string;
+  readonly payablePain?: string;
 }
+
+export type CommercialRiskClass = 'R1' | 'R2' | 'R3' | 'R4';
+export type ProofTargetLevel = 'N1' | 'N2' | 'N3' | 'N4' | 'N5' | 'N6';
+export type AutonomyMode = 'alone' | 'approval' | 'escalate' | 'prohibited';
 
 export interface MicroExperiment {
   readonly id: string;
@@ -34,6 +43,13 @@ export interface MicroExperiment {
   readonly maxDurationMs: number;
   readonly designedAt: string;
   readonly correlationId: string;
+  readonly commercialWork?: string;
+  readonly riskClass?: CommercialRiskClass;
+  readonly autonomyMode?: AutonomyMode;
+  readonly proofLevelTarget?: ProofTargetLevel;
+  readonly validationScene?: string;
+  readonly noFaithProofSignal?: string;
+  readonly leadLeavesBetterCheck?: string;
 }
 
 export interface AuthorizationRequest {

@@ -1,5 +1,5 @@
-import { assessPortfolio } from './portfolio-state.service';
-import { bundleClientContext } from './per-client-context.bundler';
+import { assessPortfolio } from './portfolio-assessment';
+import { bundleClientContext } from './client-context-bundle';
 import { rankPriorities } from './priority.ranker';
 import { trackMargin } from './margin-per-client.tracker';
 import { detectChurnRisk } from './churn-risk-per-client.detector';

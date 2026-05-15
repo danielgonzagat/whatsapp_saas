@@ -50,7 +50,7 @@ export class AgentRuntimeContextCompressorService {
     });
     const summary = this.buildSummary({
       messages: params.messages,
-      activeTask: params.activeTask,
+      ...(params.activeTask !== undefined ? { activeTask: params.activeTask } : {}),
       providerInsight,
     });
     const key = this.keyFor(params.sessionId);

@@ -174,6 +174,7 @@ import {
 } from './agent-runtime';
 import { AbiBuilderService } from './abi/abi-builder.service';
 import { LineageModule } from './lineage/lineage.module';
+import { RiskClassModule } from './risk-class/risk-class.module';
 
 /** Kloel module. */
 @Module({
@@ -195,6 +196,7 @@ import { LineageModule } from './lineage/lineage.module';
     ContactsModule,
     LineageModule,
     DriftModule,
+    RiskClassModule,
   ],
   controllers: [
     KloelController,

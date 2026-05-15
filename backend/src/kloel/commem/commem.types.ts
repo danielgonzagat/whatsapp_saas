@@ -11,6 +11,7 @@
  */
 
 import type { SpineEventRef } from '../mind/mind.types';
+import type { AbiValence } from '../abi/abi-schema';
 
 export type MemoryDimension = 'working' | 'episodic' | 'consolidated' | 'procedural' | 'semantic';
 
@@ -20,6 +21,7 @@ export interface LedgerEventEntry {
   readonly workspaceId: string;
   readonly occurredAt: string;
   readonly truthMode: 'observed' | 'inferred' | 'projected';
+  readonly valence?: AbiValence;
   readonly entityRef?: { readonly entityType: string; readonly entityId: string };
   readonly correlationId?: string;
   readonly payload?: Readonly<Record<string, unknown>>;

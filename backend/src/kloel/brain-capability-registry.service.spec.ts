@@ -1,7 +1,23 @@
 import { BrainCapabilityRegistryService } from './brain-capability-registry.service';
+import type { BrainCapabilityDomain } from './brain-capability-registry.service';
+import type {
+  BrainCapabilityDelegationMode,
+  BrainCapabilityRiskClass,
+} from './brain-capability-policy';
 
 describe('BrainCapabilityRegistryService', () => {
   const svc = new BrainCapabilityRegistryService();
+  const domains: ReadonlySet<BrainCapabilityDomain> = new Set([
+    'control',
+    'messaging',
+    'product',
+    'sales',
+  ]);
+  const riskClasses: readonly BrainCapabilityRiskClass[] = ['R1', 'R2', 'R3'];
+  const delegationModes: readonly BrainCapabilityDelegationMode[] = [
+    'allowed_alone',
+    'owner_review',
+  ];
 
   it('list returns capabilities sorted alphabetically by name', () => {
     const items = svc.list();
@@ -12,13 +28,13 @@ describe('BrainCapabilityRegistryService', () => {
 
   it('every capability has the expected shape', () => {
     for (const cap of svc.list()) {
-      expect(cap).toEqual(
-        expect.objectContaining({
-          name: expect.any(String),
-          description: expect.any(String),
-          domain: expect.stringMatching(/^(control|messaging|product|sales)$/),
-        }),
-      );
+      expect(typeof cap.name).toBe('string');
+      expect(typeof cap.description).toBe('string');
+      expect(domains.has(cap.domain)).toBe(true);
+      expect(riskClasses).toContain(cap.delegationContract.riskClass);
+      expect(delegationModes).toContain(cap.delegationContract.delegationMode);
+      expect(typeof cap.delegationContract.safeNextStep).toBe('string');
+      expect(typeof cap.delegationContract.rollback).toBe('string');
     }
   });
 
@@ -35,5 +51,14 @@ describe('BrainCapabilityRegistryService', () => {
     for (const name of allowed) {
       expect(all).toContain(name);
     }
+  });
+
+  it('publishes explicit owner-review contracts for critical capabilities', () => {
+    const paymentLink = svc.list().find((capability) => capability.name === 'create_payment_link');
+
+    expect(paymentLink).toBeDefined();
+    expect(paymentLink?.risk).toBe('critical');
+    expect(paymentLink?.delegationContract.riskClass).toBe('R3');
+    expect(paymentLink?.delegationContract.delegationMode).toBe('owner_review');
   });
 });

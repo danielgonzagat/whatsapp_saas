@@ -1,11 +1,11 @@
-import { IsInt, IsNotEmpty, IsOptional, IsString, Max, MaxLength, Min } from 'class-validator';
+import { IsInt, IsNotEmpty, IsOptional, IsString, Max, MaxLength, Min, ValidateIf } from 'class-validator';
 
 /** TikTok o auth dto. */
 export class TikTokOAuthDto {
-  /** Authorization code property. */
-  @IsOptional()
-  @IsString()
+  /** Authorization code property. Required when accessToken is not provided. */
+  @ValidateIf((o: TikTokOAuthDto) => !o.accessToken)
   @IsNotEmpty()
+  @IsString()
   @MaxLength(4096)
   code?: string;
 
@@ -15,10 +15,10 @@ export class TikTokOAuthDto {
   @MaxLength(2048)
   redirectUri?: string;
 
-  /** Access token property. */
-  @IsOptional()
-  @IsString()
+  /** Access token property. Required when code is not provided. */
+  @ValidateIf((o: TikTokOAuthDto) => !o.code)
   @IsNotEmpty()
+  @IsString()
   @MaxLength(4096)
   accessToken?: string;
 

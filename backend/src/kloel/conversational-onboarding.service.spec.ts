@@ -3,6 +3,7 @@ import { ConversationalOnboardingService } from './conversational-onboarding.ser
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { ConversationalOnboardingToolsService } from './conversational-onboarding-tools.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { AbiBuilderService } from './abi/abi-builder.service';
 
 jest.mock('openai', () => ({
   default: jest.fn().mockImplementation(() => ({
@@ -38,6 +39,7 @@ describe('ConversationalOnboardingService', () => {
   let planLimits: { ensureTokenBudget: jest.Mock; trackAiUsage: jest.Mock };
   let prisma: OnboardingPrismaMock;
   let chatCompletionWithRetryMock: jest.Mock;
+  let abiBuilder: { build: jest.Mock };
 
   beforeEach(async () => {
     toolsService = {
@@ -50,6 +52,72 @@ describe('ConversationalOnboardingService', () => {
     planLimits = {
       ensureTokenBudget: jest.fn().mockResolvedValue(undefined),
       trackAiUsage: jest.fn().mockResolvedValue(undefined),
+    };
+    abiBuilder = {
+      build: jest.fn().mockResolvedValue({
+        status: 'ok',
+        abi: {
+          abiVersion: '1.0.0',
+          lineage: {
+            canonicalName: 'Kloel',
+            genesisEventId: 'genesis-1',
+            lineageStatus: 'intact',
+            operationalAge: { sinceGenesisDays: 1, sinceFirstWorkspaceDays: 0 },
+            capabilities: ['onboarding.save_business_info'],
+          },
+          identityProjection: {
+            audience: 'public',
+            currentMaturity: 'developing',
+            truthMode: 'observed',
+          },
+          perception: {
+            currentSnapshot: {
+              channel: 'conversational_onboarding',
+              workspaceId: 'ws-1',
+              activeStage: 'onboarding',
+            },
+            recentSalientEvents: [],
+          },
+          beliefs: [],
+          predictions: { active: [], recentSurprises: [] },
+          attention: { candidates: [] },
+          memory: {
+            workingMemory: [],
+            episodicRefs: [],
+            consolidatedRefs: [],
+          },
+          capabilities: {
+            available: [],
+            restricted: [],
+          },
+          valence: {
+            recentTrace: [],
+            aggregatedMood: {
+              positive: 0,
+              negative: 0,
+              neutral: 1,
+              ambiguous: 0,
+              windowHours: 24,
+            },
+          },
+          pulseTruth: {
+            noOverclaimStatus: 'PASS',
+            capabilityHealthScore: 0,
+            gates: [],
+            certificationVerdict: {
+              verdict: 'INSUFFICIENT_EVIDENCE',
+              score: 0,
+              measuredAt: '2026-05-14T00:00:00.000Z',
+            },
+            overclaimRisk: 0,
+          },
+          currentInput: {
+            raw: 'Olá',
+            channel: 'conversational_onboarding',
+            arrivalTimestamp: '2026-05-14T00:00:00.000Z',
+          },
+        },
+      }),
     };
     prisma = {
       kloelMemory: {
@@ -85,6 +153,7 @@ describe('ConversationalOnboardingService', () => {
         { provide: PrismaService, useValue: prisma },
         { provide: PlanLimitsService, useValue: planLimits },
         { provide: ConversationalOnboardingToolsService, useValue: toolsService },
+        { provide: AbiBuilderService, useValue: abiBuilder },
       ],
     }).compile();
 
@@ -94,6 +163,7 @@ describe('ConversationalOnboardingService', () => {
   afterEach(() => {
     jest.clearAllMocks();
     delete process.env.OPENAI_API_KEY;
+    delete process.env.KLOEL_ONBOARDING_USE_ABI;
   });
 
   describe('start', () => {
@@ -121,6 +191,53 @@ describe('ConversationalOnboardingService', () => {
         'ws-1',
         'assistant',
         expect.any(String),
+      );
+    });
+
+    it('keeps legacy onboarding prompt as system message when ABI flag is off', async () => {
+      await service.chat('ws-1', 'Olá');
+
+      const completionInput = chatCompletionWithRetryMock.mock.calls[0]?.[1] as {
+        messages: Array<{ role: string; content: string | null }>;
+      };
+
+      expect(completionInput.messages[0]).toEqual(
+        expect.objectContaining({
+          role: 'system',
+          content: expect.stringContaining('MODO: ONBOARDING CONVERSACIONAL'),
+        }),
+      );
+      expect(abiBuilder.build).not.toHaveBeenCalled();
+    });
+
+    it('uses ABI state as non-system onboarding message when flag is on', async () => {
+      process.env.KLOEL_ONBOARDING_USE_ABI = 'on';
+
+      await service.chat('ws-1', 'Olá');
+
+      const completionInput = chatCompletionWithRetryMock.mock.calls[0]?.[1] as {
+        messages: Array<{ role: string; content: string | null }>;
+      };
+      const firstMessage = completionInput.messages[0];
+
+      expect(firstMessage?.role).toBe('user');
+      expect(firstMessage?.content).toContain('cognitiveStateAbi');
+      expect(completionInput.messages).toEqual(
+        expect.not.arrayContaining([expect.objectContaining({ role: 'system' })]),
+      );
+      expect(abiBuilder.build).toHaveBeenCalledWith(
+        expect.objectContaining({
+          audience: 'public',
+          currentInput: expect.objectContaining({
+            raw: 'Olá',
+            channel: 'conversational_onboarding',
+          }),
+          perceptionSnapshot: expect.objectContaining({
+            channel: 'conversational_onboarding',
+            workspaceId: 'ws-1',
+            activeStage: 'onboarding',
+          }),
+        }),
       );
     });
 

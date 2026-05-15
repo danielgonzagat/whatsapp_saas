@@ -21,6 +21,7 @@ export class WinBackWindowAdvisor {
   public async assess(risk: ChurnRiskAssessment, _input: DetectionInput): Promise<WinBackPlan> {
     const nowMs = _input.nowMs ?? Date.now();
     const entityRef = _input.entityRef ?? risk.entityRef;
+    const objectionRootedRisk = risk.contributingSignals.includes('recent_objection_recovery');
 
     let windowDays = 0;
     let tacticKind: WinBackTacticKind;
@@ -37,18 +38,20 @@ export class WinBackWindowAdvisor {
       windowOpen = true;
     } else if (risk.riskLevel === 'high') {
       windowDays = 14;
-      tacticKind = 'departure_survey';
-      description =
-        'Send a brief departure survey asking what could have been better. No offer attached — pure listening.';
+      tacticKind = objectionRootedRisk ? 'product_evolution_update' : 'departure_survey';
+      description = objectionRootedRisk
+        ? 'Share only a relevant product progress note after owner review; do not reopen the prior objection or imply the customer should return.'
+        : 'Send a brief departure survey asking what could have been better. No offer attached — pure listening.';
       suggestedChannel = 'email';
       windowOpen = true;
     } else if (risk.riskLevel === 'moderate') {
       windowDays = 30;
-      tacticKind = 'product_evolution_update';
-      description =
-        'Inform the customer of relevant product improvements made since their last interaction. Informational, not promotional.';
-      suggestedChannel = 'email';
-      windowOpen = true;
+      tacticKind = objectionRootedRisk ? 'reengagement_content' : 'product_evolution_update';
+      description = objectionRootedRisk
+        ? 'Keep the customer in silent monitoring; the recovered objection is context for support, not permission to re-sell.'
+        : 'Inform the customer of relevant product improvements made since their last interaction. Informational, not promotional.';
+      suggestedChannel = objectionRootedRisk ? 'silent' : 'email';
+      windowOpen = !objectionRootedRisk;
     } else {
       windowDays = 90;
       tacticKind = 'reengagement_content';
@@ -107,17 +110,22 @@ function buildControl(
   plan: Pick<WinBackPlan, 'windowOpen' | 'suggestedChannel' | 'tacticKind'>,
 ): PostSaleDecisionControl {
   if (!plan.windowOpen || plan.suggestedChannel === 'silent') {
+    const objectionRootedRisk = risk.contributingSignals.includes('recent_objection_recovery');
     return {
       riskClass: 'R1',
       delegationMode: 'silent_monitoring',
-      safeNextStep:
-        'Keep the win-back window closed and do not contact the customer without stronger recovery evidence.',
-      uncertainty:
-        'Risk is not strong enough to justify re-opening a customer conversation.',
-      leadOutcomeGuardrail:
-        'Customer should not receive a reactivation message just because Kloel can send one.',
-      rollback:
-        'Reassess only when churn, refund, satisfaction, or explicit return-intent evidence changes.',
+      safeNextStep: objectionRootedRisk
+        ? 'Keep the win-back window closed; use the recovered objection only as private support context until stronger help evidence appears.'
+        : 'Keep the win-back window closed and do not contact the customer without stronger recovery evidence.',
+      uncertainty: objectionRootedRisk
+        ? 'Recovered objection plus missing first value is a listening signal, not explicit permission to re-open the sale.'
+        : 'Risk is not strong enough to justify re-opening a customer conversation.',
+      leadOutcomeGuardrail: objectionRootedRisk
+        ? 'Do not reopen the prior objection as pressure; wait for explicit concern, support need, or first-value evidence.'
+        : 'Customer should not receive a reactivation message just because Kloel can send one.',
+      rollback: objectionRootedRisk
+        ? 'If new outreach was queued from this signal alone, cancel it and return to normal post-sale support.'
+        : 'Reassess only when churn, refund, satisfaction, or explicit return-intent evidence changes.',
     };
   }
 
@@ -139,12 +147,15 @@ function buildControl(
   return {
     riskClass: risk.riskLevel === 'high' ? 'R2' : 'R1',
     delegationMode: risk.riskLevel === 'high' ? 'owner_review' : 'allowed_alone',
-    safeNextStep:
-      'Use the win-back window to listen or inform; attach no discount, deadline, or pressure unless the owner approves it.',
-    uncertainty:
-      'Win-back timing is inferred from risk, not from explicit customer permission to be sold again.',
-    leadOutcomeGuardrail:
-      'Customer should leave clearer or heard, even if they never return.',
+    safeNextStep: risk.contributingSignals.includes('recent_objection_recovery')
+      ? 'Owner must review any product update and confirm it helps the customer without re-litigating the prior objection.'
+      : 'Use the win-back window to listen or inform; attach no discount, deadline, or pressure unless the owner approves it.',
+    uncertainty: risk.contributingSignals.includes('recent_objection_recovery')
+      ? 'Win-back timing is inferred from a recovered objection path; the customer has not asked to be sold again.'
+      : 'Win-back timing is inferred from risk, not from explicit customer permission to be sold again.',
+    leadOutcomeGuardrail: risk.contributingSignals.includes('recent_objection_recovery')
+      ? 'Do not reopen the prior objection as pressure; the customer should receive only useful context they would be glad to know.'
+      : 'Customer should leave clearer or heard, even if they never return.',
     rollback:
       'If the customer ignores, objects, or shows frustration, close the window and stop follow-up until fresh intent appears.',
   };

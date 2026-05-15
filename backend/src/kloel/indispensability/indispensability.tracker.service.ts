@@ -52,8 +52,23 @@ export class IndispensabilityTrackerService {
       };
     }
 
-    const firstMs = new Date(sorted[0].startedAt).getTime();
-    const lastMs = new Date(sorted[totalSessions - 1].endedAt).getTime();
+    const firstSession = sorted[0];
+    const lastSession = sorted[totalSessions - 1];
+    if (firstSession === undefined || lastSession === undefined) {
+      return {
+        workspaceId,
+        totalSessions: 0,
+        weeklyAverage: 0,
+        dailyFrequency: 0,
+        avgGapHours: 0,
+        maxGapHours: 0,
+        lastActivityAt: new Date(0).toISOString(),
+        activeDaysCount: 0,
+        observationWindowDays: 0,
+      };
+    }
+    const firstMs = new Date(firstSession.startedAt).getTime();
+    const lastMs = new Date(lastSession.endedAt).getTime();
     const windowMs = Math.max(lastMs - firstMs, MS_PER_HOUR);
     const windowDays = Math.max(windowMs / MS_PER_DAY, 7);
 
@@ -62,8 +77,11 @@ export class IndispensabilityTrackerService {
 
     const gaps: number[] = [];
     for (let i = 1; i < sorted.length; i++) {
-      const prevEnd = new Date(sorted[i - 1].endedAt).getTime();
-      const currStart = new Date(sorted[i].startedAt).getTime();
+      const prev = sorted[i - 1];
+      const curr = sorted[i];
+      if (prev === undefined || curr === undefined) continue;
+      const prevEnd = new Date(prev.endedAt).getTime();
+      const currStart = new Date(curr.startedAt).getTime();
       gaps.push(Math.max(currStart - prevEnd, 0) / MS_PER_HOUR);
     }
     const avgGapHours = gaps.length > 0 ? gaps.reduce((a, b) => a + b, 0) / gaps.length : 0;
@@ -82,7 +100,7 @@ export class IndispensabilityTrackerService {
       dailyFrequency: Math.round(dailyFrequency * 100) / 100,
       avgGapHours: Math.round(avgGapHours * 100) / 100,
       maxGapHours: Math.round(maxGapHours * 100) / 100,
-      lastActivityAt: sorted[totalSessions - 1].endedAt,
+      lastActivityAt: lastSession.endedAt,
       activeDaysCount: activeDays.size,
       observationWindowDays: Math.round(windowDays * 100) / 100,
     };
@@ -109,7 +127,9 @@ export class IndispensabilityTrackerService {
       (a, b) => new Date(a.startedAt).getTime() - new Date(b.startedAt).getTime(),
     );
 
-    const lastActivityMs = new Date(sorted[sorted.length - 1].endedAt).getTime();
+    const lastSorted = sorted[sorted.length - 1];
+    const lastActivityMs =
+      lastSorted === undefined ? nowMs : new Date(lastSorted.endedAt).getTime();
     const daysSinceLastActivity = Math.floor((nowMs - lastActivityMs) / MS_PER_DAY);
 
     const pauseDetected7d = daysSinceLastActivity >= 7;
@@ -163,6 +183,19 @@ export class IndispensabilityTrackerService {
       };
     }
 
+    const lastUnavailability = unavailabilityEvents[unavailabilityEvents.length - 1];
+    if (lastUnavailability === undefined) {
+      return {
+        workspaceId,
+        lossDetected: false,
+        featureName: '',
+        offlineDurationHours: 0,
+        userBlockingReported: false,
+        usageDropAfterOffline: 0,
+        dependencyScore: 0,
+      };
+    }
+
     const blockingEvents = unavailabilityEvents.filter((e) => e.wasUserAffected);
     const reportedBlocking = unavailabilityEvents.filter((e) => e.userReportedBlocking);
 
@@ -174,9 +207,7 @@ export class IndispensabilityTrackerService {
 
     let usageDropAfterOffline = 0;
     if (unavailabilityEvents.length > 0 && sessions.length >= 2) {
-      const lastOfflineStart = new Date(
-        unavailabilityEvents[unavailabilityEvents.length - 1].offlineStartedAt,
-      ).getTime();
+      const lastOfflineStart = new Date(lastUnavailability.offlineStartedAt).getTime();
       const before = sessions.filter(
         (s) => new Date(s.startedAt).getTime() < lastOfflineStart,
       );
@@ -203,7 +234,7 @@ export class IndispensabilityTrackerService {
     return {
       workspaceId,
       lossDetected,
-      featureName: unavailabilityEvents[unavailabilityEvents.length - 1].featureName,
+      featureName: lastUnavailability.featureName,
       offlineDurationHours: Math.round(totalOfflineHours * 100) / 100,
       userBlockingReported: reportedBlocking.length > 0,
       usageDropAfterOffline: Math.round(usageDropAfterOffline * 100) / 100,

@@ -12,6 +12,8 @@ const RISK_WINDOW_DAYS = 30;
 const CRITICAL_INACTIVITY_DAYS = 30;
 const HIGH_INACTIVITY_DAYS = 14;
 const MODERATE_INACTIVITY_DAYS = 7;
+const OBJECTION_RECOVERY_LOOKBACK_HOURS = 48;
+const OBJECTION_RECOVERY_CHURN_WEIGHT = 0.2;
 
 const PROCESSOR_NAME = 'churn-risk-detector';
 const PROCESSOR_VERSION = '1.0.0';
@@ -107,12 +109,18 @@ export class ChurnRiskDetector {
     const activationStarted = this.findLastEvent(wsEvents, 'commerce.post_sale.activation_started');
     const missingFirstValue =
       !firstValue || daysSince(firstValue.occurredAt, nowMs) > RISK_WINDOW_DAYS;
+    const objectionRecoveryDetected =
+      payment !== undefined && hasRecentPriorObjection(wsEvents, payment, entityRef);
     if (missingFirstValue && hoursSincePayment > 24) {
       const activationStalled =
         activationStarted !== undefined && daysSince(activationStarted.occurredAt, nowMs) > 5;
       riskProbability += activationStalled || hoursSincePayment > 24 * 7 ? 0.2 : 0.05;
       if (activationStalled || hoursSincePayment > 24 * 7) {
         contributingSignals.push('first_value_missing');
+      }
+      if (objectionRecoveryDetected) {
+        riskProbability += OBJECTION_RECOVERY_CHURN_WEIGHT;
+        contributingSignals.push('recent_objection_recovery');
       }
     }
 
@@ -198,6 +206,42 @@ export class ChurnRiskDetector {
   }
 }
 
+function hasRecentPriorObjection(
+  events: readonly {
+    eventName: string;
+    occurredAt: string;
+    entityRef?: { readonly entityType: string; readonly entityId: string };
+  }[],
+  paymentEvent: {
+    occurredAt: string;
+    entityRef?: { readonly entityType: string; readonly entityId: string };
+  },
+  entityRef: { readonly entityType: string; readonly entityId: string },
+): boolean {
+  const paymentTs = Date.parse(paymentEvent.occurredAt);
+  if (!Number.isFinite(paymentTs)) {
+    return false;
+  }
+
+  return events.some((event) => {
+    if (
+      event.eventName !== 'commerce.lead.objection_raised' ||
+      event.entityRef?.entityType !== entityRef.entityType ||
+      event.entityRef.entityId !== entityRef.entityId
+    ) {
+      return false;
+    }
+
+    const objectionTs = Date.parse(event.occurredAt);
+    if (!Number.isFinite(objectionTs) || objectionTs >= paymentTs) {
+      return false;
+    }
+
+    const hoursBeforePayment = (paymentTs - objectionTs) / (1000 * 60 * 60);
+    return hoursBeforePayment <= OBJECTION_RECOVERY_LOOKBACK_HOURS;
+  });
+}
+
 function buildControl(
   riskLevel: ChurnRiskAssessment['riskLevel'],
   signals: readonly ChurnSignalKind[],
@@ -206,7 +250,8 @@ function buildControl(
     return {
       riskClass: 'R2',
       delegationMode: 'owner_review',
-      safeNextStep: 'Prepare a human-reviewed retention check-in focused on help, context, and expectation repair.',
+      safeNextStep:
+        'Prepare a human-reviewed retention check-in focused on help, context, and expectation repair.',
       uncertainty: `Churn risk is inferred from ${signals.length > 0 ? signals.join(', ') : 'weak'} signals, not an observed cancellation request.`,
       leadOutcomeGuardrail:
         'The customer must feel helped and heard; do not pressure, guilt, discount-first, or imply blame.',
@@ -221,10 +266,13 @@ function buildControl(
     safeNextStep: 'Keep monitoring and avoid churn outreach until risk evidence becomes stronger.',
     uncertainty:
       riskLevel === 'moderate'
-        ? 'Moderate risk is directional and needs more evidence before outreach.'
+        ? signals.includes('recent_objection_recovery')
+          ? 'Moderate risk includes a recently recovered objection without first-value proof; treat it as a listening signal, not permission to sell.'
+          : 'Moderate risk is directional and needs more evidence before outreach.'
         : 'No meaningful churn evidence is present.',
-    leadOutcomeGuardrail:
-      'Do not turn weak churn signals into a message; silence is preferred over anxious follow-up.',
+    leadOutcomeGuardrail: signals.includes('recent_objection_recovery')
+      ? 'Do not reopen the prior objection as pressure; wait for stronger help, support, first-value, or explicit concern evidence.'
+      : 'Do not turn weak churn signals into a message; silence is preferred over anxious follow-up.',
     rollback: 'Drop the churn action and keep the customer in normal post-sale support.',
   };
 }

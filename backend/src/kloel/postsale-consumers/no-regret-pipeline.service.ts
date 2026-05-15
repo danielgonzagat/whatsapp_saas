@@ -1,8 +1,9 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
+import { SpineEmitterService } from '../spine/spine-emitter.service';
 import { AntiRemorseService } from './anti-remorse.service';
 import { ActivationCompanionService } from './activation-companion.service';
 import { FirstValueDetector } from './first-value.detector';
-import { daysSince, latestEvent } from './postsale-consumers.types';
+import { daysSince, filterByWorkspaceAndEntity, latestEvent } from './postsale-consumers.types';
 import type {
   DetectionInput,
   NoRegretPhase,
@@ -11,46 +12,188 @@ import type {
 } from './postsale-consumers.types';
 
 const POST_SALE_WINDOW_HOURS = 24;
+const OBJECTION_RECOVERY_LOOKBACK_HOURS = 48;
+const PROCESSOR_NAME = 'no-regret-pipeline';
+const PROCESSOR_VERSION = '1.0.0';
+const SCHEMA_VERSION = '1.0.0';
+const AUTORUN_EVENT_NAMES = new Set([
+  'commerce.payment.approved',
+  'commerce.post_sale.delivery_completed',
+  'commerce.post_sale.activation_started',
+  'commerce.post_sale.first_value_obtained',
+]);
 
 @Injectable()
 export class NoRegretPipelineService {
+  private readonly logger = new Logger(NoRegretPipelineService.name);
+
   public constructor(
     private readonly antiRemorse: AntiRemorseService,
     private readonly activation: ActivationCompanionService,
     private readonly firstValue: FirstValueDetector,
-  ) {}
+    @Optional() private readonly spine?: SpineEmitterService,
+  ) {
+    this.spine?.subscribe((event) => {
+      if (!AUTORUN_EVENT_NAMES.has(event.eventName)) {
+        return;
+      }
+      if (
+        event.eventName === 'commerce.post_sale.first_value_obtained' &&
+        event.truthMode !== 'observed'
+      ) {
+        return;
+      }
+      if (event.workspaceId === undefined || event.entityRef === undefined) {
+        return;
+      }
+      void this.assess({
+        events: this.spine?.recentEventsAsRef() ?? [],
+        workspaceId: event.workspaceId,
+        entityRef: event.entityRef,
+      }).catch((err: unknown) => {
+        this.logger.error(
+          `post-sale autorun failed for ${event.eventName}: ${(err as Error)?.message ?? String(err)}`,
+        );
+      });
+    });
+  }
 
   public async assess(input: DetectionInput, refundRisk?: number): Promise<NoRegretState> {
     const nowMs = input.nowMs ?? Date.now();
-    const antiRemorse = this.antiRemorse.assess(input, refundRisk);
-    const activation = this.activation.track(input);
-    const firstValue = await this.firstValue.detect(input);
-    const payment = latestEvent(input.events, 'commerce.payment.approved');
-    const entityRef = input.entityRef ?? antiRemorse.entityRef;
+    const initialEvents = filterByWorkspaceAndEntity(input.events, input.workspaceId, input.entityRef);
+    const initialPayment = latestEvent(initialEvents, 'commerce.payment.approved');
+    const scopedEntityRef = input.entityRef ?? initialPayment?.entityRef;
+    const scopedInput = scopedEntityRef === undefined ? input : { ...input, entityRef: scopedEntityRef };
+    const antiRemorse = this.antiRemorse.assess(scopedInput, refundRisk);
+    const activation = this.activation.track(scopedInput);
+    const firstValue = await this.firstValue.detect(scopedInput);
+    const wsEvents = filterByWorkspaceAndEntity(
+      scopedInput.events,
+      scopedInput.workspaceId,
+      scopedInput.entityRef,
+    );
+    const payment = latestEvent(wsEvents, 'commerce.payment.approved');
+    const entityRef = scopedInput.entityRef ?? payment?.entityRef ?? antiRemorse.entityRef;
+    const explicitFirstValue = latestEvent(wsEvents, 'commerce.post_sale.first_value_obtained');
+    const firstValueObtained = firstValue.valueObtained || explicitFirstValue !== undefined;
+    const firstValueEvidenceEventIds = uniqueEventIds(
+      firstValue.evidenceEventIds,
+      explicitFirstValue?.eventId,
+    );
+    const firstValueKind =
+      firstValue.kind ?? (explicitFirstValue === undefined ? undefined : 'explicit_first_value');
+    const effectiveFirstValue =
+      firstValueObtained === firstValue.valueObtained
+        ? firstValue
+        : {
+            ...firstValue,
+            valueObtained: true,
+            kind: firstValueKind,
+            evidenceEventIds: firstValueEvidenceEventIds,
+            evidenceQuality: 'value_signal' as const,
+          };
+    const explicitActivationStarted =
+      latestEvent(wsEvents, 'commerce.post_sale.activation_started') !== undefined;
+    const activationLikely =
+      activation.activationLikely ||
+      (explicitActivationStarted && effectiveFirstValue.valueObtained);
+    const priorObjectionRecoveryDetected =
+      antiRemorse.objectionRecoveryDetected ||
+      (payment !== undefined &&
+        hasRecentPriorObjection(wsEvents, scopedInput.workspaceId, payment, entityRef));
+    const positiveSatisfactionObserved = hasPositiveSatisfaction(
+      wsEvents,
+      scopedInput.workspaceId,
+      entityRef,
+    );
     const phase = classifyPhase({
       hasPayment: payment !== undefined,
       hoursSincePayment: payment ? daysSince(payment.occurredAt, nowMs) * 24 : undefined,
       activationStarted: activation.completedSteps > 0,
-      activationLikely: activation.activationLikely,
+      activationLikely,
       stalledDays: activation.stalledDays,
-      firstValueObtained: firstValue.valueObtained,
+      firstValueObtained: effectiveFirstValue.valueObtained,
+      positiveSatisfactionObserved,
       antiRemorseAction: antiRemorse.recommendedAction,
-      objectionRecoveryDetected: antiRemorse.objectionRecoveryDetected,
+      objectionRecoveryDetected: priorObjectionRecoveryDetected,
     });
     const isNoRegret = phase === 'no_regret_confirmed';
+    if (isNoRegret) {
+      await this.emitNoRegretConfirmed(scopedInput.workspaceId, entityRef, {
+        firstValueKind,
+        firstValueEvidenceEventIds,
+        activationEvidenceEventIds: activation.evidenceEventIds,
+        remorseRiskScore: antiRemorse.remorseRiskScore,
+      });
+    }
 
     return {
-      workspaceId: input.workspaceId,
+      workspaceId: scopedInput.workspaceId,
       entityRef,
       phase,
       isNoRegret,
       antiRemorse,
       activation,
-      firstValue,
+      firstValue: effectiveFirstValue,
       control: buildControl(phase),
       assessedAt: new Date(nowMs).toISOString(),
     };
   }
+
+  private async emitNoRegretConfirmed(
+    workspaceId: string,
+    entityRef: { readonly entityType: string; readonly entityId: string },
+    payload: {
+      readonly firstValueKind: string | undefined;
+      readonly firstValueEvidenceEventIds: readonly string[];
+      readonly activationEvidenceEventIds: readonly string[];
+      readonly remorseRiskScore: number;
+    },
+  ): Promise<void> {
+    if (!this.spine) {
+      return;
+    }
+    const alreadyConfirmed = this.spine.recentEvents().some((event) => {
+      return (
+        event.eventName === 'commerce.post_sale.no_regret_confirmed' &&
+        event.workspaceId === workspaceId &&
+        event.entityRef?.entityType === entityRef.entityType &&
+        event.entityRef.entityId === entityRef.entityId
+      );
+    });
+    if (alreadyConfirmed) {
+      return;
+    }
+    try {
+      await this.spine.emit({
+        eventName: 'commerce.post_sale.no_regret_confirmed',
+        workspaceId,
+        entityRef,
+        truthMode: 'inferred',
+        provenance: {
+          source: 'production',
+          processor: PROCESSOR_NAME,
+          processorVersion: PROCESSOR_VERSION,
+          schemaVersion: SCHEMA_VERSION,
+        },
+        payload: {
+          firstValueKind: payload.firstValueKind ?? 'multi_signal',
+          firstValueEvidenceEventIds: payload.firstValueEvidenceEventIds,
+          activationEvidenceEventIds: payload.activationEvidenceEventIds,
+          remorseRiskScore: payload.remorseRiskScore,
+          guardrail: 'not_a_testimonial_or_satisfaction_claim',
+        },
+      });
+    } catch (err: unknown) {
+      this.logger.error(
+        `failed to emit no_regret_confirmed for ws ${workspaceId}: ${(err as Error)?.message ?? String(err)}`,
+      );
+    }
+  }
+}
+
+function uniqueEventIds(ids: readonly string[], extraId: string | undefined): string[] {
+  return Array.from(new Set(extraId === undefined ? ids : [...ids, extraId]));
 }
 
 function classifyPhase(input: {
@@ -60,6 +203,7 @@ function classifyPhase(input: {
   readonly activationLikely: boolean;
   readonly stalledDays: number;
   readonly firstValueObtained: boolean;
+  readonly positiveSatisfactionObserved: boolean;
   readonly antiRemorseAction: 'send_reassurance' | 'send_welcome' | 'monitor' | 'none';
   readonly objectionRecoveryDetected: boolean;
 }): NoRegretPhase {
@@ -71,7 +215,11 @@ function classifyPhase(input: {
     return 'recovery_needed';
   }
 
-  if (input.firstValueObtained && input.activationLikely) {
+  if (
+    input.firstValueObtained &&
+    input.activationLikely &&
+    (!input.objectionRecoveryDetected || input.positiveSatisfactionObserved)
+  ) {
     return 'no_regret_confirmed';
   }
 
@@ -92,6 +240,74 @@ function classifyPhase(input: {
   }
 
   return 'silent_monitoring';
+}
+
+function hasRecentPriorObjection(
+  events: readonly {
+    eventName: string;
+    workspaceId?: string;
+    occurredAt: string;
+    entityRef?: { readonly entityType: string; readonly entityId: string };
+  }[],
+  workspaceId: string,
+  paymentEvent: {
+    occurredAt: string;
+    entityRef?: { readonly entityType: string; readonly entityId: string };
+  },
+  entityRef: { readonly entityType: string; readonly entityId: string },
+): boolean {
+  const paymentTs = Date.parse(paymentEvent.occurredAt);
+  if (!Number.isFinite(paymentTs)) {
+    return false;
+  }
+
+  return events.some((event) => {
+    if (
+      event.workspaceId !== workspaceId ||
+      event.eventName !== 'commerce.lead.objection_raised' ||
+      event.entityRef?.entityType !== entityRef.entityType ||
+      event.entityRef.entityId !== entityRef.entityId
+    ) {
+      return false;
+    }
+
+    const objectionTs = Date.parse(event.occurredAt);
+    if (!Number.isFinite(objectionTs) || objectionTs >= paymentTs) {
+      return false;
+    }
+
+    const hoursBeforePayment = (paymentTs - objectionTs) / (1000 * 60 * 60);
+    return hoursBeforePayment <= OBJECTION_RECOVERY_LOOKBACK_HOURS;
+  });
+}
+
+function hasPositiveSatisfaction(
+  events: readonly {
+    eventName: string;
+    workspaceId?: string;
+    entityRef?: { readonly entityType: string; readonly entityId: string };
+    payload?: unknown;
+  }[],
+  workspaceId: string,
+  entityRef: { readonly entityType: string; readonly entityId: string },
+): boolean {
+  return events.some((event) => {
+    if (
+      event.workspaceId !== workspaceId ||
+      event.eventName !== 'commerce.post_sale.satisfaction_signal_observed' ||
+      event.entityRef?.entityType !== entityRef.entityType ||
+      event.entityRef.entityId !== entityRef.entityId
+    ) {
+      return false;
+    }
+
+    return (
+      typeof event.payload === 'object' &&
+      event.payload !== null &&
+      'sentimentLabel' in event.payload &&
+      event.payload.sentimentLabel === 'positive'
+    );
+  });
 }
 
 function buildControl(phase: NoRegretPhase): PostSaleDecisionControl {
@@ -158,12 +374,10 @@ function buildControl(phase: NoRegretPhase): PostSaleDecisionControl {
         delegationMode: 'allowed_alone',
         safeNextStep:
           'Continue monitoring the current activation path and surface only the missing first-value evidence.',
-        uncertainty:
-          'There is post-sale movement, but no-regret is not confirmed yet.',
+        uncertainty: 'There is post-sale movement, but no-regret is not confirmed yet.',
         leadOutcomeGuardrail:
           'Customer should get continuity toward the promised result without extra decision load.',
-        rollback:
-          'If progress stops or risk appears, switch to owner-reviewed help.',
+        rollback: 'If progress stops or risk appears, switch to owner-reviewed help.',
       };
 
     case 'no_payment_observed':
@@ -174,12 +388,9 @@ function buildControl(phase: NoRegretPhase): PostSaleDecisionControl {
         delegationMode: 'silent_monitoring',
         safeNextStep:
           'Stay silent and do not create a post-sale task until payment, activation, first-value, or risk evidence appears.',
-        uncertainty:
-          'Observed evidence is insufficient for a post-sale no-regret claim.',
-        leadOutcomeGuardrail:
-          'Avoid contacting or classifying the customer without evidence.',
-        rollback:
-          'Reassess when a concrete post-sale event enters the spine.',
+        uncertainty: 'Observed evidence is insufficient for a post-sale no-regret claim.',
+        leadOutcomeGuardrail: 'Avoid contacting or classifying the customer without evidence.',
+        rollback: 'Reassess when a concrete post-sale event enters the spine.',
       };
   }
 }

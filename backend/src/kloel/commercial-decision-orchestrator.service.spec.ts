@@ -195,6 +195,19 @@ describe('CommercialDecisionOrchestratorService', () => {
       expect(entry).toBeTruthy();
       expect(entry.hierarchyJustification).toBeTruthy();
     }
+
+    const transferAction = decision.actions.find((a) => a.tool === 'transfer_to_human');
+    expect(transferAction).toBeTruthy();
+    const handoffDecision = transferAction!.args
+      .handoffDecision as Record<string, unknown> | undefined;
+    expect(handoffDecision).toBeTruthy();
+    expect(handoffDecision!.hierarchyJustification).toBeTruthy();
+    expect(
+      (handoffDecision!.hierarchyJustification as Record<string, unknown>).level,
+    ).toBeDefined();
+    expect(typeof (handoffDecision!.hierarchyJustification as Record<string, unknown>).reason).toBe(
+      'string',
+    );
   });
 
   it('builds predecided actions after detecting concepts and consulting case memory', async () => {
@@ -226,7 +239,13 @@ describe('CommercialDecisionOrchestratorService', () => {
       {
         tool: 'apply_discount',
         args: expect.objectContaining({
-          couponDecision: expect.objectContaining({ action: 'coupon_10' }),
+          couponDecision: expect.objectContaining({
+            action: 'coupon_10',
+            hierarchyJustification: expect.objectContaining({
+              level: expect.any(String),
+              reason: expect.any(String),
+            }),
+          }),
           discountPercent: 10,
           productOffer: undefined,
           segment: 'price_objection',
@@ -239,6 +258,41 @@ describe('CommercialDecisionOrchestratorService', () => {
     expect(events.recordCommercial).toHaveBeenCalledWith(
       expect.objectContaining({ eventType: 'predecided_actions.built' }),
     );
+  });
+
+  it('carries hierarchy trace into safe send-message actions', async () => {
+    concepts.detect.mockResolvedValue([{ concept: 'general', confidence: 0.8 }]);
+    const service = makeService();
+
+    const decision = await service.orchestrateInbound({
+      workspaceId: 'ws-1',
+      contactId: 'contact-1',
+      channel: 'WHATSAPP',
+      message: 'Oi, quero entender melhor.',
+    });
+
+    expect(decision.actions).toEqual([
+      {
+        tool: 'send_message',
+        args: expect.objectContaining({
+          hierarchyTrace: expect.objectContaining({
+            audio_vs_text: expect.objectContaining({
+              hierarchyJustification: expect.objectContaining({
+                level: expect.any(String),
+                reason: expect.any(String),
+              }),
+            }),
+            cia_aggressiveness: expect.objectContaining({
+              hierarchyJustification: expect.objectContaining({
+                level: expect.any(String),
+                reason: expect.any(String),
+              }),
+            }),
+          }),
+          internalReplyPlan: expect.objectContaining({ concept: 'general' }),
+        }),
+      },
+    ]);
   });
 
   it('proactively delegates product and transfer decisions from inbound concepts', async () => {

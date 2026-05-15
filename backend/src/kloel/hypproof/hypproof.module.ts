@@ -5,6 +5,7 @@ import { BeliefUpdateService } from './belief-update';
 import { DiscoveryNarrativeBuilderService } from './discovery-narrative.builder';
 import { ExperimentRunnerService } from './experiment-runner';
 import { HypothesisFormulatorService } from './hypothesis-formulator';
+import { MarketEntryDecisionService } from './market-entry-decision.service';
 import { MicroExperimentDesignerService } from './micro-experiment.designer';
 import { ObservationCollectorService } from './observation.collector';
 import { ProofEvaluatorService } from './proof-evaluator';
@@ -19,6 +20,7 @@ import { ProofEvaluatorService } from './proof-evaluator';
   imports: [SpineModule],
   providers: [
     HypothesisFormulatorService,
+    MarketEntryDecisionService,
     MicroExperimentDesignerService,
     AuthorizationGatewayService,
     ExperimentRunnerService,
@@ -29,6 +31,7 @@ import { ProofEvaluatorService } from './proof-evaluator';
   ],
   exports: [
     HypothesisFormulatorService,
+    MarketEntryDecisionService,
     MicroExperimentDesignerService,
     AuthorizationGatewayService,
     ExperimentRunnerService,

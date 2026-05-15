@@ -1,21 +1,21 @@
 import { Module } from '@nestjs/common';
+import { PortfolioStateService } from './portfolio-state.service';
+import { PerClientContextBundler } from './per-client-context.bundler';
 
 /**
- * AgencyModule — Camada XXV (UTP-AGENCY-001..008).
+ * AgencyModule — Camada XXV (UTP-AGENCY-009..010).
  *
  * Operar multiplos clientes sem perder contexto, margem ou prioridade.
  * Zero vazamento de conhecimento entre clientes.
  *
- * All core logic is pure functions exported from their respective
- * files. This module serves as the wiring point for NestJS DI
- * when stateful services are added in future waves.
+ * PortfolioStateService: consolida estado da carteira (clientCount,
+ * marginPerClient, churnRiskPerClient, priorityRanking, teamLoad).
  *
- * Implements the Agency family: portfolio state, per-client context,
- * priority ranking, margin tracking, churn risk detection, team load
- * balancing, internal knowledge leak guard, and handoff.
+ * PerClientContextBundler: constroi contexto por cliente com isolamento
+ * estrito (isolationToken criptografico para cada par agency-client).
  */
 @Module({
-  providers: [],
-  exports: [],
+  providers: [PortfolioStateService, PerClientContextBundler],
+  exports: [PortfolioStateService, PerClientContextBundler],
 })
 export class AgencyModule {}

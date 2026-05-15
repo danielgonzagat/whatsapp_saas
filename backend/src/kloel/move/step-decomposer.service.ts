@@ -75,11 +75,13 @@ export class StepDecomposerService {
         ? Math.max(MIN_STEP_MINUTES, remainingMinutes)
         : Math.min(baseMinutes, remainingMinutes);
 
-      const verb = verbSequence[i % verbSequence.length];
-      const toolAssist = toolAssists[i % toolAssists.length];
+      const verb = verbSequence[i % verbSequence.length] ?? 'Complete';
+      const toolAssist = toolAssists[i % toolAssists.length] ?? null;
       const description = this.buildStepDescription(i, verb, input.actionDescription);
 
-      const prerequisites: string[] = i > 0 ? [previousDescriptions[i - 1]] : [];
+      const prevDescription = previousDescriptions[i - 1];
+      const prerequisites: string[] =
+        i > 0 && prevDescription !== undefined ? [prevDescription] : [];
       previousDescriptions.push(description);
 
       steps.push({
@@ -131,21 +133,23 @@ export class StepDecomposerService {
       return Array.from({ length: targetCount }, () => null);
     }
 
+    const tool0 = availableTools[0] ?? '';
+    const tool1 = availableTools[1];
+    const tool2 = availableTools[2];
     const mapped: (ToolAssistMap | null)[] = [
-      { verb: 'draft', assistedTool: availableTools[0] },
+      { verb: 'draft', assistedTool: tool0 },
     ];
 
-    if (availableTools.length >= 2) {
-      mapped.push({ verb: 'generate', assistedTool: availableTools[1] });
+    if (tool1 !== undefined) {
+      mapped.push({ verb: 'generate', assistedTool: tool1 });
     }
 
-    if (availableTools.length >= 3) {
-      mapped.push({ verb: 'check', assistedTool: availableTools[2] });
+    if (tool2 !== undefined) {
+      mapped.push({ verb: 'check', assistedTool: tool2 });
     }
 
-    const standard = availableTools.length > 0
-      ? { verb: 'assist with', assistedTool: availableTools[0] }
-      : null;
+    const standard: ToolAssistMap | null =
+      tool0 !== '' ? { verb: 'assist with', assistedTool: tool0 } : null;
 
     while (mapped.length < targetCount) {
       mapped.push(standard);

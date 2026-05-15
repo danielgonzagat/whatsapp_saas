@@ -1,581 +1,496 @@
-import { collectWeeklySnapshots } from './behavior-snapshot.service';
-import { detectDrift } from './drift-detector';
-import { attributeDrift } from './drift-attribution.service';
-import { buildExplanation } from './drift-explanation.builder';
-import { buildNarrative } from './drift-narrative.builder';
-import { collectEvidence } from './drift-evidence-collector';
+import { BehaviorSnapshotService } from './behavior-snapshot.service';
+import { DriftDetectorService } from './drift-detector.service';
 import type { SpineEventRef } from '../mind/mind.types';
-import type { BehaviorSnapshot } from './drift.types';
+import type { WeeklyBehaviorSnapshot } from './drift.types';
 
 function makeEvent(
   override: Partial<SpineEventRef> & { eventName: string; occurredAt: string },
 ): SpineEventRef {
   const idx = makeEvent.seq++;
   return {
-    eventId: `evt_test_${String(idx).padStart(5, '0')}`,
-    workspaceId: 'wks_test_001',
+    eventId: `evt_${String(idx).padStart(5, '0')}`,
+    workspaceId: 'ws_001',
     truthMode: 'observed',
     ...override,
   };
 }
 makeEvent.seq = 0;
 
-function mkIso(month: number, day: number, hour: number, minute?: number): string {
-  const m = String(month).padStart(2, '0');
+function iso(day: number, hour: number, minute?: number): string {
   const d = String(day).padStart(2, '0');
   const h = String(hour).padStart(2, '0');
-  const min = String(minute ?? 0).padStart(2, '0');
-  return `2026-${m}-${d}T${h}:${min}:00.000Z`;
+  const m = String(minute ?? 0).padStart(2, '0');
+  return `2026-05-${d}T${h}:${m}:00.000Z`;
 }
 
-/**
- * Synthetic 4-week history — all dates use mkIso for guaranteed parseable ISO strings.
- * Week 1: May 4-10, Week 2: May 11-17, Week 3: May 18-24, Week 4: May 25-31.
- */
-function synthetic4Weeks(): SpineEventRef[] {
+function makeWeek(
+  wsId: string,
+  days: readonly number[],
+  valence?: 'positive' | 'negative' | 'neutral',
+): SpineEventRef[] {
   const events: SpineEventRef[] = [];
-
-  // ── Week 1: 2026-05-04 (Mon) to 2026-05-10 (Sun) ──
-  // 10 leads created
-  for (let i = 0; i < 10; i++) {
+  for (const day of days) {
     events.push(
       makeEvent({
         eventName: 'commerce.lead.created',
-        occurredAt: mkIso(5, 4 + (i % 7), 10 + (i % 12)),
-        entityRef: { entityType: 'lead', entityId: `w1_lead_${i}` },
+        occurredAt: iso(day, 10),
+        workspaceId: wsId,
+        entityRef: { entityType: 'lead', entityId: `L${day}` },
       }),
     );
-  }
-  for (const i of [0, 2, 4]) {
     events.push(
       makeEvent({
-        eventName: 'commerce.lead.contacted',
-        occurredAt: mkIso(5, 5 + i % 2, 10, 30),
-        entityRef: { entityType: 'lead', entityId: `w1_lead_${i}` },
+        eventName: 'commerce.whatsapp.message_received',
+        occurredAt: iso(day, 10, 5),
+        workspaceId: wsId,
+        entityRef: { entityType: 'lead', entityId: `L${day}` },
       }),
     );
-  }
-  for (const i of [0, 2, 4]) {
+    events.push(
+      makeEvent({
+        eventName: 'commerce.whatsapp.message_replied',
+        occurredAt: iso(day, 10, 15),
+        workspaceId: wsId,
+        entityRef: { entityType: 'lead', entityId: `L${day}` },
+      }),
+    );
     events.push(
       makeEvent({
         eventName: 'commerce.lead.converted',
-        occurredAt: mkIso(5, 6 + i % 3, 14),
-        entityRef: { entityType: 'lead', entityId: `w1_lead_${i}` },
+        occurredAt: iso(day, 14),
+        workspaceId: wsId,
+        entityRef: { entityType: 'lead', entityId: `L${day}` },
         valence: 'positive',
       }),
     );
-  }
-  for (let i = 0; i < 3; i++) {
     events.push(
       makeEvent({
         eventName: 'commerce.payment.approved',
-        occurredAt: mkIso(5, 5 + i, 15),
-        entityRef: { entityType: 'payment', entityId: `w1_pay_${i}` },
+        occurredAt: iso(day, 15),
+        workspaceId: wsId,
+        entityRef: { entityType: 'payment', entityId: `P${day}` },
         valence: 'positive',
       }),
     );
   }
-  events.push(
-    makeEvent({
-      eventName: 'commerce.lead.objection_raised',
-      occurredAt: mkIso(5, 6, 11),
-      entityRef: { entityType: 'lead', entityId: 'w1_lead_1' },
-      valence: 'negative',
-      payload: { objectionKind: 'price' },
-    }),
-  );
-
-  // ── Week 2: 2026-05-11 (Mon) to 2026-05-17 (Sun) ──
-  for (let i = 0; i < 12; i++) {
-    events.push(
-      makeEvent({
-        eventName: 'commerce.lead.created',
-        occurredAt: mkIso(5, 11 + (i % 7), 10),
-        entityRef: { entityType: 'lead', entityId: `w2_lead_${i}` },
-      }),
-    );
-  }
-  for (const i of [0, 1, 3, 4, 6]) {
-    events.push(
-      makeEvent({
-        eventName: 'commerce.lead.contacted',
-        occurredAt: mkIso(5, 12 + i % 5, 10, 45),
-        entityRef: { entityType: 'lead', entityId: `w2_lead_${i}` },
-      }),
-    );
-  }
-  for (const i of [0, 1, 3, 6]) {
-    events.push(
-      makeEvent({
-        eventName: 'commerce.lead.converted',
-        occurredAt: mkIso(5, 13 + i % 4, 14, 30),
-        entityRef: { entityType: 'lead', entityId: `w2_lead_${i}` },
-        valence: 'positive',
-      }),
-    );
-  }
-  for (let i = 0; i < 4; i++) {
-    events.push(
-      makeEvent({
-        eventName: 'commerce.payment.approved',
-        occurredAt: mkIso(5, 13 + i, 15, 30),
-        entityRef: { entityType: 'payment', entityId: `w2_pay_${i}` },
-        valence: 'positive',
-      }),
-    );
-  }
-
-  // ── Week 3: 2026-05-18 (Mon) to 2026-05-24 (Sun) ──
-  for (let i = 0; i < 8; i++) {
-    events.push(
-      makeEvent({
-        eventName: 'commerce.lead.created',
-        occurredAt: mkIso(5, 18 + (i % 7), 10),
-        entityRef: { entityType: 'lead', entityId: `w3_lead_${i}` },
-      }),
-    );
-  }
-  for (const i of [0, 2]) {
-    events.push(
-      makeEvent({
-        eventName: 'commerce.lead.contacted',
-        occurredAt: mkIso(5, 19 + i, 11),
-        entityRef: { entityType: 'lead', entityId: `w3_lead_${i}` },
-      }),
-    );
-  }
-  for (const i of [0, 2]) {
-    events.push(
-      makeEvent({
-        eventName: 'commerce.lead.converted',
-        occurredAt: mkIso(5, 20 + i, 14),
-        entityRef: { entityType: 'lead', entityId: `w3_lead_${i}` },
-        valence: 'positive',
-      }),
-    );
-  }
-  events.push(
-    makeEvent({
-      eventName: 'commerce.payment.approved',
-      occurredAt: mkIso(5, 20, 15),
-      entityRef: { entityType: 'payment', entityId: 'w3_pay_0' },
-      valence: 'positive',
-    }),
-  );
-  events.push(
-    makeEvent({
-      eventName: 'commerce.payment.approved',
-      occurredAt: mkIso(5, 22, 15, 30),
-      entityRef: { entityType: 'payment', entityId: 'w3_pay_1' },
-      valence: 'positive',
-    }),
-  );
-  events.push(
-    makeEvent({
-      eventName: 'commerce.payment.declined',
-      occurredAt: mkIso(5, 23, 16),
-      entityRef: { entityType: 'payment', entityId: 'w3_pay_2' },
-      valence: 'negative',
-    }),
-  );
-  events.push(
-    makeEvent({
-      eventName: 'commerce.lead.objection_raised',
-      occurredAt: mkIso(5, 19, 10, 30),
-      entityRef: { entityType: 'lead', entityId: 'w3_lead_3' },
-      valence: 'negative',
-      payload: { objectionKind: 'price' },
-    }),
-  );
-  events.push(
-    makeEvent({
-      eventName: 'commerce.lead.objection_raised',
-      occurredAt: mkIso(5, 21, 11),
-      entityRef: { entityType: 'lead', entityId: 'w3_lead_5' },
-      valence: 'negative',
-      payload: { objectionKind: 'urgency' },
-    }),
-  );
-
-  // ── Week 4 (drift week): 2026-05-25 (Mon) to 2026-05-31 (Sun) ──
-  for (let i = 0; i < 6; i++) {
-    events.push(
-      makeEvent({
-        eventName: 'commerce.lead.created',
-        occurredAt: mkIso(5, 25 + (i % 5), 10),
-        entityRef: { entityType: 'lead', entityId: `w4_lead_${i}` },
-      }),
-    );
-  }
-  events.push(
-    makeEvent({
-      eventName: 'commerce.lead.contacted',
-      occurredAt: mkIso(5, 25, 12),
-      entityRef: { entityType: 'lead', entityId: 'w4_lead_0' },
-    }),
-  );
-  events.push(
-    makeEvent({
-      eventName: 'commerce.lead.converted',
-      occurredAt: mkIso(5, 27, 14),
-      entityRef: { entityType: 'lead', entityId: 'w4_lead_0' },
-      valence: 'positive',
-    }),
-  );
-  events.push(
-    makeEvent({
-      eventName: 'commerce.payment.approved',
-      occurredAt: mkIso(5, 27, 15),
-      entityRef: { entityType: 'payment', entityId: 'w4_pay_0' },
-      valence: 'positive',
-    }),
-  );
-  for (let i = 0; i < 3; i++) {
-    events.push(
-      makeEvent({
-        eventName: 'commerce.payment.declined',
-        occurredAt: mkIso(5, 26 + i, 16),
-        entityRef: { entityType: 'payment', entityId: `w4_pay_d${i}` },
-        valence: 'negative',
-      }),
-    );
-  }
-  events.push(
-    makeEvent({
-      eventName: 'commerce.lead.objection_raised',
-      occurredAt: mkIso(5, 26, 10),
-      entityRef: { entityType: 'lead', entityId: 'w4_lead_1' },
-      valence: 'negative',
-      payload: { objectionKind: 'price' },
-    }),
-  );
-  events.push(
-    makeEvent({
-      eventName: 'commerce.lead.objection_raised',
-      occurredAt: mkIso(5, 27, 10, 30),
-      entityRef: { entityType: 'lead', entityId: 'w4_lead_2' },
-      valence: 'negative',
-      payload: { objectionKind: 'price' },
-    }),
-  );
-  events.push(
-    makeEvent({
-      eventName: 'commerce.lead.objection_raised',
-      occurredAt: mkIso(5, 28, 11),
-      entityRef: { entityType: 'lead', entityId: 'w4_lead_3' },
-      valence: 'negative',
-      payload: { objectionKind: 'price' },
-    }),
-  );
-  events.push(
-    makeEvent({
-      eventName: 'commerce.lead.objection_raised',
-      occurredAt: mkIso(5, 29, 9),
-      entityRef: { entityType: 'lead', entityId: 'w4_lead_4' },
-      valence: 'negative',
-      payload: { objectionKind: 'trust' },
-    }),
-  );
-  events.push(
-    makeEvent({
-      eventName: 'commerce.lead.objection_raised',
-      occurredAt: mkIso(5, 30, 14),
-      entityRef: { entityType: 'lead', entityId: 'w4_lead_5' },
-      valence: 'negative',
-      payload: { objectionKind: 'trust' },
-    }),
-  );
-  events.push(
-    makeEvent({
-      eventName: 'commerce.campaign.performance_drop_detected',
-      occurredAt: mkIso(5, 26, 8),
-      entityRef: { entityType: 'campaign', entityId: 'camp_w4' },
-    }),
-  );
-  events.push(
-    makeEvent({
-      eventName: 'commerce.post_sale.churn_risk_detected',
-      occurredAt: mkIso(5, 30, 12),
-      entityRef: { entityType: 'customer', entityId: 'w2_lead_0' },
-      valence: 'negative',
-    }),
-  );
-
   return events;
 }
 
 describe('DRIFT — Camada X (Behavioral Drift Observability)', () => {
-  const allEvents = synthetic4Weeks();
-  const [wsId] = ['wks_test_001'] as const;
+  const snapshotSvc = new BehaviorSnapshotService();
+  const driftSvc = new DriftDetectorService();
+  const wsId = 'ws_drift_test';
 
-  let snapshots: BehaviorSnapshot[];
+  // ─── BehaviorSnapshotService ──────────────────────────────
 
-  beforeAll(() => {
-    snapshots = collectWeeklySnapshots(wsId, allEvents);
-  });
+  describe('BehaviorSnapshotService.snapshot', () => {
+    it('01 produces snapshotId with workspaceId and weekStart', () => {
+      const events = makeWeek(wsId, [11, 12, 13]);
+      const snap = snapshotSvc.snapshot(wsId, '2026-05-11', events);
 
-  // ─── DRIFT-001: Behavior Snapshot ────────────────────────────
-  describe('DRIFT-001: BehaviorSnapshotService', () => {
-    it('collects exactly 4 weekly snapshots for the synthetic data', () => {
-      expect(snapshots.length).toBe(4);
+      expect(snap.snapshotId).toBe('snap_ws_drift_test_2026-05-11');
+      expect(snap.workspaceId).toBe(wsId);
+      expect(snap.weekStart).toBe('2026-05-11');
+      expect(snap.weekEnd).toBeTruthy();
+      expect(snap.computedAt).toBeTruthy();
     });
 
-    it('each snapshot has a snapshotId, workspaceId, and weekStart', () => {
-      for (const snap of snapshots) {
-        expect(snap.snapshotId).toBeTruthy();
-        expect(snap.workspaceId).toBe(wsId);
-        expect(snap.weekStart).toBeTruthy();
+    it('02 counts messages sent (replies + received) correctly', () => {
+      const events = makeWeek(wsId, [11, 12, 13]);
+      const snap = snapshotSvc.snapshot(wsId, '2026-05-11', events);
+
+      expect(snap.messagesSent).toBe(6);
+    });
+
+    it('03 ranks decisions by frequency', () => {
+      const events = makeWeek(wsId, [11, 12]);
+      const snap = snapshotSvc.snapshot(wsId, '2026-05-11', events);
+
+      expect(snap.decisionsRanked.length).toBeGreaterThan(0);
+      expect(snap.decisionsRanked[0]).toMatch(/commerce\./);
+    });
+
+    it('04 counts conversions attributed', () => {
+      const events = makeWeek(wsId, [11, 12, 13]);
+      const snap = snapshotSvc.snapshot(wsId, '2026-05-11', events);
+
+      expect(snap.conversionsAttributed).toBe(3);
+    });
+
+    it('05 computes a non-empty narrativeStyleHash', () => {
+      const events = makeWeek(wsId, [11]);
+      const snap = snapshotSvc.snapshot(wsId, '2026-05-11', events);
+
+      expect(snap.narrativeStyleHash).toBeTruthy();
+      expect(snap.narrativeStyleHash).not.toBe('empty');
+    });
+
+    it('06 different event sequences produce different hashes', () => {
+      const evA = [
+        makeEvent({
+          eventName: 'commerce.lead.created',
+          occurredAt: iso(11, 10),
+          workspaceId: wsId,
+        }),
+        makeEvent({
+          eventName: 'commerce.lead.converted',
+          occurredAt: iso(11, 14),
+          workspaceId: wsId,
+          valence: 'positive',
+        }),
+      ];
+      const evB = [
+        makeEvent({
+          eventName: 'commerce.lead.created',
+          occurredAt: iso(11, 10),
+          workspaceId: wsId,
+          valence: 'negative',
+        }),
+        makeEvent({
+          eventName: 'commerce.post_sale.churn_risk_detected',
+          occurredAt: iso(11, 14),
+          workspaceId: wsId,
+          valence: 'negative',
+        }),
+      ];
+
+      const snapA = snapshotSvc.snapshot(wsId, '2026-05-11', evA);
+      const snapB = snapshotSvc.snapshot(wsId, '2026-05-11', evB);
+
+      expect(snapA.narrativeStyleHash).not.toBe(snapB.narrativeStyleHash);
+    });
+
+    it('07 classifies tones correctly for positive events', () => {
+      const events = [
+        makeEvent({
+          eventName: 'commerce.lead.converted',
+          occurredAt: iso(11, 10),
+          workspaceId: wsId,
+          valence: 'positive',
+        }),
+        makeEvent({
+          eventName: 'commerce.payment.approved',
+          occurredAt: iso(11, 11),
+          workspaceId: wsId,
+          valence: 'positive',
+        }),
+      ];
+      const snap = snapshotSvc.snapshot(wsId, '2026-05-11', events);
+
+      expect(snap.toneClassification.assertivo).toBe(2);
+    });
+
+    it('08 classifies negative events as urgente', () => {
+      const events = [
+        makeEvent({
+          eventName: 'commerce.payment.declined',
+          occurredAt: iso(11, 10),
+          workspaceId: wsId,
+          valence: 'negative',
+        }),
+        makeEvent({
+          eventName: 'commerce.post_sale.churn_risk_detected',
+          occurredAt: iso(11, 11),
+          workspaceId: wsId,
+          valence: 'negative',
+        }),
+      ];
+      const snap = snapshotSvc.snapshot(wsId, '2026-05-11', events);
+
+      expect(snap.toneClassification.urgente).toBe(2);
+    });
+
+    it('09 detects decision patterns from sequential events', () => {
+      const events = [
+        makeEvent({
+          eventName: 'commerce.lead.converted',
+          occurredAt: iso(11, 10),
+          workspaceId: wsId,
+          valence: 'positive',
+        }),
+        makeEvent({
+          eventName: 'commerce.payment.approved',
+          occurredAt: iso(11, 11),
+          workspaceId: wsId,
+          valence: 'positive',
+        }),
+        makeEvent({
+          eventName: 'commerce.lead.converted',
+          occurredAt: iso(11, 12),
+          workspaceId: wsId,
+          valence: 'positive',
+        }),
+        makeEvent({
+          eventName: 'commerce.payment.approved',
+          occurredAt: iso(11, 13),
+          workspaceId: wsId,
+          valence: 'positive',
+        }),
+      ];
+      const snap = snapshotSvc.snapshot(wsId, '2026-05-11', events);
+
+      expect(snap.decisionPatterns.length).toBeGreaterThan(0);
+      expect(snap.decisionPatterns[0]!.pattern).toContain('commerce.lead.converted');
+      expect(snap.decisionPatterns[0]!.count).toBe(2);
+    });
+
+    it('10 returns zero messagesSent when no message events exist', () => {
+      const events = [
+        makeEvent({
+          eventName: 'commerce.lead.created',
+          occurredAt: iso(11, 10),
+          workspaceId: wsId,
+        }),
+        makeEvent({
+          eventName: 'commerce.lead.converted',
+          occurredAt: iso(11, 11),
+          workspaceId: wsId,
+          valence: 'positive',
+        }),
+      ];
+      const snap = snapshotSvc.snapshot(wsId, '2026-05-11', events);
+
+      expect(snap.messagesSent).toBe(0);
+    });
+
+    it('11 returns empty decisionsRanked when no decision events', () => {
+      const events = [
+        makeEvent({
+          eventName: 'commerce.lead.created',
+          occurredAt: iso(11, 10),
+          workspaceId: wsId,
+        }),
+        makeEvent({
+          eventName: 'commerce.whatsapp.message_received',
+          occurredAt: iso(11, 10, 5),
+          workspaceId: wsId,
+        }),
+      ];
+      const snap = snapshotSvc.snapshot(wsId, '2026-05-11', events);
+
+      expect(snap.decisionsRanked.length).toBe(0);
+      expect(snap.conversionsAttributed).toBe(0);
+    });
+
+    it('12 filters events strictly by workspaceId and week boundaries', () => {
+      const evIn = makeWeek(wsId, [11, 12]);
+      const evOut = makeWeek('ws_other', [11, 12]);
+      const evAfter = makeWeek(wsId, [18, 19]);
+      const all = [...evIn, ...evOut, ...evAfter];
+      const snap = snapshotSvc.snapshot(wsId, '2026-05-11', all);
+
+      expect(snap.messagesSent).toBe(4);
+      expect(snap.conversionsAttributed).toBe(2);
+    });
+
+    it('13 empty events produce valid snapshot with zero values', () => {
+      const snap = snapshotSvc.snapshot(wsId, '2026-05-11', []);
+
+      expect(snap.messagesSent).toBe(0);
+      expect(snap.decisionsRanked).toEqual([]);
+      expect(snap.conversionsAttributed).toBe(0);
+      expect(snap.narrativeStyleHash).toBe('empty');
+      expect(snap.decisionPatterns).toEqual([]);
+      for (const t of Object.keys(snap.toneClassification)) {
+        expect(snap.toneClassification[t as keyof typeof snap.toneClassification]).toBe(0);
       }
-    });
-
-    it('first snapshot has positive lead count', () => {
-      expect(snapshots[0]!.leadCount).toBeGreaterThan(0);
-    });
-
-    it('conversion rate is computed as ratio of conversions to leads', () => {
-      for (const snap of snapshots) {
-        if (snap.leadCount > 0) {
-          expect(snap.metrics.conversionRate).toBe(
-            snap.conversionCount / snap.leadCount,
-          );
-        } else {
-          expect(snap.metrics.conversionRate).toBe(0);
-        }
-      }
-    });
-
-    it('objection mix is computed correctly for week 4', () => {
-      const w4 = snapshots[3]!;
-      expect(w4.metrics.objectionMix['price']).toBe(3);
-      expect(w4.metrics.objectionMix['trust']).toBe(2);
-    });
-
-    it('payment success rate is between 0 and 1', () => {
-      for (const snap of snapshots) {
-        expect(snap.metrics.paymentSuccessRate).toBeGreaterThanOrEqual(0);
-        expect(snap.metrics.paymentSuccessRate).toBeLessThanOrEqual(1);
-      }
-    });
-  });
-
-  // ─── DRIFT-002: Drift Detector ────────────────────────────────
-  describe('DRIFT-002: DriftDetector', () => {
-    it('detects drift in week 4 compared to weeks 1-3', () => {
-      const w4 = snapshots[3]!;
-      const historical = snapshots.slice(0, 3);
-      const report = detectDrift(w4, historical);
-
-      expect(report.deviations.length).toBeGreaterThan(0);
-      expect(report.significantCount).toBeGreaterThanOrEqual(0);
-    });
-
-    it('drift report includes comparison snapshot IDs', () => {
-      const w4 = snapshots[3]!;
-      const historical = snapshots.slice(0, 3);
-      const report = detectDrift(w4, historical);
-
-      expect(report.comparedSnapshotIds.length).toBe(3);
-      expect(report.comparedSnapshotIds).toContain(snapshots[0]!.snapshotId);
-    });
-
-    it('stable weeks produce zero or minimal significant deviations', () => {
-      const w2 = snapshots[1]!;
-      const historical = [snapshots[0]!];
-      const report = detectDrift(w2, historical);
-
-      expect(report.significantCount).toBeLessThanOrEqual(4);
-    });
-
-    it('drift report includes overallDriftMagnitude', () => {
-      const w4 = snapshots[3]!;
-      const historical = snapshots.slice(0, 3);
-      const report = detectDrift(w4, historical);
-
-      expect(report.overallDriftMagnitude).toBeGreaterThanOrEqual(0);
-    });
-  });
-
-  // ─── DRIFT-003: Drift Attribution ─────────────────────────────
-  describe('DRIFT-003: AttributionService', () => {
-    it('attributes drift to campaign performance drop event', () => {
-      const w4 = snapshots[3]!;
-      const w3 = snapshots[2]!;
-      const attributed = attributeDrift(w4, w3, allEvents);
-
-      expect(attributed.workspaceId).toBe(wsId);
-      expect(attributed.attribution.length).toBeGreaterThan(0);
-    });
-
-    it('primary cause has highest confidence', () => {
-      const w4 = snapshots[3]!;
-      const w3 = snapshots[2]!;
-      const attributed = attributeDrift(w4, w3, allEvents);
-
-      if (attributed.primaryCause && attributed.attribution.length > 1) {
-        for (const cause of attributed.attribution) {
-          expect(cause.confidence).toBeLessThanOrEqual(
-            attributed.primaryCause.confidence,
-          );
-        }
-      }
-    });
-
-    it('attribution confidence is bounded to [0, 0.95]', () => {
-      const w4 = snapshots[3]!;
-      const w3 = snapshots[2]!;
-      const attributed = attributeDrift(w4, w3, allEvents);
-
-      for (const cause of attributed.attribution) {
-        expect(cause.confidence).toBeGreaterThan(0);
-        expect(cause.confidence).toBeLessThanOrEqual(0.95);
-      }
-    });
-  });
-
-  // ─── DRIFT-004: Explanation Builder ──────────────────────────
-  describe('DRIFT-004: ExplanationBuilder', () => {
-    it('builds explanation in Portuguese without jargon', () => {
-      const w4 = snapshots[3]!;
-      const historical = snapshots.slice(0, 3);
-      const report = detectDrift(w4, historical);
-      const explanation = buildExplanation(report, w4);
-
-      expect(explanation.summary).toBeTruthy();
-      expect(explanation.workspaceId).toBe(wsId);
-
-      const fullText = explanation.summary + explanation.details.join(' ');
-      expect(fullText).not.toMatch(/sigma/i);
-      expect(fullText).not.toMatch(/std\s*dev/i);
-      expect(fullText).not.toMatch(/deviation/i);
-      expect(fullText).not.toMatch(/p-value/i);
-    });
-
-    it('no-drift scenario produces a stable message', () => {
-      const w2 = snapshots[1]!;
-      const historical = [snapshots[0]!];
-      const report = detectDrift(w2, historical);
-      const explanation = buildExplanation(report, w2);
-
-      expect(explanation.summary).toMatch(/estável|significativa/);
-    });
-
-    it('explanation details match significant deviation count', () => {
-      const w4 = snapshots[3]!;
-      const historical = snapshots.slice(0, 3);
-      const report = detectDrift(w4, historical);
-      const explanation = buildExplanation(report, w4);
-
-      expect(explanation.details.length).toBe(report.significantCount);
-    });
-  });
-
-  // ─── DRIFT-005: Narrative Builder ─────────────────────────────
-  describe('DRIFT-005: NarrativeBuilder', () => {
-    it('builds narrative with exactly 5 story beats', () => {
-      const w4 = snapshots[3]!;
-      const w3 = snapshots[2]!;
-      const historical = snapshots.slice(0, 3);
-      const report = detectDrift(w4, historical);
-      const narrative = buildNarrative(w4, w3, report);
-
-      expect(narrative.story.length).toBe(5);
-      expect(narrative.headline).toBeTruthy();
-      expect(narrative.workspaceId).toBe(wsId);
-    });
-
-    it('story beats have valid change directions', () => {
-      const w4 = snapshots[3]!;
-      const w3 = snapshots[2]!;
-      const narrative = buildNarrative(w4, w3, undefined);
-
-      for (const beat of narrative.story) {
-        expect(['improved', 'worsened', 'stable']).toContain(
-          beat.changeDirection,
-        );
-        expect(beat.explanation).toBeTruthy();
-      }
-    });
-
-    it('handles missing previous snapshot gracefully', () => {
-      const w1 = snapshots[0]!;
-      const narrative = buildNarrative(w1, undefined, undefined);
-
-      expect(narrative.story.length).toBe(5);
-      for (const beat of narrative.story) {
-        expect(beat.beforeValue).toBe('—');
-      }
-    });
-  });
-
-  // ─── DRIFT-006: Evidence Collector ────────────────────────────
-  describe('DRIFT-006: EvidenceCollector', () => {
-    it('collects evidence with before/after snapshots', () => {
-      const w4 = snapshots[3]!;
-      const historical = snapshots.slice(0, 3);
-      const evidence = collectEvidence(w4, historical, []);
-
-      expect(evidence.driftId).toBeTruthy();
-      expect(evidence.workspaceId).toBe(wsId);
-      expect(evidence.before.snapshots.length).toBe(3);
-      expect(evidence.after.snapshot).toBe(w4);
-    });
-
-    it('before summary describes historical range', () => {
-      const w4 = snapshots[3]!;
-      const historical = snapshots.slice(0, 3);
-      const evidence = collectEvidence(w4, historical, []);
-
-      expect(evidence.before.summary).toMatch(/snapshots/);
-      expect(evidence.after.summary).toMatch(/Snapshot/);
-    });
-
-    it('attributing events are included in evidence', () => {
-      const w4 = snapshots[3]!;
-      const historical = snapshots.slice(0, 3);
-      const driftEvents = allEvents.filter(
-        (e) => e.eventName === 'commerce.campaign.performance_drop_detected',
-      );
-      const evidence = collectEvidence(w4, historical, driftEvents);
-
-      expect(evidence.attributingEvents.length).toBeGreaterThan(0);
-    });
-
-    it('handles empty historical data', () => {
-      const w1 = snapshots[0]!;
-      const evidence = collectEvidence(w1, [], []);
-
-      expect(evidence.before.snapshots.length).toBe(0);
-      expect(evidence.before.summary).toMatch(/sem histórico/);
     });
   });
 
-  // ─── Cross-UTP integration ────────────────────────────────────
-  describe('Cross-UTP integration', () => {
-    it('full pipeline: snapshot → detect → attribute → explain → narrate → evidence', () => {
-      const current = snapshots[3]!;
-      const previous = snapshots[2]!;
-      const historical = snapshots.slice(0, 3);
+  // ─── DriftDetectorService ────────────────────────────────
 
-      const report = detectDrift(current, historical);
-      expect(report).toBeDefined();
+  describe('DriftDetectorService.compare', () => {
+    it('14 returns zero magnitude for identical snapshots', () => {
+      const events = makeWeek(wsId, [11, 12]);
+      const snap = snapshotSvc.snapshot(wsId, '2026-05-11', events);
+      const result = driftSvc.compare(snap, snap);
 
-      const attributed = attributeDrift(current, previous, allEvents);
-      expect(attributed).toBeDefined();
+      expect(result.magnitude).toBe(0);
+      expect(result.driftedDimensions).toEqual([]);
+      expect(result.narrative).toMatch(/estável|estavel/i);
+    });
 
-      const explanation = buildExplanation(report, current);
-      expect(explanation).toBeDefined();
+    it('15 detects drift when conversion volume changes significantly', () => {
+      const few = makeWeek(wsId, [11]);
+      const many = makeWeek(wsId, [11, 12, 13, 14, 15]);
+      const snapA = snapshotSvc.snapshot(wsId, '2026-05-11', few);
+      const snapB = snapshotSvc.snapshot(wsId, '2026-05-11', many);
 
-      const narrative = buildNarrative(current, previous, report);
-      expect(narrative).toBeDefined();
+      const result = driftSvc.compare(snapB, snapA);
 
-      const evidence = collectEvidence(
-        current,
-        historical,
-        allEvents.filter(
-          (e) => e.eventName === 'commerce.campaign.performance_drop_detected',
-        ),
-      );
-      expect(evidence).toBeDefined();
+      expect(result.magnitude).toBeGreaterThan(0);
+      expect(result.driftedDimensions).toContain('conversionsAttributed');
+    });
+
+    it('16 detects drift when narrative style hash differs', () => {
+      const evA = [
+        makeEvent({
+          eventName: 'commerce.lead.created',
+          occurredAt: iso(11, 10),
+          workspaceId: wsId,
+        }),
+        makeEvent({
+          eventName: 'commerce.lead.converted',
+          occurredAt: iso(11, 14),
+          workspaceId: wsId,
+          valence: 'positive',
+        }),
+      ];
+      const evB = [
+        makeEvent({
+          eventName: 'commerce.payment.declined',
+          occurredAt: iso(11, 10),
+          workspaceId: wsId,
+          valence: 'negative',
+        }),
+        makeEvent({
+          eventName: 'commerce.crm.deal_lost',
+          occurredAt: iso(11, 14),
+          workspaceId: wsId,
+          valence: 'negative',
+        }),
+      ];
+      const snapA = snapshotSvc.snapshot(wsId, '2026-05-11', evA);
+      const snapB = snapshotSvc.snapshot(wsId, '2026-05-11', evB);
+
+      const result = driftSvc.compare(snapB, snapA);
+
+      expect(result.driftedDimensions).toContain('narrativeStyleHash');
+    });
+
+    it('17 detects drift when tone distribution shifts', () => {
+      const positive = [
+        makeEvent({
+          eventName: 'commerce.lead.converted',
+          occurredAt: iso(11, 10),
+          workspaceId: wsId,
+          valence: 'positive',
+        }),
+        makeEvent({
+          eventName: 'commerce.lead.converted',
+          occurredAt: iso(11, 11),
+          workspaceId: wsId,
+          valence: 'positive',
+        }),
+        makeEvent({
+          eventName: 'commerce.lead.converted',
+          occurredAt: iso(11, 12),
+          workspaceId: wsId,
+          valence: 'positive',
+        }),
+      ];
+      const negative = [
+        makeEvent({
+          eventName: 'commerce.payment.declined',
+          occurredAt: iso(11, 10),
+          workspaceId: wsId,
+          valence: 'negative',
+        }),
+        makeEvent({
+          eventName: 'commerce.payment.declined',
+          occurredAt: iso(11, 11),
+          workspaceId: wsId,
+          valence: 'negative',
+        }),
+        makeEvent({
+          eventName: 'commerce.payment.declined',
+          occurredAt: iso(11, 12),
+          workspaceId: wsId,
+          valence: 'negative',
+        }),
+      ];
+
+      const snapA = snapshotSvc.snapshot(wsId, '2026-05-11', positive);
+      const snapB = snapshotSvc.snapshot(wsId, '2026-05-11', negative);
+
+      const result = driftSvc.compare(snapB, snapA);
+
+      expect(result.driftedDimensions).toContain('toneClassification');
+    });
+
+    it('18 magnitude is bounded between 0 and 1', () => {
+      const evA = makeWeek(wsId, [11]);
+      const evB = makeWeek(wsId, [12, 13, 14, 15, 16, 17, 18]);
+      const snapA = snapshotSvc.snapshot(wsId, '2026-05-11', evA);
+      const snapB = snapshotSvc.snapshot(wsId, '2026-05-11', evB);
+
+      const result = driftSvc.compare(snapB, snapA);
+
+      expect(result.magnitude).toBeGreaterThanOrEqual(0);
+      expect(result.magnitude).toBeLessThanOrEqual(1);
+    });
+
+    it('19 narrative describes drifted dimensions when drift exists', () => {
+      const evA = makeWeek(wsId, [11]);
+      const evB = makeWeek(wsId, [12, 13, 14, 15]);
+      const snapA = snapshotSvc.snapshot(wsId, '2026-05-11', evA);
+      const snapB = snapshotSvc.snapshot(wsId, '2026-05-11', evB);
+
+      const result = driftSvc.compare(snapB, snapA);
+
+      expect(result.narrative).toMatch(/messagesSent|conversoes|mensagens|comportamento/i);
+    });
+
+    it('20 result includes details for all 6 dimensions', () => {
+      const evA = makeWeek(wsId, [11]);
+      const evB = makeWeek(wsId, [12, 13]);
+      const snapA = snapshotSvc.snapshot(wsId, '2026-05-11', evA);
+      const snapB = snapshotSvc.snapshot(wsId, '2026-05-11', evB);
+
+      const result = driftSvc.compare(snapB, snapA);
+
+      expect(result.details.length).toBe(6);
+    });
+
+    it('21 no drift when comparing snapshot to itself', () => {
+      const events = makeWeek(wsId, [11, 12]);
+      const snap = snapshotSvc.snapshot(wsId, '2026-05-11', events);
+      const result = driftSvc.compare(snap, snap);
+
+      expect(result.driftedDimensions.length).toBe(0);
+      expect(result.magnitude).toBe(0);
+    });
+
+    // ─── Integration ────────────────────────────────────────
+    it('22 full flow: snapshot two weeks and detect inter-week drift', () => {
+      const week1 = [
+        ...makeWeek(wsId, [11]),
+        makeEvent({
+          eventName: 'commerce.whatsapp.handoff_to_human',
+          occurredAt: iso(11, 11),
+          workspaceId: wsId,
+          valence: 'negative',
+        }),
+      ];
+      const week2 = [
+        ...makeWeek(wsId, [18, 19, 20]),
+        makeEvent({
+          eventName: 'commerce.crm.deal_won',
+          occurredAt: iso(18, 16),
+          workspaceId: wsId,
+          valence: 'positive',
+        }),
+        makeEvent({
+          eventName: 'commerce.crm.deal_won',
+          occurredAt: iso(19, 16),
+          workspaceId: wsId,
+          valence: 'positive',
+        }),
+      ];
+
+      const snap1 = snapshotSvc.snapshot(wsId, '2026-05-11', week1);
+      const snap2 = snapshotSvc.snapshot(wsId, '2026-05-18', week2);
+
+      expect(snap1.snapshotId).not.toBe(snap2.snapshotId);
+      expect(snap1.weekStart).not.toBe(snap2.weekStart);
+
+      const result = driftSvc.compare(snap2, snap1);
+
+      expect(result.workspaceId).toBe(wsId);
+      expect(result.snapshotId).toBe(snap2.snapshotId);
+      expect(result.comparedSnapshotId).toBe(snap1.snapshotId);
+      expect(result.magnitude).toBeGreaterThanOrEqual(0);
+      expect(result.magnitude).toBeLessThanOrEqual(1);
     });
   });
 });

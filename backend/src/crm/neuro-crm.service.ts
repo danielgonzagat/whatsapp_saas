@@ -238,6 +238,13 @@ Simule um diálogo de 6 turnos Lead/Agente com foco em conversão.`;
       void this.crmEmitter
         ?.emitObjectionRaised(workspaceId, contactId, objectionKind)
         .catch(() => {});
+      void this.createInsight(
+        contactId,
+        workspaceId,
+        'OBJECTION_RAISED',
+        `Objection detected: ${objectionKind} (intent=${result.intent}, sentiment=${result.sentiment})`,
+        -3,
+      ).catch(() => {});
     }
 
     await this.createInsightIfSignificant(contactId, workspaceId, analysisContact, result);

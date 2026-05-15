@@ -122,6 +122,9 @@ export class AssetGrowthTrackerService {
     }
 
     const latest = snapshots[snapshots.length - 1];
+    if (latest === undefined) {
+      return zeroGrowth();
+    }
     const currentSize = latest.observedSize;
 
     const targetMs = latest.observedAtMs - periodDays * MS_PER_DAY;

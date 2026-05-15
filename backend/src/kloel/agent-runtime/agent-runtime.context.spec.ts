@@ -62,12 +62,32 @@ describe('AgentRuntimeContextService', () => {
           title: 'Checkout Recovery',
           summary: 'Recover checkout with real product evidence.',
           category: 'commercial',
-          riskLevel: 'normal',
-          allowedTools: ['list_products'],
+          riskLevel: 'high',
+          allowedTools: ['get_lead_details', 'list_products', 'create_payment_link'],
           requiredEvidence: ['lead_status'],
           validation: ['workspace_isolation'],
           rollback: [],
           metrics: ['conversion_rate'],
+          delegationRules: [
+            {
+              toolName: 'get_lead_details',
+              riskClass: 'R1',
+              permission: 'allowed_alone',
+              rollback: [],
+            },
+            {
+              toolName: 'list_products',
+              riskClass: 'R1',
+              permission: 'allowed_alone',
+              rollback: [],
+            },
+            {
+              toolName: 'create_payment_link',
+              riskClass: 'R3',
+              permission: 'escalate',
+              rollback: ['cancel_payment_link', 'do_not_send_without_consent'],
+            },
+          ],
           body: 'body',
           version: 1,
           updatedAt: '2026-05-13T00:00:00.000Z',
@@ -117,6 +137,10 @@ describe('AgentRuntimeContextService', () => {
     expect(context.systemPromptBlock).toContain('<kloel-agent-runtime>');
     expect(context.systemPromptBlock).toContain('pulse.canDeclareComplete=false');
     expect(context.systemPromptBlock).toContain('checkout-recovery');
+    expect(context.systemPromptBlock).toContain('delegation:');
+    expect(context.systemPromptBlock).toContain('checkout-recovery[max=R3]');
+    expect(context.systemPromptBlock).toContain('[allowed_alone:R1] get_lead_details, list_products');
+    expect(context.systemPromptBlock).toContain('[escalate:R3] create_payment_link');
     expect(context.systemPromptBlock).toContain('user asked about checkout recovery');
     expect(context.systemPromptBlock).toContain('sessionRecall:');
     expect(context.systemPromptBlock).toContain('pending webhook proof');

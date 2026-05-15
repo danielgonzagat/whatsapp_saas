@@ -43,14 +43,21 @@ function baseInput(events: SpineEventRef[], workspaceId: string, nowMs?: number)
   return { events, workspaceId, nowMs: nowMs ?? Date.now() };
 }
 
+async function flushAsyncConsumers(): Promise<void> {
+  await new Promise((resolve) => setImmediate(resolve));
+}
+
 describe('POSTSALE-000 — No-Regret Pipeline', () => {
   let svc: NoRegretPipelineService;
+  let spine: SpineEmitterService;
 
   beforeEach(() => {
+    spine = makeSpine();
     svc = new NoRegretPipelineService(
       new AntiRemorseService(),
       new ActivationCompanionService(),
-      new FirstValueDetector(makeSpine()),
+      new FirstValueDetector(spine),
+      spine,
     );
   });
 
@@ -71,6 +78,119 @@ describe('POSTSALE-000 — No-Regret Pipeline', () => {
     expect(result.isNoRegret).toBe(false);
     expect(result.firstValue.valueObtained).toBe(false);
     expect(result.control.safeNextStep).toContain('wait for activation');
+  });
+
+  test('autoruns from checkout/post-sale spine events and confirms no-regret when value proof exists', async () => {
+    const now = Date.now();
+    const entityRef = { entityType: 'order', entityId: 'order_checkout_1' };
+    const baseEvent = {
+      workspaceId: 'wks_001',
+      entityRef,
+      truthMode: 'observed' as const,
+      provenance: {
+        source: 'production' as const,
+        processor: 'checkout-post-payment-effects',
+        processorVersion: '1.0.0',
+        schemaVersion: '1.0.0',
+      },
+    };
+
+    await spine.emit({
+      ...baseEvent,
+      eventName: 'commerce.payment.approved',
+      occurredAt: new Date(now - 3 * 86400_000).toISOString(),
+    });
+    await spine.emit({
+      ...baseEvent,
+      eventName: 'commerce.lead.converted',
+      occurredAt: new Date(now - 2 * 3600_000).toISOString(),
+    });
+    await spine.emit({
+      ...baseEvent,
+      eventName: 'commerce.crm.deal_won',
+      occurredAt: new Date(now - 2 * 3600_000).toISOString(),
+    });
+    await spine.emit({
+      ...baseEvent,
+      eventName: 'commerce.member_area.progressed',
+      occurredAt: new Date(now - 1800_000).toISOString(),
+    });
+    await spine.emit({
+      ...baseEvent,
+      eventName: 'commerce.crm.next_step_defined',
+      occurredAt: new Date(now - 1500_000).toISOString(),
+    });
+    await spine.emit({
+      ...baseEvent,
+      eventName: 'commerce.post_sale.activation_started',
+      occurredAt: new Date(now - 1200_000).toISOString(),
+    });
+
+    await flushAsyncConsumers();
+
+    const noRegretEvents = spine
+      .recentEvents()
+      .filter((event) => event.eventName === 'commerce.post_sale.no_regret_confirmed');
+    expect(noRegretEvents).toHaveLength(1);
+    expect(noRegretEvents[0]?.workspaceId).toBe('wks_001');
+    expect(noRegretEvents[0]?.entityRef).toEqual(entityRef);
+    expect(noRegretEvents[0]?.provenance.processor).toBe('no-regret-pipeline');
+  });
+
+  test('autoruns when first-value proof arrives after activation', async () => {
+    const now = Date.now();
+    const entityRef = { entityType: 'order', entityId: 'order_first_value_after_activation' };
+    const baseEvent = {
+      workspaceId: 'wks_001',
+      entityRef,
+      truthMode: 'observed' as const,
+      provenance: {
+        source: 'production' as const,
+        processor: 'post-sale-runtime',
+        processorVersion: '1.0.0',
+        schemaVersion: '1.0.0',
+      },
+    };
+
+    await spine.emit({
+      ...baseEvent,
+      eventName: 'commerce.payment.approved',
+      occurredAt: new Date(now - 3 * 86400_000).toISOString(),
+    });
+    await spine.emit({
+      ...baseEvent,
+      eventName: 'commerce.post_sale.activation_started',
+      occurredAt: new Date(now - 2 * 86400_000).toISOString(),
+    });
+    await spine.emit({
+      ...baseEvent,
+      eventName: 'commerce.crm.next_step_defined',
+      occurredAt: new Date(now - 1800_000).toISOString(),
+    });
+    await spine.emit({
+      ...baseEvent,
+      eventName: 'commerce.member_area.progressed',
+      occurredAt: new Date(now - 1500_000).toISOString(),
+    });
+    await spine.emit({
+      ...baseEvent,
+      eventName: 'commerce.post_sale.first_value_obtained',
+      occurredAt: new Date(now - 1200_000).toISOString(),
+      payload: { firstValueKind: 'course_progress' },
+    });
+
+    await flushAsyncConsumers();
+
+    const noRegretEvents = spine
+      .recentEvents()
+      .filter((event) => event.eventName === 'commerce.post_sale.no_regret_confirmed');
+    expect(noRegretEvents).toHaveLength(1);
+    expect(noRegretEvents[0]?.workspaceId).toBe('wks_001');
+    expect(noRegretEvents[0]?.entityRef).toEqual(entityRef);
+    expect(noRegretEvents[0]?.payload).toMatchObject({
+      firstValueKind: 'explicit_first_value',
+      guardrail: 'not_a_testimonial_or_satisfaction_claim',
+    });
   });
 
   test('confirms no-regret only when activation and first value are both evidenced', async () => {
@@ -105,6 +225,179 @@ describe('POSTSALE-000 — No-Regret Pipeline', () => {
     expect(result.isNoRegret).toBe(true);
     expect(result.control.riskClass).toBe('R1');
     expect(result.control.uncertainty).toContain('not a testimonial');
+    const noRegretEvents = spine
+      .recentEvents()
+      .filter((event) => event.eventName === 'commerce.post_sale.no_regret_confirmed');
+    expect(noRegretEvents).toHaveLength(1);
+    expect(noRegretEvents[0]?.truthMode).toBe('inferred');
+    expect(noRegretEvents[0]?.provenance.processor).toBe('no-regret-pipeline');
+    expect(noRegretEvents[0]?.payload).toMatchObject({
+      firstValueKind: 'course_progress',
+      guardrail: 'not_a_testimonial_or_satisfaction_claim',
+    });
+  });
+
+  test('does not confirm no-regret from another customer value when entity is inferred from payment', async () => {
+    const now = Date.now();
+    const target = { entityType: 'customer', entityId: 'cust_target' };
+    const other = { entityType: 'customer', entityId: 'cust_other' };
+    const events = [
+      makeEvent(
+        'commerce.payment.approved',
+        'wks_001',
+        new Date(now - 3 * 86400_000).toISOString(),
+        { entityRef: target },
+      ),
+      makeEvent(
+        'commerce.post_sale.activation_started',
+        'wks_001',
+        new Date(now - 2 * 86400_000).toISOString(),
+        { entityRef: target },
+      ),
+      makeEvent('commerce.lead.converted', 'wks_001', new Date(now - 3600_000).toISOString(), {
+        entityRef: other,
+      }),
+      makeEvent('commerce.crm.deal_won', 'wks_001', new Date(now - 3600_000).toISOString(), {
+        entityRef: other,
+      }),
+      makeEvent(
+        'commerce.member_area.progressed',
+        'wks_001',
+        new Date(now - 1800_000).toISOString(),
+        { entityRef: other },
+      ),
+      makeEvent(
+        'commerce.crm.next_step_defined',
+        'wks_001',
+        new Date(now - 1500_000).toISOString(),
+        { entityRef: other },
+      ),
+      makeEvent(
+        'commerce.post_sale.satisfaction_signal_observed',
+        'wks_001',
+        new Date(now - 1200_000).toISOString(),
+        { entityRef: other, payload: { sentimentLabel: 'positive' } },
+      ),
+    ];
+
+    const result = await svc.assess(baseInput(events, 'wks_001', now));
+
+    expect(result.entityRef).toEqual(target);
+    expect(result.phase).toBe('value_forming');
+    expect(result.isNoRegret).toBe(false);
+    expect(result.firstValue.valueObtained).toBe(false);
+    expect(
+      spine
+        .recentEvents()
+        .filter((event) => event.eventName === 'commerce.post_sale.no_regret_confirmed'),
+    ).toHaveLength(0);
+  });
+
+  test('does not confirm no-regret for a recovered-objection buyer without positive satisfaction', async () => {
+    const now = Date.now();
+    const entityRef = { entityType: 'customer', entityId: 'cust_objection_value' };
+    const paymentAt = now - 3 * 86400_000;
+    const events = [
+      makeEvent(
+        'commerce.lead.objection_raised',
+        'wks_001',
+        new Date(paymentAt - 2 * 3600_000).toISOString(),
+        { entityRef },
+      ),
+      makeEvent('commerce.payment.approved', 'wks_001', new Date(paymentAt).toISOString(), {
+        entityRef,
+      }),
+      makeEvent(
+        'commerce.post_sale.activation_started',
+        'wks_001',
+        new Date(now - 2 * 86400_000).toISOString(),
+        { entityRef },
+      ),
+      makeEvent('commerce.lead.converted', 'wks_001', new Date(now - 3600_000).toISOString(), {
+        entityRef,
+      }),
+      makeEvent('commerce.crm.deal_won', 'wks_001', new Date(now - 3600_000).toISOString(), {
+        entityRef,
+      }),
+      makeEvent(
+        'commerce.member_area.progressed',
+        'wks_001',
+        new Date(now - 1800_000).toISOString(),
+        { entityRef },
+      ),
+    ];
+
+    const result = await svc.assess({ ...baseInput(events, 'wks_001', now), entityRef });
+
+    expect(result.phase).toBe('value_forming');
+    expect(result.isNoRegret).toBe(false);
+    expect(result.firstValue.valueObtained).toBe(true);
+    expect(result.control.uncertainty).toContain('no-regret is not confirmed yet');
+    expect(
+      spine
+        .recentEvents()
+        .filter((event) => event.eventName === 'commerce.post_sale.no_regret_confirmed'),
+    ).toHaveLength(0);
+  });
+
+  test('confirms no-regret for a recovered-objection buyer only with positive satisfaction', async () => {
+    const now = Date.now();
+    const entityRef = { entityType: 'customer', entityId: 'cust_objection_satisfied' };
+    const paymentAt = now - 3 * 86400_000;
+    const events = [
+      makeEvent(
+        'commerce.lead.objection_raised',
+        'wks_001',
+        new Date(paymentAt - 2 * 3600_000).toISOString(),
+        { entityRef },
+      ),
+      makeEvent('commerce.payment.approved', 'wks_001', new Date(paymentAt).toISOString(), {
+        entityRef,
+      }),
+      makeEvent(
+        'commerce.post_sale.activation_started',
+        'wks_001',
+        new Date(now - 2 * 86400_000).toISOString(),
+        { entityRef },
+      ),
+      makeEvent('commerce.lead.converted', 'wks_001', new Date(now - 3600_000).toISOString(), {
+        entityRef,
+      }),
+      makeEvent('commerce.crm.deal_won', 'wks_001', new Date(now - 3600_000).toISOString(), {
+        entityRef,
+      }),
+      makeEvent(
+        'commerce.member_area.progressed',
+        'wks_001',
+        new Date(now - 1800_000).toISOString(),
+        { entityRef },
+      ),
+      makeEvent(
+        'commerce.crm.next_step_defined',
+        'wks_001',
+        new Date(now - 1500_000).toISOString(),
+        { entityRef },
+      ),
+      makeEvent(
+        'commerce.post_sale.satisfaction_signal_observed',
+        'wks_001',
+        new Date(now - 1200_000).toISOString(),
+        { entityRef, payload: { sentimentLabel: 'positive' } },
+      ),
+    ];
+
+    const result = await svc.assess({ ...baseInput(events, 'wks_001', now), entityRef });
+
+    expect(result.phase).toBe('no_regret_confirmed');
+    expect(result.isNoRegret).toBe(true);
+    expect(result.firstValue.valueObtained).toBe(true);
+    const noRegretEvents = spine
+      .recentEvents()
+      .filter((event) => event.eventName === 'commerce.post_sale.no_regret_confirmed');
+    expect(noRegretEvents).toHaveLength(1);
+    expect(noRegretEvents[0]?.payload).toMatchObject({
+      guardrail: 'not_a_testimonial_or_satisfaction_claim',
+    });
   });
 
   test('routes stalled activation to owner-reviewed help', async () => {
@@ -133,7 +426,11 @@ describe('POSTSALE-000 — No-Regret Pipeline', () => {
     const now = Date.now();
     const events = [
       makeEvent('commerce.payment.approved', 'wks_001', new Date(now - 2 * 3600_000).toISOString()),
-      makeEvent('commerce.whatsapp.handoff_to_human', 'wks_001', new Date(now - 3600_000).toISOString()),
+      makeEvent(
+        'commerce.whatsapp.handoff_to_human',
+        'wks_001',
+        new Date(now - 3600_000).toISOString(),
+      ),
       makeEvent('commerce.payment.refunded', 'wks_001', new Date(now - 3600_000).toISOString()),
     ];
     const result = await svc.assess(baseInput(events, 'wks_001', now), 0.5);
@@ -153,12 +450,9 @@ describe('POSTSALE-000 — No-Regret Pipeline', () => {
         new Date(now - 3 * 3600_000).toISOString(),
         { entityRef },
       ),
-      makeEvent(
-        'commerce.payment.approved',
-        'wks_001',
-        new Date(now - 3600_000).toISOString(),
-        { entityRef },
-      ),
+      makeEvent('commerce.payment.approved', 'wks_001', new Date(now - 3600_000).toISOString(), {
+        entityRef,
+      }),
       makeEvent(
         'commerce.post_sale.activation_started',
         'wks_001',
@@ -230,7 +524,11 @@ describe('POSTSALE-001 — Anti-Remorse Service', () => {
     const now = Date.now();
     const events = [
       makeEvent('commerce.payment.approved', 'wks_001', new Date(now - 2 * 3600_000).toISOString()),
-      makeEvent('commerce.whatsapp.handoff_to_human', 'wks_001', new Date(now - 3600_000).toISOString()),
+      makeEvent(
+        'commerce.whatsapp.handoff_to_human',
+        'wks_001',
+        new Date(now - 3600_000).toISOString(),
+      ),
       makeEvent('commerce.payment.refunded', 'wks_001', new Date(now - 3600_000).toISOString()),
     ];
 
@@ -253,12 +551,9 @@ describe('POSTSALE-001 — Anti-Remorse Service', () => {
         new Date(now - 2 * 3600_000).toISOString(),
         { entityRef },
       ),
-      makeEvent(
-        'commerce.payment.approved',
-        'wks_001',
-        new Date(now - 30 * 60_000).toISOString(),
-        { entityRef },
-      ),
+      makeEvent('commerce.payment.approved', 'wks_001', new Date(now - 30 * 60_000).toISOString(), {
+        entityRef,
+      }),
     ];
 
     const result = svc.assess(baseInput(events, 'wks_001', now));
@@ -283,12 +578,9 @@ describe('POSTSALE-001 — Anti-Remorse Service', () => {
         new Date(now - 72 * 3600_000).toISOString(),
         { entityRef },
       ),
-      makeEvent(
-        'commerce.payment.approved',
-        'wks_001',
-        new Date(now - 30 * 60_000).toISOString(),
-        { entityRef },
-      ),
+      makeEvent('commerce.payment.approved', 'wks_001', new Date(now - 30 * 60_000).toISOString(), {
+        entityRef,
+      }),
     ];
 
     const result = svc.assess(baseInput(events, 'wks_001', now));
@@ -302,12 +594,9 @@ describe('POSTSALE-001 — Anti-Remorse Service', () => {
     const now = Date.now();
     const entityRef = { entityType: 'lead', entityId: 'lead_001' };
     const events = [
-      makeEvent(
-        'commerce.payment.approved',
-        'wks_001',
-        new Date(now - 3600_000).toISOString(),
-        { entityRef },
-      ),
+      makeEvent('commerce.payment.approved', 'wks_001', new Date(now - 3600_000).toISOString(), {
+        entityRef,
+      }),
       makeEvent(
         'commerce.lead.objection_raised',
         'wks_001',
@@ -334,12 +623,9 @@ describe('POSTSALE-001 — Anti-Remorse Service', () => {
         new Date(now - 2 * 3600_000).toISOString(),
         { entityRef: otherEntity },
       ),
-      makeEvent(
-        'commerce.payment.approved',
-        'wks_001',
-        new Date(now - 30 * 60_000).toISOString(),
-        { entityRef: paymentEntity },
-      ),
+      makeEvent('commerce.payment.approved', 'wks_001', new Date(now - 30 * 60_000).toISOString(), {
+        entityRef: paymentEntity,
+      }),
     ];
 
     const result = svc.assess(baseInput(events, 'wks_001', now));
@@ -362,12 +648,9 @@ describe('POSTSALE-001 — Anti-Remorse Service', () => {
     );
     const events = [
       targetPayment,
-      makeEvent(
-        'commerce.payment.approved',
-        'wks_001',
-        new Date(now - 5 * 60_000).toISOString(),
-        { entityRef: other },
-      ),
+      makeEvent('commerce.payment.approved', 'wks_001', new Date(now - 5 * 60_000).toISOString(), {
+        entityRef: other,
+      }),
       makeEvent('commerce.payment.refunded', 'wks_001', new Date(now - 5 * 60_000).toISOString(), {
         entityRef: other,
       }),
@@ -466,12 +749,22 @@ describe('POSTSALE-002 — Activation Companion', () => {
         new Date(now - 10_000).toISOString(),
         { entityRef: other },
       ),
-      makeEvent('commerce.whatsapp.message_replied', 'wks_001', new Date(now - 10_000).toISOString(), {
-        entityRef: other,
-      }),
-      makeEvent('commerce.member_area.progressed', 'wks_001', new Date(now - 10_000).toISOString(), {
-        entityRef: other,
-      }),
+      makeEvent(
+        'commerce.whatsapp.message_replied',
+        'wks_001',
+        new Date(now - 10_000).toISOString(),
+        {
+          entityRef: other,
+        },
+      ),
+      makeEvent(
+        'commerce.member_area.progressed',
+        'wks_001',
+        new Date(now - 10_000).toISOString(),
+        {
+          entityRef: other,
+        },
+      ),
     ];
 
     const result = svc.track({ ...baseInput(events, 'wks_001', now), entityRef: target });
@@ -1585,6 +1878,72 @@ describe('POSTSALE-009 — Churn Risk Detector', () => {
     expect(result.contributingSignals).toContain('first_value_missing');
   });
 
+  test('treats recent pre-purchase objection without first value as listening risk, not pressure', async () => {
+    const now = Date.now();
+    const customer = { entityType: 'customer', entityId: 'cust_objection' };
+    const paymentAt = now - 8 * 86400_000;
+    const events = [
+      makeEvent(
+        'commerce.lead.objection_raised',
+        'wks_001',
+        new Date(paymentAt - 2 * 3600_000).toISOString(),
+        { entityRef: customer },
+      ),
+      makeEvent('commerce.payment.approved', 'wks_001', new Date(paymentAt).toISOString(), {
+        entityRef: customer,
+      }),
+      makeEvent(
+        'commerce.post_sale.activation_started',
+        'wks_001',
+        new Date(now - 7 * 86400_000).toISOString(),
+        { entityRef: customer },
+      ),
+    ];
+
+    const result = await svc.assess({ ...baseInput(events, 'wks_001', now), entityRef: customer });
+
+    expect(result.riskLevel).toBe('moderate');
+    expect(result.riskProbability).toBe(0.4);
+    expect(result.contributingSignals).toContain('first_value_missing');
+    expect(result.contributingSignals).toContain('recent_objection_recovery');
+    expect(result.control.riskClass).toBe('R1');
+    expect(result.control.delegationMode).toBe('silent_monitoring');
+    expect(result.control.uncertainty).toContain('listening signal');
+    expect(result.control.leadOutcomeGuardrail).toContain('Do not reopen the prior objection');
+    expect(spine.recentEvents()).toHaveLength(0);
+  });
+
+  test('does not let another customer objection raise churn risk', async () => {
+    const now = Date.now();
+    const target = { entityType: 'customer', entityId: 'cust_target' };
+    const other = { entityType: 'customer', entityId: 'cust_other' };
+    const paymentAt = now - 8 * 86400_000;
+    const events = [
+      makeEvent(
+        'commerce.lead.objection_raised',
+        'wks_001',
+        new Date(paymentAt - 2 * 3600_000).toISOString(),
+        { entityRef: other },
+      ),
+      makeEvent('commerce.payment.approved', 'wks_001', new Date(paymentAt).toISOString(), {
+        entityRef: target,
+      }),
+      makeEvent(
+        'commerce.post_sale.activation_started',
+        'wks_001',
+        new Date(now - 7 * 86400_000).toISOString(),
+        { entityRef: target },
+      ),
+    ];
+
+    const result = await svc.assess({ ...baseInput(events, 'wks_001', now), entityRef: target });
+
+    expect(result.riskLevel).toBe('low');
+    expect(result.riskProbability).toBe(0.2);
+    expect(result.contributingSignals).toContain('first_value_missing');
+    expect(result.contributingSignals).not.toContain('recent_objection_recovery');
+  });
+
   test('critical risk with inactivity + refund + declined', async () => {
     const now = Date.now();
     const events = [
@@ -1884,6 +2243,81 @@ describe('POSTSALE-011 — Win-Back Window Advisor', () => {
     expect(plan.windowOpen).toBe(true);
     expect(plan.control.riskClass).toBe('R2');
     expect(plan.control.leadOutcomeGuardrail).toContain('heard');
+  });
+
+  test('keeps objection-rooted moderate risk silent instead of opening a win-back window', async () => {
+    const risk = {
+      workspaceId: 'wks_001',
+      entityRef: { entityType: 'customer', entityId: 'cust_objection' },
+      riskLevel: 'moderate' as const,
+      riskProbability: 0.4,
+      primarySignal: 'first_value_missing' as const,
+      contributingSignals: ['first_value_missing' as const, 'recent_objection_recovery' as const],
+      daysSinceLastActivity: 8,
+      assessedAt: new Date().toISOString(),
+      control: {
+        riskClass: 'R1' as const,
+        delegationMode: 'silent_monitoring' as const,
+        safeNextStep:
+          'Keep monitoring and avoid churn outreach until risk evidence becomes stronger.',
+        uncertainty:
+          'Moderate risk includes a recently recovered objection without first-value proof; treat it as a listening signal, not permission to sell.',
+        leadOutcomeGuardrail:
+          'Do not reopen the prior objection as pressure; wait for stronger help, support, first-value, or explicit concern evidence.',
+        rollback: 'Drop the churn action and keep the customer in normal post-sale support.',
+      },
+    };
+
+    const plan = await svc.assess(risk, baseInput([], 'wks_001'));
+
+    expect(plan.windowOpen).toBe(false);
+    expect(plan.tacticKind).toBe('reengagement_content');
+    expect(plan.suggestedChannel).toBe('silent');
+    expect(plan.control.delegationMode).toBe('silent_monitoring');
+    expect(plan.control.safeNextStep).toContain('private support context');
+    expect(plan.control.leadOutcomeGuardrail).toContain('Do not reopen the prior objection');
+    const winbackEvents = spine
+      .recentEvents()
+      .filter((e) => e.eventName === 'commerce.post_sale.win_back_window_opened');
+    expect(winbackEvents).toHaveLength(0);
+  });
+
+  test('requires owner-reviewed product context for high objection-rooted churn risk', async () => {
+    const risk = {
+      workspaceId: 'wks_001',
+      entityRef: { entityType: 'customer', entityId: 'cust_objection_high' },
+      riskLevel: 'high' as const,
+      riskProbability: 0.6,
+      primarySignal: 'inactivity' as const,
+      contributingSignals: ['inactivity' as const, 'recent_objection_recovery' as const],
+      daysSinceLastActivity: 20,
+      assessedAt: new Date().toISOString(),
+      control: {
+        riskClass: 'R2' as const,
+        delegationMode: 'owner_review' as const,
+        safeNextStep:
+          'Prepare a human-reviewed retention check-in focused on help, context, and expectation repair.',
+        uncertainty:
+          'Churn risk is inferred from inactivity, recent_objection_recovery signals, not an observed cancellation request.',
+        leadOutcomeGuardrail:
+          'The customer must feel helped and heard; do not pressure, guilt, discount-first, or imply blame.',
+        rollback: 'Do not send if owner cannot review context.',
+      },
+    };
+
+    const plan = await svc.assess(risk, baseInput([], 'wks_001'));
+
+    expect(plan.windowOpen).toBe(true);
+    expect(plan.tacticKind).toBe('product_evolution_update');
+    expect(plan.suggestedChannel).toBe('email');
+    expect(plan.control.riskClass).toBe('R2');
+    expect(plan.control.delegationMode).toBe('owner_review');
+    expect(plan.control.safeNextStep).toContain('Owner must review');
+    expect(plan.control.leadOutcomeGuardrail).toContain('Do not reopen the prior objection');
+    const [winbackEvent] = spine
+      .recentEvents()
+      .filter((e) => e.eventName === 'commerce.post_sale.win_back_window_opened');
+    expect(winbackEvent?.payload).toMatchObject({ tacticKind: 'product_evolution_update' });
   });
 
   test('silent for low risk', async () => {

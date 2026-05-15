@@ -179,6 +179,23 @@ describe('CartRecoveryService', () => {
       expect(payload.html).not.toContain('VOLTEI10');
       expect(payload.html).not.toContain('Centenas de clientes');
     });
+
+    it('renders the real cart recovery template with escaped placeholders', async () => {
+      prisma.checkoutOrder.findMany.mockResolvedValue([
+        pendingOrder({
+          productName: '<Plano & Premium>',
+        }),
+      ]);
+
+      await service.checkAbandonedCarts();
+
+      const payload = sendEmail.mock.calls[0][0];
+      expect(payload.html).toContain('Pedido #1001');
+      expect(payload.html).toContain('&lt;Plano &amp; Premium&gt;');
+      expect(payload.html).not.toContain('{{productName}}');
+      expect(payload.html).not.toContain('{{orderNumber}}');
+      expect(payload.html).not.toContain('<Plano & Premium>');
+    });
   });
 
   describe('guard integration', () => {

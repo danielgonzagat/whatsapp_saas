@@ -60,7 +60,7 @@ export class AgentRuntimeBuiltinMemoryProvider extends AgentRuntimeMemoryProvide
       channel: options?.channel ?? 'agent-runtime',
       userMessage: userContent,
       assistantMessage: assistantContent,
-      threadId: options?.sessionId,
+      ...(options?.sessionId !== undefined ? { threadId: options.sessionId } : {}),
     });
   }
 
@@ -72,9 +72,9 @@ export class AgentRuntimeBuiltinMemoryProvider extends AgentRuntimeMemoryProvide
       content: `turn=${event.turnNumber}\nchannel=${event.channel}\nmessage=${sanitizeAgentRuntimeText(event.message, 1200)}`,
       metadata: {
         channel: event.channel,
-        model: event.model,
-        remainingTokens: event.remainingTokens,
-        toolCount: event.toolCount,
+        ...(event.model !== undefined ? { model: event.model } : {}),
+        ...(event.remainingTokens !== undefined ? { remainingTokens: event.remainingTokens } : {}),
+        ...(event.toolCount !== undefined ? { toolCount: event.toolCount } : {}),
       },
     });
   }
@@ -99,7 +99,9 @@ export class AgentRuntimeBuiltinMemoryProvider extends AgentRuntimeMemoryProvide
       eventType: 'session_switch',
       content: `session=${sanitizeAgentRuntimeText(newSessionId, 160)} parent=${sanitizeAgentRuntimeText(options?.parentSessionId ?? '', 160)}`,
       metadata: {
-        parentSessionId: options?.parentSessionId,
+        ...(options?.parentSessionId !== undefined
+          ? { parentSessionId: options.parentSessionId }
+          : {}),
         reset: options?.reset ?? false,
       },
     });
@@ -126,7 +128,7 @@ export class AgentRuntimeBuiltinMemoryProvider extends AgentRuntimeMemoryProvide
       sessionId: event.sessionId,
       eventType: 'memory_write',
       content: `${event.action}:${event.target}\n${sanitizeAgentRuntimeText(event.content, 2000)}`,
-      metadata: event.metadata,
+      ...(event.metadata !== undefined ? { metadata: event.metadata } : {}),
     });
   }
 
@@ -140,7 +142,7 @@ export class AgentRuntimeBuiltinMemoryProvider extends AgentRuntimeMemoryProvide
         `task: ${sanitizeAgentRuntimeText(event.task, 2000)}`,
         `result: ${sanitizeAgentRuntimeText(event.result, 3000)}`,
       ].join('\n'),
-      metadata: event.metadata,
+      ...(event.metadata !== undefined ? { metadata: event.metadata } : {}),
     });
   }
 }
@@ -295,8 +297,8 @@ export class AgentRuntimeMemoryManagerService {
     await this.runAll(
       (provider) =>
         provider.syncTurn(params.workspaceId, params.userContent, params.assistantContent, {
-          sessionId: params.sessionId,
-          channel: params.channel,
+          ...(params.sessionId !== undefined ? { sessionId: params.sessionId } : {}),
+          ...(params.channel !== undefined ? { channel: params.channel } : {}),
         }),
       'syncTurn',
       { skipUnavailable: true },

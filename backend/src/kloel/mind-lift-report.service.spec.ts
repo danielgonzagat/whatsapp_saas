@@ -6,6 +6,31 @@ describe('MindLiftReportService', () => {
   let service: MindLiftReportService;
   let decisionOutcome: DecisionOutcomeService;
 
+  type ClosedOutcomeRow = Awaited<
+    ReturnType<DecisionOutcomeService['findAllClosedSince']>
+  >[number];
+
+  const outcomeRow = (
+    overrides: Partial<ClosedOutcomeRow> = {},
+  ): ClosedOutcomeRow =>
+    ({
+      id: 'do-1',
+      workspaceId: 'ws-1',
+      decisionType: 'followup_timing',
+      chosenAction: 'send_now',
+      baselineAction: 'delay_24h',
+      outcomeKey: 'k1',
+      expectedWindow: 24,
+      contextSnapshot: { channel: 'whatsapp' },
+      outcomeAt: new Date(),
+      outcomeName: 'payment.succeeded',
+      outcomeValue: null,
+      economicValue: 99.9,
+      wonVsBaseline: true,
+      createdAt: new Date(),
+      ...overrides,
+    }) as ClosedOutcomeRow;
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -219,6 +244,155 @@ describe('MindLiftReportService', () => {
       expect(r.wonCount).toBe(0);
       expect(r.wonRate).toBe(0);
     });
+
+    it('aggregates failureReasonCounts from outcomeValue for inbound.silent_24h outcomes with expired_without_reply reason', async () => {
+      jest.spyOn(decisionOutcome, 'findAllClosedSince').mockResolvedValue([
+        outcomeRow({
+          outcomeName: 'inbound.silent_24h',
+          economicValue: 0,
+          wonVsBaseline: false,
+          outcomeValue: {
+            reason: 'expired_without_reply',
+            maxAgeHours: 24,
+            outcomeKeys: ['k1', 'k2', 'k3'],
+          },
+        }),
+        outcomeRow({
+          id: 'do-2',
+          outcomeKey: 'k4',
+          outcomeName: 'inbound.silent_24h',
+          economicValue: 0,
+          wonVsBaseline: false,
+          outcomeValue: {
+            reason: 'expired_without_reply',
+            maxAgeHours: 24,
+            outcomeKeys: ['k4'],
+          },
+        }),
+      ]);
+
+      const report = await service.aggregate();
+      const r = report.rows[0]!;
+
+      expect(r.successCount).toBe(0);
+      expect(r.successRate).toBe(0);
+      expect(r.failureReasonCounts).toHaveLength(1);
+      expect(r.failureReasonCounts[0]!.reason).toBe('expired_without_reply');
+      expect(r.failureReasonCounts[0]!.chosenAction).toBe('send_now');
+      expect(r.failureReasonCounts[0]!.baselineAction).toBe('delay_24h');
+      expect(r.failureReasonCounts[0]!.count).toBe(2);
+      expect(r.failureReasonCounts[0]!.totalOutcomeKeys).toBe(4);
+    });
+
+    it('does not merge the same failure reason across different chosen actions', async () => {
+      jest.spyOn(decisionOutcome, 'findAllClosedSince').mockResolvedValue([
+        outcomeRow({
+          chosenAction: 'send_now',
+          baselineAction: 'delay_24h',
+          outcomeName: 'inbound.silent_24h',
+          economicValue: 0,
+          wonVsBaseline: false,
+          outcomeValue: {
+            reason: 'expired_without_reply',
+            outcomeKeys: ['k1'],
+          },
+        }),
+        outcomeRow({
+          id: 'do-2',
+          outcomeKey: 'k2',
+          chosenAction: 'wait_for_signal',
+          baselineAction: 'delay_24h',
+          outcomeName: 'inbound.silent_24h',
+          economicValue: 0,
+          wonVsBaseline: false,
+          outcomeValue: {
+            reason: 'expired_without_reply',
+            outcomeKeys: ['k2', 'k3'],
+          },
+        }),
+      ]);
+
+      const report = await service.aggregate();
+      const reasons = report.rows[0]!.failureReasonCounts;
+
+      expect(reasons).toHaveLength(2);
+      expect(reasons).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            reason: 'expired_without_reply',
+            chosenAction: 'send_now',
+            baselineAction: 'delay_24h',
+            count: 1,
+            totalOutcomeKeys: 1,
+          }),
+          expect.objectContaining({
+            reason: 'expired_without_reply',
+            chosenAction: 'wait_for_signal',
+            baselineAction: 'delay_24h',
+            count: 1,
+            totalOutcomeKeys: 2,
+          }),
+        ]),
+      );
+    });
+
+    it('uses safe fallback labels when action context is absent or unsafe', async () => {
+      jest.spyOn(decisionOutcome, 'findAllClosedSince').mockResolvedValue([
+        outcomeRow({
+          chosenAction: null,
+          baselineAction: 'manual note | private',
+          outcomeName: 'inbound.silent_24h',
+          outcomeValue: {
+            reason: 'expired_without_reply',
+            outcomeKeys: ['k1'],
+          },
+        }),
+      ]);
+
+      const report = await service.aggregate();
+      const failure = report.rows[0]!.failureReasonCounts[0]!;
+
+      expect(failure.chosenAction).toBe('unknown_action');
+      expect(failure.baselineAction).toBe('unknown_baseline');
+    });
+
+    it('builds empty failureReasonCounts when outcomeValue has no reason field', async () => {
+      jest.spyOn(decisionOutcome, 'findAllClosedSince').mockResolvedValue([
+        outcomeRow({ outcomeValue: { total: 100, currency: 'BRL' } }),
+      ]);
+
+      const report = await service.aggregate();
+      expect(report.rows[0]!.failureReasonCounts).toEqual([]);
+    });
+
+    it('builds empty failureReasonCounts when outcomeValue is null', async () => {
+      jest.spyOn(decisionOutcome, 'findAllClosedSince').mockResolvedValue([
+        outcomeRow(),
+      ]);
+
+      const report = await service.aggregate();
+      expect(report.rows[0]!.failureReasonCounts).toEqual([]);
+    });
+
+    it('does not expose arbitrary failure reason text in reports', async () => {
+      jest.spyOn(decisionOutcome, 'findAllClosedSince').mockResolvedValue([
+        outcomeRow({
+          outcomeName: 'inbound.silent_24h',
+          outcomeValue: {
+            reason: 'customer said | private objection',
+            outcomeKeys: ['k1'],
+          },
+        }),
+      ]);
+
+      const report = await service.aggregate();
+      expect(report.rows[0]!.failureReasonCounts[0]!.reason).toBe(
+        'unclassified_reason',
+      );
+      expect(report.rows[0]!.failureReasonCounts[0]!.chosenAction).toBe(
+        'send_now',
+      );
+    });
   });
 
   describe('generateMarkdownReport', () => {
@@ -254,6 +428,58 @@ describe('MindLiftReportService', () => {
       expect(existsSync(tmpDir)).toBe(true);
       const files = readdirSync(tmpDir).filter((f: string) => f.endsWith('.md'));
       expect(files.length).toBe(1);
+    });
+
+    it('includes failure reason summary section in markdown when outcomes have reasons', async () => {
+      jest.spyOn(decisionOutcome, 'findAllClosedSince').mockResolvedValue([
+        outcomeRow({
+          outcomeName: 'inbound.silent_24h',
+          economicValue: 0,
+          wonVsBaseline: false,
+          outcomeValue: {
+            reason: 'expired_without_reply',
+            maxAgeHours: 24,
+            outcomeKeys: ['k1', 'k2'],
+          },
+        }),
+        outcomeRow({
+          id: 'do-2',
+          outcomeKey: 'k2',
+          decisionType: 'coupon_offer',
+          chosenAction: 'coupon_10',
+          contextSnapshot: { channel: 'email' },
+          outcomeName: 'inbound.silent_24h',
+          economicValue: 0,
+          wonVsBaseline: false,
+          outcomeValue: {
+            reason: 'expired_without_reply',
+            maxAgeHours: 12,
+            outcomeKeys: ['k2', 'k3', 'k4'],
+          },
+        }),
+      ]);
+
+      const md = await service.generateMarkdownReport(7);
+
+      expect(md).toContain('## Failure Reason Summary');
+      expect(md).toContain(
+        '| Decision Type | Channel | Chosen Action | Baseline Action | Reason | Count | Outcome Keys Total |',
+      );
+      expect(md).toContain(
+        '| followup_timing | whatsapp | send_now | delay_24h | expired_without_reply | 1 | 2 |',
+      );
+      expect(md).toContain(
+        '| coupon_offer | email | coupon_10 | delay_24h | expired_without_reply | 1 | 3 |',
+      );
+    });
+
+    it('omits failure reason summary section when no outcomes have reasons', async () => {
+      jest.spyOn(decisionOutcome, 'findAllClosedSince').mockResolvedValue([
+        outcomeRow(),
+      ]);
+
+      const md = await service.generateMarkdownReport(7);
+      expect(md).not.toContain('## Failure Reason Summary');
     });
 
     it('creates the reports dir even if it does not exist yet (mkdir recursive)', async () => {

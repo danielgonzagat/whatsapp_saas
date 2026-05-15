@@ -66,6 +66,8 @@ describe('CheckoutPostPaymentEffectsService', () => {
   };
   let facebookCAPI: { sendEvent: jest.Mock };
   let checkoutSocialLeadService: { markConvertedFromOrder: jest.Mock };
+  let checkoutEventEmitter: { leadConverted: jest.Mock };
+  let spineEmitter: { emit: jest.Mock };
   let memberAreaUpdateMock: jest.Mock;
 
   beforeEach(() => {
@@ -85,6 +87,8 @@ describe('CheckoutPostPaymentEffectsService', () => {
     checkoutSocialLeadService = {
       markConvertedFromOrder: jest.fn().mockResolvedValue(undefined),
     };
+    checkoutEventEmitter = { leadConverted: jest.fn().mockResolvedValue(undefined) };
+    spineEmitter = { emit: jest.fn().mockResolvedValue(undefined) };
 
     const prismaAny = prisma as PrismaService & {
       memberAreaUpdate: { updateMany: jest.Mock };
@@ -95,6 +99,8 @@ describe('CheckoutPostPaymentEffectsService', () => {
       prismaAny,
       facebookCAPI as never,
       checkoutSocialLeadService as never,
+      checkoutEventEmitter as never,
+      spineEmitter as never,
     );
   });
 
@@ -130,6 +136,76 @@ describe('CheckoutPostPaymentEffectsService', () => {
       await service.markLeadConverted(order, 'ws_1');
 
       expect(checkoutSocialLeadService.markConvertedFromOrder).not.toHaveBeenCalled();
+    });
+
+    it('emits commerce.lead.converted via checkoutEventEmitter on successful conversion', async () => {
+      checkoutSocialLeadService.markConvertedFromOrder.mockResolvedValue({
+        id: 'lead_1',
+        workspaceId: 'ws_1',
+        status: 'CONVERTED',
+        convertedAt: new Date(),
+        convertedOrderId: 'order_1',
+      });
+      const order = makeOrder({
+        metadata: {
+          capturedLeadId: 'lead_1',
+          correlationId: 'corr_1',
+        },
+      });
+
+      await service.markLeadConverted(order, 'ws_1');
+
+      expect(checkoutEventEmitter.leadConverted).toHaveBeenCalledWith(
+        expect.objectContaining({
+          workspaceId: 'ws_1',
+          orderId: 'order_1',
+          leadId: 'lead_1',
+          customerEmail: 'test@example.com',
+          correlationId: 'corr_1',
+        }),
+      );
+    });
+
+    it('does not emit leadConverted when markConvertedFromOrder returns null', async () => {
+      checkoutSocialLeadService.markConvertedFromOrder.mockResolvedValue(null);
+      const order = makeOrder();
+
+      await service.markLeadConverted(order, 'ws_1');
+
+      expect(checkoutEventEmitter.leadConverted).not.toHaveBeenCalled();
+    });
+
+    it('does not emit leadConverted when markConvertedFromOrder throws', async () => {
+      checkoutSocialLeadService.markConvertedFromOrder.mockRejectedValue(
+        new Error('DB down'),
+      );
+      const order = makeOrder();
+
+      await service.markLeadConverted(order, 'ws_1');
+
+      expect(checkoutEventEmitter.leadConverted).not.toHaveBeenCalled();
+    });
+
+    it('emits leadConverted with fallback when correlationId is not in metadata', async () => {
+      checkoutSocialLeadService.markConvertedFromOrder.mockResolvedValue({
+        id: 'lead_2',
+        workspaceId: 'ws_1',
+        status: 'CONVERTED',
+        convertedAt: new Date(),
+        convertedOrderId: 'order_1',
+      });
+      const order = makeOrder({
+        metadata: { capturedLeadId: 'lead_2' },
+      });
+
+      await service.markLeadConverted(order, 'ws_1');
+
+      expect(checkoutEventEmitter.leadConverted).toHaveBeenCalledWith(
+        expect.objectContaining({
+          leadId: 'lead_2',
+          correlationId: undefined,
+        }),
+      );
     });
 
     it('handles social lead service error gracefully', async () => {
@@ -320,6 +396,54 @@ describe('CheckoutPostPaymentEffectsService', () => {
       await service.sendPurchaseSignals(order, 9900);
 
       expect(facebookCAPI.sendEvent).not.toHaveBeenCalled();
+    });
+
+    it('emits post-sale bridge events after purchase confirmation', async () => {
+      const order = makeOrder({
+        workspaceId: 'ws_1',
+        totalInCents: 9900,
+      });
+
+      await service.sendPurchaseSignals(order, 9900);
+
+      expect(spineEmitter.emit).toHaveBeenCalledWith(
+        expect.objectContaining({
+          eventName: 'commerce.post_sale.delivery_completed',
+          workspaceId: 'ws_1',
+          entityRef: { entityType: 'order', entityId: 'order_1' },
+          truthMode: 'observed',
+        }),
+      );
+      expect(spineEmitter.emit).toHaveBeenCalledWith(
+        expect.objectContaining({
+          eventName: 'commerce.post_sale.activation_started',
+          workspaceId: 'ws_1',
+          entityRef: { entityType: 'order', entityId: 'order_1' },
+          truthMode: 'observed',
+        }),
+      );
+    });
+
+    it('skips post-sale bridge events when spine emitter is absent', async () => {
+      const serviceWithoutSpine = new CheckoutPostPaymentEffectsService(
+        prisma as PrismaService,
+        facebookCAPI as never,
+        checkoutSocialLeadService as never,
+      );
+      const order = makeOrder({ workspaceId: 'ws_1', totalInCents: 9900 });
+
+      await serviceWithoutSpine.sendPurchaseSignals(order, 9900);
+
+      expect(spineEmitter.emit).not.toHaveBeenCalled();
+    });
+
+    it('skips post-sale bridge events when order has no workspaceId', async () => {
+      const order = makeOrder({ totalInCents: 9900 });
+      delete order.workspaceId;
+
+      await service.sendPurchaseSignals(order, 9900);
+
+      expect(spineEmitter.emit).not.toHaveBeenCalled();
     });
   });
 

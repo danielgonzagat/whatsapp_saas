@@ -1,8 +1,4 @@
-import {
-  Injectable,
-  ServiceUnavailableException,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { Injectable, ServiceUnavailableException, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { StructuredLogger } from '../logging/structured-logger';
 import { createPublicKey, createSign, createVerify } from 'node:crypto';
@@ -32,7 +28,7 @@ function encodeAuthJson(value: Record<string, string | number>): string {
   return Buffer.from(JSON.stringify(value)).toString('base64url');
 }
 
-function buildClientSecret(input: {
+export function buildClientSecret(input: {
   clientId: string;
   teamId: string;
   keyId: string;

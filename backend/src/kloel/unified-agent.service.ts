@@ -16,6 +16,7 @@ import { UnifiedAgentActionsService } from './unified-agent-actions.service';
 import { AgentRuntimeContextService } from './agent-runtime';
 import { AbiBuilderService } from './abi/abi-builder.service';
 import { validateAbiPayload } from './abi/abi-validator';
+import { RiskGateService } from './risk-class/risk-gate.service';
 export type { ToolArgs, ActionEntry } from './unified-agent.types';
 import type { ToolArgs, ActionEntry, PredecidedAction } from './unified-agent.types';
 import {
@@ -86,6 +87,7 @@ export class UnifiedAgentService {
     private readonly actions: UnifiedAgentActionsService,
     @Optional() private readonly agentRuntime?: AgentRuntimeContextService,
     @Optional() private readonly abiBuilder?: AbiBuilderService,
+    @Optional() private readonly riskGate?: RiskGateService,
   ) {
     this.openai = createTextLlmClient(this.config);
     this.primaryBrainModel = resolveBackendOpenAIModel('brain', this.config);
@@ -509,6 +511,30 @@ export class UnifiedAgentService {
       case 'send_product_info':
         return this.actions.actionSendProductInfo(workspaceId, phone, args, context);
       case 'create_payment_link': {
+        const paymentAmount = this.num(args.amount);
+        if (this.riskGate && paymentAmount > 0) {
+          const gateDecision = this.riskGate.gatePaymentAction({
+            amountCents: paymentAmount,
+            reversible: true,
+            target: 'lead',
+          });
+          if (gateDecision.verdict === 'block') {
+            this.logger.error(
+              `R4 BLOCKED: create_payment_link — ${gateDecision.reason}`,
+            );
+            return {
+              success: false,
+              blocked: true,
+              riskClass: gateDecision.classification.class,
+              error: gateDecision.reason,
+            };
+          }
+          if (gateDecision.verdict === 'warn') {
+            this.logger.warn(
+              `Risk gate: payment ${gateDecision.classification.class} — ${gateDecision.reason}`,
+            );
+          }
+        }
         const result = await this.actions.actionCreatePaymentLink(
           workspaceId,
           phone,
@@ -617,6 +643,29 @@ export class UnifiedAgentService {
       case 'change_plan':
         return this.actions.actionChangePlan(workspaceId, args);
       case 'apply_discount':
+        if (this.riskGate) {
+          const gateDecision = this.riskGate.gateDiscountOffer({
+            amountCents: 0,
+            reversible: true,
+            target: 'lead',
+          });
+          if (gateDecision.verdict === 'block') {
+            this.logger.error(
+              `R4 BLOCKED: apply_discount — ${gateDecision.reason}`,
+            );
+            return {
+              success: false,
+              blocked: true,
+              riskClass: gateDecision.classification.class,
+              error: gateDecision.reason,
+            };
+          }
+          if (gateDecision.verdict === 'warn') {
+            this.logger.warn(
+              `Risk gate: discount ${gateDecision.classification.class} — ${gateDecision.reason}`,
+            );
+          }
+        }
         return this.actions.actionApplyDiscount(workspaceId, contactId, phone, args, context);
       case 'handle_objection':
         return this.actions.actionHandleObjection(workspaceId, contactId, phone, args, context);
@@ -640,6 +689,11 @@ export class UnifiedAgentService {
     }
     const record = result as Record<string, unknown>;
     return record.success === true || record.ok === true || record.executed === true;
+  }
+
+  private num(v: unknown, fb = 0): number {
+    const n = Number(v);
+    return Number.isFinite(n) ? Math.round(n) : fb;
   }
 
   private async buildAgentRuntimeContext(params: {

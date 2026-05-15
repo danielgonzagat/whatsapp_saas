@@ -1,6 +1,6 @@
 {
-  "runId": "cabebecb-4ccf-478e-9ff3-66df467aa749",
-  "generatedAt": "2026-05-13T16:58:29.005Z",
+  "runId": "8c67fecc-e24e-4582-a598-95f31b1109ec",
+  "generatedAt": "2026-05-15T01:55:34.278Z",
   "authorityMode": "advisory-only",
   "advisoryOnly": true,
   "authorityReasons": [
@@ -10,11 +10,10 @@
   "pulseMachineReadiness": {
     "status": "NOT_READY",
     "scope": "pulse_machine_not_kloel_product",
-    "canRunBoundedAutonomousCycle": false,
+    "canRunBoundedAutonomousCycle": true,
     "canDeclareKloelProductCertified": false,
     "blockers": [
-      "artifact_consistency: Cross-artifact consistency has not produced a passing check.",
-      "critical_path_terminal: 4614 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:account-agent, matrix:capability:capability:ad-rules, matrix:capability:capability:admin-accounts, matrix:capability:capability:admin-audit, matrix:capability:capability:admin-auth, matrix:capability:capability:admin-brain, matrix:capability:capability:admin-carteira, matrix:capability:capability:admin-chat. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.",
+      "critical_path_terminal: 4808 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:abi-ab, matrix:capability:capability:abi-builder, matrix:capability:capability:account-agent, matrix:capability:capability:admin-brain, matrix:capability:capability:admin-clients, matrix:capability:capability:admin-compliance, matrix:capability:capability:admin-config, matrix:capability:capability:admin-contacts. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.",
       "external_reality: 0 missing, 2 stale, and 0 invalid external adapter(s) remain."
     ]
   },
@@ -54,6 +53,7 @@
     "PULSE_OBSERVABILITY_EVIDENCE.json",
     "PULSE_OPERATOR_EVIDENCE.json",
     "PULSE_PARITY_GAPS.json",
+    "PULSE_PATH_COVERAGE.json",
     "PULSE_PRODUCT_GRAPH.json",
     "PULSE_PRODUCT_VISION.json",
     "PULSE_RECOVERY_EVIDENCE.json",
@@ -747,6 +747,28 @@
       "mirrorToRoot": true
     },
     {
+      "id": "path-coverage",
+      "relativePath": "PULSE_PATH_COVERAGE.json",
+      "schema": {
+        "module": "./artifacts",
+        "exportName": "writeRegisteredArtifact.path-coverage"
+      },
+      "producer": {
+        "module": "./artifacts",
+        "exportName": "writeRegisteredArtifact.path-coverage"
+      },
+      "consumers": [
+        "./cross-artifact-consistency-check",
+        "./path-coverage-engine/build-coverage-state",
+        "./proof-synthesis"
+      ],
+      "freshness": {
+        "mode": "preserved"
+      },
+      "truthMode": "preserved_evidence",
+      "mirrorToRoot": true
+    },
+    {
       "id": "product-graph",
       "relativePath": "PULSE_PRODUCT_GRAPH.json",
       "schema": {
@@ -1057,6 +1079,7 @@
     "PULSE_OBSERVABILITY_EVIDENCE.json",
     "PULSE_OPERATOR_EVIDENCE.json",
     "PULSE_PARITY_GAPS.json",
+    "PULSE_PATH_COVERAGE.json",
     "PULSE_PRODUCT_GRAPH.json",
     "PULSE_PRODUCT_VISION.json",
     "PULSE_RECOVERY_EVIDENCE.json",
@@ -1072,7 +1095,6 @@
     "PULSE_WORLD_STATE.json"
   ],
   "removedLegacyPulseArtifacts": [
-    "AUDIT_FEATURE_MATRIX.md",
     "PULSE_ADMIN_EVIDENCE.json",
     "PULSE_BROWSER_EVIDENCE.json",
     "PULSE_CERTIFICATE.json",

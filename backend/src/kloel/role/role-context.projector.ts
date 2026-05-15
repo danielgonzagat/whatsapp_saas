@@ -59,7 +59,7 @@ export function projectRoleContext(
 
   return {
     detectedRoles: abiDetections,
-    primaryRole,
+    ...(primaryRole !== undefined ? { primaryRole } : {}),
     realLevers: levers,
     relevantMetrics: metrics,
   };
@@ -85,7 +85,6 @@ export function projectSingleDetection(
 export function emptyRoleContext(): AbiRoleContext {
   return {
     detectedRoles: [],
-    primaryRole: undefined,
     realLevers: [],
     relevantMetrics: [],
   };

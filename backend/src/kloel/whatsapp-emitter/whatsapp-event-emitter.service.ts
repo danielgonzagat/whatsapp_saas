@@ -7,8 +7,8 @@ export interface WhatsAppEmitInput {
   readonly entityRef?: { readonly entityType: string; readonly entityId: string };
   readonly payload?: Readonly<Record<string, unknown>>;
   readonly causedBy?: readonly string[];
-  readonly correlationId?: string;
-  readonly occurredAt?: string;
+  readonly correlationId?: string | undefined;
+  readonly occurredAt?: string | undefined;
 }
 
 export interface MessageReceivedInput extends WhatsAppEmitInput {
@@ -25,10 +25,10 @@ export interface MessageReadInput extends WhatsAppEmitInput {
 
 export interface MessageRepliedInput extends WhatsAppEmitInput {
   readonly to: string;
-  readonly contactId?: string;
-  readonly messageId?: string;
+  readonly contactId?: string | undefined;
+  readonly messageId?: string | undefined;
   readonly author: 'autopilot' | 'human' | 'lead';
-  readonly content?: string;
+  readonly content?: string | undefined;
 }
 
 export interface HandoffToHumanInput extends WhatsAppEmitInput {
@@ -50,8 +50,8 @@ export interface LeadWentSilentInput extends WhatsAppEmitInput {
 
 export interface SessionLifecycleInput extends WhatsAppEmitInput {
   readonly event: 'qr' | 'connected' | 'disconnected' | 'banned';
-  readonly phoneNumber?: string;
-  readonly reason?: string;
+  readonly phoneNumber?: string | undefined;
+  readonly reason?: string | undefined;
 }
 
 const PROCESSOR = 'whatsapp-event-emitter';

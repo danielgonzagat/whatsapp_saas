@@ -25,7 +25,9 @@ function recentIso(offsetMinutes = 0): string {
   return new Date(Date.now() - offsetMinutes * 60 * 1000).toISOString();
 }
 
-async function buildSvc(initialEvents: readonly SpineEventRef[] = []): Promise<DailyDashboardService> {
+async function buildSvc(
+  initialEvents: readonly SpineEventRef[] = [],
+): Promise<DailyDashboardService> {
   const spine = new SpineEmitterService(undefined, { ringCapacity: 1000 });
 
   for (const e of initialEvents) {
@@ -418,20 +420,22 @@ describe('DailyDashboardService contract (UTP-R6)', () => {
     const d = await svc.generate(WKS);
     expect(d.silentLeads).toBe(1);
     expect(d.dealsAtRisk).toBe(1);
-    const silentActions = d.suggestedActions.filter(
-      (a) => a.targetId === 'l_obj_silent',
-    );
+    const silentActions = d.suggestedActions.filter((a) => a.targetId === 'l_obj_silent');
     expect(silentActions.length).toBeGreaterThanOrEqual(1);
     expect(silentActions.some((a) => a.kind === 'follow_up')).toBe(true);
     for (const a of silentActions) {
       expect(a.reason.toLowerCase()).toContain('objection');
+      expect(a.reason.toLowerCase()).toContain('diagnose silence');
+      expect(a.reason.toLowerCase()).toContain('before any outbound action');
       expect(a.riskClass).toBe('R1');
       expect(a.delegationMode).toBe('allowed_alone');
       expect(a.rollback).toBe('dismiss_suggestion');
     }
     expect(d.nowFocus.urgency).toBe('now');
     expect(d.nowFocus.headline).toBe('Resume the right conversation');
-    expect(d.nowFocus.safeNextStep).toBe('Prepare an honest, low-pressure next message');
+    expect(d.nowFocus.safeNextStep).toBe(
+      'Decide the silence reason before drafting any outbound message',
+    );
     expect(d.nowFocus.targetId).toBe('l_obj_silent');
     expect(d.nowFocus.riskClass).toBe('R1');
     expect(d.nowFocus.delegationMode).toBe('allowed_alone');
@@ -454,12 +458,12 @@ describe('DailyDashboardService contract (UTP-R6)', () => {
     ]);
     const d = await svc.generate(WKS);
     expect(d.silentLeads).toBe(1);
-    const silentActions = d.suggestedActions.filter(
-      (a) => a.targetId === 'l_cart_silent',
-    );
+    const silentActions = d.suggestedActions.filter((a) => a.targetId === 'l_cart_silent');
     expect(silentActions.length).toBeGreaterThanOrEqual(1);
     expect(silentActions.some((a) => a.kind === 'recover_cart')).toBe(true);
     for (const a of silentActions) {
+      expect(a.reason.toLowerCase()).toContain('diagnose checkout friction');
+      expect(a.reason.toLowerCase()).toContain('before any outbound action');
       expect(a.riskClass).toBe('R1');
       expect(a.delegationMode).toBe('allowed_alone');
     }
@@ -475,15 +479,11 @@ describe('DailyDashboardService contract (UTP-R6)', () => {
     ]);
     const d = await svc.generate(WKS);
     expect(d.silentLeads).toBe(1);
-    const silentActions = d.suggestedActions.filter(
-      (a) => a.targetId === 'l_silent_only',
-    );
+    const silentActions = d.suggestedActions.filter((a) => a.targetId === 'l_silent_only');
     expect(silentActions).toHaveLength(0);
     expect(d.nowFocus.urgency).toBe('for_awareness');
     expect(d.nowFocus.headline).toBe('No safe action yet');
-    expect(d.nowFocus.safeNextStep).toBe(
-      'Keep silent until a stronger commercial signal appears',
-    );
+    expect(d.nowFocus.safeNextStep).toBe('Keep silent until a stronger commercial signal appears');
     expect(d.nowFocus.reason).toContain('none qualify for an action');
     expect(d.nowFocus.riskClass).toBe('R1');
     expect(d.nowFocus.delegationMode).toBe('allowed_alone');
@@ -532,7 +532,9 @@ describe('DailyDashboardService contract (UTP-R6)', () => {
     expect(d.silentLeads).toBe(7);
     expect(d.suggestedActions.length).toBeLessThanOrEqual(5);
     for (const a of d.suggestedActions) {
-      expect(['contact_lead', 'recover_cart', 'follow_up', 'review_deal', 'investigate']).toContain(a.kind);
+      expect(['contact_lead', 'recover_cart', 'follow_up', 'review_deal', 'investigate']).toContain(
+        a.kind,
+      );
     }
   });
 
@@ -577,7 +579,9 @@ describe('DailyDashboardService contract (UTP-R6)', () => {
     const d = await svc.generate(WKS);
     expect(Array.isArray(d.suggestedActions)).toBe(true);
     for (const a of d.suggestedActions) {
-      expect(['contact_lead', 'recover_cart', 'follow_up', 'review_deal', 'investigate']).toContain(a.kind);
+      expect(['contact_lead', 'recover_cart', 'follow_up', 'review_deal', 'investigate']).toContain(
+        a.kind,
+      );
       expect(a.targetType).toBeTruthy();
       expect(a.targetId).toBeTruthy();
       expect(a.reason).toBeTruthy();

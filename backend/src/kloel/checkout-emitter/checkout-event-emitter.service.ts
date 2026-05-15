@@ -15,7 +15,7 @@ export class CheckoutEventEmitterService {
     workspaceId: string;
     orderId: string;
     planId: string;
-    correlationId?: string;
+    correlationId?: string | undefined;
     totalInCents: number;
   }): Promise<void> {
     try {
@@ -48,7 +48,7 @@ export class CheckoutEventEmitterService {
     workspaceId: string;
     orderId: string;
     planId: string;
-    correlationId?: string;
+    correlationId?: string | undefined;
     minutesSinceCreation: number;
   }): Promise<void> {
     try {
@@ -81,7 +81,7 @@ export class CheckoutEventEmitterService {
     workspaceId: string;
     orderId: string;
     planId: string;
-    correlationId?: string;
+    correlationId?: string | undefined;
     paymentMethod: string;
     totalInCents: number;
   }): Promise<void> {
@@ -118,7 +118,7 @@ export class CheckoutEventEmitterService {
     paymentIntentId: string;
     paymentMethod: string;
     amountInCents: number;
-    correlationId?: string;
+    correlationId?: string | undefined;
   }): Promise<void> {
     try {
       await this.spine.emit({
@@ -152,7 +152,7 @@ export class CheckoutEventEmitterService {
     orderId: string;
     paymentIntentId: string;
     amountInCents: number;
-    correlationId?: string;
+    correlationId?: string | undefined;
   }): Promise<void> {
     try {
       await this.spine.emit({
@@ -184,8 +184,8 @@ export class CheckoutEventEmitterService {
   async paymentDeclined(params: {
     workspaceId: string;
     orderId: string;
-    paymentIntentId?: string;
-    correlationId?: string;
+    paymentIntentId?: string | undefined;
+    correlationId?: string | undefined;
     reason?: string;
   }): Promise<void> {
     try {
@@ -221,7 +221,7 @@ export class CheckoutEventEmitterService {
     paymentIntentId: string;
     refundId: string;
     amountInCents: bigint;
-    correlationId?: string;
+    correlationId?: string | undefined;
   }): Promise<void> {
     try {
       const amountNumber =
@@ -261,7 +261,7 @@ export class CheckoutEventEmitterService {
     paymentIntentId: string;
     disputeId: string;
     amountInCents: bigint;
-    correlationId?: string;
+    correlationId?: string | undefined;
   }): Promise<void> {
     try {
       const amountNumber =
@@ -291,6 +291,40 @@ export class CheckoutEventEmitterService {
     } catch (error: unknown) {
       this.logger.warn(
         `commerce.payment.charged_back emission failed: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
+  }
+
+  async leadConverted(params: {
+    workspaceId: string;
+    orderId: string;
+    leadId: string;
+    customerEmail?: string | null | undefined;
+    correlationId?: string | undefined;
+  }): Promise<void> {
+    try {
+      await this.spine.emit({
+        eventName: 'commerce.lead.converted',
+        workspaceId: params.workspaceId,
+        entityRef: { entityType: 'lead', entityId: params.leadId },
+        truthMode: 'observed',
+        provenance: {
+          source: 'production',
+          processor: PROCESSOR,
+          processorVersion: PROCESSOR_VERSION,
+          schemaVersion: SCHEMA_VERSION,
+        },
+        valence: 'positive',
+        payload: {
+          orderId: params.orderId,
+          leadId: params.leadId,
+          customerEmail: params.customerEmail,
+        },
+        correlationId: params.correlationId,
+      });
+    } catch (error: unknown) {
+      this.logger.warn(
+        `commerce.lead.converted emission failed: ${error instanceof Error ? error.message : String(error)}`,
       );
     }
   }

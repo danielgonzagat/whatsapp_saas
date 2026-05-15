@@ -186,6 +186,35 @@ describe('CheckoutEventEmitterService — contract spec', () => {
     });
   });
 
+  describe('commerce.lead.converted', () => {
+    it('emits with positive valence and lead entity', async () => {
+      const { spine, emitter } = buildEmitter();
+      await emitter.leadConverted({
+        workspaceId: 'wks_test',
+        orderId: 'ord_9',
+        leadId: 'lead_1',
+        customerEmail: 'buyer@test.com',
+        correlationId: 'corr_9',
+      });
+      const events = spine.recentEvents();
+      expect(events).toHaveLength(1);
+      const ev = events[0];
+      expect(ev.eventName).toBe('commerce.lead.converted');
+      expect(ev.workspaceId).toBe('wks_test');
+      expect(ev.entityRef).toEqual({ entityType: 'lead', entityId: 'lead_1' });
+      expect(ev.truthMode).toBe('observed');
+      expect(ev.valence).toBe('positive');
+      expect(ev.provenance.source).toBe('production');
+      expect(ev.provenance.processor).toBe('checkout-event-emitter');
+      expect(ev.payload).toEqual({
+        orderId: 'ord_9',
+        leadId: 'lead_1',
+        customerEmail: 'buyer@test.com',
+      });
+      expect(ev.correlationId).toBe('corr_9');
+    });
+  });
+
   describe('ring buffer overflow', () => {
     it('does NOT throw when ring buffer is full', async () => {
       const { spine, emitter } = buildEmitter();

@@ -23,7 +23,8 @@ export type ChurnSignalKind =
   | 'member_dropout'
   | 'handoff_repeat'
   | 'conversation_cooldown'
-  | 'first_value_missing';
+  | 'first_value_missing'
+  | 'recent_objection_recovery';
 
 export type RetentionTacticKind =
   | 'usage_spotlight'

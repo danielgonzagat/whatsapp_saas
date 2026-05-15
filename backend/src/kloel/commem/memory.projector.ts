@@ -34,7 +34,8 @@ function extractTags(event: SpineEventRef): readonly string[] {
   const tags: string[] = [event.truthMode];
   const parts = event.eventName.split('.');
   for (let i = 0; i < Math.min(3, parts.length); i++) {
-    tags.push(parts[i]);
+    const part = parts[i];
+    if (part !== undefined) tags.push(part);
   }
   if (event.entityRef) {
     tags.push(`entity:${event.entityRef.entityType}`);
@@ -64,6 +65,7 @@ export class MemoryProjector {
 
       for (let i = 0; i < scoped.length; i++) {
         const ev = scoped[i];
+        if (ev === undefined) continue;
         const evDim = determinDimension(ev);
         if (evDim !== dim) continue;
 

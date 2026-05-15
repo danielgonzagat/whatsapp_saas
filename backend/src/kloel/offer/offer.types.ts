@@ -126,3 +126,52 @@ export function median(values: number[]): number {
   if (sorted.length % 2 !== 0) return sorted[mid] ?? 0;
   return ((sorted[mid - 1] ?? 0) + (sorted[mid] ?? 0)) / 2;
 }
+
+export type PromiseStrength = 'weak' | 'moderate' | 'strong';
+
+export interface PromiseStrengthConversionData {
+  readonly leadToCartRate: number;
+  readonly cartToPurchaseRate: number;
+  readonly overallConversionRate: number;
+  readonly sampleSize: number;
+  readonly windowDays: number;
+}
+
+export interface PromiseStrengthResult {
+  readonly strength: PromiseStrength;
+  readonly confidence: number;
+  readonly evidence: readonly string[];
+  readonly computedAt: string;
+}
+
+export interface AudienceProfile {
+  readonly role: string;
+  readonly painPoints: readonly string[];
+  readonly expectedValue: string;
+  readonly pricePerception: 'low' | 'medium' | 'high';
+  readonly maturitySignal: string;
+}
+
+export interface ConversionFeedback {
+  readonly objectionKinds: Readonly<Record<string, number>>;
+  readonly lostReasons: Readonly<Record<string, number>>;
+  readonly refundReasons: Readonly<Record<string, number>>;
+  readonly totalLeads: number;
+}
+
+export interface PositioningGapDetail {
+  readonly category: string;
+  readonly description: string;
+  readonly severity: number;
+  readonly evidence: readonly string[];
+}
+
+export interface PositioningMismatchResult {
+  readonly hasMismatch: boolean;
+  readonly gapDescription: string;
+  readonly severity: 'none' | 'minor' | 'moderate' | 'critical';
+  readonly confidence: number;
+  readonly evidence: readonly string[];
+  readonly gaps: readonly PositioningGapDetail[];
+  readonly computedAt: string;
+}

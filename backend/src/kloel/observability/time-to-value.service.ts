@@ -38,16 +38,16 @@ interface WorkspaceState {
 function percentile(sorted: number[], p: number): number {
   if (sorted.length === 0) return 0;
   const idx = Math.ceil(sorted.length * (p / 100)) - 1;
-  return sorted[Math.max(0, idx)];
+  return sorted[Math.max(0, idx)] ?? 0;
 }
 
 function computeMedian(sorted: number[]): number {
   if (sorted.length === 0) return 0;
   const mid = Math.floor(sorted.length / 2);
   if (sorted.length % 2 === 0) {
-    return (sorted[mid - 1] + sorted[mid]) / 2;
+    return ((sorted[mid - 1] ?? 0) + (sorted[mid] ?? 0)) / 2;
   }
-  return sorted[mid];
+  return sorted[mid] ?? 0;
 }
 
 @Injectable()
@@ -133,8 +133,8 @@ export class TimeToValueService {
     return {
       entries,
       count: durations.length,
-      minMs: durations.length > 0 ? durations[0] : 0,
-      maxMs: durations.length > 0 ? durations[durations.length - 1] : 0,
+      minMs: durations[0] ?? 0,
+      maxMs: durations[durations.length - 1] ?? 0,
       meanMs:
         durations.length > 0
           ? durations.reduce((sum, d) => sum + d, 0) / durations.length

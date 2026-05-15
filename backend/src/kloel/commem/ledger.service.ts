@@ -19,9 +19,10 @@ export class CommemLedgerService {
       workspaceId: input.workspaceId,
       occurredAt: e.occurredAt,
       truthMode: e.truthMode,
-      entityRef: e.entityRef,
-      correlationId: e.correlationId,
-      payload: e.payload,
+      ...(e.valence !== undefined ? { valence: e.valence } : {}),
+      ...(e.entityRef !== undefined ? { entityRef: e.entityRef } : {}),
+      ...(e.correlationId !== undefined ? { correlationId: e.correlationId } : {}),
+      ...(e.payload !== undefined ? { payload: e.payload } : {}),
     }));
 
     const domainBreakdown: Record<string, number> = {};

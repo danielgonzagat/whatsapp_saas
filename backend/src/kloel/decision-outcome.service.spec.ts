@@ -250,6 +250,11 @@ describe('DecisionOutcomeService', () => {
         data: expect.objectContaining({
           outcomeName: 'inbound.silent_24h',
           wonVsBaseline: false,
+          outcomeValue: expect.objectContaining({
+            reason: 'expired_without_reply',
+            maxAgeHours: 24,
+            outcomeKeys: ['expired-key-1', 'expired-key-2'],
+          }),
         }),
       });
     });

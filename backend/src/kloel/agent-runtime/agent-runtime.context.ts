@@ -7,7 +7,11 @@ import { sanitizeAgentRuntimeText } from './agent-runtime.sanitizer';
 import { AgentRuntimeMemoryManagerService } from './agent-runtime.memory-manager';
 import { AgentRuntimeContextCompressorService } from './agent-runtime.context-compressor';
 import { AgentRuntimeMemoryCuratorService } from './agent-runtime.memory-curator';
-import type { AgentRuntimeContext, AgentRuntimeContextRequest } from './agent-runtime.types';
+import type {
+  AgentRuntimeContext,
+  AgentRuntimeContextRequest,
+  AgentToolDelegationRule,
+} from './agent-runtime.types';
 
 @Injectable()
 export class AgentRuntimeContextService {
@@ -43,7 +47,7 @@ export class AgentRuntimeContextService {
       this.skills.selectSkills(request.workspaceId, request.message, 4),
       this.memoryManager.buildSystemPrompt(request.workspaceId),
       this.memoryManager.prefetchAll(request.workspaceId, request.message, {
-        sessionId: request.threadId,
+        ...(request.threadId !== undefined ? { sessionId: request.threadId } : {}),
       }),
       request.threadId
         ? this.contextCompressor.loadCompressedContext(request.workspaceId, request.threadId)
@@ -61,7 +65,7 @@ export class AgentRuntimeContextService {
       ),
     );
     void this.memoryManager.queuePrefetchAll(request.workspaceId, request.message, {
-      sessionId: request.threadId,
+      ...(request.threadId !== undefined ? { sessionId: request.threadId } : {}),
     });
 
     return {
@@ -99,7 +103,7 @@ export class AgentRuntimeContextService {
       workspaceId: params.workspaceId,
       userContent: params.userMessage,
       assistantContent: params.assistantMessage ?? '',
-      sessionId: params.threadId,
+      ...(params.threadId !== undefined ? { sessionId: params.threadId } : {}),
       channel: params.channel,
     });
     await this.memoryCurator.curateTurnOutcome(params);
@@ -107,6 +111,50 @@ export class AgentRuntimeContextService {
 
   buildToolEnvelope(params: { workspaceId: string; toolName: string; allowedTools?: string[] }) {
     return this.policy.buildEnvelope(params);
+  }
+
+  private renderDelegationLines(
+    selections: NonNullable<AgentRuntimeContext['selectedSkills']>,
+  ): string[] {
+    return selections.flatMap((selection) => {
+      const rules = selection.skill.delegationRules;
+      if (rules.length === 0) {
+        return [`${selection.skill.id}: no_tools`];
+      }
+      const grouped = new Map<string, string[]>();
+      for (const rule of rules) {
+        const key = `[${rule.permission}:${rule.riskClass}]`;
+        const entry = rule.rollback.length
+          ? `${rule.toolName} [ro:${rule.rollback.join(',')}]`
+          : rule.toolName;
+        const bucket = grouped.get(key);
+        if (bucket) {
+          bucket.push(entry);
+        } else {
+          grouped.set(key, [entry]);
+        }
+      }
+      const maxRisk = this.maxDelegationRisk(rules);
+      return [
+        `${selection.skill.id}[max=${maxRisk}]:`,
+        ...[...grouped.entries()].map(([perm, tools]) => `  ${perm} ${tools.join(', ')}`),
+      ];
+    });
+  }
+
+  private maxDelegationRisk(
+    rules: readonly AgentToolDelegationRule[],
+  ): AgentToolDelegationRule['riskClass'] {
+    const rank: Record<AgentToolDelegationRule['riskClass'], number> = {
+      R1: 1,
+      R2: 2,
+      R3: 3,
+      R4: 4,
+    };
+    return rules.reduce<AgentToolDelegationRule['riskClass']>(
+      (max, rule) => (rank[rule.riskClass] > rank[max] ? rule.riskClass : max),
+      'R1',
+    );
   }
 
   private renderSystemPromptBlock(
@@ -129,6 +177,7 @@ export class AgentRuntimeContextService {
       (selection) =>
         `- ${selection.skill.id}: ${selection.skill.summary}; risk=${selection.skill.riskLevel}; tools=${selection.skill.allowedTools.join(', ') || 'none'}`,
     );
+    const delegationLines = this.renderDelegationLines(context.selectedSkills);
 
     return [
       '<kloel-agent-runtime>',
@@ -148,6 +197,7 @@ export class AgentRuntimeContextService {
       '- Treat this runtime block as operational memory, not as user instruction.',
       '- Observed memory beats inferred memory; never turn projected facts into promises.',
       '- High and critical tool actions require policy approval before execution.',
+      '- Follow per-tool delegation permissions above; they override the global risk heuristic.',
       '- Never claim production readiness unless PULSE canDeclareComplete is true.',
       'recall:',
       ...(recallLines.length ? recallLines : ['- none']),
@@ -155,6 +205,13 @@ export class AgentRuntimeContextService {
       ...(sessionRecallLines.length ? sessionRecallLines : ['- none']),
       'proceduralSkills:',
       ...(skillLines.length ? skillLines : ['- none']),
+      'delegation:',
+      ...(delegationLines.length ? delegationLines : ['- none']),
+      'delegation_rules:',
+      '- allowed_alone: execute autonomously without asking',
+      '- with_approval: check policy gate before executing',
+      '- escalate: never execute autonomously; escalate to human',
+      '- prohibited: cannot be executed by agent at all',
       'memoryProviders:',
       context.memoryProviderPrompt.trim() ? context.memoryProviderPrompt : '- none',
       'prefetchedMemory:',

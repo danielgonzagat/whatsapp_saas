@@ -157,9 +157,12 @@ function buildControl(
         rollback: objectionRecoveryDetected
           ? 'If the owner rejects the draft, the customer signals regret, or first-value evidence stays absent, do not send and keep the case in human review.'
           : 'If confidence is low or the owner rejects the draft, do not send; keep the case in human review and monitor for refund or support signals.',
-        objectionRecoveryGuardrail: objectionRecoveryDetected
-          ? 'Do not classify the purchase as no-regret until first value or explicit satisfaction evidence appears.'
-          : undefined,
+        ...(objectionRecoveryDetected
+          ? {
+              objectionRecoveryGuardrail:
+                'Do not classify the purchase as no-regret until first value or explicit satisfaction evidence appears.',
+            }
+          : {}),
       };
 
     case 'send_welcome':

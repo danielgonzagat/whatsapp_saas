@@ -11,6 +11,8 @@ import { MindCaseMemoryService } from './mind-case-memory.service';
 import { MindGuardsService } from './mind-guards.service';
 import { MindPolicyService } from './mind-policy.service';
 import { resolveCartRecoveryDecision } from './mind-recovery-decision-resolvers';
+import { renderEmailTemplate } from '../common/utils/email-template-renderer.util';
+import { escapeHtml } from '../common/utils/html-escape.util';
 import {
   buildListUnsubscribeHeader,
   buildUnsubscribeFooterHtml,
@@ -37,54 +39,53 @@ function resolvePriceBand(price: unknown): string {
 }
 
 function renderRecoveryEmail(productName: string, orderNumber: string, action: string): string {
+  const escapedProductName = escapeHtml(productName);
   const bodyByAction: Record<string, string> = {
     proof:
-      '<p style="color: #666; line-height: 1.6; margin-bottom: 24px;">Se a sua duvida for confianca, podemos te mostrar informacoes claras sobre <strong>' +
-      productName +
-      '</strong> para voce decidir com calma.</p>',
+      'Se a sua duvida for confianca, podemos te mostrar informacoes claras sobre <strong>' +
+      escapedProductName +
+      '</strong> para voce decidir com calma.',
     urgency:
-      '<p style="color: #666; line-height: 1.6; margin-bottom: 24px;">Seu pedido de <strong>' +
-      productName +
-      '</strong> ficou em aberto. Se ainda fizer sentido para voce, pode retomar quando estiver pronto.</p>',
+      'Seu pedido de <strong>' +
+      escapedProductName +
+      '</strong> ficou em aberto. Se ainda fizer sentido para voce, pode retomar quando estiver pronto.',
     help:
-      '<p style="color: #666; line-height: 1.6; margin-bottom: 24px;">Notamos que voce iniciou a compra de <strong>' +
-      productName +
-      '</strong> mas nao finalizou. Se ficou alguma duvida real, responda este email e ajudamos sem pressa.</p>',
+      'Notamos que voce iniciou a compra de <strong>' +
+      escapedProductName +
+      '</strong> mas nao finalizou. Se ficou alguma duvida real, responda este email e ajudamos sem pressa.',
     faq:
-      '<p style="color: #666; line-height: 1.6; margin-bottom: 24px;">Tem duvidas sobre <strong>' +
-      productName +
-      '</strong>? Acesse nossa pagina de perguntas frequentes ou responda este email.</p>',
+      'Tem duvidas sobre <strong>' +
+      escapedProductName +
+      '</strong>? Acesse nossa pagina de perguntas frequentes ou responda este email.',
     discount:
-      '<p style="color: #666; line-height: 1.6; margin-bottom: 24px;">Se o valor foi a principal duvida sobre <strong>' +
-      productName +
-      '</strong>, responda este email para avaliarmos a melhor condicao disponivel antes de voce decidir.</p>',
+      'Se o valor foi a principal duvida sobre <strong>' +
+      escapedProductName +
+      '</strong>, responda este email para avaliarmos a melhor condicao disponivel antes de voce decidir.',
     pause:
-      '<p style="color: #666; line-height: 1.6; margin-bottom: 24px;">Seu pedido de <strong>' +
-      productName +
-      '</strong> esta aguardando. Sem pressa — quando estiver pronto, e so voltar.</p>',
+      'Seu pedido de <strong>' +
+      escapedProductName +
+      '</strong> esta aguardando. Sem pressa — quando estiver pronto, e so voltar.',
   };
 
   const body = bodyByAction[action] ?? bodyByAction.help ?? '';
-  const outerStyle =
-    "font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; padding: 20px;";
-  const containerStyle =
-    'max-width: 500px; margin: 0 auto; background: white; border-radius: 12px; padding: 40px; box-shadow: 0 4px 20px rgba(0,0,0,0.1);';
-  const brandStyle = 'font-size: 24px; font-weight: bold; color: #E85D30; margin-bottom: 20px;';
-  const titleStyle = 'font-size: 22px; color: #1a1a1a; margin-bottom: 16px;';
-  const orderStyle = 'color: #666; line-height: 1.6; margin-bottom: 24px;';
-  const footerStyle = 'margin-top: 32px; font-size: 12px; color: #999;';
+  const renderedTemplate = renderEmailTemplate('cart-recovery', {
+    productName,
+    orderNumber,
+  });
+  const templateBody = [
+    '<p style="color:#666;line-height:1.6;margin-bottom:24px;">',
+    'Notamos que voce iniciou a compra de <strong>' +
+      escapedProductName +
+      '</strong> mas nao finalizou.',
+    'Seu pedido ainda esta disponivel — complete sua compra agora!',
+    '</p>',
+  ].join('\n');
+  const recoveryBody =
+    '<p style="color:#666;line-height:1.6;margin-bottom:24px;">' + body + '</p>';
 
-  return [
-    '<div style="' + outerStyle + '">',
-    '<div style="' + containerStyle + '">',
-    '<div style="' + brandStyle + '">KLOEL</div>',
-    '<h1 style="' + titleStyle + '">Sua compra ficou em aberto</h1>',
-    body,
-    '<p style="' + orderStyle + '">Pedido #' + orderNumber + '</p>',
-    '<div style="' + footerStyle + '"><p>KLOEL - Inteligencia Comercial Autonoma</p></div>',
-    '</div>',
-    '</div>',
-  ].join('');
+  return renderedTemplate
+    .replace('Voce deixou algo no carrinho!', 'Sua compra ficou em aberto')
+    .replace(templateBody, recoveryBody);
 }
 
 /** Cart recovery service with MIND-driven recovery action decisions. */

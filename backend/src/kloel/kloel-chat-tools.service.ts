@@ -737,6 +737,7 @@ export class KloelChatToolsService {
       validation: this.stringList(args.validation),
       rollback: this.stringList(args.rollback),
       metrics: this.stringList(args.metrics),
+      delegationRules: [],
       body: safeStr(args.body).trim().slice(0, 4000),
       version: 1,
       updatedAt: new Date().toISOString(),
@@ -763,14 +764,21 @@ export class KloelChatToolsService {
       return { success: false, error: 'missing_agent_skill_id' };
     }
     const outcome = this.agentSkillUsageOutcome(args.outcome);
-    const result = await this.agentSkills.recordSkillUsage(workspaceId, {
+    const usage = {
       skillId,
       outcome,
       reason: safeStr(args.reason).trim().slice(0, 300),
-      provenance: this.agentSkillProvenance(args.provenance),
-      pinned: args.pinned,
-      lifecycleState: this.agentSkillLifecycle(args.lifecycleState),
-    });
+      ...(args.pinned !== undefined ? { pinned: args.pinned } : {}),
+    };
+    const provenance = this.agentSkillProvenance(args.provenance);
+    if (provenance !== undefined) {
+      Object.assign(usage, { provenance });
+    }
+    const lifecycleState = this.agentSkillLifecycle(args.lifecycleState);
+    if (lifecycleState !== undefined) {
+      Object.assign(usage, { lifecycleState });
+    }
+    const result = await this.agentSkills.recordSkillUsage(workspaceId, usage);
     return {
       success: result.ok,
       skillId,
@@ -868,7 +876,7 @@ export class KloelChatToolsService {
     const evidence = await this.agentEvidence.query({
       workspaceId,
       keyword: query,
-      limit: args.limit,
+      ...(args.limit !== undefined ? { limit: args.limit } : {}),
     });
     return { success: true, evidence, totalFound: evidence.length };
   }
@@ -884,7 +892,7 @@ export class KloelChatToolsService {
       workspaceId,
       ...(args.type ? { type: this.agentEvidenceType(args.type) } : {}),
       ...(args.actor ? { actor: safeStr(args.actor).trim().slice(0, 200) } : {}),
-      limit: args.limit,
+      ...(args.limit !== undefined ? { limit: args.limit } : {}),
     });
     return { success: true, evidence, totalFound: evidence.length };
   }

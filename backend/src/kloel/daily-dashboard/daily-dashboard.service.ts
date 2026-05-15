@@ -15,7 +15,6 @@ import type {
 
 @Injectable()
 export class DailyDashboardService {
-
   public constructor(
     private readonly spine: SpineEmitterService,
     private readonly goalField: GoalFieldService,
@@ -29,9 +28,7 @@ export class DailyDashboardService {
 
     const allEvents = this.spine.recentEventsAsRef();
     const events = allEvents.filter(
-      (e) =>
-        e.workspaceId === workspaceId &&
-        Date.parse(e.occurredAt) >= cutoffMs,
+      (e) => e.workspaceId === workspaceId && Date.parse(e.occurredAt) >= cutoffMs,
     );
 
     const hotLeadsWithoutResponse = this.countHotLeadsWithoutResponse(events, nowMs);
@@ -72,13 +69,17 @@ export class DailyDashboardService {
       attentionResult.candidates,
       events,
     );
-    const nowFocus = buildNowFocus(suggestedActions, {
-      hotLeadsWithoutResponse,
-      abandonedCarts,
-      leadsAwaitingFollowup,
-      dealsAtRisk,
-      silentLeads,
-    }, buildNoRegretHighlight(events));
+    const nowFocus = buildNowFocus(
+      suggestedActions,
+      {
+        hotLeadsWithoutResponse,
+        abandonedCarts,
+        leadsAwaitingFollowup,
+        dealsAtRisk,
+        silentLeads,
+      },
+      buildNoRegretHighlight(events),
+    );
 
     return {
       workspaceId,
@@ -101,10 +102,7 @@ export class DailyDashboardService {
     };
   }
 
-  private countHotLeadsWithoutResponse(
-    events: readonly SpineEventRef[],
-    _nowMs: number,
-  ): number {
+  private countHotLeadsWithoutResponse(events: readonly SpineEventRef[], _nowMs: number): number {
     const repliedSet = new Set<string>();
     const repliedAfterSet = new Set<string>();
 
@@ -139,10 +137,7 @@ export class DailyDashboardService {
   private countAbandonedCarts(events: readonly SpineEventRef[]): number {
     const carts = new Set<string>();
     for (const e of events) {
-      if (
-        e.eventName === 'commerce.cart.abandoned' &&
-        e.entityRef
-      ) {
+      if (e.eventName === 'commerce.cart.abandoned' && e.entityRef) {
         carts.add(e.entityRef.entityId);
       }
     }
@@ -216,9 +211,7 @@ export class DailyDashboardService {
     for (const g of goals.slice(0, 3)) {
       if (g.entityRef) {
         const alreadySuggested = actions.some(
-          (a) =>
-            a.targetType === g.entityRef?.entityType &&
-            a.targetId === g.entityRef?.entityId,
+          (a) => a.targetType === g.entityRef?.entityType && a.targetId === g.entityRef?.entityId,
         );
         if (alreadySuggested) continue;
         const kind = detectActionKind(g, events);
@@ -302,7 +295,8 @@ function buildNowFocus(
       urgency: 'for_awareness',
       headline: 'No safe action yet',
       safeNextStep: 'Keep silent until a stronger commercial signal appears',
-      reason: 'there are commercial signals, but none qualify for an action without adding pressure or review burden',
+      reason:
+        'there are commercial signals, but none qualify for an action without adding pressure or review burden',
       riskClass: 'R1',
       delegationMode: 'allowed_alone',
       rollback: 'keep_silent',
@@ -379,9 +373,7 @@ function isHealthyPostSaleOnly(
   targetId: string,
 ): boolean {
   const entityEvents = events.filter(
-    (event) =>
-      event.entityRef?.entityType === targetType &&
-      event.entityRef?.entityId === targetId,
+    (event) => event.entityRef?.entityType === targetType && event.entityRef?.entityId === targetId,
   );
 
   const hasFirstValue = entityEvents.some(
@@ -418,7 +410,7 @@ function safeNextStepForAction(action: SuggestedAction): string {
     return 'Review and approve before any outbound action';
   }
   if (action.kind === 'follow_up' || action.kind === 'recover_cart') {
-    return 'Prepare an honest, low-pressure next message';
+    return 'Decide the silence reason before drafting any outbound message';
   }
   if (action.kind === 'contact_lead') {
     return 'Check context before contacting the lead';
@@ -434,19 +426,11 @@ function detectActionKind(
     const entityId = goal.entityRef.entityId;
     const entityType = goal.entityRef.entityType;
     const entityEvents = events.filter(
-      (e) =>
-        e.entityRef?.entityId === entityId &&
-        e.entityRef?.entityType === entityType,
+      (e) => e.entityRef?.entityId === entityId && e.entityRef?.entityType === entityType,
     );
-    const wentSilent = entityEvents.some(
-      (e) => e.eventName === 'commerce.lead.went_silent',
-    );
-    const hadObjection = entityEvents.some(
-      (e) => e.eventName === 'commerce.lead.objection_raised',
-    );
-    const hadAbandonedCart = entityEvents.some(
-      (e) => e.eventName === 'commerce.cart.abandoned',
-    );
+    const wentSilent = entityEvents.some((e) => e.eventName === 'commerce.lead.went_silent');
+    const hadObjection = entityEvents.some((e) => e.eventName === 'commerce.lead.objection_raised');
+    const hadAbandonedCart = entityEvents.some((e) => e.eventName === 'commerce.cart.abandoned');
     if (wentSilent && hadObjection) return 'follow_up';
     if (wentSilent && hadAbandonedCart) return 'recover_cart';
   }
@@ -464,9 +448,7 @@ function detectActionKind(
   }
 }
 
-function silentLeadActions(
-  events: readonly SpineEventRef[],
-): readonly SuggestedAction[] {
+function silentLeadActions(events: readonly SpineEventRef[]): readonly SuggestedAction[] {
   const silentEntities = new Map<
     string,
     { entityType: string; entityId: string; events: SpineEventRef[] }
@@ -493,16 +475,13 @@ function silentLeadActions(
   for (const [, entry] of silentEntities) {
     const allEntityEvents = events.filter(
       (e) =>
-        e.entityRef?.entityId === entry.entityId &&
-        e.entityRef?.entityType === entry.entityType,
+        e.entityRef?.entityId === entry.entityId && e.entityRef?.entityType === entry.entityType,
     );
 
     const hadObjection = allEntityEvents.some(
       (e) => e.eventName === 'commerce.lead.objection_raised',
     );
-    const hadAbandonedCart = allEntityEvents.some(
-      (e) => e.eventName === 'commerce.cart.abandoned',
-    );
+    const hadAbandonedCart = allEntityEvents.some((e) => e.eventName === 'commerce.cart.abandoned');
 
     const latestSilent = entry.events.reduce((latest, e) => {
       if (!latest) return e;
@@ -511,12 +490,7 @@ function silentLeadActions(
 
     const recencyBoost =
       1 +
-      Math.max(
-        0,
-        1 -
-          (Date.now() - Date.parse(latestSilent.occurredAt)) /
-            (6 * 60 * 60 * 1000),
-      );
+      Math.max(0, 1 - (Date.now() - Date.parse(latestSilent.occurredAt)) / (6 * 60 * 60 * 1000));
 
     if (hadObjection) {
       const priority = Math.min(1, 0.75 * recencyBoost);
@@ -525,7 +499,7 @@ function silentLeadActions(
           kind: 'follow_up',
           targetType: entry.entityType,
           targetId: entry.entityId,
-          reason: 'went silent after objection - resume conversation or review deal',
+          reason: 'went silent after objection - diagnose silence before any outbound action',
           priority,
           riskClass: 'R1',
           delegationMode: 'allowed_alone',
@@ -539,7 +513,8 @@ function silentLeadActions(
           kind: 'recover_cart',
           targetType: entry.entityType,
           targetId: entry.entityId,
-          reason: 'went silent after abandoned cart - recover with honest retomada',
+          reason:
+            'went silent after abandoned cart - diagnose checkout friction before any outbound action',
           priority,
           riskClass: 'R1',
           delegationMode: 'allowed_alone',
@@ -586,15 +561,12 @@ function findRepeatedOperatorNotes(events: readonly SpineEventRef[]): string[] {
     .map(([note]) => note);
 }
 
-function postSaleRiskActions(
-  events: readonly SpineEventRef[],
-): readonly SuggestedAction[] {
+function postSaleRiskActions(events: readonly SpineEventRef[]): readonly SuggestedAction[] {
   const actions: SuggestedAction[] = [];
 
   const repeatedNotes = findRepeatedOperatorNotes(events);
-  const learnedOwnerSuffix = repeatedNotes.length > 0
-    ? ` [learned owner criterion: ${repeatedNotes[0]}]`
-    : '';
+  const learnedOwnerSuffix =
+    repeatedNotes.length > 0 ? ` [learned owner criterion: ${repeatedNotes[0]}]` : '';
 
   for (const event of events) {
     if (event.eventName !== 'commerce.post_sale.churn_risk_detected' || !event.entityRef) {
@@ -610,9 +582,11 @@ function postSaleRiskActions(
       kind: 'review_deal',
       targetType: event.entityRef.entityType,
       targetId: event.entityRef.entityId,
-      reason: (hasMissingFirstValue
-        ? 'post-sale risk: customer has not reached first value - review help path before retention'
-        : 'post-sale churn risk detected - review recovery path before outbound action') + learnedOwnerSuffix,
+      reason:
+        (hasMissingFirstValue
+          ? 'post-sale risk: customer has not reached first value - review help path before retention'
+          : 'post-sale churn risk detected - review recovery path before outbound action') +
+        learnedOwnerSuffix,
       priority: Math.min(1, Math.max(0.55, riskProbability)),
       riskClass: 'R2',
       delegationMode: 'requires_approval',
@@ -629,18 +603,13 @@ function isUnqualifiedSilentLead(
   targetId: string,
 ): boolean {
   const entityEvents = events.filter(
-    (e) =>
-      e.entityRef?.entityType === targetType &&
-      e.entityRef?.entityId === targetId,
+    (e) => e.entityRef?.entityType === targetType && e.entityRef?.entityId === targetId,
   );
-  const wentSilent = entityEvents.some(
-    (e) => e.eventName === 'commerce.lead.went_silent',
-  );
+  const wentSilent = entityEvents.some((e) => e.eventName === 'commerce.lead.went_silent');
   if (!wentSilent) return false;
   const hasCommercialReason = entityEvents.some(
     (e) =>
-      e.eventName === 'commerce.lead.objection_raised' ||
-      e.eventName === 'commerce.cart.abandoned',
+      e.eventName === 'commerce.lead.objection_raised' || e.eventName === 'commerce.cart.abandoned',
   );
   return !hasCommercialReason;
 }

@@ -2,6 +2,19 @@ import type { Prisma } from '@prisma/client';
 
 export type AgentRuntimeTruthMode = 'observed' | 'inferred' | 'projected';
 export type AgentRuntimeRiskLevel = 'safe' | 'normal' | 'high' | 'critical';
+export type AgentSkillDelegationPermission =
+  | 'allowed_alone'
+  | 'with_approval'
+  | 'escalate'
+  | 'prohibited';
+export type AgentDelegationRiskClass = 'R1' | 'R2' | 'R3' | 'R4';
+
+export interface AgentToolDelegationRule {
+  toolName: string;
+  riskClass: AgentDelegationRiskClass;
+  permission: AgentSkillDelegationPermission;
+  rollback: string[];
+}
 export type AgentRuntimeAuthorityMode = 'advisory' | 'tool_limited' | 'human_required';
 export type AgentRuntimeSourceProvenance =
   | 'kloel_memory'
@@ -155,6 +168,7 @@ export interface AgentSkillDefinition {
   validation: string[];
   rollback: string[];
   metrics: string[];
+  delegationRules: AgentToolDelegationRule[];
   body: string;
   version: number;
   updatedAt: string;

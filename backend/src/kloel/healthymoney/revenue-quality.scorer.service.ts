@@ -168,7 +168,7 @@ export class RevenueQualityScorerService {
       qualityScore,
       classification,
       reasoning,
-      blockerSuggestion,
+      ...(blockerSuggestion !== undefined ? { blockerSuggestion } : {}),
       evaluatedAt: new Date().toISOString(),
       dimensions,
     };

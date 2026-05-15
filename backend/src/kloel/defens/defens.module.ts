@@ -11,6 +11,7 @@
 
 import { Module } from '@nestjs/common';
 import { AssetRegistry } from './asset-registry';
+import { AssetGrowthTrackerService } from './asset-growth.tracker.service';
 import { GrowthTracker } from './growth-tracker';
 import { OwnedAudienceBuilder } from './owned-audience.builder';
 import { SocialProofHarvester } from './social-proof.harvester';
@@ -23,6 +24,7 @@ import { DefensibilityNarrativeBuilder } from './defensibility-narrative.builder
 @Module({
   providers: [
     AssetRegistry,
+    AssetGrowthTrackerService,
     GrowthTracker,
     OwnedAudienceBuilder,
     SocialProofHarvester,
@@ -34,6 +36,7 @@ import { DefensibilityNarrativeBuilder } from './defensibility-narrative.builder
   ],
   exports: [
     AssetRegistry,
+    AssetGrowthTrackerService,
     GrowthTracker,
     OwnedAudienceBuilder,
     SocialProofHarvester,

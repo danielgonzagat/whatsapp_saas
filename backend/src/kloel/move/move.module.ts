@@ -1,30 +1,9 @@
 import { Module } from '@nestjs/common';
 import { FrictionDetectorService } from './friction.detector';
-import { StepDecomposerService } from './step.decomposer';
-import { TinyActionSuggesterService } from './tiny-action.suggester';
-import { PartialExecutionOfferService } from './partial-execution.offer';
-import { AlternativeRouteBuilderService } from './alternative-route.builder';
-import { PatternLearnerService } from './pattern.learner';
-import { NoBlameToneGuardService } from './no-blame-tone.guard';
+import { StepDecomposerService } from './step-decomposer.service';
 
 @Module({
-  providers: [
-    FrictionDetectorService,
-    StepDecomposerService,
-    TinyActionSuggesterService,
-    PartialExecutionOfferService,
-    AlternativeRouteBuilderService,
-    PatternLearnerService,
-    NoBlameToneGuardService,
-  ],
-  exports: [
-    FrictionDetectorService,
-    StepDecomposerService,
-    TinyActionSuggesterService,
-    PartialExecutionOfferService,
-    AlternativeRouteBuilderService,
-    PatternLearnerService,
-    NoBlameToneGuardService,
-  ],
+  providers: [FrictionDetectorService, StepDecomposerService],
+  exports: [FrictionDetectorService, StepDecomposerService],
 })
 export class MoveModule {}
