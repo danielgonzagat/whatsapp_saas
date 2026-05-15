@@ -89,5 +89,12 @@
     "reason": "Human approval granted in chat on 2026-05-12 to commit and push accumulated Kloel CIA work including protected governance changes.",
     "issue": "user-approved-kloel-cia-accumulated-publication-2026-05-12",
     "expires": "2026-05-19"
+  },
+  {
+    "file": ".agents/skills/community-marketing/SKILL.md",
+    "rule": "governanceDelete",
+    "reason": "Human approval granted in chat on 2026-05-15 ('autorizo'): remove community-marketing skill with invalid YAML that broke skill loading (commit d30e9a137); part of PR#314 purga-total-debt merge.",
+    "issue": "user-approved-remove-invalid-community-marketing-skill-2026-05-15",
+    "expires": "2026-05-22"
   }
 ]
