@@ -15,8 +15,9 @@
 
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
-REPO_ROOT="$(cd "${SCRIPT_DIR}/.." >/dev/null 2>&1 && pwd)"
+# launcher lives at scripts/mcp/atomic-edit-mcp-launcher.sh
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"   # scripts/mcp
+REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." >/dev/null 2>&1 && pwd)"                # repo root
 SRC_DIR="${SCRIPT_DIR}/atomic-edit"
 DIST="${SRC_DIR}/dist/server.js"
 

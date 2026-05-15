@@ -12,11 +12,28 @@
  * runtime. Keep in sync with the "ARQUIVOS PROTEGIDOS" section of CLAUDE.md.
  */
 
+import * as fs from "node:fs";
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
 
+/**
+ * Anchor to the real repo root by walking up for a `.git` marker. Counting
+ * fixed `../..` from this file is fragile: it breaks the moment the file runs
+ * from a different depth (e.g. compiled into dist/ vs. source). Walking to the
+ * marker is location-independent — correct under tsx (source) and node (dist).
+ */
+function findRepoRoot(start: string): string {
+  let dir = start;
+  for (;;) {
+    if (fs.existsSync(path.join(dir, ".git"))) return dir;
+    const parent = path.dirname(dir);
+    if (parent === dir) return path.resolve(start, "..", "..", ".."); // last-resort
+    dir = parent;
+  }
+}
+
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-export const REPO_ROOT = path.resolve(HERE, "..", "..", "..");
+export const REPO_ROOT = findRepoRoot(HERE);
 
 /** Exact repo-relative paths that no AI CLI may modify. */
 const PROTECTED_FILES = new Set<string>([
