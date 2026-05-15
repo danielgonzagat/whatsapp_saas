@@ -163,8 +163,7 @@ export function detectTypeEscapeHatches(rootDir: string): TypeEscapeHatchResult 
     (relativePath, fileName) =>
       isSourceFile(fileName) &&
       !isTestFileName(fileName) &&
-      !isInTestDirectory(relativePath) &&
-      !relativePath.replaceAll('\\', '/').includes('scripts/pulse/__parts__/test-honesty/'),
+      !isInTestDirectory(relativePath),
   );
 
   for (const candidate of candidates) {

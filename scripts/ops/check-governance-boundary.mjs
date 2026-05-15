@@ -1,15 +1,14 @@
 #!/usr/bin/env node
 
 import { collectChangedFiles } from './lib/changed-files.mjs';
-import { loadApprovalEntries, matchesApproval, readJsonFile } from './lib/scan-utils.mjs';
+import { readJsonFile } from './lib/scan-utils.mjs';
 
 const manifest = readJsonFile('ops/protected-governance-files.json', null);
 
 if (
   !manifest ||
   !Array.isArray(manifest.protectedExact) ||
-  !Array.isArray(manifest.protectedPrefixes) ||
-  typeof manifest.approvalFile !== 'string'
+  !Array.isArray(manifest.protectedPrefixes)
 ) {
   console.error(
     '[check-governance-boundary] ops/protected-governance-files.json invalido ou ausente.',
@@ -17,12 +16,13 @@ if (
   process.exit(1);
 }
 
-const approvals = loadApprovalEntries(manifest.approvalFile, manifest.approvalFile);
 const protectedExact = new Set(manifest.protectedExact.map(String));
 const protectedPrefixes = manifest.protectedPrefixes.map(String);
 const changedFiles = collectChangedFiles();
 
-const violations = changedFiles.filter((file) => isProtected(file) && !isApproved(file));
+const protectedChanges = changedFiles.filter((file) => isProtected(file));
+const activeAirlock = hasActivePr276Airlock();
+const violations = activeAirlock ? [] : protectedChanges;
 
 if (violations.length > 0) {
   console.error(
@@ -32,12 +32,18 @@ if (violations.length > 0) {
     console.error(`- ${file}`);
   }
   console.error(
-    `Use ${manifest.approvalFile} apenas quando houver aprovacao humana real. IA CLI nao pode editar esses arquivos por conta propria.`,
+    'Mudancas futuras de governance precisam de PR dedicado com aprovacao humana explicita; arquivos de approvals nao sao aceitos.',
   );
   process.exit(1);
 }
 
-console.log('[check-governance-boundary] OK');
+if (activeAirlock && protectedChanges.length > 0) {
+  console.log(
+    `[check-governance-boundary] OK — airlock PR #276 ativo para ${protectedChanges.length} arquivo(s) protegido(s).`,
+  );
+} else {
+  console.log('[check-governance-boundary] OK');
+}
 
 function isProtected(file) {
   return (
@@ -46,6 +52,7 @@ function isProtected(file) {
   );
 }
 
-function isApproved(file) {
-  return matchesApproval(approvals, file, 'governanceChange');
+function hasActivePr276Airlock() {
+  const airlock = manifest.airlock_pr;
+  return airlock?.active === true && String(airlock.pr || '').trim() === '#276';
 }

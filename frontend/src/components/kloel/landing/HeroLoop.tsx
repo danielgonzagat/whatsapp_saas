@@ -5,6 +5,7 @@ import { usePrefersReducedMotion } from './usePrefersReducedMotion';
 import { runSequentialRange } from './KloelLanding.helpers';
 import { useHeroNoiseCanvasRef, useHeroNoiseCanvas, HeroNoiseCanvas } from './HeroLoopNoiseCanvas';
 import { HeroLoopDisplay, HeroLoopReducedMotion, HeroLoopFlash } from './HeroLoopDisplay';
+import { GlitchState, GlitchSlice, ViewState } from './HeroLoop.types';
 
 const GC = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%&!?<>{}|/\\~';
 const rc = () => GC[Math.floor(secureRandomFloat() * GC.length)];
@@ -12,30 +13,6 @@ const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
 const HERO_LOOP_PRIMARY = 'O Marketing Digital';
 const HERO_LOOP_DEATH_SUFFIX = ' acabou.';
 const HERO_LOOP_RESURRECTED = 'O Marketing Artificial começou.';
-
-export type HeroLoopPhase = 'idle' | 'typing' | 'strike' | 'death' | 'hidden';
-
-export type ViewState = {
-  text: string;
-  strike: number;
-  suffix: string;
-  phase: HeroLoopPhase;
-};
-
-export type GlitchSlice = {
-  top: number;
-  h: number;
-  off: number;
-};
-
-export type GlitchState = {
-  on: boolean;
-  text: string;
-  shk: [number, number];
-  chr: number;
-  slices: GlitchSlice[];
-  flash: boolean;
-};
 
 function scrambleText(src: string, chaos: number) {
   return src
@@ -75,10 +52,8 @@ export function HeroLoop() {
   useHeroNoiseCanvas(noiseRef, gx.on);
 
   useEffect(() => {
+    m.current = true;
     if (prefersReducedMotion) {
-      setVis({ text: '', strike: 0, suffix: '', phase: 'hidden' });
-      setGx({ on: false, text: '', shk: [0, 0], chr: 0, slices: [], flash: false });
-      setResurrected(true);
       return;
     }
     const run = async () => {

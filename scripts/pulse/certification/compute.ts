@@ -67,7 +67,7 @@ import {
   isGateBlockingFinalReadiness,
 } from './compute-helpers';
 
-import { buildAllGates, type GateComputeContext } from './__parts__/compute-gates';
+import { buildAllGates, type GateComputeContext } from './compute-gates';
 
 export function computeCertification(input: ComputeCertificationInput): PulseCertification {
   const env = getEnvironment();

@@ -1,7 +1,7 @@
-import { pathExists, readTextFile } from '../../safe-fs';
-import { safeJoin, resolveRoot } from '../../lib/safe-path';
-import type { PulseCapabilityState } from '../../types.capabilities/03-capability';
-import { dodArtifactFile } from '../grammar';
+import { pathExists, readTextFile } from '../safe-fs';
+import { safeJoin, resolveRoot } from '../lib/safe-path';
+import type { PulseCapabilityState } from '../types.capabilities/03-capability';
+import { dodArtifactFile } from './grammar';
 
 export interface LoadedArtifacts {
   runtimeEvidence: Record<string, unknown> | null;

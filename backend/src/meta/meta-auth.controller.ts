@@ -29,8 +29,8 @@ import {
   buildDiagnosticsPayload,
   humanizeMetaError,
   sanitizeReturnTo as sanitizeReturnToHelper,
-} from './__parts__/meta-auth-helpers';
-import { readRecord, readStrictText } from './__companions__/meta-read-helpers';
+} from './oauth/meta-auth-helpers';
+import { readRecord, readStrictText } from './read-model/meta-read-helpers';
 
 interface MetaAuthPage {
   id?: string;

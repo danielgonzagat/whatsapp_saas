@@ -1,5 +1,0 @@
-{
-  "generatedAt": "2026-05-11T15:42:00.000Z",
-  "note": "Wave A purge — PR #276 closure mandate. All 571 tenant-isolation allowlisted entries removed. Each was a real cross-tenant bug. Wave B (TenantSweep) will eliminate them by code, not by allowlist.",
-  "entries": []
-}

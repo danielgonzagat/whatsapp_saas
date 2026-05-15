@@ -207,10 +207,7 @@ export function discoverArtifactReferences(
 
 export function discoverRegisteredWriters(pulseDir: string): RegisteredArtifactWriter[] {
   const writers: RegisteredArtifactWriter[] = [];
-  const artifactWriterPaths = [
-    safeJoin(pulseDir, 'artifacts.ts'),
-    safeJoin(pulseDir, '__parts__', 'artifacts', 'generate.ts'),
-  ];
+  const artifactWriterPaths = [safeJoin(pulseDir, 'artifacts.ts')];
 
   for (const artifactPath of artifactWriterPaths) {
     const sourceFile = readSourceFile(artifactPath);

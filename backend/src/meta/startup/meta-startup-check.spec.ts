@@ -1,5 +1,5 @@
 import { runMetaStartupCheck } from './meta-startup-check';
-import type { ResolvedOAuthRedirect } from './meta-oauth-url.helpers';
+import type { ResolvedOAuthRedirect } from '../oauth/meta-oauth-url.helpers';
 
 function loggerSpy() {
   return {
