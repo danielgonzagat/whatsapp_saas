@@ -5,9 +5,7 @@ import { Metrics } from '../observability/metrics';
 import type { MailboxSocketConfig } from './mailbox-imap-smtp-socket.helpers';
 import { encryptMailboxToken, isEncryptedMailboxToken } from './mailbox-token-crypto';
 import { MailboxImapSmtpService } from './mailbox-imap-smtp.service';
-
 jest.mock('nodemailer');
-
 jest.mock('../observability/metrics', () => ({
   Metrics: {
     mailbox: {
@@ -18,66 +16,45 @@ jest.mock('../observability/metrics', () => ({
     },
   },
 }));
-
 type MailboxConnectionUpsertArgs = {
   where: {
-    workspaceId_provider_email: {
-      workspaceId: string;
-      provider: MailboxProvider;
-      email: string;
-    };
+    workspaceId_provider_email: { workspaceId: string; provider: MailboxProvider; email: string };
   };
-  create: {
-    provider: MailboxProvider;
-    status: MailboxStatus;
-    imapPassword: string | null;
-    smtpPassword: string | null;
-    [key: string]: unknown;
-  };
-  update: {
-    status: MailboxStatus;
-    imapPassword: string | null;
-    smtpPassword: string | null;
-    [key: string]: unknown;
-  };
+  create: MailboxPersistedCredentialFields;
+  update: MailboxPersistedCredentialFields;
   select?: Record<string, boolean>;
 };
-
-type MailboxConnectionRecord = {
-  id: string;
-  workspaceId?: string;
-  email: string;
+type MailboxPersistedCredentialFields = {
   provider?: MailboxProvider;
-  status?: MailboxStatus;
-  connectedAt?: Date;
-  lastSyncAt?: Date | null;
-  lastErrorAt?: Date | null;
-  lastError?: string | null;
-  smtpHost?: string | null;
-  smtpPort?: number | null;
-  smtpSecure?: boolean;
-  smtpUsername?: string | null;
-  smtpPassword?: string | null;
+  status: MailboxStatus;
+  imapPassword: string | null;
+  smtpPassword: string | null;
+  [key: string]: unknown;
 };
-
+type MailboxConnectionRecord = { id: string; email: string } & Partial<{
+  workspaceId: string;
+  provider: MailboxProvider;
+  status: MailboxStatus;
+  connectedAt: Date;
+  lastSyncAt: Date | null;
+  lastErrorAt: Date | null;
+  lastError: string | null;
+  smtpHost: string | null;
+  smtpPort: number | null;
+  smtpSecure: boolean;
+  smtpUsername: string | null;
+  smtpPassword: string | null;
+}>;
 type MailboxConnectionFindFirstArgs = {
   where: Record<string, unknown>;
   orderBy?: Record<string, unknown>;
   select?: Record<string, boolean>;
 };
-
 type MailboxConnectionUpdateArgs = {
   where: { id: string };
-  data: {
-    lastErrorAt?: Date;
-    lastError?: string;
-  };
+  data: { lastErrorAt?: Date; lastError?: string };
 };
-
-type ContactFindFirstArgs = {
-  where: Record<string, unknown>;
-  select?: Record<string, boolean>;
-};
+type ContactFindFirstArgs = { where: Record<string, unknown>; select?: Record<string, boolean> };
 
 type SendMailArgs = {
   from?: string;
@@ -87,7 +64,6 @@ type SendMailArgs = {
   text?: string;
   headers?: Record<string, string>;
 };
-
 type MailboxValidationInternals = {
   validateImapConnection(config: MailboxSocketConfig): Promise<void>;
   validateSmtpConnection(config: MailboxSocketConfig): Promise<void>;

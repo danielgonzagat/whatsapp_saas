@@ -293,7 +293,6 @@ describe('CheckoutPostPaymentEffectsService', () => {
       expect(facebookCAPI.sendEvent).not.toHaveBeenCalled();
     });
   });
-
   describe('autoEnrollInMemberAreas', () => {
     it('creates enrollment when no existing enrollment found', async () => {
       prisma.memberArea.findMany.mockResolvedValue([
@@ -310,11 +309,8 @@ describe('CheckoutPostPaymentEffectsService', () => {
         _count: { _all: 1 },
         _avg: { progress: 50 },
       });
-
       const order = makeOrder();
-
       await service.markLeadConverted(order, 'ws_1');
-
       const [createCall] = prisma.memberEnrollment.create.mock.calls[0]!;
       expect(createCall.data).toEqual(
         expect.objectContaining({
@@ -341,14 +337,10 @@ describe('CheckoutPostPaymentEffectsService', () => {
         },
       ]);
       prisma.memberEnrollment.findFirst.mockResolvedValue({ id: 'enr_existing' });
-
       const order = makeOrder();
-
       await service.markLeadConverted(order, 'ws_1');
-
       expect(prisma.memberEnrollment.create).not.toHaveBeenCalled();
     });
-
     it('defaults studentName to "Aluno" when customerName is empty', async () => {
       prisma.memberArea.findMany.mockResolvedValue([
         {
@@ -359,11 +351,8 @@ describe('CheckoutPostPaymentEffectsService', () => {
           name: 'Course',
         },
       ]);
-
       const order = makeOrder({ customerName: '' });
-
       await service.markLeadConverted(order, 'ws_1');
-
       const [createCall] = prisma.memberEnrollment.create.mock.calls[0]!;
       expect(createCall.data).toEqual(
         expect.objectContaining({
@@ -372,21 +361,16 @@ describe('CheckoutPostPaymentEffectsService', () => {
       );
     });
   });
-
   describe('webhook ordering invariant', () => {
     it('ensures payment is processed before post-payment effects run', async () => {
       const order = makeOrder({
         id: 'order_with_payment',
         metadata: { correlationId: 'corr_paid', paymentId: 'pay_ext_1' },
       });
-
       expect(order.metadata).toHaveProperty('correlationId');
       expect(typeof order.metadata!.correlationId).toBe('string');
-
       checkoutSocialLeadService.markConvertedFromOrder.mockResolvedValue(undefined);
-
       await service.markLeadConverted(order, 'ws_1');
-
       expect(checkoutSocialLeadService.markConvertedFromOrder).toHaveBeenCalledWith(
         expect.objectContaining({
           workspaceId: 'ws_1',
@@ -397,9 +381,7 @@ describe('CheckoutPostPaymentEffectsService', () => {
 
     it('does not run effects when order has no workspace (not paid yet)', async () => {
       const order = makeOrder();
-
       await service.markLeadConverted(order);
-
       expect(checkoutSocialLeadService.markConvertedFromOrder).not.toHaveBeenCalled();
     });
   });
