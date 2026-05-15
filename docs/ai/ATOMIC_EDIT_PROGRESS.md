@@ -69,10 +69,40 @@ real services) not started. Not faking it; not the deferred production proof.
 ## Last safe commits
 
 `0fbad6684` (atomic_replace_text), `e647a45b1` (h13 green). This session's E8
-work (advanced.ts characterDiff, trace.ts, audit-atomicity.mjs, server.ts
-wiring, .gitignore, docs) is **uncommitted** — not committed by this agent
-(concurrent-agent territory + owner rule). Restore-from-snapshot pattern used
-for the HEAD-regression proof (no `git restore`).
+work is **committed locally** in 2 clean units on `feat/kloel-cognitive-organism`:
+
+- `1f3068b81` feat(atomic-edit): visible char-level atomicity + AtomicEditTrace
+  - L0–L3 token economy (advanced.ts, trace.ts, server.ts)
+- `f5e5763dc` feat(atomic-edit): fail-closed atomicity regression auditor +
+  E8 docs (audit-atomicity.mjs, .gitignore, docs/ai/ATOMIC*EDIT*\*)
+
+ALL `guard:new-code` gates pass on these 6 files (ai-constitution, bypass-
+markers, eslint N/A, tests, visual, architecture); smoke 47/47; auditor clean.
+
+### PUSH BLOCKED — objective, out-of-scope, NOT bypassable
+
+`git push` is blocked by the scoped pre-push hook (`prepush:scoped` →
+`guard:new-code` → `guard:changed-eslint`). Root cause: `origin/feat/kloel-
+cognitive-organism` tip (`b7df42d8a`) is far behind local HEAD, so the hook
+validates the **entire 515-file local backlog** of accumulated concurrent-
+agent commits, not just my 6 files. ~30+ `@typescript-eslint/no-unsafe-
+assignment`, `prettier/prettier`, and `react-hooks/*` errors exist in
+concurrent-agent `backend/src/**.spec.ts` + `frontend/src/**.tsx` — **zero
+atomic-edit files** in the failure set.
+
+Cannot resolve from this scope without violating governance: `--no-verify`
+forbidden; `scripts/ops/check-*.mjs` protected (no weakening); `git restore`
+of others' files absolutely forbidden; mass-editing 30+ concurrent-agent
+files on a shared branch is out of scope + collision-prone (memory:
+concurrent-agent reverts on this branch). Per CLAUDE.md STOP conditions
+("tests reveal unrelated major breakage" / human-owned changes) this is a
+report-and-stop blocker, not a fake-completion.
+
+**Unblock path (owner / push-rights holder):** either (a) push the existing
+local backlog after the concurrent agents clear their own lint debt, or
+(b) the owner pushes `feat/kloel-cognitive-organism` (the lint debt is pre-
+existing repo state, not introduced by E8). My 2 commits ride along cleanly
+once the branch can push. Open PR after push.
 
 ## Risks / honest residue (R7)
 
