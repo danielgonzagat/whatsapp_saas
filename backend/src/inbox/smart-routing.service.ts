@@ -26,7 +26,7 @@ export class SmartRoutingService {
     // 1. Check explicit Routing Rules first
     const ruleMatch = await this.checkRoutingRules(workspaceId, context);
     if (ruleMatch) {
-      return this.applyRule(conversationId, ruleMatch);
+      return this.applyRule(workspaceId, conversationId, ruleMatch);
     }
 
     // 2. If no rule, check if it should go to a default Queue or stay unassigned
@@ -36,7 +36,7 @@ export class SmartRoutingService {
     });
 
     if (defaultQueue) {
-      return this.assignToQueue(conversationId, defaultQueue.id);
+      return this.assignToQueue(workspaceId, conversationId, defaultQueue.id);
     }
 
     return null;
@@ -45,23 +45,23 @@ export class SmartRoutingService {
   /**
    * Assigns a conversation to a Queue and tries to find an available Agent (Round Robin)
    */
-  async assignToQueue(conversationId: string, queueId: string) {
+  async assignToQueue(workspaceId: string, conversationId: string, queueId: string) {
     this.logger.log(`Assigning conversation ${conversationId} to queue ${queueId}`);
 
     // Update Conversation
-    await this.prisma.conversation.update({
-      where: { id: conversationId },
+    await this.prisma.conversation.updateMany({
+      where: { id: conversationId, workspaceId },
       data: { queueId, status: 'OPEN' },
     });
 
     // Try to auto-assign to an agent in this queue
-    await this.distributeToAgent(queueId, conversationId);
+    await this.distributeToAgent(workspaceId, queueId, conversationId);
   }
 
   /**
    * Round Robin / Load Balancing Logic
    */
-  private async distributeToAgent(queueId: string, conversationId: string) {
+  private async distributeToAgent(workspaceId: string, queueId: string, conversationId: string) {
     // Get all online agents in this queue
     const agentsInQueue = await this.prisma.agentQueue.findMany({
       where: { queueId, agent: { isOnline: true } },
@@ -87,8 +87,8 @@ export class SmartRoutingService {
     const selectedAgent = agentAtIdx.agent;
 
     // Assign
-    await this.prisma.conversation.update({
-      where: { id: conversationId },
+    await this.prisma.conversation.updateMany({
+      where: { id: conversationId, workspaceId },
       data: { assignedAgentId: selectedAgent.id, mode: 'HUMAN' },
     });
 
@@ -142,6 +142,7 @@ export class SmartRoutingService {
   }
 
   private async applyRule(
+    workspaceId: string,
     conversationId: string,
     rule: {
       id: string;
@@ -156,12 +157,12 @@ export class SmartRoutingService {
     this.logger.log(`Applying rule ${rule.name} to conversation ${conversationId}`);
 
     if (rule.actionType === 'ASSIGN_TO_QUEUE' && rule.targetId) {
-      return this.assignToQueue(conversationId, rule.targetId);
+      return this.assignToQueue(workspaceId, conversationId, rule.targetId);
     }
 
     if (rule.actionType === 'ASSIGN_TO_AGENT' && rule.targetId) {
-      await this.prisma.conversation.update({
-        where: { id: conversationId },
+      await this.prisma.conversation.updateMany({
+        where: { id: conversationId, workspaceId },
         data: { assignedAgentId: rule.targetId, status: 'OPEN', mode: 'HUMAN' },
       });
     }

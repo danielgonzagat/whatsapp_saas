@@ -11,6 +11,7 @@ import {
   legalConstants,
   legalContentTables,
 } from '@/lib/legal-constants';
+import { PRIVACY_TOC } from './privacy.toc';
 
 /** Metadata. */
 export const metadata = buildLegalMetadata({
@@ -20,23 +21,6 @@ export const metadata = buildLegalMetadata({
   path: '/privacy',
   locale: 'pt_BR',
 });
-
-const toc = [
-  { id: 'quem-somos', label: '1. Quem somos' },
-  { id: 'dados-coletados', label: '2. Dados que coletamos' },
-  { id: 'finalidades-bases', label: '3. Finalidades e bases legais' },
-  { id: 'compartilhamento', label: '4. Compartilhamento com terceiros' },
-  { id: 'cookies', label: '5. Cookies' },
-  { id: 'retencao', label: '6. Retenção' },
-  { id: 'seguranca', label: '7. Segurança' },
-  { id: 'direitos', label: '8. Direitos do titular' },
-  { id: 'transferencia', label: '9. Transferência internacional' },
-  { id: 'menores', label: '10. Menores de idade' },
-  { id: 'alteracoes', label: '11. Alterações desta política' },
-  { id: 'contato', label: '12. Contato, ANPD e canais de privacidade' },
-  { id: 'google-use', label: '13. Uso de informações do Google' },
-  { id: 'meta-use', label: '14. Uso de informações da Meta' },
-];
 
 /** Privacy page. */
 export default function PrivacyPage() {
@@ -51,7 +35,7 @@ export default function PrivacyPage() {
       lastUpdatedLabel={formatLastUpdated(legalConstants.lastUpdated, 'pt-BR')}
       alternateHref="/privacy/en"
       alternateLabel={kloelT(`English version`)}
-      toc={toc}
+      toc={PRIVACY_TOC}
       schemaType={kloelT(`PrivacyPolicy`)}
       path="/privacy"
       inLanguage={kloelT(`pt-BR`)}

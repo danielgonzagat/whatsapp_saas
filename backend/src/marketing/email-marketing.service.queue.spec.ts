@@ -2,7 +2,12 @@ import { EmailMarketingService } from './email-marketing.service';
 
 type WorkerCb = (job: { data: { campaignId: string; workspaceId: string } }) => Promise<void>;
 
-let workerCallback: WorkerCb | null = null;
+let _workerCallback: WorkerCb | null = null;
+
+function firstCallArg<T>(mock: { mock: { calls: Array<[unknown, ...unknown[]]> } }): T {
+  const [arg] = mock.mock.calls[0] ?? [];
+  return arg as T;
+}
 
 jest.mock('bullmq', () => {
   const queueAdd = jest.fn();
@@ -15,7 +20,7 @@ jest.mock('bullmq', () => {
       close: queueClose,
     })),
     Worker: jest.fn().mockImplementation((_name: string, cb: WorkerCb) => {
-      workerCallback = cb;
+      _workerCallback = cb;
       return {
         close: workerClose,
         on: jest.fn(),
@@ -39,8 +44,10 @@ describe('EmailMarketingService', () => {
   const campaignFindFirst = jest.fn();
   const campaignFindFirstOrThrow = jest.fn();
   const campaignUpdate = jest.fn();
+  const campaignUpdateMany = jest.fn();
   const deliveryCreate = jest.fn();
   const recipientUpdate = jest.fn();
+  const recipientUpdateMany = jest.fn();
   const recipientFindFirst = jest.fn();
   const approvalFindFirst = jest.fn();
 
@@ -51,7 +58,7 @@ describe('EmailMarketingService', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    workerCallback = null;
+    _workerCallback = null;
     sendEmail.mockResolvedValue(true);
     approvalFindFirst.mockResolvedValue({ id: 'approval-email-1' });
 
@@ -63,12 +70,14 @@ describe('EmailMarketingService', () => {
           findFirst: campaignFindFirst,
           findFirstOrThrow: campaignFindFirstOrThrow,
           update: campaignUpdate,
+          updateMany: campaignUpdateMany,
         },
         emailCampaignDelivery: {
           create: deliveryCreate,
         },
         emailCampaignRecipient: {
           update: recipientUpdate,
+          updateMany: recipientUpdateMany,
           findFirst: recipientFindFirst,
         },
         approvalRequest: {
@@ -100,7 +109,7 @@ describe('EmailMarketingService', () => {
 
       expect(campaignUpdate).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: { id: 'camp-1' },
+          where: { id: 'camp-1', workspaceId: 'ws-1' },
           data: { status: 'SCHEDULED' },
         }),
       );
@@ -148,9 +157,14 @@ describe('EmailMarketingService', () => {
             findFirst: campaignFindFirst,
             findFirstOrThrow: campaignFindFirstOrThrow,
             update: campaignUpdate,
+            updateMany: campaignUpdateMany,
           },
           emailCampaignDelivery: { create: deliveryCreate },
-          emailCampaignRecipient: { update: recipientUpdate, findFirst: recipientFindFirst },
+          emailCampaignRecipient: {
+            update: recipientUpdate,
+            updateMany: recipientUpdateMany,
+            findFirst: recipientFindFirst,
+          },
           approvalRequest: { findFirst: approvalFindFirst },
         } as never,
         { sendEmail } as never,
@@ -197,12 +211,12 @@ describe('EmailMarketingService', () => {
 
       expect(recipientFindFirst).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: { providerMessageId: 'prov-1' },
+          where: { providerMessageId: 'prov-1', workspaceId: { not: '' } },
         }),
       );
-      expect(campaignUpdate).toHaveBeenCalledWith(
+      expect(campaignUpdateMany).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: { id: 'camp-1' },
+          where: { id: 'camp-1', workspaceId: 'ws-1' },
           data: { deliveredCount: { increment: 1 } },
         }),
       );
@@ -225,7 +239,7 @@ describe('EmailMarketingService', () => {
         event: 'OPENED',
       });
 
-      expect(campaignUpdate).toHaveBeenCalledWith(
+      expect(campaignUpdateMany).toHaveBeenCalledWith(
         expect.objectContaining({
           data: { openedCount: { increment: 1 } },
         }),
@@ -248,12 +262,12 @@ describe('EmailMarketingService', () => {
         event: 'UNSUBSCRIBED',
       });
 
-      expect(recipientUpdate).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: { id: 'r-1' },
-          data: expect.objectContaining({ status: 'UNSUBSCRIBED' }),
-        }),
-      );
+      const updateArgs = firstCallArg<{
+        where?: { id?: string; workspaceId?: string };
+        data?: { status?: string };
+      }>(recipientUpdateMany);
+      expect(updateArgs.where).toEqual({ id: 'r-1', workspaceId: 'ws-1' });
+      expect(updateArgs.data).toMatchObject({ status: 'UNSUBSCRIBED' });
     });
 
     it('returns false when no recipient is found for providerMessageId', async () => {

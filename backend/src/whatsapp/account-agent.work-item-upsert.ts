@@ -65,11 +65,14 @@ export async function upsertWorkItem(deps: AccountDeps, workspaceId: string, inp
     evidence: toJson(input.evidence),
     metadata: toJson(input.metadata),
   };
-  await deps.prisma.agentWorkItem.upsert({
-    where: { id },
-    update: upd,
-    create: createData,
-  });
+  if (prev) {
+    await deps.prisma.agentWorkItem.updateMany({
+      where: { id, workspaceId },
+      data: upd,
+    });
+  } else {
+    await deps.prisma.agentWorkItem.create({ data: createData });
+  }
   const changed =
     !prev ||
     prev.state !== input.state ||

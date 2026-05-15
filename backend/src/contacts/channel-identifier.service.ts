@@ -270,8 +270,8 @@ export class ChannelIdentifierService {
     if (!existing) {
       return null;
     }
-    await this.prisma.channelIdentifier.update({
-      where: { id: existing.id },
+    await this.prisma.channelIdentifier.updateMany({
+      where: { id: existing.id, workspaceId },
       data: { verifiedAt: new Date() },
     });
     return existing;

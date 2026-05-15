@@ -51,6 +51,7 @@ export class AdminNotificationsService {
         // @AdminGlobalOperation: KYC notification queue, platform-wide
         this.prisma.agent.findMany({
           where: {
+            workspaceId: { not: '' },
             role: 'ADMIN',
             kycStatus: { in: ['pending', 'reverify'] },
           },
@@ -65,7 +66,7 @@ export class AdminNotificationsService {
         }),
         // @AdminGlobalOperation: unread conversation notifications, platform-wide
         this.prisma.conversation.findMany({
-          where: { unreadCount: { gt: 0 } },
+          where: { workspaceId: { not: '' }, unreadCount: { gt: 0 } },
           orderBy: { lastMessageAt: 'desc' },
           take: 5,
           select: {

@@ -19,7 +19,7 @@ export class SitePublicController {
   async serveSite(@Param('slug') slug: string, @Res() res: Response) {
     // @PublicMetric: public site lookup by slug (slug is globally unique)
     const site = await this.prisma.kloelSite.findFirst({
-      where: { slug, published: true },
+      where: { slug, workspaceId: { not: '' }, published: true },
     });
 
     if (!site) {
@@ -32,11 +32,16 @@ export class SitePublicController {
 
     // Increment visits
     await this.prisma.kloelSite
-      .update({
-        where: { id: site.id },
+      .updateMany({
+        where: { id: site.id, workspaceId: site.workspaceId },
         data: { visits: { increment: 1 } },
       })
-      .catch((err) => this.logger.error('Failed to increment site visits', err.message));
+      .catch((err: unknown) =>
+        this.logger.error(
+          'Failed to increment site visits',
+          err instanceof Error ? err.message : String(err),
+        ),
+      );
 
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     return res.send(site.htmlContent);

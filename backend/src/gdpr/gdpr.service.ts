@@ -41,6 +41,27 @@ type GdprJobData = {
   workspaceId: string;
 };
 
+type GdprRequestReceipt = {
+  code: string;
+  status: GdprStatus;
+  requestedAt: Date;
+  message?: string;
+};
+
+type GdprVerificationReceipt = {
+  code: string;
+  status: 'PROCESSING';
+  message: string;
+};
+
+type GdprPublicStatus = {
+  code: string;
+  type: GdprType;
+  status: GdprStatus;
+  requestedAt: Date;
+  completedAt: Date | null;
+};
+
 /** Gdpr service. */
 @Injectable()
 export class GdprService implements OnModuleInit, OnModuleDestroy {
@@ -55,7 +76,7 @@ export class GdprService implements OnModuleInit, OnModuleDestroy {
     private readonly email: EmailService,
   ) {}
 
-  async onModuleInit(): Promise<void> {
+  onModuleInit(): void {
     try {
       const connection = createRedisClient({ maxRetriesPerRequest: null });
       this.queue = new Queue<GdprJobData>(GDPR_QUEUE, { connection });
@@ -100,7 +121,7 @@ export class GdprService implements OnModuleInit, OnModuleDestroy {
   }
 
   /** Request data export. */
-  async requestExport(userId: string, workspaceId: string) {
+  async requestExport(userId: string, workspaceId: string): Promise<GdprRequestReceipt> {
     const code = generateCode();
 
     const request = await this.prisma.gdprRequest.create({
@@ -119,7 +140,7 @@ export class GdprService implements OnModuleInit, OnModuleDestroy {
   }
 
   /** Request data deletion. */
-  async requestDeletion(userId: string, workspaceId: string) {
+  async requestDeletion(userId: string, workspaceId: string): Promise<GdprRequestReceipt> {
     const existing = await this.prisma.gdprRequest.findFirst({
       where: { workspaceId, userId, type: GdprType.DELETE, status: { not: GdprStatus.FAILED } },
       orderBy: { requestedAt: 'desc' },
@@ -157,7 +178,7 @@ export class GdprService implements OnModuleInit, OnModuleDestroy {
   }
 
   /** Verify identity with a JWT token and proceed with processing. */
-  async verifyIdentity(code: string, token: string) {
+  async verifyIdentity(code: string, token: string): Promise<GdprVerificationReceipt> {
     let payload: { sub: string; requestId: string };
     try {
       payload = this.jwt.verify<{ sub: string; requestId: string }>(token);
@@ -165,8 +186,8 @@ export class GdprService implements OnModuleInit, OnModuleDestroy {
       throw new UnauthorizedException('Token de verificação inválido ou expirado.');
     }
 
-    const request = await this.prisma.gdprRequest.findUnique({
-      where: { code: String(code || '').trim() },
+    const request = await this.prisma.gdprRequest.findFirst({
+      where: { code: String(code || '').trim(), workspaceId: { not: '' } },
       select: {
         id: true,
         userId: true,
@@ -188,8 +209,8 @@ export class GdprService implements OnModuleInit, OnModuleDestroy {
       throw new BadRequestException(`Solicitação já está em estado ${request.status}.`);
     }
 
-    await this.prisma.gdprRequest.update({
-      where: { id: request.id },
+    await this.prisma.gdprRequest.updateMany({
+      where: { id: request.id, workspaceId: request.workspaceId },
       data: { status: GdprStatus.VERIFYING },
     });
 
@@ -203,9 +224,9 @@ export class GdprService implements OnModuleInit, OnModuleDestroy {
   }
 
   /** Get status by code. */
-  async getStatus(code: string) {
-    const request = await this.prisma.gdprRequest.findUnique({
-      where: { code: String(code || '').trim() },
+  async getStatus(code: string): Promise<GdprPublicStatus> {
+    const request = await this.prisma.gdprRequest.findFirst({
+      where: { code: String(code || '').trim(), workspaceId: { not: '' } },
       select: {
         code: true,
         type: true,
@@ -225,13 +246,17 @@ export class GdprService implements OnModuleInit, OnModuleDestroy {
   /** Handle Facebook data deletion callback. */
   async handleFacebookCallback(signedRequest: string) {
     const payload = parseFacebookSignedRequest(signedRequest);
-    const providerUserId = String(payload.user_id || '').trim();
+    const userIdRaw = payload.user_id;
+    const providerUserId = String(
+      typeof userIdRaw === 'string' || typeof userIdRaw === 'number' ? userIdRaw : '',
+    ).trim();
     if (!providerUserId) {
       throw new BadRequestException('signed_request sem user_id.');
     }
 
     const agent = await this.prisma.agent.findFirst({
       where: {
+        workspaceId: { not: '' },
         OR: [
           { provider: 'facebook', providerId: providerUserId },
           {
@@ -331,8 +356,8 @@ export class GdprService implements OnModuleInit, OnModuleDestroy {
 
   private async markRequestFailed(requestId: string, errorMessage: string) {
     try {
-      await this.prisma.gdprRequest.update({
-        where: { id: requestId },
+      await this.prisma.gdprRequest.updateMany({
+        where: { id: requestId, workspaceId: { not: '' } },
         data: {
           status: GdprStatus.FAILED,
           completedAt: new Date(),

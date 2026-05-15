@@ -6,7 +6,6 @@ import { PlanLimitsService } from '../billing/plan-limits.service';
 import { KloelToolExecutorBillingService } from './kloel-tool-executor-billing.service';
 import { KloelToolExecutorCrmService } from './kloel-tool-executor-crm.service';
 import { KloelToolExecutorWhatsAppService } from './kloel-tool-executor-whatsapp.service';
-import { asProviderSettings } from '../whatsapp/provider-settings.types';
 jest.mock('./kloel-tool-executor.helpers', () => ({
   toolSaveProduct: jest.fn().mockResolvedValue({ success: true, message: 'Produto salvo.' }),
   toolListProducts: jest.fn().mockResolvedValue({ success: true, products: [] }),
@@ -16,9 +15,13 @@ jest.mock('./kloel-tool-executor.helpers', () => ({
   toolCreateFlow: jest.fn().mockResolvedValue({ success: true }),
 }));
 jest.mock('./openai-wrapper', () => ({}));
-jest.mock('../lib/openai-models', () => ({
-  resolveBackendOpenAIModel: jest.fn().mockReturnValue('gpt-4o'),
-}));
+jest.mock('../lib/openai-models', () => {
+  const actual = jest.requireActual<typeof import('../lib/openai-models')>('../lib/openai-models');
+  return {
+    ...actual,
+    resolveBackendOpenAIModel: jest.fn().mockReturnValue(actual.CANONICAL_MODEL_IDS.openAiTextOmni),
+  };
+});
 jest.mock('../common/products/legacy-products.util', () => ({
   filterLegacyProducts: jest.fn((products: unknown[]) => products),
 }));
@@ -26,6 +29,11 @@ type ExecutorPrismaMock = {
   workspace: { findUnique: jest.Mock; update: jest.Mock };
   $transaction: jest.Mock;
 };
+
+function isTransactionCallback(arg: unknown): arg is (tx: ExecutorPrismaMock) => unknown {
+  return typeof arg === 'function';
+}
+
 describe('KloelToolExecutorService', () => {
   let service: KloelToolExecutorService;
   let prisma: ExecutorPrismaMock;
@@ -46,7 +54,7 @@ describe('KloelToolExecutorService', () => {
         update: jest.fn().mockResolvedValue({}),
       },
       $transaction: jest.fn().mockImplementation((arg: unknown) => {
-        if (typeof arg === 'function') {
+        if (isTransactionCallback(arg)) {
           return arg(prisma);
         }
         return Promise.resolve(undefined);

@@ -21,6 +21,48 @@ jest.mock('../observability/metrics', () => ({
   },
 }));
 
+function firstCallArg<T>(mock: { mock: { calls: Array<[unknown, ...unknown[]]> } }): T {
+  const [arg] = mock.mock.calls[0] ?? [];
+  return arg as T;
+}
+
+type MailboxUpsertArgs = {
+  where?: {
+    workspaceId_provider_email?: {
+      workspaceId: string;
+      provider: MailboxProvider;
+      email: string;
+    };
+  };
+  create?: {
+    accessToken?: string;
+    refreshToken?: string;
+    providerAccountId?: string;
+    status?: MailboxStatus;
+  };
+  update?: {
+    accessToken?: string;
+    refreshToken?: string;
+    status?: MailboxStatus;
+  };
+};
+
+type IncomingEmailMessage = {
+  workspaceId?: string;
+  channel?: string;
+  externalId?: string;
+  from?: string;
+  fromName?: string;
+  content?: string;
+};
+
+function requestBodyFrom(init: RequestInit | undefined): string {
+  if (typeof init?.body !== 'string') {
+    throw new Error('Expected request body string');
+  }
+  return init.body;
+}
+
 describe('MailboxGmailOAuthService', () => {
   const upsert = jest.fn();
   const findFirst = jest.fn();
@@ -55,24 +97,14 @@ describe('MailboxGmailOAuthService', () => {
       mailboxConnection: { upsert, findFirst, update },
       contact: { findFirst: contactFindFirst },
     };
-    const gmailClient = new GmailClientService(
-      prismaStub as never,
-      config as never,
-    );
-    const handshake = new GmailOAuthHandshakeService(
-      prismaStub as never,
-      gmailClient,
-    );
+    const gmailClient = new GmailClientService(prismaStub as never, config as never);
+    const handshake = new GmailOAuthHandshakeService(prismaStub as never, gmailClient);
     const syncService = new GmailSyncService(
       prismaStub as never,
       omnichannel as never,
       gmailClient,
     );
-    const sendService = new GmailSendService(
-      prismaStub as never,
-      config as never,
-      gmailClient,
-    );
+    const sendService = new GmailSendService(prismaStub as never, config as never, gmailClient);
 
     service = new MailboxGmailOAuthService(
       prismaStub as never,
@@ -138,31 +170,25 @@ describe('MailboxGmailOAuthService', () => {
 
     const result = await service.completeOAuth('ws-1', 'auth-code', state);
 
-    expect(upsert).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: {
-          workspaceId_provider_email: {
-            workspaceId: 'ws-1',
-            provider: MailboxProvider.GMAIL,
-            email: 'owner@example.com',
-          },
-        },
-        create: expect.objectContaining({
-          accessToken: expect.not.stringContaining('plain-access-token'),
-          refreshToken: expect.not.stringContaining('plain-refresh-token'),
-          providerAccountId: 'google-account-1',
-          status: MailboxStatus.ACTIVE,
-        }),
-        update: expect.objectContaining({
-          accessToken: expect.not.stringContaining('plain-access-token'),
-          refreshToken: expect.not.stringContaining('plain-refresh-token'),
-          status: MailboxStatus.ACTIVE,
-        }),
-      }),
-    );
-    const call = upsert.mock.calls[0]?.[0];
-    expect(isEncryptedMailboxToken(call.create.accessToken)).toBe(true);
-    expect(isEncryptedMailboxToken(call.create.refreshToken)).toBe(true);
+    const call = firstCallArg<MailboxUpsertArgs>(upsert);
+    expect(call.where).toEqual({
+      workspaceId_provider_email: {
+        workspaceId: 'ws-1',
+        provider: MailboxProvider.GMAIL,
+        email: 'owner@example.com',
+      },
+    });
+    expect(call.create).toMatchObject({
+      providerAccountId: 'google-account-1',
+      status: MailboxStatus.ACTIVE,
+    });
+    expect(call.update).toMatchObject({ status: MailboxStatus.ACTIVE });
+    expect(call.create?.accessToken).not.toContain('plain-access-token');
+    expect(call.create?.refreshToken).not.toContain('plain-refresh-token');
+    expect(call.update?.accessToken).not.toContain('plain-access-token');
+    expect(call.update?.refreshToken).not.toContain('plain-refresh-token');
+    expect(isEncryptedMailboxToken(String(call.create?.accessToken))).toBe(true);
+    expect(isEncryptedMailboxToken(String(call.create?.refreshToken))).toBe(true);
     expect(result).toEqual(
       expect.objectContaining({
         connected: true,
@@ -171,7 +197,7 @@ describe('MailboxGmailOAuthService', () => {
         connectionId: 'mailbox-1',
       }),
     );
-    expect(mailboxMetrics.connected).toHaveBeenCalledWith('gmail', { workspace_id: 'ws-1' });
+    expect(mailboxMetrics.connected.mock.calls).toContainEqual(['gmail', { workspace_id: 'ws-1' }]);
   });
 
   it('rejects callbacks when Google does not grant a refresh token', async () => {
@@ -259,33 +285,35 @@ describe('MailboxGmailOAuthService', () => {
 
     const result = await service.syncLatestInbox('ws-1', 10);
 
-    expect(omnichannel.handleIncomingMessage).toHaveBeenCalledWith(
-      expect.objectContaining({
-        workspaceId: 'ws-1',
-        channel: 'EMAIL',
-        externalId: 'gmail:gmail-message-1',
-        from: 'lead@example.com',
-        fromName: 'Lead One',
-        content: expect.stringContaining('Quero comprar'),
-      }),
-    );
-    expect(update).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: { id: 'mailbox-1' },
-        data: expect.objectContaining({
-          lastErrorAt: null,
-          lastError: null,
-          metadata: expect.objectContaining({
-            syncedMessageIds: ['already-seen', 'gmail-message-1'],
-          }),
-        }),
-      }),
-    );
-    expect(result).toEqual(expect.objectContaining({ status: 'synced', imported: 1, seen: 2 }));
-    expect(mailboxMetrics.syncCompleted).toHaveBeenCalledWith('gmail', 1, 2, {
-      workspace_id: 'ws-1',
-      status: 'synced',
+    const incoming = firstCallArg<IncomingEmailMessage>(omnichannel.handleIncomingMessage);
+    expect(incoming).toMatchObject({
+      workspaceId: 'ws-1',
+      channel: 'EMAIL',
+      externalId: 'gmail:gmail-message-1',
+      from: 'lead@example.com',
+      fromName: 'Lead One',
     });
+    expect(incoming.content).toContain('Quero comprar');
+    const updateArgs = firstCallArg<{
+      where?: { id?: string; workspaceId?: string };
+      data?: { lastErrorAt?: null; lastError?: null; metadata?: { syncedMessageIds?: string[] } };
+    }>(update);
+    expect(updateArgs.where).toEqual({ id: 'mailbox-1', workspaceId: 'ws-1' });
+    expect(updateArgs.data).toMatchObject({
+      lastErrorAt: null,
+      lastError: null,
+      metadata: { syncedMessageIds: ['already-seen', 'gmail-message-1'] },
+    });
+    expect(result).toEqual(expect.objectContaining({ status: 'synced', imported: 1, seen: 2 }));
+    expect(mailboxMetrics.syncCompleted.mock.calls).toContainEqual([
+      'gmail',
+      1,
+      2,
+      {
+        workspace_id: 'ws-1',
+        status: 'synced',
+      },
+    ]);
   });
 
   it('sends Gmail outbound from the connected customer mailbox with unsubscribe header', async () => {
@@ -298,7 +326,7 @@ describe('MailboxGmailOAuthService', () => {
       expiresAt: new Date(Date.now() + 3600_000),
       metadata: {},
     });
-    jest.spyOn(global, 'fetch').mockResolvedValueOnce({
+    const fetchSpy = jest.spyOn(global, 'fetch').mockResolvedValueOnce({
       ok: true,
       json: async () => ({
         id: 'gmail-send-1',
@@ -313,9 +341,11 @@ describe('MailboxGmailOAuthService', () => {
       proactive: true,
     });
 
-    const fetchCall = (global.fetch as jest.Mock).mock.calls[0];
-    expect(fetchCall[0]).toBe('https://gmail.googleapis.com/gmail/v1/users/me/messages/send');
-    const body = JSON.parse(String(fetchCall[1].body)) as { raw: string };
+    const [fetchUrl, fetchInit] = fetchSpy.mock.calls[0] ?? [];
+    expect(fetchUrl).toBe('https://gmail.googleapis.com/gmail/v1/users/me/messages/send');
+    const body = JSON.parse(requestBodyFrom(fetchInit)) as {
+      raw: string;
+    };
     const rawMessage = Buffer.from(body.raw, 'base64url').toString('utf8');
     expect(rawMessage).toContain('From: owner@example.com');
     expect(rawMessage).toContain('To: lead@example.com');
@@ -330,7 +360,10 @@ describe('MailboxGmailOAuthService', () => {
         messageId: 'gmail-send-1',
       }),
     );
-    expect(mailboxMetrics.sendCompleted).toHaveBeenCalledWith('gmail', { workspace_id: 'ws-1' });
+    expect(mailboxMetrics.sendCompleted.mock.calls).toContainEqual([
+      'gmail',
+      { workspace_id: 'ws-1' },
+    ]);
   });
 
   it('suppresses proactive Gmail outbound when the contact opted out', async () => {
@@ -353,8 +386,11 @@ describe('MailboxGmailOAuthService', () => {
         reason: 'recipient_unsubscribed',
       }),
     );
-    expect(mailboxMetrics.sendSuppressed).toHaveBeenCalledWith('gmail', {
-      workspace_id: 'ws-1',
-    });
+    expect(mailboxMetrics.sendSuppressed.mock.calls).toContainEqual([
+      'gmail',
+      {
+        workspace_id: 'ws-1',
+      },
+    ]);
   });
 });

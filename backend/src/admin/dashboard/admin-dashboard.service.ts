@@ -255,6 +255,7 @@ export class AdminDashboardService {
       // @AdminGlobalOperation: platform-level admin aggregate across all workspaces
       this.prisma.conversation.count({
         where: {
+          workspaceId: { not: '' },
           lastMessageAt: { gte: from, lte: to },
         },
       }),

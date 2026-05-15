@@ -238,8 +238,8 @@ export class AgentRuntimeMemoryCuratorService {
           const hygieneState = this.computeHygieneState(ageMs, ttlMs);
 
           if (hygieneState === 'retired' && retentionScore < minRetention) {
-            await this.prisma.kloelMemory.update({
-              where: { id: row.id },
+            await this.prisma.kloelMemory.updateMany({
+              where: { id: row.id, workspaceId },
               data: {
                 category: 'agent_curated',
                 metadata: {
@@ -253,8 +253,8 @@ export class AgentRuntimeMemoryCuratorService {
             result.expired += 1;
             result.staleKeys.push(row.key);
           } else if (hygieneState === 'expired') {
-            await this.prisma.kloelMemory.update({
-              where: { id: row.id },
+            await this.prisma.kloelMemory.updateMany({
+              where: { id: row.id, workspaceId },
               data: {
                 metadata: {
                   ...record,

@@ -309,7 +309,7 @@ export class MailboxMicrosoftOAuthService {
         `Microsoft sendMail failed: status=${response.status} body=${errorBody.slice(0, 200)}`,
       );
       await this.prisma.mailboxConnection.update({
-        where: { id: connection.id },
+        where: { id: connection.id, workspaceId: connection.workspaceId },
         data: {
           lastErrorAt: new Date(),
           lastError: 'microsoft_send_failed',

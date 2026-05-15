@@ -1,18 +1,11 @@
-import {
-  BadRequestException,
-  Injectable,
-} from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { MailboxStatus } from '@prisma/client';
 import { ConfigService } from '@nestjs/config';
 import { StructuredLogger } from '../../logging/structured-logger';
 import { PrismaService } from '../../prisma/prisma.service';
 import { decryptMailboxToken, encryptMailboxToken } from '../mailbox-token-crypto';
 import { expiresAtFromSeconds } from './oauth-state';
-import {
-  requireClientId,
-  requireClientSecret,
-  resolveRedirectUri,
-} from './config-resolver';
+import { requireClientId, requireClientSecret, resolveRedirectUri } from './config-resolver';
 import { GOOGLE_TOKEN_URL, GOOGLE_USERINFO_URL, GMAIL_API_BASE } from './constants';
 import type {
   GmailMailboxRecord,
@@ -62,9 +55,7 @@ export class GmailClientService {
     return payload;
   }
 
-  async fetchUserInfo(
-    accessToken: string,
-  ): Promise<GoogleUserInfoResponse> {
+  async fetchUserInfo(accessToken: string): Promise<GoogleUserInfoResponse> {
     const response = await fetch(GOOGLE_USERINFO_URL, {
       headers: { Authorization: `Bearer ${accessToken}` },
       signal: AbortSignal.timeout(15000),
@@ -79,9 +70,7 @@ export class GmailClientService {
     return payload;
   }
 
-  async resolveAccessToken(
-    connection: GmailMailboxRecord,
-  ): Promise<string> {
+  async resolveAccessToken(connection: GmailMailboxRecord): Promise<string> {
     const currentAccessToken = decryptMailboxToken(connection.accessToken);
     if (currentAccessToken && this.tokenStillUsable(connection.expiresAt)) {
       return currentAccessToken;
@@ -107,7 +96,7 @@ export class GmailClientService {
     const payload = (await response.json().catch(() => ({}))) as GoogleTokenResponse;
     if (!response.ok || !payload.access_token) {
       await this.prisma.mailboxConnection.update({
-        where: { id: connection.id },
+        where: { id: connection.id, workspaceId: connection.workspaceId },
         data: {
           status: MailboxStatus.ERROR,
           lastErrorAt: new Date(),
@@ -118,7 +107,7 @@ export class GmailClientService {
     }
 
     await this.prisma.mailboxConnection.update({
-      where: { id: connection.id },
+      where: { id: connection.id, workspaceId: connection.workspaceId },
       data: {
         accessToken: encryptMailboxToken(payload.access_token) ?? null,
         expiresAt: expiresAtFromSeconds(payload.expires_in),
@@ -138,10 +127,7 @@ export class GmailClientService {
     return expiresAt.getTime() - Date.now() > 60_000;
   }
 
-  async listMessages(
-    accessToken: string,
-    limit: number,
-  ): Promise<GmailListResponse> {
+  async listMessages(accessToken: string, limit: number): Promise<GmailListResponse> {
     const url = new URL(`${GMAIL_API_BASE}/messages`);
     url.searchParams.set('maxResults', String(limit));
     url.searchParams.set('q', 'newer_than:7d -from:me');
@@ -156,13 +142,8 @@ export class GmailClientService {
     return payload;
   }
 
-  async getMessage(
-    accessToken: string,
-    messageId: string,
-  ): Promise<GmailMessageResponse> {
-    const url = new URL(
-      `${GMAIL_API_BASE}/messages/${encodeURIComponent(messageId)}`,
-    );
+  async getMessage(accessToken: string, messageId: string): Promise<GmailMessageResponse> {
+    const url = new URL(`${GMAIL_API_BASE}/messages/${encodeURIComponent(messageId)}`);
     url.searchParams.set('format', 'full');
     const response = await fetch(url.toString(), {
       headers: { Authorization: `Bearer ${accessToken}` },

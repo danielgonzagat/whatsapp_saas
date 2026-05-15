@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import type { AdminChatSession } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AdminAuditService } from '../audit/admin-audit.service';
 import { adminErrors } from '../common/admin-api-errors';
@@ -41,7 +42,7 @@ export class AdminChatSessionService {
     this.logger.debug?.(`AdminChatSessionService initialized`);
   }
 
-  async createSession(input: CreateSessionInput) {
+  async createSession(input: CreateSessionInput): Promise<AdminChatSession> {
     const session = await this.prisma.adminChatSession.create({
       data: {
         adminUserId: input.adminUserId,
@@ -62,7 +63,9 @@ export class AdminChatSessionService {
     return session;
   }
 
-  async listSessions(input: ListSessionsInput) {
+  async listSessions(
+    input: ListSessionsInput,
+  ): Promise<{ items: AdminChatSession[]; nextCursor: string | null }> {
     const take = Math.min(MAX_PAGE_SIZE, Math.max(1, input.take ?? DEFAULT_PAGE_SIZE));
 
     const sessions = await this.prisma.adminChatSession.findMany({
@@ -94,9 +97,9 @@ export class AdminChatSessionService {
     };
   }
 
-  async getSession(id: string, workspaceId: string) {
-    const session = await this.prisma.adminChatSession.findUnique({
-      where: { id },
+  async getSession(id: string, workspaceId: string): Promise<AdminChatSession> {
+    const session = await this.prisma.adminChatSession.findFirst({
+      where: { id, workspaceId, deletedAt: null },
       include: { messages: { orderBy: { createdAt: 'asc' } } },
     });
 
@@ -104,55 +107,43 @@ export class AdminChatSessionService {
       throw adminErrors.sessionNotFound();
     }
 
-    if (session.workspaceId !== workspaceId) {
-      throw adminErrors.forbidden();
-    }
-
-    if (session.deletedAt) {
-      throw adminErrors.sessionNotFound();
-    }
-
     return session;
   }
 
-  async updateSession(input: UpdateSessionInput) {
-    const session = await this.prisma.adminChatSession.findUnique({
-      where: { id: input.id },
+  async updateSession(input: UpdateSessionInput): Promise<AdminChatSession> {
+    const session = await this.prisma.adminChatSession.findFirst({
+      where: { id: input.id, workspaceId: input.workspaceId, deletedAt: null },
     });
 
-    if (!session || session.deletedAt) {
+    if (!session) {
       throw adminErrors.sessionNotFound();
     }
 
-    if (session.workspaceId !== input.workspaceId) {
-      throw adminErrors.forbidden();
-    }
-
-    const updated = await this.prisma.adminChatSession.update({
-      where: { id: input.id },
+    await this.prisma.adminChatSession.updateMany({
+      where: { id: input.id, workspaceId: input.workspaceId },
       data: { title: input.title?.trim() ?? null },
+    });
+
+    const updated = await this.prisma.adminChatSession.findFirstOrThrow({
+      where: { id: input.id, workspaceId: input.workspaceId, deletedAt: null },
     });
 
     return updated;
   }
 
-  async softDeleteSession(input: DeleteSessionInput) {
-    const session = await this.prisma.adminChatSession.findUnique({
-      where: { id: input.id },
+  async softDeleteSession(input: DeleteSessionInput): Promise<void> {
+    const session = await this.prisma.adminChatSession.findFirst({
+      where: { id: input.id, workspaceId: input.workspaceId, deletedAt: null },
     });
 
-    if (!session || session.deletedAt) {
+    if (!session) {
       throw adminErrors.sessionNotFound();
-    }
-
-    if (session.workspaceId !== input.workspaceId) {
-      throw adminErrors.forbidden();
     }
 
     const now = new Date();
 
-    await this.prisma.adminChatSession.update({
-      where: { id: input.id },
+    await this.prisma.adminChatSession.updateMany({
+      where: { id: input.id, workspaceId: input.workspaceId },
       data: { deletedAt: now },
     });
 

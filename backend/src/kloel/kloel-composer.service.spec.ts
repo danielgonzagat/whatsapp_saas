@@ -3,6 +3,7 @@ import { KloelComposerService } from './kloel-composer.service';
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { StorageService } from '../common/storage/storage.service';
 import { KLOEL_COMPOSER_E2E_GUARD, KloelComposerE2EGuard } from './kloel-composer-e2e-guard';
+import { CANONICAL_MODEL_IDS } from '../lib/openai-models';
 
 jest.mock('openai', () => ({
   default: jest.fn().mockImplementation(() => ({
@@ -15,12 +16,12 @@ jest.mock('openai', () => ({
 jest.mock('../lib/ai-models', () => ({
   resolveKloelCapabilityModel: jest.fn((capability: string) => {
     if (capability === 'search_web') {
-      return 'gpt-4o';
+      return CANONICAL_MODEL_IDS.openAiTextOmni;
     }
     if (capability === 'create_image') {
-      return 'dall-e-3';
+      return CANONICAL_MODEL_IDS.imageGeneration;
     }
-    return 'claude-sonnet';
+    return CANONICAL_MODEL_IDS.anthropicSonnetTest;
   }),
 }));
 
@@ -210,8 +211,7 @@ describe('KloelComposerService', () => {
   describe('error handling', () => {
     it('executeComposerCapability propagates search_web errors', async () => {
       e2EGuard.isEnabled = jest.fn().mockReturnValue(false);
-      const openai = (service as { openai: { responses: { create: jest.Mock } } })
-        .openai;
+      const openai = (service as { openai: { responses: { create: jest.Mock } } }).openai;
       if (openai?.responses?.create) {
         openai.responses.create.mockRejectedValue(new Error('API error'));
         await expect(

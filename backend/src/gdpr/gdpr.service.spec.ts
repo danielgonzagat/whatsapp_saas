@@ -8,8 +8,8 @@ import { PrismaService } from '../prisma/prisma.service';
 import { GdprService } from './gdpr.service';
 
 jest.mock('node:fs', () => {
-  const { Writable } = jest.requireActual('node:stream');
-  const actual = jest.requireActual('node:fs');
+  const { Writable } = jest.requireActual<typeof import('node:stream')>('node:stream');
+  const actual = jest.requireActual<typeof import('node:fs')>('node:fs');
   const stream = new Writable({ write: (_ch: unknown, _enc: unknown, cb: () => void) => cb() });
   stream.on = jest.fn().mockImplementation(function (
     this: Record<string, unknown>,
@@ -33,13 +33,15 @@ jest.mock('node:fs', () => {
 });
 
 jest.mock('node:os', () => ({
-  ...jest.requireActual('node:os'),
+  ...jest.requireActual<typeof import('node:os')>('node:os'),
   tmpdir: jest.fn(() => '/tmp'),
 }));
 
 jest.mock('../common/redis/redis.util', () => ({
   createRedisClient: jest.fn(() => {
-    const { RedisConfigurationError } = jest.requireActual('../common/redis/resolve-redis-url');
+    const { RedisConfigurationError } = jest.requireActual<
+      typeof import('../common/redis/resolve-redis-url')
+    >('../common/redis/resolve-redis-url');
     throw new RedisConfigurationError('Redis not available in test');
   }),
 }));
@@ -58,10 +60,37 @@ jest.mock('archiver', () => ({
   default: mockArchiver,
 }));
 
+function firstCallArg<T>(mock: { mock: { calls: Array<[unknown, ...unknown[]]> } }): T {
+  const [arg] = mock.mock.calls[0] ?? [];
+  return arg as T;
+}
+
 describe('GdprService', () => {
   let service: GdprService;
 
-  const agentRecord = {
+  type AgentRecord = {
+    id: string;
+    email: string;
+    name: string;
+    workspaceId: string;
+  };
+
+  type GdprRecord = {
+    id: string;
+    workspaceId: string;
+    userId: string;
+    type: GdprType;
+    code: string;
+    status: GdprStatus;
+    requestedAt: Date;
+    completedAt: Date | null;
+  };
+
+  type GdprFindFirstArgs = {
+    where?: { code?: string; id?: string; type?: GdprType };
+  };
+
+  const agentRecord: AgentRecord = {
     id: 'agent_1',
     email: 'user@kloel.com',
     name: 'Test User',
@@ -70,7 +99,7 @@ describe('GdprService', () => {
 
   const requestedAt = new Date('2026-05-10T12:00:00.000Z');
 
-  const gdprRecord = {
+  const gdprRecord: GdprRecord = {
     id: 'gdpr_1',
     workspaceId: 'ws_1',
     userId: 'agent_1',
@@ -81,64 +110,69 @@ describe('GdprService', () => {
     completedAt: null as Date | null,
   };
 
+  const prismaDelegates = {
+    gdprRequest: {
+      create: jest.fn<Promise<GdprRecord>, [unknown]>(),
+      findUnique: jest.fn<Promise<GdprRecord | null>, [unknown]>(),
+      findUniqueOrThrow: jest.fn<Promise<GdprRecord>, [unknown]>(),
+      findFirst: jest.fn<Promise<GdprRecord | null>, [GdprFindFirstArgs?]>(),
+      update: jest.fn<Promise<GdprRecord>, [unknown]>(),
+      updateMany: jest.fn<Promise<{ count: number }>, [unknown]>(),
+    },
+    agent: {
+      findUnique: jest.fn<Promise<AgentRecord | null>, [unknown]>(),
+      findFirst: jest.fn<Promise<AgentRecord | null>, [unknown]>(),
+      update: jest.fn<Promise<AgentRecord>, [unknown]>(),
+    },
+    refreshToken: {
+      updateMany: jest.fn<Promise<{ count: number }>, [unknown]>(),
+    },
+    socialAccount: {
+      updateMany: jest.fn<Promise<{ count: number }>, [unknown]>(),
+    },
+    magicLinkToken: {
+      updateMany: jest.fn<Promise<{ count: number }>, [unknown]>(),
+    },
+    auditLog: {
+      create: jest.fn<Promise<unknown>, [unknown]>(),
+    },
+    conversation: {
+      findMany: jest.fn<Promise<unknown[]>, [unknown]>(),
+      updateMany: jest.fn<Promise<{ count: number }>, [unknown]>(),
+    },
+    message: {
+      findMany: jest.fn<Promise<unknown[]>, [unknown]>(),
+      updateMany: jest.fn<Promise<{ count: number }>, [unknown]>(),
+    },
+    chatMessage: {
+      findMany: jest.fn<Promise<unknown[]>, [unknown]>(),
+      updateMany: jest.fn<Promise<{ count: number }>, [unknown]>(),
+    },
+  };
+
   const prismaMock = {
     $transaction: jest.fn((arg: unknown, _opts?: unknown) => {
       if (typeof arg === 'function') {
-        return (arg as (tx: typeof prismaMock) => unknown)(prismaMock);
+        return (arg as (tx: typeof prismaDelegates) => unknown)(prismaDelegates);
       }
       return Promise.all(arg as Promise<unknown>[]);
     }),
-    gdprRequest: {
-      create: jest.fn(),
-      findUnique: jest.fn(),
-      findUniqueOrThrow: jest.fn(),
-      findFirst: jest.fn(),
-      update: jest.fn(),
-    },
-    agent: {
-      findUnique: jest.fn(),
-      findFirst: jest.fn(),
-      update: jest.fn(),
-    },
-    refreshToken: {
-      updateMany: jest.fn(),
-    },
-    socialAccount: {
-      updateMany: jest.fn(),
-    },
-    magicLinkToken: {
-      updateMany: jest.fn(),
-    },
-    auditLog: {
-      create: jest.fn(),
-    },
-    conversation: {
-      findMany: jest.fn(),
-      updateMany: jest.fn(),
-    },
-    message: {
-      findMany: jest.fn(),
-      updateMany: jest.fn(),
-    },
-    chatMessage: {
-      findMany: jest.fn(),
-      updateMany: jest.fn(),
-    },
+    ...prismaDelegates,
   };
 
   const jwtMock = {
-    sign: jest.fn(),
-    verify: jest.fn(),
+    sign: jest.fn<string, [unknown, unknown?]>(),
+    verify: jest.fn<{ sub: string; requestId: string }, [string]>(),
   };
 
   const emailMock = {
-    sendEmail: jest.fn(),
-    sendDataDeletionConfirmationEmail: jest.fn(),
+    sendEmail: jest.fn<Promise<boolean>, [unknown]>(),
+    sendDataDeletionConfirmationEmail: jest.fn<Promise<boolean>, [string]>(),
   };
 
   const storageMock = {
-    upload: jest.fn(),
-    getSignedUrl: jest.fn(),
+    upload: jest.fn<Promise<{ url: string; path: string; size: number }>, [unknown, unknown]>(),
+    getSignedUrl: jest.fn<string, [string, unknown]>(),
   };
 
   beforeEach(async () => {
@@ -149,13 +183,24 @@ describe('GdprService', () => {
     prismaMock.gdprRequest.create.mockResolvedValue(gdprRecord);
     prismaMock.gdprRequest.findUnique.mockResolvedValue(gdprRecord);
     prismaMock.gdprRequest.findUniqueOrThrow.mockResolvedValue(gdprRecord);
-    prismaMock.gdprRequest.findFirst.mockResolvedValue(null);
+    prismaMock.gdprRequest.findFirst.mockImplementation(
+      (args?: { where?: { code?: string; id?: string; type?: GdprType } }) => {
+        if (args?.where?.type === GdprType.DELETE) {
+          return Promise.resolve(null);
+        }
+        if (args?.where?.id === gdprRecord.id || args?.where?.code) {
+          return Promise.resolve(gdprRecord);
+        }
+        return Promise.resolve(null);
+      },
+    );
     prismaMock.gdprRequest.update.mockResolvedValue({
       ...gdprRecord,
       status: GdprStatus.PROCESSING,
     });
+    prismaMock.gdprRequest.updateMany.mockResolvedValue({ count: 1 });
     prismaMock.agent.findUnique.mockResolvedValue(agentRecord);
-    prismaMock.agent.findFirst.mockResolvedValue(null);
+    prismaMock.agent.findFirst.mockResolvedValue(agentRecord);
     prismaMock.conversation.findMany.mockResolvedValue([]);
     prismaMock.conversation.updateMany.mockResolvedValue({ count: 0 });
     prismaMock.message.findMany.mockResolvedValue([]);
@@ -194,16 +239,15 @@ describe('GdprService', () => {
         requestedAt,
       });
       expect(typeof result.code).toBe('string');
-      expect(prismaMock.gdprRequest.create).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: expect.objectContaining({
-            userId: 'agent_1',
-            workspaceId: 'ws_1',
-            type: GdprType.EXPORT,
-            status: GdprStatus.PENDING,
-          }),
-        }),
-      );
+      const createArgs = firstCallArg<{
+        data?: { userId?: string; workspaceId?: string; type?: GdprType; status?: GdprStatus };
+      }>(prismaMock.gdprRequest.create);
+      expect(createArgs.data).toMatchObject({
+        userId: 'agent_1',
+        workspaceId: 'ws_1',
+        type: GdprType.EXPORT,
+        status: GdprStatus.PENDING,
+      });
       expect(emailMock.sendEmail).toHaveBeenCalled();
     });
 
@@ -220,14 +264,10 @@ describe('GdprService', () => {
 
       await service.requestDeletion('agent_1', 'ws_1');
 
-      expect(prismaMock.gdprRequest.findFirst).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: expect.objectContaining({
-            workspaceId: 'ws_1',
-            userId: 'agent_1',
-          }),
-        }),
+      const findArgs = firstCallArg<{ where?: { workspaceId?: string; userId?: string } }>(
+        prismaMock.gdprRequest.findFirst,
       );
+      expect(findArgs.where).toMatchObject({ workspaceId: 'ws_1', userId: 'agent_1' });
     });
 
     it('creates a new deletion request when no existing one', async () => {
@@ -239,13 +279,10 @@ describe('GdprService', () => {
         requestedAt,
       });
       expect(typeof result.code).toBe('string');
-      expect(prismaMock.gdprRequest.create).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: expect.objectContaining({
-            type: GdprType.DELETE,
-          }),
-        }),
+      const createArgs = firstCallArg<{ data?: { type?: GdprType } }>(
+        prismaMock.gdprRequest.create,
       );
+      expect(createArgs.data).toMatchObject({ type: GdprType.DELETE });
     });
 
     it('returns existing pending deletion request without creating new one', async () => {
@@ -304,9 +341,9 @@ describe('GdprService', () => {
         message: 'Solicitação verificada e em processamento.',
       });
       expect(jwtMock.verify).toHaveBeenCalledWith('valid-token');
-      expect(prismaMock.gdprRequest.update).toHaveBeenCalledWith(
+      expect(prismaMock.gdprRequest.updateMany).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: { id: 'gdpr_1' },
+          where: { id: 'gdpr_1', workspaceId: 'ws_1' },
           data: { status: GdprStatus.VERIFYING },
         }),
       );
@@ -323,7 +360,7 @@ describe('GdprService', () => {
     });
 
     it('throws NotFoundException for unknown code', async () => {
-      prismaMock.gdprRequest.findUnique.mockResolvedValueOnce(null);
+      prismaMock.gdprRequest.findFirst.mockResolvedValueOnce(null);
 
       await expect(service.verifyIdentity('unknown', 'valid-token')).rejects.toThrow(
         NotFoundException,
@@ -339,7 +376,7 @@ describe('GdprService', () => {
     });
 
     it('throws BadRequestException when request is not in PENDING state', async () => {
-      prismaMock.gdprRequest.findUnique.mockResolvedValueOnce({
+      prismaMock.gdprRequest.findFirst.mockResolvedValueOnce({
         ...gdprRecord,
         status: GdprStatus.VERIFYING,
       });
@@ -364,7 +401,7 @@ describe('GdprService', () => {
     });
 
     it('throws NotFoundException for unknown code', async () => {
-      prismaMock.gdprRequest.findUnique.mockResolvedValueOnce(null);
+      prismaMock.gdprRequest.findFirst.mockResolvedValueOnce(null);
 
       await expect(service.getStatus('unknown')).rejects.toThrow(NotFoundException);
     });

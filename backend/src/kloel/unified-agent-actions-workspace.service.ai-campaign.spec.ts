@@ -3,6 +3,10 @@ import { UnifiedAgentActionsWorkspaceService } from './unified-agent-actions-wor
 import { PrismaService } from '../prisma/prisma.service';
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
+import { CANONICAL_MODEL_IDS } from '../lib/openai-models';
+import { chatCompletionWithFallback } from './openai-wrapper';
+import { actionGetWorkspaceStatus } from './unified-agent-actions-workspace.helpers';
+
 jest.mock('./openai-wrapper', () => ({
   chatCompletionWithFallback: jest.fn(),
 }));
@@ -24,10 +28,17 @@ type WorkspacePrismaMock = {
   campaign: { updateMany: jest.Mock };
   $transaction: jest.Mock;
 };
+
+function isWorkspaceTransaction(fnOrArg: unknown): fnOrArg is (tx: WorkspacePrismaMock) => unknown {
+  return typeof fnOrArg === 'function';
+}
+
 describe('UnifiedAgentActionsWorkspaceService', () => {
   let service: UnifiedAgentActionsWorkspaceService;
   let prisma: WorkspacePrismaMock;
   let planLimits: Pick<PlanLimitsService, 'ensureTokenBudget' | 'trackAiUsage'>;
+  const actionGetWorkspaceStatusMock = jest.mocked(actionGetWorkspaceStatus);
+  const chatCompletionWithFallbackMock = jest.mocked(chatCompletionWithFallback);
   const wsId = 'ws-1';
   beforeEach(async () => {
     prisma = {
@@ -60,7 +71,7 @@ describe('UnifiedAgentActionsWorkspaceService', () => {
       $transaction: jest
         .fn()
         .mockImplementation((fnOrArg: unknown) =>
-          typeof fnOrArg === 'function' ? fnOrArg(prisma) : Promise.resolve(undefined),
+          isWorkspaceTransaction(fnOrArg) ? fnOrArg(prisma) : Promise.resolve(undefined),
         ),
     };
     planLimits = {
@@ -86,14 +97,13 @@ describe('UnifiedAgentActionsWorkspaceService', () => {
         wsId,
         { description: 'test', objective: 'sell' },
         null,
-        'gpt-4',
-        'gpt-3.5-turbo',
+        CANONICAL_MODEL_IDS.openAiLegacyGpt4,
+        CANONICAL_MODEL_IDS.openAiLegacyGpt35Turbo,
       );
       expect(result.success).toBe(false);
       expect(result.error).toContain('OpenAI');
     });
     it('creates flow via OpenAI completion', async () => {
-      const { chatCompletionWithFallback } = require('./openai-wrapper');
       const fakeCompletion = {
         choices: [
           {
@@ -108,33 +118,35 @@ describe('UnifiedAgentActionsWorkspaceService', () => {
         ],
         usage: { total_tokens: 500 },
       };
-      chatCompletionWithFallback.mockResolvedValue(fakeCompletion);
+      chatCompletionWithFallbackMock.mockResolvedValue(fakeCompletion);
       const result = await service.actionCreateFlowFromDescription(
         wsId,
         { description: 'Sell product', objective: 'convert', autoActivate: true },
         { apiKey: 'fake' },
-        'gpt-4',
-        'gpt-3.5-turbo',
+        CANONICAL_MODEL_IDS.openAiLegacyGpt4,
+        CANONICAL_MODEL_IDS.openAiLegacyGpt35Turbo,
       );
       expect(result.success).toBe(true);
       expect(result.flowId).toBeDefined();
-      expect(chatCompletionWithFallback).toHaveBeenCalled();
+      expect(chatCompletionWithFallbackMock).toHaveBeenCalled();
       expect(planLimits.ensureTokenBudget).toHaveBeenCalledWith(wsId);
-      expect(prisma.flow.create).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: expect.objectContaining({ workspaceId: wsId, isActive: true }),
-        }),
-      );
+      const [[createArg]] = prisma.flow.create.mock.calls as Array<
+        [
+          {
+            data: { isActive: boolean; workspaceId: string };
+          },
+        ]
+      >;
+      expect(createArg).toMatchObject({ data: { workspaceId: wsId, isActive: true } });
     });
     it('handles OpenAI error gracefully', async () => {
-      const { chatCompletionWithFallback } = require('./openai-wrapper');
-      chatCompletionWithFallback.mockRejectedValue(new Error('API error'));
+      chatCompletionWithFallbackMock.mockRejectedValue(new Error('API error'));
       const result = await service.actionCreateFlowFromDescription(
         wsId,
         { description: 'test', objective: 'sell' },
         { apiKey: 'fake' },
-        'gpt-4',
-        'gpt-3.5-turbo',
+        CANONICAL_MODEL_IDS.openAiLegacyGpt4,
+        CANONICAL_MODEL_IDS.openAiLegacyGpt35Turbo,
       );
       expect(result.success).toBe(false);
     });
@@ -159,14 +171,13 @@ describe('UnifiedAgentActionsWorkspaceService', () => {
   });
   describe('actionGetWorkspaceStatus', () => {
     it('delegates to helper', async () => {
-      const { actionGetWorkspaceStatus } = require('./unified-agent-actions-workspace.helpers');
-      actionGetWorkspaceStatus.mockResolvedValue({
+      actionGetWorkspaceStatusMock.mockResolvedValue({
         workspaceId: wsId,
         health: { status: 'healthy' },
       });
       const result = await service.actionGetWorkspaceStatus(wsId, {});
       expect(result.workspaceId).toBe(wsId);
-      expect(actionGetWorkspaceStatus).toHaveBeenCalledWith(
+      expect(actionGetWorkspaceStatusMock).toHaveBeenCalledWith(
         expect.objectContaining({ workspaceId: wsId }),
       );
     });
@@ -174,23 +185,36 @@ describe('UnifiedAgentActionsWorkspaceService', () => {
   describe('workspace isolation', () => {
     it('actionCreateProduct scopes to workspaceId', async () => {
       await service.actionCreateProduct('ws-tenant', { name: 'X', price: 1 });
-      expect(prisma.product.findFirst).toHaveBeenCalledWith(
-        expect.objectContaining({ where: expect.objectContaining({ workspaceId: 'ws-tenant' }) }),
-      );
+      const [[findFirstArg]] = prisma.product.findFirst.mock.calls as Array<
+        [
+          {
+            where: { workspaceId: string };
+          },
+        ]
+      >;
+      expect(findFirstArg).toMatchObject({ where: { workspaceId: 'ws-tenant' } });
     });
     it('actionCreateFlow scopes to workspaceId', async () => {
       await service.actionCreateFlow('ws-tenant', { name: 'Flow A', trigger: 'welcome' });
-      expect(prisma.kloelMemory.create).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: expect.objectContaining({ workspaceId: 'ws-tenant' }),
-        }),
-      );
+      const [[createArg]] = prisma.kloelMemory.create.mock.calls as Array<
+        [
+          {
+            data: { workspaceId: string };
+          },
+        ]
+      >;
+      expect(createArg).toMatchObject({ data: { workspaceId: 'ws-tenant' } });
     });
     it('actionCreateBroadcast counts contacts by workspaceId', async () => {
       await service.actionCreateBroadcast('ws-tenant', { name: 'B', message: 'M' });
-      expect(prisma.contact.count).toHaveBeenCalledWith(
-        expect.objectContaining({ where: expect.objectContaining({ workspaceId: 'ws-tenant' }) }),
-      );
+      const [[countArg]] = prisma.contact.count.mock.calls as Array<
+        [
+          {
+            where: { workspaceId: string };
+          },
+        ]
+      >;
+      expect(countArg).toMatchObject({ where: { workspaceId: 'ws-tenant' } });
     });
   });
 });

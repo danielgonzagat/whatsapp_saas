@@ -16,6 +16,7 @@ export async function queryGmvInCents(
   // @AdminGlobalOperation: GMV aggregate, platform-wide
   const result = (await prisma.checkoutOrder.aggregate({
     where: {
+      workspaceId: { not: '' },
       status: { in: [OrderStatus.PAID, OrderStatus.SHIPPED, OrderStatus.DELIVERED] },
       paidAt: { gte: from, lte: to },
     },

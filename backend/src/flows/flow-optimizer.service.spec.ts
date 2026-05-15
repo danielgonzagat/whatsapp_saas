@@ -4,7 +4,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { FlowOptimizerService } from './flow-optimizer.service';
 
-const chatCompletionWithRetryMock = jest.fn();
+const chatCompletionWithRetryMock = jest.fn<Promise<unknown>, unknown[]>();
 jest.mock('../kloel/openai-wrapper', () => ({
   chatCompletionWithRetry: (...args: unknown[]) => chatCompletionWithRetryMock(...args),
 }));
@@ -12,9 +12,13 @@ jest.mock('openai', () => ({
   __esModule: true,
   default: jest.fn().mockImplementation(() => ({})),
 }));
-jest.mock('../lib/openai-models', () => ({
-  resolveBackendOpenAIModel: () => 'gpt-stub',
-}));
+jest.mock('../lib/openai-models', () => {
+  const actual = jest.requireActual<typeof import('../lib/openai-models')>('../lib/openai-models');
+  return {
+    ...actual,
+    resolveBackendOpenAIModel: () => actual.CANONICAL_MODEL_IDS.openAiTextStub,
+  };
+});
 
 describe('FlowOptimizerService', () => {
   let service: FlowOptimizerService;
@@ -106,13 +110,15 @@ describe('FlowOptimizerService', () => {
 
     expect(planLimits.ensureTokenBudget).toHaveBeenCalledWith('ws-1');
     expect(planLimits.trackAiUsage).toHaveBeenCalledWith('ws-1', 250);
-    expect(prisma.flowVersion.create).toHaveBeenCalledWith({
-      data: expect.objectContaining({
-        flowId: 'f-1',
-        workspaceId: 'ws-1',
-        label: expect.stringContaining('simplify'),
-      }),
-    });
+    const [[createArg]] = prisma.flowVersion.create.mock.calls as Array<
+      [
+        {
+          data: { flowId: string; label: string; workspaceId: string };
+        },
+      ]
+    >;
+    expect(createArg).toMatchObject({ data: { flowId: 'f-1', workspaceId: 'ws-1' } });
+    expect(JSON.stringify(createArg)).toContain('simplify');
   });
 
   it('does not create a FlowVersion when model returns invalid JSON', async () => {

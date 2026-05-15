@@ -69,12 +69,20 @@ export const decisionOutcomeWorker = new Worker(
 
         if (data.outcomeKey) {
           const openRows = await prisma.decisionOutcome.findMany({
-            where: { outcomeKey: data.outcomeKey, outcomeAt: null },
+            where: {
+              workspaceId: data.workspaceId,
+              outcomeKey: data.outcomeKey,
+              outcomeAt: null,
+            },
             select: { id: true, contextSnapshot: true, decisionType: true, chosenAction: true },
           });
 
           const updateResult = await prisma.decisionOutcome.updateMany({
-            where: { outcomeKey: data.outcomeKey, outcomeAt: null },
+            where: {
+              workspaceId: data.workspaceId,
+              outcomeKey: data.outcomeKey,
+              outcomeAt: null,
+            },
             data: {
               outcomeAt: new Date(),
               outcomeName: mapping?.outcomeName ?? data.eventType,
@@ -155,7 +163,7 @@ export const decisionOutcomeWorker = new Worker(
 
         if (expired.length > 0) {
           await prisma.decisionOutcome.updateMany({
-            where: { id: { in: expired.map((e) => e.id) } },
+            where: { id: { in: expired.map((e) => e.id) }, workspaceId },
             data: {
               outcomeAt: new Date(),
               outcomeName: 'inbound.silent_24h',

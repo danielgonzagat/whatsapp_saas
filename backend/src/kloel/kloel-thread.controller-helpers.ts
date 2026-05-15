@@ -201,9 +201,12 @@ export async function updateThreadMessage(
     ...normalizeMessageMetadata(existing.metadata),
     editedAt: new Date().toISOString(),
   };
-  const [message] = await deps.prisma.$transaction(
+  await deps.prisma.$transaction(
     [
-      deps.prisma.chatMessage.update({ where: { id }, data: { content, metadata: nextMetadata } }),
+      deps.prisma.chatMessage.updateMany({
+        where: { id, workspaceId },
+        data: { content, metadata: nextMetadata },
+      }),
       deps.prisma.chatThread.updateMany({
         where: { id: existing.threadId, workspaceId },
         data: { updatedAt: new Date() },
@@ -211,6 +214,9 @@ export async function updateThreadMessage(
     ],
     { isolationLevel: 'ReadCommitted' },
   );
+  const message = await deps.prisma.chatMessage.findFirstOrThrow({
+    where: { id, workspaceId },
+  });
   return message;
 }
 
@@ -245,6 +251,10 @@ export async function updateMessageFeedback(
       ...normalizeMessageMetadata(existing.metadata),
       feedback: type ? { type, updatedAt: new Date().toISOString() } : null,
     };
-    return tx.chatMessage.update({ where: { id }, data: { metadata: nextMetadata } });
+    await tx.chatMessage.updateMany({
+      where: { id, workspaceId },
+      data: { metadata: nextMetadata },
+    });
+    return tx.chatMessage.findFirstOrThrow({ where: { id, workspaceId } });
   });
 }

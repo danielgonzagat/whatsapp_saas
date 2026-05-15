@@ -178,6 +178,7 @@ export function buildMicrosoftMailboxMetadata(
 
 interface MicrosoftTokenConnection {
   id: string;
+  workspaceId: string;
   accessToken: string | null;
   refreshToken: string | null;
   expiresAt: Date | null;
@@ -186,7 +187,7 @@ interface MicrosoftTokenConnection {
 interface MicrosoftTokenPrisma {
   mailboxConnection: {
     update(input: {
-      where: { id: string };
+      where: { id: string; workspaceId: string };
       data: {
         accessToken?: string | null;
         expiresAt?: Date | null;
@@ -234,7 +235,7 @@ export async function resolveMicrosoftAccessToken(input: {
   const payload = (await response.json().catch(() => ({}))) as MicrosoftTokenResponse;
   if (!response.ok || !payload.access_token) {
     await input.prisma.mailboxConnection.update({
-      where: { id: input.connection.id },
+      where: { id: input.connection.id, workspaceId: input.connection.workspaceId },
       data: {
         status: MailboxStatus.ERROR,
         lastErrorAt: new Date(),
@@ -244,7 +245,7 @@ export async function resolveMicrosoftAccessToken(input: {
     throw new BadRequestException('microsoft_refresh_failed');
   }
   await input.prisma.mailboxConnection.update({
-    where: { id: input.connection.id },
+    where: { id: input.connection.id, workspaceId: input.connection.workspaceId },
     data: {
       accessToken: encryptMailboxToken(payload.access_token) ?? null,
       expiresAt: expiresAtFromSeconds(payload.expires_in),

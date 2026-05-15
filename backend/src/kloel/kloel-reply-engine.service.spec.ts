@@ -6,6 +6,7 @@ import { KloelThreadService } from './kloel-thread.service';
 import { KloelWorkspaceContextService } from './kloel-workspace-context.service';
 import { UnifiedAgentService } from './unified-agent.service';
 import { MarketingSkillService } from './marketing-skills/marketing-skill.service';
+import { CANONICAL_MODEL_IDS } from '../lib/openai-models';
 
 jest.mock('openai', () => ({
   default: jest.fn().mockImplementation(() => ({
@@ -22,7 +23,7 @@ jest.mock('./openai-wrapper', () => ({
 }));
 
 jest.mock('../lib/openai-models', () => ({
-  resolveBackendOpenAIModel: jest.fn().mockReturnValue('gpt-4o'),
+  resolveBackendOpenAIModel: jest.fn().mockReturnValue(CANONICAL_MODEL_IDS.openAiTextOmni),
 }));
 
 jest.mock('./kloel-reply-engine.helpers', () => ({

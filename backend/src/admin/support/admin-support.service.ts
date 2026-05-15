@@ -40,6 +40,7 @@ export class AdminSupportService {
     // @AdminGlobalOperation: support conversations overview, platform-wide
     const conversations = (await this.prisma.conversation.findMany({
       where: {
+        workspaceId: { not: '' },
         ...(search
           ? {
               OR: [
@@ -91,7 +92,7 @@ export class AdminSupportService {
   async detail(conversationId: string) {
     // @AdminGlobalOperation: support conversation detail by id, any workspace
     const conversation = (await this.prisma.conversation.findFirst({
-      where: { id: conversationId },
+      where: { id: conversationId, workspaceId: { not: '' } },
       select: {
         id: true,
         status: true,

@@ -90,7 +90,7 @@ export class GmailSendService {
     const payload = (await response.json().catch(() => ({}))) as GmailSendResponse;
     if (!response.ok || !payload.id) {
       await this.prisma.mailboxConnection.update({
-        where: { id: connection.id },
+        where: { id: connection.id, workspaceId: connection.workspaceId },
         data: {
           lastErrorAt: new Date(),
           lastError: 'gmail_send_failed',

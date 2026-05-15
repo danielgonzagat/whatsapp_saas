@@ -24,6 +24,19 @@ const DEFAULT_MODELS: Record<BackendOpenAIModelRole, string> = {
   audio_understanding_fallback: 'gpt-4o-mini-transcribe',
 };
 
+export const CANONICAL_MODEL_IDS = {
+  imageGeneration: DEFAULT_MODELS.image_generation,
+  openAiTextMini: 'gpt-4o-mini',
+  openAiTextOmni: 'gpt-4o',
+  openAiTextMock: 'gpt-4o-mock',
+  openAiTextStub: 'gpt-stub',
+  openAiLegacyGpt4: 'gpt-4',
+  openAiLegacyGpt35: 'gpt-3.5',
+  openAiLegacyGpt35Turbo: 'gpt-3.5-turbo',
+  anthropicHealthProbe: 'claude-3-haiku-20240307',
+  anthropicSonnetTest: 'claude-sonnet',
+} as const;
+
 // Ordered ENV keys per role. First non-empty value wins.
 const MODEL_ENV_KEYS: Record<BackendOpenAIModelRole, readonly string[]> = {
   brain: ['DEEPSEEK_BRAIN_MODEL', 'LLM_BRAIN_MODEL', 'OPENAI_BRAIN_MODEL'],

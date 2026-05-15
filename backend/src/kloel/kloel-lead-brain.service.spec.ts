@@ -13,9 +13,13 @@ jest.mock('./openai-wrapper', () => ({
   }),
 }));
 
-jest.mock('../lib/openai-models', () => ({
-  resolveBackendOpenAIModel: jest.fn().mockReturnValue('gpt-4o'),
-}));
+jest.mock('../lib/openai-models', () => {
+  const actual = jest.requireActual<typeof import('../lib/openai-models')>('../lib/openai-models');
+  return {
+    ...actual,
+    resolveBackendOpenAIModel: jest.fn().mockReturnValue(actual.CANONICAL_MODEL_IDS.openAiTextOmni),
+  };
+});
 
 jest.mock('openai', () => ({
   default: jest.fn().mockImplementation(() => ({
@@ -123,11 +127,16 @@ describe('KloelLeadBrainService', () => {
     it('creates lead with workspaceId and phone', async () => {
       const lead = await service.getOrCreateLead(wsId, '5511999999999');
       expect(lead.id).toBe('lead-1');
-      expect(prisma.kloelLead.create).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: expect.objectContaining({ workspaceId: wsId, phone: '5511999999999' }),
-        }),
-      );
+      const [[createArg]] = prisma.kloelLead.create.mock.calls as Array<
+        [
+          {
+            data: { phone: string; workspaceId: string };
+          },
+        ]
+      >;
+      expect(createArg).toMatchObject({
+        data: { workspaceId: wsId, phone: '5511999999999' },
+      });
     });
 
     it('returns existing lead when found', async () => {
@@ -148,15 +157,20 @@ describe('KloelLeadBrainService', () => {
   describe('saveLeadMessage', () => {
     it('creates conversation entry for valid lead', async () => {
       await service.saveLeadMessage('lead-1', wsId, 'user', 'Minha mensagem');
-      expect(prisma.kloelConversation.create).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: expect.objectContaining({
-            leadId: 'lead-1',
-            role: 'user',
-            content: 'Minha mensagem',
-          }),
-        }),
-      );
+      const [[createArg]] = prisma.kloelConversation.create.mock.calls as Array<
+        [
+          {
+            data: { content: string; leadId: string; role: string };
+          },
+        ]
+      >;
+      expect(createArg).toMatchObject({
+        data: {
+          leadId: 'lead-1',
+          role: 'user',
+          content: 'Minha mensagem',
+        },
+      });
     });
 
     it('does not create when lead not found', async () => {
@@ -169,12 +183,18 @@ describe('KloelLeadBrainService', () => {
   describe('updateLeadFromConversation', () => {
     it('updates lead with high buy intent', async () => {
       await service.updateLeadFromConversation(wsId, 'lead-1', 'Quero comprar agora', 'Resposta');
-      expect(prisma.kloelLead.updateMany).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: { id: 'lead-1', workspaceId: wsId },
-          data: expect.objectContaining({ stage: 'negotiation' }),
-        }),
-      );
+      const [[updateArg]] = prisma.kloelLead.updateMany.mock.calls as Array<
+        [
+          {
+            data: { stage: string };
+            where: { id: string; workspaceId: string };
+          },
+        ]
+      >;
+      expect(updateArg).toMatchObject({
+        where: { id: 'lead-1', workspaceId: wsId },
+        data: { stage: 'negotiation' },
+      });
     });
 
     it('updates lead with objection intent', async () => {
@@ -184,12 +204,18 @@ describe('KloelLeadBrainService', () => {
         'Muito caro, não posso pagar isso',
         'Resposta',
       );
-      expect(prisma.kloelLead.updateMany).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: { id: 'lead-1', workspaceId: wsId },
-          data: expect.objectContaining({ stage: 'objection' }),
-        }),
-      );
+      const [[updateArg]] = prisma.kloelLead.updateMany.mock.calls as Array<
+        [
+          {
+            data: { stage: string };
+            where: { id: string; workspaceId: string };
+          },
+        ]
+      >;
+      expect(updateArg).toMatchObject({
+        where: { id: 'lead-1', workspaceId: wsId },
+        data: { stage: 'objection' },
+      });
     });
 
     it('handles errors gracefully', async () => {

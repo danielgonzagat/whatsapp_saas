@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
+import { kloelT } from '@/lib/i18n/t';
 import { KLOEL_THEME } from '@/lib/kloel-theme';
 import type { ChannelKey } from '../OfficialMarketingChannelPage.helpers';
 import { CHANNEL_META } from '../OfficialMarketingChannelPage.helpers';
 
-export const SETUP_STEPS = ['Conexão', 'Produtos', 'Arsenal', 'Configuração'] as const;
+export const SETUP_STEPS = Object.freeze(['Conexão', 'Produtos', 'Arsenal', 'Configuração'] as const);
 
 interface Props {
   currentStep: number;
@@ -61,7 +62,7 @@ export function SetupSteps({ currentStep, setupLoaded, channel, onStepClick }: P
         >
           <button
             type="button"
-            aria-label={`Passo ${index + 1}`}
+            aria-label={`${kloelT(`Passo`)} ${index + 1}`}
             disabled={!setupLoaded}
             onClick={() => onStepClick(index)}
             style={{

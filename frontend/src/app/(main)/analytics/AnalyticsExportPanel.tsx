@@ -8,18 +8,11 @@ import { V } from './analytics.design-tokens';
 import { ICONS } from './shared/Icons';
 import { Button } from './shared/Components';
 import { chartCardStyle } from './analytics.design-tokens';
+import { REPORT_CARDS } from './analytics-export-panel.data';
 import { buildUrl, resolveExportEndpoint } from './analytics.helpers';
 import type { ReportFilters, SetPage, ReportRow } from './analytics.types';
 
 const PATTERN_RE = /"/g;
-const REPORT_CARDS = [
-  { key: 'vendas', label: 'Vendas', desc: 'Resumo completo de pedidos e receita do periodo.' },
-  { key: 'assinaturas', label: 'Assinaturas', desc: 'Base recorrente, status e proximas cobrancas.' },
-  { key: 'abandonos', label: 'Abandonos', desc: 'Checkouts nao concluidos e valor perdido.' },
-  { key: 'chargeback', label: 'Chargebacks', desc: 'Disputas, valores e historico de perda/ganho.' },
-  { key: 'engajamento', label: 'Engajamento', desc: 'Mensagens, contatos e performance operacional.' },
-  { key: 'satisfacao', label: 'Satisfacao', desc: 'NPS, comentarios e visao de experiencia do cliente.' },
-] as const;
 
 export function useExportReport(filters: ReportFilters) {
   const exportReport = useCallback(

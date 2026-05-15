@@ -10,34 +10,10 @@ import { PlanPaymentTab } from '@/components/plans/PlanPaymentTab';
 import { PlanShippingTab } from '@/components/plans/PlanShippingTab';
 import { PlanStoreTab } from '@/components/plans/PlanStoreTab';
 import { PlanThankYouTab } from '@/components/plans/PlanThankYouTab';
-import {
-  ArrowLeft,
-  Brain,
-  CreditCard,
-  Package,
-  ScrollText,
-  ShoppingCart,
-  Store,
-  Truck,
-  Users,
-} from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { useParams, useRouter } from 'next/navigation';
 import { useState } from 'react';
-
-// ============================================
-// SUB-TABS
-// ============================================
-
-const SUB_TABS = [
-  { id: 'store', label: 'Loja', icon: Store },
-  { id: 'payment', label: 'Pagamento', icon: CreditCard },
-  { id: 'packaging', label: 'Embalagem', icon: Package },
-  { id: 'shipping', label: 'Frete', icon: Truck },
-  { id: 'affiliate', label: 'Afiliacao', icon: Users },
-  { id: 'orderbump', label: 'Order Bump', icon: ShoppingCart },
-  { id: 'terms', label: 'Termos', icon: ScrollText },
-  { id: 'ai', label: 'IA', icon: Brain },
-];
+import { SUB_TABS } from './plan-detail-tabs';
 
 // ============================================
 // MAIN PAGE

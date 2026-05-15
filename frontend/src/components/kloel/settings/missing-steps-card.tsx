@@ -1,17 +1,9 @@
 'use client';
 
 import { kloelT } from '@/lib/i18n/t';
-import {
-  CheckCircle2,
-  Circle,
-  CreditCard,
-  FileText,
-  HelpCircle,
-  MessageSquare,
-  Package,
-  Smartphone,
-} from 'lucide-react';
+import { CheckCircle2, Circle } from 'lucide-react';
 import { SettingsCard, SettingsHeader, SettingsInset } from './contract';
+import { buildMissingSteps } from './missing-steps-card.helpers';
 
 interface MissingStepsCardProps {
   hasProducts: boolean;
@@ -33,15 +25,15 @@ export function MissingStepsCard({
   hasOpeningMessage = false,
   hasWhatsApp = false,
 }: MissingStepsCardProps) {
-  const steps = [
-    { label: 'Cadastrar produtos', done: hasProducts, icon: Package },
-    { label: 'Enviar arquivos', done: hasFiles, icon: FileText },
-    { label: 'Configurar planos de checkout', done: hasCheckout, icon: CreditCard },
-    { label: 'Definir tom de voz', done: hasVoiceTone, icon: MessageSquare },
-    { label: 'Adicionar perguntas frequentes', done: hasFaq, icon: HelpCircle },
-    { label: 'Configurar mensagem de abertura', done: hasOpeningMessage, icon: MessageSquare },
-    { label: 'Conectar WhatsApp', done: hasWhatsApp, icon: Smartphone },
-  ];
+  const steps = buildMissingSteps({
+    hasCheckout,
+    hasFaq,
+    hasFiles,
+    hasOpeningMessage,
+    hasProducts,
+    hasVoiceTone,
+    hasWhatsApp,
+  });
 
   const completedCount = steps.filter((s) => s.done).length;
   const allCompleted = completedCount === steps.length;

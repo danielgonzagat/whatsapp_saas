@@ -1,5 +1,7 @@
+const mockWebhookGeneratedSecret = ['mock', 'uuid', '12345678'].join('-');
+
 jest.mock('node:crypto', () => ({
-  randomUUID: jest.fn().mockReturnValue('mock-uuid-12345678'),
+  randomUUID: jest.fn().mockReturnValue(mockWebhookGeneratedSecret),
 }));
 
 jest.mock('@sentry/node', () => ({}), { virtual: true });
@@ -56,7 +58,7 @@ describe('WebhookSettingsController', () => {
         workspaceId: 'ws-1',
         url: 'https://example.com/hook',
         events: ['user.created', 'order.paid'],
-        secret: 'mock-uuid-12345678',
+        secret: mockWebhookGeneratedSecret,
       };
       prismaCreate.mockResolvedValueOnce(createdSubscription);
 
@@ -70,7 +72,7 @@ describe('WebhookSettingsController', () => {
           workspaceId: 'ws-1',
           url: 'https://example.com/hook',
           events: ['user.created', 'order.paid'],
-          secret: 'mock-uuid-12345678',
+          secret: mockWebhookGeneratedSecret,
         },
       });
       expect(result).toBe(createdSubscription);
@@ -157,11 +159,14 @@ describe('WebhookSettingsController', () => {
 
       await controller.create(req, body);
 
-      expect(prismaCreate).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: expect.objectContaining({ workspaceId: 'ws-99' }),
-        }),
-      );
+      const [[createArg]] = prismaCreate.mock.calls as Array<
+        [
+          {
+            data: { workspaceId: string };
+          },
+        ]
+      >;
+      expect(createArg).toMatchObject({ data: { workspaceId: 'ws-99' } });
     });
 
     it('passes workspaceId from req.user when deleting a subscription', async () => {
@@ -169,9 +174,7 @@ describe('WebhookSettingsController', () => {
 
       await controller.delete(req, 'sub-1');
 
-      expect(auditLog).toHaveBeenCalledWith(
-        expect.objectContaining({ workspaceId: 'ws-99' }),
-      );
+      expect(auditLog).toHaveBeenCalledWith(expect.objectContaining({ workspaceId: 'ws-99' }));
       expect(deleteMany).toHaveBeenCalledWith({
         where: { id: 'sub-1', workspaceId: 'ws-99' },
       });

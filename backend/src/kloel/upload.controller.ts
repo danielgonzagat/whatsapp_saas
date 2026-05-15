@@ -103,6 +103,32 @@ export class UploadController {
     return companionDeleteStored(this.storageService, this.logger, this.opsAlert, relativePath);
   }
 
+  private validateUploadedFile(file: UploadedFileType) {
+    const detectedMime = detectUploadedMime(file);
+    if (!detectedMime) {
+      throw new BadRequestException('Tipo de arquivo não permitido ou assinatura inválida.');
+    }
+    if (!ALLOWED_UPLOAD_MIMES.has(detectedMime)) {
+      throw new BadRequestException(
+        `Tipo de arquivo não suportado neste endpoint: ${detectedMime}`,
+      );
+    }
+    file.mimetype = detectedMime;
+  }
+
+  private async processUploadedFileResult(file: UploadedFileType, workspaceId: string) {
+    this.validateUploadedFile(file);
+    const result = await this.processFile(file, workspaceId);
+
+    return {
+      success: true,
+      filename: file.originalname,
+      size: file.size,
+      mimetype: file.mimetype,
+      ...result,
+    };
+  }
+
   private estimatePdfAnalysisQuote(text: string, sourceName: string): bigint | undefined {
     try {
       return estimateOpenAiChatQuoteCostCents({
@@ -216,14 +242,15 @@ export class UploadController {
       void this.opsAlert?.alertOnCriticalError(error, 'UploadController.refundUsageCharge');
       this.logger.error(
         `Failed to refund upload pdf_analysis workspace=${workspaceId} request=${requestId}: ${
-          error instanceof Error
-            ? error instanceof Error
-              ? error.message
-              : String(error)
-            : String(error)
+          error instanceof Error ? error.message : String(error)
         }`,
       );
     }
+  }
+
+  async uploadFile(file: UploadedFileType, req: AuthenticatedRequest) {
+    const workspaceId = resolveWorkspaceId(req);
+    return this.processUploadedFileResult(file, workspaceId);
   }
 
   /**
@@ -266,25 +293,8 @@ export class UploadController {
         return;
       }
       try {
-        const detectedMime = detectUploadedMime(file);
-        if (!detectedMime) {
-          throw new BadRequestException('Tipo de arquivo não permitido ou assinatura inválida.');
-        }
-        if (!ALLOWED_UPLOAD_MIMES.has(detectedMime)) {
-          throw new BadRequestException(
-            `Tipo de arquivo não suportado neste endpoint: ${detectedMime}`,
-          );
-        }
-        file.mimetype = detectedMime;
-
-        const result = await this.processFile(file, workspaceId);
-        results.push({
-          success: true,
-          filename: file.originalname,
-          size: file.size,
-          mimetype: file.mimetype,
-          ...result,
-        });
+        const result = await this.processUploadedFileResult(file, workspaceId);
+        results.push(result);
       } catch (error: unknown) {
         void this.opsAlert?.alertOnCriticalError(error, 'UploadController.push');
         results.push({

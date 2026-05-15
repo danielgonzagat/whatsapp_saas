@@ -3,6 +3,8 @@ import { UnifiedAgentResponseService } from './unified-agent-response.service';
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import OpenAI from 'openai';
 import type { ActionEntry } from './unified-agent.types';
+import { CANONICAL_MODEL_IDS } from '../lib/openai-models';
+import { chatCompletionWithFallback } from './openai-wrapper';
 
 jest.mock('./openai-wrapper', () => ({
   chatCompletionWithFallback: jest.fn(),
@@ -18,6 +20,7 @@ describe('UnifiedAgentResponseService', () => {
   let service: UnifiedAgentResponseService;
   let planLimits: PlanLimitsService;
   let planLimitsMock: { ensureTokenBudget: jest.Mock; trackAiUsage: jest.Mock };
+  const chatCompletionWithFallbackMock = jest.mocked(chatCompletionWithFallback);
 
   const wsId = 'ws-1';
 
@@ -44,39 +47,48 @@ describe('UnifiedAgentResponseService', () => {
 
   describe('composeWriterReply', () => {
     it('returns fallback reply when OpenAI is null', async () => {
-      const result = await service.composeWriterReply(null, 'gpt-4', 'gpt-3.5', {
-        customerMessage: 'Oi',
-        assistantDraft: 'Olá, como vai?',
-        actions: [],
-        historyTurns: 0,
-      });
+      const result = await service.composeWriterReply(
+        null,
+        CANONICAL_MODEL_IDS.openAiLegacyGpt4,
+        CANONICAL_MODEL_IDS.openAiLegacyGpt35,
+        {
+          customerMessage: 'Oi',
+          assistantDraft: 'Olá, como vai?',
+          actions: [],
+          historyTurns: 0,
+        },
+      );
 
       expect(result).toContain('Olá');
     });
 
     it('returns undefined when draft and message are empty', async () => {
-      const result = await service.composeWriterReply(null, 'gpt-4', 'gpt-3.5', {
-        customerMessage: '',
-        assistantDraft: null,
-        actions: [],
-        historyTurns: 0,
-      });
+      const result = await service.composeWriterReply(
+        null,
+        CANONICAL_MODEL_IDS.openAiLegacyGpt4,
+        CANONICAL_MODEL_IDS.openAiLegacyGpt35,
+        {
+          customerMessage: '',
+          assistantDraft: null,
+          actions: [],
+          historyTurns: 0,
+        },
+      );
 
       expect(result).toBeUndefined();
     });
 
     it('calls OpenAI with correct params', async () => {
-      const { chatCompletionWithFallback } = require('./openai-wrapper');
       const fakeCompletion = {
         choices: [{ message: { content: 'Olá! Como posso te ajudar hoje?' } }],
         usage: { total_tokens: 100 },
       };
-      chatCompletionWithFallback.mockResolvedValue(fakeCompletion);
+      chatCompletionWithFallbackMock.mockResolvedValue(fakeCompletion);
 
       const result = await service.composeWriterReply(
         new OpenAI({ apiKey: 'test-key' }),
-        'gpt-4',
-        'gpt-3.5',
+        CANONICAL_MODEL_IDS.openAiLegacyGpt4,
+        CANONICAL_MODEL_IDS.openAiLegacyGpt35,
         {
           workspaceId: wsId,
           customerMessage: 'Oi',
@@ -87,18 +99,17 @@ describe('UnifiedAgentResponseService', () => {
       );
 
       expect(result).toContain('ajudar');
-      expect(chatCompletionWithFallback).toHaveBeenCalled();
+      expect(chatCompletionWithFallbackMock).toHaveBeenCalled();
       expect(planLimitsMock.ensureTokenBudget).toHaveBeenCalledWith(wsId);
     });
 
     it('falls back on OpenAI error', async () => {
-      const { chatCompletionWithFallback } = require('./openai-wrapper');
-      chatCompletionWithFallback.mockRejectedValue(new Error('API error'));
+      chatCompletionWithFallbackMock.mockRejectedValue(new Error('API error'));
 
       const result = await service.composeWriterReply(
         new OpenAI({ apiKey: 'test-key' }),
-        'gpt-4',
-        'gpt-3.5',
+        CANONICAL_MODEL_IDS.openAiLegacyGpt4,
+        CANONICAL_MODEL_IDS.openAiLegacyGpt35,
         {
           customerMessage: 'Oi',
           assistantDraft: 'Olá, como vai?',
@@ -111,19 +122,23 @@ describe('UnifiedAgentResponseService', () => {
     });
 
     it('tracks AI usage when workspaceId provided', async () => {
-      const { chatCompletionWithFallback } = require('./openai-wrapper');
-      chatCompletionWithFallback.mockResolvedValue({
+      chatCompletionWithFallbackMock.mockResolvedValue({
         choices: [{ message: { content: 'Resposta' } }],
         usage: { total_tokens: 200 },
       });
 
-      await service.composeWriterReply(new OpenAI({ apiKey: 'test-key' }), 'gpt-4', 'gpt-3.5', {
-        workspaceId: wsId,
-        customerMessage: 'Oi',
-        assistantDraft: null,
-        actions: [],
-        historyTurns: 0,
-      });
+      await service.composeWriterReply(
+        new OpenAI({ apiKey: 'test-key' }),
+        CANONICAL_MODEL_IDS.openAiLegacyGpt4,
+        CANONICAL_MODEL_IDS.openAiLegacyGpt35,
+        {
+          workspaceId: wsId,
+          customerMessage: 'Oi',
+          assistantDraft: null,
+          actions: [],
+          historyTurns: 0,
+        },
+      );
 
       expect(planLimitsMock.trackAiUsage).toHaveBeenCalledWith(wsId, 200);
     });
@@ -160,29 +175,40 @@ describe('UnifiedAgentResponseService', () => {
 
   describe('buildQuotedReplyPlan', () => {
     it('returns empty array for empty messages', async () => {
-      const result = await service.buildQuotedReplyPlan(null, 'gpt-4', 'gpt-3.5', planLimits, {
-        workspaceId: wsId,
-        draftReply: 'Oi',
-        customerMessages: [],
-      });
+      const result = await service.buildQuotedReplyPlan(
+        null,
+        CANONICAL_MODEL_IDS.openAiLegacyGpt4,
+        CANONICAL_MODEL_IDS.openAiLegacyGpt35,
+        planLimits,
+        {
+          workspaceId: wsId,
+          draftReply: 'Oi',
+          customerMessages: [],
+        },
+      );
 
       expect(result).toEqual([]);
     });
 
     it('uses fallback for single message', async () => {
-      const result = await service.buildQuotedReplyPlan(null, 'gpt-4', 'gpt-3.5', planLimits, {
-        workspaceId: wsId,
-        draftReply: 'Olá, como vai?',
-        customerMessages: [{ content: 'Oi', quotedMessageId: 'msg-1' }],
-      });
+      const result = await service.buildQuotedReplyPlan(
+        null,
+        CANONICAL_MODEL_IDS.openAiLegacyGpt4,
+        CANONICAL_MODEL_IDS.openAiLegacyGpt35,
+        planLimits,
+        {
+          workspaceId: wsId,
+          draftReply: 'Olá, como vai?',
+          customerMessages: [{ content: 'Oi', quotedMessageId: 'msg-1' }],
+        },
+      );
 
       expect(result).toHaveLength(1);
       expect(result[0].quotedMessageId).toBe('msg-1');
     });
 
     it('calls OpenAI for multiple messages', async () => {
-      const { chatCompletionWithFallback } = require('./openai-wrapper');
-      chatCompletionWithFallback.mockResolvedValue({
+      chatCompletionWithFallbackMock.mockResolvedValue({
         choices: [
           {
             message: {
@@ -196,8 +222,8 @@ describe('UnifiedAgentResponseService', () => {
 
       const result = await service.buildQuotedReplyPlan(
         new OpenAI({ apiKey: 'test-key' }),
-        'gpt-4',
-        'gpt-3.5',
+        CANONICAL_MODEL_IDS.openAiLegacyGpt4,
+        CANONICAL_MODEL_IDS.openAiLegacyGpt35,
         planLimits,
         {
           workspaceId: wsId,
@@ -213,13 +239,12 @@ describe('UnifiedAgentResponseService', () => {
     });
 
     it('falls back on OpenAI error', async () => {
-      const { chatCompletionWithFallback } = require('./openai-wrapper');
-      chatCompletionWithFallback.mockRejectedValue(new Error('API error'));
+      chatCompletionWithFallbackMock.mockRejectedValue(new Error('API error'));
 
       const result = await service.buildQuotedReplyPlan(
         new OpenAI({ apiKey: 'test-key' }),
-        'gpt-4',
-        'gpt-3.5',
+        CANONICAL_MODEL_IDS.openAiLegacyGpt4,
+        CANONICAL_MODEL_IDS.openAiLegacyGpt35,
         planLimits,
         {
           workspaceId: wsId,
@@ -235,8 +260,7 @@ describe('UnifiedAgentResponseService', () => {
     });
 
     it('falls back when OpenAI returns wrong count', async () => {
-      const { chatCompletionWithFallback } = require('./openai-wrapper');
-      chatCompletionWithFallback.mockResolvedValue({
+      chatCompletionWithFallbackMock.mockResolvedValue({
         choices: [
           {
             message: { content: '{"replies":[{"index":1,"text":"Apenas uma"}]}' },
@@ -247,8 +271,8 @@ describe('UnifiedAgentResponseService', () => {
 
       const result = await service.buildQuotedReplyPlan(
         new OpenAI({ apiKey: 'test-key' }),
-        'gpt-4',
-        'gpt-3.5',
+        CANONICAL_MODEL_IDS.openAiLegacyGpt4,
+        CANONICAL_MODEL_IDS.openAiLegacyGpt35,
         planLimits,
         {
           workspaceId: wsId,
@@ -326,7 +350,7 @@ describe('UnifiedAgentResponseService', () => {
       const response: OpenAI.Chat.Completions.ChatCompletion = {
         id: 'cmpl-test-1',
         created: Math.floor(Date.now() / 1000),
-        model: 'gpt-4',
+        model: CANONICAL_MODEL_IDS.openAiLegacyGpt4,
         object: 'chat.completion',
         choices: [
           {
@@ -370,7 +394,7 @@ describe('UnifiedAgentResponseService', () => {
       const response: OpenAI.Chat.Completions.ChatCompletion = {
         id: 'cmpl-test-2',
         created: Math.floor(Date.now() / 1000),
-        model: 'gpt-4',
+        model: CANONICAL_MODEL_IDS.openAiLegacyGpt4,
         object: 'chat.completion',
         choices: [
           {

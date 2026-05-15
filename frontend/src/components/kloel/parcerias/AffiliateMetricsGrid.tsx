@@ -1,10 +1,8 @@
 'use client';
-import { colors } from '@/lib/design-tokens';
 
-import { kloelT } from '@/lib/i18n/t';
 import type { Affiliate, AffiliatePerformance } from './partnershipTypes';
-import { IC } from './ParceriasView.icons';
 import { C, FONT } from './ParceriasDesignTokens';
+import { buildAffiliateMetricCards } from './AffiliateMetricsGrid.helpers';
 
 export default function AffiliateMetricsGrid({
   affiliate,
@@ -20,12 +18,12 @@ export default function AffiliateMetricsGrid({
   const totalRevenue = perfData?.totalRevenue ?? a.revenue ?? 0;
   const commission = perfData?.commission ?? a.commission ?? 0;
 
-  const cards = [
-    { label: kloelT(`Vendas`), value: totalSales, icon: IC.box, color: C.text },
-    { label: kloelT(`Comissao`), value: `${commission}%`, icon: IC.dollar, color: C.ember },
-    { label: kloelT(`Receita`), value: 'R$ ' + Number(totalRevenue).toLocaleString('pt-BR', { minimumFractionDigits: 0 }), icon: IC.trend, color: C.text },
-    { label: kloelT(`Temperatura`), value: `${a.temperature || 0}`, icon: IC.star, color: (a.temperature || 0) > 70 ? colors.semantic.success : colors.semantic.warning },
-  ];
+  const cards = buildAffiliateMetricCards({
+    commission,
+    temperature: a.temperature || 0,
+    totalRevenue,
+    totalSales,
+  });
 
   return (
     <div

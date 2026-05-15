@@ -288,7 +288,7 @@ export class MailboxImapSmtpService {
     } catch (error) {
       const reason = error instanceof Error ? error.message.slice(0, 100) : 'smtp_send_failed';
       await this.prisma.mailboxConnection.update({
-        where: { id: connection.id },
+        where: { id: connection.id, workspaceId: connection.workspaceId },
         data: {
           lastErrorAt: new Date(),
           lastError: reason,

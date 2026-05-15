@@ -12,7 +12,12 @@ jest.mock('openai', () => ({
 }));
 
 jest.mock('../lib/ai-models', () => ({
-  resolveKloelCapabilityModel: jest.fn().mockReturnValue('dall-e-3'),
+  resolveKloelCapabilityModel: jest
+    .fn()
+    .mockReturnValue(
+      jest.requireActual<typeof import('../lib/openai-models')>('../lib/openai-models')
+        .CANONICAL_MODEL_IDS.imageGeneration,
+    ),
 }));
 
 describe('CanvasController', () => {
@@ -105,19 +110,30 @@ describe('CanvasController', () => {
       });
 
       const dto = { name: 'My Design', format: 'instagram-post', width: 1080, height: 1080 };
-      const result = await controller.createDesign(mockReq, dto as never);
+      const result = await controller.createDesign(mockReq, dto);
 
-      expect(kloelDesignCreate).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: expect.objectContaining({
-            workspaceId: 'ws-1',
-            name: 'My Design',
-            format: 'instagram-post',
-            width: 1080,
-            height: 1080,
-          }),
-        }),
-      );
+      const [[createArg]] = kloelDesignCreate.mock.calls as Array<
+        [
+          {
+            data: {
+              format: string;
+              height: number;
+              name: string;
+              width: number;
+              workspaceId: string;
+            };
+          },
+        ]
+      >;
+      expect(createArg).toMatchObject({
+        data: {
+          workspaceId: 'ws-1',
+          name: 'My Design',
+          format: 'instagram-post',
+          width: 1080,
+          height: 1080,
+        },
+      });
       expect(result.success).toBe(true);
       expect(result.design.id).toBe('design-1');
     });
@@ -172,7 +188,7 @@ describe('CanvasController', () => {
     it('throws ServiceUnavailableException when OPENAI_API_KEY is not set', async () => {
       process.env.OPENAI_API_KEY = '';
 
-      await expect(controller.generateImage(mockReq, { prompt: 'test' } as never)).rejects.toThrow(
+      await expect(controller.generateImage(mockReq, { prompt: 'test' })).rejects.toThrow(
         ServiceUnavailableException,
       );
     });
@@ -180,7 +196,7 @@ describe('CanvasController', () => {
     it('generates an image when OPENAI_API_KEY is configured', async () => {
       process.env.OPENAI_API_KEY = 'sk-test-key';
 
-      const result = await controller.generateImage(mockReq, { prompt: 'test prompt' } as never);
+      const result = await controller.generateImage(mockReq, { prompt: 'test prompt' });
 
       expect(ensureTokenBudget).toHaveBeenCalledWith('ws-1');
       expect(trackAiUsage).toHaveBeenCalledWith('ws-1', 1000);
@@ -222,7 +238,7 @@ describe('CanvasController', () => {
         name: 'Updated',
         elements: [],
       };
-      const result = await controller.updateDesign(mockReq, 'design-1', dto as never);
+      const result = await controller.updateDesign(mockReq, 'design-1', dto);
 
       expect(kloelDesignFindFirst).toHaveBeenCalledWith({
         where: { id: 'design-1', workspaceId: 'ws-1' },
@@ -237,9 +253,9 @@ describe('CanvasController', () => {
     it('throws NotFoundException when design does not exist', async () => {
       kloelDesignFindFirst.mockResolvedValue(null);
 
-      await expect(
-        controller.updateDesign(mockReq, 'nonexistent', { name: 'X' } as never),
-      ).rejects.toThrow(NotFoundException);
+      await expect(controller.updateDesign(mockReq, 'nonexistent', { name: 'X' })).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 });

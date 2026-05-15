@@ -49,7 +49,7 @@ export class GmailSyncService {
       }
 
       await this.prisma.mailboxConnection.update({
-        where: { id: connection.id },
+        where: { id: connection.id, workspaceId: connection.workspaceId },
         data: {
           lastSyncAt: new Date(),
           lastErrorAt: null,

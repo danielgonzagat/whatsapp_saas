@@ -2,8 +2,9 @@
 
 import { useResponsiveViewport } from '@/hooks/useResponsiveViewport';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { useState, useEffect, useRef, useCallback, startTransition } from 'react';
-import { IC, SORA, EMBER, TEXT, TEXT_DIM } from './SitesViewIcons';
+import { useCallback, startTransition } from 'react';
+import { SORA, EMBER, TEXT, TEXT_DIM } from './SitesViewIcons';
+import { SITE_TABS } from './SitesView.tabs';
 import { VisaoGeral } from './VisaoGeral';
 import { Dominios } from './Dominios';
 import { Hospedagem } from './Hospedagem';
@@ -17,27 +18,11 @@ export default function SitesView({ defaultTab = 'visao-geral' }: { defaultTab?:
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const [tab, setTab] = useState(defaultTab);
-  const prevDefault = useRef(defaultTab);
-
-  useEffect(() => {
-    if (prevDefault.current !== defaultTab) { setTab(defaultTab); prevDefault.current = defaultTab; }
-  }, [defaultTab]);
+  const tab = defaultTab;
 
   const rawMode = searchParams?.get('mode') ?? null;
 
-  const TABS = [
-    { id: 'visao-geral', label: 'Visao Geral', icon: IC.globe },
-    { id: 'dominios', label: 'Dominios', icon: IC.link },
-    { id: 'hospedagem', label: 'Hospedagem', icon: IC.server },
-    { id: 'criar', label: 'Criar Site', icon: IC.site },
-    { id: 'editar', label: 'Editar Site', icon: IC.edit },
-    { id: 'apps', label: 'Apps', icon: IC.puzzle },
-    { id: 'protecao', label: 'Protecao', icon: IC.shield },
-  ];
-
   const switchTab = useCallback((id: string) => {
-    setTab(id);
     const nextRoute = id === 'visao-geral' ? '/sites' : `/sites/${id}`;
     if (pathname === nextRoute) {return;}
     startTransition(() => { router.push(nextRoute); });
@@ -51,7 +36,7 @@ export default function SitesView({ defaultTab = 'visao-geral' }: { defaultTab?:
       `}</style>
 
       <div style={{ display: 'flex', gap: 4, marginBottom: 24, overflowX: 'auto', paddingBottom: 8, maxWidth: 1240, marginInline: 'auto' }}>
-        {TABS.map((t) => (
+        {SITE_TABS.map((t) => (
           <button key={t.id} type="button" onClick={() => switchTab(t.id)}
             style={{ fontFamily: SORA, fontSize: isMobile ? 11 : 12, padding: isMobile ? '8px 12px' : '8px 14px', borderRadius: 6, border: 'none', cursor: 'pointer', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: 6, background: tab === t.id ? `${EMBER}20` : 'transparent', color: tab === t.id ? EMBER : TEXT_DIM, transition: 'all .2s' }}>
             <span style={{ display: 'flex', alignItems: 'center' }}>{t.icon(14)}</span>

@@ -109,7 +109,8 @@ export class MemoryManagementService {
     const start = Date.now();
 
     // @CrossWorkspaceMaintenance: cleanup audit metric, global by design
-    const totalBefore = (await this.prisma.kloelMemory.count()) || 0;
+    const totalBefore =
+      (await this.prisma.kloelMemory.count({ where: { workspaceId: { not: '' } } })) || 0;
 
     // 1. Remover memórias expiradas
     const expiredRemoved = await this.removeExpiredMemories();
@@ -121,7 +122,8 @@ export class MemoryManagementService {
     const orphansRemoved = await this.removeOrphans();
 
     // @CrossWorkspaceMaintenance: cleanup audit metric, global by design
-    const totalAfter = (await this.prisma.kloelMemory.count()) || 0;
+    const totalAfter =
+      (await this.prisma.kloelMemory.count({ where: { workspaceId: { not: '' } } })) || 0;
 
     const result: MemoryCleanupResult = {
       expiredRemoved,
@@ -182,6 +184,7 @@ export class MemoryManagementService {
         // @CrossWorkspaceMaintenance: cron purge of expired memories across all workspaces
         const result = await this.prisma.kloelMemory.deleteMany({
           where: {
+            workspaceId: { not: '' },
             category,
             updatedAt: { lt: cutoffDate },
           },
@@ -212,12 +215,19 @@ export class MemoryManagementService {
       // @CrossWorkspaceMaintenance: cron purge of uncategorized stale memories
       const result = await this.prisma.kloelMemory.deleteMany({
         where: {
+          workspaceId: { not: '' },
           category: { notIn: knownCategories },
           updatedAt: { lt: defaultCutoff },
         },
       });
       totalRemoved += result.count;
-    } catch {}
+    } catch (error: unknown) {
+      this.logger.warn(
+        `Failed to remove stale uncategorized memories: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+    }
 
     return totalRemoved;
   }

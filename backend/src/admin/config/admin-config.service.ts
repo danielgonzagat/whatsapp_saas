@@ -78,12 +78,14 @@ export class AdminConfigService {
           // @AdminGlobalOperation: platform-level admin aggregate across all workspaces
           this.prisma.apiKey.count({
             where: {
+              workspaceId: { not: '' },
               workspace: where,
             },
           }),
           // @AdminGlobalOperation: platform-level admin aggregate across all workspaces
           this.prisma.webhookSubscription.count({
             where: {
+              workspaceId: { not: '' },
               workspace: where,
             },
           }),

@@ -40,8 +40,8 @@ export async function processGdprExport(
     select: { id: true, userId: true, workspaceId: true },
   });
 
-  await ctx.prisma.gdprRequest.update({
-    where: { id: requestId },
+  await ctx.prisma.gdprRequest.updateMany({
+    where: { id: requestId, workspaceId: request.workspaceId },
     data: { status: GdprStatus.PROCESSING },
   });
 
@@ -70,8 +70,8 @@ export async function processGdprExport(
     fs.unlinkSync(zipPath);
     fs.rmSync(exportDir, { recursive: true, force: true });
 
-    await ctx.prisma.gdprRequest.update({
-      where: { id: requestId },
+    await ctx.prisma.gdprRequest.updateMany({
+      where: { id: requestId, workspaceId: request.workspaceId },
       data: {
         status: GdprStatus.COMPLETE,
         completedAt: new Date(),
@@ -99,24 +99,24 @@ export async function processGdprDeletion(
   const daysSinceRequest = (Date.now() - request.requestedAt.getTime()) / (1000 * 60 * 60 * 24);
 
   if (daysSinceRequest > DELETION_MAX_DAYS) {
-    await ctx.prisma.gdprRequest.update({
-      where: { id: requestId },
+    await ctx.prisma.gdprRequest.updateMany({
+      where: { id: requestId, workspaceId: request.workspaceId },
       data: { status: GdprStatus.FAILED, completedAt: new Date() },
     });
     ctx.logger.warn(`Deletion request ${requestId} exceeded 30-day window`);
     return;
   }
 
-  await ctx.prisma.gdprRequest.update({
-    where: { id: requestId },
+  await ctx.prisma.gdprRequest.updateMany({
+    where: { id: requestId, workspaceId: request.workspaceId },
     data: { status: GdprStatus.PROCESSING },
   });
 
   try {
     await cascadeDeleteUserData(ctx.prisma, request.userId, request.workspaceId, requestId);
 
-    await ctx.prisma.gdprRequest.update({
-      where: { id: requestId },
+    await ctx.prisma.gdprRequest.updateMany({
+      where: { id: requestId, workspaceId: request.workspaceId },
       data: {
         status: GdprStatus.COMPLETE,
         completedAt: new Date(),
@@ -138,8 +138,16 @@ export async function sendGdprVerificationEmail(
   code: string,
   type: string,
 ): Promise<void> {
-  const agent = await ctx.prisma.agent.findUnique({
-    where: { id: userId },
+  const request = await ctx.prisma.gdprRequest.findFirst({
+    where: { id: requestId, userId, workspaceId: { not: '' } },
+    select: { workspaceId: true },
+  });
+  if (!request) {
+    return;
+  }
+
+  const agent = await ctx.prisma.agent.findFirst({
+    where: { id: userId, workspaceId: request.workspaceId },
     select: { email: true, name: true },
   });
 
@@ -174,8 +182,8 @@ async function sweepUserData(
 ): Promise<void> {
   const data: Record<string, unknown> = {};
 
-  const agent = await ctx.prisma.agent.findUnique({
-    where: { id: userId },
+  const agent = await ctx.prisma.agent.findFirst({
+    where: { id: userId, workspaceId },
     select: {
       id: true,
       name: true,
@@ -295,8 +303,8 @@ async function cascadeDeleteUserData(
         data: { agentId: null },
       });
 
-      await tx.agent.update({
-        where: { id: userId },
+      await tx.agent.updateMany({
+        where: { id: userId, workspaceId },
         data: {
           name: 'Deleted User',
           email: `deleted-${userId}@removed.local`,
@@ -330,8 +338,8 @@ async function cascadeDeleteUserData(
     { isolationLevel: 'ReadCommitted' },
   );
 
-  await prisma.gdprRequest.update({
-    where: { id: requestId },
+  await prisma.gdprRequest.updateMany({
+    where: { id: requestId, workspaceId },
     data: {
       evidenceUrl: `gdpr-deletion:${requestId}:${userId}:audit-trail`,
     },

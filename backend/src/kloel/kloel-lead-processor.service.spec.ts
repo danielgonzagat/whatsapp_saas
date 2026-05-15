@@ -12,9 +12,13 @@ jest.mock('./openai-wrapper', () => ({
   }),
 }));
 
-jest.mock('../lib/openai-models', () => ({
-  resolveBackendOpenAIModel: jest.fn().mockReturnValue('gpt-4o'),
-}));
+jest.mock('../lib/openai-models', () => {
+  const actual = jest.requireActual<typeof import('../lib/openai-models')>('../lib/openai-models');
+  return {
+    ...actual,
+    resolveBackendOpenAIModel: jest.fn().mockReturnValue(actual.CANONICAL_MODEL_IDS.openAiTextOmni),
+  };
+});
 
 jest.mock('openai', () => ({
   default: jest.fn().mockImplementation(() => ({
@@ -117,11 +121,14 @@ describe('KloelLeadProcessorService', () => {
 
       expect(result).toContain('Resposta');
       expect(prisma.kloelLead.create).toHaveBeenCalled();
-      expect(prisma.kloelConversation.create).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: expect.objectContaining({ leadId: 'lead-1', role: 'user' }),
-        }),
-      );
+      const [[createArg]] = prisma.kloelConversation.create.mock.calls as Array<
+        [
+          {
+            data: { leadId: string; role: string };
+          },
+        ]
+      >;
+      expect(createArg).toMatchObject({ data: { leadId: 'lead-1', role: 'user' } });
     });
 
     it('returns error message on failure', async () => {
@@ -155,11 +162,14 @@ describe('KloelLeadProcessorService', () => {
       await service.processWhatsAppMessage(wsId, '5511999999999', 'Teste', () =>
         Promise.resolve('c'),
       );
-      expect(prisma.kloelLead.create).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: expect.objectContaining({ workspaceId: wsId }),
-        }),
-      );
+      const [[createArg]] = prisma.kloelLead.create.mock.calls as Array<
+        [
+          {
+            data: { workspaceId: string };
+          },
+        ]
+      >;
+      expect(createArg).toMatchObject({ data: { workspaceId: wsId } });
     });
   });
 
@@ -254,18 +264,26 @@ describe('KloelLeadProcessorService', () => {
       const result = await service.listFollowups(wsId);
       expect(result.total).toBe(1);
       expect(result.followups[0].status).toBe('pending');
-      expect(prisma.kloelMemory.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({ where: expect.objectContaining({ workspaceId: wsId }) }),
-      );
+      const [[findManyArg]] = prisma.kloelMemory.findMany.mock.calls as Array<
+        [
+          {
+            where: { workspaceId: string };
+          },
+        ]
+      >;
+      expect(findManyArg).toMatchObject({ where: { workspaceId: wsId } });
     });
 
     it('filters by contactId when provided', async () => {
       await service.listFollowups(wsId, 'contact-1');
-      expect(prisma.kloelMemory.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: expect.objectContaining({ workspaceId: wsId }),
-        }),
-      );
+      const [[findManyArg]] = prisma.kloelMemory.findMany.mock.calls as Array<
+        [
+          {
+            where: { workspaceId: string };
+          },
+        ]
+      >;
+      expect(findManyArg).toMatchObject({ where: { workspaceId: wsId } });
     });
 
     it('returns empty on error', async () => {

@@ -196,7 +196,7 @@ export class EmailMarketingService implements OnModuleInit, OnModuleDestroy {
     }
     await this.assertCampaignSendApproved(campaignId, workspaceId);
     await this.prisma.emailCampaign.update({
-      where: { id: campaignId },
+      where: { id: campaignId, workspaceId },
       data: { status: 'SCHEDULED' },
     });
     if (!this.queue) {
@@ -225,7 +225,7 @@ export class EmailMarketingService implements OnModuleInit, OnModuleDestroy {
     }
     const provider = this.getProvider();
     await this.prisma.emailCampaign.update({
-      where: { id: campaignId },
+      where: { id: campaignId, workspaceId },
       data: {
         status: 'SENDING',
         startedAt: new Date(),
@@ -286,7 +286,7 @@ export class EmailMarketingService implements OnModuleInit, OnModuleDestroy {
       }
     }
     await this.prisma.emailCampaign.update({
-      where: { id: campaignId },
+      where: { id: campaignId, workspaceId },
       data: {
         status: 'SENT',
         sentCount,
@@ -326,8 +326,8 @@ export class EmailMarketingService implements OnModuleInit, OnModuleDestroy {
           ...(log.providerMessageId ? { providerMessageId: log.providerMessageId } : {}),
         },
       }),
-      this.prisma.emailCampaignRecipient.update({
-        where: { id: log.recipientId },
+      this.prisma.emailCampaignRecipient.updateMany({
+        where: { id: log.recipientId, workspaceId: log.workspaceId },
         data: isSent
           ? { status: 'SENT' as const, sentAt: new Date() }
           : {
@@ -352,7 +352,7 @@ export class EmailMarketingService implements OnModuleInit, OnModuleDestroy {
   }): Promise<boolean> {
     const { providerMessageId, event, metadata } = params;
     const recipient = await this.prisma.emailCampaignRecipient.findFirst({
-      where: { providerMessageId },
+      where: { providerMessageId, workspaceId: { not: '' } },
       include: { campaign: true },
     });
     if (!recipient) {
@@ -381,13 +381,13 @@ export class EmailMarketingService implements OnModuleInit, OnModuleDestroy {
         ...(metadata ? { metadata: metadata as Prisma.InputJsonObject } : {}),
       },
     });
-    await this.prisma.emailCampaignRecipient.update({
-      where: { id: recipient.id },
+    await this.prisma.emailCampaignRecipient.updateMany({
+      where: { id: recipient.id, workspaceId },
       data: recipientUpdate,
     });
     if (campaignUpdate) {
-      await this.prisma.emailCampaign.update({
-        where: { id: campaignId },
+      await this.prisma.emailCampaign.updateMany({
+        where: { id: campaignId, workspaceId },
         data: campaignUpdate,
       });
     }

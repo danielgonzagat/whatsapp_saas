@@ -34,6 +34,7 @@ export async function queryTransactionCounts(
     // @AdminGlobalOperation: approved transaction count, platform-wide
     prisma.checkoutOrder.count({
       where: {
+        workspaceId: { not: '' },
         status: { in: [OrderStatus.PAID, OrderStatus.SHIPPED, OrderStatus.DELIVERED] },
         paidAt: { gte: from, lte: to },
       },
@@ -47,6 +48,7 @@ export async function queryTransactionCounts(
     // @AdminGlobalOperation: pending transaction count, platform-wide
     prisma.checkoutOrder.count({
       where: {
+        workspaceId: { not: '' },
         status: { in: [OrderStatus.PENDING, OrderStatus.PROCESSING] },
         createdAt: { gte: from, lte: to },
       },
@@ -54,6 +56,7 @@ export async function queryTransactionCounts(
     // @AdminGlobalOperation: refund aggregate, platform-wide
     prisma.checkoutOrder.aggregate({
       where: {
+        workspaceId: { not: '' },
         status: OrderStatus.REFUNDED,
         refundedAt: { gte: from, lte: to },
       },
@@ -63,6 +66,7 @@ export async function queryTransactionCounts(
     // @AdminGlobalOperation: chargeback aggregate, platform-wide
     prisma.checkoutOrder.aggregate({
       where: {
+        workspaceId: { not: '' },
         status: OrderStatus.CHARGEBACK,
         updatedAt: { gte: from, lte: to },
       },

@@ -10,6 +10,7 @@ import { OpsAlertService } from '../observability/ops-alert.service';
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { chatCompletionWithRetry } from '../kloel/openai-wrapper';
+import { CANONICAL_MODEL_IDS } from '../lib/openai-models';
 
 type FlexMock = jest.Mock & {
   mockResolvedValue: (v: unknown) => FlexMock;
@@ -21,9 +22,13 @@ jest.mock('../kloel/openai-wrapper', () => ({
   chatCompletionWithRetry: jest.fn(),
 }));
 
-jest.mock('../lib/openai-models', () => ({
-  resolveBackendOpenAIModel: jest.fn(() => 'gpt-4o-mock'),
-}));
+jest.mock('../lib/openai-models', () => {
+  const actual = jest.requireActual<typeof import('../lib/openai-models')>('../lib/openai-models');
+  return {
+    ...actual,
+    resolveBackendOpenAIModel: jest.fn(() => actual.CANONICAL_MODEL_IDS.openAiTextMock),
+  };
+});
 
 jest.mock('../queue/queue', () => ({
   flowQueue: { add: jest.fn<(...args: unknown[]) => Promise<unknown>>() },
@@ -144,7 +149,7 @@ describe('AutopilotCycleExecutorService', () => {
         ],
         id: 'chatcmpl-mock',
         created: 1700000000,
-        model: 'gpt-4o-mini',
+        model: CANONICAL_MODEL_IDS.openAiTextMini,
         object: 'chat.completion',
         usage: {
           total_tokens: 100,
@@ -192,7 +197,7 @@ describe('AutopilotCycleExecutorService', () => {
         ],
         id: 'chatcmpl-mock',
         created: 1700000000,
-        model: 'gpt-4o-mini',
+        model: CANONICAL_MODEL_IDS.openAiTextMini,
         object: 'chat.completion',
         usage: {
           total_tokens: 10,
@@ -377,7 +382,10 @@ describe('AutopilotCycleExecutorService', () => {
 
       await service.executeAction('auto_reply_night', conv, compliance);
 
-      const [, payload] = mockFlowQueueAdd.mock.calls[0];
+      const [, payload] = mockFlowQueueAdd.mock.calls[0] as [
+        string,
+        { message: string; to: string; workspaceId: string },
+      ];
       expect(payload).toEqual(
         expect.objectContaining({
           workspaceId: conv.workspaceId,

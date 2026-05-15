@@ -2,6 +2,9 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { PdfProcessorService } from './pdf-processor.service';
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { MemoryService } from './memory.service';
+import { CANONICAL_MODEL_IDS } from '../lib/openai-models';
+import { chatCompletionWithRetry } from './openai-wrapper';
+
 jest.mock('openai', () => ({
   default: jest.fn().mockImplementation(() => ({
     chat: { completions: { create: jest.fn() } },
@@ -12,9 +15,13 @@ jest.mock('./openai-wrapper', () => ({
   chatCompletionWithRetry: jest.fn(),
 }));
 
-jest.mock('../lib/openai-models', () => ({
-  resolveBackendOpenAIModel: jest.fn().mockReturnValue('gpt-4o'),
-}));
+jest.mock('../lib/openai-models', () => {
+  const actual = jest.requireActual<typeof import('../lib/openai-models')>('../lib/openai-models');
+  return {
+    ...actual,
+    resolveBackendOpenAIModel: jest.fn().mockReturnValue(actual.CANONICAL_MODEL_IDS.openAiTextOmni),
+  };
+});
 
 jest.mock('../common/async-sequence', () => ({
   forEachSequential: jest.fn(
@@ -26,7 +33,7 @@ jest.mock('../common/async-sequence', () => ({
   ),
 }));
 
-const mockChatCompletionWithRetry = jest.requireMock('./openai-wrapper').chatCompletionWithRetry;
+const mockChatCompletionWithRetry = jest.mocked(chatCompletionWithRetry);
 
 describe('PdfProcessorService', () => {
   let service: PdfProcessorService;
@@ -97,7 +104,7 @@ describe('PdfProcessorService', () => {
       const [clientArg, requestArg] = mockChatCompletionWithRetry.mock.calls[0] ?? [];
       expect(clientArg).toBeDefined();
       expect(requestArg).toMatchObject({
-        model: 'gpt-4o',
+        model: CANONICAL_MODEL_IDS.openAiTextOmni,
         temperature: 0.3,
       });
     });

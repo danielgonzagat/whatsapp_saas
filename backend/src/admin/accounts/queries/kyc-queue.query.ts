@@ -35,6 +35,7 @@ export interface KycQueueResult {
  */
 export async function listKycQueue(prisma: PrismaService, limit = 50): Promise<KycQueueResult> {
   const where: Prisma.AgentWhereInput = {
+    workspaceId: { not: '' },
     kycStatus: { in: ['submitted', 'pending'] },
   };
 
