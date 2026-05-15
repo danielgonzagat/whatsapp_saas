@@ -9,9 +9,13 @@ jest.mock('../wallet/provider-llm-billing', () => ({
   quoteOpenAiChatActualCostCents: jest.fn(() => 5n),
 }));
 
-jest.mock('../lib/openai-models', () => ({
-  resolveBackendOpenAIModel: jest.fn(() => 'gpt-4o-mini'),
-}));
+jest.mock('../lib/openai-models', () => {
+  const actual = jest.requireActual<typeof import('../lib/openai-models')>('../lib/openai-models');
+  return {
+    ...actual,
+    resolveBackendOpenAIModel: jest.fn(() => actual.CANONICAL_MODEL_IDS.openAiTextMini),
+  };
+});
 
 describe('PdfProcessorController', () => {
   let controller: PdfProcessorController;
