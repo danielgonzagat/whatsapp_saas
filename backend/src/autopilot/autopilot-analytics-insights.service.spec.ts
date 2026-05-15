@@ -43,6 +43,9 @@ describe('AutopilotAnalyticsInsightsService', () => {
     contact: { findMany: FlexMock };
     message: { findMany: FlexMock };
     deal: { aggregate: FlexMock };
+    accountProofSnapshot: { findFirst: FlexMock };
+    agentWorkItem: { count: FlexMock };
+    mindPolicy: { aggregate: FlexMock; count: FlexMock };
   };
 
   const mockPrisma: MockedPrisma = {
@@ -55,6 +58,14 @@ describe('AutopilotAnalyticsInsightsService', () => {
     contact: { findMany: jest.fn() as FlexMock },
     message: { findMany: jest.fn() as FlexMock },
     deal: { aggregate: jest.fn() as FlexMock },
+    accountProofSnapshot: { findFirst: jest.fn().mockResolvedValue(null) as FlexMock },
+    agentWorkItem: { count: jest.fn().mockResolvedValue(0) as FlexMock },
+    mindPolicy: {
+      aggregate: jest
+        .fn()
+        .mockResolvedValue({ _avg: { epsilon: null }, _count: { id: 0 } }) as FlexMock,
+      count: jest.fn().mockResolvedValue(0) as FlexMock,
+    },
   };
 
   const mockConfig = {
@@ -70,6 +81,20 @@ describe('AutopilotAnalyticsInsightsService', () => {
 
   beforeEach(async () => {
     jest.clearAllMocks();
+    mockPrisma.autopilotEvent.findMany.mockResolvedValue([]);
+    mockPrisma.autopilotEvent.create.mockResolvedValue({} as never);
+    mockPrisma.autopilotEvent.count.mockResolvedValue(0);
+    mockPrisma.autopilotEvent.groupBy.mockResolvedValue([]);
+    mockPrisma.contact.findMany.mockResolvedValue([]);
+    mockPrisma.message.findMany.mockResolvedValue([]);
+    mockPrisma.deal.aggregate.mockResolvedValue({ _sum: { value: 0 }, _count: { id: 0 } });
+    mockPrisma.accountProofSnapshot.findFirst.mockResolvedValue(null);
+    mockPrisma.agentWorkItem.count.mockResolvedValue(0);
+    mockPrisma.mindPolicy.aggregate.mockResolvedValue({
+      _avg: { epsilon: null },
+      _count: { id: 0 },
+    });
+    mockPrisma.mindPolicy.count.mockResolvedValue(0);
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         AutopilotAnalyticsInsightsService,
@@ -140,6 +165,41 @@ describe('AutopilotAnalyticsInsightsService', () => {
       );
     });
 
+    it('does not treat queued or recommended events as impactable actions', async () => {
+      mockPrisma.autopilotEvent.findMany.mockResolvedValue([
+        {
+          contactId: 'c-queued',
+          createdAt: new Date('2026-05-10T10:00:00Z'),
+          action: 'ENQUEUED',
+          status: 'queued',
+        },
+        {
+          contactId: 'c-recommended',
+          createdAt: new Date('2026-05-10T10:05:00Z'),
+          action: 'NEXT_BEST_ACTION',
+          status: 'recommended',
+        },
+        {
+          contactId: 'c-executed',
+          createdAt: new Date('2026-05-10T10:10:00Z'),
+          action: 'SEND_OFFER',
+          status: 'executed',
+        },
+      ]);
+      mockPrisma.contact.findMany.mockResolvedValue([
+        { id: 'c-executed', phone: '5511', name: 'Lead' },
+      ]);
+
+      const result = await service.getImpact('ws-1');
+
+      expect(result.actionsAnalyzed).toBe(1);
+      expect(mockPrisma.contact.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({ id: { in: ['c-executed'] } }),
+        }),
+      );
+    });
+
     it('deduplicates contact actions by latest timestamp in contactActions map', async () => {
       const contactId = 'c-1';
       mockPrisma.autopilotEvent.findMany.mockResolvedValue([
@@ -200,7 +260,7 @@ describe('AutopilotAnalyticsInsightsService', () => {
   });
 
   describe('getInsights', () => {
-    it('aggregates event stats with deal data', async () => {
+    it('aggregates event stats with deal data + proof/risk/approval signals', async () => {
       mockPrisma.autopilotEvent.findMany.mockResolvedValue([
         { createdAt: new Date(), intent: 'BUYING', action: 'SEND_OFFER', status: 'executed' },
         { createdAt: new Date(), intent: 'PRICE', action: 'SEND_PRICE', status: 'executed' },
@@ -219,6 +279,16 @@ describe('AutopilotAnalyticsInsightsService', () => {
       expect(result.intents.PRICE).toBe(1);
       expect(result.dealsWon).toBe(3);
       expect(result.revenueWon).toBe(500);
+      expect(result.proofStatus).toBeNull();
+      expect(result.approvalQueue).toEqual({
+        pendingApprovalCount: 0,
+        pendingInputCount: 0,
+      });
+      expect(result.decisionConfidence).toEqual({
+        avgEpsilon: null,
+        fallbackActiveCount: 0,
+        totalPolicies: 0,
+      });
     });
 
     it('handles UNKNOWN intent when intent is null', async () => {
@@ -257,6 +327,94 @@ describe('AutopilotAnalyticsInsightsService', () => {
         }),
       );
     });
+
+    it('includes proof/risk/approval data when worker has populated them', async () => {
+      mockPrisma.autopilotEvent.findMany.mockResolvedValue([]);
+      mockPrisma.deal.aggregate.mockResolvedValue({ _sum: { value: 0 }, _count: { id: 0 } });
+      mockPrisma.accountProofSnapshot.findFirst.mockResolvedValue({
+        eligibleActionCount: 45,
+        blockedActionCount: 12,
+        deferredActionCount: 3,
+        waitingApprovalCount: 2,
+        waitingInputCount: 1,
+        noLegalActions: true,
+      });
+      mockPrisma.agentWorkItem.count.mockResolvedValueOnce(3).mockResolvedValueOnce(1);
+      mockPrisma.mindPolicy.aggregate.mockResolvedValue({
+        _avg: { epsilon: 0.15 },
+        _count: { id: 8 },
+      });
+      mockPrisma.mindPolicy.count.mockResolvedValue(2);
+
+      const result = await service.getInsights('ws-1');
+
+      expect(result.proofStatus).toEqual({
+        eligibleCount: 45,
+        blockedCount: 12,
+        deferredCount: 3,
+        waitingApprovalCount: 2,
+        waitingInputCount: 1,
+        noLegalActions: true,
+      });
+      expect(result.approvalQueue).toEqual({
+        pendingApprovalCount: 3,
+        pendingInputCount: 1,
+      });
+      expect(result.decisionConfidence).toEqual({
+        avgEpsilon: 0.15,
+        fallbackActiveCount: 2,
+        totalPolicies: 8,
+      });
+      expect(mockPrisma.agentWorkItem.count).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            requiresApproval: true,
+            OR: [
+              { approvalState: { in: ['PENDING', 'OPEN', 'REQUIRED'] } },
+              { approvalState: null },
+            ],
+          }),
+        }),
+      );
+    });
+
+    it('does not count queued or recommended events as executed decisions', async () => {
+      mockPrisma.autopilotEvent.findMany.mockResolvedValue([
+        { createdAt: new Date(), intent: 'RUN', action: 'ENQUEUED', status: 'queued' },
+        { createdAt: new Date(), intent: 'NBA', action: 'RECOMMEND', status: 'recommended' },
+        { createdAt: new Date(), intent: 'BUYING', action: 'SEND_OFFER', status: 'executed' },
+        { createdAt: new Date(), intent: 'BUYING', action: 'SEND_OFFER', status: 'error' },
+      ]);
+
+      const result = await service.getInsights('ws-1');
+
+      expect(result.executed).toBe(1);
+      expect(result.errors).toBe(1);
+      expect(result.actions.ENQUEUED).toBe(1);
+      expect(result.actions.RECOMMEND).toBe(1);
+    });
+
+    it('survives proof/agent/mind table failures gracefully', async () => {
+      mockPrisma.autopilotEvent.findMany.mockResolvedValue([]);
+      mockPrisma.deal.aggregate.mockResolvedValue({ _sum: { value: 0 }, _count: { id: 0 } });
+      mockPrisma.accountProofSnapshot.findFirst.mockRejectedValue(new Error('Table missing'));
+      mockPrisma.agentWorkItem.count.mockRejectedValue(new Error('Table missing'));
+      mockPrisma.mindPolicy.aggregate.mockRejectedValue(new Error('Table missing'));
+      mockPrisma.mindPolicy.count.mockRejectedValue(new Error('Table missing'));
+
+      const result = await service.getInsights('ws-1');
+
+      expect(result.proofStatus).toBeNull();
+      expect(result.approvalQueue).toEqual({
+        pendingApprovalCount: 0,
+        pendingInputCount: 0,
+      });
+      expect(result.decisionConfidence).toEqual({
+        avgEpsilon: null,
+        fallbackActiveCount: 0,
+        totalPolicies: 0,
+      });
+    });
   });
 
   describe('askInsights', () => {
@@ -275,6 +433,7 @@ describe('AutopilotAnalyticsInsightsService', () => {
       const result = await service.askInsights('ws-1', 'How many deals?');
 
       expect(result.answer).toContain('Resumo:');
+      expect(result.answer).toContain('Risk/Proof:');
       expect(result.answer).toContain('How many deals?');
       expect(result.detail).toBeDefined();
       expect(mockPrisma.autopilotEvent.create).toHaveBeenCalledWith(
@@ -434,6 +593,59 @@ describe('AutopilotAnalyticsInsightsService', () => {
       const result = await service.askInsights('ws-1', 'Q');
 
       expect(result.answer).toContain('Resumo:');
+    });
+
+    it('includes risk/proof/approval signals in offline response', async () => {
+      mockConfig.get.mockReturnValue(undefined);
+      mockPrisma.autopilotEvent.findMany.mockResolvedValue([]);
+      mockPrisma.autopilotEvent.groupBy.mockResolvedValue([]);
+      mockPrisma.deal.aggregate.mockResolvedValue({
+        _sum: { value: 0 },
+        _count: { id: 0 },
+      });
+      mockPrisma.autopilotEvent.create.mockResolvedValue({} as never);
+      mockPrisma.accountProofSnapshot.findFirst.mockResolvedValue({
+        eligibleActionCount: 20,
+        blockedActionCount: 5,
+        deferredActionCount: 2,
+        waitingApprovalCount: 3,
+        waitingInputCount: 1,
+        noLegalActions: false,
+      });
+      mockPrisma.agentWorkItem.count.mockResolvedValueOnce(4).mockResolvedValueOnce(2);
+      mockPrisma.mindPolicy.aggregate.mockResolvedValue({
+        _avg: { epsilon: 0.08 },
+        _count: { id: 10 },
+      });
+      mockPrisma.mindPolicy.count.mockResolvedValue(0);
+
+      const result = await service.askInsights('ws-1', 'Preciso agir agora?');
+
+      expect(result.answer).toContain('Risk/Proof:');
+      expect(result.answer).toContain('5 blocked');
+      expect(result.answer).toContain('3 awaiting human approval');
+      expect(result.answer).toContain('Decision confidence:');
+      expect(result.answer).toContain('0.080');
+      expect(result.answer).toContain('Preciso agir agora?');
+    });
+
+    it('communicates no-legal-action uncertainty in offline response', async () => {
+      mockConfig.get.mockReturnValue(undefined);
+      mockPrisma.accountProofSnapshot.findFirst.mockResolvedValue({
+        eligibleActionCount: 0,
+        blockedActionCount: 4,
+        deferredActionCount: 1,
+        waitingApprovalCount: 2,
+        waitingInputCount: 0,
+        noLegalActions: true,
+      });
+
+      const result = await service.askInsights('ws-1', 'Posso automatizar?');
+
+      expect(result.answer).toContain('no legal action currently available');
+      expect(result.answer).toContain('Approval queue:');
+      expect(result.answer).toContain('Decision confidence:');
+      expect(result.answer).toContain('Posso automatizar?');
     });
   });
 });
