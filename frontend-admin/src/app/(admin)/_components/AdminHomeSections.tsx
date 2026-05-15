@@ -6,7 +6,7 @@ import type { AdminHomeResponse } from '@/lib/api/admin-dashboard-api';
 import type { MarketplaceTreasuryBalance } from '@/lib/api/admin-carteira-api';
 import { AdminEmptyState } from './admin-empty-state';
 import { HealthMetricCard } from './admin-health-metric-card';
-import { AdminProductsSection } from './admin-products-section';
+export { AdminProductsSection } from './admin-products-section';
 import {
   formatCurrency,
   formatDelta,
@@ -16,7 +16,6 @@ import {
   METHOD_LABELS,
 } from './admin-formatters';
 import { AdminRevenueBars } from './admin-revenue-bars';
-import { AdminRingMeter } from './admin-ring-meter';
 import { AdminSparkline } from './admin-sparkline';
 
 export function AdminRevenueSection({
