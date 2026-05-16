@@ -8,6 +8,6 @@ on:
 
 jobs:
   disabled:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04-arm
     steps:
       - run: echo "Workflow legado desativado; use ci-cd.yml"
