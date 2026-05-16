@@ -1,5 +1,5 @@
 import { act } from 'react';
-import { render, screen, cleanup } from '@testing-library/react';
+import { render, screen, cleanup, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { colors } from '@/lib/design-tokens';
 import { ThemeProvider, useTheme } from './ThemeProvider';
@@ -61,7 +61,7 @@ describe('ThemeProvider', () => {
       </ThemeProvider>,
     );
 
-    expect(await screen.findByTestId('theme-value')).toHaveTextContent('dark');
+    await waitFor(() => expect(screen.getByTestId('theme-value')).toHaveTextContent('dark'));
     expect(document.documentElement.getAttribute('data-kloel-app-theme')).toBe('dark');
     expect(document.documentElement.style.colorScheme).toBe('dark');
     expect(document.head.querySelector('meta[name="theme-color"]')?.getAttribute('content')).toBe(
