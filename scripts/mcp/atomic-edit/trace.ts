@@ -26,6 +26,7 @@ import * as crypto from 'node:crypto';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { REPO_ROOT } from './guard.js';
+import { buildFounderBlock, type FounderBlock } from './founder.js';
 
 export type Verbosity = 'L0' | 'L1' | 'L2' | 'L3';
 
@@ -84,6 +85,8 @@ export interface AtomicEditTrace {
   afterSha256: string;
   rollback: { available: boolean; strategy: string };
   inlinePreview: string;
+  /** Auditability-without-code layer (thesis apex). */
+  audit: FounderBlock;
 }
 
 export function newOperationId(): string {
@@ -136,6 +139,15 @@ export function buildTrace(args: {
       strategy: 'explicit pre-edit snapshot (before-text retained by caller)',
     },
     inlinePreview: args.inlinePreview,
+    audit: buildFounderBlock({
+      file: args.file,
+      operator: args.operator,
+      language: args.validation.language,
+      syntaxBefore: args.validation.before,
+      syntaxAfter: args.validation.after,
+      changedChars: changed,
+      expansionFactor: expansion,
+    }),
   };
 }
 
@@ -177,6 +189,9 @@ export function shapePayload(
     operationId: parts.trace.operationId,
     ...persisted,
   };
+  // founder block rides at EVERY level incl. L0 — auditability-without-code
+  // is the point; it is small and must never be the thing that gets trimmed.
+  out.founder = parts.trace.audit;
   if (level === 'L0') return out;
   out.atomicDiff = parts.inlinePreview;
   if (level === 'L1') return out;

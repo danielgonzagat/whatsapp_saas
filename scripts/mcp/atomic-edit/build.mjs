@@ -27,6 +27,7 @@ const ENTRY = [
   'advanced.ts',
   'trace.ts',
   'textunit.ts',
+  'founder.ts',
 ].map((f) => path.join(dir, f));
 const OUT = path.join(dir, 'dist');
 

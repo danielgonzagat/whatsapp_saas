@@ -24,6 +24,8 @@ import {
   replacePropertyValue,
 } from './advanced.js';
 import { graphemes, measure, graphemeLength } from './textunit.js';
+import { buildFounderBlock } from './founder.js';
+import { buildTrace, levelFor, shapePayload } from './trace.js';
 
 let passed = 0;
 let failed = 0;
@@ -717,6 +719,69 @@ function partF(): void {
   }
 }
 
+// ── Part G — auditability-without-code (thesis apex) ─────────────────────
+function partG(): void {
+  const fb = buildFounderBlock({
+    file: 'backend/src/x.service.ts',
+    operator: 'atomic_replace_literal',
+    language: 'ts',
+    syntaxBefore: 0,
+    syntaxAfter: 0,
+    changedChars: 4,
+    expansionFactor: 1,
+  });
+  check(
+    'founder: ts edit = structurally-validated',
+    fb.promiseClass === 'structurally-validated',
+    fb.promiseClass,
+  );
+  // honesty ceiling: a tool edit can NEVER claim behaviour proof → < 75
+  check(
+    'founder: zeroCodeTrust ceilinged < 75 (anti-fachada)',
+    fb.zeroCodeTrust < 75 && fb.zeroCodeTrust > 0,
+    String(fb.zeroCodeTrust),
+  );
+  check(
+    'founder: notProven states behaviour unproven',
+    /behaviou?r is NOT proven|NOT proven by this tool/i.test(fb.notProven),
+    fb.notProven,
+  );
+  // structural-only language is honestly a weaker promise class
+  const fbS = buildFounderBlock({
+    file: 'main.py',
+    operator: 'atomic_replace_range',
+    language: 'structural',
+    syntaxBefore: 0,
+    syntaxAfter: 0,
+    changedChars: 3,
+    expansionFactor: 1,
+  });
+  check(
+    'founder: structural lang = balance-validated',
+    fbS.promiseClass === 'balance-validated' && fbS.zeroCodeTrust <= fb.zeroCodeTrust,
+    JSON.stringify(fbS),
+  );
+
+  // founder block rides even at L0 (must never be trimmed away)
+  const tr = buildTrace({
+    file: 'a.ts',
+    operator: 'atomic_replace_literal',
+    before: 'const a=1;',
+    newText: 'const a=2;',
+    inlinePreview: 'const a=[-1-]{+2+};',
+    validation: { language: 'ts', before: 0, after: 0 },
+    metrics: { changedChars: 1, lineRewriteSurfaceChars: 1, expansionFactorAvoided: 1 },
+  });
+  const l0 = shapePayload(levelFor(false, 'L0'), { ok: true }, { inlinePreview: 'x', trace: tr });
+  check(
+    'founder: present at L0 (not trimmed)',
+    typeof l0.founder === 'object' &&
+      (l0.founder as { promiseClass?: string }).promiseClass === 'structurally-validated' &&
+      l0.atomicDiff === undefined, // L0 still trims the diff, but NOT founder
+    JSON.stringify(Object.keys(l0)),
+  );
+}
+
 (async () => {
   await partA();
   await partB();
@@ -724,6 +789,7 @@ function partF(): void {
   await partD();
   partE();
   partF();
+  partG();
   process.stdout.write(`\n${passed} passed, ${failed} failed\n`);
   process.exit(failed === 0 ? 0 : 1);
 })().catch((e) => {
