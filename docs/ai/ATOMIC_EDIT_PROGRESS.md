@@ -8,9 +8,10 @@
 ## General state (2026-05-15)
 
 The shared `atomic-edit` MCP tool exists and is **robust + validated** — DO NOT
-rebuild (anti-pattern). 15 tools, `node dist/server.js` (self-building, no
-tsx/npx), smoke **47/47**, tsc --strict 0. Universal: connected as default for
-**Claude Code, OpenCode, and Codex** (see CLI_ACTIVATION_MATRIX).
+rebuild (anti-pattern). **17 tools**, `node dist/server.js` (self-building, no
+tsx/npx), smoke **73/73**, tsc --strict 0, auditor PASS. Universal: connected
+as default for **Claude Code, OpenCode, and Codex** (see CLI_ACTIVATION_MATRIX).
+Tool-only mandate active from next fresh session ([[feedback_tui_abolished_tool_only]]).
 
 ### E8 — visual + token atomicity (2026-05-15, explicit owner instruction)
 
