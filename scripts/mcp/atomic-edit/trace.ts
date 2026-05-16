@@ -184,7 +184,20 @@ export function shapePayload(
   parts: { inlinePreview: string; legacyDiff?: string; trace: AtomicEditTrace },
 ): Record<string, unknown> {
   const persisted = writeTrace(parts.trace);
+  const t = parts.trace;
+  // Camada 2 — compact human block FIRST, so the native CLI TUI shows this
+  // (not raw JSON) as the edit's visual proof. This is what replaces the
+  // banned native line-diff on screen.
+  const summary =
+    `✅ Atomic edit — ${t.operator}\n` +
+    `${t.file}\n` +
+    `${parts.inlinePreview}\n` +
+    `validation: ${t.validation.language} ${t.validation.syntaxErrorsBefore}->${t.validation.syntaxErrorsAfter} (ok)` +
+    ` · expansion ${t.metrics.expansionFactorAvoided}× · ${t.metrics.changedChars} chars\n` +
+    `zeroCodeTrust ${t.audit.zeroCodeTrust} (${t.audit.promiseClass})` +
+    `${persisted.tracePath ? ` · trace ${persisted.tracePath}` : ''}`;
   const out: Record<string, unknown> = {
+    summary,
     ...base,
     operationId: parts.trace.operationId,
     ...persisted,
