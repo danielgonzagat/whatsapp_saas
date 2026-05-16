@@ -819,6 +819,125 @@ server.registerTool(
   },
 );
 
+// ── Lever #3: multi-file atomic transaction (all-or-nothing + rollback) ──
+// A real product change rarely lives in one file (schema+DTO+service+UI+
+// test). This makes the whole intention ONE unit: every file validated in
+// memory first; if ANY file would regress, NOTHING is written; if a write
+// fails mid-flight, already-written files are restored from their pre-edit
+// snapshots. The intention is atomic, not just each edit.
+server.registerTool(
+  'atomic_transaction',
+  {
+    title: 'Apply a multi-file edit plan atomically (all-or-nothing)',
+    description:
+      'Apply ranged edits across MANY files as one transaction. Every file is validated (no-syntax-' +
+      'regression) in memory BEFORE any write. If any file fails validation the whole transaction is ' +
+      'refused and nothing is written. If a write throws mid-flight, already-written files are rolled ' +
+      'back to their pre-edit content. Use for one intention spanning files (schema+service+UI+test). ' +
+      'Supports preview (dry-run, per-file atomicDiff).',
+    inputSchema: {
+      plan: z
+        .array(
+          z.object({
+            file: z.string().describe('repo-relative path'),
+            edits: z
+              .array(
+                z.object({
+                  startLine: z.number().int().min(1),
+                  startColumn: z.number().int().min(1),
+                  endLine: z.number().int().min(1),
+                  endColumn: z.number().int().min(1),
+                  newText: z.string(),
+                }),
+              )
+              .min(1),
+          }),
+        )
+        .min(1)
+        .describe('one entry per file; each with ≥1 non-overlapping ranged edit'),
+      preview: z.boolean().optional().describe('dry-run: validate all, write nothing'),
+    },
+  },
+  async (a) => {
+    try {
+      const preview = a.preview ?? false;
+      // Phase 1 — resolve + apply + validate ALL in memory. Write nothing.
+      const staged: {
+        relPath: string;
+        absPath: string;
+        before: string;
+        result: ApplyResult;
+      }[] = [];
+      for (const entry of a.plan) {
+        const { absPath, relPath } = resolveSafeTarget(entry.file);
+        const before = readUtf8(absPath);
+        const edits: TextEditSpec[] = entry.edits.map((e) => ({
+          start: { line: e.startLine, column: e.startColumn },
+          end: { line: e.endLine, column: e.endColumn },
+          newText: e.newText,
+        }));
+        const result = applyEdits(relPath, before, edits);
+        if (!result.validation.ok) {
+          return fail(
+            `transaction REFUSED — ${relPath} would regress ` +
+              `(${result.validation.language}: ${result.validation.before}->${result.validation.after}). ` +
+              `${result.validation.introduced ?? ''} — NOTHING written (all-or-nothing).`,
+          );
+        }
+        staged.push({ relPath, absPath, before, result });
+      }
+      const files = staged.map((s) => ({
+        file: s.relPath,
+        changed: s.result.newText !== s.before,
+        atomicDiff: characterDiff(s.before, s.result.newText, s.relPath),
+        intentionChars: s.result.changedChars,
+        expansionFactorAvoided: s.result.expansionFactor,
+      }));
+      if (preview) {
+        return ok({
+          ok: true,
+          preview: true,
+          transaction: true,
+          changed: false,
+          note: `dry-run: ${staged.length} file(s) validated, NOTHING written`,
+          files,
+        });
+      }
+      // Phase 2 — write all; roll back written files if any write throws.
+      const written: { absPath: string; before: string }[] = [];
+      try {
+        for (const s of staged) {
+          if (s.result.newText === s.before) continue;
+          atomicWrite(s.absPath, s.result.newText);
+          written.push({ absPath: s.absPath, before: s.before });
+        }
+      } catch (writeErr) {
+        for (const w of written) {
+          try {
+            atomicWrite(w.absPath, w.before);
+          } catch {
+            /* best-effort rollback; report original error below */
+          }
+        }
+        return fail(
+          `transaction write failed; rolled back ${written.length} file(s): ` +
+            (writeErr instanceof Error ? writeErr.message : String(writeErr)),
+        );
+      }
+      log(`transaction wrote ${written.length}/${staged.length} file(s)`);
+      return ok({
+        ok: true,
+        transaction: true,
+        changed: true,
+        filesWritten: written.length,
+        files,
+      });
+    } catch (e) {
+      return fail(e instanceof Error ? e.message : String(e));
+    }
+  },
+);
+
 async function main(): Promise<void> {
   const transport = new StdioServerTransport();
   await server.connect(transport);

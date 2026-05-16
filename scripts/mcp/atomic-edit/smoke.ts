@@ -220,9 +220,10 @@ async function partB(): Promise<void> {
     const tools = await client.listTools();
     const names = tools.tools.map((t) => t.name).sort();
     check(
-      'server lists all 15 tools (incl. atomic_replace_text)',
-      names.length === 15 &&
+      'server lists all 16 tools (incl. atomic_transaction)',
+      names.length === 16 &&
         names.includes('atomic_replace_text') &&
+        names.includes('atomic_transaction') &&
         names.includes('code_outline') &&
         names.includes('atomic_edit_symbol') &&
         names.includes('atomic_add_import') &&
@@ -300,6 +301,66 @@ async function partB(): Promise<void> {
       guarded.isError === true && /governance-protected/.test(guarded.content[0].text),
       guarded.content[0].text,
     );
+
+    // ── Lever #3: multi-file atomic transaction ──
+    const txA = path.join('scripts', 'mcp', 'atomic-edit', `.smoke-tx-a.${process.pid}.ts`);
+    const txB = path.join('scripts', 'mcp', 'atomic-edit', `.smoke-tx-b.ts`);
+    const txAAbs = path.join(repoRoot, txA);
+    const txBAbs = path.join(repoRoot, txB);
+    fs.writeFileSync(txAAbs, 'export const A = 1;\n');
+    fs.writeFileSync(txBAbs, 'export const B = 2;\n');
+    // happy path: both files changed atomically
+    const txOk = (await client.callTool({
+      name: 'atomic_transaction',
+      arguments: {
+        plan: [
+          {
+            file: txA,
+            edits: [{ startLine: 1, startColumn: 18, endLine: 1, endColumn: 19, newText: '9' }],
+          },
+          {
+            file: txB,
+            edits: [{ startLine: 1, startColumn: 18, endLine: 1, endColumn: 19, newText: '8' }],
+          },
+        ],
+      },
+    })) as { content: { text: string }[] };
+    const txb = JSON.parse(txOk.content[0].text);
+    check(
+      'transaction commits all files',
+      txb.ok === true &&
+        txb.transaction === true &&
+        txb.filesWritten === 2 &&
+        fs.readFileSync(txAAbs, 'utf8') === 'export const A = 9;\n' &&
+        fs.readFileSync(txBAbs, 'utf8') === 'export const B = 8;\n',
+      txOk.content[0].text,
+    );
+    // all-or-nothing: one file would regress → NOTHING written
+    const txBad = (await client.callTool({
+      name: 'atomic_transaction',
+      arguments: {
+        plan: [
+          {
+            file: txA,
+            edits: [{ startLine: 1, startColumn: 18, endLine: 1, endColumn: 19, newText: '7' }],
+          },
+          {
+            file: txB,
+            edits: [
+              { startLine: 1, startColumn: 14, endLine: 1, endColumn: 14, newText: ' = = {' },
+            ],
+          },
+        ],
+      },
+    })) as { content: { text: string }[]; isError?: boolean };
+    check(
+      'transaction all-or-nothing on regression',
+      txBad.isError === true &&
+        /transaction REFUSED/.test(txBad.content[0].text) &&
+        fs.readFileSync(txAAbs, 'utf8') === 'export const A = 9;\n', // txA untouched
+      txBad.content[0].text,
+    );
+    for (const f of [txAAbs, txBAbs]) if (fs.existsSync(f)) fs.unlinkSync(f);
   } finally {
     await client.close().catch(() => {});
     if (fs.existsSync(fixtureAbs)) fs.unlinkSync(fixtureAbs);
