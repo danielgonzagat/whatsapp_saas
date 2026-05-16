@@ -1,7 +1,7 @@
 /**
  * UTP-DEFENS-001..009 — Defensibility Assets Spec
  *
- * Contract tests for Camada XXX defensibility layer: asset registry,
+ * Contract tests for Camada 30 defensibility layer: asset registry,
  * growth tracking, owned audience building, social proof harvesting,
  * case library building, positioning uniqueness detection, authority
  * building, tactical-tradeoff advising, and defensibility narrative

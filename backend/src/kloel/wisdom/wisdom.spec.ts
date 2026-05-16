@@ -15,9 +15,9 @@ function makeEvent(
   occurredAt: string,
   overrides: Partial<SpineEventRef> = {},
 ): SpineEventRef {
-  let seq = (makeEvent as unknown as { _seq: number })._seq ?? 0;
+  let seq = (makeEvent as { _seq: number })._seq ?? 0;
   seq++;
-  (makeEvent as unknown as { _seq: number })._seq = seq;
+  (makeEvent as { _seq: number })._seq = seq;
   return {
     eventId: `evt_${String(seq).padStart(5, '0')}`,
     eventName,
@@ -170,7 +170,7 @@ describe('WISDOM-002 — k-Anonymity + Diff-Privacy', () => {
     };
     const wp = toWisdomPattern(candidate);
     expect(wp.patternId).toBe('pat_1');
-    expect((wp as unknown as Record<string, unknown>)['evidenceWorkspaceIds']).toBeUndefined();
+    expect((wp as Record<string, unknown>)['evidenceWorkspaceIds']).toBeUndefined();
   });
 });
 

@@ -263,7 +263,7 @@ export class UnifiedAgentService {
             `ABI validation failed: ${JSON.stringify(validation.issues)}, using structured unified agent fallback`,
           );
         } else {
-          cognitiveState = abi as unknown as Record<string, unknown>;
+          cognitiveState = { ...abi };
         }
       }
     }

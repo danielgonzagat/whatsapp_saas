@@ -69,7 +69,7 @@ describe('AbiBuilderService — shadow mode composition', () => {
 
   it('reports lineage_compromised when ledger is broken — does NOT build ABI', async () => {
     const { repo, builder } = await build();
-    const internal = (repo as unknown as { entries: LineageEntry[] }).entries;
+    const internal = (repo as { entries: LineageEntry[] }).entries;
     internal[0] = { ...internal[0]!, hash: 'a'.repeat(64) };
     const result = await builder.build(defaultInput('public'));
     expect(result.status).toBe('lineage_compromised');

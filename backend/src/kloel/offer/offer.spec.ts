@@ -41,7 +41,7 @@ function ev(over?: Partial<SpineEventRef>): SpineEventRef {
   if (over?.entityRef !== undefined) defaults['entityRef'] = over.entityRef;
   if (over?.valence !== undefined) defaults['valence'] = over.valence;
   if (over?.payload !== undefined) defaults['payload'] = over.payload;
-  return defaults as unknown as SpineEventRef;
+  return defaults as SpineEventRef;
 }
 
 function makeInsight(over?: Partial<OfferInsight>): OfferInsight {

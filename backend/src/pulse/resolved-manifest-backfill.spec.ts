@@ -1,11 +1,45 @@
-import { buildResolvedManifest } from '../../../scripts/pulse/resolved-manifest';
-import type {
-  PulseCodebaseTruth,
-  PulseManifest,
-  PulseScopeState,
-} from '../../../scripts/pulse/types';
+import { spawnSync } from 'child_process';
+import * as path from 'path';
 
-function createManifest(): PulseManifest {
+interface ResolvedManifestBackfillFixtureResult {
+  readonly oauthGroup: {
+    readonly matchedFlowSpec: string | null;
+    readonly moduleKeys: readonly string[];
+    readonly pageRoutes: readonly string[];
+  } | null;
+  readonly authModule: {
+    readonly coverageStatus: string;
+    readonly discoveredFileCount: number;
+    readonly codacyIssueCount: number;
+    readonly highSeverityIssueCount: number;
+    readonly declaredByManifest: boolean;
+  } | null;
+}
+
+function runResolvedManifestBackfillFixture(): ResolvedManifestBackfillFixtureResult {
+  const repoRoot = path.resolve(__dirname, '../../..');
+  const script = String.raw`
+const fs = require('fs');
+const path = require('path');
+const ts = require('typescript');
+
+const repoRoot = process.cwd();
+require.extensions['.ts'] = function compileTypeScript(module, filename) {
+  const source = fs.readFileSync(filename, 'utf8');
+  const output = ts.transpileModule(source, {
+    compilerOptions: {
+      esModuleInterop: true,
+      module: ts.ModuleKind.CommonJS,
+      target: ts.ScriptTarget.ES2021,
+    },
+    fileName: filename,
+  }).outputText;
+  module._compile(output, filename);
+};
+
+const { buildResolvedManifest } = require(path.join(repoRoot, 'scripts/pulse/resolved-manifest.ts'));
+
+function createManifest() {
   return {
     version: 1,
     projectId: 'kloel',
@@ -77,7 +111,7 @@ function createManifest(): PulseManifest {
   };
 }
 
-function createCodebaseTruth(): PulseCodebaseTruth {
+function createCodebaseTruth() {
   return {
     generatedAt: new Date().toISOString(),
     summary: {
@@ -162,7 +196,7 @@ function createCodebaseTruth(): PulseCodebaseTruth {
   };
 }
 
-function createScopeState(): PulseScopeState {
+function createScopeState() {
   return {
     generatedAt: new Date().toISOString(),
     rootDir: '/tmp/repo',
@@ -224,15 +258,8 @@ function createScopeState(): PulseScopeState {
       stale: false,
       loc: 100,
       totalIssues: 3,
-      severityCounts: {
-        HIGH: 1,
-        MEDIUM: 1,
-        LOW: 1,
-        UNKNOWN: 0,
-      },
-      toolCounts: {
-        Opengrep: 1,
-      },
+      severityCounts: { HIGH: 1, MEDIUM: 1, LOW: 1, UNKNOWN: 0 },
+      toolCounts: { Opengrep: 1 },
       topFiles: [
         {
           filePath: 'frontend/src/app/dashboard/page.tsx',
@@ -301,22 +328,60 @@ function createScopeState(): PulseScopeState {
   };
 }
 
+const resolved = buildResolvedManifest(
+  createManifest(),
+  '/tmp/pulse.manifest.json',
+  createCodebaseTruth(),
+  createScopeState(),
+);
+const oauthGroup = resolved.flowGroups.find((group) => group.id === 'shared-auth-oauth');
+const authModule = resolved.modules.find((group) => group.key === 'auth');
+
+process.stdout.write(
+  JSON.stringify({
+    oauthGroup: oauthGroup
+      ? {
+          matchedFlowSpec: oauthGroup.matchedFlowSpec,
+          moduleKeys: oauthGroup.moduleKeys,
+          pageRoutes: oauthGroup.pageRoutes,
+        }
+      : null,
+    authModule: authModule
+      ? {
+          coverageStatus: authModule.coverageStatus,
+          discoveredFileCount: authModule.discoveredFileCount,
+          codacyIssueCount: authModule.codacyIssueCount,
+          highSeverityIssueCount: authModule.highSeverityIssueCount,
+          declaredByManifest: authModule.declaredByManifest,
+        }
+      : null,
+  }),
+);
+`;
+
+  const result = spawnSync(process.execPath, ['--max-old-space-size=8192', '-e', script], {
+    cwd: repoRoot,
+    encoding: 'utf8',
+    env: { ...process.env, NODE_ENV: 'test' },
+    maxBuffer: 1024 * 1024,
+  });
+
+  if (result.status !== 0) {
+    throw new Error(`resolved manifest fixture failed\nstdout:\n${result.stdout}\nstderr:\n${result.stderr}`);
+  }
+
+  return JSON.parse(result.stdout) as ResolvedManifestBackfillFixtureResult;
+}
+
 describe('buildResolvedManifest flow-group backfill', () => {
   it('synthesizes shared-auth-oauth when a scenario declares it and auth routes exist', () => {
-    const resolved = buildResolvedManifest(
-      createManifest(),
-      '/tmp/pulse.manifest.json',
-      createCodebaseTruth(),
-      createScopeState(),
-    );
-    const oauthGroup = resolved.flowGroups.find((group) => group.id === 'shared-auth-oauth');
-    const authModule = resolved.modules.find((group) => group.key === 'auth');
+    const resolved = runResolvedManifestBackfillFixture();
 
-    expect(oauthGroup).toBeDefined();
-    expect(oauthGroup?.matchedFlowSpec).toBe('auth-login');
-    expect(oauthGroup?.moduleKeys).toContain('auth');
-    expect(oauthGroup?.pageRoutes).toContain('/dashboard');
-    expect(authModule).toMatchObject({
+    expect(resolved.oauthGroup).toBeDefined();
+    expect(resolved.oauthGroup?.matchedFlowSpec).toBe('auth-login');
+    expect(resolved.oauthGroup?.moduleKeys).toContain('auth');
+    expect(resolved.oauthGroup?.pageRoutes).toContain('/dashboard');
+    expect(resolved.authModule).toMatchObject({
       coverageStatus: 'declared_and_discovered',
       discoveredFileCount: 2,
       codacyIssueCount: 3,

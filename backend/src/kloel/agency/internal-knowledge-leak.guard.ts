@@ -35,8 +35,8 @@ function checkBundlePair(
   const details: LeakDetail[] = [];
 
   for (const field of LEAK_CHECK_FIELDS) {
-    const sourceValue = (source as unknown as Record<string, unknown>)[field];
-    const targetValue = (target as unknown as Record<string, unknown>)[field];
+    const sourceValue = source[field];
+    const targetValue = target[field];
 
     if (
       sourceValue !== undefined &&

@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import {
   LineageEntry,
@@ -48,6 +49,9 @@ export class PrismaLineageLedgerRepository implements LineageLedgerRepository {
   }
 
   public async append(entry: LineageEntry): Promise<void> {
+    const payloadJson: Prisma.InputJsonValue = JSON.parse(
+      JSON.stringify(entry.payload),
+    );
     try {
       await this.prisma.lineageEntry.create({
         data: {
@@ -57,9 +61,7 @@ export class PrismaLineageLedgerRepository implements LineageLedgerRepository {
           eventId: entry.eventId,
           eventName: entry.eventName,
           timestampUtc: new Date(entry.timestamp),
-          payloadJson: entry.payload as unknown as Parameters<
-            typeof this.prisma.lineageEntry.create
-          >[0]['data']['payloadJson'],
+          payloadJson,
           hash: entry.hash,
         },
       });

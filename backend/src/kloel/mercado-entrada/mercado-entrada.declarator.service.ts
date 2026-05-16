@@ -301,7 +301,7 @@ export class MercadoEntradaDeclaratorService implements OnModuleInit {
           eventName: 'mercado_entrada.declared',
           truthMode: 'observed',
           provenance: PROVENANCE_SYNTHETIC,
-          payload: this.activeDeclaration.active as unknown as Record<string, unknown>,
+          payload: { ...this.activeDeclaration.active },
         })
         .catch((err: unknown) => {
           this.logger.warn(

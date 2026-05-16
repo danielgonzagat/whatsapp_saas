@@ -28,9 +28,9 @@ function makeEvent(
   occurredAt: Date,
   overrides: Partial<SpineEventRef> = {},
 ): SpineEventRef {
-  let seq = (makeEvent as unknown as { _seq: number })._seq ?? 0;
+  let seq = (makeEvent as { _seq: number })._seq ?? 0;
   seq++;
-  (makeEvent as unknown as { _seq: number })._seq = seq;
+  (makeEvent as { _seq: number })._seq = seq;
   return {
     eventId: `evt_${String(seq).padStart(5, '0')}`,
     eventName,

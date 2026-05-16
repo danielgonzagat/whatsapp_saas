@@ -1,5 +1,5 @@
 /**
- * UTP-DEFENS-001..009 — Camada XXX: Defensibility Assets
+ * UTP-DEFENS-001..009 — Camada 30: Defensibility Assets
  *
  * Cada operacao tatica emite sinal para ativos estrategicos defensaveis.
  * This module registers, tracks, and analyzes defensible assets: owned

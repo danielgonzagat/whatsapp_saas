@@ -28,7 +28,7 @@ function ev(over?: Partial<SpineEventRef>): SpineEventRef {
   if (over?.payload !== undefined) {
     defaults['payload'] = over.payload;
   }
-  return defaults as unknown as SpineEventRef;
+  return defaults as SpineEventRef;
 }
 
 function makeInsight(over?: Partial<Insight>): Insight {

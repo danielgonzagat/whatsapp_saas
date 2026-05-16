@@ -68,7 +68,7 @@ function buildScheduler() {
   );
   const spine = {
     recentEventsAsRef: jest.fn().mockReturnValue([]),
-  } as unknown as SpineEmitterService;
+  } as SpineEmitterService;
   return { scheduler: new MindBackgroundScheduler(processor, spine), spine };
 }
 

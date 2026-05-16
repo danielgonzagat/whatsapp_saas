@@ -25,7 +25,7 @@ function ev(over?: Partial<SpineEventRef>): SpineEventRef {
   if (over?.valence !== undefined) defaults['valence'] = over.valence;
   if (over?.payload !== undefined) defaults['payload'] = over.payload;
   if (over?.correlationId !== undefined) defaults['correlationId'] = over.correlationId;
-  return defaults as unknown as SpineEventRef;
+  return defaults as SpineEventRef;
 }
 
 function payment(

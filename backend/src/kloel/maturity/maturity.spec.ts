@@ -29,7 +29,7 @@ function ev(over?: Partial<SpineEventRef>): SpineEventRef {
   if (over?.eventId) defaults['eventId'] = over.eventId;
   if (over?.eventName) defaults['eventName'] = over.eventName;
   if (over?.occurredAt) defaults['occurredAt'] = over.occurredAt;
-  return defaults as unknown as SpineEventRef;
+  return defaults as SpineEventRef;
 }
 
 function gc(over?: Partial<GoalCandidate>): GoalCandidate {

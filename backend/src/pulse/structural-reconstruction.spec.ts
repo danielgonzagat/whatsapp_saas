@@ -1,86 +1,126 @@
-import * as fs from 'fs';
-import * as os from 'os';
+import { spawnSync } from 'child_process';
 import * as path from 'path';
-import {
+
+interface StructuralReconstructionFixtureResult {
+  readonly roleCountsInterface: number;
+  readonly roleCountsPersistence: number;
+  readonly realPlusPartialCapabilities: number;
+  readonly hasWidgetCapability: boolean;
+  readonly hasSymbolOnlyCapabilityName: boolean;
+  readonly hasNonRealSimulationCapability: boolean;
+  readonly totalFlows: number;
+  readonly totalParityGaps: number;
+  readonly distanceSummary: string;
+  readonly distinctWidgetProfile: {
+    readonly widgetDefined: boolean;
+    readonly profileDefined: boolean;
+    readonly differentIds: boolean;
+    readonly widgetContainsProfileRoute: boolean;
+    readonly profileContainsWidgetRoute: boolean;
+  };
+}
+
+function runStructuralReconstructionFixture(): StructuralReconstructionFixtureResult {
+  const repoRoot = path.resolve(__dirname, '../../..');
+  const script = String.raw`
+const fs = require('fs');
+const os = require('os');
+const path = require('path');
+const Module = require('module');
+const ts = require('typescript');
+
+const repoRoot = process.cwd();
+const originalLoad = Module._load;
+Module._load = function load(request, parent, isMain) {
+  if (
+    request === './external-signals/snapshot-config' &&
+    parent &&
+    parent.filename.includes(path.join('scripts', 'pulse'))
+  ) {
+    return { PULSE_EXTERNAL_INPUT_FILES: ['PULSE_CODACY_STATE.json'] };
+  }
+  return originalLoad.apply(this, arguments);
+};
+
+require.extensions['.ts'] = function compileTypeScript(module, filename) {
+  const source = fs.readFileSync(filename, 'utf8');
+  const output = ts.transpileModule(source, {
+    compilerOptions: {
+      esModuleInterop: true,
+      module: ts.ModuleKind.CommonJS,
+      target: ts.ScriptTarget.ES2021,
+    },
+    fileName: filename,
+  }).outputText;
+  module._compile(output, filename);
+};
+
+const {
   writeJson,
   writeText,
   createResolvedManifest,
   createCodebaseTruth,
   createCertification,
-} from './structural-reconstruction.fixtures';
-import { buildScopeState } from '../../../scripts/pulse/scope-state';
-import { buildCodacyEvidence } from '../../../scripts/pulse/codacy-evidence';
-import { CoreParserData } from '../../../scripts/pulse/functional-map-types';
-import { PulseHealth } from '../../../scripts/pulse/types.health';
-import { buildStructuralGraph } from '../../../scripts/pulse/structural-graph';
-import { buildCapabilityState } from '../../../scripts/pulse/capability-model';
-import { buildFlowProjection } from '../../../scripts/pulse/flow-projection';
-import { buildParityGaps } from '../../../scripts/pulse/parity-gaps';
-import { buildProductVision } from '../../../scripts/pulse/product-vision';
+} = require(path.join(repoRoot, 'backend/src/pulse/structural-reconstruction.fixtures.ts'));
+const { buildScopeState } = require(path.join(repoRoot, 'scripts/pulse/scope-state.ts'));
+const { buildCodacyEvidence } = require(path.join(repoRoot, 'scripts/pulse/codacy-evidence.ts'));
+const { buildStructuralGraph } = require(path.join(repoRoot, 'scripts/pulse/structural-graph.ts'));
+const { buildCapabilityState } = require(path.join(repoRoot, 'scripts/pulse/capability-model.ts'));
+const { buildFlowProjection } = require(path.join(repoRoot, 'scripts/pulse/flow-projection.ts'));
+const { buildParityGaps } = require(path.join(repoRoot, 'scripts/pulse/parity-gaps.ts'));
+const { buildProductVision } = require(path.join(repoRoot, 'scripts/pulse/product-vision.ts'));
 
-describe('structural reconstruction', () => {
-  let tempDir: string;
-
-  beforeEach(() => {
-    tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pulse-structural-'));
-
-    writeJson(path.join(tempDir, 'ops/protected-governance-files.json'), {
-      protectedExact: [],
-      protectedPrefixes: ['scripts/ops/'],
-    });
-    writeJson(path.join(tempDir, 'PULSE_CODACY_STATE.json'), {
-      syncedAt: new Date().toISOString(),
-      totalIssues: 1,
-      bySeverity: { HIGH: 1, MEDIUM: 0, LOW: 0, UNKNOWN: 0 },
-      byTool: { Opengrep: 1 },
-      repositorySummary: { loc: 10 },
-      topFiles: [{ file: 'frontend/src/app/fake/page.tsx', count: 1 }],
-      highPriorityBatch: [
-        {
-          issueId: 'hotspot-1',
-          filePath: 'frontend/src/app/fake/page.tsx',
-          lineNumber: 1,
-          patternId: 'fake.rule',
-          category: 'Quality',
-          severityLevel: 'HIGH',
-          tool: 'Opengrep',
-          message: 'Fake path',
-          commitSha: null,
-          commitTimestamp: null,
-        },
-      ],
-    });
-
-    writeText(
-      path.join(tempDir, 'frontend/src/app/widgets/page.tsx'),
-      'export default function Page() { return <button>Salvar</button>; }\n',
-    );
-    writeText(
-      path.join(tempDir, 'frontend/src/app/fake/page.tsx'),
-      'export default function Page() { return <button>Fake</button>; }\n',
-    );
-    writeText(
-      path.join(tempDir, 'backend/src/widgets/widget.controller.ts'),
-      'export class WidgetController {}\n',
-    );
-    writeText(
-      path.join(tempDir, 'backend/src/widgets/widget.service.ts'),
-      'export async function saveWidget() { await fetch("https://example.com"); }\n',
-    );
-    writeText(
-      path.join(tempDir, 'backend/prisma/schema.prisma'),
-      'model Widget { id String @id }\n',
-    );
+function setupTempDir() {
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pulse-structural-'));
+  writeJson(path.join(tempDir, 'ops/protected-governance-files.json'), {
+    protectedExact: [],
+    protectedPrefixes: ['scripts/ops/'],
   });
-
-  afterEach(() => {
-    fs.rmSync(tempDir, { recursive: true, force: true });
+  writeJson(path.join(tempDir, 'PULSE_CODACY_STATE.json'), {
+    syncedAt: new Date().toISOString(),
+    totalIssues: 1,
+    bySeverity: { HIGH: 1, MEDIUM: 0, LOW: 0, UNKNOWN: 0 },
+    byTool: { Opengrep: 1 },
+    repositorySummary: { loc: 10 },
+    topFiles: [{ file: 'frontend/src/app/fake/page.tsx', count: 1 }],
+    highPriorityBatch: [
+      {
+        issueId: 'hotspot-1',
+        filePath: 'frontend/src/app/fake/page.tsx',
+        lineNumber: 1,
+        patternId: 'fake.rule',
+        category: 'Quality',
+        severityLevel: 'HIGH',
+        tool: 'Opengrep',
+        message: 'Fake path',
+        commitSha: null,
+        commitTimestamp: null,
+      },
+    ],
   });
+  writeText(
+    path.join(tempDir, 'frontend/src/app/widgets/page.tsx'),
+    'export default function Page() { return <button>Salvar</button>; }\n',
+  );
+  writeText(
+    path.join(tempDir, 'frontend/src/app/fake/page.tsx'),
+    'export default function Page() { return <button>Fake</button>; }\n',
+  );
+  writeText(path.join(tempDir, 'backend/src/widgets/widget.controller.ts'), 'export class WidgetController {}\n');
+  writeText(
+    path.join(tempDir, 'backend/src/widgets/widget.service.ts'),
+    'export async function saveWidget() { await fetch("https://example.com"); }\n',
+  );
+  writeText(path.join(tempDir, 'backend/prisma/schema.prisma'), 'model Widget { id String @id }\n');
+  return tempDir;
+}
 
-  it('derives real and phantom structures from code shape instead of module names', () => {
+function runShapeScenario() {
+  const tempDir = setupTempDir();
+  try {
     const scopeState = buildScopeState(tempDir);
     const codacyEvidence = buildCodacyEvidence(scopeState);
-    const coreData: CoreParserData = {
+    const coreData = {
       uiElements: [
         {
           file: 'frontend/src/app/widgets/page.tsx',
@@ -130,15 +170,7 @@ describe('structural reconstruction', () => {
           serviceCalls: ['WidgetService.save'],
         },
       ],
-      prismaModels: [
-        {
-          name: 'Widget',
-          accessorName: 'widget',
-          line: 1,
-          fields: [],
-          relations: [],
-        },
-      ],
+      prismaModels: [{ name: 'Widget', accessorName: 'widget', line: 1, fields: [], relations: [] }],
       serviceTraces: [
         {
           file: 'backend/src/widgets/widget.service.ts',
@@ -159,22 +191,12 @@ describe('structural reconstruction', () => {
           evidence: 'no persistence',
         },
       ],
-      hookRegistry: {} as CoreParserData['hookRegistry'],
+      hookRegistry: {},
     };
 
     const resolvedManifest = createResolvedManifest();
-    const structuralGraph = buildStructuralGraph({
-      rootDir: tempDir,
-      coreData,
-      scopeState,
-      resolvedManifest,
-    });
-    const capabilityState = buildCapabilityState({
-      structuralGraph,
-      scopeState,
-      codacyEvidence,
-      resolvedManifest,
-    });
+    const structuralGraph = buildStructuralGraph({ rootDir: tempDir, coreData, scopeState, resolvedManifest });
+    const capabilityState = buildCapabilityState({ structuralGraph, scopeState, codacyEvidence, resolvedManifest });
     const flowProjection = buildFlowProjection({
       structuralGraph,
       capabilityState,
@@ -205,7 +227,7 @@ describe('structural reconstruction', () => {
         unknownSurfaces: 0,
       },
       timestamp: new Date().toISOString(),
-    } satisfies PulseHealth;
+    };
     const parityGaps = buildParityGaps({
       codebaseTruth: createCodebaseTruth(),
       capabilityState,
@@ -224,30 +246,28 @@ describe('structural reconstruction', () => {
       parityGaps,
     });
 
-    expect(structuralGraph.summary.roleCounts.interface).toBeGreaterThan(0);
-    expect(structuralGraph.summary.roleCounts.persistence).toBe(1);
-    expect(
-      capabilityState.summary.realCapabilities + capabilityState.summary.partialCapabilities,
-    ).toBeGreaterThanOrEqual(1);
-    expect(capabilityState.capabilities.some((capability) => /widget/i.test(capability.name))).toBe(
-      true,
-    );
-    expect(
-      capabilityState.capabilities.some((capability) => /^[^a-zA-Z0-9]+$/.test(capability.name)),
-    ).toBe(false);
-    expect(
-      capabilityState.capabilities.some(
-        (capability) =>
-          capability.rolesPresent.includes('simulation') && capability.status !== 'real',
+    return {
+      roleCountsInterface: structuralGraph.summary.roleCounts.interface,
+      roleCountsPersistence: structuralGraph.summary.roleCounts.persistence,
+      realPlusPartialCapabilities:
+        capabilityState.summary.realCapabilities + capabilityState.summary.partialCapabilities,
+      hasWidgetCapability: capabilityState.capabilities.some((capability) => /widget/i.test(capability.name)),
+      hasSymbolOnlyCapabilityName: capabilityState.capabilities.some((capability) => /^[^a-zA-Z0-9]+$/.test(capability.name)),
+      hasNonRealSimulationCapability: capabilityState.capabilities.some(
+        (capability) => capability.rolesPresent.includes('simulation') && capability.status !== 'real',
       ),
-    ).toBe(true);
-    expect(flowProjection.summary.totalFlows).toBe(1);
-    expect(parityGaps.summary.totalGaps).toBeGreaterThan(0);
-    expect(productVision.distanceSummary).toBeTruthy();
-    expect(productVision.distanceSummary).toMatch(/structural parity gap/i);
-  });
+      totalFlows: flowProjection.summary.totalFlows,
+      totalParityGaps: parityGaps.summary.totalGaps,
+      distanceSummary: productVision.distanceSummary,
+    };
+  } finally {
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  }
+}
 
-  it('does not collapse distinct capabilities that only share persistence', () => {
+function runDistinctPersistenceScenario() {
+  const tempDir = setupTempDir();
+  try {
     writeText(
       path.join(tempDir, 'frontend/src/app/widgets/page.tsx'),
       'export default function WidgetsPage() { return <button>Save widget</button>; }\n',
@@ -256,22 +276,13 @@ describe('structural reconstruction', () => {
       path.join(tempDir, 'frontend/src/app/profiles/page.tsx'),
       'export default function ProfilesPage() { return <button>Save profile</button>; }\n',
     );
-    writeText(
-      path.join(tempDir, 'backend/src/shared/shared.controller.ts'),
-      'export class SharedController {}\n',
-    );
-    writeText(
-      path.join(tempDir, 'backend/src/shared/shared.service.ts'),
-      'export class SharedService {}\n',
-    );
-    writeText(
-      path.join(tempDir, 'backend/prisma/schema.prisma'),
-      'model Workspace { id String @id }\n',
-    );
+    writeText(path.join(tempDir, 'backend/src/shared/shared.controller.ts'), 'export class SharedController {}\n');
+    writeText(path.join(tempDir, 'backend/src/shared/shared.service.ts'), 'export class SharedService {}\n');
+    writeText(path.join(tempDir, 'backend/prisma/schema.prisma'), 'model Workspace { id String @id }\n');
 
     const scopeState = buildScopeState(tempDir);
     const codacyEvidence = buildCodacyEvidence(scopeState);
-    const coreData: CoreParserData = {
+    const coreData = {
       uiElements: [
         {
           file: 'frontend/src/app/widgets/page.tsx',
@@ -344,15 +355,7 @@ describe('structural reconstruction', () => {
           serviceCalls: ['SharedService.saveProfile'],
         },
       ],
-      prismaModels: [
-        {
-          name: 'Workspace',
-          accessorName: 'workspace',
-          line: 1,
-          fields: [],
-          relations: [],
-        },
-      ],
+      prismaModels: [{ name: 'Workspace', accessorName: 'workspace', line: 1, fields: [], relations: [] }],
       serviceTraces: [
         {
           file: 'backend/src/shared/shared.service.ts',
@@ -371,7 +374,7 @@ describe('structural reconstruction', () => {
       ],
       proxyRoutes: [],
       facades: [],
-      hookRegistry: {} as CoreParserData['hookRegistry'],
+      hookRegistry: {},
     };
 
     const structuralGraph = buildStructuralGraph({
@@ -386,7 +389,6 @@ describe('structural reconstruction', () => {
       codacyEvidence,
       resolvedManifest: createResolvedManifest(),
     });
-
     const widgetCapability = capabilityState.capabilities.find((capability) =>
       capability.routePatterns.includes('/api/widgets'),
     );
@@ -394,10 +396,61 @@ describe('structural reconstruction', () => {
       capability.routePatterns.includes('/api/profiles'),
     );
 
-    expect(widgetCapability).toBeDefined();
-    expect(profileCapability).toBeDefined();
-    expect(widgetCapability?.id).not.toBe(profileCapability?.id);
-    expect(widgetCapability?.routePatterns).not.toContain('/api/profiles');
-    expect(profileCapability?.routePatterns).not.toContain('/api/widgets');
+    return {
+      widgetDefined: Boolean(widgetCapability),
+      profileDefined: Boolean(profileCapability),
+      differentIds: widgetCapability?.id !== profileCapability?.id,
+      widgetContainsProfileRoute: widgetCapability?.routePatterns.includes('/api/profiles') ?? false,
+      profileContainsWidgetRoute: profileCapability?.routePatterns.includes('/api/widgets') ?? false,
+    };
+  } finally {
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  }
+}
+
+process.stdout.write(
+  JSON.stringify({
+    ...runShapeScenario(),
+    distinctWidgetProfile: runDistinctPersistenceScenario(),
+  }),
+);
+`;
+
+  const result = spawnSync(process.execPath, ['--max-old-space-size=8192', '-e', script], {
+    cwd: repoRoot,
+    encoding: 'utf8',
+    env: { ...process.env, NODE_ENV: 'test' },
+    maxBuffer: 1024 * 1024,
+  });
+
+  if (result.status !== 0) {
+    throw new Error(`structural reconstruction fixture failed\nstdout:\n${result.stdout}\nstderr:\n${result.stderr}`);
+  }
+
+  return JSON.parse(result.stdout) as StructuralReconstructionFixtureResult;
+}
+
+describe('structural reconstruction', () => {
+  const fixture = runStructuralReconstructionFixture();
+
+  it('derives real and phantom structures from code shape instead of module names', () => {
+    expect(fixture.roleCountsInterface).toBeGreaterThan(0);
+    expect(fixture.roleCountsPersistence).toBe(1);
+    expect(fixture.realPlusPartialCapabilities).toBeGreaterThanOrEqual(1);
+    expect(fixture.hasWidgetCapability).toBe(true);
+    expect(fixture.hasSymbolOnlyCapabilityName).toBe(false);
+    expect(fixture.hasNonRealSimulationCapability).toBe(true);
+    expect(fixture.totalFlows).toBe(1);
+    expect(fixture.totalParityGaps).toBeGreaterThan(0);
+    expect(fixture.distanceSummary).toBeTruthy();
+    expect(fixture.distanceSummary).toMatch(/structural parity gap/i);
+  });
+
+  it('does not collapse distinct capabilities that only share persistence', () => {
+    expect(fixture.distinctWidgetProfile.widgetDefined).toBe(true);
+    expect(fixture.distinctWidgetProfile.profileDefined).toBe(true);
+    expect(fixture.distinctWidgetProfile.differentIds).toBe(true);
+    expect(fixture.distinctWidgetProfile.widgetContainsProfileRoute).toBe(false);
+    expect(fixture.distinctWidgetProfile.profileContainsWidgetRoute).toBe(false);
   });
 });

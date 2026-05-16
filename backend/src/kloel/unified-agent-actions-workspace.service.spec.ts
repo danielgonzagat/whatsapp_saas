@@ -3,6 +3,7 @@ import { UnifiedAgentActionsWorkspaceService } from './unified-agent-actions-wor
 import { PrismaService } from '../prisma/prisma.service';
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
+import { CANONICAL_MODEL_IDS } from '../lib/openai-models';
 
 jest.mock('./openai-wrapper', () => ({
   chatCompletionWithFallback: jest.fn(),
@@ -355,8 +356,8 @@ describe('UnifiedAgentActionsWorkspaceService', () => {
         wsId,
         { description: 'test', objective: 'sell' },
         null,
-        'gpt-4',
-        'gpt-3.5-turbo',
+        CANONICAL_MODEL_IDS.openAiLegacyGpt4,
+        CANONICAL_MODEL_IDS.openAiLegacyGpt35Turbo,
       );
 
       expect(result.success).toBe(false);
@@ -385,8 +386,8 @@ describe('UnifiedAgentActionsWorkspaceService', () => {
         wsId,
         { description: 'Sell product', objective: 'convert', autoActivate: true },
         { apiKey: 'fake' } as any,
-        'gpt-4',
-        'gpt-3.5-turbo',
+        CANONICAL_MODEL_IDS.openAiLegacyGpt4,
+        CANONICAL_MODEL_IDS.openAiLegacyGpt35Turbo,
       );
 
       expect(result.success).toBe(true);
@@ -422,8 +423,8 @@ describe('UnifiedAgentActionsWorkspaceService', () => {
         wsId,
         { description: 'Sell product', objective: 'convert' },
         { apiKey: 'fake' } as never,
-        'gpt-4',
-        'gpt-3.5-turbo',
+        CANONICAL_MODEL_IDS.openAiLegacyGpt4,
+        CANONICAL_MODEL_IDS.openAiLegacyGpt35Turbo,
       );
 
       expect(chatCompletionWithFallback).toHaveBeenCalled();
@@ -463,8 +464,8 @@ describe('UnifiedAgentActionsWorkspaceService', () => {
         wsId,
         { description: 'test', objective: 'sell' },
         { apiKey: 'fake' } as any,
-        'gpt-4',
-        'gpt-3.5-turbo',
+        CANONICAL_MODEL_IDS.openAiLegacyGpt4,
+        CANONICAL_MODEL_IDS.openAiLegacyGpt35Turbo,
       );
 
       expect(result.success).toBe(false);

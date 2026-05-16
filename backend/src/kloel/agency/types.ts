@@ -213,12 +213,12 @@ export const CHURN_HIGH_THRESHOLD = 0.5;
 export const CHURN_MODERATE_THRESHOLD = 0.3;
 export const OVERLOAD_THRESHOLD = 0.85;
 export const UNDERLOAD_THRESHOLD = 0.3;
-export const LEAK_CHECK_FIELDS: readonly string[] = [
+export const LEAK_CHECK_FIELDS = [
   'clientName',
   'monthlyRevenueCents',
   'openIssues',
   'satisfactionScore',
-];
+] as const satisfies readonly (keyof ClientContextBundle)[];
 export const MAX_DAYS_WITHOUT_CONTACT_BEFORE_AT_RISK = 14;
 export const MAX_DAYS_WITHOUT_CONTACT_BEFORE_CRITICAL = 30;
 

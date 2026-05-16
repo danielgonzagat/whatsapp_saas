@@ -28,9 +28,17 @@ jest.mock('../lib/llm-provider', () => ({
   resolveTextLlmApiKey: jest.fn().mockReturnValue('sk-test-key'),
 }));
 
-jest.mock('../lib/openai-models', () => ({
-  resolveBackendOpenAIModel: jest.fn().mockReturnValue('gpt-test-model'),
-}));
+jest.mock('../lib/openai-models', () => {
+  const actual = jest.requireActual<typeof import('../lib/openai-models')>(
+    '../lib/openai-models',
+  );
+  return {
+    ...actual,
+    resolveBackendOpenAIModel: jest
+      .fn()
+      .mockReturnValue(actual.CANONICAL_MODEL_IDS.openAiTextMock),
+  };
+});
 
 function makeValidAbi(overrides: Record<string, unknown> = {}) {
   return {
@@ -94,7 +102,7 @@ function makeValidAbi(overrides: Record<string, unknown> = {}) {
 function createService(mockAbiBuilder?: AbiBuilderService): GuestChatService {
   const configService = {
     get: jest.fn().mockReturnValue(undefined),
-  } as unknown as import('@nestjs/config').ConfigService;
+  } as import('@nestjs/config').ConfigService;
   return new GuestChatService(configService, undefined, undefined, mockAbiBuilder);
 }
 
@@ -106,7 +114,7 @@ async function buildGuestMessages(
   sessionId: string,
 ): Promise<{ contextMessages: GuestContextMessage[] }> {
   return (
-    service as unknown as {
+    service as {
       buildGuestMessages: (
         message: string,
         sessionId: string,
@@ -183,7 +191,7 @@ describe('GuestChatService ABI substitution (UTP-ABI-005)', () => {
           status: 'ok',
           abi: makeValidAbi(),
         }),
-      } as unknown as jest.Mocked<AbiBuilderService>;
+      } as jest.Mocked<AbiBuilderService>;
     });
 
     it('does not send any system message', async () => {

@@ -570,7 +570,7 @@ describe('GoalFieldService — shadow accumulator integration', () => {
       ev({
         eventName: 'pulse.gate_failed',
         payload: { mode: 'hard_fail', gateName: 'origin-immutability' },
-        workspaceId: undefined as unknown as string,
+        workspaceId: undefined as string,
         entityRef: { entityType: 'gate', entityId: 'origin-immutability' },
       }),
     ];

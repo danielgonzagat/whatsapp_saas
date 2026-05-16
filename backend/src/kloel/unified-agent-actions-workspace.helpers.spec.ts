@@ -28,7 +28,7 @@ describe('actionGetWorkspaceStatus helper', () => {
       flow: { count: flowCount },
       product: { count: productCount },
       ...overrides,
-    } as unknown as ActionDeps['prisma'];
+    } as ActionDeps['prisma'];
     return { prisma, workspaceFindUnique, flowCount };
   }
 
@@ -76,10 +76,10 @@ describe('actionGetWorkspaceStatus helper', () => {
     const { prisma } = buildHarness({
       workspace: {
         findUnique: workspaceFindUnique,
-      } as unknown as ActionDeps['prisma']['workspace'],
+      } as ActionDeps['prisma']['workspace'],
       flow: {
         count: flowCount,
-      } as unknown as ActionDeps['prisma']['flow'],
+      } as ActionDeps['prisma']['flow'],
     });
 
     const result = await actionGetWorkspaceStatus({

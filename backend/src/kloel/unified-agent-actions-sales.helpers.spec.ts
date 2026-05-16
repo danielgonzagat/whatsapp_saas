@@ -37,7 +37,7 @@ describe('actionHandleObjection helper', () => {
         autopilotEvent: {
           create,
         },
-      } as unknown as ActionDeps['prisma'],
+      } as ActionDeps['prisma'],
       messaging: {
         actionSendMessage,
       },

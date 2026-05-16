@@ -434,7 +434,7 @@ describe('Hypproof module (UTP-HYPPROOF-001..009)', () => {
     it('emits cognition.belief_updated event on verdict', async () => {
       const mockSpine = {
         emit: jest.fn().mockResolvedValue({ eventId: 'evt-1' }),
-      } as unknown as SpineEmitterService;
+      } as SpineEmitterService;
       const svc = new BeliefUpdateService(mockSpine, undefined);
 
       const evaluation: ProofEvaluation = {

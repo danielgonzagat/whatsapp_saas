@@ -39,7 +39,7 @@ function ev(over?: Partial<SpineEventRef>): SpineEventRef {
   if (over?.correlationId !== undefined) {
     defaults['correlationId'] = over.correlationId;
   }
-  return defaults as unknown as SpineEventRef;
+  return defaults as SpineEventRef;
 }
 
 // =========================================================================
