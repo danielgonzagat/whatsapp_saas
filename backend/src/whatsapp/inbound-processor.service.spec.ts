@@ -66,6 +66,14 @@ type MockMindHook = {
   onMessageReceived: FlexMock;
 };
 
+type QueueModuleMock = { autopilotQueue: { add: jest.Mock } };
+const nonEmptyStringMatcher = expect.stringMatching(/.+/) as unknown;
+const inlineMessageIdMatcher = expect.stringContaining('inline:msg-1') as unknown;
+
+function objectMatcher(value: Record<string, unknown>): unknown {
+  return expect.objectContaining(value) as unknown;
+}
+
 describe('InboundProcessorService', () => {
   let service: InboundProcessorService;
   let prisma: MockPrisma;
@@ -80,8 +88,29 @@ describe('InboundProcessorService', () => {
   let mindHook: MockMindHook;
   let mockAutopilotAdd: jest.Mock;
 
+  function expectTransportSend(params: {
+    recipientId: string;
+    quotedMessageId: string;
+    complianceMode?: string;
+    externalId?: unknown;
+    forceDirect?: boolean;
+  }): void {
+    const { recipientId, quotedMessageId, ...expected } = params;
+    expect(transports.send).toHaveBeenCalledWith(
+      'ws-1',
+      expect.objectContaining({
+        workspaceId: 'ws-1',
+        channel: 'whatsapp',
+        recipientId,
+        content: nonEmptyStringMatcher,
+        ...expected,
+        quotedMessageId,
+      }),
+    );
+  }
+
   beforeEach(() => {
-    const queueModule = jest.requireMock('../queue/queue');
+    const queueModule = jest.requireMock<QueueModuleMock>('../queue/queue');
     mockAutopilotAdd = queueModule.autopilotQueue.add;
 
     prisma = {
@@ -175,16 +204,23 @@ describe('InboundProcessorService', () => {
     whatsappService = {
       sendMessage: jest
         .fn()
-        .mockImplementation(async (workspaceId: string, to: string, message: string, opts?: Record<string, unknown>) => {
-          await transports.send(workspaceId, {
-            workspaceId,
-            channel: 'whatsapp',
-            recipientId: to,
-            content: message,
-            ...(opts || {}),
-          });
-          return { ok: true, direct: true };
-        }),
+        .mockImplementation(
+          async (
+            workspaceId: string,
+            to: string,
+            message: string,
+            opts?: Record<string, unknown>,
+          ) => {
+            await transports.send(workspaceId, {
+              workspaceId,
+              channel: 'whatsapp',
+              recipientId: to,
+              content: message,
+              ...(opts || {}),
+            });
+            return { ok: true, direct: true };
+          },
+        ),
       syncRemoteContactProfile: jest.fn().mockResolvedValue(true),
     };
     decisionOutcome = {
@@ -239,22 +275,16 @@ describe('InboundProcessorService', () => {
         message: 'Oi, quero saber do produto',
       }),
     );
-    expect(transports.send).toHaveBeenCalledWith(
-      'ws-1',
-      expect.objectContaining({
-        workspaceId: 'ws-1',
-        channel: 'whatsapp',
-        recipientId: '5511999999999',
-        content: expect.stringMatching(/.+/),
-        externalId: expect.stringContaining('inline:msg-1'),
-        complianceMode: 'reactive',
-        quotedMessageId: 'waha-msg-1',
-      }),
-    );
+    expectTransportSend({
+      recipientId: '5511999999999',
+      externalId: inlineMessageIdMatcher,
+      complianceMode: 'reactive',
+      quotedMessageId: 'waha-msg-1',
+    });
     expect(prisma.contact.upsert).toHaveBeenCalledWith(
       expect.objectContaining({
         update: { name: 'Alice App' },
-        create: expect.objectContaining({
+        create: objectMatcher({
           name: 'Alice App',
         }),
       }),
@@ -300,25 +330,19 @@ describe('InboundProcessorService', () => {
         contactId: 'contact-1',
         phone: '5511888888888',
         message: 'Cliente real pediu ajuda agora',
-        context: expect.objectContaining({
+        context: objectMatcher({
           source: 'waha_inline_reactive',
           deliveryMode: 'reactive',
           forceDirect: true,
         }),
       }),
     );
-    expect(transports.send).toHaveBeenCalledWith(
-      'ws-1',
-      expect.objectContaining({
-        workspaceId: 'ws-1',
-        channel: 'whatsapp',
-        recipientId: '5511888888888',
-        content: expect.stringMatching(/.+/),
-        complianceMode: 'reactive',
-        forceDirect: true,
-        quotedMessageId: 'waha-msg-live-1',
-      }),
-    );
+    expectTransportSend({
+      recipientId: '5511888888888',
+      complianceMode: 'reactive',
+      forceDirect: true,
+      quotedMessageId: 'waha-msg-live-1',
+    });
     expect(mockAutopilotAdd).not.toHaveBeenCalled();
   });
 
@@ -360,25 +384,19 @@ describe('InboundProcessorService', () => {
         contactId: 'contact-1',
         phone: '5511555555555',
         message: 'Mensagem antiga que precisa de resposta automática',
-        context: expect.objectContaining({
+        context: objectMatcher({
           source: 'waha_inline_fallback',
           deliveryMode: 'reactive',
           forceDirect: true,
         }),
       }),
     );
-    expect(transports.send).toHaveBeenCalledWith(
-      'ws-1',
-      expect.objectContaining({
-        workspaceId: 'ws-1',
-        channel: 'whatsapp',
-        recipientId: '5511555555555',
-        content: expect.stringMatching(/.+/),
-        complianceMode: 'reactive',
-        forceDirect: true,
-        quotedMessageId: 'waha-msg-catchup-inline-1',
-      }),
-    );
+    expectTransportSend({
+      recipientId: '5511555555555',
+      complianceMode: 'reactive',
+      forceDirect: true,
+      quotedMessageId: 'waha-msg-catchup-inline-1',
+    });
     expect(mockAutopilotAdd).not.toHaveBeenCalled();
   });
 
@@ -434,17 +452,11 @@ describe('InboundProcessorService', () => {
     });
 
     expect(unifiedAgent.processIncomingMessage).toHaveBeenCalled();
-    expect(transports.send).toHaveBeenCalledWith(
-      'ws-1',
-      expect.objectContaining({
-        workspaceId: 'ws-1',
-        channel: 'whatsapp',
-        recipientId: '5511666666666',
-        content: expect.stringMatching(/.+/),
-        forceDirect: true,
-        quotedMessageId: 'waha-msg-live-full-1',
-      }),
-    );
+    expectTransportSend({
+      recipientId: '5511666666666',
+      forceDirect: true,
+      quotedMessageId: 'waha-msg-live-full-1',
+    });
   });
 
   it('automatically reclaims stale human locks when a new inbound message is waiting for a reply', async () => {
@@ -477,17 +489,11 @@ describe('InboundProcessorService', () => {
       data: { mode: 'AI', assignedAgentId: null },
     });
     expect(unifiedAgent.processIncomingMessage).toHaveBeenCalled();
-    expect(transports.send).toHaveBeenCalledWith(
-      'ws-1',
-      expect.objectContaining({
-        workspaceId: 'ws-1',
-        channel: 'whatsapp',
-        recipientId: '5511444444444',
-        content: expect.stringMatching(/.+/),
-        forceDirect: true,
-        quotedMessageId: 'waha-msg-live-reclaim-1',
-      }),
-    );
+    expectTransportSend({
+      recipientId: '5511444444444',
+      forceDirect: true,
+      quotedMessageId: 'waha-msg-live-reclaim-1',
+    });
   });
 
   it('keeps live WhatsApp inbound active when the WAHA session is connected but autonomy mode is not persisted yet', async () => {
@@ -517,23 +523,17 @@ describe('InboundProcessorService', () => {
       expect.objectContaining({
         workspaceId: 'ws-1',
         phone: '5511555555555',
-        context: expect.objectContaining({
+        context: objectMatcher({
           source: 'waha_inline_reactive',
           forceDirect: true,
         }),
       }),
     );
-    expect(transports.send).toHaveBeenCalledWith(
-      'ws-1',
-      expect.objectContaining({
-        workspaceId: 'ws-1',
-        channel: 'whatsapp',
-        recipientId: '5511555555555',
-        content: expect.stringMatching(/.+/),
-        forceDirect: true,
-        quotedMessageId: 'waha-msg-live-connected-1',
-      }),
-    );
+    expectTransportSend({
+      recipientId: '5511555555555',
+      forceDirect: true,
+      quotedMessageId: 'waha-msg-live-connected-1',
+    });
   });
 
   it('falls back to a deterministic inline reply when the agent returns no text and no outbound action', async () => {
@@ -555,17 +555,11 @@ describe('InboundProcessorService', () => {
       text: 'Gostaria de saber o preço',
     });
 
-    expect(transports.send).toHaveBeenCalledWith(
-      'ws-1',
-      expect.objectContaining({
-        workspaceId: 'ws-1',
-        channel: 'whatsapp',
-        recipientId: '5511333333333',
-        content: expect.stringMatching(/.+/),
-        forceDirect: true,
-        quotedMessageId: 'waha-msg-live-fallback-1',
-      }),
-    );
+    expectTransportSend({
+      recipientId: '5511333333333',
+      forceDirect: true,
+      quotedMessageId: 'waha-msg-live-fallback-1',
+    });
   });
 
   it('falls back to a deterministic inline reply when the unified agent throws', async () => {
@@ -581,16 +575,10 @@ describe('InboundProcessorService', () => {
       text: 'Olá',
     });
 
-    expect(transports.send).toHaveBeenCalledWith(
-      'ws-1',
-      expect.objectContaining({
-        workspaceId: 'ws-1',
-        channel: 'whatsapp',
-        recipientId: '5511222222222',
-        content: expect.stringMatching(/.+/),
-        forceDirect: true,
-        quotedMessageId: 'waha-msg-live-fallback-2',
-      }),
-    );
+    expectTransportSend({
+      recipientId: '5511222222222',
+      forceDirect: true,
+      quotedMessageId: 'waha-msg-live-fallback-2',
+    });
   });
 });

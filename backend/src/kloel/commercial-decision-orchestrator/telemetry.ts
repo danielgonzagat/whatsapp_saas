@@ -56,7 +56,6 @@ export function traceInboxRecorded(
     detail: { channel: params.channel, messageLength: params.messageLength },
   });
 }
-
 export function traceLegacyGate(params: TraceParams): void {
   params.tracer.record({
     workspaceId: params.workspaceId,
@@ -66,7 +65,6 @@ export function traceLegacyGate(params: TraceParams): void {
     detail: { pipelineMode: 'legacy', outcome: 'delegated_to_legacy' },
   });
 }
-
 export function traceContactResolved(
   params: TraceParams & {
     resolvedContactId: string;
@@ -86,7 +84,6 @@ export function traceContactResolved(
     },
   });
 }
-
 export function traceConceptClassified(
   params: TraceParams & {
     concept: string;
