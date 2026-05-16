@@ -12,7 +12,14 @@
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
-import { applyEdits, replaceText, renameSymbol, replaceLiteral, posToOffset } from './engine.js';
+import {
+  applyEdits,
+  replaceText,
+  renameSymbol,
+  replaceLiteral,
+  posToOffset,
+  wrapRange,
+} from './engine.js';
 import { outline, readSymbol } from './nav.js';
 import {
   editSymbol,
@@ -198,6 +205,45 @@ async function partA(): Promise<void> {
     }
     check('ambiguous literal refused without onLine', threw);
   }
+
+  // lever #4: wrap a statement in try-catch (validated, behaviour-preserving)
+  {
+    const src = 'function f() {\n  doWork();\n}\n';
+    const r = wrapRange('a.ts', src, { line: 2, column: 3 }, { line: 2, column: 11 }, 'try-catch');
+    check(
+      'wrap try-catch validates + structures',
+      r.validation.ok &&
+        r.newText.includes('try {') &&
+        r.newText.includes('doWork()') &&
+        r.newText.includes('} catch (error) {'),
+      JSON.stringify(r.newText),
+    );
+  }
+  // wrap 'if' without condition is refused (no invented behaviour)
+  {
+    let threw = false;
+    try {
+      wrapRange('a.ts', 'x();\n', { line: 1, column: 1 }, { line: 1, column: 4 }, 'if');
+    } catch {
+      threw = true;
+    }
+    check('wrap if requires explicit condition', threw);
+  }
+  // wrap that splits a token → syntax regression refused
+  {
+    const r = wrapRange(
+      'a.ts',
+      'const a = 1;\n',
+      { line: 1, column: 1 },
+      { line: 1, column: 4 },
+      'try-catch',
+    );
+    check(
+      'wrap refuses syntax regression',
+      r.validation.ok === false,
+      JSON.stringify(r.validation),
+    );
+  }
 }
 
 async function partB(): Promise<void> {
@@ -222,10 +268,11 @@ async function partB(): Promise<void> {
     const tools = await client.listTools();
     const names = tools.tools.map((t) => t.name).sort();
     check(
-      'server lists all 16 tools (incl. atomic_transaction)',
-      names.length === 16 &&
+      'server lists all 17 tools (incl. atomic_wrap_range)',
+      names.length === 17 &&
         names.includes('atomic_replace_text') &&
         names.includes('atomic_transaction') &&
+        names.includes('atomic_wrap_range') &&
         names.includes('code_outline') &&
         names.includes('atomic_edit_symbol') &&
         names.includes('atomic_add_import') &&

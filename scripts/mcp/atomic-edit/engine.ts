@@ -390,6 +390,57 @@ export function applyEdits(file: string, original: string, edits: TextEditSpec[]
   };
 }
 
+export type WrapKind = 'try-catch' | 'block' | 'if';
+
+/**
+ * Lever #4 — semantic refactor: wrap an exact range in a try/catch, a bare
+ * block, or an `if (condition)`. One intention ("make this resilient" /
+ * "guard this") expressed as ONE validated atomic op instead of a hand
+ * line-rewrite. Re-indents the wrapped body, preserves the base indent, and
+ * routes through the same no-syntax-regression validate(). `if` REQUIRES an
+ * explicit condition (no behaviour invented).
+ */
+export function wrapRange(
+  file: string,
+  original: string,
+  start: Position,
+  end: Position,
+  kind: WrapKind,
+  condition?: string,
+): ApplyResult {
+  const s = posToOffset(original, start);
+  const e = posToOffset(original, end);
+  if (e < s) throw new Error(`wrap end before start`);
+  if (kind === 'if' && !condition) throw new Error(`'if' wrap requires an explicit condition`);
+  const lineStartOff = original.lastIndexOf('\n', s - 1) + 1;
+  const baseIndentMatch = /^[ \t]*/.exec(original.slice(lineStartOff, s));
+  const indent = baseIndentMatch ? baseIndentMatch[0] : '';
+  const body = original.slice(s, e);
+  const reindented = body
+    .split('\n')
+    .map((ln, i) => (i === 0 ? ln : ln.length ? `  ${ln}` : ln))
+    .join('\n');
+  const open = kind === 'try-catch' ? 'try {' : kind === 'if' ? `if (${condition}) {` : '{';
+  const close =
+    kind === 'try-catch' ? `} catch (error) {\n${indent}  throw error;\n${indent}}` : '}';
+  const wrapped = `${open}\n${indent}  ${reindented}\n${indent}${close}`;
+  const next = original.slice(0, s) + wrapped + original.slice(e);
+  const validation = validate(file, original, next);
+  const changedChars = Math.max(e - s, wrapped.length);
+  const firstNl = original.lastIndexOf('\n', s - 1);
+  const ls = firstNl === -1 ? 0 : firstNl + 1;
+  let le = original.indexOf('\n', e);
+  if (le === -1) le = original.length;
+  const lineSurfaceChars = le - ls;
+  return {
+    newText: next,
+    validation,
+    changedChars,
+    lineSurfaceChars,
+    expansionFactor: Number((lineSurfaceChars / Math.max(changedChars, 1)).toFixed(2)),
+  };
+}
+
 export interface RenameResult {
   newText: string;
   occurrences: number;

@@ -27,6 +27,8 @@ import {
   replaceText,
   renameSymbol,
   replaceLiteral,
+  wrapRange,
+  type WrapKind,
   type TextEditSpec,
   type ApplyResult,
   type ValidationResult,
@@ -813,6 +815,47 @@ server.registerTool(
       guardSha(before, a.expectedSha256);
       const r = await replacePropertyValue(relPath, before, a.property, a.value, a.selector);
       return commitSemantic(relPath, absPath, before, r, a.preview ?? false);
+    } catch (e) {
+      return fail(e instanceof Error ? e.message : String(e));
+    }
+  },
+);
+
+// ── Lever #4: semantic refactor — wrap a range (try-catch | block | if) ──
+server.registerTool(
+  'atomic_wrap_range',
+  {
+    title: 'Wrap an exact range in try-catch / block / if',
+    description:
+      'Semantic refactor: wrap the code between (startLine,startColumn) and (endLine,endColumn) — ' +
+      '1-based, end-exclusive — in a try/catch, a bare block, or an `if (condition)`. Re-indents the ' +
+      'body, preserves base indent, syntax-validated + atomic. `if` requires an explicit condition ' +
+      '(no behaviour is invented). One intention as one validated op instead of a hand line-rewrite.',
+    inputSchema: {
+      file: z.string().describe('repo-relative path'),
+      startLine: z.number().int().min(1),
+      startColumn: z.number().int().min(1),
+      endLine: z.number().int().min(1),
+      endColumn: z.number().int().min(1),
+      kind: z.enum(['try-catch', 'block', 'if']),
+      condition: z.string().optional().describe("required when kind='if' (e.g. 'user != null')"),
+      ...shaArg,
+    },
+  },
+  async (a) => {
+    try {
+      const { absPath, relPath } = resolveSafeTarget(a.file);
+      const before = readUtf8(absPath);
+      guardSha(before, a.expectedSha256);
+      const r = wrapRange(
+        relPath,
+        before,
+        { line: a.startLine, column: a.startColumn },
+        { line: a.endLine, column: a.endColumn },
+        a.kind as WrapKind,
+        a.condition,
+      );
+      return commit(relPath, absPath, before, r, { op: `wrap:${a.kind}` }, a.preview ?? false);
     } catch (e) {
       return fail(e instanceof Error ? e.message : String(e));
     }
