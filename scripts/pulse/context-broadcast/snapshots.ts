@@ -208,7 +208,7 @@ function gitNexusAutoReindexEnabled(): boolean {
   return (
     process.env.PULSE_DISABLE_LOCAL_ENV !== 'true' &&
     process.env.CI !== 'true' &&
-    process.env.PULSE_GITNEXUS_AUTO_REINDEX !== '0'
+    process.env.PULSE_GITNEXUS_AUTO_REINDEX === '1'
   );
 }
 
@@ -252,7 +252,7 @@ function attemptGitNexusReindex(input: {
       exitCode: null,
       durationMs: null,
       stderr: null,
-      skippedReason: 'PULSE_GITNEXUS_AUTO_REINDEX=0.',
+      skippedReason: 'PULSE_GITNEXUS_AUTO_REINDEX is not enabled.',
     };
   }
 
