@@ -2,25 +2,24 @@
 
 import { useConversationHistory } from '@/hooks/useConversationHistory';
 import { useToast } from '@/components/kloel/ToastProvider';
-import { billingApi, tokenStorage } from '@/lib/api';
+import { billingApi } from '@/lib/api';
 import { loadKloelThreadMessages } from '@/lib/kloel-conversations';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import type { AgentActivity, AgentStats } from './AgentConsole';
 import { useAuth } from './auth/auth-provider';
 import {
   applyAgentStatsEvent,
   mapThreadMessageToChatMessage,
   normalizeMessageMeta,
-  createClientRequestId,
 } from './chat-container.helpers';
 import { EMPTY_AGENT_STATS } from './chat-container.data';
 import { processAgentEvent, currentTraceDayKey } from './chat-container.event-handler';
-import { runGuestChat, runAuthedChat, extractErrorMessage } from './chat-container.message-sender';
 import { useMessageActions } from './chat-container.message-actions';
 import { useWhatsApp } from './chat-container.whatsapp-hook';
 import { useChatControllerEffects } from './useChatController.effects';
 import { useChatControllerActions } from './useChatController.actions';
+import { useChatControllerSendMessage } from './useChatController.send';
 import type { Message } from './chat-message.types';
 import type {
   AgentCursorTarget,
@@ -255,96 +254,25 @@ export function useChatController({
     setMessages((prev) => prev.filter((m) => !(m.role === 'assistant' && m.isStreaming)));
   }, []);
 
-  const handleSendMessageRef = useRef<(content: string) => Promise<void>>(async () => {});
-
-  const handleSendMessage = useCallback(
-    async (content: string) => {
-      if (!content.trim()) {
-        return;
-      }
-      const clientRequestId = createClientRequestId();
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: Date.now().toString(),
-          role: 'user',
-          content: content.trim(),
-          meta: { clientRequestId },
-        },
-      ]);
-      setInputValue('');
-      setIsTyping(true);
-      setShowSlowHint(false);
-      setIsCancelableReply(false);
-      const assistantId = (Date.now() + 1).toString();
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: assistantId,
-          role: 'assistant',
-          content: '',
-          isStreaming: true,
-          meta: { clientRequestId },
-        },
-      ]);
-      const workspaceId = tokenStorage.getWorkspaceId();
-      if (!isAuthenticated || !workspaceId) {
-        await runGuestChat({ content, assistantId, guestSessionId, setMessages, setIsTyping });
-        return;
-      }
-      try {
-        runAuthedChat({
-          content,
-          assistantId,
-          clientRequestId,
-          activeConversationId,
-          conversations,
-          setMessages,
-          setIsTyping,
-          setShowSlowHint,
-          setIsCancelableReply,
-          setActiveConversationId,
-          setActiveConversation,
-          upsertConversation,
-          refreshConversations,
-          loadConversation,
-          loadedConversationIdRef,
-          authedChatStreamRef,
-          extractErrorMessage,
-        });
-      } catch (error: unknown) {
-        setIsCancelableReply(false);
-        setShowSlowHint(false);
-        const errMsg = extractErrorMessage(
-          error,
-          'Desculpe, ocorreu um erro ao continuar sua conversa.',
-        );
-        setMessages((prev) =>
-          prev.map((m) =>
-            m.id === assistantId ? { ...m, content: errMsg, isStreaming: false } : m,
-          ),
-        );
-        setIsTyping(false);
-        showToast(errMsg, 'error');
-      }
-    },
-    [
-      activeConversationId,
-      authedChatStreamRef,
-      conversations,
-      guestSessionId,
-      isAuthenticated,
-      loadConversation,
-      loadedConversationIdRef,
-      refreshConversations,
-      setActiveConversation,
-      showToast,
-      upsertConversation,
-    ],
-  );
-  useEffect(() => {
-    handleSendMessageRef.current = handleSendMessage;
-  }, [handleSendMessage]);
+  const { handleSendMessage, handleSendMessageRef } = useChatControllerSendMessage({
+    activeConversationId,
+    authedChatStreamRef,
+    conversations,
+    guestSessionId,
+    isAuthenticated,
+    loadConversation,
+    loadedConversationIdRef,
+    refreshConversations,
+    setActiveConversation,
+    setActiveConversationId,
+    setInputValue,
+    setIsCancelableReply,
+    setIsTyping,
+    setMessages,
+    setShowSlowHint,
+    showToast,
+    upsertConversation,
+  });
 
   const {
     handleMessageRetry,
