@@ -61,6 +61,39 @@ const deny = (reason) => {
   process.exit(0);
 };
 
+const STEER =
+  `Use mcp__atomic-edit__* (replace_range / replace_text / edit_symbol / ` +
+  `replace_literal / replace_property_value / wrap_range / transaction / ` +
+  `add_import …). It returns the char-level [-removed-]{+added+} + FounderBlock — ` +
+  `the only permitted on-screen edit proof. If atomic-edit is absent from this ` +
+  `session, the MCP server is not loaded: say so and start a fresh session. ` +
+  `Do NOT silently fall back to a native/shell edit.`;
+
+// Camada 3 (Bash leg): a shell command can edit a code file too (sed -i,
+// > redirection, tee, perl -i …) and would bypass the Edit/Write ban. Deny
+// ONLY the unambiguous in-place code-content mutations — everything else
+// (npm/git/node/build/prettier/grep/cat …) passes, so workflows are safe.
+function bashEditsCode(cmd) {
+  if (!cmd) return false;
+  const codeTarget = String.raw`[^\s'"|;&>]*\.(?:ts|tsx|mts|cts|js|jsx|mjs|cjs|json|py|go|rs|java|kt|c|h|cc|cpp|hpp|cs|rb|php|swift|scala|sh|bash|zsh|css|scss|less|sql|ya?ml|toml|prisma)\b`;
+  const patterns = [
+    new RegExp(String.raw`\bsed\b[^|]*\s-i`), // sed -i
+    new RegExp(String.raw`\bperl\b[^|]*\s-i`), // perl -i
+    new RegExp(String.raw`\b(?:g?awk)\b[^|]*>\s*${codeTarget}`), // awk > code
+    new RegExp(String.raw`\btee\b[^|]*\s${codeTarget}`), // tee code
+    new RegExp(String.raw`>>?\s*${codeTarget}`), // > / >> code
+    new RegExp(String.raw`\b(?:cp|mv|install)\b[^|]*\s${codeTarget}\s*$`), // cp/mv onto code
+  ];
+  return patterns.some((re) => re.test(cmd));
+}
+
+if (tool === 'Bash') {
+  const cmd = ti.command ?? ti.cmd ?? '';
+  if (bashEditsCode(String(cmd)))
+    deny(`TUI-abolished rule: shell in-place edit of a code file is banned. ${STEER}`);
+  allow();
+}
+
 if (!NATIVE_EDIT.has(tool)) allow();
 if (filePath && !CODE_EXT.test(String(filePath))) allow(); // prose/docs OK
 
