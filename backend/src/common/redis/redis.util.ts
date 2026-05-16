@@ -1,6 +1,5 @@
 import { Logger } from '@nestjs/common';
 import Redis, { RedisOptions } from 'ioredis';
-import RedisMock from 'ioredis-mock';
 import {
   RedisConfigurationError,
   resolveRedisUrl as canonicalResolveRedisUrl,
@@ -18,6 +17,20 @@ function resolveRedisClientListenerBudget(): number {
 function setRedisClientListenerBudget(client: Redis): void {
   const listenerBudget = resolveRedisClientListenerBudget();
   client.setMaxListeners(Math.max(client.getMaxListeners(), listenerBudget));
+}
+
+type RedisMockConstructor = new () => Redis;
+let redisMockConstructor: RedisMockConstructor | null = null;
+
+function createRedisMockClient(): Redis {
+  if (!redisMockConstructor) {
+    const redisMockModule = require('ioredis-mock') as {
+      default?: RedisMockConstructor;
+    } & RedisMockConstructor;
+    redisMockConstructor = redisMockModule.default ?? redisMockModule;
+  }
+  const RedisMock = redisMockConstructor;
+  return new RedisMock();
 }
 
 // Re-export the canonical helpers so existing imports of redis.util keep working.
@@ -69,7 +82,7 @@ export function getRedisUrl(): string {
  */
 export function createRedisClient(options?: RedisOptions): Redis {
   if (process.env.JEST_WORKER_ID) {
-    return new RedisMock();
+    return createRedisMockClient();
   }
 
   const url = getRedisUrl();

@@ -35,7 +35,7 @@ export const CANONICAL_MODEL_IDS = {
   openAiLegacyGpt4: 'gpt-4',
   openAiLegacyGpt35: 'gpt-3.5',
   openAiLegacyGpt35Turbo: 'gpt-3.5-turbo',
-  anthropicHealthProbe: 'claude-3-haiku-20240307',
+  anthropicHealthProbe: 'claude-haiku-4-5-20251001',
   anthropicSonnetTest: 'claude-sonnet',
 } as const;
 

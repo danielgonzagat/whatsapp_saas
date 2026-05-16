@@ -113,6 +113,26 @@ describe('SystemHealthController', () => {
     });
   });
 
+  describe('GET /health/system', () => {
+    it('returns system health payload from service', async () => {
+      mockCheck.mockResolvedValue({
+        status: 'UP',
+        details: {
+          database: { status: 'UP' },
+          redis: { status: 'UP' },
+          worker: { status: 'UP' },
+          queues: { status: 'UP' },
+        },
+      });
+
+      const result = await controller.system();
+
+      expect(result.status).toBe('UP');
+      expect(result.details.worker.status).toBe('UP');
+      expect(mockCheck).toHaveBeenCalled();
+    });
+  });
+
   describe('GET /health/deep', () => {
     it('returns deep diagnostic payload from service', async () => {
       mockDeepDiagnostic.mockResolvedValue({

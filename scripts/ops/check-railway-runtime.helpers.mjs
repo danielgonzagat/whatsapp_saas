@@ -18,11 +18,11 @@ export async function railwayRequest(endpoint, query, variables = {}, projectTok
   return payload?.data;
 }
 
-export async function fetchJsonOrText(url, truncate) {
+export async function fetchJsonOrText(url, truncateFn = truncate) {
   const response = await fetch(url, { headers: { accept: 'application/json,text/plain,*/*' } });
   const text = await response.text();
   if (!response.ok) {
-    throw new Error(`${url} returned HTTP ${response.status}: ${truncate(text)}`);
+    throw new Error(`${url} returned HTTP ${response.status}: ${truncateFn(text)}`);
   }
   try {
     return JSON.parse(text);

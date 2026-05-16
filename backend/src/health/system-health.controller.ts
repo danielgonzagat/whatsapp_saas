@@ -54,6 +54,13 @@ export class SystemHealthController {
     return this.health.readiness();
   }
 
+  @Public()
+  @Get('system')
+  @ApiOperation({ summary: 'System health — runtime dependencies and queue state' })
+  async system() {
+    return this.health.check();
+  }
+
   @UseGuards(AdminAuthGuard)
   @WebhookEndpoint('External deep health check')
   @Get('deep')

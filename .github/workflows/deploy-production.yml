@@ -30,6 +30,35 @@ concurrency:
 
 jobs:
   deploy-production:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Railway production runtime anti-regression gate
+        env:
+          RAILWAY_RUNTIME_REQUIRED: 'true'
+          RAILWAY_RUNTIME_FAIL_ON_WARNINGS: 'true'
+          RAILWAY_PROJECT_TOKEN: ${{ secrets.RAILWAY_PROJECT_TOKEN || secrets.RAILWAY_TOKEN }}
+          RAILWAY_PROJECT_ID: ${{ secrets.RAILWAY_PROJECT_ID }}
+          RAILWAY_ENVIRONMENT_ID: ${{ vars.RAILWAY_PRODUCTION_ENVIRONMENT_ID }}
+          RAILWAY_BACKEND_SERVICE_ID: ${{ vars.RAILWAY_BACKEND_SERVICE_ID }}
+          RAILWAY_BACKEND_SERVICE_NAME: ${{ vars.RAILWAY_BACKEND_SERVICE }}
+          RAILWAY_WORKER_SERVICE_ID: ${{ vars.RAILWAY_WORKER_SERVICE_ID }}
+          RAILWAY_WORKER_SERVICE_NAME: ${{ vars.RAILWAY_WORKER_SERVICE }}
+          RAILWAY_SYSTEM_HEALTH_URL: ${{ vars.PRODUCTION_SYSTEM_HEALTH_URL }}
+          RAILWAY_BACKEND_HEALTH_URL: ${{ vars.PRODUCTION_BACKEND_HEALTHCHECK_URL }}
+          RAILWAY_FRONTEND_HEALTH_URL: ${{ vars.PRODUCTION_FRONTEND_HEALTHCHECK_URL }}
+        run: npm run railway:runtime:check
+
+  deploy-production-release:
     if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
     runs-on: ubuntu-latest
     timeout-minutes: 60
@@ -152,6 +181,14 @@ jobs:
       - name: Install deployment CLIs
         run: npm install -g @railway/cli vercel
 
+      - name: Verify Railway deployment credentials
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN || secrets.RAILWAY_PROJECT_TOKEN }}
+          RAILWAY_PROJECT_ID: ${{ secrets.RAILWAY_PROJECT_ID }}
+        run: |
+          test -n "${RAILWAY_TOKEN:-}" || { echo "::error::RAILWAY_TOKEN or RAILWAY_PROJECT_TOKEN is required"; exit 1; }
+          test -n "${RAILWAY_PROJECT_ID:-}" || { echo "::error::RAILWAY_PROJECT_ID is required"; exit 1; }
+
       - name: Backup database before deploy
         env:
           PRODUCTION_DATABASE_URL: ${{ secrets.PRODUCTION_DATABASE_URL }}
@@ -165,7 +202,7 @@ jobs:
 
       - name: Deploy backend to Railway production
         env:
-          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN || secrets.RAILWAY_PROJECT_TOKEN }}
           RAILWAY_PROJECT_ID: ${{ secrets.RAILWAY_PROJECT_ID }}
           RAILWAY_ENVIRONMENT: ${{ vars.RAILWAY_PRODUCTION_ENVIRONMENT }}
           RAILWAY_BACKEND_SERVICE: ${{ vars.RAILWAY_BACKEND_SERVICE }}
@@ -179,7 +216,7 @@ jobs:
 
       - name: Deploy worker to Railway production
         env:
-          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN || secrets.RAILWAY_PROJECT_TOKEN }}
           RAILWAY_PROJECT_ID: ${{ secrets.RAILWAY_PROJECT_ID }}
           RAILWAY_ENVIRONMENT: ${{ vars.RAILWAY_PRODUCTION_ENVIRONMENT }}
           RAILWAY_WORKER_SERVICE: ${{ vars.RAILWAY_WORKER_SERVICE }}
@@ -246,7 +283,7 @@ jobs:
       - name: Rollback on failure
         if: failure()
         env:
-          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN || secrets.RAILWAY_PROJECT_TOKEN }}
           RAILWAY_PROJECT_ID: ${{ secrets.RAILWAY_PROJECT_ID }}
           RAILWAY_ENVIRONMENT: ${{ vars.RAILWAY_PRODUCTION_ENVIRONMENT }}
         run: |
