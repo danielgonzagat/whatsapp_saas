@@ -85,7 +85,7 @@ export function useWhatsAppExperienceController({
 }: WhatsAppExperienceControllerProps) {
   const fid = useId();
   const { products } = useProducts();
-  const ownedProducts = Array.isArray(products) ? products : [];
+  const ownedProducts = useMemo(() => (Array.isArray(products) ? products : []), [products]);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const hydratedRef = useRef(false);
   const hydratedSetupKeyRef = useRef<string | null>(null);
@@ -143,13 +143,16 @@ export function useWhatsAppExperienceController({
   );
   const savedSetupKey = useMemo(() => JSON.stringify(serializeSetup(savedSetup)), [savedSetup]);
 
-  const sessionSnapshot =
-    settingsData?.providerSettings &&
-    typeof settingsData.providerSettings === 'object' &&
-    settingsData.providerSettings.whatsappApiSession &&
-    typeof settingsData.providerSettings.whatsappApiSession === 'object'
-      ? (settingsData.providerSettings.whatsappApiSession as Record<string, unknown>)
-      : {};
+  const sessionSnapshot = useMemo(
+    () =>
+      settingsData?.providerSettings &&
+      typeof settingsData.providerSettings === 'object' &&
+      settingsData.providerSettings.whatsappApiSession &&
+      typeof settingsData.providerSettings.whatsappApiSession === 'object'
+        ? (settingsData.providerSettings.whatsappApiSession as Record<string, unknown>)
+        : {},
+    [settingsData],
+  );
 
   const { isWahaProvider, effectiveProvider } = resolveEffectiveProvider(
     liveStatus?.provider,
@@ -180,32 +183,35 @@ export function useWhatsAppExperienceController({
     } | null>
   >(async () => null);
 
-  const requestQrCode = async ({ silent = false }: { silent?: boolean } = {}) => {
-    if (qrRequestInFlightRef.current) {
-      return null;
-    }
-    qrRequestInFlightRef.current = true;
-    try {
-      const qr = await getWhatsAppQrImageOnly(workspaceId);
-      if (qr.qrCode) {
-        setQrCode(qr.qrCode);
-        setScanProgress((current) => Math.max(current, QR_REFRESH_MIN_PROGRESS));
-      } else if (qr.connected) {
-        setQrCode('');
+  const requestQrCode = useCallback(
+    async ({ silent = false }: { silent?: boolean } = {}) => {
+      if (qrRequestInFlightRef.current) {
+        return null;
       }
-      return qr;
-    } catch (err: unknown) {
-      if (getErrorStatus(err) === 401) {
-        setSessionExpired(true);
-        setError(SESSION_EXPIRED_MESSAGE);
-      } else if (!silent) {
-        setError(getErrorMessage(err, 'Não foi possível carregar o QR Code.'));
+      qrRequestInFlightRef.current = true;
+      try {
+        const qr = await getWhatsAppQrImageOnly(workspaceId);
+        if (qr.qrCode) {
+          setQrCode(qr.qrCode);
+          setScanProgress((current) => Math.max(current, QR_REFRESH_MIN_PROGRESS));
+        } else if (qr.connected) {
+          setQrCode('');
+        }
+        return qr;
+      } catch (err: unknown) {
+        if (getErrorStatus(err) === 401) {
+          setSessionExpired(true);
+          setError(SESSION_EXPIRED_MESSAGE);
+        } else if (!silent) {
+          setError(getErrorMessage(err, 'Não foi possível carregar o QR Code.'));
+        }
+        return null;
+      } finally {
+        qrRequestInFlightRef.current = false;
       }
-      return null;
-    } finally {
-      qrRequestInFlightRef.current = false;
-    }
-  };
+    },
+    [workspaceId],
+  );
   useEffect(() => {
     requestQrCodeRef.current = requestQrCode;
   }, [requestQrCode]);

@@ -52,7 +52,7 @@ export function useCanvasDesigns() {
   }, []);
 
   useEffect(() => {
-    fetchDesigns();
+    queueMicrotask(() => fetchDesigns());
   }, [fetchDesigns]);
 
   const deleteDesign = async (id: string) => {

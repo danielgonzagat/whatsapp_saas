@@ -45,7 +45,7 @@ export function useFlowTemplates() {
     try {
       await downloadFlowTemplate(templateId);
       setDownloadedIds((prev) => new Set([...prev, templateId]));
-    } catch (_err: unknown) {
+    } catch {
       // non-fatal: template was shown, just increment failed count
     } finally {
       setDownloading((prev) => ({ ...prev, [templateId]: false }));

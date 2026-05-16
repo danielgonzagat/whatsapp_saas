@@ -46,11 +46,13 @@ export default function PerfilPublicoSection({
 
   useEffect(() => {
     if (profile) {
-      setForm({
-        publicName: profile.publicName || profile.name || '',
-        bio: profile.bio || '',
-        website: profile.website || '',
-        instagram: profile.instagram || '',
+      queueMicrotask(() => {
+        setForm({
+          publicName: profile.publicName || profile.name || '',
+          bio: profile.bio || '',
+          website: profile.website || '',
+          instagram: profile.instagram || '',
+        });
       });
     }
   }, [profile]);
@@ -180,7 +182,10 @@ export default function PerfilPublicoSection({
             ) : (
               <span
                 style={{
-                  fontFamily: SORA, fontSize: 18, fontWeight: 700, color: 'var(--app-text-tertiary)',
+                  fontFamily: SORA,
+                  fontSize: 18,
+                  fontWeight: 700,
+                  color: 'var(--app-text-tertiary)',
                 }}
               >
                 {initials}
@@ -190,7 +195,11 @@ export default function PerfilPublicoSection({
           <div style={{ flex: 1 }}>
             <span
               style={{
-                fontSize: 15, fontWeight: 600, color: 'var(--app-text-primary)', display: 'block', fontFamily: SORA,
+                fontSize: 15,
+                fontWeight: 600,
+                color: 'var(--app-text-primary)',
+                display: 'block',
+                fontFamily: SORA,
               }}
             >
               {form.publicName || 'Seu nome'}
@@ -198,7 +207,11 @@ export default function PerfilPublicoSection({
             {form.bio && (
               <span
                 style={{
-                  fontSize: 11, color: 'var(--app-text-secondary)', display: 'block', marginTop: 2, fontFamily: SORA,
+                  fontSize: 11,
+                  color: 'var(--app-text-secondary)',
+                  display: 'block',
+                  marginTop: 2,
+                  fontFamily: SORA,
                 }}
               >
                 {form.bio}
@@ -208,7 +221,12 @@ export default function PerfilPublicoSection({
               {form.website && (
                 <span
                   style={{
-                    fontSize: 10, color: 'var(--app-text-tertiary)', fontFamily: SORA, display: 'flex', alignItems: 'center', gap: 4,
+                    fontSize: 10,
+                    color: 'var(--app-text-tertiary)',
+                    fontFamily: SORA,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 4,
                   }}
                 >
                   {Icons.globe(10)} {form.website.replace(HTTPS_RE, '')}
@@ -223,7 +241,14 @@ export default function PerfilPublicoSection({
           </div>
           <div style={{ textAlign: 'right' as const }}>
             <span style={{ fontFamily: MONO, fontSize: 18, fontWeight: 600, color: EMBER }}>0</span>
-            <span style={{ fontSize: 9, color: 'var(--app-text-tertiary)', display: 'block', fontFamily: SORA }}>
+            <span
+              style={{
+                fontSize: 9,
+                color: 'var(--app-text-tertiary)',
+                display: 'block',
+                fontFamily: SORA,
+              }}
+            >
               produtos
             </span>
           </div>

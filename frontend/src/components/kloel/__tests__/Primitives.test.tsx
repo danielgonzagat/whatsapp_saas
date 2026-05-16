@@ -1,12 +1,12 @@
+import { createElement } from 'react';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { colors } from '@/lib/design-tokens';
 import { Button, IconButton, Badge, Chip, Skeleton, Avatar } from '../Primitives';
 
 vi.mock('next/image', () => ({
-  default: ({ src, alt = '', ...props }: React.ImgHTMLAttributes<HTMLImageElement>) => (
-    <img src={typeof src === 'string' ? src : ''} alt={alt} {...props} />
-  ),
+  default: ({ src, alt = '', ...props }: React.ImgHTMLAttributes<HTMLImageElement>) =>
+    createElement('img', { src: typeof src === 'string' ? src : '', alt, ...props }),
 }));
 
 describe('Button', () => {

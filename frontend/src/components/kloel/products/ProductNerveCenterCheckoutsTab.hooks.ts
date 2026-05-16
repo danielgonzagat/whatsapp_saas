@@ -84,7 +84,15 @@ export function useCheckoutConfigForm(
   const handleSave = async () => {
     setCkSaving(true);
     try {
-      const { id, planId, plan, createdAt, updatedAt, pixels, ...rest } = ckLocal;
+      const {
+        id: _id,
+        planId: _planId,
+        plan: _plan,
+        createdAt: _createdAt,
+        updatedAt: _updatedAt,
+        pixels: _pixels,
+        ...rest
+      } = ckLocal;
       await saveCkCfg(rest);
       await syncCheckoutLinks(ckEdit, linkedPlanIds);
       if (checkoutForCk && ckLocal.brandName !== checkoutForCk.name) {

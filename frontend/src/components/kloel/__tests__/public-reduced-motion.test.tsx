@@ -1,3 +1,4 @@
+import { createElement } from 'react';
 import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -16,9 +17,8 @@ vi.mock('next/link', () => ({
 }));
 
 vi.mock('next/image', () => ({
-  default: ({ src, alt = '', ...props }: React.ImgHTMLAttributes<HTMLImageElement>) => (
-    <img src={typeof src === 'string' ? src : ''} alt={alt} {...props} />
-  ),
+  default: ({ src, alt = '', ...props }: React.ImgHTMLAttributes<HTMLImageElement>) =>
+    createElement('img', { src: typeof src === 'string' ? src : '', alt, ...props }),
 }));
 
 vi.mock('@/components/kloel/auth/auth-provider', () => ({

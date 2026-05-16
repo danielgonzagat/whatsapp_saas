@@ -28,7 +28,7 @@ export function CustomerPersonasSection({
     if (!value) {
       return;
     }
-    setPersonas(value);
+    queueMicrotask(() => setPersonas(value));
   }, [value]);
 
   const handleAddPersona = () => {

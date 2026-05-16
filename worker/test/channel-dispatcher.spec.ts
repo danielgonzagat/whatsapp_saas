@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 const mockSendMail = vi.fn().mockResolvedValue({ messageId: 'test-msg-id' });
 
@@ -43,6 +43,10 @@ describe('channel-dispatcher', () => {
       MAIL_PASS: 'pass',
       MAIL_FROM: 'test@test.com',
     });
+  });
+
+  afterEach(() => {
+    setMailEnv(mailEnvBackup);
   });
 
   describe('sendEmail', () => {

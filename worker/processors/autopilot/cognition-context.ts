@@ -18,7 +18,9 @@ export async function fetchConversationHistory(
   phone?: string,
   limit = CONVERSATION_HISTORY_LIMIT,
 ) {
-  if (!workspaceId) return [];
+  if (!workspaceId) {
+    return [];
+  }
   let contact = contactId
     ? await prisma.contact.findFirst({
         where: { id: contactId, workspaceId },
@@ -31,7 +33,9 @@ export async function fetchConversationHistory(
       select: { id: true, phone: true },
     });
   }
-  if (!contact) return [];
+  if (!contact) {
+    return [];
+  }
 
   const messages = await prisma.message.findMany({
     where: { workspaceId, contactId: contact.id },
@@ -47,7 +51,9 @@ export async function fetchCompressedContactContext(
   contactId?: string,
   phone?: string,
 ) {
-  if (!workspaceId) return '';
+  if (!workspaceId) {
+    return '';
+  }
 
   const normalizedPhone = String(phone || '').trim();
   const keys = [
@@ -55,7 +61,9 @@ export async function fetchCompressedContactContext(
     normalizedPhone ? `compressed_context:${normalizedPhone}` : '',
   ].filter(Boolean);
 
-  if (!keys.length) return '';
+  if (!keys.length) {
+    return '';
+  }
 
   const memory = await prisma.kloelMemory.findFirst({
     where: { workspaceId, category: 'compressed_context', key: { in: keys } },
@@ -73,7 +81,9 @@ export async function fetchCompressedContactContext(
 }
 
 export async function getKbContext(workspaceId?: string, text?: string, apiKey?: string) {
-  if (!workspaceId || !text || !apiKey) return '';
+  if (!workspaceId || !text || !apiKey) {
+    return '';
+  }
   try {
     const openai = new OpenAI({ apiKey });
     const cleaned = text.slice(0, 2000);
@@ -91,7 +101,9 @@ export async function getKbContext(workspaceId?: string, text?: string, apiKey?:
       ORDER BY distance ASC
       LIMIT 3
     `;
-    if (!rows || rows.length === 0) return '';
+    if (!rows || rows.length === 0) {
+      return '';
+    }
     return rows
       .map((r: UnknownRecord) => r.content)
       .join('\n---\n')

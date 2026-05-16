@@ -38,7 +38,8 @@ const SOURCE_LABELS: Record<string, string> = {
 
 function FlowPageContent() {
   const searchParams = useSearchParams();
-  const flowId = searchParams.get('id') || `flow-${Date.now()}`;
+  const [fallbackFlowId] = useState(() => `flow-${Date.now()}`);
+  const flowId = searchParams.get('id') || fallbackFlowId;
   const requestedTab = searchParams.get('tab');
   const source = searchParams.get('source') || '';
   const purpose = searchParams.get('purpose') || '';
@@ -86,9 +87,9 @@ function FlowPageContent() {
       requestedTab === 'executions' ||
       requestedTab === 'editor'
     ) {
-      setActiveTab(requestedTab);
+      queueMicrotask(() => setActiveTab(requestedTab));
     } else if (source === 'followups') {
-      setActiveTab('editor');
+      queueMicrotask(() => setActiveTab('editor'));
     }
   }, [requestedTab, source]);
 
@@ -196,11 +197,7 @@ function FlowPageContent() {
               }}
             >
               {optimizing ? (
-                <KloelMushroomMark
-                  size={18}
-                  title="Otimizando"
-                  traceColor={colors.ember.primary}
-                />
+                <KloelMushroomMark size={18} title="Otimizando" traceColor={colors.ember.primary} />
               ) : (
                 <Sparkles className="w-4 h-4" aria-hidden="true" />
               )}

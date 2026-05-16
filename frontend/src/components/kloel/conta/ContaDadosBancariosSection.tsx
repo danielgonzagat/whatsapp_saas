@@ -4,7 +4,12 @@ import { kloelT } from '@/lib/i18n/t';
 import { useEffect, useRef, useState, useId } from 'react';
 import { useBankMutations } from '@/hooks/useKyc';
 import { useToast } from '@/components/kloel/ToastProvider';
-import { useBrazilianBanks, formatBankCode, POPULAR_BANK_CODES, type BrazilianBank } from '@/hooks/useBrazilianBanks';
+import {
+  useBrazilianBanks,
+  formatBankCode,
+  POPULAR_BANK_CODES,
+  type BrazilianBank,
+} from '@/hooks/useBrazilianBanks';
 import Icons from './ContaIcons';
 import { SORA, MONO, EMBER, U0300__U036F_RE } from './ContaConstants';
 import { cleanPayload, getErrorMessage, bankAccountToFormState } from './ContaHelpers';
@@ -104,13 +109,17 @@ export default function DadosBancariosSection({
 
   useEffect(() => {
     if (bankAccount) {
-      setForm(bankAccountToFormState(bankAccount, autoHolderName, autoHolderDoc));
+      queueMicrotask(() =>
+        setForm(bankAccountToFormState(bankAccount, autoHolderName, autoHolderDoc)),
+      );
     } else {
-      setForm((prev) => ({
-        ...prev,
-        holderName: autoHolderName || prev.holderName,
-        holderDocument: autoHolderDoc || prev.holderDocument,
-      }));
+      queueMicrotask(() => {
+        setForm((prev) => ({
+          ...prev,
+          holderName: autoHolderName || prev.holderName,
+          holderDocument: autoHolderDoc || prev.holderDocument,
+        }));
+      });
     }
   }, [bankAccount, autoHolderName, autoHolderDoc]);
 
@@ -161,7 +170,11 @@ export default function DadosBancariosSection({
             formBankName={form.bankName}
             formBankCode={form.bankCode}
             bankDropdownOpen={bankDropdownOpen}
-            onToggleDropdown={() => { if (!banksLoading) {setBankDropdownOpen(true);} }}
+            onToggleDropdown={() => {
+              if (!banksLoading) {
+                setBankDropdownOpen(true);
+              }
+            }}
             bankSearch={bankSearch}
             onBankSearchChange={setBankSearch}
             searchTerm={searchTerm}
@@ -277,7 +290,13 @@ export default function DadosBancariosSection({
           gap: 10,
         }}
       >
-        <span style={{ color: isPJ ? colors.semantic.success : colors.semantic.warning, marginTop: 2, flexShrink: 0 }}>
+        <span
+          style={{
+            color: isPJ ? colors.semantic.success : colors.semantic.warning,
+            marginTop: 2,
+            flexShrink: 0,
+          }}
+        >
           {isPJ ? Icons.check(16) : Icons.alert(16)}
         </span>
         <div>

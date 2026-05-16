@@ -98,14 +98,16 @@ export function useCheckoutFormState(productId: string): CheckoutFormStateHook {
   useEffect(() => {
     const draft = readInitialDraft(productId);
     if (draft) {
-      setForm(draft.form);
-      setShowModal(draft.showModal);
-      setEditingCheckoutId(draft.editingCheckoutId);
+      queueMicrotask(() => setForm(draft.form));
+      queueMicrotask(() => setShowModal(draft.showModal));
+      queueMicrotask(() => {
+        setEditingCheckoutId(draft.editingCheckoutId);
+      });
       return;
     }
-    setForm(createDefaultCheckoutForm());
-    setShowModal(false);
-    setEditingCheckoutId(null);
+    queueMicrotask(() => setForm(createDefaultCheckoutForm()));
+    queueMicrotask(() => setShowModal(false));
+    queueMicrotask(() => setEditingCheckoutId(null));
   }, [productId]);
 
   useEffect(() => {

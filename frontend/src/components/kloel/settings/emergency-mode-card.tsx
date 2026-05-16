@@ -30,8 +30,8 @@ export function EmergencyModeCard({ value, saving = false, onSave }: EmergencyMo
   const [fixedMessage, setFixedMessage] = useState(value?.fixedMessage || '');
 
   useEffect(() => {
-    setEmergencyAction(value?.emergencyAction || '');
-    setFixedMessage(value?.fixedMessage || '');
+    queueMicrotask(() => setEmergencyAction(value?.emergencyAction || ''));
+    queueMicrotask(() => setFixedMessage(value?.fixedMessage || ''));
   }, [value]);
 
   return (

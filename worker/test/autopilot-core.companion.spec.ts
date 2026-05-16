@@ -1,8 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
-import {
-  listVariantKeys,
-  resolveVariantByKey,
-} from '../processors/cia/self-improvement';
+import { listVariantKeys, resolveVariantByKey } from '../processors/cia/self-improvement';
 
 describe('autopilot-core companion — variant decision integration', () => {
   beforeEach(() => {

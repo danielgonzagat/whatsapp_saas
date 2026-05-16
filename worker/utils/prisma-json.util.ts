@@ -9,7 +9,9 @@ function coerceScalar(value: unknown): Prisma.InputJsonValue | undefined {
 }
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
-  if (!value || typeof value !== 'object') return false;
+  if (!value || typeof value !== 'object') {
+    return false;
+  }
   const proto = Object.getPrototypeOf(value);
   return proto === Object.prototype || proto === null;
 }
@@ -17,7 +19,9 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
 function coerceObject(value: Record<string, unknown>): Prisma.InputJsonObject {
   const out: Record<string, Prisma.InputJsonValue> = {};
   for (const [key, entry] of Object.entries(value)) {
-    if (entry === undefined) continue;
+    if (entry === undefined) {
+      continue;
+    }
     out[key] = toPrismaJsonValue(entry);
   }
   return out;
@@ -31,9 +35,13 @@ function coerceObject(value: Record<string, unknown>): Prisma.InputJsonObject {
  * need cross-package imports.
  */
 export function toPrismaJsonValue(value: unknown): Prisma.InputJsonValue {
-  if (value === null) return null as never as Prisma.InputJsonValue;
+  if (value === null) {
+    return null as never as Prisma.InputJsonValue;
+  }
   const scalar = coerceScalar(value);
-  if (scalar !== undefined) return scalar;
+  if (scalar !== undefined) {
+    return scalar;
+  }
   if (Array.isArray(value)) {
     return value.map((entry) => toPrismaJsonValue(entry));
   }

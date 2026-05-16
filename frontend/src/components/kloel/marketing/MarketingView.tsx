@@ -185,9 +185,7 @@ export default function MarketingView({ defaultTab = 'conversas' }: { defaultTab
     }
   }, [userEmail]);
 
-  const activeChannelKey = CHANNEL_KEYS.includes(tab as (typeof CHANNEL_KEYS)[number])
-    ? tab
-    : null;
+  const activeChannelKey = CHANNEL_KEYS.includes(tab as (typeof CHANNEL_KEYS)[number]) ? tab : null;
 
   // Track which channels have already received the meta=success auto-advance.
   // Without this guard the effect would re-fire whenever tab switches while
@@ -197,7 +195,9 @@ export default function MarketingView({ defaultTab = 'conversas' }: { defaultTab
   // Strip ?meta=success&channel=... from the URL after handling so a tab
   // switch or refresh doesn't replay the auto-advance.
   const clearMetaQuery = useCallback(() => {
-    if (!pathname || !searchParams) return;
+    if (!pathname || !searchParams) {
+      return;
+    }
     const next = new URLSearchParams(searchParams.toString());
     let touched = false;
     for (const key of ['meta', 'reason', 'channel']) {
@@ -206,7 +206,9 @@ export default function MarketingView({ defaultTab = 'conversas' }: { defaultTab
         touched = true;
       }
     }
-    if (!touched) return;
+    if (!touched) {
+      return;
+    }
     const qs = next.toString();
     router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
   }, [pathname, searchParams, router]);
@@ -262,9 +264,7 @@ export default function MarketingView({ defaultTab = 'conversas' }: { defaultTab
       return;
     }
     let cancelled = false;
-    apiFetch(
-      `/marketing/connect/channel-setup?channel=${encodeURIComponent(activeChannelKey)}`,
-    )
+    apiFetch(`/marketing/connect/channel-setup?channel=${encodeURIComponent(activeChannelKey)}`)
       .then((res) => {
         if (cancelled) {
           return;
@@ -360,9 +360,11 @@ export default function MarketingView({ defaultTab = 'conversas' }: { defaultTab
       if (channelKey === 'tiktok') {
         return false;
       }
-      return (connectionStatus?.channels as Record<string, { connected?: boolean }> | undefined)?.[
-        channelKey
-      ]?.connected === true;
+      return (
+        (connectionStatus?.channels as Record<string, { connected?: boolean }> | undefined)?.[
+          channelKey
+        ]?.connected === true
+      );
     },
     [connectionStatus],
   );
@@ -469,9 +471,12 @@ export default function MarketingView({ defaultTab = 'conversas' }: { defaultTab
           />
         )}
 
-        {tab === 'whatsapp' && (
-          shouldShowWizard('whatsapp') ? (
-            <OfficialMarketingChannelPage channel="whatsapp" {...(wizardInitialStep !== undefined ? { initialStep: wizardInitialStep } : {})} />
+        {tab === 'whatsapp' &&
+          (shouldShowWizard('whatsapp') ? (
+            <OfficialMarketingChannelPage
+              channel="whatsapp"
+              {...(wizardInitialStep !== undefined ? { initialStep: wizardInitialStep } : {})}
+            />
           ) : (
             <WhatsAppMarketingTab
               channelData={getChannelData('whatsapp')}
@@ -482,13 +487,15 @@ export default function MarketingView({ defaultTab = 'conversas' }: { defaultTab
               connection={channelTabProps.connectionStatus?.channels?.whatsapp}
               onRefreshConnectionStatus={channelTabProps.onRefreshConnectionStatus}
             />
-          )
-        )}
+          ))}
 
         {tab === 'instagram' && (
           <div style={{ position: 'relative' }}>
             {shouldShowWizard('instagram') ? (
-              <OfficialMarketingChannelPage channel="instagram" {...(wizardInitialStep !== undefined ? { initialStep: wizardInitialStep } : {})} />
+              <OfficialMarketingChannelPage
+                channel="instagram"
+                {...(wizardInitialStep !== undefined ? { initialStep: wizardInitialStep } : {})}
+              />
             ) : (
               <InstagramMarketingTab
                 channelData={getChannelData('instagram')}
@@ -504,7 +511,10 @@ export default function MarketingView({ defaultTab = 'conversas' }: { defaultTab
         {tab === 'tiktok' && (
           <div style={{ position: 'relative' }}>
             {shouldShowWizard('tiktok') ? (
-              <OfficialMarketingChannelPage channel="tiktok" {...(wizardInitialStep !== undefined ? { initialStep: wizardInitialStep } : {})} />
+              <OfficialMarketingChannelPage
+                channel="tiktok"
+                {...(wizardInitialStep !== undefined ? { initialStep: wizardInitialStep } : {})}
+              />
             ) : (
               <TikTokMarketingTab channelData={getChannelData('tiktok')} />
             )}
@@ -514,7 +524,10 @@ export default function MarketingView({ defaultTab = 'conversas' }: { defaultTab
         {tab === 'facebook' && (
           <div style={{ position: 'relative' }}>
             {shouldShowWizard('facebook') ? (
-              <OfficialMarketingChannelPage channel="facebook" {...(wizardInitialStep !== undefined ? { initialStep: wizardInitialStep } : {})} />
+              <OfficialMarketingChannelPage
+                channel="facebook"
+                {...(wizardInitialStep !== undefined ? { initialStep: wizardInitialStep } : {})}
+              />
             ) : (
               <FacebookMarketingTab
                 channelData={getChannelData('facebook')}
@@ -530,7 +543,10 @@ export default function MarketingView({ defaultTab = 'conversas' }: { defaultTab
         {tab === 'email' && (
           <div style={{ position: 'relative' }}>
             {shouldShowWizard('email') ? (
-              <OfficialMarketingChannelPage channel="email" {...(wizardInitialStep !== undefined ? { initialStep: wizardInitialStep } : {})} />
+              <OfficialMarketingChannelPage
+                channel="email"
+                {...(wizardInitialStep !== undefined ? { initialStep: wizardInitialStep } : {})}
+              />
             ) : (
               <EmailMarketingTab
                 channelData={getChannelData('email')}

@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 
 const envBackup = { ...process.env };
 
@@ -14,6 +14,11 @@ function clearOpenAiEnvs() {
 describe('openai-models', () => {
   beforeEach(() => {
     clearOpenAiEnvs();
+  });
+
+  afterEach(() => {
+    clearOpenAiEnvs();
+    Object.assign(process.env, envBackup);
   });
 
   describe('resolveWorkerOpenAIModel', () => {
@@ -44,7 +49,9 @@ describe('openai-models', () => {
 
     it('returns default audio_understanding_fallback model when no env set', async () => {
       const { resolveWorkerOpenAIModel } = await import('../providers/openai-models');
-      expect(resolveWorkerOpenAIModel('audio_understanding_fallback')).toBe('gpt-4o-mini-transcribe');
+      expect(resolveWorkerOpenAIModel('audio_understanding_fallback')).toBe(
+        'gpt-4o-mini-transcribe',
+      );
     });
 
     it('overrides brain model via OPENAI_BRAIN_MODEL env', async () => {

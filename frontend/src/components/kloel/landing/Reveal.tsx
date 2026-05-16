@@ -6,11 +6,11 @@ import { usePrefersReducedMotion } from './usePrefersReducedMotion';
 export function Reveal({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) {
   const prefersReducedMotion = usePrefersReducedMotion();
   const ref = useRef<HTMLDivElement | null>(null);
-  const [visible, setVisible] = useState(false);
+  const [hasEnteredViewport, setHasEnteredViewport] = useState(false);
+  const visible = prefersReducedMotion || hasEnteredViewport;
 
   useEffect(() => {
     if (prefersReducedMotion) {
-      setVisible(true);
       return;
     }
 
@@ -21,7 +21,7 @@ export function Reveal({ children, delay = 0 }: { children: React.ReactNode; del
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
-          setVisible(true);
+          setHasEnteredViewport(true);
           observer.disconnect();
         }
       },

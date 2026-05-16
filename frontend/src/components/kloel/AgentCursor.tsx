@@ -89,14 +89,16 @@ export function AgentCursor({
 
   useEffect(() => {
     if (takeoverActive || !streamConnected) {
-      setBubbleVisible(false);
+      queueMicrotask(() => setBubbleVisible(false));
       return;
     }
 
     const nextThought = String(thought || '').trim();
     if (nextThought) {
-      setBubbleText(nextThought);
-      setBubbleVisible(true);
+      queueMicrotask(() => setBubbleText(nextThought));
+      queueMicrotask(() => {
+        setBubbleVisible(true);
+      });
       if (hideBubbleTimerRef.current) {
         clearTimeout(hideBubbleTimerRef.current);
       }
@@ -107,7 +109,7 @@ export function AgentCursor({
     }
 
     if (isThinking) {
-      setBubbleVisible(true);
+      queueMicrotask(() => setBubbleVisible(true));
       if (hideBubbleTimerRef.current) {
         clearTimeout(hideBubbleTimerRef.current);
         hideBubbleTimerRef.current = null;
@@ -139,8 +141,8 @@ export function AgentCursor({
     }
 
     const center = { x: rect.width / 2, y: rect.height / 2 };
-    setDisplayPoint(center);
-    setHasPosition(true);
+    queueMicrotask(() => setDisplayPoint(center));
+    queueMicrotask(() => setHasPosition(true));
   }, [containerRef, hasPosition, imageRef, streamConnected, takeoverActive]);
 
   useEffect(() => {

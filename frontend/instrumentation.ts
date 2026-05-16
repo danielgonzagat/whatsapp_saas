@@ -1,7 +1,9 @@
 const sentryEnabled = process.env.KLOEL_ENABLE_SENTRY_BUILD === 'true';
 
 async function getSentry() {
-  if (!sentryEnabled) return null;
+  if (!sentryEnabled) {
+    return null;
+  }
   return import('@sentry/nextjs');
 }
 
@@ -11,7 +13,9 @@ export async function register() {
   }
 
   const Sentry = await getSentry();
-  if (!Sentry) return;
+  if (!Sentry) {
+    return;
+  }
 
   Sentry.init({
     dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
@@ -23,6 +27,8 @@ export async function register() {
 
 export async function onRequestError(...args: unknown[]) {
   const Sentry = await getSentry();
-  if (!Sentry) return;
+  if (!Sentry) {
+    return;
+  }
   return (Sentry.captureRequestError as (...params: unknown[]) => unknown)(...args);
 }

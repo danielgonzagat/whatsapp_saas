@@ -52,7 +52,7 @@ export default function PixPaymentPage() {
         0,
         Math.floor((new Date(data.payment.pixExpiresAt).getTime() - Date.now()) / 1000),
       );
-      setCountdown(remaining);
+      queueMicrotask(() => setCountdown(remaining));
     }
   }, [data?.payment?.pixExpiresAt]);
 
@@ -103,8 +103,17 @@ export default function PixPaymentPage() {
       <div style={{ maxWidth: '440px', width: '100%', textAlign: 'center' }}>
         {/* Header */}
         <div style={{ marginBottom: '24px' }}>
-          <div style={{ fontSize: '40px', marginBottom: '8px' }}>{kloelT(`&rgba(153, 136, 136, 0.6);`)}</div>
-          <h1 style={{ color: colors.checkout.textPrimary, fontSize: '22px', fontWeight: 700, margin: '0 0 4px' }}>
+          <div style={{ fontSize: '40px', marginBottom: '8px' }}>
+            {kloelT(`&rgba(153, 136, 136, 0.6);`)}
+          </div>
+          <h1
+            style={{
+              color: colors.checkout.textPrimary,
+              fontSize: '22px',
+              fontWeight: 700,
+              margin: '0 0 4px',
+            }}
+          >
             {kloelT(`Pagamento via Pix`)}
           </h1>
           <p style={{ color: colors.text.muted, fontSize: '14px', margin: 0 }}>

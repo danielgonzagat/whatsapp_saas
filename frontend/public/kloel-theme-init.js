@@ -19,7 +19,7 @@
   try {
     var stored = window.localStorage.getItem('kloel-app-theme');
     applyTheme(stored === 'dark' ? 'dark' : 'light');
-  } catch (_error) {
+  } catch {
     applyTheme('light');
   }
 })();

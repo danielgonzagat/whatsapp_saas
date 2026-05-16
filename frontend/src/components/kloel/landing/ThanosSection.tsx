@@ -50,6 +50,10 @@ function playMessage(_n: number): Promise<void> {
 
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
+function createEmptySalesMessages(): Record<ChannelKey, SalesMessage[]> {
+  return { wa: [], ig: [], fb: [], em: [], sms: [], tt: [] };
+}
+
 function usePrefersReducedMotion() {
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(true);
 
@@ -69,12 +73,10 @@ function usePrefersReducedMotion() {
   return prefersReducedMotion;
 }
 
-
 function ThanosOmniSales({ runToken }: { runToken: number }) {
-  const [msgs, setMsgs] = useState<Record<ChannelKey, SalesMessage[]>>(() => {
-    const init: Record<ChannelKey, SalesMessage[]> = { wa: [], ig: [], fb: [], em: [], sms: [], tt: [] };
-    return init;
-  });
+  const [msgs, setMsgs] = useState<Record<ChannelKey, SalesMessage[]>>(
+    createEmptySalesMessages,
+  );
   const { messages: flowMessages } = useSalesFlow();
 
   useEffect(() => {
@@ -82,11 +84,6 @@ function ThanosOmniSales({ runToken }: { runToken: number }) {
       return;
     }
     let cancelled = false;
-    setMsgs(() => {
-      const empty: Record<ChannelKey, SalesMessage[]> = { wa: [], ig: [], fb: [], em: [], sms: [], tt: [] };
-      return empty;
-    });
-
     const run = async () => {
       for (const [idx, msg] of flowMessages.entries()) {
         await wait(msg.f === '$' ? 520 : msg.f === 'a' ? 380 : 260);
@@ -104,7 +101,7 @@ function ThanosOmniSales({ runToken }: { runToken: number }) {
     return () => {
       cancelled = true;
     };
-  }, [runToken]);
+  }, [flowMessages, runToken]);
 
   return (
     <div style={{ animation: runToken ? 'thanosIn .8s cubic-bezier(.22,1,.36,1) both' : 'none' }}>
@@ -183,7 +180,8 @@ function ThanosOmniSales({ runToken }: { runToken: number }) {
                   >
                     <div
                       style={{
-                        background: msg.f === 'a' ? 'rgb(25, 25, 28)' : `${SALES_CHANNELS[key].c}12`,
+                        background:
+                          msg.f === 'a' ? 'rgb(25, 25, 28)' : `${SALES_CHANNELS[key].c}12`,
                         borderRadius: 4,
                         padding: '4px 8px',
                         fontSize: 10,
@@ -225,7 +223,6 @@ export default function ThanosSection() {
 
   useEffect(() => {
     if (prefersReducedMotion) {
-      setStarted(false);
       return;
     }
 
@@ -465,7 +462,10 @@ export default function ThanosSection() {
             </h2>
             {(prefersReducedMotion || showReveal || showSales) && (
               <div style={{ width: '100%', maxWidth: 740 }}>
-                <ThanosOmniSales runToken={prefersReducedMotion ? 0 : salesRunToken} />
+                <ThanosOmniSales
+                  key={prefersReducedMotion ? 'static' : salesRunToken}
+                  runToken={prefersReducedMotion ? 0 : salesRunToken}
+                />
               </div>
             )}
           </div>

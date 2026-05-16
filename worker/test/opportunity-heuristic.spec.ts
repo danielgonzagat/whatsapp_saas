@@ -5,13 +5,6 @@ import {
 } from '../processors/autopilot/opportunity-heuristic';
 
 describe('buildHeuristicCatalogScore', () => {
-  const emptyDemographics = {
-    gender: 'UNKNOWN',
-    ageRange: 'UNKNOWN',
-    location: 'UNKNOWN',
-    confidence: 0,
-  };
-
   it('returns opted-out result when optedOutAt is set', () => {
     const result = buildHeuristicCatalogScore({
       joinedText: 'hello world',
@@ -129,9 +122,7 @@ describe('buildHeuristicCatalogScore', () => {
   it('returns NEGATIVE sentiment for rude/problem text', () => {
     const result = buildHeuristicCatalogScore({
       joinedText: 'horrivel muito ruim nao gostei',
-      messages: [
-        { direction: 'INBOUND', content: 'horrivel muito ruim', createdAt: new Date() },
-      ],
+      messages: [{ direction: 'INBOUND', content: 'horrivel muito ruim', createdAt: new Date() }],
       unreadCount: 0,
     });
     expect(result.sentiment).toBe('NEGATIVE');

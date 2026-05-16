@@ -10,7 +10,7 @@ import {
   listInboxAgents,
 } from '@/lib/api';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { mutate } from 'swr';
 import {
   type ChannelFilter,
@@ -106,7 +106,7 @@ export function useInboxData({
   const visualReady =
     !isLoading && !loadingConversations && (!selectedConversationId || !loadingMessages);
 
-  const refreshConversations = async () => {
+  const refreshConversations = useCallback(async () => {
     if (!workspaceId) {
       return;
     }
@@ -135,9 +135,9 @@ export function useInboxData({
     } finally {
       setLoadingConversations(false);
     }
-  };
+  }, [requestedConversationId, requestedPhone, selectedConversationId, workspaceId]);
 
-  const refreshAgents = async () => {
+  const refreshAgents = useCallback(async () => {
     if (!workspaceId) {
       return;
     }
@@ -147,9 +147,9 @@ export function useInboxData({
     } catch {
       setAgents([]);
     }
-  };
+  }, [workspaceId]);
 
-  const loadMessages = async (conversationId: string) => {
+  const loadMessages = useCallback(async (conversationId: string) => {
     setError(null);
     setLoadingMessages(true);
     try {
@@ -160,7 +160,7 @@ export function useInboxData({
     } finally {
       setLoadingMessages(false);
     }
-  };
+  }, []);
 
   const handleAssumir = async () => {
     if (!selectedConversationId || !userId) {

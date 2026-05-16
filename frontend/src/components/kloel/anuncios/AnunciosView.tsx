@@ -5,10 +5,7 @@ import { useResponsiveViewport } from '@/hooks/useResponsiveViewport';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useState, useEffect, useRef, startTransition, useCallback } from 'react';
 import { metaAdsApi } from '@/lib/api/meta';
-import {
-  useAnunciosStatus,
-  useAnunciosCampaigns,
-} from '@/hooks/useAnuncios';
+import { useAnunciosStatus, useAnunciosCampaigns } from '@/hooks/useAnuncios';
 import type { AnunciosPlatformStatus, AnunciosCampaign } from '@/hooks/useAnuncios';
 import { AnunciosTabBar, ROUTES } from './AnunciosTabBar';
 import { WarRoomDashboard } from './WarRoomDashboard';
@@ -35,7 +32,9 @@ function mapApiCampaignToView(c: AnunciosCampaign): Campaign {
   };
 }
 
-function buildPlatformsFromStatuses(statuses: AnunciosPlatformStatus[]): Record<PlatformKey, PlatformData> {
+function buildPlatformsFromStatuses(
+  statuses: AnunciosPlatformStatus[],
+): Record<PlatformKey, PlatformData> {
   const result = { ...PLATFORM_DEFAULTS } as Record<PlatformKey, PlatformData>;
   for (const s of statuses) {
     if (s.platform === 'meta' || s.platform === 'google' || s.platform === 'tiktok') {
@@ -59,14 +58,14 @@ export default function AnunciosView({ defaultTab = 'visao' }: { defaultTab?: st
 
   useEffect(() => {
     if (prevDefault.current !== defaultTab) {
-      setTab(defaultTab as TabId);
+      queueMicrotask(() => setTab(defaultTab as TabId));
       prevDefault.current = defaultTab;
     }
   }, [defaultTab]);
 
   useEffect(() => {
     if (requestedFocus && tab !== 'track') {
-      setTab('track');
+      queueMicrotask(() => setTab('track'));
     }
   }, [requestedFocus, tab]);
 
@@ -79,16 +78,14 @@ export default function AnunciosView({ defaultTab = 'visao' }: { defaultTab?: st
 
   useEffect(() => {
     if (statuses.length > 0) {
-      setPlatforms(buildPlatformsFromStatuses(statuses));
+      queueMicrotask(() => setPlatforms(buildPlatformsFromStatuses(statuses)));
     }
   }, [statuses]);
 
   useEffect(() => {
-    setCampaigns(
-      apiCampaigns.length > 0
-        ? apiCampaigns.map(mapApiCampaignToView)
-        : [],
-    );
+    queueMicrotask(() => {
+      setCampaigns(apiCampaigns.length > 0 ? apiCampaigns.map(mapApiCampaignToView) : []);
+    });
   }, [apiCampaigns]);
 
   useEffect(() => {
@@ -117,7 +114,9 @@ export default function AnunciosView({ defaultTab = 'visao' }: { defaultTab?: st
 
   const navigateTo = useCallback(
     (nextRoute: string) => {
-      if (pathname === nextRoute) {return;}
+      if (pathname === nextRoute) {
+        return;
+      }
       startTransition(() => {
         router.push(nextRoute);
       });
@@ -140,7 +139,9 @@ export default function AnunciosView({ defaultTab = 'visao' }: { defaultTab?: st
 
   const handleCampaignToggle = useCallback(
     async (campaign: Campaign) => {
-      if (!metaConnected || campaign.platform !== 'meta') {return;}
+      if (!metaConnected || campaign.platform !== 'meta') {
+        return;
+      }
       const newStatus = campaign.status === 'active' ? 'PAUSED' : 'ACTIVE';
       await metaAdsApi.updateCampaignStatus(campaign.id, newStatus);
       setCampaigns((prev) =>
@@ -154,17 +155,14 @@ export default function AnunciosView({ defaultTab = 'visao' }: { defaultTab?: st
     [metaConnected],
   );
 
-  const handleConnectPlatform = useCallback(
-    (platformKey: PlatformKey) => {
-      const routeMap: Record<PlatformKey, string> = {
-        meta: '/conta',
-        google: `/anuncios/google`,
-        tiktok: `/anuncios/tiktok`,
-      };
-      window.location.href = routeMap[platformKey];
-    },
-    [],
-  );
+  const handleConnectPlatform = useCallback((platformKey: PlatformKey) => {
+    const routeMap: Record<PlatformKey, string> = {
+      meta: '/conta',
+      google: `/anuncios/google`,
+      tiktok: `/anuncios/tiktok`,
+    };
+    window.location.href = routeMap[platformKey];
+  }, []);
 
   return (
     <div style={{ fontFamily: SORA, color: 'var(--app-text-primary)', minHeight: '100vh' }}>
@@ -177,12 +175,14 @@ export default function AnunciosView({ defaultTab = 'visao' }: { defaultTab?: st
 
       <div style={{ padding: isMobile ? 16 : 24, maxWidth: 1240, margin: '0 auto' }}>
         {!metaConnected && tab === 'visao' ? (
-          <div style={{
-            padding: '40px 20px',
-            textAlign: 'center',
-            borderBottom: '1px solid var(--app-border)',
-            animation: 'fadeIn 0.5s ease',
-          }}>
+          <div
+            style={{
+              padding: '40px 20px',
+              textAlign: 'center',
+              borderBottom: '1px solid var(--app-border)',
+              animation: 'fadeIn 0.5s ease',
+            }}
+          >
             <div style={{ marginBottom: 12, fontSize: 14, color: 'var(--app-text-secondary)' }}>
               {kloelT('Conecte sua conta Meta para visualizar campanhas e insights reais.')}
             </div>
@@ -205,12 +205,14 @@ export default function AnunciosView({ defaultTab = 'visao' }: { defaultTab?: st
             </button>
           </div>
         ) : lastSyncAt ? (
-          <div style={{
-            padding: '6px 16px',
-            fontSize: 12,
-            color: 'var(--app-text-tertiary)',
-            textAlign: 'right',
-          }}>
+          <div
+            style={{
+              padding: '6px 16px',
+              fontSize: 12,
+              color: 'var(--app-text-tertiary)',
+              textAlign: 'right',
+            }}
+          >
             {kloelT('Última sincronização:')} {lastSyncAt}
           </div>
         ) : null}

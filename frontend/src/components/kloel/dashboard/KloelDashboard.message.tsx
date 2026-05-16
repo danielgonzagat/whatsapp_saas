@@ -175,7 +175,9 @@ function BrainOperatorResult({ metadata }: { metadata: JsonRecord }) {
             </tr>
             <tr style={{ borderBottom: `1px solid ${DIVIDER}` }}>
               <td style={{ padding: '8px 10px', color: TEXT }}>Total de Pedidos</td>
-              <td style={{ padding: '8px 10px', color: TEXT }}>{String(summary.totalCount ?? 0)}</td>
+              <td style={{ padding: '8px 10px', color: TEXT }}>
+                {String(summary.totalCount ?? 0)}
+              </td>
             </tr>
             <tr style={{ borderBottom: `1px solid ${DIVIDER}` }}>
               <td style={{ padding: '8px 10px', color: TEXT }}>Pedidos Pagos</td>
@@ -183,11 +185,15 @@ function BrainOperatorResult({ metadata }: { metadata: JsonRecord }) {
             </tr>
             <tr style={{ borderBottom: `1px solid ${DIVIDER}` }}>
               <td style={{ padding: '8px 10px', color: TEXT }}>Conversao</td>
-              <td style={{ padding: '8px 10px', color: TEXT }}>{String(summary.conversao ?? 0)}%</td>
+              <td style={{ padding: '8px 10px', color: TEXT }}>
+                {String(summary.conversao ?? 0)}%
+              </td>
             </tr>
             <tr>
               <td style={{ padding: '8px 10px', color: TEXT }}>Periodo</td>
-              <td style={{ padding: '8px 10px', color: TEXT }}>{String(summary.periodDays ?? 30)} dias</td>
+              <td style={{ padding: '8px 10px', color: TEXT }}>
+                {String(summary.periodDays ?? 30)} dias
+              </td>
             </tr>
           </tbody>
         </table>
@@ -213,7 +219,16 @@ function BrainOperatorResult({ metadata }: { metadata: JsonRecord }) {
 
 function BrainFallbackMessage() {
   return (
-    <div style={{ marginTop: 12, padding: '10px 14px', background: 'rgba(232,93,48,0.08)', borderRadius: 6, fontSize: 14, color: EMBER }}>
+    <div
+      style={{
+        marginTop: 12,
+        padding: '10px 14px',
+        background: 'rgba(232,93,48,0.08)',
+        borderRadius: 6,
+        fontSize: 14,
+        color: EMBER,
+      }}
+    >
       Ainda nao consigo executar isso. Esta sugestao foi registrada para analise futura.
     </div>
   );
@@ -268,12 +283,12 @@ export function MessageBlock({
 
   useEffect(() => {
     if (!isEditing) {
-      setDraftText(message.text);
+      queueMicrotask(() => setDraftText(message.text));
     }
   }, [isEditing, message.text]);
 
   useEffect(() => {
-    setActiveVersionIndex(Math.max(assistantVersions.length - 1, 0));
+    queueMicrotask(() => setActiveVersionIndex(Math.max(assistantVersions.length - 1, 0)));
   }, [assistantVersions.length]);
 
   if (message.role === 'user') {
@@ -468,9 +483,7 @@ export function MessageBlock({
       <AssistantAssetBlock
         {...(message.metadata !== undefined ? { metadata: message.metadata } : {})}
       />
-      {message.metadata?.brainOperator ? (
-        <BrainOperatorResult metadata={message.metadata} />
-      ) : null}
+      {message.metadata?.brainOperator ? <BrainOperatorResult metadata={message.metadata} /> : null}
       {message.metadata?.brainFallback ? <BrainFallbackMessage /> : null}
       <KloelMarkdown content={visibleAssistantText} />
       {isStreaming ? (
