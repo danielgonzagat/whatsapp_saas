@@ -18,6 +18,7 @@ import { resolveWorkspaceId } from '../auth/workspace-access';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { Idempotent } from '../common/idempotency.guard';
 import { AuthenticatedRequest } from '../common/interfaces/authenticated-request.interface';
+import { InternalEndpoint } from '../common/decorators/internal-endpoint.decorator';
 import { getTraceHeaders } from '../common/trace-headers';
 import { PrismaService } from '../prisma/prisma.service';
 import { MetaSdkService } from './meta-sdk.service';
@@ -158,6 +159,7 @@ export class MetaAuthController {
   // (2) that it matches what is registered in the Meta app, and
   // (3) which scopes are requested per channel — all without dumping secrets.
 
+  @InternalEndpoint('Meta OAuth configuration diagnostics')
   @Get('diagnostics')
   @UseGuards(WorkspaceGuard)
   getDiagnostics() {

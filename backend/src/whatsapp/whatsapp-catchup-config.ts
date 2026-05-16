@@ -14,16 +14,6 @@ export function safeStr(v: unknown, fb = ''): string {
       : fb;
 }
 
-export function normalizeOptionalText(value: unknown): string {
-  if (typeof value === 'string') {
-    return value.trim();
-  }
-  if (typeof value === 'number' || typeof value === 'boolean') {
-    return String(value).trim();
-  }
-  return '';
-}
-
 export const CATCHUP_SWEEP_LIMIT = Math.max(
   1,
   Math.min(2000, Number.parseInt(process.env.WAHA_CATCHUP_SWEEP_LIMIT || '500', 10) || 500),
@@ -46,7 +36,7 @@ export const CATCHUP_MAX_MESSAGES_PER_CHAT = Math.max(
   Number.parseInt(process.env.WAHA_CATCHUP_MAX_MESSAGES_PER_CHAT || '100', 10) || 100,
 );
 
-export const CATCHUP_LOOKBACK_MS = Math.max(
+const CATCHUP_LOOKBACK_MS = Math.max(
   60_000,
   Number.parseInt(process.env.WAHA_CATCHUP_LOOKBACK_MS || `${12 * 60 * 60 * 1000}`, 10) ||
     12 * 60 * 60 * 1000,

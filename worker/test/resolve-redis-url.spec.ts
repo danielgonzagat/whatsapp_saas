@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
   RedisConfigurationError,
   describeRedisResolution,
+  isRedisConfigured,
   resolveRedisUrl,
 } from '../resolve-redis-url';
 
@@ -54,6 +55,7 @@ describe('resolveRedisUrl', () => {
   });
 
   it('keeps localhost fallback for plain development runtimes', () => {
+    expect(isRedisConfigured()).toBe(false);
     expect(resolveRedisUrl()).toBe('redis://localhost:6379');
     expect(describeRedisResolution().mode).toBe('auto');
   });
@@ -79,9 +81,7 @@ describe('resolveRedisUrl', () => {
     process.env.REDISPORT = '6379';
     process.env.REDISPASSWORD = 'component-secret';
 
-    expect(resolveRedisUrl()).toBe(
-      'redis://default:component-secret@redis.railway.internal:6379',
-    );
+    expect(resolveRedisUrl()).toBe('redis://default:component-secret@redis.railway.internal:6379');
   });
 
   it('does not assemble passwordless Redis hosts in Railway runtimes', () => {

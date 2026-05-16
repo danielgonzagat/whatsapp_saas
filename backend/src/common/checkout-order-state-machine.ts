@@ -84,8 +84,3 @@ export function assertValidOrderStatusFilter(status: string, caller: string): vo
     );
   }
 }
-
-/** Check if a status is terminal (no further transitions). */
-export function isTerminalOrderStatus(status: string): boolean {
-  return TERMINAL_ORDER_STATES.has(String(status || '').toUpperCase());
-}

@@ -18,6 +18,7 @@ import {
   getE2EBaseUrls,
   type E2EAuthContext,
 } from '../specs/e2e-helpers';
+import { assertExactScreenshot, VISUAL_BROWSER_ARGS } from './critical-flows.screenshot';
 
 /**
  * P6.5-1 / I20 — Visual Surface Frozen.

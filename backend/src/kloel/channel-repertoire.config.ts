@@ -33,12 +33,11 @@ const ALL_TONES: ToneId[] = ['consultivo', 'formal', 'direto', 'acolhedor', 'col
 const TIKTOK_TONES: ToneId[] = ['consultivo', 'coloquial', 'direto'];
 
 function tiktokOutboundApproved(): boolean {
-  return String(process.env.TIKTOK_OUTBOUND_APPROVED || '').trim().toLowerCase() === 'true';
-}
-
-/** Override TikTok proactive outbound based on resolved marketing mode. */
-export function setTikTokOutboundForMode(mode: 'sell' | 'listen' | 'blocked') {
-  CHANNEL_REPERTOIRE.tiktok.proactiveOutboundAllowed = mode === 'sell';
+  return (
+    String(process.env.TIKTOK_OUTBOUND_APPROVED || '')
+      .trim()
+      .toLowerCase() === 'true'
+  );
 }
 
 export const CHANNEL_REPERTOIRE: Record<ChannelKey, ChannelRepertoire> = {
@@ -158,31 +157,43 @@ export const CHANNEL_REPERTOIRE: Record<ChannelKey, ChannelRepertoire> = {
 };
 
 function normalizeKey(channel: string): ChannelKey | null {
-  const key = String(channel || '').trim().toLowerCase();
-  if (key in CHANNEL_REPERTOIRE) return key as ChannelKey;
+  const key = String(channel || '')
+    .trim()
+    .toLowerCase();
+  if (key in CHANNEL_REPERTOIRE) {
+    return key as ChannelKey;
+  }
   return null;
 }
 
 export function repertoireFor(channel: string): ChannelRepertoire | null {
   const key = normalizeKey(channel);
-  if (!key) return null;
+  if (!key) {
+    return null;
+  }
   return CHANNEL_REPERTOIRE[key];
 }
 
 export function canChannelDoAction(channel: string, action: ActionId): boolean {
   const rep = repertoireFor(channel);
-  if (!rep) return false;
+  if (!rep) {
+    return false;
+  }
   return rep.actions.includes(action);
 }
 
 export function allowedFormatsFor(channel: string): FormatId[] {
   const rep = repertoireFor(channel);
-  if (!rep) return ['text'];
+  if (!rep) {
+    return ['text'];
+  }
   return [...rep.formats];
 }
 
 export function allowedTonesFor(channel: string): ToneId[] {
   const rep = repertoireFor(channel);
-  if (!rep) return ALL_TONES;
+  if (!rep) {
+    return ALL_TONES;
+  }
   return [...rep.tones];
 }

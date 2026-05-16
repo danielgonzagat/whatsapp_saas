@@ -31,10 +31,3 @@ export function toPrismaJsonValue(value: unknown): Prisma.InputJsonValue {
 export function toPrismaJsonArray(value: readonly unknown[]): Prisma.InputJsonArray {
   return value.map((entry) => (entry === null ? null : toPrismaJsonValue(entry)));
 }
-
-/** To nullable prisma json value. */
-export function toPrismaNullableJsonValue(
-  value: unknown,
-): Prisma.InputJsonValue | Prisma.NullTypes.JsonNull {
-  return value === null || value === undefined ? Prisma.JsonNull : toPrismaJsonValue(value);
-}

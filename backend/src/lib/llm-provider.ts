@@ -32,7 +32,7 @@ export function resolveTextLlmApiKey(config?: ConfigLike): string | undefined {
 }
 
 /** Base URL for the primary text LLM provider. */
-export function resolveTextLlmBaseUrl(config?: ConfigLike): string | undefined {
+function resolveTextLlmBaseUrl(config?: ConfigLike): string | undefined {
   return readFirstConfig(['DEEPSEEK_BASE_URL', 'LLM_BASE_URL', 'OPENAI_BASE_URL'], config);
 }
 

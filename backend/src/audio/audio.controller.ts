@@ -8,6 +8,7 @@ import {
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { InternalEndpoint } from '../common/decorators/internal-endpoint.decorator';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { RouteClass } from '../common/throttler/route-class.decorator';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
@@ -23,6 +24,7 @@ type AudioSynthesizeBody = {
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
 @RouteClass('ai')
 export class AudioController {
+  @InternalEndpoint('audio speech synthesis tool')
   @Post('synthesize')
   @ApiOperation({ summary: 'Synthesize speech from text' })
   async synthesize(@Body() body: AudioSynthesizeBody | null) {

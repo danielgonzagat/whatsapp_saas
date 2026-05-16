@@ -1,8 +1,6 @@
 import { KloelContextBaseFormatter } from './kloel-context-base-formatter';
 import type { KloelContextFormatterLimits } from './kloel-context-formatter.types';
 
-export const S_RE = /\s+/g;
-
 type PromptRecord = Record<string, unknown>;
 
 function isPromptRecord(value: unknown): value is PromptRecord {

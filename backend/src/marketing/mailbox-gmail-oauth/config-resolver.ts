@@ -1,10 +1,7 @@
 import { ServiceUnavailableException } from '@nestjs/common';
 import type { ConfigService } from '@nestjs/config';
 
-export function readConfiguredValue(
-  config: ConfigService,
-  keys: string[],
-): string | null {
+function readConfiguredValue(config: ConfigService, keys: string[]): string | null {
   for (const key of keys) {
     const value = String(config.get<string>(key) || process.env[key] || '').trim();
     if (value) {
@@ -31,10 +28,7 @@ export function resolveRedirectUri(config: ConfigService): string {
 }
 
 export function requireClientId(config: ConfigService): string {
-  const value = readConfiguredValue(config, [
-    'GOOGLE_MAILBOX_CLIENT_ID',
-    'GOOGLE_CLIENT_ID',
-  ]);
+  const value = readConfiguredValue(config, ['GOOGLE_MAILBOX_CLIENT_ID', 'GOOGLE_CLIENT_ID']);
   if (!value) {
     throw new ServiceUnavailableException('google_mailbox_client_id_not_configured');
   }
@@ -66,7 +60,6 @@ export function readStateSecret(config: ConfigService): string {
 
 export function resolveFrontendUrl(config: ConfigService): string {
   return (
-    readConfiguredValue(config, ['FRONTEND_URL', 'NEXT_PUBLIC_APP_URL']) ||
-    'http://localhost:3000'
+    readConfiguredValue(config, ['FRONTEND_URL', 'NEXT_PUBLIC_APP_URL']) || 'http://localhost:3000'
   ).replace(/\/+$/, '');
 }

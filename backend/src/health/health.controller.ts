@@ -5,6 +5,7 @@ import { Public } from '../auth/public.decorator';
 import { HealthService } from './health.service';
 import { RouteClass } from '../common/throttler/route-class.decorator';
 import { WebhookEndpoint } from '../common/decorators/webhook-endpoint.decorator';
+import { InternalEndpoint } from '../common/decorators/internal-endpoint.decorator';
 
 /** Health controller. */
 @Controller('health')
@@ -42,6 +43,7 @@ export class HealthController {
   }
 
   /** Deep diagnostic — admin only, includes detailed metrics. */
+  @InternalEndpoint('health deep diagnostic')
   @Get('deep')
   @UseGuards(JwtAuthGuard)
   async deep() {

@@ -10,11 +10,11 @@ export function readRecord(value: unknown): UnknownRecord {
   return typeof value === 'object' && value !== null ? (value as UnknownRecord) : {};
 }
 
-export function readString(value: unknown): string | undefined {
+function readString(value: unknown): string | undefined {
   return typeof value === 'string' && value.trim() ? value : undefined;
 }
 
-export function readStringArray(value: unknown): string[] | undefined {
+function readStringArray(value: unknown): string[] | undefined {
   if (!Array.isArray(value)) {
     return undefined;
   }
@@ -23,7 +23,7 @@ export function readStringArray(value: unknown): string[] | undefined {
   return items.length > 0 ? items : [];
 }
 
-export function normalizeWahaSnapshotStatus(
+function normalizeWahaSnapshotStatus(
   rawStatus: string | null | undefined,
 ): 'connected' | 'connecting' | 'failed' | 'disconnected' {
   const normalized = String(rawStatus || '')
@@ -50,7 +50,7 @@ export function normalizeWahaSnapshotStatus(
   return 'disconnected';
 }
 
-export function readSessionSnapshot(value: unknown): ProviderSessionSnapshot {
+function readSessionSnapshot(value: unknown): ProviderSessionSnapshot {
   const snapshot = readRecord(value);
   const status = readString(snapshot.status);
   const provider = readString(snapshot.provider);

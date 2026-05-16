@@ -8,7 +8,7 @@ const HTML_ESCAPE_BY_CHARACTER: Record<string, string> = {
 const TAG_OPEN = String.fromCharCode(60);
 const TAG_CLOSE = String.fromCharCode(62);
 
-export function escapeEmailHtml(value: string): string {
+function escapeEmailHtml(value: string): string {
   return value.replace(/[&<>"']/g, (char) => HTML_ESCAPE_BY_CHARACTER[char] ?? char);
 }
 

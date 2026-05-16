@@ -306,7 +306,9 @@ export async function buildAssistantReplyImpl(
       model: resolveBackendOpenAIModel(isChatMode ? 'brain' : 'writer'),
       messages,
       ...(isChatMode ? { tools: chatTools } : {}),
-      ...(isChatMode ? { tool_choice: chatTools.length > 0 ? ('auto' as const) : ('none' as const) } : {}),
+      ...(isChatMode
+        ? { tool_choice: chatTools.length > 0 ? ('auto' as const) : ('none' as const) }
+        : {}),
       temperature: responseTemperature,
       top_p: 0.95,
       frequency_penalty: 0.3,

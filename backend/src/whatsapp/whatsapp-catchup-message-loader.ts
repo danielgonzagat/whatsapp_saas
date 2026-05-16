@@ -1,7 +1,7 @@
 import type { WahaChatMessage, WahaChatSummary } from './providers/whatsapp-api.provider';
 import type { WhatsAppProviderRegistry } from './providers/provider-registry';
 
-export async function canonicalizeMessages(
+async function canonicalizeMessages(
   ws: string,
   messages: WahaChatMessage[],
   getLidPnMap: (ws: string) => Promise<Map<string, string>>,

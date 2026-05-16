@@ -21,7 +21,7 @@ import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { AuthenticatedRequest } from '../common/interfaces';
 import { flowQueue } from '../queue/queue';
 import { WorkspaceService } from '../workspaces/workspace.service';
-import { CreateFlowDto } from './dto/flow.dto';
+import { CreateFlowDto, UpdateFlowDto } from './dto/flow.dto';
 import { LogExecutionDto } from './dto/log-execution.dto';
 import { RunFlowDto } from './dto/run-flow.dto';
 import { SaveFlowVersionDto } from './dto/save-flow-version.dto';
@@ -152,9 +152,18 @@ export class FlowsController {
     @Req() req: AuthenticatedRequest,
     @Param('workspaceId') workspaceId: string,
     @Param('flowId') flowId: string,
-    @Body() body: CreateFlowDto,
+    @Body() body: UpdateFlowDto,
   ) {
-    return this.saveFlow(req, workspaceId, flowId, body);
+    const effectiveWorkspaceId = resolveWorkspaceId(req, workspaceId);
+    const existing = await this.flows.get(effectiveWorkspaceId, flowId);
+    if (!existing) {
+      throw new BadRequestException('Flow não encontrado ou não pertence a este workspace');
+    }
+    return this.flows.save(effectiveWorkspaceId, flowId, {
+      nodes: body.nodes ?? existing.nodes,
+      edges: body.edges ?? existing.edges,
+      ...(body.name !== undefined ? { name: body.name } : {}),
+    });
   }
 
   /** Save flow version. */

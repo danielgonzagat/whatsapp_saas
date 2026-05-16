@@ -1,7 +1,7 @@
 import type { ICatchupHistory, CatchupBackfillCursor } from './whatsapp.interfaces';
 import type { WahaChatSummary } from './providers/whatsapp-api.provider';
 
-export function sortChatsByPriority(
+function sortChatsByPriority(
   chats: WahaChatSummary[],
   since: Date,
   history: ICatchupHistory,

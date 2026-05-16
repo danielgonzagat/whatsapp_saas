@@ -1,6 +1,6 @@
 import type { Prisma } from '@prisma/client';
 
-export type AgentRuntimeTruthMode = 'observed' | 'inferred' | 'projected';
+type AgentRuntimeTruthMode = 'observed' | 'inferred' | 'projected';
 export type AgentRuntimeRiskLevel = 'safe' | 'normal' | 'high' | 'critical';
 export type AgentSkillDelegationPermission =
   | 'allowed_alone'
@@ -48,7 +48,7 @@ export interface AgentRuntimeHygieneResult {
   completedAt: string;
 }
 
-export interface AgentRuntimeMemoryItem {
+interface AgentRuntimeMemoryItem {
   id: string;
   key: string;
   category: string;
@@ -65,7 +65,7 @@ export interface AgentRuntimeRecallResult {
   memories: AgentRuntimeMemoryItem[];
 }
 
-export interface AgentRuntimeSessionRecallMessage {
+interface AgentRuntimeSessionRecallMessage {
   id: string;
   key: string;
   category: string;

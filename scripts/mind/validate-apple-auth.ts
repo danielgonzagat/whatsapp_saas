@@ -1,5 +1,5 @@
 import { createPublicKey } from 'node:crypto';
-import { buildClientSecret } from '../../backend/src/auth/__companions__/apple-auth.service.companion';
+import { buildClientSecret } from '../../backend/src/auth/apple-auth.support';
 
 type AppleValidationStatus = 'blocked' | 'ready_for_human_login' | 'failed';
 
