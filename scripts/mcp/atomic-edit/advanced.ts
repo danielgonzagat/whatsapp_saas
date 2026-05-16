@@ -15,6 +15,7 @@ import * as path from 'node:path';
 import * as ts from 'typescript';
 import { validate, type ValidationResult } from './engine.js';
 import { resolveSymbol } from './symbols.js';
+import { graphemeDiff } from './textunit.js';
 
 export type SymbolOp = 'replace' | 'insert_after' | 'remove';
 
@@ -421,44 +422,18 @@ const DIM = `${ESC}2m`;
 // there — the whole block really did change) instead of blowing memory.
 const CHAR_DIFF_CAP = 6000;
 
-/** LCS over characters → inline [-removed-]{+added+} segments with ANSI. */
+/**
+ * Inline [-removed-]{+added+} diff. Operates on GRAPHEME CLUSTERS via
+ * textunit.graphemeDiff — never splits a surrogate pair, combining mark or
+ * ZWJ sequence, so the rendered proof can't show half an emoji (the silent
+ * failure a UTF-16-index diff produces). The accent/emoji smoke cases lock
+ * this in.
+ */
 function renderCharDiff(oldStr: string, newStr: string): string {
-  const n = oldStr.length;
-  const m = newStr.length;
-  const dp: number[][] = Array.from({ length: n + 1 }, () => new Array<number>(m + 1).fill(0));
-  for (let i = n - 1; i >= 0; i--) {
-    for (let j = m - 1; j >= 0; j--) {
-      dp[i][j] =
-        oldStr[i] === newStr[j] ? dp[i + 1][j + 1] + 1 : Math.max(dp[i + 1][j], dp[i][j + 1]);
-    }
-  }
-  let i = 0;
-  let j = 0;
-  let out = '';
-  let delBuf = '';
-  let addBuf = '';
-  const flush = (): void => {
-    if (delBuf) out += `${RED}[-${delBuf}-]${RESET}`;
-    if (addBuf) out += `${GREEN}{+${addBuf}+}${RESET}`;
-    delBuf = '';
-    addBuf = '';
-  };
-  while (i < n && j < m) {
-    if (oldStr[i] === newStr[j]) {
-      flush();
-      out += oldStr[i];
-      i++;
-      j++;
-    } else if (dp[i + 1][j] >= dp[i][j + 1]) {
-      delBuf += oldStr[i++];
-    } else {
-      addBuf += newStr[j++];
-    }
-  }
-  while (i < n) delBuf += oldStr[i++];
-  while (j < m) addBuf += newStr[j++];
-  flush();
-  return out;
+  return graphemeDiff(oldStr, newStr, {
+    del: (s) => `${RED}[-${s}-]${RESET}`,
+    add: (s) => `${GREEN}{+${s}+}${RESET}`,
+  });
 }
 
 /**
