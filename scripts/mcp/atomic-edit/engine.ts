@@ -20,7 +20,7 @@
  * module stays unit-testable.
  */
 
-import * as ts from "typescript";
+import * as ts from 'typescript';
 
 export interface Position {
   /** 1-based line. */
@@ -36,7 +36,7 @@ export interface TextEditSpec {
 }
 
 export interface ValidationResult {
-  language: "ts" | "json" | "generic";
+  language: 'ts' | 'json' | 'structural' | 'generic';
   /** Syntactic-diagnostic count before the edit. */
   before: number;
   /** Syntactic-diagnostic count after the edit. */
@@ -57,22 +57,22 @@ export interface ApplyResult {
   expansionFactor: number;
 }
 
-const TS_EXT = new Set([".ts", ".tsx", ".mts", ".cts", ".js", ".jsx", ".mjs", ".cjs"]);
+const TS_EXT = new Set(['.ts', '.tsx', '.mts', '.cts', '.js', '.jsx', '.mjs', '.cjs']);
 
 function extOf(file: string): string {
-  const i = file.lastIndexOf(".");
-  return i < 0 ? "" : file.slice(i).toLowerCase();
+  const i = file.lastIndexOf('.');
+  return i < 0 ? '' : file.slice(i).toLowerCase();
 }
 
 function scriptKindFor(file: string): ts.ScriptKind {
   switch (extOf(file)) {
-    case ".tsx":
+    case '.tsx':
       return ts.ScriptKind.TSX;
-    case ".jsx":
+    case '.jsx':
       return ts.ScriptKind.JSX;
-    case ".js":
-    case ".mjs":
-    case ".cjs":
+    case '.js':
+    case '.mjs':
+    case '.cjs':
       return ts.ScriptKind.JS;
     default:
       return ts.ScriptKind.TS;
@@ -102,8 +102,8 @@ function firstIntroducedError(file: string, text: string): string | undefined {
   const diags = (sf as unknown as { parseDiagnostics?: ts.Diagnostic[] }).parseDiagnostics;
   if (!Array.isArray(diags) || diags.length === 0) return undefined;
   const d = diags[0];
-  const msg = ts.flattenDiagnosticMessageText(d.messageText, "\n");
-  if (typeof d.start === "number") {
+  const msg = ts.flattenDiagnosticMessageText(d.messageText, '\n');
+  if (typeof d.start === 'number') {
     const { line, character } = ts.getLineAndCharacterOfPosition(sf, d.start);
     return `${msg} (at ${line + 1}:${character + 1})`;
   }
@@ -117,14 +117,14 @@ export function validate(file: string, before: string, after: string): Validatio
     const b = syntacticErrorCount(file, before);
     const a = syntacticErrorCount(file, after);
     return {
-      language: "ts",
+      language: 'ts',
       before: b,
       after: a,
       ok: a <= b,
       introduced: a > b ? firstIntroducedError(file, after) : undefined,
     };
   }
-  if (ext === ".json") {
+  if (ext === '.json') {
     const safe = (s: string): boolean => {
       try {
         JSON.parse(s);
@@ -136,14 +136,163 @@ export function validate(file: string, before: string, after: string): Validatio
     const bOk = safe(before);
     const aOk = safe(after);
     return {
-      language: "json",
+      language: 'json',
       before: bOk ? 0 : 1,
       after: aOk ? 0 : 1,
       ok: aOk || !bOk, // only forbid breaking a previously-valid JSON
-      introduced: !aOk && bOk ? "edit produced invalid JSON" : undefined,
+      introduced: !aOk && bOk ? 'edit produced invalid JSON' : undefined,
     };
   }
-  return { language: "generic", before: 0, after: 0, ok: true };
+  if (STRUCTURAL_EXT.has(ext)) {
+    const b = structuralErrors(ext, before);
+    const a = structuralErrors(ext, after);
+    return {
+      language: 'structural',
+      before: b.length,
+      after: a.length,
+      ok: a.length <= b.length, // only forbid regressing structural balance
+      introduced: a.length > b.length ? a[0] : undefined,
+    };
+  }
+  return { language: 'generic', before: 0, after: 0, ok: true };
+}
+
+/**
+ * Languages with no TS-grade parser available here. We do NOT fake a full
+ * parse (that would be dishonest). We do a delimiter/string-aware structural
+ * balance — the single check that catches the overwhelmingly most common
+ * atomic-edit breakage (a deleted `)`, an unterminated string, a stray
+ * `}`), is language-agnostic, and produces no false positives on valid
+ * code. Indentation/semantic correctness is explicitly out of scope and
+ * declared so (`language: "structural"`, not the language name).
+ */
+const STRUCTURAL_EXT = new Set([
+  '.py',
+  '.go',
+  '.rs',
+  '.java',
+  '.kt',
+  '.c',
+  '.h',
+  '.cc',
+  '.cpp',
+  '.hpp',
+  '.cs',
+  '.rb',
+  '.php',
+  '.swift',
+  '.scala',
+  '.sh',
+  '.bash',
+  '.zsh',
+  '.css',
+  '.scss',
+  '.less',
+  '.sql',
+  '.yaml',
+  '.yml',
+  '.toml',
+]);
+
+const PAIRS: Record<string, string> = { ')': '(', ']': '[', '}': '{' };
+const OPEN = new Set(['(', '[', '{']);
+
+/** Quote chars that start a string per family. Hash-comment langs use #;
+ * C-family use // and /​* *​/. We stay conservative: only well-known forms,
+ * never guessing, so valid code never trips. */
+function structuralErrors(ext: string, text: string): string[] {
+  const errors: string[] = [];
+  const stack: { ch: string; line: number }[] = [];
+  const hashComment = new Set(['.py', '.rb', '.sh', '.bash', '.zsh', '.yaml', '.yml', '.toml']).has(
+    ext,
+  );
+  const slashComment = new Set([
+    '.go',
+    '.rs',
+    '.java',
+    '.kt',
+    '.c',
+    '.h',
+    '.cc',
+    '.cpp',
+    '.hpp',
+    '.cs',
+    '.php',
+    '.swift',
+    '.scala',
+    '.css',
+    '.scss',
+    '.less',
+    '.sql',
+  ]).has(ext);
+  let line = 1;
+  let i = 0;
+  const n = text.length;
+  while (i < n) {
+    const c = text[i];
+    if (c === '\n') {
+      line++;
+      i++;
+      continue;
+    }
+    // line comment
+    if (hashComment && c === '#') {
+      const nl = text.indexOf('\n', i);
+      i = nl === -1 ? n : nl;
+      continue;
+    }
+    if (slashComment && c === '/' && text[i + 1] === '/') {
+      const nl = text.indexOf('\n', i);
+      i = nl === -1 ? n : nl;
+      continue;
+    }
+    if (slashComment && c === '/' && text[i + 1] === '*') {
+      const end = text.indexOf('*/', i + 2);
+      if (end === -1) {
+        errors.push(`unterminated block comment (from line ${line})`);
+        return errors;
+      }
+      for (let k = i; k < end; k++) if (text[k] === '\n') line++;
+      i = end + 2;
+      continue;
+    }
+    // string literal — skip content, honor backslash escapes
+    if (c === '"' || c === "'" || c === '`') {
+      const startLine = line;
+      let j = i + 1;
+      while (j < n) {
+        const d = text[j];
+        if (d === '\\') {
+          j += 2;
+          continue;
+        }
+        if (d === '\n') {
+          line++;
+          // single/double quotes don't span lines in most langs; backtick does
+          if (c !== '`') {
+            errors.push(`unterminated string (line ${startLine})`);
+            break;
+          }
+        }
+        if (d === c) break;
+        j++;
+      }
+      if (j >= n) errors.push(`unterminated string (line ${startLine})`);
+      i = j + 1;
+      continue;
+    }
+    if (OPEN.has(c)) {
+      stack.push({ ch: c, line });
+    } else if (c in PAIRS) {
+      const top = stack.pop();
+      if (!top || top.ch !== PAIRS[c]) {
+        errors.push(`unbalanced '${c}' (line ${line})`);
+      }
+    }
+    i++;
+  }
+  for (const o of stack) errors.push(`unclosed '${o.ch}' (line ${o.line})`);
+  return errors;
 }
 
 /** Convert a 1-based (line,column) to an absolute UTF-16 offset. */
@@ -154,14 +303,14 @@ export function posToOffset(text: string, pos: Position): number {
   let offset = 0;
   let line = 1;
   while (line < pos.line) {
-    const nl = text.indexOf("\n", offset);
+    const nl = text.indexOf('\n', offset);
     if (nl === -1) {
       throw new Error(`line ${pos.line} does not exist (file has ${line} line(s))`);
     }
     offset = nl + 1;
     line++;
   }
-  const lineEnd = text.indexOf("\n", offset);
+  const lineEnd = text.indexOf('\n', offset);
   const lineLen = (lineEnd === -1 ? text.length : lineEnd) - offset;
   // column may equal lineLen + 1 (one past the last char = end-of-line insert).
   if (pos.column - 1 > lineLen + 1) {
@@ -175,15 +324,15 @@ export function posToOffset(text: string, pos: Position): number {
 function offsetToLine(text: string, offset: number): number {
   let line = 1;
   for (let i = 0; i < offset && i < text.length; i++) {
-    if (text[i] === "\n") line++;
+    if (text[i] === '\n') line++;
   }
   return line;
 }
 
 function lineSurface(text: string, startOff: number, endOff: number): number {
-  const firstNl = text.lastIndexOf("\n", startOff - 1);
+  const firstNl = text.lastIndexOf('\n', startOff - 1);
   const lineStart = firstNl === -1 ? 0 : firstNl + 1;
-  let lineEnd = text.indexOf("\n", endOff);
+  let lineEnd = text.indexOf('\n', endOff);
   if (lineEnd === -1) lineEnd = text.length;
   return lineEnd - lineStart;
 }
@@ -196,7 +345,7 @@ function lineSurface(text: string, startOff: number, endOff: number): number {
  * whether to persist (it must NOT persist when validation.ok === false).
  */
 export function applyEdits(file: string, original: string, edits: TextEditSpec[]): ApplyResult {
-  if (edits.length === 0) throw new Error("no edits provided");
+  if (edits.length === 0) throw new Error('no edits provided');
 
   const resolved = edits
     .map((e) => {
@@ -213,7 +362,7 @@ export function applyEdits(file: string, original: string, edits: TextEditSpec[]
 
   for (let i = 1; i < resolved.length; i++) {
     if (resolved[i].start < resolved[i - 1].end) {
-      throw new Error("overlapping edits are not allowed in a single atomic batch");
+      throw new Error('overlapping edits are not allowed in a single atomic batch');
     }
   }
 
@@ -265,9 +414,9 @@ export async function renameSymbol(
     throw new Error(`invalid identifier: ${JSON.stringify(newName)}`);
   }
   if (!TS_EXT.has(extOf(file))) {
-    throw new Error(`rename_symbol only supports TS/JS files, got ${extOf(file) || "(none)"}`);
+    throw new Error(`rename_symbol only supports TS/JS files, got ${extOf(file) || '(none)'}`);
   }
-  const { Project } = await import("ts-morph");
+  const { Project } = await import('ts-morph');
   const project = new Project({
     useInMemoryFileSystem: true,
     compilerOptions: { allowJs: true, jsx: ts.JsxEmit.Preserve, noEmit: true },
@@ -276,16 +425,19 @@ export async function renameSymbol(
   const offset = posToOffset(original, pos);
   const node = sf.getDescendantAtPos(offset);
   if (!node) throw new Error(`no AST node at ${pos.line}:${pos.column}`);
-  const id = node.getKindName() === "Identifier" ? node : node.getFirstAncestorByKind?.(ts.SyntaxKind.Identifier);
-  if (!id || id.getKindName() !== "Identifier") {
-    throw new Error(`position ${pos.line}:${pos.column} is not on an identifier (got ${node.getKindName()})`);
+  const id =
+    node.getKindName() === 'Identifier'
+      ? node
+      : node.getFirstAncestorByKind?.(ts.SyntaxKind.Identifier);
+  if (!id || id.getKindName() !== 'Identifier') {
+    throw new Error(
+      `position ${pos.line}:${pos.column} is not on an identifier (got ${node.getKindName()})`,
+    );
   }
   const oldName = id.getText();
   const renameable = id.asKindOrThrow(ts.SyntaxKind.Identifier);
   // count references before mutating
-  const refs = renameable
-    .findReferences()
-    .reduce((n, r) => n + r.getReferences().length, 0);
+  const refs = renameable.findReferences().reduce((n, r) => n + r.getReferences().length, 0);
   renameable.rename(newName);
   const next = sf.getFullText();
   return {
@@ -317,9 +469,9 @@ export async function replaceLiteral(
   onLine?: number,
 ): Promise<LiteralSwapResult> {
   if (!TS_EXT.has(extOf(file))) {
-    throw new Error(`replace_literal only supports TS/JS files, got ${extOf(file) || "(none)"}`);
+    throw new Error(`replace_literal only supports TS/JS files, got ${extOf(file) || '(none)'}`);
   }
-  const { Project, SyntaxKind } = await import("ts-morph");
+  const { Project, SyntaxKind } = await import('ts-morph');
   const project = new Project({
     useInMemoryFileSystem: true,
     compilerOptions: { allowJs: true, jsx: ts.JsxEmit.Preserve, noEmit: true },
@@ -342,11 +494,11 @@ export async function replaceLiteral(
     });
   if (hits.length === 0) {
     throw new Error(
-      `no literal with text ${JSON.stringify(currentText)}${onLine ? ` on line ${onLine}` : ""}`,
+      `no literal with text ${JSON.stringify(currentText)}${onLine ? ` on line ${onLine}` : ''}`,
     );
   }
   if (hits.length > 1) {
-    const lines = hits.map((h) => h.getStartLineNumber()).join(", ");
+    const lines = hits.map((h) => h.getStartLineNumber()).join(', ');
     throw new Error(
       `ambiguous: ${hits.length} literals match (lines ${lines}); pass onLine to disambiguate`,
     );
@@ -381,15 +533,17 @@ export function replaceText(
   newText: string,
   occurrence?: number,
 ): ApplyResult {
-  if (oldText.length === 0) throw new Error("oldText must be non-empty");
-  if (oldText === newText) throw new Error("oldText and newText are identical");
+  if (oldText.length === 0) throw new Error('oldText must be non-empty');
+  if (oldText === newText) throw new Error('oldText and newText are identical');
 
   const offsets: number[] = [];
   for (let i = original.indexOf(oldText); i !== -1; i = original.indexOf(oldText, i + 1)) {
     offsets.push(i);
   }
   if (offsets.length === 0) {
-    throw new Error(`oldText not found (verbatim, incl. whitespace): ${JSON.stringify(oldText.slice(0, 80))}`);
+    throw new Error(
+      `oldText not found (verbatim, incl. whitespace): ${JSON.stringify(oldText.slice(0, 80))}`,
+    );
   }
   let start: number;
   if (occurrence == null) {

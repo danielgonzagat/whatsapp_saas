@@ -568,12 +568,101 @@ function partE(): void {
   check('grapheme: lossless round-trip', graphemes(mix).join('') === mix, 'join mismatch');
 }
 
+// ── Part F — multi-language structural validation (lever #1) ─────────────
+function partF(): void {
+  // python: delete a ')' → structural regression refused
+  {
+    const r = applyEdits('m.py', 'def f(a, b):\n    return (a + b)\n', [
+      { start: { line: 2, column: 18 }, end: { line: 2, column: 19 }, newText: '' },
+    ]);
+    check(
+      'struct: py unbalanced paren refused',
+      r.validation.language === 'structural' && r.validation.ok === false,
+      JSON.stringify(r.validation),
+    );
+  }
+  // python: balanced edit accepted
+  {
+    const r = applyEdits('m.py', 'x = (1 + 2)\n', [
+      { start: { line: 1, column: 6 }, end: { line: 1, column: 7 }, newText: '9' },
+    ]);
+    check('struct: py balanced edit ok', r.validation.ok === true, JSON.stringify(r.validation));
+  }
+  // python '#' comment containing ')' must NOT false-trip
+  {
+    const r = applyEdits('m.py', 'x = 1  # note: ) bracket in comment\n', [
+      { start: { line: 1, column: 5 }, end: { line: 1, column: 6 }, newText: '2' },
+    ]);
+    check(
+      'struct: py comment bracket ignored',
+      r.validation.ok === true,
+      JSON.stringify(r.validation),
+    );
+  }
+  // string containing '}' must NOT false-trip (go)
+  {
+    const r = applyEdits('m.go', 'package main\nvar s = "a } b"\n', [
+      { start: { line: 2, column: 9 }, end: { line: 2, column: 16 }, newText: '"x } y"' },
+    ]);
+    check(
+      'struct: go string brace ignored',
+      r.validation.ok === true,
+      JSON.stringify(r.validation),
+    );
+  }
+  // go // line comment + balanced
+  {
+    const r = applyEdits('m.go', 'package main // ( unmatched in comment\nfunc f() {}\n', [
+      { start: { line: 2, column: 11 }, end: { line: 2, column: 11 }, newText: ' return' },
+    ]);
+    check(
+      'struct: go slash-comment ignored',
+      r.validation.ok === true,
+      JSON.stringify(r.validation),
+    );
+  }
+  // introduce unterminated string → refused
+  {
+    const r = applyEdits('m.sh', 'echo "hello"\n', [
+      { start: { line: 1, column: 12 }, end: { line: 1, column: 13 }, newText: '' },
+    ]);
+    check(
+      'struct: sh unterminated string refused',
+      r.validation.ok === false,
+      JSON.stringify(r.validation),
+    );
+  }
+  // pre-existing imbalance tolerated (no regression, surgical)
+  {
+    const r = applyEdits('m.py', 'x = (1\ny = 2\n', [
+      { start: { line: 2, column: 5 }, end: { line: 2, column: 6 }, newText: '9' },
+    ]);
+    check(
+      'struct: pre-existing imbalance tolerated',
+      r.validation.ok === true,
+      JSON.stringify(r.validation),
+    );
+  }
+  // truly unknown ext stays generic no-op (no false positives on prose)
+  {
+    const r = applyEdits('notes.txt', 'a ) b ( c\n', [
+      { start: { line: 1, column: 1 }, end: { line: 1, column: 2 }, newText: 'Z' },
+    ]);
+    check(
+      'struct: unknown ext = generic',
+      r.validation.language === 'generic',
+      JSON.stringify(r.validation),
+    );
+  }
+}
+
 (async () => {
   await partA();
   await partB();
   await partC();
   await partD();
   partE();
+  partF();
   process.stdout.write(`\n${passed} passed, ${failed} failed\n`);
   process.exit(failed === 0 ? 0 : 1);
 })().catch((e) => {
