@@ -1,3 +1,4 @@
+import { expectValueOf } from '../../../test/expect-value-of';
 import { ChannelHealthMonitorService } from './channel-health.monitor.service';
 import { ChannelHealth, RECENT_WINDOW_SIZE } from './channel-health.types';
 
@@ -267,12 +268,12 @@ describe('ChannelHealthMonitorService', () => {
       service.recordEvent('wks_1', 'whatsapp', 'commerce.whatsapp.message_replied', new Date().toISOString(), true);
       const health = service.getChannelHealth('wks_1', 'whatsapp');
       expect(health).toMatchObject({
-        totalSent: expect.any(Number),
-        deliveryRate: expect.any(Number),
-        errorRate: expect.any(Number),
-        banRiskScore: expect.any(Number),
-        policyViolationCount: expect.any(Number),
-        recentFailureBurst: expect.any(Boolean),
+        totalSent: expectValueOf(Number),
+        deliveryRate: expectValueOf(Number),
+        errorRate: expectValueOf(Number),
+        banRiskScore: expectValueOf(Number),
+        policyViolationCount: expectValueOf(Number),
+        recentFailureBurst: expectValueOf(Boolean),
         healthStatus: expect.stringMatching(/^(healthy|degraded|at_risk|critical)$/),
       });
     });

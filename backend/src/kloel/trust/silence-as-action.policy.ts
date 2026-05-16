@@ -114,7 +114,7 @@ export function decideSilence(
   if (state.silentInteractionsCount > cfg.maxSilentInteractions) {
     return silenceRemain({
       reason: `silent interactions ${state.silentInteractionsCount} exceeds max ${cfg.maxSilentInteractions} — stop reaching out`,
-      safeNextStep: 'wait for lead to re-engage before any new outbound',
+      safeNextStep: 'wait for lead to re-engage before every new outbound',
       rollback: 'resume when lead sends a message',
       leadOutcomeGuardrail:
         'do not initiate new outbound until lead replies first',

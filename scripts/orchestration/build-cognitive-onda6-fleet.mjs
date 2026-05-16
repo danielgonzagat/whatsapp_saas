@@ -17,7 +17,7 @@ OpenCode V4 Pro subagent. Read PCI + plan + delegation rules + CLAUDE.md FIRST.
 
 - NO touch on frontend, *.tsx, e2e, frontend-admin, protected files.
 - NO change to existing HTTP controller signatures (additive only).
-- NO suppression / skip / @ts-ignore / NOSONAR / git restore.
+- NO suppression / skip / TypeScript ignore comments / static-analysis suppressions / git restore.
 - NO new event names outside PCI.1.
 - NO \`prismaAny\` in NEW code.
 - NO behavioral instruction strings.
@@ -68,7 +68,7 @@ Tudo aprendido vira capital exportável da empresa.
 - ledger.service.ts (COMMEM-001): aggregator over the spine per workspace.
 - memory.projector.ts (COMMEM-002): projects per dimension.
 - exporter.service.ts (COMMEM-003): real, auditable export.
-- time-machine.service.ts (COMMEM-004): query memory at any past time.
+- time-machine.service.ts (COMMEM-004): query memory at a past time.
 - value-quantifier.ts (COMMEM-005): real value quantification.
 - narrative.builder.ts (COMMEM-006): periodic narrative.
 - attribution.guard.ts (COMMEM-007): no cross-workspace leak.

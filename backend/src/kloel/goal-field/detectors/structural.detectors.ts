@@ -164,8 +164,8 @@ export const backendWithoutSurfaceDetector: Detector = {
     ];
     const out: Tension[] = [];
     for (const surface of knownSurfaces) {
-      const any = events.some((e) => e.eventName.startsWith(surface));
-      if (any) continue;
+      const hasSurfaceEvent = events.some((e) => e.eventName.startsWith(surface));
+      if (hasSurfaceEvent) continue;
       out.push(
         structTension(
           'structural.backend_without_surface',

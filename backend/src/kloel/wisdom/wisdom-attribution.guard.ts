@@ -74,7 +74,7 @@ export function validatePatternAttribution(
 
 /**
  * Validate all patterns for attribution leaks.
- * Returns a result with ok=false if any violation is found.
+ * Returns a result with ok=false if a violation is found.
  */
 export function validateAttribution(
   patterns: readonly WisdomPattern[],

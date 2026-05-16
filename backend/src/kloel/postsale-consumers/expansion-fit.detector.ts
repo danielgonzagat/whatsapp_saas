@@ -145,7 +145,7 @@ function buildControl(
       leadOutcomeGuardrail:
         'Expansion must improve the customer outcome and never use urgency, pressure, or recent satisfaction as leverage.',
       rollback:
-        'Cancel the expansion suggestion and return to silent monitoring if any confusion, objection, refund, or discomfort appears.',
+        'Cancel the expansion suggestion and return to silent monitoring if a confusion, objection, refund, or discomfort appears.',
     };
   }
 
@@ -159,6 +159,6 @@ function buildControl(
         : 'No reliable expansion evidence is available yet.',
     leadOutcomeGuardrail:
       'Do not suggest an expansion offer without first-value proof and positive satisfaction for this customer.',
-    rollback: 'Keep the offer hidden and route any owner pressure back to value-first follow-up.',
+    rollback: 'Keep the offer hidden and route owner pressure back to value-first follow-up.',
   };
 }

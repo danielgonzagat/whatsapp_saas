@@ -1,3 +1,4 @@
+import OpenAI from 'openai';
 import { Test, TestingModule } from '@nestjs/testing';
 
 jest.mock('../whatsapp/whatsapp.tokens', () => ({
@@ -432,7 +433,7 @@ describe('UnifiedAgentActionsService', () => {
     });
 
     it('actionCreateFlowFromDescription delegates to workspace service', async () => {
-      const openai = {} as any;
+      const openai = new OpenAI({ apiKey: 'fake' });
       await service.actionCreateFlowFromDescription(wsId, { description: 'd' }, openai, 'm1', 'm2');
       expect(workspace.actionCreateFlowFromDescription).toHaveBeenCalledWith(
         wsId,

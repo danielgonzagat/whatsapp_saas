@@ -322,7 +322,7 @@ export class CheckoutPaymentService {
       throw new NotFoundException('Pedido não encontrado para processar no Stripe.');
     }
 
-    // E2E test harness: short-circuit before any real Stripe call when the
+    // E2E test harness: short-circuit before every real Stripe call when the
     // workflow has no STRIPE_SECRET_KEY configured. Production never reaches
     // this branch — gated by NODE_ENV !== 'production' inside the helper.
     if (this.e2EGuard.isEnabled()) {

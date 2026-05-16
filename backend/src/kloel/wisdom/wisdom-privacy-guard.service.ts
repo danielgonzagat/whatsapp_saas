@@ -104,7 +104,7 @@ export class WisdomPrivacyGuardService {
 
   /**
    * Hard gate: assert that a list of WisdomPattern objects contains
-   * no PII / workspace-identifiable data. Throws if any pattern
+   * no PII / workspace-identifiable data. Throws if a pattern
    * leaks identifiers. Delegates to validatePatternAttribution from
    * the attribution guard.
    *
@@ -134,7 +134,7 @@ export class WisdomPrivacyGuardService {
   /**
    * Filter a list of candidate patterns to remove those whose
    * evidenceWorkspaceIds include workspaces that have NOT opted in
-   * (for any role). A pattern survives only if ALL contributing
+   * (for an opted-in role). A pattern survives only if ALL contributing
    * workspaces have opted in for at least one role.
    *
    * After filtering, patterns whose surviving workspace count falls

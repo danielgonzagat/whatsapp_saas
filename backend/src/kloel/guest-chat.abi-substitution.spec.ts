@@ -1,3 +1,4 @@
+import { expectValueOf } from '../../test/expect-value-of';
 /**
  * UTP-ABI-005 — Guest Chat ABI substitution contract spec.
  *
@@ -194,7 +195,7 @@ describe('GuestChatService ABI substitution (UTP-ABI-005)', () => {
       } as jest.Mocked<AbiBuilderService>;
     });
 
-    it('does not send any system message', async () => {
+    it('does not send a system message', async () => {
       const service = createService(mockAbiBuilder);
       const result = await buildGuestMessages(service, 'Hello guest', 'session-abi-1');
 
@@ -237,7 +238,7 @@ describe('GuestChatService ABI substitution (UTP-ABI-005)', () => {
       expect(payload.cognitiveState).toEqual(
         expect.objectContaining({
           abiVersion: ABI_VERSION,
-          lineage: expect.any(Object),
+          lineage: expectValueOf(Object),
         }),
       );
     });

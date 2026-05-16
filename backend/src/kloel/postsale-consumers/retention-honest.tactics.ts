@@ -121,7 +121,7 @@ function buildControl(
       riskClass: 'R2',
       delegationMode: 'owner_review',
       safeNextStep:
-        'Prepare a human-reviewed retention action focused on understanding friction before offering any commercial concession.',
+        'Prepare a human-reviewed retention action focused on understanding friction before offering each commercial concession.',
       uncertainty:
         'Churn risk explains that something may be wrong, not which promise failed or what the customer wants now.',
       leadOutcomeGuardrail:
@@ -156,6 +156,6 @@ function buildControl(
     leadOutcomeGuardrail:
       'Customer should get help or clarity without being pushed toward another purchase.',
     rollback:
-      'If any negative response, refund signal, or support escalation appears, pause the tactic and move to owner review.',
+      'If a negative response, refund signal, or support escalation appears, pause the tactic and move to owner review.',
   };
 }

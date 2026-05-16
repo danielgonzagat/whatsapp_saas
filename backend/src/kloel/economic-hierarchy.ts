@@ -129,7 +129,7 @@ function ruleRefundLegitimacy(decision: HierarchyDecision): HierarchyJustificati
     if (concepts.has(reason)) {
       return {
         level: 'compliance',
-        reason: `refund requested with legitimate reason "${reason}" — compliance/legitimacy requires honoring before any conversion attempt`,
+        reason: `refund requested with legitimate reason "${reason}" — compliance/legitimacy requires honoring before every conversion attempt`,
       };
     }
   }
@@ -163,7 +163,7 @@ function ruleAntiRemorseRetention(decision: HierarchyDecision): HierarchyJustifi
   if (withinWindow || highRemorse) {
     return {
       level: 'retention',
-      reason: `buyer remorse detected (${daysSincePurchase >= 0 ? `${daysSincePurchase}d post-purchase` : 'unknown timing'}, score ${remorseScore >= 0 ? remorseScore : 'N/A'}) — retention/anti-remorse must precede any conversion attempt`,
+      reason: `buyer remorse detected (${daysSincePurchase >= 0 ? `${daysSincePurchase}d post-purchase` : 'unknown timing'}, score ${remorseScore >= 0 ? remorseScore : 'N/A'}) — retention/anti-remorse must precede each conversion attempt`,
     };
   }
   return null;

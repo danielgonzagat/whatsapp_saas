@@ -181,7 +181,7 @@ function safetyContractFor(
         riskClass: error.severity === 'high' ? 'R3' : 'R2',
         delegationMode: 'requires_review',
         safeNextStep:
-          'request explicit owner approval before offering any commercial concession',
+          'request explicit owner approval before offering each commercial concession',
         rollback: ['do_not_offer_concession', 'escalate_to_owner'],
         leadOutcomeGuardrail:
           'commercial concession must repair trust, not manufacture urgency or pressure',

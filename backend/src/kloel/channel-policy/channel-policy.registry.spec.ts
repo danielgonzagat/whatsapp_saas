@@ -230,7 +230,7 @@ describe('ChannelPolicyRegistry', () => {
       expect(result.truthMode).toBe('projected');
     });
 
-    it('returns event unchanged when eventName not in any policy', () => {
+    it('returns event unchanged when eventName not in a matching policy', () => {
       const registry = build();
       const result = registry.applyTo({ eventName: UNKNOWN_EVENT });
       expect(result.valence).toBeUndefined();

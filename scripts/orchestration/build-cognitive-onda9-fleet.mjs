@@ -17,7 +17,7 @@ OpenCode V4 Pro subagent. Read PCI + plan + delegation rules + CLAUDE.md FIRST.
 
 - NO touch on frontend, *.tsx, e2e, frontend-admin, protected files.
 - NO change to existing HTTP controller signatures (additive only).
-- NO suppression / skip / @ts-ignore / NOSONAR / git restore.
+- NO suppression / skip / TypeScript ignore comments / static-analysis suppressions / git restore.
 - NO new event names outside PCI.1.
 - NO \`prismaAny\` in NEW code.
 - NO behavioral instruction strings.
@@ -49,8 +49,8 @@ Auto-aperfeiçoamento sob governança humana absoluta.
 - experiment.runner.ts (EVOL-005): integrates HYPPROOF.
 - r-tier-delta.monitor.ts (EVOL-006): tracks R-tier delta.
 - automatic-rollback.service.ts (EVOL-007): rollback ≤24h if regression.
-- protected-files.firewall.ts (EVOL-008): blocks any touch on protected files.
-- codacy-rigor.enforcer.ts (EVOL-009): blocks any reduction of MAX-RIGOR.
+- protected-files.firewall.ts (EVOL-008): blocks each touch on protected files.
+- codacy-rigor.enforcer.ts (EVOL-009): blocks each reduction of MAX-RIGOR.
 - evolution-audit.log.ts (EVOL-010): audit trail.
 - evol.module.ts + evol.spec.ts (>= 16 tests).
 EDITABLE SET: \`backend/src/kloel/evol/**\`, \`backend/src/app.module.ts\` (additive).
@@ -112,7 +112,7 @@ Create \`backend/src/kloel/abi-009-prompt-emptied.spec.ts\`:
 
 ## ROLLBACK
 
-If ABI substitutions had any regression, revert this single commit.
+If ABI substitutions had a regression, revert this single commit.
 
 ## VALIDATION
 

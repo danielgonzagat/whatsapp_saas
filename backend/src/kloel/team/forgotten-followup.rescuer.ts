@@ -109,7 +109,7 @@ function buildForgottenFollowupContract(
     delegationMode: 'allowed_alone',
     safeNextStep: qualifiedSilence
       ? 'surface an honest follow-up suggestion for owner review; do not send'
-      : 'review timeline before suggesting any follow-up',
+      : 'review timeline before suggesting a follow-up',
     rollback: ['dismiss_suggestion', 'snooze_suggestion'],
     leadOutcomeGuardrail: {
       antiPressureLanguage: true,

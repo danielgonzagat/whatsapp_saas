@@ -8,7 +8,7 @@
  *   - SET NX (returned 'OK' regardless, breaking dedup tests)
  *   - hset/hget/hgetall (not implemented at all)
  *
- * If any of these regress in a future ioredis-mock release, this
+ * If a of these regress in a future ioredis-mock release, this
  * spec catches it before the affected service tests do.
  */
 

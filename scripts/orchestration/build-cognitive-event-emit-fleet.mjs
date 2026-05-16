@@ -34,7 +34,7 @@ Opus 4.7) for the Kloel Cognitive Organism mission.
 6. \`scripts/decomp/cognitive-organism-subagent-delegation-rules.md\` — operational rules.
 7. \`CLAUDE.md\` — project laws.
 
-If any file is missing or its checksum mismatches \`docs/contracts/pci/CHECKSUMS.txt\`, STOP and report.
+If a required file is missing or its checksum mismatches \`docs/contracts/pci/CHECKSUMS.txt\`, STOP and report.
 
 ## ABSOLUTE PROHIBITIONS
 
@@ -44,8 +44,8 @@ If any file is missing or its checksum mismatches \`docs/contracts/pci/CHECKSUMS
   ai-models.ts, scripts/pulse/no-hardcoded-reality-audit.ts,
   docs/contracts/pci/**, docs/plans/KLOEL_COGNITIVE_ORGANISM_PLAN.md.
 - NO bypass of Codacy: forbidden suppression comments and skip tags
-  (biome-ignore, @ts-ignore, eslint-disable, NOSONAR, [skip ci], etc.).
-- NO \`git restore\` (any flag).
+  (Biome ignore comments, TypeScript ignore comments, ESLint disable comments, static-analysis suppressions, [skip ci], etc.).
+- NO \`git restore\` flags.
 - NO invent event names outside PCI.1.
 - NO \`prismaAny\` in NEW code (existing usage may stay).
 - NO \`Math.random()\`, \`localStorage\`, hardcoded fake data in production paths.
@@ -150,7 +150,7 @@ All three must exit 0.
 
 ${editableSet.map((p) => `  - \`${p}\``).join('\n')}
 
-You MAY read any file in the repo. You MAY NOT edit any file outside this set.
+You MAY read each file in the repo. You MAY NOT edit each file outside this set.
 
 Begin by running:
   cd ${REPO}

@@ -1,3 +1,4 @@
+import { expectValueOf } from '../../test/expect-value-of';
 // Webhook specs exercise sendMessage-adjacent flows through the shared
 // messageLimit/dailyLimit enforcement in WhatsappService.sendMessage().
 const mockConstructEvent = jest.fn();
@@ -76,7 +77,7 @@ describe('PaymentWebhookController.handleStripe — checkout payment intents', (
     expect(prisma.checkoutOrder.updateMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { id: 'order-1', workspaceId: 'ws-1', status: 'PROCESSING' },
-        data: expect.objectContaining({ status: 'PAID', paidAt: expect.any(Date) }),
+        data: expect.objectContaining({ status: 'PAID', paidAt: expectValueOf(Date) }),
       }),
     );
     expect(webhooksService.markWebhookProcessed).toHaveBeenCalledWith('we_1');
@@ -203,7 +204,7 @@ describe('PaymentWebhookController.handleStripe — checkout payment intents', (
       'Stripe post-sale processing skipped for paymentIntent=pi_test_123: no_metadata',
     );
 
-    expect(financialAlert.webhookProcessingFailed).toHaveBeenCalledWith(expect.any(Error), {
+    expect(financialAlert.webhookProcessingFailed).toHaveBeenCalledWith(expectValueOf(Error), {
       provider: 'stripe',
       externalId: 'pi_test_123',
       eventType: 'payment_intent.succeeded',

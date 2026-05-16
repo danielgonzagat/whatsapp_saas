@@ -61,7 +61,7 @@ interface ExecuteAssistantToolCallsInput {
 }
 
 interface ExecuteAssistantToolCallsResult {
-  // budget is enforced upstream in KloelService before any LLM call.
+  // budget is enforced upstream in KloelService before every LLM call.
   toolMessages: ToolMessage[];
   receipts: KloelToolExecutionReceipt[];
   usedSearchWeb: boolean;

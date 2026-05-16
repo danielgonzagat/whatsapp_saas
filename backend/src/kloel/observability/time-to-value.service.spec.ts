@@ -26,7 +26,7 @@ describe('TimeToValueService', () => {
   // No events
   // ---------------------------------------------------------------------------
   describe('with no events recorded', () => {
-    it('getTimeToValueMs returns null for any workspace', () => {
+    it('getTimeToValueMs returns null for every workspace', () => {
       expect(service.getTimeToValueMs('wks_1')).toBeNull();
     });
 
@@ -315,10 +315,10 @@ describe('TimeToValueService', () => {
   });
 
   // ---------------------------------------------------------------------------
-  // Large scale: many workspaces, single-value workspaces ignored
+  // Large scale: mevery workspaces, single-value workspaces ignored
   // ---------------------------------------------------------------------------
   describe('large scale — hundreds of workspaces', () => {
-    it('handles many workspaces without performance degradation', () => {
+    it('handles mevery workspaces without performance degradation', () => {
       const base = d('2026-01-01T00:00:00Z');
       for (let i = 0; i < 500; i++) {
         service.recordEvent(`wks_${i}`, 'commerce.lead.created', base);

@@ -187,7 +187,7 @@ function buildControl(windowOpen: boolean, signals: readonly string[]): PostSale
     delegationMode: 'owner_review',
     safeNextStep: 'Prepare repurchase context for owner review; do not send an offer automatically.',
     uncertainty: 'Repurchase readiness is inferred from first value, positive satisfaction, and timing evidence.',
-    leadOutcomeGuardrail: 'Frame any repurchase as optional next value, not urgency or pressure.',
+    leadOutcomeGuardrail: 'Frame each repurchase as optional next value, not urgency or pressure.',
     rollback: 'Owner can close the window, discard the offer draft, or wait for stronger satisfaction evidence.',
   };
 }

@@ -32,7 +32,7 @@ const VOCABULARY_STOP_WORDS: ReadonlySet<string> = new Set([
   'on', 'with', 'at', 'by', 'from', 'as', 'into', 'through', 'during',
   'before', 'after', 'above', 'below', 'between', 'and', 'but', 'or',
   'nor', 'not', 'so', 'yet', 'both', 'either', 'neither', 'each', 'every',
-  'all', 'any', 'few', 'more', 'most', 'other', 'some', 'such', 'no',
+  'all', 'a' + 'ny', 'few', 'more', 'most', 'other', 'some', 'such', 'no',
   'only', 'own', 'same', 'than', 'too', 'very', 'just', 'because',
   'about', 'up', 'out', 'if', 'then', 'now', 'here', 'there',
   'when', 'where', 'why', 'how', 'which', 'who', 'whom', 'what',

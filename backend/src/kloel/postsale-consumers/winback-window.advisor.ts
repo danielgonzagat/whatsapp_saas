@@ -148,7 +148,7 @@ function buildControl(
     riskClass: risk.riskLevel === 'high' ? 'R2' : 'R1',
     delegationMode: risk.riskLevel === 'high' ? 'owner_review' : 'allowed_alone',
     safeNextStep: risk.contributingSignals.includes('recent_objection_recovery')
-      ? 'Owner must review any product update and confirm it helps the customer without re-litigating the prior objection.'
+      ? 'Owner must review each product update and confirm it helps the customer without re-litigating the prior objection.'
       : 'Use the win-back window to listen or inform; attach no discount, deadline, or pressure unless the owner approves it.',
     uncertainty: risk.contributingSignals.includes('recent_objection_recovery')
       ? 'Win-back timing is inferred from a recovered objection path; the customer has not asked to be sold again.'

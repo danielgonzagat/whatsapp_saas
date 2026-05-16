@@ -83,7 +83,7 @@ describe('SpineCoverageAuditorService', () => {
     expect(crm!.coverageRatio).toBeCloseTo(expectedRatio, 4);
   });
 
-  it('does not count non-PCI.6 events toward any surface coverage', () => {
+  it('does not count non-PCI.6 events toward a surface coverage', () => {
     const { emitter, auditor } = build();
     emitter.emit(input({ eventName: 'cognition.belief_updated' }));
     emitter.emit(input({ eventName: 'pulse.gate_passed' }));

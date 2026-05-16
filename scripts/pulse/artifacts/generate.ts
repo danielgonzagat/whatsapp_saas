@@ -18,7 +18,7 @@ import { normalizeCanonicalArtifactValue } from '../artifacts.queue';
 import { deriveAuthorityState } from '../artifacts.autonomy/authority';
 import { buildRuntimeProbesArtifact } from '../runtime-probes/main';
 import { buildPathCoverageState } from '../path-coverage-engine/build-coverage-state';
-import { refreshProofReadinessArtifact } from '../proof-readiness-artifact';
+import { refreshSelfTrustArtifacts } from './self-trust-artifacts';
 import { createRunIdentity, type PulseRunIdentity } from '../run-identity';
 import { buildFindingEventSurface } from '../finding-event-surface';
 import { synthesizeDiagnosticFromBreaks } from '../legacy-break-adapter';
@@ -42,7 +42,6 @@ import {
 } from '../context-broadcast/fabric';
 import type { PulseAgentOrchestrationState, PulseAutonomyState } from '../types.autonomy';
 import type { PulseArtifactSnapshot, PulseArtifactPaths } from './types';
-
 /**
  * Resolve `fileName` against `registry.canonicalDir` and assert the resulting
  * path stays inside the canonical artifact directory. Throws on traversal
@@ -57,12 +56,10 @@ function resolveInsideCanonicalDir(registry: PulseArtifactRegistry, fileName: st
   }
   return resolved;
 }
-
 function deriveArtifactIdFromObserved(contractName: string): string {
   const ids = Object.keys(discoverAllObservedArtifactFilenames());
   return ids.find((k) => k === contractName) || contractName;
 }
-
 function readRegisteredJson<T>(registry: PulseArtifactRegistry, artifactId: string): T | null {
   return readOptionalJson<T>(
     resolveInsideCanonicalDir(
@@ -71,7 +68,6 @@ function readRegisteredJson<T>(registry: PulseArtifactRegistry, artifactId: stri
     ),
   );
 }
-
 function writeRegisteredArtifact(
   registry: PulseArtifactRegistry,
   artifactId: string,
@@ -85,7 +81,6 @@ function writeRegisteredArtifact(
     identity,
   );
 }
-
 function buildFindingValidationState(snapshot: PulseArtifactSnapshot): unknown {
   const topN = Math.ceil(
     observeStatusTextLengthFromCatalog(deriveHttpStatusFromObservedCatalog('OK')) /
@@ -119,13 +114,11 @@ function buildFindingValidationState(snapshot: PulseArtifactSnapshot): unknown {
     },
   });
 }
-
 function buildHealth(snapshot: PulseArtifactSnapshot): string {
   const allStatusCodes = discoverAllObservedHttpStatusCodes();
   const indent = allStatusCodes.filter((c) => c >= 200 && c < 300).length;
   return JSON.stringify(snapshot.health, null, indent);
 }
-
 /** Generate artifacts. */
 export function generateArtifacts(
   snapshot: PulseArtifactSnapshot,
@@ -142,9 +135,7 @@ export function generateArtifacts(
     [...RUN_MODES][0]) as PulseRunIdentity['mode'];
   const identity = createRunIdentity(runMode ?? defaultRunMode, profile);
   registry.runId = identity.runId;
-
   const INDENT = discoverAllObservedHttpStatusCodes().filter((c) => c >= 200 && c < 300).length;
-
   const previousAutonomyState = readRegisteredJson<PulseAutonomyState>(registry, 'autonomy-state');
   const previousAgentOrchestrationState = readRegisteredJson<PulseAgentOrchestrationState>(
     registry,
@@ -179,7 +170,6 @@ export function generateArtifacts(
     convergencePlan,
     previousAutonomyState,
   );
-
   const reportPath = writeRegisteredArtifact(
     registry,
     'report',
@@ -328,7 +318,6 @@ export function generateArtifacts(
     ),
     identity,
   );
-
   writeRegisteredArtifact(registry, 'health', buildHealth(snapshot), identity);
   writeRegisteredArtifact(
     registry,
@@ -580,49 +569,20 @@ export function generateArtifacts(
     JSON.stringify(snapshot.resolvedManifest, null, INDENT),
     identity,
   );
-  refreshProofReadinessArtifact(rootDir, { generatedAt: identity.generatedAt });
-
-  const machineReadinessWithSelfTrust = buildPulseMachineReadiness(
+    refreshSelfTrustArtifacts({
+    rootDir,
+    registry,
+    cleanupReport,
+    authority,
+    identity,
+    indent: INDENT,
     snapshotWithNoHardcodedRealityState,
     convergencePlan,
     previousAutonomyState,
-  );
-  writeRegisteredArtifact(
-    registry,
-    'certificate',
-    buildCertificate(snapshotWithNoHardcodedRealityState, convergencePlan, previousAutonomyState),
-    identity,
-  );
-  writeRegisteredArtifact(
-    registry,
-    'machine-readiness',
-    JSON.stringify(machineReadinessWithSelfTrust, null, INDENT),
-    identity,
-  );
-  writeRegisteredArtifact(
-    registry,
-    'report',
-    buildReport(
-      snapshotWithNoHardcodedRealityState,
-      convergencePlan,
-      cleanupReport,
-      previousAutonomyState,
-    ),
-  );
-  writeRegisteredArtifact(
-    registry,
-    'artifact-index',
-    buildArtifactIndex(
-      registry,
-      cleanupReport,
-      authority,
-      identity,
-      machineReadinessWithSelfTrust as unknown as Parameters<typeof buildArtifactIndex>[4],
-    ),
-    identity,
-  );
-
-  return {
+    writeRegisteredArtifact: (artifactId, content, writerIdentity) =>
+      writeRegisteredArtifact(registry, artifactId, content, writerIdentity),
+  });
+return {
     reportPath,
     certificatePath,
     machineReadinessPath,

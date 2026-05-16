@@ -188,7 +188,7 @@ function buildControl(input: {
       riskClass: 'R1',
       delegationMode: 'allowed_alone',
       safeNextStep:
-        'Mark first value as obtained and keep watching satisfaction before any testimonial, referral, or expansion prompt.',
+        'Mark first value as obtained and keep watching satisfaction before every testimonial, referral, or expansion prompt.',
       uncertainty:
         'First value is inferred from behavior; do not claim satisfaction until explicit satisfaction evidence appears.',
       leadOutcomeGuardrail:

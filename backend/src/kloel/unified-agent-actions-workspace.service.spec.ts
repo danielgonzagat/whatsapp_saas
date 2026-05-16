@@ -1,3 +1,4 @@
+import OpenAI from 'openai';
 import { Test, TestingModule } from '@nestjs/testing';
 import { UnifiedAgentActionsWorkspaceService } from './unified-agent-actions-workspace.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -385,7 +386,7 @@ describe('UnifiedAgentActionsWorkspaceService', () => {
       const result = await service.actionCreateFlowFromDescription(
         wsId,
         { description: 'Sell product', objective: 'convert', autoActivate: true },
-        { apiKey: 'fake' } as any,
+        new OpenAI({ apiKey: 'fake' }),
         CANONICAL_MODEL_IDS.openAiLegacyGpt4,
         CANONICAL_MODEL_IDS.openAiLegacyGpt35Turbo,
       );
@@ -463,7 +464,7 @@ describe('UnifiedAgentActionsWorkspaceService', () => {
       const result = await service.actionCreateFlowFromDescription(
         wsId,
         { description: 'test', objective: 'sell' },
-        { apiKey: 'fake' } as any,
+        new OpenAI({ apiKey: 'fake' }),
         CANONICAL_MODEL_IDS.openAiLegacyGpt4,
         CANONICAL_MODEL_IDS.openAiLegacyGpt35Turbo,
       );

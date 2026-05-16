@@ -5,7 +5,7 @@
  * coarse line/block/hunk operators, so microscopic intentions become
  * macroscopic patches. This engine implements the missing primitives —
  * range / insert / delete / batched-TextEdit / scoped-rename / literal-swap —
- * each STRUCTURALLY VALIDATED before any byte is written. It is the engine;
+ * each STRUCTURALLY VALIDATED before every byte is written. It is the engine;
  * `server.ts` exposes it to the agent as first-class MCP tools.
  *
  * Invariants this engine enforces (which a raw line-rewrite does not):
@@ -19,22 +19,18 @@
  * Pure functions here; all I/O and process concerns live in server.ts so this
  * module stays unit-testable.
  */
-
 import * as ts from "typescript";
-
 export interface Position {
   /** 1-based line. */
   line: number;
   /** 1-based column (UTF-16 code units within the line). */
   column: number;
 }
-
 export interface TextEditSpec {
   start: Position;
   end: Position;
   newText: string;
 }
-
 export interface ValidationResult {
   language: "ts" | "json" | "generic";
   /** Syntactic-diagnostic count before the edit. */
@@ -45,7 +41,6 @@ export interface ValidationResult {
   /** Human-readable first introduced error, when ok === false. */
   introduced?: string;
 }
-
 export interface ApplyResult {
   newText: string;
   validation: ValidationResult;
@@ -56,14 +51,11 @@ export interface ApplyResult {
   /** lineSurfaceChars / max(changedChars,1) — the thesis Expansion Factor. */
   expansionFactor: number;
 }
-
 const TS_EXT = new Set([".ts", ".tsx", ".mts", ".cts", ".js", ".jsx", ".mjs", ".cjs"]);
-
 function extOf(file: string): string {
   const i = file.lastIndexOf(".");
   return i < 0 ? "" : file.slice(i).toLowerCase();
 }
-
 function scriptKindFor(file: string): ts.ScriptKind {
   switch (extOf(file)) {
     case ".tsx":
@@ -78,7 +70,6 @@ function scriptKindFor(file: string): ts.ScriptKind {
       return ts.ScriptKind.TS;
   }
 }
-
 /**
  * Count syntactic parse diagnostics. `parseDiagnostics` is TypeScript-internal
  * but is the standard fast syntactic check used across the ecosystem (prettier,
@@ -96,7 +87,6 @@ function syntacticErrorCount(file: string, text: string): number {
   const diags = (sf as unknown as { parseDiagnostics?: unknown[] }).parseDiagnostics;
   return Array.isArray(diags) ? diags.length : 0;
 }
-
 function firstIntroducedError(file: string, text: string): string | undefined {
   const sf = ts.createSourceFile(file, text, ts.ScriptTarget.Latest, true, scriptKindFor(file));
   const diags = (sf as unknown as { parseDiagnostics?: ts.Diagnostic[] }).parseDiagnostics;
@@ -109,7 +99,6 @@ function firstIntroducedError(file: string, text: string): string | undefined {
   }
   return msg;
 }
-
 /** Validate that `after` did not regress relative to `before`. */
 export function validate(file: string, before: string, after: string): ValidationResult {
   const ext = extOf(file);
@@ -145,7 +134,6 @@ export function validate(file: string, before: string, after: string): Validatio
   }
   return { language: "generic", before: 0, after: 0, ok: true };
 }
-
 /** Convert a 1-based (line,column) to an absolute UTF-16 offset. */
 export function posToOffset(text: string, pos: Position): number {
   if (pos.line < 1 || pos.column < 1) {
@@ -171,7 +159,6 @@ export function posToOffset(text: string, pos: Position): number {
   }
   return offset + (pos.column - 1);
 }
-
 function offsetToLine(text: string, offset: number): number {
   let line = 1;
   for (let i = 0; i < offset && i < text.length; i++) {
@@ -179,7 +166,6 @@ function offsetToLine(text: string, offset: number): number {
   }
   return line;
 }
-
 function lineSurface(text: string, startOff: number, endOff: number): number {
   const firstNl = text.lastIndexOf("\n", startOff - 1);
   const lineStart = firstNl === -1 ? 0 : firstNl + 1;
@@ -187,7 +173,6 @@ function lineSurface(text: string, startOff: number, endOff: number): number {
   if (lineEnd === -1) lineEnd = text.length;
   return lineEnd - lineStart;
 }
-
 /**
  * Apply one or more non-overlapping TextEdits atomically (LSP semantics).
  * Edits are validated against each other (no overlap) and applied
@@ -197,7 +182,6 @@ function lineSurface(text: string, startOff: number, endOff: number): number {
  */
 export function applyEdits(file: string, original: string, edits: TextEditSpec[]): ApplyResult {
   if (edits.length === 0) throw new Error("no edits provided");
-
   const resolved = edits
     .map((e) => {
       const start = posToOffset(original, e.start);
@@ -210,13 +194,11 @@ export function applyEdits(file: string, original: string, edits: TextEditSpec[]
       return { start, end, newText: e.newText };
     })
     .sort((a, b) => a.start - b.start);
-
   for (let i = 1; i < resolved.length; i++) {
     if (resolved[i].start < resolved[i - 1].end) {
       throw new Error("overlapping edits are not allowed in a single atomic batch");
     }
   }
-
   let next = original;
   let changedChars = 0;
   let surfaceMin = Number.POSITIVE_INFINITY;
@@ -229,7 +211,6 @@ export function applyEdits(file: string, original: string, edits: TextEditSpec[]
     surfaceMin = Math.min(surfaceMin, s);
     surfaceMax = Math.max(surfaceMax, s);
   }
-
   const validation = validate(file, original, next);
   const lineSurfaceChars = Number.isFinite(surfaceMin) ? surfaceMax : 0;
   return {
@@ -240,14 +221,12 @@ export function applyEdits(file: string, original: string, edits: TextEditSpec[]
     expansionFactor: Number((lineSurfaceChars / Math.max(changedChars, 1)).toFixed(2)),
   };
 }
-
 export interface RenameResult {
   newText: string;
   occurrences: number;
   symbol: string;
   validation: ValidationResult;
 }
-
 /**
  * Scope-correct, single-file rename of the identifier at (line,column).
  * Uses ts-morph so binding/shadowing is respected — this is the
@@ -295,13 +274,11 @@ export async function renameSymbol(
     validation: validate(file, original, next),
   };
 }
-
 export interface LiteralSwapResult {
   newText: string;
   matched: { line: number; column: number; old: string }[];
   validation: ValidationResult;
 }
-
 /**
  * Replace a string/numeric/boolean/null literal whose source text equals
  * `currentText`, optionally constrained to `onLine`. This is the direct
@@ -363,7 +340,6 @@ export async function replaceLiteral(
   const next = sf.getFullText();
   return { newText: next, matched, validation: validate(file, original, next) };
 }
-
 /**
  * Exact-string replacement with the ergonomics of the blunt builtin `edit`
  * (oldText -> newText, uniqueness-checked) BUT routed through the same
@@ -383,7 +359,6 @@ export function replaceText(
 ): ApplyResult {
   if (oldText.length === 0) throw new Error("oldText must be non-empty");
   if (oldText === newText) throw new Error("oldText and newText are identical");
-
   const offsets: number[] = [];
   for (let i = original.indexOf(oldText); i !== -1; i = original.indexOf(oldText, i + 1)) {
     offsets.push(i);
@@ -418,5 +393,4 @@ export function replaceText(
     expansionFactor: Number((lineSurfaceChars / Math.max(changedChars, 1)).toFixed(2)),
   };
 }
-
 export { offsetToLine };

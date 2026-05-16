@@ -4564,3 +4564,23 @@ model DecisionOutcomeEvent {
   @@index([workspaceId, processed, createdAt])
   @@map("RAC_DecisionOutcomeEvent")
 }
+
+/// UTP-LINEAGE-007 — Persistência aditiva do Lineage Ledger.
+/// Implementa PCI.3 §5.1 (docs/contracts/pci/03-genesis-lineage.md).
+/// Append-only: NUNCA editar entradas existentes. Sem updatedAt por design.
+model LineageEntry {
+  id              String   @id @default(uuid()) @db.Uuid
+  ledgerEntryId   String   @unique
+  sequenceNumber  Int      @unique
+  prevEntryHash   String
+  eventId         String
+  eventName       String
+  timestampUtc    DateTime
+  payloadJson     Json
+  hash            String   @unique
+  createdAt       DateTime @default(now())
+
+  @@index([sequenceNumber])
+  @@index([eventName])
+  @@map("RAC_LineageEntry")
+}

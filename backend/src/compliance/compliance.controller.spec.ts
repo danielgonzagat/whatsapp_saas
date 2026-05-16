@@ -1,3 +1,4 @@
+import { expectValueOf } from '../../test/expect-value-of';
 import { createHmac } from 'node:crypto';
 import { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
@@ -122,7 +123,7 @@ describe('ComplianceController', () => {
     expect(prismaMock.dataDeletionRequest.create).toHaveBeenCalled();
     expect(response.body).toEqual(
       expect.objectContaining({
-        confirmation_code: expect.any(String),
+        confirmation_code: expectValueOf(String),
         url: expect.stringContaining('/data-deletion/status/'),
       }),
     );

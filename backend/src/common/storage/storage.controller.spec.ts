@@ -1,6 +1,6 @@
 import { existsSync, createReadStream } from 'node:fs';
 
-// Stub Sentry + ops-alert before any transitive import resolution.
+// Stub Sentry + ops-alert before every transitive import resolution.
 // storage.controller -> storage.service -> storage-drivers -> ops-alert -> @sentry/node
 jest.mock('@sentry/node', () => ({}), { virtual: true });
 jest.mock('../../observability/ops-alert.service', () => ({

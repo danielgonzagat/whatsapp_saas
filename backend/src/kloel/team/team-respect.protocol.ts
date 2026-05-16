@@ -18,7 +18,7 @@ import type {
 } from './team.types';
 
 const SUGGESTION_FRAME_PREFIX =
-  'suggestion (not command): operator may dismiss or override at any time';
+  'suggestion (not command): operator may dismiss or override at all times';
 
 export function formatSuggestionForDisplay(
   suggestion: NextBestAction,

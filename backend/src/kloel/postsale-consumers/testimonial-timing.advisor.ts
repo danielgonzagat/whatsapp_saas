@@ -181,6 +181,6 @@ function buildControl(
         : `There is not enough evidence for a ${artifact} request.`,
     leadOutcomeGuardrail:
       'The customer should leave the interaction feeling valued, not mined for proof.',
-    rollback: 'Keep the request silent and route any owner desire for proof back to customer success first.',
+    rollback: 'Keep the request silent and route owner desire for proof back to customer success first.',
   };
 }

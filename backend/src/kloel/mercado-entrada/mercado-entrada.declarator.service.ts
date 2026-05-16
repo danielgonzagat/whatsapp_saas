@@ -19,20 +19,10 @@ import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import type { Role } from '../role/types';
 import type { MaturityStage } from '../maturity/maturity.types';
 import type { SpineEmitterService } from '../spine/spine-emitter.service';
-
 // =========================================================================
 // TYPES
 // =========================================================================
-
-export type BusinessType =
-  | 'infoproduto'
-  | 'servico'
-  | 'consultoria'
-  | 'ecommerce'
-  | 'saas'
-  | 'agencia'
-  | 'educacao';
-
+export type BusinessType = 'infoproduto' | 'servico' | 'consultoria' | 'ecommerce' | 'saas' | 'agencia' | 'educacao';
 export const ALL_BUSINESS_TYPES: readonly BusinessType[] = [
   'infoproduto',
   'servico',
@@ -42,7 +32,6 @@ export const ALL_BUSINESS_TYPES: readonly BusinessType[] = [
   'agencia',
   'educacao',
 ] as const;
-
 export type FlagshipJourney =
   | 'checkout_direto'
   | 'whatsapp_vendas'
@@ -52,7 +41,6 @@ export type FlagshipJourney =
   | 'consultivo'
   | 'conteudo_pago'
   | 'assinatura';
-
 export const ALL_FLAGSHIP_JOURNEYS: readonly FlagshipJourney[] = [
   'checkout_direto',
   'whatsapp_vendas',
@@ -63,7 +51,6 @@ export const ALL_FLAGSHIP_JOURNEYS: readonly FlagshipJourney[] = [
   'conteudo_pago',
   'assinatura',
 ] as const;
-
 export interface EntryMarket {
   readonly marketId: string;
   readonly label: string;
@@ -73,7 +60,6 @@ export interface EntryMarket {
   readonly flagshipJourney: FlagshipJourney;
   readonly rationale: string;
 }
-
 export interface EntryMarketCandidate extends EntryMarket {
   readonly payablePainSize: number;
   readonly n4plusProofSpeed: number;
@@ -83,7 +69,6 @@ export interface EntryMarketCandidate extends EntryMarket {
   readonly compositeScore: number;
   readonly rank: number;
 }
-
 export interface EntryMarketDeclaration {
   readonly active: EntryMarket;
   readonly declaredAt: string;
@@ -91,23 +76,19 @@ export interface EntryMarketDeclaration {
   readonly previousMarketId?: string;
   readonly eventId: string;
 }
-
 export interface DeclareResult {
   readonly ok: boolean;
   readonly declaration: EntryMarketDeclaration;
   readonly error?: string;
 }
-
 export interface EntryMarketRanking {
   readonly candidates: readonly EntryMarketCandidate[];
   readonly active: EntryMarket;
   readonly rankedAt: string;
 }
-
 // =========================================================================
 // SCORING WEIGHTS
 // =========================================================================
-
 export const SCORING_WEIGHTS = {
   payablePainSize: 0.25,
   n4plusProofSpeed: 0.25,
@@ -115,7 +96,6 @@ export const SCORING_WEIGHTS = {
   spontaneousReferral: 0.15,
   indispensability: 0.15,
 } as const;
-
 export function computeCompositeScore(
   payablePainSize: number,
   n4plusProofSpeed: number,
@@ -131,11 +111,9 @@ export function computeCompositeScore(
     indispensability * SCORING_WEIGHTS.indispensability
   );
 }
-
 // =========================================================================
 // CANDIDATES — ranked by compositeScore desc
 // =========================================================================
-
 export const ENTRY_MARKET_CANDIDATES: readonly EntryMarketCandidate[] = [
   {
     marketId: 'produtor-infoproduto-validacao-checkout',
@@ -223,24 +201,20 @@ export const ENTRY_MARKET_CANDIDATES: readonly EntryMarketCandidate[] = [
     rank: 5,
   },
 ] as const;
-
 // =========================================================================
 // ACTIVE MARKET — the single recommended entry market
 // =========================================================================
-
 const FIRST_CANDIDATE = ENTRY_MARKET_CANDIDATES[0];
 if (!FIRST_CANDIDATE) {
   throw new Error('Invariant: ENTRY_MARKET_CANDIDATES is non-empty');
 }
 export const ACTIVE_ENTRY_MARKET: EntryMarket =
   entryMarketFromCandidate(FIRST_CANDIDATE);
-
 export function findCandidateById(
   id: string,
 ): EntryMarketCandidate | undefined {
   return ENTRY_MARKET_CANDIDATES.find((c) => c.marketId === id);
 }
-
 export function entryMarketFromCandidate(
   candidate: EntryMarketCandidate,
 ): EntryMarket {
@@ -254,33 +228,27 @@ export function entryMarketFromCandidate(
     rationale: candidate.rationale,
   };
 }
-
 // =========================================================================
 // SERVICE
 // =========================================================================
-
 const PROVENANCE_SYNTHETIC = {
   source: 'synthetic' as const,
   processor: 'MercadoEntradaDeclarator',
   processorVersion: '0.1.0',
   schemaVersion: '0.1.0',
 };
-
 const PROVENANCE_PRODUCTION = {
   source: 'production' as const,
   processor: 'MercadoEntradaDeclarator',
   processorVersion: '0.1.0',
   schemaVersion: '0.1.0',
 };
-
 @Injectable()
 export class MercadoEntradaDeclaratorService implements OnModuleInit {
   private readonly logger = new Logger(MercadoEntradaDeclaratorService.name);
   private readonly history: EntryMarketDeclaration[] = [];
   private activeDeclaration: EntryMarketDeclaration | undefined;
-
   public constructor() {}
-
   public onModuleInit(): void {
     const now = new Date().toISOString();
     const eventId = this.makeEventId();
@@ -294,7 +262,6 @@ export class MercadoEntradaDeclaratorService implements OnModuleInit {
     this.logger.log(
       `Active entry market initialised: ${ACTIVE_ENTRY_MARKET.marketId} (event ${eventId})`,
     );
-
     if (this.spine) {
       void this.spine
         .emit({
@@ -310,22 +277,17 @@ export class MercadoEntradaDeclaratorService implements OnModuleInit {
         });
     }
   }
-
   // Spine is injected optionally so the service works in pure contexts (tests).
   private spine: SpineEmitterService | undefined;
-
   public setSpine(spine: SpineEmitterService | undefined): void {
     this.spine = spine ?? undefined;
   }
-
   // -------------------------------------------------------------------
   // PUBLIC API
   // -------------------------------------------------------------------
-
   public getActiveMarket(): EntryMarket {
     return this.activeDeclaration?.active ?? ACTIVE_ENTRY_MARKET;
   }
-
   public getActiveDeclaration(): EntryMarketDeclaration {
     if (!this.activeDeclaration) {
       const eventId = this.makeEventId();
@@ -339,15 +301,12 @@ export class MercadoEntradaDeclaratorService implements OnModuleInit {
     }
     return this.activeDeclaration;
   }
-
   public getCandidates(): readonly EntryMarketCandidate[] {
     return ENTRY_MARKET_CANDIDATES;
   }
-
   public getDeclarationHistory(): readonly EntryMarketDeclaration[] {
     return this.history.slice();
   }
-
   public declareMarket(marketId: string, declaredBy: string): DeclareResult {
     const candidate = findCandidateById(marketId);
     if (!candidate) {
@@ -358,7 +317,6 @@ export class MercadoEntradaDeclaratorService implements OnModuleInit {
       };
       return result;
     }
-
     const previousMarketId = this.activeDeclaration?.active.marketId;
     if (previousMarketId === marketId) {
       return {
@@ -371,7 +329,6 @@ export class MercadoEntradaDeclaratorService implements OnModuleInit {
         },
       };
     }
-
     const now = new Date().toISOString();
     const eventId = this.makeEventId();
     const market = entryMarketFromCandidate(candidate);
@@ -390,14 +347,11 @@ export class MercadoEntradaDeclaratorService implements OnModuleInit {
             declaredBy,
             eventId,
           };
-
     this.activeDeclaration = declaration;
     this.history.push(declaration);
-
     this.logger.log(
       `Entry market declared: ${marketId} → previous: ${previousMarketId ?? 'none'} (event ${eventId})`,
     );
-
     if (this.spine) {
       void this.spine
         .emit({
@@ -422,10 +376,8 @@ export class MercadoEntradaDeclaratorService implements OnModuleInit {
           );
         });
     }
-
     return { ok: true, declaration };
   }
-
   public buildRanking(): EntryMarketRanking {
     return {
       candidates: ENTRY_MARKET_CANDIDATES,
@@ -433,11 +385,9 @@ export class MercadoEntradaDeclaratorService implements OnModuleInit {
       rankedAt: new Date().toISOString(),
     };
   }
-
   // -------------------------------------------------------------------
   // HELPERS
   // -------------------------------------------------------------------
-
   private makeEventId(): string {
     return `me_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
   }

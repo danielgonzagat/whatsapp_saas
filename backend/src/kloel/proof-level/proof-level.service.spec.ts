@@ -1,3 +1,4 @@
+import { expectValueOf } from '../../../test/expect-value-of';
 import { ProofLevelService } from './proof-level.service';
 import { EvidenceDescriptor, ProofClassification } from './proof-level.types';
 
@@ -258,10 +259,10 @@ describe('ProofLevelService', () => {
         }),
       );
       expect(result).toMatchObject({
-        level: expect.any(String),
-        canDeclareProvado: expect.any(Boolean),
-        readyForRealValidation: expect.any(Boolean),
-        missingForNextLevel: expect.any(Array),
+        level: expectValueOf(String),
+        canDeclareProvado: expectValueOf(Boolean),
+        readyForRealValidation: expectValueOf(Boolean),
+        missingForNextLevel: expectValueOf(Array),
       });
     });
 

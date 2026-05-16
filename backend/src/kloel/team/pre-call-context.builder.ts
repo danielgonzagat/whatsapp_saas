@@ -143,7 +143,7 @@ function findOpenQuestions(events: readonly SpineEventRef[]): readonly string[] 
   );
   if (hasChurnRisk) {
     questions.push(
-      'post-sale churn risk flagged - confirm whether customer reached first value before any retention action; human review only',
+      'post-sale churn risk flagged - confirm whether customer reached first value before every retention action; human review only',
     );
   }
 

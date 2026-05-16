@@ -1,3 +1,4 @@
+import { expectValueOf } from '../../test/expect-value-of';
 import { Test, TestingModule } from '@nestjs/testing';
 import { KloelToolExecutorWhatsAppService } from './kloel-tool-executor-whatsapp.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -340,7 +341,7 @@ describe('KloelToolExecutorWhatsAppService', () => {
       expect(whatsappService.getChatMessages).toHaveBeenCalledWith(
         wsId,
         'chat-1',
-        expect.any(Object),
+        expectValueOf(Object),
       );
     });
   });

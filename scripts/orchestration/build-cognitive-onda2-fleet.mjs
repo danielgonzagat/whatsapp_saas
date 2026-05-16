@@ -31,7 +31,7 @@ Organism mission, Onda 2 (consumers of the spine populated by Onda 1).
 8. \`backend/src/kloel/abi/abi-schema.ts\` (the field shape you contribute to)
 9. \`CLAUDE.md\`
 
-If any file is missing or its checksum mismatches \`docs/contracts/pci/CHECKSUMS.txt\`, STOP and report.
+If a required file is missing or its checksum mismatches \`docs/contracts/pci/CHECKSUMS.txt\`, STOP and report.
 
 ## ABSOLUTE PROHIBITIONS
 
@@ -41,8 +41,8 @@ If any file is missing or its checksum mismatches \`docs/contracts/pci/CHECKSUMS
   eslint.config.mjs, ai-models.ts, scripts/pulse/no-hardcoded-reality-audit.ts,
   docs/contracts/pci/**, docs/plans/KLOEL_COGNITIVE_ORGANISM_PLAN.md,
   scripts/decomp/cognitive-organism-subagent-delegation-rules.md.
-- NO suppression comments / skip tags (biome-ignore, @ts-ignore,
-  eslint-disable, NOSONAR, [skip ci], etc.).
+- NO suppression comments / skip tags (Biome ignore comments, TypeScript ignore comments,
+  ESLint disable comments, static-analysis suppressions, [skip ci], etc.).
 - NO \`git restore\`.
 - NO invented event names outside PCI.1.
 - NO \`prismaAny\` in NEW code.
@@ -134,7 +134,7 @@ cd backend && npx jest --testPathPatterns='kloel/local-identity/' --no-coverage
 - \`backend/src/kloel/local-identity/**\`
 - \`backend/src/app.module.ts\` (additive import only)
 
-You MAY read any file. You MAY NOT edit outside this set.
+You MAY read each file. You MAY NOT edit outside this set.
 `,
   },
   {

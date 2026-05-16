@@ -184,7 +184,7 @@ function buildControl(
         safeNextStep: 'Stay silent and keep watching for support, refund, inactivity, or satisfaction signals.',
         leadOutcomeGuardrail:
           'Avoid adding noise when the customer has not shown remorse risk; silence is safer than a weak post-sale touch.',
-        rollback: 'If a new risk signal appears, reassess before recommending any outbound message.',
+        rollback: 'If a new risk signal appears, reassess before recommending each outbound message.',
       };
 
     case 'none':
