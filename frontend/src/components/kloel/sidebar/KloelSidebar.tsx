@@ -135,18 +135,20 @@ export function KloelSidebar({
 
   useEffect(() => {
     if (!expanded) {
-      setExpandedNav(null);
+      queueMicrotask(() => setExpandedNav(null));
       return;
     }
 
     const activeParent = activeSubView?.split(':')[0];
     if (activeParent && NAV.some((item) => item.key === activeParent && item.sub.length > 0)) {
-      setExpandedNav(activeParent);
+      queueMicrotask(() => setExpandedNav(activeParent));
       return;
     }
 
     if (activeView && NAV.some((item) => item.key === activeView && item.sub.length > 0)) {
-      setExpandedNav(activeView);
+      queueMicrotask(() => {
+        setExpandedNav(activeView);
+      });
     }
   }, [activeSubView, activeView, expanded]);
 
@@ -268,8 +270,18 @@ export function KloelSidebar({
           gap: 0,
         }}
       >
-        <SBtn icon={Plus} label={kloelT(`Novo chat`)} expanded={expanded} {...(onNewChat ? { onClick: onNewChat } : {})} />
-        <SBtn icon={Search} label={kloelT(`Buscar`)} expanded={expanded} {...(onSearch ? { onClick: onSearch } : {})} />
+        <SBtn
+          icon={Plus}
+          label={kloelT(`Novo chat`)}
+          expanded={expanded}
+          {...(onNewChat ? { onClick: onNewChat } : {})}
+        />
+        <SBtn
+          icon={Search}
+          label={kloelT(`Buscar`)}
+          expanded={expanded}
+          {...(onSearch ? { onClick: onSearch } : {})}
+        />
       </div>
 
       {/* ======== DIVIDER ======== */}

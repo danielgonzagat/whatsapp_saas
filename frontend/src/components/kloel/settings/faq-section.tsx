@@ -16,12 +16,7 @@ interface FaqSectionProps {
   onSave?: (payload: FaqItem[]) => void | Promise<void>;
 }
 
-export function FaqSection({
-  value,
-  saving = false,
-  disabled = false,
-  onSave,
-}: FaqSectionProps) {
+export function FaqSection({ value, saving = false, disabled = false, onSave }: FaqSectionProps) {
   const [faqs, setFaqs] = useState<FaqItem[]>([]);
   const [showAddFaq, setShowAddFaq] = useState(false);
   const [newFaq, setNewFaq] = useState({ question: '', answer: '' });
@@ -30,7 +25,7 @@ export function FaqSection({
     if (!value) {
       return;
     }
-    setFaqs(value);
+    queueMicrotask(() => setFaqs(value));
   }, [value]);
 
   const handleAddFaq = () => {

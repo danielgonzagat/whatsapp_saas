@@ -81,7 +81,9 @@ async function healQueue(dlqName: string, originalQueueName: string) {
         const reHealKey = `dlq:reheal:${job.id}`;
         const reHealCount = Number.parseInt((await redis.get(reHealKey)) || '0', 10);
         if (reHealCount >= 3) {
-          console.warn(`[Self-Healing] Job ${job.id} re-healed 3 times, permanently dead — skipping`);
+          console.warn(
+            `[Self-Healing] Job ${job.id} re-healed 3 times, permanently dead — skipping`,
+          );
           return;
         }
         await redis.set(reHealKey, String(reHealCount + 1), 'EX', 86400); // 24h TTL

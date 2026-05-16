@@ -5,11 +5,7 @@ import { AUTH_ERROR_MESSAGES } from './chat-container.data';
 import { connectAgentStream } from './chat-container.agent-stream';
 import { currentTraceDayKey } from './chat-container.event-handler';
 import type { Message } from './chat-message.types';
-import type {
-  AgentCursorTarget,
-  AgentStreamEvent,
-  AgentTraceEntry,
-} from './chat-container.types';
+import type { AgentCursorTarget, AgentStreamEvent, AgentTraceEntry } from './chat-container.types';
 import type { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime';
 import type { ReadonlyURLSearchParams } from 'next/navigation';
 import type { Dispatch, MutableRefObject, SetStateAction } from 'react';
@@ -21,9 +17,9 @@ interface ChatControllerEffectsParams {
   activeConv: string | null;
   activeConversationId: string | null;
   agentStreamEnabled: boolean;
-  appliedAuthDeepLink: MutableRefObject<boolean>;
-  appliedInitialDeepLink: MutableRefObject<boolean>;
-  appliedWhatsAppPanelDeepLink: MutableRefObject<boolean>;
+  appliedAuthDeepLinkRef: MutableRefObject<boolean>;
+  appliedInitialDeepLinkRef: MutableRefObject<boolean>;
+  appliedWhatsAppPanelDeepLinkRef: MutableRefObject<boolean>;
   authPrefillEmail: string;
   authedChatStreamRef: MutableRefObject<{ abort: () => void } | null>;
   handleAgentEvent: (event: AgentStreamEvent) => void;
@@ -70,9 +66,9 @@ export function useChatControllerEffects({
   activeConv,
   activeConversationId,
   agentStreamEnabled,
-  appliedAuthDeepLink,
-  appliedInitialDeepLink,
-  appliedWhatsAppPanelDeepLink,
+  appliedAuthDeepLinkRef,
+  appliedInitialDeepLinkRef,
+  appliedWhatsAppPanelDeepLinkRef,
   authedChatStreamRef,
   handleAgentEvent,
   initialOpenSettings,
@@ -115,12 +111,16 @@ export function useChatControllerEffects({
 }: ChatControllerEffectsParams) {
   useEffect(() => {
     const authError = searchParams.get('authError');
-    if (!authError) {return;}
+    if (!authError) {
+      return;
+    }
     const message = AUTH_ERROR_MESSAGES[authError];
     if (message) {
       setMessages((prev) => {
         const id = `auth_error_${authError}`;
-        if (prev.some((m) => m.id === id)) {return prev;}
+        if (prev.some((m) => m.id === id)) {
+          return prev;
+        }
         return [...prev, { id, role: 'assistant', content: message }];
       });
     }
@@ -128,25 +128,35 @@ export function useChatControllerEffects({
   }, [searchParams, openAuthModal, setMessages]);
 
   useEffect(() => {
-    if (appliedAuthDeepLink.current) {return;}
+    if (appliedAuthDeepLinkRef.current) {
+      return;
+    }
     const authMode = searchParams.get('authMode');
-    if (authMode !== 'login' && authMode !== 'signup') {return;}
-    appliedAuthDeepLink.current = true;
+    if (authMode !== 'login' && authMode !== 'signup') {
+      return;
+    }
+    appliedAuthDeepLinkRef.current = true;
     openAuthModal(authMode);
-  }, [searchParams, openAuthModal, appliedAuthDeepLink]);
+  }, [searchParams, openAuthModal, appliedAuthDeepLinkRef]);
 
   useEffect(() => {
-    if (!shouldOpenWhatsAppPanel || appliedWhatsAppPanelDeepLink.current) {return;}
-    appliedWhatsAppPanelDeepLink.current = true;
+    if (!shouldOpenWhatsAppPanel || appliedWhatsAppPanelDeepLinkRef.current) {
+      return;
+    }
+    appliedWhatsAppPanelDeepLinkRef.current = true;
     setShowAgentDesktop(true);
-  }, [shouldOpenWhatsAppPanel, appliedWhatsAppPanelDeepLink, setShowAgentDesktop]);
+  }, [shouldOpenWhatsAppPanel, appliedWhatsAppPanelDeepLinkRef, setShowAgentDesktop]);
 
   useEffect(() => {
-    if (!isAuthenticated) {return;}
+    if (!isAuthenticated) {
+      return;
+    }
     const nextParams = new URLSearchParams(searchParams.toString());
     const authKeys = ['authMode', 'authError', 'email', 'authEmail'];
     const hasAuthQuery = authKeys.some((key) => nextParams.has(key));
-    if (!hasAuthQuery) {return;}
+    if (!hasAuthQuery) {
+      return;
+    }
     authKeys.forEach((key) => nextParams.delete(key));
     const nextQuery = nextParams.toString();
     const nextUrl = nextQuery ? `${pathname}?${nextQuery}` : pathname;
@@ -154,11 +164,17 @@ export function useChatControllerEffects({
   }, [isAuthenticated, pathname, router, searchParams]);
 
   useEffect(() => {
-    if (!isAuthenticated) {return;}
+    if (!isAuthenticated) {
+      return;
+    }
     const targetConversationId =
       requestedConversationId || activeConversationId || activeConv || null;
-    if (!targetConversationId) {return;}
-    if (loadedConversationIdRef.current === targetConversationId && messagesLength > 0) {return;}
+    if (!targetConversationId) {
+      return;
+    }
+    if (loadedConversationIdRef.current === targetConversationId && messagesLength > 0) {
+      return;
+    }
     void loadConversation(targetConversationId);
   }, [
     activeConv,
@@ -183,7 +199,9 @@ export function useChatControllerEffects({
     };
     const handleLoadChat = (event: Event) => {
       const conversationId = (event as CustomEvent).detail?.conversationId;
-      if (!conversationId) {return;}
+      if (!conversationId) {
+        return;
+      }
       loadedConversationIdRef.current = null;
       setActiveConversationId(String(conversationId));
     };
@@ -220,19 +238,29 @@ export function useChatControllerEffects({
       setAgentStreamEnabled(true);
       return;
     }
-    if (typeof window === 'undefined') {return;}
-    if (tokenStorage.getToken() && tokenStorage.getWorkspaceId()) {setAgentStreamEnabled(true);}
+    if (typeof window === 'undefined') {
+      return;
+    }
+    if (tokenStorage.getToken() && tokenStorage.getWorkspaceId()) {
+      setAgentStreamEnabled(true);
+    }
   }, [isAuthenticated, setAgentStreamEnabled]);
 
   useEffect(() => {
-    if (isAuthenticated) {void refreshHasCard();}
+    if (isAuthenticated) {
+      void refreshHasCard();
+    }
   }, [isAuthenticated, refreshHasCard]);
 
   useEffect(() => {
-    if (!agentStreamEnabled) {return;}
+    if (!agentStreamEnabled) {
+      return;
+    }
     const token = tokenStorage.getToken();
     const workspaceId = tokenStorage.getWorkspaceId();
-    if (!token || !workspaceId) {return;}
+    if (!token || !workspaceId) {
+      return;
+    }
     return connectAgentStream({
       onEvent: handleAgentEvent,
       onConnected: () => setIsAgentStreamConnected(true),
@@ -240,15 +268,22 @@ export function useChatControllerEffects({
     });
   }, [agentStreamEnabled, handleAgentEvent, setIsAgentStreamConnected]);
 
-  useEffect(() => () => {
-    const timer = thoughtTimerRef.current;
-    if (timer) {clearTimeout(timer);}
-  }, [thoughtTimerRef]);
+  useEffect(
+    () => () => {
+      const timer = thoughtTimerRef.current;
+      if (timer) {
+        clearTimeout(timer);
+      }
+    },
+    [thoughtTimerRef],
+  );
 
   useEffect(() => {
     const interval = setInterval(() => {
       const nextDayKey = currentTraceDayKey();
-      if (traceDayRef.current === nextDayKey) {return;}
+      if (traceDayRef.current === nextDayKey) {
+        return;
+      }
       traceDayRef.current = nextDayKey;
       agentTraceEntriesRef.current = [];
       setAgentTraceEntries([]);
@@ -266,24 +301,31 @@ export function useChatControllerEffects({
     traceDayRef,
   ]);
 
-  useEffect(() => () => {
-    authedChatStreamRef.current?.abort();
-    authedChatStreamRef.current = null;
-  }, [authedChatStreamRef]);
+  useEffect(
+    () => () => {
+      authedChatStreamRef.current?.abort();
+      authedChatStreamRef.current = null;
+    },
+    [authedChatStreamRef],
+  );
 
   useEffect(() => {
-    if (appliedInitialDeepLink.current) {return;}
-    if (!initialOpenSettings) {
-      appliedInitialDeepLink.current = true;
+    if (appliedInitialDeepLinkRef.current) {
       return;
     }
-    if (!isAuthenticated) {return;}
+    if (!initialOpenSettings) {
+      appliedInitialDeepLinkRef.current = true;
+      return;
+    }
+    if (!isAuthenticated) {
+      return;
+    }
     setSettingsInitialTab(initialSettingsTab);
     setScrollToCreditCard(initialScrollToCreditCard);
     setShowSettings(true);
-    appliedInitialDeepLink.current = true;
+    appliedInitialDeepLinkRef.current = true;
   }, [
-    appliedInitialDeepLink,
+    appliedInitialDeepLinkRef,
     initialOpenSettings,
     initialScrollToCreditCard,
     initialSettingsTab,

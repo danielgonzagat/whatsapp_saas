@@ -109,7 +109,9 @@ async function ensureBanditArms(
   workspaceId: string,
   family: VariantFamily,
 ): Promise<void> {
-  if (!prisma?.mindBanditArm?.upsert) return;
+  if (!prisma?.mindBanditArm?.upsert) {
+    return;
+  }
   for (const variant of DEFAULT_VARIANTS[family]) {
     await prisma.mindBanditArm.upsert({
       where: {

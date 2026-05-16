@@ -13,7 +13,7 @@ export function useProductReviews(productId: string) {
 
   useEffect(() => {
     if (productId) {
-      setReviewsLoading(true);
+      queueMicrotask(() => setReviewsLoading(true));
       apiFetch(`/products/${productId}/reviews`)
         .then((res: unknown) => {
           const d = unwrapApiPayload<Record<string, unknown>[]>(res);

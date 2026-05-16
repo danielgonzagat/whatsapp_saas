@@ -29,7 +29,9 @@ export async function runFollowupContact(data: UnknownRecord) {
   const phone = data?.phone;
   const scheduledAt = data?.scheduledAt ? new Date(data.scheduledAt) : null;
   const jobKey = contactId || phone || workspaceId;
-  const channel: ChannelName = (typeof data?.channel === 'string' ? data.channel : 'whatsapp') as ChannelName;
+  const channel: ChannelName = (
+    typeof data?.channel === 'string' ? data.channel : 'whatsapp'
+  ) as ChannelName;
 
   const workspace = await prisma.workspace.findUnique({
     where: { id: workspaceId },

@@ -93,17 +93,16 @@ export function useCiaAdvanced(workspaceId: string): UseCiaAdvancedReturn {
     if (!workspaceId) {
       return;
     }
-    void loadAdvancedData();
+    queueMicrotask(() => {
+      void loadAdvancedData();
+    });
     const interval = setInterval(() => {
       void loadAdvancedData();
     }, 15000);
     return () => clearInterval(interval);
   }, [loadAdvancedData, workspaceId]);
 
-  const openApprovals = useMemo(
-    () => approvals.filter((a) => a.status === 'OPEN'),
-    [approvals],
-  );
+  const openApprovals = useMemo(() => approvals.filter((a) => a.status === 'OPEN'), [approvals]);
   const pendingSessions = useMemo(
     () => inputSessions.filter((s) => s.status !== 'COMPLETED'),
     [inputSessions],

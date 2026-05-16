@@ -9,7 +9,12 @@ import {
   resolveFlowDefinition,
   runSubscriptionAndRateGuards,
 } from './processor-flow-guards';
-import { autopilotQueue, buildQueueOptions, shutdownQueueSystem, silent24hResolverQueue } from './queue';
+import {
+  autopilotQueue,
+  buildQueueOptions,
+  shutdownQueueSystem,
+  silent24hResolverQueue,
+} from './queue';
 import './campaign-processor'; // Start Campaign Worker
 import './scraper-processor'; // Start Scraper Worker
 import './media-processor'; // Start Media Worker

@@ -67,7 +67,7 @@ export function NP({
   }).join(' ');
 
   useEffect(() => {
-    setIsMounted(true);
+    queueMicrotask(() => setIsMounted(true));
   }, []);
 
   useEffect(() => {

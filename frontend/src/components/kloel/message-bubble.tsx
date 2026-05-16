@@ -34,7 +34,9 @@ interface MessageBubbleProps {
   onCancelProcessing?: (() => void) | undefined;
   onMessageEdit?: ((messageId: string, nextContent: string) => Promise<void>) | undefined;
   onMessageRetry?: ((messageId: string) => Promise<void>) | undefined;
-  onAssistantFeedback?: ((messageId: string, type: 'positive' | 'negative' | null) => Promise<void>) | undefined;
+  onAssistantFeedback?:
+    | ((messageId: string, type: 'positive' | 'negative' | null) => Promise<void>)
+    | undefined;
   onAssistantRegenerate?: ((messageId: string) => Promise<void>) | undefined;
 }
 
@@ -84,12 +86,12 @@ export function MessageBubble({
 
   useEffect(() => {
     if (!isEditing) {
-      setDraftContent(message.content);
+      queueMicrotask(() => setDraftContent(message.content));
     }
   }, [isEditing, message.content]);
 
   useEffect(() => {
-    setActiveVersionIndex(Math.max(assistantVersions.length - 1, 0));
+    queueMicrotask(() => setActiveVersionIndex(Math.max(assistantVersions.length - 1, 0)));
   }, [assistantVersions.length, latestVersionId, message.id]);
 
   const visibleAssistantContent =

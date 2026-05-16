@@ -35,7 +35,9 @@ export function useBrainRouter(deps: UseBrainRouterDeps) {
 
   const handleOperatorDispatch = useCallback(
     async (text: string, intent: string) => {
-      if (isReplyInFlight) return;
+      if (isReplyInFlight) {
+        return;
+      }
       const clientRequestId = `brain_${Date.now()}`;
       const userId = `user_${Date.now()}`;
 
@@ -116,14 +118,13 @@ export function useBrainRouter(deps: UseBrainRouterDeps) {
   const handleUnsupportedFallback = useCallback(
     async (text: string) => {
       const userId = `user_${Date.now()}`;
-      setMessages((current) => [
-        ...current,
-        { id: userId, role: 'user', text },
-      ]);
+      setMessages((current) => [...current, { id: userId, role: 'user', text }]);
       setInput('');
 
       try {
-        await api.post('/admin/lacunas-suggest', { intent: 'unsupported', userMessage: text }).catch(() => {});
+        await api
+          .post('/admin/lacunas-suggest', { intent: 'unsupported', userMessage: text })
+          .catch(() => {});
       } catch {
         /* best-effort audit */
       }

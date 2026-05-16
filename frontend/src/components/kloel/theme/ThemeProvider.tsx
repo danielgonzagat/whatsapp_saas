@@ -64,7 +64,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const initialTheme = readInitialKloelTheme();
-    setThemeState(initialTheme);
+    queueMicrotask(() => setThemeState(initialTheme));
     commitTheme(initialTheme);
   }, []);
 

@@ -42,7 +42,13 @@ import { ContaReferralSection } from './ContaReferralSection';
 import { ContaInfoSection } from './ContaInfoSection';
 import { StatusBadge } from './ContaShared';
 import Icons from './ContaIcons';
-import { SORA, MONO, EMBER, DEFAULT_SETTINGS_SECTION, resolveSettingsSection } from './ContaConstants';
+import {
+  SORA,
+  MONO,
+  EMBER,
+  DEFAULT_SETTINGS_SECTION,
+  resolveSettingsSection,
+} from './ContaConstants';
 import { colors } from '@/lib/design-tokens';
 import { getErrorMessage } from './ContaHelpers';
 import type { SettingsSectionKey } from './ContaTypes';
@@ -113,12 +119,16 @@ export default function ContaView() {
   }, []);
 
   useEffect(() => {
-    void loadBillingSummary();
+    queueMicrotask(() => {
+      void loadBillingSummary();
+    });
   }, [loadBillingSummary]);
 
   useEffect(() => {
     const nextSection = resolveSettingsSection(searchParams.get('section'));
-    setSection((current) => (current === nextSection ? current : nextSection));
+    queueMicrotask(() => {
+      setSection((current) => (current === nextSection ? current : nextSection));
+    });
   }, [searchParams]);
 
   const handleSelectSection = useCallback(
@@ -342,7 +352,11 @@ export default function ContaView() {
                 >
                   <span
                     style={{
-                      color: active ? EMBER : done ? colors.semantic.success : 'var(--app-text-placeholder)',
+                      color: active
+                        ? EMBER
+                        : done
+                          ? colors.semantic.success
+                          : 'var(--app-text-placeholder)',
                     }}
                   >
                     {sec.icon(16)}
@@ -357,7 +371,9 @@ export default function ContaView() {
                   >
                     {sec.label}
                   </span>
-                  {done ? <span style={{ color: colors.semantic.success }}>{Icons.check(12)}</span> : null}
+                  {done ? (
+                    <span style={{ color: colors.semantic.success }}>{Icons.check(12)}</span>
+                  ) : null}
                 </button>
               );
             })}
@@ -470,10 +486,7 @@ export default function ContaView() {
               />
             )}
             {section === 'apps' && (
-              <ContaAppsSection
-                handleSelectSection={handleSelectSection}
-                router={router}
-              />
+              <ContaAppsSection handleSelectSection={handleSelectSection} router={router} />
             )}
             {section === 'presentear' && <ContaReferralSection />}
             {section === 'saiba-mais' && <ContaInfoSection />}

@@ -44,22 +44,14 @@ describe('email-provider', () => {
   describe('sendText', () => {
     it('returns error for non-email target', async () => {
       const { emailProvider } = await import('../providers/email-provider');
-      const result = await emailProvider.sendText(
-        { id: 'ws1' },
-        '+5511999999999',
-        'Hello',
-      );
+      const result = await emailProvider.sendText({ id: 'ws1' }, '+5511999999999', 'Hello');
       expect(result).toEqual({ error: 'invalid_email_target' });
     });
 
     it('returns error when email not configured', async () => {
       setMailEnv({ MAIL_HOST: undefined });
       const { emailProvider } = await import('../providers/email-provider');
-      const result = await emailProvider.sendText(
-        { id: 'ws1' },
-        'to@test.com',
-        'Hello',
-      );
+      const result = await emailProvider.sendText({ id: 'ws1' }, 'to@test.com', 'Hello');
       expect(result).toEqual({ error: 'email_not_configured' });
     });
 
@@ -101,11 +93,7 @@ describe('email-provider', () => {
       mockSendMail.mockResolvedValue({ messageId: '<long@test.com>' });
       const { emailProvider } = await import('../providers/email-provider');
       const longLine = 'x'.repeat(105);
-      await emailProvider.sendText(
-        { id: 'ws1' },
-        'to@test.com',
-        `${longLine}\nBody`,
-      );
+      await emailProvider.sendText({ id: 'ws1' }, 'to@test.com', `${longLine}\nBody`);
       expect(mockSendMail).toHaveBeenCalledWith(
         expect.objectContaining({ subject: 'Nova mensagem' }),
       );
@@ -114,22 +102,14 @@ describe('email-provider', () => {
     it('returns error string on send failure', async () => {
       mockSendMail.mockRejectedValue(new Error('SMTP error'));
       const { emailProvider } = await import('../providers/email-provider');
-      const result = await emailProvider.sendText(
-        { id: 'ws1' },
-        'to@test.com',
-        'Hello',
-      );
+      const result = await emailProvider.sendText({ id: 'ws1' }, 'to@test.com', 'Hello');
       expect(result).toEqual({ error: 'SMTP error' });
     });
 
     it('returns error string for non-Error throws', async () => {
       mockSendMail.mockRejectedValue('bang');
       const { emailProvider } = await import('../providers/email-provider');
-      const result = await emailProvider.sendText(
-        { id: 'ws1' },
-        'to@test.com',
-        'Hello',
-      );
+      const result = await emailProvider.sendText({ id: 'ws1' }, 'to@test.com', 'Hello');
       expect(result).toEqual({ error: 'bang' });
     });
   });
@@ -187,9 +167,7 @@ describe('email-provider', () => {
         'image',
         'https://example.com/img.jpg',
       );
-      expect(mockSendMail).toHaveBeenCalledWith(
-        expect.objectContaining({ text: 'Segue anexo.' }),
-      );
+      expect(mockSendMail).toHaveBeenCalledWith(expect.objectContaining({ text: 'Segue anexo.' }));
     });
 
     it('returns error on send failure', async () => {

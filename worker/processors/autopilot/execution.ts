@@ -44,7 +44,9 @@ export async function executeAction(
     customerMessages?: QuotedCustomerMessage[] | undefined;
   },
 ) {
-  if (!action || action === 'NONE') return 'skipped';
+  if (!action || action === 'NONE') {
+    return 'skipped';
+  }
 
   let contactEmail: string | undefined;
   let contactRecord: UnknownRecord | undefined;
@@ -69,7 +71,9 @@ export async function executeAction(
     targetPhone = contact?.phone || input.contactId;
     contactEmail = contact?.email || undefined;
   }
-  if (!targetPhone) return 'skipped';
+  if (!targetPhone) {
+    return 'skipped';
+  }
 
   if (!contactEmail) {
     const resolved = await resolveContactForExecution(
@@ -79,8 +83,9 @@ export async function executeAction(
     );
     contactRecord = resolved.contactRecord || contactRecord;
     contactEmail = resolved.contactEmail || contactEmail;
-    if (resolved.contactRecord?.id)
+    if (resolved.contactRecord?.id) {
       input.contactId = input.contactId || (resolved.contactRecord.id as string);
+    }
   }
 
   const displayName =
@@ -104,10 +109,14 @@ export async function executeAction(
     conversationId: input.conversationId,
     idempotencyContext: input.idempotencyContext,
   });
-  if (!guard.allowed) return 'skipped';
+  if (!guard.allowed) {
+    return 'skipped';
+  }
 
   const msg = await buildMessage(action, input.messageContent || '', input.settings || {});
-  if (!msg) return 'skipped';
+  if (!msg) {
+    return 'skipped';
+  }
 
   const dispatchResult = await dispatchAutopilotAction({
     workspaceId: input.workspaceId,
@@ -183,7 +192,9 @@ export async function sendDirectAutopilotText(input: {
 }) {
   const action = input.actionLabel || 'UNIFIED_AGENT_TEXT';
   const message = String(input.text || '').trim();
-  if (!message) return 'skipped';
+  if (!message) {
+    return 'skipped';
+  }
 
   let targetPhone = input.phone;
   let contactRecord: UnknownRecord | null = null;
@@ -219,7 +230,9 @@ export async function sendDirectAutopilotText(input: {
   }
 
   const displayName = input.contactName || contactRecord?.name || targetPhone || 'contato';
-  if (!targetPhone) return 'skipped';
+  if (!targetPhone) {
+    return 'skipped';
+  }
 
   const contactCustomFields = normalizeJsonObject(contactRecord?.customFields);
   const resolvedChatId =
@@ -236,7 +249,9 @@ export async function sendDirectAutopilotText(input: {
     contactName: displayName,
     existingContact: contactRecord,
   }).catch(() => ({ contactId: '', trustedName: '', savedToWhatsapp: false }));
-  if (trustedProfile.contactId && !input.contactId) input.contactId = trustedProfile.contactId;
+  if (trustedProfile.contactId && !input.contactId) {
+    input.contactId = trustedProfile.contactId;
+  }
 
   const deliveryMode = input.deliveryMode || 'proactive';
 
@@ -257,7 +272,9 @@ export async function sendDirectAutopilotText(input: {
     conversationId: input.conversationId,
     idempotencyContext: input.idempotencyContext,
   });
-  if (!guard.allowed) return 'skipped';
+  if (!guard.allowed) {
+    return 'skipped';
+  }
 
   const dispatchResult = await dispatchAutopilotAction({
     workspaceId: input.workspaceId,

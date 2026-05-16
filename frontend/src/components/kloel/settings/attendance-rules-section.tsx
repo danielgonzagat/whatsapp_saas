@@ -33,7 +33,7 @@ export function AttendanceRulesSection({
     if (!value) {
       return;
     }
-    setRules(value);
+    queueMicrotask(() => setRules(value));
   }, [value]);
 
   const handleAddRule = () => {
@@ -51,10 +51,7 @@ export function AttendanceRulesSection({
             {rules.map((rule, i) => {
               const key = buildDuplicateAwareKey('rule', rules, i);
               return (
-                <div
-                  key={key}
-                  className="flex items-center gap-3 rounded-xl bg-gray-50 p-3"
-                >
+                <div key={key} className="flex items-center gap-3 rounded-xl bg-gray-50 p-3">
                   <span className="flex h-6 w-6 items-center justify-center rounded-full bg-gray-200 text-xs font-medium text-gray-700">
                     {i + 1}
                   </span>

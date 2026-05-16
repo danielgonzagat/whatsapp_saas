@@ -128,8 +128,8 @@ function useFiscalForm(fiscal: KycFiscal | null) {
   });
   useEffect(() => {
     if (fiscal) {
-      setTipo(fiscal.type === 'PJ' || fiscal.cnpj ? 'PJ' : 'PF');
-      setForm(fiscalToFormState(fiscal));
+      queueMicrotask(() => setTipo(fiscal.type === 'PJ' || fiscal.cnpj ? 'PJ' : 'PF'));
+      queueMicrotask(() => setForm(fiscalToFormState(fiscal)));
     }
   }, [fiscal]);
   const set = (k: string, v: string) => setForm((prev) => ({ ...prev, [k]: v }));

@@ -160,8 +160,12 @@ export function buildCognitiveMessage(params: {
 }
 
 export function normalizeAutonomyLedgerValue(value: unknown): unknown {
-  if (value instanceof Date) return value.toISOString();
-  if (Array.isArray(value)) return value.map((item) => normalizeAutonomyLedgerValue(item));
+  if (value instanceof Date) {
+    return value.toISOString();
+  }
+  if (Array.isArray(value)) {
+    return value.map((item) => normalizeAutonomyLedgerValue(item));
+  }
   if (value && typeof value === 'object') {
     const record = value as Record<string, unknown>;
     return Object.keys(record)
@@ -221,7 +225,9 @@ export async function beginAutonomyExecution(input: {
   request: Record<string, unknown>;
 }) {
   const client = prisma as never as UnknownRecord;
-  if (!client.autonomyExecution) return { allowed: true as const, record: null };
+  if (!client.autonomyExecution) {
+    return { allowed: true as const, record: null };
+  }
 
   try {
     const record = await client.autonomyExecution.create({
@@ -241,7 +247,9 @@ export async function beginAutonomyExecution(input: {
     });
     return { allowed: true as const, record };
   } catch (err: unknown) {
-    if (!isAutonomyExecutionDuplicate(err)) throw err;
+    if (!isAutonomyExecutionDuplicate(err)) {
+      throw err;
+    }
 
     const existing = await client.autonomyExecution.findFirst({
       where: { workspaceId: input.workspaceId, idempotencyKey: input.idempotencyKey },
@@ -280,9 +288,13 @@ export async function finishAutonomyExecution(
   status: 'SUCCESS' | 'FAILED' | 'SKIPPED',
   payload?: { response?: Record<string, unknown> | null; error?: string | null },
 ) {
-  if (!recordId) return;
+  if (!recordId) {
+    return;
+  }
   const client = prisma as never as UnknownRecord;
-  if (!client.autonomyExecution) return;
+  if (!client.autonomyExecution) {
+    return;
+  }
 
   await client.autonomyExecution.update({
     where: { id: recordId },

@@ -9,11 +9,7 @@ import { cn } from '@/lib/utils';
 import { ChevronLeft, Power, X } from 'lucide-react';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import type { AgentActivity } from './AgentConsole';
-import {
-  type ChatPreview,
-  normalizeChats,
-  normalizeMessages,
-} from './WhatsAppConsole.helpers';
+import { type ChatPreview, normalizeChats, normalizeMessages } from './WhatsAppConsole.helpers';
 import { QrConnectCard } from './QrConnectCard';
 import { ChatsSyncList } from './ChatsSyncList';
 import { WhatsAppLiveView } from './WhatsAppLiveView';
@@ -217,7 +213,7 @@ function WhatsAppConsoleInner({
     });
 
     if (nextChat && nextChat.id !== selectedChatId) {
-      setSelectedChatId(nextChat.id);
+      queueMicrotask(() => setSelectedChatId(nextChat.id));
     }
   }, [activities, chats, selectedChatId]);
 

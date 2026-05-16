@@ -34,8 +34,10 @@ export default function CheckoutShell({ slug, mode = 'slug' }: CheckoutShellProp
         ? `${API_BASE}/checkout/public/r/${slug}`
         : `${API_BASE}/checkout/public/${slug}`;
 
-    setLoading(true);
-    setError(null);
+    queueMicrotask(() => {
+      setLoading(true);
+      setError(null);
+    });
 
     fetch(endpoint, { signal: controller.signal })
       .then((res) => {

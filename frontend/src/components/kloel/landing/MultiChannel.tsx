@@ -18,12 +18,24 @@ const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 type MultiChannelState = Record<MultiChannelKey, MultiChannelMessage[]>;
 
-const channelColors: Record<MultiChannelKey, string> = { wa: colors.canvas.lime, ig: colors.canvas.pink, em: E };
+const channelColors: Record<MultiChannelKey, string> = {
+  wa: colors.canvas.lime,
+  ig: colors.canvas.pink,
+  em: E,
+};
 const channelNames: Record<MultiChannelKey, string> = {
   wa: 'WhatsApp',
   ig: 'Instagram DM',
   em: 'Email',
 };
+
+function groupMultiChannelMessages(messages: MultiChannelMessage[]): MultiChannelState {
+  return {
+    wa: messages.filter((message) => message.ch === 'wa'),
+    ig: messages.filter((message) => message.ch === 'ig'),
+    em: messages.filter((message) => message.ch === 'em'),
+  };
+}
 
 export function MultiChannel({
   messages = DEFAULT_LANDING_CONTENT.multiChannelFlow,
@@ -32,12 +44,13 @@ export function MultiChannel({
 }) {
   const prefersReducedMotion = usePrefersReducedMotion();
   const [msgs, setMsgs] = useState<MultiChannelState>({ wa: [], ig: [], em: [] });
+  const visibleMsgs = prefersReducedMotion ? groupMultiChannelMessages(messages) : msgs;
   const ref = useRef<HTMLDivElement | null>(null);
-  const [go, setGo] = useState(false);
+  const [enteredViewport, setEnteredViewport] = useState(false);
+  const go = prefersReducedMotion || enteredViewport;
 
   useEffect(() => {
     if (prefersReducedMotion) {
-      setGo(true);
       return;
     }
 
@@ -48,7 +61,7 @@ export function MultiChannel({
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
-          setGo(true);
+          setEnteredViewport(true);
           observer.disconnect();
         }
       },
@@ -63,11 +76,6 @@ export function MultiChannel({
       return;
     }
     if (prefersReducedMotion) {
-      setMsgs({
-        wa: messages.filter((message) => message.ch === 'wa'),
-        ig: messages.filter((message) => message.ch === 'ig'),
-        em: messages.filter((message) => message.ch === 'em'),
-      });
       return;
     }
 
@@ -126,7 +134,7 @@ export function MultiChannel({
         </span>
       </div>
       <div style={{ padding: 8, minHeight: 120, display: 'flex', flexDirection: 'column', gap: 4 }}>
-        {msgs[ch].map((msg) =>
+        {visibleMsgs[ch].map((msg) =>
           msg.f === 'ok' ? (
             <div
               key={`${msg.f}-${msg.ch}-${msg.t}-${msg.text}`}
@@ -213,7 +221,9 @@ export function MultiChannel({
         {renderPanel('em')}
       </div>
       <div style={{ textAlign: 'center', marginTop: 12 }}>
-        <span style={{ fontFamily: M, fontSize: 9, color: colors.text.dim, letterSpacing: '.12em' }}>
+        <span
+          style={{ fontFamily: M, fontSize: 9, color: colors.text.dim, letterSpacing: '.12em' }}
+        >
           {kloelT('3 CANAIS · 3 VENDAS · ZERO INTERVENÇÃO HUMANA')}
         </span>
       </div>

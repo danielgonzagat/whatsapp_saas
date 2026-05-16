@@ -22,7 +22,7 @@ export function TikTokIntegrationCallback({ kind }: { kind: 'creator' | 'adverti
     const code = params.get('code') || params.get('auth_code') || '';
     const state = params.get('state') || '';
     if (!code) {
-      setStatus('TikTok não retornou código de autorização.');
+      queueMicrotask(() => setStatus('TikTok não retornou código de autorização.'));
       return;
     }
 

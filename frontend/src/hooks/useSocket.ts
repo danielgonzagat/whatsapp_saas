@@ -32,7 +32,7 @@ export function useSocket() {
       );
 
     if (visualSocketDisabled) {
-      setIsConnected(false);
+      queueMicrotask(() => setIsConnected(false));
       return;
     }
 

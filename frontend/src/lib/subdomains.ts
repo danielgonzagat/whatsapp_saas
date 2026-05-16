@@ -13,7 +13,9 @@ export type KloelHostTarget = Exclude<KloelHostKind, 'unknown'>;
 // "//kloel.com:8080/whatever".
 const PROD_ROOT_DOMAIN = (() => {
   const raw = String(process.env.NEXT_PUBLIC_PROD_ROOT_DOMAIN || '').trim();
-  if (!raw) return 'kloel.com';
+  if (!raw) {
+    return 'kloel.com';
+  }
   try {
     // Force a scheme so the URL parser accepts bare hosts and `//host`.
     const candidate = /^https?:\/\//i.test(raw) ? raw : `https://${raw.replace(/^\/+/, '')}`;

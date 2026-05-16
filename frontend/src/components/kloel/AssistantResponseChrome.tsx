@@ -152,7 +152,7 @@ export function AssistantProcessingTraceCard({
 
   useEffect(() => {
     if (isProcessing) {
-      setExpanded(true);
+      queueMicrotask(() => setExpanded(true));
     }
   }, [isProcessing]);
 

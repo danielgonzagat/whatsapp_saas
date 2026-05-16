@@ -60,7 +60,9 @@ export async function addChannelArsenal(
     const form = new FormData();
     form.set('file', asset.file);
     form.set('type', asset.type);
-    if (asset.label?.trim()) form.set('label', asset.label.trim());
+    if (asset.label?.trim()) {
+      form.set('label', asset.label.trim());
+    }
     return payload(
       await apiFetch<ChannelSetupState>(`/channel-setup/${channel}/arsenal`, {
         method: 'POST',

@@ -50,7 +50,7 @@ export default function GestaoVendasPage() {
       await removeTag(phone, tag);
       mutate();
       showToast('Tag removida', 'success');
-    } catch (e) {
+    } catch {
       showToast('Erro ao remover tag', 'error');
     }
   };

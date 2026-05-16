@@ -33,7 +33,7 @@ export function useAffiliateSummary(productId: string | undefined): {
   }, [productId]);
 
   useEffect(() => {
-    reload();
+    queueMicrotask(() => reload());
   }, [reload]);
 
   return { affiliateSummary, setAffiliateSummary, affiliateLoading, reload };
@@ -96,17 +96,19 @@ export function useCommissionConfigState(p: Record<string, unknown>) {
   // Re-sync the editable form when the upstream snapshot changes.
   useEffect(() => {
     const next = deriveCommissionInitialState(p);
-    setAffEnabled(next.affEnabled);
-    setAffVisible(next.affVisible);
-    setAffAutoApprove(next.affAutoApprove);
-    setAffAccessData(next.affAccessData);
-    setAffAccessAbandoned(next.affAccessAbandoned);
-    setAffFirstInstallment(next.affFirstInstallment);
-    setComType(next.comType);
-    setComCookie(next.comCookie);
-    setComPercent(next.comPercent);
-    setComLastClick(next.comLastClick);
-    setComOther(next.comOther);
+    queueMicrotask(() => {
+      setAffEnabled(next.affEnabled);
+      setAffVisible(next.affVisible);
+      setAffAutoApprove(next.affAutoApprove);
+      setAffAccessData(next.affAccessData);
+      setAffAccessAbandoned(next.affAccessAbandoned);
+      setAffFirstInstallment(next.affFirstInstallment);
+      setComType(next.comType);
+      setComCookie(next.comCookie);
+      setComPercent(next.comPercent);
+      setComLastClick(next.comLastClick);
+      setComOther(next.comOther);
+    });
   }, [p]);
 
   return {

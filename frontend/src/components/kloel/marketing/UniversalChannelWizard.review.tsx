@@ -341,7 +341,11 @@ const toggleRowStyle: React.CSSProperties = {
 };
 
 function acceptedAssetTypes(channel: UniversalChannel): string[] {
-  if (channel === 'tiktok') return ['text', 'audio', 'image', 'video'];
-  if (channel === 'email') return ['text', 'image', 'document', 'template'];
+  if (channel === 'tiktok') {
+    return ['text', 'audio', 'image', 'video'];
+  }
+  if (channel === 'email') {
+    return ['text', 'image', 'document', 'template'];
+  }
   return ['text', 'audio', 'image', 'video', 'document', 'template'];
 }
