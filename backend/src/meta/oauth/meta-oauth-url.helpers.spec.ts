@@ -3,7 +3,9 @@ import { resolveOAuthRedirect, resolvePublicBackendBaseUrl } from './meta-oauth-
 function envOf(values: Record<string, string | undefined>): NodeJS.ProcessEnv {
   const env: NodeJS.ProcessEnv = {};
   for (const [k, v] of Object.entries(values)) {
-    if (typeof v === 'string') env[k] = v;
+    if (typeof v === 'string') {
+      env[k] = v;
+    }
   }
   return env;
 }

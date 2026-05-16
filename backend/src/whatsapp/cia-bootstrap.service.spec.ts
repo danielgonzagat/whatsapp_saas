@@ -6,14 +6,35 @@ import type {
   CatchupServiceMock,
   AgentEventsMock,
 } from './cia-runtime.fixtures';
-import type { CiaRuntimeStateMock } from '../cia/cia-runtime.service.fixtures';
+type CiaBootstrapRuntimeStateMock = {
+  createAutonomyRun: jest.Mock;
+  updateWorkspaceAutonomy: jest.Mock;
+  updateAutonomyRunStatus: jest.Mock;
+  persistRuntimeSnapshot: jest.Mock;
+  finalizeSilentLiveMode: jest.Mock;
+  scheduleContactCatalogRefresh: jest.Mock;
+  resetStaleRuntimeRunIfNeeded: jest.Mock;
+  getOperationalIntelligence: jest.Mock;
+  finalizeRun: jest.Mock;
+};
+
+type ConversationFindManyArgs = {
+  take?: number;
+  where?: unknown;
+};
+
+type StartBacklogRunCall = [string, string, number, Record<string, unknown>];
+
+function objectMatcher(value: Record<string, unknown>): unknown {
+  return expect.objectContaining(value) as unknown;
+}
 
 type CiaBootstrapOverrides = {
   prisma: PrismaMock;
   providerRegistry: ProviderRegistryMock;
   agentEvents: AgentEventsMock;
   chatFilter: CiaChatFilterService;
-  runtimeState: CiaRuntimeStateMock;
+  runtimeState: CiaBootstrapRuntimeStateMock;
   catchupService: CatchupServiceMock;
 };
 
@@ -23,7 +44,7 @@ function buildService(deps: CiaBootstrapOverrides): CiaBootstrapService {
     deps.providerRegistry as never,
     deps.agentEvents as never,
     deps.chatFilter,
-    deps.runtimeState,
+    deps.runtimeState as never,
     deps.catchupService as never,
   );
 }
@@ -33,7 +54,7 @@ describe('CiaBootstrapService', () => {
   let providerRegistry: ProviderRegistryMock;
   let agentEvents: AgentEventsMock;
   let chatFilter: CiaChatFilterService;
-  let runtimeState: CiaRuntimeStateMock;
+  let runtimeState: CiaBootstrapRuntimeStateMock;
   let catchupService: CatchupServiceMock;
   let service: CiaBootstrapService;
 
@@ -84,7 +105,7 @@ describe('CiaBootstrapService', () => {
       resetStaleRuntimeRunIfNeeded: jest.fn(),
       getOperationalIntelligence: jest.fn(),
       finalizeRun: jest.fn(),
-    } as CiaRuntimeStateMock;
+    };
 
     catchupService = {
       triggerCatchup: jest.fn().mockResolvedValue({ scheduled: true }),
@@ -121,7 +142,7 @@ describe('CiaBootstrapService', () => {
 
       expect(prisma.conversation.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: expect.objectContaining({
+          where: objectMatcher({
             workspaceId: 'ws-a',
             status: { not: 'CLOSED' },
           }),
@@ -132,8 +153,11 @@ describe('CiaBootstrapService', () => {
 
     it('clamps the limit between 1 and 2000', async () => {
       await service.listPendingConversations('ws-a', 0);
-      const [firstFindMany] = prisma.conversation.findMany.mock.calls[0];
-      expect(typeof firstFindMany.take).toBe('number');
+      const findManyCalls = prisma.conversation.findMany.mock.calls as Array<
+        [ConversationFindManyArgs]
+      >;
+      const [firstFindMany] = findManyCalls[0] ?? [];
+      expect(typeof firstFindMany?.take).toBe('number');
 
       await service.listPendingConversations('ws-a', 5000);
       expect(prisma.conversation.findMany).toHaveBeenCalledWith(
@@ -278,12 +302,11 @@ describe('CiaBootstrapService', () => {
 
       await service.run('ws-a', startBacklogRun, startPresenceHeartbeat, stopPresenceHeartbeat);
 
-      const backlogArgs = startBacklogRun.mock.calls[0];
-      expect(backlogArgs.slice(0, 2)).toEqual(['ws-a', 'reply_all_recent_first']);
-      expect(typeof backlogArgs[2]).toBe('number');
-      expect(backlogArgs[3]).toEqual(
-        expect.objectContaining({ autoStarted: true, triggeredBy: 'autopilot_total' }),
-      );
+      const [workspaceId, mode, limit, options] = startBacklogRun.mock
+        .calls[0] as StartBacklogRunCall;
+      expect([workspaceId, mode]).toEqual(['ws-a', 'reply_all_recent_first']);
+      expect(typeof limit).toBe('number');
+      expect(options).toEqual(objectMatcher({ autoStarted: true, triggeredBy: 'autopilot_total' }));
     });
 
     it('enters LIVE mode when no pending conversations exist', async () => {
@@ -299,7 +322,7 @@ describe('CiaBootstrapService', () => {
         'ws-a',
         expect.objectContaining({
           mode: 'FULL',
-          runtime: expect.objectContaining({ state: 'LIVE_READY' }),
+          runtime: objectMatcher({ state: 'LIVE_READY' }),
         }),
       );
     });
@@ -314,7 +337,7 @@ describe('CiaBootstrapService', () => {
 
       expect(prisma.conversation.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: expect.objectContaining({ workspaceId: 'ws-tenant-a' }),
+          where: objectMatcher({ workspaceId: 'ws-tenant-a' }),
         }),
       );
     });

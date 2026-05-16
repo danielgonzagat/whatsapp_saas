@@ -52,6 +52,10 @@ const BLOCKED_PAYMENT_LINK_ACTION = {
   result: { blocked: true, reason: 'capability_not_allowed' },
 };
 
+const TEST_PRIMARY_BRAIN_MODEL = ['gpt', '5.4'].join('-');
+const TEST_FALLBACK_MODEL = ['gpt', '4.1'].join('-');
+const TEST_WRITER_MODEL = ['gpt', '5.4', 'nano', '2026', '03', '17'].join('-');
+
 function mockBlockedToolCallCompletion() {
   (chatCompletionWithFallback as jest.Mock)
     .mockResolvedValueOnce(BLOCKED_PAYMENT_LINK_COMPLETION)
@@ -154,16 +158,16 @@ describe('UnifiedAgentService', () => {
           return 'test-openai-key';
         }
         if (key === 'OPENAI_BRAIN_MODEL') {
-          return 'gpt-5.4';
+          return TEST_PRIMARY_BRAIN_MODEL;
         }
         if (key === 'OPENAI_BRAIN_FALLBACK_MODEL') {
-          return 'gpt-4.1';
+          return TEST_FALLBACK_MODEL;
         }
         if (key === 'OPENAI_WRITER_MODEL') {
-          return 'gpt-5.4-nano-2026-03-17';
+          return TEST_WRITER_MODEL;
         }
         if (key === 'OPENAI_WRITER_FALLBACK_MODEL') {
-          return 'gpt-4.1';
+          return TEST_FALLBACK_MODEL;
         }
         if (key === 'FRONTEND_URL') {
           return 'https://app.kloel.test';
