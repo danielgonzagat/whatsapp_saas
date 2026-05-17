@@ -11,7 +11,7 @@ export interface OwnerAction {
   readonly externalDependencyDescription: string | null;
 }
 
-export type ActionCategory =
+type ActionCategory =
   | 'technical'
   | 'creative'
   | 'strategic'

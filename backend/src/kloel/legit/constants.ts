@@ -1,4 +1,17 @@
-import type { RegulatedCategory } from './types';
+type RegulatedCategory =
+  | 'health_claims'
+  | 'financial_advice'
+  | 'legal_advice'
+  | 'medical_device'
+  | 'pharmaceutical'
+  | 'tobacco'
+  | 'alcohol'
+  | 'gambling'
+  | 'adult_content'
+  | 'crypto_advice'
+  | 'political'
+  | 'hate_speech'
+  | 'restricted_product';
 export const LGPD_REQUIRED_CONSENT_PURPOSES: readonly string[] = [
   'marketing_communication',
   'data_sharing_third_party',

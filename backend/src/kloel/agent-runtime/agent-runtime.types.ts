@@ -2,12 +2,8 @@ import type { Prisma } from '@prisma/client';
 
 type AgentRuntimeTruthMode = 'observed' | 'inferred' | 'projected';
 export type AgentRuntimeRiskLevel = 'safe' | 'normal' | 'high' | 'critical';
-export type AgentSkillDelegationPermission =
-  | 'allowed_alone'
-  | 'with_approval'
-  | 'escalate'
-  | 'prohibited';
-export type AgentDelegationRiskClass = 'R1' | 'R2' | 'R3' | 'R4';
+type AgentSkillDelegationPermission = 'allowed_alone' | 'with_approval' | 'escalate' | 'prohibited';
+type AgentDelegationRiskClass = 'R1' | 'R2' | 'R3' | 'R4';
 
 export interface AgentToolDelegationRule {
   toolName: string;

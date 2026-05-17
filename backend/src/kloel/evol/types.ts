@@ -10,11 +10,11 @@ export type CommercialImpact = 'revenue_blocking' | 'trust_eroding' | 'quality_d
 
 export type RTier = 'tier_1_functional' | 'tier_2_partial' | 'tier_3_facade' | 'tier_4_shell';
 
-export type AuthorizationStatus = 'pending' | 'approved' | 'rejected' | 'expired';
+type AuthorizationStatus = 'pending' | 'approved' | 'rejected' | 'expired';
 
 export type Role = 'advisory' | 'tool_limited' | 'human_required';
 
-export type RunStatus = 'pending' | 'running' | 'completed' | 'failed';
+type RunStatus = 'pending' | 'running' | 'completed' | 'failed';
 
 export type ViolationKind = 'protected_file_touch' | 'codacy_weakening' | 'bypass_suppression' | 'governance_breach';
 

@@ -70,7 +70,7 @@ export interface AntiRemorseControl {
   readonly objectionRecoveryGuardrail?: string;
 }
 
-export type PostSaleDelegationMode = 'allowed_alone' | 'owner_review' | 'silent_monitoring';
+type PostSaleDelegationMode = 'allowed_alone' | 'owner_review' | 'silent_monitoring';
 
 export interface PostSaleDecisionControl {
   readonly riskClass: 'R1' | 'R2';

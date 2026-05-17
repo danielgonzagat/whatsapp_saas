@@ -25,7 +25,7 @@ const MEASURED_BY = 'disclosure-engine.gate' as const;
 
 const MIN_DISCLOSURE_LENGTH = 10;
 
-export interface CommercialRelationship {
+interface CommercialRelationship {
   readonly type: string;
   readonly details: string;
   readonly isPublic: boolean;

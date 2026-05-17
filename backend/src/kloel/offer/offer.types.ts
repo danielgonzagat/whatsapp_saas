@@ -18,7 +18,7 @@ import type { MaturityStage } from '../maturity/maturity.types';
 export type { MaturityStage };
 import type { SpineEventRef } from '../mind/mind.types';
 
-export type OfferInsightKind =
+type OfferInsightKind =
   | 'bonus_desirability'
   | 'promise_strength'
   | 'product_version_fit'

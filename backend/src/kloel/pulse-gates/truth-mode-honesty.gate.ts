@@ -22,8 +22,8 @@ const MEASURED_BY = 'truth-mode-honesty.gate' as const;
 
 // ─── type exports ───────────────────────────────────────────────────────
 
-export type TruthModeKey = 'observed' | 'inferred' | 'projected';
-export type ProducedBy = 'direct' | 'classifier' | 'model' | 'simulation';
+type TruthModeKey = 'observed' | 'inferred' | 'projected';
+type ProducedBy = 'direct' | 'classifier' | 'model' | 'simulation';
 
 /** Per-item check — producer must match declared truthMode. */
 export interface TruthModeItem {
@@ -33,7 +33,7 @@ export interface TruthModeItem {
 }
 
 /** A single cognition entry — used for mixed-mode + valence checks. */
-export interface TruthModeCognitiveEntry {
+interface TruthModeCognitiveEntry {
   readonly key: string;
   readonly truthMode?: string;
   readonly valence?: string;
@@ -42,7 +42,7 @@ export interface TruthModeCognitiveEntry {
 }
 
 /** ABI-level data for projection-leak and missing-truthMode checks. */
-export interface TruthModeAbiCheck {
+interface TruthModeAbiCheck {
   readonly identityProjection?: {
     readonly truthMode?: string;
     readonly audience?: string;

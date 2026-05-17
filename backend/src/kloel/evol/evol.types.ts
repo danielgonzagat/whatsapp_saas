@@ -23,7 +23,7 @@ export type RTier =
 
 export type RiskClass = 'safe' | 'normal' | 'high' | 'critical';
 
-export type ProposalStatus = 'draft' | 'submitted' | 'authorized' | 'rejected';
+type ProposalStatus = 'draft' | 'submitted' | 'authorized' | 'rejected';
 
 export interface DomainRiskProfile {
   readonly severity: GapSeverity;

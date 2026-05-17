@@ -87,24 +87,6 @@ export interface GuardVerdict {
  * Stage-appropriate goal tags. The goal-filter uses these to determine
  * which GoalCandidates belong to which stage.
  */
-export type GoalTag =
-  | 'bootstrap'
-  | 'first_sale'
-  | 'product_market_fit'
-  | 'conversion'
-  | 'lead_generation'
-  | 'retention'
-  | 'repeat_purchase'
-  | 'scale'
-  | 'campaign'
-  | 'automation'
-  | 'team'
-  | 'efficiency'
-  | 'optimization'
-  | 'portfolio'
-  | 'ecosystem'
-  | 'ltv'
-  | 'cost_reduction';
 
 export interface StageFilterResult {
   readonly stage: MaturityStage;

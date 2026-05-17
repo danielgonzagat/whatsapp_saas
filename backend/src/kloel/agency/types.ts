@@ -5,8 +5,6 @@
  * Zero vazamento de conhecimento entre clientes.
  */
 
-export type ClientHealthStatus = 'healthy' | 'at_risk' | 'critical' | 'dormant' | 'offboarded';
-
 export type PriorityTier = 'agora' | 'esta_semana' | 'em_breve' | 'sustentar';
 
 export type ChurnRiskLevel = 'low' | 'moderate' | 'high' | 'critical';
@@ -15,7 +13,7 @@ export type MarginTrend = 'improving' | 'stable' | 'declining' | 'negative';
 
 export type LeakSeverity = 'none' | 'low' | 'moderate' | 'high' | 'critical';
 
-export type HandoffUrgency = 'now' | 'this_week' | 'next_week' | 'background';
+type HandoffUrgency = 'now' | 'this_week' | 'next_week' | 'background';
 
 export interface ClientContextBundle {
   readonly clientId: string;

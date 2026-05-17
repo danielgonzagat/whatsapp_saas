@@ -133,14 +133,14 @@ export interface ThirdPartyAuditExport {
   readonly summary: AuditSummary;
 }
 
-export interface AuditRecommendation {
+interface AuditRecommendation {
   readonly recommendationId: string;
   readonly summary: string;
   readonly outcome: string;
   readonly issuedAt: string;
 }
 
-export interface AuditSummary {
+interface AuditSummary {
   readonly totalRecommendations: number;
   readonly conflictsDetected: number;
   readonly silenceEvents: number;

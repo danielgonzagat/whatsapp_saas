@@ -46,7 +46,7 @@ export type Audiencia = 'b2b' | 'b2c' | 'hibrido';
 
 export const ALL_AUDIENCIAS: readonly Audiencia[] = ['b2b', 'b2c', 'hibrido'] as const;
 
-export interface DimensionConfidence {
+interface DimensionConfidence {
   readonly label: string;
   readonly confidence: number;
 }

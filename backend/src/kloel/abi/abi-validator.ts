@@ -80,7 +80,7 @@ const PROMPT_LEAKAGE_PATTERNS: ReadonlyArray<{
   { id: 'few-shot-userassistant', re: /\b(User:|Assistant:|System:)\s/m },
 ];
 
-export interface AbiValidationIssue {
+interface AbiValidationIssue {
   readonly path: string;
   readonly message: string;
   readonly code: string;

@@ -1,3 +1,4 @@
+import { createRequire } from 'node:module';
 import { Logger } from '@nestjs/common';
 import Redis, { RedisOptions } from 'ioredis';
 import {
@@ -5,6 +6,7 @@ import {
   resolveRedisUrl as canonicalResolveRedisUrl,
 } from './resolve-redis-url';
 
+const localRequire = createRequire(__filename);
 const logger = new Logger('RedisUtil');
 const DEFAULT_REDIS_CLIENT_LISTENER_BUDGET = 256;
 
@@ -24,7 +26,7 @@ let redisMockConstructor: RedisMockConstructor | null = null;
 
 function createRedisMockClient(): Redis {
   if (!redisMockConstructor) {
-    const redisMockModule = require('ioredis-mock') as {
+    const redisMockModule = localRequire('ioredis-mock') as {
       default?: RedisMockConstructor;
     } & RedisMockConstructor;
     redisMockConstructor = redisMockModule.default ?? redisMockModule;

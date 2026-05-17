@@ -2,22 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { WisdomPrivacyGuardService } from './wisdom-privacy-guard.service';
 import { extractChannelEfficiencyPatterns, extractConversionDecayPatterns, extractEngagementPeakPatterns, extractObjectionPatterns, extractOfferObjectionCorrelationPatterns } from './wisdom-pattern-extracted.helpers';
 import { MIN_WORKSPACES, aggregateSignals, conversionRate, dealCloseRate, emitCampaignPatterns, emitProductConcentrationPatterns, emitRatePatterns, emitStagePatterns, emitVolumePatterns, enrichSignal, handoffRate, refundRate, replyRate } from './wisdom-pattern-signal.helpers';
-import type { CandidatePattern, WorkspaceEventSet } from './wisdom.types';
-export type PatternKind =
-  | 'objection_pattern'
-  | 'channel_efficiency'
-  | 'conversion_decay'
-  | 'engagement_peak'
-  | 'offer_objection_correlation';
-export type PatternDimension = 'conversion' | 'engagement' | 'channel' | 'offer' | 'timing';
-export interface ExtractedPattern {
-  readonly kind: PatternKind;
-  readonly dimension: PatternDimension;
-  readonly support: number;
-  readonly confidence: number;
-  readonly abstractDescription: string;
-  readonly anonymizedExample: string;
-}
+import type { CandidatePattern, ExtractedPattern, WorkspaceEventSet } from './wisdom.types';
 /**
  * WISDOM-001 — Pattern Extractor (enhanced).
  *

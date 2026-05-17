@@ -29,14 +29,14 @@ function isObject(v: unknown): v is Record<string, unknown> {
   return typeof v === 'object' && v !== null && !Array.isArray(v);
 }
 
-export interface EcosystemRecommendationInput {
+interface EcosystemRecommendationInput {
   readonly recommendationId: string;
   readonly sourceWorkspaceIds?: readonly string[];
   readonly contextWorkspaces?: readonly string[];
   readonly items?: readonly Record<string, unknown>[];
 }
 
-export interface EcosystemCohortInput {
+interface EcosystemCohortInput {
   readonly cohortSize: number;
   readonly workspaceIds: readonly string[];
   readonly optOutWorkspaces?: readonly string[];

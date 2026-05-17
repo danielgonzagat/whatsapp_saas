@@ -96,7 +96,7 @@ export type ProtectiveActionKind =
   | 'renegotiate_payables'
   | 'emergency_fund';
 
-export type ActionUrgency = 'now' | 'soon' | 'planned';
+type ActionUrgency = 'now' | 'soon' | 'planned';
 
 export interface ProtectiveAction {
   readonly actionId: string;
@@ -107,7 +107,7 @@ export interface ProtectiveAction {
   readonly impact: number;
 }
 
-export type BlockerKind =
+type BlockerKind =
   | 'insufficient_balance'
   | 'runway_critical'
   | 'risk_critical'

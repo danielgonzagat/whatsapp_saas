@@ -9,7 +9,7 @@
 
 import type { AttentionRanking, DecisionTier, HierarchyProjectionInput } from './clarity.types';
 
-export interface TierProjection {
+interface TierProjection {
   readonly tier: DecisionTier;
   readonly items: readonly AttentionRanking[];
   readonly count: number;

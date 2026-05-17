@@ -1,7 +1,6 @@
 import { WisdomPrivacyGuardService } from './wisdom-privacy-guard.service';
 import { K_ANONYMITY_THRESHOLD, confidenceFromCount, makeCandidateId, passesKAnonymity, type InternalSignal } from './wisdom-pattern-signal.helpers';
-import type { AggregatedSignal } from './wisdom.types';
-import type { ExtractedPattern } from './wisdom-pattern-extractor.service';
+import type { AggregatedSignal, ExtractedPattern } from './wisdom.types';
 export function extractObjectionPatterns(
   guard: WisdomPrivacyGuardService | undefined,
   enriched: InternalSignal[],

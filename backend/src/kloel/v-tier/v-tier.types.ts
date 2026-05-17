@@ -1,4 +1,4 @@
-export type VtierStatus = 'PASS' | 'FAIL' | 'INSUFFICIENT_EVIDENCE';
+type VtierStatus = 'PASS' | 'FAIL' | 'INSUFFICIENT_EVIDENCE';
 
 export type VtierOverall = 'PASS' | 'PARTIAL' | 'FAIL';
 

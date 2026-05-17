@@ -76,9 +76,9 @@ export interface RecoveryTactic {
   readonly generatedAt: string;
 }
 
-export type RecoveryDelegationRiskClass = 'R1' | 'R2' | 'R3' | 'R4';
+type RecoveryDelegationRiskClass = 'R1' | 'R2' | 'R3' | 'R4';
 
-export type RecoveryDelegationMode =
+type RecoveryDelegationMode =
   | 'allowed_alone'
   | 'requires_review'
   | 'human_only';

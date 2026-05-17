@@ -13,13 +13,13 @@ const COMMON_OBJECTION_KEYWORDS: readonly string[] = [
   'pensar', 'depois', 'futuro', 'momento', 'agora',
   'marido', 'esposa', 'socio', 'sócio', 'equipe', 'time',
 ];
-export type PatternKind =
+type PatternKind =
   | 'objection_pattern'
   | 'channel_efficiency'
   | 'conversion_decay'
   | 'engagement_peak'
   | 'offer_objection_correlation';
-export type PatternDimension = 'conversion' | 'engagement' | 'channel' | 'offer' | 'timing';
+type PatternDimension = 'conversion' | 'engagement' | 'channel' | 'offer' | 'timing';
 export interface ExtractedPattern {
   readonly kind: PatternKind;
   readonly dimension: PatternDimension;

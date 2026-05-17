@@ -234,7 +234,8 @@ export class PortfolioStateService {
   ): readonly PrioritySnapshot[] {
     void nowMs;
     if (clients.length === 0) {
-      return [];
+      const emptyPriorityRanking: readonly PrioritySnapshot[] = [];
+      return emptyPriorityRanking;
     }
 
     const maxRevenue = clients.reduce(

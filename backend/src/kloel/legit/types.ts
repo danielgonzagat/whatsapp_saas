@@ -10,7 +10,7 @@
 export type Jurisdiction = 'BR' | 'US' | 'EU' | 'UK' | 'GLOBAL';
 export type DataSubjectRight = 'access' | 'rectification' | 'erasure' | 'portability' | 'restriction' | 'objection' | 'automated_decision';
 export type ConsentBasis = 'explicit' | 'legitimate_interest' | 'contractual' | 'legal_obligation' | 'vital_interest' | 'public_interest';
-export type ConsentStatus = 'granted' | 'withdrawn' | 'expired' | 'never_granted' | 'pending';
+type ConsentStatus = 'granted' | 'withdrawn' | 'expired' | 'never_granted' | 'pending';
 export type PolicyViolationSeverity = 'warning' | 'minor' | 'moderate' | 'severe' | 'critical';
 export type RegulatedCategory =
   | 'health_claims'
@@ -26,9 +26,9 @@ export type RegulatedCategory =
   | 'political'
   | 'hate_speech'
   | 'restricted_product';
-export type ImageRightsSource = 'stock' | 'licensed' | 'ai_generated' | 'user_uploaded' | 'third_party' | 'commissioned';
+type ImageRightsSource = 'stock' | 'licensed' | 'ai_generated' | 'user_uploaded' | 'third_party' | 'commissioned';
 export type ImageRightsStatus = 'verified' | 'missing_attribution' | 'license_expired' | 'unlicensed' | 'pending_review' | 'violation_detected';
-export type RiskFlagCategory =
+type RiskFlagCategory =
   | 'lgpd_violation'
   | 'gdpr_violation'
   | 'ccpa_violation'
@@ -42,7 +42,7 @@ export type RiskFlagCategory =
   | 'data_breach'
   | 'legal_threat'
   | 'regulatory_notice';
-export type RiskFlagStatus = 'open' | 'acknowledged' | 'investigating' | 'escalated' | 'resolved' | 'dismissed' | 'requires_legal';
+type RiskFlagStatus = 'open' | 'acknowledged' | 'investigating' | 'escalated' | 'resolved' | 'dismissed' | 'requires_legal';
 export type BlockReason =
   | 'policy_violation'
   | 'legal_requirement'
@@ -54,7 +54,7 @@ export type BlockReason =
   | 'platform_terms'
   | 'consent_required'
   | 'jurisdiction_block';
-export type LegalConsultUrgency = 'routine' | 'elevated' | 'urgent' | 'emergency';
+type LegalConsultUrgency = 'routine' | 'elevated' | 'urgent' | 'emergency';
 export interface ConsentRecord {
   readonly consentId: string;
   readonly workspaceId: string;
@@ -82,19 +82,7 @@ export interface PolicyViolation {
   readonly detectedAt: string;
   readonly resolvedAt: string | null;
 }
-export interface RegulatedContent {
-  readonly contentId: string;
-  readonly workspaceId: string;
-  readonly category: RegulatedCategory;
-  readonly description: string;
-  readonly source: string;
-  readonly jurisdiction: Jurisdiction;
-  readonly requiresApproval: boolean;
-  readonly requiresDisclaimer: boolean;
-  readonly disclaimerText: string | null;
-  readonly detectedAt: string;
-}
-export interface ImageRights {
+interface ImageRights {
   readonly imageId: string;
   readonly workspaceId: string;
   readonly source: ImageRightsSource;
@@ -121,7 +109,7 @@ export interface PolicyChange {
   readonly detectedAt: string;
   readonly acknowledgedAt: string | null;
 }
-export interface RiskFlag {
+interface RiskFlag {
   readonly flagId: string;
   readonly workspaceId: string;
   readonly category: RiskFlagCategory;
@@ -135,7 +123,7 @@ export interface RiskFlag {
   readonly resolvedAt: string | null;
   readonly createdAt: string;
 }
-export interface LegalConsult {
+interface LegalConsult {
   readonly consultId: string;
   readonly workspaceId: string;
   readonly urgency: LegalConsultUrgency;
@@ -147,7 +135,7 @@ export interface LegalConsult {
   readonly triggeredAt: string;
   readonly resolvedAt: string | null;
 }
-export interface BlockJustification {
+interface BlockJustification {
   readonly blockId: string;
   readonly workspaceId: string;
   readonly reason: BlockReason;

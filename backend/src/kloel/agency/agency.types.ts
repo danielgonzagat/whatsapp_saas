@@ -49,12 +49,6 @@ export interface TeamLoadSnapshot {
   readonly recommendation: string;
 }
 
-export interface PortfolioConsolidationInput {
-  readonly agencyWorkspaceId: string;
-  readonly clientWorkspaceIds: readonly string[];
-  readonly nowMs?: number;
-}
-
 export interface PortfolioResult {
   readonly state: ConsolidatedPortfolioState;
   readonly summary: string;

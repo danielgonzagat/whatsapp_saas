@@ -146,9 +146,3 @@ export interface EvidenceBundle {
   readonly attributingEvents: readonly SpineEventRef[];
   readonly computedAt: string;
 }
-
-export interface WeekBucket {
-  readonly weekStart: string;
-  readonly weekEnd: string;
-  readonly events: readonly SpineEventRef[];
-}
