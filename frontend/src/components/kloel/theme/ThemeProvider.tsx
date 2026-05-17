@@ -60,13 +60,11 @@ function commitTheme(theme: KloelAppTheme) {
 
 /** Theme provider. */
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [theme, setThemeState] = useState<KloelAppTheme>('light');
+  const [theme, setThemeState] = useState<KloelAppTheme>(() => readInitialKloelTheme());
 
   useEffect(() => {
-    const initialTheme = readInitialKloelTheme();
-    queueMicrotask(() => setThemeState(initialTheme));
-    commitTheme(initialTheme);
-  }, []);
+    commitTheme(theme);
+  }, [theme]);
 
   useEffect(() => {
     const handleStorage = (event: StorageEvent) => {
