@@ -113,6 +113,11 @@ describe('AutopilotCycleExecutorService', () => {
       ],
     }).compile();
     service = module.get<AutopilotCycleExecutorService>(AutopilotCycleExecutorService);
+    jest.useFakeTimers().setSystemTime(new Date('2026-05-13T15:00:00.000Z'));
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
   });
 
   afterEach(() => {
