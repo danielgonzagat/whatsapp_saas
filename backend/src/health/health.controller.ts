@@ -19,8 +19,8 @@ export class HealthController {
   @HttpCode(HttpStatus.OK)
   liveness() {
     return {
-      status: 'up',
-      live: true,
+      status: 'UP',
+      uptime: process.uptime(),
       timestamp: new Date().toISOString(),
     };
   }
@@ -30,14 +30,28 @@ export class HealthController {
   @Get('readiness')
   async readiness(@Res({ passthrough: true }) res: Response) {
     const checks = await this.healthService.runReadinessChecks();
-    const allUp = checks.every((c) => c.status === 'up');
+    const failures = checks.filter((c) => c.status !== 'up').map((c) => c.name);
+    const allUp = failures.length === 0;
     if (!allUp) {
       res.status(HttpStatus.SERVICE_UNAVAILABLE);
     }
+
+    const details = Object.fromEntries(
+      checks.map((check) => [
+        check.name,
+        {
+          ...check,
+          status: check.status === 'up' ? 'UP' : 'DOWN',
+        },
+      ]),
+    );
+
     return {
-      status: allUp ? 'up' : 'down',
+      status: allUp ? 'UP' : 'DOWN',
       ready: allUp,
-      checks,
+      failures,
+      details,
+      ...(allUp ? {} : { message: `Dependencies down: ${failures.join(', ')}` }),
       timestamp: new Date().toISOString(),
     };
   }

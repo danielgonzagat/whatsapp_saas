@@ -465,6 +465,7 @@ jobs:
       NEXTAUTH_URL: http://localhost:3000
       NEXTAUTH_SECRET: test_secret
       ASAAS_WEBHOOK_TOKEN: test-asaas-token
+      META_APP_SECRET: test-secret
 
     steps:
       - uses: actions/checkout@v4

@@ -44,7 +44,7 @@ export class AppController {
   @Get('health')
   healthCheck(): { status: string; timestamp: string; uptime: number } {
     return {
-      status: 'ok',
+      status: 'UP',
       timestamp: new Date().toISOString(),
       uptime: process.uptime(),
     };

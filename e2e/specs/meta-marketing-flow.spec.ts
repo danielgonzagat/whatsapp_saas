@@ -1,8 +1,26 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type APIRequestContext, type Page } from '@playwright/test';
+import { createHmac } from 'node:crypto';
+import { bootstrapAuthenticatedPage, ensureE2EAdmin, getE2EBaseUrls } from './e2e-helpers';
+
+const { appUrl: APP_URL } = getE2EBaseUrls();
+const META_APP_SECRET = 'test-secret';
+
+function signMetaWebhookPayload(payload: string) {
+  return `sha256=${createHmac('sha256', META_APP_SECRET).update(payload).digest('hex')}`;
+}
+
+async function gotoAuthenticatedAppPath(page: Page, request: APIRequestContext, path: string) {
+  const auth = await ensureE2EAdmin(request);
+  await bootstrapAuthenticatedPage(page, auth);
+  await page.goto(`${APP_URL}${path}`);
+}
 
 test.describe('Meta Marketing Flow', () => {
-  test('AnunciosView renders with empty state when no Meta account connected', async ({ page }) => {
-    await page.goto('/anuncios');
+  test('AnunciosView renders with empty state when no Meta account connected', async ({
+    page,
+    request,
+  }) => {
+    await gotoAuthenticatedAppPath(page, request, '/anuncios');
 
     await expect(page.locator('text=Anúncios')).toBeVisible({ timeout: 10000 });
 
@@ -12,26 +30,33 @@ test.describe('Meta Marketing Flow', () => {
     }
   });
 
-  test('AnunciosView shows WarRoomDashboard in visao tab', async ({ page }) => {
-    await page.goto('/anuncios?tab=visao');
+  test('AnunciosView shows WarRoomDashboard in visao tab', async ({ page, request }) => {
+    await gotoAuthenticatedAppPath(page, request, '/anuncios?tab=visao');
 
     const dash = page.locator('[data-testid="war-room-dashboard"]');
     const anyDashboardContent = page.locator('text=Plataformas');
     const altContent = page.locator('text=Meta');
-    const hasContent = (await anyDashboardContent.isVisible().catch(() => false)) ||
+    const hasContent =
+      (await anyDashboardContent.isVisible().catch(() => false)) ||
       (await altContent.isVisible().catch(() => false));
 
     expect(hasContent || (await dash.isVisible().catch(() => false))).toBeTruthy();
   });
 
-  test('AnunciosView shows setup/connect state for Meta when disconnected', async ({ page }) => {
-    await page.goto('/anuncios?tab=meta');
+  test('AnunciosView shows setup/connect state for Meta when disconnected', async ({
+    page,
+    request,
+  }) => {
+    await gotoAuthenticatedAppPath(page, request, '/anuncios?tab=meta');
 
     const metaTab = page.locator('text=Meta Ads');
     const connectButton = page.locator('text=Conectar').or(page.locator('text=Conectar Meta'));
-    const setupText = page.locator('text=Nenhuma conta conectada').or(page.locator('text=Configurar'));
+    const setupText = page
+      .locator('text=Nenhuma conta conectada')
+      .or(page.locator('text=Configurar'));
 
-    const hasMetaContent = (await metaTab.isVisible().catch(() => false)) ||
+    const hasMetaContent =
+      (await metaTab.isVisible().catch(() => false)) ||
       (await connectButton.isVisible().catch(() => false)) ||
       (await setupText.isVisible().catch(() => false));
 
@@ -44,10 +69,12 @@ test.describe('Meta Marketing Flow', () => {
   });
 
   test('Webhook endpoint rejects invalid signature', async ({ request }) => {
+    const payload = JSON.stringify({ object: 'ad_account', entry: [] });
     const response = await request.post('/webhooks/meta-marketing', {
-      data: { object: 'ad_account', entry: [] },
+      data: payload,
       headers: {
-        'X-Hub-Signature-256': 'sha256=fakesignature000000000000000000000000000000000000000000000000000000',
+        'X-Hub-Signature-256':
+          'sha256=fakesignature000000000000000000000000000000000000000000000000000000',
         'Content-Type': 'application/json',
       },
     });
@@ -56,9 +83,13 @@ test.describe('Meta Marketing Flow', () => {
   });
 
   test('Webhook endpoint accepts valid signature', async ({ request }) => {
+    const payload = JSON.stringify({ object: 'ad_account', entry: [] });
     const response = await request.post('/webhooks/meta-marketing', {
-      data: { object: 'ad_account', entry: [] },
-      headers: { 'Content-Type': 'application/json' },
+      data: payload,
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Hub-Signature-256': signMetaWebhookPayload(payload),
+      },
     });
 
     expect(response.status()).toBe(200);
