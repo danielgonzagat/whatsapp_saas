@@ -61,7 +61,7 @@ const {
   createResolvedManifest,
   createCodebaseTruth,
   createCertification,
-} = require(path.join(repoRoot, 'backend/src/pulse/structural-reconstruction.fixtures.ts'));
+} = require(path.join(repoRoot, 'backend/test/pulse/structural-reconstruction.fixtures.ts'));
 const { buildScopeState } = require(path.join(repoRoot, 'scripts/pulse/scope-state.ts'));
 const { buildCodacyEvidence } = require(path.join(repoRoot, 'scripts/pulse/codacy-evidence.ts'));
 const { buildStructuralGraph } = require(path.join(repoRoot, 'scripts/pulse/structural-graph.ts'));

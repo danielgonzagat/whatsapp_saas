@@ -8,6 +8,8 @@ jest.mock('./tiktok-token-crypto', () => ({
 }));
 
 type TikTokFetchCall = [string, RequestInit];
+type TikTokFetchResponse = { json: () => Promise<unknown> };
+type TikTokFetchMock = jest.Mock<Promise<TikTokFetchResponse>, TikTokFetchCall>;
 type TikTokTrackBody = {
   context: {
     user: {
@@ -19,9 +21,8 @@ type TikTokTrackBody = {
   };
 };
 
-function firstTikTokFetchCall(fetchMock: jest.Mock): TikTokFetchCall {
-  const calls = fetchMock.mock.calls as unknown as TikTokFetchCall[];
-  const call = calls[0];
+function firstTikTokFetchCall(fetchMock: TikTokFetchMock): TikTokFetchCall {
+  const call = fetchMock.mock.calls[0];
   if (!call) {
     throw new Error('expected TikTok fetch call');
   }
@@ -79,7 +80,7 @@ describe('TikTokEventsApiService', () => {
   });
 
   it('hashes email/phone/externalId with sha256 before sending', async () => {
-    const fetchMock = jest
+    const fetchMock: TikTokFetchMock = jest
       .fn()
       .mockResolvedValue({ json: async () => ({ code: 0, request_id: 'r1' }) });
     global.fetch = fetchMock as typeof fetch;
@@ -138,7 +139,7 @@ describe('TikTokEventsApiService', () => {
   });
 
   it('targets the canonical TikTok Events API track URL', async () => {
-    const fetchMock = jest.fn().mockResolvedValue({ json: async () => ({ code: 0 }) });
+    const fetchMock: TikTokFetchMock = jest.fn().mockResolvedValue({ json: async () => ({ code: 0 }) });
     global.fetch = fetchMock as typeof fetch;
     await service.sendEvent('ws-1', 'PX', {
       eventName: 'Purchase',
