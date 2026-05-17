@@ -28,12 +28,57 @@ on:
         default: main
 
 concurrency:
-  group: deploy-staging
-  cancel-in-progress: true
+  group: ${{ github.event_name == 'pull_request' && format('deploy-staging-pr-{0}', github.event.pull_request.number) || 'deploy-staging' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   deploy-staging:
-    if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch' || github.event_name == 'push' || (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: package-lock.json
+
+      - name: Install root dependencies
+        run: npm ci
+
+      - name: Railway runtime anti-regression gate
+        env:
+          RAILWAY_RUNTIME_REQUIRED: 'true'
+          RAILWAY_RUNTIME_FAIL_ON_WARNINGS: 'true'
+          RAILWAY_PROJECT_TOKEN: ${{ secrets.RAILWAY_PROJECT_TOKEN || secrets.RAILWAY_TOKEN }}
+          RAILWAY_PROJECT_ID: ${{ secrets.RAILWAY_PROJECT_ID }}
+          RAILWAY_ENVIRONMENT_ID: ${{ vars.RAILWAY_PRODUCTION_ENVIRONMENT_ID }}
+          RAILWAY_BACKEND_SERVICE_ID: ${{ vars.RAILWAY_BACKEND_SERVICE_ID }}
+          RAILWAY_BACKEND_SERVICE_NAME: ${{ vars.RAILWAY_BACKEND_SERVICE }}
+          RAILWAY_WORKER_SERVICE_ID: ${{ vars.RAILWAY_WORKER_SERVICE_ID }}
+          RAILWAY_WORKER_SERVICE_NAME: ${{ vars.RAILWAY_WORKER_SERVICE }}
+          RAILWAY_SYSTEM_HEALTH_URL: ${{ vars.PRODUCTION_SYSTEM_HEALTH_URL }}
+          RAILWAY_BACKEND_HEALTH_URL: ${{ vars.PRODUCTION_BACKEND_HEALTHCHECK_URL }}
+          RAILWAY_FRONTEND_HEALTH_URL: ${{ vars.PRODUCTION_FRONTEND_HEALTHCHECK_URL }}
+        run: npm run railway:runtime:check
+
+      - name: Publish deployment summary
+        run: |
+          {
+            echo "## Staging deploy"
+            echo ""
+            echo "- Ref: ${{ github.event.pull_request.head.sha }}"
+            echo "- Mode: PR gate only; no staging deploy executed."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  deploy-staging-live:
+    if: github.event_name == 'workflow_dispatch' || github.event_name == 'push' || (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
     runs-on: ubuntu-latest
     timeout-minutes: 45
     environment: staging
