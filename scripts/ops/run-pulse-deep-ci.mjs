@@ -224,7 +224,8 @@ async function main() {
 
     const testDbUrl = 'postgresql://postgres:password@localhost:55432/whatsapp_saas_test';
     log(`Applying migrations to ${testDbUrl}...`);
-    runCmd('npx --prefix backend prisma migrate deploy', {
+    runCmd('npx prisma migrate deploy', {
+      cwd: path.join(rootDir, 'backend'),
       stdio: 'inherit',
       env: { ...process.env, DATABASE_URL: testDbUrl },
     });
