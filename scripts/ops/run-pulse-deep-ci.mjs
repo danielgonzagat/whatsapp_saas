@@ -164,6 +164,9 @@ async function runPulseCycle(cycleIndex) {
     PULSE_DISABLE_LOCAL_ENV: 'false',
     PULSE_BACKEND_URL,
     PULSE_DEEP: '1',
+    NODE_OPTIONS: [process.env.NODE_OPTIONS, '--max-old-space-size=6144']
+      .filter(Boolean)
+      .join(' '),
     PULSE_EXECUTION_TRACE_PATH: path.join(rootDir, `PULSE_EXECUTION_TRACE_CYCLE_${cycleIndex}.json`),
   };
 
