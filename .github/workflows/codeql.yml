@@ -63,6 +63,7 @@ jobs:
       SENTRY_AUTH_TOKEN: ${{ secrets.FRONTEND_SENTRY_AUTH_TOKEN }}
       SENTRY_ORG: ${{ secrets.FRONTEND_SENTRY_ORG }}
       SENTRY_PROJECT: ${{ secrets.FRONTEND_SENTRY_PROJECT }}
+      NODE_OPTIONS: --max-old-space-size=6144
 
     steps:
       - uses: actions/checkout@v4
