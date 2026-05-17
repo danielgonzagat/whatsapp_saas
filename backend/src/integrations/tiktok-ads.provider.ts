@@ -29,8 +29,8 @@ import {
   TIKTOK_ADS_PLATFORM,
   TIKTOK_ADVERTISER_AUTH_URL,
   TIKTOK_ADVERTISER_TOKEN_URL,
-  TIKTOK_REVOKE_URL,
   type TikTokTokenResponse,
+  revokeTikTokTokenIfEncrypted,
 } from './tiktok-ads.helpers';
 
 @Injectable()
@@ -202,34 +202,11 @@ export class TikTokAdsProvider implements AdProvider {
       return { status: 'already_disconnected' };
     }
 
-    const encryptedToken = credential?.accessToken || legacyTikTok.accessToken;
-    const resolvedToken = decryptTikTokToken(encryptedToken) || encryptedToken;
-
-    if (resolvedToken && resolvedToken !== encryptedToken) {
-      const appId =
-        resolveTikTokEnv('TIKTOK_CLIENT_KEY') || resolveTikTokEnv('NEXT_PUBLIC_TIKTOK_CLIENT_KEY');
-      const appSecret = resolveTikTokEnv('TIKTOK_CLIENT_SECRET');
-
-      if (appId && appSecret) {
-        try {
-          await fetch(TIKTOK_REVOKE_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              app_id: appId,
-              secret: appSecret,
-              token: resolvedToken,
-            }),
-            signal: AbortSignal.timeout(15000),
-          });
-          this.logger.log(`TikTok token revoked for workspace ${workspaceId}`);
-        } catch {
-          this.logger.warn(
-            `Failed to revoke TikTok token for workspace ${workspaceId} (non-blocking)`,
-          );
-        }
-      }
-    }
+    await revokeTikTokTokenIfEncrypted(
+      credential?.accessToken || legacyTikTok.accessToken,
+      this.logger,
+      workspaceId,
+    );
 
     const current = asProviderSettings(workspace?.providerSettings);
     const nextSettings = {

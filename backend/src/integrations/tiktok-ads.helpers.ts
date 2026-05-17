@@ -126,6 +126,46 @@ export function resolveTikTokRedirectUri(explicit?: string): string {
   const frontendUrl = resolveTikTokEnv('FRONTEND_URL') || 'https://app.kloel.com';
   return `${frontendUrl.replace(/\/+$/, '')}/integrations/tiktok/callback`;
 }
+export interface TikTokRevokeLogger {
+  log(message: string): void;
+  warn(message: string): void;
+}
+
+export async function revokeTikTokTokenIfEncrypted(
+  encryptedToken: string | null | undefined,
+  logger: TikTokRevokeLogger,
+  workspaceId: string,
+): Promise<void> {
+  const resolvedToken = decryptTikTokToken(encryptedToken) || encryptedToken;
+
+  if (!resolvedToken || resolvedToken === encryptedToken) {
+    return;
+  }
+
+  const appId =
+    resolveTikTokEnv('TIKTOK_CLIENT_KEY') || resolveTikTokEnv('NEXT_PUBLIC_TIKTOK_CLIENT_KEY');
+  const appSecret = resolveTikTokEnv('TIKTOK_CLIENT_SECRET');
+
+  if (!appId || !appSecret) {
+    return;
+  }
+
+  try {
+    await fetch(TIKTOK_REVOKE_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        app_id: appId,
+        secret: appSecret,
+        token: resolvedToken,
+      }),
+      signal: AbortSignal.timeout(15000),
+    });
+    logger.log(`TikTok token revoked for workspace ${workspaceId}`);
+  } catch {
+    logger.warn(`Failed to revoke TikTok token for workspace ${workspaceId} (non-blocking)`);
+  }
+}
 
 export async function resolveTikTokAccessToken(
   prisma: PrismaService,
