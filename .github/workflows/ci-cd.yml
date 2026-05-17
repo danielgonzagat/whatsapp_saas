@@ -166,7 +166,7 @@ jobs:
           npx prisma generate
           npx prisma migrate deploy
           npm run test:cov -- --runInBand
-          npm run build
+          NODE_OPTIONS=--max-old-space-size=4096 npm run build
         working-directory: backend
 
       - name: Worker test and build
