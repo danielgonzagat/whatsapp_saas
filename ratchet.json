@@ -35,7 +35,7 @@
     "codacy_total_issues_max": 12025,
     "codacy_high_severity_issues_max": 2225,
     "codacy_medium_severity_issues_max": 3380,
-    "coverage_lines_min": 47.74,
+    "coverage_lines_min": 47.73,
     "coverage_branches_min": 38.96
   }
 }

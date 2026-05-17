@@ -1,15 +1,15 @@
 {
   "score": 100,
-  "totalNodes": 1828,
+  "totalNodes": 1830,
   "breaks": [],
   "stats": {
-    "uiElements": 1949,
+    "uiElements": 1948,
     "uiDeadHandlers": 0,
     "apiCalls": 784,
     "apiNoRoute": 0,
-    "backendRoutes": 872,
+    "backendRoutes": 873,
     "backendEmpty": 0,
-    "prismaModels": 172,
+    "prismaModels": 173,
     "modelOrphans": 0,
     "facades": 0,
     "facadesBySeverity": {
@@ -25,7 +25,7 @@
     "unavailableChecks": 0,
     "unknownSurfaces": 0
   },
-  "timestamp": "2026-05-16T00:05:54.139Z",
-  "runId": "4c07e3e2-ab9f-4f63-bf21-388c61d0a5c3",
-  "generatedAt": "2026-05-16T00:08:17.808Z"
+  "timestamp": "2026-05-17T12:26:46.886Z",
+  "runId": "b12fe5f7-ff98-42c7-8507-14be8b29c104",
+  "generatedAt": "2026-05-17T12:29:54.126Z"
 }
