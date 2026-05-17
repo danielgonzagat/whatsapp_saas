@@ -239,7 +239,7 @@ async function main() {
         stdio: ['ignore', 'pipe', 'pipe'],
         env: {
           ...process.env,
-          NODE_ENV: 'production',
+          NODE_ENV: 'development',
           PORT: PULSE_BACKEND_PORT,
           DATABASE_URL: testDbUrl,
           REDIS_URL: 'redis://localhost:56379',
