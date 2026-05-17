@@ -35,7 +35,7 @@
     "lint:check": "eslint \"{src,apps,libs,test}/**/*.ts\"",
     "test": "node scripts/run-jest-chunks.mjs",
     "test:watch": "jest --watch",
-    "test:cov": "node --max-old-space-size=6144 ./node_modules/jest/bin/jest.js --coverage --runInBand",
+    "test:cov": "node scripts/run-jest-chunks.mjs --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "seed:products": "ts-node prisma/seed-products.ts",
