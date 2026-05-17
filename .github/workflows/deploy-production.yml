@@ -48,6 +48,10 @@ jobs:
       - name: Install root dependencies
         run: npm ci
 
+      - name: Install backend dependencies
+        run: npm ci
+        working-directory: backend
+
       - name: Production readiness gate
         run: npm run readiness:check
 
