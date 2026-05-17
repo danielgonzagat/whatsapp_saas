@@ -17,6 +17,7 @@ import {
   fetchGoogleAdsToken,
   generateGoogleAdsCodeChallenge,
   generateGoogleAdsCodeVerifier,
+  googleAdsCredentialWhere,
   GOOGLE_ADS_CURRENT_KEY_VERSION,
   GOOGLE_ADS_PLATFORM,
   GOOGLE_ADS_REVOKE_URL,
@@ -45,7 +46,7 @@ export async function connectGoogleAdsOAuth(
   const verifierToken = encryptGoogleAdsTokenOrPlain(codeVerifier) || codeVerifier;
 
   await ctx.prisma.integrationCredential.upsert({
-    where: { workspaceId },
+    where: googleAdsCredentialWhere(workspaceId),
     create: {
       workspaceId,
       platform: GOOGLE_ADS_PLATFORM,
@@ -81,7 +82,7 @@ export async function completeGoogleAdsOAuth(
   }
 
   const pending = await ctx.prisma.integrationCredential.findUnique({
-    where: { workspaceId },
+    where: googleAdsCredentialWhere(workspaceId),
     select: { accessToken: true },
   });
   const codeVerifier = decryptGoogleAdsTokenOrPlain(pending?.accessToken || '');
@@ -116,7 +117,7 @@ export async function completeGoogleAdsOAuth(
     );
 
     await ctx.prisma.integrationCredential.upsert({
-      where: { workspaceId },
+      where: googleAdsCredentialWhere(workspaceId),
       create: {
         workspaceId,
         platform: GOOGLE_ADS_PLATFORM,
@@ -150,7 +151,7 @@ export async function disconnectGoogleAdsOAuth(
   workspaceId: string,
 ): Promise<DisconnectResult> {
   const cred = await ctx.prisma.integrationCredential.findUnique({
-    where: { workspaceId },
+    where: googleAdsCredentialWhere(workspaceId),
     select: { accessToken: true },
   });
 
@@ -175,7 +176,7 @@ export async function disconnectGoogleAdsOAuth(
     }
   }
 
-  await ctx.prisma.integrationCredential.delete({ where: { workspaceId } });
+  await ctx.prisma.integrationCredential.delete({ where: googleAdsCredentialWhere(workspaceId) });
   ctx.logger.log(`Google Ads disconnected for workspace ${workspaceId}`);
   return { status: 'disconnected' };
 }
@@ -186,7 +187,7 @@ export async function refreshGoogleAdsOAuthToken(
 ): Promise<RefreshTokenResult | null> {
   try {
     const cred = await ctx.prisma.integrationCredential.findUnique({
-      where: { workspaceId },
+      where: googleAdsCredentialWhere(workspaceId),
       select: { refreshToken: true },
     });
     if (!cred?.refreshToken) {
@@ -220,7 +221,7 @@ export async function refreshGoogleAdsOAuthToken(
     }
 
     await ctx.prisma.integrationCredential.update({
-      where: { workspaceId },
+      where: googleAdsCredentialWhere(workspaceId),
       data: {
         accessToken: encryptGoogleAdsTokenOrPlain(newAccessToken) || newAccessToken,
         expiresAt: computeGoogleAdsExpiresAt(tokenData.expires_in),

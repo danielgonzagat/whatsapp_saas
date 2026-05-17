@@ -1,12 +1,20 @@
 import type { PrismaService } from '../prisma/prisma.service';
 import { GoogleAdsProvider } from './google-ads.provider';
 
+type IntegrationCredentialUpsertPayload = {
+  where: unknown;
+  create: { status?: string };
+  update?: unknown;
+};
+
 describe('GoogleAdsProvider', () => {
   let provider: GoogleAdsProvider;
   let mockPrisma: {
     integrationCredential: {
       findUnique: jest.Mock;
-      upsert: jest.Mock;
+      upsert: jest.MockedFunction<
+        (payload: IntegrationCredentialUpsertPayload) => Promise<unknown>
+      >;
       delete: jest.Mock;
       update: jest.Mock;
     };
@@ -20,7 +28,7 @@ describe('GoogleAdsProvider', () => {
     mockPrisma = {
       integrationCredential: {
         findUnique: jest.fn(),
-        upsert: jest.fn().mockResolvedValue({}),
+        upsert: jest.fn(async () => ({})),
         delete: jest.fn().mockResolvedValue({}),
         update: jest.fn().mockResolvedValue({}),
       },
@@ -63,12 +71,11 @@ describe('GoogleAdsProvider', () => {
       expect(result.authUrl).toContain('accounts.google.com');
       expect(result.authUrl).toContain('code_challenge_method=S256');
       expect(result.authUrl).toContain('code_challenge=');
-      expect(mockPrisma.integrationCredential.upsert).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: { workspaceId: 'ws-1' },
-          create: expect.objectContaining({ status: 'pending_oauth' }),
-        }),
-      );
+      const upsertPayload = mockPrisma.integrationCredential.upsert.mock.calls[0]?.[0];
+      expect(upsertPayload?.where).toEqual({
+        workspaceId_platform: { workspaceId: 'ws-1', platform: 'google' },
+      });
+      expect(upsertPayload?.create.status).toBe('pending_oauth');
       delete process.env.GOOGLE_ADS_CLIENT_ID;
     });
   });
@@ -107,7 +114,7 @@ describe('GoogleAdsProvider', () => {
       const result = await provider.disconnect('ws-1');
       expect(result.status).toBe('disconnected');
       expect(mockPrisma.integrationCredential.delete).toHaveBeenCalledWith({
-        where: { workspaceId: 'ws-1' },
+        where: { workspaceId_platform: { workspaceId: 'ws-1', platform: 'google' } },
       });
     });
   });

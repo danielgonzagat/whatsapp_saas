@@ -241,7 +241,7 @@ model Workspace {
   webinars Webinar[]
 
   // Integration Credentials (Google Ads OAuth, etc.)
-  integrationCredential IntegrationCredential?
+  integrationCredentials IntegrationCredential[]
 
   // Meta Platform Connection
   metaConnections MetaConnection[]
@@ -3865,7 +3865,7 @@ model AdInsight {
 
 model IntegrationCredential {
   id              String    @id @default(uuid())
-  workspaceId     String    @unique
+  workspaceId     String
   workspace       Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   platform        String    @default("google")
   accessToken     String
@@ -3877,7 +3877,7 @@ model IntegrationCredential {
   connectedAt     DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
-  @@index([workspaceId, platform])
+  @@unique([workspaceId, platform])
   @@map("RAC_IntegrationCredential")
 }
 

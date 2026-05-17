@@ -2,6 +2,7 @@ import { Injectable, Logger, Optional } from '@nestjs/common';
 import * as crypto from 'node:crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { decryptGoogleAdsToken } from './google-ads-token-crypto';
+import { googleAdsCredentialWhere } from './google-ads.helpers';
 import { getTraceHeaders } from '../common/trace-headers';
 import { OpsAlertService } from '../observability/ops-alert.service';
 
@@ -83,7 +84,7 @@ export class GoogleAdsEnhancedConversionsService {
     data: EnhancedConversionData,
   ): Promise<{ success: boolean; error?: string }> {
     const cred = await this.prisma.integrationCredential.findUnique({
-      where: { workspaceId },
+      where: googleAdsCredentialWhere(workspaceId),
       select: { accessToken: true, loginCustomerId: true },
     });
 
@@ -191,8 +192,11 @@ export class GoogleAdsEnhancedConversionsService {
         signal: AbortSignal.timeout(15000),
       });
 
-      const body = await res.json().catch(() => ({ error: { message: 'parse_error' } }));
-      const bodyObj = body as { error?: { message?: string } };
+      const body: unknown = await res
+        .json()
+        .catch((): unknown => ({ error: { message: 'parse_error' } }));
+      const bodyObj =
+        body && typeof body === 'object' ? (body as { error?: { message?: string } }) : {};
 
       if (!res.ok || bodyObj.error) {
         this.logger.error(

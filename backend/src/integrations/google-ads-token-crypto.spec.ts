@@ -62,6 +62,15 @@ describe('google-ads-token-crypto (AES-256-GCM)', () => {
     expect(encrypted).toBe(sample);
   });
 
+  it('throws in production when no encryption key is configured', () => {
+    delete process.env.GOOGLE_ADS_TOKEN_ENCRYPTION_KEY;
+    process.env.NODE_ENV = 'production';
+
+    expect(() => encryptGoogleAdsToken('plaintext-fallback')).toThrow(
+      /GOOGLE_ADS_TOKEN_ENCRYPTION_KEY/,
+    );
+  });
+
   it('returns plaintext when decrypting unsigned token', () => {
     const sample = 'legacy-plaintext-token';
     const decrypted = decryptGoogleAdsToken(sample);

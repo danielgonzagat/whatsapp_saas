@@ -302,25 +302,16 @@ export class AdminAuthService {
       select: { mfaSecret: true, mfaEnabled: true, mfaPendingSetup: true },
     });
 
-    let encryptedSecret: string;
-    let otpauthUrl: string;
-    let qrDataUrl: string;
-
     if (existing?.mfaSecret && existing.mfaPendingSetup && !existing.mfaEnabled) {
       const resumed = await this.mfa.resumeSetup(admin.email, existing.mfaSecret);
-      encryptedSecret = resumed.encryptedSecret;
-      otpauthUrl = resumed.otpauthUrl;
-      qrDataUrl = resumed.qrDataUrl;
+      return { otpauthUrl: resumed.otpauthUrl, qrDataUrl: resumed.qrDataUrl };
     } else {
       const fresh = await this.mfa.createSetup(admin.email);
-      encryptedSecret = fresh.encryptedSecret;
-      otpauthUrl = fresh.otpauthUrl;
-      qrDataUrl = fresh.qrDataUrl;
       await this.prisma.$transaction(
         async (tx) => {
           await tx.adminUser.update({
             where: { id: admin.id },
-            data: { mfaSecret: encryptedSecret, mfaEnabled: false, mfaPendingSetup: true },
+            data: { mfaSecret: fresh.encryptedSecret, mfaEnabled: false, mfaPendingSetup: true },
           });
           await tx.adminAuditLog.create({
             data: {
@@ -331,8 +322,8 @@ export class AdminAuthService {
         },
         { isolationLevel: 'ReadCommitted' },
       );
+      return { otpauthUrl: fresh.otpauthUrl, qrDataUrl: fresh.qrDataUrl };
     }
-    return { otpauthUrl, qrDataUrl };
   }
 
   /** Verify initial mfa. */
