@@ -1,9 +1,14 @@
-export async function railwayRequest(endpoint, query, variables = {}, projectToken = '') {
+export async function railwayRequest(endpoint, query, variables = {}, auth = '') {
+  const authHeaders =
+    typeof auth === 'string'
+      ? { 'Project-Access-Token': auth }
+      : Object.fromEntries(Object.entries(auth || {}).filter(([, value]) => value));
+
   const response = await fetch(endpoint, {
     method: 'POST',
     headers: {
       'content-type': 'application/json',
-      'Project-Access-Token': projectToken,
+      ...authHeaders,
     },
     body: JSON.stringify({ query, variables }),
   });

@@ -81,7 +81,7 @@ describe('TikTokEventsApiService', () => {
 
   it('hashes email/phone/externalId with sha256 before sending', async () => {
     const fetchMock: TikTokFetchMock = jest
-      .fn()
+      .fn<Promise<TikTokFetchResponse>, TikTokFetchCall>()
       .mockResolvedValue({ json: async () => ({ code: 0, request_id: 'r1' }) });
     global.fetch = fetchMock as typeof fetch;
 
@@ -139,7 +139,9 @@ describe('TikTokEventsApiService', () => {
   });
 
   it('targets the canonical TikTok Events API track URL', async () => {
-    const fetchMock: TikTokFetchMock = jest.fn().mockResolvedValue({ json: async () => ({ code: 0 }) });
+    const fetchMock: TikTokFetchMock = jest
+      .fn<Promise<TikTokFetchResponse>, TikTokFetchCall>()
+      .mockResolvedValue({ json: async () => ({ code: 0 }) });
     global.fetch = fetchMock as typeof fetch;
     await service.sendEvent('ws-1', 'PX', {
       eventName: 'Purchase',

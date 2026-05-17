@@ -216,7 +216,8 @@ export const LEAK_CHECK_FIELDS = [
   'monthlyRevenueCents',
   'openIssues',
   'satisfactionScore',
-] as const satisfies readonly (keyof ClientContextBundle)[];export function clamp(value: number, min: number, max: number): number {
+] as const satisfies readonly (keyof ClientContextBundle)[];
+export function clamp(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));
 }
 

@@ -11,7 +11,8 @@ type RegulatedCategory =
   | 'crypto_advice'
   | 'political'
   | 'hate_speech'
-  | 'restricted_product';export const CCPA_REQUIRED_DISCLOSURES: readonly string[] = [
+  | 'restricted_product';
+export const CCPA_REQUIRED_DISCLOSURES: readonly string[] = [
   'categories_of_personal_information',
   'purposes_of_collection',
   'sale_of_data',
@@ -103,7 +104,8 @@ export const REGULATED_CONTENT_DISCLAIMERS: Readonly<Record<RegulatedCategory, s
 export function generateId(prefix: string): string {
   const suffix = Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
   return `${prefix}_${suffix}`;
-}export function daysUntil(iso: string, nowMs: number): number {
+}
+export function daysUntil(iso: string, nowMs: number): number {
   const ts = Date.parse(iso);
   if (!Number.isFinite(ts)) {
     return 0;

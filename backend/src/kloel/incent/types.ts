@@ -1,4 +1,3 @@
-
 export type ExplanationTone = 'educational' | 'transparent' | 'actionable' | 'deferential';
 
 export type ExplanationFormat = 'short' | 'medium' | 'long';

@@ -1,4 +1,3 @@
-
 export type ToneClass =
   | 'assertivo'
   | 'consultivo'
@@ -65,7 +64,8 @@ export interface BehaviorSnapshot {
   readonly leadCount: number;
   readonly conversionCount: number;
   readonly computedAt: string;
-}export interface AttributedCause {
+}
+export interface AttributedCause {
   readonly eventRef: string;
   readonly eventName: string;
   readonly occurredAt: string;
