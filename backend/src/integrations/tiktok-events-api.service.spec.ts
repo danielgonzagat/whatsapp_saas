@@ -19,9 +19,10 @@ type TikTokTrackBody = {
   };
 };
 
-function firstTikTokFetchCall(fetchMock: jest.Mock): TikTokFetchCall {
-  const calls = fetchMock.mock.calls as unknown as TikTokFetchCall[];
-  const call = calls[0];
+type TikTokFetchMock = { mock: { calls: TikTokFetchCall[] } };
+
+function firstTikTokFetchCall(fetchMock: TikTokFetchMock): TikTokFetchCall {
+  const call = fetchMock.mock.calls[0];
   if (!call) {
     throw new Error('expected TikTok fetch call');
   }
