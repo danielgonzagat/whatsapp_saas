@@ -135,3 +135,12 @@ jobs:
         uses: github/codeql-action/analyze@v3
         with:
           upload: never
+          output: codeql-results
+
+      - name: Upload CodeQL SARIF artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: codeql-sarif
+          path: codeql-results
+          if-no-files-found: warn
