@@ -239,9 +239,10 @@ async function main() {
         stdio: ['ignore', 'pipe', 'pipe'],
         env: {
           ...process.env,
-          NODE_ENV: 'development',
+          NODE_ENV: 'test',
           PORT: PULSE_BACKEND_PORT,
           DATABASE_URL: testDbUrl,
+          REDIS_MODE: 'required',
           REDIS_URL: 'redis://localhost:56379',
           JWT_SECRET: 'pulse-deep-ci-test-secret',
           AUTH_OPTIONAL: 'true',
