@@ -45,7 +45,7 @@ export const TIKTOK_ADS_PLATFORM = 'tiktok';
 export const TIKTOK_ADVERTISER_AUTH_URL = 'https://business-api.tiktok.com/portal/auth';
 export const TIKTOK_ADVERTISER_TOKEN_URL =
   'https://business-api.tiktok.com/open_api/v1.3/oauth2/access_token/';
-export const TIKTOK_REVOKE_URL = 'https://business-api.tiktok.com/open_api/v1.3/oauth2/revoke/';
+const TIKTOK_REVOKE_URL = 'https://business-api.tiktok.com/open_api/v1.3/oauth2/revoke/';
 
 export function maskTikTokToken(token: string): string {
   if (!token || token.length < 8) {
