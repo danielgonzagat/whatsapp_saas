@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, jest } from '@jest/globals';
+import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
 import { AutopilotCycleExecutorService } from './autopilot-cycle-executor.service';
@@ -104,6 +104,11 @@ describe('AutopilotCycleExecutorService', () => {
       ],
     }).compile();
     service = module.get<AutopilotCycleExecutorService>(AutopilotCycleExecutorService);
+    jest.useFakeTimers().setSystemTime(new Date('2026-05-13T15:00:00.000Z'));
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
   });
 
   describe('analyzeContext', () => {
