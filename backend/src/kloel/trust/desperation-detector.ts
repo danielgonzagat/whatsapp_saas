@@ -38,7 +38,7 @@ export interface DesperationConfig {
   readonly promiseInflationThreshold: number;
 }
 
-export const DEFAULT_DESPERATION_CONFIG: DesperationConfig = {
+const DEFAULT_DESPERATION_CONFIG: DesperationConfig = {
   maxRecentMessages: 10,
   discountEscalationThreshold: 0.3,
   promiseInflationThreshold: 0.25,

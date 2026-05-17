@@ -44,6 +44,10 @@ export function decryptGoogleAdsTokenOrPlain(token: string | null | undefined): 
   return decryptGoogleAdsToken(token) || token || '';
 }
 
+export function googleAdsCredentialWhere(workspaceId: string) {
+  return { workspaceId_platform: { workspaceId, platform: GOOGLE_ADS_PLATFORM } };
+}
+
 export function computeGoogleAdsExpiresAt(expiresIn?: number): Date {
   return expiresIn
     ? new Date(Date.now() + expiresIn * 1000)

@@ -135,7 +135,7 @@ export const abandonedCartDetector: Detector = {
   },
 };
 
-export const clickedWithoutConversionDetector: Detector = {
+const clickedWithoutConversionDetector: Detector = {
   name: 'commerce.clicked_without_conversion',
   dimension: 'commercial',
   detect: (events, nowMs) => {
@@ -196,7 +196,7 @@ export const repeatedObjectionDetector: Detector = {
   },
 };
 
-export const dormantCustomerDetector: Detector = {
+const dormantCustomerDetector: Detector = {
   name: 'commerce.dormant_customer',
   dimension: 'commercial',
   detect: (events, nowMs) => {
@@ -230,7 +230,7 @@ export const dormantCustomerDetector: Detector = {
   },
 };
 
-export const checkoutStartedWithoutPaymentDetector: Detector = {
+const checkoutStartedWithoutPaymentDetector: Detector = {
   name: 'commerce.checkout_started_without_payment',
   dimension: 'commercial',
   detect: (events, nowMs) => {
@@ -267,7 +267,7 @@ export const checkoutStartedWithoutPaymentDetector: Detector = {
   },
 };
 
-export const leadWithoutFollowupDetector: Detector = {
+const leadWithoutFollowupDetector: Detector = {
   name: 'commerce.lead_without_followup',
   dimension: 'commercial',
   detect: (events, nowMs) => {
@@ -303,7 +303,7 @@ export const leadWithoutFollowupDetector: Detector = {
   },
 };
 
-export const performingAffiliateDetector: Detector = {
+const performingAffiliateDetector: Detector = {
   name: 'commerce.performing_affiliate',
   dimension: 'commercial',
   detect: (events, nowMs) => {
@@ -327,7 +327,7 @@ export const performingAffiliateDetector: Detector = {
   },
 };
 
-export const channelWithoutConversionDetector: Detector = {
+const channelWithoutConversionDetector: Detector = {
   name: 'commerce.channel_without_conversion',
   dimension: 'commercial',
   detect: (events, nowMs) => {
@@ -351,7 +351,7 @@ export const channelWithoutConversionDetector: Detector = {
   },
 };
 
-export const viewedWithoutPurchaseDetector: Detector = {
+const viewedWithoutPurchaseDetector: Detector = {
   name: 'commerce.viewed_without_purchase',
   dimension: 'commercial',
   detect: (events, nowMs) => {

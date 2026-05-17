@@ -23,7 +23,7 @@ export interface AuthenticityConfig {
   readonly forcedEndorsementKeywordCount: number;
 }
 
-export const DEFAULT_AUTHENTICITY_CONFIG: AuthenticityConfig = {
+const DEFAULT_AUTHENTICITY_CONFIG: AuthenticityConfig = {
   maxRecentMessages: 20,
   oversellingRatioThreshold: 0.25,
   misleadingClaimMinConfidence: 0.5,

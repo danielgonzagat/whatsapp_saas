@@ -109,16 +109,6 @@ export const ROLE_DESCRIPTIONS: Readonly<Record<Role, string>> = {
     'Cria conteudo e audiencia. Controla narrativa, engajamento e confianca.',
   especialista:
     'Domina um dominio especifico. Controla execucao profunda em area restrita.',
-};
-
-export function makeRoleDetectionId(): string {
-  return `rd_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-}
-
-export function makeProfileUpdateId(): string {
-  return `mp_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-}
-
-export function clampConfidence(value: number): number {
+};export function clampConfidence(value: number): number {
   return Math.max(0, Math.min(1, value));
 }

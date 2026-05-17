@@ -34,7 +34,7 @@ export interface FitConfig {
   readonly weakFitMinScore: number;
 }
 
-export const DEFAULT_FIT_CONFIG: FitConfig = {
+const DEFAULT_FIT_CONFIG: FitConfig = {
   minEventsForAnalysis: 5,
   relevanceWeight: 0.4,
   valueAlignmentWeight: 0.35,

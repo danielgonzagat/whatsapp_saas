@@ -79,7 +79,7 @@ export function validateSuggestionDismissal(
   return { valid: true, reason: 'dismissal accepted' };
 }
 
-export function isValidOperatorAction(action: string): action is OperatorAction {
+function isValidOperatorAction(action: string): action is OperatorAction {
   return ['dismiss', 'accept', 'override', 'snooze'].includes(action);
 }
 

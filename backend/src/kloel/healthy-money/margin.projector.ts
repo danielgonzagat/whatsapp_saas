@@ -43,16 +43,3 @@ export function projectMargin(input: MarginProjectorInput): MarginProjection {
     projectedAt: new Date(input.nowMs).toISOString(),
   };
 }
-
-export function estimateDefaultMargin(revenueCents: number): MarginProjection {
-  const variableRate = 0.2;
-  const fixedRate = 0.15;
-
-  return projectMargin({
-    workspaceId: 'default',
-    revenueCents,
-    variableCostCents: Math.round(revenueCents * variableRate),
-    fixedCostCents: Math.round(revenueCents * fixedRate),
-    nowMs: Date.now(),
-  });
-}

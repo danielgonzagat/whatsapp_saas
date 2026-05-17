@@ -105,7 +105,7 @@ export const OFFER_EVENT_NAMES: ReadonlySet<string> = new Set([
   'commerce.post_sale.churn_risk_detected',
 ]);
 
-export function timestampMs(iso: string): number {
+function timestampMs(iso: string): number {
   return Date.parse(iso);
 }
 

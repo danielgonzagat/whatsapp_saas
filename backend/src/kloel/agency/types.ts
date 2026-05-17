@@ -216,11 +216,7 @@ export const LEAK_CHECK_FIELDS = [
   'monthlyRevenueCents',
   'openIssues',
   'satisfactionScore',
-] as const satisfies readonly (keyof ClientContextBundle)[];
-export const MAX_DAYS_WITHOUT_CONTACT_BEFORE_AT_RISK = 14;
-export const MAX_DAYS_WITHOUT_CONTACT_BEFORE_CRITICAL = 30;
-
-export function clamp(value: number, min: number, max: number): number {
+] as const satisfies readonly (keyof ClientContextBundle)[];export function clamp(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));
 }
 

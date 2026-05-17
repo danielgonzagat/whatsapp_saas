@@ -22,6 +22,17 @@ describe('TikTokAdsProvider', () => {
         findUnique: jest.fn(),
         update: jest.fn(),
       },
+      integrationCredential: {
+        findUnique: jest.fn().mockResolvedValue(null),
+        upsert: jest.fn().mockResolvedValue({}),
+        delete: jest.fn().mockResolvedValue({}),
+        update: jest.fn().mockResolvedValue({}),
+      },
+      adAccount: {
+        findMany: jest.fn().mockResolvedValue([]),
+        upsert: jest.fn().mockResolvedValue({}),
+      },
+      $transaction: jest.fn(async (cb: (tx: unknown) => unknown) => cb(prismaService)),
     } as jest.Mocked<PrismaService>;
 
     const module = await Test.createTestingModule({
@@ -58,16 +69,10 @@ describe('TikTokAdsProvider', () => {
   });
 
   describe('getStatus', () => {
-    it('should return connected status when provider settings exist', async () => {
-      (prismaService.workspace.findUnique as jest.Mock).mockResolvedValue({
-        providerSettings: {
-          tiktok: {
-            connected: true,
-            status: 'connected',
-            advertiserIds: ['adv-1'],
-            connectedAt: '2026-01-01T00:00:00.000Z',
-          },
-        },
+    it('should return connected status when credential exists', async () => {
+      (prismaService.integrationCredential.findUnique as jest.Mock).mockResolvedValue({
+        status: 'connected',
+        loginCustomerId: 'adv-1',
       });
 
       const result = await provider.getStatus(workspaceId);
@@ -78,6 +83,7 @@ describe('TikTokAdsProvider', () => {
     });
 
     it('should return disconnected status when not connected', async () => {
+      (prismaService.integrationCredential.findUnique as jest.Mock).mockResolvedValue(null);
       (prismaService.workspace.findUnique as jest.Mock).mockResolvedValue({
         providerSettings: { tiktok: {} },
       });
@@ -90,15 +96,15 @@ describe('TikTokAdsProvider', () => {
   });
 
   describe('syncAccounts', () => {
-    it('should return accounts from provider settings', async () => {
-      (prismaService.workspace.findUnique as jest.Mock).mockResolvedValue({
-        providerSettings: {
-          tiktok: {
-            connected: true,
-            advertiserIds: ['adv-1', 'adv-2'],
-          },
-        },
+    it('should return accounts from stored TikTok credential accounts', async () => {
+      (prismaService.integrationCredential.findUnique as jest.Mock).mockResolvedValue({
+        status: 'connected',
+        loginCustomerId: null,
       });
+      (prismaService.adAccount.findMany as jest.Mock).mockResolvedValue([
+        { accountId: 'adv-1' },
+        { accountId: 'adv-2' },
+      ]);
 
       const result = await provider.syncAccounts(workspaceId);
 
@@ -108,6 +114,7 @@ describe('TikTokAdsProvider', () => {
     });
 
     it('should return empty accounts when not connected', async () => {
+      (prismaService.integrationCredential.findUnique as jest.Mock).mockResolvedValue(null);
       (prismaService.workspace.findUnique as jest.Mock).mockResolvedValue({
         providerSettings: { tiktok: {} },
       });
@@ -120,15 +127,12 @@ describe('TikTokAdsProvider', () => {
 
   describe('syncCampaigns', () => {
     it('should return campaigns from the TikTok API', async () => {
-      (prismaService.workspace.findUnique as jest.Mock).mockResolvedValue({
-        providerSettings: {
-          tiktok: {
-            connected: true,
-            accessToken: 'encrypted-test-token',
-            advertiserIds: ['adv-1'],
-          },
-        },
+      (prismaService.integrationCredential.findUnique as jest.Mock).mockResolvedValue({
+        status: 'connected',
+        accessToken: 'encrypted-test-token',
+        loginCustomerId: null,
       });
+      (prismaService.adAccount.findMany as jest.Mock).mockResolvedValue([{ accountId: 'adv-1' }]);
       tiktokAdsService.getCampaignsForAdvertiser.mockResolvedValue([
         {
           campaignId: 'camp-1',
@@ -146,6 +150,7 @@ describe('TikTokAdsProvider', () => {
     });
 
     it('should return empty campaigns when auth fails', async () => {
+      (prismaService.integrationCredential.findUnique as jest.Mock).mockResolvedValue(null);
       (prismaService.workspace.findUnique as jest.Mock).mockResolvedValue({
         providerSettings: {},
       });
@@ -158,6 +163,7 @@ describe('TikTokAdsProvider', () => {
 
   describe('disconnect', () => {
     it('should return already_disconnected when not connected', async () => {
+      (prismaService.integrationCredential.findUnique as jest.Mock).mockResolvedValue(null);
       (prismaService.workspace.findUnique as jest.Mock).mockResolvedValue({
         providerSettings: { tiktok: {} },
       });

@@ -18,12 +18,14 @@ import {
   mapTikTokCampaign,
   mapTikTokInsight,
   maskTikTokToken,
+  persistTikTokAdvertiserIds,
   readTikTokSubsettings,
   readTikTokStatus,
   resolveTikTokAccessToken,
   resolveTikTokEnv,
   resolveTikTokRedirectUri,
   syncTikTokAccountsFromSettings,
+  tiktokCredentialWhere,
   TIKTOK_ADS_PLATFORM,
   TIKTOK_ADVERTISER_AUTH_URL,
   TIKTOK_ADVERTISER_TOKEN_URL,
@@ -114,8 +116,7 @@ export class TikTokAdsProvider implements AdProvider {
       const encryptedAccessToken = encryptTikTokToken(accessToken);
       const encryptedRefreshToken = refreshToken ? encryptTikTokToken(refreshToken) : null;
       const expiresIn = Number(inner.expires_in || 0);
-      const expiresAt =
-        expiresIn > 0 ? new Date(Date.now() + expiresIn * 1000).toISOString() : null;
+      const expiresAt = expiresIn > 0 ? new Date(Date.now() + expiresIn * 1000) : null;
 
       const workspace = await this.prisma.workspace.findUnique({
         where: { id: workspaceId },
@@ -128,19 +129,42 @@ export class TikTokAdsProvider implements AdProvider {
           connected: true,
           status: 'connected',
           kind: 'advertiser',
-          accessToken: encryptedAccessToken || accessToken,
-          refreshToken: encryptedRefreshToken,
           advertiserIds,
-          expiresAt,
+          expiresAt: expiresAt?.toISOString() || null,
           connectedAt: new Date().toISOString(),
         },
       };
 
-      await this.prisma.workspace.update({
-        where: { id: workspaceId },
-        data: {
-          providerSettings: JSON.parse(JSON.stringify(nextSettings)) as Prisma.InputJsonObject,
-        },
+      await this.prisma.$transaction(async (tx) => {
+        await tx.integrationCredential.upsert({
+          where: tiktokCredentialWhere(workspaceId),
+          create: {
+            workspaceId,
+            platform: TIKTOK_ADS_PLATFORM,
+            accessToken: encryptedAccessToken || accessToken,
+            refreshToken: encryptedRefreshToken,
+            expiresAt,
+            keyVersion: 1,
+            loginCustomerId: advertiserIds[0] || null,
+            status: 'connected',
+          },
+          update: {
+            accessToken: encryptedAccessToken || accessToken,
+            refreshToken: encryptedRefreshToken,
+            expiresAt,
+            keyVersion: 1,
+            loginCustomerId: advertiserIds[0] || null,
+            status: 'connected',
+            updatedAt: new Date(),
+          },
+        });
+        await tx.workspace.update({
+          where: { id: workspaceId },
+          data: {
+            providerSettings: JSON.parse(JSON.stringify(nextSettings)) as Prisma.InputJsonObject,
+          },
+        });
+        await persistTikTokAdvertiserIds(tx, workspaceId, advertiserIds);
       });
 
       this.logger.log(
@@ -163,19 +187,25 @@ export class TikTokAdsProvider implements AdProvider {
   // ── Disconnect ─────────────────────────────────────────────────────
 
   async disconnect(workspaceId: string): Promise<DisconnectResult> {
+    const credential = await this.prisma.integrationCredential.findUnique({
+      where: tiktokCredentialWhere(workspaceId),
+      select: { accessToken: true, status: true },
+    });
+
     const workspace = await this.prisma.workspace.findUnique({
       where: { id: workspaceId },
       select: { providerSettings: true },
     });
-    const tiktok = readTikTokSubsettings(workspace?.providerSettings);
+    const legacyTikTok = readTikTokSubsettings(workspace?.providerSettings);
 
-    if (!tiktok.connected) {
+    if (!credential && !legacyTikTok.connected) {
       return { status: 'already_disconnected' };
     }
 
-    const resolvedToken = decryptTikTokToken(tiktok.accessToken) || tiktok.accessToken;
+    const encryptedToken = credential?.accessToken || legacyTikTok.accessToken;
+    const resolvedToken = decryptTikTokToken(encryptedToken) || encryptedToken;
 
-    if (resolvedToken && resolvedToken !== tiktok.accessToken) {
+    if (resolvedToken && resolvedToken !== encryptedToken) {
       const appId =
         resolveTikTokEnv('TIKTOK_CLIENT_KEY') || resolveTikTokEnv('NEXT_PUBLIC_TIKTOK_CLIENT_KEY');
       const appSecret = resolveTikTokEnv('TIKTOK_CLIENT_SECRET');
@@ -207,11 +237,16 @@ export class TikTokAdsProvider implements AdProvider {
       tiktok: {} as Record<string, never>,
     };
 
-    await this.prisma.workspace.update({
-      where: { id: workspaceId },
-      data: {
-        providerSettings: JSON.parse(JSON.stringify(nextSettings)) as Prisma.InputJsonObject,
-      },
+    await this.prisma.$transaction(async (tx) => {
+      if (credential) {
+        await tx.integrationCredential.delete({ where: tiktokCredentialWhere(workspaceId) });
+      }
+      await tx.workspace.update({
+        where: { id: workspaceId },
+        data: {
+          providerSettings: JSON.parse(JSON.stringify(nextSettings)) as Prisma.InputJsonObject,
+        },
+      });
     });
 
     this.logger.log(`TikTok Ads disconnected for workspace ${workspaceId}`);
@@ -222,13 +257,12 @@ export class TikTokAdsProvider implements AdProvider {
   // ── Token Refresh ──────────────────────────────────────────────────
 
   async refreshToken(workspaceId: string): Promise<RefreshTokenResult | null> {
-    const workspace = await this.prisma.workspace.findUnique({
-      where: { id: workspaceId },
-      select: { providerSettings: true },
+    const credential = await this.prisma.integrationCredential.findUnique({
+      where: tiktokCredentialWhere(workspaceId),
+      select: { refreshToken: true },
     });
-    const tiktok = readTikTokSubsettings(workspace?.providerSettings);
 
-    if (!tiktok.connected || !tiktok.refreshToken) {
+    if (!credential?.refreshToken) {
       return null;
     }
 
@@ -243,7 +277,8 @@ export class TikTokAdsProvider implements AdProvider {
       return null;
     }
 
-    const resolvedRefreshToken = decryptTikTokToken(tiktok.refreshToken) || tiktok.refreshToken;
+    const resolvedRefreshToken =
+      decryptTikTokToken(credential.refreshToken) || credential.refreshToken;
 
     try {
       const response = await fetch(TIKTOK_ADVERTISER_TOKEN_URL, {
@@ -274,25 +309,16 @@ export class TikTokAdsProvider implements AdProvider {
       const encryptedAccessToken = encryptTikTokToken(newAccessToken);
       const encryptedRefreshToken = newRefreshToken
         ? encryptTikTokToken(newRefreshToken)
-        : tiktok.refreshToken;
-      const expiresAt =
-        expiresIn > 0 ? new Date(Date.now() + expiresIn * 1000).toISOString() : null;
+        : credential.refreshToken;
+      const expiresAt = expiresIn > 0 ? new Date(Date.now() + expiresIn * 1000) : null;
 
-      const current = asProviderSettings(workspace?.providerSettings);
-      const nextSettings = {
-        ...current,
-        tiktok: {
-          ...tiktok,
+      await this.prisma.integrationCredential.update({
+        where: tiktokCredentialWhere(workspaceId),
+        data: {
           accessToken: encryptedAccessToken || newAccessToken,
           refreshToken: encryptedRefreshToken,
           expiresAt,
-        },
-      };
-
-      await this.prisma.workspace.update({
-        where: { id: workspaceId },
-        data: {
-          providerSettings: JSON.parse(JSON.stringify(nextSettings)) as Prisma.InputJsonObject,
+          updatedAt: new Date(),
         },
       });
 

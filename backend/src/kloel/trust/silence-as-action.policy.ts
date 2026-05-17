@@ -22,7 +22,7 @@ export interface SilenceConfig {
   readonly maxSilentInteractions: number;
 }
 
-export const DEFAULT_SILENCE_CONFIG: SilenceConfig = {
+const DEFAULT_SILENCE_CONFIG: SilenceConfig = {
   fatigueSilenceThreshold: 0.7,
   desperationSilenceThreshold: 0.6,
   trustFloorForSilence: 0.2,

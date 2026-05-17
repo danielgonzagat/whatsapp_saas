@@ -36,7 +36,7 @@ function tensionFor(
  * never persisted as a spine event. Detected when we see action events
  * without corresponding cognition.* trace.
  */
-export const decisionWithoutPersistenceDetector: Detector = {
+const decisionWithoutPersistenceDetector: Detector = {
   name: 'cognitive.decision_without_persistence',
   dimension: 'cognitive',
   detect: (events, nowMs) => {
@@ -70,7 +70,7 @@ export const decisionWithoutPersistenceDetector: Detector = {
  * valence_assigned trace was emitted by the substrate. Indicates the
  * substrate isn't picking up real outcomes for learning.
  */
-export const conversationWithoutValenceDetector: Detector = {
+const conversationWithoutValenceDetector: Detector = {
   name: 'cognitive.conversation_without_valence',
   dimension: 'cognitive',
   detect: (events, nowMs) => {
@@ -109,7 +109,7 @@ export const conversationWithoutValenceDetector: Detector = {
  * COG-003: same agent failed >=2 times in a window. Pattern of brittle
  * autonomous behavior.
  */
-export const repeatedAgentFailureDetector: Detector = {
+const repeatedAgentFailureDetector: Detector = {
   name: 'cognitive.repeated_agent_failure',
   dimension: 'cognitive',
   detect: (events, nowMs) => {
@@ -147,7 +147,7 @@ export const repeatedAgentFailureDetector: Detector = {
  * COG-004: capability declared in pulse.capability_promoted without runtime
  * evidence event in the window.
  */
-export const capabilityWithoutRuntimeEvidenceDetector: Detector = {
+const capabilityWithoutRuntimeEvidenceDetector: Detector = {
   name: 'cognitive.capability_without_runtime_evidence',
   dimension: 'cognitive',
   detect: (events, nowMs) => {

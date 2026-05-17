@@ -1,28 +1,3 @@
-export interface OfferQuality {
-  readonly offerId: string;
-  readonly workspaceId: string;
-  readonly overallScore: number;
-  readonly conversionRate: number;
-  readonly refundRate: number;
-  readonly avgTicket: number;
-  readonly commissionRate: number;
-  readonly marketDemand: number;
-  readonly saturationRisk: number;
-  readonly evaluatedAt: string;
-}
-
-export interface ProducerTrust {
-  readonly producerId: string;
-  readonly workspaceId: string;
-  readonly trustScore: number;
-  readonly paymentHistoryReliability: number;
-  readonly communicationResponsiveness: number;
-  readonly productQualityConsistency: number;
-  readonly disputeResolutionRate: number;
-  readonly productionStability: number;
-  readonly evaluatedAt: string;
-}
-
 export interface AudienceFit {
   readonly audienceId: string;
   readonly offerId: string;

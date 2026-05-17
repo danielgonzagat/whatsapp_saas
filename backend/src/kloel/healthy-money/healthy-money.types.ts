@@ -138,22 +138,6 @@ export interface HealthyVsUnhealthyDashboard {
   readonly supportProjection: SupportCostProjection | undefined;
   readonly generatedAt: string;
 }
-
-export const HEALTHYMONEY_EVENT_NAMES: ReadonlySet<string> = new Set([
-  'commerce.payment.approved',
-  'commerce.payment.declined',
-  'commerce.payment.refunded',
-  'commerce.payment.charged_back',
-  'commerce.lead.converted',
-  'commerce.lead.objection_raised',
-  'commerce.lead.lost',
-  'commerce.crm.deal_won',
-  'commerce.crm.deal_lost',
-  'commerce.whatsapp.handoff_to_human',
-  'commerce.post_sale.churn_risk_detected',
-  'commerce.post_sale.satisfaction_signal_observed',
-]);
-
 export function clampScore(value: number): number {
   return Math.max(0, Math.min(1, value));
 }
@@ -182,9 +166,4 @@ export function countEvents(events: readonly SpineEventRef[], name: string): num
     }
   }
   return c;
-}
-
-export function withinWindow(iso: string, windowStartMs: number, windowEndMs: number): boolean {
-  const ts = Date.parse(iso);
-  return Number.isFinite(ts) && ts >= windowStartMs && ts <= windowEndMs;
 }

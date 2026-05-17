@@ -35,7 +35,7 @@ export interface CreatorTrustConfig {
   readonly retentionWindowDays: number;
 }
 
-export const DEFAULT_CREATOR_TRUST_CONFIG: CreatorTrustConfig = {
+const DEFAULT_CREATOR_TRUST_CONFIG: CreatorTrustConfig = {
   audienceTrustWeight: 0.25,
   authenticityWeight: 0.2,
   consistencyWeight: 0.15,

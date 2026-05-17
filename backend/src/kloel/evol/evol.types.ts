@@ -6,7 +6,7 @@
  * detected gaps, and improvement proposals with governance metadata.
  */
 
-export type GapSeverity = 'critical' | 'high' | 'medium' | 'low';
+type GapSeverity = 'critical' | 'high' | 'medium' | 'low';
 
 export type CommercialImpact =
   | 'revenue_blocking'
@@ -21,7 +21,7 @@ export type RTier =
   | 'tier_3_facade'
   | 'tier_4_shell';
 
-export type RiskClass = 'safe' | 'normal' | 'high' | 'critical';
+type RiskClass = 'safe' | 'normal' | 'high' | 'critical';
 
 type ProposalStatus = 'draft' | 'submitted' | 'authorized' | 'rejected';
 
@@ -160,7 +160,7 @@ export const DOMAIN_RISK_PROFILES: Readonly<Record<string, DomainRiskProfile>> =
   },
 };
 
-export const KNOWN_DOMAINS: ReadonlySet<string> = new Set(Object.keys(DOMAIN_RISK_PROFILES));
+const KNOWN_DOMAINS: ReadonlySet<string> = new Set(Object.keys(DOMAIN_RISK_PROFILES));
 
 export function resolveDomain(rawDomain: string): string | null {
   for (const [key, profile] of Object.entries(DOMAIN_RISK_PROFILES)) {

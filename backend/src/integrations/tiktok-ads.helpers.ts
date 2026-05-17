@@ -65,6 +65,60 @@ export function readTikTokSubsettings(
   return (settings.tiktok || {}) as TikTokProviderSubsettings;
 }
 
+export function tiktokCredentialWhere(workspaceId: string) {
+  return { workspaceId_platform: { workspaceId, platform: TIKTOK_ADS_PLATFORM } };
+}
+
+function normalizeAdvertiserIds(ids: unknown): string[] {
+  if (!Array.isArray(ids)) {
+    return [];
+  }
+  return [...new Set(ids.filter((id): id is string => typeof id === 'string' && id.length > 0))];
+}
+
+async function readTikTokAdvertiserIds(
+  prisma: PrismaService,
+  workspaceId: string,
+): Promise<string[]> {
+  const rows = await prisma.adAccount.findMany({
+    where: { workspaceId, platform: TIKTOK_ADS_PLATFORM },
+    orderBy: { lastSyncAt: 'desc' },
+    select: { accountId: true },
+  });
+  return rows.map((row) => row.accountId);
+}
+
+export async function persistTikTokAdvertiserIds(
+  prisma: Pick<PrismaService, 'adAccount'>,
+  workspaceId: string,
+  advertiserIds: string[],
+): Promise<void> {
+  const normalized = normalizeAdvertiserIds(advertiserIds);
+  for (const advertiserId of normalized) {
+    await prisma.adAccount.upsert({
+      where: {
+        workspaceId_platform_accountId: {
+          workspaceId,
+          platform: TIKTOK_ADS_PLATFORM,
+          accountId: advertiserId,
+        },
+      },
+      create: {
+        workspaceId,
+        platform: TIKTOK_ADS_PLATFORM,
+        accountId: advertiserId,
+        accountName: `TikTok Ads Account ${advertiserId}`,
+        status: 'connected',
+        lastSyncAt: new Date(),
+      },
+      update: {
+        status: 'connected',
+        lastSyncAt: new Date(),
+      },
+    });
+  }
+}
+
 export function resolveTikTokRedirectUri(explicit?: string): string {
   if (explicit) {
     return explicit;
@@ -77,6 +131,27 @@ export async function resolveTikTokAccessToken(
   prisma: PrismaService,
   workspaceId: string,
 ): Promise<{ accessToken: string; advertiserIds: string[] }> {
+  const credential = await prisma.integrationCredential.findUnique({
+    where: tiktokCredentialWhere(workspaceId),
+    select: { accessToken: true, status: true, loginCustomerId: true },
+  });
+  const storedAdvertiserIds = await readTikTokAdvertiserIds(prisma, workspaceId);
+
+  if (credential?.accessToken && credential.status === 'connected') {
+    const accessToken = decryptTikTokToken(credential.accessToken) || credential.accessToken;
+    const advertiserIds = storedAdvertiserIds.length
+      ? storedAdvertiserIds
+      : normalizeAdvertiserIds([credential.loginCustomerId]);
+
+    if (!advertiserIds.length) {
+      throw new Error(
+        'tiktok_ads_not_configured: no advertiser IDs found — grant advertiser access in TikTok Business Center',
+      );
+    }
+
+    return { accessToken: String(accessToken), advertiserIds };
+  }
+
   const workspace = await prisma.workspace.findUnique({
     where: { id: workspaceId },
     select: { providerSettings: true },
@@ -85,7 +160,7 @@ export async function resolveTikTokAccessToken(
 
   const encrypted = tiktok.accessToken;
   const accessToken = decryptTikTokToken(encrypted) || encrypted;
-  const advertiserIds = Array.isArray(tiktok.advertiserIds) ? tiktok.advertiserIds : [];
+  const advertiserIds = normalizeAdvertiserIds(tiktok.advertiserIds);
 
   if (!accessToken) {
     throw new Error(
@@ -105,6 +180,23 @@ export async function readTikTokStatus(
   prisma: PrismaService,
   workspaceId: string,
 ): Promise<OAuthStatusResult> {
+  const credential = await prisma.integrationCredential.findUnique({
+    where: tiktokCredentialWhere(workspaceId),
+    select: { status: true, loginCustomerId: true },
+  });
+  if (credential) {
+    const advertiserIds = await readTikTokAdvertiserIds(prisma, workspaceId);
+    const accountId = credential.loginCustomerId || advertiserIds[0];
+    const result: OAuthStatusResult = {
+      connected: credential.status === 'connected',
+      status: credential.status || 'disconnected',
+    };
+    if (accountId) {
+      result.accountId = accountId;
+    }
+    return result;
+  }
+
   const workspace = await prisma.workspace.findUnique({
     where: { id: workspaceId },
     select: { providerSettings: true },
@@ -124,6 +216,24 @@ export async function syncTikTokAccountsFromSettings(
   prisma: PrismaService,
   workspaceId: string,
 ): Promise<SyncAccountsResult> {
+  const credential = await prisma.integrationCredential.findUnique({
+    where: tiktokCredentialWhere(workspaceId),
+    select: { status: true, loginCustomerId: true },
+  });
+  if (credential?.status === 'connected') {
+    const storedAdvertiserIds = await readTikTokAdvertiserIds(prisma, workspaceId);
+    const advertiserIds = storedAdvertiserIds.length
+      ? storedAdvertiserIds
+      : normalizeAdvertiserIds([credential.loginCustomerId]);
+    return {
+      accounts: advertiserIds.map((id) => ({
+        platform: TIKTOK_ADS_PLATFORM,
+        accountId: id,
+        accountName: `TikTok Ads Account ${id}`,
+      })),
+    };
+  }
+
   const workspace = await prisma.workspace.findUnique({
     where: { id: workspaceId },
     select: { providerSettings: true },

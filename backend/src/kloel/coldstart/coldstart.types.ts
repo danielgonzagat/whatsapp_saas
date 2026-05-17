@@ -51,16 +51,6 @@ export type HypothesisCategory =
   | 'channel'
   | 'pricing'
   | 'messaging';
-
-export const HYPOTHESIS_CATEGORIES: readonly HypothesisCategory[] = [
-  'audience',
-  'offer',
-  'objection',
-  'channel',
-  'pricing',
-  'messaging',
-];
-
 export interface GuidedQuestion {
   readonly questionId: string;
   readonly workspaceId: string;

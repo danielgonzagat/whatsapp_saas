@@ -16,10 +16,7 @@ CREATE TABLE "RAC_IntegrationCredential" (
 );
 
 -- CreateIndex
-CREATE UNIQUE INDEX "RAC_IntegrationCredential_workspaceId_key" ON "RAC_IntegrationCredential" ("workspaceId");
-
--- CreateIndex
-CREATE INDEX "RAC_IntegrationCredential_workspaceId_platform_idx" ON "RAC_IntegrationCredential" ("workspaceId", "platform");
+CREATE UNIQUE INDEX "RAC_IntegrationCredential_workspaceId_platform_key" ON "RAC_IntegrationCredential" ("workspaceId", "platform");
 
 -- AddForeignKey
 ALTER TABLE "RAC_IntegrationCredential" ADD CONSTRAINT "RAC_IntegrationCredential_workspaceId_fkey" FOREIGN KEY ("workspaceId") REFERENCES "RAC_Workspace" ("id") ON DELETE CASCADE ON UPDATE CASCADE;

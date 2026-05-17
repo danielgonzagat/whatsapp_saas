@@ -86,12 +86,13 @@ const createRedisConnection = (
   const options: RedisOptions = { ...redisOpts, ...overrides };
   const client = new Redis(resolved, options);
 
-  client.duplicate = ((...args: unknown[]) =>
+  const duplicateConnection: Redis['duplicate'] = (...args: Parameters<Redis['duplicate']>) =>
     createRedisConnection(
       `${context}:duplicate`,
       { ...options, ...collectRedisDuplicateOverrides(args) },
       attachQueueLogs,
-    )) as Redis['duplicate'];
+    );
+  client.duplicate = duplicateConnection;
 
   if (attachQueueLogs) {
     client.on('error', (err) => {
@@ -199,6 +200,21 @@ function attachWorkerErrorLogger(worker: Worker, label: string): void {
   }
 }
 
+function extractWorkspaceIdFromJobData(data: unknown): unknown {
+  if (!data || typeof data !== 'object' || Array.isArray(data)) {
+    return undefined;
+  }
+  const record = data as Record<string, unknown>;
+  if (typeof record.workspaceId === 'string') {
+    return record.workspaceId;
+  }
+  const workspace = record.workspace;
+  if (workspace && typeof workspace === 'object' && !Array.isArray(workspace)) {
+    return (workspace as Record<string, unknown>).id;
+  }
+  return undefined;
+}
+
 function getOrCreateQueue(name: string): BullQueue {
   const existing = queueRegistryMap.get(name);
   if (existing) {
@@ -241,16 +257,7 @@ function attachDlq(queue: BullQueue) {
           return;
         }
 
-        const workspaceId =
-          (job.data as Record<string, unknown> | undefined)?.workspaceId ??
-          (() => {
-            const d = job.data as Record<string, unknown> | undefined;
-            const ws = d?.workspace;
-            if (ws && typeof ws === 'object' && !Array.isArray(ws)) {
-              return (ws as Record<string, unknown>).id;
-            }
-            return undefined;
-          })();
+        const workspaceId = extractWorkspaceIdFromJobData(job.data);
         const correlationId = (job.data as Record<string, unknown> | undefined)?.correlationId;
 
         await dlq.add(
@@ -272,6 +279,8 @@ function attachDlq(queue: BullQueue) {
           jobId: job.id ?? undefined,
           jobName: job.name,
           reason: failedReason,
+          workspaceId,
+          correlationId,
         });
       } catch (err: unknown) {
         console.error(

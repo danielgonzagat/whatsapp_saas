@@ -6,6 +6,13 @@ const AUTH_TAG_LENGTH = 16;
 
 const CURRENT_KEY_VERSION = 1;
 
+function handleMissingTokenCryptoKey(envVar: string): null {
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error(`[TOKEN_CRYPTO] ${envVar} is required in production`);
+  }
+  return null;
+}
+
 function resolveKeyForVersion(version: number): Buffer | null {
   const envMap: Record<number, string> = {
     1: 'TIKTOK_TOKEN_ENCRYPTION_KEY',
@@ -18,7 +25,7 @@ function resolveKeyForVersion(version: number): Buffer | null {
 
   const keyRaw = String(process.env[envVar] || '').trim();
   if (!keyRaw) {
-    return null;
+    return handleMissingTokenCryptoKey(envVar);
   }
 
   if (keyRaw.length === 64 && /^[a-f0-9]{64}$/i.test(keyRaw)) {

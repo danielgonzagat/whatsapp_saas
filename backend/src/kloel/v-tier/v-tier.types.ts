@@ -18,5 +18,3 @@ export interface VtierCertificationResult {
   readonly certificationId: string;
   readonly certifiedAt: string;
 }
-
-export type { VtierStatus as VtierVerdictStatus };

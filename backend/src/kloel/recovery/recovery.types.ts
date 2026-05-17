@@ -138,20 +138,6 @@ export interface ErrorDetectorInput {
   readonly nowMs: number;
   readonly windowDays: number;
 }
-
-export const ERROR_RECOVERY_EVENT_NAMES: ReadonlySet<string> = new Set([
-  'commerce.whatsapp.handoff_to_human',
-  'commerce.payment.declined',
-  'commerce.lead.objection_raised',
-  'commerce.lead.lost',
-  'commerce.lead.went_silent',
-  'commerce.crm.deal_lost',
-  'commerce.payment.refunded',
-  'commerce.payment.charged_back',
-  'commerce.post_sale.churn_risk_detected',
-  'pulse.gate_failed',
-]);
-
 export interface NonRepeatCommitment {
   readonly learnedFrom: string;
   readonly preventiveChange: string;

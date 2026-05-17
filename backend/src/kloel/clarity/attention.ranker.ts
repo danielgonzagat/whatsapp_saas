@@ -67,10 +67,3 @@ export function rankAttention(
     rankedAt: new Date(nowMs).toISOString(),
   };
 }
-
-export function rankUrgencyImpactReversibility(
-  items: readonly RankingInput[],
-  nowMs: number,
-): RankerResult {
-  return rankAttention(items, nowMs);
-}

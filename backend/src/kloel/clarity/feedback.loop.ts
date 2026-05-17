@@ -58,9 +58,3 @@ export function applyFeedback(input: FeedbackInput): FeedbackResult {
     appliedAt: new Date(input.nowMs).toISOString(),
   };
 }
-
-export function applyBulkFeedback(
-  inputs: readonly FeedbackInput[],
-): readonly FeedbackResult[] {
-  return inputs.map((input) => applyFeedback(input));
-}

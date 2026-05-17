@@ -17,7 +17,7 @@ export interface HandoffConfig {
   readonly silentInteractionsMax: number;
 }
 
-export const DEFAULT_HANDOFF_CONFIG: HandoffConfig = {
+const DEFAULT_HANDOFF_CONFIG: HandoffConfig = {
   trustScoreFloor: 0.15,
   fatigueCeilingForHandoff: 0.85,
   desperationCeilingForHandoff: 0.8,

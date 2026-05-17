@@ -23,7 +23,7 @@ export interface MarginSnapshot {
   readonly costCents: bigint;
   readonly trend: MarginTrend;
 }
-export type MarginTrend = 'improving' | 'stable' | 'declining' | 'negative';
+type MarginTrend = 'improving' | 'stable' | 'declining' | 'negative';
 
 export interface ChurnRiskSnapshot {
   readonly clientWorkspaceId: string;
@@ -31,7 +31,7 @@ export interface ChurnRiskSnapshot {
   readonly riskProbability: number;
   readonly signals: readonly string[];
 }
-export type ChurnRiskLevel = 'low' | 'moderate' | 'high' | 'critical';
+type ChurnRiskLevel = 'low' | 'moderate' | 'high' | 'critical';
 
 export interface PrioritySnapshot {
   readonly clientWorkspaceId: string;
@@ -40,7 +40,7 @@ export interface PrioritySnapshot {
   readonly tier: PriorityTier;
   readonly drivers: readonly string[];
 }
-export type PriorityTier = 'agora' | 'esta_semana' | 'em_breve' | 'sustentar';
+type PriorityTier = 'agora' | 'esta_semana' | 'em_breve' | 'sustentar';
 
 export interface TeamLoadSnapshot {
   readonly totalMembers: number;

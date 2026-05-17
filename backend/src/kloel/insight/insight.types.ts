@@ -14,7 +14,7 @@
 
 import type { AbiTruthMode, AbiValence } from '../abi/abi-schema';
 import type { MaturityStage, SignalSummary } from '../maturity/maturity.types';
-export type { MaturityStage, SignalSummary };
+export type { MaturityStage };
 import type { SpineEventRef } from '../mind/mind.types';
 
 type InsightKind =

@@ -13,21 +13,7 @@ const COMMON_OBJECTION_KEYWORDS: readonly string[] = [
   'pensar', 'depois', 'futuro', 'momento', 'agora',
   'marido', 'esposa', 'socio', 'sócio', 'equipe', 'time',
 ];
-type PatternKind =
-  | 'objection_pattern'
-  | 'channel_efficiency'
-  | 'conversion_decay'
-  | 'engagement_peak'
-  | 'offer_objection_correlation';
-type PatternDimension = 'conversion' | 'engagement' | 'channel' | 'offer' | 'timing';
-export interface ExtractedPattern {
-  readonly kind: PatternKind;
-  readonly dimension: PatternDimension;
-  readonly support: number;
-  readonly confidence: number;
-  readonly abstractDescription: string;
-  readonly anonymizedExample: string;
-}
+
 export interface InternalSignal extends AggregatedSignal {
   readonly objectionKeywords: ReadonlyMap<string, number>;
   readonly stageTransitions: ReadonlyMap<string, number>;
@@ -239,7 +225,7 @@ export function passesKAnonymity(
     return false;
   }
 }
-export function describeRate(
+function describeRate(
   kind: SignalKind,
   value: number,
   workspaceCount: number,

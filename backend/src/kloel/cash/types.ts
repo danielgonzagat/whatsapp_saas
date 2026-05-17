@@ -121,13 +121,6 @@ export interface UnsafeOperationBlock {
   readonly amountCents: bigint;
   readonly blockerKind: BlockerKind;
 }
-
-export function daysBetween(dateA: string, dateB: string): number {
-  const a = Date.parse(dateA);
-  const b = Date.parse(dateB);
-  return (b - a) / (24 * 60 * 60 * 1000);
-}
-
 export function entriesByCategory(
   entries: readonly CashEntry[],
   category: CashEntryCategory,
@@ -165,8 +158,4 @@ export function standardDeviation(values: readonly number[]): number {
     values.reduce((sum, v) => sum + (v - mean) * (v - mean), 0) /
     (values.length - 1);
   return Math.sqrt(variance);
-}
-
-export function clamp(value: number, min: number, max: number): number {
-  return Math.max(min, Math.min(max, value));
 }

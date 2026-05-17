@@ -23,7 +23,7 @@ export interface EngagementConfig {
   readonly leaningConversionThreshold: number;
 }
 
-export const DEFAULT_ENGAGEMENT_CONFIG: EngagementConfig = {
+const DEFAULT_ENGAGEMENT_CONFIG: EngagementConfig = {
   recentWindowMinutes: 7200,
   maxRecentEvents: 40,
   healthyEngagementMinRate: 0.4,

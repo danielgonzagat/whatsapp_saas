@@ -34,6 +34,8 @@ describe('notifyOps', () => {
       jobId: '123',
       jobName: 'scan-contact',
       reason: 'timeout',
+      workspaceId: 'ws-1',
+      correlationId: 'corr-1',
     });
     expect(mockFetch).toHaveBeenCalledTimes(1);
     const [url, options] = mockFetch.mock.calls[0];
@@ -43,6 +45,8 @@ describe('notifyOps', () => {
     expect(body.text).toContain('autopilot-jobs');
     expect(body.text).toContain('scan-contact');
     expect(body.text).toContain('timeout');
+    expect(body.text).toContain('workspace=ws-1');
+    expect(body.text).toContain('correlation=corr-1');
   });
 
   it('sends Teams-formatted payload to office.com webhook', async () => {
@@ -78,12 +82,16 @@ describe('notifyOps', () => {
       queue: 'dlq-jobs',
       jobId: '789',
       reason: 'max_retries',
+      workspaceId: 'ws-2',
+      correlationId: 'corr-2',
     });
     const body = JSON.parse(mockFetch.mock.calls[0][1].body);
     expect(body.type).toBe('dlq_event');
     expect(body.queue).toBe('dlq-jobs');
     expect(body.jobId).toBe('789');
     expect(body.reason).toBe('max_retries');
+    expect(body.workspaceId).toBe('ws-2');
+    expect(body.correlationId).toBe('corr-2');
   });
 
   it('uses OPS_WEBHOOK_URL when DLQ_WEBHOOK_URL is not set', async () => {

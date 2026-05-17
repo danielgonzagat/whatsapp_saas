@@ -43,7 +43,7 @@ type RiskFlagCategory =
   | 'legal_threat'
   | 'regulatory_notice';
 type RiskFlagStatus = 'open' | 'acknowledged' | 'investigating' | 'escalated' | 'resolved' | 'dismissed' | 'requires_legal';
-export type BlockReason =
+type BlockReason =
   | 'policy_violation'
   | 'legal_requirement'
   | 'regulatory_order'
@@ -95,7 +95,7 @@ interface ImageRights {
   readonly verifiedAt: string | null;
   readonly createdAt: string;
 }
-export interface PolicyChange {
+interface PolicyChange {
   readonly changeId: string;
   readonly policyName: string;
   readonly provider: string;

@@ -239,11 +239,6 @@ export function daysSince(iso: string, nowMs: number): number {
   }
   return Math.max(0, (nowMs - ts) / (1000 * 60 * 60 * 24));
 }
-
-export function countByEventName(events: readonly SpineEventRef[], name: string): number {
-  return events.filter((e) => e.eventName === name).reduce((c) => c + 1, 0);
-}
-
 export function filterByWorkspace(
   events: readonly SpineEventRef[],
   workspaceId: string,

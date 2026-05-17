@@ -19,7 +19,7 @@ export interface TimingConfig {
   readonly typicalReplyWindowEnd?: number;
 }
 
-export const DEFAULT_TIMING_CONFIG: TimingConfig = {
+const DEFAULT_TIMING_CONFIG: TimingConfig = {
   quietStartHour: DEFAULT_QUIET_START,
   quietEndHour: DEFAULT_QUIET_END,
 };

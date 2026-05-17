@@ -34,7 +34,7 @@ function makeT(
 // OPS
 // =========================================================================
 
-export const peakLoadDetector: Detector = {
+const peakLoadDetector: Detector = {
   name: 'operational.peak_load',
   dimension: 'operational',
   detect: (events, nowMs) => {
@@ -91,7 +91,7 @@ export const humanHandoffOverdueDetector: Detector = {
   },
 };
 
-export const queueBuildupDetector: Detector = {
+const queueBuildupDetector: Detector = {
   name: 'operational.queue_buildup',
   dimension: 'operational',
   detect: (events, nowMs) => {
@@ -150,7 +150,7 @@ export const slowResponseDetector: Detector = {
   },
 };
 
-export const repetitiveQuestionDetector: Detector = {
+const repetitiveQuestionDetector: Detector = {
   name: 'ux.repetitive_question',
   dimension: 'ux',
   detect: (events, nowMs) => {
@@ -190,7 +190,7 @@ export const repetitiveQuestionDetector: Detector = {
   },
 };
 
-export const frictionAtConversionDetector: Detector = {
+const frictionAtConversionDetector: Detector = {
   name: 'ux.friction_at_conversion',
   dimension: 'ux',
   detect: (events, nowMs) => {
@@ -217,7 +217,7 @@ export const frictionAtConversionDetector: Detector = {
   },
 };
 
-export const toneMismatchDetector: Detector = {
+const toneMismatchDetector: Detector = {
   name: 'ux.tone_mismatch',
   dimension: 'ux',
   detect: (events, nowMs) => {
