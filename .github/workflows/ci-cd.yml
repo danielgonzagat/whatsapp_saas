@@ -352,7 +352,7 @@ jobs:
       - name: Build backend
         run: |
           npx prisma generate
-          npm run build
+          NODE_OPTIONS=--max-old-space-size=4096 npm run build
         working-directory: backend
 
       - name: Run PULSE deep triple-cycle (docker compose + 3x certify + assertions)
@@ -501,7 +501,7 @@ jobs:
           cd backend
           npx prisma generate
           npx prisma migrate deploy
-          npm run build
+          NODE_OPTIONS=--max-old-space-size=4096 npm run build
           cd ../worker
           npm run build
           cd ../frontend
