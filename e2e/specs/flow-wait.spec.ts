@@ -8,9 +8,8 @@ const { apiUrl: API_URL } = getE2EBaseUrls();
  * Pré-req: backend/worker rodando.
  */
 test('flow with wait resumes on inbound message', async ({ request }) => {
-  // Polling deadline below is 35s plus auth bootstrap + flow setup + WAHA
-  // session probe — the default 30s Playwright timeout is not enough.
-  test.setTimeout(90_000);
+  // The worker must first persist WAITING_INPUT and then process the inbound resume job.
+  test.setTimeout(150_000);
 
   const { token, workspaceId } = await ensureE2EAdmin(request);
 
@@ -64,6 +63,24 @@ test('flow with wait resumes on inbound message', async ({ request }) => {
   const { executionId } = await start.json();
   expect(executionId).toBeTruthy();
 
+  const readStatus = async () => {
+    const res = await request.get(`${API_URL}/flows/execution/${executionId}`, {
+      headers: { authorization: `Bearer ${token}` },
+    });
+    const body = await res.json().catch(() => ({}));
+    return typeof body?.status === 'string' ? body.status : 'UNKNOWN';
+  };
+
+  // A resposta só pode ser enviada depois que o worker persistir o WAIT;
+  // antes disso o job de resume não encontra contexto e a mensagem vira corrida.
+  let status = 'PENDING';
+  const waitDeadline = Date.now() + 45_000;
+  while (!['WAITING_INPUT', 'COMPLETED', 'FAILED'].includes(status) && Date.now() < waitDeadline) {
+    await new Promise((r) => setTimeout(r, 1000));
+    status = await readStatus();
+  }
+  expect(status).toBe('WAITING_INPUT');
+
   // Envia mensagem inbound que casa palavra-chave
   const incoming = await request.post(`${API_URL}/whatsapp/${workspaceId}/incoming`, {
     data: {
@@ -75,19 +92,11 @@ test('flow with wait resumes on inbound message', async ({ request }) => {
   expect(incoming.ok()).toBeTruthy();
 
   // Poll status até completar ou timeout.
-  // Em E2E local o runtime pode aguardar alguns segundos por resposta do WAHA
-  // quando a sessão do workspace ainda não existe. O fluxo conclui, mas não cabe
-  // numa janela rígida de 10s.
-  let status = 'RUNNING';
-  const deadline = Date.now() + 35_000;
-  while (status === 'RUNNING' && Date.now() < deadline) {
+  const resumeDeadline = Date.now() + 60_000;
+  while (status !== 'COMPLETED' && status !== 'FAILED' && Date.now() < resumeDeadline) {
     await new Promise((r) => setTimeout(r, 1000));
-    const res = await request.get(`${API_URL}/flows/execution/${executionId}`, {
-      headers: { authorization: `Bearer ${token}` },
-    });
-    const body = await res.json().catch(() => ({}));
-    status = body?.status;
+    status = await readStatus();
   }
 
-  expect(['PENDING', 'COMPLETED']).toContain(status);
+  expect(status).toBe('COMPLETED');
 });

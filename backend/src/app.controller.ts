@@ -42,9 +42,9 @@ export class AppController {
    */
   @Public()
   @Get('health')
-  healthCheck(): { status: string; timestamp: string; uptime: number } {
+  healthCheck(): { status: 'UP'; timestamp: string; uptime: number } {
     return {
-      status: 'ok',
+      status: 'UP',
       timestamp: new Date().toISOString(),
       uptime: process.uptime(),
     };

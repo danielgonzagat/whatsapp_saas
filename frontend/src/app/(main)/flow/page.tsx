@@ -171,7 +171,7 @@ function FlowPageContent() {
             }`}
           >
             <Clock className="w-4 h-4" aria-hidden="true" />
-            {kloelT('Execucoes')}
+            {kloelT('Execuções')}
           </button>
 
           {/* AI Optimize button */}
