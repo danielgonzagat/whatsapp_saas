@@ -142,7 +142,7 @@ import { StripeWebhookLedgerService } from './webhooks/stripe-webhook-ledger.ser
 
 const appLogger = new Logger('AppModule');
 const isProd = process.env.NODE_ENV === 'production';
-const REDIS_GLOBAL_LISTENER_BUDGET = 128;
+const REDIS_GLOBAL_LISTENER_BUDGET = 256;
 
 function setRedisClientListenerBudget(client: Redis): void {
   client.setMaxListeners(Math.max(client.getMaxListeners(), REDIS_GLOBAL_LISTENER_BUDGET));

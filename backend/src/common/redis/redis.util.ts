@@ -13,7 +13,10 @@ const DEFAULT_REDIS_CLIENT_LISTENER_BUDGET = 256;
 function resolveRedisClientListenerBudget(): number {
   const raw = process.env.REDIS_CLIENT_MAX_LISTENERS;
   const parsed = raw ? Number.parseInt(raw, 10) : DEFAULT_REDIS_CLIENT_LISTENER_BUDGET;
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : DEFAULT_REDIS_CLIENT_LISTENER_BUDGET;
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return DEFAULT_REDIS_CLIENT_LISTENER_BUDGET;
+  }
+  return Math.max(parsed, DEFAULT_REDIS_CLIENT_LISTENER_BUDGET);
 }
 
 function setRedisClientListenerBudget(client: Redis): void {
@@ -84,7 +87,9 @@ export function getRedisUrl(): string {
  */
 export function createRedisClient(options?: RedisOptions): Redis {
   if (process.env.JEST_WORKER_ID) {
-    return createRedisMockClient();
+    const client = createRedisMockClient();
+    setRedisClientListenerBudget(client);
+    return client;
   }
 
   const url = getRedisUrl();

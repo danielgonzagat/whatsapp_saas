@@ -19,6 +19,21 @@ describe('ioredis-mock verification (PR P2-5)', () => {
     const client = createRedisClient();
     expect(client).not.toBeNull();
   });
+  it('keeps Redis listener budget high enough when env is lower', () => {
+    const previous = process.env.REDIS_CLIENT_MAX_LISTENERS;
+    process.env.REDIS_CLIENT_MAX_LISTENERS = '64';
+
+    try {
+      const client = createRedisClient();
+      expect(client.getMaxListeners()).toBeGreaterThanOrEqual(256);
+    } finally {
+      if (previous === undefined) {
+        delete process.env.REDIS_CLIENT_MAX_LISTENERS;
+      } else {
+        process.env.REDIS_CLIENT_MAX_LISTENERS = previous;
+      }
+    }
+  });
 
   it('supports SET key value EX ttl with TTL inspection via TTL command', async () => {
     const client = createRedisClient();
