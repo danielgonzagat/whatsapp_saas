@@ -66,13 +66,13 @@ test.describe('Meta Marketing Flow', () => {
     const auth = await ensureAdmin(request);
     await bootstrapAuthenticatedPage(page, auth, { landingPath: '/anuncios/meta' });
 
+    await expect(page.getByRole('heading', { name: 'Anúncios' })).toBeVisible({
+      timeout: 10_000,
+    });
     await expect(page.getByRole('button', { name: /meta ads/i })).toBeVisible({
       timeout: 10_000,
     });
     await expect(page.getByRole('button', { name: /conectar meta ads/i })).toBeVisible({
-      timeout: 10_000,
-    });
-    await expect(page.getByText(/Conecte sua conta Meta Ads/i)).toBeVisible({
       timeout: 10_000,
     });
   });
