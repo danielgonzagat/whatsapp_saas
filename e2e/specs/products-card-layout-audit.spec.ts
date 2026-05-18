@@ -59,7 +59,7 @@ async function captureProductsCard(
       while (cursor && cursor !== document.body) {
         const text = (cursor.textContent || '').trim();
         if (
-          text.includes('Preço') &&
+          /(Preço|Preco)/.test(text) &&
           (text.includes('Rascunho') || text.includes('Ativo') || text.includes('Em analise'))
         ) {
           firstCard = cursor;

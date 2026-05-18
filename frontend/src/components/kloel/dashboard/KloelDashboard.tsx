@@ -306,7 +306,7 @@ export default function KloelDashboard() {
       return;
     }
 
-    const detected = activeCapability ? null : detectOperatorIntent(input);
+    const detected = activeCapability || linkedProduct ? null : detectOperatorIntent(input);
     if (detected) {
       if (isUnsupportedFallback(detected)) {
         void handleUnsupportedFallback(input);
@@ -322,6 +322,7 @@ export default function KloelDashboard() {
     attachments,
     handleSendMessage,
     input,
+    linkedProduct,
     setComposerNotice,
     handleOperatorDispatch,
     handleUnsupportedFallback,

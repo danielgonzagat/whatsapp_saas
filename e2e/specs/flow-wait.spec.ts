@@ -12,6 +12,7 @@ test('flow with wait resumes on inbound message', async ({ request }) => {
   test.setTimeout(150_000);
 
   const { token, workspaceId } = await ensureE2EAdmin(request);
+  const contactPhone = `5511${Date.now().toString().slice(-9)}`;
 
   // Garante que billing não ficou suspenso por outro spec (isso pode bloquear /flows/run).
   await request
@@ -51,7 +52,7 @@ test('flow with wait resumes on inbound message', async ({ request }) => {
       flow,
       flowId,
       workspaceId,
-      user: '5511999999999',
+      user: contactPhone,
       startNode: 'n1',
     },
     headers: { authorization: `Bearer ${token}` },
@@ -84,7 +85,7 @@ test('flow with wait resumes on inbound message', async ({ request }) => {
   // Envia mensagem inbound que casa palavra-chave
   const incoming = await request.post(`${API_URL}/whatsapp/${workspaceId}/incoming`, {
     data: {
-      from: '5511999999999',
+      from: contactPhone,
       message: 'sim',
     },
     headers: { authorization: `Bearer ${token}` },

@@ -259,6 +259,9 @@ async function clickSidebarSection(page: Page, name: string) {
 
 async function clickSave(page: Page) {
   await dismissCookieBanner(page);
+  const saveButton = page.getByRole('button', { name: /Salvar altera/i }).last();
+  await expect(saveButton).toBeVisible({ timeout: 10_000 });
+  await saveButton.click();
 }
 
 async function saveAndWaitForKycPut(
@@ -266,7 +269,17 @@ async function saveAndWaitForKycPut(
   endpoint: '/kyc/profile' | '/kyc/fiscal' | '/kyc/bank',
   data: Record<string, unknown> = {},
 ) {
+  const saveResponse = page
+    .waitForResponse((response) => {
+      const url = new URL(response.url());
+      const path = url.pathname.replace(/^\/api(?=\/)/, '');
+      return path === endpoint && response.request().method() === 'PUT';
+    }, { timeout: 10_000 })
+    .catch(() => null);
+
   await clickSave(page);
+  await saveResponse;
+
   const state = kycMockStateByPage.get(page);
   if (!state) {
     throw new Error('KYC mock state not installed');
@@ -506,7 +519,7 @@ test.describe('Settings / KYC', () => {
     // Reload and verify
     await revisitSettings(page, request);
     await clickSidebarSection(page, 'Dados bancarios');
-    await expect(page.getByText(/001\s+—\s+Banco do Brasil S\.A\./).first()).toBeVisible({
+    await expect(page.getByText(/001\s*[—-]\s*Banco do Brasil S\.A\./).first()).toBeVisible({
       timeout: 10000,
     });
     await expect(page.locator('input[placeholder="0000"]')).toHaveValue('1234');

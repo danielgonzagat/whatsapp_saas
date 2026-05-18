@@ -32,33 +32,31 @@ async function ensureAdmin(request: APIRequestContext): Promise<E2EAuthContext> 
 }
 
 test.describe('Meta Marketing Flow', () => {
-  test('AnunciosView renders with empty state when no Meta account connected', async ({
+  test('AnunciosView renders disconnected War Room state when no Meta account connected', async ({
     page,
     request,
   }) => {
     const auth = await ensureAdmin(request);
     await bootstrapAuthenticatedPage(page, auth, { landingPath: '/anuncios' });
 
-    await expect(page.locator('text=Anúncios')).toBeVisible({ timeout: 10000 });
-
-    const tabBar = page.locator('text=Visão Geral');
-    if (await tabBar.isVisible()) {
-      await expect(tabBar).toBeVisible();
-    }
+    await expect(page.getByRole('button', { name: /war room/i })).toBeVisible({
+      timeout: 10_000,
+    });
+    await expect(page.getByRole('button', { name: /conectar meta ads/i })).toBeVisible({
+      timeout: 10_000,
+    });
   });
 
   test('AnunciosView shows WarRoomDashboard in visao tab', async ({ page, request }) => {
     const auth = await ensureAdmin(request);
     await bootstrapAuthenticatedPage(page, auth, { landingPath: '/anuncios' });
 
-    const dash = page.locator('[data-testid="war-room-dashboard"]');
-    const anyDashboardContent = page.locator('text=Plataformas');
-    const altContent = page.locator('text=Meta');
-    const hasContent =
-      (await anyDashboardContent.isVisible().catch(() => false)) ||
-      (await altContent.isVisible().catch(() => false));
-
-    expect(hasContent || (await dash.isVisible().catch(() => false))).toBeTruthy();
+    await expect(page.getByRole('button', { name: /war room/i })).toBeVisible({
+      timeout: 10_000,
+    });
+    await expect(page.getByText(/LUCRO LIQUIDO|INVESTIDO/i).first()).toBeVisible({
+      timeout: 10_000,
+    });
   });
 
   test('AnunciosView shows setup/connect state for Meta when disconnected', async ({
@@ -68,18 +66,15 @@ test.describe('Meta Marketing Flow', () => {
     const auth = await ensureAdmin(request);
     await bootstrapAuthenticatedPage(page, auth, { landingPath: '/anuncios/meta' });
 
-    const metaTab = page.locator('text=Meta Ads');
-    const connectButton = page.locator('text=Conectar').or(page.locator('text=Conectar Meta'));
-    const setupText = page
-      .locator('text=Nenhuma conta conectada')
-      .or(page.locator('text=Configurar'));
-
-    const hasMetaContent =
-      (await metaTab.isVisible().catch(() => false)) ||
-      (await connectButton.isVisible().catch(() => false)) ||
-      (await setupText.isVisible().catch(() => false));
-
-    expect(hasMetaContent).toBeTruthy();
+    await expect(page.getByRole('button', { name: /meta ads/i })).toBeVisible({
+      timeout: 10_000,
+    });
+    await expect(page.getByRole('button', { name: /conectar meta ads/i })).toBeVisible({
+      timeout: 10_000,
+    });
+    await expect(page.getByText(/Conecte sua conta Meta Ads/i)).toBeVisible({
+      timeout: 10_000,
+    });
   });
 
   test('OAuth callback redirect path exists', async ({ request }) => {
