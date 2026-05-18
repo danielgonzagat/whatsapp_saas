@@ -4,7 +4,7 @@ buildCommand = "npm run railway:backend:build"
 
 [deploy]
 preDeployCommand = "node backend/prisma/ensure-migrations.js"
-startCommand = "node -r ./backend/dd-trace-init.cjs backend/dist/src/bootstrap.js"
+startCommand = "npm run railway:backend:start"
 healthcheckPath = "/health/live"
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 3
