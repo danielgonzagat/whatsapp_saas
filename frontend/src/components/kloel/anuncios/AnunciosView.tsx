@@ -171,6 +171,18 @@ export default function AnunciosView({ defaultTab = 'visao' }: { defaultTab?: st
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
       `}</style>
 
+      <div
+        style={{
+          maxWidth: 1240,
+          margin: '0 auto',
+          padding: isMobile ? '16px 16px 8px' : '24px 24px 8px',
+        }}
+      >
+        <h1 style={{ margin: 0, fontSize: isMobile ? 20 : 24, fontWeight: 700 }}>
+          {kloelT('Anúncios')}
+        </h1>
+      </div>
+
       <AnunciosTabBar tab={tab} isMobile={isMobile} onSelect={goToTab} />
 
       <div style={{ padding: isMobile ? 16 : 24, maxWidth: 1240, margin: '0 auto' }}>

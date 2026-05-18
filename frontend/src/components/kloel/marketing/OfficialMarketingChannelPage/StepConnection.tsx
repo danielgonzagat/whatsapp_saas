@@ -10,9 +10,10 @@ interface Props {
 export function StepConnection({ channel, tiktokMode }: Props) {
   return (
     <div style={{ color: KLOEL_THEME.textSecondary, lineHeight: 1.7 }}>
-      <strong style={{ color: KLOEL_THEME.textPrimary }}>Conexão oficial.</strong> Use o
-      botão de conexão abaixo para abrir o fluxo oficial do provedor. O status volta para
-      esta tela e o progresso do canal fica salvo no workspace.
+      <strong style={{ color: KLOEL_THEME.textPrimary }}>Conexão oficial.</strong>{' '}
+      {channel === 'whatsapp' || channel === 'instagram' || channel === 'facebook'
+        ? 'Use a autorizacao oficial da Meta para conectar este canal. O status volta para esta tela e o progresso do canal fica salvo no workspace.'
+        : 'Use o botão de conexão abaixo para abrir o fluxo oficial do provedor. O status volta para esta tela e o progresso do canal fica salvo no workspace.'}
       {channel === 'tiktok' && tiktokMode ? (
         <div style={{ marginTop: 14 }}>
           <TikTokModeBadge mode={tiktokMode} />

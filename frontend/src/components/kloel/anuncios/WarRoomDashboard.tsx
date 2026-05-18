@@ -50,7 +50,10 @@ export function WarRoomDashboard({
   const { isMobile } = useResponsiveViewport();
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 20, animation: 'fadeIn .3s ease' }}>
+    <div
+      data-testid="war-room-dashboard"
+      style={{ display: 'flex', flexDirection: 'column' as const, gap: 20, animation: 'fadeIn .3s ease' }}
+    >
       <div style={{ textAlign: 'center' as const, padding: isMobile ? '18px 0 4px' : '24px 0 8px' }}>
         <div style={{ fontSize: 11, fontFamily: MONO, color: 'var(--app-text-secondary)', letterSpacing: 2, marginBottom: 8 }}>
           {kloelT(`LUCRO LIQUIDO`)}
