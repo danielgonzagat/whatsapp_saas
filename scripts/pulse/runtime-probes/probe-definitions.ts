@@ -49,11 +49,25 @@ export const DEFAULT_PROBE_DEFINITIONS: RuntimeProbeDefinition[] = [
   },
 ];
 
+function normalizeProbeBaseUrl(value: string): string {
+  const trimmed = value.trim().replace(/\/+$/, '');
+  try {
+    const url = new URL(trimmed);
+    if (url.hostname === 'localhost') {
+      url.hostname = '127.0.0.1';
+      return url.toString().replace(/\/+$/, '');
+    }
+  } catch {
+    return trimmed;
+  }
+  return trimmed;
+}
+
 export function resolveProbeBaseUrl(): string | null {
-  if (process.env.PULSE_BACKEND_URL) return process.env.PULSE_BACKEND_URL.replace(/\/+$/, '');
-  if (process.env.BACKEND_URL) return process.env.BACKEND_URL.replace(/\/+$/, '');
-  if (process.env.PULSE_DISABLE_LOCAL_ENV) return null;
-  return 'http://localhost:3001';
+  const configured = process.env.PULSE_BACKEND_URL || process.env.BACKEND_URL;
+  if (configured) return normalizeProbeBaseUrl(configured);
+  if (process.env.PULSE_DISABLE_LOCAL_ENV === 'true') return null;
+  return normalizeProbeBaseUrl('http://localhost:3001');
 }
 
 export function executeProbeSync(
