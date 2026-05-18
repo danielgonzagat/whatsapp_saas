@@ -33,7 +33,13 @@ export class SystemHealthController {
     return this.health.liveness();
   }
 
-    async readiness() {
+  @Public()
+  @Get('readiness')
+  @ApiOperation({
+    summary:
+      'Readiness probe — Postgres, Redis (BullMQ), Stripe, Meta Cloud API, OpenAI, Anthropic',
+  })
+  async readiness() {
     const result = await this.health.deepReadiness();
     if (result.status === 'DOWN') {
       const failures = Array.isArray(result.failures) ? result.failures : [];
@@ -45,7 +51,6 @@ export class SystemHealthController {
     return result;
   }
 
-
   @Public()
   @Get('ready')
   @ApiOperation({ summary: 'Readiness probe — DB and Redis available' })
@@ -55,7 +60,7 @@ export class SystemHealthController {
 
   @Public()
   @Get('system')
-  @ApiOperation({ summary: 'System health — runtime dependencies and queue state' })
+  @ApiOperation({ summary: 'System health — production runtime and queue health' })
   async system() {
     return this.health.check();
   }
