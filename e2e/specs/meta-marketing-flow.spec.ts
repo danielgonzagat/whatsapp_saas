@@ -68,18 +68,11 @@ test.describe('Meta Marketing Flow', () => {
     const auth = await ensureAdmin(request);
     await bootstrapAuthenticatedPage(page, auth, { landingPath: '/anuncios/meta' });
 
-    const metaTab = page.locator('text=Meta Ads');
-    const connectButton = page.locator('text=Conectar').or(page.locator('text=Conectar Meta'));
-    const setupText = page
-      .locator('text=Nenhuma conta conectada')
-      .or(page.locator('text=Configurar'));
-
-    const hasMetaContent =
-      (await metaTab.isVisible().catch(() => false)) ||
-      (await connectButton.isVisible().catch(() => false)) ||
-      (await setupText.isVisible().catch(() => false));
-
-    expect(hasMetaContent).toBeTruthy();
+    await expect(page.getByRole('heading', { name: 'Anúncios' })).toBeVisible({
+      timeout: 10_000,
+    });
+    await expect(page.getByRole('button', { name: /meta ads/i })).toBeVisible();
+    await expect(page.getByRole('button', { name: /conectar meta ads/i })).toBeVisible();
   });
 
   test('OAuth callback redirect path exists', async ({ request }) => {

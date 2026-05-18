@@ -394,7 +394,7 @@ test.describe('Marketing WhatsApp flow', () => {
     await expect(page.getByText(/autorizacao oficial da Meta/)).toBeVisible({ timeout: 15_000 });
     await expect(page.getByAltText('QR Code do WhatsApp')).toHaveCount(0);
 
-    await page.getByRole('button', { name: 'Proximo' }).click();
+    await page.getByRole('button', { name: /avançar passo/i }).click();
     await expect(page.getByText('Passo 2 de 4')).toBeVisible({ timeout: 15_000 });
     await expect(page.getByText('Conta necessaria')).toBeVisible();
 
@@ -403,7 +403,7 @@ test.describe('Marketing WhatsApp flow', () => {
     await expect(page.getByText('Passo 3 de 4')).toBeVisible();
     await expect(page.getByLabel('Nome do material')).toBeVisible();
 
-    await page.getByRole('button', { name: 'Proximo' }).click();
+    await page.getByRole('button', { name: /avançar passo/i }).click();
     await expect(page.getByText('Passo 4 de 4')).toBeVisible();
     await expect(page.getByLabel('Tom', { exact: true })).toBeVisible();
   });
