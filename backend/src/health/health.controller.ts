@@ -3,6 +3,7 @@ import type { Response } from 'express';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Public } from '../auth/public.decorator';
 import { HealthService } from './health.service';
+import { SystemHealthService } from './system-health.service';
 import { RouteClass } from '../common/throttler/route-class.decorator';
 import { WebhookEndpoint } from '../common/decorators/webhook-endpoint.decorator';
 import { InternalEndpoint } from '../common/decorators/internal-endpoint.decorator';
@@ -11,7 +12,10 @@ import { InternalEndpoint } from '../common/decorators/internal-endpoint.decorat
 @Controller('health')
 @RouteClass('read')
 export class HealthController {
-  constructor(private healthService: HealthService) {}
+  constructor(
+    private healthService: HealthService,
+    private systemHealthService: SystemHealthService,
+  ) {}
 
   /** Liveness probe — public, always 200 if process is up. */
   @Public()
@@ -62,6 +66,13 @@ export class HealthController {
   @UseGuards(JwtAuthGuard)
   async deep() {
     return this.healthService.runDeepDiagnostic();
+  }
+
+  /** System health — public runtime dependencies and queue state. */
+  @Public()
+  @Get('system')
+  async system() {
+    return this.systemHealthService.check();
   }
 
   /** Get health. */
