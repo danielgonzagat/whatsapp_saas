@@ -71,7 +71,7 @@ test.describe('Meta Marketing Flow', () => {
     await expect(page.getByRole('heading', { name: 'Anúncios' })).toBeVisible({
       timeout: 10_000,
     });
-    await expect(page.getByRole('button', { name: /meta ads/i })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Meta Ads', exact: true })).toBeVisible();
     await expect(page.getByRole('button', { name: /conectar meta ads/i })).toBeVisible();
   });
 
