@@ -1,4 +1,5 @@
 [build]
+# PR314 runtime refresh marker: force Railway to rebuild after CI gate fixes.
 builder = "RAILPACK"
 buildCommand = "npm ci --include=dev && npm run prisma:generate && npm run build"
 watchPatterns = ["**"]
