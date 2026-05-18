@@ -42,7 +42,7 @@ test.describe('Meta Marketing Flow', () => {
     await expect(page.getByRole('button', { name: /war room/i })).toBeVisible({
       timeout: 10_000,
     });
-    await expect(page.getByRole('button', { name: /conectar meta ads/i })).toBeVisible({
+    await expect(page.getByRole('button', { name: 'Conectar Meta Ads', exact: true }).first()).toBeVisible({
       timeout: 10_000,
     });
   });
@@ -69,10 +69,10 @@ test.describe('Meta Marketing Flow', () => {
     await expect(page.getByRole('heading', { name: 'Anúncios' })).toBeVisible({
       timeout: 10_000,
     });
-    await expect(page.getByRole('button', { name: /meta ads/i })).toBeVisible({
+    await expect(page.getByRole('button', { name: 'Meta Ads', exact: true })).toBeVisible({
       timeout: 10_000,
     });
-    await expect(page.getByRole('button', { name: /conectar meta ads/i })).toBeVisible({
+    await expect(page.getByRole('button', { name: 'Conectar Meta Ads', exact: true }).first()).toBeVisible({
       timeout: 10_000,
     });
   });

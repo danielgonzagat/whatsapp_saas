@@ -111,6 +111,10 @@ async function waitForConversationId(
   prompt: string,
 ) {
   let matchedConversationId: string | null = null;
+  const messagesContainPrompt = (messages: ThreadMessagePayload[]) =>
+    messages.some(
+      (message) => message.role === 'user' && String(message.content || '').includes(prompt),
+    );
 
   await expect
     .poll(
@@ -118,8 +122,11 @@ async function waitForConversationId(
         const current = new URL(page.url());
         const urlConversationId = current.searchParams.get('conversationId');
         if (urlConversationId) {
-          matchedConversationId = urlConversationId;
-          return true;
+          const messages = await fetchThreadMessages(request, auth, urlConversationId).catch(() => []);
+          if (messagesContainPrompt(messages)) {
+            matchedConversationId = urlConversationId;
+            return true;
+          }
         }
 
         const response = await request.get(`${apiUrl}/kloel/threads?limit=10`, {
@@ -145,11 +152,7 @@ async function waitForConversationId(
           }
 
           const messages = await fetchThreadMessages(request, auth, threadId).catch(() => []);
-          if (
-            messages.some(
-              (message) => message.role === 'user' && String(message.content || '').includes(prompt),
-            )
-          ) {
+          if (messagesContainPrompt(messages)) {
             matchedConversationId = threadId;
             return true;
           }
@@ -348,7 +351,7 @@ test.describe.serial('Kloel chat real e2e validation', () => {
 
     await expect(page.getByLabel(`Remover vínculo com ${product.name}`)).toBeVisible();
 
-    const prompt = 'Responda apenas com o nome e o preco do produto vinculado.';
+    const prompt = `Responda apenas com o nome e o preco do produto vinculado ${product.name}.`;
     await sendComposerMessage(page, prompt);
 
     const conversationId = await waitForConversationId(page, request, auth, prompt);
@@ -392,7 +395,7 @@ test.describe.serial('Kloel chat real e2e validation', () => {
       'Buscar na Web...',
     );
 
-    const prompt = 'Qual é o site oficial da OpenAI? Responda com a URL principal.';
+    const prompt = `Qual é o site oficial da OpenAI? Responda com a URL principal. Codigo E2E ${Date.now()}.`;
     await sendComposerMessage(page, prompt);
 
     const conversationId = await waitForConversationId(page, request, auth, prompt);
@@ -429,7 +432,7 @@ test.describe.serial('Kloel chat real e2e validation', () => {
       'Descreva a imagem que deseja criar...',
     );
 
-    const prompt = 'Crie uma imagem abstrata minimalista com um circulo coral em fundo bege.';
+    const prompt = `Crie uma imagem abstrata minimalista com um circulo coral em fundo bege. Codigo E2E ${Date.now()}.`;
     await sendComposerMessage(page, prompt);
 
     const conversationId = await waitForConversationId(page, request, auth, prompt);

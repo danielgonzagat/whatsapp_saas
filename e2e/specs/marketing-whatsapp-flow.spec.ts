@@ -411,10 +411,10 @@ test.describe('Marketing WhatsApp flow', () => {
 
     await page.getByRole('button', { name: /(?:Pr[oó]ximo|avançar passo)/i }).click();
     await expect(page.getByText('Passo 2 de 4')).toBeVisible({ timeout: 15_000 });
-    await expect(page.getByText(/Conta necess[áa]ria/i)).toBeVisible();
+    await expect(page.getByText(/Selecione os produtos/i)).toBeVisible();
 
     await page.getByLabel('Produto Teste').check();
-    await page.getByRole('button', { name: /Salvar e avan[cç]ar/i }).click();
+    await page.getByRole('button', { name: /(?:Pr[oó]ximo|Salvar e avan[cç]ar)/i }).click();
     await expect(page.getByText('Passo 3 de 4')).toBeVisible();
     await expect(page.getByLabel('Nome do material')).toBeVisible();
 
