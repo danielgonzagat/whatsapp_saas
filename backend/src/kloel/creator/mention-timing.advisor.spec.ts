@@ -26,13 +26,20 @@ function hist(
   over: Partial<MentionHistoryEntry> = {},
 ): MentionHistoryEntry {
   return {
-    mentionedAt: new Date(Date.now() - daysAgo * 24 * 60 * 60 * 1000).toISOString(),
+    mentionedAt: new Date(NOW - daysAgo * 24 * 60 * 60 * 1000).toISOString(),
     partnerId: over.partnerId ?? 'prt_001',
     engagementCount: over.engagementCount ?? 5,
   };
 }
 
 describe('MentionTimingAdvisor (UTP-CREATOR-002) — full spec', () => {
+  beforeAll(() => {
+    jest.spyOn(Date, 'now').mockReturnValue(NOW);
+  });
+
+  afterAll(() => {
+    jest.restoreAllMocks();
+  });
   // ─── 1: 'now' with high receptivity ────────────────────────────────
   it('returns "now" when receptivity >= 0.7 and days since last mention >= ideal', () => {
     const events: CreatorEvent[] = Array.from({ length: 10 }, () =>

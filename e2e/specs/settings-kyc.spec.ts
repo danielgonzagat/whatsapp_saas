@@ -107,6 +107,14 @@ async function installKycMocks(page: Page) {
     });
   });
 
+  await page.route(`**/payments/connect/${TEST_WORKSPACE_ID}/accounts`, async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ accounts: [] }),
+    });
+  });
+
   await page.route('**/cookie-consent**', async (route) => {
     await route.fulfill({
       status: 200,

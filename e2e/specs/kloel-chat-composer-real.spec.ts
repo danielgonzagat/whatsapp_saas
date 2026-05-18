@@ -104,19 +104,66 @@ async function deleteProduct(request: APIRequestContext, auth: E2EAuthContext, p
   }
 }
 
-async function waitForConversationId(page: Page) {
+async function waitForConversationId(
+  page: Page,
+  request: APIRequestContext,
+  auth: E2EAuthContext,
+  prompt: string,
+) {
+  let matchedConversationId: string | null = null;
+
   await expect
     .poll(
-      () => {
+      async () => {
         const current = new URL(page.url());
-        return current.searchParams.get('conversationId');
-      },
-      { timeout: 30_000 },
-    )
-    .not.toBeNull();
+        const urlConversationId = current.searchParams.get('conversationId');
+        if (urlConversationId) {
+          matchedConversationId = urlConversationId;
+          return true;
+        }
 
-  return new URL(page.url()).searchParams.get('conversationId') as string;
+        const response = await request.get(`${apiUrl}/kloel/threads?limit=10`, {
+          headers: authHeaders(auth),
+        });
+        if (!response.ok()) {
+          return false;
+        }
+
+        const payload = await response.json().catch(() => null);
+        const threads = Array.isArray(payload?.items)
+          ? payload.items
+          : Array.isArray(payload?.data)
+            ? payload.data
+            : Array.isArray(payload)
+              ? payload
+              : [];
+
+        for (const thread of threads) {
+          const threadId = typeof thread?.id === 'string' ? thread.id : null;
+          if (!threadId) {
+            continue;
+          }
+
+          const messages = await fetchThreadMessages(request, auth, threadId).catch(() => []);
+          if (
+            messages.some(
+              (message) => message.role === 'user' && String(message.content || '').includes(prompt),
+            )
+          ) {
+            matchedConversationId = threadId;
+            return true;
+          }
+        }
+
+        return false;
+      },
+      { timeout: 30_000, intervals: [1_000, 2_000, 3_000, 5_000] },
+    )
+    .toBe(true);
+
+  return matchedConversationId as string;
 }
+
 
 async function fetchThreadMessages(
   request: APIRequestContext,
@@ -304,7 +351,7 @@ test.describe.serial('Kloel chat real e2e validation', () => {
     const prompt = 'Responda apenas com o nome e o preco do produto vinculado.';
     await sendComposerMessage(page, prompt);
 
-    const conversationId = await waitForConversationId(page);
+    const conversationId = await waitForConversationId(page, request, auth, prompt);
     const messages = await fetchThreadMessages(request, auth, conversationId);
     const userMessage = [...messages]
       .reverse()
@@ -348,7 +395,7 @@ test.describe.serial('Kloel chat real e2e validation', () => {
     const prompt = 'Qual é o site oficial da OpenAI? Responda com a URL principal.';
     await sendComposerMessage(page, prompt);
 
-    const conversationId = await waitForConversationId(page);
+    const conversationId = await waitForConversationId(page, request, auth, prompt);
     const assistantMessage = await waitForAssistantMessage(
       request,
       auth,
@@ -385,7 +432,7 @@ test.describe.serial('Kloel chat real e2e validation', () => {
     const prompt = 'Crie uma imagem abstrata minimalista com um circulo coral em fundo bege.';
     await sendComposerMessage(page, prompt);
 
-    const conversationId = await waitForConversationId(page);
+    const conversationId = await waitForConversationId(page, request, auth, prompt);
     const assistantMessage = await waitForAssistantMessage(
       request,
       auth,

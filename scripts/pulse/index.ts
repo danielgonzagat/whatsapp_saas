@@ -1,7 +1,7 @@
 #!/usr/bin/env ts-node
 
 import { detectConfig } from './config';
-import { flags } from './cli-args';
+import { deriveEffectiveTarget, flags } from './cli-args';
 import { fullScan } from './daemon';
 import { generateArtifacts } from './artifacts/generate';
 import { renderDashboard } from './dashboard';
@@ -24,6 +24,7 @@ async function main(): Promise<void> {
     parserTimeoutMs: 1000,
     perfectnessMode,
     tracer,
+    certificationTarget: deriveEffectiveTarget(),
   });
 
   if (wantsReport || wantsJson || !wantsWatch) {

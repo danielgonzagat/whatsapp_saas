@@ -40,48 +40,60 @@ export interface AnunciosConnectUrl {
   authUrl?: string;
 }
 
+type ApiArrayEnvelope<T> = { data?: T[] };
+
+function unwrapApiArray<T>(value: T[] | ApiArrayEnvelope<T> | null | undefined): T[] {
+  if (Array.isArray(value)) {
+    return value;
+  }
+
+  if (value && typeof value === 'object' && Array.isArray((value as ApiArrayEnvelope<T>).data)) {
+    return (value as ApiArrayEnvelope<T>).data ?? [];
+  }
+
+  return [];
+}
+
 export function useAnunciosStatus() {
-  const { data, isLoading, error, mutate } = useSWR<AnunciosPlatformStatus[]>(
-    '/api/anuncios/status',
-    swrFetcher,
-    { refreshInterval: 60000 },
-  );
+  const { data, isLoading, error, mutate } = useSWR<
+    AnunciosPlatformStatus[] | ApiArrayEnvelope<AnunciosPlatformStatus>
+  >('/api/anuncios/status', swrFetcher, { refreshInterval: 60000 });
   return {
-    statuses: data || [],
+    statuses: unwrapApiArray<AnunciosPlatformStatus>(data),
     isLoading,
     error,
     refresh: mutate,
   };
 }
+
 
 export function useAnunciosAccounts(platform?: string) {
   const query = platform ? `?platform=${encodeURIComponent(platform)}` : '';
-  const { data, isLoading, error, mutate } = useSWR<AnunciosAccount[]>(
-    `/api/anuncios/accounts${query}`,
-    swrFetcher,
-  );
+  const { data, isLoading, error, mutate } = useSWR<
+    AnunciosAccount[] | ApiArrayEnvelope<AnunciosAccount>
+  >(`/api/anuncios/accounts${query}`, swrFetcher);
   return {
-    accounts: data || [],
+    accounts: unwrapApiArray<AnunciosAccount>(data),
     isLoading,
     error,
     refresh: mutate,
   };
 }
 
+
 export function useAnunciosCampaigns(platform?: string) {
   const query = platform ? `?platform=${encodeURIComponent(platform)}` : '';
-  const { data, isLoading, error, mutate } = useSWR<AnunciosCampaign[]>(
-    `/api/anuncios/campaigns${query}`,
-    swrFetcher,
-    { refreshInterval: 120000 },
-  );
+  const { data, isLoading, error, mutate } = useSWR<
+    AnunciosCampaign[] | ApiArrayEnvelope<AnunciosCampaign>
+  >(`/api/anuncios/campaigns${query}`, swrFetcher, { refreshInterval: 120000 });
   return {
-    campaigns: data || [],
+    campaigns: unwrapApiArray<AnunciosCampaign>(data),
     isLoading,
     error,
     refresh: mutate,
   };
 }
+
 
 export function useAnunciosConnectUrl(platform: string) {
   const { data, isLoading, error } = useSWR<AnunciosConnectUrl>(

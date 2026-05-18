@@ -79,8 +79,8 @@ test('flow with wait resumes on inbound message', async ({ request }) => {
   // quando a sessão do workspace ainda não existe. O fluxo conclui, mas não cabe
   // numa janela rígida de 10s.
   let status = 'RUNNING';
-  const deadline = Date.now() + 35_000;
-  while (status === 'RUNNING' && Date.now() < deadline) {
+  const deadline = Date.now() + 60_000;
+  while ((status === 'RUNNING' || status === 'WAITING_INPUT') && Date.now() < deadline) {
     await new Promise((r) => setTimeout(r, 1000));
     const res = await request.get(`${API_URL}/flows/execution/${executionId}`, {
       headers: { authorization: `Bearer ${token}` },

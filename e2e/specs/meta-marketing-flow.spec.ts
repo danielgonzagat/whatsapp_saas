@@ -14,6 +14,14 @@ async function gotoAuthenticatedAppPath(page: Page, request: APIRequestContext, 
   await bootstrapAuthenticatedPage(page, auth);
   await page.goto(`${APP_URL}${path}`);
 }
+async function anunciosAuthHeaders(request: APIRequestContext) {
+  const auth = await ensureE2EAdmin(request);
+  return {
+    Authorization: `Bearer ${auth.token}`,
+    'x-workspace-id': auth.workspaceId,
+  };
+}
+
 
 test.describe('Meta Marketing Flow', () => {
   test('AnunciosView renders with empty state when no Meta account connected', async ({
@@ -96,7 +104,9 @@ test.describe('Meta Marketing Flow', () => {
   });
 
   test('Anuncios campaign endpoint returns data for GET request', async ({ request }) => {
-    const response = await request.get('/api/anuncios/campaigns');
+    const response = await request.get('/api/anuncios/campaigns', {
+      headers: await anunciosAuthHeaders(request),
+    });
     expect(response.status()).toBe(200);
 
     const body = await response.json();
@@ -105,7 +115,9 @@ test.describe('Meta Marketing Flow', () => {
   });
 
   test('Anuncios status endpoint returns platform list', async ({ request }) => {
-    const response = await request.get('/api/anuncios/status');
+    const response = await request.get('/api/anuncios/status', {
+      headers: await anunciosAuthHeaders(request),
+    });
     expect(response.status()).toBe(200);
 
     const body = await response.json();
@@ -120,7 +132,9 @@ test.describe('Meta Marketing Flow', () => {
   });
 
   test('Conversions API hash produces consistent SHA-256 output', async ({ request }) => {
-    const response = await request.get('/api/anuncios/status');
+    const response = await request.get('/api/anuncios/status', {
+      headers: await anunciosAuthHeaders(request),
+    });
     expect(response.status()).toBe(200);
   });
 });

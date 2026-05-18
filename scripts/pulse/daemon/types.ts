@@ -12,7 +12,11 @@ import type { PulseFlowProjection } from '../types.capabilities/04-flow-projecti
 import type { PulseParityGapsArtifact } from '../types.capabilities.parity';
 import type { PulseCodebaseTruth } from '../types.truth';
 import type { PulseCodacyEvidence, PulseStructuralGraph } from '../types.structural';
-import type { PulseCertification, PulseExecutionPhaseStatus } from '../types.evidence';
+import type {
+  PulseCertification,
+  PulseCertificationTarget,
+  PulseExecutionPhaseStatus,
+} from '../types.evidence';
 import type { PulseExecutionMatrix } from '../types.execution-matrix';
 import type { PulseHealth } from '../types.health';
 import type { PulseProductGraph } from '../types.product-graph';
@@ -189,6 +193,8 @@ export interface FullScanOptions {
   parserTimeoutMs?: number;
   /** Perfectness scan mode. */
   perfectnessMode?: 'tier0' | 'full';
+  /** Certification objective requested by the current CLI command. */
+  certificationTarget?: PulseCertificationTarget;
   /** Execution tracer. */
   tracer?: PulseExecutionTracer;
 }

@@ -29,7 +29,9 @@ async function captureProductsCard(
   });
 
   return page.evaluate(() => {
-    const edit = document.querySelector('button[aria-label="Editar"]') as HTMLElement | null;
+    const edit = Array.from(document.querySelectorAll('button')).find((button) =>
+      /editar/i.test(button.getAttribute('aria-label') || button.textContent || ''),
+    ) as HTMLElement | null;
     // Anchor card discovery to the edit button so the test does not depend on
     // exhaustive textContent scans. Walk ancestors until we find a div whose
     // descendants include both 'Preço' and a status (Rascunho/Ativo/Em analise).
