@@ -33,51 +33,84 @@ function hasStripeSecret(): boolean {
   return String(process.env.STRIPE_SECRET_KEY || '').trim().length > 0;
 }
 
+function isCheckoutPaymentE2EHarnessEnabled(): boolean {
+  if (process.env.NODE_ENV === 'production') {
+    return false;
+  }
+
+  if (isTruthyEnv('CHECKOUT_PAYMENT_E2E_STUB') || isTruthyEnv('E2E_CHECKOUT_PAYMENT_STUB')) {
+    return true;
+  }
+
+  return process.env.CI === 'true' && !hasStripeSecret();
+}
+
+function buildCheckoutPaymentE2EStubResult(input: {
+  orderId: string;
+  paymentMethod: 'CREDIT_CARD' | 'PIX' | 'BOLETO';
+}): CheckoutPaymentE2EStubResult {
+  const isPix = input.paymentMethod === 'PIX';
+  const paymentIntentId = `pi_e2e_${input.orderId}`;
+
+  return {
+    payment: null,
+    type: input.paymentMethod,
+    approved: false,
+    clientSecret: `${paymentIntentId}_secret`,
+    paymentIntentId,
+    pixQrCode: isPix ? 'data:image/png;base64,e2e-pix-qr' : null,
+    pixCopyPaste: isPix ? `000201E2EPIX${input.orderId}` : null,
+    pixExpiresAt: isPix ? new Date(Date.now() + 30 * 60 * 1000).toISOString() : null,
+    boletoUrl: null,
+    boletoBarcode: null,
+    boletoExpiresAt: null,
+    stub: true,
+  };
+}
+
 @Injectable()
 export class EnvCheckoutPaymentE2EGuard implements CheckoutPaymentE2EGuard {
   isEnabled(): boolean {
-    if (process.env.NODE_ENV === 'production') {
-      return false;
-    }
-
-    if (isTruthyEnv('CHECKOUT_PAYMENT_E2E_STUB') || isTruthyEnv('E2E_CHECKOUT_PAYMENT_STUB')) {
-      return true;
-    }
-
-    return process.env.CI === 'true' && !hasStripeSecret();
+    return isCheckoutPaymentE2EHarnessEnabled();
   }
 
   buildResult(input: {
     orderId: string;
     paymentMethod: 'CREDIT_CARD' | 'PIX' | 'BOLETO';
   }): CheckoutPaymentE2EStubResult {
-    const isPix = input.paymentMethod === 'PIX';
-    const paymentIntentId = `pi_e2e_${input.orderId}`;
+    return buildCheckoutPaymentE2EStubResult(input);
+  }
+}
 
+
+@Injectable()
+export class NoopCheckoutPaymentE2EGuard implements CheckoutPaymentE2EGuard {
+  isEnabled(): boolean {
+    return isCheckoutPaymentE2EHarnessEnabled();
+  }
+
+  buildResult(input: {
+    orderId: string;
+    paymentMethod: 'CREDIT_CARD' | 'PIX' | 'BOLETO';
+  }): CheckoutPaymentE2EStubResult {
+    if (!this.isEnabled()) {
+      throw new Error('NoopCheckoutPaymentE2EGuard.buildResult called outside e2e harness');
+    }
+
+    const pixExpiresAt = new Date(Date.now() + 30 * 60 * 1000).toISOString();
     return {
       payment: null,
       type: input.paymentMethod,
       approved: false,
-      clientSecret: `${paymentIntentId}_secret`,
-      paymentIntentId,
-      pixQrCode: isPix ? 'data:image/png;base64,e2e-pix-qr' : null,
-      pixCopyPaste: isPix ? `000201E2EPIX${input.orderId}` : null,
-      pixExpiresAt: isPix ? new Date(Date.now() + 30 * 60 * 1000).toISOString() : null,
+      clientSecret: `pi_e2e_${input.orderId}_secret_e2e`,
+      paymentIntentId: `pi_e2e_${input.orderId}`,
+      pixQrCode: input.paymentMethod === 'PIX' ? 'data:image/png;base64,iVBORw0KGgo=' : null,
+      pixCopyPaste: input.paymentMethod === 'PIX' ? `pix-e2e-${input.orderId}` : null,
+      pixExpiresAt: input.paymentMethod === 'PIX' ? pixExpiresAt : null,
       boletoUrl: null,
       boletoBarcode: null,
       boletoExpiresAt: null,
       stub: true,
     };
-  }
-}
-
-@Injectable()
-export class NoopCheckoutPaymentE2EGuard implements CheckoutPaymentE2EGuard {
-  isEnabled(): boolean {
-    return false;
-  }
-
-  buildResult(): CheckoutPaymentE2EStubResult {
-    throw new Error('NoopCheckoutPaymentE2EGuard.buildResult called in production');
   }
 }

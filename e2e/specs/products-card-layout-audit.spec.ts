@@ -12,7 +12,25 @@ async function captureProductsCard(
   slug: string,
 ) {
   const auth = await ensureE2EAdmin(request);
-  const { appUrl } = getE2EBaseUrls();
+  const { appUrl, apiUrl } = getE2EBaseUrls();
+  const productRes = await request.post(`${apiUrl}/products`, {
+    headers: {
+      Authorization: `Bearer ${auth.token}`,
+      'x-workspace-id': auth.workspaceId,
+    },
+    data: {
+      name: `E2E Layout Product ${slug} ${Date.now()}`,
+      description: 'Product fixture for the card layout audit.',
+      price: 9900,
+      category: 'digital',
+      status: 'APPROVED',
+    },
+  });
+  if (![200, 201].includes(productRes.status())) {
+    throw new Error(
+      `products-card-layout-audit: product fixture failed (${productRes.status()}): ${await productRes.text()}`,
+    );
+  }
 
   await page.setViewportSize(viewport);
   await bootstrapAuthenticatedPage(page, auth, { landingPath: '/products' });

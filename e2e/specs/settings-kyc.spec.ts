@@ -135,6 +135,7 @@ async function installKycMocks(page: Page) {
   await page.route('**/kyc/**', async (route) => {
     const method = route.request().method();
     const url = new URL(route.request().url());
+    const kycPath = url.pathname.replace(/^\/api(?=\/)/, '');
     const body = () => {
       try {
         return route.request().postDataJSON() as Record<string, unknown>;
@@ -143,7 +144,7 @@ async function installKycMocks(page: Page) {
       }
     };
 
-    if (url.pathname === '/kyc/profile') {
+    if (kycPath === '/kyc/profile') {
       if (method === 'PUT') {
         state.profile = { ...state.profile, ...body() };
       }
@@ -155,7 +156,7 @@ async function installKycMocks(page: Page) {
       return;
     }
 
-    if (url.pathname === '/kyc/fiscal') {
+    if (kycPath === '/kyc/fiscal') {
       if (method === 'PUT') {
         state.fiscal = { ...state.fiscal, ...body() };
       }
@@ -167,7 +168,7 @@ async function installKycMocks(page: Page) {
       return;
     }
 
-    if (url.pathname === '/kyc/bank') {
+    if (kycPath === '/kyc/bank') {
       if (method === 'PUT') {
         state.bank = { ...state.bank, ...body() };
       }
@@ -179,7 +180,7 @@ async function installKycMocks(page: Page) {
       return;
     }
 
-    if (url.pathname === '/kyc/documents') {
+    if (kycPath === '/kyc/documents') {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -188,7 +189,7 @@ async function installKycMocks(page: Page) {
       return;
     }
 
-    if (url.pathname === '/kyc/documents/upload' && method === 'POST') {
+    if (kycPath === '/kyc/documents/upload' && method === 'POST') {
       const document = {
         id: `doc-${Date.now()}`,
         type: 'DOCUMENT_FRONT',
@@ -205,8 +206,8 @@ async function installKycMocks(page: Page) {
       return;
     }
 
-    if (url.pathname.startsWith('/kyc/documents/') && method === 'DELETE') {
-      const docId = decodeURIComponent(url.pathname.split('/').pop() || '');
+    if (kycPath.startsWith('/kyc/documents/') && method === 'DELETE') {
+      const docId = decodeURIComponent(kycPath.split('/').pop() || '');
       state.documents = state.documents.filter((doc) => doc.id !== docId);
       await route.fulfill({
         status: 200,
@@ -216,7 +217,7 @@ async function installKycMocks(page: Page) {
       return;
     }
 
-    if (url.pathname === '/kyc/status' || url.pathname === '/kyc/completion') {
+    if (kycPath === '/kyc/status' || kycPath === '/kyc/completion') {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',

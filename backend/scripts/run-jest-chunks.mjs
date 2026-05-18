@@ -21,10 +21,20 @@ const passthroughArgs = process.argv.slice(2);
 const chunkSize = Math.max(1, Number(process.env.JEST_CHUNK_SIZE || 256));
 const startChunk = Math.max(1, Number(process.env.JEST_CHUNK_START || 1));
 const maxOldSpaceSize = Math.max(3072, Number(process.env.JEST_MAX_OLD_SPACE_SIZE) || 6144);
-const defaultJestArgs = process.env.JEST_VERBOSE_OUTPUT === '1' ? [] : ['--silent'];
+const verboseJestOutput = process.env.JEST_VERBOSE_OUTPUT === '1';
+const defaultJestArgs = verboseJestOutput ? [] : ['--silent'];
 const coverageEnabled = passthroughArgs.some(isCoverageArg);
 const coverageRoot = join(backendRoot, 'coverage');
 const coverageChunksRoot = join(coverageRoot, '.chunks');
+
+function writeBufferedOutput(result) {
+  if (result.stdout) {
+    process.stdout.write(result.stdout);
+  }
+  if (result.stderr) {
+    process.stderr.write(result.stderr);
+  }
+}
 
 function runJest(args) {
   const result = spawnSync(
@@ -32,10 +42,19 @@ function runJest(args) {
     [`--max-old-space-size=${maxOldSpaceSize}`, jestBin, ...defaultJestArgs, ...args],
     {
       cwd: backendRoot,
+      encoding: 'utf8',
       env: process.env,
-      stdio: 'inherit',
+      maxBuffer: 128 * 1024 * 1024,
+      stdio: verboseJestOutput ? 'inherit' : 'pipe',
     },
   );
+  if (!verboseJestOutput && (result.error || result.signal || result.status !== 0)) {
+    writeBufferedOutput(result);
+  }
+  if (result.error) {
+    console.error(`Jest spawn failed: ${result.error.message}`);
+    return 1;
+  }
   if (result.signal) {
     console.error(`Jest exited via signal ${result.signal}`);
     return 1;
@@ -243,6 +262,7 @@ for (let index = startIndex; index < specs.length; index += chunkSize) {
   if (statusCode !== 0) {
     process.exit(statusCode);
   }
+  console.log(`[backend-test] chunk ${chunkNumber}/${totalChunks} passed`);
 }
 
 if (coverageEnabled && !mergeCoverageReports(chunkCoverageDirectories)) {

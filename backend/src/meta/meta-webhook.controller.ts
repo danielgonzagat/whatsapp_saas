@@ -80,7 +80,8 @@ export class MetaWebhookController {
     @Headers('x-hub-signature-256') signature: string,
     @Req() req: { rawBody?: Buffer },
   ) {
-    const appSecret = process.env.META_APP_SECRET;
+    const appSecret =
+      process.env.META_APP_SECRET || (process.env.CI === 'true' ? 'e2e-meta-secret' : '');
 
     if (appSecret) {
       if (!signature) {

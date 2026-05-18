@@ -97,7 +97,11 @@ export class KloelThinkerService {
     streamWriter.init();
 
     try {
-      if (!this.replyEngine.hasOpenAiKey() && !process.env.ANTHROPIC_API_KEY) {
+      if (
+        !this.llmE2EGuard.isEnabled() &&
+        !this.replyEngine.hasOpenAiKey() &&
+        !process.env.ANTHROPIC_API_KEY
+      ) {
         safeWrite(
           createKloelErrorEvent({
             content:
