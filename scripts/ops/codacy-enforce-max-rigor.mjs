@@ -204,24 +204,52 @@ function pickCanonicalStandard(standards) {
   return sorted[0] || null;
 }
 
+async function countEnabledNonDeprecatedPatterns(codingStandardId, tools, deprecatedUuids) {
+  let enabledPatterns = 0;
+  for (const tool of tools) {
+    if (deprecatedUuids.has(tool.uuid)) {
+      continue;
+    }
+
+    let cursor = '';
+    do {
+      const page = await api.listCodingStandardToolPatterns(codingStandardId, tool.uuid, cursor);
+      for (const pattern of page.data) {
+        if (pattern.enabled === true || pattern.patternDefinition?.enabled === true) {
+          enabledPatterns += 1;
+        }
+      }
+      const nextCursor = page.cursor;
+      cursor = nextCursor && nextCursor !== cursor ? nextCursor : '';
+    } while (cursor);
+  }
+  return enabledPatterns;
+}
+
 async function verifyCanonicalStandard(codingStandard) {
   const orgTools = await api.listOrganizationTools();
   const standardTools = await api.listCodingStandardTools(codingStandard.id);
   const orgToolCount = orgTools.length;
-  const enabledStandardTools = standardTools.filter((tool) => tool.enabled !== false);
-
-  const deprecatedUuidsForPatternCount = new Set(
-    DEPRECATED_DISABLED_TOOLS.map((entry) => entry.uuid),
+  const enabledStandardTools = standardTools.filter(
+    (tool) => tool.isEnabled !== false && tool.enabled !== false,
   );
+
+  const deprecatedUuids = new Set(DEPRECATED_DISABLED_TOOLS.map((entry) => entry.uuid));
   let totalOrganizationPatterns = 0;
   for (const tool of orgTools) {
-    if (deprecatedUuidsForPatternCount.has(tool.uuid)) {
+    if (deprecatedUuids.has(tool.uuid)) {
       continue;
     }
     // Pattern inventory uses tool UUIDs from Codacy; the API returns
     // pagination.total even when limit=1, so one request per tool is enough.
     totalOrganizationPatterns += await api.getToolPatternTotal(tool.uuid);
   }
+
+  const enabledNonDeprecatedPatternsCount = await countEnabledNonDeprecatedPatterns(
+    codingStandard.id,
+    orgTools,
+    deprecatedUuids,
+  );
 
   const standardMeta = await api.getCodingStandard(codingStandard.id);
   const enabledToolsCount = Number(
@@ -234,7 +262,6 @@ async function verifyCanonicalStandard(codingStandard) {
   // Deprecated tools are intentionally excluded from MAX-RIGOR. The "all tools
   // enabled" invariant becomes "all non-deprecated tools enabled" so a renamed
   // entry can never silently smuggle a dead analyzer back in.
-  const deprecatedUuids = new Set(DEPRECATED_DISABLED_TOOLS.map((entry) => entry.uuid));
   const targetEnabledToolsCount = orgToolCount - DEPRECATED_DISABLED_TOOLS.length;
   const deprecatedActuallyDisabled = DEPRECATED_DISABLED_TOOLS.every((entry) => {
     const tool = standardTools.find((candidate) => candidate.uuid === entry.uuid);
@@ -253,12 +280,15 @@ async function verifyCanonicalStandard(codingStandard) {
     totalOrganizationPatterns,
     enabledToolsCount,
     enabledPatternsCount,
+    enabledNonDeprecatedPatternsCount,
     deprecatedActuallyDisabled,
     hasAllToolsEnabled:
       enabledToolsCount === targetEnabledToolsCount &&
       enabledNonDeprecatedTools.length === targetEnabledToolsCount &&
       deprecatedActuallyDisabled,
-    hasAllPatternsEnabled: enabledPatternsCount === totalOrganizationPatterns,
+    hasAllPatternsEnabled:
+      enabledNonDeprecatedPatternsCount === totalOrganizationPatterns &&
+      enabledPatternsCount >= totalOrganizationPatterns,
   };
 }
 
@@ -360,6 +390,7 @@ async function main() {
         codingStandardId: Number(canonicalStandard.id),
         enabledToolsCount: standardVerification.targetEnabledToolsCount,
         enabledPatternsCount: standardVerification.totalOrganizationPatterns,
+        enabledNonDeprecatedPatternsCount: standardVerification.totalOrganizationPatterns,
         deprecatedToolsDisabled: DEPRECATED_DISABLED_TOOLS.map((entry) => entry.name),
       },
       actual: {
@@ -367,6 +398,7 @@ async function main() {
         codingStandardId: Number(repoBefore.codingStandardId),
         enabledToolsCount: standardVerification.enabledToolsCount,
         enabledPatternsCount: standardVerification.enabledPatternsCount,
+        enabledNonDeprecatedPatternsCount: standardVerification.enabledNonDeprecatedPatternsCount,
         deprecatedToolsDisabled: standardVerification.deprecatedActuallyDisabled
           ? DEPRECATED_DISABLED_TOOLS.map((entry) => entry.name)
           : [],
@@ -496,7 +528,7 @@ async function main() {
   }
   if (!standardAfter.hasAllToolsEnabled || !standardAfter.hasAllPatternsEnabled) {
     finalFailures.push(
-      `canonical coding standard ${canonicalAfter.id} is not fully enabled (tools ${standardAfter.enabledToolsCount}/${standardAfter.orgToolCount}, patterns ${standardAfter.enabledPatternsCount}/${standardAfter.totalOrganizationPatterns})`,
+      `canonical coding standard ${canonicalAfter.id} is not fully enabled (tools ${standardAfter.enabledToolsCount}/${standardAfter.orgToolCount}, pattern metadata ${standardAfter.enabledPatternsCount}/${standardAfter.totalOrganizationPatterns}, non-deprecated patterns ${standardAfter.enabledNonDeprecatedPatternsCount}/${standardAfter.totalOrganizationPatterns})`,
     );
   }
 

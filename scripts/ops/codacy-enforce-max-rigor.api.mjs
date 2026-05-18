@@ -99,6 +99,23 @@ export function buildCodacyApi({ token, provider, organization, repository, gate
       return Number(payload.pagination?.total || 0);
     },
 
+    async listCodingStandardToolPatterns(codingStandardId, toolUuid, cursor) {
+      const params = new URLSearchParams({ limit: '500' });
+      if (cursor) {
+        params.set('cursor', String(cursor));
+      }
+      const payload = await expectJson(
+        token,
+        'GET',
+        `${orgScope}/coding-standards/${codingStandardId}/tools/${toolUuid}/patterns?${params.toString()}`,
+      );
+      return {
+        data: payload.data || [],
+        cursor: payload.pagination?.cursor ? String(payload.pagination.cursor) : '',
+        total: Number(payload.pagination?.total || 0),
+      };
+    },
+
     async getRepositoryQualitySettings() {
       const payload = await expectJson(token, 'GET', `${repoScope}/settings/quality/repository`);
       return payload.data;
