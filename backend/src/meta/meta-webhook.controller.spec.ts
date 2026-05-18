@@ -1,5 +1,12 @@
+import { createHmac } from 'node:crypto';
 import type { WebhooksService } from '../webhooks/webhooks.service';
 import { MetaWebhookController } from './meta-webhook.controller';
+
+function signWebhookBody(body: unknown, secret = 'test-secret') {
+  const rawBody = Buffer.from(JSON.stringify(body));
+  const signature = `sha256=${createHmac('sha256', secret).update(rawBody).digest('hex')}`;
+  return { rawBody, signature };
+}
 
 describe('MetaWebhookController', () => {
   let controller: MetaWebhookController;
@@ -15,6 +22,11 @@ describe('MetaWebhookController', () => {
     };
 
     controller = new MetaWebhookController(mockWebhooksService as never as WebhooksService);
+  });
+
+  afterEach(() => {
+    delete process.env.META_APP_SECRET;
+    delete process.env.META_MARKETING_VERIFY_TOKEN;
   });
 
   describe('verifyWebhook', () => {
@@ -66,9 +78,11 @@ describe('MetaWebhookController', () => {
 
   describe('handleWebhook', () => {
     it('logs webhook event and returns ok', async () => {
+      process.env.META_APP_SECRET = 'test-secret';
       const body = { object: 'ad_account', entry: [] };
+      const { rawBody, signature } = signWebhookBody(body);
 
-      const result = await controller.handleWebhook(body, '', { rawBody: undefined });
+      const result = await controller.handleWebhook(body, signature, { rawBody });
 
       expect(result).toBe('ok');
       const logArgs = mockWebhooksService.logWebhookEvent.mock.calls[0];
@@ -79,19 +93,23 @@ describe('MetaWebhookController', () => {
     });
 
     it('handles duplicate webhook gracefully (P2002)', async () => {
+      process.env.META_APP_SECRET = 'test-secret';
       mockWebhooksService.logWebhookEvent.mockRejectedValue({ code: 'P2002' });
 
       const body = { object: 'ad_account', entry: [] };
+      const { rawBody, signature } = signWebhookBody(body);
 
-      const result = await controller.handleWebhook(body, '', { rawBody: undefined });
+      const result = await controller.handleWebhook(body, signature, { rawBody });
 
       expect(result).toBe('ok');
     });
 
     it('handles unknown webhook event type', async () => {
+      process.env.META_APP_SECRET = 'test-secret';
       const body = { object: 'unknown_type', entry: [] };
+      const { rawBody, signature } = signWebhookBody(body);
 
-      const result = await controller.handleWebhook(body, '', { rawBody: undefined });
+      const result = await controller.handleWebhook(body, signature, { rawBody });
 
       expect(result).toBe('ok');
       const logArgs = mockWebhooksService.logWebhookEvent.mock.calls[0];
@@ -110,8 +128,6 @@ describe('MetaWebhookController', () => {
           rawBody: Buffer.from(JSON.stringify(body)),
         }),
       ).rejects.toThrow('Invalid Meta webhook signature');
-
-      delete process.env.META_APP_SECRET;
     });
 
     it('rejects when app secret is configured and signature is missing', async () => {
@@ -123,20 +139,28 @@ describe('MetaWebhookController', () => {
           rawBody: Buffer.from(JSON.stringify(body)),
         }),
       ).rejects.toThrow('Missing Meta webhook signature');
-
-      delete process.env.META_APP_SECRET;
     });
 
-    it('skips signature check when no app secret set', async () => {
+    it('skips signature check when no app secret set outside CI', async () => {
+      const previousCi = process.env.CI;
       delete process.env.META_APP_SECRET;
+      process.env.CI = 'false';
 
-      const body = { object: 'ad_account', entry: [] };
+      try {
+        const body = { object: 'ad_account', entry: [] };
 
-      const result = await controller.handleWebhook(body, 'sha256=anything', {
-        rawBody: undefined,
-      });
+        const result = await controller.handleWebhook(body, 'sha256=anything', {
+          rawBody: undefined,
+        });
 
-      expect(result).toBe('ok');
+        expect(result).toBe('ok');
+      } finally {
+        if (previousCi === undefined) {
+          delete process.env.CI;
+        } else {
+          process.env.CI = previousCi;
+        }
+      }
     });
   });
 });
