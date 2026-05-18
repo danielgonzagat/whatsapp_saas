@@ -290,6 +290,8 @@ export default function KloelDashboard() {
   const { handleOperatorDispatch, handleUnsupportedFallback } = useBrainRouter({
     isReplyInFlight,
     activeConversationId,
+    requestedConversationId,
+    router,
     setMessages,
     setIsThinking,
     setStreamingMessageId,
@@ -306,7 +308,11 @@ export default function KloelDashboard() {
       return;
     }
 
-    const detected = activeCapability || linkedProduct ? null : detectOperatorIntent(input);
+    const hasReadyAttachments = attachments.some((a) => a.status === 'ready');
+    const detected =
+      !linkedProduct && !activeCapability && !hasReadyAttachments
+        ? detectOperatorIntent(input)
+        : null;
     if (detected) {
       if (isUnsupportedFallback(detected)) {
         void handleUnsupportedFallback(input);

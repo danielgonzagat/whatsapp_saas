@@ -4,11 +4,15 @@ import { useCallback } from 'react';
 import type { Dispatch, SetStateAction } from 'react';
 import { brainDecide } from '@/lib/api/brain';
 import { api } from '@/lib/api/core';
+import { KLOEL_CHAT_ROUTE } from '@/lib/kloel-dashboard-context';
+import type { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime';
 import type { DashboardMessage } from '../KloelDashboard.message';
 
 interface UseBrainRouterDeps {
   isReplyInFlight: boolean;
   activeConversationId: string | null;
+  requestedConversationId: string | null;
+  router: AppRouterInstance;
   setMessages: Dispatch<SetStateAction<DashboardMessage[]>>;
   setIsThinking: Dispatch<SetStateAction<boolean>>;
   setStreamingMessageId: Dispatch<SetStateAction<string | null>>;
@@ -23,6 +27,8 @@ export function useBrainRouter(deps: UseBrainRouterDeps) {
   const {
     isReplyInFlight,
     activeConversationId,
+    requestedConversationId,
+    router,
     setMessages,
     setIsThinking,
     setStreamingMessageId,
@@ -84,6 +90,12 @@ export function useBrainRouter(deps: UseBrainRouterDeps) {
             setConversationTitle(output.title);
           }
           setActiveConversation(output.conversationId);
+          if (requestedConversationId !== output.conversationId) {
+            router.replace(
+              `${KLOEL_CHAT_ROUTE}?conversationId=${encodeURIComponent(output.conversationId)}`,
+              { scroll: false },
+            );
+          }
         }
       } catch (error: unknown) {
         const msg = error instanceof Error ? error.message : 'brain_failed';
@@ -105,6 +117,8 @@ export function useBrainRouter(deps: UseBrainRouterDeps) {
       isReplyInFlight,
       clearAllAttachments,
       activeConversationId,
+      requestedConversationId,
+      router,
       setActiveConversation,
       setInput,
       setMessages,

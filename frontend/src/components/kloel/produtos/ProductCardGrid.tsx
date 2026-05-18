@@ -295,7 +295,7 @@ export default function ProductCardGrid({
                       color: 'var(--app-text-secondary)',
                     }}
                   >
-                    {kloelT('Preco')}
+                    {kloelT('Preço')}
                   </span>
                   <span
                     style={{

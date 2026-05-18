@@ -220,6 +220,38 @@ async function installMarketingWhatsAppFlowMocks(page: Page) {
     });
   });
 
+  await page.route('**/marketing/connect/channel-setup**', async (route) => {
+    if (route.request().method() === 'POST') {
+      const body = route.request().postDataJSON() as JsonRecord;
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          setup: {
+            currentStep: Number(body.currentStep ?? 0),
+            selectedProductIds: Array.isArray(body.selectedProductIds) ? body.selectedProductIds : [],
+            arsenal: Array.isArray(body.arsenal) ? body.arsenal : [],
+            config: asJsonRecord(body.config),
+          },
+        }),
+      });
+      return;
+    }
+
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        setup: {
+          currentStep: 0,
+          selectedProductIds: [],
+          arsenal: [],
+          config: {},
+        },
+      }),
+    });
+  });
+
   await page.route('**/channel-setup/whatsapp', async (route) => {
     await route.fulfill({
       status: 200,

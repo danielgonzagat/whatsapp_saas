@@ -40,54 +40,57 @@ export interface AnunciosConnectUrl {
   authUrl?: string;
 }
 
-type ApiArrayEnvelope<T> = { data?: T[] };
+type ApiListEnvelope<T> = T[] | { data?: T[] } | null;
 
-function unwrapApiArray<T>(value: T[] | ApiArrayEnvelope<T> | null | undefined): T[] {
+function unwrapList<T>(value: ApiListEnvelope<T> | undefined): T[] {
   if (Array.isArray(value)) {
     return value;
   }
 
-  if (value && typeof value === 'object' && Array.isArray((value as ApiArrayEnvelope<T>).data)) {
-    return (value as ApiArrayEnvelope<T>).data ?? [];
+  if (Array.isArray(value?.data)) {
+    return value.data;
   }
 
   return [];
 }
 
 export function useAnunciosStatus() {
-  const { data, isLoading, error, mutate } = useSWR<
-    AnunciosPlatformStatus[] | ApiArrayEnvelope<AnunciosPlatformStatus>
-  >('/api/anuncios/status', swrFetcher, { refreshInterval: 60000 });
+  const { data, isLoading, error, mutate } = useSWR<ApiListEnvelope<AnunciosPlatformStatus>>(
+    '/api/anuncios/status',
+    swrFetcher,
+    { refreshInterval: 60000 },
+  );
   return {
-    statuses: unwrapApiArray<AnunciosPlatformStatus>(data),
+    statuses: unwrapList(data),
     isLoading,
     error,
     refresh: mutate,
   };
 }
-
 
 export function useAnunciosAccounts(platform?: string) {
   const query = platform ? `?platform=${encodeURIComponent(platform)}` : '';
-  const { data, isLoading, error, mutate } = useSWR<
-    AnunciosAccount[] | ApiArrayEnvelope<AnunciosAccount>
-  >(`/api/anuncios/accounts${query}`, swrFetcher);
+  const { data, isLoading, error, mutate } = useSWR<ApiListEnvelope<AnunciosAccount>>(
+    `/api/anuncios/accounts${query}`,
+    swrFetcher,
+  );
   return {
-    accounts: unwrapApiArray<AnunciosAccount>(data),
+    accounts: unwrapList(data),
     isLoading,
     error,
     refresh: mutate,
   };
 }
 
-
 export function useAnunciosCampaigns(platform?: string) {
   const query = platform ? `?platform=${encodeURIComponent(platform)}` : '';
-  const { data, isLoading, error, mutate } = useSWR<
-    AnunciosCampaign[] | ApiArrayEnvelope<AnunciosCampaign>
-  >(`/api/anuncios/campaigns${query}`, swrFetcher, { refreshInterval: 120000 });
+  const { data, isLoading, error, mutate } = useSWR<ApiListEnvelope<AnunciosCampaign>>(
+    `/api/anuncios/campaigns${query}`,
+    swrFetcher,
+    { refreshInterval: 120000 },
+  );
   return {
-    campaigns: unwrapApiArray<AnunciosCampaign>(data),
+    campaigns: unwrapList(data),
     isLoading,
     error,
     refresh: mutate,

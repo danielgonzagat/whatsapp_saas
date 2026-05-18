@@ -86,7 +86,13 @@ export default function ContaBankSelectorField({
             color: formBankName ? 'var(--app-text-primary)' : 'var(--app-text-placeholder)',
           }}
         >
-          {banksLoading ? 'Carregando bancos...' : banksError ? 'Erro ao carregar' : formBankName ? `${formBankCode} — ${formBankName}` : 'Selecione o banco'}
+          {banksLoading
+            ? 'Carregando bancos...'
+            : formBankName
+              ? `${formBankCode} — ${formBankName}`
+              : banksError
+                ? 'Erro ao carregar'
+                : 'Selecione o banco'}
         </span>
         <svg
           width={12}
