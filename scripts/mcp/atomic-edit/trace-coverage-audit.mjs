@@ -4,7 +4,7 @@
  *
  * "Falhar se houver mudança de código sem AtomicEditTrace." Cross-checks the
  * working-tree code changes (git diff) against the traces in
- * docs/ai/traces/: every changed code file should have ≥1 trace whose
+ * .atomic/traces/: every changed code file should have ≥1 trace whose
  * `file` matches it. A changed code file with NO trace means a native /
  * shell edit slipped past the ban — exactly what the TUI-abolished rule
  * forbids.
@@ -24,13 +24,13 @@ import { fileURLToPath } from 'node:url';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.resolve(HERE, '..', '..', '..');
-const TRACES = path.join(REPO, 'docs', 'ai', 'traces');
+const TRACES = path.join(REPO, '.atomic', 'traces');
 const args = process.argv.slice(2);
 const strict = args.includes('--strict');
 const asJson = args.includes('--json');
 
 const CODE =
-  /\.(ts|tsx|mts|cts|js|jsx|mjs|cjs|py|go|rs|java|kt|c|h|cc|cpp|hpp|cs|rb|php|swift|scala)$/i;
+  /\.(ts|tsx|mts|cts|js|jsx|mjs|cjs|ipynb|json|py|go|rs|java|kt|c|h|cc|cpp|hpp|cs|rb|php|swift|scala|sh|bash|zsh|css|scss|less|sql|ya?ml|toml|prisma)$/i;
 // atomic-edit's own source is exempt — it is bootstrapped BY native edits
 // before the tool can edit itself; auditing it would be circular.
 const EXEMPT = /scripts\/mcp\/atomic-edit\/|scripts\/decomp\/|\.smoke|\/dist\//;

@@ -171,7 +171,7 @@ const DISCOVERY_PATTERNS: readonly DiscoveryPattern[] = [
       return {
         headline: 'Ad account risk level is critical',
         body: `Account risk score has exceeded safety threshold (${signals[0]?.currentValue.toFixed(2)}). This indicates elevated probability of policy enforcement, ad rejections, or account restriction.`,
-        actionableRecommendation: 'Pause all non-essential campaigns. Review all active ads for policy compliance. Resolve any outstanding policy violations. Wait for account health to recover before resuming.',
+        actionableRecommendation: 'Pause all non-essential campaigns. Review all active ads for policy compliance. Resolve remaining outstanding policy violations. Wait for account health to recover before resuming.',
         confidence: 0.9,
       };
     },

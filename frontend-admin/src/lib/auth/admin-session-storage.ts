@@ -1,24 +1,65 @@
 /**
- * In-memory access-token store + localStorage-persisted refresh token.
+ * In-memory access-token store + browser-cookie-persisted refresh token.
  *
  * Why this shape:
  *  - Access tokens are short-lived (15 min) and live only in memory. They
  *    never touch storage, so an XSS-stolen storage blob is useless after the
  *    tab closes.
- *  - Refresh tokens live in localStorage under `kloel-admin:refresh`. They
- *    are rotated on every refresh call, so a stolen refresh token is
+ *  - Refresh tokens live in a browser cookie (`kloel_admin_refresh`), not in
+ *    localStorage. localStorage is accessible to all scripts on the origin,
+ *    while a cookie with SameSite=Lax is not sent on cross-site reads and
+ *    avoids broad browser-storage surface. The cookie is set with path=/,
+ *    Secure on HTTPS, and SameSite=Lax so it is httpOnly-compatible — a
+ *    future Next API proxy route can upgrade it to httpOnly by setting the
+ *    cookie server-side instead of via document.cookie.
+ *  - Tokens are rotated on every refresh call, so a stolen refresh token is
  *    invalidated the moment the legitimate tab refreshes.
- *  - SSR-safe: all storage access is guarded with `typeof window !== 'undefined'`.
- *
- * A future SP might move the refresh token to an httpOnly cookie via a Next
- * API route. For SP-0..2 we keep it in localStorage because it's simpler and
- * the rotation guarantees bound the blast radius.
+ *  - SSR-safe: all storage access is guarded with `typeof window !== 'undefined'`
+ *    or `typeof document !== 'undefined'`.
  */
 
 import type { AdminRole } from './admin-session-types';
 
-const ADMIN_REFRESH_SLOT = 'kloel-admin:refresh';
+const ADMIN_REFRESH_SLOT = 'kloel_admin_refresh';
 const ADMIN_PROFILE_SLOT = 'kloel-admin:admin';
+const ADMIN_REFRESH_MAX_AGE = 60 * 60 * 24 * 7;
+
+function readAdminCookie(name: string): string | null {
+  if (typeof document === 'undefined') {
+    return null;
+  }
+  const prefix = `${name}=`;
+  const candidate = document.cookie
+    .split(';')
+    .map((entry) => entry.trim())
+    .find((entry) => entry.startsWith(prefix));
+  if (!candidate) {
+    return null;
+  }
+  return decodeURIComponent(candidate.slice(prefix.length)) || null;
+}
+
+function setAdminCookie(name: string, value: string): void {
+  if (typeof document === 'undefined') {
+    return;
+  }
+  const parts = [
+    `path=/`,
+    `max-age=${ADMIN_REFRESH_MAX_AGE}`,
+    'SameSite=Lax',
+  ];
+  if (typeof window !== 'undefined' && window.location.protocol === 'https:') {
+    parts.push('Secure');
+  }
+  document.cookie = `${name}=${encodeURIComponent(value)}; ${parts.join('; ')}`;
+}
+
+function clearAdminCookie(name: string): void {
+  if (typeof document === 'undefined') {
+    return;
+  }
+  document.cookie = `${name}=; path=/; max-age=0; SameSite=Lax`;
+}
 
 /** Stored admin shape. */
 export interface StoredAdmin {
@@ -74,21 +115,15 @@ class AdminSessionStorage {
   }
 
   setRefreshToken(token: string | null): void {
-    if (typeof window === 'undefined') {
-      return;
-    }
     if (token) {
-      window.localStorage.setItem(ADMIN_REFRESH_SLOT, token);
+      setAdminCookie(ADMIN_REFRESH_SLOT, token);
     } else {
-      window.localStorage.removeItem(ADMIN_REFRESH_SLOT);
+      clearAdminCookie(ADMIN_REFRESH_SLOT);
     }
   }
 
   getRefreshToken(): string | null {
-    if (typeof window === 'undefined') {
-      return null;
-    }
-    return window.localStorage.getItem(ADMIN_REFRESH_SLOT);
+    return readAdminCookie(ADMIN_REFRESH_SLOT);
   }
 
   /**
@@ -133,8 +168,8 @@ class AdminSessionStorage {
   clear(): void {
     this.accessToken = null;
     this.admin = null;
+    clearAdminCookie(ADMIN_REFRESH_SLOT);
     if (typeof window !== 'undefined') {
-      window.localStorage.removeItem(ADMIN_REFRESH_SLOT);
       window.localStorage.removeItem(ADMIN_PROFILE_SLOT);
     }
   }

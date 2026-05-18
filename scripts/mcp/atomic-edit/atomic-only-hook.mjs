@@ -24,17 +24,39 @@ const NATIVE_EDIT = new Set(['Edit', 'Write', 'MultiEdit', 'NotebookEdit']);
 // Code/structured files the atomic-edit engine validates. Pure prose
 // (.md/.txt/none) is NOT blocked — Daniel's rule is about *code*.
 const CODE_EXT =
-  /\.(ts|tsx|mts|cts|js|jsx|mjs|cjs|json|py|go|rs|java|kt|c|h|cc|cpp|hpp|cs|rb|php|swift|scala|sh|bash|zsh|css|scss|less|sql|ya?ml|toml|prisma)$/i;
+  /\.(ts|tsx|mts|cts|js|jsx|mjs|cjs|ipynb|json|py|go|rs|java|kt|c|h|cc|cpp|hpp|cs|rb|php|swift|scala|sh|bash|zsh|css|scss|less|sql|ya?ml|toml|prisma)$/i;
 
-function readStdin() {
+function readStdinRaw() {
   try {
-    return JSON.parse(readFileSync(0, 'utf8') || '{}');
+    return readFileSync(0, 'utf8') || '';
   } catch {
-    return {};
+    return '';
   }
 }
 
-const input = readStdin();
+// FAIL CLOSED: an enforcement gate that cannot parse its own input must not
+// wave the call through (the A/B loop proved fail-open lets large-heredoc
+// writes slip past). On parse failure we DENY; the agent simply retries
+// (transient) or routes the code change through mcp__atomic-edit__*.
+const rawStdin = readStdinRaw();
+let input;
+try {
+  input = JSON.parse(rawStdin || '{}');
+} catch {
+  process.stdout.write(
+    JSON.stringify({
+      hookSpecificOutput: {
+        hookEventName: 'PreToolUse',
+        permissionDecision: 'deny',
+        permissionDecisionReason:
+          'atomic-only hook could not parse the tool call; refusing for safety ' +
+          '(fail-closed). Retry the call, or make code changes via ' +
+          'mcp__atomic-edit__* (atomic_create_file / atomic_replace_range / …).',
+      },
+    }),
+  );
+  process.exit(0);
+}
 const tool = input.tool_name ?? input.toolName ?? '';
 const ti = input.tool_input ?? input.toolInput ?? {};
 const filePath = ti.file_path ?? ti.filePath ?? ti.path ?? '';
@@ -62,12 +84,20 @@ const deny = (reason) => {
 };
 
 const STEER =
-  `Use mcp__atomic-edit__* (replace_range / replace_text / edit_symbol / ` +
-  `replace_literal / replace_property_value / wrap_range / transaction / ` +
-  `add_import …). It returns the char-level [-removed-]{+added+} + FounderBlock — ` +
-  `the only permitted on-screen edit proof. If atomic-edit is absent from this ` +
-  `session, the MCP server is not loaded: say so and start a fresh session. ` +
-  `Do NOT silently fall back to a native/shell edit.`;
+  `The atomic-edit tools ARE active in this session — call them DIRECTLY by ` +
+  `their exact name, do NOT use ToolSearch to look for them, and do NOT ` +
+  `conclude they are absent. To create a NEW file: call the tool named ` +
+  `mcp__atomic-edit__atomic_create_file with { "file": "<repo-relative path>", ` +
+  `"content": "<full file content>" }. To change an existing file: ` +
+  `mcp__atomic-edit__atomic_replace_range / atomic_edit_symbol / ` +
+  `atomic_replace_text / atomic_apply_edits / atomic_add_import. To read ` +
+  `structure first: mcp__atomic-edit__code_outline / code_read_symbol. ` +
+  `Each returns the char-level [-removed-]{+added+} + FounderBlock proof. ` +
+  `If (and only if) a tool's schema is not visible, run ToolSearch with the ` +
+  `EXACT query "select:mcp__atomic-edit__atomic_create_file,` +
+  `mcp__atomic-edit__atomic_replace_range,mcp__atomic-edit__atomic_edit_symbol,` +
+  `mcp__atomic-edit__atomic_apply_edits,mcp__atomic-edit__code_outline" then ` +
+  `call them. NEVER fall back to a native or shell edit; that path is blocked.`;
 
 // Camada 3 (Bash leg): a shell command can edit a code file too (sed -i,
 // > redirection, tee, perl -i …) and would bypass the Edit/Write ban. Deny
@@ -75,22 +105,74 @@ const STEER =
 // (npm/git/node/build/prettier/grep/cat …) passes, so workflows are safe.
 function bashEditsCode(cmd) {
   if (!cmd) return false;
-  const codeTarget = String.raw`[^\s'"|;&>]*\.(?:ts|tsx|mts|cts|js|jsx|mjs|cjs|json|py|go|rs|java|kt|c|h|cc|cpp|hpp|cs|rb|php|swift|scala|sh|bash|zsh|css|scss|less|sql|ya?ml|toml|prisma)\b`;
-  const patterns = [
+  const source = String(cmd);
+  const codeTarget = String.raw`[^\s'"|;&>]*\.(?:ts|tsx|mts|cts|js|jsx|mjs|cjs|ipynb|json|py|go|rs|java|kt|c|h|cc|cpp|hpp|cs|rb|php|swift|scala|sh|bash|zsh|css|scss|less|sql|ya?ml|toml|prisma)\b`;
+  const directMutationPatterns = [
     new RegExp(String.raw`\bsed\b[^|]*\s-i`), // sed -i
     new RegExp(String.raw`\bperl\b[^|]*\s-i`), // perl -i
     new RegExp(String.raw`\b(?:g?awk)\b[^|]*>\s*${codeTarget}`), // awk > code
-    new RegExp(String.raw`\btee\b[^|]*\s${codeTarget}`), // tee code
-    new RegExp(String.raw`>>?\s*${codeTarget}`), // > / >> code
-    new RegExp(String.raw`\b(?:cp|mv|install)\b[^|]*\s${codeTarget}\s*$`), // cp/mv onto code
+    new RegExp(String.raw`\btee\b[^|]*\s+\\?["']?\s*${codeTarget}`), // tee [quoted] code
+    new RegExp(String.raw`>>?\s*\\?["']?\s*${codeTarget}`), // > / >> [quoted] code
+    new RegExp(String.raw`\b(?:cp|mv|install)\b[^|]*\s${codeTarget}(?:\s|$)`), // cp/mv/install onto code
+    new RegExp(String.raw`\b(?:rm|unlink|truncate|touch)\b[^|;&]*${codeTarget}`), // delete/truncate/create code
   ];
-  return patterns.some((re) => re.test(cmd));
+  if (directMutationPatterns.some((re) => re.test(source))) return true;
+
+  // Heredoc/here-string that produces a code file: `cat > x.ts <<'EOF'`,
+  // `tee x.ts <<EOF`, `… <<EOF > x.ts`, quoted or not. If the command both
+  // opens a heredoc/here-string AND references any code-extension path, deny
+  // (this closes the quoted/spacing evasions of the redirect regexes above).
+  if (
+    /<<-?\s*['"]?[\w.]/.test(source) &&
+    new RegExp(codeTarget).test(source) &&
+    /\b(?:cat|tee|dd|node|deno|bun|python3?|ruby|php|perl)\b|>>?/.test(source)
+  )
+    return true;
+
+  // Inline-eval interpreters (node -e / python -c / ruby -e / php -r / deno
+  // eval / bun -e / perl -pe …) are the Write-bypass vector observed in the
+  // atomic A/B loop. If the inline script carries ANY write/delete/rename
+  // primitive, deny UNCONDITIONALLY — no code-target token required. Read-only
+  // inline evals carry none of these and stay allowed.
+  const inlineEval =
+    /\b(?:node|deno|bun|ts-node|tsx|python3?|ruby|php|perl)\b[^\n]*?(?:\s-(?:e|pe?|c|r)\b|--eval\b|\beval\b)/;
+  const writePrim =
+    /(?:writeFileSync|writeFile|appendFileSync|appendFile|createWriteStream|promises\s*\.\s*(?:write|appendFile|rename|cp|rm|unlink|mkdir)|fs\s*\.\s*write|open\s*\([^)]*['"][wax+]|truncate\s*\(|renameSync|\.rename\s*\(|copyFileSync|copyfile\s*\(|cpSync|rmSync|unlinkSync|mkdirSync|Deno\s*\.\s*(?:writeTextFile|writeFile|create|remove|rename)|write_text|os\.replace|shutil\.(?:move|copy|copyfile))/;
+  if (inlineEval.test(source) && writePrim.test(source)) return true;
+  if (/\bdd\b[^|]*\bof=/.test(source)) return true;
+
+  const mentionsCodeTarget = new RegExp(codeTarget).test(source);
+  if (!mentionsCodeTarget) return false;
+
+  const runtimeWritePatterns = [
+    /\b(?:python3?|node|ruby|php)\b[\s\S]*(?:writeFileSync|writeFile|appendFileSync|appendFile|write_text|open\s*\([^)]*['"][wa+]|truncate\s*\(|rename\s*\(|copyfile\s*\()/,
+    /\b(?:node|deno|bun)\b[\s\S]*(?:fs\.|node:fs|Deno\.)[\s\S]*(?:write|append|rename|copyFile|truncate|rm|unlink|mkdir)/,
+  ];
+  return runtimeWritePatterns.some((re) => re.test(source));
 }
 
 if (tool === 'Bash') {
   const cmd = ti.command ?? ti.cmd ?? '';
   if (bashEditsCode(String(cmd)))
     deny(`TUI-abolished rule: shell in-place edit of a code file is banned. ${STEER}`);
+  allow();
+}
+
+function patchTouchesCode(patchText) {
+  if (!patchText) return false;
+  const paths = [];
+  for (const line of String(patchText).split('\n')) {
+    const match = line.match(/^\*\*\* (?:Update|Add|Delete) File:\s*(.+)$/);
+    if (match) paths.push(match[1].trim());
+  }
+  return paths.some((p) => CODE_EXT.test(p));
+}
+
+if (tool === 'apply_patch') {
+  const patchText = ti.command ?? ti.patch ?? ti.input ?? '';
+  if (patchTouchesCode(String(patchText))) {
+    deny(`TUI-abolished rule: native apply_patch on code is banned. ${STEER}`);
+  }
   allow();
 }
 

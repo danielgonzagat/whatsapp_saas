@@ -46,7 +46,7 @@ export const CATCHUP_MAX_MESSAGES_PER_CHAT = Math.max(
   Number.parseInt(process.env.WAHA_CATCHUP_MAX_MESSAGES_PER_CHAT || '100', 10) || 100,
 );
 
-export const CATCHUP_LOOKBACK_MS = Math.max(
+const CATCHUP_LOOKBACK_MS = Math.max(
   60_000,
   Number.parseInt(process.env.WAHA_CATCHUP_LOOKBACK_MS || `${12 * 60 * 60 * 1000}`, 10) ||
     12 * 60 * 60 * 1000,

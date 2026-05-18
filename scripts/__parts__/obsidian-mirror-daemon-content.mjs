@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, renameSync, statSync, writeFileSync } from 'node:fs';
 import { basename, dirname, extname, join, relative, resolve } from 'node:path';
 
 import {
@@ -22,6 +22,7 @@ import {
   GRAPH_SURFACE_WORKER_TAG,
   LOCAL_COMMIT_TAG,
   METADATA_ONLY_TAG,
+  PULSE_MACHINE_TAG,
   REPO_ROOT,
   SOURCE_BODY_MIRROR_MAX_BYTES,
   SOURCE_MIRROR_DIR,
@@ -34,6 +35,7 @@ import {
   normalizePath,
   obsidianLink,
   sha256,
+  sha256File,
   sourceToMirrorPath,
 } from './obsidian-mirror-daemon-utils.mjs';
 
@@ -199,6 +201,14 @@ function tagsFor(relPath, content, gitState, relations, lang) {
   if (gitState.localCommit) {
     tags.add(LOCAL_COMMIT_TAG);
   }
+  if (
+    relPath.startsWith('.pulse/') ||
+    relPath.startsWith('scripts/pulse/') ||
+    relPath.startsWith('backend/src/pulse/') ||
+    /^PULSE_[^/]+/.test(relPath)
+  ) {
+    tags.add(PULSE_MACHINE_TAG);
+  }
   if (!relations.length) {
     tags.add(GRAPH_ORPHAN_TAG);
   }
@@ -255,13 +265,13 @@ function clusterKeyFor(relPath) {
   return [parts[0] || 'root', parts[1] || 'root'].join('__');
 }
 
-function buildFacts(sourcePath, content, relPath, tags, relations, lang) {
+function buildFacts(sourcePath, content, relPath, tags, relations, lang, omitBody) {
   const facts = [
     `file-extension:${extname(sourcePath).toLowerCase() || 'none'}`,
     `surface:${surfaceFor(relPath)}`,
     `risk:${riskFor(relPath, content)}`,
     `language:${lang || 'text'}`,
-    `payload:${Buffer.byteLength(content, 'utf8') > SOURCE_BODY_MIRROR_MAX_BYTES ? 'metadata-only' : 'full-text'}`,
+    `payload:${omitBody ? 'metadata-only' : 'full-text'}`,
   ];
   for (const tag of tags) {
     facts.push(`tag:${tag}`);
@@ -301,17 +311,17 @@ function writeAtomicIfChanged(filePath, content) {
 export function mirrorFile(sourcePath, manifest) {
   try {
     const relPath = normalizePath(relative(REPO_ROOT, sourcePath));
-    const content = readFileSync(sourcePath, 'utf8');
-    const hash = sha256(content);
+    const sourceSize = statSync(sourcePath).size;
+    const omitBody = sourceSize > SOURCE_BODY_MIRROR_MAX_BYTES;
+    const content = omitBody ? '' : readFileSync(sourcePath, 'utf8');
+    const hash = omitBody ? sha256File(sourcePath) : sha256(content);
     const mirrorPath = sourceToMirrorPath(sourcePath);
     const lang = detectLanguage(sourcePath);
     const gitState = gitStateForSource(sourcePath);
-    const relations = extractRelations(content, sourcePath);
+    const relations = omitBody ? [] : extractRelations(content, sourcePath);
     const tags = tagsFor(relPath, content, gitState, relations, lang);
-    const facts = buildFacts(sourcePath, content, relPath, tags, relations, lang);
-    const omitBody = Buffer.byteLength(content, 'utf8') > SOURCE_BODY_MIRROR_MAX_BYTES;
+    const facts = buildFacts(sourcePath, content, relPath, tags, relations, lang, omitBody);
     const now = new Date().toISOString();
-    const sourceSize = Buffer.byteLength(content, 'utf8');
     const body = [
       '---',
       `source: ${yamlScalar(relPath)}`,

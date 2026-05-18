@@ -47,8 +47,8 @@ If any file is missing or its checksum mismatches, STOP and report.
 - NO suppression comments / skip tags / @ts-ignore / NOSONAR.
 - NO \`git restore\`.
 - NO new event names outside PCI.1.
-- NO behavioral instruction strings ("você é", "act as", etc.) in any
-  outgoing payload.
+- NO behavioral instruction strings ("você é", "act as", etc.) in all
+  outgoing payloads.
 
 ## REQUIRED VALIDATION
 

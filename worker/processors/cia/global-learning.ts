@@ -67,28 +67,42 @@ function objectField(
 }
 
 function lengthBucket(length: number): PreferredLength {
-  if (length <= 90) return 'short';
-  if (length <= 220) return 'medium';
+  if (length <= 90) {
+    return 'short';
+  }
+  if (length <= 220) {
+    return 'medium';
+  }
   return 'long';
 }
 
 function priorityBucket(priority: number): 'low' | 'medium' | 'high' {
-  if (priority >= 70) return 'high';
-  if (priority >= 35) return 'medium';
+  if (priority >= 70) {
+    return 'high';
+  }
+  if (priority >= 35) {
+    return 'medium';
+  }
   return 'low';
 }
 
 function variantFamily(variantKey?: string | null): string | null {
   const normalized = normalizeToken(variantKey);
-  if (normalized.startsWith('payment')) return 'payment_recovery';
-  if (normalized.startsWith('followup')) return 'followup';
+  if (normalized.startsWith('payment')) {
+    return 'payment_recovery';
+  }
+  if (normalized.startsWith('followup')) {
+    return 'followup';
+  }
   return normalized === 'generic' ? null : normalized;
 }
 
 function mostFrequentKey(values: Array<string | number | null | undefined>): string | null {
   const counts = new Map<string, number>();
   for (const value of values) {
-    if (value === null || value === undefined || value === '') continue;
+    if (value === null || value === undefined || value === '') {
+      continue;
+    }
     const key = String(value);
     counts.set(key, (counts.get(key) || 0) + 1);
   }
@@ -96,8 +110,12 @@ function mostFrequentKey(values: Array<string | number | null | undefined>): str
 }
 
 function outcomeScore(outcome: string): number {
-  if (outcome === 'sold') return 4;
-  if (outcome === 'replied') return 2;
+  if (outcome === 'sold') {
+    return 4;
+  }
+  if (outcome === 'replied') {
+    return 2;
+  }
   return 0;
 }
 
@@ -112,7 +130,9 @@ function bestHour(items: GlobalLearningSignal[]): number | null {
 }
 
 function mindAggressiveness(override?: MindAggressivenessOverride | null): Aggressiveness {
-  if (!override || override.fallback || override.confidence < 0.4) return 'LOW';
+  if (!override || override.fallback || override.confidence < 0.4) {
+    return 'LOW';
+  }
   const value = override.aggressiveness.toUpperCase();
   return value === 'HIGH' || value === 'MEDIUM' || value === 'LOW' ? value : 'LOW';
 }
@@ -150,7 +170,9 @@ export function anonymizeDecisionLog(input: {
       ? (value.metadata as Record<string, unknown>)
       : {};
   const intent = normalizeToken(String(value.intent || metadata.intent || 'generic'));
-  if (!intent) return null;
+  if (!intent) {
+    return null;
+  }
 
   const message = String(value.message || '');
   const createdAt = input.log.createdAt ? new Date(input.log.createdAt) : new Date();
@@ -241,7 +263,9 @@ export async function persistGlobalPatterns(
   redisClient: { set?: (key: string, value: string) => Promise<string | null> } | null | undefined,
   patterns: GlobalLearningPattern[],
 ) {
-  if (!redisClient?.set) return null;
+  if (!redisClient?.set) {
+    return null;
+  }
   const payload = { updatedAt: new Date().toISOString(), patterns };
   await redisClient.set('cia:global-patterns:v1', JSON.stringify(payload));
   return payload;

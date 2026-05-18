@@ -1,0 +1,7 @@
+stamp=20260516170548
+round_dir=docs/ai/atomic-os-benchmark/round-013
+normal_dir=/private/tmp/kloel-ab13-normal-20260516170548
+atomic_dir=/private/tmp/kloel-ab13-atomic-20260516170548
+normal_branch=codex/ab13-normal-20260516170548
+atomic_branch=codex/ab13-atomic-20260516170548
+base_head=565b0f84daa9f20b33a174374191a9f1f519a26e

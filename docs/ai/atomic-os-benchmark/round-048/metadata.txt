@@ -1,0 +1,14 @@
+round=048
+status=prepared
+base_commit=565b0f84daa9
+created_at=2026-05-16T23:44:36-0300
+normal_worktree=/private/tmp/kloel-ab048-normal-20260516234436
+atomic_worktree=/private/tmp/kloel-ab048-atomic-20260516234436
+normal_branch=codex/ab048-normal-20260516234436
+atomic_branch=codex/ab048-atomic-20260516234436
+task=backend_unified_agent_service_behavior_preserving_decomposition
+complexity=medium_refactor_multi_file_behavior_preservation
+mode=clean_opencode_only_evidence_files
+official_normal_events=opencode-normal-events.jsonl
+official_atomic_events=opencode-atomic-events.jsonl
+atomic_update=exclusive_opencode_artifacts_against_stale_codex_launcher_contamination

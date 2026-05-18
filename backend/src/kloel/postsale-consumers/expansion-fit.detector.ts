@@ -159,6 +159,6 @@ function buildControl(
         : 'No reliable expansion evidence is available yet.',
     leadOutcomeGuardrail:
       'Do not suggest an expansion offer without first-value proof and positive satisfaction for this customer.',
-    rollback: 'Keep the offer hidden and route any owner pressure back to value-first follow-up.',
+    rollback: 'Keep the offer hidden and route owner pressure back to value-first follow-up.',
   };
 }

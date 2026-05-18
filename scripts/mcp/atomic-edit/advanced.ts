@@ -60,7 +60,7 @@ export async function editSymbol(
   op: SymbolOp,
   code?: string,
 ): Promise<SymbolEditResult> {
-  const { Project } = await import('ts-morph');
+  const { Project, Node } = await import('ts-morph');
   const project = new Project({
     useInMemoryFileSystem: true,
     compilerOptions: { allowJs: true, jsx: ts.JsxEmit.Preserve, noEmit: true },
@@ -73,11 +73,36 @@ export async function editSymbol(
 
   let next: string;
   if (op === 'remove') {
+    // A selector for `const foo = ...` resolves to the declarator. Removing
+    // only that node leaves invalid residue such as `const ;`, so single
+    // declarator statements are removed as one syntactic unit.
+    let removalStart = start;
+    let removalEnd = end;
+    if (Node.isVariableDeclaration(node)) {
+      const statement = node.getFirstAncestorByKind(ts.SyntaxKind.VariableStatement);
+      if (statement) {
+        const declarations = statement.getDeclarations();
+        if (declarations.length === 1) {
+          removalStart = statement.getStart();
+          removalEnd = statement.getEnd();
+        } else {
+          const index = declarations.findIndex((declaration) => declaration === node);
+          if (index === 0) {
+            const nextDeclaration = declarations[1];
+            if (nextDeclaration) removalEnd = nextDeclaration.getStart();
+          } else if (index > 0) {
+            const previousDeclaration = declarations[index - 1];
+            if (previousDeclaration) removalStart = previousDeclaration.getEnd();
+          }
+        }
+      }
+    }
     // Drop the node, its own line's leading indentation, and the trailing
     // newline so no blank gap is left behind.
-    const lineStart = original.lastIndexOf('\n', start - 1) + 1;
-    const cutStart = original.slice(lineStart, start).trim() === '' ? lineStart : start;
-    let cutEnd = end;
+    const lineStart = original.lastIndexOf('\n', removalStart - 1) + 1;
+    const cutStart =
+      original.slice(lineStart, removalStart).trim() === '' ? lineStart : removalStart;
+    let cutEnd = removalEnd;
     if (original[cutEnd] === '\n') cutEnd++;
     next = original.slice(0, cutStart) + original.slice(cutEnd);
   } else if (op === 'replace') {
@@ -189,6 +214,46 @@ export async function renameSymbolCrossFile(
 //        cannot persist broken code, unlike the original). ───────────────────
 
 const TS_EXT = new Set(['.ts', '.tsx', '.mts', '.cts', '.js', '.jsx', '.mjs', '.cjs']);
+const RESERVED_IDENTIFIER_KEYS = new Set([
+  'await',
+  'break',
+  'case',
+  'catch',
+  'class',
+  'const',
+  'continue',
+  'debugger',
+  'default',
+  'delete',
+  'do',
+  'else',
+  'enum',
+  'export',
+  'extends',
+  'false',
+  'finally',
+  'for',
+  'function',
+  'if',
+  'import',
+  'in',
+  'instanceof',
+  'new',
+  'null',
+  'return',
+  'super',
+  'switch',
+  'this',
+  'throw',
+  'true',
+  'try',
+  'typeof',
+  'var',
+  'void',
+  'while',
+  'with',
+  'yield',
+]);
 
 function assertTs(file: string, op: string): void {
   const i = file.lastIndexOf('.');
@@ -203,6 +268,60 @@ async function tsmProject(file: string, text: string) {
     compilerOptions: { allowJs: true, jsx: ts.JsxEmit.Preserve, noEmit: true },
   });
   return project.createSourceFile(file, text, { overwrite: true });
+}
+
+function preferredImportQuote(original: string): string {
+  const counts: Record<string, number> = { "'": 0, '"': 0 };
+  for (const match of original.matchAll(/\bfrom\s+(['"])[^'"\n]+?\1/g)) {
+    counts[match[1] ?? "'"] = (counts[match[1] ?? "'"] ?? 0) + 1;
+  }
+  for (const match of original.matchAll(/^\s*import\s+(['"])[^'"\n]+?\1/gm)) {
+    counts[match[1] ?? "'"] = (counts[match[1] ?? "'"] ?? 0) + 1;
+  }
+  return (counts["'"] ?? 0) >= (counts['"'] ?? 0) ? "'" : '"';
+}
+
+function escapeRegExp(value: string): string {
+  const slash = String.fromCharCode(92);
+  const specialChars = new Set([
+    '^',
+    '$',
+    '.',
+    '*',
+    '+',
+    '?',
+    '(',
+    ')',
+    '[',
+    ']',
+    '{',
+    '}',
+    '|',
+    slash,
+  ]);
+  let escaped = '';
+  for (const char of value) {
+    escaped += specialChars.has(char) ? slash + char : char;
+  }
+  return escaped;
+}
+
+function normalizeModuleSpecifierQuote(
+  text: string,
+  moduleSpecifier: string,
+  quote: string,
+): string {
+  if (quote !== "'" || moduleSpecifier.includes("'")) return text;
+  const escapedModule = escapeRegExp(moduleSpecifier);
+  return text
+    .replace(
+      new RegExp('\\bfrom\\s+"' + escapedModule + '"', 'g'),
+      "from '" + moduleSpecifier + "'",
+    )
+    .replace(
+      new RegExp('\\bimport\\s+"' + escapedModule + '"', 'g'),
+      "import '" + moduleSpecifier + "'",
+    );
 }
 
 export interface SemanticEditResult {
@@ -254,6 +373,7 @@ export async function addNamedImport(
   moduleSpecifier: string,
   name: string,
   alias?: string,
+  typeOnly = false,
 ): Promise<SemanticEditResult> {
   assertTs(file, 'add_import');
   const sf = await tsmProject(file, original);
@@ -269,13 +389,16 @@ export async function addNamedImport(
     const exists = decls[0]
       .getNamedImports()
       .some(
-        (ni) => ni.getName() === name && (ni.getAliasNode()?.getText() ?? ni.getName()) === local,
+        (ni) =>
+          ni.getName() === name &&
+          (ni.getAliasNode()?.getText() ?? ni.getName()) === local &&
+          ni.isTypeOnly() === typeOnly,
       );
     if (exists) {
       return {
         newText: original,
         validation: validate(file, original, original),
-        detail: { action: 'already-present', moduleSpecifier, name },
+        detail: { action: 'already-present', moduleSpecifier, name, typeOnly },
       };
     }
   }
@@ -283,17 +406,25 @@ export async function addNamedImport(
   return guardedMutation(
     file,
     original,
-    { action, moduleSpecifier, name, alias: alias ?? null },
+    { action, moduleSpecifier, name, alias: alias ?? null, typeOnly },
     () => {
       if (decls.length === 0) {
         sf.addImportDeclaration({
           moduleSpecifier,
-          namedImports: [alias ? { name, alias } : { name }],
+          namedImports: [
+            alias ? { name, alias, isTypeOnly: typeOnly } : { name, isTypeOnly: typeOnly },
+          ],
         });
       } else {
-        decls[0].addNamedImport(alias ? { name, alias } : { name });
+        decls[0].addNamedImport(
+          alias ? { name, alias, isTypeOnly: typeOnly } : { name, isTypeOnly: typeOnly },
+        );
       }
-      return sf.getFullText();
+      return normalizeModuleSpecifierQuote(
+        sf.getFullText(),
+        moduleSpecifier,
+        preferredImportQuote(original),
+      );
     },
   );
 }
@@ -372,6 +503,130 @@ export async function replacePropertyValue(
     hits[0].getInitializerOrThrow().replaceWithText(valueCode);
     return sf.getFullText();
   });
+}
+
+/**
+ * Rename an object property key while preserving its initializer/value exactly.
+ * The operator is intentionally narrow: identifiers only for the new key,
+ * optional selector scope, and ambiguous matches are refused.
+ */
+export async function renamePropertyKey(
+  file: string,
+  original: string,
+  property: string,
+  newKey: string,
+  selector?: string,
+): Promise<SemanticEditResult> {
+  assertTs(file, 'rename_property_key');
+  if (!/^[A-Za-z_$][A-Za-z0-9_$]*$/.test(newKey) || RESERVED_IDENTIFIER_KEYS.has(newKey)) {
+    throw new Error(`invalid new key identifier: ${JSON.stringify(newKey)}`);
+  }
+  const { SyntaxKind } = await import('ts-morph');
+  const sf = await tsmProject(file, original);
+  const scopeNode = selector ? resolveSymbol(sf, selector).node : sf;
+  const hits = scopeNode.getDescendantsOfKind(SyntaxKind.PropertyAssignment).filter((pa) => {
+    const nameNode = pa.getNameNode();
+    const kind = nameNode.getKind();
+    const name =
+      kind === SyntaxKind.Identifier ||
+      kind === SyntaxKind.StringLiteral ||
+      kind === SyntaxKind.NumericLiteral
+        ? nameNode.getText().replace(/^['"]|['"]$/g, '')
+        : null;
+    return name === property;
+  });
+  if (hits.length === 0) {
+    throw new Error(`property "${property}" not found${selector ? ` in ${selector}` : ''}`);
+  }
+  if (hits.length > 1) {
+    throw new Error(
+      `property "${property}" matched ${hits.length} assignments (lines ${hits
+        .map((hit) => hit.getStartLineNumber())
+        .join(', ')}); pass a selector to disambiguate`,
+    );
+  }
+  const hit = hits[0];
+  const nameNode = hit.getNameNode();
+  const initializerText = hit.getInitializerOrThrow().getText();
+  const line = hit.getStartLineNumber();
+  return guardedMutation(
+    file,
+    original,
+    { property, newKey, selector: selector ?? null, line, preservedValue: initializerText },
+    () => {
+      nameNode.replaceWithText(newKey);
+      return sf.getFullText();
+    },
+  );
+}
+
+/**
+ * Find a CallExpression by callee name/text and optional selector scope;
+ * wrap exactly that call expression as `await <callText>`, preserving
+ * callee, arguments, and call text. Refuses missing target, ambiguity,
+ * already-awaited call, non-async context, and syntax regression.
+ */
+export async function addAwaitToCall(
+  file: string,
+  original: string,
+  callee: string,
+  selector?: string,
+): Promise<SemanticEditResult> {
+  assertTs(file, 'add_await_to_call');
+  const { SyntaxKind, Node } = await import('ts-morph');
+  const sf = await tsmProject(file, original);
+  const scopeNode = selector ? resolveSymbol(sf, selector).node : sf;
+  const calls = scopeNode.getDescendantsOfKind(SyntaxKind.CallExpression).filter((call) => {
+    const expr = call.getExpression();
+    return (
+      expr.getText() === callee ||
+      (Node.isPropertyAccessExpression(expr) && expr.getName() === callee)
+    );
+  });
+  if (calls.length === 0) {
+    throw new Error(`call "${callee}" not found${selector ? ` in ${selector}` : ''}`);
+  }
+  if (calls.length > 1) {
+    throw new Error(
+      `call "${callee}" matched ${calls.length} call expressions (lines ${calls
+        .map((c) => c.getStartLineNumber())
+        .join(', ')}); pass a selector to disambiguate`,
+    );
+  }
+  const call = calls[0];
+  if (call.getParentIfKind(SyntaxKind.AwaitExpression)) {
+    throw new Error(`call "${callee}" is already awaited`);
+  }
+  const functionScope = call.getFirstAncestor(
+    (node) =>
+      Node.isFunctionDeclaration(node) ||
+      Node.isFunctionExpression(node) ||
+      Node.isArrowFunction(node) ||
+      Node.isMethodDeclaration(node),
+  ) as
+    | import('ts-morph').FunctionDeclaration
+    | import('ts-morph').FunctionExpression
+    | import('ts-morph').ArrowFunction
+    | import('ts-morph').MethodDeclaration
+    | undefined;
+  if (
+    !functionScope
+      ?.getModifiers()
+      .some((modifier) => modifier.getKind() === SyntaxKind.AsyncKeyword)
+  ) {
+    throw new Error(`call "${callee}" is not inside an async function or method`);
+  }
+  const line = call.getStartLineNumber();
+  const callText = call.getText();
+  return guardedMutation(
+    file,
+    original,
+    { callee, selector: selector ?? null, line, callText },
+    () => {
+      call.replaceWithText(`await ${callText}`);
+      return sf.getFullText();
+    },
+  );
 }
 
 /** Minimal unified-style line diff — for PREVIEW DISPLAY only (the edit

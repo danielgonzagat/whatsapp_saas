@@ -175,9 +175,9 @@ type ErrorEmitter = {
 function hasErrorEmitter(value: unknown): value is ErrorEmitter {
   return Boolean(
     value &&
-      typeof value === 'object' &&
-      'on' in value &&
-      typeof (value as { on?: unknown }).on === 'function',
+    typeof value === 'object' &&
+    'on' in value &&
+    typeof (value as { on?: unknown }).on === 'function',
   );
 }
 
@@ -395,7 +395,10 @@ export class Queue {
         async (job: Job) => {
           await callback(job.data);
         },
-        { connection: buildBullMqConnectionOptions(`QueueWorker:${this.name}`), lockDuration: 120_000 },
+        {
+          connection: buildBullMqConnectionOptions(`QueueWorker:${this.name}`),
+          lockDuration: 120_000,
+        },
       );
       attachWorkerErrorLogger(this.worker, `legacyWorker:${this.name}`);
       additionalWorkers.push(this.worker);

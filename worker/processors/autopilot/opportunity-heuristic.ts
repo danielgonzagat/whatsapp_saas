@@ -82,30 +82,51 @@ function computeHeuristicScore(
 }
 
 function inferHeuristicSentiment(text: string): string {
-  if (PROBLEMA_RUIM_HORR_I__V_RE.test(text)) return 'NEGATIVE';
-  if (OBRIGAD_VALEU_PERFEITO_RE_2.test(text)) return 'POSITIVE';
+  if (PROBLEMA_RUIM_HORR_I__V_RE.test(text)) {
+    return 'NEGATIVE';
+  }
+  if (OBRIGAD_VALEU_PERFEITO_RE_2.test(text)) {
+    return 'POSITIVE';
+  }
   return 'NEUTRAL';
 }
 
 function inferHeuristicIntent(text: string, inboundCount: number): string {
-  if (QUERO_COMPRAR_ASSINAR_F_RE.test(text)) return 'BUY';
-  if (PROBLEMA_ERRO_SUPORTE_A_RE_2.test(text)) return 'SUPPORT';
-  if (RECLAMA_CANCELAR_RE.test(text)) return 'COMPLAINT';
-  if (inboundCount > 0) return 'INFO';
+  if (QUERO_COMPRAR_ASSINAR_F_RE.test(text)) {
+    return 'BUY';
+  }
+  if (PROBLEMA_ERRO_SUPORTE_A_RE_2.test(text)) {
+    return 'SUPPORT';
+  }
+  if (RECLAMA_CANCELAR_RE.test(text)) {
+    return 'COMPLAINT';
+  }
+  if (inboundCount > 0) {
+    return 'INFO';
+  }
   return 'COLD';
 }
 
 function inferHeuristicNextBestAction(purchaseProbability: string): string {
-  if (purchaseProbability === 'VERY_HIGH' || purchaseProbability === 'HIGH')
+  if (purchaseProbability === 'VERY_HIGH' || purchaseProbability === 'HIGH') {
     return 'PRIORITIZE_MANUAL_FOLLOWUP';
-  if (purchaseProbability === 'MEDIUM') return 'NURTURE_LATER';
+  }
+  if (purchaseProbability === 'MEDIUM') {
+    return 'NURTURE_LATER';
+  }
   return 'MONITOR_ONLY';
 }
 
 function inferHeuristicNotPurchasedReason(text: string, inboundCount: number): string {
-  if (CARO_SEM_DINHEIRO_AGORA_RE.test(text)) return 'objection_or_timing';
-  if (SUMI_SEM_RESPOSTA_DEPOI_RE.test(text)) return 'follow_up_needed';
-  if (inboundCount > 0) return 'still_open';
+  if (CARO_SEM_DINHEIRO_AGORA_RE.test(text)) {
+    return 'objection_or_timing';
+  }
+  if (SUMI_SEM_RESPOSTA_DEPOI_RE.test(text)) {
+    return 'follow_up_needed';
+  }
+  if (inboundCount > 0) {
+    return 'still_open';
+  }
   return 'insufficient_data';
 }
 

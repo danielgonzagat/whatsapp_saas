@@ -1,0 +1,174 @@
+{
+  "roundDir": "/Users/danielpenin/whatsapp_saas/docs/ai/atomic-os-benchmark/round-059",
+  "normal": {
+    "eventsFile": "opencode-normal-events.jsonl",
+    "events": {
+      "rows": 53,
+      "turnCompleted": true,
+      "completedCommands": 9,
+      "uniqueCompletedCommands": 9,
+      "failedCommands": [
+        {
+          "command": "rg -n \"(as any|@ts-ignore|@ts-expect-error|@ts-nocheck|eslint-disable|biome-ignore|codacy:|NOSONAR|noqa)\" backend/src/kloel/unified-agent.service.ts backend/src/kloel/unified-agent-runtime.helpers.ts 2>&1",
+          "exitCode": 1,
+          "output": "(no output)"
+        }
+      ],
+      "completedMcpCalls": 0,
+      "mcpTools": {},
+      "allTools": {
+        "read": 6,
+        "glob": 2,
+        "bash": 9,
+        "write": 1,
+        "edit": 2
+      },
+      "nativeFileToolViolations": [
+        {
+          "tool": "read",
+          "inputPreview": "{\"filePath\":\"/private/tmp/kloel-ab059-normal-20260517093949/backend/src/kloel/unified-agent.service.ts\"}"
+        },
+        {
+          "tool": "glob",
+          "inputPreview": "{\"pattern\":\"backend/src/kloel/unified-agent-runtime.helpers.ts\"}"
+        },
+        {
+          "tool": "read",
+          "inputPreview": "{\"filePath\":\"/private/tmp/kloel-ab059-normal-20260517093949/backend/src/kloel/unified-agent-runtime.helpers.ts\"}"
+        },
+        {
+          "tool": "read",
+          "inputPreview": "{\"filePath\":\"/private/tmp/kloel-ab059-normal-20260517093949/backend/src/kloel/agent-runtime\"}"
+        },
+        {
+          "tool": "glob",
+          "inputPreview": "{\"pattern\":\"backend/src/kloel/*.helpers.ts\"}"
+        },
+        {
+          "tool": "read",
+          "inputPreview": "{\"filePath\":\"/private/tmp/kloel-ab059-normal-20260517093949/backend/src/kloel/unified-agent-response.helpers.ts\",\"limit\":30}"
+        },
+        {
+          "tool": "write",
+          "inputPreview": "{\"filePath\":\"/private/tmp/kloel-ab059-normal-20260517093949/backend/src/kloel/unified-agent-runtime.helpers.ts\",\"content\":\"export function formatPromptValue(value: unknown): string {\\n  if (value === null) {\\n    return 'null';\\n  }\\n  if (Array.isArray(value)) {\\n    return `[${value.map(formatPromptValue).join(',')}]`;\\n  }\\n  if (typeof value === 'object') {\\n    const record = value as Record<"
+        },
+        {
+          "tool": "edit",
+          "inputPreview": "{\"filePath\":\"/private/tmp/kloel-ab059-normal-20260517093949/backend/src/kloel/unified-agent.service.ts\",\"oldString\":\"import type { ToolArgs, ActionEntry, PredecidedAction } from './unified-agent.types';\\nimport {\",\"newString\":\"import type { ToolArgs, ActionEntry, PredecidedAction } from './unified-agent.types';\\nimport { formatPromptValue } from './unified-agent-runtime.helpers';\\nimport {\"}"
+        },
+        {
+          "tool": "edit",
+          "inputPreview": "{\"filePath\":\"/private/tmp/kloel-ab059-normal-20260517093949/backend/src/kloel/unified-agent.service.ts\",\"oldString\":\"function formatPromptValue(value: unknown): string {\\n  if (value === null) {\\n    return 'null';\\n  }\\n  if (Array.isArray(value)) {\\n    return `[${value.map(formatPromptValue).join(',')}]`;\\n  }\\n  if (typeof value === 'object') {\\n    const record = value as Record<string, unkno"
+        },
+        {
+          "tool": "read",
+          "inputPreview": "{\"filePath\":\"/private/tmp/kloel-ab059-normal-20260517093949/backend/src/kloel/unified-agent.service.ts\",\"limit\":40}"
+        },
+        {
+          "tool": "read",
+          "inputPreview": "{\"filePath\":\"/private/tmp/kloel-ab059-normal-20260517093949/backend/src/kloel/unified-agent-runtime.helpers.ts\"}"
+        }
+      ],
+      "nativeShellReadCommands": [],
+      "maskedAtomicFailurePipelineCommands": [],
+      "fileChangeItems": 0,
+      "fileChangePaths": [],
+      "agentMessages": 7,
+      "proofReadCommands": 1,
+      "fullDiffCommands": 1,
+      "backendInstallCommands": 0,
+      "usage": {
+        "input_tokens": 54501,
+        "output_tokens": 2482,
+        "reasoning_output_tokens": 2106
+      }
+    },
+    "validation": {
+      "jestStatus": 0,
+      "typecheckStatus": 0,
+      "diffCheckStatus": 0,
+      "traceIsolationStatus": null,
+      "forbiddenPatternStatus": 1,
+      "serviceLines": 712,
+      "specDiff": [],
+      "protectedDiff": [],
+      "traceCount": null,
+      "docsTraceCount": null,
+      "touchedKloelFiles": [
+        "backend/src/kloel/unified-agent-runtime.helpers.ts",
+        "backend/src/kloel/unified-agent.service.ts"
+      ],
+      "touchedKloelFileCount": 2,
+      "sourceInsertions": 1,
+      "sourceDeletions": 26,
+      "sourceChurn": 27
+    }
+  },
+  "atomic": {
+    "eventsFile": "opencode-atomic-events.jsonl",
+    "events": {
+      "rows": 29,
+      "turnCompleted": true,
+      "completedCommands": 13,
+      "uniqueCompletedCommands": 13,
+      "failedCommands": [],
+      "completedMcpCalls": 0,
+      "mcpTools": {},
+      "allTools": {
+        "bash": 13
+      },
+      "nativeFileToolViolations": [],
+      "nativeShellReadCommands": [],
+      "maskedAtomicFailurePipelineCommands": [],
+      "fileChangeItems": 0,
+      "fileChangePaths": [],
+      "agentMessages": 4,
+      "proofReadCommands": 1,
+      "fullDiffCommands": 0,
+      "backendInstallCommands": 0,
+      "usage": {
+        "input_tokens": 47573,
+        "output_tokens": 2280,
+        "reasoning_output_tokens": 1598
+      }
+    },
+    "validation": {
+      "jestStatus": 0,
+      "typecheckStatus": 0,
+      "diffCheckStatus": 0,
+      "traceIsolationStatus": 0,
+      "forbiddenPatternStatus": 1,
+      "serviceLines": 713,
+      "specDiff": [],
+      "protectedDiff": [],
+      "traceCount": 3,
+      "docsTraceCount": 0,
+      "touchedKloelFiles": [
+        "backend/src/kloel/unified-agent-runtime.helpers.ts",
+        "backend/src/kloel/unified-agent.service.ts"
+      ],
+      "touchedKloelFileCount": 2,
+      "sourceInsertions": 1,
+      "sourceDeletions": 25,
+      "sourceChurn": 26
+    }
+  },
+  "scorecard": {
+    "functionalPass": true,
+    "atomicModeClean": true,
+    "atomicNativeFileToolViolationCount": 0,
+    "atomicNativeShellReadCommandCount": 0,
+    "atomicMaskedPipelineCommandCount": 0,
+    "atomicTraceIsolationPass": true,
+    "serviceLineWinner": "normal",
+    "eventRowWinner": "atomic",
+    "shellCommandWinner": "normal",
+    "inputTokenWinner": "atomic",
+    "outputTokenWinner": "atomic",
+    "reasoningTokenWinner": "atomic",
+    "traceWinner": "atomic",
+    "protectedDiffTie": true,
+    "touchedFileWinner": "tie",
+    "sourceChurnWinner": "atomic"
+  }
+}

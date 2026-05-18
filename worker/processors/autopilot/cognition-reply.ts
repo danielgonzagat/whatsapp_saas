@@ -31,7 +31,9 @@ export async function dispatchAutonomousTextMessage(input: {
     quotedMessageId: input.quotedMessageId,
   });
 
-  if (result?.error) throw new Error(String(result.reason || 'send_error'));
+  if (result?.error) {
+    throw new Error(String(result.reason || 'send_error'));
+  }
   return result;
 }
 
@@ -53,7 +55,9 @@ export async function findRecentDuplicateOutbound(params: {
   windowMs?: number;
 }) {
   const normalizedTarget = normalizeOutboundMessageForDedupe(params.content);
-  if (!normalizedTarget || !params.contactId) return null;
+  if (!normalizedTarget || !params.contactId) {
+    return null;
+  }
 
   const recentMessagesRaw = await prisma.message.findMany({
     where: {
@@ -137,13 +141,19 @@ export async function buildQuotedReplyPlan(params: {
     }))
     .filter((message) => message.content && message.quotedMessageId);
 
-  if (!normalizedMessages.length) return [];
+  if (!normalizedMessages.length) {
+    return [];
+  }
 
   const fallback = () => buildMirroredReplyPlanFallback(normalizedMessages, params.draftReply);
-  if (normalizedMessages.length === 1) return fallback();
+  if (normalizedMessages.length === 1) {
+    return fallback();
+  }
 
   const apiKey = params.settings?.openai?.apiKey || process.env.OPENAI_API_KEY;
-  if (!apiKey) return fallback();
+  if (!apiKey) {
+    return fallback();
+  }
 
   try {
     const ai = new AIProvider(apiKey);
@@ -170,7 +180,9 @@ export async function buildQuotedReplyPlan(params: {
     const parsed = JSON.parse(raw);
     const replies = Array.isArray(parsed?.replies) ? parsed.replies : [];
 
-    if (replies.length !== normalizedMessages.length) return fallback();
+    if (replies.length !== normalizedMessages.length) {
+      return fallback();
+    }
 
     return normalizedMessages.map((message, index) => ({
       quotedMessageId: message.quotedMessageId,

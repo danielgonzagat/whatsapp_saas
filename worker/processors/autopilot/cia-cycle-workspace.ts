@@ -50,8 +50,9 @@ async function loadWorkspaceGlobalStrategy(input: {
 }) {
   const domain = inferWorkspaceDomain(input.settings || {});
   const raw = await redis.get('cia:global-patterns:v1').catch(() => null);
-  if (!raw)
+  if (!raw) {
     return buildGlobalStrategy({ patterns: [], domain, intent: input.intentHint || 'generic' });
+  }
   try {
     const parsed = JSON.parse(raw) as { patterns?: GlobalLearningPattern[] };
     return buildGlobalStrategy({

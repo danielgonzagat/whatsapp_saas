@@ -91,7 +91,9 @@ export function computeCognitiveRewardSignal(
   action: string,
   state?: CustomerCognitiveState | null,
 ) {
-  if (!state) return 0;
+  if (!state) {
+    return 0;
+  }
   const stageBoost = state.stage === 'CHECKOUT' ? 1.2 : state.stage === 'HOT' ? 0.85 : 0.4;
   const trustBoost = state.trustScore * 0.6;
   const urgencyBoost = state.urgencyScore * 0.9;

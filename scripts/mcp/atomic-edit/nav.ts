@@ -72,11 +72,7 @@ export interface Outline {
   lineCount: number;
   charCount: number;
   symbols: SymbolInfo[];
-  /** full content only when the file is small (CodeStruct's ~10K heuristic). */
-  fullText?: string;
 }
-
-const SMALL_FILE_CHARS = 10_000;
 
 export async function outline(file: string, text: string): Promise<Outline> {
   const lineCount = text.split("\n").length;
@@ -86,7 +82,6 @@ export async function outline(file: string, text: string): Promise<Outline> {
       lineCount,
       charCount: text.length,
       symbols: [],
-      fullText: text.length <= SMALL_FILE_CHARS ? text : undefined,
     };
   }
   const sf = await sourceFileOf(file, text);
@@ -95,7 +90,6 @@ export async function outline(file: string, text: string): Promise<Outline> {
     lineCount,
     charCount: text.length,
     symbols: listSignatures(sf),
-    fullText: text.length <= SMALL_FILE_CHARS ? text : undefined,
   };
 }
 

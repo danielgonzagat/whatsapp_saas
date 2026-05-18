@@ -10,7 +10,7 @@ export interface GapCheckInput {
   productCount: number;
 }
 
-export interface GapCheckResult {
+interface GapCheckResult {
   kind: string;
   entityType: string;
   entityId: string;
@@ -28,9 +28,9 @@ export interface GapCheckResult {
   metadata: Record<string, unknown>;
 }
 
-export type GapChecker = (input: GapCheckInput) => GapCheckResult;
+type GapChecker = (input: GapCheckInput) => GapCheckResult;
 
-export const checkBillingGap: GapChecker = (input) => ({
+const checkBillingGap: GapChecker = (input) => ({
   kind: 'billing_update_required',
   entityType: 'workspace',
   entityId: input.workspaceId,
@@ -52,7 +52,7 @@ export const checkBillingGap: GapChecker = (input) => ({
   metadata: { capabilityCode: 'BILLING_CONFIGURATION' },
 });
 
-export const checkDomainGap: GapChecker = (input) => ({
+const checkDomainGap: GapChecker = (input) => ({
   kind: 'domain_gap',
   entityType: 'workspace',
   entityId: input.workspaceId,
@@ -72,7 +72,7 @@ export const checkDomainGap: GapChecker = (input) => ({
   metadata: { capabilityCode: 'DOMAIN_CONFIGURATION' },
 });
 
-export const checkWebhookGap: GapChecker = (input) => ({
+const checkWebhookGap: GapChecker = (input) => ({
   kind: 'webhook_gap',
   entityType: 'workspace',
   entityId: input.workspaceId,
@@ -93,7 +93,7 @@ export const checkWebhookGap: GapChecker = (input) => ({
   metadata: { capabilityCode: 'WEBHOOK_CONFIGURATION' },
 });
 
-export const checkApiKeyGap: GapChecker = (input) => ({
+const checkApiKeyGap: GapChecker = (input) => ({
   kind: 'api_key_gap',
   entityType: 'workspace',
   entityId: input.workspaceId,
@@ -114,7 +114,7 @@ export const checkApiKeyGap: GapChecker = (input) => ({
   metadata: { capabilityCode: 'API_KEY_CONFIGURATION' },
 });
 
-export const checkTeamGap: GapChecker = (input) => ({
+const checkTeamGap: GapChecker = (input) => ({
   kind: 'team_configuration_gap',
   entityType: 'workspace',
   entityId: input.workspaceId,
@@ -135,7 +135,7 @@ export const checkTeamGap: GapChecker = (input) => ({
   metadata: { capabilityCode: 'TEAM_CONFIGURATION' },
 });
 
-export const checkFlowGap: GapChecker = (input) => ({
+const checkFlowGap: GapChecker = (input) => ({
   kind: 'flow_creation_candidate',
   entityType: 'workspace',
   entityId: input.workspaceId,
@@ -156,7 +156,7 @@ export const checkFlowGap: GapChecker = (input) => ({
   metadata: { capabilityCode: 'FLOW_CONFIGURATION' },
 });
 
-export const checkCampaignGap: GapChecker = (input) => ({
+const checkCampaignGap: GapChecker = (input) => ({
   kind: 'campaign_launch_candidate',
   entityType: 'workspace',
   entityId: input.workspaceId,
@@ -177,7 +177,7 @@ export const checkCampaignGap: GapChecker = (input) => ({
   metadata: { capabilityCode: 'CAMPAIGN_CONFIGURATION' },
 });
 
-export const checkCatalogProductGap: GapChecker = (input) => ({
+const checkCatalogProductGap: GapChecker = (input) => ({
   kind: 'catalog_gap_detected',
   entityType: 'catalog',
   entityId: 'primary',

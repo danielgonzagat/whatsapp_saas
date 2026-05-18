@@ -45,7 +45,7 @@ If any file is missing or its checksum mismatches \`docs/contracts/pci/CHECKSUMS
   docs/contracts/pci/**, docs/plans/KLOEL_COGNITIVE_ORGANISM_PLAN.md.
 - NO bypass of Codacy: forbidden suppression comments and skip tags
   (biome-ignore, @ts-ignore, eslint-disable, NOSONAR, [skip ci], etc.).
-- NO \`git restore\` (any flag).
+- NO \`git restore\` flags.
 - NO invent event names outside PCI.1.
 - NO \`prismaAny\` in NEW code (existing usage may stay).
 - NO \`Math.random()\`, \`localStorage\`, hardcoded fake data in production paths.

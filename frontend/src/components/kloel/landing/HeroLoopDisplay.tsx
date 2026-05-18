@@ -1,6 +1,6 @@
 'use client';
 import { colors } from '@/lib/design-tokens';
-import type { GlitchState, ViewState } from './HeroLoop';
+import type { GlitchState, ViewState } from './HeroLoop.types';
 
 const E = colors.ember.primary;
 

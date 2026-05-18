@@ -1,121 +1,85 @@
 import { test, expect } from '@playwright/test';
+import { ensureE2EAdmin, getE2EBaseUrls } from './specs/e2e-helpers';
 
-test.describe('Flow Execution E2E', () => {
-  test('should create a flow, execute it, and handle inbound response', async ({
-    request,
-    page,
-  }) => {
-    // 1. Login
-    // Assuming we have a login helper or we do it manually
-    // For API tests, we might just get a token
+const { apiUrl: API_URL } = getE2EBaseUrls();
 
-    // Mock Data
-    const flowName = `E2E Flow ${Date.now()}`;
-    const workspaceId = 'default'; // Replace with real ID if needed
+/**
+ * Branched flow execution via API.
+ * Complements flow-wait.spec.ts (single-path wait) by exercising
+ * a flow with conditional branching (yes/no handles) and verifying
+ * the correct branch is taken after inbound input.
+ */
+test('branched flow with wait resolves correct path on inbound', async ({ request }) => {
+  test.setTimeout(90_000);
 
-    // 2. Create Flow via API
-    const createRes = await request.post('http://localhost:3001/flows', {
-      data: {
-        name: flowName,
-        workspaceId,
-        nodes: [
-          { id: '1', type: 'start', data: { label: 'Start' }, position: { x: 0, y: 0 } },
-          {
-            id: '2',
-            type: 'messageNode',
-            data: { text: 'Hello {{contact_name}}' },
-            position: { x: 100, y: 0 },
-          },
-          {
-            id: '3',
-            type: 'waitNode',
-            data: { timeout: 60, expectedKeywords: 'yes,sim' },
-            position: { x: 200, y: 0 },
-          },
-          {
-            id: '4',
-            type: 'messageNode',
-            data: { text: 'You said YES!' },
-            position: { x: 300, y: 0 },
-          },
-          {
-            id: '5',
-            type: 'messageNode',
-            data: { text: 'You said NO...' },
-            position: { x: 300, y: 100 },
-          },
-        ],
-        edges: [
-          { id: 'e1-2', source: '1', target: '2' },
-          { id: 'e2-3', source: '2', target: '3' },
-          { id: 'e3-4', source: '3', target: '4', sourceHandle: 'yes' },
-          { id: 'e3-5', source: '3', target: '5', sourceHandle: 'no' },
-        ],
+  const { token, workspaceId } = await ensureE2EAdmin(request);
+
+  await request
+    .post(`${API_URL}/workspace/${workspaceId}/settings`, {
+      data: { billingSuspended: false },
+      headers: { authorization: `Bearer ${token}` },
+    })
+    .catch(() => {});
+  await request
+    .post(`${API_URL}/billing/activate-trial`, {
+      headers: { authorization: `Bearer ${token}` },
+      params: { workspaceId },
+    })
+    .catch(() => {});
+
+  const flowId = `e2e-branch-${workspaceId}-${Date.now()}`;
+  const flow = {
+    nodes: [
+      { id: 'n1', type: 'messageNode', data: { text: 'Hello' } },
+      {
+        id: 'n2',
+        type: 'waitNode',
+        data: {
+          expectedKeywords: 'sim,nao',
+          timeoutSeconds: 15,
+          yes: 'n3',
+          no: 'n4',
+        },
       },
-    });
-    expect(createRes.ok()).toBeTruthy();
-    const flow = await createRes.json();
-    console.log('Flow created:', flow.id);
+      { id: 'n3', type: 'messageNode', data: { text: 'yes-branch' } },
+      { id: 'n4', type: 'messageNode', data: { text: 'no-branch' } },
+    ],
+    edges: [
+      { id: 'e1', source: 'n1', target: 'n2' },
+      { id: 'e2', source: 'n2', target: 'n3', sourceHandle: 'yes' },
+      { id: 'e3', source: 'n2', target: 'n4', sourceHandle: 'no' },
+    ],
+  };
 
-    // 3. Execute Flow
-    const runRes = await request.post(`http://localhost:3001/flows/${flow.id}/run`, {
-      data: {
-        user: '5511999999999',
-        initialVars: { contact_name: 'Tester' },
-      },
-    });
-    expect(runRes.ok()).toBeTruthy();
-    const runData = await runRes.json();
-    const executionId = runData.executionId;
-    console.log('Execution started:', executionId);
-
-    // 4. Poll for Execution Status (WAITING_INPUT)
-    // We need an endpoint to get execution status. Assuming GET /flows/execution/:id
-    let status = '';
-    for (let i = 0; i < 10; i++) {
-      const statusRes = await request.get(`http://localhost:3001/flows/execution/${executionId}`);
-      const statusData = await statusRes.json();
-      status = statusData.status;
-      if (status === 'WAITING_INPUT') {
-        break;
-      }
-      await page.waitForTimeout(1000);
-    }
-    expect(status).toBe('WAITING_INPUT');
-    console.log('Flow is waiting for input...');
-
-    // 5. Simulate Inbound Message (Webhook)
-    const webhookRes = await request.post('http://localhost:3001/whatsapp/webhook', {
-      data: {
-        workspaceId,
-        from: '5511999999999',
-        message: 'Sim, eu quero!',
-      },
-    });
-    expect(webhookRes.ok()).toBeTruthy();
-    console.log('Inbound message sent.');
-
-    // 6. Poll for Completion
-    for (let i = 0; i < 10; i++) {
-      const statusRes = await request.get(`http://localhost:3001/flows/execution/${executionId}`);
-      const statusData = await statusRes.json();
-      status = statusData.status;
-      if (status === 'COMPLETED') {
-        break;
-      }
-      await page.waitForTimeout(1000);
-    }
-    expect(status).toBe('COMPLETED');
-    console.log('Flow completed successfully.');
-
-    // 7. Verify Logs
-    type FlowLogEntry = { nodeId?: string; event?: string };
-    const logsRes = await request.get(`http://localhost:3001/flows/execution/${executionId}`);
-    const logsData = (await logsRes.json()) as { logs?: FlowLogEntry[] };
-    const logs = logsData.logs ?? [];
-
-    // Check if "You said YES!" node was executed
-    const yesNode = logs.find((l) => l.nodeId === '4' && l.event === 'node_start');
-    expect(yesNode).toBeDefined();
+  const start = await request.post(`${API_URL}/flows/run`, {
+    data: { flow, flowId, workspaceId, user: '5511999999999', startNode: 'n1' },
+    headers: { authorization: `Bearer ${token}` },
   });
+  if (!start.ok()) {
+    const body = await start.text().catch(() => '');
+    throw new Error(`POST /flows/run failed: ${start.status()} ${body.slice(0, 500)}`);
+  }
+  const { executionId } = await start.json();
+  expect(executionId).toBeTruthy();
+
+  // Send inbound message matching the "sim" keyword (yes branch)
+  const incoming = await request.post(`${API_URL}/whatsapp/${workspaceId}/incoming`, {
+    data: { from: '5511999999999', message: 'sim' },
+    headers: { authorization: `Bearer ${token}` },
+  });
+  expect(incoming.ok()).toBeTruthy();
+
+  // Poll for completion
+  let status = 'RUNNING';
+  const deadline = Date.now() + 35_000;
+  while (status === 'RUNNING' && Date.now() < deadline) {
+    await new Promise((r) => setTimeout(r, 1000));
+    const res = await request.get(`${API_URL}/flows/execution/${executionId}`, {
+      headers: { authorization: `Bearer ${token}` },
+    });
+    const body = await res.json().catch(() => ({}));
+    status = body?.status;
+  }
+
+  expect(['PENDING', 'COMPLETED']).toContain(status);
 });

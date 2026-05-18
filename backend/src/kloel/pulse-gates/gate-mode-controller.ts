@@ -48,8 +48,7 @@ function parseOverrides(raw: string | undefined): Partial<Record<GateName, GateM
   for (const pair of pairs) {
     const [name, mode] = pair.split('=').map((s) => s.trim());
     if (!name || !mode || !VALID_GATE_NAMES.has(name) || !VALID_MODES.has(mode)) {
-      // eslint-disable-next-line no-console
-      console.warn(
+      process.emitWarning(
         `[gate-mode-controller] ignoring invalid override pair "${pair}"`,
       );
       continue;

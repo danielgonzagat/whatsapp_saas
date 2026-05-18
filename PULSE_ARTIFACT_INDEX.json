@@ -1,20 +1,22 @@
 {
-  "runId": "8c67fecc-e24e-4582-a598-95f31b1109ec",
-  "generatedAt": "2026-05-15T01:55:34.278Z",
+  "runId": "6e4c9311-ea4c-4b50-893e-79b07952bb8b",
+  "generatedAt": "2026-05-16T16:26:24.678Z",
   "authorityMode": "advisory-only",
   "advisoryOnly": true,
   "authorityReasons": [
     "Evidence freshness is not closed.",
+    "Pulse self-trust is still failing.",
     "Runtime pass is not green with live evidence."
   ],
   "pulseMachineReadiness": {
     "status": "NOT_READY",
     "scope": "pulse_machine_not_kloel_product",
-    "canRunBoundedAutonomousCycle": true,
+    "canRunBoundedAutonomousCycle": false,
     "canDeclareKloelProductCertified": false,
     "blockers": [
-      "critical_path_terminal: 4808 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:abi-ab, matrix:capability:capability:abi-builder, matrix:capability:capability:account-agent, matrix:capability:capability:admin-brain, matrix:capability:capability:admin-clients, matrix:capability:capability:admin-compliance, matrix:capability:capability:admin-config, matrix:capability:capability:admin-contacts. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.",
-      "external_reality: 0 missing, 2 stale, and 0 invalid external adapter(s) remain."
+      "critical_path_terminal: 4883 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:abi-ab, matrix:capability:capability:abi-builder, matrix:capability:capability:account-agent, matrix:capability:capability:admin-brain, matrix:capability:capability:admin-clients, matrix:capability:capability:admin-compliance, matrix:capability:capability:admin-config, matrix:capability:capability:admin-contacts. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.",
+      "external_reality: 0 missing, 2 stale, and 0 invalid external adapter(s) remain.",
+      "self_trust: PULSE still reconstructs 1 phantom capability(ies) and 0 phantom flow(s); self-trust stays degraded until illusion collapses into real chains."
     ]
   },
   "cleanupPolicy": "enforced-single-state",

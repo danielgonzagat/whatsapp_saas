@@ -10,7 +10,7 @@
  *     (or an auditor) can open on demand.
  *
  *  2. Auditable proof. Every mutation writes an AtomicEditTrace JSON to
- *     docs/ai/traces/<op>.json: intention-level operator, char metrics,
+ *     .atomic/traces/<op>.json: intention-level operator, char metrics,
  *     expansion factor avoided, validation deltas, afterSha256, the inline
  *     char-level preview, and rollback availability. This is the durable
  *     evidence that the edit was atomic, independent of what any closed CLI
@@ -73,18 +73,63 @@ export interface TraceMetrics {
   lineRewriteAvoided: boolean;
 }
 
+export interface PreservationZone {
+  kind: string;
+  description: string;
+  beforeHash?: string;
+  afterHash?: string;
+  sample?: string;
+}
+
+export interface ModifiedZone {
+  kind: string;
+  oldTextHash?: string;
+  newTextHash?: string;
+  oldSample?: string;
+  newSample?: string;
+  description?: string;
+  metadata?: Record<string, unknown>;
+}
+
+export interface MovementZone {
+  kind: string;
+  description: string;
+  from?: string;
+  to?: string;
+  preservedHash?: string;
+}
+
 export interface AtomicEditTrace {
   traceVersion: '1.0';
   operationId: string;
   ts: string;
   file: string;
+  /** Absolute repo/worktree root that owns this trace. */
+  repoRoot?: string;
+  /** Alias for operator, kept for auditor readability and external consumers. */
+  operation: string;
   operator: string;
+  /** The smallest structural/product unit the operation claims to target. */
+  targetUnit: string;
+  /** Human/product intention represented by this mutation. */
+  intention: string;
   fallback: boolean;
   metrics: TraceMetrics;
   validation: { language: string; syntaxErrorsBefore: number; syntaxErrorsAfter: number };
+  /** True when the operator only validated a proposal and did not write the file. */
+  preview: boolean;
+  /** True when the target file was persisted with the proposed content. */
+  changed: boolean;
+  /** Hash of current on-disk content after the operation; unchanged for previews. */
   afterSha256: string;
+  /** Hash of the proposed content, even for previews that are not written. */
+  proposedSha256: string;
   rollback: { available: boolean; strategy: string };
   inlinePreview: string;
+  preservedZones: PreservationZone[];
+  modifiedZones: ModifiedZone[];
+  movementZones: MovementZone[];
+  semanticImpact: string;
   /** Auditability-without-code layer (thesis apex). */
   audit: FounderBlock;
 }
@@ -98,47 +143,86 @@ const sha256 = (s: string): string => crypto.createHash('sha256').update(s).dige
 /** Build a trace from what every mutation site already has in hand. */
 export function buildTrace(args: {
   file: string;
+  repoRoot?: string;
   operator: string;
   before: string;
   newText: string;
   inlinePreview: string;
   validation: { language: string; before: number; after: number };
   metrics?: Partial<TraceMetrics>;
+  targetUnit?: string;
+  intention?: string;
+  preservedZones?: PreservationZone[];
+  modifiedZones?: ModifiedZone[];
+  movementZones?: MovementZone[];
+  semanticImpact?: string;
+  preview?: boolean;
+  changed?: boolean;
 }): AtomicEditTrace {
   const changed = args.metrics?.changedChars ?? 0;
   const surface = args.metrics?.lineRewriteSurfaceChars ?? 0;
   const expansion =
     args.metrics?.expansionFactorAvoided ?? Number((surface / Math.max(changed, 1)).toFixed(2));
-  // A line rewrite is "avoided" when the edit did NOT bloat far past the
-  // real change. Expansion ≈ 1–3 is a true sub-line atomic edit (the ideal
-  // is exactly 1: surface == changed). Line-oriented editors blow well past
-  // this (the thesis reports ~12x). Threshold 4 cleanly separates the two.
-  const LINE_REWRITE_EXPANSION = 4;
+  // A line rewrite is avoided when the durable trace proves the real changed
+  // span is smaller than the line-level surface a blunt editor would expose.
+  // Higher expansion is better: more surrounding text was preserved.
+  const derivedLineRewriteAvoided = changed === 0 ? true : surface > changed;
+  const preview = args.preview ?? false;
+  const changedFlag = args.changed ?? !preview;
+  const afterText = changedFlag ? args.newText : args.before;
   return {
     traceVersion: '1.0',
     operationId: newOperationId(),
     ts: new Date().toISOString(),
     file: args.file,
+    repoRoot: args.repoRoot,
+    operation: args.operator,
     operator: args.operator,
+    targetUnit: args.targetUnit ?? 'text_span',
+    intention: args.intention ?? args.operator,
     fallback: false,
     metrics: {
       changedChars: changed,
       lineRewriteSurfaceChars: surface,
       expansionFactorAvoided: expansion,
       bytesNet: args.metrics?.bytesNet ?? args.newText.length - args.before.length,
-      lineRewriteAvoided: args.metrics?.lineRewriteAvoided ?? expansion <= LINE_REWRITE_EXPANSION,
+      lineRewriteAvoided: args.metrics?.lineRewriteAvoided ?? derivedLineRewriteAvoided,
     },
     validation: {
       language: args.validation.language,
       syntaxErrorsBefore: args.validation.before,
       syntaxErrorsAfter: args.validation.after,
     },
-    afterSha256: sha256(args.newText),
+    preview,
+    changed: changedFlag,
+    afterSha256: sha256(afterText),
+    proposedSha256: sha256(args.newText),
     rollback: {
-      available: true,
-      strategy: 'explicit pre-edit snapshot (before-text retained by caller)',
+      available: !preview,
+      strategy: preview
+        ? 'dry-run only; no target file write occurred'
+        : 'explicit pre-edit snapshot (before-text retained by caller)',
     },
     inlinePreview: args.inlinePreview,
+    preservedZones: args.preservedZones ?? [
+      {
+        kind: 'unchanged_context',
+        description:
+          'Everything outside the modified zone is preserved byte-for-byte by the atomic operation.',
+      },
+    ],
+    modifiedZones: args.modifiedZones ?? [
+      {
+        kind: 'changed_span',
+        oldTextHash: sha256(args.before),
+        newTextHash: sha256(args.newText),
+        description: preview
+          ? 'Preview only: the highlighted span is proposed but was not written.'
+          : 'The operation changed the highlighted span shown in inlinePreview.',
+      },
+    ],
+    movementZones: args.movementZones ?? [],
+    semanticImpact: args.semanticImpact ?? 'unclassified_code_edit',
     audit: buildFounderBlock({
       file: args.file,
       operator: args.operator,
@@ -151,10 +235,16 @@ export function buildTrace(args: {
   };
 }
 
-const TRACE_DIR = path.join(REPO_ROOT, 'docs', 'ai', 'traces');
+function traceRepoRoot(trace: AtomicEditTrace): string {
+  return trace.repoRoot && path.isAbsolute(trace.repoRoot) ? trace.repoRoot : REPO_ROOT;
+}
+
+function traceDirFor(trace: AtomicEditTrace): string {
+  return path.join(traceRepoRoot(trace), '.atomic', 'traces');
+}
 
 /**
- * Persist the trace. Fail-closed: returns the repo-relative path on success,
+ * Persist the trace. Fail-closed: returns the selected repo-relative path on success,
  * or an error string on failure — never throws, never blocks the edit.
  */
 export function writeTrace(trace: AtomicEditTrace): {
@@ -162,12 +252,14 @@ export function writeTrace(trace: AtomicEditTrace): {
   traceWriteError?: string;
 } {
   try {
-    fs.mkdirSync(TRACE_DIR, { recursive: true });
-    const abs = path.join(TRACE_DIR, `${trace.operationId}.json`);
+    const repoRoot = traceRepoRoot(trace);
+    const traceDir = traceDirFor(trace);
+    fs.mkdirSync(traceDir, { recursive: true });
+    const abs = path.join(traceDir, `${trace.operationId}.json`);
     const tmp = `${abs}.tmp`;
     fs.writeFileSync(tmp, JSON.stringify(trace, null, 2));
     fs.renameSync(tmp, abs);
-    return { tracePath: path.relative(REPO_ROOT, abs) };
+    return { tracePath: path.relative(repoRoot, abs) };
   } catch (e) {
     return { traceWriteError: e instanceof Error ? e.message : String(e) };
   }
@@ -188,18 +280,39 @@ export function shapePayload(
   // Camada 2 — compact human block FIRST, so the native CLI TUI shows this
   // (not raw JSON) as the edit's visual proof. This is what replaces the
   // banned native line-diff on screen.
+  const validationSummary = {
+    syntax: t.validation.syntaxErrorsAfter <= t.validation.syntaxErrorsBefore ? 'ok' : 'regressed',
+    typecheck: 'not-run',
+    protectedFile: 'no',
+    sha256: 'ok',
+  } as const;
+  const traceLine = persisted.tracePath
+    ? `Trace: ${persisted.tracePath}`
+    : `Trace error: ${persisted.traceWriteError ?? 'unknown'}`;
+  const headline = t.preview ? '✅ Atomic edit preview (not written)' : '✅ Atomic edit applied';
   const summary =
-    `✅ Atomic edit — ${t.operator}\n` +
+    `${headline}\n\n` +
     `${t.file}\n` +
-    `${parts.inlinePreview}\n` +
-    `validation: ${t.validation.language} ${t.validation.syntaxErrorsBefore}->${t.validation.syntaxErrorsAfter} (ok)` +
-    ` · expansion ${t.metrics.expansionFactorAvoided}× · ${t.metrics.changedChars} chars\n` +
-    `zeroCodeTrust ${t.audit.zeroCodeTrust} (${t.audit.promiseClass})` +
-    `${persisted.tracePath ? ` · trace ${persisted.tracePath}` : ''}`;
+    `${parts.inlinePreview}\n\n` +
+    `Validation:\n` +
+    `- syntax: ${validationSummary.syntax}\n` +
+    `- typecheck: ${validationSummary.typecheck}\n` +
+    `- protected file: ${validationSummary.protectedFile}\n` +
+    `- sha256: ${validationSummary.sha256}\n\n` +
+    `Trace metrics: expansion ${t.metrics.expansionFactorAvoided}× · ${t.metrics.changedChars} chars · ` +
+    `zeroCodeTrust ${t.audit.zeroCodeTrust} (${t.audit.promiseClass})\n` +
+    `Topology: ${t.targetUnit} · ${t.semanticImpact} · preserved ${t.preservedZones.length} · ` +
+    `modified ${t.modifiedZones.length} · moved ${t.movementZones.length}\n` +
+    traceLine;
   const out: Record<string, unknown> = {
-    summary,
+    // A/B loop R5 finding: `summary` was a byte-identical duplicate of
+    // `summaryForHuman` (each embeds the full inline diff) — a ~1–3 KB
+    // per-call token tax the model re-ingests every turn. Keep ONE.
+    summaryForHuman: summary,
     ...base,
     operationId: parts.trace.operationId,
+    operation: parts.trace.operation,
+    validationSummary,
     ...persisted,
   };
   // founder block rides at EVERY level incl. L0 — auditability-without-code

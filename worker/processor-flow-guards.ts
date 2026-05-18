@@ -16,7 +16,7 @@ export async function checkFlowSubscription(
   return { ok: false, skipped: true, reason: subStatus.reason ?? 'subscription_inactive' };
 }
 
-export async function checkFlowRateLimit(
+async function checkFlowRateLimit(
   _jobId: string | undefined,
   workspaceId: string,
 ): Promise<SkippedFlowResult | null> {

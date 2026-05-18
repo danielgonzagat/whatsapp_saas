@@ -25,7 +25,7 @@ export const GRAPH_LENS_ENFORCE_MS = Number(
 );
 export const MIRROR_FORMAT_VERSION = 21;
 export const SOURCE_BODY_MIRROR_MAX_BYTES = Number(
-  process.env.KLOEL_SOURCE_BODY_MIRROR_MAX_BYTES || String(Number.MAX_SAFE_INTEGER),
+  process.env.KLOEL_SOURCE_BODY_MIRROR_MAX_BYTES || String(MAX_FILE_SIZE),
 );
 export const GENERATED_PAGE_SIZE = Number(process.env.KLOEL_GRAPH_PAGE_SIZE || '120');
 export const DIRTY_WORKSPACE_TAG = 'workspace/dirty';
@@ -162,6 +162,7 @@ export const CODE_STATE_COLOR_GROUPS = [
 export const SOURCE_DIRECTORIES = [
   '.github',
   '.husky',
+  '.pulse',
   'backend',
   'docker',
   'frontend',
@@ -223,7 +224,6 @@ export const SKIP_DIR_PATTERNS = [
   /test-results/,
   /^tmp$/,
   /^Obsidian$/,
-  /^\.pulse$/,
   /^\.omx$/,
   /^\.gitnexus$/,
   /^\.kilo$/,

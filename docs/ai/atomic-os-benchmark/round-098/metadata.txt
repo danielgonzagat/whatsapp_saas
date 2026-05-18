@@ -1,0 +1,6 @@
+round=098
+normal_worktree=/Users/danielpenin/kloel-ab-worktrees/kloel-ab098-normal-20260517210129
+atomic_worktree=/Users/danielpenin/kloel-ab-worktrees/kloel-ab098-atomic-20260517210129
+task=repeat_round095_router_cluster_optional_deps_normalized
+repeat_reason=round097_rejected_harness_validation_loss_persistent_worktrees
+official_loop=opencode_workers_only

@@ -1,0 +1,9 @@
+stamp=20260516215956
+round_dir=docs/ai/atomic-os-benchmark/round-041
+normal_dir=/private/tmp/kloel-ab041-normal-20260516215956
+atomic_dir=/private/tmp/kloel-ab041-atomic-20260516215956
+normal_branch=codex/ab041-normal-20260516215956
+atomic_branch=codex/ab041-atomic-20260516215956
+base_head=565b0f84daa9f20b33a174374191a9f1f519a26e
+atomic_os_update=tool_first_atomic_control_path_remove_initial_lint_dump
+previous_verdict=round-040_no_scale_atomic_lost_input_tokens

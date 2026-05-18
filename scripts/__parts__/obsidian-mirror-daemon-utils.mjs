@@ -1,9 +1,12 @@
 import { createHash } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
 import {
+  closeSync,
   existsSync,
   mkdirSync,
+  openSync,
   readFileSync,
+  readSync,
   renameSync,
   statSync,
   writeFileSync,
@@ -15,7 +18,6 @@ import {
   GRAPH_SETTINGS_PATH,
   LANG_BY_FILENAME,
   MANIFEST_PATH,
-  MAX_FILE_SIZE,
   MIRROR_FORMAT_VERSION,
   REPO_ROOT,
   ROOT_FILE_PATTERNS,
@@ -44,6 +46,22 @@ export function log(level, ...args) {
 
 export function sha256(content) {
   return createHash('sha256').update(content).digest('hex');
+}
+
+export function sha256File(filePath) {
+  const hash = createHash('sha256');
+  const fd = openSync(filePath, 'r');
+  const buffer = Buffer.allocUnsafe(1024 * 1024);
+  try {
+    let bytesRead = readSync(fd, buffer, 0, buffer.length, null);
+    while (bytesRead > 0) {
+      hash.update(buffer.subarray(0, bytesRead));
+      bytesRead = readSync(fd, buffer, 0, buffer.length, null);
+    }
+  } finally {
+    closeSync(fd);
+  }
+  return hash.digest('hex');
 }
 
 export function normalizePath(path) {
@@ -183,7 +201,7 @@ export function isMirrorableSourceFile(fullPath) {
   }
   try {
     const st = statSync(fullPath);
-    return st.isFile() && st.size <= MAX_FILE_SIZE;
+    return st.isFile();
   } catch {
     return false;
   }

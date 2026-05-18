@@ -7,5 +7,8 @@
       "enabled": true
     }
   },
+  "permission": {
+    "edit": "deny"
+  },
   "instructions": ["docs/ai/ATOMIC_EDIT_OPERATING_GUIDE.md"]
 }

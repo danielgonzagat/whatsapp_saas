@@ -5,6 +5,7 @@ import { usePrefersReducedMotion } from './usePrefersReducedMotion';
 import { runSequentialRange } from './KloelLanding.helpers';
 import { useHeroNoiseCanvasRef, useHeroNoiseCanvas, HeroNoiseCanvas } from './HeroLoopNoiseCanvas';
 import { HeroLoopDisplay, HeroLoopReducedMotion, HeroLoopFlash } from './HeroLoopDisplay';
+import type { GlitchState, GlitchSlice, ViewState } from './HeroLoop.types';
 
 const GC = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%&!?<>{}|/\\~';
 const rc = () => GC[Math.floor(secureRandomFloat() * GC.length)];
@@ -13,29 +14,9 @@ const HERO_LOOP_PRIMARY = 'O Marketing Digital';
 const HERO_LOOP_DEATH_SUFFIX = ' acabou.';
 const HERO_LOOP_RESURRECTED = 'O Marketing Artificial começou.';
 
-export type HeroLoopPhase = 'idle' | 'typing' | 'strike' | 'death' | 'hidden';
 
-export type ViewState = {
-  text: string;
-  strike: number;
-  suffix: string;
-  phase: HeroLoopPhase;
-};
 
-export type GlitchSlice = {
-  top: number;
-  h: number;
-  off: number;
-};
 
-export type GlitchState = {
-  on: boolean;
-  text: string;
-  shk: [number, number];
-  chr: number;
-  slices: GlitchSlice[];
-  flash: boolean;
-};
 
 function scrambleText(src: string, chaos: number) {
   return src

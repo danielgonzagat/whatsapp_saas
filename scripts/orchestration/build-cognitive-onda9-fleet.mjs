@@ -49,8 +49,8 @@ Auto-aperfeiçoamento sob governança humana absoluta.
 - experiment.runner.ts (EVOL-005): integrates HYPPROOF.
 - r-tier-delta.monitor.ts (EVOL-006): tracks R-tier delta.
 - automatic-rollback.service.ts (EVOL-007): rollback ≤24h if regression.
-- protected-files.firewall.ts (EVOL-008): blocks any touch on protected files.
-- codacy-rigor.enforcer.ts (EVOL-009): blocks any reduction of MAX-RIGOR.
+- protected-files.firewall.ts (EVOL-008): blocks each touch on protected files.
+- codacy-rigor.enforcer.ts (EVOL-009): blocks each reduction of MAX-RIGOR.
 - evolution-audit.log.ts (EVOL-010): audit trail.
 - evol.module.ts + evol.spec.ts (>= 16 tests).
 EDITABLE SET: \`backend/src/kloel/evol/**\`, \`backend/src/app.module.ts\` (additive).

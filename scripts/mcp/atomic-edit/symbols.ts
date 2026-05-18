@@ -17,7 +17,7 @@
  * Matching is exact-first, then case-insensitive, then unique-substring fuzzy.
  */
 
-import type { Node, SourceFile } from "ts-morph";
+import type { Node, SourceFile } from 'ts-morph';
 
 export interface SymbolInfo {
   selector: string;
@@ -36,21 +36,21 @@ export interface ResolvedSymbol {
 }
 
 const CONTAINER_KINDS = new Set([
-  "ClassDeclaration",
-  "InterfaceDeclaration",
-  "ModuleDeclaration",
-  "EnumDeclaration",
+  'ClassDeclaration',
+  'InterfaceDeclaration',
+  'ModuleDeclaration',
+  'EnumDeclaration',
 ]);
 
 function firstLineOf(text: string): string {
-  const nl = text.indexOf("\n");
+  const nl = text.indexOf('\n');
   const head = (nl === -1 ? text : text.slice(0, nl)).trim();
   return head.length > 160 ? `${head.slice(0, 157)}...` : head;
 }
 
 function nameOf(node: Node): string | undefined {
   const anyNode = node as unknown as { getName?: () => string | undefined };
-  if (typeof anyNode.getName === "function") {
+  if (typeof anyNode.getName === 'function') {
     try {
       const n = anyNode.getName();
       if (n) return n;
@@ -69,14 +69,14 @@ export function listSignatures(sf: SourceFile): SymbolInfo[] {
     const name = nameOf(node);
     const named =
       name &&
-      (kind.endsWith("Declaration") ||
-        kind === "MethodDeclaration" ||
-        kind === "PropertyDeclaration" ||
-        kind === "GetAccessor" ||
-        kind === "SetAccessor" ||
-        kind === "Constructor");
+      (kind.endsWith('Declaration') ||
+        kind === 'MethodDeclaration' ||
+        kind === 'PropertyDeclaration' ||
+        kind === 'GetAccessor' ||
+        kind === 'SetAccessor' ||
+        kind === 'Constructor');
     if (named) {
-      const selector = [...scope, name].join(".");
+      const selector = [...scope, name].join('.');
       out.push({
         selector,
         kind,
@@ -100,12 +100,62 @@ export function listSignatures(sf: SourceFile): SymbolInfo[] {
     for (const d of vs.getDeclarations()) {
       out.push({
         selector: d.getName(),
-        kind: "VariableDeclaration",
+        kind: 'VariableDeclaration',
         startLine: vs.getStartLineNumber(),
         endLine: vs.getEndLineNumber(),
         signature: firstLineOf(vs.getText()),
       });
     }
+  }
+  return out.sort((a, b) => a.startLine - b.startLine);
+}
+
+function symbolKey(info: SymbolInfo): string {
+  return `${info.selector}:${info.kind}:${info.startLine}:${info.endLine}`;
+}
+
+function matchSymbolInfos(all: SymbolInfo[], parts: string[]): SymbolInfo[] {
+  const selector = parts.join('.');
+  const tail = parts[parts.length - 1];
+  const exact = all.filter((s) => s.selector === selector);
+  const ci = all.filter((s) => s.selector.toLowerCase() === selector.toLowerCase());
+  const byTail = all.filter((s) => {
+    const segs = s.selector.split('.');
+    return segs[segs.length - 1] === tail;
+  });
+
+  const chosen: SymbolInfo[] = exact.length ? exact : ci.length ? ci : byTail;
+  if (chosen.length > 0) return chosen;
+  return all.filter((s) => s.selector.toLowerCase().includes(tail.toLowerCase()));
+}
+
+function listLocalResolvableSymbols(sf: SourceFile, known: SymbolInfo[]): SymbolInfo[] {
+  const supportedKinds = new Set([
+    'VariableDeclaration',
+    'FunctionDeclaration',
+    'ClassDeclaration',
+    'InterfaceDeclaration',
+    'TypeAliasDeclaration',
+    'EnumDeclaration',
+  ]);
+  const seen = new Set(known.map(symbolKey));
+  const out: SymbolInfo[] = [];
+  for (const node of sf.getDescendants()) {
+    const kind = node.getKindName();
+    if (!supportedKinds.has(kind)) continue;
+    const name = nameOf(node);
+    if (!name) continue;
+    const info: SymbolInfo = {
+      selector: name,
+      kind,
+      startLine: node.getStartLineNumber(),
+      endLine: node.getEndLineNumber(),
+      signature: firstLineOf(node.getText()),
+    };
+    const key = symbolKey(info);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(info);
   }
   return out.sort((a, b) => a.startLine - b.startLine);
 }
@@ -116,36 +166,31 @@ export function listSignatures(sf: SourceFile): SymbolInfo[] {
  * silently picks, mirroring CodeStruct's deterministic resolution.
  */
 export function resolveSymbol(sf: SourceFile, selector: string): ResolvedSymbol {
-  const parts = selector.split(/::|\./).map((s) => s.trim()).filter(Boolean);
+  const parts = selector
+    .split(/::|\./)
+    .map((s) => s.trim())
+    .filter(Boolean);
   if (parts.length === 0) throw new Error(`empty selector`);
-  const all = listSignatures(sf);
+  const primary = listSignatures(sf);
+  const locals = listLocalResolvableSymbols(sf, primary);
+  const chosen = matchSymbolInfos(primary, parts);
+  const localChosen = chosen.length === 0 ? matchSymbolInfos(locals, parts) : [];
+  const resolved = chosen.length > 0 ? chosen : localChosen;
+  const all = [...primary, ...locals];
 
-  const exact = all.filter((s) => s.selector === parts.join("."));
-  const tail = parts[parts.length - 1];
-  const ci = all.filter((s) => s.selector.toLowerCase() === parts.join(".").toLowerCase());
-  const byTail = all.filter((s) => {
-    const segs = s.selector.split(".");
-    return segs[segs.length - 1] === tail;
-  });
-
-  let chosen: SymbolInfo[] = exact.length ? exact : ci.length ? ci : byTail;
-  if (chosen.length === 0) {
-    const fuzzy = all.filter((s) => s.selector.toLowerCase().includes(tail.toLowerCase()));
-    chosen = fuzzy;
-  }
-  if (chosen.length === 0) {
+  if (resolved.length === 0) {
     throw new Error(
-      `no symbol matches "${selector}". Available: ${all.map((s) => s.selector).join(", ") || "(none)"}`,
+      `no symbol matches "${selector}". Available: ${all.map((s) => s.selector).join(', ') || '(none)'}`,
     );
   }
-  if (chosen.length > 1) {
+  if (resolved.length > 1) {
     throw new Error(
-      `ambiguous selector "${selector}" -> [${chosen
+      `ambiguous selector "${selector}" -> [${resolved
         .map((c) => `${c.selector}@${c.startLine}`)
-        .join(", ")}]. Use a more specific scoped selector.`,
+        .join(', ')}]. Use a more specific scoped selector.`,
     );
   }
-  const info = chosen[0];
+  const info = resolved[0];
   const node = sf
     .getDescendants()
     .find(

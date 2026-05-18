@@ -1,0 +1,9 @@
+round=108
+created_at=2026-05-18T03:25:43Z
+complexity_step=multi-module-router-runtime-split-after-round107-stability
+normal_worktree=/Users/danielpenin/kloel-ab-worktrees/kloel-ab108-normal-20260518002543
+atomic_worktree=/Users/danielpenin/kloel-ab-worktrees/kloel-ab108-atomic-20260518002543
+normal_branch=ab/round108-normal-20260518002543
+atomic_branch=ab/round108-atomic-20260518002543
+decision=scale_one_controlled_step_after_round107_stability
+atomic_policy_delta=split extracted cluster across router helper and runtime helper modules

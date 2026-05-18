@@ -44,9 +44,13 @@ export async function buildPendingMessageBatch(params: {
   const resolvedContactId = contact?.id || contactId;
   const resolvedPhone = contact?.phone || phone;
 
-  if (!resolvedContactId || !resolvedPhone) return null;
+  if (!resolvedContactId || !resolvedPhone) {
+    return null;
+  }
 
-  if (isWorkspaceSelfTarget({ phone: resolvedPhone, chatId, selfIdentity })) return null;
+  if (isWorkspaceSelfTarget({ phone: resolvedPhone, chatId, selfIdentity })) {
+    return null;
+  }
 
   const lastOutbound = await prisma.message.findFirst({
     where: { workspaceId, contactId: resolvedContactId, direction: 'OUTBOUND' },
@@ -111,7 +115,9 @@ export async function buildPendingMessageBatch(params: {
           downloadMedia: false,
         })
         .catch(() => []);
-      if (!Array.isArray(remoteMessages) || remoteMessages.length === 0) return undefined;
+      if (!Array.isArray(remoteMessages) || remoteMessages.length === 0) {
+        return undefined;
+      }
 
       const normalizedRemoteMessages = (remoteMessages as UnknownRecord[])
         .map((message) => ({
@@ -158,7 +164,9 @@ export async function buildPendingMessageBatch(params: {
 
       const latestRemoteMessage =
         normalizedRemoteMessages[normalizedRemoteMessages.length - 1] || null;
-      if (latestRemoteMessage?.direction === 'OUTBOUND') return undefined;
+      if (latestRemoteMessage?.direction === 'OUTBOUND') {
+        return undefined;
+      }
 
       const remoteInboundAfterLastOutbound = normalizedRemoteMessages.filter(
         (message) =>
@@ -171,9 +179,15 @@ export async function buildPendingMessageBatch(params: {
       const trailingInbound: typeof normalizedRemoteMessages = [];
       for (let index = normalizedRemoteMessages.length - 1; index >= 0; index -= 1) {
         const message = normalizedRemoteMessages[index];
-        if (message.direction === 'OUTBOUND') break;
-        if (message.direction === 'INBOUND') trailingInbound.unshift(message);
-        if (trailingInbound.length >= PENDING_MESSAGE_LIMIT) break;
+        if (message.direction === 'OUTBOUND') {
+          break;
+        }
+        if (message.direction === 'INBOUND') {
+          trailingInbound.unshift(message);
+        }
+        if (trailingInbound.length >= PENDING_MESSAGE_LIMIT) {
+          break;
+        }
       }
 
       const remotePendingMessages = (
@@ -189,7 +203,9 @@ export async function buildPendingMessageBatch(params: {
     });
   }
 
-  if (!effectiveMessages.length) return null;
+  if (!effectiveMessages.length) {
+    return null;
+  }
 
   const aggregatedMessage =
     effectiveMessages.length === 1

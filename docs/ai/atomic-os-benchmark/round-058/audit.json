@@ -1,0 +1,265 @@
+{
+  "roundDir": "/Users/danielpenin/whatsapp_saas/docs/ai/atomic-os-benchmark/round-058",
+  "normal": {
+    "eventsFile": "opencode-normal-events.jsonl",
+    "events": {
+      "rows": 80,
+      "turnCompleted": true,
+      "completedCommands": 11,
+      "uniqueCompletedCommands": 11,
+      "failedCommands": [
+        {
+          "command": "rg -n \"(as any|@ts-ignore|@ts-expect-error|@ts-nocheck|eslint-disable|biome-ignore|codacy:|NOSONAR|noqa)\" backend/src/kloel/unified-agent.service.ts backend/src/kloel/unified-agent-runtime.helpers.ts",
+          "exitCode": 2,
+          "output": "rg: backend/src/kloel/unified-agent-runtime.helpers.ts: No such file or directory (os error 2)\n"
+        },
+        {
+          "command": "ls -la backend/src/kloel/unified-agent-runtime.helpers.ts",
+          "exitCode": 1,
+          "output": "ls: backend/src/kloel/unified-agent-runtime.helpers.ts: No such file or directory\n"
+        },
+        {
+          "command": "rg \"noUnused\" backend/tsconfig.build.json",
+          "exitCode": 1,
+          "output": "(no output)"
+        }
+      ],
+      "completedMcpCalls": 0,
+      "mcpTools": {},
+      "allTools": {
+        "read": 8,
+        "glob": 1,
+        "grep": 4,
+        "write": 2,
+        "edit": 4,
+        "bash": 11
+      },
+      "nativeFileToolViolations": [
+        {
+          "tool": "read",
+          "inputPreview": "{\"filePath\":\"/private/tmp/kloel-ab058-normal-20260517091600/backend/src/kloel/unified-agent.service.ts\"}"
+        },
+        {
+          "tool": "glob",
+          "inputPreview": "{\"pattern\":\"backend/src/kloel/unified-agent-runtime.helpers.ts\"}"
+        },
+        {
+          "tool": "grep",
+          "inputPreview": "{\"pattern\":\"formatPromptValue\",\"path\":\"/private/tmp/kloel-ab058-normal-20260517091600/backend\"}"
+        },
+        {
+          "tool": "read",
+          "inputPreview": "{\"filePath\":\"/private/tmp/kloel-ab058-normal-20260517091600/backend/src/kloel/unified-agent.service.spec.ts\",\"limit\":30}"
+        },
+        {
+          "tool": "write",
+          "inputPreview": "{\"filePath\":\"/private/tmp/kloel-ab058-normal-20260517091600/backend/src/kloel/unified-agent-runtime.helpers.ts\",\"content\":\"export function formatPromptValue(value: unknown): string {\\n  if (value === null) {\\n    return 'null';\\n  }\\n  if (Array.isArray(value)) {\\n    return `[${value.map(formatPromptValue).join(',')}]`;\\n  }\\n  if (typeof value === 'object') {\\n    const record = value as Record<"
+        },
+        {
+          "tool": "edit",
+          "inputPreview": "{\"filePath\":\"/private/tmp/kloel-ab058-normal-20260517091600/backend/src/kloel/unified-agent.service.ts\",\"oldString\":\"import {\\n  buildPredecidedActionDraft,\\n  executePredecidedAgentActions,\\n} from './unified-agent-predecided-actions.part';\\n\\ntype UnknownRecord = Record<string, unknown>;\\n\\nfunction isAllowedTool(toolName: string, allowedTools?: string[]): boolean {\\n  return !allowedTools || al"
+        },
+        {
+          "tool": "read",
+          "inputPreview": "{\"filePath\":\"/private/tmp/kloel-ab058-normal-20260517091600/backend/src/kloel/unified-agent.service.ts\",\"offset\":22,\"limit\":42}"
+        },
+        {
+          "tool": "read",
+          "inputPreview": "{\"filePath\":\"/private/tmp/kloel-ab058-normal-20260517091600/backend/src/kloel/unified-agent.service.ts\"}"
+        },
+        {
+          "tool": "grep",
+          "inputPreview": "{\"pattern\":\"formatPromptValue\",\"path\":\"/private/tmp/kloel-ab058-normal-20260517091600/backend/src/kloel\"}"
+        },
+        {
+          "tool": "read",
+          "inputPreview": "{\"filePath\":\"/private/tmp/kloel-ab058-normal-20260517091600/backend/src/kloel/unified-agent-shared.ts\"}"
+        },
+        {
+          "tool": "read",
+          "inputPreview": "{\"filePath\":\"/private/tmp/kloel-ab058-normal-20260517091600/backend/src/kloel/unified-agent-message-flow.ts\"}"
+        },
+        {
+          "tool": "grep",
+          "inputPreview": "{\"pattern\":\"from.*unified-agent-shared\",\"path\":\"/private/tmp/kloel-ab058-normal-20260517091600/backend/src\"}"
+        },
+        {
+          "tool": "grep",
+          "inputPreview": "{\"pattern\":\"from.*unified-agent-runtime\\\\.helpers\",\"path\":\"/private/tmp/kloel-ab058-normal-20260517091600/backend/src\"}"
+        },
+        {
+          "tool": "edit",
+          "inputPreview": "{\"filePath\":\"/private/tmp/kloel-ab058-normal-20260517091600/backend/src/kloel/unified-agent.service.ts\",\"oldString\":\"import type { UnknownRecord } from './unified-agent-shared';\",\"newString\":\"import type { UnknownRecord } from './unified-agent-shared';\\nimport { formatPromptValue } from './unified-agent-runtime.helpers';\"}"
+        },
+        {
+          "tool": "read",
+          "inputPreview": "{\"filePath\":\"/private/tmp/kloel-ab058-normal-20260517091600/backend/src/kloel/unified-agent.service.ts\",\"limit\":30}"
+        },
+        {
+          "tool": "write",
+          "inputPreview": "{\"filePath\":\"/private/tmp/kloel-ab058-normal-20260517091600/backend/src/kloel/unified-agent-runtime.helpers.ts\",\"content\":\"export function formatPromptValue(value: unknown): string {\\n  if (value === null) {\\n    return 'null';\\n  }\\n  if (Array.isArray(value)) {\\n    return `[${value.map(formatPromptValue).join(',')}]`;\\n  }\\n  if (typeof value === 'object') {\\n    const record = value as Record<"
+        },
+        {
+          "tool": "read",
+          "inputPreview": "{\"filePath\":\"/private/tmp/kloel-ab058-normal-20260517091600/backend/tsconfig.build.json\"}"
+        },
+        {
+          "tool": "edit",
+          "inputPreview": "{\"filePath\":\"/private/tmp/kloel-ab058-normal-20260517091600/backend/src/kloel/unified-agent.service.ts\",\"oldString\":\"import type { UnknownRecord } from './unified-agent-shared';\\nimport { formatPromptValue } from './unified-agent-runtime.helpers';\",\"newString\":\"import type { UnknownRecord } from './unified-agent-shared';\\nimport { formatPromptValue } from './unified-agent-runtime.helpers';\"}"
+        },
+        {
+          "tool": "edit",
+          "inputPreview": "{\"filePath\":\"/private/tmp/kloel-ab058-normal-20260517091600/backend/src/kloel/unified-agent.service.ts\",\"oldString\":\"import type { UnknownRecord } from './unified-agent-shared';\\nimport { formatPromptValue } from './unified-agent-runtime.helpers';\",\"newString\":\"import type { UnknownRecord } from './unified-agent-shared';\"}"
+        }
+      ],
+      "nativeShellReadCommands": [],
+      "maskedAtomicFailurePipelineCommands": [],
+      "fileChangeItems": 0,
+      "fileChangePaths": [],
+      "agentMessages": 9,
+      "proofReadCommands": 1,
+      "fullDiffCommands": 1,
+      "backendInstallCommands": 0,
+      "usage": {
+        "input_tokens": 67403,
+        "output_tokens": 4003,
+        "reasoning_output_tokens": 9550
+      }
+    },
+    "validation": {
+      "jestStatus": 0,
+      "typecheckStatus": 0,
+      "diffCheckStatus": 0,
+      "traceIsolationStatus": null,
+      "forbiddenPatternStatus": 1,
+      "serviceLines": 195,
+      "specDiff": [],
+      "protectedDiff": [],
+      "traceCount": null,
+      "docsTraceCount": null,
+      "touchedKloelFiles": [
+        "backend/src/kloel/unified-agent-message-flow.ts",
+        "backend/src/kloel/unified-agent-runtime-flow.ts",
+        "backend/src/kloel/unified-agent-runtime.helpers.ts",
+        "backend/src/kloel/unified-agent-shared.ts",
+        "backend/src/kloel/unified-agent-tool-router.ts",
+        "backend/src/kloel/unified-agent.service.ts"
+      ],
+      "touchedKloelFileCount": 6,
+      "sourceInsertions": 43,
+      "sourceDeletions": 585,
+      "sourceChurn": 628
+    }
+  },
+  "atomic": {
+    "eventsFile": "opencode-atomic-events.jsonl",
+    "events": {
+      "rows": 78,
+      "turnCompleted": true,
+      "completedCommands": 25,
+      "uniqueCompletedCommands": 22,
+      "failedCommands": [
+        {
+          "command": "node /Users/danielpenin/whatsapp_saas/docs/ai/atomic-os-benchmark/tools/atomic-call.cjs code_read_symbol '{\"filePath\": \"backend/src/kloel/unified-agent.service.ts\", \"specifier\": \"formatPromptValue\"}'",
+          "exitCode": 1,
+          "output": "[atomic-edit] ready — repo=/Users/danielpenin/whatsapp_saas node=v25.9.0 pid=18956\n[atomic-edit] tmpdir=/tmp\nMCP error -32602: Input validation error: Invalid arguments for tool code_read_symbol: [\n  {\n    \"expected\": \"string\",\n    \"code\": \"invalid_type\",\n    \"path\": [\n      \"selector\"\n    ],\n    \"message\": \"Invalid input: expected string, received undefined\"\n  }\n]\nError: atomic tool code_read_sym"
+        },
+        {
+          "command": "node /Users/danielpenin/whatsapp_saas/docs/ai/atomic-os-benchmark/tools/atomic-call.cjs atomic_create_file '{\n  \"file\": \"backend/src/kloel/unified-agent-runtime.helpers.ts\",\n  \"content\": \"function formatPromptValue(value: unknown): string {\\n  if (value === null) {\\n    return '\\''null'\\'';\\n  }\\n  if (Array.isArray(value)) {\\n    return `[${value.map(formatPromptValue).join('\\'','\\'')}]`;\\n  }\\n  if (typeof value === '\\''object'\\'') {\\n    const record = value as Record<string, unknown>;\\n    return `{${Object.keys(record)\\n      .sort()\\n      .map((key) => `${key}:${formatPromptValue(record[key])}`)\\n      .join('\\'','\\'')}}`;\\n  }\\n  if (typeof value === '\\''string'\\'') {\\n    return `\\\"${value.replaceAll('\\''\\\\\\\\'\\'', '\\''\\\\\\\\\\\\\\\\'\\'').replaceAll('\\''\\\"'\\'', '\\''\\\\\\\\\\\"'\\'')}\\\"`;\\n  }\\n  if (typeof value === '\\''number'\\'' || typeof value === '\\''boolean'\\'' || typeof value === '\\''bigint'\\'') {\\n    return String(value);\\n  }\\n  if (typeof value === '\\''undefined'\\'') {\\n    return '\\''undefined'\\'';\\n  }\\n  return Object.prototype.toString.call(value);\\n}\\n\",\n  \"expectedSha256\": \"8c5cc4fa9cd59d7b042757eb19ef27ad96512118f423d01f96da05e751ea7ffd\"\n}'",
+          "exitCode": 1,
+          "output": "[atomic-edit] ready — repo=/Users/danielpenin/whatsapp_saas node=v25.9.0 pid=21368\n[atomic-edit] tmpdir=/tmp\n[atomic-edit] ERROR sha256 mismatch: file changed since you read it (expected 8c5cc4fa9cd5…, got e3b0c44298fc…). Re-read and retry — NOT written.\n{\n  \"ok\": false,\n  \"error\": \"sha256 mismatch: file changed since you read it (expected 8c5cc4fa9cd5…, got e3b0c44298fc…). Re-read and retry — NOT"
+        },
+        {
+          "command": "node /Users/danielpenin/whatsapp_saas/docs/ai/atomic-os-benchmark/tools/atomic-call.cjs atomic_add_import \"$(cat <<'ATOMIC_JSON'\n{\n  \"file\": \"backend/src/kloel/unified-agent.service.ts\",\n  \"importName\": \"formatPromptValue\",\n  \"module\": \"./unified-agent-runtime.helpers\",\n  \"expectedSha256\": \"8c5cc4fa9cd59d7b042757eb19ef27ad96512118f423d01f96da05e751ea7ffd\"\n}\nATOMIC_JSON\n)\"",
+          "exitCode": 1,
+          "output": "[atomic-edit] ready — repo=/Users/danielpenin/whatsapp_saas node=v25.9.0 pid=23291\n[atomic-edit] tmpdir=/tmp\nMCP error -32602: Input validation error: Invalid arguments for tool atomic_add_import: [\n  {\n    \"expected\": \"string\",\n    \"code\": \"invalid_type\",\n    \"path\": [\n      \"name\"\n    ],\n    \"message\": \"Invalid input: expected string, received undefined\"\n  }\n]\nError: atomic tool atomic_add_impor"
+        },
+        {
+          "command": "node /Users/danielpenin/whatsapp_saas/docs/ai/atomic-os-benchmark/tools/atomic-call.cjs atomic_add_import \"$(cat <<'ATOMIC_JSON'\n{\n  \"file\": \"backend/src/kloel/unified-agent.service.ts\",\n  \"name\": \"formatPromptValue\",\n  \"specifier\": \"./unified-agent-runtime.helpers\",\n  \"expectedSha256\": \"8c5cc4fa9cd59d7b042757eb19ef27ad96512118f423d01f96da05e751ea7ffd\"\n}\nATOMIC_JSON\n)\"",
+          "exitCode": 1,
+          "output": "[atomic-edit] ready — repo=/Users/danielpenin/whatsapp_saas node=v25.9.0 pid=23497\n[atomic-edit] tmpdir=/tmp\n[atomic-edit] ERROR sha256 mismatch: file changed since you read it (expected 8c5cc4fa9cd5…, got cc70e8fa34f7…). Re-read and retry — NOT written.\n{\n  \"ok\": false,\n  \"error\": \"sha256 mismatch: file changed since you read it (expected 8c5cc4fa9cd5…, got cc70e8fa34f7…). Re-read and retry — NOT"
+        },
+        {
+          "command": "node /Users/danielpenin/whatsapp_saas/docs/ai/atomic-os-benchmark/tools/atomic-call.cjs atomic_replace_text \"$(cat <<'ATOMIC_JSON'\n{\n  \"file\": \"backend/src/kloel/unified-agent.service.ts\",\n  \"oldText\": \"@Injectable()\\nexport class UnifiedAgentService\",\n  \"newText\": \"@Injectable()\\nexport class UnifiedAgentService\",\n  \"preview\": true,\n  \"expectedSha256\": \"cc70e8fa34f77111f0835b28ab62d6e534126f3f1128a07857c16f2adc14e68f\"\n}\nATOMIC_JSON\n)\"",
+          "exitCode": 1,
+          "output": "[atomic-edit] ready — repo=/Users/danielpenin/whatsapp_saas node=v25.9.0 pid=25440\n[atomic-edit] tmpdir=/tmp\n[atomic-edit] ERROR oldText and newText are identical\n{\n  \"ok\": false,\n  \"error\": \"oldText and newText are identical\"\n}\nError: atomic tool atomic_replace_text failed\n    at main (/Users/danielpenin/whatsapp_saas/docs/ai/atomic-os-benchmark/tools/atomic-call.cjs:90:13)\n    at process.process"
+        },
+        {
+          "command": "rg -n \"(as any|@ts-ignore|@ts-expect-error|@ts-nocheck|eslint-disable|biome-ignore|codacy:|NOSONAR|noqa)\" backend/src/kloel/unified-agent.service.ts backend/src/kloel/unified-agent-runtime.helpers.ts 2>&1",
+          "exitCode": 1,
+          "output": "(no output)"
+        },
+        {
+          "command": "npm --prefix backend run typecheck 2>&1",
+          "exitCode": 2,
+          "output": "\n> backend@0.0.1 typecheck\n> tsc -p tsconfig.build.json --noEmit\n\nsrc/kloel/unified-agent.service.ts(21,1): error TS6133: 'formatPromptValue' is declared but its value is never read.\nsrc/kloel/unified-agent.service.ts(21,35): error TS2306: File '/private/tmp/kloel-ab058-atomic-20260517091600/backend/src/kloel/unified-agent-runtime.helpers.ts' is not a module.\n"
+        }
+      ],
+      "completedMcpCalls": 0,
+      "mcpTools": {},
+      "allTools": {
+        "bash": 25
+      },
+      "nativeFileToolViolations": [],
+      "nativeShellReadCommands": [
+        "head -100 /Users/danielpenin/whatsapp_saas/docs/ai/atomic-os-benchmark/tools/atomic-call.cjs",
+        "node /Users/danielpenin/whatsapp_saas/docs/ai/atomic-os-benchmark/tools/atomic-call.cjs atomic_create_file '{\"file\": \"/dev/null\", \"content\": \"test\", \"preview\": true}' 2>&1 | head -5"
+      ],
+      "maskedAtomicFailurePipelineCommands": [
+        "node /Users/danielpenin/whatsapp_saas/docs/ai/atomic-os-benchmark/tools/atomic-call.cjs atomic_create_file '{\"file\": \"/dev/null\", \"content\": \"test\", \"preview\": true}' 2>&1 | head -5"
+      ],
+      "fileChangeItems": 0,
+      "fileChangePaths": [],
+      "agentMessages": 16,
+      "proofReadCommands": 1,
+      "fullDiffCommands": 0,
+      "backendInstallCommands": 0,
+      "usage": {
+        "input_tokens": 55818,
+        "output_tokens": 4651,
+        "reasoning_output_tokens": 8962
+      }
+    },
+    "validation": {
+      "jestStatus": 0,
+      "typecheckStatus": 0,
+      "diffCheckStatus": 0,
+      "traceIsolationStatus": 0,
+      "forbiddenPatternStatus": 1,
+      "serviceLines": 209,
+      "specDiff": [],
+      "protectedDiff": [],
+      "traceCount": 13,
+      "docsTraceCount": 0,
+      "touchedKloelFiles": [
+        "backend/src/kloel/unified-agent-message.helpers.ts",
+        "backend/src/kloel/unified-agent-message.processor.ts",
+        "backend/src/kloel/unified-agent-runtime.helpers.ts",
+        "backend/src/kloel/unified-agent-tool-router.ts",
+        "backend/src/kloel/unified-agent.service.ts"
+      ],
+      "touchedKloelFileCount": 5,
+      "sourceInsertions": 60,
+      "sourceDeletions": 588,
+      "sourceChurn": 648
+    }
+  },
+  "scorecard": {
+    "functionalPass": true,
+    "atomicModeClean": false,
+    "atomicNativeFileToolViolationCount": 0,
+    "atomicNativeShellReadCommandCount": 2,
+    "atomicMaskedPipelineCommandCount": 1,
+    "atomicTraceIsolationPass": true,
+    "serviceLineWinner": "normal",
+    "eventRowWinner": "atomic",
+    "shellCommandWinner": "normal",
+    "inputTokenWinner": "atomic",
+    "outputTokenWinner": "normal",
+    "reasoningTokenWinner": "atomic",
+    "traceWinner": "atomic",
+    "protectedDiffTie": true,
+    "touchedFileWinner": "atomic",
+    "sourceChurnWinner": "normal"
+  }
+}

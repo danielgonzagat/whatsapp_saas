@@ -1,4 +1,8 @@
-import { attributeHierarchy, type HierarchyDecision, type HierarchyLevel } from './economic-hierarchy';
+import { attributeHierarchy } from './economic-hierarchy';
+
+type HierarchyDecision = Parameters<typeof attributeHierarchy>[0];
+type HierarchyLevel = ReturnType<typeof attributeHierarchy>['level'];
+
 
 describe('economic-hierarchy', () => {
   const h = (overrides: Partial<HierarchyDecision> = {}): HierarchyDecision => ({
@@ -231,7 +235,7 @@ describe('economic-hierarchy', () => {
         h({ type: 'buyer_remorse', chosen: 'nurture_sequence', context: { daysSincePurchase: 3 } }),
       );
       expect(result.level).toBe('retention');
-      expect(result.reason).toMatch(/anti-remorse must precede any conversion/);
+      expect(result.reason).toMatch(/anti-remorse must precede any conversion attempt/);
     });
 
     it('remorse at exactly 7 days → retention', () => {

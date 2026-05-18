@@ -1,0 +1,16 @@
+round=052
+status=prepared
+base_commit=565b0f84daa9
+created_at=2026-05-17T07:45:51-0300
+normal_worktree=/private/tmp/kloel-ab052-normal-20260517074551
+atomic_worktree=/private/tmp/kloel-ab052-atomic-20260517074551
+normal_branch=codex/ab052-normal-20260517074551
+atomic_branch=codex/ab052-atomic-20260517074551
+task=backend_unified_agent_service_behavior_preserving_decomposition
+complexity=medium_refactor_multi_file_behavior_preservation
+mode=watchdog_supervised_opencode_only
+official_normal_prompt=opencode-normal-prompt.md
+official_atomic_prompt=opencode-atomic-prompt.md
+official_normal_events=opencode-normal-events.jsonl
+official_atomic_events=opencode-atomic-events.jsonl
+atomic_update=watchdog_kills_stale_codex_exec_and_idle_workers

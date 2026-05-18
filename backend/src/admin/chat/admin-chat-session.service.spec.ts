@@ -1,9 +1,12 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { AdminAuditService } from '../audit/admin-audit.service';
 import { PrismaService } from '../../prisma/prisma.service';
-import { AdminChatSessionService, type ListSessionsInput } from './admin-chat-session.service';
+import { AdminChatSessionService } from './admin-chat-session.service';
 
-const sessionShape = {
+type ListSessionsInput = Parameters<AdminChatSessionService['listSessions']>[0];
+
+
+const sessionWithoutMessages = {
   id: 'session_1',
   adminUserId: 'admin_1',
   workspaceId: 'ws_1',
@@ -13,6 +16,10 @@ const sessionShape = {
   lastUsedAt: new Date('2026-05-10T12:00:00Z'),
   expiresAt: new Date('2026-05-11T12:00:00Z'),
   deletedAt: null as Date | null,
+};
+
+const sessionShape = {
+  ...sessionWithoutMessages,
   messages: [] as Array<Record<string, unknown>>,
 };
 
@@ -67,7 +74,7 @@ describe('AdminChatSessionService', () => {
   beforeEach(async () => {
     jest.clearAllMocks();
 
-    mockCreate.mockResolvedValue(sessionShape);
+    mockCreate.mockResolvedValue(sessionWithoutMessages);
     mockFindMany.mockResolvedValue([sessionShape]);
     mockFindFirst.mockResolvedValue(sessionShape);
     mockFindFirstOrThrow.mockResolvedValue(sessionShape);
@@ -144,6 +151,24 @@ describe('AdminChatSessionService', () => {
       mockFindFirst.mockResolvedValueOnce(null);
 
       await expect(service.getSession('nonexistent', workspaceId)).rejects.toThrow(/sess.*o/i);
+    });
+  });
+
+  describe('updateSession', () => {
+    it('returns the updated session with persisted messages for the admin UI contract', async () => {
+      const result = await service.updateSession({
+        id: 'session_1',
+        workspaceId,
+        title: 'Renamed Session',
+      });
+
+      expect(result).toEqual(sessionShape);
+      const reloadArgs = firstCallArg<{
+        where?: { id?: string; workspaceId?: string; deletedAt?: null };
+        include?: unknown;
+      }>(mockFindFirstOrThrow);
+      expect(reloadArgs.where).toEqual({ id: 'session_1', workspaceId, deletedAt: null });
+      expect(reloadArgs.include).toEqual({ messages: { orderBy: { createdAt: 'asc' } } });
     });
   });
 

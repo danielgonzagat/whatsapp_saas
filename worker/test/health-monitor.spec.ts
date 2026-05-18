@@ -39,10 +39,7 @@ describe('HealthMonitor', () => {
     it('publishes ban event when status is BANNED', async () => {
       const { HealthMonitor } = await import('../providers/health-monitor');
       await HealthMonitor.reportStatus('ws1', 'BANNED', { reason: 'abuse' });
-      expect(mockRedis.publish).toHaveBeenCalledWith(
-        'events:ban',
-        expect.stringContaining('ws1'),
-      );
+      expect(mockRedis.publish).toHaveBeenCalledWith('events:ban', expect.stringContaining('ws1'));
     });
 
     it('does not publish ban event for non-banned status', async () => {

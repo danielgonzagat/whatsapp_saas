@@ -1,0 +1,12 @@
+round=119
+created_utc=2026-05-18T07:32:32.330Z
+complexity=controlled_scale_five_helper_split_process_incoming_facade
+normal_worktree=/Users/danielpenin/kloel-ab-worktrees/kloel-ab119-normal-20260518073232
+atomic_worktree=/Users/danielpenin/kloel-ab-worktrees/kloel-ab119-atomic-20260518073232
+normal_branch=ab/round119-normal-20260518073232
+atomic_branch=ab/round119-atomic-20260518073232
+base_head=565b0f84d
+task=Scale from four-helper UnifiedAgentService split to five helpers by also extracting processIncomingMessage facade into unified-agent-incoming-message.helpers.ts while preserving public API.
+scale_rule=Round118 was a comparable zero-loss Atomic win with shapeComparisonEligible=true; Round119 escalates one controlled step.
+round119_watchdog_max_ms=1200000
+round119_watchdog_idle_ms=600000

@@ -79,9 +79,7 @@ describe('resolveRedisUrl', () => {
     process.env.REDISPORT = '6379';
     process.env.REDISPASSWORD = 'component-secret';
 
-    expect(resolveRedisUrl()).toBe(
-      'redis://default:component-secret@redis.railway.internal:6379',
-    );
+    expect(resolveRedisUrl()).toBe('redis://default:component-secret@redis.railway.internal:6379');
   });
 
   it('does not assemble passwordless Redis hosts in Railway runtimes', () => {

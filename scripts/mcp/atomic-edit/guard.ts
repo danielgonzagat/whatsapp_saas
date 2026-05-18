@@ -12,6 +12,7 @@
  * runtime. Keep in sync with the "ARQUIVOS PROTEGIDOS" section of CLAUDE.md.
  */
 
+import * as childProcess from "node:child_process";
 import * as fs from "node:fs";
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -34,6 +35,79 @@ function findRepoRoot(start: string): string {
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 export const REPO_ROOT = findRepoRoot(HERE);
+
+function canonicalPath(target: string): string {
+  const resolved = path.resolve(target);
+  try {
+    return fs.realpathSync.native(resolved);
+  } catch {
+    return resolved;
+  }
+}
+
+function uniqueResolved(roots: string[]): string[] {
+  const seen = new Set<string>();
+  const result: string[] = [];
+  for (const root of roots) {
+    if (root.trim().length === 0) continue;
+    const resolved = canonicalPath(root);
+    if (seen.has(resolved)) continue;
+    seen.add(resolved);
+    result.push(resolved);
+  }
+  return result;
+}
+
+function envAllowedRoots(): string[] {
+  const value = process.env.ATOMIC_EDIT_ALLOWED_ROOTS;
+  if (!value) return [];
+  return value.split(path.delimiter).map((entry) => entry.trim()).filter(Boolean);
+}
+
+function gitWorktreeRoots(): string[] {
+  try {
+    const output = childProcess.execFileSync(
+      "git",
+      ["-C", REPO_ROOT, "worktree", "list", "--porcelain"],
+      { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] },
+    );
+    return output
+      .split(/\r?\n/)
+      .filter((line) => line.startsWith("worktree "))
+      .map((line) => line.slice("worktree ".length).trim())
+      .filter(Boolean);
+  } catch {
+    return [];
+  }
+}
+
+function allowedRepoRoots(): string[] {
+  return uniqueResolved([REPO_ROOT, ...gitWorktreeRoots(), ...envAllowedRoots()]).sort(
+    (a, b) => b.length - a.length,
+  );
+}
+
+function containsPath(root: string, target: string): boolean {
+  const rel = path.relative(root, target);
+  return rel === "" || (!rel.startsWith("..") && !path.isAbsolute(rel));
+}
+
+export function resolveAllowedRootForAbsolutePath(absPath: string): string | null {
+  const abs = canonicalPath(absPath);
+  return allowedRepoRoots().find((root) => containsPath(root, abs)) ?? null;
+}
+
+function resolveTargetRoot(file: string): { absPath: string; repoRoot: string } {
+  const absPath = path.isAbsolute(file) ? canonicalPath(file) : canonicalPath(path.resolve(REPO_ROOT, file));
+  const repoRoot = resolveAllowedRootForAbsolutePath(absPath);
+  if (!repoRoot) {
+    throw new Error(
+      `refused: path escapes allowed atomic edit roots (${file}). ` +
+        `Allowed roots: ${allowedRepoRoots().join(", ")}`,
+    );
+  }
+  return { absPath, repoRoot };
+}
 
 /** Exact repo-relative paths that no AI CLI may modify. */
 const PROTECTED_FILES = new Set<string>([
@@ -63,25 +137,29 @@ function isProtectedRelative(rel: string): string | null {
 export interface ResolvedTarget {
   absPath: string;
   relPath: string;
+  repoRoot: string;
 }
 
 /**
- * Resolve a user-supplied path against the repo root and assert it is both
- * contained and not governance-protected. Throws with an actionable message
- * otherwise.
+ * Resolve a user-supplied path against an allowed repo root and assert it is
+ * both contained and not governance-protected. Relative paths still target the
+ * MCP server root. Absolute paths may target any registered git worktree for
+ * this repo, which lets delegated workers operate in isolated worktrees without
+ * mutating the coordinator's checkout.
  */
 export function resolveSafeTarget(file: string): ResolvedTarget {
-  const abs = path.resolve(REPO_ROOT, file);
-  const rel = path.relative(REPO_ROOT, abs);
+  const { absPath, repoRoot } = resolveTargetRoot(file);
+  const rel = path.relative(repoRoot, absPath);
   if (rel.startsWith("..") || path.isAbsolute(rel)) {
-    throw new Error(`refused: path escapes repo root (${file})`);
+    throw new Error(`refused: path escapes resolved repo root (${file})`);
   }
-  const hit = isProtectedRelative(rel.split(path.sep).join("/"));
+  const relPath = rel.split(path.sep).join("/");
+  const hit = isProtectedRelative(relPath);
   if (hit) {
     throw new Error(
-      `refused: ${rel} is governance-protected (matches "${hit}" in CLAUDE.md). ` +
+      `refused: ${relPath} is governance-protected (matches "${hit}" in CLAUDE.md). ` +
         `Only the repo owner may change it — ask, do not bypass.`,
     );
   }
-  return { absPath: abs, relPath: rel.split(path.sep).join("/") };
+  return { absPath, relPath, repoRoot };
 }

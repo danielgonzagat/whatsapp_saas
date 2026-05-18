@@ -265,6 +265,7 @@ export default function AutopilotPlanInspector({
               type="button"
               onClick={onRefresh}
               disabled={isLoading}
+              aria-label="Atualizar dados"
               className="p-2 rounded-lg transition-colors hover:bg-white/5"
               style={{ color: colors.text.muted }}
             >

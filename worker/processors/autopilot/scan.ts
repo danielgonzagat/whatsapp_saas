@@ -27,7 +27,9 @@ export { runScanDecisions } from './scan-decisions';
 
 export async function runScanContact(data: UnknownRecord) {
   const { workspaceId } = data || {};
-  if (!workspaceId) return;
+  if (!workspaceId) {
+    return;
+  }
   const smokeTestId = data?.smokeTestId as string | undefined;
   const smokeMode = data?.smokeMode === 'live' ? 'live' : 'dry-run';
   const runId = data?.runId as string | undefined;

@@ -28,6 +28,7 @@ const ENTRY = [
   'trace.ts',
   'textunit.ts',
   'founder.ts',
+  'smoke.ts',
 ].map((f) => path.join(dir, f));
 const OUT = path.join(dir, 'dist');
 
@@ -60,4 +61,7 @@ if (errors.length > 0) {
   process.exit(1);
 }
 fs.writeFileSync(path.join(OUT, 'package.json'), JSON.stringify({ type: 'module' }) + '\n');
+for (const asset of ['worker-scope-check.mjs']) {
+  fs.copyFileSync(path.join(dir, asset), path.join(OUT, asset));
+}
 process.stderr.write(`atomic-edit build OK -> ${OUT}\n`);

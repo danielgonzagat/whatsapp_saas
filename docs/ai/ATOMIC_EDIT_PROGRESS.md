@@ -135,3 +135,139 @@ Tool + 3-CLI connectivity = COMPLETE (kill-switch: stop tool-building). The
 remaining scope is the explicitly-deferred production phase (the 4 named Kloel
 integrations / R-tier against real services), per Daniel's own deferral. No
 more atomic-edit infra work — that would be the banned meta-fuga.
+
+## 2026-05-16 Codex continuation — product phase, honest blocker state
+
+Session instruction: Daniel explicitly resumed the v5 mission and asked for
+continuous autonomous work until two declarations can be made honestly:
+
+1. 100% of the covered scope is functional in production.
+2. The original structured-action-space principle reached its apex of result.
+
+Verified foundation first:
+
+- `npx tsx scripts/mcp/atomic-edit/smoke.ts` -> 75 passed, 0 failed.
+- `node scripts/mcp/atomic-edit/audit-atomicity.mjs --json` -> pass,
+  `atomic_edit_ratio=1`, `fallback_rate=0`, `coarse_unjustified=0`.
+
+Product unit moved, not tool rebuilt:
+
+- Front: `front-chat-postgres-d7-session-1`.
+- Integration: chat persisted in Postgres.
+- Fixed admin chat session create/update responses so the frontend-admin
+  session history receives the persisted `messages` array instead of a partial
+  raw Prisma record. This closes a real UI/API contract gap for creating and
+  renaming persisted admin chat sessions.
+- Regression test added in
+  `backend/src/admin/chat/admin-chat-session.service.spec.ts`.
+
+Typecheck/PULSE blockers repaired:
+
+- `npm --prefix backend run typecheck` initially failed on TS6133 unused
+  symbols from the dirty backlog. Exported the intended helper/queue surfaces
+  instead of deleting behavior; backend typecheck then passed.
+- `npm run pulse:json` initially failed before certification because split-file
+  imports had regressed from `__parts__` paths. Repaired only:
+  - `scripts/pulse/certification/compute.ts`
+  - `scripts/pulse/dod-engine/engine.ts`
+  - `scripts/pulse/convergence-plan/utils.ts`
+- Did not touch `scripts/pulse/no-hardcoded-reality-audit.ts`.
+
+Validation run:
+
+- `npm --prefix backend test -- --runInBand backend/src/admin/chat/admin-chat.service.spec.ts backend/src/admin/chat/admin-chat-session.service.spec.ts backend/src/admin/chat/admin-chat.controller.spec.ts backend/src/admin/chat/chat-tool.registry.spec.ts backend/src/chat/chat.service.spec.ts backend/src/chat/chat.controller.spec.ts`
+  -> 6 suites passed, 43 tests passed.
+- `npm --prefix backend run typecheck` -> passed.
+- `npm --prefix backend run build` -> passed.
+- `npm run pulse:json` -> completed to certificate, status `NOT_CERTIFIED`,
+  score `55`, rawScore `99`.
+- `git diff --check` -> passed.
+- Atomic traces exist for this session's touched code files.
+
+Honest certification state:
+
+- D7 remains `em prova`; consecutive-green counter remains `0`.
+- The two requested declarations are blocked and cannot be made honestly.
+- Fresh PULSE blockers include:
+  - `scopeClosed` fail: observed Codacy files missing from repo inventory.
+  - `staticPass` fail: 3 critical/high scan findings and 2225 Codacy HIGH
+    issues.
+  - `runtimePass` fail: runtime evidence not collected; `--deep` or `--total`
+    required.
+  - `productionDecisionPass` fail: deploy-failure external signals not mapped
+    to actionable product surfaces.
+  - `securityPass` fail: blocking security predicates remain.
+  - `customerPass`, `operatorPass`, `adminPass`, `soakPass` fail from missing
+    observed runtime/synthetic evidence.
+  - `noOverclaimPass` fail: `.pulse/current/PULSE_PROOF_READINESS.json` still
+    reports non-observed production proof (`executable_unproved`, planned
+    2047).
+  - `criticalPathObservedPass` fail: 4883 terminal critical paths still require
+    observed pass/fail evidence.
+
+Next ai-safe action:
+
+1. Do not build more atomic-edit tooling.
+2. Use PULSE's fresh certificate as the authority.
+3. Pick one failing evidence lane with bounded blast radius, preferably
+   observed admin/operator runtime evidence for a named product flow, and attach
+   real HTTP/Playwright/DB evidence.
+4. Keep protected governance files and the PULSE hardcode auditor untouched.
+
+## 2026-05-16 Codex continuation — practical apex MCP layer
+
+Session instruction changed scope explicitly: Daniel asked to turn the primary
+principle into practical tooling across Codex CLI, Claude Code CLI, and OpenCode
+CLI, using the shared MCP layer already loaded by all three. This is not a
+closed-D7 declaration; it is a scoped owner-approved tooling expansion.
+
+Implemented in the existing `atomic-edit` MCP server, so every CLI that already
+loads `atomic-edit` receives the new organs without editing protected config:
+
+- `product_intent_contract` — product goal -> named integration, acceptance
+  criteria, risk, proof plan, non-goals, external blockers, next atomic action.
+- `zero_code_trust_score` — deterministic score for whether Daniel can validate
+  by product, explanation, code review, technical interpretation, or manual fix.
+- `behavior_receipt` — founder-facing behavior receipt with click path,
+  evidence, not-proven items, risks, and Zero-Code Trust.
+- `truth_receipt` — anti-facade classifier (`REAL`, `PARTIAL`, `STUB`,
+  `MOCK_ONLY`, `EXTERNAL_BLOCKED`, `UNPROVEN`, `BROKEN`).
+- `continuity_status` — reads progress/workboard/PULSE/runtime evidence and
+  locks so a fresh session starts from repo state, not chat memory.
+- `atomic_lock_acquire`, `atomic_lock_status`, `atomic_lock_release` — POSIX
+  `mkdir` front locks under `.atomic-edit-locks/`, with status compatible with
+  both new JSON locks and existing legacy `key=value` locks.
+
+Additional correctness fix:
+
+- Corrected `lineRewriteAvoided` semantics in the trace/auditor path. A high
+  expansion factor means more line surface was preserved by the atomic edit; it
+  must not be flagged as coarse. The auditor now derives compatibility for older
+  traces instead of requiring a stale boolean to be correct.
+
+Validation:
+
+- `node scripts/mcp/atomic-edit/build.mjs` -> passed.
+- `npx tsx scripts/mcp/atomic-edit/smoke.ts` -> 83 passed, 0 failed.
+- `node scripts/mcp/atomic-edit/smoke.mjs` -> 83 passed, 0 failed through the
+  launcher/dist path.
+- `node scripts/mcp/atomic-edit/audit-atomicity.mjs --json` -> pass,
+  `atomic_edit_ratio=1`, `fallback_rate=0`, `coarse_unjustified=0`.
+- Direct dist MCP call to `continuity_status` -> reads PULSE `NOT_CERTIFIED`,
+  runtime evidence `4/4 probes executed, 3 passed, 1 failed`, and 4 active
+  locks including the new validated front.
+
+Honest state:
+
+- This makes the principle operationally stronger inside the shared CLI MCP
+  body, but it does **not** prove "100% production" and does **not** close D7.
+- The product proof remains blocked by PULSE/runtime evidence gaps and live
+  production probe failures already recorded above.
+- D7 remains `em prova`; consecutive-green counter remains `0`.
+
+Next ai-safe action:
+
+1. Use `product_intent_contract` at the start of the next real product unit.
+2. Use `truth_receipt` and `behavior_receipt` before any completion claim.
+3. Continue with product/runtime proof for one named Kloel integration instead
+   of adding more abstract tooling.

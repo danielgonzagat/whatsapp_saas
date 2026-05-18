@@ -59,7 +59,14 @@ describe('followup-scheduler — channel followUpEnabled enforcement', () => {
       status: 'OPEN',
       mode: 'AI',
       contact: { id: contactId, phone },
-      messages: [{ id: 'msg-1', content: 'Tenho interesse', direction: 'OUTBOUND', createdAt: new Date(Date.now() - 3600000) }],
+      messages: [
+        {
+          id: 'msg-1',
+          content: 'Tenho interesse',
+          direction: 'OUTBOUND',
+          createdAt: new Date(Date.now() - 3600000),
+        },
+      ],
     });
   });
 
