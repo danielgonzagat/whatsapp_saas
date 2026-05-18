@@ -5,7 +5,8 @@ buildCommand = "npm ci --include=dev && npm run prisma:generate && npm run build
 watchPatterns = ["**"]
 
 [deploy]
-startCommand = "npm run start:prod"
+preDeployCommand = "node prisma/ensure-migrations.js"
+startCommand = "node -r ./dd-trace-init.cjs dist/src/bootstrap.js"
 healthcheckPath = "/health/live"
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 3
