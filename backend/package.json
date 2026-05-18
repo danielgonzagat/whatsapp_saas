@@ -38,8 +38,8 @@
     "cleanup:legacy-products": "ts-node scripts/remove-legacy-products.ts"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "3.1047.0",
-    "@aws-sdk/s3-request-presigner": "3.1047.0",
+    "@aws-sdk/client-s3": "3.1048.0",
+    "@aws-sdk/s3-request-presigner": "3.1048.0",
     "@nestjs-modules/ioredis": "2.2.1",
     "@nestjs/common": "11.1.21",
     "@nestjs/config": "4.0.4",
@@ -58,7 +58,7 @@
     "@types/bcrypt": "6.0.0",
     "@types/cookie-parser": "1.4.10",
     "bcrypt": "6.0.0",
-    "bullmq": "5.76.8",
+    "bullmq": "5.76.10",
     "class-transformer": "0.5.1",
     "class-validator": "0.15.1",
     "cookie-parser": "1.4.7",
@@ -71,7 +71,7 @@
     "htmlparser2": "10.1.0",
     "ioredis": "5.10.1",
     "joi": "18.2.1",
-    "openai": "6.37.0",
+    "openai": "6.38.0",
     "otplib": "12.0.1",
     "pdf-parse": "2.4.5",
     "prisma": "5.22.0",
