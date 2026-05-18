@@ -81,7 +81,7 @@ jobs:
   deploy-staging-live:
     if: github.event_name == 'workflow_dispatch' || github.event_name == 'push' || (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 75
     environment: staging
 
     services:
@@ -215,12 +215,24 @@ jobs:
           RAILWAY_ENVIRONMENT: ${{ vars.RAILWAY_STAGING_ENVIRONMENT }}
           RAILWAY_BACKEND_SERVICE: ${{ vars.RAILWAY_BACKEND_SERVICE }}
         run: |
-          railway up backend \
-            --path-as-root \
-            --service "${RAILWAY_BACKEND_SERVICE:-backend}" \
-            --environment "${RAILWAY_ENVIRONMENT:-staging}" \
-            --project "$RAILWAY_PROJECT_ID" \
-            --ci
+          for attempt in 1 2 3; do
+            if railway up backend \
+              --path-as-root \
+              --service "${RAILWAY_BACKEND_SERVICE:-backend}" \
+              --environment "${RAILWAY_ENVIRONMENT:-staging}" \
+              --project "$RAILWAY_PROJECT_ID" \
+              --ci; then
+              exit 0
+            fi
+
+            if [ "$attempt" -eq 3 ]; then
+              echo "Railway backend deploy failed after $attempt attempts"
+              exit 1
+            fi
+
+            echo "Railway backend deploy attempt $attempt failed; retrying in 60s"
+            sleep 60
+          done
 
       - name: Deploy worker to Railway staging
         if: github.event_name != 'pull_request'
@@ -230,12 +242,24 @@ jobs:
           RAILWAY_ENVIRONMENT: ${{ vars.RAILWAY_STAGING_ENVIRONMENT }}
           RAILWAY_WORKER_SERVICE: ${{ vars.RAILWAY_WORKER_SERVICE }}
         run: |
-          railway up worker \
-            --path-as-root \
-            --service "${RAILWAY_WORKER_SERVICE:-worker}" \
-            --environment "${RAILWAY_ENVIRONMENT:-staging}" \
-            --project "$RAILWAY_PROJECT_ID" \
-            --ci
+          for attempt in 1 2 3; do
+            if railway up worker \
+              --path-as-root \
+              --service "${RAILWAY_WORKER_SERVICE:-worker}" \
+              --environment "${RAILWAY_ENVIRONMENT:-staging}" \
+              --project "$RAILWAY_PROJECT_ID" \
+              --ci; then
+              exit 0
+            fi
+
+            if [ "$attempt" -eq 3 ]; then
+              echo "Railway worker deploy failed after $attempt attempts"
+              exit 1
+            fi
+
+            echo "Railway worker deploy attempt $attempt failed; retrying in 60s"
+            sleep 60
+          done
 
       - name: Deploy frontend to Vercel preview/staging
         if: github.event_name != 'pull_request'
