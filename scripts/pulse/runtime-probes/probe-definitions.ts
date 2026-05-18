@@ -50,17 +50,7 @@ export const DEFAULT_PROBE_DEFINITIONS: RuntimeProbeDefinition[] = [
 ];
 
 function normalizeProbeBaseUrl(value: string): string {
-  const trimmed = value.trim().replace(/\/+$/, '');
-  try {
-    const url = new URL(trimmed);
-    if (url.hostname === 'localhost') {
-      url.hostname = '127.0.0.1';
-      return url.toString().replace(/\/+$/, '');
-    }
-  } catch {
-    return trimmed;
-  }
-  return trimmed;
+  return value.trim().replace(/\/+$/, '');
 }
 
 export function resolveProbeBaseUrl(): string | null {

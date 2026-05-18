@@ -226,6 +226,20 @@ async function countEnabledNonDeprecatedPatterns(codingStandardId, tools, deprec
   return enabledPatterns;
 }
 
+async function listAllCodingStandardToolPatterns(codingStandardId, toolUuid) {
+  const patterns = [];
+  let total = 0;
+  let cursor = '';
+  do {
+    const page = await api.listCodingStandardToolPatterns(codingStandardId, toolUuid, cursor);
+    patterns.push(...page.data);
+    total = page.total;
+    const nextCursor = page.cursor;
+    cursor = nextCursor && nextCursor !== cursor ? nextCursor : '';
+  } while (cursor);
+  return { patterns, total };
+}
+
 async function verifyCanonicalStandard(codingStandard) {
   const orgTools = await api.listOrganizationTools();
   const standardTools = await api.listCodingStandardTools(codingStandard.id);
@@ -270,6 +284,34 @@ async function verifyCanonicalStandard(codingStandard) {
     }
     return tool.isEnabled === false || tool.enabled === false;
   });
+  const deprecatedPatternState = [];
+  for (const entry of DEPRECATED_DISABLED_TOOLS) {
+    const tool = standardTools.find((candidate) => candidate.uuid === entry.uuid);
+    if (!tool) {
+      continue;
+    }
+    const snapshot = await listAllCodingStandardToolPatterns(codingStandard.id, entry.uuid);
+    const enabledPatterns = snapshot.patterns.filter((pattern) => pattern.enabled !== false);
+    deprecatedPatternState.push({
+      name: entry.name,
+      uuid: entry.uuid,
+      total: snapshot.total,
+      inspected: snapshot.patterns.length,
+      enabledCount: enabledPatterns.length,
+      fullyInspected: snapshot.patterns.length === snapshot.total,
+    });
+  }
+  const deprecatedPatternsFullyDisabled =
+    deprecatedPatternState.length === DEPRECATED_DISABLED_TOOLS.length &&
+    deprecatedPatternState.every(
+      (entry) => entry.fullyInspected && entry.total > 0 && entry.enabledCount === 0,
+    );
+  // Codacy's published-standard meta can include one disabled deprecated-tool
+  // sentinel even after the tool and every deprecated pattern are disabled.
+  // Accept only that exact +1 shape; any missing non-deprecated pattern or any
+  // enabled deprecated pattern remains a hard failure.
+  const disabledDeprecatedMetaSentinel =
+    deprecatedPatternsFullyDisabled && enabledPatternsCount === totalOrganizationPatterns + 1;
   const enabledNonDeprecatedTools = enabledStandardTools.filter(
     (tool) => !deprecatedUuids.has(tool.uuid),
   );
@@ -282,13 +324,15 @@ async function verifyCanonicalStandard(codingStandard) {
     enabledPatternsCount,
     enabledNonDeprecatedPatternsCount,
     deprecatedActuallyDisabled,
+    deprecatedPatternsFullyDisabled,
+    disabledDeprecatedMetaSentinel,
     hasAllToolsEnabled:
       enabledToolsCount === targetEnabledToolsCount &&
       enabledNonDeprecatedTools.length === targetEnabledToolsCount &&
       deprecatedActuallyDisabled,
     hasAllPatternsEnabled:
       enabledNonDeprecatedPatternsCount === totalOrganizationPatterns &&
-      enabledPatternsCount >= totalOrganizationPatterns,
+      (enabledPatternsCount === totalOrganizationPatterns || disabledDeprecatedMetaSentinel),
   };
 }
 

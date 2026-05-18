@@ -109,8 +109,10 @@ export function buildCodacyApi({ token, provider, organization, repository, gate
         'GET',
         `${orgScope}/coding-standards/${codingStandardId}/tools/${toolUuid}/patterns?${params.toString()}`,
       );
+      const data = payload.data || [];
       return {
-        data: payload.data || [],
+        data,
+        patterns: data,
         cursor: payload.pagination?.cursor ? String(payload.pagination.cursor) : '',
         total: Number(payload.pagination?.total || 0),
       };
