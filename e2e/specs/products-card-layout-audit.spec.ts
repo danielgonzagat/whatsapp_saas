@@ -34,7 +34,7 @@ async function captureProductsCard(
 
   await page.setViewportSize(viewport);
   await bootstrapAuthenticatedPage(page, auth, { landingPath: '/products' });
-  await page.goto(`${appUrl}/products`, { waitUntil: 'networkidle' });
+  await page.goto(`${appUrl}/products`, { waitUntil: 'domcontentloaded' });
 
   const editButton = page.getByRole('button', { name: /editar/i }).first();
   await expect(editButton).toBeVisible({ timeout: 15000 });
