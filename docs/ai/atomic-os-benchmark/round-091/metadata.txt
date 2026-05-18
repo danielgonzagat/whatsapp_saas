@@ -1,0 +1,6 @@
+round=091
+normal_worktree=/private/tmp/kloel-ab091-normal-20260517182930
+atomic_worktree=/private/tmp/kloel-ab091-atomic-20260517182930
+task=extract_execute_tool_router_cluster_plus_actionSucceeded
+started_at=2026-05-17T18:29:33-03:00
+repeat_reason=round090_semantic_lint_fix_regression

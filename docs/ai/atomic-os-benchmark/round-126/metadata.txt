@@ -1,0 +1,12 @@
+round=126
+created_at_utc=2026-05-18T10:55:45Z
+base_head=565b0f84d
+normal_worktree=/Users/danielpenin/kloel-ab-worktrees/kloel-ab126-normal-20260518105544
+atomic_worktree=/Users/danielpenin/kloel-ab-worktrees/kloel-ab126-atomic-20260518105544
+normal_branch=ab/round126-normal-20260518105544
+atomic_branch=ab/round126-atomic-20260518105544
+complexity=seven-helper-predecided-processing-repeat-after-service-residue-validator-repair
+normal_variant=compact_timeout_aware_factory
+atomic_variant=minimal_compact_preprompt_summary_final_service_residue_gate
+idle_ms=720000
+max_ms=1500000

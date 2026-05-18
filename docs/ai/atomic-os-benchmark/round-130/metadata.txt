@@ -1,0 +1,6 @@
+round=130
+timestamp=20260518100157
+normal_worktree=/Users/danielpenin/kloel-ab-worktrees/kloel-ab130-normal-20260518100157
+atomic_worktree=/Users/danielpenin/kloel-ab-worktrees/kloel-ab130-atomic-20260518100157
+complexity=seven-helper unified-agent split with macro facade compaction
+policy=repeat same tier; do not scale until ATOMIC wins or ties service facade lines while preserving all gates

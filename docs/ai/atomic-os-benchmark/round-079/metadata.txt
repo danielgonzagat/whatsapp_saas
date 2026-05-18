@@ -1,0 +1,6 @@
+round=079
+timestamp=20260517143719
+normal=/private/tmp/kloel-ab079-normal-20260517143719
+atomic=/private/tmp/kloel-ab079-atomic-20260517143719
+task=repeat_round078_runtime_context_dependency_extraction_after_atomic_adapter
+atomic_change=extract_class_methods_to_file targetHeader+methodAdapter+forbiddenTextChecks

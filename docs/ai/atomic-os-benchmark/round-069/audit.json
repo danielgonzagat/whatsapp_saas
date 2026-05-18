@@ -1,0 +1,222 @@
+{
+  "roundDir": "/Users/danielpenin/whatsapp_saas/docs/ai/atomic-os-benchmark/round-069",
+  "normal": {
+    "eventsFile": "opencode-normal-events.jsonl",
+    "events": {
+      "rows": 36,
+      "turnCompleted": true,
+      "completedCommands": 6,
+      "uniqueCompletedCommands": 6,
+      "failedCommands": [
+        {
+          "command": "npm --prefix backend run typecheck 2>&1",
+          "exitCode": 2,
+          "output": "\n> backend@0.0.1 typecheck\n> tsc -p tsconfig.build.json --noEmit\n\nsrc/integrations/google-ads-enhanced-conversions.service.ts(86,7): error TS2322: Type '{ workspaceId: string; }' is not assignable to type 'IntegrationCredentialWhereUniqueInput'.\n  Type '{ workspaceId: string; }' is not assignable to type '{ id: string | IntegrationCredentialWorkspaceIdPlatformCompoundUniqueInput; workspaceId_platf"
+        }
+      ],
+      "completedMcpCalls": 0,
+      "mcpTools": {},
+      "allTools": {
+        "read": 1,
+        "bash": 6,
+        "write": 1,
+        "edit": 5
+      },
+      "nativeFileToolViolations": [
+        {
+          "tool": "read",
+          "inputPreview": "{\"filePath\":\"/private/tmp/kloel-ab069-normal-20260517113500/backend/src/kloel/unified-agent.service.ts\"}"
+        },
+        {
+          "tool": "write",
+          "inputPreview": "{\"filePath\":\"/private/tmp/kloel-ab069-normal-20260517113500/backend/src/kloel/unified-agent-action.helpers.ts\",\"content\":\"export function actionSucceeded(result: unknown): boolean {\\n  if (!result || typeof result !== 'object' || Array.isArray(result)) {\\n    return false;\\n  }\\n  const record = result as Record<string, unknown>;\\n  return record.success === true || record.ok === true || record.ex"
+        },
+        {
+          "tool": "edit",
+          "inputPreview": "{\"filePath\":\"/private/tmp/kloel-ab069-normal-20260517113500/backend/src/kloel/unified-agent.service.ts\",\"oldString\":\"import {\\n  buildPredecidedActionDraft,\\n  executePredecidedAgentActions,\\n} from './unified-agent-predecided-actions.part';\",\"newString\":\"import {\\n  buildPredecidedActionDraft,\\n  executePredecidedAgentActions,\\n} from './unified-agent-predecided-actions.part';\\nimport { actionSuc"
+        },
+        {
+          "tool": "edit",
+          "inputPreview": "{\"filePath\":\"/private/tmp/kloel-ab069-normal-20260517113500/backend/src/kloel/unified-agent.service.ts\",\"oldString\":\"          success: this.actionSucceeded(action.result),\\n          result: action.result,\\n        })),\\n      });\\n\\n      return {\\n        actions: actionsList,\",\"newString\":\"          success: actionSucceeded(action.result),\\n          result: action.result,\\n        })),\\n     "
+        },
+        {
+          "tool": "edit",
+          "inputPreview": "{\"filePath\":\"/private/tmp/kloel-ab069-normal-20260517113500/backend/src/kloel/unified-agent.service.ts\",\"oldString\":\"        success: this.actionSucceeded(action.result),\\n        result: action.result,\\n      })),\\n    });\\n\\n    return {\\n      actions: actionsList,\",\"newString\":\"        success: actionSucceeded(action.result),\\n        result: action.result,\\n      })),\\n    });\\n\\n    return {"
+        },
+        {
+          "tool": "edit",
+          "inputPreview": "{\"filePath\":\"/private/tmp/kloel-ab069-normal-20260517113500/backend/src/kloel/unified-agent.service.ts\",\"oldString\":\"        const paymentAmount = this.num(args.amount);\",\"newString\":\"        const paymentAmount = num(args.amount);\"}"
+        },
+        {
+          "tool": "edit",
+          "inputPreview": "{\"filePath\":\"/private/tmp/kloel-ab069-normal-20260517113500/backend/src/kloel/unified-agent.service.ts\",\"oldString\":\"  private actionSucceeded(result: unknown): boolean {\\n    if (!result || typeof result !== 'object' || Array.isArray(result)) {\\n      return false;\\n    }\\n    const record = result as Record<string, unknown>;\\n    return record.success === true || record.ok === true || record.exe"
+        }
+      ],
+      "nativeShellReadCommands": [],
+      "maskedAtomicFailurePipelineCommands": [],
+      "fileChangeItems": 0,
+      "fileChangePaths": [],
+      "agentMessages": 5,
+      "proofReadCommands": 1,
+      "fullDiffCommands": 0,
+      "backendInstallCommands": 0,
+      "usage": {
+        "input_tokens": 52794,
+        "output_tokens": 1886,
+        "reasoning_output_tokens": 764
+      }
+    },
+    "validation": {
+      "jestStatus": 0,
+      "typecheckStatus": 1,
+      "diffCheckStatus": 0,
+      "traceIsolationStatus": 0,
+      "forbiddenPatternStatus": 1,
+      "serviceLines": 725,
+      "specDiff": [],
+      "protectedDiff": [],
+      "traceCount": 0,
+      "docsTraceCount": null,
+      "touchedKloelFiles": [
+        "backend/src/kloel/unified-agent-action.helpers.ts",
+        "backend/src/kloel/unified-agent.service.ts"
+      ],
+      "touchedKloelFileCount": 2,
+      "fileLineCounts": [
+        {
+          "lines": 725,
+          "path": "backend/src/kloel/unified-agent.service.ts"
+        },
+        {
+          "lines": 12,
+          "path": "backend/src/kloel/unified-agent-action.helpers.ts"
+        }
+      ],
+      "actionHelperLines": 12,
+      "runtimeHelperLines": null,
+      "untrackedInsertions": 12,
+      "sourceInsertions": 16,
+      "sourceDeletions": 16,
+      "sourceChurn": 32
+    }
+  },
+  "atomic": {
+    "eventsFile": "opencode-atomic-events.jsonl",
+    "events": {
+      "rows": 79,
+      "turnCompleted": true,
+      "completedCommands": 22,
+      "uniqueCompletedCommands": 20,
+      "failedCommands": [
+        {
+          "command": "node /Users/danielpenin/whatsapp_saas/docs/ai/atomic-os-benchmark/tools/atomic-call.cjs code_outline backend/src/kloel/unified-agent.service.ts",
+          "exitCode": 1,
+          "output": "[atomic-edit] ready — repo=/Users/danielpenin/whatsapp_saas node=v25.9.0 pid=50256\n[atomic-edit] tmpdir=/tmp\nSyntaxError: Unexpected token 'b', \"backend/sr\"... is not valid JSON\n    at JSON.parse (<anonymous>)\n    at parseCliJson (/Users/danielpenin/whatsapp_saas/docs/ai/atomic-os-benchmark/tools/atomic-call.cjs:39:17)\n    at main (/Users/danielpenin/whatsapp_saas/docs/ai/atomic-os-benchmark/tools"
+        },
+        {
+          "command": "node /Users/danielpenin/whatsapp_saas/docs/ai/atomic-os-benchmark/tools/atomic-call.cjs extract_symbols_to_file '{\"sourceFile\":\"backend/src/kloel/unified-agent.service.ts\",\"targetFile\":\"backend/src/kloel/unified-agent-action.helpers.ts\",\"selectors\":[\"actionSucceeded\",\"num\"],\"importNames\":[\"actionSucceeded\",\"num\"],\"importModule\":\"./unified-agent-action.helpers\"}'",
+          "exitCode": 1,
+          "output": "[atomic-edit] ready — repo=/Users/danielpenin/whatsapp_saas node=v25.9.0 pid=67807\n[atomic-edit] tmpdir=/tmp\n[atomic-edit] ERROR rejected: edit would introduce a ts syntax error (0 -> 10). Declaration or statement expected. (at 1:1) — file NOT modified.\n{\n  \"ok\": false,\n  \"error\": \"rejected: edit would introduce a ts syntax error (0 -> 10). Declaration or statement expected. (at 1:1) — file NOT mo"
+        },
+        {
+          "command": "node /Users/danielpenin/whatsapp_saas/docs/ai/atomic-os-benchmark/tools/atomic-call.cjs batch \"$(cat /tmp/atomic-batch.json)\"",
+          "exitCode": 1,
+          "output": "[atomic-edit] ready — repo=/Users/danielpenin/whatsapp_saas node=v25.9.0 pid=8677\n[atomic-edit] tmpdir=/tmp\n[atomic-edit] semantic edit {\"action\":\"created-declaration\",\"moduleSpecifier\":\"./unified-agent-action.helpers\",\"name\":\"actionSucceeded\",\"alias\":null} in backend/src/kloel/unified-agent.service.ts\n[atomic-edit] semantic edit {\"action\":\"added-specifier\",\"moduleSpecifier\":\"./unified-agent-actio"
+        }
+      ],
+      "completedMcpCalls": 0,
+      "mcpTools": {},
+      "allTools": {
+        "bash": 22,
+        "read": 4
+      },
+      "nativeFileToolViolations": [
+        {
+          "tool": "read",
+          "inputPreview": "{\"filePath\":\"/Users/danielpenin/whatsapp_saas/docs/ai/atomic-os-benchmark/tools/atomic-call.cjs\",\"limit\":80}"
+        },
+        {
+          "tool": "read",
+          "inputPreview": "{\"filePath\":\"/Users/danielpenin/whatsapp_saas/docs/ai/atomic-os-benchmark/tools/atomic-call.cjs\",\"offset\":80,\"limit\":100}"
+        },
+        {
+          "tool": "read",
+          "inputPreview": "{\"offset\":180,\"filePath\":\"/Users/danielpenin/whatsapp_saas/docs/ai/atomic-os-benchmark/tools/atomic-call.cjs\",\"limit\":150}"
+        },
+        {
+          "tool": "read",
+          "inputPreview": "{\"offset\":330,\"filePath\":\"/Users/danielpenin/whatsapp_saas/docs/ai/atomic-os-benchmark/tools/atomic-call.cjs\",\"limit\":180}"
+        }
+      ],
+      "nativeShellReadCommands": [
+        "cat > /tmp/atomic-batch.json << 'BATCHEOF'\n[\n  {\"tool\": \"atomic_add_import\", \"args\": {\"file\": \"backend/src/kloel/unified-agent.service.ts\", \"name\": \"actionSucceeded\", \"module\": \"./unified-agent-action.helpers\"}},\n  {\"tool\": \"atomic_add_import\", \"args\": {\"file\": \"backend/src/kloel/unified-agent.service.ts\", \"name\": \"num\", \"module\": \"./unified-agent-action.helpers\"}},\n  {\"tool\": \"atomic_replace_text\", \"args\": {\"file\": \"backend/src/kloel/unified-agent.service.ts\", \"oldText\": \"this.actionSucceeded(\", \"newText\": \"actionSucceeded(\"}},\n  {\"tool\": \"atomic_replace_text\", \"args\": {\"file\": \"backend/src/kloel/unified-agent.service.ts\", \"oldText\": \"this.num(\", \"newText\": \"num(\"}},\n  {\"tool\": \"atomic_edit_symbol\", \"args\": {\"file\": \"backend/src/kloel/unified-agent.service.ts\", \"selector\": \"actionSucceeded\", \"op\": \"remove\"}},\n  {\"tool\": \"atomic_edit_symbol\", \"args\": {\"file\": \"backend/src/kloel/unified-agent.service.ts\", \"selector\": \"num\", \"op\": \"remove\"}}\n]\nBATCHEOF\necho \"Batch file written\""
+      ],
+      "maskedAtomicFailurePipelineCommands": [],
+      "fileChangeItems": 0,
+      "fileChangePaths": [],
+      "agentMessages": 13,
+      "proofReadCommands": 1,
+      "fullDiffCommands": 0,
+      "backendInstallCommands": 0,
+      "usage": {
+        "input_tokens": 68004,
+        "output_tokens": 4990,
+        "reasoning_output_tokens": 9027
+      }
+    },
+    "validation": {
+      "jestStatus": 0,
+      "typecheckStatus": 1,
+      "diffCheckStatus": 0,
+      "traceIsolationStatus": 0,
+      "forbiddenPatternStatus": 1,
+      "serviceLines": 727,
+      "specDiff": [],
+      "protectedDiff": [],
+      "traceCount": 8,
+      "docsTraceCount": null,
+      "touchedKloelFiles": [
+        "backend/src/kloel/unified-agent-action.helpers.ts",
+        "backend/src/kloel/unified-agent.service.ts"
+      ],
+      "touchedKloelFileCount": 2,
+      "fileLineCounts": [
+        {
+          "lines": 727,
+          "path": "backend/src/kloel/unified-agent.service.ts"
+        },
+        {
+          "lines": 12,
+          "path": "backend/src/kloel/unified-agent-action.helpers.ts"
+        }
+      ],
+      "actionHelperLines": 12,
+      "runtimeHelperLines": null,
+      "untrackedInsertions": 12,
+      "sourceInsertions": 16,
+      "sourceDeletions": 14,
+      "sourceChurn": 30
+    }
+  },
+  "scorecard": {
+    "functionalPass": false,
+    "atomicModeClean": false,
+    "atomicNativeFileToolViolationCount": 4,
+    "atomicNativeShellReadCommandCount": 1,
+    "atomicMaskedPipelineCommandCount": 0,
+    "atomicTraceIsolationPass": true,
+    "serviceLineWinner": "normal",
+    "eventRowWinner": "normal",
+    "shellCommandWinner": "normal",
+    "normalFailedCommandCount": 1,
+    "atomicFailedCommandCount": 3,
+    "failedCommandWinner": "normal",
+    "inputTokenWinner": "normal",
+    "outputTokenWinner": "normal",
+    "reasoningTokenWinner": "normal",
+    "traceWinner": "atomic",
+    "protectedDiffTie": true,
+    "touchedFileWinner": "tie",
+    "sourceChurnWinner": "atomic"
+  }
+}

@@ -662,7 +662,7 @@ async function partB(): Promise<void> {
     const eslintAbs = path.join(repoRoot, eslintRel);
     fs.writeFileSync(
       eslintAbs,
-      'const envBackup = { TEST_FLAG: process.env.TEST_FLAG };\nexport function smoke(flag: boolean) {\n  if (flag) return 1;\n  return 0;\n}\n',
+      'const envBackup = { TEST_FLAG: process.env.TEST_FLAG }\nexport function smoke(flag:boolean){if(flag){return 1}return 0}\n',
     );
     try {
       const eslintTx = (await client.callTool({

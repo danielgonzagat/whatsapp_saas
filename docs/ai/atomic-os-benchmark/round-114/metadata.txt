@@ -1,0 +1,10 @@
+round=114
+created_utc=2026-05-18T05:39:09Z
+complexity=controlled_scale_four_helper_split
+normal_worktree=/Users/danielpenin/kloel-ab-worktrees/kloel-ab114-normal-20260518053909
+atomic_worktree=/Users/danielpenin/kloel-ab-worktrees/kloel-ab114-atomic-20260518053909
+normal_branch=ab/round114-normal-20260518053909
+atomic_branch=ab/round114-atomic-20260518053909
+base_head=565b0f84d
+task=Split UnifiedAgentService runtime/router/parser/cognitive-state concerns into four helper modules while preserving public API and focused behavior.
+scale_rule=Repeat the four-helper tier because previous round had Atomic functional pass but Normal idle timeout; only Atomic policy change is narrower service import surface.

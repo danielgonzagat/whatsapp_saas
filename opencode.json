@@ -1,0 +1,14 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "atomic-edit": {
+      "type": "local",
+      "command": ["bash", "scripts/mcp/atomic-edit-mcp-launcher.sh"],
+      "enabled": true
+    }
+  },
+  "permission": {
+    "edit": "deny"
+  },
+  "instructions": ["docs/ai/ATOMIC_EDIT_OPERATING_GUIDE.md"]
+}

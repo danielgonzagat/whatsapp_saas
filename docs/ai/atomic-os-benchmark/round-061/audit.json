@@ -1,0 +1,157 @@
+{
+  "roundDir": "/Users/danielpenin/whatsapp_saas/docs/ai/atomic-os-benchmark/round-061",
+  "normal": {
+    "eventsFile": "opencode-normal-events.jsonl",
+    "events": {
+      "rows": 40,
+      "turnCompleted": true,
+      "completedCommands": 7,
+      "uniqueCompletedCommands": 7,
+      "failedCommands": [
+        {
+          "command": "rg -n \"(as any|@ts-ignore|@ts-expect-error|@ts-nocheck|eslint-disable|biome-ignore|codacy:|NOSONAR|noqa)\" /private/tmp/kloel-ab061-normal-20260517100738/backend/src/kloel/unified-agent.service.ts /private/tmp/kloel-ab061-normal-20260517100738/backend/src/kloel/unified-agent-runtime.helpers.ts 2>&1",
+          "exitCode": 1,
+          "output": "(no output)"
+        }
+      ],
+      "completedMcpCalls": 0,
+      "mcpTools": {},
+      "allTools": {
+        "todowrite": 4,
+        "read": 2,
+        "write": 1,
+        "edit": 1,
+        "bash": 7
+      },
+      "nativeFileToolViolations": [
+        {
+          "tool": "read",
+          "inputPreview": "{\"filePath\":\"/private/tmp/kloel-ab061-normal-20260517100738/backend/src/kloel/unified-agent.service.ts\"}"
+        },
+        {
+          "tool": "read",
+          "inputPreview": "{\"filePath\":\"/private/tmp/kloel-ab061-normal-20260517100738/backend/src/kloel/unified-agent-runtime.helpers.ts\"}"
+        },
+        {
+          "tool": "write",
+          "inputPreview": "{\"filePath\":\"/private/tmp/kloel-ab061-normal-20260517100738/backend/src/kloel/unified-agent-runtime.helpers.ts\",\"content\":\"export function formatPromptValue(value: unknown): string {\\n  if (value === null) {\\n    return 'null';\\n  }\\n  if (Array.isArray(value)) {\\n    return `[${value.map(formatPromptValue).join(',')}]`;\\n  }\\n  if (typeof value === 'object') {\\n    const record = value as Record<"
+        },
+        {
+          "tool": "edit",
+          "inputPreview": "{\"filePath\":\"/private/tmp/kloel-ab061-normal-20260517100738/backend/src/kloel/unified-agent.service.ts\",\"oldString\":\"import {\\n  buildPredecidedActionDraft,\\n  executePredecidedAgentActions,\\n} from './unified-agent-predecided-actions.part';\\n\\ntype UnknownRecord = Record<string, unknown>;\\n\\nfunction isAllowedTool(toolName: string, allowedTools?: string[]): boolean {\\n  return !allowedTools || al"
+        }
+      ],
+      "nativeShellReadCommands": [],
+      "maskedAtomicFailurePipelineCommands": [],
+      "fileChangeItems": 0,
+      "fileChangePaths": [],
+      "agentMessages": 3,
+      "proofReadCommands": 1,
+      "fullDiffCommands": 0,
+      "backendInstallCommands": 0,
+      "usage": {
+        "input_tokens": 53095,
+        "output_tokens": 2608,
+        "reasoning_output_tokens": 626
+      }
+    },
+    "validation": {
+      "jestStatus": 0,
+      "typecheckStatus": 0,
+      "diffCheckStatus": 0,
+      "traceIsolationStatus": null,
+      "forbiddenPatternStatus": 1,
+      "serviceLines": 712,
+      "specDiff": [],
+      "protectedDiff": [],
+      "traceCount": null,
+      "docsTraceCount": null,
+      "touchedKloelFiles": [
+        "backend/src/kloel/unified-agent-runtime.helpers.ts",
+        "backend/src/kloel/unified-agent.service.ts"
+      ],
+      "touchedKloelFileCount": 2,
+      "sourceInsertions": 1,
+      "sourceDeletions": 26,
+      "sourceChurn": 27
+    }
+  },
+  "atomic": {
+    "eventsFile": "opencode-atomic-events.jsonl",
+    "events": {
+      "rows": 27,
+      "turnCompleted": true,
+      "completedCommands": 10,
+      "uniqueCompletedCommands": 10,
+      "failedCommands": [
+        {
+          "command": "ls backend/src/kloel/unified-agent.service.ts backend/src/kloel/unified-agent-runtime.helpers.ts 2>&1",
+          "exitCode": 1,
+          "output": "ls: backend/src/kloel/unified-agent-runtime.helpers.ts: No such file or directory\nbackend/src/kloel/unified-agent.service.ts\n"
+        },
+        {
+          "command": "rg -n \"(as any|@ts-ignore|@ts-expect-error|@ts-nocheck|eslint-disable|biome-ignore|codacy:|NOSONAR|noqa)\" backend/src/kloel/unified-agent.service.ts backend/src/kloel/unified-agent-runtime.helpers.ts 2>&1",
+          "exitCode": 1,
+          "output": "(no output)"
+        }
+      ],
+      "completedMcpCalls": 0,
+      "mcpTools": {},
+      "allTools": {
+        "bash": 10
+      },
+      "nativeFileToolViolations": [],
+      "nativeShellReadCommands": [],
+      "maskedAtomicFailurePipelineCommands": [],
+      "fileChangeItems": 0,
+      "fileChangePaths": [],
+      "agentMessages": 5,
+      "proofReadCommands": 1,
+      "fullDiffCommands": 0,
+      "backendInstallCommands": 0,
+      "usage": {
+        "input_tokens": 47625,
+        "output_tokens": 1386,
+        "reasoning_output_tokens": 1487
+      }
+    },
+    "validation": {
+      "jestStatus": 0,
+      "typecheckStatus": 0,
+      "diffCheckStatus": 0,
+      "traceIsolationStatus": 0,
+      "forbiddenPatternStatus": 1,
+      "serviceLines": 713,
+      "specDiff": [],
+      "protectedDiff": [],
+      "traceCount": 3,
+      "docsTraceCount": 0,
+      "touchedKloelFiles": [
+        "backend/src/kloel/unified-agent-runtime.helpers.ts",
+        "backend/src/kloel/unified-agent.service.ts"
+      ],
+      "touchedKloelFileCount": 2,
+      "sourceInsertions": 1,
+      "sourceDeletions": 25,
+      "sourceChurn": 26
+    }
+  },
+  "scorecard": {
+    "functionalPass": true,
+    "atomicModeClean": true,
+    "atomicNativeFileToolViolationCount": 0,
+    "atomicNativeShellReadCommandCount": 0,
+    "atomicMaskedPipelineCommandCount": 0,
+    "atomicTraceIsolationPass": true,
+    "serviceLineWinner": "normal",
+    "eventRowWinner": "atomic",
+    "shellCommandWinner": "normal",
+    "inputTokenWinner": "atomic",
+    "outputTokenWinner": "atomic",
+    "reasoningTokenWinner": "normal",
+    "traceWinner": "atomic",
+    "protectedDiffTie": true,
+    "touchedFileWinner": "tie",
+    "sourceChurnWinner": "atomic"
+  }
+}
