@@ -19,7 +19,7 @@
     "node": ">=22 <23"
   },
   "scripts": {
-    "build": "nest build && tsc -p tsconfig.build.json",
+    "build": "node --max-old-space-size=4096 ./node_modules/@nestjs/cli/bin/nest.js build && tsc -p tsconfig.build.json",
     "typecheck": "tsc -p tsconfig.build.json --noEmit",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "node -r ./dd-trace-init.cjs ./node_modules/@nestjs/cli/bin/nest.js start",
