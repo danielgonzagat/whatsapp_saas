@@ -1,8 +1,7 @@
 {
   "build": {
-    "builder": "RAILPACK",
-    "buildCommand": "npm ci --include=dev && npm run prisma:generate && npm run build",
-    "dockerfilePath": null,
+    "builder": "DOCKERFILE",
+    "dockerfilePath": "Dockerfile",
     "watchPatterns": ["**"]
   },
   "deploy": {
