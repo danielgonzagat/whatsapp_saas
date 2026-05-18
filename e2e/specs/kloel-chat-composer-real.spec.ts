@@ -221,7 +221,7 @@ async function openComposerPopover(page: Page) {
 async function sendComposerMessage(page: Page, message: string) {
   const textarea = page.locator('textarea').first();
   await textarea.fill(message);
-  await textarea.press('Enter');
+  await page.getByRole('button', { name: 'Enviar mensagem' }).click();
 }
 
 async function stageChatPreviewFiles(page: Page) {
