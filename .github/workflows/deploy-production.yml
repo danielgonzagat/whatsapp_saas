@@ -298,7 +298,6 @@ jobs:
       - name: Deploy frontend to Vercel production
         if: github.event_name != 'pull_request'
         id: vercel
-        working-directory: frontend
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_ORG_ID: ${{ vars.VERCEL_ORG_ID }}
