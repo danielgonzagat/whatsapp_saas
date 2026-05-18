@@ -2,6 +2,8 @@ import { ServiceUnavailableException } from '@nestjs/common';
 import { SystemHealthController } from './system-health.controller';
 import type { SystemHealthService } from './system-health.service';
 
+type SentryScopeCallback = (scope: { setTag: jest.Mock; setExtra: jest.Mock }) => unknown;
+
 jest.mock('@sentry/node', () => ({
   captureException: jest.fn(),
   captureMessage: jest.fn(),
@@ -10,7 +12,9 @@ jest.mock('@sentry/node', () => ({
   setContext: jest.fn(),
   setTag: jest.fn(),
   setExtra: jest.fn(),
-  withScope: jest.fn((callback) => callback({ setTag: jest.fn(), setExtra: jest.fn() })),
+  withScope: jest.fn((callback: SentryScopeCallback) =>
+    callback({ setTag: jest.fn(), setExtra: jest.fn() }),
+  ),
 }));
 
 describe('SystemHealthController', () => {
@@ -110,6 +114,26 @@ describe('SystemHealthController', () => {
       });
 
       await expect(controller.readiness()).rejects.toThrow(ServiceUnavailableException);
+    });
+  });
+
+  describe('GET /health/system', () => {
+    it('returns production runtime health payload from service', async () => {
+      mockCheck.mockResolvedValue({
+        status: 'UP',
+        details: {
+          database: { status: 'UP' },
+          redis: { status: 'UP' },
+          worker: { status: 'UP' },
+          queues: { status: 'UP', failed: 0, dlqWaiting: 0, dlqFailed: 0 },
+        },
+      });
+
+      const result = await controller.system();
+
+      expect(result.status).toBe('UP');
+      expect(result.details.worker.status).toBe('UP');
+      expect(mockCheck).toHaveBeenCalledTimes(1);
     });
   });
 
