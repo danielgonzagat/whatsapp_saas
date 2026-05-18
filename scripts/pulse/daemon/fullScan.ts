@@ -300,6 +300,9 @@ export async function fullScan(
     flowProjection,
     externalSignalState,
     executionMatrix,
+    ...(options.tracer
+      ? { executionEvidence: { executionTrace: options.tracer.getSnapshot() } }
+      : {}),
     autonomyState: autonomyState as PulseAutonomyStateSnapshot | null,
   });
   options.tracer?.finishPhase('scan:certification:final', PASSED, {
