@@ -21,6 +21,7 @@ import { CANONICAL_FALLBACK_SYSTEM_PROMPT } from './kloel.prompts';
 import { LLM_MAX_COMPLETION_TOKENS } from './openai-wrapper';
 import { OPERATOR_CAPABILITIES } from './brain-capabilities.const';
 import { AbiBuilderService } from './abi/abi-builder.service';
+import { BrainCapabilityExecutorService } from './brain-capability-executor.service';
 import { validateAbiPayload } from './abi/abi-validator';
 import { ChatCompletionMessageParam } from 'openai/resources/chat';
 import { KloelReplyEngineService, LocalToolExecutor } from './kloel-reply-engine.service';
@@ -58,6 +59,7 @@ export class KloelThinkerService {
     private readonly replyEngine: KloelReplyEngineService,
     @Inject(KLOEL_LLM_E2E_GUARD) private readonly llmE2EGuard: KloelLLME2EGuard,
     @Optional() private readonly abiBuilder?: AbiBuilderService,
+    @Optional() private readonly capabilityExecutor?: BrainCapabilityExecutorService,
   ) {
     this.conversationStore = new KloelConversationStore(prisma, this.logger);
   }
@@ -202,8 +204,20 @@ export class KloelThinkerService {
       let finalUserMessage = message;
 
       const useAbi = process.env['KLOEL_THINKER_USE_ABI'] === 'on';
+      let abiOutcome = useAbi ? (this.abiBuilder ? 'attempted' : 'no_abiBuilder') : 'flag_off';
+      let substrateBuilt = false;
       if (useAbi && this.abiBuilder) {
         try {
+          // Close the read-back loop: feed the REAL persisted cognitive
+          // substrate (memory/beliefs/predictions/valence/pulseTruth from
+          // the spine via #363) into the CONVERSATIONAL ABI — previously
+          // only inspect_self got it, so the chat had no cross-session
+          // memory. Safe: whole block is try/caught with legacy fallback.
+          const chatSubstrate =
+            workspaceId && this.capabilityExecutor
+              ? await this.capabilityExecutor.buildCognitiveSubstrate(workspaceId)
+              : undefined;
+          substrateBuilt = !!chatSubstrate;
           const abiResult = await this.abiBuilder.build({
             audience: 'public',
             currentInput: {
@@ -218,9 +232,11 @@ export class KloelThinkerService {
             // Real capability registry so the chat ABI is not hollow
             // (was the cause of Kloel reporting "ABI inteiramente vazio").
             capabilityIds: [...OPERATOR_CAPABILITIES],
+            ...(chatSubstrate ? { cognitiveSubstrate: chatSubstrate } : {}),
           });
 
           if (abiResult.status !== 'ok') {
+            abiOutcome = `build_failed:${abiResult.reason}`;
             this.logger.warn(
               `ABI build failed: ${abiResult.reason}, falling back to legacy thinker prompt`,
             );
@@ -228,6 +244,7 @@ export class KloelThinkerService {
             const validation = validateAbiPayload(abiResult.abi);
 
             if (validation.status === 'FAIL') {
+              abiOutcome = `validation_failed:${JSON.stringify(validation.issues).slice(0, 240)}`;
               this.logger.warn(
                 `ABI validation failed: ${JSON.stringify(validation.issues)}, falling back to legacy thinker prompt`,
               );
@@ -240,12 +257,21 @@ export class KloelThinkerService {
               const capArrays = (_k: string, v: unknown): unknown =>
                 Array.isArray(v) ? v.slice(0, 8) : v;
               let abiStr = JSON.stringify(abiResult.abi, capArrays);
-              const ABI_MAX = 6000;
+              // ROOT-CAUSE FIX (runtime-evidenced via KLOEL_ABI_PATH
+              // abiLen=6018): the 6000 hard cap blind-sliced the JSON
+              // and decapitated memory/episodicRefs/recentSalientEvents
+              // (where recallable facts live) → cross-session recall
+              // never worked substrate-driven. Arrays are already capped
+              // to 8 (capArrays); 24000 fits the full enriched ABI well
+              // within DeepSeek V4 Pro's context. Slice stays only as a
+              // never-reached last resort.
+              const ABI_MAX = 24000;
               if (abiStr.length > ABI_MAX) {
                 abiStr = `${abiStr.slice(0, ABI_MAX)}…(state_truncated)`;
               }
               finalSystemPrompt = `${CANONICAL_FALLBACK_SYSTEM}\nstate_payload=${abiStr}`;
               finalUserMessage = message;
+              abiOutcome = `success(abiLen=${abiStr.length})`;
             }
           }
         } catch (error: unknown) {
@@ -255,9 +281,16 @@ export class KloelThinkerService {
               : typeof error === 'string'
                 ? error
                 : 'unknown error';
+          abiOutcome = `exception:${msg}`;
           this.logger.warn(`ABI build exception: ${msg}, falling back to legacy thinker prompt`);
         }
       }
+      // RUNTIME TRUTH: greppable, severity=log so it is never filtered.
+      // Tells us definitively whether the chat actually uses the
+      // cognitive substrate or silently falls back to the legacy prompt.
+      this.logger.log(
+        `KLOEL_ABI_PATH useAbi=${useAbi} substrateBuilt=${substrateBuilt} outcome=${abiOutcome}`,
+      );
 
       if (thread?.id) {
         safeWrite(createKloelThreadEvent(thread.id, thread.title));
@@ -371,6 +404,33 @@ export class KloelThinkerService {
         fullResponse = this.replyEngine.unavailableMessage;
       }
       await finalizeSuccessfulReply(fullResponse, streamedReply.estimatedTokens, branchCtx);
+      // Persist this conversational turn to the cognitive spine so it
+      // becomes CROSS-SESSION memory (MindPerceptionService reads
+      // autopilotEvent → working/episodic/consolidated/beliefs → ABI).
+      // B4: memory is a structural effect of the operation, not an LLM
+      // decision. Fire-and-forget — never blocks or fails the reply.
+      if (workspaceId) {
+        void this.prisma.autopilotEvent
+          .create({
+            data: {
+              workspaceId,
+              intent: 'kloel_chat_turn',
+              action: 'kloel.chat.turn',
+              status: 'executed',
+              meta: {
+                userPreview: message.slice(0, 280),
+                replyPreview: fullResponse.slice(0, 280),
+                mode,
+                conversationId: conversationId ?? null,
+              },
+            },
+          })
+          .catch((e: unknown) => {
+            this.logger.warn(
+              `chat-turn spine persist failed: ${e instanceof Error ? e.message : 'unknown'}`,
+            );
+          });
+      }
     } catch (error: unknown) {
       this.logger.error('Erro no KLOEL Thinker:', error);
       if (!isClientDisconnected()) {

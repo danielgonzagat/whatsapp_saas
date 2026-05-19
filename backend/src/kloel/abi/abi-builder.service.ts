@@ -13,8 +13,10 @@ import {
   AbiPredictions,
   AbiPerceptionSnapshot,
   AbiPulseTruth,
+  AbiAttention,
   AbiSalientEvent,
   AbiTruthMode,
+  AbiValenceSection,
   AbiWorkingMemoryItem,
   CognitiveStateAbi,
 } from './abi-schema';
@@ -64,6 +66,9 @@ export interface AbiBuildInput {
     readonly consolidatedRefs?: readonly AbiConsolidatedRef[];
     readonly beliefs?: readonly AbiBelief[];
     readonly predictions?: AbiPredictions;
+    readonly pulseTruth?: AbiPulseTruth;
+    readonly valence?: AbiValenceSection;
+    readonly attention?: AbiAttention;
   };
 }
 
@@ -129,7 +134,7 @@ export class AbiBuilderService {
       },
       beliefs: input.cognitiveSubstrate?.beliefs ?? [],
       predictions: input.cognitiveSubstrate?.predictions ?? { active: [], recentSurprises: [] },
-      attention: { candidates: [] },
+      attention: input.cognitiveSubstrate?.attention ?? { candidates: [] },
       memory: {
         workingMemory: input.cognitiveSubstrate?.workingMemory ?? [],
         episodicRefs: input.cognitiveSubstrate?.episodicRefs ?? [],
@@ -143,7 +148,7 @@ export class AbiBuilderService {
         })),
         restricted: [],
       },
-      valence: {
+      valence: input.cognitiveSubstrate?.valence ?? {
         recentTrace: [],
         aggregatedMood: {
           positive: 0,
@@ -153,14 +158,20 @@ export class AbiBuilderService {
           windowHours: 24,
         },
       },
-      pulseTruth: this.buildPulseTruth(measuredAt),
+      pulseTruth: this.buildPulseTruth(measuredAt, input.cognitiveSubstrate?.pulseTruth),
       currentInput: input.currentInput,
     };
 
     return { status: 'ok', abi };
   }
 
-  private buildPulseTruth(measuredAt: string): AbiPulseTruth {
+  private buildPulseTruth(measuredAt: string, override?: AbiPulseTruth): AbiPulseTruth {
+    // ABI 1.1.0 additive seam (ADR-0008): caller may hydrate a REAL,
+    // spine-evidence-grounded pulseTruth. Builder stays PURE — pure
+    // function of input; absent ⇒ historical static snapshot/default.
+    if (override) {
+      return override;
+    }
     if (this.pulseTruthSnapshot) {
       return this.pulseTruthSnapshot.snapshot();
     }

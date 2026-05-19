@@ -210,7 +210,7 @@ export interface AbiAggregatedMood {
   readonly windowHours: number;
 }
 
-interface AbiValenceSection {
+export interface AbiValenceSection {
   readonly recentTrace: readonly AbiValenceTrace[];
   readonly aggregatedMood: AbiAggregatedMood;
 }
