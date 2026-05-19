@@ -218,11 +218,27 @@ export class BrainCapabilityExecutorService {
       `evt_${new Date(e.occurredAt).getTime().toString(36)}_${i.toString(36)}`;
 
     const ordered = [...events].sort((a, b) => b.occurredAt.getTime() - a.occurredAt.getTime());
+    // Carry the REAL salient content (message text persisted in the
+    // event meta) into the substrate — not just the event name — so
+    // cross-session FACTUAL recall is genuinely substrate-driven
+    // (Kloel can recall what was said in prior sessions from its own
+    // cognitive state, not the legacy context injector).
+    const salientContent = (e: MindPerceptEvent): string => {
+      const p = (e.payload ?? undefined) as Record<string, unknown> | undefined;
+      const meta =
+        p && typeof p.meta === 'object' && p.meta ? (p.meta as Record<string, unknown>) : undefined;
+      const txt =
+        (meta && typeof meta.userPreview === 'string' && meta.userPreview) ||
+        (meta && typeof meta.replyPreview === 'string' && meta.replyPreview) ||
+        (p && typeof p.contentPreview === 'string' && p.contentPreview) ||
+        '';
+      return txt ? `${e.kind}: ${String(txt).slice(0, 280)}` : `${e.kind} — ${e.subject}`;
+    };
     const recentSalientEvents: AbiSalientEvent[] = ordered.slice(0, 30).map((e, i) => ({
       eventId: eventId(e, i),
       eventName: e.kind,
       occurredAt: e.occurredAt.toISOString(),
-      summary: `${e.kind} — ${e.subject}`,
+      summary: salientContent(e),
       valence: valenceOf(e.kind),
     }));
 
