@@ -191,7 +191,7 @@ export class BrainCapabilityExecutorService {
    * hardcode, no synthetic fill. Impurity (DB reads) lives HERE, not in
    * the PURE AbiBuilderService.
    */
-  private async buildCognitiveSubstrate(workspaceId: string): Promise<{
+  async buildCognitiveSubstrate(workspaceId: string): Promise<{
     recentSalientEvents: AbiSalientEvent[];
     workingMemory: AbiWorkingMemoryItem[];
     episodicRefs: AbiEpisodicRef[];
