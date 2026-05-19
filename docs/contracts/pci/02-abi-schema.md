@@ -5,8 +5,18 @@
 > instrucional. B1 + B2 são lei.
 >
 > **Nome canônico**: `kloel-cognitive-organism-pci-2`
-> **Versão**: `1.0.0`
+> **Versão**: `1.1.0`
 > **Status**: `frozen` após selo final em UTP-PCI-008.
+
+> **Emenda 1.1.0 (aditiva, 2026-05-19)** — autorizada pelo steward Daniel
+> Penin in-session; registrada em [ADR-0008](../../adr/0008-abi-1.1.0-additive-cognitive-substrate.md).
+> Bump `abiVersion` `1.0.0 → 1.1.0` conforme §4 ("adição de campo opcional →
+> minor"). O **payload schema permanece inalterado**: a emenda adiciona apenas
+> um campo OPCIONAL ao INPUT do builder (`cognitiveSubstrate`), permitindo que
+> os campos já existentes no schema congelado (`workingMemory`,
+> `recentSalientEvents`, `episodicRefs`, `consolidatedRefs`) sejam populados
+> com estado real (encerrando o "shadow mode inicial" do §5.6) sem quebrar a
+> invariante PURE do §5 — a leitura impura vive no caller, não no builder.
 
 ---
 
