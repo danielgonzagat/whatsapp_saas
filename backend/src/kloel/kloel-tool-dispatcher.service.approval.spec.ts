@@ -38,6 +38,7 @@ import { KloelComposerService } from './kloel-composer.service';
 import { AuditService } from '../audit/audit.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { KloelCodeToolsService } from './kloel-code-tools.service';
+import { KloelCodeAnalysisService } from './kloel-code-analysis.service';
 import {
   createPrismaMock,
   createPlanLimitsMock,
@@ -48,6 +49,7 @@ import {
   createAuditMock,
   createOpsAlertMock,
   createCodeToolsMock,
+  createCodeAnalysisMock,
   DEFAULT_WS_ID,
 } from './kloel-tool-dispatcher.service.fixtures';
 import type {
@@ -60,6 +62,7 @@ import type {
   DispatcherOpsAlertMock,
   DispatcherPlanLimitsMock,
   DispatcherCodeToolsMock,
+  DispatcherCodeAnalysisMock,
 } from './kloel-tool-dispatcher.service.fixtures';
 
 describe('KloelToolDispatcherService approval execution', () => {
@@ -73,6 +76,7 @@ describe('KloelToolDispatcherService approval execution', () => {
   let auditService: DispatcherAuditMock;
   let opsAlert: DispatcherOpsAlertMock;
   let codeToolsService: DispatcherCodeToolsMock;
+  let codeAnalysisService: DispatcherCodeAnalysisMock;
 
   beforeEach(async () => {
     prisma = createPrismaMock();
@@ -84,6 +88,7 @@ describe('KloelToolDispatcherService approval execution', () => {
     auditService = createAuditMock();
     opsAlert = createOpsAlertMock();
     codeToolsService = createCodeToolsMock();
+    codeAnalysisService = createCodeAnalysisMock();
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -96,6 +101,7 @@ describe('KloelToolDispatcherService approval execution', () => {
         { provide: KloelComposerService, useValue: composerService },
         { provide: AuditService, useValue: auditService },
         { provide: KloelCodeToolsService, useValue: codeToolsService },
+        { provide: KloelCodeAnalysisService, useValue: codeAnalysisService },
         { provide: OpsAlertService, useValue: opsAlert },
       ],
     }).compile();

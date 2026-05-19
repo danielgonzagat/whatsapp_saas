@@ -6,6 +6,7 @@ import { KloelComposerService } from './kloel-composer.service';
 import { AuditService } from '../audit/audit.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { KloelCodeToolsService } from './kloel-code-tools.service';
+import { KloelCodeAnalysisService } from './kloel-code-analysis.service';
 
 type DispatcherPrismaMock = {
   workspace: { findUnique: jest.Mock };
@@ -238,3 +239,18 @@ export function createCodeToolsMock(): DispatcherCodeToolsMock {
 }
 
 export { DEFAULT_WS_ID };
+  
+type DispatcherCodeAnalysisMock = Pick<
+  KloelCodeAnalysisService,
+  | 'toolCodeLint'
+  | 'toolCodeDetectIssues'
+>;
+
+export type { DispatcherCodeAnalysisMock };
+
+export function createCodeAnalysisMock(): DispatcherCodeAnalysisMock {
+  return {
+    toolCodeLint: jest.fn().mockResolvedValue({ success: true, issues: [] }),
+    toolCodeDetectIssues: jest.fn().mockResolvedValue({ success: true, issues: [] }),
+  };
+}
