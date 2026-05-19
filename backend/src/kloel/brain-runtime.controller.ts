@@ -1,6 +1,7 @@
-import { Body, Controller, Get, Post, Request, Res, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Post, Request, Res, UseFilters, UseGuards } from '@nestjs/common';
 import { StructuredLogger } from '../logging/structured-logger';
 import type { Response } from 'express';
+import { BrainDecideDegradeFilter } from './brain-decide-degrade.filter';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import type { AuthenticatedRequest } from '../common/interfaces';
@@ -34,6 +35,7 @@ function readOptionalStreamString(body: BrainDecideDto, key: string): string | u
 
 @Controller('brain')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
+@UseFilters(BrainDecideDegradeFilter)
 export class BrainRuntimeController {
   private readonly logger = StructuredLogger.from(BrainRuntimeController.name);
 
@@ -95,9 +97,7 @@ export class BrainRuntimeController {
       // root-cause; the user-facing chat must never hard-fail (CLAUDE.md:
       // fallback honesto / estado honesto). Contract-shape preserved.
       this.logger.error(
-        `brain.decide failed (code=${code}): ${
-          err instanceof Error ? err.message : String(err)
-        }`,
+        `brain.decide failed (code=${code}): ${err instanceof Error ? err.message : String(err)}`,
       );
       const degradedSource = body.source ?? 'chat';
       const degradedIntent = body.intent ?? 'user_message';
