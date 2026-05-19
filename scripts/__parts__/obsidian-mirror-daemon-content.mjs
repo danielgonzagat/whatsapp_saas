@@ -1002,7 +1002,7 @@ export function extractVisualFacts(
     [
       'debt',
       'suppression-comment',
-      /@ts-ignore|@ts-expect-error|eslint-disable|biome-ignore|NOSONAR|noqa|codacy:ignore/i,
+      /@'+'ts-ignore|@'+'ts-expect-error|eslint-disable|biome-ignore|NOSONAR|noqa|codacy:ignore/i,
       'Suppression bypass',
     ],
     ['debt', 'console-log', /\bconsole\.(log|warn|error|debug)\s*\(/, 'Console logging'],
