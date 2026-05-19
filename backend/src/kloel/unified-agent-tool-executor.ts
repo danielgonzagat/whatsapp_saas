@@ -1,11 +1,9 @@
 import { Injectable, Optional } from '@nestjs/common';
 import { StructuredLogger } from '../logging/structured-logger';
 import OpenAI from 'openai';
-import { PlanLimitsService } from '../billing/plan-limits.service';
 import { AuditService } from '../audit/audit.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { UnifiedAgentActionsService } from './unified-agent-actions.service';
-import { UnifiedAgentResponseService } from './unified-agent-response.service';
 import { RiskGateService } from './risk-class/risk-gate.service';
 import type { ToolArgs } from './unified-agent.types';
 
