@@ -290,6 +290,19 @@ export class BrainCapabilityExecutorService {
         truthMode: 'inferred' as const,
       }));
 
+    // Consolidation (pillar #1): a belief reinforced ≥10× over the
+    // window IS consolidated long-term knowledge — the working→episodic
+    // →consolidated promotion by repetition/strength Kloel asked for.
+    // Honest: empty when no belief is strong enough (gap persists, no
+    // fabrication). Merged with the projector's consolidated dimension.
+    const consolidatedFromBeliefs: AbiConsolidatedRef[] = beliefs
+      .filter((b) => b.evidenceCount >= 10)
+      .map((b) => ({
+        skillId: `cns_${b.beliefId}`,
+        summary: `conhecimento consolidado por reforço: ${b.proposition}`,
+        consolidatedAt: b.lastUpdated,
+      }));
+
     // Prediction generation (base-rate). Honest: only when total ≥ 5
     // (else empty — no fabrication on thin data). recentSurprises stays
     // [] because true surprise detection requires PERSISTED prior
@@ -316,7 +329,7 @@ export class BrainCapabilityExecutorService {
       recentSalientEvents,
       workingMemory,
       episodicRefs,
-      consolidatedRefs,
+      consolidatedRefs: [...consolidatedRefs, ...consolidatedFromBeliefs].slice(0, 50),
       dissolution,
       beliefs,
       predictions,
