@@ -62,6 +62,7 @@ const OPERATOR_CAPABILITIES = [
   'send_message_via_channel',
   'query_revenue_summary',
   'inspect_self',
+  'inspect_runtime',
 ] as const;
 
 @Injectable()
@@ -301,6 +302,9 @@ export class BrainRuntimeService {
         break;
       case 'inspect_self':
         capabilityResult = await this.executor.inspectSelf(workspaceId, context);
+        break;
+      case 'inspect_runtime':
+        capabilityResult = await this.executor.inspectRuntime(workspaceId);
         break;
       default:
         capabilityResult = { ok: false, error: 'unknown_operator_intent' };

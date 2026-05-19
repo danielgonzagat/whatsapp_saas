@@ -179,6 +179,97 @@ export class BrainCapabilityExecutorService {
   }
 
   /**
+   * Runtime self-awareness organ (phase 3/4). Kloel reads its OWN
+   * deploy/runtime state. Backend self-metrics (uptime/node/memory)
+   * are always real and secret-free. Railway/Vercel deploy state is
+   * read ONLY if the corresponding read token is present in the env —
+   * absent ⇒ an HONEST `configured:false` (never faked). Tokens are
+   * read from env, never logged, never returned.
+   */
+  async inspectRuntime(workspaceId: string): Promise<CapabilityResult> {
+    const startedAt = Date.now();
+    try {
+      const mem = process.memoryUsage();
+      const self = {
+        nodeVersion: process.version,
+        uptimeSeconds: Math.round(process.uptime()),
+        rssMb: Math.round(mem.rss / 1048576),
+        heapUsedMb: Math.round(mem.heapUsed / 1048576),
+        env: process.env.NODE_ENV ?? 'unknown',
+      };
+
+      const railwayToken = process.env.RAILWAY_TOKEN;
+      const railwayProjectId = process.env.RAILWAY_PROJECT_ID;
+      const railwayEnvId = process.env.RAILWAY_ENV_ID;
+      const railwayServiceId = process.env.RAILWAY_BACKEND_SERVICE_ID;
+      let railway: Record<string, unknown> = { configured: false };
+      if (railwayToken && railwayProjectId && railwayEnvId && railwayServiceId) {
+        try {
+          const q = {
+            query: `query{deployments(first:1,input:{projectId:"${railwayProjectId}",environmentId:"${railwayEnvId}",serviceId:"${railwayServiceId}"}){edges{node{status createdAt}}}}`,
+          };
+          const r = await fetch('https://backboard.railway.app/graphql/v2', {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${railwayToken}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(q),
+            signal: AbortSignal.timeout(8000),
+          });
+          const j = (await r.json()) as {
+            data?: { deployments?: { edges?: Array<{ node?: Record<string, unknown> }> } };
+          };
+          const node = j.data?.deployments?.edges?.[0]?.node;
+          railway = node
+            ? { configured: true, status: node.status, createdAt: node.createdAt }
+            : { configured: true, status: 'unknown' };
+        } catch (e: unknown) {
+          railway = {
+            configured: true,
+            error: e instanceof Error ? e.message : 'railway_query_failed',
+          };
+        }
+      }
+
+      const vercelToken = process.env.VERCEL_TOKEN;
+      const vercelProjectId = process.env.VERCEL_PROJECT_ID;
+      const vercelTeamId = process.env.VERCEL_TEAM_ID;
+      let vercel: Record<string, unknown> = { configured: false };
+      if (vercelToken && vercelProjectId) {
+        try {
+          const teamQ = vercelTeamId ? `&teamId=${vercelTeamId}` : '';
+          const r = await fetch(
+            `https://api.vercel.com/v6/deployments?projectId=${vercelProjectId}&target=production&limit=1${teamQ}`,
+            {
+              headers: { Authorization: `Bearer ${vercelToken}` },
+              signal: AbortSignal.timeout(8000),
+            },
+          );
+          const j = (await r.json()) as { deployments?: Array<Record<string, unknown>> };
+          const d = j.deployments?.[0];
+          vercel = d
+            ? { configured: true, state: d.state, createdAt: d.created }
+            : { configured: true, state: 'unknown' };
+        } catch (e: unknown) {
+          vercel = {
+            configured: true,
+            error: e instanceof Error ? e.message : 'vercel_query_failed',
+          };
+        }
+      }
+
+      await this.emitCapabilityInvoked(workspaceId, 'inspect_runtime', startedAt, true);
+      return { ok: true, data: { self, railway, vercel } };
+    } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : 'unknown';
+      this.logger.error(`inspect_runtime failed: ${msg}`);
+      await this.emitCapabilityInvoked(workspaceId, 'inspect_runtime', startedAt, false);
+      return { ok: false, error: msg };
+    }
+  }
+
+  /**
    * Self-introspection organ. Returns Kloel's REAL current cognitive-state
    * ABI (the same self-model surface that is observed externally) plus an
    * honestly-derived list of which cognitive loops are still unclosed.

@@ -163,6 +163,32 @@ export const OPERATOR_INTENT_PATTERNS: Array<{
       'faca um auto-diagnostico',
     ],
   },
+  {
+    intent: 'inspect_runtime',
+    keywords: [
+      'estado do runtime',
+      'estado do deploy',
+      'status do deploy',
+      'status do servidor',
+      'como esta o deploy',
+      'como esta o servidor',
+      'seu runtime',
+      'seu deploy',
+      'railway',
+      'vercel',
+      'voce esta no ar',
+      'esta deployado',
+      'uptime',
+      'saude do sistema',
+      'estado de producao',
+    ],
+    examples: [
+      'como esta seu deploy no railway',
+      'qual o estado do runtime',
+      'voce esta no ar em producao',
+      'status do servidor e do vercel',
+    ],
+  },
 ];
 
 const UNSUPPORTED_FALLBACK_KEYWORDS = [
