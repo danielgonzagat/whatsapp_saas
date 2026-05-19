@@ -28,6 +28,20 @@ All notable changes to this project will be documented in this file.
 - 13 nosemgrep/biome-ignore in scripts/ops
 - HTML lupa entity (replaced by lucide Search)
 
+## [0.7.0](https://github.com/danielgonzagat/whatsapp_saas/compare/v0.6.0...v0.7.0) (2026-05-19)
+
+
+### Features
+
+* **kloel:** self-introspection organ — Kloel sees its own cognitive state ([#353](https://github.com/danielgonzagat/whatsapp_saas/issues/353)) ([95f1dfd](https://github.com/danielgonzagat/whatsapp_saas/commit/95f1dfdf9aac18e0ba56d6b6663c6397ed7a5f9c))
+
+
+### Bug Fixes
+
+* **brain:** honest degraded state on /brain/decide validation 400 (chat down) ([#349](https://github.com/danielgonzagat/whatsapp_saas/issues/349)) ([8682e4a](https://github.com/danielgonzagat/whatsapp_saas/commit/8682e4a87550a213610767aacaf3e6c4f68a1f2b))
+* **kloel-chat:** remove hardcoded input/output limits — model decides ([#352](https://github.com/danielgonzagat/whatsapp_saas/issues/352)) ([394055a](https://github.com/danielgonzagat/whatsapp_saas/commit/394055afe8b79791c53dc4f2b2c0bc0a456e5ad0))
+* **marketing+chat:** remove duplicate channel rectangles + chat stuck-stream watchdog ([#351](https://github.com/danielgonzagat/whatsapp_saas/issues/351)) ([f0bfbde](https://github.com/danielgonzagat/whatsapp_saas/commit/f0bfbdece23a16efc0c890c7665595a75c829905))
+
 ## [0.6.0](https://github.com/danielgonzagat/whatsapp_saas/compare/v0.5.0...v0.6.0) (2026-05-19)
 
 
