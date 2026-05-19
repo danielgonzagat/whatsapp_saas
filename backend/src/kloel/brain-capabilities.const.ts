@@ -19,4 +19,4 @@ export const OPERATOR_CAPABILITIES = [
   'inspect_runtime',
 ] as const;
 
-type OperatorCapability = (typeof OPERATOR_CAPABILITIES)[number];
+export type OperatorCapability = (typeof OPERATOR_CAPABILITIES)[number];

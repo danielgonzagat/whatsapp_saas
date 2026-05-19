@@ -210,7 +210,7 @@ export interface AbiAggregatedMood {
   readonly windowHours: number;
 }
 
-interface AbiValenceSection {
+export interface AbiValenceSection {
   readonly recentTrace: readonly AbiValenceTrace[];
   readonly aggregatedMood: AbiAggregatedMood;
 }
@@ -354,5 +354,3 @@ export const ABI_REQUIRED_KEYS = [
   'pulseTruth',
   'currentInput',
 ] as const;
-
-type AbiRequiredKey = (typeof ABI_REQUIRED_KEYS)[number];
