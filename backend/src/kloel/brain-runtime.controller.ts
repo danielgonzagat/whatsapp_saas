@@ -1,6 +1,7 @@
-import { Body, Controller, Get, Post, Request, Res, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Post, Request, Res, UseFilters, UseGuards } from '@nestjs/common';
 import { StructuredLogger } from '../logging/structured-logger';
 import type { Response } from 'express';
+import { BrainDecideDegradeFilter } from './brain-decide-degrade.filter';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import type { AuthenticatedRequest } from '../common/interfaces';
@@ -34,6 +35,7 @@ function readOptionalStreamString(body: BrainDecideDto, key: string): string | u
 
 @Controller('brain')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
+@UseFilters(BrainDecideDegradeFilter)
 export class BrainRuntimeController {
   private readonly logger = StructuredLogger.from(BrainRuntimeController.name);
 
@@ -90,7 +92,28 @@ export class BrainRuntimeController {
     } catch (err: unknown) {
       const code = (err as { code?: string })?.code ?? 'unknown';
       Metrics.endpoint.failure('brain.decide', { workspaceId, code });
-      throw err;
+      // Honest degraded state instead of a bare 4xx/5xx that kills the chat
+      // for the authenticated user. The real error is logged server-side for
+      // root-cause; the user-facing chat must never hard-fail (CLAUDE.md:
+      // fallback honesto / estado honesto). Contract-shape preserved.
+      this.logger.error(
+        `brain.decide failed (code=${code}): ${err instanceof Error ? err.message : String(err)}`,
+      );
+      const degradedSource = body.source ?? 'chat';
+      const degradedIntent = body.intent ?? 'user_message';
+      const degradedRequestId =
+        typeof body.context?.clientRequestId === 'string'
+          ? body.context.clientRequestId
+          : `brain_degraded_${Date.now()}`;
+      return {
+        actions: [],
+        confidence: 0,
+        intent: degradedIntent,
+        requestId: degradedRequestId,
+        source: degradedSource,
+        response:
+          'O Kloel teve uma instabilidade momentânea e não conseguiu concluir esta ação. Sua mensagem foi preservada — tente novamente em instantes.',
+      };
     }
   }
 
