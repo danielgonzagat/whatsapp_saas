@@ -1,5 +1,4 @@
 import { Injectable } from '@nestjs/common';
-import { StructuredLogger } from '../logging/structured-logger';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import { exec as cpExec } from 'child_process';
@@ -39,7 +38,6 @@ interface EslintFileResult {
 
 @Injectable()
 export class KloelCodeAnalysisService {
-  private readonly logger = StructuredLogger.from(KloelCodeAnalysisService.name);
 
   async toolCodeLint(relPath: string): Promise<ToolResult> {
     try {
@@ -99,10 +97,7 @@ export class KloelCodeAnalysisService {
             detail: line.trim().slice(0, 120),
           });
         }
-        if (
-          /console\.(log|warn|error|debug)\(/.test(line) &&
-          !/logger\.|this\.logger/.test(line)
-        ) {
+        if (/console\.(log|warn|error|debug)\(/.test(line) && !/logger\.|this\.logger/.test(line)) {
           issues.push({
             line: ln,
             severity: 'warning',
@@ -137,10 +132,7 @@ export class KloelCodeAnalysisService {
         }
       }
 
-      const deadCodePatterns = [
-        /export\s+(async\s+)?function\s+(\w+)/g,
-        /export\s+const\s+(\w+)/g,
-      ];
+      const deadCodePatterns = [/export\s+(async\s+)?function\s+(\w+)/g, /export\s+const\s+(\w+)/g];
       const exportedNames = new Set<string>();
       for (const pattern of deadCodePatterns) {
         for (const m of content.matchAll(pattern)) {
@@ -154,8 +146,7 @@ export class KloelCodeAnalysisService {
       let deadCodeCount = 0;
       for (const name of exportedNames) {
         const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        const refCount =
-          (content.match(new RegExp(`\\b${escaped}\\b`, 'g')) || []).length;
+        const refCount = (content.match(new RegExp(`\\b${escaped}\\b`, 'g')) || []).length;
         if (refCount <= 1) {
           deadCodeCount++;
         }
