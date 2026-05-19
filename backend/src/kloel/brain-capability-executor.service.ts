@@ -42,6 +42,86 @@ function readOptionalStr(value: unknown, fb = ''): string {
  * self-introspection organ surfaces so Kloel can tell, through the chat,
  * what is genuinely not working in itself.
  */
+/**
+ * Canonical B17 commercial surfaces and their PCI.6 event-domain
+ * prefixes. This MIRRORS the frozen contract
+ * `docs/contracts/pci/06-b17-surfaces.md` / PCI.1 — it is the contract,
+ * not invented behavior (same status as ABI_VERSION / OPERATOR_CAPABILITIES
+ * consts). If the PCI changes, this must change with it.
+ */
+const PCI_B17_SURFACES: ReadonlyArray<{
+  readonly surface: string;
+  readonly domains: readonly string[];
+  /** Substrate kinds that count as REAL (non-canonical) activity today. */
+  readonly partialKinds: readonly string[];
+}> = [
+  {
+    surface: 'checkout_wallet_billing',
+    domains: ['commerce.cart', 'commerce.payment'],
+    partialKinds: ['sale', 'order', 'checkout', 'payment'],
+  },
+  {
+    surface: 'crm',
+    domains: ['commerce.crm', 'commerce.lead'],
+    partialKinds: ['lead', 'deal', 'stage'],
+  },
+  {
+    surface: 'whatsapp_inbox',
+    domains: ['commerce.whatsapp'],
+    partialKinds: ['message.received', 'message.sent', 'autopilot'],
+  },
+  {
+    surface: 'campaigns_ads',
+    domains: ['commerce.campaign'],
+    partialKinds: ['campaign', 'click', 'conversion'],
+  },
+  {
+    surface: 'member_affiliate',
+    domains: ['commerce.member_area', 'commerce.affiliate'],
+    partialKinds: ['member', 'affiliate', 'enroll'],
+  },
+  { surface: 'kyc_auth', domains: ['commerce.kyc'], partialKinds: ['kyc', 'document'] },
+  {
+    surface: 'post_sale',
+    domains: ['commerce.post_sale'],
+    partialKinds: ['delivery', 'activation', 'churn', 'testimonial', 'repurchase'],
+  },
+];
+
+/** A dissolution gap derived from REAL substrate counts vs the PCI.6 contract. */
+interface DissolutionGap {
+  readonly surface: string;
+  readonly canonicalDomains: readonly string[];
+  readonly canonicalEvents: number;
+  readonly partialActivity: number;
+  readonly status: 'dissolved' | 'partial' | 'silent';
+}
+
+/**
+ * The PCI-grounded work queue: for each frozen B17 surface, how many
+ * CANONICAL cognitive events vs raw partial activity exist in the live
+ * substrate. `silent` = surface emits nothing (not dissolved); `partial`
+ * = it is active but not yet emitting canonical PCI events (EVENT-EMIT
+ * pending); `dissolved` = canonical cognitive events flowing. 100% real
+ * counts from the workspace substrate — zero hardcode, zero synthetic.
+ */
+function computeDissolutionGaps(substrateKinds: readonly string[]): DissolutionGap[] {
+  const lower = substrateKinds.map((k) => k.toLowerCase());
+  return PCI_B17_SURFACES.map((s) => {
+    const canonicalEvents = lower.filter((k) => s.domains.some((d) => k.startsWith(d))).length;
+    const partialActivity = lower.filter((k) => s.partialKinds.some((p) => k.includes(p))).length;
+    const status: DissolutionGap['status'] =
+      canonicalEvents > 0 ? 'dissolved' : partialActivity > 0 ? 'partial' : 'silent';
+    return {
+      surface: s.surface,
+      canonicalDomains: s.domains,
+      canonicalEvents,
+      partialActivity,
+      status,
+    };
+  });
+}
+
 function computeCognitiveGaps(abi: unknown): string[] {
   const gaps: string[] = [];
   if (!abi || typeof abi !== 'object') {
@@ -111,6 +191,7 @@ export class BrainCapabilityExecutorService {
     workingMemory: AbiWorkingMemoryItem[];
     episodicRefs: AbiEpisodicRef[];
     consolidatedRefs: AbiConsolidatedRef[];
+    dissolution: DissolutionGap[];
   }> {
     const sinceMs = Date.now() - 7 * 24 * 60 * 60 * 1000;
     const events = await this.mindPerception.since(workspaceId, new Date(sinceMs));
@@ -175,7 +256,9 @@ export class BrainCapabilityExecutorService {
         consolidatedAt: it.occurredAt,
       }));
 
-    return { recentSalientEvents, workingMemory, episodicRefs, consolidatedRefs };
+    const dissolution = computeDissolutionGaps(events.map((e) => e.kind));
+
+    return { recentSalientEvents, workingMemory, episodicRefs, consolidatedRefs, dissolution };
   }
 
   /**
@@ -306,13 +389,28 @@ export class BrainCapabilityExecutorService {
         };
       }
       const gaps = computeCognitiveGaps(result.abi);
+      const dissolution = cognitiveSubstrate.dissolution;
+      const silentSurfaces = dissolution
+        .filter((d) => d.status !== 'dissolved')
+        .map((d) => d.surface);
+      const workQueue = [
+        ...gaps,
+        ...dissolution
+          .filter((d) => d.status === 'silent')
+          .map((d) => `dissolve_surface:${d.surface}`),
+        ...dissolution
+          .filter((d) => d.status === 'partial')
+          .map((d) => `emit_canonical_events:${d.surface}`),
+      ];
       await this.emitCapabilityInvoked(workspaceId, 'inspect_self', startedAt, true);
       return {
         ok: true,
         data: {
           cognitiveState: result.abi as unknown as UnknownRecord,
           gaps,
-          emergent: gaps.length === 0,
+          dissolution,
+          workQueue,
+          emergent: gaps.length === 0 && silentSurfaces.length === 0,
         },
       };
     } catch (error: unknown) {
