@@ -36,7 +36,6 @@ interface JestOutput {
   testResults?: Array<{ name: string; status: string }>;
 }
 
-
 @Injectable()
 export class KloelCodeToolsService {
   private readonly logger = StructuredLogger.from(KloelCodeToolsService.name);
