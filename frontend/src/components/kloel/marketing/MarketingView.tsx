@@ -368,19 +368,15 @@ export default function MarketingView({ defaultTab = 'conversas' }: { defaultTab
   );
 
   const shouldShowWizard = useCallback(
-    (channelKey: string): boolean => {
-      if (!connectionStatus) {
-        return false;
-      }
-      const connected = isChannelConnected(channelKey);
-      if (!connected) {
-        return true;
-      }
-      const setup = channelSetupMap[channelKey];
-      if (!setup || setup.completedAt === null) {
-        return true;
-      }
-      return false;
+    (_channelKey: string): boolean => {
+      // Owner directive (2026-05-19): the official 4-step wizard
+      // (Conectar/Produtos/Arsenal/Configurar) is THE screen for every
+      // channel. It must NEVER fall back to the legacy per-channel tab —
+      // that conditional caused a flash-then-revert: the wizard rendered
+      // for ~1s while channelSetupMap was empty, then once it loaded with
+      // completedAt set the gate flipped to the old tab and its broken
+      // channel rectangles. Always render the wizard.
+      return true;
     },
     [connectionStatus, channelSetupMap, isChannelConnected],
   );
