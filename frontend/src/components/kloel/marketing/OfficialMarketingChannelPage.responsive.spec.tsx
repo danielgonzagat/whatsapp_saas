@@ -1,8 +1,15 @@
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, render } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { SetupSteps } from './OfficialMarketingChannelPage/SetupSteps';
+import { StepBar } from './OfficialMarketingChannelPage/ChannelOnboarding/atoms';
+import { paletteFor } from './OfficialMarketingChannelPage/ChannelOnboarding/palette';
 
+/**
+ * The Marketing spec (§5) retired the numbered, grid-based stepper. The
+ * canonical screen now uses {@link StepBar} — four abstract traces, viewport
+ * independent (the screen's responsiveness lives in its column padding, not
+ * in the bar). These assertions are grounded directly in spec §5.
+ */
 function mockMatchMedia(matches: boolean) {
   vi.stubGlobal(
     'matchMedia',
@@ -15,106 +22,59 @@ function mockMatchMedia(matches: boolean) {
   );
 }
 
-function renderSetupSteps(step = 0) {
-  return render(
-    <SetupSteps
-      currentStep={step}
-      setupLoaded={true}
-      channel="whatsapp"
-      onStepClick={vi.fn()}
-    />,
-  );
+const C = paletteFor('dark');
+
+function renderStepBar(step: number) {
+  return render(<StepBar step={step} C={C} />);
 }
 
-describe('SetupSteps responsive', () => {
+/** The StepBar root is the container's first element; its children are the traces. */
+function traceEls(container: HTMLElement): HTMLElement[] {
+  const root = container.firstElementChild as HTMLElement | null;
+  return root ? (Array.from(root.children) as HTMLElement[]) : [];
+}
+
+describe('Channel onboarding step bar (spec §5)', () => {
   afterEach(() => {
     cleanup();
     vi.unstubAllGlobals();
   });
 
-  describe('mobile viewport (below 640px)', () => {
-    it('renders 2-column grid', () => {
-      mockMatchMedia(true);
-      const { container } = renderSetupSteps();
-
-      const ol = container.querySelector('ol');
-      expect(ol).not.toBeNull();
-      const style = (ol as HTMLElement).style;
-      expect(style.gridTemplateColumns).toBe('repeat(2, minmax(0, 1fr))');
-    });
-
-    it('digit "1" container is 32x32 and visible', () => {
-      mockMatchMedia(true);
-      renderSetupSteps();
-
-      const digit = screen.getByText('1') as HTMLSpanElement;
-      expect(digit).toBeDefined();
-      expect(digit.style.width).toBe('32px');
-      expect(digit.style.height).toBe('32px');
-      expect(digit.style.flexShrink).toBe('0');
-    });
-
-    it('all four digit numbers render', () => {
-      mockMatchMedia(true);
-      renderSetupSteps();
-
-      for (let i = 1; i <= 4; i++) {
-        expect(screen.getByText(String(i))).toBeDefined();
-      }
-    });
-
-    it('step labels use 14px font-size', () => {
-      mockMatchMedia(true);
-      renderSetupSteps();
-
-      const stepLabel = screen.getByText('Conexão') as HTMLSpanElement;
-      expect(stepLabel.style.fontSize).toBe('14px');
-    });
-
-    it('button minHeight is 72px', () => {
-      mockMatchMedia(true);
-      renderSetupSteps();
-
-      const buttons = screen.getAllByRole('button');
-      for (const btn of buttons) {
-        expect(btn.style.minHeight).toBe('72px');
-      }
-    });
-
-    it('li has no minWidth constraint', () => {
-      mockMatchMedia(true);
-      const { container } = renderSetupSteps();
-
-      const li = container.querySelector('li');
-      expect(li?.style.minWidth).toBe('0px');
+  it('renders exactly four abstract traces, each 28x2px', () => {
+    const { container } = renderStepBar(0);
+    const traces = traceEls(container);
+    expect(traces).toHaveLength(4);
+    traces.forEach((trace) => {
+      expect(trace.style.width).toBe('28px');
+      expect(trace.style.height).toBe('2px');
     });
   });
 
-  describe('desktop viewport (above 640px)', () => {
-    it('renders 4-column grid', () => {
-      mockMatchMedia(false);
-      const { container } = renderSetupSteps();
+  it('renders no numbers and no list semantics (not a numbered stepper)', () => {
+    const { container } = renderStepBar(2);
+    expect(container.querySelector('ol')).toBeNull();
+    expect(container.querySelector('li')).toBeNull();
+    expect(container.textContent).toBe('');
+  });
 
-      const ol = container.querySelector('ol');
-      expect(ol).not.toBeNull();
-      const style = (ol as HTMLElement).style;
-      expect(style.gridTemplateColumns).toBe('repeat(4, minmax(0, 1fr))');
-    });
+  it('colours completed and current traces ember, future traces neutral', () => {
+    const { container } = renderStepBar(1);
+    const traces = traceEls(container);
+    // step 1 → traces 0 and 1 lit (ember), 2 and 3 dormant (hi).
+    expect(traces[0].style.background).toBe(C.ember);
+    expect(traces[1].style.background).toBe(C.ember);
+    expect(traces[2].style.background).toBe(C.hi);
+    expect(traces[3].style.background).toBe(C.hi);
+  });
 
-    it('step labels use 16px font-size', () => {
-      mockMatchMedia(false);
-      renderSetupSteps();
+  it('is viewport independent — identical structure on mobile and desktop', () => {
+    mockMatchMedia(true);
+    const mobile = renderStepBar(2);
+    const mobileHtml = mobile.container.innerHTML;
+    cleanup();
 
-      const stepLabel = screen.getByText('Conexão') as HTMLSpanElement;
-      expect(stepLabel.style.fontSize).toBe('16px');
-    });
-
-    it('li has minWidth 170px', () => {
-      mockMatchMedia(false);
-      const { container } = renderSetupSteps();
-
-      const li = container.querySelector('li');
-      expect(li?.style.minWidth).toBe('170px');
-    });
+    mockMatchMedia(false);
+    const desktop = renderStepBar(2);
+    expect(desktop.container.innerHTML).toBe(mobileHtml);
   });
 });
