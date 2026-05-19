@@ -2,7 +2,6 @@
 
 import { CHANNEL_META, type ChannelKey } from './OfficialMarketingChannelPage.helpers';
 import { useOfficialMarketingChannel } from './OfficialMarketingChannelPage/use-official-marketing-channel';
-import { ChannelNav } from './OfficialMarketingChannelPage/ChannelNav';
 import { ChannelHeader } from './OfficialMarketingChannelPage/ChannelHeader';
 import { ProofCards } from './OfficialMarketingChannelPage/ProofCards';
 import { SetupSteps } from './OfficialMarketingChannelPage/SetupSteps';
@@ -34,8 +33,6 @@ export function OfficialMarketingChannelPage({ channel, initialStep }: Props) {
         fontFamily: "'Sora', system-ui, sans-serif",
       }}
     >
-      <ChannelNav channel={channel} />
-
       <section style={{ maxWidth: 920, margin: '0 auto' }}>
         <ChannelHeader
           label={meta.label}
@@ -83,6 +80,8 @@ export function OfficialMarketingChannelPage({ channel, initialStep }: Props) {
             <StepArsenal
               arsenal={data.setup.arsenal}
               onArsenalChange={data.handleArsenalChange}
+              productOptions={data.productOptions}
+              selectedProductIds={data.setup.selectedProductIds}
               busy={data.busy}
               onSave={() => void data.persistSetup(data.setup, 'Arsenal do canal salvo.')}
             />
@@ -127,9 +126,7 @@ export function OfficialMarketingChannelPage({ channel, initialStep }: Props) {
           onAdvanceStep={data.handleAdvanceStep}
         />
 
-        {data.message ? (
-          <p style={{ color: KLOEL_THEME.textSecondary }}>{data.message}</p>
-        ) : null}
+        {data.message ? <p style={{ color: KLOEL_THEME.textSecondary }}>{data.message}</p> : null}
 
         <pre
           style={{

@@ -96,6 +96,21 @@ export function createSendMessageHandler(ctx: SendMessageContext) {
     const thinkingStartedAt = performance.now();
     const minimumThinkingMs = 420;
     const playbackTimerRef: { current: ReturnType<typeof setTimeout> | null } = { current: null };
+    // Safety net: if the stream never delivers a terminal event (provider
+    // wedged, keep-alive pings masking the idle timeout, connection severed
+    // without a close), finalizeStream() would never run and
+    // streamingMessageId would stay set forever — which keeps the derived
+    // isReplyInFlight true, so EVERY subsequent send becomes a silent no-op
+    // ("Kloel não responde e nada aparece"). This wall-clock backstop
+    // guarantees the streaming state is always released.
+    const HARD_STREAM_WATCHDOG_MS = 300_000;
+    const hardWatchdogRef: { current: ReturnType<typeof setTimeout> | null } = { current: null };
+    const clearHardWatchdog = () => {
+      if (hardWatchdogRef.current) {
+        clearTimeout(hardWatchdogRef.current);
+        hardWatchdogRef.current = null;
+      }
+    };
 
     const syncAssistantText = (nextText: string) => {
       ctx.setMessages((current) =>
@@ -118,6 +133,7 @@ export function createSendMessageHandler(ctx: SendMessageContext) {
       }
       finalized = true;
       clearPlaybackTimer();
+      clearHardWatchdog();
       ctx.activeStreamRef.current = null;
       ctx.setIsThinking(false);
       ctx.setStreamingMessageId(null);
@@ -190,6 +206,26 @@ export function createSendMessageHandler(ctx: SendMessageContext) {
       ]);
       ctx.setStreamingMessageId(assistantId);
 
+      hardWatchdogRef.current = setTimeout(() => {
+        if (finalized) {
+          return;
+        }
+        try {
+          ctx.activeStreamRef.current?.abort();
+        } catch {
+          // best-effort: aborting a wedged stream must not throw here
+        }
+        const watchdogMessage =
+          'O Kloel não respondeu a tempo. Sua mensagem foi preservada — tente enviar novamente.';
+        finalError = finalError || watchdogMessage;
+        if (!streamedReply.trim()) {
+          streamedReply = watchdogMessage;
+          syncAssistantText(streamedReply);
+        }
+        streamEnded = true;
+        finalizeStream();
+      }, HARD_STREAM_WATCHDOG_MS);
+
       ctx.activeStreamRef.current = streamAuthenticatedKloelMessage(
         {
           message: text,
@@ -260,6 +296,7 @@ export function createSendMessageHandler(ctx: SendMessageContext) {
       );
     } catch (error: unknown) {
       clearPlaybackTimer();
+      clearHardWatchdog();
       ctx.activeStreamRef.current = null;
       ctx.setIsThinking(false);
       ctx.setStreamingMessageId(null);
