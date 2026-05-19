@@ -9,7 +9,8 @@ import { KloelWorkspaceContextDataService } from './kloel-workspace-context-data
 import { KloelToolExecutorCrmService } from './kloel-tool-executor-crm.service';
 import { GuestChatController } from './guest-chat.controller';
 import { GuestChatService } from './guest-chat.service';
-import { KloelCodeToolsService } from './kloel-code-tools.service';
+import { KloelCodeToolsService } from './kloel-code-tools.service';import { KloelCodeAnalysisService } from './kloel-code-analysis.service';
+
 import { KloelReflexivityService } from './kloel-reflexivity.service';
 import { UnifiedAgentToolExecutorService } from './unified-agent-tool-executor';
 
@@ -252,7 +253,8 @@ import { RiskClassModule } from './risk-class/risk-class.module';
     KloelThreadSummaryService,
     KloelChatToolsService,
     KloelCodeToolsService,
-    KloelBusinessConfigToolsService,
+    KloelBusinessConfigToolsService,    KloelCodeAnalysisService,
+
     KloelReflexivityService,
 
     KloelWhatsAppToolsService,

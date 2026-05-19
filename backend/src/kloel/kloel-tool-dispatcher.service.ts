@@ -10,6 +10,7 @@ import { KloelComposerService } from './kloel-composer.service';
 import { KloelWhatsAppToolsService } from './kloel-whatsapp-tools.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { KloelCodeToolsService } from './kloel-code-tools.service';
+import { KloelCodeAnalysisService } from './kloel-code-analysis.service';
 
 type UnknownRecord = Record<string, unknown>;
 type ApprovedToolExecutionResult = {
@@ -39,7 +40,8 @@ export class KloelToolDispatcherService {
     private readonly whatsappToolsService: KloelWhatsAppToolsService,
     private readonly composerService: KloelComposerService,
     private readonly auditService: AuditService,
-    private readonly codeToolsService: KloelCodeToolsService,
+    private readonly codeToolsService: KloelCodeToolsService,    private readonly codeAnalysisService: KloelCodeAnalysisService,
+
     @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
 
@@ -252,11 +254,11 @@ export class KloelToolDispatcherService {
             typeof args.scope === 'string' ? args.scope : undefined,
           );
         case 'code_lint':
-          return await this.codeToolsService.toolCodeLint(
+          return await this.codeAnalysisService.toolCodeLint(
             typeof args.path === 'string' ? args.path : '',
           );
         case 'code_detect_issues':
-          return await this.codeToolsService.toolCodeDetectIssues(
+          return await this.codeAnalysisService.toolCodeDetectIssues(
             typeof args.path === 'string' ? args.path : '',
           );
         default:
