@@ -18,6 +18,7 @@ import { KloelStreamWriter } from './kloel-stream-writer';
 import { KloelThreadService, StoredProcessingTraceEntry } from './kloel-thread.service';
 import { KloelWorkspaceContextService } from './kloel-workspace-context.service';
 import { CANONICAL_FALLBACK_SYSTEM_PROMPT } from './kloel.prompts';
+import { LLM_MAX_COMPLETION_TOKENS } from './openai-wrapper';
 import { AbiBuilderService } from './abi/abi-builder.service';
 import { validateAbiPayload } from './abi/abi-validator';
 import { ChatCompletionMessageParam } from 'openai/resources/chat';
@@ -97,11 +98,7 @@ export class KloelThinkerService {
     streamWriter.init();
 
     try {
-      if (
-        !this.llmE2EGuard.isEnabled() &&
-        !this.replyEngine.hasOpenAiKey() &&
-        !process.env.ANTHROPIC_API_KEY
-      ) {
+      if (!this.replyEngine.hasOpenAiKey() && !process.env.ANTHROPIC_API_KEY) {
         safeWrite(
           createKloelErrorEvent({
             content:
@@ -180,9 +177,12 @@ export class KloelThinkerService {
       );
       const shouldPlanWithTools =
         mode === 'chat' && !!workspaceId && this.replyEngine.shouldAttemptToolPlanningPass(message);
-      const usesLongFormBudget = this.replyEngine.shouldUseLongFormBudget(message);
+      // No hardcoded output cap: operator/model decides via the
+      // LLM_MAX_COMPLETION_TOKENS env (DeepSeek V4 Pro's real ceiling).
+      // Long-form signal kept for telemetry; it no longer halves replies.
+      void this.replyEngine.shouldUseLongFormBudget(message);
       const responseTemperature = 0.7;
-      const responseMaxTokens = usesLongFormBudget ? 4096 : 2048;
+      const responseMaxTokens = LLM_MAX_COMPLETION_TOKENS;
       const clientRequestId = this.threadService.resolveClientRequestId(metadata);
 
       void context;
