@@ -83,13 +83,11 @@ export class UnifiedAgentService {
     private readonly prisma: PrismaService,
     private readonly config: ConfigService,
     private readonly planLimits: PlanLimitsService,
-    private readonly auditService: AuditService,
     private readonly ctx: UnifiedAgentContextService,
     private readonly response: UnifiedAgentResponseService,
     private readonly actions: UnifiedAgentActionsService,
     @Optional() private readonly agentRuntime?: AgentRuntimeContextService,
     @Optional() private readonly abiBuilder?: AbiBuilderService,
-    @Optional() private readonly riskGate?: RiskGateService,
     @Optional() private readonly brainCapability?: BrainCapabilityExecutorService,
     @Optional() private readonly toolExecutor?: UnifiedAgentToolExecutorService,
   ) {
@@ -480,7 +478,13 @@ export class UnifiedAgentService {
     args: ToolArgs,
     ctx: { workspaceId: string; contactId?: string; phone?: string },
   ): Promise<unknown> {
-    return this.toolExecutor.execute(ctx.workspaceId, ctx.contactId || '', ctx.phone || '', tool, args);
+    return this.toolExecutor.execute(
+      ctx.workspaceId,
+      ctx.contactId || '',
+      ctx.phone || '',
+      tool,
+      args,
+    );
   }
 
   /** Build quoted reply plan (delegates to response service). */
@@ -510,23 +514,57 @@ export class UnifiedAgentService {
     args: ToolArgs,
     context?: UnknownRecord,
   ): Promise<unknown> {
-    if (!this.toolExecutor) return { success: false, error: 'tool_executor_unavailable' };
+    if (!this.toolExecutor) {
+      return { success: false, error: 'tool_executor_unavailable' };
+    }
     return this.toolExecutor.execute(workspaceId, contactId, phone, tool, args, context);
   }
 
   private actionSucceeded(result: unknown): boolean {
-    return typeof result === 'object' && result !== null && ((result as Record<string, unknown>).success === true || (result as Record<string, unknown>).ok === true || (result as Record<string, unknown>).executed === true);
+    return (
+      typeof result === 'object' &&
+      result !== null &&
+      ((result as Record<string, unknown>).success === true ||
+        (result as Record<string, unknown>).ok === true ||
+        (result as Record<string, unknown>).executed === true)
+    );
   }
-  private num(v: unknown, fb = 0): number { const n = Number(v); return Number.isFinite(n) ? Math.round(n) : fb; }
+  private num(v: unknown, fb = 0): number {
+    const n = Number(v);
+    return Number.isFinite(n) ? Math.round(n) : fb;
+  }
   private async buildAgentRuntimeContext(params: {
-    workspaceId: string; channel: string; message: string; contactId?: string; allowedTools?: string[];
-  }): Promise<{ systemPromptBlock: string }> { return this.agentRuntime?.buildContext(params) ?? { systemPromptBlock: '' }; }
+    workspaceId: string;
+    channel: string;
+    message: string;
+    contactId?: string;
+    allowedTools?: string[];
+  }): Promise<{ systemPromptBlock: string }> {
+    return this.agentRuntime?.buildContext(params) ?? { systemPromptBlock: '' };
+  }
   private async recordAgentRuntimeTurn(params: {
-    workspaceId: string; channel: string; userMessage: string; assistantMessage?: string;
-    contactId?: string; intent?: string; confidence?: number;
+    workspaceId: string;
+    channel: string;
+    userMessage: string;
+    assistantMessage?: string;
+    contactId?: string;
+    intent?: string;
+    confidence?: number;
     actions?: Array<{ toolName: string; success: boolean; result?: unknown }>;
-  }): Promise<void> { await this.agentRuntime?.recordTurnOutcome(params); }
+  }): Promise<void> {
+    await this.agentRuntime?.recordTurnOutcome(params);
+  }
   private buildAgentToolEnvelope(params: { workspaceId: string; toolName: string }): {
-    id: string; toolName: string; allowed: boolean;
-  } { return this.agentRuntime?.buildToolEnvelope(params) ?? { id: 'agent-runtime-unavailable', toolName: params.toolName, allowed: true }; }
+    id: string;
+    toolName: string;
+    allowed: boolean;
+  } {
+    return (
+      this.agentRuntime?.buildToolEnvelope(params) ?? {
+        id: 'agent-runtime-unavailable',
+        toolName: params.toolName,
+        allowed: true,
+      }
+    );
+  }
 }

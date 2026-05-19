@@ -251,7 +251,15 @@ describe('economic-hierarchy – part 2', () => {
     });
 
     it('all valid HierarchyLevel values are usable', () => {
-      const levels = ['compliance', 'margin', 'conversion', 'retention', 'ux', 'learning', 'exploration'] as const;
+      const levels = [
+        'compliance',
+        'margin',
+        'conversion',
+        'retention',
+        'ux',
+        'learning',
+        'exploration',
+      ] as const;
       expect(levels.length).toBe(7);
       for (const level of levels) {
         expect(typeof level).toBe('string');

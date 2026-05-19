@@ -1,7 +1,6 @@
 import { attributeHierarchy } from './economic-hierarchy';
 
 type HierarchyDecision = Parameters<typeof attributeHierarchy>[0];
-type HierarchyLevel = ReturnType<typeof attributeHierarchy>['level'];
 
 describe('economic-hierarchy', () => {
   const h = (overrides: Partial<HierarchyDecision> = {}): HierarchyDecision => ({
@@ -397,7 +396,4 @@ describe('economic-hierarchy', () => {
       expect(result.level).toBe('retention');
     });
   });
-
 });
-
-
