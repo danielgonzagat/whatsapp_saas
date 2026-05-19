@@ -18,6 +18,7 @@ import type {
   AbiPulseTruth,
   AbiSalientEvent,
   AbiValence,
+  AbiValenceSection,
   AbiWorkingMemoryItem,
 } from './abi/abi-schema';
 
@@ -199,6 +200,7 @@ export class BrainCapabilityExecutorService {
     beliefs: AbiBelief[];
     predictions: AbiPredictions;
     pulseTruth: AbiPulseTruth;
+    valence: AbiValenceSection;
   }> {
     const sinceMs = Date.now() - 7 * 24 * 60 * 60 * 1000;
     const events = await this.mindPerception.since(workspaceId, new Date(sinceMs));
@@ -351,6 +353,32 @@ export class BrainCapabilityExecutorService {
       overclaimRisk: 0,
     };
 
+    // Real valence (gap #6): recentTrace + aggregatedMood from the live
+    // spine events (valenceOf classifies each kind). No longer a mute
+    // static neutral:1 — the mood now reflects actual workspace events.
+    const recentForValence = ordered.slice(0, 20);
+    const valenceTrace = recentForValence.map((e, i) => ({
+      eventId: eventId(e, i),
+      valence: valenceOf(e.kind),
+      weight: 1,
+      occurredAt: e.occurredAt.toISOString(),
+    }));
+    const moodCount = { positive: 0, negative: 0, neutral: 0, ambiguous: 0 };
+    for (const e of events) {
+      moodCount[valenceOf(e.kind)] += 1;
+    }
+    const moodTotal = events.length || 1;
+    const valence: AbiValenceSection = {
+      recentTrace: valenceTrace,
+      aggregatedMood: {
+        positive: Number((moodCount.positive / moodTotal).toFixed(4)),
+        negative: Number((moodCount.negative / moodTotal).toFixed(4)),
+        neutral: events.length === 0 ? 1 : Number((moodCount.neutral / moodTotal).toFixed(4)),
+        ambiguous: Number((moodCount.ambiguous / moodTotal).toFixed(4)),
+        windowHours: 168,
+      },
+    };
+
     return {
       recentSalientEvents,
       workingMemory,
@@ -360,6 +388,7 @@ export class BrainCapabilityExecutorService {
       beliefs,
       predictions,
       pulseTruth,
+      valence,
     };
   }
 

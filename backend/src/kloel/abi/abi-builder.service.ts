@@ -15,6 +15,7 @@ import {
   AbiPulseTruth,
   AbiSalientEvent,
   AbiTruthMode,
+  AbiValenceSection,
   AbiWorkingMemoryItem,
   CognitiveStateAbi,
 } from './abi-schema';
@@ -65,6 +66,7 @@ export interface AbiBuildInput {
     readonly beliefs?: readonly AbiBelief[];
     readonly predictions?: AbiPredictions;
     readonly pulseTruth?: AbiPulseTruth;
+    readonly valence?: AbiValenceSection;
   };
 }
 
@@ -144,7 +146,7 @@ export class AbiBuilderService {
         })),
         restricted: [],
       },
-      valence: {
+      valence: input.cognitiveSubstrate?.valence ?? {
         recentTrace: [],
         aggregatedMood: {
           positive: 0,
