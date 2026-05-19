@@ -1,6 +1,7 @@
 import { ChatCompletionTool } from 'openai/resources/chat';
 import { KLOEL_CHAT_TOOLS_MEDIA_BILLING } from './kloel-chat-tools-b.definition';
 import { KLOEL_CHAT_TOOLS_SETTINGS_CAMPAIGNS } from './kloel-chat-tools.definition-extras';
+import { KLOEL_CHAT_TOOLS_CODE } from './kloel-code-tools.definition';
 
 /** Core tool definitions (products, automation, metrics, payments, whatsapp, leads). */
 const KLOEL_CHAT_TOOLS_CORE: ChatCompletionTool[] = [
@@ -368,6 +369,7 @@ export const KLOEL_CHAT_TOOLS: ChatCompletionTool[] = [
   ...KLOEL_CHAT_TOOLS_CORE,
   ...KLOEL_CHAT_TOOLS_MEDIA_BILLING,
   ...KLOEL_CHAT_TOOLS_SETTINGS_CAMPAIGNS,
+  ...KLOEL_CHAT_TOOLS_CODE,
 ];
 
 export const KLOEL_SAFE_READ_TOOL_NAMES = [

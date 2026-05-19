@@ -9,6 +9,8 @@ import { KloelWorkspaceContextDataService } from './kloel-workspace-context-data
 import { KloelToolExecutorCrmService } from './kloel-tool-executor-crm.service';
 import { GuestChatController } from './guest-chat.controller';
 import { GuestChatService } from './guest-chat.service';
+import { KloelCodeToolsService } from './kloel-code-tools.service';import { KloelReflexivityService } from './kloel-reflexivity.service';
+
 import { KloelBusinessConfigToolsService } from './kloel-business-config-tools.service';
 import { KloelChatToolsService } from './kloel-chat-tools.service';
 import { KloelComposerService } from './kloel-composer.service';
@@ -247,7 +249,9 @@ import { RiskClassModule } from './risk-class/risk-class.module';
     KloelThreadService,
     KloelThreadSummaryService,
     KloelChatToolsService,
-    KloelBusinessConfigToolsService,
+    KloelCodeToolsService,
+    KloelBusinessConfigToolsService,    KloelReflexivityService,
+
     KloelWhatsAppToolsService,
     KloelLeadBrainService,
     KloelToolDispatcherService,
@@ -358,6 +362,8 @@ import { RiskClassModule } from './risk-class/risk-class.module';
   ],
   exports: [
     KloelService,
+    KloelCodeToolsService,
+
     KloelThinkerService,
     KloelReplyEngineService,
     KloelThreadSearchService,
@@ -375,6 +381,7 @@ import { RiskClassModule } from './risk-class/risk-class.module';
     GuestChatService,
     WhatsAppBrainService,
     PaymentService,
+
     OnboardingService,
     ConversationalOnboardingService,
     MemoryCrudService,

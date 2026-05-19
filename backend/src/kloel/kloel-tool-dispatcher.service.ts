@@ -9,6 +9,7 @@ import { KloelChatToolsService } from './kloel-chat-tools.service';
 import { KloelComposerService } from './kloel-composer.service';
 import { KloelWhatsAppToolsService } from './kloel-whatsapp-tools.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
+import { KloelCodeToolsService } from './kloel-code-tools.service';
 
 type UnknownRecord = Record<string, unknown>;
 type ApprovedToolExecutionResult = {
@@ -38,6 +39,7 @@ export class KloelToolDispatcherService {
     private readonly whatsappToolsService: KloelWhatsAppToolsService,
     private readonly composerService: KloelComposerService,
     private readonly auditService: AuditService,
+    private readonly codeToolsService: KloelCodeToolsService,
     @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
 
@@ -210,6 +212,43 @@ export class KloelToolDispatcherService {
           return await this.bizConfigToolsService.toolGetBillingStatus(workspaceId);
         case 'change_plan':
           return await this.requestHighRiskApproval(workspaceId, toolName, args, userId);
+        case 'read_source_file':
+          return await this.codeToolsService.toolReadSourceFile(
+            String(args.path ?? ''),
+            typeof args.startLine === 'number' ? args.startLine : undefined,
+            typeof args.endLine === 'number' ? args.endLine : undefined,
+          );
+        case 'list_source_dir':
+          return await this.codeToolsService.toolListSourceDir(
+            typeof args.path === 'string' ? args.path : undefined,
+          );
+        case 'search_codebase':
+          return await this.codeToolsService.toolSearchCodebase(
+            String(args.pattern ?? ''),
+            typeof args.glob === 'string' ? args.glob : undefined,
+          );
+        case 'code_outline':
+          return await this.codeToolsService.toolCodeOutline(String(args.path ?? ''));
+        case 'read_prisma_schema':
+          return await this.codeToolsService.toolReadPrismaSchema();
+        case 'git_log':
+          return await this.codeToolsService.toolGitLog(
+            typeof args.count === 'number' ? args.count : undefined,
+          );
+        case 'git_diff':
+          return await this.codeToolsService.toolGitDiff(
+            typeof args.target === 'string' ? args.target : undefined,
+          );
+        case 'git_status':
+          return await this.codeToolsService.toolGitStatus();
+        case 'run_backend_tests':
+          return await this.codeToolsService.toolRunBackendTests(
+            typeof args.pattern === 'string' ? args.pattern : undefined,
+          );
+        case 'build_status':
+          return await this.codeToolsService.toolBuildStatus(
+            typeof args.scope === 'string' ? args.scope : undefined,
+          );
         default:
           return { success: false, error: `Ferramenta desconhecida: ${toolName}` };
       }

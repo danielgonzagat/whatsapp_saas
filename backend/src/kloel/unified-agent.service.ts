@@ -23,6 +23,7 @@ import {
   buildPredecidedActionDraft,
   executePredecidedAgentActions,
 } from './unified-agent-predecided-actions.part';
+import { BrainCapabilityExecutorService } from './brain-capability-executor.service';
 
 type UnknownRecord = Record<string, unknown>;
 
@@ -88,6 +89,7 @@ export class UnifiedAgentService {
     @Optional() private readonly agentRuntime?: AgentRuntimeContextService,
     @Optional() private readonly abiBuilder?: AbiBuilderService,
     @Optional() private readonly riskGate?: RiskGateService,
+    @Optional() private readonly brainCapability?: BrainCapabilityExecutorService,
   ) {
     this.openai = createTextLlmClient(this.config);
     this.primaryBrainModel = resolveBackendOpenAIModel('brain', this.config);
@@ -241,6 +243,17 @@ export class UnifiedAgentService {
       perceptionSnapshot: { channel: currentInput.channel },
     };
 
+    let cognitiveSubstrate: Awaited<ReturnType<BrainCapabilityExecutorService['buildCognitiveSubstrate']>> | undefined;
+    if (this.brainCapability) {
+      try {
+        cognitiveSubstrate = await this.brainCapability.buildCognitiveSubstrate(workspaceId);
+      } catch (err: unknown) {
+        this.logger.warn(
+          `Cognitive substrate build failed: ${err instanceof Error ? err.message : String(err)}`,
+        );
+      }
+    }
+
     if (this.abiBuilder) {
       const abiResult = await this.abiBuilder.build({
         audience: 'public',
@@ -248,6 +261,7 @@ export class UnifiedAgentService {
         perceptionSnapshot: {
           channel: currentInput.channel,
         },
+        ...(cognitiveSubstrate ? { cognitiveSubstrate } : {}),
       });
 
       if (abiResult.status !== 'ok') {
