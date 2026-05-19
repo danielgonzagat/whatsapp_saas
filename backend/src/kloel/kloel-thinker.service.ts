@@ -204,6 +204,8 @@ export class KloelThinkerService {
       let finalUserMessage = message;
 
       const useAbi = process.env['KLOEL_THINKER_USE_ABI'] === 'on';
+      let abiOutcome = useAbi ? (this.abiBuilder ? 'attempted' : 'no_abiBuilder') : 'flag_off';
+      let substrateBuilt = false;
       if (useAbi && this.abiBuilder) {
         try {
           // Close the read-back loop: feed the REAL persisted cognitive
@@ -215,6 +217,7 @@ export class KloelThinkerService {
             workspaceId && this.capabilityExecutor
               ? await this.capabilityExecutor.buildCognitiveSubstrate(workspaceId)
               : undefined;
+          substrateBuilt = !!chatSubstrate;
           const abiResult = await this.abiBuilder.build({
             audience: 'public',
             currentInput: {
@@ -233,6 +236,7 @@ export class KloelThinkerService {
           });
 
           if (abiResult.status !== 'ok') {
+            abiOutcome = `build_failed:${abiResult.reason}`;
             this.logger.warn(
               `ABI build failed: ${abiResult.reason}, falling back to legacy thinker prompt`,
             );
@@ -240,6 +244,7 @@ export class KloelThinkerService {
             const validation = validateAbiPayload(abiResult.abi);
 
             if (validation.status === 'FAIL') {
+              abiOutcome = `validation_failed:${JSON.stringify(validation.issues).slice(0, 240)}`;
               this.logger.warn(
                 `ABI validation failed: ${JSON.stringify(validation.issues)}, falling back to legacy thinker prompt`,
               );
@@ -258,6 +263,7 @@ export class KloelThinkerService {
               }
               finalSystemPrompt = `${CANONICAL_FALLBACK_SYSTEM}\nstate_payload=${abiStr}`;
               finalUserMessage = message;
+              abiOutcome = `success(abiLen=${abiStr.length})`;
             }
           }
         } catch (error: unknown) {
@@ -267,9 +273,16 @@ export class KloelThinkerService {
               : typeof error === 'string'
                 ? error
                 : 'unknown error';
+          abiOutcome = `exception:${msg}`;
           this.logger.warn(`ABI build exception: ${msg}, falling back to legacy thinker prompt`);
         }
       }
+      // RUNTIME TRUTH: greppable, severity=log so it is never filtered.
+      // Tells us definitively whether the chat actually uses the
+      // cognitive substrate or silently falls back to the legacy prompt.
+      this.logger.log(
+        `KLOEL_ABI_PATH useAbi=${useAbi} substrateBuilt=${substrateBuilt} outcome=${abiOutcome}`,
+      );
 
       if (thread?.id) {
         safeWrite(createKloelThreadEvent(thread.id, thread.title));
