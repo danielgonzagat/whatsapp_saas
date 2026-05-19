@@ -19,6 +19,7 @@ import { KloelThreadService, StoredProcessingTraceEntry } from './kloel-thread.s
 import { KloelWorkspaceContextService } from './kloel-workspace-context.service';
 import { CANONICAL_FALLBACK_SYSTEM_PROMPT } from './kloel.prompts';
 import { LLM_MAX_COMPLETION_TOKENS } from './openai-wrapper';
+import { OPERATOR_CAPABILITIES } from './brain-capabilities.const';
 import { AbiBuilderService } from './abi/abi-builder.service';
 import { validateAbiPayload } from './abi/abi-validator';
 import { ChatCompletionMessageParam } from 'openai/resources/chat';
@@ -212,7 +213,11 @@ export class KloelThinkerService {
             },
             perceptionSnapshot: {
               channel: 'web',
+              ...(workspaceId ? { workspaceId } : {}),
             },
+            // Real capability registry so the chat ABI is not hollow
+            // (was the cause of Kloel reporting "ABI inteiramente vazio").
+            capabilityIds: [...OPERATOR_CAPABILITIES],
           });
 
           if (abiResult.status !== 'ok') {
@@ -227,8 +232,20 @@ export class KloelThinkerService {
                 `ABI validation failed: ${JSON.stringify(validation.issues)}, falling back to legacy thinker prompt`,
               );
             } else {
-              finalSystemPrompt = CANONICAL_FALLBACK_SYSTEM;
-              finalUserMessage = `Estado cognitivo (ABI): ${JSON.stringify(abiResult.abi)}\n\n${message}`;
+              // BOUNDED ABI: cap arrays + hard size limit so a long
+              // user prompt is NEVER inflated/crashed by the state
+              // payload. The ABI goes to SYSTEM (structured state, B2 —
+              // not a behavioral instruction); the user message stays
+              // EXACTLY the user's input (fixes long-message hang).
+              const capArrays = (_k: string, v: unknown): unknown =>
+                Array.isArray(v) ? v.slice(0, 8) : v;
+              let abiStr = JSON.stringify(abiResult.abi, capArrays);
+              const ABI_MAX = 6000;
+              if (abiStr.length > ABI_MAX) {
+                abiStr = `${abiStr.slice(0, ABI_MAX)}…(state_truncated)`;
+              }
+              finalSystemPrompt = `${CANONICAL_FALLBACK_SYSTEM}\nstate_payload=${abiStr}`;
+              finalUserMessage = message;
             }
           }
         } catch (error: unknown) {
