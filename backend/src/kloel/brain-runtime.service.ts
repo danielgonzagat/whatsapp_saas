@@ -8,6 +8,7 @@ import {
   readBrainActionName,
 } from './brain-action-event-mapper';
 import { BrainCapabilityExecutorService } from './brain-capability-executor.service';
+import { OPERATOR_CAPABILITIES } from './brain-capabilities.const';
 import { BrainCapabilityRegistryService } from './brain-capability-registry.service';
 import { BrainCommercialGraphService } from './brain-commercial-graph.service';
 import type { CommercialGraphRecommendation } from './brain-commercial-graph.types';
@@ -55,15 +56,8 @@ function buildPredecidedActions(input: {
   return [{ tool: input.intent, args: args }];
 }
 
-const OPERATOR_CAPABILITIES = [
-  'list_products',
-  'search_contact',
-  'list_conversations',
-  'send_message_via_channel',
-  'query_revenue_summary',
-  'inspect_self',
-  'inspect_runtime',
-] as const;
+// OPERATOR_CAPABILITIES moved to ./brain-capabilities.const (single
+// source of truth shared with the executor's self-model registry).
 
 @Injectable()
 export class BrainRuntimeService {

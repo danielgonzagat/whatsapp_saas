@@ -6,6 +6,7 @@ import { PlanLimitsService } from '../billing/plan-limits.service';
 import { AbiBuilderService, type AbiBuildInput } from './abi/abi-builder.service';
 import type { IdentityAudience } from './lineage/identity-projector.service';
 import { MindPerceptionService } from './mind-perception.service';
+import { OPERATOR_CAPABILITIES } from './brain-capabilities.const';
 import { MemoryProjector } from './commem/memory.projector';
 import type { MindPerceptEvent } from './mind.types';
 import type { SpineEventRef } from './mind/mind.types';
@@ -439,6 +440,7 @@ export class BrainCapabilityExecutorService {
           arrivalTimestamp: new Date().toISOString(),
         },
         perceptionSnapshot: { channel: 'chat', workspaceId },
+        capabilityIds: [...OPERATOR_CAPABILITIES],
         cognitiveSubstrate,
       };
       const result = await this.abiBuilder.build(input);
