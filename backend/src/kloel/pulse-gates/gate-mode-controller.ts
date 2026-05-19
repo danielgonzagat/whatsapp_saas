@@ -44,13 +44,14 @@ const VALID_MODES = new Set<string>(['log_only', 'hard_fail']);
 function parseOverrides(raw: string | undefined): Partial<Record<GateName, GateMode>> {
   if (!raw) return {};
   const out: Partial<Record<GateName, GateMode>> = {};
-  const pairs = raw.split(',').map((p) => p.trim()).filter(Boolean);
+  const pairs = raw
+    .split(',')
+    .map((p) => p.trim())
+    .filter(Boolean);
   for (const pair of pairs) {
     const [name, mode] = pair.split('=').map((s) => s.trim());
     if (!name || !mode || !VALID_GATE_NAMES.has(name) || !VALID_MODES.has(mode)) {
-      process.emitWarning(
-        `[gate-mode-controller] ignoring invalid override pair "${pair}"`,
-      );
+      process.emitWarning(`[gate-mode-controller] ignoring invalid override pair "${pair}"`);
       continue;
     }
     out[name as GateName] = mode as GateMode;

@@ -243,7 +243,9 @@ export class UnifiedAgentService {
       perceptionSnapshot: { channel: currentInput.channel },
     };
 
-    let cognitiveSubstrate: Awaited<ReturnType<BrainCapabilityExecutorService['buildCognitiveSubstrate']>> | undefined;
+    let cognitiveSubstrate:
+      | Awaited<ReturnType<BrainCapabilityExecutorService['buildCognitiveSubstrate']>>
+      | undefined;
     if (this.brainCapability) {
       try {
         cognitiveSubstrate = await this.brainCapability.buildCognitiveSubstrate(workspaceId);
@@ -292,8 +294,7 @@ export class UnifiedAgentService {
             workspaceProductContext: systemPrompt,
             compressedMemory: compressedContext || null,
             additionalContext,
-            tacticalHint:
-              tacticalHint || 'responder com clareza, valor concreto e próximo passo.',
+            tacticalHint: tacticalHint || 'responder com clareza, valor concreto e próximo passo.',
             responsePolicy: stylePolicy,
           },
           contact: {
@@ -533,9 +534,7 @@ export class UnifiedAgentService {
             target: 'lead',
           });
           if (gateDecision.verdict === 'block') {
-            this.logger.error(
-              `R4 BLOCKED: create_payment_link — ${gateDecision.reason}`,
-            );
+            this.logger.error(`R4 BLOCKED: create_payment_link — ${gateDecision.reason}`);
             return {
               success: false,
               blocked: true,
@@ -664,9 +663,7 @@ export class UnifiedAgentService {
             target: 'lead',
           });
           if (gateDecision.verdict === 'block') {
-            this.logger.error(
-              `R4 BLOCKED: apply_discount — ${gateDecision.reason}`,
-            );
+            this.logger.error(`R4 BLOCKED: apply_discount — ${gateDecision.reason}`);
             return {
               success: false,
               blocked: true,
@@ -736,10 +733,11 @@ export class UnifiedAgentService {
     await this.agentRuntime?.recordTurnOutcome(params);
   }
 
-  private buildAgentToolEnvelope(params: {
-    workspaceId: string;
+  private buildAgentToolEnvelope(params: { workspaceId: string; toolName: string }): {
+    id: string;
     toolName: string;
-  }): { id: string; toolName: string; allowed: boolean } {
+    allowed: boolean;
+  } {
     return (
       this.agentRuntime?.buildToolEnvelope(params) ?? {
         id: 'agent-runtime-unavailable',

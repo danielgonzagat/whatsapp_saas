@@ -4,7 +4,12 @@ import type {
   PostSaleDecisionControl,
   TestimonialReadiness,
 } from './postsale-consumers.types';
-import { clamp, daysSince, filterByWorkspaceAndEntity, latestEvent } from './postsale-consumers.types';
+import {
+  clamp,
+  daysSince,
+  filterByWorkspaceAndEntity,
+  latestEvent,
+} from './postsale-consumers.types';
 
 const MIN_DAYS_SINCE_PURCHASE = 7;
 const MAX_DAYS_SINCE_PURCHASE = 60;
@@ -105,7 +110,11 @@ export class TestimonialTimingAdvisor {
 }
 
 function hasRecentPostSaleRisk(
-  events: readonly { readonly eventName: string; readonly occurredAt: string; readonly payload?: Readonly<Record<string, unknown>> }[],
+  events: readonly {
+    readonly eventName: string;
+    readonly occurredAt: string;
+    readonly payload?: Readonly<Record<string, unknown>>;
+  }[],
   nowMs: number,
 ): boolean {
   return events.some((event) => {
@@ -181,6 +190,7 @@ function buildControl(
         : `There is not enough evidence for a ${artifact} request.`,
     leadOutcomeGuardrail:
       'The customer should leave the interaction feeling valued, not mined for proof.',
-    rollback: 'Keep the request silent and route owner desire for proof back to customer success first.',
+    rollback:
+      'Keep the request silent and route owner desire for proof back to customer success first.',
   };
 }
