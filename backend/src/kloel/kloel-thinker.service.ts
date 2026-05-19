@@ -21,6 +21,7 @@ import { CANONICAL_FALLBACK_SYSTEM_PROMPT } from './kloel.prompts';
 import { LLM_MAX_COMPLETION_TOKENS } from './openai-wrapper';
 import { OPERATOR_CAPABILITIES } from './brain-capabilities.const';
 import { AbiBuilderService } from './abi/abi-builder.service';
+import { BrainCapabilityExecutorService } from './brain-capability-executor.service';
 import { validateAbiPayload } from './abi/abi-validator';
 import { ChatCompletionMessageParam } from 'openai/resources/chat';
 import { KloelReplyEngineService, LocalToolExecutor } from './kloel-reply-engine.service';
@@ -58,6 +59,7 @@ export class KloelThinkerService {
     private readonly replyEngine: KloelReplyEngineService,
     @Inject(KLOEL_LLM_E2E_GUARD) private readonly llmE2EGuard: KloelLLME2EGuard,
     @Optional() private readonly abiBuilder?: AbiBuilderService,
+    @Optional() private readonly capabilityExecutor?: BrainCapabilityExecutorService,
   ) {
     this.conversationStore = new KloelConversationStore(prisma, this.logger);
   }
@@ -204,6 +206,15 @@ export class KloelThinkerService {
       const useAbi = process.env['KLOEL_THINKER_USE_ABI'] === 'on';
       if (useAbi && this.abiBuilder) {
         try {
+          // Close the read-back loop: feed the REAL persisted cognitive
+          // substrate (memory/beliefs/predictions/valence/pulseTruth from
+          // the spine via #363) into the CONVERSATIONAL ABI — previously
+          // only inspect_self got it, so the chat had no cross-session
+          // memory. Safe: whole block is try/caught with legacy fallback.
+          const chatSubstrate =
+            workspaceId && this.capabilityExecutor
+              ? await this.capabilityExecutor.buildCognitiveSubstrate(workspaceId)
+              : undefined;
           const abiResult = await this.abiBuilder.build({
             audience: 'public',
             currentInput: {
@@ -218,6 +229,7 @@ export class KloelThinkerService {
             // Real capability registry so the chat ABI is not hollow
             // (was the cause of Kloel reporting "ABI inteiramente vazio").
             capabilityIds: [...OPERATOR_CAPABILITIES],
+            ...(chatSubstrate ? { cognitiveSubstrate: chatSubstrate } : {}),
           });
 
           if (abiResult.status !== 'ok') {
