@@ -42,12 +42,14 @@ export function VoiceToneSection({
     if (!value) {
       return;
     }
-    setVoiceTone({
-      style: value.style || '',
-      customInstructions: value.customInstructions || '',
-      useProfessional: value.useProfessional !== false,
-      useFriendly: value.useFriendly === true,
-      usePersuasive: value.usePersuasive === true,
+    queueMicrotask(() => {
+      setVoiceTone({
+        style: value.style || '',
+        customInstructions: value.customInstructions || '',
+        useProfessional: value.useProfessional !== false,
+        useFriendly: value.useFriendly === true,
+        usePersuasive: value.usePersuasive === true,
+      });
     });
   }, [value]);
 

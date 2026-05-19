@@ -95,30 +95,14 @@ export interface RoleDetectorInput {
 }
 
 export const ROLE_DESCRIPTIONS: Readonly<Record<Role, string>> = {
-  produtor:
-    'Cria e opera o produto proprio. Controla catalogo, precos, checkout e entrega.',
-  afiliado:
-    'Promove produtos de terceiros. Controla audiencia, criativos e canais de trafego.',
-  agencia:
-    'Opera multiplos clientes. Controla portfolio, margem, time e retencao.',
-  gestor:
-    'Gerencia a operacao de um unico negocio. Controla equipe, processos e execucao.',
-  closer:
-    'Fecha vendas diretamente. Controla pipeline, objecoes e taxas de conversao.',
-  creator:
-    'Cria conteudo e audiencia. Controla narrativa, engajamento e confianca.',
-  especialista:
-    'Domina um dominio especifico. Controla execucao profunda em area restrita.',
+  produtor: 'Cria e opera o produto proprio. Controla catalogo, precos, checkout e entrega.',
+  afiliado: 'Promove produtos de terceiros. Controla audiencia, criativos e canais de trafego.',
+  agencia: 'Opera multiplos clientes. Controla portfolio, margem, time e retencao.',
+  gestor: 'Gerencia a operacao de um unico negocio. Controla equipe, processos e execucao.',
+  closer: 'Fecha vendas diretamente. Controla pipeline, objecoes e taxas de conversao.',
+  creator: 'Cria conteudo e audiencia. Controla narrativa, engajamento e confianca.',
+  especialista: 'Domina um dominio especifico. Controla execucao profunda em area restrita.',
 };
-
-export function makeRoleDetectionId(): string {
-  return `rd_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-}
-
-export function makeProfileUpdateId(): string {
-  return `mp_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-}
-
 export function clampConfidence(value: number): number {
   return Math.max(0, Math.min(1, value));
 }

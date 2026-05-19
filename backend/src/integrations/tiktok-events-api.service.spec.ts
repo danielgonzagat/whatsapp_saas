@@ -7,17 +7,51 @@ jest.mock('./tiktok-token-crypto', () => ({
   decryptTikTokToken: (s: string) => s,
 }));
 
+type TikTokFetchCall = [string, RequestInit];
+type TikTokFetchResponse = { json: () => Promise<unknown> };
+type TikTokFetchMock = jest.Mock<Promise<TikTokFetchResponse>, TikTokFetchCall>;
+type TikTokTrackBody = {
+  context: {
+    user: {
+      email?: string;
+      phone?: string;
+      external_id?: string;
+      ttclid?: string;
+    };
+  };
+};
+
+function firstTikTokFetchCall(fetchMock: TikTokFetchMock): TikTokFetchCall {
+  const call = fetchMock.mock.calls[0];
+  if (!call) {
+    throw new Error('expected TikTok fetch call');
+  }
+  return call;
+}
+
+function parseTikTokTrackBody(init: RequestInit): TikTokTrackBody {
+  if (typeof init.body !== 'string') {
+    throw new Error('expected TikTok JSON request body');
+  }
+  const parsed: unknown = JSON.parse(init.body);
+  if (!parsed || typeof parsed !== 'object') {
+    throw new Error('expected TikTok track JSON object');
+  }
+  return parsed as TikTokTrackBody;
+}
+
 describe('TikTokEventsApiService', () => {
   let service: TikTokEventsApiService;
-  let prisma: { workspace: { findUnique: jest.Mock } };
+  let prisma: { integrationCredential: { findUnique: jest.Mock } };
   let opsAlert: { alertOnDegradation: jest.Mock };
   const originalFetch = global.fetch;
 
   beforeEach(async () => {
     prisma = {
-      workspace: {
+      integrationCredential: {
         findUnique: jest.fn().mockResolvedValue({
-          providerSettings: { tiktok: { accessToken: 'token-abc' } },
+          accessToken: 'token-abc',
+          status: 'connected',
         }),
       },
     };
@@ -37,7 +71,7 @@ describe('TikTokEventsApiService', () => {
   });
 
   it('returns tiktok_token_not_configured when no access token', async () => {
-    prisma.workspace.findUnique.mockResolvedValue({ providerSettings: { tiktok: {} } });
+    prisma.integrationCredential.findUnique.mockResolvedValue(null);
     const result = await service.sendEvent('ws-1', 'PX', {
       eventName: 'Purchase',
       userData: {},
@@ -46,8 +80,8 @@ describe('TikTokEventsApiService', () => {
   });
 
   it('hashes email/phone/externalId with sha256 before sending', async () => {
-    const fetchMock = jest
-      .fn()
+    const fetchMock: TikTokFetchMock = jest
+      .fn<Promise<TikTokFetchResponse>, TikTokFetchCall>()
       .mockResolvedValue({ json: async () => ({ code: 0, request_id: 'r1' }) });
     global.fetch = fetchMock as typeof fetch;
 
@@ -60,7 +94,8 @@ describe('TikTokEventsApiService', () => {
         ttclid: 'click-1',
       },
     });
-    const body = JSON.parse(fetchMock.mock.calls[0][1].body);
+    const [, init] = firstTikTokFetchCall(fetchMock);
+    const body = parseTikTokTrackBody(init);
     expect(body.context.user.email).toMatch(/^[a-f0-9]{64}$/);
     expect(body.context.user.phone).toMatch(/^[a-f0-9]{64}$/);
     expect(body.context.user.external_id).toMatch(/^[a-f0-9]{64}$/);
@@ -81,9 +116,9 @@ describe('TikTokEventsApiService', () => {
   });
 
   it('returns success=false and error message on non-zero TikTok code', async () => {
-    global.fetch = jest
-      .fn()
-      .mockResolvedValue({ json: async () => ({ code: 40001, message: 'bad', request_id: 'r2' }) }) as typeof fetch;
+    global.fetch = jest.fn().mockResolvedValue({
+      json: async () => ({ code: 40001, message: 'bad', request_id: 'r2' }),
+    }) as typeof fetch;
     const result = await service.sendEvent('ws-1', 'PX', {
       eventName: 'Purchase',
       userData: {},
@@ -104,16 +139,17 @@ describe('TikTokEventsApiService', () => {
   });
 
   it('targets the canonical TikTok Events API track URL', async () => {
-    const fetchMock = jest.fn().mockResolvedValue({ json: async () => ({ code: 0 }) });
+    const fetchMock: TikTokFetchMock = jest
+      .fn<Promise<TikTokFetchResponse>, TikTokFetchCall>()
+      .mockResolvedValue({ json: async () => ({ code: 0 }) });
     global.fetch = fetchMock as typeof fetch;
     await service.sendEvent('ws-1', 'PX', {
       eventName: 'Purchase',
       userData: {},
     });
-    expect(fetchMock.mock.calls[0][0]).toBe(
-      'https://business-api.tiktok.com/open_api/v1.3/event/track/',
-    );
-    expect(fetchMock.mock.calls[0][1].headers['Access-Token']).toBe('token-abc');
+    const [url, init] = firstTikTokFetchCall(fetchMock);
+    expect(url).toBe('https://business-api.tiktok.com/open_api/v1.3/event/track/');
+    expect((init.headers as Record<string, string>)['Access-Token']).toBe('token-abc');
   });
 
   it('sendEvents aggregates success/failure counts', async () => {

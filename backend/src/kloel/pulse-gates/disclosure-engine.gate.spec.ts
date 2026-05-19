@@ -168,7 +168,7 @@ describe('disclosure-engine gate — FAIL (missing commercialRelationship)', () 
   it('14. hasCommercialRelationship=true with commercialRelationship=null fails', () => {
     const v = check(validInput({
       hasCommercialRelationship: true,
-      commercialRelationship: null as unknown as undefined,
+      commercialRelationship: null as undefined,
     }));
     expect(v.status).toBe('FAIL');
   });

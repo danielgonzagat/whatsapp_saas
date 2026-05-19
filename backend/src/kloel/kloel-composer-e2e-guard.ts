@@ -24,17 +24,44 @@ export interface KloelComposerE2EGuard {
   buildImageResult(): ComposerE2EImageResult;
 }
 
+const E2E_IMAGE_DATA_URL =
+  'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+Xx7cAAAAASUVORK5CYII=';
+
+function isComposerE2EHarnessEnabled(): boolean {
+  return process.env.NODE_ENV !== 'production' && process.env.CI === 'true';
+}
+
 @Injectable()
 export class NoopKloelComposerE2EGuard implements KloelComposerE2EGuard {
   isEnabled(): boolean {
-    return false;
+    return isComposerE2EHarnessEnabled();
   }
 
-  buildSearchResult(): ComposerE2EWebSearchDigest {
-    throw new Error('NoopKloelComposerE2EGuard.buildSearchResult called in production');
+  buildSearchResult(query: string): ComposerE2EWebSearchDigest {
+    if (!this.isEnabled()) {
+      throw new Error('NoopKloelComposerE2EGuard.buildSearchResult called outside e2e harness');
+    }
+
+    return {
+      answer: `A URL principal do site oficial da OpenAI é https://openai.com. Consulta: ${query}`,
+      sources: [{ title: 'OpenAI', url: 'https://openai.com' }],
+      totalTokens: 24,
+    };
   }
 
   buildImageResult(): ComposerE2EImageResult {
-    throw new Error('NoopKloelComposerE2EGuard.buildImageResult called in production');
+    if (!this.isEnabled()) {
+      throw new Error('NoopKloelComposerE2EGuard.buildImageResult called outside e2e harness');
+    }
+
+    return {
+      content: 'Imagem criada pelo Kloel.',
+      metadata: {
+        capability: 'create_image',
+        generatedImageUrl: E2E_IMAGE_DATA_URL,
+        generatedImageFilename: 'kloel-e2e-image.png',
+      },
+      estimatedTokens: 8,
+    };
   }
 }

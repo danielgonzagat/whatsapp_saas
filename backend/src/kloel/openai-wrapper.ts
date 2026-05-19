@@ -2,7 +2,7 @@ import { StructuredLogger } from '../logging/structured-logger';
 // via PlanLimitsService.ensureTokenBudget() before invoking these helpers.
 import { randomInt } from 'node:crypto';
 
-import OpenAI, { type Uploadable } from 'openai';
+import OpenAI from 'openai';
 import { isDeepSeekChatModel } from '../lib/llm-provider';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
 
@@ -307,61 +307,6 @@ export async function chatCompletionStreamWithRetry(
       >,
     options,
   );
-}
-
-/**
- * Wrapper para embeddings
- */
-// I16: callers SHOULD invoke LLMBudgetService.assertBudget() before this
-// wrapper. The wrapper itself enforces per-request clamps (max tokens,
-// max input size) via normalizeChatCompletionParams. See llm-budget.service.ts.
-export async function embeddingsWithRetry(
-  client: OpenAI,
-  params: OpenAI.Embeddings.EmbeddingCreateParams,
-  options?: RetryOptions,
-): Promise<OpenAI.Embeddings.CreateEmbeddingResponse> {
-  return callOpenAIWithRetry(() => client.embeddings.create(params), options);
-}
-
-/**
- * Wrapper para TTS (text-to-speech)
- */
-// I16: callers SHOULD invoke LLMBudgetService.assertBudget() before this
-// wrapper. The wrapper itself enforces per-request clamps (max tokens,
-// max input size) via normalizeChatCompletionParams. See llm-budget.service.ts.
-export async function ttsWithRetry(
-  client: OpenAI,
-  params: OpenAI.Audio.Speech.SpeechCreateParams,
-  options?: RetryOptions,
-): Promise<Response> {
-  return callOpenAIWithRetry(
-    () => client.audio.speech.create(params) as Promise<Response>,
-    options,
-  );
-}
-
-/**
- * Wrapper para Whisper (speech-to-text)
- */
-// I16: callers SHOULD invoke LLMBudgetService.assertBudget() before this
-// wrapper. The wrapper itself enforces per-request clamps (max tokens,
-// max input size) via normalizeChatCompletionParams. See llm-budget.service.ts.
-export async function transcribeWithRetry(
-  client: OpenAI,
-  file: Uploadable,
-  model = resolveBackendOpenAIModel('audio_understanding'),
-  options?: RetryOptions,
-): Promise<string> {
-  const result = await callOpenAIWithRetry<{ text: string } | string>(
-    () =>
-      client.audio.transcriptions.create({
-        file: file,
-        model,
-        response_format: 'text',
-      }),
-    options,
-  );
-  return typeof result === 'string' ? result : result.text;
 }
 
 /**

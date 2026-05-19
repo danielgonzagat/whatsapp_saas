@@ -26,11 +26,6 @@ export const MATURITY_STAGES_ORDERED: readonly MaturityStage[] = [
   'maturidade',
   'otimizacao',
 ] as const;
-
-export function maturityStageIndex(stage: MaturityStage): number {
-  return MATURITY_STAGES_ORDERED.indexOf(stage);
-}
-
 /**
  * Aggregated commercial signals extracted from spine events by the
  * signals collector (UTP-MATURITY-001). All counts are derived from
@@ -87,41 +82,9 @@ export interface GuardVerdict {
  * Stage-appropriate goal tags. The goal-filter uses these to determine
  * which GoalCandidates belong to which stage.
  */
-export type GoalTag =
-  | 'bootstrap'
-  | 'first_sale'
-  | 'product_market_fit'
-  | 'conversion'
-  | 'lead_generation'
-  | 'retention'
-  | 'repeat_purchase'
-  | 'scale'
-  | 'campaign'
-  | 'automation'
-  | 'team'
-  | 'efficiency'
-  | 'optimization'
-  | 'portfolio'
-  | 'ecosystem'
-  | 'ltv'
-  | 'cost_reduction';
 
 export interface StageFilterResult {
   readonly stage: MaturityStage;
   readonly allowed: readonly GoalCandidate[];
   readonly filteredOut: readonly GoalCandidate[];
 }
-
-export const MATURITY_STAGE_DESCRIPTIONS: Readonly<Record<MaturityStage, string>> =
-  {
-    validacao:
-      'Explorando product-market fit. Primeiras vendas, leads esparsos, alta incerteza.',
-    tracao:
-      'Conversões crescendo de forma consistente. Primeiros clientes recorrentes.',
-    crescimento:
-      'Escalando ativamente — campanhas, time, automação. Volume alto.',
-    maturidade:
-      'Operação estável com métricas previsíveis. Refinamento e eficiência.',
-    otimizacao:
-      'Fine-tuning avançado. Portfolio, ecossistema, maximização de LTV.',
-  };

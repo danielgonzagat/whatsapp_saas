@@ -220,6 +220,38 @@ async function installMarketingWhatsAppFlowMocks(page: Page) {
     });
   });
 
+  await page.route('**/marketing/connect/channel-setup**', async (route) => {
+    if (route.request().method() === 'POST') {
+      const body = route.request().postDataJSON() as JsonRecord;
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          setup: {
+            currentStep: Number(body.currentStep ?? 0),
+            selectedProductIds: Array.isArray(body.selectedProductIds) ? body.selectedProductIds : [],
+            arsenal: Array.isArray(body.arsenal) ? body.arsenal : [],
+            config: asJsonRecord(body.config),
+          },
+        }),
+      });
+      return;
+    }
+
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        setup: {
+          currentStep: 0,
+          selectedProductIds: [],
+          arsenal: [],
+          config: {},
+        },
+      }),
+    });
+  });
+
   await page.route('**/channel-setup/whatsapp', async (route) => {
     await route.fulfill({
       status: 200,
@@ -333,6 +365,21 @@ async function installMarketingWhatsAppFlowMocks(page: Page) {
       }),
     });
   });
+
+  await page.route('**/whatsapp/session-status/*', async (route) => {
+    syncSessionSnapshot();
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        connected: sessionState === 'connected',
+        status: sessionState === 'connected' ? 'CONNECTED' : 'DISCONNECTED',
+        provider: 'meta-cloud',
+        phone: sessionState === 'connected' ? '+55 11 99999-9999' : undefined,
+        pushName: sessionState === 'connected' ? 'Loja E2E' : undefined,
+      }),
+    });
+  });
 }
 
 test.describe('Marketing WhatsApp flow', () => {
@@ -359,20 +406,22 @@ test.describe('Marketing WhatsApp flow', () => {
     await dismissCookieBanner(page);
 
     await expect(page.getByText('Conectar WhatsApp')).toBeVisible({ timeout: 15_000 });
-    await expect(page.getByText(/autorizacao oficial da Meta/)).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByText(/Conex(?:ão|ao) oficial|autorizacao oficial da Meta/i)).toBeVisible({ timeout: 15_000 });
     await expect(page.getByAltText('QR Code do WhatsApp')).toHaveCount(0);
 
-    await page.getByRole('button', { name: 'Proximo' }).click();
+    await page.getByRole('button', { name: /(?:Pr[oó]ximo|avançar passo)/i }).click();
     await expect(page.getByText('Passo 2 de 4')).toBeVisible({ timeout: 15_000 });
-    await expect(page.getByText('Conta necessaria')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Produtos liberados no canal' })).toBeVisible();
 
     await page.getByLabel('Produto Teste').check();
-    await page.getByRole('button', { name: 'Salvar e avancar' }).click();
+    await page.getByRole('button', { name: 'Salvar produtos' }).click();
+    await expect(page.getByText('Produtos do canal salvos.')).toBeVisible();
+    await page.getByRole('button', { name: /avançar passo/i }).click();
     await expect(page.getByText('Passo 3 de 4')).toBeVisible();
-    await expect(page.getByLabel('Nome do material')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Arsenal do canal' })).toBeVisible();
 
-    await page.getByRole('button', { name: 'Proximo' }).click();
+    await page.getByRole('button', { name: /(?:Pr[oó]ximo|avançar passo)/i }).click();
     await expect(page.getByText('Passo 4 de 4')).toBeVisible();
-    await expect(page.getByLabel('Tom', { exact: true })).toBeVisible();
+    await expect(page.getByRole('combobox', { name: 'Tom' })).toBeVisible();
   });
 });

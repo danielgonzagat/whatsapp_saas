@@ -30,7 +30,7 @@ function finTension(
   return t;
 }
 
-export const productWithoutMarginGuardDetector: Detector = {
+const productWithoutMarginGuardDetector: Detector = {
   name: 'financial.product_without_margin_guard',
   dimension: 'financial',
   detect: (events, nowMs) => {
@@ -54,7 +54,7 @@ export const productWithoutMarginGuardDetector: Detector = {
   },
 };
 
-export const churnRiskWithoutRetentionDetector: Detector = {
+const churnRiskWithoutRetentionDetector: Detector = {
   name: 'financial.churn_risk_without_retention',
   dimension: 'financial',
   detect: (events, nowMs) => {

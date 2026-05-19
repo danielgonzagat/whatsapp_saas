@@ -111,6 +111,7 @@ export class SystemHealthService {
     status: 'UP' | 'DOWN';
     timestamp: string;
     failures: string[];
+    message: string;
     details: Record<string, { status: string; error?: string; latencyMs?: number }>;
   }> {
     const logger = new Logger('ReadinessProbe');
@@ -173,6 +174,10 @@ export class SystemHealthService {
       status,
       timestamp: new Date().toISOString(),
       failures,
+      message:
+        status === 'UP'
+          ? 'All readiness probes are healthy.'
+          : `Readiness probes failed: ${failures.join(', ')}`,
       details,
     };
   }

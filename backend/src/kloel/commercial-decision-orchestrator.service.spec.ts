@@ -1,3 +1,4 @@
+import { expectValueOf } from '../../test/expect-value-of';
 import { CommercialDecisionOrchestratorService } from './commercial-decision-orchestrator.service';
 
 describe('CommercialDecisionOrchestratorService', () => {
@@ -242,8 +243,8 @@ describe('CommercialDecisionOrchestratorService', () => {
           couponDecision: expect.objectContaining({
             action: 'coupon_10',
             hierarchyJustification: expect.objectContaining({
-              level: expect.any(String),
-              reason: expect.any(String),
+              level: expectValueOf(String),
+              reason: expectValueOf(String),
             }),
           }),
           discountPercent: 10,
@@ -278,14 +279,14 @@ describe('CommercialDecisionOrchestratorService', () => {
           hierarchyTrace: expect.objectContaining({
             audio_vs_text: expect.objectContaining({
               hierarchyJustification: expect.objectContaining({
-                level: expect.any(String),
-                reason: expect.any(String),
+                level: expectValueOf(String),
+                reason: expectValueOf(String),
               }),
             }),
             cia_aggressiveness: expect.objectContaining({
               hierarchyJustification: expect.objectContaining({
-                level: expect.any(String),
-                reason: expect.any(String),
+                level: expectValueOf(String),
+                reason: expectValueOf(String),
               }),
             }),
           }),

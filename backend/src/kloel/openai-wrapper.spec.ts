@@ -1,3 +1,4 @@
+import { expectValueOf } from '../../test/expect-value-of';
 import {
   callOpenAIWithRetry,
   chatCompletionWithFallback,
@@ -112,12 +113,12 @@ describe('OpenAI Wrapper', () => {
 
       // 1º erro -> delay attempt=0 => 50ms
       await Promise.resolve();
-      expect(setTimeoutSpy).toHaveBeenCalledWith(expect.any(Function), 50);
+      expect(setTimeoutSpy).toHaveBeenCalledWith(expectValueOf(Function), 50);
       await jest.advanceTimersByTimeAsync(50);
 
       // 2º erro -> delay attempt=1 => 100ms
       await Promise.resolve();
-      expect(setTimeoutSpy).toHaveBeenCalledWith(expect.any(Function), 100);
+      expect(setTimeoutSpy).toHaveBeenCalledWith(expectValueOf(Function), 100);
       await jest.advanceTimersByTimeAsync(100);
 
       await expect(promise).resolves.toEqual({ success: true });

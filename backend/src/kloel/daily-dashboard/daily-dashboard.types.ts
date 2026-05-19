@@ -20,7 +20,7 @@ export interface TopOpportunity {
   readonly score: number;
 }
 
-export interface CommercialMood {
+interface CommercialMood {
   readonly positive: number;
   readonly negative: number;
   readonly neutral: number;

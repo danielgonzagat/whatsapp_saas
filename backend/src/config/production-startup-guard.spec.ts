@@ -15,6 +15,12 @@ describe('assertProductionStartupSecrets', () => {
     );
   });
 
+  it('requires ads token encryption keys in production', () => {
+    expect(productionStartupRequiredSecrets).toEqual(
+      expect.arrayContaining(['GOOGLE_ADS_TOKEN_ENCRYPTION_KEY', 'TIKTOK_TOKEN_ENCRYPTION_KEY']),
+    );
+  });
+
   it('accepts production when all required secrets are configured', () => {
     const env = Object.fromEntries(
       productionStartupRequiredSecrets.map((name) => [name, `${name.toLowerCase()}-secret`]),

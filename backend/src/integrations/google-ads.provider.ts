@@ -16,6 +16,7 @@ import {
   buildGoogleAdsClientParams,
   createGoogleAdsApiClient,
   decryptGoogleAdsTokenOrPlain,
+  googleAdsCredentialWhere,
   GOOGLE_ADS_PLATFORM,
 } from './google-ads.helpers';
 import {
@@ -39,7 +40,7 @@ export class GoogleAdsProvider implements AdProvider {
 
   private async getCredential(workspaceId: string) {
     const cred = await this.prisma.integrationCredential.findUnique({
-      where: { workspaceId },
+      where: googleAdsCredentialWhere(workspaceId),
     });
 
     if (!cred || !cred.refreshToken || cred.status !== 'connected') {
@@ -74,7 +75,7 @@ export class GoogleAdsProvider implements AdProvider {
 
   async getStatus(workspaceId: string): Promise<OAuthStatusResult> {
     const cred = await this.prisma.integrationCredential.findUnique({
-      where: { workspaceId },
+      where: googleAdsCredentialWhere(workspaceId),
       select: { status: true, loginCustomerId: true },
     });
 
@@ -140,7 +141,7 @@ export class GoogleAdsProvider implements AdProvider {
 
     if (loginCustomerId && loginCustomerId !== credential.loginCustomerId) {
       await this.prisma.integrationCredential.update({
-        where: { workspaceId },
+        where: googleAdsCredentialWhere(workspaceId),
         data: { loginCustomerId, updatedAt: new Date() },
       });
     }

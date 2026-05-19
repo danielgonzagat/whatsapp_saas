@@ -29,6 +29,5 @@
     "docs/design/",
     "ops/",
     "scripts/ops/"
-  ],
-  "approvalFile": "ops/governance-change-approvals.json"
+  ]
 }

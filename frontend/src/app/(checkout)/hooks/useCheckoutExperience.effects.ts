@@ -207,7 +207,7 @@ export function useCheckoutFormDraftPersistence({
     setPayMethod(savedDraft.payMethod);
     setQty(savedDraft.qty);
     setCouponCode(savedDraft.couponCode);
-  }, [checkoutFormDraftKey]); // intentionally run only on key change
+  }, [checkoutFormDraftKey, setCouponCode, setForm, setPayMethod, setQty]); // intentionally run only on key change
   useEffect(() => {
     if (typeof window === 'undefined') {
       return;

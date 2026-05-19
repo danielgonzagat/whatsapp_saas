@@ -65,7 +65,7 @@ export interface BrandRiskFlag {
   readonly matchedPattern: string;
 }
 
-export type BrandRiskKind =
+type BrandRiskKind =
   | 'false_promise'
   | 'complaint_trigger'
   | 'pressure_tactic'

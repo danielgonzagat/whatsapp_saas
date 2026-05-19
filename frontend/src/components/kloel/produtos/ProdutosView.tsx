@@ -9,7 +9,7 @@ import { useProductMutations, useProducts } from '@/hooks/useProducts';
 import { useResponsiveViewport } from '@/hooks/useResponsiveViewport';
 import { affiliateApi } from '@/lib/api/affiliate';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { startTransition, useCallback, useEffect, useState } from 'react';
+import { startTransition, useCallback, useEffect, useMemo, useState } from 'react';
 
 import { SORA, ANIMATIONS, PURPLE, getProductPlanPriceSummary } from './ProdutosView.shared';
 import {
@@ -91,14 +91,20 @@ export default function ProdutosView({ defaultTab = 'produtos' }: { defaultTab?:
   }, []);
 
   useEffect(() => {
-    void hydrateAffiliate();
+    queueMicrotask(() => {
+      void hydrateAffiliate();
+    });
   }, [hydrateAffiliate]);
 
-  const displayProducts: DisplayProduct[] = Array.isArray(rawProducts)
-    ? (rawProducts as RawProductPayload[]).map((p) =>
-        normalizeDisplayProduct(p, getProductPlanPriceSummary(p)),
-      )
-    : [];
+  const displayProducts: DisplayProduct[] = useMemo(
+    () =>
+      Array.isArray(rawProducts)
+        ? (rawProducts as RawProductPayload[]).map((p) =>
+            normalizeDisplayProduct(p, getProductPlanPriceSummary(p)),
+          )
+        : [],
+    [rawProducts],
+  );
 
   const displayAreas: DisplayArea[] = Array.isArray(rawAreas)
     ? (rawAreas as RawAreaPayload[]).map((a) => ({

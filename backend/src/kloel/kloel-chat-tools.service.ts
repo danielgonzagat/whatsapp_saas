@@ -9,16 +9,37 @@ import {
   AgentRuntimeEvidenceStoreService,
   AgentRuntimeSessionStore,
   AgentRuntimeSkillRegistry,
-  type AgentEvidenceType,
-  type AgentEvidenceVerificationState,
-  type AgentSkillDefinition,
-  type AgentSkillLifecycleState,
-  type AgentSkillProvenance,
-  type AgentSkillUsageOutcome,
 } from './agent-runtime';
-
+import {
+  type ToolCreateAgentJobArgs,
+  type ToolGetAgentArtifactArgs,
+  type ToolSearchAgentMemoryArgs,
+  type ToolSearchAgentSessionsArgs,
+  type ToolSetAgentJobEnabledArgs,
+  runCreateAgentJob,
+  runGetAgentArtifact,
+  runListAgentJobs,
+  runSearchAgentMemory,
+  runSearchAgentSessions,
+  runSetAgentJobEnabled,
+} from './kloel-chat-tools.agent-jobs.helpers';
+import {
+  type ToolListAgentEvidenceArgs,
+  type ToolRecordAgentDelegationArgs,
+  type ToolRecordAgentEvidenceArgs,
+  type ToolRecordAgentSkillOutcomeArgs,
+  type ToolResult,
+  type ToolSearchAgentEvidenceArgs,
+  type ToolUpsertAgentSkillArgs,
+  runListAgentEvidence,
+  runRecordAgentDelegation,
+  runRecordAgentEvidence,
+  runRecordAgentSkillOutcome,
+  runSearchAgentEvidence,
+  runUpsertAgentSkill,
+  runVerifyAgentEvidence,
+} from './kloel-chat-tools.agent-runtime.helpers';
 const NON_SLUG_CHAR_RE = /[^a-z0-9_:-]+/g;
-
 function safeStr(value: unknown, fallback = ''): string {
   if (typeof value === 'string') {
     return value;
@@ -28,144 +49,40 @@ function safeStr(value: unknown, fallback = ''): string {
   }
   return fallback;
 }
-
-function safeAgentRuntimeId(value: unknown, fallback: string): string {
-  return safeStr(value, fallback).trim().toLowerCase().replace(NON_SLUG_CHAR_RE, '_').slice(0, 80);
-}
-
-/** Generic tool result shape. */
-interface ToolResult {
-  success: boolean;
-  message?: string;
-  error?: string;
-  [key: string]: unknown;
-}
-
 interface ToolSaveProductArgs {
   name: string;
   price: number;
   description?: string;
 }
-
 interface ToolDeleteProductArgs {
   productId?: string;
   productName?: string;
 }
-
 interface ToolToggleAutopilotArgs {
   enabled: boolean;
 }
-
 interface ToolSetBrandVoiceArgs {
   tone: string;
   personality?: string;
 }
-
 interface ToolSetSalesPolicyArgs {
   aggressiveness?: string;
   tone?: string;
   instructions?: string;
   appliesTo?: string;
 }
-
 interface ToolRememberUserInfoArgs {
   key: string;
   value: string;
 }
-
 interface ToolCreateFlowArgs {
   name: string;
   trigger: string;
   actions?: string[];
 }
-
 interface ToolDashboardSummaryArgs {
   period?: 'today' | 'week' | 'month';
 }
-
-interface ToolCreateAgentJobArgs {
-  jobId?: string;
-  title: string;
-  prompt: string;
-  everyMinutes?: number;
-  runAt?: string;
-  toolScope?: string[];
-}
-
-interface ToolSetAgentJobEnabledArgs {
-  jobId: string;
-  enabled: boolean;
-}
-
-interface ToolSearchAgentMemoryArgs {
-  query: string;
-  limit?: number;
-}
-
-interface ToolSearchAgentSessionsArgs {
-  query: string;
-  limit?: number;
-}
-
-interface ToolGetAgentArtifactArgs {
-  artifactId: string;
-  maxChars?: number;
-}
-
-interface ToolUpsertAgentSkillArgs {
-  id: string;
-  title: string;
-  summary: string;
-  category?: AgentSkillDefinition['category'];
-  riskLevel?: AgentSkillDefinition['riskLevel'];
-  allowedTools?: string[];
-  requiredEvidence?: string[];
-  validation?: string[];
-  rollback?: string[];
-  metrics?: string[];
-  body?: string;
-}
-
-interface ToolRecordAgentSkillOutcomeArgs {
-  skillId: string;
-  outcome: AgentSkillUsageOutcome;
-  reason?: string;
-  provenance?: AgentSkillProvenance;
-  pinned?: boolean;
-  lifecycleState?: AgentSkillLifecycleState;
-}
-
-interface ToolRecordAgentDelegationArgs {
-  sessionId?: string;
-  task: string;
-  result: string;
-  childSessionId?: string;
-  metadata?: Record<string, unknown>;
-}
-
-interface ToolRecordAgentEvidenceArgs {
-  source: string;
-  content: string;
-  type?: AgentEvidenceType;
-  actor?: string;
-  url?: string;
-  eventTimestamp?: string;
-  verification?: AgentEvidenceVerificationState;
-  notes?: string;
-  metadata?: Record<string, unknown>;
-}
-
-interface ToolSearchAgentEvidenceArgs {
-  query: string;
-  limit?: number;
-}
-
-interface ToolListAgentEvidenceArgs {
-  type?: AgentEvidenceType;
-  actor?: string;
-  limit?: number;
-}
-
 function centsFromUnknown(value: unknown): number {
   if (typeof value === 'bigint') {
     return Number(value);
@@ -175,12 +92,10 @@ function centsFromUnknown(value: unknown): number {
   }
   return 0;
 }
-
 /** Handles product, flow, dashboard, payment, and misc AI chat tools. */
 @Injectable()
 export class KloelChatToolsService {
   private readonly logger = StructuredLogger.from(KloelChatToolsService.name);
-
   constructor(
     private readonly prisma: PrismaService,
     private readonly smartPaymentService: SmartPaymentService,
@@ -189,7 +104,6 @@ export class KloelChatToolsService {
     @Optional() private readonly agentSkills?: AgentRuntimeSkillRegistry,
     @Optional() private readonly agentEvidence?: AgentRuntimeEvidenceStoreService,
   ) {}
-
   async toolSaveProduct(workspaceId: string, args: ToolSaveProductArgs): Promise<ToolResult> {
     const product = await this.prisma.product.create({
       data: {
@@ -202,7 +116,6 @@ export class KloelChatToolsService {
     });
     return { success: true, product, message: `Produto "${args.name}" cadastrado com sucesso!` };
   }
-
   async toolListProducts(workspaceId: string): Promise<ToolResult> {
     const products = filterLegacyProducts(
       await this.prisma.product.findMany({
@@ -218,7 +131,6 @@ export class KloelChatToolsService {
     const list = products.map((p) => `- ${p.name}: R$ ${p.price}`).join('\n');
     return { success: true, products, message: `Aqui estão seus produtos:\n\n${list}` };
   }
-
   async toolDeleteProduct(workspaceId: string, args: ToolDeleteProductArgs): Promise<ToolResult> {
     const { productId, productName } = args;
     const where: Prisma.ProductWhereInput = { workspaceId };
@@ -231,7 +143,6 @@ export class KloelChatToolsService {
     if (!product) {
       return { success: false, error: 'Produto não encontrado.' };
     }
-
     await this.prisma.$transaction(
       [
         this.prisma.product.updateMany({
@@ -256,7 +167,6 @@ export class KloelChatToolsService {
     );
     return { success: true, message: `Produto "${product.name}" removido com sucesso.` };
   }
-
   async toolToggleAutopilot(
     workspaceId: string,
     args: ToolToggleAutopilotArgs,
@@ -271,7 +181,6 @@ export class KloelChatToolsService {
       decision: args.enabled ? 'enable' : 'disable',
       billingSuspended: currentSettings.billingSuspended === true,
     });
-
     if (args.enabled && currentSettings.billingSuspended === true) {
       return {
         success: false,
@@ -279,7 +188,6 @@ export class KloelChatToolsService {
         error: 'Autopilot suspenso: regularize cobrança para ativar.',
       };
     }
-
     return this.prisma.$transaction(async (tx) => {
       const workspace = await tx.workspace.findUnique({
         where: { id: workspaceId },
@@ -305,7 +213,6 @@ export class KloelChatToolsService {
       };
     });
   }
-
   async toolSetBrandVoice(workspaceId: string, args: ToolSetBrandVoiceArgs): Promise<ToolResult> {
     await this.prisma.kloelMemory.upsert({
       where: { workspaceId_key: { workspaceId, key: 'brandVoice' } },
@@ -328,7 +235,6 @@ export class KloelChatToolsService {
     });
     return { success: true, message: `Tom de voz definido como "${args.tone}"` };
   }
-
   async toolSetSalesPolicy(
     workspaceId: string,
     args: ToolSetSalesPolicyArgs,
@@ -338,11 +244,9 @@ export class KloelChatToolsService {
     const tone = safeStr(args.tone, '').trim().slice(0, 80);
     const instructions = safeStr(args.instructions, '').trim().slice(0, 1000);
     const appliesTo = safeStr(args.appliesTo, 'all').trim().slice(0, 120);
-
     if (!aggressiveness && !tone && !instructions) {
       return { success: false, error: 'missing_sales_policy_payload' };
     }
-
     const policy = {
       aggressiveness: aggressiveness || 'balanced',
       tone: tone || null,
@@ -351,7 +255,6 @@ export class KloelChatToolsService {
       updatedAt: new Date().toISOString(),
       updatedByUserId: userId || null,
     } satisfies Prisma.InputJsonObject;
-
     await this.prisma.$transaction(async (tx) => {
       const workspace = await tx.workspace.findUnique({
         where: { id: workspaceId },
@@ -372,14 +275,12 @@ export class KloelChatToolsService {
         },
       });
     });
-
     return {
       success: true,
       policy,
       message: `Politica comercial atualizada: agressividade ${policy.aggressiveness}.`,
     };
   }
-
   async toolRememberUserInfo(
     workspaceId: string,
     args: ToolRememberUserInfoArgs,
@@ -394,7 +295,6 @@ export class KloelChatToolsService {
     if (!normalizedKey || !value) {
       return { success: false, error: 'missing_user_memory_payload' };
     }
-
     const profileKey = `user_profile:${userId || 'workspace_owner'}`;
     const existing = await this.prisma.kloelMemory.findUnique({
       where: { workspaceId_key: { workspaceId, key: profileKey } },
@@ -413,7 +313,6 @@ export class KloelChatToolsService {
       .filter(([k]) => !['updatedAt', 'userId'].includes(k))
       .map(([k, v]) => k + ': ' + safeStr(v))
       .join('\n');
-
     await this.prisma.kloelMemory.upsert({
       where: { workspaceId_key: { workspaceId, key: profileKey } },
       update: {
@@ -439,7 +338,6 @@ export class KloelChatToolsService {
     });
     return { success: true, message: `Memória "${normalizedKey}" salva.` };
   }
-
   async toolCreateFlow(workspaceId: string, args: ToolCreateFlowArgs): Promise<ToolResult> {
     const nodes = [
       {
@@ -468,7 +366,6 @@ export class KloelChatToolsService {
     });
     return { success: true, flow, message: `Fluxo "${args.name}" criado com sucesso!` };
   }
-
   async toolListFlows(workspaceId: string): Promise<ToolResult> {
     const flows = await this.prisma.flow.findMany({
       where: { workspaceId },
@@ -493,7 +390,6 @@ export class KloelChatToolsService {
       message: `Você tem ${flows.length} fluxo(s) cadastrado(s).`,
     };
   }
-
   async toolGetDashboardSummary(
     workspaceId: string,
     args: ToolDashboardSummaryArgs,
@@ -557,7 +453,6 @@ export class KloelChatToolsService {
       },
     };
   }
-
   async toolCreatePaymentLink(
     workspaceId: string,
     args: { amount: number; description: string; customerName?: string },
@@ -577,398 +472,73 @@ export class KloelChatToolsService {
     });
     return { success: true, ...paymentResult };
   }
-
-  async toolCreateAgentJob(workspaceId: string, args: ToolCreateAgentJobArgs): Promise<ToolResult> {
-    if (!this.agentScheduler) {
-      return { success: false, error: 'agent_scheduler_unavailable' };
-    }
-    const title = safeStr(args.title).trim().slice(0, 200);
-    const prompt = safeStr(args.prompt).trim().slice(0, 4000);
-    if (!title || !prompt) {
-      return { success: false, error: 'missing_agent_job_title_or_prompt' };
-    }
-    const everyMinutes = Number(args.everyMinutes);
-    const runAt = args.runAt ? new Date(args.runAt) : undefined;
-    const hasValidRunAt = runAt && !Number.isNaN(runAt.getTime());
-    const result = await this.agentScheduler.upsertJob({
-      workspaceId,
-      jobId: safeAgentRuntimeId(args.jobId, title) || 'job',
-      title,
-      prompt,
-      schedule: hasValidRunAt
-        ? { kind: 'once', runAt }
-        : { kind: 'interval', everyMinutes: Number.isFinite(everyMinutes) ? everyMinutes : 60 },
-      toolScope: Array.isArray(args.toolScope)
-        ? args.toolScope.filter((tool): tool is string => typeof tool === 'string')
-        : [],
-    });
-    return { success: true, message: 'Job autônomo registrado com governança.', ...result };
+    async toolCreateAgentJob(workspaceId: string, args: ToolCreateAgentJobArgs): Promise<ToolResult> {
+    return runCreateAgentJob(this.agentScheduler, workspaceId, args);
   }
-
   async toolListAgentJobs(workspaceId: string): Promise<ToolResult> {
-    if (!this.agentScheduler) {
-      return { success: false, error: 'agent_scheduler_unavailable' };
-    }
-    const jobs = await this.agentScheduler.listJobs(workspaceId);
-    return {
-      success: true,
-      jobs,
-      message: jobs.length ? `Jobs autônomos: ${jobs.length}` : 'Nenhum job autônomo registrado.',
-    };
+    return runListAgentJobs(this.agentScheduler, workspaceId);
   }
-
   async toolSetAgentJobEnabled(
     workspaceId: string,
     args: ToolSetAgentJobEnabledArgs,
   ): Promise<ToolResult> {
-    if (!this.agentScheduler) {
-      return { success: false, error: 'agent_scheduler_unavailable' };
-    }
-    const jobId = safeStr(args.jobId).trim().slice(0, 160);
-    if (!jobId) {
-      return { success: false, error: 'missing_agent_job_id' };
-    }
-    const result = await this.agentScheduler.setJobEnabled({
-      workspaceId,
-      jobId,
-      enabled: args.enabled === true,
-    });
-    return {
-      success: result.ok,
-      key: result.key,
-      enabled: result.enabled,
-      ...(result.reason ? { error: result.reason } : {}),
-    };
+    return runSetAgentJobEnabled(this.agentScheduler, workspaceId, args);
   }
-
   async toolSearchAgentMemory(
     workspaceId: string,
     args: ToolSearchAgentMemoryArgs,
   ): Promise<ToolResult> {
-    if (!this.agentSessions) {
-      return { success: false, error: 'agent_memory_unavailable' };
-    }
-    const query = safeStr(args.query).trim();
-    if (!query) {
-      return { success: false, error: 'missing_agent_memory_query' };
-    }
-    const result = await this.agentSessions.search(workspaceId, query, args.limit ?? 6);
-    return { success: true, ...result };
+    return runSearchAgentMemory(this.agentSessions, workspaceId, args);
   }
-
   async toolSearchAgentSessions(
     workspaceId: string,
     args: ToolSearchAgentSessionsArgs,
   ): Promise<ToolResult> {
-    if (!this.agentSessions) {
-      return { success: false, error: 'agent_memory_unavailable' };
-    }
-    const query = safeStr(args.query).trim();
-    if (!query) {
-      return { success: false, error: 'missing_agent_session_query' };
-    }
-    const result = await this.agentSessions.searchSessions(workspaceId, query, args.limit ?? 3);
-    return { success: true, ...result };
+    return runSearchAgentSessions(this.agentSessions, workspaceId, args);
   }
-
   async toolGetAgentArtifact(
     workspaceId: string,
     args: ToolGetAgentArtifactArgs,
   ): Promise<ToolResult> {
-    const artifactId = safeStr(args.artifactId).trim().slice(0, 220);
-    if (!artifactId || !artifactId.startsWith('tool_artifact:')) {
-      return { success: false, error: 'invalid_agent_artifact_id' };
-    }
-
-    const row = await this.prisma.kloelMemory.findUnique({
-      where: { workspaceId_key: { workspaceId, key: artifactId } },
-    });
-    if (!row || row.category !== 'tool_artifact') {
-      return { success: false, error: 'agent_artifact_not_found' };
-    }
-
-    const rawContent = safeStr(row.content);
-    const maxChars = Math.max(500, Math.min(Number(args.maxChars) || 12_000, 50_000));
-    const truncated = rawContent.length > maxChars;
-    let parsed: unknown = null;
-    try {
-      parsed = rawContent ? JSON.parse(rawContent) : null;
-    } catch {
-      parsed = null;
-    }
-
-    return {
-      success: true,
-      artifactId,
-      category: row.category,
-      type: row.type ?? null,
-      originalChars: rawContent.length,
-      truncated,
-      content: rawContent.slice(0, maxChars),
-      parsed: truncated ? null : parsed,
-      updatedAt: row.updatedAt,
-      message: truncated
-        ? 'Artefato recuperado parcialmente por limite de contexto.'
-        : 'Artefato recuperado da memória operacional.',
-    };
+    return runGetAgentArtifact(this.prisma, workspaceId, args);
   }
-
   async toolUpsertAgentSkill(
     workspaceId: string,
     args: ToolUpsertAgentSkillArgs,
   ): Promise<ToolResult> {
-    if (!this.agentSkills) {
-      return { success: false, error: 'agent_skill_registry_unavailable' };
-    }
-    const id = safeAgentRuntimeId(args.id, '');
-    const title = safeStr(args.title).trim().slice(0, 200);
-    const summary = safeStr(args.summary).trim().slice(0, 500);
-    if (!id || !title || !summary) {
-      return { success: false, error: 'missing_agent_skill_identity' };
-    }
-    const skill: AgentSkillDefinition = {
-      id,
-      title,
-      summary,
-      category: this.agentSkillCategory(args.category),
-      riskLevel: this.agentSkillRisk(args.riskLevel),
-      allowedTools: this.stringList(args.allowedTools),
-      requiredEvidence: this.stringList(args.requiredEvidence),
-      validation: this.stringList(args.validation),
-      rollback: this.stringList(args.rollback),
-      metrics: this.stringList(args.metrics),
-      delegationRules: [],
-      body: safeStr(args.body).trim().slice(0, 4000),
-      version: 1,
-      updatedAt: new Date().toISOString(),
-    };
-    const result = await this.agentSkills.upsertSkill(workspaceId, skill);
-    return {
-      success: result.ok,
-      skillId: skill.id,
-      version: result.version,
-      reasons: result.reasons,
-      message: result.ok ? 'Skill procedural registrada.' : 'Skill procedural recusada.',
-    };
+    return runUpsertAgentSkill(this.agentSkills, workspaceId, args);
   }
-
   async toolRecordAgentSkillOutcome(
     workspaceId: string,
     args: ToolRecordAgentSkillOutcomeArgs,
   ): Promise<ToolResult> {
-    if (!this.agentSkills) {
-      return { success: false, error: 'agent_skill_registry_unavailable' };
-    }
-    const skillId = safeAgentRuntimeId(args.skillId, '');
-    if (!skillId) {
-      return { success: false, error: 'missing_agent_skill_id' };
-    }
-    const outcome = this.agentSkillUsageOutcome(args.outcome);
-    const usage = {
-      skillId,
-      outcome,
-      reason: safeStr(args.reason).trim().slice(0, 300),
-      ...(args.pinned !== undefined ? { pinned: args.pinned } : {}),
-    };
-    const provenance = this.agentSkillProvenance(args.provenance);
-    if (provenance !== undefined) {
-      Object.assign(usage, { provenance });
-    }
-    const lifecycleState = this.agentSkillLifecycle(args.lifecycleState);
-    if (lifecycleState !== undefined) {
-      Object.assign(usage, { lifecycleState });
-    }
-    const result = await this.agentSkills.recordSkillUsage(workspaceId, usage);
-    return {
-      success: result.ok,
-      skillId,
-      outcome,
-      stats: result.stats,
-      ...(result.reason ? { error: result.reason } : {}),
-      message: result.ok ? 'Uso da skill registrado.' : 'Uso da skill recusado.',
-    };
+    return runRecordAgentSkillOutcome(this.agentSkills, workspaceId, args);
   }
-
   async toolRecordAgentDelegation(
     workspaceId: string,
     args: ToolRecordAgentDelegationArgs,
   ): Promise<ToolResult> {
-    if (!this.agentSessions) {
-      return { success: false, error: 'agent_sessions_unavailable' };
-    }
-    const task = safeStr(args.task).trim().slice(0, 2000);
-    const result = safeStr(args.result).trim().slice(0, 3000);
-    if (!task || !result) {
-      return { success: false, error: 'missing_delegation_task_or_result' };
-    }
-    const sessionId = safeStr(args.sessionId, 'kloel_delegation').trim().slice(0, 160);
-    const childSessionId = safeStr(args.childSessionId).trim().slice(0, 160);
-    const metadata =
-      args.metadata && typeof args.metadata === 'object' && !Array.isArray(args.metadata)
-        ? args.metadata
-        : {};
-    await this.agentSessions.recordRuntimeEvent({
-      workspaceId,
-      sessionId: sessionId || 'kloel_delegation',
-      eventType: 'delegation',
-      content: [`childSessionId=${childSessionId}`, `task: ${task}`, `result: ${result}`].join(
-        '\n',
-      ),
-      metadata: {
-        ...metadata,
-        childSessionId: childSessionId || null,
-        source: 'kloel_tool',
-      },
-    });
-    return {
-      success: true,
-      message: 'Delegação registrada na memória operacional do Kloel.',
-      sessionId: sessionId || 'kloel_delegation',
-    };
+    return runRecordAgentDelegation(this.agentSessions, workspaceId, args);
   }
-
   async toolRecordAgentEvidence(
     workspaceId: string,
     args: ToolRecordAgentEvidenceArgs,
   ): Promise<ToolResult> {
-    if (!this.agentEvidence) {
-      return { success: false, error: 'agent_evidence_store_unavailable' };
-    }
-    const source = safeStr(args.source).trim().slice(0, 500);
-    const content = safeStr(args.content).trim().slice(0, 30_000);
-    if (!source || !content) {
-      return { success: false, error: 'missing_agent_evidence_source_or_content' };
-    }
-    const evidence = await this.agentEvidence.add({
-      workspaceId,
-      source,
-      content,
-      type: this.agentEvidenceType(args.type),
-      ...(args.actor ? { actor: safeStr(args.actor).trim().slice(0, 200) } : {}),
-      ...(args.url ? { url: safeStr(args.url).trim().slice(0, 1000) } : {}),
-      ...(args.eventTimestamp
-        ? { eventTimestamp: safeStr(args.eventTimestamp).trim().slice(0, 100) }
-        : {}),
-      verification: this.agentEvidenceVerification(args.verification),
-      ...(args.notes ? { notes: safeStr(args.notes).trim().slice(0, 2000) } : {}),
-      ...(args.metadata && typeof args.metadata === 'object' && !Array.isArray(args.metadata)
-        ? { metadata: args.metadata }
-        : {}),
-    });
-    return {
-      success: true,
-      evidence,
-      message: 'Evidência operacional registrada com hash de integridade.',
-    };
+    return runRecordAgentEvidence(this.agentEvidence, workspaceId, args);
   }
-
   async toolSearchAgentEvidence(
     workspaceId: string,
     args: ToolSearchAgentEvidenceArgs,
   ): Promise<ToolResult> {
-    if (!this.agentEvidence) {
-      return { success: false, error: 'agent_evidence_store_unavailable' };
-    }
-    const query = safeStr(args.query).trim();
-    if (!query) {
-      return { success: false, error: 'missing_agent_evidence_query' };
-    }
-    const evidence = await this.agentEvidence.query({
-      workspaceId,
-      keyword: query,
-      ...(args.limit !== undefined ? { limit: args.limit } : {}),
-    });
-    return { success: true, evidence, totalFound: evidence.length };
+    return runSearchAgentEvidence(this.agentEvidence, workspaceId, args);
   }
-
   async toolListAgentEvidence(
     workspaceId: string,
     args: ToolListAgentEvidenceArgs,
   ): Promise<ToolResult> {
-    if (!this.agentEvidence) {
-      return { success: false, error: 'agent_evidence_store_unavailable' };
-    }
-    const evidence = await this.agentEvidence.list({
-      workspaceId,
-      ...(args.type ? { type: this.agentEvidenceType(args.type) } : {}),
-      ...(args.actor ? { actor: safeStr(args.actor).trim().slice(0, 200) } : {}),
-      ...(args.limit !== undefined ? { limit: args.limit } : {}),
-    });
-    return { success: true, evidence, totalFound: evidence.length };
+    return runListAgentEvidence(this.agentEvidence, workspaceId, args);
   }
-
   async toolVerifyAgentEvidence(workspaceId: string): Promise<ToolResult> {
-    if (!this.agentEvidence) {
-      return { success: false, error: 'agent_evidence_store_unavailable' };
-    }
-    const integrityIssues = await this.agentEvidence.verify(workspaceId);
-    const summary = await this.agentEvidence.summary(workspaceId);
-    return {
-      success: integrityIssues.length === 0,
-      integrityIssues,
-      summary,
-      message: integrityIssues.length
-        ? 'Evidências com hash divergente encontradas.'
-        : 'Todas as evidências verificadas mantêm integridade.',
-    };
-  }
-
-  private stringList(value: unknown): string[] {
-    return Array.isArray(value)
-      ? value.filter((entry): entry is string => typeof entry === 'string')
-      : [];
-  }
-
-  private agentSkillCategory(value: unknown): AgentSkillDefinition['category'] {
-    return value === 'commercial' ||
-      value === 'operational' ||
-      value === 'pulse' ||
-      value === 'workspace'
-      ? value
-      : 'operational';
-  }
-
-  private agentSkillRisk(value: unknown): AgentSkillDefinition['riskLevel'] {
-    return value === 'safe' || value === 'normal' || value === 'high' || value === 'critical'
-      ? value
-      : 'normal';
-  }
-
-  private agentSkillUsageOutcome(value: unknown): AgentSkillUsageOutcome {
-    return value === 'succeeded' ||
-      value === 'failed' ||
-      value === 'patched' ||
-      value === 'viewed' ||
-      value === 'selected'
-      ? value
-      : 'selected';
-  }
-
-  private agentSkillProvenance(value: unknown): AgentSkillProvenance | undefined {
-    return value === 'default' ||
-      value === 'workspace' ||
-      value === 'background_review' ||
-      value === 'imported'
-      ? value
-      : undefined;
-  }
-
-  private agentSkillLifecycle(value: unknown): AgentSkillLifecycleState | undefined {
-    return value === 'active' || value === 'stale' || value === 'archived' ? value : undefined;
-  }
-
-  private agentEvidenceType(value: unknown): AgentEvidenceType {
-    return value === 'tool_result' ||
-      value === 'runtime_observation' ||
-      value === 'validation' ||
-      value === 'pulse' ||
-      value === 'commercial_event' ||
-      value === 'manual'
-      ? value
-      : 'runtime_observation';
-  }
-
-  private agentEvidenceVerification(value: unknown): AgentEvidenceVerificationState {
-    return value === 'single_source' || value === 'multi_source_verified' ? value : 'unverified';
+    return runVerifyAgentEvidence(this.agentEvidence, workspaceId);
   }
 }

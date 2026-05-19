@@ -108,7 +108,7 @@ export default function PaymentPage({ params }: { params: Promise<{ id: string }
         }
         const data: PaymentDetails = await res.json();
         setPayment(data);
-      } catch (_err) {
+      } catch {
         setError('Não foi possível conectar ao servidor');
       } finally {
         setLoading(false);

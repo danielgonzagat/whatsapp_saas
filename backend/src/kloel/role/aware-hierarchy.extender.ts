@@ -22,7 +22,7 @@ import type { Role } from './types';
  * Values > 1.0 increase urgency (push toward AGORA).
  * Values < 1.0 decrease urgency (push toward ARQUIVO).
  */
-export interface RoleTierBoost {
+interface RoleTierBoost {
   readonly role: Role;
   readonly agoraBoost: number;
   readonly estaSemanaBoost: number;

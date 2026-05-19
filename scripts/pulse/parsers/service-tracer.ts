@@ -412,6 +412,8 @@ export function traceServices(config: PulseConfig): ServiceTrace[] {
     (f) =>
       f.endsWith('.service.ts') ||
       f.endsWith('.controller.ts') ||
+      f.endsWith('.repository.ts') ||
+      f.endsWith('-repository.ts') ||
       f.endsWith('.engine.ts') ||
       f.endsWith('.guard.ts') ||
       f.endsWith('.interceptor.ts') ||

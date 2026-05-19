@@ -1,17 +1,3 @@
-/**
- * UTP-INCENT-001..008 — Camada XXXIV (Cognitive Organism — Incentive Integrity).
- *
- * Recomendação cruzada sem conflito oculto, sem viés de plataforma.
- * This module explains recommendations, detects conflicts of interest,
- * enforces silence under conflict, monitors platform bias, auto-discloses
- * Kloel↔party links, exports third-party audit bundles, processes user
- * feedback corrections, and builds recommendation attributions.
- *
- * All services are pure logic — no Prisma, no external dependencies.
- * Uses canonical PCI.1 event taxonomy domain `incentive.*`.
- */
-import type { SpineEventRef } from '../mind/mind.types';
-
 export type ExplanationTone = 'educational' | 'transparent' | 'actionable' | 'deferential';
 
 export type ExplanationFormat = 'short' | 'medium' | 'long';
@@ -133,14 +119,14 @@ export interface ThirdPartyAuditExport {
   readonly summary: AuditSummary;
 }
 
-export interface AuditRecommendation {
+interface AuditRecommendation {
   readonly recommendationId: string;
   readonly summary: string;
   readonly outcome: string;
   readonly issuedAt: string;
 }
 
-export interface AuditSummary {
+interface AuditSummary {
   readonly totalRecommendations: number;
   readonly conflictsDetected: number;
   readonly silenceEvents: number;
@@ -200,14 +186,6 @@ export interface AttributionEntry {
 export function clamp(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));
 }
-
-export function filterByWorkspace(
-  events: readonly SpineEventRef[],
-  workspaceId: string,
-): readonly SpineEventRef[] {
-  return events.filter((e) => e.workspaceId === workspaceId);
-}
-
 export function makeIncidentId(prefix: string, seq: number): string {
   const ts = Date.now().toString(36);
   const rnd = Math.random().toString(36).slice(2, 6);

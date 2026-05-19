@@ -22,7 +22,7 @@ export interface TimescaleConfig {
   readonly description: string;
 }
 
-export const TIMESCALE_DEFAULTS: Readonly<Record<Timescale, TimescaleConfig>> = Object.freeze({
+const TIMESCALE_DEFAULTS: Readonly<Record<Timescale, TimescaleConfig>> = Object.freeze({
   immediate: { intervalMs: 0, description: 'on-event' },
   short: { intervalMs: 5_000, description: 'windowed seconds' },
   medium: { intervalMs: 60 * 60 * 1000, description: 'hourly maintenance' },

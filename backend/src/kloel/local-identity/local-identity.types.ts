@@ -1,17 +1,6 @@
 import type { AbiValence } from '../abi/abi-schema';
-import type { SpineEventRef } from '../mind/mind.types';
 
 export const VOLUME_THRESHOLD = 100;
-
-export interface ActivityBucket {
-  readonly hour: number;
-  readonly count: number;
-}
-
-export interface EntityTypeBucket {
-  readonly entityType: string;
-  readonly count: number;
-}
 
 export interface ValenceBucket {
   readonly valence: AbiValence;
@@ -26,11 +15,6 @@ export interface TokenBucket {
 export interface ProductEntry {
   readonly productId: string;
   readonly role: string;
-}
-
-export interface StageCount {
-  readonly stageName: string;
-  readonly count: number;
 }
 
 export interface DerivedOperational {
@@ -64,5 +48,3 @@ export interface DerivedDecisionPatterns {
   readonly typicalNextSteps: readonly string[];
   readonly typicalEscalations: readonly string[];
 }
-
-export type WorkspaceEvents = readonly SpineEventRef[];

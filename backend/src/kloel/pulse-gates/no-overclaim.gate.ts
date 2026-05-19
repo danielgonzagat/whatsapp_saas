@@ -38,9 +38,13 @@ function extractAvailable(
   return out;
 }
 
+function isNoOverclaimInput(raw: unknown): raw is NoOverclaimInput {
+  return isObject(raw) && 'abiPayload' in raw;
+}
+
 function normalizeInput(raw: unknown): NoOverclaimInput {
-  if (isObject(raw) && 'abiPayload' in raw) {
-    return raw as unknown as NoOverclaimInput;
+  if (isNoOverclaimInput(raw)) {
+    return raw;
   }
   return { abiPayload: raw };
 }

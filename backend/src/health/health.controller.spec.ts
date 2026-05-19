@@ -2,13 +2,34 @@ import { HealthController } from './health.controller';
 
 describe('HealthController', () => {
   const getHealth = jest.fn();
+  const systemCheck = jest.fn();
 
   let controller: HealthController;
 
   beforeEach(() => {
     jest.clearAllMocks();
 
-    controller = new HealthController({ getHealth } as never);
+    controller = new HealthController({ getHealth } as never, { check: systemCheck } as never);
+  });
+
+  describe('system', () => {
+    it('delegates to system health service before workspace param route can capture system', async () => {
+      const payload = {
+        status: 'UP',
+        details: {
+          database: { status: 'UP' },
+          redis: { status: 'UP' },
+          worker: { status: 'UP' },
+          queues: { status: 'UP' },
+        },
+      };
+      systemCheck.mockResolvedValue(payload);
+
+      await expect(controller.system()).resolves.toEqual(payload);
+
+      expect(systemCheck).toHaveBeenCalledTimes(1);
+      expect(getHealth).not.toHaveBeenCalled();
+    });
   });
 
   describe('getHealth', () => {

@@ -47,7 +47,7 @@ export interface MicrosoftProfileResponse {
   };
 }
 
-export function readConfiguredValue(config: ConfigService, keys: string[]): string | null {
+function readConfiguredValue(config: ConfigService, keys: string[]): string | null {
   for (const key of keys) {
     const value = String(config.get<string>(key) || process.env[key] || '').trim();
     if (value) {

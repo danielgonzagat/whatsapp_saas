@@ -96,7 +96,7 @@ export type ProtectiveActionKind =
   | 'renegotiate_payables'
   | 'emergency_fund';
 
-export type ActionUrgency = 'now' | 'soon' | 'planned';
+type ActionUrgency = 'now' | 'soon' | 'planned';
 
 export interface ProtectiveAction {
   readonly actionId: string;
@@ -107,7 +107,7 @@ export interface ProtectiveAction {
   readonly impact: number;
 }
 
-export type BlockerKind =
+type BlockerKind =
   | 'insufficient_balance'
   | 'runway_critical'
   | 'risk_critical'
@@ -121,13 +121,6 @@ export interface UnsafeOperationBlock {
   readonly amountCents: bigint;
   readonly blockerKind: BlockerKind;
 }
-
-export function daysBetween(dateA: string, dateB: string): number {
-  const a = Date.parse(dateA);
-  const b = Date.parse(dateB);
-  return (b - a) / (24 * 60 * 60 * 1000);
-}
-
 export function entriesByCategory(
   entries: readonly CashEntry[],
   category: CashEntryCategory,
@@ -162,11 +155,6 @@ export function standardDeviation(values: readonly number[]): number {
   if (values.length < 2) return 0;
   const mean = values.reduce((a, b) => a + b, 0) / values.length;
   const variance =
-    values.reduce((sum, v) => sum + (v - mean) * (v - mean), 0) /
-    (values.length - 1);
+    values.reduce((sum, v) => sum + (v - mean) * (v - mean), 0) / (values.length - 1);
   return Math.sqrt(variance);
-}
-
-export function clamp(value: number, min: number, max: number): number {
-  return Math.max(min, Math.min(max, value));
 }

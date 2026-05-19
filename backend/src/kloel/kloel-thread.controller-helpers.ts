@@ -14,7 +14,6 @@ export async function listThreads(
   options: { limit?: number; cursor?: number; paginated?: boolean } = {},
 ) {
   try {
-    await deps.prisma.chatThread.deleteMany({ where: { workspaceId, messages: { none: {} } } });
     const take = Math.min(50, Math.max(1, options.limit ?? 50));
     const skip = Math.max(0, options.cursor ?? 0);
     const threads = await deps.prisma.chatThread.findMany({

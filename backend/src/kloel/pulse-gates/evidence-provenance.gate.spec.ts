@@ -42,7 +42,7 @@ describe('evidence-provenance gate — complete detection surface (>= 15 scenari
   });
 
   it('3. FAIL — provenance is null (not an object)', () => {
-    const v = gate.check({ eventId: 'e1', eventName: 'x', provenance: null as unknown as ProvenanceLike });
+    const v = gate.check({ eventId: 'e1', eventName: 'x', provenance: null as ProvenanceLike });
     expect(v.status).toBe('FAIL');
     expect(v.evidence).toContainEqual(
       expect.objectContaining({ path: '$.provenance' }),

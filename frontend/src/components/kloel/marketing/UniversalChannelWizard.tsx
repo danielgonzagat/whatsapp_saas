@@ -69,14 +69,18 @@ export default function UniversalChannelWizard({
     let active = true;
     getChannelSetup(channel)
       .then((state) => {
-        if (!active) return;
+        if (!active) {
+          return;
+        }
         setSetup(state);
         setSelectedProductIds(state.selectedProductIds);
         setChannelConfig(state.config ?? defaultChannelConfig);
         setEditing(!state.completed);
       })
       .catch(() => {
-        if (active) setEditing(true);
+        if (active) {
+          setEditing(true);
+        }
       });
     return () => {
       active = false;

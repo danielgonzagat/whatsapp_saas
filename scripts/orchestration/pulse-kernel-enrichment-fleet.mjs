@@ -293,7 +293,7 @@ Should print a number larger than ~65 (current kernel count + new primitives).
 ./backend/node_modules/.bin/ts-node --transpile-only --project scripts/pulse/tsconfig.json -e "const m=require('./scripts/pulse/no-hardcoded-reality-audit'); const r=m.auditPulseNoHardcodedReality(process.cwd()); let c=0; for(const f of r.findings) if (f.filePath==='scripts/pulse/dynamic-reality-kernel.ts') c++; console.log('kernel debt:', c);"
 \`\`\`
 
-The kernel-file debt may rise slightly (more code = more surface) but the GLOBAL debt should drop in the next Wave E because the new primitives unlock liquefaction in many files.
+The kernel-file debt may rise slightly (more code = more surface) but the GLOBAL debt should drop in the next Wave E because the new primitives unlock liquefaction in meach files.
 
 ## DO NOT COMMIT
 

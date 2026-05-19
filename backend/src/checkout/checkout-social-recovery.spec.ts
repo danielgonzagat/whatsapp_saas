@@ -1,3 +1,4 @@
+import { expectValueOf } from '../../test/expect-value-of';
 import { CheckoutSocialRecoveryService } from './checkout-social-recovery.service';
 import { CheckoutSocialLeadStatus } from '@prisma/client';
 
@@ -161,7 +162,7 @@ describe('CheckoutSocialRecoveryService', () => {
       expect.objectContaining({
         to: 'joao@example.com',
         headers: expect.objectContaining({
-          'List-Unsubscribe': expect.any(String),
+          'List-Unsubscribe': expectValueOf(String),
           'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
         }),
       }),

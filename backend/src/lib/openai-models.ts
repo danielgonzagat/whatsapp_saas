@@ -35,7 +35,7 @@ export const CANONICAL_MODEL_IDS = {
   openAiLegacyGpt4: 'gpt-4',
   openAiLegacyGpt35: 'gpt-3.5',
   openAiLegacyGpt35Turbo: 'gpt-3.5-turbo',
-  anthropicHealthProbe: 'claude-3-haiku-20240307',
+  anthropicHealthProbe: 'claude-haiku-4-5-20251001',
   anthropicSonnetTest: 'claude-sonnet',
 } as const;
 
@@ -87,9 +87,4 @@ export function resolveBackendOpenAIModel(
   config?: ConfigLike,
 ): string {
   return firstConfiguredValue(MODEL_ENV_KEYS[role], config) || DEFAULT_MODELS[role];
-}
-
-/** Should require audio reply by default. */
-export function shouldRequireAudioReplyByDefault(config?: ConfigLike): boolean {
-  return readConfig('VOICE_RESPONSE_AUDIO_REQUIRED', config) === 'true';
 }

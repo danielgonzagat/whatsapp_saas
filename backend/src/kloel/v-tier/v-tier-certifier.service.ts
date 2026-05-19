@@ -21,19 +21,7 @@ import {
   VtierCertificationResult,
   VtierOverall,
 } from './v-tier.types';
-const B17_SURFACE_PREFIXES: readonly string[] = [
-  'commerce.cart.',
-  'commerce.payment.',
-  'commerce.crm.',
-  'commerce.whatsapp.',
-  'commerce.campaign.',
-  'commerce.member_area.',
-  'commerce.affiliate.',
-  'commerce.kyc.',
-  'commerce.post_sale.',
-];
-const B17_SURFACE_COUNT = 7;
-
+import { certifyDissolucaoVerificavel, certifyGoalFieldCommercialDominance, certifyGoalFieldOperational, certifyIdentityProjectorAudience, certifyMachineHumanAuditable, certifyRemocaoDegradaCognicao, certifyWorkspaceLocalIdentity } from './v-tier-certifier.helpers';
 const FORBIDDEN_V1_PATTERNS: readonly RegExp[] = [
   /\byou are\b/i,
   /\bvocê é\b/i,
@@ -49,11 +37,9 @@ const FORBIDDEN_V1_PATTERNS: readonly RegExp[] = [
   /Kloel é um/i,
   /Kloel is a/i,
 ];
-
 @Injectable()
 export class VtierCertifierService {
   private cycleCount = 0;
-
   public constructor(
     private readonly spine: SpineEmitterService,
     private readonly lineageGuard: LineageGuardService,
@@ -64,7 +50,6 @@ export class VtierCertifierService {
     private readonly identityProjector: IdentityProjectorService,
     private readonly mindBg: MindBackgroundProcessor,
   ) {}
-
   public async certify(
     opts: {
       readonly workspaceCount?: number;
@@ -74,7 +59,6 @@ export class VtierCertifierService {
   ): Promise<VtierCertificationResult> {
     this.cycleCount += 1;
     const verdicts: VerificationVerdict[] = [];
-
     verdicts.push(await this.v1NoBehavioralInstruction(opts));
     verdicts.push(await this.v2AbiStructuralOnly());
     verdicts.push(await this.v3SpineEventRatio());
@@ -91,13 +75,11 @@ export class VtierCertifierService {
     verdicts.push(this.v14GoalFieldCommercialDominance());
     verdicts.push(await this.v15DissolucaoVerificavel());
     verdicts.push(this.v16RemocaoDegradaCognicao());
-
     const passCount = verdicts.filter((v) => v.status === 'PASS').length;
     const failCount = verdicts.filter((v) => v.status === 'FAIL').length;
     const insufficientEvidenceCount = verdicts.filter(
       (v) => v.status === 'INSUFFICIENT_EVIDENCE',
     ).length;
-
     let overall: VtierOverall;
     if (failCount === 0 && insufficientEvidenceCount === 0) {
       overall = 'PASS';
@@ -106,7 +88,6 @@ export class VtierCertifierService {
     } else {
       overall = 'FAIL';
     }
-
     return {
       overall,
       verdicts,
@@ -117,7 +98,6 @@ export class VtierCertifierService {
       certifiedAt: new Date().toISOString(),
     };
   }
-
   private async v1NoBehavioralInstruction(opts: {
     readonly kloelPromptsPath?: string;
     readonly kloelPromptsHelpersPath?: string;
@@ -165,7 +145,6 @@ export class VtierCertifierService {
       measuredAt: now,
     };
   }
-
   private async v2AbiStructuralOnly(): Promise<VerificationVerdict> {
     const now = new Date().toISOString();
     try {
@@ -217,7 +196,6 @@ export class VtierCertifierService {
       };
     }
   }
-
   private async v3SpineEventRatio(): Promise<VerificationVerdict> {
     const now = new Date().toISOString();
     const events = this.spine.recentEvents();
@@ -247,7 +225,6 @@ export class VtierCertifierService {
       measuredAt: now,
     };
   }
-
   private async v4BgActivityContinuous(): Promise<VerificationVerdict> {
     const now = new Date().toISOString();
     if (this.mindBg !== undefined && this.mindBg !== null) {
@@ -265,7 +242,6 @@ export class VtierCertifierService {
       measuredAt: now,
     };
   }
-
   private async v5ValenceCoverage(): Promise<VerificationVerdict> {
     const now = new Date().toISOString();
     const events = this.spine.recentEventsAsRef();
@@ -293,7 +269,6 @@ export class VtierCertifierService {
       measuredAt: now,
     };
   }
-
   private async v6HebbianNonUniform(): Promise<VerificationVerdict> {
     const now = new Date().toISOString();
     const topAssoc = this.hebbian.top(1);
@@ -313,11 +288,9 @@ export class VtierCertifierService {
       measuredAt: now,
     };
   }
-
   private async v7PulseCertifies(): Promise<VerificationVerdict> {
     const now = new Date().toISOString();
     const gateResults: string[] = [];
-
     const lineageGate = makeNoRoleplayGate(resolveGateMode('no-roleplay'));
     const abiResult = await this.abiBuilder.build({
       audience: 'public',
@@ -334,13 +307,10 @@ export class VtierCertifierService {
     } else {
       gateResults.push(`ABI build failed: ${abiResult.reason}`);
     }
-
     const lineageVerdict = await this.lineageGuard.verify();
     gateResults.push(`lineage-integrity=${lineageVerdict.status === 'intact' ? 'PASS' : 'FAIL'}`);
-
     const originPass = verifyGenesisEvent(GENESIS_EVENT);
     gateResults.push(`origin-immutability=${originPass ? 'PASS' : 'FAIL'}`);
-
     const allPass = gateResults.every((r) => r.endsWith('=PASS'));
     if (allPass) {
       return {
@@ -357,7 +327,6 @@ export class VtierCertifierService {
       measuredAt: now,
     };
   }
-
   private v8ComponentAuditable(): VerificationVerdict {
     return {
       criterionId: 'V8',
@@ -366,7 +335,6 @@ export class VtierCertifierService {
       measuredAt: new Date().toISOString(),
     };
   }
-
   private async v9GenesisVerifiable(): Promise<VerificationVerdict> {
     const now = new Date().toISOString();
     if (verifyGenesisEvent(GENESIS_EVENT)) {
@@ -384,197 +352,31 @@ export class VtierCertifierService {
       measuredAt: now,
     };
   }
-
-  private async v10IdentityProjectorAudience(): Promise<VerificationVerdict> {
-    const now = new Date().toISOString();
-    const audiences = ['public', 'technical', 'origin', 'internal'] as const;
-    const results: string[] = [];
-
-    for (const audience of audiences) {
-      const opts: Parameters<IdentityProjectorService['project']>[0] = { audience };
-      if (audience === 'origin') {
-        Object.assign(opts, {
-          originAuthorization: {
-            grantedAt: now,
-            grantedBy: 'v-tier-certifier',
-          },
-        });
-      }
-      const projection = await this.identityProjector.project(opts);
-      const serialized = JSON.stringify(projection);
-      const hasKleos = serialized.includes('kléos');
-      results.push(`${audience}: hasKleos=${hasKleos}`);
-    }
-
-    const publicViolation = results.find(
-      (r) => r.startsWith('public:') && r.includes('hasKleos=true'),
-    );
-    if (publicViolation) {
-      return {
-        criterionId: 'V10',
-        status: 'FAIL',
-        evidence: `public audience leaked 'kléos': ${publicViolation}. All results: ${results.join('; ')}`,
-        measuredAt: now,
-      };
-    }
-
-    return {
-      criterionId: 'V10',
-      status: 'PASS',
-      evidence: `4 audience projections verified — public never contains 'kléos': ${results.join('; ')}`,
-      measuredAt: now,
-    };
+    private async v10IdentityProjectorAudience(): Promise<VerificationVerdict> {
+    return certifyIdentityProjectorAudience(this.identityProjector);
   }
-
   private v11GoalFieldOperational(): VerificationVerdict {
-    const now = new Date().toISOString();
-    const detectors = this.goalField.registeredDetectors();
-    if (detectors.length >= 29) {
-      return {
-        criterionId: 'V11',
-        status: 'PASS',
-        evidence: `${detectors.length} detectors registered (≥29 required)`,
-        measuredAt: now,
-      };
-    }
-    return {
-      criterionId: 'V11',
-      status: 'FAIL',
-      evidence: `only ${detectors.length} detectors registered (need ≥29)`,
-      measuredAt: now,
-    };
+    return certifyGoalFieldOperational(this.goalField);
   }
-
   private v12MachineHumanAuditable(): VerificationVerdict {
-    return {
-      criterionId: 'V12',
-      status: 'PASS',
-      evidence: 'architectural property — all cognitive state is machine-readable and human-auditable via event spine + PULSE reports',
-      measuredAt: new Date().toISOString(),
-    };
+    return certifyMachineHumanAuditable();
   }
-
   private v13WorkspaceLocalIdentity(opts: {
     readonly workspaceCount?: number;
   }): VerificationVerdict {
-    const now = new Date().toISOString();
-    const count = opts.workspaceCount ?? 0;
-    if (count === 0) {
-      return {
-        criterionId: 'V13',
-        status: 'INSUFFICIENT_EVIDENCE',
-        evidence: 'no workspaces meet volume threshold — workspace local identity not yet active',
-        measuredAt: now,
-      };
-    }
-    return {
-      criterionId: 'V13',
-      status: 'PASS',
-      evidence: `${count} workspace(s) operational — local identity active`,
-      measuredAt: now,
-    };
+    return certifyWorkspaceLocalIdentity(opts);
   }
-
   private v14GoalFieldCommercialDominance(): VerificationVerdict {
-    const now = new Date().toISOString();
-    if (this.cycleCount < 20) {
-      return {
-        criterionId: 'V14',
-        status: 'INSUFFICIENT_EVIDENCE',
-        evidence: `shadow mode collected ${this.cycleCount}/20 cycles — need ≥20 for commercial dominance assessment`,
-        measuredAt: now,
-      };
-    }
-    const result = this.goalField.runCycle({
-      events: this.spine.recentEventsAsRef(),
-      mode: 'shadow',
+    return certifyGoalFieldCommercialDominance({
+      cycleCount: this.cycleCount,
+      goalField: this.goalField,
+      spine: this.spine,
     });
-    const totalTensions = result.tensions.length;
-    if (totalTensions === 0) {
-      return {
-        criterionId: 'V14',
-        status: 'INSUFFICIENT_EVIDENCE',
-        evidence: 'no tensions detected in the current cycle',
-        measuredAt: now,
-      };
-    }
-    const commercialCount = result.tensions.filter(
-      (t) => t.dimension === 'commercial',
-    ).length;
-    const pct = (commercialCount / totalTensions) * 100;
-    if (pct >= 50) {
-      return {
-        criterionId: 'V14',
-        status: 'PASS',
-        evidence: `commercial dominance=${pct.toFixed(1)}% — ${commercialCount}/${totalTensions} tensions are commercial (≥50%)`,
-        measuredAt: now,
-      };
-    }
-    return {
-      criterionId: 'V14',
-      status: 'FAIL',
-      evidence: `commercial dominance=${pct.toFixed(1)}% — ${commercialCount}/${totalTensions} below 50% threshold`,
-      measuredAt: now,
-    };
   }
-
   private async v15DissolucaoVerificavel(): Promise<VerificationVerdict> {
-    const now = new Date().toISOString();
-    const events = this.spine.recentEvents();
-    const foundPrefixes = new Set<string>();
-    for (const event of events) {
-      for (const prefix of B17_SURFACE_PREFIXES) {
-        if (event.eventName.startsWith(prefix)) {
-          foundPrefixes.add(prefix);
-        }
-      }
-    }
-    // Group by B17 surface. Each surface is identified by its domain prefix group.
-    const surfaceMap: Record<string, string[]> = {
-      'checkout/wallet/billing': ['commerce.cart.', 'commerce.payment.'],
-      'crm': ['commerce.crm.'],
-      'whatsapp/inbox': ['commerce.whatsapp.'],
-      'campaigns/ads': ['commerce.campaign.'],
-      'member-area/affiliate': ['commerce.member_area.', 'commerce.affiliate.'],
-      'kyc/auth': ['commerce.kyc.'],
-      'post-sale/ltv': ['commerce.post_sale.'],
-    };
-    const coveredSurfaces: string[] = [];
-    for (const [surface, prefixes] of Object.entries(surfaceMap)) {
-      if (prefixes.some((p) => foundPrefixes.has(p))) {
-        coveredSurfaces.push(surface);
-      }
-    }
-    if (coveredSurfaces.length >= B17_SURFACE_COUNT) {
-      return {
-        criterionId: 'V15',
-        status: 'PASS',
-        evidence: `${coveredSurfaces.length}/${B17_SURFACE_COUNT} B17 surfaces emit cognitive events: ${coveredSurfaces.join(', ')}`,
-        measuredAt: now,
-      };
-    }
-    if (coveredSurfaces.length === 0) {
-      return {
-        criterionId: 'V15',
-        status: 'INSUFFICIENT_EVIDENCE',
-        evidence: `no B17 surface events in spine (${events.length} total events)`,
-        measuredAt: now,
-      };
-    }
-    return {
-      criterionId: 'V15',
-      status: 'FAIL',
-      evidence: `only ${coveredSurfaces.length}/${B17_SURFACE_COUNT} surfaces emit events: ${coveredSurfaces.join(', ')}. Missing: ${Object.keys(surfaceMap).filter((s) => !coveredSurfaces.includes(s)).join(', ')}`,
-      measuredAt: now,
-    };
+    return certifyDissolucaoVerificavel(this.spine);
   }
-
   private v16RemocaoDegradaCognicao(): VerificationVerdict {
-    return {
-      criterionId: 'V16',
-      status: 'PASS',
-      evidence: 'architectural property — removal of any cognitive component would degrade organism cognition, not just remove a feature',
-      measuredAt: new Date().toISOString(),
-    };
+    return certifyRemocaoDegradaCognicao();
   }
 }

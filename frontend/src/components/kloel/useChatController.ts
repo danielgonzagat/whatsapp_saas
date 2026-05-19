@@ -2,20 +2,24 @@
 
 import { useConversationHistory } from '@/hooks/useConversationHistory';
 import { useToast } from '@/components/kloel/ToastProvider';
-import { billingApi, tokenStorage } from '@/lib/api';
+import { billingApi } from '@/lib/api';
 import { loadKloelThreadMessages } from '@/lib/kloel-conversations';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import type { AgentActivity, AgentStats } from './AgentConsole';
 import { useAuth } from './auth/auth-provider';
-import { applyAgentStatsEvent, mapThreadMessageToChatMessage, normalizeMessageMeta, createClientRequestId } from './chat-container.helpers';
+import {
+  applyAgentStatsEvent,
+  mapThreadMessageToChatMessage,
+  normalizeMessageMeta,
+} from './chat-container.helpers';
 import { EMPTY_AGENT_STATS } from './chat-container.data';
 import { processAgentEvent, currentTraceDayKey } from './chat-container.event-handler';
-import { runGuestChat, runAuthedChat, extractErrorMessage } from './chat-container.message-sender';
 import { useMessageActions } from './chat-container.message-actions';
 import { useWhatsApp } from './chat-container.whatsapp-hook';
 import { useChatControllerEffects } from './useChatController.effects';
 import { useChatControllerActions } from './useChatController.actions';
+import { useChatControllerSendMessage } from './useChatController.send';
 import type { Message } from './chat-message.types';
 import type {
   AgentCursorTarget,
@@ -56,8 +60,8 @@ export function useChatController({
     refreshConversations,
   } = useConversationHistory();
 
-  const appliedAuthDeepLink = useRef(false);
-  const appliedWhatsAppPanelDeepLink = useRef(false);
+  const appliedAuthDeepLinkRef = useRef(false);
+  const appliedWhatsAppPanelDeepLinkRef = useRef(false);
   const loadedConversationIdRef = useRef<string | null>(null);
 
   const [messages, setMessages] = useState<Message[]>([]);
@@ -107,7 +111,7 @@ export function useChatController({
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showActivationSuccess, setShowActivationSuccess] = useState(false);
   const [guestSessionId, setGuestSessionId] = useState<string | null>(null);
-  const appliedInitialDeepLink = useRef(false);
+  const appliedInitialDeepLinkRef = useRef(false);
 
   const refreshHasCard = useCallback(async () => {
     if (!isAuthenticated) {
@@ -125,7 +129,9 @@ export function useChatController({
 
   const loadConversation = useCallback(
     async (conversationId: string) => {
-      if (!conversationId) {return;}
+      if (!conversationId) {
+        return;
+      }
       try {
         const payload = await loadKloelThreadMessages(conversationId);
         setMessages(
@@ -152,7 +158,9 @@ export function useChatController({
 
   const appendAssistantMessage = useCallback((content: string, meta?: Record<string, unknown>) => {
     const normalized = String(content || '').trim();
-    if (!normalized) {return;}
+    if (!normalized) {
+      return;
+    }
     setMessages((prev) => [
       ...prev,
       {
@@ -189,18 +197,52 @@ export function useChatController({
   );
 
   useChatControllerEffects({
-    activeConv, activeConversationId, agentStreamEnabled, appliedAuthDeepLink,
-    appliedInitialDeepLink, appliedWhatsAppPanelDeepLink, authPrefillEmail, authedChatStreamRef,
-    handleAgentEvent, initialOpenSettings, initialScrollToCreditCard, initialSettingsTab,
-    isAuthenticated, isCancelableReply, isTyping, loadConversation, loadedConversationIdRef,
+    activeConv,
+    activeConversationId,
+    agentStreamEnabled,
+    appliedAuthDeepLinkRef,
+    appliedInitialDeepLinkRef,
+    appliedWhatsAppPanelDeepLinkRef,
+    authPrefillEmail,
+    authedChatStreamRef,
+    handleAgentEvent,
+    initialOpenSettings,
+    initialScrollToCreditCard,
+    initialSettingsTab,
+    isAuthenticated,
+    isCancelableReply,
+    isTyping,
+    loadConversation,
+    loadedConversationIdRef,
     messagesEndRef,
     messagesLength: messages.length,
-    openAuthModal, pathname, refreshHasCard, requestedConversationId, router, searchParams,
-    setActiveConversation, setActiveConversationId, setAgentStreamEnabled, setAgentThoughts,
-    setAgentTraceEntries, setCurrentThought, setCursorTarget, setInputValue,
-    setIsAgentStreamConnected, setIsTyping, setMessages, setScrollToCreditCard,
-    setSettingsInitialTab, setShowAgentDesktop, setShowSettings, setShowSlowHint,
-    setGuestSessionId, shouldOpenWhatsAppPanel, traceDayRef, agentTraceEntriesRef, thoughtTimerRef,
+    openAuthModal,
+    pathname,
+    refreshHasCard,
+    requestedConversationId,
+    router,
+    searchParams,
+    setActiveConversation,
+    setActiveConversationId,
+    setAgentStreamEnabled,
+    setAgentThoughts,
+    setAgentTraceEntries,
+    setCurrentThought,
+    setCursorTarget,
+    setInputValue,
+    setIsAgentStreamConnected,
+    setIsTyping,
+    setMessages,
+    setScrollToCreditCard,
+    setSettingsInitialTab,
+    setShowAgentDesktop,
+    setShowSettings,
+    setShowSlowHint,
+    setGuestSessionId,
+    shouldOpenWhatsAppPanel,
+    traceDayRef,
+    agentTraceEntriesRef,
+    thoughtTimerRef,
   });
 
   const cancelActiveReply = useCallback(() => {
@@ -212,78 +254,25 @@ export function useChatController({
     setMessages((prev) => prev.filter((m) => !(m.role === 'assistant' && m.isStreaming)));
   }, []);
 
-  const handleSendMessageRef = useRef<(content: string) => Promise<void>>(async () => {});
-
-  const handleSendMessage = async (content: string) => {
-    if (!content.trim()) {return;}
-    const clientRequestId = createClientRequestId();
-    setMessages((prev) => [
-      ...prev,
-      {
-        id: Date.now().toString(),
-        role: 'user',
-        content: content.trim(),
-        meta: { clientRequestId },
-      },
-    ]);
-    setInputValue('');
-    setIsTyping(true);
-    setShowSlowHint(false);
-    setIsCancelableReply(false);
-    const assistantId = (Date.now() + 1).toString();
-    setMessages((prev) => [
-      ...prev,
-      {
-        id: assistantId,
-        role: 'assistant',
-        content: '',
-        isStreaming: true,
-        meta: { clientRequestId },
-      },
-    ]);
-    const workspaceId = tokenStorage.getWorkspaceId();
-    if (!isAuthenticated || !workspaceId) {
-      await runGuestChat({ content, assistantId, guestSessionId, setMessages, setIsTyping });
-      return;
-    }
-    try {
-      runAuthedChat({
-        content,
-        assistantId,
-        clientRequestId,
-        activeConversationId,
-        conversations,
-        setMessages,
-        setIsTyping,
-        setShowSlowHint,
-        setIsCancelableReply,
-        setActiveConversationId,
-        setActiveConversation,
-        upsertConversation,
-        refreshConversations,
-        loadConversation,
-        loadedConversationIdRef,
-        authedChatStreamRef,
-        extractErrorMessage,
-      });
-    } catch (error: unknown) {
-      setIsCancelableReply(false);
-      setShowSlowHint(false);
-      const errMsg = extractErrorMessage(
-        error,
-        'Desculpe, ocorreu um erro ao continuar sua conversa.',
-      );
-      setMessages((prev) =>
-        prev.map((m) => (m.id === assistantId ? { ...m, content: errMsg, isStreaming: false } : m)),
-      );
-      setIsTyping(false);
-      showToast(errMsg, 'error');
-    }
-  };
-  useEffect(() => {
-    handleSendMessageRef.current = handleSendMessage;
+  const { handleSendMessage, handleSendMessageRef } = useChatControllerSendMessage({
+    activeConversationId,
+    authedChatStreamRef,
+    conversations,
+    guestSessionId,
+    isAuthenticated,
+    loadConversation,
+    loadedConversationIdRef,
+    refreshConversations,
+    setActiveConversation,
+    setActiveConversationId,
+    setInputValue,
+    setIsCancelableReply,
+    setIsTyping,
+    setMessages,
+    setShowSlowHint,
+    showToast,
+    upsertConversation,
   });
-
   const {
     handleMessageRetry,
     handleMessageEdit,
@@ -304,16 +293,47 @@ export function useChatController({
 
   const { handleAgentQuickAction, handleOpenSettings, handleWhatsAppConnect, modals } =
     useChatControllerActions({
-      agentActivities, appendAssistantMessage, authModalMode, authModalOpen, authPrefillEmail,
-      authedChatStreamRef, closeAuthModal, completeOnboarding, creditsBalance,
-      dismissOnboardingForSession, hasCard, isAuthenticated, loadedConversationIdRef,
-      openAuthModal, paywallVariant, refreshSubscription, scrollToCreditCard,
-      setActiveConversation, setActiveConversationId, setAgentThoughts, setCurrentThought,
-      setHasCard, setInputValue, setIsAgentThinking, setIsTyping, setMessages,
-      setPendingAgentAction, setScrollToCreditCard, setSettingsInitialTab,
-      setShowActivationSuccess, setShowAgentDesktop, setShowOnboarding, setShowPaywallModal,
-      setShowSettings, settingsInitialTab, showActivationSuccess, showOnboarding, showPaywallModal,
-      showSettings, subscriptionStatus, trialDaysLeft,
+      agentActivities,
+      appendAssistantMessage,
+      authModalMode,
+      authModalOpen,
+      authPrefillEmail,
+      authedChatStreamRef,
+      closeAuthModal,
+      completeOnboarding,
+      creditsBalance,
+      dismissOnboardingForSession,
+      hasCard,
+      isAuthenticated,
+      loadedConversationIdRef,
+      openAuthModal,
+      paywallVariant,
+      refreshSubscription,
+      scrollToCreditCard,
+      setActiveConversation,
+      setActiveConversationId,
+      setAgentThoughts,
+      setCurrentThought,
+      setHasCard,
+      setInputValue,
+      setIsAgentThinking,
+      setIsTyping,
+      setMessages,
+      setPendingAgentAction,
+      setScrollToCreditCard,
+      setSettingsInitialTab,
+      setShowActivationSuccess,
+      setShowAgentDesktop,
+      setShowOnboarding,
+      setShowPaywallModal,
+      setShowSettings,
+      settingsInitialTab,
+      showActivationSuccess,
+      showOnboarding,
+      showPaywallModal,
+      showSettings,
+      subscriptionStatus,
+      trialDaysLeft,
     });
 
   const optionalCallbacks = activeConversationId

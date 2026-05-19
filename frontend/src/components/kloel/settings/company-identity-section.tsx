@@ -48,12 +48,14 @@ export function CompanyIdentitySection({
     if (!value) {
       return;
     }
-    setCompany({
-      name: value.name || '',
-      sector: value.sector || '',
-      description: value.description || '',
-      mission: value.mission || '',
-      differentials: value.differentials.length > 0 ? value.differentials : [''],
+    queueMicrotask(() => {
+      setCompany({
+        name: value.name || '',
+        sector: value.sector || '',
+        description: value.description || '',
+        mission: value.mission || '',
+        differentials: value.differentials.length > 0 ? value.differentials : [''],
+      });
     });
   }, [value]);
 

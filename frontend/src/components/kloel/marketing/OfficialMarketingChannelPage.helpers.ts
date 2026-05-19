@@ -97,9 +97,15 @@ export const CHANNEL_META: Record<ChannelKey, ChannelMeta> = {
 };
 
 export function statusText(connected?: boolean, status?: string | null): string {
-  if (connected) return 'Conectado';
-  if (status === 'server_not_configured') return 'Indisponível';
-  if (status === 'unavailable') return 'Indisponível';
+  if (connected) {
+    return 'Conectado';
+  }
+  if (status === 'server_not_configured') {
+    return 'Indisponível';
+  }
+  if (status === 'unavailable') {
+    return 'Indisponível';
+  }
   return 'Desconectado';
 }
 

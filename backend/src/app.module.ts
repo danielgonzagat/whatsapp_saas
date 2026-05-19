@@ -142,7 +142,7 @@ import { StripeWebhookLedgerService } from './webhooks/stripe-webhook-ledger.ser
 
 const appLogger = new Logger('AppModule');
 const isProd = process.env.NODE_ENV === 'production';
-const REDIS_GLOBAL_LISTENER_BUDGET = 128;
+const REDIS_GLOBAL_LISTENER_BUDGET = 256;
 
 function setRedisClientListenerBudget(client: Redis): void {
   client.setMaxListeners(Math.max(client.getMaxListeners(), REDIS_GLOBAL_LISTENER_BUDGET));
@@ -317,7 +317,7 @@ function setRedisClientListenerBudget(client: Redis): void {
     MoveModule, // 🏃 Camada XXXI — Real Movement (friction detection, step decomposition, tiny action suggestion, partial execution, alternative routes, pattern learning, no-blame tone) (UTP-MOVE-001..007)
     ChannelModule, // 📡 Camada XXVIII — Channel Survival Intelligence (concentration, health, ban-risk, policy, contingency, migration, diversification)
     ChannelPolicyModule, // 📋 Per-channel terminal valence + truthMode policy registry
-    DefensModule, // 🛡️ Camada XXX — Defensibility Assets (asset registry, growth, owned audience, social proof, case library, positioning, authority, tradeoffs, narrative)
+    DefensModule, // 🛡️ Camada 30 — Defensibility Assets (asset registry, growth, owned audience, social proof, case library, positioning, authority, tradeoffs, narrative)
     EvolModule, // 🧬 Camada XXXII — Self-Evolution (gap detection, proposals, human authorization, agent dispatch, experiment runner, rollback, firewall, codacy enforcement, audit)
     IncentModule, // 🤝 Camada XXXIV — Incentive Integrity (explain, detect conflict, silence, monitor bias, disclose, audit, feedback, attribution)
     EcosysModule, // 🤝 Camada XXVII — Ecosystem Intelligence (cross-role fits, privacy guard, conflict detector, suggestion delivery)

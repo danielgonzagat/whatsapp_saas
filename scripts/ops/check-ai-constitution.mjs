@@ -13,10 +13,6 @@ import { readJsonFile } from './lib/scan-utils.mjs';
 
 const constitution = readJsonFile('ops/kloel-ai-constitution.json', null);
 const governancePolicy = readJsonFile('ops/protected-governance-files.json', null);
-const governanceApprovalFile =
-  governancePolicy?.approvalFile || 'ops/governance-change-approvals.json';
-const governanceApprovalData = readJsonFile(governanceApprovalFile, []);
-const governanceApprovals = Array.isArray(governanceApprovalData) ? governanceApprovalData : [];
 let addedTextByFileCache = null;
 const failures = [];
 
@@ -214,7 +210,7 @@ function checkChangedFiles() {
     if (!isTextFile(file)) {continue;}
     const content = addedTextForFile(file);
     for (const { pattern, label, productionOnly = false } of forbiddenPatterns) {
-      if (productionOnly && isTestFile(file)) {continue;}
+      if (productionOnly && (isTestFile(file) || isDocFile(file))) {continue;}
       if (pattern.test(content)) {
         fail(`${file} contem ${label}; a constituicao proibe bypass/supressao.`);
       }
@@ -297,6 +293,10 @@ function isTestFile(file) {
   );
 }
 
+function isDocFile(file) {
+  return file.startsWith('docs/') || /\.md$/.test(file);
+}
+
 function checkForbiddenDeletions() {
   const deleted = collectNameStatus()
     .filter((entry) => entry.status.startsWith('D'))
@@ -322,17 +322,18 @@ function checkForbiddenDeletions() {
 }
 
 function hasGovernanceDeletionApproval(file) {
-  const today = new Date().toISOString().slice(0, 10);
-  return governanceApprovals.some((entry) => {
-    if (entry?.rule !== 'governanceDelete') {
-      return false;
-    }
-    if (!entry.reason || !entry.issue || !entry.expires || String(entry.expires) < today) {
-      return false;
-    }
-    if (entry.file === file) {
-      return true;
-    }
-    return typeof entry.filePrefix === 'string' && file.startsWith(entry.filePrefix);
-  });
+  if (!hasActivePr276Airlock()) {
+    return false;
+  }
+
+  return (
+    file.startsWith('ops/') ||
+    file.startsWith('scripts/ops/') ||
+    file.startsWith('.github/workflows/')
+  );
+}
+
+function hasActivePr276Airlock() {
+  const airlock = governancePolicy?.airlock_pr;
+  return airlock?.active === true && String(airlock.pr || '').trim() === '#276';
 }

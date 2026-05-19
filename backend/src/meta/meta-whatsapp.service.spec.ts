@@ -1,3 +1,4 @@
+import { expectValueOf } from '../../test/expect-value-of';
 import type { PrismaService } from '../prisma/prisma.service';
 import { MetaWhatsAppService } from './meta-whatsapp.service';
 
@@ -150,7 +151,7 @@ describe('MetaWhatsAppService', () => {
             whatsappApiSession: expect.objectContaining({
               phoneNumber: '5511999999999',
               provider: 'meta-cloud',
-              lastWebhookAt: expect.any(String),
+              lastWebhookAt: expectValueOf(String),
             }),
           }),
         }),

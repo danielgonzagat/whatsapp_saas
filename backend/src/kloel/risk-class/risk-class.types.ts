@@ -7,7 +7,7 @@
  * Part of UTP-DELEG-001: delegation-state-tracker.
  */
 
-export type ActionKind =
+type ActionKind =
   | 'message_send'
   | 'discount_offer'
   | 'lead_block'

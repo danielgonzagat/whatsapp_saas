@@ -11,7 +11,14 @@ import { CommandPalette } from './CommandPalette';
 import { ErrorBoundary } from './ErrorBoundary';
 import { KloelSidebar } from './sidebar/KloelSidebar';
 import { useSidebarState } from './sidebar/useSidebarState';
-import { VIEW_ROUTES, SUB_ROUTES, MOBILE_VIEW_LABELS, resolveRoute, resolveActiveView, resolveActiveSubView } from './AppShell.routes';
+import {
+  VIEW_ROUTES,
+  SUB_ROUTES,
+  MOBILE_VIEW_LABELS,
+  resolveRoute,
+  resolveActiveView,
+  resolveActiveSubView,
+} from './AppShell.routes';
 import { MobileTopBar, KycBanner } from './AppShell.banners';
 
 interface AppShellProps {
@@ -41,7 +48,7 @@ export function AppShell({ children }: AppShellProps) {
 
   useEffect(() => {
     if (isDesktop) {
-      setMobileMenuOpen(false);
+      queueMicrotask(() => setMobileMenuOpen(false));
     }
   }, [isDesktop]);
 

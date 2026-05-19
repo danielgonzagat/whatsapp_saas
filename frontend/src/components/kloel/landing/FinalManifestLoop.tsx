@@ -24,8 +24,8 @@ export function FinalManifestLoop() {
 
   useEffect(() => {
     if (prefersReducedMotion) {
-      setTone('ember');
-      setText(FINAL_MANIFEST_SECOND);
+      queueMicrotask(() => setTone('ember'));
+      queueMicrotask(() => setText(FINAL_MANIFEST_SECOND));
       return;
     }
 

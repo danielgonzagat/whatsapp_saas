@@ -19,7 +19,7 @@ export interface FatigueConfig {
   readonly maxObjections: number;
 }
 
-export const DEFAULT_FATIGUE_CONFIG: FatigueConfig = {
+const DEFAULT_FATIGUE_CONFIG: FatigueConfig = {
   windowMinutes: DEFAULT_WINDOW_MINUTES,
   maxOutboundMessages: DEFAULT_MAX_OUTBOUND,
   maxObjections: DEFAULT_MAX_OBJECTIONS,

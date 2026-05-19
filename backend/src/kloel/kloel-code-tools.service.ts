@@ -28,6 +28,14 @@ interface ToolResult {
   [key: string]: unknown;
 }
 
+interface JestOutput {
+  success: boolean;
+  numTotalTests: number;
+  numPassedTests: number;
+  numFailedTests: number;
+  testResults?: Array<{ name: string; status: string }>;
+}
+
 @Injectable()
 export class KloelCodeToolsService {
   private readonly logger = StructuredLogger.from(KloelCodeToolsService.name);
@@ -40,7 +48,9 @@ export class KloelCodeToolsService {
     try {
       const absPath = repoPath(relPath);
       const stat = await fs.stat(absPath);
-      if (!stat.isFile()) return { success: false, error: 'not_a_file' };
+      if (!stat.isFile()) {
+        return { success: false, error: 'not_a_file' };
+      }
       if (stat.size > MAX_FILE_BYTES) {
         return {
           success: false,
@@ -66,7 +76,9 @@ export class KloelCodeToolsService {
       };
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
-      if (msg.includes('ENOENT')) return { success: false, error: 'file_not_found' };
+      if (msg.includes('ENOENT')) {
+        return { success: false, error: 'file_not_found' };
+      }
       this.logger.error(`read_source_file failed: ${msg}`);
       return { success: false, error: msg };
     }
@@ -84,7 +96,9 @@ export class KloelCodeToolsService {
           kind: e.isDirectory() ? 'directory' : e.isSymbolicLink() ? 'symlink' : 'file',
         }));
       sorted.sort((a, b) => {
-        if (a.kind !== b.kind) return a.kind === 'directory' ? -1 : 1;
+        if (a.kind !== b.kind) {
+          return a.kind === 'directory' ? -1 : 1;
+        }
         return a.name.localeCompare(b.name);
       });
       return { success: true, path: relDir || '.', entries: sorted, total: sorted.length };
@@ -99,7 +113,9 @@ export class KloelCodeToolsService {
       const globArg = glob ? `--glob '${glob.replace(/'/g, "'\\''")}'` : '';
       const cmd = `cd '${REPO_ROOT}' && rg --line-number --max-count ${MAX_GREP_RESULTS} ${globArg} '${pattern.replace(/'/g, "'\\''")}' 2>&1`;
       const { stdout, stderr } = await exec(cmd, { timeout: 15_000, maxBuffer: 1024 * 1024 });
-      if (stderr && !stdout) return { success: false, error: stderr.trim() };
+      if (stderr && !stdout) {
+        return { success: false, error: stderr.trim() };
+      }
       const lines = stdout.trim().split('\n').filter(Boolean);
       return {
         success: true,
@@ -201,7 +217,9 @@ export class KloelCodeToolsService {
 
       for (let i = 0; i < lines.length; i++) {
         const line = lines[i];
-        if (!line) continue;
+        if (!line) {
+          continue;
+        }
         for (const p of patterns) {
           const m = line.match(p.regex);
           if (m) {
@@ -232,13 +250,13 @@ export class KloelCodeToolsService {
         : `cd '${REPO_ROOT}/backend' && npx jest --no-coverage --forceExit --json 2>&1`;
 
       const { stdout } = await exec(cmd, { timeout: 120_000, maxBuffer: 10 * 1024 * 1024 });
-      const result = JSON.parse(stdout);
+      const result = JSON.parse(stdout) as JestOutput;
       return {
         success: result.success || result.numFailedTests === 0,
         numTotalTests: result.numTotalTests,
         numPassedTests: result.numPassedTests,
         numFailedTests: result.numFailedTests,
-        testResults: (result.testResults || []).map((r: { name: string; status: string }) => ({
+        testResults: (result.testResults ?? []).map((r) => ({
           file: r.name.replace(REPO_ROOT + '/', ''),
           status: r.status,
         })),
@@ -255,7 +273,9 @@ export class KloelCodeToolsService {
       const scopes = scope ? [scope] : ['backend', 'frontend', 'worker'];
 
       for (const s of scopes) {
-        if (!['backend', 'frontend', 'worker'].includes(s)) continue;
+        if (!['backend', 'frontend', 'worker'].includes(s)) {
+          continue;
+        }
         try {
           const { stdout, stderr } = await exec(`cd '${REPO_ROOT}/${s}' && npx tsc --noEmit 2>&1`, {
             timeout: 60_000,
@@ -280,13 +300,13 @@ export class KloelCodeToolsService {
       const modelMatches = [...content.matchAll(/^model\s+(\w+)\s*\{/gm)];
       const models = modelMatches.map((m) => ({
         name: m[1],
-        line: content.slice(0, m.index!).split('\n').length,
+        line: content.slice(0, m.index).split('\n').length,
       }));
 
       const enumMatches = [...content.matchAll(/^enum\s+(\w+)\s*\{/gm)];
       const enums = enumMatches.map((m) => ({
         name: m[1],
-        line: content.slice(0, m.index!).split('\n').length,
+        line: content.slice(0, m.index).split('\n').length,
       }));
 
       return {

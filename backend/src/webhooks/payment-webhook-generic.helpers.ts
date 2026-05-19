@@ -3,7 +3,6 @@ import { Logger, NotFoundException } from '@nestjs/common';
 import type { Redis } from 'ioredis';
 import { validatePaymentTransition } from '../common/payment-state-machine';
 import { PrismaService } from '../prisma/prisma.service';
-import { WhatsappService } from '../whatsapp/whatsapp.service';
 import type { GenericPaymentWebhookBody, WebhookRequest } from './payment-webhook-types';
 
 export async function assertWorkspaceExists(
@@ -125,28 +124,5 @@ export async function updateSaleAndPaymentHelper(
           : new Error(typeof paymentErr === 'string' ? paymentErr : 'unknown error');
       logger.warn(`Não foi possível atualizar Payment (generic): ${msg?.message}`);
     }
-  }
-}
-
-export async function sendGenericConfirmationHelper(
-  whatsapp: WhatsappService,
-  logger: Logger,
-  workspaceId: string,
-  normalizedPhone: string,
-  body: GenericPaymentWebhookBody,
-): Promise<void> {
-  try {
-    const amountText =
-      typeof body.amount === 'number'
-        ? body.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })
-        : undefined;
-    const msg = `Pagamento confirmado.\n\n${amountText ? `Valor: R$ ${amountText}\n` : ''}${body.orderId ? `Pedido: ${body.orderId}\n` : ''}\nObrigado pela sua compra!`;
-    await whatsapp.sendMessage(workspaceId, normalizedPhone, msg);
-  } catch (notifyErr: unknown) {
-    const notifyMsg =
-      notifyErr instanceof Error
-        ? notifyErr
-        : new Error(typeof notifyErr === 'string' ? notifyErr : 'unknown error');
-    logger.warn(`Falha ao notificar cliente (generic): ${notifyMsg?.message}`);
   }
 }

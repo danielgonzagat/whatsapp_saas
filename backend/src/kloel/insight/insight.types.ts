@@ -14,10 +14,10 @@
 
 import type { AbiTruthMode, AbiValence } from '../abi/abi-schema';
 import type { MaturityStage, SignalSummary } from '../maturity/maturity.types';
-export type { MaturityStage, SignalSummary };
+export type { MaturityStage };
 import type { SpineEventRef } from '../mind/mind.types';
 
-export type InsightKind =
+type InsightKind =
   | 'funnel_bottleneck'
   | 'offer_fit'
   | 'objection_pattern'
@@ -123,7 +123,7 @@ export const FUNNEL_STEP_ORDER = [
   'commerce.payment.approved',
 ] as const;
 
-export type FunnelStep = (typeof FUNNEL_STEP_ORDER)[number];
+type FunnelStep = (typeof FUNNEL_STEP_ORDER)[number];
 
 export const FUNNEL_RELEVANT_EVENTS: ReadonlySet<string> = new Set(FUNNEL_STEP_ORDER);
 

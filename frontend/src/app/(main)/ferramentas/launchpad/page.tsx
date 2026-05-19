@@ -7,20 +7,32 @@ export const dynamic = 'force-dynamic';
 
 import { Card } from '@/components/kloel/Card';
 import { SectionPage } from '@/components/kloel/SectionPage';
+import { launchApi, type Launcher, type LauncherListPayload } from '@/lib/api/launch';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import useSWR from 'swr';
 import { NewLauncherModal } from './NewLauncherModal';
 import { AddGroupModal } from './AddGroupModal';
 
 const SORA = "'Sora', sans-serif";
 const EMBER = colors.ember.primary;
 
-interface Launcher {
-  id: string;
-  name: string;
-  slug?: string;
-  description?: string;
-  createdAt: string;
+function extractLaunchers(payload: LauncherListPayload | undefined): Launcher[] {
+  if (!payload) {
+    return [];
+  }
+  if (Array.isArray(payload)) {
+    return payload;
+  }
+  return payload.launchers || payload.data || [];
+}
+
+async function fetchLaunchers(): Promise<Launcher[]> {
+  const res = await launchApi.listLaunchers();
+  if (res.error) {
+    throw new Error(res.error);
+  }
+  return extractLaunchers(res.data);
 }
 
 function LauncherRow({
@@ -121,15 +133,26 @@ function LauncherRow({
 /** Launchpad page. */
 export default function LaunchpadPage() {
   const router = useRouter();
-  const [launchers, _setLaunchers] = useState<Launcher[]>([]);
-  const isLoading = false;
-  const error = null;
-  const mutate = () => {
-    /* no list endpoint yet */
-  };
+  const {
+    data: launchers = [],
+    isLoading,
+    error,
+    mutate: refreshLaunchers,
+  } = useSWR<Launcher[]>('/launch/launchers', fetchLaunchers);
 
   const [showNewModal, setShowNewModal] = useState(false);
   const [addGroupFor, setAddGroupFor] = useState<string | null>(null);
+
+  const handleLauncherCreated = (created: Launcher) => {
+    void refreshLaunchers(
+      (current = []) => [created, ...current.filter((launcher) => launcher.id !== created.id)],
+      { revalidate: true },
+    );
+  };
+
+  const handleGroupAdded = () => {
+    void refreshLaunchers();
+  };
 
   return (
     <SectionPage
@@ -218,14 +241,17 @@ export default function LaunchpadPage() {
       )}
 
       {showNewModal && (
-        <NewLauncherModal onClose={() => setShowNewModal(false)} onCreated={() => mutate()} />
+        <NewLauncherModal
+          onClose={() => setShowNewModal(false)}
+          onCreated={handleLauncherCreated}
+        />
       )}
 
       {addGroupFor && (
         <AddGroupModal
           launcherId={addGroupFor}
           onClose={() => setAddGroupFor(null)}
-          onAdded={() => mutate()}
+          onAdded={handleGroupAdded}
         />
       )}
     </SectionPage>

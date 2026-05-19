@@ -57,6 +57,14 @@ function hasButtonSemantics(line: string): boolean {
   return lowerTag === 'button' || lowerTag.endsWith('button') || lowerTag.endsWith('bt');
 }
 
+function isIdentifierPart(char: string | undefined): boolean {
+  if (!char) {
+    return false;
+  }
+  const lower = char.toLowerCase();
+  return (lower >= 'a' && lower <= 'z') || (char >= '0' && char <= '9') || char === '_';
+}
+
 function extractActionPropNames(line: string): string[] {
   const props: string[] = [];
   let cursor = 0;
@@ -64,6 +72,10 @@ function extractActionPropNames(line: string): string[] {
     const onIndex = line.indexOf('on', cursor);
     if (onIndex < 0) {
       break;
+    }
+    if (isIdentifierPart(line[onIndex - 1])) {
+      cursor = onIndex + 2;
+      continue;
     }
     const next = line[onIndex + 2] ?? '';
     if (next < 'A' || next > 'Z') {

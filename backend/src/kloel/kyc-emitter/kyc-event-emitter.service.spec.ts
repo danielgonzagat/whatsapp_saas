@@ -138,7 +138,7 @@ describe('KycEventEmitterService (contract spec)', () => {
       const { emitter } = build();
 
       expect(() => {
-        (emitter as unknown as Record<string, unknown>)['emitDocumentSubmitted']?.({});
+        (emitter as Record<string, unknown>)['emitDocumentSubmitted']?.({});
       }).not.toThrow();
     });
 

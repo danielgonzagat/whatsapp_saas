@@ -98,10 +98,16 @@ export default function MarketplaceProductGrid({
             }}
           >
             {m.thumbnailUrl || m.imageUrl ? (
-              <img
-                src={m.thumbnailUrl || m.imageUrl}
-                alt=""
-                style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 6 }}
+              <div
+                aria-hidden
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  borderRadius: 6,
+                  backgroundSize: 'cover',
+                  backgroundPosition: 'center',
+                  backgroundImage: `url(${m.thumbnailUrl || m.imageUrl})`,
+                }}
               />
             ) : (
               <span style={{ color: GREEN }}>{IC.box(20)}</span>

@@ -62,7 +62,7 @@ export function getBrainCapabilityDelegationContract(
       riskClass: 'R3',
       delegationMode: 'owner_review',
       safeNextStep:
-        'Prepare the action for explicit owner approval before any billing, plan, or payment execution.',
+        'Prepare the action for explicit owner approval before every billing, plan, or payment execution.',
       rollback:
         'If approval, amount, recipient, or commercial context is unclear, do not execute and keep the action in owner review.',
     };

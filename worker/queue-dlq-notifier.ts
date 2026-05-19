@@ -3,6 +3,8 @@ interface DlqEvent {
   jobId?: string | number | undefined;
   jobName?: string | undefined;
   reason?: string | undefined;
+  workspaceId?: unknown;
+  correlationId?: unknown;
 }
 
 interface DlqPayload extends DlqEvent {
@@ -17,12 +19,14 @@ const buildDlqPayload = (input: DlqEvent): DlqPayload => ({
   jobId: input.jobId,
   jobName: input.jobName,
   reason: input.reason,
+  ...(typeof input.workspaceId === 'string' ? { workspaceId: input.workspaceId } : {}),
+  ...(typeof input.correlationId === 'string' ? { correlationId: input.correlationId } : {}),
   env: process.env.NODE_ENV || 'dev',
   at: new Date().toISOString(),
 });
 
 const buildSlackBody = (payload: DlqPayload): { text: string } => ({
-  text: `DLQ ${payload.queue} -> job ${payload.jobName || payload.jobId || 'unknown'} (${payload.reason || 'no reason'}) [${payload.env}]`,
+  text: `DLQ ${payload.queue} -> job ${payload.jobName || payload.jobId || 'unknown'} (${payload.reason || 'no reason'}) [${payload.env}]${payload.workspaceId ? ` workspace=${payload.workspaceId}` : ''}${payload.correlationId ? ` correlation=${payload.correlationId}` : ''}`,
 });
 
 const buildTeamsBody = (payload: DlqPayload): Record<string, unknown> => ({
@@ -36,6 +40,8 @@ const buildTeamsBody = (payload: DlqPayload): Record<string, unknown> => ({
       facts: [
         { name: 'Job', value: String(payload.jobName || payload.jobId || 'unknown') },
         { name: 'Reason', value: payload.reason || 'n/a' },
+        ...(payload.workspaceId ? [{ name: 'Workspace', value: payload.workspaceId }] : []),
+        ...(payload.correlationId ? [{ name: 'Correlation', value: payload.correlationId }] : []),
         { name: 'Env', value: payload.env },
         { name: 'At', value: payload.at },
       ],
@@ -53,7 +59,7 @@ const buildWebhookBody = (
   if (type === 'teams') {
     return buildTeamsBody(payload);
   }
-  return JSON.parse(JSON.stringify(payload)) as Record<string, unknown>;
+  return { ...payload };
 };
 
 const resolveFetch = (): typeof globalThis.fetch | undefined =>

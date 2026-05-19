@@ -1,7 +1,7 @@
 /**
  * KLOEL observability bootstrap.
  *
- * This file MUST be imported before any other module. It initialises:
+ * This file MUST be imported before every other module. It initialises:
  *   - Datadog APM (dd-trace) with Prisma/ioredis/http instrumentation
  *   - Sentry error tracking with release + environment context
  *   - Custom business metrics (dogstatsd)

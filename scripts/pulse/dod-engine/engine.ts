@@ -28,12 +28,12 @@ import {
   certaintyFromStatus,
   sumNumbers,
 } from './classification';
-import { evaluateStructuralChecks, structuralEvidenceProfile } from './__parts__/engine-structural';
+import { evaluateStructuralChecks, structuralEvidenceProfile } from './engine-structural';
 import {
   loadCapabilityState,
   loadSupportingArtifacts,
   type LoadedArtifacts,
-} from './__parts__/engine-artifacts';
+} from './engine-artifacts';
 interface CapabilityInput {
   id: string;
   name: string;

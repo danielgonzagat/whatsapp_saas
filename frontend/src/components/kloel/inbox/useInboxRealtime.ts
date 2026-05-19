@@ -51,5 +51,12 @@ export function useInboxRealtime({
       unsubNewMsg();
       unsubConvUpdate();
     };
-  }, [isConnected, refreshConversations, subscribe, workspaceId, selectedConversationId]);
+  }, [
+    isConnected,
+    refreshConversations,
+    selectedConversationId,
+    setMessages,
+    subscribe,
+    workspaceId,
+  ]);
 }

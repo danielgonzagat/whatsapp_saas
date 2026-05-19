@@ -43,7 +43,7 @@ export interface UsageMetrics {
   readonly observationWindowDays: number;
 }
 
-export type ChurnRiskLevel = 'none' | 'low' | 'medium' | 'high' | 'critical';
+type ChurnRiskLevel = 'none' | 'low' | 'medium' | 'high' | 'critical';
 
 export interface ChurnRiskAssessment {
   readonly workspaceId: string;

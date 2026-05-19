@@ -60,7 +60,8 @@ export const KLOEL_CHAT_TOOLS_CODE: ChatCompletionTool[] = [
         properties: {
           pattern: {
             type: 'string',
-            description: 'Expressão regular para buscar no código, ex: "class KloelService" ou "async tick\\\\("',
+            description:
+              'Expressão regular para buscar no código, ex: "class KloelService" ou "async tick\\\\("',
           },
           glob: {
             type: 'string',

@@ -40,14 +40,28 @@ export interface AnunciosConnectUrl {
   authUrl?: string;
 }
 
+type ApiListEnvelope<T> = T[] | { data?: T[] } | null;
+
+function unwrapList<T>(value: ApiListEnvelope<T> | undefined): T[] {
+  if (Array.isArray(value)) {
+    return value;
+  }
+
+  if (Array.isArray(value?.data)) {
+    return value.data;
+  }
+
+  return [];
+}
+
 export function useAnunciosStatus() {
-  const { data, isLoading, error, mutate } = useSWR<AnunciosPlatformStatus[]>(
+  const { data, isLoading, error, mutate } = useSWR<ApiListEnvelope<AnunciosPlatformStatus>>(
     '/api/anuncios/status',
     swrFetcher,
     { refreshInterval: 60000 },
   );
   return {
-    statuses: data || [],
+    statuses: unwrapList(data),
     isLoading,
     error,
     refresh: mutate,
@@ -56,12 +70,12 @@ export function useAnunciosStatus() {
 
 export function useAnunciosAccounts(platform?: string) {
   const query = platform ? `?platform=${encodeURIComponent(platform)}` : '';
-  const { data, isLoading, error, mutate } = useSWR<AnunciosAccount[]>(
+  const { data, isLoading, error, mutate } = useSWR<ApiListEnvelope<AnunciosAccount>>(
     `/api/anuncios/accounts${query}`,
     swrFetcher,
   );
   return {
-    accounts: data || [],
+    accounts: unwrapList(data),
     isLoading,
     error,
     refresh: mutate,
@@ -70,18 +84,19 @@ export function useAnunciosAccounts(platform?: string) {
 
 export function useAnunciosCampaigns(platform?: string) {
   const query = platform ? `?platform=${encodeURIComponent(platform)}` : '';
-  const { data, isLoading, error, mutate } = useSWR<AnunciosCampaign[]>(
+  const { data, isLoading, error, mutate } = useSWR<ApiListEnvelope<AnunciosCampaign>>(
     `/api/anuncios/campaigns${query}`,
     swrFetcher,
     { refreshInterval: 120000 },
   );
   return {
-    campaigns: data || [],
+    campaigns: unwrapList(data),
     isLoading,
     error,
     refresh: mutate,
   };
 }
+
 
 export function useAnunciosConnectUrl(platform: string) {
   const { data, isLoading, error } = useSWR<AnunciosConnectUrl>(

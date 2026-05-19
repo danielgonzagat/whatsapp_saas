@@ -74,7 +74,7 @@ describe('validateAbiPayload', () => {
   });
 
   it('FAIL when required field missing', () => {
-    const p = valid() as unknown as Record<string, unknown>;
+    const p = valid() as Record<string, unknown>;
     delete p['lineage'];
     const v = validateAbiPayload(p);
     expect(v.status).toBe('FAIL');

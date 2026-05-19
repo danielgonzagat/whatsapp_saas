@@ -1,4 +1,4 @@
-export type EvidenceOrigin =
+type EvidenceOrigin =
   | 'mental_simulation'
   | 'synthetic_scenario'
   | 'code_run'
@@ -8,9 +8,9 @@ export type EvidenceOrigin =
 
 export type ProofLevel = 'N1' | 'N2' | 'N3' | 'N4' | 'N5' | 'N6';
 
-export type CommercialMetricKind = 'ltv' | 'conversion' | 'retention' | 'churn_reduction';
+type CommercialMetricKind = 'ltv' | 'conversion' | 'retention' | 'churn_reduction';
 
-export interface CommercialMetric {
+interface CommercialMetric {
   readonly kind: CommercialMetricKind;
   readonly delta: number;
 }

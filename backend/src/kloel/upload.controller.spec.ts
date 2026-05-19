@@ -73,7 +73,7 @@ describe('UploadController', () => {
   });
 
   const callProcessFile = (file: typeof pdfFile, workspaceId: string) =>
-    (controller as unknown as { processFile: (f: typeof pdfFile, ws: string) => ReturnType<UploadController['uploadMultipleFiles']> }).processFile(file, workspaceId);
+    (controller as { processFile: (f: typeof pdfFile, ws: string) => ReturnType<UploadController['uploadMultipleFiles']> }).processFile(file, workspaceId);
 
   it('charges before storage side effects and settles after a successful PDF upload analysis', async () => {
     pdfProcessor.processTextWithUsage.mockResolvedValue({

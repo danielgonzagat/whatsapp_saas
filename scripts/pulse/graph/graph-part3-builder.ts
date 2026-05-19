@@ -25,6 +25,7 @@ import {
   matchApiCallToRoute,
   buildServiceModelMap,
   resolveRouteModels,
+  expandConsumedServiceModelClosure,
   type PulseGraphInput,
 } from './graph-part2-routing';
 import { buildApiModuleMap } from '../parsers/api-parser';
@@ -148,6 +149,12 @@ export function buildGraph(input: PulseGraphInput): PulseHealth {
     }
   }
 
+  expandConsumedServiceModelClosure(
+    consumedServiceCalls,
+    serviceModelMap,
+    serviceTraces,
+  ).forEach((model) => usedModels.add(model));
+
   expandUsedModelsWithRelations(usedModels, prismaModels);
 
   for (const model of prismaModels) {
@@ -214,7 +221,7 @@ export function buildGraph(input: PulseGraphInput): PulseHealth {
     if (!routeLookup.has(backendKey)) {
       let found = false;
       for (const [key] of routeLookup) {
-        const [, rPath] = key.split(':');
+        const rPath = key.slice(key.indexOf(':') + 1);
         if (normalizeForMatch(proxy.backendPath).startsWith(rPath)) {
           found = true;
           break;

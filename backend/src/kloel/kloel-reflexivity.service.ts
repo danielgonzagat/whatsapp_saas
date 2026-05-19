@@ -92,7 +92,9 @@ export class KloelReflexivityService {
       const key = `${p.decisionType}:${p.chosen}`;
       const entry = patternMap.get(key) ?? { count: 0, lastOutcome: null };
       entry.count += 1;
-      if (p.outcome !== null) entry.lastOutcome = p.outcome;
+      if (p.outcome !== null) {
+        entry.lastOutcome = p.outcome;
+      }
       patternMap.set(key, entry);
     }
 

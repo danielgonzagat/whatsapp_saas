@@ -27,7 +27,7 @@ export type LineageEventName =
 /**
  * Payload for a `lineage.capability_acquired` entry.
  */
-export interface CapabilityAcquiredPayload {
+interface CapabilityAcquiredPayload {
   readonly capabilityId: string;
   readonly maturity: 'developing' | 'operational' | 'productionReady';
   readonly runtimeEvidencePct: number;
@@ -37,7 +37,7 @@ export interface CapabilityAcquiredPayload {
 /**
  * Payload for a `lineage.skill_consolidated` entry.
  */
-export interface SkillConsolidatedPayload {
+interface SkillConsolidatedPayload {
   readonly skillId: string;
   readonly summary: string;
   readonly consolidatedAt: string;
@@ -46,7 +46,7 @@ export interface SkillConsolidatedPayload {
 /**
  * Payload for a `lineage.ciclo_pulse_nao_regressivo` entry.
  */
-export interface CiclePulseNonRegressivePayload {
+interface CiclePulseNonRegressivePayload {
   readonly cycleNumber: number;
   readonly score: number;
   readonly verdict: 'SIM' | 'NAO' | 'INSUFFICIENT_EVIDENCE';

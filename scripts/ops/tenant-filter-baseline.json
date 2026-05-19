@@ -1,5 +1,0 @@
-{
-  "generatedAt": "2026-05-11T15:42:00.000Z",
-  "note": "Wave A purge — historical tenant-isolation baseline cleared. CI must fail on first new violation. Wave B sweeps each fingerprint by code, not by baseline.",
-  "bugFingerprints": []
-}

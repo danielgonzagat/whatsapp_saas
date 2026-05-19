@@ -36,7 +36,7 @@ function structTension(
  * corresponding type is observed in the same correlation. Indicates the UI
  * is firing without backend persistence.
  */
-export const uiWithoutPersistenceDetector: Detector = {
+const uiWithoutPersistenceDetector: Detector = {
   name: 'structural.ui_without_persistence',
   dimension: 'structural',
   detect: (events, nowMs) => {
@@ -72,7 +72,7 @@ export const uiWithoutPersistenceDetector: Detector = {
  * STRUCT-002: a flow step started but never completed (no terminal event
  * in the same correlation within window).
  */
-export const flowWithoutValidationDetector: Detector = {
+const flowWithoutValidationDetector: Detector = {
   name: 'structural.flow_without_validation',
   dimension: 'structural',
   detect: (events, nowMs) => {
@@ -111,7 +111,7 @@ export const flowWithoutValidationDetector: Detector = {
  * STRUCT-003: action that should generate audit (e.g. owner_assigned)
  * lacks corresponding audit log evidence.
  */
-export const actionWithoutAuditDetector: Detector = {
+const actionWithoutAuditDetector: Detector = {
   name: 'structural.action_without_audit',
   dimension: 'structural',
   detect: (events, nowMs) => {
@@ -164,8 +164,8 @@ export const backendWithoutSurfaceDetector: Detector = {
     ];
     const out: Tension[] = [];
     for (const surface of knownSurfaces) {
-      const any = events.some((e) => e.eventName.startsWith(surface));
-      if (any) continue;
+      const hasSurfaceEvent = events.some((e) => e.eventName.startsWith(surface));
+      if (hasSurfaceEvent) continue;
       out.push(
         structTension(
           'structural.backend_without_surface',

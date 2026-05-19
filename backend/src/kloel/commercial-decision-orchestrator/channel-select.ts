@@ -1,8 +1,4 @@
-import {
-  allowedFormatsFor,
-  type FormatId,
-  type ToneId,
-} from '../channel-repertoire.config';
+import { allowedFormatsFor, type FormatId, type ToneId } from '../channel-repertoire.config';
 
 export function filterArsenalFormats(
   channel: string,
@@ -37,22 +33,6 @@ export function filterArsenalFormats(
     };
   }
   return { formatCandidates, decisions };
-}
-
-export function checkAudioForChannel(
-  channel: string,
-  brainAudio: { choice: string; confidence: number; fallback: boolean },
-): { choice: string; confidence: number; fallback: boolean; decisions: Record<string, unknown> } {
-  const allowedFormats = allowedFormatsFor(channel);
-  if (!allowedFormats.includes('audio')) {
-    return {
-      choice: 'text',
-      confidence: 1,
-      fallback: false,
-      decisions: { audio_skipped: 'channel-no-audio' },
-    };
-  }
-  return { ...brainAudio, decisions: {} };
 }
 
 export function intersectToneRepertoire(

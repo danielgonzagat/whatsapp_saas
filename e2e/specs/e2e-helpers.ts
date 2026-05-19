@@ -1,6 +1,7 @@
 import type { APIRequestContext, Page } from '@playwright/test';
 import fs from 'node:fs';
 import path from 'node:path';
+import { seedE2EAuthSessionWithUrls } from './e2e-auth-session';
 
 export interface E2EAuthContext {
   token: string;
@@ -201,52 +202,7 @@ export async function seedE2EAuthSession(
   page: Page,
   auth: Pick<E2EAuthContext, 'token' | 'workspaceId'>,
 ) {
-  const { appUrl, authUrl, frontendUrl, payUrl } = getE2EBaseUrls();
-  const consent = JSON.stringify({
-    necessary: true,
-    analytics: false,
-    marketing: false,
-    updatedAt: new Date(0).toISOString(),
-  });
-  const consentCookies = [...new Set([frontendUrl, authUrl, appUrl, payUrl])].map((url) => ({
-    name: 'kloel_consent',
-    value: consent,
-    url,
-    sameSite: 'Lax' as const,
-  }));
-
-  await page.context().addCookies([
-    ...consentCookies,
-    {
-      name: 'kloel_auth',
-      value: '1',
-      url: appUrl,
-      sameSite: 'Lax',
-    },
-    {
-      name: 'kloel_token',
-      value: auth.token,
-      url: appUrl,
-      sameSite: 'Lax',
-    },
-    {
-      name: 'kloel_access_token',
-      value: auth.token,
-      url: appUrl,
-      sameSite: 'Lax',
-    },
-    {
-      name: 'kloel_workspace_id',
-      value: auth.workspaceId,
-      url: appUrl,
-      sameSite: 'Lax',
-    },
-  ]);
-
-  await page.addInitScript(({ token, workspaceId }) => {
-    window.localStorage.setItem('kloel_access_token', token);
-    window.localStorage.setItem('kloel_workspace_id', workspaceId);
-  }, auth);
+  await seedE2EAuthSessionWithUrls(page, auth, getE2EBaseUrls());
 }
 
 export async function dismissCookieBanner(page: Page) {
@@ -427,7 +383,7 @@ export async function ensureE2EAdmin(request: APIRequestContext): Promise<E2EAut
         } catch {
           const cached = readCache();
           if (cached?.token && cached?.workspaceId && cached?.email) {
-            return cached as E2EAuthContext;
+            return completeOnboarding(cached as E2EAuthContext);
           }
           await sleep(250);
         }
@@ -451,6 +407,20 @@ export async function ensureE2EAdmin(request: APIRequestContext): Promise<E2EAut
         },
       });
 
+    const completeOnboarding = async (ctx: E2EAuthContext): Promise<E2EAuthContext> => {
+      const res = await request.post(`${apiUrl}/kloel/onboarding/${ctx.workspaceId}/complete`, {
+        headers: {
+          Authorization: `Bearer ${ctx.token}`,
+          'x-workspace-id': ctx.workspaceId,
+        },
+      });
+      if (!res.ok()) {
+        const body = await res.text().catch(() => '');
+        throw new Error(`E2E setup: onboarding completion failed (${res.status()}): ${body}`);
+      }
+      return ctx;
+    };
+
     const parseAuth = async (
       res: Awaited<ReturnType<typeof request.post>>,
       email: string,
@@ -464,7 +434,7 @@ export async function ensureE2EAdmin(request: APIRequestContext): Promise<E2EAut
       if (!token || !workspaceId) {
         throw new Error('E2E setup: auth did not return token/workspaceId');
       }
-      return { token, workspaceId, email, password: adminCredential };
+      return completeOnboarding({ token, workspaceId, email, password: adminCredential });
     };
 
     const validateToken = async (token: string): Promise<boolean> => {
@@ -493,7 +463,7 @@ export async function ensureE2EAdmin(request: APIRequestContext): Promise<E2EAut
       if (!getEnv('E2E_ADMIN_EMAIL') && cached?.token && cached?.workspaceId && cached?.email) {
         const ok = await validateToken(cached.token);
         if (ok) {
-          return cached as E2EAuthContext;
+          return completeOnboarding(cached as E2EAuthContext);
         }
 
         // Token expirado/invalidado: tenta login para renovar
@@ -506,7 +476,12 @@ export async function ensureE2EAdmin(request: APIRequestContext): Promise<E2EAut
       }
 
       if (!preferInteractiveAuth && envToken && envWorkspaceId) {
-        return { token: envToken, workspaceId: envWorkspaceId, email, password: adminCredential };
+        return completeOnboarding({
+          token: envToken,
+          workspaceId: envWorkspaceId,
+          email,
+          password: adminCredential,
+        });
       }
 
       // Try login (with retry for rate limiting)

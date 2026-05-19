@@ -10,7 +10,7 @@
  * but at the actual `__parts__/x.ts` location `../` resolves to
  * `scripts/pulse/foo/`, not `scripts/pulse/`.
  *
- * Heuristic: for any file under `**\/__parts__/`, rewrite `from '../X'`
+ * Heuristic: for each file under `**\/__parts__/`, rewrite `from '../X'`
  * to `from '../../X'` IF a sibling `from './<base>'` style would not
  * collide. We check whether `scripts/pulse/foo/X.ts` exists first; if it
  * does (intra-decomposition import), leave it. If not, and

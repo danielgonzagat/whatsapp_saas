@@ -14,17 +14,35 @@ interface HomeScreenProps {
 }
 
 export function HomeScreen({ onSendMessage }: HomeScreenProps) {
-  const chat = useKloelChat(
-    onSendMessage !== undefined ? { onSendMessage } : {},
-  );
+  const {
+    phase,
+    homeInput,
+    setHomeInput,
+    handleHomeSubmit,
+    chatTitle,
+    chatContainerRef,
+    messages,
+    thinkingText,
+    copiedId,
+    handleCopyMessage,
+    handleEditMessage,
+    ERROR_MESSAGE,
+    messagesEndRef,
+    chatInput,
+    setChatInput,
+    isWaitingForResponse,
+    handleChatSubmit,
+    handleStopResponse,
+    chatInputRef,
+  } = useKloelChat(onSendMessage !== undefined ? { onSendMessage } : {});
 
-  if (chat.phase === 'home' || chat.phase === 'transitioning') {
+  if (phase === 'home' || phase === 'transitioning') {
     return (
       <HomeLanding
-        phase={chat.phase}
-        homeInput={chat.homeInput}
-        onHomeInputChange={chat.setHomeInput}
-        onSubmit={chat.handleHomeSubmit}
+        phase={phase}
+        homeInput={homeInput}
+        onHomeInputChange={setHomeInput}
+        onSubmit={handleHomeSubmit}
       />
     );
   }
@@ -40,10 +58,10 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
         overflow: 'hidden',
       }}
     >
-      <ChatTitleBar title={chat.chatTitle} />
+      <ChatTitleBar title={chatTitle} />
 
       <div
-        ref={chat.chatContainerRef}
+        ref={chatContainerRef}
         style={{
           flex: 1,
           overflowY: 'auto',
@@ -62,28 +80,28 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
             gap: 20,
           }}
         >
-          {chat.messages.map((msg) => (
+          {messages.map((msg) => (
             <ChatMessageBubble
               key={msg.id}
               msg={msg}
-              thinkingText={chat.thinkingText}
-              copiedId={chat.copiedId}
-              onCopy={chat.handleCopyMessage}
-              onEdit={chat.handleEditMessage}
-              errorMessage={chat.ERROR_MESSAGE}
+              thinkingText={thinkingText}
+              copiedId={copiedId}
+              onCopy={handleCopyMessage}
+              onEdit={handleEditMessage}
+              errorMessage={ERROR_MESSAGE}
             />
           ))}
-          <div ref={chat.messagesEndRef} />
+          <div ref={messagesEndRef} />
         </div>
       </div>
 
       <ChatInputArea
-        value={chat.chatInput}
-        onChange={chat.setChatInput}
-        isWaitingForResponse={chat.isWaitingForResponse}
-        onSubmit={chat.handleChatSubmit}
-        onStop={chat.handleStopResponse}
-        inputRef={chat.chatInputRef}
+        value={chatInput}
+        onChange={setChatInput}
+        isWaitingForResponse={isWaitingForResponse}
+        onSubmit={handleChatSubmit}
+        onStop={handleStopResponse}
+        inputRef={chatInputRef}
       />
     </div>
   );

@@ -36,14 +36,14 @@ You are an OpenCode V4 Pro subagent for the Kloel Cognitive Organism mission.
 10. \`backend/src/kloel/maturity/maturity.classifier.ts\` (MATURITY consumer)
 11. \`CLAUDE.md\`
 
-If any file is missing or its checksum mismatches, STOP and report.
+If a required file is missing or its checksum mismatches, STOP and report.
 
 ## ABSOLUTE PROHIBITIONS
 
 - NO touch on frontend, *.tsx, *.vue, e2e, frontend-admin.
 - NO change to existing HTTP controller/route/DTO signature (additive only).
 - NO touch on protected files.
-- NO suppression comments / skip tags / @ts-ignore / NOSONAR.
+- NO suppression comments / skip tags / TypeScript ignore comments / static-analysis suppressions.
 - NO \`git restore\`.
 - NO new event names outside PCI.1.
 - NO \`prismaAny\` in NEW code.

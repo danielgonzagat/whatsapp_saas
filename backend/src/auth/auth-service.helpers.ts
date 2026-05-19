@@ -20,10 +20,6 @@ export function assertAgentCanAuthenticate(agent: {
   }
 }
 
-export function buildDeletedEmail(agentId: string): string {
-  return `deleted-${agentId}@removed.local`;
-}
-
 export function asJsonObject(value: Prisma.JsonValue | null | undefined): Record<string, unknown> {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
     return {};

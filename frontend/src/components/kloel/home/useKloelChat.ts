@@ -3,9 +3,19 @@ import { loadKloelThreadMessages } from '@/lib/kloel-conversations';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTypingSimulation } from './useTypingSimulation';
 import { useKloelSendMessage } from './useKloelSendMessage';
-import type { Phase, ChatMessage, UseKloelChatOptions, UseKloelChatReturn } from './HomeScreen.types';
+import type {
+  Phase,
+  ChatMessage,
+  UseKloelChatOptions,
+  UseKloelChatReturn,
+} from './HomeScreen.types';
 
-export type { Phase, ChatMessage, UseKloelChatOptions, UseKloelChatReturn } from './HomeScreen.types';
+export type {
+  Phase,
+  ChatMessage,
+  UseKloelChatOptions,
+  UseKloelChatReturn,
+} from './HomeScreen.types';
 
 const ERROR_MESSAGE = 'Nao foi possivel conectar ao servidor. Tente novamente.';
 
@@ -42,22 +52,26 @@ export function useKloelChat({ onSendMessage }: UseKloelChatOptions): UseKloelCh
     return `msg_${Date.now()}_${crypto.randomUUID().slice(0, 9)}`;
   }, []);
 
-  const { sendToApi, handleStopResponse: stopResponse, typingMessageIdRef, abortControllerRef } =
-    useKloelSendMessage({
-      activeConversationId,
-      chatTitle,
-      conversationTitleMap,
-      generateId,
-      startTyping,
-      setMessages,
-      setThinkingText,
-      setActiveConversationId,
-      setChatTitle,
-      setIsWaitingForResponse,
-      setActiveConversation,
-      upsertConversation,
-      refreshConversations,
-    });
+  const {
+    sendToApi,
+    handleStopResponse: stopResponse,
+    typingMessageIdRef,
+    abortControllerRef,
+  } = useKloelSendMessage({
+    activeConversationId,
+    chatTitle,
+    conversationTitleMap,
+    generateId,
+    startTyping,
+    setMessages,
+    setThinkingText,
+    setActiveConversationId,
+    setChatTitle,
+    setIsWaitingForResponse,
+    setActiveConversation,
+    upsertConversation,
+    refreshConversations,
+  });
 
   useEffect(() => {
     if (isTyping && messagesEndRef.current) {
@@ -83,14 +97,14 @@ export function useKloelChat({ onSendMessage }: UseKloelChatOptions): UseKloelCh
         ),
       );
     }
-  }, [displayedText, isTyping, isDone]);
+  }, [displayedText, isTyping, isDone, typingMessageIdRef]);
 
   useEffect(() => {
     if (isDone) {
-      setIsWaitingForResponse(false);
+      queueMicrotask(() => setIsWaitingForResponse(false));
       typingMessageIdRef.current = null;
     }
-  }, [isDone]);
+  }, [isDone, typingMessageIdRef]);
 
   const handleHomeSubmit = useCallback(() => {
     if (!homeInput.trim()) {

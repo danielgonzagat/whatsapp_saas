@@ -22,7 +22,7 @@ export interface SilenceConfig {
   readonly maxSilentInteractions: number;
 }
 
-export const DEFAULT_SILENCE_CONFIG: SilenceConfig = {
+const DEFAULT_SILENCE_CONFIG: SilenceConfig = {
   fatigueSilenceThreshold: 0.7,
   desperationSilenceThreshold: 0.6,
   trustFloorForSilence: 0.2,
@@ -114,7 +114,7 @@ export function decideSilence(
   if (state.silentInteractionsCount > cfg.maxSilentInteractions) {
     return silenceRemain({
       reason: `silent interactions ${state.silentInteractionsCount} exceeds max ${cfg.maxSilentInteractions} — stop reaching out`,
-      safeNextStep: 'wait for lead to re-engage before any new outbound',
+      safeNextStep: 'wait for lead to re-engage before every new outbound',
       rollback: 'resume when lead sends a message',
       leadOutcomeGuardrail:
         'do not initiate new outbound until lead replies first',

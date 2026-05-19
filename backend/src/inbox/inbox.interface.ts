@@ -2,7 +2,7 @@
  * Minimal contract the inbox saver exposes to callers. The Prisma message
  * shape is wider, but reconcilers only need contactId + id projections.
  */
-export interface InboxSavedMessage {
+interface InboxSavedMessage {
   id: string;
   contactId: string;
 }

@@ -144,7 +144,7 @@ function findNearestTsconfig(absFile: string, repoRoot: string): string | undefi
 /**
  * True cross-file, scope-correct rename via the TypeScript language service
  * (loaded from the nearest tsconfig). All-or-nothing: every touched file is
- * revalidated; if any would regress syntactically, NOTHING is written and the
+ * revalidated; if a would regress syntactically, NOTHING is written and the
  * caller is told which file failed.
  */
 export async function renameSymbolCrossFile(

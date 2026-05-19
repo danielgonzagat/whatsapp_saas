@@ -1,4 +1,4 @@
-export type VtierStatus = 'PASS' | 'FAIL' | 'INSUFFICIENT_EVIDENCE';
+type VtierStatus = 'PASS' | 'FAIL' | 'INSUFFICIENT_EVIDENCE';
 
 export type VtierOverall = 'PASS' | 'PARTIAL' | 'FAIL';
 
@@ -18,5 +18,3 @@ export interface VtierCertificationResult {
   readonly certificationId: string;
   readonly certifiedAt: string;
 }
-
-export type { VtierStatus as VtierVerdictStatus };

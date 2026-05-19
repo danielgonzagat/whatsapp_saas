@@ -1,3 +1,4 @@
+import { expectValueOf } from '../../test/expect-value-of';
 import { AccountAgentService } from './account-agent.service';
 import { ACCOUNT_CAPABILITY_REGISTRY } from './account-agent.registry';
 import {
@@ -163,8 +164,8 @@ describe('AccountAgentService', () => {
           name: 'serum',
           paymentLink: 'https://pay.test/serum-start',
           metadata: expect.objectContaining({
-            faq: expect.any(Array),
-            offers: expect.any(Array),
+            faq: expectValueOf(Array),
+            offers: expectValueOf(Array),
           }),
         }),
       }),
@@ -176,7 +177,7 @@ describe('AccountAgentService', () => {
         workspaceId: 'ws-1',
         contactId: 'contact-1',
       }),
-      expect.any(Object),
+      expectValueOf(Object),
     );
     expect(agentEvents.publish).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -220,7 +221,7 @@ describe('AccountAgentService', () => {
     const updateArgs = prisma.kloelMemory.update.mock.calls.at(-1)?.[0];
     expect(updateArgs.data.metadata).toEqual({
       status: 'APPROVED',
-      inputSessionId: expect.any(String),
+      inputSessionId: expectValueOf(String),
     });
   });
 

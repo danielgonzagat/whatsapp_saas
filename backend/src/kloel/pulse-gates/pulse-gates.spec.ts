@@ -160,7 +160,7 @@ describe('PULSE gates — lineage-integrity + origin-immutability', () => {
 
   it('lineage-integrity FAIL when ledger is broken', async () => {
     const { repo, guard } = await build();
-    const internal = (repo as unknown as { entries: LineageEntry[] }).entries;
+    const internal = (repo as { entries: LineageEntry[] }).entries;
     internal[0] = { ...internal[0]!, hash: 'a'.repeat(64) };
     const v = await makeLineageIntegrityGate(guard).check();
     expect(v.status).toBe('FAIL');
@@ -174,7 +174,7 @@ describe('PULSE gates — lineage-integrity + origin-immutability', () => {
 
   it('origin-immutability FAIL when ledger Genesis tampered', async () => {
     const { repo, guard } = await build();
-    const internal = (repo as unknown as { entries: LineageEntry[] }).entries;
+    const internal = (repo as { entries: LineageEntry[] }).entries;
     internal[0] = {
       ...internal[0]!,
       payload: { ...internal[0]!.payload, canonicalName: 'NotKloel' } as never,

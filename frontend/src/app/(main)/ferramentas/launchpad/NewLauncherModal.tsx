@@ -2,7 +2,7 @@
 
 import { kloelT } from '@/lib/i18n/t';
 import { colors } from '@/lib/design-tokens';
-import { launchApi } from '@/lib/api/launch';
+import { launchApi, type Launcher } from '@/lib/api/launch';
 import { useState, useId } from 'react';
 
 const SORA = "'Sora', sans-serif";
@@ -10,7 +10,7 @@ const EMBER = colors.ember.primary;
 
 interface NewLauncherModalProps {
   onClose: () => void;
-  onCreated: () => void;
+  onCreated: (launcher: Launcher) => void;
 }
 
 export function NewLauncherModal({ onClose, onCreated }: NewLauncherModalProps) {
@@ -35,7 +35,10 @@ export function NewLauncherModal({ onClose, onCreated }: NewLauncherModalProps) 
       if (res.error) {
         throw new Error(res.error);
       }
-      onCreated();
+      if (!res.data) {
+        throw new Error('Launcher criado sem payload de retorno');
+      }
+      onCreated(res.data);
       onClose();
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Erro ao criar launcher');

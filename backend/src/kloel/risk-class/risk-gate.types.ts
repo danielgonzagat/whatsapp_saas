@@ -2,7 +2,7 @@
  * OC-ORPHAN-14: Risk Gate Behavioral Contract Types.
  *
  * RiskGateService wraps RiskClassService to produce an execution-gate
- * decision before any R2/R3/R4 action executes. This closes the gap
+ * decision before every R2/R3/R4 action executes. This closes the gap
  * where RiskClassService existed but zero production code consulted it.
  *
  * Part of Camada XIII — UTP-DELEG-001.

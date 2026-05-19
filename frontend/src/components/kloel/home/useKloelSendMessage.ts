@@ -137,9 +137,7 @@ export function useKloelSendMessage(deps: UseKloelSendMessageDeps) {
 
         setTimeout(() => {
           deps.setMessages((prev) =>
-            prev.map((msg) =>
-              msg.id === assistantId ? { ...msg, content: fullContent } : msg,
-            ),
+            prev.map((msg) => (msg.id === assistantId ? { ...msg, content: fullContent } : msg)),
           );
           deps.startTyping(fullContent);
         }, thinkDuration);
@@ -164,9 +162,7 @@ export function useKloelSendMessage(deps: UseKloelSendMessageDeps) {
 
           setTimeout(() => {
             deps.setMessages((prev) =>
-              prev.map((msg) =>
-                msg.id === assistantId ? { ...msg, content: fallbackText } : msg,
-              ),
+              prev.map((msg) => (msg.id === assistantId ? { ...msg, content: fallbackText } : msg)),
             );
             deps.startTyping(fallbackText);
           }, thinkDuration);
@@ -191,21 +187,7 @@ export function useKloelSendMessage(deps: UseKloelSendMessageDeps) {
         }
       }
     },
-    [
-      deps.activeConversationId,
-      deps.chatTitle,
-      deps.conversationTitleMap,
-      deps.generateId,
-      deps.startTyping,
-      deps.setMessages,
-      deps.setThinkingText,
-      deps.setActiveConversationId,
-      deps.setChatTitle,
-      deps.setIsWaitingForResponse,
-      deps.setActiveConversation,
-      deps.upsertConversation,
-      deps.refreshConversations,
-    ],
+    [deps],
   );
 
   const handleStopResponse = useCallback(() => {

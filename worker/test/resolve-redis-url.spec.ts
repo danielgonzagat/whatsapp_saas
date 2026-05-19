@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
   RedisConfigurationError,
   describeRedisResolution,
+  isRedisConfigured,
   resolveRedisUrl,
 } from '../resolve-redis-url';
 
@@ -54,6 +55,7 @@ describe('resolveRedisUrl', () => {
   });
 
   it('keeps localhost fallback for plain development runtimes', () => {
+    expect(isRedisConfigured()).toBe(false);
     expect(resolveRedisUrl()).toBe('redis://localhost:6379');
     expect(describeRedisResolution().mode).toBe('auto');
   });

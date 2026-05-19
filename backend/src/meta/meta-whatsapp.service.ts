@@ -11,17 +11,17 @@ import { OpsAlertService } from '../observability/ops-alert.service';
 import { MetaSdkService } from './meta-sdk.service';
 import { decryptMetaToken } from './meta-token-crypto';
 import { asProviderSettings } from '../whatsapp/provider-settings.types';
-import { readRecord, readStrictText } from './__companions__/meta-read-helpers';
+import { readRecord, readStrictText } from './read-model/meta-read-helpers';
 import {
   resolveOAuthRedirect,
   resolvePublicBackendBaseUrl,
   type ResolvedOAuthRedirect,
-} from './__parts__/meta-oauth-url.helpers';
-import { runMetaStartupCheck } from './__parts__/meta-startup-check';
+} from './oauth/meta-oauth-url.helpers';
+import { runMetaStartupCheck } from './startup/meta-startup-check';
 import {
   getRequestedScopesForChannel,
   type MetaMarketingChannel,
-} from './__parts__/meta-scopes.helpers';
+} from './oauth/meta-scopes.helpers';
 const D_RE = /\D/g;
 type ResolvedMetaConnection = {
   workspaceId: string;

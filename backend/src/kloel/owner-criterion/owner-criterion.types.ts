@@ -189,18 +189,6 @@ export interface OwnerCriterionProjection {
   readonly observationWindows: number;
 }
 
-export interface CriterionEvidence {
-  readonly criterionName: string;
-  readonly workspaceId: string;
-  readonly observationCount: number;
-  readonly firstObservedAt: string;
-  readonly lastObservedAt: string;
-  readonly confidence: number;
-  readonly stabilityScore: number;
-  readonly notablePatterns: readonly string[];
-  readonly generatedAt: string;
-}
-
 export interface ObserverInput {
   readonly events: readonly SpineEventRef[];
   readonly workspaceId: string;

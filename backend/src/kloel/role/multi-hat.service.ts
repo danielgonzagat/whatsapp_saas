@@ -25,7 +25,7 @@ export class MultiHatService {
    *
    * Combines all detected roles into a single profile that exposes
    * the primary role, secondary roles, the combined lever set,
-   * and the hat-stack depth (how many roles stacked).
+   * and the hat-stack depth (how man opted-in roles stacked).
    */
   public buildProfile(input: {
     readonly detections: readonly RoleDetection[];

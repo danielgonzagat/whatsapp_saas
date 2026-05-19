@@ -14,7 +14,7 @@ import type { Insight } from '../insight/insight.types';
 import type { MaturityStage } from '../maturity/maturity.types';
 import { type RankedWOWInsight } from './wow.types';
 
-export type WowUrgency = 'immediate' | 'first_session' | 'first_week';
+type WowUrgency = 'immediate' | 'first_session' | 'first_week';
 
 function computeUrgency(impactConfidenceProduct: number, maturityStage: MaturityStage): WowUrgency {
   if (maturityStage === 'validacao' || maturityStage === 'tracao') {

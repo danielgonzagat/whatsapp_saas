@@ -1,3 +1,4 @@
+import { expectValueOf } from '../../test/expect-value-of';
 import { CiaRuntimeService } from './cia-runtime.service';
 import {
   makePrismaMock,
@@ -123,7 +124,7 @@ describe('CiaRuntimeService', () => {
         mode: 'reply_all_recent_first',
         limit: 2,
       }),
-      expect.any(Object),
+      expectValueOf(Object),
     );
     expect(prisma.workspace.update).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -174,10 +175,10 @@ describe('CiaRuntimeService', () => {
       expect.objectContaining({
         businessState: expect.objectContaining({ openBacklog: 12 }),
         marketSignals: [expect.objectContaining({ normalizedKey: 'price_resistance' })],
-        humanTasks: [expect.any(Object)],
-        demandStates: [expect.any(Object)],
+        humanTasks: [expectValueOf(Object)],
+        demandStates: [expectValueOf(Object)],
         insights: [expect.objectContaining({ type: 'CIA_MARKET_SIGNAL' })],
-        runtime: expect.any(Object),
+        runtime: expectValueOf(Object),
         autonomy: expect.anything(),
       }),
     );
@@ -239,7 +240,7 @@ describe('CiaRuntimeService', () => {
         workspaceId: 'ws-1',
         days: 30,
       }),
-      expect.any(Object),
+      expectValueOf(Object),
     );
   });
 
@@ -292,7 +293,7 @@ describe('CiaRuntimeService', () => {
         workspaceId: 'ws-1',
         limit: 1,
       }),
-      expect.any(Object),
+      expectValueOf(Object),
     );
   });
 
@@ -322,7 +323,7 @@ describe('CiaRuntimeService', () => {
       expect.objectContaining({
         workspaceId: 'ws-1',
       }),
-      expect.any(Object),
+      expectValueOf(Object),
     );
   });
 
@@ -351,7 +352,7 @@ describe('CiaRuntimeService', () => {
       expect.objectContaining({
         workspaceId: 'ws-1',
       }),
-      expect.any(Object),
+      expectValueOf(Object),
     );
   });
 
@@ -422,7 +423,7 @@ describe('CiaRuntimeService', () => {
       expect.objectContaining({
         workspaceId: 'ws-1',
       }),
-      expect.any(Object),
+      expectValueOf(Object),
     );
     expect(agentEvents.publish).toHaveBeenCalledWith(
       expect.objectContaining({

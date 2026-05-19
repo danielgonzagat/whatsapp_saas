@@ -5,8 +5,6 @@
  * Zero vazamento de conhecimento entre clientes.
  */
 
-export type ClientHealthStatus = 'healthy' | 'at_risk' | 'critical' | 'dormant' | 'offboarded';
-
 export type PriorityTier = 'agora' | 'esta_semana' | 'em_breve' | 'sustentar';
 
 export type ChurnRiskLevel = 'low' | 'moderate' | 'high' | 'critical';
@@ -15,7 +13,7 @@ export type MarginTrend = 'improving' | 'stable' | 'declining' | 'negative';
 
 export type LeakSeverity = 'none' | 'low' | 'moderate' | 'high' | 'critical';
 
-export type HandoffUrgency = 'now' | 'this_week' | 'next_week' | 'background';
+type HandoffUrgency = 'now' | 'this_week' | 'next_week' | 'background';
 
 export interface ClientContextBundle {
   readonly clientId: string;
@@ -213,15 +211,12 @@ export const CHURN_HIGH_THRESHOLD = 0.5;
 export const CHURN_MODERATE_THRESHOLD = 0.3;
 export const OVERLOAD_THRESHOLD = 0.85;
 export const UNDERLOAD_THRESHOLD = 0.3;
-export const LEAK_CHECK_FIELDS: readonly string[] = [
+export const LEAK_CHECK_FIELDS = [
   'clientName',
   'monthlyRevenueCents',
   'openIssues',
   'satisfactionScore',
-];
-export const MAX_DAYS_WITHOUT_CONTACT_BEFORE_AT_RISK = 14;
-export const MAX_DAYS_WITHOUT_CONTACT_BEFORE_CRITICAL = 30;
-
+] as const satisfies readonly (keyof ClientContextBundle)[];
 export function clamp(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));
 }

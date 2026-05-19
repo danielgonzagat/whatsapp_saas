@@ -20,9 +20,9 @@ export function normalizeJsonObjExt(value: unknown): Record<string, unknown> {
   }
   if (typeof value === 'string') {
     try {
-      const p = JSON.parse(value);
-      if (p && typeof p === 'object' && !Array.isArray(p)) {
-        return p as Record<string, unknown>;
+      const parsed: unknown = JSON.parse(value);
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+        return parsed as Record<string, unknown>;
       }
     } catch {
       return {};
@@ -114,8 +114,4 @@ export function normalizeHashExt(text: string): string {
   return Buffer.from(text || '')
     .toString('base64')
     .slice(0, 32);
-}
-
-export function normalizeNumberExt(num: string): string {
-  return num.replace(D_RE, '');
 }

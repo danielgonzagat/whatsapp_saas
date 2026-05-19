@@ -41,5 +41,3 @@ export interface ChannelTransportProvider {
 
   isConfigured(): boolean;
 }
-
-export const CHANNEL_TRANSPORT_REGISTRY = Symbol('CHANNEL_TRANSPORT_REGISTRY');

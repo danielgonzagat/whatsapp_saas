@@ -1,10 +1,4 @@
-import {
-  CallHandler,
-  ExecutionContext,
-  Injectable,
-  NestInterceptor,
-  SetMetadata,
-} from '@nestjs/common';
+import { CallHandler, ExecutionContext, Injectable, NestInterceptor } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { Observable } from 'rxjs';
 import { tap } from 'rxjs/operators';
@@ -54,10 +48,6 @@ function readHeader(headers: unknown, key: string): string | undefined {
 function readResourceId(response: unknown, params: unknown): string | undefined {
   return readStringProperty(response, 'id') ?? readStringProperty(params, 'id');
 }
-
-/** Audit action. */
-export const AuditAction = (action: string, resource: string) =>
-  SetMetadata(AUDIT_ACTION_METADATA, { action, resource });
 
 /** Audit interceptor. */
 @Injectable()

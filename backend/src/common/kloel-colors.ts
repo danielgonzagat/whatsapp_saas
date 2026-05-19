@@ -27,31 +27,6 @@ export const BRAND_COLORS = {
 } as const;
 
 // ─────────────────────────────────────────────────────────────────
-// EMAIL TEMPLATE COLORS
-// ─────────────────────────────────────────────────────────────────
-
-export const EMAIL_COLORS = {
-  /** Outer email wrapper background (light theme). */
-  OUTER_BG: '#f5f5f5',
-  /** Alternative outer wrapper background. */
-  OUTER_BG_ALT: '#f6f6f6',
-  /** Inner card background (light theme). */
-  CARD_BG: '#ffffff',
-  /** Heading text (light theme). */
-  HEADING: '#1a1a1a',
-  /** Heading text (dark-slate variant). */
-  HEADING_DARK: '#0f172a',
-  /** Body paragraph text. */
-  BODY_TEXT: '#666',
-  /** Footer / muted text. */
-  FOOTER_TEXT: '#999',
-  /** Slate-500 — label text. */
-  LABEL_SLATE: '#64748b',
-  /** Slate-700 — paragraph text on light cards. */
-  PARAGRAPH_SLATE: '#334155',
-} as const;
-
-// ─────────────────────────────────────────────────────────────────
 // PIPELINE / CRM STAGE DEFAULTS
 // ─────────────────────────────────────────────────────────────────
 

@@ -69,14 +69,14 @@ export function VendasView({ defaultTab = 'vendas' }: VendasViewProps) {
 
   useEffect(() => {
     if (prevDefaultV.current !== defaultTab) {
-      setTab(defaultTab);
+      queueMicrotask(() => setTab(defaultTab));
       prevDefaultV.current = defaultTab;
     }
   }, [defaultTab]);
 
   useEffect(() => {
     if (requestedTab && requestedTab !== tab) {
-      setTab(requestedTab);
+      queueMicrotask(() => setTab(requestedTab));
     }
   }, [requestedTab, tab]);
 
@@ -271,10 +271,7 @@ export function VendasView({ defaultTab = 'vendas' }: VendasViewProps) {
         actionLoading={actionLoading}
       />
       {showSmartPayment && (
-        <SmartPaymentModal
-          workspaceId={workspaceId}
-          onClose={() => setShowSmartPayment(false)}
-        />
+        <SmartPaymentModal workspaceId={workspaceId} onClose={() => setShowSmartPayment(false)} />
       )}
 
       <OrderAlertsBanner
@@ -328,10 +325,7 @@ export function VendasView({ defaultTab = 'vendas' }: VendasViewProps) {
         )}
         {tab === 'estrategias' && estrategiasTabContent}
         {tab === 'pipeline' && (
-          <PipelineTab
-            stages={salesStages as PipelineStage[]}
-            isLoading={salesPipelineLoading}
-          />
+          <PipelineTab stages={salesStages as PipelineStage[]} isLoading={salesPipelineLoading} />
         )}
       </div>
     </div>

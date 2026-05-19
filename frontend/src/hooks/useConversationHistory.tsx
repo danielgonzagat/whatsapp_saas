@@ -144,7 +144,9 @@ export function ConversationHistoryProvider({ children }: { children: ReactNode 
     setConversations((prev) => {
       const existing = new Map(prev.map((c) => [c.id, c]));
       for (const conv of incoming) {
-        if (!isValidConversationId(conv?.id)) continue;
+        if (!isValidConversationId(conv?.id)) {
+          continue;
+        }
         existing.set(conv.id, normalizeConversation(conv));
       }
       return sortConversations(Array.from(existing.values()));

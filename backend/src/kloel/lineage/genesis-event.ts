@@ -37,7 +37,7 @@ export const GENESIS_EVENT_ID = '01JD90000000000000000000GE' as const;
 /**
  * Canonical etymology — Greek `kléos` + Hebrew `El`.
  */
-export interface GenesisEtymology {
+interface GenesisEtymology {
   readonly greek: { readonly word: string; readonly meaning: string };
   readonly hebrew: { readonly word: string; readonly meaning: string };
   readonly synthesis: string;
@@ -46,7 +46,7 @@ export interface GenesisEtymology {
 /**
  * Canonical origin — nature, inception, author posture.
  */
-export interface GenesisOrigin {
+interface GenesisOrigin {
   readonly nature: string;
   readonly inception: string;
   readonly authorPosture: string;
@@ -56,7 +56,7 @@ export interface GenesisOrigin {
  * Canonical steward — the human posture preserving origin without dictating
  * behavior.
  */
-export interface GenesisSteward {
+interface GenesisSteward {
   readonly role: string;
   readonly responsibility: string;
   readonly posture: string;
@@ -65,12 +65,7 @@ export interface GenesisSteward {
 /**
  * Inviolable field names — payload keys that MUST never be mutated.
  */
-export type GenesisInviolableField =
-  | 'canonicalName'
-  | 'etymology'
-  | 'origin'
-  | 'steward'
-  | 'inviolable';
+type GenesisInviolableField = 'canonicalName' | 'etymology' | 'origin' | 'steward' | 'inviolable';
 
 /**
  * Evolvable field names — payload keys describing the operational state of
@@ -78,12 +73,7 @@ export type GenesisInviolableField =
  * other parts of the cognitive substrate (capabilities, memory, beliefs,
  * valence, operationalState). Listed here for clarity of contract.
  */
-export type GenesisEvolvableField =
-  | 'capabilities'
-  | 'memory'
-  | 'valence'
-  | 'beliefs'
-  | 'operationalState';
+type GenesisEvolvableField = 'capabilities' | 'memory' | 'valence' | 'beliefs' | 'operationalState';
 
 /**
  * The immutable payload of the Genesis Event.
@@ -140,10 +130,8 @@ const GENESIS_PAYLOAD: GenesisPayload = Object.freeze({
   }),
   steward: Object.freeze({
     role: 'humano-mordomo',
-    responsibility:
-      'governança, rollback, autorização de evolução composta',
-    posture:
-      'preservador de origem, não ditador de comportamento',
+    responsibility: 'governança, rollback, autorização de evolução composta',
+    posture: 'preservador de origem, não ditador de comportamento',
   }),
   inviolable: Object.freeze([
     'canonicalName',
@@ -210,12 +198,11 @@ export const GENESIS_EVENT: GenesisEvent = Object.freeze({
     processor: 'lineage-bootstrap',
     processorVersion: GENESIS_PROCESSOR_VERSION,
     schemaVersion: GENESIS_SCHEMA_VERSION,
-    environment:
-      (process.env['NODE_ENV'] === 'production'
-        ? 'prod'
-        : process.env['NODE_ENV'] === 'staging'
-          ? 'staging'
-          : 'dev') as 'dev' | 'staging' | 'prod',
+    environment: (process.env['NODE_ENV'] === 'production'
+      ? 'prod'
+      : process.env['NODE_ENV'] === 'staging'
+        ? 'staging'
+        : 'dev') as 'dev' | 'staging' | 'prod',
   }),
   valence: 'neutral',
   payload: GENESIS_PAYLOAD,

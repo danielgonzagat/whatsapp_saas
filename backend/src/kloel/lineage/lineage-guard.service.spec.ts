@@ -69,7 +69,7 @@ describe('LineageGuardService', () => {
     const all = (await repo.listAll()) as readonly LineageEntry[];
     // Direct write via private internals — simulating storage tamper.
     const internalEntries = (
-      repo as unknown as { entries: LineageEntry[] }
+      repo as { entries: LineageEntry[] }
     ).entries;
     const tampered: LineageEntry = {
       ...all[0]!,
@@ -99,7 +99,7 @@ describe('LineageGuardService', () => {
         acquiredVia: 't',
       },
     });
-    const internal = (repo as unknown as { entries: LineageEntry[] }).entries;
+    const internal = (repo as { entries: LineageEntry[] }).entries;
     internal[1] = { ...internal[1]!, prevEntryHash: 'b'.repeat(64) };
     const v = await guard.verify();
     expect(v.status).toBe('compromised');
@@ -122,7 +122,7 @@ describe('LineageGuardService', () => {
         acquiredVia: 't',
       },
     });
-    const internal = (repo as unknown as { entries: LineageEntry[] }).entries;
+    const internal = (repo as { entries: LineageEntry[] }).entries;
     internal[1] = { ...internal[1]!, sequenceNumber: 99 };
     const v = await guard.verify();
     expect(v.status).toBe('compromised');
@@ -144,7 +144,7 @@ describe('LineageGuardService', () => {
         acquiredVia: 't',
       },
     });
-    const internal = (repo as unknown as { entries: LineageEntry[] }).entries;
+    const internal = (repo as { entries: LineageEntry[] }).entries;
     internal[1] = { ...internal[1]!, hash: 'a'.repeat(64) };
     const v = await guard.verify();
     expect(v.status).toBe('compromised');
@@ -154,7 +154,7 @@ describe('LineageGuardService', () => {
   it('detects entry 1 with non-genesis eventName', async () => {
     const { service, repo, guard } = build();
     await service.bootstrapGenesis();
-    const internal = (repo as unknown as { entries: LineageEntry[] }).entries;
+    const internal = (repo as { entries: LineageEntry[] }).entries;
     internal[0] = {
       ...internal[0]!,
       eventName: 'lineage.capability_acquired' as never,
@@ -167,7 +167,7 @@ describe('LineageGuardService', () => {
   it('detects entry 1 with non-zero prevEntryHash', async () => {
     const { service, repo, guard } = build();
     await service.bootstrapGenesis();
-    const internal = (repo as unknown as { entries: LineageEntry[] }).entries;
+    const internal = (repo as { entries: LineageEntry[] }).entries;
     internal[0] = { ...internal[0]!, prevEntryHash: 'a'.repeat(64) };
     const v = await guard.verify();
     expect(v.status).toBe('compromised');

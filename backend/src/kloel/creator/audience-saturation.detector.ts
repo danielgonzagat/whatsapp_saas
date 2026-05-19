@@ -24,7 +24,7 @@ export interface SaturationConfig {
   readonly silenceDecayMinutes: number;
 }
 
-export const DEFAULT_SATURATION_CONFIG: SaturationConfig = {
+const DEFAULT_SATURATION_CONFIG: SaturationConfig = {
   recentWindowMinutes: 4320,
   maxRecentEvents: 50,
   saturationThreshold: 0.5,

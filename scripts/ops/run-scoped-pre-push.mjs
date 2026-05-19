@@ -149,19 +149,18 @@ const repoInfraChanged =
   ]) || hasPrefix(changedFiles, ['scripts/ops/']);
 
 const frontendChanged =
-  repoInfraChanged ||
   hasExact(changedFiles, ['frontend/package.json', 'frontend/package-lock.json']) ||
   hasPrefix(changedFiles, ['frontend/']);
 
 const backendChanged =
-  repoInfraChanged ||
   hasExact(changedFiles, ['backend/package.json', 'backend/package-lock.json']) ||
   hasPrefix(changedFiles, ['backend/']);
 
 const workerChanged =
-  repoInfraChanged ||
   hasExact(changedFiles, ['worker/package.json', 'worker/package-lock.json']) ||
   hasPrefix(changedFiles, ['worker/']);
+
+const codeChanged = frontendChanged || backendChanged || workerChanged;
 
 runStep('Guard DB push', 'npm run guard:db-push');
 runStep('Guard commit messages', 'npm run commit-msg:check');

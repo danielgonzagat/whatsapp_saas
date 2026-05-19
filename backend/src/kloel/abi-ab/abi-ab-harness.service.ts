@@ -1,23 +1,9 @@
 import { Inject, Injectable, Logger, Optional } from '@nestjs/common';
-import type {
-  AbClaimEvidence,
-  AbCommercialOutcome,
-  AbCommercialOutcomeDetectorFn,
-  AbHarnessRecord,
-  AbPathRunnerFn,
-  AbPathRunnerResult,
-  AbPromotionDecision,
-  AbRCriterionDelta,
-  AbRCriterionDescriptor,
-  AbRCriterionName,
-} from './abi-ab.types';
-
+import type { AbClaimEvidence, AbCommercialOutcome, AbCommercialOutcomeDetectorFn, AbHarnessRecord, AbPathRunnerFn, AbPathRunnerResult, AbPromotionDecision, AbRCriterionDelta, AbRCriterionDescriptor, AbRCriterionName } from './abi-ab.types';
 export const ABI_PATH_RUNNER = Symbol('ABI_PATH_RUNNER');
 export const ABI_COMMERCIAL_OUTCOME_DETECTOR = Symbol('ABI_COMMERCIAL_OUTCOME_DETECTOR');
-
 const PROMOTION_MIN_SAMPLES = 100;
 const PROMOTION_MIN_IMPROVED_CRITERIA = 3;
-
 const R_CRITERIA: AbRCriterionDescriptor[] = [
   { name: 'R1', family: 'GoalField', description: 'Commercial recovery' },
   { name: 'R2', family: 'GoalField', description: 'Reduced human work' },
@@ -58,35 +44,28 @@ const R_CRITERIA: AbRCriterionDescriptor[] = [
   { name: 'R37', family: 'Legitimacy', description: 'Operational legitimacy' },
   { name: 'R38', family: 'Incentive', description: 'Incentive integrity' },
 ];
-
 function generateId(): string {
   return `rec_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
 }
-
 function sum(arr: number[]): number {
   return arr.reduce((a, b) => a + b, 0);
 }
-
 function avg(arr: number[], fallback: number = 0): number {
   if (arr.length === 0) return fallback;
   return sum(arr) / arr.length;
 }
-
 function ratio(numerator: number, denominator: number, fallback: number = 0): number {
   if (denominator === 0) return fallback;
   return numerator / denominator;
 }
-
 function clamp01(value: number): number {
   if (value <= 0) return 0;
   if (value >= 1) return 1;
   return value;
 }
-
 function extractClaimsFromText(text: string): AbClaimEvidence[] {
   const claims: AbClaimEvidence[] = [];
   const sentences = text.split(/[.!?]+/).filter((s) => s.trim().length > 10);
-
   for (const sentence of sentences) {
     const trimmed = sentence.trim();
     const hasProof = /segundo|de acordo com|conforme|fonte|dados mostram|pesquisa|relat.rio|evid.ncia/i.test(trimmed);
@@ -96,38 +75,29 @@ function extractClaimsFromText(text: string): AbClaimEvidence[] {
       proofSource: hasProof ? 'text-reference' : null,
     });
   }
-
   return claims;
 }
-
 function estimateCommercialOutcome(params: {
   readonly responseText: string;
   readonly workspaceId: string;
 }): AbCommercialOutcome | null {
   const text = params.responseText.toLowerCase();
-
   const conversionKeywords = ['comprar', 'clique aqui', 'aproveite', 'oferta', 'desconto', 'adquirir', 'garantir', 'última chance', 'exclusivo', 'compre agora'];
   const satisfactionKeywords = ['obrigado', 'obrigada', 'excelente', 'satisfeito', 'gostei', 'perfeito', 'resolvido', 'ajudou', 'agradeço', 'valeu'];
-
   const hasConversion = conversionKeywords.some((kw) => text.includes(kw));
   const hasSatisfaction = satisfactionKeywords.some((kw) => text.includes(kw));
-
   if (!hasConversion && !hasSatisfaction) return null;
-
   return {
     conversionSignal: hasConversion,
     satisfactionSignal: hasSatisfaction ? hasSatisfaction : null,
   };
 }
-
 @Injectable()
 export class AbiAbHarnessService {
   private readonly logger = new Logger(AbiAbHarnessService.name);
   private readonly store = new Map<string, AbHarnessRecord[]>();
-
   private readonly pathRunner: AbPathRunnerFn;
   private readonly commercialOutcomeDetector: AbCommercialOutcomeDetectorFn;
-
   constructor(
     @Optional() @Inject(ABI_PATH_RUNNER) pathRunner: AbPathRunnerFn | null,
     @Optional() @Inject(ABI_COMMERCIAL_OUTCOME_DETECTOR) commercialOutcomeDetector: AbCommercialOutcomeDetectorFn | null,
@@ -135,14 +105,12 @@ export class AbiAbHarnessService {
     this.pathRunner = pathRunner ?? this.noopPathRunner;
     this.commercialOutcomeDetector = commercialOutcomeDetector ?? estimateCommercialOutcome;
   }
-
   private readonly noopPathRunner: AbPathRunnerFn = async () => ({
     success: false,
     latencyMs: 0,
     tokensUsed: 0,
     responseText: 'ABI_PATH_RUNNER not configured',
   });
-
   public async runParallel(
     workspaceId: string,
     userMessage: string,
@@ -151,30 +119,23 @@ export class AbiAbHarnessService {
       this.pathRunner({ workspaceId, userMessage, useAbi: false }),
       this.pathRunner({ workspaceId, userMessage, useAbi: true }),
     ]);
-
     const baselineRecord = this.buildRecord(workspaceId, userMessage, false, baselineResult);
     const variantRecord = this.buildRecord(workspaceId, userMessage, true, variantResult);
-
     this.record(baselineRecord);
     this.record(variantRecord);
-
     this.logger.debug(
       `parallel run complete ws=${workspaceId} baseline=${baselineRecord.recordId} variant=${variantRecord.recordId}`,
     );
-
     return { baseline: baselineRecord, variant: variantRecord };
   }
-
   public record(record: AbHarnessRecord): void {
     const records = this.store.get(record.workspaceId) ?? [];
     records.push(record);
     this.store.set(record.workspaceId, records);
   }
-
   public getRecordsForWorkspace(workspaceId: string): AbHarnessRecord[] {
     return this.store.get(workspaceId) ?? [];
   }
-
   public hallucinatedFacts(records: AbHarnessRecord[]): number {
     let count = 0;
     for (const r of records) {
@@ -184,7 +145,6 @@ export class AbiAbHarnessService {
     }
     return count;
   }
-
   public totalClaims(records: AbHarnessRecord[]): number {
     let count = 0;
     for (const r of records) {
@@ -192,20 +152,16 @@ export class AbiAbHarnessService {
     }
     return count;
   }
-
   public hallucinationRate(records: AbHarnessRecord[]): number {
     const total = this.totalClaims(records);
     if (total === 0) return 0;
     return this.hallucinatedFacts(records) / total;
   }
-
   public computeRDelta(workspaceId: string): AbRCriterionDelta[] {
     const records = this.getRecordsForWorkspace(workspaceId);
     const deltas: AbRCriterionDelta[] = [];
-
     const baseline = records.filter((r) => !r.abiUsed);
     const variant = records.filter((r) => r.abiUsed);
-
     if (baseline.length === 0 && variant.length === 0) {
       for (const crit of R_CRITERIA) {
         deltas.push({
@@ -218,15 +174,12 @@ export class AbiAbHarnessService {
       }
       return deltas;
     }
-
     const bMetrics = this.aggregateMetrics(baseline);
     const vMetrics = this.aggregateMetrics(variant);
-
     for (const crit of R_CRITERIA) {
       const bScore = this.projectRScore(crit.name, bMetrics, baseline.length);
       const vScore = this.projectRScore(crit.name, vMetrics, variant.length);
       const rawDelta = vScore - bScore;
-
       let direction: 'improved' | 'regressed' | 'unchanged';
       if (rawDelta > 0.001) {
         direction = 'improved';
@@ -235,7 +188,6 @@ export class AbiAbHarnessService {
       } else {
         direction = 'unchanged';
       }
-
       deltas.push({
         criterion: crit,
         baselineScore: clamp01(bScore),
@@ -244,15 +196,12 @@ export class AbiAbHarnessService {
         direction,
       });
     }
-
     return deltas;
   }
-
   public decidePromotion(workspaceId: string): AbPromotionDecision {
     const records = this.getRecordsForWorkspace(workspaceId);
     const sampleSize = records.length;
     const deltas = this.computeRDelta(workspaceId);
-
     if (sampleSize < PROMOTION_MIN_SAMPLES) {
       return {
         promoteVariantToDefault: false,
@@ -268,17 +217,14 @@ export class AbiAbHarnessService {
         computedAt: new Date().toISOString(),
       };
     }
-
     let improved = 0;
     let regressed = 0;
     let unchanged = 0;
-
     for (const d of deltas) {
       if (d.direction === 'improved') improved++;
       else if (d.direction === 'regressed') regressed++;
       else unchanged++;
     }
-
     if (regressed > 0) {
       return {
         promoteVariantToDefault: false,
@@ -294,7 +240,6 @@ export class AbiAbHarnessService {
         computedAt: new Date().toISOString(),
       };
     }
-
     if (improved < PROMOTION_MIN_IMPROVED_CRITERIA) {
       return {
         promoteVariantToDefault: false,
@@ -310,7 +255,6 @@ export class AbiAbHarnessService {
         computedAt: new Date().toISOString(),
       };
     }
-
     return {
       promoteVariantToDefault: true,
       reason: `variant meets all promotion gates: ${improved} improved, 0 regressed, ${sampleSize} samples >= ${PROMOTION_MIN_SAMPLES} min`,
@@ -325,15 +269,12 @@ export class AbiAbHarnessService {
       computedAt: new Date().toISOString(),
     };
   }
-
   public clearWorkspace(workspaceId: string): void {
     this.store.delete(workspaceId);
   }
-
   public workspaceCount(): number {
     return this.store.size;
   }
-
   private buildRecord(
     workspaceId: string,
     userMessage: string,
@@ -345,7 +286,6 @@ export class AbiAbHarnessService {
       responseText: result.responseText,
       workspaceId,
     });
-
     return {
       recordId: generateId(),
       workspaceId,
@@ -359,7 +299,6 @@ export class AbiAbHarnessService {
       collectedAt: new Date().toISOString(),
     };
   }
-
   private aggregateMetrics(
     records: AbHarnessRecord[],
   ): {
@@ -378,24 +317,20 @@ export class AbiAbHarnessService {
     let conversionCount = 0;
     let satisfactionCount = 0;
     let outcomeCount = 0;
-
     for (const r of records) {
       latencies.push(r.latencyMs);
       tokens.push(r.tokensUsed);
       if (r.success) successCount++;
-
       for (const c of r.claims) {
         claimTotal++;
         if (!c.hasProof) claimNoProof++;
       }
-
       if (r.commercialOutcome) {
         outcomeCount++;
         if (r.commercialOutcome.conversionSignal) conversionCount++;
         if (r.commercialOutcome.satisfactionSignal === true) satisfactionCount++;
       }
     }
-
     return {
       successRate: ratio(successCount, records.length),
       avgLatencyMs: avg(latencies),
@@ -405,7 +340,6 @@ export class AbiAbHarnessService {
       satisfactionRate: ratio(satisfactionCount, outcomeCount),
     };
   }
-
   private projectRScore(
     criterion: AbRCriterionName,
     m: ReturnType<AbiAbHarnessService['aggregateMetrics']>,
@@ -415,7 +349,6 @@ export class AbiAbHarnessService {
     const hRate = m.hallucinationRate;
     const cRate = m.conversionRate;
     const satRate = m.satisfactionRate;
-
     const byCriterion: Record<AbRCriterionName, () => number> = {
       R1: () => cRate * 0.6 + s * 0.4,
       R2: () => s * 0.8 + (1 - hRate) * 0.2,
@@ -456,7 +389,6 @@ export class AbiAbHarnessService {
       R37: () => (1 - hRate) * 0.6 + s * 0.4,
       R38: () => satRate * 0.6 + s * 0.4,
     };
-
     const fn = byCriterion[criterion];
     if (!fn) return 0;
     return clamp01(fn());

@@ -25,11 +25,7 @@ function tierFromScore(score: number): DecisionTier {
   return 'ARQUIVO';
 }
 
-function computeScore(
-  urgency: number,
-  impact: number,
-  reversibility: number,
-): number {
+function computeScore(urgency: number, impact: number, reversibility: number): number {
   const clampedUrgency = clampScore(urgency);
   const clampedImpact = clampScore(impact);
   const clampedReversibility = clampScore(reversibility);
@@ -38,10 +34,7 @@ function computeScore(
   return Math.round(raw * 100) / 100;
 }
 
-export function rankAttention(
-  items: readonly RankingInput[],
-  nowMs: number,
-): RankerResult {
+export function rankAttention(items: readonly RankingInput[], nowMs: number): RankerResult {
   const ranked = items
     .map((item) => {
       const score = computeScore(item.urgency, item.impact, item.reversibility);
@@ -66,11 +59,4 @@ export function rankAttention(
     topItem: ranked.length > 0 ? ranked[0]! : null,
     rankedAt: new Date(nowMs).toISOString(),
   };
-}
-
-export function rankUrgencyImpactReversibility(
-  items: readonly RankingInput[],
-  nowMs: number,
-): RankerResult {
-  return rankAttention(items, nowMs);
 }

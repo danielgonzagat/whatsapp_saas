@@ -32,7 +32,7 @@ You are an OpenCode V4 Pro subagent for the Kloel Cognitive Organism mission.
 - NO touch on frontend, *.tsx, *.vue, e2e, frontend-admin.
 - NO change to existing HTTP controller signatures (additive only).
 - NO touch on protected files.
-- NO suppression comments / skip tags / @ts-ignore / NOSONAR.
+- NO suppression comments / skip tags / TypeScript ignore comments / static-analysis suppressions.
 - NO \`git restore\`.
 - NO new event names outside PCI.1.
 - NO \`prismaAny\` in NEW code.
@@ -151,7 +151,7 @@ Implements Camada XI. Choque de valor nos primeiros minutos.
 
 - wow.types.ts: HistoryIngestion, FirstHourPattern, RankedInsight,
   EvidenceBundle, OrchestrationOutcome.
-- cold-start-ingestion.service.ts (WOW-001): rapid ingestion of any
+- cold-start-ingestion.service.ts (WOW-001): rapid ingestion of each
   history available at workspace activation.
 - pattern-detector.service.ts (WOW-002): runs WISDOM, INSIGHT, MATURITY
   consumers on the ingested history (re-uses those services — does NOT

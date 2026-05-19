@@ -32,7 +32,7 @@ function makeSpine(): { spine: SpineEmitterService; emitAll: (events: SpineEvent
       };
       return unsub;
     }),
-  } as unknown as SpineEmitterService;
+  } as SpineEmitterService;
   return {
     spine,
     emitAll: (events: SpineEventEnvelope[]) => {

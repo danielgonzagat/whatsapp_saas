@@ -241,7 +241,7 @@ model Workspace {
   webinars Webinar[]
 
   // Integration Credentials (Google Ads OAuth, etc.)
-  integrationCredential IntegrationCredential?
+  integrationCredentials IntegrationCredential[]
 
   // Meta Platform Connection
   metaConnections MetaConnection[]
@@ -3865,7 +3865,7 @@ model AdInsight {
 
 model IntegrationCredential {
   id              String    @id @default(uuid())
-  workspaceId     String    @unique
+  workspaceId     String
   workspace       Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   platform        String    @default("google")
   accessToken     String
@@ -3877,7 +3877,7 @@ model IntegrationCredential {
   connectedAt     DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
-  @@index([workspaceId, platform])
+  @@unique([workspaceId, platform])
   @@map("RAC_IntegrationCredential")
 }
 
@@ -4563,4 +4563,24 @@ model DecisionOutcomeEvent {
   @@index([workspaceId, eventType, createdAt])
   @@index([workspaceId, processed, createdAt])
   @@map("RAC_DecisionOutcomeEvent")
+}
+
+/// UTP-LINEAGE-007 — Persistência aditiva do Lineage Ledger.
+/// Implementa PCI.3 §5.1 (docs/contracts/pci/03-genesis-lineage.md).
+/// Append-only: NUNCA editar entradas existentes. Sem updatedAt por design.
+model LineageEntry {
+  id              String   @id @default(uuid()) @db.Uuid
+  ledgerEntryId   String   @unique
+  sequenceNumber  Int      @unique
+  prevEntryHash   String
+  eventId         String
+  eventName       String
+  timestampUtc    DateTime
+  payloadJson     Json
+  hash            String   @unique
+  createdAt       DateTime @default(now())
+
+  @@index([sequenceNumber])
+  @@index([eventName])
+  @@map("RAC_LineageEntry")
 }

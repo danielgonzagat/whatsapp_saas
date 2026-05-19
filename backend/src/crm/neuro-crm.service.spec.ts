@@ -1,3 +1,4 @@
+import { expectValueOf } from '../../test/expect-value-of';
 import { NeuroCrmService } from './neuro-crm.service';
 
 describe('NeuroCrmService', () => {
@@ -115,7 +116,7 @@ describe('NeuroCrmService', () => {
           probabilityReasons: ['asking_price', 'payment_signal'],
           intent: 'BUY',
           cluster: 'VIP',
-          lastNeuroCrmAnalysisAt: expect.any(String),
+          lastNeuroCrmAnalysisAt: expectValueOf(String),
         }),
       }),
     });

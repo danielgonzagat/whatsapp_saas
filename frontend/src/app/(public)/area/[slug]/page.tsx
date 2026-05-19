@@ -25,13 +25,19 @@ export default function PublicMemberAreaPage({ params }: { params: Promise<{ slu
     let active = true;
     fetchPublicMemberArea(slug)
       .then((response) => {
-        if (active) {setArea(response.area);}
+        if (active) {
+          setArea(response.area);
+        }
       })
       .catch(() => {
-        if (active) {setError('Area de membros nao encontrada.');}
+        if (active) {
+          setError('Area de membros nao encontrada.');
+        }
       })
       .finally(() => {
-        if (active) {setLoading(false);}
+        if (active) {
+          setLoading(false);
+        }
       });
     return () => {
       active = false;
@@ -92,10 +98,10 @@ export default function PublicMemberAreaPage({ params }: { params: Promise<{ slu
           <div>
             <div className="mb-6 flex items-center gap-3">
               {area.logoUrl ? (
-                <img
-                  src={area.logoUrl}
-                  alt=""
-                  className="h-12 w-12 rounded border border-zinc-800"
+                <div
+                  aria-hidden
+                  className="h-12 w-12 rounded border border-zinc-800 bg-cover bg-center"
+                  style={{ backgroundImage: `url(${area.logoUrl})` }}
                 />
               ) : (
                 <div className="flex h-12 w-12 items-center justify-center rounded border border-zinc-800 bg-zinc-900">
@@ -195,7 +201,9 @@ export default function PublicMemberAreaPage({ params }: { params: Promise<{ slu
               <div className="mb-4 flex flex-wrap items-center gap-3 text-xs text-zinc-400">
                 <span className="inline-flex items-center gap-1">
                   <Clock className="h-4 w-4" />
-                  {selectedLesson.durationMin ? `${selectedLesson.durationMin} min` : kloelT('Aula')}
+                  {selectedLesson.durationMin
+                    ? `${selectedLesson.durationMin} min`
+                    : kloelT('Aula')}
                 </span>
                 <span>{selectedLesson.type}</span>
               </div>

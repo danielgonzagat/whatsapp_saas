@@ -219,7 +219,7 @@ describe('WhatsAppEventEmitterService', () => {
       const emitter = makeEmitter(spine);
 
       expect(() => {
-        (emitter as unknown as Record<string, unknown>).emitMessageReceived = () => {
+        (emitter as Record<string, unknown>).emitMessageReceived = () => {
           const svc = emitter;
           try {
             svc['spine'].emit({
@@ -233,7 +233,7 @@ describe('WhatsAppEventEmitterService', () => {
                 processorVersion: '0.0.0',
                 schemaVersion: '1.0.0',
               },
-              payload: undefined as unknown as Record<string, unknown>,
+              payload: undefined as Record<string, unknown>,
             });
           } catch {
             // If the spine throws, the emitter's safeEmit should have caught it.
@@ -250,7 +250,7 @@ describe('WhatsAppEventEmitterService', () => {
         },
         recentEvents: () => [],
         stats: () => ({ buffered: 0, capacity: 0, subscribers: 0 }),
-      } as unknown as SpineEmitterService;
+      } as SpineEmitterService;
       const emitter = new WhatsAppEventEmitterService(brokenSpine);
 
       expect(() => {

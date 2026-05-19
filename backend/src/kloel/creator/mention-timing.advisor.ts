@@ -31,7 +31,7 @@ export interface TimingConfig {
   readonly saturationPauseThreshold: number;
 }
 
-export const DEFAULT_TIMING_CONFIG: TimingConfig = {
+const DEFAULT_TIMING_CONFIG: TimingConfig = {
   recentWindowMinutes: 1440,
   minDaysBetweenMentions: 1,
   idealDaysBetweenMentions: 3,

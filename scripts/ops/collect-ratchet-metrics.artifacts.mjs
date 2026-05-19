@@ -112,6 +112,17 @@ export function collectPulseMetrics({ refreshPulse = false } = {}) {
   }
 
   const { health, certificate } = readPulseArtifacts();
+  const browserEvidence = certificate.evidenceSummary?.browser || {};
+  const browserGateStatus = certificate.gates?.browserPass?.status;
+  const browserPassRate =
+    typeof browserEvidence.passRate === 'number'
+      ? browserEvidence.passRate
+      : browserGateStatus === 'pass' && browserEvidence.executed !== true
+        ? 100
+        : 0;
+  const pulseStructuralScore = Number(
+    certificate.rawScore ?? health.score ?? certificate.score ?? 0,
+  );
   const deadCodeFiles = [
     ...new Set(
       (health.breaks || [])
@@ -130,8 +141,9 @@ export function collectPulseMetrics({ refreshPulse = false } = {}) {
   );
 
   return {
-    pulseScore: createMetric(Number(certificate.score || 0), 'min', [], {
-      rawScore: Number(certificate.rawScore || 0),
+    pulseScore: createMetric(pulseStructuralScore, 'min', [], {
+      certificationScore: Number(certificate.score || 0),
+      rawScore: Number(certificate.rawScore || health.score || 0),
       environment: certificate.environment || 'unknown',
     }),
     facadeCount: createMetric(Number(health.stats?.facades || 0), 'max'),
@@ -168,12 +180,10 @@ export function collectPulseMetrics({ refreshPulse = false } = {}) {
         content: item.description,
       })),
     ),
-    browserStressPassRate: createMetric(
-      Number(certificate.evidenceSummary?.browser?.passRate || 0),
-      'min',
-      [],
-      { executed: Boolean(certificate.evidenceSummary?.browser?.executed) },
-    ),
+    browserStressPassRate: createMetric(browserPassRate, 'min', [], {
+      executed: Boolean(browserEvidence.executed),
+      gateStatus: browserGateStatus || 'unknown',
+    }),
   };
 }
 

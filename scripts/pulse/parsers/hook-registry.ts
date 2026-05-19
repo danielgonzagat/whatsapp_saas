@@ -6,6 +6,7 @@ import {
   discoverAllObservedHttpMethods,
   discoverReservedJsKeywords,
 } from '../dynamic-reality-kernel/catalog-arithmetic';
+import { getFrontendSourceDirs } from '../frontend-roots';
 
 /** Hook function shape. */
 export interface HookFunction {
@@ -54,6 +55,34 @@ function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
+function sliceLocalFunctionBody(lines: string[], startLine: number): string {
+  let depth = 0;
+  let bodyStarted = false;
+  const endLimit = Math.min(startLine + 80, lines.length);
+
+  for (let i = startLine; i < endLimit; i++) {
+    const line = lines[i] || '';
+    for (const ch of line) {
+      if (ch === '{') {
+        depth++;
+        bodyStarted = true;
+      }
+      if (ch === '}') {
+        depth--;
+      }
+    }
+
+    if (bodyStarted && depth === 0) {
+      return lines.slice(startLine, i + 1).join('\n');
+    }
+    if (!bodyStarted && i > startLine && line.trimEnd().endsWith(';')) {
+      return lines.slice(startLine, i + 1).join('\n');
+    }
+  }
+
+  return lines.slice(startLine, endLimit).join('\n');
+}
+
 /**
  * Build a registry of all custom hooks and the API calls their returned functions make.
  *
@@ -69,12 +98,14 @@ function escapeRegExp(value: string): string {
  */
 export function buildHookRegistry(config: PulseConfig): HookRegistry {
   const registry: HookRegistry = new Map();
-  const hooksDir = safeJoin(config.frontendDir, 'hooks');
-  if (!pathExists(hooksDir)) {
-    return registry;
-  }
-
-  const files = walkFiles(hooksDir, ['.ts', '.tsx']);
+  const frontendSourceDirs = getFrontendSourceDirs(config);
+  const files = frontendSourceDirs.flatMap((frontendDir) => {
+    const hooksDir = safeJoin(frontendDir, 'hooks');
+    if (!pathExists(hooksDir)) {
+      return [];
+    }
+    return walkFiles(hooksDir, ['.ts', '.tsx']);
+  });
 
   for (const file of files) {
     try {
@@ -125,13 +156,13 @@ export function buildHookRegistry(config: PulseConfig): HookRegistry {
         const innerFuncRe =
           /(?:const|let)\s+(\w+)\s*=\s*(?:useCallback\s*\(\s*)?(?:async\s+)?\([^)]*\)\s*(?::\s*[\w<>\[\]|,\s]+)?\s*=>\s*\{?/g;
         let innerMatch;
+        const hookBodyLines = hookBody.split('\n');
 
         while ((innerMatch = innerFuncRe.exec(hookBody)) !== null) {
           const funcName = innerMatch[1];
           // Get the function body (~20 lines after declaration)
           const funcStartLine = hookBody.substring(0, innerMatch.index).split('\n').length - 1;
-          const funcLines = hookBody.split('\n').slice(funcStartLine);
-          const funcBodyText = funcLines.join('\n');
+          const funcBodyText = sliceLocalFunctionBody(hookBodyLines, funcStartLine);
 
           // Look for apiFetch call
           const apiMatch = funcBodyText.match(
@@ -201,8 +232,11 @@ export function buildHookRegistry(config: PulseConfig): HookRegistry {
 
   // Also parse API module files to find object-based APIs
   // productApi.list → apiFetch('/products')
-  const apiDir = safeJoin(config.frontendDir, 'lib', 'api');
-  if (pathExists(apiDir)) {
+  for (const frontendDir of frontendSourceDirs) {
+    const apiDir = safeJoin(frontendDir, 'lib', 'api');
+    if (!pathExists(apiDir)) {
+      continue;
+    }
     const apiFiles = walkFiles(apiDir, ['.ts']);
     for (const file of apiFiles) {
       try {

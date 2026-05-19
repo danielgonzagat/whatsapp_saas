@@ -15,7 +15,7 @@ export interface RecoveryConfig {
   readonly maxDelayMinutes: number;
 }
 
-export const DEFAULT_RECOVERY_CONFIG: RecoveryConfig = {
+const DEFAULT_RECOVERY_CONFIG: RecoveryConfig = {
   trustScoreFloor: 0.4,
   minDelayMinutes: 5,
   maxDelayMinutes: 1440,

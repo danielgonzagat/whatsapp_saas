@@ -50,7 +50,7 @@ const R1_ALLOWED_ALONE: SuggestionR1Contract = {
 const R1_REVIEW_DEFAULT: SuggestionR1Contract = {
   riskClass: 'R1',
   delegationMode: 'allowed_alone',
-  safeNextStep: 'review lead status before suggesting any outbound action',
+  safeNextStep: 'review lead status before suggesting each outbound action',
   rollback: ['dismiss_suggestion', 'snooze_suggestion'],
   leadOutcomeGuardrail: {
     antiPressureLanguage: false,
@@ -76,7 +76,7 @@ const R1_SILENT_UNQUALIFIED: SuggestionR1Contract = {
   riskClass: 'R1',
   delegationMode: 'allowed_alone',
   safeNextStep:
-    'review timeline and gather context before any re-engagement suggestion',
+    'review timeline and gather context before every re-engagement suggestion',
   rollback: ['dismiss_suggestion', 'snooze_suggestion'],
   leadOutcomeGuardrail: {
     antiPressureLanguage: true,
@@ -113,7 +113,7 @@ const R2_RECOVER_REVENUE: SuggestionR1Contract = {
 const R2_POST_SALE: SuggestionR1Contract = {
   riskClass: 'R2',
   delegationMode: 'human_only',
-  safeNextStep: 'ask human to verify delivery before any post-sale message',
+  safeNextStep: 'ask human to verify delivery before every post-sale message',
   rollback: ['dismiss_suggestion', 'snooze_suggestion', 'manual_review'],
   leadOutcomeGuardrail: {
     antiPressureLanguage: true,
@@ -229,7 +229,7 @@ const ACTION_TEMPLATES: readonly ActionTemplate[] = [
       hasEvent(ctx, 'commerce.post_sale.churn_risk_detected'),
     action: 'review_post_sale_value_gap',
     rationale:
-      'post-sale churn risk detected - verify whether the customer reached first value before any retention action',
+      'post-sale churn risk detected - verify whether the customer reached first value before every retention action',
     baseConfidence: 0.9,
     guardrails: [
       'frame as customer support, not team failure',

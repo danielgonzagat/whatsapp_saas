@@ -44,6 +44,20 @@ export interface AggregatedSignal {
   readonly observationWindowDays: number;
 }
 
+export interface ExtractedPattern {
+  readonly kind:
+    | 'objection_pattern'
+    | 'channel_efficiency'
+    | 'conversion_decay'
+    | 'engagement_peak'
+    | 'offer_objection_correlation';
+  readonly dimension: 'conversion' | 'engagement' | 'channel' | 'offer' | 'timing';
+  readonly support: number;
+  readonly confidence: number;
+  readonly abstractDescription: string;
+  readonly anonymizedExample: string;
+}
+
 /**
  * A candidate pattern discovered by the pattern extractor (WISDOM-001).
  * Represents a cross-workspace abstract signal before anonymization.

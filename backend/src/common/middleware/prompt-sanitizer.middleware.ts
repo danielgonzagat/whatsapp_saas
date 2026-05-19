@@ -142,7 +142,6 @@ export class PromptSanitizerMiddleware implements NestMiddleware {
     }
   }
 
-  /** @internal exposed for sanitizePromptInput utility */
   sanitizeString(input: string): string {
     let result = input;
 
@@ -160,12 +159,4 @@ export class PromptSanitizerMiddleware implements NestMiddleware {
 
     return result;
   }
-}
-
-/**
- * Função utilitária para sanitizar texto fora do middleware.
- */
-export function sanitizePromptInput(input: string): string {
-  const middleware = new PromptSanitizerMiddleware();
-  return middleware.sanitizeString(input);
 }

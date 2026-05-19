@@ -18,7 +18,7 @@ import type {
 } from './team.types';
 
 const SUGGESTION_FRAME_PREFIX =
-  'suggestion (not command): operator may dismiss or override at any time';
+  'suggestion (not command): operator may dismiss or override at all times';
 
 export function formatSuggestionForDisplay(
   suggestion: NextBestAction,
@@ -79,7 +79,7 @@ export function validateSuggestionDismissal(
   return { valid: true, reason: 'dismissal accepted' };
 }
 
-export function isValidOperatorAction(action: string): action is OperatorAction {
+function isValidOperatorAction(action: string): action is OperatorAction {
   return ['dismiss', 'accept', 'override', 'snooze'].includes(action);
 }
 

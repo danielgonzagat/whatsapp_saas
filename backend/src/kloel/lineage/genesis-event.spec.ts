@@ -63,7 +63,7 @@ describe('GENESIS_EVENT immutability and verification', () => {
 
   it('rejects mutation of etymology via direct property write', () => {
     expect(() => {
-      const mutable = GENESIS_EVENT.payload.etymology as unknown as {
+      const mutable = GENESIS_EVENT.payload.etymology as {
         greek: { word: string };
       };
       mutable.greek.word = 'kudos';
@@ -73,7 +73,7 @@ describe('GENESIS_EVENT immutability and verification', () => {
 
   it('rejects mutation of origin via direct property write', () => {
     expect(() => {
-      const mutable = GENESIS_EVENT.payload.origin as unknown as { inception: string };
+      const mutable = GENESIS_EVENT.payload.origin as { inception: string };
       mutable.inception = '1999-01-01';
     }).toThrow(TypeError);
     expect(GENESIS_EVENT.payload.origin.inception).toBe('2026-05-13');
@@ -81,7 +81,7 @@ describe('GENESIS_EVENT immutability and verification', () => {
 
   it('rejects mutation of inviolable list via Array.push', () => {
     expect(() => {
-      const mutable = GENESIS_EVENT.payload.inviolable as unknown as string[];
+      const mutable = GENESIS_EVENT.payload.inviolable as string[];
       mutable.push('new-field');
     }).toThrow(TypeError);
     expect(GENESIS_EVENT.payload.inviolable).toHaveLength(5);

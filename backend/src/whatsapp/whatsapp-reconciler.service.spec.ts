@@ -1,3 +1,4 @@
+import { expectValueOf } from '../../test/expect-value-of';
 import { Test, TestingModule } from '@nestjs/testing';
 import Redis from 'ioredis';
 import { INBOX_SERVICE } from '../inbox/inbox.token';
@@ -114,7 +115,7 @@ describe('WhatsappReconcilerService', () => {
     it('enqueues resume-flow job', async () => {
       const { flowQueue } = require('../queue/queue');
       await service.handleIncoming('ws-1', '5511999991234', 'hello');
-      expect(flowQueue.add).toHaveBeenCalledWith('resume-flow', expect.any(Object), expect.any(Object));
+      expect(flowQueue.add).toHaveBeenCalledWith('resume-flow', expectValueOf(Object), expectValueOf(Object));
     });
 
     it('enqueues autopilot scan-contact when autonomous is enabled', async () => {
@@ -127,7 +128,7 @@ describe('WhatsappReconcilerService', () => {
       expect(autopilotQueue.add).toHaveBeenCalledWith(
         'scan-contact',
         expect.objectContaining({ workspaceId: 'ws-1', contactId: 'c-2' }),
-        expect.any(Object),
+        expectValueOf(Object),
       );
     });
 

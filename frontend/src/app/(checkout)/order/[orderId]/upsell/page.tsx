@@ -36,8 +36,8 @@ export default function UpsellPage() {
   useEffect(() => {
     const parsed = parseUpsellsQuery(searchParams.get('upsells'));
     if (parsed) {
-      setUpsells(parsed);
-      setLoading(false);
+      queueMicrotask(() => setUpsells(parsed));
+      queueMicrotask(() => setLoading(false));
       return;
     }
 
@@ -63,10 +63,10 @@ export default function UpsellPage() {
   // Timer
   useEffect(() => {
     if (!currentUpsell?.timerSeconds) {
-      setCountdown(null);
+      queueMicrotask(() => setCountdown(null));
       return;
     }
-    setCountdown(currentUpsell.timerSeconds);
+    queueMicrotask(() => setCountdown(currentUpsell.timerSeconds ?? null));
   }, [currentUpsell]);
 
   useEffect(() => {
@@ -129,7 +129,9 @@ export default function UpsellPage() {
           fontFamily: font,
         }}
       >
-        <div style={{ color: colors.text.muted, fontSize: '14px' }}>{kloelT(`Carregando oferta...`)}</div>
+        <div style={{ color: colors.text.muted, fontSize: '14px' }}>
+          {kloelT(`Carregando oferta...`)}
+        </div>
       </div>
     );
   }
@@ -183,7 +185,14 @@ export default function UpsellPage() {
         >
           {currentUpsell.headline}
         </h1>
-        <p style={{ color: colors.text.muted, fontSize: '14px', margin: '0 0 24px', lineHeight: '1.5' }}>
+        <p
+          style={{
+            color: colors.text.muted,
+            fontSize: '14px',
+            margin: '0 0 24px',
+            lineHeight: '1.5',
+          }}
+        >
           {currentUpsell.description}
         </p>
 
@@ -207,7 +216,14 @@ export default function UpsellPage() {
         )}
 
         {/* Product name */}
-        <div style={{ fontSize: '16px', fontWeight: 600, color: colors.checkout.textPrimary, marginBottom: '12px' }}>
+        <div
+          style={{
+            fontSize: '16px',
+            fontWeight: 600,
+            color: colors.checkout.textPrimary,
+            marginBottom: '12px',
+          }}
+        >
           {currentUpsell.productName}
         </div>
 
@@ -223,7 +239,9 @@ export default function UpsellPage() {
           )}
           <div style={{ fontSize: '32px', fontWeight: 700, color: accent }}>
             {currentUpsell.compareAtPrice != null && (
-              <span style={{ fontSize: '14px', fontWeight: 400, color: colors.text.muted }}>por </span>
+              <span style={{ fontSize: '14px', fontWeight: 400, color: colors.text.muted }}>
+                por{' '}
+              </span>
             )}
             {formatBRL(currentUpsell.priceInCents)}
           </div>

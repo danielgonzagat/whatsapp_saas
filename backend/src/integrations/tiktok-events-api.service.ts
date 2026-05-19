@@ -2,7 +2,7 @@ import { Injectable, Logger, Optional } from '@nestjs/common';
 import * as crypto from 'node:crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { decryptTikTokToken } from './tiktok-token-crypto';
-import { asProviderSettings } from '../whatsapp/provider-settings.types';
+import { tiktokCredentialWhere } from './tiktok-ads.helpers';
 import { OpsAlertService } from '../observability/ops-alert.service';
 
 interface TikTokUserData {
@@ -148,15 +148,13 @@ export class TikTokEventsApiService {
     pixelCode: string,
     event: TikTokEventData,
   ): Promise<{ success: boolean; requestId?: string; error?: string }> {
-    const workspace = await this.prisma.workspace.findUnique({
-      where: { id: workspaceId },
-      select: { providerSettings: true },
+    const credential = await this.prisma.integrationCredential.findUnique({
+      where: tiktokCredentialWhere(workspaceId),
+      select: { accessToken: true, status: true },
     });
 
-    const settings = asProviderSettings(workspace?.providerSettings);
-    const tiktok = (settings.tiktok || {}) as Record<string, unknown>;
-
-    const encryptedToken = typeof tiktok.accessToken === 'string' ? tiktok.accessToken : '';
+    const encryptedToken =
+      credential?.status === 'connected' && credential.accessToken ? credential.accessToken : '';
     const accessToken = decryptTikTokToken(encryptedToken) || encryptedToken;
 
     if (!accessToken) {

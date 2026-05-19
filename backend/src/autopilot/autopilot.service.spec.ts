@@ -1,3 +1,4 @@
+import { expectValueOf } from '../../test/expect-value-of';
 import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { Test, TestingModule } from '@nestjs/testing';
 import { AutopilotService } from './autopilot.service';
@@ -214,7 +215,7 @@ describe('AutopilotService', () => {
     expect(mockPrisma.workspace.update).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { id: 'ws-1' },
-        data: expect.objectContaining({ providerSettings: expect.any(Object) }),
+        data: expect.objectContaining({ providerSettings: expectValueOf(Object) }),
       }),
     );
   });

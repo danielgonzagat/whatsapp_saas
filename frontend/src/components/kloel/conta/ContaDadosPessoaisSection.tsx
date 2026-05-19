@@ -166,11 +166,13 @@ export default function DadosPessoaisSection({
       if (bd && bd.length > 10) {
         bd = bd.slice(0, 10);
       }
-      setForm({
-        name: profile.name || '',
-        email: profile.email || '',
-        phone: profile.phone || '',
-        birthDate: bd,
+      queueMicrotask(() => {
+        setForm({
+          name: profile.name || '',
+          email: profile.email || '',
+          phone: profile.phone || '',
+          birthDate: bd,
+        });
       });
     }
   }, [profile]);

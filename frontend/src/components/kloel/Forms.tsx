@@ -142,19 +142,17 @@ interface SearchInputProps extends Omit<InputProps, 'leftIcon' | 'type'> {
 }
 
 /** Search input. */
-export const SearchInput = forwardRef<HTMLInputElement, SearchInputProps>(
-  ({ onSearch, ...props }, ref) => {
-    return (
-      <Input
-        ref={ref}
-        type="search"
-        leftIcon={<Search className="w-4 h-4" aria-hidden="true" />}
-        placeholder={kloelT(`Buscar...`)}
-        {...props}
-      />
-    );
-  },
-);
+export const SearchInput = forwardRef<HTMLInputElement, SearchInputProps>((props, ref) => {
+  return (
+    <Input
+      ref={ref}
+      type="search"
+      leftIcon={<Search className="w-4 h-4" aria-hidden="true" />}
+      placeholder={kloelT(`Buscar...`)}
+      {...props}
+    />
+  );
+});
 
 SearchInput.displayName = 'SearchInput';
 

@@ -29,7 +29,7 @@ OpenCode V4 Pro subagent for Kloel Cognitive Organism mission.
 - NO touch on frontend, *.tsx, *.vue, e2e, frontend-admin.
 - NO change to existing HTTP controllers (additive only).
 - NO touch on protected files.
-- NO suppression / skip tags / @ts-ignore / NOSONAR.
+- NO suppression / skip tags / TypeScript ignore comments / static-analysis suppressions.
 - NO \`git restore\`.
 - NO new event names outside PCI.1.
 - NO \`prismaAny\` in NEW code.

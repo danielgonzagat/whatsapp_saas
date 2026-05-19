@@ -1,6 +1,6 @@
 import type { Prisma } from '@prisma/client';
 
-export type MindDecisionKind =
+type MindDecisionKind =
   | 'followup_timing'
   | 'message_format'
   | 'objection_response'
@@ -13,7 +13,7 @@ export type MindDecisionKind =
   | 'ad_alert_action'
   | 'autopilot_action';
 
-export type MindGuardDecision = 'allow' | 'block' | 'modify' | 'needs_human';
+type MindGuardDecision = 'allow' | 'block' | 'modify' | 'needs_human';
 
 export const MIND_GUARD_REASON_TAGS = [
   'opt_out',

@@ -345,7 +345,7 @@ function buildControl(phase: NoRegretPhase): PostSaleDecisionControl {
         riskClass: 'R2',
         delegationMode: 'owner_review',
         safeNextStep:
-          'Prioritize anti-remorse recovery before any activation, referral, testimonial, or expansion action.',
+          'Prioritize anti-remorse recovery before every activation, referral, testimonial, or expansion action.',
         uncertainty:
           'Risk signals are strong enough that Kloel should not assume normal onboarding will solve the issue.',
         leadOutcomeGuardrail:

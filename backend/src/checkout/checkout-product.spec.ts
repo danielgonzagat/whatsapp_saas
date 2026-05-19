@@ -1,3 +1,4 @@
+import { expectValueOf } from '../../test/expect-value-of';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { CheckoutProductService } from './checkout-product.service';
@@ -340,7 +341,7 @@ describe('CheckoutProductService', () => {
 
       expect(prisma.checkoutConfig.findUnique).toHaveBeenCalledWith({
         where: { planId: 'plan_1' },
-        include: expect.objectContaining({ pixels: true, plan: expect.any(Object) }),
+        include: expect.objectContaining({ pixels: true, plan: expectValueOf(Object) }),
       });
       expect(productConfigService.buildPricingPreview).toHaveBeenCalledWith(19990);
       expect(result).toHaveProperty('pricing');

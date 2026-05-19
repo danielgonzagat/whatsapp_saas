@@ -42,7 +42,11 @@ export class SystemHealthController {
   async readiness() {
     const result = await this.health.deepReadiness();
     if (result.status === 'DOWN') {
-      throw new ServiceUnavailableException(result);
+      const failures = Array.isArray(result.failures) ? result.failures : [];
+      throw new ServiceUnavailableException({
+        ...result,
+        message: `Dependencies down: ${failures.join(', ') || 'unknown'}`,
+      });
     }
     return result;
   }
@@ -52,6 +56,13 @@ export class SystemHealthController {
   @ApiOperation({ summary: 'Readiness probe — DB and Redis available' })
   async ready() {
     return this.health.readiness();
+  }
+
+  @Public()
+  @Get('system')
+  @ApiOperation({ summary: 'System health — production runtime and queue health' })
+  async system() {
+    return this.health.check();
   }
 
   @UseGuards(AdminAuthGuard)

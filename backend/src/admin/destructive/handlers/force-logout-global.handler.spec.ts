@@ -1,3 +1,4 @@
+import { expectValueOf } from '../../../../test/expect-value-of';
 import { DestructiveIntentKind } from '@prisma/client';
 import { UnsupportedUndoError } from '../destructive-handler.registry';
 import type { DestructiveIntentRecord } from '../destructive-intent.types';
@@ -37,7 +38,7 @@ describe('ForceLogoutGlobalHandler', () => {
       adminSession: {
         updateMany: jest.fn(async ({ where, data }: { where: unknown; data: unknown }) => {
           expect(where).toMatchObject({ revokedAt: null });
-          expect(data).toMatchObject({ revokedAt: expect.any(Date) });
+          expect(data).toMatchObject({ revokedAt: expectValueOf(Date) });
           revoked = 7;
           return { count: 7 };
         }),

@@ -220,7 +220,7 @@ export class KloelReplyEngineService {
               `ABI validation failed: ${JSON.stringify(validation.issues)}, using structured reply fallback`,
             );
           } else {
-            cognitiveState = abiResult.abi as unknown as Record<string, unknown>;
+            cognitiveState = { ...abiResult.abi };
           }
         }
       } catch (error: unknown) {

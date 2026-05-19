@@ -1,6 +1,6 @@
 import type { MindJson } from './mind.types';
 
-export type EconomicObjectiveProfile = 'b2c_ecommerce' | 'b2b_saas' | 'recurring_subscription';
+type EconomicObjectiveProfile = 'b2c_ecommerce' | 'b2b_saas' | 'recurring_subscription';
 
 export type EconomicObjectiveBreakdown = {
   attentionCost: number;

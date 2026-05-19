@@ -145,7 +145,7 @@ function buildControl(
       leadOutcomeGuardrail:
         'Expansion must improve the customer outcome and never use urgency, pressure, or recent satisfaction as leverage.',
       rollback:
-        'Cancel the expansion suggestion and return to silent monitoring if any confusion, objection, refund, or discomfort appears.',
+        'Cancel the expansion suggestion and return to silent monitoring if a confusion, objection, refund, or discomfort appears.',
     };
   }
 

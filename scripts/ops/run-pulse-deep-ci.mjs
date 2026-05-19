@@ -105,8 +105,8 @@ async function runRuntimeProbes() {
     try {
       const start = Date.now();
       const stdout = execSync(
-        `curl -s -o /dev/stdout -w "\\n%{http_code}" --max-time 5 "${PULSE_BACKEND_URL}${p.path}"`,
-        { encoding: 'utf-8', timeout: 7000 },
+        `curl -sS --retry 3 --retry-connrefused --retry-delay 1 -o /dev/stdout -w "\\n%{http_code}" --max-time 5 "${PULSE_BACKEND_URL}${p.path}"`,
+        { encoding: 'utf-8', timeout: 25000 },
       );
       const lines = stdout.trim().split('\n');
       const code = Number.parseInt(lines[lines.length - 1], 10);
@@ -114,7 +114,7 @@ async function runRuntimeProbes() {
         probeId: p.id,
         target: `GET ${p.path}`,
         executed: true,
-        status: code === 200 ? 'passed' : 'failed',
+        status: code >= 200 && code < 300 ? 'passed' : 'failed',
         latencyMs: Date.now() - start,
         summary: `HTTP ${code}`,
       });
@@ -164,6 +164,9 @@ async function runPulseCycle(cycleIndex) {
     PULSE_DISABLE_LOCAL_ENV: 'false',
     PULSE_BACKEND_URL,
     PULSE_DEEP: '1',
+    NODE_OPTIONS: [process.env.NODE_OPTIONS, '--max-old-space-size=6144']
+      .filter(Boolean)
+      .join(' '),
     PULSE_EXECUTION_TRACE_PATH: path.join(rootDir, `PULSE_EXECUTION_TRACE_CYCLE_${cycleIndex}.json`),
   };
 
@@ -224,7 +227,7 @@ async function main() {
 
     const testDbUrl = 'postgresql://postgres:password@localhost:55432/whatsapp_saas_test';
     log(`Applying migrations to ${testDbUrl}...`);
-    runCmd('npx --prefix backend prisma migrate deploy', {
+    runCmd('npm --prefix backend run prisma:migrate', {
       stdio: 'inherit',
       env: { ...process.env, DATABASE_URL: testDbUrl },
     });
@@ -239,9 +242,10 @@ async function main() {
         stdio: ['ignore', 'pipe', 'pipe'],
         env: {
           ...process.env,
-          NODE_ENV: 'production',
+          NODE_ENV: 'test',
           PORT: PULSE_BACKEND_PORT,
           DATABASE_URL: testDbUrl,
+          REDIS_MODE: 'required',
           REDIS_URL: 'redis://localhost:56379',
           JWT_SECRET: 'pulse-deep-ci-test-secret',
           AUTH_OPTIONAL: 'true',
@@ -289,7 +293,7 @@ async function main() {
       log('');
       log('=== TRIPLE-CYCLE ASSERTION REPORT ===');
       log(`runtime_evidence > 0: ${report.assertions.runtime_evidence_gt_zero.passed ? 'PASS' : 'FAIL'}`);
-      log(`all_subgates_pass:   ${report.assertions.all_subgates_pass.passed ? 'PASS' : 'FAIL'}`);
+      log(`target_certified:   ${report.assertions.target_certified.passed ? 'PASS' : 'FAIL'}`);
       log(`no_regression:       ${report.assertions.no_regression.passed ? 'PASS' : 'FAIL'}`);
       log(`overall:             ${report.overall}`);
       log(`Report written to: ${reportPath}`);
@@ -297,10 +301,10 @@ async function main() {
       if (!report.assertions.runtime_evidence_gt_zero.passed) {
         log(`  ${report.assertions.runtime_evidence_gt_zero.detail}`);
       }
-      if (!report.assertions.all_subgates_pass.passed) {
-        log(`  ${report.assertions.all_subgates_pass.detail}`);
+      if (!report.assertions.target_certified.passed) {
+        log(`  ${report.assertions.target_certified.detail}`);
         for (const [cycle, gates] of Object.entries(
-          report.assertions.all_subgates_pass.failing_gates_by_cycle,
+          report.assertions.target_certified.failing_gates_by_cycle,
         )) {
           if (gates.length > 0) {log(`    ${cycle}: ${gates.join(', ')}`);}
         }

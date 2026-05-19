@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import type { Prisma } from '@prisma/client';
 import { BrainEventSpineService } from '../brain-event-spine.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { RuntimeConversationTracerService } from '../runtime-conversation-tracer.service';
@@ -19,7 +20,7 @@ export function stableInboundKey(
     .slice(0, 24);
 }
 
-export function buildLegacyBaseline(concept: string, _channel: string): Record<string, unknown> {
+function buildLegacyBaseline(concept: string, _channel: string): Record<string, unknown> {
   const baselines: Record<string, Record<string, unknown>> = {
     general: { action: 'send_message', tone: 'NEUTRAL', aggressiveness: 'LOW' },
     price_objection: { action: 'apply_discount', coupon: 'coupon_10', tone: 'CONSULTIVE' },
@@ -30,6 +31,11 @@ export function buildLegacyBaseline(concept: string, _channel: string): Record<s
     audio_preference: { action: 'send_audio', tone: 'NEUTRAL' },
   };
   return (baselines[concept] ?? baselines.general) as Record<string, unknown>;
+}
+
+function toInputJson(value: unknown): Prisma.InputJsonValue {
+  const parsed: unknown = JSON.parse(JSON.stringify(value));
+  return parsed as Prisma.InputJsonValue;
 }
 
 type TraceParams = {
@@ -50,7 +56,6 @@ export function traceInboxRecorded(
     detail: { channel: params.channel, messageLength: params.messageLength },
   });
 }
-
 export function traceLegacyGate(params: TraceParams): void {
   params.tracer.record({
     workspaceId: params.workspaceId,
@@ -60,7 +65,6 @@ export function traceLegacyGate(params: TraceParams): void {
     detail: { pipelineMode: 'legacy', outcome: 'delegated_to_legacy' },
   });
 }
-
 export function traceContactResolved(
   params: TraceParams & {
     resolvedContactId: string;
@@ -80,7 +84,6 @@ export function traceContactResolved(
     },
   });
 }
-
 export function traceConceptClassified(
   params: TraceParams & {
     concept: string;
@@ -101,9 +104,7 @@ export function traceConceptClassified(
   });
 }
 
-export function traceMemoryQueried(
-  params: TraceParams & { concept: string; count: number },
-): void {
+export function traceMemoryQueried(params: TraceParams & { concept: string; count: number }): void {
   params.tracer.record({
     workspaceId: params.workspaceId,
     contactId: params.contactId,
@@ -317,13 +318,13 @@ export async function recordShadow(
         workspaceId,
         channel,
         inboundCorrelationId: inboundKey,
-        orchestratorDecision: JSON.parse(JSON.stringify(decisions)),
-        legacyBaseline: JSON.parse(JSON.stringify(buildLegacyBaseline(concept, channel))),
+        orchestratorDecision: toInputJson(decisions),
+        legacyBaseline: toInputJson(buildLegacyBaseline(concept, channel)),
         outcomeKey: `shadow:${workspaceId}:${channel}:${concept}`,
       },
       update: {
-        orchestratorDecision: JSON.parse(JSON.stringify(decisions)),
-        legacyBaseline: JSON.parse(JSON.stringify(buildLegacyBaseline(concept, channel))),
+        orchestratorDecision: toInputJson(decisions),
+        legacyBaseline: toInputJson(buildLegacyBaseline(concept, channel)),
         outcomeKey: `shadow:${workspaceId}:${channel}:${concept}`,
       },
     });
@@ -333,7 +334,11 @@ export async function recordShadow(
       eventType: 'pipeline.shadow_recorded',
       occurredAt: new Date(),
       idempotencyKey: `pipeline-shadow:${workspaceId}:${inboundKey}`,
-      payload: { channel, inboundCorrelationId: inboundKey, outcomeKey: `shadow:${workspaceId}:${channel}:${concept}` },
+      payload: {
+        channel,
+        inboundCorrelationId: inboundKey,
+        outcomeKey: `shadow:${workspaceId}:${channel}:${concept}`,
+      },
     });
   } catch {
     // non-fatal
@@ -347,7 +352,9 @@ export async function handleOrchestrationFallback(
   channel: string,
   pipelineMode: string,
 ): Promise<void> {
-  if (pipelineMode !== 'active') return;
+  if (pipelineMode !== 'active') {
+    return;
+  }
   try {
     await prisma.pipelineState.updateMany({
       where: { workspaceId },
