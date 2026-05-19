@@ -40,7 +40,8 @@ export class KloelToolDispatcherService {
     private readonly whatsappToolsService: KloelWhatsAppToolsService,
     private readonly composerService: KloelComposerService,
     private readonly auditService: AuditService,
-    private readonly codeToolsService: KloelCodeToolsService,    private readonly codeAnalysisService: KloelCodeAnalysisService,
+    private readonly codeToolsService: KloelCodeToolsService,
+    private readonly codeAnalysisService: KloelCodeAnalysisService,
 
     @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}

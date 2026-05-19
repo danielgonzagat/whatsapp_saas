@@ -1,0 +1,80 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779231845032_1be13549",
+  "ts": "2026-05-19T23:04:05.032Z",
+  "file": "backend/src/kloel/kloel-tool-dispatcher.service.ts",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "targetUnit": "text_span",
+  "intention": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 338,
+    "lineRewriteSurfaceChars": 332,
+    "expansionFactorAvoided": 0.98,
+    "bytesNet": 6,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "8f05b0c86077c71e32078ff9c1e552715cb74ba0e25f5beac267eb41008547d9",
+  "proposedSha256": "8f05b0c86077c71e32078ff9c1e552715cb74ba0e25f5beac267eb41008547d9",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- backend/src/kloel/kloel-tool-dispatcher.service.ts (atomic char-level)\u001b[0m\n            );\n          case 'code_lint':\n            return await this.code\u001b[31m[-Too-]\u001b[0m\u001b[32m{+Ana+}\u001b[0ml\u001b[32m{+y+}\u001b[0ms\u001b[32m{+is+}\u001b[0mService.toolCodeLint(\n              typeof args.path === 'string' ? args.path : '',\n            );\n          case 'code_detect_issues':\n            return await this.code\u001b[31m[-Too-]\u001b[0m\u001b[32m{+Ana+}\u001b[0ml\u001b[32m{+y+}\u001b[0ms\u001b[32m{+is+}\u001b[0mService.toolCodeDetectIssues(\n              typeof args.path === 'string' ? args.path : '',\n            );",
+  "preservedZones": [
+    {
+      "kind": "prefix_preserved",
+      "description": "Bytes 0–11771 — prefix preserved unchanged",
+      "byteStart": 0,
+      "byteEnd": 11772,
+      "byteLength": 11772,
+      "beforeHash": "eb32f3c5939df5d0d652a443410474cbc623a20ec9539d2e218fc1b24c33294d",
+      "afterHash": "eb32f3c5939df5d0d652a443410474cbc623a20ec9539d2e218fc1b24c33294d",
+      "sample": "defined,\n          );\n        case 'code_lint':\n          return await this.code"
+    },
+    {
+      "kind": "suffix_preserved",
+      "description": "Bytes 11943–22293 — suffix preserved unchanged",
+      "byteStart": 11943,
+      "byteEnd": 22294,
+      "byteLength": 10351,
+      "beforeHash": "2837cab20c1b531167cd4c11fb04521a5d9f0a00e35132e3be41ed802e792c40",
+      "afterHash": "2837cab20c1b531167cd4c11fb04521a5d9f0a00e35132e3be41ed802e792c40",
+      "sample": "sService.toolCodeDetectIssues(\n            typeof args.path === 'string' ? args."
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "byteStart": 11772,
+      "byteEnd": 11943,
+      "newByteLength": 177,
+      "oldTextHash": "358645bd8103bc01cccd1f4f9d1ab43128f3758c0268a3fe4488eb9560affe55",
+      "newTextHash": "bcab56a6d9d18958f28ab7f88eb296b479ffbfb4b9887163b80185e05f8c420c",
+      "oldSample": "ToolsService.toolCodeLint(\n            typeof args.path === 'string' ? args.path : '',\n          );\n        case 'code_detect_issues':\n          return await this.codeTool",
+      "newSample": "AnalysisService.toolCodeLint(\n            typeof args.path === 'string' ? args.path : '',\n          );\n        case 'code_detect_issues':\n          return await this.codeAnalysi",
+      "description": "Replace 171 bytes at offset 11772 with 177 bytes"
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~338 character(s) in `backend/src/kloel/kloel-tool-dispatcher.service.ts` (sub-line atomic edit, expansion 0.98× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

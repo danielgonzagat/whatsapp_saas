@@ -1,0 +1,80 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779231939308_04216197",
+  "ts": "2026-05-19T23:05:39.308Z",
+  "file": "backend/src/kloel/kloel.module.ts",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "insert_after_anchor",
+  "operator": "insert_after_anchor",
+  "targetUnit": "text_span",
+  "intention": "insert_after_anchor",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 30,
+    "lineRewriteSurfaceChars": 36,
+    "expansionFactorAvoided": 1.2,
+    "bytesNet": 30,
+    "lineRewriteAvoided": true
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "f0b16dd7f457ac2efde3bcaa9e36cf92d839ae99ab6516777c50e4be5c01a9c8",
+  "proposedSha256": "f0b16dd7f457ac2efde3bcaa9e36cf92d839ae99ab6516777c50e4be5c01a9c8",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- backend/src/kloel/kloel.module.ts (atomic char-level)\u001b[0m\n      KloelChatToolsService,\n      KloelCodeToolsService,\n      KloelBusinessConfigToolsService,\u001b[32m{+    KloelCodeAnalysisService,\n  +}\u001b[0m\n      KloelReflexivityService,\n  ",
+  "preservedZones": [
+    {
+      "kind": "prefix_preserved",
+      "description": "Bytes 0–13137 — prefix preserved unchanged",
+      "byteStart": 0,
+      "byteEnd": 13138,
+      "byteLength": 13138,
+      "beforeHash": "fc983d2963efaf85e6af4e1f3c215ef4df556c4e0c454b360df9fd9469ed1b55",
+      "afterHash": "fc983d2963efaf85e6af4e1f3c215ef4df556c4e0c454b360df9fd9469ed1b55",
+      "sample": "hatToolsService,\n    KloelCodeToolsService,\n    KloelBusinessConfigToolsService,"
+    },
+    {
+      "kind": "suffix_preserved",
+      "description": "Bytes 13138–18533 — suffix preserved unchanged",
+      "byteStart": 13138,
+      "byteEnd": 18534,
+      "byteLength": 5396,
+      "beforeHash": "7ce043862b21b734d689a44e698dc4cf6d01fd144219d5fd9ea1e8058a84b033",
+      "afterHash": "7ce043862b21b734d689a44e698dc4cf6d01fd144219d5fd9ea1e8058a84b033",
+      "sample": "\n    KloelReflexivityService,\n\n    KloelWhatsAppToolsService,\n    UnifiedAgentTo"
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "byteStart": 13138,
+      "byteEnd": 13138,
+      "newByteLength": 30,
+      "oldTextHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "newTextHash": "a467cd1d5c2ea6fb38429930caa0c7cad4c3aba82b2034d28d30ba4125b0d553",
+      "oldSample": "",
+      "newSample": "    KloelCodeAnalysisService,\n",
+      "description": "Insert 30 bytes at offset 13138"
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `insert_after_anchor` changed ~30 character(s) in `backend/src/kloel/kloel.module.ts` (sub-line atomic edit, expansion 1.2× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

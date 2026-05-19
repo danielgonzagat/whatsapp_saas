@@ -45,7 +45,7 @@ describe('Cognitive detectors — COG-001: decision_without_persistence', () => 
     const tens = decisionWithoutPersistenceDetector.detect(events, NOW);
     expect(tens).toHaveLength(1);
     expect(tens[0]?.detectorName).toBe('cognitive.decision_without_persistence');
-    expect(tens[0]?.severity).toBe(0.6);
+    expect(tens[0]?.severity).toBeCloseTo(0.6);
     expect(tens[0]?.evidenceEventIds).toEqual(['reply_1']);
     expect(tens[0]?.dimension).toBe('cognitive');
   });
@@ -263,7 +263,7 @@ describe('Cognitive detectors — COG-003: repeated_agent_failure', () => {
     expect(tens).toHaveLength(1);
     expect(tens[0]?.detectorName).toBe('cognitive.repeated_agent_failure');
     expect(tens[0]?.evidenceEventIds).toEqual(['h1', 'h2']);
-    expect(tens[0]?.severity).toBe(0.6); // 0.4 + 2 * 0.1
+    expect(tens[0]?.severity).toBeCloseTo(0.6);
   });
 
   it('is silent on single handoff', () => {

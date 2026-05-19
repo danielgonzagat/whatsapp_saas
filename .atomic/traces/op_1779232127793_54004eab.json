@@ -1,0 +1,80 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779232127793_54004eab",
+  "ts": "2026-05-19T23:08:47.794Z",
+  "file": "backend/src/kloel/kloel-code-analysis.service.ts",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "targetUnit": "text_span",
+  "intention": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 82,
+    "lineRewriteSurfaceChars": 82,
+    "expansionFactorAvoided": 1,
+    "bytesNet": -82,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "0abe187f4a2f1660599b903fcd029a818f16e4708ee192f805a825b1e81372e4",
+  "proposedSha256": "0abe187f4a2f1660599b903fcd029a818f16e4708ee192f805a825b1e81372e4",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- backend/src/kloel/kloel-code-analysis.service.ts (atomic char-level)\u001b[0m\n  @Injectable()\n  export class KloelCodeAnalysisService {\n  \u001b[31m[-  private readonly logger = StructuredLogger.from(KloelCodeAnalysisService.name);-]\u001b[0m\n  \n    async toolCodeLint(relPath: string): Promise<ToolResult> {",
+  "preservedZones": [
+    {
+      "kind": "prefix_preserved",
+      "description": "Bytes 0–926 — prefix preserved unchanged",
+      "byteStart": 0,
+      "byteEnd": 927,
+      "byteLength": 927,
+      "beforeHash": "fdb57d9afb63a0fc3e22e9e4b3d322cf639bf733262957fd0955487da6301063",
+      "afterHash": "fdb57d9afb63a0fc3e22e9e4b3d322cf639bf733262957fd0955487da6301063",
+      "sample": "ages: EslintMessage[];\n}\n\n@Injectable()\nexport class KloelCodeAnalysisService {\n"
+    },
+    {
+      "kind": "suffix_preserved",
+      "description": "Bytes 1009–5343 — suffix preserved unchanged",
+      "byteStart": 1009,
+      "byteEnd": 5344,
+      "byteLength": 4335,
+      "beforeHash": "a9f9e202cf69ca0fd498be1d1450fe87dc4c1ca06ff6d3d3a59be1cfbeea6728",
+      "afterHash": "a9f9e202cf69ca0fd498be1d1450fe87dc4c1ca06ff6d3d3a59be1cfbeea6728",
+      "sample": "\n  async toolCodeLint(relPath: string): Promise<ToolResult> {\n    try {\n      co"
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "byteStart": 927,
+      "byteEnd": 1009,
+      "newByteLength": 0,
+      "oldTextHash": "ecbbc93e830b7bf6aa362b8c1453556981290455afa911c862106a9035cfee9b",
+      "newTextHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "oldSample": "  private readonly logger = StructuredLogger.from(KloelCodeAnalysisService.name);\n",
+      "newSample": "",
+      "description": "Delete 82 bytes at offset 927"
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~82 character(s) in `backend/src/kloel/kloel-code-analysis.service.ts` (sub-line atomic edit, expansion 1× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}
