@@ -5,6 +5,17 @@ import { BrainEventSpineService } from './brain-event-spine.service';
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { AbiBuilderService, type AbiBuildInput } from './abi/abi-builder.service';
 import type { IdentityAudience } from './lineage/identity-projector.service';
+import { MindPerceptionService } from './mind-perception.service';
+import { MemoryProjector } from './commem/memory.projector';
+import type { MindPerceptEvent } from './mind.types';
+import type { SpineEventRef } from './mind/mind.types';
+import type {
+  AbiConsolidatedRef,
+  AbiEpisodicRef,
+  AbiSalientEvent,
+  AbiValence,
+  AbiWorkingMemoryItem,
+} from './abi/abi-schema';
 
 type UnknownRecord = Record<string, unknown>;
 
@@ -81,7 +92,91 @@ export class BrainCapabilityExecutorService {
     private readonly events: BrainEventSpineService,
     private readonly planLimits: PlanLimitsService,
     private readonly abiBuilder: AbiBuilderService,
+    private readonly mindPerception: MindPerceptionService,
   ) {}
+
+  private readonly memoryProjector = new MemoryProjector();
+
+  /**
+   * Builds Kloel's REAL cognitive substrate from the live perception
+   * substrate (autopilot events, messages, sales, orders via
+   * MindPerceptionService) and projects it into memory dimensions via
+   * the pure MemoryProjector. This is the perception→memory loop
+   * closure: the data is 100% derived from real workspace events — no
+   * hardcode, no synthetic fill. Impurity (DB reads) lives HERE, not in
+   * the PURE AbiBuilderService.
+   */
+  private async buildCognitiveSubstrate(workspaceId: string): Promise<{
+    recentSalientEvents: AbiSalientEvent[];
+    workingMemory: AbiWorkingMemoryItem[];
+    episodicRefs: AbiEpisodicRef[];
+    consolidatedRefs: AbiConsolidatedRef[];
+  }> {
+    const sinceMs = Date.now() - 7 * 24 * 60 * 60 * 1000;
+    const events = await this.mindPerception.since(workspaceId, new Date(sinceMs));
+
+    const valenceOf = (kind: string): AbiValence => {
+      if (/\b(error|failed|fail|abandon|chargeback|refund)\b/i.test(kind)) {
+        return 'negative';
+      }
+      if (/\b(sale|order|paid|converted|executed|success)\b/i.test(kind)) {
+        return 'positive';
+      }
+      return 'neutral';
+    };
+    const eventId = (e: MindPerceptEvent, i: number): string =>
+      `evt_${new Date(e.occurredAt).getTime().toString(36)}_${i.toString(36)}`;
+
+    const ordered = [...events].sort((a, b) => b.occurredAt.getTime() - a.occurredAt.getTime());
+    const recentSalientEvents: AbiSalientEvent[] = ordered.slice(0, 30).map((e, i) => ({
+      eventId: eventId(e, i),
+      eventName: e.kind,
+      occurredAt: e.occurredAt.toISOString(),
+      summary: `${e.kind} — ${e.subject}`,
+      valence: valenceOf(e.kind),
+    }));
+
+    const spineEvents: SpineEventRef[] = events.map((e, i) => ({
+      eventId: eventId(e, i),
+      eventName: e.kind,
+      workspaceId,
+      occurredAt: e.occurredAt.toISOString(),
+      truthMode: 'observed',
+      valence: valenceOf(e.kind),
+      payload: e.payload as Readonly<Record<string, unknown>>,
+    }));
+    const projections = this.memoryProjector.projectAll({
+      events: spineEvents,
+      workspaceId,
+      dimensions: ['working', 'episodic', 'consolidated'],
+    });
+    const byDim = (dim: string) => projections.find((p) => p.dimension === dim);
+
+    const workingMemory: AbiWorkingMemoryItem[] = (byDim('working')?.items ?? [])
+      .slice(0, 50)
+      .map((it) => ({
+        itemId: it.id,
+        kind: 'fact' as const,
+        content: `${it.sourceEventName} (${it.tags.join(',') || 'event'})`,
+        addedAt: it.occurredAt,
+      }));
+    const episodicRefs: AbiEpisodicRef[] = (byDim('episodic')?.items ?? [])
+      .slice(0, 50)
+      .map((it) => ({
+        episodeId: it.id,
+        summary: it.sourceEventName,
+        occurredAt: it.occurredAt,
+      }));
+    const consolidatedRefs: AbiConsolidatedRef[] = (byDim('consolidated')?.items ?? [])
+      .slice(0, 50)
+      .map((it) => ({
+        skillId: it.id,
+        summary: it.sourceEventName,
+        consolidatedAt: it.occurredAt,
+      }));
+
+    return { recentSalientEvents, workingMemory, episodicRefs, consolidatedRefs };
+  }
 
   /**
    * Self-introspection organ. Returns Kloel's REAL current cognitive-state
@@ -100,6 +195,7 @@ export class BrainCapabilityExecutorService {
       ).includes(requested as IdentityAudience)
         ? (requested as IdentityAudience)
         : 'internal';
+      const cognitiveSubstrate = await this.buildCognitiveSubstrate(workspaceId);
       const input: AbiBuildInput = {
         audience,
         currentInput: {
@@ -108,6 +204,7 @@ export class BrainCapabilityExecutorService {
           arrivalTimestamp: new Date().toISOString(),
         },
         perceptionSnapshot: { channel: 'chat', workspaceId },
+        cognitiveSubstrate,
       };
       const result = await this.abiBuilder.build(input);
       if (result.status !== 'ok') {

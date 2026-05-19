@@ -6,10 +6,14 @@ import {
 } from '../lineage/identity-projector.service';
 import {
   ABI_VERSION,
+  AbiConsolidatedRef,
   AbiCurrentInput,
+  AbiEpisodicRef,
   AbiPerceptionSnapshot,
   AbiPulseTruth,
+  AbiSalientEvent,
   AbiTruthMode,
+  AbiWorkingMemoryItem,
   CognitiveStateAbi,
 } from './abi-schema';
 import type { PulseTruthSnapshot } from './pulse-truth-snapshot.service';
@@ -42,6 +46,21 @@ export interface AbiBuildInput {
   readonly firstWorkspaceActivatedAt?: string;
   readonly capabilityIds?: readonly string[];
   readonly now?: Date;
+  /**
+   * ABI 1.1.0 (additive, PCI §4 minor bump). OPTIONAL real cognitive
+   * substrate hydrated by the caller from the live event/memory stores.
+   * The builder stays PURE (pure function of input): when absent it
+   * falls back to the historical empty defaults, so every existing
+   * caller is forward-compatible and unchanged. This is the seam that
+   * closes the perception→memory loop without breaking the frozen
+   * schema or the UTP-ABI-002 purity invariant.
+   */
+  readonly cognitiveSubstrate?: {
+    readonly recentSalientEvents?: readonly AbiSalientEvent[];
+    readonly workingMemory?: readonly AbiWorkingMemoryItem[];
+    readonly episodicRefs?: readonly AbiEpisodicRef[];
+    readonly consolidatedRefs?: readonly AbiConsolidatedRef[];
+  };
 }
 
 export type AbiBuildResult =
@@ -90,8 +109,7 @@ export class AbiBuilderService {
       abiVersion: ABI_VERSION,
       lineage: {
         canonicalName: 'Kloel',
-        genesisEventId:
-          'genesisEventId' in projection ? projection.genesisEventId : '',
+        genesisEventId: 'genesisEventId' in projection ? projection.genesisEventId : '',
         lineageStatus: 'intact',
         operationalAge: projection.operationalAge,
         capabilities: capabilityIds,
@@ -103,15 +121,15 @@ export class AbiBuilderService {
       },
       perception: {
         currentSnapshot: input.perceptionSnapshot,
-        recentSalientEvents: [],
+        recentSalientEvents: input.cognitiveSubstrate?.recentSalientEvents ?? [],
       },
       beliefs: [],
       predictions: { active: [], recentSurprises: [] },
       attention: { candidates: [] },
       memory: {
-        workingMemory: [],
-        episodicRefs: [],
-        consolidatedRefs: [],
+        workingMemory: input.cognitiveSubstrate?.workingMemory ?? [],
+        episodicRefs: input.cognitiveSubstrate?.episodicRefs ?? [],
+        consolidatedRefs: input.cognitiveSubstrate?.consolidatedRefs ?? [],
       },
       capabilities: {
         available: capabilityIds.map((capabilityId) => ({
