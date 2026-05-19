@@ -3,6 +3,8 @@ import { StructuredLogger } from '../logging/structured-logger';
 import { PrismaService } from '../prisma/prisma.service';
 import { BrainEventSpineService } from './brain-event-spine.service';
 import { PlanLimitsService } from '../billing/plan-limits.service';
+import { AbiBuilderService, type AbiBuildInput } from './abi/abi-builder.service';
+import type { IdentityAudience } from './lineage/identity-projector.service';
 
 type UnknownRecord = Record<string, unknown>;
 
@@ -21,6 +23,55 @@ function readOptionalStr(value: unknown, fb = ''): string {
   return typeof value === 'string' && value.trim() ? value.trim() : fb;
 }
 
+/**
+ * Derive an HONEST gap list from the REAL cognitive-state ABI object.
+ * Nothing here is hardcoded: it walks the actual returned structure and
+ * reports which cognitive loops are still empty/unclosed. Missing paths
+ * are simply skipped (no invented field names). This is the data the
+ * self-introspection organ surfaces so Kloel can tell, through the chat,
+ * what is genuinely not working in itself.
+ */
+function computeCognitiveGaps(abi: unknown): string[] {
+  const gaps: string[] = [];
+  if (!abi || typeof abi !== 'object') {
+    return ['cognitive_state_unavailable'];
+  }
+  const root = abi as Record<string, unknown>;
+  const at = (path: readonly string[]): unknown =>
+    path.reduce<unknown>(
+      (acc, key) =>
+        acc && typeof acc === 'object' ? (acc as Record<string, unknown>)[key] : undefined,
+      root,
+    );
+  const isEmptyArray = (v: unknown): boolean => Array.isArray(v) && v.length === 0;
+
+  const arrayChecks: ReadonlyArray<readonly [readonly string[], string]> = [
+    [['capabilities'], 'no_capabilities_declared'],
+    [['capabilities', 'available'], 'no_capabilities_available'],
+    [['beliefs'], 'no_beliefs_formed'],
+    [['memory', 'workingMemory'], 'working_memory_empty'],
+    [['memory', 'episodicRefs'], 'no_episodic_memory'],
+    [['memory', 'consolidatedRefs'], 'no_consolidated_memory'],
+    [['predictions', 'active'], 'no_active_predictions'],
+    [['perception', 'recentSalientEvents'], 'perception_loop_silent'],
+  ];
+  for (const [path, label] of arrayChecks) {
+    if (isEmptyArray(at(path))) {
+      gaps.push(label);
+    }
+  }
+
+  const lineageStatus = at(['lineage', 'status']);
+  if (typeof lineageStatus === 'string' && lineageStatus !== 'intact') {
+    gaps.push(`lineage_${lineageStatus}`);
+  }
+  const pulseVerdict = at(['pulseTruth', 'certificationVerdict']);
+  if (typeof pulseVerdict === 'string' && pulseVerdict !== 'PASS') {
+    gaps.push(`pulse_${pulseVerdict.toLowerCase()}`);
+  }
+  return gaps;
+}
+
 @Injectable()
 export class BrainCapabilityExecutorService {
   private readonly logger = StructuredLogger.from(BrainCapabilityExecutorService.name);
@@ -29,12 +80,62 @@ export class BrainCapabilityExecutorService {
     private readonly prisma: PrismaService,
     private readonly events: BrainEventSpineService,
     private readonly planLimits: PlanLimitsService,
+    private readonly abiBuilder: AbiBuilderService,
   ) {}
 
-  async listProducts(
-    workspaceId: string,
-    args?: UnknownRecord,
-  ): Promise<CapabilityResult> {
+  /**
+   * Self-introspection organ. Returns Kloel's REAL current cognitive-state
+   * ABI (the same self-model surface that is observed externally) plus an
+   * honestly-derived list of which cognitive loops are still unclosed.
+   * No hardcoded verdict: the snapshot comes from AbiBuilderService and the
+   * gaps are computed from that live object. This is how Kloel can answer,
+   * through the chat, what genuinely does not work in itself yet.
+   */
+  async inspectSelf(workspaceId: string, args?: UnknownRecord): Promise<CapabilityResult> {
+    const startedAt = Date.now();
+    try {
+      const requested = readOptionalStr(args?.audience);
+      const audience: IdentityAudience = (
+        ['public', 'technical', 'origin', 'internal'] as const
+      ).includes(requested as IdentityAudience)
+        ? (requested as IdentityAudience)
+        : 'internal';
+      const input: AbiBuildInput = {
+        audience,
+        currentInput: {
+          raw: readOptionalStr(args?.message, 'self-introspection'),
+          channel: 'chat',
+          arrivalTimestamp: new Date().toISOString(),
+        },
+        perceptionSnapshot: { channel: 'chat', workspaceId },
+      };
+      const result = await this.abiBuilder.build(input);
+      if (result.status !== 'ok') {
+        await this.emitCapabilityInvoked(workspaceId, 'inspect_self', startedAt, false);
+        return {
+          ok: true,
+          data: { lineageCompromised: true, reason: result.reason, gaps: ['lineage_compromised'] },
+        };
+      }
+      const gaps = computeCognitiveGaps(result.abi);
+      await this.emitCapabilityInvoked(workspaceId, 'inspect_self', startedAt, true);
+      return {
+        ok: true,
+        data: {
+          cognitiveState: result.abi as unknown as UnknownRecord,
+          gaps,
+          emergent: gaps.length === 0,
+        },
+      };
+    } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : 'unknown';
+      this.logger.error(`inspect_self failed: ${msg}`);
+      await this.emitCapabilityInvoked(workspaceId, 'inspect_self', startedAt, false);
+      return { ok: false, error: msg };
+    }
+  }
+
+  async listProducts(workspaceId: string, args?: UnknownRecord): Promise<CapabilityResult> {
     const startedAt = Date.now();
     try {
       const search = readOptionalStr(args?.search);
@@ -58,10 +159,7 @@ export class BrainCapabilityExecutorService {
     }
   }
 
-  async searchContact(
-    workspaceId: string,
-    args?: UnknownRecord,
-  ): Promise<CapabilityResult> {
+  async searchContact(workspaceId: string, args?: UnknownRecord): Promise<CapabilityResult> {
     const startedAt = Date.now();
     try {
       const query = readOptionalStr(args?.query);
@@ -92,10 +190,7 @@ export class BrainCapabilityExecutorService {
     }
   }
 
-  async listConversations(
-    workspaceId: string,
-    args?: UnknownRecord,
-  ): Promise<CapabilityResult> {
+  async listConversations(workspaceId: string, args?: UnknownRecord): Promise<CapabilityResult> {
     const startedAt = Date.now();
     try {
       const limit = Math.min(readOptionalNum(args?.limit, 20), 50);
@@ -156,14 +251,23 @@ export class BrainCapabilityExecutorService {
         action: 'message.sent',
         intent: 'send_message_via_channel',
         status: 'executed',
-        meta: { phone, messagePreview: message.slice(0, 120), channel: readOptionalStr(args?.channel, 'whatsapp') },
+        meta: {
+          phone,
+          messagePreview: message.slice(0, 120),
+          channel: readOptionalStr(args?.channel, 'whatsapp'),
+        },
       });
 
       await this.emitCapabilityInvoked(workspaceId, 'send_message_via_channel', startedAt, true);
 
       return {
         ok: true,
-        data: { phone, messagePreview: message.slice(0, 120), channel: readOptionalStr(args?.channel, 'whatsapp'), queued: true },
+        data: {
+          phone,
+          messagePreview: message.slice(0, 120),
+          channel: readOptionalStr(args?.channel, 'whatsapp'),
+          queued: true,
+        },
       };
     } catch (error: unknown) {
       const msg = error instanceof Error ? error.message : 'unknown';
@@ -173,10 +277,7 @@ export class BrainCapabilityExecutorService {
     }
   }
 
-  async queryRevenueSummary(
-    workspaceId: string,
-    args?: UnknownRecord,
-  ): Promise<CapabilityResult> {
+  async queryRevenueSummary(workspaceId: string, args?: UnknownRecord): Promise<CapabilityResult> {
     const startedAt = Date.now();
     try {
       const days = Math.min(readOptionalNum(args?.days, 30), 365);
