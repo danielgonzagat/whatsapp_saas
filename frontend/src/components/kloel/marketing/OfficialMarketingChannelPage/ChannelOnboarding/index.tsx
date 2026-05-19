@@ -70,7 +70,18 @@ export function ChannelOnboarding({ channel, initialStep }: Props) {
       return;
     }
     if (channel === 'email') {
-      void data.toggleEmail(true).then(() => data.setCurrentStep(1));
+      void data
+        .toggleEmail(true)
+        .then(() => {
+          // Only advance to the Products step when the channel actually
+          // came up. `useOfficialMarketingChannel` surfaces backend
+          // failures via `data.loadError` / `data.message`, so we gate
+          // on `data.connection?.connected` after the round-trip.
+          if (data.connection?.connected) {
+            data.setCurrentStep(1);
+          }
+        })
+        .catch(() => undefined);
       return;
     }
     void data.openMeta();

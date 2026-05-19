@@ -161,7 +161,7 @@ describe('step vignettes wired by props', () => {
         onContinue={onContinue}
       />,
     );
-    expect(screen.getByText('R$ 197')).toBeTruthy();
+    expect(screen.getByText(/R\$\s*197,00/)).toBeTruthy();
     const advance = screen.getByRole('button', { name: /Avançar/ });
     expect(advance).toBeDisabled();
     fireEvent.click(screen.getByText('Alpha'));

@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useId, useMemo } from 'react';
 import type { OnboardingPalette } from './palette';
 
 interface GlyphProps {
@@ -17,6 +17,9 @@ interface GlyphProps {
  * substituted by a generic icon.
  */
 export function Glyph({ step, products = 0, arsenal = 0, C }: GlyphProps) {
+  const uid = useId();
+  const glowId = `${uid}-coreGlow`;
+  const softId = `${uid}-soft`;
   const productSlots = useMemo(
     () =>
       Array.from({ length: 6 }, (_, i) => {
@@ -57,12 +60,12 @@ export function Glyph({ step, products = 0, arsenal = 0, C }: GlyphProps) {
         style={{ display: 'block', overflow: 'visible' }}
       >
         <defs>
-          <radialGradient id="kloelCoreGlow" cx="50%" cy="50%" r="50%">
+          <radialGradient id={glowId} cx="50%" cy="50%" r="50%">
             <stop offset="0%" stopColor={C.ember} stopOpacity="0.45" />
             <stop offset="60%" stopColor={C.ember} stopOpacity="0.10" />
             <stop offset="100%" stopColor={C.ember} stopOpacity="0" />
           </radialGradient>
-          <filter id="kloelSoft" x="-50%" y="-50%" width="200%" height="200%">
+          <filter id={softId} x="-50%" y="-50%" width="200%" height="200%">
             <feGaussianBlur stdDeviation="1.2" />
           </filter>
         </defs>
@@ -148,7 +151,7 @@ export function Glyph({ step, products = 0, arsenal = 0, C }: GlyphProps) {
               r="3"
               fill={C.ember}
               opacity="0.25"
-              filter="url(#kloelSoft)"
+              filter={`url(#${softId})`}
             />
           </g>
         ))}
@@ -174,7 +177,7 @@ export function Glyph({ step, products = 0, arsenal = 0, C }: GlyphProps) {
                 r="7"
                 fill={C.ember}
                 opacity="0.2"
-                filter="url(#kloelSoft)"
+                filter={`url(#${softId})`}
               />
             ) : null}
           </g>
@@ -200,7 +203,7 @@ export function Glyph({ step, products = 0, arsenal = 0, C }: GlyphProps) {
           cx="150"
           cy="150"
           r="32"
-          fill={alive ? 'url(#kloelCoreGlow)' : 'transparent'}
+          fill={alive ? `url(#${glowId})` : 'transparent'}
         />
         <circle
           cx="150"

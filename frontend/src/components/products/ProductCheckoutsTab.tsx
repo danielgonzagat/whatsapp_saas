@@ -12,8 +12,34 @@ import {
 import { useCheckoutFormState } from '@/components/products/useCheckoutFormState';
 import { colors } from '@/lib/design-tokens';
 import { Pencil, Plus, Trash2, X } from 'lucide-react';
-import { useCallback, useEffect, useId, useState } from 'react';
+import { useCallback, useEffect, useId, useState, useSyncExternalStore } from 'react';
 import { mutate } from 'swr';
+
+/**
+ * Network-online subscription helpers driving {@link useSyncExternalStore}.
+ * Defined at module scope so React sees a stable subscribe ref; the SSR
+ * snapshot returns `true` so the server HTML never claims the user is offline,
+ * eliminating the hydration mismatch the previous lazy-init pattern caused.
+ */
+function subscribeOnlineStatus(callback: () => void): () => void {
+  if (typeof window === 'undefined') {
+    return () => undefined;
+  }
+  window.addEventListener('online', callback);
+  window.addEventListener('offline', callback);
+  return () => {
+    window.removeEventListener('online', callback);
+    window.removeEventListener('offline', callback);
+  };
+}
+
+function getOnlineSnapshot(): boolean {
+  return typeof navigator === 'undefined' ? true : navigator.onLine;
+}
+
+function getServerOnlineSnapshot(): boolean {
+  return true;
+}
 
 /** Product checkouts tab. */
 export function ProductCheckoutsTab({ productId }: { productId: string }) {
@@ -35,9 +61,7 @@ export function ProductCheckoutsTab({ productId }: { productId: string }) {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [checkoutPendingDelete, setCheckoutPendingDelete] = useState<Checkout | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
-  const [isOnline, setIsOnline] = useState(() =>
-    typeof window === 'undefined' ? true : window.navigator.onLine,
-  );
+  const isOnline = useSyncExternalStore(subscribeOnlineStatus, getOnlineSnapshot, getServerOnlineSnapshot);
 
   const fetch_ = useCallback(() => {
     apiFetch<Checkout[]>(`/products/${productId}/checkouts`)
@@ -55,18 +79,6 @@ export function ProductCheckoutsTab({ productId }: { productId: string }) {
     fetch_();
   }, [fetch_]);
 
-  useEffect(() => {
-    if (typeof window === 'undefined') {
-      return;
-    }
-    const syncNetworkState = () => setIsOnline(window.navigator.onLine);
-    window.addEventListener('online', syncNetworkState);
-    window.addEventListener('offline', syncNetworkState);
-    return () => {
-      window.removeEventListener('online', syncNetworkState);
-      window.removeEventListener('offline', syncNetworkState);
-    };
-  }, []);
 
   const resetForm = () => {
     hookResetForm();
