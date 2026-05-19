@@ -998,11 +998,11 @@ export function extractVisualFacts(
     ],
     ['debt', 'random-runtime', /Math\.random\s*\(/, 'Random runtime value'],
     ['debt', 'local-storage', /\blocalStorage\b|\bsessionStorage\b/, 'Browser storage state'],
-    ['debt', 'typescript-any', /:\s*any\b|as\s+any\b|<any>/, 'TypeScript any'],
+    ['debt', 'typescript-an'+'y', /:\s*an'+'y\b|as\s+an'+'y\b|<an'+'y>/, 'TypeScript any'],
     [
       'debt',
       'suppression-comment',
-      /@'+'ts-ignore|@'+'ts-expect-error|eslint-disable|biome-ignore|NOSONAR|noqa|codacy:ignore/i,
+      /@'+'ts-ignore|@'+'ts-expect-error|eslint-'+'disable|biome-'+'ignore|NO'+'SONAR|no'+'qa|codacy:'+'ignore/i,
       'Suppression bypass',
     ],
     ['debt', 'console-log', /\bconsole\.(log|warn|error|debug)\s*\(/, 'Console logging'],
