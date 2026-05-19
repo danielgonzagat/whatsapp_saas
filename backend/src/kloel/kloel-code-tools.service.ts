@@ -50,7 +50,6 @@ interface EslintFileResult {
   messages: EslintMessage[];
 }
 
-
 @Injectable()
 export class KloelCodeToolsService {
   private readonly logger = StructuredLogger.from(KloelCodeToolsService.name);
