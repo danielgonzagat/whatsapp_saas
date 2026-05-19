@@ -1,10 +1,14 @@
 import { useEffect, useState } from 'react';
-import { kloelT } from '@/lib/i18n/t';
 import { KLOEL_THEME } from '@/lib/kloel-theme';
 import type { ChannelKey } from '../OfficialMarketingChannelPage.helpers';
 import { CHANNEL_META } from '../OfficialMarketingChannelPage.helpers';
 
-export const SETUP_STEPS = Object.freeze(['Conexão', 'Produtos', 'Arsenal', 'Configuração'] as const);
+export const SETUP_STEPS = Object.freeze([
+  'Conectar',
+  'Produtos',
+  'Arsenal',
+  'Configurar',
+] as const);
 
 interface Props {
   currentStep: number;
@@ -17,100 +21,122 @@ const MOBILE_BREAKPOINT = 640;
 
 function useMobileViewport(): boolean {
   const [isMobile, setIsMobile] = useState(false);
-
   useEffect(() => {
     if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
       return;
     }
-
-    const mediaQuery = window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT - 1}px)`);
-    const apply = () => setIsMobile(mediaQuery.matches);
+    const mq = window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT - 1}px)`);
+    const apply = () => setIsMobile(mq.matches);
     apply();
-    mediaQuery.addEventListener?.('change', apply);
-    return () => mediaQuery.removeEventListener?.('change', apply);
+    mq.addEventListener?.('change', apply);
+    return () => mq.removeEventListener?.('change', apply);
   }, []);
-
   return isMobile;
 }
 
+/**
+ * Circular numbered step indicator with connectors (Conectar → Produtos →
+ * Arsenal → Configurar). Theme-token based so it adapts to light/dark
+ * automatically. Steps are clickable once the real setup has loaded.
+ */
 export function SetupSteps({ currentStep, setupLoaded, channel, onStepClick }: Props) {
-  const meta = CHANNEL_META[channel];
+  const accent = CHANNEL_META[channel].color;
   const isMobile = useMobileViewport();
 
   return (
-    <ol
+    <div
       style={{
-        display: 'grid',
-        gridTemplateColumns: isMobile
-          ? 'repeat(2, minmax(0, 1fr))'
-          : 'repeat(4, minmax(0, 1fr))',
-        gap: 10,
-        margin: '0 0 22px',
+        display: 'flex',
+        alignItems: 'flex-start',
+        gap: 0,
+        margin: '0 0 28px',
         padding: 0,
-        listStyle: 'none',
-        overflowX: 'auto',
       }}
     >
-      {SETUP_STEPS.map((step, index) => (
-        <li
-          key={step}
-          aria-current={currentStep === index ? 'step' : undefined}
-          style={{
-            minHeight: 72,
-            minWidth: isMobile ? 0 : 170,
-          }}
-        >
-          <button
-            type="button"
-            aria-label={`${kloelT(`Passo`)} ${index + 1}`}
-            disabled={!setupLoaded}
-            onClick={() => onStepClick(index)}
+      {SETUP_STEPS.map((label, index) => {
+        const done = index < currentStep;
+        const active = index === currentStep;
+        const reached = index <= currentStep;
+        return (
+          <div
+            key={label}
             style={{
-              width: '100%',
-              minHeight: 72,
-              borderRadius: 6,
-              border: `1px solid ${KLOEL_THEME.borderPrimary}`,
-              display: 'grid',
-              gridTemplateColumns: '32px 1fr',
-              gap: 10,
-              alignItems: 'center',
-              background:
-                currentStep === index ? 'rgba(232,93,48,.14)' : KLOEL_THEME.bgSecondary,
-              padding: 14,
-              cursor: setupLoaded ? 'pointer' : 'not-allowed',
-              opacity: setupLoaded ? 1 : 0.62,
-              textAlign: 'left',
+              display: 'flex',
+              alignItems: 'flex-start',
+              flex: index < SETUP_STEPS.length - 1 ? 1 : 'none',
+              minWidth: 0,
             }}
           >
-            <span
+            <button
+              type="button"
+              aria-current={active ? 'step' : undefined}
+              aria-label={`Passo ${index + 1}: ${label}`}
+              disabled={!setupLoaded}
+              onClick={() => onStepClick(index)}
               style={{
-                width: 32,
-                height: 32,
-                borderRadius: 6,
-                display: 'inline-flex',
+                display: 'flex',
+                flexDirection: 'column',
                 alignItems: 'center',
-                justifyContent: 'center',
-                background: meta.color,
-                color: KLOEL_THEME.textOnAccent,
-                fontWeight: 800,
-                fontFamily: "'JetBrains Mono', monospace",
+                gap: 8,
+                background: 'transparent',
+                border: 'none',
+                padding: 0,
+                cursor: setupLoaded ? 'pointer' : 'not-allowed',
+                opacity: setupLoaded ? 1 : 0.55,
                 flexShrink: 0,
+                width: isMobile ? 56 : 92,
               }}
             >
-              {index + 1}
-            </span>
-            <span
-              style={{
-                color: KLOEL_THEME.textPrimary,
-                lineHeight: 1.45,
-                fontSize: isMobile ? 14 : 16,
-              }}
-            >
-              {step}
-            </span>
-          </button>
-        </li>
-      ))}
-    </ol>
+              <span
+                style={{
+                  width: 34,
+                  height: 34,
+                  borderRadius: '50%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: 13,
+                  fontWeight: 800,
+                  fontFamily: "'JetBrains Mono', monospace",
+                  background: reached ? accent : KLOEL_THEME.bgSecondary,
+                  color: reached ? KLOEL_THEME.textOnAccent : KLOEL_THEME.textSecondary,
+                  border: active
+                    ? `2px solid ${accent}`
+                    : `2px solid ${reached ? accent : KLOEL_THEME.borderPrimary}`,
+                  boxShadow: active ? `0 0 0 4px ${KLOEL_THEME.accentLight}` : 'none',
+                  transition: 'all .25s',
+                }}
+              >
+                {done ? '✓' : index + 1}
+              </span>
+              <span
+                style={{
+                  fontSize: isMobile ? 10 : 12,
+                  textAlign: 'center',
+                  color: active ? KLOEL_THEME.textPrimary : KLOEL_THEME.textSecondary,
+                  fontWeight: active ? 700 : 500,
+                  lineHeight: 1.3,
+                }}
+              >
+                {label}
+              </span>
+            </button>
+            {index < SETUP_STEPS.length - 1 ? (
+              <span
+                aria-hidden
+                style={{
+                  flex: 1,
+                  height: 2,
+                  marginTop: 17,
+                  minWidth: 12,
+                  background: index < currentStep ? accent : KLOEL_THEME.borderPrimary,
+                  transition: 'background .25s',
+                }}
+              />
+            ) : null}
+          </div>
+        );
+      })}
+    </div>
   );
 }

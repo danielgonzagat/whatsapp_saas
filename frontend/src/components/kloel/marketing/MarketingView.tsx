@@ -195,9 +195,7 @@ export default function MarketingView({ defaultTab = 'conversas' }: { defaultTab
   // Strip ?meta=success&channel=... from the URL after handling so a tab
   // switch or refresh doesn't replay the auto-advance.
   const clearMetaQuery = useCallback(() => {
-    if (!pathname || !searchParams) {
-      return;
-    }
+    if (!pathname || !searchParams) return;
     const next = new URLSearchParams(searchParams.toString());
     let touched = false;
     for (const key of ['meta', 'reason', 'channel']) {
@@ -206,9 +204,7 @@ export default function MarketingView({ defaultTab = 'conversas' }: { defaultTab
         touched = true;
       }
     }
-    if (!touched) {
-      return;
-    }
+    if (!touched) return;
     const qs = next.toString();
     router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
   }, [pathname, searchParams, router]);
@@ -370,19 +366,15 @@ export default function MarketingView({ defaultTab = 'conversas' }: { defaultTab
   );
 
   const shouldShowWizard = useCallback(
-    (channelKey: string): boolean => {
-      if (!connectionStatus) {
-        return false;
-      }
-      const connected = isChannelConnected(channelKey);
-      if (!connected) {
-        return true;
-      }
-      const setup = channelSetupMap[channelKey];
-      if (!setup || setup.completedAt === null) {
-        return true;
-      }
-      return false;
+    (_channelKey: string): boolean => {
+      // Owner directive (2026-05-19): the official 4-step wizard
+      // (Conectar/Produtos/Arsenal/Configurar) is THE screen for every
+      // channel. It must NEVER fall back to the legacy per-channel tab —
+      // that conditional caused a flash-then-revert: the wizard rendered
+      // for ~1s while channelSetupMap was empty, then once it loaded with
+      // completedAt set the gate flipped to the old tab and its broken
+      // channel rectangles. Always render the wizard.
+      return true;
     },
     [connectionStatus, channelSetupMap, isChannelConnected],
   );
