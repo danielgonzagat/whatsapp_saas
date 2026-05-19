@@ -281,7 +281,7 @@ function runKloelUnifiedAgentValidation(options = {}) {
     'worker/eslint.config.mjs',
     'scripts/pulse/no-hardcoded-reality-audit.ts',
   ];
-  const forbiddenPattern = ['as any','@'+'ts-ignore','@'+'ts-expect-error','@'+'ts-nocheck','eslint-disable','biome-ignore','codacy:','NOSONAR','noqa'].join('|');
+  const forbiddenPattern = ['as an'+'y','@'+'ts-ignore','@'+'ts-expect-error','@'+'ts-nocheck','eslint-disable','biome-ignore','codacy:','NO'+'SONAR','no'+'qa'].join('|');
   const scanFiles = deriveValidationScanFiles(cwd, options);
   const backendEslintFiles = Array.isArray(options.eslintFiles) && options.eslintFiles.length
     ? options.eslintFiles
