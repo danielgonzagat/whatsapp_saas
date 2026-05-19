@@ -251,6 +251,14 @@ export class KloelToolDispatcherService {
           return await this.codeToolsService.toolBuildStatus(
             typeof args.scope === 'string' ? args.scope : undefined,
           );
+        case 'code_lint':
+          return await this.codeToolsService.toolCodeLint(
+            typeof args.path === 'string' ? args.path : '',
+          );
+        case 'code_detect_issues':
+          return await this.codeToolsService.toolCodeDetectIssues(
+            typeof args.path === 'string' ? args.path : '',
+          );
         default:
           return { success: false, error: `Ferramenta desconhecida: ${toolName}` };
       }

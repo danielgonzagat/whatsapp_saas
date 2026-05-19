@@ -187,4 +187,42 @@ export const KLOEL_CHAT_TOOLS_CODE: ChatCompletionTool[] = [
       },
     },
   },
+  {
+    type: 'function',
+    function: {
+      name: 'code_lint',
+      description:
+        'Executa ESLint em um arquivo específico e retorna erros e warnings com linha, coluna e regra. ' +
+        'Use para verificar qualidade de código antes de propor mudanças.',
+      parameters: {
+        type: 'object',
+        properties: {
+          path: {
+            type: 'string',
+            description: 'Caminho relativo do arquivo a ser analisado',
+          },
+        },
+        required: ['path'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'code_detect_issues',
+      description:
+        'Analisa um arquivo em busca de problemas comuns: TODOs/FIXMEs, console.log direto, any explícito, ' +
+        '@ts-ignore, testes com .only(), e código potencialmente morto (exportações usadas 1x ou menos).',
+      parameters: {
+        type: 'object',
+        properties: {
+          path: {
+            type: 'string',
+            description: 'Caminho relativo do arquivo a ser analisado',
+          },
+        },
+        required: ['path'],
+      },
+    },
+  },
 ];
