@@ -64,6 +64,7 @@ export interface AbiBuildInput {
     readonly consolidatedRefs?: readonly AbiConsolidatedRef[];
     readonly beliefs?: readonly AbiBelief[];
     readonly predictions?: AbiPredictions;
+    readonly pulseTruth?: AbiPulseTruth;
   };
 }
 
@@ -153,14 +154,20 @@ export class AbiBuilderService {
           windowHours: 24,
         },
       },
-      pulseTruth: this.buildPulseTruth(measuredAt),
+      pulseTruth: this.buildPulseTruth(measuredAt, input.cognitiveSubstrate?.pulseTruth),
       currentInput: input.currentInput,
     };
 
     return { status: 'ok', abi };
   }
 
-  private buildPulseTruth(measuredAt: string): AbiPulseTruth {
+  private buildPulseTruth(measuredAt: string, override?: AbiPulseTruth): AbiPulseTruth {
+    // ABI 1.1.0 additive seam (ADR-0008): caller may hydrate a REAL,
+    // spine-evidence-grounded pulseTruth. Builder stays PURE — pure
+    // function of input; absent ⇒ historical static snapshot/default.
+    if (override) {
+      return override;
+    }
     if (this.pulseTruthSnapshot) {
       return this.pulseTruthSnapshot.snapshot();
     }

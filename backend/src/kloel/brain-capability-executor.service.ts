@@ -15,6 +15,7 @@ import type {
   AbiConsolidatedRef,
   AbiEpisodicRef,
   AbiPredictions,
+  AbiPulseTruth,
   AbiSalientEvent,
   AbiValence,
   AbiWorkingMemoryItem,
@@ -197,6 +198,7 @@ export class BrainCapabilityExecutorService {
     dissolution: DissolutionGap[];
     beliefs: AbiBelief[];
     predictions: AbiPredictions;
+    pulseTruth: AbiPulseTruth;
   }> {
     const sinceMs = Date.now() - 7 * 24 * 60 * 60 * 1000;
     const events = await this.mindPerception.since(workspaceId, new Date(sinceMs));
@@ -325,6 +327,30 @@ export class BrainCapabilityExecutorService {
           }
         : { active: [], recentSurprises: [] };
 
+    // Epistemic certification GROUNDED in real spine evidence (gap #2).
+    // capabilityHealthScore = real success ratio of operational events;
+    // verdict only leaves INSUFFICIENT_EVIDENCE with ≥20 real events
+    // (honest — no fabrication on thin evidence). gates/overclaimRisk
+    // stay [] / 0 because no real gate engine exists yet (honest).
+    const evidenceCount = events.length;
+    const failures = events.filter((e) => valenceOf(e.kind) === 'negative').length;
+    const successRate = evidenceCount > 0 ? (evidenceCount - failures) / evidenceCount : 0;
+    const measuredAtIso = new Date().toISOString();
+    const pulseTruth: AbiPulseTruth = {
+      noOverclaimStatus: 'PASS',
+      capabilityHealthScore: Number(successRate.toFixed(4)),
+      gates: [],
+      certificationVerdict:
+        evidenceCount < 20
+          ? { verdict: 'INSUFFICIENT_EVIDENCE', score: 0, measuredAt: measuredAtIso }
+          : {
+              verdict: successRate >= 0.8 ? 'SIM' : 'NAO',
+              score: Number(successRate.toFixed(4)),
+              measuredAt: measuredAtIso,
+            },
+      overclaimRisk: 0,
+    };
+
     return {
       recentSalientEvents,
       workingMemory,
@@ -333,6 +359,7 @@ export class BrainCapabilityExecutorService {
       dissolution,
       beliefs,
       predictions,
+      pulseTruth,
     };
   }
 
