@@ -2,7 +2,6 @@
 
 import { CHANNEL_META, type ChannelKey } from './OfficialMarketingChannelPage.helpers';
 import { useOfficialMarketingChannel } from './OfficialMarketingChannelPage/use-official-marketing-channel';
-import { ChannelNav } from './OfficialMarketingChannelPage/ChannelNav';
 import { ChannelHeader } from './OfficialMarketingChannelPage/ChannelHeader';
 import { ProofCards } from './OfficialMarketingChannelPage/ProofCards';
 import { SetupSteps } from './OfficialMarketingChannelPage/SetupSteps';
@@ -34,8 +33,6 @@ export function OfficialMarketingChannelPage({ channel, initialStep }: Props) {
         fontFamily: "'Sora', system-ui, sans-serif",
       }}
     >
-      <ChannelNav channel={channel} />
-
       <section style={{ maxWidth: 920, margin: '0 auto' }}>
         <ChannelHeader
           label={meta.label}
