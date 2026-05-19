@@ -257,7 +257,15 @@ export class KloelThinkerService {
               const capArrays = (_k: string, v: unknown): unknown =>
                 Array.isArray(v) ? v.slice(0, 8) : v;
               let abiStr = JSON.stringify(abiResult.abi, capArrays);
-              const ABI_MAX = 6000;
+              // ROOT-CAUSE FIX (runtime-evidenced via KLOEL_ABI_PATH
+              // abiLen=6018): the 6000 hard cap blind-sliced the JSON
+              // and decapitated memory/episodicRefs/recentSalientEvents
+              // (where recallable facts live) → cross-session recall
+              // never worked substrate-driven. Arrays are already capped
+              // to 8 (capArrays); 24000 fits the full enriched ABI well
+              // within DeepSeek V4 Pro's context. Slice stays only as a
+              // never-reached last resort.
+              const ABI_MAX = 24000;
               if (abiStr.length > ABI_MAX) {
                 abiStr = `${abiStr.slice(0, ABI_MAX)}…(state_truncated)`;
               }
