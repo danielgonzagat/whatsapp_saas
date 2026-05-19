@@ -13,6 +13,7 @@ import {
   AbiPredictions,
   AbiPerceptionSnapshot,
   AbiPulseTruth,
+  AbiAttention,
   AbiSalientEvent,
   AbiTruthMode,
   AbiValenceSection,
@@ -67,6 +68,7 @@ export interface AbiBuildInput {
     readonly predictions?: AbiPredictions;
     readonly pulseTruth?: AbiPulseTruth;
     readonly valence?: AbiValenceSection;
+    readonly attention?: AbiAttention;
   };
 }
 
@@ -132,7 +134,7 @@ export class AbiBuilderService {
       },
       beliefs: input.cognitiveSubstrate?.beliefs ?? [],
       predictions: input.cognitiveSubstrate?.predictions ?? { active: [], recentSurprises: [] },
-      attention: { candidates: [] },
+      attention: input.cognitiveSubstrate?.attention ?? { candidates: [] },
       memory: {
         workingMemory: input.cognitiveSubstrate?.workingMemory ?? [],
         episodicRefs: input.cognitiveSubstrate?.episodicRefs ?? [],
