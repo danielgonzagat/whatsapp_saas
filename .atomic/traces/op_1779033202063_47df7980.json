@@ -1,0 +1,59 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779033202063_47df7980",
+  "ts": "2026-05-17T15:53:22.064Z",
+  "file": "docs/ai/atomic-os-benchmark/tools/atomic-call.cjs",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "targetUnit": "text_span",
+  "intention": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 2050,
+    "lineRewriteSurfaceChars": 104,
+    "expansionFactorAvoided": 0.05,
+    "bytesNet": 1987,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "135b61d375ca725ee7bc1f7c2475ec0f6a33dd1c380882d00809f804eed93841",
+  "proposedSha256": "135b61d375ca725ee7bc1f7c2475ec0f6a33dd1c380882d00809f804eed93841",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- docs/ai/atomic-os-benchmark/tools/atomic-call.cjs (atomic char-level)\u001b[0m\n  }\n  \n  \u001b[32m{+function compactOperationResult(operation) {\n    const summary = { tool: operation.tool };\n    if (operation.selector) summary.selector = operation.selector;\n    if (operation.importName) summary.importName = operation.importName;\n    const output = operation.output;\n    if (output && typeof output === 'object') {\n      summary.ok = output.ok !== false;\n      if (output.changed !== undefined) summary.changed = output.changed;\n      if (output.skipped !== undefined) summary.skipped = output.skipped;\n      if (output.reason) summary.reason = output.reason;\n      if (output.tracePath) summary.tracePath = output.tracePath;\n      if (output.operation) summary.operation = output.operation;\n      return summary;\n    }\n    const text = String(output || '');\n    summary.ok = !/\\b(ERROR|failed|ok[\"']?\\s*:\\s*false)\\b/i.test(text);\n    const traceMatch = text.match(/Trace:\\s*([^\\s]+)/) || text.match(/[\"']tracePath[\"']\\s*:\\s*[\"']([^\"']+)[\"']/);\n    if (traceMatch) summary.tracePath = traceMatch[1];\n    const changedMatch = text.match(/[\"']changed[\"']\\s*:\\s*(true|false)/);\n    if (changedMatch) summary.changed = changedMatch[1] === 'true';\n    return summary;\n  }\n  \n  function compactPayload(payload) {\n    return {\n      ok: payload.ok,\n      operation: payload.operation,\n      idempotent: payload.idempotent || undefined,\n      sourceFile: payload.sourceFile,\n      targetFile: payload.targetFile,\n      selectors: payload.selectors,\n      functionNames: payload.functionNames,\n      importModule: payload.importModule,\n      validation: payload.validation,\n      operationCount: Array.isArray(payload.operations) ? payload.operations.length : 0,\n      operationSummary: Array.isArray(payload.operations) ? payload.operations.map(compactOperationResult) : [],\n    };\n  }\n  \n  function emitPayload(payload, options = {}) {\n    const reportMode = options.report || options.reportMode || process.env.ATOMIC_CALL_REPORT || '';\n    const printable = reportMode === 'compact' ? compactPayload(payload) : payload;\n    console.log(JSON.stringify(printable, null, 2));\n  }\n  +}\u001b[0m\n  function fileHasNamedImport(file, importNames, importModule) {\n    if (!fs.existsSync(file)) return false;",
+  "preservedZones": [
+    {
+      "kind": "unchanged_context",
+      "description": "Everything outside the modified zone is preserved byte-for-byte by the atomic operation."
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "oldTextHash": "0f0f9b564ff0576a736c31c6b5b1fa3e510a1d16868ad4e25bdbf8104d334ce6",
+      "newTextHash": "135b61d375ca725ee7bc1f7c2475ec0f6a33dd1c380882d00809f804eed93841",
+      "description": "The operation changed the highlighted span shown in inlinePreview."
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~2050 character(s) in `docs/ai/atomic-os-benchmark/tools/atomic-call.cjs` (sub-line atomic edit, expansion 0.05× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

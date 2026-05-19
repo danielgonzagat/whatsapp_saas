@@ -1,0 +1,59 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779043887466_fab293a0",
+  "ts": "2026-05-17T18:51:27.466Z",
+  "file": "docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "targetUnit": "text_span",
+  "intention": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 5054,
+    "lineRewriteSurfaceChars": 89,
+    "expansionFactorAvoided": 0.02,
+    "bytesNet": 5025,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "9c5dff099ddd2174507f89a4b2d3e832fd6cb486dbee20738945e9fe0feff9ab",
+  "proposedSha256": "9c5dff099ddd2174507f89a4b2d3e832fd6cb486dbee20738945e9fe0feff9ab",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs (atomic char-level)\u001b[0m\n  }\n  \n  \u001b[32m{+function isSiblingRuntimeFile(rel, scopePrefix, targetRel, specRel, targetExt) {\n    if (rel === targetRel || rel === specRel) return false;\n    if (path.posix.extname(rel) !== (targetExt || '.ts')) return false;\n    const scopeDir = path.posix.dirname(scopePrefix);\n    const scopeBase = path.posix.basename(scopePrefix);\n    if (path.posix.dirname(rel) !== scopeDir) return false;\n    const baseName = path.posix.basename(rel);\n    if (!baseName.startsWith(scopeBase)) return false;\n    if (/(^|[.-])(spec|test)([.-]|$)|spec-helpers/.test(baseName)) return false;\n    return true;\n  }\n  \n  function siblingModuleInventory(worktree, scopePrefix, targetRel, specRel, targetExt) {\n    const scopeDir = path.posix.dirname(scopePrefix);\n    const scopeBase = path.posix.basename(scopePrefix);\n    return runGit(worktree, ['ls-files', path.posix.join(scopeDir, scopeBase + '*' + (targetExt || '.ts'))])\n      .filter((rel) => isSiblingRuntimeFile(rel, scopePrefix, targetRel, specRel, targetExt))\n      .map((rel) => {\n        const text = readText(abs(worktree, rel));\n        const exportedRuntimeSymbols = symbolSpanInventory(text, abs(worktree, rel), worktree)\n          .filter((span) => span.isPublicSurface)\n          .map((span) => ({ name: span.name, lines: span.lines }));\n        const suffix = path.posix.basename(rel, targetExt || '.ts').slice(scopeBase.length);\n        const moduleTokens = [...new Set([\n          ...splitName(suffix),\n          ...exportedRuntimeSymbols.flatMap((symbol) => splitName(symbol.name)),\n        ])];\n        return {\n          file: rel,\n          lines: lineCount(abs(worktree, rel)),\n          exportedRuntimeSymbols,\n          moduleTokens,\n        };\n      })\n      .filter((module) => module.exportedRuntimeSymbols.length > 0);\n  }\n  \n  function clusterMemberDetails(clusterPlan) {\n    return clusterPlan.clusters.flatMap((cluster) => {\n      const details = Array.isArray(cluster.memberDetails) && cluster.memberDetails.length > 0\n        ? cluster.memberDetails\n        : (cluster.symbols || []).map((name) => ({ name, lines: 0, calls: [], isPublicSurface: false, assignmentReason: 'symbol-list' }));\n      return details.map((detail) => ({ ...detail, cluster: cluster.cluster }));\n    });\n  }\n  \n  function bestSiblingModuleForSymbol(symbol, modules) {\n    const symbolTokens = splitName(symbol.name);\n    return modules\n      .map((module) => ({\n        module,\n        score: tokenRelationScore(symbolTokens, module.moduleTokens),\n      }))\n      .filter((candidate) => candidate.score > 0)\n      .sort((left, right) => right.score - left.score || left.module.lines - right.module.lines || left.module.file.localeCompare(right.module.file))[0] || null;\n  }\n  \n  function residualModuleFile(scopePrefix, targetExt) {\n    return scopePrefix + '-residual.helpers' + (targetExt || '.ts');\n  }\n  \n  function planSiblingModuleReuse(worktree, scopePrefix, targetRel, specRel, targetExt, clusterPlan) {\n    const modules = siblingModuleInventory(worktree, scopePrefix, targetRel, specRel, targetExt);\n    const memberDetails = clusterMemberDetails(clusterPlan);\n    const assignments = [];\n    for (const symbol of memberDetails) {\n      if (!symbol.isPublicSurface) continue;\n      const match = bestSiblingModuleForSymbol(symbol, modules);\n      if (!match) continue;\n      assignments.push({\n        symbol: symbol.name,\n        lines: symbol.lines,\n        existingModule: match.module.file,\n        score: match.score,\n        reason: 'public_symbol_matches_existing_runtime_sibling',\n      });\n    }\n    const reusedNames = new Set(assignments.map((assignment) => assignment.symbol));\n    const residualSymbols = memberDetails\n      .filter((symbol) => !reusedNames.has(symbol.name))\n      .map((symbol) => ({\n        name: symbol.name,\n        lines: symbol.lines,\n        isPublicSurface: symbol.isPublicSurface,\n        assignmentReason: symbol.assignmentReason,\n      }));\n    const existingModules = modules.map((module) => ({\n      file: module.file,\n      lines: module.lines,\n      exportedRuntimeSymbols: module.exportedRuntimeSymbols.map((symbol) => symbol.name),\n      reusedSymbols: assignments\n        .filter((assignment) => assignment.existingModule === module.file)\n        .map((assignment) => assignment.symbol),\n    })).filter((module) => module.reusedSymbols.length > 0);\n    const applied = existingModules.length > 0;\n    return {\n      available: modules.length > 0,\n      applied,\n      reason: applied ? 'existing_runtime_siblings_cover_public_surface' : (modules.length > 0 ? 'no_public_symbol_matched_existing_runtime_sibling' : 'no_existing_runtime_sibling_modules'),\n      existingModules,\n      reuseAssignments: assignments,\n      residualObservedLines: sumValues(residualSymbols, (symbol) => symbol.lines),\n      residualSymbols: residualSymbols.map((symbol) => symbol.name),\n      residualWriteTargets: applied\n        ? [{\n            file: residualModuleFile(scopePrefix, targetExt),\n            symbols: residualSymbols.map((symbol) => symbol.name),\n            responsibility: 'Extract residual behavior not already covered by existing runtime sibling modules: ' + residualSymbols.map((symbol) => symbol.name).join(', '),\n          }]\n        : [],\n    };\n  }\n  +}\u001b[0m\n  function shellQuote(value) {\n    return \"'\" + String(value).replaceAll(\"'\", \"'\\\\''\") + \"'\";",
+  "preservedZones": [
+    {
+      "kind": "unchanged_context",
+      "description": "Everything outside the modified zone is preserved byte-for-byte by the atomic operation."
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "oldTextHash": "f7a3e768e67068b1013cd667f7c156d22cd3ba37379ba4403ff13adb884b879c",
+      "newTextHash": "9c5dff099ddd2174507f89a4b2d3e832fd6cb486dbee20738945e9fe0feff9ab",
+      "description": "The operation changed the highlighted span shown in inlinePreview."
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~5054 character(s) in `docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs` (sub-line atomic edit, expansion 0.02× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

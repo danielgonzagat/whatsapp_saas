@@ -1,0 +1,59 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779162429211_10b8dbea",
+  "ts": "2026-05-19T03:47:09.211Z",
+  "file": "frontend/src/components/kloel/marketing/OfficialMarketingChannelPage/StepConnection.tsx",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "atomic_create_file",
+  "operator": "atomic_create_file",
+  "targetUnit": "text_span",
+  "intention": "atomic_create_file",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 4156,
+    "lineRewriteSurfaceChars": 0,
+    "expansionFactorAvoided": 0,
+    "bytesNet": 4156,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "df272e485dc4a459e7fc16929b47e6d2fc1bf1e8b21112ea3a354889fc7c91e4",
+  "proposedSha256": "df272e485dc4a459e7fc16929b47e6d2fc1bf1e8b21112ea3a354889fc7c91e4",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- frontend/src/components/kloel/marketing/OfficialMarketingChannelPage/StepConnection.tsx (atomic char-level)\u001b[0m\n  \u001b[32m{+import { KLOEL_THEME } from '@/lib/kloel-theme';\n  import { CHANNEL_META, type ChannelKey, type TikTokModeData } from '../OfficialMarketingChannelPage.helpers';\n  import { TikTokModeBadge } from './TikTokModeBadge';\n  \n  interface Props {\n    channel: ChannelKey;\n    tiktokMode: TikTokModeData | null;\n  }\n  \n  const CONNECT_COPY: Record<ChannelKey, { provider: string; how: string[] }> = {\n    whatsapp: {\n      provider: 'WhatsApp Cloud API (Meta oficial)',\n      how: [\n        'Sem QR Code — conexão oficial via login Meta Business.',\n        'Você autoriza o número no Gerenciador da Meta; o Kloel passa a enviar e responder pela API oficial.',\n        'Mensagens, leads e vendas aparecem no painel do canal automaticamente.',\n      ],\n    },\n    instagram: {\n      provider: 'Instagram via Meta oficial',\n      how: [\n        'Login oficial Meta — autoriza a conta Instagram Business vinculada.',\n        'O Kloel responde DMs e comentários pela Graph API oficial.',\n        'Sem senha compartilhada, sem automação não-oficial.',\n      ],\n    },\n    facebook: {\n      provider: 'Facebook Pages via Meta oficial',\n      how: [\n        'Login oficial Meta — autoriza a Página do Facebook.',\n        'O Kloel responde mensagens e comentários pela API oficial.',\n        'Tudo auditado e revogável no Gerenciador da Meta.',\n      ],\n    },\n    tiktok: {\n      provider: 'TikTok via OAuth oficial',\n      how: [\n        'Login oficial TikTok — conta de criador ou advertiser.',\n        'Sem QR Code: autorização pelo fluxo oficial do TikTok.',\n        'O modo conectado define quais ações o Kloel pode executar.',\n      ],\n    },\n    email: {\n      provider: 'Email transacional Kloel',\n      how: [\n        'Ativação direta — sem QR Code.',\n        'O Kloel passa a enviar campanhas e responder pelo domínio configurado.',\n        'Use \"Enviar teste\" para validar a entrega antes de ativar a IA.',\n      ],\n    },\n  };\n  \n  /**\n   * Step 0 hero. Explains the OFFICIAL connection (no QR Code) for the channel.\n   * The real connect action lives in <ActionButtons/> below the panel; this is\n   * the contextual explanation + status. Theme-token based (light/dark).\n   */\n  export function StepConnection({ channel, tiktokMode }: Props) {\n    const meta = CHANNEL_META[channel];\n    const copy = CONNECT_COPY[channel];\n  \n    return (\n      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>\n        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>\n          <span\n            style={{\n              width: 44,\n              height: 44,\n              borderRadius: 10,\n              background: KLOEL_THEME.accentLight,\n              color: meta.color,\n              display: 'flex',\n              alignItems: 'center',\n              justifyContent: 'center',\n              fontWeight: 800,\n              fontSize: 18,\n              flexShrink: 0,\n            }}\n          >\n            {meta.label.charAt(0)}\n          </span>\n          <div>\n            <h2 style={{ margin: 0, fontSize: 18, color: KLOEL_THEME.textPrimary }}>\n              Conectar {meta.label}\n            </h2>\n            <p\n              style={{\n                margin: '2px 0 0',\n                fontSize: 12,\n                color: KLOEL_THEME.textSecondary,\n                fontFamily: \"'JetBrains Mono', monospace\",\n              }}\n            >\n              {copy.provider}\n            </p>\n          </div>\n        </div>\n  \n        <ul\n          style={{\n            margin: 0,\n            paddingLeft: 18,\n            display: 'flex',\n            flexDirection: 'column',\n            gap: 8,\n            color: KLOEL_THEME.textSecondary,\n            fontSize: 13,\n            lineHeight: 1.6,\n          }}\n        >\n          {copy.how.map((line) => (\n            <li key={line}>{line}</li>\n          ))}\n        </ul>\n  \n        <p\n          style={{\n            margin: 0,\n            padding: '10px 14px',\n            borderRadius: 6,\n            background: KLOEL_THEME.bgSecondary,\n            border: `1px solid ${KLOEL_THEME.borderPrimary}`,\n            color: KLOEL_THEME.textSecondary,\n            fontSize: 12,\n          }}\n        >\n          Use o botão de conexão oficial abaixo. O status volta para esta tela e o\n          progresso fica salvo no workspace.\n        </p>\n  \n        {channel === 'tiktok' && tiktokMode ? <TikTokModeBadge mode={tiktokMode} /> : null}\n      </div>\n    );\n  }+}\u001b[0m\n  ",
+  "preservedZones": [],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "byteStart": 0,
+      "byteEnd": 0,
+      "newByteLength": 4156,
+      "oldTextHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "newTextHash": "df272e485dc4a459e7fc16929b47e6d2fc1bf1e8b21112ea3a354889fc7c91e4",
+      "oldSample": "",
+      "newSample": "import { KLOEL_THEME } from '@/lib/kloel-theme';\nimport { CHANNEL_META, type ChannelKey, type TikTokModeData } from '../OfficialMarketingChannelPage.helpers';\nimport { TikTokModeBadge } from './TikTok",
+      "description": "Insert 4156 bytes at offset 0"
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `atomic_create_file` changed ~4156 character(s) in `frontend/src/components/kloel/marketing/OfficialMarketingChannelPage/StepConnection.tsx` (sub-line atomic edit, expansion 0× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

@@ -1,0 +1,3 @@
+{"type":"thread.started","thread_id":"019e33d6-5480-7432-91eb-db67f5c62fb7"}
+{"type":"item.completed","item":{"id":"item_0","type":"error","message":"`[features].codex_hooks` is deprecated. Use `[features].hooks` instead. (Enable it with `--enable hooks` or `[features].hooks` in config.toml. See https://developers.openai.com/codex/config-basic#feature-flags for details.)"}}
+{"type":"turn.started"}

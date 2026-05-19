@@ -1,0 +1,80 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779203012017_f7a8b1f1",
+  "ts": "2026-05-19T15:03:32.017Z",
+  "file": "backend/src/kloel/brain-capability-executor.service.ts",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "targetUnit": "text_span",
+  "intention": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 536,
+    "lineRewriteSurfaceChars": 160,
+    "expansionFactorAvoided": 0.3,
+    "bytesNet": 376,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "9f053846099b54563bbc7aca422950f28afc7ce4140f08f7d53b6680a4061c74",
+  "proposedSha256": "9f053846099b54563bbc7aca422950f28afc7ce4140f08f7d53b6680a4061c74",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- backend/src/kloel/brain-capability-executor.service.ts (atomic char-level)\u001b[0m\n  import { AbiBuilderService, type AbiBuildInput } from './abi/abi-builder.service';\n  import type { IdentityAudience } from './lineage/identity-projector.service';\n  \u001b[32m{+import { MindPerceptionService } from './mind-perception.service';\n  import { MemoryProjector } from './commem/memory.projector';\n  import type { MindPerceptEvent } from './mind.types';\n  import type { SpineEventRef } from './mind/mind.types';\n  import type {\n    AbiConsolidatedRef,\n    AbiEpisodicRef,\n    AbiSalientEvent,\n    AbiValence,\n    AbiWorkingMemoryItem,\n  } from './abi/abi-schema';+}\u001b[0m\n  \n  type UnknownRecord = Record<string, unknown>;",
+  "preservedZones": [
+    {
+      "kind": "prefix_preserved",
+      "description": "Bytes 0–466 — prefix preserved unchanged",
+      "byteStart": 0,
+      "byteEnd": 467,
+      "byteLength": 467,
+      "beforeHash": "fb4e5eddd16cb167fabc63a7c56bb6e6dac5f7e191de9c58438aaf188cc4b5d4",
+      "afterHash": "fb4e5eddd16cb167fabc63a7c56bb6e6dac5f7e191de9c58438aaf188cc4b5d4",
+      "sample": ";\nimport type { IdentityAudience } from './lineage/identity-projector.service';\n"
+    },
+    {
+      "kind": "suffix_preserved",
+      "description": "Bytes 467–12897 — suffix preserved unchanged",
+      "byteStart": 467,
+      "byteEnd": 12898,
+      "byteLength": 12431,
+      "beforeHash": "9d8fdda3e76b8ec9590f290e5549b1e7f65fcec6b6311b9acd823a6c044efe20",
+      "afterHash": "9d8fdda3e76b8ec9590f290e5549b1e7f65fcec6b6311b9acd823a6c044efe20",
+      "sample": "\ntype UnknownRecord = Record<string, unknown>;\n\nexport interface CapabilityResul"
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "byteStart": 467,
+      "byteEnd": 467,
+      "newByteLength": 376,
+      "oldTextHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "newTextHash": "56028e26645c710b3319c70639f5b8e28aedb59ed69242a59f2ecf7aedd29342",
+      "oldSample": "",
+      "newSample": "import { MindPerceptionService } from './mind-perception.service';\nimport { MemoryProjector } from './commem/memory.projector';\nimport type { MindPerceptEvent } from './mind.types';\nimport type { Spin",
+      "description": "Insert 376 bytes at offset 467"
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~536 character(s) in `backend/src/kloel/brain-capability-executor.service.ts` (sub-line atomic edit, expansion 0.3× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

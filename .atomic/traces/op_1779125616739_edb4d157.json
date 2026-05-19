@@ -1,0 +1,59 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779125616739_edb4d157",
+  "ts": "2026-05-18T17:33:36.739Z",
+  "file": ".atomic-os-export/atomic-edit.protected.example.json",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "atomic_create_file",
+  "operator": "atomic_create_file",
+  "targetUnit": "text_span",
+  "intention": "atomic_create_file",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 570,
+    "lineRewriteSurfaceChars": 0,
+    "expansionFactorAvoided": 0,
+    "bytesNet": 570,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "json",
+    "syntaxErrorsBefore": 1,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "c3eefefb0dd71b0d6e4b9d760f1335cbcb046d26118e53fc759435c5a2feb7d0",
+  "proposedSha256": "c3eefefb0dd71b0d6e4b9d760f1335cbcb046d26118e53fc759435c5a2feb7d0",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- .atomic-os-export/atomic-edit.protected.example.json (atomic char-level)\u001b[0m\n  \u001b[32m{+{\n    \"_comment\": \"Copy this file to atomic-edit.protected.json at the ROOT of the repo you want atomic-os to operate on (NOT here). Any path listed becomes hard-refused for every AI CLI edit. 'files' = exact repo-relative paths. 'globs' = JS RegExp source tested against the repo-relative path (forward slashes). Equivalent env var: ATOMIC_EDIT_PROTECTED_FILES (OS-path-delimited list). Empty/absent = only the path-escape boundary is enforced.\",\n    \"files\": [\n      \"CLAUDE.md\",\n      \"AGENTS.md\"\n    ],\n    \"globs\": [\n      \"^\\\\.github/workflows/.+$\",\n      \"^ops/.+\\\\.json$\"\n    ]\n  }+}\u001b[0m\n  ",
+  "preservedZones": [],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "byteStart": 0,
+      "byteEnd": 0,
+      "newByteLength": 570,
+      "oldTextHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "newTextHash": "c3eefefb0dd71b0d6e4b9d760f1335cbcb046d26118e53fc759435c5a2feb7d0",
+      "oldSample": "",
+      "newSample": "{\n  \"_comment\": \"Copy this file to atomic-edit.protected.json at the ROOT of the repo you want atomic-os to operate on (NOT here). Any path listed becomes hard-refused for every AI CLI edit. 'files' =",
+      "description": "Insert 570 bytes at offset 0"
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `atomic_create_file` changed ~570 character(s) in `.atomic-os-export/atomic-edit.protected.example.json` (sub-line atomic edit, expansion 0× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

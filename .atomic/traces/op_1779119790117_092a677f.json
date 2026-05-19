@@ -1,0 +1,59 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779119790117_092a677f",
+  "ts": "2026-05-18T15:56:30.117Z",
+  "file": "scripts/mcp/atomic-edit/server.ts",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "targetUnit": "text_span",
+  "intention": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 1755,
+    "lineRewriteSurfaceChars": 0,
+    "expansionFactorAvoided": 0,
+    "bytesNet": 1755,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "4048a23a4700de4d591eda2dd8603d18cd990a1664bd7f1b1d698d854b3f75f5",
+  "proposedSha256": "4048a23a4700de4d591eda2dd8603d18cd990a1664bd7f1b1d698d854b3f75f5",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- scripts/mcp/atomic-edit/server.ts (atomic char-level)\u001b[0m\n  }\n  \n  \u001b[32m{+function runPostEditVerify(\n    relPath: string,\n    absPath: string,\n    repoRoot: string,\n    verify: string,\n  ): { kind: string; command: string; passed: boolean; summary: string } | null {\n    const pkg = nearestPackageRelPath(repoRoot, relPath);\n    if (!pkg) return null;\n    const pkgDir = path.join(repoRoot, pkg);\n  \n    if (verify === 'typecheck') {\n      try {\n        childProcess.execSync(`npx tsc --noEmit`, {\n          cwd: pkgDir,\n          timeout: 30000,\n          encoding: 'utf8',\n          stdio: 'pipe',\n        });\n        return {\n          kind: 'typecheck',\n          command: `tsc --noEmit (${pkg})`,\n          passed: true,\n          summary: 'TypeScript typecheck passed',\n        };\n      } catch (e: any) {\n        const stderr = (e.stderr || e.stdout || '').toString();\n        return {\n          kind: 'typecheck',\n          command: `tsc --noEmit (${pkg})`,\n          passed: false,\n          summary: stderr.slice(0, 500),\n        };\n      }\n    }\n  \n    if (verify === 'lint') {\n      try {\n        const result = childProcess.execSync(`npx eslint \"${absPath}\" --format json`, {\n          timeout: 30000,\n          encoding: 'utf8',\n          stdio: 'pipe',\n        });\n        const issues = JSON.parse(result);\n        const errorCount = issues.reduce((sum: number, f: any) => sum + f.errorCount, 0);\n        const warningCount = issues.reduce((sum: number, f: any) => sum + f.warningCount, 0);\n        const passed = errorCount === 0;\n        return {\n          kind: 'lint',\n          command: `eslint ${relPath}`,\n          passed,\n          summary: `${errorCount} errors, ${warningCount} warnings`,\n        };\n      } catch (e: any) {\n        return {\n          kind: 'lint',\n          command: `eslint ${relPath}`,\n          passed: false,\n          summary: 'ESLint execution failed',\n        };\n      }\n    }\n  \n    return null;\n  }\n  +}\u001b[0m\n  function packageVerificationPlan(\n    repoRoot: string,",
+  "preservedZones": [
+    {
+      "kind": "unchanged_context",
+      "description": "Everything outside the modified zone is preserved byte-for-byte by the atomic operation."
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "oldTextHash": "1e30aaedb879c4d976b018040bc69b2b21c7ea3bd0a44ce2856c5f86c5695ae2",
+      "newTextHash": "4048a23a4700de4d591eda2dd8603d18cd990a1664bd7f1b1d698d854b3f75f5",
+      "description": "The operation changed the highlighted span shown in inlinePreview."
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~1755 character(s) in `scripts/mcp/atomic-edit/server.ts` (sub-line atomic edit, expansion 0× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

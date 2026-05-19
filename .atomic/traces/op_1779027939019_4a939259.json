@@ -1,0 +1,59 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779027939019_4a939259",
+  "ts": "2026-05-17T14:25:39.019Z",
+  "file": "docs/ai/atomic-os-benchmark/tools/refactor-scorecard.cjs",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "targetUnit": "text_span",
+  "intention": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 1673,
+    "lineRewriteSurfaceChars": 188,
+    "expansionFactorAvoided": 0.11,
+    "bytesNet": 1485,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "2a778ef83dbee44d3b237b216bea1279a2f4741ea87ec113dae71b1b736ff22e",
+  "proposedSha256": "2a778ef83dbee44d3b237b216bea1279a2f4741ea87ec113dae71b1b736ff22e",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- docs/ai/atomic-os-benchmark/tools/refactor-scorecard.cjs (atomic char-level)\u001b[0m\n  }\n  \n  \u001b[32m{+function median(values) {\n    if (values.length === 0) return null;\n    const sorted = [...values].sort((left, right) => left - right);\n    const middle = Math.floor(sorted.length / 2);\n    return sorted.length % 2 === 1 ? sorted[middle] : (sorted[middle - 1] + sorted[middle]) / 2;\n  }\n  \n  function sourceChurn(worktree, scopePrefix, sourceMetrics) {\n    const tracked = trackedNumstat(worktree, scopePrefix);\n    const trackedFiles = new Set(tracked.map((item) => item.file));\n    const untrackedSources = sourceMetrics.filter((item) => !trackedFiles.has(item.file));\n    return {\n      tracked,\n      untracked: untrackedSources.map((item) => ({ file: item.file, added: item.lines })),\n      added: tracked.reduce((total, item) => total + item.added, 0) + untrackedSources.reduce((total, item) => total + item.lines, 0),\n      deleted: tracked.reduce((total, item) => total + item.deleted, 0),\n    };\n  }\n  \n  function extractionEconomy(sourceMetrics, target) {\n    const extracted = sourceMetrics.filter((item) => item.file !== target);\n    const extractedMedianLines = median(extracted.map((item) => item.lines));\n    const supportModules = extractedMedianLines === null\n      ? []\n      : extracted.filter((item) => item.lines < extractedMedianLines);\n    const supportModuleScatter = Math.max(0, supportModules.length - 1);\n    const debt = supportModuleScatter > 0;\n    return {\n      extractedSourceCount: extracted.length,\n      extractedMedianLines,\n      supportModules,\n      supportModuleScatter,\n      debt,\n      pass: !debt,\n    };\n  }\n  +}\u001b[0m\n  function isAllowedScope(fileName, args) {\n    if (args.allowFiles.includes(fileName)) return true;",
+  "preservedZones": [
+    {
+      "kind": "unchanged_context",
+      "description": "Everything outside the modified zone is preserved byte-for-byte by the atomic operation."
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "oldTextHash": "5888024a58afb3dafcfaa0a319b1da3b007d7d2a60e92d6f9c4bc04bdad00d75",
+      "newTextHash": "2a778ef83dbee44d3b237b216bea1279a2f4741ea87ec113dae71b1b736ff22e",
+      "description": "The operation changed the highlighted span shown in inlinePreview."
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~1673 character(s) in `docs/ai/atomic-os-benchmark/tools/refactor-scorecard.cjs` (sub-line atomic edit, expansion 0.11× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

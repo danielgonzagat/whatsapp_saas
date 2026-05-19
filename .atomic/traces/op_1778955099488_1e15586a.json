@@ -1,0 +1,37 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1778955099488_1e15586a",
+  "ts": "2026-05-16T18:11:39.488Z",
+  "file": "scripts/mcp/atomic-edit/smoke.ts",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 985,
+    "lineRewriteSurfaceChars": 342,
+    "expansionFactorAvoided": 0.35,
+    "bytesNet": 643,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "afterSha256": "2ad43de2639bd385f3c578ada4cc3853a05b0587ef0ef880b8cc726443a6cd6e",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- scripts/mcp/atomic-edit/smoke.ts (atomic char-level)\u001b[0m\n    }\n  \n  \u001b[32m{+  // edit_symbol remove variable declaration\n    {\n      const fixture = [\n        'const mailEnvBackup = {',\n        '  MAIL_HOST: process.env.MAIL_HOST,',\n        '};',\n        '',\n        'function setMailEnv() {',\n        \"  process.env.MAIL_HOST = 'smtp.example.com';\",\n        '}',\n        '',\n      ].join('\\n');\n      const r = await editSymbol('fixture.spec.ts', fixture, 'mailEnvBackup', 'remove');\n      check(\n        'edit_symbol remove variable declaration ok',\n        r.validation.ok &&\n          !r.newText.includes('mailEnvBackup') &&\n          !r.newText.includes('const ;') &&\n          r.newText.includes('function setMailEnv'),\n        r.newText,\n      );\n    }\n  +}\u001b[0m\n    // edit_symbol rejects syntax-breaking replacement\n    {",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~985 character(s) in `scripts/mcp/atomic-edit/smoke.ts` (sub-line atomic edit, expansion 0.35× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

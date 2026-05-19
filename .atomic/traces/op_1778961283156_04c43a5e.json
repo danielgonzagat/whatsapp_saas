@@ -1,0 +1,37 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1778961283156_04c43a5e",
+  "ts": "2026-05-16T19:54:43.156Z",
+  "file": "scripts/mcp/atomic-edit/smoke.ts",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 435,
+    "lineRewriteSurfaceChars": 372,
+    "expansionFactorAvoided": 0.86,
+    "bytesNet": 76,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "afterSha256": "2916152a664bb2872fe5341da114e15e2275dd49164f51520b12c58149a65517",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- scripts/mcp/atomic-edit/smoke.ts (atomic char-level)\u001b[0m\n            '}',\n            '',\n            \"describe('\u001b[31m[-res-]\u001b[0mo\u001b[31m[-lveWorkerO-]\u001b[0mpen\u001b[31m[-AIM-]\u001b[0m\u001b[32m{+ai-m+}\u001b[0model\u001b[32m{+s+}\u001b[0m', () => {\",\n            '  beforeEach(() => {',\n            '    clearOpenAiEnvs();',\n            '  });',\n            '',\n            \"  \u001b[32m{+descr+}\u001b[0mi\u001b[32m{+be('resolveWorkerOpenAIModel', () => {\",\n            \"    i+}\u001b[0mt('uses env', () => {\",\n            \"    \u001b[32m{+  +}\u001b[0mprocess.env.OPENAI_MODEL = 'gpt-test';\",\n            \"    \u001b[32m{+  +}\u001b[0mexpect(process.env.OPENAI_MODEL).toBe('gpt-test');\",\u001b[32m{+\n            '    });',+}\u001b[0m\n            '  });',\n            '});',",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~435 character(s) in `scripts/mcp/atomic-edit/smoke.ts` (sub-line atomic edit, expansion 0.86× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

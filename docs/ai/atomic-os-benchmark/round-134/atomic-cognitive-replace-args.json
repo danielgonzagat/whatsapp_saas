@@ -1,0 +1,6 @@
+{
+  "file": "backend/src/kloel/unified-agent.service.ts",
+  "oldText": "    let cognitiveState: Record<string, unknown> = {\n      abiStatus: this.abiBuilder ? 'unavailable_or_invalid' : 'builder_not_injected',\n      audience: 'public',\n      perceptionSnapshot: { channel: currentInput.channel },\n    };\n\n    if (this.abiBuilder) {\n      const abiResult = await this.abiBuilder.build({\n        audience: 'public',\n        currentInput,\n        perceptionSnapshot: {\n          channel: currentInput.channel,\n        },\n      });\n\n      if (abiResult.status !== 'ok') {\n        this.logger.warn(\n          `ABI build failed: ${abiResult.reason}, using structured unified agent fallback`,\n        );\n      } else {\n        const abi = abiResult.abi;\n        const validation = validateAbiPayload(abi);\n\n        if (validation.status === 'FAIL') {\n          this.logger.warn(\n            `ABI validation failed: ${JSON.stringify(validation.issues)}, using structured unified agent fallback`,\n          );\n        } else {\n          cognitiveState = abi as unknown as Record<string, unknown>;\n        }\n      }\n    }",
+  "newText": "    const cognitiveState = await buildUnifiedAgentCognitiveState(\n      this.abiBuilder,\n      this.logger,\n      currentInput,\n    );",
+  "expectedCount": 1
+}

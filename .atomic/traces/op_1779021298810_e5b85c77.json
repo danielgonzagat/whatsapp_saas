@@ -1,0 +1,59 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779021298810_e5b85c77",
+  "ts": "2026-05-17T12:34:58.810Z",
+  "file": "docs/ai/atomic-os-benchmark/tools/round-audit.cjs",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "targetUnit": "text_span",
+  "intention": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 750,
+    "lineRewriteSurfaceChars": 328,
+    "expansionFactorAvoided": 0.44,
+    "bytesNet": 422,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "74d9949b9b9554c4ee79fccdc9efb39cb3cd79a5a052cc257d0d59be7dc6c085",
+  "proposedSha256": "74d9949b9b9554c4ee79fccdc9efb39cb3cd79a5a052cc257d0d59be7dc6c085",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- docs/ai/atomic-os-benchmark/tools/round-audit.cjs (atomic char-level)\u001b[0m\n    const commandOutput = (event) => event.item?.aggregated_output || event.part?.state?.output || '';\n    const commandTexts = commands.map(commandText);\n    const \u001b[32m{+comma+}\u001b[0mn\u001b[32m{+dMentionsCodeP+}\u001b[0mat\u001b[32m{+h = (command) =>\n      command.+}\u001b[0mi\u001b[32m{+ncludes('backend/src/kloel') ||\n      command.includes('docs/ai/atomic-os-benchmark/tools') ||\n      command.includes('scripts/mcp/atomic-edit');\n    const nati+}\u001b[0mveShellReadCommands = commandTexts.filter((command) => {\n      if (!/\\b(cat|sed|nl|awk|head|tail)\\b/.test(command)) return false;\n      if (!command\u001b[31m[-.-]\u001b[0m\u001b[32m{+Ment+}\u001b[0mi\u001b[32m{+o+}\u001b[0mn\u001b[31m[-clu-]\u001b[0m\u001b[32m{+sCo+}\u001b[0mde\u001b[31m[-s('b-]\u001b[0m\u001b[32m{+P+}\u001b[0ma\u001b[32m{+th(+}\u001b[0mc\u001b[31m[-ke-]\u001b[0m\u001b[32m{+omma+}\u001b[0mnd\u001b[31m[-/src/kloel'-]\u001b[0m)) return false;\n      if (/\\bgit\\s+diff\\b/.test(command)) return false;\n      if (/\\bcat\\s*<</.test(command)\u001b[32m{+ && !/\\|\\s*(head|tail|sed|awk|nl+}\u001b[0m)\u001b[32m{+\\b/.test(command))+}\u001b[0m return false;\n      return true;\n    });\u001b[32m{+\n    const maskedAtomicFailurePipelineCommands = commandTexts.filter(\n      (command) => command.includes('atomic-call.cjs') && /\\|\\s*(head|tail|sed|awk|nl)\\b/.test(command),\n    );+}\u001b[0m\n    const toolCounts = {};\n    for (const event of mcpCalls) {",
+  "preservedZones": [
+    {
+      "kind": "unchanged_context",
+      "description": "Everything outside the modified zone is preserved byte-for-byte by the atomic operation."
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "oldTextHash": "4d933410b70eeeeff103c4ea1bdfd3fd8fbea90b1e02234518f0ffc649715484",
+      "newTextHash": "74d9949b9b9554c4ee79fccdc9efb39cb3cd79a5a052cc257d0d59be7dc6c085",
+      "description": "The operation changed the highlighted span shown in inlinePreview."
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~750 character(s) in `docs/ai/atomic-os-benchmark/tools/round-audit.cjs` (sub-line atomic edit, expansion 0.44× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

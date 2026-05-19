@@ -1,0 +1,37 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1778951644251_3554c77b",
+  "ts": "2026-05-16T17:14:04.251Z",
+  "file": "scripts/mcp/atomic-edit/.smoke-fixture.767.ts",
+  "operation": "semantic:edit",
+  "operator": "semantic:edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 0,
+    "lineRewriteSurfaceChars": 0,
+    "expansionFactorAvoided": 0,
+    "bytesNet": 28,
+    "lineRewriteAvoided": true
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "afterSha256": "554babb7c2314d7460047ced8677154911afd6d06289aea6d3c58918d0a81d5b",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- scripts/mcp/atomic-edit/.smoke-fixture.767.ts (atomic char-level)\u001b[0m\n  \u001b[32m{+import { Zed } from \"./z\";\n  +}\u001b[0m\n  export const TARGET = '5511999999999';\n  ",
+  "audit": {
+    "whatChanged": "Operation `semantic:edit` changed ~0 character(s) in `scripts/mcp/atomic-edit/.smoke-fixture.767.ts` (sub-line atomic edit, expansion 0× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

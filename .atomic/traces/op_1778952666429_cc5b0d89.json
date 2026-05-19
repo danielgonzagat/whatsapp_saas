@@ -1,0 +1,37 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1778952666429_cc5b0d89",
+  "ts": "2026-05-16T17:31:06.429Z",
+  "file": "scripts/mcp/atomic-edit/audit-atomicity.mjs",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 193,
+    "lineRewriteSurfaceChars": 212,
+    "expansionFactorAvoided": 1.1,
+    "bytesNet": 53,
+    "lineRewriteAvoided": true
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "afterSha256": "25179342e94ab3ffbd41b6b855d47c6ed9af9be4d9583cd23ceb7f229a96d25a",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- scripts/mcp/atomic-edit/audit-atomicity.mjs (atomic char-level)\u001b[0m\n  const args = process.argv.slice(2);\n  const asJson = args.includes('--json');\n  \u001b[32m{+const strictRatio = args.includes('--strict-ratio');+}\u001b[0m\n  const minRatio = Number((args.find((a) => a.startsWith('--min-ratio=')) ?? '=0.85').split('=')[1]);\n  const MICRO_CHANGE = 32; // chars: a literal/arg/token-sized real change",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~193 character(s) in `scripts/mcp/atomic-edit/audit-atomicity.mjs` (sub-line atomic edit, expansion 1.1× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

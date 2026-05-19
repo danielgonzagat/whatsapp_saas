@@ -1,0 +1,80 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779125360926_9bbc94be",
+  "ts": "2026-05-18T17:29:20.927Z",
+  "file": "scripts/orchestration/phase-tags-emitter.mjs",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "targetUnit": "text_span",
+  "intention": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 95,
+    "lineRewriteSurfaceChars": 85,
+    "expansionFactorAvoided": 0.89,
+    "bytesNet": 10,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "62c0c7e8774ef442932fbb2a06599f5a23e643d1ac5353707c0bf0dc823bae24",
+  "proposedSha256": "62c0c7e8774ef442932fbb2a06599f5a23e643d1ac5353707c0bf0dc823bae24",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- scripts/orchestration/phase-tags-emitter.mjs (atomic char-level)\u001b[0m\n  import { join, relative, resolve, dirname } from 'node:path';\n  import { fileURLToPath } from 'node:url';\n  import { rewriteMirrorFrontmatterTags } from '../\u001b[32m{+__parts__/+}\u001b[0mobsidian-mirror-daemon-indexes.mjs';\n  \n  const __dirname = dirname(fileURLToPath(import.meta.url));",
+  "preservedZones": [
+    {
+      "kind": "prefix_preserved",
+      "description": "Bytes 0–434 — prefix preserved unchanged",
+      "byteStart": 0,
+      "byteEnd": 435,
+      "byteLength": 435,
+      "beforeHash": "f283893735e83b7280030acfc78eb55a366739681c05a71748ac5fb6c9323215",
+      "afterHash": "f283893735e83b7280030acfc78eb55a366739681c05a71748ac5fb6c9323215",
+      "sample": "leURLToPath } from 'node:url';\nimport { rewriteMirrorFrontmatterTags } from '../"
+    },
+    {
+      "kind": "suffix_preserved",
+      "description": "Bytes 435–8137 — suffix preserved unchanged",
+      "byteStart": 435,
+      "byteEnd": 8138,
+      "byteLength": 7703,
+      "beforeHash": "9201877941086e07d220fd3cf9276a73162bf8a9c531fc25c13ebb43264cd8b3",
+      "afterHash": "9201877941086e07d220fd3cf9276a73162bf8a9c531fc25c13ebb43264cd8b3",
+      "sample": "obsidian-mirror-daemon-indexes.mjs';\n\nconst __dirname = dirname(fileURLToPath(im"
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "byteStart": 435,
+      "byteEnd": 435,
+      "newByteLength": 10,
+      "oldTextHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "newTextHash": "2fffd845c2668c6425600d76d3d10c20f7d66b20ce060dc5f49d184d52c25ab9",
+      "oldSample": "",
+      "newSample": "__parts__/",
+      "description": "Insert 10 bytes at offset 435"
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~95 character(s) in `scripts/orchestration/phase-tags-emitter.mjs` (sub-line atomic edit, expansion 0.89× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

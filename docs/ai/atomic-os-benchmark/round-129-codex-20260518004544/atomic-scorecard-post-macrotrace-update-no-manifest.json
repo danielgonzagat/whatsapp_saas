@@ -1,0 +1,283 @@
+{
+  "ok": false,
+  "target": "backend/src/kloel/unified-agent.service.ts",
+  "targetLines": 168,
+  "maxTargetLines": null,
+  "targetLinePass": true,
+  "changedSourceCount": 3,
+  "changedInventoryLines": 917,
+  "largestChangedSource": {
+    "file": "backend/src/kloel/unified-agent-process-helpers.ts",
+    "lines": 500
+  },
+  "maxFileLines": null,
+  "overFileLimit": [],
+  "specDiff": [],
+  "protectedDiff": [],
+  "protectedPathspecs": [
+    "AGENTS.md",
+    "CLAUDE.md",
+    ".codacy.yml",
+    "ratchet.json",
+    "package.json",
+    ".husky/commit-msg",
+    ".husky/pre-push",
+    "backend/eslint.config.mjs",
+    "frontend/eslint.config.mjs",
+    "worker/eslint.config.mjs",
+    "backend/src/lib/openai-models.ts",
+    "backend/src/lib/ai-models.ts",
+    ".github/workflows",
+    "docs/codacy",
+    "docs/design",
+    "ops",
+    "scripts/ops"
+  ],
+  "traceCount": 6,
+  "effectiveTraceCount": 6,
+  "traceInventory": {
+    "rawTraceCount": 6,
+    "traceFiles": [
+      ".atomic/traces/op_1779076704197_378abc01.json",
+      ".atomic/traces/op_1779076737086_54f545a9.json",
+      ".atomic/traces/op_1779076821122_b9da62a6.json",
+      ".atomic/traces/op_1779076944813_aea99566.json",
+      ".atomic/traces/op_1779077050660_fd72cdec.json",
+      ".atomic/traces/op_1779077249070_01577cfd.json"
+    ],
+    "macroManifests": [],
+    "macroCoveredTraceCount": 0,
+    "uncoveredTraceCount": 6,
+    "macroCoveragePass": false,
+    "consolidatedProductBatchUnits": []
+  },
+  "enforceTraceEconomy": true,
+  "traceEconomy": {
+    "traceCount": 6,
+    "effectiveTraceCount": 6,
+    "productBatchUnitCount": 3,
+    "derivedTraceCeiling": 3,
+    "excessTraceCount": 3,
+    "rawExcessTraceCount": 3,
+    "macroTraceCoveragePass": false,
+    "macroCoveredTraceCount": 0,
+    "uncoveredTraceCount": 6,
+    "consolidatedProductBatchUnits": [],
+    "macroManifests": [],
+    "debt": true,
+    "pass": false,
+    "interpretation": "Macro-refactor proof is evaluated by dynamically covered product batch units when a macro trace manifest covers every child trace; otherwise raw child traces remain the trust surface."
+  },
+  "traceEconomyPass": false,
+  "enforcePublicApi": true,
+  "className": "UnifiedAgentService",
+  "publicApi": {
+    "available": true,
+    "className": "UnifiedAgentService",
+    "beforeClassFound": true,
+    "afterClassFound": true,
+    "constructorChanged": false,
+    "publicMethodCountBefore": 4,
+    "publicMethodCountAfter": 4,
+    "missingPublicMethods": [],
+    "addedPublicMethods": [],
+    "debt": false,
+    "pass": true
+  },
+  "publicApiPass": true,
+  "enforceTargetDominanceRelease": true,
+  "targetDominance": {
+    "targetChanged": true,
+    "sourceCount": 3,
+    "targetIsLargestChangedSource": false,
+    "largestNonTargetChangedSource": {
+      "file": "backend/src/kloel/unified-agent-process-helpers.ts",
+      "lines": 500
+    },
+    "debt": false
+  },
+  "targetDominancePass": true,
+  "enforceFacadePrivateHelperRelease": true,
+  "facadeSurface": {
+    "available": true,
+    "publicMethodCount": 4,
+    "privateMethodCount": 0,
+    "privateMethodUsages": [],
+    "singleUsePrivateMethods": [],
+    "singleUsePrivateMethodDebt": [],
+    "debt": false,
+    "pass": true
+  },
+  "facadeSurfacePass": true,
+  "enforceFacadeTypeSurfaceRelease": true,
+  "facadeTypeSurface": {
+    "available": true,
+    "extractedSourceCount": 2,
+    "declarationCount": 0,
+    "declarations": [],
+    "debt": false,
+    "pass": true,
+    "interpretation": "After a facade extraction, public DTO/type declarations should move to or be imported from the owner module. Keeping them in the facade increases trust surface and import/type pressure."
+  },
+  "facadeTypeSurfacePass": true,
+  "enforceTypeSpilloverEconomy": true,
+  "typeSpilloverEconomy": {
+    "available": true,
+    "extractedSourceCount": 2,
+    "newOwnerFileCount": 2,
+    "typeSpilloverFiles": [],
+    "debtFiles": [],
+    "debt": false,
+    "pass": true,
+    "interpretation": "Existing shared type files are not free during facade extraction: the scorecard inventory counts the whole changed file. Touch them only when the measured diff is not pure spillover, or when validation proves owner-local type export would be worse."
+  },
+  "typeSpilloverEconomyPass": true,
+  "enforceExtractionEconomy": true,
+  "productChurn": {
+    "tracked": [
+      {
+        "file": "backend/src/kloel/unified-agent.service.ts",
+        "added": 43,
+        "deleted": 612
+      }
+    ],
+    "untracked": [
+      {
+        "file": "backend/src/kloel/unified-agent-execute.ts",
+        "added": 249
+      },
+      {
+        "file": "backend/src/kloel/unified-agent-process-helpers.ts",
+        "added": 500
+      }
+    ],
+    "added": 792,
+    "deleted": 612,
+    "net": 180,
+    "directional": {
+      "trackedAdded": 43,
+      "untrackedAdded": 749,
+      "deletedFromTrackedSources": 612,
+      "finalInventoryLines": 917,
+      "interpretation": "Compare additions, final inventory, facade size, and largest module separately; deletions from tracked sources may be desired when extracting a facade and must not be treated as automatic product loss."
+    },
+    "total": 1404
+  },
+  "extractionEconomy": {
+    "extractedSourceCount": 2,
+    "extractedMedianLines": 374.5,
+    "supportModules": [
+      {
+        "file": "backend/src/kloel/unified-agent-execute.ts",
+        "lines": 249
+      }
+    ],
+    "supportModuleScatter": 0,
+    "debt": false,
+    "pass": true
+  },
+  "extractionEconomyPass": true,
+  "enforceSiblingReuse": true,
+  "siblingReuse": {
+    "available": true,
+    "reason": "existing_runtime_siblings_detected",
+    "decisionAuthority": "derived from HEAD public methods, existing sibling runtime exports, token dominance, and the actual changed source files; no fixed target file or latency budget is used",
+    "publicMethodCount": 4,
+    "existingRuntimeModuleCount": 8,
+    "reuseAssignmentCount": 1,
+    "existingRuntimeModules": [
+      {
+        "file": "backend/src/kloel/unified-agent-actions-billing.helpers.ts",
+        "lines": 102,
+        "exportedRuntimeSymbols": [
+          "createFunnelFlows",
+          "getProductAIConfig",
+          "getProductPlans",
+          "getProductReviews",
+          "getProductUrls",
+          "validateCoupon"
+        ]
+      },
+      {
+        "file": "backend/src/kloel/unified-agent-actions-crm-predecided.helpers.ts",
+        "lines": 123,
+        "exportedRuntimeSymbols": [
+          "chooseFollowUpTiming",
+          "predecidedFollowUpTiming",
+          "predecidedHumanTransfer"
+        ]
+      },
+      {
+        "file": "backend/src/kloel/unified-agent-actions-crm.helpers.ts",
+        "lines": 77,
+        "exportedRuntimeSymbols": [
+          "actionImportContacts"
+        ]
+      },
+      {
+        "file": "backend/src/kloel/unified-agent-actions-sales.helpers.ts",
+        "lines": 117,
+        "exportedRuntimeSymbols": [
+          "actionHandleObjection"
+        ]
+      },
+      {
+        "file": "backend/src/kloel/unified-agent-actions-workspace.helpers.ts",
+        "lines": 129,
+        "exportedRuntimeSymbols": [
+          "actionGetWorkspaceStatus"
+        ]
+      },
+      {
+        "file": "backend/src/kloel/unified-agent-predecided-actions.part.ts",
+        "lines": 163,
+        "exportedRuntimeSymbols": [
+          "buildPredecidedActionDraft",
+          "executePredecidedAgentActions"
+        ]
+      },
+      {
+        "file": "backend/src/kloel/unified-agent-response.helpers.ts",
+        "lines": 37,
+        "exportedRuntimeSymbols": [
+          "buildReplyStyleInstruction",
+          "computeReplyStyleBudget",
+          "countResponseWords"
+        ]
+      },
+      {
+        "file": "backend/src/kloel/unified-agent-response.regex.ts",
+        "lines": 36,
+        "exportedRuntimeSymbols": [
+          "safeForRegex"
+        ]
+      }
+    ],
+    "reuseAssignments": [
+      {
+        "symbol": "buildQuotedReplyPlan",
+        "existingModule": "backend/src/kloel/unified-agent-response.helpers.ts",
+        "score": 2,
+        "reason": "dominant_token_match_to_existing_runtime_sibling"
+      }
+    ],
+    "newSourceFiles": [
+      "backend/src/kloel/unified-agent-execute.ts",
+      "backend/src/kloel/unified-agent-process-helpers.ts"
+    ],
+    "touchedExistingOwnerModules": [],
+    "missedReuseSymbols": [],
+    "debt": false,
+    "pass": true
+  },
+  "siblingReusePass": true,
+  "enforceScope": true,
+  "allowedPrefixes": [
+    "backend/src/kloel/unified-agent"
+  ],
+  "allowedFiles": [],
+  "allowAtomicTraces": true,
+  "allChangedFileCount": 9,
+  "outOfScopeFiles": [],
+  "scopePass": true
+}

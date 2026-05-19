@@ -1,0 +1,195 @@
+{
+  "ok": true,
+  "target": "backend/src/kloel/unified-agent.service.ts",
+  "targetLines": 529,
+  "maxTargetLines": null,
+  "targetLinePass": true,
+  "changedSourceCount": 3,
+  "changedInventoryLines": 821,
+  "largestChangedSource": {
+    "file": "backend/src/kloel/unified-agent.service.ts",
+    "lines": 529
+  },
+  "maxFileLines": null,
+  "overFileLimit": [],
+  "specDiff": [],
+  "protectedDiff": [],
+  "protectedPathspecs": [
+    "AGENTS.md",
+    "CLAUDE.md",
+    ".codacy.yml",
+    "ratchet.json",
+    "package.json",
+    ".husky/commit-msg",
+    ".husky/pre-push",
+    "backend/eslint.config.mjs",
+    "frontend/eslint.config.mjs",
+    "worker/eslint.config.mjs",
+    "backend/src/lib/openai-models.ts",
+    "backend/src/lib/ai-models.ts",
+    ".github/workflows",
+    "docs/codacy",
+    "docs/design",
+    "ops",
+    "scripts/ops"
+  ],
+  "traceCount": 0,
+  "enforceTraceEconomy": false,
+  "traceEconomy": {
+    "traceCount": 0,
+    "productBatchUnitCount": 3,
+    "derivedTraceCeiling": 3,
+    "excessTraceCount": 0,
+    "debt": false,
+    "pass": true,
+    "interpretation": "Macro-refactor proof should track product batch units, not every internal method. The ceiling is derived from changed source files in this run, not a fixed trace budget."
+  },
+  "traceEconomyPass": true,
+  "enforcePublicApi": true,
+  "className": "UnifiedAgentService",
+  "publicApi": {
+    "available": true,
+    "className": "UnifiedAgentService",
+    "beforeClassFound": true,
+    "afterClassFound": true,
+    "constructorChanged": false,
+    "publicMethodCountBefore": 4,
+    "publicMethodCountAfter": 4,
+    "missingPublicMethods": [],
+    "addedPublicMethods": [],
+    "debt": false,
+    "pass": true
+  },
+  "publicApiPass": true,
+  "enforceTargetDominanceRelease": false,
+  "targetDominance": {
+    "targetChanged": true,
+    "sourceCount": 3,
+    "targetIsLargestChangedSource": true,
+    "largestNonTargetChangedSource": {
+      "file": "backend/src/kloel/unified-agent-tool-router.ts",
+      "lines": 232
+    },
+    "debt": true
+  },
+  "targetDominancePass": true,
+  "enforceFacadePrivateHelperRelease": false,
+  "facadeSurface": {
+    "available": true,
+    "publicMethodCount": 4,
+    "privateMethodCount": 1,
+    "privateMethodUsages": [
+      {
+        "name": "executeToolAction",
+        "lines": 26,
+        "usageCount": 3
+      }
+    ],
+    "singleUsePrivateMethods": [],
+    "singleUsePrivateMethodDebt": [],
+    "debt": false,
+    "pass": true
+  },
+  "facadeSurfacePass": true,
+  "enforceFacadeTypeSurfaceRelease": false,
+  "facadeTypeSurface": {
+    "available": true,
+    "extractedSourceCount": 2,
+    "declarationCount": 1,
+    "declarations": [
+      {
+        "kind": "type_alias",
+        "name": "UnknownRecord",
+        "lines": 1
+      }
+    ],
+    "debt": true,
+    "pass": false,
+    "interpretation": "After a facade extraction, public DTO/type declarations should move to or be imported from the owner module. Keeping them in the facade increases trust surface and import/type pressure."
+  },
+  "facadeTypeSurfacePass": true,
+  "enforceTypeSpilloverEconomy": false,
+  "typeSpilloverEconomy": {
+    "available": true,
+    "extractedSourceCount": 2,
+    "newOwnerFileCount": 2,
+    "typeSpilloverFiles": [],
+    "debtFiles": [],
+    "debt": false,
+    "pass": true,
+    "interpretation": "Existing shared type files are not free during facade extraction: the scorecard inventory counts the whole changed file. Touch them only when the measured diff is not pure spillover, or when validation proves owner-local type export would be worse."
+  },
+  "typeSpilloverEconomyPass": true,
+  "enforceExtractionEconomy": false,
+  "productChurn": {
+    "tracked": [
+      {
+        "file": "backend/src/kloel/unified-agent.service.ts",
+        "added": 35,
+        "deleted": 243
+      }
+    ],
+    "untracked": [
+      {
+        "file": "backend/src/kloel/unified-agent-runtime.delegate.ts",
+        "added": 60
+      },
+      {
+        "file": "backend/src/kloel/unified-agent-tool-router.ts",
+        "added": 232
+      }
+    ],
+    "added": 327,
+    "deleted": 243,
+    "net": 84,
+    "directional": {
+      "trackedAdded": 35,
+      "untrackedAdded": 292,
+      "deletedFromTrackedSources": 243,
+      "finalInventoryLines": 821,
+      "interpretation": "Compare additions, final inventory, facade size, and largest module separately; deletions from tracked sources may be desired when extracting a facade and must not be treated as automatic product loss."
+    },
+    "total": 570
+  },
+  "extractionEconomy": {
+    "extractedSourceCount": 2,
+    "extractedMedianLines": 146,
+    "supportModules": [
+      {
+        "file": "backend/src/kloel/unified-agent-runtime.delegate.ts",
+        "lines": 60
+      }
+    ],
+    "supportModuleScatter": 0,
+    "debt": false,
+    "pass": true
+  },
+  "extractionEconomyPass": true,
+  "enforceSiblingReuse": false,
+  "siblingReuse": {
+    "available": true,
+    "reason": "no_existing_runtime_sibling_modules",
+    "decisionAuthority": "derived from HEAD public methods, existing sibling runtime exports, token dominance, and the actual changed source files; no fixed target file or latency budget is used",
+    "publicMethodCount": 4,
+    "existingRuntimeModuleCount": 0,
+    "reuseAssignmentCount": 0,
+    "existingRuntimeModules": [],
+    "reuseAssignments": [],
+    "newSourceFiles": [
+      "backend/src/kloel/unified-agent-runtime.delegate.ts",
+      "backend/src/kloel/unified-agent-tool-router.ts"
+    ],
+    "touchedExistingOwnerModules": [],
+    "missedReuseSymbols": [],
+    "debt": false,
+    "pass": true
+  },
+  "siblingReusePass": true,
+  "enforceScope": false,
+  "allowedPrefixes": [],
+  "allowedFiles": [],
+  "allowAtomicTraces": false,
+  "allChangedFileCount": 3,
+  "outOfScopeFiles": [],
+  "scopePass": true
+}

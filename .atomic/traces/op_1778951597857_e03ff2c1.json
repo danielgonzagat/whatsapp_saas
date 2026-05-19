@@ -1,0 +1,37 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1778951597857_e03ff2c1",
+  "ts": "2026-05-16T17:13:17.857Z",
+  "file": "worker/processors/autopilot/cognition-reply.ts",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 87,
+    "lineRewriteSurfaceChars": 93,
+    "expansionFactorAvoided": 1.07,
+    "bytesNet": 10,
+    "lineRewriteAvoided": true
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "afterSha256": "04ff62ab93c5aca89e80285b6e03024d08b65141dcc225d638c91313641966e7",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- worker/processors/autopilot/cognition-reply.ts (atomic char-level)\u001b[0m\n    });\n  \n    if (result?.error) \u001b[32m{+{\n      +}\u001b[0mthrow new Error(String(result.reason || 'send_error'));\u001b[32m{+\n    }+}\u001b[0m\n    return result;\n  }",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~87 character(s) in `worker/processors/autopilot/cognition-reply.ts` (sub-line atomic edit, expansion 1.07× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

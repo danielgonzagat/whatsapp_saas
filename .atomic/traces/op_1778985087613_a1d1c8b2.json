@@ -1,0 +1,59 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1778985087613_a1d1c8b2",
+  "ts": "2026-05-17T02:31:27.613Z",
+  "file": "docs/ai/atomic-os-benchmark/tools/trace-isolation-check.cjs",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "atomic_create_file",
+  "operator": "atomic_create_file",
+  "targetUnit": "text_span",
+  "intention": "atomic_create_file",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 2936,
+    "lineRewriteSurfaceChars": 0,
+    "expansionFactorAvoided": 0,
+    "bytesNet": 2936,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "b8b66a2d6ba1f6942eed40f4d4e6adc91bf8175119c1b253250f437dff134b0f",
+  "proposedSha256": "b8b66a2d6ba1f6942eed40f4d4e6adc91bf8175119c1b253250f437dff134b0f",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- docs/ai/atomic-os-benchmark/tools/trace-isolation-check.cjs (atomic char-level)\u001b[0m\n  \u001b[32m{+#!/usr/bin/env node\n  'use strict';\n  \n  const fs = require('node:fs');\n  const path = require('node:path');\n  \n  function usage() {\n    console.error('Usage: trace-isolation-check.cjs --worktree <abs> --coordinator <abs> [--since <date>] [--json]');\n    process.exit(2);\n  }\n  \n  function parseArgs(argv) {\n    const out = { json: false };\n    for (let index = 0; index < argv.length; index += 1) {\n      const arg = argv[index];\n      if (arg === '--worktree') {\n        out.worktree = argv[index + 1];\n        index += 1;\n        continue;\n      }\n      if (arg === '--coordinator') {\n        out.coordinator = argv[index + 1];\n        index += 1;\n        continue;\n      }\n      if (arg === '--since') {\n        out.since = argv[index + 1];\n        index += 1;\n        continue;\n      }\n      if (arg === '--json') {\n        out.json = true;\n        continue;\n      }\n      usage();\n    }\n    if (!out.worktree || !out.coordinator) usage();\n    for (const key of ['worktree', 'coordinator']) {\n      if (!path.isAbsolute(out[key])) {\n        throw new Error(`${key} must be absolute: ${out[key]}`);\n      }\n    }\n    return out;\n  }\n  \n  function traceIds(root) {\n    const dir = path.join(root, '.atomic', 'traces');\n    try {\n      return fs.readdirSync(dir).filter((name) => name.endsWith('.json')).sort();\n    } catch (error) {\n      if (error && error.code === 'ENOENT') return [];\n      throw error;\n    }\n  }\n  \n  function traceCountSince(root, since) {\n    if (!since) return null;\n    const timestamp = Date.parse(since);\n    if (!Number.isFinite(timestamp)) throw new Error(`invalid --since date: ${since}`);\n    const dir = path.join(root, '.atomic', 'traces');\n    try {\n      return fs\n        .readdirSync(dir)\n        .filter((name) => name.endsWith('.json'))\n        .filter((name) => fs.statSync(path.join(dir, name)).mtimeMs >= timestamp).length;\n    } catch (error) {\n      if (error && error.code === 'ENOENT') return 0;\n      throw error;\n    }\n  }\n  \n  function main() {\n    const args = parseArgs(process.argv.slice(2));\n    const worktreeIds = traceIds(args.worktree);\n    const coordinatorIds = new Set(traceIds(args.coordinator));\n    const matchingTraceIds = worktreeIds.filter((id) => coordinatorIds.has(id));\n    const result = {\n      ok: matchingTraceIds.length === 0,\n      worktreeTraceCount: worktreeIds.length,\n      coordinatorTraceCount: coordinatorIds.size,\n      coordinatorNewTraceCount: traceCountSince(args.coordinator, args.since),\n      matchingTraceIds,\n    };\n    if (args.json) {\n      console.log(JSON.stringify(result, null, 2));\n    } else {\n      console.log(`worktree_traces=${result.worktreeTraceCount}`);\n      console.log(`coordinator_traces=${result.coordinatorTraceCount}`);\n      if (result.coordinatorNewTraceCount !== null) {\n        console.log(`coordinator_new_traces=${result.coordinatorNewTraceCount}`);\n      }\n      console.log(`matching_trace_ids=${matchingTraceIds.length}`);\n    }\n    process.exit(result.ok ? 0 : 1);\n  }\n  \n  try {\n    main();\n  } catch (error) {\n    console.error(error instanceof Error ? error.message : String(error));\n    process.exit(1);\n  }+}\u001b[0m\n  ",
+  "preservedZones": [
+    {
+      "kind": "unchanged_context",
+      "description": "Everything outside the modified zone is preserved byte-for-byte by the atomic operation."
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "oldTextHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "newTextHash": "b8b66a2d6ba1f6942eed40f4d4e6adc91bf8175119c1b253250f437dff134b0f",
+      "description": "The operation changed the highlighted span shown in inlinePreview."
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `atomic_create_file` changed ~2936 character(s) in `docs/ai/atomic-os-benchmark/tools/trace-isolation-check.cjs` (sub-line atomic edit, expansion 0× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

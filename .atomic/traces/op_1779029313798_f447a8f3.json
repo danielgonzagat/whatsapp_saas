@@ -1,0 +1,59 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779029313798_f447a8f3",
+  "ts": "2026-05-17T14:48:33.799Z",
+  "file": "docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "targetUnit": "text_span",
+  "intention": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 167,
+    "lineRewriteSurfaceChars": 167,
+    "expansionFactorAvoided": 1,
+    "bytesNet": -32,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "e06a5b3e0a37d23cae90b69a0de8765c3ce2a5b1c4afc5448d43dee57a6f13a4",
+  "proposedSha256": "e06a5b3e0a37d23cae90b69a0de8765c3ce2a5b1c4afc5448d43dee57a6f13a4",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs (atomic char-level)\u001b[0m\n        'For facade splits, the generated scorecard releases target dominance dynamically: the target cannot remain the largest changed source.',\n        'For facade splits, keep single-use private helpers out of the facade; inline or move them because the scorecard detects this from AST usage.',\n        'For facade splits, \u001b[31m[-ke-]\u001b[0m\u001b[32m{+us+}\u001b[0me\u001b[31m[-p-]\u001b[0m \u001b[31m[-sup-]\u001b[0m\u001b[32m{+de+}\u001b[0mp\u001b[31m[-ort -]\u001b[0me\u001b[31m[-xtractio-]\u001b[0mn\u001b[31m[- -]\u001b[0m\u001b[32m{+den+}\u001b[0mc\u001b[32m{+y-c+}\u001b[0mohesive\u001b[31m[-;-]\u001b[0m \u001b[32m{+clus+}\u001b[0mt\u001b[31m[-h-]\u001b[0me\u001b[31m[- -]\u001b[0m\u001b[32m{+r+}\u001b[0ms\u001b[31m[-co-]\u001b[0m\u001b[32m{+ f+}\u001b[0mr\u001b[32m{+om th+}\u001b[0me\u001b[31m[-card-]\u001b[0m \u001b[31m[-d-]\u001b[0m\u001b[32m{+obs+}\u001b[0mer\u001b[31m[-i-]\u001b[0mve\u001b[31m[-s-]\u001b[0m\u001b[32m{+d+}\u001b[0m s\u001b[31m[-upport--]\u001b[0m\u001b[32m{+y+}\u001b[0mm\u001b[32m{+b+}\u001b[0mo\u001b[31m[-du-]\u001b[0ml\u001b[31m[-e-]\u001b[0m \u001b[31m[-s-]\u001b[0mca\u001b[31m[-tte-]\u001b[0m\u001b[32m{+ll g+}\u001b[0mr\u001b[32m{+aph+}\u001b[0m \u001b[32m{+be+}\u001b[0mf\u001b[31m[-r-]\u001b[0mo\u001b[31m[-m th-]\u001b[0m\u001b[32m{+r+}\u001b[0me \u001b[31m[-sp-]\u001b[0m\u001b[32m{+fa+}\u001b[0ml\u001b[31m[-it med-]\u001b[0m\u001b[32m{+l+}\u001b[0mi\u001b[31m[-a-]\u001b[0mn\u001b[32m{+g+}\u001b[0m \u001b[31m[-inste-]\u001b[0m\u001b[32m{+b+}\u001b[0ma\u001b[31m[-d-]\u001b[0m\u001b[32m{+ck+}\u001b[0m \u001b[32m{+t+}\u001b[0mo\u001b[31m[-f-]\u001b[0m \u001b[31m[-fixed file -]\u001b[0m\u001b[32m{+t+}\u001b[0mo\u001b[31m[-r lin-]\u001b[0m\u001b[32m{+k+}\u001b[0me\u001b[32m{+n+}\u001b[0m \u001b[31m[-b-]\u001b[0m\u001b[32m{+cl+}\u001b[0mu\u001b[31m[-dge-]\u001b[0m\u001b[32m{+s+}\u001b[0mt\u001b[32m{+er+}\u001b[0ms.',\n        'Preserve public API when a class is detected; if no class is detected, preserve exported call surface identified by code_outline.',\n        'Treat this output as runtime policy compiled from the current worktree, not a reusable fixed architecture template.',",
+  "preservedZones": [
+    {
+      "kind": "unchanged_context",
+      "description": "Everything outside the modified zone is preserved byte-for-byte by the atomic operation."
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "oldTextHash": "2991587fba170a4781adf0d2629315ebdf541487e611182fa6232a0306f3a0ed",
+      "newTextHash": "e06a5b3e0a37d23cae90b69a0de8765c3ce2a5b1c4afc5448d43dee57a6f13a4",
+      "description": "The operation changed the highlighted span shown in inlinePreview."
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~167 character(s) in `docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs` (sub-line atomic edit, expansion 1× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

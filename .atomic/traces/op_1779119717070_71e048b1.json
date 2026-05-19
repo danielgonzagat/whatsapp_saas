@@ -1,0 +1,59 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779119717070_71e048b1",
+  "ts": "2026-05-18T15:55:17.070Z",
+  "file": "scripts/mcp/atomic-edit/server.ts",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "targetUnit": "text_span",
+  "intention": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 4297,
+    "lineRewriteSurfaceChars": 1659,
+    "expansionFactorAvoided": 0.39,
+    "bytesNet": 2638,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "6df3a1aec470046b7dfd8f56abe3f680af1211b21e6cca037b967a8747bd3b92",
+  "proposedSha256": "6df3a1aec470046b7dfd8f56abe3f680af1211b21e6cca037b967a8747bd3b92",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- scripts/mcp/atomic-edit/server.ts (atomic char-level)\u001b[0m\n        newName: z.string().min(1),\n        preview: z.boolean().optional().describe('dry-run: list files + refs, do not write'),\n      \u001b[32m{+  includeStrings: z\n          .boolean()\n          .optional()\n          .describe(\n            'after TS rename, also do regex-based string replacement of oldName->newName across all repo text files',\n          ),\n      +}\u001b[0m},\n    },\n    async (a) => {\n      try {\n        const { absPath, repoRoot } = resolveSafeTarget(a.file);\n        const r = await renameSymbolCrossFile(absPath, repoRoot, a.line, a.column, a.newName);\n        const bad = r.validations.filter((v) => !v.ok);\n        if (bad.length > 0) {\n          return fail(\n            `rejected: rename would break ${bad.length} file(s): ` +\n              bad.map((b) => `${b.file} (${b.introduced ?? 'syntax error'})`).join('; ') +\n              ' — NOTHING written.',\n          );\n        }\n        // every change target must also pass the governance guard in the same resolved root\n        for (const rel of r.changes.keys()) resolveSafeTarget(path.join(repoRoot, rel));\n        if (a.preview ?? false) {\n          return ok({\n            ok: true,\n            preview: true,\n            changed: false,\n            symbol: r.symbol,\n            references: r.totalReferences,\n            files: [...r.changes.keys()],\n          });\n        }\n        \u001b[32m{+let stringReplacedCount = 0;\n        i+}\u001b[0mf\u001b[32m{+ (a.includeStrings) {\n          c+}\u001b[0mo\u001b[32m{+nst oldName = +}\u001b[0mr\u001b[32m{+.symbol;\n  +}\u001b[0m \u001b[32m{+       const regex = new RegExp+}\u001b[0m(\u001b[32m{+`\\\\b${oldName.repla+}\u001b[0mc\u001b[32m{+e(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&')}\\\\b`, 'g');\n          c+}\u001b[0monst \u001b[32m{+excludeDirs = new Set(+}\u001b[0m[\u001b[32m{+'node_modules', '.git', 'dist', 'build', '.atomic']);\n          const walkDi+}\u001b[0mr\u001b[32m{+ = (dir: string): string[] => {\n            const +}\u001b[0me\u001b[32m{+ntries = fs.readdirSync(dir, { withFi+}\u001b[0ml\u001b[32m{+eTypes: true });\n            const results: string[] = [];\n            for (const entry of entries) {\n              if (entry.name.startsWith('.') && excludeDirs.has(entry.name)) continue;\n              if (excludeDirs.has(entry.name)) continue;\n              const fullPath = path.join(dir+}\u001b[0m, \u001b[32m{+entry.name);\n              if (entry.isDire+}\u001b[0mc\u001b[32m{+t+}\u001b[0mo\u001b[32m{+ry()) {\n                results.push(...walkDir(fullPath));\n              } else if (e+}\u001b[0mnt\u001b[32m{+ry.isFil+}\u001b[0me\u001b[32m{+()) {\n                co+}\u001b[0mn\u001b[32m{+s+}\u001b[0mt\u001b[32m{+ ext = path.extname(entry.name).toLowerCase();\n                const textExts = new Set([\n                  '.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs', '.mts', '.cts',\n                  '.json', '.md', '.txt', '.html', '.css', '.yml', '.yaml',\n                  '.env', '.graphql', '.prisma', '.sql', '.sh',\n                +}\u001b[0m]\u001b[32m{+);\n  +}\u001b[0m \u001b[32m{+             if (textExts.has(ext) || ext === '') {\n                  results.push(fullPath);\n                }\n              }\n            }\n            return results;\n          };\n          c+}\u001b[0mo\u001b[32m{+nst allFiles = walkDir(repoRoot);\n          +}\u001b[0mf\u001b[32m{+or+}\u001b[0m \u001b[32m{+(const absFile of allFiles) {\n            if (+}\u001b[0mr.changes\u001b[32m{+.has(path.relative(repoRoot, absFile+}\u001b[0m)\u001b[32m{+))+}\u001b[0m \u001b[32m{+continue;\n            let content: string;\n            try +}\u001b[0m{\n          \u001b[32m{+    content = fs.re+}\u001b[0ma\u001b[32m{+dFileSync(absFile, 'u+}\u001b[0mt\u001b[32m{+f8');\n            } catch {\n              c+}\u001b[0mo\u001b[32m{+ntinue;\n            }\n            const newContent = content.replace(regex, a.newNa+}\u001b[0mm\u001b[32m{+e);\n            +}\u001b[0mi\u001b[32m{+f (newContent === +}\u001b[0mc\u001b[32m{+ontent) continue;\n            if (content.length > 500 * 1024) continue;\n            try {\n              resolveSafeTarget(absFile);\n            } catch {\n              continue;\n            }\n            const validation = validate(\n              path.relative(repoRoot, absFile),\n              content,\n              newContent,\n            );\n            if (!validation.ok) continue;\n            const rel = path.relative(repoRoot, absFile);\n            r.changes.set(rel, newContent);\n            stringReplacedCount++;\n          }\n        }\n        for (const [rel, content] of r.changes) {\n          atomic+}\u001b[0mWrite(path.join(repoRoot, rel), content);\n        }\n        log(\u001b[32m{+\n          +}\u001b[0m`cross-file rename ${r.symbol}: ${r.changes.size} file(s), ${r.totalReferences} refs`\u001b[32m{+ +\n            (stringReplacedCount > 0 ? `, ${stringReplacedCount} string-replaced` : ''+}\u001b[0m)\u001b[32m{+,\n        )+}\u001b[0m;\n        return ok({\n          ok: true,\n          changed: true,\n          symbol: r.symbol,\n          references: r.totalReferences,\n          files: [...r.changes.keys()],\u001b[32m{+\n          ...(stringReplacedCount > 0 ? { stringReplacedCount } : {}),+}\u001b[0m\n        });\n      } catch (e) {",
+  "preservedZones": [
+    {
+      "kind": "unchanged_context",
+      "description": "Everything outside the modified zone is preserved byte-for-byte by the atomic operation."
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "oldTextHash": "8d28d8b8815cf5d7f43390b7f46df3fc1c5fe1f6427a8a86c45694209426109b",
+      "newTextHash": "6df3a1aec470046b7dfd8f56abe3f680af1211b21e6cca037b967a8747bd3b92",
+      "description": "The operation changed the highlighted span shown in inlinePreview."
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~4297 character(s) in `scripts/mcp/atomic-edit/server.ts` (sub-line atomic edit, expansion 0.39× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

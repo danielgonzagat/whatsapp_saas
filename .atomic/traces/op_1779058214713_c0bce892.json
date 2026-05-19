@@ -1,0 +1,59 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779058214713_c0bce892",
+  "ts": "2026-05-17T22:50:14.713Z",
+  "file": "docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "targetUnit": "text_span",
+  "intention": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 204,
+    "lineRewriteSurfaceChars": 189,
+    "expansionFactorAvoided": 0.93,
+    "bytesNet": 15,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "e74747205468dd3d2086885eede9c76dbd30ac38ec460da433ea4f453c2138a3",
+  "proposedSha256": "e74747205468dd3d2086885eede9c76dbd30ac38ec460da433ea4f453c2138a3",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs (atomic char-level)\u001b[0m\n        ],\n        compactionRule: 'After the first green scorecard, keep only compactions that reduce at least one optimize surface without worsening any gate or increasing product source count.',\n        stopRule: 'Stop when the next available product-batch compaction would require a new write target, \u001b[31m[-cha-]\u001b[0m\u001b[32m{+type-o+}\u001b[0mn\u001b[31m[-g-]\u001b[0m\u001b[32m{+ly spillov+}\u001b[0me\u001b[32m{+r+}\u001b[0m \u001b[32m{+file, +}\u001b[0mpublic API\u001b[31m[-,-]\u001b[0m \u001b[31m[-tou-]\u001b[0mch\u001b[32m{+ange,+}\u001b[0m spec\u001b[31m[-s-]\u001b[0m/protected \u001b[31m[-fil-]\u001b[0me\u001b[31m[-s-]\u001b[0m\u001b[32m{+dit+}\u001b[0m, or increase\u001b[31m[- any-]\u001b[0m\u001b[32m{+d+}\u001b[0m scorecard surface.',\n        facadeShape: blueprint.facadeDelegationCompactness ? blueprint.facadeDelegationCompactness.expectedFacadeShape : null,\n        facadeCompactnessGuard: facadeRewritePlan ? facadeRewritePlan.compactnessGuard : null,",
+  "preservedZones": [
+    {
+      "kind": "unchanged_context",
+      "description": "Everything outside the modified zone is preserved byte-for-byte by the atomic operation."
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "oldTextHash": "25319f511a4f4be64f7f3eeadd4e173c6c1f235829b7ffcb6facc4ba73540d0e",
+      "newTextHash": "e74747205468dd3d2086885eede9c76dbd30ac38ec460da433ea4f453c2138a3",
+      "description": "The operation changed the highlighted span shown in inlinePreview."
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~204 character(s) in `docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs` (sub-line atomic edit, expansion 0.93× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

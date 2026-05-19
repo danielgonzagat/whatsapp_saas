@@ -1,0 +1,11 @@
+{
+  "frontId": "front-runtime-health-probe-production",
+  "owner": "codex",
+  "objective": "align PULSE runtime liveness probe with production public health endpoint",
+  "startedAt": "2026-05-16T14:26:17Z",
+  "heartbeatAt": "2026-05-16T14:26:17Z",
+  "allowedFiles": ["scripts/pulse/runtime-probes/probe-definitions.ts", "docs/ai/ATOMIC_EDIT_PROGRESS.md", "docs/ai/ATOMIC_EDIT_WORKBOARD.md"],
+  "blockedFiles": ["scripts/pulse/no-hardcoded-reality-audit.ts", "scripts/ops/**", "ops/**", ".github/workflows/**", "CLAUDE.md", "AGENTS.md"],
+  "acceptanceCriteria": ["production runtime probes pass", "PULSE evidence records 4/4 passed", "no protected governance edit"],
+  "status": "claimed"
+}

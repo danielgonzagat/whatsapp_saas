@@ -1,0 +1,37 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1778960984309_604bbfb4",
+  "ts": "2026-05-16T19:49:44.309Z",
+  "file": "scripts/mcp/atomic-edit/server.ts",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 3408,
+    "lineRewriteSurfaceChars": 0,
+    "expansionFactorAvoided": 0,
+    "bytesNet": 3408,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "afterSha256": "29c532dfee21e28cb9c2fc3a5ab6232fde7af2cf25b10972bba7a3d61c1412a1",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- scripts/mcp/atomic-edit/server.ts (atomic char-level)\u001b[0m\n  }\n  \n  \u001b[32m{+interface KnownLintResidueFix {\n    symbol: string;\n    description: string;\n  }\n  \n  function addVitestNamedImport(text: string, name: string): string {\n    return text.replace(/import \\{([^}]+)\\} from 'vitest';/, (statement, namesText: string) => {\n      const names = namesText.split(',').map((part) => part.trim()).filter(Boolean);\n      if (names.includes(name)) return statement;\n      return `import { ${[...names, name].join(', ')} } from 'vitest';`;\n    });\n  }\n  \n  function applyMailEnvBackupResidueFix(text: string): string {\n    if (!text.includes('const mailEnvBackup') || text.includes('setMailEnv(mailEnvBackup);')) {\n      return text;\n    }\n    const withImport = addVitestNamedImport(text, 'afterEach');\n    const anchor = \"  describe('sendEmail', () => {\";\n    if (!withImport.includes(anchor)) return text;\n    return withImport.replace(\n      anchor,\n      \"  afterEach(() => {\\n    setMailEnv(mailEnvBackup);\\n  });\\n\\n\" + anchor,\n    );\n  }\n  \n  function applyOpenAiEnvBackupResidueFix(text: string): string {\n    if (!text.includes('const envBackup') || text.includes('Object.entries(envBackup)')) {\n      return text;\n    }\n    const withImport = addVitestNamedImport(text, 'afterEach');\n    const anchor = \"  describe('resolveWorkerOpenAIModel', () => {\";\n    if (!withImport.includes(anchor)) return text;\n    return withImport.replace(\n      anchor,\n      \"  afterEach(() => {\\n\" +\n        \"    clearOpenAiEnvs();\\n\" +\n        \"    for (const [key, value] of Object.entries(envBackup)) {\\n\" +\n        \"      if (key.startsWith('OPENAI_') || key === 'VOICE_RESPONSE_AUDIO_REQUIRED') {\\n\" +\n        \"        if (value === undefined) {\\n\" +\n        \"          delete process.env[key];\\n\" +\n        \"        } else {\\n\" +\n        \"          process.env[key] = value;\\n\" +\n        \"        }\\n\" +\n        \"      }\\n\" +\n        \"    }\\n\" +\n        \"  });\\n\\n\" +\n        anchor,\n    );\n  }\n  \n  function applyEmptyDemographicsResidueFix(text: string): string {\n    if (\n      !text.includes('const emptyDemographics') ||\n      text.includes('expect(result.demographics).toEqual(emptyDemographics);')\n    ) {\n      return text;\n    }\n    const anchor = '    expect(result.leadScore).toBeLessThanOrEqual(100);\\n';\n    if (!text.includes(anchor)) return text;\n    return text.replace(anchor, `${anchor}    expect(result.demographics).toEqual(emptyDemographics);\\n`);\n  }\n  \n  function applyKnownLintResidueFixes(\n    relPath: string,\n    text: string,\n    messages: EslintDryRunResult['messages'],\n  ): { text: string; applied: KnownLintResidueFix[] } {\n    let next = text;\n    const applied: KnownLintResidueFix[] = [];\n    const symbols = new Set((messages ?? []).map((message) => unusedSymbolFromLintMessage(message.message)));\n    const apply = (symbol: string, description: string, fn: (source: string) => string): void => {\n      if (!symbols.has(symbol)) return;\n      const before = next;\n      next = fn(next);\n      if (next !== before) applied.push({ symbol, description });\n    };\n  \n    apply('mailEnvBackup', 'preserve mail env backup by restoring it after each test', applyMailEnvBackupResidueFix);\n    apply('envBackup', 'preserve OpenAI env backup by restoring target env keys after each test', applyOpenAiEnvBackupResidueFix);\n    apply(\n      'emptyDemographics',\n      'preserve expected empty demographics fixture by asserting it in the empty-message behavior test',\n      applyEmptyDemographicsResidueFix,\n    );\n  \n    return { text: next, applied: applied.map((fix) => ({ ...fix, description: `${relPath}: ${fix.description}` })) };\n  }\n  +}\u001b[0m\n  interface ToolOk {\n    content: { type: 'text'; text: string }[];",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~3408 character(s) in `scripts/mcp/atomic-edit/server.ts` (sub-line atomic edit, expansion 0× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

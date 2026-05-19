@@ -1,0 +1,80 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779158799292_8b08d0ba",
+  "ts": "2026-05-19T02:46:39.292Z",
+  "file": "frontend/src/components/kloel/dashboard/KloelDashboardSendMessage.ts",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "targetUnit": "text_span",
+  "intention": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 913,
+    "lineRewriteSurfaceChars": 98,
+    "expansionFactorAvoided": 0.11,
+    "bytesNet": 815,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "560d64ed9185a79f666e0a2d178bee65bbd3201c16b401607189448d4a23631f",
+  "proposedSha256": "560d64ed9185a79f666e0a2d178bee65bbd3201c16b401607189448d4a23631f",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- frontend/src/components/kloel/dashboard/KloelDashboardSendMessage.ts (atomic char-level)\u001b[0m\n      const minimumThinkingMs = 420;\n      const playbackTimerRef: { current: ReturnType<typeof setTimeout> | null } = { current: null };\n  \u001b[32m{+    // Safety net: if the stream never delivers a terminal event (provider\n      // wedged, keep-alive pings masking the idle timeout, connection severed\n      // without a close), finalizeStream() would never run and\n      // streamingMessageId would stay set forever — which keeps the derived\n      // isReplyInFlight true, so EVERY subsequent send becomes a silent no-op\n      // (\"Kloel não responde e nada aparece\"). This wall-clock backstop\n      // guarantees the streaming state is always released.\n      const HARD_STREAM_WATCHDOG_MS = 300_000;\n      const hardWatchdogRef: { current: ReturnType<typeof setTimeout> | null } = { current: null };\n      const clearHardWatchdog = () => {\n        if (hardWatchdogRef.current) {\n          clearTimeout(hardWatchdogRef.current);\n          hardWatchdogRef.current = null;\n        }\n      };+}\u001b[0m\n  \n      const syncAssistantText = (nextText: string) => {",
+  "preservedZones": [
+    {
+      "kind": "prefix_preserved",
+      "description": "Bytes 0–3599 — prefix preserved unchanged",
+      "byteStart": 0,
+      "byteEnd": 3600,
+      "byteLength": 3600,
+      "beforeHash": "30f1f929e19b4477085cca544eb0d4a18e4039eb995f2ab77c3f60372b955510",
+      "afterHash": "30f1f929e19b4477085cca544eb0d4a18e4039eb995f2ab77c3f60372b955510",
+      "sample": "imerRef: { current: ReturnType<typeof setTimeout> | null } = { current: null };\n"
+    },
+    {
+      "kind": "suffix_preserved",
+      "description": "Bytes 3600–9037 — suffix preserved unchanged",
+      "byteStart": 3600,
+      "byteEnd": 9038,
+      "byteLength": 5438,
+      "beforeHash": "a97262c57d21ae77b6287d0eee47b28d0b77f5da9a643b1b72de6eb4d337b25c",
+      "afterHash": "a97262c57d21ae77b6287d0eee47b28d0b77f5da9a643b1b72de6eb4d337b25c",
+      "sample": "\n    const syncAssistantText = (nextText: string) => {\n      ctx.setMessages((cu"
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "byteStart": 3600,
+      "byteEnd": 3600,
+      "newByteLength": 815,
+      "oldTextHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "newTextHash": "d1c98d99307297df2c62e5410336308287fd7cdad24b256037e474aa5e78e23f",
+      "oldSample": "",
+      "newSample": "    // Safety net: if the stream never delivers a terminal event (provider\n    // wedged, keep-alive pings masking the idle timeout, connection severed\n    // without a close), finalizeStream() would ",
+      "description": "Insert 815 bytes at offset 3600"
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~913 character(s) in `frontend/src/components/kloel/dashboard/KloelDashboardSendMessage.ts` (sub-line atomic edit, expansion 0.11× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

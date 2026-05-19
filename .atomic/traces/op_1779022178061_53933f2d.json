@@ -1,0 +1,59 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779022178061_53933f2d",
+  "ts": "2026-05-17T12:49:38.061Z",
+  "file": "docs/ai/atomic-os-benchmark/tools/atomic-call.cjs",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "targetUnit": "text_span",
+  "intention": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 2301,
+    "lineRewriteSurfaceChars": 985,
+    "expansionFactorAvoided": 0.43,
+    "bytesNet": 1316,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "28f1feb409a8fd00e077100cd4c6e86e4495d1daad7d4dabffef412e43901516",
+  "proposedSha256": "28f1feb409a8fd00e077100cd4c6e86e4495d1daad7d4dabffef412e43901516",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- docs/ai/atomic-os-benchmark/tools/atomic-call.cjs (atomic char-level)\u001b[0m\n    if (!tool || !rawArgs) usage();\n  \n    const \u001b[31m[-args = JSON.parse(rawArgs);\n    normalizeToolAliases(tool, args);\n    normalizeWorktreeSafePaths(args);\n  \n    -]\u001b[0mc\u001b[31m[-onst c-]\u001b[0mlient = new Client({ name: 'codex-atomic-worktree-safe-call', version: '1.\u001b[31m[-0-]\u001b[0m\u001b[32m{+1+}\u001b[0m.0' });\n    const transport = new StdioClientTransport({\n      command: 'bash',\n      args: ['/Users/danielpenin/whatsapp_saas/scripts/mcp/atomic-edit-mcp-launcher.sh'],\n    });\n  \n    await client.connect(transport);\n    try {\u001b[32m{+\n      if (tool === 'batch') {\n        const operations = JSON.parse(rawArgs);\n        if (!Array.isArray(operations)) throw new Error('batch expects a JSON array');\n        const outputs = [];\n        for (const [index, operation] of operations.entries()) {\n          const operationTool = operation?.tool;\n          const operationArgs = operation?.args ?? {};\n          if (!operationTool || typeof operationTool !== 'string') throw new Error(`batch operation ${index} is missing tool`);\n          if (!operationArgs || typeof operationArgs !== 'object' || Array.isArray(operationArgs)) throw new Error(`batch operation ${index} args must be an object`);\n          normalizeToolAliases(operationTool, operationArgs);\n          normalizeWorktreeSafePaths(operationArgs);\n          const result = await client.callTool({ name: operationTool, arguments: operationArgs });\n          const output = result.content?.map((part) => part.text || '').join('\\n') || '';\n          if (result.isError || /\\bMCP error\\b/i.test(output)) {\n            if (output) console.error(output);\n            throw new Error(`atomic batch operation ${index} (${operationTool}) failed`);\n          }\n          outputs.push({ index, tool: operationTool, output });\n        }\n        console.log(JSON.stringify({ ok: true, operations: outputs }, null, 2));\n        return;\n      }\n  \n      const args = JSON.parse(rawArgs);\n      normalizeToolAliases(tool, args);\n      normalizeWorktreeSafePaths(args);+}\u001b[0m\n      const result = await client.callTool({ name: tool, arguments: args });\n      const output = result.content?.map((part) => part.text || '').join('\\n') || '';",
+  "preservedZones": [
+    {
+      "kind": "unchanged_context",
+      "description": "Everything outside the modified zone is preserved byte-for-byte by the atomic operation."
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "oldTextHash": "985a0ec074eb4322800ffc2a523a0cade3e33ad948a6e85c1c15d94856b2cea3",
+      "newTextHash": "28f1feb409a8fd00e077100cd4c6e86e4495d1daad7d4dabffef412e43901516",
+      "description": "The operation changed the highlighted span shown in inlinePreview."
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~2301 character(s) in `docs/ai/atomic-os-benchmark/tools/atomic-call.cjs` (sub-line atomic edit, expansion 0.43× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

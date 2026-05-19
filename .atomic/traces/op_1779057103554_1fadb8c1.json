@@ -1,0 +1,59 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779057103554_1fadb8c1",
+  "ts": "2026-05-17T22:31:43.554Z",
+  "file": "docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "targetUnit": "text_span",
+  "intention": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 1190,
+    "lineRewriteSurfaceChars": 325,
+    "expansionFactorAvoided": 0.27,
+    "bytesNet": 865,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "d07d6d72cba4edc1172a48174d08cfc7e82a091212c005eaa5dcbbaed178ed05",
+  "proposedSha256": "d07d6d72cba4edc1172a48174d08cfc7e82a091212c005eaa5dcbbaed178ed05",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs (atomic char-level)\u001b[0m\n        importPressurePlan: facadePressure,\n        compactnessGuard: 'one public method statement per delegated method; no private facade helper unless this recipe leaves the method unresolved',\n  \u001b[32m{+      postSplitFacadeCompactionPlan: {\n          decisionAuthority: 'derived from methodDelegations, ownerFiles, import pressure, and the next scorecard; no fixed facade line budget',\n          compactionActions: [\n            'after the first green scorecard, delegate every resolved public method to its owner module with one facade statement',\n            'move retained public leaf bodies only when an existing owner module can absorb them without adding a product source file',\n            'remove facade-only private helpers when methodDelegations has no unresolved owner',\n            'choose namespace or named imports from importPressurePlan instead of hand-written import style',\n          ],\n          guard: 'apply only if public API, constructor shape, scorecard, focused Jest, typecheck-impact, spec diff, protected diff, and source count remain non-worse',\n        },+}\u001b[0m\n      },\n      writeGranularityPlan: {",
+  "preservedZones": [
+    {
+      "kind": "unchanged_context",
+      "description": "Everything outside the modified zone is preserved byte-for-byte by the atomic operation."
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "oldTextHash": "80a0cf6eff312b99d52647112f5e388a9dbb8071e0079942a84f570fbdb8a63f",
+      "newTextHash": "d07d6d72cba4edc1172a48174d08cfc7e82a091212c005eaa5dcbbaed178ed05",
+      "description": "The operation changed the highlighted span shown in inlinePreview."
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~1190 character(s) in `docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs` (sub-line atomic edit, expansion 0.27× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

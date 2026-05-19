@@ -1,0 +1,59 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779041918778_9bccc955",
+  "ts": "2026-05-17T18:18:38.779Z",
+  "file": "docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "targetUnit": "text_span",
+  "intention": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 1528,
+    "lineRewriteSurfaceChars": 846,
+    "expansionFactorAvoided": 0.55,
+    "bytesNet": 718,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "1d88a556115b2bf11568a71627e72abc2a529eaff617c93cf96b61273bfab4ee",
+  "proposedSha256": "1d88a556115b2bf11568a71627e72abc2a529eaff617c93cf96b61273bfab4ee",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs (atomic char-level)\u001b[0m\n    const supportFile = scopePrefix + '-support' + (targetExt || '.ts');\n    const supportSymbols = supportMembers.map((member) => member.name);\n    const \u001b[31m[-ava-]\u001b[0m\u001b[32m{+[f+}\u001b[0mi\u001b[32m{+rstC+}\u001b[0ml\u001b[32m{+uster, ...rem+}\u001b[0ma\u001b[31m[-b-]\u001b[0m\u001b[32m{+iningC+}\u001b[0ml\u001b[32m{+ust+}\u001b[0me\u001b[32m{+rs]+}\u001b[0m = \u001b[32m{+clu+}\u001b[0ms\u001b[32m{+ters;\n    const m+}\u001b[0mu\u001b[31m[-p-]\u001b[0m\u001b[32m{+ltiClusterTo+}\u001b[0mpo\u001b[32m{+logy = Boolean(fi+}\u001b[0mr\u001b[32m{+s+}\u001b[0mt\u001b[31m[-M-]\u001b[0m\u001b[32m{+Clust+}\u001b[0me\u001b[32m{+r && re+}\u001b[0mm\u001b[31m[-b-]\u001b[0m\u001b[32m{+ainingClust+}\u001b[0mers.length\u001b[32m{+);\n  +}\u001b[0m \u001b[31m[->-]\u001b[0m \u001b[31m[-0-]\u001b[0m\u001b[32m{+const+}\u001b[0m \u001b[32m{+supportReleasesIndependentTopology = Boolean(\n      multiClusterTopology +}\u001b[0m&& largestModuleLinesAfterSupport < largestBeforeSupport\u001b[32m{+,\n    )+}\u001b[0m;\n    \u001b[32m{+const available = suppo+}\u001b[0mr\u001b[32m{+tM+}\u001b[0me\u001b[32m{+mbers.leng+}\u001b[0mt\u001b[32m{+h > 0 && s+}\u001b[0mu\u001b[32m{+ppo+}\u001b[0mr\u001b[32m{+tReleasesI+}\u001b[0mn\u001b[32m{+dependentTopology;\n  +}\u001b[0m \u001b[32m{+ const availabilityReason = supportMembers.length === 0\n      ? 'no_leaf_support_symbols'\n      : (!multiClusterTopology\n          ? 'single_cluster_support_stays_with_dependency_owner'\n          : (supportReleasesIndependentTopology\n              ? 'support_releases_multi_cluster_largest_module_pressure'\n              : 'support_does_not_release_largest_module_pressure'));\n    return +}\u001b[0m{\n      available,\u001b[32m{+\n      availabilityReason,\n      multiClusterTopology,\n      supportReleasesIndependentTopology,+}\u001b[0m\n      supportFile,\n      supportLines,",
+  "preservedZones": [
+    {
+      "kind": "unchanged_context",
+      "description": "Everything outside the modified zone is preserved byte-for-byte by the atomic operation."
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "oldTextHash": "ad1938595d92abcb794feefe337a3971bca570ad5b792dc14fdad0454eeb0834",
+      "newTextHash": "1d88a556115b2bf11568a71627e72abc2a529eaff617c93cf96b61273bfab4ee",
+      "description": "The operation changed the highlighted span shown in inlinePreview."
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~1528 character(s) in `docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs` (sub-line atomic edit, expansion 0.55× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

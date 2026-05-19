@@ -1,0 +1,59 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779031730225_d738671b",
+  "ts": "2026-05-17T15:28:50.225Z",
+  "file": "docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "targetUnit": "text_span",
+  "intention": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 199,
+    "lineRewriteSurfaceChars": 203,
+    "expansionFactorAvoided": 1.02,
+    "bytesNet": -122,
+    "lineRewriteAvoided": true
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "710cc0efed6b12b294d0afe9bd733c860a3708019e909dd0d634e2f7285b9a8f",
+  "proposedSha256": "710cc0efed6b12b294d0afe9bd733c860a3708019e909dd0d634e2f7285b9a8f",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs (atomic char-level)\u001b[0m\n    const singleTemplate = [{\n      file: runtimeFile,\n      responsibility: '\u001b[31m[-Extract the ob-]\u001b[0ms\u001b[31m[-erved dependency-cohes-]\u001b[0mi\u001b[31m[-ve clusters i-]\u001b[0mn\u001b[31m[-to on-]\u001b[0m\u001b[32m{+gl+}\u001b[0me\u001b[31m[- -]\u001b[0m\u001b[32m{+_+}\u001b[0mruntime\u001b[31m[- module because the selector-]\u001b[0m\u001b[32m{+:+}\u001b[0m measured \u001b[31m[-low-]\u001b[0me\u001b[31m[-r file--]\u001b[0mco\u001b[31m[-u-]\u001b[0mn\u001b[31m[-t, b-]\u001b[0mo\u001b[31m[-undar-]\u001b[0m\u001b[32m{+m+}\u001b[0my\u001b[31m[-,-]\u001b[0m \u001b[31m[-and -]\u001b[0m\u001b[32m{+w+}\u001b[0min\u001b[31m[-ve-]\u001b[0mn\u001b[31m[-tory pr-]\u001b[0me\u001b[31m[-ssu-]\u001b[0mr\u001b[31m[-e-]\u001b[0m for this \u001b[31m[-source -]\u001b[0mtopology.',\n      observedLines: clusterLineTotal,\n      preserveTogether: 'Preserve each observed cluster as an internal section or exported operation inside the runtime module; do not split unless validation or the scorecard proves the single module is the actual pressure point.',",
+  "preservedZones": [
+    {
+      "kind": "unchanged_context",
+      "description": "Everything outside the modified zone is preserved byte-for-byte by the atomic operation."
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "oldTextHash": "06f6d675409ece9e9811038f513134f7f162e2e851108e9a9286625123adbd44",
+      "newTextHash": "710cc0efed6b12b294d0afe9bd733c860a3708019e909dd0d634e2f7285b9a8f",
+      "description": "The operation changed the highlighted span shown in inlinePreview."
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~199 character(s) in `docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs` (sub-line atomic edit, expansion 1.02× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

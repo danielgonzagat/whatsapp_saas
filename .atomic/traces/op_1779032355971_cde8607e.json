@@ -1,0 +1,59 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779032355971_cde8607e",
+  "ts": "2026-05-17T15:39:15.971Z",
+  "file": "backend/src/kloel/unified-agent.service.ts",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "targetUnit": "text_span",
+  "intention": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 44,
+    "lineRewriteSurfaceChars": 47,
+    "expansionFactorAvoided": 1.07,
+    "bytesNet": 5,
+    "lineRewriteAvoided": true
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "a51560e8c7968247c3d7e1322f540c60fca6417fdf1aafea4fb7f158539c1e6f",
+  "proposedSha256": "a51560e8c7968247c3d7e1322f540c60fca6417fdf1aafea4fb7f158539c1e6f",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- backend/src/kloel/unified-agent.service.ts (atomic char-level)\u001b[0m\n          return this.actions.actionSendProductInfo(workspaceId, phone, args, context);\n        case 'create_payment_link': {\n          const paymentAmount = \u001b[32m{+this.+}\u001b[0mnum(args.amount);\n          if (this.riskGate && paymentAmount > 0) {\n            const gateDecision = this.riskGate.gatePaymentAction({",
+  "preservedZones": [
+    {
+      "kind": "unchanged_context",
+      "description": "Everything outside the modified zone is preserved byte-for-byte by the atomic operation."
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "oldTextHash": "cfb128ccebdfd50cfb155af623793db836c43d766160602a0be7b3aeb45bafdf",
+      "newTextHash": "a51560e8c7968247c3d7e1322f540c60fca6417fdf1aafea4fb7f158539c1e6f",
+      "description": "The operation changed the highlighted span shown in inlinePreview."
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~44 character(s) in `backend/src/kloel/unified-agent.service.ts` (sub-line atomic edit, expansion 1.07× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

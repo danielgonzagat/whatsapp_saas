@@ -1,0 +1,59 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779023243283_53289d71",
+  "ts": "2026-05-17T13:07:23.284Z",
+  "file": "docs/ai/atomic-os-benchmark/tools/refactor-scorecard.cjs",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "targetUnit": "text_span",
+  "intention": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 1240,
+    "lineRewriteSurfaceChars": 171,
+    "expansionFactorAvoided": 0.14,
+    "bytesNet": 1069,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "79c7444946a9453e394d4cb30aec087ffdd6e66d187dfb961adfa8919dbd6bd7",
+  "proposedSha256": "79c7444946a9453e394d4cb30aec087ffdd6e66d187dfb961adfa8919dbd6bd7",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- docs/ai/atomic-os-benchmark/tools/refactor-scorecard.cjs (atomic char-level)\u001b[0m\n  function relPath(worktree, value) {\n    const normalized = path.isAbsolute(value) ? path.relative(worktree, value) : value;\n    return normalized.split(path.sep).join('/')\u001b[32m{+.replace(/^\\.\\//, '').replace(/\\/+$/, '')+}\u001b[0m;\u001b[32m{+\n  }\n  \n  function deriveScopePrefix(worktree, target) {\n    const rel = relPath(worktree, target);\n    const ext = path.posix.extname(rel);\n    const withoutExt = ext ? rel.slice(0, -ext.length) : rel;\n    const dir = path.posix.dirname(withoutExt);\n    const base = path.posix.basename(withoutExt);\n    const pivot = base.lastIndexOf('.');\n    const stem = pivot > 0 ? base.slice(0, pivot) : base;\n    return dir === '.' ? stem : dir + '/' + stem;\n  }\n  \n  function loadProtectedPathspecs(worktree) {\n    const governancePath = path.join(worktree, 'ops', 'protected-governance-files.json');\n    if (!fs.existsSync(governancePath)) return ['.'];\n    const parsed = JSON.parse(fs.readFileSync(governancePath, 'utf8'));\n    const exact = Array.isArray(parsed.protectedExact) ? parsed.protectedExact : [];\n    const prefixes = Array.isArray(parsed.protectedPrefixes) ? parsed.protectedPrefixes : [];\n    const pathspecs = uniq([...exact, ...prefixes])\n      .map((value) => relPath(worktree, value))\n      .filter(Boolean);\n    return pathspecs.length > 0 ? pathspecs : ['.'];+}\u001b[0m\n  }\n  ",
+  "preservedZones": [
+    {
+      "kind": "unchanged_context",
+      "description": "Everything outside the modified zone is preserved byte-for-byte by the atomic operation."
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "oldTextHash": "ea432e2d9bf1376b31739111fdb70af03e64ad7db7ff27fb15461041fb91a2f7",
+      "newTextHash": "79c7444946a9453e394d4cb30aec087ffdd6e66d187dfb961adfa8919dbd6bd7",
+      "description": "The operation changed the highlighted span shown in inlinePreview."
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~1240 character(s) in `docs/ai/atomic-os-benchmark/tools/refactor-scorecard.cjs` (sub-line atomic edit, expansion 0.14× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

@@ -1,0 +1,59 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779085217631_6bbb3b20",
+  "ts": "2026-05-18T06:20:17.631Z",
+  "file": "docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "targetUnit": "text_span",
+  "intention": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 3856,
+    "lineRewriteSurfaceChars": 2276,
+    "expansionFactorAvoided": 0.59,
+    "bytesNet": 1580,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "23fa08e4562f4b25ba9393d6138c997d410175bdcc383b231307b8a36532ec00",
+  "proposedSha256": "23fa08e4562f4b25ba9393d6138c997d410175bdcc383b231307b8a36532ec00",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs (atomic char-level)\u001b[0m\n      ? (facadeSurface.constructorParamProperties.length + facadeSurface.privateFields.length)\n      : 0;\n    const \u001b[31m[-reusableO-]\u001b[0m\u001b[32m{+o+}\u001b[0mwner\u001b[32m{+Entrie+}\u001b[0ms = [...owners.values()]\u001b[32m{+;+}\u001b[0m\n    \u001b[32m{+const+}\u001b[0m \u001b[32m{+reusableOwners+}\u001b[0m \u001b[32m{+= ownerEntries\n      +}\u001b[0m.filter((owner) => owner.methods.length > 1)\n      .map((owner) => ({\n        ...owner,\n        repeatedDelegationCount: owner.methods.length,\n      }));\n    const \u001b[32m{+delegatedMethodCount = owne+}\u001b[0mr\u001b[32m{+Entri+}\u001b[0me\u001b[32m{+s.reduce((total, owner) => total + owner.methods.length, 0);\n    const re+}\u001b[0mpeatedMethodCount = reusableOwners.reduce((total, owner) => total + owner.methods.length, 0);\n    const ownerFileCount = owners.size;\n    const repeatedDirectSurface = reusableOwners.reduce(\n      (total, owner) => total + (owner.methods.length * dependencySurfaceCount),\n      0,\n    );\n    const c\u001b[32m{+rossOwnerDirectSurf+}\u001b[0mac\u001b[31m[-h-]\u001b[0me\u001b[32m{+ = +}\u001b[0md\u001b[31m[-B-]\u001b[0m\u001b[32m{+elegatedMethodCo+}\u001b[0mun\u001b[32m{+t * +}\u001b[0md\u001b[31m[-l-]\u001b[0me\u001b[32m{+pendency+}\u001b[0mSurface\u001b[32m{+Count;\n  +}\u001b[0m \u001b[32m{+ const sameOwnerCachedSurface +}\u001b[0m= dependencySurfaceCount > 0\n      ? (dependencySurfaceCount * (reusableOwners.length + ownerFileCount)) + repeatedMethodCount\n      : repeatedMethodCount;\n    const \u001b[32m{+crossOwn+}\u001b[0me\u001b[32m{+rSharedSurfa+}\u001b[0mc\u001b[32m{+e = dependencySurfaceC+}\u001b[0mo\u001b[32m{+u+}\u001b[0mn\u001b[32m{+t > 0\n      ? dependencySurfaceC+}\u001b[0mo\u001b[32m{+unt + delegatedMethodCount + ownerFileCount\n      : delegatedMethodCount + ownerFileCount;\n    const sa+}\u001b[0mm\u001b[31m[-y-]\u001b[0m\u001b[32m{+eOwnerBundle+}\u001b[0mPass = reusableOwners.length > 0 && repeatedDirectSurface > \u001b[32m{+sameOwnerCa+}\u001b[0mc\u001b[32m{+hedSurf+}\u001b[0mac\u001b[32m{+e;\n    const crossOwnerBundlePass = reusableOwners.lengt+}\u001b[0mh\u001b[32m{+ === 0 && own+}\u001b[0me\u001b[32m{+rFileCount > 1 && +}\u001b[0md\u001b[32m{+elegatedMethodCount > 1 && crossOwnerDirectSurface > crossOwnerSharedSurface;\n    const cached+}\u001b[0mBundleSurface\u001b[32m{+ = crossOwnerBundlePass ? crossOwnerSharedSurface : sameOwnerCachedSurface+}\u001b[0m;\n    const \u001b[32m{+economyPass = sameOwne+}\u001b[0mr\u001b[32m{+Bundl+}\u001b[0me\u001b[32m{+Pass || crossOwnerB+}\u001b[0mu\u001b[32m{+ndlePa+}\u001b[0ms\u001b[32m{+s;\n    const r+}\u001b[0me\u001b[32m{+use+}\u001b[0mCandidates = reusableOwners.map((owner) => ({\n      ...owner,\n      action: \u001b[32m{+sam+}\u001b[0me\u001b[31m[-co-]\u001b[0m\u001b[32m{+Ow+}\u001b[0mn\u001b[31m[-omy-]\u001b[0m\u001b[32m{+erBundle+}\u001b[0mPass\n        ? 'build one owner-local dependency bundle or cached delegate for these public methods because measured repeated direct dependency surface is larger than typed bundle surface'\n        : 'keep direct per-method dependency objects because measured typed bundle/support surface is not smaller than repeated direct dependency surface',\n    }));\n    \u001b[32m{+const sha+}\u001b[0mre\u001b[32m{+dBundleOwners = crossOwnerBundlePass\n      ? ownerEn+}\u001b[0mt\u001b[32m{+ries.map((owner) => ({\n          ownerFile: owner.ownerFile,\n          methods: owner.methods,\n          preferredExports: owner.preferredExports,\n          action: 'cons+}\u001b[0mu\u001b[32m{+me the sha+}\u001b[0mr\u001b[32m{+ed facade depe+}\u001b[0mn\u001b[32m{+dency+}\u001b[0m \u001b[32m{+bundle instead of rebuilding the same dependency object per owner method',\n        }))\n      : [];\n    return +}\u001b[0m{\n      available: economyPass,\n      decisionAuthority: 'derived from \u001b[31m[-repeated -]\u001b[0mowner\u001b[31m[-File-]\u001b[0m method\u001b[31m[-D-]\u001b[0m\u001b[32m{+ d+}\u001b[0melegations, facade dependency surface, owner-file count, and typed bundle surface estimate\u001b[32m{+ across owners+}\u001b[0m; no fixed facade line budget or hardcoded owner name',\n      dependencyBundleEconomy: {\n        dependencySurfaceCount,\n        \u001b[32m{+delegatedMethodCount,\n        +}\u001b[0mrepeatedMethodCount,\n        reusableOwnerCount: reusableOwners.length,\n        ownerFileCount,\n        repeatedDirectSurface,\n        c\u001b[32m{+rossOwnerDirectSurf+}\u001b[0mac\u001b[32m{+e,\n        sameOwnerCac+}\u001b[0mhed\u001b[32m{+Surface,\n        crossOwnerSharedSurface,\n        cached+}\u001b[0mBundleSurface,\n        \u001b[32m{+sameOwnerBundlePass,\n        crossOwnerBundlePass,\n        +}\u001b[0mpass: economyPass,\n        interpretation: 'Bundle reuse is an economy win \u001b[31m[-only -]\u001b[0mwhen \u001b[31m[-the esti-]\u001b[0mm\u001b[32m{+e+}\u001b[0ma\u001b[31m[-t-]\u001b[0m\u001b[32m{+sur+}\u001b[0med direct \u001b[32m{+dependency +}\u001b[0mrepetition \u001b[31m[-surfac-]\u001b[0me\u001b[31m[- e-]\u001b[0mxceeds the \u001b[31m[-es-]\u001b[0mt\u001b[31m[-imated t-]\u001b[0myped bundle/support surface\u001b[32m{+,+}\u001b[0m \u001b[31m[-cr-]\u001b[0m\u001b[32m{+wh+}\u001b[0me\u001b[31m[-a-]\u001b[0mt\u001b[32m{+h+}\u001b[0me\u001b[31m[-d-]\u001b[0m\u001b[32m{+r+}\u001b[0m \u001b[32m{+repe+}\u001b[0mt\u001b[32m{+iti+}\u001b[0mo\u001b[32m{+n+}\u001b[0m \u001b[32m{+i+}\u001b[0ms\u001b[31m[-h-]\u001b[0m\u001b[32m{+ inside one owner or +}\u001b[0ma\u001b[32m{+c+}\u001b[0mr\u001b[31m[-e-]\u001b[0m\u001b[32m{+oss+}\u001b[0m \u001b[32m{+s+}\u001b[0mi\u001b[31m[-t-]\u001b[0m\u001b[32m{+bling owners+}\u001b[0m.',\n      },\n      reusableOwners: reuseCandidates,\n      \u001b[32m{+sh+}\u001b[0ma\u001b[32m{+redBundleOwners,\n      a+}\u001b[0mction: economyPass\n        ? \u001b[32m{+(crossOwnerBundlePass\n            ? +}\u001b[0m'Compress repeated facade dependency objects \u001b[32m{+into one shared de+}\u001b[0mpe\u001b[32m{+ndency bundle consumed by sibling owne+}\u001b[0mr\u001b[32m{+s+}\u001b[0m \u001b[32m{+while preserving c+}\u001b[0mo\u001b[32m{+nstructor shape, public method signatures, and source inventory economy.'\n            : 'Compress repeated facade dependency objects per o+}\u001b[0mwner while preserving constructor shape, public method signatures, and source inventory economy.'\u001b[32m{+)+}\u001b[0m\n        : 'Do not materialize cached dependency bundles; direct facade delegation remains lower total inventory until measured repetition outweighs the typed bundle/support surface.',\n    };",
+  "preservedZones": [
+    {
+      "kind": "unchanged_context",
+      "description": "Everything outside the modified zone is preserved byte-for-byte by the atomic operation."
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "oldTextHash": "17ba60164924eeee17685412ebacc7866b681222020185aeb1b08465dbc69c91",
+      "newTextHash": "23fa08e4562f4b25ba9393d6138c997d410175bdcc383b231307b8a36532ec00",
+      "description": "The operation changed the highlighted span shown in inlinePreview."
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~3856 character(s) in `docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs` (sub-line atomic edit, expansion 0.59× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

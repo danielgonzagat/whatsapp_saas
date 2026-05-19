@@ -11,7 +11,7 @@
  * compare against. UTP-ABI-003 enforces version policy in CI.
  */
 
-export const ABI_VERSION = '1.0.0' as const;
+export const ABI_VERSION = '1.1.0' as const;
 
 /**
  * The single canonical mirror of PCI.5 truth modes.

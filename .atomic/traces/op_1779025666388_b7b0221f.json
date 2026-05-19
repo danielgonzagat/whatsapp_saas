@@ -1,0 +1,59 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779025666388_b7b0221f",
+  "ts": "2026-05-17T13:47:46.389Z",
+  "file": "docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "targetUnit": "text_span",
+  "intention": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 167,
+    "lineRewriteSurfaceChars": 301,
+    "expansionFactorAvoided": 1.8,
+    "bytesNet": 22,
+    "lineRewriteAvoided": true
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "88bd48eca6265a3f0d46fbd0c5cddb21d4a3bb60b5c95fbdc287aa9af90953c6",
+  "proposedSha256": "88bd48eca6265a3f0d46fbd0c5cddb21d4a3bb60b5c95fbdc287aa9af90953c6",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs (atomic char-level)\u001b[0m\n        progressSignals: ['target diff exists', 'atomic trace exists', 'scorecard was run', 'target dominance released', 'public API audit was run when class was detected'],\n        noProgressResponse: 'When progress signals stop advancing, run the dominantExtractionCandidate macro step, then re-run scorecard and this policy compiler.',\n        sizingAuthority: 'Only caller-provided max flags are enforced; \u001b[31m[-o-]\u001b[0mt\u001b[31m[-he-]\u001b[0m\u001b[32m{+a+}\u001b[0mr\u001b[31m[-wis-]\u001b[0m\u001b[32m{+g+}\u001b[0me\u001b[32m{+t+}\u001b[0m \u001b[31m[-f-]\u001b[0m\u001b[32m{+dom+}\u001b[0mi\u001b[31m[-l-]\u001b[0m\u001b[32m{+nanc+}\u001b[0me \u001b[32m{+relea+}\u001b[0ms\u001b[31m[-iz-]\u001b[0me\u001b[32m{+ i+}\u001b[0ms \u001b[31m[-a-]\u001b[0m\u001b[32m{+de+}\u001b[0mr\u001b[32m{+iv+}\u001b[0me\u001b[32m{+d+}\u001b[0m \u001b[32m{+fro+}\u001b[0mm\u001b[31m[-e-]\u001b[0m\u001b[32m{+ ch+}\u001b[0ma\u001b[32m{+nged-+}\u001b[0ms\u001b[32m{+o+}\u001b[0mur\u001b[32m{+c+}\u001b[0me\u001b[31m[-d-]\u001b[0m \u001b[32m{+me+}\u001b[0ma\u001b[31m[-nd -]\u001b[0m\u001b[32m{+su+}\u001b[0mre\u001b[31m[-port-]\u001b[0m\u001b[32m{+m+}\u001b[0me\u001b[31m[-d wi-]\u001b[0m\u001b[32m{+n+}\u001b[0mt\u001b[31m[-h-]\u001b[0m\u001b[32m{+s, n+}\u001b[0mo\u001b[31m[-u-]\u001b[0mt \u001b[31m[-emb-]\u001b[0m\u001b[32m{+a fix+}\u001b[0med\u001b[31m[-d-]\u001b[0m\u001b[32m{+ lin+}\u001b[0me\u001b[31m[-d-]\u001b[0m ceiling\u001b[31m[-s-]\u001b[0m.',\n        explorationLimit: 'Read files needed to preserve the detected public surface and focused behavior; extra reads must be tied to a failing validation.',\n        dominanceResponse: dominantSpan",
+  "preservedZones": [
+    {
+      "kind": "unchanged_context",
+      "description": "Everything outside the modified zone is preserved byte-for-byte by the atomic operation."
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "oldTextHash": "88bdd180c257f16afd4caf5ef3b5ca211f485da7b16f2adb228e82b1e8007f39",
+      "newTextHash": "88bd48eca6265a3f0d46fbd0c5cddb21d4a3bb60b5c95fbdc287aa9af90953c6",
+      "description": "The operation changed the highlighted span shown in inlinePreview."
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~167 character(s) in `docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs` (sub-line atomic edit, expansion 1.8× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

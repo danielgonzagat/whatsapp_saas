@@ -1,0 +1,80 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779156641447_4eb16965",
+  "ts": "2026-05-19T02:10:41.447Z",
+  "file": "scripts/orchestration/tier-tags-helpers.mjs",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "targetUnit": "text_span",
+  "intention": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 133,
+    "lineRewriteSurfaceChars": 27,
+    "expansionFactorAvoided": 0.2,
+    "bytesNet": 106,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "45739766e7843ccf092c13f17b5f13c12bcebea803396f652f8093345207ebe4",
+  "proposedSha256": "45739766e7843ccf092c13f17b5f13c12bcebea803396f652f8093345207ebe4",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- scripts/orchestration/tier-tags-helpers.mjs (atomic char-level)\u001b[0m\n  );\n  \n  \u001b[32m{+// Also lost in the same decomposition (was a parent-module constant).\n  const SHELL_SIZE_THRESHOLD = 500;\n  +}\u001b[0m\n  export function buildFileSignalMap(breaks, repoRoot) {\n    const map = new Map();",
+  "preservedZones": [
+    {
+      "kind": "prefix_preserved",
+      "description": "Bytes 0–545 — prefix preserved unchanged",
+      "byteStart": 0,
+      "byteEnd": 546,
+      "byteLength": 546,
+      "beforeHash": "c47e242bd6e089295363ec284dda4352f5570f0153112c2dbd350f7096cc2c87",
+      "afterHash": "c47e242bd6e089295363ec284dda4352f5570f0153112c2dbd350f7096cc2c87",
+      "sample": "ame(fileURLToPath(import.meta.url)), '..', '..')),\n  'pulse.manifest.json',\n);\n\n"
+    },
+    {
+      "kind": "suffix_preserved",
+      "description": "Bytes 546–3765 — suffix preserved unchanged",
+      "byteStart": 546,
+      "byteEnd": 3766,
+      "byteLength": 3220,
+      "beforeHash": "cc29d46499b6c7db22dc4bbf9fe7f289de9df626e488cc698d6a39f07b765a0f",
+      "afterHash": "cc29d46499b6c7db22dc4bbf9fe7f289de9df626e488cc698d6a39f07b765a0f",
+      "sample": "export function buildFileSignalMap(breaks, repoRoot) {\n  const map = new Map();\n"
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "byteStart": 546,
+      "byteEnd": 546,
+      "newByteLength": 106,
+      "oldTextHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "newTextHash": "93fea1db19400bef71118ea107c4b69df56b73f2f9b9983a3af216a45d42c190",
+      "oldSample": "",
+      "newSample": "// Also lost in the same decomposition (was a parent-module constant).\nconst SHELL_SIZE_THRESHOLD = 500;\n\n",
+      "description": "Insert 106 bytes at offset 546"
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~133 character(s) in `scripts/orchestration/tier-tags-helpers.mjs` (sub-line atomic edit, expansion 0.2× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

@@ -1,0 +1,37 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1778959866162_a09a25bf",
+  "ts": "2026-05-16T19:31:06.162Z",
+  "file": "scripts/mcp/atomic-edit/trace.ts",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 74,
+    "lineRewriteSurfaceChars": 53,
+    "expansionFactorAvoided": 0.72,
+    "bytesNet": 21,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "afterSha256": "df0567f0d249ad694aa792b1d3582f5a9147e045663521fb6bc56ad5187e936c",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- scripts/mcp/atomic-edit/trace.ts (atomic char-level)\u001b[0m\n  export function buildTrace(args: {\n    file: string;\n  \u001b[32m{+  repoRoot?: string;+}\u001b[0m\n    operator: string;\n    before: string;",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~74 character(s) in `scripts/mcp/atomic-edit/trace.ts` (sub-line atomic edit, expansion 0.72× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

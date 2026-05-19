@@ -1,0 +1,80 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779203400882_3951498f",
+  "ts": "2026-05-19T15:10:00.882Z",
+  "file": "backend/src/kloel/brain-runtime.service.ts",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "targetUnit": "text_span",
+  "intention": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 50,
+    "lineRewriteSurfaceChars": 29,
+    "expansionFactorAvoided": 0.58,
+    "bytesNet": 21,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "8440dda5f561a6aedb5c4c8d8e275a3a77dfbc1a0496825c9d21c5c658c59ce9",
+  "proposedSha256": "8440dda5f561a6aedb5c4c8d8e275a3a77dfbc1a0496825c9d21c5c658c59ce9",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- backend/src/kloel/brain-runtime.service.ts (atomic char-level)\u001b[0m\n    'query_revenue_summary',\n    'inspect_self',\n  \u001b[32m{+  'inspect_runtime',+}\u001b[0m\n  ] as const;\n  ",
+  "preservedZones": [
+    {
+      "kind": "prefix_preserved",
+      "description": "Bytes 0–2398 — prefix preserved unchanged",
+      "byteStart": 0,
+      "byteEnd": 2399,
+      "byteLength": 2399,
+      "beforeHash": "b96070a12df9a3d49d27625fd67efddcbc09668e539342c3e8927c08619915c7",
+      "afterHash": "b96070a12df9a3d49d27625fd67efddcbc09668e539342c3e8927c08619915c7",
+      "sample": "ns',\n  'send_message_via_channel',\n  'query_revenue_summary',\n  'inspect_self',\n"
+    },
+    {
+      "kind": "suffix_preserved",
+      "description": "Bytes 2399–15208 — suffix preserved unchanged",
+      "byteStart": 2399,
+      "byteEnd": 15209,
+      "byteLength": 12810,
+      "beforeHash": "b43bca54104c547607c3e2f2ef00552124c558d8049e5ab25636b4e34460688e",
+      "afterHash": "b43bca54104c547607c3e2f2ef00552124c558d8049e5ab25636b4e34460688e",
+      "sample": "] as const;\n\n@Injectable()\nexport class BrainRuntimeService {\n  private readonly"
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "byteStart": 2399,
+      "byteEnd": 2399,
+      "newByteLength": 21,
+      "oldTextHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "newTextHash": "60650f0bfef11ee5c0023fed8d063bb6911294a77a493da0ea1a1fa588d73697",
+      "oldSample": "",
+      "newSample": "  'inspect_runtime',\n",
+      "description": "Insert 21 bytes at offset 2399"
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~50 character(s) in `backend/src/kloel/brain-runtime.service.ts` (sub-line atomic edit, expansion 0.58× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

@@ -1,0 +1,37 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1778955854666_5057e46e",
+  "ts": "2026-05-16T18:24:14.666Z",
+  "file": "scripts/mcp/atomic-edit/audit-atomicity.mjs",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 212,
+    "lineRewriteSurfaceChars": 225,
+    "expansionFactorAvoided": 1.06,
+    "bytesNet": 59,
+    "lineRewriteAvoided": true
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "afterSha256": "5761653b916daead030047cf82f9c1212e68e707bfe6a9ceb7cbc27b2c08afc3",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- scripts/mcp/atomic-edit/audit-atomicity.mjs (atomic char-level)\u001b[0m\n  const asJson = args.includes('--json');\n  const strictRatio = args.includes('--strict-ratio');\n  \u001b[32m{+const strictTopology = args.includes('--strict-topology');+}\u001b[0m\n  const minRatio = Number((args.find((a) => a.startsWith('--min-ratio=')) ?? '=0.85').split('=')[1]);\n  const MICRO_CHANGE = 32; // chars: a literal/arg/token-sized real change",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~212 character(s) in `scripts/mcp/atomic-edit/audit-atomicity.mjs` (sub-line atomic edit, expansion 1.06× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

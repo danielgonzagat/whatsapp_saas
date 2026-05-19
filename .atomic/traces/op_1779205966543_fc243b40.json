@@ -1,0 +1,80 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779205966543_fc243b40",
+  "ts": "2026-05-19T15:52:46.543Z",
+  "file": "backend/src/kloel/abi/abi-builder.service.ts",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "targetUnit": "text_span",
+  "intention": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 212,
+    "lineRewriteSurfaceChars": 124,
+    "expansionFactorAvoided": 0.58,
+    "bytesNet": 88,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "5e5cab98be3e5447a12655c1a85cd9380d6e35b84b20258d8794fba00dec1ec3",
+  "proposedSha256": "5e5cab98be3e5447a12655c1a85cd9380d6e35b84b20258d8794fba00dec1ec3",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- backend/src/kloel/abi/abi-builder.service.ts (atomic char-level)\u001b[0m\n      readonly episodicRefs?: readonly AbiEpisodicRef[];\n      readonly consolidatedRefs?: readonly AbiConsolidatedRef[];\n  \u001b[32m{+    readonly beliefs?: readonly AbiBelief[];\n      readonly predictions?: AbiPredictions;+}\u001b[0m\n    };\n  }",
+  "preservedZones": [
+    {
+      "kind": "prefix_preserved",
+      "description": "Bytes 0–2324 — prefix preserved unchanged",
+      "byteStart": 0,
+      "byteEnd": 2325,
+      "byteLength": 2325,
+      "beforeHash": "c2955553e393d2a738c5f71f0e8ad4c5dfcb33b3400e6f22d988153bae1028a0",
+      "afterHash": "c2955553e393d2a738c5f71f0e8ad4c5dfcb33b3400e6f22d988153bae1028a0",
+      "sample": "EpisodicRef[];\n    readonly consolidatedRefs?: readonly AbiConsolidatedRef[];\n  "
+    },
+    {
+      "kind": "suffix_preserved",
+      "description": "Bytes 2325–5934 — suffix preserved unchanged",
+      "byteStart": 2325,
+      "byteEnd": 5935,
+      "byteLength": 3610,
+      "beforeHash": "9d7b21b2f9df348c6e6d9247ffc0a7de263f3c7fff9d0ca3d157ac1e9570cb8d",
+      "afterHash": "9d7b21b2f9df348c6e6d9247ffc0a7de263f3c7fff9d0ca3d157ac1e9570cb8d",
+      "sample": "};\n}\n\nexport type AbiBuildResult =\n  | { readonly status: 'ok'; readonly abi: Co"
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "byteStart": 2325,
+      "byteEnd": 2325,
+      "newByteLength": 88,
+      "oldTextHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "newTextHash": "0b3a171e4e7efed334517dd50a87f51a0fb1c2ea26f4dc4b3a41085f029e3942",
+      "oldSample": "",
+      "newSample": "  readonly beliefs?: readonly AbiBelief[];\n    readonly predictions?: AbiPredictions;\n  ",
+      "description": "Insert 88 bytes at offset 2325"
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~212 character(s) in `backend/src/kloel/abi/abi-builder.service.ts` (sub-line atomic edit, expansion 0.58× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

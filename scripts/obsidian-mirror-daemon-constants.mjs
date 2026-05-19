@@ -125,10 +125,22 @@ export const WORKSPACE_DYNAMIC_DIR = '_workspace';
 export const WORKSPACE_DYNAMIC_NOTE = 'current.md';
 export const VISUAL_FACT_DIR = '_visual';
 
+// ── Color priority (first match wins in Obsidian) ───────────────────────────
+// ACTION first: dirty work-in-progress → TODO → missing proof → danger →
+// isolation/debt → static issue signals. Only files with NO action/danger
+// signal fall through to "what it does" (effect) and "where it lives"
+// (surface). So the graph reads as: hot cluster = attack here; the calm
+// rest = anatomy. Reordered 2026-05-18 to make "what to do" obvious.
 export const CODE_STATE_COLOR_GROUPS = [
   { query: DIRTY_WORKSPACE_QUERY, color: { a: 1, rgb: DIRTY_WORKSPACE_COLOR_RGB } },
   { query: GRAPH_ACTION_REQUIRED_QUERY, color: { a: 1, rgb: GRAPH_ACTION_REQUIRED_COLOR_RGB } },
   { query: GRAPH_EVIDENCE_GAP_QUERY, color: { a: 1, rgb: GRAPH_EVIDENCE_GAP_COLOR_RGB } },
+  { query: GRAPH_RISK_CRITICAL_QUERY, color: { a: 1, rgb: GRAPH_RISK_CRITICAL_COLOR_RGB } },
+  { query: GRAPH_RISK_HIGH_QUERY, color: { a: 1, rgb: 16724787 } },
+  { query: GRAPH_ORPHAN_QUERY, color: { a: 1, rgb: GRAPH_ORPHAN_COLOR_RGB } },
+  { query: SIGNAL_STATIC_HIGH_QUERY, color: { a: 1, rgb: SIGNAL_STATIC_HIGH_COLOR_RGB } },
+  { query: SIGNAL_HOTSPOT_QUERY, color: { a: 1, rgb: 14524637 } },
+  { query: SIGNAL_EXTERNAL_QUERY, color: { a: 1, rgb: SIGNAL_EXTERNAL_COLOR_RGB } },
   { query: GRAPH_EFFECT_SECURITY_QUERY, color: { a: 1, rgb: GRAPH_EFFECT_SECURITY_COLOR_RGB } },
   { query: GRAPH_EFFECT_ERROR_QUERY, color: { a: 1, rgb: GRAPH_EFFECT_ERROR_COLOR_RGB } },
   { query: GRAPH_EFFECT_ENTRYPOINT_QUERY, color: { a: 1, rgb: GRAPH_EFFECT_ENTRYPOINT_COLOR_RGB } },
@@ -138,21 +150,15 @@ export const CODE_STATE_COLOR_GROUPS = [
   { query: GRAPH_EFFECT_STATE_QUERY, color: { a: 1, rgb: GRAPH_EFFECT_STATE_COLOR_RGB } },
   { query: GRAPH_EFFECT_CONTRACT_QUERY, color: { a: 1, rgb: GRAPH_EFFECT_CONTRACT_COLOR_RGB } },
   { query: GRAPH_EFFECT_CONFIG_QUERY, color: { a: 1, rgb: GRAPH_EFFECT_CONFIG_COLOR_RGB } },
-  { query: METADATA_ONLY_QUERY, color: { a: 1, rgb: METADATA_ONLY_COLOR_RGB } },
-  { query: PULSE_MACHINE_QUERY, color: { a: 1, rgb: PULSE_MACHINE_COLOR_RGB } },
-  { query: SIGNAL_STATIC_HIGH_QUERY, color: { a: 1, rgb: SIGNAL_STATIC_HIGH_COLOR_RGB } },
-  { query: SIGNAL_HOTSPOT_QUERY, color: { a: 1, rgb: 14524637 } },
-  { query: SIGNAL_EXTERNAL_QUERY, color: { a: 1, rgb: SIGNAL_EXTERNAL_COLOR_RGB } },
-  { query: GRAPH_RISK_CRITICAL_QUERY, color: { a: 1, rgb: GRAPH_RISK_CRITICAL_COLOR_RGB } },
-  { query: GRAPH_RISK_HIGH_QUERY, color: { a: 1, rgb: 16724787 } },
-  { query: GRAPH_PROOF_TEST_QUERY, color: { a: 1, rgb: GRAPH_PROOF_TEST_COLOR_RGB } },
   { query: GRAPH_RUNTIME_API_QUERY, color: { a: 1, rgb: GRAPH_RUNTIME_API_COLOR_RGB } },
+  { query: GRAPH_PROOF_TEST_QUERY, color: { a: 1, rgb: GRAPH_PROOF_TEST_COLOR_RGB } },
   { query: GRAPH_SURFACE_UI_QUERY, color: { a: 1, rgb: GRAPH_SURFACE_UI_COLOR_RGB } },
   { query: GRAPH_SURFACE_BACKEND_QUERY, color: { a: 1, rgb: GRAPH_SURFACE_BACKEND_COLOR_RGB } },
   { query: GRAPH_SURFACE_WORKER_QUERY, color: { a: 1, rgb: GRAPH_SURFACE_WORKER_COLOR_RGB } },
   { query: GRAPH_SURFACE_SOURCE_QUERY, color: { a: 1, rgb: GRAPH_SURFACE_SOURCE_COLOR_RGB } },
   { query: GRAPH_GOVERNANCE_QUERY, color: { a: 1, rgb: GRAPH_GOVERNANCE_COLOR_RGB } },
-  { query: GRAPH_ORPHAN_QUERY, color: { a: 1, rgb: GRAPH_ORPHAN_COLOR_RGB } },
+  { query: PULSE_MACHINE_QUERY, color: { a: 1, rgb: PULSE_MACHINE_COLOR_RGB } },
+  { query: METADATA_ONLY_QUERY, color: { a: 1, rgb: METADATA_ONLY_COLOR_RGB } },
   { query: GRAPH_MOLECULE_QUERY, color: { a: 1, rgb: GRAPH_MOLECULE_COLOR_RGB } },
 ];
 
@@ -230,6 +236,15 @@ export const SKIP_DIR_PATTERNS = [
   /^\.beads$/,
   /^\.agents$/,
   /^\.serena$/,
+  /^\.pulse$/,
+  /^\.atomic$/,
+  /^\.atomic-edit-locks$/,
+  /^\.opencode-prompts$/,
+  /^\.smart-env$/,
+  /^\.claudian$/,
+  /^artifacts$/,
+  /atomic-os-benchmark/,
+  /opencode-fleet/,
 ];
 
 export const SKIP_FILE_PATTERNS = [

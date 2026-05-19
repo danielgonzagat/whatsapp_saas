@@ -1,0 +1,59 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779067259319_bd9bbedb",
+  "ts": "2026-05-18T01:20:59.319Z",
+  "file": "docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "targetUnit": "text_span",
+  "intention": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 1202,
+    "lineRewriteSurfaceChars": 855,
+    "expansionFactorAvoided": 0.71,
+    "bytesNet": 347,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "bf1d02b862ccb5e0025bf3e02924a113d3f9fcb74229ea460df3cff05ec3ed19",
+  "proposedSha256": "bf1d02b862ccb5e0025bf3e02924a113d3f9fcb74229ea460df3cff05ec3ed19",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs (atomic char-level)\u001b[0m\n    indexWriteTargets();\n    const retainedReleaseBySymbol = new Map();\n    \u001b[32m{+const retainedReleaseEconomyBySymbol = new Map();\n    +}\u001b[0mfor (const retained of retainedDetails) {\n      if (!retained || !retainedFacade.has(retained.name)) continue;\n      const ownerCall = (retained.calls || []).find((call) => writeTargetBySymbol.has(call));\n      if (!ownerCall) continue;\n      const ownerTarget = writeTargetBySymbol.get(ownerCall);\n      if (!ownerTarget) continue;\n      \u001b[32m{+const publ+}\u001b[0mi\u001b[32m{+cLea+}\u001b[0mf\u001b[32m{+ReleaseEconomy+}\u001b[0m \u001b[32m{+= retainedPublicLeafReleaseEconomyPlan+}\u001b[0m(\u001b[32m{+retained, ownerTarget, ownerCall);\n      retainedReleaseEconomyBySymbol.set(retained.name, publicLeafReleaseEconomy);\n      if (+}\u001b[0m!\u001b[32m{+publicLeafReleaseEc+}\u001b[0mo\u001b[32m{+nomy.pass) continue;\n      if (!o+}\u001b[0mwnerTarget.symbols.includes(retained.name)) ownerTarget.symbols.push(retained.name);\n      retainedFacade.delete(retained.name);\n      retainedReleaseBySymbol.set(retained.name, {\n        ownerKind: 'selected_write_target',\n        ownerFile: ownerTarget.file,\n        preferredExport: retained.name,\n        ownerCall,\n        \u001b[32m{+publicLe+}\u001b[0ma\u001b[32m{+fReleaseE+}\u001b[0mc\u001b[32m{+onomy,\n        ac+}\u001b[0mtion: 'release retained public leaf into its already-created owner module because \u001b[32m{+publ+}\u001b[0mi\u001b[31m[-t d-]\u001b[0m\u001b[32m{+cL+}\u001b[0me\u001b[32m{+afRe+}\u001b[0mle\u001b[31m[-g-]\u001b[0ma\u001b[31m[-te-]\u001b[0ms\u001b[31m[- thr-]\u001b[0m\u001b[32m{+eEc+}\u001b[0mo\u001b[31m[-ugh that-]\u001b[0m\u001b[32m{+nomy+}\u001b[0m \u001b[32m{+pr+}\u001b[0mo\u001b[31m[-wn-]\u001b[0m\u001b[32m{+v+}\u001b[0me\u001b[31m[-r-]\u001b[0m\u001b[32m{+s+}\u001b[0m a\u001b[31m[-nd-]\u001b[0m \u001b[32m{+me+}\u001b[0ma\u001b[31m[-dd-]\u001b[0ms\u001b[32m{+ured+}\u001b[0m \u001b[32m{+eco+}\u001b[0mno\u001b[32m{+my+}\u001b[0m \u001b[31m[-pr-]\u001b[0m\u001b[32m{+win, n+}\u001b[0mo\u001b[31m[-duc-]\u001b[0mt \u001b[31m[-so-]\u001b[0m\u001b[32m{+j+}\u001b[0mu\u001b[31m[-rce-]\u001b[0m\u001b[32m{+st+}\u001b[0m file\u001b[32m{+-count neutrality+}\u001b[0m',\n      });\n    }",
+  "preservedZones": [
+    {
+      "kind": "unchanged_context",
+      "description": "Everything outside the modified zone is preserved byte-for-byte by the atomic operation."
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "oldTextHash": "7780db694870126094291d99e351d4909d8d94f4ea8dd1260682e7dc10e52b58",
+      "newTextHash": "bf1d02b862ccb5e0025bf3e02924a113d3f9fcb74229ea460df3cff05ec3ed19",
+      "description": "The operation changed the highlighted span shown in inlinePreview."
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~1202 character(s) in `docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs` (sub-line atomic edit, expansion 0.71× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

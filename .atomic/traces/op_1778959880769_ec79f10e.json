@@ -1,0 +1,37 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1778959880769_ec79f10e",
+  "ts": "2026-05-16T19:31:20.769Z",
+  "file": "scripts/mcp/atomic-edit/trace.ts",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 1023,
+    "lineRewriteSurfaceChars": 725,
+    "expansionFactorAvoided": 0.71,
+    "bytesNet": 298,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "afterSha256": "6f93f7c23b7515376475921231a5eaf3d518e574145dd4d5973301e58feff388",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- scripts/mcp/atomic-edit/trace.ts (atomic char-level)\u001b[0m\n  }\n  \n  \u001b[32m{+fun+}\u001b[0mc\u001b[32m{+ti+}\u001b[0mon\u001b[31m[-st-]\u001b[0m \u001b[31m[-T-]\u001b[0m\u001b[32m{+trace+}\u001b[0mR\u001b[32m{+epoRoot(trace: +}\u001b[0mA\u001b[31m[-C-]\u001b[0m\u001b[32m{+tomic+}\u001b[0mE\u001b[31m[-_DI-]\u001b[0m\u001b[32m{+ditTrace): string {\n    return trace.repo+}\u001b[0mR\u001b[32m{+oot+}\u001b[0m \u001b[31m[-=-]\u001b[0m\u001b[32m{+&&+}\u001b[0m path.\u001b[31m[-jo-]\u001b[0mi\u001b[31m[-n-]\u001b[0m\u001b[32m{+sAbsolute+}\u001b[0m(\u001b[32m{+trace.repo+}\u001b[0mR\u001b[32m{+oot) ? trace.repoRoot : R+}\u001b[0mEPO_ROOT\u001b[32m{+;\n  }\n  \n  function traceDirFor(trace: AtomicEditTrace): string {\n    return path.join(traceRepoRoot(trace)+}\u001b[0m, '.atomic', 'traces');\n  \u001b[32m{+}+}\u001b[0m\n  \u001b[32m{+\n  +}\u001b[0m/**\n   * Persist the trace. Fail-closed: returns the \u001b[32m{+selected +}\u001b[0mrepo-relative path on success,\n   * or an error string on failure — never throws, never blocks the edit.\n   */\n  export function writeTrace(trace: AtomicEditTrace): {\n    tracePath?: string;\n    traceWriteError?: string;\n  } {\n    try {\n      \u001b[32m{+const repoRoot = traceRepoRoot(trace);\n      const traceDir = traceDirFor(trace);\n      +}\u001b[0mfs.mkdirSync(\u001b[31m[-TRACE_-]\u001b[0m\u001b[32m{+trace+}\u001b[0mD\u001b[31m[-IR-]\u001b[0m\u001b[32m{+ir+}\u001b[0m, { recursive: true });\n      const abs = path.join(\u001b[31m[-TRACE_-]\u001b[0m\u001b[32m{+trace+}\u001b[0mD\u001b[31m[-IR-]\u001b[0m\u001b[32m{+ir+}\u001b[0m, `${trace.operationId}.json`);\n      const tmp = `${abs}.tmp`;\n      fs.writeFileSync(tmp, JSON.stringify(trace, null, 2));\n      fs.renameSync(tmp, abs);\n      return { tracePath: path.relative(\u001b[31m[-REPO_-]\u001b[0m\u001b[32m{+repo+}\u001b[0mR\u001b[31m[-OOT-]\u001b[0m\u001b[32m{+oot+}\u001b[0m, abs) };\n    } catch (e) {\n      return { traceWriteError: e instanceof Error ? e.message : String(e) };",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~1023 character(s) in `scripts/mcp/atomic-edit/trace.ts` (sub-line atomic edit, expansion 0.71× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

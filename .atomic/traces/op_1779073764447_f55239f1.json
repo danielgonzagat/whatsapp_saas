@@ -1,0 +1,59 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779073764447_f55239f1",
+  "ts": "2026-05-18T03:09:24.447Z",
+  "file": "docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "targetUnit": "text_span",
+  "intention": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 576,
+    "lineRewriteSurfaceChars": 397,
+    "expansionFactorAvoided": 0.69,
+    "bytesNet": 179,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "e0e7affb9d17392e4a861a4b45e895625606322b2eaaca8878a952f3f9f3d4f8",
+  "proposedSha256": "e0e7affb9d17392e4a861a4b45e895625606322b2eaaca8878a952f3f9f3d4f8",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs (atomic char-level)\u001b[0m\n            'when facadeDelegationShape prefers runtime_owner_class_delegation, materialize owner runtime classes and move owner-local private helper/callback methods out of the facade before scorecard comparison',\n            'when multiple public methods share an owner module, build one owner-local dependency bundle or cached delegate only if dependencyBundleEconomy proves lower total inventory than direct dependency objects',\n  \u001b[32m{+          'compact retained public leaf wrappers locally when they call a retained dominant public root; this reduces facade surface without creating or growing an owner module',+}\u001b[0m\n            'delegate retained public leaf wrappers through their runtime owner when runtime_owner_class_delegation is preferred and the move does not increase product source count or changed inventory',\n            'otherwise release retained public leaf wrappers only when publicLeafReleaseEconomy proves the move reduces at least one measured surface without worsening owner pressure or inventory',",
+  "preservedZones": [
+    {
+      "kind": "unchanged_context",
+      "description": "Everything outside the modified zone is preserved byte-for-byte by the atomic operation."
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "oldTextHash": "b1268e961bc2121c608984727e736ee00432c18cf0a1159a7eb8e65bb9d2393d",
+      "newTextHash": "e0e7affb9d17392e4a861a4b45e895625606322b2eaaca8878a952f3f9f3d4f8",
+      "description": "The operation changed the highlighted span shown in inlinePreview."
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~576 character(s) in `docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs` (sub-line atomic edit, expansion 0.69× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

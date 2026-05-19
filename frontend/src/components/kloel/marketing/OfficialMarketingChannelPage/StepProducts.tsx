@@ -1,5 +1,5 @@
 import { KLOEL_THEME } from '@/lib/kloel-theme';
-import { sectionTitleStyle, secondaryButtonStyle } from './shared-styles';
+import { sectionTitleStyle, secondaryButtonStyle, FULL_ROUND_RADIUS } from './shared-styles';
 
 interface ProductOption {
   id: string;
@@ -144,7 +144,7 @@ export function StepProducts({
                     style={{
                       width: 22,
                       height: 22,
-                      borderRadius: '50%',
+                      borderRadius: FULL_ROUND_RADIUS,
                       flexShrink: 0,
                       border: `2px solid ${
                         selected ? KLOEL_THEME.accent : KLOEL_THEME.borderPrimary

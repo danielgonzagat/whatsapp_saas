@@ -1,0 +1,80 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779205987352_d221322b",
+  "ts": "2026-05-19T15:53:07.352Z",
+  "file": "backend/src/kloel/abi/abi-builder.service.ts",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "targetUnit": "text_span",
+  "intention": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 152,
+    "lineRewriteSurfaceChars": 74,
+    "expansionFactorAvoided": 0.49,
+    "bytesNet": 78,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "6dd57a8a34085d53b9608274242ed9fd5bb9624ba9c2c7080d9a6eaf7c449b5e",
+  "proposedSha256": "6dd57a8a34085d53b9608274242ed9fd5bb9624ba9c2c7080d9a6eaf7c449b5e",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- backend/src/kloel/abi/abi-builder.service.ts (atomic char-level)\u001b[0m\n          recentSalientEvents: input.cognitiveSubstrate?.recentSalientEvents ?? [],\n        },\n        beliefs: \u001b[32m{+input.cognitiveSubstrate?.beliefs ?? +}\u001b[0m[],\n        predictions: \u001b[32m{+input.cognitiveSubstrate?.predictions ?? +}\u001b[0m{ active: [], recentSurprises: [] },\n        attention: { candidates: [] },\n        memory: {",
+  "preservedZones": [
+    {
+      "kind": "prefix_preserved",
+      "description": "Bytes 0–4709 — prefix preserved unchanged",
+      "byteStart": 0,
+      "byteEnd": 4710,
+      "byteLength": 4710,
+      "beforeHash": "16e56d8eb031cbdca87eb447c8cde94133fa611fc24745b317852dab181af6c3",
+      "afterHash": "16e56d8eb031cbdca87eb447c8cde94133fa611fc24745b317852dab181af6c3",
+      "sample": "s: input.cognitiveSubstrate?.recentSalientEvents ?? [],\n      },\n      beliefs: "
+    },
+    {
+      "kind": "suffix_preserved",
+      "description": "Bytes 4732–6022 — suffix preserved unchanged",
+      "byteStart": 4732,
+      "byteEnd": 6023,
+      "byteLength": 1291,
+      "beforeHash": "d66d2d256ce2e5566a32256b534bf6370d35af3344a29d42b6ad6e050623fa87",
+      "afterHash": "d66d2d256ce2e5566a32256b534bf6370d35af3344a29d42b6ad6e050623fa87",
+      "sample": " { active: [], recentSurprises: [] },\n      attention: { candidates: [] },\n     "
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "byteStart": 4710,
+      "byteEnd": 4732,
+      "newByteLength": 100,
+      "oldTextHash": "6afbade4667dacc61197ada11986f96acdb616ac85f32f978f507bb908edd9e2",
+      "newTextHash": "e61898abd98df6f4e51bbf2c4fe7d843439c353c84ff96ecedd6d102b8353963",
+      "oldSample": "[],\n      predictions:",
+      "newSample": "input.cognitiveSubstrate?.beliefs ?? [],\n      predictions: input.cognitiveSubstrate?.predictions ??",
+      "description": "Replace 22 bytes at offset 4710 with 100 bytes"
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~152 character(s) in `backend/src/kloel/abi/abi-builder.service.ts` (sub-line atomic edit, expansion 0.49× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

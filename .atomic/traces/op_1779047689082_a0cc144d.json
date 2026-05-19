@@ -1,0 +1,59 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779047689082_a0cc144d",
+  "ts": "2026-05-17T19:54:49.082Z",
+  "file": "docs/ai/atomic-os-benchmark/tools/refactor-scorecard.cjs",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "targetUnit": "text_span",
+  "intention": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 4966,
+    "lineRewriteSurfaceChars": 414,
+    "expansionFactorAvoided": 0.08,
+    "bytesNet": 4552,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "76e429408963f47b16936c7ab76d19177d6a0cbaf88d29b37628d23700281e82",
+  "proposedSha256": "76e429408963f47b16936c7ab76d19177d6a0cbaf88d29b37628d23700281e82",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- docs/ai/atomic-os-benchmark/tools/refactor-scorecard.cjs (atomic char-level)\u001b[0m\n  }\n  \n  \u001b[32m{+function gitShowText(worktree, spec) {\n    const result = spawnSync('git', ['-C', worktree, 'show', spec], { encoding: 'utf8' });\n    if (result.status !== 0) {\n      throw new Error('git show ' + spec + ' failed: ' + (result.stderr || result.stdout));\n    }\n    return result.stdout;\n  }\n  \n  function normalizeSignatureText(value) {\n    return String(value || '').replace(/\\s+/g, ' ').trim();\n  }\n  \n  function modifierText(ts, node) {\n    return (node.modifiers || [])\n      .map((modifier) => ts.SyntaxKind[modifier.kind].replace(/Keyword$/, '').toLowerCase())\n      .filter((name) => name !== 'public')\n      .sort()\n      .join(' ');\n  }\n  \n  function parameterSignature(ts, source, parameter) {\n    const mods = modifierText(ts, parameter);\n    const name = parameter.name.getText(source);\n    const optional = parameter.questionToken ? '?' : '';\n    const type = parameter.type ? normalizeSignatureText(parameter.type.getText(source)) : '';\n    const rest = parameter.dotDotDotToken ? '...' : '';\n    return [mods, rest + name + optional, type].filter(Boolean).join(' ');\n  }\n  \n  function constructorSignature(ts, classNode, source) {\n    const ctor = classNode.members.find((member) => ts.isConstructorDeclaration(member));\n    if (!ctor) return null;\n    return ctor.parameters.map((parameter) => parameterSignature(ts, source, parameter));\n  }\n  \n  function publicMethodSignatures(ts, classNode, source) {\n    return classNode.members\n      .filter((member) => ts.isMethodDeclaration(member))\n      .filter((member) => !hasModifier(ts, member, [ts.SyntaxKind.PrivateKeyword, ts.SyntaxKind.ProtectedKeyword]))\n      .map((member) => {\n        const name = member.name.getText(source);\n        const mods = modifierText(ts, member);\n        const typeParameters = member.typeParameters\n          ? '<' + member.typeParameters.map((param) => normalizeSignatureText(param.getText(source))).join(', ') + '>'\n          : '';\n        const parameters = member.parameters.map((parameter) => parameterSignature(ts, source, parameter)).join(', ');\n        const returnType = member.type ? normalizeSignatureText(member.type.getText(source)) : '';\n        return [mods, name + typeParameters + '(' + parameters + ')', returnType].filter(Boolean).join(' -> ');\n      })\n      .sort();\n  }\n  \n  function findNamedClass(ts, source, className) {\n    let found = null;\n    function visit(node) {\n      if (ts.isClassDeclaration(node) && node.name && node.name.text === className) {\n        found = node;\n        return;\n      }\n      ts.forEachChild(node, visit);\n    }\n    visit(source);\n    return found;\n  }\n  \n  function extractClassApi(ts, text, fileName, className) {\n    const source = ts.createSourceFile(fileName, text, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);\n    const classNode = findNamedClass(ts, source, className);\n    if (!classNode) return { classFound: false, constructor: null, publicMethods: [] };\n    return {\n      classFound: true,\n      constructor: constructorSignature(ts, classNode, source),\n      publicMethods: publicMethodSignatures(ts, classNode, source),\n    };\n  }\n  \n  function diffList(before, after) {\n    const beforeSet = new Set(before || []);\n    const afterSet = new Set(after || []);\n    return {\n      missing: [...beforeSet].filter((item) => !afterSet.has(item)).sort(),\n      added: [...afterSet].filter((item) => !beforeSet.has(item)).sort(),\n    };\n  }\n  \n  function publicApiPreservation(worktree, target, className) {\n    if (!className) return { available: false, reason: 'class_not_configured', debt: false, pass: true };\n    const ts = loadTypeScript(worktree);\n    if (!ts) return { available: false, reason: 'typescript_unavailable', debt: true, pass: false };\n    const beforeText = gitShowText(worktree, 'HEAD:' + target);\n    const afterText = fs.readFileSync(path.join(worktree, target), 'utf8');\n    const before = extractClassApi(ts, beforeText, 'before.ts', className);\n    const after = extractClassApi(ts, afterText, 'after.ts', className);\n    const constructorChanged = JSON.stringify(before.constructor) !== JSON.stringify(after.constructor);\n    const methodDiff = diffList(before.publicMethods, after.publicMethods);\n    const debt =\n      !before.classFound ||\n      !after.classFound ||\n      constructorChanged ||\n      methodDiff.missing.length > 0 ||\n      methodDiff.added.length > 0;\n    return {\n      available: true,\n      className,\n      beforeClassFound: before.classFound,\n      afterClassFound: after.classFound,\n      constructorChanged,\n      publicMethodCountBefore: before.publicMethods.length,\n      publicMethodCountAfter: after.publicMethods.length,\n      missingPublicMethods: methodDiff.missing,\n      addedPublicMethods: methodDiff.added,\n      debt,\n      pass: !debt,\n    };\n  }\n  +}\u001b[0m\n  function countWord(text, word) {\n    if (!word) return 0;",
+  "preservedZones": [
+    {
+      "kind": "unchanged_context",
+      "description": "Everything outside the modified zone is preserved byte-for-byte by the atomic operation."
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "oldTextHash": "e79a25a5c5fe677cc0d2b7f1971c250e56b37452d023878f52ef1b607215cb4b",
+      "newTextHash": "76e429408963f47b16936c7ab76d19177d6a0cbaf88d29b37628d23700281e82",
+      "description": "The operation changed the highlighted span shown in inlinePreview."
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~4966 character(s) in `docs/ai/atomic-os-benchmark/tools/refactor-scorecard.cjs` (sub-line atomic edit, expansion 0.08× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

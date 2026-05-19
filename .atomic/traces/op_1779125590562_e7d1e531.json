@@ -1,0 +1,59 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779125590562_e7d1e531",
+  "ts": "2026-05-18T17:33:10.562Z",
+  "file": ".atomic-os-export/src/atomic-edit-mcp-launcher.sh",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "atomic_create_file",
+  "operator": "atomic_create_file",
+  "targetUnit": "text_span",
+  "intention": "atomic_create_file",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 1397,
+    "lineRewriteSurfaceChars": 0,
+    "expansionFactorAvoided": 0,
+    "bytesNet": 1397,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "structural",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "abdd5f7720174a2955a823c019306f0347054a9070c4a6437412c5d0dfa77137",
+  "proposedSha256": "abdd5f7720174a2955a823c019306f0347054a9070c4a6437412c5d0dfa77137",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- .atomic-os-export/src/atomic-edit-mcp-launcher.sh (atomic char-level)\u001b[0m\n  \u001b[32m{+#!/usr/bin/env bash\n  #\n  # Launch the atomic-edit MCP server (standalone build).\n  #\n  # Permanent design: NO tsx, NO npx, NO network. The server graph is compiled\n  # once to dist/ with the locally-installed `typescript`, then run as plain\n  # `node dist/server.js` (sub-second cold start, deterministic, upgrade-proof).\n  # It self-rebuilds ONLY when a source .ts is newer than dist/server.js, so it\n  # always reflects the latest source without a manual build step.\n  #\n  # stdout is reserved for the MCP stdio transport — this script prints nothing\n  # to stdout; build/diagnostic output goes to stderr only.\n  #\n  # Wire this path into your CLI's MCP config (see docs/INSTALL.md). The server\n  # operates on whatever git repo is the CURRENT working directory when your CLI\n  # launches it (guard.ts anchors to the nearest .git), so one install serves\n  # every project.\n  \n  set -euo pipefail\n  \n  # This launcher lives at <repo>/src/atomic-edit-mcp-launcher.sh\n  SRC_DIR=\"$(cd \"$(dirname \"${BASH_SOURCE[0]}\")\" >/dev/null 2>&1 && pwd)\"   # .../src\n  DIST=\"${SRC_DIR}/dist/server.js\"\n  \n  needs_build() {\n    [[ ! -f \"${DIST}\" ]] && return 0\n    local newest\n    newest=\"$(find \"${SRC_DIR}\" -maxdepth 1 -name '*.ts' -newer \"${DIST}\" -print -quit 2>/dev/null || true)\"\n    [[ -n \"${newest}\" ]]\n  }\n  \n  if needs_build; then\n    echo \"[atomic-edit-launcher] building dist (source changed)…\" >&2\n    node \"${SRC_DIR}/build.mjs\" >&2\n  fi\n  \n  exec node \"${DIST}\" \"$@\"+}\u001b[0m\n  ",
+  "preservedZones": [],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "byteStart": 0,
+      "byteEnd": 0,
+      "newByteLength": 1397,
+      "oldTextHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "newTextHash": "abdd5f7720174a2955a823c019306f0347054a9070c4a6437412c5d0dfa77137",
+      "oldSample": "",
+      "newSample": "#!/usr/bin/env bash\n#\n# Launch the atomic-edit MCP server (standalone build).\n#\n# Permanent design: NO tsx, NO npx, NO network. The server graph is compiled\n# once to dist/ with the locally-installed ",
+      "description": "Insert 1397 bytes at offset 0"
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `atomic_create_file` changed ~1397 character(s) in `.atomic-os-export/src/atomic-edit-mcp-launcher.sh` (sub-line atomic edit, expansion 0× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "balance-validated",
+    "zeroCodeTrust": 50,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

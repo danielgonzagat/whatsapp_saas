@@ -1,0 +1,59 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779120911949_17bcc97b",
+  "ts": "2026-05-18T16:15:11.949Z",
+  "file": "scripts/mcp/atomic-edit/smoke.ts",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "targetUnit": "text_span",
+  "intention": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 135,
+    "lineRewriteSurfaceChars": 133,
+    "expansionFactorAvoided": 0.99,
+    "bytesNet": 2,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "f480948e19a59e257d17e1c75c7ed842a549c36db7e3d51d95d796d914c3b17b",
+  "proposedSha256": "f480948e19a59e257d17e1c75c7ed842a549c36db7e3d51d95d796d914c3b17b",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- scripts/mcp/atomic-edit/smoke.ts (atomic char-level)\u001b[0m\n          names.includes('atomic_lock_acquire') &&\n          names.includes('atomic_lock_status') &&\n          names.includes('atomic_lock_release')\u001b[31m[-,-]\u001b[0m\u001b[32m{+ &&+}\u001b[0m\n          names.includes('atomic_edit') &&\n          names.includes('code_outline_batch'),",
+  "preservedZones": [
+    {
+      "kind": "unchanged_context",
+      "description": "Everything outside the modified zone is preserved byte-for-byte by the atomic operation."
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "oldTextHash": "5d9d43a4de7539f9bb3a7c947c5bcf8e0fb70b2f4fca128ce2688f6865c8d407",
+      "newTextHash": "f480948e19a59e257d17e1c75c7ed842a549c36db7e3d51d95d796d914c3b17b",
+      "description": "The operation changed the highlighted span shown in inlinePreview."
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~135 character(s) in `scripts/mcp/atomic-edit/smoke.ts` (sub-line atomic edit, expansion 0.99× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

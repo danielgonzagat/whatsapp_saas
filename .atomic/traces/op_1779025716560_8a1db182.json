@@ -1,0 +1,59 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779025716560_8a1db182",
+  "ts": "2026-05-17T13:48:36.561Z",
+  "file": "docs/ai/atomic-os-benchmark/tools/atomic-call.cjs",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "targetUnit": "text_span",
+  "intention": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 736,
+    "lineRewriteSurfaceChars": 376,
+    "expansionFactorAvoided": 0.51,
+    "bytesNet": 433,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "aeb387f9e58f05d27954321abf324d324878e5e951c1cd6ddc7b991c9cd6485c",
+  "proposedSha256": "aeb387f9e58f05d27954321abf324d324878e5e951c1cd6ddc7b991c9cd6485c",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- docs/ai/atomic-os-benchmark/tools/atomic-call.cjs (atomic char-level)\u001b[0m\n  }\n  \n  function \u001b[32m{+optionalPositiveNumbe+}\u001b[0mr\u001b[32m{+(val+}\u001b[0mu\u001b[32m{+e) {\n    co+}\u001b[0mn\u001b[32m{+st parsed = Number(value);\n    return Number.isFinite(parsed) && parsed > 0 ? parsed : undefined;\n  }\n  \n  function run+}\u001b[0mValidationStep(label, command, args, options = {}) {\n    const startedAt = Date.now();\n    const \u001b[31m[-re-]\u001b[0ms\u001b[31m[-ult = s-]\u001b[0mpawn\u001b[31m[-Sync(c-]\u001b[0m\u001b[32m{+Opti+}\u001b[0mo\u001b[31m[-mma-]\u001b[0mn\u001b[31m[-d, arg-]\u001b[0ms\u001b[31m[-,-]\u001b[0m \u001b[32m{+= +}\u001b[0m{\n      cwd: options.cwd || process.cwd(),\n      encoding: 'utf8',\n    \u001b[32m{+};\n  +}\u001b[0m  \u001b[32m{+cons+}\u001b[0mt\u001b[32m{+ t+}\u001b[0mimeout\u001b[31m[-:-]\u001b[0m\u001b[32m{+Ms+}\u001b[0m \u001b[32m{+= +}\u001b[0moptions.timeoutMs \u001b[31m[-||-]\u001b[0m\u001b[32m{+??+}\u001b[0m \u001b[31m[-180000,-]\u001b[0m\u001b[32m{+optionalPositiveNumber(process.env.ATOMIC_VALIDATION_TIMEOUT_MS);+}\u001b[0m\n    \u001b[32m{+const+}\u001b[0m \u001b[32m{+maxBuffer+}\u001b[0m \u001b[32m{+= options.+}\u001b[0mmaxBuffer\u001b[31m[-:-]\u001b[0m \u001b[32m{+?? +}\u001b[0moption\u001b[32m{+alPo+}\u001b[0ms\u001b[32m{+itiveNumber(process+}\u001b[0m.\u001b[32m{+env.ATOMIC_VALIDATION_MAX_BUFFER);\n    if (ti+}\u001b[0mm\u001b[32m{+eoutMs !== undefined) sp+}\u001b[0ma\u001b[32m{+wnOptions.timeout = timeoutMs;\n    if (ma+}\u001b[0mxBuffer \u001b[31m[-||-]\u001b[0m\u001b[32m{+!==+}\u001b[0m \u001b[31m[-8-]\u001b[0m\u001b[32m{+undefined)+}\u001b[0m \u001b[31m[-*-]\u001b[0m\u001b[32m{+spawnOptions.maxBuffer+}\u001b[0m \u001b[31m[-1024-]\u001b[0m\u001b[32m{+=+}\u001b[0m \u001b[31m[-*-]\u001b[0m\u001b[32m{+maxBuffer;\n  +}\u001b[0m \u001b[31m[-1024-]\u001b[0m\u001b[32m{+ const result = spawnSync(command+}\u001b[0m,\u001b[31m[-\n  -]\u001b[0m \u001b[32m{+args,+}\u001b[0m \u001b[31m[-}-]\u001b[0m\u001b[32m{+spawnOptions+}\u001b[0m);\n    const status = typeof result.status === 'number' ? result.status : 124;\n    const ok = typeof options.okStatus === 'function' ? options.okStatus(status, result) : status === 0;",
+  "preservedZones": [
+    {
+      "kind": "unchanged_context",
+      "description": "Everything outside the modified zone is preserved byte-for-byte by the atomic operation."
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "oldTextHash": "74d76378505aaf9e3fa6612a090ca5f0a9387b107f68edb86ccd2946adc09b10",
+      "newTextHash": "aeb387f9e58f05d27954321abf324d324878e5e951c1cd6ddc7b991c9cd6485c",
+      "description": "The operation changed the highlighted span shown in inlinePreview."
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~736 character(s) in `docs/ai/atomic-os-benchmark/tools/atomic-call.cjs` (sub-line atomic edit, expansion 0.51× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

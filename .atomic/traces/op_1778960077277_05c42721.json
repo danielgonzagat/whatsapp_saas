@@ -1,0 +1,37 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1778960077277_05c42721",
+  "ts": "2026-05-16T19:34:37.277Z",
+  "file": "scripts/mcp/atomic-edit/smoke.ts",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 191,
+    "lineRewriteSurfaceChars": 134,
+    "expansionFactorAvoided": 0.7,
+    "bytesNet": 57,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "afterSha256": "738e77c5262da5fff81e31aa6edae1e332bec49cb2a2e32189545bebc8483d9f",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- scripts/mcp/atomic-edit/smoke.ts (atomic char-level)\u001b[0m\n      fs.writeFileSync(\n        eslintAbs,\n        \u001b[31m[-'-]\u001b[0m\u001b[32m{+\"const +}\u001b[0me\u001b[32m{+nvBackup = { TEST_FLAG: process.env.TEST_FLAG };\\ne+}\u001b[0mxport function smoke(flag: boolean) {\\n  if (flag) return 1;\\n  return 0;\\n}\\n\u001b[31m[-'-]\u001b[0m\u001b[32m{+\"+}\u001b[0m,\n      );\n      try {",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~191 character(s) in `scripts/mcp/atomic-edit/smoke.ts` (sub-line atomic edit, expansion 0.7× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

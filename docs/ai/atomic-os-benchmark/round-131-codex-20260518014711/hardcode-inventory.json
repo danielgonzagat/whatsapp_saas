@@ -1,0 +1,1989 @@
+{
+  "ok": true,
+  "root": "/Users/danielpenin/whatsapp_saas",
+  "scannedPaths": [
+    "docs/ai/atomic-os-benchmark/tools"
+  ],
+  "scannedFileCount": 12,
+  "findingCount": 245,
+  "summary": {
+    "byKind": {
+      "constitutional_invariant": 173,
+      "prompt_or_contract_rigidity": 71,
+      "review_needed": 1
+    },
+    "byFile": {
+      "docs/ai/atomic-os-benchmark/tools/atomic-batch.cjs": 3,
+      "docs/ai/atomic-os-benchmark/tools/atomic-call.cjs": 65,
+      "docs/ai/atomic-os-benchmark/tools/atomic-operational-hardcode-inventory.cjs": 20,
+      "docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs": 67,
+      "docs/ai/atomic-os-benchmark/tools/opencode-round-watchdog.cjs": 14,
+      "docs/ai/atomic-os-benchmark/tools/public-api-preservation-audit.cjs": 1,
+      "docs/ai/atomic-os-benchmark/tools/refactor-scorecard.cjs": 26,
+      "docs/ai/atomic-os-benchmark/tools/round-audit.cjs": 47,
+      "docs/ai/atomic-os-benchmark/tools/typecheck-impact-audit.cjs": 2
+    }
+  },
+  "findings": [
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-batch.cjs",
+      "line": 36,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "throw new Error(`refused: ${key} must be absolute in benchmark worktree mode: ${value}`);",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-batch.cjs",
+      "line": 40,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "throw new Error(`refused: ${key} escapes current worktree: ${value}`);",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-batch.cjs",
+      "line": 58,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "throw new Error(`refused: ${fullKey} must be an array of absolute paths`);",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-call.cjs",
+      "line": 59,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "throw new Error(`refused: ${key} escapes current worktree: ${value}`);",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-call.cjs",
+      "line": 81,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "delete args.expectedSha256;",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-call.cjs",
+      "line": 105,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "throw new Error(`refused: ${fullKey} must be an array of paths`);",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-call.cjs",
+      "line": 129,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "function runValidationStep(label, command, args, options = {}) {",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-call.cjs",
+      "line": 135,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "const timeoutMs = options.timeoutMs ?? optionalPositiveNumber(process.env.ATOMIC_VALIDATION_TIMEOUT_MS);",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-call.cjs",
+      "line": 136,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "const maxBuffer = options.maxBuffer ?? optionalPositiveNumber(process.env.ATOMIC_VALIDATION_MAX_BUFFER);",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-call.cjs",
+      "line": 153,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "function syntheticValidationStep(label, ok, message = '') {",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-call.cjs",
+      "line": 171,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "function deriveValidationScanFiles(cwd, options = {}) {",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-call.cjs",
+      "line": 187,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "function runKloelUnifiedAgentValidation(options = {}) {",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-call.cjs",
+      "line": 189,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "const protectedPaths = [",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-call.cjs",
+      "line": 206,
+      "kind": "prompt_or_contract_rigidity",
+      "reason": "long imperative prompt/contract text embedded",
+      "evidence": "const forbiddenPattern = '(as any|@ts-ignore|@ts-expect-error|@ts-nocheck|eslint-disable|biome-ignore|codacy:|NOSONAR|noqa)';",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-call.cjs",
+      "line": 207,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "const scanFiles = deriveValidationScanFiles(cwd, options);",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-call.cjs",
+      "line": 210,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "steps.push(runValidationStep('jest unified-agent', 'npx', ['jest', 'src/kloel/unified-agent.service.spec.ts', '--runInBand', '--silent'], {",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-call.cjs",
+      "line": 215,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "steps.push(runValidationStep('backend typecheck', 'npm', ['--prefix', 'backend', 'run', 'typecheck'], { cwd }));",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-call.cjs",
+      "line": 218,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "runValidationStep('diff check backend/src/kloel', 'git', ['diff', '--check', '--', 'backend/src/kloel'], { cwd }),",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-call.cjs",
+      "line": 219,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "runValidationStep('protected diff empty', 'git', ['diff', '--name-only', '--', ...protectedPaths], {",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-call.cjs",
+      "line": 224,
+      "kind": "prompt_or_contract_rigidity",
+      "reason": "long imperative prompt/contract text embedded",
+      "evidence": "? [runValidationStep('forbidden suppression scan empty', 'rg', ['-n', forbiddenPattern, ...scanFiles], {",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-call.cjs",
+      "line": 235,
+      "kind": "prompt_or_contract_rigidity",
+      "reason": "long imperative prompt/contract text embedded",
+      "evidence": "steps.push(syntheticValidationStep('forbidden text check malformed', false, 'forbiddenTextChecks require file/path and text'));",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-call.cjs",
+      "line": 242,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "steps.push(syntheticValidationStep(",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-call.cjs",
+      "line": 254,
+      "kind": "prompt_or_contract_rigidity",
+      "reason": "long imperative prompt/contract text embedded",
+      "evidence": "steps.push(syntheticValidationStep('required text check malformed', false, 'requiredTextChecks require file/path and text'));",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-call.cjs",
+      "line": 261,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "steps.push(syntheticValidationStep(",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-call.cjs",
+      "line": 270,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "profile: options.validationProfile || 'kloel-unified-agent-extract',",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-call.cjs",
+      "line": 388,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "validation: payload.validation,",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-call.cjs",
+      "line": 417,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "function escapeRegExp(value) {",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-call.cjs",
+      "line": 447,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "function decodeEscapedCodeText(value) {",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-call.cjs",
+      "line": 457,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "function replacementEscapesEnabled(scope = {}, replacement = {}) {",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-call.cjs",
+      "line": 458,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "if (replacement.preserveEscapedCodeText === true || scope.preserveEscapedCodeTextInReplacements === true) {",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-call.cjs",
+      "line": 462,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "replacement.decodeEscapedCodeText === true ||",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-call.cjs",
+      "line": 463,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "replacement.decodeEscapedNewlines === true ||",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-call.cjs",
+      "line": 464,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "scope.decodeEscapedCodeTextInReplacements === true ||",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-call.cjs",
+      "line": 465,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "scope.decodeEscapedNewlinesInReplacements === true",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-call.cjs",
+      "line": 472,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "return replacementEscapesEnabled(scope, replacement) ? decodeEscapedCodeText(raw) : raw;",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-call.cjs",
+      "line": 493,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "const pattern = new RegExp('(\\\\n\\\\s*)' + escapeRegExp(name) + '\\\\?:\\\\s*([^;\\\\n]+);', 'g');",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-call.cjs",
+      "line": 635,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "code = code.replace(/^(?:private|public|protected)\\s+/, '');",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-call.cjs",
+      "line": 638,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "const namePattern = new RegExp('^export\\\\s+(?:async\\\\s+)?function\\\\s+' + escapeRegExp(expectedName) + '\\\\s*\\\\(');",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-call.cjs",
+      "line": 647,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "const signaturePattern = new RegExp('^(export\\\\s+(?:async\\\\s+)?function\\\\s+' + escapeRegExp(expectedName) + '\\\\s*\\\\()');",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-call.cjs",
+      "line": 659,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "return names.every((name) => new RegExp('export\\\\s+(?:async\\\\s+)?function\\\\s+' + escapeRegExp(name) + '\\\\s*\\\\(').test(source));",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-call.cjs",
+      "line": 678,
+      "kind": "prompt_or_contract_rigidity",
+      "reason": "long imperative prompt/contract text embedded",
+      "evidence": "const formatOnly = args.formatWithEslint === true && args.lintFix !== true && args.autoFixLint !== true;",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-call.cjs",
+      "line": 774,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "const validation = args.validate === true || args.validationProfile ? runKloelUnifiedAgentValidation(args) : null;",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-call.cjs",
+      "line": 776,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "ok: !validation || validation.ok,",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-call.cjs",
+      "line": 784,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "validation,",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-call.cjs",
+      "line": 790,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "if (validation && !validation.ok) {",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-call.cjs",
+      "line": 791,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "throw new Error('extract_class_methods_to_file validation failed');",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-call.cjs",
+      "line": 939,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "const validation = args.validate === true || args.validationProfile ? runKloelUnifiedAgentValidation(args) : null;",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-call.cjs",
+      "line": 941,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "ok: !validation || validation.ok,",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-call.cjs",
+      "line": 948,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "validation,",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-call.cjs",
+      "line": 963,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "if (validation && !validation.ok) {",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-call.cjs",
+      "line": 964,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "throw new Error('extract_class_methods_to_file validation failed');",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-call.cjs",
+      "line": 1021,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "const validation = args.validate === true || args.validationProfile ? runKloelUnifiedAgentValidation(args) : null;",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-call.cjs",
+      "line": 1023,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "ok: !validation || validation.ok,",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-call.cjs",
+      "line": 1031,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "validation,",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-call.cjs",
+      "line": 1038,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "if (validation && !validation.ok) {",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-call.cjs",
+      "line": 1039,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "throw new Error('extract_symbols_to_file validation failed');",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-call.cjs",
+      "line": 1049,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "return !new RegExp('export\\\\s+(?:async\\\\s+)?function\\\\s+' + escapeRegExp(importName) + '\\\\s*\\\\(').test(existingTarget);",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-call.cjs",
+      "line": 1115,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "const validation = args.validate === true || args.validationProfile ? runKloelUnifiedAgentValidation(args) : null;",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-call.cjs",
+      "line": 1117,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "ok: !validation || validation.ok,",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-call.cjs",
+      "line": 1124,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "validation,",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-call.cjs",
+      "line": 1135,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "if (validation && !validation.ok) {",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-call.cjs",
+      "line": 1136,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "throw new Error('extract_symbols_to_file validation failed');",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-call.cjs",
+      "line": 1182,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "const validation = args.validate === true || args.validationProfile ? runKloelUnifiedAgentValidation(args) : null;",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-call.cjs",
+      "line": 1184,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "ok: !validation || validation.ok,",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-call.cjs",
+      "line": 1191,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "validation,",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-call.cjs",
+      "line": 1201,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "if (validation && !validation.ok) {",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-call.cjs",
+      "line": 1202,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "throw new Error('extract_symbol_to_file validation failed');",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-call.cjs",
+      "line": 1215,
+      "kind": "prompt_or_contract_rigidity",
+      "reason": "long imperative prompt/contract text embedded",
+      "evidence": "if (!operationArgs || typeof operationArgs !== 'object' || Array.isArray(operationArgs)) throw new Error(`batch operation ${index} args must be an object`);",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-operational-hardcode-inventory.cjs",
+      "line": 12,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "console.error('Usage: atomic-operational-hardcode-inventory.cjs --root <abs> [--path <rel> ...] [--include-protected] [--json]');",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-operational-hardcode-inventory.cjs",
+      "line": 17,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "const out = { paths: [], includeProtected: false, json: false };",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-operational-hardcode-inventory.cjs",
+      "line": 22,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "else if (arg === '--include-protected') out.includeProtected = true;",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-operational-hardcode-inventory.cjs",
+      "line": 43,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "function loadProtected(root) {",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-operational-hardcode-inventory.cjs",
+      "line": 44,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "const file = path.join(root, 'ops', 'protected-governance-files.json');",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-operational-hardcode-inventory.cjs",
+      "line": 48,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "exact: new Set((parsed.protectedExact || []).map((value) => normalizeRel(root, value))),",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-operational-hardcode-inventory.cjs",
+      "line": 49,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "prefixes: (parsed.protectedPrefixes || []).map((value) => normalizeRel(root, value).replace(/\\/+$/, '')),",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-operational-hardcode-inventory.cjs",
+      "line": 53,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "function isProtected(rel, protectedSpec) {",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-operational-hardcode-inventory.cjs",
+      "line": 54,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "if (protectedSpec.exact.has(rel)) return true;",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-operational-hardcode-inventory.cjs",
+      "line": 55,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "return protectedSpec.prefixes.some((prefix) => rel === prefix || rel.startsWith(prefix + '/'));",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-operational-hardcode-inventory.cjs",
+      "line": 83,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "const securitySignals = /protected|governance|resolveSafeTarget|path containment|sha256|expectedSha256|atomicWrite|fsync|validation|rollback|refused|outside.*root|escape/i;",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-operational-hardcode-inventory.cjs",
+      "line": 88,
+      "kind": "prompt_or_contract_rigidity",
+      "reason": "long imperative prompt/contract text embedded",
+      "evidence": "const defaultArrayOrMap = /^const\\s+(DEFAULT_|PRODUCT_|KNOWN_|ALLOWED_|PROTECTED_|FIXED_)[A-Z0-9_]*\\s*=\\s*(\\[|new Set|new Map|\\{)/;",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-operational-hardcode-inventory.cjs",
+      "line": 89,
+      "kind": "prompt_or_contract_rigidity",
+      "reason": "long imperative prompt/contract text embedded",
+      "evidence": "const promptContract = /do not|never|must|only|forbidden|allowed|required|contract|fastpath|prompt|constraints/i;",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-operational-hardcode-inventory.cjs",
+      "line": 98,
+      "kind": "prompt_or_contract_rigidity",
+      "reason": "long imperative prompt/contract text embedded",
+      "evidence": "if (promptContract.test(trimmed) && trimmed.length > 100) push('prompt_or_contract_rigidity', 'long imperative prompt/contract text embedded');",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-operational-hardcode-inventory.cjs",
+      "line": 99,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "if (securitySignals.test(trimmed) && findings.length === 0) push('constitutional_invariant', 'security or validation invariant signal');",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-operational-hardcode-inventory.cjs",
+      "line": 100,
+      "kind": "review_needed",
+      "reason": "explicit hardcode TODO/debt marker",
+      "evidence": "if (lower.includes('todo') && lower.includes('hardcode')) push('review_needed', 'explicit hardcode TODO/debt marker');",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-operational-hardcode-inventory.cjs",
+      "line": 117,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "const protectedSpec = loadProtected(args.root);",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-operational-hardcode-inventory.cjs",
+      "line": 126,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "const protectedFile = isProtected(rel, protectedSpec);",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-operational-hardcode-inventory.cjs",
+      "line": 127,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "if (protectedFile && !args.includeProtected) continue;",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-operational-hardcode-inventory.cjs",
+      "line": 130,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "for (const finding of classify(rel, line, index)) findings.push({ ...finding, protectedFile });",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs",
+      "line": 10,
+      "kind": "prompt_or_contract_rigidity",
+      "reason": "long imperative prompt/contract text embedded",
+      "evidence": "console.error('Usage: atomic-refactor-fastpath.cjs --worktree <abs> [--target <rel>] [--spec <rel>] [--class <ClassName>] [--max-target-lines <n>] [--max-file-lines <n>] [--policy-path <json>] [--json]');",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs",
+      "line": 159,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "/^\\s{2}(?:private|protected|public)?\\s*(?:async\\s+)?([A-Za-z_$][\\w$]*)\\s*\\(/gm,",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs",
+      "line": 192,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "function escapeRegExp(value) {",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs",
+      "line": 197,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "const escaped = escapeRegExp(name);",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs",
+      "line": 198,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "const memberCall = new RegExp('\\\\bthis\\\\s*\\\\.\\\\s*' + escaped + '\\\\s*\\\\(');",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs",
+      "line": 200,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "const bareCall = new RegExp('(^|[^A-Za-z0-9_$\\\\.])' + escaped + '\\\\s*\\\\(');",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs",
+      "line": 246,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "const isPrivate = hasAstModifier(node, [ts.SyntaxKind.PrivateKeyword, ts.SyntaxKind.ProtectedKeyword]);",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs",
+      "line": 273,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "const pattern = /^\\s{2}(?:private|protected|public)?\\s*(?:async\\s+)?([A-Za-z_$][\\w$]*)\\s*\\([^)]*\\)\\s*(?::[^{}]+)?\\{/gm;",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs",
+      "line": 476,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "if (/@Controller\\s*\\(/.test(text) || new RegExp('from\\\\s+[\\\"\\']' + escapeRegExp(targetImportStem) + '[\\\"\\']').test(text)) return null;",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs",
+      "line": 609,
+      "kind": "prompt_or_contract_rigidity",
+      "reason": "long imperative prompt/contract text embedded",
+      "evidence": ".filter((parameter) => hasModifier(parameter, [ts.SyntaxKind.PrivateKeyword, ts.SyntaxKind.ProtectedKeyword, ts.SyntaxKind.PublicKeyword, ts.SyntaxKind.ReadonlyKeyword]))",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs",
+      "line": 623,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "visibility: hasModifier(member, [ts.SyntaxKind.PrivateKeyword, ts.SyntaxKind.ProtectedKeyword]) ? 'private' : 'public',",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs",
+      "line": 631,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "const isPrivate = hasModifier(member, [ts.SyntaxKind.PrivateKeyword, ts.SyntaxKind.ProtectedKeyword]);",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs",
+      "line": 706,
+      "kind": "prompt_or_contract_rigidity",
+      "reason": "long imperative prompt/contract text embedded",
+      "evidence": "winsWhen: 'Only keep this if AST/line measurement proves it is smaller than cached delegate and direct function shapes.',",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs",
+      "line": 898,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "preserveTogether: 'Keep these core symbols together unless validation proves another observed dependency root owns one member.',",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs",
+      "line": 953,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "callHints: (rootMember.calls || []).filter((call) => new RegExp('\\\\b' + escapeRegExp(call) + '\\\\s*\\\\(').test(sectionText)),",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs",
+      "line": 1011,
+      "kind": "prompt_or_contract_rigidity",
+      "reason": "long imperative prompt/contract text embedded",
+      "evidence": "preserveTogether: 'These helpers and internal sections move only because their public root remains in the facade for measured inventory/churn economy.',",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs",
+      "line": 1012,
+      "kind": "prompt_or_contract_rigidity",
+      "reason": "long imperative prompt/contract text embedded",
+      "evidence": "splitWhen: 'Move a helper or section to another owner only when dependency evidence or validation proves that owner consumes it more directly.',",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs",
+      "line": 1023,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "preserveTogether: 'Keep these symbols together unless a validation or scorecard signal proves that one member belongs to another observed dependency root.',",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs",
+      "line": 1024,
+      "kind": "prompt_or_contract_rigidity",
+      "reason": "long imperative prompt/contract text embedded",
+      "evidence": "splitWhen: 'Split only along an observed dependency edge or repeated validation failure, not by a fixed file or line budget.',",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs",
+      "line": 1092,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "preserveTogether: 'Keep these symbols together unless a validation or scorecard signal proves that one member belongs to another observed dependency root.',",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs",
+      "line": 1093,
+      "kind": "prompt_or_contract_rigidity",
+      "reason": "long imperative prompt/contract text embedded",
+      "evidence": "splitWhen: 'Split only along an observed dependency edge or repeated validation failure, not by a fixed file or line budget.',",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs",
+      "line": 1230,
+      "kind": "prompt_or_contract_rigidity",
+      "reason": "long imperative prompt/contract text embedded",
+      "evidence": "interpretation: 'Support extraction is active only when the measured largest-module reduction is larger than the standalone support surface created to obtain it.',",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs",
+      "line": 1233,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "useWhen: 'Use when the previous benchmark loss is largest-module or runtime pressure and validation keeps source count, inventory, facade size, public API, spec diff, protected diff, and trace economy non-worse.',",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs",
+      "line": 1360,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "validationOrder: ['write selected modules', 'replace facade once', 'run scorecard', 'run focused Jest', 'run typecheck impact'],",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs",
+      "line": 1361,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "avoid: ['extra architecture exploration before first write', 'support split candidates marked as economy tradeoff debt', 'per-method writes before the batch fails validation'],",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs",
+      "line": 1407,
+      "kind": "prompt_or_contract_rigidity",
+      "reason": "long imperative prompt/contract text embedded",
+      "evidence": "? 'reuse existing runtime sibling modules, create only the residual target module, then replace the facade from this blueprint before broader architecture exploration.'",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs",
+      "line": 1415,
+      "kind": "prompt_or_contract_rigidity",
+      "reason": "long imperative prompt/contract text embedded",
+      "evidence": "expectedFacadeShape: 'imports, constructor, cached delegate accessors only when needed, and 24 one-statement public methods.',",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs",
+      "line": 1425,
+      "kind": "prompt_or_contract_rigidity",
+      "reason": "long imperative prompt/contract text embedded",
+      "evidence": "rule: 'Planning can be method-aware, but writing must be module/facade-batch aware. Use the fewest Atomic write units matching writeTargets plus facade replacement.',",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs",
+      "line": 1426,
+      "kind": "prompt_or_contract_rigidity",
+      "reason": "long imperative prompt/contract text embedded",
+      "evidence": "childEvidence: 'Per-method atomic writes are fallback only after the macro batch fails validation; otherwise they are macro-atomicity debt.',",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs",
+      "line": 1500,
+      "kind": "prompt_or_contract_rigidity",
+      "reason": "long imperative prompt/contract text embedded",
+      "evidence": "? 'Prefer namespace imports per owner module for runtime calls only when public signature types are imported or namespace-qualified from owner modules; never keep or recreate local facade type declarations.'",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs",
+      "line": 1501,
+      "kind": "prompt_or_contract_rigidity",
+      "reason": "long imperative prompt/contract text embedded",
+      "evidence": ": 'Named imports are acceptable because namespace imports do not reduce the observed binding surface.',",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs",
+      "line": 1554,
+      "kind": "prompt_or_contract_rigidity",
+      "reason": "long imperative prompt/contract text embedded",
+      "evidence": "interpretation: 'Bundle reuse is an economy win only when the estimated direct repetition surface exceeds the estimated typed bundle/support surface created to share it.',",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs",
+      "line": 1559,
+      "kind": "prompt_or_contract_rigidity",
+      "reason": "long imperative prompt/contract text embedded",
+      "evidence": ": 'Do not materialize cached dependency bundles; direct facade delegation remains lower total inventory until measured repetition outweighs the typed bundle/support surface.',",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs",
+      "line": 1632,
+      "kind": "prompt_or_contract_rigidity",
+      "reason": "long imperative prompt/contract text embedded",
+      "evidence": ": 'Retained public leaf stays in the facade when release is only a surface transfer without runtime-owner delegation or a measured economy win.',",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs",
+      "line": 1693,
+      "kind": "prompt_or_contract_rigidity",
+      "reason": "long imperative prompt/contract text embedded",
+      "evidence": "? 'delegate retained public leaf through its runtime owner class because runtime_owner_class_delegation is already the measured facade shape and source/inventory count do not increase'",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs",
+      "line": 1720,
+      "kind": "prompt_or_contract_rigidity",
+      "reason": "long imperative prompt/contract text embedded",
+      "evidence": "? 'compact this retained public leaf locally into one facade statement that calls the retained public root; do not create or grow an owner module for a wrapper-only move'",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs",
+      "line": 1734,
+      "kind": "prompt_or_contract_rigidity",
+      "reason": "long imperative prompt/contract text embedded",
+      "evidence": "action: 'import the matched existing export and delegate; do not copy or rewrite the existing owner module',",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs",
+      "line": 1774,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "action: 'read/import only unless validation proves the owner module itself is broken',",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs",
+      "line": 1799,
+      "kind": "prompt_or_contract_rigidity",
+      "reason": "long imperative prompt/contract text embedded",
+      "evidence": ": 'do not materialize owner runtime classes unless facadeDelegationShape.runtimeOwnerClassEconomy becomes the preferred measured shape',",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs",
+      "line": 1808,
+      "kind": "prompt_or_contract_rigidity",
+      "reason": "long imperative prompt/contract text embedded",
+      "evidence": "action: 'retain the dominant public orchestration root in the facade, extract its private helper surface and sibling roots, and compact wrapper leaves locally so inventory/churn do not grow just to move a body across files',",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs",
+      "line": 1811,
+      "kind": "prompt_or_contract_rigidity",
+      "reason": "long imperative prompt/contract text embedded",
+      "evidence": "compactnessGuard: 'one public method statement per delegated method; repeated owner dependency objects collapse into one owner-local bundle/delegate only when dependencyBundleReusePlan.dependencyBundleEconomy.pass is true; otherwise keep di",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs",
+      "line": 1817,
+      "kind": "prompt_or_contract_rigidity",
+      "reason": "long imperative prompt/contract text embedded",
+      "evidence": "'when multiple public methods share an owner module, build one owner-local dependency bundle or cached delegate only if dependencyBundleEconomy proves lower total inventory than direct dependency objects',",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs",
+      "line": 1820,
+      "kind": "prompt_or_contract_rigidity",
+      "reason": "long imperative prompt/contract text embedded",
+      "evidence": "'otherwise release retained public leaf wrappers only when publicLeafReleaseEconomy proves the move reduces at least one measured surface without worsening owner pressure or inventory',",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs",
+      "line": 1823,
+      "kind": "prompt_or_contract_rigidity",
+      "reason": "long imperative prompt/contract text embedded",
+      "evidence": "'touch an existing shared type file only when multiple owner modules consume the released type and scorecard economy stays non-worse',",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs",
+      "line": 1827,
+      "kind": "prompt_or_contract_rigidity",
+      "reason": "long imperative prompt/contract text embedded",
+      "evidence": "typeSpilloverGuard: 'extra type-only changed files are economy debt unless scorecard typeSpilloverEconomy proves the existing shared type-file touch is cheaper than owner-local export/import; small public helper types should live in a newly",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs",
+      "line": 1828,
+      "kind": "prompt_or_contract_rigidity",
+      "reason": "long imperative prompt/contract text embedded",
+      "evidence": "guard: 'apply only if public API, constructor shape, scorecard, focused Jest, typecheck-impact, spec diff, protected diff, and source count remain non-worse',",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs",
+      "line": 1839,
+      "kind": "prompt_or_contract_rigidity",
+      "reason": "long imperative prompt/contract text embedded",
+      "evidence": "microWriteFallback: 'Use per-method writes only after a batch-sized write fails validation and record the failed validation reason.',",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs",
+      "line": 1876,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "decisionAuthority: 'derived from scorecard surfaces, executable owner map, and validation results; no fixed line or time budget',",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs",
+      "line": 1885,
+      "kind": "prompt_or_contract_rigidity",
+      "reason": "long imperative prompt/contract text embedded",
+      "evidence": "compactionRule: 'After the first green scorecard, keep only compactions that reduce at least one optimize surface without worsening any gate or increasing product source count.',",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs",
+      "line": 1886,
+      "kind": "prompt_or_contract_rigidity",
+      "reason": "long imperative prompt/contract text embedded",
+      "evidence": "stopRule: 'Stop when the next available product-batch compaction would require a new write target, type-only spillover file, public API change, spec/protected edit, or increased scorecard surface.',",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs",
+      "line": 1916,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "validation: {",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs",
+      "line": 1951,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "preserveTogether: 'Keep these symbols together unless a validation or scorecard signal proves that one member belongs to another observed dependency root.',",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs",
+      "line": 1952,
+      "kind": "prompt_or_contract_rigidity",
+      "reason": "long imperative prompt/contract text embedded",
+      "evidence": "splitWhen: 'Split only along an observed dependency edge or repeated validation failure, not by a fixed file or line budget.',",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs",
+      "line": 1957,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "splitWhen: 'Split only when validation or scorecard evidence shows mixed responsibilities.',",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs",
+      "line": 2033,
+      "kind": "prompt_or_contract_rigidity",
+      "reason": "long imperative prompt/contract text embedded",
+      "evidence": "sizingSource: args.maxTargetLines || args.maxFileLines ? 'caller-provided flags only' : 'measurement-only, no embedded line ceiling',",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs",
+      "line": 2037,
+      "kind": "prompt_or_contract_rigidity",
+      "reason": "long imperative prompt/contract text embedded",
+      "evidence": "scorecardPolicySource: args.policyPath ? 'caller-provided fastpath policy path' : 'not provided; pass --policy-path when the caller wants generated scorecard commands to enforce this policy JSON',",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs",
+      "line": 2040,
+      "kind": "prompt_or_contract_rigidity",
+      "reason": "long imperative prompt/contract text embedded",
+      "evidence": "'Use only the derived allowed source prefix plus atomic trace files unless a focused validation proves a broader edit is required.',",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs",
+      "line": 2041,
+      "kind": "prompt_or_contract_rigidity",
+      "reason": "long imperative prompt/contract text embedded",
+      "evidence": "'Do not edit governance, package, workflow, benchmark tooling, or unrelated product surfaces from the worker worktree.',",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs",
+      "line": 2046,
+      "kind": "prompt_or_contract_rigidity",
+      "reason": "long imperative prompt/contract text embedded",
+      "evidence": "'For macro-refactors, method-level ownership is planning granularity only; product batch units define write granularity and trace economy.',",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs",
+      "line": 2051,
+      "kind": "prompt_or_contract_rigidity",
+      "reason": "long imperative prompt/contract text embedded",
+      "evidence": "'Choose the facade delegation shape from measured surface pressure: cached delegate, direct functions, or private helper only when it is actually smallest.',",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs",
+      "line": 2057,
+      "kind": "prompt_or_contract_rigidity",
+      "reason": "long imperative prompt/contract text embedded",
+      "evidence": "sizingAuthority: 'Only caller-provided max flags are enforced; target dominance release is derived from changed-source measurements, not a fixed line ceiling.',",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs",
+      "line": 2058,
+      "kind": "prompt_or_contract_rigidity",
+      "reason": "long imperative prompt/contract text embedded",
+      "evidence": "explorationLimit: 'Read files needed to preserve the detected public surface and focused behavior; extra reads must be tied to a failing validation.',",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs",
+      "line": 2060,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "? 'If the target remains the largest changed source after validation, continue by extracting ' + dominantSpan.name + ' or the cohesive cluster that contains it.'",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs",
+      "line": 2063,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "macroShapeResponse: 'Follow macroRefactorShape.preferredShape unless validation moves the Pareto winner.',",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs",
+      "line": 2064,
+      "kind": "prompt_or_contract_rigidity",
+      "reason": "long imperative prompt/contract text embedded",
+      "evidence": "extractionEconomyResponse: 'If scorecard reports support-module scatter or dominant extraction bloat, merge support into its dependency owner or split only along an observed call-graph root.',",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs",
+      "line": 2065,
+      "kind": "prompt_or_contract_rigidity",
+      "reason": "long imperative prompt/contract text embedded",
+      "evidence": "traceEconomyResponse: 'If scorecard reports trace-economy debt, re-run the write as product batch units from executableFirstBatchRecipe.writeGranularityPlan; do not continue per-method writes.',",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs",
+      "line": 2080,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "atomicWriteBatchShape: [",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/opencode-round-watchdog.cjs",
+      "line": 10,
+      "kind": "prompt_or_contract_rigidity",
+      "reason": "long imperative prompt/contract text embedded",
+      "evidence": "'Usage: opencode-round-watchdog.cjs --round-dir <dir> --normal-worktree <dir> --atomic-worktree <dir> --normal-prompt <file> --atomic-prompt <file> --idle-ms <ms> --max-ms <ms> --poll-ms <ms> --model <provider/model>',",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/opencode-round-watchdog.cjs",
+      "line": 34,
+      "kind": "prompt_or_contract_rigidity",
+      "reason": "long imperative prompt/contract text embedded",
+      "evidence": "if (!value) throw new Error(flag + ' or ' + envName + ' must be supplied by the benchmark policy compiler');",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/opencode-round-watchdog.cjs",
+      "line": 65,
+      "kind": "prompt_or_contract_rigidity",
+      "reason": "long imperative prompt/contract text embedded",
+      "evidence": "const minifyAtomicPromptEnabled = flagEnabled('--minify-atomic-prompt', 'ATOMIC_MINIFY_ATOMIC_PROMPT');",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/opencode-round-watchdog.cjs",
+      "line": 100,
+      "kind": "prompt_or_contract_rigidity",
+      "reason": "long imperative prompt/contract text embedded",
+      "evidence": "'After it finishes, report only ok/fail, validation status, trace count if visible, and residual risk.',",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/opencode-round-watchdog.cjs",
+      "line": 115,
+      "kind": "prompt_or_contract_rigidity",
+      "reason": "long imperative prompt/contract text embedded",
+      "evidence": "if (!command) throw new Error('atomic preprompt command mode requires a shell command block in the atomic prompt');",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/opencode-round-watchdog.cjs",
+      "line": 156,
+      "kind": "prompt_or_contract_rigidity",
+      "reason": "long imperative prompt/contract text embedded",
+      "evidence": "'Report only ATOMIC_PREPROMPT_EXIT, validation status, trace count if visible, and residual risk. Do not run extra tools unless the macro output clearly failed.',",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/opencode-round-watchdog.cjs",
+      "line": 363,
+      "kind": "prompt_or_contract_rigidity",
+      "reason": "long imperative prompt/contract text embedded",
+      "evidence": "const forbiddenCommand = /atomic-call[.]cjs|scripts[/]mcp[/]atomic-edit|[.]atomic[/]traces|docs[/]ai[/]traces/;",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/opencode-round-watchdog.cjs",
+      "line": 392,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "function findAtomicWorktreeEscape(lane) {",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/opencode-round-watchdog.cjs",
+      "line": 403,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "kind: 'atomic_worktree_escape',",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/opencode-round-watchdog.cjs",
+      "line": 507,
+      "kind": "prompt_or_contract_rigidity",
+      "reason": "long imperative prompt/contract text embedded",
+      "evidence": "promptTransform: atomicPrepromptCommand ? null : minifyAtomicPromptEnabled ? compileAtomicFastPrompt : null,",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/opencode-round-watchdog.cjs",
+      "line": 541,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "const worktreeEscape = findAtomicWorktreeEscape(lane);",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/opencode-round-watchdog.cjs",
+      "line": 542,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "if (worktreeEscape) {",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/opencode-round-watchdog.cjs",
+      "line": 543,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "lane.status = 'worktree_escape';",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/opencode-round-watchdog.cjs",
+      "line": 544,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "lane.forbiddenUse = worktreeEscape;",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/public-api-preservation-audit.cjs",
+      "line": 112,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": ".filter((member) => !hasModifier(member, [ts.SyntaxKind.PrivateKeyword, ts.SyntaxKind.ProtectedKeyword]))",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/refactor-scorecard.cjs",
+      "line": 11,
+      "kind": "prompt_or_contract_rigidity",
+      "reason": "long imperative prompt/contract text embedded",
+      "evidence": "'Usage: refactor-scorecard.cjs --worktree <abs> --target <path> [--scope-prefix <path>] [--class <ClassName> --enforce-public-api] [--max-target-lines <n>] [--max-file-lines <n>] [--spec <path>] [--enforce-scope --allow-prefix <path> ...] [",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/refactor-scorecard.cjs",
+      "line": 96,
+      "kind": "prompt_or_contract_rigidity",
+      "reason": "long imperative prompt/contract text embedded",
+      "evidence": "out.fastpathPolicy = out.fastpathPolicy ? resolveReadablePath(argsCwd(), out.worktree, out.fastpathPolicy) : null;",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/refactor-scorecard.cjs",
+      "line": 97,
+      "kind": "prompt_or_contract_rigidity",
+      "reason": "long imperative prompt/contract text embedded",
+      "evidence": "if (out.enforceFastpathPolicy && !out.fastpathPolicy) throw new Error('--enforce-fastpath-policy requires --fastpath-policy');",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/refactor-scorecard.cjs",
+      "line": 99,
+      "kind": "prompt_or_contract_rigidity",
+      "reason": "long imperative prompt/contract text embedded",
+      "evidence": "throw new Error('--enforce-scope requires at least one allowed prefix/file or --allow-atomic-traces');",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/refactor-scorecard.cjs",
+      "line": 169,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "function loadProtectedPathspecs(worktree) {",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/refactor-scorecard.cjs",
+      "line": 170,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "const governancePath = path.join(worktree, 'ops', 'protected-governance-files.json');",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/refactor-scorecard.cjs",
+      "line": 171,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "if (!fs.existsSync(governancePath)) return ['.'];",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/refactor-scorecard.cjs",
+      "line": 172,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "const parsed = JSON.parse(fs.readFileSync(governancePath, 'utf8'));",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/refactor-scorecard.cjs",
+      "line": 173,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "const exact = Array.isArray(parsed.protectedExact) ? parsed.protectedExact : [];",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/refactor-scorecard.cjs",
+      "line": 174,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "const prefixes = Array.isArray(parsed.protectedPrefixes) ? parsed.protectedPrefixes : [];",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/refactor-scorecard.cjs",
+      "line": 310,
+      "kind": "prompt_or_contract_rigidity",
+      "reason": "long imperative prompt/contract text embedded",
+      "evidence": "interpretation: 'Compare additions, final inventory, facade size, and largest module separately; deletions from tracked sources may be desired when extracting a facade and must not be treated as automatic product loss.',",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/refactor-scorecard.cjs",
+      "line": 383,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "function protectedDiff(worktree, protectedPathspecs) {",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/refactor-scorecard.cjs",
+      "line": 384,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "return runGit(worktree, ['diff', '--name-only', '--', ...protectedPathspecs]);",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/refactor-scorecard.cjs",
+      "line": 436,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": ".filter((member) => !hasModifier(ts, member, [ts.SyntaxKind.PrivateKeyword, ts.SyntaxKind.ProtectedKeyword]))",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/refactor-scorecard.cjs",
+      "line": 570,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "const isPrivate = hasModifier(ts, method, [ts.SyntaxKind.PrivateKeyword, ts.SyntaxKind.ProtectedKeyword]);",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/refactor-scorecard.cjs",
+      "line": 575,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "visibility: isPrivate ? 'private_or_protected' : 'public',",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/refactor-scorecard.cjs",
+      "line": 696,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "const isPrivate = hasModifier(ts, member, [ts.SyntaxKind.PrivateKeyword, ts.SyntaxKind.ProtectedKeyword]);",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/refactor-scorecard.cjs",
+      "line": 769,
+      "kind": "prompt_or_contract_rigidity",
+      "reason": "long imperative prompt/contract text embedded",
+      "evidence": "? 'existing type file was touched only by additions during extraction; its whole-file inventory exceeds the local added surface and a new owner module could hold the type instead'",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/refactor-scorecard.cjs",
+      "line": 782,
+      "kind": "prompt_or_contract_rigidity",
+      "reason": "long imperative prompt/contract text embedded",
+      "evidence": "interpretation: 'Existing shared type files are not free during facade extraction: the scorecard inventory counts the whole changed file. Touch them only when the measured diff is not pure spillover, or when validation proves owner-local ty",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/refactor-scorecard.cjs",
+      "line": 846,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": ".filter((member) => !hasModifier(ts, member, [ts.SyntaxKind.PrivateKeyword, ts.SyntaxKind.ProtectedKeyword]))",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/refactor-scorecard.cjs",
+      "line": 1026,
+      "kind": "prompt_or_contract_rigidity",
+      "reason": "long imperative prompt/contract text embedded",
+      "evidence": "const fastpathPolicy = fastpathPolicyAdherence(args.worktree, target, args.className, args.fastpathPolicy);",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/refactor-scorecard.cjs",
+      "line": 1036,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "const protectedPathspecs = loadProtectedPathspecs(args.worktree);",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/refactor-scorecard.cjs",
+      "line": 1037,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "const protectedFiles = protectedDiff(args.worktree, protectedPathspecs);",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/refactor-scorecard.cjs",
+      "line": 1052,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "protectedDiff: protectedFiles,",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/refactor-scorecard.cjs",
+      "line": 1053,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "protectedPathspecs,",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/refactor-scorecard.cjs",
+      "line": 1098,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "protectedFiles.length === 0 &&",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/round-audit.cjs",
+      "line": 87,
+      "kind": "prompt_or_contract_rigidity",
+      "reason": "long imperative prompt/contract text embedded",
+      "evidence": "commandText: readText(prefix + '-command.txt') || readText('opencode-' + name + '-preprompt-command.txt'),",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/round-audit.cjs",
+      "line": 215,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "const atomicCallWorktreeEscapes = commands",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/round-audit.cjs",
+      "line": 319,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "atomicCallWorktreeEscapes,",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/round-audit.cjs",
+      "line": 363,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "function validationMetrics(file, worktree = '') {",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/round-audit.cjs",
+      "line": 391,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "'protected_diff',",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/round-audit.cjs",
+      "line": 514,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "protectedDiff: section('protected_diff'),",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/round-audit.cjs",
+      "line": 556,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "validation: validationMetrics('normal-external-validation.log', roundMetadata.normalWorktree),",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/round-audit.cjs",
+      "line": 561,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "validation: validationMetrics('atomic-external-validation.log', roundMetadata.atomicWorktree),",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/round-audit.cjs",
+      "line": 564,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "function validationPass(validation, options = {}) {",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/round-audit.cjs",
+      "line": 566,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "validation.typecheckStatus === 0 ||",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/round-audit.cjs",
+      "line": 567,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "(options.allowTaskScopedTypecheckNoise === true && validation.typecheckKloelErrorCount === 0);",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/round-audit.cjs",
+      "line": 568,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "const lintOk = validation.lintStatus === null || validation.lintStatus === 0;",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/round-audit.cjs",
+      "line": 570,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "validation.jestStatus === 0 &&",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/round-audit.cjs",
+      "line": 573,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "validation.diffCheckStatus === 0 &&",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/round-audit.cjs",
+      "line": 574,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "validation.forbiddenPatternStatus === 1 &&",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/round-audit.cjs",
+      "line": 575,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "(validation.helperThisStatus === null || validation.helperThisStatus === 1) &&",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/round-audit.cjs",
+      "line": 576,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "(validation.privateMethodsStatus === null || validation.privateMethodsStatus === 1) &&",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/round-audit.cjs",
+      "line": 577,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "(validation.scopePreservationPass === null || validation.scopePreservationPass === true)",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/round-audit.cjs",
+      "line": 582,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "normal.validation.typecheckStatus !== 0 &&",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/round-audit.cjs",
+      "line": 583,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "atomic.validation.typecheckStatus !== 0 &&",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/round-audit.cjs",
+      "line": 584,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "normal.validation.typecheckKloelErrorCount === 0 &&",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/round-audit.cjs",
+      "line": 585,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "atomic.validation.typecheckKloelErrorCount === 0;",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/round-audit.cjs",
+      "line": 586,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "const globalFunctionalPass = validationPass(normal.validation) && validationPass(atomic.validation);",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/round-audit.cjs",
+      "line": 587,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "const normalTaskFunctionalPass = validationPass(normal.validation, {",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/round-audit.cjs",
+      "line": 589,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "normal.validation.typecheckStatus !== 0 && normal.validation.typecheckKloelErrorCount === 0,",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/round-audit.cjs",
+      "line": 591,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "const atomicTaskFunctionalPass = validationPass(atomic.validation, {",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/round-audit.cjs",
+      "line": 593,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "atomic.validation.typecheckStatus !== 0 && atomic.validation.typecheckKloelErrorCount === 0,",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/round-audit.cjs",
+      "line": 616,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "atomic.events.atomicCallWorktreeEscapes.length === 0,",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/round-audit.cjs",
+      "line": 618,
+      "kind": "prompt_or_contract_rigidity",
+      "reason": "long imperative prompt/contract text embedded",
+      "evidence": "normal.events.forbiddenAtomicToolUses.length === 0 && normal.events.forbiddenAtomicCommands.length === 0,",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/round-audit.cjs",
+      "line": 625,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "atomic.events.atomicCallWorktreeEscapes.length === 0,",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/round-audit.cjs",
+      "line": 629,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "atomicWorktreeEscapeCount: atomic.events.atomicCallWorktreeEscapes.length,",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/round-audit.cjs",
+      "line": 631,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "atomic.validation.traceIsolationStatus === null || atomic.validation.traceIsolationStatus === 0,",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/round-audit.cjs",
+      "line": 634,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "{ value: normal.validation.serviceLines },",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/round-audit.cjs",
+      "line": 635,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "{ value: atomic.validation.serviceLines },",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/round-audit.cjs",
+      "line": 641,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "{ value: normal.validation.totalKloelLines },",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/round-audit.cjs",
+      "line": 642,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "{ value: atomic.validation.totalKloelLines },",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/round-audit.cjs",
+      "line": 646,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "normalScopePreservationPass: normal.validation.scopePreservationPass,",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/round-audit.cjs",
+      "line": 647,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "atomicScopePreservationPass: atomic.validation.scopePreservationPass,",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/round-audit.cjs",
+      "line": 649,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "normal.validation.scopePreservationPass,",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/round-audit.cjs",
+      "line": 650,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "atomic.validation.scopePreservationPass,",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/round-audit.cjs",
+      "line": 671,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "atomic.events.completedMcpCalls > 0 || Number(atomic.validation.traceCount || 0) > 0",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/round-audit.cjs",
+      "line": 674,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "protectedDiffTie:",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/round-audit.cjs",
+      "line": 675,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "JSON.stringify(normal.validation.protectedDiff) === JSON.stringify(atomic.validation.protectedDiff),",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/round-audit.cjs",
+      "line": 678,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "{ value: normal.validation.touchedKloelFileCount },",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/round-audit.cjs",
+      "line": 679,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "{ value: atomic.validation.touchedKloelFileCount },",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/round-audit.cjs",
+      "line": 685,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "{ value: normal.validation.sourceChurn },",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/round-audit.cjs",
+      "line": 686,
+      "kind": "constitutional_invariant",
+      "reason": "security or validation invariant signal",
+      "evidence": "{ value: atomic.validation.sourceChurn },",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/typecheck-impact-audit.cjs",
+      "line": 124,
+      "kind": "prompt_or_contract_rigidity",
+      "reason": "long imperative prompt/contract text embedded",
+      "evidence": "const inScopeDiagnostics = diagnostics.filter((diagnostic) => isAllowedDiagnostic(diagnostic.file, args));",
+      "protectedFile": false
+    },
+    {
+      "file": "docs/ai/atomic-os-benchmark/tools/typecheck-impact-audit.cjs",
+      "line": 125,
+      "kind": "prompt_or_contract_rigidity",
+      "reason": "long imperative prompt/contract text embedded",
+      "evidence": "const outOfScopeDiagnostics = diagnostics.filter((diagnostic) => !isAllowedDiagnostic(diagnostic.file, args));",
+      "protectedFile": false
+    }
+  ]
+}

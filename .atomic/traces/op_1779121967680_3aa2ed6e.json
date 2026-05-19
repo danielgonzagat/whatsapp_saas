@@ -1,0 +1,59 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779121967680_3aa2ed6e",
+  "ts": "2026-05-18T16:32:47.680Z",
+  "file": "scripts/mcp/atomic-edit/server.ts",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "targetUnit": "text_span",
+  "intention": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 112,
+    "lineRewriteSurfaceChars": 112,
+    "expansionFactorAvoided": 1,
+    "bytesNet": -62,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "7aae0beceb9a97a1d81cb8a50f96479d08e496c77385ba54c3557f8abaf9e9a3",
+  "proposedSha256": "7aae0beceb9a97a1d81cb8a50f96479d08e496c77385ba54c3557f8abaf9e9a3",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- scripts/mcp/atomic-edit/server.ts (atomic char-level)\u001b[0m\n              'apply analyzer-proposed lint fixes without letting the analyzer write directly',\n            semanticImpact: 'lint_fix_auto_applied',\n  \u001b[31m[-          semanticImpact: 'behavior_preserving_lint_cleanup',-]\u001b[0m\n          });\n          const persisted = writeTrace(trace);",
+  "preservedZones": [
+    {
+      "kind": "unchanged_context",
+      "description": "Everything outside the modified zone is preserved byte-for-byte by the atomic operation."
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "oldTextHash": "bf1cb3d31f5b98da04b2ef23a8c76573339eb69d6e2cd70b72d10c8cd0930fca",
+      "newTextHash": "7aae0beceb9a97a1d81cb8a50f96479d08e496c77385ba54c3557f8abaf9e9a3",
+      "description": "The operation changed the highlighted span shown in inlinePreview."
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~112 character(s) in `scripts/mcp/atomic-edit/server.ts` (sub-line atomic edit, expansion 1× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

@@ -1,0 +1,59 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779065528444_5c54724e",
+  "ts": "2026-05-18T00:52:08.444Z",
+  "file": "docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "targetUnit": "text_span",
+  "intention": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 2760,
+    "lineRewriteSurfaceChars": 1472,
+    "expansionFactorAvoided": 0.53,
+    "bytesNet": 1288,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "32ed8df6334236418e0abdd468ac41036ea51c0a6b2ebb69ea355e1b4a90a678",
+  "proposedSha256": "32ed8df6334236418e0abdd468ac41036ea51c0a6b2ebb69ea355e1b4a90a678",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs (atomic char-level)\u001b[0m\n      splitVsSingleBoundaryDelta: split.metrics.dependencyBoundaryPressure - single.metrics.dependencyBoundaryPressure,\n    };\n    \u001b[31m[-if-]\u001b[0m\u001b[32m{+let+}\u001b[0m \u001b[31m[-(-]\u001b[0msupport\u001b[31m[-)-]\u001b[0m\u001b[32m{+LargestReduction+}\u001b[0m \u001b[31m[-{\n  -]\u001b[0m\u001b[32m{+=+}\u001b[0m \u001b[32m{+0;\n  +}\u001b[0m  \u001b[32m{+let+}\u001b[0m \u001b[31m[-candida-]\u001b[0m\u001b[32m{+suppor+}\u001b[0mt\u001b[32m{+Surfac+}\u001b[0meCo\u001b[31m[-m-]\u001b[0m\u001b[32m{+st = 0;\n    let su+}\u001b[0mp\u001b[31m[-a-]\u001b[0m\u001b[32m{+po+}\u001b[0mr\u001b[31m[-i-]\u001b[0m\u001b[32m{+tRelea+}\u001b[0ms\u001b[32m{+eEc+}\u001b[0mon\u001b[31m[-.-]\u001b[0m\u001b[32m{+omyPa+}\u001b[0ms\u001b[31m[-p-]\u001b[0m\u001b[32m{+s = fa+}\u001b[0ml\u001b[32m{+se;\n    +}\u001b[0mi\u001b[32m{+f (suppor+}\u001b[0mt\u001b[31m[-V-]\u001b[0m\u001b[32m{+) {\n      +}\u001b[0ms\u001b[31m[-S-]\u001b[0mupportLargest\u001b[31m[-D-]\u001b[0m\u001b[32m{+R+}\u001b[0me\u001b[31m[-l-]\u001b[0m\u001b[32m{+duc+}\u001b[0mt\u001b[31m[-a-]\u001b[0m\u001b[32m{+ion+}\u001b[0m = split.metrics.largestModuleLines - support.metrics.largestModuleLines;\n      \u001b[32m{+supportSurfa+}\u001b[0mc\u001b[32m{+eCost = supportPl+}\u001b[0man\u001b[32m{+.supportLines || 0;\n      supportReleaseEconomyPass = supportLargestRe+}\u001b[0md\u001b[32m{+uct+}\u001b[0mi\u001b[32m{+on > supportSurfaceCost;\n      can+}\u001b[0md\u001b[32m{+id+}\u001b[0mateComparison.s\u001b[32m{+plitVsS+}\u001b[0mupport\u001b[32m{+LargestDelta = supportLargestReduction;\n      candidateComparison.support+}\u001b[0mVsSplitInventoryDelta = support.metrics.estimatedInventoryPressure - split.metrics.estimatedInventoryPressure;\n      candidateComparison.supportVsSplitFileDelta = support.metrics.productSourceFileCount - split.metrics.productSourceFileCount;\n    \u001b[32m{+  candidateComparison.supportSurfaceCost = supportSurfaceCost;\n      candidateComparison.supportReleaseEconomyPass = supportReleaseEconomyPass;\n    +}\u001b[0m}\n    const balancedSupportReleasePlan = support && supportPlan.available && support.metrics.largestModuleLines < split.metrics.largestModuleLines && support.metrics.estimatedInventoryPressure <= split.metrics.estimatedInventoryPressure\u001b[32m{+ && supportReleaseEconomyPass+}\u001b[0m\n      ? {\n          available: true,\n          shape: support.shape,\n          selectedDecompositionTemplate: support.selectedDecompositionTemplate,\n          metrics: support.metrics,\n          \u001b[32m{+supportReleaseEconomy: {\n            largestMo+}\u001b[0md\u001b[32m{+ul+}\u001b[0me\u001b[32m{+Redu+}\u001b[0mc\u001b[32m{+t+}\u001b[0mi\u001b[32m{+on: +}\u001b[0ms\u001b[32m{+upportLargestReduct+}\u001b[0mion\u001b[32m{+,\n            supportSurfaceCost,\n            pass: true,\n            interpretation: 'Support extraction is active only when the measured largest-module reduction is larger than the standalone support surface created to obtain it.',\n          },\n          decision+}\u001b[0mAuthority: 'derived from candidate metrics: support lowers largest-module pressure\u001b[32m{+,+}\u001b[0m \u001b[31m[-with-]\u001b[0m\u001b[32m{+d+}\u001b[0mo\u001b[31m[-u-]\u001b[0m\u001b[32m{+es no+}\u001b[0mt increas\u001b[31m[-ing-]\u001b[0m\u001b[32m{+e+}\u001b[0m estimated inventory pressure\u001b[32m{+,+}\u001b[0m \u001b[31m[-versus-]\u001b[0m\u001b[32m{+and+}\u001b[0m \u001b[32m{+i+}\u001b[0mt\u001b[31m[-he -]\u001b[0ms\u001b[32m{+ larg+}\u001b[0me\u001b[32m{+st-modu+}\u001b[0mle\u001b[32m{+ redu+}\u001b[0mct\u001b[32m{+ion +}\u001b[0me\u001b[32m{+xcee+}\u001b[0md\u001b[31m[- -]\u001b[0ms\u001b[31m[-pl-]\u001b[0m\u001b[32m{+ +}\u001b[0mit\u001b[32m{+s+}\u001b[0m \u001b[31m[-ca-]\u001b[0m\u001b[32m{+ow+}\u001b[0mn\u001b[31m[-dida-]\u001b[0m\u001b[32m{+ suppor+}\u001b[0mt\u001b[32m{+ surfac+}\u001b[0me\u001b[32m{+ cost+}\u001b[0m',\n          useWhen: 'Use when the previous benchmark loss is largest-module or runtime pressure and validation keeps source count, inventory, \u001b[32m{+facade size, +}\u001b[0mpublic API, spec diff, protected diff, and trace economy non-worse.',\n        }\n      : {\n          available: false,\n          \u001b[32m{+suppo+}\u001b[0mr\u001b[32m{+tR+}\u001b[0me\u001b[32m{+le+}\u001b[0mas\u001b[32m{+eEc+}\u001b[0mon\u001b[32m{+omy+}\u001b[0m: support\n            ? \u001b[32m{+{\n                largestModuleReduction: supportLargestReduction,\n                supportSurfaceCost,\n                pass: supportReleaseEconomyPass,\n                interpretation: +}\u001b[0m'\u001b[32m{+Support extraction +}\u001b[0ms\u001b[32m{+tays inactive when its standalone s+}\u001b[0mupport \u001b[32m{+surfa+}\u001b[0mc\u001b[32m{+e is gre+}\u001b[0ma\u001b[32m{+ter tha+}\u001b[0mn\u001b[32m{+ or equal to the largest-mo+}\u001b[0md\u001b[32m{+ule reduct+}\u001b[0mi\u001b[32m{+on it buys.',\n              }\n            : null,\n          reason: support\n            ? 'support can+}\u001b[0md\u001b[32m{+id+}\u001b[0mate did not \u001b[31m[-l-]\u001b[0m\u001b[32m{+pr+}\u001b[0mo\u001b[31m[-w-]\u001b[0m\u001b[32m{+v+}\u001b[0me\u001b[31m[-r-]\u001b[0m largest-module \u001b[31m[-p-]\u001b[0mre\u001b[32m{+duction greater than it+}\u001b[0ms\u001b[32m{+ +}\u001b[0ms\u001b[32m{+tandalone s+}\u001b[0mu\u001b[32m{+ppo+}\u001b[0mr\u001b[32m{+t surfac+}\u001b[0me without inventory pressure against the selected split candidate'\n            : 'no support candidate available',\n        };",
+  "preservedZones": [
+    {
+      "kind": "unchanged_context",
+      "description": "Everything outside the modified zone is preserved byte-for-byte by the atomic operation."
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "oldTextHash": "b24683c51d739ee4ae631b2fb2a73a18f7464fa2b1d8358ce9c0ef45bc209ac5",
+      "newTextHash": "32ed8df6334236418e0abdd468ac41036ea51c0a6b2ebb69ea355e1b4a90a678",
+      "description": "The operation changed the highlighted span shown in inlinePreview."
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~2760 character(s) in `docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs` (sub-line atomic edit, expansion 0.53× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

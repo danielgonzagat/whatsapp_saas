@@ -1,0 +1,59 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779017939493_5d3f583c",
+  "ts": "2026-05-17T11:38:59.493Z",
+  "file": "scripts/mcp/atomic-edit/.smoke-replace-anchors-ambig.35610.ts",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "replace_between_anchors",
+  "operator": "replace_between_anchors",
+  "targetUnit": "text_span",
+  "intention": "replace_between_anchors",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 6,
+    "lineRewriteSurfaceChars": 65,
+    "expansionFactorAvoided": 10.83,
+    "bytesNet": 1,
+    "lineRewriteAvoided": true
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "3cae1fc859ac264d5ecc91a342b08d32218497ab9c460ab74daa52bc51ad6468",
+  "proposedSha256": "3cae1fc859ac264d5ecc91a342b08d32218497ab9c460ab74daa52bc51ad6468",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- scripts/mcp/atomic-edit/.smoke-replace-anchors-ambig.35610.ts (atomic char-level)\u001b[0m\n  export let X = `BEFORE alpha BODY omega alpha \u001b[31m[-B-]\u001b[0m\u001b[32m{+SEC+}\u001b[0mO\u001b[32m{+N+}\u001b[0mD\u001b[31m[-Y2-]\u001b[0m omega AFTER`;\n  ",
+  "preservedZones": [
+    {
+      "kind": "unchanged_context",
+      "description": "Everything outside the modified zone is preserved byte-for-byte by the atomic operation."
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "oldTextHash": "b2938b9828da0eea6f2159a2a9dd6bc798914cb67e9de27adb0230c30fce5636",
+      "newTextHash": "3cae1fc859ac264d5ecc91a342b08d32218497ab9c460ab74daa52bc51ad6468",
+      "description": "The operation changed the highlighted span shown in inlinePreview."
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `replace_between_anchors` changed ~6 character(s) in `scripts/mcp/atomic-edit/.smoke-replace-anchors-ambig.35610.ts` (sub-line atomic edit, expansion 10.83× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

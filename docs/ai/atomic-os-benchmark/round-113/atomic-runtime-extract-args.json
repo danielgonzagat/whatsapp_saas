@@ -1,0 +1,105 @@
+{
+  "sourceFile": "backend/src/kloel/unified-agent.service.ts",
+  "targetFile": "backend/src/kloel/unified-agent-runtime.helpers.ts",
+  "className": "UnifiedAgentService",
+  "methods": [
+    "buildAgentRuntimeContext",
+    "recordAgentRuntimeTurn"
+  ],
+  "importNames": [
+    "buildAgentRuntimeContext",
+    "recordAgentRuntimeTurn"
+  ],
+  "importModule": "./unified-agent-runtime.helpers",
+  "targetHeader": "import type { AgentRuntimeContextService } from './agent-runtime';",
+  "methodAdapters": {
+    "buildAgentRuntimeContext": {
+      "signaturePrefixParam": "agentRuntime: AgentRuntimeContextService | undefined, ",
+      "bodyReplacements": [
+        {
+          "oldText": "this.agentRuntime",
+          "newText": "agentRuntime"
+        }
+      ]
+    },
+    "recordAgentRuntimeTurn": {
+      "signaturePrefixParam": "agentRuntime: AgentRuntimeContextService | undefined, ",
+      "bodyReplacements": [
+        {
+          "oldText": "this.agentRuntime",
+          "newText": "agentRuntime"
+        }
+      ]
+    }
+  },
+  "callsiteReplacements": [
+    {
+      "oldText": "    const agentRuntimeContext = await this.buildAgentRuntimeContext({",
+      "newText": "    const agentRuntimeContext = await buildAgentRuntimeContext(this.agentRuntime, {",
+      "expectedCount": 1
+    },
+    {
+      "oldText": "      await this.recordAgentRuntimeTurn({",
+      "newText": "      await recordAgentRuntimeTurn(this.agentRuntime, {",
+      "expectedCount": 1
+    },
+    {
+      "oldText": "    await this.recordAgentRuntimeTurn({",
+      "newText": "    await recordAgentRuntimeTurn(this.agentRuntime, {",
+      "expectedCount": 1
+    }
+  ],
+  "formatWithEslint": true,
+  "validate": true,
+  "includeTypecheck": false,
+  "validationProfile": "round113-runtime-helper-split-no-typecheck",
+  "scanFiles": [
+    "backend/src/kloel/unified-agent.service.ts",
+    "backend/src/kloel/unified-agent-runtime.helpers.ts"
+  ],
+  "forbiddenTextChecks": [
+    {
+      "file": "backend/src/kloel/unified-agent-runtime.helpers.ts",
+      "text": "this.",
+      "label": "runtime helper no this"
+    },
+    {
+      "file": "backend/src/kloel/unified-agent-runtime.helpers.ts",
+      "text": "ToolArgs",
+      "label": "runtime helper no unused ToolArgs import"
+    },
+    {
+      "file": "backend/src/kloel/unified-agent.service.ts",
+      "text": "private async buildAgentRuntimeContext",
+      "label": "private buildAgentRuntimeContext removed"
+    },
+    {
+      "file": "backend/src/kloel/unified-agent.service.ts",
+      "text": "private async recordAgentRuntimeTurn",
+      "label": "private recordAgentRuntimeTurn removed"
+    }
+  ],
+  "requiredTextChecks": [
+    {
+      "file": "backend/src/kloel/unified-agent-runtime.helpers.ts",
+      "text": "export async function buildAgentRuntimeContext",
+      "label": "runtime helper exports buildAgentRuntimeContext"
+    },
+    {
+      "file": "backend/src/kloel/unified-agent-runtime.helpers.ts",
+      "text": "export async function recordAgentRuntimeTurn",
+      "label": "runtime helper exports recordAgentRuntimeTurn"
+    },
+    {
+      "file": "backend/src/kloel/unified-agent.service.ts",
+      "text": "buildAgentRuntimeContext(this.agentRuntime, {",
+      "label": "runtime context explicit dependency"
+    },
+    {
+      "file": "backend/src/kloel/unified-agent.service.ts",
+      "text": "recordAgentRuntimeTurn(this.agentRuntime, {",
+      "label": "runtime turn explicit dependency"
+    }
+  ],
+  "report": "compact"
+}

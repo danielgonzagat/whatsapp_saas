@@ -1,0 +1,59 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779121417641_1acb9471",
+  "ts": "2026-05-18T16:23:37.641Z",
+  "file": "scripts/mcp/atomic-edit/engine.ts",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "targetUnit": "text_span",
+  "intention": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 4012,
+    "lineRewriteSurfaceChars": 33,
+    "expansionFactorAvoided": 0.01,
+    "bytesNet": 3979,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "2232137d598b8a8cd55fc30d3e50cbb96de32e12d0c44d9aaf748e2d40435999",
+  "proposedSha256": "2232137d598b8a8cd55fc30d3e50cbb96de32e12d0c44d9aaf748e2d40435999",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- scripts/mcp/atomic-edit/engine.ts (atomic char-level)\u001b[0m\n  \n  import * as ts from 'typescript';\n  \u001b[32m{+import * as crypto from 'crypto';\n  import type { PreservationZone, ModifiedZone, MovementZone } from './trace.js';\n  \n  const sha256 = (s: string): string => crypto.createHash('sha256').update(s).digest('hex');\n  \n  export interface Position {\n    /** 1-based line. */\n    line: number;\n    /** 1-based column (UTF-16 code units within the line). */\n    column: number;\n  }\n  \n  export interface EditZones {\n    preservedZones: PreservationZone[];\n    modifiedZones: ModifiedZone[];\n    movementZones: MovementZone[];\n  }\n  \n  export const EMPTY_ZONES: EditZones = {\n    preservedZones: [],\n    modifiedZones: [],\n    movementZones: [],\n  };\n  \n  /**\n   * Compute exact preservation / modification / movement zones by comparing\n   * `before` and `after` byte-by-byte. This is the universal topology analyser\n   * that works for ANY edit type — range, text, symbol, import, etc.\n   *\n   * Strategy:\n   *  1. Find the first byte where before[i] !== after[i]  → prefix preserved zone\n   *  2. Find the last byte where before[j] !== after[j]    → suffix preserved zone\n   *  3. The span between first and last diff is the modified zone\n   *  4. If before and after are identical → no zones\n   */\n  export function computeZones(\n    before: string,\n    after: string,\n    opKind = 'changed_span',\n  ): EditZones {\n    const preservedZones: PreservationZone[] = [];\n    const modifiedZones: ModifiedZone[] = [];\n  \n    if (before === after) {\n      preservedZones.push({\n        kind: 'unchanged_content',\n        description: `Full file (${before.length} bytes) unchanged`,\n        byteStart: 0,\n        byteEnd: before.length,\n        byteLength: before.length,\n        beforeHash: sha256(before),\n        afterHash: sha256(after),\n      });\n      return { preservedZones, modifiedZones, movementZones: [] };\n    }\n  \n    let firstDiff = 0;\n    while (\n      firstDiff < before.length &&\n      firstDiff < after.length &&\n      before[firstDiff] === after[firstDiff]\n    ) {\n      firstDiff++;\n    }\n  \n    let lastBeforeDiff = before.length - 1;\n    let lastAfterDiff = after.length - 1;\n    while (\n      lastBeforeDiff >= firstDiff &&\n      lastAfterDiff >= firstDiff &&\n      before[lastBeforeDiff] === after[lastAfterDiff]\n    ) {\n      lastBeforeDiff--;\n      lastAfterDiff--;\n    }\n    lastBeforeDiff++;\n    lastAfterDiff++;\n  \n    if (firstDiff > 0) {\n      const prefixText = before.slice(0, firstDiff);\n      preservedZones.push({\n        kind: 'prefix_preserved',\n        description: `Bytes 0–${firstDiff - 1} — prefix preserved unchanged`,\n        byteStart: 0,\n        byteEnd: firstDiff,\n        byteLength: firstDiff,\n        beforeHash: sha256(prefixText),\n        afterHash: sha256(prefixText),\n        sample: prefixText.length > 80 ? prefixText.slice(-80) : prefixText,\n      });\n    }\n  \n    const oldChunk = before.slice(firstDiff, lastBeforeDiff);\n    const newChunk = after.slice(firstDiff, lastAfterDiff);\n    modifiedZones.push({\n      kind: opKind,\n      byteStart: firstDiff,\n      byteEnd: lastBeforeDiff,\n      newByteLength: newChunk.length,\n      oldTextHash: sha256(oldChunk),\n      newTextHash: sha256(newChunk),\n      oldSample: oldChunk.slice(0, 200),\n      newSample: newChunk.slice(0, 200),\n      description:\n        oldChunk.length === 0\n          ? `Insert ${newChunk.length} bytes at offset ${firstDiff}`\n          : newChunk.length === 0\n            ? `Delete ${oldChunk.length} bytes at offset ${firstDiff}`\n            : `Replace ${oldChunk.length} bytes at offset ${firstDiff} with ${newChunk.length} bytes`,\n    });\n  \n    if (lastBeforeDiff < before.length) {\n      const suffixText = before.slice(lastBeforeDiff);\n      if (suffixText.length > 0) {\n        preservedZones.push({\n          kind: 'suffix_preserved',\n          description: `Bytes ${lastBeforeDiff}–${before.length - 1} — suffix preserved unchanged`,\n          byteStart: lastBeforeDiff,\n          byteEnd: before.length,\n          byteLength: suffixText.length,\n          beforeHash: sha256(suffixText),\n          afterHash: sha256(suffixText),\n          sample: suffixText.length > 80 ? suffixText.slice(0, 80) : suffixText,\n        });\n      }\n    }\n  \n    return { preservedZones, modifiedZones, movementZones: [] };\n  }+}\u001b[0m\n  \n  export interface Position {",
+  "preservedZones": [
+    {
+      "kind": "unchanged_context",
+      "description": "Everything outside the modified zone is preserved byte-for-byte by the atomic operation."
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "oldTextHash": "24053061d09239f8eb4b290aebaf3101add8364b7f7415975039f86287f58296",
+      "newTextHash": "2232137d598b8a8cd55fc30d3e50cbb96de32e12d0c44d9aaf748e2d40435999",
+      "description": "The operation changed the highlighted span shown in inlinePreview."
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~4012 character(s) in `scripts/mcp/atomic-edit/engine.ts` (sub-line atomic edit, expansion 0.01× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

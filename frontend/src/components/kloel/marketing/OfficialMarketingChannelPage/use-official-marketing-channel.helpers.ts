@@ -3,6 +3,7 @@
 export interface ProductOption {
   id: string;
   name: string;
+  price?: number | null;
 }
 
 export interface ChannelSetup {
@@ -92,5 +93,27 @@ export function normalizeProduct(raw: unknown): ProductOption | null {
   return {
     id,
     name: typeof record.name === 'string' && record.name.trim() ? record.name.trim() : 'Produto',
+    price: extractPrice(record),
   };
+}
+
+/**
+ * Best-effort real price for the catalogue row. Reads the common product
+ * shapes (reais in `price`/`amount`, or cents in `priceCents`). Returns null
+ * when no numeric price exists so the UI shows nothing rather than a fake
+ * value (honest-state contract).
+ */
+function extractPrice(record: Record<string, unknown>): number | null {
+  const direct = record.price ?? record.amount ?? record.value;
+  if (typeof direct === 'number' && Number.isFinite(direct)) {
+    return direct;
+  }
+  if (typeof direct === 'string' && direct.trim() && Number.isFinite(Number(direct))) {
+    return Number(direct);
+  }
+  const cents = record.priceCents ?? record.amountCents;
+  if (typeof cents === 'number' && Number.isFinite(cents)) {
+    return Math.round(cents) / 100;
+  }
+  return null;
 }

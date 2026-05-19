@@ -1,0 +1,37 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1778957884230_24c88c18",
+  "ts": "2026-05-16T18:58:04.230Z",
+  "file": "scripts/mcp/atomic-edit/server.ts",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 1321,
+    "lineRewriteSurfaceChars": 420,
+    "expansionFactorAvoided": 0.32,
+    "bytesNet": 901,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "afterSha256": "ca14d8401b2eefe0ee0c704eae4400a39bd3900ff26652084c5a5d9f40cb4e60",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- scripts/mcp/atomic-edit/server.ts (atomic char-level)\u001b[0m\n  }\n  \n  function \u001b[31m[-p-]\u001b[0m\u001b[32m{+ne+}\u001b[0ma\u001b[32m{+restPa+}\u001b[0mckage\u001b[31m[-V-]\u001b[0m\u001b[32m{+R+}\u001b[0me\u001b[32m{+lPath(+}\u001b[0mr\u001b[32m{+epoRoot: str+}\u001b[0mi\u001b[31m[-f-]\u001b[0m\u001b[32m{+ng, relPath: str+}\u001b[0mi\u001b[32m{+ng): string | null {\n    +}\u001b[0mc\u001b[31m[-a-]\u001b[0m\u001b[32m{+ons+}\u001b[0mt\u001b[32m{+ normal+}\u001b[0mi\u001b[32m{+zed = n+}\u001b[0mo\u001b[32m{+rmalizeRepoRelPath(relPath);\n    co+}\u001b[0mn\u001b[31m[-C-]\u001b[0m\u001b[32m{+st parts = n+}\u001b[0mo\u001b[32m{+r+}\u001b[0mm\u001b[32m{+alized === '.' ? [] : nor+}\u001b[0mma\u001b[32m{+lized.split('/').filter(Boolea+}\u001b[0mn\u001b[32m{+);\n    for (let +}\u001b[0md\u001b[32m{+epth = part+}\u001b[0ms\u001b[32m{+.length; depth >= 0; depth--) {\n      const packageRelPath = parts.slice+}\u001b[0m(\u001b[32m{+0, depth).join('/') || '.';\n      +}\u001b[0mc\u001b[32m{+onst packageJsonPath = path.join(repoRoot, packageRelPath === '.' ? '' : packageRelPath, 'package.json');\n      if (fs.existsSync(packageJsonPath)) return packageRelPath;\n    }\n    return null;\n  }\n  \n  function packageVerificationPlan(\n    repoRoot: string,\n    c+}\u001b[0mwdRelPath: string\u001b[32m{+,\n    allowedPaths: string[],\n  +}\u001b[0m): \u001b[32m{+{ packageRelPath: +}\u001b[0mstring\u001b[32m{+; commands: string+}\u001b[0m[] \u001b[32m{+} +}\u001b[0m{\n    const \u001b[31m[-pr-]\u001b[0m\u001b[32m{+candidat+}\u001b[0me\u001b[32m{+s = [...allowedPaths, cwdRelPath].+}\u001b[0mfi\u001b[31m[-x-]\u001b[0m\u001b[32m{+lter(Boolean);\n  +}\u001b[0m \u001b[32m{+ const packageRelPath +}\u001b[0m= c\u001b[31m[-w-]\u001b[0m\u001b[32m{+an+}\u001b[0md\u001b[32m{+idates\n      .map((candidate) => nearestPackage+}\u001b[0mRelPath\u001b[32m{+(repoRoot,+}\u001b[0m \u001b[31m[-&&-]\u001b[0m\u001b[32m{+candidate))\n  +}\u001b[0m \u001b[32m{+   .find((+}\u001b[0mc\u001b[31m[-w-]\u001b[0m\u001b[32m{+an+}\u001b[0md\u001b[32m{+idate): candidate is string => Boolean(candidate)) ?? '.';\n    const prefix = package+}\u001b[0mRelPath !== '.' ? `npm --prefix ${shellPath(\u001b[32m{+pa+}\u001b[0mc\u001b[31m[-wd-]\u001b[0m\u001b[32m{+kage+}\u001b[0mRelPath)}` : 'npm';\n    return \u001b[32m{+{\n      packageRelPath,\n      commands: +}\u001b[0m[`${prefix} run lint:check`, `${prefix} run typecheck`, `${prefix} test`, `${prefix} run build`]\u001b[32m{+,\n    }+}\u001b[0m;\n  }\n  ",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~1321 character(s) in `scripts/mcp/atomic-edit/server.ts` (sub-line atomic edit, expansion 0.32× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

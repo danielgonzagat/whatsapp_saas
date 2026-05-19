@@ -1,0 +1,59 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779029276261_ae97fdc8",
+  "ts": "2026-05-17T14:47:56.261Z",
+  "file": "docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "targetUnit": "text_span",
+  "intention": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 1227,
+    "lineRewriteSurfaceChars": 1249,
+    "expansionFactorAvoided": 1.02,
+    "bytesNet": -145,
+    "lineRewriteAvoided": true
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "2991587fba170a4781adf0d2629315ebdf541487e611182fa6232a0306f3a0ed",
+  "proposedSha256": "2991587fba170a4781adf0d2629315ebdf541487e611182fa6232a0306f3a0ed",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs (atomic char-level)\u001b[0m\n    const symbols = symbolSpans.length > 0 ? symbolSpans.map((span) => span.name) : symbolInventory(targetText);\n    const dominantSpan = symbolSpans[0] || null;\n    const clusters = symbol\u001b[32m{+Dependency+}\u001b[0mClusters(symbol\u001b[32m{+Span+}\u001b[0ms, s\u001b[32m{+ymbols, s+}\u001b[0mcopePrefix, targetExt);\n    const \u001b[31m[-dominan-]\u001b[0m\u001b[32m{+clus+}\u001b[0mt\u001b[32m{+er+}\u001b[0mTemplate\u001b[32m{+s+}\u001b[0m = \u001b[31m[-do-]\u001b[0m\u001b[32m{+clusters.+}\u001b[0mm\u001b[31m[-in-]\u001b[0ma\u001b[31m[-ntS-]\u001b[0mp\u001b[31m[-an\n     -]\u001b[0m\u001b[32m{+((cluster)+}\u001b[0m \u001b[31m[-?-]\u001b[0m\u001b[32m{+=>+}\u001b[0m \u001b[31m[-[-]\u001b[0m\u001b[32m{+(+}\u001b[0m{\n      \u001b[31m[-    -]\u001b[0mfile: \u001b[31m[-s-]\u001b[0mc\u001b[31m[-op-]\u001b[0m\u001b[32m{+lust+}\u001b[0me\u001b[31m[-P-]\u001b[0mr\u001b[31m[-efix + '-' + dominantSpan-]\u001b[0m.fileHint\u001b[31m[-Token + targetExt-]\u001b[0m,\n      \u001b[31m[-    -]\u001b[0mresponsibility: 'Extract \u001b[31m[-th-]\u001b[0m\u001b[32m{+d+}\u001b[0me\u001b[31m[- curr-]\u001b[0m\u001b[32m{+p+}\u001b[0men\u001b[31m[-t -]\u001b[0md\u001b[31m[-omina-]\u001b[0m\u001b[32m{+e+}\u001b[0mn\u001b[31m[-t m-]\u001b[0m\u001b[32m{+cy-coh+}\u001b[0me\u001b[31m[-a-]\u001b[0ms\u001b[32m{+ive cl+}\u001b[0mu\u001b[31m[-r-]\u001b[0m\u001b[32m{+st+}\u001b[0me\u001b[31m[-d-]\u001b[0m\u001b[32m{+r+}\u001b[0m r\u001b[31m[-egi-]\u001b[0mo\u001b[31m[-n:-]\u001b[0m\u001b[32m{+oted+}\u001b[0m \u001b[32m{+at +}\u001b[0m' + \u001b[31m[-dominan-]\u001b[0m\u001b[32m{+clus+}\u001b[0mt\u001b[31m[-Span.nam-]\u001b[0me\u001b[32m{+r.root+}\u001b[0m + '\u001b[32m{+:+}\u001b[0m \u001b[31m[-(-]\u001b[0m' + \u001b[31m[-dominan-]\u001b[0m\u001b[32m{+clus+}\u001b[0mt\u001b[31m[-Span-]\u001b[0m\u001b[32m{+er+}\u001b[0m.\u001b[32m{+symbo+}\u001b[0ml\u001b[32m{+s.jo+}\u001b[0min\u001b[31m[-es + -]\u001b[0m\u001b[32m{+(+}\u001b[0m'\u001b[32m{+,+}\u001b[0m \u001b[31m[-lines).-]\u001b[0m'\u001b[32m{+)+}\u001b[0m,\n      \u001b[31m[-    -]\u001b[0m\u001b[32m{+ob+}\u001b[0ms\u001b[31m[-plitWh-]\u001b[0me\u001b[32m{+rvedLi+}\u001b[0mn\u001b[32m{+es+}\u001b[0m: \u001b[31m[-'Sp-]\u001b[0m\u001b[32m{+c+}\u001b[0ml\u001b[31m[-i-]\u001b[0m\u001b[32m{+us+}\u001b[0mt\u001b[31m[- by -]\u001b[0m\u001b[32m{+er.t+}\u001b[0mo\u001b[32m{+talO+}\u001b[0mbserved\u001b[31m[- -]\u001b[0m\u001b[32m{+Li+}\u001b[0mnes\u001b[32m{+,\n      preserveToge+}\u001b[0mt\u001b[32m{+h+}\u001b[0me\u001b[31m[-d-]\u001b[0m\u001b[32m{+r:+}\u001b[0m \u001b[32m{+'Keep t+}\u001b[0mhe\u001b[32m{+se symbo+}\u001b[0ml\u001b[31m[-p-]\u001b[0m\u001b[32m{+s tog+}\u001b[0me\u001b[32m{+the+}\u001b[0mr \u001b[31m[-cal-]\u001b[0m\u001b[32m{+un+}\u001b[0ml\u001b[32m{+e+}\u001b[0ms\u001b[32m{+s+}\u001b[0m \u001b[31m[-if-]\u001b[0m\u001b[32m{+a+}\u001b[0m validation \u001b[31m[-sh-]\u001b[0mo\u001b[31m[-ws the -]\u001b[0mr\u001b[31m[-egion-]\u001b[0m \u001b[31m[-mixe-]\u001b[0ms\u001b[31m[- -]\u001b[0m\u001b[32m{+co+}\u001b[0mre\u001b[31m[-spon-]\u001b[0m\u001b[32m{+card +}\u001b[0msi\u001b[31m[-bi-]\u001b[0m\u001b[32m{+gna+}\u001b[0ml\u001b[31m[-ities.',\n  -]\u001b[0m \u001b[31m[-     }]\n      : [];\n    c-]\u001b[0m\u001b[32m{+pr+}\u001b[0mo\u001b[31m[-n-]\u001b[0m\u001b[32m{+ve+}\u001b[0ms\u001b[31m[-t-]\u001b[0m \u001b[31m[-clus-]\u001b[0mt\u001b[31m[-erTempl-]\u001b[0m\u001b[32m{+h+}\u001b[0mat\u001b[31m[-es-]\u001b[0m \u001b[31m[-=-]\u001b[0m\u001b[32m{+one+}\u001b[0m \u001b[31m[-clust-]\u001b[0m\u001b[32m{+m+}\u001b[0me\u001b[31m[-rs.-]\u001b[0mm\u001b[31m[-ap((clust-]\u001b[0m\u001b[32m{+b+}\u001b[0mer\u001b[31m[-)-]\u001b[0m \u001b[31m[-=> ({\n      file: clust-]\u001b[0m\u001b[32m{+b+}\u001b[0me\u001b[31m[-r.fi-]\u001b[0ml\u001b[31m[-eHint,\n      resp-]\u001b[0mon\u001b[32m{+g+}\u001b[0ms\u001b[31m[-ibility:-]\u001b[0m \u001b[31m[-'Ex-]\u001b[0mt\u001b[31m[-ract the-]\u001b[0m\u001b[32m{+o+}\u001b[0m \u001b[31m[-c-]\u001b[0m\u001b[32m{+an+}\u001b[0mo\u001b[32m{+t+}\u001b[0mhe\u001b[31m[-sive-]\u001b[0m\u001b[32m{+r+}\u001b[0m observed \u001b[31m[-symbol clust-]\u001b[0m\u001b[32m{+d+}\u001b[0me\u001b[31m[-r: ' + clust-]\u001b[0m\u001b[32m{+p+}\u001b[0me\u001b[31m[-r.s-]\u001b[0m\u001b[32m{+ndenc+}\u001b[0my\u001b[31m[-mb-]\u001b[0m\u001b[32m{+ r+}\u001b[0mo\u001b[31m[-ls.j-]\u001b[0mo\u001b[31m[-in(', -]\u001b[0m\u001b[32m{+t.+}\u001b[0m'\u001b[31m[-)-]\u001b[0m,\n      splitWhen: '\u001b[31m[-If-]\u001b[0m\u001b[32m{+Split+}\u001b[0m \u001b[31m[-sc-]\u001b[0mo\u001b[31m[-recard,-]\u001b[0m\u001b[32m{+nly+}\u001b[0m \u001b[32m{+a+}\u001b[0ml\u001b[31m[-i-]\u001b[0m\u001b[32m{+o+}\u001b[0mn\u001b[31m[-t,-]\u001b[0m\u001b[32m{+g+}\u001b[0m \u001b[31m[-or-]\u001b[0m\u001b[32m{+an+}\u001b[0m \u001b[31m[-f-]\u001b[0mo\u001b[31m[-cu-]\u001b[0m\u001b[32m{+b+}\u001b[0mse\u001b[32m{+rve+}\u001b[0md \u001b[31m[-t-]\u001b[0m\u001b[32m{+d+}\u001b[0me\u001b[31m[-sts-]\u001b[0m\u001b[32m{+pendency+}\u001b[0m \u001b[31m[-sh-]\u001b[0m\u001b[32m{+edge +}\u001b[0mo\u001b[31m[-w-]\u001b[0m\u001b[32m{+r+}\u001b[0m \u001b[32m{+repea+}\u001b[0mt\u001b[31m[-his-]\u001b[0m\u001b[32m{+ed+}\u001b[0m \u001b[31m[-c-]\u001b[0m\u001b[32m{+va+}\u001b[0ml\u001b[31m[-us-]\u001b[0m\u001b[32m{+ida+}\u001b[0mt\u001b[31m[-er m-]\u001b[0mi\u001b[31m[-xes resp-]\u001b[0mon\u001b[31m[-sib-]\u001b[0m\u001b[32m{+ fa+}\u001b[0mil\u001b[31m[-iti-]\u001b[0m\u001b[32m{+ur+}\u001b[0me\u001b[31m[-s-]\u001b[0m, \u001b[31m[-spli-]\u001b[0m\u001b[32m{+no+}\u001b[0mt by \u001b[31m[-th-]\u001b[0m\u001b[32m{+a fix+}\u001b[0me\u001b[32m{+d+}\u001b[0m \u001b[31m[-n-]\u001b[0m\u001b[32m{+fil+}\u001b[0me\u001b[31m[-xt-]\u001b[0m o\u001b[31m[-bse-]\u001b[0mr\u001b[31m[-ved-]\u001b[0m \u001b[31m[-toke-]\u001b[0m\u001b[32m{+li+}\u001b[0mn\u001b[32m{+e+}\u001b[0m \u001b[31m[-gro-]\u001b[0m\u001b[32m{+b+}\u001b[0mu\u001b[31m[-p-]\u001b[0m\u001b[32m{+dget+}\u001b[0m.',\n    }));\n    const fallbackTemplate = [{",
+  "preservedZones": [
+    {
+      "kind": "unchanged_context",
+      "description": "Everything outside the modified zone is preserved byte-for-byte by the atomic operation."
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "oldTextHash": "789afdb585dabc6debed4df0a6a40867113fadaa901ea8c5b4f61956e1cd8ab5",
+      "newTextHash": "2991587fba170a4781adf0d2629315ebdf541487e611182fa6232a0306f3a0ed",
+      "description": "The operation changed the highlighted span shown in inlinePreview."
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~1227 character(s) in `docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs` (sub-line atomic edit, expansion 1.02× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

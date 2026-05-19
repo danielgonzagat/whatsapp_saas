@@ -1,0 +1,80 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779164894247_6e38fc67",
+  "ts": "2026-05-19T04:28:14.248Z",
+  "file": "frontend/src/components/kloel/marketing/MarketingView.tsx",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "targetUnit": "text_span",
+  "intention": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 659,
+    "lineRewriteSurfaceChars": 469,
+    "expansionFactorAvoided": 0.71,
+    "bytesNet": 190,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "234d967e84b09ed08238af722baabab195cec0073f07d49ad965eeb81c8a661b",
+  "proposedSha256": "234d967e84b09ed08238af722baabab195cec0073f07d49ad965eeb81c8a661b",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- frontend/src/components/kloel/marketing/MarketingView.tsx (atomic char-level)\u001b[0m\n  \n    const shouldShowWizard = useCallback(\n      (\u001b[32m{+_+}\u001b[0mchannelKey: string): boolean => {\n        \u001b[31m[-if-]\u001b[0m\u001b[32m{+//+}\u001b[0m \u001b[31m[-(!con-]\u001b[0m\u001b[32m{+Ow+}\u001b[0mne\u001b[32m{+r dire+}\u001b[0mcti\u001b[31m[-onS-]\u001b[0m\u001b[32m{+ve (2026-05-19): +}\u001b[0mt\u001b[32m{+he offici+}\u001b[0ma\u001b[31m[-tu-]\u001b[0m\u001b[32m{+l 4-+}\u001b[0ms\u001b[31m[-)-]\u001b[0m\u001b[32m{+tep+}\u001b[0m \u001b[31m[-{-]\u001b[0m\u001b[32m{+wizard+}\u001b[0m\n        \u001b[31m[- -]\u001b[0m\u001b[32m{+//+}\u001b[0m \u001b[31m[-r-]\u001b[0m\u001b[32m{+(Con+}\u001b[0me\u001b[32m{+c+}\u001b[0mt\u001b[32m{+ar/Prod+}\u001b[0mu\u001b[32m{+tos/A+}\u001b[0mr\u001b[32m{+se+}\u001b[0mn\u001b[31m[- f-]\u001b[0mal\u001b[31m[-se;\n   -]\u001b[0m\u001b[32m{+/Configurar)+}\u001b[0m \u001b[32m{+is+}\u001b[0m \u001b[32m{+THE+}\u001b[0m \u001b[32m{+screen+}\u001b[0m \u001b[32m{+for+}\u001b[0m \u001b[31m[-}-]\u001b[0m\u001b[32m{+every+}\u001b[0m\n        \u001b[31m[-const-]\u001b[0m\u001b[32m{+//+}\u001b[0m c\u001b[31m[-o-]\u001b[0m\u001b[32m{+ha+}\u001b[0mnne\u001b[31m[-cted-]\u001b[0m\u001b[32m{+l.+}\u001b[0m \u001b[31m[-=-]\u001b[0m\u001b[32m{+It+}\u001b[0m \u001b[31m[-i-]\u001b[0m\u001b[32m{+mu+}\u001b[0ms\u001b[31m[-Ch-]\u001b[0m\u001b[32m{+t NEVER f+}\u001b[0ma\u001b[31m[-nne-]\u001b[0ml\u001b[31m[-C-]\u001b[0m\u001b[32m{+l back t+}\u001b[0mo\u001b[31m[-nn-]\u001b[0m\u001b[32m{+ th+}\u001b[0me\u001b[32m{+ lega+}\u001b[0mc\u001b[31m[-t-]\u001b[0m\u001b[32m{+y p+}\u001b[0me\u001b[31m[-d(-]\u001b[0m\u001b[32m{+r-+}\u001b[0mchannel\u001b[31m[-Key);-]\u001b[0m\u001b[32m{+ tab —+}\u001b[0m\n        \u001b[31m[-if-]\u001b[0m\u001b[32m{+//+}\u001b[0m \u001b[31m[-(!-]\u001b[0m\u001b[32m{+that +}\u001b[0mcon\u001b[32m{+ditio+}\u001b[0mn\u001b[31m[-e-]\u001b[0m\u001b[32m{+al +}\u001b[0mc\u001b[31m[-t-]\u001b[0m\u001b[32m{+aus+}\u001b[0med\u001b[31m[-)-]\u001b[0m \u001b[31m[-{\n      -]\u001b[0m\u001b[32m{+a+}\u001b[0m \u001b[32m{+flash-then-revert:+}\u001b[0m \u001b[32m{+the+}\u001b[0m \u001b[32m{+wizard+}\u001b[0m re\u001b[31m[-tur-]\u001b[0mn\u001b[31m[- t-]\u001b[0m\u001b[32m{+de+}\u001b[0mr\u001b[31m[-u-]\u001b[0me\u001b[31m[-;-]\u001b[0m\u001b[32m{+d+}\u001b[0m\n        \u001b[31m[-}\n       -]\u001b[0m\u001b[32m{+//+}\u001b[0m \u001b[31m[-c-]\u001b[0m\u001b[32m{+f+}\u001b[0mo\u001b[31m[-nst-]\u001b[0m\u001b[32m{+r+}\u001b[0m \u001b[32m{+~1+}\u001b[0ms\u001b[31m[-etup-]\u001b[0m \u001b[31m[-=-]\u001b[0m\u001b[32m{+while+}\u001b[0m channelSetupMap\u001b[31m[-[ch-]\u001b[0m\u001b[32m{+ w+}\u001b[0ma\u001b[32m{+s empty, the+}\u001b[0mn\u001b[32m{+ o+}\u001b[0mn\u001b[32m{+c+}\u001b[0me\u001b[32m{+ it +}\u001b[0ml\u001b[31m[-K-]\u001b[0m\u001b[32m{+oad+}\u001b[0me\u001b[31m[-y];\n   -]\u001b[0m\u001b[32m{+d+}\u001b[0m \u001b[32m{+with\n  +}\u001b[0m    \u001b[31m[-if-]\u001b[0m \u001b[31m[-(!setup-]\u001b[0m \u001b[31m[-||-]\u001b[0m\u001b[32m{+//+}\u001b[0m \u001b[31m[-setup.-]\u001b[0mcompletedAt \u001b[31m[-===-]\u001b[0m\u001b[32m{+set+}\u001b[0m \u001b[31m[-nu-]\u001b[0m\u001b[32m{+the gate f+}\u001b[0ml\u001b[32m{+ipped to the o+}\u001b[0ml\u001b[31m[-)-]\u001b[0m\u001b[32m{+d+}\u001b[0m \u001b[31m[-{-]\u001b[0m\u001b[32m{+tab and its broken+}\u001b[0m\n        \u001b[32m{+//+}\u001b[0m \u001b[32m{+channel+}\u001b[0m re\u001b[32m{+c+}\u001b[0mt\u001b[31m[-ur-]\u001b[0m\u001b[32m{+a+}\u001b[0mn\u001b[31m[- tru-]\u001b[0m\u001b[32m{+gl+}\u001b[0me\u001b[31m[-;\n    -]\u001b[0m\u001b[32m{+s.+}\u001b[0m \u001b[32m{+Always+}\u001b[0m \u001b[32m{+render+}\u001b[0m \u001b[32m{+the+}\u001b[0m \u001b[31m[-}-]\u001b[0m\u001b[32m{+wizard.+}\u001b[0m\n        return \u001b[31m[-fals-]\u001b[0m\u001b[32m{+tru+}\u001b[0me;\n      },\n      [connectionStatus, channelSetupMap, isChannelConnected],",
+  "preservedZones": [
+    {
+      "kind": "prefix_preserved",
+      "description": "Bytes 0–13358 — prefix preserved unchanged",
+      "byteStart": 0,
+      "byteEnd": 13359,
+      "byteLength": 13359,
+      "beforeHash": "d1f67f0bf5ce8fda78ec6bcce2cb7cd0cc29aeecba90644ad3ab667883c76f85",
+      "afterHash": "d1f67f0bf5ce8fda78ec6bcce2cb7cd0cc29aeecba90644ad3ab667883c76f85",
+      "sample": "  },\n    [connectionStatus],\n  );\n\n  const shouldShowWizard = useCallback(\n    ("
+    },
+    {
+      "kind": "suffix_preserved",
+      "description": "Bytes 13708–20106 — suffix preserved unchanged",
+      "byteStart": 13708,
+      "byteEnd": 20107,
+      "byteLength": 6399,
+      "beforeHash": "88115858b1d1be1eb8b1e7bf5c3b3dca81a92d361c5e70dc416f1b46aa06c0cf",
+      "afterHash": "88115858b1d1be1eb8b1e7bf5c3b3dca81a92d361c5e70dc416f1b46aa06c0cf",
+      "sample": "e;\n    },\n    [connectionStatus, channelSetupMap, isChannelConnected],\n  );\n\n  r"
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "byteStart": 13359,
+      "byteEnd": 13708,
+      "newByteLength": 539,
+      "oldTextHash": "b553b140246504dc2086f58491eede23b4d4e8986a3af8691a2393b3c797e6b1",
+      "newTextHash": "967810c966f7f26495ca167bee77d787e789b1743ac19f10e5d50e4b6d2a1fd9",
+      "oldSample": "channelKey: string): boolean => {\n      if (!connectionStatus) {\n        return false;\n      }\n      const connected = isChannelConnected(channelKey);\n      if (!connected) {\n        return true;\n    ",
+      "newSample": "_channelKey: string): boolean => {\n      // Owner directive (2026-05-19): the official 4-step wizard\n      // (Conectar/Produtos/Arsenal/Configurar) is THE screen for every\n      // channel. It must N",
+      "description": "Replace 349 bytes at offset 13359 with 539 bytes"
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~659 character(s) in `frontend/src/components/kloel/marketing/MarketingView.tsx` (sub-line atomic edit, expansion 0.71× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

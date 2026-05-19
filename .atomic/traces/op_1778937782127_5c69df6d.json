@@ -1,0 +1,37 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1778937782127_5c69df6d",
+  "ts": "2026-05-16T13:23:02.127Z",
+  "file": "backend/src/admin/chat/admin-chat-session.service.ts",
+  "operation": "edit_symbol:replace",
+  "operator": "edit_symbol:replace",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 0,
+    "lineRewriteSurfaceChars": 0,
+    "expansionFactorAvoided": 0,
+    "bytesNet": 73,
+    "lineRewriteAvoided": true
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "afterSha256": "4c8b5262f9b854e2361c1c5fb2c9bb954134202eca3b64343ee8c7c717ea2436",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- backend/src/admin/chat/admin-chat-session.service.ts (atomic char-level)\u001b[0m\n  \n    async createSession(input: CreateSessionInput): Promise<AdminChatSession> {\n      \u001b[32m{+  +}\u001b[0mconst session = await this.prisma.adminChatSession.create({\n        \u001b[32m{+  +}\u001b[0mdata: {\n          \u001b[32m{+  +}\u001b[0madminUserId: input.adminUserId,\n          \u001b[32m{+  +}\u001b[0mworkspaceId: input.workspaceId,\n          \u001b[32m{+  +}\u001b[0mtitle: input.title?.trim() || null,\n          \u001b[32m{+  +}\u001b[0mexpiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),\n        \u001b[32m{+  +}\u001b[0m},\n      \u001b[32m{+  +}\u001b[0m});\n  \n      \u001b[32m{+  +}\u001b[0mvoid this.audit.append({\n        \u001b[32m{+  +}\u001b[0madminUserId: input.adminUserId,\n        \u001b[32m{+  +}\u001b[0maction: 'CREATE_ADMIN_CHAT_SESSION',\n        \u001b[32m{+  +}\u001b[0mentityType: 'AdminChatSession',\n        \u001b[32m{+  +}\u001b[0mentityId: session.id,\n        \u001b[32m{+  +}\u001b[0mdetails: { workspaceId: input.workspaceId, title: input.title },\n      \u001b[32m{+  +}\u001b[0m});\n  \n      \u001b[32m{+  +}\u001b[0mreturn \u001b[32m{+thi+}\u001b[0ms\u001b[32m{+.g+}\u001b[0me\u001b[32m{+tSe+}\u001b[0mssion\u001b[32m{+(session.id, input.workspaceId)+}\u001b[0m;\n    \u001b[32m{+  +}\u001b[0m}\n  \n    async listSessions(",
+  "audit": {
+    "whatChanged": "Operation `edit_symbol:replace` changed ~0 character(s) in `backend/src/admin/chat/admin-chat-session.service.ts` (sub-line atomic edit, expansion 0× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

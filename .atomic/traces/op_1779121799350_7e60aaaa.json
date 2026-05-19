@@ -1,0 +1,59 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779121799350_7e60aaaa",
+  "ts": "2026-05-18T16:29:59.350Z",
+  "file": "scripts/mcp/atomic-edit/server.ts",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "targetUnit": "text_span",
+  "intention": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 1034,
+    "lineRewriteSurfaceChars": 842,
+    "expansionFactorAvoided": 0.81,
+    "bytesNet": 192,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "a2f7ac9d11af167bbbb45751ab6a9cc153521f30cf486b8ba84918c1373d5941",
+  "proposedSha256": "a2f7ac9d11af167bbbb45751ab6a9cc153521f30cf486b8ba84918c1373d5941",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- scripts/mcp/atomic-edit/server.ts (atomic char-level)\u001b[0m\n        const preview = a.preview ?? false;\n        const inlinePreview = characterDiff(before, '', relPath);\n        const \u001b[32m{+delZones = compu+}\u001b[0mt\u001b[32m{+eZones(befo+}\u001b[0mr\u001b[32m{+e, '');\n        const tr+}\u001b[0mace = buildTrace({\n          file: relPath,\n          repoRoot,\n          operator: 'atomic_delete_file',\n          before,\n          newText: '',\n          inlinePreview,\n          validation: { language: 'generic', before: 0, after: 0 },\n          metrics: {\n            changedChars: before.length,\n            lineRewriteSurfaceChars: before.length,\n            expansionFactorAvoided: 1,\n            bytesNet: -before.length,\n          },\u001b[32m{+\n          preservedZones: delZones.preservedZones,\n          modifiedZones: delZones.modifiedZones,\n          movementZones: delZones.movementZones,+}\u001b[0m\n          targetUnit: 'file',\n          intention: `delete ${relPath} (${before.length} bytes)`,",
+  "preservedZones": [
+    {
+      "kind": "unchanged_context",
+      "description": "Everything outside the modified zone is preserved byte-for-byte by the atomic operation."
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "oldTextHash": "5e1632c84cd8ada0c3dc56987e418e691a366d60610abcf444eae63d60d86398",
+      "newTextHash": "a2f7ac9d11af167bbbb45751ab6a9cc153521f30cf486b8ba84918c1373d5941",
+      "description": "The operation changed the highlighted span shown in inlinePreview."
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~1034 character(s) in `scripts/mcp/atomic-edit/server.ts` (sub-line atomic edit, expansion 0.81× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

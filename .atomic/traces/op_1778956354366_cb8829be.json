@@ -1,0 +1,37 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1778956354366_cb8829be",
+  "ts": "2026-05-16T18:32:34.366Z",
+  "file": "scripts/mcp/atomic-edit/server.ts",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 150,
+    "lineRewriteSurfaceChars": 191,
+    "expansionFactorAvoided": 1.27,
+    "bytesNet": 57,
+    "lineRewriteAvoided": true
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "afterSha256": "249523c13a8d83134ba1a34a7d6d3a486803011c8f394c4ce641adf038d76d08",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- scripts/mcp/atomic-edit/server.ts (atomic char-level)\u001b[0m\n          .array(z.string())\n          .min(1)\n          .describe('repo-relative paths \u001b[32m{+or absolu+}\u001b[0mt\u001b[32m{+e pat+}\u001b[0mh\u001b[32m{+s insid+}\u001b[0me \u001b[32m{+the selected repo/worktree th+}\u001b[0ma\u001b[32m{+t the a+}\u001b[0mnalyzer is allowed to change, e.g. [\"worker\"]'),\n        preview: z.boolean().optional().describe('dry-run: validate analyzer output, do not write'),\n      },",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~150 character(s) in `scripts/mcp/atomic-edit/server.ts` (sub-line atomic edit, expansion 1.27× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

@@ -1,0 +1,80 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779207095095_7ed2cd8a",
+  "ts": "2026-05-19T16:11:35.095Z",
+  "file": "backend/src/kloel/brain-capability-executor.service.ts",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "targetUnit": "text_span",
+  "intention": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 149,
+    "lineRewriteSurfaceChars": 98,
+    "expansionFactorAvoided": 0.66,
+    "bytesNet": 51,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "69a1577a687d0dd8ead8de25698434112a759513bbb8f0e055368b1e33405704",
+  "proposedSha256": "69a1577a687d0dd8ead8de25698434112a759513bbb8f0e055368b1e33405704",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- backend/src/kloel/brain-capability-executor.service.ts (atomic char-level)\u001b[0m\n          },\n          perceptionSnapshot: { channel: 'chat', workspaceId },\n  \u001b[32m{+        capabilityIds: [...OPERATOR_CAPABILITIES],+}\u001b[0m\n          cognitiveSubstrate,\n        };",
+  "preservedZones": [
+    {
+      "kind": "prefix_preserved",
+      "description": "Bytes 0–17499 — prefix preserved unchanged",
+      "byteStart": 0,
+      "byteEnd": 17500,
+      "byteLength": 17500,
+      "beforeHash": "a03017508981da55c2743bb0f9cf3fba369ec317bbee488fcd560f48aef16dd1",
+      "afterHash": "a03017508981da55c2743bb0f9cf3fba369ec317bbee488fcd560f48aef16dd1",
+      "sample": "      },\n        perceptionSnapshot: { channel: 'chat', workspaceId },\n        c"
+    },
+    {
+      "kind": "suffix_preserved",
+      "description": "Bytes 17500–26554 — suffix preserved unchanged",
+      "byteStart": 17500,
+      "byteEnd": 26555,
+      "byteLength": 9055,
+      "beforeHash": "a977e0cc9382399d936b8708b65ab35fe31de767657751760a109a8a3eff1e1e",
+      "afterHash": "a977e0cc9382399d936b8708b65ab35fe31de767657751760a109a8a3eff1e1e",
+      "sample": "ognitiveSubstrate,\n      };\n      const result = await this.abiBuilder.build(inp"
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "byteStart": 17500,
+      "byteEnd": 17500,
+      "newByteLength": 51,
+      "oldTextHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "newTextHash": "b38bd13b2aab5e86e8d07c7dac78e38b31534cb77d2a58ef8d39ff11669a1622",
+      "oldSample": "",
+      "newSample": "apabilityIds: [...OPERATOR_CAPABILITIES],\n        c",
+      "description": "Insert 51 bytes at offset 17500"
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~149 character(s) in `backend/src/kloel/brain-capability-executor.service.ts` (sub-line atomic edit, expansion 0.66× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

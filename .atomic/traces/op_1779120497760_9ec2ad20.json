@@ -1,0 +1,59 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779120497760_9ec2ad20",
+  "ts": "2026-05-18T16:08:17.760Z",
+  "file": "scripts/mcp/atomic-edit/.smoke-await.79684.ts",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "semantic:edit",
+  "operator": "semantic:edit",
+  "targetUnit": "text_span",
+  "intention": "semantic:edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 0,
+    "lineRewriteSurfaceChars": 0,
+    "expansionFactorAvoided": 0,
+    "bytesNet": 6,
+    "lineRewriteAvoided": true
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "4b27188f14886ca7983aba0bee559d6787f5257902ab24f06cc2577bc45f28a7",
+  "proposedSha256": "4b27188f14886ca7983aba0bee559d6787f5257902ab24f06cc2577bc45f28a7",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- scripts/mcp/atomic-edit/.smoke-await.79684.ts (atomic char-level)\u001b[0m\n  async function build() {\n    const ok = \u001b[32m{+await +}\u001b[0mcompute(1, 2);\n    return ok;\n  }",
+  "preservedZones": [
+    {
+      "kind": "unchanged_context",
+      "description": "Everything outside the modified zone is preserved byte-for-byte by the atomic operation."
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "oldTextHash": "b86c1590c1088b81da69e1984a4b7a9235156ecc396bb2a9e5b6627966196c05",
+      "newTextHash": "4b27188f14886ca7983aba0bee559d6787f5257902ab24f06cc2577bc45f28a7",
+      "description": "The operation changed the highlighted span shown in inlinePreview."
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `semantic:edit` changed ~0 character(s) in `scripts/mcp/atomic-edit/.smoke-await.79684.ts` (sub-line atomic edit, expansion 0× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

@@ -1,0 +1,59 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779120634950_07122b03",
+  "ts": "2026-05-18T16:10:34.950Z",
+  "file": "scripts/mcp/atomic-edit/smoke.ts",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "targetUnit": "text_span",
+  "intention": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 367,
+    "lineRewriteSurfaceChars": 317,
+    "expansionFactorAvoided": 0.86,
+    "bytesNet": 50,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "4b83c4e8d051bf51f84a87098ec358c2c3375165b77f4b11d63e8eef7604da26",
+  "proposedSha256": "4b83c4e8d051bf51f84a87098ec358c2c3375165b77f4b11d63e8eef7604da26",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- scripts/mcp/atomic-edit/smoke.ts (atomic char-level)\u001b[0m\n      const names = tools.tools.map((t) => t.name).sort();\n      check(\n        'server lists all 3\u001b[31m[-5-]\u001b[0m\u001b[32m{+7+}\u001b[0m tools (incl. atomic_create_file + atomic_delete_file + code_file_stat + analyzer transaction + product apex layer + rename property key + add await to call + insert after anchor + insert before anchor + replace between anchors + replace text in anchor region\u001b[32m{+ + atomic_edit unified router + code_outline_batch+}\u001b[0m)',\n        names.length === 3\u001b[31m[-5-]\u001b[0m\u001b[32m{+7+}\u001b[0m &&\n          names.includes('atomic_create_file') &&\n          names.includes('atomic_delete_file') &&",
+  "preservedZones": [
+    {
+      "kind": "unchanged_context",
+      "description": "Everything outside the modified zone is preserved byte-for-byte by the atomic operation."
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "oldTextHash": "3e0995b4e9f3a863a110cb4374577574d0da15e3a9070891ddc495c68d7850e8",
+      "newTextHash": "4b83c4e8d051bf51f84a87098ec358c2c3375165b77f4b11d63e8eef7604da26",
+      "description": "The operation changed the highlighted span shown in inlinePreview."
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~367 character(s) in `scripts/mcp/atomic-edit/smoke.ts` (sub-line atomic edit, expansion 0.86× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

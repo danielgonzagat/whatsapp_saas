@@ -16,6 +16,7 @@ on:
   pull_request:
     branches:
       - main
+      - chore/purga-total-debt
     paths:
       # Run on any change that could affect the visual surface.
       - 'frontend/**'

@@ -1,0 +1,37 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1778952877607_39baf5c9",
+  "ts": "2026-05-16T17:34:37.608Z",
+  "file": "worker/processors/autopilot/cognition-reply.ts",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 354,
+    "lineRewriteSurfaceChars": 362,
+    "expansionFactorAvoided": 1.02,
+    "bytesNet": 30,
+    "lineRewriteAvoided": true
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "afterSha256": "8b0888f632b62a7c12a5074d8996254e28e24eac722b2e6a2fdb206003f87f95",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- worker/processors/autopilot/cognition-reply.ts (atomic char-level)\u001b[0m\n      .filter((message) => message.content && message.quotedMessageId);\n  \n    if (!normalizedMessages.length) \u001b[32m{+{\n      +}\u001b[0mreturn [];\n  \u001b[32m{+  }+}\u001b[0m\n  \u001b[32m{+\n  +}\u001b[0m  const fallback = () => buildMirroredReplyPlanFallback(normalizedMessages, params.draftReply);\n    if (normalizedMessages.length === 1) \u001b[32m{+{\n      +}\u001b[0mreturn fallback();\n  \u001b[32m{+  }+}\u001b[0m\n  \u001b[32m{+\n  +}\u001b[0m  const apiKey = params.settings?.openai?.apiKey || process.env.OPENAI_API_KEY;\n    if (!apiKey) \u001b[32m{+{\n      +}\u001b[0mreturn fallback();\u001b[32m{+\n    }+}\u001b[0m\n  \n    try {",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~354 character(s) in `worker/processors/autopilot/cognition-reply.ts` (sub-line atomic edit, expansion 1.02× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

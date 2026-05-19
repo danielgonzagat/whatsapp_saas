@@ -1,0 +1,37 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1778957658200_ea68b7b8",
+  "ts": "2026-05-16T18:54:18.200Z",
+  "file": "scripts/mcp/atomic-edit/atomic-only-hook.mjs",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 963,
+    "lineRewriteSurfaceChars": 147,
+    "expansionFactorAvoided": 0.15,
+    "bytesNet": 816,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "afterSha256": "ee414be16222990e8aa6f83aca414dc20e8a9553a5a7db437741334ba10b1604",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- scripts/mcp/atomic-edit/atomic-only-hook.mjs (atomic char-level)\u001b[0m\n    /\\.(ts|tsx|mts|cts|js|jsx|mjs|cjs|ipynb|json|py|go|rs|java|kt|c|h|cc|cpp|hpp|cs|rb|php|swift|scala|sh|bash|zsh|css|scss|less|sql|ya?ml|toml|prisma)$/i;\n  \n  function readStdin\u001b[32m{+Raw+}\u001b[0m() {\n    try {\n      return \u001b[31m[-JSON.pa-]\u001b[0mr\u001b[31m[-s-]\u001b[0me\u001b[31m[-(re-]\u001b[0madFileSync(0, 'utf8') || '\u001b[31m[-{}-]\u001b[0m'\u001b[31m[-)-]\u001b[0m;\n    } catch {\n      return \u001b[31m[-{}-]\u001b[0m\u001b[32m{+''+}\u001b[0m;\n    }\n  }\n  \n  \u001b[32m{+// FAIL CLOSED: an enfor+}\u001b[0mc\u001b[32m{+ement gate that cann+}\u001b[0mo\u001b[32m{+t parse its ow+}\u001b[0mn\u001b[32m{+ input mu+}\u001b[0mst \u001b[32m{+not\n  // wave the call through (the A/B loop proved fa+}\u001b[0mi\u001b[32m{+l-ope+}\u001b[0mn\u001b[32m{+ lets large-heredoc\n  // writes sli+}\u001b[0mp\u001b[32m{+ past). On parse fail+}\u001b[0mu\u001b[32m{+re we DENY; +}\u001b[0mt\u001b[32m{+he+}\u001b[0m \u001b[32m{+agent simply retries\n  // (transient) or routes the code change through mcp__atomic-edit__*.\n  const rawStdin +}\u001b[0m= readStdin\u001b[32m{+Raw+}\u001b[0m();\u001b[32m{+\n  let input;\n  try {\n    input = JSON.parse(rawStdin || '{}');\n  } catch {\n    process.stdout.write(\n      JSON.stringify({\n        hookSpecificOutput: {\n          hookEventName: 'PreToolUse',\n          permissionDecision: 'deny',\n          permissionDecisionReason:\n            'atomic-only hook could not parse the tool call; refusing for safety ' +\n            '(fail-closed). Retry the call, or make code changes via ' +\n            'mcp__atomic-edit__* (atomic_create_file / atomic_replace_range / …).',\n        },\n      }),\n    );\n    process.exit(0);\n  }+}\u001b[0m\n  const tool = input.tool_name ?? input.toolName ?? '';\n  const ti = input.tool_input ?? input.toolInput ?? {};",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~963 character(s) in `scripts/mcp/atomic-edit/atomic-only-hook.mjs` (sub-line atomic edit, expansion 0.15× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

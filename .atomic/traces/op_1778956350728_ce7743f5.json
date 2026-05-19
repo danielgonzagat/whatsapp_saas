@@ -1,0 +1,37 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1778956350728_ce7743f5",
+  "ts": "2026-05-16T18:32:30.728Z",
+  "file": "scripts/mcp/atomic-edit/server.ts",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 662,
+    "lineRewriteSurfaceChars": 320,
+    "expansionFactorAvoided": 0.48,
+    "bytesNet": 386,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "afterSha256": "b4459857688909cbd5c2f6a19dec1d78a86301c0c9fee7d431d3812d702fa1fb",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- scripts/mcp/atomic-edit/server.ts (atomic char-level)\u001b[0m\n  }\n  \n  \u001b[32m{+function normalizeAllowedPath(value: string, repoRoot: string): string {\n    if (!path.isAbsolute(value)) {\n      return normalizeRepoRelPath(value);\n    }\n    const rel = path.relative(repoRoot, path.resolve(value));\n    if (rel === '') {\n      return '';\n    }\n    if (rel.startsWith('..') || path.isAbsolute(rel)) {\n      return normalizeRepoRelPath(value);\n    }\n    return normalizeRepoRelPath(rel);\n  }\n  +}\u001b[0m\n  function relPathAllowed(relPath: string, allowedPaths: string[]): boolean {\n    const rel = normalizeRepoRelPath(relPath);",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~662 character(s) in `scripts/mcp/atomic-edit/server.ts` (sub-line atomic edit, expansion 0.48× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

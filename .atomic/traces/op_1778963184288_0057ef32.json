@@ -1,0 +1,56 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1778963184288_0057ef32",
+  "ts": "2026-05-16T20:26:24.289Z",
+  "file": "scripts/mcp/atomic-edit/audit-atomicity.mjs",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "replace_literal",
+  "operator": "replace_literal",
+  "targetUnit": "text_span",
+  "intention": "replace_literal",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 2,
+    "lineRewriteSurfaceChars": 72,
+    "expansionFactorAvoided": 36,
+    "bytesNet": 0,
+    "lineRewriteAvoided": true
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "afterSha256": "afc48d4435a2ee13c6e7e883a46df1fa1c795b648a76deddb9573635410d64a3",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- scripts/mcp/atomic-edit/audit-atomicity.mjs (atomic char-level)\u001b[0m\n  const sinceMs = parseSince(sinceRaw);\n  const minRatio = Number((args.find((a) => a.startsWith('--min-ratio=')) ?? '=0.85').split('=')[1]);\n  const MICRO_CHANGE = 3\u001b[31m[-3-]\u001b[0m\u001b[32m{+2+}\u001b[0m; // chars: a literal/arg/token-sized real change\n  const LINE_NOISE = 80; // chars of line surface rewritten = whole-line-ish\n  ",
+  "preservedZones": [
+    {
+      "kind": "unchanged_context",
+      "description": "Everything outside the modified zone is preserved byte-for-byte by the atomic operation."
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "oldTextHash": "1b13c3f987633e6e9459dcd28d492e26cd074ec66066f293e076f54468d66298",
+      "newTextHash": "afc48d4435a2ee13c6e7e883a46df1fa1c795b648a76deddb9573635410d64a3",
+      "description": "The operation changed the highlighted span shown in inlinePreview."
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `replace_literal` changed ~2 character(s) in `scripts/mcp/atomic-edit/audit-atomicity.mjs` (sub-line atomic edit, expansion 36× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

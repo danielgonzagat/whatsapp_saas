@@ -1,0 +1,59 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779070614067_0ed7b711",
+  "ts": "2026-05-18T02:16:54.067Z",
+  "file": "docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "targetUnit": "text_span",
+  "intention": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 1875,
+    "lineRewriteSurfaceChars": 899,
+    "expansionFactorAvoided": 0.48,
+    "bytesNet": 976,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "7428e8ff164dcc6c8df79671085d0407e707c6fb0b9b445600ae3a66f3d80ec7",
+  "proposedSha256": "7428e8ff164dcc6c8df79671085d0407e707c6fb0b9b445600ae3a66f3d80ec7",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs (atomic char-level)\u001b[0m\n    const retainedPublicLeaves = retainedFacadeSymbols.map((symbol) => symbol.name);\n    const publicDelegateMethods = surface.publicMethods.filter((name) => !retainedPublicLeaves.includes(name));\n    const \u001b[32m{+p+}\u001b[0mr\u001b[32m{+ivat+}\u001b[0me\u001b[32m{+Methods = Array.isArray(surface.+}\u001b[0mp\u001b[32m{+rivat+}\u001b[0me\u001b[32m{+Methods) ? surf+}\u001b[0ma\u001b[32m{+ce.priva+}\u001b[0mte\u001b[32m{+Metho+}\u001b[0md\u001b[32m{+s : [];\n    const privateMethodSurface = sumValues(privateMethods, (method) => method.lines);\n    const repeated+}\u001b[0mDependencyPressure = dependencyCount * publicDelegateMethods.length;\n    const extractedRootPressure = dependencyCount * delegateRoots.length;\n    const \u001b[32m{+runtimeOwnerClassEconomy = {\n      +}\u001b[0mpr\u001b[32m{+ivat+}\u001b[0me\u001b[32m{+MethodSur+}\u001b[0mf\u001b[32m{+ac+}\u001b[0me\u001b[32m{+,\n      dependencySu+}\u001b[0mr\u001b[32m{+face: dependency+}\u001b[0mC\u001b[32m{+ount,\n      publicDeleg+}\u001b[0ma\u001b[32m{+teMethodCount: publi+}\u001b[0mc\u001b[32m{+DelegateMet+}\u001b[0mh\u001b[32m{+ods.l+}\u001b[0me\u001b[32m{+ngth,\n      extracte+}\u001b[0md\u001b[32m{+RootCount: delegateRoots.length,\n      repeated+}\u001b[0mDe\u001b[32m{+pendencyPressure,\n      extractedRootPressure,\n      pass: privateMethodSurface > 0 && extractedRootPressure <= repeatedDependencyPressure,\n      interpretation: 'Runtime-owner c+}\u001b[0ml\u001b[32m{+ass+}\u001b[0me\u001b[32m{+s are preferred when observed private facade helper surface exists and constructor dependency wirin+}\u001b[0mg\u001b[32m{+ is not worse th+}\u001b[0ma\u001b[32m{+n direc+}\u001b[0mt\u001b[32m{+ p+}\u001b[0me\u001b[32m{+r-method+}\u001b[0m \u001b[32m{+function delegation.',\n    };\n    const preferRuntimeOwnerClass +}\u001b[0m= \u001b[32m{+runtim+}\u001b[0me\u001b[32m{+OwnerClassEconomy.pass;\n    const preferCachedDelegate = !preferRuntimeOwnerClass && e+}\u001b[0mxtractedRootPressure < repeatedDependencyPressure;\n    return {\n      available: true,\n      dependencyCount,\n      publicDelegateMethods,\n      retainedPublicLeaves,\n      delegateRoots,\n      \u001b[32m{+p+}\u001b[0mr\u001b[32m{+ivat+}\u001b[0me\u001b[32m{+Methods,\n      +}\u001b[0mp\u001b[32m{+rivat+}\u001b[0me\u001b[32m{+MethodSurf+}\u001b[0ma\u001b[32m{+ce,\n      repea+}\u001b[0mtedDependencyPressure,\n      extractedRootPressure,\n      \u001b[32m{+runtimeOwnerClassEconomy,\n      +}\u001b[0mpreferredShape: prefer\u001b[32m{+RuntimeOwner+}\u001b[0mC\u001b[32m{+l+}\u001b[0ma\u001b[32m{+ss ? 'runtime_owner_+}\u001b[0mc\u001b[32m{+lass_delegation' : (preferCac+}\u001b[0mhedDelegate ? 'cached_delegate_instance' : 'direct_function_delegation'\u001b[32m{+)+}\u001b[0m,\n      candidates: [\n        {",
+  "preservedZones": [
+    {
+      "kind": "unchanged_context",
+      "description": "Everything outside the modified zone is preserved byte-for-byte by the atomic operation."
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "oldTextHash": "aadd6c87d377dd8c92470b071687a658e38714e4718296108dcbe2c8f4ae1c71",
+      "newTextHash": "7428e8ff164dcc6c8df79671085d0407e707c6fb0b9b445600ae3a66f3d80ec7",
+      "description": "The operation changed the highlighted span shown in inlinePreview."
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~1875 character(s) in `docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs` (sub-line atomic edit, expansion 0.48× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

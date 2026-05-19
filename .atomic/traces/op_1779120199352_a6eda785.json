@@ -1,0 +1,59 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779120199352_a6eda785",
+  "ts": "2026-05-18T16:03:19.352Z",
+  "file": "scripts/mcp/atomic-edit/server.ts",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "targetUnit": "text_span",
+  "intention": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 2249,
+    "lineRewriteSurfaceChars": 2123,
+    "expansionFactorAvoided": 0.94,
+    "bytesNet": 126,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "9fb7a489f292e6503340da379a3ecfb5ddcfdd60b63f4917ec33852a2dcdc5af",
+  "proposedSha256": "9fb7a489f292e6503340da379a3ecfb5ddcfdd60b63f4917ec33852a2dcdc5af",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- scripts/mcp/atomic-edit/server.ts (atomic char-level)\u001b[0m\n          .describe(\"optimistic-concurrency guard: refuse if the file's sha256 differs\"),\n        preview: z.boolean().optional().describe('dry-run: validate + return diff, do not write'),\n      \u001b[32m{+  verify: z.enum(['typecheck', 'lint']).optional(),\n        lock: z.boolean().optional(),\n      +}\u001b[0m},\n    },\n    async (a) => {\n      try {\n        const { absPath, relPath } = resolveSafeTarget(a.file);\n        const exists = fs.existsSync(absPath);\n        const existingBefore = exists ? fs.readFileSync(absPath, 'utf8') : '';\n        // A/B loop R7 finding + Atomic Action Principle: regenerating a whole\n        // existing file to change PART of it is the banned macro-mutation (it\n        // re-emits the entire file as a tool argument — the dominant token\n        // sink). atomic_create_file is for NEW files only. Modifying an\n        // existing non-empty file MUST go through a surgical operator.\n        if (exists && existingBefore.trim() !== '') {\n          return fail(\n            `refused: ${relPath} already exists and is non-empty. atomic_create_file ` +\n              `is for NEW files only. To CHANGE part of an existing file use a ` +\n              `surgical operator — atomic_edit_symbol (replace/remove a symbol), ` +\n              `atomic_delete_range / atomic_replace_range (a span), ` +\n              `atomic_replace_text (a verbatim block), atomic_add_import — so only ` +\n              `the changed sub-structure is emitted, never the whole file.`,\n          );\n        }\n        const before = existingBefore;\n        guardSha(before, a.expectedSha256);\n        const edit =\n          before === ''\n            ? { start: { line: 1, column: 1 }, end: { line: 1, column: 1 }, newText: a.content }\n            : (() => {\n                const lines = before.split('\\n');\n                return {\n                  start: { line: 1, column: 1 },\n                  end: { line: lines.length, column: lines[lines.length - 1].length + 1 },\n                  newText: a.content,\n                };\n              })();\n        const r = applyEdits(relPath, before, [edit]);\n        if (!exists && !(a.preview ?? false)) {\n          fs.mkdirSync(path.dirname(absPath), { recursive: true });\n        }\n        return commit(\n          relPath,\n          absPath,\n          before,\n          r,\n          { op: 'atomic_create_file', created: !exists },\n          a.preview ?? false,\u001b[32m{+\n          a.verify,\n          a.lock,+}\u001b[0m\n        );\n      } catch (e) {",
+  "preservedZones": [
+    {
+      "kind": "unchanged_context",
+      "description": "Everything outside the modified zone is preserved byte-for-byte by the atomic operation."
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "oldTextHash": "db861651d7e1d63cf9ef97acc73c071b6fb203431b9aab67553606fe582afb81",
+      "newTextHash": "9fb7a489f292e6503340da379a3ecfb5ddcfdd60b63f4917ec33852a2dcdc5af",
+      "description": "The operation changed the highlighted span shown in inlinePreview."
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~2249 character(s) in `scripts/mcp/atomic-edit/server.ts` (sub-line atomic edit, expansion 0.94× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

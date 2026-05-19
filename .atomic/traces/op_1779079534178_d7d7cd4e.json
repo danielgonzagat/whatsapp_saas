@@ -1,0 +1,59 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779079534178_d7d7cd4e",
+  "ts": "2026-05-18T04:45:34.179Z",
+  "file": "docs/ai/atomic-os-benchmark/tools/refactor-scorecard.cjs",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "targetUnit": "text_span",
+  "intention": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 226,
+    "lineRewriteSurfaceChars": 127,
+    "expansionFactorAvoided": 0.56,
+    "bytesNet": 99,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "b1584400f4c0bb416ee9af425efb5a51adb98a99c4c5925422261e5a55201917",
+  "proposedSha256": "b1584400f4c0bb416ee9af425efb5a51adb98a99c4c5925422261e5a55201917",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- docs/ai/atomic-os-benchmark/tools/refactor-scorecard.cjs (atomic char-level)\u001b[0m\n      siblingReuse,\n      siblingReusePass,\n  \u001b[32m{+    enforceFastpathPolicy: args.enforceFastpathPolicy,\n      fastpathPolicy,\n      fastpathPolicyPass,+}\u001b[0m\n      enforceScope: args.enforceScope,\n      allowedPrefixes: args.allowPrefixes,",
+  "preservedZones": [
+    {
+      "kind": "unchanged_context",
+      "description": "Everything outside the modified zone is preserved byte-for-byte by the atomic operation."
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "oldTextHash": "b053bb1f032aa53cd0e9f64e325296a42181b1b9c29292f94528422285e05105",
+      "newTextHash": "b1584400f4c0bb416ee9af425efb5a51adb98a99c4c5925422261e5a55201917",
+      "description": "The operation changed the highlighted span shown in inlinePreview."
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~226 character(s) in `docs/ai/atomic-os-benchmark/tools/refactor-scorecard.cjs` (sub-line atomic edit, expansion 0.56× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

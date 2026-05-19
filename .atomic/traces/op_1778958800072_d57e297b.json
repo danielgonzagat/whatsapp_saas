@@ -1,0 +1,65 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1778958800072_d57e297b",
+  "ts": "2026-05-16T19:13:20.072Z",
+  "file": "worker/utils/prisma-json.util.ts",
+  "operation": "atomic_apply_eslint_dry_run_fixes",
+  "operator": "atomic_apply_eslint_dry_run_fixes",
+  "targetUnit": "eslint_dry_run_file_output",
+  "intention": "apply analyzer-proposed lint fixes without letting the analyzer write directly",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 1037,
+    "lineRewriteSurfaceChars": 1037,
+    "expansionFactorAvoided": 1,
+    "bytesNet": 44,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "afterSha256": "5ece68e7a4630394d675a21b1264b037238b6ad434b595973c85409deec3c5b0",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- worker/utils/prisma-json.util.ts (atomic char-level)\u001b[0m\n  \n  function isPlainObject(value: unknown): value is Record<string, unknown> {\n    if (!value || typeof value !== 'object') \u001b[32m{+{\n      +}\u001b[0mreturn false;\n    \u001b[32m{+}\n    +}\u001b[0mconst proto = Object.getPrototypeOf(value);\n    return proto === Object.prototype || proto === null;\n  }\n  \n  function coerceObject(value: Record<string, unknown>): Prisma.InputJsonObject {\n    const out: Record<string, Prisma.InputJsonValue> = {};\n    for (const [key, entry] of Object.entries(value)) {\n      if (entry === undefined) \u001b[32m{+{\n        +}\u001b[0mcontinue;\n      \u001b[32m{+}\n      +}\u001b[0mout[key] = toPrismaJsonValue(entry);\n    }\n    return out;\n  }\n  \n  /**\n   * Convert any JSON-serializable runtime value into Prisma.InputJsonValue.\n   * Accepts null (returns null, which is Prisma.JsonNull in Prisma v5+).\n   * Throws on non-serializable inputs (functions, symbols, bigints, Dates, class instances).\n   * Mirrors backend/src/common/prisma/prisma-json.util.ts so worker code does not\n   * need cross-package imports.\n   */\n  export function toPrismaJsonValue(value: unknown): Prisma.InputJsonValue {\n    if (value === null) \u001b[32m{+{\n      +}\u001b[0mreturn null as never as Prisma.InputJsonValue;\n    \u001b[32m{+}\n    +}\u001b[0mconst scalar = coerceScalar(value);\n    if (scalar !== undefined) \u001b[32m{+{\n      +}\u001b[0mreturn scalar;\u001b[32m{+\n    }+}\u001b[0m\n    if (Array.isArray(value)) {\n      return value.map((entry) => toPrismaJsonValue(entry));",
+  "preservedZones": [
+    {
+      "kind": "prefix_context",
+      "description": "Text before the first analyzer-modified span was preserved.",
+      "beforeHash": "f4d9224c832613000a001a0ec9dddb4a32ab868ad12d1f53f07e550712befb80",
+      "afterHash": "f4d9224c832613000a001a0ec9dddb4a32ab868ad12d1f53f07e550712befb80"
+    },
+    {
+      "kind": "suffix_context",
+      "description": "Text after the last analyzer-modified span was preserved.",
+      "beforeHash": "1fc581642652d58a56b54f48de05377fadce286f2a5f04acb836b0eea065f64d",
+      "afterHash": "1fc581642652d58a56b54f48de05377fadce286f2a5f04acb836b0eea065f64d"
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "analyzer_fix_output",
+      "oldTextHash": "39d54212de65c5b3b5b2ce826b88032e6e1a835b2a49f6d33f1e0437824b2df7",
+      "newTextHash": "5ece68e7a4630394d675a21b1264b037238b6ad434b595973c85409deec3c5b0",
+      "oldSample": "return false;\n  const proto = Object.getPrototypeOf(value);\n  return proto === Object.prototype || proto === null;\n}\n\nfunction coerceObject(value: Record<string, unknown>): Prisma.InputJsonObject {\n  const out: Record<string, Prisma.Inpu...",
+      "newSample": "{\n    return false;\n  }\n  const proto = Object.getPrototypeOf(value);\n  return proto === Object.prototype || proto === null;\n}\n\nfunction coerceObject(value: Record<string, unknown>): Prisma.InputJsonObject {\n  const out: Record<string, P...",
+      "description": "ESLint --fix-dry-run proposed this file output; atomic-edit validated and wrote it."
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "behavior_preserving_lint_cleanup",
+  "audit": {
+    "whatChanged": "Operation `atomic_apply_eslint_dry_run_fixes` changed ~1037 character(s) in `worker/utils/prisma-json.util.ts` (sub-line atomic edit, expansion 1× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

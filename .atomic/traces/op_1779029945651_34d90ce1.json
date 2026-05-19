@@ -1,0 +1,59 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779029945651_34d90ce1",
+  "ts": "2026-05-17T14:59:05.651Z",
+  "file": "docs/ai/atomic-os-benchmark/tools/atomic-call.cjs",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "targetUnit": "text_span",
+  "intention": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 2961,
+    "lineRewriteSurfaceChars": 599,
+    "expansionFactorAvoided": 0.2,
+    "bytesNet": 2362,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "046508d4cdf0a6fe79b089bd30dd0291da2ac48b7ce5638f0b8b8e433c44c307",
+  "proposedSha256": "046508d4cdf0a6fe79b089bd30dd0291da2ac48b7ce5638f0b8b8e433c44c307",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- docs/ai/atomic-os-benchmark/tools/atomic-call.cjs (atomic char-level)\u001b[0m\n  }\n  \n  \u001b[32m{+function escapeRegExp(value) {\n    return String(value).replace(/[-\\/\\^$*+?.()|[\\]{}]/g, '\\$&');\n  }\n  \n  function parseToolArgs(tool, raw) {\n    const trimmed = String(raw || '').trim();\n    if (trimmed.startsWith('@')) {\n      const file = normalizePathValue(trimmed.slice(1), 'argsFile');\n      return parseCliJson(fs.readFileSync(file, 'utf8'));\n    }\n    try {\n      return parseCliJson(raw);\n    } catch (error) {\n      if ((tool === 'code_outline' || tool === 'code_file_stat') && trimmed && !/^[{[]/.test(trimmed)) {\n        return { file: trimmed };\n      }\n      throw error;\n    }\n  }\n  \n  function methodNameFromSelector(selector) {\n    const parts = String(selector).split('.');\n    return parts[parts.length - 1];\n  }\n  \n  function classMethodSelectors(className, methodsOrSelectors) {\n    if (!className) return methodsOrSelectors;\n    return methodsOrSelectors.map((entry) => String(entry).includes('.') ? String(entry) : className + '.' + entry);\n  }\n  \n  function classMethodToExportedFunction(methodCode, expectedName) {\n    let code = String(methodCode || '').trimEnd();\n    code = code.replace(/^(?:private|public|protected)\\s+/, '');\n    code = code.replace(/^async\\s+([A-Za-z_$][\\w$]*)\\s*\\(/, 'export async function $1(');\n    code = code.replace(/^([A-Za-z_$][\\w$]*)\\s*\\(/, 'export function $1(');\n    const namePattern = new RegExp('^export\\\\s+(?:async\\\\s+)?function\\\\s+' + escapeRegExp(expectedName) + '\\\\s*\\\\(');\n    if (!namePattern.test(code)) {\n      throw new Error('could not convert class method ' + expectedName + ' to exported function');\n    }\n    return code\n      .split('\\n')\n      .map((line, index) => (index === 0 ? line : line.startsWith('  ') ? line.slice(2) : line))\n      .join('\\n');\n  }\n  \n  function fileHasExportedFunctions(file, names) {\n    if (!fs.existsSync(file)) return false;\n    const source = fs.readFileSync(file, 'utf8');\n    return names.every((name) => new RegExp('export\\\\s+(?:async\\\\s+)?function\\\\s+' + escapeRegExp(name) + '\\\\s*\\\\(').test(source));\n  }\n  \n  function fileContainsNone(file, texts) {\n    if (!fs.existsSync(file)) return false;\n    const source = fs.readFileSync(file, 'utf8');\n    return texts.every((text) => !source.includes(text));\n  }\n  \n  function countOccurrences(haystack, needle) {\n    if (!needle) return 0;\n    let count = 0;\n    let index = 0;\n    for (;;) {\n      index = haystack.indexOf(needle, index);\n      if (index === -1) return count;\n      count += 1;\n      index += needle.length;\n    }\n  }\n  +}\u001b[0m\n  async function main() {\n    const tool = process.argv[2];",
+  "preservedZones": [
+    {
+      "kind": "unchanged_context",
+      "description": "Everything outside the modified zone is preserved byte-for-byte by the atomic operation."
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "oldTextHash": "ef644c25d3509c27a0460164ef59608fd4a6a4ff982cc0e4c5e5003e8d9fa1ec",
+      "newTextHash": "046508d4cdf0a6fe79b089bd30dd0291da2ac48b7ce5638f0b8b8e433c44c307",
+      "description": "The operation changed the highlighted span shown in inlinePreview."
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~2961 character(s) in `docs/ai/atomic-os-benchmark/tools/atomic-call.cjs` (sub-line atomic edit, expansion 0.2× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

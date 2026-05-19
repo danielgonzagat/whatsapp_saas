@@ -8,7 +8,7 @@ import { KloelThreadService } from './kloel-thread.service';
 import { KloelToolRouter } from './kloel-tool-router';
 import { createKloelStatusEvent, type KloelStreamEvent } from './kloel-stream-events';
 import { CANONICAL_FALLBACK_SYSTEM_PROMPT } from './kloel.prompts';
-import { chatCompletionWithFallback } from './openai-wrapper';
+import { chatCompletionWithFallback, LLM_MAX_COMPLETION_TOKENS } from './openai-wrapper';
 import { KLOEL_CHAT_TOOLS } from './kloel-chat-tools.definition';
 import type { ExpertiseLevel, LocalToolExecutor, ReplyMessage } from './kloel-reply-engine.types';
 
@@ -266,7 +266,12 @@ export async function buildAssistantReplyImpl(
     mode,
     message,
   );
-  const responseMaxTokens = deps.shouldUseLongFormBudget(message) ? 4096 : 2048;
+  // No hardcoded output cap: the operator/model decides via the
+  // LLM_MAX_COMPLETION_TOKENS env (DeepSeek V4 Pro's real ceiling).
+  // shouldUseLongFormBudget is kept only as a forward signal; it no
+  // longer artificially halves the reply.
+  void deps.shouldUseLongFormBudget(message);
+  const responseMaxTokens = LLM_MAX_COMPLETION_TOKENS;
   const responseTemperature = 0.7;
 
   let systemPrompt: string;
@@ -306,7 +311,9 @@ export async function buildAssistantReplyImpl(
       model: resolveBackendOpenAIModel(isChatMode ? 'brain' : 'writer'),
       messages,
       ...(isChatMode ? { tools: chatTools } : {}),
-      ...(isChatMode ? { tool_choice: chatTools.length > 0 ? ('auto' as const) : ('none' as const) } : {}),
+      ...(isChatMode
+        ? { tool_choice: chatTools.length > 0 ? ('auto' as const) : ('none' as const) }
+        : {}),
       temperature: responseTemperature,
       top_p: 0.95,
       frequency_penalty: 0.3,

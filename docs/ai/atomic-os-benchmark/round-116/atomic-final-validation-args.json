@@ -1,0 +1,89 @@
+{
+  "validationProfile": "round116-four-helper-shape-budget-no-typecheck",
+  "includeJest": true,
+  "includeTypecheck": false,
+  "scanFiles": [
+    "backend/src/kloel/unified-agent.service.ts",
+    "backend/src/kloel/unified-agent-tool-router.helpers.ts",
+    "backend/src/kloel/unified-agent-runtime.helpers.ts",
+    "backend/src/kloel/unified-agent-tool-parser.helpers.ts",
+    "backend/src/kloel/unified-agent-cognitive-state.helpers.ts"
+  ],
+  "forbiddenTextChecks": [
+    {
+      "file": "backend/src/kloel/unified-agent-tool-router.helpers.ts",
+      "text": "this.",
+      "label": "router helper no this"
+    },
+    {
+      "file": "backend/src/kloel/unified-agent-runtime.helpers.ts",
+      "text": "this.",
+      "label": "runtime helper no this"
+    },
+    {
+      "file": "backend/src/kloel/unified-agent-tool-parser.helpers.ts",
+      "text": "this.",
+      "label": "parser helper no this"
+    },
+    {
+      "file": "backend/src/kloel/unified-agent-cognitive-state.helpers.ts",
+      "text": "this.",
+      "label": "cognitive helper no this"
+    },
+    {
+      "file": "backend/src/kloel/unified-agent.service.ts",
+      "text": "private async executeToolAction",
+      "label": "private executeToolAction removed"
+    },
+    {
+      "file": "backend/src/kloel/unified-agent.service.ts",
+      "text": "function isAllowedTool",
+      "label": "top-level isAllowedTool removed"
+    },
+    {
+      "file": "backend/src/kloel/unified-agent.service.ts",
+      "text": "function formatPromptValue",
+      "label": "top-level formatPromptValue removed"
+    }
+  ],
+  "requiredTextChecks": [
+    {
+      "file": "backend/src/kloel/unified-agent.service.ts",
+      "text": "async executeTool(",
+      "label": "public executeTool preserved"
+    },
+    {
+      "file": "backend/src/kloel/unified-agent.service.ts",
+      "text": "async buildQuotedReplyPlan(",
+      "label": "public buildQuotedReplyPlan preserved"
+    },
+    {
+      "file": "backend/src/kloel/unified-agent-cognitive-state.helpers.ts",
+      "text": "export async function buildUnifiedAgentCognitiveState",
+      "label": "cognitive helper export present"
+    }
+  ],
+  "lineBudgetChecks": [
+    {
+      "files": [
+        "backend/src/kloel/unified-agent.service.ts",
+        "backend/src/kloel/unified-agent-tool-router.helpers.ts",
+        "backend/src/kloel/unified-agent-runtime.helpers.ts",
+        "backend/src/kloel/unified-agent-tool-parser.helpers.ts",
+        "backend/src/kloel/unified-agent-cognitive-state.helpers.ts"
+      ],
+      "maxTotalLines": 817,
+      "label": "round115 normal total Kloel line budget"
+    }
+  ],
+  "sourceChurnBudgetChecks": [
+    {
+      "pathspecs": [
+        "backend/src/kloel"
+      ],
+      "maxChurn": 730,
+      "label": "round115 normal source churn budget"
+    }
+  ],
+  "report": "compact"
+}

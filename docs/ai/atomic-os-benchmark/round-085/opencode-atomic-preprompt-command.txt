@@ -1,0 +1,102 @@
+cd /private/tmp/kloel-ab085-atomic-20260517161619 && ARGS=$(node - <<'NODE'
+const targetHeader = `import type OpenAI from 'openai';
+import type { AuditService } from '../audit/audit.service';
+import type { StructuredLogger } from '../logging/structured-logger';
+import type { PrismaService } from '../prisma/prisma.service';
+import type { UnifiedAgentActionsService } from './unified-agent-actions.service';
+import type { RiskGateService } from './risk-class/risk-gate.service';
+import type { ToolArgs } from './unified-agent.types';
+
+type UnknownRecord = Record<string, unknown>;
+
+type BuildAgentToolEnvelope = (params: {
+  workspaceId: string;
+  toolName: string;
+}) => { id: string; toolName: string; allowed: boolean };
+
+type Num = (value: unknown, fallback?: number) => number;`;
+const signaturePrefixParam = 'logger: StructuredLogger, buildAgentToolEnvelope: BuildAgentToolEnvelope, num: Num, riskGate: RiskGateService | undefined, actions: UnifiedAgentActionsService, prisma: PrismaService, auditService: AuditService, openai: OpenAI | null, primaryBrainModel: string, fallbackBrainModel: string, ';
+const deps8 = `executeToolAction(
+          this.logger,
+          this.buildAgentToolEnvelope.bind(this),
+          this.num.bind(this),
+          this.riskGate,
+          this.actions,
+          this.prisma,
+          this.auditService,
+          this.openai,
+          this.primaryBrainModel,
+          this.fallbackBrainModel,`;
+const deps4 = `executeToolAction(
+      this.logger,
+      this.buildAgentToolEnvelope.bind(this),
+      this.num.bind(this),
+      this.riskGate,
+      this.actions,
+      this.prisma,
+      this.auditService,
+      this.openai,
+      this.primaryBrainModel,
+      this.fallbackBrainModel,`;
+const predecided = `        executeTool: (toolWorkspaceId, toolContactId, toolPhone, tool, toolArgs, toolContext) =>
+          executeToolAction(
+            this.logger,
+            this.buildAgentToolEnvelope.bind(this),
+            this.num.bind(this),
+            this.riskGate,
+            this.actions,
+            this.prisma,
+            this.auditService,
+            this.openai,
+            this.primaryBrainModel,
+            this.fallbackBrainModel,
+            toolWorkspaceId,
+            toolContactId,
+            toolPhone,
+            tool,
+            toolArgs,
+            toolContext,
+          ),`;
+console.log(JSON.stringify({
+  sourceFile: 'backend/src/kloel/unified-agent.service.ts',
+  targetFile: 'backend/src/kloel/unified-agent-tool-router.helpers.ts',
+  className: 'UnifiedAgentService',
+  methods: ['executeToolAction'],
+  importNames: ['executeToolAction'],
+  importModule: './unified-agent-tool-router.helpers',
+  targetHeader,
+  methodAdapter: {
+    signaturePrefixParam,
+    bodyReplacements: [
+      { oldText: 'this.logger', newText: 'logger' },
+      { oldText: 'this.buildAgentToolEnvelope', newText: 'buildAgentToolEnvelope' },
+      { oldText: 'this.num', newText: 'num' },
+      { oldText: 'this.riskGate', newText: 'riskGate' },
+      { oldText: 'this.actions', newText: 'actions' },
+      { oldText: 'this.prisma', newText: 'prisma' },
+      { oldText: 'this.auditService', newText: 'auditService' },
+      { oldText: 'this.openai', newText: 'openai' },
+      { oldText: 'this.primaryBrainModel', newText: 'primaryBrainModel' },
+      { oldText: 'this.fallbackBrainModel', newText: 'fallbackBrainModel' },
+    ],
+  },
+  callsiteReplacements: [
+    { oldText: '        executeTool: this.executeToolAction.bind(this),', newText: predecided, expectedCount: 1 },
+    { oldText: '        const result = await this.executeToolAction(', newText: '        const result = await ' + deps8, expectedCount: 1 },
+    { oldText: '    return this.executeToolAction(', newText: '    return ' + deps4, expectedCount: 1 },
+  ],
+  validate: true,
+  includeTypecheck: false,
+  validationProfile: 'kloel-unified-agent-tool-router-extract-no-typecheck',
+  scanFiles: [
+    'backend/src/kloel/unified-agent.service.ts',
+    'backend/src/kloel/unified-agent-tool-router.helpers.ts',
+  ],
+  forbiddenTextChecks: [
+    { file: 'backend/src/kloel/unified-agent-tool-router.helpers.ts', text: 'this.', label: 'router helper no this' },
+    { file: 'backend/src/kloel/unified-agent.service.ts', text: 'private async executeToolAction', label: 'private executeToolAction removed' },
+  ],
+  report: 'compact',
+}));
+NODE
+) && ATOMIC_OS_REPO_ROOT=/private/tmp/kloel-ab085-atomic-20260517161619 node /private/tmp/kloel-ab085-atomic-20260517161619/docs/ai/atomic-os-benchmark/tools/atomic-call.cjs extract_class_methods_to_file "$ARGS"

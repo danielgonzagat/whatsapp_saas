@@ -1,0 +1,106 @@
+cd /private/tmp/kloel-ab089-atomic-20260517173646 && ARGS=$(node - <<'NODE'
+const targetHeader = `import type OpenAI from 'openai';
+import type { AuditService } from '../audit/audit.service';
+import type { StructuredLogger } from '../logging/structured-logger';
+import type { PrismaService } from '../prisma/prisma.service';
+import type { AgentRuntimeContextService } from './agent-runtime';
+import type { UnifiedAgentActionsService } from './unified-agent-actions.service';
+import type { RiskGateService } from './risk-class/risk-gate.service';
+import type { ToolArgs } from './unified-agent.types';
+
+type UnknownRecord = Record<string, unknown>;
+
+export interface ExecuteToolActionDeps {
+  logger: StructuredLogger;
+  agentRuntime: AgentRuntimeContextService | undefined;
+  riskGate: RiskGateService | undefined;
+  actions: UnifiedAgentActionsService;
+  prisma: PrismaService;
+  auditService: AuditService;
+  openai: OpenAI | null;
+  primaryBrainModel: string;
+  fallbackBrainModel: string;
+}`;
+const signaturePrefixParam = 'deps: ExecuteToolActionDeps, ';
+const depsInline = 'executeToolAction(this.toolRouterDeps(),';
+const predecided = `        executeTool: (toolWorkspaceId, toolContactId, toolPhone, tool, toolArgs, toolContext) =>
+          executeToolAction(this.toolRouterDeps(), toolWorkspaceId, toolContactId, toolPhone, tool, toolArgs, toolContext),`;
+const depsBuilder = `
+
+  private toolRouterDeps() {
+    return {
+      logger: this.logger,
+      agentRuntime: this.agentRuntime,
+      riskGate: this.riskGate,
+      actions: this.actions,
+      prisma: this.prisma,
+      auditService: this.auditService,
+      openai: this.openai,
+      primaryBrainModel: this.primaryBrainModel,
+      fallbackBrainModel: this.fallbackBrainModel,
+    };
+  }
+
+  private async buildAgentRuntimeContext(params: {`;
+console.log(JSON.stringify({
+  sourceFile: 'backend/src/kloel/unified-agent.service.ts',
+  targetFile: 'backend/src/kloel/unified-agent-tool-router.helpers.ts',
+  className: 'UnifiedAgentService',
+  methods: ['executeToolAction', 'num', 'buildAgentToolEnvelope', 'actionSucceeded'],
+  importNames: ['executeToolAction', 'num', 'buildAgentToolEnvelope', 'actionSucceeded'],
+  importModule: './unified-agent-tool-router.helpers',
+  targetHeader,
+  methodAdapters: {
+    executeToolAction: {
+      signaturePrefixParam,
+      bodyReplacements: [
+        { oldText: 'this.buildAgentToolEnvelope({', newText: 'buildAgentToolEnvelope(deps.agentRuntime, {' },
+        { oldText: 'this.num(', newText: 'num(' },
+        { oldText: 'this.logger', newText: 'deps.logger' },
+        { oldText: 'this.riskGate', newText: 'deps.riskGate' },
+        { oldText: 'this.actions', newText: 'deps.actions' },
+        { oldText: 'this.prisma', newText: 'deps.prisma' },
+        { oldText: 'this.auditService', newText: 'deps.auditService' },
+        { oldText: 'this.openai', newText: 'deps.openai' },
+        { oldText: 'this.primaryBrainModel', newText: 'deps.primaryBrainModel' },
+        { oldText: 'this.fallbackBrainModel', newText: 'deps.fallbackBrainModel' }
+      ]
+    },
+    buildAgentToolEnvelope: {
+      signaturePrefixParam: 'agentRuntime: AgentRuntimeContextService | undefined, ',
+      bodyReplacements: [
+        { oldText: 'this.agentRuntime', newText: 'agentRuntime' }
+      ]
+    }
+  },
+  callsiteReplacements: [
+    { oldText: '        executeTool: this.executeToolAction.bind(this),', newText: predecided, expectedCount: 1 },
+    { oldText: '        const result = await this.executeToolAction(', newText: '        const result = await ' + depsInline, expectedCount: 1 },
+    { oldText: '    return this.executeToolAction(', newText: '    return ' + depsInline, expectedCount: 1 },
+    { oldText: 'this.actionSucceeded(', newText: 'actionSucceeded(', expectedCount: 2 }
+  ],
+  postRemovalReplacements: [
+    { oldText: '\n\n  private async buildAgentRuntimeContext(params: {', newText: depsBuilder, expectedCount: 1 }
+  ],
+  validate: true,
+  includeTypecheck: false,
+  validationProfile: 'kloel-unified-agent-tool-router-cluster-plus-success-no-typecheck',
+  scanFiles: [
+    'backend/src/kloel/unified-agent.service.ts',
+    'backend/src/kloel/unified-agent-tool-router.helpers.ts'
+  ],
+  forbiddenTextChecks: [
+    { file: 'backend/src/kloel/unified-agent-tool-router.helpers.ts', text: 'this.', label: 'router helper no this' },
+    { file: 'backend/src/kloel/unified-agent.service.ts', text: 'private async executeToolAction', label: 'private executeToolAction removed' },
+    { file: 'backend/src/kloel/unified-agent.service.ts', text: 'private num', label: 'private num removed' },
+    { file: 'backend/src/kloel/unified-agent.service.ts', text: 'private buildAgentToolEnvelope', label: 'private buildAgentToolEnvelope removed' },
+    { file: 'backend/src/kloel/unified-agent.service.ts', text: 'private actionSucceeded', label: 'private actionSucceeded removed' }
+  ],
+  requiredTextChecks: [
+    { file: 'backend/src/kloel/unified-agent.service.ts', text: 'private async buildAgentRuntimeContext', label: 'preserve private buildAgentRuntimeContext' },
+    { file: 'backend/src/kloel/unified-agent.service.ts', text: 'private async recordAgentRuntimeTurn', label: 'preserve private recordAgentRuntimeTurn' }
+  ],
+  report: 'compact'
+}));
+NODE
+) && ATOMIC_OS_REPO_ROOT=/private/tmp/kloel-ab089-atomic-20260517173646 node /private/tmp/kloel-ab089-atomic-20260517173646/docs/ai/atomic-os-benchmark/tools/atomic-call.cjs extract_class_methods_to_file "$ARGS" && ATOMIC_OS_REPO_ROOT=/private/tmp/kloel-ab089-atomic-20260517173646 node /private/tmp/kloel-ab089-atomic-20260517173646/docs/ai/atomic-os-benchmark/tools/atomic-call.cjs atomic_remove_import '{"file":"backend/src/kloel/unified-agent.service.ts","module":"./unified-agent-tool-router.helpers","name":"num"}' && ATOMIC_OS_REPO_ROOT=/private/tmp/kloel-ab089-atomic-20260517173646 node /private/tmp/kloel-ab089-atomic-20260517173646/docs/ai/atomic-os-benchmark/tools/atomic-call.cjs atomic_remove_import '{"file":"backend/src/kloel/unified-agent.service.ts","module":"./unified-agent-tool-router.helpers","name":"buildAgentToolEnvelope"}'

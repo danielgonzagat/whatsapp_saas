@@ -1,0 +1,59 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779073652633_0136cbb4",
+  "ts": "2026-05-18T03:07:32.633Z",
+  "file": "docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "targetUnit": "text_span",
+  "intention": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 1587,
+    "lineRewriteSurfaceChars": 780,
+    "expansionFactorAvoided": 0.49,
+    "bytesNet": 807,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "5b24011e7cfed84aa9581647f8a5bc61dec170a6e6ef28929bf6d52ff48044b0",
+  "proposedSha256": "5b24011e7cfed84aa9581647f8a5bc61dec170a6e6ef28929bf6d52ff48044b0",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs (atomic char-level)\u001b[0m\n    const single = candidates.find((candidate) => candidate.shape === 'single_runtime_module');\n    const split = candidates.find((candidate) => candidate.shape === 'dependency_split_modules');\n    const \u001b[32m{+dominantRootRetention = candidate+}\u001b[0ms\u001b[32m{+.find((candidate) => candidate.shape === 'dominant_p+}\u001b[0mu\u001b[32m{+blic_root_retention');\n    const su+}\u001b[0mpport = candidates.find((candidate) => candidate.shape === 'dependency_split_with_support_module');\n    const candidateComparison = {\n      singleVsSplitLargestDelta: single.metrics.largestModuleLines - split.metrics.largestModuleLines,\n      splitVsSingleInventoryDelta: split.metrics.estimatedInventoryPressure - single.metrics.estimatedInventoryPressure,\n      splitVsSingleFileDelta: split.metrics.productSourceFileCount - single.metrics.productSourceFileCount,\n      splitVsSingleBoundaryDelta: split.metrics.dependencyBoundaryPressure - single.metrics.dependencyBoundaryPressure,\n    };\u001b[32m{+\n    if (dominantRootRetention) {\n      candidateComparison.dominantRetentionVsSplitLargestDelta = dominantRootRetention.metrics.largestModuleLines - split.metrics.largestModuleLines;\n      candidateComparison.dominantRetentionVsSplitInventoryDelta = dominantRootRetention.metrics.estimatedInventoryPressure - split.metrics.estimatedInventoryPressure;\n      candidateComparison.dominantRetentionVsSplitFileDelta = dominantRootRetention.metrics.productSourceFileCount - split.metrics.productSourceFileCount;\n      candidateComparison.dominantRetentionDominantRoot = dominantRootRetention.dominantRootRetentionPlan\n        ? dominantRootRetention.dominantRootRetentionPlan.dominantRoot\n        : null;\n    }+}\u001b[0m\n    let supportLargestReduction = 0;\n    let supportSurfaceCost = 0;",
+  "preservedZones": [
+    {
+      "kind": "unchanged_context",
+      "description": "Everything outside the modified zone is preserved byte-for-byte by the atomic operation."
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "oldTextHash": "33a1a3260235c732b3b85bdebfe9b3e153b3b4dcf79d2091124a595418c712fb",
+      "newTextHash": "5b24011e7cfed84aa9581647f8a5bc61dec170a6e6ef28929bf6d52ff48044b0",
+      "description": "The operation changed the highlighted span shown in inlinePreview."
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~1587 character(s) in `docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs` (sub-line atomic edit, expansion 0.49× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

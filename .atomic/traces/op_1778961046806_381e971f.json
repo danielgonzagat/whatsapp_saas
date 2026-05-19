@@ -1,0 +1,37 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1778961046806_381e971f",
+  "ts": "2026-05-16T19:50:46.806Z",
+  "file": "scripts/mcp/atomic-edit/server.ts",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 201,
+    "lineRewriteSurfaceChars": 150,
+    "expansionFactorAvoided": 0.75,
+    "bytesNet": 107,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "afterSha256": "8f235f80cd5c9f92e8fde8262b1d251043b22fb19028feafe7de1553905b5173",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- scripts/mcp/atomic-edit/server.ts (atomic char-level)\u001b[0m\n            `Verification package: ${verificationPlan.packageRelPath}\\n` +\n            `Files changed: ${staged.length}\\n` +\n            `Remaining analyzer messages\u001b[32m{+ before known residue fixes+}\u001b[0m: ${remainingMessages}\\n` +\u001b[32m{+\n            `Known residue fixes applied: ${knownResidueFixesApplied.length}\\n` ++}\u001b[0m\n            `Validation:\\n` +\n            `- analyzer mode: --fix-dry-run JSON only\\n` +",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~201 character(s) in `scripts/mcp/atomic-edit/server.ts` (sub-line atomic edit, expansion 0.75× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

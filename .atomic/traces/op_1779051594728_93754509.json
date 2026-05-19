@@ -1,0 +1,59 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779051594728_93754509",
+  "ts": "2026-05-17T20:59:54.728Z",
+  "file": "docs/ai/atomic-os-benchmark/tools/refactor-scorecard.cjs",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "targetUnit": "text_span",
+  "intention": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 886,
+    "lineRewriteSurfaceChars": 685,
+    "expansionFactorAvoided": 0.77,
+    "bytesNet": 201,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "5368407b0f08a78a6722c6be3d59f04189d4fcbae7df6ace73e8dfb991d7a4f9",
+  "proposedSha256": "5368407b0f08a78a6722c6be3d59f04189d4fcbae7df6ace73e8dfb991d7a4f9",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- docs/ai/atomic-os-benchmark/tools/refactor-scorecard.cjs (atomic char-level)\u001b[0m\n      };\n    }).filter(Boolean);\n    const \u001b[31m[-ass-]\u001b[0m\u001b[32m{+dom+}\u001b[0mi\u001b[31m[-g-]\u001b[0mn\u001b[31m[-me-]\u001b[0m\u001b[32m{+a+}\u001b[0mnt\u001b[32m{+Matche+}\u001b[0ms = [];\n    for (const method of publicMethods) {\n      const methodTokens = splitName(method);\n      const ranked = modules\n        .map((module) => ({ module, score: tokenRelationScore(methodTokens, module.moduleTokens) }))\n        .filter((candidate) => candidate.score > 0)\n        .sort((left, right) => right.score - left.score || left.module.file.localeCompare(right.module.file));\n      const [best, second] = ranked;\n      if (!best || (second && best.score === second.score)) continue;\n      \u001b[31m[-ass-]\u001b[0m\u001b[32m{+dom+}\u001b[0mi\u001b[31m[-g-]\u001b[0mn\u001b[31m[-me-]\u001b[0m\u001b[32m{+a+}\u001b[0mnt\u001b[32m{+Matche+}\u001b[0ms.push({\n        symbol: method,\n        existingModule: best.module.file,\n        score: best.score,\n        reason: 'dominant_token_match_to_existing_runtime_sibling',\n      });\n    }\u001b[32m{+\n    const scoreFloor = median(dominantMatches.map((match) => match.score));\n    const assignments = scoreFloor === null\n      ? []\n      : dominantMatches.filter((match) => match.score >= scoreFloor);+}\u001b[0m\n    return {\n      available: true,",
+  "preservedZones": [
+    {
+      "kind": "unchanged_context",
+      "description": "Everything outside the modified zone is preserved byte-for-byte by the atomic operation."
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "oldTextHash": "c54ee047076a40b016246f718963720e938c03b174a899d46374676ef73c28e0",
+      "newTextHash": "5368407b0f08a78a6722c6be3d59f04189d4fcbae7df6ace73e8dfb991d7a4f9",
+      "description": "The operation changed the highlighted span shown in inlinePreview."
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~886 character(s) in `docs/ai/atomic-os-benchmark/tools/refactor-scorecard.cjs` (sub-line atomic edit, expansion 0.77× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

@@ -1,0 +1,37 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1778937998911_830469c1",
+  "ts": "2026-05-16T13:26:38.912Z",
+  "file": "backend/src/lib/openai-models.ts",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 48,
+    "lineRewriteSurfaceChars": 73,
+    "expansionFactorAvoided": 1.52,
+    "bytesNet": 7,
+    "lineRewriteAvoided": true
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "afterSha256": "eaca0a0fa7816d1c33d316d39d0bb2349ecd82ee171fa99a6323e69b98621452",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- backend/src/lib/openai-models.ts (atomic char-level)\u001b[0m\n  \n  /** Should require audio reply by default. */\n  \u001b[32m{+export +}\u001b[0mfunction shouldRequireAudioReplyByDefault(config?: ConfigLike): boolean {\n    return readConfig('VOICE_RESPONSE_AUDIO_REQUIRED', config) === 'true';\n  }",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~48 character(s) in `backend/src/lib/openai-models.ts` (sub-line atomic edit, expansion 1.52× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

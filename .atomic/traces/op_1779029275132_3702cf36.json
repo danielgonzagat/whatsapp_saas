@@ -1,0 +1,59 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779029275132_3702cf36",
+  "ts": "2026-05-17T14:47:55.132Z",
+  "file": "docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "targetUnit": "text_span",
+  "intention": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 4169,
+    "lineRewriteSurfaceChars": 611,
+    "expansionFactorAvoided": 0.15,
+    "bytesNet": 3586,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "789afdb585dabc6debed4df0a6a40867113fadaa901ea8c5b4f61956e1cd8ab5",
+  "proposedSha256": "789afdb585dabc6debed4df0a6a40867113fadaa901ea8c5b4f61956e1cd8ab5",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs (atomic char-level)\u001b[0m\n  }\n  \n  function \u001b[32m{+tokenRelated(left, right) {\n    if (!left || !right) return fal+}\u001b[0ms\u001b[32m{+e;\n    return left === right || left.startsWith(right) || right.startsWith(left);\n  }\n  \n  function tokenRelationScore(leftTokens, rightTokens) {\n    let score = 0;\n    for (const left of leftTokens) {\n      for (const right of rightTokens) {\n        if (tokenRelated(left, right)) score += 1;\n      }\n    }\n    return score;\n  }\n  \n  function fallbackS+}\u001b[0mymbolClusters(symbols, scopePrefix, targetExt) {\n    const grouped = new Map();\n    for (const symbol of symbols) {\n      const tokens = splitName(symbol);\n      const key = tokens[0] || 'extracted';\n      const current = grouped.get(key) || [];\n      current.push(\u001b[32m{+{ name: +}\u001b[0msymbol\u001b[32m{+, lines: null, calls: [], isPublicSurface: false }+}\u001b[0m);\n      grouped.set(key, current);\n    }\n    return [...grouped.entries()]\n      .sort((left, right) => right[1].length - left[1].length || left[0].localeCompare(right[0]))\n      .map(([key, \u001b[31m[-na-]\u001b[0mme\u001b[32m{+mber+}\u001b[0ms]) => ({\n        cluster: key,\n        \u001b[32m{+root: key,\n        rootLine+}\u001b[0ms\u001b[32m{+: null,\n        totalObservedLines: null,\n        s+}\u001b[0mymbols: \u001b[32m{+members.map((member) => member.+}\u001b[0mname\u001b[32m{+),\n        memberDetail+}\u001b[0ms\u001b[32m{+: members+}\u001b[0m,\n        fileHint: scopePrefix + '-' + key + (targetExt || '.ts'),\n      \u001b[32m{+  assignmentSource: 'name-token-fallback',\n      +}\u001b[0m}));\u001b[32m{+\n  }\n  \n  function symbolDependencyClusters(symbolSpans, fallbackSymbols, scopePrefix, targetExt) {\n    if (!symbolSpans || symbolSpans.length === 0) {\n      return fallbackSymbolClusters(fallbackSymbols, scopePrefix, targetExt);\n    }\n    const averageLines = symbolSpans.reduce((total, span) => total + span.lines, 0) / symbolSpans.length;\n    const dominantRootNames = new Set(\n      symbolSpans.filter((span) => span.lines > averageLines).map((span) => span.name),\n    );\n    const roots = symbolSpans\n      .filter((span) => dominantRootNames.has(span.name) || (span.isPublicSurface && !span.calls.some((call) => dominantRootNames.has(call))))\n      .sort((left, right) => right.lines - left.lines || left.name.localeCompare(right.name));\n    const effectiveRoots = roots.length > 0 ? roots : [symbolSpans[0]];\n    const clusters = new Map();\n  \n    function rootKey(root) {\n      return splitName(root.name)[0] || root.fileHintToken || root.name.toLowerCase();\n    }\n  \n    function ensureCluster(root) {\n      const key = rootKey(root);\n      if (!clusters.has(key)) {\n        clusters.set(key, {\n          cluster: key,\n          root: root.name,\n          rootLines: root.lines,\n          totalObservedLines: 0,\n          symbols: [],\n          memberDetails: [],\n          fileHint: scopePrefix + '-' + key + (targetExt || '.ts'),\n          assignmentSource: 'dependency-graph',\n        });\n      }\n      return clusters.get(key);\n    }\n  \n    function addMember(cluster, span, reason) {\n      if (cluster.symbols.includes(span.name)) return;\n      cluster.symbols.push(span.name);\n      cluster.memberDetails.push({\n        name: span.name,\n        lines: span.lines,\n        calls: span.calls,\n        isPublicSurface: span.isPublicSurface,\n        assignmentReason: reason,\n      });\n      cluster.totalObservedLines += span.lines;\n    }\n  \n    for (const root of effectiveRoots) {\n      addMember(ensureCluster(root), root, 'root');\n    }\n  \n    for (const span of symbolSpans) {\n      if (effectiveRoots.some((root) => root.name === span.name)) continue;\n      const callers = effectiveRoots.filter((root) => root.calls.includes(span.name));\n      const calledRoots = effectiveRoots.filter((root) => span.calls.includes(root.name));\n      const tokenMatches = effectiveRoots.filter((root) => tokenRelationScore(splitName(span.name), splitName(root.name)) > 0);\n      const candidates = [...callers, ...calledRoots, ...tokenMatches];\n      const chosen = (candidates.length > 0 ? candidates : effectiveRoots)\n        .sort((left, right) => right.lines - left.lines || left.name.localeCompare(right.name))[0];\n      const reason = callers.includes(chosen)\n        ? 'called-by-root'\n        : calledRoots.includes(chosen)\n          ? 'wrapper-calls-root'\n          : tokenMatches.includes(chosen)\n            ? 'name-token-affinity'\n            : 'largest-root-fallback';\n      addMember(ensureCluster(chosen), span, reason);\n    }\n  \n    return [...clusters.values()]\n      .sort((left, right) => right.totalObservedLines - left.totalObservedLines || left.cluster.localeCompare(right.cluster));+}\u001b[0m\n  }\n  ",
+  "preservedZones": [
+    {
+      "kind": "unchanged_context",
+      "description": "Everything outside the modified zone is preserved byte-for-byte by the atomic operation."
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "oldTextHash": "a7f4fbc17435110228c1e0aebda4f1f2c778af832a1be02e41e9f56b4357d756",
+      "newTextHash": "789afdb585dabc6debed4df0a6a40867113fadaa901ea8c5b4f61956e1cd8ab5",
+      "description": "The operation changed the highlighted span shown in inlinePreview."
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~4169 character(s) in `docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs` (sub-line atomic edit, expansion 0.15× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

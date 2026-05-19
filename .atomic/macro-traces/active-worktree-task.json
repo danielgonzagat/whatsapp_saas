@@ -1,0 +1,402 @@
+{
+  "traceVersion": "1.0",
+  "manifestKind": "macro_trace_consolidation",
+  "worktree": "/Users/danielpenin/whatsapp_saas",
+  "updatedAt": "2026-05-18T07:25:14.967Z",
+  "decisionAuthority": "derived from child atomic traces and their target files in the current worktree; no fixed trace budget, file name, or method name is used",
+  "productBatchUnitCount": 2,
+  "productBatchUnits": [
+    "docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs",
+    "docs/ai/atomic-os-benchmark/tools/refactor-scorecard.cjs"
+  ],
+  "childTraceCount": 43,
+  "childTraces": [
+    {
+      "tracePath": ".atomic/traces/op_1779077600637_5413fe8f.json",
+      "operationId": "op_1779077600637_5413fe8f",
+      "ts": "2026-05-18T04:13:20.637Z",
+      "file": "docs/ai/atomic-os-benchmark/tools/refactor-scorecard.cjs",
+      "operation": "atomic_edit",
+      "changed": true,
+      "targetUnit": "text_span"
+    },
+    {
+      "tracePath": ".atomic/traces/op_1779077600811_513beaef.json",
+      "operationId": "op_1779077600811_513beaef",
+      "ts": "2026-05-18T04:13:20.811Z",
+      "file": "docs/ai/atomic-os-benchmark/tools/refactor-scorecard.cjs",
+      "operation": "atomic_edit",
+      "changed": true,
+      "targetUnit": "text_span"
+    },
+    {
+      "tracePath": ".atomic/traces/op_1779077600957_4217a7bb.json",
+      "operationId": "op_1779077600957_4217a7bb",
+      "ts": "2026-05-18T04:13:20.957Z",
+      "file": "docs/ai/atomic-os-benchmark/tools/refactor-scorecard.cjs",
+      "operation": "atomic_edit",
+      "changed": true,
+      "targetUnit": "text_span"
+    },
+    {
+      "tracePath": ".atomic/traces/op_1779077601096_c16ea44f.json",
+      "operationId": "op_1779077601096_c16ea44f",
+      "ts": "2026-05-18T04:13:21.096Z",
+      "file": "docs/ai/atomic-os-benchmark/tools/refactor-scorecard.cjs",
+      "operation": "atomic_edit",
+      "changed": true,
+      "targetUnit": "text_span"
+    },
+    {
+      "tracePath": ".atomic/traces/op_1779077601215_3528d8d6.json",
+      "operationId": "op_1779077601215_3528d8d6",
+      "ts": "2026-05-18T04:13:21.215Z",
+      "file": "docs/ai/atomic-os-benchmark/tools/refactor-scorecard.cjs",
+      "operation": "atomic_edit",
+      "changed": true,
+      "targetUnit": "text_span"
+    },
+    {
+      "tracePath": ".atomic/traces/op_1779079463709_98ddcddf.json",
+      "operationId": "op_1779079463709_98ddcddf",
+      "ts": "2026-05-18T04:44:23.710Z",
+      "file": "docs/ai/atomic-os-benchmark/tools/refactor-scorecard.cjs",
+      "operation": "atomic_edit",
+      "changed": true,
+      "targetUnit": "text_span"
+    },
+    {
+      "tracePath": ".atomic/traces/op_1779079464572_447aa119.json",
+      "operationId": "op_1779079464572_447aa119",
+      "ts": "2026-05-18T04:44:24.573Z",
+      "file": "docs/ai/atomic-os-benchmark/tools/refactor-scorecard.cjs",
+      "operation": "atomic_edit",
+      "changed": true,
+      "targetUnit": "text_span"
+    },
+    {
+      "tracePath": ".atomic/traces/op_1779079465446_dd1fbe38.json",
+      "operationId": "op_1779079465446_dd1fbe38",
+      "ts": "2026-05-18T04:44:25.446Z",
+      "file": "docs/ai/atomic-os-benchmark/tools/refactor-scorecard.cjs",
+      "operation": "atomic_edit",
+      "changed": true,
+      "targetUnit": "text_span"
+    },
+    {
+      "tracePath": ".atomic/traces/op_1779079466332_ee0663bf.json",
+      "operationId": "op_1779079466332_ee0663bf",
+      "ts": "2026-05-18T04:44:26.333Z",
+      "file": "docs/ai/atomic-os-benchmark/tools/refactor-scorecard.cjs",
+      "operation": "atomic_edit",
+      "changed": true,
+      "targetUnit": "text_span"
+    },
+    {
+      "tracePath": ".atomic/traces/op_1779079467198_6706735d.json",
+      "operationId": "op_1779079467198_6706735d",
+      "ts": "2026-05-18T04:44:27.198Z",
+      "file": "docs/ai/atomic-os-benchmark/tools/refactor-scorecard.cjs",
+      "operation": "atomic_edit",
+      "changed": true,
+      "targetUnit": "text_span"
+    },
+    {
+      "tracePath": ".atomic/traces/op_1779079513253_e70606d4.json",
+      "operationId": "op_1779079513253_e70606d4",
+      "ts": "2026-05-18T04:45:13.253Z",
+      "file": "docs/ai/atomic-os-benchmark/tools/refactor-scorecard.cjs",
+      "operation": "atomic_edit",
+      "changed": true,
+      "targetUnit": "text_span"
+    },
+    {
+      "tracePath": ".atomic/traces/op_1779079533283_4a14d988.json",
+      "operationId": "op_1779079533283_4a14d988",
+      "ts": "2026-05-18T04:45:33.283Z",
+      "file": "docs/ai/atomic-os-benchmark/tools/refactor-scorecard.cjs",
+      "operation": "atomic_edit",
+      "changed": true,
+      "targetUnit": "text_span"
+    },
+    {
+      "tracePath": ".atomic/traces/op_1779079534178_d7d7cd4e.json",
+      "operationId": "op_1779079534178_d7d7cd4e",
+      "ts": "2026-05-18T04:45:34.179Z",
+      "file": "docs/ai/atomic-os-benchmark/tools/refactor-scorecard.cjs",
+      "operation": "atomic_edit",
+      "changed": true,
+      "targetUnit": "text_span"
+    },
+    {
+      "tracePath": ".atomic/traces/op_1779079535056_67542278.json",
+      "operationId": "op_1779079535056_67542278",
+      "ts": "2026-05-18T04:45:35.056Z",
+      "file": "docs/ai/atomic-os-benchmark/tools/refactor-scorecard.cjs",
+      "operation": "atomic_edit",
+      "changed": true,
+      "targetUnit": "text_span"
+    },
+    {
+      "tracePath": ".atomic/traces/op_1779079535925_82f717d0.json",
+      "operationId": "op_1779079535925_82f717d0",
+      "ts": "2026-05-18T04:45:35.925Z",
+      "file": "docs/ai/atomic-os-benchmark/tools/refactor-scorecard.cjs",
+      "operation": "atomic_edit",
+      "changed": true,
+      "targetUnit": "text_span"
+    },
+    {
+      "tracePath": ".atomic/traces/op_1779079558610_f1bae5a7.json",
+      "operationId": "op_1779079558610_f1bae5a7",
+      "ts": "2026-05-18T04:45:58.610Z",
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs",
+      "operation": "atomic_edit",
+      "changed": true,
+      "targetUnit": "text_span"
+    },
+    {
+      "tracePath": ".atomic/traces/op_1779079559529_b057d8b1.json",
+      "operationId": "op_1779079559529_b057d8b1",
+      "ts": "2026-05-18T04:45:59.529Z",
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs",
+      "operation": "atomic_edit",
+      "changed": true,
+      "targetUnit": "text_span"
+    },
+    {
+      "tracePath": ".atomic/traces/op_1779079560421_6703c95d.json",
+      "operationId": "op_1779079560421_6703c95d",
+      "ts": "2026-05-18T04:46:00.421Z",
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs",
+      "operation": "atomic_edit",
+      "changed": true,
+      "targetUnit": "text_span"
+    },
+    {
+      "tracePath": ".atomic/traces/op_1779079561324_a087d9ad.json",
+      "operationId": "op_1779079561324_a087d9ad",
+      "ts": "2026-05-18T04:46:01.324Z",
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs",
+      "operation": "atomic_edit",
+      "changed": true,
+      "targetUnit": "text_span"
+    },
+    {
+      "tracePath": ".atomic/traces/op_1779079562206_f8001af8.json",
+      "operationId": "op_1779079562206_f8001af8",
+      "ts": "2026-05-18T04:46:02.206Z",
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs",
+      "operation": "atomic_edit",
+      "changed": true,
+      "targetUnit": "text_span"
+    },
+    {
+      "tracePath": ".atomic/traces/op_1779079563067_3cc74cb0.json",
+      "operationId": "op_1779079563067_3cc74cb0",
+      "ts": "2026-05-18T04:46:03.067Z",
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs",
+      "operation": "atomic_edit",
+      "changed": true,
+      "targetUnit": "text_span"
+    },
+    {
+      "tracePath": ".atomic/traces/op_1779081083871_54c61d24.json",
+      "operationId": "op_1779081083871_54c61d24",
+      "ts": "2026-05-18T05:11:23.871Z",
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs",
+      "operation": "atomic_edit",
+      "changed": true,
+      "targetUnit": "text_span"
+    },
+    {
+      "tracePath": ".atomic/traces/op_1779081085113_2b621b80.json",
+      "operationId": "op_1779081085113_2b621b80",
+      "ts": "2026-05-18T05:11:25.113Z",
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs",
+      "operation": "atomic_edit",
+      "changed": true,
+      "targetUnit": "text_span"
+    },
+    {
+      "tracePath": ".atomic/traces/op_1779081086291_48ed458d.json",
+      "operationId": "op_1779081086291_48ed458d",
+      "ts": "2026-05-18T05:11:26.291Z",
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs",
+      "operation": "atomic_edit",
+      "changed": true,
+      "targetUnit": "text_span"
+    },
+    {
+      "tracePath": ".atomic/traces/op_1779081119901_c9366ac4.json",
+      "operationId": "op_1779081119901_c9366ac4",
+      "ts": "2026-05-18T05:11:59.901Z",
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs",
+      "operation": "atomic_edit",
+      "changed": true,
+      "targetUnit": "text_span"
+    },
+    {
+      "tracePath": ".atomic/traces/op_1779081120807_9ed3823b.json",
+      "operationId": "op_1779081120807_9ed3823b",
+      "ts": "2026-05-18T05:12:00.808Z",
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs",
+      "operation": "atomic_edit",
+      "changed": true,
+      "targetUnit": "text_span"
+    },
+    {
+      "tracePath": ".atomic/traces/op_1779081121676_3161c714.json",
+      "operationId": "op_1779081121676_3161c714",
+      "ts": "2026-05-18T05:12:01.676Z",
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs",
+      "operation": "atomic_edit",
+      "changed": true,
+      "targetUnit": "text_span"
+    },
+    {
+      "tracePath": ".atomic/traces/op_1779081122544_77b7fc7e.json",
+      "operationId": "op_1779081122544_77b7fc7e",
+      "ts": "2026-05-18T05:12:02.545Z",
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs",
+      "operation": "atomic_edit",
+      "changed": true,
+      "targetUnit": "text_span"
+    },
+    {
+      "tracePath": ".atomic/traces/op_1779082061383_3c1cee0d.json",
+      "operationId": "op_1779082061383_3c1cee0d",
+      "ts": "2026-05-18T05:27:41.383Z",
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs",
+      "operation": "atomic_edit",
+      "changed": true,
+      "targetUnit": "text_span"
+    },
+    {
+      "tracePath": ".atomic/traces/op_1779082062268_abcd6e4a.json",
+      "operationId": "op_1779082062268_abcd6e4a",
+      "ts": "2026-05-18T05:27:42.268Z",
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs",
+      "operation": "atomic_edit",
+      "changed": true,
+      "targetUnit": "text_span"
+    },
+    {
+      "tracePath": ".atomic/traces/op_1779082063229_2b29f8c6.json",
+      "operationId": "op_1779082063229_2b29f8c6",
+      "ts": "2026-05-18T05:27:43.229Z",
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs",
+      "operation": "atomic_edit",
+      "changed": true,
+      "targetUnit": "text_span"
+    },
+    {
+      "tracePath": ".atomic/traces/op_1779083289869_fada0f6a.json",
+      "operationId": "op_1779083289869_fada0f6a",
+      "ts": "2026-05-18T05:48:09.869Z",
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs",
+      "operation": "atomic_edit",
+      "changed": true,
+      "targetUnit": "text_span"
+    },
+    {
+      "tracePath": ".atomic/traces/op_1779083494525_90989be1.json",
+      "operationId": "op_1779083494525_90989be1",
+      "ts": "2026-05-18T05:51:34.525Z",
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs",
+      "operation": "atomic_edit",
+      "changed": true,
+      "targetUnit": "text_span"
+    },
+    {
+      "tracePath": ".atomic/traces/op_1779085217631_6bbb3b20.json",
+      "operationId": "op_1779085217631_6bbb3b20",
+      "ts": "2026-05-18T06:20:17.631Z",
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs",
+      "operation": "atomic_edit",
+      "changed": true,
+      "targetUnit": "text_span"
+    },
+    {
+      "tracePath": ".atomic/traces/op_1779085255478_8a94b5ac.json",
+      "operationId": "op_1779085255478_8a94b5ac",
+      "ts": "2026-05-18T06:20:55.478Z",
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs",
+      "operation": "atomic_edit",
+      "changed": true,
+      "targetUnit": "text_span"
+    },
+    {
+      "tracePath": ".atomic/traces/op_1779086610711_6830e02f.json",
+      "operationId": "op_1779086610711_6830e02f",
+      "ts": "2026-05-18T06:43:30.711Z",
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs",
+      "operation": "atomic_edit",
+      "changed": true,
+      "targetUnit": "text_span"
+    },
+    {
+      "tracePath": ".atomic/traces/op_1779086639739_763b51a0.json",
+      "operationId": "op_1779086639739_763b51a0",
+      "ts": "2026-05-18T06:43:59.739Z",
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs",
+      "operation": "atomic_edit",
+      "changed": true,
+      "targetUnit": "text_span"
+    },
+    {
+      "tracePath": ".atomic/traces/op_1779086649868_be7a2031.json",
+      "operationId": "op_1779086649868_be7a2031",
+      "ts": "2026-05-18T06:44:09.868Z",
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs",
+      "operation": "atomic_edit",
+      "changed": true,
+      "targetUnit": "text_span"
+    },
+    {
+      "tracePath": ".atomic/traces/op_1779086660891_bae177f7.json",
+      "operationId": "op_1779086660891_bae177f7",
+      "ts": "2026-05-18T06:44:20.891Z",
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs",
+      "operation": "atomic_edit",
+      "changed": true,
+      "targetUnit": "text_span"
+    },
+    {
+      "tracePath": ".atomic/traces/op_1779086669310_32bb226e.json",
+      "operationId": "op_1779086669310_32bb226e",
+      "ts": "2026-05-18T06:44:29.310Z",
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs",
+      "operation": "atomic_edit",
+      "changed": true,
+      "targetUnit": "text_span"
+    },
+    {
+      "tracePath": ".atomic/traces/op_1779087950982_be86a830.json",
+      "operationId": "op_1779087950982_be86a830",
+      "ts": "2026-05-18T07:05:50.982Z",
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs",
+      "operation": "atomic_edit",
+      "changed": true,
+      "targetUnit": "text_span"
+    },
+    {
+      "tracePath": ".atomic/traces/op_1779087963323_17b0b4b4.json",
+      "operationId": "op_1779087963323_17b0b4b4",
+      "ts": "2026-05-18T07:06:03.323Z",
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs",
+      "operation": "atomic_edit",
+      "changed": true,
+      "targetUnit": "text_span"
+    },
+    {
+      "tracePath": ".atomic/traces/op_1779089114900_8dac4011.json",
+      "operationId": "op_1779089114900_8dac4011",
+      "ts": "2026-05-18T07:25:14.900Z",
+      "file": "docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs",
+      "operation": "atomic_edit",
+      "changed": true,
+      "targetUnit": "text_span"
+    }
+  ]
+}

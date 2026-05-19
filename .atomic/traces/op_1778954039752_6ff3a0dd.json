@@ -1,0 +1,37 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1778954039752_6ff3a0dd",
+  "ts": "2026-05-16T17:53:59.753Z",
+  "file": "scripts/mcp/atomic-edit/server.ts",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 2601,
+    "lineRewriteSurfaceChars": 20,
+    "expansionFactorAvoided": 0.01,
+    "bytesNet": 2601,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "afterSha256": "cc368d152a714ef69aee9c7f2b981ef27fef44858d715c21cf2af78884abd8e0",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- scripts/mcp/atomic-edit/server.ts (atomic char-level)\u001b[0m\n  \n  server.registerTool(\n  \u001b[32m{+  'atomic_create_file',\n    {\n      title: 'Create (or wholesale-replace) a file — syntax-validated, atomic, governed',\n      description:\n        'Create a NEW source file (or, with overwrite:true, replace one wholesale) with `content`, through the ' +\n        'SAME pipeline as every atomic op: governance guard, full syntax-regression validation, atomic write, ' +\n        'char-level trace. This is the first-class FILE-LEVEL operator for decomposition/extraction (topologies: ' +\n        'identity-preserved position-moved, API-preserved impl-moved): create the new module here, then trim the ' +\n        'origin with atomic_edit_symbol/atomic_replace_range and rewire with atomic_add_import. NEVER fall back to ' +\n        'a shell heredoc (cat > file) — that bypasses validation, trace and governance and is a banned escape.',\n      inputSchema: {\n        file: z.string().describe('repo-relative path of the file to create'),\n        content: z.string().describe('full file content'),\n        overwrite: z\n          .boolean()\n          .optional()\n          .describe('replace an existing file wholesale (default false → refuse if it already exists)'),\n        preview: z.boolean().optional().describe('dry-run: validate + return diff, do not write'),\n      },\n    },\n    async (a) => {\n      try {\n        const { absPath, relPath } = resolveSafeTarget(a.file);\n        const exists = fs.existsSync(absPath);\n        if (exists && !a.overwrite) {\n          return fail(\n            `refused: ${relPath} already exists. Pass overwrite:true to replace it wholesale, ` +\n              `or use a ranged/symbol edit to change only what the intention requires.`,\n          );\n        }\n        const before = exists ? fs.readFileSync(absPath, 'utf8') : '';\n        const edit =\n          before === ''\n            ? { start: { line: 1, column: 1 }, end: { line: 1, column: 1 }, newText: a.content }\n            : (() => {\n                const lines = before.split('\\n');\n                return {\n                  start: { line: 1, column: 1 },\n                  end: { line: lines.length, column: lines[lines.length - 1].length + 1 },\n                  newText: a.content,\n                };\n              })();\n        const r = applyEdits(relPath, before, [edit]);\n        if (!exists && !(a.preview ?? false)) {\n          fs.mkdirSync(path.dirname(absPath), { recursive: true });\n        }\n        return commit(\n          relPath,\n          absPath,\n          before,\n          r,\n          { op: 'atomic_create_file', created: !exists },\n          a.preview ?? false,\n        );\n      } catch (e) {\n        return fail(e instanceof Error ? e.message : String(e));\n      }\n    },\n  );\n  \n  server.registerTool(+}\u001b[0m\n    'atomic_apply_edits',\n    {",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~2601 character(s) in `scripts/mcp/atomic-edit/server.ts` (sub-line atomic edit, expansion 0.01× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

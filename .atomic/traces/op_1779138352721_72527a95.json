@@ -1,0 +1,59 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779138352721_72527a95",
+  "ts": "2026-05-18T21:05:52.721Z",
+  "file": "frontend/src/components/kloel/products/product-nerve-tabs.const.ts",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "atomic_delete_file",
+  "operator": "atomic_delete_file",
+  "targetUnit": "file",
+  "intention": "delete frontend/src/components/kloel/products/product-nerve-tabs.const.ts (1231 bytes)",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 1231,
+    "lineRewriteSurfaceChars": 1231,
+    "expansionFactorAvoided": 1,
+    "bytesNet": -1231,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "generic",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "proposedSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- frontend/src/components/kloel/products/product-nerve-tabs.const.ts (atomic char-level)\u001b[0m\n  \u001b[31m[-/**\n   * Static tab configuration for the ProductNerveCenter editor surface.\n   * Extracted from the .tsx component so the data-integrity gate (which only\n   * scans .tsx files for inline literal arrays) does not flag it as fake data.\n   * This is UI-config, not domain data.\n   */\n  \n  /** Top-level tab descriptor. */\n  export interface ProductNerveTab {\n    /** Tab key (used for routing within the editor). */\n    k: string;\n    /** Tab label shown to the user. */\n    l: string;\n  }\n  \n  /** Top-level tabs of the product editor. */\n  export const PRODUCT_NERVE_TABS: readonly ProductNerveTab[] = [\n    { k: 'dados', l: 'Dados gerais' },\n    { k: 'planos', l: 'Planos' },\n    { k: 'checkouts', l: 'Checkouts' },\n    { k: 'urls', l: 'Urls' },\n    { k: 'comissao', l: 'Comissionamento / Afiliação' },\n    { k: 'cupons', l: 'Cupons de Desconto' },\n    { k: 'campanhas', l: 'Campanhas' },\n    { k: 'avaliacoes', l: 'Avaliações' },\n    { k: 'afterpay', l: 'After Pay' },\n    { k: 'ia', l: 'IA' },\n  ];\n  \n  /** Sub-tabs within the Plan detail panel. */\n  export const PLAN_DETAIL_SUBTABS: readonly ProductNerveTab[] = [\n    { k: 'loja', l: 'Loja' },\n    { k: 'pagamento', l: 'Pagamento' },\n    { k: 'frete', l: 'Frete' },\n    { k: 'afiliacao', l: 'Afiliação' },\n    { k: 'bump', l: 'Order Bump' },\n  ];-]\u001b[0m\n  ",
+  "preservedZones": [],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "byteStart": 0,
+      "byteEnd": 1231,
+      "newByteLength": 0,
+      "oldTextHash": "e7b9af43c28e5791ccef3dd2ede234b68b2a08109d4ebdf6b1cf115a3522e6f8",
+      "newTextHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "oldSample": "/**\n * Static tab configuration for the ProductNerveCenter editor surface.\n * Extracted from the .tsx component so the data-integrity gate (which only\n * scans .tsx files for inline literal arrays) do",
+      "newSample": "",
+      "description": "Delete 1231 bytes at offset 0"
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "file_deleted",
+  "audit": {
+    "whatChanged": "Operation `atomic_delete_file` changed ~1231 character(s) in `frontend/src/components/kloel/products/product-nerve-tabs.const.ts` (sub-line atomic edit, expansion 1× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "unvalidated-text",
+    "zeroCodeTrust": 30,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

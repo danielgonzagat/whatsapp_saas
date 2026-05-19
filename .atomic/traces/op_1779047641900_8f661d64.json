@@ -1,0 +1,59 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779047641900_8f661d64",
+  "ts": "2026-05-17T19:54:01.900Z",
+  "file": "docs/ai/atomic-os-benchmark/tools/refactor-scorecard.cjs",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "targetUnit": "text_span",
+  "intention": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 3384,
+    "lineRewriteSurfaceChars": 3030,
+    "expansionFactorAvoided": 0.9,
+    "bytesNet": 354,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "e79a25a5c5fe677cc0d2b7f1971c250e56b37452d023878f52ef1b607215cb4b",
+  "proposedSha256": "e79a25a5c5fe677cc0d2b7f1971c250e56b37452d023878f52ef1b607215cb4b",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- docs/ai/atomic-os-benchmark/tools/refactor-scorecard.cjs (atomic char-level)\u001b[0m\n  function usage() {\n    console.error(\n      'Usage: refactor-scorecard.cjs --worktree <abs> --target <path> [--scope-prefix <path>] [--\u001b[32m{+class <ClassNa+}\u001b[0mm\u001b[32m{+e> --enforce-public-+}\u001b[0ma\u001b[32m{+pi] [--ma+}\u001b[0mx-target-lines <n>] [--max-file-lines <n>] [--spec <path>] [--enforce-scope --allow-prefix <path> ...] [--allow-file <path> ...] [--allow-atomic-traces] [--enforce-target-dominance-release] [--enforce-facade-private-helper-release] [--enforce-extraction-economy] [--enforce-trace-economy] [--json]',\n    );\n    process.exit(2);\n  }\n  \n  function parseArgs(argv) {\n    const out = {\n      json: false,\n      scopePrefix: null,\n      \u001b[32m{+classNam+}\u001b[0me\u001b[32m{+: +}\u001b[0mn\u001b[32m{+ull,\n      en+}\u001b[0mforceScope: false,\n      allowPrefixes: [],\n      allowFiles: [],\n      allowAtomicTraces: false,\n      enforceTargetDominanceRelease: false,\n      enforceFacadePrivateHelperRelease: false,\n      enforceExtractionEconomy: false,\n      enforceTraceEconomy: false,\n    \u001b[32m{+  enforcePublicApi: false,\n    +}\u001b[0m};\n    for (let index = 0; index < argv.length; index += 1) {\n      const arg = argv[index];\n      if (arg === '--worktree') {\n        out.worktree = argv[++index];\n      } else if (arg === '--target') {\n        out.target = argv[++index];\n      } else if (arg === '--scope-prefix') {\n        out.scopePrefix = argv[++index];\n      } else if (arg === '--\u001b[32m{+class') {\n        out.classNa+}\u001b[0mm\u001b[32m{+e = +}\u001b[0ma\u001b[32m{+rgv[++inde+}\u001b[0mx\u001b[32m{+];\n      } else if (arg === '+}\u001b[0m-\u001b[32m{+-max-+}\u001b[0mtarget-lines') {\n        out.maxTargetLines = Number(argv[++index]);\n      } else if (arg === '--max-file-lines') {\n        out.maxFileLines = Number(argv[++index]);\n      } else if (arg === '--spec') {\n        out.spec = argv[++index];\n      } else if (arg === '--enforce-scope') {\n        out.enforceScope = true;\n      } else if (arg === '--allow-prefix') {\n        out.allowPrefixes.push(argv[++index]);\n      } else if (arg === '--allow-file') {\n        out.allowFiles.push(argv[++index]);\n      } else if (arg === '--allow-atomic-traces') {\n        out.allowAtomicTraces = true;\n      } else if (arg === '--enforce-target-dominance-release') {\n        out.enforceTargetDominanceRelease = true;\n      } else if (arg === '--enforce-facade-private-helper-release') {\n        out.enforceFacadePrivateHelperRelease = true;\n      } else if (arg === '--enforce-extraction-economy') {\n        out.enforceExtractionEconomy = true;\n      } else if (arg === '--enforce-trace-economy') {\n        out.enforceTraceEconomy = true;\n      } else if (arg === '--\u001b[32m{+enforce-public-api') {\n        out.enforcePublicApi = true;\n      } else if (arg === '--+}\u001b[0mjson') {\n        out.json = true;\n      } else {\n        usage();\n      }\n    }\n    if (!out.worktree || !out.target) usage();\u001b[32m{+\n    if (out.enforcePublicApi && !out.className) throw new Error('--enforce-public-api requires --class');+}\u001b[0m\n    if (!path.isAbsolute(out.worktree)) throw new Error('--worktree must be absolute');\n    if (!fs.existsSync(out.worktree)) throw new Error('worktree not found: ' + out.worktree);",
+  "preservedZones": [
+    {
+      "kind": "unchanged_context",
+      "description": "Everything outside the modified zone is preserved byte-for-byte by the atomic operation."
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "oldTextHash": "dfa99f0ede90d79a837da40d95a66788fda02e68534ec63a8f7200c69a1b85ff",
+      "newTextHash": "e79a25a5c5fe677cc0d2b7f1971c250e56b37452d023878f52ef1b607215cb4b",
+      "description": "The operation changed the highlighted span shown in inlinePreview."
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~3384 character(s) in `docs/ai/atomic-os-benchmark/tools/refactor-scorecard.cjs` (sub-line atomic edit, expansion 0.9× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

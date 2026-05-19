@@ -1,0 +1,77 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1778984298754_a3312d0e",
+  "ts": "2026-05-17T02:18:18.754Z",
+  "file": "worker/.smoke-eslint-residue.3744.spec.ts",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "atomic_apply_eslint_dry_run_fixes",
+  "operator": "atomic_apply_eslint_dry_run_fixes",
+  "targetUnit": "eslint_dry_run_file_output",
+  "intention": "apply analyzer-proposed lint fixes without letting the analyzer write directly",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 275,
+    "lineRewriteSurfaceChars": 275,
+    "expansionFactorAvoided": 1,
+    "bytesNet": 74,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "1eb1e0e0d2814792c3fbb7a3c87edffd1860c6184b918826d4cc52f74e2b92c7",
+  "proposedSha256": "1eb1e0e0d2814792c3fbb7a3c87edffd1860c6184b918826d4cc52f74e2b92c7",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- worker/.smoke-eslint-residue.3744.spec.ts (atomic char-level)\u001b[0m\n  import { describe, beforeEach, it, expect\u001b[32m{+,+}\u001b[0m \u001b[32m{+afterEach +}\u001b[0m} from 'vitest';\n  \n  const envBackup = { ...process.env };\n  \n  function clearOpenAiEnvs() {\n    delete process.env.OPENAI_MODEL;\n  }\n  \n  describe('openai-models', () => {\n    beforeEach(() => {\n      clearOpenAiEnvs();\u001b[32m{+\n    });\n  \n    afterEach(() => {\n      process.env = { ...envBackup };+}\u001b[0m\n    });\n  ",
+  "preservedZones": [
+    {
+      "kind": "prefix_context",
+      "description": "Text before the first analyzer-modified span was preserved.",
+      "beforeHash": "7952ac756f57e94fab3b22b2554ce7831afd01f6b6b9aeafeac5c04c2244351a",
+      "afterHash": "7952ac756f57e94fab3b22b2554ce7831afd01f6b6b9aeafeac5c04c2244351a"
+    },
+    {
+      "kind": "suffix_context",
+      "description": "Text after the last analyzer-modified span was preserved.",
+      "beforeHash": "da9b00998fa05fbde791381170374c42cc71d1bfa9c0d53bd8046d90927efe9f",
+      "afterHash": "da9b00998fa05fbde791381170374c42cc71d1bfa9c0d53bd8046d90927efe9f"
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "analyzer_fix_output",
+      "oldTextHash": "84661e4dc314f9fe6d076c6c45a418f82135a11fef3ddf86d0bd3e5a898b1d9f",
+      "newTextHash": "1eb1e0e0d2814792c3fbb7a3c87edffd1860c6184b918826d4cc52f74e2b92c7",
+      "oldSample": " } from 'vitest';\n\nconst envBackup = { ...process.env };\n\nfunction clearOpenAiEnvs() {\n  delete process.env.OPENAI_MODEL;\n}\n\ndescribe('openai-models', () => {\n  beforeEach(() => {\n    clearOpenAiEnvs()",
+      "newSample": ", afterEach } from 'vitest';\n\nconst envBackup = { ...process.env };\n\nfunction clearOpenAiEnvs() {\n  delete process.env.OPENAI_MODEL;\n}\n\ndescribe('openai-models', () => {\n  beforeEach(() => {\n    clearOpenAiEnvs();\n  });\n\n  afterEach(() =...",
+      "description": "ESLint --fix-dry-run proposed this file output; atomic-edit validated and wrote it.",
+      "metadata": {
+        "knownResidueFixes": [
+          {
+            "symbol": "envBackup",
+            "description": "worker/.smoke-eslint-residue.3744.spec.ts: preserve OpenAI env backup by restoring target env keys after each test"
+          }
+        ]
+      }
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "behavior_preserving_lint_cleanup",
+  "audit": {
+    "whatChanged": "Operation `atomic_apply_eslint_dry_run_fixes` changed ~275 character(s) in `worker/.smoke-eslint-residue.3744.spec.ts` (sub-line atomic edit, expansion 1× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

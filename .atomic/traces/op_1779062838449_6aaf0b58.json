@@ -1,0 +1,59 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779062838449_6aaf0b58",
+  "ts": "2026-05-18T00:07:18.449Z",
+  "file": "docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "targetUnit": "text_span",
+  "intention": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 205,
+    "lineRewriteSurfaceChars": 179,
+    "expansionFactorAvoided": 0.87,
+    "bytesNet": 36,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "1d2a8e50d9e5f2261db90f825a051024002a4cdd657edaf854b6febcd4cc65a9",
+  "proposedSha256": "1d2a8e50d9e5f2261db90f825a051024002a4cdd657edaf854b6febcd4cc65a9",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs (atomic char-level)\u001b[0m\n          compactionActions: [\n            'after the first green scorecard, delegate every resolved public method to its owner module with one facade statement',\n            'when multiple public methods share an owner module, build one owner-local dependency bundle or cached delegate \u001b[32m{+only +}\u001b[0mi\u001b[32m{+f depe+}\u001b[0mn\u001b[31m[-st-]\u001b[0m\u001b[32m{+d+}\u001b[0me\u001b[31m[-a-]\u001b[0m\u001b[32m{+ncyBun+}\u001b[0md\u001b[31m[- -]\u001b[0m\u001b[32m{+leEc+}\u001b[0mo\u001b[31m[-f-]\u001b[0m\u001b[32m{+nomy+}\u001b[0m \u001b[32m{+p+}\u001b[0mr\u001b[32m{+ov+}\u001b[0me\u001b[31m[-p-]\u001b[0m\u001b[32m{+s low+}\u001b[0me\u001b[31m[-a-]\u001b[0m\u001b[32m{+r +}\u001b[0mt\u001b[32m{+otal +}\u001b[0min\u001b[31m[-g-]\u001b[0m\u001b[32m{+ventory+}\u001b[0m th\u001b[31m[-e s-]\u001b[0ma\u001b[31m[-me-]\u001b[0m\u001b[32m{+n+}\u001b[0m \u001b[31m[-obj-]\u001b[0m\u001b[32m{+dir+}\u001b[0mect \u001b[31m[-lit-]\u001b[0m\u001b[32m{+d+}\u001b[0me\u001b[31m[-ral -]\u001b[0mpe\u001b[31m[-r-]\u001b[0m\u001b[32m{+ndency+}\u001b[0m \u001b[31m[-m-]\u001b[0m\u001b[32m{+obj+}\u001b[0me\u001b[32m{+c+}\u001b[0mt\u001b[31m[-hod-]\u001b[0m\u001b[32m{+s+}\u001b[0m',\n            'release retained public leaf wrappers into an already-created owner module when their body delegates through that owner and adds no product source file',\n            'move retained public leaf bodies only when an existing owner module can absorb them without adding a product source file',",
+  "preservedZones": [
+    {
+      "kind": "unchanged_context",
+      "description": "Everything outside the modified zone is preserved byte-for-byte by the atomic operation."
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "oldTextHash": "4c63771a094c6f7c31edccff5b8fa2a48257d8916de7c19c036eb7136a5d4375",
+      "newTextHash": "1d2a8e50d9e5f2261db90f825a051024002a4cdd657edaf854b6febcd4cc65a9",
+      "description": "The operation changed the highlighted span shown in inlinePreview."
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~205 character(s) in `docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs` (sub-line atomic edit, expansion 0.87× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

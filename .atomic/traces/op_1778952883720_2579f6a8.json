@@ -1,0 +1,37 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1778952883720_2579f6a8",
+  "ts": "2026-05-16T17:34:43.720Z",
+  "file": "worker/processors/autopilot/cognition-reply.ts",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 220,
+    "lineRewriteSurfaceChars": 253,
+    "expansionFactorAvoided": 1.15,
+    "bytesNet": 14,
+    "lineRewriteAvoided": true
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "afterSha256": "d4313584fd12be3cf1ca93b843af3ac828768f16d86e0b472592c9e418b0bac8",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- worker/processors/autopilot/cognition-reply.ts (atomic char-level)\u001b[0m\n      const replies = Array.isArray(parsed?.replies) ? parsed.replies : [];\n  \n      if (replies.length !== normalizedMessages.length) \u001b[32m{+{\n        +}\u001b[0mreturn fallback();\u001b[32m{+\n      }+}\u001b[0m\n  \n      return normalizedMessages.map((message, index) => ({",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~220 character(s) in `worker/processors/autopilot/cognition-reply.ts` (sub-line atomic edit, expansion 1.15× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

@@ -1,0 +1,59 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779038214744_0975fa10",
+  "ts": "2026-05-17T17:16:54.744Z",
+  "file": "docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "targetUnit": "text_span",
+  "intention": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 1385,
+    "lineRewriteSurfaceChars": 604,
+    "expansionFactorAvoided": 0.44,
+    "bytesNet": 781,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "2a60db8b8c93f999bb920b65047ee089f9e195ef11411d809af51e9f9b3f689b",
+  "proposedSha256": "2a60db8b8c93f999bb920b65047ee089f9e195ef11411d809af51e9f9b3f689b",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs (atomic char-level)\u001b[0m\n      candidate.pressureScore.byCategory = byCategory;\n      candidate.pressureScore.byFamily = byFamily;\n      c\u001b[32m{+onst worstF+}\u001b[0ma\u001b[32m{+milyRegret = Math.max(...Object.values(byFamily));\n      ca+}\u001b[0mndidate.pressureScore.\u001b[32m{+wors+}\u001b[0mt\u001b[32m{+Family = Number(w+}\u001b[0mo\u001b[32m{+rs+}\u001b[0mt\u001b[32m{+F+}\u001b[0ma\u001b[32m{+mi+}\u001b[0ml\u001b[32m{+yRegret.toFixed(6));\n  +}\u001b[0m \u001b[32m{+   candidate.pressureScore.total +}\u001b[0m= Number((total / families.length).toFixed(6));\n    }\n    return [...candidates].sort((left, right) => {\n      const leftPass = left.dynamicReleasePass ? 1 : 0;\n      const rightPass = right.dynamicReleasePass ? 1 : 0;\n      if (leftPass !== rightPass) return rightPass - leftPass;\n      if (left.pressureScore.\u001b[32m{+wors+}\u001b[0mt\u001b[32m{+Family !== right.pressureSc+}\u001b[0mo\u001b[32m{+re.wors+}\u001b[0mt\u001b[32m{+F+}\u001b[0ma\u001b[32m{+mi+}\u001b[0ml\u001b[32m{+y)+}\u001b[0m \u001b[32m{+{\n        return left.pressureScore.worstFamily - right.pressureScore.worstFamily;\n      }\n      if (left.pressureScore.total +}\u001b[0m!== right.pressureScore.total) {\n        return left.pressureScore.total - right.pressureScore.total;\n      }\u001b[32m{+\n      const leftFileCount = Number(left.metrics.productSourceFileCount || 0);\n      const rightFileCount = Number(right.metrics.productSourceFileCount || 0);\n      if (leftFileCount !== rightFileCount) return leftFileCount - rightFileCount;\n      const leftBatchCount = Number(left.metrics.writeBatchFileCount || 0);\n      const rightBatchCount = Number(right.metrics.writeBatchFileCount || 0);\n      if (leftBatchCount !== rightBatchCount) return leftBatchCount - rightBatchCount;+}\u001b[0m\n      return left.shape.localeCompare(right.shape);\n    });",
+  "preservedZones": [
+    {
+      "kind": "unchanged_context",
+      "description": "Everything outside the modified zone is preserved byte-for-byte by the atomic operation."
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "oldTextHash": "62025daad13e5073b7fb15eb7b4697bee620dbf915962a23fe5261fc1666018b",
+      "newTextHash": "2a60db8b8c93f999bb920b65047ee089f9e195ef11411d809af51e9f9b3f689b",
+      "description": "The operation changed the highlighted span shown in inlinePreview."
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~1385 character(s) in `docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs` (sub-line atomic edit, expansion 0.44× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

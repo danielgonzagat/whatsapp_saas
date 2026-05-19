@@ -1,0 +1,59 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779018790180_0b7696f0",
+  "ts": "2026-05-17T11:53:10.180Z",
+  "file": "docs/ai/atomic-os-benchmark/tools/round-audit.cjs",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "edit_symbol:replace",
+  "operator": "edit_symbol:replace",
+  "targetUnit": "text_span",
+  "intention": "edit_symbol:replace",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 0,
+    "lineRewriteSurfaceChars": 0,
+    "expansionFactorAvoided": 0,
+    "bytesNet": 356,
+    "lineRewriteAvoided": true
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "b4780f6775c389b4747cd973cf56bbe4083574d930f64bb8345a3fcff6d479d0",
+  "proposedSha256": "b4780f6775c389b4747cd973cf56bbe4083574d930f64bb8345a3fcff6d479d0",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- docs/ai/atomic-os-benchmark/tools/round-audit.cjs (atomic char-level)\u001b[0m\n    const lines = text.split(/\\r?\\n/);\n    const status = (name) => {\n      const match = text.match(new RegExp(\u001b[31m[-`-]\u001b[0m\u001b[32m{+\n        '+}\u001b[0m(?:\u001b[31m[-${-]\u001b[0m\u001b[32m{+' + +}\u001b[0mname\u001b[31m[-}-]\u001b[0m\u001b[32m{+ + '+}\u001b[0m_status|\u001b[31m[-${-]\u001b[0m\u001b[32m{+' + +}\u001b[0mname\u001b[31m[-}-]\u001b[0m\u001b[32m{+ + '+}\u001b[0m_exit)=([0-9]+)\u001b[31m[-`-]\u001b[0m\u001b[32m{+',\n      +}\u001b[0m));\n      return match ? Number(match[1]) : null;\n    };\n    const sectionMarkers = new Set([\n      'git_status_short',\n      'touched_kloel_files',\n      'jest_start',\n      'typecheck_start',\n      'diff_check_start',\n      '\u001b[32m{+atomic_trace_i+}\u001b[0ms\u001b[32m{+olation',\n      's+}\u001b[0mervice_line_count',\n      'unified_agent_file_line_counts',\n      'spec_diff',\n      'protected_diff',\n      'forbidden_pattern_scan',\n      'diff_numstat',\n      'untracked_line_counts',\n      'atomic_trace_counts',\n    ]);\n    const section = (name) => {\n      const index = lines.findIndex((line) => line.trim() === name);\n      if (index === -1) return [];\n      const values = [];\n      for (const rawLine of lines.slice(index + 1)) {\n        const line = rawLine.trim();\n        if (!line) continue;\n        if (sectionMarkers.has(line) || /^[a-z_]+=(.*)$/.test(line)) break;\n        values.push(line);\n      }\n      return values;\n    };\n    const lineMatch = text.match(/\\n\\s*(\\d+)\\s+backend\\/src\\/kloel\\/unified-agent\\.service\\.ts/);\n    const traceMatch =\u001b[32m{+\n  +}\u001b[0m \u001b[32m{+   +}\u001b[0mtext.match(/worktree_\u001b[32m{+do+}\u001b[0mt\u001b[32m{+_atomic_t+}\u001b[0mraces=(\\d+)/)\u001b[32m{+ ||\n      text.match(/worktree_traces=(\\d+)/) ||\n      text.match(/\"worktreeTraceCount\":\\s*(\\d+)/)+}\u001b[0m;\n    \u001b[32m{+const docsT+}\u001b[0mr\u001b[32m{+ac+}\u001b[0me\u001b[32m{+Ma+}\u001b[0mt\u001b[32m{+ch = text.match(/worktree_docs_ai_traces=(\\d+)/);\n    ret+}\u001b[0murn {\n      jestStatus: status('jest'),\n      typecheckStatus: status('typecheck'),\n      diffCheckStatus: status('diff_check'),\n      \u001b[32m{+traceIsolationStatus: status('trace_isolation'),\n      +}\u001b[0mforbiddenPatternStatus: status('forbidden_pattern'),\n      serviceLines: lineMatch ? Number(lineMatch[1]) : null,\n      specDiff: section('spec_diff'),\n      protectedDiff: section('protected_diff'),\n      traceCount: traceMatch ? Number(traceMatch[1]) : null,\u001b[32m{+\n      docsTraceCount: docsTraceMatch ? Number(docsTraceMatch[1]) : null,+}\u001b[0m\n    };\n  }",
+  "preservedZones": [
+    {
+      "kind": "unchanged_context",
+      "description": "Everything outside the modified zone is preserved byte-for-byte by the atomic operation."
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "oldTextHash": "bc2155ddb5e60a02cd42ac5cc4cd8ade9cad9b6dedeb3ad393a666689028107f",
+      "newTextHash": "b4780f6775c389b4747cd973cf56bbe4083574d930f64bb8345a3fcff6d479d0",
+      "description": "The operation changed the highlighted span shown in inlinePreview."
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `edit_symbol:replace` changed ~0 character(s) in `docs/ai/atomic-os-benchmark/tools/round-audit.cjs` (sub-line atomic edit, expansion 0× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

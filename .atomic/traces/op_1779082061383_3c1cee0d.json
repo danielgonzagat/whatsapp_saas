@@ -1,0 +1,59 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779082061383_3c1cee0d",
+  "ts": "2026-05-18T05:27:41.383Z",
+  "file": "docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "targetUnit": "text_span",
+  "intention": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 761,
+    "lineRewriteSurfaceChars": 565,
+    "expansionFactorAvoided": 0.74,
+    "bytesNet": 196,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "4c822b692a62597e01e464b4660216fcdbc251cb2613ed8188fac912280d2829",
+  "proposedSha256": "4c822b692a62597e01e464b4660216fcdbc251cb2613ed8188fac912280d2829",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs (atomic char-level)\u001b[0m\n      repeatedDependencyPressure,\n      extractedRootPressure,\n      \u001b[32m{+strictDe+}\u001b[0mp\u001b[32m{+endencySurf+}\u001b[0ma\u001b[32m{+ceWin: extractedRootPre+}\u001b[0mss\u001b[32m{+ure < repeatedDependencyPressure,\n      pass+}\u001b[0m: privateMethodSurface > 0 && extractedRootPressure <\u001b[31m[-=-]\u001b[0m repeatedDependencyPressure,\n      interpretation: 'Runtime-owner classes are preferred \u001b[32m{+only +}\u001b[0mwhen observed private facade helper surface exists and \u001b[32m{+owner +}\u001b[0mconstructor dependency wiring is \u001b[31m[-no-]\u001b[0m\u001b[32m{+s+}\u001b[0mt\u001b[31m[- wo-]\u001b[0mr\u001b[32m{+ictly +}\u001b[0ms\u001b[32m{+mall+}\u001b[0me\u001b[32m{+r+}\u001b[0m than direct per-method function delegation\u001b[32m{+; dependency-surface ties stay with direct functions to avoid class/private-method module bloat+}\u001b[0m.',\n    };\n    const preferRuntimeOwnerClass = runtimeOwnerClassEconomy.pass;",
+  "preservedZones": [
+    {
+      "kind": "unchanged_context",
+      "description": "Everything outside the modified zone is preserved byte-for-byte by the atomic operation."
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "oldTextHash": "b3e9a178cd15050d87a348de4545ce96b2f4685509c0d2961cb52db703ce1037",
+      "newTextHash": "4c822b692a62597e01e464b4660216fcdbc251cb2613ed8188fac912280d2829",
+      "description": "The operation changed the highlighted span shown in inlinePreview."
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~761 character(s) in `docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs` (sub-line atomic edit, expansion 0.74× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

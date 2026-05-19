@@ -1,0 +1,37 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1778959903253_7187b0be",
+  "ts": "2026-05-16T19:31:43.253Z",
+  "file": "scripts/mcp/atomic-edit/trace.ts",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 296,
+    "lineRewriteSurfaceChars": 96,
+    "expansionFactorAvoided": 0.32,
+    "bytesNet": 200,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "afterSha256": "18a23c569af13921635e81558ce242ccf83a2a67d95ac026790f53fb812f7726",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- scripts/mcp/atomic-edit/trace.ts (atomic char-level)\u001b[0m\n      traceLine;\n    const out: Record<string, unknown> = {\n      \u001b[32m{+// A/B loop R5 finding: `+}\u001b[0msummary\u001b[32m{+` was a byte-identical duplicate of\n      // `summary+}\u001b[0mForHuman\u001b[31m[-:-]\u001b[0m\u001b[32m{+`+}\u001b[0m \u001b[32m{+(each embed+}\u001b[0ms\u001b[32m{+ the f+}\u001b[0mu\u001b[31m[-mm-]\u001b[0m\u001b[32m{+ll inline diff) — +}\u001b[0ma\u001b[32m{+ ~1–3 KB\n      // pe+}\u001b[0mr\u001b[32m{+-call token tax the model re-ingests ever+}\u001b[0my\u001b[31m[-,-]\u001b[0m\u001b[32m{+ turn. Keep ONE.+}\u001b[0m\n      summary\u001b[32m{+ForHuman: summary+}\u001b[0m,\n      ...base,\n      operationId: parts.trace.operationId,",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~296 character(s) in `scripts/mcp/atomic-edit/trace.ts` (sub-line atomic edit, expansion 0.32× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

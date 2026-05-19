@@ -13,6 +13,7 @@ on:
   pull_request:
     branches:
       - main
+      - chore/purga-total-debt
   workflow_dispatch:
     # checkov:skip=CKV_GHA_7: git_ref is a controlled operator input that selects
     # which git ref to deploy to production; it is validated at checkout time and

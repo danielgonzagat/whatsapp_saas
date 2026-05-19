@@ -1,0 +1,57 @@
+{
+  "ok": true,
+  "initialKilled": [],
+  "recurringKilled": [],
+  "syncedAtomicToolchain": [
+    "scripts/mcp/atomic-edit",
+    "docs/ai/atomic-os-benchmark/tools"
+  ],
+  "linkedDependencies": {
+    "normal": [
+      "node_modules",
+      "backend/node_modules"
+    ],
+    "atomic": [
+      "node_modules",
+      "backend/node_modules"
+    ]
+  },
+  "normalIsolation": {
+    "enabled": true,
+    "xdgRoot": "/Users/danielpenin/whatsapp_saas/docs/ai/atomic-os-benchmark/round-073/normal-opencode-xdg",
+    "restored": true,
+    "generatedMoves": [],
+    "restoreError": null
+  },
+  "now": "2026-05-17T15:49:53.617Z",
+  "lanes": [
+    {
+      "name": "normal",
+      "pid": 45408,
+      "status": "completed",
+      "exitCode": 0,
+      "signal": null,
+      "cleanupError": null,
+      "forbiddenUse": null,
+      "lastSize": 90414,
+      "idleMs": 0,
+      "elapsedMs": 195066,
+      "outFile": "/Users/danielpenin/whatsapp_saas/docs/ai/atomic-os-benchmark/round-073/opencode-normal-events.jsonl",
+      "errFile": "/Users/danielpenin/whatsapp_saas/docs/ai/atomic-os-benchmark/round-073/opencode-normal-stderr.log"
+    },
+    {
+      "name": "atomic",
+      "pid": 45415,
+      "status": "completed",
+      "exitCode": 0,
+      "signal": null,
+      "cleanupError": null,
+      "forbiddenUse": null,
+      "lastSize": 77325,
+      "idleMs": 105035,
+      "elapsedMs": 195063,
+      "outFile": "/Users/danielpenin/whatsapp_saas/docs/ai/atomic-os-benchmark/round-073/opencode-atomic-events.jsonl",
+      "errFile": "/Users/danielpenin/whatsapp_saas/docs/ai/atomic-os-benchmark/round-073/opencode-atomic-stderr.log"
+    }
+  ]
+}

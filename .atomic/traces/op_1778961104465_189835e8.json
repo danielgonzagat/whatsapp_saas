@@ -1,0 +1,37 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1778961104465_189835e8",
+  "ts": "2026-05-16T19:51:44.465Z",
+  "file": "scripts/mcp/atomic-edit/smoke.ts",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 1823,
+    "lineRewriteSurfaceChars": 1823,
+    "expansionFactorAvoided": 1,
+    "bytesNet": -1823,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "afterSha256": "5675ec7e2bbfc4578b84e0e061646f014a62cfdec4226d5856134347674332c2",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- scripts/mcp/atomic-edit/smoke.ts (atomic char-level)\u001b[0m\n  }\n  \n  \u001b[31m[-    const residueRel = path.join('worker', `.smoke-eslint-residue.${process.pid}.spec.ts`);\n      const residueAbs = path.join(repoRoot, residueRel);\n      fs.writeFileSync(\n        residueAbs,\n        [\n          \"import { describe, beforeEach, it, expect } from 'vitest';\",\n          '',\n          'const envBackup = { ...process.env };',\n          '',\n          'function clearOpenAiEnvs() {',\n          '  delete process.env.OPENAI_MODEL;',\n          '}',\n          '',\n          \"describe('resolveWorkerOpenAIModel', () => {\",\n          '  beforeEach(() => {',\n          '    clearOpenAiEnvs();',\n          '  });',\n          '',\n          \"  it('uses env', () => {\",\n          \"    process.env.OPENAI_MODEL = 'gpt-test';\",\n          \"    expect(process.env.OPENAI_MODEL).toBe('gpt-test');\",\n          '  });',\n          '});',\n          '',\n        ].join('\\n'),\n      );\n      try {\n        const residueTx = (await client.callTool({\n          name: 'atomic_apply_eslint_dry_run_fixes',\n          arguments: {\n            cwd: repoRoot,\n            args: [residueRel, '--fix-dry-run', '--format', 'json'],\n            allowedPaths: [path.join(repoRoot, 'worker')],\n          },\n        })) as { content: { text: string }[]; isError?: boolean };\n        const residueBody = JSON.parse(residueTx.content.at(-1)?.text ?? '{}') as {\n          ok?: boolean;\n          knownResidueFixesAppliedTotal?: number;\n        };\n        const residueAfter = fs.readFileSync(residueAbs, 'utf8');\n        check(\n          'eslint analyzer applies known env residue fix',\n          residueBody.ok === true &&\n            residueBody.knownResidueFixesAppliedTotal === 1 &&\n            residueAfter.includes('afterEach') &&\n            residueAfter.includes('Object.entries(envBackup)'),\n          residueTx.content[0]?.text ?? '',\n        );\n      } finally {\n        if (fs.existsSync(residueAbs)) fs.unlinkSync(residueAbs);\n      }\n  -]\u001b[0m\n  async function partC(): Promise<void> {\n    process.stdout.write('Part C — v2 read-side + symbol edits + cross-file rename\\n');",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~1823 character(s) in `scripts/mcp/atomic-edit/smoke.ts` (sub-line atomic edit, expansion 1× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

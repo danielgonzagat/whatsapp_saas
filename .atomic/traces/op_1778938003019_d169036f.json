@@ -1,0 +1,37 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1778938003019_d169036f",
+  "ts": "2026-05-16T13:26:43.019Z",
+  "file": "backend/src/queue/queue.ts",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 38,
+    "lineRewriteSurfaceChars": 31,
+    "expansionFactorAvoided": 0.82,
+    "bytesNet": 7,
+    "lineRewriteAvoided": true
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "afterSha256": "3a117fc4f5df71de2c6bad90541f68f79e146cbdee8131220f1f2add84d38d01",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- backend/src/queue/queue.ts (atomic char-level)\u001b[0m\n  \n  /** Queue options. */\n  \u001b[32m{+export +}\u001b[0mconst queueOptions = new Proxy(\n    {},\n    {",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~38 character(s) in `backend/src/queue/queue.ts` (sub-line atomic edit, expansion 0.82× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

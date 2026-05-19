@@ -1,0 +1,80 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779121990816_1e836e9c",
+  "ts": "2026-05-18T16:33:10.816Z",
+  "file": "scripts/mcp/atomic-edit/.smoke-replace-anchors.25176.ts",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "replace_between_anchors",
+  "operator": "replace_between_anchors",
+  "targetUnit": "text_span",
+  "intention": "replace_between_anchors",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 8,
+    "lineRewriteSurfaceChars": 52,
+    "expansionFactorAvoided": 6.5,
+    "bytesNet": 2,
+    "lineRewriteAvoided": true
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "188fd601705366a4cfa51d46ec03145f9cf9758e484fa181fca5a55b780fcd15",
+  "proposedSha256": "188fd601705366a4cfa51d46ec03145f9cf9758e484fa181fca5a55b780fcd15",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- scripts/mcp/atomic-edit/.smoke-replace-anchors.25176.ts (atomic char-level)\u001b[0m\n  export let DATA = `BEFORE alpha \u001b[31m[-MIDD-]\u001b[0m\u001b[32m{+REP+}\u001b[0mL\u001b[32m{+AC+}\u001b[0mE\u001b[32m{+D+}\u001b[0m omega AFTER`;\n  ",
+  "preservedZones": [
+    {
+      "kind": "prefix_preserved",
+      "description": "Bytes 0–31 — prefix preserved unchanged",
+      "byteStart": 0,
+      "byteEnd": 32,
+      "byteLength": 32,
+      "beforeHash": "bf7fea09cfe7d35ea5ad9cd38db4ca55e716b90a8cbe0f5df3deb6a0a9b2ce04",
+      "afterHash": "bf7fea09cfe7d35ea5ad9cd38db4ca55e716b90a8cbe0f5df3deb6a0a9b2ce04",
+      "sample": "export let DATA = `BEFORE alpha "
+    },
+    {
+      "kind": "suffix_preserved",
+      "description": "Bytes 38–52 — suffix preserved unchanged",
+      "byteStart": 38,
+      "byteEnd": 53,
+      "byteLength": 15,
+      "beforeHash": "851c7042a762dcf654542152f7e107beecde4369527358a5cf9f8fac1ef25ba0",
+      "afterHash": "851c7042a762dcf654542152f7e107beecde4369527358a5cf9f8fac1ef25ba0",
+      "sample": " omega AFTER`;\n"
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "byteStart": 32,
+      "byteEnd": 38,
+      "newByteLength": 8,
+      "oldTextHash": "b0db1518f3cdfd4db883854f40d1c2b32f687162d0ffb4a5c70637de157a67b7",
+      "newTextHash": "8b8edc2a2539d8a0f49556c9e066af896a4f2257f2afd268336b0dfd20cd4d1d",
+      "oldSample": "MIDDLE",
+      "newSample": "REPLACED",
+      "description": "Replace 6 bytes at offset 32 with 8 bytes"
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `replace_between_anchors` changed ~8 character(s) in `scripts/mcp/atomic-edit/.smoke-replace-anchors.25176.ts` (sub-line atomic edit, expansion 6.5× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

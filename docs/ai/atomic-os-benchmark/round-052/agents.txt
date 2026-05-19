@@ -1,0 +1,5 @@
+normal_agent=019e358b-6322-7ac1-90f1-270616ca244f
+normal_nickname=Bacon
+atomic_agent=019e358b-65da-7921-b71b-9fefc4c7fa3f
+atomic_nickname=Halley
+started_at=2026-05-17 07:46:42 -03

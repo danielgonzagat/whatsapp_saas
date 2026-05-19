@@ -33,8 +33,7 @@ import {
   type WrapKind,
   type TextEditSpec,
   type ApplyResult,
-  type ValidationResult,
-} from './engine.js';
+  type ValidationResult, computeZones } from './engine.js';
 import { resolveAllowedRootForAbsolutePath, resolveSafeTarget, REPO_ROOT } from './guard.js';
 import { buildTrace, levelFor, shapePayload, writeTrace } from './trace.js';
 import { browse, outline, readSymbol } from './nav.js';
@@ -231,6 +230,71 @@ function nearestPackageRelPath(repoRoot: string, relPath: string): string | null
     );
     if (fs.existsSync(packageJsonPath)) return packageRelPath;
   }
+  return null;
+}
+
+function runPostEditVerify(
+  relPath: string,
+  absPath: string,
+  repoRoot: string,
+  verify: string,
+): { kind: string; command: string; passed: boolean; summary: string } | null {
+  const pkg = nearestPackageRelPath(repoRoot, relPath);
+  if (!pkg) return null;
+  const pkgDir = path.join(repoRoot, pkg);
+
+  if (verify === 'typecheck') {
+    try {
+      childProcess.execSync(`npx tsc --noEmit`, {
+        cwd: pkgDir,
+        timeout: 30000,
+        encoding: 'utf8',
+        stdio: 'pipe',
+      });
+      return {
+        kind: 'typecheck',
+        command: `tsc --noEmit (${pkg})`,
+        passed: true,
+        summary: 'TypeScript typecheck passed',
+      };
+    } catch (e: any) {
+      const stderr = (e.stderr || e.stdout || '').toString();
+      return {
+        kind: 'typecheck',
+        command: `tsc --noEmit (${pkg})`,
+        passed: false,
+        summary: stderr.slice(0, 500),
+      };
+    }
+  }
+
+  if (verify === 'lint') {
+    try {
+      const result = childProcess.execSync(`npx eslint "${absPath}" --format json`, {
+        timeout: 30000,
+        encoding: 'utf8',
+        stdio: 'pipe',
+      });
+      const issues = JSON.parse(result);
+      const errorCount = issues.reduce((sum: number, f: any) => sum + f.errorCount, 0);
+      const warningCount = issues.reduce((sum: number, f: any) => sum + f.warningCount, 0);
+      const passed = errorCount === 0;
+      return {
+        kind: 'lint',
+        command: `eslint ${relPath}`,
+        passed,
+        summary: `${errorCount} errors, ${warningCount} warnings`,
+      };
+    } catch (e: any) {
+      return {
+        kind: 'lint',
+        command: `eslint ${relPath}`,
+        passed: false,
+        summary: 'ESLint execution failed',
+      };
+    }
+  }
+
   return null;
 }
 
@@ -450,6 +514,8 @@ function commit(
   result: ApplyResult,
   extra: Record<string, unknown> = {},
   preview = false,
+  verify?: 'typecheck' | 'lint',
+  lock?: boolean,
 ): ToolOk {
   const v: ValidationResult = result.validation;
   if (!v.ok) {
@@ -475,6 +541,7 @@ function commit(
   );
   const inlinePreview = characterDiff(before, result.newText, relPath);
   const repoRoot = resolveAllowedRootForAbsolutePath(absPath) ?? REPO_ROOT;
+  const editZones = computeZones(before, result.newText);
   const trace = buildTrace({
     file: relPath,
     repoRoot,
@@ -488,6 +555,9 @@ function commit(
       lineRewriteSurfaceChars: result.lineSurfaceChars,
       expansionFactorAvoided: result.expansionFactor,
     },
+    preservedZones: editZones.preservedZones,
+    modifiedZones: editZones.modifiedZones,
+    movementZones: editZones.movementZones,
     preview,
     changed: !preview,
   });
@@ -515,68 +585,93 @@ function commit(
       ),
     );
   }
-  // A/B loop R6 finding: whole-file create/overwrite echoed the ENTIRE file
-  // back as a char-diff (before='' ⇒ diff == whole file) inside summaryForHuman
-  // AND again as `atomicDiff` — i.e. the content the model just supplied,
-  // returned to it twice, the dominant token sink (1.58M vs 0.95M). For these
-  // ops return a COMPACT confirmation; full char-proof is persisted to the
-  // trace file (path returned). Sub-line in-place edits keep the inline proof.
-  if (before === '' || operator === 'atomic_create_file') {
-    atomicWrite(absPath, result.newText);
-    const persisted = writeTrace(trace);
-    const lines = result.newText.split('\n').length;
-    log(`created ${relPath} (${lines} lines)`);
-    return ok({
-      ok: true,
-      changed: true,
-      created: before === '',
-      file: relPath,
-      ...targetDetails(absPath, relPath),
-      lines,
-      bytesNet: result.newText.length - before.length,
-      afterSha256: sha256(result.newText),
-      validation: {
-        language: v.language,
-        syntaxErrorsBefore: v.before,
-        syntaxErrorsAfter: v.after,
-      },
-      summaryForHuman:
-        `✅ ${before === '' ? 'Created' : 'Replaced'} ${relPath} ` +
-        `(${lines} lines, syntax ${v.after <= v.before ? 'ok' : 'REGRESSED'}). ` +
-        `Content was supplied by you; char-level proof persisted to the trace ` +
-        `file (not echoed back, to save context).`,
-      operation: trace.operation,
-      operationId: trace.operationId,
-      founder: trace.audit,
-      ...persisted,
-      ...extra,
-    });
+
+  let commitLockId: string | null = null;
+  if (lock) {
+    autoLockCleanup(relPath);
+    commitLockId = autoLockFile(relPath);
   }
-  atomicWrite(absPath, result.newText);
-  log(`wrote ${relPath} (+${result.newText.length - before.length} bytes net)`);
-  return ok(
-    shapePayload(
-      level,
-      {
+
+  try {
+    // A/B loop R6 finding: whole-file create/overwrite echoed the ENTIRE file
+    // back as a char-diff (before='' ⇒ diff == whole file) inside summaryForHuman
+    // AND again as `atomicDiff` — i.e. the content the model just supplied,
+    // returned to it twice, the dominant token sink (1.58M vs 0.95M). For these
+    // ops return a COMPACT confirmation; full char-proof is persisted to the
+    // trace file (path returned). Sub-line in-place edits keep the inline proof.
+    if (before === '' || operator === 'atomic_create_file') {
+      atomicWrite(absPath, result.newText);
+      const persisted = writeTrace(trace);
+      const lines = result.newText.split('\n').length;
+      log(`created ${relPath} (${lines} lines)`);
+      const verifyResult = verify
+        ? runPostEditVerify(relPath, absPath, repoRoot, verify)
+        : null;
+      return ok({
         ok: true,
         changed: true,
+        created: before === '',
         file: relPath,
         ...targetDetails(absPath, relPath),
+        lines,
+        bytesNet: result.newText.length - before.length,
+        afterSha256: sha256(result.newText),
         validation: {
           language: v.language,
           syntaxErrorsBefore: v.before,
           syntaxErrorsAfter: v.after,
         },
-        intentionChars: result.changedChars,
-        lineRewriteSurfaceChars: result.lineSurfaceChars,
-        expansionFactorAvoided: result.expansionFactor,
-        bytesNet: result.newText.length - before.length,
-        afterSha256: sha256(result.newText),
+        ...(verifyResult ? { verify: verifyResult } : {}),
+        summaryForHuman:
+          `✅ ${before === '' ? 'Created' : 'Replaced'} ${relPath} ` +
+          `(${lines} lines, syntax ${v.after <= v.before ? 'ok' : 'REGRESSED'}). ` +
+          `Content was supplied by you; char-level proof persisted to the trace ` +
+          `file (not echoed back, to save context).`,
+        operation: trace.operation,
+        operationId: trace.operationId,
+        founder: trace.audit,
+        ...persisted,
         ...extra,
-      },
-      { inlinePreview, legacyDiff: previewDiff(before, result.newText, relPath), trace },
-    ),
-  );
+      });
+    }
+    atomicWrite(absPath, result.newText);
+    log(`wrote ${relPath} (+${result.newText.length - before.length} bytes net)`);
+    const verifyResult = verify
+      ? runPostEditVerify(relPath, absPath, repoRoot, verify)
+      : null;
+    return ok(
+      shapePayload(
+        level,
+        {
+          ok: true,
+          changed: true,
+          file: relPath,
+          ...targetDetails(absPath, relPath),
+          validation: {
+            language: v.language,
+            syntaxErrorsBefore: v.before,
+            syntaxErrorsAfter: v.after,
+          },
+          intentionChars: result.changedChars,
+          lineRewriteSurfaceChars: result.lineSurfaceChars,
+          expansionFactorAvoided: result.expansionFactor,
+          bytesNet: result.newText.length - before.length,
+          afterSha256: sha256(result.newText),
+          ...(verifyResult ? { verify: verifyResult } : {}),
+          ...extra,
+        },
+        { inlinePreview, legacyDiff: previewDiff(before, result.newText, relPath), trace },
+      ),
+    );
+  } finally {
+    if (commitLockId) {
+      try {
+        fs.rmdirSync(lockDir(commitLockId), { recursive: true });
+      } catch {
+        // best-effort cleanup
+      }
+    }
+  }
 }
 
 const server = new McpServer({ name: 'kloel-atomic-edit', version: '4.0.0' });
@@ -585,6 +680,128 @@ const pos = z.object({
   line: z.number().int().min(1).describe('1-based line'),
   column: z.number().int().min(1).describe('1-based column (UTF-16 units within the line)'),
 });
+
+server.registerTool(
+  'atomic_edit',
+  {
+    title: 'Unified atomic code editing — dispatches to the correct precise operator',
+    description:
+      'Single entry-point for all atomic editing operations. The `op` parameter selects the operation, ' +
+      'and the rest of the params are specific to that operation. Supported ops: ' +
+      'replace_text, replace_range, replace_literal, ' +
+      'insert_at, delete_range, edit_symbol, ' +
+      'add_import, remove_import, rename_symbol, ' +
+      'replace_property_value, rename_property_key.',
+    inputSchema: {
+      op: z.enum([
+        'replace_text', 'replace_range', 'replace_literal',
+        'insert_at', 'delete_range', 'edit_symbol',
+        'add_import', 'remove_import', 'rename_symbol',
+        'replace_property_value', 'rename_property_key',
+      ]),
+      file: z.string(),
+      oldText: z.string().optional(),
+      newText: z.string().optional(),
+      occurrence: z.number().int().min(1).optional(),
+      startLine: z.number().int().min(1).optional(),
+      startColumn: z.number().int().min(1).optional(),
+      endLine: z.number().int().min(1).optional(),
+      endColumn: z.number().int().min(1).optional(),
+      selector: z.string().optional(),
+      symbolOp: z.enum(['replace', 'insert_after', 'remove']).optional(),
+      code: z.string().optional(),
+      module: z.string().optional(),
+      name: z.string().optional(),
+      alias: z.string().optional(),
+      typeOnly: z.boolean().optional(),
+      property: z.string().optional(),
+      value: z.string().optional(),
+      newKey: z.string().optional(),
+      expectedSha256: z.string().optional(),
+      preview: z.boolean().optional(),
+      verify: z.enum(['typecheck', 'lint']).optional(),
+      lock: z.boolean().optional(),
+    },
+  },
+  async (a) => {
+    try {
+      const { absPath, relPath, repoRoot } = resolveSafeTarget(a.file);
+      const before = readUtf8(absPath);
+      guardSha(before, a.expectedSha256);
+
+      switch (a.op) {
+        case 'replace_text': {
+          if (!a.oldText || a.newText === undefined) throw new Error('replace_text requires oldText+newText');
+          const r = replaceText(relPath, before, a.oldText, a.newText, a.occurrence);
+          return commit(relPath, absPath, before, r, { op: 'atomic_edit:replace_text' }, a.preview ?? false, a.verify, a.lock);
+        }
+        case 'replace_range': {
+          if (!a.startLine || !a.startColumn || !a.endLine || !a.endColumn || a.newText === undefined) throw new Error('replace_range requires coordinates+newText');
+          const r = applyEdits(relPath, before, [{ start: { line: a.startLine, column: a.startColumn }, end: { line: a.endLine, column: a.endColumn }, newText: a.newText }]);
+          return commit(relPath, absPath, before, r, { op: 'atomic_edit:replace_range' }, a.preview ?? false, a.verify, a.lock);
+        }
+        case 'replace_literal': {
+          if (!a.oldText || a.newText === undefined) throw new Error('replace_literal requires oldText+newText');
+          const r = await replaceLiteral(relPath, before, a.oldText, a.newText, a.startLine);
+          if (!r.validation.ok) return fail('rejected: replace_literal would break syntax. ' + (r.validation.introduced ?? ''));
+          if (r.newText === before) return ok({ ok: true, changed: false, note: 'no change', file: relPath });
+          if (!a.preview) atomicWrite(absPath, r.newText);
+          return ok({ ok: true, changed: !a.preview, file: relPath, matched: r.matched });
+        }
+        case 'insert_at': {
+          if (!a.startLine || !a.startColumn || a.newText === undefined) throw new Error('insert_at requires position+newText');
+          const p = { line: a.startLine, column: a.startColumn };
+          const r = applyEdits(relPath, before, [{ start: p, end: p, newText: a.newText }]);
+          return commit(relPath, absPath, before, r, { op: 'atomic_edit:insert_at' }, a.preview ?? false);
+        }
+        case 'delete_range': {
+          if (!a.startLine || !a.startColumn || !a.endLine || !a.endColumn) throw new Error('delete_range requires coordinates');
+          const r = applyEdits(relPath, before, [{ start: { line: a.startLine, column: a.startColumn }, end: { line: a.endLine, column: a.endColumn }, newText: '' }]);
+          return commit(relPath, absPath, before, r, { op: 'atomic_edit:delete_range' }, a.preview ?? false);
+        }
+        case 'edit_symbol': {
+          if (!a.selector || !a.symbolOp) throw new Error('edit_symbol requires selector+symbolOp');
+          const r = await editSymbol(relPath, before, a.selector, a.symbolOp as SymbolOp, a.code);
+          if (!r.validation.ok) return fail('rejected: ' + a.symbolOp + ' on ' + r.selector + ' would introduce a syntax error. ' + (r.validation.introduced ?? ''));
+          if (r.newText === before) return ok({ ok: true, changed: false, note: 'no change', file: relPath });
+          if (!a.preview) atomicWrite(absPath, r.newText);
+          return ok({ ok: true, changed: !a.preview, preview: a.preview ?? false, file: relPath, selector: r.selector, op: r.op });
+        }
+        case 'add_import': {
+          if (!a.name || !a.module) throw new Error('add_import requires name+module');
+          const r = await addNamedImport(relPath, before, a.module, a.name, a.alias, a.typeOnly);
+          return commitSemantic(relPath, absPath, before, r, a.preview ?? false);
+        }
+        case 'remove_import': {
+          if (!a.name || !a.module) throw new Error('remove_import requires name+module');
+          const r = await removeNamedImport(relPath, before, a.module, a.name);
+          return commitSemantic(relPath, absPath, before, r, a.preview ?? false);
+        }
+        case 'replace_property_value': {
+          if (!a.property || a.value === undefined) throw new Error('replace_property_value requires property+value');
+          const r = await replacePropertyValue(relPath, before, a.property, a.value, a.selector);
+          return commitSemantic(relPath, absPath, before, r, a.preview ?? false);
+        }
+        case 'rename_property_key': {
+          if (!a.property || !a.newKey) throw new Error('rename_property_key requires property+newKey');
+          const r = await renamePropertyKey(relPath, before, a.property, a.newKey, a.selector);
+          return commitSemantic(relPath, absPath, before, r, a.preview ?? false);
+        }
+        case 'rename_symbol': {
+          if (!a.startLine || !a.startColumn || !a.newText) throw new Error('rename_symbol requires position+newText');
+          const r = await renameSymbol(relPath, before, { line: a.startLine, column: a.startColumn }, a.newText);
+          if (!r.validation.ok) return fail('Rename rejected: ' + (r.validation.introduced ?? ''));
+          if (!a.preview) atomicWrite(absPath, r.newText);
+          return ok({ ok: true, changed: !a.preview, file: relPath, symbol: r.symbol, occurrences: r.occurrences });
+        }
+        default:
+          return fail('Unknown op: ' + a.op);
+      }
+    } catch (e) {
+      return fail(e instanceof Error ? e.message : String(e));
+    }
+  },
+);
 
 server.registerTool(
   'atomic_replace_range',
@@ -605,6 +822,8 @@ server.registerTool(
         .boolean()
         .optional()
         .describe('dry-run only when uncertain; exact edits are already validated before write'),
+      verify: z.enum(['typecheck', 'lint']).optional(),
+      lock: z.boolean().optional(),
     },
   },
   async (a) => {
@@ -618,7 +837,7 @@ server.registerTool(
           newText: a.newText,
         },
       ]);
-      return commit(relPath, absPath, before, r, {}, a.preview ?? false);
+      return commit(relPath, absPath, before, r, {}, a.preview ?? false, a.verify, a.lock);
     } catch (e) {
       return fail(e instanceof Error ? e.message : String(e));
     }
@@ -659,6 +878,8 @@ server.registerTool(
         .boolean()
         .optional()
         .describe('dry-run only when uncertain; exact edits are already validated before write'),
+      verify: z.enum(['typecheck', 'lint']).optional(),
+      lock: z.boolean().optional(),
     },
   },
   async (a) => {
@@ -667,7 +888,7 @@ server.registerTool(
       const before = readUtf8(absPath);
       guardSha(before, a.expectedSha256);
       const r = replaceText(relPath, before, a.oldText, a.newText, a.occurrence);
-      return commit(relPath, absPath, before, r, {}, a.preview ?? false);
+      return commit(relPath, absPath, before, r, {}, a.preview ?? false, a.verify, a.lock);
     } catch (e) {
       return fail(e instanceof Error ? e.message : String(e));
     }
@@ -759,6 +980,8 @@ server.registerTool(
         .optional()
         .describe("optimistic-concurrency guard: refuse if the file's sha256 differs"),
       preview: z.boolean().optional().describe('dry-run: validate + return diff, do not write'),
+      verify: z.enum(['typecheck', 'lint']).optional(),
+      lock: z.boolean().optional(),
     },
   },
   async (a) => {
@@ -805,6 +1028,8 @@ server.registerTool(
         r,
         { op: 'atomic_create_file', created: !exists },
         a.preview ?? false,
+        a.verify,
+        a.lock,
       );
     } catch (e) {
       return fail(e instanceof Error ? e.message : String(e));
@@ -852,6 +1077,7 @@ server.registerTool(
       guardSha(before, a.expectedSha256);
       const preview = a.preview ?? false;
       const inlinePreview = characterDiff(before, '', relPath);
+      const delZones = computeZones(before, '');
       const trace = buildTrace({
         file: relPath,
         repoRoot,
@@ -866,6 +1092,9 @@ server.registerTool(
           expansionFactorAvoided: 1,
           bytesNet: -before.length,
         },
+        preservedZones: delZones.preservedZones,
+        modifiedZones: delZones.modifiedZones,
+        movementZones: delZones.movementZones,
         targetUnit: 'file',
         intention: `delete ${relPath} (${before.length} bytes)`,
         semanticImpact: preview ? 'preview_file_deletion' : 'file_deleted',
@@ -1134,13 +1363,143 @@ server.registerTool(
           'repo-relative to the MCP server root, or absolute file path inside a registered worktree',
         ),
       selector: z.string().describe("unscoped 'name' or scoped 'Class.method' / 'A.B.c'"),
+      line: z
+        .number()
+        .int()
+        .min(1)
+        .optional()
+        .describe('1-based line: if provided with column, resolve by position instead of selector'),
+      column: z
+        .number()
+        .int()
+        .min(1)
+        .optional()
+        .describe('1-based column: if provided with line, resolve by position instead of selector'),
     },
   },
   async (a) => {
     try {
       const { absPath, relPath } = resolveSafeTarget(a.file);
-      const r = await readSymbol(relPath, readUtf8(absPath), a.selector);
+      const position =
+        a.line !== undefined && a.column !== undefined
+          ? { line: a.line, column: a.column }
+          : undefined;
+      const r = await readSymbol(relPath, readUtf8(absPath), a.selector, position);
       return ok({ ok: true, file: relPath, ...targetDetails(absPath, relPath), ...r });
+    } catch (e) {
+      return fail(e instanceof Error ? e.message : String(e));
+    }
+  },
+);
+
+// ───────────────────────── batch outline ──────────────────────────
+
+function matchesGlob(pattern: string, filePath: string): boolean {
+  const parts = pattern.split('/');
+  const fileParts = filePath.split('/');
+  let pi = 0;
+  let fi = 0;
+  while (pi < parts.length) {
+    if (parts[pi] === '**') {
+      if (pi === parts.length - 1) return true;
+      pi++;
+      const next = parts[pi];
+      while (fi < fileParts.length) {
+        if (matchesGlobPart(next, fileParts[fi])) break;
+        fi++;
+      }
+      if (fi >= fileParts.length) return false;
+      pi++;
+      fi++;
+      continue;
+    }
+    if (fi >= fileParts.length) return false;
+    if (!matchesGlobPart(parts[pi], fileParts[fi])) return false;
+    pi++;
+    fi++;
+  }
+  return fi === fileParts.length;
+}
+
+function matchesGlobPart(part: string, name: string): boolean {
+  if (!part.includes('*')) return part === name;
+  const regex = new RegExp(
+    '^' + part.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/\\\*/g, '[^/]*') + '$',
+  );
+  return regex.test(name);
+}
+
+function globFindFiles(absCwd: string, pattern: string): string[] {
+  const results: string[] = [];
+  const excludeDirs = new Set(['node_modules', '.git', 'dist', 'build', '.atomic']);
+  const walk = (dir: string, relDir: string): void => {
+    let entries: fs.Dirent[];
+    try {
+      entries = fs.readdirSync(dir, { withFileTypes: true });
+    } catch {
+      return;
+    }
+    for (const entry of entries) {
+      if (excludeDirs.has(entry.name)) continue;
+      const absPath = path.join(dir, entry.name);
+      const relPath = relDir ? `${relDir}/${entry.name}` : entry.name;
+      if (entry.isDirectory()) {
+        walk(absPath, relPath);
+      } else if (entry.isFile()) {
+        if (matchesGlob(pattern, relPath)) {
+          results.push(absPath);
+        }
+      }
+    }
+  };
+  walk(absCwd, '');
+  return results;
+}
+
+server.registerTool(
+  'code_outline_batch',
+  {
+    title: 'File signature map for multiple files (batch)',
+    description:
+      'Returns outline (signature map, no bodies) for every file matching a glob pattern. ' +
+      'Max 20 files to prevent overload. Use glob patterns like "backend/src/**/*.service.ts".',
+    inputSchema: {
+      glob: z.string().describe('glob pattern relative to cwd, e.g. "backend/src/**/*.service.ts"'),
+      cwd: z.string().optional().describe('working directory (default ".")'),
+    },
+  },
+  async (a) => {
+    try {
+      const cwdTarget = resolveSafeTarget(a.cwd ?? '.');
+      const absCwd = cwdTarget.absPath;
+      const absFiles = globFindFiles(absCwd, a.glob);
+      const limit = 20;
+      const sliced = absFiles.slice(0, limit);
+      const files = [];
+      for (const absFile of sliced) {
+        let relPath: string;
+        try {
+          relPath = resolveSafeTarget(absFile).relPath;
+        } catch {
+          continue;
+        }
+        const text = readUtf8(absFile);
+        const o = await outline(relPath, text);
+        files.push({
+          file: relPath,
+          sha256: crypto.createHash('sha256').update(text).digest('hex'),
+          symbols: o.symbols,
+        });
+      }
+      return ok({
+        ok: true,
+        glob: a.glob,
+        cwd: a.cwd ?? '.',
+        matchedTotal: absFiles.length,
+        returned: files.length,
+        truncated: absFiles.length > limit,
+        files,
+      });
     } catch (e) {
       return fail(e instanceof Error ? e.message : String(e));
     }
@@ -1275,6 +1634,8 @@ server.registerTool(
         .optional()
         .describe("optimistic-concurrency guard: refuse if the file's sha256 differs"),
       preview: z.boolean().optional().describe('dry-run: validate + return diff, do not write'),
+      verify: z.enum(['typecheck', 'lint']).optional(),
+      lock: z.boolean().optional(),
     },
   },
   async (a) => {
@@ -1292,6 +1653,7 @@ server.registerTool(
         return ok({ ok: true, changed: false, note: 'no change', file: relPath });
       const symLevel = levelFor(a.preview ?? false);
       const symInline = characterDiff(before, r.newText, relPath);
+      const symZones = computeZones(before, r.newText);
       const symTrace = buildTrace({
         file: relPath,
         repoRoot,
@@ -1304,6 +1666,9 @@ server.registerTool(
           before: r.validation.before,
           after: r.validation.after,
         },
+        preservedZones: symZones.preservedZones,
+        modifiedZones: symZones.modifiedZones,
+        movementZones: symZones.movementZones,
         preview: a.preview ?? false,
         changed: !(a.preview ?? false),
       });
@@ -1327,19 +1692,30 @@ server.registerTool(
           ),
         );
       }
-      atomicWrite(absPath, r.newText);
-      log(`edit_symbol ${a.op} ${r.selector} in ${relPath}`);
-      return ok(
-        shapePayload(
-          symLevel,
-          { ok: true, changed: true, file: relPath, selector: r.selector, op: r.op },
-          {
-            inlinePreview: symInline,
-            legacyDiff: previewDiff(before, r.newText, relPath),
-            trace: symTrace,
-          },
-        ),
-      );
+      let symLockId: string | null = null;
+      if (a.lock) symLockId = autoLockFile(relPath);
+      try {
+        atomicWrite(absPath, r.newText);
+        log(`edit_symbol ${a.op} ${r.selector} in ${relPath}`);
+        const verifyResult = a.verify
+          ? runPostEditVerify(relPath, absPath, repoRoot, a.verify)
+          : null;
+        return ok(
+          shapePayload(
+            symLevel,
+            { ok: true, changed: true, file: relPath, selector: r.selector, op: r.op, ...(verifyResult ? { verify: verifyResult } : {}) },
+            {
+              inlinePreview: symInline,
+              legacyDiff: previewDiff(before, r.newText, relPath),
+              trace: symTrace,
+            },
+          ),
+        );
+      } finally {
+        if (symLockId) {
+          try { fs.rmdirSync(lockDir(symLockId), { recursive: true }); } catch { /* cleanup */ }
+        }
+      }
     } catch (e) {
       return fail(e instanceof Error ? e.message : String(e));
     }
@@ -1361,6 +1737,12 @@ server.registerTool(
       column: z.number().int().min(1),
       newName: z.string().min(1),
       preview: z.boolean().optional().describe('dry-run: list files + refs, do not write'),
+      includeStrings: z
+        .boolean()
+        .optional()
+        .describe(
+          'after TS rename, also do regex-based string replacement of oldName->newName across all repo text files',
+        ),
     },
   },
   async (a) => {
@@ -1387,16 +1769,81 @@ server.registerTool(
           files: [...r.changes.keys()],
         });
       }
+      let stringReplacedCount = 0;
+      const stringReplacedByKind: Record<string, number> = {};
+      if (a.includeStrings) {
+        const oldName = r.symbol;
+        const regex = new RegExp(`\\b${oldName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'g');
+        const excludeDirs = new Set(['node_modules', '.git', 'dist', 'build', '.atomic', '.next', 'coverage']);
+        const walkDir = (dir: string): string[] => {
+          const entries = fs.readdirSync(dir, { withFileTypes: true });
+          const results: string[] = [];
+          for (const entry of entries) {
+            if (excludeDirs.has(entry.name)) continue;
+            if (entry.name.startsWith('.') && !['.env', '.eslintrc', '.prettierrc'].includes(entry.name)) continue;
+            const fullPath = path.join(dir, entry.name);
+            if (entry.isDirectory()) {
+              results.push(...walkDir(fullPath));
+            } else if (entry.isFile()) {
+              const ext = path.extname(entry.name).toLowerCase();
+              const textExts = new Set([
+                '.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs', '.mts', '.cts',
+                '.json', '.md', '.txt', '.html', '.css', '.yml', '.yaml',
+                '.env', '.graphql', '.prisma', '.sql', '.sh', '.vue', '.svelte',
+              ]);
+              if (textExts.has(ext) || ext === '') {
+                results.push(fullPath);
+              }
+            }
+          }
+          return results;
+        };
+        const allFiles = walkDir(repoRoot);
+        for (const absFile of allFiles) {
+          if (r.changes.has(path.relative(repoRoot, absFile))) continue;
+          let content: string;
+          try {
+            content = fs.readFileSync(absFile, 'utf8');
+          } catch {
+            continue;
+          }
+          const newContent = content.replace(regex, a.newName);
+          if (newContent === content) continue;
+          if (content.length > 500 * 1024) continue;
+          try {
+            resolveSafeTarget(absFile);
+          } catch {
+            continue;
+          }
+          const validation = validate(
+            path.relative(repoRoot, absFile),
+            content,
+            newContent,
+          );
+          if (!validation.ok) continue;
+          const rel = path.relative(repoRoot, absFile);
+          r.changes.set(rel, newContent);
+          stringReplacedCount++;
+          const ext = path.extname(rel).toLowerCase() || '(no-ext)';
+          stringReplacedByKind[ext] = (stringReplacedByKind[ext] || 0) + 1;
+        }
+      }
       for (const [rel, content] of r.changes) {
         atomicWrite(path.join(repoRoot, rel), content);
       }
-      log(`cross-file rename ${r.symbol}: ${r.changes.size} file(s), ${r.totalReferences} refs`);
+      log(
+        `cross-file rename ${r.symbol}: ${r.changes.size} file(s), ${r.totalReferences} refs` +
+          (stringReplacedCount > 0 ? `, ${stringReplacedCount} string-replaced` : ''),
+      );
       return ok({
         ok: true,
         changed: true,
         symbol: r.symbol,
         references: r.totalReferences,
         files: [...r.changes.keys()],
+        ...(stringReplacedCount > 0
+          ? { stringReplacedCount, stringReplacedByKind }
+          : {}),
       });
     } catch (e) {
       return fail(e instanceof Error ? e.message : String(e));
@@ -1412,6 +1859,7 @@ function commitSemantic(
   before: string,
   r: SemanticEditResult,
   preview: boolean,
+  verify?: 'typecheck' | 'lint',
 ): ToolOk {
   if (!r.validation.ok) {
     return fail(`rejected: would introduce a syntax error. ${r.validation.introduced ?? ''}`);
@@ -1429,6 +1877,7 @@ function commitSemantic(
   const semLevel = levelFor(preview);
   const semInline = characterDiff(before, r.newText, relPath);
   const repoRoot = resolveAllowedRootForAbsolutePath(absPath) ?? REPO_ROOT;
+  const semZones = computeZones(before, r.newText);
   const semTrace = buildTrace({
     file: relPath,
     repoRoot,
@@ -1441,6 +1890,9 @@ function commitSemantic(
       before: r.validation.before,
       after: r.validation.after,
     },
+    preservedZones: semZones.preservedZones,
+    modifiedZones: semZones.modifiedZones,
+    movementZones: semZones.movementZones,
     preview,
     changed: !preview,
   });
@@ -1466,6 +1918,9 @@ function commitSemantic(
   }
   atomicWrite(absPath, r.newText);
   log(`semantic edit ${JSON.stringify(r.detail)} in ${relPath}`);
+  const verifyResult = verify
+    ? runPostEditVerify(relPath, absPath, repoRoot, verify)
+    : null;
   return ok(
     shapePayload(
       semLevel,
@@ -1475,6 +1930,7 @@ function commitSemantic(
         file: relPath,
         ...targetDetails(absPath, relPath),
         afterSha256: sha256(r.newText),
+        ...(verifyResult ? { verify: verifyResult } : {}),
         ...r.detail,
       },
       {
@@ -2142,6 +2598,9 @@ server.registerTool(
             expansionFactorAvoided: s.result.expansionFactor,
             bytesNet: s.result.newText.length - s.before.length,
           },
+          preservedZones: computeZones(s.before, s.result.newText).preservedZones,
+          modifiedZones: computeZones(s.before, s.result.newText).modifiedZones,
+          movementZones: [],
         }),
       }));
       const files = staged.map((s, index) => ({
@@ -2499,6 +2958,7 @@ server.registerTool(
       }
       const traceRefs: string[] = [];
       for (const item of staged) {
+        const itemZones = computeZones(item.before, item.newText);
         const trace = buildTrace({
           file: item.relPath,
           repoRoot: item.repoRoot,
@@ -2511,6 +2971,9 @@ server.registerTool(
             before: item.validation.before,
             after: item.validation.after,
           },
+          preservedZones: itemZones.preservedZones,
+          modifiedZones: itemZones.modifiedZones,
+          movementZones: itemZones.movementZones,
           metrics: {
             changedChars: item.metrics.changedChars,
             lineRewriteSurfaceChars: item.metrics.lineSurfaceChars,
@@ -2520,34 +2983,7 @@ server.registerTool(
           targetUnit: 'eslint_dry_run_file_output',
           intention:
             'apply analyzer-proposed lint fixes without letting the analyzer write directly',
-          preservedZones: [
-            {
-              kind: 'prefix_context',
-              description: 'Text before the first analyzer-modified span was preserved.',
-              beforeHash: item.metrics.preservedPrefixHash,
-              afterHash: item.metrics.preservedPrefixHash,
-            },
-            {
-              kind: 'suffix_context',
-              description: 'Text after the last analyzer-modified span was preserved.',
-              beforeHash: item.metrics.preservedSuffixHash,
-              afterHash: item.metrics.preservedSuffixHash,
-            },
-          ],
-          modifiedZones: [
-            {
-              kind: 'analyzer_fix_output',
-              oldTextHash: sha256(item.before),
-              newTextHash: sha256(item.newText),
-              oldSample: item.metrics.oldSample,
-              newSample: item.metrics.newSample,
-              description:
-                'ESLint --fix-dry-run proposed this file output; atomic-edit validated and wrote it.',
-              metadata: { knownResidueFixes: item.knownResidueFixes },
-            },
-          ],
-          movementZones: [],
-          semanticImpact: 'behavior_preserving_lint_cleanup',
+          semanticImpact: 'lint_fix_auto_applied',
         });
         const persisted = writeTrace(trace);
         traceRefs.push(
@@ -2854,6 +3290,37 @@ function lockDir(frontId: string): string {
 
 function lockFile(frontId: string): string {
   return path.join(lockDir(frontId), 'lock');
+}
+
+function autoLockFile(relPath: string): string | null {
+  const sanitized = relPath.replace(/[\\/:*?"<>|]/g, '-');
+  const lockId = safeLockId(sanitized + '-' + Date.now());
+  const d = lockDir(lockId);
+  try {
+    fs.mkdirSync(d);
+    fs.writeFileSync(path.join(d, 'heartbeat'), String(Date.now()));
+    return lockId;
+  } catch {
+    return null;
+  }
+}
+
+function autoLockCleanup(relPath: string, maxAgeMs = 30000): void {
+  const root = lockRoot();
+  if (!fs.existsSync(root)) return;
+  const now = Date.now();
+  for (const entry of fs.readdirSync(root, { withFileTypes: true })) {
+    if (!entry.isDirectory()) continue;
+    const hbPath = path.join(root, entry.name, 'heartbeat');
+    try {
+      const ts = Number(fs.readFileSync(hbPath, 'utf8'));
+      if (now - ts > maxAgeMs) {
+        fs.rmSync(path.join(root, entry.name), { recursive: true, force: true });
+      }
+    } catch {
+      fs.rmSync(path.join(root, entry.name), { recursive: true, force: true });
+    }
+  }
 }
 
 function readLockRecord(id: string): Record<string, unknown> | null {

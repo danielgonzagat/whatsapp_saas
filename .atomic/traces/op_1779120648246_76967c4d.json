@@ -1,0 +1,59 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779120648246_76967c4d",
+  "ts": "2026-05-18T16:10:48.246Z",
+  "file": "scripts/mcp/atomic-edit/server.ts",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "targetUnit": "text_span",
+  "intention": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 981,
+    "lineRewriteSurfaceChars": 244,
+    "expansionFactorAvoided": 0.25,
+    "bytesNet": 737,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "308bfcb76a85d258d25daa35576c7d474fd1a6576df9f7959c95ca45f2dda981",
+  "proposedSha256": "308bfcb76a85d258d25daa35576c7d474fd1a6576df9f7959c95ca45f2dda981",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- scripts/mcp/atomic-edit/server.ts (atomic char-level)\u001b[0m\n  \n  function autoLockFile(relPath: string): string | null {\n    const \u001b[31m[-lockId = -]\u001b[0msa\u001b[31m[-f-]\u001b[0m\u001b[32m{+nitiz+}\u001b[0me\u001b[31m[-LockI-]\u001b[0md\u001b[31m[-(-]\u001b[0m\u001b[32m{+ = +}\u001b[0mrelPath.replace(/\u001b[32m{+[+}\u001b[0m\\\u001b[32m{+\\+}\u001b[0m/\u001b[32m{+:*?\"<>|]+}\u001b[0m/g, '-')\u001b[32m{+;\n  +}\u001b[0m \u001b[32m{+ const lockId = safeLockId(sanitized +}\u001b[0m+ '-' + Date.now());\n    const d = lockDir(lockId);\n    try {\n      fs.mkdirSync(d);\n      \u001b[32m{+fs.w+}\u001b[0mr\u001b[32m{+it+}\u001b[0me\u001b[32m{+FileSync(pa+}\u001b[0mt\u001b[32m{+h.join(d, 'heartbeat'), String(Date.now()));\n      ret+}\u001b[0murn lockId;\n    } catch {\n      return null;\u001b[32m{+\n    }\n  }\n  \n  function autoLockCleanup(relPath: string, maxAgeMs = 30000): void {\n    const root = lockRoot();\n    if (!fs.existsSync(root)) return;\n    const now = Date.now();\n    for (const entry of fs.readdirSync(root, { withFileTypes: true })) {\n      if (!entry.isDirectory()) continue;\n      const hbPath = path.join(root, entry.name, 'heartbeat');\n      try {\n        const ts = Number(fs.readFileSync(hbPath, 'utf8'));\n        if (now - ts > maxAgeMs) {\n          fs.rmSync(path.join(root, entry.name), { recursive: true, force: true });\n        }\n      } catch {\n        fs.rmSync(path.join(root, entry.name), { recursive: true, force: true });\n      }+}\u001b[0m\n    }\n  }",
+  "preservedZones": [
+    {
+      "kind": "unchanged_context",
+      "description": "Everything outside the modified zone is preserved byte-for-byte by the atomic operation."
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "oldTextHash": "915a2b73c1af90b97d9d2c7db91bafa092c9b5fd883f8411285e61e12260924b",
+      "newTextHash": "308bfcb76a85d258d25daa35576c7d474fd1a6576df9f7959c95ca45f2dda981",
+      "description": "The operation changed the highlighted span shown in inlinePreview."
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~981 character(s) in `scripts/mcp/atomic-edit/server.ts` (sub-line atomic edit, expansion 0.25× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

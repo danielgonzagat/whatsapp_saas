@@ -1,0 +1,59 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779075473449_970504cd",
+  "ts": "2026-05-18T03:37:53.449Z",
+  "file": "docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "targetUnit": "text_span",
+  "intention": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 1472,
+    "lineRewriteSurfaceChars": 891,
+    "expansionFactorAvoided": 0.61,
+    "bytesNet": 581,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "7aa7dfa36c6e6eea436c39dbdc6170bc30eed02e6109a2970f98d3901de29490",
+  "proposedSha256": "7aa7dfa36c6e6eea436c39dbdc6170bc30eed02e6109a2970f98d3901de29490",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs (atomic char-level)\u001b[0m\n    const otherClusters = clusters.filter((cluster) => cluster !== dominant.cluster);\n    const helperSymbols = dominant.helperMembers.map((member) => member.name).filter(Boolean);\n    const \u001b[32m{+internalCompactionPlan = retainedRootInternalCompactionPlan(targetText, dominant.rootMember, scopePrefix, targetExt);\n    const internalCompactionLineSurface = internalCompactionPlan.available ? internalCompactionPlan.selectedLineSurface : 0;\n    const +}\u001b[0mhelper\u001b[32m{+ObservedLines = dominant.helperLines + internalCompactionLineSurface;\n    const helper+}\u001b[0mFile = scopePrefix + '-' + dominant.cluster.cluster + '-helpers' + (targetExt || '.ts');\n    const helperTemplate = helperSymbols.length > 0\u001b[32m{+ || internalCompactionPlan.available+}\u001b[0m\n      ? [{\n          file: helperFile,\n          responsibility: 'Extract private helper/support surface \u001b[32m{+and selected internal sections +}\u001b[0mfor retained public root ' + dominant.cluster.root + ': ' + helperSymbols.join(', '),\n          observedLines: \u001b[31m[-dominant.-]\u001b[0mhelper\u001b[32m{+Observed+}\u001b[0mLines,\n          preserveTogether: 'These helpers \u001b[32m{+and internal sections +}\u001b[0mmove only because their public root remains in the facade for measured inventory/churn economy.',\n          splitWhen: 'Move a helper \u001b[32m{+or sec+}\u001b[0mt\u001b[32m{+i+}\u001b[0mo\u001b[32m{+n+}\u001b[0m \u001b[32m{+to +}\u001b[0manother owner only when dependency evidence or validation proves that owner consumes it more directly.',\n          symbols: helperSymbols,\u001b[32m{+\n          internalCompactionSections: internalCompactionPlan.available ? internalCompactionPlan.selectedSections : [],\n          internalCompactionPlan,+}\u001b[0m\n        }]\n      : [];",
+  "preservedZones": [
+    {
+      "kind": "unchanged_context",
+      "description": "Everything outside the modified zone is preserved byte-for-byte by the atomic operation."
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "oldTextHash": "808ccba12b0ae3cc0fe8417aca839042e1bdc746c3e9b42609707e41953257fe",
+      "newTextHash": "7aa7dfa36c6e6eea436c39dbdc6170bc30eed02e6109a2970f98d3901de29490",
+      "description": "The operation changed the highlighted span shown in inlinePreview."
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~1472 character(s) in `docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs` (sub-line atomic edit, expansion 0.61× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

@@ -1,0 +1,59 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779032022363_d4b4e867",
+  "ts": "2026-05-17T15:33:42.363Z",
+  "file": "backend/src/kloel/unified-agent.service.ts",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "edit_symbol:remove",
+  "operator": "edit_symbol:remove",
+  "targetUnit": "text_span",
+  "intention": "edit_symbol:remove",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 0,
+    "lineRewriteSurfaceChars": 0,
+    "expansionFactorAvoided": 0,
+    "bytesNet": -125,
+    "lineRewriteAvoided": true
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "5c4a695592cae53590c7ede13851905723f38c81f579024c7d417927e759f281",
+  "proposedSha256": "5c4a695592cae53590c7ede13851905723f38c81f579024c7d417927e759f281",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- backend/src/kloel/unified-agent.service.ts (atomic char-level)\u001b[0m\n  \n  \n  \u001b[31m[-  private num(v: unknown, fb = 0): number {\n      const n = Number(v);\n      return Number.isFinite(n) ? Math.round(n) : fb;\n    }-]\u001b[0m\n  \n    private async buildAgentRuntimeContext(params: {",
+  "preservedZones": [
+    {
+      "kind": "unchanged_context",
+      "description": "Everything outside the modified zone is preserved byte-for-byte by the atomic operation."
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "oldTextHash": "6bdff31af231e972e8134916db37f288d9240499e923db7201452f00ca3491db",
+      "newTextHash": "5c4a695592cae53590c7ede13851905723f38c81f579024c7d417927e759f281",
+      "description": "The operation changed the highlighted span shown in inlinePreview."
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `edit_symbol:remove` changed ~0 character(s) in `backend/src/kloel/unified-agent.service.ts` (sub-line atomic edit, expansion 0× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

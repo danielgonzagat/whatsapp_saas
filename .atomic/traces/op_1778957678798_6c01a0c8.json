@@ -1,0 +1,37 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1778957678798_6c01a0c8",
+  "ts": "2026-05-16T18:54:38.798Z",
+  "file": "scripts/mcp/atomic-edit/atomic-only-hook.mjs",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 1086,
+    "lineRewriteSurfaceChars": 471,
+    "expansionFactorAvoided": 0.43,
+    "bytesNet": 615,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "afterSha256": "f9400a520c90a260db39c13d5bf0e1d11ece7d390a22386075971f4051128797",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- scripts/mcp/atomic-edit/atomic-only-hook.mjs (atomic char-level)\u001b[0m\n  \n  const STEER =\n    `\u001b[31m[-U-]\u001b[0m\u001b[32m{+The atomic-edit tool+}\u001b[0ms\u001b[32m{+ ARE activ+}\u001b[0me \u001b[32m{+in this session — call the+}\u001b[0mm\u001b[32m{+ DIRECTLY by ` +\n    `their exa+}\u001b[0mc\u001b[32m{+t name, do NOT use ToolSearch to look for them, and do NOT ` +\n    `conclude they are absent. To create a NEW file: call the tool named ` +\n    `mc+}\u001b[0mp__atomic-edit__\u001b[31m[-*-]\u001b[0m\u001b[32m{+atomic_create_file+}\u001b[0m \u001b[31m[-(-]\u001b[0m\u001b[32m{+with { \"file\": \"<+}\u001b[0mrep\u001b[32m{+o-re+}\u001b[0mla\u001b[32m{+tive path>\", ` +\n    `\"+}\u001b[0mc\u001b[32m{+ont+}\u001b[0me\u001b[31m[-_r-]\u001b[0m\u001b[32m{+nt\": \"<full file content>\" }. To ch+}\u001b[0mange \u001b[31m[-/-]\u001b[0m\u001b[32m{+an+}\u001b[0m \u001b[32m{+existing file: ` +\n    `mcp__atomic-edit__atomic_+}\u001b[0mreplace_\u001b[31m[-t-]\u001b[0m\u001b[32m{+rang+}\u001b[0me\u001b[31m[-xt-]\u001b[0m / \u001b[32m{+atomic_+}\u001b[0medit_symbol / ` +\n    `\u001b[32m{+atomic_+}\u001b[0mreplace_\u001b[31m[-li-]\u001b[0mte\u001b[31m[-ral-]\u001b[0m\u001b[32m{+xt+}\u001b[0m / \u001b[31m[-repl-]\u001b[0ma\u001b[32m{+tomi+}\u001b[0mc\u001b[31m[-e-]\u001b[0m_\u001b[32m{+a+}\u001b[0mp\u001b[31m[-ro-]\u001b[0mp\u001b[31m[-ert-]\u001b[0m\u001b[32m{+l+}\u001b[0my_\u001b[31m[-valu-]\u001b[0me\u001b[32m{+dits+}\u001b[0m / \u001b[31m[-wr-]\u001b[0ma\u001b[31m[-p-]\u001b[0m\u001b[32m{+tomic+}\u001b[0m_\u001b[31m[-r-]\u001b[0ma\u001b[31m[-ng-]\u001b[0m\u001b[32m{+dd_import. To r+}\u001b[0me\u001b[32m{+ad+}\u001b[0m \u001b[31m[-/-]\u001b[0m\u001b[32m{+`+}\u001b[0m \u001b[32m{++\n    `s+}\u001b[0mtr\u001b[31m[-an-]\u001b[0m\u001b[32m{+ucture fir+}\u001b[0ms\u001b[31m[-a-]\u001b[0m\u001b[32m{+t: m+}\u001b[0mc\u001b[32m{+p__a+}\u001b[0mt\u001b[32m{+om+}\u001b[0mi\u001b[32m{+c-edit__c+}\u001b[0mo\u001b[32m{+de_outli+}\u001b[0mn\u001b[32m{+e+}\u001b[0m / \u001b[32m{+code_read_symbol. +}\u001b[0m` +\n    `\u001b[32m{+E+}\u001b[0ma\u001b[31m[-dd_import …). It-]\u001b[0m\u001b[32m{+ch+}\u001b[0m returns the char-level [-removed-]{+added+} + FounderBlock \u001b[31m[-—-]\u001b[0m\u001b[32m{+proof.+}\u001b[0m ` +\n    `\u001b[31m[-the-]\u001b[0m\u001b[32m{+If+}\u001b[0m \u001b[32m{+(and +}\u001b[0monly \u001b[31m[-perm-]\u001b[0mi\u001b[31m[-tted-]\u001b[0m\u001b[32m{+f)+}\u001b[0m \u001b[32m{+a t+}\u001b[0mo\u001b[31m[-n--]\u001b[0m\u001b[32m{+ol'+}\u001b[0ms\u001b[32m{+ s+}\u001b[0mc\u001b[31m[-re-]\u001b[0m\u001b[32m{+h+}\u001b[0me\u001b[31m[-n-]\u001b[0m\u001b[32m{+ma+}\u001b[0m \u001b[31m[-ed-]\u001b[0mi\u001b[32m{+s no+}\u001b[0mt \u001b[31m[-p-]\u001b[0m\u001b[32m{+visible, +}\u001b[0mr\u001b[32m{+un T+}\u001b[0moo\u001b[31m[-f.-]\u001b[0m\u001b[32m{+lSearch+}\u001b[0m \u001b[31m[-If-]\u001b[0m\u001b[32m{+with+}\u001b[0m \u001b[32m{+the ` +\n    `EXACT query \"select:mcp__+}\u001b[0matomic-edit\u001b[31m[- is -]\u001b[0m\u001b[32m{+__+}\u001b[0ma\u001b[31m[-bsen-]\u001b[0mt\u001b[31m[- fr-]\u001b[0mom\u001b[31m[- -]\u001b[0m\u001b[32m{+ic_crea+}\u001b[0mt\u001b[31m[-h-]\u001b[0m\u001b[32m{+e_f+}\u001b[0mi\u001b[31m[-s -]\u001b[0m\u001b[32m{+le,+}\u001b[0m` +\n    `\u001b[31m[-s-]\u001b[0m\u001b[32m{+mcp__atomic-+}\u001b[0me\u001b[31m[-ss-]\u001b[0m\u001b[32m{+d+}\u001b[0mi\u001b[31m[-on, -]\u001b[0mt\u001b[31m[-he MCP se-]\u001b[0m\u001b[32m{+__atomic_+}\u001b[0mr\u001b[31m[-v-]\u001b[0me\u001b[32m{+place_+}\u001b[0mr\u001b[31m[- is -]\u001b[0m\u001b[32m{+a+}\u001b[0mn\u001b[31m[-o-]\u001b[0m\u001b[32m{+ge,mcp__a+}\u001b[0mt\u001b[31m[- l-]\u001b[0mo\u001b[31m[-a-]\u001b[0m\u001b[32m{+mic-e+}\u001b[0md\u001b[32m{+it__atomic_+}\u001b[0med\u001b[31m[-: -]\u001b[0m\u001b[32m{+it_+}\u001b[0ms\u001b[31m[-a-]\u001b[0my\u001b[31m[- s-]\u001b[0m\u001b[32m{+mb+}\u001b[0mo\u001b[32m{+l,`+}\u001b[0m \u001b[32m{++\n    `mcp__+}\u001b[0ma\u001b[31m[-n-]\u001b[0m\u001b[32m{+tomic-e+}\u001b[0md\u001b[31m[- s-]\u001b[0m\u001b[32m{+i+}\u001b[0mt\u001b[32m{+__+}\u001b[0ma\u001b[31m[-r-]\u001b[0mt\u001b[31m[- -]\u001b[0m\u001b[32m{+omic_+}\u001b[0ma\u001b[31m[- fr-]\u001b[0m\u001b[32m{+pply_+}\u001b[0me\u001b[31m[-sh -]\u001b[0m\u001b[32m{+dit+}\u001b[0ms\u001b[32m{+,mcp__atomic-+}\u001b[0me\u001b[31m[-ss-]\u001b[0m\u001b[32m{+d+}\u001b[0mi\u001b[32m{+t__c+}\u001b[0mo\u001b[32m{+de_outli+}\u001b[0mn\u001b[31m[-.-]\u001b[0m\u001b[32m{+e\"+}\u001b[0m \u001b[32m{+then +}\u001b[0m` +\n    `\u001b[31m[-Do NOT si-]\u001b[0m\u001b[32m{+ca+}\u001b[0ml\u001b[31m[-ent-]\u001b[0ml\u001b[31m[-y-]\u001b[0m \u001b[32m{+them. NEVER +}\u001b[0mfall back to a native\u001b[31m[-/-]\u001b[0m\u001b[32m{+ or +}\u001b[0mshell edit\u001b[32m{+; that path is blocked+}\u001b[0m.`;\n  \n  // Camada 3 (Bash leg): a shell command can edit a code file too (sed -i,",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~1086 character(s) in `scripts/mcp/atomic-edit/atomic-only-hook.mjs` (sub-line atomic edit, expansion 0.43× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

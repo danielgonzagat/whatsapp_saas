@@ -1,0 +1,59 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779017567540_e1a90263",
+  "ts": "2026-05-17T11:32:47.540Z",
+  "file": "docs/ai/atomic-os-benchmark/tools/atomic-call.cjs",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "targetUnit": "text_span",
+  "intention": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 1236,
+    "lineRewriteSurfaceChars": 1182,
+    "expansionFactorAvoided": 0.96,
+    "bytesNet": 54,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "2d86ff868302942926aa2c26e95a9b1865dcff211ff378ad795c3e865d02b36e",
+  "proposedSha256": "2d86ff868302942926aa2c26e95a9b1865dcff211ff378ad795c3e865d02b36e",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- docs/ai/atomic-os-benchmark/tools/atomic-call.cjs (atomic char-level)\u001b[0m\n  \n  \n  function \u001b[31m[-assertAbs-]\u001b[0m\u001b[32m{+n+}\u001b[0mo\u001b[32m{+rma+}\u001b[0ml\u001b[31m[-ut-]\u001b[0m\u001b[32m{+iz+}\u001b[0mePath\u001b[32m{+Value+}\u001b[0m(value, key) {\n    if (typeof value !== 'string') return\u001b[32m{+ value+}\u001b[0m;\n    \u001b[31m[-if-]\u001b[0m\u001b[32m{+const+}\u001b[0m \u001b[32m{+cwd = process.cwd+}\u001b[0m(\u001b[31m[-!-]\u001b[0m\u001b[32m{+);\n    const abs = +}\u001b[0mpath.isAbsolute(value)\u001b[31m[-)-]\u001b[0m \u001b[31m[-{\n      throw new-]\u001b[0m\u001b[32m{+?+}\u001b[0m \u001b[31m[-Error(`ref-]\u001b[0m\u001b[32m{+val+}\u001b[0mu\u001b[31m[-s-]\u001b[0me\u001b[31m[-d:-]\u001b[0m \u001b[31m[-${key}-]\u001b[0m\u001b[32m{+:+}\u001b[0m \u001b[31m[-mus-]\u001b[0m\u001b[32m{+pa+}\u001b[0mt\u001b[31m[- b-]\u001b[0m\u001b[32m{+h.r+}\u001b[0me\u001b[31m[- ab-]\u001b[0msol\u001b[31m[-ute in b-]\u001b[0m\u001b[32m{+v+}\u001b[0me\u001b[31m[-n-]\u001b[0m\u001b[32m{+(+}\u001b[0mc\u001b[31m[-hmark -]\u001b[0mw\u001b[31m[-orktree mo-]\u001b[0md\u001b[31m[-e:-]\u001b[0m\u001b[32m{+,+}\u001b[0m \u001b[31m[-${-]\u001b[0mvalue\u001b[31m[-}`-]\u001b[0m);\n    \u001b[31m[-}\n    -]\u001b[0mconst cwd\u001b[32m{+Prefix+}\u001b[0m = `${\u001b[31m[-pro-]\u001b[0mc\u001b[31m[-ess.c-]\u001b[0mwd\u001b[31m[-()-]\u001b[0m}${path.sep}`;\n    if (\u001b[31m[-v-]\u001b[0ma\u001b[31m[-lue-]\u001b[0m\u001b[32m{+bs+}\u001b[0m !== \u001b[31m[-pro-]\u001b[0mc\u001b[31m[-ess.c-]\u001b[0mwd\u001b[31m[-()-]\u001b[0m && !\u001b[31m[-v-]\u001b[0ma\u001b[31m[-lue-]\u001b[0m\u001b[32m{+bs+}\u001b[0m.startsWith(cwd\u001b[32m{+Prefix+}\u001b[0m)) {\n      throw new Error(`refused: ${key} escapes current worktree: ${value}`);\n    }\n  \u001b[32m{+  return abs;\n  +}\u001b[0m}\n  \n  function \u001b[32m{+norm+}\u001b[0ma\u001b[31m[-ss-]\u001b[0m\u001b[32m{+liz+}\u001b[0me\u001b[31m[-rt-]\u001b[0mWorktreeSafePaths(value, parentKey = '') {\n    if (!value || typeof value !== 'object') return\u001b[32m{+ value+}\u001b[0m;\n    if (Array.isArray(value)) {\n      value.forEach((item, index) => \u001b[32m{+norm+}\u001b[0ma\u001b[31m[-ss-]\u001b[0m\u001b[32m{+liz+}\u001b[0me\u001b[31m[-rt-]\u001b[0mWorktreeSafePaths(item, `${parentKey}[${index}]`));\n      return\u001b[32m{+ value+}\u001b[0m;\n    }\n    for (const [key, child] of Object.entries(value)) {\n      const fullKey = parentKey ? `${parentKey}.${key}` : key;\n      if (PATH_KEYS.has(key)) {\n        \u001b[32m{+v+}\u001b[0ma\u001b[31m[-ss-]\u001b[0m\u001b[32m{+lu+}\u001b[0me\u001b[31m[-rtAbs-]\u001b[0m\u001b[32m{+[key] = n+}\u001b[0mo\u001b[32m{+rma+}\u001b[0ml\u001b[31m[-ut-]\u001b[0m\u001b[32m{+iz+}\u001b[0mePath\u001b[32m{+Value+}\u001b[0m(child, fullKey);\n        continue;\n      }\n      if (PATH_ARRAY_KEYS.has(key)) {\n        if (!Array.isArray(child)) {\n          throw new Error(`refused: ${fullKey} must be an array of \u001b[31m[-absolute -]\u001b[0mpaths`);\n        }\n        child.forEach((entry, index) => \u001b[31m[-ass-]\u001b[0m\u001b[32m{+{\n          child[ind+}\u001b[0me\u001b[31m[-rtAbs-]\u001b[0m\u001b[32m{+x] = n+}\u001b[0mo\u001b[32m{+rma+}\u001b[0ml\u001b[31m[-ut-]\u001b[0m\u001b[32m{+iz+}\u001b[0mePath\u001b[32m{+Value+}\u001b[0m(entry, `${fullKey}[${index}]`)\u001b[32m{+;\n        }+}\u001b[0m);\n        continue;\n      }\n      \u001b[32m{+norm+}\u001b[0ma\u001b[31m[-ss-]\u001b[0m\u001b[32m{+liz+}\u001b[0me\u001b[31m[-rt-]\u001b[0mWorktreeSafePaths(child, fullKey);\n    }\u001b[32m{+\n    return value;+}\u001b[0m\n  }\n  ",
+  "preservedZones": [
+    {
+      "kind": "unchanged_context",
+      "description": "Everything outside the modified zone is preserved byte-for-byte by the atomic operation."
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "oldTextHash": "ed9a1a036b85424120245eee3028a31e7803624644a6134817c6d80f50be087c",
+      "newTextHash": "2d86ff868302942926aa2c26e95a9b1865dcff211ff378ad795c3e865d02b36e",
+      "description": "The operation changed the highlighted span shown in inlinePreview."
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~1236 character(s) in `docs/ai/atomic-os-benchmark/tools/atomic-call.cjs` (sub-line atomic edit, expansion 0.96× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

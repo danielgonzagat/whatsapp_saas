@@ -1,0 +1,106 @@
+{
+  "decisionAuthority": "compiled from the current executable first-batch recipe, start capsule, bundle-economy plan, and validation commands; no reusable prompt template, latency budget, file list, or command count is hardcoded",
+  "missionShape": "dependency_split_modules",
+  "delegationShape": "direct_function_delegation",
+  "firstDurableMutation": {
+    "file": "backend/src/kloel/unified-agent-process.ts",
+    "observedLines": 380,
+    "symbolCount": 6,
+    "measuredReleaseSurface": 380,
+    "productBatchUnit": {
+      "kind": "module_write",
+      "file": "backend/src/kloel/unified-agent-process.ts",
+      "plannedSymbols": [
+        "processMessage",
+        "formatPromptValue",
+        "buildAgentRuntimeContext",
+        "recordAgentRuntimeTurn",
+        "actionSucceeded",
+        "isAllowedTool"
+      ],
+      "observedLines": 380
+    }
+  },
+  "startNowWhen": [
+    "target source and focused spec have been read enough to preserve public behavior",
+    "the compiled first product batch unit has a non-empty owner responsibility",
+    "no unresolved public method blocks the selected owner file",
+    "governance and allowed-scope surfaces are already known from the compiled policy"
+  ],
+  "deferUntilAfterFirstWrite": [
+    "broad scorecard optimization",
+    "facade compaction beyond one statement per resolved public method",
+    "extra exploratory reads not tied to preserving the first product batch unit",
+    "style-only cleanup that is not required for syntax or focused validation"
+  ],
+  "firstBatchOrder": [
+    {
+      "action": "write_first_observable_selected_module",
+      "file": "backend/src/kloel/unified-agent-process.ts"
+    },
+    {
+      "action": "write_selected_module",
+      "file": "backend/src/kloel/unified-agent-execute.ts"
+    },
+    {
+      "action": "replace_facade",
+      "file": "backend/src/kloel/unified-agent.service.ts"
+    }
+  ],
+  "productBatchUnits": [
+    {
+      "kind": "module_write",
+      "file": "backend/src/kloel/unified-agent-process.ts",
+      "plannedSymbols": [
+        "processMessage",
+        "formatPromptValue",
+        "buildAgentRuntimeContext",
+        "recordAgentRuntimeTurn",
+        "actionSucceeded",
+        "isAllowedTool"
+      ],
+      "observedLines": 380
+    },
+    {
+      "kind": "module_write",
+      "file": "backend/src/kloel/unified-agent-execute.ts",
+      "plannedSymbols": [
+        "executeToolAction",
+        "executeTool",
+        "buildAgentToolEnvelope",
+        "num"
+      ],
+      "observedLines": 220
+    },
+    {
+      "kind": "facade_replace",
+      "file": "backend/src/kloel/unified-agent.service.ts",
+      "plannedMethods": [
+        "processIncomingMessage",
+        "processMessage",
+        "executeTool",
+        "buildQuotedReplyPlan"
+      ]
+    }
+  ],
+  "dependencyBundleAccessMode": {
+    "mode": "direct_value_bundle",
+    "mutableBundleFields": [],
+    "postConstructorAssignedFields": [],
+    "decisionAuthority": "derived from AST assignment scan over this.<field> outside the constructor; direct values are used only when the facade dependencies are not reassigned after construction"
+  },
+  "facadeRewriteGuard": "one public method statement per delegated method; repeated dependency objects collapse into one owner-local or cross-owner shared bundle only when dependencyBundleReusePlan.dependencyBundleEconomy.pass is true; otherwise keep direct per-method dependency objects to avoid support/type inventory bloat; no private facade helper unless this recipe leaves the method unresolved",
+  "validation": {
+    "scorecard": "'node' '/Users/danielpenin/whatsapp_saas/docs/ai/atomic-os-benchmark/tools/refactor-scorecard.cjs' '--worktree' '/private/tmp/kloel-ab138-atomic-20260518072701' '--target' 'backend/src/kloel/unified-agent.service.ts' '--class' 'UnifiedAgentService' '--spec' 'backend/src/kloel/unified-agent.service.spec.ts' '--enforce-scope' '--allow-prefix' 'backend/src/kloel/unified-agent' '--allow-atomic-traces' '--enforce-target-dominance-release' '--enforce-facade-private-helper-release' '--enforce-facade-type-surface-release' '--enforce-type-spillover-economy' '--enforce-extraction-economy' '--enforce-sibling-reuse' '--enforce-trace-economy' '--enforce-public-api' '--json'",
+    "publicApiAudit": "'node' '/Users/danielpenin/whatsapp_saas/docs/ai/atomic-os-benchmark/tools/public-api-preservation-audit.cjs' '--worktree' '/private/tmp/kloel-ab138-atomic-20260518072701' '--target' 'backend/src/kloel/unified-agent.service.ts' '--class' 'UnifiedAgentService' '--json'",
+    "scopeDiscipline": "'node' '/Users/danielpenin/whatsapp_saas/docs/ai/atomic-os-benchmark/tools/scope-discipline-check.cjs' '--worktree' '/private/tmp/kloel-ab138-atomic-20260518072701' '--allow-prefix' 'backend/src/kloel/unified-agent' '--allow-atomic-traces' '--json'",
+    "traceIsolation": "'node' '/Users/danielpenin/whatsapp_saas/docs/ai/atomic-os-benchmark/tools/trace-isolation-check.cjs' '--worktree' '/private/tmp/kloel-ab138-atomic-20260518072701' '--coordinator' '/Users/danielpenin/whatsapp_saas' '--since' '<start-time>' '--json'",
+    "typecheckImpact": "'node' '/Users/danielpenin/whatsapp_saas/docs/ai/atomic-os-benchmark/tools/typecheck-impact-audit.cjs' '--worktree' '/private/tmp/kloel-ab138-atomic-20260518072701' '--allow-prefix' 'backend/src/kloel/unified-agent' '--json' '--' 'npm' '--prefix' 'backend' 'run' 'typecheck'"
+  },
+  "workerInstruction": [
+    "Use this minimalDispatchBrief as the execution brief and the full policy JSON only as lookup evidence.",
+    "Do not re-summarize the full policy before the first durable mutation when startNowWhen is already true.",
+    "Make the first durable mutation against firstDurableMutation.file, continue firstBatchOrder, then run validation.",
+    "Escalate back to the full policy only if the first mutation is refused, public API preservation is ambiguous, or validation fails."
+  ]
+}

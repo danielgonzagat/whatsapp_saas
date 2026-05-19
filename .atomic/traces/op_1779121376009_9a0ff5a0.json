@@ -1,0 +1,59 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779121376009_9a0ff5a0",
+  "ts": "2026-05-18T16:22:56.009Z",
+  "file": "scripts/mcp/atomic-edit/trace.ts",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "targetUnit": "text_span",
+  "intention": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 1481,
+    "lineRewriteSurfaceChars": 477,
+    "expansionFactorAvoided": 0.32,
+    "bytesNet": 1004,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "bfd2cb640a14c2925ef757bb11d6fce074dc4f7b5f2333a639e4303068d21863",
+  "proposedSha256": "bfd2cb640a14c2925ef757bb11d6fce074dc4f7b5f2333a639e4303068d21863",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- scripts/mcp/atomic-edit/trace.ts (atomic char-level)\u001b[0m\n    kind: string;\n    description: string;\n    \u001b[32m{+/** Byte offset in original file (0-+}\u001b[0mb\u001b[32m{+as+}\u001b[0me\u001b[32m{+d) where this preserved zone starts. */\n    byteStart: number;\n    /** Byte o+}\u001b[0mf\u001b[32m{+fset in +}\u001b[0mor\u001b[32m{+iginal fil+}\u001b[0me\u001b[32m{+ (0-based, exclusive) where this preserved zone ends. */\n    byteEnd: number;\n    /** Length of this zone in bytes (before === after). */\n    byteLength: number;\n    before+}\u001b[0mHash?: string;\n    afterHash?: string;\n    sample?: string;\n  }\n  \n  export interface ModifiedZone {\n    kind: string;\n    \u001b[32m{+/** Byte +}\u001b[0mo\u001b[32m{+ffset in origina+}\u001b[0ml\u001b[32m{+ file (0-base+}\u001b[0md\u001b[32m{+) where modified zone starts. */\n    byteStart: number;\n    /** Byte offset in original file (0-based, exclusive) where modified zone ends. */\n    byteEnd: number;\n    /** Length of new text in bytes (may differ from old length). */\n    newByteLength: number;\n    old+}\u001b[0mTextHash?: string;\n    newTextHash?: string;\n    oldSample?: string;\n    newSample?: string;\n    description?: string;\n    metadata?: Record<string, unknown>;\n  }\n  \n  export interface MovementZone {\n    kind: string;\n    description: string;\u001b[32m{+\n    /** Byte offset in original file (0-based) where moved content started. */\n    oldByteStart?: number;\n    /** Byte offset in original file (0-based, exclusive) where moved content ended. */\n    oldByteEnd?: number;\n    /** Byte offset in new file (0-based) where moved content now starts. */\n    newByteStart?: number;\n    /** Byte offset in new file (0-based, exclusive) where moved content now ends. */\n    newByteEnd?: number;+}\u001b[0m\n    from?: string;\n    to?: string;",
+  "preservedZones": [
+    {
+      "kind": "unchanged_context",
+      "description": "Everything outside the modified zone is preserved byte-for-byte by the atomic operation."
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "oldTextHash": "537b572b6a187b50fe867fab35a3c21cbd4d7a12b439f273e2a3af7deb48b486",
+      "newTextHash": "bfd2cb640a14c2925ef757bb11d6fce074dc4f7b5f2333a639e4303068d21863",
+      "description": "The operation changed the highlighted span shown in inlinePreview."
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~1481 character(s) in `scripts/mcp/atomic-edit/trace.ts` (sub-line atomic edit, expansion 0.32× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

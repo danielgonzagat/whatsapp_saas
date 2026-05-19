@@ -1,0 +1,69 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1778963910455_2157fdc8",
+  "ts": "2026-05-16T20:38:30.455Z",
+  "file": "worker/.smoke-eslint.39313.ts",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "atomic_apply_eslint_dry_run_fixes",
+  "operator": "atomic_apply_eslint_dry_run_fixes",
+  "targetUnit": "eslint_dry_run_file_output",
+  "intention": "apply analyzer-proposed lint fixes without letting the analyzer write directly",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 19,
+    "lineRewriteSurfaceChars": 21,
+    "expansionFactorAvoided": 1.11,
+    "bytesNet": 10,
+    "lineRewriteAvoided": true
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "afterSha256": "b0ce160211b895d8d834541d8b0092115d91d6fa6d37d5c7f755b79a8fb5d5a6",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- worker/.smoke-eslint.39313.ts (atomic char-level)\u001b[0m\n  const envBackup = { TEST_FLAG: process.env.TEST_FLAG };\n  export function smoke(flag: boolean) {\n    if (flag) \u001b[32m{+{\n      +}\u001b[0mreturn 1;\u001b[32m{+\n    }+}\u001b[0m\n    return 0;\n  }",
+  "preservedZones": [
+    {
+      "kind": "prefix_context",
+      "description": "Text before the first analyzer-modified span was preserved.",
+      "beforeHash": "42e8ad960e162ea0254bf882c774e9028c216a84d6206b96d382def924f44869",
+      "afterHash": "42e8ad960e162ea0254bf882c774e9028c216a84d6206b96d382def924f44869"
+    },
+    {
+      "kind": "suffix_context",
+      "description": "Text after the last analyzer-modified span was preserved.",
+      "beforeHash": "bf6d7f1c657f93bc071cefa12df49f4ca747c76ace6cbeabd8458431ba3a31f6",
+      "afterHash": "bf6d7f1c657f93bc071cefa12df49f4ca747c76ace6cbeabd8458431ba3a31f6"
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "analyzer_fix_output",
+      "oldTextHash": "627866d37dfb0713b74f3c3be486a1101f3d3f9f8388175b8c984a7a6fff2c45",
+      "newTextHash": "b0ce160211b895d8d834541d8b0092115d91d6fa6d37d5c7f755b79a8fb5d5a6",
+      "oldSample": "return 1;",
+      "newSample": "{\n    return 1;\n  }",
+      "description": "ESLint --fix-dry-run proposed this file output; atomic-edit validated and wrote it.",
+      "metadata": {
+        "knownResidueFixes": []
+      }
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "behavior_preserving_lint_cleanup",
+  "audit": {
+    "whatChanged": "Operation `atomic_apply_eslint_dry_run_fixes` changed ~19 character(s) in `worker/.smoke-eslint.39313.ts` (sub-line atomic edit, expansion 1.11× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

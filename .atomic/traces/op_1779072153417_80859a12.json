@@ -1,0 +1,59 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779072153417_80859a12",
+  "ts": "2026-05-18T02:42:33.417Z",
+  "file": "docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "targetUnit": "text_span",
+  "intention": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 732,
+    "lineRewriteSurfaceChars": 387,
+    "expansionFactorAvoided": 0.53,
+    "bytesNet": 345,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "d8b1da0f5cd6935f4043576ffc828c24da6dc043aa0cb12720707b2e666179f1",
+  "proposedSha256": "d8b1da0f5cd6935f4043576ffc828c24da6dc043aa0cb12720707b2e666179f1",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs (atomic char-level)\u001b[0m\n      productSourceFileDelta,\n      changedInventoryDelta,\n      \u001b[32m{+runt+}\u001b[0mi\u001b[32m{+meOw+}\u001b[0mn\u001b[32m{+erClassPreferred,\n      s+}\u001b[0mt\u001b[32m{+andardEconomyPass,\n      runtim+}\u001b[0me\u001b[32m{+Owne+}\u001b[0mr\u001b[32m{+DelegationPass,\n      inter+}\u001b[0mpretation: pass\n        ? \u001b[32m{+(runtimeOwnerDelegationPass\n            ? +}\u001b[0m'Retained public leaf \u001b[32m{+delegates th+}\u001b[0mr\u001b[32m{+ough th+}\u001b[0me\u001b[32m{+ runtime owner because runtime_owner_c+}\u001b[0ml\u001b[32m{+ass_d+}\u001b[0me\u001b[32m{+leg+}\u001b[0ma\u001b[32m{+tion i+}\u001b[0ms\u001b[32m{+ alr+}\u001b[0me\u001b[32m{+ady+}\u001b[0m \u001b[32m{+preferred and the wrapper move does not add product source f+}\u001b[0mi\u001b[32m{+le+}\u001b[0ms \u001b[32m{+or ch+}\u001b[0ma\u001b[32m{+nged inventory.'\n            : 'Retained publi+}\u001b[0mc\u001b[32m{+ leaf release is ac+}\u001b[0mtive because measured economy is Pareto-improving across facade, owner pressure, source count, and inventory surfaces.'\u001b[32m{+)+}\u001b[0m\n        : 'Retained public leaf stays in the facade when release is only a surface transfer \u001b[31m[-from facade -]\u001b[0m\u001b[32m{+wi+}\u001b[0mt\u001b[32m{+h+}\u001b[0mo\u001b[32m{+ut+}\u001b[0m \u001b[32m{+runtime-+}\u001b[0mowner \u001b[31m[-wi-]\u001b[0m\u001b[32m{+delega+}\u001b[0mt\u001b[31m[-h-]\u001b[0m\u001b[32m{+i+}\u001b[0mo\u001b[31m[-ut-]\u001b[0m\u001b[32m{+n+}\u001b[0m \u001b[32m{+or +}\u001b[0ma measured economy win.',\n    };\n  }",
+  "preservedZones": [
+    {
+      "kind": "unchanged_context",
+      "description": "Everything outside the modified zone is preserved byte-for-byte by the atomic operation."
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "oldTextHash": "d82d164326ae24d19170eabbe42e3f68fb6e5d63a8a78c6a80aab0ed084e4bb2",
+      "newTextHash": "d8b1da0f5cd6935f4043576ffc828c24da6dc043aa0cb12720707b2e666179f1",
+      "description": "The operation changed the highlighted span shown in inlinePreview."
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~732 character(s) in `docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs` (sub-line atomic edit, expansion 0.53× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

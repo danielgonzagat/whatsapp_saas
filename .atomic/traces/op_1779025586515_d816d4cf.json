@@ -1,0 +1,59 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779025586515_d816d4cf",
+  "ts": "2026-05-17T13:46:26.515Z",
+  "file": "docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "targetUnit": "text_span",
+  "intention": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 2775,
+    "lineRewriteSurfaceChars": 938,
+    "expansionFactorAvoided": 0.34,
+    "bytesNet": 1837,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "16b070a22d8ec378556859cb8473b83fd45f109d5137d5e76bf720b5729169dd",
+  "proposedSha256": "16b070a22d8ec378556859cb8473b83fd45f109d5137d5e76bf720b5729169dd",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs (atomic char-level)\u001b[0m\n  }\n  \n  function \u001b[32m{+a+}\u001b[0ms\u001b[32m{+tS+}\u001b[0mymbolSpanInventory(text\u001b[32m{+, fileName, worktree+}\u001b[0m) {\u001b[32m{+\n    const ts = loadTypeScript(worktree);\n    if (!ts) return null;\n    const source = ts.createSourceFile(fileName, text, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);\n    const spans = [];\n    const ignored = new Set(['constructor', 'if', 'for', 'while', 'switch', 'catch', 'function']);\n    const seen = new Set();\n  \n    function nameText(node) {\n      if (!node) return null;\n      if (ts.isIdentifier(node) || ts.isPrivateIdentifier(node) || ts.isStringLiteral(node) || ts.isNumericLiteral(node)) {\n        return node.text;\n      }\n      return node.getText(source).replace(/^['\"]|['\"]$/g, '');\n    }\n  \n    function pushSpan(name, node) {\n      if (!name || ignored.has(name)) return;\n      const start = source.getLineAndCharacterOfPosition(node.getStart(source)).line + 1;\n      const end = source.getLineAndCharacterOfPosition(node.getEnd()).line + 1;\n      const key = name + ':' + start + ':' + end;\n      if (seen.has(key)) return;\n      seen.add(key);\n      spans.push({\n        name,\n        startLine: start,\n        endLine: end,\n        lines: end - start + 1,\n        fileHintToken: splitName(name)[0] || name.toLowerCase(),\n      });\n    }\n  \n    function visit(node) {\n      if (ts.isMethodDeclaration(node) || ts.isFunctionDeclaration(node)) {\n        pushSpan(nameText(node.name), node);\n      } else if (ts.isVariableDeclaration(node) && node.initializer) {\n        if (ts.isArrowFunction(node.initializer) || ts.isFunctionExpression(node.initializer)) {\n          pushSpan(nameText(node.name), node);\n        }\n      }\n      ts.forEachChild(node, visit);\n    }\n  \n    visit(source);\n    return spans.sort((left, right) => right.lines - left.lines || left.name.localeCompare(right.name));\n  }\n  \n  function symbolSpanInventory(text, fileName, worktree) {\n    const astSpans = astSymbolSpanInventory(text, fileName, worktree);\n    if (astSpans && astSpans.length > 0) return astSpans;\n  +}\u001b[0m\n    const spans = [];\n    const pattern = /^\\s{2}(?:private|protected|public)?\\s*(?:async\\s+)?([A-Za-z_$][\\w$]*)\\s*\\([^)]*\\)\\s*(?::[^{}]+)?\\{/gm;",
+  "preservedZones": [
+    {
+      "kind": "unchanged_context",
+      "description": "Everything outside the modified zone is preserved byte-for-byte by the atomic operation."
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "oldTextHash": "7e5314e6c40485a11e81446fb5fda87edb637554889f15a60bb9c4e973d2f250",
+      "newTextHash": "16b070a22d8ec378556859cb8473b83fd45f109d5137d5e76bf720b5729169dd",
+      "description": "The operation changed the highlighted span shown in inlinePreview."
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~2775 character(s) in `docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs` (sub-line atomic edit, expansion 0.34× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

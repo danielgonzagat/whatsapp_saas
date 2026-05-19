@@ -1,11 +1,11 @@
 {
-  "generatedAt": "2026-05-16T16:26:24.678Z",
+  "generatedAt": "2026-05-18T17:03:16.667Z",
   "profile": null,
   "certificationScope": null,
   "pulseMachineReadiness": {
     "scope": "pulse_machine_not_kloel_product",
     "status": "NOT_READY",
-    "generatedAt": "2026-05-16T16:22:34.450Z",
+    "generatedAt": "2026-05-18T17:01:23.749Z",
     "productCertificationStatus": "NOT_CERTIFIED",
     "productCertificationExcludedFromVerdict": true,
     "canRunBoundedAutonomousCycle": false,
@@ -24,8 +24,8 @@
       },
       {
         "id": "artifact_consistency",
-        "status": "fail",
-        "reason": "Cross-artifact consistency has not produced a passing check.",
+        "status": "pass",
+        "reason": "Cross-artifact consistency passed.",
         "evidence": {
           "selfTrustOverallPass": null,
           "selfTrustScore": null
@@ -34,9 +34,9 @@
       {
         "id": "execution_matrix",
         "status": "pass",
-        "reason": "Execution matrix classified 7445 path(s) with zero unknown and zero non-terminal paths.",
+        "reason": "Execution matrix classified 11377 path(s) with zero unknown and zero non-terminal paths.",
         "evidence": {
-          "totalPaths": 7445,
+          "totalPaths": 11377,
           "unknownPaths": 0,
           "criticalUnobservedPaths": 0,
           "impreciseBreakpoints": 0,
@@ -46,12 +46,12 @@
       {
         "id": "critical_path_terminal",
         "status": "fail",
-        "reason": "4883 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:abi-ab, matrix:capability:capability:abi-builder, matrix:capability:capability:account-agent, matrix:capability:capability:admin-brain, matrix:capability:capability:admin-clients, matrix:capability:capability:admin-compliance, matrix:capability:capability:admin-config, matrix:capability:capability:admin-contacts. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.",
+        "reason": "4884 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:abi-ab, matrix:capability:capability:abi-builder, matrix:capability:capability:account-agent, matrix:capability:capability:admin-brain, matrix:capability:capability:admin-clients, matrix:capability:capability:admin-compliance, matrix:capability:capability:admin-config, matrix:capability:capability:admin-contacts. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.",
         "evidence": {
           "criticalUnobservedPaths": 0,
           "observedPass": 0,
           "observedFail": 248,
-          "terminalWithoutObservedEvidence": 4883,
+          "terminalWithoutObservedEvidence": 4884,
           "firstTerminalPathId": "matrix:capability:capability:abi-ab",
           "terminalArtifact": "PULSE_EXECUTION_MATRIX.json",
           "coverageArtifact": "PULSE_PATH_COVERAGE.json",
@@ -109,8 +109,7 @@
       }
     ],
     "blockers": [
-      "artifact_consistency: Cross-artifact consistency has not produced a passing check.",
-      "critical_path_terminal: 4883 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:abi-ab, matrix:capability:capability:abi-builder, matrix:capability:capability:account-agent, matrix:capability:capability:admin-brain, matrix:capability:capability:admin-clients, matrix:capability:capability:admin-compliance, matrix:capability:capability:admin-config, matrix:capability:capability:admin-contacts. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.",
+      "critical_path_terminal: 4884 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:abi-ab, matrix:capability:capability:abi-builder, matrix:capability:capability:account-agent, matrix:capability:capability:admin-brain, matrix:capability:capability:admin-clients, matrix:capability:capability:admin-compliance, matrix:capability:capability:admin-config, matrix:capability:capability:admin-contacts. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.",
       "external_reality: 0 missing, 2 stale, and 0 invalid external adapter(s) remain.",
       "self_trust: PULSE still reconstructs 1 phantom capability(ies) and 0 phantom flow(s); self-trust stays degraded until illusion collapses into real chains."
     ]
@@ -174,7 +173,7 @@
     {
       "gate": "criticalPathObservedPass",
       "status": "fail",
-      "reason": "4883 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:abi-ab, matrix:capability:capability:abi-builder, matrix:capability:capability:account-agent, matrix:capability:capability:admin-brain, matrix:capability:capability:admin-clients, matrix:capability:capability:admin-compliance, matrix:capability:capability:admin-config, matrix:capability:capability:admin-contacts. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json."
+      "reason": "4884 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:abi-ab, matrix:capability:capability:abi-builder, matrix:capability:capability:account-agent, matrix:capability:capability:admin-brain, matrix:capability:capability:admin-clients, matrix:capability:capability:admin-compliance, matrix:capability:capability:admin-config, matrix:capability:capability:admin-contacts. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json."
     }
   ],
   "pathProofSurface": {
@@ -185,10 +184,10 @@
       "executableUnprovedTasks": 2047,
       "governedValidationTasks": 0,
       "notExecutableTasks": 0,
-      "readinessBlockers": 4,
+      "readinessBlockers": 3,
       "criticalUnobservedPaths": 0,
       "criticalBlueprintReady": 0,
-      "coveragePercent": 3
+      "coveragePercent": 2
     },
     "executionMode": "ai_safe",
     "topExecutableUnprovedTasks": [
@@ -307,7 +306,7 @@
       }
     ],
     "evidenceFreshness": {
-      "generatedAt": "2026-05-16T16:26:10.518Z",
+      "generatedAt": "2026-05-18T17:03:02.031Z",
       "ageMinutes": 0,
       "stale": false,
       "source": "path_proof_plan",
@@ -325,8 +324,7 @@
       "canRunBoundedAutonomousCycle": false,
       "canDeclareProductCertified": false,
       "blockers": [
-        "artifact_consistency: Cross-artifact consistency has not produced a passing check.",
-        "critical_path_terminal: 4883 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:abi-ab, matrix:capability:capability:abi-builder, matrix:capability:capability:account-agent, matrix:capability:capability:admin-brain, matrix:capability:capability:admin-clients, matrix:capability:capability:admin-compliance, matrix:capability:capability:admin-config, matrix:capability:capability:admin-contacts. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.",
+        "critical_path_terminal: 4884 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:abi-ab, matrix:capability:capability:abi-builder, matrix:capability:capability:account-agent, matrix:capability:capability:admin-brain, matrix:capability:capability:admin-clients, matrix:capability:capability:admin-compliance, matrix:capability:capability:admin-config, matrix:capability:capability:admin-contacts. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.",
         "external_reality: 0 missing, 2 stale, and 0 invalid external adapter(s) remain.",
         "self_trust: PULSE still reconstructs 1 phantom capability(ies) and 0 phantom flow(s); self-trust stays degraded until illusion collapses into real chains."
       ]
@@ -832,7 +830,7 @@
   "zeroPromptProductionGuidanceVerdict": "NAO",
   "zeroPromptProductionGuidanceReason": "NAO: Authority is not automation-eligible: Evidence freshness is not closed. | Pulse self-trust is still failing. | Runtime pass is not green with live evidence.. | 0 missing, 2 stale, and 0 invalid external adapter(s) remain. | 23 governed validation gap(s) remain observation-only or protected-surface work.",
   "productionAutonomyVerdict": "NAO",
-  "productionAutonomyReason": "NAO: Evidence freshness is not closed. | Pulse self-trust is still failing. | Runtime pass is not green with live evidence. | Authority mode is advisory-only, not certified-autonomous. | Certification status is NOT_CERTIFIED, not CERTIFIED. | 0 missing, 2 stale, and 0 invalid external adapter(s) remain. | 46 parity gap(s), 2225 HIGH Codacy issue(s), 1 phantom capability(ies), and 0 phantom flow(s) remain. | 23 governed validation gap(s) remain observation-only or protected-surface work. | Observed Codacy files are missing from repo inventory: frontend/src/components/kloel/KloelProductSurfacePatches.tsx, scripts/fix_context_strings.py, scripts/fix_opsalert_contexts.py, scripts/instrument-ops-alert-catches.py, scripts/instrument-ops-alert.py, scripts/instrument-ops-v2.py, scripts/instrument-v3.py, scripts/instrument_opsalert.py, scripts/instrument_opsalert_v2.py, scripts/orchestration/__parts__/findings-watch.mjs, worker/__parts__/flow-node-executor.interactions.ts, worker/__parts__/flow-node-executor.ts, worker/__parts__/scheduled-followup-handler.ts, worker/processors/cia/cognitive-state/__parts__/cognitive-state-build.ts, worker/processors/cia/cognitive-state/__parts__/cognitive-state-inference.ts, worker/processors/cia/cognitive-state/__parts__/cognitive-state-load.ts, worker/processors/cia/cognitive-state/__parts__/cognitive-state-persist.ts, worker/processors/cia/cognitive-state/__parts__/cognitive-state-record.ts, worker/processors/cia/cognitive-state/__parts__/cognitive-state-scoring.ts, worker/processors/cia/cognitive-state/__parts__/cognitive-state-types.ts. | Codacy still reports 2225 HIGH issue(s). | Phantom capabilities remain: Portfolio State. | Observed external high-impact signals remain active: 5. | External evidence is stale for 2 adapter(s). | Proof readiness still has non-observed production proof: status=executable_unproved, canAdvance=false, planned=2047, inferred=0, not_available=0, nonObserved=2047, executableUnproved=2047. | No-hardcoded-reality state still has hardcoded reality authority: 223437 hardcoded reality event(s) across 544 scanned PULSE file(s). Top files: scripts/pulse/convergence-plan.ts, scripts/pulse/__companions__/autopilot-processor.companion.ts, scripts/pulse/property-tester.ts, scripts/pulse/types.ts, scripts/pulse/certification.ts, scripts/pulse/observability-coverage.ts, scripts/pulse/chaos-engine.ts, scripts/pulse/behavior-graph.ts. First event: scripts/pulse/__kernel_additions__/discoverAutonomyConceptTypeLabels.ts:9.. | NAO: production proof readiness is not fully observed (proofReadiness status=executable_unproved, canAdvance=false, planned=2047, inferred=0, not_available=0, nonObserved=2047, executableUnproved=2047).",
+  "productionAutonomyReason": "NAO: Evidence freshness is not closed. | Pulse self-trust is still failing. | Runtime pass is not green with live evidence. | Authority mode is advisory-only, not certified-autonomous. | Certification status is NOT_CERTIFIED, not CERTIFIED. | 0 missing, 2 stale, and 0 invalid external adapter(s) remain. | 46 parity gap(s), 2225 HIGH Codacy issue(s), 1 phantom capability(ies), and 0 phantom flow(s) remain. | 23 governed validation gap(s) remain observation-only or protected-surface work. | Observed Codacy files are missing from repo inventory: frontend/src/components/kloel/KloelProductSurfacePatches.tsx, scripts/fix_context_strings.py, scripts/fix_opsalert_contexts.py, scripts/instrument-ops-alert-catches.py, scripts/instrument-ops-alert.py, scripts/instrument-ops-v2.py, scripts/instrument-v3.py, scripts/instrument_opsalert.py, scripts/instrument_opsalert_v2.py, scripts/orchestration/__parts__/findings-watch.mjs, worker/__parts__/flow-node-executor.interactions.ts, worker/__parts__/flow-node-executor.ts, worker/__parts__/scheduled-followup-handler.ts, worker/processors/cia/cognitive-state/__parts__/cognitive-state-build.ts, worker/processors/cia/cognitive-state/__parts__/cognitive-state-inference.ts, worker/processors/cia/cognitive-state/__parts__/cognitive-state-load.ts, worker/processors/cia/cognitive-state/__parts__/cognitive-state-persist.ts, worker/processors/cia/cognitive-state/__parts__/cognitive-state-record.ts, worker/processors/cia/cognitive-state/__parts__/cognitive-state-scoring.ts, worker/processors/cia/cognitive-state/__parts__/cognitive-state-types.ts. | Codacy still reports 2225 HIGH issue(s). | Phantom capabilities remain: Portfolio State. | Codacy snapshot is stale (4281 minute(s) old). | Observed external high-impact signals remain active: 5. | External evidence is stale for 2 adapter(s). | Proof readiness still has non-observed production proof: status=executable_unproved, canAdvance=false, planned=2047, inferred=0, not_available=0, nonObserved=2047, executableUnproved=2047. | No-hardcoded-reality state still has hardcoded reality authority: 223445 hardcoded reality event(s) across 544 scanned PULSE file(s). Top files: scripts/pulse/convergence-plan.ts, scripts/pulse/__companions__/autopilot-processor.companion.ts, scripts/pulse/property-tester.ts, scripts/pulse/types.ts, scripts/pulse/certification.ts, scripts/pulse/observability-coverage.ts, scripts/pulse/chaos-engine.ts, scripts/pulse/behavior-graph.ts. First event: scripts/pulse/__kernel_additions__/discoverAutonomyConceptTypeLabels.ts:9.. | NAO: production proof readiness is not fully observed (proofReadiness status=executable_unproved, canAdvance=false, planned=2047, inferred=0, not_available=0, nonObserved=2047, executableUnproved=2047).",
   "canWorkNow": false,
   "canContinueUntilReady": false,
   "canWorkUntilProductionReady": false,
@@ -852,12 +850,12 @@
     ]
   },
   "autonomyProof": {
-    "generatedAt": "2026-05-16T16:22:34.450Z",
+    "generatedAt": "2026-05-18T17:01:23.749Z",
     "freshSessionQuestion": "If a new AI session runs the full Pulse, will it know the next safe executable step?",
     "freshSessionAnswer": "SIM",
     "productionAutonomyQuestion": "Can Pulse prove unsupervised convergence to fully functional and production-safe completion?",
     "productionAutonomyAnswer": "NAO",
-    "productionAutonomyReason": "NAO: Evidence freshness is not closed. | Pulse self-trust is still failing. | Runtime pass is not green with live evidence. | Authority mode is advisory-only, not certified-autonomous. | Certification status is NOT_CERTIFIED, not CERTIFIED. | 0 missing, 2 stale, and 0 invalid external adapter(s) remain. | 46 parity gap(s), 2225 HIGH Codacy issue(s), 1 phantom capability(ies), and 0 phantom flow(s) remain. | 23 governed validation gap(s) remain observation-only or protected-surface work. | Observed Codacy files are missing from repo inventory: frontend/src/components/kloel/KloelProductSurfacePatches.tsx, scripts/fix_context_strings.py, scripts/fix_opsalert_contexts.py, scripts/instrument-ops-alert-catches.py, scripts/instrument-ops-alert.py, scripts/instrument-ops-v2.py, scripts/instrument-v3.py, scripts/instrument_opsalert.py, scripts/instrument_opsalert_v2.py, scripts/orchestration/__parts__/findings-watch.mjs, worker/__parts__/flow-node-executor.interactions.ts, worker/__parts__/flow-node-executor.ts, worker/__parts__/scheduled-followup-handler.ts, worker/processors/cia/cognitive-state/__parts__/cognitive-state-build.ts, worker/processors/cia/cognitive-state/__parts__/cognitive-state-inference.ts, worker/processors/cia/cognitive-state/__parts__/cognitive-state-load.ts, worker/processors/cia/cognitive-state/__parts__/cognitive-state-persist.ts, worker/processors/cia/cognitive-state/__parts__/cognitive-state-record.ts, worker/processors/cia/cognitive-state/__parts__/cognitive-state-scoring.ts, worker/processors/cia/cognitive-state/__parts__/cognitive-state-types.ts. | Codacy still reports 2225 HIGH issue(s). | Phantom capabilities remain: Portfolio State. | Observed external high-impact signals remain active: 5. | External evidence is stale for 2 adapter(s). | Proof readiness still has non-observed production proof: status=executable_unproved, canAdvance=false, planned=2047, inferred=0, not_available=0, nonObserved=2047, executableUnproved=2047. | No-hardcoded-reality state still has hardcoded reality authority: 223437 hardcoded reality event(s) across 544 scanned PULSE file(s). Top files: scripts/pulse/convergence-plan.ts, scripts/pulse/__companions__/autopilot-processor.companion.ts, scripts/pulse/property-tester.ts, scripts/pulse/types.ts, scripts/pulse/certification.ts, scripts/pulse/observability-coverage.ts, scripts/pulse/chaos-engine.ts, scripts/pulse/behavior-graph.ts. First event: scripts/pulse/__kernel_additions__/discoverAutonomyConceptTypeLabels.ts:9.. | NAO: production proof readiness is not fully observed (proofReadiness status=executable_unproved, canAdvance=false, planned=2047, inferred=0, not_available=0, nonObserved=2047, executableUnproved=2047).",
+    "productionAutonomyReason": "NAO: Evidence freshness is not closed. | Pulse self-trust is still failing. | Runtime pass is not green with live evidence. | Authority mode is advisory-only, not certified-autonomous. | Certification status is NOT_CERTIFIED, not CERTIFIED. | 0 missing, 2 stale, and 0 invalid external adapter(s) remain. | 46 parity gap(s), 2225 HIGH Codacy issue(s), 1 phantom capability(ies), and 0 phantom flow(s) remain. | 23 governed validation gap(s) remain observation-only or protected-surface work. | Observed Codacy files are missing from repo inventory: frontend/src/components/kloel/KloelProductSurfacePatches.tsx, scripts/fix_context_strings.py, scripts/fix_opsalert_contexts.py, scripts/instrument-ops-alert-catches.py, scripts/instrument-ops-alert.py, scripts/instrument-ops-v2.py, scripts/instrument-v3.py, scripts/instrument_opsalert.py, scripts/instrument_opsalert_v2.py, scripts/orchestration/__parts__/findings-watch.mjs, worker/__parts__/flow-node-executor.interactions.ts, worker/__parts__/flow-node-executor.ts, worker/__parts__/scheduled-followup-handler.ts, worker/processors/cia/cognitive-state/__parts__/cognitive-state-build.ts, worker/processors/cia/cognitive-state/__parts__/cognitive-state-inference.ts, worker/processors/cia/cognitive-state/__parts__/cognitive-state-load.ts, worker/processors/cia/cognitive-state/__parts__/cognitive-state-persist.ts, worker/processors/cia/cognitive-state/__parts__/cognitive-state-record.ts, worker/processors/cia/cognitive-state/__parts__/cognitive-state-scoring.ts, worker/processors/cia/cognitive-state/__parts__/cognitive-state-types.ts. | Codacy still reports 2225 HIGH issue(s). | Phantom capabilities remain: Portfolio State. | Codacy snapshot is stale (4281 minute(s) old). | Observed external high-impact signals remain active: 5. | External evidence is stale for 2 adapter(s). | Proof readiness still has non-observed production proof: status=executable_unproved, canAdvance=false, planned=2047, inferred=0, not_available=0, nonObserved=2047, executableUnproved=2047. | No-hardcoded-reality state still has hardcoded reality authority: 223445 hardcoded reality event(s) across 544 scanned PULSE file(s). Top files: scripts/pulse/convergence-plan.ts, scripts/pulse/__companions__/autopilot-processor.companion.ts, scripts/pulse/property-tester.ts, scripts/pulse/types.ts, scripts/pulse/certification.ts, scripts/pulse/observability-coverage.ts, scripts/pulse/chaos-engine.ts, scripts/pulse/behavior-graph.ts. First event: scripts/pulse/__kernel_additions__/discoverAutonomyConceptTypeLabels.ts:9.. | NAO: production proof readiness is not fully observed (proofReadiness status=executable_unproved, canAdvance=false, planned=2047, inferred=0, not_available=0, nonObserved=2047, executableUnproved=2047).",
     "zeroPromptProductionGuidanceQuestion": "If a fresh AI session runs the full Pulse and is told to work autonomously, can it keep converging safely until production completion without manual intervention?",
     "zeroPromptProductionGuidanceAnswer": "NAO",
     "zeroPromptProductionGuidanceReason": "NAO: Authority is not automation-eligible: Evidence freshness is not closed. | Pulse self-trust is still failing. | Runtime pass is not green with live evidence.. | 0 missing, 2 stale, and 0 invalid external adapter(s) remain. | 23 governed validation gap(s) remain observation-only or protected-surface work.",
@@ -953,10 +951,11 @@
       "Observed Codacy files are missing from repo inventory: frontend/src/components/kloel/KloelProductSurfacePatches.tsx, scripts/fix_context_strings.py, scripts/fix_opsalert_contexts.py, scripts/instrument-ops-alert-catches.py, scripts/instrument-ops-alert.py, scripts/instrument-ops-v2.py, scripts/instrument-v3.py, scripts/instrument_opsalert.py, scripts/instrument_opsalert_v2.py, scripts/orchestration/__parts__/findings-watch.mjs, worker/__parts__/flow-node-executor.interactions.ts, worker/__parts__/flow-node-executor.ts, worker/__parts__/scheduled-followup-handler.ts, worker/processors/cia/cognitive-state/__parts__/cognitive-state-build.ts, worker/processors/cia/cognitive-state/__parts__/cognitive-state-inference.ts, worker/processors/cia/cognitive-state/__parts__/cognitive-state-load.ts, worker/processors/cia/cognitive-state/__parts__/cognitive-state-persist.ts, worker/processors/cia/cognitive-state/__parts__/cognitive-state-record.ts, worker/processors/cia/cognitive-state/__parts__/cognitive-state-scoring.ts, worker/processors/cia/cognitive-state/__parts__/cognitive-state-types.ts.",
       "Codacy still reports 2225 HIGH issue(s).",
       "Phantom capabilities remain: Portfolio State.",
+      "Codacy snapshot is stale (4281 minute(s) old).",
       "Observed external high-impact signals remain active: 5.",
       "External evidence is stale for 2 adapter(s).",
       "Proof readiness still has non-observed production proof: status=executable_unproved, canAdvance=false, planned=2047, inferred=0, not_available=0, nonObserved=2047, executableUnproved=2047.",
-      "No-hardcoded-reality state still has hardcoded reality authority: 223437 hardcoded reality event(s) across 544 scanned PULSE file(s). Top files: scripts/pulse/convergence-plan.ts, scripts/pulse/__companions__/autopilot-processor.companion.ts, scripts/pulse/property-tester.ts, scripts/pulse/types.ts, scripts/pulse/certification.ts, scripts/pulse/observability-coverage.ts, scripts/pulse/chaos-engine.ts, scripts/pulse/behavior-graph.ts. First event: scripts/pulse/__kernel_additions__/discoverAutonomyConceptTypeLabels.ts:9.."
+      "No-hardcoded-reality state still has hardcoded reality authority: 223445 hardcoded reality event(s) across 544 scanned PULSE file(s). Top files: scripts/pulse/convergence-plan.ts, scripts/pulse/__companions__/autopilot-processor.companion.ts, scripts/pulse/property-tester.ts, scripts/pulse/types.ts, scripts/pulse/certification.ts, scripts/pulse/observability-coverage.ts, scripts/pulse/chaos-engine.ts, scripts/pulse/behavior-graph.ts. First event: scripts/pulse/__kernel_additions__/discoverAutonomyConceptTypeLabels.ts:9.."
     ],
     "cycleProof": {
       "requiredCycles": 3,
@@ -971,7 +970,7 @@
     "externalAdapterStatus": [
       {
         "source": "codacy",
-        "status": "ready",
+        "status": "stale",
         "requirement": "optional",
         "required": false,
         "observed": true,
@@ -979,7 +978,7 @@
         "proofBasis": "codacy_snapshot",
         "executed": true,
         "signalCount": 7,
-        "reason": "7 Codacy hotspot signal(s) were normalized from the latest snapshot."
+        "reason": "PULSE_CODACY_STATE.json is stale (4281 minute(s) old)."
       },
       {
         "source": "github",
@@ -991,7 +990,7 @@
         "proofBasis": "snapshot_artifact",
         "executed": true,
         "signalCount": 40,
-        "reason": "PULSE_GITHUB_STATE.json is stale (5202 minute(s) old)."
+        "reason": "PULSE_GITHUB_STATE.json is stale (8121 minute(s) old)."
       },
       {
         "source": "github_actions",
@@ -1003,7 +1002,7 @@
         "proofBasis": "snapshot_artifact",
         "executed": true,
         "signalCount": 6,
-        "reason": "PULSE_GITHUB_ACTIONS_STATE.json is stale (5202 minute(s) old)."
+        "reason": "PULSE_GITHUB_ACTIONS_STATE.json is stale (8121 minute(s) old)."
       },
       {
         "source": "codecov",
@@ -1112,7 +1111,7 @@
   },
   "noHardcodedReality": {
     "summary": {
-      "totalEvents": 223437,
+      "totalEvents": 223445,
       "scannedFiles": 544,
       "topFiles": [
         "scripts/pulse/convergence-plan.ts",
@@ -1138,7 +1137,7 @@
       }
     },
     "blocksProduction": true,
-    "reason": "223437 hardcoded reality event(s) across 544 scanned PULSE file(s). Top files: scripts/pulse/convergence-plan.ts, scripts/pulse/__companions__/autopilot-processor.companion.ts, scripts/pulse/property-tester.ts, scripts/pulse/types.ts, scripts/pulse/certification.ts, scripts/pulse/observability-coverage.ts, scripts/pulse/chaos-engine.ts, scripts/pulse/behavior-graph.ts. First event: scripts/pulse/__kernel_additions__/discoverAutonomyConceptTypeLabels.ts:9."
+    "reason": "223445 hardcoded reality event(s) across 544 scanned PULSE file(s). Top files: scripts/pulse/convergence-plan.ts, scripts/pulse/__companions__/autopilot-processor.companion.ts, scripts/pulse/property-tester.ts, scripts/pulse/types.ts, scripts/pulse/certification.ts, scripts/pulse/observability-coverage.ts, scripts/pulse/chaos-engine.ts, scripts/pulse/behavior-graph.ts. First event: scripts/pulse/__kernel_additions__/discoverAutonomyConceptTypeLabels.ts:9."
   },
   "noOverclaim": {
     "gateStatus": "fail",
@@ -1178,7 +1177,7 @@
       "mode": "repo_inventory_with_codacy_spotcheck",
       "confidence": "low",
       "reason": "Observed Codacy files are missing from repo inventory: frontend/src/components/kloel/KloelProductSurfacePatches.tsx, scripts/fix_context_strings.py, scripts/fix_opsalert_contexts.py, scripts/instrument-ops-alert-catches.py, scripts/instrument-ops-alert.py, scripts/instrument-ops-v2.py, scripts/instrument-v3.py, scripts/instrument_opsalert.py, scripts/instrument_opsalert_v2.py, scripts/orchestration/__parts__/findings-watch.mjs, worker/__parts__/flow-node-executor.interactions.ts, worker/__parts__/flow-node-executor.ts, worker/__parts__/scheduled-followup-handler.ts, worker/processors/cia/cognitive-state/__parts__/cognitive-state-build.ts, worker/processors/cia/cognitive-state/__parts__/cognitive-state-inference.ts, worker/processors/cia/cognitive-state/__parts__/cognitive-state-load.ts, worker/processors/cia/cognitive-state/__parts__/cognitive-state-persist.ts, worker/processors/cia/cognitive-state/__parts__/cognitive-state-record.ts, worker/processors/cia/cognitive-state/__parts__/cognitive-state-scoring.ts, worker/processors/cia/cognitive-state/__parts__/cognitive-state-types.ts.",
-      "inventoryFiles": 6249,
+      "inventoryFiles": 10181,
       "codacyObservedFiles": 63,
       "codacyObservedFilesCovered": 43,
       "missingCodacyFiles": [
@@ -1240,20 +1239,20 @@
   "freshness": {
     "codacy": {
       "snapshotAvailable": true,
-      "stale": false,
+      "stale": true,
       "syncedAt": "2026-05-15T17:39:40.237Z"
     },
     "externalAdapters": [
       {
         "source": "codacy",
-        "status": "ready",
+        "status": "stale",
         "requirement": "optional",
         "required": false,
         "observed": true,
         "blocking": false,
         "proofBasis": "codacy_snapshot",
         "syncedAt": "2026-05-15T17:39:40.237Z",
-        "freshnessMinutes": 1361
+        "freshnessMinutes": 4281
       },
       {
         "source": "github",
@@ -1264,7 +1263,7 @@
         "blocking": true,
         "proofBasis": "snapshot_artifact",
         "syncedAt": "2026-05-13T01:40:15.371Z",
-        "freshnessMinutes": 5202
+        "freshnessMinutes": 8121
       },
       {
         "source": "github_actions",
@@ -1275,7 +1274,7 @@
         "blocking": true,
         "proofBasis": "snapshot_artifact",
         "syncedAt": "2026-05-13T01:40:15.371Z",
-        "freshnessMinutes": 5202
+        "freshnessMinutes": 8121
       },
       {
         "source": "codecov",
@@ -1402,7 +1401,7 @@
     "adapterClassification": [
       {
         "source": "codacy",
-        "status": "ready",
+        "status": "stale",
         "requirement": "optional",
         "required": false,
         "observed": true,
@@ -1492,7 +1491,7 @@
         "impactScore": 0.8,
         "confidence": 0.95,
         "summary": "7 HIGH Codacy issue(s) remain in backend/prisma/migrations/20251209150035_init_baseline/migration.sql.",
-        "observedAt": "2026-05-16T16:21:05.194Z",
+        "observedAt": "2026-05-18T17:00:32.823Z",
         "relatedFiles": [
           "backend/prisma/migrations/20251209150035_init_baseline/migration.sql"
         ],
@@ -1551,7 +1550,7 @@
         "impactScore": 0.8,
         "confidence": 0.95,
         "summary": "1 HIGH Codacy issue(s) remain in backend/src/meta/__parts__/meta-auth-helpers.ts.",
-        "observedAt": "2026-05-16T16:21:05.194Z",
+        "observedAt": "2026-05-18T17:00:32.823Z",
         "relatedFiles": [
           "backend/src/meta/__parts__/meta-auth-helpers.ts"
         ],
@@ -1833,7 +1832,7 @@
         "impactScore": 0.8,
         "confidence": 0.95,
         "summary": "1 HIGH Codacy issue(s) remain in backend/src/meta/__parts__/meta-oauth-url.helpers.ts.",
-        "observedAt": "2026-05-16T16:21:05.194Z",
+        "observedAt": "2026-05-18T17:00:32.823Z",
         "relatedFiles": [
           "backend/src/meta/__parts__/meta-oauth-url.helpers.ts"
         ],
@@ -2100,7 +2099,7 @@
         "impactScore": 0.55,
         "confidence": 0.95,
         "summary": "17 HIGH Codacy issue(s) remain in scripts/__parts__/obsidian-mirror-daemon-content.mjs.",
-        "observedAt": "2026-05-16T16:21:05.194Z",
+        "observedAt": "2026-05-18T17:00:32.823Z",
         "relatedFiles": [
           "scripts/__parts__/obsidian-mirror-daemon-content.mjs"
         ],
@@ -2189,7 +2188,7 @@
         "impactScore": 0.55,
         "confidence": 0.95,
         "summary": "5 HIGH Codacy issue(s) remain in scripts/__parts__/obsidian-mirror-daemon-utils.mjs.",
-        "observedAt": "2026-05-16T16:21:05.194Z",
+        "observedAt": "2026-05-18T17:00:32.823Z",
         "relatedFiles": [
           "scripts/__parts__/obsidian-mirror-daemon-utils.mjs"
         ],
@@ -2233,7 +2232,7 @@
         "impactScore": 0.55,
         "confidence": 0.95,
         "summary": "1 HIGH Codacy issue(s) remain in package.json.",
-        "observedAt": "2026-05-16T16:21:05.194Z",
+        "observedAt": "2026-05-18T17:00:32.823Z",
         "relatedFiles": [
           "package.json"
         ],
@@ -2277,7 +2276,7 @@
         "impactScore": 0.55,
         "confidence": 0.95,
         "summary": "2 HIGH Codacy issue(s) remain in scripts/__parts__/obsidian-mirror-daemon-indexes.mjs.",
-        "observedAt": "2026-05-16T16:21:05.194Z",
+        "observedAt": "2026-05-18T17:00:32.823Z",
         "relatedFiles": [
           "scripts/__parts__/obsidian-mirror-daemon-indexes.mjs"
         ],
@@ -8172,13 +8171,13 @@
   },
   "executionMatrix": {
     "summary": {
-      "totalPaths": 7445,
+      "totalPaths": 11377,
       "bySource": {
         "execution_chain": 0,
         "capability": 455,
         "flow": 48,
         "structural_node": 1904,
-        "scope_file": 5038
+        "scope_file": 8970
       },
       "byStatus": {
         "observed_pass": 0,
@@ -8187,15 +8186,15 @@
         "observation_only": 0,
         "unreachable": 0,
         "inferred_only": 2035,
-        "not_executable": 5146
+        "not_executable": 9078
       },
       "observedPass": 0,
       "observedFail": 248,
       "untested": 16,
       "unreachable": 0,
       "inferredOnly": 2035,
-      "notExecutable": 5146,
-      "terminalPaths": 7445,
+      "notExecutable": 9078,
+      "terminalPaths": 11377,
       "nonTerminalPaths": 0,
       "unknownPaths": 0,
       "criticalUnobservedPaths": 0,
@@ -33742,6 +33741,7 @@
         "frontend/src/components/kloel/landing/FloatingChatRows.tsx",
         "frontend/src/components/kloel/landing/FooterSection.tsx",
         "frontend/src/components/kloel/landing/HeroLoop.tsx",
+        "frontend/src/components/kloel/landing/HeroLoop.types.ts",
         "frontend/src/components/kloel/landing/HeroLoopDisplay.tsx",
         "frontend/src/components/kloel/landing/HeroLoopNoiseCanvas.tsx",
         "frontend/src/components/kloel/landing/HeroSection.tsx",
@@ -35170,7 +35170,7 @@
       "productImpact": "diagnostic",
       "ownerLane": "platform",
       "title": "Remove PULSE Hardcoded Reality Authority",
-      "summary": "223437 hardcoded reality event(s) across 544 scanned PULSE file(s). Top files: scripts/pulse/convergence-plan.ts, scripts/pulse/__companions__/autopilot-processor.companion.ts, scripts/pulse/property-tester.ts, scripts/pulse/types.ts, scripts/pulse/certification.ts, scripts/pulse/observability-coverage.ts, scripts/p...",
+      "summary": "223445 hardcoded reality event(s) across 544 scanned PULSE file(s). Top files: scripts/pulse/convergence-plan.ts, scripts/pulse/__companions__/autopilot-processor.companion.ts, scripts/pulse/property-tester.ts, scripts/pulse/types.ts, scripts/pulse/certification.ts, scripts/pulse/observability-coverage.ts, scripts/p...",
       "whyNow": "Keeps PULSE decisions grounded in discovered evidence instead of fixed product reality lists.",
       "visionDelta": "Keeps PULSE decisions grounded in discovered evidence instead of fixed product reality lists.",
       "targetState": "PULSE_NO_HARDCODED_REALITY.json reports zero dynamic hardcode evidence events.",
@@ -47281,6 +47281,7 @@
         "frontend/src/components/kloel/landing/FloatingChatRows.tsx",
         "frontend/src/components/kloel/landing/FooterSection.tsx",
         "frontend/src/components/kloel/landing/HeroLoop.tsx",
+        "frontend/src/components/kloel/landing/HeroLoop.types.ts",
         "frontend/src/components/kloel/landing/HeroLoopDisplay.tsx",
         "frontend/src/components/kloel/landing/HeroLoopNoiseCanvas.tsx",
         "frontend/src/components/kloel/landing/HeroSection.tsx",
@@ -48700,240 +48701,6 @@
   "pulseMachineNextWork": [
     {
       "order": 1,
-      "id": "pulse-machine-artifact_consistency",
-      "kind": "pulse_machine",
-      "priority": "P1",
-      "source": "pulse_machine",
-      "executionMode": "ai_safe",
-      "riskLevel": "low",
-      "evidenceMode": "inferred",
-      "confidence": "high",
-      "productImpact": "machine",
-      "ownerLane": "pulse-core",
-      "title": "Close PULSE artifact consistency criterion",
-      "summary": "Cross-artifact consistency has not produced a passing check.",
-      "whyNow": "PULSE machine readiness is the active target; do not spend this cycle materializing SaaS product capabilities.",
-      "visionDelta": "Moves PULSE closer to zero-prompt technical autonomy by closing machine proof, adapter, or execution-evidence gaps.",
-      "targetState": "PULSE machine criterion \"artifact_consistency\" must pass with canonical evidence.",
-      "affectedCapabilities": [],
-      "affectedFlows": [],
-      "gateNames": [
-        "artifact_consistency"
-      ],
-      "expectedGateShift": "Pass PULSE machine criterion artifact_consistency",
-      "validationTargets": [
-        "PULSE_MACHINE_READINESS.json",
-        "PULSE_CLI_DIRECTIVE.json",
-        "PULSE_CERTIFICATE.json",
-        "PULSE_ADMIN_EVIDENCE.json",
-        "PULSE_AGENT_ORCHESTRATION_STATE.json",
-        "PULSE_ARTIFACT_INDEX.json",
-        "PULSE_AUTONOMY_MEMORY.json",
-        "PULSE_AUTONOMY_PROOF.json",
-        "PULSE_AUTONOMY_STATE.json",
-        "PULSE_BEADS_STATE.json",
-        "PULSE_BROWSER_EVIDENCE.json",
-        "PULSE_CAPABILITY_STATE.json",
-        "PULSE_CERTIFICATE.json",
-        "PULSE_CODACY_EVIDENCE.json",
-        "PULSE_CODEBASE_TRUTH.json",
-        "PULSE_CONTEXT_BROADCAST.json",
-        "PULSE_CONTEXT_DELTA.json",
-        "PULSE_CONVERGENCE_PLAN.json",
-        "PULSE_CUSTOMER_EVIDENCE.json",
-        "PULSE_CLI_DIRECTIVE.json",
-        "PULSE_EXECUTION_CHAINS.json",
-        "PULSE_EXECUTION_MATRIX.json",
-        "PULSE_EXECUTION_TRACE.json",
-        "PULSE_EXTERNAL_SIGNAL_STATE.json",
-        "PULSE_FINDING_VALIDATION_STATE.json",
-        "PULSE_FLOW_EVIDENCE.json",
-        "PULSE_FLOW_PROJECTION.json",
-        "PULSE_GITNEXUS_STATE.json",
-        "PULSE_HEALTH.json",
-        "PULSE_INVARIANT_EVIDENCE.json",
-        "PULSE_MACHINE_READINESS.json",
-        "PULSE_NO_HARDCODED_REALITY_STATE.json",
-        "PULSE_OBSERVABILITY_EVIDENCE.json",
-        "PULSE_OPERATOR_EVIDENCE.json",
-        "PULSE_PARITY_GAPS.json",
-        "PULSE_PATH_COVERAGE.json",
-        "PULSE_PRODUCT_GRAPH.json",
-        "PULSE_PRODUCT_VISION.json",
-        "PULSE_RECOVERY_EVIDENCE.json",
-        "PULSE_REPORT.md",
-        "PULSE_RESOLVED_MANIFEST.json",
-        "PULSE_RUNTIME_EVIDENCE.json",
-        "PULSE_RUNTIME_PROBES.json",
-        "PULSE_SCENARIO_COVERAGE.json",
-        "PULSE_SCOPE_STATE.json",
-        "PULSE_SOAK_EVIDENCE.json",
-        "PULSE_STRUCTURAL_GRAPH.json",
-        "PULSE_WORKER_LEASES.json",
-        "PULSE_WORLD_STATE.json"
-      ],
-      "validationArtifacts": [
-        "PULSE_MACHINE_READINESS.json",
-        "PULSE_CLI_DIRECTIVE.json",
-        "PULSE_CERTIFICATE.json",
-        "PULSE_ADMIN_EVIDENCE.json",
-        "PULSE_AGENT_ORCHESTRATION_STATE.json",
-        "PULSE_ARTIFACT_INDEX.json",
-        "PULSE_AUTONOMY_MEMORY.json",
-        "PULSE_AUTONOMY_PROOF.json",
-        "PULSE_AUTONOMY_STATE.json",
-        "PULSE_BEADS_STATE.json",
-        "PULSE_BROWSER_EVIDENCE.json",
-        "PULSE_CAPABILITY_STATE.json",
-        "PULSE_CODACY_EVIDENCE.json",
-        "PULSE_CODEBASE_TRUTH.json",
-        "PULSE_CONTEXT_BROADCAST.json",
-        "PULSE_CONTEXT_DELTA.json",
-        "PULSE_CONVERGENCE_PLAN.json",
-        "PULSE_CUSTOMER_EVIDENCE.json",
-        "PULSE_EXECUTION_CHAINS.json",
-        "PULSE_EXECUTION_MATRIX.json",
-        "PULSE_EXECUTION_TRACE.json",
-        "PULSE_EXTERNAL_SIGNAL_STATE.json",
-        "PULSE_FINDING_VALIDATION_STATE.json",
-        "PULSE_FLOW_EVIDENCE.json",
-        "PULSE_FLOW_PROJECTION.json",
-        "PULSE_GITNEXUS_STATE.json",
-        "PULSE_HEALTH.json",
-        "PULSE_INVARIANT_EVIDENCE.json",
-        "PULSE_NO_HARDCODED_REALITY_STATE.json",
-        "PULSE_OBSERVABILITY_EVIDENCE.json",
-        "PULSE_OPERATOR_EVIDENCE.json",
-        "PULSE_PARITY_GAPS.json",
-        "PULSE_PATH_COVERAGE.json",
-        "PULSE_PRODUCT_GRAPH.json",
-        "PULSE_PRODUCT_VISION.json",
-        "PULSE_RECOVERY_EVIDENCE.json",
-        "PULSE_REPORT.md",
-        "PULSE_RESOLVED_MANIFEST.json",
-        "PULSE_RUNTIME_EVIDENCE.json",
-        "PULSE_RUNTIME_PROBES.json",
-        "PULSE_SCENARIO_COVERAGE.json",
-        "PULSE_SCOPE_STATE.json",
-        "PULSE_SOAK_EVIDENCE.json",
-        "PULSE_STRUCTURAL_GRAPH.json",
-        "PULSE_WORKER_LEASES.json",
-        "PULSE_WORLD_STATE.json"
-      ],
-      "proofAuthority": "artifact_registry",
-      "proofBasis": [
-        "admin-evidence:./artifacts.writeRegisteredArtifact.admin-evidence:preserved:preserved_evidence",
-        "agent-orchestration-state:./artifacts.writeRegisteredArtifact.agent-orchestration-state:run:generated_from_module",
-        "artifact-index:./artifacts.writeRegisteredArtifact.artifact-index:run:generated_from_module",
-        "autonomy-memory:./artifacts.writeRegisteredArtifact.autonomy-memory:run:generated_from_module",
-        "autonomy-proof:./artifacts.writeRegisteredArtifact.autonomy-proof:run:generated_from_module",
-        "autonomy-state:./artifacts.writeRegisteredArtifact.autonomy-state:run:generated_from_module",
-        "beads-state:./artifacts.writeRegisteredArtifact.beads-state:external_snapshot:external_snapshot",
-        "browser-evidence:./artifacts.writeRegisteredArtifact.browser-evidence:external_snapshot:external_snapshot",
-        "capability-state:./artifacts.writeRegisteredArtifact.capability-state:external_snapshot:external_snapshot",
-        "certificate:./artifacts.writeRegisteredArtifact.certificate:run:generated_from_module",
-        "codacy-evidence:./artifacts.writeRegisteredArtifact.codacy-evidence:preserved:preserved_evidence",
-        "codebase-truth:./artifacts.writeRegisteredArtifact.codebase-truth:run:generated_from_module",
-        "context-broadcast:./artifacts.writeRegisteredArtifact.context-broadcast:run:generated_from_module",
-        "context-delta:./artifacts.writeRegisteredArtifact.context-delta:run:generated_from_module",
-        "convergence-plan:./artifacts.writeRegisteredArtifact.convergence-plan:run:generated_from_module",
-        "customer-evidence:./artifacts.writeRegisteredArtifact.customer-evidence:preserved:preserved_evidence",
-        "directive:./artifacts.writeRegisteredArtifact.directive:run:generated_from_module",
-        "execution-chains:./artifacts.writeRegisteredArtifact.execution-chains:run:generated_from_module",
-        "execution-matrix:./artifacts.writeRegisteredArtifact.execution-matrix:run:generated_from_module",
-        "execution-trace:./artifacts.writeRegisteredArtifact.execution-trace:preserved:preserved_evidence",
-        "external-signal-state:./artifacts.writeRegisteredArtifact.external-signal-state:external_snapshot:external_snapshot",
-        "finding-validation-state:./artifacts.writeRegisteredArtifact.finding-validation-state:run:generated_from_module",
-        "flow-evidence:./artifacts.writeRegisteredArtifact.flow-evidence:preserved:preserved_evidence",
-        "flow-projection:./artifacts.writeRegisteredArtifact.flow-projection:external_snapshot:external_snapshot",
-        "gitnexus-state:./artifacts.writeRegisteredArtifact.gitnexus-state:external_snapshot:external_snapshot",
-        "health:./artifacts.writeRegisteredArtifact.health:run:generated_from_module",
-        "invariant-evidence:./artifacts.writeRegisteredArtifact.invariant-evidence:preserved:preserved_evidence",
-        "machine-readiness:./artifacts.writeRegisteredArtifact.machine-readiness:run:generated_from_module",
-        "no-hardcoded-reality-state:./artifacts.writeRegisteredArtifact.no-hardcoded-reality-state:run:generated_from_module",
-        "observability-evidence:./artifacts.writeRegisteredArtifact.observability-evidence:preserved:preserved_evidence",
-        "operator-evidence:./artifacts.writeRegisteredArtifact.operator-evidence:preserved:preserved_evidence",
-        "parity-gaps:./artifacts.writeRegisteredArtifact.parity-gaps:run:generated_from_module",
-        "path-coverage:./artifacts.writeRegisteredArtifact.path-coverage:preserved:preserved_evidence",
-        "product-graph:./artifacts.writeRegisteredArtifact.product-graph:run:generated_from_module",
-        "product-vision:./artifacts.writeRegisteredArtifact.product-vision:run:generated_from_module",
-        "recovery-evidence:./artifacts.writeRegisteredArtifact.recovery-evidence:preserved:preserved_evidence",
-        "report:./artifacts.writeRegisteredArtifact.report:run:generated_from_module",
-        "resolved-manifest:./artifacts.writeRegisteredArtifact.resolved-manifest:run:generated_from_module",
-        "runtime-evidence:./artifacts.writeRegisteredArtifact.runtime-evidence:preserved:preserved_evidence",
-        "runtime-probes:./artifacts.writeRegisteredArtifact.runtime-probes:preserved:preserved_evidence",
-        "scenario-coverage:./artifacts.writeRegisteredArtifact.scenario-coverage:preserved:preserved_evidence",
-        "scope-state:./artifacts.writeRegisteredArtifact.scope-state:run:generated_from_module",
-        "soak-evidence:./artifacts.writeRegisteredArtifact.soak-evidence:preserved:preserved_evidence",
-        "structural-graph:./artifacts.writeRegisteredArtifact.structural-graph:run:generated_from_module",
-        "worker-leases:./artifacts.writeRegisteredArtifact.worker-leases:run:generated_from_module",
-        "world-state:./artifacts.writeRegisteredArtifact.world-state:run:generated_from_module"
-      ],
-      "relatedFiles": [
-        "scripts/pulse/artifacts.ts",
-        "scripts/pulse/actors/coverage.ts",
-        "scripts/pulse/artifact-gc.ts",
-        "scripts/pulse/cert-gate-evidence.ts",
-        "scripts/pulse/autonomy-loop.types.ts",
-        "scripts/pulse/autonomy-types.ts",
-        "scripts/pulse/cross-artifact-consistency-check/loaders.ts",
-        "scripts/pulse/autonomy-loop.utils.ts",
-        "scripts/pulse/daemon/fullScan.ts",
-        "scripts/pulse/probabilistic-risk/model.ts",
-        "scripts/pulse/structural-memory/memory-patterns.ts",
-        "scripts/pulse/execution-matrix/grammar.ts",
-        "scripts/pulse/replay-adapter/main.ts",
-        "scripts/pulse/production-proof/dimensions.ts",
-        "scripts/pulse/signal-mapper.ts",
-        "scripts/pulse/authority-engine/core.ts",
-        "scripts/pulse/cross-artifact-consistency-check.ts",
-        "scripts/pulse/unified-readiness-report.ts",
-        "scripts/pulse/autonomy-decision.ts",
-        "scripts/pulse/autonomy-loop.state-io/directive.ts",
-        "scripts/pulse/path-coverage-engine/build-coverage-state.ts",
-        "scripts/pulse/proof-synthesis.ts",
-        "scripts/pulse/cert-evidence-defaults.ts",
-        "scripts/pulse/execution-trace.ts",
-        "scripts/pulse/adapters/gitnexus-adapter.ts",
-        "scripts/pulse/adapters/external-sources-orchestrator/capability.ts",
-        "scripts/pulse/scenario-mode-registry.ts",
-        "scripts/pulse/runtime-probes/executor.ts",
-        "scripts/pulse/runtime-probes/main.ts",
-        "scripts/pulse/runtime-probes/probe-definitions.ts",
-        "scripts/pulse/runtime-probes/run.ts",
-        "scripts/pulse/cert-evidence-actor.ts",
-        "scripts/pulse/execution-matrix/matrix.ts",
-        "scripts/pulse/false-positive-adjudicator.ts"
-      ],
-      "exitCriteria": [
-        "{\"id\":\"pulse-machine-artifact_consistency-exit-0\",\"type\":\"artifact-assertion\",\"target\":\"PULSE_MACHINE_READINESS.json\",\"expected\":{\"criterion\":\"artifact_consistency\",\"status\":\"pass\"},\"comparison\":\"contains\"}"
-      ],
-      "preconditions": [
-        "Operate only on PULSE machine/proof code and generated PULSE artifacts."
-      ],
-      "allowedActions": [
-        "PULSE scanner changes",
-        "PULSE evidence generation",
-        "PULSE adapter refresh",
-        "PULSE test writing"
-      ],
-      "forbiddenActions": [
-        "Do not edit SaaS product code for this unit",
-        "Do not edit governance-protected files",
-        "Do not suppress Codacy, lint, or certification findings",
-        "Do not add secrets or credentials"
-      ],
-      "successCriteria": [
-        "PULSE_MACHINE_READINESS criterion artifact_consistency is pass or has a more precise terminal blocker.",
-        "PULSE_CLI_DIRECTIVE keeps next work focused on the PULSE machine when machine readiness is not READY.",
-        "Targeted PULSE tests pass."
-      ],
-      "requiredValidations": [
-        "affected-tests"
-      ]
-    },
-    {
-      "order": 2,
       "id": "pulse-machine-critical_path_terminal",
       "kind": "pulse_machine",
       "priority": "P0",
@@ -48945,7 +48712,7 @@
       "productImpact": "machine",
       "ownerLane": "pulse-core",
       "title": "Close PULSE critical path terminal criterion",
-      "summary": "4883 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:abi-ab, matrix:capability:capability:abi-builder, matrix:capability:capability:account-agent, matrix:capability:capability:admin-brain, matrix:capability:capability:admin-clients, matrix:capability:capability:admin-compliance, matrix:capability:capability:admin-config, matrix:capability:capability:admin-contacts. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.",
+      "summary": "4884 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:abi-ab, matrix:capability:capability:abi-builder, matrix:capability:capability:account-agent, matrix:capability:capability:admin-brain, matrix:capability:capability:admin-clients, matrix:capability:capability:admin-compliance, matrix:capability:capability:admin-config, matrix:capability:capability:admin-contacts. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.",
       "whyNow": "PULSE machine readiness is the active target; do not spend this cycle materializing SaaS product capabilities.",
       "visionDelta": "Moves PULSE closer to zero-prompt technical autonomy by closing machine proof, adapter, or execution-evidence gaps.",
       "targetState": "PULSE machine criterion \"critical_path_terminal\" must pass with canonical evidence.",
@@ -49012,7 +48779,7 @@
       ]
     },
     {
-      "order": 3,
+      "order": 2,
       "id": "pulse-machine-external_reality",
       "kind": "pulse_machine",
       "priority": "P0",
@@ -49109,7 +48876,7 @@
       ]
     },
     {
-      "order": 4,
+      "order": 3,
       "id": "pulse-machine-self_trust",
       "kind": "pulse_machine",
       "priority": "P1",
@@ -50259,7 +50026,7 @@
       "productImpact": "machine",
       "ownerLane": "pulse-proof",
       "title": "Repair PULSE critical path observed proof",
-      "summary": "4883 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:abi-ab, matrix:capability:capability:abi-builder, matrix:capability:capability:account-agent, matrix:capability:capability:admin-brain, matrix:capability:capability:admin-clients, matrix:capability:capability:admin-compliance, matrix:capability:capability:admin-config, matrix:capability:capability:admin-contacts. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.",
+      "summary": "4884 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:abi-ab, matrix:capability:capability:abi-builder, matrix:capability:capability:account-agent, matrix:capability:capability:admin-brain, matrix:capability:capability:admin-clients, matrix:capability:capability:admin-compliance, matrix:capability:capability:admin-config, matrix:capability:capability:admin-contacts. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.",
       "whyNow": "PULSE cannot claim zero-prompt production autonomy while this proof gate is failing; improve PULSE proof machinery before editing SaaS product code.",
       "visionDelta": "Moves PULSE from advisory/autonomous execution toward certified technical replacement by converting inferred or missing proof into canonical evidence.",
       "targetState": "Certification gate criticalPathObservedPass must pass or expose a precise non-product proof blocker.",
@@ -50335,7 +50102,7 @@
       "productImpact": "machine",
       "ownerLane": "pulse-proof",
       "title": "Close PULSE production-autonomy proof debt",
-      "summary": "NAO: Evidence freshness is not closed. | Pulse self-trust is still failing. | Runtime pass is not green with live evidence. | Authority mode is advisory-only, not certified-autonomous. | Certification status is NOT_CERTIFIED, not CERTIFIED. | 0 missing, 2 stale, and 0 invalid external adapter(s) remain. | 46 parity gap(s), 2225 HIGH Codacy issue(s), 1 phantom capability(ies), and 0 phantom flow(s) remain. | 23 governed validation gap(s) remain observation-only or protected-surface work. | Observed Codacy files are missing from repo inventory: frontend/src/components/kloel/KloelProductSurfacePatches.tsx, scripts/fix_context_strings.py, scripts/fix_opsalert_contexts.py, scripts/instrument-ops-alert-catches.py, scripts/instrument-ops-alert.py, scripts/instrument-ops-v2.py, scripts/instrument-v3.py, scripts/instrument_opsalert.py, scripts/instrument_opsalert_v2.py, scripts/orchestration/__parts__/findings-watch.mjs, worker/__parts__/flow-node-executor.interactions.ts, worker/__parts__/flow-node-executor.ts, worker/__parts__/scheduled-followup-handler.ts, worker/processors/cia/cognitive-state/__parts__/cognitive-state-build.ts, worker/processors/cia/cognitive-state/__parts__/cognitive-state-inference.ts, worker/processors/cia/cognitive-state/__parts__/cognitive-state-load.ts, worker/processors/cia/cognitive-state/__parts__/cognitive-state-persist.ts, worker/processors/cia/cognitive-state/__parts__/cognitive-state-record.ts, worker/processors/cia/cognitive-state/__parts__/cognitive-state-scoring.ts, worker/processors/cia/cognitive-state/__parts__/cognitive-state-types.ts. | Codacy still reports 2225 HIGH issue(s). | Phantom capabilities remain: Portfolio State. | Observed external high-impact signals remain active: 5. | External evidence is stale for 2 adapter(s). | Proof readiness still has non-observed production proof: status=executable_unproved, canAdvance=false, planned=2047, inferred=0, not_available=0, nonObserved=2047, executableUnproved=2047. | No-hardcoded-reality state still has hardcoded reality authority: 223437 hardcoded reality event(s) across 544 scanned PULSE file(s). Top files: scripts/pulse/convergence-plan.ts, scripts/pulse/__companions__/autopilot-processor.companion.ts, scripts/pulse/property-tester.ts, scripts/pulse/types.ts, scripts/pulse/certification.ts, scripts/pulse/observability-coverage.ts, scripts/pulse/chaos-engine.ts, scripts/pulse/behavior-graph.ts. First event: scripts/pulse/__kernel_additions__/discoverAutonomyConceptTypeLabels.ts:9.. | NAO: production proof readiness is not fully observed (proofReadiness status=executable_unproved, canAdvance=false, planned=2047, inferred=0, not_available=0, nonObserved=2047, executableUnproved=2047).",
+      "summary": "NAO: Evidence freshness is not closed. | Pulse self-trust is still failing. | Runtime pass is not green with live evidence. | Authority mode is advisory-only, not certified-autonomous. | Certification status is NOT_CERTIFIED, not CERTIFIED. | 0 missing, 2 stale, and 0 invalid external adapter(s) remain. | 46 parity gap(s), 2225 HIGH Codacy issue(s), 1 phantom capability(ies), and 0 phantom flow(s) remain. | 23 governed validation gap(s) remain observation-only or protected-surface work. | Observed Codacy files are missing from repo inventory: frontend/src/components/kloel/KloelProductSurfacePatches.tsx, scripts/fix_context_strings.py, scripts/fix_opsalert_contexts.py, scripts/instrument-ops-alert-catches.py, scripts/instrument-ops-alert.py, scripts/instrument-ops-v2.py, scripts/instrument-v3.py, scripts/instrument_opsalert.py, scripts/instrument_opsalert_v2.py, scripts/orchestration/__parts__/findings-watch.mjs, worker/__parts__/flow-node-executor.interactions.ts, worker/__parts__/flow-node-executor.ts, worker/__parts__/scheduled-followup-handler.ts, worker/processors/cia/cognitive-state/__parts__/cognitive-state-build.ts, worker/processors/cia/cognitive-state/__parts__/cognitive-state-inference.ts, worker/processors/cia/cognitive-state/__parts__/cognitive-state-load.ts, worker/processors/cia/cognitive-state/__parts__/cognitive-state-persist.ts, worker/processors/cia/cognitive-state/__parts__/cognitive-state-record.ts, worker/processors/cia/cognitive-state/__parts__/cognitive-state-scoring.ts, worker/processors/cia/cognitive-state/__parts__/cognitive-state-types.ts. | Codacy still reports 2225 HIGH issue(s). | Phantom capabilities remain: Portfolio State. | Codacy snapshot is stale (4281 minute(s) old). | Observed external high-impact signals remain active: 5. | External evidence is stale for 2 adapter(s). | Proof readiness still has non-observed production proof: status=executable_unproved, canAdvance=false, planned=2047, inferred=0, not_available=0, nonObserved=2047, executableUnproved=2047. | No-hardcoded-reality state still has hardcoded reality authority: 223445 hardcoded reality event(s) across 544 scanned PULSE file(s). Top files: scripts/pulse/convergence-plan.ts, scripts/pulse/__companions__/autopilot-processor.companion.ts, scripts/pulse/property-tester.ts, scripts/pulse/types.ts, scripts/pulse/certification.ts, scripts/pulse/observability-coverage.ts, scripts/pulse/chaos-engine.ts, scripts/pulse/behavior-graph.ts. First event: scripts/pulse/__kernel_additions__/discoverAutonomyConceptTypeLabels.ts:9.. | NAO: production proof readiness is not fully observed (proofReadiness status=executable_unproved, canAdvance=false, planned=2047, inferred=0, not_available=0, nonObserved=2047, executableUnproved=2047).",
       "whyNow": "PULSE cannot claim production autonomy while proof blockers remain; repair PULSE proof machinery before editing SaaS product code.",
       "visionDelta": "Moves PULSE from next-step guidance toward certified zero-prompt technical replacement.",
       "targetState": "productionAutonomyVerdict must be SIM or expose only precise machine blockers.",
@@ -50514,240 +50281,6 @@
   "nextExecutableUnits": [
     {
       "order": 1,
-      "id": "pulse-machine-artifact_consistency",
-      "kind": "pulse_machine",
-      "priority": "P1",
-      "source": "pulse_machine",
-      "executionMode": "ai_safe",
-      "riskLevel": "low",
-      "evidenceMode": "inferred",
-      "confidence": "high",
-      "productImpact": "machine",
-      "ownerLane": "pulse-core",
-      "title": "Close PULSE artifact consistency criterion",
-      "summary": "Cross-artifact consistency has not produced a passing check.",
-      "whyNow": "PULSE machine readiness is the active target; do not spend this cycle materializing SaaS product capabilities.",
-      "visionDelta": "Moves PULSE closer to zero-prompt technical autonomy by closing machine proof, adapter, or execution-evidence gaps.",
-      "targetState": "PULSE machine criterion \"artifact_consistency\" must pass with canonical evidence.",
-      "affectedCapabilities": [],
-      "affectedFlows": [],
-      "gateNames": [
-        "artifact_consistency"
-      ],
-      "expectedGateShift": "Pass PULSE machine criterion artifact_consistency",
-      "validationTargets": [
-        "PULSE_MACHINE_READINESS.json",
-        "PULSE_CLI_DIRECTIVE.json",
-        "PULSE_CERTIFICATE.json",
-        "PULSE_ADMIN_EVIDENCE.json",
-        "PULSE_AGENT_ORCHESTRATION_STATE.json",
-        "PULSE_ARTIFACT_INDEX.json",
-        "PULSE_AUTONOMY_MEMORY.json",
-        "PULSE_AUTONOMY_PROOF.json",
-        "PULSE_AUTONOMY_STATE.json",
-        "PULSE_BEADS_STATE.json",
-        "PULSE_BROWSER_EVIDENCE.json",
-        "PULSE_CAPABILITY_STATE.json",
-        "PULSE_CERTIFICATE.json",
-        "PULSE_CODACY_EVIDENCE.json",
-        "PULSE_CODEBASE_TRUTH.json",
-        "PULSE_CONTEXT_BROADCAST.json",
-        "PULSE_CONTEXT_DELTA.json",
-        "PULSE_CONVERGENCE_PLAN.json",
-        "PULSE_CUSTOMER_EVIDENCE.json",
-        "PULSE_CLI_DIRECTIVE.json",
-        "PULSE_EXECUTION_CHAINS.json",
-        "PULSE_EXECUTION_MATRIX.json",
-        "PULSE_EXECUTION_TRACE.json",
-        "PULSE_EXTERNAL_SIGNAL_STATE.json",
-        "PULSE_FINDING_VALIDATION_STATE.json",
-        "PULSE_FLOW_EVIDENCE.json",
-        "PULSE_FLOW_PROJECTION.json",
-        "PULSE_GITNEXUS_STATE.json",
-        "PULSE_HEALTH.json",
-        "PULSE_INVARIANT_EVIDENCE.json",
-        "PULSE_MACHINE_READINESS.json",
-        "PULSE_NO_HARDCODED_REALITY_STATE.json",
-        "PULSE_OBSERVABILITY_EVIDENCE.json",
-        "PULSE_OPERATOR_EVIDENCE.json",
-        "PULSE_PARITY_GAPS.json",
-        "PULSE_PATH_COVERAGE.json",
-        "PULSE_PRODUCT_GRAPH.json",
-        "PULSE_PRODUCT_VISION.json",
-        "PULSE_RECOVERY_EVIDENCE.json",
-        "PULSE_REPORT.md",
-        "PULSE_RESOLVED_MANIFEST.json",
-        "PULSE_RUNTIME_EVIDENCE.json",
-        "PULSE_RUNTIME_PROBES.json",
-        "PULSE_SCENARIO_COVERAGE.json",
-        "PULSE_SCOPE_STATE.json",
-        "PULSE_SOAK_EVIDENCE.json",
-        "PULSE_STRUCTURAL_GRAPH.json",
-        "PULSE_WORKER_LEASES.json",
-        "PULSE_WORLD_STATE.json"
-      ],
-      "validationArtifacts": [
-        "PULSE_MACHINE_READINESS.json",
-        "PULSE_CLI_DIRECTIVE.json",
-        "PULSE_CERTIFICATE.json",
-        "PULSE_ADMIN_EVIDENCE.json",
-        "PULSE_AGENT_ORCHESTRATION_STATE.json",
-        "PULSE_ARTIFACT_INDEX.json",
-        "PULSE_AUTONOMY_MEMORY.json",
-        "PULSE_AUTONOMY_PROOF.json",
-        "PULSE_AUTONOMY_STATE.json",
-        "PULSE_BEADS_STATE.json",
-        "PULSE_BROWSER_EVIDENCE.json",
-        "PULSE_CAPABILITY_STATE.json",
-        "PULSE_CODACY_EVIDENCE.json",
-        "PULSE_CODEBASE_TRUTH.json",
-        "PULSE_CONTEXT_BROADCAST.json",
-        "PULSE_CONTEXT_DELTA.json",
-        "PULSE_CONVERGENCE_PLAN.json",
-        "PULSE_CUSTOMER_EVIDENCE.json",
-        "PULSE_EXECUTION_CHAINS.json",
-        "PULSE_EXECUTION_MATRIX.json",
-        "PULSE_EXECUTION_TRACE.json",
-        "PULSE_EXTERNAL_SIGNAL_STATE.json",
-        "PULSE_FINDING_VALIDATION_STATE.json",
-        "PULSE_FLOW_EVIDENCE.json",
-        "PULSE_FLOW_PROJECTION.json",
-        "PULSE_GITNEXUS_STATE.json",
-        "PULSE_HEALTH.json",
-        "PULSE_INVARIANT_EVIDENCE.json",
-        "PULSE_NO_HARDCODED_REALITY_STATE.json",
-        "PULSE_OBSERVABILITY_EVIDENCE.json",
-        "PULSE_OPERATOR_EVIDENCE.json",
-        "PULSE_PARITY_GAPS.json",
-        "PULSE_PATH_COVERAGE.json",
-        "PULSE_PRODUCT_GRAPH.json",
-        "PULSE_PRODUCT_VISION.json",
-        "PULSE_RECOVERY_EVIDENCE.json",
-        "PULSE_REPORT.md",
-        "PULSE_RESOLVED_MANIFEST.json",
-        "PULSE_RUNTIME_EVIDENCE.json",
-        "PULSE_RUNTIME_PROBES.json",
-        "PULSE_SCENARIO_COVERAGE.json",
-        "PULSE_SCOPE_STATE.json",
-        "PULSE_SOAK_EVIDENCE.json",
-        "PULSE_STRUCTURAL_GRAPH.json",
-        "PULSE_WORKER_LEASES.json",
-        "PULSE_WORLD_STATE.json"
-      ],
-      "proofAuthority": "artifact_registry",
-      "proofBasis": [
-        "admin-evidence:./artifacts.writeRegisteredArtifact.admin-evidence:preserved:preserved_evidence",
-        "agent-orchestration-state:./artifacts.writeRegisteredArtifact.agent-orchestration-state:run:generated_from_module",
-        "artifact-index:./artifacts.writeRegisteredArtifact.artifact-index:run:generated_from_module",
-        "autonomy-memory:./artifacts.writeRegisteredArtifact.autonomy-memory:run:generated_from_module",
-        "autonomy-proof:./artifacts.writeRegisteredArtifact.autonomy-proof:run:generated_from_module",
-        "autonomy-state:./artifacts.writeRegisteredArtifact.autonomy-state:run:generated_from_module",
-        "beads-state:./artifacts.writeRegisteredArtifact.beads-state:external_snapshot:external_snapshot",
-        "browser-evidence:./artifacts.writeRegisteredArtifact.browser-evidence:external_snapshot:external_snapshot",
-        "capability-state:./artifacts.writeRegisteredArtifact.capability-state:external_snapshot:external_snapshot",
-        "certificate:./artifacts.writeRegisteredArtifact.certificate:run:generated_from_module",
-        "codacy-evidence:./artifacts.writeRegisteredArtifact.codacy-evidence:preserved:preserved_evidence",
-        "codebase-truth:./artifacts.writeRegisteredArtifact.codebase-truth:run:generated_from_module",
-        "context-broadcast:./artifacts.writeRegisteredArtifact.context-broadcast:run:generated_from_module",
-        "context-delta:./artifacts.writeRegisteredArtifact.context-delta:run:generated_from_module",
-        "convergence-plan:./artifacts.writeRegisteredArtifact.convergence-plan:run:generated_from_module",
-        "customer-evidence:./artifacts.writeRegisteredArtifact.customer-evidence:preserved:preserved_evidence",
-        "directive:./artifacts.writeRegisteredArtifact.directive:run:generated_from_module",
-        "execution-chains:./artifacts.writeRegisteredArtifact.execution-chains:run:generated_from_module",
-        "execution-matrix:./artifacts.writeRegisteredArtifact.execution-matrix:run:generated_from_module",
-        "execution-trace:./artifacts.writeRegisteredArtifact.execution-trace:preserved:preserved_evidence",
-        "external-signal-state:./artifacts.writeRegisteredArtifact.external-signal-state:external_snapshot:external_snapshot",
-        "finding-validation-state:./artifacts.writeRegisteredArtifact.finding-validation-state:run:generated_from_module",
-        "flow-evidence:./artifacts.writeRegisteredArtifact.flow-evidence:preserved:preserved_evidence",
-        "flow-projection:./artifacts.writeRegisteredArtifact.flow-projection:external_snapshot:external_snapshot",
-        "gitnexus-state:./artifacts.writeRegisteredArtifact.gitnexus-state:external_snapshot:external_snapshot",
-        "health:./artifacts.writeRegisteredArtifact.health:run:generated_from_module",
-        "invariant-evidence:./artifacts.writeRegisteredArtifact.invariant-evidence:preserved:preserved_evidence",
-        "machine-readiness:./artifacts.writeRegisteredArtifact.machine-readiness:run:generated_from_module",
-        "no-hardcoded-reality-state:./artifacts.writeRegisteredArtifact.no-hardcoded-reality-state:run:generated_from_module",
-        "observability-evidence:./artifacts.writeRegisteredArtifact.observability-evidence:preserved:preserved_evidence",
-        "operator-evidence:./artifacts.writeRegisteredArtifact.operator-evidence:preserved:preserved_evidence",
-        "parity-gaps:./artifacts.writeRegisteredArtifact.parity-gaps:run:generated_from_module",
-        "path-coverage:./artifacts.writeRegisteredArtifact.path-coverage:preserved:preserved_evidence",
-        "product-graph:./artifacts.writeRegisteredArtifact.product-graph:run:generated_from_module",
-        "product-vision:./artifacts.writeRegisteredArtifact.product-vision:run:generated_from_module",
-        "recovery-evidence:./artifacts.writeRegisteredArtifact.recovery-evidence:preserved:preserved_evidence",
-        "report:./artifacts.writeRegisteredArtifact.report:run:generated_from_module",
-        "resolved-manifest:./artifacts.writeRegisteredArtifact.resolved-manifest:run:generated_from_module",
-        "runtime-evidence:./artifacts.writeRegisteredArtifact.runtime-evidence:preserved:preserved_evidence",
-        "runtime-probes:./artifacts.writeRegisteredArtifact.runtime-probes:preserved:preserved_evidence",
-        "scenario-coverage:./artifacts.writeRegisteredArtifact.scenario-coverage:preserved:preserved_evidence",
-        "scope-state:./artifacts.writeRegisteredArtifact.scope-state:run:generated_from_module",
-        "soak-evidence:./artifacts.writeRegisteredArtifact.soak-evidence:preserved:preserved_evidence",
-        "structural-graph:./artifacts.writeRegisteredArtifact.structural-graph:run:generated_from_module",
-        "worker-leases:./artifacts.writeRegisteredArtifact.worker-leases:run:generated_from_module",
-        "world-state:./artifacts.writeRegisteredArtifact.world-state:run:generated_from_module"
-      ],
-      "relatedFiles": [
-        "scripts/pulse/artifacts.ts",
-        "scripts/pulse/actors/coverage.ts",
-        "scripts/pulse/artifact-gc.ts",
-        "scripts/pulse/cert-gate-evidence.ts",
-        "scripts/pulse/autonomy-loop.types.ts",
-        "scripts/pulse/autonomy-types.ts",
-        "scripts/pulse/cross-artifact-consistency-check/loaders.ts",
-        "scripts/pulse/autonomy-loop.utils.ts",
-        "scripts/pulse/daemon/fullScan.ts",
-        "scripts/pulse/probabilistic-risk/model.ts",
-        "scripts/pulse/structural-memory/memory-patterns.ts",
-        "scripts/pulse/execution-matrix/grammar.ts",
-        "scripts/pulse/replay-adapter/main.ts",
-        "scripts/pulse/production-proof/dimensions.ts",
-        "scripts/pulse/signal-mapper.ts",
-        "scripts/pulse/authority-engine/core.ts",
-        "scripts/pulse/cross-artifact-consistency-check.ts",
-        "scripts/pulse/unified-readiness-report.ts",
-        "scripts/pulse/autonomy-decision.ts",
-        "scripts/pulse/autonomy-loop.state-io/directive.ts",
-        "scripts/pulse/path-coverage-engine/build-coverage-state.ts",
-        "scripts/pulse/proof-synthesis.ts",
-        "scripts/pulse/cert-evidence-defaults.ts",
-        "scripts/pulse/execution-trace.ts",
-        "scripts/pulse/adapters/gitnexus-adapter.ts",
-        "scripts/pulse/adapters/external-sources-orchestrator/capability.ts",
-        "scripts/pulse/scenario-mode-registry.ts",
-        "scripts/pulse/runtime-probes/executor.ts",
-        "scripts/pulse/runtime-probes/main.ts",
-        "scripts/pulse/runtime-probes/probe-definitions.ts",
-        "scripts/pulse/runtime-probes/run.ts",
-        "scripts/pulse/cert-evidence-actor.ts",
-        "scripts/pulse/execution-matrix/matrix.ts",
-        "scripts/pulse/false-positive-adjudicator.ts"
-      ],
-      "exitCriteria": [
-        "{\"id\":\"pulse-machine-artifact_consistency-exit-0\",\"type\":\"artifact-assertion\",\"target\":\"PULSE_MACHINE_READINESS.json\",\"expected\":{\"criterion\":\"artifact_consistency\",\"status\":\"pass\"},\"comparison\":\"contains\"}"
-      ],
-      "preconditions": [
-        "Operate only on PULSE machine/proof code and generated PULSE artifacts."
-      ],
-      "allowedActions": [
-        "PULSE scanner changes",
-        "PULSE evidence generation",
-        "PULSE adapter refresh",
-        "PULSE test writing"
-      ],
-      "forbiddenActions": [
-        "Do not edit SaaS product code for this unit",
-        "Do not edit governance-protected files",
-        "Do not suppress Codacy, lint, or certification findings",
-        "Do not add secrets or credentials"
-      ],
-      "successCriteria": [
-        "PULSE_MACHINE_READINESS criterion artifact_consistency is pass or has a more precise terminal blocker.",
-        "PULSE_CLI_DIRECTIVE keeps next work focused on the PULSE machine when machine readiness is not READY.",
-        "Targeted PULSE tests pass."
-      ],
-      "requiredValidations": [
-        "affected-tests"
-      ]
-    },
-    {
-      "order": 2,
       "id": "pulse-machine-critical_path_terminal",
       "kind": "pulse_machine",
       "priority": "P0",
@@ -50759,7 +50292,7 @@
       "productImpact": "machine",
       "ownerLane": "pulse-core",
       "title": "Close PULSE critical path terminal criterion",
-      "summary": "4883 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:abi-ab, matrix:capability:capability:abi-builder, matrix:capability:capability:account-agent, matrix:capability:capability:admin-brain, matrix:capability:capability:admin-clients, matrix:capability:capability:admin-compliance, matrix:capability:capability:admin-config, matrix:capability:capability:admin-contacts. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.",
+      "summary": "4884 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:abi-ab, matrix:capability:capability:abi-builder, matrix:capability:capability:account-agent, matrix:capability:capability:admin-brain, matrix:capability:capability:admin-clients, matrix:capability:capability:admin-compliance, matrix:capability:capability:admin-config, matrix:capability:capability:admin-contacts. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.",
       "whyNow": "PULSE machine readiness is the active target; do not spend this cycle materializing SaaS product capabilities.",
       "visionDelta": "Moves PULSE closer to zero-prompt technical autonomy by closing machine proof, adapter, or execution-evidence gaps.",
       "targetState": "PULSE machine criterion \"critical_path_terminal\" must pass with canonical evidence.",
@@ -50826,7 +50359,7 @@
       ]
     },
     {
-      "order": 3,
+      "order": 2,
       "id": "pulse-machine-external_reality",
       "kind": "pulse_machine",
       "priority": "P0",
@@ -50923,7 +50456,7 @@
       ]
     },
     {
-      "order": 4,
+      "order": 3,
       "id": "pulse-machine-self_trust",
       "kind": "pulse_machine",
       "priority": "P1",
@@ -51298,6 +50831,79 @@
       ],
       "successCriteria": [
         "performancePass is pass or has a more precise machine-owned blocker.",
+        "PULSE_CLI_DIRECTIVE keeps next work focused on PULSE proof machinery while production autonomy is NAO.",
+        "Targeted PULSE tests pass."
+      ],
+      "requiredValidations": [
+        "affected-tests"
+      ]
+    },
+    {
+      "order": 105,
+      "id": "pulse-proof-customerPass",
+      "kind": "pulse_machine",
+      "priority": "P0",
+      "source": "pulse_machine",
+      "executionMode": "ai_safe",
+      "riskLevel": "low",
+      "evidenceMode": "inferred",
+      "confidence": "medium",
+      "productImpact": "machine",
+      "ownerLane": "pulse-proof",
+      "title": "Repair PULSE customer proof",
+      "summary": "customer synthetic evidence is missing for: customer-auth-shell, customer-product-and-checkout, customer-whatsapp-and-inbox.",
+      "whyNow": "PULSE cannot claim zero-prompt production autonomy while this proof gate is failing; improve PULSE proof machinery before editing SaaS product code.",
+      "visionDelta": "Moves PULSE from advisory/autonomous execution toward certified technical replacement by converting inferred or missing proof into canonical evidence.",
+      "targetState": "Certification gate customerPass must pass or expose a precise non-product proof blocker.",
+      "affectedCapabilities": [],
+      "affectedFlows": [],
+      "gateNames": [
+        "customerPass"
+      ],
+      "expectedGateShift": "Pass or sharpen customerPass without editing SaaS product code",
+      "proofAuthority": "artifact_registry",
+      "proofBasis": [
+        "customer-evidence:./artifacts.writeRegisteredArtifact.customer-evidence:preserved:preserved_evidence"
+      ],
+      "validationTargets": [
+        "PULSE_CERTIFICATE.json",
+        "PULSE_CLI_DIRECTIVE.json",
+        "PULSE_MACHINE_READINESS.json",
+        "PULSE_CUSTOMER_EVIDENCE.json"
+      ],
+      "validationArtifacts": [
+        "PULSE_CERTIFICATE.json",
+        "PULSE_CLI_DIRECTIVE.json",
+        "PULSE_MACHINE_READINESS.json",
+        "PULSE_CUSTOMER_EVIDENCE.json"
+      ],
+      "relatedFiles": [
+        "scripts/pulse/artifacts.ts",
+        "scripts/pulse/actors/coverage.ts",
+        "scripts/pulse/artifact-gc.ts",
+        "scripts/pulse/cert-gate-evidence.ts"
+      ],
+      "exitCriteria": [
+        "{\"id\":\"pulse-proof-customerPass-exit-0\",\"type\":\"artifact-gate\",\"target\":\"PULSE_CERTIFICATE.json\",\"expected\":{\"gate\":\"customerPass\",\"status\":\"pass\"},\"comparison\":\"eq\"}"
+      ],
+      "preconditions": [
+        "Operate only on PULSE machine/proof code and generated PULSE artifacts.",
+        "Do not materialize SaaS product capabilities for this proof-debt unit."
+      ],
+      "allowedActions": [
+        "PULSE scanner changes",
+        "PULSE evidence generation",
+        "PULSE scenario/probe harness changes",
+        "PULSE test writing"
+      ],
+      "forbiddenActions": [
+        "Do not edit SaaS product code for this unit",
+        "Do not edit governance-protected files",
+        "Do not suppress Codacy, lint, or certification findings",
+        "Do not add secrets or credentials"
+      ],
+      "successCriteria": [
+        "customerPass is pass or has a more precise machine-owned blocker.",
         "PULSE_CLI_DIRECTIVE keeps next work focused on PULSE proof machinery while production autonomy is NAO.",
         "Targeted PULSE tests pass."
       ],
@@ -51309,240 +50915,6 @@
   "nextWork": [
     {
       "order": 1,
-      "id": "pulse-machine-artifact_consistency",
-      "kind": "pulse_machine",
-      "priority": "P1",
-      "source": "pulse_machine",
-      "executionMode": "ai_safe",
-      "riskLevel": "low",
-      "evidenceMode": "inferred",
-      "confidence": "high",
-      "productImpact": "machine",
-      "ownerLane": "pulse-core",
-      "title": "Close PULSE artifact consistency criterion",
-      "summary": "Cross-artifact consistency has not produced a passing check.",
-      "whyNow": "PULSE machine readiness is the active target; do not spend this cycle materializing SaaS product capabilities.",
-      "visionDelta": "Moves PULSE closer to zero-prompt technical autonomy by closing machine proof, adapter, or execution-evidence gaps.",
-      "targetState": "PULSE machine criterion \"artifact_consistency\" must pass with canonical evidence.",
-      "affectedCapabilities": [],
-      "affectedFlows": [],
-      "gateNames": [
-        "artifact_consistency"
-      ],
-      "expectedGateShift": "Pass PULSE machine criterion artifact_consistency",
-      "validationTargets": [
-        "PULSE_MACHINE_READINESS.json",
-        "PULSE_CLI_DIRECTIVE.json",
-        "PULSE_CERTIFICATE.json",
-        "PULSE_ADMIN_EVIDENCE.json",
-        "PULSE_AGENT_ORCHESTRATION_STATE.json",
-        "PULSE_ARTIFACT_INDEX.json",
-        "PULSE_AUTONOMY_MEMORY.json",
-        "PULSE_AUTONOMY_PROOF.json",
-        "PULSE_AUTONOMY_STATE.json",
-        "PULSE_BEADS_STATE.json",
-        "PULSE_BROWSER_EVIDENCE.json",
-        "PULSE_CAPABILITY_STATE.json",
-        "PULSE_CERTIFICATE.json",
-        "PULSE_CODACY_EVIDENCE.json",
-        "PULSE_CODEBASE_TRUTH.json",
-        "PULSE_CONTEXT_BROADCAST.json",
-        "PULSE_CONTEXT_DELTA.json",
-        "PULSE_CONVERGENCE_PLAN.json",
-        "PULSE_CUSTOMER_EVIDENCE.json",
-        "PULSE_CLI_DIRECTIVE.json",
-        "PULSE_EXECUTION_CHAINS.json",
-        "PULSE_EXECUTION_MATRIX.json",
-        "PULSE_EXECUTION_TRACE.json",
-        "PULSE_EXTERNAL_SIGNAL_STATE.json",
-        "PULSE_FINDING_VALIDATION_STATE.json",
-        "PULSE_FLOW_EVIDENCE.json",
-        "PULSE_FLOW_PROJECTION.json",
-        "PULSE_GITNEXUS_STATE.json",
-        "PULSE_HEALTH.json",
-        "PULSE_INVARIANT_EVIDENCE.json",
-        "PULSE_MACHINE_READINESS.json",
-        "PULSE_NO_HARDCODED_REALITY_STATE.json",
-        "PULSE_OBSERVABILITY_EVIDENCE.json",
-        "PULSE_OPERATOR_EVIDENCE.json",
-        "PULSE_PARITY_GAPS.json",
-        "PULSE_PATH_COVERAGE.json",
-        "PULSE_PRODUCT_GRAPH.json",
-        "PULSE_PRODUCT_VISION.json",
-        "PULSE_RECOVERY_EVIDENCE.json",
-        "PULSE_REPORT.md",
-        "PULSE_RESOLVED_MANIFEST.json",
-        "PULSE_RUNTIME_EVIDENCE.json",
-        "PULSE_RUNTIME_PROBES.json",
-        "PULSE_SCENARIO_COVERAGE.json",
-        "PULSE_SCOPE_STATE.json",
-        "PULSE_SOAK_EVIDENCE.json",
-        "PULSE_STRUCTURAL_GRAPH.json",
-        "PULSE_WORKER_LEASES.json",
-        "PULSE_WORLD_STATE.json"
-      ],
-      "validationArtifacts": [
-        "PULSE_MACHINE_READINESS.json",
-        "PULSE_CLI_DIRECTIVE.json",
-        "PULSE_CERTIFICATE.json",
-        "PULSE_ADMIN_EVIDENCE.json",
-        "PULSE_AGENT_ORCHESTRATION_STATE.json",
-        "PULSE_ARTIFACT_INDEX.json",
-        "PULSE_AUTONOMY_MEMORY.json",
-        "PULSE_AUTONOMY_PROOF.json",
-        "PULSE_AUTONOMY_STATE.json",
-        "PULSE_BEADS_STATE.json",
-        "PULSE_BROWSER_EVIDENCE.json",
-        "PULSE_CAPABILITY_STATE.json",
-        "PULSE_CODACY_EVIDENCE.json",
-        "PULSE_CODEBASE_TRUTH.json",
-        "PULSE_CONTEXT_BROADCAST.json",
-        "PULSE_CONTEXT_DELTA.json",
-        "PULSE_CONVERGENCE_PLAN.json",
-        "PULSE_CUSTOMER_EVIDENCE.json",
-        "PULSE_EXECUTION_CHAINS.json",
-        "PULSE_EXECUTION_MATRIX.json",
-        "PULSE_EXECUTION_TRACE.json",
-        "PULSE_EXTERNAL_SIGNAL_STATE.json",
-        "PULSE_FINDING_VALIDATION_STATE.json",
-        "PULSE_FLOW_EVIDENCE.json",
-        "PULSE_FLOW_PROJECTION.json",
-        "PULSE_GITNEXUS_STATE.json",
-        "PULSE_HEALTH.json",
-        "PULSE_INVARIANT_EVIDENCE.json",
-        "PULSE_NO_HARDCODED_REALITY_STATE.json",
-        "PULSE_OBSERVABILITY_EVIDENCE.json",
-        "PULSE_OPERATOR_EVIDENCE.json",
-        "PULSE_PARITY_GAPS.json",
-        "PULSE_PATH_COVERAGE.json",
-        "PULSE_PRODUCT_GRAPH.json",
-        "PULSE_PRODUCT_VISION.json",
-        "PULSE_RECOVERY_EVIDENCE.json",
-        "PULSE_REPORT.md",
-        "PULSE_RESOLVED_MANIFEST.json",
-        "PULSE_RUNTIME_EVIDENCE.json",
-        "PULSE_RUNTIME_PROBES.json",
-        "PULSE_SCENARIO_COVERAGE.json",
-        "PULSE_SCOPE_STATE.json",
-        "PULSE_SOAK_EVIDENCE.json",
-        "PULSE_STRUCTURAL_GRAPH.json",
-        "PULSE_WORKER_LEASES.json",
-        "PULSE_WORLD_STATE.json"
-      ],
-      "proofAuthority": "artifact_registry",
-      "proofBasis": [
-        "admin-evidence:./artifacts.writeRegisteredArtifact.admin-evidence:preserved:preserved_evidence",
-        "agent-orchestration-state:./artifacts.writeRegisteredArtifact.agent-orchestration-state:run:generated_from_module",
-        "artifact-index:./artifacts.writeRegisteredArtifact.artifact-index:run:generated_from_module",
-        "autonomy-memory:./artifacts.writeRegisteredArtifact.autonomy-memory:run:generated_from_module",
-        "autonomy-proof:./artifacts.writeRegisteredArtifact.autonomy-proof:run:generated_from_module",
-        "autonomy-state:./artifacts.writeRegisteredArtifact.autonomy-state:run:generated_from_module",
-        "beads-state:./artifacts.writeRegisteredArtifact.beads-state:external_snapshot:external_snapshot",
-        "browser-evidence:./artifacts.writeRegisteredArtifact.browser-evidence:external_snapshot:external_snapshot",
-        "capability-state:./artifacts.writeRegisteredArtifact.capability-state:external_snapshot:external_snapshot",
-        "certificate:./artifacts.writeRegisteredArtifact.certificate:run:generated_from_module",
-        "codacy-evidence:./artifacts.writeRegisteredArtifact.codacy-evidence:preserved:preserved_evidence",
-        "codebase-truth:./artifacts.writeRegisteredArtifact.codebase-truth:run:generated_from_module",
-        "context-broadcast:./artifacts.writeRegisteredArtifact.context-broadcast:run:generated_from_module",
-        "context-delta:./artifacts.writeRegisteredArtifact.context-delta:run:generated_from_module",
-        "convergence-plan:./artifacts.writeRegisteredArtifact.convergence-plan:run:generated_from_module",
-        "customer-evidence:./artifacts.writeRegisteredArtifact.customer-evidence:preserved:preserved_evidence",
-        "directive:./artifacts.writeRegisteredArtifact.directive:run:generated_from_module",
-        "execution-chains:./artifacts.writeRegisteredArtifact.execution-chains:run:generated_from_module",
-        "execution-matrix:./artifacts.writeRegisteredArtifact.execution-matrix:run:generated_from_module",
-        "execution-trace:./artifacts.writeRegisteredArtifact.execution-trace:preserved:preserved_evidence",
-        "external-signal-state:./artifacts.writeRegisteredArtifact.external-signal-state:external_snapshot:external_snapshot",
-        "finding-validation-state:./artifacts.writeRegisteredArtifact.finding-validation-state:run:generated_from_module",
-        "flow-evidence:./artifacts.writeRegisteredArtifact.flow-evidence:preserved:preserved_evidence",
-        "flow-projection:./artifacts.writeRegisteredArtifact.flow-projection:external_snapshot:external_snapshot",
-        "gitnexus-state:./artifacts.writeRegisteredArtifact.gitnexus-state:external_snapshot:external_snapshot",
-        "health:./artifacts.writeRegisteredArtifact.health:run:generated_from_module",
-        "invariant-evidence:./artifacts.writeRegisteredArtifact.invariant-evidence:preserved:preserved_evidence",
-        "machine-readiness:./artifacts.writeRegisteredArtifact.machine-readiness:run:generated_from_module",
-        "no-hardcoded-reality-state:./artifacts.writeRegisteredArtifact.no-hardcoded-reality-state:run:generated_from_module",
-        "observability-evidence:./artifacts.writeRegisteredArtifact.observability-evidence:preserved:preserved_evidence",
-        "operator-evidence:./artifacts.writeRegisteredArtifact.operator-evidence:preserved:preserved_evidence",
-        "parity-gaps:./artifacts.writeRegisteredArtifact.parity-gaps:run:generated_from_module",
-        "path-coverage:./artifacts.writeRegisteredArtifact.path-coverage:preserved:preserved_evidence",
-        "product-graph:./artifacts.writeRegisteredArtifact.product-graph:run:generated_from_module",
-        "product-vision:./artifacts.writeRegisteredArtifact.product-vision:run:generated_from_module",
-        "recovery-evidence:./artifacts.writeRegisteredArtifact.recovery-evidence:preserved:preserved_evidence",
-        "report:./artifacts.writeRegisteredArtifact.report:run:generated_from_module",
-        "resolved-manifest:./artifacts.writeRegisteredArtifact.resolved-manifest:run:generated_from_module",
-        "runtime-evidence:./artifacts.writeRegisteredArtifact.runtime-evidence:preserved:preserved_evidence",
-        "runtime-probes:./artifacts.writeRegisteredArtifact.runtime-probes:preserved:preserved_evidence",
-        "scenario-coverage:./artifacts.writeRegisteredArtifact.scenario-coverage:preserved:preserved_evidence",
-        "scope-state:./artifacts.writeRegisteredArtifact.scope-state:run:generated_from_module",
-        "soak-evidence:./artifacts.writeRegisteredArtifact.soak-evidence:preserved:preserved_evidence",
-        "structural-graph:./artifacts.writeRegisteredArtifact.structural-graph:run:generated_from_module",
-        "worker-leases:./artifacts.writeRegisteredArtifact.worker-leases:run:generated_from_module",
-        "world-state:./artifacts.writeRegisteredArtifact.world-state:run:generated_from_module"
-      ],
-      "relatedFiles": [
-        "scripts/pulse/artifacts.ts",
-        "scripts/pulse/actors/coverage.ts",
-        "scripts/pulse/artifact-gc.ts",
-        "scripts/pulse/cert-gate-evidence.ts",
-        "scripts/pulse/autonomy-loop.types.ts",
-        "scripts/pulse/autonomy-types.ts",
-        "scripts/pulse/cross-artifact-consistency-check/loaders.ts",
-        "scripts/pulse/autonomy-loop.utils.ts",
-        "scripts/pulse/daemon/fullScan.ts",
-        "scripts/pulse/probabilistic-risk/model.ts",
-        "scripts/pulse/structural-memory/memory-patterns.ts",
-        "scripts/pulse/execution-matrix/grammar.ts",
-        "scripts/pulse/replay-adapter/main.ts",
-        "scripts/pulse/production-proof/dimensions.ts",
-        "scripts/pulse/signal-mapper.ts",
-        "scripts/pulse/authority-engine/core.ts",
-        "scripts/pulse/cross-artifact-consistency-check.ts",
-        "scripts/pulse/unified-readiness-report.ts",
-        "scripts/pulse/autonomy-decision.ts",
-        "scripts/pulse/autonomy-loop.state-io/directive.ts",
-        "scripts/pulse/path-coverage-engine/build-coverage-state.ts",
-        "scripts/pulse/proof-synthesis.ts",
-        "scripts/pulse/cert-evidence-defaults.ts",
-        "scripts/pulse/execution-trace.ts",
-        "scripts/pulse/adapters/gitnexus-adapter.ts",
-        "scripts/pulse/adapters/external-sources-orchestrator/capability.ts",
-        "scripts/pulse/scenario-mode-registry.ts",
-        "scripts/pulse/runtime-probes/executor.ts",
-        "scripts/pulse/runtime-probes/main.ts",
-        "scripts/pulse/runtime-probes/probe-definitions.ts",
-        "scripts/pulse/runtime-probes/run.ts",
-        "scripts/pulse/cert-evidence-actor.ts",
-        "scripts/pulse/execution-matrix/matrix.ts",
-        "scripts/pulse/false-positive-adjudicator.ts"
-      ],
-      "exitCriteria": [
-        "{\"id\":\"pulse-machine-artifact_consistency-exit-0\",\"type\":\"artifact-assertion\",\"target\":\"PULSE_MACHINE_READINESS.json\",\"expected\":{\"criterion\":\"artifact_consistency\",\"status\":\"pass\"},\"comparison\":\"contains\"}"
-      ],
-      "preconditions": [
-        "Operate only on PULSE machine/proof code and generated PULSE artifacts."
-      ],
-      "allowedActions": [
-        "PULSE scanner changes",
-        "PULSE evidence generation",
-        "PULSE adapter refresh",
-        "PULSE test writing"
-      ],
-      "forbiddenActions": [
-        "Do not edit SaaS product code for this unit",
-        "Do not edit governance-protected files",
-        "Do not suppress Codacy, lint, or certification findings",
-        "Do not add secrets or credentials"
-      ],
-      "successCriteria": [
-        "PULSE_MACHINE_READINESS criterion artifact_consistency is pass or has a more precise terminal blocker.",
-        "PULSE_CLI_DIRECTIVE keeps next work focused on the PULSE machine when machine readiness is not READY.",
-        "Targeted PULSE tests pass."
-      ],
-      "requiredValidations": [
-        "affected-tests"
-      ]
-    },
-    {
-      "order": 2,
       "id": "pulse-machine-critical_path_terminal",
       "kind": "pulse_machine",
       "priority": "P0",
@@ -51554,7 +50926,7 @@
       "productImpact": "machine",
       "ownerLane": "pulse-core",
       "title": "Close PULSE critical path terminal criterion",
-      "summary": "4883 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:abi-ab, matrix:capability:capability:abi-builder, matrix:capability:capability:account-agent, matrix:capability:capability:admin-brain, matrix:capability:capability:admin-clients, matrix:capability:capability:admin-compliance, matrix:capability:capability:admin-config, matrix:capability:capability:admin-contacts. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.",
+      "summary": "4884 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:abi-ab, matrix:capability:capability:abi-builder, matrix:capability:capability:account-agent, matrix:capability:capability:admin-brain, matrix:capability:capability:admin-clients, matrix:capability:capability:admin-compliance, matrix:capability:capability:admin-config, matrix:capability:capability:admin-contacts. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.",
       "whyNow": "PULSE machine readiness is the active target; do not spend this cycle materializing SaaS product capabilities.",
       "visionDelta": "Moves PULSE closer to zero-prompt technical autonomy by closing machine proof, adapter, or execution-evidence gaps.",
       "targetState": "PULSE machine criterion \"critical_path_terminal\" must pass with canonical evidence.",
@@ -51621,7 +50993,7 @@
       ]
     },
     {
-      "order": 3,
+      "order": 2,
       "id": "pulse-machine-external_reality",
       "kind": "pulse_machine",
       "priority": "P0",
@@ -51718,7 +51090,7 @@
       ]
     },
     {
-      "order": 4,
+      "order": 3,
       "id": "pulse-machine-self_trust",
       "kind": "pulse_machine",
       "priority": "P1",
@@ -52093,6 +51465,79 @@
       ],
       "successCriteria": [
         "performancePass is pass or has a more precise machine-owned blocker.",
+        "PULSE_CLI_DIRECTIVE keeps next work focused on PULSE proof machinery while production autonomy is NAO.",
+        "Targeted PULSE tests pass."
+      ],
+      "requiredValidations": [
+        "affected-tests"
+      ]
+    },
+    {
+      "order": 105,
+      "id": "pulse-proof-customerPass",
+      "kind": "pulse_machine",
+      "priority": "P0",
+      "source": "pulse_machine",
+      "executionMode": "ai_safe",
+      "riskLevel": "low",
+      "evidenceMode": "inferred",
+      "confidence": "medium",
+      "productImpact": "machine",
+      "ownerLane": "pulse-proof",
+      "title": "Repair PULSE customer proof",
+      "summary": "customer synthetic evidence is missing for: customer-auth-shell, customer-product-and-checkout, customer-whatsapp-and-inbox.",
+      "whyNow": "PULSE cannot claim zero-prompt production autonomy while this proof gate is failing; improve PULSE proof machinery before editing SaaS product code.",
+      "visionDelta": "Moves PULSE from advisory/autonomous execution toward certified technical replacement by converting inferred or missing proof into canonical evidence.",
+      "targetState": "Certification gate customerPass must pass or expose a precise non-product proof blocker.",
+      "affectedCapabilities": [],
+      "affectedFlows": [],
+      "gateNames": [
+        "customerPass"
+      ],
+      "expectedGateShift": "Pass or sharpen customerPass without editing SaaS product code",
+      "proofAuthority": "artifact_registry",
+      "proofBasis": [
+        "customer-evidence:./artifacts.writeRegisteredArtifact.customer-evidence:preserved:preserved_evidence"
+      ],
+      "validationTargets": [
+        "PULSE_CERTIFICATE.json",
+        "PULSE_CLI_DIRECTIVE.json",
+        "PULSE_MACHINE_READINESS.json",
+        "PULSE_CUSTOMER_EVIDENCE.json"
+      ],
+      "validationArtifacts": [
+        "PULSE_CERTIFICATE.json",
+        "PULSE_CLI_DIRECTIVE.json",
+        "PULSE_MACHINE_READINESS.json",
+        "PULSE_CUSTOMER_EVIDENCE.json"
+      ],
+      "relatedFiles": [
+        "scripts/pulse/artifacts.ts",
+        "scripts/pulse/actors/coverage.ts",
+        "scripts/pulse/artifact-gc.ts",
+        "scripts/pulse/cert-gate-evidence.ts"
+      ],
+      "exitCriteria": [
+        "{\"id\":\"pulse-proof-customerPass-exit-0\",\"type\":\"artifact-gate\",\"target\":\"PULSE_CERTIFICATE.json\",\"expected\":{\"gate\":\"customerPass\",\"status\":\"pass\"},\"comparison\":\"eq\"}"
+      ],
+      "preconditions": [
+        "Operate only on PULSE machine/proof code and generated PULSE artifacts.",
+        "Do not materialize SaaS product capabilities for this proof-debt unit."
+      ],
+      "allowedActions": [
+        "PULSE scanner changes",
+        "PULSE evidence generation",
+        "PULSE scenario/probe harness changes",
+        "PULSE test writing"
+      ],
+      "forbiddenActions": [
+        "Do not edit SaaS product code for this unit",
+        "Do not edit governance-protected files",
+        "Do not suppress Codacy, lint, or certification findings",
+        "Do not add secrets or credentials"
+      ],
+      "successCriteria": [
+        "customerPass is pass or has a more precise machine-owned blocker.",
         "PULSE_CLI_DIRECTIVE keeps next work focused on PULSE proof machinery while production autonomy is NAO.",
         "Targeted PULSE tests pass."
       ],
@@ -52392,7 +51837,7 @@
     },
     "codacy": {
       "snapshotAvailable": true,
-      "stale": false,
+      "stale": true,
       "totalIssues": 12025,
       "highIssues": 2225,
       "runtimeCriticalHotspots": 23,
@@ -52487,25 +51932,28 @@
     "leasesRef": "PULSE_WORKER_LEASES.json",
     "gitnexusRef": "gitnexus:565b0f84daa9f20b33a174374191a9f1f519a26e:2026-05-16T16:19:46.957Z",
     "beadsRef": "beads:60ac6e77ca29e058",
-    "contextDigest": "3aeeb1c58bc2c614103530a6be369a40e99428b4cf9b87d8a65e8fd2379be2ce",
+    "contextDigest": "708a1a97ef200b7dff2e5336c6e104b7ee0cc7a5e5ae69469c554e2dc3165447",
     "workerEnvelopeCount": 10,
     "contextBroadcastPass": true,
     "ownershipConflictPass": true,
     "protectedFilesForbiddenPass": true,
     "workerContextCompletenessPass": true,
-    "staleContextBlocksExecution": false,
-    "blockers": []
+    "staleContextBlocksExecution": true,
+    "blockers": [
+      "gitnexus:stale"
+    ]
   },
   "stopCondition": [
     "Observed Codacy files are missing from repo inventory: frontend/src/components/kloel/KloelProductSurfacePatches.tsx, scripts/fix_context_strings.py, scripts/fix_opsalert_contexts.py, scripts/instrument-ops-alert-catches.py, scripts/instrument-ops-alert.py, scripts/instrument-ops-v2.py, scripts/instrument-v3.py, scripts/instrument_opsalert.py, scripts/instrument_opsalert_v2.py, scripts/orchestration/__parts__/findings-watch.mjs, worker/__parts__/flow-node-executor.interactions.ts, worker/__parts__/flow-node-executor.ts, worker/__parts__/scheduled-followup-handler.ts, worker/processors/cia/cognitive-state/__parts__/cognitive-state-build.ts, worker/processors/cia/cognitive-state/__parts__/cognitive-state-inference.ts, worker/processors/cia/cognitive-state/__parts__/cognitive-state-load.ts, worker/processors/cia/cognitive-state/__parts__/cognitive-state-persist.ts, worker/processors/cia/cognitive-state/__parts__/cognitive-state-record.ts, worker/processors/cia/cognitive-state/__parts__/cognitive-state-scoring.ts, worker/processors/cia/cognitive-state/__parts__/cognitive-state-types.ts.",
     "Codacy still reports 2225 HIGH issue(s).",
     "Phantom capabilities remain: Portfolio State.",
+    "Codacy snapshot is stale (4281 minute(s) old).",
     "Observed external high-impact signals remain active: 5.",
     "External evidence is stale for 2 adapter(s).",
     "Proof readiness still has non-observed production proof: status=executable_unproved, canAdvance=false, planned=2047, inferred=0, not_available=0, nonObserved=2047, executableUnproved=2047.",
-    "No-hardcoded-reality state still has hardcoded reality authority: 223437 hardcoded reality event(s) across 544 scanned PULSE file(s). Top files: scripts/pulse/convergence-plan.ts, scripts/pulse/__companions__/autopilot-processor.companion.ts, scripts/pulse/property-tester.ts, scripts/pulse/types.ts, scripts/pulse/certification.ts, scripts/pulse/observability-coverage.ts, scripts/pulse/chaos-engine.ts, scripts/pulse/behavior-graph.ts. First event: scripts/pulse/__kernel_additions__/discoverAutonomyConceptTypeLabels.ts:9..",
+    "No-hardcoded-reality state still has hardcoded reality authority: 223445 hardcoded reality event(s) across 544 scanned PULSE file(s). Top files: scripts/pulse/convergence-plan.ts, scripts/pulse/__companions__/autopilot-processor.companion.ts, scripts/pulse/property-tester.ts, scripts/pulse/types.ts, scripts/pulse/certification.ts, scripts/pulse/observability-coverage.ts, scripts/pulse/chaos-engine.ts, scripts/pulse/behavior-graph.ts. First event: scripts/pulse/__kernel_additions__/discoverAutonomyConceptTypeLabels.ts:9..",
     "github_actions/deploy_failure: Deploy Production failed in GitHub Actions.",
     "github_actions/deploy_failure: Deploy Staging failed in GitHub Actions."
   ],
-  "runId": "6e4c9311-ea4c-4b50-893e-79b07952bb8b"
+  "runId": "b90c8ab9-fdcf-4cf3-b037-ae68d7770f39"
 }

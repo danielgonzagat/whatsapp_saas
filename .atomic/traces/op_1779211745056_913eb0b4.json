@@ -1,0 +1,80 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779211745056_913eb0b4",
+  "ts": "2026-05-19T17:29:05.056Z",
+  "file": "backend/src/kloel/brain-capability-executor.service.ts",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "targetUnit": "text_span",
+  "intention": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 128,
+    "lineRewriteSurfaceChars": 96,
+    "expansionFactorAvoided": 0.75,
+    "bytesNet": 32,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "e602d47b25a4ff792680bb7bd6eb86efd4a82a805d291cb510b43f8b55a4e640",
+  "proposedSha256": "e602d47b25a4ff792680bb7bd6eb86efd4a82a805d291cb510b43f8b55a4e640",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- backend/src/kloel/brain-capability-executor.service.ts (atomic char-level)\u001b[0m\n      predictions: AbiPredictions;\n      pulseTruth: AbiPulseTruth;\n  \u001b[32m{+    valence: AbiValenceSection;+}\u001b[0m\n    }> {\n      const sinceMs = Date.now() - 7 * 24 * 60 * 60 * 1000;",
+  "preservedZones": [
+    {
+      "kind": "prefix_preserved",
+      "description": "Bytes 0–7662 — prefix preserved unchanged",
+      "byteStart": 0,
+      "byteEnd": 7663,
+      "byteLength": 7663,
+      "beforeHash": "43daf67311a00794cc468e35d3a6c36d80cf99fca687a7709359039391c4dcfa",
+      "afterHash": "43daf67311a00794cc468e35d3a6c36d80cf99fca687a7709359039391c4dcfa",
+      "sample": " AbiBelief[];\n    predictions: AbiPredictions;\n    pulseTruth: AbiPulseTruth;\n  "
+    },
+    {
+      "kind": "suffix_preserved",
+      "description": "Bytes 7663–28537 — suffix preserved unchanged",
+      "byteStart": 7663,
+      "byteEnd": 28538,
+      "byteLength": 20875,
+      "beforeHash": "fec0c4b98587ba1b50792aad1b8f496b42056846ebd09fd114ba43deba7bfe4b",
+      "afterHash": "fec0c4b98587ba1b50792aad1b8f496b42056846ebd09fd114ba43deba7bfe4b",
+      "sample": "}> {\n    const sinceMs = Date.now() - 7 * 24 * 60 * 60 * 1000;\n    const events "
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "byteStart": 7663,
+      "byteEnd": 7663,
+      "newByteLength": 32,
+      "oldTextHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "newTextHash": "16d82c9fc067005923087e894933f480dbdf35e7fd48a419f1891041257fde48",
+      "oldSample": "",
+      "newSample": "  valence: AbiValenceSection;\n  ",
+      "description": "Insert 32 bytes at offset 7663"
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~128 character(s) in `backend/src/kloel/brain-capability-executor.service.ts` (sub-line atomic edit, expansion 0.75× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

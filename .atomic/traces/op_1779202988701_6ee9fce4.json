@@ -1,0 +1,80 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779202988701_6ee9fce4",
+  "ts": "2026-05-19T15:03:08.701Z",
+  "file": "backend/src/kloel/abi/abi-builder.service.ts",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "targetUnit": "text_span",
+  "intention": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 512,
+    "lineRewriteSurfaceChars": 332,
+    "expansionFactorAvoided": 0.65,
+    "bytesNet": 180,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "6ec983f3cf4e927a171ba28372de69db19d0ffdd40dae1072f4a9fedcfcb347f",
+  "proposedSha256": "6ec983f3cf4e927a171ba28372de69db19d0ffdd40dae1072f4a9fedcfcb347f",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- backend/src/kloel/abi/abi-builder.service.ts (atomic char-level)\u001b[0m\n        perception: {\n          currentSnapshot: input.perceptionSnapshot,\n          recentSalientEvents: \u001b[32m{+input.cognitiveSubstrate?.recentSalientEvents ?? +}\u001b[0m[],\n        },\n        beliefs: [],\n        predictions: { active: [], recentSurprises: [] },\n        attention: { candidates: [] },\n        memory: {\n          workingMemory: \u001b[32m{+input.cognitiveSubstrate?.workingMemory ?? +}\u001b[0m[],\n          episodicRefs: \u001b[32m{+input.cognitiveSubstrate?.episodicRefs ?? +}\u001b[0m[],\n          consolidatedRefs: \u001b[32m{+input.cognitiveSubstrate?.consolidatedRefs ?? +}\u001b[0m[],\n        },\n        capabilities: {",
+  "preservedZones": [
+    {
+      "kind": "prefix_preserved",
+      "description": "Bytes 0–4523 — prefix preserved unchanged",
+      "byteStart": 0,
+      "byteEnd": 4524,
+      "byteLength": 4524,
+      "beforeHash": "17b8c2961196409dbb02c025ad724ff131b152821522618240fff10b81b26f4c",
+      "afterHash": "17b8c2961196409dbb02c025ad724ff131b152821522618240fff10b81b26f4c",
+      "sample": "        currentSnapshot: input.perceptionSnapshot,\n        recentSalientEvents: "
+    },
+    {
+      "kind": "suffix_preserved",
+      "description": "Bytes 4743–5733 — suffix preserved unchanged",
+      "byteStart": 4743,
+      "byteEnd": 5734,
+      "byteLength": 991,
+      "beforeHash": "066c7ee434cad007a03ff7a05f3700009de37adf5f4c3848baa4ad0ebb097a3b",
+      "afterHash": "066c7ee434cad007a03ff7a05f3700009de37adf5f4c3848baa4ad0ebb097a3b",
+      "sample": " [],\n      },\n      capabilities: {\n        available: capabilityIds.map((capabi"
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "byteStart": 4524,
+      "byteEnd": 4743,
+      "newByteLength": 399,
+      "oldTextHash": "5f3d7a28c52985ade4ef8292bf3d644471dec1d50e1e1b0714004d0e06ece83e",
+      "newTextHash": "b9c212f4199ed068e6797f3d5b5c581c8b836f5aa4f904be8948b86cf064594f",
+      "oldSample": "[],\n      },\n      beliefs: [],\n      predictions: { active: [], recentSurprises: [] },\n      attention: { candidates: [] },\n      memory: {\n        workingMemory: [],\n        episodicRefs: [],\n      ",
+      "newSample": "input.cognitiveSubstrate?.recentSalientEvents ?? [],\n      },\n      beliefs: [],\n      predictions: { active: [], recentSurprises: [] },\n      attention: { candidates: [] },\n      memory: {\n        wo",
+      "description": "Replace 219 bytes at offset 4524 with 399 bytes"
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~512 character(s) in `backend/src/kloel/abi/abi-builder.service.ts` (sub-line atomic edit, expansion 0.65× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

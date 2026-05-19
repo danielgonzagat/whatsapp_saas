@@ -1,0 +1,59 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779030553390_25f9750c",
+  "ts": "2026-05-17T15:09:13.390Z",
+  "file": "docs/ai/atomic-os-benchmark/tools/atomic-call.cjs",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "targetUnit": "text_span",
+  "intention": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 225,
+    "lineRewriteSurfaceChars": 166,
+    "expansionFactorAvoided": 0.74,
+    "bytesNet": 59,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "0f0f9b564ff0576a736c31c6b5b1fa3e510a1d16868ad4e25bdbf8104d334ce6",
+  "proposedSha256": "0f0f9b564ff0576a736c31c6b5b1fa3e510a1d16868ad4e25bdbf8104d334ce6",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- docs/ai/atomic-os-benchmark/tools/atomic-call.cjs (atomic char-level)\u001b[0m\n        okStatus: (status, result) => status === 0 && String(result.stdout || '').trim() === '',\n      }),\n      \u001b[32m{+...(scanFiles.length > 0\n        ? [+}\u001b[0mrunValidationStep('forbidden suppression scan empty', 'rg', ['-n', forbiddenPattern, ...scanFiles], {\n        \u001b[32m{+    +}\u001b[0mcwd,\n        \u001b[32m{+    +}\u001b[0mokStatus: (status) => status === 1,\n      \u001b[32m{+    +}\u001b[0m})\u001b[32m{+]\n        : [])+}\u001b[0m,\n    );\n    return {",
+  "preservedZones": [
+    {
+      "kind": "unchanged_context",
+      "description": "Everything outside the modified zone is preserved byte-for-byte by the atomic operation."
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "oldTextHash": "6602f8639c2ce6d9a3dc10aa85098f2154e4fa1d207a541e97cc36e15dcad573",
+      "newTextHash": "0f0f9b564ff0576a736c31c6b5b1fa3e510a1d16868ad4e25bdbf8104d334ce6",
+      "description": "The operation changed the highlighted span shown in inlinePreview."
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~225 character(s) in `docs/ai/atomic-os-benchmark/tools/atomic-call.cjs` (sub-line atomic edit, expansion 0.74× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

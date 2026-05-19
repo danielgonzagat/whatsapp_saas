@@ -1,0 +1,37 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1778955849992_a2ef2186",
+  "ts": "2026-05-16T18:24:09.993Z",
+  "file": "scripts/mcp/atomic-edit/audit-atomicity.mjs",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 568,
+    "lineRewriteSurfaceChars": 336,
+    "expansionFactorAvoided": 0.59,
+    "bytesNet": 235,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "afterSha256": "2aaf08717d1f3991e2f97c7f26fa9f9d16afe3060c5f007cf89cf71d938dafbf",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- scripts/mcp/atomic-edit/audit-atomicity.mjs (atomic char-level)\u001b[0m\n   *   coarse_unjustified      ops that rewrote >LINE_NOISE chars surface for\n   *                           a <=MICRO_CHANGE-char real change (pure noise)\n   *\u001b[32m{+   topologyCoverage        share of traces proving preservation topology+}\u001b[0m\n   * \u001b[32m{+  missingTopology         traces lacking targetUnit / semanticImpact /\n   *                           preserved+}\u001b[0mZ\u001b[32m{+on+}\u001b[0me\u001b[32m{+s / modifiedZones p+}\u001b[0mro\u001b[32m{+of\n  +}\u001b[0m \u001b[32m{+*\n   * Zero +}\u001b[0mdeps. `node audit-atomicity.mjs [--json] [--strict-ratio] [--\u001b[32m{+strict-topology] [--+}\u001b[0mmin-ratio=0.85] [--self-test]`.\n   */\n  import * as fs from 'node:fs';",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~568 character(s) in `scripts/mcp/atomic-edit/audit-atomicity.mjs` (sub-line atomic edit, expansion 0.59× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

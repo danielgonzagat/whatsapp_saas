@@ -1,0 +1,80 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779161964268_f3378b9d",
+  "ts": "2026-05-19T03:39:24.268Z",
+  "file": "frontend/src/components/kloel/marketing/MarketingVisaoGeral.tsx",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "targetUnit": "text_span",
+  "intention": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 62,
+    "lineRewriteSurfaceChars": 123,
+    "expansionFactorAvoided": 1.98,
+    "bytesNet": -62,
+    "lineRewriteAvoided": true
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "9dfd91d070b1a665f4c371e2d3f69c9de476993265a516849358219f3e6a59d8",
+  "proposedSha256": "9dfd91d070b1a665f4c371e2d3f69c9de476993265a516849358219f3e6a59d8",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- frontend/src/components/kloel/marketing/MarketingVisaoGeral.tsx (atomic char-level)\u001b[0m\n  import type { ChannelRealData, AIBrainInfo } from './MarketingTypes';\n  import { isBrainAvgResponseMeaningful } from './marketing-utils';\n  \u001b[31m[-import { ChannelNerveRow } from './MarketingChannelNerveRow';-]\u001b[0m\n  import { RevenueBarChart } from './MarketingRevenueBarChart';\n  ",
+  "preservedZones": [
+    {
+      "kind": "prefix_preserved",
+      "description": "Bytes 0–420 — prefix preserved unchanged",
+      "byteStart": 0,
+      "byteEnd": 421,
+      "byteLength": 421,
+      "beforeHash": "447c1c742e4330a173803913fc02f8bbe0e881402956cf2154f1f5c2d08fcc65",
+      "afterHash": "447c1c742e4330a173803913fc02f8bbe0e881402956cf2154f1f5c2d08fcc65",
+      "sample": "es';\nimport { isBrainAvgResponseMeaningful } from './marketing-utils';\nimport { "
+    },
+    {
+      "kind": "suffix_preserved",
+      "description": "Bytes 483–8597 — suffix preserved unchanged",
+      "byteStart": 483,
+      "byteEnd": 8598,
+      "byteLength": 8115,
+      "beforeHash": "27ed3631380efb4958a5f73be29b429445e95ce3224f430480e6b4ce6e510440",
+      "afterHash": "27ed3631380efb4958a5f73be29b429445e95ce3224f430480e6b4ce6e510440",
+      "sample": "RevenueBarChart } from './MarketingRevenueBarChart';\n\nexport function MarketingV"
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "byteStart": 421,
+      "byteEnd": 483,
+      "newByteLength": 0,
+      "oldTextHash": "fc111c011c062fab3e9f5ac50e9d504ae446e8bdefe281dfa7e89dffca898700",
+      "newTextHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "oldSample": "ChannelNerveRow } from './MarketingChannelNerveRow';\nimport { ",
+      "newSample": "",
+      "description": "Delete 62 bytes at offset 421"
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~62 character(s) in `frontend/src/components/kloel/marketing/MarketingVisaoGeral.tsx` (sub-line atomic edit, expansion 1.98× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

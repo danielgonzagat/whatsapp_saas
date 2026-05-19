@@ -1,0 +1,59 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779070613928_234f7c24",
+  "ts": "2026-05-18T02:16:53.929Z",
+  "file": "docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "targetUnit": "text_span",
+  "intention": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 977,
+    "lineRewriteSurfaceChars": 421,
+    "expansionFactorAvoided": 0.43,
+    "bytesNet": 556,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "aadd6c87d377dd8c92470b071687a658e38714e4718296108dcbe2c8f4ae1c71",
+  "proposedSha256": "aadd6c87d377dd8c92470b071687a658e38714e4718296108dcbe2c8f4ae1c71",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs (atomic char-level)\u001b[0m\n      }))\n      .filter((field) => field.name);\n    const \u001b[31m[-publicM-]\u001b[0m\u001b[32m{+m+}\u001b[0method\u001b[32m{+Surface+}\u001b[0ms = classNode.members\n      .filter((member) => ts.isMethodDeclaration(member))\n      .\u001b[32m{+map((member) => {\n        const start = source.getLineAndCharacterO+}\u001b[0mf\u001b[32m{+Pos+}\u001b[0mi\u001b[31m[-l-]\u001b[0mt\u001b[32m{+ion(m+}\u001b[0me\u001b[32m{+mbe+}\u001b[0mr\u001b[32m{+.getStart+}\u001b[0m(\u001b[32m{+source)).line + 1;\n        const end = source.getLineAndCharacterOfPosition+}\u001b[0m(member\u001b[32m{+.getEnd(+}\u001b[0m)\u001b[32m{+).line+}\u001b[0m \u001b[32m{++ 1;\n        const isPrivate +}\u001b[0m=\u001b[31m[->-]\u001b[0m \u001b[31m[-!-]\u001b[0mhasModifier(member, [ts.SyntaxKind.PrivateKeyword, ts.SyntaxKind.ProtectedKeyword])\u001b[31m[-)-]\u001b[0m\u001b[32m{+;+}\u001b[0m\n      \u001b[31m[-.-]\u001b[0m\u001b[32m{+  return {\n          na+}\u001b[0mm\u001b[32m{+e: n+}\u001b[0ma\u001b[31m[-p(-]\u001b[0m\u001b[32m{+meText+}\u001b[0m(member\u001b[32m{+.name+}\u001b[0m)\u001b[32m{+,\n  +}\u001b[0m \u001b[32m{+       visibility: isPrivate ? 'private' : 'public',\n          lines: end - start + 1,\n        };\n      })\n      .filter((method) +}\u001b[0m=> \u001b[32m{+method.+}\u001b[0mname\u001b[31m[-T-]\u001b[0m\u001b[32m{+);\n    const publicM+}\u001b[0me\u001b[31m[-x-]\u001b[0mt\u001b[32m{+hods = methodSurfaces.filter+}\u001b[0m(\u001b[32m{+(+}\u001b[0mme\u001b[32m{+thod) => +}\u001b[0mm\u001b[32m{+ethod.visi+}\u001b[0mb\u001b[32m{+ility === 'public').map((m+}\u001b[0me\u001b[31m[-r-]\u001b[0m\u001b[32m{+thod) => method+}\u001b[0m.name)\u001b[31m[-)-]\u001b[0m\u001b[32m{+;+}\u001b[0m\n    \u001b[32m{+const+}\u001b[0m \u001b[32m{+privateMethods+}\u001b[0m \u001b[32m{+= methodSurfaces+}\u001b[0m.filter(\u001b[31m[-B-]\u001b[0m\u001b[32m{+(meth+}\u001b[0mo\u001b[32m{+d) => meth+}\u001b[0mo\u001b[32m{+d.visibi+}\u001b[0ml\u001b[31m[-e-]\u001b[0m\u001b[32m{+ity === 'priv+}\u001b[0ma\u001b[31m[-n-]\u001b[0m\u001b[32m{+te'+}\u001b[0m);\n    return {\n      available: true,\n      className: nameText(classNode.name),\n      constructorParamProperties,\n      privateFields,\n      publicMethods,\u001b[32m{+\n      privateMethods,+}\u001b[0m\n    };\n  }",
+  "preservedZones": [
+    {
+      "kind": "unchanged_context",
+      "description": "Everything outside the modified zone is preserved byte-for-byte by the atomic operation."
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "oldTextHash": "5d05c931ee89ac75c10defff5acb679c98c20df65546e29cd442a38ff1172dc6",
+      "newTextHash": "aadd6c87d377dd8c92470b071687a658e38714e4718296108dcbe2c8f4ae1c71",
+      "description": "The operation changed the highlighted span shown in inlinePreview."
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~977 character(s) in `docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs` (sub-line atomic edit, expansion 0.43× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

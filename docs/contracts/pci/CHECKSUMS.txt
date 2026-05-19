@@ -1,7 +1,8 @@
 # PCI — Pacote de Contratos Imutáveis
 # Frozen at: 2026-05-13
 # Wave: 0 (UTP-PCI-008)
-# Manifest version: 1.0.0
+# Manifest version: 1.1.0
+# Amended: 2026-05-19 by steward (Daniel Penin) — ADR-0008, additive minor (02-abi-schema 1.0.0->1.1.0)
 # Algorithm: sha256 of UTF-8 file content (no canonicalization, raw bytes)
 #
 # Verification:
@@ -11,7 +12,7 @@
 # Any mismatch indicates PCI tampering and is grounds for blocking the swarm.
 
 17afd7d73be73746b42c57ef0c71c74607198e570de35ca6e1b790473d08395c  01-event-taxonomy.md
-b76f5b92812aff59e24c5c9b743fe8c20f51e6c5154a75390daca26df7050bfd  02-abi-schema.md
+d0891d477b4531ba6eb82bc5b36b7f78a697307f1bd5b2916d998a8fe6814f7e  02-abi-schema.md
 8a2847563ea6998ceb1bc80cdbadc2357d16709f625bce24203cfdff391acf2e  03-genesis-lineage.md
 ceb507c48720da8610de6107438a581c0a338397ca072ec0e78686e6f6596f3e  04-pulse-gates.md
 e485717976c4786f9bd2f7f272706bf83db0fd8d808c7521c9f5554cd7ca9927  05-universal-conventions.md

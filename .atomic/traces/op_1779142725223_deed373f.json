@@ -1,0 +1,80 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779142725223_deed373f",
+  "ts": "2026-05-18T22:18:45.223Z",
+  "file": "scripts/obsidian-mirror-daemon-constants.mjs",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "targetUnit": "text_span",
+  "intention": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 2969,
+    "lineRewriteSurfaceChars": 2526,
+    "expansionFactorAvoided": 0.85,
+    "bytesNet": 443,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "1a4c7a4d3cf634043ab6581a4b5ffab16708be164d3d519e0c88ef71a21f34f6",
+  "proposedSha256": "1a4c7a4d3cf634043ab6581a4b5ffab16708be164d3d519e0c88ef71a21f34f6",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- scripts/obsidian-mirror-daemon-constants.mjs (atomic char-level)\u001b[0m\n  export const VISUAL_FACT_DIR = '_visual';\n  \n  \u001b[32m{+// ── Color priority (first match wins in Obsidian) ───────────────────────────\n  // ACTION first: dirty work-in-progr+}\u001b[0me\u001b[32m{+ss → TODO → missing proof → danger →\n  // isolation/debt → static issue signals. Only files with NO action/danger\n  // signal fall through to \"what it does\" (effect) and \"where it lives\"\n  // (surface). So the graph reads as: hot cluster = attack here; the calm\n  // rest = anatomy. Reordered 2026-05-18 to make \"what to do\" obvious.\n  e+}\u001b[0mxport const CODE_STATE_COLOR_GROUPS = [\n    { query: DIRTY_WORKSPACE_QUERY, color: { a: 1, rgb: DIRTY_WORKSPACE_COLOR_RGB } },\n    { query: GRAPH_ACTION_REQUIRED_QUERY, color: { a: 1, rgb: GRAPH_ACTION_REQUIRED_COLOR_RGB } },\n    { query: GRAPH_EVIDENCE_GAP_QUERY, color: { a: 1, rgb: GRAPH_EVIDENCE_GAP_COLOR_RGB } },\n    { query: GRAPH_\u001b[31m[-EFFECT_-]\u001b[0m\u001b[32m{+RI+}\u001b[0mS\u001b[31m[-E-]\u001b[0m\u001b[32m{+K_+}\u001b[0mC\u001b[31m[-U-]\u001b[0mRIT\u001b[31m[-Y-]\u001b[0m\u001b[32m{+ICAL+}\u001b[0m_QUERY, color: { a: 1, rgb: GRAPH_\u001b[31m[-EFFECT_-]\u001b[0m\u001b[32m{+RI+}\u001b[0mS\u001b[31m[-E-]\u001b[0m\u001b[32m{+K_+}\u001b[0mC\u001b[31m[-U-]\u001b[0mRIT\u001b[31m[-Y-]\u001b[0m\u001b[32m{+ICAL+}\u001b[0m_COLOR_RGB } },\n    { query: GRAPH_\u001b[31m[-EFFECT_E-]\u001b[0mR\u001b[31m[-ROR-]\u001b[0m\u001b[32m{+ISK+}\u001b[0m_\u001b[32m{+HIGH_+}\u001b[0mQUERY, color: { a: 1, rgb: \u001b[31m[-GRAPH_EFFECT_ERROR_COLOR_RGB-]\u001b[0m\u001b[32m{+16724787+}\u001b[0m } },\n    { query: GRAPH_\u001b[31m[-EFFECT_ENT-]\u001b[0m\u001b[32m{+O+}\u001b[0mR\u001b[31m[-Y-]\u001b[0mP\u001b[31m[-OI-]\u001b[0m\u001b[32m{+HA+}\u001b[0mN\u001b[31m[-T-]\u001b[0m_QUERY, color: { a: 1, rgb: GRAPH_\u001b[31m[-EFFECT_ENT-]\u001b[0m\u001b[32m{+O+}\u001b[0mR\u001b[31m[-Y-]\u001b[0mP\u001b[31m[-OI-]\u001b[0m\u001b[32m{+HA+}\u001b[0mN\u001b[31m[-T-]\u001b[0m_COLOR_RGB } },\n    { query: \u001b[32m{+SI+}\u001b[0mG\u001b[31m[-R-]\u001b[0m\u001b[32m{+N+}\u001b[0mA\u001b[31m[-PH-]\u001b[0m\u001b[32m{+L+}\u001b[0m_\u001b[31m[-EFFEC-]\u001b[0m\u001b[32m{+S+}\u001b[0mT\u001b[31m[-_D-]\u001b[0mAT\u001b[31m[-A-]\u001b[0m\u001b[32m{+IC+}\u001b[0m_\u001b[32m{+HIGH_+}\u001b[0mQUERY, color: { a: 1, rgb: \u001b[32m{+SI+}\u001b[0mG\u001b[31m[-R-]\u001b[0m\u001b[32m{+N+}\u001b[0mA\u001b[31m[-PH-]\u001b[0m\u001b[32m{+L+}\u001b[0m_\u001b[31m[-EFFEC-]\u001b[0m\u001b[32m{+S+}\u001b[0mT\u001b[31m[-_D-]\u001b[0mAT\u001b[31m[-A-]\u001b[0m\u001b[32m{+IC+}\u001b[0m_\u001b[32m{+HIGH_+}\u001b[0mCOLOR_RGB } },\n    { query: \u001b[32m{+SI+}\u001b[0mG\u001b[31m[-R-]\u001b[0m\u001b[32m{+N+}\u001b[0mA\u001b[31m[-PH_EFFECT-]\u001b[0m\u001b[32m{+L+}\u001b[0m_\u001b[31m[-NE-]\u001b[0m\u001b[32m{+HO+}\u001b[0mT\u001b[31m[-W-]\u001b[0m\u001b[32m{+SP+}\u001b[0mO\u001b[31m[-RK-]\u001b[0m\u001b[32m{+T+}\u001b[0m_QUERY, color: { a: 1, rgb: \u001b[31m[-GRAPH_EFFECT_NETWORK_COLOR_RGB-]\u001b[0m\u001b[32m{+14524637+}\u001b[0m } },\n    { query: \u001b[32m{+SI+}\u001b[0mG\u001b[31m[-R-]\u001b[0m\u001b[32m{+N+}\u001b[0mA\u001b[31m[-PH-]\u001b[0m\u001b[32m{+L+}\u001b[0m_E\u001b[31m[-FFEC-]\u001b[0m\u001b[32m{+X+}\u001b[0mT\u001b[31m[-_ASY-]\u001b[0m\u001b[32m{+ER+}\u001b[0mN\u001b[31m[-C-]\u001b[0m\u001b[32m{+AL+}\u001b[0m_QUERY, color: { a: 1, rgb: \u001b[32m{+SI+}\u001b[0mG\u001b[31m[-R-]\u001b[0m\u001b[32m{+N+}\u001b[0mA\u001b[31m[-PH-]\u001b[0m\u001b[32m{+L+}\u001b[0m_E\u001b[31m[-FFEC-]\u001b[0m\u001b[32m{+X+}\u001b[0mT\u001b[31m[-_ASY-]\u001b[0m\u001b[32m{+ER+}\u001b[0mN\u001b[31m[-C-]\u001b[0m\u001b[32m{+AL+}\u001b[0m_COLOR_RGB } },\n    { query: GRAPH_EFFECT_S\u001b[31m[-TAT-]\u001b[0mE\u001b[32m{+CURITY+}\u001b[0m_QUERY, color: { a: 1, rgb: GRAPH_EFFECT_S\u001b[31m[-TAT-]\u001b[0mE\u001b[32m{+CURITY+}\u001b[0m_COLOR_RGB } },\n    { query: GRAPH_EFFECT_\u001b[31m[-C-]\u001b[0m\u001b[32m{+ERR+}\u001b[0mO\u001b[31m[-NT-]\u001b[0mR\u001b[31m[-ACT-]\u001b[0m_QUERY, color: { a: 1, rgb: GRAPH_EFFECT_\u001b[31m[-C-]\u001b[0m\u001b[32m{+ERR+}\u001b[0mO\u001b[31m[-NT-]\u001b[0mR\u001b[31m[-ACT-]\u001b[0m_COLOR_RGB } },\n    { query: GRAPH_EFFECT_\u001b[31m[-CO-]\u001b[0m\u001b[32m{+E+}\u001b[0mN\u001b[31m[-F-]\u001b[0m\u001b[32m{+TRYPO+}\u001b[0mI\u001b[31m[-G-]\u001b[0m\u001b[32m{+NT+}\u001b[0m_QUERY, color: { a: 1, rgb: GRAPH_EFFECT_\u001b[31m[-CO-]\u001b[0m\u001b[32m{+E+}\u001b[0mN\u001b[31m[-F-]\u001b[0m\u001b[32m{+TRYPO+}\u001b[0mI\u001b[31m[-G-]\u001b[0m\u001b[32m{+NT+}\u001b[0m_COLOR_RGB } },\n    { query: \u001b[31m[-M-]\u001b[0m\u001b[32m{+GRAPH_+}\u001b[0mE\u001b[32m{+FFEC+}\u001b[0mT\u001b[31m[-A-]\u001b[0m\u001b[32m{+_+}\u001b[0mDATA_\u001b[31m[-ONLY_-]\u001b[0mQUERY, color: { a: 1, rgb: \u001b[31m[-M-]\u001b[0m\u001b[32m{+GRAPH_+}\u001b[0mE\u001b[32m{+FFEC+}\u001b[0mT\u001b[31m[-A-]\u001b[0m\u001b[32m{+_+}\u001b[0mDATA_\u001b[31m[-ONLY_-]\u001b[0mCOLOR_RGB } },\n    { query: \u001b[32m{+GRA+}\u001b[0mP\u001b[31m[-ULSE-]\u001b[0m\u001b[32m{+H+}\u001b[0m_\u001b[31m[-MA-]\u001b[0m\u001b[32m{+EFFE+}\u001b[0mC\u001b[31m[-HI-]\u001b[0m\u001b[32m{+T_+}\u001b[0mNE\u001b[32m{+TWORK+}\u001b[0m_QUERY, color: { a: 1, rgb: \u001b[32m{+GRA+}\u001b[0mP\u001b[31m[-ULSE-]\u001b[0m\u001b[32m{+H+}\u001b[0m_\u001b[31m[-MA-]\u001b[0m\u001b[32m{+EFFE+}\u001b[0mC\u001b[31m[-HI-]\u001b[0m\u001b[32m{+T_+}\u001b[0mNE\u001b[32m{+TWORK+}\u001b[0m_COLOR_RGB } },\n    { query: \u001b[31m[-SI-]\u001b[0mG\u001b[31m[-N-]\u001b[0m\u001b[32m{+R+}\u001b[0mA\u001b[31m[-L-]\u001b[0m\u001b[32m{+PH+}\u001b[0m_\u001b[31m[-S-]\u001b[0m\u001b[32m{+EFFEC+}\u001b[0mT\u001b[32m{+_+}\u001b[0mA\u001b[31m[-TI-]\u001b[0m\u001b[32m{+SYN+}\u001b[0mC_\u001b[31m[-HIGH_-]\u001b[0mQUERY, color: { a: 1, rgb: \u001b[31m[-SI-]\u001b[0mG\u001b[31m[-N-]\u001b[0m\u001b[32m{+R+}\u001b[0mA\u001b[31m[-L-]\u001b[0m\u001b[32m{+PH+}\u001b[0m_\u001b[31m[-S-]\u001b[0m\u001b[32m{+EFFEC+}\u001b[0mT\u001b[32m{+_+}\u001b[0mA\u001b[31m[-TI-]\u001b[0m\u001b[32m{+SYN+}\u001b[0mC_\u001b[31m[-HIGH_-]\u001b[0mCOLOR_RGB } },\n    { query: \u001b[31m[-SI-]\u001b[0mG\u001b[31m[-N-]\u001b[0m\u001b[32m{+R+}\u001b[0mA\u001b[31m[-L_-]\u001b[0m\u001b[32m{+P+}\u001b[0mH\u001b[31m[-O-]\u001b[0m\u001b[32m{+_EFFEC+}\u001b[0mT\u001b[32m{+_+}\u001b[0mS\u001b[31m[-PO-]\u001b[0mT\u001b[32m{+ATE+}\u001b[0m_QUERY, color: { a: 1, rgb: \u001b[31m[-14524637 } },\n    { query: SI-]\u001b[0mG\u001b[31m[-N-]\u001b[0m\u001b[32m{+R+}\u001b[0mA\u001b[31m[-L-]\u001b[0m\u001b[32m{+PH+}\u001b[0m_E\u001b[31m[-XT-]\u001b[0m\u001b[32m{+FF+}\u001b[0mE\u001b[31m[-RNAL-]\u001b[0m\u001b[32m{+CT+}\u001b[0m_\u001b[31m[-QUERY, color: { a: 1, rgb: -]\u001b[0mS\u001b[31m[-IGN-]\u001b[0m\u001b[32m{+T+}\u001b[0mA\u001b[31m[-L_EX-]\u001b[0mTE\u001b[31m[-RNAL-]\u001b[0m_COLOR_RGB } },\n    { query: GRAPH_\u001b[31m[-RISK_-]\u001b[0m\u001b[32m{+EFFE+}\u001b[0mC\u001b[31m[-RI-]\u001b[0mT\u001b[31m[-I-]\u001b[0m\u001b[32m{+_+}\u001b[0mC\u001b[32m{+ONTR+}\u001b[0mA\u001b[31m[-L-]\u001b[0m\u001b[32m{+CT+}\u001b[0m_QUERY, color: { a: 1, rgb: GRAPH_\u001b[31m[-RISK_-]\u001b[0m\u001b[32m{+EFFE+}\u001b[0mC\u001b[31m[-RI-]\u001b[0mT\u001b[31m[-I-]\u001b[0m\u001b[32m{+_+}\u001b[0mC\u001b[32m{+ONTR+}\u001b[0mA\u001b[31m[-L-]\u001b[0m\u001b[32m{+CT+}\u001b[0m_COLOR_RGB } },\n    { query: GRAPH_\u001b[31m[-RISK-]\u001b[0m\u001b[32m{+EFFECT+}\u001b[0m_\u001b[31m[-H-]\u001b[0m\u001b[32m{+CONF+}\u001b[0mIG\u001b[31m[-H-]\u001b[0m_QUERY, color: { a: 1, rgb: \u001b[31m[-16724787-]\u001b[0m\u001b[32m{+GRAPH_EFFECT_CONFIG_COLOR_RGB+}\u001b[0m } },\n    { query: GRAPH_\u001b[31m[-P-]\u001b[0mR\u001b[31m[-OOF_-]\u001b[0m\u001b[32m{+UN+}\u001b[0mT\u001b[32m{+IM+}\u001b[0mE\u001b[31m[-ST-]\u001b[0m_\u001b[32m{+API_+}\u001b[0mQUERY, color: { a: 1, rgb: GRAPH_\u001b[31m[-P-]\u001b[0mR\u001b[31m[-OOF_-]\u001b[0m\u001b[32m{+UN+}\u001b[0mT\u001b[32m{+IM+}\u001b[0mE\u001b[31m[-ST-]\u001b[0m_\u001b[32m{+API_+}\u001b[0mCOLOR_RGB } },\n    { query: GRAPH_\u001b[32m{+P+}\u001b[0mR\u001b[31m[-UN-]\u001b[0m\u001b[32m{+OOF_+}\u001b[0mT\u001b[31m[-IM-]\u001b[0mE\u001b[31m[-_API-]\u001b[0m\u001b[32m{+ST+}\u001b[0m_QUERY, color: { a: 1, rgb: GRAPH_\u001b[32m{+P+}\u001b[0mR\u001b[31m[-UN-]\u001b[0m\u001b[32m{+OOF_+}\u001b[0mT\u001b[31m[-IM-]\u001b[0mE\u001b[31m[-_API-]\u001b[0m\u001b[32m{+ST+}\u001b[0m_COLOR_RGB } },\n    { query: GRAPH_SURFACE_UI_QUERY, color: { a: 1, rgb: GRAPH_SURFACE_UI_COLOR_RGB } },\n    { query: GRAPH_SURFACE_BACKEND_QUERY, color: { a: 1, rgb: GRAPH_SURFACE_BACKEND_COLOR_RGB } },\n    { query: GRAPH_SURFACE_WORKER_QUERY, color: { a: 1, rgb: GRAPH_SURFACE_WORKER_COLOR_RGB } },\n    { query: GRAPH_SURFACE_SOURCE_QUERY, color: { a: 1, rgb: GRAPH_SURFACE_SOURCE_COLOR_RGB } },\n    { query: GRAPH_GOVERNANCE_QUERY, color: { a: 1, rgb: GRAPH_GOVERNANCE_COLOR_RGB } },\n    { query: \u001b[31m[-GRA-]\u001b[0mP\u001b[32m{+ULSE_MAC+}\u001b[0mH\u001b[32m{+INE+}\u001b[0m_\u001b[31m[-O-]\u001b[0m\u001b[32m{+QUE+}\u001b[0mR\u001b[32m{+Y, color: { a: 1, rgb: +}\u001b[0mP\u001b[32m{+ULSE_MAC+}\u001b[0mH\u001b[32m{+INE_COLOR_RGB } },\n    { query: MET+}\u001b[0mA\u001b[32m{+DATA_O+}\u001b[0mN\u001b[32m{+LY+}\u001b[0m_QUERY, color: { a: 1, rgb: \u001b[31m[-GR-]\u001b[0m\u001b[32m{+MET+}\u001b[0mA\u001b[31m[-PH-]\u001b[0m\u001b[32m{+DATA+}\u001b[0m_O\u001b[31m[-RPHA-]\u001b[0mN\u001b[32m{+LY+}\u001b[0m_COLOR_RGB } },\n    { query: GRAPH_MOLECULE_QUERY, color: { a: 1, rgb: GRAPH_MOLECULE_COLOR_RGB } },\n  ];",
+  "preservedZones": [
+    {
+      "kind": "prefix_preserved",
+      "description": "Bytes 0–7811 — prefix preserved unchanged",
+      "byteStart": 0,
+      "byteEnd": 7812,
+      "byteLength": 7812,
+      "beforeHash": "b2ee5921e48d70155f8c5b1fc9fc53dfea1b08c1a8244f7b4cbca11701e22a80",
+      "afterHash": "b2ee5921e48d70155f8c5b1fc9fc53dfea1b08c1a8244f7b4cbca11701e22a80",
+      "sample": "RKSPACE_DYNAMIC_NOTE = 'current.md';\nexport const VISUAL_FACT_DIR = '_visual';\n\n"
+    },
+    {
+      "kind": "suffix_preserved",
+      "description": "Bytes 10237–14787 — suffix preserved unchanged",
+      "byteStart": 10237,
+      "byteEnd": 14788,
+      "byteLength": 4551,
+      "beforeHash": "ceedc5e0537cdc7399b1e0eaec86f82008bc352b093a6c5a4bdca7b899fe8714",
+      "afterHash": "ceedc5e0537cdc7399b1e0eaec86f82008bc352b093a6c5a4bdca7b899fe8714",
+      "sample": "_COLOR_RGB } },\n  { query: GRAPH_MOLECULE_QUERY, color: { a: 1, rgb: GRAPH_MOLEC"
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "byteStart": 7812,
+      "byteEnd": 10237,
+      "newByteLength": 2868,
+      "oldTextHash": "96cbfd596ce549a217b8849807da70234cb8536dfab008cd427969a43ea961d9",
+      "newTextHash": "3e5d81d8d7701dcfb17ebe753981aaf83e19d348a74b95ecdda8087b2d6abc8d",
+      "oldSample": "export const CODE_STATE_COLOR_GROUPS = [\n  { query: DIRTY_WORKSPACE_QUERY, color: { a: 1, rgb: DIRTY_WORKSPACE_COLOR_RGB } },\n  { query: GRAPH_ACTION_REQUIRED_QUERY, color: { a: 1, rgb: GRAPH_ACTION_R",
+      "newSample": "// ── Color priority (first match wins in Obsidian) ───────────────────────────\n// ACTION first: dirty work-in-progress → TODO → missing proof → danger →\n// isolation/debt → static issue signals. Only",
+      "description": "Replace 2425 bytes at offset 7812 with 2868 bytes"
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~2969 character(s) in `scripts/obsidian-mirror-daemon-constants.mjs` (sub-line atomic edit, expansion 0.85× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

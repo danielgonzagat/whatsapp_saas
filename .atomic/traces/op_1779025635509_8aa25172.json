@@ -1,0 +1,59 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779025635509_8aa25172",
+  "ts": "2026-05-17T13:47:15.509Z",
+  "file": "docs/ai/atomic-os-benchmark/tools/refactor-scorecard.cjs",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "targetUnit": "text_span",
+  "intention": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 866,
+    "lineRewriteSurfaceChars": 216,
+    "expansionFactorAvoided": 0.25,
+    "bytesNet": 708,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "5a18928a4ebb94b43367ca015cfc38f133f7785f4417fdfeecc916b98871b743",
+  "proposedSha256": "5a18928a4ebb94b43367ca015cfc38f133f7785f4417fdfeecc916b98871b743",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- docs/ai/atomic-os-benchmark/tools/refactor-scorecard.cjs (atomic char-level)\u001b[0m\n    }));\n    const targetLines = lineCount(path.join(args.worktree, target));\n    const \u001b[32m{+sortedSourceMetrics = [...sourceMetrics].sort(\n      (+}\u001b[0ml\u001b[32m{+eft, right) => right.lines - left.lines || left.file.loc+}\u001b[0ma\u001b[32m{+leCompa+}\u001b[0mr\u001b[32m{+e(ri+}\u001b[0mg\u001b[32m{+ht.fil+}\u001b[0me\u001b[32m{+),\n    );\n    con+}\u001b[0mst\u001b[32m{+ largest+}\u001b[0mChangedSource = so\u001b[32m{+rtedSo+}\u001b[0murceMetrics\u001b[31m[-.-]\u001b[0m\u001b[32m{+[0] || { file: null, lines: 0 };\n    const ta+}\u001b[0mr\u001b[32m{+g+}\u001b[0me\u001b[31m[-d-]\u001b[0m\u001b[32m{+tSo+}\u001b[0mu\u001b[32m{+r+}\u001b[0mce\u001b[32m{+Metric = sourceMetrics.find+}\u001b[0m(\u001b[31m[-\n  -]\u001b[0m\u001b[32m{+(item)+}\u001b[0m \u001b[32m{+=>+}\u001b[0m \u001b[32m{+item.file+}\u001b[0m \u001b[32m{+===+}\u001b[0m \u001b[31m[-(-]\u001b[0m\u001b[32m{+target) || nu+}\u001b[0ml\u001b[32m{+l;\n    const l+}\u001b[0margest\u001b[31m[-,-]\u001b[0m\u001b[32m{+NonTargetChangedSource+}\u001b[0m \u001b[32m{+= sortedSourceMetr+}\u001b[0mi\u001b[32m{+cs.find((i+}\u001b[0mtem) => \u001b[31m[-(-]\u001b[0mitem.\u001b[32m{+fi+}\u001b[0ml\u001b[32m{+e !== target) || null;\n    const targetDom+}\u001b[0min\u001b[32m{+anc+}\u001b[0me\u001b[31m[-s-]\u001b[0m \u001b[31m[->-]\u001b[0m\u001b[32m{+=+}\u001b[0m \u001b[32m{+{\n      targetChanged: Boo+}\u001b[0ml\u001b[32m{+e+}\u001b[0ma\u001b[32m{+n(ta+}\u001b[0mrge\u001b[32m{+tSourceMetric),\n      +}\u001b[0ms\u001b[32m{+ourceCoun+}\u001b[0mt\u001b[32m{+: sourceMetrics+}\u001b[0m.l\u001b[31m[-i-]\u001b[0m\u001b[32m{+e+}\u001b[0mn\u001b[32m{+gth,\n      targ+}\u001b[0me\u001b[32m{+tI+}\u001b[0ms\u001b[31m[- ?-]\u001b[0m\u001b[32m{+LargestChangedSource:+}\u001b[0m \u001b[32m{+largestChangedSource.f+}\u001b[0mi\u001b[32m{+le === +}\u001b[0mt\u001b[32m{+arg+}\u001b[0me\u001b[31m[-m-]\u001b[0m\u001b[32m{+t,\n  +}\u001b[0m \u001b[31m[-:-]\u001b[0m \u001b[32m{+  +}\u001b[0mlargest\u001b[31m[-)-]\u001b[0m\u001b[32m{+NonTargetChangedSource+}\u001b[0m,\n      \u001b[31m[-{-]\u001b[0m\u001b[32m{+debt:\n  +}\u001b[0m \u001b[31m[-f-]\u001b[0m\u001b[32m{+     !targetSourceMetr+}\u001b[0mi\u001b[32m{+c ||\n        sourceMetrics.+}\u001b[0mle\u001b[31m[-:-]\u001b[0m\u001b[32m{+ngth+}\u001b[0m \u001b[32m{+<= 1 ||\n        largestCha+}\u001b[0mn\u001b[32m{+gedSo+}\u001b[0mu\u001b[31m[-l-]\u001b[0m\u001b[32m{+rce.fi+}\u001b[0ml\u001b[32m{+e === target+}\u001b[0m,\u001b[32m{+\n  +}\u001b[0m \u001b[31m[-l-]\u001b[0m\u001b[32m{+ };\n    const targetDom+}\u001b[0min\u001b[32m{+anc+}\u001b[0me\u001b[32m{+Pa+}\u001b[0ms\u001b[31m[-:-]\u001b[0m\u001b[32m{+s+}\u001b[0m \u001b[31m[-0-]\u001b[0m\u001b[32m{+=+}\u001b[0m \u001b[31m[-},\n  -]\u001b[0m\u001b[32m{+args.enforceTargetDominanceRelease+}\u001b[0m \u001b[32m{+?+}\u001b[0m \u001b[31m[-)-]\u001b[0m\u001b[32m{+!targetDominance.debt : true+}\u001b[0m;\n    const overFileLimit = Number.isFinite(args.maxFileLines)\n      ? sourceMetrics.filter((item) => item.lines > args.maxFileLines)",
+  "preservedZones": [
+    {
+      "kind": "unchanged_context",
+      "description": "Everything outside the modified zone is preserved byte-for-byte by the atomic operation."
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "oldTextHash": "8784ad79fa27a406da76393b7aeb3d6ae7209ee1726ebcd785ffad0d63e3bb04",
+      "newTextHash": "5a18928a4ebb94b43367ca015cfc38f133f7785f4417fdfeecc916b98871b743",
+      "description": "The operation changed the highlighted span shown in inlinePreview."
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~866 character(s) in `docs/ai/atomic-os-benchmark/tools/refactor-scorecard.cjs` (sub-line atomic edit, expansion 0.25× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

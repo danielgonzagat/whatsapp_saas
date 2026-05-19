@@ -1,0 +1,59 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779120916054_13a4255b",
+  "ts": "2026-05-18T16:15:16.055Z",
+  "file": "scripts/mcp/atomic-edit/server.ts",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "targetUnit": "text_span",
+  "intention": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 113,
+    "lineRewriteSurfaceChars": 95,
+    "expansionFactorAvoided": 0.84,
+    "bytesNet": 18,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "b3cfea830c485bcce6a2d45f548e80a0c18ba2ca3be4fdf290d719618d725109",
+  "proposedSha256": "b3cfea830c485bcce6a2d45f548e80a0c18ba2ca3be4fdf290d719618d725109",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- scripts/mcp/atomic-edit/server.ts (atomic char-level)\u001b[0m\n          case 'rename_symbol': {\n            if (!a.startLine || !a.startColumn || !a.newText) throw new Error('rename_symbol requires position+newText');\n            const r = await renameSymbol(relPath, before, \u001b[32m{+{ line: +}\u001b[0ma.startLine, \u001b[32m{+column: +}\u001b[0ma.startColumn\u001b[32m{+ }+}\u001b[0m, a.newText);\n            if (!r.validation.ok) return fail('Rename rejected: ' + (r.validation.introduced ?? ''));\n            if (!a.preview) atomicWrite(absPath, r.newText);",
+  "preservedZones": [
+    {
+      "kind": "unchanged_context",
+      "description": "Everything outside the modified zone is preserved byte-for-byte by the atomic operation."
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "oldTextHash": "0ef73ad92ea806b12dd8743ae451e1a4b1c94681765fff0c5f005404c8031195",
+      "newTextHash": "b3cfea830c485bcce6a2d45f548e80a0c18ba2ca3be4fdf290d719618d725109",
+      "description": "The operation changed the highlighted span shown in inlinePreview."
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~113 character(s) in `scripts/mcp/atomic-edit/server.ts` (sub-line atomic edit, expansion 0.84× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

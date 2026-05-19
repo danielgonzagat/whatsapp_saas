@@ -1,0 +1,59 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779077543726_d4d2f6f6",
+  "ts": "2026-05-18T04:12:23.726Z",
+  "file": "docs/ai/atomic-os-benchmark/tools/atomic-call.cjs",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "targetUnit": "text_span",
+  "intention": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 172,
+    "lineRewriteSurfaceChars": 75,
+    "expansionFactorAvoided": 0.44,
+    "bytesNet": 97,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "1f865f29a9db8f095adf04cb1af8b233b811cf3f8758d84f21840cf7a62cb384",
+  "proposedSha256": "1f865f29a9db8f095adf04cb1af8b233b811cf3f8758d84f21840cf7a62cb384",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- docs/ai/atomic-os-benchmark/tools/atomic-call.cjs (atomic char-level)\u001b[0m\n            // Keep non-JSON tool output intact.\n          }\n          \u001b[32m{+c+}\u001b[0mo\u001b[32m{+nst macroTracePath = recordMacroTraceFromO+}\u001b[0mutput\u001b[32m{+(output, par+}\u001b[0ms\u001b[32m{+edOutput);\n          outputs+}\u001b[0m.push({ index, tool: operationTool, output: parsedOutput\u001b[32m{+,+}\u001b[0m \u001b[32m{+macroTracePath +}\u001b[0m});\n        }\n        console.log(JSON.stringify({ ok: true, operations: outputs }, null, 2));",
+  "preservedZones": [
+    {
+      "kind": "unchanged_context",
+      "description": "Everything outside the modified zone is preserved byte-for-byte by the atomic operation."
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "oldTextHash": "48b2d7b66ae8ac0a2c33f1d734a9453ba050135ae791b0cf3ed42a0a26c9bf15",
+      "newTextHash": "1f865f29a9db8f095adf04cb1af8b233b811cf3f8758d84f21840cf7a62cb384",
+      "description": "The operation changed the highlighted span shown in inlinePreview."
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~172 character(s) in `docs/ai/atomic-os-benchmark/tools/atomic-call.cjs` (sub-line atomic edit, expansion 0.44× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

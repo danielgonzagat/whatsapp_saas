@@ -1,0 +1,80 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779214618737_a7388dd3",
+  "ts": "2026-05-19T18:16:58.737Z",
+  "file": "backend/src/kloel/brain-capability-executor.service.ts",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "targetUnit": "text_span",
+  "intention": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 1298,
+    "lineRewriteSurfaceChars": 55,
+    "expansionFactorAvoided": 0.04,
+    "bytesNet": 1243,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "9ff05b7610cb6808fd78367c792a35d08cc74a8d735cb9a3ad527c4dedf374bd",
+  "proposedSha256": "9ff05b7610cb6808fd78367c792a35d08cc74a8d735cb9a3ad527c4dedf374bd",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- backend/src/kloel/brain-capability-executor.service.ts (atomic char-level)\u001b[0m\n      };\n  \n  \u001b[32m{+    // Attention (gap: attention.candidates was []): rank recent events\n      // by recency × valence magnitude so Kloel can prioritize what to\n      // focus on (hottest conversation/lead first). 100% real, additive.\n      const nowMs = Date.now();\n      const valWeight = (v: AbiValence): number =>\n        v === 'positive' ? 1 : v === 'negative' ? 0.9 : v === 'ambiguous' ? 0.6 : 0.3;\n      const attnRanked = ordered.slice(0, 40).map((e) => {\n        const ageH = Math.max(0, (nowMs - e.occurredAt.getTime()) / 3_600_000);\n        const recency = 1 / (1 + ageH / 24);\n        return {\n          targetType: e.kind.split(/[._]/)[0] || 'event',\n          targetId: e.subject || e.kind,\n          weight: Number((recency * valWeight(valenceOf(e.kind))).toFixed(4)),\n        };\n      });\n      attnRanked.sort((a, b) => b.weight - a.weight);\n      const attnCandidates = attnRanked.slice(0, 15);\n      const attention: AbiAttention = {\n        candidates: attnCandidates,\n        ...(attnCandidates[0]\n          ? {\n              focal: {\n                targetType: attnCandidates[0].targetType,\n                targetId: attnCandidates[0].targetId,\n                reason: 'highest recency×valence salience',\n                sinceMs: nowMs,\n              },\n            }\n          : {}),\n      };\n  +}\u001b[0m\n      return {\n        recentSalientEvents,",
+  "preservedZones": [
+    {
+      "kind": "prefix_preserved",
+      "description": "Bytes 0–16089 — prefix preserved unchanged",
+      "byteStart": 0,
+      "byteEnd": 16090,
+      "byteLength": 16090,
+      "beforeHash": "b2934f1d9df27ff14591d689b676836de1ac7da4ef948f4d59df28aef95b714e",
+      "afterHash": "b2934f1d9df27ff14591d689b676836de1ac7da4ef948f4d59df28aef95b714e",
+      "sample": "iguous / moodTotal).toFixed(4)),\n        windowHours: 168,\n      },\n    };\n\n    "
+    },
+    {
+      "kind": "suffix_preserved",
+      "description": "Bytes 16090–30679 — suffix preserved unchanged",
+      "byteStart": 16090,
+      "byteEnd": 30680,
+      "byteLength": 14590,
+      "beforeHash": "785d97573e752e9a7b446409ce9d9fde1ad093ca405ddc10d8ffd5cb18fb5806",
+      "afterHash": "785d97573e752e9a7b446409ce9d9fde1ad093ca405ddc10d8ffd5cb18fb5806",
+      "sample": "return {\n      recentSalientEvents,\n      workingMemory,\n      episodicRefs,\n   "
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "byteStart": 16090,
+      "byteEnd": 16090,
+      "newByteLength": 1243,
+      "oldTextHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "newTextHash": "1b8074fbce9d70c716913a7afbc24997459455a4826f5d74029c91488eb727d4",
+      "oldSample": "",
+      "newSample": "// Attention (gap: attention.candidates was []): rank recent events\n    // by recency × valence magnitude so Kloel can prioritize what to\n    // focus on (hottest conversation/lead first). 100% real, ",
+      "description": "Insert 1243 bytes at offset 16090"
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~1298 character(s) in `backend/src/kloel/brain-capability-executor.service.ts` (sub-line atomic edit, expansion 0.04× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

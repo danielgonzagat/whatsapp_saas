@@ -1,0 +1,37 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1778952672051_17cb1bbb",
+  "ts": "2026-05-16T17:31:12.051Z",
+  "file": "scripts/mcp/atomic-edit/audit-atomicity.mjs",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 340,
+    "lineRewriteSurfaceChars": 369,
+    "expansionFactorAvoided": 1.09,
+    "bytesNet": -117,
+    "lineRewriteAvoided": true
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "afterSha256": "fd9e3794faffd3ad1dbf56112a9367a5dbd06793f0f8d75bf6e830b16bb06f3e",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- scripts/mcp/atomic-edit/audit-atomicity.mjs (atomic char-level)\u001b[0m\n    const changedChars = Number(m.changedChars ?? 0);\n    const lineRewriteSurfaceChars = Number(m.lineRewriteSurfaceChars ?? 0);\n    const \u001b[31m[-mathematica-]\u001b[0ml\u001b[31m[-lyAtom-]\u001b[0mi\u001b[31m[-c = cha-]\u001b[0mn\u001b[31m[-g-]\u001b[0me\u001b[31m[-dChars === 0 || line-]\u001b[0mRewrite\u001b[31m[-SurfaceChars > changedChars;\n    const lineRewrite-]\u001b[0mAvoided = Boolean(m.lineRewriteAvoided)\u001b[31m[- || mathematicallyAtomic-]\u001b[0m;\n    if (lineRewriteAvoided) avoided++;\n    if (t.fallback) fallback++;",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~340 character(s) in `scripts/mcp/atomic-edit/audit-atomicity.mjs` (sub-line atomic edit, expansion 1.09× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

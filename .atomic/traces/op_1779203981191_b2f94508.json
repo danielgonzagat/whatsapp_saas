@@ -1,0 +1,80 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779203981191_b2f94508",
+  "ts": "2026-05-19T15:19:41.191Z",
+  "file": "backend/src/kloel/brain-capability-executor.service.ts",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "targetUnit": "text_span",
+  "intention": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 2933,
+    "lineRewriteSurfaceChars": 55,
+    "expansionFactorAvoided": 0.02,
+    "bytesNet": 2878,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "7a5aaf875d0ad6d962cf6de3012ef36a19f537480531fc2e3ae7861862f8ebbc",
+  "proposedSha256": "7a5aaf875d0ad6d962cf6de3012ef36a19f537480531fc2e3ae7861862f8ebbc",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- backend/src/kloel/brain-capability-executor.service.ts (atomic char-level)\u001b[0m\n   * what is genuinely not working in itself.\n   */\n  \u001b[32m{+/**\n   * Canonical B17 commercial surfaces and their PCI.6 event-domain\n   * prefixes. This MIRRORS the frozen contract\n   * `docs/contracts/pci/06-b17-surfaces.md` / PCI.1 — it is the contract,\n   * not invented behavior (same status as ABI_VERSION / OPERATOR_CAPABILITIES\n   * consts). If the PCI changes, this must change with it.\n   */\n  const PCI_B17_SURFACES: ReadonlyArray<{\n    readonly surface: string;\n    readonly domains: readonly string[];\n    /** Substrate kinds that count as REAL (non-canonical) activity today. */\n    readonly partialKinds: readonly string[];\n  }> = [\n    { surface: 'checkout_wallet_billing', domains: ['commerce.cart', 'commerce.payment'], partialKinds: ['sale', 'order', 'checkout', 'payment'] },\n    { surface: 'crm', domains: ['commerce.crm', 'commerce.lead'], partialKinds: ['lead', 'deal', 'stage'] },\n    { surface: 'whatsapp_inbox', domains: ['commerce.whatsapp'], partialKinds: ['message.received', 'message.sent', 'autopilot'] },\n    { surface: 'campaigns_ads', domains: ['commerce.campaign'], partialKinds: ['campaign', 'click', 'conversion'] },\n    { surface: 'member_affiliate', domains: ['commerce.member_area', 'commerce.affiliate'], partialKinds: ['member', 'affiliate', 'enroll'] },\n    { surface: 'kyc_auth', domains: ['commerce.kyc'], partialKinds: ['kyc', 'document'] },\n    { surface: 'post_sale', domains: ['commerce.post_sale'], partialKinds: ['delivery', 'activation', 'churn', 'testimonial', 'repurchase'] },\n  ];\n  \n  /** A dissolution gap derived from REAL substrate counts vs the PCI.6 contract. */\n  interface DissolutionGap {\n    readonly surface: string;\n    readonly canonicalDomains: readonly string[];\n    readonly canonicalEvents: number;\n    readonly partialActivity: number;\n    readonly status: 'dissolved' | 'partial' | 'silent';\n  }\n  \n  /**\n   * The PCI-grounded work queue: for each frozen B17 surface, how many\n   * CANONICAL cognitive events vs raw partial activity exist in the live\n   * substrate. `silent` = surface emits nothing (not dissolved); `partial`\n   * = it is active but not yet emitting canonical PCI events (EVENT-EMIT\n   * pending); `dissolved` = canonical cognitive events flowing. 100% real\n   * counts from the workspace substrate — zero hardcode, zero synthetic.\n   */\n  function computeDissolutionGaps(substrateKinds: readonly string[]): DissolutionGap[] {\n    const lower = substrateKinds.map((k) => k.toLowerCase());\n    return PCI_B17_SURFACES.map((s) => {\n      const canonicalEvents = lower.filter((k) =>\n        s.domains.some((d) => k.startsWith(d)),\n      ).length;\n      const partialActivity = lower.filter((k) =>\n        s.partialKinds.some((p) => k.includes(p)),\n      ).length;\n      const status: DissolutionGap['status'] =\n        canonicalEvents > 0 ? 'dissolved' : partialActivity > 0 ? 'partial' : 'silent';\n      return {\n        surface: s.surface,\n        canonicalDomains: s.domains,\n        canonicalEvents,\n        partialActivity,\n        status,\n      };\n    });\n  }\n  +}\u001b[0m\n  function computeCognitiveGaps(abi: unknown): string[] {\n    const gaps: string[] = [];",
+  "preservedZones": [
+    {
+      "kind": "prefix_preserved",
+      "description": "Bytes 0–1704 — prefix preserved unchanged",
+      "byteStart": 0,
+      "byteEnd": 1705,
+      "byteLength": 1705,
+      "beforeHash": "3add4226bd800eb1b85c729f6848fafdf8c01a0fceadd8a259b32468fc2dbbf0",
+      "afterHash": "3add4226bd800eb1b85c729f6848fafdf8c01a0fceadd8a259b32468fc2dbbf0",
+      "sample": "oel can tell, through the chat,\n * what is genuinely not working in itself.\n */\n"
+    },
+    {
+      "kind": "suffix_preserved",
+      "description": "Bytes 1705–20567 — suffix preserved unchanged",
+      "byteStart": 1705,
+      "byteEnd": 20568,
+      "byteLength": 18863,
+      "beforeHash": "18b749d927541270e3b93042b147d8fe845e73815b2bb47e62e42caacbf04a1a",
+      "afterHash": "18b749d927541270e3b93042b147d8fe845e73815b2bb47e62e42caacbf04a1a",
+      "sample": "function computeCognitiveGaps(abi: unknown): string[] {\n  const gaps: string[] ="
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "byteStart": 1705,
+      "byteEnd": 1705,
+      "newByteLength": 2878,
+      "oldTextHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "newTextHash": "ad45602ff7db4a30695d528e29470494cd73ef7f8d2768b4b03d29a4f4635548",
+      "oldSample": "",
+      "newSample": "/**\n * Canonical B17 commercial surfaces and their PCI.6 event-domain\n * prefixes. This MIRRORS the frozen contract\n * `docs/contracts/pci/06-b17-surfaces.md` / PCI.1 — it is the contract,\n * not inve",
+      "description": "Insert 2878 bytes at offset 1705"
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~2933 character(s) in `backend/src/kloel/brain-capability-executor.service.ts` (sub-line atomic edit, expansion 0.02× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

@@ -1,0 +1,59 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779049528321_17673a37",
+  "ts": "2026-05-17T20:25:28.322Z",
+  "file": "docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "targetUnit": "text_span",
+  "intention": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 207,
+    "lineRewriteSurfaceChars": 167,
+    "expansionFactorAvoided": 0.81,
+    "bytesNet": 46,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "4b8cbd5dbf2cabd49409eb4be30d694f7ac4d3393d4e88e96e04c81c56180cfd",
+  "proposedSha256": "4b8cbd5dbf2cabd49409eb4be30d694f7ac4d3393d4e88e96e04c81c56180cfd",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs (atomic char-level)\u001b[0m\n      owners,\n      rule: bindingReduction > 0\n        ? 'Prefer namespace imports per owner module \u001b[31m[-a-]\u001b[0m\u001b[32m{+for ru+}\u001b[0mn\u001b[31m[-d-]\u001b[0m\u001b[32m{+time+}\u001b[0m call\u001b[32m{+s+}\u001b[0m \u001b[31m[-Ow-]\u001b[0m\u001b[32m{+o+}\u001b[0mn\u001b[31m[-erA-]\u001b[0ml\u001b[31m[-ias.-]\u001b[0m\u001b[32m{+y wh+}\u001b[0me\u001b[31m[-x-]\u001b[0m\u001b[32m{+n +}\u001b[0mp\u001b[31m[-ortedF-]\u001b[0mu\u001b[31m[-nct-]\u001b[0m\u001b[32m{+bl+}\u001b[0mi\u001b[31m[-on-]\u001b[0m\u001b[32m{+c+}\u001b[0m s\u001b[31m[-o the fac-]\u001b[0m\u001b[32m{+ign+}\u001b[0ma\u001b[31m[-d-]\u001b[0m\u001b[32m{+tur+}\u001b[0me \u001b[31m[-pa-]\u001b[0m\u001b[32m{+t+}\u001b[0my\u001b[32m{+pe+}\u001b[0ms \u001b[31m[-on-]\u001b[0m\u001b[32m{+ar+}\u001b[0me import\u001b[31m[- bin-]\u001b[0m\u001b[32m{+e+}\u001b[0md\u001b[31m[-ing-]\u001b[0m \u001b[32m{+or names+}\u001b[0mp\u001b[32m{+ac+}\u001b[0me\u001b[32m{+-qualified f+}\u001b[0mr\u001b[32m{+om+}\u001b[0m owner \u001b[31m[-whi-]\u001b[0m\u001b[32m{+modu+}\u001b[0mle\u001b[32m{+s;+}\u001b[0m \u001b[31m[-p-]\u001b[0m\u001b[32m{+neve+}\u001b[0mr\u001b[32m{+ k+}\u001b[0me\u001b[31m[-s-]\u001b[0me\u001b[32m{+p o+}\u001b[0mr\u001b[31m[-ving-]\u001b[0m \u001b[31m[-m-]\u001b[0m\u001b[32m{+recreate l+}\u001b[0mo\u001b[31m[-du-]\u001b[0m\u001b[32m{+ca+}\u001b[0ml\u001b[32m{+ facad+}\u001b[0me \u001b[31m[-r-]\u001b[0m\u001b[32m{+typ+}\u001b[0me\u001b[31m[-us-]\u001b[0m\u001b[32m{+ d+}\u001b[0me\u001b[32m{+clarations+}\u001b[0m.'\n        : 'Named imports are acceptable because namespace imports do not reduce the observed binding surface.',\n    };",
+  "preservedZones": [
+    {
+      "kind": "unchanged_context",
+      "description": "Everything outside the modified zone is preserved byte-for-byte by the atomic operation."
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "oldTextHash": "2b03a655a38e9d0e908193eaa715e72c3f4defe277dc1421747b7579f9720c32",
+      "newTextHash": "4b8cbd5dbf2cabd49409eb4be30d694f7ac4d3393d4e88e96e04c81c56180cfd",
+      "description": "The operation changed the highlighted span shown in inlinePreview."
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~207 character(s) in `docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs` (sub-line atomic edit, expansion 0.81× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

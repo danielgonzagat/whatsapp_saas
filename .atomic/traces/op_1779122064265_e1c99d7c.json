@@ -1,0 +1,80 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779122064265_e1c99d7c",
+  "ts": "2026-05-18T16:34:24.265Z",
+  "file": "scripts/mcp/atomic-edit/.smoke-rta-textoc.31543.ts",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "replace_text_in_anchor_region",
+  "operator": "replace_text_in_anchor_region",
+  "targetUnit": "text_span",
+  "intention": "replace_text_in_anchor_region",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 8,
+    "lineRewriteSurfaceChars": 54,
+    "expansionFactorAvoided": 6.75,
+    "bytesNet": 5,
+    "lineRewriteAvoided": true
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "e632e661261b3efb6781e69c9dacdae35c5682c3305247b6ba930870cf11f093",
+  "proposedSha256": "e632e661261b3efb6781e69c9dacdae35c5682c3305247b6ba930870cf11f093",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- scripts/mcp/atomic-edit/.smoke-rta-textoc.31543.ts (atomic char-level)\u001b[0m\n  export let Z = `BEFORE alpha DUP \u001b[32m{+SELECTE+}\u001b[0mD\u001b[31m[-UP-]\u001b[0m DUP omega AFTER`;\n  ",
+  "preservedZones": [
+    {
+      "kind": "prefix_preserved",
+      "description": "Bytes 0–32 — prefix preserved unchanged",
+      "byteStart": 0,
+      "byteEnd": 33,
+      "byteLength": 33,
+      "beforeHash": "0579266ceb0a8334a7b18ef92e5ab793ea647b46ce9b45455a8f3db9bd242126",
+      "afterHash": "0579266ceb0a8334a7b18ef92e5ab793ea647b46ce9b45455a8f3db9bd242126",
+      "sample": "export let Z = `BEFORE alpha DUP "
+    },
+    {
+      "kind": "suffix_preserved",
+      "description": "Bytes 36–54 — suffix preserved unchanged",
+      "byteStart": 36,
+      "byteEnd": 55,
+      "byteLength": 19,
+      "beforeHash": "44f4ed03836dd687452d23a08ab4829ecc3ea8befac438d4f61c916f716ef8f6",
+      "afterHash": "44f4ed03836dd687452d23a08ab4829ecc3ea8befac438d4f61c916f716ef8f6",
+      "sample": " DUP omega AFTER`;\n"
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "byteStart": 33,
+      "byteEnd": 36,
+      "newByteLength": 8,
+      "oldTextHash": "bee4be1e75ef5ec13f41ecbffd640e197d96307b577e2f8c0ffed1bad5c41246",
+      "newTextHash": "6a6df4a0eec5caa19d1ad4bead18af4c386078fa398b9f4f0446407c9552c6cb",
+      "oldSample": "DUP",
+      "newSample": "SELECTED",
+      "description": "Replace 3 bytes at offset 33 with 8 bytes"
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `replace_text_in_anchor_region` changed ~8 character(s) in `scripts/mcp/atomic-edit/.smoke-rta-textoc.31543.ts` (sub-line atomic edit, expansion 6.75× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

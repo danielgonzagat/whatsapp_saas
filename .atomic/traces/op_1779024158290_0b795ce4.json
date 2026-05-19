@@ -1,0 +1,59 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779024158290_0b795ce4",
+  "ts": "2026-05-17T13:22:38.291Z",
+  "file": "docs/ai/atomic-os-benchmark/tools/round-audit.cjs",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "targetUnit": "text_span",
+  "intention": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 346,
+    "lineRewriteSurfaceChars": 320,
+    "expansionFactorAvoided": 0.92,
+    "bytesNet": 94,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "10ae0cdf100fc2e0983a83e9de8d6cc5f2643225852b77dd7d470bbaf897763c",
+  "proposedSha256": "10ae0cdf100fc2e0983a83e9de8d6cc5f2643225852b77dd7d470bbaf897763c",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- docs/ai/atomic-os-benchmark/tools/round-audit.cjs (atomic char-level)\u001b[0m\n    const commandOutput = (event) => event.item?.aggregated_output || event.part?.state?.output || '';\n    const commandTexts = commands.map(commandText);\n    const command\u001b[31m[-MentionsC-]\u001b[0m\u001b[32m{+Sc+}\u001b[0mo\u001b[32m{+peNee+}\u001b[0md\u001b[32m{+l+}\u001b[0me\u001b[31m[-Path-]\u001b[0m\u001b[32m{+s+}\u001b[0m = (\u001b[31m[-command) =>\n      c-]\u001b[0m\u001b[32m{+pr+}\u001b[0mo\u001b[31m[-mmand.in-]\u001b[0mc\u001b[31m[-lud-]\u001b[0mes\u001b[31m[-(-]\u001b[0m\u001b[32m{+s.env.ATOMIC_ROUND_AUDIT_CODE_SCOPES || +}\u001b[0m'backend/src/kloel')\u001b[31m[- ||-]\u001b[0m\n      \u001b[31m[-co-]\u001b[0m\u001b[32m{+.split(path.deli+}\u001b[0mm\u001b[32m{+iter)\n      .+}\u001b[0mma\u001b[31m[-nd-]\u001b[0m\u001b[32m{+p((value) => value+}\u001b[0m.\u001b[32m{+tr+}\u001b[0mi\u001b[31m[-nc-]\u001b[0m\u001b[32m{+m())\n      .fi+}\u001b[0ml\u001b[31m[-ud-]\u001b[0m\u001b[32m{+t+}\u001b[0me\u001b[31m[-s-]\u001b[0m\u001b[32m{+r+}\u001b[0m(\u001b[31m[-'d-]\u001b[0m\u001b[32m{+B+}\u001b[0mo\u001b[32m{+olean);\n    +}\u001b[0mc\u001b[32m{+on+}\u001b[0ms\u001b[31m[-/ai/a-]\u001b[0mt\u001b[32m{+ c+}\u001b[0mom\u001b[32m{+mandMent+}\u001b[0mi\u001b[31m[-c--]\u001b[0mo\u001b[32m{+n+}\u001b[0ms\u001b[31m[--b-]\u001b[0m\u001b[32m{+Cod+}\u001b[0me\u001b[31m[-nchm-]\u001b[0m\u001b[32m{+P+}\u001b[0ma\u001b[31m[-rk/-]\u001b[0mt\u001b[31m[-o-]\u001b[0m\u001b[32m{+h = (c+}\u001b[0mo\u001b[31m[-ls'-]\u001b[0m\u001b[32m{+mmand+}\u001b[0m) \u001b[31m[-||-]\u001b[0m\u001b[32m{+=>+}\u001b[0m\n      command\u001b[31m[-.in-]\u001b[0m\u001b[32m{+S+}\u001b[0mc\u001b[31m[-lu-]\u001b[0m\u001b[32m{+opeNee+}\u001b[0md\u001b[32m{+l+}\u001b[0mes\u001b[31m[-('script-]\u001b[0m\u001b[32m{+.+}\u001b[0ms\u001b[31m[-/-]\u001b[0m\u001b[32m{+o+}\u001b[0mm\u001b[32m{+e((needle) => +}\u001b[0mc\u001b[31m[-p/at-]\u001b[0mom\u001b[32m{+mand.+}\u001b[0mi\u001b[32m{+n+}\u001b[0mc\u001b[31m[---]\u001b[0m\u001b[32m{+lud+}\u001b[0me\u001b[32m{+s(nee+}\u001b[0md\u001b[31m[-it'-]\u001b[0m\u001b[32m{+le+}\u001b[0m)\u001b[32m{+)+}\u001b[0m;\n    const nativeShellReadCommands = commandTexts.filter((command) => {\n      if (!/\\b(cat|sed|nl|awk|head|tail)\\b/.test(command)) return false;",
+  "preservedZones": [
+    {
+      "kind": "unchanged_context",
+      "description": "Everything outside the modified zone is preserved byte-for-byte by the atomic operation."
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "oldTextHash": "dc662e22bb9af9e68c832272f4d7391c088a8fe3cb21ba30dc8393f7c89c2526",
+      "newTextHash": "10ae0cdf100fc2e0983a83e9de8d6cc5f2643225852b77dd7d470bbaf897763c",
+      "description": "The operation changed the highlighted span shown in inlinePreview."
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~346 character(s) in `docs/ai/atomic-os-benchmark/tools/round-audit.cjs` (sub-line atomic edit, expansion 0.92× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

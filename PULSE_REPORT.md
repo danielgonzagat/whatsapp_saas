@@ -1,4 +1,4 @@
-# PULSE REPORT — 2026-05-16T16:22:34.450Z
+# PULSE REPORT — 2026-05-18T17:01:23.749Z
 
 ## PULSE VERDICT
 
@@ -19,8 +19,8 @@
 - Can declare Kloel product certified: NAO
 - bounded_run: PASS - Bounded next autonomous cycle exposes 8 ai_safe unit(s).
 - artifact_consistency: PASS - Cross-artifact consistency passed.
-- execution_matrix: PASS - Execution matrix classified 7445 path(s) with zero unknown and zero non-terminal paths.
-- critical_path_terminal: FAIL - 4883 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:abi-ab, matrix:capability:capability:abi-builder, matrix:capability:capability:account-agent, matrix:capability:capability:admin-brain, matrix:capability:capability:admin-clients, matrix:capability:capability:admin-compliance, matrix:capability:capability:admin-config, matrix:capability:capability:admin-contacts. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.
+- execution_matrix: PASS - Execution matrix classified 11377 path(s) with zero unknown and zero non-terminal paths.
+- critical_path_terminal: FAIL - 4884 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:abi-ab, matrix:capability:capability:abi-builder, matrix:capability:capability:account-agent, matrix:capability:capability:admin-brain, matrix:capability:capability:admin-clients, matrix:capability:capability:admin-compliance, matrix:capability:capability:admin-config, matrix:capability:capability:admin-contacts. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.
 - breakpoint_precision: PASS - Every observed failure in the execution matrix has a breakpoint.
 - external_reality: FAIL - 0 missing, 2 stale, and 0 invalid external adapter(s) remain.
 - self_trust: FAIL - PULSE still reconstructs 1 phantom capability(ies) and 0 phantom flow(s); self-trust stays degraded until illusion collapses into real chains.
@@ -37,7 +37,7 @@
 - Capabilities: real=0, partial=437, latent=17, phantom=1
 - Capability maturity: foundational=4, connected=451, operational=0, productionReady=0
 - Flows: real=0, partial=48, latent=0, phantom=0
-- Execution matrix: paths=7445, observedPass=0, observedFail=248, criticalUnobserved=0, unknown=0
+- Execution matrix: paths=11377, observedPass=0, observedFail=248, criticalUnobserved=0, unknown=0
 - Structural parity gaps: total=46, critical=0, high=45
 - Finding events: totalSignals=17, uniqueEvents=17, observed=0, confirmedStatic=17, weakSignals=0
 - Codacy HIGH issues: 2225
@@ -59,19 +59,19 @@
 ## Coverage Truth
 
 - Inventory Coverage: 100%
-- Classification Coverage: 91%
-- Structural Graph Coverage: 29% (1424/4866 connected)
-  Reason: 1424/4866 structural files connected.
+- Classification Coverage: 72%
+- Structural Graph Coverage: 29% (1424/4867 connected)
+  Reason: 1424/4867 structural files connected.
 - Test Coverage: 18%
-  Reason: 679/3758 source modules have spec files.
+  Reason: 679/3759 source modules have spec files.
 - Scenario Coverage: 100% (declared=100%, executed=100%, passed=0%)
 - Runtime Evidence Coverage: 0% (fresh=0%, stale=0%)
   Reason: No runtime probes executed.
 - Production Proof Coverage: 0%
   Reason: 0/455 capabilities real.
-- Unknown Files: 581
+- Unknown Files: 2831
 - Orphan Files: 200
-- Excluded Directories: 25
+- Excluded Directories: 89
 - Manifest role: semantic overlay, NOT scope boundary
 - Scope source: repo_filesystem
 

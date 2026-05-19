@@ -1,0 +1,59 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779024478193_c34a4b74",
+  "ts": "2026-05-17T13:27:58.194Z",
+  "file": "docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "targetUnit": "text_span",
+  "intention": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 168,
+    "lineRewriteSurfaceChars": 312,
+    "expansionFactorAvoided": 1.86,
+    "bytesNet": -10,
+    "lineRewriteAvoided": true
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "499cfb7e066e2f4224854327b67924f3334da5f71ceecd1a3a08602a361fee25",
+  "proposedSha256": "499cfb7e066e2f4224854327b67924f3334da5f71ceecd1a3a08602a361fee25",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs (atomic char-level)\u001b[0m\n      adaptiveExecutionPolicy: {\n        progressSignals: ['target diff exists', 'atomic trace exists', 'scorecard was run', 'public API audit was run when class was detected'],\n        noProgressResponse: 'When progress signals stop advancing, ex\u001b[31m[-ecu-]\u001b[0mt\u001b[31m[-e -]\u001b[0m\u001b[32m{+rac+}\u001b[0mt\u001b[31m[-he-]\u001b[0m \u001b[31m[-s-]\u001b[0m\u001b[32m{+do+}\u001b[0mm\u001b[32m{+in+}\u001b[0ma\u001b[31m[-lles-]\u001b[0m\u001b[32m{+n+}\u001b[0mt\u001b[31m[- reversible e-]\u001b[0m\u001b[32m{+E+}\u001b[0mxtraction\u001b[31m[- suggeste-]\u001b[0m\u001b[32m{+Can+}\u001b[0md\u001b[31m[- by observe-]\u001b[0m\u001b[32m{+i+}\u001b[0md\u001b[31m[-SymbolClus-]\u001b[0m\u001b[32m{+a+}\u001b[0mte\u001b[32m{+ fi+}\u001b[0mrs\u001b[32m{+t,+}\u001b[0m \u001b[31m[-a-]\u001b[0m\u001b[32m{+the+}\u001b[0mn\u001b[31m[-d-]\u001b[0m re-run scorecard\u001b[32m{+ and this policy compiler+}\u001b[0m.',\n        sizingAuthority: 'Only caller-provided max flags are enforced; otherwise file sizes are measured and reported without embedded ceilings.',\n        explorationLimit: 'Read files needed to preserve the detected public surface and focused behavior; extra reads must be tied to a failing validation.',",
+  "preservedZones": [
+    {
+      "kind": "unchanged_context",
+      "description": "Everything outside the modified zone is preserved byte-for-byte by the atomic operation."
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "oldTextHash": "78f5750d3a464d9bafa2362b113cfb177ce90ba2b3b491c2766a322c34309e8a",
+      "newTextHash": "499cfb7e066e2f4224854327b67924f3334da5f71ceecd1a3a08602a361fee25",
+      "description": "The operation changed the highlighted span shown in inlinePreview."
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~168 character(s) in `docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs` (sub-line atomic edit, expansion 1.86× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

@@ -1,0 +1,59 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779029320955_78e3a9e5",
+  "ts": "2026-05-17T14:48:40.955Z",
+  "file": "docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "targetUnit": "text_span",
+  "intention": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 155,
+    "lineRewriteSurfaceChars": 155,
+    "expansionFactorAvoided": 1,
+    "bytesNet": -2,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "f18548f28602b1f4177361c50eedccbac53fcad9189dc7ef45a7bb8726b5feef",
+  "proposedSha256": "f18548f28602b1f4177361c50eedccbac53fcad9189dc7ef45a7bb8726b5feef",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs (atomic char-level)\u001b[0m\n          args.spec ? 'focused spec bytes: ' + args.spec : 'no adjacent focused spec detected',\n        ],\n        executeAs: 'minimal read batch, \u001b[32m{+dependen+}\u001b[0mc\u001b[32m{+y-c+}\u001b[0mohesive extraction \u001b[31m[-based on obse-]\u001b[0mr\u001b[31m[-v-]\u001b[0me\u001b[31m[-d -]\u001b[0mc\u001b[31m[-lust-]\u001b[0m\u001b[32m{+ip+}\u001b[0me\u001b[31m[-rs-]\u001b[0m, \u001b[32m{+single +}\u001b[0mfacade replacement, scorecard, public API audit when class is known',\n      },\n      atomicWriteBatchShape: [",
+  "preservedZones": [
+    {
+      "kind": "unchanged_context",
+      "description": "Everything outside the modified zone is preserved byte-for-byte by the atomic operation."
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "oldTextHash": "a2df51fcd3b550f1846d3ea79f5e730d7c89761f55a02868b4103ae00d90a2b5",
+      "newTextHash": "f18548f28602b1f4177361c50eedccbac53fcad9189dc7ef45a7bb8726b5feef",
+      "description": "The operation changed the highlighted span shown in inlinePreview."
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~155 character(s) in `docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs` (sub-line atomic edit, expansion 1× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

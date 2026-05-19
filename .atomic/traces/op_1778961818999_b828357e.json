@@ -1,0 +1,37 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1778961818999_b828357e",
+  "ts": "2026-05-16T20:03:38.999Z",
+  "file": "scripts/mcp/atomic-edit/server.ts",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 896,
+    "lineRewriteSurfaceChars": 896,
+    "expansionFactorAvoided": 1,
+    "bytesNet": -147,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "afterSha256": "090321fe27a9f3a56cd7cda038c050c147627bb26d527aca803cda08d4bd8b8b",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- scripts/mcp/atomic-edit/server.ts (atomic char-level)\u001b[0m\n      '  afterEach(() => {\\n' +\n        '    clearOpenAiEnvs();\\n' +\n        '    \u001b[31m[-for (const [key, value] of -]\u001b[0mObject.entries(envBackup)\u001b[32m{+.forEach(([key, value]+}\u001b[0m) \u001b[32m{+=> +}\u001b[0m{\\n' +\n        \"      if (key.startsWith('OPENAI_') || key === 'VOICE_RESPONSE_AUDIO_REQUIRED') {\\n\" +\n        '        \u001b[31m[-if (value === undefined) {\\n' +\n        '          delete -]\u001b[0mprocess.env[key]\u001b[31m[-;\\n'-]\u001b[0m \u001b[31m[-+\n        '        } else {\\n' +\n        '          process.env[key] -]\u001b[0m= value;\\n' +\n        '      \u001b[31m[-  -]\u001b[0m}\\n' +\n        '    \u001b[31m[-  -]\u001b[0m}\u001b[31m[-\\n' +\n        '    }-]\u001b[0m\u001b[32m{+);+}\u001b[0m\\n' +\n        '  });\\n\\n' +\n        anchor,",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~896 character(s) in `scripts/mcp/atomic-edit/server.ts` (sub-line atomic edit, expansion 1× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

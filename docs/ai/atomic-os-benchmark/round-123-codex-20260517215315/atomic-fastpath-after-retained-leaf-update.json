@@ -1,0 +1,1746 @@
+{
+  "worktree": "/private/tmp/kloel-ab123-atomic-20260517215315",
+  "target": "/private/tmp/kloel-ab123-atomic-20260517215315/backend/src/kloel/unified-agent.service.ts",
+  "targetRel": "backend/src/kloel/unified-agent.service.ts",
+  "spec": "/private/tmp/kloel-ab123-atomic-20260517215315/backend/src/kloel/unified-agent.service.spec.ts",
+  "specRel": "backend/src/kloel/unified-agent.service.spec.ts",
+  "currentTargetLines": 156,
+  "maxTargetLines": null,
+  "maxFileLines": null,
+  "derivedScopePrefix": "backend/src/kloel/unified-agent",
+  "derivedClassName": "UnifiedAgentService",
+  "detectedSymbols": [
+    "processMessage",
+    "executeTool",
+    "processIncomingMessage",
+    "buildQuotedReplyPlan"
+  ],
+  "observedSymbolSpans": [
+    {
+      "name": "processMessage",
+      "startLine": 78,
+      "endLine": 112,
+      "lines": 35,
+      "fileHintToken": "process",
+      "isPublicSurface": true,
+      "calls": []
+    },
+    {
+      "name": "executeTool",
+      "startLine": 117,
+      "endLine": 138,
+      "lines": 22,
+      "fileHintToken": "execute",
+      "isPublicSurface": true,
+      "calls": []
+    },
+    {
+      "name": "processIncomingMessage",
+      "startLine": 57,
+      "endLine": 76,
+      "lines": 20,
+      "fileHintToken": "process",
+      "isPublicSurface": true,
+      "calls": [
+        "processMessage"
+      ]
+    },
+    {
+      "name": "buildQuotedReplyPlan",
+      "startLine": 141,
+      "endLine": 155,
+      "lines": 15,
+      "fileHintToken": "build",
+      "isPublicSurface": true,
+      "calls": []
+    }
+  ],
+  "dominantExtractionCandidate": {
+    "name": "processMessage",
+    "startLine": 78,
+    "endLine": 112,
+    "lines": 35,
+    "fileHintToken": "process",
+    "isPublicSurface": true,
+    "calls": []
+  },
+  "observedSymbolClusters": [
+    {
+      "cluster": "process",
+      "root": "processMessage",
+      "rootLines": 35,
+      "totalObservedLines": 92,
+      "symbols": [
+        "processMessage",
+        "executeTool",
+        "processIncomingMessage",
+        "buildQuotedReplyPlan"
+      ],
+      "memberDetails": [
+        {
+          "name": "processMessage",
+          "lines": 35,
+          "calls": [],
+          "isPublicSurface": true,
+          "assignmentReason": "root"
+        },
+        {
+          "name": "executeTool",
+          "lines": 22,
+          "calls": [],
+          "isPublicSurface": true,
+          "assignmentReason": "single-cluster-facade-retention-release"
+        },
+        {
+          "name": "processIncomingMessage",
+          "lines": 20,
+          "calls": [
+            "processMessage"
+          ],
+          "isPublicSurface": true,
+          "assignmentReason": "single-cluster-facade-retention-release"
+        },
+        {
+          "name": "buildQuotedReplyPlan",
+          "lines": 15,
+          "calls": [],
+          "isPublicSurface": true,
+          "assignmentReason": "single-cluster-facade-retention-release"
+        }
+      ],
+      "fileHint": "backend/src/kloel/unified-agent-process.ts",
+      "assignmentSource": "dependency-graph"
+    }
+  ],
+  "retainedFacadeSymbols": [],
+  "facadeRetentionRelease": {
+    "applied": true,
+    "reason": "single_delegate_cluster_preserves_public_api_by_delegation",
+    "releasedSymbols": [
+      "executeTool",
+      "processIncomingMessage",
+      "buildQuotedReplyPlan"
+    ]
+  },
+  "siblingReusePlan": {
+    "available": true,
+    "applied": true,
+    "reason": "existing_runtime_siblings_cover_public_surface",
+    "existingModules": [
+      {
+        "file": "backend/src/kloel/unified-agent-response.service.ts",
+        "lines": 398,
+        "exportedRuntimeSymbols": [
+          "buildQuotedReplyPlan",
+          "buildFallbackResult",
+          "composeWriterReply",
+          "finalizeReplyStyle",
+          "extractIntent",
+          "calculateConfidence"
+        ],
+        "reusedSymbols": [
+          "buildQuotedReplyPlan"
+        ]
+      }
+    ],
+    "reuseAssignments": [
+      {
+        "symbol": "buildQuotedReplyPlan",
+        "lines": 15,
+        "existingModule": "backend/src/kloel/unified-agent-response.service.ts",
+        "score": 4,
+        "reason": "public_symbol_matches_existing_runtime_sibling"
+      }
+    ],
+    "residualObservedLines": 77,
+    "residualSymbols": [
+      "processMessage",
+      "executeTool",
+      "processIncomingMessage"
+    ],
+    "residualWriteTargets": [
+      {
+        "file": "backend/src/kloel/unified-agent-residual.helpers.ts",
+        "symbols": [
+          "processMessage",
+          "executeTool",
+          "processIncomingMessage"
+        ],
+        "responsibility": "Extract residual behavior not already covered by existing runtime sibling modules: processMessage, executeTool, processIncomingMessage"
+      }
+    ]
+  },
+  "facadeSurface": {
+    "available": true,
+    "className": "UnifiedAgentService",
+    "constructorParamProperties": [
+      {
+        "name": "prisma",
+        "optional": false,
+        "type": "PrismaService"
+      },
+      {
+        "name": "config",
+        "optional": false,
+        "type": "ConfigService"
+      },
+      {
+        "name": "planLimits",
+        "optional": false,
+        "type": "PlanLimitsService"
+      },
+      {
+        "name": "auditService",
+        "optional": false,
+        "type": "AuditService"
+      },
+      {
+        "name": "ctx",
+        "optional": false,
+        "type": "UnifiedAgentContextService"
+      },
+      {
+        "name": "response",
+        "optional": false,
+        "type": "UnifiedAgentResponseService"
+      },
+      {
+        "name": "actions",
+        "optional": false,
+        "type": "UnifiedAgentActionsService"
+      },
+      {
+        "name": "agentRuntime",
+        "optional": true,
+        "type": "AgentRuntimeContextService"
+      },
+      {
+        "name": "abiBuilder",
+        "optional": true,
+        "type": "AbiBuilderService"
+      },
+      {
+        "name": "riskGate",
+        "optional": true,
+        "type": "RiskGateService"
+      }
+    ],
+    "privateFields": [
+      {
+        "name": "logger",
+        "optional": false,
+        "type": null,
+        "visibility": "private"
+      },
+      {
+        "name": "openai",
+        "optional": false,
+        "type": "OpenAI | null",
+        "visibility": "private"
+      },
+      {
+        "name": "primaryBrainModel",
+        "optional": false,
+        "type": "string",
+        "visibility": "private"
+      },
+      {
+        "name": "fallbackBrainModel",
+        "optional": false,
+        "type": "string",
+        "visibility": "private"
+      },
+      {
+        "name": "writerModel",
+        "optional": false,
+        "type": "string",
+        "visibility": "private"
+      },
+      {
+        "name": "fallbackWriterModel",
+        "optional": false,
+        "type": "string",
+        "visibility": "private"
+      }
+    ],
+    "publicMethods": [
+      "processIncomingMessage",
+      "processMessage",
+      "executeTool",
+      "buildQuotedReplyPlan"
+    ]
+  },
+  "facadeDelegationShape": {
+    "available": true,
+    "dependencyCount": 16,
+    "publicDelegateMethods": [
+      "processIncomingMessage",
+      "processMessage",
+      "executeTool",
+      "buildQuotedReplyPlan"
+    ],
+    "retainedPublicLeaves": [],
+    "delegateRoots": [
+      "processMessage"
+    ],
+    "repeatedDependencyPressure": 64,
+    "extractedRootPressure": 16,
+    "preferredShape": "cached_delegate_instance",
+    "candidates": [
+      {
+        "shape": "cached_delegate_instance",
+        "signal": "Constructor creates one delegate/core object for dependency-heavy extracted roots; public facade methods call that object.",
+        "winsWhen": "The measured dependency wiring is reused across public methods or extracted roots."
+      },
+      {
+        "shape": "direct_function_delegation",
+        "signal": "Public facade methods call extracted module functions directly with the smallest measured dependency object.",
+        "winsWhen": "The dependency bundle is small or retained public leaves dominate the facade."
+      },
+      {
+        "shape": "private_dependency_helper",
+        "signal": "A private helper builds the dependency bundle.",
+        "winsWhen": "Only keep this if AST/line measurement proves it is smaller than cached delegate and direct function shapes."
+      }
+    ]
+  },
+  "macroRefactorShape": {
+    "available": true,
+    "preferredShape": "dependency_split_modules",
+    "selectedDecompositionTemplate": [
+      {
+        "file": "backend/src/kloel/unified-agent-process.ts",
+        "responsibility": "Extract dependency-cohesive cluster rooted at processMessage: processMessage, executeTool, processIncomingMessage, buildQuotedReplyPlan",
+        "observedLines": 92,
+        "symbols": [
+          "processMessage",
+          "executeTool",
+          "processIncomingMessage",
+          "buildQuotedReplyPlan"
+        ],
+        "preserveTogether": "Keep these symbols together unless a validation or scorecard signal proves that one member belongs to another observed dependency root.",
+        "splitWhen": "Split only along an observed dependency edge or repeated validation failure, not by a fixed file or line budget."
+      }
+    ],
+    "marginAmplificationShape": "dependency_split_modules",
+    "marginAmplificationTemplate": [
+      {
+        "file": "backend/src/kloel/unified-agent-process.ts",
+        "responsibility": "Extract dependency-cohesive cluster rooted at processMessage: processMessage, executeTool, processIncomingMessage, buildQuotedReplyPlan",
+        "observedLines": 92,
+        "symbols": [
+          "processMessage",
+          "executeTool",
+          "processIncomingMessage",
+          "buildQuotedReplyPlan"
+        ],
+        "preserveTogether": "Keep these symbols together unless a validation or scorecard signal proves that one member belongs to another observed dependency root.",
+        "splitWhen": "Split only along an observed dependency edge or repeated validation failure, not by a fixed file or line budget."
+      }
+    ],
+    "marginAmplificationMetrics": {
+      "productSourceFileCount": 1,
+      "estimatedInventoryPressure": 112,
+      "dependencyBoundaryPressure": 16,
+      "writeBatchFileCount": 2,
+      "largestModuleLines": 92,
+      "responsibilityIsolation": 1
+    },
+    "currentTargetLines": 156,
+    "measurements": {
+      "dependencyCount": 16,
+      "publicMethodCount": 4,
+      "retainedFacadeLinePressure": 0,
+      "clusterCount": 1,
+      "clusterLineTotal": 92,
+      "largestClusterLines": 92,
+      "supportPlan": {
+        "available": false,
+        "availabilityReason": "no_leaf_support_symbols",
+        "multiClusterTopology": false,
+        "supportReleasesIndependentTopology": false,
+        "supportFile": "backend/src/kloel/unified-agent-support.ts",
+        "supportLines": 0,
+        "supportSymbols": [],
+        "largestBeforeSupport": 92,
+        "largestModuleLinesAfterSupport": 92
+      }
+    },
+    "candidateComparison": {
+      "singleVsSplitLargestDelta": 0,
+      "splitVsSingleInventoryDelta": 0,
+      "splitVsSingleFileDelta": 0,
+      "splitVsSingleBoundaryDelta": 0
+    },
+    "balancedSupportReleasePlan": {
+      "available": false,
+      "supportReleaseEconomy": null,
+      "reason": "no support candidate available"
+    },
+    "candidates": [
+      {
+        "shape": "dependency_split_modules",
+        "reason": "dependency split wins measured modularity pressure.",
+        "dynamicReleasePass": true,
+        "metrics": {
+          "productSourceFileCount": 1,
+          "estimatedInventoryPressure": 112,
+          "dependencyBoundaryPressure": 16,
+          "writeBatchFileCount": 2,
+          "largestModuleLines": 92,
+          "responsibilityIsolation": 1
+        },
+        "metricWins": [],
+        "metricLosses": [],
+        "pressureScore": {
+          "total": 0,
+          "byFamily": {
+            "economy": 0,
+            "modularity": 0
+          },
+          "byCategory": {
+            "surface_economy": 0,
+            "execution_economy": 0,
+            "modularity": 0
+          },
+          "byMetric": {
+            "productSourceFileCount": 0,
+            "estimatedInventoryPressure": 0,
+            "dependencyBoundaryPressure": 0,
+            "writeBatchFileCount": 0,
+            "largestModuleLines": 0,
+            "responsibilityIsolation": 0
+          },
+          "worstFamily": 0
+        },
+        "operationalTradeoff": {
+          "executionEconomyLosses": [],
+          "surfaceEconomyWins": [],
+          "economyTradeoffDebt": false,
+          "interpretation": "This shape is balanced enough for default ranking because economy losses are absent or offset by measured surface-economy wins."
+        },
+        "selected": true,
+        "marginAmplifier": true
+      },
+      {
+        "shape": "single_runtime_module",
+        "reason": "single runtime wins measured economy after release.",
+        "dynamicReleasePass": true,
+        "metrics": {
+          "productSourceFileCount": 1,
+          "estimatedInventoryPressure": 112,
+          "dependencyBoundaryPressure": 16,
+          "writeBatchFileCount": 2,
+          "largestModuleLines": 92,
+          "responsibilityIsolation": 1
+        },
+        "metricWins": [],
+        "metricLosses": [],
+        "pressureScore": {
+          "total": 0,
+          "byFamily": {
+            "economy": 0,
+            "modularity": 0
+          },
+          "byCategory": {
+            "surface_economy": 0,
+            "execution_economy": 0,
+            "modularity": 0
+          },
+          "byMetric": {
+            "productSourceFileCount": 0,
+            "estimatedInventoryPressure": 0,
+            "dependencyBoundaryPressure": 0,
+            "writeBatchFileCount": 0,
+            "largestModuleLines": 0,
+            "responsibilityIsolation": 0
+          },
+          "worstFamily": 0
+        },
+        "operationalTradeoff": {
+          "executionEconomyLosses": [],
+          "surfaceEconomyWins": [],
+          "economyTradeoffDebt": false,
+          "interpretation": "This shape is balanced enough for default ranking because economy losses are absent or offset by measured surface-economy wins."
+        },
+        "selected": false,
+        "marginAmplifier": false
+      }
+    ],
+    "selectionRule": "rank by dynamic release, then minimax family pressure regret, then average pressure regret; marginAmplificationShape is the release-pass candidate with the lowest measured largest-module pressure; support extraction is generated from observed leaf-support topology, not fixed thresholds."
+  },
+  "directFirstWriteBlueprint": {
+    "mode": "policy_to_first_write_batch",
+    "selectedShape": "dependency_split_modules",
+    "compactExecutionBrief": {
+      "mode": "clear_non_tradeoff_shape_brief",
+      "decisionAuthority": "derived from macroRefactorShape preferred candidate with dynamic release pass and no operational economy tradeoff debt",
+      "selectedShape": "dependency_split_modules",
+      "writeTargets": [
+        {
+          "file": "backend/src/kloel/unified-agent-residual.helpers.ts",
+          "symbols": [
+            "processMessage",
+            "executeTool",
+            "processIncomingMessage"
+          ],
+          "responsibility": "Extract residual behavior not already covered by existing runtime sibling modules: processMessage, executeTool, processIncomingMessage"
+        }
+      ],
+      "validationOrder": [
+        "write selected modules",
+        "replace facade once",
+        "run scorecard",
+        "run focused Jest",
+        "run typecheck impact"
+      ],
+      "avoid": [
+        "extra architecture exploration before first write",
+        "support split candidates marked as economy tradeoff debt",
+        "per-method writes before the batch fails validation"
+      ]
+    },
+    "marginAmplification": {
+      "shape": "dependency_split_modules",
+      "writeTargets": [
+        {
+          "file": "backend/src/kloel/unified-agent-process.ts",
+          "symbols": [
+            "processMessage",
+            "executeTool",
+            "processIncomingMessage",
+            "buildQuotedReplyPlan"
+          ],
+          "responsibility": "Extract dependency-cohesive cluster rooted at processMessage: processMessage, executeTool, processIncomingMessage, buildQuotedReplyPlan",
+          "observedLines": 92
+        }
+      ],
+      "metrics": {
+        "productSourceFileCount": 1,
+        "estimatedInventoryPressure": 112,
+        "dependencyBoundaryPressure": 16,
+        "writeBatchFileCount": 2,
+        "largestModuleLines": 92,
+        "responsibilityIsolation": 1
+      },
+      "useWhen": "Use this measured shape when the loop objective is larger structural margin and the standard scorecard stays green."
+    },
+    "balancedSupportRelease": {
+      "available": false,
+      "supportReleaseEconomy": null,
+      "reason": "no support candidate available"
+    },
+    "delegationShape": "cached_delegate_instance",
+    "retainInFacade": [],
+    "retainedFacadeSymbols": [],
+    "writeTargets": [
+      {
+        "file": "backend/src/kloel/unified-agent-residual.helpers.ts",
+        "symbols": [
+          "processMessage",
+          "executeTool",
+          "processIncomingMessage"
+        ],
+        "responsibility": "Extract residual behavior not already covered by existing runtime sibling modules: processMessage, executeTool, processIncomingMessage"
+      }
+    ],
+    "reuseExistingModules": [
+      {
+        "file": "backend/src/kloel/unified-agent-response.service.ts",
+        "lines": 398,
+        "exportedRuntimeSymbols": [
+          "buildQuotedReplyPlan",
+          "buildFallbackResult",
+          "composeWriterReply",
+          "finalizeReplyStyle",
+          "extractIntent",
+          "calculateConfidence"
+        ],
+        "reusedSymbols": [
+          "buildQuotedReplyPlan"
+        ]
+      }
+    ],
+    "siblingReusePlan": {
+      "available": true,
+      "applied": true,
+      "reason": "existing_runtime_siblings_cover_public_surface",
+      "existingModules": [
+        {
+          "file": "backend/src/kloel/unified-agent-response.service.ts",
+          "lines": 398,
+          "exportedRuntimeSymbols": [
+            "buildQuotedReplyPlan",
+            "buildFallbackResult",
+            "composeWriterReply",
+            "finalizeReplyStyle",
+            "extractIntent",
+            "calculateConfidence"
+          ],
+          "reusedSymbols": [
+            "buildQuotedReplyPlan"
+          ]
+        }
+      ],
+      "reuseAssignments": [
+        {
+          "symbol": "buildQuotedReplyPlan",
+          "lines": 15,
+          "existingModule": "backend/src/kloel/unified-agent-response.service.ts",
+          "score": 4,
+          "reason": "public_symbol_matches_existing_runtime_sibling"
+        }
+      ],
+      "residualObservedLines": 77,
+      "residualSymbols": [
+        "processMessage",
+        "executeTool",
+        "processIncomingMessage"
+      ],
+      "residualWriteTargets": [
+        {
+          "file": "backend/src/kloel/unified-agent-residual.helpers.ts",
+          "symbols": [
+            "processMessage",
+            "executeTool",
+            "processIncomingMessage"
+          ],
+          "responsibility": "Extract residual behavior not already covered by existing runtime sibling modules: processMessage, executeTool, processIncomingMessage"
+        }
+      ]
+    },
+    "preserve": {
+      "className": "UnifiedAgentService",
+      "target": "backend/src/kloel/unified-agent.service.ts",
+      "spec": "backend/src/kloel/unified-agent.service.spec.ts",
+      "publicApi": true
+    },
+    "firstAction": "reuse existing runtime sibling modules, create only the residual target module, then replace the facade from this blueprint before broader architecture exploration.",
+    "proofAfterFirstBatch": [
+      "focused spec",
+      "scorecard",
+      "public API audit",
+      "scope check"
+    ],
+    "facadeDelegationCompactness": {
+      "mode": "delegate_public_methods_by_domain_owner",
+      "rule": "Each public facade method should be a one-statement delegation to the existing sibling module or residual helper selected by siblingReusePlan.",
+      "avoid": [
+        "duplicated type aliases in facade",
+        "inline method bodies in facade",
+        "private facade helpers",
+        "per-method dependency bundle rebuilds"
+      ],
+      "expectedFacadeShape": "imports, constructor, cached delegate accessors only when needed, and 24 one-statement public methods."
+    },
+    "traceBatching": {
+      "mode": "product_batch_unit_trace",
+      "rule": "Planning can be method-aware, but writing must be module/facade-batch aware. Use the fewest Atomic write units matching writeTargets plus facade replacement.",
+      "childEvidence": "Per-method atomic writes are fallback only after the macro batch fails validation; otherwise they are macro-atomicity debt."
+    },
+    "executableFirstBatchRecipe": {
+      "mode": "compiled_owner_map_to_first_batch",
+      "decisionAuthority": "derived from detected public methods, sibling reuse assignments, selected write targets, and facade surface inventory",
+      "publicMethodCount": 4,
+      "dependencies": {
+        "constructorParamProperties": [
+          {
+            "name": "prisma",
+            "optional": false,
+            "type": "PrismaService"
+          },
+          {
+            "name": "config",
+            "optional": false,
+            "type": "ConfigService"
+          },
+          {
+            "name": "planLimits",
+            "optional": false,
+            "type": "PlanLimitsService"
+          },
+          {
+            "name": "auditService",
+            "optional": false,
+            "type": "AuditService"
+          },
+          {
+            "name": "ctx",
+            "optional": false,
+            "type": "UnifiedAgentContextService"
+          },
+          {
+            "name": "response",
+            "optional": false,
+            "type": "UnifiedAgentResponseService"
+          },
+          {
+            "name": "actions",
+            "optional": false,
+            "type": "UnifiedAgentActionsService"
+          },
+          {
+            "name": "agentRuntime",
+            "optional": true,
+            "type": "AgentRuntimeContextService"
+          },
+          {
+            "name": "abiBuilder",
+            "optional": true,
+            "type": "AbiBuilderService"
+          },
+          {
+            "name": "riskGate",
+            "optional": true,
+            "type": "RiskGateService"
+          }
+        ],
+        "privateFields": [
+          {
+            "name": "logger",
+            "optional": false,
+            "type": null,
+            "visibility": "private"
+          },
+          {
+            "name": "openai",
+            "optional": false,
+            "type": "OpenAI | null",
+            "visibility": "private"
+          },
+          {
+            "name": "primaryBrainModel",
+            "optional": false,
+            "type": "string",
+            "visibility": "private"
+          },
+          {
+            "name": "fallbackBrainModel",
+            "optional": false,
+            "type": "string",
+            "visibility": "private"
+          },
+          {
+            "name": "writerModel",
+            "optional": false,
+            "type": "string",
+            "visibility": "private"
+          },
+          {
+            "name": "fallbackWriterModel",
+            "optional": false,
+            "type": "string",
+            "visibility": "private"
+          }
+        ]
+      },
+      "readOnlyExistingModules": [
+        {
+          "file": "backend/src/kloel/unified-agent-response.service.ts",
+          "exportedRuntimeSymbols": [
+            "buildQuotedReplyPlan",
+            "buildFallbackResult",
+            "composeWriterReply",
+            "finalizeReplyStyle",
+            "extractIntent",
+            "calculateConfidence"
+          ],
+          "reusedSymbols": [
+            "buildQuotedReplyPlan"
+          ],
+          "action": "read/import only unless validation proves the owner module itself is broken"
+        }
+      ],
+      "writePlan": [
+        {
+          "file": "backend/src/kloel/unified-agent-residual.helpers.ts",
+          "symbols": [
+            "processMessage",
+            "executeTool",
+            "processIncomingMessage"
+          ],
+          "responsibility": "Extract residual behavior not already covered by existing runtime sibling modules: processMessage, executeTool, processIncomingMessage",
+          "action": "create or update this module before replacing the facade"
+        }
+      ],
+      "facadeRewritePlan": {
+        "target": "backend/src/kloel/unified-agent.service.ts",
+        "ownerFiles": [
+          "backend/src/kloel/unified-agent-residual.helpers.ts",
+          "backend/src/kloel/unified-agent-response.service.ts"
+        ],
+        "methodDelegations": [
+          {
+            "method": "processIncomingMessage",
+            "ownerKind": "selected_write_target",
+            "ownerFile": "backend/src/kloel/unified-agent-residual.helpers.ts",
+            "preferredExport": "processIncomingMessage",
+            "action": "move implementation to the selected write target and delegate with one public facade statement"
+          },
+          {
+            "method": "processMessage",
+            "ownerKind": "selected_write_target",
+            "ownerFile": "backend/src/kloel/unified-agent-residual.helpers.ts",
+            "preferredExport": "processMessage",
+            "action": "move implementation to the selected write target and delegate with one public facade statement"
+          },
+          {
+            "method": "executeTool",
+            "ownerKind": "selected_write_target",
+            "ownerFile": "backend/src/kloel/unified-agent-residual.helpers.ts",
+            "preferredExport": "executeTool",
+            "action": "move implementation to the selected write target and delegate with one public facade statement"
+          },
+          {
+            "method": "buildQuotedReplyPlan",
+            "ownerKind": "existing_runtime_sibling",
+            "ownerFile": "backend/src/kloel/unified-agent-response.service.ts",
+            "preferredExport": "buildQuotedReplyPlan",
+            "exportMatchScore": 4,
+            "action": "import the matched existing export and delegate; do not copy or rewrite the existing owner module"
+          }
+        ],
+        "importPressurePlan": {
+          "mode": "namespace_owner_imports",
+          "decisionAuthority": "derived from facade owner count and delegated binding count; no fixed line budget is used",
+          "ownerCount": 2,
+          "namedBindingCount": 4,
+          "namespaceBindingCount": 2,
+          "bindingReduction": 2,
+          "owners": [
+            {
+              "file": "backend/src/kloel/unified-agent-residual.helpers.ts",
+              "namespaceAlias": "ResidualHelpers",
+              "delegatedMethodCount": 3,
+              "preferredExports": [
+                "processIncomingMessage",
+                "processMessage",
+                "executeTool"
+              ]
+            },
+            {
+              "file": "backend/src/kloel/unified-agent-response.service.ts",
+              "namespaceAlias": "ResponseService",
+              "delegatedMethodCount": 1,
+              "preferredExports": [
+                "buildQuotedReplyPlan"
+              ]
+            }
+          ],
+          "rule": "Prefer namespace imports per owner module for runtime calls only when public signature types are imported or namespace-qualified from owner modules; never keep or recreate local facade type declarations."
+        },
+        "dependencyBundleReusePlan": {
+          "available": false,
+          "decisionAuthority": "derived from repeated ownerFile methodDelegations, facade dependency surface, owner-file count, and typed bundle surface estimate; no fixed facade line budget or hardcoded owner name",
+          "dependencyBundleEconomy": {
+            "dependencySurfaceCount": 16,
+            "repeatedMethodCount": 3,
+            "reusableOwnerCount": 1,
+            "ownerFileCount": 2,
+            "repeatedDirectSurface": 48,
+            "cachedBundleSurface": 51,
+            "pass": false,
+            "interpretation": "Bundle reuse is an economy win only when the estimated direct repetition surface exceeds the estimated typed bundle/support surface created to share it."
+          },
+          "reusableOwners": [
+            {
+              "ownerFile": "backend/src/kloel/unified-agent-residual.helpers.ts",
+              "methods": [
+                "processIncomingMessage",
+                "processMessage",
+                "executeTool"
+              ],
+              "preferredExports": [
+                "processIncomingMessage",
+                "processMessage",
+                "executeTool"
+              ],
+              "repeatedDelegationCount": 3,
+              "action": "keep direct per-method dependency objects because measured typed bundle/support surface is not smaller than repeated direct dependency surface"
+            }
+          ],
+          "action": "Do not materialize cached dependency bundles; direct facade delegation remains lower total inventory until measured repetition outweighs the typed bundle/support surface."
+        },
+        "compactnessGuard": "one public method statement per delegated method; repeated owner dependency objects collapse into one owner-local bundle/delegate only when dependencyBundleReusePlan.dependencyBundleEconomy.pass is true; otherwise keep direct per-method dependency objects to avoid support/type inventory bloat; no private facade helper unless this recipe leaves the method unresolved",
+        "postSplitFacadeCompactionPlan": {
+          "decisionAuthority": "derived from methodDelegations, ownerFiles, import pressure, dependency bundle reuse, type consumers, and the next scorecard; no fixed facade line budget",
+          "compactionActions": [
+            "after the first green scorecard, delegate every resolved public method to its owner module with one facade statement",
+            "when multiple public methods share an owner module, build one owner-local dependency bundle or cached delegate only if dependencyBundleEconomy proves lower total inventory than direct dependency objects",
+            "release retained public leaf wrappers only when publicLeafReleaseEconomy proves the move reduces at least one measured surface without worsening owner pressure or inventory",
+            "keep retained public leaf bodies in the facade when release is a pure surface transfer instead of a measured Pareto improvement",
+            "release facade-local types into an already-created consuming owner module before touching any existing shared type file",
+            "touch an existing shared type file only when multiple owner modules consume the released type and scorecard economy stays non-worse",
+            "remove facade-only private helpers when methodDelegations has no unresolved owner",
+            "choose namespace or named imports from importPressurePlan instead of hand-written import style"
+          ],
+          "typeSpilloverGuard": "extra type-only changed files are economy debt unless scorecard typeSpilloverEconomy proves the existing shared type-file touch is cheaper than owner-local export/import; small public helper types should live in a newly-created owner module before touching an existing shared type file",
+          "guard": "apply only if public API, constructor shape, scorecard, focused Jest, typecheck-impact, spec diff, protected diff, and source count remain non-worse"
+        }
+      },
+      "writeGranularityPlan": {
+        "planningUnit": "public method owner map",
+        "writeUnit": "product batch unit",
+        "productBatchUnits": [
+          {
+            "kind": "module_write",
+            "file": "backend/src/kloel/unified-agent-residual.helpers.ts",
+            "plannedSymbols": [
+              "processMessage",
+              "executeTool",
+              "processIncomingMessage"
+            ]
+          },
+          {
+            "kind": "facade_replace",
+            "file": "backend/src/kloel/unified-agent.service.ts",
+            "plannedMethods": [
+              "processIncomingMessage",
+              "processMessage",
+              "executeTool",
+              "buildQuotedReplyPlan"
+            ]
+          }
+        ],
+        "traceEconomy": "Trace count should follow product batch units derived here, not methodDelegations length.",
+        "microWriteFallback": "Use per-method writes only after a batch-sized write fails validation and record the failed validation reason."
+      },
+      "firstBatchOrder": [
+        {
+          "action": "reuse_existing_module",
+          "file": "backend/src/kloel/unified-agent-response.service.ts"
+        },
+        {
+          "action": "write_selected_module",
+          "file": "backend/src/kloel/unified-agent-residual.helpers.ts"
+        },
+        {
+          "action": "replace_facade",
+          "file": "backend/src/kloel/unified-agent.service.ts"
+        }
+      ],
+      "unresolvedPublicMethods": []
+    }
+  },
+  "atomicWorkerBrief": {
+    "execute": "reuse existing runtime sibling modules, create only the residual target module, then replace the facade from this blueprint before broader architecture exploration.",
+    "selectedShape": "dependency_split_modules",
+    "compactExecutionBrief": {
+      "mode": "clear_non_tradeoff_shape_brief",
+      "decisionAuthority": "derived from macroRefactorShape preferred candidate with dynamic release pass and no operational economy tradeoff debt",
+      "selectedShape": "dependency_split_modules",
+      "writeTargets": [
+        {
+          "file": "backend/src/kloel/unified-agent-residual.helpers.ts",
+          "symbols": [
+            "processMessage",
+            "executeTool",
+            "processIncomingMessage"
+          ],
+          "responsibility": "Extract residual behavior not already covered by existing runtime sibling modules: processMessage, executeTool, processIncomingMessage"
+        }
+      ],
+      "validationOrder": [
+        "write selected modules",
+        "replace facade once",
+        "run scorecard",
+        "run focused Jest",
+        "run typecheck impact"
+      ],
+      "avoid": [
+        "extra architecture exploration before first write",
+        "support split candidates marked as economy tradeoff debt",
+        "per-method writes before the batch fails validation"
+      ],
+      "executableOwnerMap": {
+        "publicMethodCount": 4,
+        "readOnlyExistingModules": [
+          {
+            "file": "backend/src/kloel/unified-agent-response.service.ts",
+            "exportedRuntimeSymbols": [
+              "buildQuotedReplyPlan",
+              "buildFallbackResult",
+              "composeWriterReply",
+              "finalizeReplyStyle",
+              "extractIntent",
+              "calculateConfidence"
+            ],
+            "reusedSymbols": [
+              "buildQuotedReplyPlan"
+            ],
+            "action": "read/import only unless validation proves the owner module itself is broken"
+          }
+        ],
+        "writePlan": [
+          {
+            "file": "backend/src/kloel/unified-agent-residual.helpers.ts",
+            "symbols": [
+              "processMessage",
+              "executeTool",
+              "processIncomingMessage"
+            ],
+            "responsibility": "Extract residual behavior not already covered by existing runtime sibling modules: processMessage, executeTool, processIncomingMessage",
+            "action": "create or update this module before replacing the facade"
+          }
+        ],
+        "facadeRewritePlan": {
+          "target": "backend/src/kloel/unified-agent.service.ts",
+          "ownerFiles": [
+            "backend/src/kloel/unified-agent-residual.helpers.ts",
+            "backend/src/kloel/unified-agent-response.service.ts"
+          ],
+          "methodDelegations": [
+            {
+              "method": "processIncomingMessage",
+              "ownerKind": "selected_write_target",
+              "ownerFile": "backend/src/kloel/unified-agent-residual.helpers.ts",
+              "preferredExport": "processIncomingMessage",
+              "action": "move implementation to the selected write target and delegate with one public facade statement"
+            },
+            {
+              "method": "processMessage",
+              "ownerKind": "selected_write_target",
+              "ownerFile": "backend/src/kloel/unified-agent-residual.helpers.ts",
+              "preferredExport": "processMessage",
+              "action": "move implementation to the selected write target and delegate with one public facade statement"
+            },
+            {
+              "method": "executeTool",
+              "ownerKind": "selected_write_target",
+              "ownerFile": "backend/src/kloel/unified-agent-residual.helpers.ts",
+              "preferredExport": "executeTool",
+              "action": "move implementation to the selected write target and delegate with one public facade statement"
+            },
+            {
+              "method": "buildQuotedReplyPlan",
+              "ownerKind": "existing_runtime_sibling",
+              "ownerFile": "backend/src/kloel/unified-agent-response.service.ts",
+              "preferredExport": "buildQuotedReplyPlan",
+              "exportMatchScore": 4,
+              "action": "import the matched existing export and delegate; do not copy or rewrite the existing owner module"
+            }
+          ],
+          "importPressurePlan": {
+            "mode": "namespace_owner_imports",
+            "decisionAuthority": "derived from facade owner count and delegated binding count; no fixed line budget is used",
+            "ownerCount": 2,
+            "namedBindingCount": 4,
+            "namespaceBindingCount": 2,
+            "bindingReduction": 2,
+            "owners": [
+              {
+                "file": "backend/src/kloel/unified-agent-residual.helpers.ts",
+                "namespaceAlias": "ResidualHelpers",
+                "delegatedMethodCount": 3,
+                "preferredExports": [
+                  "processIncomingMessage",
+                  "processMessage",
+                  "executeTool"
+                ]
+              },
+              {
+                "file": "backend/src/kloel/unified-agent-response.service.ts",
+                "namespaceAlias": "ResponseService",
+                "delegatedMethodCount": 1,
+                "preferredExports": [
+                  "buildQuotedReplyPlan"
+                ]
+              }
+            ],
+            "rule": "Prefer namespace imports per owner module for runtime calls only when public signature types are imported or namespace-qualified from owner modules; never keep or recreate local facade type declarations."
+          },
+          "dependencyBundleReusePlan": {
+            "available": false,
+            "decisionAuthority": "derived from repeated ownerFile methodDelegations, facade dependency surface, owner-file count, and typed bundle surface estimate; no fixed facade line budget or hardcoded owner name",
+            "dependencyBundleEconomy": {
+              "dependencySurfaceCount": 16,
+              "repeatedMethodCount": 3,
+              "reusableOwnerCount": 1,
+              "ownerFileCount": 2,
+              "repeatedDirectSurface": 48,
+              "cachedBundleSurface": 51,
+              "pass": false,
+              "interpretation": "Bundle reuse is an economy win only when the estimated direct repetition surface exceeds the estimated typed bundle/support surface created to share it."
+            },
+            "reusableOwners": [
+              {
+                "ownerFile": "backend/src/kloel/unified-agent-residual.helpers.ts",
+                "methods": [
+                  "processIncomingMessage",
+                  "processMessage",
+                  "executeTool"
+                ],
+                "preferredExports": [
+                  "processIncomingMessage",
+                  "processMessage",
+                  "executeTool"
+                ],
+                "repeatedDelegationCount": 3,
+                "action": "keep direct per-method dependency objects because measured typed bundle/support surface is not smaller than repeated direct dependency surface"
+              }
+            ],
+            "action": "Do not materialize cached dependency bundles; direct facade delegation remains lower total inventory until measured repetition outweighs the typed bundle/support surface."
+          },
+          "compactnessGuard": "one public method statement per delegated method; repeated owner dependency objects collapse into one owner-local bundle/delegate only when dependencyBundleReusePlan.dependencyBundleEconomy.pass is true; otherwise keep direct per-method dependency objects to avoid support/type inventory bloat; no private facade helper unless this recipe leaves the method unresolved",
+          "postSplitFacadeCompactionPlan": {
+            "decisionAuthority": "derived from methodDelegations, ownerFiles, import pressure, dependency bundle reuse, type consumers, and the next scorecard; no fixed facade line budget",
+            "compactionActions": [
+              "after the first green scorecard, delegate every resolved public method to its owner module with one facade statement",
+              "when multiple public methods share an owner module, build one owner-local dependency bundle or cached delegate only if dependencyBundleEconomy proves lower total inventory than direct dependency objects",
+              "release retained public leaf wrappers only when publicLeafReleaseEconomy proves the move reduces at least one measured surface without worsening owner pressure or inventory",
+              "keep retained public leaf bodies in the facade when release is a pure surface transfer instead of a measured Pareto improvement",
+              "release facade-local types into an already-created consuming owner module before touching any existing shared type file",
+              "touch an existing shared type file only when multiple owner modules consume the released type and scorecard economy stays non-worse",
+              "remove facade-only private helpers when methodDelegations has no unresolved owner",
+              "choose namespace or named imports from importPressurePlan instead of hand-written import style"
+            ],
+            "typeSpilloverGuard": "extra type-only changed files are economy debt unless scorecard typeSpilloverEconomy proves the existing shared type-file touch is cheaper than owner-local export/import; small public helper types should live in a newly-created owner module before touching an existing shared type file",
+            "guard": "apply only if public API, constructor shape, scorecard, focused Jest, typecheck-impact, spec diff, protected diff, and source count remain non-worse"
+          }
+        },
+        "firstBatchOrder": [
+          {
+            "action": "reuse_existing_module",
+            "file": "backend/src/kloel/unified-agent-response.service.ts"
+          },
+          {
+            "action": "write_selected_module",
+            "file": "backend/src/kloel/unified-agent-residual.helpers.ts"
+          },
+          {
+            "action": "replace_facade",
+            "file": "backend/src/kloel/unified-agent.service.ts"
+          }
+        ],
+        "unresolvedPublicMethods": []
+      },
+      "dynamicDominanceObjective": {
+        "decisionAuthority": "derived from scorecard surfaces, executable owner map, and validation results; no fixed line or time budget",
+        "optimizeSurfaces": [
+          "target facade lines",
+          "changed inventory lines",
+          "largest changed source lines",
+          "product churn",
+          "net source deletion"
+        ],
+        "compactionRule": "After the first green scorecard, keep only compactions that reduce at least one optimize surface without worsening any gate or increasing product source count.",
+        "stopRule": "Stop when the next available product-batch compaction would require a new write target, type-only spillover file, public API change, spec/protected edit, or increased scorecard surface.",
+        "facadeShape": "imports, constructor, cached delegate accessors only when needed, and 24 one-statement public methods.",
+        "facadeCompactnessGuard": "one public method statement per delegated method; repeated owner dependency objects collapse into one owner-local bundle/delegate only when dependencyBundleReusePlan.dependencyBundleEconomy.pass is true; otherwise keep direct per-method dependency objects to avoid support/type inventory bloat; no private facade helper unless this recipe leaves the method unresolved",
+        "importPressurePlan": {
+          "mode": "namespace_owner_imports",
+          "decisionAuthority": "derived from facade owner count and delegated binding count; no fixed line budget is used",
+          "ownerCount": 2,
+          "namedBindingCount": 4,
+          "namespaceBindingCount": 2,
+          "bindingReduction": 2,
+          "owners": [
+            {
+              "file": "backend/src/kloel/unified-agent-residual.helpers.ts",
+              "namespaceAlias": "ResidualHelpers",
+              "delegatedMethodCount": 3,
+              "preferredExports": [
+                "processIncomingMessage",
+                "processMessage",
+                "executeTool"
+              ]
+            },
+            {
+              "file": "backend/src/kloel/unified-agent-response.service.ts",
+              "namespaceAlias": "ResponseService",
+              "delegatedMethodCount": 1,
+              "preferredExports": [
+                "buildQuotedReplyPlan"
+              ]
+            }
+          ],
+          "rule": "Prefer namespace imports per owner module for runtime calls only when public signature types are imported or namespace-qualified from owner modules; never keep or recreate local facade type declarations."
+        },
+        "dependencyBundleReusePlan": {
+          "available": false,
+          "decisionAuthority": "derived from repeated ownerFile methodDelegations, facade dependency surface, owner-file count, and typed bundle surface estimate; no fixed facade line budget or hardcoded owner name",
+          "dependencyBundleEconomy": {
+            "dependencySurfaceCount": 16,
+            "repeatedMethodCount": 3,
+            "reusableOwnerCount": 1,
+            "ownerFileCount": 2,
+            "repeatedDirectSurface": 48,
+            "cachedBundleSurface": 51,
+            "pass": false,
+            "interpretation": "Bundle reuse is an economy win only when the estimated direct repetition surface exceeds the estimated typed bundle/support surface created to share it."
+          },
+          "reusableOwners": [
+            {
+              "ownerFile": "backend/src/kloel/unified-agent-residual.helpers.ts",
+              "methods": [
+                "processIncomingMessage",
+                "processMessage",
+                "executeTool"
+              ],
+              "preferredExports": [
+                "processIncomingMessage",
+                "processMessage",
+                "executeTool"
+              ],
+              "repeatedDelegationCount": 3,
+              "action": "keep direct per-method dependency objects because measured typed bundle/support surface is not smaller than repeated direct dependency surface"
+            }
+          ],
+          "action": "Do not materialize cached dependency bundles; direct facade delegation remains lower total inventory until measured repetition outweighs the typed bundle/support surface."
+        },
+        "balancedSupportReleasePlan": {
+          "available": false,
+          "supportReleaseEconomy": null,
+          "reason": "no support candidate available"
+        },
+        "postSplitFacadeCompactionPlan": {
+          "decisionAuthority": "derived from methodDelegations, ownerFiles, import pressure, dependency bundle reuse, type consumers, and the next scorecard; no fixed facade line budget",
+          "compactionActions": [
+            "after the first green scorecard, delegate every resolved public method to its owner module with one facade statement",
+            "when multiple public methods share an owner module, build one owner-local dependency bundle or cached delegate only if dependencyBundleEconomy proves lower total inventory than direct dependency objects",
+            "release retained public leaf wrappers only when publicLeafReleaseEconomy proves the move reduces at least one measured surface without worsening owner pressure or inventory",
+            "keep retained public leaf bodies in the facade when release is a pure surface transfer instead of a measured Pareto improvement",
+            "release facade-local types into an already-created consuming owner module before touching any existing shared type file",
+            "touch an existing shared type file only when multiple owner modules consume the released type and scorecard economy stays non-worse",
+            "remove facade-only private helpers when methodDelegations has no unresolved owner",
+            "choose namespace or named imports from importPressurePlan instead of hand-written import style"
+          ],
+          "typeSpilloverGuard": "extra type-only changed files are economy debt unless scorecard typeSpilloverEconomy proves the existing shared type-file touch is cheaper than owner-local export/import; small public helper types should live in a newly-created owner module before touching an existing shared type file",
+          "guard": "apply only if public API, constructor shape, scorecard, focused Jest, typecheck-impact, spec diff, protected diff, and source count remain non-worse"
+        },
+        "writeGranularityPlan": {
+          "planningUnit": "public method owner map",
+          "writeUnit": "product batch unit",
+          "productBatchUnits": [
+            {
+              "kind": "module_write",
+              "file": "backend/src/kloel/unified-agent-residual.helpers.ts",
+              "plannedSymbols": [
+                "processMessage",
+                "executeTool",
+                "processIncomingMessage"
+              ]
+            },
+            {
+              "kind": "facade_replace",
+              "file": "backend/src/kloel/unified-agent.service.ts",
+              "plannedMethods": [
+                "processIncomingMessage",
+                "processMessage",
+                "executeTool",
+                "buildQuotedReplyPlan"
+              ]
+            }
+          ],
+          "traceEconomy": "Trace count should follow product batch units derived here, not methodDelegations length.",
+          "microWriteFallback": "Use per-method writes only after a batch-sized write fails validation and record the failed validation reason."
+        }
+      }
+    },
+    "marginAmplification": {
+      "shape": "dependency_split_modules",
+      "writeTargets": [
+        {
+          "file": "backend/src/kloel/unified-agent-process.ts",
+          "symbols": [
+            "processMessage",
+            "executeTool",
+            "processIncomingMessage",
+            "buildQuotedReplyPlan"
+          ],
+          "responsibility": "Extract dependency-cohesive cluster rooted at processMessage: processMessage, executeTool, processIncomingMessage, buildQuotedReplyPlan",
+          "observedLines": 92
+        }
+      ],
+      "metrics": {
+        "productSourceFileCount": 1,
+        "estimatedInventoryPressure": 112,
+        "dependencyBoundaryPressure": 16,
+        "writeBatchFileCount": 2,
+        "largestModuleLines": 92,
+        "responsibilityIsolation": 1
+      },
+      "useWhen": "Use this measured shape when the loop objective is larger structural margin and the standard scorecard stays green."
+    },
+    "balancedSupportRelease": {
+      "available": false,
+      "supportReleaseEconomy": null,
+      "reason": "no support candidate available"
+    },
+    "delegationShape": "cached_delegate_instance",
+    "retainInFacade": [],
+    "writeTargets": [
+      {
+        "file": "backend/src/kloel/unified-agent-residual.helpers.ts",
+        "symbols": [
+          "processMessage",
+          "executeTool",
+          "processIncomingMessage"
+        ],
+        "responsibility": "Extract residual behavior not already covered by existing runtime sibling modules: processMessage, executeTool, processIncomingMessage"
+      }
+    ],
+    "reuseExistingModules": [
+      {
+        "file": "backend/src/kloel/unified-agent-response.service.ts",
+        "lines": 398,
+        "exportedRuntimeSymbols": [
+          "buildQuotedReplyPlan",
+          "buildFallbackResult",
+          "composeWriterReply",
+          "finalizeReplyStyle",
+          "extractIntent",
+          "calculateConfidence"
+        ],
+        "reusedSymbols": [
+          "buildQuotedReplyPlan"
+        ]
+      }
+    ],
+    "siblingReusePlan": {
+      "available": true,
+      "applied": true,
+      "reason": "existing_runtime_siblings_cover_public_surface",
+      "existingModules": [
+        {
+          "file": "backend/src/kloel/unified-agent-response.service.ts",
+          "lines": 398,
+          "exportedRuntimeSymbols": [
+            "buildQuotedReplyPlan",
+            "buildFallbackResult",
+            "composeWriterReply",
+            "finalizeReplyStyle",
+            "extractIntent",
+            "calculateConfidence"
+          ],
+          "reusedSymbols": [
+            "buildQuotedReplyPlan"
+          ]
+        }
+      ],
+      "reuseAssignments": [
+        {
+          "symbol": "buildQuotedReplyPlan",
+          "lines": 15,
+          "existingModule": "backend/src/kloel/unified-agent-response.service.ts",
+          "score": 4,
+          "reason": "public_symbol_matches_existing_runtime_sibling"
+        }
+      ],
+      "residualObservedLines": 77,
+      "residualSymbols": [
+        "processMessage",
+        "executeTool",
+        "processIncomingMessage"
+      ],
+      "residualWriteTargets": [
+        {
+          "file": "backend/src/kloel/unified-agent-residual.helpers.ts",
+          "symbols": [
+            "processMessage",
+            "executeTool",
+            "processIncomingMessage"
+          ],
+          "responsibility": "Extract residual behavior not already covered by existing runtime sibling modules: processMessage, executeTool, processIncomingMessage"
+        }
+      ]
+    },
+    "executableFirstBatchRecipe": {
+      "mode": "compiled_owner_map_to_first_batch",
+      "decisionAuthority": "derived from detected public methods, sibling reuse assignments, selected write targets, and facade surface inventory",
+      "publicMethodCount": 4,
+      "dependencies": {
+        "constructorParamProperties": [
+          {
+            "name": "prisma",
+            "optional": false,
+            "type": "PrismaService"
+          },
+          {
+            "name": "config",
+            "optional": false,
+            "type": "ConfigService"
+          },
+          {
+            "name": "planLimits",
+            "optional": false,
+            "type": "PlanLimitsService"
+          },
+          {
+            "name": "auditService",
+            "optional": false,
+            "type": "AuditService"
+          },
+          {
+            "name": "ctx",
+            "optional": false,
+            "type": "UnifiedAgentContextService"
+          },
+          {
+            "name": "response",
+            "optional": false,
+            "type": "UnifiedAgentResponseService"
+          },
+          {
+            "name": "actions",
+            "optional": false,
+            "type": "UnifiedAgentActionsService"
+          },
+          {
+            "name": "agentRuntime",
+            "optional": true,
+            "type": "AgentRuntimeContextService"
+          },
+          {
+            "name": "abiBuilder",
+            "optional": true,
+            "type": "AbiBuilderService"
+          },
+          {
+            "name": "riskGate",
+            "optional": true,
+            "type": "RiskGateService"
+          }
+        ],
+        "privateFields": [
+          {
+            "name": "logger",
+            "optional": false,
+            "type": null,
+            "visibility": "private"
+          },
+          {
+            "name": "openai",
+            "optional": false,
+            "type": "OpenAI | null",
+            "visibility": "private"
+          },
+          {
+            "name": "primaryBrainModel",
+            "optional": false,
+            "type": "string",
+            "visibility": "private"
+          },
+          {
+            "name": "fallbackBrainModel",
+            "optional": false,
+            "type": "string",
+            "visibility": "private"
+          },
+          {
+            "name": "writerModel",
+            "optional": false,
+            "type": "string",
+            "visibility": "private"
+          },
+          {
+            "name": "fallbackWriterModel",
+            "optional": false,
+            "type": "string",
+            "visibility": "private"
+          }
+        ]
+      },
+      "readOnlyExistingModules": [
+        {
+          "file": "backend/src/kloel/unified-agent-response.service.ts",
+          "exportedRuntimeSymbols": [
+            "buildQuotedReplyPlan",
+            "buildFallbackResult",
+            "composeWriterReply",
+            "finalizeReplyStyle",
+            "extractIntent",
+            "calculateConfidence"
+          ],
+          "reusedSymbols": [
+            "buildQuotedReplyPlan"
+          ],
+          "action": "read/import only unless validation proves the owner module itself is broken"
+        }
+      ],
+      "writePlan": [
+        {
+          "file": "backend/src/kloel/unified-agent-residual.helpers.ts",
+          "symbols": [
+            "processMessage",
+            "executeTool",
+            "processIncomingMessage"
+          ],
+          "responsibility": "Extract residual behavior not already covered by existing runtime sibling modules: processMessage, executeTool, processIncomingMessage",
+          "action": "create or update this module before replacing the facade"
+        }
+      ],
+      "facadeRewritePlan": {
+        "target": "backend/src/kloel/unified-agent.service.ts",
+        "ownerFiles": [
+          "backend/src/kloel/unified-agent-residual.helpers.ts",
+          "backend/src/kloel/unified-agent-response.service.ts"
+        ],
+        "methodDelegations": [
+          {
+            "method": "processIncomingMessage",
+            "ownerKind": "selected_write_target",
+            "ownerFile": "backend/src/kloel/unified-agent-residual.helpers.ts",
+            "preferredExport": "processIncomingMessage",
+            "action": "move implementation to the selected write target and delegate with one public facade statement"
+          },
+          {
+            "method": "processMessage",
+            "ownerKind": "selected_write_target",
+            "ownerFile": "backend/src/kloel/unified-agent-residual.helpers.ts",
+            "preferredExport": "processMessage",
+            "action": "move implementation to the selected write target and delegate with one public facade statement"
+          },
+          {
+            "method": "executeTool",
+            "ownerKind": "selected_write_target",
+            "ownerFile": "backend/src/kloel/unified-agent-residual.helpers.ts",
+            "preferredExport": "executeTool",
+            "action": "move implementation to the selected write target and delegate with one public facade statement"
+          },
+          {
+            "method": "buildQuotedReplyPlan",
+            "ownerKind": "existing_runtime_sibling",
+            "ownerFile": "backend/src/kloel/unified-agent-response.service.ts",
+            "preferredExport": "buildQuotedReplyPlan",
+            "exportMatchScore": 4,
+            "action": "import the matched existing export and delegate; do not copy or rewrite the existing owner module"
+          }
+        ],
+        "importPressurePlan": {
+          "mode": "namespace_owner_imports",
+          "decisionAuthority": "derived from facade owner count and delegated binding count; no fixed line budget is used",
+          "ownerCount": 2,
+          "namedBindingCount": 4,
+          "namespaceBindingCount": 2,
+          "bindingReduction": 2,
+          "owners": [
+            {
+              "file": "backend/src/kloel/unified-agent-residual.helpers.ts",
+              "namespaceAlias": "ResidualHelpers",
+              "delegatedMethodCount": 3,
+              "preferredExports": [
+                "processIncomingMessage",
+                "processMessage",
+                "executeTool"
+              ]
+            },
+            {
+              "file": "backend/src/kloel/unified-agent-response.service.ts",
+              "namespaceAlias": "ResponseService",
+              "delegatedMethodCount": 1,
+              "preferredExports": [
+                "buildQuotedReplyPlan"
+              ]
+            }
+          ],
+          "rule": "Prefer namespace imports per owner module for runtime calls only when public signature types are imported or namespace-qualified from owner modules; never keep or recreate local facade type declarations."
+        },
+        "dependencyBundleReusePlan": {
+          "available": false,
+          "decisionAuthority": "derived from repeated ownerFile methodDelegations, facade dependency surface, owner-file count, and typed bundle surface estimate; no fixed facade line budget or hardcoded owner name",
+          "dependencyBundleEconomy": {
+            "dependencySurfaceCount": 16,
+            "repeatedMethodCount": 3,
+            "reusableOwnerCount": 1,
+            "ownerFileCount": 2,
+            "repeatedDirectSurface": 48,
+            "cachedBundleSurface": 51,
+            "pass": false,
+            "interpretation": "Bundle reuse is an economy win only when the estimated direct repetition surface exceeds the estimated typed bundle/support surface created to share it."
+          },
+          "reusableOwners": [
+            {
+              "ownerFile": "backend/src/kloel/unified-agent-residual.helpers.ts",
+              "methods": [
+                "processIncomingMessage",
+                "processMessage",
+                "executeTool"
+              ],
+              "preferredExports": [
+                "processIncomingMessage",
+                "processMessage",
+                "executeTool"
+              ],
+              "repeatedDelegationCount": 3,
+              "action": "keep direct per-method dependency objects because measured typed bundle/support surface is not smaller than repeated direct dependency surface"
+            }
+          ],
+          "action": "Do not materialize cached dependency bundles; direct facade delegation remains lower total inventory until measured repetition outweighs the typed bundle/support surface."
+        },
+        "compactnessGuard": "one public method statement per delegated method; repeated owner dependency objects collapse into one owner-local bundle/delegate only when dependencyBundleReusePlan.dependencyBundleEconomy.pass is true; otherwise keep direct per-method dependency objects to avoid support/type inventory bloat; no private facade helper unless this recipe leaves the method unresolved",
+        "postSplitFacadeCompactionPlan": {
+          "decisionAuthority": "derived from methodDelegations, ownerFiles, import pressure, dependency bundle reuse, type consumers, and the next scorecard; no fixed facade line budget",
+          "compactionActions": [
+            "after the first green scorecard, delegate every resolved public method to its owner module with one facade statement",
+            "when multiple public methods share an owner module, build one owner-local dependency bundle or cached delegate only if dependencyBundleEconomy proves lower total inventory than direct dependency objects",
+            "release retained public leaf wrappers only when publicLeafReleaseEconomy proves the move reduces at least one measured surface without worsening owner pressure or inventory",
+            "keep retained public leaf bodies in the facade when release is a pure surface transfer instead of a measured Pareto improvement",
+            "release facade-local types into an already-created consuming owner module before touching any existing shared type file",
+            "touch an existing shared type file only when multiple owner modules consume the released type and scorecard economy stays non-worse",
+            "remove facade-only private helpers when methodDelegations has no unresolved owner",
+            "choose namespace or named imports from importPressurePlan instead of hand-written import style"
+          ],
+          "typeSpilloverGuard": "extra type-only changed files are economy debt unless scorecard typeSpilloverEconomy proves the existing shared type-file touch is cheaper than owner-local export/import; small public helper types should live in a newly-created owner module before touching an existing shared type file",
+          "guard": "apply only if public API, constructor shape, scorecard, focused Jest, typecheck-impact, spec diff, protected diff, and source count remain non-worse"
+        }
+      },
+      "writeGranularityPlan": {
+        "planningUnit": "public method owner map",
+        "writeUnit": "product batch unit",
+        "productBatchUnits": [
+          {
+            "kind": "module_write",
+            "file": "backend/src/kloel/unified-agent-residual.helpers.ts",
+            "plannedSymbols": [
+              "processMessage",
+              "executeTool",
+              "processIncomingMessage"
+            ]
+          },
+          {
+            "kind": "facade_replace",
+            "file": "backend/src/kloel/unified-agent.service.ts",
+            "plannedMethods": [
+              "processIncomingMessage",
+              "processMessage",
+              "executeTool",
+              "buildQuotedReplyPlan"
+            ]
+          }
+        ],
+        "traceEconomy": "Trace count should follow product batch units derived here, not methodDelegations length.",
+        "microWriteFallback": "Use per-method writes only after a batch-sized write fails validation and record the failed validation reason."
+      },
+      "firstBatchOrder": [
+        {
+          "action": "reuse_existing_module",
+          "file": "backend/src/kloel/unified-agent-response.service.ts"
+        },
+        {
+          "action": "write_selected_module",
+          "file": "backend/src/kloel/unified-agent-residual.helpers.ts"
+        },
+        {
+          "action": "replace_facade",
+          "file": "backend/src/kloel/unified-agent.service.ts"
+        }
+      ],
+      "unresolvedPublicMethods": []
+    },
+    "facadeDelegationCompactness": {
+      "mode": "delegate_public_methods_by_domain_owner",
+      "rule": "Each public facade method should be a one-statement delegation to the existing sibling module or residual helper selected by siblingReusePlan.",
+      "avoid": [
+        "duplicated type aliases in facade",
+        "inline method bodies in facade",
+        "private facade helpers",
+        "per-method dependency bundle rebuilds"
+      ],
+      "expectedFacadeShape": "imports, constructor, cached delegate accessors only when needed, and 24 one-statement public methods."
+    },
+    "traceBatching": {
+      "mode": "product_batch_unit_trace",
+      "rule": "Planning can be method-aware, but writing must be module/facade-batch aware. Use the fewest Atomic write units matching writeTargets plus facade replacement.",
+      "childEvidence": "Per-method atomic writes are fallback only after the macro batch fails validation; otherwise they are macro-atomicity debt."
+    },
+    "preserve": {
+      "className": "UnifiedAgentService",
+      "target": "backend/src/kloel/unified-agent.service.ts",
+      "spec": "backend/src/kloel/unified-agent.service.spec.ts",
+      "publicApi": true
+    },
+    "validation": {
+      "scorecard": "'node' '/Users/danielpenin/whatsapp_saas/docs/ai/atomic-os-benchmark/tools/refactor-scorecard.cjs' '--worktree' '/private/tmp/kloel-ab123-atomic-20260517215315' '--target' 'backend/src/kloel/unified-agent.service.ts' '--class' 'UnifiedAgentService' '--spec' 'backend/src/kloel/unified-agent.service.spec.ts' '--enforce-scope' '--allow-prefix' 'backend/src/kloel/unified-agent' '--allow-atomic-traces' '--enforce-target-dominance-release' '--enforce-facade-private-helper-release' '--enforce-facade-type-surface-release' '--enforce-type-spillover-economy' '--enforce-extraction-economy' '--enforce-sibling-reuse' '--enforce-trace-economy' '--enforce-public-api' '--json'",
+      "publicApiAudit": "'node' '/Users/danielpenin/whatsapp_saas/docs/ai/atomic-os-benchmark/tools/public-api-preservation-audit.cjs' '--worktree' '/private/tmp/kloel-ab123-atomic-20260517215315' '--target' 'backend/src/kloel/unified-agent.service.ts' '--class' 'UnifiedAgentService' '--json'",
+      "scopeDiscipline": "'node' '/Users/danielpenin/whatsapp_saas/docs/ai/atomic-os-benchmark/tools/scope-discipline-check.cjs' '--worktree' '/private/tmp/kloel-ab123-atomic-20260517215315' '--allow-prefix' 'backend/src/kloel/unified-agent' '--allow-atomic-traces' '--json'",
+      "traceIsolation": "'node' '/Users/danielpenin/whatsapp_saas/docs/ai/atomic-os-benchmark/tools/trace-isolation-check.cjs' '--worktree' '/private/tmp/kloel-ab123-atomic-20260517215315' '--coordinator' '/Users/danielpenin/whatsapp_saas' '--since' '<start-time>' '--json'",
+      "typecheckImpact": "'node' '/Users/danielpenin/whatsapp_saas/docs/ai/atomic-os-benchmark/tools/typecheck-impact-audit.cjs' '--worktree' '/private/tmp/kloel-ab123-atomic-20260517215315' '--allow-prefix' 'backend/src/kloel/unified-agent' '--json' '--' 'npm' '--prefix' 'backend' 'run' 'typecheck'"
+    }
+  },
+  "dynamicPolicyInputs": {
+    "targetSource": "caller",
+    "specSource": "caller-or-detected-adjacent-spec",
+    "classSource": "caller-or-source-class-detection",
+    "sizingSource": "measurement-only, no embedded line ceiling",
+    "allowedScopeSource": "derived from target file stem",
+    "toolPathSource": "current tool directory",
+    "coordinatorSource": "ATOMIC_OS_REPO_ROOT or discovered repo root"
+  },
+  "constraints": [
+    "Use only the derived allowed source prefix plus atomic trace files unless a focused validation proves a broader edit is required.",
+    "Do not edit governance, package, workflow, benchmark tooling, or unrelated product surfaces from the worker worktree.",
+    "Use atomic MCP writes for code and run the generated scorecard before declaring completion.",
+    "For facade splits, the generated scorecard releases target dominance dynamically: the target cannot remain the largest changed source.",
+    "For facade splits, keep single-use private helpers out of the facade; inline or move them because the scorecard detects this from AST usage.",
+    "For facade splits, use dependency-cohesive clusters from the observed symbol call graph before falling back to token clusters.",
+    "For macro-refactors, method-level ownership is planning granularity only; product batch units define write granularity and trace economy.",
+    "Retain public leaf methods in the facade when extraction would create a single-purpose support module without releasing dominance.",
+    "Preserve public API when a class is detected; if no class is detected, preserve exported call surface identified by code_outline.",
+    "Treat this output as runtime policy compiled from the current worktree, not a reusable fixed architecture template.",
+    "Avoid copying helper bodies across modules; export/import the dependency owner selected by the graph when a helper is needed in another cluster.",
+    "Choose the facade delegation shape from measured surface pressure: cached delegate, direct functions, or private helper only when it is actually smallest.",
+    "Macro refactor shape comes from measured Pareto pressure."
+  ],
+  "adaptiveExecutionPolicy": {
+    "progressSignals": [
+      "target diff exists",
+      "atomic trace exists",
+      "scorecard was run",
+      "target dominance released",
+      "facade private helper surface released",
+      "extraction economy released",
+      "trace economy released",
+      "dependency clusters preserved or intentionally recompiled",
+      "facade delegation shape chosen from surface pressure",
+      "macro refactor shape chosen from measured Pareto pressure",
+      "public API audit was run when class was detected"
+    ],
+    "noProgressResponse": "When progress signals stop advancing, create the selected modules from macroRefactorShape.selectedDecompositionTemplate, replace the facade once, then re-run scorecard and this policy compiler.",
+    "sizingAuthority": "Only caller-provided max flags are enforced; target dominance release is derived from changed-source measurements, not a fixed line ceiling.",
+    "explorationLimit": "Read files needed to preserve the detected public surface and focused behavior; extra reads must be tied to a failing validation.",
+    "dominanceResponse": "If the target remains the largest changed source after validation, continue by extracting processMessage or the cohesive cluster that contains it.",
+    "facadeSurfaceResponse": "If the facade keeps helper methods, compare the emitted facadeDelegationShape candidates and use the smallest measured delegation shape that preserves constructor identity.",
+    "macroShapeResponse": "Follow macroRefactorShape.preferredShape unless validation moves the Pareto winner.",
+    "extractionEconomyResponse": "If scorecard reports support-module scatter or dominant extraction bloat, merge support into its dependency owner or split only along an observed call-graph root.",
+    "traceEconomyResponse": "If scorecard reports trace-economy debt, re-run the write as product batch units from executableFirstBatchRecipe.writeGranularityPlan; do not continue per-method writes."
+  },
+  "decompositionTemplate": [
+    {
+      "file": "backend/src/kloel/unified-agent-process.ts",
+      "responsibility": "Extract dependency-cohesive cluster rooted at processMessage: processMessage, executeTool, processIncomingMessage, buildQuotedReplyPlan",
+      "observedLines": 92,
+      "symbols": [
+        "processMessage",
+        "executeTool",
+        "processIncomingMessage",
+        "buildQuotedReplyPlan"
+      ],
+      "preserveTogether": "Keep these symbols together unless a validation or scorecard signal proves that one member belongs to another observed dependency root.",
+      "splitWhen": "Split only along an observed dependency edge or repeated validation failure, not by a fixed file or line budget."
+    }
+  ],
+  "macroRefactorOperation": {
+    "name": "dynamic_service_facade_split",
+    "preserve": [
+      "class name: UnifiedAgentService",
+      "constructor injection shape for UnifiedAgentService",
+      "public method signatures for UnifiedAgentService",
+      "focused spec bytes: backend/src/kloel/unified-agent.service.spec.ts"
+    ],
+    "executeAs": "minimal read batch, macro shape selection, dependency-cohesive extraction recipe, facade delegation-shape choice, single facade replacement, scorecard, public API audit when class is known"
+  },
+  "atomicWriteBatchShape": [
+    "atomic_create_file for extracted modules derived from macroRefactorShape.selectedDecompositionTemplate and observedSymbolClusters",
+    "atomic_replace_text or atomic_edit_symbol for the facade replacement using macroRefactorShape.preferredShape plus facadeDelegationShape.preferredShape as the first measured candidate pair",
+    "refactor-scorecard with derived --allow-prefix, dynamic target-dominance release, facade private-helper release, extraction-economy release, and trace-economy release immediately after the first write batch",
+    "public-api-preservation-audit for UnifiedAgentService"
+  ],
+  "batchReadJsonl": "{\"tool\":\"code_file_stat\",\"arguments\":{\"file\":\"/private/tmp/kloel-ab123-atomic-20260517215315/backend/src/kloel/unified-agent.service.ts\"}}\n{\"tool\":\"code_outline\",\"arguments\":{\"file\":\"/private/tmp/kloel-ab123-atomic-20260517215315/backend/src/kloel/unified-agent.service.ts\"}}",
+  "batchReadCommand": "printf %s '{\"tool\":\"code_file_stat\",\"arguments\":{\"file\":\"/private/tmp/kloel-ab123-atomic-20260517215315/backend/src/kloel/unified-agent.service.ts\"}}\n{\"tool\":\"code_outline\",\"arguments\":{\"file\":\"/private/tmp/kloel-ab123-atomic-20260517215315/backend/src/kloel/unified-agent.service.ts\"}}\n' | node '/Users/danielpenin/whatsapp_saas/docs/ai/atomic-os-benchmark/tools/atomic-batch.cjs' -",
+  "scorecardCommand": "'node' '/Users/danielpenin/whatsapp_saas/docs/ai/atomic-os-benchmark/tools/refactor-scorecard.cjs' '--worktree' '/private/tmp/kloel-ab123-atomic-20260517215315' '--target' 'backend/src/kloel/unified-agent.service.ts' '--class' 'UnifiedAgentService' '--spec' 'backend/src/kloel/unified-agent.service.spec.ts' '--enforce-scope' '--allow-prefix' 'backend/src/kloel/unified-agent' '--allow-atomic-traces' '--enforce-target-dominance-release' '--enforce-facade-private-helper-release' '--enforce-facade-type-surface-release' '--enforce-type-spillover-economy' '--enforce-extraction-economy' '--enforce-sibling-reuse' '--enforce-trace-economy' '--enforce-public-api' '--json'",
+  "publicApiAuditCommand": "'node' '/Users/danielpenin/whatsapp_saas/docs/ai/atomic-os-benchmark/tools/public-api-preservation-audit.cjs' '--worktree' '/private/tmp/kloel-ab123-atomic-20260517215315' '--target' 'backend/src/kloel/unified-agent.service.ts' '--class' 'UnifiedAgentService' '--json'",
+  "scopeDisciplineCommand": "'node' '/Users/danielpenin/whatsapp_saas/docs/ai/atomic-os-benchmark/tools/scope-discipline-check.cjs' '--worktree' '/private/tmp/kloel-ab123-atomic-20260517215315' '--allow-prefix' 'backend/src/kloel/unified-agent' '--allow-atomic-traces' '--json'",
+  "traceIsolationCommand": "'node' '/Users/danielpenin/whatsapp_saas/docs/ai/atomic-os-benchmark/tools/trace-isolation-check.cjs' '--worktree' '/private/tmp/kloel-ab123-atomic-20260517215315' '--coordinator' '/Users/danielpenin/whatsapp_saas' '--since' '<start-time>' '--json'",
+  "typecheckImpactCommand": "'node' '/Users/danielpenin/whatsapp_saas/docs/ai/atomic-os-benchmark/tools/typecheck-impact-audit.cjs' '--worktree' '/private/tmp/kloel-ab123-atomic-20260517215315' '--allow-prefix' 'backend/src/kloel/unified-agent' '--json' '--' 'npm' '--prefix' 'backend' 'run' 'typecheck'"
+}

@@ -1,0 +1,59 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779162374895_1d0e9d3a",
+  "ts": "2026-05-19T03:46:14.895Z",
+  "file": "frontend/src/components/kloel/marketing/OfficialMarketingChannelPage/SetupSteps.tsx",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "atomic_delete_file",
+  "operator": "atomic_delete_file",
+  "targetUnit": "file",
+  "intention": "delete frontend/src/components/kloel/marketing/OfficialMarketingChannelPage/SetupSteps.tsx (3454 bytes)",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 3454,
+    "lineRewriteSurfaceChars": 3454,
+    "expansionFactorAvoided": 1,
+    "bytesNet": -3454,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "generic",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "proposedSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- frontend/src/components/kloel/marketing/OfficialMarketingChannelPage/SetupSteps.tsx (atomic char-level)\u001b[0m\n  \u001b[31m[-import { useEffect, useState } from 'react';\n  import { kloelT } from '@/lib/i18n/t';\n  import { KLOEL_THEME } from '@/lib/kloel-theme';\n  import type { ChannelKey } from '../OfficialMarketingChannelPage.helpers';\n  import { CHANNEL_META } from '../OfficialMarketingChannelPage.helpers';\n  \n  export const SETUP_STEPS = Object.freeze(['Conexão', 'Produtos', 'Arsenal', 'Configuração'] as const);\n  \n  interface Props {\n    currentStep: number;\n    setupLoaded: boolean;\n    channel: ChannelKey;\n    onStepClick: (step: number) => void;\n  }\n  \n  const MOBILE_BREAKPOINT = 640;\n  \n  function useMobileViewport(): boolean {\n    const [isMobile, setIsMobile] = useState(false);\n  \n    useEffect(() => {\n      if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {\n        return;\n      }\n  \n      const mediaQuery = window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT - 1}px)`);\n      const apply = () => setIsMobile(mediaQuery.matches);\n      apply();\n      mediaQuery.addEventListener?.('change', apply);\n      return () => mediaQuery.removeEventListener?.('change', apply);\n    }, []);\n  \n    return isMobile;\n  }\n  \n  export function SetupSteps({ currentStep, setupLoaded, channel, onStepClick }: Props) {\n    const meta = CHANNEL_META[channel];\n    const isMobile = useMobileViewport();\n  \n    return (\n      <ol\n        style={{\n          display: 'grid',\n          gridTemplateColumns: isMobile\n            ? 'repeat(2, minmax(0, 1fr))'\n            : 'repeat(4, minmax(0, 1fr))',\n          gap: 10,\n          margin: '0 0 22px',\n          padding: 0,\n          listStyle: 'none',\n          overflowX: 'auto',\n        }}\n      >\n        {SETUP_STEPS.map((step, index) => (\n          <li\n            key={step}\n            aria-current={currentStep === index ? 'step' : undefined}\n            style={{\n              minHeight: 72,\n              minWidth: isMobile ? 0 : 170,\n            }}\n          >\n            <button\n              type=\"button\"\n              aria-label={`${kloelT(`Passo`)} ${index + 1}`}\n              disabled={!setupLoaded}\n              onClick={() => onStepClick(index)}\n              style={{\n                width: '100%',\n                minHeight: 72,\n                borderRadius: 6,\n                border: `1px solid ${KLOEL_THEME.borderPrimary}`,\n                display: 'grid',\n                gridTemplateColumns: '32px 1fr',\n                gap: 10,\n                alignItems: 'center',\n                background:\n                  currentStep === index ? 'rgba(232,93,48,.14)' : KLOEL_THEME.bgSecondary,\n                padding: 14,\n                cursor: setupLoaded ? 'pointer' : 'not-allowed',\n                opacity: setupLoaded ? 1 : 0.62,\n                textAlign: 'left',\n              }}\n            >\n              <span\n                style={{\n                  width: 32,\n                  height: 32,\n                  borderRadius: 6,\n                  display: 'inline-flex',\n                  alignItems: 'center',\n                  justifyContent: 'center',\n                  background: meta.color,\n                  color: KLOEL_THEME.textOnAccent,\n                  fontWeight: 800,\n                  fontFamily: \"'JetBrains Mono', monospace\",\n                  flexShrink: 0,\n                }}\n              >\n                {index + 1}\n              </span>\n              <span\n                style={{\n                  color: KLOEL_THEME.textPrimary,\n                  lineHeight: 1.45,\n                  fontSize: isMobile ? 14 : 16,\n                }}\n              >\n                {step}\n              </span>\n            </button>\n          </li>\n        ))}\n      </ol>\n    );\n  }-]\u001b[0m\n  ",
+  "preservedZones": [],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "byteStart": 0,
+      "byteEnd": 3454,
+      "newByteLength": 0,
+      "oldTextHash": "89debb446f521c83b082a71abb3480c8d41171f4d36ed252bc4325ac2820aae4",
+      "newTextHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "oldSample": "import { useEffect, useState } from 'react';\nimport { kloelT } from '@/lib/i18n/t';\nimport { KLOEL_THEME } from '@/lib/kloel-theme';\nimport type { ChannelKey } from '../OfficialMarketingChannelPage.he",
+      "newSample": "",
+      "description": "Delete 3454 bytes at offset 0"
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "file_deleted",
+  "audit": {
+    "whatChanged": "Operation `atomic_delete_file` changed ~3454 character(s) in `frontend/src/components/kloel/marketing/OfficialMarketingChannelPage/SetupSteps.tsx` (sub-line atomic edit, expansion 1× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "unvalidated-text",
+    "zeroCodeTrust": 30,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

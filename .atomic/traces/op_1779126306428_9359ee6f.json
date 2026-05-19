@@ -1,0 +1,59 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779126306428_9359ee6f",
+  "ts": "2026-05-18T17:45:06.428Z",
+  "file": ".atomic-os-export/integrations/opencode/workspace-gates.ts",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "atomic_create_file",
+  "operator": "atomic_create_file",
+  "targetUnit": "text_span",
+  "intention": "atomic_create_file",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 5062,
+    "lineRewriteSurfaceChars": 0,
+    "expansionFactorAvoided": 0,
+    "bytesNet": 5062,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "bcc08565b24a0ff6e7a9c62fb7fafd48482185e7aff37eba201ede0d354edc3e",
+  "proposedSha256": "bcc08565b24a0ff6e7a9c62fb7fafd48482185e7aff37eba201ede0d354edc3e",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- .atomic-os-export/integrations/opencode/workspace-gates.ts (atomic char-level)\u001b[0m\n  \u001b[32m{+/**\n   * Atomic OS — OpenCode enforcement plugin (genericized / portable).\n   *\n   * This is the OpenCode equivalent of the Claude Code `atomic-only-hook.mjs`\n   * PreToolUse gate: it intercepts every code-mutating tool call OpenCode makes\n   * (and every spawned subagent inherits it) and routes it through the SHARED\n   * `atomic-only-hook.mjs`, so native/shell code edits are denied and only the\n   * atomic-edit MCP tools may mutate code. One law, three CLIs.\n   *\n   * The original deployment also chained project-specific workspace gates\n   * (KLOEL `scripts/decomp/*`). Those were NOT part of the Atomic OS and have\n   * been removed from this portable build — this plugin enforces ONLY the\n   * atomic-edit law. Add your own project gates back if you want them.\n   *\n   * Resolution of the shared hook (first hit wins):\n   *   1. env `ATOMIC_OS_HOME`            → $ATOMIC_OS_HOME/src/atomic-only-hook.mjs\n   *   2. a co-located copy               → <this dir>/../../src/atomic-only-hook.mjs\n   *   3. in-repo install                 → <repoRoot>/atomic-os/src/atomic-only-hook.mjs\n   * If none is found the gate is a safe no-op (it never fails open silently on\n   * a malformed response — only on a genuinely absent install).\n   *\n   * Install: copy to `.opencode/plugins/workspace-gates.ts` in the repo you want\n   * gated (OpenCode auto-loads `.opencode/plugins/*.ts`), and set\n   * `ATOMIC_OS_HOME` to your atomic-os checkout. See integrations/opencode/README.md.\n   */\n  import { spawnSync } from 'node:child_process';\n  import { existsSync } from 'node:fs';\n  import path from 'node:path';\n  import { fileURLToPath } from 'node:url';\n  import type { Plugin } from '@opencode-ai/plugin';\n  \n  type ToolArgs = Record<string, unknown>;\n  type HookInput = {\n    call?: { name?: string; input?: ToolArgs };\n    tool?: string;\n    args?: ToolArgs;\n  };\n  type HookOutput = { args?: ToolArgs };\n  \n  const TOOL_MAP: Record<string, string> = {\n    bash: 'Bash',\n    Bash: 'Bash',\n    write: 'Write',\n    Write: 'Write',\n    edit: 'Edit',\n    Edit: 'Edit',\n    multiedit: 'MultiEdit',\n    MultiEdit: 'MultiEdit',\n    notebookedit: 'NotebookEdit',\n    NotebookEdit: 'NotebookEdit',\n    patch: 'apply_patch',\n    Patch: 'apply_patch',\n  };\n  \n  const ATOMIC_GATED_TOOLS = new Set([\n    'Write',\n    'Edit',\n    'MultiEdit',\n    'NotebookEdit',\n    'Bash',\n    'apply_patch',\n  ]);\n  \n  const HERE = path.dirname(fileURLToPath(import.meta.url));\n  \n  function findRepoRoot(start: string): string {\n    let dir = start;\n    for (let i = 0; i < 12; i += 1) {\n      if (existsSync(path.join(dir, '.git'))) return dir;\n      const parent = path.dirname(dir);\n      if (parent === dir) break;\n      dir = parent;\n    }\n    return start;\n  }\n  \n  /** Locate the shared atomic-only-hook.mjs across the supported layouts. */\n  function resolveAtomicHook(repoRoot: string): string | null {\n    const candidates = [\n      process.env.ATOMIC_OS_HOME\n        ? path.join(process.env.ATOMIC_OS_HOME, 'src', 'atomic-only-hook.mjs')\n        : '',\n      path.resolve(HERE, '..', '..', 'src', 'atomic-only-hook.mjs'),\n      path.join(repoRoot, 'atomic-os', 'src', 'atomic-only-hook.mjs'),\n    ].filter(Boolean);\n    return candidates.find((c) => existsSync(c)) ?? null;\n  }\n  \n  function normalizeOpenCodeArgs(args: ToolArgs): ToolArgs {\n    const normalized = { ...args };\n    if (normalized.filePath && !normalized.file_path) normalized.file_path = normalized.filePath;\n    if (normalized.path && !normalized.file_path) normalized.file_path = normalized.path;\n    return normalized;\n  }\n  \n  function runAtomicGate(hookPath: string, payload: object): { deny: boolean; reason: string } {\n    const result = spawnSync('node', [hookPath], {\n      input: JSON.stringify(payload),\n      encoding: 'utf8',\n    });\n    try {\n      const out = JSON.parse(result.stdout || '{}');\n      const decision = out?.hookSpecificOutput;\n      if (decision?.permissionDecision === 'deny') {\n        return {\n          deny: true,\n          reason: String(decision.permissionDecisionReason || 'native code edit banned'),\n        };\n      }\n    } catch {\n      throw new Error('OpenCode atomic gate returned malformed JSON; refusing tool execution.');\n    }\n    return { deny: false, reason: '' };\n  }\n  \n  function buildEnvelope(input: HookInput, output: HookOutput) {\n    const rawName = input?.call?.name ?? input?.tool ?? '';\n    const claudeName = TOOL_MAP[rawName] ?? rawName;\n    const args = normalizeOpenCodeArgs(output?.args ?? input?.call?.input ?? input?.args ?? {});\n    return {\n      claudeName,\n      envelope: { tool_name: claudeName, tool_input: args },\n    };\n  }\n  \n  export const WorkspaceGatesPlugin: Plugin = async ({ directory, worktree }) => {\n    const repoRoot = findRepoRoot(worktree || directory || process.cwd());\n    const atomicHook = resolveAtomicHook(repoRoot);\n  \n    return {\n      'tool.execute.before': async (input: HookInput, output: HookOutput) => {\n        if (!atomicHook) return; // atomic-os not installed → safe no-op\n        const { claudeName, envelope } = buildEnvelope(input, output);\n        if (ATOMIC_GATED_TOOLS.has(claudeName)) {\n          const atomic = runAtomicGate(atomicHook, envelope);\n          if (atomic.deny) throw new Error(atomic.reason);\n        }\n      },\n    };\n  };\n  \n  export default WorkspaceGatesPlugin;+}\u001b[0m\n  ",
+  "preservedZones": [],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "byteStart": 0,
+      "byteEnd": 0,
+      "newByteLength": 5062,
+      "oldTextHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "newTextHash": "bcc08565b24a0ff6e7a9c62fb7fafd48482185e7aff37eba201ede0d354edc3e",
+      "oldSample": "",
+      "newSample": "/**\n * Atomic OS — OpenCode enforcement plugin (genericized / portable).\n *\n * This is the OpenCode equivalent of the Claude Code `atomic-only-hook.mjs`\n * PreToolUse gate: it intercepts every code-mu",
+      "description": "Insert 5062 bytes at offset 0"
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `atomic_create_file` changed ~5062 character(s) in `.atomic-os-export/integrations/opencode/workspace-gates.ts` (sub-line atomic edit, expansion 0× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

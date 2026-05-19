@@ -1,0 +1,59 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779023593414_56aa1996",
+  "ts": "2026-05-17T13:13:13.414Z",
+  "file": "docs/ai/atomic-os-benchmark/round-060/codex-subagents-verdict.md",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "atomic_create_file",
+  "operator": "atomic_create_file",
+  "targetUnit": "text_span",
+  "intention": "atomic_create_file",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 3500,
+    "lineRewriteSurfaceChars": 0,
+    "expansionFactorAvoided": 0,
+    "bytesNet": 3500,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "generic",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "511038479ef33242ea2f11879f5886ba2b222d9c175855d180dce0a6308a9848",
+  "proposedSha256": "511038479ef33242ea2f11879f5886ba2b222d9c175855d180dce0a6308a9848",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- docs/ai/atomic-os-benchmark/round-060/codex-subagents-verdict.md (atomic char-level)\u001b[0m\n  \u001b[32m{+# Round 060 Codex Subagents Verdict\n  \n  ## Status\n  \n  normal_wins_overall_atomic_quality_wins_partial\n  \n  This report covers the Codex subagent A/B run in isolated worktrees:\n  \n  - NORMAL: /private/tmp/kloel-ab060-normal-20260517094500\n  - ATOMIC: /private/tmp/kloel-ab060-atomic-20260517094500\n  \n  The pre-existing round-060/verdict.md belongs to an older OpenCode attempt and is not used as the Codex subagent verdict.\n  \n  ## Functional Gates\n  \n  Both lanes passed the same external gates:\n  \n  - Focused Jest: 13/13 pass on both lanes.\n  - Backend typecheck: pass on both lanes.\n  - git diff --check for backend/src/kloel: pass on both lanes.\n  - unified-agent.service.spec.ts: untouched on both lanes.\n  - public-api-preservation-audit: pass on both lanes; constructor unchanged and public methods 4 -> 4.\n  - scope-discipline-check: pass on both lanes.\n  - trace-isolation-check: pass on both lanes.\n  \n  ## Metrics\n  \n  | Metric | Normal | Atomic | Winner |\n  | --- | ---: | ---: | --- |\n  | elapsed time | 7m00s | 23m49s | Normal |\n  | time to first observable write | early | 17m13s | Normal |\n  | service facade lines | 191 | 211 | Normal |\n  | changed source files | 5 | 4 | Atomic |\n  | changed source inventory lines | 930 | 855 | Atomic |\n  | largest changed source | 314 | 370 | Normal |\n  | atomic traces | 0 | 6 | Atomic |\n  | protected/spec diff | 0 | 0 | tie |\n  | scope contamination | 0 | 0 | tie |\n  \n  ## Formal Winner\n  \n  Normal wins the round overall because it delivered the same behavior much faster and produced a smaller facade and smaller largest helper.\n  \n  Atomic wins only partial quality dimensions: it produced fewer changed source files, lower changed-source inventory, and real traces, while preserving scope. This is a meaningful improvement over earlier contaminated rounds, but it is not enough to claim benchmark superiority.\n  \n  ## Atomic Defeats Formalized\n  \n  - Progress-to-first-write is still too slow for macro-refactor tasks.\n  - The fastpath still let the worker deliberate for too long before executing the macro operation.\n  - Atomic's largest extracted module remained larger than Normal's largest module.\n  - Atomic's facade was 20 lines larger than Normal's facade.\n  \n  ## Atomic Wins Formalized\n  \n  - No scope contamination.\n  - No protected or spec diff.\n  - Public API was preserved and externally audited.\n  - Changed source inventory was 75 lines smaller than Normal.\n  - Changed source file count was 1 lower than Normal.\n  - Six isolated traces were produced.\n  \n  ## Tool Updates Applied After This Result\n  \n  - atomic-call.cjs: already uses dynamic repo-root discovery instead of an absolute workspace path.\n  - atomic-batch.cjs: now discovers the repo root dynamically and resolves the MCP launcher from that root.\n  - public-api-preservation-audit.cjs: now loads TypeScript dynamically from the target worktree or nearest package.json instead of a fixed backend path.\n  - refactor-scorecard.cjs: now derives protected pathspecs from ops/protected-governance-files.json and derives default scope from the target file stem.\n  - atomic-refactor-fastpath.cjs: converted from a unified-agent-specific template into a dynamic policy compiler that infers target, spec, public class, allowed prefix, tool paths, and decomposition clusters from the live worktree.\n  \n  ## Next Loop Decision\n  \n  Do not escalate complexity.\n  \n  Round 061 must repeat the same complexity tier using the updated dynamic fastpath. The target for Atomic is not merely to preserve quality; it must close the progress-to-first-write gap while keeping traces, scope discipline, and API preservation.+}\u001b[0m\n  ",
+  "preservedZones": [
+    {
+      "kind": "unchanged_context",
+      "description": "Everything outside the modified zone is preserved byte-for-byte by the atomic operation."
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "oldTextHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "newTextHash": "511038479ef33242ea2f11879f5886ba2b222d9c175855d180dce0a6308a9848",
+      "description": "The operation changed the highlighted span shown in inlinePreview."
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `atomic_create_file` changed ~3500 character(s) in `docs/ai/atomic-os-benchmark/round-060/codex-subagents-verdict.md` (sub-line atomic edit, expansion 0× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "unvalidated-text",
+    "zeroCodeTrust": 30,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

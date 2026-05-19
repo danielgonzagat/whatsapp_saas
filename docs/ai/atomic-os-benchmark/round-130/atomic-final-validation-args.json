@@ -1,0 +1,217 @@
+{
+  "validationProfile": "round130-seven-helper-facade-compaction-final",
+  "includeJest": true,
+  "includeTypecheck": true,
+  "scanFiles": [
+    "backend/src/kloel/unified-agent.service.ts",
+    "backend/src/kloel/unified-agent-tool-router.helpers.ts",
+    "backend/src/kloel/unified-agent-runtime.helpers.ts",
+    "backend/src/kloel/unified-agent-tool-parser.helpers.ts",
+    "backend/src/kloel/unified-agent-cognitive-state.helpers.ts",
+    "backend/src/kloel/unified-agent-incoming-message.helpers.ts",
+    "backend/src/kloel/unified-agent-tool-call-processing.helpers.ts",
+    "backend/src/kloel/unified-agent-predecided-processing.helpers.ts"
+  ],
+  "forbiddenTextChecks": [
+    {
+      "file": "backend/src/kloel/unified-agent-tool-router.helpers.ts",
+      "text": "this.",
+      "label": "router helper no this"
+    },
+    {
+      "file": "backend/src/kloel/unified-agent-runtime.helpers.ts",
+      "text": "this.",
+      "label": "runtime helper no this"
+    },
+    {
+      "file": "backend/src/kloel/unified-agent-tool-parser.helpers.ts",
+      "text": "this.",
+      "label": "parser helper no this"
+    },
+    {
+      "file": "backend/src/kloel/unified-agent-cognitive-state.helpers.ts",
+      "text": "this.",
+      "label": "cognitive helper no this"
+    },
+    {
+      "file": "backend/src/kloel/unified-agent.service.ts",
+      "text": "private async executeToolAction",
+      "label": "private executeToolAction removed"
+    },
+    {
+      "file": "backend/src/kloel/unified-agent.service.ts",
+      "text": "function isAllowedTool",
+      "label": "top-level isAllowedTool removed"
+    },
+    {
+      "file": "backend/src/kloel/unified-agent.service.ts",
+      "text": "function formatPromptValue",
+      "label": "top-level formatPromptValue removed"
+    },
+    {
+      "file": "backend/src/kloel/unified-agent-incoming-message.helpers.ts",
+      "text": "this.",
+      "label": "incoming helper no this"
+    },
+    {
+      "file": "backend/src/kloel/unified-agent-tool-call-processing.helpers.ts",
+      "text": "this.",
+      "label": "tool-call-processing helper no this"
+    },
+    {
+      "file": "backend/src/kloel/unified-agent.service.ts",
+      "text": "forEachSequential(",
+      "label": "service no inline forEachSequential tool loop"
+    },
+    {
+      "file": "backend/src/kloel/unified-agent.service.ts",
+      "text": "parseToolArgs(",
+      "label": "service no inline parseToolArgs"
+    },
+    {
+      "file": "backend/src/kloel/unified-agent.service.ts",
+      "text": "isAllowedTool(",
+      "label": "service no inline isAllowedTool"
+    },
+    {
+      "file": "backend/src/kloel/unified-agent-predecided-processing.helpers.ts",
+      "text": "this.",
+      "label": "predecided helper no this"
+    },
+    {
+      "file": "backend/src/kloel/unified-agent.service.ts",
+      "text": "executePredecidedAgentActions({",
+      "label": "service no inline predecided executor"
+    },
+    {
+      "file": "backend/src/kloel/unified-agent.service.ts",
+      "text": "buildPredecidedActionDraft(",
+      "label": "service no inline predecided draft"
+    },
+    {
+      "file": "backend/src/kloel/unified-agent.service.ts",
+      "text": "processUnifiedAgentToolCalls({",
+      "label": "service no direct tool-call processing"
+    },
+    {
+      "file": "backend/src/kloel/unified-agent.service.ts",
+      "text": "processUnifiedAgentPredecidedActions({",
+      "label": "service no direct predecided processing"
+    },
+    {
+      "file": "backend/src/kloel/unified-agent.service.ts",
+      "text": "chatCompletionWithFallback(",
+      "label": "service no direct llm completion"
+    },
+    {
+      "file": "backend/src/kloel/unified-agent.service.ts",
+      "text": "buildUnifiedAgentCognitiveState(",
+      "label": "service no direct cognitive build"
+    },
+    {
+      "file": "backend/src/kloel/unified-agent.service.ts",
+      "text": "formatPromptValue(",
+      "label": "service no direct context formatting"
+    },
+    {
+      "file": "backend/src/kloel/unified-agent.service.ts",
+      "text": "recordAgentRuntimeTurn(",
+      "label": "service no direct runtime turn recording"
+    },
+    {
+      "file": "backend/src/kloel/unified-agent.service.ts",
+      "text": "UNIFIED_AGENT_PROVIDER_CONFIG_REQUIRED",
+      "label": "service no provider constant after incoming macro extraction"
+    }
+  ],
+  "requiredTextChecks": [
+    {
+      "file": "backend/src/kloel/unified-agent.service.ts",
+      "text": "async executeTool(",
+      "label": "public executeTool preserved"
+    },
+    {
+      "file": "backend/src/kloel/unified-agent.service.ts",
+      "text": "async buildQuotedReplyPlan(",
+      "label": "public buildQuotedReplyPlan preserved"
+    },
+    {
+      "file": "backend/src/kloel/unified-agent-cognitive-state.helpers.ts",
+      "text": "export async function buildUnifiedAgentCognitiveState",
+      "label": "cognitive helper export present"
+    },
+    {
+      "file": "backend/src/kloel/unified-agent.service.ts",
+      "text": "async processIncomingMessage(",
+      "label": "public processIncomingMessage preserved"
+    },
+    {
+      "file": "backend/src/kloel/unified-agent-incoming-message.helpers.ts",
+      "text": "export async function processIncomingUnifiedAgentMessage",
+      "label": "incoming helper export present"
+    },
+    {
+      "file": "backend/src/kloel/unified-agent-tool-call-processing.helpers.ts",
+      "text": "export async function processUnifiedAgentToolCalls",
+      "label": "tool-call-processing helper export present"
+    },
+    {
+      "file": "backend/src/kloel/unified-agent-predecided-processing.helpers.ts",
+      "text": "export async function processUnifiedAgentPredecidedActions",
+      "label": "predecided helper export present"
+    },
+    {
+      "file": "backend/src/kloel/unified-agent.service.ts",
+      "text": "return processIncomingUnifiedAgentMessage({",
+      "label": "service delegates processMessage orchestration to incoming helper"
+    },
+    {
+      "file": "backend/src/kloel/unified-agent-incoming-message.helpers.ts",
+      "text": "processUnifiedAgentToolCalls({",
+      "label": "incoming helper owns tool-call processing"
+    },
+    {
+      "file": "backend/src/kloel/unified-agent-incoming-message.helpers.ts",
+      "text": "processUnifiedAgentPredecidedActions({",
+      "label": "incoming helper owns predecided processing"
+    },
+    {
+      "file": "backend/src/kloel/unified-agent-incoming-message.helpers.ts",
+      "text": "chatCompletionWithFallback(",
+      "label": "incoming helper owns llm completion"
+    },
+    {
+      "file": "backend/src/kloel/unified-agent-incoming-message.helpers.ts",
+      "text": "recordAgentRuntimeTurn(",
+      "label": "incoming helper owns runtime turn recording"
+    }
+  ],
+  "lineBudgetChecks": [
+    {
+      "files": [
+        "backend/src/kloel/unified-agent.service.ts",
+        "backend/src/kloel/unified-agent-tool-router.helpers.ts",
+        "backend/src/kloel/unified-agent-runtime.helpers.ts",
+        "backend/src/kloel/unified-agent-tool-parser.helpers.ts",
+        "backend/src/kloel/unified-agent-cognitive-state.helpers.ts",
+        "backend/src/kloel/unified-agent-incoming-message.helpers.ts",
+        "backend/src/kloel/unified-agent-tool-call-processing.helpers.ts",
+        "backend/src/kloel/unified-agent-predecided-processing.helpers.ts"
+      ],
+      "maxTotalLines": 1100,
+      "label": "round130 seven-helper total line budget matches compact baseline",
+      "advisory": true
+    }
+  ],
+  "sourceChurnBudgetChecks": [
+    {
+      "pathspecs": [
+        "backend/src/kloel"
+      ],
+      "maxChurn": 1390,
+      "label": "round130 seven-helper source churn budget matches compact baseline",
+      "advisory": true
+    }
+  ],
+  "report": "compact"
+}

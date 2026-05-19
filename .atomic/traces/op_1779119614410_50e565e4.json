@@ -1,0 +1,59 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779119614410_50e565e4",
+  "ts": "2026-05-18T15:53:34.410Z",
+  "file": "scripts/mcp/atomic-edit/server.ts",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "targetUnit": "text_span",
+  "intention": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 1159,
+    "lineRewriteSurfaceChars": 631,
+    "expansionFactorAvoided": 0.54,
+    "bytesNet": 528,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "8d28d8b8815cf5d7f43390b7f46df3fc1c5fe1f6427a8a86c45694209426109b",
+  "proposedSha256": "8d28d8b8815cf5d7f43390b7f46df3fc1c5fe1f6427a8a86c45694209426109b",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- scripts/mcp/atomic-edit/server.ts (atomic char-level)\u001b[0m\n          ),\n        selector: z.string().describe(\"unscoped 'name' or scoped 'Class.method' / 'A.B.c'\"),\n      \u001b[32m{+  line: z\n          .number()\n          .int()\n          .min(1)\n          .optional()\n          .describe('1-based line: if provided with column, resolve by position instead of selector'),\n        column: z\n          .number()\n          .int()\n          .min(1)\n          .optional()\n          .describe('1-based column: if provided with line, resolve by position instead of selector'),\n      +}\u001b[0m},\n    },\n    async (a) => {\n      try {\n        const { absPath, relPath } = resolveSafeTarget(a.file);\n        const \u001b[32m{+position =\n          a.line !== undefined && a.column !== undefined\n            ? { line: a.line, column: a.column }\n            : undefined;\n        const +}\u001b[0mr = await readSymbol(relPath, readUtf8(absPath), a.selector\u001b[32m{+, position+}\u001b[0m);\n        return ok({ ok: true, file: relPath, ...targetDetails(absPath, relPath), ...r });\n      } catch (e) {",
+  "preservedZones": [
+    {
+      "kind": "unchanged_context",
+      "description": "Everything outside the modified zone is preserved byte-for-byte by the atomic operation."
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "oldTextHash": "30cdc2152ad6946ae61cfd74b51aa99a280bd5c327a7949007ad5d05b6d45457",
+      "newTextHash": "8d28d8b8815cf5d7f43390b7f46df3fc1c5fe1f6427a8a86c45694209426109b",
+      "description": "The operation changed the highlighted span shown in inlinePreview."
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~1159 character(s) in `scripts/mcp/atomic-edit/server.ts` (sub-line atomic edit, expansion 0.54× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

@@ -1,0 +1,59 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779024474428_42123167",
+  "ts": "2026-05-17T13:27:54.428Z",
+  "file": "docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "targetUnit": "text_span",
+  "intention": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 1996,
+    "lineRewriteSurfaceChars": 661,
+    "expansionFactorAvoided": 0.33,
+    "bytesNet": 1335,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "4f4492246b624cb200dde78c0982447e2a460e9053214fe3b7c630ca69f84bf2",
+  "proposedSha256": "4f4492246b624cb200dde78c0982447e2a460e9053214fe3b7c630ca69f84bf2",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs (atomic char-level)\u001b[0m\n  }\n  \n  \u001b[32m{+function lineNumberAt(text, offset) {\n    return text.slice(0, offset).split('\\n').length;\n  }\n  \n  function findMatchingBrace(text, openOffset) {\n    let depth = 0;\n    for (let index = openOffset; index < text.length; index += 1) {\n      const char = text[index];\n      if (char === '{') depth += 1;\n      else if (char === '}') {\n        depth -= 1;\n        if (depth === 0) return index;\n      }\n    }\n    return -1;\n  }\n  \n  function symbolSpanInventory(text) {\n    const spans = [];\n    const pattern = /^\\s{2}(?:private|protected|public)?\\s*(?:async\\s+)?([A-Za-z_$][\\w$]*)\\s*\\([^)]*\\)\\s*(?::[^{}]+)?\\{/gm;\n    const ignored = new Set(['constructor', 'if', 'for', 'while', 'switch', 'catch', 'function']);\n    for (const match of text.matchAll(pattern)) {\n      const name = match[1];\n      if (ignored.has(name)) continue;\n      const openOffset = match.index + match[0].lastIndexOf('{');\n      const closeOffset = findMatchingBrace(text, openOffset);\n      if (closeOffset === -1) continue;\n      const startLine = lineNumberAt(text, match.index);\n      const endLine = lineNumberAt(text, closeOffset);\n      spans.push({\n        name,\n        startLine,\n        endLine,\n        lines: endLine - startLine + 1,\n        fileHintToken: splitName(name)[0] || name.toLowerCase(),\n      });\n    }\n    return spans.sort((left, right) => right.lines - left.lines || left.name.localeCompare(right.name));\n  }\n  +}\u001b[0m\n  function symbolClusters(symbols, scopePrefix, targetExt) {\n    const grouped = new Map();",
+  "preservedZones": [
+    {
+      "kind": "unchanged_context",
+      "description": "Everything outside the modified zone is preserved byte-for-byte by the atomic operation."
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "oldTextHash": "d01b19db7872107ff27119327aa8d2055ff114b5c0f414bb845b4d1af4f74ae6",
+      "newTextHash": "4f4492246b624cb200dde78c0982447e2a460e9053214fe3b7c630ca69f84bf2",
+      "description": "The operation changed the highlighted span shown in inlinePreview."
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~1996 character(s) in `docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs` (sub-line atomic edit, expansion 0.33× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

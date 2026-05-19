@@ -1,0 +1,59 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779039750109_b6fe26fc",
+  "ts": "2026-05-17T17:42:30.109Z",
+  "file": "docs/ai/atomic-os-benchmark/tools/typecheck-impact-audit.cjs",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "targetUnit": "text_span",
+  "intention": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 425,
+    "lineRewriteSurfaceChars": 234,
+    "expansionFactorAvoided": 0.55,
+    "bytesNet": 191,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "f41b4974a431111637420993b430f84648175ec2e9080bb433a30e8c690db8a5",
+  "proposedSha256": "f41b4974a431111637420993b430f84648175ec2e9080bb433a30e8c690db8a5",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- docs/ai/atomic-os-benchmark/tools/typecheck-impact-audit.cjs (atomic char-level)\u001b[0m\n  }\n  \n  function trim(text\u001b[31m[-, limit = 4000-]\u001b[0m) {\n    const value = stripAnsi(text).trim();\n    \u001b[32m{+const conf+}\u001b[0mi\u001b[32m{+guredLimit = Number(process.env.TYPECHECK_IMPACT_OUTPUT_LIMIT || '');\n    i+}\u001b[0mf (\u001b[32m{+!Number.isFinite(configuredLimit) || configuredLimit <= Number.EPSILON) return +}\u001b[0mvalue\u001b[32m{+;\n    if (value+}\u001b[0m.length <= \u001b[31m[-l-]\u001b[0m\u001b[32m{+conf+}\u001b[0mi\u001b[32m{+guredLi+}\u001b[0mmit) return value;\n    const half = Math.floor(\u001b[31m[-l-]\u001b[0m\u001b[32m{+conf+}\u001b[0mi\u001b[32m{+guredLi+}\u001b[0mmit / \u001b[31m[-2-]\u001b[0m\u001b[32m{+'ab'.length+}\u001b[0m);\n    return value.slice(0, half) + '\\n...<trimmed>...\\n' + value.slice(-half);\n  }",
+  "preservedZones": [
+    {
+      "kind": "unchanged_context",
+      "description": "Everything outside the modified zone is preserved byte-for-byte by the atomic operation."
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "oldTextHash": "5533f24cf87e30a248c19eafa21afd7b962ea9045992b046b36f975d5be899a4",
+      "newTextHash": "f41b4974a431111637420993b430f84648175ec2e9080bb433a30e8c690db8a5",
+      "description": "The operation changed the highlighted span shown in inlinePreview."
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~425 character(s) in `docs/ai/atomic-os-benchmark/tools/typecheck-impact-audit.cjs` (sub-line atomic edit, expansion 0.55× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

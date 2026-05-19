@@ -1,0 +1,59 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779024536694_330a7921",
+  "ts": "2026-05-17T13:28:56.696Z",
+  "file": "docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "targetUnit": "text_span",
+  "intention": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 677,
+    "lineRewriteSurfaceChars": 706,
+    "expansionFactorAvoided": 1.04,
+    "bytesNet": -558,
+    "lineRewriteAvoided": true
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "5ff2b852968653f1a2f516fb9ed02b3f99d635f64524477ea91b8be6e2de4844",
+  "proposedSha256": "5ff2b852968653f1a2f516fb9ed02b3f99d635f64524477ea91b8be6e2de4844",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs (atomic char-level)\u001b[0m\n          : 'No dominant method body detected; use code_outline to choose the next cohesive extracted region.',\n      },\n      decompositionTemplate: \u001b[31m[-clusters.length > 0\n        ? clusters.slice(0, 6).-]\u001b[0m\u001b[32m{+do+}\u001b[0mm\u001b[31m[-ap((cluster) => ({\n            f-]\u001b[0mi\u001b[31m[-le: cluster.fileHi-]\u001b[0mn\u001b[31m[-t,\n            responsibility: 'Extr-]\u001b[0ma\u001b[31m[-ct the cohesive observed symbol cluster: ' + clus-]\u001b[0m\u001b[32m{+n+}\u001b[0mt\u001b[32m{+T+}\u001b[0me\u001b[31m[-r.sy-]\u001b[0mm\u001b[31m[-bols.join(', '),\n            s-]\u001b[0mpl\u001b[31m[-i-]\u001b[0m\u001b[32m{+a+}\u001b[0mt\u001b[31m[-Wh-]\u001b[0me\u001b[31m[-n: 'If s-]\u001b[0m\u001b[32m{+.+}\u001b[0mco\u001b[31m[-recard, li-]\u001b[0mn\u001b[31m[-t, or fo-]\u001b[0mc\u001b[31m[-used tests show -]\u001b[0m\u001b[32m{+a+}\u001b[0mt\u001b[31m[-his -]\u001b[0m\u001b[32m{+(+}\u001b[0mcluster\u001b[31m[- mixes responsibiliti-]\u001b[0m\u001b[32m{+T+}\u001b[0me\u001b[31m[-s, s-]\u001b[0m\u001b[32m{+m+}\u001b[0mpl\u001b[31m[-it by -]\u001b[0m\u001b[32m{+a+}\u001b[0mt\u001b[31m[-h-]\u001b[0me\u001b[31m[- next ob-]\u001b[0ms\u001b[31m[-erved token group-]\u001b[0m.\u001b[31m[-',\n          }))\n        : [{\n            fi-]\u001b[0mle\u001b[31m[-: scopePrefix + '-extracted' + targetExt,\n            respo-]\u001b[0mn\u001b[31m[-sibility: 'Extract -]\u001b[0m\u001b[32m{+g+}\u001b[0mth\u001b[31m[-e-]\u001b[0m \u001b[31m[-smallest cohesive-]\u001b[0m\u001b[32m{+>+}\u001b[0m \u001b[31m[-private-]\u001b[0m\u001b[32m{+0+}\u001b[0m \u001b[31m[-helper-]\u001b[0m\u001b[32m{+?+}\u001b[0m cluster\u001b[31m[- found by code_outlin-]\u001b[0m\u001b[32m{+T+}\u001b[0me\u001b[31m[-.',\n            s-]\u001b[0m\u001b[32m{+m+}\u001b[0mpl\u001b[31m[-i-]\u001b[0m\u001b[32m{+a+}\u001b[0mt\u001b[31m[-Wh-]\u001b[0me\u001b[31m[-n: 'Split only-]\u001b[0m\u001b[32m{+s+}\u001b[0m \u001b[31m[-when-]\u001b[0m\u001b[32m{+:+}\u001b[0m \u001b[31m[-v-]\u001b[0m\u001b[32m{+f+}\u001b[0mal\u001b[31m[-idation or scorec-]\u001b[0m\u001b[32m{+lb+}\u001b[0ma\u001b[31m[-rd eviden-]\u001b[0mc\u001b[32m{+kT+}\u001b[0me\u001b[31m[- shows -]\u001b[0mm\u001b[31m[-ixed res-]\u001b[0mp\u001b[31m[-onsibi-]\u001b[0ml\u001b[31m[-i-]\u001b[0m\u001b[32m{+a+}\u001b[0mt\u001b[31m[-i-]\u001b[0me\u001b[31m[-s.',\n          }]-]\u001b[0m\u001b[32m{+)+}\u001b[0m,\n      macroRefactorOperation: {\n        name: 'dynamic_service_facade_split',",
+  "preservedZones": [
+    {
+      "kind": "unchanged_context",
+      "description": "Everything outside the modified zone is preserved byte-for-byte by the atomic operation."
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "oldTextHash": "2081089abd4700c83fbc7a0b82d5d5048391380dd11d3bbda67732bc3201cd75",
+      "newTextHash": "5ff2b852968653f1a2f516fb9ed02b3f99d635f64524477ea91b8be6e2de4844",
+      "description": "The operation changed the highlighted span shown in inlinePreview."
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~677 character(s) in `docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs` (sub-line atomic edit, expansion 1.04× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

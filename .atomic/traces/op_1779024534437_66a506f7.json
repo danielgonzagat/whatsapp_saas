@@ -1,0 +1,59 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779024534437_66a506f7",
+  "ts": "2026-05-17T13:28:54.437Z",
+  "file": "docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "targetUnit": "text_span",
+  "intention": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 1092,
+    "lineRewriteSurfaceChars": 154,
+    "expansionFactorAvoided": 0.14,
+    "bytesNet": 1001,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "87f536513ff22f72aa68e27d45cea9c68c03d5ee7e4140d3a6e63daf6e6e714e",
+  "proposedSha256": "87f536513ff22f72aa68e27d45cea9c68c03d5ee7e4140d3a6e63daf6e6e714e",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs (atomic char-level)\u001b[0m\n    const dominantSpan = symbolSpans[0] || null;\n    const clusters = symbolClusters(symbols, scopePrefix, targetExt);\n  \u001b[32m{+  const dominantTemplate = dominantSpan\n      ? [{\n          file: scopePrefix + '-' + dominantSpan.fileHintToken + targetExt,\n          responsibility: 'Extract the current dominant measured region: ' + dominantSpan.name + ' (' + dominantSpan.lines + ' lines).',\n          splitWhen: 'Split by observed nested helper calls if validation shows the region mixes responsibilities.',\n        }]\n      : [];\n    const clusterTemplates = clusters.map((cluster) => ({\n      file: cluster.fileHint,\n      responsibility: 'Extract the cohesive observed symbol cluster: ' + cluster.symbols.join(', '),\n      splitWhen: 'If scorecard, lint, or focused tests show this cluster mixes responsibilities, split by the next observed token group.',\n    }));\n    const fallbackTemplate = [{\n      file: scopePrefix + '-extracted' + targetExt,\n      responsibility: 'Extract the smallest cohesive private helper cluster found by code_outline.',\n      splitWhen: 'Split only when validation or scorecard evidence shows mixed responsibilities.',\n    }];+}\u001b[0m\n    const batchCalls = [\n      { tool: 'code_file_stat', arguments: { file: targetAbs } },",
+  "preservedZones": [
+    {
+      "kind": "unchanged_context",
+      "description": "Everything outside the modified zone is preserved byte-for-byte by the atomic operation."
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "oldTextHash": "24221481549065fba53f69ac6ee554cae2019ae42157881ca55fb158d00b77bf",
+      "newTextHash": "87f536513ff22f72aa68e27d45cea9c68c03d5ee7e4140d3a6e63daf6e6e714e",
+      "description": "The operation changed the highlighted span shown in inlinePreview."
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~1092 character(s) in `docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs` (sub-line atomic edit, expansion 0.14× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

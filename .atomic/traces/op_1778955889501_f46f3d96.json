@@ -1,0 +1,37 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1778955889501_f46f3d96",
+  "ts": "2026-05-16T18:24:49.501Z",
+  "file": "scripts/mcp/atomic-edit/audit-atomicity.mjs",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 1977,
+    "lineRewriteSurfaceChars": 1323,
+    "expansionFactorAvoided": 0.67,
+    "bytesNet": 654,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "afterSha256": "bf8d921e9e26d7a0a29a8c69c8c43ec5e12cd393982d199d6bc1e0c8274b6197",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- scripts/mcp/atomic-edit/audit-atomicity.mjs (atomic char-level)\u001b[0m\n  }\n  \n  function auditTraces(traces\u001b[32m{+, options = {}+}\u001b[0m) {\n    const \u001b[32m{+shouldS+}\u001b[0mtr\u001b[32m{+ictR+}\u001b[0ma\u001b[32m{+tio = options.stri+}\u001b[0mc\u001b[32m{+tRatio ?? strictRatio;\n    const shouldStrictTopology = options.strictTopology ?? strictTopology;\n    const trac+}\u001b[0meResults = traces.map(evaluateTrace);\n    const n = traceResults.length;\n    if (n === 0) return { empty: true, report: null, traceResults };\n  \n    const avoided = traceResults.filter((t) => t.lineRewriteAvoided).length;\n    const fallback = traceResults.filter((t) => t.fallback).length;\n    const expSum = traceResults.reduce((sum, t) => sum + t.expansionFactorAvoided, 0);\n    const offenders = traceResults.filter((t) => t.isOffender);\n    const enforcementPass = fallback === 0 && offenders.length === 0;\n    const ratioPass = avoided / n >= minRatio;\n    const \u001b[32m{+to+}\u001b[0mp\u001b[32m{+ologyCount = tr+}\u001b[0ma\u001b[32m{+ceRe+}\u001b[0ms\u001b[32m{+ult+}\u001b[0ms\u001b[32m{+.filter((t)+}\u001b[0m =\u001b[32m{+>+}\u001b[0m \u001b[32m{+t.hasTopology).l+}\u001b[0men\u001b[32m{+gth;\n    const topologyCoverage = Number((topologyCount / n).toFixed(4));\n    const topologyPass = topologyCount === n;\n    const missingTopology = traceResults\n      .+}\u001b[0mf\u001b[32m{+ilter((t) => !t.hasT+}\u001b[0mo\u001b[32m{+pology)\n      .map((t) => ({ ope+}\u001b[0mr\u001b[32m{+ationId: t.operationId, file: t.file }));\n    +}\u001b[0mc\u001b[32m{+onst pass = +}\u001b[0me\u001b[32m{+nforce+}\u001b[0mmentPass && (!s\u001b[32m{+houldS+}\u001b[0mtrictRatio || ratioPass)\u001b[32m{+ && (!shouldStrictTopology || topologyPass)+}\u001b[0m;\n  \n    return {\n      empty: false,\n      traceResults,\n      report: {\n        traces: n,\n        atomic_edit_ratio: Number((avoided / n).toFixed(4)),\n        mean_expansion_avoided: Number((expSum / n).toFixed(2)),\n        fallback_rate: Number((fallback / n).toFixed(4)),\n        coarse_unjustified: offenders.length,\n        thresholdMinRatio: minRatio,\n        strictRatio\u001b[32m{+: shouldStrictRatio+}\u001b[0m,\n        \u001b[32m{+strictTopology: shouldStrictTopology,\n        +}\u001b[0menforcementPass,\n        ratioPass,\u001b[32m{+\n        topologyCoverage,\n        topologyPass,\n        missingTopology,+}\u001b[0m\n        pass,\n        worstOffenders: offenders.slice(0, 10).map((t) => ({",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~1977 character(s) in `scripts/mcp/atomic-edit/audit-atomicity.mjs` (sub-line atomic edit, expansion 0.67× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

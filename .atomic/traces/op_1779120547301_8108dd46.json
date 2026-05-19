@@ -1,0 +1,59 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779120547301_8108dd46",
+  "ts": "2026-05-18T16:09:07.301Z",
+  "file": "scripts/mcp/atomic-edit/.smoke-fixture.82586.ts",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "targetUnit": "text_span",
+  "intention": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 7,
+    "lineRewriteSurfaceChars": 38,
+    "expansionFactorAvoided": 5.43,
+    "bytesNet": 7,
+    "lineRewriteAvoided": true
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": true,
+  "changed": false,
+  "afterSha256": "8d0236c0bad84198cb38bcd5571c08748bb8510392df6ba4f2179bc197b80ffe",
+  "proposedSha256": "c4453b81cdb88f9ab0fa39bd60432c8831785b815b24ea7a1b05d866676828d1",
+  "rollback": {
+    "available": false,
+    "strategy": "dry-run only; no target file write occurred"
+  },
+  "inlinePreview": "\u001b[2m--- scripts/mcp/atomic-edit/.smoke-fixture.82586.ts (atomic char-level)\u001b[0m\n  \u001b[32m{+// hdr+}\u001b[0m\n  export const TARGET = '5511999999999';\n  ",
+  "preservedZones": [
+    {
+      "kind": "unchanged_context",
+      "description": "Everything outside the modified zone is preserved byte-for-byte by the atomic operation."
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "oldTextHash": "8d0236c0bad84198cb38bcd5571c08748bb8510392df6ba4f2179bc197b80ffe",
+      "newTextHash": "c4453b81cdb88f9ab0fa39bd60432c8831785b815b24ea7a1b05d866676828d1",
+      "description": "Preview only: the highlighted span is proposed but was not written."
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~7 character(s) in `scripts/mcp/atomic-edit/.smoke-fixture.82586.ts` (sub-line atomic edit, expansion 5.43× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

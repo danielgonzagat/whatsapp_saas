@@ -1,5 +1,11 @@
 import { KLOEL_THEME } from '@/lib/kloel-theme';
-import { sectionTitleStyle, secondaryButtonStyle, inputStyle, textAreaStyle } from './shared-styles';
+import {
+  sectionTitleStyle,
+  secondaryButtonStyle,
+  inputStyle,
+  textAreaStyle,
+  FULL_ROUND_RADIUS,
+} from './shared-styles';
 
 interface ChannelConfig {
   tone: string;
@@ -207,7 +213,7 @@ export function StepConfig({
                 left: config.followUpEnabled !== false ? 23 : 3,
                 width: 18,
                 height: 18,
-                borderRadius: '50%',
+                borderRadius: FULL_ROUND_RADIUS,
                 background: KLOEL_THEME.textOnAccent,
                 transition: 'left .2s',
               }}

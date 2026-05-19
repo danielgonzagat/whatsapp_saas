@@ -66,7 +66,7 @@ export function StepConnection({ channel, tiktokMode }: Props) {
           style={{
             width: 44,
             height: 44,
-            borderRadius: 10,
+            borderRadius: 12,
             background: KLOEL_THEME.accentLight,
             color: meta.color,
             display: 'flex',

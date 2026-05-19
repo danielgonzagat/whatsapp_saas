@@ -1,0 +1,37 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1778894048272_c5bc95ad",
+  "ts": "2026-05-16T01:14:08.273Z",
+  "file": ".codex/hooks.json",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 235,
+    "lineRewriteSurfaceChars": 236,
+    "expansionFactorAvoided": 1,
+    "bytesNet": 14,
+    "lineRewriteAvoided": true
+  },
+  "validation": {
+    "language": "json",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "afterSha256": "7d661035b1fbcacdba136155d1654d5a34ecffdd6c3523019b2d1bc5c9158537",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- .codex/hooks.json (atomic char-level)\u001b[0m\n  {\n    \"_comment\": \"Codex CLI hook config. Mirrors \u001b[31m[-the -]\u001b[0mClaude Code \u001b[31m[-PreTo-]\u001b[0m\u001b[32m{+w+}\u001b[0mo\u001b[31m[-lU-]\u001b[0m\u001b[32m{+rk+}\u001b[0ms\u001b[32m{+pac+}\u001b[0me \u001b[31m[-hook-]\u001b[0m\u001b[32m{+gate+}\u001b[0ms a\u001b[32m{+nd adds +}\u001b[0mt\u001b[32m{+he+}\u001b[0m \u001b[31m[-.-]\u001b[0m\u001b[32m{+atomi+}\u001b[0mc\u001b[32m{+-edit-on+}\u001b[0ml\u001b[31m[-au-]\u001b[0m\u001b[32m{+y co+}\u001b[0mde\u001b[31m[-/se-]\u001b[0m\u001b[32m{+ mu+}\u001b[0mt\u001b[32m{+a+}\u001b[0mti\u001b[31m[-ngs.js-]\u001b[0mon \u001b[32m{+gate +}\u001b[0mso any AI CLI in this repo \u001b[32m{+r+}\u001b[0me\u001b[31m[-n-]\u001b[0mf\u001b[31m[-orc-]\u001b[0m\u001b[32m{+us+}\u001b[0mes \u001b[32m{+na+}\u001b[0mt\u001b[31m[-h-]\u001b[0m\u001b[32m{+iv+}\u001b[0me \u001b[32m{+code edit+}\u001b[0ms\u001b[32m{+. Sh+}\u001b[0ma\u001b[31m[-m-]\u001b[0m\u001b[32m{+r+}\u001b[0me\u001b[32m{+d+}\u001b[0m workspace \u001b[31m[-gates. Sing-]\u001b[0m\u001b[32m{+ru+}\u001b[0mle\u001b[31m[- -]\u001b[0ms\u001b[31m[-ource-]\u001b[0m \u001b[31m[-of tru-]\u001b[0m\u001b[32m{+s+}\u001b[0mt\u001b[31m[-h for-]\u001b[0m\u001b[32m{+ill+}\u001b[0m \u001b[31m[-ru-]\u001b[0ml\u001b[32m{+iv+}\u001b[0me\u001b[31m[-s:-]\u001b[0m \u001b[32m{+in +}\u001b[0mscripts/decomp/lib/gate-rules.mjs.\",\n    \"hooks\": {\n      \"PreToolUse\": [",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~235 character(s) in `.codex/hooks.json` (sub-line atomic edit, expansion 1× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

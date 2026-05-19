@@ -1,0 +1,59 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779036428100_5d095b1c",
+  "ts": "2026-05-17T16:47:08.101Z",
+  "file": "docs/ai/atomic-os-benchmark/tools/opencode-round-watchdog.cjs",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "targetUnit": "text_span",
+  "intention": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 2936,
+    "lineRewriteSurfaceChars": 498,
+    "expansionFactorAvoided": 0.17,
+    "bytesNet": 2438,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "383ead346526c22cd332d70b5f61193959b146d07a8ae12782180d8cc4777b9c",
+  "proposedSha256": "383ead346526c22cd332d70b5f61193959b146d07a8ae12782180d8cc4777b9c",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- docs/ai/atomic-os-benchmark/tools/opencode-round-watchdog.cjs (atomic char-level)\u001b[0m\n  }\n  \n  \u001b[32m{+function shellQuote(value) {\n    return \"'\" + String(value).replaceAll(\"'\", \"'\\\"'\\\"'\") + \"'\";\n  }\n  \n  function prepareAtomicPrepromptCommand(worktreeRoot, promptFile) {\n    const rawPrompt = readPrompt(promptFile);\n    const command = firstShellCommandBlock(rawPrompt);\n    if (!command) throw new Error('atomic preprompt command mode requires a shell command block in the atomic prompt');\n  \n    const commandName = 'atomic-benchmark-fastpath';\n    const commandTextFile = path.join(roundDir, 'opencode-atomic-preprompt-command.txt');\n    const runnerFile = path.join(roundDir, 'opencode-atomic-preprompt-runner.sh');\n    const commandFile = path.join(worktreeRoot, '.opencode', 'commands', commandName + '.md');\n  \n    fs.writeFileSync(commandTextFile, command + '\\n');\n    fs.writeFileSync(runnerFile, [\n      '#!/usr/bin/env bash',\n      'set -u',\n      ': \"${ATOMIC_OS_FAST_COMMAND_FILE:?}\"',\n      ': \"${ATOMIC_OS_ROUND_DIR:?}\"',\n      'lane=\"${ATOMIC_OS_LANE:-atomic}\"',\n      'start_file=\"$ATOMIC_OS_ROUND_DIR/opencode-${lane}-preprompt-start-ms.txt\"',\n      'end_file=\"$ATOMIC_OS_ROUND_DIR/opencode-${lane}-preprompt-end-ms.txt\"',\n      'exit_file=\"$ATOMIC_OS_ROUND_DIR/opencode-${lane}-preprompt-exit.txt\"',\n      'output_file=\"$ATOMIC_OS_ROUND_DIR/opencode-${lane}-preprompt-output.log\"',\n      \"timestamp_ms() { node -e 'process.stdout.write(String(Date.now()))'; }\",\n      'timestamp_ms > \"$start_file\"',\n      'command_text=\"$(cat \"$ATOMIC_OS_FAST_COMMAND_FILE\")\"',\n      'bash -lc \"$command_text\" > \"$output_file\" 2>&1',\n      'rc=$?',\n      'timestamp_ms > \"$end_file\"',\n      \"printf '%s\\\\n' \\\"$rc\\\" > \\\"$exit_file\\\"\",\n      \"printf 'ATOMIC_PREPROMPT_EXIT=%s\\\\n' \\\"$rc\\\"\",\n      'cat \"$output_file\"',\n      'exit \"$rc\"',\n      '',\n    ].join('\\n'));\n    fs.chmodSync(runnerFile, 0o755);\n  \n    fs.mkdirSync(path.dirname(commandFile), { recursive: true });\n    fs.writeFileSync(commandFile, [\n      '---',\n      'description: Execute the benchmark Atomic macro operator before model reasoning',\n      '---',\n      '',\n      'Atomic benchmark macro output:',\n      '!`ATOMIC_OS_FAST_COMMAND_FILE=' + shellQuote(commandTextFile) + ' ATOMIC_OS_ROUND_DIR=' + shellQuote(roundDir) + ' ATOMIC_OS_LANE=atomic bash ' + shellQuote(runnerFile) + '`',\n      '',\n      'Report only ATOMIC_PREPROMPT_EXIT, validation status, trace count if visible, and residual risk. Do not run extra tools unless the macro output clearly failed.',\n      '',\n    ].join('\\n'));\n  \n    return { commandName, commandFile, commandTextFile, runnerFile };\n  }\n  +}\u001b[0m\n  function psRows() {\n    const result = spawnSync('ps', ['-axo', 'pid=,ppid=,command='], { encoding: 'utf8' });",
+  "preservedZones": [
+    {
+      "kind": "unchanged_context",
+      "description": "Everything outside the modified zone is preserved byte-for-byte by the atomic operation."
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "oldTextHash": "e5372f4a74f8947af840d1da780c2edf79dc9052518ebec4ebf9c699fab628cf",
+      "newTextHash": "383ead346526c22cd332d70b5f61193959b146d07a8ae12782180d8cc4777b9c",
+      "description": "The operation changed the highlighted span shown in inlinePreview."
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~2936 character(s) in `docs/ai/atomic-os-benchmark/tools/opencode-round-watchdog.cjs` (sub-line atomic edit, expansion 0.17× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

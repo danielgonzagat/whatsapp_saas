@@ -1,0 +1,80 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779211547034_85976314",
+  "ts": "2026-05-19T17:25:47.034Z",
+  "file": "backend/src/kloel/abi/abi-builder.service.ts",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "targetUnit": "text_span",
+  "intention": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 437,
+    "lineRewriteSurfaceChars": 152,
+    "expansionFactorAvoided": 0.35,
+    "bytesNet": 285,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "7af2c5ec8466db662f224d3736e01b09526c68532dd6e3c00c647d3174d968f3",
+  "proposedSha256": "7af2c5ec8466db662f224d3736e01b09526c68532dd6e3c00c647d3174d968f3",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- backend/src/kloel/abi/abi-builder.service.ts (atomic char-level)\u001b[0m\n    }\n  \n    private buildPulseTruth(measuredAt: string\u001b[32m{+, override?: AbiPulseTruth+}\u001b[0m): AbiPulseTruth {\u001b[32m{+\n      // ABI 1.1.0 additive seam (ADR-0008): caller may hydrate a REAL,\n      // spine-evidence-grounded pulseTruth. Builder stays PURE — pure\n      // function of input; absent ⇒ historical static snapshot/default.\n      if (override) {\n        return override;\n      }+}\u001b[0m\n      if (this.pulseTruthSnapshot) {\n        return this.pulseTruthSnapshot.snapshot();",
+  "preservedZones": [
+    {
+      "kind": "prefix_preserved",
+      "description": "Bytes 0–5818 — prefix preserved unchanged",
+      "byteStart": 0,
+      "byteEnd": 5819,
+      "byteLength": 5819,
+      "beforeHash": "a71a3efa1b8ef5a124a023ec0f6e02e5aae5473a33331ffdfaf0fdcccbb109f1",
+      "afterHash": "a71a3efa1b8ef5a124a023ec0f6e02e5aae5473a33331ffdfaf0fdcccbb109f1",
+      "sample": " return { status: 'ok', abi };\n  }\n\n  private buildPulseTruth(measuredAt: string"
+    },
+    {
+      "kind": "suffix_preserved",
+      "description": "Bytes 5837–6179 — suffix preserved unchanged",
+      "byteStart": 5837,
+      "byteEnd": 6180,
+      "byteLength": 343,
+      "beforeHash": "3c9bed50b5ff7e1d357ab001e8bc7fe48e9441c58e179b4939c7c91a1440fa22",
+      "afterHash": "3c9bed50b5ff7e1d357ab001e8bc7fe48e9441c58e179b4939c7c91a1440fa22",
+      "sample": "\n    if (this.pulseTruthSnapshot) {\n      return this.pulseTruthSnapshot.snapsho"
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "byteStart": 5819,
+      "byteEnd": 5837,
+      "newByteLength": 303,
+      "oldTextHash": "fc29938759dafc217c5ed04468ef194f10afef8209e6c4ee107fa94aa872e608",
+      "newTextHash": "805777efb58c5aa0e6d320f931242a80939e6bfea46f4ffeef6c09e566b87f37",
+      "oldSample": "): AbiPulseTruth {",
+      "newSample": ", override?: AbiPulseTruth): AbiPulseTruth {\n    // ABI 1.1.0 additive seam (ADR-0008): caller may hydrate a REAL,\n    // spine-evidence-grounded pulseTruth. Builder stays PURE — pure\n    // function ",
+      "description": "Replace 18 bytes at offset 5819 with 303 bytes"
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~437 character(s) in `backend/src/kloel/abi/abi-builder.service.ts` (sub-line atomic edit, expansion 0.35× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

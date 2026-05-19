@@ -1,0 +1,37 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1778942742496_b29fb4bf",
+  "ts": "2026-05-16T14:45:42.496Z",
+  "file": ".opencode/plugin/workspace-gates.ts",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 819,
+    "lineRewriteSurfaceChars": 219,
+    "expansionFactorAvoided": 0.27,
+    "bytesNet": 600,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "afterSha256": "955aa7032b4d3620e5cac37af6f357d6270e114a1790bc33602ce298859e4263",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- .opencode/plugin/workspace-gates.ts (atomic char-level)\u001b[0m\n      const envelope = { tool_name: claudeName, tool_input: toolInput };\n  \n  \u001b[32m{+    // Camada 1 — atomic-only law (hard, runs FIRST): refuse native code edits\n      // so OpenCode's native diff renderer never shows a code mutation. Covers\n      // Write/Edit/MultiEdit/NotebookEdit, Bash in-place code mutation, and patch.\n      if (\n        claudeName === 'Write' ||\n        claudeName === 'Edit' ||\n        claudeName === 'MultiEdit' ||\n        claudeName === 'NotebookEdit' ||\n        claudeName === 'Bash' ||\n        claudeName === 'apply_patch'\n      ) {\n        const atomic = runAtomicGate(envelope);\n        if (atomic.deny) {\n          output.abort = atomic.reason;\n          return;\n        }\n      }\n  +}\u001b[0m\n      let result: { exit: number; stderr: string } = { exit: 0, stderr: '' };\n      if (claudeName === 'Write' || claudeName === 'Edit' || claudeName === 'MultiEdit') {",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~819 character(s) in `.opencode/plugin/workspace-gates.ts` (sub-line atomic edit, expansion 0.27× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "frontId": "front-atomic-product-apex-mcp-layer",
+  "owner": "codex",
+  "objective": "shared MCP product-oriented action layer for Codex Claude OpenCode",
+  "startedAt": "2026-05-16T14:21:18Z",
+  "heartbeatAt": "2026-05-16T14:21:18Z",
+  "allowedFiles": ["scripts/mcp/atomic-edit/**", "docs/ai/ATOMIC_EDIT_PROGRESS.md", "docs/ai/ATOMIC_EDIT_WORKBOARD.md"],
+  "blockedFiles": ["CLAUDE.md", "AGENTS.md", ".mcp.json", ".claude/settings.json", ".codex/hooks.json", ".github/workflows/**", "scripts/ops/**", "ops/**", "scripts/pulse/no-hardcoded-reality-audit.ts"],
+  "acceptanceCriteria": ["25 MCP tools listed", "product apex layer smoke passed", "launcher smoke passed", "atomicity auditor passed"],
+  "status": "validated"
+}

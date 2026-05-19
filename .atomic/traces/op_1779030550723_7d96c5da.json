@@ -1,0 +1,59 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779030550723_7d96c5da",
+  "ts": "2026-05-17T15:09:10.723Z",
+  "file": "docs/ai/atomic-os-benchmark/tools/atomic-call.cjs",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "targetUnit": "text_span",
+  "intention": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 1146,
+    "lineRewriteSurfaceChars": 56,
+    "expansionFactorAvoided": 0.05,
+    "bytesNet": 1090,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "5dac9b16fae4b5ea64783fa2cbe18120b1b225e5e8a18d107b815046dd958bcf",
+  "proposedSha256": "5dac9b16fae4b5ea64783fa2cbe18120b1b225e5e8a18d107b815046dd958bcf",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- docs/ai/atomic-os-benchmark/tools/atomic-call.cjs (atomic char-level)\u001b[0m\n  }\n  \n  \u001b[32m{+function gitOutputLines(cwd, args) {\n    const result = spawnSync('git', args, { cwd, encoding: 'utf8' });\n    if (result.status !== 0) return [];\n    return String(result.stdout || '').split(/\\r?\\n/).map((line) => line.trim()).filter(Boolean);\n  }\n  \n  function deriveValidationScanFiles(cwd, options = {}) {\n    if (Array.isArray(options.scanFiles) && options.scanFiles.length) {\n      return [...new Set(options.scanFiles)].filter((fileName) => fs.existsSync(path.join(cwd, fileName)));\n    }\n    const pathspecs = Array.isArray(options.scanPathspecs) && options.scanPathspecs.length\n      ? options.scanPathspecs\n      : [];\n    const separator = ['--'];\n    const tracked = gitOutputLines(cwd, ['diff', '--name-only', ...separator, ...pathspecs]);\n    const untracked = gitOutputLines(cwd, ['ls-files', '--others', '--exclude-standard', ...separator, ...pathspecs]);\n    return [...new Set([...tracked, ...untracked])]\n      .filter((fileName) => /\\.[cm]?[jt]sx?$/.test(fileName))\n      .filter((fileName) => !fileName.startsWith('.atomic/traces/'))\n      .filter((fileName) => fs.existsSync(path.join(cwd, fileName)));\n  }\n  +}\u001b[0m\n  function runKloelUnifiedAgentValidation(options = {}) {\n    const cwd = process.cwd();",
+  "preservedZones": [
+    {
+      "kind": "unchanged_context",
+      "description": "Everything outside the modified zone is preserved byte-for-byte by the atomic operation."
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "oldTextHash": "386f6aa942a1197c1c2949d539af239acc9cc467ed237f847abc8d4346e0629d",
+      "newTextHash": "5dac9b16fae4b5ea64783fa2cbe18120b1b225e5e8a18d107b815046dd958bcf",
+      "description": "The operation changed the highlighted span shown in inlinePreview."
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~1146 character(s) in `docs/ai/atomic-os-benchmark/tools/atomic-call.cjs` (sub-line atomic edit, expansion 0.05× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

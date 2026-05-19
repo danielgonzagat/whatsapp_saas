@@ -1,0 +1,29 @@
+You are the ATOMIC OpenCode lane in A/B Round 119.
+
+Worktree:
+`/Users/danielpenin/kloel-ab-worktrees/kloel-ab119-atomic-20260518073232`
+
+You must use Atomic OS only. Do not use native file read/write/edit tools.
+Execute the macro command below first. It is the compiled Atomic fast-path for
+this controlled scale: four existing helpers plus the new incoming-message
+facade helper while preserving public API.
+
+```sh
+cd /Users/danielpenin/kloel-ab-worktrees/kloel-ab119-atomic-20260518073232 && export ATOMIC_OS_REPO_ROOT=/Users/danielpenin/kloel-ab-worktrees/kloel-ab119-atomic-20260518073232 && R=/Users/danielpenin/whatsapp_saas/docs/ai/atomic-os-benchmark/round-119 && W=/Users/danielpenin/kloel-ab-worktrees/kloel-ab119-atomic-20260518073232 && RUNTIME_ARGS="$(node -e 'process.stdout.write(require("node:fs").readFileSync(process.argv[1], "utf8"))' "$R/atomic-runtime-extract-args.json")" && node "$W/docs/ai/atomic-os-benchmark/tools/atomic-call.cjs" extract_class_methods_to_file "$RUNTIME_ARGS" && ROUTER_ARGS="$(node -e 'process.stdout.write(require("node:fs").readFileSync(process.argv[1], "utf8"))' "$R/atomic-router-extract-args.json")" && node "$W/docs/ai/atomic-os-benchmark/tools/atomic-call.cjs" extract_class_methods_to_file "$ROUTER_ARGS" && PARSER_CREATE_ARGS="$(node -e 'process.stdout.write(require("node:fs").readFileSync(process.argv[1], "utf8"))' "$R/atomic-parser-create-args.json")" && node "$W/docs/ai/atomic-os-benchmark/tools/atomic-call.cjs" atomic_create_file "$PARSER_CREATE_ARGS" && node "$W/docs/ai/atomic-os-benchmark/tools/atomic-call.cjs" atomic_add_import '{"file":"backend/src/kloel/unified-agent.service.ts","module":"./unified-agent-tool-router.helpers","name":"ExecuteToolActionDeps","typeOnly":true}' && node "$W/docs/ai/atomic-os-benchmark/tools/atomic-call.cjs" atomic_add_import '{"file":"backend/src/kloel/unified-agent.service.ts","module":"./unified-agent-tool-parser.helpers","name":"parseToolArgs"}' && PARSE_ARGS="$(node -e 'process.stdout.write(require("node:fs").readFileSync(process.argv[1], "utf8"))' "$R/atomic-parser-replace-args.json")" && node "$W/docs/ai/atomic-os-benchmark/tools/atomic-call.cjs" atomic_replace_text "$PARSE_ARGS" && TOP_ARGS="$(node -e 'process.stdout.write(require("node:fs").readFileSync(process.argv[1], "utf8"))' "$R/atomic-top-extract-args.json")" && node "$W/docs/ai/atomic-os-benchmark/tools/atomic-call.cjs" extract_symbols_to_file "$TOP_ARGS" && COG_CREATE_ARGS="$(node -e 'process.stdout.write(require("node:fs").readFileSync(process.argv[1], "utf8"))' "$R/atomic-cognitive-create-args.json")" && node "$W/docs/ai/atomic-os-benchmark/tools/atomic-call.cjs" atomic_create_file "$COG_CREATE_ARGS" && node "$W/docs/ai/atomic-os-benchmark/tools/atomic-call.cjs" atomic_add_import '{"file":"backend/src/kloel/unified-agent.service.ts","module":"./unified-agent-cognitive-state.helpers","name":"buildUnifiedAgentCognitiveState"}' && COG_REPLACE_ARGS="$(node -e 'process.stdout.write(require("node:fs").readFileSync(process.argv[1], "utf8"))' "$R/atomic-cognitive-replace-args.json")" && node "$W/docs/ai/atomic-os-benchmark/tools/atomic-call.cjs" atomic_replace_text "$COG_REPLACE_ARGS" && node "$W/docs/ai/atomic-os-benchmark/tools/atomic-call.cjs" atomic_remove_import '{"file":"backend/src/kloel/unified-agent.service.ts","module":"./abi/abi-validator","name":"validateAbiPayload"}' && INCOMING_CREATE_ARGS="$(node -e 'process.stdout.write(require("node:fs").readFileSync(process.argv[1], "utf8"))' "$R/atomic-incoming-create-args.json")" && node "$W/docs/ai/atomic-os-benchmark/tools/atomic-call.cjs" atomic_create_file "$INCOMING_CREATE_ARGS" && node "$W/docs/ai/atomic-os-benchmark/tools/atomic-call.cjs" atomic_add_import '{"file":"backend/src/kloel/unified-agent.service.ts","module":"./unified-agent-incoming-message.helpers","name":"processIncomingUnifiedAgentMessage"}' && INCOMING_REPLACE_ARGS="$(node -e 'process.stdout.write(require("node:fs").readFileSync(process.argv[1], "utf8"))' "$R/atomic-incoming-replace-args.json")" && node "$W/docs/ai/atomic-os-benchmark/tools/atomic-call.cjs" atomic_replace_text "$INCOMING_REPLACE_ARGS" && node "$W/docs/ai/atomic-os-benchmark/tools/atomic-call.cjs" atomic_apply_eslint_dry_run_fixes '{"cwd":"backend","args":["src/kloel/unified-agent.service.ts","src/kloel/unified-agent-tool-router.helpers.ts","src/kloel/unified-agent-runtime.helpers.ts","src/kloel/unified-agent-tool-parser.helpers.ts","src/kloel/unified-agent-cognitive-state.helpers.ts","src/kloel/unified-agent-incoming-message.helpers.ts","--fix-dry-run","--fix-type","layout","--format","json"],"allowedPaths":["backend/src/kloel/unified-agent.service.ts","backend/src/kloel/unified-agent-tool-router.helpers.ts","backend/src/kloel/unified-agent-runtime.helpers.ts","backend/src/kloel/unified-agent-tool-parser.helpers.ts","backend/src/kloel/unified-agent-cognitive-state.helpers.ts","backend/src/kloel/unified-agent-incoming-message.helpers.ts"],"applyKnownResidueFixes":false}' && FINAL_ARGS="$(node -e 'process.stdout.write(require("node:fs").readFileSync(process.argv[1], "utf8"))' "$R/atomic-final-validation-args.json")" && node "$W/docs/ai/atomic-os-benchmark/tools/atomic-call.cjs" validate_kloel_unified_agent "$FINAL_ARGS"
+```
+
+After the command finishes, report only:
+- ATOMIC_PREPROMPT_EXIT if visible.
+- Whether macro validation passed.
+- Trace count if visible.
+- Any native file-tool violation if visible.
+- Residual risk.
+
+Acceptance remains:
+- Helpers contain no `this.`
+- Service keeps public `async processIncomingMessage(`, `async executeTool(`
+  and `async buildQuotedReplyPlan(`
+- `processIncomingMessage` delegates to `processIncomingUnifiedAgentMessage`
+- Service no longer imports `validateAbiPayload`
+- Runtime helper must not import/contain `ToolArgs`
+- No suppressions, no native file tools, no shell code writes.

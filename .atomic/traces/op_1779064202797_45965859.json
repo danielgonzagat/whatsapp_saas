@@ -1,0 +1,59 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779064202797_45965859",
+  "ts": "2026-05-18T00:30:02.797Z",
+  "file": "docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "targetUnit": "text_span",
+  "intention": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 308,
+    "lineRewriteSurfaceChars": 195,
+    "expansionFactorAvoided": 0.63,
+    "bytesNet": 121,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "b24683c51d739ee4ae631b2fb2a73a18f7464fa2b1d8358ce9c0ef45bc209ac5",
+  "proposedSha256": "b24683c51d739ee4ae631b2fb2a73a18f7464fa2b1d8358ce9c0ef45bc209ac5",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs (atomic char-level)\u001b[0m\n            'choose namespace or named imports from importPressurePlan instead of hand-written import style',\n          ],\n          typeSpilloverGuard: 'extra type-only changed files are economy debt unless \u001b[32m{+s+}\u001b[0mco\u001b[31m[-nsum-]\u001b[0m\u001b[32m{+r+}\u001b[0me\u001b[32m{+ca+}\u001b[0mr\u001b[32m{+d+}\u001b[0m \u001b[32m{+typ+}\u001b[0me\u001b[31m[-v-]\u001b[0m\u001b[32m{+Sp+}\u001b[0mi\u001b[31m[-d-]\u001b[0m\u001b[32m{+llov+}\u001b[0me\u001b[31m[-n-]\u001b[0m\u001b[32m{+rE+}\u001b[0mc\u001b[31m[-e-]\u001b[0m\u001b[32m{+onomy+}\u001b[0m proves \u001b[32m{+the existing shared type-fi+}\u001b[0ml\u001b[32m{+e t+}\u001b[0mo\u001b[31m[-w-]\u001b[0m\u001b[32m{+uch is ch+}\u001b[0me\u001b[32m{+ape+}\u001b[0mr t\u001b[32m{+han +}\u001b[0mo\u001b[31m[-t-]\u001b[0m\u001b[32m{+wner-loc+}\u001b[0mal \u001b[31m[-typ-]\u001b[0me\u001b[32m{+xport+}\u001b[0m/import\u001b[32m{+;+}\u001b[0m \u001b[31m[-pre-]\u001b[0ms\u001b[31m[-s-]\u001b[0m\u001b[32m{+mall p+}\u001b[0mu\u001b[31m[-r-]\u001b[0m\u001b[32m{+blic h+}\u001b[0me\u001b[32m{+lper+}\u001b[0m \u001b[31m[-wi-]\u001b[0mt\u001b[32m{+ypes s+}\u001b[0mhou\u001b[31m[-t-]\u001b[0m\u001b[32m{+ld+}\u001b[0m \u001b[32m{+l+}\u001b[0mi\u001b[31m[-ncr-]\u001b[0m\u001b[32m{+v+}\u001b[0me\u001b[31m[-as-]\u001b[0m\u001b[32m{+ +}\u001b[0min\u001b[31m[-g-]\u001b[0m \u001b[31m[-ch-]\u001b[0ma\u001b[32m{+ +}\u001b[0mn\u001b[31m[-g-]\u001b[0me\u001b[32m{+wly-create+}\u001b[0md \u001b[31m[-s-]\u001b[0mo\u001b[31m[-urc-]\u001b[0m\u001b[32m{+wn+}\u001b[0me\u001b[32m{+r+}\u001b[0m \u001b[31m[-c-]\u001b[0m\u001b[32m{+m+}\u001b[0mo\u001b[32m{+d+}\u001b[0mu\u001b[31m[-nt-]\u001b[0m\u001b[32m{+le+}\u001b[0m \u001b[32m{+bef+}\u001b[0mor\u001b[32m{+e+}\u001b[0m \u001b[32m{+touch+}\u001b[0min\u001b[31m[-ve-]\u001b[0m\u001b[32m{+g a+}\u001b[0mn\u001b[32m{+ exis+}\u001b[0mt\u001b[31m[-o-]\u001b[0m\u001b[32m{+ing sha+}\u001b[0mr\u001b[32m{+ed t+}\u001b[0my\u001b[32m{+pe file+}\u001b[0m',\n          guard: 'apply only if public API, constructor shape, scorecard, focused Jest, typecheck-impact, spec diff, protected diff, and source count remain non-worse',\n        },",
+  "preservedZones": [
+    {
+      "kind": "unchanged_context",
+      "description": "Everything outside the modified zone is preserved byte-for-byte by the atomic operation."
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "oldTextHash": "47821fde33d2ae9be57d90dbb4bec54366eb077f252400a898f1d8bfedf61b76",
+      "newTextHash": "b24683c51d739ee4ae631b2fb2a73a18f7464fa2b1d8358ce9c0ef45bc209ac5",
+      "description": "The operation changed the highlighted span shown in inlinePreview."
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~308 character(s) in `docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs` (sub-line atomic edit, expansion 0.63× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

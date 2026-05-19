@@ -1,0 +1,59 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779086610711_6830e02f",
+  "ts": "2026-05-18T06:43:30.711Z",
+  "file": "docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "targetUnit": "text_span",
+  "intention": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 1043,
+    "lineRewriteSurfaceChars": 380,
+    "expansionFactorAvoided": 0.36,
+    "bytesNet": 663,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "28c033d07c0c86e41ea5793cbeae91a504055399e2f0f90d838cf68369f7cf19",
+  "proposedSha256": "28c033d07c0c86e41ea5793cbeae91a504055399e2f0f90d838cf68369f7cf19",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs (atomic char-level)\u001b[0m\n    const publicMethods = methodSurfaces.filter((method) => method.visibility === 'public').map((method) => method.name);\n    const privateMethods = methodSurfaces.filter((method) => method.visibility === 'private');\n    \u001b[32m{+const postConst+}\u001b[0mr\u001b[32m{+uctorAssign+}\u001b[0me\u001b[32m{+dFields = new Se+}\u001b[0mt\u001b[32m{+();\n    for (const member of classNode.members) {\n      if (ts.isConstr+}\u001b[0mu\u001b[32m{+cto+}\u001b[0mr\u001b[32m{+Declaratio+}\u001b[0mn\u001b[32m{+(member))+}\u001b[0m \u001b[32m{+continue;\n      function scanAssignments(node) +}\u001b[0m{\n      \u001b[32m{+  if (\n          ts.isBin+}\u001b[0ma\u001b[32m{+ryExpression(node) &&\n          node.operatorToken.kind === ts.SyntaxKind.EqualsToken &&\n          ts.isPropertyAccessExpression(node.left) &&\n          node.left.expression.kind === ts.SyntaxKind.ThisKeyword\n        ) {\n          postConstructorAssignedFields.add(node.left.name.text);\n        }\n        ts.forEachChild(node, scanAssignments);\n      }\n      scanAssignments(member);\n    }\n    return {\n      a+}\u001b[0mvailable: true,\n      className: nameText(classNode.name),\n      constructorParamProperties,\n      privateFields,\n      publicMethods,\n      privateMethods,\u001b[32m{+\n      postConstructorAssignedFields: [...postConstructorAssignedFields].sort(),+}\u001b[0m\n    };\n  }",
+  "preservedZones": [
+    {
+      "kind": "unchanged_context",
+      "description": "Everything outside the modified zone is preserved byte-for-byte by the atomic operation."
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "oldTextHash": "8e2a3c8bd930160f4f994ecc4c280386ceef0e8ef14f2e0a837297a147c0f50e",
+      "newTextHash": "28c033d07c0c86e41ea5793cbeae91a504055399e2f0f90d838cf68369f7cf19",
+      "description": "The operation changed the highlighted span shown in inlinePreview."
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~1043 character(s) in `docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs` (sub-line atomic edit, expansion 0.36× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

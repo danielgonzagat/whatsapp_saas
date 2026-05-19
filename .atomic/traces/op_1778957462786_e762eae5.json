@@ -1,0 +1,55 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1778957462786_e762eae5",
+  "ts": "2026-05-16T18:51:02.786Z",
+  "file": "worker/test/openai-models.spec.ts",
+  "operation": "edit_symbol:remove",
+  "operator": "edit_symbol:remove",
+  "targetUnit": "text_span",
+  "intention": "edit_symbol:remove",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 0,
+    "lineRewriteSurfaceChars": 0,
+    "expansionFactorAvoided": 0,
+    "bytesNet": -38,
+    "lineRewriteAvoided": true
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "afterSha256": "f0965d5c37058ae2e6f7fb0419f1db0902a7ac6b0152a20bc16456a137c1e7b5",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- worker/test/openai-models.spec.ts (atomic char-level)\u001b[0m\n  import { describe, it, expect, beforeEach } from 'vitest';\n  \n  \u001b[31m[-const envBackup = { ...process.env };-]\u001b[0m\n  \n  function clearOpenAiEnvs() {",
+  "preservedZones": [
+    {
+      "kind": "unchanged_context",
+      "description": "Everything outside the modified zone is preserved byte-for-byte by the atomic operation."
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "oldTextHash": "237a07f413d950a8568f088074d2b6a5d3e6b8f206c377b40fe9f86c9a877326",
+      "newTextHash": "f0965d5c37058ae2e6f7fb0419f1db0902a7ac6b0152a20bc16456a137c1e7b5",
+      "description": "The operation changed the highlighted span shown in inlinePreview."
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `edit_symbol:remove` changed ~0 character(s) in `worker/test/openai-models.spec.ts` (sub-line atomic edit, expansion 0× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

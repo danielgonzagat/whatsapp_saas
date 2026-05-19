@@ -1,0 +1,80 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779211714092_b7c7adea",
+  "ts": "2026-05-19T17:28:34.092Z",
+  "file": "backend/src/kloel/abi/abi-builder.service.ts",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "targetUnit": "text_span",
+  "intention": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 55,
+    "lineRewriteSurfaceChars": 34,
+    "expansionFactorAvoided": 0.62,
+    "bytesNet": 21,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "99b99b77aea0252604485069e695b49be790af04b1c50d230b355e010084a7b9",
+  "proposedSha256": "99b99b77aea0252604485069e695b49be790af04b1c50d230b355e010084a7b9",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- backend/src/kloel/abi/abi-builder.service.ts (atomic char-level)\u001b[0m\n    AbiSalientEvent,\n    AbiTruthMode,\n  \u001b[32m{+  AbiValenceSection,+}\u001b[0m\n    AbiWorkingMemoryItem,\n    CognitiveStateAbi,",
+  "preservedZones": [
+    {
+      "kind": "prefix_preserved",
+      "description": "Bytes 0–382 — prefix preserved unchanged",
+      "byteStart": 0,
+      "byteEnd": 383,
+      "byteLength": 383,
+      "beforeHash": "88930cb65746a952e0ee48fef79052a1f02dcc5d4c0873e37f6e55787efcbd1a",
+      "afterHash": "88930cb65746a952e0ee48fef79052a1f02dcc5d4c0873e37f6e55787efcbd1a",
+      "sample": "AbiPerceptionSnapshot,\n  AbiPulseTruth,\n  AbiSalientEvent,\n  AbiTruthMode,\n  Abi"
+    },
+    {
+      "kind": "suffix_preserved",
+      "description": "Bytes 383–6464 — suffix preserved unchanged",
+      "byteStart": 383,
+      "byteEnd": 6465,
+      "byteLength": 6082,
+      "beforeHash": "f2f7bb8168ac425f42d3e1c96fe3513e141defd7f65f52f4545fbe8fc482f516",
+      "afterHash": "f2f7bb8168ac425f42d3e1c96fe3513e141defd7f65f52f4545fbe8fc482f516",
+      "sample": "WorkingMemoryItem,\n  CognitiveStateAbi,\n} from './abi-schema';\nimport type { Pul"
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "byteStart": 383,
+      "byteEnd": 383,
+      "newByteLength": 21,
+      "oldTextHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "newTextHash": "b4ddd7f3647040dc9908c92f7e2acdefffff1e395f2b5f2bf29bc4f8ad1c05ea",
+      "oldSample": "",
+      "newSample": "ValenceSection,\n  Abi",
+      "description": "Insert 21 bytes at offset 383"
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~55 character(s) in `backend/src/kloel/abi/abi-builder.service.ts` (sub-line atomic edit, expansion 0.62× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

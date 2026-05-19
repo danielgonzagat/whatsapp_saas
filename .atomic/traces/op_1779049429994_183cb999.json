@@ -1,0 +1,59 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779049429994_183cb999",
+  "ts": "2026-05-17T20:23:49.995Z",
+  "file": "docs/ai/atomic-os-benchmark/tools/refactor-scorecard.cjs",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "targetUnit": "text_span",
+  "intention": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 1510,
+    "lineRewriteSurfaceChars": 66,
+    "expansionFactorAvoided": 0.04,
+    "bytesNet": 1444,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "445026857aea7bbb9b0047bc3e7123a514c7252f8fc4f7a9fb2b7f4998222fb4",
+  "proposedSha256": "445026857aea7bbb9b0047bc3e7123a514c7252f8fc4f7a9fb2b7f4998222fb4",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- docs/ai/atomic-os-benchmark/tools/refactor-scorecard.cjs (atomic char-level)\u001b[0m\n  }\n  \n  \u001b[32m{+function facadeTypeSurfaceMetrics(worktree, target, sourceMetrics) {\n    const ts = loadTypeScript(worktree);\n    if (!ts) return { available: false, reason: 'typescript_unavailable', debt: false, pass: true };\n    const absTarget = path.join(worktree, target);\n    const text = fs.readFileSync(absTarget, 'utf8');\n    const source = ts.createSourceFile(absTarget, text, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);\n    const declarations = [];\n    for (const statement of source.statements) {\n      if (ts.isInterfaceDeclaration(statement) || ts.isTypeAliasDeclaration(statement)) {\n        declarations.push({\n          kind: ts.isInterfaceDeclaration(statement) ? 'interface' : 'type_alias',\n          name: statement.name ? statement.name.text : '<anonymous>',\n          lines: source.getLineAndCharacterOfPosition(statement.getEnd()).line - source.getLineAndCharacterOfPosition(statement.getStart(source)).line + 1,\n        });\n      }\n    }\n    const extractedSourceCount = sourceMetrics.filter((item) => item.file !== target).length;\n    const debt = extractedSourceCount > 0 && declarations.length > 0;\n    return {\n      available: true,\n      extractedSourceCount,\n      declarationCount: declarations.length,\n      declarations,\n      debt,\n      pass: !debt,\n      interpretation: 'After a facade extraction, public DTO/type declarations should move to or be imported from the owner module. Keeping them in the facade increases trust surface and import/type pressure.',\n    };\n  }\n  +}\u001b[0m\n  function main() {\n    const args = parseArgs(process.argv.slice(2));",
+  "preservedZones": [
+    {
+      "kind": "unchanged_context",
+      "description": "Everything outside the modified zone is preserved byte-for-byte by the atomic operation."
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "oldTextHash": "3cc155e40288ce4347e67e8de674326850592d27989c46c09f91a71f0cf26beb",
+      "newTextHash": "445026857aea7bbb9b0047bc3e7123a514c7252f8fc4f7a9fb2b7f4998222fb4",
+      "description": "The operation changed the highlighted span shown in inlinePreview."
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~1510 character(s) in `docs/ai/atomic-os-benchmark/tools/refactor-scorecard.cjs` (sub-line atomic edit, expansion 0.04× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

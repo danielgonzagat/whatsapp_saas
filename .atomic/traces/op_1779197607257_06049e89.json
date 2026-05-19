@@ -1,0 +1,80 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779197607257_06049e89",
+  "ts": "2026-05-19T13:33:27.257Z",
+  "file": "backend/src/kloel/brain-runtime.controller.ts",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "targetUnit": "text_span",
+  "intention": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 350,
+    "lineRewriteSurfaceChars": 247,
+    "expansionFactorAvoided": 0.71,
+    "bytesNet": 103,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "2a14293478a858d0fb7c5396d3132e7deb83a843a1b6bb6219f61ceaaff9a7fc",
+  "proposedSha256": "2a14293478a858d0fb7c5396d3132e7deb83a843a1b6bb6219f61ceaaff9a7fc",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- backend/src/kloel/brain-runtime.controller.ts (atomic char-level)\u001b[0m\n  import {\u001b[32m{+\n  +}\u001b[0m \u001b[32m{+ +}\u001b[0mBody,\u001b[32m{+\n  +}\u001b[0m \u001b[32m{+ +}\u001b[0mController,\u001b[32m{+\n  +}\u001b[0m \u001b[32m{+ +}\u001b[0mGet,\u001b[32m{+\n  +}\u001b[0m \u001b[32m{+ +}\u001b[0mPost,\u001b[32m{+\n  +}\u001b[0m \u001b[32m{+ +}\u001b[0mRequest,\u001b[32m{+\n  +}\u001b[0m \u001b[32m{+ +}\u001b[0mRes,\u001b[32m{+\n  +}\u001b[0m \u001b[32m{+ +}\u001b[0mUse\u001b[32m{+Filters,\n    Use+}\u001b[0mGuards\u001b[31m[- -]\u001b[0m\u001b[32m{+,\n  +}\u001b[0m} from '@nestjs/common';\n  import { StructuredLogger } from '../logging/structured-logger';\n  import type { Response } from 'express';\u001b[32m{+\n  import { BrainDecideDegradeFilter } from './brain-decide-degrade.filter';+}\u001b[0m\n  import { JwtAuthGuard } from '../auth/jwt-auth.guard';\n  import { WorkspaceGuard } from '../common/guards/workspace.guard';",
+  "preservedZones": [
+    {
+      "kind": "prefix_preserved",
+      "description": "Bytes 0–7 — prefix preserved unchanged",
+      "byteStart": 0,
+      "byteEnd": 8,
+      "byteLength": 8,
+      "beforeHash": "e0cbdab303939db3db5ed1394f8cc7d9c814984d13f730431eb0cabd77c9e204",
+      "afterHash": "e0cbdab303939db3db5ed1394f8cc7d9c814984d13f730431eb0cabd77c9e204",
+      "sample": "import {"
+    },
+    {
+      "kind": "suffix_preserved",
+      "description": "Bytes 190–7370 — suffix preserved unchanged",
+      "byteStart": 190,
+      "byteEnd": 7371,
+      "byteLength": 7181,
+      "beforeHash": "c1c23d5fb95793b3e5e09554037b0441f56d24845c8b03b7cdd7bff8a018ea95",
+      "afterHash": "c1c23d5fb95793b3e5e09554037b0441f56d24845c8b03b7cdd7bff8a018ea95",
+      "sample": "';\nimport { JwtAuthGuard } from '../auth/jwt-auth.guard';\nimport { WorkspaceGuar"
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "byteStart": 8,
+      "byteEnd": 190,
+      "newByteLength": 285,
+      "oldTextHash": "d84d6d6dab034099dc66c14c3a64287d1e4799307e3ad3e84d27dee7556e0d9b",
+      "newTextHash": "1223d3e2d18de3a1db9ce2dd5bce07476fc47ae0f34fc57c2a475b34b1a144d6",
+      "oldSample": " Body, Controller, Get, Post, Request, Res, UseGuards } from '@nestjs/common';\nimport { StructuredLogger } from '../logging/structured-logger';\nimport type { Response } from 'express",
+      "newSample": "\n  Body,\n  Controller,\n  Get,\n  Post,\n  Request,\n  Res,\n  UseFilters,\n  UseGuards,\n} from '@nestjs/common';\nimport { StructuredLogger } from '../logging/structured-logger';\nimport type { Response } fr",
+      "description": "Replace 182 bytes at offset 8 with 285 bytes"
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~350 character(s) in `backend/src/kloel/brain-runtime.controller.ts` (sub-line atomic edit, expansion 0.71× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

@@ -29,7 +29,6 @@ export class BrainMessageDto implements BrainMessage {
   role!: 'assistant' | 'system' | 'user';
 
   @IsString()
-  @MaxLength(12000)
   content!: string;
 }
 

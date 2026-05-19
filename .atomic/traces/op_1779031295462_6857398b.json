@@ -1,0 +1,59 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779031295462_6857398b",
+  "ts": "2026-05-17T15:21:35.462Z",
+  "file": "docs/ai/atomic-os-benchmark/tools/opencode-round-watchdog.cjs",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "targetUnit": "text_span",
+  "intention": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 254,
+    "lineRewriteSurfaceChars": 223,
+    "expansionFactorAvoided": 0.88,
+    "bytesNet": 31,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "cf969e0bcf3aac34185b20e17875f5d197b56caa0d9faa477fa6bce95161b444",
+  "proposedSha256": "cf969e0bcf3aac34185b20e17875f5d197b56caa0d9faa477fa6bce95161b444",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- docs/ai/atomic-os-benchmark/tools/opencode-round-watchdog.cjs (atomic char-level)\u001b[0m\n    for (const lane of lanes) {\n      lane.child.on('exit', (code, signal) => {\n        \u001b[32m{+if (+}\u001b[0mlane.status =\u001b[32m{+==+}\u001b[0m \u001b[32m{+'running') lane.status = +}\u001b[0mcode === 0 ? 'completed' : 'exited';\n        lane.exitCode = code;\n        lane.signal = signal;",
+  "preservedZones": [
+    {
+      "kind": "unchanged_context",
+      "description": "Everything outside the modified zone is preserved byte-for-byte by the atomic operation."
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "oldTextHash": "503a2abf8aaef38c9b860471b3e524e19a35aafd43ffe8dffefcdbfee0ce7d32",
+      "newTextHash": "cf969e0bcf3aac34185b20e17875f5d197b56caa0d9faa477fa6bce95161b444",
+      "description": "The operation changed the highlighted span shown in inlinePreview."
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~254 character(s) in `docs/ai/atomic-os-benchmark/tools/opencode-round-watchdog.cjs` (sub-line atomic edit, expansion 0.88× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

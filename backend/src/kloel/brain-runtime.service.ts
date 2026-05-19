@@ -8,6 +8,7 @@ import {
   readBrainActionName,
 } from './brain-action-event-mapper';
 import { BrainCapabilityExecutorService } from './brain-capability-executor.service';
+import { OPERATOR_CAPABILITIES } from './brain-capabilities.const';
 import { BrainCapabilityRegistryService } from './brain-capability-registry.service';
 import { BrainCommercialGraphService } from './brain-commercial-graph.service';
 import type { CommercialGraphRecommendation } from './brain-commercial-graph.types';
@@ -55,13 +56,8 @@ function buildPredecidedActions(input: {
   return [{ tool: input.intent, args: args }];
 }
 
-const OPERATOR_CAPABILITIES = [
-  'list_products',
-  'search_contact',
-  'list_conversations',
-  'send_message_via_channel',
-  'query_revenue_summary',
-] as const;
+// OPERATOR_CAPABILITIES moved to ./brain-capabilities.const (single
+// source of truth shared with the executor's self-model registry).
 
 @Injectable()
 export class BrainRuntimeService {
@@ -297,6 +293,12 @@ export class BrainRuntimeService {
         break;
       case 'query_revenue_summary':
         capabilityResult = await this.executor.queryRevenueSummary(workspaceId, context);
+        break;
+      case 'inspect_self':
+        capabilityResult = await this.executor.inspectSelf(workspaceId, context);
+        break;
+      case 'inspect_runtime':
+        capabilityResult = await this.executor.inspectRuntime(workspaceId);
         break;
       default:
         capabilityResult = { ok: false, error: 'unknown_operator_intent' };

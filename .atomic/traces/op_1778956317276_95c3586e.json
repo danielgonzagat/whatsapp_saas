@@ -1,0 +1,37 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1778956317276_95c3586e",
+  "ts": "2026-05-16T18:31:57.277Z",
+  "file": "scripts/mcp/atomic-edit/smoke.ts",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 184,
+    "lineRewriteSurfaceChars": 153,
+    "expansionFactorAvoided": 0.83,
+    "bytesNet": 41,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "afterSha256": "5e697f6c547c5ef57ecdf940d1d69d748dae392bf6690642b43d8cbf1648ec8c",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- scripts/mcp/atomic-edit/smoke.ts (atomic char-level)\u001b[0m\n          name: 'atomic_apply_eslint_dry_run_fixes',\n          arguments: {\n            cwd: \u001b[32m{+path.join(repoRoot, +}\u001b[0m'worker'\u001b[32m{+)+}\u001b[0m,\n            args: ['--fix-dry-run', '--format', 'json', path.basename(eslintRel)],\n            allowedPaths: [\u001b[31m[-esl-]\u001b[0m\u001b[32m{+path.jo+}\u001b[0min\u001b[31m[-t-]\u001b[0m\u001b[32m{+(repo+}\u001b[0mR\u001b[32m{+oot, 'work+}\u001b[0me\u001b[31m[-l-]\u001b[0m\u001b[32m{+r')+}\u001b[0m],\n          },\n        })) as { content: { text: string }[]; isError?: boolean };",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~184 character(s) in `scripts/mcp/atomic-edit/smoke.ts` (sub-line atomic edit, expansion 0.83× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

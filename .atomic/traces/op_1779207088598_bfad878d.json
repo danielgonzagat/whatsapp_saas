@@ -1,0 +1,80 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779207088598_bfad878d",
+  "ts": "2026-05-19T16:11:28.598Z",
+  "file": "backend/src/kloel/brain-capability-executor.service.ts",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "targetUnit": "text_span",
+  "intention": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 134,
+    "lineRewriteSurfaceChars": 66,
+    "expansionFactorAvoided": 0.49,
+    "bytesNet": 68,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "5177eb62266c1dcee4f3bc4aec16735657a2b087990681334558ce3590c6118d",
+  "proposedSha256": "5177eb62266c1dcee4f3bc4aec16735657a2b087990681334558ce3590c6118d",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- backend/src/kloel/brain-capability-executor.service.ts (atomic char-level)\u001b[0m\n  import type { IdentityAudience } from './lineage/identity-projector.service';\n  import { MindPerceptionService } from './mind-perception.service';\n  \u001b[32m{+import { OPERATOR_CAPABILITIES } from './brain-capabilities.const';+}\u001b[0m\n  import { MemoryProjector } from './commem/memory.projector';\n  import type { MindPerceptEvent } from './mind.types';",
+  "preservedZones": [
+    {
+      "kind": "prefix_preserved",
+      "description": "Bytes 0–542 — prefix preserved unchanged",
+      "byteStart": 0,
+      "byteEnd": 543,
+      "byteLength": 543,
+      "beforeHash": "b5e11f389855159b67db12555bad074a444b94007c42b6ebcf80eda978287fa5",
+      "afterHash": "b5e11f389855159b67db12555bad074a444b94007c42b6ebcf80eda978287fa5",
+      "sample": "e';\nimport { MindPerceptionService } from './mind-perception.service';\nimport { "
+    },
+    {
+      "kind": "suffix_preserved",
+      "description": "Bytes 543–26486 — suffix preserved unchanged",
+      "byteStart": 543,
+      "byteEnd": 26487,
+      "byteLength": 25944,
+      "beforeHash": "4b561e883bde6a139c332f989b5c90c5209ab42de25a78b6b5db8be6c3befb44",
+      "afterHash": "4b561e883bde6a139c332f989b5c90c5209ab42de25a78b6b5db8be6c3befb44",
+      "sample": "MemoryProjector } from './commem/memory.projector';\nimport type { MindPerceptEve"
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "byteStart": 543,
+      "byteEnd": 543,
+      "newByteLength": 68,
+      "oldTextHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "newTextHash": "2a98babbdc84f5703b39efaf5b9fe1fe54db353b91e2302ec5a74a3ff5c5661a",
+      "oldSample": "",
+      "newSample": "OPERATOR_CAPABILITIES } from './brain-capabilities.const';\nimport { ",
+      "description": "Insert 68 bytes at offset 543"
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~134 character(s) in `backend/src/kloel/brain-capability-executor.service.ts` (sub-line atomic edit, expansion 0.49× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

@@ -1,0 +1,80 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779202966948_81407d4e",
+  "ts": "2026-05-19T15:02:46.948Z",
+  "file": "backend/src/kloel/abi/abi-builder.service.ts",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "targetUnit": "text_span",
+  "intention": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 227,
+    "lineRewriteSurfaceChars": 144,
+    "expansionFactorAvoided": 0.63,
+    "bytesNet": 83,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "3379c1ffce0facaebc56ecacd36ff974b34cb76e7e2a936d15f014f55bc09ea4",
+  "proposedSha256": "3379c1ffce0facaebc56ecacd36ff974b34cb76e7e2a936d15f014f55bc09ea4",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- backend/src/kloel/abi/abi-builder.service.ts (atomic char-level)\u001b[0m\n  import {\n    ABI_VERSION,\n    AbiC\u001b[32m{+onsolidatedRef,\n    AbiC+}\u001b[0murrentInput,\n    Abi\u001b[32m{+EpisodicRef,\n    Abi+}\u001b[0mPerceptionSnapshot,\n    AbiPulseTruth,\n    Abi\u001b[32m{+SalientEvent,\n    Abi+}\u001b[0mTruthMode,\u001b[32m{+\n    AbiWorkingMemoryItem,+}\u001b[0m\n    CognitiveStateAbi,\n  } from './abi-schema';",
+  "preservedZones": [
+    {
+      "kind": "prefix_preserved",
+      "description": "Bytes 0–216 — prefix preserved unchanged",
+      "byteStart": 0,
+      "byteEnd": 217,
+      "byteLength": 217,
+      "beforeHash": "ec805099cb0e9b2285e10b9c5e98120004866f161ea99f91b556bf51fffc5723",
+      "afterHash": "ec805099cb0e9b2285e10b9c5e98120004866f161ea99f91b556bf51fffc5723",
+      "sample": ",\n} from '../lineage/identity-projector.service';\nimport {\n  ABI_VERSION,\n  AbiC"
+    },
+    {
+      "kind": "suffix_preserved",
+      "description": "Bytes 286–4889 — suffix preserved unchanged",
+      "byteStart": 286,
+      "byteEnd": 4890,
+      "byteLength": 4604,
+      "beforeHash": "23b6e649ceb7e1824adb027bac54231730a448b70eb60f9399147e9df6e417af",
+      "afterHash": "23b6e649ceb7e1824adb027bac54231730a448b70eb60f9399147e9df6e417af",
+      "sample": ",\n  CognitiveStateAbi,\n} from './abi-schema';\nimport type { PulseTruthSnapshot }"
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "byteStart": 217,
+      "byteEnd": 286,
+      "newByteLength": 152,
+      "oldTextHash": "1a68851057c98a71f328bebcc310ecc15d8a17ebf0b78d9d6f18214d0e141fa0",
+      "newTextHash": "bf8e3d637db7a19047238a202c879e19759cbcc2c6501bd2a753a51568c963f7",
+      "oldSample": "urrentInput,\n  AbiPerceptionSnapshot,\n  AbiPulseTruth,\n  AbiTruthMode",
+      "newSample": "onsolidatedRef,\n  AbiCurrentInput,\n  AbiEpisodicRef,\n  AbiPerceptionSnapshot,\n  AbiPulseTruth,\n  AbiSalientEvent,\n  AbiTruthMode,\n  AbiWorkingMemoryItem",
+      "description": "Replace 69 bytes at offset 217 with 152 bytes"
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~227 character(s) in `backend/src/kloel/abi/abi-builder.service.ts` (sub-line atomic edit, expansion 0.63× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

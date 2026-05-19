@@ -1,0 +1,59 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779026756278_f6cbbda3",
+  "ts": "2026-05-17T14:05:56.278Z",
+  "file": "docs/ai/atomic-os-benchmark/tools/refactor-scorecard.cjs",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "targetUnit": "text_span",
+  "intention": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 3070,
+    "lineRewriteSurfaceChars": 138,
+    "expansionFactorAvoided": 0.04,
+    "bytesNet": 2932,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "f6279e2a2253c83c90678bec506932545e264d5ab798a0b5109eac82bb770293",
+  "proposedSha256": "f6279e2a2253c83c90678bec506932545e264d5ab798a0b5109eac82bb770293",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- docs/ai/atomic-os-benchmark/tools/refactor-scorecard.cjs (atomic char-level)\u001b[0m\n  }\n  \n  \u001b[32m{+function hasModifier(ts, node, kinds) {\n    return (node.modifiers || []).some((modifier) => kinds.includes(modifier.kind));\n  }\n  \n  function memberName(ts, source, member) {\n    if (!member.name) return null;\n    if (ts.isIdentifier(member.name) || ts.isPrivateIdentifier(member.name)) return member.name.text;\n    if (ts.isStringLiteral(member.name) || ts.isNumericLiteral(member.name)) return member.name.text;\n    return member.name.getText(source).replace(/^['\"]|['\"]$/g, '');\n  }\n  \n  function countWord(text, word) {\n    if (!word) return 0;\n    let count = 0;\n    let offset = 0;\n    for (;;) {\n      const found = text.indexOf(word, offset);\n      if (found === -1) return count;\n      const before = found === 0 ? '' : text[found - 1];\n      const after = text[found + word.length] || '';\n      if (!/[A-Za-z0-9_$]/.test(before) && !/[A-Za-z0-9_$]/.test(after)) count += 1;\n      offset = found + word.length;\n    }\n  }\n  \n  function facadeSurfaceMetrics(worktree, target) {\n    const ts = loadTypeScript(worktree);\n    if (!ts) return { available: false, reason: 'typescript_unavailable', debt: false, pass: true };\n    const absTarget = path.join(worktree, target);\n    const text = fs.readFileSync(absTarget, 'utf8');\n    const source = ts.createSourceFile(absTarget, text, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);\n    let classNode = null;\n    function visit(node) {\n      if (!classNode && ts.isClassDeclaration(node)) classNode = node;\n      ts.forEachChild(node, visit);\n    }\n    visit(source);\n    if (!classNode) return { available: false, reason: 'class_not_found', debt: false, pass: true };\n    const classText = text.slice(classNode.getStart(source), classNode.getEnd());\n    const methods = classNode.members.filter((member) => ts.isMethodDeclaration(member));\n    const publicMethods = [];\n    const privateMethods = [];\n    for (const member of methods) {\n      const name = memberName(ts, source, member);\n      if (!name) continue;\n      const isPrivate = hasModifier(ts, member, [ts.SyntaxKind.PrivateKeyword, ts.SyntaxKind.ProtectedKeyword]);\n      const info = { name, lines: source.getLineAndCharacterOfPosition(member.getEnd()).line - source.getLineAndCharacterOfPosition(member.getStart(source)).line + 1 };\n      if (isPrivate) privateMethods.push(info);\n      else publicMethods.push(info);\n    }\n    const privateMethodUsages = privateMethods.map((method) => ({\n      ...method,\n      usageCount: Math.max(0, countWord(classText, method.name) - 1),\n    }));\n    const singleUsePrivateMethods = privateMethodUsages.filter((method) => method.usageCount <= 1);\n    const dependencyBuilderPrivateMethods = singleUsePrivateMethods.filter((method) => /deps|depend|build/i.test(method.name));\n    const debt = dependencyBuilderPrivateMethods.length > 0;\n    return {\n      available: true,\n      publicMethodCount: publicMethods.length,\n      privateMethodCount: privateMethods.length,\n      privateMethodUsages,\n      singleUsePrivateMethods,\n      dependencyBuilderPrivateMethods,\n      debt,\n      pass: !debt,\n    };\n  }\n  +}\u001b[0m\n  function main() {\n    const args = parseArgs(process.argv.slice(2));",
+  "preservedZones": [
+    {
+      "kind": "unchanged_context",
+      "description": "Everything outside the modified zone is preserved byte-for-byte by the atomic operation."
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "oldTextHash": "01cafd5f7ed23f0f385de8899ffc30adeacf1163254befa34c42009edc83aa7d",
+      "newTextHash": "f6279e2a2253c83c90678bec506932545e264d5ab798a0b5109eac82bb770293",
+      "description": "The operation changed the highlighted span shown in inlinePreview."
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~3070 character(s) in `docs/ai/atomic-os-benchmark/tools/refactor-scorecard.cjs` (sub-line atomic edit, expansion 0.04× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

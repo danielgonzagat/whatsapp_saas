@@ -1,0 +1,80 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779219210822_554f70fe",
+  "ts": "2026-05-19T19:33:30.822Z",
+  "file": "backend/src/kloel/kloel-chat-tools.definition.ts",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "semantic:edit",
+  "operator": "semantic:edit",
+  "targetUnit": "text_span",
+  "intention": "semantic:edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 0,
+    "lineRewriteSurfaceChars": 0,
+    "expansionFactorAvoided": 0,
+    "bytesNet": 71,
+    "lineRewriteAvoided": true
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "ce45a14828bd2fbbd4f0eff610271a3c1572fb112f69a259b6bb7251047387c8",
+  "proposedSha256": "ce45a14828bd2fbbd4f0eff610271a3c1572fb112f69a259b6bb7251047387c8",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- backend/src/kloel/kloel-chat-tools.definition.ts (atomic char-level)\u001b[0m\n  import { KLOEL_CHAT_TOOLS_MEDIA_BILLING } from './kloel-chat-tools-b.definition';\n  import { KLOEL_CHAT_TOOLS_SETTINGS_CAMPAIGNS } from './kloel-chat-tools.definition-extras';\n  \u001b[32m{+import { KLOEL_CHAT_TOOLS_CODE } from './kloel-code-tools.definition';+}\u001b[0m\n  \n  /** Core tool definitions (products, automation, metrics, payments, whatsapp, leads). */",
+  "preservedZones": [
+    {
+      "kind": "prefix_preserved",
+      "description": "Bytes 0–233 — prefix preserved unchanged",
+      "byteStart": 0,
+      "byteEnd": 234,
+      "byteLength": 234,
+      "beforeHash": "3696a4efe75dd6f537e3a530b8dac88a240ee793ddf1bd04ac5cedd41d1abca3",
+      "afterHash": "3696a4efe75dd6f537e3a530b8dac88a240ee793ddf1bd04ac5cedd41d1abca3",
+      "sample": "EL_CHAT_TOOLS_SETTINGS_CAMPAIGNS } from './kloel-chat-tools.definition-extras';\n"
+    },
+    {
+      "kind": "suffix_preserved",
+      "description": "Bytes 234–12085 — suffix preserved unchanged",
+      "byteStart": 234,
+      "byteEnd": 12086,
+      "byteLength": 11852,
+      "beforeHash": "fa83eb8d57b6a27393ca0d86406fee86a6dda915373d5afbaa28154cbfa4f170",
+      "afterHash": "fa83eb8d57b6a27393ca0d86406fee86a6dda915373d5afbaa28154cbfa4f170",
+      "sample": "\n/** Core tool definitions (products, automation, metrics, payments, whatsapp, l"
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "byteStart": 234,
+      "byteEnd": 234,
+      "newByteLength": 71,
+      "oldTextHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "newTextHash": "29a0279a5c09c7a6d1ca61958a0457f4cc072cd41c78488bc0d9675a29039ef7",
+      "oldSample": "",
+      "newSample": "import { KLOEL_CHAT_TOOLS_CODE } from './kloel-code-tools.definition';\n",
+      "description": "Insert 71 bytes at offset 234"
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `semantic:edit` changed ~0 character(s) in `backend/src/kloel/kloel-chat-tools.definition.ts` (sub-line atomic edit, expansion 0× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

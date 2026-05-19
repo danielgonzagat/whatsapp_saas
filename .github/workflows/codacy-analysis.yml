@@ -10,7 +10,7 @@ on:
   push:
     branches: [main]
   pull_request:
-    branches: [main]
+    branches: [main, chore/purga-total-debt]
 
 jobs:
   codacy-analysis:

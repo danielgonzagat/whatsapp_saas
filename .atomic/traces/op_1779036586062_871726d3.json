@@ -1,0 +1,59 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779036586062_871726d3",
+  "ts": "2026-05-17T16:49:46.063Z",
+  "file": "docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "targetUnit": "text_span",
+  "intention": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 500,
+    "lineRewriteSurfaceChars": 500,
+    "expansionFactorAvoided": 1,
+    "bytesNet": -419,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "62025daad13e5073b7fb15eb7b4697bee620dbf915962a23fe5261fc1666018b",
+  "proposedSha256": "62025daad13e5073b7fb15eb7b4697bee620dbf915962a23fe5261fc1666018b",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs (atomic char-level)\u001b[0m\n      batchReadCommand: 'printf %s ' + shellQuote(batchJsonl + '\\n') + ' | node ' + shellQuote(atomicBatch) + ' -',\n      scorecardCommand,\n      publicApiAuditCommand\u001b[31m[-: args.className\n        ? command(['node'-]\u001b[0m,\u001b[31m[- publicApiAudit, '--worktree', args.worktree, '--target', args.target, '--class', args.className, '--json'])-]\u001b[0m\n      \u001b[31m[-  : null,\n      -]\u001b[0mscopeDisciplineCommand\u001b[31m[-: command(['node'-]\u001b[0m,\u001b[31m[- scopeCheck, '--worktree', args.worktree, '--allow-prefix', scopePrefix, '--allow-atomic-traces', '--json']),-]\u001b[0m\n      traceIsolationCommand\u001b[31m[-: command(['node'-]\u001b[0m,\u001b[31m[- traceCheck, '--worktree', args.worktree, '--coordinator', coordinatorRoot, '--since', '<start-time>', '--json']),-]\u001b[0m\n    };\n    if (args.json) console.log(JSON.stringify(result, null, 2));",
+  "preservedZones": [
+    {
+      "kind": "unchanged_context",
+      "description": "Everything outside the modified zone is preserved byte-for-byte by the atomic operation."
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "oldTextHash": "99a7ade2dc1f865c35ab4e6306786f1dc58c6a57abe7c82d365cfd43c81e2b96",
+      "newTextHash": "62025daad13e5073b7fb15eb7b4697bee620dbf915962a23fe5261fc1666018b",
+      "description": "The operation changed the highlighted span shown in inlinePreview."
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~500 character(s) in `docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs` (sub-line atomic edit, expansion 1× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

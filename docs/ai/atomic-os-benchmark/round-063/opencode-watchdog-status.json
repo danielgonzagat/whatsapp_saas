@@ -1,0 +1,33 @@
+{
+  "ok": true,
+  "initialKilled": [],
+  "recurringKilled": [],
+  "syncedAtomicToolchain": [],
+  "now": "2026-05-17T13:27:13.200Z",
+  "lanes": [
+    {
+      "name": "normal",
+      "pid": 33239,
+      "status": "completed",
+      "exitCode": 0,
+      "signal": null,
+      "lastSize": 62799,
+      "idleMs": 0,
+      "elapsedMs": 205143,
+      "outFile": "/Users/danielpenin/whatsapp_saas/docs/ai/atomic-os-benchmark/round-063/opencode-normal-events.jsonl",
+      "errFile": "/Users/danielpenin/whatsapp_saas/docs/ai/atomic-os-benchmark/round-063/opencode-normal-stderr.log"
+    },
+    {
+      "name": "atomic",
+      "pid": 33246,
+      "status": "completed",
+      "exitCode": 0,
+      "signal": null,
+      "lastSize": 43182,
+      "idleMs": 100063,
+      "elapsedMs": 205140,
+      "outFile": "/Users/danielpenin/whatsapp_saas/docs/ai/atomic-os-benchmark/round-063/opencode-atomic-events.jsonl",
+      "errFile": "/Users/danielpenin/whatsapp_saas/docs/ai/atomic-os-benchmark/round-063/opencode-atomic-stderr.log"
+    }
+  ]
+}

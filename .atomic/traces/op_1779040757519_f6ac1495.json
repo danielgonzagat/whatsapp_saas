@@ -1,0 +1,59 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779040757519_f6ac1495",
+  "ts": "2026-05-17T17:59:17.519Z",
+  "file": "docs/ai/atomic-os-benchmark/tools/refactor-scorecard.cjs",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "targetUnit": "text_span",
+  "intention": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 562,
+    "lineRewriteSurfaceChars": 503,
+    "expansionFactorAvoided": 0.9,
+    "bytesNet": 59,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "9cd78e1becd2dadb11d6d9acb479ad44ea6c6e5f23161586d1f270c50b19bf2f",
+  "proposedSha256": "9cd78e1becd2dadb11d6d9acb479ad44ea6c6e5f23161586d1f270c50b19bf2f",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- docs/ai/atomic-os-benchmark/tools/refactor-scorecard.cjs (atomic char-level)\u001b[0m\n  }\n  \n  function trackedNumstat(worktree, \u001b[31m[-p-]\u001b[0m\u001b[32m{+files) {\n    if (!Arr+}\u001b[0ma\u001b[31m[-th-]\u001b[0m\u001b[32m{+y.i+}\u001b[0ms\u001b[31m[-p-]\u001b[0m\u001b[32m{+Array(fil+}\u001b[0me\u001b[31m[-c-]\u001b[0m\u001b[32m{+s+}\u001b[0m) \u001b[31m[-{-]\u001b[0m\u001b[32m{+|| files.length === 0) return [];+}\u001b[0m\n    const result = spawnSync('git', ['-C', worktree, 'diff', '--numstat', '--', \u001b[31m[-pathsp-]\u001b[0m\u001b[32m{+...fil+}\u001b[0me\u001b[31m[-c-]\u001b[0m\u001b[32m{+s+}\u001b[0m], { encoding: 'utf8' });\n    if (result.status !== 0) return [];\n    return result.stdout",
+  "preservedZones": [
+    {
+      "kind": "unchanged_context",
+      "description": "Everything outside the modified zone is preserved byte-for-byte by the atomic operation."
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "oldTextHash": "dc79bf0d1bab871de1856b67385066916b662d8c1a2cebc82ac93dce80a82d6f",
+      "newTextHash": "9cd78e1becd2dadb11d6d9acb479ad44ea6c6e5f23161586d1f270c50b19bf2f",
+      "description": "The operation changed the highlighted span shown in inlinePreview."
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~562 character(s) in `docs/ai/atomic-os-benchmark/tools/refactor-scorecard.cjs` (sub-line atomic edit, expansion 0.9× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

@@ -1,0 +1,59 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779162405773_5621c362",
+  "ts": "2026-05-19T03:46:45.773Z",
+  "file": "frontend/src/components/kloel/marketing/OfficialMarketingChannelPage/StepConnection.tsx",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "atomic_delete_file",
+  "operator": "atomic_delete_file",
+  "targetUnit": "file",
+  "intention": "delete frontend/src/components/kloel/marketing/OfficialMarketingChannelPage/StepConnection.tsx (849 bytes)",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 849,
+    "lineRewriteSurfaceChars": 849,
+    "expansionFactorAvoided": 1,
+    "bytesNet": -849,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "generic",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "proposedSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- frontend/src/components/kloel/marketing/OfficialMarketingChannelPage/StepConnection.tsx (atomic char-level)\u001b[0m\n  \u001b[31m[-import { KLOEL_THEME } from '@/lib/kloel-theme';\n  import type { ChannelKey, TikTokModeData } from '../OfficialMarketingChannelPage.helpers';\n  import { TikTokModeBadge } from './TikTokModeBadge';\n  \n  interface Props {\n    channel: ChannelKey;\n    tiktokMode: TikTokModeData | null;\n  }\n  \n  export function StepConnection({ channel, tiktokMode }: Props) {\n    return (\n      <div style={{ color: KLOEL_THEME.textSecondary, lineHeight: 1.7 }}>\n        <strong style={{ color: KLOEL_THEME.textPrimary }}>Conexão oficial.</strong> Use o\n        botão de conexão abaixo para abrir o fluxo oficial do provedor. O status volta para\n        esta tela e o progresso do canal fica salvo no workspace.\n        {channel === 'tiktok' && tiktokMode ? (\n          <div style={{ marginTop: 14 }}>\n            <TikTokModeBadge mode={tiktokMode} />\n          </div>\n        ) : null}\n      </div>\n    );\n  }-]\u001b[0m\n  ",
+  "preservedZones": [],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "byteStart": 0,
+      "byteEnd": 849,
+      "newByteLength": 0,
+      "oldTextHash": "a34e4fc2b60f33c1e1bfc7699cff7ba5e4fa9985b7890265098f4d2dbb1915e1",
+      "newTextHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "oldSample": "import { KLOEL_THEME } from '@/lib/kloel-theme';\nimport type { ChannelKey, TikTokModeData } from '../OfficialMarketingChannelPage.helpers';\nimport { TikTokModeBadge } from './TikTokModeBadge';\n\ninterf",
+      "newSample": "",
+      "description": "Delete 849 bytes at offset 0"
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "file_deleted",
+  "audit": {
+    "whatChanged": "Operation `atomic_delete_file` changed ~849 character(s) in `frontend/src/components/kloel/marketing/OfficialMarketingChannelPage/StepConnection.tsx` (sub-line atomic edit, expansion 1× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "unvalidated-text",
+    "zeroCodeTrust": 30,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

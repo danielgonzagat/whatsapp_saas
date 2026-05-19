@@ -1,0 +1,59 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779121859235_ccce3d85",
+  "ts": "2026-05-18T16:30:59.235Z",
+  "file": "scripts/mcp/atomic-edit/trace.ts",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "targetUnit": "text_span",
+  "intention": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 803,
+    "lineRewriteSurfaceChars": 601,
+    "expansionFactorAvoided": 0.75,
+    "bytesNet": 202,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "86ba7a5bffbc48181f925db1bd84a57bad84406b62e25132e59820920f642369",
+  "proposedSha256": "86ba7a5bffbc48181f925db1bd84a57bad84406b62e25132e59820920f642369",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- scripts/mcp/atomic-edit/trace.ts (atomic char-level)\u001b[0m\n        {\n          kind: 'unchanged_context',\n          \u001b[32m{+byteStart: 0,\n          byteEn+}\u001b[0md\u001b[32m{+: args.b+}\u001b[0me\u001b[32m{+fore.length,\n          byteLength: arg+}\u001b[0ms\u001b[32m{+.before.length,\n          des+}\u001b[0mcription:\n            'Everything outside the modified zone is preserved byte-for-byte by the atomic operation.',\n        },\n      ],\n      modifiedZones: args.modifiedZones ?? [\n        {\n          kind: 'changed_span',\u001b[32m{+\n          byteStart: 0,\n          byteEnd: args.before.length,\n          newByteLength: args.newText.length,+}\u001b[0m\n          oldTextHash: sha256(args.before),\n          newTextHash: sha256(args.newText),",
+  "preservedZones": [
+    {
+      "kind": "unchanged_context",
+      "description": "Everything outside the modified zone is preserved byte-for-byte by the atomic operation."
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "oldTextHash": "bfd2cb640a14c2925ef757bb11d6fce074dc4f7b5f2333a639e4303068d21863",
+      "newTextHash": "86ba7a5bffbc48181f925db1bd84a57bad84406b62e25132e59820920f642369",
+      "description": "The operation changed the highlighted span shown in inlinePreview."
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~803 character(s) in `scripts/mcp/atomic-edit/trace.ts` (sub-line atomic edit, expansion 0.75× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

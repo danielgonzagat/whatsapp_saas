@@ -1,0 +1,59 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779018791115_153217b0",
+  "ts": "2026-05-17T11:53:11.115Z",
+  "file": "docs/ai/atomic-os-benchmark/tools/round-audit.cjs",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "targetUnit": "text_span",
+  "intention": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 1420,
+    "lineRewriteSurfaceChars": 925,
+    "expansionFactorAvoided": 0.65,
+    "bytesNet": 495,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "70e4ad55e0d1a7c709a3ccc4c1789104370546d5435a525bfe5d3537eb4de910",
+  "proposedSha256": "70e4ad55e0d1a7c709a3ccc4c1789104370546d5435a525bfe5d3537eb4de910",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- docs/ai/atomic-os-benchmark/tools/round-audit.cjs (atomic char-level)\u001b[0m\n  const scorecard = {\n    functionalPass: validationPass(normal.validation) && validationPass(atomic.validation),\n    \u001b[32m{+atomicModeClean:\n      atomic.event+}\u001b[0ms\u001b[32m{+.nativ+}\u001b[0me\u001b[32m{+FileToolViolations.length === 0 &&\n      atomic.events.nativeShellReadCommands.length === 0,\n    atomicNativeFileToolViolationCount: atomic.events.nativeFileToolViolations.length,\n    atomicNativeShellReadCommandCount: atomic.events.nativeShellReadCommands.length,\n    atomicT+}\u001b[0mr\u001b[32m{+aceIsolationPass:\n      atomic.+}\u001b[0mv\u001b[32m{+al+}\u001b[0mi\u001b[32m{+dation.tra+}\u001b[0mce\u001b[32m{+IsolationStatus === null || atomic.validation.traceIsolationStatus === 0,\n    service+}\u001b[0mLineWinner: compareLower(\n      { value: normal.validation.serviceLines },\n      { value: atomic.validation.serviceLines },\n      'value',\n    ),\n    eventRowWinner: compareLower(normal.events, atomic.events, 'rows'),\n    shellCommandWinner: compareLower(normal.events, atomic.events, 'completedCommands'),\n    inputTokenWinner: compareLower(normal.events.usage, atomic.events.usage, 'input_tokens'),\n    outputTokenWinner: compareLower(normal.events.usage, atomic.events.usage, 'output_tokens'),\n    reasoningTokenWinner: compareLower(\n      normal.events.usage,\n      atomic.events.usage,\n      'reasoning_output_tokens',\n    ),\n    traceWinner:\u001b[32m{+\n  +}\u001b[0m \u001b[32m{+   +}\u001b[0matomic.events.completedMcpCalls > 0 \u001b[32m{+|| Number(atomic.validation.traceCount || 0) > 0\n        +}\u001b[0m? 'atomic'\u001b[32m{+\n  +}\u001b[0m \u001b[32m{+     +}\u001b[0m: 'normal',\n    protectedDiffTie:\n      JSON.stringify(normal.validation.protectedDiff) === JSON.stringify(atomic.validation.protectedDiff),\n  }\u001b[31m[-;-]\u001b[0m\n  \n  console.log(JSON.stringify({ roundDir, normal, atomic, scorecard }, null, 2));",
+  "preservedZones": [
+    {
+      "kind": "unchanged_context",
+      "description": "Everything outside the modified zone is preserved byte-for-byte by the atomic operation."
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "oldTextHash": "b4780f6775c389b4747cd973cf56bbe4083574d930f64bb8345a3fcff6d479d0",
+      "newTextHash": "70e4ad55e0d1a7c709a3ccc4c1789104370546d5435a525bfe5d3537eb4de910",
+      "description": "The operation changed the highlighted span shown in inlinePreview."
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~1420 character(s) in `docs/ai/atomic-os-benchmark/tools/round-audit.cjs` (sub-line atomic edit, expansion 0.65× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

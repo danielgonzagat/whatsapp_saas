@@ -1,0 +1,80 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779202190172_5a11e69e",
+  "ts": "2026-05-19T14:49:50.172Z",
+  "file": "backend/src/kloel/brain-capability-executor.service.ts",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "targetUnit": "text_span",
+  "intention": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 2105,
+    "lineRewriteSurfaceChars": 133,
+    "expansionFactorAvoided": 0.06,
+    "bytesNet": 1972,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "a0b0899c14acf12c53903721ff85c2e53edab776c97ee9116b41e76063acc989",
+  "proposedSha256": "a0b0899c14acf12c53903721ff85c2e53edab776c97ee9116b41e76063acc989",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- backend/src/kloel/brain-capability-executor.service.ts (atomic char-level)\u001b[0m\n  }\n  \n  \u001b[32m{+/**\n   * Derive an HONEST gap list from the REAL cognitive-state ABI object.\n   * Nothing here is hardcoded: it walks the actual returned structure and\n   * reports which cognitive loops are still empty/unclosed. Missing paths\n   * are simply skipped (no invented field names). This is the data the\n   * self-introspection organ surfaces so Kloel can tell, through the chat,\n   * what is genuinely not working in itself.\n   */\n  function computeCognitiveGaps(abi: unknown): string[] {\n    const gaps: string[] = [];\n    if (!abi || typeof abi !== 'object') {\n      return ['cognitive_state_unavailable'];\n    }\n    const root = abi as Record<string, unknown>;\n    const at = (path: readonly string[]): unknown =>\n      path.reduce<unknown>(\n        (acc, key) =>\n          acc && typeof acc === 'object' ? (acc as Record<string, unknown>)[key] : undefined,\n        root,\n      );\n    const isEmptyArray = (v: unknown): boolean => Array.isArray(v) && v.length === 0;\n  \n    const arrayChecks: ReadonlyArray<readonly [readonly string[], string]> = [\n      [['capabilities'], 'no_capabilities_declared'],\n      [['capabilities', 'available'], 'no_capabilities_available'],\n      [['beliefs'], 'no_beliefs_formed'],\n      [['memory', 'workingMemory'], 'working_memory_empty'],\n      [['memory', 'episodicRefs'], 'no_episodic_memory'],\n      [['memory', 'consolidatedRefs'], 'no_consolidated_memory'],\n      [['predictions', 'active'], 'no_active_predictions'],\n      [['perception', 'recentSalientEvents'], 'perception_loop_silent'],\n    ];\n    for (const [path, label] of arrayChecks) {\n      if (isEmptyArray(at(path))) {\n        gaps.push(label);\n      }\n    }\n  \n    const lineageStatus = at(['lineage', 'status']);\n    if (typeof lineageStatus === 'string' && lineageStatus !== 'intact') {\n      gaps.push(`lineage_${lineageStatus}`);\n    }\n    const pulseVerdict = at(['pulseTruth', 'certificationVerdict']);\n    if (typeof pulseVerdict === 'string' && pulseVerdict !== 'PASS') {\n      gaps.push(`pulse_${pulseVerdict.toLowerCase()}`);\n    }\n    return gaps;\n  }\n  +}\u001b[0m\n  @Injectable()\n  export class BrainCapabilityExecutorService {",
+  "preservedZones": [
+    {
+      "kind": "prefix_preserved",
+      "description": "Bytes 0–895 — prefix preserved unchanged",
+      "byteStart": 0,
+      "byteEnd": 896,
+      "byteLength": 896,
+      "beforeHash": "f09a1cf69bcb012a8f1a68df44fb3ad4e0b9c8b09d721076019929253ece9c51",
+      "afterHash": "f09a1cf69bcb012a8f1a68df44fb3ad4e0b9c8b09d721076019929253ece9c51",
+      "sample": "ng {\n  return typeof value === 'string' && value.trim() ? value.trim() : fb;\n}\n\n"
+    },
+    {
+      "kind": "suffix_preserved",
+      "description": "Bytes 896–8730 — suffix preserved unchanged",
+      "byteStart": 896,
+      "byteEnd": 8731,
+      "byteLength": 7835,
+      "beforeHash": "45e5e4901a0f5d4211173dce12414251d032f7e49267c765fe5391e104949b9d",
+      "afterHash": "45e5e4901a0f5d4211173dce12414251d032f7e49267c765fe5391e104949b9d",
+      "sample": "@Injectable()\nexport class BrainCapabilityExecutorService {\n  private readonly l"
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "byteStart": 896,
+      "byteEnd": 896,
+      "newByteLength": 1972,
+      "oldTextHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "newTextHash": "627c41eb2cefa1f9deff0d9c5deccad3db9cec8229a6cef953f9af385a6b9842",
+      "oldSample": "",
+      "newSample": "/**\n * Derive an HONEST gap list from the REAL cognitive-state ABI object.\n * Nothing here is hardcoded: it walks the actual returned structure and\n * reports which cognitive loops are still empty/unc",
+      "description": "Insert 1972 bytes at offset 896"
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~2105 character(s) in `backend/src/kloel/brain-capability-executor.service.ts` (sub-line atomic edit, expansion 0.06× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

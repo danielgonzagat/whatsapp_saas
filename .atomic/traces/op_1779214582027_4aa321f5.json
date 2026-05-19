@@ -1,0 +1,80 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779214582027_4aa321f5",
+  "ts": "2026-05-19T18:16:22.027Z",
+  "file": "backend/src/kloel/abi/abi-builder.service.ts",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "targetUnit": "text_span",
+  "intention": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 75,
+    "lineRewriteSurfaceChars": 36,
+    "expansionFactorAvoided": 0.48,
+    "bytesNet": 39,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "c2f4026518329272de2f40d187b7d52db9c4786096e95507620dcca463466f86",
+  "proposedSha256": "c2f4026518329272de2f40d187b7d52db9c4786096e95507620dcca463466f86",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- backend/src/kloel/abi/abi-builder.service.ts (atomic char-level)\u001b[0m\n        beliefs: input.cognitiveSubstrate?.beliefs ?? [],\n        predictions: input.cognitiveSubstrate?.predictions ?? { active: [], recentSurprises: [] },\n        attention: \u001b[32m{+input.cognitiveSubstrate?.attention ?? +}\u001b[0m{ candidates: [] },\n        memory: {\n          workingMemory: input.cognitiveSubstrate?.workingMemory ?? [],",
+  "preservedZones": [
+    {
+      "kind": "prefix_preserved",
+      "description": "Bytes 0–5023 — prefix preserved unchanged",
+      "byteStart": 0,
+      "byteEnd": 5024,
+      "byteLength": 5024,
+      "beforeHash": "dfe6fd6aa172599420db32f2752804c32918067db4702fcf04f72b83fe0901d1",
+      "afterHash": "dfe6fd6aa172599420db32f2752804c32918067db4702fcf04f72b83fe0901d1",
+      "sample": "Substrate?.predictions ?? { active: [], recentSurprises: [] },\n      attention: "
+    },
+    {
+      "kind": "suffix_preserved",
+      "description": "Bytes 5024–6619 — suffix preserved unchanged",
+      "byteStart": 5024,
+      "byteEnd": 6620,
+      "byteLength": 1596,
+      "beforeHash": "5b57f15362265c17550d85227155f0e13edc3ffc878688e8bd4b2ab668a62612",
+      "afterHash": "5b57f15362265c17550d85227155f0e13edc3ffc878688e8bd4b2ab668a62612",
+      "sample": "{ candidates: [] },\n      memory: {\n        workingMemory: input.cognitiveSubstr"
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "byteStart": 5024,
+      "byteEnd": 5024,
+      "newByteLength": 39,
+      "oldTextHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "newTextHash": "a83cb02e43532f24d34422d7ef758122b548f3cad4c5a35b70f8d0ef5fa2cff9",
+      "oldSample": "",
+      "newSample": "input.cognitiveSubstrate?.attention ?? ",
+      "description": "Insert 39 bytes at offset 5024"
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~75 character(s) in `backend/src/kloel/abi/abi-builder.service.ts` (sub-line atomic edit, expansion 0.48× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

@@ -1,0 +1,65 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1778959427903_9c541ddf",
+  "ts": "2026-05-16T19:23:47.903Z",
+  "file": "worker/processors/autopilot/opportunity-heuristic.ts",
+  "operation": "atomic_apply_eslint_dry_run_fixes",
+  "operator": "atomic_apply_eslint_dry_run_fixes",
+  "targetUnit": "eslint_dry_run_file_output",
+  "intention": "apply analyzer-proposed lint fixes without letting the analyzer write directly",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 1096,
+    "lineRewriteSurfaceChars": 1096,
+    "expansionFactorAvoided": 1,
+    "bytesNet": 106,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "afterSha256": "5c7fe20691e72570cbb6046e4198e0c0ebef67ee9c474f04903af5a9c601d629",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- worker/processors/autopilot/opportunity-heuristic.ts (atomic char-level)\u001b[0m\n  \n  function inferHeuristicSentiment(text: string): string {\n    if (PROBLEMA_RUIM_HORR_I__V_RE.test(text)) \u001b[32m{+{\n      +}\u001b[0mreturn 'NEGATIVE';\n    \u001b[32m{+}\n    +}\u001b[0mif (OBRIGAD_VALEU_PERFEITO_RE_2.test(text)) \u001b[32m{+{\n      +}\u001b[0mreturn 'POSITIVE';\n    \u001b[32m{+}\n    +}\u001b[0mreturn 'NEUTRAL';\n  }\n  \n  function inferHeuristicIntent(text: string, inboundCount: number): string {\n    if (QUERO_COMPRAR_ASSINAR_F_RE.test(text)) \u001b[32m{+{\n      +}\u001b[0mreturn 'BUY';\n    \u001b[32m{+}\n    +}\u001b[0mif (PROBLEMA_ERRO_SUPORTE_A_RE_2.test(text)) \u001b[32m{+{\n      +}\u001b[0mreturn 'SUPPORT';\n    \u001b[32m{+}\n    +}\u001b[0mif (RECLAMA_CANCELAR_RE.test(text)) \u001b[32m{+{\n      +}\u001b[0mreturn 'COMPLAINT';\n    \u001b[32m{+}\n    +}\u001b[0mif (inboundCount > 0) \u001b[32m{+{\n      +}\u001b[0mreturn 'INFO';\n    \u001b[32m{+}\n    +}\u001b[0mreturn 'COLD';\n  }\n  \n  function inferHeuristicNextBestAction(purchaseProbability: string): string {\n    if (purchaseProbability === 'VERY_HIGH' || purchaseProbability === 'HIGH')\u001b[32m{+ {+}\u001b[0m\n      return 'PRIORITIZE_MANUAL_FOLLOWUP';\n    \u001b[32m{+}\n    +}\u001b[0mif (purchaseProbability === 'MEDIUM') \u001b[32m{+{\n      +}\u001b[0mreturn 'NURTURE_LATER';\n    \u001b[32m{+}\n    +}\u001b[0mreturn 'MONITOR_ONLY';\n  }\n  \n  function inferHeuristicNotPurchasedReason(text: string, inboundCount: number): string {\n    if (CARO_SEM_DINHEIRO_AGORA_RE.test(text)) \u001b[32m{+{\n      +}\u001b[0mreturn 'objection_or_timing';\n    \u001b[32m{+}\n    +}\u001b[0mif (SUMI_SEM_RESPOSTA_DEPOI_RE.test(text)) \u001b[32m{+{\n      +}\u001b[0mreturn 'follow_up_needed';\n    \u001b[32m{+}\n    +}\u001b[0mif (inboundCount > 0) \u001b[32m{+{\n      +}\u001b[0mreturn 'still_open';\u001b[32m{+\n    }+}\u001b[0m\n    return 'insufficient_data';\n  }",
+  "preservedZones": [
+    {
+      "kind": "prefix_context",
+      "description": "Text before the first analyzer-modified span was preserved.",
+      "beforeHash": "a30d7d50c4d2f6af0f1281491694e6f4a483c2831856f2a31707950d24779250",
+      "afterHash": "a30d7d50c4d2f6af0f1281491694e6f4a483c2831856f2a31707950d24779250"
+    },
+    {
+      "kind": "suffix_context",
+      "description": "Text after the last analyzer-modified span was preserved.",
+      "beforeHash": "74579b9f39077fecb70893b917abdee02786b9d094e1ebb0a4f7dfc3a3e89ec5",
+      "afterHash": "74579b9f39077fecb70893b917abdee02786b9d094e1ebb0a4f7dfc3a3e89ec5"
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "analyzer_fix_output",
+      "oldTextHash": "de0964688b0c33071702c6331aa69d3cbb95d21a3ff63c2c7132e716ce3d2cb2",
+      "newTextHash": "5c7fe20691e72570cbb6046e4198e0c0ebef67ee9c474f04903af5a9c601d629",
+      "oldSample": "return 'NEGATIVE';\n  if (OBRIGAD_VALEU_PERFEITO_RE_2.test(text)) return 'POSITIVE';\n  return 'NEUTRAL';\n}\n\nfunction inferHeuristicIntent(text: string, inboundCount: number): string {\n  if (QUERO_COMPRAR_ASSINAR_F_RE.test(text)) return 'B...",
+      "newSample": "{\n    return 'NEGATIVE';\n  }\n  if (OBRIGAD_VALEU_PERFEITO_RE_2.test(text)) {\n    return 'POSITIVE';\n  }\n  return 'NEUTRAL';\n}\n\nfunction inferHeuristicIntent(text: string, inboundCount: number): string {\n  if (QUERO_COMPRAR_ASSINAR_F_RE.t...",
+      "description": "ESLint --fix-dry-run proposed this file output; atomic-edit validated and wrote it."
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "behavior_preserving_lint_cleanup",
+  "audit": {
+    "whatChanged": "Operation `atomic_apply_eslint_dry_run_fixes` changed ~1096 character(s) in `worker/processors/autopilot/opportunity-heuristic.ts` (sub-line atomic edit, expansion 1× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

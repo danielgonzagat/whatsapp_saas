@@ -28,7 +28,7 @@ import {
   unlinkSync,
 } from 'node:fs';
 import { resolve, join, relative, dirname } from 'node:path';
-import { rewriteMirrorFrontmatterTags } from '../obsidian-mirror-daemon-indexes.mjs';
+import { rewriteMirrorFrontmatterTags } from '../__parts__/obsidian-mirror-daemon-indexes.mjs';
 
 // ── Constants ────────────────────────────────────────────────────────────────
 

@@ -1,0 +1,80 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779219682346_4d388a28",
+  "ts": "2026-05-19T19:41:22.346Z",
+  "file": "backend/src/kloel/unified-agent.service.ts",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "targetUnit": "text_span",
+  "intention": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 442,
+    "lineRewriteSurfaceChars": 442,
+    "expansionFactorAvoided": 1,
+    "bytesNet": -4,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "50a80898266b59085555daccf03ec257d32b41fa177eb1b91dc2ecf151de3cdc",
+  "proposedSha256": "50a80898266b59085555daccf03ec257d32b41fa177eb1b91dc2ecf151de3cdc",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- backend/src/kloel/unified-agent.service.ts (atomic char-level)\u001b[0m\n      };\n  \n      let cognitiveSubstrate: \u001b[31m[-R-]\u001b[0m\u001b[32m{+Await+}\u001b[0me\u001b[31m[-cor-]\u001b[0md<\u001b[31m[-s-]\u001b[0m\u001b[32m{+Re+}\u001b[0mt\u001b[32m{+u+}\u001b[0mr\u001b[32m{+nType<Bra+}\u001b[0min\u001b[31m[-g, -]\u001b[0m\u001b[32m{+CapabilityExec+}\u001b[0mu\u001b[31m[-nkn-]\u001b[0m\u001b[32m{+t+}\u001b[0mo\u001b[31m[-w-]\u001b[0m\u001b[32m{+rService['buildCog+}\u001b[0mn\u001b[32m{+itiveSubstrate']+}\u001b[0m>\u001b[32m{+>+}\u001b[0m | undefined;\n      if (this.brainCapability) {\n        try {\n          cognitiveSubstrate = await this.brainCapability.buildCognitiveSubstrate(\u001b[31m[-\n            -]\u001b[0mworkspaceId\u001b[31m[-,\n          -]\u001b[0m)\u001b[31m[- as unknown as Record<string, unknown>-]\u001b[0m;\n        } catch (err: unknown) {\n          this.logger.warn(",
+  "preservedZones": [
+    {
+      "kind": "prefix_preserved",
+      "description": "Bytes 0–9319 — prefix preserved unchanged",
+      "byteStart": 0,
+      "byteEnd": 9320,
+      "byteLength": 9320,
+      "beforeHash": "f8f0252b37931e1b87e037e1ed095cb89db203d17d86b7691020cba1f63268b1",
+      "afterHash": "f8f0252b37931e1b87e037e1ed095cb89db203d17d86b7691020cba1f63268b1",
+      "sample": "napshot: { channel: currentInput.channel },\n    };\n\n    let cognitiveSubstrate: "
+    },
+    {
+      "kind": "suffix_preserved",
+      "description": "Bytes 9552–27405 — suffix preserved unchanged",
+      "byteStart": 9552,
+      "byteEnd": 27406,
+      "byteLength": 17854,
+      "beforeHash": "35a45b6fd70051df37a59df8ba98cee54a25c3398434618fca6e29b579352d86",
+      "afterHash": "35a45b6fd70051df37a59df8ba98cee54a25c3398434618fca6e29b579352d86",
+      "sample": ";\n      } catch (err: unknown) {\n        this.logger.warn(\n          `Cognitive "
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "byteStart": 9320,
+      "byteEnd": 9552,
+      "newByteLength": 228,
+      "oldTextHash": "f20778fd2cccd9e2775e3d6a5e60ee2d1590e1529ac7f3aea2103307cb2f367a",
+      "newTextHash": "a208df5e3c74f174ea85d43ba2548329020c17f965266eb5d168744114523bd6",
+      "oldSample": "Record<string, unknown> | undefined;\n    if (this.brainCapability) {\n      try {\n        cognitiveSubstrate = await this.brainCapability.buildCognitiveSubstrate(\n          workspaceId,\n        ) as un",
+      "newSample": "Awaited<ReturnType<BrainCapabilityExecutorService['buildCognitiveSubstrate']>> | undefined;\n    if (this.brainCapability) {\n      try {\n        cognitiveSubstrate = await this.brainCapability.buildCog",
+      "description": "Replace 232 bytes at offset 9320 with 228 bytes"
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~442 character(s) in `backend/src/kloel/unified-agent.service.ts` (sub-line atomic edit, expansion 1× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

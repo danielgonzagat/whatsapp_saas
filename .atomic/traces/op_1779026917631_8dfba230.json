@@ -1,0 +1,59 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779026917631_8dfba230",
+  "ts": "2026-05-17T14:08:37.632Z",
+  "file": "docs/ai/atomic-os-benchmark/tools/atomic-call.cjs",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "targetUnit": "text_span",
+  "intention": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 2945,
+    "lineRewriteSurfaceChars": 525,
+    "expansionFactorAvoided": 0.18,
+    "bytesNet": 2450,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "c6c2a19616d88aebece8acb2197998c66f0f74349eaab0e6ce42876eb1074895",
+  "proposedSha256": "c6c2a19616d88aebece8acb2197998c66f0f74349eaab0e6ce42876eb1074895",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- docs/ai/atomic-os-benchmark/tools/atomic-call.cjs (atomic char-level)\u001b[0m\n        }\n        const reads = [];\n        \u001b[32m{+const sourceReadFailures = [];\n        +}\u001b[0mfor (const selector of selectors) {\n          \u001b[32m{+try {\n            +}\u001b[0mconst read = await callAtomicTool(\n            \u001b[32m{+  +}\u001b[0m'code_read_symbol',\n            \u001b[32m{+  +}\u001b[0m{ file: sourceFile, selector },\n            \u001b[32m{+  +}\u001b[0m`extract_symbols_to_file read ${selector}`,\n          \u001b[32m{+  +}\u001b[0m);\n          \u001b[32m{+  +}\u001b[0mif (!read.output || typeof read.output !== 'object' || typeof read.output.code !== 'string') {\n            \u001b[32m{+  +}\u001b[0mthrow new Error(`extract_symbols_to_file could not read symbol ${selector}`);\n          \u001b[32m{+  +}\u001b[0m}\n          \u001b[32m{+  +}\u001b[0mreads.push({ selector, read });\u001b[32m{+\n          } catch (error) {\n            sourceReadFailures.push({ selector, error: error.message });\n          }\n        }\n        if (sourceReadFailures.length) {\n          const targetReads = [];\n          let targetHasAllSymbols = fs.existsSync(targetFile);\n          if (targetHasAllSymbols) {\n            for (const selector of selectors) {\n              try {\n                const read = await callAtomicTool(\n                  'code_read_symbol',\n                  { file: targetFile, selector },\n                  `extract_symbols_to_file idempotent read ${selector}`,\n                );\n                if (!read.output || typeof read.output !== 'object' || typeof read.output.code !== 'string') {\n                  throw new Error(`extract_symbols_to_file could not read target symbol ${selector}`);\n                }\n                targetReads.push({ selector, read });\n              } catch (error) {\n                targetHasAllSymbols = false;\n                targetReads.push({ selector, error: error.message });\n                break;\n              }\n            }\n          }\n          const sourceAlreadyImports = fileHasNamedImport(sourceFile, importNames, importModule);\n          if (sourceReadFailures.length === selectors.length && targetHasAllSymbols && sourceAlreadyImports) {\n            const validation = args.validate === true || args.validationProfile ? runKloelUnifiedAgentValidation() : null;\n            const payload = {\n              ok: !validation || validation.ok,\n              operation: 'extract_symbols_to_file',\n              idempotent: true,\n              sourceFile,\n              targetFile,\n              selectors,\n              importNames,\n              importModule,\n              validation,\n              operations: [\n                ...targetReads.map(({ selector, read }) => ({ tool: 'code_read_symbol', file: targetFile, selector, output: read.output })),\n                { tool: 'idempotent_state_check', output: { sourceReadFailures, sourceAlreadyImports } },\n              ],\n            };\n            console.log(JSON.stringify(payload, null, 2));\n            if (validation && !validation.ok) {\n              throw new Error('extract_symbols_to_file validation failed');\n            }\n            return;\n          }\n          throw new Error(`extract_symbols_to_file source read failed before a complete idempotent state: ${sourceReadFailures.map((failure) => failure.selector + ': ' + failure.error).join('; ')}`);+}\u001b[0m\n        }\n        const content = `${reads",
+  "preservedZones": [
+    {
+      "kind": "unchanged_context",
+      "description": "Everything outside the modified zone is preserved byte-for-byte by the atomic operation."
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "oldTextHash": "c71bd9bafd74467bc343272720386ff4467974db95ac400779cc35011d3e14e7",
+      "newTextHash": "c6c2a19616d88aebece8acb2197998c66f0f74349eaab0e6ce42876eb1074895",
+      "description": "The operation changed the highlighted span shown in inlinePreview."
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~2945 character(s) in `docs/ai/atomic-os-benchmark/tools/atomic-call.cjs` (sub-line atomic edit, expansion 0.18× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

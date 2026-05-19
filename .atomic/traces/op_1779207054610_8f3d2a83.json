@@ -1,0 +1,59 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779207054610_8f3d2a83",
+  "ts": "2026-05-19T16:10:54.610Z",
+  "file": "backend/src/kloel/brain-capabilities.const.ts",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "atomic_create_file",
+  "operator": "atomic_create_file",
+  "targetUnit": "text_span",
+  "intention": "atomic_create_file",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 820,
+    "lineRewriteSurfaceChars": 0,
+    "expansionFactorAvoided": 0,
+    "bytesNet": 820,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "47a752b3d3120593004e017dea25724133169d91536b746483a276094c65afac",
+  "proposedSha256": "47a752b3d3120593004e017dea25724133169d91536b746483a276094c65afac",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- backend/src/kloel/brain-capabilities.const.ts (atomic char-level)\u001b[0m\n  \u001b[32m{+/**\n   * Canonical machine-readable capability registry for the Kloel brain.\n   * Single source of truth shared by BrainRuntimeService (intent dispatch)\n   * and BrainCapabilityExecutorService (self-introspection capability\n   * registry → ABI `capabilities.available`). Kept in its own module so\n   * both can import it without a circular dependency\n   * (brain-runtime → executor already exists).\n   *\n   * Adding a capability here = it is dispatchable AND it appears in the\n   * cognitive self-model. No hardcoded behavior — this IS the registry.\n   */\n  export const OPERATOR_CAPABILITIES = [\n    'list_products',\n    'search_contact',\n    'list_conversations',\n    'send_message_via_channel',\n    'query_revenue_summary',\n    'inspect_self',\n    'inspect_runtime',\n  ] as const;\n  \n  export type OperatorCapability = (typeof OPERATOR_CAPABILITIES)[number];+}\u001b[0m\n  ",
+  "preservedZones": [],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "byteStart": 0,
+      "byteEnd": 0,
+      "newByteLength": 820,
+      "oldTextHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "newTextHash": "47a752b3d3120593004e017dea25724133169d91536b746483a276094c65afac",
+      "oldSample": "",
+      "newSample": "/**\n * Canonical machine-readable capability registry for the Kloel brain.\n * Single source of truth shared by BrainRuntimeService (intent dispatch)\n * and BrainCapabilityExecutorService (self-introsp",
+      "description": "Insert 820 bytes at offset 0"
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `atomic_create_file` changed ~820 character(s) in `backend/src/kloel/brain-capabilities.const.ts` (sub-line atomic edit, expansion 0× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

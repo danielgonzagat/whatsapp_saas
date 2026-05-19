@@ -1,0 +1,37 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1778938281737_f47af6e4",
+  "ts": "2026-05-16T13:31:21.737Z",
+  "file": "scripts/pulse/certification/compute.ts",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 83,
+    "lineRewriteSurfaceChars": 73,
+    "expansionFactorAvoided": 0.88,
+    "bytesNet": 10,
+    "lineRewriteAvoided": true
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "afterSha256": "166eb380d7b446ca0aa8e74b9823126f5157268be82fd214c3c78906e706395d",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- scripts/pulse/certification/compute.ts (atomic char-level)\u001b[0m\n  } from './compute-helpers';\n  \n  import { buildAllGates, type GateComputeContext } from './\u001b[32m{+__parts__/+}\u001b[0mcompute-gates';\n  \n  export function computeCertification(input: ComputeCertificationInput): PulseCertification {",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~83 character(s) in `scripts/pulse/certification/compute.ts` (sub-line atomic edit, expansion 0.88× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

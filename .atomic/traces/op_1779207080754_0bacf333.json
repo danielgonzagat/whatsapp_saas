@@ -1,0 +1,80 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779207080754_0bacf333",
+  "ts": "2026-05-19T16:11:20.754Z",
+  "file": "backend/src/kloel/brain-runtime.service.ts",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "targetUnit": "text_span",
+  "intention": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 202,
+    "lineRewriteSurfaceChars": 202,
+    "expansionFactorAvoided": 1,
+    "bytesNet": -66,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "1c6a2497aab9f90255f3027e8310ea9d09702c17c7f1092d448a2cd63dcb1f5e",
+  "proposedSha256": "1c6a2497aab9f90255f3027e8310ea9d09702c17c7f1092d448a2cd63dcb1f5e",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- backend/src/kloel/brain-runtime.service.ts (atomic char-level)\u001b[0m\n  }\n  \n  \u001b[31m[-const-]\u001b[0m\u001b[32m{+//+}\u001b[0m OPERATOR_CAPABILITIES \u001b[31m[-= [\n    'list_pr-]\u001b[0m\u001b[32m{+m+}\u001b[0mo\u001b[32m{+ve+}\u001b[0md\u001b[31m[-ucts',\n  -]\u001b[0m \u001b[32m{+to+}\u001b[0m \u001b[31m[-'sea-]\u001b[0m\u001b[32m{+./b+}\u001b[0mr\u001b[31m[-ch_cont-]\u001b[0ma\u001b[32m{+in-+}\u001b[0mc\u001b[31m[-t',\n    '-]\u001b[0m\u001b[32m{+apabi+}\u001b[0mli\u001b[31m[-s-]\u001b[0mt\u001b[31m[-_conv-]\u001b[0m\u001b[32m{+i+}\u001b[0me\u001b[31m[-r-]\u001b[0ms\u001b[31m[-ati-]\u001b[0m\u001b[32m{+.c+}\u001b[0mons\u001b[31m[-',\n   -]\u001b[0m\u001b[32m{+t+}\u001b[0m \u001b[31m[-'send_mes-]\u001b[0m\u001b[32m{+(+}\u001b[0ms\u001b[31m[-age_v-]\u001b[0mi\u001b[31m[-a_cha-]\u001b[0mn\u001b[31m[-ne-]\u001b[0m\u001b[32m{+g+}\u001b[0ml\u001b[31m[-',-]\u001b[0m\u001b[32m{+e+}\u001b[0m\n  \u001b[31m[- -]\u001b[0m\u001b[32m{+//+}\u001b[0m \u001b[31m[-'q-]\u001b[0m\u001b[32m{+so+}\u001b[0mu\u001b[31m[-e-]\u001b[0mr\u001b[31m[-y_rev-]\u001b[0m\u001b[32m{+c+}\u001b[0me\u001b[31m[-n-]\u001b[0m\u001b[32m{+ of tr+}\u001b[0mu\u001b[31m[-e_-]\u001b[0m\u001b[32m{+th +}\u001b[0ms\u001b[31m[-umm-]\u001b[0m\u001b[32m{+h+}\u001b[0mar\u001b[31m[-y',\n   -]\u001b[0m\u001b[32m{+ed+}\u001b[0m \u001b[31m[-'-]\u001b[0m\u001b[32m{+w+}\u001b[0mi\u001b[31m[-nspec-]\u001b[0mt\u001b[31m[-_self',\n  -]\u001b[0m\u001b[32m{+h+}\u001b[0m \u001b[32m{+the+}\u001b[0m \u001b[31m[-'insp-]\u001b[0me\u001b[32m{+xe+}\u001b[0mc\u001b[31m[-t_r-]\u001b[0mu\u001b[31m[-n-]\u001b[0mt\u001b[31m[-ime-]\u001b[0m\u001b[32m{+or+}\u001b[0m'\u001b[31m[-,\n  ] a-]\u001b[0ms \u001b[31m[-c-]\u001b[0m\u001b[32m{+self-m+}\u001b[0mo\u001b[31m[-n-]\u001b[0m\u001b[32m{+del regi+}\u001b[0mst\u001b[31m[-;-]\u001b[0m\u001b[32m{+ry).+}\u001b[0m\n  \n  @Injectable()",
+  "preservedZones": [
+    {
+      "kind": "prefix_preserved",
+      "description": "Bytes 0–2296 — prefix preserved unchanged",
+      "byteStart": 0,
+      "byteEnd": 2297,
+      "byteLength": 2297,
+      "beforeHash": "6ee5a27d7ac59f4fd9b685cae2677a202dc1df70c4c473f9b968447938fb1439",
+      "afterHash": "6ee5a27d7ac59f4fd9b685cae2677a202dc1df70c4c473f9b968447938fb1439",
+      "sample": " ?? input.context?.toolArgs);\n  return [{ tool: input.intent, args: args }];\n}\n\n"
+    },
+    {
+      "kind": "suffix_preserved",
+      "description": "Bytes 2499–15418 — suffix preserved unchanged",
+      "byteStart": 2499,
+      "byteEnd": 15419,
+      "byteLength": 12920,
+      "beforeHash": "f19c8e7fed3deacf1cf0bb6481544bc1e683ff41d407ff153d603b5fe363c519",
+      "afterHash": "f19c8e7fed3deacf1cf0bb6481544bc1e683ff41d407ff153d603b5fe363c519",
+      "sample": "\n\n@Injectable()\nexport class BrainRuntimeService {\n  private readonly logger = S"
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "byteStart": 2297,
+      "byteEnd": 2499,
+      "newByteLength": 136,
+      "oldTextHash": "375a8d8081a9c8b9c1556cb7d5e0cca8422965ad9b7b1d95e881ad917ff179ca",
+      "newTextHash": "ea5a307a0aedaaae7b665b2eaa08fef314e3da33428ff9ff36ea5b5aaa96566d",
+      "oldSample": "const OPERATOR_CAPABILITIES = [\n  'list_products',\n  'search_contact',\n  'list_conversations',\n  'send_message_via_channel',\n  'query_revenue_summary',\n  'inspect_self',\n  'inspect_runtime',\n] as cons",
+      "newSample": "// OPERATOR_CAPABILITIES moved to ./brain-capabilities.const (single\n// source of truth shared with the executor's self-model registry).",
+      "description": "Replace 202 bytes at offset 2297 with 136 bytes"
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~202 character(s) in `backend/src/kloel/brain-runtime.service.ts` (sub-line atomic edit, expansion 1× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

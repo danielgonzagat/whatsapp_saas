@@ -1,0 +1,59 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779030159618_ea55b7ec",
+  "ts": "2026-05-17T15:02:39.618Z",
+  "file": "docs/ai/atomic-os-benchmark/tools/opencode-round-watchdog.cjs",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "targetUnit": "text_span",
+  "intention": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 116,
+    "lineRewriteSurfaceChars": 116,
+    "expansionFactorAvoided": 1,
+    "bytesNet": -17,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "eb852a68ac2d6178f7e1ab93af10273547e7fe99e4035c681c72024919320b89",
+  "proposedSha256": "eb852a68ac2d6178f7e1ab93af10273547e7fe99e4035c681c72024919320b89",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- docs/ai/atomic-os-benchmark/tools/opencode-round-watchdog.cjs (atomic char-level)\u001b[0m\n  const pollMs = policyNumber('--poll-ms', 'ATOMIC_WATCHDOG_POLL_MS');\n  const coordinatorRoot = path.resolve(__dirname, '..', '..', '..', '..');\n  const syncAtomicToolchainEnabled = \u001b[32m{+fl+}\u001b[0ma\u001b[31m[-r-]\u001b[0mg\u001b[32m{+Enabled+}\u001b[0m('--sync-atomic-toolchain', \u001b[31m[-process.env.-]\u001b[0m\u001b[32m{+'+}\u001b[0mATOMIC_SYNC_TOOLCHAIN\u001b[31m[- || -]\u001b[0m'\u001b[31m[-0'-]\u001b[0m)\u001b[31m[- === '1'-]\u001b[0m;\n  const atomicToolchainPaths = (process.env.ATOMIC_TOOLCHAIN_PATHS || '')\n    .split(path.delimiter)",
+  "preservedZones": [
+    {
+      "kind": "unchanged_context",
+      "description": "Everything outside the modified zone is preserved byte-for-byte by the atomic operation."
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "oldTextHash": "24ad4b8efa0e2113ccb67f0937b38b06bf5c034fc049cde933ae8d1fa95fc88c",
+      "newTextHash": "eb852a68ac2d6178f7e1ab93af10273547e7fe99e4035c681c72024919320b89",
+      "description": "The operation changed the highlighted span shown in inlinePreview."
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~116 character(s) in `docs/ai/atomic-os-benchmark/tools/opencode-round-watchdog.cjs` (sub-line atomic edit, expansion 1× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

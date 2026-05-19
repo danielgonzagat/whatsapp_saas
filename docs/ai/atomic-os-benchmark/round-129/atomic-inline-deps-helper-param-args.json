@@ -1,0 +1,6 @@
+{
+  "file": "backend/src/kloel/unified-agent.service.ts",
+  "oldText": "      toolRouterDeps: this.toolRouterDeps,",
+  "newText": "      executeToolActionDeps: {\n        logger: this.logger,\n        actions: this.actions,\n        riskGate: this.riskGate,\n        prisma: this.prisma,\n        auditService: this.auditService,\n        openai: this.openai,\n        primaryBrainModel: this.primaryBrainModel,\n        fallbackBrainModel: this.fallbackBrainModel,\n        agentRuntime: this.agentRuntime,\n      },",
+  "expectedCount": 2
+}

@@ -277,8 +277,8 @@ async function partB(): Promise<void> {
     const tools = await client.listTools();
     const names = tools.tools.map((t) => t.name).sort();
     check(
-      'server lists all 35 tools (incl. atomic_create_file + atomic_delete_file + code_file_stat + analyzer transaction + product apex layer + rename property key + add await to call + insert after anchor + insert before anchor + replace between anchors + replace text in anchor region)',
-      names.length === 35 &&
+      'server lists all 37 tools (incl. atomic_create_file + atomic_delete_file + code_file_stat + analyzer transaction + product apex layer + rename property key + add await to call + insert after anchor + insert before anchor + replace between anchors + replace text in anchor region + atomic_edit unified router + code_outline_batch)',
+      names.length === 37 &&
         names.includes('atomic_create_file') &&
         names.includes('atomic_delete_file') &&
         names.includes('code_file_stat') &&
@@ -304,7 +304,9 @@ async function partB(): Promise<void> {
         names.includes('continuity_status') &&
         names.includes('atomic_lock_acquire') &&
         names.includes('atomic_lock_status') &&
-        names.includes('atomic_lock_release'),
+        names.includes('atomic_lock_release') &&
+        names.includes('atomic_edit') &&
+        names.includes('code_outline_batch'),
       names.join(','),
     );
 
@@ -2099,7 +2101,7 @@ async function partB(): Promise<void> {
       check(
         'eslint analyzer trace records preservation topology',
         traceBody.targetUnit === 'eslint_dry_run_file_output' &&
-          traceBody.semanticImpact === 'behavior_preserving_lint_cleanup' &&
+          traceBody.semanticImpact === 'lint_fix_auto_applied' &&
           Array.isArray(traceBody.preservedZones) &&
           traceBody.preservedZones.length >= 2,
         JSON.stringify(traceBody),

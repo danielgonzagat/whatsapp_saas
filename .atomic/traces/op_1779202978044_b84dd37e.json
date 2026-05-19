@@ -1,0 +1,80 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779202978044_b84dd37e",
+  "ts": "2026-05-19T15:02:58.044Z",
+  "file": "backend/src/kloel/abi/abi-builder.service.ts",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "targetUnit": "text_span",
+  "intention": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 831,
+    "lineRewriteSurfaceChars": 70,
+    "expansionFactorAvoided": 0.08,
+    "bytesNet": 761,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "5018d652dda6c0207feed96f71c81a714ff9234b9cf078dac583fb9d5da650ec",
+  "proposedSha256": "5018d652dda6c0207feed96f71c81a714ff9234b9cf078dac583fb9d5da650ec",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- backend/src/kloel/abi/abi-builder.service.ts (atomic char-level)\u001b[0m\n    readonly capabilityIds?: readonly string[];\n    readonly now?: Date;\n  \u001b[32m{+  /**\n     * ABI 1.1.0 (additive, PCI §4 minor bump). OPTIONAL real cognitive\n     * substrate hydrated by the caller from the live event/memory stores.\n     * The builder stays PURE (pure function of input): when absent it\n     * falls back to the historical empty defaults, so every existing\n     * caller is forward-compatible and unchanged. This is the seam that\n     * closes the perception→memory loop without breaking the frozen\n     * schema or the UTP-ABI-002 purity invariant.\n     */\n    readonly cognitiveSubstrate?: {\n      readonly recentSalientEvents?: readonly AbiSalientEvent[];\n      readonly workingMemory?: readonly AbiWorkingMemoryItem[];\n      readonly episodicRefs?: readonly AbiEpisodicRef[];\n      readonly consolidatedRefs?: readonly AbiConsolidatedRef[];\n    };+}\u001b[0m\n  }\n  ",
+  "preservedZones": [
+    {
+      "kind": "prefix_preserved",
+      "description": "Bytes 0–1535 — prefix preserved unchanged",
+      "byteStart": 0,
+      "byteEnd": 1536,
+      "byteLength": 1536,
+      "beforeHash": "c159efb15bf08248ea8a2076892f202a3018f4c4bbbe70189a273675e33559d2",
+      "afterHash": "c159efb15bf08248ea8a2076892f202a3018f4c4bbbe70189a273675e33559d2",
+      "sample": "?: string;\n  readonly capabilityIds?: readonly string[];\n  readonly now?: Date;\n"
+    },
+    {
+      "kind": "suffix_preserved",
+      "description": "Bytes 1536–4972 — suffix preserved unchanged",
+      "byteStart": 1536,
+      "byteEnd": 4973,
+      "byteLength": 3437,
+      "beforeHash": "25986f5219253043f86938e89afa7b410379138ffc18c5ea983f071691e8fe7e",
+      "afterHash": "25986f5219253043f86938e89afa7b410379138ffc18c5ea983f071691e8fe7e",
+      "sample": "}\n\nexport type AbiBuildResult =\n  | { readonly status: 'ok'; readonly abi: Cogni"
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "byteStart": 1536,
+      "byteEnd": 1536,
+      "newByteLength": 761,
+      "oldTextHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "newTextHash": "c83a77e65ead3e80fb7faa4a0a9f9cc5bdf98910730a58b48899d01735414fa1",
+      "oldSample": "",
+      "newSample": "  /**\n   * ABI 1.1.0 (additive, PCI §4 minor bump). OPTIONAL real cognitive\n   * substrate hydrated by the caller from the live event/memory stores.\n   * The builder stays PURE (pure function of input",
+      "description": "Insert 761 bytes at offset 1536"
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~831 character(s) in `backend/src/kloel/abi/abi-builder.service.ts` (sub-line atomic edit, expansion 0.08× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

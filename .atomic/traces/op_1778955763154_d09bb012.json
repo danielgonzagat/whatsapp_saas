@@ -1,0 +1,37 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1778955763154_d09bb012",
+  "ts": "2026-05-16T18:22:43.154Z",
+  "file": "scripts/mcp/atomic-edit/server.ts",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 640,
+    "lineRewriteSurfaceChars": 348,
+    "expansionFactorAvoided": 0.54,
+    "bytesNet": 292,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "afterSha256": "a8262d97b007f561f49e120849599666c43bc7e1c4e512d72580dba3b24f0b39",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- scripts/mcp/atomic-edit/server.ts (atomic char-level)\u001b[0m\n        'Token-cheap structural summary: every named function/class/method/interface/type/var with its ' +\n        \"selector and line range — NO bodies. CodeStruct's readCode summarization mode; the highest-leverage \" +\n        'read primitive. Use before editing so you address symbols by name, not by guessed line numbers.\u001b[32m{+ +}\u001b[0m'\u001b[32m{+ +\n        'Relative paths target the MCP server root; workers in linked worktrees should pass absolute file paths from `pwd`.'+}\u001b[0m,\n      inputSchema: {\u001b[32m{+\n  +}\u001b[0m \u001b[32m{+     +}\u001b[0mfile: z\u001b[32m{+\n          +}\u001b[0m.string()\u001b[32m{+\n  +}\u001b[0m \u001b[32m{+       .describe('repo-relative to the MCP server root, or absolute file path inside a registered worktree'),\n      +}\u001b[0m},\n    },\n    async (a) => {\n      try {\n        const { absPath, relPath } = resolveSafeTarget(a.file);\n        const o = await outline(relPath, readUtf8(absPath));\n        return ok({ ok: true, file: relPath, ...\u001b[32m{+targetDetails(absPath, relPath), ...+}\u001b[0mo });\n      } catch (e) {\n        return fail(e instanceof Error ? e.message : String(e));",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~640 character(s) in `scripts/mcp/atomic-edit/server.ts` (sub-line atomic edit, expansion 0.54× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

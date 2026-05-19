@@ -6,10 +6,18 @@ import {
 } from '../lineage/identity-projector.service';
 import {
   ABI_VERSION,
+  AbiBelief,
+  AbiConsolidatedRef,
   AbiCurrentInput,
+  AbiEpisodicRef,
+  AbiPredictions,
   AbiPerceptionSnapshot,
   AbiPulseTruth,
+  AbiAttention,
+  AbiSalientEvent,
   AbiTruthMode,
+  AbiValenceSection,
+  AbiWorkingMemoryItem,
   CognitiveStateAbi,
 } from './abi-schema';
 import type { PulseTruthSnapshot } from './pulse-truth-snapshot.service';
@@ -42,6 +50,26 @@ export interface AbiBuildInput {
   readonly firstWorkspaceActivatedAt?: string;
   readonly capabilityIds?: readonly string[];
   readonly now?: Date;
+  /**
+   * ABI 1.1.0 (additive, PCI §4 minor bump). OPTIONAL real cognitive
+   * substrate hydrated by the caller from the live event/memory stores.
+   * The builder stays PURE (pure function of input): when absent it
+   * falls back to the historical empty defaults, so every existing
+   * caller is forward-compatible and unchanged. This is the seam that
+   * closes the perception→memory loop without breaking the frozen
+   * schema or the UTP-ABI-002 purity invariant.
+   */
+  readonly cognitiveSubstrate?: {
+    readonly recentSalientEvents?: readonly AbiSalientEvent[];
+    readonly workingMemory?: readonly AbiWorkingMemoryItem[];
+    readonly episodicRefs?: readonly AbiEpisodicRef[];
+    readonly consolidatedRefs?: readonly AbiConsolidatedRef[];
+    readonly beliefs?: readonly AbiBelief[];
+    readonly predictions?: AbiPredictions;
+    readonly pulseTruth?: AbiPulseTruth;
+    readonly valence?: AbiValenceSection;
+    readonly attention?: AbiAttention;
+  };
 }
 
 export type AbiBuildResult =
@@ -90,8 +118,7 @@ export class AbiBuilderService {
       abiVersion: ABI_VERSION,
       lineage: {
         canonicalName: 'Kloel',
-        genesisEventId:
-          'genesisEventId' in projection ? projection.genesisEventId : '',
+        genesisEventId: 'genesisEventId' in projection ? projection.genesisEventId : '',
         lineageStatus: 'intact',
         operationalAge: projection.operationalAge,
         capabilities: capabilityIds,
@@ -103,15 +130,15 @@ export class AbiBuilderService {
       },
       perception: {
         currentSnapshot: input.perceptionSnapshot,
-        recentSalientEvents: [],
+        recentSalientEvents: input.cognitiveSubstrate?.recentSalientEvents ?? [],
       },
-      beliefs: [],
-      predictions: { active: [], recentSurprises: [] },
-      attention: { candidates: [] },
+      beliefs: input.cognitiveSubstrate?.beliefs ?? [],
+      predictions: input.cognitiveSubstrate?.predictions ?? { active: [], recentSurprises: [] },
+      attention: input.cognitiveSubstrate?.attention ?? { candidates: [] },
       memory: {
-        workingMemory: [],
-        episodicRefs: [],
-        consolidatedRefs: [],
+        workingMemory: input.cognitiveSubstrate?.workingMemory ?? [],
+        episodicRefs: input.cognitiveSubstrate?.episodicRefs ?? [],
+        consolidatedRefs: input.cognitiveSubstrate?.consolidatedRefs ?? [],
       },
       capabilities: {
         available: capabilityIds.map((capabilityId) => ({
@@ -121,7 +148,7 @@ export class AbiBuilderService {
         })),
         restricted: [],
       },
-      valence: {
+      valence: input.cognitiveSubstrate?.valence ?? {
         recentTrace: [],
         aggregatedMood: {
           positive: 0,
@@ -131,14 +158,20 @@ export class AbiBuilderService {
           windowHours: 24,
         },
       },
-      pulseTruth: this.buildPulseTruth(measuredAt),
+      pulseTruth: this.buildPulseTruth(measuredAt, input.cognitiveSubstrate?.pulseTruth),
       currentInput: input.currentInput,
     };
 
     return { status: 'ok', abi };
   }
 
-  private buildPulseTruth(measuredAt: string): AbiPulseTruth {
+  private buildPulseTruth(measuredAt: string, override?: AbiPulseTruth): AbiPulseTruth {
+    // ABI 1.1.0 additive seam (ADR-0008): caller may hydrate a REAL,
+    // spine-evidence-grounded pulseTruth. Builder stays PURE — pure
+    // function of input; absent ⇒ historical static snapshot/default.
+    if (override) {
+      return override;
+    }
     if (this.pulseTruthSnapshot) {
       return this.pulseTruthSnapshot.snapshot();
     }

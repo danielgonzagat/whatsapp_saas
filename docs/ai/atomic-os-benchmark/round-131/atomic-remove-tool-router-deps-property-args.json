@@ -1,0 +1,6 @@
+{
+  "file": "backend/src/kloel/unified-agent.service.ts",
+  "oldText": "  private readonly toolRouterDeps: ExecuteToolActionDeps;\n",
+  "newText": "",
+  "expectedCount": 1
+}

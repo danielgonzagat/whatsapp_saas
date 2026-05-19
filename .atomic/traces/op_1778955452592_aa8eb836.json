@@ -1,0 +1,55 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1778955452592_aa8eb836",
+  "ts": "2026-05-16T18:17:32.592Z",
+  "file": "worker/test/channel-dispatcher.spec.ts",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "targetUnit": "text_span",
+  "intention": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 308,
+    "lineRewriteSurfaceChars": 250,
+    "expansionFactorAvoided": 0.81,
+    "bytesNet": 58,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "afterSha256": "a35f4b69f8981c6d7aa89dd5581e26bbd0a38c105793abf72355cedcc83e9d87",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- worker/test/channel-dispatcher.spec.ts (atomic char-level)\u001b[0m\n    });\n  \n  \u001b[32m{+  afterEach(() => {\n      setMailEnv(mailEnvBackup);\n    });\n  +}\u001b[0m\n    describe('sendEmail', () => {\n      it('sends email successfully', async () => {",
+  "preservedZones": [
+    {
+      "kind": "unchanged_context",
+      "description": "Everything outside the modified zone is preserved byte-for-byte by the atomic operation."
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "oldTextHash": "f0c9dd83d674674f9e6cf24c1523740c022d3178e4d46508a50c0106c59f8148",
+      "newTextHash": "a35f4b69f8981c6d7aa89dd5581e26bbd0a38c105793abf72355cedcc83e9d87",
+      "description": "The operation changed the highlighted span shown in inlinePreview."
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~308 character(s) in `worker/test/channel-dispatcher.spec.ts` (sub-line atomic edit, expansion 0.81× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

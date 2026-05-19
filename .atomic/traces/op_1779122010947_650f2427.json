@@ -1,0 +1,80 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779122010947_650f2427",
+  "ts": "2026-05-18T16:33:30.947Z",
+  "file": "scripts/mcp/atomic-edit/.smoke-rpk.28274.ts",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "semantic:edit",
+  "operator": "semantic:edit",
+  "targetUnit": "text_span",
+  "intention": "semantic:edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 0,
+    "lineRewriteSurfaceChars": 0,
+    "expansionFactorAvoided": 0,
+    "bytesNet": 10,
+    "lineRewriteAvoided": true
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "a9a16e823729f772c311be7faee44eca17c34e17af5f707544517652edc4a58c",
+  "proposedSha256": "a9a16e823729f772c311be7faee44eca17c34e17af5f707544517652edc4a58c",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- scripts/mcp/atomic-edit/.smoke-rpk.28274.ts (atomic char-level)\u001b[0m\n  export const config = {\n    \u001b[32m{+whatsa+}\u001b[0mp\u001b[32m{+pP+}\u001b[0mhone\u001b[32m{+Id+}\u001b[0m: '5511999999999',\n    timeout: 5000,\n  };",
+  "preservedZones": [
+    {
+      "kind": "prefix_preserved",
+      "description": "Bytes 0–25 — prefix preserved unchanged",
+      "byteStart": 0,
+      "byteEnd": 26,
+      "byteLength": 26,
+      "beforeHash": "635604a0d94efa41e3f49c5df1dd6848c1514ed31d36f78d9657ec70782d6729",
+      "afterHash": "635604a0d94efa41e3f49c5df1dd6848c1514ed31d36f78d9657ec70782d6729",
+      "sample": "export const config = {\n  "
+    },
+    {
+      "kind": "suffix_preserved",
+      "description": "Bytes 31–69 — suffix preserved unchanged",
+      "byteStart": 31,
+      "byteEnd": 70,
+      "byteLength": 39,
+      "beforeHash": "523e377d797af87bf8e56dcf49a5b9b728f0dfcf5da2f8d6f368d278b951e605",
+      "afterHash": "523e377d797af87bf8e56dcf49a5b9b728f0dfcf5da2f8d6f368d278b951e605",
+      "sample": ": '5511999999999',\n  timeout: 5000,\n};\n"
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "byteStart": 26,
+      "byteEnd": 31,
+      "newByteLength": 15,
+      "oldTextHash": "45569da57f4b7bf472d7a864ef4781451cae6383fee9fb0ae40c59aa1ce475b7",
+      "newTextHash": "a69c8fea5fb22ed09c21fc0bded725158be782c979fa81ee58a4e8a7b5ed135b",
+      "oldSample": "phone",
+      "newSample": "whatsappPhoneId",
+      "description": "Replace 5 bytes at offset 26 with 15 bytes"
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `semantic:edit` changed ~0 character(s) in `scripts/mcp/atomic-edit/.smoke-rpk.28274.ts` (sub-line atomic edit, expansion 0× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

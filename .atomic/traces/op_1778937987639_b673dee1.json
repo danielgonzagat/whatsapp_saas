@@ -1,0 +1,37 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1778937987639_b673dee1",
+  "ts": "2026-05-16T13:26:27.639Z",
+  "file": "backend/src/kloel/openai-wrapper.ts",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 42,
+    "lineRewriteSurfaceChars": 35,
+    "expansionFactorAvoided": 0.83,
+    "bytesNet": 7,
+    "lineRewriteAvoided": true
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "afterSha256": "13ce37dc8a1b8ce6fba1b1fed55ca87e841d94995ca70c4ac99a8dc89ef1d4b6",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- backend/src/kloel/openai-wrapper.ts (atomic char-level)\u001b[0m\n  // wrapper. The wrapper itself enforces per-request clamps (max tokens,\n  // max input size) via normalizeChatCompletionParams. See llm-budget.service.ts.\n  \u001b[32m{+export +}\u001b[0masync function embeddingsWithRetry(\n    client: OpenAI,\n    params: OpenAI.Embeddings.EmbeddingCreateParams,",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~42 character(s) in `backend/src/kloel/openai-wrapper.ts` (sub-line atomic edit, expansion 0.83× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

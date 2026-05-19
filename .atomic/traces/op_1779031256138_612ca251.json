@@ -1,0 +1,59 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779031256138_612ca251",
+  "ts": "2026-05-17T15:20:56.138Z",
+  "file": "docs/ai/atomic-os-benchmark/tools/opencode-round-watchdog.cjs",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "targetUnit": "text_span",
+  "intention": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 4568,
+    "lineRewriteSurfaceChars": 346,
+    "expansionFactorAvoided": 0.08,
+    "bytesNet": 4222,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "3ac2b77abe860557649d1f996ad1af77b52a7109640144e99bd41049b0878ed9",
+  "proposedSha256": "3ac2b77abe860557649d1f996ad1af77b52a7109640144e99bd41049b0878ed9",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- docs/ai/atomic-os-benchmark/tools/opencode-round-watchdog.cjs (atomic char-level)\u001b[0m\n  }\n  \n  function \u001b[32m{+writeMinimalOpenCodeConfig(file) {\n    f+}\u001b[0ms\u001b[32m{+.mkdirSync(pa+}\u001b[0mt\u001b[32m{+h.dirn+}\u001b[0ma\u001b[32m{+me(file), { +}\u001b[0mr\u001b[32m{+ecursive: +}\u001b[0mt\u001b[32m{+rue });\n    fs.writeFileSync(file, JSON.stringify({ permission: { edit: 'allow' }, instructions: [] }, null, 2) + '\\n');\n  }\n  \n  function moveGeneratedPath(source, label) {\n    let destination = path.join(roundDir, label);\n    let suffix = 0;\n    while (fs.existsSync(destination)) {\n      suffix += 1;\n      destination = path.join(roundDir, label + '-' + suffix);\n    }\n    fs.renameSync(source, destination);\n    return destination;\n  }\n  \n  function prepareNormal+}\u001b[0mLane\u001b[32m{+Isolation+}\u001b[0m(\u001b[32m{+) {\n    co+}\u001b[0mn\u001b[32m{+st b+}\u001b[0ma\u001b[32m{+ckupSuffix = '.__ato+}\u001b[0mm\u001b[32m{+ic_b+}\u001b[0me\u001b[32m{+nchmark_backup';\n    const localConfig = path.join(normalWorktree+}\u001b[0m, \u001b[32m{+'opencode.json');\n    const localConfigBackup = path.join(normalWorktree, 'opencode.json' + backupSuffix);\n    const localOpenCode = path.join(normalWorktree, '.opencode');\n    const localOpenCodeBackup = path.join(normalWorktree, '.opencode' + backupSuffix);\n    if (fs.existsSync(localConfigBackup) || fs.existsSync(localOpenCodeBackup)) {\n      thro+}\u001b[0mw\u001b[32m{+ new Err+}\u001b[0mor\u001b[32m{+('stale normal OpenCode isolation bac+}\u001b[0mk\u001b[32m{+up exis+}\u001b[0mt\u001b[32m{+s; +}\u001b[0mre\u001b[32m{+fusing to ov+}\u001b[0me\u001b[32m{+rwrite benchmark state');\n    }\n    const xdgRoot = path.join(roundDir+}\u001b[0m, \u001b[32m{+'normal-o+}\u001b[0mp\u001b[32m{+encode-xdg');\n    const xdgConfig = path.join(xdgRoot, 'opencode', 'opencode.json');\n    const hadLocalConfig = fs.existsSync(localConfig);\n    const hadLocalOpenCode = fs.existsSync(localOpenCode);\n    if (hadLocalConfig) {\n      fs.copyFileSync(localConfig, path.join(+}\u001b[0mro\u001b[32m{+undDir, 'nor+}\u001b[0mm\u001b[32m{+al-o+}\u001b[0mp\u001b[32m{+encode.original.json'));\n      fs.renameSync(localConfig, localConfigBackup);\n    }\n    if (hadLocalOpenCode) fs.renameSync(localOpenCode, localOpenCodeBackup);\n    wri+}\u001b[0mt\u001b[32m{+eMinimalOpenCodeConfig(localConfig);\n    writeMinimalOpenCodeConfig(xdgConfig);\n    return {\n      enabled: true,\n      xdgRoot,\n      localConfig,\n      localConfigBackup,\n      localOpenCode,\n      localOpenCodeBackup,\n      hadLocalConfig,\n      hadLocalOpenCode,\n      generatedMoves: [],\n      restored: false,\n      restoreError: null,\n    };\n  }\n  \n  function restoreNormalLaneIsolation(isolation) {\n    if (!isolation || isolation.restored) return;\n    try {\n      if (fs.existsSync(isolation.localConfig)) fs.unlinkSync(isolation.localConfig);\n      if (isolation.hadLocalConfig && fs.existsSync(isolation.localConfigBackup)) {\n        fs.renameSync(isolation.localConfigBackup, isolation.localConfig);\n      }\n      if (fs.existsSync(isolation.localOpenCode)) {\n        isolation.generatedMoves.push(moveGeneratedPath(isolation.localOpenCode, 'normal-opencode-generated-after-isolation'));\n      }\n      if (isolation.hadLocalOpenCode && fs.existsSync(isolation.localOpenCodeBackup)) {\n        fs.renameSync(isolation.localOpenCodeBackup, isolation.localOpenCode);\n      }\n      isolation.restored = true;\n    } catch (error) {\n      isolation.restoreError = error instanceof Error ? error.message : String(error);\n      throw error;\n    }\n  }\n  \n  function readJsonlLoose(file) {\n    let text = '';\n    try {\n      text = fs.read+}\u001b[0mFile\u001b[32m{+Sync(file, 'utf8'+}\u001b[0m)\u001b[32m{+.replace(/\\0/g,+}\u001b[0m \u001b[32m{+'').trim();\n    } catch +}\u001b[0m{\u001b[32m{+\n      return [];\n    }\n    if (!text) return [];\n    const events = [];\n    for (const line of text.split('\\n')) {\n      if (!line.trim()) continue;\n      try {\n        events.push(JSON.parse(line));\n      } catch {}\n    }\n    return events;\n  }\n  \n  function findForbiddenNormalUse(lane) {\n    const forbiddenCommand = /atomic-call[.]cjs|scripts[/]mcp[/]atomic-edit|[.]atomic[/]traces|docs[/]ai[/]traces/;\n    const forbiddenInput = /atomic-edit_|atomic-call[.]cjs|scripts[/]mcp[/]atomic-edit/;\n    const events = readJsonlLoose(lane.outFile);\n    for (let index = 0; index < events.length; index += 1) {\n      const event = events[index];\n      const tool = String(event.part?.tool || event.item?.tool || event.tool || '');\n      if (tool.startsWith('atomic-edit_')) {\n        return { eventIndex: index, kind: 'atomic_mcp_tool', tool };\n      }\n      const command = String(event.part?.state?.input?.command || event.item?.command || '');\n      if (forbiddenCommand.test(command)) {\n        return { eventIndex: index, kind: 'atomic_command_or_trace_access', command: command.slice(0, 500) };\n      }\n      const input = JSON.stringify(event.part?.state?.input || event.item?.input || {});\n      if (forbiddenInput.test(input)) {\n        return { eventIndex: index, kind: 'atomic_tool_input', tool, input: input.slice(0, 500) };\n      }\n    }\n    return null;\n  }\n  \n  function startLane(name, worktree, promptFile, options = {}) {+}\u001b[0m\n    const prompt = readPrompt(promptFile);\n    const outFile = path.join(roundDir, 'opencode-' + name + '-events.jsonl');",
+  "preservedZones": [
+    {
+      "kind": "unchanged_context",
+      "description": "Everything outside the modified zone is preserved byte-for-byte by the atomic operation."
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "oldTextHash": "eb852a68ac2d6178f7e1ab93af10273547e7fe99e4035c681c72024919320b89",
+      "newTextHash": "3ac2b77abe860557649d1f996ad1af77b52a7109640144e99bd41049b0878ed9",
+      "description": "The operation changed the highlighted span shown in inlinePreview."
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~4568 character(s) in `docs/ai/atomic-os-benchmark/tools/opencode-round-watchdog.cjs` (sub-line atomic edit, expansion 0.08× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

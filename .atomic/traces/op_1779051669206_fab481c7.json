@@ -1,0 +1,59 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779051669206_fab481c7",
+  "ts": "2026-05-17T21:01:09.206Z",
+  "file": "docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "targetUnit": "text_span",
+  "intention": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 957,
+    "lineRewriteSurfaceChars": 203,
+    "expansionFactorAvoided": 0.21,
+    "bytesNet": 754,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "b9b0b00705c63c992eff91c7b8033889bbe0d05f18c62bd069ae3237b15d5386",
+  "proposedSha256": "b9b0b00705c63c992eff91c7b8033889bbe0d05f18c62bd069ae3237b15d5386",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs (atomic char-level)\u001b[0m\n    const ranked = rankMacroShapeCandidates(candidates, { currentTargetLines });\n    const preferred = ranked[0];\n  \u001b[32m{+  const marginAmplifierPool = ranked.filter((candidate) => candidate.dynamicReleasePass);\n    const marginAmplifier = (marginAmplifierPool.length > 0 ? marginAmplifierPool : ranked)\n      .sort((left, right) => {\n        if (left.metrics.largestModuleLines !== right.metrics.largestModuleLines) return left.metrics.largestModuleLines - right.metrics.largestModuleLines;\n        if (left.metrics.estimatedInventoryPressure !== right.metrics.estimatedInventoryPressure) return left.metrics.estimatedInventoryPressure - right.metrics.estimatedInventoryPressure;\n        if (left.pressureScore.total !== right.pressureScore.total) return left.pressureScore.total - right.pressureScore.total;\n        return left.shape.localeCompare(right.shape);\n      })[0] || preferred;+}\u001b[0m\n    const single = candidates.find((candidate) => candidate.shape === 'single_runtime_module');\n    const split = candidates.find((candidate) => candidate.shape === 'dependency_split_modules');",
+  "preservedZones": [
+    {
+      "kind": "unchanged_context",
+      "description": "Everything outside the modified zone is preserved byte-for-byte by the atomic operation."
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "oldTextHash": "af5f322ff235f2419b7db887d38095648b0061a1383740d44897cfa91e9a871e",
+      "newTextHash": "b9b0b00705c63c992eff91c7b8033889bbe0d05f18c62bd069ae3237b15d5386",
+      "description": "The operation changed the highlighted span shown in inlinePreview."
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~957 character(s) in `docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs` (sub-line atomic edit, expansion 0.21× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

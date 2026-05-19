@@ -12,9 +12,10 @@
  */
 
 import * as fs from "node:fs";
+import crypto from "crypto";
 import * as path from "node:path";
 import * as ts from "typescript";
-import { listSignatures, resolveSymbol, type SymbolInfo } from "./symbols.js";
+import { listSignatures, resolveSymbol, resolveNodeAtPosition, type SymbolInfo } from "./symbols.js";
 
 const TS_EXT = new Set([".ts", ".tsx", ".mts", ".cts", ".js", ".jsx", ".mjs", ".cjs"]);
 
@@ -101,22 +102,36 @@ export interface ReadSymbolResult {
   endLine: number;
   endColumn: number;
   code: string;
+  fileSha256?: string;
 }
 
 export async function readSymbol(
   file: string,
   text: string,
   selector: string,
+  position?: { line: number; column: number },
 ): Promise<ReadSymbolResult> {
   if (!TS_EXT.has(extOf(file))) {
     throw new Error(`read_symbol only supports TS/JS files, got ${extOf(file) || "(none)"}`);
   }
   const sf = await sourceFileOf(file, text);
+  if (position) {
+    const resolved = resolveNodeAtPosition(sf, position.line, position.column);
+    return {
+      selector: `pos:${position.line}:${position.column}`,
+      kind: resolved.kind,
+      startLine: resolved.startLine,
+      startColumn: resolved.startColumn,
+      endLine: resolved.endLine,
+      endColumn: resolved.endColumn,
+      code: resolved.text,
+      fileSha256: crypto.createHash('sha256').update(text).digest('hex'),
+    };
+  }
   const { node, info } = resolveSymbol(sf, selector);
   const start = node.getStart();
   const end = node.getEnd();
   const startLinePos = node.getStartLinePos();
-  // column of end: distance from its line start
   const endLineStart = text.lastIndexOf("\n", end - 1) + 1;
   return {
     selector: info.selector,
@@ -126,5 +141,6 @@ export async function readSymbol(
     endLine: info.endLine,
     endColumn: end - endLineStart + 1,
     code: node.getText(),
+    fileSha256: crypto.createHash('sha256').update(text).digest('hex'),
   };
 }

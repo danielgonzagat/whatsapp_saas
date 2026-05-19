@@ -1,0 +1,106 @@
+{
+  "sourceFile": "backend/src/kloel/unified-agent.service.ts",
+  "targetFile": "backend/src/kloel/unified-agent-tool-router.helpers.ts",
+  "selectors": [
+    "isAllowedTool",
+    "formatPromptValue"
+  ],
+  "importNames": [
+    "isAllowedTool",
+    "formatPromptValue"
+  ],
+  "importModule": "./unified-agent-tool-router.helpers",
+  "validate": true,
+  "includeTypecheck": false,
+  "validationProfile": "round108-final-multi-module-helper-split-no-typecheck",
+  "scanFiles": [
+    "backend/src/kloel/unified-agent.service.ts",
+    "backend/src/kloel/unified-agent-tool-router.helpers.ts",
+    "backend/src/kloel/unified-agent-runtime.helpers.ts"
+  ],
+  "forbiddenTextChecks": [
+    {
+      "file": "backend/src/kloel/unified-agent-tool-router.helpers.ts",
+      "text": "this.",
+      "label": "router helper no this"
+    },
+    {
+      "file": "backend/src/kloel/unified-agent-runtime.helpers.ts",
+      "text": "this.",
+      "label": "runtime helper no this"
+    },
+    {
+      "file": "backend/src/kloel/unified-agent.service.ts",
+      "text": "function isAllowedTool",
+      "label": "top-level isAllowedTool removed"
+    },
+    {
+      "file": "backend/src/kloel/unified-agent.service.ts",
+      "text": "function formatPromptValue",
+      "label": "top-level formatPromptValue removed"
+    },
+    {
+      "file": "backend/src/kloel/unified-agent.service.ts",
+      "text": "private async executeToolAction",
+      "label": "private executeToolAction removed"
+    },
+    {
+      "file": "backend/src/kloel/unified-agent.service.ts",
+      "text": "private async buildAgentRuntimeContext",
+      "label": "private buildAgentRuntimeContext removed"
+    }
+  ],
+  "requiredTextChecks": [
+    {
+      "file": "backend/src/kloel/unified-agent-tool-router.helpers.ts",
+      "text": "export function isAllowedTool",
+      "label": "router helper exports isAllowedTool"
+    },
+    {
+      "file": "backend/src/kloel/unified-agent-tool-router.helpers.ts",
+      "text": "export function formatPromptValue",
+      "label": "router helper exports formatPromptValue"
+    },
+    {
+      "file": "backend/src/kloel/unified-agent-tool-router.helpers.ts",
+      "text": "export function parseToolArgs",
+      "label": "router helper exports parseToolArgs"
+    },
+    {
+      "file": "backend/src/kloel/unified-agent-runtime.helpers.ts",
+      "text": "export async function buildAgentRuntimeContext",
+      "label": "runtime helper exports buildAgentRuntimeContext"
+    },
+    {
+      "file": "backend/src/kloel/unified-agent-runtime.helpers.ts",
+      "text": "export async function recordAgentRuntimeTurn",
+      "label": "runtime helper exports recordAgentRuntimeTurn"
+    },
+    {
+      "file": "backend/src/kloel/unified-agent.service.ts",
+      "text": "parseToolArgs(this.logger, toolName, toolCall.function.arguments)",
+      "label": "safe parser helper used after import"
+    },
+    {
+      "file": "backend/src/kloel/unified-agent.service.ts",
+      "text": "buildAgentRuntimeContext(this.agentRuntime, {",
+      "label": "runtime context explicit dependency"
+    },
+    {
+      "file": "backend/src/kloel/unified-agent.service.ts",
+      "text": "recordAgentRuntimeTurn(this.agentRuntime, {",
+      "label": "runtime turn explicit dependency"
+    },
+    {
+      "file": "backend/src/kloel/unified-agent.service.ts",
+      "text": "async executeTool(",
+      "label": "preserve public executeTool"
+    },
+    {
+      "file": "backend/src/kloel/unified-agent.service.ts",
+      "text": "async buildQuotedReplyPlan(",
+      "label": "preserve public buildQuotedReplyPlan"
+    }
+  ],
+  "report": "compact"
+}

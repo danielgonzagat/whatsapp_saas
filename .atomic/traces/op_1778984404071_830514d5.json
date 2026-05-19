@@ -1,0 +1,59 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1778984404071_830514d5",
+  "ts": "2026-05-17T02:20:04.071Z",
+  "file": "scripts/mcp/atomic-edit/.smoke-rta.8732.ts",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "replace_text_in_anchor_region",
+  "operator": "replace_text_in_anchor_region",
+  "targetUnit": "text_span",
+  "intention": "replace_text_in_anchor_region",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 8,
+    "lineRewriteSurfaceChars": 51,
+    "expansionFactorAvoided": 6.38,
+    "bytesNet": -1,
+    "lineRewriteAvoided": true
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": true,
+  "changed": false,
+  "afterSha256": "4f4954bd181d5369e5d937a12fc3d1be795e4aeffc158bae28e3931847ef5728",
+  "proposedSha256": "93bb77f659079b08738afa8656b7bb134578a6604ca23c1469affa32665007f6",
+  "rollback": {
+    "available": false,
+    "strategy": "dry-run only; no target file write occurred"
+  },
+  "inlinePreview": "\u001b[2m--- scripts/mcp/atomic-edit/.smoke-rta.8732.ts (atomic char-level)\u001b[0m\n  export let A = `BEFORE alpha \u001b[32m{+P+}\u001b[0mRE\u001b[31m[-PLAC-]\u001b[0m\u001b[32m{+VI+}\u001b[0mE\u001b[31m[-D-]\u001b[0m\u001b[32m{+W+}\u001b[0m omega AFTER`;\n  ",
+  "preservedZones": [
+    {
+      "kind": "unchanged_context",
+      "description": "Everything outside the modified zone is preserved byte-for-byte by the atomic operation."
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "oldTextHash": "4f4954bd181d5369e5d937a12fc3d1be795e4aeffc158bae28e3931847ef5728",
+      "newTextHash": "93bb77f659079b08738afa8656b7bb134578a6604ca23c1469affa32665007f6",
+      "description": "Preview only: the highlighted span is proposed but was not written."
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `replace_text_in_anchor_region` changed ~8 character(s) in `scripts/mcp/atomic-edit/.smoke-rta.8732.ts` (sub-line atomic edit, expansion 6.38× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

@@ -1,0 +1,59 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779036569887_1632da73",
+  "ts": "2026-05-17T16:49:29.887Z",
+  "file": "docs/ai/atomic-os-benchmark/tools/round-audit.cjs",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "targetUnit": "text_span",
+  "intention": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 1245,
+    "lineRewriteSurfaceChars": 143,
+    "expansionFactorAvoided": 0.11,
+    "bytesNet": 1102,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "cb8ce05c27aa4e0c11a980115c3be1c69b77c0d7cbf619f2c54e0dfa4c65a6fe",
+  "proposedSha256": "cb8ce05c27aa4e0c11a980115c3be1c69b77c0d7cbf619f2c54e0dfa4c65a6fe",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- docs/ai/atomic-os-benchmark/tools/round-audit.cjs (atomic char-level)\u001b[0m\n    atomicWorktree: metadataValue('atomic'),\n  };\n  \u001b[32m{+const watchdogStatus = readJsonFile('opencode-watchdog-status.json') || {};\n  \n  function laneStatus(name) {\n    return (watchdogStatus.lanes || []).find((lane) => lane.name === name) || null;\n  }\n  \n  function laneStartedAt(name) {\n    const value = Number(laneStatus(name)?.startedAt);\n    return Number.isFinite(value) ? value : null;\n  }\n  \n  function readNumberTextFile(file) {\n    const value = Number(readText(file).trim());\n    return Number.isFinite(value) ? value : null;\n  }\n  \n  function prepromptMetrics(name) {\n    if (!name) return null;\n    const prefix = 'opencode-' + name + '-preprompt';\n    const startTimestamp = readNumberTextFile(prefix + '-start-ms.txt');\n    const endTimestamp = readNumberTextFile(prefix + '-end-ms.txt');\n    const exitCode = readNumberTextFile(prefix + '-exit.txt');\n    if (startTimestamp === null && endTimestamp === null && exitCode === null) return null;\n    return {\n      startTimestamp,\n      endTimestamp,\n      exitCode,\n      commandText: readText(prefix + '-command.txt') || readText('opencode-' + name + '-preprompt-command.txt'),\n      output: readText(prefix + '-output.log').slice(0, 8000),\n    };\n  }+}\u001b[0m\n  \n  function finalUsage(events) {",
+  "preservedZones": [
+    {
+      "kind": "unchanged_context",
+      "description": "Everything outside the modified zone is preserved byte-for-byte by the atomic operation."
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "oldTextHash": "5d1a8891826617145ddf85c802996c9aa16b66b06926267de2ba06cbe236f514",
+      "newTextHash": "cb8ce05c27aa4e0c11a980115c3be1c69b77c0d7cbf619f2c54e0dfa4c65a6fe",
+      "description": "The operation changed the highlighted span shown in inlinePreview."
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~1245 character(s) in `docs/ai/atomic-os-benchmark/tools/round-audit.cjs` (sub-line atomic edit, expansion 0.11× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

@@ -1,0 +1,59 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779054907912_2fc23dd6",
+  "ts": "2026-05-17T21:55:07.912Z",
+  "file": "docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "targetUnit": "text_span",
+  "intention": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 2939,
+    "lineRewriteSurfaceChars": 1091,
+    "expansionFactorAvoided": 0.37,
+    "bytesNet": 1865,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "731eb9587e7592c1d8e26d926951348403d9c7818b31837e8a24ed14041d3cf2",
+  "proposedSha256": "731eb9587e7592c1d8e26d926951348403d9c7818b31837e8a24ed14041d3cf2",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs (atomic char-level)\u001b[0m\n  }\n  \n  function \u001b[32m{+comp+}\u001b[0ma\u001b[32m{+c+}\u001b[0mt\u001b[32m{+Executi+}\u001b[0mo\u001b[32m{+nBriefWithDyna+}\u001b[0mmic\u001b[32m{+Dominance(blueprint) {\n    if (!blueprint.compactExecutionBrief) return null;\n    const recipe = blueprint.executableFirstBatchRecipe || null;\n    const facadeRewritePlan = recipe ? recipe.facadeRewritePlan : null;\n    return {\n      ...blueprint.compactExecutionBrief,\n      executableOwnerMap: recipe\n        ? {\n            publicMethodCount: recipe.publicMethodCount,\n            readOnlyExistingModules: recipe.readOnlyExistingModules,\n            writePlan: recipe.writePlan,\n            facadeRewritePlan,\n            firstBatchOrder: recipe.firstBatchOrder,\n            unresolvedPublicMethods: recipe.unresolvedPublicMethods,\n          }\n        : null,\n      dynamicDominanceObjective: {\n        decisionAuthority: 'derived from scorecard surfaces, executable owner map, and validation results; no fixed line or time budget',\n        optimizeSurfaces: [\n          'target facade lines',\n          'changed inventory lines',\n          'largest changed source lines',\n          'product churn',\n          'net source deletion',\n        ],\n        compactionRule: 'After the first green scorecard, keep only compactions that reduce at least one optimize surface without worsening any gate or increasing product source count.',\n        stopRule: 'Stop when the next available product-batch compaction would require a new write target, change public API, touch specs/protected files, or increase any scorecard surface.',\n        facadeShape: blueprint.facadeDelegationCompactness ? blueprint.facadeDelegationCompactness.expectedFacadeShape : null,\n        facadeCompactnessGuard: facadeRewritePlan ? facadeRewritePlan.compactnessGuard : null,\n        importPressurePlan: facadeRewritePlan ? facadeRewritePlan.importPressurePlan : null,\n        writeGranularityPlan: recipe ? recipe.writeGranularityPlan : null,\n      },\n    };\n  }\n  \n  function atomic+}\u001b[0mWorkerBrief(blueprint, scorecardCommand, publicApiAuditCommand, scopeDisciplineCommand, traceIsolationCommand, typecheckImpactCommand) {\n    \u001b[32m{+const compactExecutionB+}\u001b[0mr\u001b[32m{+i+}\u001b[0me\u001b[32m{+f = compac+}\u001b[0mt\u001b[32m{+Exec+}\u001b[0mu\u001b[32m{+tionB+}\u001b[0mr\u001b[32m{+iefWithDy+}\u001b[0mn\u001b[32m{+amicDominance(blueprint);\n  +}\u001b[0m \u001b[32m{+ return +}\u001b[0m{\n      execute: blueprint.firstAction,\n      selectedShape: blueprint.selectedShape,\n      compactExecutionBrief\u001b[31m[-: blueprint.compactExecutionBrief-]\u001b[0m,\n      marginAmplification: blueprint.marginAmplification,\n      delegationShape: blueprint.delegationShape,",
+  "preservedZones": [
+    {
+      "kind": "unchanged_context",
+      "description": "Everything outside the modified zone is preserved byte-for-byte by the atomic operation."
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "oldTextHash": "33806bc9db3ca05be7a68578b8a5ccbf57900fdc14651abf20b88119b3972d99",
+      "newTextHash": "731eb9587e7592c1d8e26d926951348403d9c7818b31837e8a24ed14041d3cf2",
+      "description": "The operation changed the highlighted span shown in inlinePreview."
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~2939 character(s) in `docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs` (sub-line atomic edit, expansion 0.37× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

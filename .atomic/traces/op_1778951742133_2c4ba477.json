@@ -1,0 +1,37 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1778951742133_2c4ba477",
+  "ts": "2026-05-16T17:15:42.133Z",
+  "file": "worker/test/openai-models.spec.ts",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 119,
+    "lineRewriteSurfaceChars": 102,
+    "expansionFactorAvoided": 0.86,
+    "bytesNet": 17,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "afterSha256": "63f8f9deb93bd19da098f98d92bd83fb6488dfb7359444a84e0f60d7f0521c93",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- worker/test/openai-models.spec.ts (atomic char-level)\u001b[0m\n      it('returns default audio_understanding_fallback model when no env set', async () => {\n        const { resolveWorkerOpenAIModel } = await import('../providers/openai-models');\n        expect(resolveWorkerOpenAIModel('audio_understanding_fallback')).toBe(\u001b[32m{+\n          +}\u001b[0m'gpt-4o-mini-transcribe'\u001b[32m{+,\n        +}\u001b[0m);\n      });\n  ",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~119 character(s) in `worker/test/openai-models.spec.ts` (sub-line atomic edit, expansion 0.86× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

@@ -1,0 +1,80 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779142837564_fd32da58",
+  "ts": "2026-05-18T22:20:37.564Z",
+  "file": "scripts/__parts__/obsidian-mirror-daemon-indexes.mjs",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "targetUnit": "text_span",
+  "intention": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 3053,
+    "lineRewriteSurfaceChars": 153,
+    "expansionFactorAvoided": 0.05,
+    "bytesNet": 2900,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "c6ea9901efce12fd79fddcb657d39265e8445caa8c63863cfa2cc857992934eb",
+  "proposedSha256": "c6ea9901efce12fd79fddcb657d39265e8445caa8c63863cfa2cc857992934eb",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- scripts/__parts__/obsidian-mirror-daemon-indexes.mjs (atomic char-level)\u001b[0m\n  }\n  \n  \u001b[32m{+// ── Light diagnostic tagging (manifest-only, zero overlay notes) ─────────────\n  // Re-enables the \"what to do\" signal that the heavy writeGeneratedIndexes path\n  // (disabled for bloat) used to provide — but derived purely from manifest\n  // fields, so it paints #graph/action-required / #graph/evidence-gap onto the\n  // EXISTING source notes without generating a single extra note.\n  function diagnosticHasNearbyTest(entry, sourceSet, testSources) {\n    if (isTestSource(entry.source)) {\n      return true;\n    }\n    const source = entry.source;\n    const ext = extname(source);\n    const withoutExt = ext ? source.slice(0, -ext.length) : source;\n    const candidates = [\n      `${withoutExt}.spec${ext}`,\n      `${withoutExt}.test${ext}`,\n      `${dirname(source)}/__tests__/${basename(withoutExt)}.spec${ext}`,\n      `${dirname(source)}/__tests__/${basename(withoutExt)}.test${ext}`,\n    ].map(normalizePath);\n    if (candidates.some((candidate) => sourceSet.has(candidate))) {\n      return true;\n    }\n    const stem = basename(withoutExt).replace(\n      /\\.(controller|service|module|dto|route|page|component)$/i,\n      '',\n    );\n    return stem.length > 3 && testSources.some((t) => t.includes(stem));\n  }\n  \n  export function applyDiagnosticTags(manifest) {\n    const all = Object.values(manifest.files);\n    const sourceSet = new Set(all.map((e) => e.source));\n    const testSources = all.filter((e) => isTestSource(e.source)).map((e) => e.source);\n    const isExec = (s) =>\n      /^(backend\\/src|frontend\\/src|frontend-admin\\/src|worker\\/|scripts\\/pulse\\/)/.test(s) &&\n      !isTestSource(s);\n  \n    let changed = 0;\n    for (const [relMirror, entry] of Object.entries(manifest.files)) {\n      const kinds = entry.machine_kinds || [];\n      const exec = isExec(entry.source);\n      const noTest = !diagnosticHasNearbyTest(entry, sourceSet, testSources);\n  \n      let action = false;\n      let evidence = false;\n      if (kinds.includes('api-controller') && noTest) {\n        action = true;\n      }\n      if (entry.machine_risk === 'critical' && noTest) {\n        action = true;\n      }\n      if (entry.git_dirty && entry.machine_risk === 'critical') {\n        action = true;\n      }\n      if (entry.mirror_payload === 'metadata_only' && exec) {\n        action = true;\n      }\n      if (exec && noTest) {\n        evidence = true;\n      }\n  \n      const tags = new Set(entry.machine_tags || []);\n      const before = [...tags].sort().join(',');\n      if (action) {\n        tags.add(GRAPH_ACTION_REQUIRED_TAG);\n      } else {\n        tags.delete(GRAPH_ACTION_REQUIRED_TAG);\n      }\n      if (evidence) {\n        tags.add(GRAPH_EVIDENCE_GAP_TAG);\n      } else {\n        tags.delete(GRAPH_EVIDENCE_GAP_TAG);\n      }\n      const next = [...tags];\n      if (next.sort().join(',') === before) {\n        continue;\n      }\n  \n      entry.machine_tags = next;\n      if (rewriteMirrorFrontmatterTags(relMirror, next)) {\n        changed++;\n      }\n    }\n  \n    if (changed > 0) {\n      log('OK', `Diagnostic action tags applied to ${changed} source points.`);\n    }\n  }\n  +}\u001b[0m\n  export function listGeneratedMarkdownRelPaths(rootDir, relPrefix) {\n    if (!existsSync(rootDir)) {",
+  "preservedZones": [
+    {
+      "kind": "prefix_preserved",
+      "description": "Bytes 0–4617 — prefix preserved unchanged",
+      "byteStart": 0,
+      "byteEnd": 4618,
+      "byteLength": 4618,
+      "beforeHash": "04acf6e63c5a06c1b5526409e5d4bf1f723366393a718f2e03d61e3b69b3a77a",
+      "afterHash": "04acf6e63c5a06c1b5526409e5d4bf1f723366393a718f2e03d61e3b69b3a77a",
+      "sample": "g('OK', `Graph derived file tags applied to ${changed} source points.`);\n  }\n}\n\n"
+    },
+    {
+      "kind": "suffix_preserved",
+      "description": "Bytes 4618–44768 — suffix preserved unchanged",
+      "byteStart": 4618,
+      "byteEnd": 44769,
+      "byteLength": 40151,
+      "beforeHash": "76395c645c37c0c26c8ba598fcac615be9da41e20d2543ec4fb7cf5900d5f842",
+      "afterHash": "76395c645c37c0c26c8ba598fcac615be9da41e20d2543ec4fb7cf5900d5f842",
+      "sample": "export function listGeneratedMarkdownRelPaths(rootDir, relPrefix) {\n  if (!exist"
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "byteStart": 4618,
+      "byteEnd": 4618,
+      "newByteLength": 2900,
+      "oldTextHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "newTextHash": "f55a47f001f66bc8d22cf5ee7c915dda149c5784fd8f70402472503822c49ca0",
+      "oldSample": "",
+      "newSample": "// ── Light diagnostic tagging (manifest-only, zero overlay notes) ─────────────\n// Re-enables the \"what to do\" signal that the heavy writeGeneratedIndexes path\n// (disabled for bloat) used to provide",
+      "description": "Insert 2900 bytes at offset 4618"
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~3053 character(s) in `scripts/__parts__/obsidian-mirror-daemon-indexes.mjs` (sub-line atomic edit, expansion 0.05× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

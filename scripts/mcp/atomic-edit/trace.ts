@@ -76,6 +76,12 @@ export interface TraceMetrics {
 export interface PreservationZone {
   kind: string;
   description: string;
+  /** Byte offset in original file (0-based) where this preserved zone starts. */
+  byteStart: number;
+  /** Byte offset in original file (0-based, exclusive) where this preserved zone ends. */
+  byteEnd: number;
+  /** Length of this zone in bytes (before === after). */
+  byteLength: number;
   beforeHash?: string;
   afterHash?: string;
   sample?: string;
@@ -83,6 +89,12 @@ export interface PreservationZone {
 
 export interface ModifiedZone {
   kind: string;
+  /** Byte offset in original file (0-based) where modified zone starts. */
+  byteStart: number;
+  /** Byte offset in original file (0-based, exclusive) where modified zone ends. */
+  byteEnd: number;
+  /** Length of new text in bytes (may differ from old length). */
+  newByteLength: number;
   oldTextHash?: string;
   newTextHash?: string;
   oldSample?: string;
@@ -94,6 +106,14 @@ export interface ModifiedZone {
 export interface MovementZone {
   kind: string;
   description: string;
+  /** Byte offset in original file (0-based) where moved content started. */
+  oldByteStart?: number;
+  /** Byte offset in original file (0-based, exclusive) where moved content ended. */
+  oldByteEnd?: number;
+  /** Byte offset in new file (0-based) where moved content now starts. */
+  newByteStart?: number;
+  /** Byte offset in new file (0-based, exclusive) where moved content now ends. */
+  newByteEnd?: number;
   from?: string;
   to?: string;
   preservedHash?: string;
@@ -207,6 +227,9 @@ export function buildTrace(args: {
     preservedZones: args.preservedZones ?? [
       {
         kind: 'unchanged_context',
+        byteStart: 0,
+        byteEnd: args.before.length,
+        byteLength: args.before.length,
         description:
           'Everything outside the modified zone is preserved byte-for-byte by the atomic operation.',
       },
@@ -214,6 +237,9 @@ export function buildTrace(args: {
     modifiedZones: args.modifiedZones ?? [
       {
         kind: 'changed_span',
+        byteStart: 0,
+        byteEnd: args.before.length,
+        newByteLength: args.newText.length,
         oldTextHash: sha256(args.before),
         newTextHash: sha256(args.newText),
         description: preview

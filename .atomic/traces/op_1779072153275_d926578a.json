@@ -1,0 +1,59 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779072153275_d926578a",
+  "ts": "2026-05-18T02:42:33.275Z",
+  "file": "docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "targetUnit": "text_span",
+  "intention": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 627,
+    "lineRewriteSurfaceChars": 324,
+    "expansionFactorAvoided": 0.52,
+    "bytesNet": 303,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "d82d164326ae24d19170eabbe42e3f68fb6e5d63a8a78c6a80aab0ed084e4bb2",
+  "proposedSha256": "d82d164326ae24d19170eabbe42e3f68fb6e5d63a8a78c6a80aab0ed084e4bb2",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs (atomic char-level)\u001b[0m\n    const changedInventoryDelta = 0;\n    const ownerAlreadyExists = Boolean(ownerTarget && ownerTarget.file);\n    const \u001b[32m{+runti+}\u001b[0mme\u001b[32m{+OwnerCl+}\u001b[0mas\u001b[32m{+sPreferred = Boolean(options.r+}\u001b[0mu\u001b[32m{+ntimeOwne+}\u001b[0mr\u001b[32m{+Cl+}\u001b[0ma\u001b[32m{+ssPreferred);\n    const measura+}\u001b[0mble = measuredLeafLines !== null && ownerAlreadyExists;\n    const \u001b[31m[-p-]\u001b[0m\u001b[32m{+st+}\u001b[0ma\u001b[32m{+ndardEconomyPa+}\u001b[0mss = measurable && (\n      productSourceFileDelta < 0 ||\n      changedInventoryDelta < 0 ||\n      facadeReduction > ownerLargestIncrease + Math.max(0, changedInventoryDelta)\n    );\u001b[32m{+\n    const runtimeOwnerDelegationPass = measurable && runtimeOwnerClassPreferred && productSourceFileDelta <= 0 && changedInventoryDelta <= 0;\n    const pass = standardEconomyPass || runtimeOwnerDelegationPass;+}\u001b[0m\n    return {\n      available: measurable,",
+  "preservedZones": [
+    {
+      "kind": "unchanged_context",
+      "description": "Everything outside the modified zone is preserved byte-for-byte by the atomic operation."
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "oldTextHash": "8ab427ceed6820b7ee257b84cb691a8e32d0e692cddc375c12b02fdf15f346cc",
+      "newTextHash": "d82d164326ae24d19170eabbe42e3f68fb6e5d63a8a78c6a80aab0ed084e4bb2",
+      "description": "The operation changed the highlighted span shown in inlinePreview."
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~627 character(s) in `docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs` (sub-line atomic edit, expansion 0.52× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

@@ -1,0 +1,37 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1778962944354_6a73821f",
+  "ts": "2026-05-16T20:22:24.354Z",
+  "file": "scripts/mcp/atomic-edit/audit-atomicity.mjs",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 773,
+    "lineRewriteSurfaceChars": 505,
+    "expansionFactorAvoided": 0.65,
+    "bytesNet": 268,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "afterSha256": "c0f1ee197702ce7f5fd54d9196fd766543645a86e003d571532708244bf84f65",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- scripts/mcp/atomic-edit/audit-atomicity.mjs (atomic char-level)\u001b[0m\n  }\n  \n  function loadTraceDirectory(tracesDir\u001b[32m{+, options = {}+}\u001b[0m) {\n    if (!fs.existsSync(tracesDir)) return { empty: true, report: null, traceResults: [] };\n  \n    const traces = [];\n    for (const f of fs.readdirSync(tracesDir).filter((name) => name.endsWith('.json'))) {\n      try {\n        const t = JSON.parse(fs.readFileSync(path.join(tracesDir, f), 'utf8'));\n        if (!isFixture(t.file)) traces.push(t);\n      } catch {\n        /* skip unparseable trace - never let one bad file blind the audit */\n      }\n    }\n    \u001b[32m{+const windowedT+}\u001b[0mr\u001b[32m{+ac+}\u001b[0me\u001b[32m{+s =\n      +}\u001b[0mt\u001b[32m{+ypeof options.sinceMs === 'n+}\u001b[0mu\u001b[32m{+mbe+}\u001b[0mr\u001b[32m{+'\n        ? traces.filter((t) => {\n            co+}\u001b[0mn\u001b[32m{+st+}\u001b[0m \u001b[32m{+tsMs = D+}\u001b[0ma\u001b[32m{+te.parse(t.ts ?? '');\n            ret+}\u001b[0mu\u001b[32m{+rn Number.isFinite(tsMs) && tsMs >= options.sinceMs;\n          })\n        : traces;\n    return au+}\u001b[0mditTraces(\u001b[31m[-t-]\u001b[0m\u001b[32m{+windowedT+}\u001b[0mraces\u001b[32m{+, options+}\u001b[0m);\n  }\n  ",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~773 character(s) in `scripts/mcp/atomic-edit/audit-atomicity.mjs` (sub-line atomic edit, expansion 0.65× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

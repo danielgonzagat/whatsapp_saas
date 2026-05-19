@@ -1,0 +1,59 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779029318549_07e5bb79",
+  "ts": "2026-05-17T14:48:38.550Z",
+  "file": "docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "targetUnit": "text_span",
+  "intention": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 198,
+    "lineRewriteSurfaceChars": 184,
+    "expansionFactorAvoided": 0.93,
+    "bytesNet": 14,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "f2d0a23c1c59aa9adfd0ef1c0e2dce038cf46e8a5724b0ab684b572825f9041d",
+  "proposedSha256": "f2d0a23c1c59aa9adfd0ef1c0e2dce038cf46e8a5724b0ab684b572825f9041d",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs (atomic char-level)\u001b[0m\n          : 'No dominant method body detected; use code_outline to choose the next cohesive extracted region.',\n        facadeSurfaceResponse: 'If scorecard reports single-use private helpers in the facade, inline the helper body into its caller or move it into the extracted module.',\n        extractionEconomyResponse: 'If scorecard reports support-module scatter\u001b[31m[-,-]\u001b[0m \u001b[32m{+or do+}\u001b[0mm\u001b[32m{+inant +}\u001b[0me\u001b[32m{+xt+}\u001b[0mr\u001b[31m[-ge-]\u001b[0m\u001b[32m{+action+}\u001b[0m b\u001b[31m[-e-]\u001b[0mlo\u001b[31m[-w--]\u001b[0m\u001b[32m{+at, +}\u001b[0mme\u001b[31m[-dian-]\u001b[0m\u001b[32m{+rge+}\u001b[0m support \u001b[31m[-modules -]\u001b[0minto \u001b[32m{+i+}\u001b[0mt\u001b[31m[-h-]\u001b[0m\u001b[32m{+s d+}\u001b[0me\u001b[32m{+pendency+}\u001b[0m \u001b[32m{+ow+}\u001b[0mne\u001b[31m[-a-]\u001b[0mr\u001b[31m[-est-]\u001b[0m \u001b[31m[-c-]\u001b[0mo\u001b[31m[-he-]\u001b[0m\u001b[32m{+r +}\u001b[0ms\u001b[32m{+pl+}\u001b[0mi\u001b[31m[-ve ex-]\u001b[0mt\u001b[31m[-racted-]\u001b[0m \u001b[31m[-m-]\u001b[0mo\u001b[31m[-du-]\u001b[0m\u001b[32m{+n+}\u001b[0ml\u001b[31m[-e-]\u001b[0m\u001b[32m{+y+}\u001b[0m \u001b[32m{+al+}\u001b[0mo\u001b[31m[-r-]\u001b[0m\u001b[32m{+ng+}\u001b[0m \u001b[31m[-sh-]\u001b[0ma\u001b[32m{+n obse+}\u001b[0mr\u001b[32m{+v+}\u001b[0med \u001b[31m[-suppo-]\u001b[0m\u001b[32m{+call-g+}\u001b[0mr\u001b[31m[-t-]\u001b[0m\u001b[32m{+aph+}\u001b[0m \u001b[31m[-m-]\u001b[0m\u001b[32m{+r+}\u001b[0mo\u001b[31m[-dule-]\u001b[0m\u001b[32m{+ot+}\u001b[0m.',\n      },\n      decompositionTemplate: dominantTemplate.concat(clusterTemplates.length > 0 ? clusterTemplates : fallbackTemplate),",
+  "preservedZones": [
+    {
+      "kind": "unchanged_context",
+      "description": "Everything outside the modified zone is preserved byte-for-byte by the atomic operation."
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "oldTextHash": "0e4d221f5896a913f246dac00baa08fe97cb012923b1b3151763d7172a24d36c",
+      "newTextHash": "f2d0a23c1c59aa9adfd0ef1c0e2dce038cf46e8a5724b0ab684b572825f9041d",
+      "description": "The operation changed the highlighted span shown in inlinePreview."
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~198 character(s) in `docs/ai/atomic-os-benchmark/tools/atomic-refactor-fastpath.cjs` (sub-line atomic edit, expansion 0.93× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

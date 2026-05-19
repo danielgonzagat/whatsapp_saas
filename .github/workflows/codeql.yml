@@ -11,6 +11,7 @@ on:
   pull_request:
     branches:
       - main
+      - chore/purga-total-debt
   schedule:
     - cron: '20 6 * * 1'
 

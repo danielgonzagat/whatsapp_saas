@@ -1,0 +1,37 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1778951776571_df1fa786",
+  "ts": "2026-05-16T17:16:16.571Z",
+  "file": "worker/test/health-monitor.spec.ts",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 124,
+    "lineRewriteSurfaceChars": 124,
+    "expansionFactorAvoided": 1,
+    "bytesNet": -25,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "afterSha256": "30334db1d853c307fdb6210ae72ef8ad198412698227a6f2d4b26a3812eaba7a",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- worker/test/health-monitor.spec.ts (atomic char-level)\u001b[0m\n        const { HealthMonitor } = await import('../providers/health-monitor');\n        await HealthMonitor.reportStatus('ws1', 'BANNED', { reason: 'abuse' });\n        expect(mockRedis.publish).toHaveBeenCalledWith(\u001b[31m[-\n          -]\u001b[0m'events:ban',\u001b[31m[-\n  -]\u001b[0m \u001b[31m[-       -]\u001b[0mexpect.stringContaining('ws1')\u001b[31m[-,\n        -]\u001b[0m);\n      });\n  ",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~124 character(s) in `worker/test/health-monitor.spec.ts` (sub-line atomic edit, expansion 1× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

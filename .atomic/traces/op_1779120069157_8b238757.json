@@ -1,0 +1,59 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779120069157_8b238757",
+  "ts": "2026-05-18T16:01:09.157Z",
+  "file": "scripts/mcp/atomic-edit/server.ts",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "targetUnit": "text_span",
+  "intention": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 2805,
+    "lineRewriteSurfaceChars": 2246,
+    "expansionFactorAvoided": 0.8,
+    "bytesNet": 559,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "bcc022cc8b25000d1274646b28fe4905b71ea2ea14fb98307a381e466bd3aa13",
+  "proposedSha256": "bcc022cc8b25000d1274646b28fe4905b71ea2ea14fb98307a381e466bd3aa13",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- scripts/mcp/atomic-edit/server.ts (atomic char-level)\u001b[0m\n          .describe(\"optimistic-concurrency guard: refuse if the file's sha256 differs\"),\n        preview: z.boolean().optional().describe('dry-run: validate + return diff, do not write'),\n      \u001b[32m{+  verify: z.enum(['typecheck', 'lint']).optional(),\n        lock: z.boolean().optional(),\n      +}\u001b[0m},\n    },\n    async (a) => {\n      try {\n        const { absPath, relPath, repoRoot } = resolveSafeTarget(a.file);\n        const before = readUtf8(absPath);\n        guardSha(before, a.expectedSha256);\n        const r = await editSymbol(relPath, before, a.selector, a.op as SymbolOp, a.code);\n        if (!r.validation.ok) {\n          return fail(\n            `rejected: ${a.op} on ${r.selector} would introduce a syntax error. ${r.validation.introduced ?? ''}`,\n          );\n        }\n        if (r.newText === before)\n          return ok({ ok: true, changed: false, note: 'no change', file: relPath });\n        const symLevel = levelFor(a.preview ?? false);\n        const symInline = characterDiff(before, r.newText, relPath);\n        const symTrace = buildTrace({\n          file: relPath,\n          repoRoot,\n          operator: `edit_symbol:${r.op}`,\n          before,\n          newText: r.newText,\n          inlinePreview: symInline,\n          validation: {\n            language: r.validation.language,\n            before: r.validation.before,\n            after: r.validation.after,\n          },\n          preview: a.preview ?? false,\n          changed: !(a.preview ?? false),\n        });\n        if (a.preview ?? false) {\n          return ok(\n            shapePayload(\n              symLevel,\n              {\n                ok: true,\n                preview: true,\n                changed: false,\n                file: relPath,\n                selector: r.selector,\n                op: r.op,\n              },\n              {\n                inlinePreview: symInline,\n                legacyDiff: previewDiff(before, r.newText, relPath),\n                trace: symTrace,\n              },\n            ),\n          );\n        }\n        \u001b[32m{+let symLockId: string | null = null;\n        if (+}\u001b[0ma\u001b[32m{+.lock) symLockId = au+}\u001b[0mto\u001b[32m{+LockFile(relPath);\n        try {\n          ato+}\u001b[0mmicWrite(absPath, r.newText);\n        \u001b[32m{+  +}\u001b[0mlog(`edit_symbol ${a.op} ${r.selector} in ${relPath}`);\n        \u001b[32m{+  const ve+}\u001b[0mr\u001b[32m{+ifyR+}\u001b[0me\u001b[32m{+sul+}\u001b[0mt\u001b[32m{+ = a.verify\n            ? r+}\u001b[0mu\u001b[32m{+nPostEditVe+}\u001b[0mr\u001b[32m{+ify(relPath, absPath, repoRoot, a.verify)\n            : +}\u001b[0mn\u001b[32m{+ull;\n  +}\u001b[0m \u001b[32m{+       return +}\u001b[0mok(\n          \u001b[32m{+  +}\u001b[0mshapePayload(\n            \u001b[32m{+  +}\u001b[0msymLevel,\n            \u001b[32m{+  +}\u001b[0m{ ok: true, changed: true, file: relPath, selector: r.selector, op: r.op\u001b[32m{+,+}\u001b[0m \u001b[32m{+...(verifyResult ? { verify: verifyResult +}\u001b[0m}\u001b[32m{+ : {}) }+}\u001b[0m,\n            \u001b[32m{+  +}\u001b[0m{\n              \u001b[32m{+  +}\u001b[0minlinePreview: symInline,\n              \u001b[32m{+  +}\u001b[0mlegacyDiff: previewDiff(before, r.newText, relPath),\n              \u001b[32m{+  +}\u001b[0mtrace: symTrace,\n            \u001b[32m{+  +}\u001b[0m},\n          \u001b[32m{+  +}\u001b[0m),\n        \u001b[32m{+  +}\u001b[0m);\u001b[32m{+\n        } finally {\n          if (symLockId) {\n            try { fs.rmdirSync(lockDir(symLockId), { recursive: true }); } catch { /* cleanup */ }\n          }\n        }+}\u001b[0m\n      } catch (e) {\n        return fail(e instanceof Error ? e.message : String(e));",
+  "preservedZones": [
+    {
+      "kind": "unchanged_context",
+      "description": "Everything outside the modified zone is preserved byte-for-byte by the atomic operation."
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "oldTextHash": "432dd801dfa99ef1872dc3f0bc56781c6de62677fa4c0cc2448772dbe4ce387d",
+      "newTextHash": "bcc022cc8b25000d1274646b28fe4905b71ea2ea14fb98307a381e466bd3aa13",
+      "description": "The operation changed the highlighted span shown in inlinePreview."
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~2805 character(s) in `scripts/mcp/atomic-edit/server.ts` (sub-line atomic edit, expansion 0.8× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}
