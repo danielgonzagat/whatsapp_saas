@@ -11,6 +11,7 @@ import { MemoryProjector } from './commem/memory.projector';
 import type { MindPerceptEvent } from './mind.types';
 import type { SpineEventRef } from './mind/mind.types';
 import type {
+  AbiAttention,
   AbiBelief,
   AbiConsolidatedRef,
   AbiEpisodicRef,
@@ -201,6 +202,7 @@ export class BrainCapabilityExecutorService {
     predictions: AbiPredictions;
     pulseTruth: AbiPulseTruth;
     valence: AbiValenceSection;
+    attention: AbiAttention;
   }> {
     const sinceMs = Date.now() - 7 * 24 * 60 * 60 * 1000;
     const events = await this.mindPerception.since(workspaceId, new Date(sinceMs));
@@ -354,19 +356,28 @@ export class BrainCapabilityExecutorService {
     const failures = events.filter((e) => valenceOf(e.kind) === 'negative').length;
     const successRate = evidenceCount > 0 ? (evidenceCount - failures) / evidenceCount : 0;
     const measuredAtIso = new Date().toISOString();
+    const cert =
+      evidenceCount < 20
+        ? { verdict: 'INSUFFICIENT_EVIDENCE' as const, score: 0, measuredAt: measuredAtIso }
+        : {
+            verdict: (successRate >= 0.8 ? 'SIM' : 'NAO') as 'SIM' | 'NAO',
+            score: Number(successRate.toFixed(4)),
+            measuredAt: measuredAtIso,
+          };
+    // Gap #6 fix: noOverclaimStatus + overclaimRisk DERIVED from the
+    // verdict — the previous hardcoded PASS with score 0 was a logical
+    // impossibility (false-safe). No evidence ⇒ WARN + max risk; NAO ⇒
+    // FAIL; only SIM ⇒ PASS.
+    const noOverclaim: 'PASS' | 'WARN' | 'FAIL' =
+      cert.verdict === 'SIM' ? 'PASS' : cert.verdict === 'NAO' ? 'FAIL' : 'WARN';
+    const overclaimRisk =
+      cert.verdict === 'INSUFFICIENT_EVIDENCE' ? 1 : Number((1 - successRate).toFixed(4));
     const pulseTruth: AbiPulseTruth = {
-      noOverclaimStatus: 'PASS',
+      noOverclaimStatus: noOverclaim,
       capabilityHealthScore: Number(successRate.toFixed(4)),
       gates: [],
-      certificationVerdict:
-        evidenceCount < 20
-          ? { verdict: 'INSUFFICIENT_EVIDENCE', score: 0, measuredAt: measuredAtIso }
-          : {
-              verdict: successRate >= 0.8 ? 'SIM' : 'NAO',
-              score: Number(successRate.toFixed(4)),
-              measuredAt: measuredAtIso,
-            },
-      overclaimRisk: 0,
+      certificationVerdict: cert,
+      overclaimRisk,
     };
 
     // Real valence (gap #6): recentTrace + aggregatedMood from the live
@@ -395,16 +406,72 @@ export class BrainCapabilityExecutorService {
       },
     };
 
+    // Attention (gap: attention.candidates was []): rank recent events
+    // by recency × valence magnitude so Kloel can prioritize what to
+    // focus on (hottest conversation/lead first). 100% real, additive.
+    const nowMs = Date.now();
+    const valWeight = (v: AbiValence): number =>
+      v === 'positive' ? 1 : v === 'negative' ? 0.9 : v === 'ambiguous' ? 0.6 : 0.3;
+    const attnRanked = ordered.slice(0, 40).map((e) => {
+      const ageH = Math.max(0, (nowMs - e.occurredAt.getTime()) / 3_600_000);
+      const recency = 1 / (1 + ageH / 24);
+      return {
+        targetType: e.kind.split(/[._]/)[0] || 'event',
+        targetId: e.subject || e.kind,
+        weight: Number((recency * valWeight(valenceOf(e.kind))).toFixed(4)),
+      };
+    });
+    attnRanked.sort((a, b) => b.weight - a.weight);
+    const attnCandidates = attnRanked.slice(0, 15);
+    const attention: AbiAttention = {
+      candidates: attnCandidates,
+      ...(attnCandidates[0]
+        ? {
+            focal: {
+              targetType: attnCandidates[0].targetType,
+              targetId: attnCandidates[0].targetId,
+              reason: 'highest recency×valence salience',
+              sinceMs: nowMs,
+            },
+          }
+        : {}),
+    };
+
+    // Gap #9: ingest the real workspace catalog into BELIEFS (source +
+    // confidence + date), so product facts are part of the organism —
+    // not just external context. truthMode 'observed' (catalog is fact).
+    let catalogBeliefs: AbiBelief[] = [];
+    try {
+      const products = await this.prisma.product.findMany({
+        where: { workspaceId, active: true },
+        select: { id: true, name: true, price: true, updatedAt: true },
+        orderBy: { updatedAt: 'desc' },
+        take: 25,
+      });
+      catalogBeliefs = products.map((p) => ({
+        beliefId: `blf_catalog_${p.id.slice(0, 16)}`,
+        subject: 'catalog',
+        proposition: `produto "${p.name}" ativo no workspace (preço R$ ${p.price})`,
+        confidence: 1,
+        evidenceCount: 1,
+        lastUpdated: p.updatedAt.toISOString(),
+        truthMode: 'observed' as const,
+      }));
+    } catch {
+      catalogBeliefs = [];
+    }
+
     return {
       recentSalientEvents,
       workingMemory,
       episodicRefs,
       consolidatedRefs: [...consolidatedRefs, ...consolidatedFromBeliefs].slice(0, 50),
       dissolution,
-      beliefs,
+      beliefs: [...catalogBeliefs, ...beliefs].slice(0, 40),
       predictions,
       pulseTruth,
       valence,
+      attention,
     };
   }
 
