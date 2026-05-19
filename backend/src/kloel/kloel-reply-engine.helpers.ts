@@ -386,12 +386,3 @@ function filterChatToolsByAllowedTools(allowedTools?: string[]): typeof KLOEL_CH
   });
 }
 
-export function buildKloelDashboardPrompt(params: {
-  currentDate: string;
-  userName?: string | null;
-  workspaceName?: string | null;
-  expertiseLevel?: ExpertiseLevel;
-}): string {
-  void params;
-  return CANONICAL_FALLBACK_SYSTEM_PROMPT;
-}

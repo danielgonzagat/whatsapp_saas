@@ -36,12 +36,12 @@ export type AbiValence = 'positive' | 'negative' | 'neutral' | 'ambiguous';
 /**
  * Lineage status as seen by the consumer (mirrors PCI.3).
  */
-export type AbiLineageStatus = 'intact' | 'compromised';
+type AbiLineageStatus = 'intact' | 'compromised';
 
 // ---------------------------------------------------------------------------
 // 3.2 lineage
 // ---------------------------------------------------------------------------
-export interface AbiLineage {
+interface AbiLineage {
   readonly canonicalName: 'Kloel';
   readonly genesisEventId: string;
   readonly lineageStatus: AbiLineageStatus;
@@ -55,7 +55,7 @@ export interface AbiLineage {
 // ---------------------------------------------------------------------------
 // 3.3 identityProjection
 // ---------------------------------------------------------------------------
-export interface AbiIdentityProjection {
+interface AbiIdentityProjection {
   readonly audience: AbiAudience;
   readonly currentMaturity: AbiCapabilityMaturity;
   readonly truthMode: AbiTruthMode;
@@ -80,7 +80,7 @@ export interface AbiPerceptionSnapshot {
   readonly activeStage?: string;
 }
 
-export interface AbiPerception {
+interface AbiPerception {
   readonly currentSnapshot: AbiPerceptionSnapshot;
   readonly recentSalientEvents: readonly AbiSalientEvent[];
 }
@@ -101,7 +101,7 @@ export interface AbiBelief {
 // ---------------------------------------------------------------------------
 // 3.6 predictions
 // ---------------------------------------------------------------------------
-export interface AbiActivePrediction {
+interface AbiActivePrediction {
   readonly predictionId: string;
   readonly about: string;
   readonly expectedOutcome: string;
@@ -109,7 +109,7 @@ export interface AbiActivePrediction {
   readonly horizonHours: number;
 }
 
-export interface AbiSurprise {
+interface AbiSurprise {
   readonly predictionId: string;
   readonly expected: string;
   readonly observed: string;
@@ -125,7 +125,7 @@ export interface AbiPredictions {
 // ---------------------------------------------------------------------------
 // 3.7 attention
 // ---------------------------------------------------------------------------
-export interface AbiAttentionFocal {
+interface AbiAttentionFocal {
   readonly targetType: string;
   readonly targetId: string;
   readonly reason: string;
@@ -166,7 +166,7 @@ export interface AbiConsolidatedRef {
   readonly consolidatedAt: string;
 }
 
-export interface AbiMemory {
+interface AbiMemory {
   readonly workingMemory: readonly AbiWorkingMemoryItem[];
   readonly episodicRefs: readonly AbiEpisodicRef[];
   readonly consolidatedRefs: readonly AbiConsolidatedRef[];
@@ -175,19 +175,19 @@ export interface AbiMemory {
 // ---------------------------------------------------------------------------
 // 3.9 capabilities
 // ---------------------------------------------------------------------------
-export interface AbiAvailableCapability {
+interface AbiAvailableCapability {
   readonly capabilityId: string;
   readonly maturity: AbiCapabilityMaturity;
   readonly runtimeEvidencePct: number;
 }
 
-export interface AbiRestrictedCapability {
+interface AbiRestrictedCapability {
   readonly capabilityId: string;
   readonly reason: string;
   readonly restrictedAt: string;
 }
 
-export interface AbiCapabilities {
+interface AbiCapabilities {
   readonly available: readonly AbiAvailableCapability[];
   readonly restricted: readonly AbiRestrictedCapability[];
 }
@@ -210,7 +210,7 @@ export interface AbiAggregatedMood {
   readonly windowHours: number;
 }
 
-export interface AbiValenceSection {
+interface AbiValenceSection {
   readonly recentTrace: readonly AbiValenceTrace[];
   readonly aggregatedMood: AbiAggregatedMood;
 }
@@ -218,14 +218,14 @@ export interface AbiValenceSection {
 // ---------------------------------------------------------------------------
 // 3.11 pulseTruth
 // ---------------------------------------------------------------------------
-export interface AbiPulseGateSnapshot {
+interface AbiPulseGateSnapshot {
   readonly gateName: string;
   readonly status: 'PASS' | 'FAIL';
   readonly mode: 'log_only' | 'hard_fail';
   readonly lastChecked: string;
 }
 
-export interface AbiCertificationVerdict {
+interface AbiCertificationVerdict {
   readonly verdict: 'SIM' | 'NAO' | 'INSUFFICIENT_EVIDENCE';
   readonly score: number;
   readonly measuredAt: string;
@@ -302,7 +302,7 @@ export interface AbiRoleContext {
 // ---------------------------------------------------------------------------
 // 3.15 currentInput
 // ---------------------------------------------------------------------------
-export interface AbiInputParsed {
+interface AbiInputParsed {
   readonly intent?: string;
   readonly entities?: readonly { readonly type: string; readonly value: string }[];
   readonly sentiment?: 'positive' | 'negative' | 'neutral' | 'mixed';
@@ -354,5 +354,3 @@ export const ABI_REQUIRED_KEYS = [
   'pulseTruth',
   'currentInput',
 ] as const;
-
-export type AbiRequiredKey = (typeof ABI_REQUIRED_KEYS)[number];

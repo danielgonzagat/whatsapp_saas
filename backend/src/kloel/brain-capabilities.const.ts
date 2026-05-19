@@ -18,5 +18,3 @@ export const OPERATOR_CAPABILITIES = [
   'inspect_self',
   'inspect_runtime',
 ] as const;
-
-export type OperatorCapability = (typeof OPERATOR_CAPABILITIES)[number];
