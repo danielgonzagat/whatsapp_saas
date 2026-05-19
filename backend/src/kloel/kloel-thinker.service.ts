@@ -371,6 +371,33 @@ export class KloelThinkerService {
         fullResponse = this.replyEngine.unavailableMessage;
       }
       await finalizeSuccessfulReply(fullResponse, streamedReply.estimatedTokens, branchCtx);
+      // Persist this conversational turn to the cognitive spine so it
+      // becomes CROSS-SESSION memory (MindPerceptionService reads
+      // autopilotEvent → working/episodic/consolidated/beliefs → ABI).
+      // B4: memory is a structural effect of the operation, not an LLM
+      // decision. Fire-and-forget — never blocks or fails the reply.
+      if (workspaceId) {
+        void this.prisma.autopilotEvent
+          .create({
+            data: {
+              workspaceId,
+              intent: 'kloel_chat_turn',
+              action: 'kloel.chat.turn',
+              status: 'executed',
+              meta: {
+                userPreview: message.slice(0, 280),
+                replyPreview: fullResponse.slice(0, 280),
+                mode,
+                conversationId: conversationId ?? null,
+              },
+            },
+          })
+          .catch((e: unknown) => {
+            this.logger.warn(
+              `chat-turn spine persist failed: ${e instanceof Error ? e.message : 'unknown'}`,
+            );
+          });
+      }
     } catch (error: unknown) {
       this.logger.error('Erro no KLOEL Thinker:', error);
       if (!isClientDisconnected()) {
