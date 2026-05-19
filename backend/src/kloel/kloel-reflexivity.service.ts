@@ -83,9 +83,7 @@ export class KloelReflexivityService {
     const successfulOutcomes = mindPolicies.filter(
       (p) => p.outcome !== null && p.outcome > 0.5,
     ).length;
-    const failedOutcomes = mindPolicies.filter(
-      (p) => p.outcome !== null && p.outcome < 0.5,
-    ).length;
+    const failedOutcomes = mindPolicies.filter((p) => p.outcome !== null && p.outcome < 0.5).length;
 
     const successRate = totalDecisions > 0 ? successfulOutcomes / totalDecisions : 0;
 
@@ -102,9 +100,12 @@ export class KloelReflexivityService {
       .sort((a, b) => b[1].count - a[1].count)
       .slice(0, 10)
       .map(([pattern, data]) => {
-        const outcomeLabel = data.lastOutcome !== null
-          ? data.lastOutcome > 0.5 ? 'positive' : 'negative'
-          : 'unknown';
+        const outcomeLabel =
+          data.lastOutcome !== null
+            ? data.lastOutcome > 0.5
+              ? 'positive'
+              : 'negative'
+            : 'unknown';
         return { pattern, count: data.count, outcome: outcomeLabel };
       });
 
@@ -163,9 +164,7 @@ export class KloelReflexivityService {
         take: 100,
       });
       totalDecisions += policies.length;
-      totalSuccess += policies.filter(
-        (p) => p.outcome !== null && p.outcome > 0.5,
-      ).length;
+      totalSuccess += policies.filter((p) => p.outcome !== null && p.outcome > 0.5).length;
     }
 
     const aggregateSuccessRate = totalDecisions > 0 ? totalSuccess / totalDecisions : 0;

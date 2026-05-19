@@ -214,7 +214,7 @@ export class KloelToolDispatcherService {
           return await this.requestHighRiskApproval(workspaceId, toolName, args, userId);
         case 'read_source_file':
           return await this.codeToolsService.toolReadSourceFile(
-            typeof args.path === "string" ? args.path : "",
+            typeof args.path === 'string' ? args.path : '',
             typeof args.startLine === 'number' ? args.startLine : undefined,
             typeof args.endLine === 'number' ? args.endLine : undefined,
           );
@@ -228,7 +228,9 @@ export class KloelToolDispatcherService {
             typeof args.glob === 'string' ? args.glob : undefined,
           );
         case 'code_outline':
-          return await this.codeToolsService.toolCodeOutline(typeof args.path === "string" ? args.path : "");
+          return await this.codeToolsService.toolCodeOutline(
+            typeof args.path === 'string' ? args.path : '',
+          );
         case 'read_prisma_schema':
           return await this.codeToolsService.toolReadPrismaSchema();
         case 'git_log':

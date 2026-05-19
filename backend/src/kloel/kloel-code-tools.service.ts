@@ -32,13 +32,20 @@ interface ToolResult {
 export class KloelCodeToolsService {
   private readonly logger = StructuredLogger.from(KloelCodeToolsService.name);
 
-  async toolReadSourceFile(relPath: string, startLine?: number, endLine?: number): Promise<ToolResult> {
+  async toolReadSourceFile(
+    relPath: string,
+    startLine?: number,
+    endLine?: number,
+  ): Promise<ToolResult> {
     try {
       const absPath = repoPath(relPath);
       const stat = await fs.stat(absPath);
       if (!stat.isFile()) return { success: false, error: 'not_a_file' };
       if (stat.size > MAX_FILE_BYTES) {
-        return { success: false, error: `file_too_large: ${stat.size} bytes, max ${MAX_FILE_BYTES}` };
+        return {
+          success: false,
+          error: `file_too_large: ${stat.size} bytes, max ${MAX_FILE_BYTES}`,
+        };
       }
       let content = await fs.readFile(absPath, 'utf-8');
       const lines = content.split('\n');
@@ -46,7 +53,10 @@ export class KloelCodeToolsService {
       if (startLine && endLine) {
         const s = Math.max(1, startLine);
         const e = Math.min(totalLines, endLine);
-        content = lines.slice(s - 1, e).map((l, i) => `${s + i}: ${l}`).join('\n');
+        content = lines
+          .slice(s - 1, e)
+          .map((l, i) => `${s + i}: ${l}`)
+          .join('\n');
       }
       return {
         success: true,
@@ -113,10 +123,9 @@ export class KloelCodeToolsService {
   async toolGitLog(count?: number): Promise<ToolResult> {
     try {
       const n = count && count > 0 ? Math.min(count, GIT_LOG_MAX_COUNT) : 10;
-      const { stdout } = await exec(
-        `cd '${REPO_ROOT}' && git log --oneline -${n}`,
-        { timeout: 10_000 },
-      );
+      const { stdout } = await exec(`cd '${REPO_ROOT}' && git log --oneline -${n}`, {
+        timeout: 10_000,
+      });
       const entries = stdout.trim().split('\n').filter(Boolean);
       return { success: true, count: entries.length, entries };
     } catch (err: unknown) {
@@ -128,10 +137,9 @@ export class KloelCodeToolsService {
   async toolGitDiff(branch?: string): Promise<ToolResult> {
     try {
       const target = branch || 'HEAD~1';
-      const { stdout } = await exec(
-        `cd '${REPO_ROOT}' && git diff ${target} --stat`,
-        { timeout: 10_000 },
-      );
+      const { stdout } = await exec(`cd '${REPO_ROOT}' && git diff ${target} --stat`, {
+        timeout: 10_000,
+      });
       return { success: true, target, summary: stdout.trim() || 'no changes' };
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
@@ -141,10 +149,7 @@ export class KloelCodeToolsService {
 
   async toolGitStatus(): Promise<ToolResult> {
     try {
-      const { stdout } = await exec(
-        `cd '${REPO_ROOT}' && git status --short`,
-        { timeout: 10_000 },
-      );
+      const { stdout } = await exec(`cd '${REPO_ROOT}' && git status --short`, { timeout: 10_000 });
       const files = stdout.trim().split('\n').filter(Boolean);
       return { success: true, fileCount: files.length, files };
     } catch (err: unknown) {
@@ -160,15 +165,35 @@ export class KloelCodeToolsService {
       const lines = content.split('\n');
       const symbols: Array<{ name: string; kind: string; line: number }> = [];
 
-      const patterns: Array<{ regex: RegExp; kind: string; extract: (m: RegExpMatchArray) => string }> = [
-        { regex: /^\s*export\s+(async\s+)?function\s+(\w+)/, kind: 'function', extract: (m) => m[2] ?? 'unknown' },
-        { regex: /^\s*(async\s+)?function\s+(\w+)/, kind: 'function', extract: (m) => m[2] ?? 'unknown' },
+      const patterns: Array<{
+        regex: RegExp;
+        kind: string;
+        extract: (m: RegExpMatchArray) => string;
+      }> = [
+        {
+          regex: /^\s*export\s+(async\s+)?function\s+(\w+)/,
+          kind: 'function',
+          extract: (m) => m[2] ?? 'unknown',
+        },
+        {
+          regex: /^\s*(async\s+)?function\s+(\w+)/,
+          kind: 'function',
+          extract: (m) => m[2] ?? 'unknown',
+        },
         { regex: /^\s*export\s+class\s+(\w+)/, kind: 'class', extract: (m) => m[1] ?? 'unknown' },
         { regex: /^\s*class\s+(\w+)/, kind: 'class', extract: (m) => m[1] ?? 'unknown' },
-        { regex: /^\s*export\s+interface\s+(\w+)/, kind: 'interface', extract: (m) => m[1] ?? 'unknown' },
+        {
+          regex: /^\s*export\s+interface\s+(\w+)/,
+          kind: 'interface',
+          extract: (m) => m[1] ?? 'unknown',
+        },
         { regex: /^\s*export\s+type\s+(\w+)/, kind: 'type', extract: (m) => m[1] ?? 'unknown' },
         { regex: /^\s*export\s+const\s+(\w+)/, kind: 'const', extract: (m) => m[1] ?? 'unknown' },
-        { regex: /^\s*(?:public|private|protected)?\s*(?:async\s+)?(\w+)\s*\(/, kind: 'method', extract: (m) => m[1] ?? 'unknown' },
+        {
+          regex: /^\s*(?:public|private|protected)?\s*(?:async\s+)?(\w+)\s*\(/,
+          kind: 'method',
+          extract: (m) => m[1] ?? 'unknown',
+        },
         { regex: /@Injectable\(\)/, kind: 'decorator', extract: () => 'Injectable' },
         { regex: /@Controller\(/, kind: 'decorator', extract: () => 'Controller' },
         { regex: /@Module\(/, kind: 'decorator', extract: () => 'Module' },
@@ -232,10 +257,9 @@ export class KloelCodeToolsService {
       for (const s of scopes) {
         if (!['backend', 'frontend', 'worker'].includes(s)) continue;
         try {
-          const { stdout, stderr } = await exec(
-            `cd '${REPO_ROOT}/${s}' && npx tsc --noEmit 2>&1`,
-            { timeout: 60_000 },
-          );
+          const { stdout, stderr } = await exec(`cd '${REPO_ROOT}/${s}' && npx tsc --noEmit 2>&1`, {
+            timeout: 60_000,
+          });
           results[s] = stderr || stdout || 'clean';
         } catch (e: unknown) {
           const errStr = e instanceof Error ? e.message : String(e);
@@ -254,10 +278,16 @@ export class KloelCodeToolsService {
       const schemaPath = path.join(REPO_ROOT, 'backend', 'prisma', 'schema.prisma');
       const content = await fs.readFile(schemaPath, 'utf-8');
       const modelMatches = [...content.matchAll(/^model\s+(\w+)\s*\{/gm)];
-      const models = modelMatches.map((m) => ({ name: m[1], line: (content.slice(0, m.index!).split('\n').length) }));
+      const models = modelMatches.map((m) => ({
+        name: m[1],
+        line: content.slice(0, m.index!).split('\n').length,
+      }));
 
       const enumMatches = [...content.matchAll(/^enum\s+(\w+)\s*\{/gm)];
-      const enums = enumMatches.map((m) => ({ name: m[1], line: (content.slice(0, m.index!).split('\n').length) }));
+      const enums = enumMatches.map((m) => ({
+        name: m[1],
+        line: content.slice(0, m.index!).split('\n').length,
+      }));
 
       return {
         success: true,
