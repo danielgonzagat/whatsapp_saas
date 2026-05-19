@@ -36,6 +36,21 @@ interface JestOutput {
   testResults?: Array<{ name: string; status: string }>;
 }
 
+interface EslintMessage {
+  line: number;
+  column: number;
+  ruleId: string | null;
+  message: string;
+  severity: number;
+}
+
+interface EslintFileResult {
+  errorCount: number;
+  warningCount: number;
+  messages: EslintMessage[];
+}
+
+
 @Injectable()
 export class KloelCodeToolsService {
   private readonly logger = StructuredLogger.from(KloelCodeToolsService.name);
@@ -330,21 +345,31 @@ export class KloelCodeToolsService {
         `cd '${REPO_ROOT}' && npx eslint '${absPath}' --format json --max-warnings 999 2>&1`,
         { timeout: 30_000, maxBuffer: 1024 * 1024 },
       );
-      if (stderr && !stdout) return { success: false, error: stderr.trim() };
-      const results = JSON.parse(stdout);
+      if (stderr && !stdout) {
+        return { success: false, error: stderr.trim() };
+      }
+      const results = JSON.parse(stdout) as EslintFileResult[];
       const fileResult = Array.isArray(results) ? results[0] : results;
       return {
         success: true,
         file: relPath,
         errorCount: fileResult?.errorCount ?? 0,
         warningCount: fileResult?.warningCount ?? 0,
-        messages: (fileResult?.messages ?? []).map((m: { line: number; column: number; ruleId: string; message: string; severity: number }) => ({
-          line: m.line,
-          column: m.column,
-          ruleId: m.ruleId ?? 'unknown',
-          message: m.message,
-          severity: m.severity === 2 ? 'error' : 'warning',
-        })),
+        messages: (fileResult?.messages ?? []).map(
+          (m: {
+            line: number;
+            column: number;
+            ruleId: string;
+            message: string;
+            severity: number;
+          }) => ({
+            line: m.line,
+            column: m.column,
+            ruleId: m.ruleId ?? 'unknown',
+            message: m.message,
+            severity: m.severity === 2 ? 'error' : 'warning',
+          }),
+        ),
       };
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
@@ -361,23 +386,53 @@ export class KloelCodeToolsService {
 
       for (let i = 0; i < lines.length; i++) {
         const line = lines[i];
-        if (!line) continue;
+        if (!line) {
+          continue;
+        }
         const ln = i + 1;
 
         if (/\/\/\s*TODO|FIXME|HACK|XXX/.test(line)) {
-          issues.push({ line: ln, severity: 'info', kind: 'todo_marker', detail: line.trim().slice(0, 120) });
+          issues.push({
+            line: ln,
+            severity: 'info',
+            kind: 'todo_marker',
+            detail: line.trim().slice(0, 120),
+          });
         }
         if (/console\.(log|warn|error|debug)\(/.test(line) && !/logger\.|this\.logger/.test(line)) {
-          issues.push({ line: ln, severity: 'warning', kind: 'raw_console', detail: 'Direct console call — use StructuredLogger' });
+          issues.push({
+            line: ln,
+            severity: 'warning',
+            kind: 'raw_console',
+            detail: 'Direct console call — use StructuredLogger',
+          });
         }
         if (/\bas any\b/.test(line)) {
-          issues.push({ line: ln, severity: 'warning', kind: 'explicit_any', detail: line.trim().slice(0, 120) });
+          issues.push({
+            line: ln,
+            severity: 'warning',
+            kind: 'explicit_any',
+            detail: line.trim().slice(0, 120),
+          });
         }
-        if (/\/\/\s*@ts-ignore|@ts-expect-error/.test(line) && !/forbiddenPattern|detect/i.test(line)) {
-          issues.push({ line: ln, severity: 'error', kind: 'ts_bypass', detail: line.trim().slice(0, 120) });
+        if (
+          /\/\/\s*@ts-ignore|@ts-expect-error/.test(line) &&
+          !/forbiddenPattern|detect/i.test(line)
+        ) {
+          issues.push({
+            line: ln,
+            severity: 'error',
+            kind: 'ts_bypass',
+            detail: line.trim().slice(0, 120),
+          });
         }
         if (/\.only\(/.test(line) && /describe|it|test/.test(line)) {
-          issues.push({ line: ln, severity: 'error', kind: 'focused_test', detail: 'Test.only() will skip other tests in suite' });
+          issues.push({
+            line: ln,
+            severity: 'error',
+            kind: 'focused_test',
+            detail: 'Test.only() will skip other tests in suite',
+          });
         }
       }
 
@@ -386,7 +441,9 @@ export class KloelCodeToolsService {
       for (const pattern of deadCodePatterns) {
         for (const m of content.matchAll(pattern)) {
           const name = m[2] ?? m[1];
-          if (name) exportedNames.add(name);
+          if (name) {
+            exportedNames.add(name);
+          }
         }
       }
 
