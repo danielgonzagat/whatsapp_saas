@@ -38,7 +38,6 @@ interface EslintFileResult {
 
 @Injectable()
 export class KloelCodeAnalysisService {
-
   async toolCodeLint(relPath: string): Promise<ToolResult> {
     try {
       const absPath = repoPath(relPath);
