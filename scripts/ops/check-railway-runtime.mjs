@@ -65,9 +65,7 @@ const serviceInputs = [
     key: 'backend',
     id: process.env.RAILWAY_BACKEND_SERVICE_ID || '',
     name:
-      process.env.RAILWAY_BACKEND_SERVICE_NAME ||
-      process.env.RAILWAY_BACKEND_SERVICE ||
-      'Backend',
+      process.env.RAILWAY_BACKEND_SERVICE_NAME || process.env.RAILWAY_BACKEND_SERVICE || 'Backend',
   },
   {
     key: 'worker',
@@ -120,19 +118,35 @@ function requiredEnvFailures() {
 }
 
 async function createRailwayClient() {
+  const authCandidates = [
+    { name: 'account-token', headers: { Authorization: `Bearer ${projectToken}` } },
+    { name: 'project-token', headers: { 'Project-Access-Token': projectToken } },
+  ];
+
   let lastError = null;
   for (const endpoint of RAILWAY_GRAPHQL_ENDPOINTS) {
-    try {
-      const data = await railwayRequest(endpoint, 'query { projectToken { projectId } }', {}, projectToken);
-      const tokenProjectId = data?.projectToken?.projectId;
-      if (tokenProjectId && tokenProjectId !== projectId) {
-        throw new Error(
-          `project token belongs to ${tokenProjectId}, expected RAILWAY_PROJECT_ID=${projectId}`,
+    for (const auth of authCandidates) {
+      try {
+        const data = await railwayRequest(
+          endpoint,
+          `query($projectId: String!) {
+            project(id: $projectId) {
+              id
+            }
+          }`,
+          { projectId },
+          auth.headers,
         );
+        const remoteProjectId = data?.project?.id;
+        if (remoteProjectId !== projectId) {
+          throw new Error(
+            `Railway ${auth.name} resolved project ${remoteProjectId || '<none>'}, expected RAILWAY_PROJECT_ID=${projectId}`,
+          );
+        }
+        return { endpoint, authHeaders: auth.headers, authMode: auth.name };
+      } catch (error) {
+        lastError = error;
       }
-      return { endpoint };
-    } catch (error) {
-      lastError = error;
     }
   }
   throw lastError || new Error('Railway API connection failed');
@@ -233,7 +247,9 @@ async function assertServiceDeployment(client, service, deployments) {
       );
     }
   } else if (!TERMINAL_GOOD_STATUSES.has(latest.status)) {
-    throw new Error(`${service.name} latest deployment ${latest.id} has unsupported status ${latest.status}`);
+    throw new Error(
+      `${service.name} latest deployment ${latest.id} has unsupported status ${latest.status}`,
+    );
   }
 
   await assertDeploymentLogs(client, service, active);
@@ -297,9 +313,7 @@ async function assertDeploymentLogs(client, service, deployment) {
 
 async function assertHealthEndpoints() {
   const backendHealthUrl =
-    process.env.RAILWAY_BACKEND_HEALTH_URL ||
-    process.env.PRODUCTION_BACKEND_HEALTHCHECK_URL ||
-    '';
+    process.env.RAILWAY_BACKEND_HEALTH_URL || process.env.PRODUCTION_BACKEND_HEALTHCHECK_URL || '';
   const frontendHealthUrl =
     process.env.RAILWAY_FRONTEND_HEALTH_URL ||
     process.env.PRODUCTION_FRONTEND_HEALTHCHECK_URL ||
@@ -351,5 +365,5 @@ function assertSystemHealth(url, system) {
 }
 
 async function gql(client, query, variables = {}) {
-  return railwayRequest(client.endpoint, query, variables, projectToken);
+  return railwayRequest(client.endpoint, query, variables, client.authHeaders);
 }

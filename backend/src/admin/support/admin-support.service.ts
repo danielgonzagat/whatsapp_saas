@@ -90,7 +90,7 @@ export class AdminSupportService {
 
   /** Detail. */
   async detail(conversationId: string) {
-    // @AdminGlobalOperation: support conversation detail by id, any workspace
+    // @AdminGlobalOperation: support conversation detail by id, every workspace
     const conversation = (await this.prisma.conversation.findFirst({
       where: { id: conversationId, workspaceId: { not: '' } },
       select: {

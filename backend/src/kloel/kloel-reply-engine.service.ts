@@ -9,10 +9,12 @@ import { type KloelStreamEvent } from './kloel-stream-events';
 import { KloelThreadService } from './kloel-thread.service';
 import { KloelToolRouter } from './kloel-tool-router';
 import { KloelWorkspaceContextService } from './kloel-workspace-context.service';
-import { buildKloelResponseEnginePrompt } from './kloel.prompts';
+import { CANONICAL_FALLBACK_SYSTEM_PROMPT } from './kloel.prompts';
 import { MarketingSkillService } from './marketing-skills/marketing-skill.service';
 import { MindService } from './mind.service';
 import { UnifiedAgentService } from './unified-agent.service';
+import { AbiBuilderService } from './abi/abi-builder.service';
+import { validateAbiPayload } from './abi/abi-validator';
 import {
   WHITESPACE_RE,
   RELAT_O__RIO_DOCUMENTO_RE,
@@ -46,6 +48,7 @@ export class KloelReplyEngineService {
     private readonly unifiedAgentService: UnifiedAgentService,
     @Optional() private readonly marketingSkillService?: MarketingSkillService,
     @Optional() private readonly mindService?: MindService,
+    @Optional() private readonly abiBuilder?: AbiBuilderService,
   ) {
     this.openai = createTextLlmClient(undefined, { timeout: 60_000, maxRetries: 0 });
     this.toolRouter = new KloelToolRouter(
@@ -74,15 +77,8 @@ export class KloelReplyEngineService {
     workspaceName?: string | null;
     expertiseLevel?: ExpertiseLevel;
   }): string {
-    return buildKloelResponseEnginePrompt({
-      currentDate: new Intl.DateTimeFormat('pt-BR', {
-        dateStyle: 'full',
-        timeZone: 'America/Sao_Paulo',
-      }).format(new Date()),
-      userName: this.contextFormatter.sanitizeUserNameForAssistant(params?.userName),
-      workspaceName: 'Workspace',
-      ...(params?.expertiseLevel !== undefined ? { expertiseLevel: params.expertiseLevel } : {}),
-    });
+    void params;
+    return CANONICAL_FALLBACK_SYSTEM_PROMPT;
   }
 
   detectExpertiseLevel(message: string, history: ReplyMessage[] = []): ExpertiseLevel {
@@ -177,7 +173,7 @@ export class KloelReplyEngineService {
     return reason === KLOEL_STREAM_ABORT_REASON_CLIENT_DISCONNECTED;
   }
 
-  buildChatModelMessages(params: {
+  async buildChatModelMessages(params: {
     systemPrompt: string;
     dynamicContext: string;
     marketingPromptAddendum?: string | null;
@@ -189,21 +185,85 @@ export class KloelReplyEngineService {
       tool_calls?: OpenAI.Chat.ChatCompletionAssistantMessageParam['tool_calls'];
     };
     toolMessages?: Array<{ role?: 'tool'; tool_call_id: string; name: string; content: string }>;
-  }): ChatCompletionMessageParam[] {
-    const msgs: ChatCompletionMessageParam[] = [
-      { role: 'system', content: params.systemPrompt },
-      { role: 'system', content: params.dynamicContext },
-    ];
-    if (params.marketingPromptAddendum) {
-      msgs.push({ role: 'system', content: params.marketingPromptAddendum });
+  }): Promise<ChatCompletionMessageParam[]> {
+    const currentInput = {
+      raw: params.userMessage,
+      channel: 'web',
+      arrivalTimestamp: new Date().toISOString(),
+    };
+    void params.systemPrompt;
+    let cognitiveState: Record<string, unknown> = {
+      abiStatus: this.abiBuilder ? 'unavailable_or_invalid' : 'builder_not_injected',
+      audience: 'public',
+      perceptionSnapshot: { channel: 'web' },
+    };
+
+    if (this.abiBuilder) {
+      try {
+        const abiResult = await this.abiBuilder.build({
+          audience: 'public',
+          currentInput,
+          perceptionSnapshot: {
+            channel: 'web',
+          },
+        });
+
+        if (abiResult.status !== 'ok') {
+          this.logger.warn(
+            `ABI build failed: ${abiResult.reason}, using structured reply fallback`,
+          );
+        } else {
+          const validation = validateAbiPayload(abiResult.abi);
+
+          if (validation.status === 'FAIL') {
+            this.logger.warn(
+              `ABI validation failed: ${JSON.stringify(validation.issues)}, using structured reply fallback`,
+            );
+          } else {
+            cognitiveState = { ...abiResult.abi };
+          }
+        }
+      } catch (error: unknown) {
+        const msg =
+          error instanceof Error
+            ? error.message
+              : typeof error === 'string'
+                ? error
+                : 'unknown error';
+        this.logger.warn(`ABI build exception: ${msg}, using structured reply fallback`);
+      }
     }
+
+    const msgs: ChatCompletionMessageParam[] = [
+      {
+        role: 'user',
+        content: JSON.stringify({
+          runtimeContext: {
+            dynamicContext: params.dynamicContext,
+            marketingContext: params.marketingPromptAddendum ?? null,
+          },
+        }),
+      },
+    ];
     if (params.summaryMessage) {
-      msgs.push(params.summaryMessage);
+      msgs.push({
+        role: 'user',
+        content: JSON.stringify({
+          conversationSummary:
+            typeof params.summaryMessage.content === 'string' ? params.summaryMessage.content : '',
+        }),
+      });
     }
     for (const entry of params.recentMessages) {
       msgs.push({ role: entry.role as 'user' | 'assistant', content: entry.content });
     }
-    msgs.push({ role: 'user', content: params.userMessage });
+    msgs.push({
+      role: 'user',
+      content: JSON.stringify({
+        cognitiveState,
+        currentInput,
+      }),
+    });
     if (params.assistantMessage) {
       const toolCalls = Array.isArray(params.assistantMessage.tool_calls)
         ? params.assistantMessage.tool_calls
@@ -345,7 +405,7 @@ export class KloelReplyEngineService {
       shouldUseLongFormBudget: (m) => this.shouldUseLongFormBudget(m),
       buildMarketingPromptAddendum: (wid, mode, msg) =>
         this.buildMarketingPromptAddendum(wid, mode, msg),
-      buildChatModelMessages: (p) => this.buildChatModelMessages(p),
+      buildChatModelMessages: async (p) => this.buildChatModelMessages(p),
       buildDynamicRuntimeContext: (p) => this.buildDynamicRuntimeContext(p),
     });
   }

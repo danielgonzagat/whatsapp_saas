@@ -1,3 +1,4 @@
+import { expectValueOf } from '../../test/expect-value-of';
 import { Test, type TestingModule } from '@nestjs/testing';
 
 import { FinancialAlertService } from '../common/financial-alert.service';
@@ -120,7 +121,7 @@ describe('MarketplaceTreasuryPayoutService.createPayout', () => {
         requestId: 'marketplace_treasury_po_req_timeout',
       },
     });
-    expect(financialAlert.withdrawalFailed).toHaveBeenCalledWith(expect.any(Error), {
+    expect(financialAlert.withdrawalFailed).toHaveBeenCalledWith(expectValueOf(Error), {
       amount: 5000,
     });
   });
@@ -195,7 +196,7 @@ describe('MarketplaceTreasuryPayoutService.handleFailedPayout', () => {
         stripePayoutId: 'po_marketplace_treasury_123',
       },
     });
-    expect(financialAlert.withdrawalFailed).toHaveBeenCalledWith(expect.any(Error), {
+    expect(financialAlert.withdrawalFailed).toHaveBeenCalledWith(expectValueOf(Error), {
       amount: 5000,
     });
   });

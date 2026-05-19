@@ -13,6 +13,7 @@ on:
   pull_request:
     branches:
       - main
+      - chore/purga-total-debt
   workflow_dispatch:
     # checkov:skip=CKV_GHA_7: git_ref is a controlled operator input that selects
     # which git ref to deploy to production; it is validated at checkout time and
@@ -90,7 +91,7 @@ jobs:
   deploy-production-live:
     if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 90
     environment: production
 
     services:
@@ -104,6 +105,15 @@ jobs:
           - 5432:5432
         options: >-
           --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
@@ -211,6 +221,14 @@ jobs:
         if: github.event_name != 'pull_request'
         run: npm install -g @railway/cli vercel
 
+      - name: Verify Railway deployment credentials
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN || secrets.RAILWAY_PROJECT_TOKEN }}
+          RAILWAY_PROJECT_ID: ${{ secrets.RAILWAY_PROJECT_ID }}
+        run: |
+          test -n "${RAILWAY_TOKEN:-}" || { echo "::error::RAILWAY_TOKEN or RAILWAY_PROJECT_TOKEN is required"; exit 1; }
+          test -n "${RAILWAY_PROJECT_ID:-}" || { echo "::error::RAILWAY_PROJECT_ID is required"; exit 1; }
+
       - name: Backup database before deploy
         if: github.event_name != 'pull_request'
         env:
@@ -226,37 +244,60 @@ jobs:
       - name: Deploy backend to Railway production
         if: github.event_name != 'pull_request'
         env:
-          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN || secrets.RAILWAY_PROJECT_TOKEN }}
           RAILWAY_PROJECT_ID: ${{ secrets.RAILWAY_PROJECT_ID }}
           RAILWAY_ENVIRONMENT: ${{ vars.RAILWAY_PRODUCTION_ENVIRONMENT }}
           RAILWAY_BACKEND_SERVICE: ${{ vars.RAILWAY_BACKEND_SERVICE }}
         run: |
-          railway up backend \
-            --path-as-root \
-            --service "${RAILWAY_BACKEND_SERVICE:-backend}" \
-            --environment "${RAILWAY_ENVIRONMENT:-production}" \
-            --project "$RAILWAY_PROJECT_ID" \
-            --ci
+          for attempt in 1 2 3; do
+            if railway up backend \
+              --path-as-root \
+              --service "${RAILWAY_BACKEND_SERVICE:-backend}" \
+              --environment "${RAILWAY_ENVIRONMENT:-production}" \
+              --project "$RAILWAY_PROJECT_ID" \
+              --ci; then
+              exit 0
+            fi
+
+            if [ "$attempt" -eq 3 ]; then
+              echo "Railway backend deploy failed after $attempt attempts"
+              exit 1
+            fi
+
+            echo "Railway backend deploy attempt $attempt failed; retrying in 60s"
+            sleep 60
+          done
 
       - name: Deploy worker to Railway production
         if: github.event_name != 'pull_request'
         env:
-          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN || secrets.RAILWAY_PROJECT_TOKEN }}
           RAILWAY_PROJECT_ID: ${{ secrets.RAILWAY_PROJECT_ID }}
           RAILWAY_ENVIRONMENT: ${{ vars.RAILWAY_PRODUCTION_ENVIRONMENT }}
           RAILWAY_WORKER_SERVICE: ${{ vars.RAILWAY_WORKER_SERVICE }}
         run: |
-          railway up worker \
-            --path-as-root \
-            --service "${RAILWAY_WORKER_SERVICE:-worker}" \
-            --environment "${RAILWAY_ENVIRONMENT:-production}" \
-            --project "$RAILWAY_PROJECT_ID" \
-            --ci
+          for attempt in 1 2 3; do
+            if railway up worker \
+              --path-as-root \
+              --service "${RAILWAY_WORKER_SERVICE:-worker}" \
+              --environment "${RAILWAY_ENVIRONMENT:-production}" \
+              --project "$RAILWAY_PROJECT_ID" \
+              --ci; then
+              exit 0
+            fi
+
+            if [ "$attempt" -eq 3 ]; then
+              echo "Railway worker deploy failed after $attempt attempts"
+              exit 1
+            fi
+
+            echo "Railway worker deploy attempt $attempt failed; retrying in 60s"
+            sleep 60
+          done
 
       - name: Deploy frontend to Vercel production
         if: github.event_name != 'pull_request'
         id: vercel
-        working-directory: frontend
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_ORG_ID: ${{ vars.VERCEL_ORG_ID }}
@@ -310,7 +351,7 @@ jobs:
       - name: Rollback on failure
         if: failure() && github.event_name != 'pull_request'
         env:
-          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN || secrets.RAILWAY_PROJECT_TOKEN }}
           RAILWAY_PROJECT_ID: ${{ secrets.RAILWAY_PROJECT_ID }}
           RAILWAY_ENVIRONMENT: ${{ vars.RAILWAY_PRODUCTION_ENVIRONMENT }}
         run: |

@@ -5,7 +5,7 @@
 Kloel now vendors the upstream `coreyhaines31/marketingskills` library into
 project-local `.agents/skills/`.
 
-As of **April 19, 2026**, the upstream repository exposes **36** public skills:
+As of **April 19, 2026**, the project-local install exposes **36** public skills:
 
 - `ab-test-setup`
 - `ad-creative`

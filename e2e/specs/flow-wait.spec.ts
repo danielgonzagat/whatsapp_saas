@@ -12,6 +12,7 @@ test('flow with wait resumes on inbound message', async ({ request }) => {
   test.setTimeout(150_000);
 
   const { token, workspaceId } = await ensureE2EAdmin(request);
+  const contactPhone = `5511${Date.now().toString().slice(-9)}`;
 
   // Garante que billing não ficou suspenso por outro spec (isso pode bloquear /flows/run).
   await request
@@ -28,7 +29,6 @@ test('flow with wait resumes on inbound message', async ({ request }) => {
     .catch(() => {});
 
   const flowId = `e2e-wait-flow-${workspaceId}-${Date.now()}`;
-  const contactPhone = `55119${String(Date.now()).slice(-8)}`;
   const flow = {
     nodes: [
       { id: 'n1', type: 'messageNode', data: { text: 'start' } },
@@ -93,6 +93,8 @@ test('flow with wait resumes on inbound message', async ({ request }) => {
   expect(incoming.ok()).toBeTruthy();
 
   // Poll status até completar ou timeout.
+  // Em E2E local o runtime pode aguardar alguns segundos por resposta do provedor
+  // quando a sessão do workspace ainda não existe.
   const resumeDeadline = Date.now() + 60_000;
   while (status !== 'COMPLETED' && status !== 'FAILED' && Date.now() < resumeDeadline) {
     await new Promise((r) => setTimeout(r, 1000));

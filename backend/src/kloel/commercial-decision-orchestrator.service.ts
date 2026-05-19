@@ -256,6 +256,7 @@ export class CommercialDecisionOrchestratorService {
       internalReplyPlan: plan,
       priceBand,
       segment: concept,
+      decisions,
     });
 
     traceTransportInvoked({

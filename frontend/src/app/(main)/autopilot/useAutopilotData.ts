@@ -9,8 +9,11 @@ import {
   tokenStorage,
 } from '@/lib/api';
 import type { AskInsightsResult, RuntimeConfig } from '@/lib/api';
-import { useCallback, useEffect, useState } from 'react';
-import { fetchAutopilotDataBundle } from './page.helpers';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import type { ElementType } from 'react';
+import type { MissionCardData } from '@/components/kloel';
+import { deriveAutopilotMissions, fetchAutopilotDataBundle } from './page.helpers';
+import { AlertCircle, Clock, MessageSquare, Play, TrendingUp } from 'lucide-react';
 import type {
   AutopilotAction,
   AutopilotConfigData,
@@ -56,6 +59,45 @@ export function useAutopilotData(workspaceId: string | null) {
   const [isAsking, setIsAsking] = useState(false);
   const [askResult, setAskResult] = useState<AskInsightsResult | null>(null);
   const [runtimeConfig, setRuntimeConfig] = useState<RuntimeConfig | null>(null);
+
+  const missionCards = useMemo<MissionCardData[]>(() => {
+    const definitions = deriveAutopilotMissions({ status, stats, impact, pipeline, insights });
+    if (definitions.length === 0) {
+      return [];
+    }
+
+    const iconMap: Record<string, ElementType> = {
+      'activate-autopilot': Play,
+      'resolve-billing': AlertCircle,
+      'connect-whatsapp': MessageSquare,
+      'check-whatsapp': AlertCircle,
+      'review-errors': AlertCircle,
+      'check-conversion': TrendingUp,
+      'improve-reply-rate': TrendingUp,
+      'insights-stale': Clock,
+    };
+
+    const statusMap: Record<string, MissionCardData['status']> = {
+      critical: 'pending',
+      warning: 'pending',
+      info: 'suggested',
+    };
+
+    return definitions.map((d) => {
+      const card: MissionCardData = {
+        id: d.id,
+        title: d.title,
+        description: d.description,
+        status: statusMap[d.severity] ?? 'suggested',
+        priority: d.priority,
+      };
+      const icon = iconMap[d.id];
+      if (icon) {
+        card.icon = icon;
+      }
+      return card;
+    });
+  }, [status, stats, impact, pipeline, insights]);
 
   const token = tokenStorage.getToken();
   const effectiveWorkspaceId = workspaceId || tokenStorage.getWorkspaceId() || '';
@@ -144,16 +186,22 @@ export function useAutopilotData(workspaceId: string | null) {
         waitMs: 12000,
         token,
       };
-      if (testPhone) { params.phone = testPhone; }
-      if (testMessage) { params.message = testMessage; }
-      const data = await runAutopilotSmokeTest(params as {
-        workspaceId: string;
-        phone?: string;
-        message?: string;
-        liveSend?: boolean;
-        waitMs?: number;
-        token?: string;
-      });
+      if (testPhone) {
+        params.phone = testPhone;
+      }
+      if (testMessage) {
+        params.message = testMessage;
+      }
+      const data = await runAutopilotSmokeTest(
+        params as {
+          workspaceId: string;
+          phone?: string;
+          message?: string;
+          liveSend?: boolean;
+          waitMs?: number;
+          token?: string;
+        },
+      );
       setSmokeResult(data as never as AutopilotSmokeTestResult);
       await fetchAutopilotData();
     } catch (err: unknown) {
@@ -257,6 +305,7 @@ export function useAutopilotData(workspaceId: string | null) {
     isAsking,
     askResult,
     runtimeConfig,
+    missionCards,
     fetchAutopilotData,
     handleToggle,
     handleSmokeTest,

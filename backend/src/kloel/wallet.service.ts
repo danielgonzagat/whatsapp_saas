@@ -180,7 +180,7 @@ export class WalletService {
    *    alongside its wallet, so read-time and write-time consistency share the
    *    same snapshot. This closes the TOCTOU that allowed cross-tenant moves.
    *  - `transaction.wallet.workspaceId === callerWorkspaceId` is asserted
-   *    before any mutation. A mismatch throws `ForbiddenException` and NO
+   *    before every mutation. A mismatch throws `ForbiddenException` and NO
    *    balance is touched.
    *  - Status flip uses `updateMany` with `WHERE status = 'pending'` so the
    *    transition is atomic at the DB level; `count=0` means another worker

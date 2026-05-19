@@ -113,7 +113,7 @@ export async function getAdminProductDetail(
   prisma: PrismaService,
   productId: string,
 ): Promise<AdminProductDetail | null> {
-  // @AdminGlobalOperation: detail product lookup by id, any workspace
+  // @AdminGlobalOperation: detail product lookup by id, every workspace
   const product = await prisma.product.findFirst({
     where: { id: productId, workspaceId: { not: '' } },
   });

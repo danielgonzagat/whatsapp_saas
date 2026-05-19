@@ -1,3 +1,4 @@
+import OpenAI from 'openai';
 import { Test, TestingModule } from '@nestjs/testing';
 
 jest.mock('../whatsapp/whatsapp.tokens', () => ({
@@ -275,6 +276,322 @@ describe('UnifiedAgentActionsService', () => {
       });
 
       expect(result.success).toBe(false);
+    });
+  });
+
+  describe('delegation to sub-services', () => {
+    it('actionSendMessage delegates to messaging service', async () => {
+      await service.actionSendMessage(wsId, phone, { message: 'Oi' });
+      expect(messaging.actionSendMessage).toHaveBeenCalledWith(
+        wsId,
+        phone,
+        { message: 'Oi' },
+        undefined,
+      );
+    });
+
+    it('actionSendMedia delegates to messaging service', async () => {
+      await service.actionSendMedia(wsId, phone, { url: 'http://img' });
+      expect(messaging.actionSendMedia).toHaveBeenCalledWith(
+        wsId,
+        phone,
+        { url: 'http://img' },
+        undefined,
+      );
+    });
+
+    it('actionSendVoiceNote delegates to messaging service', async () => {
+      await service.actionSendVoiceNote(wsId, phone, { url: 'http://audio' });
+      expect(messaging.actionSendVoiceNote).toHaveBeenCalledWith(
+        wsId,
+        phone,
+        { url: 'http://audio' },
+        undefined,
+      );
+    });
+
+    it('actionSendAudio delegates to messaging service', async () => {
+      await service.actionSendAudio(wsId, phone, { url: 'http://audio' });
+      expect(messaging.actionSendAudio).toHaveBeenCalledWith(
+        wsId,
+        phone,
+        { url: 'http://audio' },
+        undefined,
+      );
+    });
+
+    it('actionTranscribeAudio delegates to messaging service', async () => {
+      await service.actionTranscribeAudio(wsId, { audioUrl: 'https://example.com/audio.ogg' });
+      expect(messaging.actionTranscribeAudio).toHaveBeenCalledWith(wsId, {
+        audioUrl: 'https://example.com/audio.ogg',
+      });
+    });
+
+    it('actionSendProductInfo delegates to commerce service', async () => {
+      await service.actionSendProductInfo(wsId, phone, { productId: 'p-1' });
+      expect(commerce.actionSendProductInfo).toHaveBeenCalledWith(
+        wsId,
+        phone,
+        { productId: 'p-1' },
+        undefined,
+      );
+    });
+
+    it('actionUpdateLeadStatus delegates to crm service', async () => {
+      await service.actionUpdateLeadStatus(wsId, contactId, { status: 'qualified' });
+      expect(crm.actionUpdateLeadStatus).toHaveBeenCalledWith(wsId, contactId, {
+        status: 'qualified',
+      });
+    });
+
+    it('actionAddTag delegates to crm service', async () => {
+      await service.actionAddTag(wsId, contactId, { tag: 'vip' });
+      expect(crm.actionAddTag).toHaveBeenCalledWith(wsId, contactId, { tag: 'vip' });
+    });
+
+    it('actionScheduleFollowup delegates to crm service', async () => {
+      await service.actionScheduleFollowup(wsId, contactId, phone, { delayHours: 1 });
+      expect(crm.actionScheduleFollowup).toHaveBeenCalledWith(
+        wsId,
+        contactId,
+        phone,
+        { delayHours: 1 },
+        undefined,
+      );
+    });
+
+    it('actionTransferToHuman delegates to crm service', async () => {
+      await service.actionTransferToHuman(wsId, contactId, { reason: 'complex' });
+      expect(crm.actionTransferToHuman).toHaveBeenCalledWith(
+        wsId,
+        contactId,
+        { reason: 'complex' },
+        undefined,
+      );
+    });
+
+    it('actionSearchKnowledgeBase delegates to crm service', async () => {
+      await service.actionSearchKnowledgeBase(wsId, { query: 'how to' });
+      expect(crm.actionSearchKnowledgeBase).toHaveBeenCalledWith(wsId, { query: 'how to' });
+    });
+
+    it('actionTriggerFlow delegates to crm service', async () => {
+      await service.actionTriggerFlow(wsId, phone, { flowId: 'f-1' });
+      expect(crm.actionTriggerFlow).toHaveBeenCalledWith(wsId, phone, { flowId: 'f-1' });
+    });
+
+    it('actionLogEvent delegates to crm service', async () => {
+      await service.actionLogEvent(wsId, contactId, { event: 'click' });
+      expect(crm.actionLogEvent).toHaveBeenCalledWith(wsId, contactId, { event: 'click' });
+    });
+
+    it('actionConnectWhatsApp delegates to crm service', async () => {
+      await service.actionConnectWhatsApp(wsId, {});
+      expect(crm.actionConnectWhatsApp).toHaveBeenCalledWith(wsId, {});
+    });
+
+    it('actionImportContacts delegates to crm service', async () => {
+      await service.actionImportContacts(wsId, {});
+      expect(crm.actionImportContacts).toHaveBeenCalledWith(wsId, {});
+    });
+
+    it('actionCreateProduct delegates to workspace service', async () => {
+      await service.actionCreateProduct(wsId, { name: 'P', price: 1 });
+      expect(workspace.actionCreateProduct).toHaveBeenCalledWith(wsId, { name: 'P', price: 1 });
+    });
+
+    it('actionUpdateProduct delegates to workspace service', async () => {
+      await service.actionUpdateProduct(wsId, { productId: 'p-1' });
+      expect(workspace.actionUpdateProduct).toHaveBeenCalledWith(wsId, { productId: 'p-1' });
+    });
+
+    it('actionCreateFlow delegates to workspace service', async () => {
+      await service.actionCreateFlow(wsId, { name: 'Flow' });
+      expect(workspace.actionCreateFlow).toHaveBeenCalledWith(wsId, { name: 'Flow' });
+    });
+
+    it('actionUpdateWorkspaceSettings delegates to workspace service', async () => {
+      await service.actionUpdateWorkspaceSettings(wsId, { businessName: 'A' });
+      expect(workspace.actionUpdateWorkspaceSettings).toHaveBeenCalledWith(wsId, {
+        businessName: 'A',
+      });
+    });
+
+    it('actionCreateBroadcast delegates to workspace service', async () => {
+      await service.actionCreateBroadcast(wsId, { name: 'B' });
+      expect(workspace.actionCreateBroadcast).toHaveBeenCalledWith(wsId, { name: 'B' }, undefined);
+    });
+
+    it('actionConfigureAIPersona delegates to workspace service', async () => {
+      await service.actionConfigureAIPersona(wsId, { tone: 'formal' });
+      expect(workspace.actionConfigureAIPersona).toHaveBeenCalledWith(wsId, { tone: 'formal' });
+    });
+
+    it('actionToggleAutopilot delegates to workspace service', async () => {
+      await service.actionToggleAutopilot(wsId, { enabled: true });
+      expect(workspace.actionToggleAutopilot).toHaveBeenCalledWith(wsId, { enabled: true });
+    });
+
+    it('actionCreateFlowFromDescription delegates to workspace service', async () => {
+      const openai = new OpenAI({ apiKey: 'fake' });
+      await service.actionCreateFlowFromDescription(wsId, { description: 'd' }, openai, 'm1', 'm2');
+      expect(workspace.actionCreateFlowFromDescription).toHaveBeenCalledWith(
+        wsId,
+        { description: 'd' },
+        openai,
+        'm1',
+        'm2',
+      );
+    });
+
+    it('actionScheduleCampaign delegates to workspace service', async () => {
+      await service.actionScheduleCampaign(wsId, { campaignId: 'c-1' });
+      expect(workspace.actionScheduleCampaign).toHaveBeenCalledWith(wsId, { campaignId: 'c-1' });
+    });
+
+    it('actionGetWorkspaceStatus delegates to workspace service', async () => {
+      await service.actionGetWorkspaceStatus(wsId, {});
+      expect(workspace.actionGetWorkspaceStatus).toHaveBeenCalledWith(wsId, {});
+    });
+
+    it('actionGetAnalytics delegates to billing service', async () => {
+      await service.actionGetAnalytics(wsId, { period: 'today' });
+      expect(billing.actionGetAnalytics).toHaveBeenCalledWith(wsId, { period: 'today' });
+    });
+
+    it('actionGenerateSalesFunnel delegates to billing service', async () => {
+      await service.actionGenerateSalesFunnel(wsId, {});
+      expect(billing.actionGenerateSalesFunnel).toHaveBeenCalledWith(wsId, {});
+    });
+
+    it('actionUpdateBillingInfo delegates to billing service', async () => {
+      await service.actionUpdateBillingInfo(wsId, {});
+      expect(billing.actionUpdateBillingInfo).toHaveBeenCalledWith(wsId, {});
+    });
+
+    it('actionGetBillingStatus delegates to billing service', async () => {
+      await service.actionGetBillingStatus(wsId);
+      expect(billing.actionGetBillingStatus).toHaveBeenCalledWith(wsId);
+    });
+
+    it('actionChangePlan delegates to billing service', async () => {
+      await service.actionChangePlan(wsId, { plan: 'pro' });
+      expect(billing.actionChangePlan).toHaveBeenCalledWith(wsId, { plan: 'pro' });
+    });
+
+    it('actionApplyDiscount delegates to sales service', async () => {
+      await service.actionApplyDiscount(wsId, contactId, phone, { discountPercent: 10 });
+      expect(sales.actionApplyDiscount).toHaveBeenCalledWith(
+        wsId,
+        contactId,
+        phone,
+        { discountPercent: 10 },
+        undefined,
+      );
+    });
+
+    it('actionHandleObjection delegates to sales service', async () => {
+      await service.actionHandleObjection(wsId, contactId, phone, { objectionType: 'price' });
+      expect(sales.actionHandleObjection).toHaveBeenCalledWith(
+        wsId,
+        contactId,
+        phone,
+        { objectionType: 'price' },
+        undefined,
+      );
+    });
+
+    it('actionQualifyLead delegates to sales service', async () => {
+      await service.actionQualifyLead(wsId, contactId, phone, {});
+      expect(sales.actionQualifyLead).toHaveBeenCalledWith(wsId, contactId, phone, {}, undefined);
+    });
+
+    it('actionScheduleMeeting delegates to sales service', async () => {
+      await service.actionScheduleMeeting(wsId, contactId, phone, { type: 'demo' });
+      expect(sales.actionScheduleMeeting).toHaveBeenCalledWith(
+        wsId,
+        contactId,
+        phone,
+        { type: 'demo' },
+        undefined,
+      );
+    });
+
+    it('actionAntiChurn delegates to sales service', async () => {
+      await service.actionAntiChurn(wsId, contactId, phone, { strategy: 'discount' });
+      expect(sales.actionAntiChurn).toHaveBeenCalledWith(
+        wsId,
+        contactId,
+        phone,
+        { strategy: 'discount' },
+        undefined,
+      );
+    });
+
+    it('actionReactivateGhost delegates to sales service', async () => {
+      await service.actionReactivateGhost(wsId, contactId, phone, { daysSilent: 7 });
+      expect(sales.actionReactivateGhost).toHaveBeenCalledWith(
+        wsId,
+        contactId,
+        phone,
+        { daysSilent: 7 },
+        undefined,
+      );
+    });
+
+    it('actionCreatePaymentLink delegates to commerce and audits', async () => {
+      const result = await service.actionCreatePaymentLink(wsId, phone, { amount: 99 });
+      expect(result.success).toBe(true);
+      expect(commerce.actionCreatePaymentLink).toHaveBeenCalled();
+      expect(auditService.logWithTx).toHaveBeenCalled();
+    });
+
+    it('getProductPlans delegates to billing', async () => {
+      await service.getProductPlans('p-1');
+      expect(billing.getProductPlans).toHaveBeenCalledWith('p-1');
+    });
+
+    it('getProductAIConfig delegates to billing', async () => {
+      await service.getProductAIConfig('p-1');
+      expect(billing.getProductAIConfig).toHaveBeenCalledWith('p-1');
+    });
+
+    it('getProductReviews delegates to billing', async () => {
+      await service.getProductReviews('p-1');
+      expect(billing.getProductReviews).toHaveBeenCalledWith('p-1');
+    });
+
+    it('getProductUrls delegates to billing', async () => {
+      await service.getProductUrls('p-1');
+      expect(billing.getProductUrls).toHaveBeenCalledWith('p-1');
+    });
+
+    it('validateCoupon delegates to billing', async () => {
+      await service.validateCoupon('p-1', 'CODE10');
+      expect(billing.validateCoupon).toHaveBeenCalledWith('p-1', 'CODE10');
+    });
+  });
+
+  describe('workspace isolation', () => {
+    it('actionSendDocument scopes document lookup to workspaceId', async () => {
+      await service.actionSendDocument('ws-tenant', phone, { documentName: 'Doc' });
+      expect(prisma.document.findFirst).toHaveBeenCalledWith(
+        expect.objectContaining({ where: expect.objectContaining({ workspaceId: 'ws-tenant' }) }),
+      );
+    });
+  });
+
+  describe('error handling', () => {
+    it('actionSendDocument handles errors gracefully', async () => {
+      whatsappService.sendMessage.mockRejectedValue(new Error('network error'));
+      const result = await service.actionSendDocument(wsId, phone, { url: 'http://x' });
+      expect(result.success).toBe(false);
+    });
+
+    it('actionCreatePaymentLink handles audit failure gracefully', async () => {
+      prisma.$transaction.mockRejectedValue(new Error('audit failed'));
+      const result = await service.actionCreatePaymentLink(wsId, phone, { amount: 99 });
+      expect(result.success).toBe(true);
     });
   });
 });

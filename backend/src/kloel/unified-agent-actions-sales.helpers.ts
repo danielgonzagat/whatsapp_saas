@@ -31,6 +31,19 @@ interface KloelMemoryRow {
   value: unknown;
 }
 
+function readObjectionMemoryValue(value: unknown): UnknownRecord | null {
+  if (typeof value === 'string') {
+    try {
+      const parsed: unknown = JSON.parse(value);
+      return typeof parsed === 'object' && parsed !== null ? (parsed as UnknownRecord) : null;
+    } catch {
+      return null;
+    }
+  }
+
+  return typeof value === 'object' && value !== null ? (value as UnknownRecord) : null;
+}
+
 export async function actionHandleObjection(deps: {
   workspaceId: string;
   contactId: string;
@@ -64,18 +77,15 @@ export async function actionHandleObjection(deps: {
         'Compreendo totalmente sua posição. Cada cliente é único e merece atenção especial. \nO que posso fazer para ajudar você a tomar a melhor decisão?',
     };
     const customObjection = objections.find((o: KloelMemoryRow) => {
-      const val = typeof o.value === 'string' ? JSON.parse(o.value) : o.value;
-      return (val as UnknownRecord)?.type === objectionType;
+      const val = readObjectionMemoryValue(o.value);
+      return val?.type === objectionType;
     });
     const objectionResponse = objectionResponses[objectionType] || objectionResponses.other;
     let response = objectionResponse;
     if (customObjection?.value) {
-      const customData =
-        typeof customObjection.value === 'string'
-          ? JSON.parse(customObjection.value)
-          : customObjection.value;
-      const customResponse = (customData as Record<string, string>).response;
-      if (customResponse) {
+      const customData = readObjectionMemoryValue(customObjection.value);
+      const customResponse = customData?.response;
+      if (typeof customResponse === 'string' && customResponse.trim().length > 0) {
         response = customResponse;
       }
     }

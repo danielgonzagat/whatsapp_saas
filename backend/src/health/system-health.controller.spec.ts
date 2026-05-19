@@ -114,8 +114,21 @@ describe('SystemHealthController', () => {
       });
 
       await expect(controller.readiness()).rejects.toThrow(ServiceUnavailableException);
+
+      try {
+        await controller.readiness();
+        throw new Error('readiness should have thrown');
+      } catch (error) {
+        expect(error).toBeInstanceOf(ServiceUnavailableException);
+        expect((error as ServiceUnavailableException).getResponse()).toMatchObject({
+          status: 'DOWN',
+          message: 'Dependencies down: postgres, redis',
+        });
+      }
     });
   });
+
+
 
   describe('GET /health/system', () => {
     it('returns production runtime health payload from service', async () => {

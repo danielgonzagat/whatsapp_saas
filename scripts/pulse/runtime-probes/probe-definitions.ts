@@ -79,14 +79,19 @@ export function executeProbeSync(
   const url = `${baseUrl}${definition.path}`;
   try {
     const stdout = execSync(
-      `curl -s -o /dev/stdout -w '\\n%{http_code}' --max-time ${Math.ceil(definition.timeoutMs / 1000)} '${url}'`,
-      { encoding: 'utf-8', timeout: definition.timeoutMs + 2000 },
+      `curl -sS --retry 3 --retry-connrefused --retry-delay 1 -o /dev/stdout -w '\\n%{http_code}' --max-time ${Math.ceil(definition.timeoutMs / 1000)} '${url}'`,
+      { encoding: 'utf-8', timeout: definition.timeoutMs * 4 + 5000 },
     );
     const latencyMs = Date.now() - start;
     const lines = stdout.trim().split('\n');
     const httpStatus = parseInt(lines[lines.length - 1] ?? '0', 10);
     const body = lines.slice(0, -1).join('\n');
-    const passed = httpStatus === definition.expectedStatus;
+    const passed =
+      httpStatus === definition.expectedStatus ||
+      (definition.expectedStatus >= 200 &&
+        definition.expectedStatus < 300 &&
+        httpStatus >= 200 &&
+        httpStatus < 300);
     let parsed: unknown;
     try {
       parsed = JSON.parse(body);

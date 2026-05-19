@@ -8,7 +8,6 @@ import { SmartPaymentService } from './smart-payment.service';
 import { chatCompletionWithFallback } from './openai-wrapper';
 import { createTextLlmClient } from '../lib/llm-provider';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
-import { KLOEL_SALES_PROMPT } from './kloel.prompts';
 import {
   NON_DIGIT_RE,
   safeStr,
@@ -23,6 +22,8 @@ import {
 } from './kloel-lead-processor-helpers';
 import OpenAI from 'openai';
 import { OpsAlertService } from '../observability/ops-alert.service';
+import { AbiBuilderService } from './abi/abi-builder.service';
+import { validateAbiPayload } from './abi/abi-validator';
 
 export interface FollowupListItem {
   id: string;
@@ -49,6 +50,7 @@ export class KloelLeadProcessorService {
     private readonly smartPaymentService: SmartPaymentService,
     private readonly planLimits: PlanLimitsService,
     @Optional() private readonly opsAlert?: OpsAlertService,
+    @Optional() private readonly abiBuilder?: AbiBuilderService,
   ) {
     this.openai = createTextLlmClient() ?? new OpenAI({ apiKey: '' });
   }
@@ -130,11 +132,56 @@ export class KloelLeadProcessorService {
 
       const conversationHistory = await getLeadConversationHistory(this.prisma, lead.id);
       const context = await getWorkspaceContextFn(workspaceId);
-      const salesSystemPrompt = KLOEL_SALES_PROMPT(workspace?.name || 'nossa empresa', context);
+      void workspace;
+      let effectiveUserContent = JSON.stringify({
+        cognitiveState: {
+          source: 'lead-processor',
+          abiStatus: this.abiBuilder ? 'pending' : 'unavailable',
+          workspaceContext: context,
+        },
+        currentInput: {
+          raw: message,
+          channel: 'whatsapp',
+          arrivalTimestamp: new Date().toISOString(),
+        },
+      });
+
+      if (this.abiBuilder) {
+        const abiResult = await this.abiBuilder.build({
+          audience: 'public',
+          currentInput: {
+            raw: message,
+            channel: 'whatsapp',
+            arrivalTimestamp: new Date().toISOString(),
+          },
+          perceptionSnapshot: {
+            channel: 'whatsapp',
+          },
+        });
+
+        if (abiResult.status !== 'ok') {
+          this.logger.warn(`ABI build failed: ${abiResult.reason}`);
+        } else {
+          const abi = abiResult.abi;
+          const validation = validateAbiPayload(abi);
+
+          if (validation.status === 'FAIL') {
+            this.logger.warn(`ABI validation failed: ${JSON.stringify(validation.issues)}`);
+          } else {
+            effectiveUserContent = JSON.stringify({
+              cognitiveState: abi,
+              currentInput: {
+                raw: message,
+                channel: 'whatsapp',
+              },
+            });
+          }
+        }
+      }
+
       const messages: ChatMessage[] = [
-        { role: 'system', content: salesSystemPrompt },
         ...conversationHistory,
-        { role: 'user', content: message },
+        { role: 'user', content: effectiveUserContent },
       ];
 
       if (workspaceId) {

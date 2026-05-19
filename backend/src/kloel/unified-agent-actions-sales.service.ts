@@ -306,7 +306,7 @@ export class UnifiedAgentActionsSalesService {
       await this.prisma.contact
         .update({
           where: { id: contactId },
-          data: { purchaseProbability: String(this.getStageScore(stage)) },
+          data: { purchaseProbability: this.getStagePurchaseProbabilityBucket(stage) },
         })
         .catch((err: unknown) => {
           const errStr = describeUnknownError(err);
@@ -344,14 +344,14 @@ export class UnifiedAgentActionsSalesService {
     }
   }
 
-  private getStageScore(stage: string): number {
-    const scores: Record<string, number> = {
-      awareness: 10,
-      interest: 30,
-      decision: 60,
-      action: 90,
+  private getStagePurchaseProbabilityBucket(stage: string): string {
+    const buckets: Record<string, string> = {
+      awareness: 'LOW',
+      interest: 'MEDIUM',
+      decision: 'HIGH',
+      action: 'VERY_HIGH',
     };
-    return scores[stage] || 20;
+    return buckets[stage] || 'LOW';
   }
 
   async actionScheduleMeeting(

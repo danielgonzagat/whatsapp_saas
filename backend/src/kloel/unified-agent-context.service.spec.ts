@@ -3,16 +3,12 @@ import { UnifiedAgentContextService } from './unified-agent-context.service';
 import { UnifiedAgentContextDataService } from './unified-agent-context-data.service';
 
 jest.mock('./kloel.prompts', () => ({
-  buildKloelLeadPrompt: jest.fn(
-    (params: {
-      companyName: string;
-      brandVoice: string;
-      productList: string;
-      extraContext: string;
-    }) =>
-      `SYSTEM PROMPT [${params.companyName}] [${params.productList}] [${params.brandVoice}] [${params.extraContext}]`,
-  ),
+  CANONICAL_FALLBACK_SYSTEM_PROMPT:
+    'cognitive_state_boundary=distributed; verbalization_source=state_payload; fact_boundary=state_payload',
 }));
+
+const CANONICAL_FALLBACK_SYSTEM_PROMPT =
+  'cognitive_state_boundary=distributed; verbalization_source=state_payload; fact_boundary=state_payload';
 
 type ContextDataMock = {
   getWorkspaceContext: jest.Mock;
@@ -86,53 +82,22 @@ describe('UnifiedAgentContextService', () => {
   });
 
   describe('buildSystemPrompt', () => {
-    it('constructs prompt with business name and products', () => {
-      const { buildKloelLeadPrompt } = require('./kloel.prompts');
-      buildKloelLeadPrompt.mockClear();
-
+    it('returns CANONICAL_FALLBACK_SYSTEM_PROMPT regardless of input (ABI-009 cutover)', () => {
       const prompt = service.buildSystemPrompt({ name: 'Empresa X' }, [
         { value: { name: 'Produto A', price: 99 } },
       ]);
 
-      expect(prompt).toContain('SYSTEM PROMPT');
-      expect(buildKloelLeadPrompt).toHaveBeenCalledWith(
-        expect.objectContaining({
-          companyName: 'Empresa X',
-          brandVoice: expect.stringContaining('Direto, humano'),
-          productList: expect.stringContaining('Produto A'),
-        }),
-      );
+      expect(prompt).toBe(CANONICAL_FALLBACK_SYSTEM_PROMPT);
     });
 
-    it('handles empty products list', () => {
+    it('returns CANONICAL_FALLBACK_SYSTEM_PROMPT with empty products', () => {
       const prompt = service.buildSystemPrompt({ name: 'Empresa X' }, []);
 
-      expect(prompt).toContain('Nenhum produto cadastrado');
+      expect(prompt).toBe(CANONICAL_FALLBACK_SYSTEM_PROMPT);
     });
 
-    it('resolves business display name from settings', () => {
+    it('returns CANONICAL_FALLBACK_SYSTEM_PROMPT with sales policy present', () => {
       const prompt = service.buildSystemPrompt(
-        {
-          name: 'Guest Workspace',
-          providerSettings: { businessName: 'Real Business Name' },
-        },
-        [],
-      );
-
-      expect(prompt).toContain('Real Business Name');
-    });
-
-    it('falls back to generic name when workspace label is generic', () => {
-      const prompt = service.buildSystemPrompt({ name: 'guest workspace' }, []);
-
-      expect(prompt).toContain('sua empresa');
-    });
-
-    it('includes sales policy in prompt when present', () => {
-      const { buildKloelLeadPrompt } = require('./kloel.prompts');
-      buildKloelLeadPrompt.mockClear();
-
-      service.buildSystemPrompt(
         {
           name: 'TestCo',
           salesPolicy: {
@@ -144,18 +109,11 @@ describe('UnifiedAgentContextService', () => {
         [],
       );
 
-      expect(buildKloelLeadPrompt).toHaveBeenCalledWith(
-        expect.objectContaining({
-          brandVoice: expect.stringContaining('POLÍTICA ESTRATÉGICA ATIVA'),
-        }),
-      );
+      expect(prompt).toBe(CANONICAL_FALLBACK_SYSTEM_PROMPT);
     });
 
-    it('includes AI configs in prompt', () => {
-      const { buildKloelLeadPrompt } = require('./kloel.prompts');
-      buildKloelLeadPrompt.mockClear();
-
-      service.buildSystemPrompt(
+    it('returns CANONICAL_FALLBACK_SYSTEM_PROMPT with AI configs present', () => {
+      const prompt = service.buildSystemPrompt(
         { name: 'TestCo' },
         [],
         [
@@ -167,11 +125,7 @@ describe('UnifiedAgentContextService', () => {
         ],
       );
 
-      expect(buildKloelLeadPrompt).toHaveBeenCalledWith(
-        expect.objectContaining({
-          brandVoice: expect.stringContaining('TOM DE VENDA'),
-        }),
-      );
+      expect(prompt).toBe(CANONICAL_FALLBACK_SYSTEM_PROMPT);
     });
   });
 

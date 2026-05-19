@@ -40,7 +40,7 @@ export interface AnunciosConnectUrl {
   authUrl?: string;
 }
 
-type ApiListEnvelope<T> = T[] | { data?: T[] };
+type ApiListEnvelope<T> = T[] | { data?: T[] } | null;
 
 function unwrapList<T>(value: ApiListEnvelope<T> | undefined): T[] {
   if (Array.isArray(value)) {
@@ -96,6 +96,7 @@ export function useAnunciosCampaigns(platform?: string) {
     refresh: mutate,
   };
 }
+
 
 export function useAnunciosConnectUrl(platform: string) {
   const { data, isLoading, error } = useSWR<AnunciosConnectUrl>(

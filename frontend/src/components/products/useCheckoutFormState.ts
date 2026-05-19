@@ -57,73 +57,107 @@ function readCheckoutFormDraft(
   }
 }
 
-function saveCheckoutFormDraft(draft: ProductCheckoutFormDraft): void {
-  try {
-    localStorage.setItem(
-      draft.version ? buildCheckoutFormDraftKey(draft.productId) : '',
-      JSON.stringify(draft),
-    );
-  } catch {
-    // Silent fail on localStorage quota exceeded
+function readInitialDraft(productId: string): ProductCheckoutFormDraft | null {
+  if (typeof window === 'undefined') {
+    return null;
   }
+  const key = buildCheckoutFormDraftKey(productId);
+  return readCheckoutFormDraft(localStorage.getItem(key), productId);
 }
 
 interface CheckoutFormStateHook {
   form: CheckoutFormState;
   showModal: boolean;
   editingCheckoutId: string | null;
+  draftKey: string;
   setForm: (form: CheckoutFormState) => void;
   setShowModal: (show: boolean) => void;
   setEditingCheckoutId: (id: string | null) => void;
   resetForm: () => void;
+  clearDraft: () => void;
 }
 
 export function useCheckoutFormState(productId: string): CheckoutFormStateHook {
-  const [form, setForm] = useState<CheckoutFormState>(createDefaultCheckoutForm());
-  const [showModal, setShowModal] = useState(false);
-  const [editingCheckoutId, setEditingCheckoutId] = useState<string | null>(null);
+  const [form, setForm] = useState<CheckoutFormState>(() => {
+    const draft = readInitialDraft(productId);
+    return draft ? draft.form : createDefaultCheckoutForm();
+  });
+
+  const [showModal, setShowModal] = useState(() => {
+    const draft = readInitialDraft(productId);
+    return draft ? draft.showModal : false;
+  });
+
+  const [editingCheckoutId, setEditingCheckoutId] = useState<string | null>(() => {
+    const draft = readInitialDraft(productId);
+    return draft ? draft.editingCheckoutId : null;
+  });
 
   const draftKey = buildCheckoutFormDraftKey(productId);
 
   useEffect(() => {
-    const saved = localStorage.getItem(draftKey);
-    const draft = readCheckoutFormDraft(saved, productId);
+    const draft = readInitialDraft(productId);
     if (draft) {
       queueMicrotask(() => setForm(draft.form));
       queueMicrotask(() => setShowModal(draft.showModal));
       queueMicrotask(() => {
         setEditingCheckoutId(draft.editingCheckoutId);
       });
+      return;
     }
-  }, [productId, draftKey]);
+    queueMicrotask(() => setForm(createDefaultCheckoutForm()));
+    queueMicrotask(() => setShowModal(false));
+    queueMicrotask(() => setEditingCheckoutId(null));
+  }, [productId]);
 
-  const handleSetForm = useCallback(
-    (newForm: CheckoutFormState) => {
-      setForm(newForm);
-      saveCheckoutFormDraft({
+  useEffect(() => {
+    if (typeof window === 'undefined' || !showModal) {
+      return;
+    }
+    try {
+      const payload: ProductCheckoutFormDraft = {
         version: CHECKOUT_FORM_DRAFT_VERSION,
         productId,
         savedAt: new Date().toISOString(),
-        form: newForm,
+        form,
         editingCheckoutId,
         showModal,
-      });
-    },
-    [productId, editingCheckoutId, showModal],
-  );
+      };
+      localStorage.setItem(draftKey, JSON.stringify(payload));
+    } catch {
+      // Silent fail on localStorage quota exceeded
+    }
+  }, [draftKey, form, editingCheckoutId, showModal, productId]);
+
+  const handleSetForm = useCallback((newForm: CheckoutFormState) => {
+    setForm(newForm);
+  }, []);
 
   const handleResetForm = useCallback(() => {
-    const defaultForm = createDefaultCheckoutForm();
-    handleSetForm(defaultForm);
+    handleSetForm(createDefaultCheckoutForm());
+    setEditingCheckoutId(null);
   }, [handleSetForm]);
+
+  const clearDraft = useCallback(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+    try {
+      localStorage.removeItem(draftKey);
+    } catch {
+      // Silent fail
+    }
+  }, [draftKey]);
 
   return {
     form,
     showModal,
     editingCheckoutId,
+    draftKey,
     setForm: handleSetForm,
     setShowModal,
     setEditingCheckoutId,
     resetForm: handleResetForm,
+    clearDraft,
   };
 }

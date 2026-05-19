@@ -19,7 +19,11 @@ import {
   type CheckoutPaymentTxCallback,
   type CheckoutPaymentPrismaMock,
 } from './checkout-payment.service.fixtures';
-import { CHECKOUT_PAYMENT_E2E_GUARD } from './checkout-payment-e2e-guard';
+import {
+  CHECKOUT_PAYMENT_E2E_GUARD,
+  EnvCheckoutPaymentE2EGuard,
+} from './checkout-payment-e2e-guard';
+import { CheckoutEventEmitterService } from "../kloel/checkout-emitter/checkout-event-emitter.service";
 
 describe('CheckoutPaymentService.processPayment — Stripe-only', () => {
   let service: CheckoutPaymentService;
@@ -99,14 +103,9 @@ describe('CheckoutPaymentService.processPayment — Stripe-only', () => {
         { provide: FinancialAlertService, useValue: financialAlert },
         { provide: AuditService, useValue: auditService },
         { provide: CheckoutSocialLeadService, useValue: socialLeadService },
+        { provide: CHECKOUT_PAYMENT_E2E_GUARD, useValue: { isEnabled: jest.fn().mockReturnValue(false), buildResult: jest.fn() } },
+        { provide: CheckoutEventEmitterService, useValue: { paymentInitiated: jest.fn().mockResolvedValue(undefined), paymentApproved: jest.fn().mockResolvedValue(undefined), paymentDeclined: jest.fn().mockResolvedValue(undefined) } },
         { provide: CheckoutPostPaymentEffectsService, useValue: postPaymentEffects },
-        {
-          provide: CHECKOUT_PAYMENT_E2E_GUARD,
-          useValue: {
-            isEnabled: jest.fn(() => false),
-            buildResult: jest.fn(),
-          },
-        },
       ],
     }).compile();
 
@@ -544,6 +543,47 @@ describe('CheckoutPaymentService.processPayment — Stripe-only', () => {
           reasons: [{ signal: 'high_amount', detail: 'step-up required' }],
         },
       },
+
     });
+  });
+});
+
+describe('EnvCheckoutPaymentE2EGuard', () => {
+  const originalEnv = process.env;
+
+  beforeEach(() => {
+    process.env = { ...originalEnv };
+  });
+
+  afterAll(() => {
+    process.env = originalEnv;
+  });
+
+  it('enables the CI checkout stub only when Stripe is not configured outside production', () => {
+    delete process.env.STRIPE_SECRET_KEY;
+    process.env.CI = 'true';
+    process.env.NODE_ENV = 'test';
+
+    const guard = new EnvCheckoutPaymentE2EGuard();
+
+    expect(guard.isEnabled()).toBe(true);
+    expect(guard.buildResult({ orderId: 'order-1', paymentMethod: 'PIX' })).toMatchObject({
+      type: 'PIX',
+      approved: false,
+      paymentIntentId: 'pi_e2e_order-1',
+      pixCopyPaste: '000201E2EPIXorder-1',
+      stub: true,
+    });
+  });
+
+  it('does not enable the checkout stub in production', () => {
+    delete process.env.STRIPE_SECRET_KEY;
+    process.env.CHECKOUT_PAYMENT_E2E_STUB = 'true';
+    process.env.CI = 'true';
+    process.env.NODE_ENV = 'production';
+
+    const guard = new EnvCheckoutPaymentE2EGuard();
+
+    expect(guard.isEnabled()).toBe(false);
   });
 });

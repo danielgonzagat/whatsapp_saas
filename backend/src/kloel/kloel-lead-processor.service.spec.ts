@@ -4,6 +4,8 @@ import { PrismaService } from '../prisma/prisma.service';
 import { UnifiedAgentService } from './unified-agent.service';
 import { SmartPaymentService } from './smart-payment.service';
 import { PlanLimitsService } from '../billing/plan-limits.service';
+import { AbiBuilderService } from './abi/abi-builder.service';
+import { chatCompletionWithFallback } from './openai-wrapper';
 
 jest.mock('./openai-wrapper', () => ({
   chatCompletionWithFallback: jest.fn().mockResolvedValue({
@@ -42,6 +44,7 @@ describe('KloelLeadProcessorService', () => {
   let unifiedAgent: Pick<UnifiedAgentService, 'processIncomingMessage'>;
   let smartPayment: { createSmartPayment: jest.Mock };
   let planLimits: Pick<PlanLimitsService, 'ensureTokenBudget' | 'trackAiUsage'>;
+  let abiBuilder: { build: jest.Mock };
 
   const wsId = 'ws-1';
 
@@ -92,6 +95,58 @@ describe('KloelLeadProcessorService', () => {
       ensureTokenBudget: jest.fn().mockResolvedValue(undefined),
       trackAiUsage: jest.fn().mockResolvedValue(undefined),
     };
+    abiBuilder = {
+      build: jest.fn().mockResolvedValue({
+        status: 'ok',
+        abi: {
+          abiVersion: '1.0.0',
+          lineage: {
+            canonicalName: 'Kloel',
+            genesisEventId: 'genesis-1',
+            lineageStatus: 'intact',
+            operationalAge: 'new',
+            capabilities: [],
+          },
+          identityProjection: {
+            audience: 'public',
+            currentMaturity: 'developing',
+            truthMode: 'observed',
+          },
+          perception: { currentSnapshot: {}, recentSalientEvents: [] },
+          beliefs: [],
+          predictions: { active: [], recentSurprises: [] },
+          attention: { candidates: [] },
+          memory: { workingMemory: [], episodicRefs: [], consolidatedRefs: [] },
+          capabilities: { available: [], restricted: [] },
+          valence: {
+            recentTrace: [],
+            aggregatedMood: {
+              positive: 0,
+              negative: 0,
+              neutral: 1,
+              ambiguous: 0,
+              windowHours: 24,
+            },
+          },
+          pulseTruth: {
+            noOverclaimStatus: 'PASS',
+            capabilityHealthScore: 1,
+            gates: [],
+            certificationVerdict: {
+              verdict: 'INSUFFICIENT_EVIDENCE',
+              score: 0,
+              measuredAt: '2026-05-14T00:00:00.000Z',
+            },
+            overclaimRisk: 0,
+          },
+          currentInput: {
+            raw: 'Mensagem',
+            channel: 'whatsapp',
+            arrivalTimestamp: '2026-05-14T00:00:00.000Z',
+          },
+        },
+      }),
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -100,6 +155,7 @@ describe('KloelLeadProcessorService', () => {
         { provide: UnifiedAgentService, useValue: unifiedAgent },
         { provide: SmartPaymentService, useValue: smartPayment },
         { provide: PlanLimitsService, useValue: planLimits },
+        { provide: AbiBuilderService, useValue: abiBuilder },
       ],
     }).compile();
 
@@ -143,6 +199,32 @@ describe('KloelLeadProcessorService', () => {
       const contextFn = jest.fn().mockResolvedValue('contexto');
       await service.processWhatsAppMessage(wsId, '5511999999999', 'Mensagem', contextFn);
       expect(contextFn).toHaveBeenCalledWith(wsId);
+    });
+
+    it('sends structured ABI state without a system role', async () => {
+      await service.processWhatsAppMessage(wsId, '5511999999999', 'Mensagem', () =>
+        Promise.resolve('contexto'),
+      );
+
+      expect(abiBuilder.build).toHaveBeenCalledWith(
+        expect.objectContaining({
+          audience: 'public',
+          currentInput: expect.objectContaining({
+            raw: 'Mensagem',
+            channel: 'whatsapp',
+          }),
+        }),
+      );
+      const completionInput = (chatCompletionWithFallback as jest.Mock).mock.calls.at(-1)?.[1];
+      expect(completionInput.messages).toEqual(
+        expect.not.arrayContaining([expect.objectContaining({ role: 'system' })]),
+      );
+      expect(completionInput.messages.at(-1)).toEqual(
+        expect.objectContaining({
+          role: 'user',
+          content: expect.stringContaining('"cognitiveState"'),
+        }),
+      );
     });
 
     it('handles autopilot enabled mode', async () => {

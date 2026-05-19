@@ -160,6 +160,7 @@ export async function runUpsertAgentSkill(
     riskLevel: agentSkillRisk(args.riskLevel),
     allowedTools: stringList(args.allowedTools),
     requiredEvidence: stringList(args.requiredEvidence),
+    delegationRules: [],
     validation: stringList(args.validation),
     rollback: stringList(args.rollback),
     metrics: stringList(args.metrics),

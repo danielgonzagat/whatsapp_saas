@@ -35,6 +35,17 @@ const OUTCOME_WEIGHTS: Record<string, number> = {
 interface OutcomeRow {
   outcomeName: string | null;
   wonVsBaseline: boolean | null;
+  outcomeValue: unknown;
+  chosenAction: string | null;
+  baselineAction: string | null;
+}
+
+export interface FailureReasonCount {
+  reason: string;
+  chosenAction: string;
+  baselineAction: string;
+  count: number;
+  totalOutcomeKeys: number;
 }
 
 interface LiftRow {
@@ -48,6 +59,7 @@ interface LiftRow {
   upperCI: number;
   wonCount: number;
   wonRate: number;
+  failureReasonCounts: FailureReasonCount[];
 }
 
 export interface LiftReport {
@@ -91,6 +103,69 @@ function isSingleSuccess(outcome: OutcomeRow): boolean {
   return weight >= 0.3;
 }
 
+function normalizeFailureReason(reason: string): string {
+  const trimmed = reason.trim();
+  if (/^[A-Za-z0-9_.-]{1,80}$/.test(trimmed)) return trimmed;
+  return 'unclassified_reason';
+}
+
+function normalizeReportLabel(label: string | null | undefined, fallback: string): string {
+  if (!label) return fallback;
+  const trimmed = label.trim();
+  if (/^[A-Za-z0-9_.-]{1,80}$/.test(trimmed)) return trimmed;
+  return fallback;
+}
+
+function extractFailureReason(
+  outcomeValue: unknown,
+): { reason: string; outcomeKeysCount: number } | null {
+  if (!outcomeValue || typeof outcomeValue !== 'object' || Array.isArray(outcomeValue)) return null;
+  const ov = outcomeValue as Record<string, unknown>;
+  if (typeof ov.reason !== 'string' || ov.reason.length === 0) return null;
+  const keys = ov.outcomeKeys;
+  const outcomeKeysCount = Array.isArray(keys) ? keys.length : 0;
+  return { reason: normalizeFailureReason(ov.reason), outcomeKeysCount };
+}
+
+function buildFailureReasonCounts(outcomes: OutcomeRow[]): FailureReasonCount[] {
+  const map = new Map<
+    string,
+    {
+      reason: string;
+      chosenAction: string;
+      baselineAction: string;
+      count: number;
+      outcomeKeysTotal: number;
+    }
+  >();
+  for (const o of outcomes) {
+    const extracted = extractFailureReason(o.outcomeValue);
+    if (!extracted) continue;
+    const chosenAction = normalizeReportLabel(o.chosenAction, 'unknown_action');
+    const baselineAction = normalizeReportLabel(o.baselineAction, 'unknown_baseline');
+    const key = JSON.stringify([extracted.reason, chosenAction, baselineAction]);
+    const entry = map.get(key) ?? {
+      reason: extracted.reason,
+      chosenAction,
+      baselineAction,
+      count: 0,
+      outcomeKeysTotal: 0,
+    };
+    entry.count += 1;
+    entry.outcomeKeysTotal += extracted.outcomeKeysCount;
+    map.set(key, entry);
+  }
+  return Array.from(map.values()).map(
+    ({ reason, chosenAction, baselineAction, count, outcomeKeysTotal }) => ({
+      reason,
+      chosenAction,
+      baselineAction,
+      count,
+      totalOutcomeKeys: outcomeKeysTotal,
+    }),
+  );
+}
+
 @Injectable()
 export class MindLiftReportService {
   private readonly logger = StructuredLogger.from(MindLiftReportService.name);
@@ -112,6 +187,9 @@ export class MindLiftReportService {
       entry.push({
         outcomeName: row.outcomeName ?? null,
         wonVsBaseline: row.wonVsBaseline ?? null,
+        outcomeValue: row.outcomeValue ?? null,
+        chosenAction: row.chosenAction ?? null,
+        baselineAction: row.baselineAction ?? null,
       });
       grouped.set(key, entry);
     }
@@ -130,6 +208,8 @@ export class MindLiftReportService {
       const wonCount = outcomes.filter((o) => o.wonVsBaseline === true).length;
       const wonRate = total > 0 ? wonCount / total : 0;
 
+      const failureReasonCounts = buildFailureReasonCounts(outcomes);
+
       liftRows.push({
         decisionType,
         channel,
@@ -141,6 +221,7 @@ export class MindLiftReportService {
         upperCI: ci.upper,
         wonCount,
         wonRate,
+        failureReasonCounts,
       });
     }
 
@@ -176,6 +257,23 @@ export class MindLiftReportService {
       lines.push(
         `| ${row.decisionType} | ${row.channel} | ${row.total} | ${row.closed} | ${(row.successRate * 100).toFixed(1)}% | ${ciStr} | ${(row.wonRate * 100).toFixed(1)}% |`,
       );
+    }
+
+    const rowsWithFailures = report.rows.filter((r) => r.failureReasonCounts.length > 0);
+    if (rowsWithFailures.length > 0) {
+      lines.push('');
+      lines.push('## Failure Reason Summary');
+      lines.push('');
+      lines.push('| Decision Type | Channel | Chosen Action | Baseline Action | Reason | Count | Outcome Keys Total |');
+      lines.push('|---------------|---------|---------------|-----------------|--------|-------|-------------------|');
+
+      for (const row of rowsWithFailures) {
+        for (const fr of row.failureReasonCounts) {
+          lines.push(
+            `| ${row.decisionType} | ${row.channel} | ${fr.chosenAction} | ${fr.baselineAction} | ${fr.reason} | ${fr.count} | ${fr.totalOutcomeKeys} |`,
+          );
+        }
+      }
     }
 
     const markdown = lines.join('\n');

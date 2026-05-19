@@ -3,7 +3,7 @@
   "updatedAt": "2026-05-17T12:46:59.757Z",
   "source": "scripts/ops/collect-ratchet-metrics.mjs",
   "mode": "mechanical-ratchet",
-  "note": "PR-276 live ratchet: zero remains locked for bypass/suppression/new-code metrics; legacy aggregate ceilings reflect the synchronized live measurement and may only tighten from here.",
+  "note": "These numbers are the current floor/ceiling for measurable code quality. _max metrics must never go up. _min metrics must never go down.",
   "ratchet": {
     "pulse_score_min": 58,
     "any_count_max": 0,
@@ -35,7 +35,7 @@
     "codacy_total_issues_max": 12025,
     "codacy_high_severity_issues_max": 2225,
     "codacy_medium_severity_issues_max": 3380,
-    "coverage_lines_min": 47.47,
-    "coverage_branches_min": 38.89
+    "coverage_lines_min": 47.73,
+    "coverage_branches_min": 38.96
   }
 }

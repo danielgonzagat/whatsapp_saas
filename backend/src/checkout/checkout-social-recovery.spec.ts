@@ -1,3 +1,4 @@
+import { expectValueOf } from '../../test/expect-value-of';
 import { CheckoutSocialRecoveryService } from './checkout-social-recovery.service';
 import { CheckoutSocialLeadStatus } from '@prisma/client';
 
@@ -18,7 +19,9 @@ describe('CheckoutSocialRecoveryService', () => {
       findFirst: jest.Mock;
       findUnique: jest.Mock;
     };
-    workspace: { findMany: jest.Mock };
+    workspace: {
+      findMany: jest.Mock;
+    };
     $transaction: jest.Mock;
   };
   let emailService: { sendEmail: jest.Mock };
@@ -63,8 +66,8 @@ describe('CheckoutSocialRecoveryService', () => {
           {
             id: 'ws-1',
             providerSettings: {
+              whatsappProvider: 'meta',
               connectionStatus: 'connected',
-              whatsappProvider: 'meta-cloud',
             },
           },
         ]),
@@ -159,7 +162,7 @@ describe('CheckoutSocialRecoveryService', () => {
       expect.objectContaining({
         to: 'joao@example.com',
         headers: expect.objectContaining({
-          'List-Unsubscribe': expect.stringMatching(/^/),
+          'List-Unsubscribe': expectValueOf(String),
           'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
         }),
       }),

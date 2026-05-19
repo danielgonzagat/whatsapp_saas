@@ -18,7 +18,7 @@ test('flow editor loads via builder route', async ({ page, request }) => {
 
   await expect(page.getByRole('button', { name: 'Editor' })).toBeVisible({ timeout: 15_000 });
   await expect(page.getByRole('button', { name: 'Templates' })).toBeVisible();
-  await expect(page.getByRole('button', { name: /^Execuções$/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: /^Execu(?:coes|ções)$/i })).toBeVisible();
   await expect(page.locator('.react-flow').first()).toBeVisible({ timeout: 15_000 });
   await expect(page.getByRole('button', { name: /Salvar/i })).toBeVisible();
   await expect(page.getByRole('button', { name: /Testar/i })).toBeVisible();

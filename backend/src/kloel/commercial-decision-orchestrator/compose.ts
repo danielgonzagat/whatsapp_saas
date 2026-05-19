@@ -98,6 +98,7 @@ export function buildActions(params: {
   internalReplyPlan: InternalReplyPlan;
   priceBand: string;
   segment: string;
+  decisions?: Record<string, unknown>;
 }): PredecidedAction[] {
   const actions: PredecidedAction[] = [];
   const discountFn = params.discountPercentFromCoupon;
@@ -129,6 +130,9 @@ export function buildActions(params: {
         inboundCorrelationId: params.inboundKey,
         message: params.customerMessage,
         internalReplyPlan: params.internalReplyPlan,
+        ...(params.decisions
+          ? { hierarchyTrace: params.decisions }
+          : {}),
       },
     });
   }

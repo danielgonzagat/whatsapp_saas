@@ -8,7 +8,7 @@
  *   - SET NX (returned 'OK' regardless, breaking dedup tests)
  *   - hset/hget/hgetall (not implemented at all)
  *
- * If any of these regress in a future ioredis-mock release, this
+ * If a of these regress in a future ioredis-mock release, this
  * spec catches it before the affected service tests do.
  */
 
@@ -18,6 +18,21 @@ describe('ioredis-mock verification (PR P2-5)', () => {
   it('returns a non-null client in test mode', () => {
     const client = createRedisClient();
     expect(client).not.toBeNull();
+  });
+  it('keeps Redis listener budget high enough when env is lower', () => {
+    const previous = process.env.REDIS_CLIENT_MAX_LISTENERS;
+    process.env.REDIS_CLIENT_MAX_LISTENERS = '64';
+
+    try {
+      const client = createRedisClient();
+      expect(client.getMaxListeners()).toBeGreaterThanOrEqual(256);
+    } finally {
+      if (previous === undefined) {
+        delete process.env.REDIS_CLIENT_MAX_LISTENERS;
+      } else {
+        process.env.REDIS_CLIENT_MAX_LISTENERS = previous;
+      }
+    }
   });
 
   it('supports SET key value EX ttl with TTL inspection via TTL command', async () => {

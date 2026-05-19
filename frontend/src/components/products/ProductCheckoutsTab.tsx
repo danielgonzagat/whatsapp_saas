@@ -6,66 +6,14 @@ import {
   CHECKOUT_PAYMENT_METHODS,
   CHECKOUT_TAB_COPY,
   Checkout,
-  CheckoutFormState,
   createCheckoutForm,
-  createDefaultCheckoutForm,
   toCheckoutErrorMessage,
 } from '@/components/products/ProductCheckoutsTab.helpers';
+import { useCheckoutFormState } from '@/components/products/useCheckoutFormState';
 import { colors } from '@/lib/design-tokens';
 import { Pencil, Plus, Trash2, X } from 'lucide-react';
 import { useCallback, useEffect, useId, useState } from 'react';
 import { mutate } from 'swr';
-
-const CHECKOUT_FORM_DRAFT_VERSION = 1;
-
-type ProductCheckoutFormDraft = {
-  version: number;
-  productId: string;
-  savedAt: string;
-  form: CheckoutFormState;
-  editingCheckoutId: string | null;
-  showModal: boolean;
-};
-
-function buildCheckoutFormDraftKey(productId: string): string {
-  return `kloel:product-checkout-form-draft:${productId}`;
-}
-
-function readCheckoutFormDraft(
-  raw: string | null,
-  productId: string,
-): ProductCheckoutFormDraft | null {
-  if (!raw) {
-    return null;
-  }
-  try {
-    const parsed = JSON.parse(raw) as Partial<ProductCheckoutFormDraft>;
-    if (
-      parsed.version !== CHECKOUT_FORM_DRAFT_VERSION ||
-      parsed.productId !== productId ||
-      !parsed.form
-    ) {
-      return null;
-    }
-    return {
-      version: CHECKOUT_FORM_DRAFT_VERSION,
-      productId,
-      savedAt: typeof parsed.savedAt === 'string' ? parsed.savedAt : new Date().toISOString(),
-      form: {
-        ...createDefaultCheckoutForm(),
-        ...parsed.form,
-        paymentMethods: Array.isArray(parsed.form.paymentMethods)
-          ? parsed.form.paymentMethods
-          : createDefaultCheckoutForm().paymentMethods,
-      },
-      editingCheckoutId:
-        typeof parsed.editingCheckoutId === 'string' ? parsed.editingCheckoutId : null,
-      showModal: parsed.showModal === true,
-    };
-  } catch {
-    return null;
-  }
-}
 
 /** Product checkouts tab. */
 export function ProductCheckoutsTab({ productId }: { productId: string }) {
@@ -73,15 +21,21 @@ export function ProductCheckoutsTab({ productId }: { productId: string }) {
   const [items, setItems] = useState<Checkout[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [showModal, setShowModal] = useState(false);
-  const [editingCheckoutId, setEditingCheckoutId] = useState<string | null>(null);
-  const [form, setForm] = useState<CheckoutFormState>(createDefaultCheckoutForm());
+  const {
+    form,
+    showModal,
+    editingCheckoutId,
+    setForm,
+    setShowModal,
+    setEditingCheckoutId,
+    resetForm: hookResetForm,
+    clearDraft,
+  } = useCheckoutFormState(productId);
   const [creating, setCreating] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [checkoutPendingDelete, setCheckoutPendingDelete] = useState<Checkout | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [isOnline, setIsOnline] = useState(true);
-  const checkoutFormDraftKey = buildCheckoutFormDraftKey(productId);
 
   const fetch_ = useCallback(() => {
     setLoadError(null);
@@ -111,40 +65,8 @@ export function ProductCheckoutsTab({ productId }: { productId: string }) {
     };
   }, []);
 
-  useEffect(() => {
-    if (typeof window === 'undefined') {
-      return;
-    }
-    const savedDraft = readCheckoutFormDraft(
-      window.localStorage.getItem(checkoutFormDraftKey),
-      productId,
-    );
-    if (!savedDraft) {
-      return;
-    }
-    setForm(savedDraft.form);
-    setEditingCheckoutId(savedDraft.editingCheckoutId);
-    setShowModal(savedDraft.showModal);
-  }, [checkoutFormDraftKey, productId]);
-
-  useEffect(() => {
-    if (typeof window === 'undefined' || !showModal) {
-      return;
-    }
-    const payload: ProductCheckoutFormDraft = {
-      version: CHECKOUT_FORM_DRAFT_VERSION,
-      productId,
-      savedAt: new Date().toISOString(),
-      form,
-      editingCheckoutId,
-      showModal,
-    };
-    window.localStorage.setItem(checkoutFormDraftKey, JSON.stringify(payload));
-  }, [checkoutFormDraftKey, editingCheckoutId, form, productId, showModal]);
-
   const resetForm = () => {
-    setForm(createDefaultCheckoutForm());
-    setEditingCheckoutId(null);
+    hookResetForm();
     setSubmitError(null);
   };
 
@@ -165,7 +87,7 @@ export function ProductCheckoutsTab({ productId }: { productId: string }) {
       } else {
         await apiFetch(`/products/${productId}/checkouts`, { method: 'POST', body });
       }
-      window.localStorage.removeItem(checkoutFormDraftKey);
+      clearDraft();
       setShowModal(false);
       resetForm();
       mutate((key: unknown) => typeof key === 'string' && key.startsWith('/products'));

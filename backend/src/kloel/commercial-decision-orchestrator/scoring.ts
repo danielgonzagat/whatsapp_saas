@@ -168,7 +168,10 @@ export async function resolveDecisions(
         context: { concept, concepts: allConcepts, confidence: objection.confidence, priceBand },
       }),
     };
-    couponDecision = coupon;
+    couponDecision = {
+      ...coupon,
+      hierarchyJustification: (decisions.coupon_offer as { hierarchyJustification?: unknown }).hierarchyJustification,
+    };
     couponAction = coupon.action;
   }
 
@@ -212,7 +215,10 @@ export async function resolveDecisions(
           },
         }),
       };
-      productOfferDecision = product;
+      productOfferDecision = {
+        ...product,
+        hierarchyJustification: (decisions.product_offer as { hierarchyJustification?: unknown }).hierarchyJustification,
+      };
       productOffer = product.offer;
     }
   }
@@ -280,7 +286,10 @@ export async function resolveDecisions(
         },
       }),
     };
-    humanTransferDecision = transfer;
+    humanTransferDecision = {
+      ...transfer,
+      hierarchyJustification: (decisions.human_transfer as { hierarchyJustification?: unknown }).hierarchyJustification,
+    };
   }
 
   return {

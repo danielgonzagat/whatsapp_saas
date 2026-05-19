@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   getAutopilotStatus,
   toggleAutopilot,
@@ -25,18 +25,14 @@ const { apiFetch } = vi.hoisted(() => ({
 
 vi.mock('./core', () => ({
   apiFetch,
-  authHeaders: vi.fn((token?: string) =>
-    token ? { authorization: `Bearer ${token}` } : {},
-  ),
-  buildQuery: vi.fn(
-    (params: Record<string, string | number | boolean | undefined | null>) => {
-      const qs = Object.entries(params)
-        .filter(([, v]) => v !== undefined && v !== null)
-        .map(([k, v]) => `${k}=${String(v)}`)
-        .join('&');
-      return qs ? `?${qs}` : '';
-    },
-  ),
+  authHeaders: vi.fn((token?: string) => (token ? { authorization: `Bearer ${token}` } : {})),
+  buildQuery: vi.fn((params: Record<string, string | number | boolean | undefined | null>) => {
+    const qs = Object.entries(params)
+      .filter(([, v]) => v !== undefined && v !== null)
+      .map(([k, v]) => `${k}=${String(v)}`)
+      .join('&');
+    return qs ? `?${qs}` : '';
+  }),
 }));
 
 vi.mock('swr', () => ({
@@ -164,9 +160,7 @@ describe('getAutopilotPipeline', () => {
 
   it('throws on failure', async () => {
     apiFetch.mockResolvedValueOnce({ error: 'Error', status: 500 });
-    await expect(getAutopilotPipeline('ws1')).rejects.toThrow(
-      'Failed to fetch autopilot pipeline',
-    );
+    await expect(getAutopilotPipeline('ws1')).rejects.toThrow('Failed to fetch autopilot pipeline');
   });
 });
 
@@ -232,9 +226,7 @@ describe('getAutopilotActions', () => {
 
   it('throws on failure', async () => {
     apiFetch.mockResolvedValueOnce({ error: 'Error', status: 500 });
-    await expect(getAutopilotActions('ws1')).rejects.toThrow(
-      'Failed to fetch autopilot actions',
-    );
+    await expect(getAutopilotActions('ws1')).rejects.toThrow('Failed to fetch autopilot actions');
   });
 });
 
@@ -287,9 +279,7 @@ describe('runAutopilot', () => {
 
   it('throws on failure', async () => {
     apiFetch.mockResolvedValueOnce({ error: 'Error', status: 500 });
-    await expect(runAutopilot({ workspaceId: 'ws1' })).rejects.toThrow(
-      'Failed to run autopilot',
-    );
+    await expect(runAutopilot({ workspaceId: 'ws1' })).rejects.toThrow('Failed to run autopilot');
   });
 });
 
@@ -368,5 +358,179 @@ describe('getAutopilotRuntimeConfig', () => {
   it('throws on failure', async () => {
     apiFetch.mockResolvedValueOnce({ error: 'Error', status: 500 });
     await expect(getAutopilotRuntimeConfig()).rejects.toThrow('Error');
+  });
+});
+
+describe('deriveAutopilotMissions', () => {
+  let deriveAutopilotMissions: (bundle: {
+    status: { workspaceId: string; enabled: boolean; billingSuspended?: boolean } | null;
+    stats: {
+      errorsLast7d?: number;
+      contactsTracked?: number;
+      conversionsLast7d?: number;
+      actionsLast7d?: number;
+    } | null;
+    impact: { replyRate?: number } | null;
+    pipeline: {
+      workspaceId: string;
+      autonomy?: { whatsappStatus?: string; connected?: boolean };
+    } | null;
+    insights: { id?: string; createdAt?: string }[];
+  }) => { id: string; title: string; severity: string; priority: boolean }[];
+
+  beforeAll(async () => {
+    const mod = await vi.importActual<typeof import('../../app/(main)/autopilot/page.helpers')>(
+      '../../app/(main)/autopilot/page.helpers',
+    );
+    deriveAutopilotMissions = mod.deriveAutopilotMissions as typeof deriveAutopilotMissions;
+  });
+
+  it('returns empty array when all data is null', () => {
+    const result = deriveAutopilotMissions({
+      status: null,
+      stats: null,
+      impact: null,
+      pipeline: null,
+      insights: [],
+    });
+    expect(result).toEqual([]);
+  });
+
+  it('returns activation mission when autopilot is disabled', () => {
+    const result = deriveAutopilotMissions({
+      status: { workspaceId: 'ws1', enabled: false },
+      stats: null,
+      impact: null,
+      pipeline: null,
+      insights: [],
+    });
+    expect(result).toHaveLength(1);
+    expect(result[0].id).toBe('activate-autopilot');
+    expect(result[0].priority).toBe(true);
+    expect(result[0].severity).toBe('warning');
+  });
+
+  it('returns billing mission when billing is suspended', () => {
+    const result = deriveAutopilotMissions({
+      status: { workspaceId: 'ws1', enabled: true, billingSuspended: true },
+      stats: null,
+      impact: null,
+      pipeline: null,
+      insights: [],
+    });
+    expect(result).toHaveLength(1);
+    expect(result[0].id).toBe('resolve-billing');
+    expect(result[0].severity).toBe('critical');
+  });
+
+  it('returns connect-whatsapp mission when whatsapp is down', () => {
+    const result = deriveAutopilotMissions({
+      status: null,
+      stats: null,
+      impact: null,
+      pipeline: { workspaceId: 'ws1', autonomy: { whatsappStatus: 'DOWN', connected: false } },
+      insights: [],
+    });
+    expect(result).toHaveLength(1);
+    expect(result[0].id).toBe('connect-whatsapp');
+    expect(result[0].severity).toBe('critical');
+  });
+
+  it('returns check-whatsapp mission when whatsapp is degraded', () => {
+    const result = deriveAutopilotMissions({
+      status: null,
+      stats: null,
+      impact: null,
+      pipeline: { workspaceId: 'ws1', autonomy: { whatsappStatus: 'DEGRADED', connected: true } },
+      insights: [],
+    });
+    expect(result).toHaveLength(1);
+    expect(result[0].id).toBe('check-whatsapp');
+    expect(result[0].severity).toBe('warning');
+  });
+
+  it('returns error review mission when errors exceed threshold', () => {
+    const result = deriveAutopilotMissions({
+      status: null,
+      stats: { errorsLast7d: 5, contactsTracked: 0, conversionsLast7d: 0, actionsLast7d: 0 },
+      impact: null,
+      pipeline: null,
+      insights: [],
+    });
+    expect(result).toHaveLength(1);
+    expect(result[0].id).toBe('review-errors');
+  });
+
+  it('does not return error mission when errors are few', () => {
+    const result = deriveAutopilotMissions({
+      status: null,
+      stats: { errorsLast7d: 2, contactsTracked: 0, conversionsLast7d: 0, actionsLast7d: 0 },
+      impact: null,
+      pipeline: null,
+      insights: [],
+    });
+    expect(result.find((m: { id: string }) => m.id === 'review-errors')).toBeUndefined();
+  });
+
+  it('returns conversion check mission when tracked contacts exist but no conversions', () => {
+    const result = deriveAutopilotMissions({
+      status: null,
+      stats: { errorsLast7d: 0, contactsTracked: 10, conversionsLast7d: 0, actionsLast7d: 0 },
+      impact: null,
+      pipeline: null,
+      insights: [],
+    });
+    expect(result).toHaveLength(1);
+    expect(result[0].id).toBe('check-conversion');
+  });
+
+  it('does not return conversion mission with fewer than 5 tracked contacts', () => {
+    const result = deriveAutopilotMissions({
+      status: null,
+      stats: { errorsLast7d: 0, contactsTracked: 3, conversionsLast7d: 0, actionsLast7d: 0 },
+      impact: null,
+      pipeline: null,
+      insights: [],
+    });
+    expect(result.find((m: { id: string }) => m.id === 'check-conversion')).toBeUndefined();
+  });
+
+  it('returns reply rate mission when rate is low with contacts tracked', () => {
+    const result = deriveAutopilotMissions({
+      status: null,
+      stats: { errorsLast7d: 0, contactsTracked: 5, conversionsLast7d: 1, actionsLast7d: 0 },
+      impact: { replyRate: 0.15 },
+      pipeline: null,
+      insights: [],
+    });
+    expect(result).toHaveLength(1);
+    expect(result[0].id).toBe('improve-reply-rate');
+  });
+
+  it('returns stale insights mission when latest insight is older than 2h', () => {
+    const oldDate = new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString();
+    const result = deriveAutopilotMissions({
+      status: null,
+      stats: null,
+      impact: null,
+      pipeline: null,
+      insights: [{ createdAt: oldDate, id: 'i1' }],
+    });
+    expect(result).toHaveLength(1);
+    expect(result[0].id).toBe('insights-stale');
+  });
+
+  it('returns multiple missions when multiple conditions are met', () => {
+    const result = deriveAutopilotMissions({
+      status: { workspaceId: 'ws1', enabled: false },
+      stats: { errorsLast7d: 7, contactsTracked: 0, conversionsLast7d: 0, actionsLast7d: 0 },
+      impact: null,
+      pipeline: null,
+      insights: [],
+    });
+    expect(result.length).toBeGreaterThanOrEqual(2);
+    expect(result.map((m: { id: string }) => m.id).sort()).toEqual(
+      ['activate-autopilot', 'review-errors'].sort(),
+    );
   });
 });

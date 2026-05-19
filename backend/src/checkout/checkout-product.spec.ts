@@ -1,12 +1,16 @@
+import { expectValueOf } from '../../test/expect-value-of';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { CheckoutProductService } from './checkout-product.service';
+
 jest.mock('./checkout-product.create', () => ({
   createCheckout: jest.fn(),
 }));
+
 jest.mock('./checkout-code.util', () => ({
   generateUniquePublicCheckoutCode: jest.fn().mockResolvedValue('CODE001'),
 }));
+
 let prisma: {
   product: {
     create: jest.Mock;
@@ -28,6 +32,7 @@ let prisma: {
   };
   $transaction: jest.Mock;
 };
+
 let auditService: { log: jest.Mock };
 let productConfigService: {
   buildDefaultCheckoutConfigInput: jest.Mock;
@@ -37,7 +42,9 @@ let productConfigService: {
   buildPricingPreview: jest.Mock;
   resetConfig: jest.Mock;
 };
+
 let service: CheckoutProductService;
+
 const makeProduct = (overrides = {}) => ({
   id: 'prod_1',
   workspaceId: 'ws_1',
@@ -45,6 +52,7 @@ const makeProduct = (overrides = {}) => ({
   name: 'Test Product',
   ...overrides,
 });
+
 const makePlan = (overrides = {}) => ({
   id: 'plan_1',
   productId: 'prod_1',
@@ -56,6 +64,7 @@ const makePlan = (overrides = {}) => ({
   referenceCode: 'CODE001',
   ...overrides,
 });
+
 beforeEach(() => {
   prisma = {
     product: {
@@ -332,7 +341,7 @@ describe('CheckoutProductService', () => {
 
       expect(prisma.checkoutConfig.findUnique).toHaveBeenCalledWith({
         where: { planId: 'plan_1' },
-        include: expect.objectContaining({ pixels: true, plan: expect.objectContaining({}) }),
+        include: expect.objectContaining({ pixels: true, plan: expectValueOf(Object) }),
       });
       expect(productConfigService.buildPricingPreview).toHaveBeenCalledWith(19990);
       expect(result).toHaveProperty('pricing');

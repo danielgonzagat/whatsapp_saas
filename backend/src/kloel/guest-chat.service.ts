@@ -8,12 +8,13 @@ import OpenAI from 'openai';
 import { findFirstSequential } from '../common/async-sequence';
 import { createTextLlmClient, resolveTextLlmApiKey } from '../lib/llm-provider';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
-import { KLOEL_GUEST_SYSTEM_PROMPT } from './kloel.prompts';
 import { chatCompletionWithFallback, chatCompletionWithRetry } from './openai-wrapper';
 import { OpsAlertService } from '../observability/ops-alert.service';
+import { AbiBuilderService } from './abi/abi-builder.service';
+import { validateAbiPayload } from './abi/abi-validator';
 
 interface GuestConversation {
-  messages: { role: 'user' | 'assistant' | 'system'; content: string }[];
+  messages: { role: 'user' | 'assistant'; content: string }[];
   createdAt: Date;
   lastMessageAt: Date;
 }
@@ -38,6 +39,7 @@ export class GuestChatService implements OnModuleDestroy {
     private readonly configService: ConfigService,
     @Optional() private readonly opsAlert?: OpsAlertService,
     @Optional() @InjectRedis() private readonly redis?: Redis,
+    @Optional() private readonly abiBuilder?: AbiBuilderService,
   ) {
     const isTestEnv = !!process.env.JEST_WORKER_ID || process.env.NODE_ENV === 'test';
 
@@ -87,9 +89,64 @@ export class GuestChatService implements OnModuleDestroy {
     conversation.lastMessageAt = new Date();
     await this.persistConversation(sessionId, conversation);
 
+    const historyMessages = conversation.messages.slice(0, -1).slice(-9);
+    const currentInput = {
+      raw: message,
+      channel: 'web',
+      arrivalTimestamp: new Date().toISOString(),
+    };
+
+    if (this.abiBuilder) {
+      const abiResult = await this.abiBuilder.build({
+        audience: 'public',
+        currentInput,
+        perceptionSnapshot: {
+          channel: 'web',
+        },
+      });
+
+      if (abiResult.status !== 'ok') {
+        this.logger.warn(
+          `ABI build failed: ${abiResult.reason}, using structured guest fallback`,
+        );
+      } else {
+        const abi = abiResult.abi;
+        const validation = validateAbiPayload(abi);
+
+        if (validation.status === 'FAIL') {
+          this.logger.warn(
+            `ABI validation failed: ${JSON.stringify(validation.issues)}, using structured guest fallback`,
+          );
+        } else {
+          const contextMessages = [
+            ...historyMessages,
+            {
+              role: 'user' as const,
+              content: JSON.stringify({
+                cognitiveState: abi,
+                currentInput,
+              }),
+            },
+          ];
+
+          return { conversation, contextMessages };
+        }
+      }
+    }
+
     const contextMessages = [
-      { role: 'system' as const, content: KLOEL_GUEST_SYSTEM_PROMPT },
-      ...conversation.messages.slice(-10),
+      ...historyMessages,
+      {
+        role: 'user' as const,
+        content: JSON.stringify({
+          cognitiveState: {
+            abiStatus: this.abiBuilder ? 'unavailable_or_invalid' : 'builder_not_injected',
+            audience: 'public',
+            perceptionSnapshot: { channel: 'web' },
+          },
+          currentInput,
+        }),
+      },
     ];
 
     return {
@@ -106,7 +163,7 @@ export class GuestChatService implements OnModuleDestroy {
 
   private async generateGuestReply(
     contextMessages: {
-      role: 'user' | 'assistant' | 'system';
+      role: 'user' | 'assistant';
       content: string;
     }[],
     sessionId: string,
@@ -195,6 +252,12 @@ export class GuestChatService implements OnModuleDestroy {
     res.flushHeaders();
 
     try {
+      if (!message || message.trim().length === 0) {
+        res.write(`data: [DONE]\n\n`);
+        res.end();
+        return;
+      }
+
       const apiKey = this.getOpenAiKey();
       if (!apiKey) {
         this.writeStreamChunk(res, {
@@ -247,6 +310,10 @@ export class GuestChatService implements OnModuleDestroy {
    */
   async chatSync(message: string, sessionId: string): Promise<string> {
     try {
+      if (!message || message.trim().length === 0) {
+        return '';
+      }
+
       const apiKey = this.getOpenAiKey();
       if (!apiKey) {
         this.logger.error('OPENAI_API_KEY not configured');
@@ -298,7 +365,10 @@ export class GuestChatService implements OnModuleDestroy {
         return null;
       }
       return {
-        messages: parsed.messages,
+        messages: parsed.messages.filter(
+          (message): message is GuestConversation['messages'][number] =>
+            message.role === 'user' || message.role === 'assistant',
+        ),
         createdAt: parsed.createdAt ? new Date(parsed.createdAt) : new Date(),
         lastMessageAt: parsed.lastMessageAt ? new Date(parsed.lastMessageAt) : new Date(),
       };

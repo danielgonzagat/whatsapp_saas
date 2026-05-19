@@ -1,3 +1,4 @@
+import { expectValueOf } from '../../test/expect-value-of';
 // Webhook specs exercise sendMessage-adjacent flows through the shared
 // messageLimit/dailyLimit enforcement in WhatsappService.sendMessage().
 import { buildConnectEventsWebhookController as buildController } from '../../test/payment-webhook-connect-events-harness';
@@ -41,7 +42,7 @@ describe('PaymentWebhookController.handleStripe — connect reversals and payout
     });
     expect(prisma.checkoutOrder.updateMany).toHaveBeenCalledWith({
       where: { id: 'order-1', workspaceId: 'ws-1' },
-      data: { status: 'REFUNDED', refundedAt: expect.any(Date) },
+      data: { status: 'REFUNDED', refundedAt: expectValueOf(Date) },
     });
     expect(prisma.kloelSale.updateMany).toHaveBeenCalledWith({
       where: { workspaceId: 'ws-1', externalPaymentId: 'pi_test_123' },

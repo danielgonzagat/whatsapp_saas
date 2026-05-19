@@ -42,7 +42,11 @@ export class SystemHealthController {
   async readiness() {
     const result = await this.health.deepReadiness();
     if (result.status === 'DOWN') {
-      throw new ServiceUnavailableException(result);
+      const failures = Array.isArray(result.failures) ? result.failures : [];
+      throw new ServiceUnavailableException({
+        ...result,
+        message: `Dependencies down: ${failures.join(', ') || 'unknown'}`,
+      });
     }
     return result;
   }

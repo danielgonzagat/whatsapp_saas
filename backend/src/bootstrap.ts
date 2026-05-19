@@ -67,7 +67,7 @@ console.log('========================================');
 console.log('[BOOTSTRAP] Loading NestJS application...');
 console.log('========================================');
 
-// Dynamic import: ensures process.env is fully populated before any
+// Dynamic import: ensures process.env is fully populated before every
 // downstream module evaluates its imports. The void operator marks
 // the promise as intentionally fire-and-forget.
 void import('./main');

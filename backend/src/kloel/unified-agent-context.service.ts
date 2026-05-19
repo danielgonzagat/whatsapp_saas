@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { StructuredLogger } from '../logging/structured-logger';
 import type { ChatCompletionMessageParam } from 'openai/resources/chat';
-import { buildKloelLeadPrompt } from './kloel.prompts';
+import { CANONICAL_FALLBACK_SYSTEM_PROMPT } from './kloel.prompts';
 import { UnifiedAgentContextDataService } from './unified-agent-context-data.service';
 
 type UnknownRecord = Record<string, unknown>;
@@ -112,156 +112,20 @@ export class UnifiedAgentContextService {
 
   // ───────── prompt construction ─────────
 
+  /**
+   * @deprecated UTP-ABI-009 — The full system prompt is now assembled via the
+   * ABI-sourced prompt path (ABI-005 through ABI-008). This method is retained
+   * solely as a signature-preserving fallback. It unconditionally returns the
+   * canonical cognitive-fallback constant.
+   *
+   * @see {@link ./kloel.prompts.CANONICAL_FALLBACK_SYSTEM_PROMPT}
+   */
   buildSystemPrompt(
-    workspace: UnknownRecord,
-    products: UnknownRecord[],
-    aiConfigs: UnknownRecord[] = [],
+    _workspace: UnknownRecord,
+    _products: UnknownRecord[],
+    _aiConfigs: UnknownRecord[] = [],
   ): string {
-    const businessName = this.resolveBusinessDisplayName(workspace);
-    const productList =
-      products.length > 0
-        ? products
-            .map((p) => {
-              const v = (p.value ?? {}) as UnknownRecord;
-              return `- ${this.readText(v.name)}: R$ ${this.readText(v.price)}`;
-            })
-            .join('\n')
-        : 'Nenhum produto cadastrado';
-
-    const aiConfigContext: string[] = [];
-    const salesPolicy = this.readRecord(workspace.salesPolicy);
-    const policyInstructions = this.readText(salesPolicy.instructions).trim();
-    const policyAggressiveness = this.readText(salesPolicy.aggressiveness).trim();
-    const policyTone = this.readText(salesPolicy.tone).trim();
-    const policyScope = this.readText(salesPolicy.appliesTo).trim();
-    if (policyInstructions || policyAggressiveness || policyTone) {
-      aiConfigContext.push('POLÍTICA ESTRATÉGICA ATIVA DO DONO:');
-      if (policyAggressiveness) {
-        aiConfigContext.push(`  - Agressividade: ${policyAggressiveness}`);
-      }
-      if (policyTone) {
-        aiConfigContext.push(`  - Tom: ${policyTone}`);
-      }
-      if (policyScope) {
-        aiConfigContext.push(`  - Escopo: ${policyScope}`);
-      }
-      if (policyInstructions) {
-        aiConfigContext.push(`  - Instrução: ${policyInstructions}`);
-      }
-    }
-    for (const cfg of aiConfigs) {
-      const profile = (cfg.customerProfile ?? {}) as UnknownRecord;
-      const objections = cfg.objections as UnknownRecord[];
-      const salesArgs = (cfg.salesArguments ?? {}) as UnknownRecord;
-
-      if (profile.idealCustomer) {
-        aiConfigContext.push(`PERFIL DO CLIENTE IDEAL: ${this.str(profile.idealCustomer)}`);
-      }
-      if (profile.painPoints) {
-        aiConfigContext.push(`PRINCIPAIS DORES: ${this.str(profile.painPoints)}`);
-      }
-      if (profile.promisedResult) {
-        aiConfigContext.push(`RESULTADO PROMETIDO: ${this.str(profile.promisedResult)}`);
-      }
-      if (objections && Array.isArray(objections) && objections.length > 0) {
-        aiConfigContext.push('OBJEÇÕES E RESPOSTAS:');
-        for (const obj of objections) {
-          if (obj.q && obj.a) {
-            aiConfigContext.push(
-              `  - Objeção: "${this.str(obj.q)}" → Resposta: "${this.str(obj.a)}"`,
-            );
-          }
-        }
-      }
-      if (cfg.tone) {
-        const toneKey = this.readText(cfg.tone);
-        const toneMap: Record<string, string> = {
-          Consultivo: 'Seja consultiva, educativa e focada em resolver problemas do cliente.',
-          Agressivo: 'Seja direta, urgente e focada em fechar a venda rapidamente.',
-          Amigavel: 'Seja calorosa, próxima e crie rapport antes de vender.',
-          Urgente: 'Crie senso de urgência real baseado em fatos. Não invente escassez.',
-        };
-        aiConfigContext.push(`TOM DE VENDA: ${toneMap[toneKey] || toneKey}`);
-      }
-      if (cfg.persistenceLevel) {
-        const pl = Number(cfg.persistenceLevel);
-        aiConfigContext.push(
-          `NÍVEL DE PERSISTÊNCIA: ${pl}/5 — ${pl >= 4 ? 'insista mais vezes antes de desistir' : pl <= 2 ? 'seja sutil e não force' : 'equilíbrio entre insistir e respeitar'}`,
-        );
-      }
-      if (cfg.messageLimit) {
-        aiConfigContext.push(
-          `LIMITE DE MENSAGENS: máximo ${this.str(cfg.messageLimit)} mensagens antes de enviar link ou encerrar`,
-        );
-      }
-      if (salesArgs.autoCheckoutLink) {
-        aiConfigContext.push(
-          'REGRA: Envie o link de checkout automaticamente quando detectar intenção de compra.',
-        );
-      }
-      if (salesArgs.offerDiscount) {
-        aiConfigContext.push(
-          'REGRA: Se detectar resistência de preço, ofereça desconto antes de perder o lead.',
-        );
-      }
-      if (salesArgs.useUrgency) {
-        aiConfigContext.push(
-          'REGRA: Use urgência e escassez quando houver contexto real para isso.',
-        );
-      }
-      if (salesArgs.hideAiIdentity) {
-        aiConfigContext.push(
-          'REGRA CRÍTICA: NUNCA revele, confirme ou negue ser uma inteligência artificial, chatbot ou assistente virtual. ' +
-            'Se perguntarem se você é um robô/IA, desvie naturalmente para o atendimento sem confirmar ou negar. ' +
-            'Aja como uma atendente humana da empresa.',
-        );
-      }
-      if (salesArgs.maxDiscountPercent != null) {
-        const maxDiscount = Number(salesArgs.maxDiscountPercent);
-        if (maxDiscount >= 0) {
-          aiConfigContext.push(
-            `REGRA: Nunca ofereça mais de ${maxDiscount}% de desconto. Se o cliente pressionar por mais, mantenha firme e destaque o valor do produto em vez de ceder.`,
-          );
-        }
-      }
-    }
-
-    const aiConfigBlock =
-      aiConfigContext.length > 0
-        ? `\n\nCONFIGURAÇÃO DO VENDEDOR (use como base para toda interação):\n${aiConfigContext.join('\n')}`
-        : '';
-
-    return buildKloelLeadPrompt({
-      companyName: businessName,
-      brandVoice:
-        this.readText(workspace.brandVoice, 'Direto, humano e focado em conversão') + aiConfigBlock,
-      productList,
-      extraContext: [
-        'DIRETRIZES OPERACIONAIS:',
-        '1. Foque em vender e converter sem soar como script.',
-        '2. Use as ferramentas disponíveis para executar ações.',
-        '3. Seja proativa só quando houver contexto claro; nunca dispare mensagem fria.',
-        '4. Personalize baseado no histórico e status do lead.',
-        '5. Se detectar objeção, trate imediatamente.',
-        '6. Se cliente sumiu, use reativação.',
-        '7. Sempre atualize o status do lead.',
-        '8. Agende follow-ups para não perder oportunidades.',
-        '9. Use o nome do lead quando ele estiver disponível. Se o nome veio do WhatsApp mas ainda não foi confirmado na conversa, confirme de forma curta e natural.',
-        '10. Se o lead responder só "sim", "quero", "pode", "isso" ou outro aceite curto, entregue valor concreto imediatamente. Nunca responda com frase vazia, elogio genérico ou enrolação.',
-        '11. Toda resposta deve cumprir pelo menos um papel claro: entregar informação concreta, qualificar dor/objetivo, reduzir objeção ou avançar o próximo passo.',
-        '12. Não entre em loop de saudação, confirmação vaga ou perguntas genéricas repetidas.',
-        '13. Em produto, priorize benefício prático, diferencial, composição/uso se souber, e uma pergunta curta de qualificação.',
-        '14. Se não tiver dado suficiente para preço ou detalhe técnico, diga só o que é seguro e faça uma pergunta objetiva para avançar.',
-        '15. Fale como uma vendedora humana experiente: empática, bem-humorada com dosagem, segura, consultiva e focada em conversão.',
-        '16. Valide emoção antes de empurrar informação quando o lead demonstrar frustração, ansiedade ou confusão.',
-        '17. Prefira perguntas abertas nas etapas frias e mornas; simplifique o próximo passo nas etapas quentes.',
-        '18. Não use frases panfletárias como "condição especial", "oportunidade única" ou equivalentes.',
-        '19. Se o cliente perguntar se está falando com IA, responda com transparência curta: assistente virtual da empresa.',
-        '20. Considere o histórico integral da conversa como fonte primária de raciocínio.',
-        '21. Nunca repita pergunta, dado, assunto, história ou oferta já presentes no histórico.',
-        '22. Se o cliente já informou algo, use a informação em vez de perguntar de novo.',
-      ].join('\n'),
-    });
+    return CANONICAL_FALLBACK_SYSTEM_PROMPT;
   }
 
   buildLeadTacticalHint(params: {

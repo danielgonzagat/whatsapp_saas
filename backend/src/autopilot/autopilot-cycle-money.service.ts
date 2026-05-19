@@ -292,6 +292,26 @@ export class AutopilotCycleMoneyService {
         { workspaceId, contactId, operation, durationMs: Date.now() - startedAt, status: 'ok' },
         'Autopilot next-best-action succeeded',
       );
+      try {
+        await this.prisma.autopilotEvent.create({
+          data: {
+            workspaceId,
+            contactId,
+            intent: 'NBA',
+            action: result.action,
+            status: 'recommended',
+            reason: result.reason,
+            meta: {
+              recommendedMessage: result.recommendedMessage,
+              lastMessageAt: result.lastMessageAt,
+            },
+          },
+        });
+      } catch (err: unknown) {
+        this.logger.warn(
+          `Failed to log autopilotEvent for nextBestAction: ${err instanceof Error ? err.message : 'unknown error'}`,
+        );
+      }
       return result;
     } catch (error: unknown) {
       this.logger.error(

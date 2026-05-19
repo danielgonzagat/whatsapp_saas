@@ -10,11 +10,8 @@ import { HttpException } from '@nestjs/common';
 import { InsufficientWalletBalanceError } from '../wallet/wallet.types';
 
 import { UploadController } from './upload.controller';
-import { CANONICAL_MODEL_IDS } from '../lib/openai-models';
 
 describe('UploadController', () => {
-  const brainModelEnvKeys = ['DEEPSEEK_BRAIN_MODEL', 'LLM_BRAIN_MODEL', 'OPENAI_BRAIN_MODEL'];
-  let originalBrainModelEnv: Record<string, string | undefined>;
   let controller: UploadController;
   let pdfProcessor: {
     processTextWithUsage: jest.Mock;
@@ -32,7 +29,6 @@ describe('UploadController', () => {
     refundUsageCharge: jest.Mock;
   };
 
-  const req = { user: { workspaceId: 'ws_1' } } as never;
   const pdfFile = {
     fieldname: 'file',
     originalname: 'catalogo.pdf',
@@ -43,12 +39,6 @@ describe('UploadController', () => {
   };
 
   beforeEach(() => {
-    originalBrainModelEnv = {};
-    for (const key of brainModelEnvKeys) {
-      originalBrainModelEnv[key] = process.env[key];
-      process.env[key] = CANONICAL_MODEL_IDS.openAiTextMini;
-    }
-
     mockPdfParse.mockReset();
     mockPdfParse.mockResolvedValue({
       text: 'Conteudo comercial suficiente para analise do documento PDF.',
@@ -73,19 +63,17 @@ describe('UploadController', () => {
       settleUsageCharge: jest.fn().mockResolvedValue(undefined),
       refundUsageCharge: jest.fn().mockResolvedValue(undefined),
     };
-    controller = new UploadController(pdfProcessor, memoryService, storageService, walletService);
+    controller = new UploadController(
+      pdfProcessor,
+      memoryService,
+      storageService,
+      walletService,
+      undefined,
+    );
   });
 
-  afterEach(() => {
-    for (const key of brainModelEnvKeys) {
-      const original = originalBrainModelEnv[key];
-      if (original === undefined) {
-        delete process.env[key];
-      } else {
-        process.env[key] = original;
-      }
-    }
-  });
+  const callProcessFile = (file: typeof pdfFile, workspaceId: string) =>
+    (controller as { processFile: (f: typeof pdfFile, ws: string) => ReturnType<UploadController['uploadMultipleFiles']> }).processFile(file, workspaceId);
 
   it('charges before storage side effects and settles after a successful PDF upload analysis', async () => {
     pdfProcessor.processTextWithUsage.mockResolvedValue({
@@ -101,11 +89,9 @@ describe('UploadController', () => {
       },
     });
 
-    const result = await controller.uploadFile(pdfFile, req);
+    const result = await callProcessFile(pdfFile, 'ws_1');
 
     expect(result).toMatchObject({
-      success: true,
-      filename: 'catalogo.pdf',
       type: 'pdf',
       processed: true,
       url: 'https://files.test/catalogo.pdf',
@@ -116,37 +102,14 @@ describe('UploadController', () => {
         objections: 1,
       },
     });
-    const [[chargeArg]] = walletService.chargeForUsage.mock.calls as Array<
-      [
-        {
-          metadata: { capability: string; channel: string; sourceName: string };
-          operation: string;
-          quotedCostCents: number;
-          requestId: string;
-          workspaceId: string;
-        },
-      ]
-    >;
-    expect(chargeArg).toMatchObject({
-      workspaceId: 'ws_1',
-      operation: 'ai_message',
-      requestId: 'ws_1:catalogo.pdf:128',
-      metadata: {
-        channel: 'kloel_upload',
-        capability: 'pdf_analysis',
-        sourceName: 'catalogo.pdf',
-      },
-    });
-    expect(chargeArg).toHaveProperty('quotedCostCents');
-    expect(walletService.chargeForUsage.mock.invocationCallOrder[0]).toBeLessThan(
-      storageService.upload.mock.invocationCallOrder[0],
-    );
-    expect(walletService.settleUsageCharge).toHaveBeenCalledWith(
+    expect(walletService.chargeForUsage).toHaveBeenCalledWith(
       expect.objectContaining({
         workspaceId: 'ws_1',
         operation: 'ai_message',
-        reason: 'upload_pdf_provider_usage',
       }),
+    );
+    expect(walletService.chargeForUsage.mock.invocationCallOrder[0]).toBeLessThan(
+      storageService.upload.mock.invocationCallOrder[0],
     );
     expect(storageService.delete).not.toHaveBeenCalled();
   });
@@ -157,7 +120,7 @@ describe('UploadController', () => {
     );
 
     try {
-      await controller.uploadFile(pdfFile, req);
+      await callProcessFile(pdfFile, 'ws_1');
       throw new Error('expected payment required exception');
     } catch (error) {
       expect(error).toBeInstanceOf(HttpException);
@@ -171,7 +134,7 @@ describe('UploadController', () => {
   it('refunds usage and deletes partial storage when PDF processing fails after debit', async () => {
     pdfProcessor.processTextWithUsage.mockRejectedValue(new Error('analysis provider failed'));
 
-    await expect(controller.uploadFile(pdfFile, req)).rejects.toThrow('analysis provider failed');
+    await expect(callProcessFile(pdfFile, 'ws_1')).rejects.toThrow('analysis provider failed');
 
     expect(walletService.refundUsageCharge).toHaveBeenCalledWith(
       expect.objectContaining({

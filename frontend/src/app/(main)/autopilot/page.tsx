@@ -56,6 +56,7 @@ export default function AutopilotPage() {
     isAsking,
     askResult,
     runtimeConfig,
+    missionCards,
     fetchAutopilotData,
     handleToggle,
     handleSmokeTest,
@@ -101,7 +102,7 @@ export default function AutopilotPage() {
         impact={impact}
         pipeline={pipeline}
         systemHealth={systemHealth}
-        missionCards={[]}
+        missionCards={missionCards}
         isLoading={isLoading}
         error={error}
         isToggling={isToggling}

@@ -177,3 +177,123 @@ export function askResultToSummary(value: Record<string, unknown>): string {
   });
   return parts.join(' · ') || 'Dados disponíveis.';
 }
+export interface DerivedMissionDefinition {
+  id: string;
+  title: string;
+  description: string;
+  priority: boolean;
+  severity: 'info' | 'warning' | 'critical';
+}
+
+function asPct(n: number) {
+  const pct = Math.round(n * 100);
+  return Number.isFinite(pct) ? `${pct}%` : '0%';
+}
+
+export function deriveAutopilotMissions(bundle: {
+  status: AutopilotStatus | null;
+  stats: AutopilotStats | null;
+  impact: AutopilotImpact | null;
+  pipeline: AutopilotPipeline | null;
+  insights: AutopilotInsight[];
+}): DerivedMissionDefinition[] {
+  const missions: DerivedMissionDefinition[] = [];
+
+  if (bundle.status && !bundle.status.enabled) {
+    missions.push({
+      id: 'activate-autopilot',
+      title: 'Ativar o Autopilot',
+      description:
+        'O Autopilot está pausado. Ative para começar a responder e qualificar leads automaticamente.',
+      priority: true,
+      severity: 'warning',
+    });
+  }
+
+  if (bundle.status?.billingSuspended) {
+    missions.push({
+      id: 'resolve-billing',
+      title: 'Regularizar cobrança',
+      description: 'O faturamento está suspenso. Regularize para reativar o Autopilot.',
+      priority: true,
+      severity: 'critical',
+    });
+  }
+
+  const whatsappStatus = bundle.pipeline?.autonomy?.whatsappStatus?.toLowerCase();
+  if (whatsappStatus === 'down' || bundle.pipeline?.autonomy?.connected === false) {
+    missions.push({
+      id: 'connect-whatsapp',
+      title: 'Conectar WhatsApp',
+      description:
+        'O WhatsApp não está conectado. Configure a conexão para que o Autopilot possa enviar mensagens.',
+      priority: true,
+      severity: 'critical',
+    });
+  } else if (whatsappStatus === 'degraded') {
+    missions.push({
+      id: 'check-whatsapp',
+      title: 'Verificar WhatsApp',
+      description: 'A conexão com o WhatsApp está degradada. Verifique o status da sessão.',
+      priority: false,
+      severity: 'warning',
+    });
+  }
+
+  if (bundle.stats) {
+    if (bundle.stats.errorsLast7d > 3) {
+      missions.push({
+        id: 'review-errors',
+        title: 'Revisar erros do Autopilot',
+        description: `${bundle.stats.errorsLast7d} erros nos últimos 7 dias. Revise o log de ações para identificar a causa.`,
+        priority: false,
+        severity: 'warning',
+      });
+    }
+
+    if (bundle.stats.contactsTracked >= 5 && bundle.stats.conversionsLast7d === 0) {
+      missions.push({
+        id: 'check-conversion',
+        title: 'Revisar taxa de conversão',
+        description: `${bundle.stats.contactsTracked} contatos rastreados mas nenhuma conversão nos últimos 7 dias. Verifique os fluxos e ofertas.`,
+        priority: false,
+        severity: 'info',
+      });
+    }
+
+    if (bundle.stats.contactsTracked > 0 && bundle.impact) {
+      const rate = asPct(bundle.impact.replyRate);
+      if (bundle.impact.replyRate < 0.3) {
+        missions.push({
+          id: 'improve-reply-rate',
+          title: 'Melhorar taxa de resposta',
+          description: `Taxa de resposta em ${rate}. Revise as mensagens automáticas para aumentar o engajamento.`,
+          priority: false,
+          severity: 'info',
+        });
+      }
+    }
+  }
+
+  if (bundle.insights.length > 0) {
+    const latestTime = bundle.insights
+      .filter((i) => i.createdAt)
+      .sort((a, b) => new Date(b.createdAt!).getTime() - new Date(a.createdAt!).getTime())[0];
+    if (latestTime?.createdAt) {
+      const minutesAgo = Math.round(
+        (Date.now() - new Date(latestTime.createdAt).getTime()) / 60000,
+      );
+      if (minutesAgo > 120) {
+        missions.push({
+          id: 'insights-stale',
+          title: 'Insights desatualizados',
+          description: `Último insight gerado há mais de ${Math.round(minutesAgo / 60)}h. Execute uma análise para atualizar.`,
+          priority: false,
+          severity: 'info',
+        });
+      }
+    }
+  }
+
+  return missions;
+}

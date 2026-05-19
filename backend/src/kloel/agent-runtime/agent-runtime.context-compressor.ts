@@ -50,8 +50,8 @@ export class AgentRuntimeContextCompressorService {
     });
     const summary = this.buildSummary({
       messages: params.messages,
-      providerInsight,
       ...(params.activeTask !== undefined ? { activeTask: params.activeTask } : {}),
+      providerInsight,
     });
     const key = this.keyFor(params.sessionId);
     const now = new Date().toISOString();
@@ -145,9 +145,7 @@ export class AgentRuntimeContextCompressorService {
     const messages = params.messages;
     const head = messages.slice(0, 4);
     const tail = messages.slice(-8);
-    const unresolved = messages
-      .filter((message) => this.looksUnresolved(message.content))
-      .slice(-6);
+    const unresolved = messages.filter((message) => this.looksUnresolved(message.content)).slice(-6);
     const toolEvidence = messages.filter((message) => message.role === 'tool').slice(-8);
 
     const sections = [
@@ -163,14 +161,10 @@ export class AgentRuntimeContextCompressorService {
       ...tail.map((message) => this.renderMessageLine(message)),
       '',
       '## Tool And Action Evidence',
-      ...(toolEvidence.length
-        ? toolEvidence.map((message) => this.renderMessageLine(message))
-        : ['none']),
+      ...(toolEvidence.length ? toolEvidence.map((message) => this.renderMessageLine(message)) : ['none']),
       '',
       '## Pending Or Unresolved',
-      ...(unresolved.length
-        ? unresolved.map((message) => this.renderMessageLine(message))
-        : ['none']),
+      ...(unresolved.length ? unresolved.map((message) => this.renderMessageLine(message)) : ['none']),
       '',
       '## Provider Insights',
       sanitizeAgentRuntimeText(params.providerInsight, 1500) || 'none',
@@ -181,9 +175,7 @@ export class AgentRuntimeContextCompressorService {
 
   private renderMessageLine(message: AgentRuntimeCompressionMessage): string {
     const tool = message.toolName ? `:${sanitizeAgentRuntimeText(message.toolName, 80)}` : '';
-    const timestamp = message.createdAt
-      ? ` @ ${sanitizeAgentRuntimeText(message.createdAt, 80)}`
-      : '';
+    const timestamp = message.createdAt ? ` @ ${sanitizeAgentRuntimeText(message.createdAt, 80)}` : '';
     return `- ${message.role}${tool}${timestamp}: ${sanitizeAgentRuntimeText(
       message.content,
       AgentRuntimeContextCompressorService.MAX_MESSAGE_CHARS,

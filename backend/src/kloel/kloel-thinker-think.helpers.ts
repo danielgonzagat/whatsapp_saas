@@ -248,7 +248,7 @@ export async function runToolPlanningBranch(
     const finalTemp = usedSearchWeb ? 0.1 : responseTemperature;
     await planLimits.ensureTokenBudget(workspaceId ?? '');
     const streamedFinal = await streamWriterResponse(
-      replyEngine.buildChatModelMessages({
+      await replyEngine.buildChatModelMessages({
         systemPrompt,
         dynamicContext,
         marketingPromptAddendum,

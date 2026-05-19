@@ -11,6 +11,7 @@ on:
   pull_request:
     branches:
       - main
+      - chore/purga-total-debt
   schedule:
     - cron: '20 6 * * 1'
 
@@ -111,6 +112,8 @@ jobs:
         working-directory: backend
 
       - name: Backend build
+        env:
+          NODE_OPTIONS: --max-old-space-size=4096
         run: npm run build
         working-directory: backend
 

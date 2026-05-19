@@ -1,3 +1,4 @@
+import { expectValueOf } from '../../test/expect-value-of';
 import { WhatsAppWatchdogService } from './whatsapp-watchdog.service';
 import { WhatsAppWatchdogSessionService } from './whatsapp-watchdog-session.service';
 
@@ -239,14 +240,14 @@ describe('WhatsAppWatchdogService', () => {
         data: expect.objectContaining({
           providerSettings: expect.objectContaining({
             whatsappApiSession: expect.objectContaining({
-              lastHeartbeatAt: expect.any(String),
-              lastSeenWorkingAt: expect.any(String),
-              lastUpdated: expect.any(String),
+              lastHeartbeatAt: expectValueOf(String),
+              lastSeenWorkingAt: expectValueOf(String),
+              lastUpdated: expectValueOf(String),
             }),
             whatsappWebSession: expect.objectContaining({
-              lastHeartbeatAt: expect.any(String),
-              lastSeenWorkingAt: expect.any(String),
-              lastUpdated: expect.any(String),
+              lastHeartbeatAt: expectValueOf(String),
+              lastSeenWorkingAt: expectValueOf(String),
+              lastUpdated: expectValueOf(String),
             }),
           }),
         }),

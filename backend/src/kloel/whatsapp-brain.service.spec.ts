@@ -28,7 +28,6 @@ describe('WhatsAppBrainService', () => {
   let service: WhatsAppBrainService;
   let prisma: BrainPrismaMock;
   let kloelService: Pick<KloelService, 'thinkSync'>;
-  let decisionOutcome: { recordEvent: jest.Mock };
 
   const wsId = 'ws-1';
   const phone = '5511999999999';
@@ -43,16 +42,16 @@ describe('WhatsAppBrainService', () => {
     kloelService = {
       thinkSync: jest.fn().mockResolvedValue({ response: 'Olá! Como posso ajudar?' }),
     };
-    decisionOutcome = {
-      recordEvent: jest.fn().mockResolvedValue(undefined),
-    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         WhatsAppBrainService,
         { provide: PrismaService, useValue: prisma },
         { provide: KloelService, useValue: kloelService },
-        { provide: DecisionOutcomeService, useValue: decisionOutcome },
+        {
+          provide: DecisionOutcomeService,
+          useValue: { recordEvent: jest.fn().mockResolvedValue(undefined) },
+        },
       ],
     }).compile();
 

@@ -28,6 +28,7 @@ import { asProviderSettings, type ProviderSettings } from './provider-settings.t
 import type { ContactCustomFields } from '../contacts/contact-custom-fields.types';
 import { executeInlineAutopilot } from './inbound-processor.inline-autopilot';
 import { triggerWhatsappMindPercept } from './inbound-mind-percept';
+import { WhatsAppEventEmitterService } from '../kloel/whatsapp-emitter/whatsapp-event-emitter.service';
 
 import {
   checkDuplicateExt,
@@ -79,6 +80,7 @@ export class InboundProcessorService {
     private readonly decisionOutcome: DecisionOutcomeService,
     @Optional() private readonly opsAlert?: OpsAlertService,
     @Optional() private readonly mindHook?: ChannelInboundHookService,
+    @Optional() private readonly whatsappEmitter?: WhatsAppEventEmitterService,
   ) {}
 
   private isPlaceholderContactName(value: unknown, phone?: string | null): boolean {
@@ -217,6 +219,17 @@ export class InboundProcessorService {
         channel: 'whatsapp',
       },
     });
+
+    if (this.whatsappEmitter) {
+      this.whatsappEmitter.emitMessageReceived({
+        workspaceId: msg.workspaceId,
+        contactId: contact.id,
+        messageId: savedMessage.id,
+        phone,
+        provider: msg.provider,
+        correlationId: savedMessage.conversationId ?? undefined,
+      });
+    }
 
     if (!isCatchup) {
       await this.deliverToFlowContext(phone, processedContent, msg.workspaceId);

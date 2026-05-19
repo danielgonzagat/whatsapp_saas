@@ -10,6 +10,11 @@ describe('KloelController', () => {
       findFirst: jest.Mock;
       updateMany: jest.Mock;
     };
+    chatThread: {
+      deleteMany: jest.Mock;
+      findMany: jest.Mock;
+      count: jest.Mock;
+    };
   };
   let toolDispatcher: {
     executeApprovedApprovalRequest: jest.Mock;
@@ -27,6 +32,11 @@ describe('KloelController', () => {
         findMany: jest.fn().mockResolvedValue([]),
         findFirst: jest.fn(),
         updateMany: jest.fn(),
+      },
+      chatThread: {
+        deleteMany: jest.fn(),
+        findMany: jest.fn().mockResolvedValue([]),
+        count: jest.fn().mockResolvedValue(0),
       },
     };
     toolDispatcher = {
@@ -79,6 +89,46 @@ describe('KloelController', () => {
         workspaceId: 'ws-1',
       }),
     );
+  });
+
+  it('lists chat threads without deleting empty in-flight threads', async () => {
+    const updatedAt = new Date('2026-05-18T19:00:00.000Z');
+    prisma.chatThread.findMany.mockResolvedValue([
+      {
+        id: 'thread-ready',
+        title: 'Thread pronta',
+        updatedAt,
+        messages: [{ content: 'Mensagem persistida', role: 'assistant' }],
+      },
+    ]);
+    prisma.chatThread.count.mockResolvedValue(1);
+
+    const result = await controller.listChatThreads(
+      { workspaceId: 'ws-1', user: { workspaceId: 'ws-1' } } as never as Parameters<
+        KloelController['listChatThreads']
+      >[0],
+      '10',
+    );
+
+    expect(prisma.chatThread.deleteMany).not.toHaveBeenCalled();
+    expect(prisma.chatThread.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { workspaceId: 'ws-1', messages: { some: {} } },
+      }),
+    );
+    expect(result).toEqual({
+      items: [
+        {
+          id: 'thread-ready',
+          title: 'Thread pronta',
+          updatedAt,
+          lastMessagePreview: 'Mensagem persistida',
+        },
+      ],
+      total: 1,
+      nextCursor: null,
+      hasMore: false,
+    });
   });
 
   it('lists pending approvals for the authenticated workspace only', async () => {

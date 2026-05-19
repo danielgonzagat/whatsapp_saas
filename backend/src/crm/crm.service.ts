@@ -1,25 +1,23 @@
-import { ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { ForbiddenException, Injectable, Logger, NotFoundException, Optional } from '@nestjs/common';
 import { DealStatus, Prisma } from '@prisma/client';
 import { AuditService } from '../audit/audit.service';
 import { getTraceHeaders } from '../common/trace-headers';
 import { validateNoInternalAccess } from '../common/utils/url-validator';
 import { PrismaService } from '../prisma/prisma.service';
 import { PIPELINE_STAGE_COLORS } from '../common/kloel-colors';
-
+import { CrmEventEmitterService } from '../kloel/crm-emitter/crm-event-emitter.service';
 /** Crm service. */
 @Injectable()
 export class CrmService {
   private readonly logger = new Logger(CrmService.name);
-
   constructor(
     private prisma: PrismaService,
     private auditService: AuditService,
+    @Optional() private readonly crmEmitter?: CrmEventEmitterService,
   ) {}
-
   // ============================================================
   // CONTATOS (CRM BÁSICO)
   // ============================================================
-
   async createContact(workspaceId: string, data: Prisma.ContactCreateWithoutWorkspaceInput) {
     return this.prisma.contact.create({
       data: {
@@ -31,7 +29,6 @@ export class CrmService {
       include: { tags: true },
     });
   }
-
   /** Upsert contact. */
   async upsertContact(
     workspaceId: string,
@@ -56,7 +53,6 @@ export class CrmService {
       include: { tags: true },
     });
   }
-
   /** Get contact. */
   async getContact(workspaceId: string, phone: string) {
     return this.prisma.contact.findUnique({
@@ -76,7 +72,6 @@ export class CrmService {
       },
     });
   }
-
   /** Add tag. */
   async addTag(workspaceId: string, phone: string, tagName: string) {
     return this.prisma.$transaction(async (tx) => {
@@ -93,7 +88,6 @@ export class CrmService {
           workspace: { connect: { id: workspaceId } },
         },
       });
-
       return tx.contact.update({
         where: {
           workspaceId_phone: {
@@ -110,7 +104,6 @@ export class CrmService {
       });
     });
   }
-
   /** Remove tag. */
   async removeTag(workspaceId: string, phone: string, tagName: string) {
     const tag = await this.prisma.tag.findUnique({
@@ -121,11 +114,9 @@ export class CrmService {
         },
       },
     });
-
     if (!tag) {
       return null;
     }
-
     return this.prisma.contact.update({
       where: {
         workspaceId_phone: {
@@ -141,7 +132,6 @@ export class CrmService {
       include: { tags: true },
     });
   }
-
   /** List contacts. */
   async listContacts(
     workspaceId: string,
@@ -149,7 +139,6 @@ export class CrmService {
   ) {
     const { page = 1, limit = 20, search } = params;
     const skip = (page - 1) * limit;
-
     const where: Prisma.ContactWhereInput = {
       workspaceId,
       ...(search
@@ -162,7 +151,6 @@ export class CrmService {
           }
         : {}),
     };
-
     const [total, data] = await Promise.all([
       this.prisma.contact.count({ where: { ...where, workspaceId } }),
       this.prisma.contact.findMany({
@@ -173,7 +161,6 @@ export class CrmService {
         include: { tags: true },
       }),
     ]);
-
     return {
       data,
       meta: {
@@ -184,11 +171,9 @@ export class CrmService {
       },
     };
   }
-
   // ============================================================
   // PIPELINES / DEALS (KANBAN DE VENDAS)
   // ============================================================
-
   async createPipeline(workspaceId: string, name: string) {
     return this.prisma.pipeline.create({
       data: {
@@ -205,7 +190,6 @@ export class CrmService {
       include: { stages: true },
     });
   }
-
   /** List pipelines. */
   async listPipelines(workspaceId: string) {
     let pipelines = await this.prisma.pipeline.findMany({
@@ -214,7 +198,6 @@ export class CrmService {
       orderBy: { createdAt: 'asc' },
       take: 20,
     });
-
     // Create default pipeline if none exists
     if (pipelines.length === 0) {
       await this.createPipeline(workspaceId, 'Pipeline de Vendas');
@@ -225,10 +208,8 @@ export class CrmService {
         take: 20,
       });
     }
-
     return pipelines;
   }
-
   /** Create deal. */
   async createDeal(
     workspaceId: string,
@@ -245,26 +226,22 @@ export class CrmService {
     if (!normalizedStageId) {
       throw new NotFoundException('Etapa não encontrada');
     }
-
     const stage = await this.prisma.stage.findUnique({
       where: { id: normalizedStageId },
       select: { id: true, pipeline: { select: { workspaceId: true } } },
     });
-
     if (!stage) {
       throw new NotFoundException('Etapa não encontrada');
     }
     if (stage.pipeline.workspaceId !== workspaceId) {
       throw new ForbiddenException('Etapa não pertence a este workspace');
     }
-
     let contact = input.contactId
       ? await this.prisma.contact.findUnique({
           where: { id: input.contactId },
           select: { id: true, workspaceId: true, customFields: true },
         })
       : null;
-
     if (!contact && input.contactPhone) {
       const normalizedPhone = String(input.contactPhone).trim();
       if (normalizedPhone) {
@@ -289,17 +266,14 @@ export class CrmService {
         });
       }
     }
-
     if (!contact) {
       throw new NotFoundException('Contato não encontrado');
     }
     if (contact.workspaceId !== workspaceId) {
       throw new ForbiddenException('Contato não pertence a este workspace');
     }
-
     const cf = (contact.customFields || {}) as Record<string, string>;
     const sourceCampaignId = cf.lastCampaignId || undefined;
-
     return this.prisma.deal.create({
       data: {
         contact: { connect: { id: contact.id } },
@@ -311,7 +285,6 @@ export class CrmService {
       },
     });
   }
-
   /** Update deal. */
   async updateDeal(
     workspaceId: string,
@@ -333,12 +306,19 @@ export class CrmService {
     if (deal.stage.pipeline.workspaceId !== workspaceId) {
       throw new ForbiddenException('Acesso negado a este deal');
     }
-
     const updated = await this.prisma.deal.update({
       where: { id: dealId },
       data,
     });
-
+    if (data.status === 'WON') {
+      void this.crmEmitter
+        ?.emitDealWon(workspaceId, dealId, data.value ?? updated.value, deal.contactId)
+        .catch(() => {});
+    } else if (data.status === 'LOST') {
+      void this.crmEmitter
+        ?.emitDealLost(workspaceId, dealId, undefined, deal.contactId)
+        .catch(() => {});
+    }
     // Atribuição de receita (Money Machine) quando status vira WON
     if (data.status === 'WON') {
       const cf = (deal.contact?.customFields || {}) as Record<string, string>;
@@ -368,10 +348,8 @@ export class CrmService {
         );
       }
     }
-
     return updated;
   }
-
   /** Delete deal. */
   async deleteDeal(workspaceId: string, dealId: string) {
     const deal = await this.prisma.deal.findUnique({
@@ -396,7 +374,6 @@ export class CrmService {
     });
     return this.prisma.deal.delete({ where: { id: dealId } });
   }
-
   /** Move deal. */
   async moveDeal(workspaceId: string, dealId: string, newStageId: string) {
     const [deal, stage] = await Promise.all([
@@ -414,7 +391,6 @@ export class CrmService {
         select: { id: true, pipeline: { select: { workspaceId: true } } },
       }),
     ]);
-
     if (!deal || !stage) {
       throw new NotFoundException('Deal ou etapa não encontrada');
     }
@@ -425,7 +401,6 @@ export class CrmService {
     ) {
       throw new ForbiddenException('Acesso negado a este deal ou etapa');
     }
-
     const updatedDeal = await this.prisma.deal.update({
       where: { id: dealId },
       data: { stageId: newStageId },
@@ -434,7 +409,6 @@ export class CrmService {
         stage: true,
       },
     });
-
     // Automação simples: ao ir para estágio "Fechado", marcar contato como cliente
     if (updatedDeal.stage?.name?.toLowerCase() === 'fechado') {
       const contact = updatedDeal.contact;
@@ -442,9 +416,25 @@ export class CrmService {
         await this.addTag(contact.workspaceId, contact.phone, 'cliente');
       }
     }
-
+    const fromStageName = deal.stage?.name ?? 'unknown';
+    const toStageName = updatedDeal.stage?.name ?? 'unknown';
+    void this.crmEmitter
+      ?.emitStageChanged(workspaceId, dealId, fromStageName, toStageName, deal.contact?.id)
+      .catch(() => {});
     const lower = (updatedDeal.stage?.name || '').toLowerCase();
     const isWon = lower.includes('won') || lower.includes('venda') || lower.includes('fechado');
+    const isLost = lower.includes('lost') || lower.includes('perdido');
+    if (isWon || isLost) {
+      if (isWon) {
+        void this.crmEmitter
+          ?.emitDealWon(workspaceId, dealId, updatedDeal.value, deal.contact?.id)
+          .catch(() => {});
+      } else {
+        void this.crmEmitter
+          ?.emitDealLost(workspaceId, dealId, toStageName, deal.contact?.id)
+          .catch(() => {});
+      }
+    }
     if (isWon) {
       const cf = (deal.contact?.customFields || {}) as Record<string, string>;
       const campaignId = cf.lastCampaignId;
@@ -473,10 +463,8 @@ export class CrmService {
         );
       }
     }
-
     return updatedDeal;
   }
-
   /** List deals. */
   async listDeals(
     workspaceId: string,
@@ -491,7 +479,6 @@ export class CrmService {
     const pipelineId = String(params?.pipelineId || '').trim();
     const stageId = String(params?.stageId || '').trim();
     const search = String(params?.search || '').trim();
-
     return this.prisma.deal.findMany({
       where: {
         stage: {
@@ -536,7 +523,6 @@ export class CrmService {
       take: 500,
     });
   }
-
   /**
    * Notifica webhook de receita atrelada a campanha (se configurado).
    */

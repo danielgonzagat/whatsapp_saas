@@ -319,6 +319,27 @@ export class AutopilotOpsService {
           : {}),
       },
     );
+    try {
+      await this.prisma.autopilotEvent.create({
+        data: {
+          workspaceId,
+          ...(contactId !== undefined ? { contactId } : {}),
+          intent: 'AUTOPILOT_RUN',
+          action: 'ENQUEUED',
+          status: 'queued',
+          reason: 'manual_trigger',
+          meta: {
+            phone: phone ?? null,
+            message: message ?? null,
+            delayMs: delayMs ?? null,
+          },
+        },
+      });
+    } catch (err: unknown) {
+      this.logger.warn(
+        `Failed to log autopilotEvent for enqueueProcessing: ${err instanceof Error ? err.message : 'unknown error'}`,
+      );
+    }
     return { queued: true };
   }
 

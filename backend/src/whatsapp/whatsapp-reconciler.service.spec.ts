@@ -1,7 +1,10 @@
+import { expectValueOf } from '../../test/expect-value-of';
 import { Test, TestingModule } from '@nestjs/testing';
+import Redis from 'ioredis';
 import { INBOX_SERVICE } from '../inbox/inbox.token';
-import { NeuroCrmService } from '../crm/neuro-crm.service';
+import type { IInboxService } from '../inbox/inbox.interface';
 import { DecisionOutcomeService } from '../kloel/decision-outcome.service';
+import { NeuroCrmService } from '../crm/neuro-crm.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { WorkspaceService } from '../workspaces/workspace.service';
@@ -21,14 +24,7 @@ const makeWorkspace = (overrides: Record<string, unknown> = {}) => ({
 
 describe('WhatsappReconcilerService', () => {
   let service: WhatsappReconcilerService;
-  let redis: {
-    get: jest.Mock;
-    set: jest.Mock;
-    setex: jest.Mock;
-    rpush: jest.Mock;
-    expire: jest.Mock;
-    publish: jest.Mock;
-  };
+  let redis: { get: jest.Mock; set: jest.Mock; setex: jest.Mock; rpush: jest.Mock; expire: jest.Mock; publish: jest.Mock };
   let inbox: { saveMessageByPhone: jest.Mock };
   let workspaces: { getWorkspace: jest.Mock };
   let neuroCrm: { analyzeContact: jest.Mock };
@@ -67,9 +63,9 @@ describe('WhatsappReconcilerService', () => {
         findFirst: jest.fn(),
         create: jest.fn(),
       },
-      $transaction: jest
-        .fn()
-        .mockImplementation((cb: (tx: unknown) => Promise<unknown>) => cb(prisma)),
+      $transaction: jest.fn().mockImplementation((cb: (tx: unknown) => Promise<unknown>) =>
+        cb(prisma),
+      ),
     };
     providerRegistry = { upsertContactProfile: jest.fn().mockResolvedValue(true) };
 
@@ -82,14 +78,7 @@ describe('WhatsappReconcilerService', () => {
         { provide: NeuroCrmService, useValue: neuroCrm },
         { provide: PrismaService, useValue: prisma },
         { provide: WhatsAppProviderRegistry, useValue: providerRegistry },
-        {
-          provide: DecisionOutcomeService,
-          useValue: {
-            closeOutcome: jest.fn(),
-            recordDecision: jest.fn(),
-            recordEvent: jest.fn().mockResolvedValue(undefined),
-          },
-        },
+        { provide: DecisionOutcomeService, useValue: { recordEvent: jest.fn().mockResolvedValue(undefined) } },
         { provide: OpsAlertService, useValue: { alertOnCriticalError: jest.fn() } },
       ],
     }).compile();
@@ -124,13 +113,9 @@ describe('WhatsappReconcilerService', () => {
     });
 
     it('enqueues resume-flow job', async () => {
-      const { flowQueue } = jest.requireMock('../queue/queue');
+      const { flowQueue } = require('../queue/queue');
       await service.handleIncoming('ws-1', '5511999991234', 'hello');
-      expect(flowQueue.add).toHaveBeenCalledWith(
-        'resume-flow',
-        expect.objectContaining({}),
-        expect.objectContaining({}),
-      );
+      expect(flowQueue.add).toHaveBeenCalledWith('resume-flow', expectValueOf(Object), expectValueOf(Object));
     });
 
     it('enqueues autopilot scan-contact when autonomous is enabled', async () => {
@@ -138,28 +123,26 @@ describe('WhatsappReconcilerService', () => {
       workspaces.getWorkspace.mockResolvedValue(ws);
       inbox.saveMessageByPhone.mockResolvedValue({ id: 'msg-2', contactId: 'c-2' });
       redis.set.mockResolvedValue('OK');
-      const { autopilotQueue } = jest.requireMock('../queue/queue');
+      const { autopilotQueue } = require('../queue/queue');
       await service.handleIncoming('ws-1', '5511999991234', 'hello');
       expect(autopilotQueue.add).toHaveBeenCalledWith(
         'scan-contact',
         expect.objectContaining({ workspaceId: 'ws-1', contactId: 'c-2' }),
-        expect.objectContaining({}),
+        expectValueOf(Object),
       );
     });
 
     it('enqueues hot-flow when keyword matches and hotFlowId is set', async () => {
       const ws = makeWorkspace({ autopilot: { enabled: false, hotFlowId: 'flow-99' } });
       workspaces.getWorkspace.mockResolvedValue(ws);
-      const { flowQueue } = jest.requireMock('../queue/queue');
+      const { flowQueue } = require('../queue/queue');
       flowQueue.add.mockClear();
       await service.handleIncoming('ws-1', '5511999991234', 'quanto custa?');
       const runFlowCall = flowQueue.add.mock.calls.find(
         (call: unknown[]) => call[0] === 'run-flow',
       );
       expect(runFlowCall).toBeDefined();
-      if (runFlowCall) {
-        expect(runFlowCall[1]).toMatchObject({ flowId: 'flow-99' });
-      }
+      expect(runFlowCall[1]).toMatchObject({ flowId: 'flow-99' });
     });
 
     it('records BUYING intent for payment keywords when recent event exists', async () => {

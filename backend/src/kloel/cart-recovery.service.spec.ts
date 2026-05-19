@@ -27,6 +27,51 @@ jest.mock('../auth/email.service', () => ({
   })),
 }));
 
+function makeStubGuards(result: Record<string, unknown> = { allowed: true }) {
+  return {
+    evaluate: jest.fn().mockResolvedValue(result),
+  };
+}
+
+function makeStubTransport(options: {
+  sendAvailable?: boolean;
+  sendResult?: Record<string, unknown>;
+} = {}) {
+  return {
+    getCapability: jest.fn().mockResolvedValue({
+      sendAvailable: options.sendAvailable ?? true,
+    }),
+    send: jest.fn().mockResolvedValue(options.sendResult ?? { success: true }),
+  };
+}
+
+function makeStubBandit(options: { arm?: string } = {}) {
+  return {
+    register: jest.fn().mockResolvedValue(undefined),
+    choose: jest
+      .fn()
+      .mockResolvedValue(options.arm ? { arm: options.arm } : null),
+  };
+}
+
+function makeStubMindPolicy(action: string) {
+  return {
+    choose: jest.fn().mockResolvedValue({
+      chosen: action,
+      decision: {
+        fallbackActive: false,
+        reasonInternal: `test selected ${action}`,
+        candidates: [
+          {
+            action,
+            beliefMean: 0.8,
+          },
+        ],
+      },
+    }),
+  };
+}
+
 describe('CartRecoveryService', () => {
   let prisma: MockPrisma;
   let service: CartRecoveryService;
@@ -74,50 +119,6 @@ describe('CartRecoveryService', () => {
     };
   }
 
-  function makeStubGuards(overrides?: { allowed?: boolean; guardName?: string; reason?: string }) {
-    return {
-      evaluate: jest.fn().mockResolvedValue({
-        allowed: overrides?.allowed ?? true,
-        guardName: overrides?.guardName ?? 'ok',
-        reason: overrides?.reason ?? null,
-      }),
-    };
-  }
-
-  function makeStubTransport(overrides?: { sendAvailable?: boolean; sendResult?: unknown }) {
-    return {
-      getCapability: jest.fn().mockResolvedValue({
-        sendAvailable: overrides?.sendAvailable ?? true,
-      }),
-      send: jest.fn().mockResolvedValue(
-        overrides?.sendResult ?? {
-          success: true,
-          blocked: false,
-        },
-      ),
-    };
-  }
-
-  function makeStubBandit(overrides?: { arm?: string }) {
-    return {
-      register: jest.fn().mockResolvedValue(undefined),
-      choose: jest.fn().mockResolvedValue(overrides?.arm ? { arm: overrides.arm } : null),
-    };
-  }
-
-  function makeStubMindPolicy(chosen = 'help') {
-    return {
-      choose: jest.fn().mockResolvedValue({
-        chosen,
-        decision: {
-          fallbackActive: false,
-          reasonInternal: 'test-policy',
-          candidates: [{ action: chosen, beliefMean: 0.8 }],
-        },
-      }),
-    };
-  }
-
   describe('legacy behavior (no guard, no transport, no bandit)', () => {
     it('ignores malformed metadata when marking recovery email as sent', async () => {
       prisma.checkoutOrder.findMany.mockResolvedValue([pendingOrder({ metadata: 'corrupted' })]);
@@ -162,6 +163,38 @@ describe('CartRecoveryService', () => {
           },
         }),
       );
+    });
+
+    it('uses honest no-pressure recovery copy in direct email fallback', async () => {
+      prisma.checkoutOrder.findMany.mockResolvedValue([pendingOrder()]);
+
+      await service.checkAbandonedCarts();
+
+      const payload = sendEmail.mock.calls[0][0];
+      expect(payload.subject).toContain('Seu pedido ainda esta aberto');
+      expect(payload.html).toContain('Sua compra ficou em aberto');
+      expect(payload.html).toContain('sem pressa');
+      expect(payload.html).not.toContain('Voce deixou algo');
+      expect(payload.html).not.toContain('Garanta agora');
+      expect(payload.html).not.toContain('VOLTEI10');
+      expect(payload.html).not.toContain('Centenas de clientes');
+    });
+
+    it('renders the real cart recovery template with escaped placeholders', async () => {
+      prisma.checkoutOrder.findMany.mockResolvedValue([
+        pendingOrder({
+          productName: '<Plano & Premium>',
+        }),
+      ]);
+
+      await service.checkAbandonedCarts();
+
+      const payload = sendEmail.mock.calls[0][0];
+      expect(payload.html).toContain('Pedido #1001');
+      expect(payload.html).toContain('&lt;Plano &amp; Premium&gt;');
+      expect(payload.html).not.toContain('{{productName}}');
+      expect(payload.html).not.toContain('{{orderNumber}}');
+      expect(payload.html).not.toContain('<Plano & Premium>');
     });
   });
 
@@ -284,7 +317,7 @@ describe('CartRecoveryService', () => {
         expect.objectContaining({
           channel: 'email',
           recipientId: 'cliente@kloel.test',
-          content: expect.stringContaining('Voce deixou algo'),
+          content: expect.stringContaining('Sua compra ficou em aberto'),
           guardContext: expect.objectContaining({
             channel: 'email',
             withinComplianceWindow: true,
@@ -353,6 +386,27 @@ describe('CartRecoveryService', () => {
       const updatePayload = prisma.checkoutOrder.updateMany.mock.calls[0][0].data.metadata;
       expect(updatePayload.banditArm).toBe('proof');
       expect(updatePayload.mindRecoveryAction).toBe('proof');
+    });
+
+    it('keeps proof and discount recovery copy non-manipulative', async () => {
+      for (const action of ['proof', 'discount', 'urgency']) {
+        sendEmail.mockClear();
+        prisma.checkoutOrder.findMany.mockResolvedValue([pendingOrder()]);
+        const stubMindPolicy = makeStubMindPolicy(action);
+        service = new CartRecoveryService(
+          prisma as never,
+          undefined,
+          stubMindPolicy as never,
+        );
+
+        await service.checkAbandonedCarts();
+
+        const payload = sendEmail.mock.calls[0][0];
+        expect(payload.html).not.toContain('Garanta agora');
+        expect(payload.html).not.toContain('antes que acabe');
+        expect(payload.html).not.toContain('VOLTEI10');
+        expect(payload.html).not.toContain('Centenas de clientes');
+      }
     });
 
     it('falls back gracefully when bandit choose returns null', async () => {

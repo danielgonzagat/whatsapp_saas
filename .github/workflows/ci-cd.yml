@@ -4,7 +4,7 @@ on:
   push:
     branches: [main]
   pull_request:
-    branches: [main]
+    branches: [main, chore/purga-total-debt]
   workflow_dispatch:
 
 env:
@@ -38,7 +38,7 @@ jobs:
   quality:
     needs: architecture
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 180
 
     services:
       postgres:
@@ -166,7 +166,7 @@ jobs:
           npx prisma generate
           npx prisma migrate deploy
           npm run test:cov -- --runInBand
-          npm run build
+          NODE_OPTIONS=--max-old-space-size=4096 npm run build
         working-directory: backend
 
       - name: Worker test and build
@@ -352,7 +352,7 @@ jobs:
       - name: Build backend
         run: |
           npx prisma generate
-          npm run build
+          NODE_OPTIONS=--max-old-space-size=4096 npm run build
         working-directory: backend
 
       - name: Run PULSE deep triple-cycle (docker compose + 3x certify + assertions)
@@ -465,6 +465,7 @@ jobs:
       NEXTAUTH_URL: http://localhost:3000
       NEXTAUTH_SECRET: test_secret
       ASAAS_WEBHOOK_TOKEN: test-asaas-token
+      META_APP_SECRET: test-secret
 
     steps:
       - uses: actions/checkout@v4
@@ -501,7 +502,7 @@ jobs:
           cd backend
           npx prisma generate
           npx prisma migrate deploy
-          npm run build
+          NODE_OPTIONS=--max-old-space-size=4096 npm run build
           cd ../worker
           npm run build
           cd ../frontend

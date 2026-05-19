@@ -1,8 +1,31 @@
 import { UnifiedAgentActionsCrmService } from './unified-agent-actions-crm.service';
 import { UnifiedAgentActionsSalesService } from './unified-agent-actions-sales.service';
 import { UnifiedAgentActionsWorkspaceService } from './unified-agent-actions-workspace.service';
+import { buildPredecidedActionDraft } from './unified-agent-predecided-actions.part';
 
 describe('Unified agent predecided action execution', () => {
+  it('does not describe blocked payment links as sent in the assistant draft', () => {
+    const draft = buildPredecidedActionDraft([
+      {
+        tool: 'create_payment_link',
+        args: { amount: 100, productName: 'Produto X' },
+        result: {
+          blocked: true,
+          reason: 'capability_not_allowed',
+          riskClass: 'R3',
+          approvalRequired: true,
+          escalation: 'human_operator_required',
+          safeNextStep: 'redirect_to_manual_checkout',
+          rollback: 'not_executed',
+        },
+      },
+    ]);
+
+    expect(draft).toContain('não enviado');
+    expect(draft).toContain('aprovação humana');
+    expect(draft).not.toContain('preparado e enviado');
+  });
+
   it('executes predecided discounts without asking MIND to decide again', async () => {
     const prisma = {
       autopilotEvent: { create: jest.fn().mockResolvedValue({}) },

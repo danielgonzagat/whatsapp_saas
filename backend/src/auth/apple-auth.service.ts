@@ -24,6 +24,8 @@ import {
   tokenAudienceIncludes,
 } from './apple-auth.support';
 
+export { buildClientSecret };
+
 @Injectable()
 export class AppleAuthService {
   private readonly logger = StructuredLogger.from(AppleAuthService.name);

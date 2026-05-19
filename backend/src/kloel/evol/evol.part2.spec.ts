@@ -1,0 +1,358 @@
+import { GapDetector } from './gap.detector';
+import type { GapSignal } from './gap.detector';
+import { ProposalBuilder } from './proposal.builder';
+import { HumanAuthorizationGateway } from './human-authorization.gateway';
+import { AgentOrchestrationBridgeService } from './agent-orchestration.bridge';
+import { ExperimentRunner } from './experiment.runner';
+import { RTierDeltaMonitor } from './r-tier-delta.monitor';
+import { AutomaticRollbackService } from './automatic-rollback.service';
+import { ProtectedFilesFirewallService } from './protected-files.firewall';
+import { CodacyRigorEnforcer } from './codacy-rigor.enforcer';
+import { EvolutionAuditLog } from './evolution-audit.log';
+import type { SelfGap, ImprovementProposal, HumanAuthorization, RTier } from './types';
+import { commercialImpactWeight, tierToNumber } from './types';
+
+function makePaymentSignal(workspaceId = 'ws-1'): GapSignal {
+  return {
+    eventName: 'commerce.payment.failed',
+    workspaceId,
+    domain: 'payments',
+    severityScore: 0.9,
+    revenueRiskCents: 50000,
+  };
+}
+
+function makeAuthSignal(workspaceId = 'ws-1'): GapSignal {
+  return {
+    eventName: 'auth.refresh_token_expired',
+    workspaceId,
+    domain: 'auth',
+    severityScore: 0.7,
+    revenueRiskCents: 20000,
+  };
+}
+
+function makeGap(workspaceId = 'ws-1', domain = 'payments'): SelfGap {
+  return {
+    id: `gap-${workspaceId}-1`,
+    workspaceId,
+    domain,
+    description: `Detected capability gap in ${domain} domain`,
+    severity: 'critical',
+    commercialImpact: 'revenue_blocking',
+    estimatedRevenueRiskCents: 90000,
+    detectedAt: new Date().toISOString(),
+    sourceEvidence: ['test_event'],
+    confidence: 0.9,
+  };
+}
+
+function makeProposal(workspaceId = 'ws-1'): ImprovementProposal {
+  const gap = makeGap(workspaceId);
+  return {
+    id: `prop-${workspaceId}-1`,
+    gapId: gap.id,
+    workspaceId,
+    description: 'Add idempotency guard to payment webhook handler (gap: test)',
+    targetFiles: ['backend/src/payments/**'],
+    expectedDelta: 'Reduce revenue risk by resolving revenue_blocking in payments',
+    riskAssessment: 'critical',
+    evidence: ['test_event'],
+    generatedAt: new Date().toISOString(),
+    status: 'draft',
+  };
+}
+
+describe('Evol module (UTP-EVOL-001..010)', () => {
+  describe('RTierDeltaMonitor (EVOL-006)', () => {
+    const svc = new RTierDeltaMonitor();
+
+    beforeEach(() => svc.reset());
+
+    it('records R-tier upgrade', () => {
+      const delta = svc.record('payments', 'tier_1_functional', { coverage: 0.95 }, 'tests added');
+      expect(delta.direction).toBe('upgraded');
+      expect(delta.currentTier).toBe('tier_1_functional');
+    });
+
+    it('records R-tier downgrade', () => {
+      svc.record('payments', 'tier_1_functional', {}, 'initial');
+      const delta = svc.record('payments', 'tier_3_facade', {}, 'tests removed');
+      expect(delta.direction).toBe('downgraded');
+    });
+
+    it('detects downgrades', () => {
+      svc.record('payments', 'tier_1_functional', {}, 'initial');
+      svc.record('checkout', 'tier_1_functional', {}, 'initial');
+      svc.record('payments', 'tier_3_facade', {}, 'degraded');
+      expect(svc.getDowngrades()).toHaveLength(1);
+    });
+
+    it('lists deltas filtered by module', () => {
+      svc.record('payments', 'tier_2_partial', {}, 'test');
+      svc.record('auth', 'tier_1_functional', {}, 'test');
+      expect(svc.listDeltas('payments')).toHaveLength(1);
+    });
+
+    it('returns default tier_4_shell for unknown module', () => {
+      expect(svc.getCurrentTier('unknown_module')).toBe('tier_4_shell');
+    });
+
+    it('getRecentDeltas respects time window', () => {
+      svc.record('payments', 'tier_1_functional', {}, 'recent');
+      expect(svc.getRecentDeltas(3600000)).toHaveLength(1);
+      expect(svc.getRecentDeltas(-1)).toHaveLength(0);
+    });
+  });
+
+  describe('AutomaticRollbackService (EVOL-007)', () => {
+    let svc: AutomaticRollbackService;
+
+    beforeEach(() => {
+      svc = new AutomaticRollbackService();
+    });
+
+    it('triggers rollback on R-tier downgrade within window', () => {
+      const proposal = makeProposal();
+      const delta = {
+        workspaceId: 'global',
+        module: 'payments',
+        previousTier: 'tier_1_functional' as RTier,
+        currentTier: 'tier_3_facade' as RTier,
+        metrics: {},
+        changedAt: new Date().toISOString(),
+        direction: 'downgraded' as const,
+        reason: 'degraded',
+      };
+      const rollback = svc.evaluateDelta(proposal, delta);
+      expect(rollback).not.toBeNull();
+      expect(rollback!.status).toBe('pending');
+      expect(rollback!.wasAutomatic).toBe(true);
+    });
+
+    it('does not trigger rollback on upgrade', () => {
+      const proposal = makeProposal();
+      const delta = {
+        workspaceId: 'global',
+        module: 'payments',
+        previousTier: 'tier_3_facade' as RTier,
+        currentTier: 'tier_1_functional' as RTier,
+        metrics: {},
+        changedAt: new Date().toISOString(),
+        direction: 'upgraded' as const,
+        reason: 'improved',
+      };
+      expect(svc.evaluateDelta(proposal, delta)).toBeNull();
+    });
+
+    it('triggers rollback on refuted experiment verdict', () => {
+      const proposal = makeProposal();
+      const rollback = svc.evaluateExperiment(proposal, 'refuted');
+      expect(rollback).not.toBeNull();
+      expect(rollback!.status).toBe('pending');
+    });
+
+    it('does not trigger rollback on confirmed verdict', () => {
+      const proposal = makeProposal();
+      expect(svc.evaluateExperiment(proposal, 'confirmed')).toBeNull();
+    });
+
+    it('executes pending rollback', () => {
+      const proposal = makeProposal();
+      const delta = {
+        workspaceId: 'global',
+        module: 'payments',
+        previousTier: 'tier_1_functional' as RTier,
+        currentTier: 'tier_3_facade' as RTier,
+        metrics: {},
+        changedAt: new Date().toISOString(),
+        direction: 'downgraded' as const,
+        reason: 'degraded',
+      };
+      const rb = svc.evaluateDelta(proposal, delta)!;
+      const executed = svc.execute(rb.id);
+      expect(executed).not.toBeNull();
+      expect(executed!.status).toBe('executed');
+      expect(executed!.rollbackDurationMs).toBeGreaterThanOrEqual(0);
+    });
+
+    it('fails rollback execution', () => {
+      const proposal = makeProposal();
+      const delta = {
+        workspaceId: 'global',
+        module: 'payments',
+        previousTier: 'tier_1_functional' as RTier,
+        currentTier: 'tier_3_facade' as RTier,
+        metrics: {},
+        changedAt: new Date().toISOString(),
+        direction: 'downgraded' as const,
+        reason: 'degraded',
+      };
+      const rb = svc.evaluateDelta(proposal, delta)!;
+      const failed = svc.fail(rb.id, 'disk full');
+      expect(failed).not.toBeNull();
+      expect(failed!.status).toBe('failed');
+    });
+
+    it('lists pending rollbacks', () => {
+      const proposal = makeProposal();
+      const delta = {
+        workspaceId: 'global',
+        module: 'payments',
+        previousTier: 'tier_1_functional' as RTier,
+        currentTier: 'tier_3_facade' as RTier,
+        metrics: {},
+        changedAt: new Date().toISOString(),
+        direction: 'downgraded' as const,
+        reason: 'degraded',
+      };
+      svc.evaluateDelta(proposal, delta);
+      expect(svc.getPendingRollbacks()).toHaveLength(1);
+    });
+  });
+
+  describe('ProtectedFilesFirewall (EVOL-008)', () => {
+    const svc = new ProtectedFilesFirewallService();
+
+    beforeEach(() => svc.reset());
+
+    it('blocks access to protected governance file', () => {
+      const violation = svc.check('CLAUDE.md', 'test-agent');
+      expect(violation).not.toBeNull();
+      expect(violation!.violationKind).toBe('governance_breach');
+      expect(violation!.escalationRequired).toBe(true);
+    });
+
+    it('isProtected returns true for protected file', () => {
+      expect(svc.isProtected('AGENTS.md')).toBe(true);
+      expect(svc.isProtected('.github/workflows/ci-cd.yml')).toBe(true);
+    });
+
+    it('isProtected returns false for non-protected file', () => {
+      expect(svc.isProtected('backend/src/kloel/evol/gap.detector.ts')).toBe(false);
+      expect(svc.isProtected('README.md')).toBe(false);
+    });
+
+    it('classifies eslint config as codacy_weakening', () => {
+      const violation = svc.check('backend/eslint.config.mjs', 'test-agent');
+      expect(violation).not.toBeNull();
+      expect(violation!.violationKind).toBe('codacy_weakening');
+    });
+
+    it('classifies husky pre-push as bypass_suppression', () => {
+      const violation = svc.check('.husky/pre-push', 'test-agent');
+      expect(violation).not.toBeNull();
+      expect(violation!.violationKind).toBe('bypass_suppression');
+    });
+
+    it('tracks violation count', () => {
+      svc.check('CLAUDE.md', 'agent-1');
+      svc.check('AGENTS.md', 'agent-2');
+      expect(svc.violationCount()).toBe(2);
+    });
+
+    it('lists recent violations within time window', () => {
+      svc.check('CODEX.md', 'agent-1');
+      expect(svc.recentViolations(3600000)).toHaveLength(1);
+      expect(svc.recentViolations(-1)).toHaveLength(0);
+    });
+  });
+
+  describe('CodacyRigorEnforcer (EVOL-009)', () => {
+    const svc = new CodacyRigorEnforcer();
+
+    beforeEach(() => svc.reset());
+
+    it('captures baseline from initial check', () => {
+      const result = svc.check({ eslint: true, biome: true, semgrep: true });
+      expect(result.status).toBe('compliant');
+      expect(result.violations).toHaveLength(0);
+    });
+
+    it('detects tool disabled (degraded)', () => {
+      svc.captureBaseline({ eslint: true, biome: true, semgrep: true });
+      const result = svc.check({ eslint: false, biome: true, semgrep: true });
+      expect(result.status).toBe('degraded');
+      expect(result.violations).toContain('eslint');
+    });
+
+    it('detects multiple tools disabled (violated)', () => {
+      svc.captureBaseline({ eslint: true, biome: true, semgrep: true, pmd: true });
+      const result = svc.check({ eslint: false, biome: false, semgrep: false, pmd: true });
+      expect(result.status).toBe('violated');
+      expect(result.violations.length).toBeGreaterThanOrEqual(3);
+    });
+
+    it('isCompliant returns true when no violations', () => {
+      svc.check({ eslint: true, biome: true, semgrep: true });
+      expect(svc.isCompliant()).toBe(true);
+    });
+
+    it('isCompliant returns false when violations exist', () => {
+      svc.captureBaseline({ eslint: true, biome: true });
+      svc.check({ eslint: false, biome: true });
+      expect(svc.isCompliant()).toBe(false);
+    });
+
+    it('retrieves baseline', () => {
+      svc.captureBaseline({ eslint: true, biome: false });
+      const baseline = svc.getBaseline();
+      expect(baseline.eslint).toBe(true);
+      expect(baseline.biome).toBe(false);
+    });
+  });
+
+  describe('EvolutionAuditLog (EVOL-010)', () => {
+    const svc = new EvolutionAuditLog();
+
+    beforeEach(() => svc.reset());
+
+    it('records generic audit entry', () => {
+      const entry = svc.record('ws-1', 'test_action', 'test_actor', {}, 'corr-1');
+      expect(entry.workspaceId).toBe('ws-1');
+      expect(entry.action).toBe('test_action');
+      expect(entry.actor).toBe('test_actor');
+    });
+
+    it('records gap detection', () => {
+      const entry = svc.recordGapDetection('gap-1', 'ws-1', 'corr-1');
+      expect(entry.action).toBe('gap_detected');
+      expect(entry.actor).toBe('GapDetector');
+    });
+
+    it('records proposal created', () => {
+      const entry = svc.recordProposalCreated('prop-1', 'ws-1', 'corr-1');
+      expect(entry.action).toBe('proposal_created');
+    });
+
+    it('records authorization events', () => {
+      const entry = svc.recordAuthorization('auth-1', 'approved', 'ws-1', 'corr-1');
+      expect(entry.action).toBe('authorization_approved');
+    });
+
+    it('records dispatch events', () => {
+      const entry = svc.recordDispatch('bridge-1', 'ws-1', 'corr-1', 'auth-1');
+      expect(entry.actor).toBe('AgentOrchestrationBridge');
+      expect(entry.authorizationId).toBe('auth-1');
+    });
+
+    it('filters entries by workspace', () => {
+      svc.record('ws-1', 'action_a', 'actor', {}, 'corr-1');
+      svc.record('ws-2', 'action_b', 'actor', {}, 'corr-2');
+      expect(svc.list('ws-1')).toHaveLength(1);
+      expect(svc.list()).toHaveLength(2);
+    });
+
+    it('filters entries by recency', () => {
+      svc.record('ws-1', 'action', 'actor', {}, 'corr-1');
+      expect(svc.recentEntries(3600000)).toHaveLength(1);
+      expect(svc.recentEntries(-1)).toHaveLength(0);
+    });
+
+    it('counts all entries', () => {
+      svc.record('ws-1', 'a', 'actor', {}, 'c1');
+      svc.record('ws-2', 'b', 'actor', {}, 'c2');
+      expect(svc.count()).toBe(2);
+    });
+  });
+});

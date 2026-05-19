@@ -7,7 +7,7 @@ import { readTextFile } from '../safe-fs';
 import { discoverReservedJsKeywords } from '../dynamic-reality-kernel/catalog-arithmetic';
 import {
   buildRelationFieldMap,
-  buildTableNameMap,
+  buildTableNameMapFromModels,
   collectModelsFromIncludeSelect,
   collectModelsFromRawSql,
 } from '../orphan-prisma/enhanced-detector';
@@ -401,10 +401,9 @@ export function traceServices(config: PulseConfig): ServiceTrace[] {
   let tableNameMap: Map<string, string> | undefined;
   if (config.schemaPath) {
     try {
-      const schemaContent = readTextFile(config.schemaPath, 'utf8');
       const prismaModels: PrismaModel[] = parseSchema(config);
       relationFieldMap = buildRelationFieldMap(prismaModels);
-      tableNameMap = buildTableNameMap(schemaContent);
+      tableNameMap = buildTableNameMapFromModels(prismaModels);
     } catch {
     }
   }
@@ -413,6 +412,8 @@ export function traceServices(config: PulseConfig): ServiceTrace[] {
     (f) =>
       f.endsWith('.service.ts') ||
       f.endsWith('.controller.ts') ||
+      f.endsWith('.repository.ts') ||
+      f.endsWith('-repository.ts') ||
       f.endsWith('.engine.ts') ||
       f.endsWith('.guard.ts') ||
       f.endsWith('.interceptor.ts') ||

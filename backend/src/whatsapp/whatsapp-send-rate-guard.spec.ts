@@ -9,50 +9,26 @@ type PlanLimitsMock = {
   ensureMessageRate: jest.Mock;
 };
 
-const PATCHED_METHODS = ['sendMessage', 'sendTemplate', 'sendDirectMessage'] as const;
-
-type PrototypeSnapshot = Record<(typeof PATCHED_METHODS)[number], unknown> & {
-  marker: unknown;
-};
-
-function getProto(): Record<string | symbol, unknown> {
-  return WhatsappService.prototype as Record<string | symbol, unknown>;
+function getProto(): Record<string, unknown> {
+  return WhatsappService.prototype as Record<string, unknown>;
 }
 
 describe('WhatsappSendRateGuardService', () => {
   let planLimits: PlanLimitsMock;
   let service: WhatsappSendRateGuardService;
-  let originalSnapshot: PrototypeSnapshot;
+  let originalProto: Record<string, unknown>;
 
   function setupPrototype(methods: Record<string, jest.Mock | undefined>) {
     const proto = getProto();
-    delete proto[PATCH_MARKER];
+    for (const key of Object.keys(proto)) {
+      if (!(key in methods)) {
+        delete proto[key];
+      }
+    }
     for (const [key, fn] of Object.entries(methods)) {
       proto[key] = fn;
     }
     return proto;
-  }
-
-  function snapshotPrototype(): PrototypeSnapshot {
-    const proto = getProto();
-    return {
-      sendMessage: proto.sendMessage,
-      sendTemplate: proto.sendTemplate,
-      sendDirectMessage: proto.sendDirectMessage,
-      marker: proto[PATCH_MARKER],
-    };
-  }
-
-  function restorePrototype(snapshot: PrototypeSnapshot): void {
-    const proto = getProto();
-    for (const methodName of PATCHED_METHODS) {
-      proto[methodName] = snapshot[methodName];
-    }
-    if (snapshot.marker === undefined) {
-      delete proto[PATCH_MARKER];
-      return;
-    }
-    proto[PATCH_MARKER] = snapshot.marker;
   }
 
   beforeEach(() => {
@@ -61,7 +37,7 @@ describe('WhatsappSendRateGuardService', () => {
       ensureMessageRate: jest.fn().mockResolvedValue(undefined),
     };
 
-    originalSnapshot = snapshotPrototype();
+    originalProto = { ...getProto() };
 
     setupPrototype({
       sendMessage: jest.fn().mockResolvedValue('sent'),
@@ -73,7 +49,14 @@ describe('WhatsappSendRateGuardService', () => {
   });
 
   afterEach(() => {
-    restorePrototype(originalSnapshot);
+    const proto = getProto();
+    for (const key of Object.keys(proto)) {
+      delete proto[key];
+    }
+    for (const key of Object.getOwnPropertySymbols(proto)) {
+      delete proto[key];
+    }
+    Object.assign(proto, originalProto);
   });
 
   describe('onModuleInit', () => {
@@ -110,7 +93,11 @@ describe('WhatsappSendRateGuardService', () => {
     it('calls ensureDailyMessageQuota and ensureMessageRate before original method', async () => {
       const originalFn = jest.fn().mockResolvedValue('original-result');
 
-      setupPrototype({ sendMessage: originalFn });
+      const p = getProto();
+      for (const k of Object.keys(p)) {
+        delete p[k];
+      }
+      p.sendMessage = originalFn;
 
       service.onModuleInit();
 
@@ -131,7 +118,11 @@ describe('WhatsappSendRateGuardService', () => {
     it('skips rate check when workspaceId is not a string', async () => {
       const originalFn = jest.fn().mockResolvedValue('no-quota-check');
 
-      setupPrototype({ sendMessage: originalFn });
+      const p = getProto();
+      for (const k of Object.keys(p)) {
+        delete p[k];
+      }
+      p.sendMessage = originalFn;
 
       service.onModuleInit();
 
@@ -147,7 +138,11 @@ describe('WhatsappSendRateGuardService', () => {
     it('skips rate check when workspaceId is an empty string', async () => {
       const originalFn = jest.fn().mockResolvedValue('empty-id');
 
-      setupPrototype({ sendMessage: originalFn });
+      const p = getProto();
+      for (const k of Object.keys(p)) {
+        delete p[k];
+      }
+      p.sendMessage = originalFn;
 
       service.onModuleInit();
 

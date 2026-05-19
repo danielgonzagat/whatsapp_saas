@@ -8,6 +8,7 @@ type LeadRow = {
   name: string | null;
   email: string | null;
   status: string | null;
+  stage: string | null;
   lastIntent: string | null;
   totalMessages: number | null;
   metadata: unknown;
@@ -21,6 +22,7 @@ type LeadOutput = {
   name: string | null;
   email: string | null;
   status: string;
+  stage: string | null;
   lastIntent: string;
   totalMessages: number;
   lastInteraction: Date;
@@ -65,6 +67,7 @@ function mapLead(lead: LeadRow): LeadOutput {
     name: lead.name,
     email: lead.email,
     status: lead.status || 'new',
+    stage: lead.stage ?? null,
     lastIntent: lead.lastIntent || 'general',
     totalMessages: lead.totalMessages || 0,
     lastInteraction: lead.updatedAt || lead.createdAt,
@@ -116,6 +119,7 @@ export class LeadsService {
         name: true,
         email: true,
         status: true,
+        stage: true,
         lastIntent: true,
         totalMessages: true,
         metadata: true,

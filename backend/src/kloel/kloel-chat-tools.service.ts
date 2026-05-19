@@ -11,22 +11,6 @@ import {
   AgentRuntimeSkillRegistry,
 } from './agent-runtime';
 import {
-  type ToolResult,
-  type ToolUpsertAgentSkillArgs,
-  type ToolRecordAgentSkillOutcomeArgs,
-  type ToolRecordAgentDelegationArgs,
-  type ToolRecordAgentEvidenceArgs,
-  type ToolSearchAgentEvidenceArgs,
-  type ToolListAgentEvidenceArgs,
-  runUpsertAgentSkill,
-  runRecordAgentSkillOutcome,
-  runRecordAgentDelegation,
-  runRecordAgentEvidence,
-  runSearchAgentEvidence,
-  runListAgentEvidence,
-  runVerifyAgentEvidence,
-} from './kloel-chat-tools.agent-runtime.helpers';
-import {
   type ToolCreateAgentJobArgs,
   type ToolGetAgentArtifactArgs,
   type ToolSearchAgentMemoryArgs,
@@ -39,9 +23,23 @@ import {
   runSearchAgentSessions,
   runSetAgentJobEnabled,
 } from './kloel-chat-tools.agent-jobs.helpers';
-
+import {
+  type ToolListAgentEvidenceArgs,
+  type ToolRecordAgentDelegationArgs,
+  type ToolRecordAgentEvidenceArgs,
+  type ToolRecordAgentSkillOutcomeArgs,
+  type ToolResult,
+  type ToolSearchAgentEvidenceArgs,
+  type ToolUpsertAgentSkillArgs,
+  runListAgentEvidence,
+  runRecordAgentDelegation,
+  runRecordAgentEvidence,
+  runRecordAgentSkillOutcome,
+  runSearchAgentEvidence,
+  runUpsertAgentSkill,
+  runVerifyAgentEvidence,
+} from './kloel-chat-tools.agent-runtime.helpers';
 const NON_SLUG_CHAR_RE = /[^a-z0-9_:-]+/g;
-
 function safeStr(value: unknown, fallback = ''): string {
   if (typeof value === 'string') {
     return value;
@@ -51,49 +49,40 @@ function safeStr(value: unknown, fallback = ''): string {
   }
   return fallback;
 }
-
 interface ToolSaveProductArgs {
   name: string;
   price: number;
   description?: string;
 }
-
 interface ToolDeleteProductArgs {
   productId?: string;
   productName?: string;
 }
-
 interface ToolToggleAutopilotArgs {
   enabled: boolean;
 }
-
 interface ToolSetBrandVoiceArgs {
   tone: string;
   personality?: string;
 }
-
 interface ToolSetSalesPolicyArgs {
   aggressiveness?: string;
   tone?: string;
   instructions?: string;
   appliesTo?: string;
 }
-
 interface ToolRememberUserInfoArgs {
   key: string;
   value: string;
 }
-
 interface ToolCreateFlowArgs {
   name: string;
   trigger: string;
   actions?: string[];
 }
-
 interface ToolDashboardSummaryArgs {
   period?: 'today' | 'week' | 'month';
 }
-
 function centsFromUnknown(value: unknown): number {
   if (typeof value === 'bigint') {
     return Number(value);
@@ -103,12 +92,10 @@ function centsFromUnknown(value: unknown): number {
   }
   return 0;
 }
-
 /** Handles product, flow, dashboard, payment, and misc AI chat tools. */
 @Injectable()
 export class KloelChatToolsService {
   private readonly logger = StructuredLogger.from(KloelChatToolsService.name);
-
   constructor(
     private readonly prisma: PrismaService,
     private readonly smartPaymentService: SmartPaymentService,
@@ -117,7 +104,6 @@ export class KloelChatToolsService {
     @Optional() private readonly agentSkills?: AgentRuntimeSkillRegistry,
     @Optional() private readonly agentEvidence?: AgentRuntimeEvidenceStoreService,
   ) {}
-
   async toolSaveProduct(workspaceId: string, args: ToolSaveProductArgs): Promise<ToolResult> {
     const product = await this.prisma.product.create({
       data: {
@@ -130,7 +116,6 @@ export class KloelChatToolsService {
     });
     return { success: true, product, message: `Produto "${args.name}" cadastrado com sucesso!` };
   }
-
   async toolListProducts(workspaceId: string): Promise<ToolResult> {
     const products = filterLegacyProducts(
       await this.prisma.product.findMany({
@@ -146,7 +131,6 @@ export class KloelChatToolsService {
     const list = products.map((p) => `- ${p.name}: R$ ${p.price}`).join('\n');
     return { success: true, products, message: `Aqui estão seus produtos:\n\n${list}` };
   }
-
   async toolDeleteProduct(workspaceId: string, args: ToolDeleteProductArgs): Promise<ToolResult> {
     const { productId, productName } = args;
     const where: Prisma.ProductWhereInput = { workspaceId };
@@ -159,7 +143,6 @@ export class KloelChatToolsService {
     if (!product) {
       return { success: false, error: 'Produto não encontrado.' };
     }
-
     await this.prisma.$transaction(
       [
         this.prisma.product.updateMany({
@@ -184,7 +167,6 @@ export class KloelChatToolsService {
     );
     return { success: true, message: `Produto "${product.name}" removido com sucesso.` };
   }
-
   async toolToggleAutopilot(
     workspaceId: string,
     args: ToolToggleAutopilotArgs,
@@ -199,7 +181,6 @@ export class KloelChatToolsService {
       decision: args.enabled ? 'enable' : 'disable',
       billingSuspended: currentSettings.billingSuspended === true,
     });
-
     if (args.enabled && currentSettings.billingSuspended === true) {
       return {
         success: false,
@@ -207,7 +188,6 @@ export class KloelChatToolsService {
         error: 'Autopilot suspenso: regularize cobrança para ativar.',
       };
     }
-
     return this.prisma.$transaction(async (tx) => {
       const workspace = await tx.workspace.findUnique({
         where: { id: workspaceId },
@@ -233,7 +213,6 @@ export class KloelChatToolsService {
       };
     });
   }
-
   async toolSetBrandVoice(workspaceId: string, args: ToolSetBrandVoiceArgs): Promise<ToolResult> {
     await this.prisma.kloelMemory.upsert({
       where: { workspaceId_key: { workspaceId, key: 'brandVoice' } },
@@ -256,7 +235,6 @@ export class KloelChatToolsService {
     });
     return { success: true, message: `Tom de voz definido como "${args.tone}"` };
   }
-
   async toolSetSalesPolicy(
     workspaceId: string,
     args: ToolSetSalesPolicyArgs,
@@ -266,11 +244,9 @@ export class KloelChatToolsService {
     const tone = safeStr(args.tone, '').trim().slice(0, 80);
     const instructions = safeStr(args.instructions, '').trim().slice(0, 1000);
     const appliesTo = safeStr(args.appliesTo, 'all').trim().slice(0, 120);
-
     if (!aggressiveness && !tone && !instructions) {
       return { success: false, error: 'missing_sales_policy_payload' };
     }
-
     const policy = {
       aggressiveness: aggressiveness || 'balanced',
       tone: tone || null,
@@ -279,7 +255,6 @@ export class KloelChatToolsService {
       updatedAt: new Date().toISOString(),
       updatedByUserId: userId || null,
     } satisfies Prisma.InputJsonObject;
-
     await this.prisma.$transaction(async (tx) => {
       const workspace = await tx.workspace.findUnique({
         where: { id: workspaceId },
@@ -300,14 +275,12 @@ export class KloelChatToolsService {
         },
       });
     });
-
     return {
       success: true,
       policy,
       message: `Politica comercial atualizada: agressividade ${policy.aggressiveness}.`,
     };
   }
-
   async toolRememberUserInfo(
     workspaceId: string,
     args: ToolRememberUserInfoArgs,
@@ -322,7 +295,6 @@ export class KloelChatToolsService {
     if (!normalizedKey || !value) {
       return { success: false, error: 'missing_user_memory_payload' };
     }
-
     const profileKey = `user_profile:${userId || 'workspace_owner'}`;
     const existing = await this.prisma.kloelMemory.findUnique({
       where: { workspaceId_key: { workspaceId, key: profileKey } },
@@ -341,7 +313,6 @@ export class KloelChatToolsService {
       .filter(([k]) => !['updatedAt', 'userId'].includes(k))
       .map(([k, v]) => k + ': ' + safeStr(v))
       .join('\n');
-
     await this.prisma.kloelMemory.upsert({
       where: { workspaceId_key: { workspaceId, key: profileKey } },
       update: {
@@ -367,7 +338,6 @@ export class KloelChatToolsService {
     });
     return { success: true, message: `Memória "${normalizedKey}" salva.` };
   }
-
   async toolCreateFlow(workspaceId: string, args: ToolCreateFlowArgs): Promise<ToolResult> {
     const nodes = [
       {
@@ -396,7 +366,6 @@ export class KloelChatToolsService {
     });
     return { success: true, flow, message: `Fluxo "${args.name}" criado com sucesso!` };
   }
-
   async toolListFlows(workspaceId: string): Promise<ToolResult> {
     const flows = await this.prisma.flow.findMany({
       where: { workspaceId },
@@ -421,7 +390,6 @@ export class KloelChatToolsService {
       message: `Você tem ${flows.length} fluxo(s) cadastrado(s).`,
     };
   }
-
   async toolGetDashboardSummary(
     workspaceId: string,
     args: ToolDashboardSummaryArgs,
@@ -485,7 +453,6 @@ export class KloelChatToolsService {
       },
     };
   }
-
   async toolCreatePaymentLink(
     workspaceId: string,
     args: { amount: number; description: string; customerName?: string },
@@ -505,83 +472,73 @@ export class KloelChatToolsService {
     });
     return { success: true, ...paymentResult };
   }
-
-  async toolCreateAgentJob(workspaceId: string, args: ToolCreateAgentJobArgs): Promise<ToolResult> {
+    async toolCreateAgentJob(workspaceId: string, args: ToolCreateAgentJobArgs): Promise<ToolResult> {
     return runCreateAgentJob(this.agentScheduler, workspaceId, args);
   }
-
   async toolListAgentJobs(workspaceId: string): Promise<ToolResult> {
     return runListAgentJobs(this.agentScheduler, workspaceId);
   }
-
   async toolSetAgentJobEnabled(
     workspaceId: string,
     args: ToolSetAgentJobEnabledArgs,
   ): Promise<ToolResult> {
     return runSetAgentJobEnabled(this.agentScheduler, workspaceId, args);
   }
-
   async toolSearchAgentMemory(
     workspaceId: string,
     args: ToolSearchAgentMemoryArgs,
   ): Promise<ToolResult> {
     return runSearchAgentMemory(this.agentSessions, workspaceId, args);
   }
-
   async toolSearchAgentSessions(
     workspaceId: string,
     args: ToolSearchAgentSessionsArgs,
   ): Promise<ToolResult> {
     return runSearchAgentSessions(this.agentSessions, workspaceId, args);
   }
-
   async toolGetAgentArtifact(
     workspaceId: string,
     args: ToolGetAgentArtifactArgs,
   ): Promise<ToolResult> {
     return runGetAgentArtifact(this.prisma, workspaceId, args);
   }
-
-  toolUpsertAgentSkill(workspaceId: string, args: ToolUpsertAgentSkillArgs): Promise<ToolResult> {
+  async toolUpsertAgentSkill(
+    workspaceId: string,
+    args: ToolUpsertAgentSkillArgs,
+  ): Promise<ToolResult> {
     return runUpsertAgentSkill(this.agentSkills, workspaceId, args);
   }
-
-  toolRecordAgentSkillOutcome(
+  async toolRecordAgentSkillOutcome(
     workspaceId: string,
     args: ToolRecordAgentSkillOutcomeArgs,
   ): Promise<ToolResult> {
     return runRecordAgentSkillOutcome(this.agentSkills, workspaceId, args);
   }
-
-  toolRecordAgentDelegation(
+  async toolRecordAgentDelegation(
     workspaceId: string,
     args: ToolRecordAgentDelegationArgs,
   ): Promise<ToolResult> {
     return runRecordAgentDelegation(this.agentSessions, workspaceId, args);
   }
-
-  toolRecordAgentEvidence(
+  async toolRecordAgentEvidence(
     workspaceId: string,
     args: ToolRecordAgentEvidenceArgs,
   ): Promise<ToolResult> {
     return runRecordAgentEvidence(this.agentEvidence, workspaceId, args);
   }
-
-  toolSearchAgentEvidence(
+  async toolSearchAgentEvidence(
     workspaceId: string,
     args: ToolSearchAgentEvidenceArgs,
   ): Promise<ToolResult> {
     return runSearchAgentEvidence(this.agentEvidence, workspaceId, args);
   }
-
-  toolListAgentEvidence(
+  async toolListAgentEvidence(
     workspaceId: string,
     args: ToolListAgentEvidenceArgs,
   ): Promise<ToolResult> {
     return runListAgentEvidence(this.agentEvidence, workspaceId, args);
   }
-
-  toolVerifyAgentEvidence(workspaceId: string): Promise<ToolResult> {
+  async toolVerifyAgentEvidence(workspaceId: string): Promise<ToolResult> {
     return runVerifyAgentEvidence(this.agentEvidence, workspaceId);
   }
 }

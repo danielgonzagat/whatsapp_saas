@@ -31,7 +31,7 @@ import {
   WalletNotFoundError,
 } from '../wallet/wallet.types';
 import {
-  PDF_ANALYSIS_SYSTEM_PROMPT,
+  PDF_ANALYSIS_OUTPUT_CONTRACT,
   PdfProcessorService,
   buildPdfAnalysisPrompt,
 } from './pdf-processor.service';
@@ -69,7 +69,7 @@ export class PdfProcessorController {
       return estimateOpenAiChatQuoteCostCents({
         model,
         messages: [
-          { role: 'system', content: PDF_ANALYSIS_SYSTEM_PROMPT },
+          { role: 'user', content: JSON.stringify({ contract: PDF_ANALYSIS_OUTPUT_CONTRACT }) },
           { role: 'user', content: buildPdfAnalysisPrompt(text, sourceName) },
         ],
       });
@@ -190,6 +190,59 @@ export class PdfProcessorController {
             : String(error)
         }`,
       );
+    }
+  }
+
+  /** Process text directly (no file upload). */
+  async processText(workspaceId: string, dto: { text: string; sourceName: string }) {
+    const { text, sourceName } = dto;
+
+    if (!text || text.trim().length < 10) {
+      throw new BadRequestException('O documento não contém texto suficiente para análise.');
+    }
+
+    const requestId = `${workspaceId}:${sourceName}:${text.length}`;
+    const estimatedCostCents = this.estimatePdfAnalysisQuote(text, sourceName);
+    const usageCharged = await this.chargePdfAnalysisIfNeeded({
+      workspaceId,
+      requestId,
+      sourceName,
+      textLength: text.length,
+      ...(estimatedCostCents !== undefined ? { estimatedCostCents } : {}),
+    });
+
+    try {
+      const result = await this.pdfProcessor.processTextWithUsage(workspaceId, text, sourceName);
+      if (estimatedCostCents !== undefined && usageCharged) {
+        await this.settlePdfAnalysisIfNeeded({
+          workspaceId,
+          requestId,
+          sourceName,
+          usage: result.usage,
+        });
+      }
+
+      return {
+        status: 'processed',
+        sourceName,
+        textLength: text.length,
+        analysis: {
+          products: countAnalysisItems(result.analysis.products),
+          hasCompanyInfo: !!result.analysis.companyInfo,
+          objections: countAnalysisItems(result.analysis.objections),
+        },
+        details: result.analysis,
+      };
+    } catch (error: unknown) {
+      if (usageCharged) {
+        await this.refundPdfAnalysisIfNeeded(
+          workspaceId,
+          requestId,
+          'pdf_analysis_provider_exception',
+          sourceName,
+        );
+      }
+      throw error;
     }
   }
 

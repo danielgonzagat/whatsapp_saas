@@ -91,8 +91,17 @@ describe('AutopilotCycleExecutorService', () => {
     };
   }
 
+  function useDaytimeClock(): void {
+    jest.useFakeTimers().setSystemTime(new Date('2026-05-13T15:00:00.000Z'));
+  }
+
+  function useNightClock(): void {
+    jest.useFakeTimers().setSystemTime(new Date('2026-05-13T03:00:00.000Z'));
+  }
+
   beforeEach(async () => {
     jest.clearAllMocks();
+    useDaytimeClock();
     mockConfig.get.mockReturnValue(undefined);
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -105,6 +114,10 @@ describe('AutopilotCycleExecutorService', () => {
     }).compile();
     service = module.get<AutopilotCycleExecutorService>(AutopilotCycleExecutorService);
     jest.useFakeTimers().setSystemTime(new Date('2026-05-13T15:00:00.000Z'));
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
   });
 
   afterEach(() => {
@@ -225,21 +238,19 @@ describe('AutopilotCycleExecutorService', () => {
     const conv = makeConv();
 
     it('returns auto_reply_night when isNight and no buying signal', async () => {
-      jest.useFakeTimers().setSystemTime(new Date('2026-05-13T03:00:00.000Z'));
+      useNightClock();
       const analysis: ConversationAnalysis = { intent: 'greeting', buyingSignal: false };
       const result = await service.decideAction(analysis, conv, false);
 
       expect(result).toBe('auto_reply_night');
-      jest.useRealTimers();
     });
 
     it('returns soft_close_night when isNight with buying signal', async () => {
-      jest.useFakeTimers().setSystemTime(new Date('2026-05-13T03:00:00.000Z'));
+      useNightClock();
       const analysis: ConversationAnalysis = { intent: 'buying', buyingSignal: true };
       const result = await service.decideAction(analysis, conv, false);
 
       expect(result).toBe('soft_close_night');
-      jest.useRealTimers();
     });
 
     it('returns send_offer when buying signal at optimal time', async () => {
@@ -456,12 +467,11 @@ describe('AutopilotCycleExecutorService', () => {
     });
 
     it('prefers night+noBuying auto_reply_night over buying path', async () => {
-      jest.useFakeTimers().setSystemTime(new Date('2026-05-13T03:00:00.000Z'));
+      useNightClock();
       const conv = makeConv();
       const result = await service.decideAction({ buyingSignal: false }, conv, false);
 
       expect(result).toBe('auto_reply_night');
-      jest.useRealTimers();
     });
   });
 

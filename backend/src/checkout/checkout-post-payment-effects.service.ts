@@ -1,9 +1,11 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
 import { StructuredLogger } from '../logging/structured-logger';
+import { SpineEmitterService } from '../kloel/spine/spine-emitter.service';
 import { Prisma } from '@prisma/client';
 import * as Sentry from '@sentry/node';
 import { forEachSequential } from '../common/async-sequence';
 import { formatBrlAmount } from '../kloel/money-format.util';
+import { CheckoutEventEmitterService } from '../kloel/checkout-emitter/checkout-event-emitter.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { CheckoutSocialLeadService } from './checkout-social-lead.service';
 import { FacebookCAPIService } from './facebook-capi.service';
@@ -18,6 +20,7 @@ type CheckoutPixelConfig = {
 
 type CheckoutOrderForEffects = {
   id?: string;
+  workspaceId?: string | null;
   orderNumber?: string | null;
   customerName?: string | null;
   customerEmail?: string | null;
@@ -42,6 +45,8 @@ export class CheckoutPostPaymentEffectsService {
     private readonly prisma: PrismaService,
     private readonly facebookCAPI: FacebookCAPIService,
     private readonly checkoutSocialLeadService: CheckoutSocialLeadService,
+    private readonly checkoutEventEmitter: CheckoutEventEmitterService,
+    @Optional() private readonly spine?: SpineEmitterService,
   ) {}
 
   /** Mark lead converted + auto-enroll in linked member areas. */
@@ -55,21 +60,35 @@ export class CheckoutPostPaymentEffectsService {
       typeof orderMetadata.capturedLeadId === 'string' ? orderMetadata.capturedLeadId : null;
     const deviceFingerprint =
       typeof orderMetadata.deviceFingerprint === 'string' ? orderMetadata.deviceFingerprint : null;
+    const correlationId =
+      typeof orderMetadata.correlationId === 'string' ? orderMetadata.correlationId : undefined;
 
-    await this.checkoutSocialLeadService
-      .markConvertedFromOrder({
+    const conversionInput = {
+      workspaceId,
+      orderId: order.id,
+      ...(capturedLeadId !== null ? { capturedLeadId } : {}),
+      ...(order.customerEmail !== undefined && order.customerEmail !== null
+        ? { customerEmail: order.customerEmail }
+        : {}),
+      ...(order.customerPhone !== undefined && order.customerPhone !== null
+        ? { customerPhone: order.customerPhone }
+        : {}),
+      ...(deviceFingerprint !== null ? { deviceFingerprint } : {}),
+    };
+
+    const converted = await this.checkoutSocialLeadService
+      .markConvertedFromOrder(conversionInput)
+      .catch(() => null);
+
+    if (converted) {
+      void this.checkoutEventEmitter.leadConverted({
         workspaceId,
         orderId: order.id,
-        ...(capturedLeadId !== null ? { capturedLeadId } : {}),
-        ...(order.customerEmail !== undefined && order.customerEmail !== null
-          ? { customerEmail: order.customerEmail }
-          : {}),
-        ...(order.customerPhone !== undefined && order.customerPhone !== null
-          ? { customerPhone: order.customerPhone }
-          : {}),
-        ...(deviceFingerprint !== null ? { deviceFingerprint } : {}),
-      })
-      .catch(() => undefined);
+        leadId: converted.id,
+        customerEmail: order.customerEmail ?? null,
+        correlationId,
+      });
+    }
 
     await this.autoEnrollInMemberAreas(
       workspaceId,
@@ -84,6 +103,45 @@ export class CheckoutPostPaymentEffectsService {
   async sendPurchaseSignals(order: CheckoutOrderForEffects, chargedAmount: number) {
     await this.sendFacebookPurchaseEvent(order);
     await this.sendPaymentConfirmationEmail(order, chargedAmount);
+    void this.emitPostSaleBridgeEvents(order);
+  }
+
+  private emitPostSaleBridgeEvents(order: CheckoutOrderForEffects): void {
+    if (!this.spine || !order.id || !order.workspaceId) {
+      return;
+    }
+    const entityRef = { entityType: 'order' as const, entityId: order.id };
+    void this.spine.emit({
+      eventName: 'commerce.post_sale.delivery_completed',
+      workspaceId: order.workspaceId,
+      entityRef,
+      truthMode: 'observed',
+      provenance: {
+        source: 'production',
+        processor: 'checkout-post-payment-effects',
+        processorVersion: '1.0.0',
+        schemaVersion: '1.0.0',
+      },
+      payload: {
+        deliveryKind: 'purchase_confirmation',
+        channel: 'email',
+      },
+    }).catch(() => undefined);
+    void this.spine.emit({
+      eventName: 'commerce.post_sale.activation_started',
+      workspaceId: order.workspaceId,
+      entityRef,
+      truthMode: 'observed',
+      provenance: {
+        source: 'production',
+        processor: 'checkout-post-payment-effects',
+        processorVersion: '1.0.0',
+        schemaVersion: '1.0.0',
+      },
+      payload: {
+        activationKind: 'post_purchase',
+      },
+    }).catch(() => undefined);
   }
 
   private readOrderMetadata(metadata: Prisma.JsonValue | null | undefined) {

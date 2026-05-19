@@ -1,6 +1,6 @@
 import { BadRequestException, NotFoundException } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
 import { CheckoutCatalogService } from './checkout-catalog.service';
+import { Prisma } from "@prisma/client";
 
 type PrismaMock = {
   checkoutProductPlan: { findUnique: jest.Mock };
@@ -144,7 +144,7 @@ describe('CheckoutCatalogService', () => {
     it('throws NotFoundException on P2025 error', async () => {
       const error = new Prisma.PrismaClientKnownRequestError('Record not found', {
         code: 'P2025',
-        clientVersion: '5.0.0',
+        clientVersion: '5',
       });
       prisma.orderBump.update.mockRejectedValue(error);
 
@@ -283,7 +283,7 @@ describe('CheckoutCatalogService', () => {
     it('throws NotFoundException on P2025', async () => {
       const error = new Prisma.PrismaClientKnownRequestError('Not found', {
         code: 'P2025',
-        clientVersion: '5.0.0',
+        clientVersion: '5',
       });
       prisma.upsell.update.mockRejectedValue(error);
 
@@ -325,4 +325,3 @@ describe('CheckoutCatalogService', () => {
       expect(result).toHaveLength(1);
     });
   });
-});

@@ -149,12 +149,18 @@ export class DecisionOutcomeService {
     });
 
     if (expired.length > 0) {
+      const outcomeKeys = expired.map((e) => e.outcomeKey);
       await this.prisma.decisionOutcome.updateMany({
         where: { id: { in: expired.map((e) => e.id) }, workspaceId },
         data: {
           outcomeAt: new Date(),
           outcomeName: 'inbound.silent_24h',
           wonVsBaseline: false,
+          outcomeValue: inputJson({
+            reason: 'expired_without_reply',
+            maxAgeHours,
+            outcomeKeys,
+          }),
         },
       });
     }

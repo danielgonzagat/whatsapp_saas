@@ -14,6 +14,7 @@ import { WhatsAppProviderRegistry } from './providers/provider-registry';
 import { WorkerRuntimeService } from './worker-runtime.service';
 import { WhatsappSessionService } from './whatsapp-session.service';
 import type { ContactCustomFields } from '../contacts/contact-custom-fields.types';
+import { WhatsAppEventEmitterService } from '../kloel/whatsapp-emitter/whatsapp-event-emitter.service';
 
 const D_RE = /\D/g;
 
@@ -31,6 +32,7 @@ export class WhatsappMessageDispatcherService {
     private readonly sessionService: WhatsappSessionService,
     @InjectRedis() private readonly redis: Redis,
     @Optional() private readonly opsAlert?: OpsAlertService,
+    @Optional() private readonly whatsappEmitter?: WhatsAppEventEmitterService,
   ) {}
 
   private normalizeChatId(chatId: string): string {
@@ -276,6 +278,17 @@ export class WhatsappMessageDispatcherService {
       ...(opts?.mediaUrl !== undefined ? { mediaUrl: opts.mediaUrl } : {}),
       status: 'SENT',
     });
+
+    if (this.whatsappEmitter) {
+      this.whatsappEmitter.emitMessageReplied({
+        workspaceId: ws,
+        to,
+        contactId: to,
+        messageId: extId ?? undefined,
+        author: 'autopilot',
+        content: message,
+      });
+    }
     return {
       ok: true,
       direct: true,

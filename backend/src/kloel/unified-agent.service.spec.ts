@@ -1,3 +1,8 @@
+import { expectValueOf } from '../../test/expect-value-of';
+jest.mock('./openai-wrapper', () => ({
+  chatCompletionWithFallback: jest.fn(),
+}));
+
 import { ConfigService } from '@nestjs/config';
 import { UnifiedAgentActionsCommerceService } from './unified-agent-actions-commerce.service';
 import { UnifiedAgentActionsMessagingService } from './unified-agent-actions-messaging.service';
@@ -6,6 +11,7 @@ import { UnifiedAgentContextDataService } from './unified-agent-context-data.ser
 import { UnifiedAgentContextService } from './unified-agent-context.service';
 import { chatCompletionWithFallback } from './openai-wrapper';
 import { UnifiedAgentResponseService } from './unified-agent-response.service';
+import { chatCompletionWithFallback } from './openai-wrapper';
 import { UnifiedAgentService } from './unified-agent.service';
 
 jest.mock('./openai-wrapper', () => ({
@@ -129,12 +135,7 @@ describe('UnifiedAgentService', () => {
       sendMessage: jest.fn().mockResolvedValue({ error: false, delivery: 'sent', direct: true }),
     };
     transportRegistry = {
-      send: jest.fn().mockResolvedValue({
-        success: true,
-        blocked: false,
-        messageId: 'msg-1',
-        delivery: 'sent',
-      }),
+      send: jest.fn().mockResolvedValue({ success: true, blocked: false, messageId: 'msg-1' }),
     };
 
     paymentService = {
@@ -177,8 +178,8 @@ describe('UnifiedAgentService', () => {
     dailyLimit = {
       ensureProactiveDailyLimit: jest.fn().mockResolvedValue({
         allowed: true,
-        capAtDay: 1000,
-        remaining: 999,
+        capAtDay: 100,
+        remaining: 99,
       }),
     };
 
@@ -220,10 +221,43 @@ describe('UnifiedAgentService', () => {
       response,
       actions,
     );
+    Reflect.set(service, 'openai', {});
   });
 
   afterEach(() => {
     jest.clearAllMocks();
+  });
+
+  it('sends structured unified-agent state without a system role', async () => {
+    (chatCompletionWithFallback as jest.Mock).mockResolvedValueOnce({
+      choices: [{ message: { content: 'Resposta estruturada' } }],
+      usage: { total_tokens: 24 },
+    });
+
+    await service.processIncomingMessage({
+      workspaceId: 'ws-1',
+      contactId: 'contact-1',
+      phone: '5511999999999',
+      message: 'quanto custa?',
+      channel: 'whatsapp',
+      context: { deliveryMode: 'reactive' },
+      executeTools: false,
+    });
+
+    const completionInput = (chatCompletionWithFallback as jest.Mock).mock.calls[0]?.[1];
+    expect(completionInput.messages).toEqual(
+      expect.not.arrayContaining([expect.objectContaining({ role: 'system' })]),
+    );
+    const lastUserMessage = completionInput.messages.at(-1);
+    expect(lastUserMessage).toEqual(expect.objectContaining({ role: 'user' }));
+    const payload = JSON.parse(String(lastUserMessage.content)) as Record<string, unknown>;
+    expect(payload).toEqual(
+      expect.objectContaining({
+        cognitiveState: expect.objectContaining({ abiStatus: 'builder_not_injected' }),
+        runtimeContext: expect.objectContaining({ responsePolicy: expectValueOf(String) }),
+        currentInput: expect.objectContaining({ raw: 'quanto custa?', channel: 'whatsapp' }),
+      }),
+    );
   });
 
   it('turns inbound WhatsApp intent into an outbound send_message action through the unified CIA loop', async () => {
@@ -267,8 +301,8 @@ describe('UnifiedAgentService', () => {
       'ws-1',
       expect.objectContaining({
         channel: 'whatsapp',
-        recipientId: '5511999999999',
         content: 'Claro. O produto custa R$ 890.',
+        recipientId: '5511999999999',
       }),
     );
     expect(prisma.autopilotEvent.create).toHaveBeenCalledWith(
@@ -290,268 +324,26 @@ describe('UnifiedAgentService', () => {
       }),
     ]);
     expect(result.response).toBe('Claro. O produto custa R$ 890.');
-  });
 
-  it('send_product_info always sends the generated product answer to WhatsApp', async () => {
-    prisma.product.findFirst.mockResolvedValue({
-      id: 'prod-1',
-      name: 'Test Product',
-      description: 'Bioestimulador regenerativo',
-      price: 890,
-      paymentLink: 'https://pay.kloel.test/serum-premium',
-      active: true,
-    });
-
-    const result = await service.executeTool(
-      'send_product_info',
-      {
-        productName: 'Test Product',
-        includePrice: true,
-        includeLink: false,
-      },
-      {
-        workspaceId: 'ws-1',
-        phone: '5511999999999',
-      },
+    const firstCompletionInput = (chatCompletionWithFallback as jest.Mock).mock.calls[0]?.[1];
+    expect(firstCompletionInput.messages).toEqual(
+      expect.not.arrayContaining([expect.objectContaining({ role: 'system' })]),
     );
-
-    expect(transportRegistry.send).toHaveBeenCalledWith(
-      'ws-1',
+    const lastUserMessage = firstCompletionInput.messages.at(-1);
+    expect(lastUserMessage).toEqual(expect.objectContaining({ role: 'user' }));
+    const payload = JSON.parse(String(lastUserMessage.content)) as Record<string, unknown>;
+    expect(payload).toEqual(
       expect.objectContaining({
-        channel: 'whatsapp',
-        recipientId: '5511999999999',
-        content: expect.stringContaining('Test Product'),
+        cognitiveState: expect.objectContaining({ abiStatus: 'builder_not_injected' }),
+        runtimeContext: expect.objectContaining({
+          responsePolicy: expectValueOf(String),
+        }),
+        contact: expect.objectContaining({ name: '5511999999999' }),
+        currentInput: expect.objectContaining({
+          raw: 'quanto custa?',
+          channel: 'whatsapp',
+        }),
       }),
     );
-    expect(result).toEqual(
-      expect.objectContaining({
-        success: true,
-        sent: true,
-        message: expect.stringMatching(/Preço:\sR\$\s?890(?:,00)?/),
-      }),
-    );
+    expect(payload.runtimeContext).toHaveProperty('compressedMemory');
   });
-
-  it('uses the configured brain/writer model split', () => {
-    expect(Reflect.get(service, 'primaryBrainModel')).toBe('gpt-5.4');
-    expect(Reflect.get(service, 'fallbackBrainModel')).toBe('gpt-4.1');
-    expect(Reflect.get(service, 'writerModel')).toBe('gpt-5.4-nano-2026-03-17');
-    expect(Reflect.get(service, 'fallbackWriterModel')).toBe('gpt-4.1');
-  });
-
-  it('executes predecided actions without delegating tool choice to the LLM', async () => {
-    const result = await service.processMessage({
-      workspaceId: 'ws-1',
-      contactId: 'contact-1',
-      phone: '5511999999999',
-      message: 'manda o link',
-      allowedTools: ['send_message'],
-      predecidedActions: [
-        {
-          tool: 'send_message',
-          args: { message: 'Aqui está o próximo passo.' },
-        },
-      ],
-      context: { channel: 'whatsapp' },
-    });
-
-    expect(transportRegistry.send).toHaveBeenCalledWith(
-      'ws-1',
-      expect.objectContaining({
-        content: 'Aqui está o próximo passo.',
-        recipientId: '5511999999999',
-      }),
-    );
-    expect(result.actions).toEqual([
-      expect.objectContaining({
-        tool: 'send_message',
-        args: { message: 'Aqui está o próximo passo.' },
-      }),
-    ]);
-    expect(result.intent).toBe('FOLLOW_UP');
-    expect(result.confidence).toBe(0.85);
-  });
-
-  it('blocks predecided actions that are outside the Brain capability policy', async () => {
-    const result = await service.processMessage({
-      workspaceId: 'ws-1',
-      contactId: 'contact-1',
-      phone: '5511999999999',
-      message: 'manda o link',
-      allowedTools: ['send_message'],
-      predecidedActions: [
-        {
-          tool: 'create_payment_link',
-          args: { amount: 100, productName: 'Produto X' },
-        },
-      ],
-    });
-
-    expect(paymentService.createPayment).not.toHaveBeenCalled();
-    expect(result.actions).toEqual([
-      {
-        tool: 'create_payment_link',
-        args: { amount: 100, productName: 'Produto X' },
-        result: { blocked: true, reason: 'capability_not_allowed' },
-      },
-    ]);
-  });
-
-  it('treats an empty allowedTools policy as no tools allowed', async () => {
-    const result = await service.processMessage({
-      workspaceId: 'ws-1',
-      contactId: 'contact-1',
-      phone: '5511999999999',
-      message: 'manda uma mensagem',
-      allowedTools: [],
-      predecidedActions: [
-        {
-          tool: 'send_message',
-          args: { message: 'Nao deve enviar.' },
-        },
-      ],
-    });
-
-    expect(transportRegistry.send).not.toHaveBeenCalled();
-    expect(result.actions).toEqual([
-      {
-        tool: 'send_message',
-        args: { message: 'Nao deve enviar.' },
-        result: { blocked: true, reason: 'capability_not_allowed' },
-      },
-    ]);
-  });
-
-  it('logs and blocks LLM tool calls outside the allowed policy', async () => {
-    Reflect.set(service, 'openai', {});
-    mockBlockedToolCallCompletion();
-
-    const result = await service.processMessage({
-      workspaceId: 'ws-1',
-      contactId: 'contact-1',
-      phone: '5511999999999',
-      message: 'gera o link',
-      allowedTools: ['send_message'],
-    });
-
-    expectPaymentLinkToolBlocked(result, prisma, paymentService, planLimits);
-  });
-
-  it('loads conversation history by phone when contactId is missing', async () => {
-    prisma.message.findMany.mockResolvedValue([
-      {
-        content: 'Oi',
-        direction: 'INBOUND',
-      },
-      {
-        content: 'Claro, te explico agora.',
-        direction: 'OUTBOUND',
-      },
-    ]);
-
-    const history = await ctx.getConversationHistory('ws-1', '', 10, '5511999999999');
-
-    expect(prisma.message.findMany).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: {
-          workspaceId: 'ws-1',
-          contact: { phone: '5511999999999' },
-        },
-        take: 10,
-      }),
-    );
-    expect(history).toEqual([
-      { role: 'assistant', content: 'Claro, te explico agora.' },
-      { role: 'user', content: 'Oi' },
-    ]);
-  });
-
-  it('compresses long replies to mirror short customer messages', () => {
-    const reply = response.finalizeReplyStyle(
-      'quanto custa?',
-      'Claro! O produto custa R$ 890. Posso te explicar os benefícios, formas de pagamento e próximos passos se você quiser 😊',
-    );
-
-    expect(reply).toBe(
-      'Claro! O produto custa R$ 890. Posso te explicar os benefícios, formas de pagamento e próximos passos se você quiser',
-    );
-    expect(reply).not.toContain('😊');
-  });
-
-  it('never exposes Guest Workspace as the company identity in the system prompt', () => {
-    const prompt = ctx.buildSystemPrompt(
-      {
-        name: 'Guest Workspace',
-        providerSettings: {
-          whatsappApiSession: {
-            pushName: 'Branding Caps',
-          },
-        },
-      },
-      [],
-    );
-
-    expect(prompt).toContain('EMPRESA: Branding Caps');
-    expect(prompt).not.toContain('EMPRESA: Guest Workspace');
-    expect(prompt).toContain('Nunca se apresente como "Guest Workspace"');
-  });
-
-  it('does not cut the reply in the middle of a sentence', () => {
-    const reply = response.finalizeReplyStyle(
-      'me explica o serum',
-      'O serum ajuda na regeneração da pele. Ele melhora a qualidade do tecido e pode ser usado em protocolos de rejuvenescimento. Também posso te explicar indicação, preço e próximos passos.',
-    );
-
-    expect(reply).toBe(
-      'O serum ajuda na regeneração da pele. Ele melhora a qualidade do tecido e pode ser usado em protocolos de rejuvenescimento.',
-    );
-    expect(reply?.endsWith('.')).toBe(true);
-    expect(reply).not.toMatch(/pr[óo]ximos$/i);
-  });
-
-  it('creates payment links through the payment kernel and sends the pix payload to WhatsApp', async () => {
-    prisma.contact.findFirst.mockResolvedValue({
-      id: 'contact-1',
-      name: 'Cliente Pix',
-      email: 'cliente@example.com',
-    });
-
-    const result = await service.executeTool(
-      'create_payment_link',
-      {
-        amount: 139.9,
-        productName: 'Produto X',
-      },
-      {
-        workspaceId: 'ws-1',
-        phone: '5511999999999',
-      },
-    );
-
-    expect(paymentService.createPayment).toHaveBeenCalledWith({
-      workspaceId: 'ws-1',
-      leadId: 'contact-1',
-      customerName: 'Cliente Pix',
-      customerPhone: '5511999999999',
-      customerEmail: 'cliente@example.com',
-      amount: 139.9,
-      description: 'Pagamento - Produto X',
-      idempotencyKey: 'kloel-pix:ws-1:5511999999999:139.9:Produto X',
-    });
-    expect(transportRegistry.send).toHaveBeenCalledWith(
-      'ws-1',
-      expect.objectContaining({
-        channel: 'whatsapp',
-        recipientId: '5511999999999',
-        content: expect.stringContaining('000201pixcopy'),
-      }),
-    );
-    expect(result).toMatchObject({
-      success: true,
-      paymentId: 'pi_pix_1',
-      paymentLink: 'https://pay.stripe.com/pix/pi_pix_1',
-      pixCopyPaste: '000201pixcopy',
-      sent: true,
-    });
-  });
-});

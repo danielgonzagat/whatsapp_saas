@@ -53,7 +53,7 @@ describe('KloelWhatsAppToolsService', () => {
   let audioService: AudioServiceMock;
   let planLimits: PlanLimitsMock;
   let opsAlert: { alertOnCriticalError: jest.Mock };
-  let transports: { send: jest.Mock };
+  let transports: Pick<ChannelTransportRegistry, 'send'>;
 
   const wsId = 'ws-1';
 
@@ -116,7 +116,10 @@ describe('KloelWhatsAppToolsService', () => {
     opsAlert = {
       alertOnCriticalError: jest.fn().mockResolvedValue(undefined),
     };
-    transports = { send: jest.fn().mockResolvedValue({ success: true }) };
+
+    transports = {
+      send: jest.fn().mockResolvedValue({ success: true }),
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -124,10 +127,10 @@ describe('KloelWhatsAppToolsService', () => {
         { provide: PrismaService, useValue: prisma },
         { provide: WhatsAppProviderRegistry, useValue: providerRegistry },
         { provide: WhatsappService, useValue: whatsappService },
+        { provide: ChannelTransportRegistry, useValue: transports },
         { provide: AudioService, useValue: audioService },
         { provide: PlanLimitsService, useValue: planLimits },
         { provide: OpsAlertService, useValue: opsAlert },
-        { provide: ChannelTransportRegistry, useValue: transports },
       ],
     }).compile();
 
@@ -250,11 +253,12 @@ describe('KloelWhatsAppToolsService', () => {
     });
 
     it('marks message as FAILED on send error', async () => {
-      transports.send.mockResolvedValue({ success: false, blockedReason: 'rate limit' });
+      transports.send.mockRejectedValue(new Error('rate limit'));
 
       const result = await service.toolSendWhatsAppMessage(wsId, { phone, message: 'Olá!' });
 
       expect(result.success).toBe(false);
+      expect(result.error).toContain('rate limit');
       expect(prisma.message.updateMany).toHaveBeenCalledWith({
         where: { id: 'm-1', workspaceId: wsId },
         data: { status: 'FAILED' },
@@ -310,4 +314,28 @@ describe('KloelWhatsAppToolsService', () => {
       });
     });
   });
-});
+
+  describe('toolListWhatsAppChats', () => {
+    it('returns chats and pending counts', async () => {
+      whatsappService.listChats.mockResolvedValue([
+        { id: 'chat-1', unreadCount: 3, name: 'Alice' },
+        { id: 'chat-2', unreadCount: 0, name: 'Bob' },
+        { id: 'chat-3', unreadCount: 1, name: 'Carlos' },
+      ]);
+
+      const result = await service.toolListWhatsAppChats(wsId, { limit: 10 });
+
+      expect(result.success).toBe(true);
+      expect(result.chats).toHaveLength(3);
+      expect(result.pendingConversations).toBe(2);
+      expect(result.pendingMessages).toBe(4);
+      expect(whatsappService.listChats).toHaveBeenCalledWith(wsId);
+    });
+
+    it('returns empty message when no chats', async () => {
+      const result = await service.toolListWhatsAppChats(wsId, {});
+
+      expect(result.success).toBe(true);
+      expect(result.message).toContain('Não encontrei conversas');
+    });
+  });

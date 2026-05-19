@@ -136,7 +136,7 @@ if (typeof require !== 'undefined' && require.main === module) {
   }
 
   if (!rootDir) {
-    rootDir = path.resolve(__dirname, '..', '..');
+    rootDir = path.resolve(__dirname, '..', '..', '..');
   }
 
   if (enforce) {

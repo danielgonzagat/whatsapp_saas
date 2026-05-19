@@ -28,11 +28,13 @@ function incrementEdge(edges: Map<string, CommercialGraphEdge>, edge: Commercial
   edges.set(key, edge);
 }
 
+const TOXIC_STATUSES = new Set(['failed', 'error', 'refunded', 'chargeback', 'cancelled']);
+
 function outcomeWeight(status: string): number {
   if (status === 'executed' || status === 'completed') {
     return 1;
   }
-  if (status === 'failed' || status === 'error') {
+  if (TOXIC_STATUSES.has(status)) {
     return -1;
   }
   return 0.25;
@@ -224,7 +226,7 @@ export class BrainCommercialGraphService {
           decisionType: true,
           chosen: true,
           outcome: true,
-          baseline: true,
+          baselineOutcome: true,
         },
       }),
     ]);
@@ -239,32 +241,122 @@ export class BrainCommercialGraphService {
       actionStats.set(event.action, stat);
     }
 
-    const recommendations: CommercialGraphRecommendation[] = [];
-    for (const [action, stat] of actionStats.entries()) {
-      const confidence = stat.total > 0 ? stat.wins / stat.total : 0;
-      recommendations.push({
-        action,
-        confidence,
-        reason:
-          confidence === 0
-            ? `Priorizar correção: ${stat.wins}/${stat.total} successes`
-            : `${stat.wins}/${stat.total} successes`,
-      });
+    const actionPolicySignal = new Map<
+      string,
+      { total: number; toxic: number; regressions: number; bestOutcome: number }
+    >();
+    for (const policy of policies) {
+      const signal = actionPolicySignal.get(policy.chosen) ?? {
+        total: 0,
+        toxic: 0,
+        regressions: 0,
+        bestOutcome: -Infinity,
+      };
+      signal.total += 1;
+      if (policy.outcome !== null) {
+        if (policy.outcome <= 0) {
+          signal.toxic += 1;
+        }
+        if (
+          policy.baselineOutcome !== null &&
+          policy.baselineOutcome !== undefined &&
+          policy.outcome < policy.baselineOutcome
+        ) {
+          signal.regressions += 1;
+        }
+        signal.bestOutcome = Math.max(signal.bestOutcome, policy.outcome);
+      }
+      actionPolicySignal.set(policy.chosen, signal);
     }
 
-    for (const policy of policies) {
-      if (policy.outcome !== null && policy.outcome > 0) {
+    const recommendations: CommercialGraphRecommendation[] = [];
+
+    for (const [action, stat] of actionStats.entries()) {
+      const confidence = stat.total > 0 ? stat.wins / stat.total : 0;
+      const signal = actionPolicySignal.get(action);
+      const hasToxicity = signal !== undefined && signal.toxic > 0;
+      const hasRegression = signal !== undefined && signal.regressions > 0;
+
+      if (confidence === 0 || (hasToxicity && confidence < 0.3)) {
+        let reason = `Priorizar correção: ${stat.wins}/${stat.total} successes`;
+        if (hasToxicity) {
+          reason += ` — ${signal!.toxic} sinal(is) tóxico(s)`;
+        }
+        if (hasRegression) {
+          reason += ` — ${signal!.regressions} regressão(ões) vs baseline`;
+        }
         recommendations.push({
-          action: policy.chosen,
-          confidence: policy.outcome,
-          reason: `MIND policy: ${policy.decisionType}`,
+          action,
+          confidence: 0,
+          reason,
+          toxicityFlag: 'toxic',
+          toxicPolicyCount: signal?.toxic ?? 0,
+        });
+      } else if (hasRegression || hasToxicity) {
+        const clamped = Math.min(confidence, 0.35);
+        let reason = `${stat.wins}/${stat.total} successes — toxicidade detectada`;
+        if (hasRegression) {
+          reason += ` (${signal!.regressions} regressões)`;
+        }
+        if (hasToxicity) {
+          reason += ` (${signal!.toxic} resultados ≤ 0)`;
+        }
+        recommendations.push({
+          action,
+          confidence: clamped,
+          reason,
+          toxicityFlag: hasRegression ? 'regression' : 'toxic',
+          toxicPolicyCount: signal?.toxic ?? 0,
+        });
+      } else {
+        let reason = `${stat.wins}/${stat.total} successes`;
+        if (signal !== undefined && signal.bestOutcome > 0) {
+          reason += ` | best policy outcome: ${signal.bestOutcome.toFixed(2)}`;
+        }
+        recommendations.push({
+          action,
+          confidence,
+          reason,
+          toxicityFlag: 'healthy',
+          toxicPolicyCount: 0,
+        });
+      }
+    }
+
+    for (const [action, signal] of actionPolicySignal.entries()) {
+      if (actionStats.has(action)) {
+        continue;
+      }
+      if (signal.toxic > 0) {
+        recommendations.push({
+          action,
+          confidence: 0,
+          reason: `${signal.toxic} política(s) tóxica(s) — investigar antes de escalar`,
+          toxicityFlag: 'toxic',
+          toxicPolicyCount: signal.toxic,
+        });
+      } else if (signal.bestOutcome > 0) {
+        recommendations.push({
+          action,
+          confidence: Math.min(signal.bestOutcome, 1),
+          reason: `MIND policy: ${signal.total} decisão(ões)`,
+          toxicityFlag: 'healthy',
+          toxicPolicyCount: 0,
         });
       }
     }
 
     const rankedRecommendations = recommendations
-      .sort((left, right) => left.confidence - right.confidence)
+      .sort((left, right) => {
+        const leftFix = left.toxicityFlag === 'toxic' || left.toxicityFlag === 'regression' ? 0 : 1;
+        const rightFix = right.toxicityFlag === 'toxic' || right.toxicityFlag === 'regression' ? 0 : 1;
+        if (leftFix !== rightFix) {
+          return leftFix - rightFix;
+        }
+        return left.confidence - right.confidence;
+      })
       .slice(0, 10);
+
     this.logger.debug({
       operation: 'brain.commercial_graph.recommendations',
       status: 'ok',
@@ -272,6 +364,9 @@ export class BrainCommercialGraphService {
       eventCount: events.length,
       policyCount: policies.length,
       recommendationCount: rankedRecommendations.length,
+      toxicFlagged: rankedRecommendations.filter(
+        (r) => r.toxicityFlag === 'toxic' || r.toxicityFlag === 'regression',
+      ).length,
     });
 
     return {

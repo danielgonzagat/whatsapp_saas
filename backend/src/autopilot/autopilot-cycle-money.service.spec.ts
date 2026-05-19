@@ -29,6 +29,7 @@ describe('AutopilotCycleMoneyService', () => {
     contact: { findFirst: jest.Mock };
     campaign: { create: jest.Mock; updateMany: jest.Mock };
     auditLog: { createMany: jest.Mock };
+    autopilotEvent: { create: jest.Mock };
   };
   let smartTime: { getBestTime: jest.Mock };
 
@@ -43,16 +44,24 @@ describe('AutopilotCycleMoneyService', () => {
       },
       campaign: {
         create: jest.fn().mockImplementation((args: { data: { name: string } }) =>
-          Promise.resolve({ id: `c-${args.data.name.replace(/\s+/g, '-').toLowerCase()}`, ...args.data }),
+          Promise.resolve({
+            id: `c-${args.data.name.replace(/\s+/g, '-').toLowerCase()}`,
+            ...args.data,
+          }),
         ),
         updateMany: jest.fn().mockResolvedValue({ count: 3 }),
       },
       auditLog: {
         createMany: jest.fn().mockResolvedValue({ count: 3 }),
       },
+      autopilotEvent: {
+        create: jest.fn().mockResolvedValue({ id: 'ev-nba-1' }),
+      },
     };
     smartTime = {
-      getBestTime: jest.fn().mockResolvedValue({ peakHour: 14, bestHours: [14], bestDays: ['Ter'] }),
+      getBestTime: jest
+        .fn()
+        .mockResolvedValue({ peakHour: 14, bestHours: [14], bestDays: ['Ter'] }),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -122,7 +131,11 @@ describe('AutopilotCycleMoneyService', () => {
 
   describe('nextBestAction', () => {
     it('returns action for a known contact in workspace', async () => {
-      prisma.contact.findFirst.mockResolvedValue({ id: 'ct-1', phone: '5511999999999', name: 'João' });
+      prisma.contact.findFirst.mockResolvedValue({
+        id: 'ct-1',
+        phone: '5511999999999',
+        name: 'João',
+      });
       prisma.conversation.findFirst = jest.fn().mockResolvedValue({
         messages: [{ content: 'qual o valor?', direction: 'INBOUND', createdAt: new Date() }],
       });
@@ -136,7 +149,46 @@ describe('AutopilotCycleMoneyService', () => {
 
     it('throws NotFoundException when contact does not belong to workspace (tenant isolation)', async () => {
       prisma.contact.findFirst.mockResolvedValue(null);
-      await expect(service.nextBestAction('ws-other', 'ct-missing')).rejects.toThrow(NotFoundException);
+      await expect(service.nextBestAction('ws-other', 'ct-missing')).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+
+    it('creates autopilotEvent with recommended action', async () => {
+      prisma.contact.findFirst.mockResolvedValue({
+        id: 'ct-1',
+        phone: '5511999999999',
+        name: 'João',
+      });
+      prisma.conversation.findFirst = jest.fn().mockResolvedValue({
+        messages: [{ content: 'qual o valor?', direction: 'INBOUND', createdAt: new Date() }],
+      });
+
+      await service.nextBestAction('ws-1', 'ct-1');
+      expect(prisma.autopilotEvent.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          workspaceId: 'ws-1',
+          contactId: 'ct-1',
+          intent: 'NBA',
+          status: 'recommended',
+        }),
+      });
+    });
+
+    it('returns NBA result even if autopilotEvent.create fails', async () => {
+      prisma.contact.findFirst.mockResolvedValue({
+        id: 'ct-1',
+        phone: '5511999999999',
+        name: 'João',
+      });
+      prisma.conversation.findFirst = jest.fn().mockResolvedValue({
+        messages: [{ content: 'olá', direction: 'INBOUND', createdAt: new Date() }],
+      });
+      prisma.autopilotEvent.create.mockRejectedValueOnce(new Error('db write failure'));
+
+      const result = await service.nextBestAction('ws-1', 'ct-1');
+      expect(result).toHaveProperty('action');
+      expect(result).toHaveProperty('reason');
     });
 
     it('rethrows upstream error from prisma', async () => {

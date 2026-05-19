@@ -1,5 +1,6 @@
 import { PrismaService } from '../prisma/prisma.service';
 import { CheckoutPostPaymentEffectsService } from './checkout-post-payment-effects.service';
+
 type CheckoutOrderForEffects = {
   id?: string;
   orderNumber?: string | null;
@@ -24,16 +25,7 @@ type CheckoutOrderForEffects = {
     } | null;
   } | null;
 };
-type ConvertedLeadPayload = {
-  capturedLeadId?: unknown;
-  deviceFingerprint?: unknown;
-  [key: string]: unknown;
-};
-type MemberEnrollmentCreateArgs = { data: Record<string, unknown> };
-type MemberAreaUpdateManyArgs = {
-  where: { id: string; workspaceId: string };
-  data: { totalStudents: number; avgCompletion: number };
-};
+
 const makeOrder = (overrides: Partial<CheckoutOrderForEffects> = {}): CheckoutOrderForEffects => ({
   id: 'order_1',
   orderNumber: 'ORD-001',
@@ -61,38 +53,30 @@ const makeOrder = (overrides: Partial<CheckoutOrderForEffects> = {}): CheckoutOr
   },
   ...overrides,
 });
+
 describe('CheckoutPostPaymentEffectsService', () => {
   let service: CheckoutPostPaymentEffectsService;
   let prisma: {
-    memberArea: {
-      findMany: jest.Mock;
-      updateMany: jest.Mock<Promise<{ count: number }>, [MemberAreaUpdateManyArgs]>;
-    };
+    memberArea: { findMany: jest.Mock };
     memberEnrollment: {
       findFirst: jest.Mock;
-      create: jest.Mock<Promise<{ id: string }>, [MemberEnrollmentCreateArgs]>;
+      create: jest.Mock;
       aggregate: jest.Mock;
     };
   };
   let facebookCAPI: { sendEvent: jest.Mock };
-  let checkoutSocialLeadService: {
-    markConvertedFromOrder: jest.Mock<Promise<void>, [ConvertedLeadPayload]>;
-  };
-  let memberAreaUpdateMock: jest.Mock<Promise<{ count: number }>, [MemberAreaUpdateManyArgs]>;
+  let checkoutSocialLeadService: { markConvertedFromOrder: jest.Mock };
+  let checkoutEventEmitter: { leadConverted: jest.Mock };
+  let spineEmitter: { emit: jest.Mock };
+  let memberAreaUpdateMock: jest.Mock;
+
   beforeEach(() => {
-    memberAreaUpdateMock = jest
-      .fn<Promise<{ count: number }>, [MemberAreaUpdateManyArgs]>()
-      .mockResolvedValue({ count: 1 });
+    memberAreaUpdateMock = jest.fn().mockResolvedValue({ count: 1 });
     prisma = {
-      memberArea: {
-        findMany: jest.fn().mockResolvedValue([]),
-        updateMany: memberAreaUpdateMock,
-      },
+      memberArea: { findMany: jest.fn().mockResolvedValue([]), updateMany: memberAreaUpdateMock },erArea: { findMany: jest.fn().mockResolvedValue([]) },
       memberEnrollment: {
         findFirst: jest.fn().mockResolvedValue(null),
-        create: jest.fn<Promise<{ id: string }>, [MemberEnrollmentCreateArgs]>().mockResolvedValue({
-          id: 'enr_1',
-        }),
+        create: jest.fn().mockResolvedValue({ id: 'enr_1' }),
         aggregate: jest.fn().mockResolvedValue({
           _count: { _all: 0 },
           _avg: { progress: 0 },
@@ -101,20 +85,31 @@ describe('CheckoutPostPaymentEffectsService', () => {
     };
     facebookCAPI = { sendEvent: jest.fn().mockResolvedValue(undefined) };
     checkoutSocialLeadService = {
-      markConvertedFromOrder: jest
-        .fn<Promise<void>, [ConvertedLeadPayload]>()
-        .mockResolvedValue(undefined),
+      markConvertedFromOrder: jest.fn().mockResolvedValue(undefined),
     };
+    checkoutEventEmitter = { leadConverted: jest.fn().mockResolvedValue(undefined) };
+    spineEmitter = { emit: jest.fn().mockResolvedValue(undefined) };
+
+    const prismaAny = prisma as PrismaService & {
+      memberAreaUpdate: { updateMany: jest.Mock };
+    };
+    prismaAny.memberAreaUpdate = { updateMany: memberAreaUpdateMock };
+
     service = new CheckoutPostPaymentEffectsService(
-      prisma as PrismaService,
+      prismaAny,
       facebookCAPI as never,
       checkoutSocialLeadService as never,
+      checkoutEventEmitter as never,
+      spineEmitter as never,
     );
   });
+
   describe('markLeadConverted', () => {
     it('calls social lead service with order metadata', async () => {
       const order = makeOrder();
+
       await service.markLeadConverted(order, 'ws_1');
+
       expect(checkoutSocialLeadService.markConvertedFromOrder).toHaveBeenCalledWith(
         expect.objectContaining({
           workspaceId: 'ws_1',
@@ -125,23 +120,102 @@ describe('CheckoutPostPaymentEffectsService', () => {
         }),
       );
     });
+
     it('no-ops when workspaceId is missing', async () => {
       const order = makeOrder();
+
       await service.markLeadConverted(order);
+
       expect(checkoutSocialLeadService.markConvertedFromOrder).not.toHaveBeenCalled();
     });
+
     it('no-ops when order.id is missing', async () => {
       const order = makeOrder({ id: undefined });
+
       await service.markLeadConverted(order, 'ws_1');
+
       expect(checkoutSocialLeadService.markConvertedFromOrder).not.toHaveBeenCalled();
     });
+
+    it('emits commerce.lead.converted via checkoutEventEmitter on successful conversion', async () => {
+      checkoutSocialLeadService.markConvertedFromOrder.mockResolvedValue({
+        id: 'lead_1',
+        workspaceId: 'ws_1',
+        status: 'CONVERTED',
+        convertedAt: new Date(),
+        convertedOrderId: 'order_1',
+      });
+      const order = makeOrder({
+        metadata: {
+          capturedLeadId: 'lead_1',
+          correlationId: 'corr_1',
+        },
+      });
+
+      await service.markLeadConverted(order, 'ws_1');
+
+      expect(checkoutEventEmitter.leadConverted).toHaveBeenCalledWith(
+        expect.objectContaining({
+          workspaceId: 'ws_1',
+          orderId: 'order_1',
+          leadId: 'lead_1',
+          customerEmail: 'test@example.com',
+          correlationId: 'corr_1',
+        }),
+      );
+    });
+
+    it('does not emit leadConverted when markConvertedFromOrder returns null', async () => {
+      checkoutSocialLeadService.markConvertedFromOrder.mockResolvedValue(null);
+      const order = makeOrder();
+
+      await service.markLeadConverted(order, 'ws_1');
+
+      expect(checkoutEventEmitter.leadConverted).not.toHaveBeenCalled();
+    });
+
+    it('does not emit leadConverted when markConvertedFromOrder throws', async () => {
+      checkoutSocialLeadService.markConvertedFromOrder.mockRejectedValue(
+        new Error('DB down'),
+      );
+      const order = makeOrder();
+
+      await service.markLeadConverted(order, 'ws_1');
+
+      expect(checkoutEventEmitter.leadConverted).not.toHaveBeenCalled();
+    });
+
+    it('emits leadConverted with fallback when correlationId is not in metadata', async () => {
+      checkoutSocialLeadService.markConvertedFromOrder.mockResolvedValue({
+        id: 'lead_2',
+        workspaceId: 'ws_1',
+        status: 'CONVERTED',
+        convertedAt: new Date(),
+        convertedOrderId: 'order_1',
+      });
+      const order = makeOrder({
+        metadata: { capturedLeadId: 'lead_2' },
+      });
+
+      await service.markLeadConverted(order, 'ws_1');
+
+      expect(checkoutEventEmitter.leadConverted).toHaveBeenCalledWith(
+        expect.objectContaining({
+          leadId: 'lead_2',
+          correlationId: undefined,
+        }),
+      );
+    });
+
     it('handles social lead service error gracefully', async () => {
       checkoutSocialLeadService.markConvertedFromOrder.mockRejectedValue(
         new Error('Social lead service down'),
       );
       const order = makeOrder();
+
       await expect(service.markLeadConverted(order, 'ws_1')).resolves.toBeUndefined();
     });
+
     it('reads deviceFingerprint from metadata when present', async () => {
       const order = makeOrder({
         metadata: {
@@ -150,20 +224,29 @@ describe('CheckoutPostPaymentEffectsService', () => {
           correlationId: 'corr_1',
         },
       });
+
       await service.markLeadConverted(order, 'ws_1');
+
       expect(checkoutSocialLeadService.markConvertedFromOrder).toHaveBeenCalledWith(
         expect.objectContaining({
           deviceFingerprint: 'fp_abc123',
         }),
       );
     });
+
     it('handles null/undefined metadata gracefully', async () => {
       const order = makeOrder({ metadata: null });
+
       await service.markLeadConverted(order, 'ws_1');
-      const [payload] = checkoutSocialLeadService.markConvertedFromOrder.mock.calls[0]!;
-      expect(payload).not.toHaveProperty('capturedLeadId');
-      expect(payload).not.toHaveProperty('deviceFingerprint');
+
+      expect(checkoutSocialLeadService.markConvertedFromOrder).toHaveBeenCalledWith({
+        workspaceId: 'ws_1',
+        orderId: 'order_1',
+        customerEmail: 'test@example.com',
+        customerPhone: '11999999999',
+      });
     });
+
     it('calls auto-enrollment for member areas', async () => {
       prisma.memberArea.findMany.mockResolvedValue([
         {
@@ -174,8 +257,11 @@ describe('CheckoutPostPaymentEffectsService', () => {
           name: 'Course A',
         },
       ]);
+
       const order = makeOrder();
+
       await service.markLeadConverted(order, 'ws_1');
+
       expect(prisma.memberArea.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { workspaceId: 'ws_1', productId: 'prod_1', active: true },
@@ -183,10 +269,13 @@ describe('CheckoutPostPaymentEffectsService', () => {
       );
     });
   });
+
   describe('sendPurchaseSignals', () => {
     it('sends Facebook purchase event for active pixels', async () => {
       const order = makeOrder();
+
       await service.sendPurchaseSignals(order, 9900);
+
       expect(facebookCAPI.sendEvent).toHaveBeenCalledWith(
         expect.objectContaining({
           pixelId: 'fb_pixel_1',
@@ -200,6 +289,7 @@ describe('CheckoutPostPaymentEffectsService', () => {
         }),
       );
     });
+
     it('skips inactive pixels', async () => {
       const order = makeOrder({
         plan: {
@@ -218,9 +308,12 @@ describe('CheckoutPostPaymentEffectsService', () => {
           },
         },
       });
+
       await service.sendPurchaseSignals(order, 9900);
+
       expect(facebookCAPI.sendEvent).not.toHaveBeenCalled();
     });
+
     it('skips non-FACEBOOK pixels', async () => {
       const order = makeOrder({
         plan: {
@@ -239,9 +332,12 @@ describe('CheckoutPostPaymentEffectsService', () => {
           },
         },
       });
+
       await service.sendPurchaseSignals(order, 9900);
+
       expect(facebookCAPI.sendEvent).not.toHaveBeenCalled();
     });
+
     it('skips pixels without accessToken', async () => {
       const order = makeOrder({
         plan: {
@@ -260,14 +356,19 @@ describe('CheckoutPostPaymentEffectsService', () => {
           },
         },
       });
+
       await service.sendPurchaseSignals(order, 9900);
+
       expect(facebookCAPI.sendEvent).not.toHaveBeenCalled();
     });
+
     it('handles Facebook CAPI error gracefully', async () => {
       facebookCAPI.sendEvent.mockRejectedValue(new Error('CAPI timeout'));
       const order = makeOrder();
+
       await expect(service.sendPurchaseSignals(order, 9900)).resolves.toBeUndefined();
     });
+
     it('handles empty pixels array', async () => {
       const order = makeOrder({
         plan: {
@@ -276,9 +377,12 @@ describe('CheckoutPostPaymentEffectsService', () => {
           checkoutConfig: { pixels: [] },
         },
       });
+
       await service.sendPurchaseSignals(order, 9900);
+
       expect(facebookCAPI.sendEvent).not.toHaveBeenCalled();
     });
+
     it('handles null checkoutConfig gracefully', async () => {
       const order = makeOrder({
         plan: {
@@ -292,7 +396,56 @@ describe('CheckoutPostPaymentEffectsService', () => {
 
       expect(facebookCAPI.sendEvent).not.toHaveBeenCalled();
     });
+
+    it('emits post-sale bridge events after purchase confirmation', async () => {
+      const order = makeOrder({
+        workspaceId: 'ws_1',
+        totalInCents: 9900,
+      });
+
+      await service.sendPurchaseSignals(order, 9900);
+
+      expect(spineEmitter.emit).toHaveBeenCalledWith(
+        expect.objectContaining({
+          eventName: 'commerce.post_sale.delivery_completed',
+          workspaceId: 'ws_1',
+          entityRef: { entityType: 'order', entityId: 'order_1' },
+          truthMode: 'observed',
+        }),
+      );
+      expect(spineEmitter.emit).toHaveBeenCalledWith(
+        expect.objectContaining({
+          eventName: 'commerce.post_sale.activation_started',
+          workspaceId: 'ws_1',
+          entityRef: { entityType: 'order', entityId: 'order_1' },
+          truthMode: 'observed',
+        }),
+      );
+    });
+
+    it('skips post-sale bridge events when spine emitter is absent', async () => {
+      const serviceWithoutSpine = new CheckoutPostPaymentEffectsService(
+        prisma as PrismaService,
+        facebookCAPI as never,
+        checkoutSocialLeadService as never,
+      );
+      const order = makeOrder({ workspaceId: 'ws_1', totalInCents: 9900 });
+
+      await serviceWithoutSpine.sendPurchaseSignals(order, 9900);
+
+      expect(spineEmitter.emit).not.toHaveBeenCalled();
+    });
+
+    it('skips post-sale bridge events when order has no workspaceId', async () => {
+      const order = makeOrder({ totalInCents: 9900 });
+      delete order.workspaceId;
+
+      await service.sendPurchaseSignals(order, 9900);
+
+      expect(spineEmitter.emit).not.toHaveBeenCalled();
+    });
   });
+
   describe('autoEnrollInMemberAreas', () => {
     it('creates enrollment when no existing enrollment found', async () => {
       prisma.memberArea.findMany.mockResolvedValue([
@@ -309,9 +462,12 @@ describe('CheckoutPostPaymentEffectsService', () => {
         _count: { _all: 1 },
         _avg: { progress: 50 },
       });
+
       const order = makeOrder();
+
       await service.markLeadConverted(order, 'ws_1');
-      const [createCall] = prisma.memberEnrollment.create.mock.calls[0]!;
+
+      const createCall = prisma.memberEnrollment.create.mock.calls[0][0] as Record<string, unknown>;
       expect(createCall.data).toEqual(
         expect.objectContaining({
           workspaceId: 'ws_1',
@@ -320,10 +476,15 @@ describe('CheckoutPostPaymentEffectsService', () => {
           studentName: 'Test Customer',
         }),
       );
-      const [memberAreaUpdateCall] = memberAreaUpdateMock.mock.calls[0]!;
-      expect(memberAreaUpdateCall.where).toEqual({ id: 'ma_1', workspaceId: 'ws_1' });
-      expect(memberAreaUpdateCall.data.totalStudents).toBe(1);
-      expect(memberAreaUpdateCall.data.avgCompletion).toBe(50);
+      expect(memberAreaUpdateMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 'ma_1', workspaceId: 'ws_1' },
+          data: expect.objectContaining({
+            totalStudents: 1,
+            avgCompletion: 50,
+          }),
+        }),
+      );
     });
 
     it('skips enrollment when enrollment already exists', async () => {
@@ -337,10 +498,14 @@ describe('CheckoutPostPaymentEffectsService', () => {
         },
       ]);
       prisma.memberEnrollment.findFirst.mockResolvedValue({ id: 'enr_existing' });
+
       const order = makeOrder();
+
       await service.markLeadConverted(order, 'ws_1');
+
       expect(prisma.memberEnrollment.create).not.toHaveBeenCalled();
     });
+
     it('defaults studentName to "Aluno" when customerName is empty', async () => {
       prisma.memberArea.findMany.mockResolvedValue([
         {
@@ -351,9 +516,12 @@ describe('CheckoutPostPaymentEffectsService', () => {
           name: 'Course',
         },
       ]);
+
       const order = makeOrder({ customerName: '' });
+
       await service.markLeadConverted(order, 'ws_1');
-      const [createCall] = prisma.memberEnrollment.create.mock.calls[0]!;
+
+      const createCall = prisma.memberEnrollment.create.mock.calls[0][0] as Record<string, unknown>;
       expect(createCall.data).toEqual(
         expect.objectContaining({
           studentName: 'Aluno',
@@ -361,16 +529,21 @@ describe('CheckoutPostPaymentEffectsService', () => {
       );
     });
   });
+
   describe('webhook ordering invariant', () => {
     it('ensures payment is processed before post-payment effects run', async () => {
       const order = makeOrder({
         id: 'order_with_payment',
         metadata: { correlationId: 'corr_paid', paymentId: 'pay_ext_1' },
       });
+
       expect(order.metadata).toHaveProperty('correlationId');
       expect(typeof order.metadata!.correlationId).toBe('string');
+
       checkoutSocialLeadService.markConvertedFromOrder.mockResolvedValue(undefined);
+
       await service.markLeadConverted(order, 'ws_1');
+
       expect(checkoutSocialLeadService.markConvertedFromOrder).toHaveBeenCalledWith(
         expect.objectContaining({
           workspaceId: 'ws_1',
@@ -381,7 +554,9 @@ describe('CheckoutPostPaymentEffectsService', () => {
 
     it('does not run effects when order has no workspace (not paid yet)', async () => {
       const order = makeOrder();
+
       await service.markLeadConverted(order);
+
       expect(checkoutSocialLeadService.markConvertedFromOrder).not.toHaveBeenCalled();
     });
   });

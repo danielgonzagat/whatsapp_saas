@@ -14,12 +14,16 @@ import { UnifiedAgentContextService } from './unified-agent-context.service';
 import { UnifiedAgentResponseService } from './unified-agent-response.service';
 import { UnifiedAgentActionsService } from './unified-agent-actions.service';
 import { AgentRuntimeContextService } from './agent-runtime';
+import { AbiBuilderService } from './abi/abi-builder.service';
+import { validateAbiPayload } from './abi/abi-validator';
+import { RiskGateService } from './risk-class/risk-gate.service';
 export type { ToolArgs, ActionEntry } from './unified-agent.types';
 import type { ToolArgs, ActionEntry, PredecidedAction } from './unified-agent.types';
 import {
   buildPredecidedActionDraft,
   executePredecidedAgentActions,
 } from './unified-agent-predecided-actions.part';
+import { executeUnifiedAgentToolAction } from './unified-agent-tool-router';
 type UnknownRecord = Record<string, unknown>;
 function isAllowedTool(toolName: string, allowedTools?: string[]): boolean {
   return !allowedTools || allowedTools.includes(toolName);
@@ -51,6 +55,15 @@ function formatPromptValue(value: unknown): string {
   }
   return Object.prototype.toString.call(value);
 }
+/**
+ * KLOEL Unified Agent Service — orchestrator.
+ *
+ * This service coordinates context loading, LLM calls, tool dispatch, and
+ * response composition. All heavy logic lives in the sub-services injected
+ * here. The constructor, processMessage, and executeToolAction router are the
+ * only concerns of this file.
+ */
+/** Idempotency: enforced at HTTP layer via @Idempotent() guard + Stripe idempotencyKey. */
 @Injectable()
 export class UnifiedAgentService {
   private readonly logger = StructuredLogger.from(UnifiedAgentService.name);
@@ -68,6 +81,8 @@ export class UnifiedAgentService {
     private readonly response: UnifiedAgentResponseService,
     private readonly actions: UnifiedAgentActionsService,
     @Optional() private readonly agentRuntime?: AgentRuntimeContextService,
+    @Optional() private readonly abiBuilder?: AbiBuilderService,
+    @Optional() private readonly riskGate?: RiskGateService,
   ) {
     this.openai = createTextLlmClient(this.config);
     this.primaryBrainModel = resolveBackendOpenAIModel('brain', this.config);
@@ -130,12 +145,14 @@ export class UnifiedAgentService {
       this.logger.warn('OpenAI not configured');
       return this.response.buildFallbackResult(message);
     }
+    // 1. Load workspace / contact / history / products in parallel
     const [workspace, contact, conversationHistory, products] = await Promise.all([
       this.ctx.getWorkspaceContext(workspaceId),
       this.ctx.getContactContext(workspaceId, contactId, phone),
       this.ctx.getConversationHistory(workspaceId, contactId, 0, phone),
       this.ctx.getProducts(workspaceId),
     ]);
+    // 1b. Load AI config per product (commercial brain)
     const productIds = products
       .map((product: UnknownRecord) => {
         const productValue = this.ctx.readRecord(product.value);
@@ -160,7 +177,9 @@ export class UnifiedAgentService {
             salesArguments: true,
           },
         });
-      } catch {}
+      } catch {
+        /* ProductAIConfig may not exist yet */
+      }
     }
     const compressedContext = await this.ctx.buildAndPersistCompressedContext(
       workspaceId,
@@ -173,6 +192,7 @@ export class UnifiedAgentService {
       currentMessage: message,
       conversationHistory,
     });
+    // 2. Build system prompt and style instruction
     const agentRuntimeContext = await this.buildAgentRuntimeContext({
       workspaceId,
       channel: this.ctx.readText(context?.channel, 'whatsapp'),
@@ -193,21 +213,64 @@ export class UnifiedAgentService {
     const contactSentiment = this.ctx.readText(contactData.sentiment).trim() || 'NEUTRAL';
     const leadScore = this.ctx.readText(contactData.leadScore, '0');
     const tagNames = this.ctx.readTagList(contactData.tags);
+    // 3. Build messages array
     const additionalContext = context ? formatPromptValue(context) : '';
+    const currentInput = {
+      raw: message,
+      channel: this.ctx.readText(context?.channel, 'whatsapp'),
+      arrivalTimestamp: new Date().toISOString(),
+    };
+    let cognitiveState: Record<string, unknown> = {
+      abiStatus: this.abiBuilder ? 'unavailable_or_invalid' : 'builder_not_injected',
+      audience: 'public',
+      perceptionSnapshot: { channel: currentInput.channel },
+    };
+    if (this.abiBuilder) {
+      const abiResult = await this.abiBuilder.build({
+        audience: 'public',
+        currentInput,
+        perceptionSnapshot: {
+          channel: currentInput.channel,
+        },
+      });
+      if (abiResult.status !== 'ok') {
+        this.logger.warn(
+          `ABI build failed: ${abiResult.reason}, using structured unified agent fallback`,
+        );
+      } else {
+        const abi = abiResult.abi;
+        const validation = validateAbiPayload(abi);
+        if (validation.status === 'FAIL') {
+          this.logger.warn(
+            `ABI validation failed: ${JSON.stringify(validation.issues)}, using structured unified agent fallback`,
+          );
+        } else {
+          cognitiveState = { ...abi };
+        }
+      }
+    }
     const messages: ChatCompletionMessageParam[] = [
-      { role: 'system', content: systemPrompt },
       ...conversationHistory,
       {
         role: 'user',
-        content: `[Contato: ${contactName}]
-[Sentiment: ${contactSentiment}]
-[Lead Score: ${leadScore}]
-[Tags: ${tagNames}]
-  [Memória comprimida: ${compressedContext || 'nenhuma'}]
-  ${additionalContext ? `[Contexto adicional: ${additionalContext}]` : ''}
-[Instrução tática: ${tacticalHint || 'responder com clareza, valor concreto e próximo passo.'}]
-[Política de resposta: ${stylePolicy}]
-Mensagem: ${message}`,
+        content: JSON.stringify({
+          cognitiveState,
+          runtimeContext: {
+            workspaceProductContext: systemPrompt,
+            compressedMemory: compressedContext || null,
+            additionalContext,
+            tacticalHint:
+              tacticalHint || 'responder com clareza, valor concreto e próximo passo.',
+            responsePolicy: stylePolicy,
+          },
+          contact: {
+            name: contactName,
+            sentiment: contactSentiment,
+            leadScore,
+            tags: tagNames,
+          },
+          currentInput,
+        }),
       },
     ];
     if (predecidedActions.length > 0) {
@@ -255,6 +318,7 @@ Mensagem: ${message}`,
         confidence: actionsList.length > 0 ? 0.85 : 0.55,
       };
     }
+    // 4. Ask the LLM to verbalize only; code-native actions enter via predecidedActions.
     let llmResponse: OpenAI.Chat.ChatCompletion;
     try {
       await this.planLimits.ensureTokenBudget(params.workspaceId);
@@ -291,6 +355,7 @@ Mensagem: ${message}`,
       .catch(() => {});
     const assistantMessage = firstChoice.message;
     const actionsList: ActionEntry[] = [];
+    // 5. Process tool calls
     const executeTools = context?.executeTools !== false;
     if (executeTools && assistantMessage.tool_calls && assistantMessage.tool_calls.length > 0) {
       await forEachSequential(assistantMessage.tool_calls, async (toolCall) => {
@@ -325,6 +390,7 @@ Mensagem: ${message}`,
         await this.actions.logAutopilotEvent(workspaceId, contactId, toolName, toolArgs, result);
       });
     }
+    // 6. Extract intent, confidence, and compose final reply
     const intent = this.response.extractIntent(actionsList, message);
     const confidence = this.response.calculateConfidence(actionsList, llmResponse);
     const draftedReply = await this.response.composeWriterReply(
@@ -360,6 +426,9 @@ Mensagem: ${message}`,
       confidence,
     };
   }
+  /**
+   * Public API: execute a single named tool directly.
+   */
   async executeTool(
     tool: string,
     args: ToolArgs,
@@ -373,6 +442,7 @@ Mensagem: ${message}`,
       args,
     );
   }
+  /** Build quoted reply plan (delegates to response service). */
   async buildQuotedReplyPlan(params: {
     workspaceId: string;
     contactId?: string;
@@ -388,7 +458,8 @@ Mensagem: ${message}`,
       params,
     );
   }
-  private async executeToolAction(
+  // ───────── tool router ─────────
+    private async executeToolAction(
     workspaceId: string,
     contactId: string,
     phone: string,
@@ -396,142 +467,25 @@ Mensagem: ${message}`,
     args: ToolArgs,
     context?: UnknownRecord,
   ): Promise<unknown> {
-    this.logger.log(`Executing tool: ${tool}`, { args });
-    const envelope = this.buildAgentToolEnvelope({
+    return executeUnifiedAgentToolAction({
       workspaceId,
-      toolName: tool,
+      contactId,
+      phone,
+      tool,
+      args,
+      context,
+      logger: this.logger,
+      actions: this.actions,
+      prisma: this.prisma,
+      auditService: this.auditService,
+      agentRuntime: this.agentRuntime,
+      riskGate: this.riskGate,
+      openai: this.openai,
+      primaryBrainModel: this.primaryBrainModel,
+      fallbackBrainModel: this.fallbackBrainModel,
     });
-    switch (tool) {
-      case 'send_message':
-        return this.actions.actionSendMessage(workspaceId, phone, args, context);
-      case 'send_product_info':
-        return this.actions.actionSendProductInfo(workspaceId, phone, args, context);
-      case 'create_payment_link': {
-        const result = await this.actions.actionCreatePaymentLink(
-          workspaceId,
-          phone,
-          args,
-          context,
-        );
-        try {
-          await this.prisma.$transaction(
-            async (tx) => {
-              await this.auditService.logWithTx(tx, {
-                workspaceId,
-                action: 'AGENT_DISPATCHED_PAYMENT_LINK',
-                resource: 'UnifiedAgent',
-                resourceId: contactId,
-                details: { tool, phone },
-              });
-            },
-            { isolationLevel: 'ReadCommitted' },
-          );
-        } catch (auditError: unknown) {
-          const auditMsg =
-            auditError instanceof Error
-              ? auditError.message
-              : typeof auditError === 'string'
-                ? auditError
-                : 'unknown';
-          this.logger.warn(`Audit dispatch log failed: ${auditMsg}`);
-        }
-        return result;
-      }
-      case 'update_lead_status':
-        return this.actions.actionUpdateLeadStatus(workspaceId, contactId, args);
-      case 'add_tag':
-        return this.actions.actionAddTag(workspaceId, contactId, args);
-      case 'schedule_followup':
-        return this.actions.actionScheduleFollowup(workspaceId, contactId, phone, args, context);
-      case 'transfer_to_human':
-        return this.actions.actionTransferToHuman(workspaceId, contactId, args, context);
-      case 'search_knowledge_base':
-        return this.actions.actionSearchKnowledgeBase(workspaceId, args);
-      case 'trigger_flow':
-        return this.actions.actionTriggerFlow(workspaceId, phone, args);
-      case 'log_event':
-        return this.actions.actionLogEvent(workspaceId, contactId, args);
-      case 'send_media':
-        return this.actions.actionSendMedia(workspaceId, phone, args, context);
-      case 'send_document':
-        return this.actions.actionSendDocument(workspaceId, phone, args, context);
-      case 'send_voice_note':
-        return this.actions.actionSendVoiceNote(workspaceId, phone, args, context);
-      case 'send_audio':
-        return this.actions.actionSendAudio(workspaceId, phone, args, context);
-      case 'transcribe_audio':
-        return this.actions.actionTranscribeAudio(workspaceId, args);
-      case 'create_product':
-        return this.actions.actionCreateProduct(workspaceId, args);
-      case 'update_product':
-        return this.actions.actionUpdateProduct(workspaceId, args);
-      case 'get_product_plans':
-        return this.actions.getProductPlans(this.actions.str(args.productId));
-      case 'get_product_ai_config':
-        return this.actions.getProductAIConfig(this.actions.str(args.productId));
-      case 'get_product_reviews':
-        return this.actions.getProductReviews(this.actions.str(args.productId));
-      case 'get_product_urls':
-        return this.actions.getProductUrls(this.actions.str(args.productId));
-      case 'validate_coupon':
-        return this.actions.validateCoupon(
-          this.actions.str(args.productId),
-          this.actions.str(args.code),
-        );
-      case 'create_flow':
-        return this.actions.actionCreateFlow(workspaceId, args);
-      case 'update_workspace_settings':
-        return this.actions.actionUpdateWorkspaceSettings(workspaceId, args);
-      case 'create_broadcast':
-        return this.actions.actionCreateBroadcast(workspaceId, args, context);
-      case 'get_analytics':
-        return this.actions.actionGetAnalytics(workspaceId, args);
-      case 'configure_ai_persona':
-        return this.actions.actionConfigureAIPersona(workspaceId, args);
-      case 'toggle_autopilot':
-        return this.actions.actionToggleAutopilot(workspaceId, args);
-      case 'create_flow_from_description':
-        return this.actions.actionCreateFlowFromDescription(
-          workspaceId,
-          args,
-          this.openai,
-          this.primaryBrainModel,
-          this.fallbackBrainModel,
-        );
-      case 'connect_whatsapp':
-        return this.actions.actionConnectWhatsApp(workspaceId, args);
-      case 'import_contacts':
-        return this.actions.actionImportContacts(workspaceId, args);
-      case 'generate_sales_funnel':
-        return this.actions.actionGenerateSalesFunnel(workspaceId, args);
-      case 'schedule_campaign':
-        return this.actions.actionScheduleCampaign(workspaceId, args);
-      case 'get_workspace_status':
-        return this.actions.actionGetWorkspaceStatus(workspaceId, args);
-      case 'update_billing_info':
-        return this.actions.actionUpdateBillingInfo(workspaceId, args);
-      case 'get_billing_status':
-        return this.actions.actionGetBillingStatus(workspaceId);
-      case 'change_plan':
-        return this.actions.actionChangePlan(workspaceId, args);
-      case 'apply_discount':
-        return this.actions.actionApplyDiscount(workspaceId, contactId, phone, args, context);
-      case 'handle_objection':
-        return this.actions.actionHandleObjection(workspaceId, contactId, phone, args, context);
-      case 'qualify_lead':
-        return this.actions.actionQualifyLead(workspaceId, contactId, phone, args, context);
-      case 'schedule_meeting':
-        return this.actions.actionScheduleMeeting(workspaceId, contactId, phone, args, context);
-      case 'anti_churn_action':
-        return this.actions.actionAntiChurn(workspaceId, contactId, phone, args, context);
-      case 'reactivate_ghost':
-        return this.actions.actionReactivateGhost(workspaceId, contactId, phone, args, context);
-      default:
-        this.logger.warn(`Unknown tool: ${tool}`);
-        return { success: false, error: 'Unknown tool', policyEnvelope: envelope };
-    }
   }
-  private actionSucceeded(result: unknown): boolean {
+private actionSucceeded(result: unknown): boolean {
     if (!result || typeof result !== 'object' || Array.isArray(result)) {
       return false;
     }
@@ -562,17 +516,4 @@ Mensagem: ${message}`,
   }): Promise<void> {
     await this.agentRuntime?.recordTurnOutcome(params);
   }
-  private buildAgentToolEnvelope(params: { workspaceId: string; toolName: string }): {
-    id: string;
-    toolName: string;
-    allowed: boolean;
-  } {
-    return (
-      this.agentRuntime?.buildToolEnvelope(params) ?? {
-        id: 'agent-runtime-unavailable',
-        toolName: params.toolName,
-        allowed: true,
-      }
-    );
   }
-}

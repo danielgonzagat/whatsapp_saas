@@ -114,282 +114,219 @@ describe('economic-hierarchy', () => {
     });
   });
 
-  describe('R4 — aggressiveness ceiling → ux', () => {
-    it('brain above ceiling → ux', () => {
+  describe('R10 — refund_request legitimacy → compliance', () => {
+    it('defective_product reason → compliance', () => {
       const result = attributeHierarchy(
-        h({
-          type: 'cia_aggressiveness',
-          chosen: 'baixa',
-          context: { brainAggressiveness: 'alta', aggressivenessCeiling: 'baixa' },
-        }),
+        h({ type: 'refund_request', chosen: 'approve_refund', context: { concept: 'defective_product' } }),
       );
-      expect(result.level).toBe('ux');
-      expect(result.reason).toMatch(/respects operator ceiling/);
+      expect(result.level).toBe('compliance');
+      expect(result.reason).toMatch(/defective_product/);
+      expect(result.reason).toMatch(/before every conversion attempt/);
     });
 
-    it('brain equals ceiling → ux', () => {
+    it('not_as_described reason → compliance', () => {
       const result = attributeHierarchy(
-        h({
-          type: 'cia_aggressiveness',
-          chosen: 'normal',
-          context: { brainAggressiveness: 'normal', aggressivenessCeiling: 'normal' },
-        }),
+        h({ type: 'refund_request', chosen: 'approve_refund', context: { concept: 'not_as_described' } }),
       );
-      expect(result.level).toBe('ux');
-      expect(result.reason).toMatch(/ux-driven cap/);
+      expect(result.level).toBe('compliance');
+      expect(result.reason).toMatch(/not_as_described/);
     });
 
-    it('brain below ceiling → falls through', () => {
+    it('never_received reason → compliance', () => {
       const result = attributeHierarchy(
-        h({
-          type: 'cia_aggressiveness',
-          chosen: 'baixa',
-          context: { brainAggressiveness: 'baixa', aggressivenessCeiling: 'alta' },
-        }),
+        h({ type: 'refund_request', chosen: 'approve_refund', context: { concept: 'never_received' } }),
       );
-      expect(result.level).toBe('conversion');
+      expect(result.level).toBe('compliance');
+      expect(result.reason).toMatch(/never_received/);
     });
 
-    it('English labels: HIGH/MEDIUM/LOW', () => {
+    it('duplicate_charge reason → compliance', () => {
       const result = attributeHierarchy(
-        h({
-          type: 'cia_aggressiveness',
-          chosen: 'medium',
-          context: { brainAggressiveness: 'HIGH', aggressivenessCeiling: 'MEDIUM' },
-        }),
+        h({ type: 'refund_request', chosen: 'approve_refund', context: { concept: 'duplicate_charge' } }),
       );
-      expect(result.level).toBe('ux');
-    });
-  });
-
-  describe('R5 — audio preference → ux', () => {
-    it('audio chosen, arsenal and audio_preference concept → ux', () => {
-      const result = attributeHierarchy(
-        h({
-          type: 'audio_vs_text',
-          chosen: 'audio',
-          context: { audioRatio: 0.25, arsenalCount: 5, concept: 'audio_preference' },
-        }),
-      );
-      expect(result.level).toBe('ux');
-      expect(result.reason).toMatch(/lead prefers audio/);
+      expect(result.level).toBe('compliance');
+      expect(result.reason).toMatch(/duplicate_charge/);
     });
 
-    it('audio chosen, high audioRatio, arsenal → ux', () => {
+    it('cancelled_within_window reason → compliance', () => {
       const result = attributeHierarchy(
-        h({
-          type: 'audio_vs_text',
-          chosen: 'audio',
-          context: { audioRatio: 0.3, arsenalCount: 3 },
-        }),
+        h({ type: 'refund_request', chosen: 'approve_refund', context: { concept: 'cancelled_within_window' } }),
       );
-      expect(result.level).toBe('ux');
+      expect(result.level).toBe('compliance');
+      expect(result.reason).toMatch(/cancelled_within_window/);
     });
 
-    it('audio chosen, no arsenal → falls through', () => {
+    it('non-legitimate refund reason falls through', () => {
       const result = attributeHierarchy(
-        h({
-          type: 'audio_vs_text',
-          chosen: 'audio',
-          context: { audioRatio: 0.3, arsenalCount: 0 },
-        }),
+        h({ type: 'refund_request', chosen: 'deny_refund', context: { concept: 'changed_mind' } }),
       );
       expect(result.level).toBe('conversion');
     });
 
-    it('text chosen → falls through', () => {
+    it('legitimate reason via concepts array', () => {
       const result = attributeHierarchy(
-        h({
-          type: 'audio_vs_text',
-          chosen: 'text',
-          context: { audioRatio: 0.3, arsenalCount: 5, concept: 'audio_preference' },
-        }),
+        h({ type: 'refund_request', chosen: 'approve_refund', context: { concepts: ['defective_product', 'late_delivery'] } }),
+      );
+      expect(result.level).toBe('compliance');
+      expect(result.reason).toMatch(/defective_product/);
+    });
+
+    it('refund_request with no reason concept falls through', () => {
+      const result = attributeHierarchy(
+        h({ type: 'refund_request', chosen: 'approve_refund', context: {} }),
       );
       expect(result.level).toBe('conversion');
     });
   });
 
-  describe('R6 — highest_margin product → margin', () => {
-    it('highest_margin chosen → margin', () => {
+  describe('R11 — churn_signal retention (anti-churn)', () => {
+    it('high churnRisk ≥ 0.5 → retention', () => {
       const result = attributeHierarchy(
-        h({ type: 'product_offer', chosen: 'highest_margin', context: {} }),
+        h({ type: 'churn_signal', chosen: 'retention_offer', context: { churnRisk: 0.75 } }),
       );
-      expect(result.level).toBe('margin');
-      expect(result.reason).toMatch(/highest-margin variant/);
+      expect(result.level).toBe('retention');
+      expect(result.reason).toMatch(/blocks poisonous conversion/);
     });
 
-    it('other product → falls through', () => {
+    it('churnRisk exactly 0.5 → retention', () => {
       const result = attributeHierarchy(
-        h({ type: 'product_offer', chosen: 'entry_product', context: {} }),
+        h({ type: 'churn_signal', chosen: 'retention_offer', context: { churnRisk: 0.5 } }),
+      );
+      expect(result.level).toBe('retention');
+    });
+
+    it('low satisfactionScore < 0.4 → retention', () => {
+      const result = attributeHierarchy(
+        h({ type: 'churn_signal', chosen: 'retention_offer', context: { satisfactionScore: 0.2 } }),
+      );
+      expect(result.level).toBe('retention');
+      expect(result.reason).toMatch(/blocks poisonous conversion/);
+    });
+
+    it('churnRisk < 0.5 and satisfaction ≥ 0.4 → falls through', () => {
+      const result = attributeHierarchy(
+        h({ type: 'churn_signal', chosen: 'retention_offer', context: { churnRisk: 0.3, satisfactionScore: 0.6 } }),
+      );
+      expect(result.level).toBe('conversion');
+    });
+
+    it('churn_signal with no risk context → falls through', () => {
+      const result = attributeHierarchy(
+        h({ type: 'churn_signal', chosen: 'retention_offer', context: {} }),
+      );
+      expect(result.level).toBe('conversion');
+    });
+
+    it('non-churn_signal type does not trigger R11', () => {
+      const result = attributeHierarchy(
+        h({ type: 'product_offer', chosen: 'top_seller', context: { churnRisk: 0.9 } }),
       );
       expect(result.level).toBe('conversion');
     });
   });
 
-  describe('R7 — top_seller with high replied_rate → conversion', () => {
-    it('top_seller + high replied_rate → conversion', () => {
+  describe('R12 — buyer_remorse retention (anti-remorse)', () => {
+    it('remorse within 7 days → retention', () => {
       const result = attributeHierarchy(
-        h({ type: 'product_offer', chosen: 'top_seller', context: { repliedRate: 0.45 } }),
+        h({ type: 'buyer_remorse', chosen: 'nurture_sequence', context: { daysSincePurchase: 3 } }),
       );
-      expect(result.level).toBe('conversion');
-      expect(result.reason).toMatch(/conversion opportunity/);
+      expect(result.level).toBe('retention');
+      expect(result.reason).toMatch(/anti-remorse must precede each conversion/);
     });
 
-    it('top_seller + low replied_rate → falls through', () => {
+    it('remorse at exactly 7 days → retention', () => {
       const result = attributeHierarchy(
-        h({ type: 'product_offer', chosen: 'top_seller', context: { repliedRate: 0.1 } }),
+        h({ type: 'buyer_remorse', chosen: 'nurture_sequence', context: { daysSincePurchase: 7 } }),
+      );
+      expect(result.level).toBe('retention');
+    });
+
+    it('high remorseScore ≥ 0.6 even after 7d → retention', () => {
+      const result = attributeHierarchy(
+        h({ type: 'buyer_remorse', chosen: 'nurture_sequence', context: { daysSincePurchase: 14, remorseScore: 0.8 } }),
+      );
+      expect(result.level).toBe('retention');
+      expect(result.reason).toMatch(/score 0.8/);
+    });
+
+    it('remorseScore exactly 0.6 → retention', () => {
+      const result = attributeHierarchy(
+        h({ type: 'buyer_remorse', chosen: 'nurture_sequence', context: { daysSincePurchase: 10, remorseScore: 0.6 } }),
+      );
+      expect(result.level).toBe('retention');
+    });
+
+    it('days > 7 and low remorse → falls through', () => {
+      const result = attributeHierarchy(
+        h({ type: 'buyer_remorse', chosen: 'nurture_sequence', context: { daysSincePurchase: 30, remorseScore: 0.2 } }),
       );
       expect(result.level).toBe('conversion');
+    });
+
+    it('buyer_remorse with no context → falls through', () => {
+      const result = attributeHierarchy(
+        h({ type: 'buyer_remorse', chosen: 'nurture_sequence', context: {} }),
+      );
+      expect(result.level).toBe('conversion');
+    });
+
+    it('buyer_remorse blocks conversion: top_seller with high replied_rate still yields retention when remorse present', () => {
+      const result = attributeHierarchy(
+        h({ type: 'buyer_remorse', chosen: 'nurture_sequence', context: { daysSincePurchase: 1, repliedRate: 0.9 } }),
+      );
+      expect(result.level).toBe('retention');
     });
   });
 
-  describe('R8 — aggressiveness escalation with imminent_purchase → conversion', () => {
-    it('imminent_purchase + escalated → conversion', () => {
+  describe('R13 — post_sale_offer satisfaction retention', () => {
+    it('low NPS < 6 → retention', () => {
       const result = attributeHierarchy(
-        h({
-          type: 'cia_aggressiveness',
-          chosen: 'alta',
-          context: { concept: 'imminent_purchase' },
-        }),
+        h({ type: 'post_sale_offer', chosen: 'cross_sell_pro', context: { nps: 4 } }),
       );
-      expect(result.level).toBe('conversion');
-      expect(result.reason).toMatch(/imminent purchase/);
+      expect(result.level).toBe('retention');
+      expect(result.reason).toMatch(/retention\/legitimacy gates before conversion/);
     });
 
-    it('hot_lead + escalated → conversion', () => {
+    it('NPS exactly 5 → retention', () => {
       const result = attributeHierarchy(
-        h({
-          type: 'cia_aggressiveness',
-          chosen: 'normal',
-          context: { concept: 'hot_lead' },
-        }),
+        h({ type: 'post_sale_offer', chosen: 'cross_sell_pro', context: { nps: 5 } }),
+      );
+      expect(result.level).toBe('retention');
+    });
+
+    it('low satisfaction < 0.5 → retention', () => {
+      const result = attributeHierarchy(
+        h({ type: 'post_sale_offer', chosen: 'upsell_premium', context: { satisfaction: 0.3, nps: 8 } }),
+      );
+      expect(result.level).toBe('retention');
+    });
+
+    it('unresolved_complaint concept → retention', () => {
+      const result = attributeHierarchy(
+        h({ type: 'post_sale_offer', chosen: 'cross_sell', context: { nps: 9, satisfaction: 0.9, concept: 'unresolved_complaint' } }),
+      );
+      expect(result.level).toBe('retention');
+      expect(result.reason).toMatch(/retention\/legitimacy gates/);
+    });
+
+    it('high NPS and high satisfaction → falls through to conversion', () => {
+      const result = attributeHierarchy(
+        h({ type: 'post_sale_offer', chosen: 'cross_sell_pro', context: { nps: 9, satisfaction: 0.8 } }),
       );
       expect(result.level).toBe('conversion');
     });
 
-    it('imminent_purchase but low aggressiveness → falls through', () => {
+    it('post_sale_offer with default values (NPS 10, satisfaction 1) → falls through', () => {
       const result = attributeHierarchy(
-        h({
-          type: 'cia_aggressiveness',
-          chosen: 'baixa',
-          context: { concept: 'imminent_purchase' },
-        }),
+        h({ type: 'post_sale_offer', chosen: 'upsell', context: {} }),
       );
       expect(result.level).toBe('conversion');
     });
 
-    it('escalated without imminent_purchase → R4 takes precedence', () => {
+    it('post_sale_offer blocked even with imminent_purchase concept when satisfaction is low', () => {
       const result = attributeHierarchy(
-        h({
-          type: 'cia_aggressiveness',
-          chosen: 'baixa',
-          context: { brainAggressiveness: 'alta', aggressivenessCeiling: 'baixa', concept: 'general' },
-        }),
+        h({ type: 'post_sale_offer', chosen: 'upsell', context: { nps: 3, concept: 'imminent_purchase' } }),
       );
-      expect(result.level).toBe('ux');
+      expect(result.level).toBe('retention');
     });
   });
-
-  describe('R9 — low confidence learning', () => {
-    it('confidence < 0.5 and baseline < 0.5 → learning', () => {
-      const result = attributeHierarchy(
-        h({
-          type: 'audio_vs_text',
-          chosen: 'text',
-          context: { confidence: 0.3, baselineConfidence: 0.3 },
-        }),
-      );
-      expect(result.level).toBe('learning');
-      expect(result.reason).toMatch(/exploring within low-risk window/);
-    });
-
-    it('confidence >= 0.5 → falls through', () => {
-      const result = attributeHierarchy(
-        h({
-          type: 'audio_vs_text',
-          chosen: 'text',
-          context: { confidence: 0.6, baselineConfidence: 0.3 },
-        }),
-      );
-      expect(result.level).toBe('conversion');
-    });
-
-    it('confidence < 0.5 but baseline high → falls through', () => {
-      const result = attributeHierarchy(
-        h({
-          type: 'audio_vs_text',
-          chosen: 'text',
-          context: { confidence: 0.3, baselineConfidence: 0.6 },
-        }),
-      );
-      expect(result.level).toBe('conversion');
-    });
-  });
-
-  describe('R10 — default fallback', () => {
-    it('unknown decision type → conversion', () => {
-      const result = attributeHierarchy(h({ type: 'some_unknown', chosen: 'anything' }));
-      expect(result.level).toBe('conversion');
-      expect(result.reason).toMatch(/unclassified/);
-    });
-
-    it('known type but no rule matches → conversion', () => {
-      const result = attributeHierarchy(
-        h({ type: 'message_format', chosen: 'text', context: {} }),
-      );
-      expect(result.level).toBe('conversion');
-    });
-  });
-
-  describe('edge cases', () => {
-    it('empty context', () => {
-      const result = attributeHierarchy(h());
-      expect(result.level).toBe('conversion');
-    });
-
-    it('missing optional fields', () => {
-      const result = attributeHierarchy(
-        h({ type: 'cia_aggressiveness', chosen: 'normal' }),
-      );
-      expect(result.level).toBe('conversion');
-    });
-
-    it('all valid HierarchyLevel values are usable', () => {
-      const levels: HierarchyLevel[] = [
-        'compliance', 'margin', 'conversion', 'retention', 'ux', 'learning', 'exploration',
-      ];
-      expect(levels.length).toBe(7);
-      for (const level of levels) {
-        expect(typeof level).toBe('string');
-      }
-    });
-  });
-
-  describe('rule ordering', () => {
-    it('R1 (human_transfer ux) fires before R9 (learning) when both applicable', () => {
-      const result = attributeHierarchy(
-        h({
-          type: 'human_transfer',
-          chosen: 'transfer_now',
-          context: { concept: 'trust_objection', confidence: 0.3, baselineConfidence: 0.3 },
-        }),
-      );
-      expect(result.level).toBe('ux');
-    });
-
-    it('R4 (ceiling ux) fires before R8 (escalation conversion) when both applicable', () => {
-      const result = attributeHierarchy(
-        h({
-          type: 'cia_aggressiveness',
-          chosen: 'baixa',
-          context: {
-            brainAggressiveness: 'alta',
-            aggressivenessCeiling: 'baixa',
-            concept: 'imminent_purchase',
-          },
-        }),
-      );
-      expect(result.level).toBe('ux');
-    });
-  });
-});

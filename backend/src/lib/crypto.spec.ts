@@ -10,6 +10,12 @@ describe('Crypto Library', () => {
   const testKey = generateEncryptionKey();
   const testPlaintext = 'my-secret-api-token-12345';
 
+  function tamperEncryptedData(encrypted: string): string {
+    const bytes = Buffer.from(encrypted, 'base64');
+    bytes[bytes.length - 1] ^= 0xff;
+    return bytes.toString('base64');
+  }
+
   describe('encryptString', () => {
     it('should encrypt a string', () => {
       const encrypted = encryptString(testPlaintext, testKey);
@@ -70,7 +76,7 @@ describe('Crypto Library', () => {
 
     it('should fail with tampered ciphertext', () => {
       const encrypted = encryptString(testPlaintext, testKey);
-      const tampered = encrypted.substring(0, encrypted.length - 2) + 'XX';
+      const tampered = tamperEncryptedData(encrypted);
 
       expect(() => decryptString(tampered, testKey)).toThrow();
     });
@@ -119,7 +125,7 @@ describe('Crypto Library', () => {
 
     it('should return original value for tampered data', () => {
       const encrypted = encryptString(testPlaintext, testKey);
-      const tampered = encrypted.substring(0, encrypted.length - 2) + 'XX';
+      const tampered = tamperEncryptedData(encrypted);
 
       const result = safeDecrypt(tampered, testKey);
       expect(result).toEqual(tampered); // Returns as-is

@@ -24,6 +24,14 @@ function makeSkill(overrides: Partial<AgentSkillDefinition> = {}): AgentSkillDef
     validation: ['workspace_isolation'],
     rollback: ['cancel_scheduled_followup_if_requested'],
     metrics: ['conversion_rate'],
+    delegationRules: [
+      {
+        toolName: 'list_products',
+        riskClass: 'R1',
+        permission: 'allowed_alone',
+        rollback: [],
+      },
+    ],
     body: 'Use observed lead and product facts before sending a payment link.',
     version: 1,
     updatedAt: '2026-05-13T00:00:00.000Z',
@@ -56,7 +64,7 @@ describe('AgentRuntimeSkillRegistry', () => {
             version: 1,
             previousVersion: null,
           }),
-          content: expect.stringContaining('validation=workspace_isolation'),
+          content: expect.stringContaining('delegation=list_products:R1:allowed_alone'),
         }),
       }),
     );
@@ -105,6 +113,29 @@ describe('AgentRuntimeSkillRegistry', () => {
     expect(result.reasons).toEqual(
       expect.arrayContaining(['invalid_skill_id', 'critical_skill_requires_validation']),
     );
+    expect(prisma.kloelMemory.upsert).not.toHaveBeenCalled();
+  });
+
+  it('rejects delegation rules that reference tools outside the skill allowlist', async () => {
+    const prisma = makePrisma();
+    const registry = new AgentRuntimeSkillRegistry(prisma as never);
+
+    const result = await registry.upsertSkill(
+      'ws_1',
+      makeSkill({
+        delegationRules: [
+          {
+            toolName: 'create_payment_link',
+            riskClass: 'R3',
+            permission: 'escalate',
+            rollback: ['cancel_payment_link'],
+          },
+        ],
+      }),
+    );
+
+    expect(result.ok).toBe(false);
+    expect(result.reasons).toContain('delegation_rule_tool_not_allowed');
     expect(prisma.kloelMemory.upsert).not.toHaveBeenCalled();
   });
 

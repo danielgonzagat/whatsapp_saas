@@ -272,7 +272,11 @@ export class UnifiedAgentActionsMessagingService {
       // P1.4 — per-channel proactive daily limit. Inbound replies skip
       // this check; only proactive outbound decrements the counter.
       const outboundKind = String(context?.outboundKind ?? '').toLowerCase();
-      if (outboundKind !== 'reply' && outboundKind !== 'inbound-reply') {
+      const isReactiveReply =
+        outboundKind === 'reply' ||
+        outboundKind === 'inbound-reply' ||
+        this.resolveComplianceMode(context) === 'reactive';
+      if (!isReactiveReply) {
         const resolvedCh = this.resolveChannel(context);
         const limitCheck = await this.dailyLimit.ensureProactiveDailyLimit(workspaceId, resolvedCh);
         if (!limitCheck.allowed) {
@@ -314,7 +318,11 @@ export class UnifiedAgentActionsMessagingService {
 
       const delivery = this.readText(sendResult.delivery).toLowerCase();
       const queued = delivery === 'queued';
-      const sent = delivery === 'sent' || delivery === 'direct' || sendResult?.direct === true;
+      const sent =
+        delivery === 'sent' ||
+        delivery === 'direct' ||
+        sendResult?.direct === true ||
+        (sendResult.success === true && sendResult.blocked !== true && !queued);
       this.logger.log(
         `[AGENT] Mensagem ${queued ? 'enfileirada' : 'enviada'} com sucesso para ${phone}`,
       );

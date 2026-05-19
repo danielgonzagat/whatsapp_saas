@@ -74,6 +74,39 @@ export interface KycStatus {
 /** Kyc update payload type. */
 export type KycUpdatePayload = Record<string, unknown>;
 
+type ApiObjectEnvelope<T> = { data?: T };
+
+function asRecord(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === 'object' && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : null;
+}
+
+function normalizeKycCompletionPayload(value: unknown): KycCompletion | null {
+  const envelope = asRecord(value);
+  const payload = asRecord(envelope?.data) ?? envelope;
+  if (!payload) {
+    return null;
+  }
+
+  const sections = (Array.isArray(payload.sections) ? payload.sections : [])
+    .map((section) => asRecord(section))
+    .filter((section): section is Record<string, unknown> => section !== null)
+    .map((section) => ({
+      name: String(section.name || ''),
+      complete: Boolean(section.complete),
+    }))
+    .filter((section) => section.name.length > 0);
+  const rawPercentage =
+    payload.percentage ?? payload.completion ?? (payload.completed === true ? 100 : 0);
+  const numericPercentage = Number(rawPercentage);
+  const percentage = Number.isFinite(numericPercentage)
+    ? Math.min(100, Math.max(0, numericPercentage))
+    : 0;
+
+  return { percentage, sections };
+}
+
 // ═══ PROFILE ═══
 
 export function useProfile() {
@@ -178,17 +211,20 @@ export function useKycStatus() {
 
 /** Use kyc completion. */
 export function useKycCompletion() {
-  const { data, error, isLoading, mutate } = useSWR<KycCompletion>('/kyc/completion', swrFetcher, {
+  const { data, error, isLoading, mutate } = useSWR<
+    KycCompletion | ApiObjectEnvelope<KycCompletion> | Record<string, unknown>
+  >('/kyc/completion', swrFetcher, {
     dedupingInterval: 30000,
     revalidateOnFocus: false,
   });
   return {
-    completion: data || null,
+    completion: normalizeKycCompletionPayload(data),
     isLoading,
     error,
     mutate,
   };
 }
+
 
 /** Use kyc submit. */
 export function useKycSubmit() {

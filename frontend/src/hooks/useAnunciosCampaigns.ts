@@ -2,6 +2,20 @@ import useSWR from 'swr';
 import { swrFetcher } from '@/lib/fetcher';
 import type { AnunciosCampaign } from './useAnuncios';
 
+type ApiArrayEnvelope<T> = { data?: T[] };
+
+function unwrapApiArray<T>(value: T[] | ApiArrayEnvelope<T> | null | undefined): T[] {
+  if (Array.isArray(value)) {
+    return value;
+  }
+
+  if (value && typeof value === 'object' && Array.isArray((value as ApiArrayEnvelope<T>).data)) {
+    return (value as ApiArrayEnvelope<T>).data ?? [];
+  }
+
+  return [];
+}
+
 export interface MetaSyncStatus {
   connected: boolean;
   adAccountId: string | null;
@@ -16,18 +30,17 @@ export interface MetaMarketingSyncStatus {
 
 export function useAnunciosCampaigns(platform?: string) {
   const query = platform ? `?platform=${encodeURIComponent(platform)}` : '';
-  const { data, isLoading, error, mutate } = useSWR<AnunciosCampaign[]>(
-    `/api/anuncios/campaigns${query}`,
-    swrFetcher,
-    { refreshInterval: 120000 },
-  );
+  const { data, isLoading, error, mutate } = useSWR<
+    AnunciosCampaign[] | ApiArrayEnvelope<AnunciosCampaign>
+  >(`/api/anuncios/campaigns${query}`, swrFetcher, { refreshInterval: 120000 });
   return {
-    campaigns: data || [],
+    campaigns: unwrapApiArray<AnunciosCampaign>(data),
     isLoading,
     error,
     refresh: mutate,
   };
 }
+
 
 export function useMetaMarketingSyncStatus() {
   const { data, isLoading, error, mutate } = useSWR<MetaMarketingSyncStatus>(

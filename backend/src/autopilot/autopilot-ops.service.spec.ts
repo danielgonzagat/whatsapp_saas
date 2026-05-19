@@ -29,14 +29,23 @@ describe('AutopilotOpsService', () => {
     workspace: { findUnique: jest.Mock };
     subscription: { findUnique: jest.Mock };
     message: { count: jest.Mock; findFirst: jest.Mock };
-    autopilotEvent: { count: jest.Mock; findFirst: jest.Mock; findMany: jest.Mock };
+    autopilotEvent: {
+      count: jest.Mock;
+      findFirst: jest.Mock;
+      findMany: jest.Mock;
+      create: jest.Mock;
+    };
     contact: { upsert: jest.Mock };
   };
   let conversion: { retryContact: jest.Mock; markConversion: jest.Mock };
 
   beforeEach(async () => {
     prisma = {
-      workspace: { findUnique: jest.fn().mockResolvedValue({ id: 'ws-1', name: 'Test WS', providerSettings: {} }) },
+      workspace: {
+        findUnique: jest
+          .fn()
+          .mockResolvedValue({ id: 'ws-1', name: 'Test WS', providerSettings: {} }),
+      },
       subscription: { findUnique: jest.fn().mockResolvedValue({ status: 'ACTIVE' }) },
       message: {
         count: jest.fn().mockResolvedValue(0),
@@ -46,6 +55,7 @@ describe('AutopilotOpsService', () => {
         count: jest.fn().mockResolvedValue(0),
         findFirst: jest.fn().mockResolvedValue(null),
         findMany: jest.fn().mockResolvedValue([]),
+        create: jest.fn().mockResolvedValue({ id: 'ev-1' }),
       },
       contact: {
         upsert: jest.fn().mockResolvedValue({ id: 'ct-1' }),
@@ -69,22 +79,60 @@ describe('AutopilotOpsService', () => {
 
   describe('enqueueProcessing', () => {
     it('enqueues scan-contact job successfully', async () => {
-      const result = await service.enqueueProcessing({ workspaceId: 'ws-1', phone: '5511999999999' });
+      const result = await service.enqueueProcessing({
+        workspaceId: 'ws-1',
+        phone: '5511999999999',
+      });
       expect(result).toEqual({ queued: true });
     });
 
     it('throws BadRequestException when neither phone nor contactId provided', async () => {
-      await expect(service.enqueueProcessing({ workspaceId: 'ws-1' })).rejects.toThrow(BadRequestException);
+      await expect(service.enqueueProcessing({ workspaceId: 'ws-1' })).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('throws ForbiddenException for billing-suspended workspace (tenant isolation)', async () => {
-      prisma.workspace.findUnique.mockResolvedValue({ providerSettings: { billingSuspended: true } });
-      await expect(service.enqueueProcessing({ workspaceId: 'ws-bad', phone: '5511999999999' })).rejects.toThrow(ForbiddenException);
+      prisma.workspace.findUnique.mockResolvedValue({
+        providerSettings: { billingSuspended: true },
+      });
+      await expect(
+        service.enqueueProcessing({ workspaceId: 'ws-bad', phone: '5511999999999' }),
+      ).rejects.toThrow(ForbiddenException);
     });
 
     it('throws ForbiddenException for CANCELED subscription', async () => {
       prisma.subscription.findUnique.mockResolvedValue({ status: 'CANCELED' });
-      await expect(service.enqueueProcessing({ workspaceId: 'ws-canceled', phone: '5511999999999' })).rejects.toThrow(ForbiddenException);
+      await expect(
+        service.enqueueProcessing({ workspaceId: 'ws-canceled', phone: '5511999999999' }),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('creates an autopilotEvent record when enqueue succeeds', async () => {
+      await service.enqueueProcessing({
+        workspaceId: 'ws-1',
+        phone: '5511999999999',
+        message: 'test',
+      });
+      expect(prisma.autopilotEvent.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          workspaceId: 'ws-1',
+          intent: 'AUTOPILOT_RUN',
+          action: 'ENQUEUED',
+          status: 'queued',
+          reason: 'manual_trigger',
+          meta: { phone: '5511999999999', message: 'test', delayMs: null },
+        }),
+      });
+    });
+
+    it('does not fail enqueue if autopilotEvent.create throws', async () => {
+      prisma.autopilotEvent.create.mockRejectedValueOnce(new Error('db write failure'));
+      const result = await service.enqueueProcessing({
+        workspaceId: 'ws-1',
+        phone: '5511999999999',
+      });
+      expect(result).toEqual({ queued: true });
     });
   });
 
@@ -106,7 +154,10 @@ describe('AutopilotOpsService', () => {
     it('delegates to conversion service', async () => {
       conversion.markConversion.mockResolvedValue({ ok: true, contactId: 'ct-1' });
       const result = await service.markConversion({ workspaceId: 'ws-1', contactId: 'ct-1' });
-      expect(conversion.markConversion).toHaveBeenCalledWith({ workspaceId: 'ws-1', contactId: 'ct-1' });
+      expect(conversion.markConversion).toHaveBeenCalledWith({
+        workspaceId: 'ws-1',
+        contactId: 'ct-1',
+      });
       expect(result).toEqual({ ok: true, contactId: 'ct-1' });
     });
   });
@@ -125,7 +176,9 @@ describe('AutopilotOpsService', () => {
   describe('runSmokeTest', () => {
     it('throws NotFoundException when workspace does not exist', async () => {
       prisma.workspace.findUnique.mockResolvedValue(null);
-      await expect(service.runSmokeTest({ workspaceId: 'ws-missing' })).rejects.toThrow(NotFoundException);
+      await expect(service.runSmokeTest({ workspaceId: 'ws-missing' })).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 });

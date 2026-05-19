@@ -7,7 +7,7 @@ import { KloelWorkspaceContextService } from './kloel-workspace-context.service'
 import { KloelThreadService } from './kloel-thread.service';
 import { KloelToolRouter } from './kloel-tool-router';
 import { createKloelStatusEvent, type KloelStreamEvent } from './kloel-stream-events';
-import { KLOEL_ONBOARDING_PROMPT, KLOEL_SALES_PROMPT } from './kloel.prompts';
+import { CANONICAL_FALLBACK_SYSTEM_PROMPT } from './kloel.prompts';
 import { chatCompletionWithFallback } from './openai-wrapper';
 import { KLOEL_CHAT_TOOLS } from './kloel-chat-tools.definition';
 import type { ExpertiseLevel, LocalToolExecutor, ReplyMessage } from './kloel-reply-engine.types';
@@ -190,7 +190,7 @@ interface BuildAssistantReplyDeps {
       tool_calls?: OpenAI.Chat.ChatCompletionAssistantMessageParam['tool_calls'];
     };
     toolMessages?: Array<{ role?: 'tool'; tool_call_id: string; name: string; content: string }>;
-  }) => ChatCompletionMessageParam[];
+  }) => Promise<ChatCompletionMessageParam[]>;
   buildDynamicRuntimeContext: (params: {
     workspaceId?: string;
     userId?: string;
@@ -272,13 +272,8 @@ export async function buildAssistantReplyImpl(
   let systemPrompt: string;
   switch (mode) {
     case 'onboarding':
-      systemPrompt = KLOEL_ONBOARDING_PROMPT;
-      break;
     case 'sales':
-      systemPrompt = KLOEL_SALES_PROMPT(
-        companyName,
-        await wsContextService.getWorkspaceContext(workspaceId || '', userId),
-      );
+      systemPrompt = CANONICAL_FALLBACK_SYSTEM_PROMPT;
       break;
     default:
       systemPrompt = deps.buildDashboardPrompt({
@@ -287,8 +282,10 @@ export async function buildAssistantReplyImpl(
         expertiseLevel,
       });
   }
+  void companyName;
+  void wsContextService;
 
-  const messages = deps.buildChatModelMessages({
+  const messages = await deps.buildChatModelMessages({
     systemPrompt,
     dynamicContext,
     marketingPromptAddendum,
@@ -345,7 +342,7 @@ export async function buildAssistantReplyImpl(
       openai,
       {
         model: resolveBackendOpenAIModel('writer'),
-        messages: deps.buildChatModelMessages({
+        messages: await deps.buildChatModelMessages({
           systemPrompt,
           dynamicContext,
           marketingPromptAddendum,

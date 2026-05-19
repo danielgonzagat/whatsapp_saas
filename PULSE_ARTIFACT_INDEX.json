@@ -1,6 +1,6 @@
 {
-  "runId": "4c07e3e2-ab9f-4f63-bf21-388c61d0a5c3",
-  "generatedAt": "2026-05-16T00:08:17.808Z",
+  "runId": "b12fe5f7-ff98-42c7-8507-14be8b29c104",
+  "generatedAt": "2026-05-17T12:29:54.126Z",
   "authorityMode": "advisory-only",
   "advisoryOnly": true,
   "authorityReasons": [
@@ -10,18 +10,17 @@
   "pulseMachineReadiness": {
     "status": "NOT_READY",
     "scope": "pulse_machine_not_kloel_product",
-    "canRunBoundedAutonomousCycle": false,
+    "canRunBoundedAutonomousCycle": true,
     "canDeclareKloelProductCertified": false,
     "blockers": [
-      "artifact_consistency: Cross-artifact consistency has not produced a passing check.",
-      "critical_path_terminal: 4561 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:account-agent, matrix:capability:capability:ad-rules, matrix:capability:capability:admin-accounts, matrix:capability:capability:admin-audit, matrix:capability:capability:admin-auth, matrix:capability:capability:admin-brain, matrix:capability:capability:admin-carteira, matrix:capability:capability:admin-change. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.",
+      "critical_path_terminal: 5008 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:abi-ab, matrix:capability:capability:abi-builder, matrix:capability:capability:account-agent, matrix:capability:capability:ad-rules, matrix:capability:capability:admin-accounts, matrix:capability:capability:admin-audit, matrix:capability:capability:admin-auth, matrix:capability:capability:admin-brain. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.",
       "external_reality: 2 missing, 0 stale, and 0 invalid external adapter(s) remain.",
       "multi_cycle: multiCycleConvergence: no autonomy iteration history found; production-autonomy verdict requires proven cycles. Cycle proof: 0/3 successful non-regressing real cycle(s)."
     ]
   },
   "cleanupPolicy": "enforced-single-state",
-  "canonicalDir": "/private/tmp/kloel-pr276-arch/.pulse/current",
-  "tempDir": "/private/tmp/kloel-pr276-arch/.pulse/tmp",
+  "canonicalDir": "/Users/danielpenin/whatsapp_saas-pr314-conflicts/.pulse/current",
+  "tempDir": "/Users/danielpenin/whatsapp_saas-pr314-conflicts/.pulse/tmp",
   "officialArtifacts": [
     "PULSE_ADMIN_EVIDENCE.json",
     "PULSE_AGENT_ORCHESTRATION_STATE.json",
@@ -55,6 +54,7 @@
     "PULSE_OBSERVABILITY_EVIDENCE.json",
     "PULSE_OPERATOR_EVIDENCE.json",
     "PULSE_PARITY_GAPS.json",
+    "PULSE_PATH_COVERAGE.json",
     "PULSE_PRODUCT_GRAPH.json",
     "PULSE_PRODUCT_VISION.json",
     "PULSE_RECOVERY_EVIDENCE.json",
@@ -255,9 +255,9 @@
         "./signal-mapper"
       ],
       "freshness": {
-        "mode": "external_snapshot"
+        "mode": "run"
       },
-      "truthMode": "external_snapshot",
+      "truthMode": "generated_from_module",
       "mirrorToRoot": true
     },
     {
@@ -575,9 +575,9 @@
         "./signal-mapper"
       ],
       "freshness": {
-        "mode": "external_snapshot"
+        "mode": "run"
       },
-      "truthMode": "external_snapshot",
+      "truthMode": "generated_from_module",
       "mirrorToRoot": true
     },
     {
@@ -664,7 +664,7 @@
         "mode": "run"
       },
       "truthMode": "generated_from_module",
-      "mirrorToRoot": false
+      "mirrorToRoot": true
     },
     {
       "id": "no-hardcoded-reality-state",
@@ -745,6 +745,28 @@
         "mode": "run"
       },
       "truthMode": "generated_from_module",
+      "mirrorToRoot": true
+    },
+    {
+      "id": "path-coverage",
+      "relativePath": "PULSE_PATH_COVERAGE.json",
+      "schema": {
+        "module": "./artifacts",
+        "exportName": "writeRegisteredArtifact.path-coverage"
+      },
+      "producer": {
+        "module": "./artifacts",
+        "exportName": "writeRegisteredArtifact.path-coverage"
+      },
+      "consumers": [
+        "./cross-artifact-consistency-check",
+        "./path-coverage-engine/build-coverage-state",
+        "./proof-synthesis"
+      ],
+      "freshness": {
+        "mode": "preserved"
+      },
+      "truthMode": "preserved_evidence",
       "mirrorToRoot": true
     },
     {
@@ -1044,7 +1066,9 @@
     "PULSE_EXTERNAL_SIGNAL_STATE.json",
     "PULSE_FLOW_PROJECTION.json",
     "PULSE_HEALTH.json",
+    "PULSE_MACHINE_READINESS.json",
     "PULSE_PARITY_GAPS.json",
+    "PULSE_PATH_COVERAGE.json",
     "PULSE_PRODUCT_VISION.json",
     "PULSE_REPORT.md",
     "PULSE_RUNTIME_EVIDENCE.json",
@@ -1054,7 +1078,9 @@
   "removedLegacyPulseArtifacts": [
     "PULSE_CERTIFICATE.json",
     "PULSE_CLI_DIRECTIVE.json",
-    "PULSE_REPORT.md"
+    "PULSE_HEALTH.json",
+    "PULSE_REPORT.md",
+    "PULSE_WORLD_STATE.json"
   ],
   "rootStateMode": "local-only"
 }

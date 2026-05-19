@@ -24,6 +24,7 @@ import { WhatsappService } from './whatsapp.service';
 import { RouteClass } from '../common/throttler/route-class.decorator';
 import { WebhookEndpoint } from '../common/decorators/webhook-endpoint.decorator';
 import { InternalEndpoint } from '../common/decorators/internal-endpoint.decorator';
+import { WhatsAppEventEmitterService } from '../kloel/whatsapp-emitter/whatsapp-event-emitter.service';
 
 const D_RE = /\D/g;
 
@@ -41,6 +42,7 @@ export class InternalWhatsAppRuntimeController {
     private readonly whatsappService: WhatsappService,
     private readonly transports: ChannelTransportRegistry,
     @Optional() private readonly opsAlert?: OpsAlertService,
+    @Optional() private readonly whatsappEmitter?: WhatsAppEventEmitterService,
   ) {}
 
   /** Ingest inbound. */
@@ -121,6 +123,15 @@ export class InternalWhatsAppRuntimeController {
       this.logger.log(
         `Autopilot auto-activated for workspace ${workspaceId} (browser session connected)`,
       );
+
+      if (this.whatsappEmitter) {
+        this.whatsappEmitter.emitSessionLifecycle({
+          workspaceId,
+          event: 'connected',
+          phoneNumber: body.phoneNumber ?? undefined,
+          reason: 'browser_session_connected',
+        });
+      }
 
       return { success: true, workspaceId, autopilotEnabled: true };
     } catch (err: unknown) {

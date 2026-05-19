@@ -10,9 +10,9 @@ import { chatCompletionWithRetry } from './openai-wrapper';
 
 const JSON_N___N_RE = /```json\n?|\n?```/g;
 const A_Z_A_Z0_9_RE = /[^a-zA-Z0-9]/g;
-/** Pdf_analysis_system_prompt. */
-export const PDF_ANALYSIS_SYSTEM_PROMPT =
-  'Analista de documentos comerciais. Retorne apenas JSON válido.';
+/** Output contract used by document analysis calls and cost quotes. */
+export const PDF_ANALYSIS_OUTPUT_CONTRACT =
+  'Analise o documento comercial e devolva apenas JSON valido no schema solicitado.';
 
 type PdfAnalysis = Record<string, unknown>;
 
@@ -95,10 +95,7 @@ export class PdfProcessorService {
       const response = await chatCompletionWithRetry(this.openai, {
         model: resolveBackendOpenAIModel('brain'),
         messages: [
-          {
-            role: 'system',
-            content: PDF_ANALYSIS_SYSTEM_PROMPT,
-          },
+          { role: 'user', content: JSON.stringify({ contract: PDF_ANALYSIS_OUTPUT_CONTRACT }) },
           { role: 'user', content: prompt },
         ],
         temperature: 0.3,

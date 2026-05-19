@@ -382,5 +382,22 @@ describe('CiaBootstrapService', () => {
       const key = await service.resolveActiveSessionKey('ws-a');
       expect(key).toBe('custom-session');
     });
+
+    it('falls back to workspaceId when getSessionStatus throws', async () => {
+      providerRegistry.getSessionStatus.mockRejectedValue(new Error('WAHA unreachable'));
+
+      const key = await service.resolveActiveSessionKey('ws-a');
+      expect(key).toBe('ws-a');
+    });
+
+    it('falls back to workspaceId when getSessionStatus throws and no providerSettings configured', async () => {
+      providerRegistry.getSessionStatus.mockRejectedValue(new Error('WAHA timeout'));
+      prisma.workspace.findUnique.mockResolvedValue({
+        providerSettings: {},
+      });
+
+      const key = await service.resolveActiveSessionKey('ws-b');
+      expect(key).toBe('ws-b');
+    });
   });
 });

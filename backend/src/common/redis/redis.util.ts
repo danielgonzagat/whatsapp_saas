@@ -1,23 +1,41 @@
+import { createRequire } from 'node:module';
 import { Logger } from '@nestjs/common';
 import Redis, { RedisOptions } from 'ioredis';
-import RedisMock from 'ioredis-mock';
 import {
   RedisConfigurationError,
   resolveRedisUrl as canonicalResolveRedisUrl,
 } from './resolve-redis-url';
 
+const localRequire = createRequire(__filename);
 const logger = new Logger('RedisUtil');
 const DEFAULT_REDIS_CLIENT_LISTENER_BUDGET = 256;
 
 function resolveRedisClientListenerBudget(): number {
   const raw = process.env.REDIS_CLIENT_MAX_LISTENERS;
   const parsed = raw ? Number.parseInt(raw, 10) : DEFAULT_REDIS_CLIENT_LISTENER_BUDGET;
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : DEFAULT_REDIS_CLIENT_LISTENER_BUDGET;
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return DEFAULT_REDIS_CLIENT_LISTENER_BUDGET;
+  }
+  return Math.max(parsed, DEFAULT_REDIS_CLIENT_LISTENER_BUDGET);
 }
 
 function setRedisClientListenerBudget(client: Redis): void {
   const listenerBudget = resolveRedisClientListenerBudget();
   client.setMaxListeners(Math.max(client.getMaxListeners(), listenerBudget));
+}
+
+type RedisMockConstructor = new () => Redis;
+let redisMockConstructor: RedisMockConstructor | null = null;
+
+function createRedisMockClient(): Redis {
+  if (!redisMockConstructor) {
+    const redisMockModule = localRequire('ioredis-mock') as {
+      default?: RedisMockConstructor;
+    } & RedisMockConstructor;
+    redisMockConstructor = redisMockModule.default ?? redisMockModule;
+  }
+  const RedisMock = redisMockConstructor;
+  return new RedisMock();
 }
 
 // Re-export the canonical helpers so existing imports of redis.util keep working.
@@ -69,7 +87,9 @@ export function getRedisUrl(): string {
  */
 export function createRedisClient(options?: RedisOptions): Redis {
   if (process.env.JEST_WORKER_ID) {
-    return new RedisMock();
+    const client = createRedisMockClient();
+    setRedisClientListenerBudget(client);
+    return client;
   }
 
   const url = getRedisUrl();

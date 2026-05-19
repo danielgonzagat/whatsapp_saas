@@ -2,7 +2,7 @@
 /**
  * Annotates all controllers with @RouteClass decorator.
  *
- * Reads the classification map from controller-classification.ts,
+ * Reads the embedded classification map below,
  * processes each controller file, and:
  * 1. Adds `import { RouteClass } from '...'`
  * 2. Adds `@RouteClass('xxx')` before `export class`

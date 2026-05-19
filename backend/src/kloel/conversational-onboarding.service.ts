@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
 import { StructuredLogger } from '../logging/structured-logger';
 import { Response } from 'express';
 import OpenAI from 'openai';
@@ -9,6 +9,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { chatCompletionWithRetry } from './openai-wrapper';
 import { ConversationalOnboardingToolsService } from './conversational-onboarding-tools.service';
 import { ONBOARDING_TOOLS } from './conversational-onboarding-tools-schema';
+import { AbiBuilderService } from './abi/abi-builder.service';
 // @@index: optimistic lock via updatedAt — concurrent writes resolved by DB constraint
 
 const ONBOARDING_SAFE_SETUP_TOOL_NAMES = [
@@ -127,9 +128,54 @@ export class ConversationalOnboardingService {
     prisma: PrismaService,
     private readonly planLimits: PlanLimitsService,
     private readonly toolsService: ConversationalOnboardingToolsService,
+    @Optional() private readonly abiBuilder?: AbiBuilderService,
   ) {
     this.prismaExt = prisma as object as PrismaWithDynamicModels;
     this.openai = createTextLlmClient() ?? new OpenAI({ apiKey: 'missing' });
+  }
+
+  private async buildOnboardingStateMessage(
+    workspaceId: string,
+    userMessage: string,
+  ): Promise<OnboardingMessage> {
+    if (process.env['KLOEL_ONBOARDING_USE_ABI'] !== 'on' || !this.abiBuilder) {
+      return { role: 'system', content: CONVERSATIONAL_ONBOARDING_PROMPT };
+    }
+
+    const now = new Date();
+    const result = await this.abiBuilder.build({
+      audience: 'public',
+      currentInput: {
+        raw: userMessage,
+        parsed: { intent: 'workspace_onboarding' },
+        channel: 'conversational_onboarding',
+        arrivalTimestamp: now.toISOString(),
+      },
+      perceptionSnapshot: {
+        channel: 'conversational_onboarding',
+        workspaceId,
+        activeStage: 'onboarding',
+      },
+      capabilityIds: ONBOARDING_SAFE_SETUP_TOOL_NAMES.map((name) => `onboarding.${name}`),
+      now,
+    });
+
+    return {
+      role: 'user',
+      content: JSON.stringify(
+        result.status === 'ok'
+          ? { cognitiveStateAbi: result.abi }
+          : {
+              cognitiveStateAbiStatus: result.status,
+              reason: result.reason,
+              currentInput: {
+                raw: userMessage,
+                channel: 'conversational_onboarding',
+                truthMode: 'observed',
+              },
+            },
+      ),
+    };
   }
 
   private parseToolArguments(rawArguments: string, functionName: string): Record<string, unknown> {
@@ -248,9 +294,10 @@ export class ConversationalOnboardingService {
   /** Inicia ou continua o onboarding conversacional */
   async chat(workspaceId: string, userMessage: string, res?: Response): Promise<string | void> {
     const history = await this.toolsService.getOnboardingHistory(workspaceId);
+    const onboardingStateMessage = await this.buildOnboardingStateMessage(workspaceId, userMessage);
 
     const messages: OnboardingMessage[] = [
-      { role: 'system', content: CONVERSATIONAL_ONBOARDING_PROMPT },
+      onboardingStateMessage,
       ...history.map((h) => ({
         role: h.role as OnboardingMessage['role'],
         content: h.content,

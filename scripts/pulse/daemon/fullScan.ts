@@ -259,6 +259,7 @@ export async function fullScan(
     flowProjection,
     externalSignalState,
     autonomyState: autonomyState as PulseAutonomyStateSnapshot | null,
+    ...(options.certificationTarget ? { certificationTarget: options.certificationTarget } : {}),
   });
   options.tracer?.finishPhase('scan:certification:preliminary', PASSED, {
     metadata: {
@@ -304,6 +305,7 @@ export async function fullScan(
       ? { executionEvidence: { executionTrace: options.tracer.getSnapshot() } }
       : {}),
     autonomyState: autonomyState as PulseAutonomyStateSnapshot | null,
+    ...(options.certificationTarget ? { certificationTarget: options.certificationTarget } : {}),
   });
   options.tracer?.finishPhase('scan:certification:final', PASSED, {
     metadata: {

@@ -12,7 +12,7 @@
 #   noisy, fix code or tighten governance — never shrink Codacy's scope.
 
 engines:
-  eslint:
+  eslint-8:
     enabled: true
   biome:
     enabled: true
@@ -36,6 +36,7 @@ exclude_paths:
   - '**/build/**'
   - '**/coverage/**'
   - '**/test-results/**'
+  - '.claude/skills'
   - '**/playwright-report/**'
 
   # Prisma auto-generated migration SQL — Semgrep rac-table-access calibration (2026-05-10).

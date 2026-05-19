@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { BadRequestException, Inject, Injectable, forwardRef } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable, Optional, forwardRef } from '@nestjs/common';
 import { StructuredLogger } from '../logging/structured-logger';
 import { Prisma } from '@prisma/client';
 import { toPrismaJsonArray } from '../common/prisma/prisma-json.util';
@@ -22,6 +22,7 @@ import {
 } from './checkout-order.post-payment';
 import type { CheckoutOrderStatusValue } from './checkout-order-status';
 import type { ShippingAddress } from './checkout-shipping.types';
+import { CheckoutEventEmitterService } from '../kloel/checkout-emitter/checkout-event-emitter.service';
 
 const D_RE = /\D/g;
 const DEFAULT_MARKETPLACE_FEE_PERCENT = 9.9;
@@ -38,6 +39,8 @@ export class CheckoutOrderService {
     private readonly paymentService: CheckoutPaymentService,
     private readonly catalogService: CheckoutCatalogService,
     private readonly queryService: CheckoutOrderQueryService,
+    @Optional()
+    private readonly eventEmitter?: CheckoutEventEmitterService,
   ) {
     this.orderSupport = new CheckoutOrderSupport(prisma, this.logger);
   }
@@ -326,6 +329,14 @@ export class CheckoutOrderService {
         normalizedInstallments,
         ...(cardHolderName !== undefined ? { cardHolderName } : {}),
       });
+      void this.eventEmitter?.checkoutInitiated({
+        workspaceId: data.workspaceId,
+        orderId: orderResult.order.id,
+        planId: data.planId,
+        correlationId,
+        paymentMethod: String(orderData.paymentMethod),
+        totalInCents: normalizedBaseTotalInCents,
+      });
       return { ...orderResult.order, paymentData };
     }
 
@@ -336,6 +347,13 @@ export class CheckoutOrderService {
       orderNumber,
       planId: data.planId,
       workspaceId: data.workspaceId,
+      totalInCents: normalizedBaseTotalInCents,
+    });
+    void this.eventEmitter?.cartCreated({
+      workspaceId: data.workspaceId,
+      orderId: order.id,
+      planId: data.planId,
+      correlationId,
       totalInCents: normalizedBaseTotalInCents,
     });
     const paymentData = await this.processOrderPostPayment({
@@ -359,6 +377,14 @@ export class CheckoutOrderService {
       normalizedBaseTotalInCents,
       normalizedInstallments,
       ...(cardHolderName !== undefined ? { cardHolderName } : {}),
+    });
+    void this.eventEmitter?.checkoutInitiated({
+      workspaceId: data.workspaceId,
+      orderId: order.id,
+      planId: data.planId,
+      correlationId,
+      paymentMethod: String(orderData.paymentMethod),
+      totalInCents: normalizedBaseTotalInCents,
     });
     return { ...order, paymentData };
   }

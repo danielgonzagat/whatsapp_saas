@@ -166,12 +166,14 @@ describe('LeadsService', () => {
         email: null,
         commercialScore: null,
         status: 'new',
+        stage: null,
         lastIntent: 'general',
         totalMessages: 0,
         lastInteraction: new Date('2026-01-01'),
         metadata: {},
         createdAt: new Date('2026-01-01'),
         updatedAt: null,
+        commercialScore: null,
       });
     });
 
@@ -222,6 +224,7 @@ describe('LeadsService', () => {
             name: true,
             email: true,
             status: true,
+            stage: true,
             lastIntent: true,
             totalMessages: true,
             metadata: true,
