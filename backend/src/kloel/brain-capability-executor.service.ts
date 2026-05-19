@@ -10,8 +10,10 @@ import { MemoryProjector } from './commem/memory.projector';
 import type { MindPerceptEvent } from './mind.types';
 import type { SpineEventRef } from './mind/mind.types';
 import type {
+  AbiBelief,
   AbiConsolidatedRef,
   AbiEpisodicRef,
+  AbiPredictions,
   AbiSalientEvent,
   AbiValence,
   AbiWorkingMemoryItem,
@@ -192,6 +194,8 @@ export class BrainCapabilityExecutorService {
     episodicRefs: AbiEpisodicRef[];
     consolidatedRefs: AbiConsolidatedRef[];
     dissolution: DissolutionGap[];
+    beliefs: AbiBelief[];
+    predictions: AbiPredictions;
   }> {
     const sinceMs = Date.now() - 7 * 24 * 60 * 60 * 1000;
     const events = await this.mindPerception.since(workspaceId, new Date(sinceMs));
@@ -258,7 +262,64 @@ export class BrainCapabilityExecutorService {
 
     const dissolution = computeDissolutionGaps(events.map((e) => e.kind));
 
-    return { recentSalientEvents, workingMemory, episodicRefs, consolidatedRefs, dissolution };
+    // Belief induction (frequency + valence, Beta(1,1) posterior mean).
+    // 100% derived from real workspace events. Epistemically honest: thin
+    // evidence ⇒ confidence stays near 0.5 (no overclaim); a kind needs
+    // ≥3 occurrences to crystallize a belief. truthMode='inferred'.
+    const byKind = new Map<string, { n: number; pos: number; last: Date }>();
+    for (const e of events) {
+      const k = e.kind;
+      const cur = byKind.get(k) ?? { n: 0, pos: 0, last: e.occurredAt };
+      cur.n += 1;
+      if (valenceOf(k) === 'positive') cur.pos += 1;
+      if (e.occurredAt > cur.last) cur.last = e.occurredAt;
+      byKind.set(k, cur);
+    }
+    const beliefs: AbiBelief[] = [...byKind.entries()]
+      .filter(([, s]) => s.n >= 3)
+      .sort((a, b) => b[1].n - a[1].n)
+      .slice(0, 20)
+      .map(([kind, s]) => ({
+        beliefId: `blf_${kind.replace(/[^a-z0-9]/gi, '_').slice(0, 40)}`,
+        subject: kind.split(/[._]/)[0] || kind,
+        proposition: `evento "${kind}" recorre no workspace (n=${s.n}, janela 7d)`,
+        confidence: (s.pos + 1) / (s.n + 2),
+        evidenceCount: s.n,
+        lastUpdated: s.last.toISOString(),
+        truthMode: 'inferred' as const,
+      }));
+
+    // Prediction generation (base-rate). Honest: only when total ≥ 5
+    // (else empty — no fabrication on thin data). recentSurprises stays
+    // [] because true surprise detection requires PERSISTED prior
+    // predictions to compare against (a later cycle / pillar #1).
+    const total = events.length;
+    const topKind = [...byKind.entries()].sort((a, b) => b[1].n - a[1].n)[0];
+    const predictions: AbiPredictions =
+      total >= 5 && topKind
+        ? {
+            active: [
+              {
+                predictionId: `prd_next_${Date.now().toString(36)}`,
+                about: 'próximo evento cognitivo do workspace',
+                expectedOutcome: `mais provável: "${topKind[0]}"`,
+                confidence: topKind[1].n / total,
+                horizonHours: 24,
+              },
+            ],
+            recentSurprises: [],
+          }
+        : { active: [], recentSurprises: [] };
+
+    return {
+      recentSalientEvents,
+      workingMemory,
+      episodicRefs,
+      consolidatedRefs,
+      dissolution,
+      beliefs,
+      predictions,
+    };
   }
 
   /**

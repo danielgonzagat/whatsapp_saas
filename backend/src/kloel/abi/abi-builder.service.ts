@@ -6,9 +6,11 @@ import {
 } from '../lineage/identity-projector.service';
 import {
   ABI_VERSION,
+  AbiBelief,
   AbiConsolidatedRef,
   AbiCurrentInput,
   AbiEpisodicRef,
+  AbiPredictions,
   AbiPerceptionSnapshot,
   AbiPulseTruth,
   AbiSalientEvent,
@@ -60,6 +62,8 @@ export interface AbiBuildInput {
     readonly workingMemory?: readonly AbiWorkingMemoryItem[];
     readonly episodicRefs?: readonly AbiEpisodicRef[];
     readonly consolidatedRefs?: readonly AbiConsolidatedRef[];
+    readonly beliefs?: readonly AbiBelief[];
+    readonly predictions?: AbiPredictions;
   };
 }
 
@@ -123,8 +127,8 @@ export class AbiBuilderService {
         currentSnapshot: input.perceptionSnapshot,
         recentSalientEvents: input.cognitiveSubstrate?.recentSalientEvents ?? [],
       },
-      beliefs: [],
-      predictions: { active: [], recentSurprises: [] },
+      beliefs: input.cognitiveSubstrate?.beliefs ?? [],
+      predictions: input.cognitiveSubstrate?.predictions ?? { active: [], recentSurprises: [] },
       attention: { candidates: [] },
       memory: {
         workingMemory: input.cognitiveSubstrate?.workingMemory ?? [],
