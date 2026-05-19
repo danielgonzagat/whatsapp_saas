@@ -1,0 +1,80 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779226225946_ef528860",
+  "ts": "2026-05-19T21:30:25.946Z",
+  "file": "backend/src/kloel/kloel-code-tools.service.ts",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "targetUnit": "text_span",
+  "intention": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 1115,
+    "lineRewriteSurfaceChars": 1115,
+    "expansionFactorAvoided": 1,
+    "bytesNet": -20,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "f90f134a4a5fc2f6e4aebb585b7d782320aa1e4a73234d3e4e52ceff48adc225",
+  "proposedSha256": "f90f134a4a5fc2f6e4aebb585b7d782320aa1e4a73234d3e4e52ceff48adc225",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- backend/src/kloel/kloel-code-tools.service.ts (atomic char-level)\u001b[0m\n  \n        const { stdout } = await exec(cmd, { timeout: 120_000, maxBuffer: 10 * 1024 * 1024 });\n        const result = JSON.parse(stdout)\u001b[32m{+ as JestOutput+}\u001b[0m;\n        return {\n          success: result.success || result.numFailedTests === 0,\n          numTotalTests: result.numTotalTests,\n          numPassedTests: result.numPassedTests,\n          numFailedTests: result.numFailedTests,\n          testResults: (result.testResults \u001b[31m[-||-]\u001b[0m\u001b[32m{+??+}\u001b[0m []).map((r\u001b[31m[-: { name: string; status: string }-]\u001b[0m) => ({\n            file: r.name.replace(REPO_ROOT + '/', ''),\n            status: r.status,",
+  "preservedZones": [
+    {
+      "kind": "prefix_preserved",
+      "description": "Bytes 0–8849 — prefix preserved unchanged",
+      "byteStart": 0,
+      "byteEnd": 8850,
+      "byteLength": 8850,
+      "beforeHash": "8692e9f29246bf6de60cd00276e367d968814337efe45db29e2f69f894fdef3d",
+      "afterHash": "8692e9f29246bf6de60cd00276e367d968814337efe45db29e2f69f894fdef3d",
+      "sample": "120_000, maxBuffer: 10 * 1024 * 1024 });\n      const result = JSON.parse(stdout)"
+    },
+    {
+      "kind": "suffix_preserved",
+      "description": "Bytes 9158–11337 — suffix preserved unchanged",
+      "byteStart": 9158,
+      "byteEnd": 11338,
+      "byteLength": 2180,
+      "beforeHash": "49919d89c4ec62e615dd253a5a5814d9534a6ce0c5bcbf29b6b032ffebd119d3",
+      "afterHash": "49919d89c4ec62e615dd253a5a5814d9534a6ce0c5bcbf29b6b032ffebd119d3",
+      "sample": ") => ({\n          file: r.name.replace(REPO_ROOT + '/', ''),\n          status: r"
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "byteStart": 8850,
+      "byteEnd": 9158,
+      "newByteLength": 288,
+      "oldTextHash": "cfec48fac845f508af1ad9640485b32a143bfec316bebb88a82b8a39b3e823d5",
+      "newTextHash": "47d883a5cd6c17005f9742acea8b4d51dd4b0df015d49a8d7a7aa767a0b84cc4",
+      "oldSample": ";\n      return {\n        success: result.success || result.numFailedTests === 0,\n        numTotalTests: result.numTotalTests,\n        numPassedTests: result.numPassedTests,\n        numFailedTests: res",
+      "newSample": " as JestOutput;\n      return {\n        success: result.success || result.numFailedTests === 0,\n        numTotalTests: result.numTotalTests,\n        numPassedTests: result.numPassedTests,\n        numFa",
+      "description": "Replace 308 bytes at offset 8850 with 288 bytes"
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~1115 character(s) in `backend/src/kloel/kloel-code-tools.service.ts` (sub-line atomic edit, expansion 1× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

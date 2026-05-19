@@ -1,0 +1,59 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779228574379_04b0089e",
+  "ts": "2026-05-19T22:09:34.379Z",
+  "file": "backend/src/kloel/unified-agent-helpers.ts",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "atomic_create_file",
+  "operator": "atomic_create_file",
+  "targetUnit": "text_span",
+  "intention": "atomic_create_file",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 2246,
+    "lineRewriteSurfaceChars": 0,
+    "expansionFactorAvoided": 0,
+    "bytesNet": 2246,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "aa5a0ebc7acbf444f9294bf624c4c5b44647e6b50c75091c24d423d0cdbc45e1",
+  "proposedSha256": "aa5a0ebc7acbf444f9294bf624c4c5b44647e6b50c75091c24d423d0cdbc45e1",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- backend/src/kloel/unified-agent-helpers.ts (atomic char-level)\u001b[0m\n  \u001b[32m{+import type { UnifiedAgentService } from './unified-agent.service';\n  \n  export function actionSucceeded(result: unknown): boolean {\n    if (!result) return false;\n    if (typeof result === 'boolean') return result;\n    if (typeof result === 'string') return true;\n    if (typeof result === 'object') {\n      const record = result as Record<string, unknown>;\n      return record.success === true || record.ok === true || record.executed === true;\n    }\n    return false;\n  }\n  \n  export function numFromUnknown(v: unknown, fb = 0): number {\n    const n = Number(v);\n    return Number.isFinite(n) ? Math.round(n) : fb;\n  }\n  \n  export function buildAgentRuntimeContextSync(params: {\n    agentRuntime: UnifiedAgentService['agentRuntime'];\n    workspaceId: string;\n    channel: string;\n    message: string;\n    contactId?: string;\n    allowedTools?: string[];\n  }): string {\n    if (!params.agentRuntime) return '';\n    return params.agentRuntime.buildContext({\n      workspaceId: params.workspaceId,\n      channel: params.channel,\n      message: params.message,\n      contactId: params.contactId,\n      allowedTools: params.allowedTools,\n    }).systemPromptBlock;\n  }\n  \n  export async function recordAgentRuntimeTurn(params: {\n    agentRuntime: UnifiedAgentService['agentRuntime'];\n    workspaceId: string;\n    channel: string;\n    userMessage: string;\n    assistantMessage?: string;\n    contactId?: string;\n    intent?: string;\n    confidence?: number;\n    actions?: Array<{ toolName: string; success: boolean; result?: unknown }>;\n  }): Promise<void> {\n    await params.agentRuntime?.recordTurnOutcome({\n      workspaceId: params.workspaceId,\n      channel: params.channel,\n      userMessage: params.userMessage,\n      assistantMessage: params.assistantMessage,\n      contactId: params.contactId,\n      intent: params.intent,\n      confidence: params.confidence,\n      actions: params.actions,\n    });\n  }\n  \n  export function buildAgentToolEnvelopeSync(params: {\n    agentRuntime: UnifiedAgentService['agentRuntime'];\n    workspaceId: string;\n    toolName: string;\n  }): { id: string; toolName: string; allowed: boolean } {\n    return (\n      params.agentRuntime?.buildToolEnvelope({\n        workspaceId: params.workspaceId,\n        toolName: params.toolName,\n      }) ?? {\n        id: 'agent-runtime-unavailable',\n        toolName: params.toolName,\n        allowed: true,\n      }\n    );\n  }+}\u001b[0m\n  ",
+  "preservedZones": [],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "byteStart": 0,
+      "byteEnd": 0,
+      "newByteLength": 2246,
+      "oldTextHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "newTextHash": "aa5a0ebc7acbf444f9294bf624c4c5b44647e6b50c75091c24d423d0cdbc45e1",
+      "oldSample": "",
+      "newSample": "import type { UnifiedAgentService } from './unified-agent.service';\n\nexport function actionSucceeded(result: unknown): boolean {\n  if (!result) return false;\n  if (typeof result === 'boolean') return ",
+      "description": "Insert 2246 bytes at offset 0"
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `atomic_create_file` changed ~2246 character(s) in `backend/src/kloel/unified-agent-helpers.ts` (sub-line atomic edit, expansion 0× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

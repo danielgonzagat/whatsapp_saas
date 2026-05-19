@@ -1,0 +1,80 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779227983164_4ed96af9",
+  "ts": "2026-05-19T21:59:43.164Z",
+  "file": "scripts/orchestration/build-cognitive-event-emit-fleet.mjs",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "targetUnit": "text_span",
+  "intention": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 83,
+    "lineRewriteSurfaceChars": 74,
+    "expansionFactorAvoided": 0.89,
+    "bytesNet": 9,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "c9a725b642800359b22d514d4823d0dd6be0da240f3dcee9d0ffc2eb0fb7bca6",
+  "proposedSha256": "c9a725b642800359b22d514d4823d0dd6be0da240f3dcee9d0ffc2eb0fb7bca6",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- scripts/orchestration/build-cognitive-event-emit-fleet.mjs (atomic char-level)\u001b[0m\n    docs/contracts/pci/**, docs/plans/KLOEL_COGNITIVE_ORGANISM_PLAN.md.\n  - NO bypass of Codacy: forbidden suppression comments and skip tags\n    (biome-\u001b[32m{+'+'+}\u001b[0mignore, @'+'ts-ignore, eslint-\u001b[32m{+'+'+}\u001b[0mdisable, NO\u001b[32m{+'+'+}\u001b[0mSONAR, [skip ci], etc.).\n  - NO \\`git restore\\` flags.\n  - NO invent event names outside PCI.1.",
+  "preservedZones": [
+    {
+      "kind": "prefix_preserved",
+      "description": "Bytes 0–2321 — prefix preserved unchanged",
+      "byteStart": 0,
+      "byteEnd": 2322,
+      "byteLength": 2322,
+      "beforeHash": "83b61fe130cdd7819ee0cd3cb83ff11045808964ad57c2272197e98fef97b261",
+      "afterHash": "83b61fe130cdd7819ee0cd3cb83ff11045808964ad57c2272197e98fef97b261",
+      "sample": "d.\n- NO bypass of Codacy: forbidden suppression comments and skip tags\n  (biome-"
+    },
+    {
+      "kind": "suffix_preserved",
+      "description": "Bytes 2363–11314 — suffix preserved unchanged",
+      "byteStart": 2363,
+      "byteEnd": 11315,
+      "byteLength": 8952,
+      "beforeHash": "3a1bebf7b88e077f71f69ca9887d5606c2d72e9b61cf29e87d5139252c493256",
+      "afterHash": "3a1bebf7b88e077f71f69ca9887d5606c2d72e9b61cf29e87d5139252c493256",
+      "sample": "SONAR, [skip ci], etc.).\n- NO \\`git restore\\` flags.\n- NO invent event names out"
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "byteStart": 2322,
+      "byteEnd": 2363,
+      "newByteLength": 50,
+      "oldTextHash": "0c417be34137cc2d4c2508620299ba0f7f6b87bb89dc5a19e2c1fa6ac61b3559",
+      "newTextHash": "43a405cbce9e62ce1946aa88c89113715b7de61b40f1fa84e420cec21c4cf553",
+      "oldSample": "ignore, @'+'ts-ignore, eslint-disable, NO",
+      "newSample": "'+'ignore, @'+'ts-ignore, eslint-'+'disable, NO'+'",
+      "description": "Replace 41 bytes at offset 2322 with 50 bytes"
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~83 character(s) in `scripts/orchestration/build-cognitive-event-emit-fleet.mjs` (sub-line atomic edit, expansion 0.89× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

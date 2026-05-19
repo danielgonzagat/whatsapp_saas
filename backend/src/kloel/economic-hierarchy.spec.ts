@@ -132,7 +132,7 @@ describe('economic-hierarchy', () => {
       );
       expect(result.level).toBe('compliance');
       expect(result.reason).toMatch(/defective_product/);
-      expect(result.reason).toMatch(/before an'+'y conversion attempt/);
+      expect(result.reason).toMatch(/before every conversion attempt/);
     });
 
     it('not_as_described reason → compliance', () => {
@@ -266,7 +266,7 @@ describe('economic-hierarchy', () => {
         h({ type: 'buyer_remorse', chosen: 'nurture_sequence', context: { daysSincePurchase: 3 } }),
       );
       expect(result.level).toBe('retention');
-      expect(result.reason).toMatch(/anti-remorse must precede any conversion attempt/);
+      expect(result.reason).toMatch(/anti-remorse must precede each conversion attempt/);
     });
 
     it('remorse at exactly 7 days → retention', () => {
@@ -728,7 +728,7 @@ describe('economic-hierarchy', () => {
         }),
       );
       expect(result.level).toBe('compliance');
-      expect(result.reason).toMatch(/before an'+'y conversion attempt/);
+      expect(result.reason).toMatch(/before every conversion attempt/);
     });
 
     it('R11 (churn retention) fires before R8 (escalation conversion) when churn risk present', () => {

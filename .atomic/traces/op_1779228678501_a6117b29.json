@@ -1,0 +1,80 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779228678501_a6117b29",
+  "ts": "2026-05-19T22:11:18.501Z",
+  "file": "backend/src/kloel/unified-agent.service.ts",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "targetUnit": "text_span",
+  "intention": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 246,
+    "lineRewriteSurfaceChars": 246,
+    "expansionFactorAvoided": 1,
+    "bytesNet": -16,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "d8da6302e946fba96947b45e6193bd2e19c00af4df63f531f550f415af33955b",
+  "proposedSha256": "d8da6302e946fba96947b45e6193bd2e19c00af4df63f531f550f415af33955b",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- backend/src/kloel/unified-agent.service.ts (atomic char-level)\u001b[0m\n  \n      switch (tool) {\n        case 'send_message':\u001b[31m[-\n  -]\u001b[0m \u001b[31m[-       -]\u001b[0mreturn this.actions.actionSendMessage(workspaceId, phone, args, context);\n        case 'send_product_info':\u001b[31m[-\n  -]\u001b[0m \u001b[31m[-       -]\u001b[0mreturn this.actions.actionSendProductInfo(workspaceId, phone, args, context);\n        case 'create_payment_link': {\n          const paymentAmount = this.num(args.amount);",
+  "preservedZones": [
+    {
+      "kind": "prefix_preserved",
+      "description": "Bytes 0–18369 — prefix preserved unchanged",
+      "byteStart": 0,
+      "byteEnd": 18370,
+      "byteLength": 18370,
+      "beforeHash": "dead0e5ccb7d5fbb2106b255246e22df5f892c4df8a137406d6121fca18083fc",
+      "afterHash": "dead0e5ccb7d5fbb2106b255246e22df5f892c4df8a137406d6121fca18083fc",
+      "sample": "d,\n      toolName: tool,\n    });\n\n    switch (tool) {\n      case 'send_message':"
+    },
+    {
+      "kind": "suffix_preserved",
+      "description": "Bytes 18492–27374 — suffix preserved unchanged",
+      "byteStart": 18492,
+      "byteEnd": 27375,
+      "byteLength": 8883,
+      "beforeHash": "9e60cb32d36f5b1756cd25b00cb25b8fe08634e184e303b7c0d3672b4f55c01b",
+      "afterHash": "9e60cb32d36f5b1756cd25b00cb25b8fe08634e184e303b7c0d3672b4f55c01b",
+      "sample": " return this.actions.actionSendProductInfo(workspaceId, phone, args, context);\n "
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "byteStart": 18370,
+      "byteEnd": 18492,
+      "newByteLength": 106,
+      "oldTextHash": "6c142e645bc6d220825705a00a82683ac2fab0e54ad0f065e12adb7127f44a68",
+      "newTextHash": "b1235247802868db70d0841349ae175c1c247b1d2afe01b34cf838f27f073a02",
+      "oldSample": "\n        return this.actions.actionSendMessage(workspaceId, phone, args, context);\n      case 'send_product_info':\n       ",
+      "newSample": " return this.actions.actionSendMessage(workspaceId, phone, args, context);\n      case 'send_product_info':",
+      "description": "Replace 122 bytes at offset 18370 with 106 bytes"
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~246 character(s) in `backend/src/kloel/unified-agent.service.ts` (sub-line atomic edit, expansion 1× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

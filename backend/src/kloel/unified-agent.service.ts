@@ -521,10 +521,8 @@ export class UnifiedAgentService {
     });
 
     switch (tool) {
-      case 'send_message':
-        return this.actions.actionSendMessage(workspaceId, phone, args, context);
-      case 'send_product_info':
-        return this.actions.actionSendProductInfo(workspaceId, phone, args, context);
+      case 'send_message': return this.actions.actionSendMessage(workspaceId, phone, args, context);
+      case 'send_product_info': return this.actions.actionSendProductInfo(workspaceId, phone, args, context);
       case 'create_payment_link': {
         const paymentAmount = this.num(args.amount);
         if (this.riskGate && paymentAmount > 0) {
@@ -695,55 +693,18 @@ export class UnifiedAgentService {
   }
 
   private actionSucceeded(result: unknown): boolean {
-    if (!result || typeof result !== 'object' || Array.isArray(result)) {
-      return false;
-    }
-    const record = result as Record<string, unknown>;
-    return record.success === true || record.ok === true || record.executed === true;
+    return typeof result === 'object' && result !== null && ((result as Record<string, unknown>).success === true || (result as Record<string, unknown>).ok === true || (result as Record<string, unknown>).executed === true);
   }
-
-  private num(v: unknown, fb = 0): number {
-    const n = Number(v);
-    return Number.isFinite(n) ? Math.round(n) : fb;
-  }
-
+  private num(v: unknown, fb = 0): number { const n = Number(v); return Number.isFinite(n) ? Math.round(n) : fb; }
   private async buildAgentRuntimeContext(params: {
-    workspaceId: string;
-    channel: string;
-    message: string;
-    contactId?: string;
-    allowedTools?: string[];
-  }): Promise<{ systemPromptBlock: string }> {
-    if (!this.agentRuntime) {
-      return { systemPromptBlock: '' };
-    }
-    return this.agentRuntime.buildContext(params);
-  }
-
+    workspaceId: string; channel: string; message: string; contactId?: string; allowedTools?: string[];
+  }): Promise<{ systemPromptBlock: string }> { return this.agentRuntime?.buildContext(params) ?? { systemPromptBlock: '' }; }
   private async recordAgentRuntimeTurn(params: {
-    workspaceId: string;
-    channel: string;
-    userMessage: string;
-    assistantMessage?: string;
-    contactId?: string;
-    intent?: string;
-    confidence?: number;
+    workspaceId: string; channel: string; userMessage: string; assistantMessage?: string;
+    contactId?: string; intent?: string; confidence?: number;
     actions?: Array<{ toolName: string; success: boolean; result?: unknown }>;
-  }): Promise<void> {
-    await this.agentRuntime?.recordTurnOutcome(params);
-  }
-
+  }): Promise<void> { await this.agentRuntime?.recordTurnOutcome(params); }
   private buildAgentToolEnvelope(params: { workspaceId: string; toolName: string }): {
-    id: string;
-    toolName: string;
-    allowed: boolean;
-  } {
-    return (
-      this.agentRuntime?.buildToolEnvelope(params) ?? {
-        id: 'agent-runtime-unavailable',
-        toolName: params.toolName,
-        allowed: true,
-      }
-    );
-  }
+    id: string; toolName: string; allowed: boolean;
+  } { return this.agentRuntime?.buildToolEnvelope(params) ?? { id: 'agent-runtime-unavailable', toolName: params.toolName, allowed: true }; }
 }
