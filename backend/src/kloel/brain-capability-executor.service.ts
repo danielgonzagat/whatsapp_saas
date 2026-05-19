@@ -229,9 +229,15 @@ export class BrainCapabilityExecutorService {
       const p = (e.payload ?? undefined) as Record<string, unknown> | undefined;
       const meta =
         p && typeof p.meta === 'object' && p.meta ? (p.meta as Record<string, unknown>) : undefined;
+      // ROOT-CAUSE FIX (proven from prod spine data): NEVER surface
+      // Kloel's own replyPreview as a recallable fact. Doing so created
+      // a self-reinforcing ECHO ATTRACTOR — a value Kloel once recalled
+      // got persisted in its own reply, inflated its frequency, became
+      // the dominant "belief", and was recalled forever, drowning fresh
+      // user facts. Only what the USER actually stated
+      // (userPreview / inbound contentPreview) is ground truth.
       const txt =
         (meta && typeof meta.userPreview === 'string' && meta.userPreview) ||
-        (meta && typeof meta.replyPreview === 'string' && meta.replyPreview) ||
         (p && typeof p.contentPreview === 'string' && p.contentPreview) ||
         '';
       return txt ? `${e.kind}: ${String(txt).slice(0, 280)}` : `${e.kind} — ${e.subject}`;
