@@ -36,19 +36,6 @@ interface JestOutput {
   testResults?: Array<{ name: string; status: string }>;
 }
 
-interface EslintMessage {
-  line: number;
-  column: number;
-  ruleId: string | null;
-  message: string;
-  severity: number;
-}
-
-interface EslintFileResult {
-  errorCount: number;
-  warningCount: number;
-  messages: EslintMessage[];
-}
 
 @Injectable()
 export class KloelCodeToolsService {
@@ -336,6 +323,4 @@ export class KloelCodeToolsService {
       return { success: false, error: msg };
     }
   }
-
 }
-
