@@ -1876,7 +1876,6 @@ frontend	frontend/src/components/kloel/settings/product-catalog-section.tsx	reac
 frontend	frontend/src/components/products/checkout/CheckoutPixelsSection.tsx	react-hooks/set-state-in-effect	1
 frontend	frontend/src/components/products/ProductAfterPayTab.tsx	react-hooks/set-state-in-effect	1
 frontend	frontend/src/components/products/ProductCampaignsTab.tsx	react-hooks/set-state-in-effect	1
-frontend	frontend/src/components/products/ProductCheckoutsTab.tsx	react-hooks/set-state-in-effect	1
 frontend	frontend/src/components/products/ProductCommissionsTab.tsx	react-hooks/set-state-in-effect	1
 frontend	frontend/src/components/products/ProductCouponsTab.tsx	react-hooks/set-state-in-effect	1
 frontend	frontend/src/components/products/ProductIATab.tsx	react-hooks/set-state-in-effect	1
