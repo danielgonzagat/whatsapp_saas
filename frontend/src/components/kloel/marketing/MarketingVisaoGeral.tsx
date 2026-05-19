@@ -14,16 +14,13 @@ import {
   Fmt,
   FmtMoney,
   LiveStream,
-  CH_CONFIG,
 } from './MarketingShared';
 import type { ChannelRealData, AIBrainInfo } from './MarketingTypes';
 import { isBrainAvgResponseMeaningful } from './marketing-utils';
-import { ChannelNerveRow } from './MarketingChannelNerveRow';
 import { RevenueBarChart } from './MarketingRevenueBarChart';
 
 export function MarketingVisaoGeral({
   realStats,
-  switchTab,
   channelDataMap,
   feedMsgs,
   realBrain,
@@ -94,19 +91,6 @@ export function MarketingVisaoGeral({
       </div>
 
       <Ticker items={tickerItems} />
-
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 20 }}>
-        {Object.entries(CH_CONFIG).map(([key, ch]) => (
-          <ChannelNerveRow
-            key={key}
-            channelKey={key}
-            cfg={ch}
-            data={channelDataMap[ch.backendKey]}
-            isMobile={isMobile}
-            onOpen={switchTab}
-          />
-        ))}
-      </div>
 
       <div style={{ marginTop: 20 }}>
         <RevenueBarChart channelDataMap={channelDataMap} />

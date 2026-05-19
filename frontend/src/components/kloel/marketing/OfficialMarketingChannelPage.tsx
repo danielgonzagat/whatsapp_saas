@@ -83,6 +83,8 @@ export function OfficialMarketingChannelPage({ channel, initialStep }: Props) {
             <StepArsenal
               arsenal={data.setup.arsenal}
               onArsenalChange={data.handleArsenalChange}
+              productOptions={data.productOptions}
+              selectedProductIds={data.setup.selectedProductIds}
               busy={data.busy}
               onSave={() => void data.persistSetup(data.setup, 'Arsenal do canal salvo.')}
             />
