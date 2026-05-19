@@ -340,7 +340,7 @@ describe('economic-hierarchy – part 2', () => {
         }),
       );
       expect(result.level).toBe('compliance');
-      expect(result.reason).toMatch(/before an'+'y conversion attempt/);
+      expect(result.reason).toMatch(/before every conversion attempt/);
     });
 
     it('R11 (churn retention) fires before R8 (escalation conversion) when churn risk present', () => {

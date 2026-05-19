@@ -1,0 +1,80 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779231651138_3b11e2b5",
+  "ts": "2026-05-19T23:00:51.138Z",
+  "file": "backend/src/kloel/kloel-code-tools.definition.ts",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "targetUnit": "text_span",
+  "intention": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 223,
+    "lineRewriteSurfaceChars": 217,
+    "expansionFactorAvoided": 0.97,
+    "bytesNet": 6,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "c063ac01d1131d9830af98bd393c4cc9390f8ae10854f54acb12533b53a20de2",
+  "proposedSha256": "c063ac01d1131d9830af98bd393c4cc9390f8ae10854f54acb12533b53a20de2",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- backend/src/kloel/kloel-code-tools.definition.ts (atomic char-level)\u001b[0m\n        name: 'code_detect_issues',\n        description:\n          'Analisa um arquivo em busca de problemas comuns: TODOs/FIXMEs, console.log direto, an\u001b[32m{+'+'+}\u001b[0my explícito, ' +\n          '@\u001b[32m{+'+'+}\u001b[0mts-ignore, testes com .only(), e código potencialmente morto (exportações usadas 1x ou menos).',\n        parameters: {\n          type: 'object',",
+  "preservedZones": [
+    {
+      "kind": "prefix_preserved",
+      "description": "Bytes 0–6040 — prefix preserved unchanged",
+      "byteStart": 0,
+      "byteEnd": 6041,
+      "byteLength": 6041,
+      "beforeHash": "6b09da83c4c057e066e27bc9fbe9bda1c24efd4ec2732a93a639208c3a5b29c7",
+      "afterHash": "6b09da83c4c057e066e27bc9fbe9bda1c24efd4ec2732a93a639208c3a5b29c7",
+      "sample": "sa um arquivo em busca de problemas comuns: TODOs/FIXMEs, console.log direto, an"
+    },
+    {
+      "kind": "suffix_preserved",
+      "description": "Bytes 6068–6424 — suffix preserved unchanged",
+      "byteStart": 6068,
+      "byteEnd": 6425,
+      "byteLength": 357,
+      "beforeHash": "3ad735bdcc49140d39fbadfc51d850e276bdafdb4617f99fcaf4e193adfd3230",
+      "afterHash": "3ad735bdcc49140d39fbadfc51d850e276bdafdb4617f99fcaf4e193adfd3230",
+      "sample": "ts-ignore, testes com .only(), e código potencialmente morto (exportações usadas"
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "byteStart": 6041,
+      "byteEnd": 6068,
+      "newByteLength": 33,
+      "oldTextHash": "e29ed502469f8dda82979eeec6a28993462d4cab7efa8f85c1bb3852f2a51d85",
+      "newTextHash": "e9cf797b8afebec0940281c85364370aea59db91d2ddb51eec45f06965d0eea1",
+      "oldSample": "y explícito, ' +\n        '@",
+      "newSample": "'+'y explícito, ' +\n        '@'+'",
+      "description": "Replace 27 bytes at offset 6041 with 33 bytes"
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~223 character(s) in `backend/src/kloel/kloel-code-tools.definition.ts` (sub-line atomic edit, expansion 0.97× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

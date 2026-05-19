@@ -1,0 +1,80 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779231276829_66f67a29",
+  "ts": "2026-05-19T22:54:36.829Z",
+  "file": "backend/src/kloel/kloel-code-tools.definition.ts",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "targetUnit": "text_span",
+  "intention": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 1253,
+    "lineRewriteSurfaceChars": 157,
+    "expansionFactorAvoided": 0.13,
+    "bytesNet": 1096,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "4739421fb250ee69ceb05d1389a20a659f51552e67fa6c88ed4ad1cf1f1eab02",
+  "proposedSha256": "4739421fb250ee69ceb05d1389a20a659f51552e67fa6c88ed4ad1cf1f1eab02",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- backend/src/kloel/kloel-code-tools.definition.ts (atomic char-level)\u001b[0m\n      },\n    },\n  \u001b[32m{+  {\n      type: 'function',\n      function: {\n        name: 'code_lint',\n        description:\n          'Executa ESLint em um arquivo específico e retorna erros e warnings com linha, coluna e regra. ' +\n          'Use para verificar qualidade de código antes de propor mudanças.',\n        parameters: {\n          type: 'object',\n          properties: {\n            path: {\n              type: 'string',\n              description: 'Caminho relativo do arquivo a ser analisado',\n            },\n          },\n          required: ['path'],\n        },\n      },\n    },\n    {\n      type: 'function',\n      function: {\n        name: 'code_detect_issues',\n        description:\n          'Analisa um arquivo em busca de problemas comuns: TODOs/FIXMEs, console.log direto, any explícito, ' +\n          '@ts-ignore, testes com .only(), e código potencialmente morto (exportações usadas 1x ou menos).',\n        parameters: {\n          type: 'object',\n          properties: {\n            path: {\n              type: 'string',\n              description: 'Caminho relativo do arquivo a ser analisado',\n            },\n          },\n          required: ['path'],\n        },\n      },\n    },+}\u001b[0m\n  ];\n  ",
+  "preservedZones": [
+    {
+      "kind": "prefix_preserved",
+      "description": "Bytes 0–5325 — prefix preserved unchanged",
+      "byteStart": 0,
+      "byteEnd": 5326,
+      "byteLength": 5326,
+      "beforeHash": "49f986f19b5829751b6bd23f2db77101de3d5f7067810f72283bc5399635c4cf",
+      "afterHash": "49f986f19b5829751b6bd23f2db77101de3d5f7067810f72283bc5399635c4cf",
+      "sample": "n: 'Escopo específico (opcional)',\n          },\n        },\n      },\n    },\n  },\n"
+    },
+    {
+      "kind": "suffix_preserved",
+      "description": "Bytes 5326–5328 — suffix preserved unchanged",
+      "byteStart": 5326,
+      "byteEnd": 5329,
+      "byteLength": 3,
+      "beforeHash": "b02d2c0d6dc5e74d92fa14b91dbea264090beb35fdb9188d9b341181dce9f4ce",
+      "afterHash": "b02d2c0d6dc5e74d92fa14b91dbea264090beb35fdb9188d9b341181dce9f4ce",
+      "sample": "];\n"
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "byteStart": 5326,
+      "byteEnd": 5326,
+      "newByteLength": 1096,
+      "oldTextHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "newTextHash": "f7f23ef415a75faeb388872998ecf520b93cbe12c5c7551a443df30f1d8b9a0b",
+      "oldSample": "",
+      "newSample": "  {\n    type: 'function',\n    function: {\n      name: 'code_lint',\n      description:\n        'Executa ESLint em um arquivo específico e retorna erros e warnings com linha, coluna e regra. ' +\n       ",
+      "description": "Insert 1096 bytes at offset 5326"
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~1253 character(s) in `backend/src/kloel/kloel-code-tools.definition.ts` (sub-line atomic edit, expansion 0.13× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

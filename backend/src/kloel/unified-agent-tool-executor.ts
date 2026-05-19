@@ -1,6 +1,5 @@
 import { Injectable, Optional } from '@nestjs/common';
 import { StructuredLogger } from '../logging/structured-logger';
-import OpenAI from 'openai';
 import { AuditService } from '../audit/audit.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { UnifiedAgentActionsService } from './unified-agent-actions.service';
@@ -17,9 +16,6 @@ export class UnifiedAgentToolExecutorService {
     private readonly actions: UnifiedAgentActionsService,
     private readonly prisma: PrismaService,
     private readonly auditService: AuditService,
-    private readonly openai: OpenAI | null,
-    private readonly primaryBrainModel: string,
-    private readonly fallbackBrainModel: string,
     @Optional() private readonly riskGate?: RiskGateService,
   ) {}
 
@@ -148,9 +144,9 @@ export class UnifiedAgentToolExecutorService {
         return this.actions.actionCreateFlowFromDescription(
           workspaceId,
           args,
-          this.openai,
-          this.primaryBrainModel,
-          this.fallbackBrainModel,
+          null,
+          'deepseek-v4-pro',
+          'deepseek-v4-flash',
         );
       case 'connect_whatsapp':
         return this.actions.actionConnectWhatsApp(workspaceId, args);

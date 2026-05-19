@@ -1,0 +1,80 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779230220083_00f87a65",
+  "ts": "2026-05-19T22:37:00.083Z",
+  "file": "backend/src/kloel/audio.service.ts",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "atomic_edit:replace_text",
+  "operator": "atomic_edit:replace_text",
+  "targetUnit": "text_span",
+  "intention": "atomic_edit:replace_text",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 236,
+    "lineRewriteSurfaceChars": 95,
+    "expansionFactorAvoided": 0.4,
+    "bytesNet": 141,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "53ebb811365171ea1c18eba9a464a85e221649a6251d6cb9eea02e974e88a005",
+  "proposedSha256": "53ebb811365171ea1c18eba9a464a85e221649a6251d6cb9eea02e974e88a005",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- backend/src/kloel/audio.service.ts (atomic char-level)\u001b[0m\n    ) {\n      this.openai = new OpenAI({\n        apiKey: this.config.get<string>('\u001b[32m{+DEEPSEEK_API_KEY') || this.config.get<string>('+}\u001b[0mOPENAI_API_KEY'),\u001b[32m{+\n        baseURL: this.config.get<string>('DEEPSEEK_BASE_URL') || 'https://api.deepseek.com/v1',+}\u001b[0m\n      });\n    }",
+  "preservedZones": [
+    {
+      "kind": "prefix_preserved",
+      "description": "Bytes 0–1212 — prefix preserved unchanged",
+      "byteStart": 0,
+      "byteEnd": 1213,
+      "byteLength": 1213,
+      "beforeHash": "ea42719c9c05c7186bf8404266c385435d0a4ed34bf946fa466272df45b9fd6a",
+      "afterHash": "ea42719c9c05c7186bf8404266c385435d0a4ed34bf946fa466272df45b9fd6a",
+      "sample": "ce,\n  ) {\n    this.openai = new OpenAI({\n      apiKey: this.config.get<string>('"
+    },
+    {
+      "kind": "suffix_preserved",
+      "description": "Bytes 1229–11460 — suffix preserved unchanged",
+      "byteStart": 1229,
+      "byteEnd": 11461,
+      "byteLength": 10232,
+      "beforeHash": "f60514b8213a06d7eb14d4bc2b2b3500def8aec8a521715d2121c42cbf2624dc",
+      "afterHash": "f60514b8213a06d7eb14d4bc2b2b3500def8aec8a521715d2121c42cbf2624dc",
+      "sample": ",\n    });\n  }\n\n  private estimateTextTokens(...chunks: Array<string | undefined>"
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "byteStart": 1213,
+      "byteEnd": 1229,
+      "newByteLength": 157,
+      "oldTextHash": "77cf171b54c6ad0630e85054c8ac511dcc7fdbd42be5e695d6b73aed7f161349",
+      "newTextHash": "66d1657880483f9cc6415319971171be06c04a3ca8b1df1276e3031b213e4796",
+      "oldSample": "OPENAI_API_KEY')",
+      "newSample": "DEEPSEEK_API_KEY') || this.config.get<string>('OPENAI_API_KEY'),\n      baseURL: this.config.get<string>('DEEPSEEK_BASE_URL') || 'https://api.deepseek.com/v1'",
+      "description": "Replace 16 bytes at offset 1213 with 157 bytes"
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit:replace_text` changed ~236 character(s) in `backend/src/kloel/audio.service.ts` (sub-line atomic edit, expansion 0.4× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

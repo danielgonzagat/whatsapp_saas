@@ -30,7 +30,8 @@ export class AudioService {
     @Optional() private readonly opsAlert?: OpsAlertService,
   ) {
     this.openai = new OpenAI({
-      apiKey: this.config.get<string>('OPENAI_API_KEY'),
+      apiKey: this.config.get<string>('DEEPSEEK_API_KEY') || this.config.get<string>('OPENAI_API_KEY'),
+      baseURL: this.config.get<string>('DEEPSEEK_BASE_URL') || 'https://api.deepseek.com/v1',
     });
   }
 

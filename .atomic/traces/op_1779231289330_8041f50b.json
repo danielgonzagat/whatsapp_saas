@@ -1,0 +1,80 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779231289330_8041f50b",
+  "ts": "2026-05-19T22:54:49.330Z",
+  "file": "backend/src/kloel/kloel-tool-dispatcher.service.ts",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "targetUnit": "text_span",
+  "intention": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 522,
+    "lineRewriteSurfaceChars": 189,
+    "expansionFactorAvoided": 0.36,
+    "bytesNet": 333,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "bb5970d44d699e8e61a34fe3104112347807b45f6446553fabfb72ee26e1753d",
+  "proposedSha256": "bb5970d44d699e8e61a34fe3104112347807b45f6446553fabfb72ee26e1753d",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- backend/src/kloel/kloel-tool-dispatcher.service.ts (atomic char-level)\u001b[0m\n              typeof args.scope === 'string' ? args.scope : undefined,\n            );\n  \u001b[32m{+        case 'code_lint':\n            return await this.codeToolsService.toolCodeLint(\n              typeof args.path === 'string' ? args.path : '',\n            );\n          case 'code_detect_issues':\n            return await this.codeToolsService.toolCodeDetectIssues(\n              typeof args.path === 'string' ? args.path : '',\n            );+}\u001b[0m\n          default:\n            return { success: false, error: `Ferramenta desconhecida: ${toolName}` };",
+  "preservedZones": [
+    {
+      "kind": "prefix_preserved",
+      "description": "Bytes 0–11579 — prefix preserved unchanged",
+      "byteStart": 0,
+      "byteEnd": 11580,
+      "byteLength": 11580,
+      "beforeHash": "9a6a605ad466ede4dbf59e47ba923526f5db032a23a7a4ad679e16f28058e835",
+      "afterHash": "9a6a605ad466ede4dbf59e47ba923526f5db032a23a7a4ad679e16f28058e835",
+      "sample": "  typeof args.scope === 'string' ? args.scope : undefined,\n          );\n        "
+    },
+    {
+      "kind": "suffix_preserved",
+      "description": "Bytes 11580–21818 — suffix preserved unchanged",
+      "byteStart": 11580,
+      "byteEnd": 21819,
+      "byteLength": 10239,
+      "beforeHash": "fee9f24e45753cb38f53f14a802a070b9ada6d283d604295f6fe1e86b7671958",
+      "afterHash": "fee9f24e45753cb38f53f14a802a070b9ada6d283d604295f6fe1e86b7671958",
+      "sample": "default:\n          return { success: false, error: `Ferramenta desconhecida: ${t"
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "byteStart": 11580,
+      "byteEnd": 11580,
+      "newByteLength": 333,
+      "oldTextHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "newTextHash": "443dd8bb9a0cd0437afbb83a818f55bd6cf989b31c588dad9991aca58e82f375",
+      "oldSample": "",
+      "newSample": "case 'code_lint':\n          return await this.codeToolsService.toolCodeLint(\n            typeof args.path === 'string' ? args.path : '',\n          );\n        case 'code_detect_issues':\n          retur",
+      "description": "Insert 333 bytes at offset 11580"
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~522 character(s) in `backend/src/kloel/kloel-tool-dispatcher.service.ts` (sub-line atomic edit, expansion 0.36× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}
