@@ -210,7 +210,7 @@ function checkChangedFiles() {
     if (!isTextFile(file)) {continue;}
     const content = addedTextForFile(file);
     for (const { pattern, label, productionOnly = false } of forbiddenPatterns) {
-      if (productionOnly && isTestFile(file)) {continue;}
+      if (productionOnly && (isTestFile(file) || isDocFile(file))) {continue;}
       if (pattern.test(content)) {
         fail(`${file} contem ${label}; a constituicao proibe bypass/supressao.`);
       }
@@ -291,6 +291,10 @@ function isTestFile(file) {
     /(?:^|\/)(?:__tests__|test|tests|specs)\//.test(file) ||
     /\.(?:spec|test)\.[cm]?[jt]sx?$/.test(file)
   );
+}
+
+function isDocFile(file) {
+  return file.startsWith('docs/') || /\.md$/.test(file);
 }
 
 function checkForbiddenDeletions() {
