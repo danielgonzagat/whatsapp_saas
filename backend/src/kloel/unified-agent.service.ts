@@ -4,7 +4,6 @@ import { StructuredLogger } from '../logging/structured-logger';
 import OpenAI from 'openai';
 import type { ChatCompletionMessageParam } from 'openai/resources/chat';
 import { PlanLimitsService } from '../billing/plan-limits.service';
-import { AuditService } from '../audit/audit.service';
 import { createTextLlmClient } from '../lib/llm-provider';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
 import { PrismaService } from '../prisma/prisma.service';
@@ -16,7 +15,6 @@ import { UnifiedAgentActionsService } from './unified-agent-actions.service';
 import { AgentRuntimeContextService } from './agent-runtime';
 import { AbiBuilderService } from './abi/abi-builder.service';
 import { validateAbiPayload } from './abi/abi-validator';
-import { RiskGateService } from './risk-class/risk-gate.service';
 export type { ToolArgs, ActionEntry } from './unified-agent.types';
 import type { ToolArgs, ActionEntry, PredecidedAction } from './unified-agent.types';
 import {
@@ -529,10 +527,6 @@ export class UnifiedAgentService {
         (result as Record<string, unknown>).executed === true)
     );
   }
-  private num(v: unknown, fb = 0): number {
-    const n = Number(v);
-    return Number.isFinite(n) ? Math.round(n) : fb;
-  }
   private async buildAgentRuntimeContext(params: {
     workspaceId: string;
     channel: string;
@@ -553,18 +547,5 @@ export class UnifiedAgentService {
     actions?: Array<{ toolName: string; success: boolean; result?: unknown }>;
   }): Promise<void> {
     await this.agentRuntime?.recordTurnOutcome(params);
-  }
-  private buildAgentToolEnvelope(params: { workspaceId: string; toolName: string }): {
-    id: string;
-    toolName: string;
-    allowed: boolean;
-  } {
-    return (
-      this.agentRuntime?.buildToolEnvelope(params) ?? {
-        id: 'agent-runtime-unavailable',
-        toolName: params.toolName,
-        allowed: true,
-      }
-    );
   }
 }
