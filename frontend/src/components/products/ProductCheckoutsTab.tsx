@@ -35,12 +35,16 @@ export function ProductCheckoutsTab({ productId }: { productId: string }) {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [checkoutPendingDelete, setCheckoutPendingDelete] = useState<Checkout | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
-  const [isOnline, setIsOnline] = useState(true);
+  const [isOnline, setIsOnline] = useState(() =>
+    typeof window === 'undefined' ? true : window.navigator.onLine,
+  );
 
   const fetch_ = useCallback(() => {
-    setLoadError(null);
     apiFetch<Checkout[]>(`/products/${productId}/checkouts`)
-      .then((r) => setItems(Array.isArray(r) ? r : []))
+      .then((r) => {
+        setLoadError(null);
+        setItems(Array.isArray(r) ? r : []);
+      })
       .catch((error: unknown) => {
         setItems([]);
         setLoadError(toCheckoutErrorMessage(error, CHECKOUT_TAB_COPY.loadError));
@@ -56,7 +60,6 @@ export function ProductCheckoutsTab({ productId }: { productId: string }) {
       return;
     }
     const syncNetworkState = () => setIsOnline(window.navigator.onLine);
-    syncNetworkState();
     window.addEventListener('online', syncNetworkState);
     window.addEventListener('offline', syncNetworkState);
     return () => {
