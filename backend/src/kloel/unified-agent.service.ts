@@ -414,7 +414,7 @@ export class UnifiedAgentService {
         }
         let toolArgs: Record<string, unknown> = {};
         try {
-          toolArgs = JSON.parse(toolCall.function.arguments || '{}');
+          toolArgs = JSON.parse(toolCall.function.arguments || '{}') as Record<string, unknown>;
         } catch {
           this.logger.warn(`Failed to parse tool args for ${toolName}`);
         }
