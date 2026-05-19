@@ -6,48 +6,60 @@ import {
   ServiceUnavailableException,
   UseGuards,
 } from '@nestjs/common';
-import { ApiOperation, ApiTags } from '@nestjs/swagger';
-import OpenAI from 'openai';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { InternalEndpoint } from '../common/decorators/internal-endpoint.decorator';
+import { WorkspaceGuard } from '../common/guards/workspace.guard';
+import { RouteClass } from '../common/throttler/route-class.decorator';
+import { resolveBackendOpenAIModel } from '../lib/openai-models';
 
-/** Audio controller. */
-@ApiTags('audio')
+type AudioSynthesizeBody = {
+  text?: string;
+  voice?: string;
+};
+
+@ApiTags('Audio')
+@ApiBearerAuth()
 @Controller('audio')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, WorkspaceGuard)
+@RouteClass('ai')
 export class AudioController {
-  /** Synthesize. */
+  @InternalEndpoint('audio speech synthesis tool')
   @Post('synthesize')
-  @ApiOperation({
-    summary: 'Synthesizes speech from text via OpenAI TTS',
-    description:
-      'Converte texto em áudio usando a API OpenAI TTS. Requer OPENAI_API_KEY configurada no ambiente.',
-  })
-  async synthesize(
-    @Body() body: { text?: string; voice?: string; speed?: number; idempotencyKey?: string },
-  ) {
-    if (!body?.text || body.text.trim().length === 0) {
+  @ApiOperation({ summary: 'Synthesize speech from text' })
+  async synthesize(@Body() body: AudioSynthesizeBody | null) {
+    const text = String(body?.text ?? '').trim();
+    if (!text) {
       throw new BadRequestException('text é obrigatório');
     }
 
-    if (!process.env.OPENAI_API_KEY) {
-      throw new ServiceUnavailableException(
-        'TTS não configurado neste ambiente (OPENAI_API_KEY ausente)',
-      );
+    const apiKey = process.env.OPENAI_API_KEY?.trim();
+    if (!apiKey) {
+      throw new ServiceUnavailableException('TTS não configurado neste ambiente');
     }
 
-    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-    // tokenBudget: non-workspace context, budget tracked at caller level
-    const response = await openai.audio.speech.create({
-      model: 'tts-1',
-      voice: (body.voice as 'alloy' | 'echo' | 'fable' | 'onyx' | 'nova' | 'shimmer') || 'alloy',
-      input: body.text,
-      ...(typeof body.speed === 'number' ? { speed: body.speed } : {}),
+    const response = await fetch('https://api.openai.com/v1/audio/speech', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: resolveBackendOpenAIModel('audio_speech'),
+        voice: body?.voice || 'alloy',
+        input: text,
+      }),
+      signal: AbortSignal.timeout(60000),
     });
-    const buffer = Buffer.from(await response.arrayBuffer());
+
+    if (!response.ok) {
+      throw new ServiceUnavailableException('TTS indisponível neste momento');
+    }
+
+    const audio = Buffer.from(await response.arrayBuffer());
     return {
-      success: true,
-      audio: buffer.toString('base64'),
-      format: 'mp3',
+      contentType: response.headers.get('content-type') || 'audio/mpeg',
+      audioBase64: audio.toString('base64'),
     };
   }
 }

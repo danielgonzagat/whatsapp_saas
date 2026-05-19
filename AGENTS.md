@@ -293,68 +293,67 @@ O estado de rigor maximo do Codacy faz parte da governance.
 <claude-mem-context>
 # Memory Context
 
-# [whatsapp_saas] recent context, 2026-05-07 2:23pm GMT-3
+# [whatsapp_saas] recent context, 2026-05-12 1:28pm GMT-3
 
 Legend: 🎯session 🔴bugfix 🟣feature 🔄refactor ✅change 🔵discovery ⚖️decision
 Format: ID TIME TYPE TITLE
 Fetch details: get_observations([IDs]) | Search: mem-search skill
 
-Stats: 50 obs (22,031t read) | 2,420,326t work | 99% savings
+Stats: 50 obs (20,276t read) | 1,688,324t work | 99% savings
 
-### May 7, 2026
+### May 11, 2026
+1341 2:43p 🔵 Visual Diff (Chromium) CI Gate Failed — login-desktop 180px Diff + Chat Test Context Disposed
+1342 2:44p 🔴 Backend TypeScript Typecheck and Build Now Pass Clean — Zero Errors
+1343 2:45p 🔵 Working Railway CLI Deploy Command for Kloel Backend Service
+1345 2:47p 🔵 New PR Push Triggered Fresh CI Run — Visual Snapshot Baseline Fix Attempt
+1346 2:49p 🟣 Kloel Backend Successfully Deployed to Railway Production
+1347 2:50p 🔵 Worker Service Health Check Confirmed Healthy — Redis Connected, Autopilot Queue Active
+1348 " 🔴 WhatsAppProviderRegistry Added to WhatsappModule Exports
+1349 2:51p 🔴 Visual Baseline Updated — signup-mobile.png Snapshot Regenerated from CI Artifact
+1350 2:57p ⚖️ Kloel CIA v3 Execution Contract — Full Mission Definition Issued
+1351 " 🔵 PR #266 Gap Analysis — Foundation Delivered, Production State Not Reached
+1352 " 🔵 Baseline Lift Bug — outcome and baselineOutcome Always Equal, Lift Always Zero
+1353 " ⚖️ Email Channel Architecture Mandate — Per-Workspace OAuth Mailbox, Not Shared Sender
+1354 " 🔵 Meta OAuth Error Root Cause — 11-Step Diagnostic Tree Defined
+1355 2:58p 🔵 Fourth CI Push — New Run Group 25687403xxx, Both Vercel Deploys Passing, Visual Diff Still Pending After 300s
+1356 3:00p 🔵 CI Quality Job Failure — Prettier Lint Errors in 5 Backend Files on codex/pr266-exec Branch
+1357 " 🔵 Visual Diff CI Failure — login-mobile Playwright Snapshot Has 123 Pixel Mismatch on Linux
+1358 " 🔵 Worktree at /private/tmp/kloel-pr266-exec Has No node_modules — Fixed by Symlinking from Main Repo
+1359 " ✅ Worktree Branch Fast-Forward Merged to origin/main (v0.4.1) — PR #287 and #288 Now Incorporated
+1360 3:01p ⚖️ Railway Full Automation Mandate — Auto-Deploy on PR Merge + Production Perfection
+1361 3:02p 🔵 Backend Docker Build — 5 npm Vulnerabilities Found During Railway Deploy
+1362 " 🔵 Worktree Full npm ci Install — Node v25.9.0 Used Despite Package Engine Requiring Node 20.x
+1363 3:03p ⚖️ 4-Problem Production Fix Mandate Issued — Kloel Platform (Eighth Issuance)
+1364 " 🔴 Visual Baseline signup-tablet-visual-linux.png Updated on fix/quatro-problemas-producao
+1365 3:05p 🔵 CI Run 25680826106 — All Three Jobs Passed (quality, architecture, e2e) on main After v0.4.1 Merge
+1366 " 🔵 Auth Screen Decomposed into 5 New Files — Social Buttons, Icons, Hooks, Form Fields, and State Machine
+1367 " ✅ 51 Visual Regression Snapshots Updated in PR #266 — Login, Signup, Landing, Settings, KYC, and More
+1368 " ✅ Railway Backend Docker Image Built and Deployed — amd64/linux
+1369 3:06p 🔵 Kloel Backend Production Health — All Services UP After Deployment
+1370 " 🔵 Backend Production Logs — Two Residual Warnings After Clean Deploy
+1371 " 🔵 Worker Health Check — Redis Connected, 3 Delayed Autopilot Jobs in Queue
+1372 " 🔵 Backend Stack Architecture — Node 20, dd-trace, Prisma Auto-Migrate on Start
+1373 " 🔵 Backend npm Audit — 5 Vulnerabilities Fully Catalogued, All Fixable Without Breaking Changes
+1375 3:09p ✅ Backend Upgraded to Node 22, Firebase Warning Downgraded, npm Vulnerabilities Eliminated
+1376 " 🔴 ledger.service.ts — Missing Prisma Namespace Import Fixed (TS2503)
+1383 3:14p 🔴 Backend TypeScript Typecheck and Build Now Pass Clean — Zero Errors
+1384 " ✅ Railway Backend Redeployment Triggered — New Deployment a9f749e3 with Node 22 + Clean Build
+1385 3:15p 🔴 Visual Baseline signup-desktop-visual-linux.png Updated — Second Iteration
+1386 " 🔵 PR #289 CI State — Visual Baselines Cascading, Non-Visual Gates All Green
+1387 " 🔵 Worker `__companions__` Directory Excluded from TypeScript Compilation
+1388 " 🔵 fallback-email.helpers.ts and templates/fallback-email.html Deleted in Wave-14
+1389 " 🔵 Railway Worker Has Two Environment Deployments with Different Root Configs
+1390 " 🔵 PR266 Visual Regression Root Cause — macOS Snapshots Committed as Linux Baseline
+1391 " ✅ Deploy-Production Workflow Manually Re-Triggered — Run 25688283908
+1392 3:16p 🔵 Kilo Code Review Failing with Sandbox Infrastructure Error — Transient, Not Code Issue
+1406 3:25p 🔵 PR #289 CI Status — Most Checks Passing, Three Still In Progress
+1407 3:26p ⚖️ Railway Full Automation and Production Perfection Mandate Issued
+1412 3:30p 🔵 Kloel Backend and Worker Production Health Confirmed — Both Services UP
+1413 " 🔵 Backend Railway Deployment Startup Sequence — Full NestJS Boot Captured
+1414 " 🔵 Working Tree State — Branch chore/purga-total-debt Has ~160 Modified Files Pre-Commit
+1415 3:31p ⚖️ Kloel CIA v3 Execution Contract Re-Issued in New Session — Full Mandate Active
 
-325 12:47p 🟣 MIND Backend Test Suite — 94 Tests Passing Across 15 Suites Including All MIND Service Specs
-326 " 🟣 CIA Aggressiveness Decision Delegated to MIND — First Production Decision Type Migrated
-327 " 🟣 MIND Frontend Observability — mind-client.ts, useMind Hooks, MindDashboard, and /mente Route All Built and Passing
-328 " 🔴 React Compiler Memoization Errors Fixed in MindDashboard and MindBriefingCard
-329 " 🔴 mind-verbalizer.service.ts and mind.service.ts — @typescript-eslint/no-base-to-string Fixed with safeString() Helper
-330 " 🔵 ESLint Version Conflict — npx Fetches ESLint 10.x Which Crashes on Project's ESLint 9.x Config
-331 " 🔵 Full Scope of Changes on Branch codex/official-marketing-prod — 46 Files, Two Prisma Migrations, ~20 New Backend Files
-335 12:51p 🔴 mind-verbalizer.service.spec.ts Prettier Formatting Fixed via ESLint --fix
-336 " 🟣 MIND Backend Test Suite — 16 Suites, 99 Tests All Passing
-337 " 🟣 ESLint Clean Pass on All MIND Backend and Frontend Files
-338 " 🔵 Full Git Status of MIND Omnichannel Branch — 95 Files Changed or New
-339 " 🔵 Frontend Dev Server Running on Port 3001 — Port 3000 Already Occupied
-340 12:52p 🔵 Playwright E2E Audit Confirmed: Marketing Pages Clean, Login Missing Google Button Detection
-341 " 🔵 ThanosSection Canvas Particle System Already Implemented with 150 Particles per Icon
-342 " ✅ Auth Social Button Labels Localized to Portuguese — "Continuar com Google/Apple"
-343 12:53p 🔴 Login Page E2E Audit Confirmed: Google Detected, Apple Labeled in Portuguese, Facebook/TikTok Absent
-354 12:54p 🟣 Thanos Disintegration Animation Confirmed Live — Canvas Pixel Count Grows 0→15,550 Non-Blank Pixels
-355 " 🟣 Frontend Test Suite — 27 Tests Passing Including Auth, MIND Hooks, and Apple Start Route
-356 " 🔵 KloelMushroomVisual Uses /kloel-mushroom-animated.svg as Single Canonical Source
-365 12:59p 🔴 Frontend Test Suite — 27/27 Passing After KloelBrand and Auth Fixes
-366 " 🔵 Railway CLI Session Expired — Cannot Set Apple Auth Env Vars Without Re-Login
-367 " 🔵 Apple Auth Configuration — Service ID and Env Var Mapping Confirmed
-368 " 🔵 Git Working Tree Status — Full Scope of MIND Transformation Uncommitted
-369 " 🔵 KLOEL Brain Production Checklist — Current Completion State
-370 1:00p ✅ Delivery Report Created — KLOEL_MIND_OMNICHANNEL_DELIVERY_REPORT.md
-371 " ✅ Security Scan Confirms No Secrets in Codebase Diff
-372 1:02p ⚖️ Railway API Authentication Strategy — Use Env File Keys, Research Correct Call Pattern
-373 " ⚖️ KLOEL MIND Omnichannel Full Platform Transformation Mandate v9 — Autonomous Execution Contract
-378 1:04p 🔵 WORKSPACE GATE — CLAUDE.md and AGENTS.md Protected from Shell Read via sed
-379 " 🔵 Working Tree Inventory — Branch codex/official-marketing-prod Has Massive MIND + Marketing Changes
-380 1:05p 🔵 Railway MCP Token Configuration Gap — RAILWAY_TOKEN Present But MCP Requires configure_api_token Call
-381 " 🔵 Env File Topology — All Production Secrets Confirmed Across Multiple .env Files
-386 1:07p 🔵 Railway GraphQL API — Correct Variable Mutation Input Schemas Confirmed
-387 " 🟣 OpenCode Subagent Server Started on Port 4096 for Parallel Subagent Orchestration
-388 " 🟣 10 Parallel OpenCode Subagents Launched for Full-Scope Audit Wave
-390 1:08p 🔵 Apple Auth Env Var Resolution Chain — backend/src/auth/apple-auth.service.ts
-391 " 🔵 Meta Per-Channel Config ID Env Var Mapping and TikTok Technical Leakage in MarketingView
-393 " 🔴 TikTok Marketing UI — Technical Identifiers and Env Var Names Removed from Operator Screen
-394 " 🟣 Railway Backend Production Variables Bulk Upsert — MIND + Meta + TikTok Config Vars
-414 1:15p 🔴 WhatsAppExperience ConnectedCelebration — Raw Unicode Checkmark Replaced with Lucide Icon
-415 " ✅ KLOEL_MIND_OMNICHANNEL_DELIVERY_REPORT.md — Blocker List Reduced and Railway API Status Updated
-416 " 🔵 Frontend Validation — TypeCheck Clean, 27 Tests Passing Across 4 Critical Suites
-417 1:16p 🔵 Backend Build + Mind/Brain Test Suite — 20 Suites, 123 Tests All Passing
-418 " 🔵 MIND Decision Types — Both `cia_aggressiveness` and `followup_timing` Are Real, Distinct Decision Types
-419 " 🔵 Pre-Commit Hook Blocks Commit — 6 Architecture Violations in 109-File Staged Changeset
-430 1:19p 🔵 MIND Module Complete File Inventory — 17 Backend Services + 4 Admin + Frontend Hooks Verified
-431 " 🔵 Apple Service ID `com.kloel.web` — Only in Test Fixtures, Never in Production Code
-432 " 🔴 admin-mind.service.ts Trailing Whitespace Fixed — git diff --check Now Passes
-433 " 🔵 Frontend-Admin Also Uses Canonical Mushroom SVG — 3 References Found
-434 " 🔵 Pre-Commit Architecture Gate Flags `expect.any()` as Explicit Any — False Positive Pattern
-
-Access 2420k tokens of past work via get_observations([IDs]) or mem-search skill.
+Access 1688k tokens of past work via get_observations([IDs]) or mem-search skill.
 </claude-mem-context>
 
 ## PULSE Auditor Immutability

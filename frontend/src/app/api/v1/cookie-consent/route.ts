@@ -130,7 +130,7 @@ async function callConsentUpstream({ baseUrl, method, headers, body }: ConsentUp
     const response = await fetch(`${baseUrl}/api/v1/cookie-consent`, {
       method,
       headers,
-      body: body ? JSON.stringify(body) : undefined,
+      ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
       cache: 'no-store',
     });
 
@@ -157,7 +157,7 @@ async function fetchBackendConsent(
   );
 
   return findFirstSequential(getBackendCandidateUrls(), (baseUrl) =>
-    callConsentUpstream({ baseUrl, method, headers, body }),
+    callConsentUpstream({ baseUrl, method, headers, ...(body !== undefined ? { body } : {}) }),
   );
 }
 

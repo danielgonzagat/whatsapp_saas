@@ -27,7 +27,7 @@ function normalizeConsent(
     necessary: true,
     analytics: Boolean(input.analytics),
     marketing: Boolean(input.marketing),
-    updatedAt: input.updatedAt,
+    ...(input.updatedAt !== undefined ? { updatedAt: input.updatedAt } : {}),
   };
 }
 
@@ -201,7 +201,7 @@ export function CookieProvider({ children }: CookieProviderProps) {
           color: ${COOKIE_TOKENS.silver};
           background: ${COOKIE_TOKENS.buttonBg};
           border: none;
-          border-radius: 999px;
+          border-radius: 16px;
           padding: 13px 26px;
           cursor: pointer;
           transition: background 0.15s ease;
@@ -286,7 +286,7 @@ export function CookieProvider({ children }: CookieProviderProps) {
           color: ${COOKIE_TOKENS.onAccent};
           background: ${COOKIE_TOKENS.ember};
           border: none;
-          border-radius: 999px;
+          border-radius: 16px;
           padding: 14px 0;
           cursor: pointer;
           transition: background 0.15s ease;

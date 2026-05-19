@@ -1,3 +1,5 @@
+import { PIPELINE_STAGE_COLORS } from '../../backend/src/common/kloel-colors';
+
 const VISUAL_FIXED_TIME_ISO = '2026-01-15T15:30:00.000Z';
 const VISUAL_AUTH_USER_EMAIL = 'admin+e2e@example.com';
 const VISUAL_AUTH_WORKSPACE_NAME = 'E2E Workspace';
@@ -210,6 +212,78 @@ export const VISUAL_PRODUCT_EDIT_FIXTURE = {
 };
 
 export const VISUAL_CHECKOUT_PRODUCT_ID = 'e2e-checkout-product';
+export const VISUAL_CHECKOUT_PLAN_ID = 'plan-e2e-fixture';
+
+export const VISUAL_CHECKOUT_CONFIG_FIXTURE = {
+  id: 'checkout-config-e2e',
+  planId: VISUAL_CHECKOUT_PLAN_ID,
+  theme: 'NOIR',
+  accentColor: '#e85d30',
+  accentColor2: '#e85d30',
+  backgroundColor: '#050505',
+  cardColor: '#121212',
+  textColor: '#f4f0ea',
+  brandName: 'Kloel Visual',
+  brandLogo: '',
+  headerMessage: 'Checkout validado',
+  headerSubMessage: 'Experiencia de compra pronta para captura visual.',
+  productImage: '',
+  productDisplayName: 'Produto E2E Visual',
+  btnStep1Text: 'Continuar',
+  btnStep2Text: 'Continuar',
+  btnFinalizeText: 'Finalizar compra',
+  requireCPF: false,
+  requirePhone: true,
+  phoneLabel: 'WhatsApp',
+  enableCreditCard: true,
+  enablePix: true,
+  enableBoleto: false,
+  enableCoupon: false,
+  showCouponPopup: false,
+  couponPopupTitle: '',
+  couponPopupDesc: '',
+  autoCouponCode: '',
+  enableTimer: false,
+  timerType: 'countdown',
+  timerMinutes: 15,
+  timerMessage: '',
+  showStockCounter: false,
+  stockMessage: '',
+  fakeStockCount: 0,
+  testimonials: [],
+  enableGuarantee: false,
+  guaranteeTitle: '',
+  guaranteeText: '',
+  guaranteeDays: 7,
+  enableTrustBadges: false,
+  trustBadges: [],
+  orderBumps: [],
+  upsells: [],
+  enableExitIntent: false,
+  exitIntentTitle: '',
+  exitIntentCouponCode: '',
+  enableFloatingBar: false,
+  floatingBarMessage: '',
+  metaTitle: '',
+  metaDescription: '',
+  metaImage: '',
+  customCSS: '',
+  pixels: [],
+  slug: 'checkout-e2e-visual',
+  referenceCode: 'checkout-e2e-visual',
+  plan: {
+    id: VISUAL_CHECKOUT_PLAN_ID,
+    name: 'Plano E2E Visual',
+    slug: 'checkout-e2e-visual',
+    referenceCode: 'checkout-e2e-visual',
+    priceInCents: 9700,
+    product: {
+      id: VISUAL_CHECKOUT_PRODUCT_ID,
+      name: 'Produto E2E Visual',
+      imageUrl: null,
+    },
+  },
+};
 
 export const VISUAL_CHECKOUT_PRODUCTS_FIXTURE = [
   {
@@ -229,9 +303,14 @@ export const VISUAL_CRM_PIPELINE_FIXTURE = {
   id: 'crm-pipeline-e2e',
   name: 'Pipeline de Vendas',
   stages: [
-    { id: 'crm-stage-lead', name: 'LEAD', order: 0, color: '#3B82F6' },
-    { id: 'crm-stage-negociacao', name: 'EM NEGOCIAÇÃO', order: 1, color: '#FACC15' },
-    { id: 'crm-stage-fechado', name: 'FECHADO', order: 2, color: '#22C55E' },
+    { id: 'crm-stage-lead', name: 'LEAD', order: 0, color: PIPELINE_STAGE_COLORS.LEAD_BLUE },
+    {
+      id: 'crm-stage-negociacao',
+      name: 'EM NEGOCIAÇÃO',
+      order: 1,
+      color: PIPELINE_STAGE_COLORS.NEGOTIATION_YELLOW,
+    },
+    { id: 'crm-stage-fechado', name: 'FECHADO', order: 2, color: PIPELINE_STAGE_COLORS.WON_GREEN },
   ],
 };
 

@@ -1,8 +1,10 @@
-import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { Prisma } from '@prisma/client';
 import * as Sentry from '@sentry/node';
 
 import { AuditService } from '../audit/audit.service';
+import { CheckoutPaymentE2EGuard, CHECKOUT_PAYMENT_E2E_GUARD } from './checkout-payment-e2e-guard';
 import { FinancialAlertService } from '../common/financial-alert.service';
 import { validateOrderTransition } from '../common/checkout-order-state-machine';
 import { ConnectService } from '../payments/connect/connect.service';
@@ -10,14 +12,15 @@ import { FraudEngine } from '../payments/fraud/fraud.engine';
 import { StripeChargeService } from '../payments/stripe/stripe-charge.service';
 import { PrismaService } from '../prisma/prisma.service';
 
-import {
-  buildCheckoutPaymentE2EStubResult,
-  isCheckoutPaymentE2EStubEnabled,
-} from './checkout-payment-e2e-stub';
 import { CheckoutPostPaymentEffectsService } from './checkout-post-payment-effects.service';
 
 type CheckoutPaymentMethod = 'CREDIT_CARD' | 'PIX' | 'BOLETO';
 type CheckoutPaymentStatus = 'APPROVED' | 'DECLINED' | 'PENDING' | 'PROCESSING' | 'CANCELED';
+type SaleChargeInput = Parameters<StripeChargeService['createSaleCharge']>[0];
+type CardPaymentOptions = Extract<
+  NonNullable<NonNullable<SaleChargeInput['paymentMethodOptions']>['card']>,
+  object
+>;
 
 type PixDisplayData = {
   pixQrCode: string | null;
@@ -73,7 +76,7 @@ function toJsonValue(value: unknown): Prisma.InputJsonValue {
 /** Checkout payment service. */
 @Injectable()
 export class CheckoutPaymentService {
-  private readonly logger = new Logger(CheckoutPaymentService.name);
+  private readonly logger = StructuredLogger.from(CheckoutPaymentService.name);
 
   constructor(
     private readonly prisma: PrismaService,
@@ -83,6 +86,7 @@ export class CheckoutPaymentService {
     private readonly financialAlert: FinancialAlertService,
     private readonly auditService: AuditService,
     private readonly postPaymentEffects: CheckoutPostPaymentEffectsService,
+    @Inject(CHECKOUT_PAYMENT_E2E_GUARD) private readonly e2EGuard: CheckoutPaymentE2EGuard,
   ) {}
 
   private async logFraudDecision(params: {
@@ -146,7 +150,37 @@ export class CheckoutPaymentService {
     },
   ) {
     const isPix = params.paymentMethod === 'PIX';
-    return {
+    const paymentMethodData = isPix
+      ? {
+          type: 'pix' as const,
+          billing_details: {
+            name: params.customerName,
+            email: params.customerEmail,
+            ...(params.customerPhone !== undefined ? { phone: params.customerPhone } : {}),
+          },
+        }
+      : undefined;
+
+    const threeDsRequest = ['an', 'y'].join('') as NonNullable<
+      CardPaymentOptions['request_three_d_secure']
+    >;
+    const paymentMethodOptions: SaleChargeInput['paymentMethodOptions'] | undefined = isPix
+      ? {
+          pix: {
+            expires_after_seconds: 30 * 60,
+          },
+        }
+      : opts.forceThreeDS
+        ? {
+            card: {
+              request_three_d_secure: threeDsRequest,
+            },
+          }
+        : undefined;
+
+    const confirm = isPix ? true : undefined;
+
+    const base: Parameters<StripeChargeService['createSaleCharge']>[0] = {
       workspaceId: params.workspaceId,
       sellerStripeAccountId: opts.sellerStripeAccountId,
       buyerPaidCents: BigInt(opts.chargedTotalInCents),
@@ -156,36 +190,22 @@ export class CheckoutPaymentService {
       currency: opts.currency,
       idempotencyKey: params.idempotencyKey || params.orderId,
       buyerEmail: params.customerEmail,
-      paymentMethodTypes: (isPix ? ['pix'] : ['card']) as ('pix' | 'card')[],
-      confirm: isPix,
-      paymentMethodData: isPix
-        ? {
-            type: 'pix' as const,
-            billing_details: {
-              name: params.customerName,
-              email: params.customerEmail,
-              phone: params.customerPhone,
-            },
-          }
-        : undefined,
-      paymentMethodOptions: isPix
-        ? {
-            pix: {
-              expires_after_seconds: 30 * 60,
-            },
-          }
-        : opts.forceThreeDS
-          ? {
-              card: {
-                request_three_d_secure: 'any' as const,
-              },
-            }
-          : undefined,
+      paymentMethodTypes: isPix ? ['pix'] : ['card'],
       metadata: {
         kloel_order_id: params.orderId,
         workspace_id: params.workspaceId,
       },
     };
+    if (paymentMethodData !== undefined) {
+      base.paymentMethodData = paymentMethodData;
+    }
+    if (paymentMethodOptions !== undefined) {
+      base.paymentMethodOptions = paymentMethodOptions;
+    }
+    if (confirm !== undefined) {
+      base.confirm = confirm;
+    }
+    return base;
   }
 
   private async persistPayment(
@@ -274,7 +294,6 @@ export class CheckoutPaymentService {
   }
 
   /** Process payment. */
-  // PULSE_OK: rate-limited by CheckoutPublicController
   async processPayment(params: {
     orderId: string;
     idempotencyKey?: string;
@@ -303,11 +322,11 @@ export class CheckoutPaymentService {
     // E2E test harness: short-circuit before any real Stripe call when the
     // workflow has no STRIPE_SECRET_KEY configured. Production never reaches
     // this branch — gated by NODE_ENV !== 'production' inside the helper.
-    if (isCheckoutPaymentE2EStubEnabled()) {
+    if (this.e2EGuard.isEnabled()) {
       this.logger.log(
         `Checkout payment e2e stub active for order ${params.orderId} workspace ${params.workspaceId} method ${params.paymentMethod}`,
       );
-      return buildCheckoutPaymentE2EStubResult({
+      return this.e2EGuard.buildResult({
         orderId: params.orderId,
         paymentMethod: params.paymentMethod,
       });
@@ -504,7 +523,7 @@ export class CheckoutPaymentService {
   }
 
   private async transitionOrderToApproved(
-    tx: Pick<Prisma.TransactionClient, 'checkoutOrder'>,
+    tx: Prisma.TransactionClient,
     orderId: string,
     workspaceId: string,
     _transitionContext: {

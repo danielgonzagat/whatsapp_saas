@@ -2,8 +2,10 @@ import { readFileSync } from 'node:fs';
 import { createConnection } from 'node:net';
 import { connect as tlsConnect } from 'node:tls';
 import { join } from 'node:path';
-import { Injectable, Logger, Optional } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { OpsAlertService } from '../observability/ops-alert.service';
+import { PrismaService } from '../prisma/prisma.service';
 import { getTraceHeaders } from '../common/trace-headers';
 import { escapeHtml } from '../common/utils/html-escape.util';
 import {
@@ -61,11 +63,26 @@ const TEMPLATE_CACHE: Readonly<Record<TemplateName, string>> = (() => {
  */
 @Injectable()
 export class EmailService {
-  private readonly logger = new Logger(EmailService.name);
+  private readonly logger = StructuredLogger.from(EmailService.name);
   private readonly fromEmail = process.env.EMAIL_FROM || 'noreply@kloel.com';
 
-  constructor(@Optional() private readonly opsAlert?: OpsAlertService) {
-    this.logger.log(`EmailService initialized with provider: ${this.getProvider()}`);
+  constructor(
+    @Optional() private readonly opsAlert?: OpsAlertService,
+    @Optional() private readonly prismaService?: PrismaService,
+  ) {
+    const provider = this.getProvider();
+    this.logger.log(`EmailService initialized with provider: ${provider}`);
+
+    if (this.prismaService) {
+      this.prismaService.setCheckoutEmailSender(this.sendEmail.bind(this));
+    }
+
+    if (process.env.NODE_ENV === 'production' && provider === 'log') {
+      throw new Error(
+        'EmailService cannot start in production: no email provider configured. ' +
+          'Set one of: RESEND_API_KEY, SENDGRID_API_KEY, or SMTP_HOST (+ SMTP_PORT, SMTP_USER, SMTP_PASS).',
+      );
+    }
   }
 
   private getProvider(): 'resend' | 'sendgrid' | 'smtp' | 'log' {
@@ -165,10 +182,18 @@ export class EmailService {
     const subject = 'Bem-vindo ao KLOEL!';
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
     const html = this.renderTemplate('welcome', { agentName, workspaceName, frontendUrl });
-    const htmlWithUnsub = html + buildUnsubscribeFooterHtml({ email, workspaceId });
-    const headers = buildListUnsubscribeHeader({ email, workspaceId })
+    const htmlWithUnsub =
+      html +
+      buildUnsubscribeFooterHtml({ email, ...(workspaceId !== undefined ? { workspaceId } : {}) });
+    const headers = buildListUnsubscribeHeader({
+      email,
+      ...(workspaceId !== undefined ? { workspaceId } : {}),
+    })
       ? {
-          'List-Unsubscribe': buildListUnsubscribeHeader({ email, workspaceId }),
+          'List-Unsubscribe': buildListUnsubscribeHeader({
+            email,
+            ...(workspaceId !== undefined ? { workspaceId } : {}),
+          }),
           'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
         }
       : undefined;
@@ -189,10 +214,18 @@ export class EmailService {
     };
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
     const html = this.renderTemplate(template, { agentName, frontendUrl });
-    const htmlWithUnsub = html + buildUnsubscribeFooterHtml({ email, workspaceId });
-    const headers = buildListUnsubscribeHeader({ email, workspaceId })
+    const htmlWithUnsub =
+      html +
+      buildUnsubscribeFooterHtml({ email, ...(workspaceId !== undefined ? { workspaceId } : {}) });
+    const headers = buildListUnsubscribeHeader({
+      email,
+      ...(workspaceId !== undefined ? { workspaceId } : {}),
+    })
       ? {
-          'List-Unsubscribe': buildListUnsubscribeHeader({ email, workspaceId }),
+          'List-Unsubscribe': buildListUnsubscribeHeader({
+            email,
+            ...(workspaceId !== undefined ? { workspaceId } : {}),
+          }),
           'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
         }
       : undefined;
@@ -383,8 +416,11 @@ export class EmailService {
           await new Promise<void>((res, rej) => {
             socket.once('data', (data: Buffer) => {
               const resp = data.toString();
-              if (resp.startsWith('2')) res();
-              else rej(new Error(`SMTP DATA error: ${resp.trim()}`));
+              if (resp.startsWith('2')) {
+                res();
+              } else {
+                rej(new Error(`SMTP DATA error: ${resp.trim()}`));
+              }
             });
           });
           await sendCmd('QUIT');

@@ -56,7 +56,7 @@ function collectFiles(dir, exts = ['.tsx', '.ts'], exclude = []) {
   try {
     for (const entry of readdirSync(dir, { withFileTypes: true })) {
       const full = join(dir, entry.name);
-      if (exclude.some((e) => full.includes(e))) continue;
+      if (exclude.some((e) => full.includes(e))) {continue;}
       if (entry.isDirectory()) {
         results.push(...collectFiles(full, exts, exclude));
       } else if (exts.some((e) => full.endsWith(e))) {
@@ -74,9 +74,9 @@ function needsHexFix(content) {
 }
 
 function addColorsImport(content) {
-  if (content.includes("from '@/lib/design-tokens'")) return content;
-  if (content.includes('from "@/lib/design-tokens"')) return content;
-  if (content.includes("from '~/lib/design-tokens'")) return content;
+  if (content.includes("from '@/lib/design-tokens'")) {return content;}
+  if (content.includes('from "@/lib/design-tokens"')) {return content;}
+  if (content.includes("from '~/lib/design-tokens'")) {return content;}
 
   // Insert after last import line
   const lines = content.split('\n');
@@ -200,7 +200,7 @@ function processFile(filepath) {
     let content = readFileSync(filepath, 'utf8');
     const original = content;
 
-    if (!needsHexFix(content)) return { file: filepath, changed: false };
+    if (!needsHexFix(content)) {return { file: filepath, changed: false };}
 
     // Step 1: Replace tailwind className hex values with CSS vars
     content = replaceHexInTailwind(content);

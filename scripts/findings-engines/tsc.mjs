@@ -40,7 +40,7 @@ const DIAG_RE = /^(.+?)\((\d+),(\d+)\):\s+(error|warning|message)\s+TS(\d+):\s+(
  */
 function categoryFromCode(tsCode) {
   const n = parseInt(tsCode, 10);
-  if (n >= 1000 && n <= 1999) return 'syntax';
+  if (n >= 1000 && n <= 1999) {return 'syntax';}
   return 'type';
 }
 
@@ -91,7 +91,7 @@ function normalizePath(rawPath, workspacePrefix) {
  */
 function parseLine(line, workspacePrefix) {
   const match = line.match(DIAG_RE);
-  if (!match) return null;
+  if (!match) {return null;}
 
   const [, rawPath, lineStr, colStr, keyword, tsCode, message] = match;
   const file = normalizePath(rawPath, workspacePrefix);
@@ -137,7 +137,7 @@ function runTsc({ project, prefix }) {
     const findings = [];
     const lines = stdout.split('\n');
     for (const line of lines) {
-      if (!line.trim()) continue;
+      if (!line.trim()) {continue;}
       const finding = parseLine(line, prefix);
       if (finding) {
         findings.push(finding);
@@ -151,7 +151,7 @@ function runTsc({ project, prefix }) {
       const findings = [];
       const lines = err.stdout.split('\n');
       for (const line of lines) {
-        if (!line.trim()) continue;
+        if (!line.trim()) {continue;}
         const finding = parseLine(line, prefix);
         if (finding) {
           findings.push(finding);

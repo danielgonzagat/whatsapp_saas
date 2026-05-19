@@ -1,23 +1,55 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { Prisma } from '@prisma/client';
 import { filterLegacyProducts } from '../common/products/legacy-products.util';
 import { PrismaService } from '../prisma/prisma.service';
 import { SmartPaymentService } from './smart-payment.service';
+import {
+  AgentRuntimeSchedulerService,
+  AgentRuntimeEvidenceStoreService,
+  AgentRuntimeSessionStore,
+  AgentRuntimeSkillRegistry,
+} from './agent-runtime';
+import {
+  type ToolResult,
+  type ToolUpsertAgentSkillArgs,
+  type ToolRecordAgentSkillOutcomeArgs,
+  type ToolRecordAgentDelegationArgs,
+  type ToolRecordAgentEvidenceArgs,
+  type ToolSearchAgentEvidenceArgs,
+  type ToolListAgentEvidenceArgs,
+  runUpsertAgentSkill,
+  runRecordAgentSkillOutcome,
+  runRecordAgentDelegation,
+  runRecordAgentEvidence,
+  runSearchAgentEvidence,
+  runListAgentEvidence,
+  runVerifyAgentEvidence,
+} from './kloel-chat-tools.agent-runtime.helpers';
+import {
+  type ToolCreateAgentJobArgs,
+  type ToolGetAgentArtifactArgs,
+  type ToolSearchAgentMemoryArgs,
+  type ToolSearchAgentSessionsArgs,
+  type ToolSetAgentJobEnabledArgs,
+  runCreateAgentJob,
+  runGetAgentArtifact,
+  runListAgentJobs,
+  runSearchAgentMemory,
+  runSearchAgentSessions,
+  runSetAgentJobEnabled,
+} from './kloel-chat-tools.agent-jobs.helpers';
 
 const NON_SLUG_CHAR_RE = /[^a-z0-9_:-]+/g;
 
 function safeStr(value: unknown, fallback = ''): string {
-  if (typeof value === 'string') return value;
-  if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+  if (typeof value === 'string') {
+    return value;
+  }
+  if (typeof value === 'number' || typeof value === 'boolean') {
+    return String(value);
+  }
   return fallback;
-}
-
-/** Generic tool result shape. */
-interface ToolResult {
-  success: boolean;
-  message?: string;
-  error?: string;
-  [key: string]: unknown;
 }
 
 interface ToolSaveProductArgs {
@@ -40,6 +72,13 @@ interface ToolSetBrandVoiceArgs {
   personality?: string;
 }
 
+interface ToolSetSalesPolicyArgs {
+  aggressiveness?: string;
+  tone?: string;
+  instructions?: string;
+  appliesTo?: string;
+}
+
 interface ToolRememberUserInfoArgs {
   key: string;
   value: string;
@@ -55,14 +94,28 @@ interface ToolDashboardSummaryArgs {
   period?: 'today' | 'week' | 'month';
 }
 
+function centsFromUnknown(value: unknown): number {
+  if (typeof value === 'bigint') {
+    return Number(value);
+  }
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return Math.trunc(value);
+  }
+  return 0;
+}
+
 /** Handles product, flow, dashboard, payment, and misc AI chat tools. */
 @Injectable()
 export class KloelChatToolsService {
-  private readonly logger = new Logger(KloelChatToolsService.name);
+  private readonly logger = StructuredLogger.from(KloelChatToolsService.name);
 
   constructor(
     private readonly prisma: PrismaService,
     private readonly smartPaymentService: SmartPaymentService,
+    @Optional() private readonly agentScheduler?: AgentRuntimeSchedulerService,
+    @Optional() private readonly agentSessions?: AgentRuntimeSessionStore,
+    @Optional() private readonly agentSkills?: AgentRuntimeSkillRegistry,
+    @Optional() private readonly agentEvidence?: AgentRuntimeEvidenceStoreService,
   ) {}
 
   async toolSaveProduct(workspaceId: string, args: ToolSaveProductArgs): Promise<ToolResult> {
@@ -103,7 +156,9 @@ export class KloelChatToolsService {
       where.name = { contains: productName, mode: 'insensitive' };
     }
     const product = await this.prisma.product.findFirst({ where: { ...where, workspaceId } });
-    if (!product) return { success: false, error: 'Produto não encontrado.' };
+    if (!product) {
+      return { success: false, error: 'Produto não encontrado.' };
+    }
 
     await this.prisma.$transaction(
       [
@@ -139,6 +194,12 @@ export class KloelChatToolsService {
       select: { providerSettings: true },
     });
     const currentSettings = (settingsSnapshot?.providerSettings as Record<string, unknown>) || {};
+    this.logger.log('Autopilot decision', {
+      context: 'KloelChatTools.toolToggleAutopilot',
+      decision: args.enabled ? 'enable' : 'disable',
+      billingSuspended: currentSettings.billingSuspended === true,
+    });
+
     if (args.enabled && currentSettings.billingSuspended === true) {
       return {
         success: false,
@@ -173,7 +234,6 @@ export class KloelChatToolsService {
     });
   }
 
-  // PULSE_OK: workspaceId validated by caller guard
   async toolSetBrandVoice(workspaceId: string, args: ToolSetBrandVoiceArgs): Promise<ToolResult> {
     await this.prisma.kloelMemory.upsert({
       where: { workspaceId_key: { workspaceId, key: 'brandVoice' } },
@@ -197,6 +257,57 @@ export class KloelChatToolsService {
     return { success: true, message: `Tom de voz definido como "${args.tone}"` };
   }
 
+  async toolSetSalesPolicy(
+    workspaceId: string,
+    args: ToolSetSalesPolicyArgs,
+    userId?: string,
+  ): Promise<ToolResult> {
+    const aggressiveness = safeStr(args.aggressiveness, 'balanced').trim().slice(0, 40);
+    const tone = safeStr(args.tone, '').trim().slice(0, 80);
+    const instructions = safeStr(args.instructions, '').trim().slice(0, 1000);
+    const appliesTo = safeStr(args.appliesTo, 'all').trim().slice(0, 120);
+
+    if (!aggressiveness && !tone && !instructions) {
+      return { success: false, error: 'missing_sales_policy_payload' };
+    }
+
+    const policy = {
+      aggressiveness: aggressiveness || 'balanced',
+      tone: tone || null,
+      instructions: instructions || null,
+      appliesTo: appliesTo || 'all',
+      updatedAt: new Date().toISOString(),
+      updatedByUserId: userId || null,
+    } satisfies Prisma.InputJsonObject;
+
+    await this.prisma.$transaction(async (tx) => {
+      const workspace = await tx.workspace.findUnique({
+        where: { id: workspaceId },
+        select: { providerSettings: true },
+      });
+      const settings = (workspace?.providerSettings as Record<string, unknown>) || {};
+      const autopilot = (settings.autopilot as Record<string, unknown>) || {};
+      await tx.workspace.update({
+        where: { id: workspaceId },
+        data: {
+          providerSettings: {
+            ...settings,
+            autopilot: {
+              ...autopilot,
+              salesPolicy: policy,
+            },
+          },
+        },
+      });
+    });
+
+    return {
+      success: true,
+      policy,
+      message: `Politica comercial atualizada: agressividade ${policy.aggressiveness}.`,
+    };
+  }
+
   async toolRememberUserInfo(
     workspaceId: string,
     args: ToolRememberUserInfoArgs,
@@ -208,7 +319,9 @@ export class KloelChatToolsService {
       .replace(NON_SLUG_CHAR_RE, '_')
       .slice(0, 80);
     const value = String(args?.value || '').trim();
-    if (!normalizedKey || !value) return { success: false, error: 'missing_user_memory_payload' };
+    if (!normalizedKey || !value) {
+      return { success: false, error: 'missing_user_memory_payload' };
+    }
 
     const profileKey = `user_profile:${userId || 'workspace_owner'}`;
     const existing = await this.prisma.kloelMemory.findUnique({
@@ -255,7 +368,6 @@ export class KloelChatToolsService {
     return { success: true, message: `Memória "${normalizedKey}" salva.` };
   }
 
-  // PULSE_OK: workspaceId validated by caller guard
   async toolCreateFlow(workspaceId: string, args: ToolCreateFlowArgs): Promise<ToolResult> {
     const nodes = [
       {
@@ -327,15 +439,50 @@ export class KloelChatToolsService {
         dateFilter = new Date();
         dateFilter.setHours(0, 0, 0, 0);
     }
-    const [contacts, messages, flows] = await Promise.all([
+    const [contacts, messages, flows, paidOrders, wallet] = await Promise.all([
       this.prisma.contact.count({ where: { workspaceId, createdAt: { gte: dateFilter } } }),
       this.prisma.message.count({ where: { workspaceId, createdAt: { gte: dateFilter } } }),
       this.prisma.flow.count({ where: { workspaceId, isActive: true } }),
+      this.prisma.checkoutOrder.aggregate({
+        where: { workspaceId, status: 'PAID', paidAt: { gte: dateFilter } },
+        _count: { _all: true },
+        _sum: { totalInCents: true },
+      }),
+      this.prisma.kloelWallet.findUnique({
+        where: { workspaceId },
+        select: {
+          availableBalanceInCents: true,
+          pendingBalanceInCents: true,
+          blockedBalanceInCents: true,
+        },
+      }),
     ]);
+    const revenueInCents = paidOrders._sum.totalInCents || 0;
+    const availableInCents = centsFromUnknown(wallet?.availableBalanceInCents);
+    const pendingInCents = centsFromUnknown(wallet?.pendingBalanceInCents);
+    const blockedInCents = centsFromUnknown(wallet?.blockedBalanceInCents);
+    const totalInCents = availableInCents + pendingInCents + blockedInCents;
     return {
       success: true,
       period,
-      stats: { newContacts: contacts, messages, activeFlows: flows },
+      stats: {
+        newContacts: contacts,
+        messages,
+        activeFlows: flows,
+        paidOrders: paidOrders._count._all,
+        revenueInCents,
+        revenue: revenueInCents / 100,
+        wallet: {
+          availableInCents,
+          pendingInCents,
+          blockedInCents,
+          totalInCents,
+          available: availableInCents / 100,
+          pending: pendingInCents / 100,
+          blocked: blockedInCents / 100,
+          total: totalInCents / 100,
+        },
+      },
     };
   }
 
@@ -343,6 +490,12 @@ export class KloelChatToolsService {
     workspaceId: string,
     args: { amount: number; description: string; customerName?: string },
   ): Promise<ToolResult> {
+    this.logger.log('Payment operation', {
+      context: 'KloelChatTools.toolCreatePaymentLink',
+      action: 'createSmartPayment',
+      amount: Number(args.amount) || 0,
+      hasDescription: !!args.description,
+    });
     const paymentResult = await this.smartPaymentService.createSmartPayment({
       workspaceId,
       amount: Number(args.amount) || 0,
@@ -351,5 +504,84 @@ export class KloelChatToolsService {
       phone: '',
     });
     return { success: true, ...paymentResult };
+  }
+
+  async toolCreateAgentJob(workspaceId: string, args: ToolCreateAgentJobArgs): Promise<ToolResult> {
+    return runCreateAgentJob(this.agentScheduler, workspaceId, args);
+  }
+
+  async toolListAgentJobs(workspaceId: string): Promise<ToolResult> {
+    return runListAgentJobs(this.agentScheduler, workspaceId);
+  }
+
+  async toolSetAgentJobEnabled(
+    workspaceId: string,
+    args: ToolSetAgentJobEnabledArgs,
+  ): Promise<ToolResult> {
+    return runSetAgentJobEnabled(this.agentScheduler, workspaceId, args);
+  }
+
+  async toolSearchAgentMemory(
+    workspaceId: string,
+    args: ToolSearchAgentMemoryArgs,
+  ): Promise<ToolResult> {
+    return runSearchAgentMemory(this.agentSessions, workspaceId, args);
+  }
+
+  async toolSearchAgentSessions(
+    workspaceId: string,
+    args: ToolSearchAgentSessionsArgs,
+  ): Promise<ToolResult> {
+    return runSearchAgentSessions(this.agentSessions, workspaceId, args);
+  }
+
+  async toolGetAgentArtifact(
+    workspaceId: string,
+    args: ToolGetAgentArtifactArgs,
+  ): Promise<ToolResult> {
+    return runGetAgentArtifact(this.prisma, workspaceId, args);
+  }
+
+  toolUpsertAgentSkill(workspaceId: string, args: ToolUpsertAgentSkillArgs): Promise<ToolResult> {
+    return runUpsertAgentSkill(this.agentSkills, workspaceId, args);
+  }
+
+  toolRecordAgentSkillOutcome(
+    workspaceId: string,
+    args: ToolRecordAgentSkillOutcomeArgs,
+  ): Promise<ToolResult> {
+    return runRecordAgentSkillOutcome(this.agentSkills, workspaceId, args);
+  }
+
+  toolRecordAgentDelegation(
+    workspaceId: string,
+    args: ToolRecordAgentDelegationArgs,
+  ): Promise<ToolResult> {
+    return runRecordAgentDelegation(this.agentSessions, workspaceId, args);
+  }
+
+  toolRecordAgentEvidence(
+    workspaceId: string,
+    args: ToolRecordAgentEvidenceArgs,
+  ): Promise<ToolResult> {
+    return runRecordAgentEvidence(this.agentEvidence, workspaceId, args);
+  }
+
+  toolSearchAgentEvidence(
+    workspaceId: string,
+    args: ToolSearchAgentEvidenceArgs,
+  ): Promise<ToolResult> {
+    return runSearchAgentEvidence(this.agentEvidence, workspaceId, args);
+  }
+
+  toolListAgentEvidence(
+    workspaceId: string,
+    args: ToolListAgentEvidenceArgs,
+  ): Promise<ToolResult> {
+    return runListAgentEvidence(this.agentEvidence, workspaceId, args);
+  }
+
+  toolVerifyAgentEvidence(workspaceId: string): Promise<ToolResult> {
+    return runVerifyAgentEvidence(this.agentEvidence, workspaceId);
   }
 }

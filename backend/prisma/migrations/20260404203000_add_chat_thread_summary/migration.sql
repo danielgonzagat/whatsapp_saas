@@ -23,8 +23,8 @@ CREATE TABLE IF NOT EXISTS "ChatMessage" (
 );
 
 -- CreateIndex
-CREATE INDEX IF NOT EXISTS "ChatThread_workspaceId_updatedAt_idx" ON "ChatThread"("workspaceId", "updatedAt");
-CREATE INDEX IF NOT EXISTS "ChatMessage_threadId_createdAt_idx" ON "ChatMessage"("threadId", "createdAt");
+CREATE INDEX IF NOT EXISTS "ChatThread_workspaceId_updatedAt_idx" ON "ChatThread" ("workspaceId", "updatedAt");
+CREATE INDEX IF NOT EXISTS "ChatMessage_threadId_createdAt_idx" ON "ChatMessage" ("threadId", "createdAt");
 
 -- AddForeignKey
 DO $$ BEGIN

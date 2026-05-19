@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import { PaymentsModule } from '../payments/payments.module';
 import { PrismaModule } from '../prisma/prisma.module';
+import { AppleLoginDiagnosticController } from './apple-login-diagnostic.controller';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { AppleAuthService } from './apple-auth.service';
@@ -22,17 +23,19 @@ import { getJwtExpiresIn, getJwtSecret } from './jwt-config';
     JwtModule.registerAsync({
       inject: [ConfigService],
       useFactory: (config: ConfigService) => {
-        const expiresIn = config.get<string>('JWT_EXPIRES_IN');
+        const expiresIn =
+          (config.get<string>('JWT_EXPIRES_IN') as ReturnType<typeof getJwtExpiresIn>) ??
+          getJwtExpiresIn();
         return {
           secret: String(config.get<string>('JWT_SECRET') || getJwtSecret()).trim(),
           signOptions: {
-            expiresIn: (expiresIn as ReturnType<typeof getJwtExpiresIn>) || getJwtExpiresIn(),
+            ...(expiresIn !== undefined ? { expiresIn } : {}),
           },
         };
       },
     }),
   ],
-  controllers: [AuthController],
+  controllers: [AuthController, AppleLoginDiagnosticController],
   providers: [
     AuthService,
     EmailService,

@@ -1,4 +1,5 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { DealStatus, Prisma } from '@prisma/client';
 import { forEachSequential } from '../common/async-sequence';
 import { PrismaService } from '../prisma/prisma.service';
@@ -146,7 +147,7 @@ export const PRESET_SEGMENTS = {
 /** Segmentation service. */
 @Injectable()
 export class SegmentationService {
-  private readonly logger = new Logger(SegmentationService.name);
+  private readonly logger = StructuredLogger.from(SegmentationService.name);
 
   constructor(private prisma: PrismaService) {}
 
@@ -231,24 +232,32 @@ export class SegmentationService {
     this.applyPipelineFilters(where, criteria);
 
     // Buscar contatos com critérios básicos
-    let contacts = await this.prisma.contact.findMany({
-      take: criteria.limit || 1000,
-      where: { ...where, workspaceId },
-      select: {
-        id: true,
-        phone: true,
-        name: true,
-        updatedAt: true,
-        deals: {
-          select: {
-            id: true,
-            value: true,
-            status: true,
-            createdAt: true,
+    let contacts: SegmentationContact[] = (
+      await this.prisma.contact.findMany({
+        take: criteria.limit || 1000,
+        where: { ...where, workspaceId },
+        select: {
+          id: true,
+          phone: true,
+          name: true,
+          updatedAt: true,
+          deals: {
+            select: {
+              id: true,
+              value: true,
+              status: true,
+              createdAt: true,
+            },
           },
         },
-      },
-    });
+      })
+    ).map((c) => ({
+      id: c.id,
+      phone: c.phone,
+      name: c.name,
+      updatedAt: c.updatedAt,
+      deals: c.deals,
+    }));
 
     // Filtros pós-query (histórico de compras)
     if (criteria.purchaseHistory) {
@@ -275,8 +284,8 @@ export class SegmentationService {
     return {
       contacts: contacts.map((c) => ({
         id: c.id,
-        phone: c.phone,
-        name: c.name || undefined,
+        phone: c.phone as string,
+        ...(c.name != null ? { name: c.name } : {}),
       })),
       total: contacts.length,
       criteria,
@@ -353,6 +362,54 @@ export class SegmentationService {
     ];
   }
 
+  private computeRecencyFactor(contact: { updatedAt: Date; createdAt: Date }): number {
+    const referenceDate =
+      contact.updatedAt instanceof Date
+        ? contact.updatedAt
+        : contact.createdAt instanceof Date
+          ? contact.createdAt
+          : new Date();
+    const daysSinceUpdate = Math.floor((Date.now() - referenceDate.getTime()) / 86400000);
+    return Math.max(0, 30 - daysSinceUpdate);
+  }
+
+  private computeFrequencyFactor(messages: Array<{ createdAt: Date }>): number {
+    const recentMessages = messages.filter((m) => {
+      const daysAgo = (Date.now() - m.createdAt.getTime()) / 86400000;
+      return daysAgo <= 30;
+    });
+    return Math.min(25, recentMessages.length * 2);
+  }
+
+  private computeResponseRateFactor(messages: Array<{ direction: string }>): number {
+    const outbound = messages.filter((m) => m.direction === 'OUTBOUND').length;
+    const inbound = messages.filter((m) => m.direction === 'INBOUND').length;
+    const responseRate = outbound > 0 ? inbound / outbound : 0;
+    return Math.min(25, responseRate * 25);
+  }
+
+  private computePurchaseValueFactor(
+    deals: Array<{ status: string; value: number | null }>,
+  ): number {
+    const totalPurchased = deals
+      .filter((d) => d.status === 'WON')
+      .reduce((sum, d) => sum + (d.value || 0), 0);
+    return Math.min(20, totalPurchased / 100);
+  }
+
+  private getEngagementLevel(score: number): 'hot' | 'warm' | 'cold' | 'ghost' {
+    if (score >= 60) {
+      return 'hot';
+    }
+    if (score >= 35) {
+      return 'warm';
+    }
+    if (score >= 15) {
+      return 'cold';
+    }
+    return 'ghost';
+  }
+
   /**
    * Calcula score de engajamento de um contato
    */
@@ -364,8 +421,6 @@ export class SegmentationService {
     level: 'hot' | 'warm' | 'cold' | 'ghost';
     factors: Record<string, number>;
   }> {
-    // Tenant-safe lookup: include workspaceId in the predicate so a foreign
-    // contactId from another workspace returns null instead of leaking data.
     const contactRow = await this.prisma.contact.findFirst({
       where: { id: contactId, workspaceId },
       include: { deals: true },
@@ -375,72 +430,30 @@ export class SegmentationService {
       return { score: 0, level: 'ghost', factors: {} };
     }
 
-    // Tenant-safe: scope conversation lookup to the contact's own workspaceId.
-    // Avoids relying on the implicit contactId relation as the only safety net.
     const conversations = await this.prisma.conversation.findMany({
       where: { contactId: contactRow.id, workspaceId: contactRow.workspaceId },
       include: {
-        messages: {
-          take: 20,
-          orderBy: { createdAt: 'desc' },
-        },
+        messages: { take: 20, orderBy: { createdAt: 'desc' } },
       },
     });
 
     const contact = { ...contactRow, conversations };
+    const allMessages = contact.conversations.flatMap((c) => c.messages);
 
     const factors: Record<string, number> = {};
-    let totalScore = 0;
+    factors.recency = this.computeRecencyFactor(contact);
+    factors.frequency = this.computeFrequencyFactor(allMessages);
+    factors.responseRate = this.computeResponseRateFactor(allMessages);
+    factors.purchaseValue = this.computePurchaseValueFactor(contact.deals);
 
-    // Fator 1: Recência (0-30 pontos) - usando updatedAt
-    const referenceDate =
-      contact.updatedAt instanceof Date
-        ? contact.updatedAt
-        : contact.createdAt instanceof Date
-          ? contact.createdAt
-          : new Date();
-    const daysSinceUpdate = Math.floor(
-      (Date.now() - referenceDate.getTime()) / (1000 * 60 * 60 * 24),
-    );
-    factors.recency = Math.max(0, 30 - daysSinceUpdate);
-    totalScore += factors.recency;
+    const totalScore =
+      factors.recency + factors.frequency + factors.responseRate + factors.purchaseValue;
 
-    // Fator 2: Frequência de mensagens (0-25 pontos)
-    const allMessages = contact.conversations.flatMap((c) => c.messages);
-    const recentMessages = allMessages.filter((m) => {
-      const daysAgo = (Date.now() - m.createdAt.getTime()) / (1000 * 60 * 60 * 24);
-      return daysAgo <= 30;
-    });
-    factors.frequency = Math.min(25, recentMessages.length * 2);
-    totalScore += factors.frequency;
-
-    // Fator 3: Taxa de resposta (0-25 pontos)
-    const outbound = allMessages.filter((m) => m.direction === 'OUTBOUND').length;
-    const inbound = allMessages.filter((m) => m.direction === 'INBOUND').length;
-    const responseRate = outbound > 0 ? inbound / outbound : 0;
-    factors.responseRate = Math.min(25, responseRate * 25);
-    totalScore += factors.responseRate;
-
-    // Fator 4: Valor de compras (0-20 pontos)
-    const totalPurchased = contact.deals
-      .filter((d) => d.status === 'WON')
-      .reduce((sum, d) => sum + (d.value || 0), 0);
-    factors.purchaseValue = Math.min(20, totalPurchased / 100);
-    totalScore += factors.purchaseValue;
-
-    // Determinar nível
-    let level: 'hot' | 'warm' | 'cold' | 'ghost';
-    if (totalScore >= 60) {
-      level = 'hot';
-    } else if (totalScore >= 35) {
-      level = 'warm';
-    } else if (totalScore >= 15) {
-      level = 'cold';
-    } else {
-      level = 'ghost';
-    }
-
-    return { score: Math.round(totalScore), level, factors };
+    return {
+      score: Math.round(totalScore),
+      level: this.getEngagementLevel(totalScore),
+      factors,
+    };
   }
 
   /**
@@ -464,8 +477,8 @@ export class SegmentationService {
 
     await forEachSequential(contacts, async (contact) => {
       const { level } = await this.calculateEngagementScore(contact.id, workspaceId);
-      results[level]++;
-      results.processed++;
+      results[level] += 1;
+      results.processed += 1;
     });
 
     this.logger.log(

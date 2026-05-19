@@ -13,7 +13,7 @@ import {
   discoverObservabilityFindingEventPatternsFromEvidence,
   discoverRuntimeFindingEventPatternsFromEvidence,
   discoverCheckerGapTypesFromEvidence,
-} from './dynamic-reality-kernel/__parts__/token-evidence';
+} from './dynamic-reality-kernel/token-evidence';
 
 export const SECURITY_FINDING_EVENT_KERNEL_GRAMMAR =
   discoverSecurityFindingEventPatternsFromEvidence();
@@ -79,3 +79,5 @@ export const RUNTIME_FINDING_EVENT_KERNEL_GRAMMAR =
   discoverRuntimeFindingEventPatternsFromEvidence();
 
 export const CHECKER_GAP_TYPES = discoverCheckerGapTypesFromEvidence() as Set<Break['type']>;
+
+export const SECURITY_BREAK_TYPE_KERNEL_GRAMMAR = SECURITY_FINDING_EVENT_KERNEL_GRAMMAR;

@@ -47,9 +47,9 @@ interface BlancIdentityStepProps {
   /** True while the next-step transition is in flight. */
   loadingStep: boolean;
   /** Optional override label for the phone field. */
-  phoneLabel?: string;
+  phoneLabel?: string | undefined;
   /** Optional override label for the primary CTA button. */
-  btnStep1Text?: string;
+  btnStep1Text?: string | undefined;
   /** Setter that jumps the wizard to a given step index. */
   setStep: (n: number) => void;
   /** Returns a change handler bound to a specific identity field. */

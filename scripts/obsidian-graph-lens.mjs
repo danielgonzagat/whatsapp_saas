@@ -74,7 +74,7 @@ function installLensFiles() {
 }
 
 function currentLensName() {
-  if (!existsSync(GRAPH_SETTINGS_PATH)) return 'missing';
+  if (!existsSync(GRAPH_SETTINGS_PATH)) {return 'missing';}
   const current = JSON.parse(readFileSync(GRAPH_SETTINGS_PATH, 'utf8'));
   const currentKeys = Object.keys(current).sort();
   const colorQueries = (current.colorGroups || []).map((group) => group.query).sort();

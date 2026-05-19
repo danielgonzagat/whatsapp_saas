@@ -1,0 +1,19 @@
+{
+  "runId": "kloel-cia-w9-readiness-audit-2026-05-11",
+  "concurrency": 2,
+  "timeoutSec": 600,
+  "dir": "/Users/danielpenin/whatsapp_saas",
+  "skipPermissions": false,
+  "tasks": [
+    {
+      "id": "webhook-observability-audit",
+      "title": "W9 webhook observability readiness audit",
+      "promptFile": ".opencode-prompts/batch-11/webhook-observability-audit.md"
+    },
+    {
+      "id": "golden-path-local-blockers-audit",
+      "title": "W9 golden path local blockers audit",
+      "promptFile": ".opencode-prompts/batch-11/golden-path-local-blockers-audit.md"
+    }
+  ]
+}

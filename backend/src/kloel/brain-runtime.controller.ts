@@ -1,8 +1,11 @@
-import { Body, Controller, Get, Logger, Post, Request, Res, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Post, Request, Res, UseGuards } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import type { Response } from 'express';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import type { AuthenticatedRequest } from '../common/interfaces';
+import { Metrics } from '../observability/metrics';
+import { InternalEndpoint } from '../common/decorators/internal-endpoint.decorator';
 import { BrainAutonomyService } from './brain-autonomy.service';
 import { BrainDecideDto, BrainObserveDto } from './brain-runtime.dto';
 import { BrainCommercialGraphService } from './brain-commercial-graph.service';
@@ -32,7 +35,7 @@ function readOptionalStreamString(body: BrainDecideDto, key: string): string | u
 @Controller('brain')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
 export class BrainRuntimeController {
-  private readonly logger = new Logger(BrainRuntimeController.name);
+  private readonly logger = StructuredLogger.from(BrainRuntimeController.name);
 
   constructor(
     private readonly brain: BrainRuntimeService,
@@ -40,49 +43,79 @@ export class BrainRuntimeController {
     private readonly autonomy: BrainAutonomyService,
   ) {}
 
+  @InternalEndpoint('brain capabilities endpoint')
   @Get('capabilities')
   capabilities() {
     return this.brain.listCapabilities();
   }
 
+  @InternalEndpoint('brain event taxonomy')
   @Get('events/taxonomy')
   eventTaxonomy() {
     return this.brain.eventTaxonomy();
   }
 
+  @InternalEndpoint('brain commercial graph')
   @Get('graph/commercial')
   commercialGraph(@Request() req: AuthenticatedRequest) {
     return this.graph.buildWorkspaceGraph(req.workspaceId || req.user.workspaceId);
   }
 
+  @InternalEndpoint('brain recommendations')
   @Get('graph/recommendations')
   graphRecommendations(@Request() req: AuthenticatedRequest) {
     return this.graph.recommendNextActions(req.workspaceId || req.user.workspaceId);
   }
 
+  @InternalEndpoint('brain autonomy proposals')
   @Get('autonomy/proposals')
   autonomyProposals(@Request() req: AuthenticatedRequest) {
     return this.autonomy.propose(req.workspaceId || req.user.workspaceId);
   }
 
+  @InternalEndpoint('brain decision endpoint')
   @Post('decide')
-  decide(@Body() body: BrainDecideDto, @Request() req: AuthenticatedRequest) {
-    return this.brain.decide({
-      body,
-      workspaceId: req.workspaceId || req.user.workspaceId,
-      userId: req.user.sub,
-    });
+  async decide(@Body() body: BrainDecideDto, @Request() req: AuthenticatedRequest) {
+    const start = Date.now();
+    const workspaceId = req.workspaceId || req.user.workspaceId;
+    try {
+      const result = await this.brain.decide({
+        body,
+        workspaceId,
+        userId: req.user.sub,
+      });
+      Metrics.endpoint.success('brain.decide', { workspaceId });
+      Metrics.endpoint.duration('brain.decide', Date.now() - start, { workspaceId });
+      return result;
+    } catch (err: unknown) {
+      const code = (err as { code?: string })?.code ?? 'unknown';
+      Metrics.endpoint.failure('brain.decide', { workspaceId, code });
+      throw err;
+    }
   }
 
+  @InternalEndpoint('brain observation endpoint')
   @Post('observe')
-  observe(@Body() body: BrainObserveDto, @Request() req: AuthenticatedRequest) {
-    return this.brain.observe({
-      body,
-      workspaceId: req.workspaceId || req.user.workspaceId,
-      userId: req.user.sub,
-    });
+  async observe(@Body() body: BrainObserveDto, @Request() req: AuthenticatedRequest) {
+    const start = Date.now();
+    const workspaceId = req.workspaceId || req.user.workspaceId;
+    try {
+      const result = await this.brain.observe({
+        body,
+        workspaceId,
+        userId: req.user.sub,
+      });
+      Metrics.endpoint.success('brain.observe', { workspaceId });
+      Metrics.endpoint.duration('brain.observe', Date.now() - start, { workspaceId });
+      return result;
+    } catch (err: unknown) {
+      const code = (err as { code?: string })?.code ?? 'unknown';
+      Metrics.endpoint.failure('brain.observe', { workspaceId, code });
+      throw err;
+    }
   }
 
+  @InternalEndpoint('brain stream endpoint')
   @Post('stream')
   async stream(
     @Body() body: BrainDecideDto,
@@ -120,7 +153,11 @@ export class BrainRuntimeController {
           break;
         }
       }
+      Metrics.endpoint.success('brain.stream', { workspaceId });
+      Metrics.endpoint.duration('brain.stream', Date.now() - startedAt, { workspaceId });
     } catch (error: unknown) {
+      const code = (error as { code?: string })?.code ?? 'unknown';
+      Metrics.endpoint.failure('brain.stream', { workspaceId, code });
       this.logger.error(
         {
           durationMs: Date.now() - startedAt,

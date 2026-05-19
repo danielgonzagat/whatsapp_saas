@@ -37,19 +37,24 @@ BEGIN;
 -- For each (workspaceId, contactId, channel) group that has more than one
 -- non-closed conversation, keep the most recent and mark the rest CLOSED.
 WITH ranked AS (
-  SELECT
-    "id",
-    ROW_NUMBER() OVER (
-      PARTITION BY "workspaceId", "contactId", "channel"
-      ORDER BY "lastMessageAt" DESC NULLS LAST, "createdAt" DESC
-    ) AS rank
-  FROM "Conversation"
-  WHERE "status" != 'CLOSED'
+    SELECT
+        "id",
+        ROW_NUMBER() OVER (
+            PARTITION BY "workspaceId", "contactId", "channel"
+            ORDER BY "lastMessageAt" DESC NULLS LAST, "createdAt" DESC
+        ) AS rank
+    FROM "Conversation"
+    WHERE "status" != 'CLOSED'
 )
+
 UPDATE "Conversation"
-SET "status" = 'CLOSED',
+SET
+    "status" = 'CLOSED',
     "updatedAt" = NOW()
-WHERE "id" IN (SELECT "id" FROM ranked WHERE rank > 1);
+WHERE "id" IN (
+    SELECT "id" FROM ranked
+    WHERE rank > 1
+);
 
 -- Step 2 — create the partial unique index.
 -- CONCURRENTLY cannot be used inside a transaction and the dedup above
@@ -58,7 +63,7 @@ WHERE "id" IN (SELECT "id" FROM ranked WHERE rank > 1);
 -- workloads. Run during a maintenance window if the Conversation table
 -- is especially large.
 CREATE UNIQUE INDEX "conversation_one_open_per_workspace_contact_channel"
-  ON "Conversation" ("workspaceId", "contactId", "channel")
-  WHERE "status" != 'CLOSED';
+ON "Conversation" ("workspaceId", "contactId", "channel")
+WHERE "status" != 'CLOSED';
 
 COMMIT;

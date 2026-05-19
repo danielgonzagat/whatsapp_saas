@@ -1,10 +1,10 @@
 'use client';
+import { colors } from '@/lib/design-tokens';
 
 import { apiFetch } from '@/lib/api';
 import { swrFetcher } from '@/lib/fetcher';
 import { useCallback, useRef } from 'react';
 import useSWR from 'swr';
-import { colors } from '@/lib/design-tokens';
 
 /* ── Types ── */
 
@@ -180,9 +180,9 @@ export interface CheckoutConfig {
 
   /* Stock Counter */
   showStockCounter: boolean;
-  /** Stock message property. */
+  /** Legacy stock message property. */
   stockMessage: string;
-  /** Fake stock count property. */
+  /** Legacy displayed stock count property. */
   fakeStockCount: number;
 
   /* Testimonials */
@@ -245,7 +245,7 @@ export interface CheckoutConfig {
 export const DEFAULT_CONFIG: CheckoutConfig = {
   theme: 'NOIR',
   accentColor: 'colors.ember.primary',
-  accentColor2: '#D14E25',
+  accentColor2: colors.ember.primary,
   backgroundColor: 'colors.background.void',
   cardColor: 'colors.background.surface',
   textColor: 'colors.text.silver',
@@ -464,7 +464,7 @@ function normalizeConfigForEditor(data: Record<string, unknown>): CheckoutConfig
 /* ── Hook ── */
 
 export function useCheckoutEditor(planId: string | null) {
-  const { data, error, isLoading, mutate } = useSWR(
+  const { data, error, isLoading, mutate } = useSWR<Record<string, unknown>>(
     planId ? `/checkout/plans/${planId}/config` : null,
     swrFetcher,
   );

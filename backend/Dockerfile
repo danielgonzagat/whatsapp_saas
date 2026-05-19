@@ -1,33 +1,38 @@
-# Backend Dockerfile
-FROM node:20-bookworm@sha256:8f693eaa7e0a8e71560c9a82b55fd54c2ae920a2ba5d2cde28bac7d1c01c9ba5
+FROM node:22-bookworm AS backend-build
+
+WORKDIR /app/backend
+
+ENV PRISMA_CLI_BINARY_TARGETS="debian-openssl-3.0.x"
+ENV NPM_CONFIG_UPDATE_NOTIFIER=false
+
+COPY backend/package.json backend/package-lock.json ./
+COPY backend/vendor ./vendor
+RUN npm ci --include=dev --no-audit --fund=false
+
+COPY backend ./
+RUN npm run prisma:generate
+RUN npm run build
+RUN npm prune --omit=dev --no-audit --fund=false
+
+FROM node:22-bookworm AS backend-runtime
 
 WORKDIR /app
 
-# Prisma binaries para Debian + OpenSSL 3
+ENV NODE_ENV=production
 ENV PRISMA_CLI_BINARY_TARGETS="debian-openssl-3.0.x"
+ENV NPM_CONFIG_UPDATE_NOTIFIER=false
 
-COPY package*.json ./
-RUN npm ci
+COPY package.json ./
+COPY --from=backend-build --chown=node:node /app/backend ./backend
 
-COPY . .
-RUN npx prisma generate
+RUN mkdir -p /app/backend/public/audio /app/backend/uploads && \
+    chown -R node:node /app/backend
 
-RUN npm run build
-RUN npm prune --omit=dev
-
-# Create runtime directories and fix permissions before switching user
-RUN mkdir -p /app/public/audio /app/uploads && \
-    chown -R node:node /app
-
-# Railway injeta PORT automaticamente; app usa PORT || 3001
 EXPOSE 3001
 
-# Healthcheck para monitoramento
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-  CMD curl -f http://localhost:${PORT:-3001}/health || exit 1
+  CMD node -e "fetch('http://127.0.0.1:' + (process.env.PORT || 3001) + '/health/live').then((r) => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"
 
 USER node
 
-# Executa migrations e inicia a aplicação
-# As migrations são aplicadas a cada deploy para garantir que o banco está atualizado
-CMD ["sh", "-c", "npx prisma migrate deploy && npm run start:prod"]
+CMD ["npm", "run", "railway:backend:start"]

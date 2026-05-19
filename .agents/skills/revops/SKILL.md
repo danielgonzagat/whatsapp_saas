@@ -328,20 +328,20 @@ Format each as a standalone document the user can implement directly. Include pl
 
 ## Tool Integrations
 
-For implementation, see the [tools registry](../../tools/REGISTRY.md). Key RevOps tools:
+For implementation, see the tools registry. Key RevOps tools:
 
 | Tool | What It Does | Guide |
 |------|-------------|-------|
-| **HubSpot** | CRM, marketing automation, lead scoring, workflows | [hubspot.md](../../tools/integrations/hubspot.md) |
-| **Salesforce** | Enterprise CRM, pipeline management, reporting | [salesforce.md](../../tools/integrations/salesforce.md) |
-| **Calendly** | Meeting scheduling, round-robin routing | [calendly.md](../../tools/integrations/calendly.md) |
-| **SavvyCal** | Scheduling with priority-based availability | [savvycal.md](../../tools/integrations/savvycal.md) |
-| **Clearbit** | Real-time lead enrichment and scoring | [clearbit.md](../../tools/integrations/clearbit.md) |
-| **Apollo** | Contact data, enrichment, and outbound sequences | [apollo.md](../../tools/integrations/apollo.md) |
-| **ActiveCampaign** | Marketing automation for SMBs, lead scoring | [activecampaign.md](../../tools/integrations/activecampaign.md) |
-| **Zapier** | Cross-tool automation and workflow glue | [zapier.md](../../tools/integrations/zapier.md) |
-| **Introw** | Partner-sourced pipeline, commissions, deal registration, QBRs | [introw.md](../../tools/integrations/introw.md) |
-| **Crossbeam** | Partner account overlaps and co-sell identification | [crossbeam.md](../../tools/integrations/crossbeam.md) |
+| **HubSpot** | CRM, marketing automation, lead scoring, workflows | hubspot.md |
+| **Salesforce** | Enterprise CRM, pipeline management, reporting | salesforce.md |
+| **Calendly** | Meeting scheduling, round-robin routing | calendly.md |
+| **SavvyCal** | Scheduling with priority-based availability | savvycal.md |
+| **Clearbit** | Real-time lead enrichment and scoring | clearbit.md |
+| **Apollo** | Contact data, enrichment, and outbound sequences | apollo.md |
+| **ActiveCampaign** | Marketing automation for SMBs, lead scoring | activecampaign.md |
+| **Zapier** | Cross-tool automation and workflow glue | zapier.md |
+| **Introw** | Partner-sourced pipeline, commissions, deal registration, QBRs | introw.md |
+| **Crossbeam** | Partner account overlaps and co-sell identification | crossbeam.md |
 
 ---
 

@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { PrismaService } from '../prisma/prisma.service';
 import type { ChannelSendRequest } from './channel-transport.types';
 import type { MindActionContext } from './mind-code-native.types';
@@ -7,7 +8,11 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 
 @Injectable()
 export class MindGuardContextBuilderService {
-  constructor(private readonly prisma: PrismaService) {}
+  private readonly logger = StructuredLogger.from(MindGuardContextBuilderService.name);
+
+  constructor(private readonly prisma: PrismaService) {
+    this.logger.debug?.(`MindGuardContextBuilderService initialized`);
+  }
 
   async buildForSend(
     workspaceId: string,
@@ -63,7 +68,7 @@ export class MindGuardContextBuilderService {
       ...contactContext.context,
       maxPaymentAmount:
         typeof baseContext.maxPaymentAmount === 'number' ? baseContext.maxPaymentAmount : 5000,
-      paymentAmount,
+      ...(paymentAmount !== undefined ? { paymentAmount } : {}),
       paymentProcessed,
     };
   }
@@ -148,16 +153,20 @@ export class MindGuardContextBuilderService {
 
     return {
       context: {
-        contactMessagesToday:
-          typeof baseContext.contactMessagesToday === 'number'
-            ? baseContext.contactMessagesToday
-            : (messagesToday ?? baseContext.contactMessagesToday),
-        contactOptOut:
-          typeof baseContext.contactOptOut === 'boolean'
-            ? baseContext.contactOptOut
-            : contact
-              ? contact.optIn === false || Boolean(contact.optedOutAt)
-              : baseContext.contactOptOut,
+        ...(typeof baseContext.contactMessagesToday === 'number'
+          ? { contactMessagesToday: baseContext.contactMessagesToday }
+          : messagesToday !== null
+            ? { contactMessagesToday: messagesToday }
+            : baseContext.contactMessagesToday !== undefined
+              ? { contactMessagesToday: baseContext.contactMessagesToday }
+              : {}),
+        ...(typeof baseContext.contactOptOut === 'boolean'
+          ? { contactOptOut: baseContext.contactOptOut }
+          : contact
+            ? { contactOptOut: contact.optIn === false || Boolean(contact.optedOutAt) }
+            : baseContext.contactOptOut !== undefined
+              ? { contactOptOut: baseContext.contactOptOut }
+              : {}),
       },
       lastInbound: Boolean(lastInbound),
     };

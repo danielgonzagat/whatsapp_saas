@@ -64,7 +64,7 @@ export class ReportsAffiliateService {
     try {
       if (f.product) {
         const productFilter = `%${f.product}%`;
-        return await this.prisma.$queryRaw`
+        return await this.prisma.$queryRaw<{ day: Date; vendas: number; receita: number }[]>`
           SELECT DATE(co."createdAt") as day, COUNT(*)::int as vendas,
             COALESCE(SUM(co."totalInCents"), 0)::int as receita
           FROM "RAC_CheckoutOrder" co
@@ -76,7 +76,7 @@ export class ReportsAffiliateService {
           GROUP BY DATE(co."createdAt") ORDER BY day ASC
         `;
       }
-      return await this.prisma.$queryRaw`
+      return await this.prisma.$queryRaw<{ day: Date; vendas: number; receita: number }[]>`
         SELECT DATE(co."createdAt") as day, COUNT(*)::int as vendas,
           COALESCE(SUM(co."totalInCents"), 0)::int as receita
         FROM "RAC_CheckoutOrder" co

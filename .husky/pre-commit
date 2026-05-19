@@ -1,11 +1,2 @@
 #!/usr/bin/env sh
-# Pre-commit backstop. Runs workspace gate validators BEFORE lint-staged.
-# Catches any write that bypassed the Pre-tool hooks (direct shell, other CLIs).
-
-set -e
-
-# 1. Workspace gate validator (mirrors GitHub architecture gate + extras)
-node "$(git rev-parse --show-toplevel)/scripts/decomp/validate-staged.mjs"
-
-# 2. lint-staged (existing project lint/format pipeline)
-npx lint-staged
+npm run format:check

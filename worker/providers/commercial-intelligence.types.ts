@@ -26,7 +26,7 @@ export interface DemandState {
   /** Attention score property. */
   attentionScore: number;
   /** Reactivation at property. */
-  reactivationAt?: string;
+  reactivationAt?: string | undefined;
 }
 
 /** Commercial decision envelope shape. */
@@ -81,13 +81,13 @@ export interface HumanTaskPayload {
   /** Reason property. */
   reason: string;
   /** Suggested reply property. */
-  suggestedReply?: string;
+  suggestedReply?: string | undefined;
   /** Business impact property. */
-  businessImpact?: string;
+  businessImpact?: string | undefined;
   /** Contact id property. */
-  contactId?: string;
+  contactId?: string | undefined;
   /** Phone property. */
-  phone?: string;
+  phone?: string | undefined;
   /** Conversation id property. */
   conversationId?: string | null;
   /** Status property. */

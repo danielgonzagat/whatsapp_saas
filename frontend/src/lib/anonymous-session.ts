@@ -9,7 +9,7 @@ const GUEST_WORKSPACE_CLAIM_SLOT = ['kloel', 'guest', 'workspace', 'claim', 'can
 type AnonymousSession = {
   token: string;
   workspaceId: string;
-  refreshToken?: string;
+  refreshToken?: string | undefined;
   created: boolean;
 };
 

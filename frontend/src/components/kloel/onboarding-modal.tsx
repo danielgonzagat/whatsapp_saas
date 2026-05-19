@@ -101,7 +101,7 @@ export function OnboardingModal({
           </div>
           <div className="h-1.5 w-full overflow-hidden rounded-full bg-gray-100">
             <div
-              className="h-full rounded-full bg-[#E0DDD8] transition-all duration-500 ease-out"
+              className="h-full rounded-full bg-[var(--text-silver)] transition-all duration-500 ease-out"
               style={{ width: `${progress}%` }}
             />
           </div>
@@ -184,7 +184,7 @@ export function OnboardingModal({
                 <Button
                   onClick={handleNext}
                   disabled={!businessData.name || !businessData.niche || !businessData.objective}
-                  className="w-full rounded-md bg-[#E0DDD8] py-6 text-[#0A0A0C] hover:bg-[#E0DDD8]"
+                  className="w-full rounded-md bg-[var(--text-silver)] py-6 text-[var(--bg-void)] hover:bg-[var(--text-silver)]"
                 >
                   {kloelT(`Avancar`)}
                   <ChevronRight className="ml-2 h-4 w-4" aria-hidden="true" />
@@ -220,7 +220,7 @@ export function OnboardingModal({
                 </div>
                 <Button
                   onClick={handleNext}
-                  className="w-full rounded-md bg-[#E0DDD8] py-6 text-[#0A0A0C] hover:bg-[#E0DDD8]"
+                  className="w-full rounded-md bg-[var(--text-silver)] py-6 text-[var(--bg-void)] hover:bg-[var(--text-silver)]"
                 >
                   {kloelT(`Avancar`)}
                   <ChevronRight className="ml-2 h-4 w-4" aria-hidden="true" />

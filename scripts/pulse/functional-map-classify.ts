@@ -9,9 +9,9 @@ import type {
 import type { HookRegistry } from './parsers/hook-registry';
 import type { InteractionStatus, InteractionChain } from './functional-map-types';
 import type { PageEntry } from './functional-map-types';
-import { normalizeForMatch, type RouteKey } from './graph/__parts__/graph-part1-core';
-import { matchApiCallToRoute, resolveRouteModels } from './graph/__parts__/graph-part2-routing';
-import { findApiCallForElement } from './functional-map.helpers/__parts__/public';
+import { normalizeForMatch, type RouteKey } from './graph/graph-part1-core';
+import { matchApiCallToRoute, resolveRouteModels } from './graph/graph-part2-routing';
+import { findApiCallForElement } from './functional-map.helpers/public';
 
 export function traceInteractionChain(
   element: UIElement,

@@ -31,17 +31,17 @@ export const CRM = {
         },
       },
       update: {
-        name: contact.name,
-        email: contact.email,
-        avatarUrl: contact.avatarUrl,
+        ...(contact.name !== undefined ? { name: contact.name } : {}),
+        ...(contact.email !== undefined ? { email: contact.email } : {}),
+        ...(contact.avatarUrl !== undefined ? { avatarUrl: contact.avatarUrl } : {}),
         customFields: contact.customFields ?? {},
       },
       create: {
         workspace: { connect: { id: workspaceId } },
         phone: contact.phone,
-        name: contact.name,
-        email: contact.email,
-        avatarUrl: contact.avatarUrl,
+        ...(contact.name !== undefined ? { name: contact.name } : {}),
+        ...(contact.email !== undefined ? { email: contact.email } : {}),
+        ...(contact.avatarUrl !== undefined ? { avatarUrl: contact.avatarUrl } : {}),
         customFields: contact.customFields ?? {},
       },
     });

@@ -1,6 +1,7 @@
-import { forwardRef, Inject, Injectable, Logger, Optional } from '@nestjs/common';
+import { forwardRef, Inject, Injectable, NotFoundException, Optional } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
+import { StructuredLogger } from '../logging/structured-logger';
 import { InjectRedis } from '@nestjs-modules/ioredis';
 import type { Redis } from 'ioredis';
 import { AuditService } from '../audit/audit.service';
@@ -14,14 +15,9 @@ import { GoogleAuthService } from './google-auth.service';
 import { TikTokAuthService } from './tiktok-auth.service';
 import { RateLimitService } from './rate-limit.service';
 
-import type { AuthPartsDeps } from './__parts__/auth-service/register-login';
-import {
-  checkEmail,
-  createAnonymous,
-  register,
-  login,
-} from './__parts__/auth-service/register-login';
-import { issueTokensForAgentId, refreshToken } from './__parts__/auth-service/tokens';
+import type { AuthPartsDeps } from './auth-service.register-login';
+import { checkEmail, createAnonymous, register, login } from './auth-service.register-login';
+import { issueTokensForAgentId, refreshToken } from './auth-service.tokens';
 import {
   oauthLogin,
   loginWithGoogleCredential,
@@ -29,21 +25,21 @@ import {
   loginWithAppleCredential,
   loginWithTikTokAuthorizationCode,
   loginWithTikTokAccessToken,
-} from './__parts__/auth-service/oauth-entry';
-import { requestMagicLink, verifyMagicLink } from './__parts__/auth-service/magic-link';
-import { sendWhatsAppCode, verifyWhatsAppCode } from './__parts__/auth-service/whatsapp';
+} from './auth-service.oauth-entry';
+import { requestMagicLink, verifyMagicLink } from './auth-service.magic-link';
+import { sendWhatsAppCode, verifyWhatsAppCode } from './auth-service.whatsapp';
 import {
   forgotPassword,
   resetPassword,
   sendVerificationEmail,
   verifyEmail,
   resendVerificationEmail,
-} from './__parts__/auth-service/password-verification';
+} from './auth-service.password-verification';
 
 /** Auth service. */
 @Injectable()
 export class AuthService {
-  private readonly logger = new Logger(AuthService.name);
+  private readonly logger = StructuredLogger.from(AuthService.name);
 
   constructor(
     private readonly prisma: PrismaService,
@@ -166,10 +162,12 @@ export class AuthService {
   }) {
     const result = await loginWithAppleCredential(this.buildDeps(), {
       identityToken: data.identityToken,
-      authorizationCode: data.authorizationCode,
-      redirectUri: data.redirectUri,
-      user: data.user,
-      ip: data.ip,
+      ...(data.authorizationCode !== undefined
+        ? { authorizationCode: data.authorizationCode }
+        : {}),
+      ...(data.redirectUri !== undefined ? { redirectUri: data.redirectUri } : {}),
+      ...(data.user !== undefined ? { user: data.user } : {}),
+      ...(data.ip !== undefined ? { ip: data.ip } : {}),
     });
     if (result.isNewUser) {
       this.triggerWelcomeFlow(
@@ -261,6 +259,45 @@ export class AuthService {
 
   async resendVerificationEmail(email: string, ip?: string) {
     return resendVerificationEmail(this.buildDeps(), email, ip);
+  }
+
+  async completeOnboarding(agentId: string) {
+    const existing = await this.prisma.agent.findFirst({
+      where: { id: agentId, workspaceId: { not: '' } },
+      select: { workspaceId: true },
+    });
+    if (!existing) {
+      throw new NotFoundException('Usuario nao encontrado.');
+    }
+
+    const onboardingCompletedAt = new Date();
+    await this.prisma.agent.updateMany({
+      where: { id: agentId, workspaceId: existing.workspaceId },
+      data: { onboardingCompletedAt },
+    });
+    return { onboardingCompletedAt };
+  }
+
+  async getMe(agentId: string) {
+    const agent = await this.prisma.agent.findUnique({
+      where: { id: agentId },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        phone: true,
+        avatarUrl: true,
+        workspaceId: true,
+        onboardingCompletedAt: true,
+        displayRole: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+    if (!agent) {
+      throw new Error('User not found');
+    }
+    return { user: agent };
   }
 
   /** Logout — revoke all refresh tokens for the authenticated agent. */

@@ -10,9 +10,9 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
-import { Throttle } from '@nestjs/throttler';
 import { Public } from '../auth/public.decorator';
 import { PrismaService } from '../prisma/prisma.service';
+import { RouteClass } from '../common/throttler/route-class.decorator';
 
 const ACCESS_TTL_SECONDS = 60 * 60 * 24 * 7;
 const MAX_EMAIL_LENGTH = 254;
@@ -105,6 +105,7 @@ function readJsonPayload(value: string): AccessTokenPayload {
 
 @Public()
 @Controller('member-areas/public')
+@RouteClass('public-checkout')
 export class MemberAreaPublicController {
   constructor(private readonly prisma: PrismaService) {}
 
@@ -176,7 +177,6 @@ export class MemberAreaPublicController {
   }
 
   @Post(':slug/access')
-  @Throttle({ default: { limit: 10, ttl: 60000 } })
   async requestAccess(@Param('slug') slug: string, @Body() dto: RequestAccessDto) {
     const email = normalizeEmail(dto.email);
     const enrollment = await this.prisma.memberEnrollment.findFirst({

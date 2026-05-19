@@ -20,13 +20,13 @@ function sanitizeFilename(filePath) {
 }
 
 function derivePriority(rank) {
-  if (rank <= 10) return 'high';
-  if (rank <= 25) return 'medium';
+  if (rank <= 10) {return 'high';}
+  if (rank <= 25) {return 'medium';}
   return 'low';
 }
 
 function readExistingTask(absPath) {
-  if (!existsSync(absPath)) return null;
+  if (!existsSync(absPath)) {return null;}
   try {
     return readFileSync(absPath, 'utf8');
   } catch {
@@ -35,9 +35,9 @@ function readExistingTask(absPath) {
 }
 
 function parseFrontmatter(content) {
-  if (!content.startsWith('---\n')) return {};
+  if (!content.startsWith('---\n')) {return {};}
   const end = content.indexOf('\n---\n', 4);
-  if (end === -1) return {};
+  if (end === -1) {return {};}
   const fm = content.slice(4, end);
   const result = {};
   let currentKey = null;
@@ -47,7 +47,7 @@ function parseFrontmatter(content) {
       currentKey = m[1];
       result[currentKey] = m[2];
     } else if (currentKey === 'tags' && line.startsWith('  - ')) {
-      if (!Array.isArray(result.tags)) result.tags = [];
+      if (!Array.isArray(result.tags)) {result.tags = [];}
       result.tags.push(line.slice(4));
     }
   }
@@ -133,18 +133,18 @@ function atomWrite(absPath, content) {
 
 function taskExistsAndMatches(absPath, entry) {
   const content = readExistingTask(absPath);
-  if (!content) return false;
+  if (!content) {return false;}
 
   const fm = parseFrontmatter(content);
 
-  if (fm.status === 'done') return 'preserved_done';
-  if (fm.status && fm.status !== 'open') return 'preserved_human';
+  if (fm.status === 'done') {return 'preserved_done';}
+  if (fm.status && fm.status !== 'open') {return 'preserved_human';}
 
   const sameScore = parseFloat(fm.score) === entry.score;
   const sameTier = parseInt(fm.tier, 10) === entry.tier;
   const samePhase = parseInt(fm.phase, 10) === entry.phase;
 
-  if (sameScore && sameTier && samePhase) return 'unchanged';
+  if (sameScore && sameTier && samePhase) {return 'unchanged';}
 
   return false;
 }

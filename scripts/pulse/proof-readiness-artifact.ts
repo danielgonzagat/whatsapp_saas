@@ -5,8 +5,8 @@ import {
   PATH_PROOF_TASKS_ARTIFACT,
   type PathProofEvidenceArtifact,
   type PathProofEvidenceEntry,
-} from './__parts__/path-proof-evidence/main';
-import type { PathProofPlan } from './__parts__/path-proof-runner/main';
+} from './path-proof-evidence/main';
+import type { PathProofPlan } from './path-proof-runner/main';
 import {
   buildProofReadinessGateInput,
   evaluateProofReadinessGate,
@@ -109,7 +109,7 @@ export function pathProofEntryToReadinessEvidence(
     evidenceMode: pathProofReadinessMode(entry),
     executed,
     attempts: executed ? 1 : 0,
-    exitCode: entry.result?.exitCode,
+    ...(typeof entry.result?.exitCode === 'number' ? { exitCode: entry.result.exitCode } : {}),
     startedAt: entry.result?.startedAt ?? null,
     finishedAt: entry.result?.finishedAt ?? null,
     artifactPaths: pathProofReadinessArtifactPaths(entry),

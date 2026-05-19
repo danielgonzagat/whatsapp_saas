@@ -15,21 +15,21 @@ export interface WorkspaceOrId {
 /** Options for sending text messages. */
 export interface SendTextOptions {
   /** Quoted message id property. */
-  quotedMessageId?: string;
+  quotedMessageId?: string | undefined;
   /** External id property. */
-  externalId?: string;
+  externalId?: string | undefined;
   /** Chat id property. */
-  chatId?: string;
+  chatId?: string | undefined;
 }
 
 /** Options for sending media messages. */
 export interface SendMediaOptions {
   /** Quoted message id property. */
-  quotedMessageId?: string;
+  quotedMessageId?: string | undefined;
   /** External id property. */
-  externalId?: string;
+  externalId?: string | undefined;
   /** Chat id property. */
-  chatId?: string;
+  chatId?: string | undefined;
 }
 
 /** Options for retrieving chat messages. */

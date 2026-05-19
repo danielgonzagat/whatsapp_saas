@@ -1,6 +1,5 @@
 import type { Prisma } from '@prisma/client';
 
-/** ToolArgs shape used by all action methods. */
 export interface ToolArgs {
   active?: boolean;
   amount?: number;
@@ -11,13 +10,13 @@ export interface ToolArgs {
   autoReplyMessage?: string;
   businessHours?: Prisma.InputJsonValue;
   businessName?: string;
-  broadcastWindow?: Record<string, unknown>;
   campaignId?: string;
   caption?: string;
   category?: string;
-  channelChoice?: Record<string, unknown>;
+  broadcastWindow?: unknown;
+  channelChoice?: unknown;
   code?: string;
-  couponDecision?: Record<string, unknown>;
+  couponDecision?: unknown;
   csvData?: string;
   daysSilent?: number;
   delayHours?: number;
@@ -30,17 +29,25 @@ export interface ToolArgs {
   expiresIn?: string;
   flowId?: string;
   flowName?: string;
-  followupTimingDecision?: Record<string, unknown>;
+  followupTimingDecision?: unknown;
   funnelName?: string;
-  handoffDecision?: Record<string, unknown>;
+  handoffDecision?: unknown;
   imageUrl?: string;
-  inboundCorrelationId?: string;
   includeConnections?: boolean;
-  includeFollowUps?: boolean;
   includeHealth?: boolean;
+  includeFollowUps?: boolean;
   includeLink?: boolean;
   includeMetrics?: boolean;
   includePrice?: boolean;
+  inboundCorrelationId?: string;
+  /**
+   * Structured plan emitted by the deterministic commercial orchestrator.
+   * NEVER sent to the customer verbatim. Carried alongside `message` so a
+   * future LLM writer/composer can rewrite the customer-facing string while
+   * keeping the structured decision available for tracing and outcome
+   * correlation. See commercial-decision-orchestrator.service.ts.
+   */
+  internalReplyPlan?: unknown;
   intent?: string;
   language?: string;
   message?: string;
@@ -54,22 +61,23 @@ export interface ToolArgs {
   period?: string;
   personality?: string;
   plan?: string;
-  price?: number;
   priceBand?: string;
+  price?: number;
   priority?: string;
   productId?: string;
-  productOffer?: Record<string, unknown>;
   productName?: string;
+  productOffer?: unknown;
   properties?: Prisma.InputJsonValue;
   query?: string;
   questions?: string[];
   reason?: string;
   returnUrl?: string;
   scheduleAt?: string;
-  source?: string;
   segment?: string;
+  source?: string;
   stage?: string;
   status?: string;
+  subject?: string;
   stages?: string[];
   steps?: Prisma.InputJsonValue[];
   strategy?: string;
@@ -89,7 +97,6 @@ export interface ToolArgs {
   workingHoursOnly?: boolean;
 }
 
-/** Action entry shape. */
 export interface ActionEntry {
   tool: string;
   args: ToolArgs;
@@ -97,6 +104,6 @@ export interface ActionEntry {
 }
 
 export interface PredecidedAction {
-  args: ToolArgs;
   tool: string;
+  args: ToolArgs;
 }

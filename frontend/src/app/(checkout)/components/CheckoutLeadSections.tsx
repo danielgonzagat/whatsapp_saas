@@ -20,7 +20,7 @@ type FormState = LeadFormState;
 
 type SharedProps = {
   theme: CheckoutVisualTheme;
-  config?: PublicCheckoutConfig;
+  config?: PublicCheckoutConfig | undefined;
   step: number;
   setStep: Dispatch<SetStateAction<number>>;
   form: FormState;

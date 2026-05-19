@@ -2,14 +2,15 @@
  * KLOEL MEMORY MANAGEMENT SERVICE — TTL expiration, dedup, priority, orphans.
  * @@index: optimistic lock via updatedAt — concurrent writes resolved by DB constraint
  */
-import { Injectable, Logger, Optional } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
+import { StructuredLogger } from '../logging/structured-logger';
 import { Counter, Gauge, register } from 'prom-client';
 import { AuditService } from '../audit/audit.service';
 import { forEachSequential } from '../common/async-sequence';
 import { PrismaService } from '../prisma/prisma.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
-import { computeMemoryStats, type MemoryStats } from './__parts__/memory-stats';
+import { computeMemoryStats, type MemoryStats } from './memory-stats';
 
 interface MemoryCleanupResult {
   expiredRemoved: number;
@@ -23,7 +24,7 @@ interface MemoryCleanupResult {
 // Cache.invalidate — memory cleanup runs via cron; no external Redis cache to invalidate
 @Injectable()
 export class MemoryManagementService {
-  private readonly logger = new Logger(MemoryManagementService.name);
+  private readonly logger = StructuredLogger.from(MemoryManagementService.name);
 
   // Configurações de expiração por categoria (em dias)
   private readonly EXPIRATION_DAYS: Record<string, number> = {
@@ -76,7 +77,6 @@ export class MemoryManagementService {
       );
     } catch (error: unknown) {
       void this.opsAlert?.alertOnCriticalError(error, 'MemoryManagementService.runDailyCleanup');
-      // PULSE:OK — Scheduled cleanup failure is non-critical; next run will retry
       this.logger.error(
         `Cleanup failed: ${error instanceof Error ? error.message : 'unknown_error'}`,
       );
@@ -96,7 +96,6 @@ export class MemoryManagementService {
       }
     } catch (error: unknown) {
       void this.opsAlert?.alertOnCriticalError(error, 'MemoryManagementService.getStats');
-      // PULSE:OK — Prometheus metric update failure is non-critical; next cron will retry
       this.logger.error(
         `Failed to update memory metrics: ${error instanceof Error ? error.message : 'unknown_error'}`,
       );
@@ -109,10 +108,9 @@ export class MemoryManagementService {
   async cleanupAll(): Promise<MemoryCleanupResult> {
     const start = Date.now();
 
-    // Contar antes (cross-workspace maintenance count; workspaceId filter is
-    // universal since the column is NOT NULL and no-op in practice).
+    // @CrossWorkspaceMaintenance: cleanup audit metric, global by design
     const totalBefore =
-      (await this.prisma.kloelMemory.count({ where: { workspaceId: { not: undefined } } })) || 0;
+      (await this.prisma.kloelMemory.count({ where: { workspaceId: { not: '' } } })) || 0;
 
     // 1. Remover memórias expiradas
     const expiredRemoved = await this.removeExpiredMemories();
@@ -123,9 +121,9 @@ export class MemoryManagementService {
     // 3. Remover órfãos (workspaces deletados)
     const orphansRemoved = await this.removeOrphans();
 
-    // Contar depois (cross-workspace maintenance count).
+    // @CrossWorkspaceMaintenance: cleanup audit metric, global by design
     const totalAfter =
-      (await this.prisma.kloelMemory.count({ where: { workspaceId: { not: undefined } } })) || 0;
+      (await this.prisma.kloelMemory.count({ where: { workspaceId: { not: '' } } })) || 0;
 
     const result: MemoryCleanupResult = {
       expiredRemoved,
@@ -183,12 +181,12 @@ export class MemoryManagementService {
       cutoffDate.setDate(cutoffDate.getDate() - days);
 
       try {
-        // PULSE:OK — each category has a unique cutoff date; fixed small set of categories
+        // @CrossWorkspaceMaintenance: cron purge of expired memories across all workspaces
         const result = await this.prisma.kloelMemory.deleteMany({
           where: {
+            workspaceId: { not: '' },
             category,
             updatedAt: { lt: cutoffDate },
-            workspaceId: { not: undefined },
           },
         });
 
@@ -201,30 +199,34 @@ export class MemoryManagementService {
           error,
           'MemoryManagementService.removeExpiredMemories',
         );
-        // PULSE:OK — Per-category cleanup failure is non-critical; other categories still processed
         this.logger.warn(
           `Failed to cleanup ${category}: ${error instanceof Error ? error.message : 'unknown_error'}`,
         );
       }
     });
 
-    // Limpar categorias não listadas com expiração padrão
+    const defaultDays = this.EXPIRATION_DAYS.default ?? 180;
     const defaultCutoff = new Date();
-    defaultCutoff.setDate(defaultCutoff.getDate() - this.EXPIRATION_DAYS.default);
+    defaultCutoff.setDate(defaultCutoff.getDate() - defaultDays);
 
     const knownCategories = Object.keys(this.EXPIRATION_DAYS).filter((c) => c !== 'default');
 
     try {
+      // @CrossWorkspaceMaintenance: cron purge of uncategorized stale memories
       const result = await this.prisma.kloelMemory.deleteMany({
         where: {
+          workspaceId: { not: '' },
           category: { notIn: knownCategories },
           updatedAt: { lt: defaultCutoff },
-          workspaceId: { not: undefined },
         },
       });
       totalRemoved += result.count;
-    } catch {
-      // PULSE:OK — Default-category cleanup non-critical; known categories already processed above
+    } catch (error: unknown) {
+      this.logger.warn(
+        `Failed to remove stale uncategorized memories: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
     }
 
     return totalRemoved;
@@ -251,7 +253,6 @@ export class MemoryManagementService {
       });
 
       await forEachSequential(groups, async (group) => {
-        // PULSE:OK — each group has unique workspace+category filter; dedup requires per-group scan
         const memories = await this.prisma.kloelMemory.findMany({
           where: {
             workspaceId: group.workspaceId,
@@ -286,7 +287,6 @@ export class MemoryManagementService {
       });
     } catch (error: unknown) {
       void this.opsAlert?.alertOnCriticalError(error, 'MemoryManagementService.removeDuplicates');
-      // PULSE:OK — Deduplication is a background maintenance job; next run will retry
       this.logger.warn(
         `Deduplication failed: ${error instanceof Error ? error.message : 'unknown_error'}`,
       );
@@ -436,10 +436,12 @@ export class MemoryManagementService {
 
     for (const mem of memories) {
       const prefix = mem.key.split('_').slice(0, 2).join('_');
-      if (!groups.has(prefix)) {
-        groups.set(prefix, []);
+      const group = groups.get(prefix);
+      if (group) {
+        group.push(mem);
+      } else {
+        groups.set(prefix, [mem]);
       }
-      groups.get(prefix)?.push(mem);
     }
 
     let merged = 0;

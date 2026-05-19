@@ -175,7 +175,7 @@ describe('streamAuthenticatedKloelMessage', () => {
 
     const seenEvents: string[] = [];
     const chunks: string[] = [];
-    const threads: Array<{ conversationId: string; title?: string }> = [];
+    const threads: Array<{ conversationId: string; title?: string | undefined }> = [];
 
     await new Promise<void>((resolve, reject) => {
       streamAuthenticatedKloelMessage(

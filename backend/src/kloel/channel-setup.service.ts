@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 import { Prisma } from '@prisma/client';
 import { StorageService } from '../common/storage/storage.service';
@@ -84,10 +84,14 @@ export interface SaveConfigInput {
 
 @Injectable()
 export class ChannelSetupService {
+  private readonly logger = new Logger(ChannelSetupService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly storage: StorageService,
-  ) {}
+  ) {
+    this.logger.debug?.(`ChannelSetupService initialized`);
+  }
 
   async getState(workspaceId: string, channel: string) {
     const normalizedChannel = normalizeSetupChannel(channel);
@@ -286,8 +290,8 @@ export class ChannelSetupService {
 function validateArsenalUploadMime(type: string, file: ChannelArsenalUploadFile): string {
   const detectedMime = detectUploadedMime({
     buffer: file.buffer,
-    mimetype: file.mimetype,
-    originalname: file.originalname,
+    ...(file.mimetype !== undefined ? { mimetype: file.mimetype } : {}),
+    ...(file.originalname !== undefined ? { originalname: file.originalname } : {}),
   });
   if (!detectedMime) {
     throw new BadRequestException('assinatura_do_arquivo_invalida');

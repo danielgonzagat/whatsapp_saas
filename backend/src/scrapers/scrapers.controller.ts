@@ -17,6 +17,7 @@ import { resolveWorkspaceId } from '../auth/workspace-access';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { ScrapersService } from './scrapers.service';
 import { AuthenticatedRequest } from '../common/interfaces/authenticated-request.interface';
+import { RouteClass } from '../common/throttler/route-class.decorator';
 
 class CreateJobDto {
   @IsString()
@@ -41,6 +42,7 @@ class CreateJobDto {
 /** Scrapers controller. */
 @Controller('scrapers')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
+@RouteClass('mutate')
 export class ScrapersController {
   constructor(private readonly scrapersService: ScrapersService) {}
 

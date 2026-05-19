@@ -1,5 +1,5 @@
 /** String/regex helpers shared by api-parser modules. */
-import { discoverAllObservedHttpMethods } from '../dynamic-reality-kernel/__parts__/catalog-arithmetic';
+import { discoverAllObservedHttpMethods } from '../dynamic-reality-kernel/catalog-arithmetic';
 
 /** Escape a string for use as a literal pattern in a RegExp. */
 export function escapeRegExp(value: string): string {

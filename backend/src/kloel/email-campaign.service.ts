@@ -1,4 +1,5 @@
-import { Injectable, Logger, Optional } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { forEachSequential } from '../common/async-sequence';
 import { getTraceHeaders } from '../common/trace-headers';
 import { OpsAlertService } from '../observability/ops-alert.service';
@@ -26,12 +27,14 @@ function resolveEnvSmtpConfig(): EmailSmtpDeliveryOverride | undefined {
   if (!host) {
     return undefined;
   }
+  const user = readText(process.env.EMAIL_OUTBOUND_SMTP_USER) ?? readText(process.env.SMTP_USER);
+  const pass = readText(process.env.EMAIL_OUTBOUND_SMTP_PASS) ?? readText(process.env.SMTP_PASS);
   return {
     host,
     port: Number(process.env.EMAIL_OUTBOUND_SMTP_PORT ?? process.env.SMTP_PORT) || 587,
     secure: (process.env.EMAIL_OUTBOUND_SMTP_SECURE ?? process.env.SMTP_SECURE) === 'true',
-    user: readText(process.env.EMAIL_OUTBOUND_SMTP_USER) ?? readText(process.env.SMTP_USER),
-    pass: readText(process.env.EMAIL_OUTBOUND_SMTP_PASS) ?? readText(process.env.SMTP_PASS),
+    ...(user !== undefined ? { user } : {}),
+    ...(pass !== undefined ? { pass } : {}),
   };
 }
 
@@ -41,7 +44,7 @@ function resolveEnvSmtpConfig(): EmailSmtpDeliveryOverride | undefined {
  */
 @Injectable()
 export class EmailCampaignService {
-  private readonly logger = new Logger(EmailCampaignService.name);
+  private readonly logger = StructuredLogger.from(EmailCampaignService.name);
   private readonly fromEmail = process.env.EMAIL_FROM || 'noreply@kloel.com';
   private readonly fromName = process.env.EMAIL_FROM_NAME || 'KLOEL';
 
@@ -71,23 +74,24 @@ export class EmailCampaignService {
             ? 'smtp'
             : this.getProvider());
     const smtp = override?.smtp ?? resolveEnvSmtpConfig();
+    const resendApiKey = override?.resendApiKey?.trim() || process.env.RESEND_API_KEY;
+    const sendgridApiKey = override?.sendgridApiKey?.trim() || process.env.SENDGRID_API_KEY;
+    const smtpObj = smtp?.host
+      ? {
+          host: smtp.host,
+          port: Number(smtp.port) || 587,
+          secure: smtp.secure === true,
+          ...(smtp.user !== undefined ? { user: smtp.user } : {}),
+          ...(smtp.pass !== undefined ? { pass: smtp.pass } : {}),
+        }
+      : undefined;
     return {
       provider,
       fromEmail: override?.fromEmail?.trim() || this.fromEmail,
       fromName: override?.fromName?.trim() || this.fromName,
-      resendApiKey: override?.resendApiKey?.trim() || process.env.RESEND_API_KEY,
-      sendgridApiKey: override?.sendgridApiKey?.trim() || process.env.SENDGRID_API_KEY,
-      ...(smtp?.host
-        ? {
-            smtp: {
-              host: smtp.host,
-              port: Number(smtp.port) || 587,
-              secure: smtp.secure === true,
-              user: smtp.user,
-              pass: smtp.pass,
-            },
-          }
-        : {}),
+      ...(resendApiKey !== undefined ? { resendApiKey } : {}),
+      ...(sendgridApiKey !== undefined ? { sendgridApiKey } : {}),
+      ...(smtpObj ? { smtp: smtpObj } : {}),
     };
   }
 
@@ -132,9 +136,9 @@ export class EmailCampaignService {
           'List-Unsubscribe-Post': `List-Unsubscribe=One-Click`,
         });
         if (success) {
-          sent++;
+          sent += 1;
         } else {
-          failed++;
+          failed += 1;
           errors.push(`Failed to send to ${recipient.email}`);
         }
 
@@ -144,7 +148,7 @@ export class EmailCampaignService {
         }
       } catch (err: unknown) {
         void this.opsAlert?.alertOnCriticalError(err, 'EmailCampaignService.push');
-        failed++;
+        failed += 1;
         errors.push(`${recipient.email}: ${err instanceof Error ? err.message : 'unknown_error'}`);
       }
     });
@@ -238,7 +242,7 @@ export class EmailCampaignService {
             subject,
             html,
             delivery,
-            alert: this.opsAlert,
+            ...(this.opsAlert !== undefined ? { alert: this.opsAlert } : {}),
           });
         default:
           this.logger.log(`[DEV] Campaign email to ${to}: ${subject}`);

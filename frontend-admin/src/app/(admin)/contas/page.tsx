@@ -47,8 +47,8 @@ export default function ContasPage() {
     ['admin/accounts', search, kycStatus],
     () =>
       adminAccountsApi.list({
-        search: search || undefined,
-        kycStatus: kycStatus || undefined,
+        ...(search ? { search } : {}),
+        ...(kycStatus ? { kycStatus } : {}),
         take: 60,
       }),
     { revalidateOnFocus: false },

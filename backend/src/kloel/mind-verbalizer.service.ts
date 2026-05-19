@@ -1,6 +1,8 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { StructuredLogger } from '../logging/structured-logger';
 import OpenAI from 'openai';
+import { createTextLlmClient } from '../lib/llm-provider';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
 import { LLMBudgetService, estimateChatCostCents } from './llm-budget.service';
 import { chatCompletionWithFallback, LLM_MAX_COMPLETION_TOKENS } from './openai-wrapper';
@@ -161,7 +163,7 @@ function buildRulesBasedNarrative(
 
 @Injectable()
 export class MindVerbalizerService {
-  private readonly logger = new Logger(MindVerbalizerService.name);
+  private readonly logger = StructuredLogger.from(MindVerbalizerService.name);
   private readonly openai: OpenAI | null;
   private readonly verbalizerModel: string;
 
@@ -171,8 +173,7 @@ export class MindVerbalizerService {
     private readonly config: ConfigService,
     private readonly budget: LLMBudgetService,
   ) {
-    const apiKey = this.config.get<string>('OPENAI_API_KEY');
-    this.openai = apiKey ? new OpenAI({ apiKey }) : null;
+    this.openai = createTextLlmClient(this.config);
     this.verbalizerModel = resolveBackendOpenAIModel('writer', this.config);
   }
 

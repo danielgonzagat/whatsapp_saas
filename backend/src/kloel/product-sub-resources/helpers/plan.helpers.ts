@@ -13,7 +13,7 @@ import {
   buildCouponData,
   serializeCoupon,
   serializeReview,
-} from './__companions__/plan.helpers.companion';
+} from './plan.serialize-helpers';
 export { buildCheckoutData, serializeCheckout, buildCouponData, serializeCoupon, serializeReview };
 
 function buildPlanExtraConfig(body: LooseObject, current: LooseObject) {

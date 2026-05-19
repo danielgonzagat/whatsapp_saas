@@ -1,5 +1,6 @@
 import { InjectRedis } from '@nestjs-modules/ioredis';
-import { ForbiddenException, Injectable, Logger, Optional } from '@nestjs/common';
+import { ForbiddenException, Injectable, Optional } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import type { Redis } from 'ioredis';
 import { PrismaService } from '../prisma/prisma.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
@@ -64,7 +65,7 @@ const planConfig: Record<
 /** Plan limits service. */
 @Injectable()
 export class PlanLimitsService {
-  private readonly logger = new Logger(PlanLimitsService.name);
+  private readonly logger = StructuredLogger.from(PlanLimitsService.name);
 
   constructor(
     private readonly prisma: PrismaService,
@@ -183,7 +184,6 @@ export class PlanLimitsService {
       if (total > cfg.messagesPerMonth) {
         throw new ForbiddenException(`Limite mensal de mensagens atingido para o plano ${plan}.`);
       }
-      // PULSE:OK — Redis rate-limit is best-effort; message is allowed to proceed when Redis is unavailable
     } catch (err: unknown) {
       void this.opsAlert?.alertOnCriticalError(err, 'PlanLimitsService.expire');
       // Em ambientes sem Redis ou em conexão subscriber, não bloqueia (modo tolerante para dev/test)
@@ -223,7 +223,6 @@ export class PlanLimitsService {
           `Limite de ${limit} mensagens/minuto atingido para o plano ${plan}. Aguarde.`,
         );
       }
-      // PULSE:OK — Redis rate-limit is best-effort; message is allowed to proceed when Redis is unavailable
     } catch (err: unknown) {
       void this.opsAlert?.alertOnCriticalError(err, 'PlanLimitsService.ensureMessageRate');
       if (err instanceof ForbiddenException) {
@@ -315,7 +314,6 @@ export class PlanLimitsService {
           `Limite de execuções por minuto atingido para o plano ${plan}.`,
         );
       }
-      // PULSE:OK — Redis unavailability for rate-limit tracking is non-fatal; allowing the operation is the safe fallback
     } catch (err: unknown) {
       void this.opsAlert?.alertOnCriticalError(err, 'PlanLimitsService.expire');
       this.logger.warn(
@@ -382,7 +380,6 @@ export class PlanLimitsService {
       if (total > cfg.aiTokensPerMonth) {
         throw new ForbiddenException(`Limite mensal de tokens IA atingido para o plano ${plan}.`);
       }
-      // PULSE:OK — Redis AI token tracking is best-effort; AI call proceeds when Redis is unavailable
     } catch (err: unknown) {
       void this.opsAlert?.alertOnCriticalError(err, 'PlanLimitsService.expire');
       this.logger.warn(

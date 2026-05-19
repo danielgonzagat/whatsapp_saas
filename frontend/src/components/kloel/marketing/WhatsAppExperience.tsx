@@ -88,8 +88,8 @@ export default function WhatsAppExperience(props: WhatsAppExperienceProps) {
     setMetaConnecting,
   } = useWhatsAppExperienceController(props);
 
-  if (!workspaceId) return null;
-  if (activated) return <ActivatedScreen />;
+  if (!workspaceId) {return null;}
+  if (activated) {return <ActivatedScreen />;}
 
   if (showWizard) {
     return (

@@ -1,5 +1,6 @@
-import { Injectable, Logger, Optional } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { StructuredLogger } from '../logging/structured-logger';
 import OpenAI from 'openai';
 import { Prisma } from '@prisma/client';
 import { PlanLimitsService } from '../billing/plan-limits.service';
@@ -59,7 +60,7 @@ const AUTOPILOT_ACTIONS = [
  */
 @Injectable()
 export class AutopilotCycleExecutorService {
-  private readonly logger = new Logger(AutopilotCycleExecutorService.name);
+  private readonly logger = StructuredLogger.from(AutopilotCycleExecutorService.name);
   private readonly openai: OpenAI | null;
 
   constructor(
@@ -159,44 +160,51 @@ export class AutopilotCycleExecutorService {
     const hour = new Date().getHours();
     const isNight = hour > 22 || hour < 7;
 
-    if (isNight) {
-      if (buyingSignal) {
-        return 'soft_close_night';
-      }
-      return 'auto_reply_night';
-    }
+    return (
+      this.decideNightAction(isNight, buyingSignal) ??
+      this.decideBuyingAction(buyingSignal, isOptimalTime) ??
+      this.decideIntentAction(intent) ??
+      this.decideStageAction(stage, sentiment, buyingSignal) ??
+      'ai_chat'
+    );
+  }
 
-    if (buyingSignal) {
-      if (isOptimalTime) {
-        return 'send_offer';
-      }
-      return 'send_offer_soft';
+  private decideNightAction(isNight: boolean, buyingSignal?: boolean): string | null {
+    if (!isNight) {
+      return null;
     }
+    return buyingSignal ? 'soft_close_night' : 'auto_reply_night';
+  }
 
-    if (intent === 'question_price') {
-      return 'send_price';
+  private decideBuyingAction(buyingSignal?: boolean, isOptimalTime?: boolean): string | null {
+    if (!buyingSignal) {
+      return null;
     }
-    if (intent === 'scheduling') {
-      return 'send_calendar';
-    }
-    if (intent === 'complaint') {
-      return 'handover_human';
-    }
-    if (intent === 'objection') {
-      return 'handle_objection';
-    }
+    return isOptimalTime ? 'send_offer' : 'send_offer_soft';
+  }
 
+  private decideIntentAction(intent?: string): string | null {
+    const INTENT_ACTION_MAP: Record<string, string> = {
+      question_price: 'send_price',
+      scheduling: 'send_calendar',
+      complaint: 'handover_human',
+      objection: 'handle_objection',
+    };
+    return intent ? (INTENT_ACTION_MAP[intent] ?? null) : null;
+  }
+
+  private decideStageAction(
+    stage?: string,
+    sentiment?: string,
+    buyingSignal?: boolean,
+  ): string | null {
     if (stage === 'new') {
       return 'qualify';
     }
     if (stage === 'closing') {
-      if (sentiment === 'positive' && !buyingSignal) {
-        return 'try_upsell';
-      }
-      return 'send_cta';
+      return sentiment === 'positive' && !buyingSignal ? 'try_upsell' : 'send_cta';
     }
-
-    return 'ai_chat';
+    return null;
   }
 
   private buildMindActionContext(
@@ -254,11 +262,11 @@ export class AutopilotCycleExecutorService {
         await this.prisma.autopilotEvent.create({
           data: {
             workspaceId: conv.workspaceId,
-            contactId: conv.contact?.id,
+            ...(conv.contact?.id !== undefined ? { contactId: conv.contact.id } : {}),
             intent: analysis?.intent || 'UNKNOWN',
             action,
             status: 'skipped',
-            reason: compliance.reason,
+            ...(compliance.reason !== undefined ? { reason: compliance.reason } : {}),
             meta: { compliance: true },
           },
         });
@@ -272,84 +280,88 @@ export class AutopilotCycleExecutorService {
       return;
     }
 
-    let responseText = '';
-
-    switch (action) {
-      case 'send_offer':
-        responseText = await this.generateResponse('offer', conv, analysis);
-        break;
-      case 'send_offer_soft':
-        responseText = await this.generateResponse('offer_soft', conv, analysis);
-        break;
-      case 'send_price':
-        responseText = await this.generateResponse('price', conv, analysis);
-        break;
-      case 'follow_up':
-        responseText = await this.generateResponse('follow_up', conv, analysis);
-        break;
-      case 'lead_unlocker':
-        responseText = await this.generateResponse('lead_unlocker', conv, analysis);
-        break;
-      case 'handle_objection':
-        responseText = await this.generateResponse('objection', conv, analysis);
-        break;
-      case 'qualify':
-        responseText = await this.generateResponse('qualify', conv, analysis);
-        break;
-      case 'try_upsell':
-        responseText = await this.generateResponse('upsell', conv, analysis);
-        break;
-      case 'send_calendar':
-        responseText = renderTemplate('SEND_CALENDAR', {
-          calendarLink:
-            (this.readRecord(this.readRecord(conv?.workspace).providerSettings)
-              .calendarLink as string) || undefined,
-        });
-        break;
-      case 'soft_close_night':
-        responseText =
-          'Oi! Vi seu interesse. Já deixei tudo preparado para você. Amanhã cedo eu retomo para concluirmos, tudo bem?';
-        break;
-      case 'auto_reply_night':
-        responseText =
-          'Opa! Agora estou offline, mas já anotei sua dúvida. Amanhã 8h te respondo sem falta!';
-        break;
-      case 'ai_chat':
-        responseText = await this.generateResponse('chat', conv, analysis);
-        break;
-      case 'handover_human':
-        this.logger.warn(
-          `[Autopilot] Handover to human for conv ${conv.id} — complaint intent detected`,
-        );
-        return;
-      default:
-        return;
+    const responseText = await this.resolveActionResponse(action, conv, analysis);
+    if (responseText === null) {
+      return;
+    }
+    if (responseText === '') {
+      return;
     }
 
-    if (responseText) {
-      this.logger.log(`[Autopilot] Sent: "${responseText}"`);
-      try {
-        await this.planLimits.ensureDailyMessageQuota(conv.workspaceId);
-        await this.planLimits.ensureMessageRate(conv.workspaceId);
-        await flowQueue.add('send-message', {
+    try {
+      await this.planLimits.ensureDailyMessageQuota(conv.workspaceId);
+      await this.planLimits.ensureMessageRate(conv.workspaceId);
+      await flowQueue.add('send-message', {
+        workspaceId: conv.workspaceId,
+        to: conv.contact.phone,
+        user: conv.contact.phone,
+        message: responseText,
+      });
+    } catch (err: unknown) {
+      this.logger.warn(
+        `[Autopilot] Falha ao enfileirar envio: ${err instanceof Error ? err.message : 'unknown_error'}`,
+      );
+      void this.opsAlert?.alertOnCriticalError(
+        err,
+        'AutopilotCycleExecutorService.executeAction.send',
+        {
           workspaceId: conv.workspaceId,
-          to: conv.contact.phone,
-          user: conv.contact.phone,
-          message: responseText,
-        });
-      } catch (err: unknown) {
-        this.logger.warn(
-          `[Autopilot] Falha ao enfileirar envio: ${err instanceof Error ? err.message : 'unknown_error'}`,
-        );
-        void this.opsAlert?.alertOnCriticalError(
-          err,
-          'AutopilotCycleExecutorService.executeAction.send',
-          {
-            workspaceId: conv.workspaceId,
-          },
-        );
-      }
+        },
+      );
     }
+  }
+
+  private async resolveActionResponse(
+    action: string,
+    conv: AutopilotConversation,
+    analysis?: ConversationAnalysis,
+  ): Promise<string | null> {
+    const ACTION_TO_RESPONSE_TYPE: Record<string, string> = {
+      send_offer: 'offer',
+      send_offer_soft: 'offer_soft',
+      send_price: 'price',
+      follow_up: 'follow_up',
+      lead_unlocker: 'lead_unlocker',
+      handle_objection: 'objection',
+      qualify: 'qualify',
+      try_upsell: 'upsell',
+      ai_chat: 'chat',
+    };
+
+    const responseType = ACTION_TO_RESPONSE_TYPE[action];
+    if (responseType) {
+      return await this.generateResponse(responseType, conv, analysis);
+    }
+
+    if (action === 'send_calendar') {
+      const calendarLink =
+        (this.readRecord(this.readRecord(conv?.workspace).providerSettings)
+          .calendarLink as string) || undefined;
+
+      return renderTemplate('SEND_CALENDAR', {
+        ...(calendarLink !== undefined ? { calendarLink } : {}),
+      });
+    }
+
+    const HARDCODED_RESPONSES: Record<string, string> = {
+      soft_close_night:
+        'Oi! Vi seu interesse. Já deixei tudo preparado para você. Amanhã cedo eu retomo para concluirmos, tudo bem?',
+      auto_reply_night:
+        'Opa! Agora estou offline, mas já anotei sua dúvida. Amanhã 8h te respondo sem falta!',
+    };
+
+    if (action in HARDCODED_RESPONSES) {
+      return HARDCODED_RESPONSES[action] ?? null;
+    }
+
+    if (action === 'handover_human') {
+      this.logger.warn(
+        `[Autopilot] Handover to human for conv ${conv.id} — complaint intent detected`,
+      );
+      return null;
+    }
+
+    return '';
   }
 
   private async fetchWorkspaceProductInfo(workspaceId: string): Promise<{
@@ -407,7 +419,7 @@ export class AutopilotCycleExecutorService {
       productContext = info.products
         .map(
           (p) =>
-            `- ${p.name}: ${p.currency === 'BRL' ? 'R$' : p.currency + ' '}${p.price.toFixed(2)}${p.description ? ` — ${p.description}` : ''}`,
+            `- ${p.name}: ${p.currency === 'BRL' ? 'R$' : `${p.currency} `}${p.price.toFixed(2)}${p.description ? ` — ${p.description}` : ''}`,
         )
         .join('\n');
     }
@@ -438,6 +450,6 @@ ${productContext ? `\nAVAILABLE PRODUCTS (use ONLY these real products in your r
         .catch(() => {});
     }
 
-    return completion.choices[0]?.message?.content ?? 'Olá, como posso ajudar?';
+    return completion.choices[0]?.message?.content ?? null;
   }
 }

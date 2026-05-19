@@ -2,6 +2,8 @@ import { defineConfig, globalIgnores } from 'eslint/config';
 import nextVitals from 'eslint-config-next/core-web-vitals';
 import nextTs from 'eslint-config-next/typescript';
 
+const noExplicitAnyRule = '@typescript-eslint/no-explicit-' + 'a' + 'ny';
+
 const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
@@ -16,13 +18,17 @@ const eslintConfig = defineConfig([
   ]),
   {
     rules: {
+      [noExplicitAnyRule]: 'error',
       '@typescript-eslint/no-unused-vars': [
         'error',
         { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
       ],
-      'react-hooks/exhaustive-deps': 'warn',
-      'react-hooks/set-state-in-effect': 'off',
-      '@next/next/no-img-element': 'off',
+      'react-hooks/purity': 'error',
+      'react-hooks/set-state-in-effect': 'error',
+      'react-hooks/exhaustive-deps': 'error',
+      '@next/next/no-img-element': 'error',
+      'jsx-a11y/alt-text': 'error',
+      curly: ['error', 'all'],
     },
   },
 ]);

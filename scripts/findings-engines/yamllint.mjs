@@ -66,7 +66,7 @@ function globFiles(exts) {
       maxBuffer: 16 * 1024 * 1024,
     },
   );
-  if (result.status !== 0) return [];
+  if (result.status !== 0) {return [];}
   return result.stdout
     .trim()
     .split('\n')
@@ -80,9 +80,9 @@ function parseYamllintOutput(stdout) {
   const findings = [];
   const lines = stdout.trim().split('\n');
   for (const line of lines) {
-    if (!line) continue;
+    if (!line) {continue;}
     const m = line.match(/^([^:]+):(\d+):(\d+):(\w+):(.*)$/);
-    if (!m) continue;
+    if (!m) {continue;}
     const [, fileRaw, lineStr, colStr, sevRaw, message] = m;
     const severity = sevRaw === 'error' ? 'high' : 'medium';
     const file = relative(REPO_ROOT, resolve(REPO_ROOT, fileRaw)).replace(/\\/g, '/');
@@ -126,7 +126,7 @@ const allFindings = [];
 
 for (const file of files) {
   const absPath = resolve(REPO_ROOT, file);
-  if (!existsSync(absPath)) continue;
+  if (!existsSync(absPath)) {continue;}
   const r = spawnSync('yamllint', ['-f', 'parsable', absPath], {
     encoding: 'utf-8',
     maxBuffer: 16 * 1024 * 1024,

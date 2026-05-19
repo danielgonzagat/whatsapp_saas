@@ -185,6 +185,25 @@ jobs:
       - name: Normalize LCOV paths for monorepo uploads
         run: npm run coverage:normalize
 
+      - name: Validate coverage summaries
+        run: |
+          missing=0
+          for dir in backend frontend worker; do
+            if [ -f "$dir/coverage/coverage-summary.json" ]; then
+              echo "  ✓ $dir coverage-summary.json found"
+            else
+              echo "  ✗ $dir coverage-summary.json MISSING"
+              missing=1
+            fi
+          done
+          if [ "$missing" -ne 0 ]; then
+            echo ""
+            echo "ERROR: coverage-summary.json missing in one or more packages"
+            exit 1
+          fi
+          echo ""
+          echo "All coverage-summary.json files present"
+
       # Codecov Coverage Analytics — one upload per workspace with a flag so
       # the dashboard separates backend/frontend/worker rollups and component
       # targets in codecov.yml resolve correctly.
@@ -254,9 +273,26 @@ jobs:
 
       - name: PULSE certification gate
         env:
-          PULSE_CI_TIMEOUT_MS: '300000'
+          PULSE_CI_TIMEOUT_MS: '900000'
+          PULSE_CI_HEARTBEAT_MS: '60000'
           PULSE_DISABLE_LOCAL_ENV: 'true'
         run: npm run pulse:ci
+
+      - name: Railway runtime anti-regression gate
+        env:
+          RAILWAY_RUNTIME_REQUIRED: 'true'
+          RAILWAY_RUNTIME_FAIL_ON_WARNINGS: 'true'
+          RAILWAY_PROJECT_TOKEN: ${{ secrets.RAILWAY_PROJECT_TOKEN || secrets.RAILWAY_TOKEN }}
+          RAILWAY_PROJECT_ID: ${{ secrets.RAILWAY_PROJECT_ID }}
+          RAILWAY_ENVIRONMENT_ID: ${{ vars.RAILWAY_PRODUCTION_ENVIRONMENT_ID }}
+          RAILWAY_BACKEND_SERVICE_ID: ${{ vars.RAILWAY_BACKEND_SERVICE_ID }}
+          RAILWAY_BACKEND_SERVICE_NAME: ${{ vars.RAILWAY_BACKEND_SERVICE }}
+          RAILWAY_WORKER_SERVICE_ID: ${{ vars.RAILWAY_WORKER_SERVICE_ID }}
+          RAILWAY_WORKER_SERVICE_NAME: ${{ vars.RAILWAY_WORKER_SERVICE }}
+          RAILWAY_SYSTEM_HEALTH_URL: ${{ vars.PRODUCTION_SYSTEM_HEALTH_URL }}
+          RAILWAY_BACKEND_HEALTH_URL: ${{ vars.PRODUCTION_BACKEND_HEALTHCHECK_URL }}
+          RAILWAY_FRONTEND_HEALTH_URL: ${{ vars.PRODUCTION_FRONTEND_HEALTHCHECK_URL }}
+        run: npm run railway:runtime:check
 
       - name: Quality ratchet gate
         run: npm run ratchet:check
@@ -282,6 +318,111 @@ jobs:
             frontend/test-results/**
             worker/test-results/**
             .eslint-seatbelt.tsv
+          if-no-files-found: ignore
+
+  pulse-deep:
+    needs: quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    env:
+      PULSE_BACKEND_URL: http://localhost:3099
+      JWT_SECRET: pulse-deep-ci-test-secret
+      AUTH_OPTIONAL: 'true'
+      OPENAI_API_KEY: e2e-dummy-key
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: |
+            backend/package-lock.json
+
+      - name: Install root dependencies
+        run: npm ci
+
+      - name: Install backend dependencies
+        run: npm ci
+        working-directory: backend
+
+      - name: Build backend
+        run: |
+          npx prisma generate
+          npm run build
+        working-directory: backend
+
+      - name: Run PULSE deep triple-cycle (docker compose + 3x certify + assertions)
+        env:
+          PULSE_CI_TIMEOUT_MS: '1800000'
+        run: node scripts/ops/run-pulse-deep-ci.mjs --triple-cycle
+
+      - name: Print assertion report
+        if: always()
+        run: |
+          if [ -f PULSE_CERTIFICATE_ASSERTIONS.json ]; then
+            echo "=== Triple-Cycle Assertion Report ==="
+            cat PULSE_CERTIFICATE_ASSERTIONS.json | node -e "
+              const d = JSON.parse(require('fs').readFileSync(0,'utf-8'));
+              console.log('Overall:', d.overall);
+              console.log('Cycles:', d.cycles);
+              console.log('');
+              for (const [key, a] of Object.entries(d.assertions)) {
+                console.log(key + ':', a.passed ? 'PASS' : 'FAIL');
+                if (a.detail) console.log('  ' + a.detail);
+              }
+              console.log('');
+              for (const cd of (d.cycles_detail || [])) {
+                console.log('Cycle ' + cd.cycle + ': ' +
+                  'probes=' + cd.runtime_probes_executed + ' ' +
+                  'gates=' + cd.gates_passed + '/' + cd.gates_total + ' PASS ' +
+                  (cd.all_gates_pass ? '' : 'FAILING: ' + (cd.failing_gates || []).join(', ')));
+              }
+            "
+          else
+            echo 'No assertion report found.'
+          fi
+
+      - name: Print certificate gate summary for each cycle
+        if: always()
+        run: |
+          for i in 1 2 3; do
+            cert="PULSE_CERTIFICATE_CYCLE_${i}.json"
+            if [ -f "$cert" ]; then
+              echo "=== $cert ==="
+              cat "$cert" | node -e "
+                const d = JSON.parse(require('fs').readFileSync(0,'utf-8'));
+                console.log('status:', d.status);
+                console.log('score:', d.score);
+                console.log('environment:', d.environment);
+                const failing = Object.entries(d.gates||{}).filter(([,g])=>g.status!=='pass').map(([n])=>n);
+                if (failing.length) console.log('failing_gates:', failing.join(', '));
+                else console.log('all gates PASS');
+              "
+            else
+              echo "$cert: not found"
+            fi
+          done
+
+      - name: Upload PULSE deep triple-cycle artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pulse-deep-artifacts
+          path: |
+            PULSE_*.json
+            PULSE_*.md
+            PULSE_*
+            PULSE_REPORT.md
+            PULSE_CERTIFICATE.json
+            PULSE_CERTIFICATE_CYCLE_*.json
+            PULSE_CERTIFICATE_ASSERTIONS.json
+            .pulse/current/PULSE_RUNTIME_EVIDENCE.json
+            .pulse/current/PULSE_RUNTIME_PROBES.json
+            .pulse/current/PULSE_CERTIFICATE_CYCLE_*.json
           if-no-files-found: ignore
 
   e2e:

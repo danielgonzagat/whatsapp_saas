@@ -43,7 +43,7 @@ export function QRCodePane({
         }
       }
     }
-    setDots(generated);
+    queueMicrotask(() => setDots(generated));
   }, []);
 
   const showGenerating = !qrCode && (loading || progress > 0) && !connected;

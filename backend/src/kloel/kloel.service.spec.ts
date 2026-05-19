@@ -1,54 +1,58 @@
-jest.mock('./openai-wrapper', () => ({
-  chatCompletionWithFallback: jest.fn(),
-  chatCompletionStreamWithRetry: jest.fn(),
-}));
-
 import { KloelService } from './kloel.service';
-import { KloelThinkerService } from './kloel-thinker.service';
-import { KloelReplyEngineService } from './kloel-reply-engine.service';
-import { KloelThreadService } from './kloel-thread.service';
-import { KloelWhatsAppToolsService } from './kloel-whatsapp-tools.service';
-import { chatCompletionStreamWithRetry, chatCompletionWithFallback } from './openai-wrapper';
-
-import type { KloelPrismaMock } from './__companions__/kloel.service.spec.companion';
+import type { KloelPrismaMock } from './kloel.service.spec.types';
 
 describe('KloelService', () => {
   let service: KloelService;
   let prisma: KloelPrismaMock;
-  let whatsappService: { listChats: jest.Mock };
-  let transportRegistry: { send: jest.Mock };
-  let unifiedAgentService: { executeTool: jest.Mock };
-  let threadService: KloelThreadService;
-  let replyEngineService: KloelReplyEngineService;
-  let thinkerService: KloelThinkerService;
-  let whatsappToolsService: KloelWhatsAppToolsService;
+  let mocks: {
+    planLimits: {
+      ensureTokenBudget: jest.Mock;
+      trackAiUsage: jest.Mock;
+      trackMessageSend: jest.Mock;
+    };
+    threadService: { normalizeThreadMessageMetadataRecord: jest.Mock };
+    wsContextService: {
+      getWorkspaceContext: jest.Mock;
+      buildLinkedProductPromptContext: jest.Mock;
+      contextFormatter: { sanitizeUserNameForAssistant: jest.Mock };
+    };
+    leadBrainService: {
+      processWhatsAppMessage: jest.Mock;
+      processWhatsAppMessageWithPayment: jest.Mock;
+      generatePaymentForLead: jest.Mock;
+    };
+    composerService: {
+      executeComposerCapability: jest.Mock;
+      searchWeb: jest.Mock;
+      buildCapabilityPrompt: jest.Mock;
+    };
+    thinkerService: {
+      think: jest.Mock;
+      thinkSync: jest.Mock;
+      regenerateThreadAssistantResponse: jest.Mock;
+    };
+    replyEngineService: {
+      buildAssistantReply: jest.Mock;
+      buildMarketingPromptAddendum: jest.Mock;
+    };
+    toolDispatcher: { executeTool: jest.Mock };
+  };
 
   beforeEach(() => {
-    process.env.OPENAI_API_KEY = 'test-key';
-
     prisma = {
       chatThread: {
         findFirst: jest.fn().mockResolvedValue(null),
-        create: jest.fn().mockResolvedValue({
-          id: 'thread-1',
-          title: 'Nova conversa',
-          summary: null,
-          summaryUpdatedAt: null,
-        }),
+        create: jest.fn().mockResolvedValue({ id: 'thread-1', title: 'Nova conversa' }),
         update: jest.fn().mockResolvedValue({}),
         updateMany: jest.fn().mockResolvedValue({ count: 1 }),
         count: jest.fn().mockResolvedValue(0),
       },
       chatMessage: {
         findMany: jest.fn().mockResolvedValue([]),
-        create: jest
-          .fn()
-          .mockImplementation(({ data }: { data: { role: string } }) =>
-            Promise.resolve({ id: `${data.role}-1` }),
-          ),
+        create: jest.fn().mockResolvedValue({ id: 'msg-1' }),
         count: jest.fn().mockResolvedValue(0),
-        update: jest.fn(),
-        deleteMany: jest.fn(),
+        update: jest.fn().mockResolvedValue({}),
+        deleteMany: jest.fn().mockResolvedValue({ count: 0 }),
       },
       kloelMessage: {
         findMany: jest.fn().mockResolvedValue([]),
@@ -56,143 +60,83 @@ describe('KloelService', () => {
         update: jest.fn().mockResolvedValue({}),
         deleteMany: jest.fn().mockResolvedValue({ count: 0 }),
       },
+      kloelMemory: {
+        findMany: jest.fn().mockResolvedValue([]),
+        upsert: jest.fn().mockResolvedValue({}),
+      },
+      persona: {
+        findMany: jest.fn().mockResolvedValue([]),
+        create: jest.fn().mockResolvedValue({}),
+      },
+      integration: {
+        findMany: jest.fn().mockResolvedValue([]),
+        create: jest.fn().mockResolvedValue({}),
+      },
       product: {
         create: jest.fn(),
         count: jest.fn().mockResolvedValue(0),
-        findMany: jest.fn(),
-        findFirst: jest.fn(),
+        findMany: jest.fn().mockResolvedValue([]),
+        findFirst: jest.fn().mockResolvedValue(null),
         update: jest.fn(),
       },
       workspace: { findUnique: jest.fn().mockResolvedValue(null), update: jest.fn() },
       agent: { findFirst: jest.fn().mockResolvedValue(null) },
-      flow: { create: jest.fn(), findMany: jest.fn() },
-      contact: { findFirst: jest.fn(), create: jest.fn() },
+      flow: { create: jest.fn(), findMany: jest.fn().mockResolvedValue([]) },
+      contact: { findFirst: jest.fn().mockResolvedValue(null), create: jest.fn() },
       message: { create: jest.fn(), update: jest.fn() },
       auditLog: { create: jest.fn().mockResolvedValue({}) },
       $transaction: jest.fn().mockResolvedValue(undefined),
     };
 
-    whatsappService = {
-      listChats: jest.fn().mockResolvedValue([
-        {
-          id: '5511999991111@c.us',
-          phone: '5511999991111',
-          name: 'Alice',
-          unreadCount: 2,
-          pending: true,
+    mocks = {
+      planLimits: {
+        ensureTokenBudget: jest.fn().mockResolvedValue(undefined),
+        trackAiUsage: jest.fn().mockResolvedValue(undefined),
+        trackMessageSend: jest.fn().mockResolvedValue(undefined),
+      },
+      threadService: {
+        normalizeThreadMessageMetadataRecord: jest.fn().mockReturnValue({}),
+      },
+      wsContextService: {
+        getWorkspaceContext: jest.fn().mockResolvedValue(''),
+        buildLinkedProductPromptContext: jest.fn().mockResolvedValue(null),
+        contextFormatter: {
+          sanitizeUserNameForAssistant: jest.fn().mockReturnValue('Usuário'),
         },
-        {
-          id: '5511999992222@c.us',
-          phone: '5511999992222',
-          name: 'Bob',
-          unreadCount: 1,
-          pending: true,
-        },
-      ]),
-    };
-    transportRegistry = {
-      send: jest.fn().mockResolvedValue({ success: true, blocked: false, messageId: 'msg-1' }),
-    };
-
-    unifiedAgentService = {
-      executeTool: jest.fn().mockResolvedValue({ error: 'Unknown tool' }),
-    };
-
-    const planLimitsMock = {
-      trackAiUsage: jest.fn().mockResolvedValue(undefined),
-      ensureTokenBudget: jest.fn().mockResolvedValue(undefined),
-      trackMessageSend: jest.fn().mockResolvedValue(undefined),
-    };
-
-    const summaryServiceMock = {
-      maybeGenerateThreadTitle: jest.fn().mockResolvedValue('Conversas pendentes'),
-      maybeRefreshThreadSummary: jest.fn().mockResolvedValue(undefined),
-      isDefaultThreadTitle: jest.fn().mockReturnValue(true),
-      isSubstantiveMessage: jest.fn().mockReturnValue(true),
-      sanitizeGeneratedThreadTitle: jest
-        .fn()
-        .mockImplementation((v: string) => v || 'Nova conversa'),
-    };
-    threadService = new KloelThreadService(
-      prisma as never as ConstructorParameters<typeof KloelThreadService>[0],
-      summaryServiceMock as never,
-    );
-
-    const wsContextServiceMock = {
-      getWorkspaceContext: jest.fn().mockResolvedValue(''),
-      buildLinkedProductPromptContext: jest.fn().mockResolvedValue(null),
-      contextFormatter: {
-        sanitizeUserNameForAssistant: jest.fn().mockReturnValue('Usuário'),
-        buildWorkspaceBusinessHoursContext: jest.fn().mockReturnValue(null),
-        buildWorkspaceProductContext: jest.fn().mockReturnValue(''),
-        buildWorkspaceAffiliateContext: jest.fn().mockReturnValue(''),
-        buildAgentProfileContext: jest.fn().mockReturnValue(null),
+      },
+      leadBrainService: {
+        processWhatsAppMessage: jest.fn().mockResolvedValue('resposta'),
+        processWhatsAppMessageWithPayment: jest.fn().mockResolvedValue({ response: 'r' }),
+        generatePaymentForLead: jest.fn().mockResolvedValue({}),
+      },
+      composerService: {
+        executeComposerCapability: jest.fn(),
+        searchWeb: jest.fn().mockResolvedValue({ answer: '', sources: [] }),
+        buildCapabilityPrompt: jest.fn().mockReturnValue(''),
+      },
+      thinkerService: {
+        think: jest.fn().mockResolvedValue(undefined),
+        thinkSync: jest.fn().mockResolvedValue({ response: 'ok' }),
+        regenerateThreadAssistantResponse: jest.fn().mockResolvedValue({}),
+      },
+      replyEngineService: {
+        buildAssistantReply: jest.fn().mockResolvedValue('reply'),
+        buildMarketingPromptAddendum: jest.fn().mockResolvedValue(''),
+      },
+      toolDispatcher: {
+        executeTool: jest.fn().mockResolvedValue({ success: true }),
       },
     };
 
-    replyEngineService = new KloelReplyEngineService(
-      prisma as never as ConstructorParameters<typeof KloelReplyEngineService>[0],
-      planLimitsMock as never,
-      threadService,
-      wsContextServiceMock as never,
-      unifiedAgentService as never,
-    );
-
-    const composerServiceMock = {
-      executeComposerCapability: jest.fn(),
-      searchWeb: jest.fn().mockResolvedValue({ answer: 'resultado', sources: [] }),
-      buildCapabilityPrompt: jest.fn().mockReturnValue(''),
-    };
-
-    const llmBudgetMock = {
-      assertBudget: jest.fn().mockResolvedValue(undefined),
-      recordSpend: jest.fn().mockResolvedValue(undefined),
-    };
-
-    thinkerService = new KloelThinkerService(
-      prisma as never as ConstructorParameters<typeof KloelThinkerService>[0],
-      planLimitsMock as never,
-      llmBudgetMock as never,
-      threadService,
-      wsContextServiceMock as never,
-      composerServiceMock as never,
-      replyEngineService,
-    );
-
-    whatsappToolsService = new KloelWhatsAppToolsService(
-      prisma as never as ConstructorParameters<typeof KloelWhatsAppToolsService>[0],
-      whatsappService as never,
-      { getSessionStatus: jest.fn(), startSession: jest.fn() } as never,
-      transportRegistry as never,
-      { textToSpeech: jest.fn(), transcribeAudio: jest.fn() } as never,
-      planLimitsMock as never,
-    );
-
     service = new KloelService(
-      prisma as never as ConstructorParameters<typeof KloelService>[0],
-      { createSmartPayment: jest.fn() } as never,
-      whatsappService as never,
-      { getSessionStatus: jest.fn(), startSession: jest.fn() } as never,
-      unifiedAgentService as never,
-      { textToSpeech: jest.fn(), transcribeAudio: jest.fn() } as never,
-      planLimitsMock as never,
-      { upload: jest.fn(), uploadFromUrl: jest.fn() } as never,
-      threadService, // [8] threadService
-      wsContextServiceMock as never, // [9] wsContextService
-      {} as never, // [10] chatToolsService
-      {} as never, // [11] bizConfigToolsService
-      whatsappToolsService, // [12] whatsappToolsService
-      {} as never, // [13] leadBrainService
-      composerServiceMock as never, // [14] composerService
-      thinkerService,
-      replyEngineService,
-      {
-        executeTool: jest.fn(async (workspaceId: string, toolName: string, args: unknown) =>
-          toolName === 'list_whatsapp_chats'
-            ? whatsappToolsService.toolListWhatsAppChats(workspaceId, args as { limit?: number })
-            : { success: false, error: `Ferramenta desconhecida: ${toolName}` },
-        ),
-      } as never,
+      prisma as never,
+      mocks.planLimits as never,
+      mocks.threadService as never,
+      mocks.wsContextService as never,
+      mocks.leadBrainService as never,
+      mocks.thinkerService as never,
+      mocks.replyEngineService as never,
+      mocks.toolDispatcher as never,
     );
   });
 
@@ -200,386 +144,367 @@ describe('KloelService', () => {
     jest.clearAllMocks();
   });
 
-  it('executes real WhatsApp tools inside the think loop instead of only generating text', async () => {
-    (chatCompletionWithFallback as jest.Mock).mockResolvedValueOnce({
-      choices: [
-        {
-          message: {
-            content: '',
-            tool_calls: [
-              {
-                id: 'call-1',
-                function: {
-                  name: 'list_whatsapp_chats',
-                  arguments: JSON.stringify({ limit: 2 }),
-                },
-              },
-            ],
+  // ── getHistory ──
+
+  describe('getHistory', () => {
+    it('returns empty array when workspaceId is falsy', async () => {
+      const result = await service.getHistory('');
+      expect(result).toEqual([]);
+      expect(prisma.kloelMessage.findMany).not.toHaveBeenCalled();
+    });
+
+    it('queries kloelMessage scoped by workspaceId', async () => {
+      prisma.kloelMessage.findMany.mockResolvedValue([
+        { id: 'm1', role: 'user', content: 'hello', createdAt: new Date('2026-01-01') },
+      ]);
+
+      const result = await service.getHistory('ws-1');
+
+      expect(prisma.kloelMessage.findMany).toHaveBeenCalledWith({
+        where: { workspaceId: 'ws-1' },
+        orderBy: { createdAt: 'asc' },
+        take: 50,
+        select: { id: true, role: true, content: true, createdAt: true },
+      });
+      expect(result).toEqual([
+        { id: 'm1', role: 'user', content: 'hello', timestamp: new Date('2026-01-01') },
+      ]);
+    });
+
+    it('returns empty array on prisma error', async () => {
+      prisma.kloelMessage.findMany.mockRejectedValue(new Error('db down'));
+      const result = await service.getHistory('ws-1');
+      expect(result).toEqual([]);
+    });
+  });
+
+  // ── saveMemory ──
+
+  describe('saveMemory', () => {
+    it('delegates to conversationStore with workspaceId', async () => {
+      const captured: Array<{ where?: unknown; create?: unknown }> = [];
+      prisma.kloelMemory.upsert.mockImplementation(
+        (args: { where?: unknown; create?: unknown }) => {
+          captured.push(args);
+          return Promise.resolve({});
+        },
+      );
+
+      await service.saveMemory('ws-1', 'fact', 'content');
+
+      expect(captured.length).toBe(1);
+      const wsKey = captured[0].where as { workspaceId_key?: { workspaceId?: string } } | undefined;
+      const createData = captured[0].create as { workspaceId?: string } | undefined;
+      expect(wsKey?.workspaceId_key?.workspaceId).toBe('ws-1');
+      expect(createData?.workspaceId).toBe('ws-1');
+    });
+  });
+
+  // ── listFollowups ──
+
+  describe('listFollowups', () => {
+    it('queries kloelMemory scoped by workspaceId', async () => {
+      prisma.kloelMemory.findMany.mockResolvedValue([]);
+
+      await service.listFollowups('ws-1');
+
+      expect(prisma.kloelMemory.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { workspaceId: 'ws-1', category: 'followups' },
+        }),
+      );
+    });
+
+    it('adds contactId filter when provided', async () => {
+      prisma.kloelMemory.findMany.mockResolvedValue([]);
+
+      await service.listFollowups('ws-1', 'contact-1');
+
+      expect(prisma.kloelMemory.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: {
+            workspaceId: 'ws-1',
+            category: 'followups',
+            metadata: { path: ['contactId'], equals: 'contact-1' },
           },
-        },
-      ],
+        }),
+      );
     });
 
-    (chatCompletionStreamWithRetry as jest.Mock).mockResolvedValueOnce(
-      (async function* () {
-        await Promise.resolve();
-        yield {
-          choices: [
-            { delta: { content: 'Encontrei 2 conversas pendentes e já posso agir sobre elas.' } },
-          ],
-        };
-      })(),
-    );
+    it('maps followup metadata to list items', async () => {
+      const createdAt = new Date('2026-01-01');
+      prisma.kloelMemory.findMany.mockResolvedValue([
+        {
+          id: 'f1',
+          key: 'followup-1',
+          value: 'some value',
+          metadata: { phone: '5511', contactId: 'c1', message: 'msg', status: 'done' },
+          createdAt,
+        },
+      ]);
 
-    const writes: string[] = [];
-    const response = {
-      setHeader: jest.fn(),
-      write: jest.fn((chunk: string) => {
-        writes.push(chunk);
-        return true;
-      }),
-      end: jest.fn(),
-    };
+      const result = await service.listFollowups('ws-1');
 
-    await service.think(
-      { workspaceId: 'ws-1', message: 'o que está pendente no whatsapp?', mode: 'chat' },
-      response as never,
-    );
+      expect(result.total).toBe(1);
+      expect(result.followups[0]).toEqual({
+        id: 'f1',
+        key: 'followup-1',
+        phone: '5511',
+        contactId: 'c1',
+        message: 'msg',
+        scheduledFor: undefined,
+        delayMinutes: undefined,
+        status: 'done',
+        createdAt,
+        executedAt: undefined,
+      });
+    });
 
-    const events = writes
-      .join('')
-      .split('\n\n')
-      .filter(Boolean)
-      .map((block) => JSON.parse(block.replace(/^data: /, '')));
-
-    expect(whatsappService.listChats).toHaveBeenCalledWith('ws-1');
-    expect(unifiedAgentService.executeTool).toHaveBeenCalledWith(
-      'list_whatsapp_chats',
-      { limit: 2 },
-      expect.objectContaining({ workspaceId: 'ws-1' }),
-    );
-    expect(events).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ type: 'status', phase: 'thinking' }),
-        expect.objectContaining({ type: 'status', phase: 'streaming_token' }),
-        expect.objectContaining({ type: 'tool_call', tool: 'list_whatsapp_chats' }),
-        expect.objectContaining({
-          type: 'tool_result',
-          tool: 'list_whatsapp_chats',
-          success: true,
-        }),
-        expect.objectContaining({
-          type: 'content',
-          content: 'Encontrei 2 conversas pendentes e já posso agir sobre elas.',
-        }),
-        expect.objectContaining({ type: 'done', done: true }),
-      ]),
-    );
-    expect(response.end).toHaveBeenCalled();
+    it('returns empty result on prisma error', async () => {
+      prisma.kloelMemory.findMany.mockRejectedValue(new Error('db down'));
+      const result = await service.listFollowups('ws-1');
+      expect(result).toEqual({ total: 0, followups: [] });
+    });
   });
 
-  it('implicitly routes landing-page requests to the site composer capability', async () => {
-    const executeComposerCapability = jest
-      .spyOn(
-        Reflect.get(thinkerService, 'composerService') as { executeComposerCapability: jest.Mock },
-        'executeComposerCapability',
-      )
-      .mockResolvedValue({
-        content: 'Site gerado e pronto para revisão.',
-        metadata: { generatedSiteHtml: '<html><body>Oferta</body></html>' },
+  // ── listPersonas ──
+
+  describe('listPersonas', () => {
+    it('queries persona scoped by workspaceId', async () => {
+      prisma.persona.findMany.mockResolvedValue([]);
+
+      await service.listPersonas('ws-1');
+
+      expect(prisma.persona.findMany).toHaveBeenCalledWith({
+        where: { workspaceId: 'ws-1' },
+        orderBy: { createdAt: 'desc' },
+        take: 50,
+        select: {
+          id: true,
+          name: true,
+          role: true,
+          basePrompt: true,
+          voiceId: true,
+          knowledgeBaseId: true,
+          workspaceId: true,
+          createdAt: true,
+        },
+      });
+    });
+  });
+
+  // ── createPersona ──
+
+  describe('createPersona', () => {
+    it('creates persona with workspaceId in data', async () => {
+      prisma.persona.create.mockResolvedValue({ id: 'p1' });
+
+      await service.createPersona('ws-1', { name: 'Vendedor', role: 'SALES' });
+
+      expect(prisma.persona.create).toHaveBeenCalledWith({
+        data: {
+          workspaceId: 'ws-1',
+          name: 'Vendedor',
+          role: 'SALES',
+          basePrompt: '',
+        },
+      });
+    });
+
+    it('defaults role to SALES and uses systemPrompt as basePrompt when provided', async () => {
+      prisma.persona.create.mockResolvedValue({ id: 'p2' });
+
+      await service.createPersona('ws-2', { name: 'Suporte', systemPrompt: 'Você é suporte' });
+
+      expect(prisma.persona.create).toHaveBeenCalledWith({
+        data: {
+          workspaceId: 'ws-2',
+          name: 'Suporte',
+          role: 'SALES',
+          basePrompt: 'Você é suporte',
+        },
+      });
+    });
+
+    it('prefers basePrompt over systemPrompt when both provided', async () => {
+      prisma.persona.create.mockResolvedValue({ id: 'p3' });
+
+      await service.createPersona('ws-3', {
+        name: 'Bot',
+        basePrompt: 'Prompt base',
+        systemPrompt: 'System prompt',
       });
 
-    const result = await service.thinkSync({
-      workspaceId: 'ws-1',
-      message: 'Crie uma landing page para vender meu ebook de R$47',
-      mode: 'chat',
+      expect(prisma.persona.create).toHaveBeenCalledWith({
+        data: {
+          workspaceId: 'ws-3',
+          name: 'Bot',
+          role: 'SALES',
+          basePrompt: 'Prompt base',
+        },
+      });
     });
-
-    expect(executeComposerCapability).toHaveBeenCalledWith(
-      expect.objectContaining({ capability: 'create_site', workspaceId: 'ws-1' }),
-    );
-    expect(result.response).toBe('Site gerado e pronto para revisão.');
   });
 
-  it('streams long-form prompts directly, skipping the extra planning pass and persisting the user first', async () => {
-    const createdMessages: Array<Record<string, unknown>> = [];
-    prisma.chatMessage.create.mockImplementation(({ data }: { data: Record<string, unknown> }) => {
-      createdMessages.push(data);
-      const role = typeof data.role === 'string' ? data.role : 'message';
-      return Promise.resolve({ id: `${role}-${createdMessages.length}` });
+  // ── listIntegrations ──
+
+  describe('listIntegrations', () => {
+    it('queries integration scoped by workspaceId', async () => {
+      prisma.integration.findMany.mockResolvedValue([]);
+
+      await service.listIntegrations('ws-1');
+
+      expect(prisma.integration.findMany).toHaveBeenCalledWith({
+        where: { workspaceId: 'ws-1' },
+        orderBy: { createdAt: 'desc' },
+        take: 50,
+        select: {
+          id: true,
+          type: true,
+          name: true,
+          credentials: true,
+          isActive: true,
+          workspaceId: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      });
     });
+  });
 
-    (chatCompletionStreamWithRetry as jest.Mock).mockResolvedValueOnce(
-      (async function* () {
-        await Promise.resolve();
-        yield {
-          choices: [
-            { delta: { content: 'Segue o diagnóstico completo com os pontos prioritários.' } },
-          ],
-        };
-      })(),
-    );
+  // ── createIntegration ──
 
-    const writes: string[] = [];
-    const response = {
-      setHeader: jest.fn(),
-      write: jest.fn((chunk: string) => {
-        writes.push(chunk);
-        return true;
-      }),
-      end: jest.fn(),
-    };
+  describe('createIntegration', () => {
+    it('creates integration with workspaceId in data', async () => {
+      prisma.integration.create.mockResolvedValue({ id: 'i1' });
 
-    await service.think(
-      {
+      await service.createIntegration('ws-1', {
+        type: 'blig',
+        name: 'Bling',
+        credentials: { apiKey: 'k' },
+      });
+
+      expect(prisma.integration.create).toHaveBeenCalledWith({
+        data: {
+          workspaceId: 'ws-1',
+          type: 'blig',
+          name: 'Bling',
+          credentials: { apiKey: 'k' },
+        },
+      });
+    });
+  });
+
+  // ── Delegation methods ──
+
+  describe('processWhatsAppMessage', () => {
+    it('passes workspaceId to leadBrainService', async () => {
+      await service.processWhatsAppMessage('ws-1', '5511', 'hello');
+
+      const args = mocks.leadBrainService.processWhatsAppMessage.mock.calls[0];
+      expect(args.slice(0, 3)).toEqual(['ws-1', '5511', 'hello']);
+      expect(typeof args[3]).toBe('function');
+    });
+  });
+
+  describe('processWhatsAppMessageWithPayment', () => {
+    it('passes workspaceId to leadBrainService', async () => {
+      await service.processWhatsAppMessageWithPayment('ws-1', '5511', 'hello');
+
+      const args = mocks.leadBrainService.processWhatsAppMessageWithPayment.mock.calls[0];
+      expect(args.slice(0, 3)).toEqual(['ws-1', '5511', 'hello']);
+      expect(typeof args[3]).toBe('function');
+    });
+  });
+
+  describe('generatePaymentForLead', () => {
+    it('passes workspaceId to leadBrainService', async () => {
+      await service.generatePaymentForLead('ws-1', 'lead-1', '5511', 'Prod', 100, 'conv');
+
+      expect(mocks.leadBrainService.generatePaymentForLead).toHaveBeenCalledWith(
+        'ws-1',
+        'lead-1',
+        '5511',
+        'Prod',
+        100,
+        'conv',
+      );
+    });
+  });
+
+  describe('regenerateThreadAssistantResponse', () => {
+    it('passes workspaceId to thinkerService', async () => {
+      await service.regenerateThreadAssistantResponse({
         workspaceId: 'ws-1',
-        message: 'Preciso de um diagnóstico completo da operação comercial com plano completo.',
-        mode: 'chat',
-        metadata: { clientRequestId: 'req-long-1' },
-      },
-      response as never,
-    );
+        conversationId: 'conv-1',
+        assistantMessageId: 'msg-1',
+      });
 
-    const events = writes
-      .join('')
-      .split('\n\n')
-      .filter((block) => block.startsWith('data: '))
-      .map((block) => JSON.parse(block.replace(/^data: /, '')));
+      expect(mocks.thinkerService.regenerateThreadAssistantResponse).toHaveBeenCalledWith({
+        workspaceId: 'ws-1',
+        conversationId: 'conv-1',
+        assistantMessageId: 'msg-1',
+      });
+    });
+  });
 
-    expect(chatCompletionWithFallback).not.toHaveBeenCalled();
-    expect(createdMessages).toHaveLength(2);
-    expect(createdMessages[0]).toEqual(
-      expect.objectContaining({
-        role: 'user',
-        content: 'Preciso de um diagnóstico completo da operação comercial com plano completo.',
-        metadata: expect.objectContaining({
-          clientRequestId: 'req-long-1',
-          requestState: 'accepted',
-          transport: 'sse',
-        }),
-      }),
-    );
-    expect(createdMessages[1]).toEqual(
-      expect.objectContaining({
-        role: 'assistant',
-        content: 'Segue o diagnóstico completo com os pontos prioritários.',
-        metadata: expect.objectContaining({
-          clientRequestId: 'req-long-1',
-          requestState: 'completed',
-          replyToMessageId: 'user-1',
-        }),
-      }),
-    );
-    expect(events).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ type: 'thread', conversationId: 'thread-1' }),
-        expect.objectContaining({ type: 'status', phase: 'thinking' }),
-        expect.objectContaining({ type: 'status', phase: 'streaming_token' }),
+  // ── Tenant isolation ──
+
+  describe('tenant isolation', () => {
+    it('getHistory enforces workspaceId filter', async () => {
+      prisma.kloelMessage.findMany.mockResolvedValue([
+        { id: 'm1', role: 'user', content: 'hello', createdAt: new Date() },
+      ]);
+
+      await service.getHistory('ws-a');
+
+      expect(prisma.kloelMessage.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { workspaceId: 'ws-a' } }),
+      );
+    });
+
+    it('listFollowups enforces workspaceId filter', async () => {
+      await service.listFollowups('ws-b');
+
+      expect(prisma.kloelMemory.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { workspaceId: 'ws-b', category: 'followups' } }),
+      );
+    });
+
+    it('listPersonas enforces workspaceId filter', async () => {
+      await service.listPersonas('ws-c');
+
+      expect(prisma.persona.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { workspaceId: 'ws-c' } }),
+      );
+    });
+
+    it('createPersona includes workspaceId in data', async () => {
+      await service.createPersona('ws-d', { name: 'P' });
+
+      expect(prisma.persona.create).toHaveBeenCalledWith(
         expect.objectContaining({
-          type: 'content',
-          content: 'Segue o diagnóstico completo com os pontos prioritários.',
+          data: { workspaceId: 'ws-d', name: 'P', role: 'SALES', basePrompt: '' },
         }),
-        expect.objectContaining({ type: 'done', done: true }),
-      ]),
-    );
-  });
+      );
+    });
 
-  it('preserves assistant response versions when regenerating a reply', async () => {
-    prisma.chatThread.findFirst.mockResolvedValue({ id: 'thread-1', summary: 'Resumo atual' });
-    prisma.chatMessage.findMany.mockResolvedValue([
-      {
-        id: 'assistant-later',
-        threadId: 'thread-1',
-        role: 'assistant',
-        content: 'Resposta posterior',
-        metadata: null,
-        createdAt: new Date('2026-04-13T10:01:00.000Z'),
-      },
-      {
-        id: 'assistant-1',
-        threadId: 'thread-1',
-        role: 'assistant',
-        content: 'Resposta original',
-        metadata: {
-          responseVersions: [
-            {
-              id: 'resp-1',
-              content: 'Resposta original',
-              createdAt: '2026-04-13T10:00:10.000Z',
-              source: 'initial',
-            },
-          ],
-        },
-        createdAt: new Date('2026-04-13T10:00:10.000Z'),
-      },
-      {
-        id: 'user-1',
-        threadId: 'thread-1',
-        role: 'user',
-        content: 'Explique melhor',
-        metadata: null,
-        createdAt: new Date('2026-04-13T10:00:00.000Z'),
-      },
-    ]);
-    prisma.chatMessage.create.mockImplementation(
-      ({ data }: { data: { role: string; content?: string; metadata?: unknown } }) =>
-        Promise.resolve({
-          id: `${data.role}-generated`,
-          threadId: 'thread-1',
-          role: data.role,
-          content: data.content,
-          metadata: data.metadata ?? null,
-          createdAt: new Date('2026-04-13T10:02:00.000Z'),
+    it('listIntegrations enforces workspaceId filter', async () => {
+      await service.listIntegrations('ws-e');
+
+      expect(prisma.integration.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { workspaceId: 'ws-e' } }),
+      );
+    });
+
+    it('createIntegration includes workspaceId in data', async () => {
+      await service.createIntegration('ws-f', { type: 't', name: 'n', credentials: {} });
+
+      expect(prisma.integration.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: { workspaceId: 'ws-f', type: 't', name: 'n', credentials: {} },
         }),
-    );
-    prisma.chatMessage.update = jest.fn().mockResolvedValue({
-      id: 'assistant-1',
-      threadId: 'thread-1',
-      role: 'assistant',
-      content: 'Resposta regenerada',
-      metadata: null,
-      createdAt: new Date('2026-04-13T10:00:10.000Z'),
+      );
     });
-    prisma.chatMessage.deleteMany = jest.fn().mockResolvedValue({ count: 1 });
-    prisma.$transaction.mockResolvedValue([
-      {
-        id: 'assistant-1',
-        threadId: 'thread-1',
-        role: 'assistant',
-        content: 'Resposta regenerada',
-        createdAt: new Date('2026-04-13T10:00:10.000Z'),
-        metadata: {
-          responseVersions: [
-            { id: 'resp-1', content: 'Resposta original', source: 'initial' },
-            { id: 'resp-2', content: 'Resposta regenerada', source: 'regenerated' },
-          ],
-        },
-      },
-      { count: 1 },
-      {},
-      {},
-    ]);
-
-    jest.spyOn(replyEngineService, 'buildAssistantReply').mockImplementation(async (params) => {
-      await Promise.resolve();
-      params.onTraceEvent?.({
-        type: 'status',
-        phase: 'thinking',
-        message: 'Entendendo sua pergunta e reunindo o contexto da conversa.',
-        done: false,
-      });
-      params.onTraceEvent?.({
-        type: 'tool_result',
-        callId: 'call-1',
-        tool: 'search_web',
-        success: true,
-        result: { answer: 'ok' },
-        done: false,
-      });
-      return 'Resposta regenerada';
-    });
-
-    const result = await service.regenerateThreadAssistantResponse({
-      workspaceId: 'ws-1',
-      conversationId: 'thread-1',
-      assistantMessageId: 'assistant-1',
-      userId: 'agent-1',
-      userName: 'Daniel',
-    });
-
-    expect(prisma.chatMessage.update).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: { id: 'assistant-1' },
-        data: expect.objectContaining({
-          content: 'Resposta regenerada',
-          metadata: expect.objectContaining({
-            regeneratedFromUserMessageId: 'user-1',
-            activeResponseVersionIndex: 1,
-            responseVersions: [
-              expect.objectContaining({
-                id: 'resp-1',
-                content: 'Resposta original',
-                source: 'initial',
-              }),
-              expect.objectContaining({ content: 'Resposta regenerada', source: 'regenerated' }),
-            ],
-            processingTrace: expect.arrayContaining([
-              expect.objectContaining({
-                phase: 'thinking',
-                label: 'Entendendo sua pergunta e reunindo o contexto da conversa.',
-              }),
-              expect.objectContaining({ phase: 'tool_result', label: 'Concluiu search web.' }),
-            ]),
-          }),
-        }),
-      }),
-    );
-    expect(prisma.chatMessage.deleteMany).toHaveBeenCalledWith({
-      where: { id: { in: ['assistant-later'] } },
-    });
-    expect(result).toEqual(
-      expect.objectContaining({
-        id: 'assistant-1',
-        content: 'Resposta regenerada',
-        deletedMessageIds: ['assistant-later'],
-      }),
-    );
-  });
-
-  it('persists thinkSync conversations with granular user and assistant writes', async () => {
-    prisma.chatThread.findFirst.mockResolvedValue({
-      id: 'thread-1',
-      title: 'Nova conversa',
-      summary: null,
-      summaryUpdatedAt: null,
-    });
-
-    jest.spyOn(replyEngineService, 'buildAssistantReply').mockResolvedValue('Resposta síncrona');
-
-    const result = await service.thinkSync({
-      workspaceId: 'ws-1',
-      conversationId: 'thread-1',
-      message: 'Me responda em modo síncrono',
-      mode: 'chat',
-      metadata: { clientRequestId: 'sync-1' },
-    });
-
-    expect(prisma.chatMessage.create).toHaveBeenNthCalledWith(
-      1,
-      expect.objectContaining({
-        data: expect.objectContaining({
-          threadId: 'thread-1',
-          role: 'user',
-          content: 'Me responda em modo síncrono',
-          metadata: expect.objectContaining({
-            clientRequestId: 'sync-1',
-            transport: 'sync',
-            requestState: 'accepted',
-          }),
-        }),
-        select: { id: true },
-      }),
-    );
-    expect(prisma.chatMessage.create).toHaveBeenNthCalledWith(
-      2,
-      expect.objectContaining({
-        data: expect.objectContaining({
-          threadId: 'thread-1',
-          role: 'assistant',
-          content: 'Resposta síncrona',
-          metadata: expect.objectContaining({
-            clientRequestId: 'sync-1',
-            transport: 'sync',
-            requestState: 'completed',
-            replyToMessageId: 'user-1',
-            activeResponseVersionIndex: 0,
-          }),
-        }),
-        select: { id: true },
-      }),
-    );
-    expect(result).toEqual(
-      expect.objectContaining({ response: 'Resposta síncrona', conversationId: 'thread-1' }),
-    );
   });
 });

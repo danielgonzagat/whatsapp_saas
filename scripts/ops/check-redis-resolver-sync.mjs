@@ -41,8 +41,8 @@ function fail(msg) {
   process.exit(1);
 }
 
-if (!existsSync(BACKEND)) fail(`Backend resolver missing: ${BACKEND}`);
-if (!existsSync(WORKER)) fail(`Worker resolver missing: ${WORKER}`);
+if (!existsSync(BACKEND)) {fail(`Backend resolver missing: ${BACKEND}`);}
+if (!existsSync(WORKER)) {fail(`Worker resolver missing: ${WORKER}`);}
 
 const backendContent = readFileSync(BACKEND, 'utf8');
 const workerContent = readFileSync(WORKER, 'utf8');

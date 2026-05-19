@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { Inject, Injectable, forwardRef } from '@nestjs/common';
+import { Inject, Injectable, forwardRef, Logger } from '@nestjs/common';
 import {
   AUTOPILOT_SWEEP_UNREAD_CONVERSATIONS_JOB,
   buildSweepUnreadConversationsJobData,
@@ -17,11 +17,8 @@ import { WhatsAppProviderRegistry } from '../whatsapp/providers/provider-registr
 import { WhatsAppCatchupService } from '../whatsapp/whatsapp-catchup.service';
 import { WorkerRuntimeService } from '../whatsapp/worker-runtime.service';
 import { CiaBootstrapService } from './cia-bootstrap.service';
-import type {
-  BacklogMode,
-  WorkspaceAutonomyMode,
-} from './__parts__/cia-backlog-run.service.companion';
-import { ensureBacklogCoverageHelper } from './__parts__/cia-backlog-run.service.companion';
+import type { BacklogMode, WorkspaceAutonomyMode } from '../whatsapp/cia-backlog-run.helpers';
+import { ensureBacklogCoverageHelper } from '../whatsapp/cia-backlog-run.helpers';
 
 /**
  * Orchestrates the backlog run: decides between queue-based (BullMQ worker),
@@ -30,6 +27,8 @@ import { ensureBacklogCoverageHelper } from './__parts__/cia-backlog-run.service
  */
 @Injectable()
 export class CiaBacklogRunService {
+  private readonly logger = new Logger(CiaBacklogRunService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly providerRegistry: WhatsAppProviderRegistry,
@@ -42,7 +41,9 @@ export class CiaBacklogRunService {
     private readonly bootstrapService: CiaBootstrapService,
     @Inject(forwardRef(() => WhatsAppCatchupService))
     private readonly catchupService: WhatsAppCatchupService,
-  ) {}
+  ) {
+    this.logger.debug?.(`CiaBacklogRunService initialized`);
+  }
 
   async startBacklogRun(
     workspaceId: string,

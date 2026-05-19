@@ -21,7 +21,6 @@ interface QueueConfigSectionProps {
   setIsEditingConfig: (v: boolean) => void;
   isSavingConfig: boolean;
   onSaveConfig: () => void;
-  onNavigate: (href: string) => void;
 }
 
 export function QueueConfigSection({
@@ -36,7 +35,6 @@ export function QueueConfigSection({
   setIsEditingConfig,
   isSavingConfig,
   onSaveConfig,
-  onNavigate,
 }: QueueConfigSectionProps) {
   return (
     <Section spacing="lg">

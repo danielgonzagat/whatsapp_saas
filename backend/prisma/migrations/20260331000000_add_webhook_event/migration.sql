@@ -14,7 +14,7 @@ CREATE TABLE "WebhookEvent" (
 );
 
 -- CreateIndex
-CREATE INDEX "WebhookEvent_status_idx" ON "WebhookEvent"("status");
+CREATE INDEX "WebhookEvent_status_idx" ON "WebhookEvent" ("status");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "WebhookEvent_provider_externalId_key" ON "WebhookEvent"("provider", "externalId");
+CREATE UNIQUE INDEX "WebhookEvent_provider_externalId_key" ON "WebhookEvent" ("provider", "externalId");

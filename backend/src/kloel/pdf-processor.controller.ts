@@ -1,11 +1,9 @@
 import {
   BadRequestException,
-  Body,
   Controller,
   FileTypeValidator,
   HttpException,
   HttpStatus,
-  Logger,
   MaxFileSizeValidator,
   Param,
   ParseFilePipe,
@@ -17,6 +15,7 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiBody, ApiConsumes, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
+import { StructuredLogger } from '../logging/structured-logger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
 import {
@@ -37,6 +36,8 @@ import {
   buildPdfAnalysisPrompt,
 } from './pdf-processor.service';
 
+import { RouteClass } from '../common/throttler/route-class.decorator';
+import { InternalEndpoint } from '../common/decorators/internal-endpoint.decorator';
 const PDF_TXT_RE = /\.(pdf|txt)$/i;
 const APPLICATION__PDF_OR_TEXT_RE = /^(application\/pdf|text\/plain)$/;
 
@@ -48,8 +49,9 @@ function countAnalysisItems(value: unknown): number {
 @ApiTags('KLOEL PDF Processor')
 @Controller('kloel/pdf')
 @UseGuards(JwtAuthGuard)
+@RouteClass('ai')
 export class PdfProcessorController {
-  private readonly logger = new Logger(PdfProcessorController.name);
+  private readonly logger = StructuredLogger.from(PdfProcessorController.name);
 
   constructor(
     private readonly pdfProcessor: PdfProcessorService,
@@ -192,6 +194,7 @@ export class PdfProcessorController {
   }
 
   /** Upload pdf. */
+  @InternalEndpoint('PDF upload handler')
   @Post(':workspaceId/upload')
   @ApiOperation({ summary: 'Upload e processa PDF' })
   @ApiParam({ name: 'workspaceId', description: 'ID do workspace' })
@@ -277,7 +280,7 @@ export class PdfProcessorController {
       requestId,
       sourceName: file.originalname,
       textLength: text.length,
-      estimatedCostCents,
+      ...(estimatedCostCents !== undefined ? { estimatedCostCents } : {}),
     });
 
     try {
@@ -314,68 +317,6 @@ export class PdfProcessorController {
           requestId,
           'pdf_analysis_provider_exception',
           file.originalname,
-        );
-      }
-      throw error;
-    }
-  }
-
-  /** Process text. */
-  @Post(':workspaceId/text')
-  @ApiOperation({ summary: 'Processa texto direto' })
-  @ApiParam({ name: 'workspaceId', description: 'ID do workspace' })
-  async processText(
-    @Param('workspaceId') workspaceId: string,
-    @Body() body: { text: string; sourceName: string },
-  ) {
-    if (!body.text || !body.sourceName) {
-      throw new BadRequestException('Texto e sourceName são obrigatórios');
-    }
-
-    const requestId = `${workspaceId}:${body.sourceName}:${body.text.length}`;
-    const estimatedCostCents = this.estimatePdfAnalysisQuote(body.text, body.sourceName);
-    const usageCharged = await this.chargePdfAnalysisIfNeeded({
-      workspaceId,
-      requestId,
-      sourceName: body.sourceName,
-      textLength: body.text.length,
-      estimatedCostCents,
-    });
-
-    try {
-      const result = await this.pdfProcessor.processTextWithUsage(
-        workspaceId,
-        body.text,
-        body.sourceName,
-      );
-      if (estimatedCostCents !== undefined && usageCharged) {
-        await this.settlePdfAnalysisIfNeeded({
-          workspaceId,
-          requestId,
-          sourceName: body.sourceName,
-          usage: result.usage,
-        });
-      }
-
-      return {
-        status: 'processed',
-        sourceName: body.sourceName,
-        textLength: body.text.length,
-        analysis: {
-          products: countAnalysisItems(result.analysis.products),
-          hasCompanyInfo: !!result.analysis.companyInfo,
-          objections: countAnalysisItems(result.analysis.objections),
-        },
-        details: result.analysis,
-      };
-    } catch (error: unknown) {
-      void this.opsAlert?.alertOnCriticalError(error, 'PdfProcessorController.countAnalysisItems');
-      if (usageCharged) {
-        await this.refundPdfAnalysisIfNeeded(
-          workspaceId,
-          requestId,
-          'pdf_analysis_provider_exception',
-          body.sourceName,
         );
       }
       throw error;

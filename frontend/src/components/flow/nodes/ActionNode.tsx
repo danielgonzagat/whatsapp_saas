@@ -35,8 +35,8 @@ function ActionNodeComponent({ data, selected }: NodeProps<ActionNodeData>) {
   return (
     <div
       className={`
-      px-4 py-3 rounded-lg border-2 bg-[#111113] shadow-md min-w-[200px] max-w-[280px]
-      ${selected ? 'border-teal-500 ring-2 ring-teal-500/30' : 'border-[#222226]'}
+      px-4 py-3 rounded-lg border-2 bg-[var(--bg-surface)] shadow-md min-w-[200px] max-w-[280px]
+      ${selected ? 'border-teal-500 ring-2 ring-teal-500/30' : 'border-[var(--bg-border)]'}
     `}
     >
       <Handle type="target" position={Position.Top} className="!bg-teal-500 !w-3 !h-3" />
@@ -45,10 +45,10 @@ function ActionNodeComponent({ data, selected }: NodeProps<ActionNodeData>) {
         <div className="p-1.5 bg-teal-500/15 rounded-md">
           <Zap className="w-4 h-4 text-teal-400" aria-hidden="true" />
         </div>
-        <span className="font-medium text-sm text-[#E0DDD8]">{data.label || 'Ação'}</span>
+        <span className="font-medium text-sm text-[var(--text-silver)]">{data.label || 'Ação'}</span>
       </div>
 
-      <div className="text-xs text-[#6E6E73]">
+      <div className="text-xs text-[var(--text-muted)]">
         {data.actionType ? (
           <span className="bg-teal-500/10 px-2 py-1 rounded-md">
             {actionLabels[data.actionType] || data.actionType}

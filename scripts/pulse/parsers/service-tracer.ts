@@ -1,32 +1,34 @@
 import * as path from 'path';
 import * as ts from 'typescript';
-import type { ServiceTrace } from '../types.core';
+import type { PrismaModel, ServiceTrace } from '../types.core';
 import type { PulseConfig } from '../types.manifest';
 import { walkFiles } from './utils';
 import { readTextFile } from '../safe-fs';
-import { discoverReservedJsKeywords } from '../dynamic-reality-kernel/__parts__/catalog-arithmetic';
-
+import { discoverReservedJsKeywords } from '../dynamic-reality-kernel/catalog-arithmetic';
+import {
+  buildRelationFieldMap,
+  buildTableNameMap,
+  collectModelsFromIncludeSelect,
+  collectModelsFromRawSql,
+} from '../orphan-prisma/enhanced-detector';
+import { parseSchema } from './schema-parser';
 function isNonMethodName(name: string): boolean {
   return discoverReservedJsKeywords().has(name);
 }
-
 function extractConstructorAliases(content: string): Map<string, string> {
   const aliases = new Map<string, string>();
   const ctorMatch = content.match(/constructor\s*\(([\s\S]*?)\)\s*\{/);
   if (!ctorMatch) {
     return aliases;
   }
-
   const paramRe =
     /(?:@(?:Inject|InjectRedis|Optional)\([^)]*\)\s*)?(?:private|public|protected)?\s*(?:readonly\s+)?(\w+)\??\s*:\s*([A-Z][A-Za-z0-9_]+)/g;
   let match: RegExpExecArray | null;
   while ((match = paramRe.exec(ctorMatch[1])) !== null) {
     aliases.set(match[1], match[2]);
   }
-
   return aliases;
 }
-
 function extractAssignedServiceAliases(content: string): Map<string, string> {
   const aliases = new Map<string, string>();
   const assignmentRe = /\bthis\.([A-Za-z_]\w*)\s*=\s*new\s+([A-Z][A-Za-z0-9_]+)\s*\(/g;
@@ -36,7 +38,6 @@ function extractAssignedServiceAliases(content: string): Map<string, string> {
   }
   return aliases;
 }
-
 function getClassMethodDeclarationName(trimmedLine: string): string | null {
   const methodMatch = trimmedLine.match(
     /^(?:public|private|protected)?\s*(?:async\s+)?([A-Za-z_]\w*)\s*(?:<[^>{}]+>)?\s*\(/,
@@ -44,15 +45,12 @@ function getClassMethodDeclarationName(trimmedLine: string): string | null {
   if (!methodMatch) {
     return null;
   }
-
   const methodName = methodMatch[1];
   if (isNonMethodName(methodName)) {
     return null;
   }
-
   return methodName;
 }
-
 function countParenDelta(value: string): number {
   let delta = 0;
   for (const ch of value) {
@@ -64,7 +62,6 @@ function countParenDelta(value: string): number {
   }
   return delta;
 }
-
 function identifierTokens(value: string): Set<string> {
   return new Set(
     value
@@ -75,11 +72,9 @@ function identifierTokens(value: string): Set<string> {
       .filter(Boolean),
   );
 }
-
 function hasIdentifierToken(value: string, token: string): boolean {
   return identifierTokens(value).has(token);
 }
-
 function unwrapExpression(expression: ts.Expression): ts.Expression {
   let current = expression;
   while (
@@ -92,7 +87,6 @@ function unwrapExpression(expression: ts.Expression): ts.Expression {
   }
   return current;
 }
-
 function expressionParts(expression: ts.Expression): string[] {
   const current = unwrapExpression(expression);
   if (ts.isIdentifier(current)) {
@@ -109,15 +103,12 @@ function expressionParts(expression: ts.Expression): string[] {
   }
   return [];
 }
-
 function collectPrismaReceiverNames(sourceFile: ts.SourceFile): Set<string> {
   const receivers = new Set<string>();
-
   const visit = (node: ts.Node): void => {
     if (ts.isIdentifier(node) && hasIdentifierToken(node.text, 'prisma')) {
       receivers.add(node.text);
     }
-
     if (ts.isCallExpression(node)) {
       const expression = unwrapExpression(node.expression);
       if (ts.isPropertyAccessExpression(expression)) {
@@ -137,14 +128,11 @@ function collectPrismaReceiverNames(sourceFile: ts.SourceFile): Set<string> {
         }
       }
     }
-
     ts.forEachChild(node, visit);
   };
-
   visit(sourceFile);
   return receivers;
 }
-
 function modelFromCallParts(parts: string[], prismaReceivers: Set<string>): string | null {
   for (let index = 0; index < parts.length; index++) {
     const part = parts[index];
@@ -161,7 +149,6 @@ function modelFromCallParts(parts: string[], prismaReceivers: Set<string>): stri
   }
   return null;
 }
-
 function modelFromPrismaPropertyParts(
   parts: string[],
   prismaReceivers: Set<string>,
@@ -180,7 +167,6 @@ function modelFromPrismaPropertyParts(
   }
   return null;
 }
-
 function sourceFilesForTraceText(fileName: string, text: string): ts.SourceFile[] {
   return [
     ts.createSourceFile(fileName, text, ts.ScriptTarget.Latest, true),
@@ -192,19 +178,46 @@ function sourceFilesForTraceText(fileName: string, text: string): ts.SourceFile[
     ),
   ];
 }
-
-function collectPrismaModelsFromText(text: string): Set<string> {
+function collectPrismaModelsFromText(
+  text: string,
+  relationFieldMap?: Map<string, string>,
+  tableNameMap?: Map<string, string>,
+): Set<string> {
   const models = new Set<string>();
-
   for (const sourceFile of sourceFilesForTraceText('service-trace-slice.ts', text)) {
     const prismaReceivers = collectPrismaReceiverNames(sourceFile);
-
     const visit = (node: ts.Node): void => {
       if (ts.isCallExpression(node)) {
         const parts = expressionParts(node.expression);
         const modelName = modelFromCallParts(parts, prismaReceivers);
         if (modelName) {
           models.add(modelName);
+          if (relationFieldMap) {
+            for (const m of collectModelsFromIncludeSelect(node, relationFieldMap)) {
+              models.add(m);
+            }
+          }
+        }
+        if (tableNameMap) {
+          for (const m of collectModelsFromRawSql(node, tableNameMap)) {
+            models.add(m);
+          }
+        }
+        const hasTransaction = parts.some((p) => p === '$transaction');
+        const usesPrismaReceiver = parts.some((p) => prismaReceivers.has(p));
+        if (hasTransaction && usesPrismaReceiver) {
+          for (const arg of node.arguments) {
+            if (ts.isArrowFunction(arg) || ts.isFunctionExpression(arg)) {
+              ts.forEachChild(arg.body, visit);
+            }
+          }
+        }
+      }
+      if (ts.isTaggedTemplateExpression(node)) {
+        if (tableNameMap) {
+          for (const m of collectModelsFromRawSql(node, tableNameMap)) {
+            models.add(m);
+          }
         }
       }
       if (ts.isPropertyAccessExpression(node)) {
@@ -214,21 +227,33 @@ function collectPrismaModelsFromText(text: string): Set<string> {
           models.add(modelName);
         }
       }
-
+      if (ts.isPropertyAccessExpression(node)) {
+        const parts = expressionParts(node);
+        if (parts.length >= 3) {
+          for (let idx = 0; idx < parts.length - 1; idx++) {
+            const part = parts[idx];
+            const isPrismaToken = hasIdentifierToken(part, 'prisma');
+            const isKnownReceiver = prismaReceivers.has(part);
+            if (isPrismaToken || isKnownReceiver) {
+              const modelName = parts[idx + 1];
+              if (modelName && !modelName.startsWith('$')) {
+                models.add(modelName);
+              }
+            }
+          }
+        }
+      }
       ts.forEachChild(node, visit);
     };
-
     visit(sourceFile);
   }
   return models;
 }
-
 function collectHelperModelsFromText(
   text: string,
   helperModelMap: Map<string, string[]>,
 ): Set<string> {
   const models = new Set<string>();
-
   for (const sourceFile of sourceFilesForTraceText('service-helper-slice.ts', text)) {
     const visit = (node: ts.Node): void => {
       if (ts.isCallExpression(node)) {
@@ -244,22 +269,19 @@ function collectHelperModelsFromText(
           }
         }
       }
-
       ts.forEachChild(node, visit);
     };
-
     visit(sourceFile);
   }
   return models;
 }
-
 function collectServiceCallsFromText(
   text: string,
   serviceAliases: Map<string, string>,
   className: string,
 ): Set<string> {
   const calls = new Set<string>();
-  const callRe = /\bthis\.([A-Za-z_]\w*)\.([A-Za-z_]\w*)\s*\(/g;
+  const callRe = /\bthis\.([A-Za-z_]\w*)\??\.([A-Za-z_]\w*)\s*\(/g;
   let match: RegExpExecArray | null;
   while ((match = callRe.exec(text)) !== null) {
     const serviceName = serviceAliases.get(match[1]);
@@ -276,7 +298,6 @@ function collectServiceCallsFromText(
   }
   return calls;
 }
-
 function collectTriggersFromDecorators(decorators: string[], methodName: string): string[] {
   const decoratorTriggers = decorators
     .map((decorator) => {
@@ -284,27 +305,22 @@ function collectTriggersFromDecorators(decorators: string[], methodName: string)
       if (cronMatch) {
         return `cron:${cronMatch[1].replace(/\s+/g, ' ').trim()}`;
       }
-
       const intervalMatch = decorator.match(/@Interval\(\s*([^)]*)\)/);
       if (intervalMatch) {
         return `interval:${intervalMatch[1].replace(/\s+/g, ' ').trim()}`;
       }
-
       const timeoutMatch = decorator.match(/@Timeout\(\s*([^)]*)\)/);
       if (timeoutMatch) {
         return `timeout:${timeoutMatch[1].replace(/\s+/g, ' ').trim()}`;
       }
-
       const eventMatch = decorator.match(/@OnEvent\(\s*([^)]*)\)/);
       if (eventMatch) {
         return `event:${eventMatch[1].replace(/\s+/g, ' ').trim()}`;
       }
-
       const processMatch = decorator.match(/@Process\(\s*([^)]*)\)/);
       if (processMatch) {
         return `queue:${processMatch[1].replace(/\s+/g, ' ').trim()}`;
       }
-
       return '';
     })
     .filter(Boolean);
@@ -313,25 +329,21 @@ function collectTriggersFromDecorators(decorators: string[], methodName: string)
     : [];
   return [...decoratorTriggers, ...lifecycleTriggers];
 }
-
 function extractDeclarationBody(lines: string[], startIndex: number, maxLines = 260): string {
   const block: string[] = [];
   let parenDepth = 0;
   let braceDepth = 0;
   let bodyStarted = false;
-
   for (let i = startIndex; i < Math.min(startIndex + maxLines, lines.length); i++) {
     const line = lines[i];
     const trimmed = line.trim();
     block.push(line);
-
     if (!bodyStarted) {
       parenDepth += countParenDelta(trimmed);
       if (parenDepth > 0 || !/\{\s*$/.test(trimmed)) {
         continue;
       }
     }
-
     const scanFrom = bodyStarted ? 0 : line.lastIndexOf('{');
     for (const ch of line.slice(Math.max(0, scanFrom))) {
       if (ch === '{') {
@@ -341,25 +353,24 @@ function extractDeclarationBody(lines: string[], startIndex: number, maxLines = 
         braceDepth--;
       }
     }
-
     if (bodyStarted && braceDepth <= 0) {
       break;
     }
   }
-
   return block.join('\n');
 }
-
-function buildPrismaHelperModelMap(files: string[]): Map<string, string[]> {
+function buildPrismaHelperModelMap(
+  files: string[],
+  relationFieldMap?: Map<string, string>,
+  tableNameMap?: Map<string, string>,
+): Map<string, string[]> {
   const helperModels = new Map<string, string[]>();
-
   for (const file of files) {
     try {
       const content = readTextFile(file, 'utf8');
       if (!/prisma|PrismaService/i.test(content)) {
         continue;
       }
-
       const lines = content.split('\n');
       for (let i = 0; i < lines.length; i++) {
         const functionMatch = lines[i]
@@ -368,9 +379,8 @@ function buildPrismaHelperModelMap(files: string[]): Map<string, string[]> {
         if (!functionMatch) {
           continue;
         }
-
         const body = extractDeclarationBody(lines, i);
-        const models = collectPrismaModelsFromText(body);
+        const models = collectPrismaModelsFromText(body, relationFieldMap, tableNameMap);
         if (models.size > 0) {
           helperModels.set(functionMatch[1], [...models]);
         }
@@ -379,18 +389,26 @@ function buildPrismaHelperModelMap(files: string[]): Map<string, string[]> {
       continue;
     }
   }
-
   return helperModels;
 }
-
 /** Trace services. */
 export function traceServices(config: PulseConfig): ServiceTrace[] {
   const traces: ServiceTrace[] = [];
   const backendFiles = walkFiles(config.backendDir, ['.ts']).filter(
     (file) => !/\.(spec|test|d)\.ts$/.test(file),
   );
-  const helperModelMap = buildPrismaHelperModelMap(backendFiles);
-  // Scan BOTH services AND controllers for Prisma model access
+  let relationFieldMap: Map<string, string> | undefined;
+  let tableNameMap: Map<string, string> | undefined;
+  if (config.schemaPath) {
+    try {
+      const schemaContent = readTextFile(config.schemaPath, 'utf8');
+      const prismaModels: PrismaModel[] = parseSchema(config);
+      relationFieldMap = buildRelationFieldMap(prismaModels);
+      tableNameMap = buildTableNameMap(schemaContent);
+    } catch {
+    }
+  }
+  const helperModelMap = buildPrismaHelperModelMap(backendFiles, relationFieldMap, tableNameMap);
   const files = backendFiles.filter(
     (f) =>
       f.endsWith('.service.ts') ||
@@ -402,7 +420,6 @@ export function traceServices(config: PulseConfig): ServiceTrace[] {
       f.endsWith('.work-items.ts') ||
       f.endsWith('.companion.ts'),
   );
-
   for (const file of files) {
     try {
       const content = readTextFile(file, 'utf8');
@@ -412,18 +429,12 @@ export function traceServices(config: PulseConfig): ServiceTrace[] {
         ...extractConstructorAliases(content),
         ...extractAssignedServiceAliases(content),
       ]);
-
-      // Check if file uses Prisma in any form
       const hasPrisma = /prisma|PrismaService/i.test(content);
       if (!hasPrisma && serviceAliases.size === 0) {
         continue;
       }
-
-      // Extract class name
       const classMatch = content.match(/export\s+class\s+(\w+)/);
       const className = classMatch ? classMatch[1] : path.basename(file, '.ts');
-
-      // Find all methods and their Prisma model accesses
       let currentMethod: string | null = null;
       let methodLine = 0;
       let methodBodyStartLine = 0;
@@ -436,18 +447,13 @@ export function traceServices(config: PulseConfig): ServiceTrace[] {
       const currentMethodLines: string[] = [];
       let pendingDecorators: string[] = [];
       let currentTriggers: string[] = [];
-
       for (let i = 0; i < lines.length; i++) {
         const line = lines[i];
         const trimmed = line.trim();
-
         if (!inMethod && !pendingMethod && trimmed.startsWith('@')) {
           pendingDecorators.push(trimmed);
           continue;
         }
-
-        // Detect class method declarations only. Prisma calls such as
-        // `this.prisma.product.findFirst({` must not become fake method names.
         if (!inMethod && !pendingMethod) {
           const methodName = getClassMethodDeclarationName(trimmed);
           if (methodName) {
@@ -456,11 +462,9 @@ export function traceServices(config: PulseConfig): ServiceTrace[] {
             pendingDecorators = [];
           }
         }
-
         if (!inMethod && pendingMethod) {
           pendingMethod.parenDepth += countParenDelta(trimmed);
         }
-
         if (!inMethod && pendingMethod && pendingMethod.parenDepth <= 0 && /\{\s*$/.test(trimmed)) {
           currentMethod = pendingMethod.name;
           methodLine = pendingMethod.line;
@@ -475,11 +479,8 @@ export function traceServices(config: PulseConfig): ServiceTrace[] {
           currentTriggers = collectTriggersFromDecorators(pendingDecorators, currentMethod);
           pendingDecorators = [];
         }
-
         if (inMethod) {
           currentMethodLines.push(line);
-
-          // Track braces
           const braceScanText =
             i === methodBodyStartLine ? line.slice(methodBodyStartColumn) : line;
           for (const ch of braceScanText) {
@@ -490,21 +491,17 @@ export function traceServices(config: PulseConfig): ServiceTrace[] {
               braceDepth--;
             }
           }
-
           for (const serviceCall of collectServiceCallsFromText(line, serviceAliases, className)) {
             currentServiceCalls.add(serviceCall);
           }
-
-          // Method ended
           if (braceDepth === 0 && currentMethod) {
             const methodText = currentMethodLines.join('\n');
-            for (const modelName of collectPrismaModelsFromText(methodText)) {
+            for (const modelName of collectPrismaModelsFromText(methodText, relationFieldMap, tableNameMap)) {
               currentModels.add(modelName);
             }
             for (const modelName of collectHelperModelsFromText(methodText, helperModelMap)) {
               currentModels.add(modelName);
             }
-
             if (currentModels.size > 0 || currentServiceCalls.size > 0) {
               traces.push({
                 file: relFile,
@@ -526,6 +523,5 @@ export function traceServices(config: PulseConfig): ServiceTrace[] {
       process.stderr.write(`  [warn] Could not trace ${file}: ${(e as Error).message}\n`);
     }
   }
-
   return traces;
 }

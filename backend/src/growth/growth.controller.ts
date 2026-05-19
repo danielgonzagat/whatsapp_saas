@@ -2,12 +2,14 @@ import { BadRequestException, Body, Controller, Post, UseGuards } from '@nestjs/
 import { toDataURL as qrToDataURL } from 'qrcode';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
+import { RouteClass } from '../common/throttler/route-class.decorator';
 
 const D_RE = /\D/g;
 
 /** Growth controller. */
 @Controller('growth')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
+@RouteClass('read')
 export class GrowthController {
   // NOTE: POST /growth/money-machine/activate is handled by MoneyMachineController
   // to avoid duplicate route registration. See money-machine.controller.ts.

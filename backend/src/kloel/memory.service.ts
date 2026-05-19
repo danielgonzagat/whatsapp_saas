@@ -1,47 +1,22 @@
-import { Injectable, Logger, Optional } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
-import { AuditService } from '../audit/audit.service';
-import { PrismaService } from '../prisma/prisma.service';
-import { OpsAlertService } from '../observability/ops-alert.service';
+import { Injectable } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
+import { MemoryCrudService } from './memory-crud.service';
+import { MemorySearchService } from './memory-search.service';
+import type { MemoryItem, SearchResult } from './memory.types';
 
-/** Memory item shape. */
-export interface MemoryItem {
-  /** Id property. */
-  id: string;
-  /** Workspace id property. */
-  workspaceId: string;
-  /** Key property. */
-  key: string;
-  /** Value property. */
-  value: unknown;
-  /** Category property. */
-  category: string;
-  /** Content property. */
-  content: string | null;
-  /** Similarity property. */
-  similarity?: number;
-}
-
-/** Search result shape. */
-export interface SearchResult {
-  /** Memories property. */
-  memories: MemoryItem[];
-  /** Total found property. */
-  totalFound: number;
-  /** Search time property. */
-  searchTime: number;
-}
+export type { MemoryItem, SearchResult };
 
 /** Memory service. */
 @Injectable()
 export class MemoryService {
-  private readonly logger = new Logger(MemoryService.name);
+  private readonly logger = StructuredLogger.from(MemoryService.name);
 
   constructor(
-    private readonly prisma: PrismaService,
-    private readonly auditService: AuditService,
-    @Optional() private readonly opsAlert?: OpsAlertService,
-  ) {}
+    private readonly memoryCrud: MemoryCrudService,
+    private readonly memorySearch: MemorySearchService,
+  ) {
+    this.logger.debug?.(`MemoryService initialized`);
+  }
 
   /**
    * 💾 Salva memória com embedding
@@ -53,37 +28,7 @@ export class MemoryService {
     category = 'general',
     content?: string,
   ): Promise<MemoryItem> {
-    const textContent = content || (typeof value === 'string' ? value : JSON.stringify(value));
-
-    try {
-      // Upsert na memória (sem embedding por simplicidade inicial)
-      const memory = await this.prisma.kloelMemory.upsert({
-        where: {
-          workspaceId_key: { workspaceId, key },
-        },
-        create: {
-          workspaceId,
-          key,
-          value: value as Prisma.InputJsonValue,
-          category,
-          content: textContent,
-        },
-        update: {
-          value: value as Prisma.InputJsonValue,
-          category,
-          content: textContent,
-        },
-      });
-
-      this.logger.log(`Memória salva: ${key} (${category})`);
-      return memory;
-    } catch (error: unknown) {
-      void this.opsAlert?.alertOnCriticalError(error, 'MemoryService.saveMemory');
-      this.logger.error(
-        `Erro salvando memória: ${error instanceof Error ? error.message : String(error)}`,
-      );
-      throw error;
-    }
+    return this.memoryCrud.saveMemory(workspaceId, key, value, category, content);
   }
 
   /**
@@ -95,94 +40,14 @@ export class MemoryService {
     limit = 5,
     category?: string,
   ): Promise<SearchResult> {
-    const startTime = Date.now();
-
-    try {
-      const where: Record<string, unknown> = { workspaceId };
-      if (category) {
-        where.category = category;
-      }
-
-      // Busca por texto simples
-      where.OR = [
-        { content: { contains: query, mode: 'insensitive' } },
-        { key: { contains: query, mode: 'insensitive' } },
-      ];
-
-      const memories = await this.prisma.kloelMemory.findMany({
-        where,
-        take: limit,
-        orderBy: { updatedAt: 'desc' },
-        select: {
-          id: true,
-          workspaceId: true,
-          key: true,
-          value: true,
-          category: true,
-          type: true,
-          content: true,
-          metadata: true,
-          createdAt: true,
-          updatedAt: true,
-        },
-      });
-
-      return {
-        memories,
-        totalFound: memories.length,
-        searchTime: Date.now() - startTime,
-      };
-    } catch (error: unknown) {
-      void this.opsAlert?.alertOnCriticalError(error, 'MemoryService.now');
-      this.logger.error(`Erro na busca: ${error instanceof Error ? error.message : String(error)}`);
-      return {
-        memories: [],
-        totalFound: 0,
-        searchTime: Date.now() - startTime,
-      };
-    }
+    return this.memorySearch.searchMemory(workspaceId, query, limit, category);
   }
 
   /**
    * 📚 Busca contexto relevante para vendas
    */
   async getSalesContext(workspaceId: string, customerMessage: string): Promise<string> {
-    try {
-      const productSearch = await this.searchMemory(workspaceId, customerMessage, 3, 'product');
-      const scriptSearch = await this.searchMemory(workspaceId, customerMessage, 2, 'script');
-      const objectionSearch = await this.searchMemory(workspaceId, customerMessage, 2, 'objection');
-
-      const contextParts: string[] = [];
-
-      if (productSearch.memories.length > 0) {
-        contextParts.push('=== PRODUTOS RELEVANTES ===');
-        for (const m of productSearch.memories) {
-          contextParts.push(m.content || JSON.stringify(m.value));
-        }
-      }
-
-      if (scriptSearch.memories.length > 0) {
-        contextParts.push('\n=== SCRIPTS DE VENDA ===');
-        for (const m of scriptSearch.memories) {
-          contextParts.push(m.content || JSON.stringify(m.value));
-        }
-      }
-
-      if (objectionSearch.memories.length > 0) {
-        contextParts.push('\n=== RESPOSTAS A OBJEÇÕES ===');
-        for (const m of objectionSearch.memories) {
-          contextParts.push(m.content || JSON.stringify(m.value));
-        }
-      }
-
-      return contextParts.join('\n');
-    } catch (error: unknown) {
-      void this.opsAlert?.alertOnCriticalError(error, 'MemoryService.join');
-      this.logger.error(
-        `Erro buscando contexto: ${error instanceof Error ? error.message : String(error)}`,
-      );
-      return '';
-    }
+    return this.memorySearch.getSalesContext(workspaceId, customerMessage);
   }
 
   /**
@@ -200,11 +65,17 @@ export class MemoryService {
   ): Promise<MemoryItem> {
     const priceDisplay = Number(productData.price.toFixed(2));
     const content = `PRODUTO: ${productData.name}
-PREÇO: R$ ${priceDisplay}
-DESCRIÇÃO: ${productData.description}
-${productData.benefits ? `BENEFÍCIOS: ${productData.benefits.join(', ')}` : ''}`.trim();
+ PREÇO: R$ ${priceDisplay}
+ DESCRIÇÃO: ${productData.description}
+ ${productData.benefits ? `BENEFÍCIOS: ${productData.benefits.join(', ')}` : ''}`.trim();
 
-    return this.saveMemory(workspaceId, `product_${productId}`, productData, 'product', content);
+    return this.memoryCrud.saveMemory(
+      workspaceId,
+      `product_${productId}`,
+      productData,
+      'product',
+      content,
+    );
   }
 
   /**
@@ -216,68 +87,20 @@ ${productData.benefits ? `BENEFÍCIOS: ${productData.benefits.join(', ')}` : ''}
     page = 1,
     limit = 20,
   ): Promise<{ memories: MemoryItem[]; total: number }> {
-    const where: Record<string, unknown> = { workspaceId };
-    if (category) {
-      where.category = category;
-    }
-
-    const [memories, total] = await Promise.all([
-      this.prisma.kloelMemory.findMany({
-        where: { ...where, workspaceId },
-        skip: (page - 1) * limit,
-        take: limit,
-        orderBy: { updatedAt: 'desc' },
-      }),
-      this.prisma.kloelMemory.count({ where: { ...where, workspaceId } }),
-    ]);
-
-    return { memories, total };
+    return this.memoryCrud.listMemories(workspaceId, category, page, limit);
   }
 
   /**
    * 📊 Estatísticas
    */
   async getMemoryStats(workspaceId: string): Promise<unknown> {
-    const memories = await this.prisma.kloelMemory.findMany({
-      where: { workspaceId },
-      select: { category: true, updatedAt: true },
-      take: 5000,
-    });
-
-    const byCategory: Record<string, number> = {};
-    for (const m of memories) {
-      byCategory[m.category] = (byCategory[m.category] || 0) + 1;
-    }
-
-    return {
-      totalMemories: memories.length,
-      byCategory,
-      lastUpdated: memories[0]?.updatedAt || null,
-    };
+    return this.memoryCrud.getMemoryStats(workspaceId);
   }
 
   /**
    * 🗑️ Remove memória
    */
   async deleteMemory(workspaceId: string, key: string): Promise<boolean> {
-    try {
-      await this.auditService
-        .log({
-          workspaceId,
-          action: 'DELETE_MEMORY',
-          resource: 'KloelMemory',
-          resourceId: key,
-          details: { key },
-        })
-        .catch(() => {});
-
-      await this.prisma.kloelMemory.delete({
-        where: { workspaceId_key: { workspaceId, key } },
-      });
-      return true;
-    } catch (_error: unknown) {
-      void this.opsAlert?.alertOnCriticalError(_error, 'MemoryService.delete');
-      return false;
-    }
+    return this.memoryCrud.deleteMemory(workspaceId, key);
   }
 }

@@ -1,25 +1,25 @@
-import { ForbiddenException, Injectable, NotFoundException, Optional } from '@nestjs/common';
+import { ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { DealStatus, Prisma } from '@prisma/client';
 import { AuditService } from '../audit/audit.service';
 import { getTraceHeaders } from '../common/trace-headers';
 import { validateNoInternalAccess } from '../common/utils/url-validator';
 import { PrismaService } from '../prisma/prisma.service';
-import { OpsAlertService } from '../observability/ops-alert.service';
+import { PIPELINE_STAGE_COLORS } from '../common/kloel-colors';
 
 /** Crm service. */
 @Injectable()
 export class CrmService {
+  private readonly logger = new Logger(CrmService.name);
+
   constructor(
     private prisma: PrismaService,
     private auditService: AuditService,
-    @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
 
   // ============================================================
   // CONTATOS (CRM BÁSICO)
   // ============================================================
 
-  // PULSE_OK: workspaceId validated by caller guard
   async createContact(workspaceId: string, data: Prisma.ContactCreateWithoutWorkspaceInput) {
     return this.prisma.contact.create({
       data: {
@@ -78,7 +78,6 @@ export class CrmService {
   }
 
   /** Add tag. */
-  // PULSE_OK: workspaceId validated by caller guard
   async addTag(workspaceId: string, phone: string, tagName: string) {
     return this.prisma.$transaction(async (tx) => {
       const tag = await tx.tag.upsert({
@@ -153,13 +152,15 @@ export class CrmService {
 
     const where: Prisma.ContactWhereInput = {
       workspaceId,
-      OR: search
-        ? [
-            { name: { contains: search, mode: 'insensitive' } },
-            { phone: { contains: search } },
-            { email: { contains: search, mode: 'insensitive' } },
-          ]
-        : undefined,
+      ...(search
+        ? {
+            OR: [
+              { name: { contains: search, mode: 'insensitive' } },
+              { phone: { contains: search } },
+              { email: { contains: search, mode: 'insensitive' } },
+            ],
+          }
+        : {}),
     };
 
     const [total, data] = await Promise.all([
@@ -188,7 +189,6 @@ export class CrmService {
   // PIPELINES / DEALS (KANBAN DE VENDAS)
   // ============================================================
 
-  // PULSE_OK: workspaceId validated by caller guard
   async createPipeline(workspaceId: string, name: string) {
     return this.prisma.pipeline.create({
       data: {
@@ -196,9 +196,9 @@ export class CrmService {
         name,
         stages: {
           create: [
-            { name: 'Lead', order: 0, color: '#3b82f6' },
-            { name: 'Em Negociação', order: 1, color: '#facc15' },
-            { name: 'Fechado', order: 2, color: '#22c55e' },
+            { name: 'Lead', order: 0, color: PIPELINE_STAGE_COLORS.LEAD_BLUE },
+            { name: 'Em Negociação', order: 1, color: PIPELINE_STAGE_COLORS.NEGOTIATION_YELLOW },
+            { name: 'Fechado', order: 2, color: PIPELINE_STAGE_COLORS.WON_GREEN },
           ],
         },
       },
@@ -492,7 +492,6 @@ export class CrmService {
     const stageId = String(params?.stageId || '').trim();
     const search = String(params?.search || '').trim();
 
-    // PULSE_OK: bounded by pipeline/stage/campaign filters from the caller
     return this.prisma.deal.findMany({
       where: {
         stage: {
@@ -553,6 +552,12 @@ export class CrmService {
       return;
     }
     try {
+      this.logger.log('Sending revenue webhook notification', {
+        context: 'CrmService.notifyRevenue',
+        workspaceId,
+        campaignId,
+        source,
+      });
       validateNoInternalAccess(url);
       await globalThis.fetch(url, {
         method: 'POST',
@@ -568,8 +573,12 @@ export class CrmService {
         }),
         signal: AbortSignal.timeout(10000),
       });
-    } catch {
-      // PULSE:OK — CRM webhook notification non-critical; contact event still recorded
+    } catch (error: unknown) {
+      this.logger.error(
+        'Failed to send revenue webhook notification',
+        error instanceof Error ? error.message : String(error),
+        { context: 'CrmService.notifyRevenue', workspaceId, campaignId },
+      );
     }
   }
 }

@@ -1,6 +1,6 @@
 {
-  "runId": "6fdaf2f0-48ef-4542-9132-24c0f6cb6ab7",
-  "generatedAt": "2026-05-10T16:09:11.441Z",
+  "runId": "4c07e3e2-ab9f-4f63-bf21-388c61d0a5c3",
+  "generatedAt": "2026-05-16T00:08:17.808Z",
   "authorityMode": "advisory-only",
   "advisoryOnly": true,
   "authorityReasons": [
@@ -14,14 +14,14 @@
     "canDeclareKloelProductCertified": false,
     "blockers": [
       "artifact_consistency: Cross-artifact consistency has not produced a passing check.",
-      "critical_path_terminal: 5224 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:account-agent, matrix:capability:capability:admin-chat, matrix:capability:capability:admin-clients, matrix:capability:capability:admin-compliance, matrix:capability:capability:admin-config, matrix:capability:capability:admin-dashboard, matrix:capability:capability:admin-destructive, matrix:capability:capability:admin-login. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.",
+      "critical_path_terminal: 4561 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:account-agent, matrix:capability:capability:ad-rules, matrix:capability:capability:admin-accounts, matrix:capability:capability:admin-audit, matrix:capability:capability:admin-auth, matrix:capability:capability:admin-brain, matrix:capability:capability:admin-carteira, matrix:capability:capability:admin-change. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.",
       "external_reality: 2 missing, 0 stale, and 0 invalid external adapter(s) remain.",
       "multi_cycle: multiCycleConvergence: no autonomy iteration history found; production-autonomy verdict requires proven cycles. Cycle proof: 0/3 successful non-regressing real cycle(s)."
     ]
   },
   "cleanupPolicy": "enforced-single-state",
-  "canonicalDir": "/private/tmp/kloel-pr266-current/.pulse/current",
-  "tempDir": "/private/tmp/kloel-pr266-current/.pulse/tmp",
+  "canonicalDir": "/private/tmp/kloel-pr276-arch/.pulse/current",
+  "tempDir": "/private/tmp/kloel-pr276-arch/.pulse/tmp",
   "officialArtifacts": [
     "PULSE_ADMIN_EVIDENCE.json",
     "PULSE_AGENT_ORCHESTRATION_STATE.json",
@@ -74,12 +74,12 @@
       "id": "admin-evidence",
       "relativePath": "PULSE_ADMIN_EVIDENCE.json",
       "schema": {
-        "module": "./types",
-        "exportName": "PulseCertification.evidenceSummary.admin"
+        "module": "./artifacts",
+        "exportName": "writeRegisteredArtifact.admin-evidence"
       },
       "producer": {
-        "module": "./__parts__/artifacts/generate",
-        "exportName": "snapshot.certification.evidenceSummary.admin"
+        "module": "./artifacts",
+        "exportName": "writeRegisteredArtifact.admin-evidence"
       },
       "consumers": [
         "./actors/coverage",
@@ -96,11 +96,11 @@
       "id": "agent-orchestration-state",
       "relativePath": "PULSE_AGENT_ORCHESTRATION_STATE.json",
       "schema": {
-        "module": "./__parts__/artifacts/generate",
+        "module": "./artifacts",
         "exportName": "writeRegisteredArtifact.agent-orchestration-state"
       },
       "producer": {
-        "module": "./__parts__/artifacts/generate",
+        "module": "./artifacts",
         "exportName": "writeRegisteredArtifact.agent-orchestration-state"
       },
       "consumers": [
@@ -117,12 +117,12 @@
       "id": "artifact-index",
       "relativePath": "PULSE_ARTIFACT_INDEX.json",
       "schema": {
-        "module": "./__parts__/artifacts/generate",
-        "exportName": "buildArtifactIndex"
+        "module": "./artifacts",
+        "exportName": "writeRegisteredArtifact.artifact-index"
       },
       "producer": {
-        "module": "./__parts__/artifacts/generate",
-        "exportName": "buildArtifactIndex"
+        "module": "./artifacts",
+        "exportName": "writeRegisteredArtifact.artifact-index"
       },
       "consumers": [
         "./cross-artifact-consistency-check/loaders"
@@ -137,12 +137,12 @@
       "id": "autonomy-memory",
       "relativePath": "PULSE_AUTONOMY_MEMORY.json",
       "schema": {
-        "module": "./__parts__/artifacts/generate",
-        "exportName": "buildPulseAutonomyMemoryState"
+        "module": "./artifacts",
+        "exportName": "writeRegisteredArtifact.autonomy-memory"
       },
       "producer": {
-        "module": "./__parts__/artifacts/generate",
-        "exportName": "buildPulseAutonomyMemoryState"
+        "module": "./artifacts",
+        "exportName": "writeRegisteredArtifact.autonomy-memory"
       },
       "consumers": [
         "./autonomy-loop.types",
@@ -159,11 +159,11 @@
       "id": "autonomy-proof",
       "relativePath": "PULSE_AUTONOMY_PROOF.json",
       "schema": {
-        "module": "./__parts__/artifacts/generate",
+        "module": "./artifacts",
         "exportName": "writeRegisteredArtifact.autonomy-proof"
       },
       "producer": {
-        "module": "./__parts__/artifacts/generate",
+        "module": "./artifacts",
         "exportName": "writeRegisteredArtifact.autonomy-proof"
       },
       "consumers": [],
@@ -177,18 +177,19 @@
       "id": "autonomy-state",
       "relativePath": "PULSE_AUTONOMY_STATE.json",
       "schema": {
-        "module": "./__parts__/artifacts/generate",
-        "exportName": "normalizeCanonicalArtifactValue"
+        "module": "./artifacts",
+        "exportName": "writeRegisteredArtifact.autonomy-state"
       },
       "producer": {
-        "module": "./__parts__/artifacts/generate",
-        "exportName": "normalizeCanonicalArtifactValue"
+        "module": "./artifacts",
+        "exportName": "writeRegisteredArtifact.autonomy-state"
       },
       "consumers": [
-        "./__parts__/probabilistic-risk/model",
         "./autonomy-loop.types",
         "./autonomy-types",
-        "./structural-memory/__parts__/memory-patterns"
+        "./daemon/fullScan",
+        "./probabilistic-risk/model",
+        "./structural-memory/memory-patterns"
       ],
       "freshness": {
         "mode": "run"
@@ -200,11 +201,11 @@
       "id": "beads-state",
       "relativePath": "PULSE_BEADS_STATE.json",
       "schema": {
-        "module": "./__parts__/artifacts/generate",
+        "module": "./artifacts",
         "exportName": "writeRegisteredArtifact.beads-state"
       },
       "producer": {
-        "module": "./__parts__/artifacts/generate",
+        "module": "./artifacts",
         "exportName": "writeRegisteredArtifact.beads-state"
       },
       "consumers": [],
@@ -218,17 +219,17 @@
       "id": "browser-evidence",
       "relativePath": "PULSE_BROWSER_EVIDENCE.json",
       "schema": {
-        "module": "./types",
-        "exportName": "PulseCertification.evidenceSummary.browser"
+        "module": "./artifacts",
+        "exportName": "writeRegisteredArtifact.browser-evidence"
       },
       "producer": {
-        "module": "./__parts__/artifacts/generate",
-        "exportName": "snapshot.certification.evidenceSummary.browser"
+        "module": "./artifacts",
+        "exportName": "writeRegisteredArtifact.browser-evidence"
       },
       "consumers": [
-        "./__parts__/replay-adapter/main",
         "./artifact-gc",
-        "./execution-matrix/__parts__/grammar"
+        "./execution-matrix/grammar",
+        "./replay-adapter/main"
       ],
       "freshness": {
         "mode": "external_snapshot"
@@ -240,17 +241,17 @@
       "id": "capability-state",
       "relativePath": "PULSE_CAPABILITY_STATE.json",
       "schema": {
-        "module": "./types",
-        "exportName": "snapshot.capabilityState"
+        "module": "./artifacts",
+        "exportName": "writeRegisteredArtifact.capability-state"
       },
       "producer": {
-        "module": "./__parts__/artifacts/generate",
-        "exportName": "snapshot.capabilityState"
+        "module": "./artifacts",
+        "exportName": "writeRegisteredArtifact.capability-state"
       },
       "consumers": [
-        "./__parts__/probabilistic-risk/model",
         "./cert-gate-evidence",
-        "./production-proof/__parts__/dimensions",
+        "./probabilistic-risk/model",
+        "./production-proof/dimensions",
         "./signal-mapper"
       ],
       "freshness": {
@@ -263,22 +264,23 @@
       "id": "certificate",
       "relativePath": "PULSE_CERTIFICATE.json",
       "schema": {
-        "module": "./__parts__/artifacts/generate",
-        "exportName": "buildCertificate"
+        "module": "./artifacts",
+        "exportName": "writeRegisteredArtifact.certificate"
       },
       "producer": {
-        "module": "./__parts__/artifacts/generate",
-        "exportName": "buildCertificate"
+        "module": "./artifacts",
+        "exportName": "writeRegisteredArtifact.certificate"
       },
       "consumers": [
-        "./__parts__/probabilistic-risk/model",
         "./artifact-gc",
-        "./authority-engine/__parts__/core",
+        "./authority-engine/core",
         "./cert-gate-evidence",
         "./cross-artifact-consistency-check",
         "./cross-artifact-consistency-check/loaders",
-        "./execution-matrix/__parts__/grammar",
-        "./signal-mapper"
+        "./execution-matrix/grammar",
+        "./probabilistic-risk/model",
+        "./signal-mapper",
+        "./unified-readiness-report"
       ],
       "freshness": {
         "mode": "run"
@@ -290,17 +292,17 @@
       "id": "directive",
       "relativePath": "PULSE_CLI_DIRECTIVE.json",
       "schema": {
-        "module": "./__parts__/artifacts/generate",
-        "exportName": "buildDirective"
+        "module": "./artifacts",
+        "exportName": "writeRegisteredArtifact.directive"
       },
       "producer": {
-        "module": "./__parts__/artifacts/generate",
-        "exportName": "buildDirective"
+        "module": "./artifacts",
+        "exportName": "writeRegisteredArtifact.directive"
       },
       "consumers": [
-        "./__parts__/autonomy-loop.state-io/directive",
         "./artifact-gc",
         "./autonomy-decision",
+        "./autonomy-loop.state-io/directive",
         "./cross-artifact-consistency-check/loaders"
       ],
       "freshness": {
@@ -313,12 +315,12 @@
       "id": "codacy-evidence",
       "relativePath": "PULSE_CODACY_EVIDENCE.json",
       "schema": {
-        "module": "./types",
-        "exportName": "snapshot.codacyEvidence"
+        "module": "./artifacts",
+        "exportName": "writeRegisteredArtifact.codacy-evidence"
       },
       "producer": {
-        "module": "./__parts__/artifacts/generate",
-        "exportName": "snapshot.codacyEvidence"
+        "module": "./artifacts",
+        "exportName": "writeRegisteredArtifact.codacy-evidence"
       },
       "consumers": [],
       "freshness": {
@@ -331,12 +333,12 @@
       "id": "codebase-truth",
       "relativePath": "PULSE_CODEBASE_TRUTH.json",
       "schema": {
-        "module": "./types",
-        "exportName": "snapshot.codebaseTruth"
+        "module": "./artifacts",
+        "exportName": "writeRegisteredArtifact.codebase-truth"
       },
       "producer": {
-        "module": "./__parts__/artifacts/generate",
-        "exportName": "snapshot.codebaseTruth"
+        "module": "./artifacts",
+        "exportName": "writeRegisteredArtifact.codebase-truth"
       },
       "consumers": [
         "./artifact-gc",
@@ -352,11 +354,11 @@
       "id": "context-broadcast",
       "relativePath": "PULSE_CONTEXT_BROADCAST.json",
       "schema": {
-        "module": "./__parts__/artifacts/generate",
+        "module": "./artifacts",
         "exportName": "writeRegisteredArtifact.context-broadcast"
       },
       "producer": {
-        "module": "./__parts__/artifacts/generate",
+        "module": "./artifacts",
         "exportName": "writeRegisteredArtifact.context-broadcast"
       },
       "consumers": [],
@@ -370,11 +372,11 @@
       "id": "context-delta",
       "relativePath": "PULSE_CONTEXT_DELTA.json",
       "schema": {
-        "module": "./__parts__/artifacts/generate",
+        "module": "./artifacts",
         "exportName": "writeRegisteredArtifact.context-delta"
       },
       "producer": {
-        "module": "./__parts__/artifacts/generate",
+        "module": "./artifacts",
         "exportName": "writeRegisteredArtifact.context-delta"
       },
       "consumers": [],
@@ -388,12 +390,12 @@
       "id": "convergence-plan",
       "relativePath": "PULSE_CONVERGENCE_PLAN.json",
       "schema": {
-        "module": "./__parts__/artifacts/generate",
-        "exportName": "normalizeCanonicalArtifactValue"
+        "module": "./artifacts",
+        "exportName": "writeRegisteredArtifact.convergence-plan"
       },
       "producer": {
-        "module": "./__parts__/artifacts/generate",
-        "exportName": "normalizeCanonicalArtifactValue"
+        "module": "./artifacts",
+        "exportName": "writeRegisteredArtifact.convergence-plan"
       },
       "consumers": [
         "./artifact-gc",
@@ -411,12 +413,12 @@
       "id": "customer-evidence",
       "relativePath": "PULSE_CUSTOMER_EVIDENCE.json",
       "schema": {
-        "module": "./types",
-        "exportName": "PulseCertification.evidenceSummary.customer"
+        "module": "./artifacts",
+        "exportName": "writeRegisteredArtifact.customer-evidence"
       },
       "producer": {
-        "module": "./__parts__/artifacts/generate",
-        "exportName": "snapshot.certification.evidenceSummary.customer"
+        "module": "./artifacts",
+        "exportName": "writeRegisteredArtifact.customer-evidence"
       },
       "consumers": [
         "./actors/coverage",
@@ -433,12 +435,12 @@
       "id": "execution-chains",
       "relativePath": "PULSE_EXECUTION_CHAINS.json",
       "schema": {
-        "module": "./types",
-        "exportName": "snapshot.executionChains"
+        "module": "./artifacts",
+        "exportName": "writeRegisteredArtifact.execution-chains"
       },
       "producer": {
-        "module": "./__parts__/artifacts/generate",
-        "exportName": "snapshot.executionChains"
+        "module": "./artifacts",
+        "exportName": "writeRegisteredArtifact.execution-chains"
       },
       "consumers": [],
       "freshness": {
@@ -451,16 +453,16 @@
       "id": "execution-matrix",
       "relativePath": "PULSE_EXECUTION_MATRIX.json",
       "schema": {
-        "module": "./types",
-        "exportName": "normalizeCanonicalArtifactValue"
+        "module": "./artifacts",
+        "exportName": "writeRegisteredArtifact.execution-matrix"
       },
       "producer": {
-        "module": "./__parts__/artifacts/generate",
-        "exportName": "normalizeCanonicalArtifactValue"
+        "module": "./artifacts",
+        "exportName": "writeRegisteredArtifact.execution-matrix"
       },
       "consumers": [
         "./cross-artifact-consistency-check",
-        "./path-coverage-engine/__parts__/build-coverage-state",
+        "./path-coverage-engine/build-coverage-state",
         "./proof-synthesis"
       ],
       "freshness": {
@@ -473,12 +475,12 @@
       "id": "execution-trace",
       "relativePath": "PULSE_EXECUTION_TRACE.json",
       "schema": {
-        "module": "./types",
-        "exportName": "PulseCertification.evidenceSummary.executionTrace"
+        "module": "./artifacts",
+        "exportName": "writeRegisteredArtifact.execution-trace"
       },
       "producer": {
-        "module": "./__parts__/artifacts/generate",
-        "exportName": "snapshot.certification.evidenceSummary.executionTrace"
+        "module": "./artifacts",
+        "exportName": "writeRegisteredArtifact.execution-trace"
       },
       "consumers": [
         "./artifact-gc",
@@ -495,19 +497,19 @@
       "id": "external-signal-state",
       "relativePath": "PULSE_EXTERNAL_SIGNAL_STATE.json",
       "schema": {
-        "module": "./types",
-        "exportName": "snapshot.externalSignalState"
+        "module": "./artifacts",
+        "exportName": "writeRegisteredArtifact.external-signal-state"
       },
       "producer": {
-        "module": "./__parts__/artifacts/generate",
-        "exportName": "snapshot.externalSignalState"
+        "module": "./artifacts",
+        "exportName": "writeRegisteredArtifact.external-signal-state"
       },
       "consumers": [
-        "./__parts__/replay-adapter/main",
         "./adapters/gitnexus-adapter",
         "./cert-gate-evidence",
-        "./execution-matrix/__parts__/grammar",
-        "./production-proof/__parts__/dimensions",
+        "./execution-matrix/grammar",
+        "./production-proof/dimensions",
+        "./replay-adapter/main",
         "./signal-mapper"
       ],
       "freshness": {
@@ -520,12 +522,12 @@
       "id": "finding-validation-state",
       "relativePath": "PULSE_FINDING_VALIDATION_STATE.json",
       "schema": {
-        "module": "./__parts__/artifacts/generate",
-        "exportName": "buildFindingValidationState"
+        "module": "./artifacts",
+        "exportName": "writeRegisteredArtifact.finding-validation-state"
       },
       "producer": {
-        "module": "./__parts__/artifacts/generate",
-        "exportName": "buildFindingValidationState"
+        "module": "./artifacts",
+        "exportName": "writeRegisteredArtifact.finding-validation-state"
       },
       "consumers": [],
       "freshness": {
@@ -538,18 +540,18 @@
       "id": "flow-evidence",
       "relativePath": "PULSE_FLOW_EVIDENCE.json",
       "schema": {
-        "module": "./types",
-        "exportName": "PulseCertification.evidenceSummary.flows"
+        "module": "./artifacts",
+        "exportName": "writeRegisteredArtifact.flow-evidence"
       },
       "producer": {
-        "module": "./__parts__/artifacts/generate",
-        "exportName": "snapshot.certification.evidenceSummary.flows"
+        "module": "./artifacts",
+        "exportName": "writeRegisteredArtifact.flow-evidence"
       },
       "consumers": [
         "./artifact-gc",
         "./cert-evidence-defaults",
         "./cert-gate-evidence",
-        "./execution-matrix/__parts__/grammar"
+        "./execution-matrix/grammar"
       ],
       "freshness": {
         "mode": "preserved"
@@ -561,12 +563,12 @@
       "id": "flow-projection",
       "relativePath": "PULSE_FLOW_PROJECTION.json",
       "schema": {
-        "module": "./types",
-        "exportName": "snapshot.flowProjection"
+        "module": "./artifacts",
+        "exportName": "writeRegisteredArtifact.flow-projection"
       },
       "producer": {
-        "module": "./__parts__/artifacts/generate",
-        "exportName": "snapshot.flowProjection"
+        "module": "./artifacts",
+        "exportName": "writeRegisteredArtifact.flow-projection"
       },
       "consumers": [
         "./cert-gate-evidence",
@@ -582,15 +584,15 @@
       "id": "gitnexus-state",
       "relativePath": "PULSE_GITNEXUS_STATE.json",
       "schema": {
-        "module": "./__parts__/artifacts/generate",
+        "module": "./artifacts",
         "exportName": "writeRegisteredArtifact.gitnexus-state"
       },
       "producer": {
-        "module": "./__parts__/artifacts/generate",
+        "module": "./artifacts",
         "exportName": "writeRegisteredArtifact.gitnexus-state"
       },
       "consumers": [
-        "./adapters/external-sources-orchestrator/__parts__/capability",
+        "./adapters/external-sources-orchestrator/capability",
         "./adapters/gitnexus-adapter"
       ],
       "freshness": {
@@ -603,16 +605,17 @@
       "id": "health",
       "relativePath": "PULSE_HEALTH.json",
       "schema": {
-        "module": "./__parts__/artifacts/generate",
-        "exportName": "buildHealth"
+        "module": "./artifacts",
+        "exportName": "writeRegisteredArtifact.health"
       },
       "producer": {
-        "module": "./__parts__/artifacts/generate",
-        "exportName": "buildHealth"
+        "module": "./artifacts",
+        "exportName": "writeRegisteredArtifact.health"
       },
       "consumers": [
-        "./__parts__/probabilistic-risk/model",
-        "./artifact-gc"
+        "./artifact-gc",
+        "./probabilistic-risk/model",
+        "./unified-readiness-report"
       ],
       "freshness": {
         "mode": "run"
@@ -624,12 +627,12 @@
       "id": "invariant-evidence",
       "relativePath": "PULSE_INVARIANT_EVIDENCE.json",
       "schema": {
-        "module": "./types",
-        "exportName": "PulseCertification.evidenceSummary.invariants"
+        "module": "./artifacts",
+        "exportName": "writeRegisteredArtifact.invariant-evidence"
       },
       "producer": {
-        "module": "./__parts__/artifacts/generate",
-        "exportName": "snapshot.certification.evidenceSummary.invariants"
+        "module": "./artifacts",
+        "exportName": "writeRegisteredArtifact.invariant-evidence"
       },
       "consumers": [
         "./artifact-gc",
@@ -646,15 +649,15 @@
       "id": "machine-readiness",
       "relativePath": "PULSE_MACHINE_READINESS.json",
       "schema": {
-        "module": "./__parts__/artifacts/generate",
+        "module": "./artifacts",
         "exportName": "writeRegisteredArtifact.machine-readiness"
       },
       "producer": {
-        "module": "./__parts__/artifacts/generate",
+        "module": "./artifacts",
         "exportName": "writeRegisteredArtifact.machine-readiness"
       },
       "consumers": [
-        "./authority-engine/__parts__/core",
+        "./authority-engine/core",
         "./cross-artifact-consistency-check"
       ],
       "freshness": {
@@ -667,12 +670,12 @@
       "id": "no-hardcoded-reality-state",
       "relativePath": "PULSE_NO_HARDCODED_REALITY_STATE.json",
       "schema": {
-        "module": "./__parts__/artifacts/generate",
-        "exportName": "normalizeCanonicalArtifactValue"
+        "module": "./artifacts",
+        "exportName": "writeRegisteredArtifact.no-hardcoded-reality-state"
       },
       "producer": {
-        "module": "./__parts__/artifacts/generate",
-        "exportName": "normalizeCanonicalArtifactValue"
+        "module": "./artifacts",
+        "exportName": "writeRegisteredArtifact.no-hardcoded-reality-state"
       },
       "consumers": [],
       "freshness": {
@@ -685,18 +688,18 @@
       "id": "observability-evidence",
       "relativePath": "PULSE_OBSERVABILITY_EVIDENCE.json",
       "schema": {
-        "module": "./types",
-        "exportName": "PulseCertification.evidenceSummary.observability"
+        "module": "./artifacts",
+        "exportName": "writeRegisteredArtifact.observability-evidence"
       },
       "producer": {
-        "module": "./__parts__/artifacts/generate",
-        "exportName": "snapshot.certification.evidenceSummary.observability"
+        "module": "./artifacts",
+        "exportName": "writeRegisteredArtifact.observability-evidence"
       },
       "consumers": [
         "./artifact-gc",
         "./cert-evidence-defaults",
         "./cert-gate-evidence",
-        "./production-proof/__parts__/dimensions"
+        "./production-proof/dimensions"
       ],
       "freshness": {
         "mode": "preserved"
@@ -708,12 +711,12 @@
       "id": "operator-evidence",
       "relativePath": "PULSE_OPERATOR_EVIDENCE.json",
       "schema": {
-        "module": "./types",
-        "exportName": "PulseCertification.evidenceSummary.operator"
+        "module": "./artifacts",
+        "exportName": "writeRegisteredArtifact.operator-evidence"
       },
       "producer": {
-        "module": "./__parts__/artifacts/generate",
-        "exportName": "snapshot.certification.evidenceSummary.operator"
+        "module": "./artifacts",
+        "exportName": "writeRegisteredArtifact.operator-evidence"
       },
       "consumers": [
         "./actors/coverage",
@@ -730,12 +733,12 @@
       "id": "parity-gaps",
       "relativePath": "PULSE_PARITY_GAPS.json",
       "schema": {
-        "module": "./types",
-        "exportName": "snapshot.parityGaps"
+        "module": "./artifacts",
+        "exportName": "writeRegisteredArtifact.parity-gaps"
       },
       "producer": {
-        "module": "./__parts__/artifacts/generate",
-        "exportName": "snapshot.parityGaps"
+        "module": "./artifacts",
+        "exportName": "writeRegisteredArtifact.parity-gaps"
       },
       "consumers": [],
       "freshness": {
@@ -748,32 +751,32 @@
       "id": "product-graph",
       "relativePath": "PULSE_PRODUCT_GRAPH.json",
       "schema": {
-        "module": "./types",
-        "exportName": "snapshot.productGraph"
+        "module": "./artifacts",
+        "exportName": "writeRegisteredArtifact.product-graph"
       },
       "producer": {
-        "module": "./__parts__/artifacts/generate",
-        "exportName": "snapshot.productGraph"
+        "module": "./artifacts",
+        "exportName": "writeRegisteredArtifact.product-graph"
       },
       "consumers": [
-        "./production-proof/__parts__/dimensions"
+        "./production-proof/dimensions"
       ],
       "freshness": {
         "mode": "run"
       },
       "truthMode": "generated_from_module",
-      "mirrorToRoot": true
+      "mirrorToRoot": false
     },
     {
       "id": "product-vision",
       "relativePath": "PULSE_PRODUCT_VISION.json",
       "schema": {
-        "module": "./types",
-        "exportName": "snapshot.productVision"
+        "module": "./artifacts",
+        "exportName": "writeRegisteredArtifact.product-vision"
       },
       "producer": {
-        "module": "./__parts__/artifacts/generate",
-        "exportName": "snapshot.productVision"
+        "module": "./artifacts",
+        "exportName": "writeRegisteredArtifact.product-vision"
       },
       "consumers": [],
       "freshness": {
@@ -786,12 +789,12 @@
       "id": "recovery-evidence",
       "relativePath": "PULSE_RECOVERY_EVIDENCE.json",
       "schema": {
-        "module": "./types",
-        "exportName": "PulseCertification.evidenceSummary.recovery"
+        "module": "./artifacts",
+        "exportName": "writeRegisteredArtifact.recovery-evidence"
       },
       "producer": {
-        "module": "./__parts__/artifacts/generate",
-        "exportName": "snapshot.certification.evidenceSummary.recovery"
+        "module": "./artifacts",
+        "exportName": "writeRegisteredArtifact.recovery-evidence"
       },
       "consumers": [
         "./artifact-gc",
@@ -808,16 +811,17 @@
       "id": "report",
       "relativePath": "PULSE_REPORT.md",
       "schema": {
-        "module": "./__parts__/artifacts/generate",
-        "exportName": "buildReport"
+        "module": "./artifacts",
+        "exportName": "writeRegisteredArtifact.report"
       },
       "producer": {
-        "module": "./__parts__/artifacts/generate",
-        "exportName": "buildReport"
+        "module": "./artifacts",
+        "exportName": "writeRegisteredArtifact.report"
       },
       "consumers": [
         "./artifact-gc",
-        "./cert-gate-evidence"
+        "./cert-gate-evidence",
+        "./unified-readiness-report"
       ],
       "freshness": {
         "mode": "run"
@@ -829,12 +833,12 @@
       "id": "resolved-manifest",
       "relativePath": "PULSE_RESOLVED_MANIFEST.json",
       "schema": {
-        "module": "./types",
-        "exportName": "snapshot.resolvedManifest"
+        "module": "./artifacts",
+        "exportName": "writeRegisteredArtifact.resolved-manifest"
       },
       "producer": {
-        "module": "./__parts__/artifacts/generate",
-        "exportName": "snapshot.resolvedManifest"
+        "module": "./artifacts",
+        "exportName": "writeRegisteredArtifact.resolved-manifest"
       },
       "consumers": [
         "./artifact-gc",
@@ -851,18 +855,22 @@
       "id": "runtime-evidence",
       "relativePath": "PULSE_RUNTIME_EVIDENCE.json",
       "schema": {
-        "module": "./types",
-        "exportName": "PulseCertification.evidenceSummary.runtime"
+        "module": "./artifacts",
+        "exportName": "writeRegisteredArtifact.runtime-evidence"
       },
       "producer": {
-        "module": "./__parts__/artifacts/generate",
-        "exportName": "snapshot.certification.evidenceSummary.runtime"
+        "module": "./artifacts",
+        "exportName": "writeRegisteredArtifact.runtime-evidence"
       },
       "consumers": [
-        "./__parts__/runtime-probes/main",
         "./artifact-gc",
+        "./cert-evidence-defaults",
         "./cert-gate-evidence",
-        "./execution-matrix/__parts__/grammar"
+        "./execution-matrix/grammar",
+        "./runtime-probes/executor",
+        "./runtime-probes/main",
+        "./runtime-probes/probe-definitions",
+        "./runtime-probes/run"
       ],
       "freshness": {
         "mode": "preserved"
@@ -874,18 +882,18 @@
       "id": "runtime-probes",
       "relativePath": "PULSE_RUNTIME_PROBES.json",
       "schema": {
-        "module": "./types",
-        "exportName": "buildRuntimeProbesArtifact"
+        "module": "./artifacts",
+        "exportName": "writeRegisteredArtifact.runtime-probes"
       },
       "producer": {
-        "module": "./__parts__/artifacts/generate",
-        "exportName": "buildRuntimeProbesArtifact"
+        "module": "./artifacts",
+        "exportName": "writeRegisteredArtifact.runtime-probes"
       },
       "consumers": [
-        "./__parts__/runtime-probes/main",
         "./artifact-gc",
         "./cert-gate-evidence",
-        "./production-proof/__parts__/dimensions"
+        "./production-proof/dimensions",
+        "./runtime-probes/main"
       ],
       "freshness": {
         "mode": "preserved"
@@ -897,12 +905,12 @@
       "id": "scenario-coverage",
       "relativePath": "PULSE_SCENARIO_COVERAGE.json",
       "schema": {
-        "module": "./types",
-        "exportName": "PulseCertification.evidenceSummary.syntheticCoverage"
+        "module": "./artifacts",
+        "exportName": "writeRegisteredArtifact.scenario-coverage"
       },
       "producer": {
-        "module": "./__parts__/artifacts/generate",
-        "exportName": "snapshot.certification.evidenceSummary.syntheticCoverage"
+        "module": "./artifacts",
+        "exportName": "writeRegisteredArtifact.scenario-coverage"
       },
       "consumers": [
         "./actors/coverage",
@@ -920,17 +928,17 @@
       "id": "scope-state",
       "relativePath": "PULSE_SCOPE_STATE.json",
       "schema": {
-        "module": "./types",
-        "exportName": "snapshot.scopeState"
+        "module": "./artifacts",
+        "exportName": "writeRegisteredArtifact.scope-state"
       },
       "producer": {
-        "module": "./__parts__/artifacts/generate",
-        "exportName": "snapshot.scopeState"
+        "module": "./artifacts",
+        "exportName": "writeRegisteredArtifact.scope-state"
       },
       "consumers": [
         "./artifact-gc",
         "./cert-gate-evidence",
-        "./execution-matrix/__parts__/matrix",
+        "./execution-matrix/matrix",
         "./false-positive-adjudicator"
       ],
       "freshness": {
@@ -943,12 +951,12 @@
       "id": "soak-evidence",
       "relativePath": "PULSE_SOAK_EVIDENCE.json",
       "schema": {
-        "module": "./types",
-        "exportName": "PulseCertification.evidenceSummary.soak"
+        "module": "./artifacts",
+        "exportName": "writeRegisteredArtifact.soak-evidence"
       },
       "producer": {
-        "module": "./__parts__/artifacts/generate",
-        "exportName": "snapshot.certification.evidenceSummary.soak"
+        "module": "./artifacts",
+        "exportName": "writeRegisteredArtifact.soak-evidence"
       },
       "consumers": [
         "./actors/coverage",
@@ -965,29 +973,29 @@
       "id": "structural-graph",
       "relativePath": "PULSE_STRUCTURAL_GRAPH.json",
       "schema": {
-        "module": "./types",
-        "exportName": "snapshot.structuralGraph"
+        "module": "./artifacts",
+        "exportName": "writeRegisteredArtifact.structural-graph"
       },
       "producer": {
-        "module": "./__parts__/artifacts/generate",
-        "exportName": "snapshot.structuralGraph"
+        "module": "./artifacts",
+        "exportName": "writeRegisteredArtifact.structural-graph"
       },
       "consumers": [],
       "freshness": {
         "mode": "run"
       },
       "truthMode": "generated_from_module",
-      "mirrorToRoot": true
+      "mirrorToRoot": false
     },
     {
       "id": "worker-leases",
       "relativePath": "PULSE_WORKER_LEASES.json",
       "schema": {
-        "module": "./__parts__/artifacts/generate",
+        "module": "./artifacts",
         "exportName": "writeRegisteredArtifact.worker-leases"
       },
       "producer": {
-        "module": "./__parts__/artifacts/generate",
+        "module": "./artifacts",
         "exportName": "writeRegisteredArtifact.worker-leases"
       },
       "consumers": [],
@@ -1001,18 +1009,19 @@
       "id": "world-state",
       "relativePath": "PULSE_WORLD_STATE.json",
       "schema": {
-        "module": "./types",
-        "exportName": "PulseCertification.evidenceSummary.worldState"
+        "module": "./artifacts",
+        "exportName": "writeRegisteredArtifact.world-state"
       },
       "producer": {
-        "module": "./__parts__/artifacts/generate",
-        "exportName": "snapshot.certification.evidenceSummary.worldState"
+        "module": "./artifacts",
+        "exportName": "writeRegisteredArtifact.world-state"
       },
       "consumers": [
         "./actors/coverage",
         "./artifact-gc",
         "./cert-evidence-actor",
-        "./cert-gate-evidence"
+        "./cert-gate-evidence",
+        "./unified-readiness-report"
       ],
       "freshness": {
         "mode": "run"
@@ -1036,25 +1045,16 @@
     "PULSE_FLOW_PROJECTION.json",
     "PULSE_HEALTH.json",
     "PULSE_PARITY_GAPS.json",
-    "PULSE_PRODUCT_GRAPH.json",
     "PULSE_PRODUCT_VISION.json",
     "PULSE_REPORT.md",
     "PULSE_RUNTIME_EVIDENCE.json",
     "PULSE_SCOPE_STATE.json",
-    "PULSE_STRUCTURAL_GRAPH.json",
     "PULSE_WORLD_STATE.json"
   ],
   "removedLegacyPulseArtifacts": [
     "PULSE_CERTIFICATE.json",
     "PULSE_CLI_DIRECTIVE.json",
-    "PULSE_CONVERGENCE_PLAN.json",
-    "PULSE_EXECUTION_TRACE.json",
-    "PULSE_FLOW_PROJECTION.json",
-    "PULSE_HEALTH.json",
-    "PULSE_REPORT.md",
-    "PULSE_RUNTIME_EVIDENCE.json",
-    "PULSE_SCOPE_STATE.json",
-    "PULSE_WORLD_STATE.json"
+    "PULSE_REPORT.md"
   ],
   "rootStateMode": "local-only"
 }

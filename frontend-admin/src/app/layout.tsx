@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { ThemeProvider } from '@/components/theme-provider';
 import { AdminChatHistoryProvider } from '@/lib/admin-chat-history';
 import { AdminSessionProvider } from '@/lib/auth/admin-session-context';
+import { colors } from '@/lib/design-tokens';
 import { jetbrainsMono, sora } from './fonts';
 import './globals.css';
 
@@ -25,7 +26,7 @@ export const viewport: Viewport = {
   // Viewport theme color is the LIGHT default. When the user flips the
   // toggle to dark we update meta[name=theme-color] at runtime via
   // ThemeToggle to match the active palette.
-  themeColor: '#FFFFFF',
+  themeColor: colors.lightBg,
   width: 'device-width',
   initialScale: 1,
 };

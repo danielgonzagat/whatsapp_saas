@@ -3,7 +3,7 @@
 import { detectConfig } from './config';
 import { flags } from './cli-args';
 import { fullScan } from './daemon';
-import { generateArtifacts } from './__parts__/artifacts/generate';
+import { generateArtifacts } from './artifacts/generate';
 import { renderDashboard } from './dashboard';
 import { PulseExecutionTracer } from './execution-trace';
 
@@ -29,11 +29,13 @@ async function main(): Promise<void> {
   if (wantsReport || wantsJson || !wantsWatch) {
     const artifactPaths = generateArtifacts(scanResult, config.rootDir);
     if (wantsJson) {
-      process.stdout.write(JSON.stringify(scanResult.certification, null, 2) + '\n');
+      process.stdout.write(JSON.stringify(scanResult.certification, null, 2) + '\n', () =>
+        process.exit(0),
+      );
       return;
     }
     if (wantsReport) {
-      process.stdout.write(JSON.stringify(artifactPaths, null, 2) + '\n');
+      process.stdout.write(JSON.stringify(artifactPaths, null, 2) + '\n', () => process.exit(0));
       return;
     }
   }

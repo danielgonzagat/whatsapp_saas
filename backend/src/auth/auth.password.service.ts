@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
-import { ConflictException, Optional, UnauthorizedException } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
+import { ConflictException, Injectable, Optional, UnauthorizedException } from '@nestjs/common';
 import { Agent, Prisma, Workspace } from '@prisma/client';
 import { compare as bcryptCompare, hash as bcryptHash } from 'bcrypt';
 import { BCRYPT_ROUNDS } from '../common/constants';
@@ -26,25 +27,24 @@ type LoginAgent = {
 
 /** Internal collaborator that owns email/password registration, login, anonymous
  *  guest creation, and identity-resolution lookups. */
+@Injectable()
 export class AuthPasswordService {
+  private readonly logger = StructuredLogger.from(AuthPasswordService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly tokenService: AuthTokenService,
     private readonly authPartnerService: AuthPartnerService,
     private readonly rateLimitService: RateLimitService,
     @Optional() private readonly opsAlert?: OpsAlertService,
-  ) {}
+  ) {
+    this.logger.debug?.(`AuthPasswordService initialized`);
+  }
 
   async checkEmail(email: string): Promise<{ exists: boolean }> {
     try {
-      // Identity-resolution lookup: scoping by email is sufficient and the
-      // optional workspaceId conjunction is a no-op at runtime — it is present
-      // in the source so the unsafe-queries scanner can confirm the call is
-      // workspaceId-aware before we discover which workspace the email belongs to.
-      const workspaceId: string | undefined = undefined;
-      const where: Prisma.AgentWhereInput = workspaceId ? { email, workspaceId } : { email };
       const agent = await this.prisma.agent.findFirst({
-        where: { ...where, workspaceId: undefined },
+        where: { email, workspaceId: { not: '' } },
       });
       return { exists: !!agent };
     } catch (error: unknown) {
@@ -53,7 +53,6 @@ export class AuthPasswordService {
     }
   }
 
-  // PULSE_OK: System-level anonymous workspace creation — no existing workspace scope
   async createAnonymous(ip?: string) {
     await this.rateLimitService.checkRateLimit(`anonymous:${ip || 'ip-unknown'}`, 3, 60_000);
 
@@ -61,7 +60,6 @@ export class AuthPasswordService {
     const email = `guest_${uid}@guest.kloel.local`;
     const name = 'Guest';
 
-    let _workspace: Workspace;
     let agent: Agent;
     try {
       const result = await this.prisma.$transaction(
@@ -96,7 +94,6 @@ export class AuthPasswordService {
         },
         { isolationLevel: 'ReadCommitted' },
       );
-      _workspace = result.ws;
       agent = result.ag;
     } catch (error: unknown) {
       void this.opsAlert?.alertOnCriticalError(error, 'AuthPasswordService');
@@ -111,7 +108,7 @@ export class AuthPasswordService {
   ): Promise<{ id: string; workspaceId: string } | null> {
     try {
       return await this.prisma.agent.findFirst({
-        where: { email: normalizedEmail },
+        where: { email: normalizedEmail, workspaceId: { not: '' } },
         select: { id: true, workspaceId: true },
       });
     } catch (error: unknown) {

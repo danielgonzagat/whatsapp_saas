@@ -207,11 +207,11 @@ export interface CreateBumpPayload {
   /** Product name property. */
   productName: string;
   /** Image property. */
-  image?: string;
+  image?: string | undefined;
   /** Price in cents property. */
   priceInCents: number;
   /** Compare at price property. */
-  compareAtPrice?: number | null;
+  compareAtPrice?: number | null | undefined;
   /** Checkbox label property. */
   checkboxLabel: string;
 }

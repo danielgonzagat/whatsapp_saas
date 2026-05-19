@@ -55,9 +55,7 @@ if (resolvedUrl) {
   console.log(`[BOOTSTRAP] Redis URL: ${maskRedisUrl(resolvedUrl)}`);
 
   if (resolvedUrl.includes('.railway.internal')) {
-    console.warn(
-      '[BOOTSTRAP] URL uses .railway.internal — verify backend is on the same Railway network as Redis.',
-    );
+    console.log('[BOOTSTRAP] Redis is using Railway internal networking.');
   }
 } else {
   console.warn(

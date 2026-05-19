@@ -1,4 +1,5 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { Prisma } from '@prisma/client';
 import { randomUUID } from 'crypto';
 import {
@@ -6,6 +7,7 @@ import {
   mapBrainActionToDomainEvent,
   readBrainActionName,
 } from './brain-action-event-mapper';
+import { BrainCapabilityExecutorService } from './brain-capability-executor.service';
 import { BrainCapabilityRegistryService } from './brain-capability-registry.service';
 import { BrainCommercialGraphService } from './brain-commercial-graph.service';
 import type { CommercialGraphRecommendation } from './brain-commercial-graph.types';
@@ -53,8 +55,18 @@ function buildPredecidedActions(input: {
   return [{ tool: input.intent, args: args }];
 }
 
+const OPERATOR_CAPABILITIES = [
+  'list_products',
+  'search_contact',
+  'list_conversations',
+  'send_message_via_channel',
+  'query_revenue_summary',
+] as const;
+
 @Injectable()
 export class BrainRuntimeService {
+  private readonly logger = StructuredLogger.from(BrainRuntimeService.name);
+
   constructor(
     private readonly unifiedAgent: UnifiedAgentService,
     private readonly contextData: UnifiedAgentContextDataService,
@@ -62,7 +74,10 @@ export class BrainRuntimeService {
     private readonly events: BrainEventSpineService,
     private readonly threads: KloelThreadService,
     private readonly graph: BrainCommercialGraphService,
-  ) {}
+    private readonly executor: BrainCapabilityExecutorService,
+  ) {
+    this.logger.debug?.(`BrainRuntimeService initialized`);
+  }
 
   listCapabilities() {
     return {
@@ -121,9 +136,25 @@ export class BrainRuntimeService {
     const allowedTools = this.capabilities.allowedFor(source);
     const predecidedActions = buildPredecidedActions({
       allowedTools,
-      context: params.body.context,
+      ...(params.body.context !== undefined ? { context: params.body.context } : {}),
       intent,
     });
+
+    const isOperatorIntent = (OPERATOR_CAPABILITIES as readonly string[]).includes(intent);
+    if (isOperatorIntent) {
+      return this.executeOperatorCapability({
+        workspaceId: params.workspaceId,
+        // exactOptionalPropertyTypes: drop the key entirely when undefined
+        // rather than passing `userId: undefined` which the target type rejects.
+        ...(params.userId !== undefined ? { userId: params.userId } : {}),
+        intent,
+        source,
+        requestId,
+        thread,
+        context: params.body.context ?? {},
+        message,
+      });
+    }
 
     const result = await this.unifiedAgent.processMessage({
       allowedTools,
@@ -179,7 +210,7 @@ export class BrainRuntimeService {
       } satisfies Prisma.InputJsonObject;
       await this.events.record({
         workspaceId: params.workspaceId,
-        contactId: params.body.contactId,
+        ...(params.body.contactId !== undefined ? { contactId: params.body.contactId } : {}),
         intent,
         action: actionSucceeded ? 'capability.executed' : 'capability.failed',
         status: actionSucceeded ? 'executed' : 'error',
@@ -189,7 +220,7 @@ export class BrainRuntimeService {
       if (domainEvent) {
         await this.events.record({
           workspaceId: params.workspaceId,
-          contactId: params.body.contactId,
+          ...(params.body.contactId !== undefined ? { contactId: params.body.contactId } : {}),
           intent,
           action: domainEvent,
           status: actionSucceeded ? 'executed' : 'error',
@@ -200,11 +231,11 @@ export class BrainRuntimeService {
 
     await this.events.record({
       workspaceId: params.workspaceId,
-      contactId: params.body.contactId,
+      ...(params.body.contactId !== undefined ? { contactId: params.body.contactId } : {}),
       intent,
       action: 'brain.decide',
       status: 'executed',
-      responseText: result.response,
+      ...(result.response !== undefined ? { responseText: result.response } : {}),
       meta: {
         source,
         requestId,
@@ -217,13 +248,122 @@ export class BrainRuntimeService {
 
     return {
       source,
-      conversationId: thread?.id,
-      title: resolvedTitle,
+      ...(thread?.id !== undefined ? { conversationId: thread.id } : {}),
+      ...(resolvedTitle !== undefined ? { title: resolvedTitle } : {}),
       intent: result.intent || intent,
       requestId,
       confidence: result.confidence,
-      response: result.response,
+      ...(result.response !== undefined ? { response: result.response } : {}),
       actions: result.actions,
+    };
+  }
+
+  private async executeOperatorCapability(params: {
+    workspaceId: string;
+    userId?: string;
+    intent: string;
+    source: string;
+    requestId: string;
+    thread: { id: string; title?: string | null } | null;
+    context: Record<string, unknown>;
+    message: string;
+  }): Promise<{
+    actions: unknown[];
+    confidence: number;
+    conversationId?: string;
+    intent: string;
+    requestId: string;
+    response?: string;
+    source: string;
+    title?: string;
+  }> {
+    const startedAt = Date.now();
+    const { workspaceId, intent, requestId, thread, context } = params;
+
+    let capabilityResult: { ok: boolean; data?: unknown; error?: string };
+
+    switch (intent) {
+      case 'list_products':
+        capabilityResult = await this.executor.listProducts(workspaceId, context);
+        break;
+      case 'search_contact':
+        capabilityResult = await this.executor.searchContact(workspaceId, context);
+        break;
+      case 'list_conversations':
+        capabilityResult = await this.executor.listConversations(workspaceId, context);
+        break;
+      case 'send_message_via_channel':
+        capabilityResult = await this.executor.sendMessageViaChannel(workspaceId, context);
+        break;
+      case 'query_revenue_summary':
+        capabilityResult = await this.executor.queryRevenueSummary(workspaceId, context);
+        break;
+      default:
+        capabilityResult = { ok: false, error: 'unknown_operator_intent' };
+    }
+
+    const action = {
+      tool: intent,
+      result: capabilityResult.data ?? { error: capabilityResult.error },
+    };
+    const actions = [action];
+
+    const responseText = capabilityResult.ok
+      ? `Acao "${intent}" executada com sucesso.`
+      : `Falha ao executar "${intent}": ${capabilityResult.error ?? 'erro desconhecido'}.`;
+
+    if (thread) {
+      await this.threads.persistAssistantThreadMessage(thread.id, workspaceId, responseText, {
+        brain: true,
+        brainIntent: intent,
+        brainRequestId: requestId,
+        brainSource: params.source,
+        actions: actions as Prisma.InputJsonValue,
+        confidence: capabilityResult.ok ? 1 : 0,
+      } satisfies Prisma.InputJsonObject);
+    }
+
+    await this.events.record({
+      workspaceId,
+      intent,
+      action: capabilityResult.ok ? 'capability.executed' : 'capability.failed',
+      status: capabilityResult.ok ? 'executed' : 'error',
+      meta: {
+        source: params.source,
+        requestId,
+        userId: params.userId,
+        conversationId: thread?.id,
+        action: cloneJson(action),
+      },
+    });
+
+    await this.events.record({
+      workspaceId,
+      intent,
+      action: 'brain.decide',
+      status: 'executed',
+      responseText,
+      meta: {
+        source: params.source,
+        requestId,
+        userId: params.userId,
+        conversationId: thread?.id,
+        actionCount: 1,
+        confidence: capabilityResult.ok ? 1 : 0,
+        operator: true,
+        latencyMs: Date.now() - startedAt,
+      },
+    });
+
+    return {
+      source: params.source,
+      ...(thread?.id !== undefined ? { conversationId: thread.id } : {}),
+      ...(thread?.title !== null && thread?.title !== undefined ? { title: thread.title } : {}),
+      intent,
+      requestId,
+      confidence: capabilityResult.ok ? 1 : 0,
+      response: responseText,
+      actions,
     };
   }
 
@@ -315,7 +455,7 @@ export class BrainRuntimeService {
       mode: 'observe',
       source,
       requestId,
-      question: params.body.question,
+      ...(params.body.question !== undefined ? { question: params.body.question } : {}),
       workspace,
       products: products.length,
       capabilities: this.capabilities.list().length,

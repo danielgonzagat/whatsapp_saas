@@ -4,6 +4,8 @@
  * No mocks, no Jest APIs — pure helpers only.
  */
 
+type SSEBlock = Record<string, unknown>;
+
 type TraceEntry = {
   cycle: number;
   type:
@@ -63,13 +65,7 @@ type DbContact = {
   updatedAt: Date;
 };
 
-export const WORKSPACE_ID = 'ws-proof';
 export const ALICE_PHONE = '5511999991111';
-const CARLOS_PHONE = '5511999992222';
-const DANIELA_PHONE = '5511999993333';
-export const ALICE_CHAT_ID = `${ALICE_PHONE}@c.us`;
-export const CARLOS_CHAT_ID = `${CARLOS_PHONE}@c.us`;
-export const DANIELA_CHAT_ID = `${DANIELA_PHONE}@c.us`;
 
 export const EXPECTED_TOOL_ALPHABET = [
   'connect_whatsapp',
@@ -90,8 +86,12 @@ export function normalizePhone(value: string): string {
 
 export function normalizeChatId(value: string): string {
   const raw = String(value || '').trim();
-  if (!raw) return '';
-  if (raw.includes('@')) return raw;
+  if (!raw) {
+    return '';
+  }
+  if (raw.includes('@')) {
+    return raw;
+  }
   return `${normalizePhone(raw)}@c.us`;
 }
 
@@ -100,8 +100,12 @@ export function phoneFromChatId(value: string): string {
 }
 
 export function asStr(v: unknown, fallback = ''): string {
-  if (typeof v === 'string') return v;
-  if (typeof v === 'number' || typeof v === 'boolean') return String(v);
+  if (typeof v === 'string') {
+    return v;
+  }
+  if (typeof v === 'number' || typeof v === 'boolean') {
+    return String(v);
+  }
   return fallback;
 }
 
@@ -161,7 +165,7 @@ export function parseEvents(writes: string[]): Array<Record<string, unknown>> {
     .filter(Boolean)
     .map((block) => {
       try {
-        return JSON.parse(block.replace(/^data: /, '')) as Record<string, unknown>;
+        return JSON.parse(block.replace(/^data: /, '')) as SSEBlock;
       } catch {
         return null;
       }

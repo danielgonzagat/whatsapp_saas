@@ -43,7 +43,7 @@ async function runMadge(srcRoot) {
     return parseMadgeOutput(stdout);
   } catch (err) {
     // madge exits 1 when cycles exist — not a failure
-    if (err.stdout) return parseMadgeOutput(err.stdout);
+    if (err.stdout) {return parseMadgeOutput(err.stdout);}
     throw err;
   }
 }
@@ -51,7 +51,7 @@ async function runMadge(srcRoot) {
 function parseMadgeOutput(raw) {
   const start = raw.indexOf('[');
   const end = raw.lastIndexOf(']');
-  if (start === -1 || end === -1 || start > end) return [];
+  if (start === -1 || end === -1 || start > end) {return [];}
   const json = raw.slice(start, end + 1);
   return JSON.parse(json);
 }
@@ -62,12 +62,12 @@ async function collectFindings() {
   const findings = [];
 
   for (const srcRoot of SOURCE_ROOTS) {
-    if (!existsSync(srcRoot)) continue;
+    if (!existsSync(srcRoot)) {continue;}
 
     const cycles = await runMadge(srcRoot);
 
     for (const cycle of cycles) {
-      if (!Array.isArray(cycle) || cycle.length < 2) continue;
+      if (!Array.isArray(cycle) || cycle.length < 2) {continue;}
 
       const cyclePaths = cycle.map((p) => `${srcRoot}/${p}`.replace(/\/+/g, '/'));
 

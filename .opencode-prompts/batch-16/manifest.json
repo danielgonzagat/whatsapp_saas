@@ -1,0 +1,24 @@
+{
+  "runId": "kloel-cia-batch-16-readonly-readiness-2026-05-12",
+  "concurrency": 3,
+  "timeoutSec": 300,
+  "dir": "/Users/danielpenin/whatsapp_saas",
+  "skipPermissions": true,
+  "tasks": [
+    {
+      "id": "A-golden-path-readiness-audit",
+      "title": "Golden Path readiness audit",
+      "promptFile": ".opencode-prompts/batch-16/A-golden-path-readiness-audit.md"
+    },
+    {
+      "id": "B-anti-fake-ui-endpoint-audit",
+      "title": "Anti fake UI endpoint audit",
+      "promptFile": ".opencode-prompts/batch-16/B-anti-fake-ui-endpoint-audit.md"
+    },
+    {
+      "id": "C-provider-readiness-audit",
+      "title": "Provider readiness audit",
+      "promptFile": ".opencode-prompts/batch-16/C-provider-readiness-audit.md"
+    }
+  ]
+}

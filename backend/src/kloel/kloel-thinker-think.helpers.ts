@@ -76,7 +76,9 @@ export async function finalizeSuccessfulReply(
       source: 'initial',
     },
   ];
-  if (workspaceId) await planLimits.trackAiUsage(workspaceId, estimatedTokens).catch(() => {});
+  if (workspaceId) {
+    await planLimits.trackAiUsage(workspaceId, estimatedTokens).catch(() => {});
+  }
   if (thread?.id && workspaceId) {
     await threadService.persistAssistantThreadMessage(
       thread.id,
@@ -94,13 +96,13 @@ export async function finalizeSuccessfulReply(
         processingSummary: threadService.buildProcessingTraceSummary(processingTraceEntries),
       }),
     );
-    await threadService.maybeRefreshThreadSummary(thread.id, workspaceId, replyEngine.openai);
+    await threadService.maybeRefreshThreadSummary(thread.id, workspaceId, replyEngine.openai ?? undefined);
     const title = await threadService.maybeGenerateThreadTitle(
       thread.id,
       thread.title ?? '',
       message,
       workspaceId,
-      replyEngine.openai,
+      replyEngine.openai ?? undefined,
     );
     safeWrite(createKloelThreadEvent(thread.id, title));
   }
@@ -139,10 +141,10 @@ export async function runComposerCapabilityBranch(
   const capResult = await composerService.executeComposerCapability({
     capability: composerCapability,
     message,
-    workspaceId,
-    metadata,
-    composerContext: effectiveCompanyContext,
-    signal,
+    ...(workspaceId !== undefined ? { workspaceId } : {}),
+    ...(metadata !== undefined ? { metadata } : {}),
+    ...(effectiveCompanyContext !== undefined ? { composerContext: effectiveCompanyContext } : {}),
+    ...(signal !== undefined ? { signal } : {}),
   });
   safeWrite(createKloelStatusEvent('streaming_token'));
   safeWrite(createKloelContentEvent(capResult.content));
@@ -161,13 +163,13 @@ export async function runComposerCapabilityBranch(
         ...(capResult.metadata || {}),
       }),
     );
-    await threadService.maybeRefreshThreadSummary(thread.id, workspaceId, replyEngine.openai);
+    await threadService.maybeRefreshThreadSummary(thread.id, workspaceId, replyEngine.openai ?? undefined);
     const title = await threadService.maybeGenerateThreadTitle(
       thread.id,
       thread.title ?? '',
       message,
       workspaceId,
-      replyEngine.openai,
+      replyEngine.openai ?? undefined,
     );
     safeWrite(createKloelThreadEvent(thread.id, title));
   }
@@ -189,6 +191,7 @@ export async function runToolPlanningBranch(
   responseTemperature: number,
   responseMaxTokens: number,
   executeLocalTool: LocalToolExecutor,
+  requestedAllowedTools: string[] | undefined,
   signal: AbortSignal | undefined,
   streamWriterResponse: (
     msgs: ChatCompletionMessageParam[],
@@ -203,10 +206,16 @@ export async function runToolPlanningBranch(
     throw error;
   }
   safeWrite(createKloelStatusEvent('thinking'));
-  await planLimits.ensureTokenBudget(workspaceId);
-  const allowedTools = KLOEL_SAFE_READ_TOOLS;
+  await planLimits.ensureTokenBudget(workspaceId ?? '');
+  const allowedTools =
+    requestedAllowedTools === undefined
+      ? KLOEL_SAFE_READ_TOOLS
+      : KLOEL_SAFE_READ_TOOLS.filter((tool) => {
+          const name = 'function' in tool ? tool.function?.name : undefined;
+          return typeof name === 'string' && requestedAllowedTools.includes(name);
+        });
   const initialResponse = await chatCompletionWithFallback(
-    replyEngine.openai,
+    replyEngine.openai!,
     {
       model: resolveBackendOpenAIModel('brain'),
       messages,
@@ -223,20 +232,21 @@ export async function runToolPlanningBranch(
     signal ? { signal } : undefined,
   );
   await planLimits
-    .trackAiUsage(workspaceId, initialResponse?.usage?.total_tokens ?? 500)
+    .trackAiUsage(workspaceId ?? '', initialResponse?.usage?.total_tokens ?? 500)
     .catch(() => {});
   const assistantMsg = initialResponse.choices[0]?.message;
   const assistantText = assistantMsg?.content || '';
   if (assistantMsg?.tool_calls?.length) {
     const { toolMessages, usedSearchWeb } = await replyEngine.toolRouter.executeAssistantToolCalls({
       assistantMessage: assistantMsg,
-      workspaceId: workspaceId,
-      userId,
+      workspaceId: workspaceId ?? '',
+      ...(userId !== undefined ? { userId } : {}),
+      ...(requestedAllowedTools !== undefined ? { allowedTools: requestedAllowedTools } : {}),
       safeWrite,
       executeLocalTool,
     });
     const finalTemp = usedSearchWeb ? 0.1 : responseTemperature;
-    await planLimits.ensureTokenBudget(workspaceId);
+    await planLimits.ensureTokenBudget(workspaceId ?? '');
     const streamedFinal = await streamWriterResponse(
       replyEngine.buildChatModelMessages({
         systemPrompt,
@@ -250,7 +260,9 @@ export async function runToolPlanningBranch(
       }),
       finalTemp,
     );
-    if (!streamedFinal) return;
+    if (!streamedFinal) {
+      return;
+    }
     let finalResp = streamedFinal.fullResponse.trim();
     if (!finalResp) {
       finalResp =
@@ -260,9 +272,11 @@ export async function runToolPlanningBranch(
     await finalizeSuccessfulReply(finalResp, streamedFinal.estimatedTokens, ctx);
     return;
   }
-  await planLimits.ensureTokenBudget(workspaceId);
+  await planLimits.ensureTokenBudget(workspaceId ?? '');
   const streamedReply = await streamWriterResponse(messages, responseTemperature);
-  if (!streamedReply) return;
+  if (!streamedReply) {
+    return;
+  }
   let fallbackText = streamedReply.fullResponse.trim();
   if (!fallbackText) {
     fallbackText =

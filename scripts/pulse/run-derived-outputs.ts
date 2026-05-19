@@ -4,29 +4,29 @@
  * models (structural graph, capabilities, flows, signals, parity gaps, vision),
  * then renders or emits output based on the active flags.
  */
-import type { FullScanResult } from './daemon/__parts__/types';
+import type { FullScanResult } from './daemon/types';
 import type { PulseCertification } from './types.evidence';
 import type { PulseConfig } from './types.manifest';
 import { buildStructuralGraph } from './structural-graph';
 import { buildExecutionChains } from './execution-chains';
-import { buildExecutionMatrix } from './execution-matrix/__parts__/matrix';
-import { buildCapabilityState } from './capability-model/__parts__/builder';
-import { buildFlowProjection } from './flow-projection/__parts__/builder';
+import { buildExecutionMatrix } from './execution-matrix/matrix';
+import { buildCapabilityState } from './capability-model/builder';
+import { buildFlowProjection } from './flow-projection/builder';
 import { buildParityGaps } from './parity-gaps';
-import { buildProductVision } from './product-vision/__parts__/builder';
-import { buildProductModel } from './product-model/__parts__/model-builder';
-import { buildExternalSignalState } from './external-signals/__parts__/signal-state';
-import { runExternalSourcesOrchestrator } from './adapters/external-sources-orchestrator/__parts__/orchestration';
-import type { ExternalSourcesConfig } from './adapters/external-sources-orchestrator/__parts__/core';
+import { buildProductVision } from './product-vision/builder';
+import { buildProductModel } from './product-model/model-builder';
+import { buildExternalSignalState } from './external-signals/signal-state';
+import { runExternalSourcesOrchestrator } from './adapters/external-sources-orchestrator/orchestration';
+import type { ExternalSourcesConfig } from './adapters/external-sources-orchestrator/core';
 import { deriveExternalSourcesTimeoutMs } from './external-sources-timeout';
 import { buildFunctionalMap } from './functional-map';
 import { generateFunctionalMapReport, renderFunctionalMapSummary } from './functional-map-report';
 import { PulseExecutionTracer, runPhaseWithTrace } from './execution-trace';
 import { renderDashboard } from './dashboard';
-import { generateArtifacts } from './__parts__/artifacts/generate';
-import type { PulseArtifactPaths, PulseArtifactSnapshot } from './__parts__/artifacts/types';
-import type { SelfTrustReport } from './self-trust/__parts__/checks-core';
-import { formatSelfTrustReport } from './self-trust/__parts__/runner';
+import { generateArtifacts } from './artifacts/generate';
+import type { PulseArtifactPaths, PulseArtifactSnapshot } from './artifacts/types';
+import type { SelfTrustReport } from './self-trust/checks-core';
+import { formatSelfTrustReport } from './self-trust/runner';
 import { readTextFile } from './safe-fs';
 import type { flags } from './cli-args';
 import { refreshProofReadinessArtifact } from './proof-readiness-artifact';
@@ -84,41 +84,54 @@ export async function runDerivedOutputs(input: DerivedOutputsInput): Promise<voi
     executionEvidence: certification.evidenceSummary,
   });
 
+  const githubToken = process.env.GITHUB_TOKEN;
+  const sentryAuthToken = process.env.SENTRY_AUTH_TOKEN;
+  const sentryOrg = process.env.SENTRY_ORG;
+  const sentryProject = process.env.SENTRY_PROJECT;
+  const datadogApiKey = process.env.DATADOG_API_KEY;
+  const datadogAppKey = process.env.DATADOG_APP_KEY;
+  const datadogSite = process.env.DATADOG_SITE;
+  const prometheusBaseUrl = process.env.PROMETHEUS_BASE_URL || process.env.PULSE_PROMETHEUS_URL;
+  const prometheusBearerToken = process.env.PROMETHEUS_BEARER_TOKEN || process.env.PULSE_PROMETHEUS_TOKEN;
+  const prometheusQuery = process.env.PROMETHEUS_QUERY;
+  const codecovToken = process.env.CODECOV_TOKEN;
+  const dependabotToken = process.env.GITHUB_TOKEN; 
+
   // Run external sources orchestration
   const externalSourcesConfig: ExternalSourcesConfig = {
     rootDir: config.rootDir,
     github: {
       owner: process.env.GITHUB_OWNER || '',
       repo: process.env.GITHUB_REPO || '',
-      token: process.env.GITHUB_TOKEN,
+      ...(githubToken !== undefined ? { token: githubToken } : {}),
     },
     sentry: {
-      authToken: process.env.SENTRY_AUTH_TOKEN,
-      org: process.env.SENTRY_ORG,
-      project: process.env.SENTRY_PROJECT,
+      ...(sentryAuthToken !== undefined ? { authToken: sentryAuthToken } : {}),
+      ...(sentryOrg !== undefined ? { org: sentryOrg } : {}),
+      ...(sentryProject !== undefined ? { project: sentryProject } : {}),
     },
     datadog: {
-      apiKey: process.env.DATADOG_API_KEY,
-      appKey: process.env.DATADOG_APP_KEY,
-      site: process.env.DATADOG_SITE,
+      ...(datadogApiKey !== undefined ? { apiKey: datadogApiKey } : {}),
+      ...(datadogAppKey !== undefined ? { appKey: datadogAppKey } : {}),
+      ...(datadogSite !== undefined ? { site: datadogSite } : {}),
     },
     prometheus: {
-      baseUrl: process.env.PROMETHEUS_BASE_URL || process.env.PULSE_PROMETHEUS_URL,
-      bearerToken: process.env.PROMETHEUS_BEARER_TOKEN || process.env.PULSE_PROMETHEUS_TOKEN,
-      query: process.env.PROMETHEUS_QUERY,
+      ...(prometheusBaseUrl !== undefined ? { baseUrl: prometheusBaseUrl } : {}),
+      ...(prometheusBearerToken !== undefined ? { bearerToken: prometheusBearerToken } : {}),
+      ...(prometheusQuery !== undefined ? { query: prometheusQuery } : {}),
     },
     codecov: {
-      token: process.env.CODECOV_TOKEN,
+      ...(codecovToken !== undefined ? { token: codecovToken } : {}),
       owner: process.env.GITHUB_OWNER || '',
       repo: process.env.GITHUB_REPO || '',
     },
     dependabot: {
-      token: process.env.GITHUB_TOKEN,
+      ...(dependabotToken !== undefined ? { token: dependabotToken } : {}),
       owner: process.env.GITHUB_OWNER || '',
       repo: process.env.GITHUB_REPO || '',
     },
-    profile: config.certificationProfile || undefined,
-    certificationScope: config.certificationProfile || undefined,
+    ...(config.certificationProfile != null ? { profile: config.certificationProfile } : {}),
+    ...(config.certificationProfile != null ? { certificationScope: config.certificationProfile } : {}),
   };
   const externalSourcesTask = runExternalSourcesOrchestrator(externalSourcesConfig).catch(
     () => null,
@@ -184,7 +197,6 @@ export async function runDerivedOutputs(input: DerivedOutputsInput): Promise<voi
   const { flags, queryModeRequested, selfTrustReport } = input;
   const health = finalScanResult.health;
   const coreData = finalScanResult.coreData;
-  const humanReadableOutput = !flags.json && !flags.guidance && !flags.prove && !flags.vision;
 
   if (flags.manifestValidate) {
     if (

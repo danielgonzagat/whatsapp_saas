@@ -1,20 +1,4 @@
-import type { PrismaService } from '../prisma/prisma.service';
 import { MarketingConnectController } from './marketing-connect.controller';
-
-type MarketingPrismaMock = {
-  workspace: {
-    findUnique: jest.Mock;
-    update: jest.Mock;
-  };
-  metaConnection: {
-    findUnique: jest.Mock;
-  };
-  channelConfig: {
-    findUnique: jest.Mock;
-    upsert: jest.Mock;
-  };
-  $transaction: jest.Mock;
-};
 
 type MarketingRequest = {
   user: {
@@ -36,84 +20,98 @@ const mockTikTokStatus = {
 };
 
 describe('MarketingConnectController', () => {
-  let prisma: MarketingPrismaMock;
-  let metaWhatsApp: {
-    buildEmbeddedSignupUrl: jest.Mock;
+  let metaConnect: {
+    getStatus: jest.Mock;
   };
-  let whatsappProviders: {
-    getProviderType: jest.Mock;
-    getSessionStatus: jest.Mock;
+  let emailConnect: {
+    connect: jest.Mock;
+    disconnect: jest.Mock;
+    getStatus: jest.Mock;
+    sendTest: jest.Mock;
+  };
+  let channelSetup: {
+    completeSetup: jest.Mock;
+    getSetup: jest.Mock;
+    saveSetup: jest.Mock;
+  };
+  let whatsappSummary: {
+    getSummary: jest.Mock;
   };
   let tiktokMarketing: {
     getStatus: jest.Mock;
   };
-  let emailCampaign: {
-    sendSingleEmail: jest.Mock;
+  let tiktokMode: {
+    resolveMode: jest.Mock;
   };
+  let gmailMailbox: { getPrimaryGmailStatus: jest.Mock };
+  let microsoftMailbox: { getPrimaryMicrosoftStatus: jest.Mock };
+  let imapSmtpMailbox: { getPrimaryImapSmtpStatus: jest.Mock };
   let controller: MarketingConnectController;
-  const originalEnv = { ...process.env };
 
   beforeEach(() => {
-    delete process.env.ENCRYPTION_KEY;
-    prisma = {
-      workspace: {
-        findUnique: jest.fn().mockResolvedValue({
-          providerSettings: {
-            whatsappProvider: 'whatsapp-api',
-            whatsappApiSession: {
-              status: 'scan_qr_code',
-              sessionName: 'ws-1',
-            },
-            email: { enabled: false },
-          },
-          name: 'Workspace Teste',
-        }),
-        update: jest.fn().mockResolvedValue({}),
-      },
-      metaConnection: {
-        findUnique: jest.fn().mockResolvedValue(null),
-      },
-      channelConfig: {
-        findUnique: jest.fn().mockResolvedValue(null),
-        upsert: jest.fn().mockResolvedValue({}),
-      },
-      $transaction: jest
-        .fn()
-        .mockImplementation(async (queries: unknown[]) => Promise.all(queries)),
+    const whatsappStatus = {
+      provider: 'whatsapp-api',
+      connected: false,
+      status: 'connecting',
+      authUrl: null,
+      phoneNumberId: null,
+      whatsappBusinessId: null,
+      phoneNumber: null,
+      pushName: null,
+      degradedReason: null,
     };
 
-    metaWhatsApp = {
-      buildEmbeddedSignupUrl: jest.fn().mockReturnValue('https://meta.test/signup'),
-    };
-
-    whatsappProviders = {
-      getProviderType: jest.fn().mockResolvedValue('whatsapp-api'),
-      getSessionStatus: jest.fn().mockResolvedValue({
-        connected: false,
-        status: 'SCAN_QR_CODE',
-        phoneNumber: null,
-        pushName: null,
+    metaConnect = {
+      getStatus: jest.fn().mockResolvedValue({
+        meta: { connected: false, authUrl: 'https://meta.test/signup' },
+        whatsapp: whatsappStatus,
+        instagram: { connected: false, status: 'disconnected' },
+        facebook: { connected: false, status: 'disconnected' },
       }),
     };
+
+    emailConnect = {
+      connect: jest.fn().mockResolvedValue(undefined),
+      disconnect: jest.fn().mockResolvedValue(undefined),
+      sendTest: jest.fn().mockResolvedValue({ success: true }),
+      getStatus: jest.fn().mockResolvedValue({
+        connected: false,
+        status: 'disconnected',
+        enabled: false,
+        provider: 'log',
+        providerAvailable: false,
+        fromEmail: 'noreply@kloel.com',
+        fromName: 'KLOEL',
+        workspaceName: 'Workspace Teste',
+      }),
+    };
+
+    channelSetup = {
+      completeSetup: jest.fn(),
+      getSetup: jest.fn(),
+      saveSetup: jest.fn(),
+    };
+    whatsappSummary = { getSummary: jest.fn() };
+    tiktokMode = { resolveMode: jest.fn() };
+    gmailMailbox = { getPrimaryGmailStatus: jest.fn().mockResolvedValue(null) };
+    microsoftMailbox = { getPrimaryMicrosoftStatus: jest.fn().mockResolvedValue(null) };
+    imapSmtpMailbox = { getPrimaryImapSmtpStatus: jest.fn().mockResolvedValue(null) };
 
     tiktokMarketing = {
       getStatus: jest.fn().mockResolvedValue(mockTikTokStatus),
     };
-    emailCampaign = {
-      sendSingleEmail: jest.fn().mockResolvedValue(true),
-    };
 
     controller = new MarketingConnectController(
-      prisma as never as PrismaService,
-      metaWhatsApp as never,
-      whatsappProviders as never,
+      metaConnect as never,
+      emailConnect as never,
+      channelSetup as never,
+      whatsappSummary as never,
       tiktokMarketing as never,
-      emailCampaign as never,
+      tiktokMode as never,
+      gmailMailbox as never,
+      microsoftMailbox as never,
+      imapSmtpMailbox as never,
     );
-  });
-
-  afterEach(() => {
-    process.env = { ...originalEnv };
   });
 
   it('returns WAHA-driven WhatsApp status without leaking Meta authUrl into the QR flow', async () => {
@@ -186,34 +184,11 @@ describe('MarketingConnectController', () => {
     expect(result).not.toHaveProperty('secret');
   });
 
-  it('stores per-workspace email provider credentials encrypted in ChannelConfig', async () => {
-    process.env.ENCRYPTION_KEY = '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef';
-    const providerTokenFixture = ['re', 'workspace', 'fixture'].join('_');
+  it('delegates per-workspace email enablement to EmailConnectService', async () => {
+    await controller.connectEmail({ user: { workspaceId: 'ws-1' } }, { enabled: true });
 
-    await controller.connectEmail(
-      { user: { workspaceId: 'ws-1' } },
-      {
-        enabled: true,
-        provider: 'resend',
-        fromEmail: 'vendas@example.com',
-        fromName: 'Vendas Example',
-        apiKey: providerTokenFixture,
-      },
-    );
-
-    expect(prisma.channelConfig.upsert).toHaveBeenCalledTimes(1);
-    const call = prisma.channelConfig.upsert.mock.calls[0][0];
-    expect(call.where).toEqual({ workspaceId_channel: { workspaceId: 'ws-1', channel: 'email' } });
-    expect(call.create.transferCriteria.emailDelivery).toEqual(
-      expect.objectContaining({
-        provider: 'resend',
-        fromEmail: 'vendas@example.com',
-        fromName: 'Vendas Example',
-      }),
-    );
-    expect(call.create.transferCriteria.emailDelivery.apiKeyEncrypted).not.toBe(
-      providerTokenFixture,
-    );
+    expect(emailConnect.connect).toHaveBeenCalledWith('ws-1', true);
+    expect(metaConnect.getStatus).toHaveBeenCalledWith('ws-1');
   });
 
   it('exposes TikTok connect status without leaking secrets', async () => {

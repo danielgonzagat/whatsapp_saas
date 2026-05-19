@@ -207,6 +207,6 @@ export class TranscriptionService {
 
     // Tenta extrair da URL
     const match = url.match(OGG_MP3_WAV_M4A_OPUS_RE);
-    return match ? `.${match[1].toLowerCase()}` : '.ogg';
+    return match?.[1] ? `.${match[1].toLowerCase()}` : '.ogg';
   }
 }

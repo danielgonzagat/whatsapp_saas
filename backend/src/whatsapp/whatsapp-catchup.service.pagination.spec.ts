@@ -14,6 +14,7 @@ const { autopilotQueue: _autopilotQueue } = jest.requireMock('../queue/queue');
 
 import type { InboundMessage } from './inbound-processor.service';
 import { WhatsAppCatchupService } from './whatsapp-catchup.service';
+import { CATCHUP_MAX_MESSAGES_PER_CHAT } from './whatsapp-catchup-config';
 import {
   applyCatchupEnvDefaults,
   buildCatchupMocks,
@@ -85,6 +86,19 @@ describe('WhatsAppCatchupService — pagination & error paths', () => {
   });
 
   it('drains pagination correctly by resuming with cursor after prior offset', async () => {
+    const pageSize = CATCHUP_MAX_MESSAGES_PER_CHAT;
+    const buildPage = (page: number, count: number) =>
+      Array.from({ length: count }, (_item, index) => {
+        const messageNumber = page * pageSize + index + 1;
+        return {
+          id: `p${page + 1}-m${index + 1}`,
+          from: '5511999999999@c.us',
+          body: `Page ${page + 1} Msg ${index + 1}`,
+          type: 'chat',
+          timestamp: Date.now() - (messageNumber + 1) * 60 * 1000,
+        };
+      });
+
     // Bump unreadCount above the sum the pagination test produces so the
     // catchup loop keeps fetching pages until the provider returns fewer
     // messages than maxMessagesPerChat (i.e. exhausts the cursor) instead
@@ -92,7 +106,7 @@ describe('WhatsAppCatchupService — pagination & error paths', () => {
     providerRegistry.getChats.mockResolvedValue([
       {
         id: '5511999999999@c.us',
-        unreadCount: 99,
+        unreadCount: pageSize * 3,
         timestamp: Date.now() - 60 * 60 * 1000,
       },
     ]);
@@ -106,51 +120,13 @@ describe('WhatsAppCatchupService — pagination & error paths', () => {
         _callCount += 1;
         const offset = options?.offset || 0;
         if (offset === 0) {
-          return [
-            {
-              id: 'p1-m1',
-              from: '5511999999999@c.us',
-              body: 'Page 1 Msg 1',
-              type: 'chat',
-              timestamp: Date.now() - 30 * 60 * 1000,
-            },
-            {
-              id: 'p1-m2',
-              from: '5511999999999@c.us',
-              body: 'Page 1 Msg 2',
-              type: 'chat',
-              timestamp: Date.now() - 25 * 60 * 1000,
-            },
-          ];
+          return buildPage(0, pageSize);
         }
-        if (offset === 2) {
-          return [
-            {
-              id: 'p2-m1',
-              from: '5511999999999@c.us',
-              body: 'Page 2 Msg 1',
-              type: 'chat',
-              timestamp: Date.now() - 20 * 60 * 1000,
-            },
-            {
-              id: 'p2-m2',
-              from: '5511999999999@c.us',
-              body: 'Page 2 Msg 2',
-              type: 'chat',
-              timestamp: Date.now() - 15 * 60 * 1000,
-            },
-          ];
+        if (offset === pageSize) {
+          return buildPage(1, pageSize);
         }
-        if (offset === 4) {
-          return [
-            {
-              id: 'p3-m1',
-              from: '5511999999999@c.us',
-              body: 'Page 3 Msg 1',
-              type: 'chat',
-              timestamp: Date.now() - 10 * 60 * 1000,
-            },
-          ];
+        if (offset === pageSize * 2) {
+          return buildPage(2, 1);
         }
         return [];
       },
@@ -160,18 +136,18 @@ describe('WhatsAppCatchupService — pagination & error paths', () => {
     await runCatchup(service, 'ws-1', 'pagination_test', 'lock-token');
 
     expect(providerRegistry.getChatMessages).toHaveBeenCalledWith('ws-1', '5511999999999@c.us', {
-      limit: 2,
+      limit: pageSize,
       offset: 0,
     });
     expect(providerRegistry.getChatMessages).toHaveBeenCalledWith('ws-1', '5511999999999@c.us', {
-      limit: 2,
-      offset: 2,
+      limit: pageSize,
+      offset: pageSize,
     });
     expect(providerRegistry.getChatMessages).toHaveBeenCalledWith('ws-1', '5511999999999@c.us', {
-      limit: 2,
-      offset: 4,
+      limit: pageSize,
+      offset: pageSize * 2,
     });
-    expect(inboundProcessor.process).toHaveBeenCalledTimes(5);
+    expect(inboundProcessor.process).toHaveBeenCalledTimes(pageSize * 2 + 1);
   });
 
   it('deduplicates messages on retry by skipping previously seen IDs within same catchup run', async () => {

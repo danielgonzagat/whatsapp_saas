@@ -1,9 +1,19 @@
+/**
+ * ARCHITECTURAL COHESION: This file is the Memory Processing Worker.
+ * It hosts the BullMQ worker for the `memory-jobs` queue, dispatching
+ * `ingest-source`, `extract-facts`, and `analyze-contact` jobs. The text
+ * splitting algorithm is extracted to memory-text-splitter.ts. What remains
+ * is the embedding pipeline (chunk → vector → wallet settlement), the job
+ * dispatch switch, and the failure cleanup — all tied to the memory worker's
+ * BullMQ lifecycle.
+ */
+
 import { type Job, Worker } from 'bullmq';
 import OpenAI from 'openai';
 import { prisma } from '../db';
 import { WorkerLogger } from '../logger';
 import { LeadScorer } from '../providers/lead-scorer';
-import { connection } from '../queue';
+import { buildQueueOptions } from '../queue';
 import { forEachSequential } from '../utils/async-sequence';
 import { processFactExtraction } from './fact-extractor';
 import {
@@ -12,16 +22,10 @@ import {
   settleQuotedUsageCharge,
 } from './prepaid-wallet-settlement';
 import { WorkerError } from '../src/utils/error-handler';
+import { checkIdempotent, endJob, logError, markCompleted, startJob } from '../processor-base';
+import { DEFAULT_CHUNK_OVERLAP, DEFAULT_CHUNK_SIZE, splitText } from './memory-text-splitter';
 
-const WHITESPACE_RE = /\s+/g;
-const SENTENCE_ENDINGS = ['. ', '? ', '! '];
-const DEFAULT_CHUNK_SIZE = 1000;
-const DEFAULT_CHUNK_OVERLAP = 200;
 const DEFAULT_MAX_CHUNKS = 400;
-const SPLIT_BIAS_NUMERATOR = 1;
-const SPLIT_BIAS_DENOMINATOR = 2;
-const NO_SPLIT_INDEX = -1;
-const MIN_OFFSET = 1;
 const WORKER_CONCURRENCY = 5;
 
 const log = new WorkerLogger('memory-worker');
@@ -69,11 +73,6 @@ const resolveOpenAIKey = (workspace: { providerSettings: unknown } | null): stri
 /**
  * Embed a single chunk and persist its vector. Returns the token count
  * reported by the provider, or `0` if the response omits usage info.
- *
- * @param openai - Provider client.
- * @param chunk - Text chunk to embed.
- * @param sourceId - Knowledge source identifier.
- * @returns Total tokens billed for the embedding call.
  */
 const insertChunkVector = async (
   openai: OpenAI,
@@ -100,8 +99,6 @@ const insertChunkVector = async (
 
 /**
  * Settle the wallet usage that was quoted before embedding started.
- *
- * @param input - Settlement input bundle.
  */
 const settleIngestUsage = async (input: {
   workspaceId: string;
@@ -151,10 +148,10 @@ const markSourceFailed = async (sourceId: string): Promise<void> => {
  *
  * @param job - BullMQ job instance.
  */
-const processIngestSource = async (job: Job): Promise<void> => {
+const processIngestSource = async (job: Job, ctxLog: WorkerLogger): Promise<void> => {
   const data = job.data as IIngestSourceJobData;
   const { workspaceId, sourceId, content, type: sourceType, maxChunks, walletUsage } = data;
-  log.info('ingest_source_start', { sourceId, type: sourceType });
+  ctxLog.info('ingest_source_start', { sourceId, type: sourceType });
 
   const workspace = await prisma.workspace.findUnique({ where: { id: workspaceId } });
   const apiKey = resolveOpenAIKey(workspace);
@@ -175,7 +172,7 @@ const processIngestSource = async (job: Job): Promise<void> => {
   let processed = 0;
   await forEachSequential(chunks, async (chunk) => {
     actualInputTokens += BigInt(await insertChunkVector(openai, chunk, sourceId));
-    processed++;
+    processed += 1;
     if (chunks.length > 0) {
       await job.updateProgress(10 + Math.floor((80 * processed) / chunks.length));
     }
@@ -197,7 +194,7 @@ const processIngestSource = async (job: Job): Promise<void> => {
     where: { id: sourceId },
   });
   await job.updateProgress(100);
-  log.info('ingest_source_complete', {
+  ctxLog.info('ingest_source_complete', {
     actualInputTokens: actualInputTokens.toString(),
     chunks: chunks.length,
     sourceId,
@@ -210,27 +207,25 @@ const processIngestSource = async (job: Job): Promise<void> => {
  *
  * @param job - BullMQ job instance.
  */
-const dispatchMemoryJob = async (job: Job): Promise<void> => {
+const dispatchMemoryJob = async (job: Job, ctxLog: WorkerLogger): Promise<void> => {
   switch (job.name) {
-    // PULSE:OK - extract-facts is enqueued by unified-agent and inbound-processor via memory queue
     case 'extract-facts':
       await processFactExtraction(job);
 
       return;
 
-    // PULSE:OK - analyze-contact is enqueued by whatsapp.service via memory queue
     case 'analyze-contact':
       await LeadScorer.analyze(job.data.workspaceId, job.data.contactId);
 
       return;
 
     case 'ingest-source':
-      await processIngestSource(job);
+      await processIngestSource(job, ctxLog);
 
       return;
 
     default:
-      log.warn('unknown_memory_job', { name: job.name });
+      ctxLog.warn('unknown_memory_job', { name: job.name });
   }
 };
 
@@ -280,9 +275,13 @@ const toError = (err: unknown): Error => {
  * @param job - BullMQ job instance.
  * @param err - Error thrown by the dispatcher.
  */
-const handleMemoryJobFailure = async (job: Job, err: unknown): Promise<void> => {
+const handleMemoryJobFailure = async (
+  job: Job,
+  err: unknown,
+  ctxLog: WorkerLogger,
+): Promise<void> => {
   const errInstance = toError(err);
-  log.error('memory_job_failed', { error: errInstance.message, jobId: job.id });
+  ctxLog.error('memory_job_failed', { error: errInstance.message, jobId: job.id });
 
   if (job.name === 'ingest-source' && job.data.sourceId) {
     await cleanupFailedIngest(String(job.data.sourceId), errInstance.message);
@@ -295,148 +294,25 @@ const handleMemoryJobFailure = async (job: Job, err: unknown): Promise<void> => 
 export const memoryWorker = new Worker(
   'memory-jobs',
   async (job: Job) => {
-    log.info('memory_job_start', { jobId: job.id, name: job.name });
+    const meta = startJob(job, log);
+    const ctxLog = log.withContext(meta.correlationId, meta.workspaceId);
+
     try {
-      await dispatchMemoryJob(job);
+      const dedup = await checkIdempotent(job);
+      if (dedup) {
+        ctxLog.info('job_skipped_idempotent', { jobId: job.id });
+        endJob(meta, ctxLog, job.name, 'skipped');
+        return;
+      }
+
+      await dispatchMemoryJob(job, ctxLog);
+      await markCompleted(job);
+      endJob(meta, ctxLog, job.name, 'completed');
     } catch (err: unknown) {
-      await handleMemoryJobFailure(job, err);
+      logError(meta, ctxLog, err, job.name);
+      await handleMemoryJobFailure(job, err, ctxLog);
       throw err;
     }
   },
-  { concurrency: WORKER_CONCURRENCY, connection, lockDuration: 300_000 },
+  { concurrency: WORKER_CONCURRENCY, ...buildQueueOptions(), lockDuration: 300_000 },
 );
-
-/**
- * Decide whether `idx` is a better split candidate than the current best.
- *
- * @param idx - Candidate sentence-ending index.
- * @param startIndex - Lower bound of the current chunk.
- * @param endIndex - Upper bound of the current chunk.
- * @param splitIndex - Best split index found so far.
- * @returns `true` when `idx` should replace `splitIndex`.
- */
-const isSplitCandidate = (
-  idx: number,
-  startIndex: number,
-  endIndex: number,
-  splitIndex: number,
-): boolean => {
-  const halfwayIndex =
-    startIndex + ((endIndex - startIndex) * SPLIT_BIAS_NUMERATOR) / SPLIT_BIAS_DENOMINATOR;
-
-  return idx > halfwayIndex && idx > splitIndex;
-};
-
-/**
- * Locate the best sentence-ending split position within `[startIndex, endIndex]`.
- *
- * @param cleanText - Whitespace-normalised text.
- * @param startIndex - Lower bound (inclusive).
- * @param endIndex - Upper bound (inclusive).
- * @returns Split position (>=0) or `NO_SPLIT_INDEX` when no candidate exists.
- */
-const findSentenceSplit = (cleanText: string, startIndex: number, endIndex: number): number => {
-  let splitIndex = NO_SPLIT_INDEX;
-  for (const ending of SENTENCE_ENDINGS) {
-    const idx = cleanText.lastIndexOf(ending, endIndex);
-    if (isSplitCandidate(idx, startIndex, endIndex, splitIndex)) {
-      splitIndex = idx + 1;
-    }
-  }
-
-  return splitIndex;
-};
-
-/**
- * Find the optimal end index for a chunk starting at `startIndex`.
- *
- * Prefers sentence boundaries; falls back to the last word boundary; finally
- * uses the hard `chunkSize` cut.
- *
- * @param cleanText - Whitespace-normalised text.
- * @param startIndex - Chunk start index.
- * @param chunkSize - Target chunk size in characters.
- * @returns Exclusive end index for the chunk.
- */
-const findChunkEnd = (cleanText: string, startIndex: number, chunkSize: number): number => {
-  const endIndex = startIndex + chunkSize;
-  if (endIndex >= cleanText.length) {
-    return endIndex;
-  }
-
-  const splitIndex = findSentenceSplit(cleanText, startIndex, endIndex);
-  if (splitIndex !== NO_SPLIT_INDEX) {
-    return splitIndex;
-  }
-
-  const lastSpace = cleanText.lastIndexOf(' ', endIndex);
-  if (lastSpace > startIndex) {
-    return lastSpace;
-  }
-
-  return endIndex;
-};
-
-/**
- * Compute the next chunk start, applying the configured overlap while
- * guaranteeing forward progress (>=1 character per iteration).
- *
- * @param startIndex - Current chunk start.
- * @param endIndex - Current chunk end.
- * @param chunkOverlap - Desired overlap in characters.
- * @returns Next chunk start index.
- */
-const nextStartIndex = (startIndex: number, endIndex: number, chunkOverlap: number): number =>
-  Math.max(startIndex + MIN_OFFSET, endIndex - chunkOverlap);
-
-/**
- * Append `chunk` to `chunks` if it carries any non-whitespace content.
- *
- * @param chunks - Mutable accumulator of chunks built so far.
- * @param chunk - Candidate chunk.
- */
-const pushIfNonEmpty = (chunks: string[], chunk: string): void => {
-  const trimmed = chunk.trim();
-  if (trimmed) {
-    chunks.push(trimmed);
-  }
-};
-
-/**
- * Split `text` into overlapping chunks suitable for vector embedding.
- *
- * Algorithm preserves sentence boundaries when possible and never produces an
- * empty chunk. The whitespace-normalised result is deterministic for the
- * given inputs.
- *
- * @param text - Source text.
- * @param chunkSize - Target chunk size in characters.
- * @param chunkOverlap - Overlap between consecutive chunks (default 200).
- * @returns Ordered list of non-empty chunks.
- */
-const splitText = (
-  text: string,
-  chunkSize: number,
-  chunkOverlap: number = DEFAULT_CHUNK_OVERLAP,
-): string[] => {
-  if (!text) {
-    return [];
-  }
-  const cleanText = text.replace(WHITESPACE_RE, ' ').trim();
-  if (cleanText.length <= chunkSize) {
-    return [cleanText];
-  }
-
-  const chunks: string[] = [];
-  let startIndex = 0;
-  while (startIndex < cleanText.length) {
-    const endIndex = findChunkEnd(cleanText, startIndex, chunkSize);
-    pushIfNonEmpty(chunks, cleanText.substring(startIndex, endIndex));
-    if (endIndex >= cleanText.length) {
-      break;
-    }
-    startIndex = nextStartIndex(startIndex, endIndex, chunkOverlap);
-  }
-
-  return chunks;
-};

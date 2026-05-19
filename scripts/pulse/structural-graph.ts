@@ -531,7 +531,9 @@ export function buildStructuralGraph(input: BuildStructuralGraphInput): PulseStr
     nodes,
     edges,
     resolvedManifest: input.resolvedManifest,
-    executionEvidence: input.executionEvidence,
+    ...(input.executionEvidence !== undefined
+      ? { executionEvidence: input.executionEvidence }
+      : {}),
   });
 
   return {

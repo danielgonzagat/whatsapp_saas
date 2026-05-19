@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
-import { BadRequestException, Inject, Injectable, Logger, forwardRef } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable, forwardRef } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { Prisma } from '@prisma/client';
-import { AuditService } from '../audit/audit.service';
 import { toPrismaJsonArray } from '../common/prisma/prisma-json.util';
 import { PrismaService } from '../prisma/prisma.service';
 import { generateCheckoutOrderNumber } from './checkout-code.util';
@@ -19,8 +19,9 @@ import { buildCheckoutOrderMetadata } from './checkout-order-metadata.util';
 import {
   executeProcessOrderPostPayment,
   type ProcessOrderPostPaymentParams,
-} from './__companions__/checkout-order.service.companion';
+} from './checkout-order.post-payment';
 import type { CheckoutOrderStatusValue } from './checkout-order-status';
+import type { ShippingAddress } from './checkout-shipping.types';
 
 const D_RE = /\D/g;
 const DEFAULT_MARKETPLACE_FEE_PERCENT = 9.9;
@@ -28,14 +29,13 @@ const DEFAULT_MARKETPLACE_FEE_PERCENT = 9.9;
 /** Manages order lifecycle: create, query, status transitions, upsell accept/decline. */
 @Injectable()
 export class CheckoutOrderService {
-  private readonly logger = new Logger(CheckoutOrderService.name);
+  private readonly logger = StructuredLogger.from(CheckoutOrderService.name);
   private readonly orderSupport: CheckoutOrderSupport;
 
   constructor(
     private readonly prisma: PrismaService,
     @Inject(forwardRef(() => CheckoutPaymentService))
     private readonly paymentService: CheckoutPaymentService,
-    private readonly auditService: AuditService,
     private readonly catalogService: CheckoutCatalogService,
     private readonly queryService: CheckoutOrderQueryService,
   ) {
@@ -47,7 +47,6 @@ export class CheckoutOrderService {
   }
 
   /** Create order with server-side pricing reconciliation and payment processing. */
-  // PULSE_OK: rate-limited by CheckoutPublicController
   async createOrder(data: {
     planId: string;
     workspaceId: string;
@@ -111,14 +110,16 @@ export class CheckoutOrderService {
     const normalizedOrderQuantity = normalizeCheckoutOrderQuantity(orderQuantity);
     const acceptedBumpIds = this.orderSupport.parseAcceptedBumpIds(orderData.acceptedBumps);
     const shippingAddress = orderData.shippingAddress;
-    const destinationZip =
+    const address =
       shippingAddress && typeof shippingAddress === 'object'
-        ? typeof (shippingAddress as Record<string, unknown>).cep === 'string'
-          ? ((shippingAddress as Record<string, unknown>).cep as string)
-          : typeof (shippingAddress as Record<string, unknown>).zipCode === 'string'
-            ? ((shippingAddress as Record<string, unknown>).zipCode as string)
-            : ''
-        : '';
+        ? (shippingAddress as ShippingAddress)
+        : null;
+    const destinationZip =
+      typeof address?.cep === 'string'
+        ? address.cep
+        : typeof address?.zipCode === 'string'
+          ? address.zipCode
+          : '';
     const shippingQuote = buildCheckoutShippingQuote({
       plan: planRecord,
       checkoutConfig: planRecord.checkoutConfig,
@@ -156,10 +157,7 @@ export class CheckoutOrderService {
     const qualityGate = {
       documentDigits: String(orderData.customerCPF || '').replace(D_RE, ''),
       phoneDigits: this.orderSupport.normalizePhoneDigits(orderData.customerPhone),
-      payerAddress:
-        orderData.shippingAddress && typeof orderData.shippingAddress === 'object'
-          ? (orderData.shippingAddress as Record<string, unknown>)
-          : null,
+      payerAddress: address,
     };
     const lineItems = this.orderSupport.buildCheckoutLineItems(
       planRecord,
@@ -199,7 +197,6 @@ export class CheckoutOrderService {
     }
     const orderNumber = generateCheckoutOrderNumber();
 
-    // PULSE_OK: correlationId idempotency gate + create wrapped in single
     // $transaction to prevent duplicate orders from concurrent createOrder
     // calls with the same correlationId (metadata is a JSON field, no
     // unique constraint on the correlationId path)
@@ -220,12 +217,32 @@ export class CheckoutOrderService {
             payment: true,
           },
         });
-        if (existing) return { replay: true, order: existing } as const;
+        if (existing) {
+          return { replay: true, order: existing } as const;
+        }
 
         const created = await tx.checkoutOrder.create({
           data: {
-            ...orderData,
-            paymentMethod,
+            planId: orderData.planId,
+            workspaceId: orderData.workspaceId,
+            customerName: orderData.customerName,
+            customerEmail: orderData.customerEmail,
+            paymentMethod: orderData.paymentMethod as 'CREDIT_CARD' | 'PIX' | 'BOLETO',
+            shippingAddress: orderData.shippingAddress,
+            ...(orderData.shippingMethod !== undefined
+              ? { shippingMethod: orderData.shippingMethod }
+              : {}),
+            ...(orderData.customerCPF !== undefined ? { customerCPF: orderData.customerCPF } : {}),
+            ...(orderData.customerPhone !== undefined
+              ? { customerPhone: orderData.customerPhone }
+              : {}),
+            ...(orderData.utmSource !== undefined ? { utmSource: orderData.utmSource } : {}),
+            ...(orderData.utmMedium !== undefined ? { utmMedium: orderData.utmMedium } : {}),
+            ...(orderData.utmCampaign !== undefined ? { utmCampaign: orderData.utmCampaign } : {}),
+            ...(orderData.utmContent !== undefined ? { utmContent: orderData.utmContent } : {}),
+            ...(orderData.utmTerm !== undefined ? { utmTerm: orderData.utmTerm } : {}),
+            ...(orderData.ipAddress !== undefined ? { ipAddress: orderData.ipAddress } : {}),
+            ...(orderData.userAgent !== undefined ? { userAgent: orderData.userAgent } : {}),
             shippingPrice: normalizedShippingInCents,
             acceptedBumps: toPrismaJsonArray(serverTotals.acceptedBumpIds),
             subtotalInCents: normalizedSubtotalInCents,
@@ -235,7 +252,7 @@ export class CheckoutOrderService {
             couponCode: orderData.couponCode ? orderData.couponCode.toUpperCase() : null,
             couponDiscount: normalizedDiscountInCents || null,
             installments: normalizedInstallments,
-            affiliateId: affiliateLink?.affiliateWorkspaceId || affiliateId,
+            affiliateId: (affiliateLink?.affiliateWorkspaceId || affiliateId) ?? null,
             metadata: buildCheckoutOrderMetadata({
               checkoutCode,
               capturedLeadId,
@@ -291,12 +308,23 @@ export class CheckoutOrderService {
         order: orderResult.order,
         orderNumber,
         correlationId,
-        data,
-        orderData: { paymentMethod },
+        data: {
+          workspaceId: data.workspaceId,
+          planId: data.planId,
+          customerName: data.customerName,
+          customerEmail: data.customerEmail,
+          ...(data.customerCPF !== undefined ? { customerCPF: data.customerCPF } : {}),
+          ...(data.customerPhone !== undefined ? { customerPhone: data.customerPhone } : {}),
+          ...(data.couponCode !== undefined ? { couponCode: data.couponCode } : {}),
+          shippingAddress: data.shippingAddress,
+        },
+        orderData: {
+          paymentMethod: orderData.paymentMethod as 'CREDIT_CARD' | 'PIX' | 'BOLETO',
+        },
         qualityGate,
         normalizedBaseTotalInCents,
         normalizedInstallments,
-        cardHolderName,
+        ...(cardHolderName !== undefined ? { cardHolderName } : {}),
       });
       return { ...orderResult.order, paymentData };
     }
@@ -314,19 +342,28 @@ export class CheckoutOrderService {
       order,
       orderNumber,
       correlationId,
-      data,
-      orderData: { paymentMethod },
+      data: {
+        workspaceId: data.workspaceId,
+        planId: data.planId,
+        customerName: data.customerName,
+        customerEmail: data.customerEmail,
+        ...(data.customerCPF !== undefined ? { customerCPF: data.customerCPF } : {}),
+        ...(data.customerPhone !== undefined ? { customerPhone: data.customerPhone } : {}),
+        ...(data.couponCode !== undefined ? { couponCode: data.couponCode } : {}),
+        shippingAddress: data.shippingAddress,
+      },
+      orderData: {
+        paymentMethod: orderData.paymentMethod as 'CREDIT_CARD' | 'PIX' | 'BOLETO',
+      },
       qualityGate,
       normalizedBaseTotalInCents,
       normalizedInstallments,
-      cardHolderName,
+      ...(cardHolderName !== undefined ? { cardHolderName } : {}),
     });
     return { ...order, paymentData };
   }
 
-  private async processOrderPostPayment(
-    params: ProcessOrderPostPaymentParams,
-  ): Promise<Record<string, unknown> | null> {
+  private async processOrderPostPayment(params: ProcessOrderPostPaymentParams): Promise<unknown> {
     return executeProcessOrderPostPayment(params, {
       prisma: this.prisma,
       paymentService: this.paymentService,
@@ -336,13 +373,11 @@ export class CheckoutOrderService {
   }
 
   /** Get order. */
-  // PULSE_OK: rate-limited by CheckoutPublicController
   async getOrder(orderId: string, workspaceId?: string) {
     return this.queryService.getOrder(orderId, workspaceId);
   }
 
   /** List orders. */
-  // PULSE_OK: rate-limited by CheckoutPublicController
   async listOrders(
     workspaceId: string,
     filters?: { status?: string; page?: number; limit?: number },
@@ -351,7 +386,6 @@ export class CheckoutOrderService {
   }
 
   /** Update order status. */
-  // PULSE_OK: rate-limited by CheckoutPublicController
   async updateOrderStatus(
     orderId: string,
     workspaceId: string | undefined,
@@ -362,25 +396,21 @@ export class CheckoutOrderService {
   }
 
   /** Get order status. */
-  // PULSE_OK: rate-limited by CheckoutPublicController
   async getOrderStatus(orderId: string) {
     return this.queryService.getOrderStatus(orderId);
   }
 
   /** Accept upsell. */
-  // PULSE_OK: rate-limited by CheckoutPublicController
   async acceptUpsell(orderId: string, upsellId: string) {
     return this.queryService.acceptUpsell(orderId, upsellId);
   }
 
   /** Get recent paid orders. */
-  // PULSE_OK: rate-limited by CheckoutPublicController
   async getRecentPaidOrders(limit: number) {
     return this.queryService.getRecentPaidOrders(limit);
   }
 
   /** Decline upsell. */
-  // PULSE_OK: rate-limited by CheckoutPublicController
   async declineUpsell(orderId: string, upsellId: string) {
     return this.queryService.declineUpsell(orderId, upsellId);
   }

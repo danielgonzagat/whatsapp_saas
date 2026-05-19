@@ -22,6 +22,12 @@ export default defineConfig({
       provider: 'v8',
       reporter: ['text', 'lcov', 'json-summary', 'clover'],
       reportsDirectory: './coverage',
+      thresholds: {
+        lines: 46,
+        branches: 38,
+        functions: 38,
+        statements: 46,
+      },
     },
   },
   resolve: {

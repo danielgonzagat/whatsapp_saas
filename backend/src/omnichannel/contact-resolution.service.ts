@@ -12,7 +12,9 @@ export { ResolvedContact };
 export class OmnichannelContactResolutionService {
   private readonly logger = new Logger(OmnichannelContactResolutionService.name);
 
-  constructor(private readonly channelIdentifier: ChannelIdentifierService) {}
+  constructor(private readonly channelIdentifier: ChannelIdentifierService) {
+    this.logger.debug?.(`OmnichannelContactResolutionService initialized`);
+  }
 
   resolveFromMessage(
     msg: NormalizedMessage,
@@ -21,8 +23,9 @@ export class OmnichannelContactResolutionService {
     const channel = msg.channel;
     const value = this.extractChannelValue(channel, msg.from, msg.externalId);
 
+    const resolvedName = options?.name || msg.fromName;
     return this.channelIdentifier.resolve(channel, value, msg.workspaceId, {
-      name: options?.name || msg.fromName,
+      ...(resolvedName !== undefined ? { name: resolvedName } : {}),
       isPrimary: true,
       metadata: {
         rawFrom: msg.from,

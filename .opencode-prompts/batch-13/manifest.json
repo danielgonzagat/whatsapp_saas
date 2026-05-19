@@ -1,0 +1,26 @@
+{
+  "runId": "batch-13-2026-05-12b",
+  "concurrency": 2,
+  "timeoutSec": 0,
+  "staggerMs": 60000,
+  "dir": "/Users/danielpenin/whatsapp_saas",
+  "skipPermissions": true,
+  "_note": "Batch 13 — Wave K decomp views + Wave M property-tester + Wave D5a Codacy MEDIUM codemods. Conservative conc 2 due to RAM.",
+  "tasks": [
+    {
+      "id": "K-decomp-views",
+      "title": "Wave K — Decompose top 5 views",
+      "promptFile": ".opencode-prompts/batch-13/K-decomp-views.md"
+    },
+    {
+      "id": "M-property-tester",
+      "title": "Wave M — Hardcoded liquefication: property-tester.ts (3291 findings)",
+      "promptFile": ".opencode-prompts/batch-13/M-property-tester.md"
+    },
+    {
+      "id": "D5a-codacy-codemod",
+      "title": "Wave D5a — Codacy MEDIUM codemods (curly + i18n + throw + format)",
+      "promptFile": ".opencode-prompts/batch-13/D5-codacy-curly-i18n.md"
+    }
+  ]
+}

@@ -1,5 +1,7 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { PlanLimitsService } from '../billing/plan-limits.service';
+import { toPrismaJsonValue } from '../common/prisma/prisma-json.util';
 import { PrismaService } from '../prisma/prisma.service';
 import { SmartPaymentService } from './smart-payment.service';
 import { KloelToolExecutorBillingService } from './kloel-tool-executor-billing.service';
@@ -32,12 +34,14 @@ import type {
   ToolChangePlanArgs,
 } from './kloel-tool-executor.types';
 
+import { asProviderSettings } from '../whatsapp/provider-settings.types';
+
 type UnknownRecord = Record<string, unknown>;
 
 /** Service that executes all AI-chat tool calls on behalf of KloelService. */
 @Injectable()
 export class KloelToolExecutorService {
-  private readonly logger = new Logger(KloelToolExecutorService.name);
+  private readonly logger = StructuredLogger.from(KloelToolExecutorService.name);
 
   constructor(
     private readonly prisma: PrismaService,
@@ -195,7 +199,7 @@ export class KloelToolExecutorService {
       where: { id: workspaceId },
       select: { providerSettings: true },
     });
-    const currentSettings = (settingsSnapshot?.providerSettings as Record<string, unknown>) || {};
+    const currentSettings = asProviderSettings(settingsSnapshot?.providerSettings);
     if (args.enabled && currentSettings.billingSuspended === true) {
       return {
         success: false,
@@ -209,18 +213,18 @@ export class KloelToolExecutorService {
         where: { id: workspaceId },
         select: { providerSettings: true },
       });
-      const settings = (workspace?.providerSettings as Record<string, unknown>) || {};
+      const settings = asProviderSettings(workspace?.providerSettings);
       const newSettings = {
         ...settings,
         autopilot: {
-          ...((settings.autopilot as Record<string, unknown>) || {}),
+          ...(settings.autopilot || {}),
           enabled: args.enabled,
         },
         autopilotEnabled: args.enabled,
       };
       await tx.workspace.update({
         where: { id: workspaceId },
-        data: { providerSettings: newSettings },
+        data: { providerSettings: toPrismaJsonValue(newSettings) },
       });
       return {
         success: true,
@@ -253,8 +257,12 @@ export class KloelToolExecutorService {
     ) => Promise<{ answer: string; sources: Array<{ title: string; url: string }> }>,
   ): Promise<ToolResult> {
     const query = String(args?.query || '').trim();
-    if (!query) return { success: false, error: 'missing_query' };
-    if (!searchWebFn) return { success: false, error: 'web_search_unavailable' };
+    if (!query) {
+      return { success: false, error: 'missing_query' };
+    }
+    if (!searchWebFn) {
+      return { success: false, error: 'web_search_unavailable' };
+    }
     try {
       await this.planLimits.ensureTokenBudget(workspaceId);
       const digest = await searchWebFn(query);

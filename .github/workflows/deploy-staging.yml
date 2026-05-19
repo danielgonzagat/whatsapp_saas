@@ -28,11 +28,56 @@ on:
         default: main
 
 concurrency:
-  group: deploy-staging
-  cancel-in-progress: true
+  group: ${{ github.event_name == 'pull_request' && format('deploy-staging-pr-{0}', github.event.pull_request.number) || 'deploy-staging' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   deploy-staging:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: package-lock.json
+
+      - name: Install root dependencies
+        run: npm ci
+
+      - name: Railway runtime anti-regression gate
+        env:
+          RAILWAY_RUNTIME_REQUIRED: 'true'
+          RAILWAY_RUNTIME_FAIL_ON_WARNINGS: 'true'
+          RAILWAY_PROJECT_TOKEN: ${{ secrets.RAILWAY_PROJECT_TOKEN || secrets.RAILWAY_TOKEN }}
+          RAILWAY_PROJECT_ID: ${{ secrets.RAILWAY_PROJECT_ID }}
+          RAILWAY_ENVIRONMENT_ID: ${{ vars.RAILWAY_PRODUCTION_ENVIRONMENT_ID }}
+          RAILWAY_BACKEND_SERVICE_ID: ${{ vars.RAILWAY_BACKEND_SERVICE_ID }}
+          RAILWAY_BACKEND_SERVICE_NAME: ${{ vars.RAILWAY_BACKEND_SERVICE }}
+          RAILWAY_WORKER_SERVICE_ID: ${{ vars.RAILWAY_WORKER_SERVICE_ID }}
+          RAILWAY_WORKER_SERVICE_NAME: ${{ vars.RAILWAY_WORKER_SERVICE }}
+          RAILWAY_SYSTEM_HEALTH_URL: ${{ vars.PRODUCTION_SYSTEM_HEALTH_URL }}
+          RAILWAY_BACKEND_HEALTH_URL: ${{ vars.PRODUCTION_BACKEND_HEALTHCHECK_URL }}
+          RAILWAY_FRONTEND_HEALTH_URL: ${{ vars.PRODUCTION_FRONTEND_HEALTHCHECK_URL }}
+        run: npm run railway:runtime:check
+
+      - name: Publish deployment summary
+        run: |
+          {
+            echo "## Staging deploy"
+            echo ""
+            echo "- Ref: ${{ github.event.pull_request.head.sha }}"
+            echo "- Mode: PR gate only; no staging deploy executed."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  deploy-staging-live:
     if: github.event_name == 'workflow_dispatch' || github.event_name == 'push' || (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
     runs-on: ubuntu-latest
     timeout-minutes: 45
@@ -62,10 +107,13 @@ jobs:
         env:
           EVENT_NAME: ${{ github.event_name }}
           WORKFLOW_RUN_HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+          PULL_REQUEST_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           INPUT_GIT_REF: ${{ github.event.inputs.git_ref }}
         run: |
           if [[ "$EVENT_NAME" == "workflow_run" ]]; then
             echo "git_ref=$WORKFLOW_RUN_HEAD_SHA" >> "$GITHUB_OUTPUT"
+          elif [[ "$EVENT_NAME" == "pull_request" ]]; then
+            echo "git_ref=$PULL_REQUEST_HEAD_SHA" >> "$GITHUB_OUTPUT"
           else
             echo "git_ref=${INPUT_GIT_REF:-main}" >> "$GITHUB_OUTPUT"
           fi
@@ -120,10 +168,29 @@ jobs:
           cd ../worker && npm test
           cd ../frontend && NEXT_PUBLIC_API_URL=http://localhost:3001 BACKEND_URL=http://localhost:3001 npm test
 
+      - name: Railway runtime anti-regression gate
+        if: github.event_name == 'pull_request'
+        env:
+          RAILWAY_RUNTIME_REQUIRED: 'true'
+          RAILWAY_RUNTIME_FAIL_ON_WARNINGS: 'true'
+          RAILWAY_PROJECT_TOKEN: ${{ secrets.RAILWAY_PROJECT_TOKEN || secrets.RAILWAY_TOKEN }}
+          RAILWAY_PROJECT_ID: ${{ secrets.RAILWAY_PROJECT_ID }}
+          RAILWAY_ENVIRONMENT_ID: ${{ vars.RAILWAY_PRODUCTION_ENVIRONMENT_ID }}
+          RAILWAY_BACKEND_SERVICE_ID: ${{ vars.RAILWAY_BACKEND_SERVICE_ID }}
+          RAILWAY_BACKEND_SERVICE_NAME: ${{ vars.RAILWAY_BACKEND_SERVICE }}
+          RAILWAY_WORKER_SERVICE_ID: ${{ vars.RAILWAY_WORKER_SERVICE_ID }}
+          RAILWAY_WORKER_SERVICE_NAME: ${{ vars.RAILWAY_WORKER_SERVICE }}
+          RAILWAY_SYSTEM_HEALTH_URL: ${{ vars.PRODUCTION_SYSTEM_HEALTH_URL }}
+          RAILWAY_BACKEND_HEALTH_URL: ${{ vars.PRODUCTION_BACKEND_HEALTHCHECK_URL }}
+          RAILWAY_FRONTEND_HEALTH_URL: ${{ vars.PRODUCTION_FRONTEND_HEALTHCHECK_URL }}
+        run: npm run railway:runtime:check
+
       - name: Install deployment CLIs
+        if: github.event_name != 'pull_request'
         run: npm install -g @railway/cli vercel
 
       - name: Deploy backend to Railway staging
+        if: github.event_name != 'pull_request'
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
           RAILWAY_PROJECT_ID: ${{ secrets.RAILWAY_PROJECT_ID }}
@@ -138,6 +205,7 @@ jobs:
             --ci
 
       - name: Deploy worker to Railway staging
+        if: github.event_name != 'pull_request'
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
           RAILWAY_PROJECT_ID: ${{ secrets.RAILWAY_PROJECT_ID }}
@@ -152,6 +220,7 @@ jobs:
             --ci
 
       - name: Deploy frontend to Vercel preview/staging
+        if: github.event_name != 'pull_request'
         id: vercel
         working-directory: frontend
         env:
@@ -170,7 +239,7 @@ jobs:
       # blocking the deploy. The gate runs the same playwright suite;
       # the only change is that failures now fail the workflow.
       - name: Run E2E tests
-        if: vars.STAGING_BACKEND_HEALTHCHECK_URL != ''
+        if: github.event_name != 'pull_request' && vars.STAGING_BACKEND_HEALTHCHECK_URL != ''
         env:
           E2E_API_URL: ${{ vars.STAGING_BACKEND_HEALTHCHECK_URL }}
           E2E_EMAIL: ${{ secrets.E2E_EMAIL }}
@@ -181,6 +250,7 @@ jobs:
           npx playwright test --project=chromium
 
       - name: Probe staging health endpoints
+        if: github.event_name != 'pull_request'
         env:
           BACKEND_HEALTH_URL: ${{ vars.STAGING_BACKEND_HEALTHCHECK_URL }}
           WORKER_HEALTH_URL: ${{ vars.STAGING_WORKER_HEALTHCHECK_URL }}
@@ -205,6 +275,7 @@ jobs:
 
       - name: Publish deployment summary
         env:
+          EVENT_NAME: ${{ github.event_name }}
           GIT_REF_OUTPUT: ${{ steps.ref.outputs.git_ref }}
           DEPLOYMENT_URL: ${{ steps.vercel.outputs.deployment_url }}
         run: |
@@ -212,5 +283,9 @@ jobs:
             echo "## Staging deploy"
             echo ""
             echo "- Ref: \`${GIT_REF_OUTPUT}\`"
-            echo "- Frontend preview: ${DEPLOYMENT_URL}"
+            if [[ "$EVENT_NAME" == "pull_request" ]]; then
+              echo "- Mode: PR gate only; no staging deploy executed."
+            else
+              echo "- Frontend preview: ${DEPLOYMENT_URL}"
+            fi
           } >> "$GITHUB_STEP_SUMMARY"

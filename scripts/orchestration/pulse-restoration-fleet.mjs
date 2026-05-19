@@ -37,7 +37,7 @@ function discoverCompanionsDir() {
 
 function listCompanions() {
   const companionsDir = discoverCompanionsDir();
-  if (!companionsDir) return [];
+  if (!companionsDir) {return [];}
   const companionRoot = companionsDir.replace(`${REPO_ROOT}/`, '');
   return readdirSync(companionsDir)
     .filter((f) => f.endsWith('.companion.ts'))
@@ -50,7 +50,7 @@ function listCompanions() {
 function findMainForBase(base) {
   // Search recursively for scripts/pulse/<base>.ts (could be in subdirs)
   function scan(dir) {
-    if (!existsSync(dir)) return null;
+    if (!existsSync(dir)) {return null;}
     for (const entry of readdirSync(dir)) {
       if (
         entry === '__companions__' ||
@@ -60,14 +60,14 @@ function findMainForBase(base) {
         entry === '__fixtures__' ||
         entry === 'node_modules'
       )
-        continue;
+        {continue;}
       const p = join(dir, entry);
       const s = statSync(p);
       if (s.isFile() && entry === `${base}.ts`) {
         return p.replace(REPO_ROOT + '/', '');
       } else if (s.isDirectory()) {
         const found = scan(p);
-        if (found) return found;
+        if (found) {return found;}
       }
     }
     return null;
@@ -165,7 +165,7 @@ You only EDIT and validate. The orchestrator commits sequentially across all Pha
 const candidates = [];
 for (const { companion, base } of listCompanions()) {
   const main = findMainForBase(base);
-  if (!main) continue;
+  if (!main) {continue;}
   const smoke = smokeImportFails(main);
   if (smoke.failed) {
     candidates.push({ main, companion, base, smokeError: smoke.stderr });

@@ -89,28 +89,28 @@ CREATE TABLE IF NOT EXISTS "PartnerMessage" (
 );
 
 -- CreateIndex
-CREATE INDEX IF NOT EXISTS "Payment_workspaceId_idx" ON "Payment"("workspaceId");
-CREATE INDEX IF NOT EXISTS "Payment_status_idx" ON "Payment"("status");
-CREATE UNIQUE INDEX IF NOT EXISTS "Payment_workspaceId_externalId_key" ON "Payment"("workspaceId", "externalId");
+CREATE INDEX IF NOT EXISTS "Payment_workspaceId_idx" ON "Payment" ("workspaceId");
+CREATE INDEX IF NOT EXISTS "Payment_status_idx" ON "Payment" ("status");
+CREATE UNIQUE INDEX IF NOT EXISTS "Payment_workspaceId_externalId_key" ON "Payment" ("workspaceId", "externalId");
 
-CREATE UNIQUE INDEX IF NOT EXISTS "CollaboratorInvite_token_key" ON "CollaboratorInvite"("token");
-CREATE INDEX IF NOT EXISTS "CollaboratorInvite_workspaceId_idx" ON "CollaboratorInvite"("workspaceId");
-CREATE INDEX IF NOT EXISTS "CollaboratorInvite_email_idx" ON "CollaboratorInvite"("email");
-CREATE INDEX IF NOT EXISTS "CollaboratorInvite_token_idx" ON "CollaboratorInvite"("token");
+CREATE UNIQUE INDEX IF NOT EXISTS "CollaboratorInvite_token_key" ON "CollaboratorInvite" ("token");
+CREATE INDEX IF NOT EXISTS "CollaboratorInvite_workspaceId_idx" ON "CollaboratorInvite" ("workspaceId");
+CREATE INDEX IF NOT EXISTS "CollaboratorInvite_email_idx" ON "CollaboratorInvite" ("email");
+CREATE INDEX IF NOT EXISTS "CollaboratorInvite_token_idx" ON "CollaboratorInvite" ("token");
 
-CREATE UNIQUE INDEX IF NOT EXISTS "AffiliatePartner_affiliateCode_key" ON "AffiliatePartner"("affiliateCode");
-CREATE UNIQUE INDEX IF NOT EXISTS "AffiliatePartner_workspaceId_partnerEmail_key" ON "AffiliatePartner"("workspaceId", "partnerEmail");
-CREATE INDEX IF NOT EXISTS "AffiliatePartner_workspaceId_status_idx" ON "AffiliatePartner"("workspaceId", "status");
-CREATE INDEX IF NOT EXISTS "AffiliatePartner_workspaceId_type_idx" ON "AffiliatePartner"("workspaceId", "type");
-CREATE INDEX IF NOT EXISTS "AffiliatePartner_affiliateCode_idx" ON "AffiliatePartner"("affiliateCode");
+CREATE UNIQUE INDEX IF NOT EXISTS "AffiliatePartner_affiliateCode_key" ON "AffiliatePartner" ("affiliateCode");
+CREATE UNIQUE INDEX IF NOT EXISTS "AffiliatePartner_workspaceId_partnerEmail_key" ON "AffiliatePartner" ("workspaceId", "partnerEmail");
+CREATE INDEX IF NOT EXISTS "AffiliatePartner_workspaceId_status_idx" ON "AffiliatePartner" ("workspaceId", "status");
+CREATE INDEX IF NOT EXISTS "AffiliatePartner_workspaceId_type_idx" ON "AffiliatePartner" ("workspaceId", "type");
+CREATE INDEX IF NOT EXISTS "AffiliatePartner_affiliateCode_idx" ON "AffiliatePartner" ("affiliateCode");
 
-CREATE INDEX IF NOT EXISTS "PartnerMessage_partnerId_createdAt_idx" ON "PartnerMessage"("partnerId", "createdAt");
+CREATE INDEX IF NOT EXISTS "PartnerMessage_partnerId_createdAt_idx" ON "PartnerMessage" ("partnerId", "createdAt");
 
 -- AddForeignKey
-ALTER TABLE "Payment" ADD CONSTRAINT "Payment_workspaceId_fkey" FOREIGN KEY ("workspaceId") REFERENCES "Workspace"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-ALTER TABLE "CollaboratorInvite" ADD CONSTRAINT "CollaboratorInvite_workspaceId_fkey" FOREIGN KEY ("workspaceId") REFERENCES "Workspace"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-ALTER TABLE "AffiliatePartner" ADD CONSTRAINT "AffiliatePartner_workspaceId_fkey" FOREIGN KEY ("workspaceId") REFERENCES "Workspace"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-ALTER TABLE "PartnerMessage" ADD CONSTRAINT "PartnerMessage_partnerId_fkey" FOREIGN KEY ("partnerId") REFERENCES "AffiliatePartner"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "Payment" ADD CONSTRAINT "Payment_workspaceId_fkey" FOREIGN KEY ("workspaceId") REFERENCES "Workspace" ("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "CollaboratorInvite" ADD CONSTRAINT "CollaboratorInvite_workspaceId_fkey" FOREIGN KEY ("workspaceId") REFERENCES "Workspace" ("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "AffiliatePartner" ADD CONSTRAINT "AffiliatePartner_workspaceId_fkey" FOREIGN KEY ("workspaceId") REFERENCES "Workspace" ("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "PartnerMessage" ADD CONSTRAINT "PartnerMessage_partnerId_fkey" FOREIGN KEY ("partnerId") REFERENCES "AffiliatePartner" ("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- Add workspace relations for models that were missing them
 -- These use IF NOT EXISTS patterns to be idempotent

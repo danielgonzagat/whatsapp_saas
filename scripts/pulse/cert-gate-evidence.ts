@@ -6,7 +6,7 @@ import type { PulseCodebaseTruth } from './types.truth';
 import type { PulseCodacySummary } from './types.truth.codacy';
 import type { PulseEvidenceRecord } from './types.convergence';
 import type { PulseExecutionEvidence } from './types.evidence';
-import type { PulseExternalSignalState } from './__parts__/types.capabilities/05-external-signals';
+import type { PulseExternalSignalState } from './types.capabilities/05-external-signals';
 import type { PulseGateName } from './types.manifest';
 import type { PulseHealth } from './types.health';
 import type { PulseResolvedManifest } from './types.resolved-manifest';

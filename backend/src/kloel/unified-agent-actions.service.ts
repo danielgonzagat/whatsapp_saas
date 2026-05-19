@@ -1,10 +1,12 @@
-import { Injectable, Logger, Optional } from '@nestjs/common';
+import { Inject, Injectable, Optional, forwardRef } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { Prisma } from '@prisma/client';
 import OpenAI from 'openai';
 import { AuditService } from '../audit/audit.service';
-import { PlanLimitsService } from '../billing/plan-limits.service';
 import { StorageService } from '../common/storage/storage.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { WHATSAPP_MESSAGING } from '../whatsapp/whatsapp.tokens';
+import type { IWhatsappMessaging } from '../whatsapp/whatsapp.interfaces';
 import { UnifiedAgentActionsBillingService } from './unified-agent-actions-billing.service';
 import { UnifiedAgentActionsCommerceService } from './unified-agent-actions-commerce.service';
 import { UnifiedAgentActionsCrmService } from './unified-agent-actions-crm.service';
@@ -12,7 +14,18 @@ import { UnifiedAgentActionsMessagingService } from './unified-agent-actions-mes
 import { UnifiedAgentActionsSalesService } from './unified-agent-actions-sales.service';
 import { UnifiedAgentActionsWorkspaceService } from './unified-agent-actions-workspace.service';
 import type { ToolArgs } from './unified-agent.types';
-import { actionStr, actionNum } from './__companions__/unified-agent-actions.service.companion';
+function actionStr(v: unknown, fb = ''): string {
+  return typeof v === 'string'
+    ? v
+    : typeof v === 'number' || typeof v === 'boolean'
+      ? String(v)
+      : fb;
+}
+
+function actionNum(v: unknown, fb = 0): number {
+  const n = Number(v);
+  return Number.isFinite(n) ? n : fb;
+}
 import { OpsAlertService } from '../observability/ops-alert.service';
 
 type UnknownRecord = Record<string, unknown>;
@@ -25,12 +38,13 @@ type UnknownRecord = Record<string, unknown>;
 /** Idempotency: enforced at HTTP layer via @Idempotent() guard + Stripe idempotencyKey. */
 @Injectable()
 export class UnifiedAgentActionsService {
-  private readonly logger = new Logger(UnifiedAgentActionsService.name);
+  private readonly logger = StructuredLogger.from(UnifiedAgentActionsService.name);
 
   constructor(
     private readonly prisma: PrismaService,
     private readonly storageService: StorageService,
-    private readonly planLimits: PlanLimitsService,
+    @Inject(forwardRef(() => WHATSAPP_MESSAGING))
+    private readonly whatsappService: IWhatsappMessaging,
     private readonly messaging: UnifiedAgentActionsMessagingService,
     private readonly crm: UnifiedAgentActionsCrmService,
     private readonly sales: UnifiedAgentActionsSalesService,
@@ -66,7 +80,9 @@ export class UnifiedAgentActionsService {
       void this.opsAlert?.alertOnCriticalError(err, 'UnifiedAgentActionsService.parse');
       const msg = err instanceof Error ? err.message : typeof err === 'string' ? err : 'unknown';
       const isTestEnv = !!process.env.JEST_WORKER_ID || process.env.NODE_ENV === 'test';
-      if (isTestEnv) return;
+      if (isTestEnv) {
+        return;
+      }
       const code = (err as { code?: string } | null)?.code;
       if (code === 'P2003') {
         this.logger.debug(`Skipping autopilot event log due to FK (contactId=${contactId})`);
@@ -98,27 +114,34 @@ export class UnifiedAgentActionsService {
             expiresInSeconds: 15 * 60,
             downloadName: document.fileName,
           });
-          if (!documentCaption && document.description) documentCaption = document.description;
+          if (!documentCaption && document.description) {
+            documentCaption = document.description;
+          }
         } else {
           return { success: false, error: `Documento "${documentName}" não encontrado.` };
         }
       }
-      if (!documentUrl) return { success: false, error: 'URL ou nome do documento é obrigatório' };
-      const result = await this.messaging.sendViaTransport(
+      if (!documentUrl) {
+        return { success: false, error: 'URL ou nome do documento é obrigatório' };
+      }
+      const result = await this.whatsappService.sendMessage(
         workspaceId,
         phone,
         documentCaption || '',
-        context,
         {
           mediaUrl: documentUrl,
           mediaType: 'document',
           caption: documentCaption || '',
+          ...(context || {}),
         },
       );
-      if (!result.success) {
+      const sendResult =
+        result && typeof result === 'object' ? (result as Record<string, unknown>) : {};
+      if (sendResult.error) {
         return {
           success: false,
-          error: result.blockedReason || result.error || 'Falha ao enviar documento',
+          error:
+            typeof sendResult.message === 'string' ? sendResult.message : 'send_document_failed',
         };
       }
       return {

@@ -1,8 +1,11 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import type { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { KloelGlobalPriorService } from './kloel-global-prior.service';
 import { MindBeliefService } from './mind-belief.service';
-import type { MindPolicyDecision } from './mind.types';
+import { extractChannel } from './mind-belief-by-channel';
+import type { MindBelief, MindPolicyDecision } from './mind.types';
 import {
   buildFallbackDecision,
   buildPolicyArtifacts,
@@ -20,13 +23,19 @@ import {
 } from './mind-policy.helpers';
 
 const FALLBACK_MIN_SAMPLES = 30;
+const COLD_START_THRESHOLD = 30;
 
 @Injectable()
 export class MindPolicyService {
+  private readonly logger = StructuredLogger.from(MindPolicyService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly beliefs: MindBeliefService,
-  ) {}
+    @Optional() private readonly globalPrior?: KloelGlobalPriorService,
+  ) {
+    this.logger.debug?.(`MindPolicyService initialized`);
+  }
 
   async choose(input: MindPolicyInput): Promise<{ chosen: string; decision: MindPolicyDecision }> {
     const utilitySuccess = input.utilitySuccess ?? 1;
@@ -51,11 +60,43 @@ export class MindPolicyService {
       return { chosen: baselineAction, decision: fallbackDecision };
     }
 
-    const beliefs = await Promise.all(
+    const channel = input.channel ?? extractChannel(input.context);
+    let workspaceOptedOut = false;
+    if (channel) {
+      const workspace = await this.prisma.workspace.findUnique({
+        where: { id: input.workspaceId },
+        select: { globalPriorOptOut: true },
+      });
+      workspaceOptedOut = workspace?.globalPriorOptOut ?? false;
+    }
+
+    const rawBeliefs = await Promise.all(
       input.options.map((option) =>
         this.beliefs.getOrInit(input.workspaceId, input.subject, option.predicate, option.context),
       ),
     );
+
+    let usedGlobalPrior = false;
+    let maxPriorWeight = 0;
+
+    const mixedBeliefs = await this.mixWithGlobalPrior({
+      beliefs: rawBeliefs,
+      channel,
+      decisionType: input.decisionType,
+      inputOptions: input.options,
+      workspaceOptedOut,
+    });
+
+    const beliefs = mixedBeliefs.map((m) => {
+      if (m.usedPrior) {
+        usedGlobalPrior = true;
+        if (m.priorWeight > maxPriorWeight) {
+          maxPriorWeight = m.priorWeight;
+        }
+      }
+      return { mean: m.mixedMean, variance: m.belief.variance };
+    });
+
     const artifacts = buildPolicyArtifacts({
       beliefs,
       epsilon,
@@ -64,19 +105,26 @@ export class MindPolicyService {
       utilityFail,
       utilitySuccess,
     });
+    const fallbackAction = artifacts.candidates.at(-1)?.action;
     const baselineAction = resolveBaselineAction({
-      baseline: input.baseline,
-      baselineActionQuiet: input.baselineActionQuiet,
-      fallback: artifacts.candidates[artifacts.candidates.length - 1]?.action,
+      ...(input.baseline !== undefined ? { baseline: input.baseline } : {}),
+      ...(input.baselineActionQuiet !== undefined
+        ? { baselineActionQuiet: input.baselineActionQuiet }
+        : {}),
+      ...(fallbackAction !== undefined ? { fallback: fallbackAction } : {}),
     });
-    const decision = buildPolicyDecision({
-      artifacts,
-      baselineAction,
-      epsilon,
-      policy: input,
-      utilityFail,
-      utilitySuccess,
-    });
+    const decision = {
+      ...buildPolicyDecision({
+        artifacts,
+        baselineAction,
+        epsilon,
+        policy: input,
+        utilityFail,
+        utilitySuccess,
+      }),
+      usedGlobalPrior,
+      priorWeight: maxPriorWeight,
+    };
 
     await this.persist(decision);
     return { chosen: decision.chosen, decision };
@@ -285,15 +333,66 @@ export class MindPolicyService {
     return summarizePolicyHarness(Array.isArray(rawRows) ? rawRows : []);
   }
 
+  private async mixWithGlobalPrior(input: {
+    beliefs: MindBelief[];
+    channel: string | undefined;
+    decisionType: string;
+    inputOptions: Array<{ action: string }>;
+    workspaceOptedOut: boolean;
+  }): Promise<
+    Array<{ belief: MindBelief; mixedMean: number; usedPrior: boolean; priorWeight: number }>
+  > {
+    return Promise.all(
+      input.beliefs.map(async (belief, index) => {
+        if (
+          input.workspaceOptedOut ||
+          !input.channel ||
+          !this.globalPrior ||
+          belief.samples >= COLD_START_THRESHOLD
+        ) {
+          return {
+            belief,
+            mixedMean: belief.mean,
+            usedPrior: false,
+            priorWeight: 0,
+          };
+        }
+
+        const action = input.inputOptions[index]?.action;
+        if (!action) {
+          return { belief, mixedMean: belief.mean, usedPrior: false, priorWeight: 0 };
+        }
+
+        const prior = await this.globalPrior.getPrior(input.channel, input.decisionType, action);
+
+        if (!prior) {
+          return { belief, mixedMean: belief.mean, usedPrior: false, priorWeight: 0 };
+        }
+
+        const localN = belief.samples;
+        const localMean = belief.mean;
+        const globalN = prior.observations;
+        const globalMean = prior.mean;
+        const globalNWeight = Math.min(globalN, COLD_START_THRESHOLD - localN);
+        const mixedMean =
+          (localN * localMean + globalNWeight * globalMean) / (localN + globalNWeight);
+        const priorWeight = globalNWeight / (localN + globalNWeight);
+
+        return { belief, mixedMean, usedPrior: true, priorWeight };
+      }),
+    );
+  }
+
   private async persist(decision: MindPolicyDecision): Promise<void> {
-    if (decision.outcomeKey) {
+    const { outcomeKey } = decision;
+    if (outcomeKey) {
       await this.prisma.$transaction(async (tx) => {
         await tx.$executeRaw /* raw justified: PostgreSQL advisory lock for outcome deduplication */ `
-          SELECT pg_advisory_xact_lock(hashtext(${`${decision.workspaceId}:${decision.outcomeKey}`}))
+          SELECT pg_advisory_xact_lock(hashtext(${`${decision.workspaceId}:${outcomeKey}`}))
         `;
         const existing = await tx.mindPolicy.findFirst({
           where: {
-            outcomeKey: decision.outcomeKey,
+            outcomeKey,
             workspaceId: decision.workspaceId,
           },
           select: { id: true },

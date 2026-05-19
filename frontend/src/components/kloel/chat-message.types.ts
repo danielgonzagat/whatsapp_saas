@@ -7,9 +7,7 @@ export interface Message {
   /** Content property. */
   content: string;
   /** Is streaming property. */
-  isStreaming?: boolean;
-  /** Event type property. */
-  eventType?: 'tool_call' | 'tool_result';
-  /** Meta property. */
-  meta?: Record<string, unknown>;
+  isStreaming?: boolean | undefined;
+  eventType?: 'tool_call' | 'tool_result' | undefined;
+  meta?: Record<string, unknown> | undefined;
 }

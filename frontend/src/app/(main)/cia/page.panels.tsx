@@ -361,7 +361,7 @@ export function WorkItemsPanel({ workItems, activeWorkItems }: WorkItemsPanelPro
                 </p>
               </div>
               <div className="flex-shrink-0">
-                <Badge variant={workItemStateBadgeVariant(item.state)}>
+                <Badge variant={workItemStateBadgeVariant(item.state) || 'default'}>
                   {item.state.replace(PATTERN_RE_2, ' ')}
                 </Badge>
               </div>

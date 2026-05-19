@@ -1,5 +1,6 @@
-import type { Logger } from '@nestjs/common';
-import { type ConnectLedgerEntry, Prisma } from '@prisma/client';
+import { Logger } from '@nestjs/common';
+
+import type { ConnectLedgerEntry } from '@prisma/client';
 
 import type { PrismaService } from '../../prisma/prisma.service';
 import { toPrismaJsonValue } from '../../common/prisma/prisma-json.util';
@@ -23,7 +24,6 @@ export async function creditAvailableByAdjustmentImpl(
     );
   }
 
-  // PULSE_OK: already in $transaction
   return prisma.$transaction(async (tx) => {
     const existing = await tx.connectLedgerEntry.findFirst({
       where: {
@@ -77,7 +77,7 @@ export async function creditAvailableByAdjustmentImpl(
         balanceAfterAvailableCents: newAvailable,
         referenceType: input.reference.type,
         referenceId: input.reference.id,
-        metadata: input.metadata ? toPrismaJsonValue(input.metadata) : Prisma.JsonNull,
+        ...(input.metadata ? { metadata: toPrismaJsonValue(input.metadata) } : {}),
       },
     });
 

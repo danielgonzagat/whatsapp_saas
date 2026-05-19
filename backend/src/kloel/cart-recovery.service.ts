@@ -1,6 +1,8 @@
-import { Injectable, Logger, Optional } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
+import { StructuredLogger } from '../logging/structured-logger';
 import { forEachSequential } from '../common/async-sequence';
+import { EmailService } from '../auth/email.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { ChannelTransportRegistry } from './channel-transport.registry';
@@ -88,7 +90,7 @@ function renderRecoveryEmail(productName: string, orderNumber: string, action: s
 /** Cart recovery service with MIND-driven recovery action decisions. */
 @Injectable()
 export class CartRecoveryService {
-  private readonly logger = new Logger(CartRecoveryService.name);
+  private readonly logger = StructuredLogger.from(CartRecoveryService.name);
   constructor(
     private readonly prisma: PrismaService,
     @Optional() private readonly opsAlert?: OpsAlertService,
@@ -104,9 +106,10 @@ export class CartRecoveryService {
   async checkAbandonedCarts() {
     try {
       const thirtyMinAgo = new Date(Date.now() - 30 * 60 * 1000);
+
       const workspaces = await this.prisma.workspace.findMany({
         select: { id: true },
-        orderBy: { createdAt: 'asc' },
+        take: 500,
       });
       const workspaceIds = workspaces.map((workspace) => workspace.id);
       const abandoned =
@@ -139,7 +142,8 @@ export class CartRecoveryService {
             return;
           }
 
-          const productName = order.plan?.product?.name || 'Seu pedido';
+          const orderWithPlan = order;
+          const productName = orderWithPlan.plan?.product?.name || 'Seu pedido';
           const customerEmail = order.customerEmail;
           const wsId = order.workspaceId;
           const product = order.plan?.product;
@@ -222,39 +226,35 @@ export class CartRecoveryService {
             email: customerEmail,
             workspaceId: wsId,
           });
-
-          const subject = `Voce esqueceu algo — ${productName}`;
-          const html = `${emailBody}${unsubscribeFooter}`;
+          const html = emailBody + unsubscribeFooter;
 
           if (this.transportRegistry) {
             const sendResult = await this.transportRegistry.send(wsId, {
               workspaceId: wsId,
               channel: 'email',
               recipientId: customerEmail,
-              content: `${subject}\n${html}`,
+              content: html,
+              externalId: `cart-recovery:${order.id}`,
+              complianceMode: 'proactive',
               guardContext: {
                 channel: 'email',
                 withinComplianceWindow: true,
                 productId: product?.id,
-                listUnsubscribe,
               },
             });
-
             if (!sendResult.success) {
               this.logger.warn(
-                `Cart recovery email blocked or failed by transport registry for order ${order.id}: ${
-                  sendResult.blockedReason ?? sendResult.error ?? 'unknown_error'
+                `Cart recovery transport failed for order ${order.id}: ${
+                  sendResult.error || sendResult.blockedReason || 'unknown_error'
                 }`,
               );
               return;
             }
           } else {
-            const { EmailService } = await import('../auth/email.service');
             const emailService = new EmailService();
-
             await emailService.sendEmail({
               to: customerEmail,
-              subject,
+              subject: `Voce esqueceu algo — ${productName}`,
               html,
               headers: {
                 'List-Unsubscribe': listUnsubscribe,

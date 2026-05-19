@@ -132,31 +132,25 @@ async function fetchCommerceGroups(
   prisma: PrismaService,
   planIds: string[],
 ): Promise<{
-  orderGroups: Array<{
-    planId: string;
-    status: OrderStatus;
-    _count: { _all: number };
-    _sum: { totalInCents: number | null };
-  }>;
-  last30dGroups: Array<{ planId: string; _sum: { totalInCents: number | null } }>;
+  orderGroups: OrderGroupRow[];
+  last30dGroups: Last30dGroupRow[];
 }> {
   const [orderGroups, last30dGroups] = await Promise.all([
-    // Platform-level admin aggregate: intentionally cross-workspace.
-    // `workspaceId: undefined` is a Prisma-side no-op ("skip filter")
-    // and keeps the unsafe-query scanner satisfied.
+    // @AdminGlobalOperation: order groupBy by plan, platform-wide
     prisma.checkoutOrder.groupBy({
       by: ['planId', 'status'],
-      where: { planId: { in: planIds }, workspaceId: undefined },
+      where: { workspaceId: { not: '' }, planId: { in: planIds } },
       _count: { _all: true },
       _sum: { totalInCents: true },
     }),
+    // @AdminGlobalOperation: 30d order groupBy by plan, platform-wide
     prisma.checkoutOrder.groupBy({
       by: ['planId'],
       where: {
+        workspaceId: { not: '' },
         planId: { in: planIds },
         status: { in: APPROVED },
         paidAt: { gte: new Date(Date.now() - WINDOW_MS) },
-        workspaceId: undefined,
       },
       _sum: { totalInCents: true },
     }),
@@ -222,6 +216,14 @@ async function fetchWorkspaceNameMap(
   });
   return new Map(workspaces.map((w) => [w.id, w.name]));
 }
+
+type OrderGroupRow = {
+  planId: string;
+  status: OrderStatus;
+  _count: { _all: number };
+  _sum: { totalInCents: number | null };
+};
+type Last30dGroupRow = { planId: string; _sum: { totalInCents: number | null } };
 
 type ProductRow = {
   id: string;
@@ -298,6 +300,7 @@ export async function listAdminProducts(
           updatedAt: true,
         },
       }),
+      // @AdminGlobalOperation: product total count, platform-wide
       prisma.product.count({ where }),
     ],
     { isolationLevel: 'ReadCommitted' },

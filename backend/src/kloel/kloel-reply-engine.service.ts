@@ -1,5 +1,7 @@
-import { Injectable, Logger, Optional } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import OpenAI from 'openai';
+import { createTextLlmClient, hasTextLlmApiKey } from '../lib/llm-provider';
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { KloelContextFormatter } from './kloel-context-formatter';
@@ -24,25 +26,14 @@ import {
 
 type ChatCompletionMessageParam = OpenAI.Chat.ChatCompletionMessageParam;
 
-export type ExpertiseLevel = 'INICIANTE' | 'INTERMEDIÁRIO' | 'AVANÇADO' | 'EXPERT';
-
-export interface ReplyMessage {
-  role: 'system' | 'user' | 'assistant';
-  content: string;
-}
-
-export type LocalToolExecutor = (
-  workspaceId: string,
-  toolName: string,
-  args: Record<string, unknown>,
-  userId?: string,
-) => Promise<{ success: boolean; message?: string; error?: string; [key: string]: unknown }>;
+export type { ExpertiseLevel, ReplyMessage, LocalToolExecutor } from './kloel-reply-engine.types';
+import type { ExpertiseLevel, ReplyMessage, LocalToolExecutor } from './kloel-reply-engine.types';
 
 /** Provides reply-building helpers: prompt assembly, expertise detection, context enrichment. */
 @Injectable()
 export class KloelReplyEngineService {
-  private readonly logger = new Logger(KloelReplyEngineService.name);
-  readonly openai: OpenAI;
+  private readonly logger = StructuredLogger.from(KloelReplyEngineService.name);
+  readonly openai: OpenAI | null;
   readonly toolRouter: KloelToolRouter;
   readonly unavailableMessage =
     'Eu fiquei sem acesso ao motor de resposta agora. Me chama de novo em instantes que eu retomo sem te fazer repetir tudo.';
@@ -56,12 +47,18 @@ export class KloelReplyEngineService {
     @Optional() private readonly marketingSkillService?: MarketingSkillService,
     @Optional() private readonly mindService?: MindService,
   ) {
-    this.openai = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
-      timeout: 60_000,
-      maxRetries: 0,
-    });
-    this.toolRouter = new KloelToolRouter(this.logger, unifiedAgentService);
+    this.openai = createTextLlmClient(undefined, { timeout: 60_000, maxRetries: 0 });
+    this.toolRouter = new KloelToolRouter(
+      this.logger,
+      this.unifiedAgentService,
+      async (workspaceId, key, content) => {
+        await this.prisma.kloelMemory.upsert({
+          where: { workspaceId_key: { workspaceId, key } },
+          update: { content, value: {}, category: 'tool_artifact', updatedAt: new Date() },
+          create: { workspaceId, key, value: {}, content, category: 'tool_artifact' },
+        });
+      },
+    );
   }
 
   get contextFormatter(): KloelContextFormatter {
@@ -69,7 +66,7 @@ export class KloelReplyEngineService {
   }
 
   hasOpenAiKey(): boolean {
-    return !!String(process.env.OPENAI_API_KEY || '').trim();
+    return hasTextLlmApiKey();
   }
 
   buildDashboardPrompt(params?: {
@@ -84,7 +81,7 @@ export class KloelReplyEngineService {
       }).format(new Date()),
       userName: this.contextFormatter.sanitizeUserNameForAssistant(params?.userName),
       workspaceName: 'Workspace',
-      expertiseLevel: params?.expertiseLevel,
+      ...(params?.expertiseLevel !== undefined ? { expertiseLevel: params.expertiseLevel } : {}),
     });
   }
 
@@ -123,15 +120,20 @@ export class KloelReplyEngineService {
     ];
     const expertScore = expertSignals.filter((s) => combined.includes(s)).length;
     const advancedScore = advancedSignals.filter((s) => combined.includes(s)).length;
-    if (expertScore >= 3) return 'EXPERT';
-    if (expertScore >= 1 || advancedScore >= 5) return 'AVANÇADO';
+    if (expertScore >= 3) {
+      return 'EXPERT';
+    }
+    if (expertScore >= 1 || advancedScore >= 5) {
+      return 'AVANÇADO';
+    }
     if (
       advancedScore >= 2 ||
       String(message || '')
         .trim()
         .split(WHITESPACE_RE).length >= 14
-    )
+    ) {
       return 'INTERMEDIÁRIO';
+    }
     return 'INICIANTE';
   }
 
@@ -147,7 +149,9 @@ export class KloelReplyEngineService {
     const normalized = String(message || '')
       .trim()
       .toLowerCase();
-    if (!normalized || /ideias?/.test(normalized)) return false;
+    if (!normalized || /ideias?/.test(normalized)) {
+      return false;
+    }
     return (
       CRIE_CADASTRAR_CADASTRE_RE.test(normalized) && PRODUTO_CAT_A__LOGO_AUT_RE.test(normalized)
     );
@@ -163,7 +167,9 @@ export class KloelReplyEngineService {
         ? `A resposta demorou mais de ${secs}s e eu interrompi a tentativa para não travar sua conversa. Sua mensagem foi preservada. Tente dividir o pedido em partes ou enviar de novo.`
         : 'A resposta demorou demais e eu interrompi a tentativa para não travar sua conversa. Sua mensagem foi preservada. Tente novamente.';
     }
-    if (reason === KLOEL_STREAM_ABORT_REASON_CLIENT_DISCONNECTED) return 'client_disconnected';
+    if (reason === KLOEL_STREAM_ABORT_REASON_CLIENT_DISCONNECTED) {
+      return 'client_disconnected';
+    }
     return this.unavailableMessage;
   }
 
@@ -188,25 +194,30 @@ export class KloelReplyEngineService {
       { role: 'system', content: params.systemPrompt },
       { role: 'system', content: params.dynamicContext },
     ];
-    if (params.marketingPromptAddendum)
+    if (params.marketingPromptAddendum) {
       msgs.push({ role: 'system', content: params.marketingPromptAddendum });
-    if (params.summaryMessage) msgs.push(params.summaryMessage);
-    for (const entry of params.recentMessages)
+    }
+    if (params.summaryMessage) {
+      msgs.push(params.summaryMessage);
+    }
+    for (const entry of params.recentMessages) {
       msgs.push({ role: entry.role as 'user' | 'assistant', content: entry.content });
+    }
     msgs.push({ role: 'user', content: params.userMessage });
     if (params.assistantMessage) {
+      const toolCalls = Array.isArray(params.assistantMessage.tool_calls)
+        ? params.assistantMessage.tool_calls
+        : undefined;
       msgs.push({
         role: 'assistant',
         content:
           typeof params.assistantMessage.content === 'string'
             ? params.assistantMessage.content
             : '',
-        tool_calls: Array.isArray(params.assistantMessage.tool_calls)
-          ? params.assistantMessage.tool_calls
-          : undefined,
+        ...(toolCalls !== undefined ? { tool_calls: toolCalls } : {}),
       });
     }
-    if (params.toolMessages?.length)
+    if (params.toolMessages?.length) {
       msgs.push(
         ...params.toolMessages.map((m) => ({
           role: 'tool' as const,
@@ -214,6 +225,7 @@ export class KloelReplyEngineService {
           content: m.content,
         })),
       );
+    }
     return msgs;
   }
 
@@ -222,7 +234,9 @@ export class KloelReplyEngineService {
     mode: string | undefined,
     message: string,
   ): Promise<string | null> {
-    if (mode !== 'chat' || !workspaceId || !this.marketingSkillService) return null;
+    if (mode !== 'chat' || !workspaceId || !this.marketingSkillService) {
+      return null;
+    }
     try {
       return (
         (await this.marketingSkillService.buildPacket(workspaceId, message))?.promptAddendum || null
@@ -260,7 +274,9 @@ export class KloelReplyEngineService {
     workspaceId?: string;
     expertiseLevel: ExpertiseLevel;
   }): Promise<string | null> {
-    if (!params.workspaceId || !this.mindService) return null;
+    if (!params.workspaceId || !this.mindService) {
+      return null;
+    }
 
     try {
       const channel = 'kloel_chat';
@@ -306,10 +322,14 @@ export class KloelReplyEngineService {
     userName?: string;
     mode?: 'chat' | 'onboarding' | 'sales';
     companyContext?: string;
+    allowedTools?: string[];
     conversationState?: { summary?: string; recentMessages: ReplyMessage[]; totalMessages: number };
     onTraceEvent?: (event: KloelStreamEvent) => void;
     executeLocalTool?: LocalToolExecutor;
   }): Promise<string> {
+    if (!this.openai) {
+      return this.unavailableMessage;
+    }
     return buildAssistantReplyImpl(params, {
       openai: this.openai,
       prisma: this.prisma,

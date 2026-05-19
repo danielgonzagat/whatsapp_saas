@@ -4,11 +4,11 @@ import {
   HttpException,
   HttpStatus,
   Injectable,
-  Logger,
   Optional,
   UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { StructuredLogger } from '../logging/structured-logger';
 import { BCRYPT_ROUNDS } from '../common/constants';
 import { getTraceHeaders } from '../common/trace-headers';
 import { PrismaService } from '../prisma/prisma.service';
@@ -34,7 +34,7 @@ function normalizePhone(phone: string): string {
  */
 @Injectable()
 export class AuthWhatsappPasswordService {
-  private readonly logger = new Logger(AuthWhatsappPasswordService.name);
+  private readonly logger = StructuredLogger.from(AuthWhatsappPasswordService.name);
   private readonly rateLimitService: RateLimitService;
 
   constructor(

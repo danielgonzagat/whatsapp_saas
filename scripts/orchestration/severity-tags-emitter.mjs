@@ -23,7 +23,9 @@ const SEVERITY_TAG_PREFIX = 'findings/severity-';
 
 function findSidecars(root) {
   const out = [];
-  if (!existsSync(root)) return out;
+  if (!existsSync(root)) {
+    return out;
+  }
   const stack = [root];
   while (stack.length) {
     const dir = stack.pop();
@@ -46,11 +48,11 @@ function findSidecars(root) {
 }
 
 function readMirrorTags(mirrorAbsPath) {
-  if (!existsSync(mirrorAbsPath)) return null;
+  if (!existsSync(mirrorAbsPath)) {return null;}
   const content = readFileSync(mirrorAbsPath, 'utf8');
-  if (!content.startsWith('---\n')) return null;
+  if (!content.startsWith('---\n')) {return null;}
   const end = content.indexOf('\n---\n', 4);
-  if (end === -1) return null;
+  if (end === -1) {return null;}
   const frontmatter = content.slice(4, end).split('\n');
   const tags = [];
   let inTags = false;
@@ -88,21 +90,21 @@ function main() {
     try {
       const sc = JSON.parse(readFileSync(scPath, 'utf8'));
       const sev = sc.dominantSeverity;
-      if (!sev || !SEVERITY_TAGS[sev]) continue;
+      if (!sev || !SEVERITY_TAGS[sev]) {continue;}
 
       const relMirror = relative(SOURCE_MIRROR_DIR, scPath).replace(/\.findings\.json$/, '.md');
       const mirrorAbs = join(SOURCE_MIRROR_DIR, relMirror);
 
-      if (!existsSync(mirrorAbs)) continue;
+      if (!existsSync(mirrorAbs)) {continue;}
 
       const existing = readMirrorTags(mirrorAbs);
-      if (existing === null) continue;
+      if (existing === null) {continue;}
 
       const merged = existing.filter((t) => !t.startsWith(SEVERITY_TAG_PREFIX));
       merged.push(SEVERITY_TAGS[sev]);
       merged.sort();
 
-      if (JSON.stringify(merged) === JSON.stringify(existing)) continue;
+      if (JSON.stringify(merged) === JSON.stringify(existing)) {continue;}
 
       severityCounts[sev]++;
 

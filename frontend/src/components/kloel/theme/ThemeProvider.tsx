@@ -1,4 +1,5 @@
 'use client';
+import { colors } from '@/lib/design-tokens';
 
 import { kloelError } from '@/lib/i18n/t';
 import {
@@ -26,7 +27,7 @@ interface ThemeContextValue {
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 
 function themeColorFor(theme: KloelAppTheme) {
-  return theme === 'dark' ? '#0A0A0C' : '#FFFFFF';
+  return theme === 'dark' ? colors.background.void : colors.text.silver;
 }
 
 function commitThemeColor(theme: KloelAppTheme) {
@@ -59,13 +60,11 @@ function commitTheme(theme: KloelAppTheme) {
 
 /** Theme provider. */
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [theme, setThemeState] = useState<KloelAppTheme>('light');
+  const [theme, setThemeState] = useState<KloelAppTheme>(() => readInitialKloelTheme());
 
   useEffect(() => {
-    const initialTheme = readInitialKloelTheme();
-    setThemeState(initialTheme);
-    commitTheme(initialTheme);
-  }, []);
+    commitTheme(theme);
+  }, [theme]);
 
   useEffect(() => {
     const handleStorage = (event: StorageEvent) => {

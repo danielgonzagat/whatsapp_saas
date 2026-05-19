@@ -129,8 +129,6 @@ critical paths, and the required CI checks.
 
 Keep the repository-level ratchets active:
 
-- `seatbelt:check` must run in CI and fail on new ESLint violations above the
-  committed baseline in `.eslint-seatbelt.tsv`
 - `quality:dead-code` must run in CI so Knip evidence is refreshed and the
   ratchet can reject new dead code
 - `quality:graph` must run in CI so Madge evidence is refreshed and the ratchet

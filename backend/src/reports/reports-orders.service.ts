@@ -9,12 +9,14 @@ import {
   applyCommonOrderFilters,
   toOrderStatus,
   toPaymentMethod,
-} from './__companions__/reports-orders.service.companion';
+} from './reports-orders.helpers';
 
 export {
   dateRange,
+  validatedPaidOrderStatus,
+  paginate,
   applyCommonOrderFilters,
-} from './__companions__/reports-orders.service.companion';
+} from './reports-orders.helpers';
 
 /**
  * Handles CheckoutOrder and CheckoutPayment report queries:
@@ -53,7 +55,6 @@ export class ReportsOrdersService {
 
     const { skip, take } = paginate(f);
 
-    // PULSE_OK: paginated via skip/take from filters
     const [data, total] = await Promise.all([
       this.prisma.checkoutOrder.findMany({
         take,
@@ -133,7 +134,7 @@ export class ReportsOrdersService {
   async getVendasDaily(workspaceId: string, f: ReportFiltersDto) {
     const { start, end } = dateRange(f);
     try {
-      return await this.prisma.$queryRaw`
+      return await this.prisma.$queryRaw<{ day: Date; vendas: number; receita: number }[]>`
         SELECT DATE("createdAt") as day, COUNT(*)::int as vendas,
           COALESCE(SUM("totalInCents"), 0)::int as receita
         FROM "RAC_CheckoutOrder"
@@ -165,7 +166,6 @@ export class ReportsOrdersService {
     applyCommonOrderFilters(where, f);
 
     const { skip, take } = paginate(f);
-    // PULSE_OK: paginated via skip/take from filters
     const [data, total] = await Promise.all([
       this.prisma.checkoutOrder.findMany({
         take,
@@ -190,7 +190,6 @@ export class ReportsOrdersService {
     applyCommonOrderFilters(where, f);
 
     const { skip, take } = paginate(f);
-    // PULSE_OK: paginated via skip/take from filters
     const [data, total] = await Promise.all([
       this.prisma.checkoutOrder.findMany({
         take,
@@ -216,7 +215,6 @@ export class ReportsOrdersService {
 
     const { skip, take } = paginate(f);
     try {
-      // PULSE_OK: paginated via skip/take from filters
       const data = await this.prisma.checkoutPayment.findMany({
         take,
         skip,
@@ -257,7 +255,7 @@ export class ReportsOrdersService {
     assertValidOrderStatusFilter('PAID', 'ReportsOrdersService.getOrigem');
     const paidStatus = 'PAID' as const;
     try {
-      return await this.prisma.$queryRaw`
+      return await this.prisma.$queryRaw<{ source: string; vendas: number; receita: number }[]>`
         SELECT COALESCE(NULLIF("couponCode",''), 'Direto') as source,
           COUNT(*)::int as vendas, COALESCE(SUM("totalInCents"),0)::int as receita
         FROM "RAC_CheckoutOrder"

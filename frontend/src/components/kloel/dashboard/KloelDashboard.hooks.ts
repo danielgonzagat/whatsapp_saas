@@ -1,13 +1,13 @@
 'use client';
 
-export { useKloelFiles } from './__parts__/KloelDashboard.useKloelFiles';
-export type { UseKloelFilesReturn } from './__parts__/KloelDashboard.useKloelFiles';
+export { useKloelFiles } from './useKloelFiles';
+export type { UseKloelFilesReturn } from './useKloelFiles';
 
-export { useKloelDragDrop } from './__parts__/KloelDashboard.useKloelDragDrop';
+export { useKloelDragDrop } from './useKloelDragDrop';
 export type {
   UseKloelDragDropDeps,
   UseKloelDragDropReturn,
-} from './__parts__/KloelDashboard.useKloelDragDrop';
+} from './useKloelDragDrop';
 
-export { createSendMessageHandler } from './__parts__/KloelDashboard.sendMessage';
-export type { SendMessageContext } from './__parts__/KloelDashboard.sendMessage';
+export { createSendMessageHandler } from './KloelDashboardSendMessage';
+export type { SendMessageContext } from './KloelDashboardSendMessage';

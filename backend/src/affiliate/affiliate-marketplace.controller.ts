@@ -5,6 +5,7 @@ import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import type { AuthenticatedRequest } from '../common/interfaces/authenticated-request.interface';
 import { PrismaService } from '../prisma/prisma.service';
 import { buildMarketplaceWhere, enrichAffiliateProducts } from './affiliate-helpers';
+import { RouteClass } from '../common/throttler/route-class.decorator';
 
 /**
  * Affiliate Marketplace Read Controller
@@ -14,6 +15,7 @@ import { buildMarketplaceWhere, enrichAffiliateProducts } from './affiliate-help
  */
 @Controller('affiliate')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
+@RouteClass('mutate')
 export class AffiliateMarketplaceController {
   constructor(private readonly prisma: PrismaService) {}
 
@@ -183,17 +185,14 @@ export class AffiliateMarketplaceController {
       take: 5,
     });
     const categories = [
-      ...new Set(
-        myProducts
-          .map((product) => product.category)
-          .filter((category): category is string => Boolean(category)),
-      ),
-    ];
+      ...new Set(myProducts.map((product) => product.category).filter(Boolean)),
+    ] as string[];
 
-    const where = buildMarketplaceWhere({
-      listed: true,
-      ...(categories.length > 0 ? { category: { in: categories } } : {}),
-    });
+    const whereInput: Prisma.AffiliateProductWhereInput = { listed: true };
+    if (categories.length > 0) {
+      whereInput.category = { in: categories };
+    }
+    const where = buildMarketplaceWhere(whereInput);
 
     const products = await this.prisma.affiliateProduct.findMany({
       where,

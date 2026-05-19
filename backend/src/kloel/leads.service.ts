@@ -1,6 +1,6 @@
-import { Injectable, Logger, Optional } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { PrismaService } from '../prisma/prisma.service';
-import { MindPolicyService } from './mind-policy.service';
 
 type LeadRow = {
   id: string;
@@ -78,12 +78,11 @@ function mapLead(lead: LeadRow): LeadOutput {
 /** Leads service with commercial scoring. */
 @Injectable()
 export class LeadsService {
-  private readonly logger = new Logger(LeadsService.name);
+  private readonly logger = StructuredLogger.from(LeadsService.name);
 
-  constructor(
-    private readonly prisma: PrismaService,
-    @Optional() private readonly mindPolicy?: MindPolicyService,
-  ) {}
+  constructor(private readonly prisma: PrismaService) {
+    this.logger.log('LeadsService initialized');
+  }
 
   /** List leads with optional commercial scoring. */
   async listLeads(

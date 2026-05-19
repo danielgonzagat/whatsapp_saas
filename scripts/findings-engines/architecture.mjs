@@ -35,7 +35,7 @@ function runCheck(scriptPath) {
 const SIZE_LINE_RE = /^\s*-\s+(.+?):\s+(\d+)\s+lines\s+exceeds\s+(\d+)\s+for\s+(.+)$/;
 function parseSizeViolation(line) {
   const m = SIZE_LINE_RE.exec(line);
-  if (!m) return null;
+  if (!m) {return null;}
   return {
     file: m[1],
     line: undefined,
@@ -50,7 +50,7 @@ function parseSizeViolation(line) {
 const SUPPRESSION_LINE_RE = /^\s*-\s+(.+?):(\d+)\s+->\s+(.+?)\s+\((.+?)\)$/;
 function parseSuppressionViolation(line) {
   const m = SUPPRESSION_LINE_RE.exec(line);
-  if (!m) return null;
+  if (!m) {return null;}
   return {
     file: m[1],
     line: Number(m[2]),
@@ -64,7 +64,7 @@ function parseSuppressionViolation(line) {
 const NO_GUARD_RE = /^\s*-\s+(.+?)\s+nao\s+declara\s+guardas/;
 function parseNoGuard(line) {
   const m = NO_GUARD_RE.exec(line);
-  if (!m) return null;
+  if (!m) {return null;}
   return {
     file: m[1],
     line: undefined,
@@ -78,7 +78,7 @@ function parseNoGuard(line) {
 const DUP_PROVIDER_RE = /^\s*-\s+(.+?)\s+aparece\s+em\s+multiplos\s+layouts:\s+(.+)$/;
 function parseDuplicateProvider(line) {
   const m = DUP_PROVIDER_RE.exec(line);
-  if (!m) return null;
+  if (!m) {return null;}
   const provider = m[1];
   const filesPart = m[2];
   const files = [...new Set(filesPart.split(/,\s*/))];
@@ -96,7 +96,7 @@ const SIMILAR_NAME_RE =
   /^\s*-\s+(.+?)\s+tem\s+nome\s+muito\s+proximo\s+de\s+componente\s+existente/;
 function parseSimilarName(line) {
   const m = SIMILAR_NAME_RE.exec(line);
-  if (!m) return null;
+  if (!m) {return null;}
   return {
     file: m[1],
     line: undefined,
@@ -117,7 +117,7 @@ const PARSERS = [
 function parseLine(line) {
   for (const parser of PARSERS) {
     const result = parser(line);
-    if (result !== null) return result;
+    if (result !== null) {return result;}
   }
   return null;
 }
@@ -170,11 +170,11 @@ await (async () => {
 
   for (const line of lines) {
     const trimmed = line.trim();
-    if (!trimmed) continue;
-    if (isBannerLine(trimmed)) continue;
+    if (!trimmed) {continue;}
+    if (isBannerLine(trimmed)) {continue;}
 
     // Only process lines that look like violation items (start with "-" after optional indent)
-    if (!/^\s*-/.test(line)) continue;
+    if (!/^\s*-/.test(line)) {continue;}
 
     const parsed = parseLine(line);
 

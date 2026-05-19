@@ -1,5 +1,6 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { StructuredLogger } from '../logging/structured-logger';
 import OpenAI from 'openai';
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { chatCompletionWithRetry } from '../kloel/openai-wrapper';
@@ -12,7 +13,7 @@ import { PrismaService } from '../prisma/prisma.service';
  */
 @Injectable()
 export class AutopilotAnalyticsInsightsService {
-  private readonly logger = new Logger(AutopilotAnalyticsInsightsService.name);
+  private readonly logger = StructuredLogger.from(AutopilotAnalyticsInsightsService.name);
 
   constructor(
     private readonly prisma: PrismaService,
@@ -39,10 +40,14 @@ export class AutopilotAnalyticsInsightsService {
 
       const contactActions = new Map<string, number>();
       for (const ev of events) {
-        if (!ev.contactId) continue;
+        if (!ev.contactId) {
+          continue;
+        }
         const ts = ev.createdAt.getTime();
         const current = contactActions.get(ev.contactId);
-        if (!current || ts > current) contactActions.set(ev.contactId, ts);
+        if (!current || ts > current) {
+          contactActions.set(ev.contactId, ts);
+        }
       }
 
       const contactIds = Array.from(contactActions.keys());
@@ -108,7 +113,9 @@ export class AutopilotAnalyticsInsightsService {
 
       const inboundByContact = new Map<string, Date[]>();
       for (const msg of inboundMessages) {
-        if (!msg.contactId) continue;
+        if (!msg.contactId) {
+          continue;
+        }
         const list = inboundByContact.get(msg.contactId) || [];
         list.push(msg.createdAt);
         inboundByContact.set(msg.contactId, list);
@@ -130,16 +137,20 @@ export class AutopilotAnalyticsInsightsService {
           (d) => d.getTime() > actionTs,
         );
         if (replies.length > 0) {
+          const firstReply = replies[0];
+          if (!firstReply) {
+            continue;
+          }
           repliedContacts += 1;
           totalReplies += replies.length;
-          const delay = Math.round((replies[0].getTime() - actionTs) / 60000);
+          const delay = Math.round((firstReply.getTime() - actionTs) / 60000);
           replyDelays.push(delay);
           const contact = contactMap.get(contactId);
           if (samples.length < 5 && contact) {
             samples.push({
               contactId,
               contact: contact.name || contact.phone,
-              replyAt: replies[0],
+              replyAt: firstReply,
               delayMinutes: delay,
             });
           }

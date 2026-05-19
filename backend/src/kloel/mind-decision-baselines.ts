@@ -1,10 +1,11 @@
 import { MIND_DECISION_TYPES } from './mind-decision-catalog';
 
-export const LEGACY_DECISION_TYPES = [
+const LEGACY_DECISION_TYPES = [
   'cia_aggressiveness',
   'audio_vs_text',
   'tom',
   'cupom',
+  'flow_variant',
 ] as const;
 
 export const KNOWN_DECISION_TYPES = [...MIND_DECISION_TYPES] as const;

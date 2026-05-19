@@ -351,13 +351,17 @@ export {
   type InstagramMedia,
   type InstagramComment,
   instagramApi,
+  type IgAccount,
+  type IgPostData,
+  type IgInsightData,
+  instagramMarketingApi,
   type MessengerConversation,
   messengerApi,
 } from './meta';
 
 // Default export: the apiClient composite object
 import { authApi } from './auth';
-import { affiliateApi } from './affiliate';
+
 import { billingApi } from './billing';
 import { crmApi, segmentationApi } from './crm';
 import { kycApi } from './kyc';

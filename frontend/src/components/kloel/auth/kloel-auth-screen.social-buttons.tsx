@@ -1,13 +1,21 @@
 'use client';
+import { colors } from '@/lib/design-tokens';
 import { kloelT } from '@/lib/i18n/t';
-import { AppleIcon, GoogleIcon } from './kloel-auth-screen.icons';
+import { FacebookIcon, GoogleIcon, TikTokIcon } from './kloel-auth-screen.icons';
+import { AppleSignInButton } from '@/components/login/AppleSignInButton';
 
 const sora = "var(--font-sora), 'Sora', sans-serif";
 
 interface SocialButtonsProps {
   googleButtonRef: React.RefObject<HTMLDivElement | null>;
   isLoading: boolean;
+  isAppleLoading?: boolean;
   onAppleClick: () => void;
+  onFacebookClick?: () => void;
+  facebookAvailable?: boolean;
+  facebookSdkReady?: boolean;
+  onTikTokClick?: () => void;
+  tikTokAvailable?: boolean;
 }
 
 const socialBtnBase: React.CSSProperties = {
@@ -16,16 +24,26 @@ const socialBtnBase: React.CSSProperties = {
   justifyContent: 'center',
   gap: 10,
   height: 44,
-  background: '#111113',
-  border: '1px solid #222226',
+  background: colors.background.surface,
+  border: `1px solid ${colors.stroke}`,
   borderRadius: 6,
-  color: '#E0DDD8',
+  color: colors.text.silver,
   fontSize: 13,
   fontFamily: sora,
   transition: 'border-color 150ms ease, opacity 150ms ease',
 };
 
-export function SocialButtons({ googleButtonRef, isLoading, onAppleClick }: SocialButtonsProps) {
+export function SocialButtons({
+  googleButtonRef,
+  isLoading,
+  isAppleLoading = false,
+  onAppleClick,
+  onFacebookClick = () => {},
+  facebookAvailable = false,
+  facebookSdkReady = false,
+  onTikTokClick = () => {},
+  tikTokAvailable = false,
+}: SocialButtonsProps) {
   return (
     <div
       style={{
@@ -62,24 +80,58 @@ export function SocialButtons({ googleButtonRef, isLoading, onAppleClick }: Soci
         />
       </div>
 
-      <button
-        type="button"
-        onClick={onAppleClick}
-        disabled={isLoading}
-        style={{
-          ...socialBtnBase,
-          cursor: 'pointer',
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.borderColor = '#333338';
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.borderColor = '#222226';
-        }}
-      >
-        <AppleIcon />
-        {kloelT(`Continuar com Apple`)}
-      </button>
+      {facebookAvailable ? (
+        <button
+          type="button"
+          onClick={onFacebookClick}
+          disabled={isLoading || !facebookSdkReady}
+          style={{
+            ...socialBtnBase,
+            cursor: isLoading || !facebookSdkReady ? 'default' : 'pointer',
+            opacity: facebookSdkReady ? 1 : 0.45,
+          }}
+          onMouseEnter={(e) => {
+            if (!facebookSdkReady || isLoading) {
+              return;
+            }
+            e.currentTarget.style.borderColor = colors.border.glow;
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.borderColor = colors.background.border;
+          }}
+          title={facebookSdkReady ? 'Continuar com Facebook' : 'Carregando Facebook...'}
+        >
+          <FacebookIcon />
+          {kloelT(`Facebook`)}
+        </button>
+      ) : null}
+
+      {tikTokAvailable ? (
+        <button
+          type="button"
+          onClick={onTikTokClick}
+          disabled={isLoading}
+          style={{
+            ...socialBtnBase,
+            cursor: isLoading ? 'default' : 'pointer',
+          }}
+          onMouseEnter={(e) => {
+            if (isLoading) {
+              return;
+            }
+            e.currentTarget.style.borderColor = colors.border.glow;
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.borderColor = colors.background.border;
+          }}
+          title="Continuar com TikTok"
+        >
+          <TikTokIcon />
+          {kloelT(`TikTok`)}
+        </button>
+      ) : null}
+
+      <AppleSignInButton onClick={onAppleClick} isLoading={isAppleLoading} />
     </div>
   );
 }

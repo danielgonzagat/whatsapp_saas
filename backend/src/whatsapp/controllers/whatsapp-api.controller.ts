@@ -19,7 +19,6 @@ import { AccountAgentService } from '../account-agent.service';
 import { AgentEventsService } from '../agent-events.service';
 import {
   CIA_RUNTIME_SERVICE,
-  type CiaBacklogMode,
   type CiaRuntimePort,
 } from '../../cia/cia-runtime.port';
 import { asProviderSettings, type ProviderSessionSnapshot } from '../provider-settings.types';
@@ -28,13 +27,14 @@ import { WhatsAppApiProvider } from '../providers/whatsapp-api.provider';
 import { WhatsAppCatchupService } from '../whatsapp-catchup.service';
 import { WhatsAppWatchdogService } from '../whatsapp-watchdog.service';
 import { WhatsappService } from '../whatsapp.service';
-type BacklogMode = CiaBacklogMode;
-
-const WHATSAPP_API_WORKSPACE_REQUIRED = 'workspaceId is required for WhatsApp API routes';
+import { InternalEndpoint } from '../../common/decorators/internal-endpoint.decorator';
+import { RouteClass } from '../../common/throttler/route-class.decorator';
+type BacklogMode = Exclude<Parameters<CiaRuntimePort['startBacklogRun']>[1], undefined>;
 
 /** Whats app api controller. */
 @Controller('whatsapp-api')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
+@RouteClass('mutate')
 export class WhatsAppApiController {
   constructor(
     private readonly providerRegistry: WhatsAppProviderRegistry,
@@ -47,15 +47,6 @@ export class WhatsAppApiController {
     private readonly workspaces: WorkspaceService,
     private readonly watchdog: WhatsAppWatchdogService,
   ) {}
-
-  private requireWorkspaceId(req: AuthenticatedRequest): string {
-    if (!req.workspaceId) {
-      const error = new Error();
-      error.message = WHATSAPP_API_WORKSPACE_REQUIRED;
-      throw error;
-    }
-    return req.workspaceId;
-  }
 
   private async getSessionDiagnostics(workspaceId: string) {
     const workspace = await this.workspaces.getWorkspace(workspaceId);
@@ -89,7 +80,7 @@ export class WhatsAppApiController {
   /** Start session. */
   @Post('session/start')
   async startSession(@Req() req: AuthenticatedRequest) {
-    const workspaceId = this.requireWorkspaceId(req);
+    const workspaceId = req.workspaceId!;
     const result = await this.providerRegistry.startSession(workspaceId);
     if (result.success && result.message === 'already_connected') {
       await this.catchupService.triggerCatchup(workspaceId, 'session_start_already_connected');
@@ -99,7 +90,7 @@ export class WhatsAppApiController {
   /** Get status. */
   @Get('session/status')
   async getStatus(@Req() req: AuthenticatedRequest) {
-    const workspaceId = this.requireWorkspaceId(req);
+    const workspaceId = req.workspaceId!;
     const [providerType, status] = await Promise.all([
       this.providerRegistry.getProviderType(workspaceId),
       this.providerRegistry.getSessionStatus(workspaceId),
@@ -110,95 +101,86 @@ export class WhatsAppApiController {
     };
   }
   /** Get diagnostics. */
-  // PULSE_OK: internal route, called by worker process for WhatsApp session diagnostics
+  @InternalEndpoint('whatsapp session diagnostics')
   @Get('session/diagnostics')
   async getDiagnostics(@Req() req: AuthenticatedRequest) {
-    return this.getSessionDiagnostics(this.requireWorkspaceId(req));
+    return this.getSessionDiagnostics(req.workspaceId!);
   }
   /** Force check. */
-  // PULSE_OK: internal route, called by worker process for WhatsApp session health check
+  @InternalEndpoint('whatsapp session force-check')
   @Post('session/force-check')
   async forceCheck(@Req() req: AuthenticatedRequest) {
-    const workspace = await this.workspaces.getWorkspace(this.requireWorkspaceId(req));
+    const workspace = await this.workspaces.getWorkspace(req.workspaceId!);
     await this.watchdog.checkWorkspaceSession(
-      this.requireWorkspaceId(req),
-      workspace?.name || this.requireWorkspaceId(req),
+      req.workspaceId!,
+      workspace?.name || req.workspaceId!,
     );
     return {
       success: true,
-      diagnostics: await this.getSessionDiagnostics(this.requireWorkspaceId(req)),
+      diagnostics: await this.getSessionDiagnostics(req.workspaceId!),
     };
   }
   /** Force reconnect. */
-  // PULSE_OK: internal route, called by worker process for WhatsApp session reconnect
+  @InternalEndpoint('whatsapp session force-reconnect')
   @Post('session/force-reconnect')
   async forceReconnect(@Req() req: AuthenticatedRequest) {
-    const diagnosticsBefore = await this.getSessionDiagnostics(this.requireWorkspaceId(req));
-    const providerType = await this.providerRegistry.getProviderType(this.requireWorkspaceId(req));
+    const diagnosticsBefore = await this.getSessionDiagnostics(req.workspaceId!);
+    const providerType = await this.providerRegistry.getProviderType(req.workspaceId!);
     const reconnectResult = diagnosticsBefore?.status?.connected
       ? { success: true, message: 'already_connected' }
-      : await this.providerRegistry.restartSession(this.requireWorkspaceId(req));
+      : await this.providerRegistry.restartSession(req.workspaceId!);
     return {
       success: Boolean(reconnectResult?.success),
       providerType,
       reconnectResult,
-      diagnostics: await this.getSessionDiagnostics(this.requireWorkspaceId(req)),
+      diagnostics: await this.getSessionDiagnostics(req.workspaceId!),
     };
   }
   /** Repair config. */
-  /** Repair config. */
-  // PULSE_OK: internal route, called by worker process for WhatsApp session config repair
+  @InternalEndpoint('whatsapp session repair-config')
   @Post('session/repair-config')
   async repairConfig(@Req() req: AuthenticatedRequest) {
-    const providerType = await this.providerRegistry.getProviderType(this.requireWorkspaceId(req));
-    await this.providerRegistry.syncSessionConfig(this.requireWorkspaceId(req));
+    const providerType = await this.providerRegistry.getProviderType(req.workspaceId!);
+    await this.providerRegistry.syncSessionConfig(req.workspaceId!);
     return {
       success: true,
       repaired: true,
       providerType,
-      diagnostics: await this.getSessionDiagnostics(this.requireWorkspaceId(req)),
+      diagnostics: await this.getSessionDiagnostics(req.workspaceId!),
     };
   }
   /** Bootstrap session. */
-  // PULSE_OK: internal route, called by worker process for WhatsApp session bootstrap
+  @InternalEndpoint('whatsapp session bootstrap')
   @Post('session/bootstrap')
   async bootstrapSession(@Req() req: AuthenticatedRequest) {
-    return this.ciaRuntime.bootstrap(this.requireWorkspaceId(req));
+    return this.ciaRuntime.bootstrap(req.workspaceId!);
   }
   /** Start backlog. */
-  // PULSE_OK: internal route, called by worker process for WhatsApp session backlog processing
+  @InternalEndpoint('whatsapp session backlog start')
   @Post('session/backlog/start')
   async startBacklog(
     @Req() req: AuthenticatedRequest,
     @Body() body: { mode?: string; limit?: number },
   ) {
     if (body?.mode === 'pause_autonomy') {
-      return this.ciaRuntime.pauseAutonomy(this.requireWorkspaceId(req));
+      return this.ciaRuntime.pauseAutonomy(req.workspaceId!);
     }
     return this.ciaRuntime.startBacklogRun(
-      this.requireWorkspaceId(req),
+      req.workspaceId!,
       this.readBacklogMode(body?.mode),
       body?.limit,
     );
   }
-  /** Resume conversation autonomy. */
-  @Post('cia/conversations/:conversationId/resume')
-  async resumeConversationAutonomy(
-    @Req() req: AuthenticatedRequest,
-    @Param('conversationId') conversationId: string,
-  ) {
-    return this.ciaRuntime.resumeConversationAutonomy(this.requireWorkspaceId(req), conversationId);
-  }
-  /** Get operational intelligence. */
-  // PULSE_OK: internal route, called by worker process for CIA operational intelligence
+  /** Start backlog. */
+  @InternalEndpoint('whatsapp CIA intelligence')
   @Get('cia/intelligence')
   async getOperationalIntelligence(@Req() req: AuthenticatedRequest) {
-    return this.ciaRuntime.getOperationalIntelligence(this.requireWorkspaceId(req));
+    return this.ciaRuntime.getOperationalIntelligence(req.workspaceId!);
   }
   /** Stream agent. */
   @Get('agent/stream')
   streamAgent(@Req() req: AuthenticatedRequest, @Res() res: Response) {
-    const workspaceId = this.requireWorkspaceId(req);
+    const workspaceId = req.workspaceId!;
     const safeWrite = (data: unknown) => {
       try {
         res.write(`data: ${JSON.stringify(data)}\n\n`);
@@ -255,7 +237,7 @@ export class WhatsAppApiController {
   /** Stream live. */
   @Get('live')
   async streamLive(@Req() req: AuthenticatedRequest, @Res() res: Response) {
-    const workspaceId = this.requireWorkspaceId(req);
+    const workspaceId = req.workspaceId!;
     const safeWrite = (data: unknown) => {
       try {
         res.write(`data: ${JSON.stringify(data)}\n\n`);
@@ -321,9 +303,7 @@ export class WhatsAppApiController {
   /** Get qr code. */
   @Get('session/qr')
   async getQrCode(@Req() req: AuthenticatedRequest) {
-    const sessionStatus = await this.providerRegistry.getSessionStatus(
-      this.requireWorkspaceId(req),
-    );
+    const sessionStatus = await this.providerRegistry.getSessionStatus(req.workspaceId!);
     if (sessionStatus?.connected) {
       return {
         available: false,
@@ -341,7 +321,7 @@ export class WhatsAppApiController {
         message: 'QR Code recuperado do snapshot da sessão.',
       };
     }
-    const result = await this.providerRegistry.getQrCode(this.requireWorkspaceId(req));
+    const result = await this.providerRegistry.getQrCode(req.workspaceId!);
     if (result.qr) {
       return {
         available: true,
@@ -357,7 +337,7 @@ export class WhatsAppApiController {
   /** Get session view. */
   @Get('session/view')
   async getSessionView(@Req() req: AuthenticatedRequest) {
-    const workspaceId = this.requireWorkspaceId(req);
+    const workspaceId = req.workspaceId!;
     const providerType = await this.providerRegistry.getProviderType(workspaceId);
     const status = await this.providerRegistry.getSessionStatus(workspaceId);
     return {
@@ -382,36 +362,27 @@ export class WhatsAppApiController {
   /** Disconnect. */
   @Delete('session/disconnect')
   async disconnect(@Req() req: AuthenticatedRequest) {
-    const workspaceId = this.requireWorkspaceId(req);
+    const workspaceId = req.workspaceId!;
     return this.providerRegistry.disconnect(workspaceId);
   }
   /** Logout. */
   @Post('session/logout')
   async logout(@Req() req: AuthenticatedRequest) {
-    const workspaceId = this.requireWorkspaceId(req);
+    const workspaceId = req.workspaceId!;
     return this.providerRegistry.logout(workspaceId);
   }
   // messageLimit: enforced via PlanLimitsService.trackMessageSend
-  @Post('send/:phone')
-  async sendMessage(@Req() req: AuthenticatedRequest, @Param('phone') phone: string) {
-    const workspaceId = this.requireWorkspaceId(req);
-    const { message, mediaUrl, caption, mediaType } = req.body || {};
-    await this.providerRegistry.getProviderType(workspaceId);
-    if (mediaUrl) {
-      return this.whatsappApi.sendMediaFromUrl(workspaceId, phone, mediaUrl, caption, mediaType);
-    }
-    return this.whatsappApi.sendMessage(workspaceId, phone, message);
-  }
   /** Check registration. */
-  // PULSE_OK: internal route, called by worker process for WhatsApp phone registration check
+  @InternalEndpoint('whatsapp phone check')
   @Get('check/:phone')
   async checkRegistration(@Req() req: AuthenticatedRequest, @Param('phone') phone: string) {
-    const workspaceId = this.requireWorkspaceId(req);
+    const workspaceId = req.workspaceId!;
     await this.providerRegistry.getProviderType(workspaceId);
     const isRegistered = await this.whatsappApi.isRegisteredUser(workspaceId, phone);
     return { phone, registered: isRegistered };
   }
   /** Health check. */
+  @InternalEndpoint('whatsapp health check')
   @Get('health')
   async healthCheck() {
     const health = await this.providerRegistry.healthCheck();
@@ -423,10 +394,10 @@ export class WhatsAppApiController {
     };
   }
   /** Get provider status. */
-  // PULSE_OK: internal route, called by worker process for WhatsApp provider status
+  @InternalEndpoint('whatsapp provider status')
   @Get('provider-status')
   async getProviderStatus(@Req() req: AuthenticatedRequest) {
-    const workspaceId = this.requireWorkspaceId(req);
+    const workspaceId = req.workspaceId!;
     const workspace = await this.workspaces.getWorkspace(workspaceId).catch(() => null);
     const sessionMeta = this.readSessionSnapshot(workspace?.providerSettings);
     const sessionName =
@@ -506,29 +477,6 @@ export class WhatsAppApiController {
         backlog,
       },
     };
-  }
-  private readNumberQuery(value: unknown, fallback: number, min: number, max: number) {
-    const parsed = Number(value);
-    if (!Number.isFinite(parsed)) {
-      return fallback;
-    }
-    return Math.min(max, Math.max(min, parsed));
-  }
-  private readBooleanQuery(value: unknown, fallback = false) {
-    if (typeof value === 'boolean') {
-      return value;
-    }
-    const normalized = (typeof value === 'string' ? value : '').trim().toLowerCase();
-    if (!normalized) {
-      return fallback;
-    }
-    if (['1', 'true', 'yes', 'y', 'on'].includes(normalized)) {
-      return true;
-    }
-    if (['0', 'false', 'no', 'n', 'off'].includes(normalized)) {
-      return false;
-    }
-    return fallback;
   }
   private readText(value: unknown, fallback = '') {
     return typeof value === 'string' ? value : fallback;

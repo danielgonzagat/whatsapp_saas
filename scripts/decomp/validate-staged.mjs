@@ -90,7 +90,7 @@ for (const line of stagedRaw.split('\n').filter(Boolean)) {
   const content = readFileSync(absPath, 'utf8');
   const isNewFile = status === 'A';
   const fileViolations = evaluateContent({ relPath, content, isNewFile, lockedFiles });
-  for (const v of fileViolations) violations.push('[' + v.rule + '] ' + v.detail);
+  for (const v of fileViolations) {violations.push('[' + v.rule + '] ' + v.detail);}
 }
 
 // Roda também o gate canônico de CI (architecture-guardrails) para garantir

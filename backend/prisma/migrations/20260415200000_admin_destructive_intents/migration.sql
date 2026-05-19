@@ -7,27 +7,27 @@
 
 -- CreateEnum
 CREATE TYPE "DestructiveIntentKind" AS ENUM (
-  'ACCOUNT_SUSPEND',
-  'ACCOUNT_DEACTIVATE',
-  'ACCOUNT_HARD_DELETE',
-  'PRODUCT_ARCHIVE',
-  'PRODUCT_DELETE',
-  'REFUND_MANUAL',
-  'PAYOUT_CANCEL',
-  'MFA_RESET',
-  'FORCE_LOGOUT_GLOBAL',
-  'CACHE_PURGE'
+    'ACCOUNT_SUSPEND',
+    'ACCOUNT_DEACTIVATE',
+    'ACCOUNT_HARD_DELETE',
+    'PRODUCT_ARCHIVE',
+    'PRODUCT_DELETE',
+    'REFUND_MANUAL',
+    'PAYOUT_CANCEL',
+    'MFA_RESET',
+    'FORCE_LOGOUT_GLOBAL',
+    'CACHE_PURGE'
 );
 
 -- CreateEnum
 CREATE TYPE "DestructiveIntentStatus" AS ENUM (
-  'PENDING',
-  'CONFIRMED',
-  'EXECUTING',
-  'EXECUTED',
-  'FAILED',
-  'EXPIRED',
-  'UNDONE'
+    'PENDING',
+    'CONFIRMED',
+    'EXECUTING',
+    'EXECUTED',
+    'FAILED',
+    'EXPIRED',
+    'UNDONE'
 );
 
 -- CreateTable
@@ -59,9 +59,9 @@ CREATE TABLE "destructive_intents" (
 );
 
 -- CreateIndex
-CREATE INDEX "destructive_intents_kind_status_created_at_idx" ON "destructive_intents"("kind", "status", "created_at");
-CREATE INDEX "destructive_intents_created_by_admin_user_id_created_at_idx" ON "destructive_intents"("created_by_admin_user_id", "created_at");
-CREATE INDEX "destructive_intents_target_type_target_id_idx" ON "destructive_intents"("target_type", "target_id");
+CREATE INDEX "destructive_intents_kind_status_created_at_idx" ON "destructive_intents" ("kind", "status", "created_at");
+CREATE INDEX "destructive_intents_created_by_admin_user_id_created_at_idx" ON "destructive_intents" ("created_by_admin_user_id", "created_at");
+CREATE INDEX "destructive_intents_target_type_target_id_idx" ON "destructive_intents" ("target_type", "target_id");
 
 -- ============================================================================
 -- Invariant I-ADMIN-D1 — destructive_intents is near-append-only.
@@ -70,8 +70,8 @@ CREATE INDEX "destructive_intents_target_type_target_id_idx" ON "destructive_int
 -- target_type, target_id, reason, challenge, created_by, ip, user_agent,
 -- expires_at) are immutable after insert.
 -- ============================================================================
-CREATE OR REPLACE FUNCTION destructive_intents_block_mutation()
-RETURNS trigger AS $$
+CREATE OR REPLACE FUNCTION DESTRUCTIVE_INTENTS_BLOCK_MUTATION()
+RETURNS TRIGGER AS $$
 BEGIN
   IF TG_OP = 'DELETE' THEN
     RAISE EXCEPTION 'destructive_intents rows cannot be deleted (invariant I-ADMIN-D1)';
@@ -120,8 +120,8 @@ $$ LANGUAGE plpgsql;
 
 CREATE TRIGGER destructive_intents_no_delete
 BEFORE DELETE ON destructive_intents
-FOR EACH ROW EXECUTE FUNCTION destructive_intents_block_mutation();
+FOR EACH ROW EXECUTE FUNCTION DESTRUCTIVE_INTENTS_BLOCK_MUTATION();
 
 CREATE TRIGGER destructive_intents_restrict_update
 BEFORE UPDATE ON destructive_intents
-FOR EACH ROW EXECUTE FUNCTION destructive_intents_block_mutation();
+FOR EACH ROW EXECUTE FUNCTION DESTRUCTIVE_INTENTS_BLOCK_MUTATION();

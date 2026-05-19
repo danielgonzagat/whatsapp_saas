@@ -8,6 +8,7 @@ import { StripeChargeService } from '../payments/stripe/stripe-charge.service';
 import { PrismaService } from '../prisma/prisma.service';
 
 import { CheckoutPaymentService } from './checkout-payment.service';
+import { CHECKOUT_PAYMENT_E2E_GUARD } from './checkout-payment-e2e-guard';
 import { CheckoutPostPaymentEffectsService } from './checkout-post-payment-effects.service';
 import { CheckoutSocialLeadService } from './checkout-social-lead.service';
 import {
@@ -100,6 +101,13 @@ describe('Checkout E2E Split Chain', () => {
         { provide: AuditService, useValue: auditService },
         { provide: CheckoutSocialLeadService, useValue: { markConvertedFromOrder: jest.fn() } },
         { provide: CheckoutPostPaymentEffectsService, useValue: postPaymentEffects },
+        {
+          provide: CHECKOUT_PAYMENT_E2E_GUARD,
+          useValue: {
+            isEnabled: jest.fn(() => false),
+            buildResult: jest.fn(),
+          },
+        },
       ],
     }).compile();
 

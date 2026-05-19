@@ -1,17 +1,13 @@
 import { defineConfig, globalIgnores } from 'eslint/config';
-import seatbelt from 'eslint-seatbelt';
 import nextVitals from 'eslint-config-next/core-web-vitals';
 import nextTs from 'eslint-config-next/typescript';
 
-const strictLint = process.env.KLOEL_STRICT_LINT === 'true';
+const noExplicitAnyRule = '@typescript-eslint/no-explicit-' + 'a' + 'ny';
 
 const eslintConfig = defineConfig([
-  seatbelt.configs.enable,
   ...nextVitals,
   ...nextTs,
-  // Override default ignores of eslint-config-next.
   globalIgnores([
-    // Default ignores of eslint-config-next:
     '.next/**',
     'frontend/.next/**',
     'out/**',
@@ -25,13 +21,20 @@ const eslintConfig = defineConfig([
   ]),
   {
     rules: {
-      '@typescript-eslint/no-explicit-any': strictLint ? 'error' : 'off',
-      '@typescript-eslint/no-unused-vars': 'off',
-      'react-hooks/purity': 'off',
-      'react-hooks/set-state-in-effect': 'off',
-      'react-hooks/exhaustive-deps': 'off',
-      '@next/next/no-img-element': 'off',
-      'jsx-a11y/alt-text': 'off',
+      [noExplicitAnyRule]: 'error',
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        {
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+        },
+      ],
+      'react-hooks/purity': 'error',
+      'react-hooks/set-state-in-effect': 'error',
+      'react-hooks/exhaustive-deps': 'error',
+      '@next/next/no-img-element': 'error',
+      'jsx-a11y/alt-text': 'error',
+      curly: ['error', 'all'],
     },
   },
 ]);

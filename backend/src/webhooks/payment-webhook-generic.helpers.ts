@@ -1,124 +1,128 @@
-/**
- * Pure helper utilities for PaymentWebhookGenericController.
- * No NestJS DI — plain functions only, safe to unit-test in isolation.
- */
-import * as crypto from 'node:crypto';
-import { BadRequestException, type Logger } from '@nestjs/common';
+import { createHmac } from 'node:crypto';
+import { Logger, NotFoundException } from '@nestjs/common';
 import type { Redis } from 'ioredis';
-import type { PrismaService } from '../prisma/prisma.service';
-import { validateNoInternalAccess } from '../common/utils/url-validator';
-import type { WebhookRequest } from './payment-webhook-types';
+import { validatePaymentTransition } from '../common/payment-state-machine';
+import { PrismaService } from '../prisma/prisma.service';
+import type { GenericPaymentWebhookBody, WebhookRequest } from './payment-webhook-types';
 
-/** Throw BadRequestException if the workspace does not exist. */
-export async function assertWorkspaceExists(prisma: PrismaService, workspaceId: string) {
-  const ws = await prisma.workspace.findUnique({ where: { id: workspaceId } });
-  if (!ws) throw new BadRequestException('invalid_workspaceId');
+export async function assertWorkspaceExists(
+  prisma: PrismaService,
+  workspaceId: string,
+): Promise<void> {
+  const workspace = await prisma.workspace.findUnique({
+    where: { id: workspaceId },
+    select: { id: true },
+  });
+  if (!workspace) {
+    throw new NotFoundException('workspace_not_found');
+  }
 }
 
-/** Verify a shared-secret header or HMAC signature against the expected value. */
 export function verifySharedSecretOrSignature(
   req: WebhookRequest,
   expectedSecret: string,
-  sharedSecret?: string,
-  signature?: string,
+  secretHeader: string | undefined,
+  signatureHeader: string | undefined,
 ): boolean {
-  if (sharedSecret && safeCompare(sharedSecret, expectedSecret)) return true;
-  if (!signature) return false;
-  const reqBody = req?.body;
-  const raw = req?.rawBody || JSON.stringify(reqBody || '');
-  const payload = Buffer.isBuffer(raw) ? raw : Buffer.from(String(raw));
-  const hexDigest = crypto.createHmac('sha256', expectedSecret).update(payload).digest('hex');
-  const base64Digest = crypto.createHmac('sha256', expectedSecret).update(payload).digest('base64');
-  return safeCompare(signature, hexDigest) || safeCompare(signature, base64Digest);
+  if (secretHeader && secretHeader === expectedSecret) {
+    return true;
+  }
+  if (!signatureHeader) {
+    return false;
+  }
+  const raw = req?.rawBody || JSON.stringify(req?.body || {});
+  const rawBuffer = Buffer.isBuffer(raw) ? raw : Buffer.from(raw, 'utf8');
+  const digest = createHmac('sha256', expectedSecret).update(rawBuffer).digest('hex');
+  return signatureHeader === digest || signatureHeader === `sha256=${digest}`;
 }
 
-/** Constant-time string comparison (both trimmed). */
-function safeCompare(left: string, right: string): boolean {
-  const l = String(left || '').trim();
-  const r = String(right || '').trim();
-  if (!l || l.length !== r.length) return false;
-  return crypto.timingSafeEqual(Buffer.from(l), Buffer.from(r));
-}
-
-/** Build a stable request-id for ops alerts. */
-function buildOpsAlertRequestId(message: string, meta: Record<string, unknown>): string {
-  const stableId =
-    asString(meta.eventId) ||
-    asString(meta.externalId) ||
-    asString(meta.paymentIntentId) ||
-    asString(meta.orderId) ||
-    crypto.randomUUID();
-  return `payment-webhook:${message}:${stableId}`;
-}
-
-function asString(v: unknown): string | undefined {
-  return typeof v === 'string' && v.length > 0 ? v : undefined;
-}
-
-/**
- * Idempotency check using atomic Redis SET EX NX.
- * Returns duplicate-response when event was already processed, null otherwise.
- */
 export async function ensureIdempotent(
   eventId: string | undefined,
   req: WebhookRequest,
   redis: Redis,
   logger: Logger,
-  sendOpsAlertFn: (message: string, meta: Record<string, unknown>) => Promise<void>,
-): Promise<{ ok: true; received: true; duplicate: true; reason: string } | null> {
-  const reqBody = req?.body;
-  const raw = req?.rawBody || JSON.stringify(reqBody || '');
-  const key =
-    eventId ||
-    crypto
-      .createHash('sha256')
-      .update(Buffer.isBuffer(raw) ? raw : Buffer.from(String(raw)))
-      .digest('hex')
-      .slice(0, 32);
-  const cacheKey = `webhook:payment:${key}`;
-  const result = await redis.set(cacheKey, '1', 'EX', 300, 'NX');
-  if (result === null) {
-    logger.warn(`Duplicate payment webhook ignored: ${key}`);
-    await sendOpsAlertFn('webhook_duplicate_payment', { key, path: req?.url });
-    return { ok: true, received: true, duplicate: true, reason: 'duplicate_event' };
+  onDuplicate: (message: string, meta: Record<string, unknown>) => Promise<void> | void,
+): Promise<{ ok: true; duplicate: true } | null> {
+  const raw = req?.rawBody || JSON.stringify(req?.body || {});
+  const rawBuffer = Buffer.isBuffer(raw) ? raw : Buffer.from(raw, 'utf8');
+  const keySeed =
+    eventId || createHmac('sha256', 'generic-payment-webhook').update(rawBuffer).digest('hex');
+  const key = `webhook:payment:generic:${keySeed}`;
+  const inserted = await redis.set(key, '1', 'EX', 60 * 60 * 24, 'NX');
+  if (inserted === 'OK') {
+    return null;
   }
-  return null;
+  logger.log(`Duplicate payment webhook ignored: ${keySeed}`);
+  await onDuplicate('duplicate_payment_webhook', { eventId: keySeed });
+  return { ok: true, duplicate: true };
 }
 
-/** Send an ops alert to OPS_WEBHOOK_URL / DLQ_WEBHOOK_URL and push to Redis alerts list. */
 export async function sendOpsAlert(
   message: string,
   meta: Record<string, unknown>,
   redis: Redis,
 ): Promise<void> {
-  const url =
-    process.env.OPS_WEBHOOK_URL ||
-    process.env.AUTOPILOT_ALERT_WEBHOOK ||
-    process.env.DLQ_WEBHOOK_URL;
-  if (!url || !globalThis.fetch) return;
-  const requestId = buildOpsAlertRequestId(message, meta);
-  try {
-    validateNoInternalAccess(url);
-    await globalThis.fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-Request-ID': requestId },
-      body: JSON.stringify({
-        type: message,
-        meta,
-        requestId,
-        at: new Date().toISOString(),
-        env: process.env.NODE_ENV || 'dev',
-      }),
-      signal: AbortSignal.timeout(10000),
-    });
-  } catch {
-    // best effort
+  await redis.publish(
+    'ops-alerts',
+    JSON.stringify({ message, meta, at: new Date().toISOString() }),
+  );
+}
+
+export async function updateSaleAndPaymentHelper(
+  prisma: PrismaService,
+  logger: Logger,
+  body: GenericPaymentWebhookBody,
+  workspaceId: string,
+): Promise<void> {
+  if (body.orderId || body.provider) {
+    try {
+      await prisma.kloelSale.updateMany({
+        where: {
+          workspaceId,
+          OR: [
+            body.orderId ? { externalPaymentId: String(body.orderId) } : undefined,
+            body.orderId ? { id: String(body.orderId) } : undefined,
+          ].filter(Boolean) as Array<{ externalPaymentId: string } | { id: string }>,
+        },
+        data: { status: 'paid', paidAt: new Date() },
+      });
+    } catch (saleErr: unknown) {
+      const msg =
+        saleErr instanceof Error
+          ? saleErr
+          : new Error(typeof saleErr === 'string' ? saleErr : 'unknown error');
+      logger.warn(`Não foi possível atualizar KloelSale (generic): ${msg?.message}`);
+    }
   }
-  try {
-    const payload = { type: message, meta, requestId, at: new Date().toISOString() };
-    await redis.lpush('alerts:webhooks', JSON.stringify(payload));
-    await redis.ltrim('alerts:webhooks', 0, 49);
-  } catch {
-    // ignore
+  if (body.orderId) {
+    try {
+      const genericExternalRef = String(body.orderId);
+      const existingGenericPayment = await prisma.payment.findFirst({
+        where: { workspaceId, externalId: genericExternalRef },
+      });
+      const canTransitionGeneric =
+        !existingGenericPayment ||
+        validatePaymentTransition(existingGenericPayment.status || 'PENDING', 'RECEIVED', {
+          paymentId: existingGenericPayment?.id,
+          provider: body.provider || 'generic',
+          externalId: genericExternalRef,
+        });
+      if (canTransitionGeneric) {
+        await prisma.payment.updateMany({
+          where: { workspaceId, externalId: genericExternalRef },
+          data: { status: 'RECEIVED' },
+        });
+      } else {
+        logger.warn(
+          `Generic webhook rejected by state machine: ${existingGenericPayment?.status} -> RECEIVED for ${genericExternalRef}`,
+        );
+      }
+    } catch (paymentErr: unknown) {
+      const msg =
+        paymentErr instanceof Error
+          ? paymentErr
+          : new Error(typeof paymentErr === 'string' ? paymentErr : 'unknown error');
+      logger.warn(`Não foi possível atualizar Payment (generic): ${msg?.message}`);
+    }
   }
 }

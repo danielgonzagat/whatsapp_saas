@@ -33,7 +33,6 @@ export interface UpdateFollowUpDto {
 }
 
 /** Follow up service. */
-// PULSE_OK: new Date(dto.scheduledFor) validated with type check + isNaN(getTime()) + BadRequestException in create() and update()
 @Injectable()
 export class FollowUpService {
   private readonly logger = new Logger(FollowUpService.name);
@@ -153,9 +152,9 @@ export class FollowUpService {
         workspaceId,
         contactId: dto.contactId,
         scheduledFor,
-        message: dto.message,
-        reason: dto.reason,
-        flowId: dto.flowId,
+        ...(dto.message !== undefined ? { message: dto.message } : {}),
+        ...(dto.reason !== undefined ? { reason: dto.reason } : {}),
+        ...(dto.flowId !== undefined ? { flowId: dto.flowId } : {}),
         status: 'pending',
       },
     });

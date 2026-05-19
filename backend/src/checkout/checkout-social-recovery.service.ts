@@ -1,5 +1,6 @@
-import { Injectable, Logger, Optional } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
+import { StructuredLogger } from '../logging/structured-logger';
 import { CheckoutSocialLeadStatus, Prisma } from '@prisma/client';
 import { EmailService } from '../auth/email.service';
 import { forEachSequential } from '../common/async-sequence';
@@ -35,7 +36,7 @@ type WorkspaceChannelState = {
 /** Checkout social recovery service with deterministic channel constraints. */
 @Injectable()
 export class CheckoutSocialRecoveryService {
-  private readonly logger = new Logger(CheckoutSocialRecoveryService.name);
+  private readonly logger = StructuredLogger.from(CheckoutSocialRecoveryService.name);
   private readonly workspaceChannels = new Map<
     string,
     { state: WorkspaceChannelState; fetchedAt: number }
@@ -243,14 +244,15 @@ export class CheckoutSocialRecoveryService {
     name: string | null,
     checkoutSlug: string,
   ) {
-    // PULSE_OK: advisory gate inside $transaction prevents two concurrent
     // recovery runs from both sending email to the same lead
     const alreadySent = await this.prisma.$transaction(async (tx) => {
       const lead = await tx.checkoutSocialLead.findFirst({
         where: { id: leadId, workspaceId },
         select: { id: true, recoveryEmailSentAt: true },
       });
-      if (!lead || lead.recoveryEmailSentAt) return true;
+      if (!lead || lead.recoveryEmailSentAt) {
+        return true;
+      }
 
       await tx.checkoutSocialLead.update({
         where: { id: leadId },
@@ -260,7 +262,9 @@ export class CheckoutSocialRecoveryService {
       return false;
     });
 
-    if (alreadySent) return;
+    if (alreadySent) {
+      return;
+    }
 
     const unsubscribeFooter = buildUnsubscribeFooterHtml({ email, workspaceId });
     const listUnsubscribe = buildListUnsubscribeHeader({ email, workspaceId });
@@ -288,20 +292,8 @@ export class CheckoutSocialRecoveryService {
   private renderRecoveryEmail(name: string | null, checkoutSlug: string) {
     const safeName = String(name || '').trim();
     const productLine = checkoutSlug ? `checkout ${checkoutSlug}` : 'checkout';
-
-    return `
-      <div style="font-family:Arial,sans-serif;background:#f6f6f6;padding:24px;">
-        <div style="max-width:560px;margin:0 auto;background:#ffffff;border-radius:16px;padding:32px;">
-          <p style="font-size:14px;color:#64748b;margin:0 0 12px;">KLOEL</p>
-          <h1 style="font-size:24px;color:#0f172a;margin:0 0 16px;">${safeName ? `Oi, ${safeName}.` : 'Oi.'}</h1>
-          <p style="font-size:16px;line-height:1.6;color:#334155;margin:0 0 12px;">
-            Percebemos que você começou o ${productLine} e não terminou.
-          </p>
-          <p style="font-size:16px;line-height:1.6;color:#334155;margin:0;">
-            Se ainda quiser concluir sua compra, volte para o checkout e retome de onde parou.
-          </p>
-        </div>
-      </div>
-    `;
+    const greeting = safeName ? `Oi, ${safeName}.` : 'Oi.';
+    const { renderEmailTemplate } = require('../common/utils/email-template-renderer.util');
+    return renderEmailTemplate('social-recovery', { greeting, productLine });
   }
 }

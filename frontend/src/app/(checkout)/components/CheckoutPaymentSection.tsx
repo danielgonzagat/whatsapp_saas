@@ -20,7 +20,7 @@ type FormState = {
 
 type Props = {
   theme: CheckoutVisualTheme;
-  config?: PublicCheckoutConfig;
+  config?: PublicCheckoutConfig | undefined;
   step: number;
   payMethod: 'card' | 'pix' | 'boleto';
   setPayMethod: Dispatch<SetStateAction<'card' | 'pix' | 'boleto'>>;
@@ -38,9 +38,9 @@ type Props = {
   isSubmitting: boolean;
   finalizeOrder: () => void | Promise<void>;
   stripeClientSecret?: string | null;
-  stripeReturnUrl?: string;
-  onStripeSuccess?: () => void;
-  onStripeError?: (message: string) => void;
+  stripeReturnUrl?: string | undefined;
+  onStripeSuccess?: (() => void) | undefined;
+  onStripeError?: ((message: string) => void) | undefined;
 };
 
 /** Checkout payment section. */
@@ -119,8 +119,8 @@ export function CheckoutPaymentSection(props: Props) {
               <StripePaymentElement
                 clientSecret={stripeClientSecret}
                 returnUrl={stripeReturnUrl}
-                onSuccess={onStripeSuccess}
-                onError={onStripeError}
+                {...(onStripeSuccess ? { onSuccess: onStripeSuccess } : {})}
+                {...(onStripeError ? { onError: onStripeError } : {})}
               />
             ) : (
               renderCardForm(
@@ -510,10 +510,10 @@ function Field({
   theme: CheckoutVisualTheme;
   label: string;
   id: string;
-  name?: string;
-  autoComplete?: string;
-  inputMode?: React.HTMLAttributes<HTMLInputElement>['inputMode'];
-  maxLength?: number;
+  name?: string | undefined;
+  autoComplete?: string | undefined;
+  inputMode?: React.HTMLAttributes<HTMLInputElement>['inputMode'] | undefined;
+  maxLength?: number | undefined;
   value: string;
   onChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
   placeholder: string;
@@ -528,13 +528,13 @@ function Field({
       <ValidationInput
         theme={theme.input}
         id={id}
-        name={name}
+        {...(name !== undefined ? { name } : {})}
         value={value}
         onChange={onChange}
         placeholder={placeholder}
-        autoComplete={autoComplete}
-        inputMode={inputMode}
-        maxLength={maxLength}
+        {...(autoComplete !== undefined ? { autoComplete } : {})}
+        {...(inputMode !== undefined ? { inputMode } : {})}
+        {...(maxLength !== undefined ? { maxLength } : {})}
       />
     </div>
   );

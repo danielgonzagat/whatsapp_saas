@@ -47,8 +47,8 @@ try {
 const version = state.version ? `codacy-cloud-v${state.version}` : 'codacy-cloud';
 
 const issueArrays = [];
-if (Array.isArray(state.highPriorityBatch)) issueArrays.push(state.highPriorityBatch);
-if (Array.isArray(state.issues)) issueArrays.push(state.issues);
+if (Array.isArray(state.highPriorityBatch)) {issueArrays.push(state.highPriorityBatch);}
+if (Array.isArray(state.issues)) {issueArrays.push(state.issues);}
 const allIssues = issueArrays.flat();
 
 const semgrepIssues = allIssues.filter((issue) => {
@@ -58,15 +58,15 @@ const semgrepIssues = allIssues.filter((issue) => {
 
 function mapSeverity(raw) {
   const s = String(raw || '').toLowerCase();
-  if (s === 'critical' || s === 'error' || s === 'blocker') return 'critical';
-  if (s === 'high' || s === 'warning' || s === 'major') return 'high';
-  if (s === 'medium' || s === 'info' || s === 'minor') return 'medium';
+  if (s === 'critical' || s === 'error' || s === 'blocker') {return 'critical';}
+  if (s === 'high' || s === 'warning' || s === 'major') {return 'high';}
+  if (s === 'medium' || s === 'info' || s === 'minor') {return 'medium';}
   const n = Number(raw);
   if (!Number.isNaN(n)) {
-    if (n === 1) return 'critical';
-    if (n === 2) return 'high';
-    if (n === 3) return 'medium';
-    if (n >= 4) return 'low';
+    if (n === 1) {return 'critical';}
+    if (n === 2) {return 'high';}
+    if (n === 3) {return 'medium';}
+    if (n >= 4) {return 'low';}
   }
   return 'low';
 }

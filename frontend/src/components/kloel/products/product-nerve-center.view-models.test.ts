@@ -4,7 +4,6 @@ import {
   mapProductEditorPlans,
 } from './product-nerve-center.view-models';
 
-// PULSE_OK: assertions exist below
 describe('product-nerve-center.view-models', () => {
   it('maps raw plans into stable editor view models', () => {
     const plans = mapProductEditorPlans([
@@ -65,7 +64,7 @@ describe('product-nerve-center.view-models', () => {
         code: 'PX12AB34',
         referenceCode: 'PX12AB34',
         desc: 'Checkout Noir',
-        mt: ['PIX', 'BOLETO'],
+        mt: ['PIX'],
         sales: 14,
         installments: 6,
         quantity: 1,

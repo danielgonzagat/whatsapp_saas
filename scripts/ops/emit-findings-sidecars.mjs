@@ -98,7 +98,7 @@ function writeAtomic(path, content) {
 function findExistingSidecars(root) {
   /** @type {string[]} */
   const out = [];
-  if (!existsSync(root)) return out;
+  if (!existsSync(root)) {return out;}
   const stack = [root];
   while (stack.length) {
     const dir = stack.pop();
@@ -157,14 +157,14 @@ function main() {
         /* fall through to write */
       }
     }
-    if (dry) continue;
+    if (dry) {continue;}
     writeAtomic(path, content);
     written++;
   }
 
   let removed = 0;
   for (const p of stale) {
-    if (dry) continue;
+    if (dry) {continue;}
     try {
       unlinkSync(p);
       removed++;

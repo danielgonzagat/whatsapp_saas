@@ -81,7 +81,7 @@ let buffer = '';
 let resolved = false;
 
 function finish(code, reason) {
-  if (resolved) return;
+  if (resolved) {return;}
   resolved = true;
   if (child.exitCode === null) {
     child.kill('SIGTERM');
@@ -110,7 +110,7 @@ function inspectBuffer() {
       return;
     }
   }
-  if (!buffer.includes(LATE_MARKER)) return;
+  if (!buffer.includes(LATE_MARKER)) {return;}
   const missing = MODULE_MARKERS.filter((marker) => !buffer.includes(marker));
   if (missing.length > 0) {
     finish(1, `${LATE_MARKER} reached but missing: ${missing.join(', ')}`);
@@ -129,7 +129,7 @@ child.stderr.on('data', (chunk) => {
 });
 child.on('error', (err) => finish(1, `child process error: ${err.message}`));
 child.on('exit', (code, signal) => {
-  if (resolved) return;
+  if (resolved) {return;}
   finish(1, `bootstrap exited early with code=${code} signal=${signal ?? 'none'}`);
 });
 

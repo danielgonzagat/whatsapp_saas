@@ -27,13 +27,13 @@ function toolVersion() {
 // Example: .agents/file.md:7:121 error MD013/line-length Line length [Expected: 120; Actual: 192]
 function parseMarkdownlintOutput(stdout) {
   const findings = [];
-  if (!stdout) return findings;
+  if (!stdout) {return findings;}
   const lines = stdout.split('\n');
   for (const line of lines) {
     // Skip summary line and empty lines
-    if (!line || line.startsWith('Summary:')) continue;
+    if (!line || line.startsWith('Summary:')) {continue;}
     const m = line.match(/^(.+?):(\d+):(\d+)\s+(error|warning|info)\s+([\w/-]+)\s+(.+)$/);
-    if (!m) continue;
+    if (!m) {continue;}
     const [, fileRaw, lineStr, colStr, sevRaw, rule, message] = m;
     const severity = sevRaw === 'error' ? 'high' : sevRaw === 'warning' ? 'medium' : 'low';
     const file = relative(REPO_ROOT, resolve(REPO_ROOT, fileRaw)).replace(/\\/g, '/');

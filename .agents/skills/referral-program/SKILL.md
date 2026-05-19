@@ -252,17 +252,17 @@ They get [their reward] too.
 
 ## Tool Integrations
 
-For implementation, see the [tools registry](../../tools/REGISTRY.md). Key tools for referral programs:
+For implementation, see the tools registry. Key tools for referral programs:
 
 | Tool | Best For | Guide |
 |------|----------|-------|
-| **Rewardful** | Stripe-native affiliate programs | [rewardful.md](../../tools/integrations/rewardful.md) |
-| **Tolt** | SaaS affiliate programs | [tolt.md](../../tools/integrations/tolt.md) |
-| **Mention Me** | Enterprise referral programs | [mention-me.md](../../tools/integrations/mention-me.md) |
-| **Dub.co** | Link tracking and attribution | [dub-co.md](../../tools/integrations/dub-co.md) |
-| **Stripe** | Payment processing (for commission tracking) | [stripe.md](../../tools/integrations/stripe.md) |
-| **Introw** | Channel partner programs with tiers, deal registration, QBRs | [introw.md](../../tools/integrations/introw.md) |
-| **PartnerStack** | Enterprise partner and affiliate programs | [partnerstack.md](../../tools/integrations/partnerstack.md) |
+| **Rewardful** | Stripe-native affiliate programs | rewardful.md |
+| **Tolt** | SaaS affiliate programs | tolt.md |
+| **Mention Me** | Enterprise referral programs | mention-me.md |
+| **Dub.co** | Link tracking and attribution | dub-co.md |
+| **Stripe** | Payment processing (for commission tracking) | stripe.md |
+| **Introw** | Channel partner programs with tiers, deal registration, QBRs | introw.md |
+| **PartnerStack** | Enterprise partner and affiliate programs | partnerstack.md |
 
 ---
 

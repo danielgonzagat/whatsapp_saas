@@ -189,15 +189,17 @@ export class InboxService {
       contactId: contact.id,
       content: data.content,
       direction: data.direction,
-      externalId: data.externalId,
-      type: data.type,
-      channel: data.channel,
-      mediaUrl: data.mediaUrl,
-      status: data.status,
-      createdAt: data.createdAt,
-      countAsUnread: data.countAsUnread,
-      resetUnreadOnOutbound: data.resetUnreadOnOutbound,
-      silent: data.silent,
+      ...(data.externalId !== undefined ? { externalId: data.externalId } : {}),
+      ...(data.type !== undefined ? { type: data.type } : {}),
+      ...(data.channel !== undefined ? { channel: data.channel } : {}),
+      ...(data.mediaUrl !== undefined ? { mediaUrl: data.mediaUrl } : {}),
+      ...(data.status !== undefined ? { status: data.status } : {}),
+      ...(data.createdAt !== undefined ? { createdAt: data.createdAt } : {}),
+      ...(data.countAsUnread !== undefined ? { countAsUnread: data.countAsUnread } : {}),
+      ...(data.resetUnreadOnOutbound !== undefined
+        ? { resetUnreadOnOutbound: data.resetUnreadOnOutbound }
+        : {}),
+      ...(data.silent !== undefined ? { silent: data.silent } : {}),
     });
   }
 
@@ -326,9 +328,9 @@ export class InboxService {
         conversationId: conversation.id,
         content: data.content,
         direction: data.direction,
-        externalId: data.externalId,
+        ...(data.externalId !== undefined ? { externalId: data.externalId } : {}),
         type: data.type || 'TEXT',
-        mediaUrl: data.mediaUrl,
+        ...(data.mediaUrl !== undefined ? { mediaUrl: data.mediaUrl } : {}),
         status: data.status || 'DELIVERED',
         createdAt: messageCreatedAt,
       },
@@ -363,7 +365,6 @@ export class InboxService {
       return Number.isNaN(value.getTime()) ? null : value;
     }
 
-    // PULSE_OK: date validated via Number.isNaN(parsed.getTime()) right below — returns null on invalid
     const parsed = new Date(value);
     return Number.isNaN(parsed.getTime()) ? null : parsed;
   }

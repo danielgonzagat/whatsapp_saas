@@ -1,6 +1,7 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { MindBeliefService } from '../../kloel/mind-belief.service';
+import { MindLiftReportService } from '../../kloel/mind-lift-report.service';
 import { MindPolicyService } from '../../kloel/mind-policy.service';
 import { MindObservabilityService } from '../../kloel/mind-observability.service';
 import { MindReportService } from '../../kloel/mind-report.service';
@@ -21,13 +22,18 @@ function severityLabel(surprise: number): string {
 
 @Injectable()
 export class AdminMindService {
+  private readonly logger = new Logger(AdminMindService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly beliefs: MindBeliefService,
+    private readonly liftReport: MindLiftReportService,
     private readonly policy: MindPolicyService,
     private readonly observability: MindObservabilityService,
     private readonly reports: MindReportService,
-  ) {}
+  ) {
+    this.logger.debug?.(`AdminMindService initialized`);
+  }
 
   async getState(workspaceId: string, _decisionType?: string) {
     const workspace = await this.prisma.workspace.findUnique({
@@ -228,6 +234,10 @@ export class AdminMindService {
 
     const result = await this.observability.ask(workspaceId, question);
     return { ...result, workspaceId: workspace.id, workspaceName: workspace.name };
+  }
+
+  async getLiftReport(sinceDays = 14) {
+    return this.liftReport.aggregate(sinceDays);
   }
 
   async generateReport(workspaceId: string) {

@@ -1,0 +1,241 @@
+import type { Prisma } from '@prisma/client';
+
+type AgentRuntimeTruthMode = 'observed' | 'inferred' | 'projected';
+export type AgentRuntimeRiskLevel = 'safe' | 'normal' | 'high' | 'critical';
+export type AgentRuntimeAuthorityMode = 'advisory' | 'tool_limited' | 'human_required';
+export type AgentRuntimeSourceProvenance =
+  | 'kloel_memory'
+  | 'agent_curated'
+  | 'agent_event'
+  | 'agent_skill'
+  | 'product'
+  | 'objection'
+  | 'compressed_context';
+export type AgentRuntimeHygieneState = 'fresh' | 'aging' | 'stale' | 'expired' | 'retired';
+
+export interface AgentRuntimeSourceStamp {
+  source: string;
+  confidence: number;
+  freshness: 'fresh' | 'stale' | 'missing';
+  truthMode: AgentRuntimeTruthMode;
+  observedAt: string;
+  provenance?: AgentRuntimeSourceProvenance;
+  ttlMs?: number;
+  expiresAt?: string;
+  retentionScore?: number;
+}
+
+export interface AgentRuntimeHygieneResult {
+  workspaceId: string;
+  inspected: number;
+  expired: number;
+  retained: number;
+  staleKeys: string[];
+  errors: number;
+  completedAt: string;
+}
+
+interface AgentRuntimeMemoryItem {
+  id: string;
+  key: string;
+  category: string;
+  content: string;
+  value: Prisma.JsonValue;
+  source: AgentRuntimeSourceStamp;
+  snippet?: string;
+}
+
+export interface AgentRuntimeRecallResult {
+  query: string;
+  tokens: string[];
+  totalFound: number;
+  memories: AgentRuntimeMemoryItem[];
+}
+
+interface AgentRuntimeSessionRecallMessage {
+  id: string;
+  key: string;
+  category: string;
+  content: string;
+  snippet: string;
+  updatedAt: string;
+}
+
+export interface AgentRuntimeSessionRecallGroup {
+  sessionId: string;
+  source: 'thread' | 'session' | 'contact' | 'memory';
+  matchCount: number;
+  updatedAt: string;
+  summary: string;
+  transcriptWindow: string;
+  messages: AgentRuntimeSessionRecallMessage[];
+}
+
+export interface AgentRuntimeSessionRecallResult {
+  query: string;
+  tokens: string[];
+  totalFound: number;
+  sessions: AgentRuntimeSessionRecallGroup[];
+}
+
+export interface AgentRuntimeMemoryToolSchema {
+  name: string;
+  description: string;
+  parameters: Record<string, unknown>;
+}
+
+export interface AgentRuntimeMemoryProviderInit {
+  workspaceId: string;
+  sessionId: string;
+  channel: string;
+  agentContext: 'primary' | 'subagent' | 'scheduled' | 'flush';
+  parentSessionId?: string;
+  userId?: string;
+}
+
+export interface AgentRuntimeMemoryTurnStart {
+  workspaceId: string;
+  sessionId: string;
+  turnNumber: number;
+  message: string;
+  channel: string;
+  model?: string;
+  remainingTokens?: number;
+  toolCount?: number;
+}
+
+export interface AgentRuntimeMemoryWrite {
+  workspaceId: string;
+  sessionId: string;
+  action: string;
+  target: string;
+  content: string;
+  metadata?: Record<string, unknown>;
+}
+
+export interface AgentRuntimeDelegationObservation {
+  workspaceId: string;
+  sessionId: string;
+  task: string;
+  result: string;
+  childSessionId?: string;
+  metadata?: Record<string, unknown>;
+}
+
+export interface AgentRuntimeCompressionObservation {
+  workspaceId: string;
+  sessionId: string;
+  messages: Array<{ role: string; content: string }>;
+}
+
+export interface AgentRuntimeCompressionMessage {
+  role: 'system' | 'user' | 'assistant' | 'tool';
+  content: string;
+  toolName?: string;
+  createdAt?: string;
+}
+
+export interface AgentRuntimeCompressedContext {
+  key: string;
+  workspaceId: string;
+  sessionId: string;
+  summary: string;
+  messageCount: number;
+  source: AgentRuntimeSourceStamp;
+}
+
+export interface AgentSkillDefinition {
+  id: string;
+  title: string;
+  summary: string;
+  category: 'commercial' | 'operational' | 'pulse' | 'workspace';
+  riskLevel: AgentRuntimeRiskLevel;
+  allowedTools: string[];
+  requiredEvidence: string[];
+  validation: string[];
+  rollback: string[];
+  metrics: string[];
+  body: string;
+  version: number;
+  updatedAt: string;
+}
+
+export type AgentSkillProvenance = 'default' | 'workspace' | 'background_review' | 'imported';
+export type AgentSkillLifecycleState = 'active' | 'stale' | 'archived';
+export type AgentSkillUsageOutcome = 'selected' | 'succeeded' | 'failed' | 'patched' | 'viewed';
+
+export interface AgentSkillUsageStats {
+  skillId: string;
+  provenance: AgentSkillProvenance;
+  lifecycleState: AgentSkillLifecycleState;
+  pinned: boolean;
+  selectedCount: number;
+  successCount: number;
+  failureCount: number;
+  patchCount: number;
+  viewCount: number;
+  lastUsedAt: string;
+  lastOutcome: AgentSkillUsageOutcome;
+  lastReason?: string;
+}
+
+export interface AgentSkillSelection {
+  skill: AgentSkillDefinition;
+  score: number;
+  reasons: string[];
+}
+
+export interface AgentPulseSelfModel {
+  status: 'ready' | 'degraded' | 'empty';
+  authorityMode: string;
+  canWorkNow: boolean;
+  canDeclareComplete: boolean;
+  score: number | null;
+  blockingReasons: string[];
+  nextSafeUnits: string[];
+  generatedAt: string;
+}
+
+export interface AgentRuntimePolicyEnvelope {
+  id: string;
+  workspaceId: string;
+  toolName: string;
+  riskLevel: AgentRuntimeRiskLevel;
+  authorityMode: AgentRuntimeAuthorityMode;
+  allowed: boolean;
+  requiresHumanApproval: boolean;
+  reasons: string[];
+  createdAt: string;
+}
+
+export interface AgentRuntimeContextRequest {
+  workspaceId: string;
+  userId?: string;
+  channel: string;
+  message: string;
+  contactId?: string;
+  threadId?: string;
+  allowedTools?: string[];
+}
+
+export interface AgentRuntimeContext {
+  systemPromptBlock: string;
+  recall: AgentRuntimeRecallResult;
+  sessionRecall: AgentRuntimeSessionRecallResult;
+  selectedSkills: AgentSkillSelection[];
+  pulse: AgentPulseSelfModel;
+  authorityMode: AgentRuntimeAuthorityMode;
+}
+
+export interface AgentRuntimeTurnRecord {
+  workspaceId: string;
+  channel: string;
+  userMessage: string;
+  assistantMessage?: string;
+  contactId?: string;
+  threadId?: string;
+  userId?: string;
+  intent?: string;
+  confidence?: number;
+  actions?: Array<{ toolName: string; success: boolean; result?: unknown }>;
+}

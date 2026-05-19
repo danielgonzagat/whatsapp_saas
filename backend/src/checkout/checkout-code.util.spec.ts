@@ -1,5 +1,4 @@
 import {
-  DEFAULT_PUBLIC_CHECKOUT_CODE_LENGTH,
   generateCheckoutOrderNumber,
   generatePublicCheckoutCode,
   generateSecureBase36Suffix,
@@ -14,7 +13,7 @@ describe('checkout-code.util', () => {
   it('generates public checkout codes with the default secure length', () => {
     const code = generatePublicCheckoutCode();
 
-    expect(code).toMatch(new RegExp(`^[A-Z0-9]{${DEFAULT_PUBLIC_CHECKOUT_CODE_LENGTH}}$`));
+    expect(code).toMatch(/^[A-Z0-9]{8}$/);
   });
 
   it('generates secure base36 suffixes without Math.random', () => {

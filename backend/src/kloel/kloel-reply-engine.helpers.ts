@@ -7,10 +7,10 @@ import { KloelWorkspaceContextService } from './kloel-workspace-context.service'
 import { KloelThreadService } from './kloel-thread.service';
 import { KloelToolRouter } from './kloel-tool-router';
 import { createKloelStatusEvent, type KloelStreamEvent } from './kloel-stream-events';
-import { buildKloelDashboardPrompt } from './__companions__/kloel-reply-engine.helpers.companion';
 import { KLOEL_ONBOARDING_PROMPT, KLOEL_SALES_PROMPT } from './kloel.prompts';
 import { chatCompletionWithFallback } from './openai-wrapper';
-import type { ExpertiseLevel, LocalToolExecutor, ReplyMessage } from './kloel-reply-engine.service';
+import { KLOEL_CHAT_TOOLS } from './kloel-chat-tools.definition';
+import type { ExpertiseLevel, LocalToolExecutor, ReplyMessage } from './kloel-reply-engine.types';
 
 export const KLOEL_STREAM_ABORT_REASON_TIMEOUT = 'request_timeout';
 export const KLOEL_STREAM_ABORT_REASON_CLIENT_DISCONNECTED = 'client_disconnected';
@@ -209,6 +209,7 @@ export async function buildAssistantReplyImpl(
     userName?: string;
     mode?: 'chat' | 'onboarding' | 'sales';
     companyContext?: string;
+    allowedTools?: string[];
     conversationState?: { summary?: string; recentMessages: ReplyMessage[]; totalMessages: number };
     onTraceEvent?: (event: KloelStreamEvent) => void;
     executeLocalTool?: LocalToolExecutor;
@@ -222,13 +223,16 @@ export async function buildAssistantReplyImpl(
     userName: reqUserName,
     mode = 'chat',
     companyContext,
+    allowedTools,
     conversationState,
     onTraceEvent,
     executeLocalTool,
   } = params;
   const { openai, prisma, planLimits, threadService, wsContextService, toolRouter } = deps;
 
-  if (!deps.hasOpenAiKey() && !process.env.ANTHROPIC_API_KEY) return deps.unavailableMessage;
+  if (!deps.hasOpenAiKey() && !process.env.ANTHROPIC_API_KEY) {
+    return deps.unavailableMessage;
+  }
 
   const companyName = 'sua empresa';
   let userName = 'Usuário';
@@ -250,11 +254,11 @@ export async function buildAssistantReplyImpl(
   const historyState = conversationState || { recentMessages: [], totalMessages: 0 };
   const expertiseLevel = deps.detectExpertiseLevel(message, historyState.recentMessages);
   const dynamicContext = await deps.buildDynamicRuntimeContext({
-    workspaceId,
-    userId,
+    ...(workspaceId !== undefined ? { workspaceId } : {}),
+    ...(userId !== undefined ? { userId } : {}),
     userName,
     expertiseLevel,
-    companyContext,
+    ...(companyContext !== undefined ? { companyContext } : {}),
   });
   const summaryMessage = threadService.buildThreadSummarySystemMessage(historyState.summary);
   const marketingPromptAddendum = await deps.buildMarketingPromptAddendum(
@@ -293,15 +297,21 @@ export async function buildAssistantReplyImpl(
     userMessage: message,
   });
   onTraceEvent?.(createKloelStatusEvent('thinking'));
-  if (workspaceId) await planLimits.ensureTokenBudget(workspaceId);
+  if (workspaceId) {
+    await planLimits.ensureTokenBudget(workspaceId);
+  }
 
   const isChatMode = mode === 'chat';
+  const chatTools = filterChatToolsByAllowedTools(allowedTools);
   const response = await chatCompletionWithFallback(
     openai,
     {
       model: resolveBackendOpenAIModel(isChatMode ? 'brain' : 'writer'),
       messages,
-      tool_choice: 'none',
+      ...(isChatMode ? { tools: chatTools } : {}),
+      ...(isChatMode
+        ? { tool_choice: chatTools.length > 0 ? ('auto' as const) : ('none' as const) }
+        : {}),
       temperature: responseTemperature,
       top_p: 0.95,
       frequency_penalty: 0.3,
@@ -310,10 +320,11 @@ export async function buildAssistantReplyImpl(
     },
     resolveBackendOpenAIModel(isChatMode ? 'brain_fallback' : 'writer_fallback'),
   );
-  if (workspaceId)
+  if (workspaceId) {
     await planLimits
       .trackAiUsage(workspaceId, response?.usage?.total_tokens ?? 500)
       .catch(() => {});
+  }
 
   const initialMsg = response.choices[0]?.message;
   let assistantMessage = initialMsg?.content || deps.unavailableMessage;
@@ -323,8 +334,9 @@ export async function buildAssistantReplyImpl(
     const { toolMessages, usedSearchWeb } = await toolRouter.executeAssistantToolCalls({
       assistantMessage: initialMsg,
       workspaceId,
-      userId,
-      safeWrite: onTraceEvent,
+      ...(userId !== undefined ? { userId } : {}),
+      ...(allowedTools !== undefined ? { allowedTools } : {}),
+      ...(onTraceEvent !== undefined ? { safeWrite: onTraceEvent } : {}),
       executeLocalTool,
     });
     onTraceEvent?.(createKloelStatusEvent('tool_result'));
@@ -361,4 +373,13 @@ export async function buildAssistantReplyImpl(
   return assistantMessage;
 }
 
-export { buildKloelDashboardPrompt };
+function filterChatToolsByAllowedTools(allowedTools?: string[]): typeof KLOEL_CHAT_TOOLS {
+  if (allowedTools === undefined) {
+    return KLOEL_CHAT_TOOLS;
+  }
+  const allowed = new Set(allowedTools);
+  return KLOEL_CHAT_TOOLS.filter((tool) => {
+    const name = 'function' in tool ? tool.function?.name : undefined;
+    return typeof name === 'string' && allowed.has(name);
+  });
+}

@@ -156,12 +156,13 @@ function sanitizeVariables(vars: Record<string, unknown>): Record<string, unknow
 
     // Para objetos, faz sanitizacao recursiva (apenas 1 nivel para performance)
     if (value && typeof value === 'object' && !Array.isArray(value)) {
-      safe[key] = {};
+      const nested: Record<string, unknown> = {};
       for (const [k, v] of Object.entries(value)) {
         if (typeof v !== 'function' && !['__proto__', 'prototype', 'constructor'].includes(k)) {
-          safe[key][k] = v;
+          nested[k] = v;
         }
       }
+      safe[key] = nested;
     } else {
       safe[key] = value;
     }

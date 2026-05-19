@@ -1,6 +1,4 @@
-export {
-  CheckoutMobileSummary,
-  CheckoutDesktopSidebar,
-  CheckoutFooter,
-} from './__parts__/CheckoutSummarySections/main';
-export type { SummaryProps, FooterProps } from './__parts__/CheckoutSummarySections/types';
+export { CheckoutMobileSummary } from './CheckoutMobileSummary';
+export { CheckoutDesktopSidebar } from './CheckoutDesktopSidebar';
+export { CheckoutFooter } from './CheckoutFooter';
+export type { SummaryProps, FooterProps } from './checkout-summary-types';

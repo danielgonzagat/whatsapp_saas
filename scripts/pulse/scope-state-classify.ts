@@ -5,7 +5,7 @@ import { pathExists, readTextFile } from './safe-fs';
 import { safeJoin } from './lib/safe-path';
 import type { PulseConvergenceOwnerLane } from './types.gate-failure';
 import type { PulseScopeFileKind, PulseScopeSurface } from './types.truth.scope';
-import { deriveStringUnionMembersFromTypeContract } from './dynamic-reality-kernel/__parts__/type-contract-labels';
+import { deriveStringUnionMembersFromTypeContract } from './dynamic-reality-kernel/type-contract-labels';
 import {
   classifyKind as classifyKindDynamic,
   classifySurface as classifySurfaceDynamic,

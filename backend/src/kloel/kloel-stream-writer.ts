@@ -1,4 +1,3 @@
-// PULSE:OK — stream helper only. KloelService performs PlanLimitsService.ensureTokenBudget()
 // before opening any writer stream through this module.
 import { Response } from 'express';
 import OpenAI from 'openai';
@@ -10,7 +9,7 @@ import {
   createKloelStatusEvent,
 } from './kloel-stream-events';
 import { chatCompletionStreamWithRetry } from './openai-wrapper';
-import { buildKloelLlmTestStubStream, isKloelLlmTestStubEnabled } from './kloel-llm-test-stub';
+import { KloelLLME2EGuard } from './kloel-llm-e2e-guard';
 
 const U2028_U2029_RE = /[<>&\u2028\u2029]/g;
 type ChatCompletionStream = AsyncIterable<OpenAI.ChatCompletionChunk>;
@@ -20,6 +19,7 @@ interface KloelStreamWriterOptions {
   logger: {
     warn(message: string): void;
   };
+  llmE2EGuard?: KloelLLME2EGuard;
 }
 
 interface StreamWriterModelResponseInput {
@@ -181,7 +181,6 @@ export class KloelStreamWriter {
   ): Promise<StreamWriterModelResponseResult | null> {
     this.write(createKloelStatusEvent('thinking', input.thinkingLabel));
 
-    // PULSE:OK — caller (KloelService.think) runs PlanLimitsService.ensureTokenBudget()
     // before delegating to the stream writer; this helper only opens the already-approved stream.
     const openWriterStream = async (model: string) =>
       chatCompletionStreamWithRetry(
@@ -200,14 +199,11 @@ export class KloelStreamWriter {
         this.options.signal ? { signal: this.options.signal } : undefined,
       );
 
-    // PULSE:OK — stream object itself is not a new LLM call; it is the handle returned by the
     // already-budgeted chatCompletionStreamWithRetry() invocation above.
     let stream: ChatCompletionStream;
 
-    if (isKloelLlmTestStubEnabled()) {
-      // Deterministic e2e/test stub. Production never reaches this branch
-      // (gated by NODE_ENV !== 'production' inside isKloelLlmTestStubEnabled).
-      stream = buildKloelLlmTestStubStream(input.writerMessages);
+    if (this.options.llmE2EGuard?.isEnabled()) {
+      stream = this.options.llmE2EGuard.buildStream(input.writerMessages);
     } else {
       try {
         stream = await openWriterStream(resolveBackendOpenAIModel('writer'));

@@ -1,7 +1,8 @@
+import { colors, typography } from '@/lib/design-tokens';
+import { kloelT } from '@/lib/i18n/t';
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import { colors, typography } from '@/lib/design-tokens';
 
 export const metadata: Metadata = {
   title: 'Pagamento | Kloel',
@@ -69,7 +70,7 @@ export default async function PayPage({ searchParams }: PayPageProps) {
             letterSpacing: '-0.01em',
           }}
         >
-          Link de pagamento invalido ou expirado
+          {kloelT('Link de pagamento invalido ou expirado')}
         </h1>
 
         <p
@@ -81,8 +82,7 @@ export default async function PayPage({ searchParams }: PayPageProps) {
             margin: '0 0 32px',
           }}
         >
-          Este link de pagamento nao e valido. Solicite um novo link ao vendedor ou entre em contato
-          com o suporte.
+          {kloelT('Este link de pagamento nao e valido. Solicite um novo link ao vendedor ou entre em contato com o suporte.')}
         </p>
 
         <Link
@@ -90,7 +90,7 @@ export default async function PayPage({ searchParams }: PayPageProps) {
           style={{
             display: 'inline-block',
             background: colors.ember.primary,
-            color: '#FFFFFF',
+            color: colors.text.silver,
             fontFamily: typography.fontFamily.display,
             fontSize: 14,
             fontWeight: 600,
@@ -100,7 +100,7 @@ export default async function PayPage({ searchParams }: PayPageProps) {
             letterSpacing: '0.01em',
           }}
         >
-          Voltar para o inicio
+          {kloelT('Voltar para o inicio')}
         </Link>
 
         <p
@@ -111,7 +111,7 @@ export default async function PayPage({ searchParams }: PayPageProps) {
             marginTop: 24,
           }}
         >
-          Kloel Tecnologia LTDA
+          {kloelT('Kloel Tecnologia LTDA')}
         </p>
       </div>
     </main>

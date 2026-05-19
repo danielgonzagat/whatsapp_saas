@@ -1,23 +1,17 @@
 import { InjectRedis } from '@nestjs-modules/ioredis';
-import { Injectable, Optional } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Redis from 'ioredis';
 import { StripeService } from '../billing/stripe.service';
 import { StorageService } from '../common/storage/storage.service';
-import { getTraceHeaders } from '../common/trace-headers';
 import { QueueHealthService } from '../metrics/queue-health.service';
 import { ObservabilityQueriesService } from '../metrics/observability-queries.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { WhatsAppApiProvider } from '../whatsapp/providers/whatsapp-api.provider';
+import * as DbProbe from './system-health-db-probe';
+import * as ExternalProbe from './system-health-external-probes';
+import * as InfraChecks from './system-health-infra-checks';
 
-const HEALTH_RE = /\/health$/i;
-const S____S____S_RE = /^\s*\{\s*\}\s*/;
-const PATTERN_RE = /\/+$/;
-const HTTPS_RE = /^https?:\/\//i;
-const LOCALHOST_127__0__0__1_RE = /^(localhost|127\.0\.0\.1)(:\d+)?$/i;
-const RAILWAY__INTERNAL_RE = /\.railway\.internal(?::\d+)?$/i;
-
-/** System health service. */
 @Injectable()
 export class SystemHealthService {
   constructor(
@@ -32,30 +26,19 @@ export class SystemHealthService {
     private readonly stripeService: StripeService,
   ) {}
 
-  /**
-   * Liveness probe: "is the process alive and responding?"
-   *
-   * No external dependencies. No database, no Redis, no worker. A liveness
-   * failure is the only acceptable signal for the orchestrator to kill and
-   * restart the container. Returning DOWN from liveness because Redis is
-   * temporarily unreachable creates restart storms that cannot fix the
-   * underlying problem.
-   */
   liveness() {
-    return { status: 'UP', timestamp: new Date().toISOString() };
+    return {
+      status: 'UP',
+      uptime: process.uptime(),
+      timestamp: new Date().toISOString(),
+    };
   }
 
-  /**
-   * Readiness probe: "should this instance receive traffic?"
-   *
-   * Checks only the dependencies that must be up to serve any request
-   * meaningfully (database + Redis). Other integrations (WhatsApp, Worker,
-   * Storage, Stripe, OpenAI) have their own degraded modes and should not
-   * gate readiness — losing them means partial functionality, not no
-   * functionality.
-   */
   async readiness() {
-    const [database, redis] = await Promise.all([this.checkDatabase(), this.checkRedis()]);
+    const [database, redis] = await Promise.all([
+      DbProbe.checkDatabase(this.prisma),
+      DbProbe.checkRedis(this.redis),
+    ]);
     const isReady = database.status === 'UP' && redis.status === 'UP';
     return {
       status: isReady ? 'UP' : 'DOWN',
@@ -64,19 +47,21 @@ export class SystemHealthService {
     };
   }
 
-  /** Check. */
   async check() {
-    const whatsapp = await this.checkWhatsAppTransport();
+    const whatsapp = await InfraChecks.checkWhatsAppTransport(
+      this.whatsappApi,
+      this.observabilityQueries,
+    );
     const [database, redis, worker, storage, queues] = await Promise.all([
-      this.checkDatabase(),
-      this.checkRedis(),
-      this.checkWorker(),
-      this.checkStorage(),
-      this.checkQueues(),
+      DbProbe.checkDatabase(this.prisma),
+      DbProbe.checkRedis(this.redis),
+      InfraChecks.checkWorker(this.config),
+      InfraChecks.checkStorage(this.storageService),
+      InfraChecks.checkQueues(this.queueHealth),
     ]);
-    const backup = this.checkBackup();
-    const email = this.checkEmail();
-    const stripe = this.checkStripe();
+    const backup = ExternalProbe.checkBackup();
+    const email = ExternalProbe.checkEmail();
+    const stripe = ExternalProbe.checkStripe(this.config);
     const status = {
       database,
       redis,
@@ -86,11 +71,11 @@ export class SystemHealthService {
       queues,
       backup,
       email,
-      config: this.checkCriticalConfig(),
-      openai: this.checkOpenAI(),
-      anthropic: this.checkAnthropic(),
+      config: InfraChecks.checkCriticalConfig(this.config),
+      openai: ExternalProbe.checkOpenAI(this.config),
+      anthropic: ExternalProbe.checkAnthropic(this.config),
       stripe,
-      googleAuth: this.checkGoogleAuth(),
+      googleAuth: ExternalProbe.checkGoogleAuth(this.config),
       version: '0.0.365',
       timestamp: new Date().toISOString(),
     };
@@ -109,311 +94,149 @@ export class SystemHealthService {
       !hasDownDependency &&
       Object.values(status)
         .filter((s: unknown) => typeof s === 'object' && s && 'status' in s)
-        .every((s: unknown) =>
-          ['UP', 'CONFIGURED', 'NOT_CONFIGURED'].includes((s as Record<string, string>).status),
-        );
+        .every((s: unknown) => {
+          if (typeof s !== 'object' || !s || !('status' in s)) {
+            return true;
+          }
+          const status = String((s as Record<string, unknown>).status ?? '');
+          return ['UP', 'CONFIGURED', 'NOT_CONFIGURED'].includes(status);
+        });
     return {
       status: hasDownDependency ? 'DOWN' : isHealthy ? 'UP' : 'DEGRADED',
       details: status,
     };
   }
 
-  private async checkDatabase() {
-    try {
-      await this.prisma.$queryRaw`SELECT 1`;
-      return { status: 'UP', latency: 'OK' };
-    } catch (e: unknown) {
-      return { status: 'DOWN', error: e instanceof Error ? e.message : String(e) };
-    }
-  }
+  async deepReadiness(): Promise<{
+    status: 'UP' | 'DOWN';
+    timestamp: string;
+    failures: string[];
+    message: string;
+    details: Record<string, { status: string; error?: string; latencyMs?: number }>;
+  }> {
+    const logger = new Logger('ReadinessProbe');
+    const startedAt = Date.now();
 
-  private async checkRedis() {
-    try {
-      await this.redis.ping();
-      return { status: 'UP' };
-    } catch (e: unknown) {
-      return {
-        status: 'DOWN',
-        error: e instanceof Error ? (e instanceof Error ? e.message : String(e)) : 'unknown_error',
-      };
-    }
-  }
-
-  private async checkStorage() {
-    try {
-      return await this.storageService.healthCheck();
-    } catch (e: unknown) {
-      return {
-        status: 'DOWN',
-        driver: 'unknown',
-        error: e instanceof Error ? (e instanceof Error ? e.message : String(e)) : 'unknown_error',
-      };
-    }
-  }
-
-  private resolveConfiguredWhatsAppProvider(): 'meta-cloud' {
-    return 'meta-cloud';
-  }
-
-  private async checkWhatsAppTransport() {
-    const provider = this.resolveConfiguredWhatsAppProvider();
-    const runtime = this.whatsappApi.getRuntimeConfigDiagnostics();
-    const connectedWorkspaces = await this.getConnectedMetaWorkspaceCount();
-    const transportReady =
-      runtime.appIdConfigured &&
-      runtime.appSecretConfigured &&
-      runtime.webhookConfigured &&
-      runtime.inboundEventsConfigured;
-
-    return {
-      status: transportReady ? 'UP' : 'DOWN',
-      provider,
-      auth: runtime.accessTokenConfigured
-        ? 'GLOBAL_TOKEN'
-        : connectedWorkspaces > 0
-          ? 'WORKSPACE_OAUTH_CONNECTED'
-          : 'WORKSPACE_OAUTH_PENDING',
-      appId: runtime.appIdConfigured ? 'CONFIGURED' : 'MISSING',
-      appSecret: runtime.appSecretConfigured ? 'CONFIGURED' : 'MISSING',
-      phoneNumberId: runtime.phoneNumberIdConfigured
-        ? 'CONFIGURED'
-        : connectedWorkspaces > 0
-          ? 'WORKSPACE_SCOPED'
-          : 'PENDING_FIRST_CONNECTION',
-      webhook:
-        runtime.webhookConfigured && runtime.inboundEventsConfigured ? 'CONFIGURED' : 'MISSING',
-      webhookEvents: runtime.events,
-      store: runtime.storeEnabled ? 'ENABLED' : 'DISABLED',
-      connectedWorkspaces,
-      connectionMode: 'workspace-oauth',
-    };
-  }
-
-  private async checkWorker() {
-    const workerHealthUrl = this.resolveWorkerHealthUrl();
-    const workerMetricsToken = this.config.get<string>('WORKER_METRICS_TOKEN');
-
-    if (!workerHealthUrl) {
-      return { status: 'NOT_CONFIGURED' };
-    }
-
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 3000);
-
-    try {
-      // Not SSRF: workerHealthUrl is derived from server-owned env vars
-      // (WORKER_HEALTH_URL, WORKER_METRICS_URL, etc.) — intentional backend-to-worker
-      // internal communication on Railway's private network.
-      const response = await fetch(workerHealthUrl, {
-        method: 'GET',
-        headers: workerMetricsToken
-          ? {
-              ...getTraceHeaders(),
-              Authorization: `Bearer ${workerMetricsToken}`,
-            }
-          : getTraceHeaders(),
-        signal: controller.signal,
-      });
-      clearTimeout(timeout);
-
-      if (!response.ok) {
-        return {
-          status: 'DOWN',
-          url: this.maskUrl(workerHealthUrl),
-          error: `HTTP ${response.status}`,
-        };
-      }
-
-      const payload = await response.json().catch(() => ({}));
-      return {
-        status: payload?.status === 'ok' ? 'UP' : 'DEGRADED',
-        url: this.maskUrl(workerHealthUrl),
-        details: payload,
-      };
-    } catch (e: unknown) {
-      clearTimeout(timeout);
-      return {
-        status: 'DOWN',
-        url: this.maskUrl(workerHealthUrl),
-        error: e instanceof Error ? (e instanceof Error ? e.message : String(e)) : 'unknown_error',
-      };
-    }
-  }
-
-  private async checkQueues() {
-    try {
-      const statuses = await this.queueHealth.getQueuesStatus();
-      const totalWaiting = statuses.reduce((sum, q) => sum + (q.main.waiting || 0), 0);
-      const totalFailed = statuses.reduce((sum, q) => sum + (q.main.failed || 0), 0);
-      const totalDlqWaiting = statuses.reduce((sum, q) => sum + (q.dlq.waiting || 0), 0);
-      const totalDlqFailed = statuses.reduce((sum, q) => sum + (q.dlq.failed || 0), 0);
-      const threshold = statuses[0]?.threshold ?? 200;
-      const alert = totalWaiting > threshold || totalFailed > 0 || totalDlqFailed > 0;
-      return {
-        status: alert ? 'DEGRADED' : 'UP',
-        waiting: totalWaiting,
-        failed: totalFailed,
-        dlqWaiting: totalDlqWaiting,
-        dlqFailed: totalDlqFailed,
-        threshold,
-      };
-    } catch (e: unknown) {
-      return {
-        status: 'DOWN',
-        error: e instanceof Error ? e.message : String(e),
-      };
-    }
-  }
-
-  private checkCriticalConfig() {
-    const jwtSecret = this.config.get<string>('JWT_SECRET');
-    const redisUrl = this.config.get<string>('REDIS_URL');
-    const metaAppId = this.config.get<string>('META_APP_ID');
-    const metaAppSecret = this.config.get<string>('META_APP_SECRET');
-    const metaVerifyToken =
-      this.config.get<string>('META_VERIFY_TOKEN') ||
-      this.config.get<string>('META_WEBHOOK_VERIFY_TOKEN');
-
-    const missing: string[] = [];
-    if (!jwtSecret) {
-      missing.push('JWT_SECRET');
-    }
-    if (!redisUrl) {
-      missing.push('REDIS_URL');
-    }
-    if (!metaAppId) {
-      missing.push('META_APP_ID');
-    }
-    if (!metaAppSecret) {
-      missing.push('META_APP_SECRET');
-    }
-    if (!metaVerifyToken) {
-      missing.push('META_VERIFY_TOKEN');
-    }
-
-    return {
-      status: missing.length ? 'DOWN' : 'CONFIGURED',
-      missing,
-    };
-  }
-
-  private checkOpenAI() {
-    const key = this.config.get('OPENAI_API_KEY');
-    return { status: key ? 'CONFIGURED' : 'MISSING' };
-  }
-
-  private checkAnthropic() {
-    const key = this.config.get('ANTHROPIC_API_KEY');
-    return { status: key ? 'CONFIGURED' : 'MISSING' };
-  }
-
-  private checkStripe() {
-    const key = this.config.get('STRIPE_SECRET_KEY');
-    return { status: key ? 'CONFIGURED' : 'MISSING' };
-  }
-
-  private checkBackup() {
-    return { status: 'CONFIGURED' };
-  }
-
-  private checkEmail() {
-    return { status: 'CONFIGURED' };
-  }
-
-  private checkGoogleAuth() {
-    const clientIds = this.getConfiguredGoogleClientIds();
-    const clientSecret = this.config.get('GOOGLE_CLIENT_SECRET');
-
-    if (clientIds.length) {
-      return {
-        status: 'CONFIGURED',
-        mode: 'google_identity_services',
-        clientIdsConfigured: clientIds.length,
-        clientSecret: clientSecret ? 'CONFIGURED' : 'OPTIONAL_MISSING',
-      };
-    }
-
-    return {
-      status: 'MISSING',
-      missing: ['GOOGLE_CLIENT_ID or NEXT_PUBLIC_GOOGLE_CLIENT_ID or GOOGLE_ALLOWED_CLIENT_IDS'],
-    };
-  }
-
-  private getConfiguredGoogleClientIds() {
-    const raw = [
-      this.config.get<string>('GOOGLE_CLIENT_ID'),
-      this.config.get<string>('NEXT_PUBLIC_GOOGLE_CLIENT_ID'),
-      this.config.get<string>('GOOGLE_ALLOWED_CLIENT_IDS'),
-    ]
-      .filter((value): value is string => typeof value === 'string')
-      .flatMap((value) => value.split(','))
-      .map((value) => value.trim())
-      .filter(Boolean);
-
-    return [...new Set(raw)];
-  }
-
-  private maskUrl(input: string): string {
-    try {
-      const url = new URL(input);
-      url.username = '';
-      url.password = '';
-      return url.toString();
-    } catch {
-      return input;
-    }
-  }
-
-  private async getConnectedMetaWorkspaceCount(): Promise<number> {
-    try {
-      return await this.observabilityQueries.countConnectedMetaWorkspaces();
-    } catch {
-      return 0;
-    }
-  }
-
-  private resolveWorkerHealthUrl(): string | null {
-    const candidates = [
-      this.config.get<string>('WORKER_HEALTH_URL'),
-      this.config.get<string>('WORKER_METRICS_URL'),
-      this.config.get<string>('WORKER_INTERNAL_URL'),
-      this.config.get<string>('WORKER_BROWSER_RUNTIME_URL'),
-      this.config.get<string>('RAILWAY_SERVICE_WORKER_URL'),
+    const probes: Array<
+      Promise<{
+        dependency: string;
+        status: 'UP' | 'DOWN';
+        error?: string;
+        latencyMs: number;
+      }>
+    > = [
+      DbProbe.probePostgres(this.prisma),
+      DbProbe.probeBullMQRedis(),
+      ExternalProbe.probeStripe(this.stripeService),
+      ExternalProbe.probeMetaCloud(this.config),
+      ExternalProbe.probeOpenAI(this.config),
+      ExternalProbe.probeAnthropic(this.config),
+      ExternalProbe.probeEmail(),
     ];
 
-    for (const candidate of candidates) {
-      const normalized = this.normalizeServiceUrl(candidate);
-      if (!normalized) {
+    const settled = await Promise.allSettled(probes);
+    const failures: string[] = [];
+    const details: Record<string, { status: string; error?: string; latencyMs?: number }> = {};
+
+    for (const result of settled) {
+      if (result.status === 'rejected') {
+        logger.error(`Readiness probe crashed unexpectedly`, String(result.reason));
         continue;
       }
-      return HEALTH_RE.test(normalized) ? normalized : `${normalized}/health`;
+
+      const probe = result.value;
+      details[probe.dependency] = {
+        status: probe.status,
+        latencyMs: probe.latencyMs,
+      };
+
+      if (probe.status === 'DOWN') {
+        failures.push(probe.dependency);
+        const entry = details[probe.dependency];
+        if (entry) {
+          entry.error = probe.error ?? 'unknown';
+        }
+      }
     }
 
-    return null;
+    const status = failures.length === 0 ? 'UP' : 'DOWN';
+
+    logger.log(
+      JSON.stringify({
+        event: 'readiness_probe.completed',
+        status,
+        failures,
+        totalDurationMs: Date.now() - startedAt,
+      }),
+    );
+
+    return {
+      status,
+      timestamp: new Date().toISOString(),
+      failures,
+      message:
+        status === 'UP'
+          ? 'All readiness probes are healthy.'
+          : `Readiness probes failed: ${failures.join(', ')}`,
+      details,
+    };
   }
 
-  private normalizeServiceUrl(candidate: string | undefined): string {
-    const raw = String(candidate || '')
-      .replace(S____S____S_RE, '')
-      .trim()
-      .replace(PATTERN_RE, '');
+  async deepDiagnostic() {
+    const logger = new Logger('DeepDiagnostic');
+    const startedAt = Date.now();
 
-    if (!raw) {
-      return '';
+    const readiness = await this.deepReadiness();
+
+    let queueDetails: Record<string, unknown>[] = [];
+    try {
+      const queueStatuses = await this.queueHealth.getQueuesStatus();
+      queueDetails = queueStatuses.map((q) => ({
+        name: q.name,
+        waiting: q.main.waiting ?? 0,
+        active: q.main.active ?? 0,
+        delayed: q.main.delayed ?? 0,
+        failed: q.main.failed ?? 0,
+        dlqWaiting: q.dlq.waiting ?? 0,
+        dlqFailed: q.dlq.failed ?? 0,
+      }));
+    } catch (err) {
+      logger.warn('Queue status collection failed', String(err));
     }
 
-    if (HTTPS_RE.test(raw)) {
-      return raw;
-    }
+    const memoryUsage = process.memoryUsage();
 
-    if (LOCALHOST_127__0__0__1_RE.test(raw)) {
-      return `http://${raw}`;
-    }
+    logger.log(
+      JSON.stringify({
+        event: 'deep_diagnostic.completed',
+        status: readiness.status,
+        failures: readiness.failures,
+        totalDurationMs: Date.now() - startedAt,
+      }),
+    );
 
-    if (RAILWAY__INTERNAL_RE.test(raw)) {
-      return `http://${raw}`;
-    }
-
-    return `https://${raw}`;
+    return {
+      status: readiness.status,
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime(),
+      failures: readiness.failures,
+      indicators: readiness.details,
+      queues: {
+        count: queueDetails.length,
+        details: queueDetails,
+        totalWaiting: queueDetails.reduce((sum, q) => sum + ((q.waiting as number) ?? 0), 0),
+        totalFailed: queueDetails.reduce((sum, q) => sum + ((q.failed as number) ?? 0), 0),
+        totalDlqWaiting: queueDetails.reduce((sum, q) => sum + ((q.dlqWaiting as number) ?? 0), 0),
+        totalDlqFailed: queueDetails.reduce((sum, q) => sum + ((q.dlqFailed as number) ?? 0), 0),
+      },
+      performance: {
+        memory: {
+          heapUsedMb: Math.round(memoryUsage.heapUsed / 1024 / 1024),
+          heapTotalMb: Math.round(memoryUsage.heapTotal / 1024 / 1024),
+          rssMb: Math.round(memoryUsage.rss / 1024 / 1024),
+        },
+        diagnosticDurationMs: Date.now() - startedAt,
+      },
+    };
   }
 }

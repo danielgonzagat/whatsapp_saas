@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { StructuredLogger } from '../../logging/structured-logger';
 import { MARKETING_SKILL_CATALOG } from './marketing-skill.catalog';
 import { MarketingSkillContextBuilder } from './marketing-skill.context';
 import { MarketingSkillLoader } from './marketing-skill.loader';
@@ -12,11 +13,15 @@ import type {
 /** Marketing skill service. */
 @Injectable()
 export class MarketingSkillService {
+  private readonly logger = StructuredLogger.from(MarketingSkillService.name);
+
   constructor(
     private readonly loader: MarketingSkillLoader,
     private readonly router: MarketingSkillRouter,
     private readonly contextBuilder: MarketingSkillContextBuilder,
-  ) {}
+  ) {
+    this.logger.log('MarketingSkillService initialized');
+  }
 
   /** List installed skill ids. */
   listInstalledSkillIds(): string[] {

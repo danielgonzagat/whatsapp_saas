@@ -185,7 +185,7 @@ export class CiaRuntimeStateService {
     await this.agentEvents.publish({
       type: 'status',
       workspaceId,
-      runId,
+      ...(runId !== undefined ? { runId } : {}),
       phase: 'live_ready',
       persistent: true,
       message: catalog.scheduled
@@ -272,9 +272,7 @@ export class CiaRuntimeStateService {
           meta: meta as import('@prisma/client').Prisma.InputJsonValue,
         },
       });
-    } catch {
-      // PULSE:OK — AutonomyRun record creation is best-effort; autonomy still executes
-    }
+    } catch {}
   }
 
   async updateAutonomyRunStatus(workspaceId: string, runId: string | undefined, status: string) {
@@ -287,15 +285,12 @@ export class CiaRuntimeStateService {
         where: { id: runId, workspaceId },
         data: {
           status,
-          endedAt:
-            status === 'COMPLETED' || status === 'FAILED' || status === 'PAUSED'
-              ? new Date()
-              : undefined,
+          ...(status === 'COMPLETED' || status === 'FAILED' || status === 'PAUSED'
+            ? { endedAt: new Date() }
+            : {}),
         },
       });
-    } catch {
-      // PULSE:OK — AutonomyRun status update is best-effort; status tracked in-memory
-    }
+    } catch {}
   }
 
   async createExecution(workspaceId: string, runId: string, action: string) {

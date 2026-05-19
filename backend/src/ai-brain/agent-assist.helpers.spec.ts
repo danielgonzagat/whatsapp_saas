@@ -19,7 +19,6 @@ jest.mock('../wallet/provider-llm-billing', () => ({
 }));
 jest.mock('../wallet/provider-pricing');
 
-// PULSE_OK: assertions exist below
 describe('agent-assist.helpers', () => {
   describe('AgentAssistWalletAccessError', () => {
     it('should extend Error', () => {

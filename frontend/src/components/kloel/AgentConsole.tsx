@@ -1,331 +1,38 @@
 'use client';
 
-import { kloelT } from '@/lib/i18n/t';
 /**
- * ============================================
  * AGENT CONSOLE
- * ============================================
  * Painel lateral que mostra a atividade do agente em tempo real.
- * "O usuário vê o que o cérebro está fazendo."
- *
- * Features:
- * - Live feed de atividades do agente
- * - Status de conexão com WhatsApp
- * - Métricas em tempo real
- * - Actions logs (envios, respostas, decisões)
- * - "Thinking" indicator quando agente está processando
- * ============================================
  */
-
+import { kloelT } from '@/lib/i18n/t';
 import { colors } from '@/lib/design-tokens';
 import { cn } from '@/lib/utils';
 import {
   Activity,
-  AlertCircle,
   Bot,
   Brain,
-  CheckCircle,
   ChevronLeft,
   Clock,
-  Loader2,
   MessageSquare,
   Send,
-  TrendingUp,
   Users,
-  Wifi,
   WifiOff,
   X,
   Zap,
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import { ActivityItem, StatCard } from './AgentConsole.items';
+import { AgentFilterTabs } from './AgentConsole.filters';
 
-// ============================================
-// TYPES
-// ============================================
-
-export type ActivityType =
-  | 'message_received'
-  | 'message_sent'
-  | 'action_executed'
-  | 'lead_qualified'
-  | 'follow_up_scheduled'
-  | 'agent_thinking'
-  | 'error'
-  | 'connection_status';
-
-/** Activity status type. */
-export type ActivityStatus = 'pending' | 'success' | 'error';
-
-/** Agent activity shape. */
-export interface AgentActivity {
-  /** Id property. */
-  id: string;
-  /** Type property. */
-  type: ActivityType;
-  /** Title property. */
-  title: string;
-  /** Description property. */
-  description?: string;
-  /** Timestamp property. */
-  timestamp: Date;
-  /** Status property. */
-  status: ActivityStatus;
-  /** Metadata property. */
-  metadata?: {
-    contactName?: string;
-    contactPhone?: string;
-    messagePreview?: string;
-    actionType?: string;
-    capabilityCode?: string;
-    tacticCode?: string;
-    conversationId?: string;
-    workItemId?: string;
-    conversationProofId?: string;
-    accountProofId?: string;
-    cycleProofId?: string;
-    selectedActionUtility?: number;
-    selectedActionRank?: number;
-    betterActionCount?: number;
-    betterExecutableActionCount?: number;
-    nextBestActionType?: string;
-    nextBestActionUtility?: number;
-    selectedTactic?: string;
-    selectedTacticUtility?: number;
-    selectedTacticRank?: number;
-    betterTacticCount?: number;
-    nextBestTactic?: string;
-    nextBestTacticUtility?: number;
-    utility?: number;
-    state?: string;
-    leadScore?: number;
-    scheduledFor?: Date;
-    errorMessage?: string;
-  };
-}
-
-/** Agent stats shape. */
-export interface AgentStats {
-  /** Messages received property. */
-  messagesReceived: number;
-  /** Messages sent property. */
-  messagesSent: number;
-  /** Actions executed property. */
-  actionsExecuted: number;
-  /** Leads qualified property. */
-  leadsQualified: number;
-  /** Active conversations property. */
-  activeConversations: number;
-  /** Avg response time property. */
-  avgResponseTime: string;
-}
-
-/** Agent console props shape. */
-export interface AgentConsoleProps {
-  /** Is open property. */
-  isOpen: boolean;
-  /** On close property. */
-  onClose: () => void;
-  /** On toggle property. */
-  onToggle: () => void;
-  /** Activities property. */
-  activities?: AgentActivity[];
-  /** Stats property. */
-  stats?: AgentStats;
-  /** Is connected property. */
-  isConnected?: boolean;
-  /** Is thinking property. */
-  isThinking?: boolean;
-  /** Class name property. */
-  className?: string;
-}
-
-// ============================================
-// ACTIVITY CONFIG
-// ============================================
-
-const ACTIVITY_CONFIG: Record<
+export type {
   ActivityType,
-  {
-    icon: React.ElementType;
-    color: string;
-    label: string;
-  }
-> = {
-  message_received: {
-    icon: MessageSquare,
-    color: colors.brand.cyan,
-    label: 'Mensagem Recebida',
-  },
-  message_sent: {
-    icon: Send,
-    color: colors.brand.green,
-    label: 'Mensagem Enviada',
-  },
-  action_executed: {
-    icon: Zap,
-    color: colors.state.warning,
-    label: 'Ação Executada',
-  },
-  lead_qualified: {
-    icon: Users,
-    color: colors.brand.green,
-    label: 'Lead Qualificado',
-  },
-  follow_up_scheduled: {
-    icon: Clock,
-    color: colors.brand.cyan,
-    label: 'Follow-up Agendado',
-  },
-  agent_thinking: {
-    icon: Brain,
-    color: colors.text.secondary,
-    label: 'Processando',
-  },
-  error: {
-    icon: AlertCircle,
-    color: colors.state.error,
-    label: 'Erro',
-  },
-  connection_status: {
-    icon: Wifi,
-    color: colors.text.secondary,
-    label: 'Status de Conexão',
-  },
-};
-
-const STATUS_ICONS: Record<ActivityStatus, React.ElementType> = {
-  pending: Loader2,
-  success: CheckCircle,
-  error: AlertCircle,
-};
-
-// ============================================
-// HELPER FUNCTIONS
-// ============================================
-
-function formatTimeAgo(date: Date): string {
-  const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
-
-  if (seconds < 60) {
-    return `${seconds}s atrás`;
-  }
-  if (seconds < 3600) {
-    return `${Math.floor(seconds / 60)}m atrás`;
-  }
-  if (seconds < 86400) {
-    return `${Math.floor(seconds / 3600)}h atrás`;
-  }
-  return `${Math.floor(seconds / 86400)}d atrás`;
-}
-
-// ============================================
-// SUB-COMPONENTS
-// ============================================
-
-interface ActivityItemProps {
-  activity: AgentActivity;
-}
-
-function ActivityItem({ activity }: ActivityItemProps) {
-  const config = ACTIVITY_CONFIG[activity.type];
-  const Icon = config.icon;
-  const _StatusIcon = STATUS_ICONS[activity.status];
-
-  return (
-    <div
-      className="flex gap-3 p-3 rounded-lg transition-colors hover:bg-white/5"
-      style={{
-        backgroundColor: activity.status === 'pending' ? `${colors.brand.cyan}08` : 'transparent',
-      }}
-    >
-      {/* Icon */}
-      <div
-        className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
-        style={{
-          backgroundColor: `${config.color}15`,
-        }}
-      >
-        <Icon size={16} style={{ color: config.color }} />
-      </div>
-
-      {/* Content */}
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center justify-between gap-2">
-          <span className="font-medium text-sm leading-snug" style={{ color: colors.text.primary }}>
-            {activity.title}
-          </span>
-          <div className="flex items-center gap-1.5 flex-shrink-0">
-            {activity.status === 'pending' && (
-              <Loader2
-                size={12}
-                className="animate-spin"
-                style={{ color: colors.brand.cyan }}
-                aria-hidden="true"
-              />
-            )}
-            <span className="text-xs" style={{ color: colors.text.muted }}>
-              {formatTimeAgo(activity.timestamp)}
-            </span>
-          </div>
-        </div>
-
-        {activity.description && (
-          <p
-            className="mt-1 whitespace-pre-line text-xs leading-relaxed"
-            style={{ color: colors.text.secondary }}
-          >
-            {activity.description}
-          </p>
-        )}
-
-        {/* Message preview */}
-        {activity.metadata?.messagePreview && (
-          <div
-            className="mt-1.5 px-2 py-1 rounded text-xs"
-            style={{
-              backgroundColor: colors.background.surface2,
-              color: colors.text.muted,
-            }}
-          >
-            {kloelT(`&ldquo;`)}
-            {activity.metadata.messagePreview}
-            {kloelT(`&rdquo;`)}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-interface StatCardProps {
-  label: string;
-  value: string | number;
-  icon: React.ElementType;
-  trend?: 'up' | 'down' | 'neutral';
-}
-
-function StatCard({ label, value, icon: Icon, trend }: StatCardProps) {
-  return (
-    <div className="p-3 rounded-lg" style={{ backgroundColor: colors.background.surface2 }}>
-      <div className="flex items-center justify-between mb-1">
-        <Icon size={14} style={{ color: colors.text.muted }} />
-        {trend === 'up' && (
-          <TrendingUp size={12} style={{ color: colors.state.success }} aria-hidden="true" />
-        )}
-      </div>
-      <div className="text-lg font-semibold" style={{ color: colors.text.primary }}>
-        {value}
-      </div>
-      <div className="text-xs" style={{ color: colors.text.muted }}>
-        {label}
-      </div>
-    </div>
-  );
-}
-
-// ============================================
-// MAIN COMPONENT
-// ============================================
+  ActivityStatus,
+  AgentActivity,
+  AgentStats,
+  AgentConsoleProps,
+} from './AgentConsole.types';
+import type { AgentConsoleProps } from './AgentConsole.types';
+import type { ActivityType, AgentActivity } from './AgentConsole.types';
 
 export function AgentConsole({
   isOpen,
@@ -347,7 +54,6 @@ export function AgentConsole({
   const [filter, setFilter] = useState<ActivityType | 'all'>('all');
   const listRef = useRef<HTMLDivElement>(null);
 
-  // Auto-scroll to bottom on new activities
   useEffect(() => {
     if (listRef.current) {
       listRef.current.scrollTop = listRef.current.scrollHeight;
@@ -359,7 +65,6 @@ export function AgentConsole({
 
   return (
     <>
-      {/* Collapsed Toggle Button */}
       {!isOpen && (
         <button
           type="button"
@@ -391,7 +96,6 @@ export function AgentConsole({
         </button>
       )}
 
-      {/* Panel */}
       <aside
         className={cn(
           'fixed top-0 right-0 h-full flex flex-col transition-transform duration-200',
@@ -405,7 +109,6 @@ export function AgentConsole({
           zIndex: 45,
         }}
       >
-        {/* Header */}
         <div
           className="flex items-center justify-between px-4 py-3"
           style={{ borderBottom: `1px solid ${colors.stroke}` }}
@@ -413,9 +116,7 @@ export function AgentConsole({
           <div className="flex items-center gap-3">
             <div
               className="w-9 h-9 rounded-lg flex items-center justify-center"
-              style={{
-                backgroundColor: `${colors.brand.green}15`,
-              }}
+              style={{ backgroundColor: `${colors.brand.green}15` }}
             >
               <Bot
                 size={20}
@@ -450,7 +151,6 @@ export function AgentConsole({
               </div>
             </div>
           </div>
-
           <button
             type="button"
             onClick={onClose}
@@ -461,7 +161,6 @@ export function AgentConsole({
           </button>
         </div>
 
-        {/* Stats Grid */}
         <div
           className="p-3 grid grid-cols-3 gap-2"
           style={{ borderBottom: `1px solid ${colors.stroke}` }}
@@ -476,7 +175,6 @@ export function AgentConsole({
           <StatCard label={kloelT(`Ações`)} value={stats.actionsExecuted} icon={Zap} />
         </div>
 
-        {/* Quick Stats Bar */}
         <div
           className="flex items-center justify-between px-4 py-2"
           style={{
@@ -509,7 +207,6 @@ export function AgentConsole({
           </div>
         </div>
 
-        {/* Thinking Indicator */}
         {isThinking && (
           <div
             className="flex items-center gap-2 px-4 py-2"
@@ -542,61 +239,8 @@ export function AgentConsole({
           </div>
         )}
 
-        {/* Filter Tabs */}
-        <div
-          className="flex items-center gap-1 px-3 py-2 overflow-x-auto"
-          style={{ borderBottom: `1px solid ${colors.stroke}` }}
-        >
-          <button
-            type="button"
-            onClick={() => setFilter('all')}
-            className="px-2.5 py-1 rounded-md text-xs font-medium whitespace-nowrap transition-colors"
-            style={{
-              backgroundColor: filter === 'all' ? colors.background.surface2 : 'transparent',
-              color: filter === 'all' ? colors.text.primary : colors.text.muted,
-            }}
-          >
-            {kloelT(`Todos`)}
-          </button>
-          <button
-            type="button"
-            onClick={() => setFilter('message_received')}
-            className="px-2.5 py-1 rounded-md text-xs font-medium whitespace-nowrap transition-colors"
-            style={{
-              backgroundColor:
-                filter === 'message_received' ? colors.background.surface2 : 'transparent',
-              color: filter === 'message_received' ? colors.text.primary : colors.text.muted,
-            }}
-          >
-            {kloelT(`Recebidas`)}
-          </button>
-          <button
-            type="button"
-            onClick={() => setFilter('message_sent')}
-            className="px-2.5 py-1 rounded-md text-xs font-medium whitespace-nowrap transition-colors"
-            style={{
-              backgroundColor:
-                filter === 'message_sent' ? colors.background.surface2 : 'transparent',
-              color: filter === 'message_sent' ? colors.text.primary : colors.text.muted,
-            }}
-          >
-            {kloelT(`Enviadas`)}
-          </button>
-          <button
-            type="button"
-            onClick={() => setFilter('action_executed')}
-            className="px-2.5 py-1 rounded-md text-xs font-medium whitespace-nowrap transition-colors"
-            style={{
-              backgroundColor:
-                filter === 'action_executed' ? colors.background.surface2 : 'transparent',
-              color: filter === 'action_executed' ? colors.text.primary : colors.text.muted,
-            }}
-          >
-            {kloelT(`Ações`)}
-          </button>
-        </div>
+        <AgentFilterTabs filter={filter} onFilterChange={setFilter} />
 
-        {/* Activity Feed */}
         <div ref={listRef} className="flex-1 overflow-y-auto p-2 space-y-1">
           {filteredActivities.length === 0 ? (
             <div
@@ -608,13 +252,12 @@ export function AgentConsole({
               <p className="text-xs mt-1">{kloelT(`As ações do agente aparecerão aqui`)}</p>
             </div>
           ) : (
-            filteredActivities.map((activity) => (
+            filteredActivities.map((activity: AgentActivity) => (
               <ActivityItem key={activity.id} activity={activity} />
             ))
           )}
         </div>
 
-        {/* Footer */}
         <div
           className="px-4 py-3 flex items-center justify-between"
           style={{
@@ -635,7 +278,6 @@ export function AgentConsole({
         </div>
       </aside>
 
-      {/* Backdrop on mobile */}
       {isOpen && (
         <button
           type="button"
@@ -655,24 +297,5 @@ export function AgentConsole({
   );
 }
 
-// ============================================
-// HOOK FOR USING AGENT CONSOLE
-// ============================================
-
-export function useAgentConsole() {
-  const [isOpen, setIsOpen] = useState(false);
-
-  return {
-    isOpen,
-    open: () => setIsOpen(true),
-    close: () => setIsOpen(false),
-    toggle: () => setIsOpen((prev) => !prev),
-    consoleProps: {
-      isOpen,
-      onClose: () => setIsOpen(false),
-      onToggle: () => setIsOpen((prev) => !prev),
-    },
-  };
-}
-
+export { useAgentConsole } from './AgentConsole.hook';
 export default AgentConsole;

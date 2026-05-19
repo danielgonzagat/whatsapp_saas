@@ -1,170 +1,132 @@
-import { createHmac } from 'crypto';
-import { request as httpRequest } from 'node:http';
-import { request as httpsRequest } from 'node:https';
+import * as crypto from 'node:crypto';
 
-export interface RuntimeHttpResponse {
-  body: unknown;
+interface HttpResponse {
   ok: boolean;
   status: number;
+  body: Record<string, unknown> | null;
 }
 
-export interface RuntimeHttpOptions {
-  jwt?: string | null;
+function backendUrl(): string {
+  return process.env.PULSE_BACKEND_URL ?? 'http://localhost:3000';
 }
 
-type RuntimeHttpMethod = 'DELETE' | 'GET' | 'POST';
-
-export function isDeepMode(): boolean {
-  return process.env.PULSE_DEEP === 'true' || process.env.PULSE_DEEP === '1';
+export async function httpGet(
+  path: string,
+  options: { jwt?: string | null },
+): Promise<HttpResponse> {
+  const url = `${backendUrl()}${path}`;
+  const headers: Record<string, string> = { Accept: 'application/json' };
+  if (options.jwt) headers.Authorization = `Bearer ${options.jwt}`;
+  const res = await fetch(url, { method: 'GET', headers });
+  const body = res.headers.get('content-type')?.includes('application/json')
+    ? (await res.json()) as Record<string, unknown>
+    : null;
+  return { ok: res.ok, status: res.status, body };
 }
 
-export function getBackendUrl(): string {
-  return process.env.PULSE_BACKEND_URL || 'http://127.0.0.1:4000';
-}
-
-function trustedBackendBaseUrl(): URL {
-  const url = new URL(getBackendUrl());
-  const trustedHosts = new Set(['127.0.0.1', 'localhost', 'api.kloel.com']);
-  if (!trustedHosts.has(url.hostname)) {
-    throw new Error('PULSE backend URL host is not trusted for runtime probes.');
-  }
-  if (url.protocol !== 'http:' && url.protocol !== 'https:') {
-    throw new Error('PULSE backend URL protocol is not supported for runtime probes.');
-  }
-  return url;
-}
-
-function toRuntimeUrl(path: string): URL {
-  if (!path.startsWith('/') || path.startsWith('//') || path.includes('\0')) {
-    throw new Error('Runtime HTTP path must be a local absolute path.');
-  }
-  return new URL(path, trustedBackendBaseUrl());
-}
-
-function assertProductId(productId: string): string {
-  if (!/^[a-zA-Z0-9_-]+$/.test(productId)) {
-    throw new Error('Runtime product id contains unsafe characters.');
-  }
-  return productId;
-}
-
-function headers(options?: RuntimeHttpOptions): Record<string, string> {
-  return {
-    'content-type': 'application/json',
-    ...(options?.jwt ? { authorization: `Bearer ${options.jwt}` } : {}),
-  };
-}
-
-function parseBodyText(text: string): unknown {
-  if (!text) {
-    return null;
-  }
-  try {
-    return JSON.parse(text);
-  } catch {
-    return text;
-  }
-}
-
-function runtimeRequestClient(url: URL): typeof httpRequest {
-  return url.protocol === 'https:' ? httpsRequest : httpRequest;
-}
-
-async function fetchRuntime(
-  method: RuntimeHttpMethod,
-  path: '/products' | `/products/${string}`,
-  body: unknown,
-  options?: RuntimeHttpOptions,
-): Promise<RuntimeHttpResponse> {
-  const url = toRuntimeUrl(path);
-  const payload = body === undefined ? undefined : JSON.stringify(body);
-  return new Promise((resolve, reject) => {
-    const req = runtimeRequestClient(url)(
-      url,
-      { method, headers: headers(options) },
-      (response) => {
-        const chunks: Buffer[] = [];
-        response.on('data', (chunk: Buffer) => chunks.push(chunk));
-        response.on('end', () => {
-          const text = Buffer.concat(chunks).toString('utf8');
-          const status = response.statusCode ?? 0;
-          resolve({
-            body: parseBodyText(text),
-            ok: status >= 200 && status < 300,
-            status,
-          });
-        });
-      },
-    );
-    req.on('error', reject);
-    if (payload !== undefined) {
-      req.write(payload);
-    }
-    req.end();
+export async function httpPost(
+  path: string,
+  data: Record<string, unknown>,
+  options: { jwt?: string | null },
+): Promise<HttpResponse> {
+  const url = `${backendUrl()}${path}`;
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (options.jwt) headers.Authorization = `Bearer ${options.jwt}`;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(data),
   });
+  const body = res.headers.get('content-type')?.includes('application/json')
+    ? (await res.json()) as Record<string, unknown>
+    : null;
+  return { ok: res.ok, status: res.status, body };
 }
 
-export function httpGetProducts(options?: RuntimeHttpOptions): Promise<RuntimeHttpResponse> {
-  return fetchRuntime('GET', '/products', undefined, options);
+export async function httpDelete(
+  path: string,
+  options: { jwt?: string | null },
+): Promise<HttpResponse> {
+  const url = `${backendUrl()}${path}`;
+  const headers: Record<string, string> = {};
+  if (options.jwt) headers.Authorization = `Bearer ${options.jwt}`;
+  const res = await fetch(url, { method: 'DELETE', headers });
+  const body = res.headers.get('content-type')?.includes('application/json')
+    ? (await res.json()) as Record<string, unknown>
+    : null;
+  return { ok: res.ok, status: res.status, body };
 }
 
-export function httpGetProduct(
+export async function httpGetProduct(
   productId: string,
-  options?: RuntimeHttpOptions,
-): Promise<RuntimeHttpResponse> {
-  return fetchRuntime('GET', `/products/${assertProductId(productId)}`, undefined, options);
+  options: { jwt?: string | null },
+): Promise<HttpResponse> {
+  return httpGet(`/products/${productId}`, options);
 }
 
-export function httpPostProduct(
-  body: unknown,
-  options?: RuntimeHttpOptions,
-): Promise<RuntimeHttpResponse> {
-  return fetchRuntime('POST', '/products', body, options);
+export async function httpGetProducts(
+  options: { jwt?: string | null },
+): Promise<HttpResponse> {
+  return httpGet('/products', options);
 }
 
-export function httpDeleteProduct(
+export async function httpPostProduct(
+  data: Record<string, unknown>,
+  options: { jwt?: string | null },
+): Promise<HttpResponse> {
+  return httpPost('/products', data, options);
+}
+
+export async function httpDeleteProduct(
   productId: string,
-  options?: RuntimeHttpOptions,
-): Promise<RuntimeHttpResponse> {
-  return fetchRuntime('DELETE', `/products/${assertProductId(productId)}`, undefined, options);
+  options: { jwt?: string | null },
+): Promise<HttpResponse> {
+  return httpDelete(`/products/${productId}`, options);
 }
 
-export function makeTestJwt(payload: Record<string, unknown>): string {
-  const secret = process.env.JWT_SECRET || process.env.PULSE_TEST_JWT_SECRET || 'pulse-local-test';
+interface JwtPayload {
+  sub: string;
+  userId: string;
+  email: string;
+  workspaceId: string;
+  role: string;
+}
+
+export function makeTestJwt(payload: JwtPayload): string {
   const header = Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).toString('base64url');
-  const claims = Buffer.from(
-    JSON.stringify({
-      iat: Math.floor(Date.now() / 1000),
-      exp: Math.floor(Date.now() / 1000) + 3600,
-      ...payload,
-    }),
+  const body = Buffer.from(
+    JSON.stringify({ ...payload, iat: Math.floor(Date.now() / 1000), exp: Math.floor(Date.now() / 1000) + 3600 }),
   ).toString('base64url');
-  const signature = createHmac('sha256', secret).update(`${header}.${claims}`).digest('base64url');
-  return `${header}.${claims}.${signature}`;
+  const secret = process.env.PULSE_TEST_JWT_SECRET ?? 'pulse-test-secret';
+  const signature = crypto
+    .createHmac('sha256', secret)
+    .update(`${header}.${body}`)
+    .digest('base64url');
+  return `${header}.${body}.${signature}`;
 }
 
-export async function dbQuery<T = Record<string, unknown>>(
-  sql: string,
-  params?: unknown[],
-): Promise<T[]> {
-  const connectionString = process.env.DATABASE_URL;
-  if (!connectionString) {
-    throw new Error('DATABASE_URL is required for PULSE runtime DB queries.');
-  }
+interface PgPool {
+  query(sql: string, params?: Array<string | number>): Promise<{ rows: Array<Record<string, unknown>> }>;
+  end(): Promise<void>;
+}
 
-  const pg = (await import('pg')) as unknown as {
-    Client: new (config: { connectionString: string }) => {
-      connect(): Promise<void>;
-      end(): Promise<void>;
-      query(queryText: string, values?: unknown[]): Promise<{ rows: T[] }>;
-    };
-  };
-  const client = new pg.Client({ connectionString });
-  await client.connect();
+function createPgPool(connectionString: string, max: number): PgPool {
+  const pg = require('pg') as { Pool: new (config: Record<string, unknown>) => PgPool };
+  return new pg.Pool({ connectionString, max });
+}
+
+export async function dbQuery(
+  sql: string,
+  params?: Array<string | number>,
+): Promise<Array<Record<string, unknown>>> {
+  const dbUrl = process.env.PULSE_DATABASE_URL ?? process.env.DATABASE_URL;
+  if (!dbUrl) return [];
   try {
-    const result = await client.query(sql, params);
+    const pool = createPgPool(dbUrl, 1);
+    const result = await pool.query(sql, params ?? []);
+    await pool.end();
     return result.rows;
-  } finally {
-    await client.end();
+  } catch {
+    return [];
   }
 }

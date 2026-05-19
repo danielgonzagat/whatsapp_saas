@@ -41,7 +41,7 @@ function walk(dir, out = []) {
     const f = path.join(dir, n);
     const s = fs.statSync(f);
     if (s.isDirectory()) {
-      if (['node_modules', 'dist', '.next', 'coverage', '__tests__'].includes(n)) continue;
+      if (['node_modules', 'dist', '.next', 'coverage', '__tests__'].includes(n)) {continue;}
       walk(f, out);
     } else if (/\.tsx$/.test(n) && !/\.(spec|test)\.tsx$/.test(n)) {
       out.push(f);
@@ -122,33 +122,33 @@ const SKIP_ATTR_NAMES = new Set([
 const SKIP_PREFIXES = ['data-', 'aria-', 'data', 'meta', 'sentry-', 'x-', 'test-', 'tw-'];
 
 function shouldSkipAttribute(attrName) {
-  if (!attrName) return true;
-  if (attrName.startsWith('on')) return true; // onClick, onChange, ...
+  if (!attrName) {return true;}
+  if (attrName.startsWith('on')) {return true;} // onClick, onChange, ...
   for (const pfx of SKIP_PREFIXES) {
-    if (attrName.startsWith(pfx)) return true;
+    if (attrName.startsWith(pfx)) {return true;}
   }
-  if (SKIP_ATTR_NAMES.has(attrName)) return true;
+  if (SKIP_ATTR_NAMES.has(attrName)) {return true;}
   return false;
 }
 
 function looksLikeHumanText(str) {
-  if (!str) return false;
+  if (!str) {return false;}
   const trimmed = str.trim();
-  if (trimmed.length === 0) return false;
+  if (trimmed.length === 0) {return false;}
   // Only formatting whitespace like `  ` or `\n    `.
-  if (/^[\s]+$/.test(str) && !/\w/.test(str)) return false;
+  if (/^[\s]+$/.test(str) && !/\w/.test(str)) {return false;}
   // Single punctuation / symbol — skip.
-  if (trimmed.length < 2) return false;
+  if (trimmed.length < 2) {return false;}
   // Pure numbers or numeric units.
-  if (/^[\d+\-,.]+(px|em|rem|%|s|ms)?$/.test(trimmed)) return false;
+  if (/^[\d+\-,.]+(px|em|rem|%|s|ms)?$/.test(trimmed)) {return false;}
   // Looks like a CSS class list / id-like token (kebab or snake with digits, no spaces).
-  if (!/\s/.test(trimmed) && /^[a-z][a-z0-9_-]*$/.test(trimmed)) return false;
+  if (!/\s/.test(trimmed) && /^[a-z][a-z0-9_-]*$/.test(trimmed)) {return false;}
   // Looks like a URL/path.
-  if (/^(https?:|\/|\.\/)/.test(trimmed)) return false;
+  if (/^(https?:|\/|\.\/)/.test(trimmed)) {return false;}
   // Looks like an env var / token.
-  if (/^[A-Z][A-Z0-9_]+$/.test(trimmed)) return false;
+  if (/^[A-Z][A-Z0-9_]+$/.test(trimmed)) {return false;}
   // Looks like a JSON/stringified blob.
-  if (/^[{[].+[}\]]$/.test(trimmed)) return false;
+  if (/^[{[].+[}\]]$/.test(trimmed)) {return false;}
   return true;
 }
 
@@ -175,12 +175,12 @@ for (const file of files) {
 
   function wrapJsxText(node) {
     const raw = node.text;
-    if (!looksLikeHumanText(raw)) return;
+    if (!looksLikeHumanText(raw)) {return;}
     // Preserve leading/trailing whitespace so layout doesn't shift.
     const leading = raw.match(/^\s*/)[0];
     const trailing = raw.match(/\s*$/)[0];
     const inner = raw.slice(leading.length, raw.length - trailing.length);
-    if (!inner) return;
+    if (!inner) {return;}
     // Replace the JsxText run with `leading{t('inner')}trailing`.
     edits.push({
       start: node.getStart(sf),
@@ -191,12 +191,12 @@ for (const file of files) {
   }
 
   function wrapJsxAttrStringLiteral(attr) {
-    if (!attr.name || !attr.initializer) return;
+    if (!attr.name || !attr.initializer) {return;}
     const attrName = attr.name.getText(sf);
-    if (shouldSkipAttribute(attrName)) return;
+    if (shouldSkipAttribute(attrName)) {return;}
     const init = attr.initializer;
-    if (!ts.isStringLiteral(init)) return;
-    if (!looksLikeHumanText(init.text)) return;
+    if (!ts.isStringLiteral(init)) {return;}
+    if (!looksLikeHumanText(init.text)) {return;}
     const escaped = escapeForTemplate(init.text);
     edits.push({
       start: init.getStart(sf),
@@ -207,14 +207,14 @@ for (const file of files) {
   }
 
   function wrapThrowError(node) {
-    if (!ts.isThrowStatement(node)) return;
+    if (!ts.isThrowStatement(node)) {return;}
     const expr = node.expression;
-    if (!expr || !ts.isNewExpression(expr)) return;
-    if (!expr.expression || expr.expression.getText(sf) !== 'Error') return;
+    if (!expr || !ts.isNewExpression(expr)) {return;}
+    if (!expr.expression || expr.expression.getText(sf) !== 'Error') {return;}
     const args = expr.arguments;
-    if (!args || args.length !== 1) return;
+    if (!args || args.length !== 1) {return;}
     const arg = args[0];
-    if (!ts.isStringLiteral(arg) || !looksLikeHumanText(arg.text)) return;
+    if (!ts.isStringLiteral(arg) || !looksLikeHumanText(arg.text)) {return;}
     edits.push({
       start: expr.getStart(sf),
       end: expr.getEnd(),
@@ -235,7 +235,7 @@ for (const file of files) {
   }
   visit(sf);
 
-  if (!edits.length) continue;
+  if (!edits.length) {continue;}
 
   edits.sort((a, b) => b.start - a.start);
   let out = source;

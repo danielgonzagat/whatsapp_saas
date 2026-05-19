@@ -1,13 +1,8 @@
-import {
-  Injectable,
-  Logger,
-  ServiceUnavailableException,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { Injectable, ServiceUnavailableException, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { StructuredLogger } from '../logging/structured-logger';
 import { createPublicKey, createVerify } from 'node:crypto';
 import { readFileSync } from 'node:fs';
-import { buildClientSecret } from './__companions__/apple-auth.service.companion';
 import { getTraceHeaders } from '../common/trace-headers';
 import { GoogleVerifiedProfile } from './google-auth.service';
 import {
@@ -22,6 +17,7 @@ import {
   type AppleUserHint,
   type AppleVerifiedToken,
   buildAppleName,
+  buildClientSecret,
   decodeBase64UrlJson,
   normalizeEmailVerified,
   sanitizeAppleError,
@@ -30,7 +26,7 @@ import {
 
 @Injectable()
 export class AppleAuthService {
-  private readonly logger = new Logger(AppleAuthService.name);
+  private readonly logger = StructuredLogger.from(AppleAuthService.name);
   private jwksCache: { expiresAt: number; keys: AppleJwk[] } | null = null;
 
   constructor(private readonly config: ConfigService) {}
@@ -43,20 +39,20 @@ export class AppleAuthService {
       throw new UnauthorizedException('Identity token Apple ausente.');
     }
 
-    const parts = token.split('.');
-    if (parts.length !== 3) {
+    const [rawHeader, rawPayload, rawSig] = token.split('.');
+    if (rawHeader === undefined || rawPayload === undefined || rawSig === undefined) {
       throw new UnauthorizedException('Identity token Apple malformado.');
     }
 
-    const header = this.decodeTokenHeader(parts[0]);
+    const header = this.decodeTokenHeader(rawHeader);
     if (header.alg !== 'RS256' || !header.kid) {
       throw new UnauthorizedException('Header do token Apple invalido.');
     }
 
     const key = await this.findJwk(header.kid);
-    this.verifySignature(`${parts[0]}.${parts[1]}`, parts[2], key);
+    this.verifySignature(`${rawHeader}.${rawPayload}`, rawSig, key);
 
-    const payload = this.decodeTokenPayload(parts[1]);
+    const payload = this.decodeTokenPayload(rawPayload);
     this.assertIdentityPayload(payload);
     return payload as AppleIdentityPayload & { sub: string };
   }
@@ -195,7 +191,7 @@ export class AppleAuthService {
   private verifySignature(signingInput: string, signatureSegment: string, jwk: AppleJwk) {
     const signature = Buffer.from(signatureSegment, 'base64url');
     const publicKey = createPublicKey({ key: jwk, format: 'jwk' });
-    const verifier = createVerify('RSA-SHA256'); // PULSE_OK: not JWT, RSA sign verify
+    const verifier = createVerify('RSA-SHA256');
     verifier.update(signingInput);
     verifier.end();
     if (!verifier.verify(publicKey, signature)) {

@@ -39,20 +39,20 @@ function extractLastJson(text) {
 function collectRequests() {
   const fleetDir = join(REPO_ROOT, 'artifacts/opencode-fleet');
   const requests = [];
-  if (!existsSync(fleetDir)) return requests;
+  if (!existsSync(fleetDir)) {return requests;}
   for (const runDir of readdirSync(fleetDir)) {
     const dirPath = join(fleetDir, runDir);
-    if (!statSync(dirPath).isDirectory()) continue;
-    if (!/^pulse-liquefy-/.test(runDir)) continue;
+    if (!statSync(dirPath).isDirectory()) {continue;}
+    if (!/^pulse-liquefy-/.test(runDir)) {continue;}
     for (const f of readdirSync(dirPath)) {
-      if (!f.endsWith('.out')) continue;
+      if (!f.endsWith('.out')) {continue;}
       try {
         const text = readFileSync(join(dirPath, f), 'utf8');
         const j = extractLastJson(text);
-        if (!j) continue;
+        if (!j) {continue;}
         if (Array.isArray(j.kernelExtensionsRequested)) {
           for (const r of j.kernelExtensionsRequested)
-            requests.push({ ...r, sourceFile: j.file, sourceWave: runDir });
+            {requests.push({ ...r, sourceFile: j.file, sourceWave: runDir });}
         }
       } catch {}
     }
@@ -65,7 +65,7 @@ function listTypeContracts() {
   const pulseDir = join(REPO_ROOT, 'scripts/pulse');
   const contracts = [];
   function scan(dir) {
-    if (!existsSync(dir)) return;
+    if (!existsSync(dir)) {return;}
     for (const entry of readdirSync(dir)) {
       if (
         entry === 'node_modules' ||
@@ -76,7 +76,7 @@ function listTypeContracts() {
         entry === '__fixtures__' ||
         entry === '__kernel_additions__'
       )
-        continue;
+        {continue;}
       const p = join(dir, entry);
       const s = statSync(p);
       if (s.isFile() && /^types\.[a-z0-9_-]+\.ts$/.test(entry)) {
@@ -121,8 +121,8 @@ for (const contract of contracts) {
 // Add explicitly-requested primitives that aren't auto-discovered
 const requestNames = new Set(candidates.map((c) => c.functionName));
 for (const r of requests) {
-  if (!r.name) continue;
-  if (requestNames.has(r.name)) continue;
+  if (!r.name) {continue;}
+  if (requestNames.has(r.name)) {continue;}
   candidates.push({
     functionName: r.name,
     signature: r.signature,
@@ -137,10 +137,10 @@ for (const r of requests) {
 const seen = new Set();
 const unique = [];
 for (const c of candidates) {
-  if (seen.has(c.functionName)) continue;
+  if (seen.has(c.functionName)) {continue;}
   seen.add(c.functionName);
   unique.push(c);
-  if (unique.length >= 24) break;
+  if (unique.length >= 24) {break;}
 }
 
 function buildPrimitivePrompt(primitive) {

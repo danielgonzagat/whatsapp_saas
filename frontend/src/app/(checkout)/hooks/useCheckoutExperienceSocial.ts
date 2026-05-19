@@ -68,7 +68,11 @@ export function useCheckoutExperienceSocial({
   const redirectTimer = useRef<number | null>(null);
 
   const { fmt } = helpers;
-  const social = useCheckoutSocialIdentity({ slug, checkoutCode, enabled: Boolean(slug) });
+  const social = useCheckoutSocialIdentity({
+    ...(slug !== undefined ? { slug } : {}),
+    ...(checkoutCode !== undefined ? { checkoutCode } : {}),
+    enabled: Boolean(slug),
+  });
   const checkoutFormDraftKey = useMemo(
     () => buildCheckoutFormDraftKey(slug, checkoutCode, plan?.id),
     [checkoutCode, plan?.id, slug],
@@ -178,7 +182,7 @@ export function useCheckoutExperienceSocial({
     setCouponApplied,
     setDiscount,
     qty,
-    slug,
+    ...(slug !== undefined ? { slug } : {}),
     shippingMode,
     variableShippingFloorInCents,
     cep: form.cep,

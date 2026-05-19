@@ -1,8 +1,8 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { Prisma } from '@prisma/client';
 import * as Sentry from '@sentry/node';
 import { forEachSequential } from '../common/async-sequence';
-import { escapeHtml } from '../common/utils/html-escape.util';
 import { formatBrlAmount } from '../kloel/money-format.util';
 import { PrismaService } from '../prisma/prisma.service';
 import { CheckoutSocialLeadService } from './checkout-social-lead.service';
@@ -36,7 +36,7 @@ type CheckoutOrderForEffects = {
 /** Checkout post payment effects service. */
 @Injectable()
 export class CheckoutPostPaymentEffectsService {
-  private readonly logger = new Logger(CheckoutPostPaymentEffectsService.name);
+  private readonly logger = StructuredLogger.from(CheckoutPostPaymentEffectsService.name);
 
   constructor(
     private readonly prisma: PrismaService,
@@ -45,7 +45,6 @@ export class CheckoutPostPaymentEffectsService {
   ) {}
 
   /** Mark lead converted + auto-enroll in linked member areas. */
-  // PULSE_OK: rate-limited by CheckoutPublicController
   async markLeadConverted(order: CheckoutOrderForEffects, workspaceId?: string) {
     if (!workspaceId || !order.id) {
       return;
@@ -61,10 +60,14 @@ export class CheckoutPostPaymentEffectsService {
       .markConvertedFromOrder({
         workspaceId,
         orderId: order.id,
-        capturedLeadId,
-        customerEmail: order.customerEmail || undefined,
-        customerPhone: order.customerPhone || undefined,
-        deviceFingerprint,
+        ...(capturedLeadId !== null ? { capturedLeadId } : {}),
+        ...(order.customerEmail !== undefined && order.customerEmail !== null
+          ? { customerEmail: order.customerEmail }
+          : {}),
+        ...(order.customerPhone !== undefined && order.customerPhone !== null
+          ? { customerPhone: order.customerPhone }
+          : {}),
+        ...(deviceFingerprint !== null ? { deviceFingerprint } : {}),
       })
       .catch(() => undefined);
 
@@ -78,7 +81,6 @@ export class CheckoutPostPaymentEffectsService {
   }
 
   /** Send purchase signals. */
-  // PULSE_OK: rate-limited by CheckoutPublicController
   async sendPurchaseSignals(order: CheckoutOrderForEffects, chargedAmount: number) {
     await this.sendFacebookPurchaseEvent(order);
     await this.sendPaymentConfirmationEmail(order, chargedAmount);
@@ -110,13 +112,23 @@ export class CheckoutPostPaymentEffectsService {
           pixelId: pixel.pixelId,
           accessToken: pixel.accessToken,
           eventName: 'Purchase',
-          email: order.customerEmail || undefined,
-          phone: order.customerPhone || undefined,
+          ...(order.customerEmail !== undefined && order.customerEmail !== null
+            ? { email: order.customerEmail }
+            : {}),
+          ...(order.customerPhone !== undefined && order.customerPhone !== null
+            ? { phone: order.customerPhone }
+            : {}),
           amount: Number(order.totalInCents || 0),
           currency: 'BRL',
-          productId: order.plan?.productId || undefined,
-          ip: order.ipAddress || undefined,
-          userAgent: order.userAgent || undefined,
+          ...(order.plan?.productId !== undefined && order.plan?.productId !== null
+            ? { productId: order.plan.productId }
+            : {}),
+          ...(order.ipAddress !== undefined && order.ipAddress !== null
+            ? { ip: order.ipAddress }
+            : {}),
+          ...(order.userAgent !== undefined && order.userAgent !== null
+            ? { userAgent: order.userAgent }
+            : {}),
         });
       });
     } catch (error: unknown) {
@@ -217,31 +229,14 @@ export class CheckoutPostPaymentEffectsService {
     order: CheckoutOrderForEffects,
     chargedAmount: number,
   ): string {
-    const safeCustomerName = escapeHtml(order.customerName || '');
-    const safeProductName = escapeHtml(order.plan?.product?.name || '\u2014');
-    const safeOrderId = escapeHtml(order.orderNumber || order.id || '');
     const amountSource = chargedAmount || Number(order.totalInCents || 0) / 100;
-    const formattedAmount = escapeHtml(formatBrlAmount(amountSource));
-
-    return [
-      '<div style="font-family:sans-serif;max-width:600px;margin:0 auto;background:#0A0A0C;color:#e0e0e0;padding:40px;">',
-      '<h1 style="color:#E85D30;">KLOEL</h1>',
-      '<p>Ola ',
-      safeCustomerName,
-      ',</p>',
-      '<p>Seu pagamento foi confirmado!</p>',
-      '<div style="background:#151517;padding:20px;border-radius:6px;margin:20px 0;">',
-      '<p><strong>Produto:</strong> ',
-      safeProductName,
-      '</p>',
-      '<p><strong>Valor:</strong> ',
-      formattedAmount,
-      '</p>',
-      '<p><strong>Pedido:</strong> #',
-      safeOrderId,
-      '</p>',
-      '</div>',
-      '</div>',
-    ].join('');
+    const { renderEmailTemplate } = require('../common/utils/email-template-renderer.util');
+    return renderEmailTemplate('payment-confirmation', {
+      customerName: order.customerName || '',
+      productName: order.plan?.product?.name || '\u2014',
+      orderNumber: order.orderNumber || order.id || '',
+      formattedAmount: formatBrlAmount(amountSource),
+      memberAreaSection: '',
+    });
   }
 }

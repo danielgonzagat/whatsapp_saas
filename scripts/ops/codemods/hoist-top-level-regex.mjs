@@ -61,7 +61,7 @@ function ensureTsMorphInstalled() {
 
 function patternToConstName(source) {
   const cleaned = source.replace(/[^A-Za-z0-9]/g, '_').slice(0, 24);
-  if (!cleaned) return 'PATTERN';
+  if (!cleaned) {return 'PATTERN';}
   let result = cleaned
     .replace(/([a-z])([A-Z])/g, '$1_$2')
     .toUpperCase()
@@ -70,7 +70,7 @@ function patternToConstName(source) {
   if (/^[0-9]/.test(result)) {
     result = `RX_${result}`;
   }
-  if (!result || result === 'RX_') return 'PATTERN';
+  if (!result || result === 'RX_') {return 'PATTERN';}
   return result;
 }
 
@@ -115,7 +115,7 @@ async function main() {
         return Boolean(enclosing);
       });
 
-    if (regexLiterals.length === 0) continue;
+    if (regexLiterals.length === 0) {continue;}
 
     if (regexLiterals.length > MAX_HOISTS_PER_FILE) {
       skipped.push({
@@ -134,12 +134,12 @@ async function main() {
       // replace, split, matchAll) reset lastIndex internally. The rare
       // RegExp.exec/test-in-loop pattern is not present in this codebase.
       const sourceMatch = text.match(/^\/(.+)\/[a-z]*$/);
-      if (!sourceMatch) continue;
-      if (!byText.has(text)) byText.set(text, { source: sourceMatch[1], nodes: [] });
+      if (!sourceMatch) {continue;}
+      if (!byText.has(text)) {byText.set(text, { source: sourceMatch[1], nodes: [] });}
       byText.get(text).nodes.push(lit);
     }
 
-    if (byText.size === 0) continue;
+    if (byText.size === 0) {continue;}
 
     const usedNames = new Set();
     const declarations = [];
@@ -157,7 +157,7 @@ async function main() {
       }
     }
 
-    if (declarations.length === 0) continue;
+    if (declarations.length === 0) {continue;}
 
     const importDecls = sourceFile.getImportDeclarations();
     let insertAt;

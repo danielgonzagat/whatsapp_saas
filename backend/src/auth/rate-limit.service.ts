@@ -2,10 +2,10 @@ import {
   HttpException,
   HttpStatus,
   Injectable,
-  Logger,
   Optional,
   ServiceUnavailableException,
 } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { InjectRedis } from '@nestjs-modules/ioredis';
 import type { Redis } from 'ioredis';
 
@@ -19,7 +19,7 @@ import type { Redis } from 'ioredis';
  */
 @Injectable()
 export class RateLimitService {
-  private logger = new Logger(RateLimitService.name);
+  private readonly logger = StructuredLogger.from(RateLimitService.name);
 
   constructor(@Optional() @InjectRedis() private readonly redis: Redis | null = null) {}
 

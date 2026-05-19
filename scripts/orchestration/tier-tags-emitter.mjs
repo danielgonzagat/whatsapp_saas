@@ -102,12 +102,18 @@ const SKIP_EXTS = new Set([
 ]);
 
 function isSourceFile(relPath) {
-  if (SKIP_ROOT_FILES.has(relPath)) return false;
+  if (SKIP_ROOT_FILES.has(relPath)) {
+    return false;
+  }
   for (const prefix of SKIP_PREFIXES) {
-    if (relPath.startsWith(prefix)) return false;
+    if (relPath.startsWith(prefix)) {
+      return false;
+    }
   }
   const ext = relPath.includes('.') ? '.' + relPath.split('.').pop() : '';
-  if (SKIP_EXTS.has(ext)) return false;
+  if (SKIP_EXTS.has(ext)) {
+    return false;
+  }
   if (
     relPath.includes('/node_modules/') ||
     relPath.includes('/dist/') ||
@@ -116,12 +122,12 @@ function isSourceFile(relPath) {
     relPath.includes('/.next/') ||
     relPath.includes('/__pycache__/')
   )
-    return false;
+    {return false;}
   return SOURCE_DIR_PREFIXES.some((p) => relPath.startsWith(p));
 }
 
 function isTestFile(relPath, machineKinds) {
-  if (machineKinds && machineKinds.includes('test')) return true;
+  if (machineKinds && machineKinds.includes('test')) {return true;}
   return (
     relPath.endsWith('.spec.ts') ||
     relPath.endsWith('.spec.tsx') ||
@@ -137,7 +143,7 @@ function buildTestSet(manifestFiles) {
   const testSet = new Set();
   for (const [relMirror, entry] of Object.entries(manifestFiles)) {
     const source = entry.source;
-    if (!source) continue;
+    if (!source) {continue;}
     if (isTestFile(source, entry.machine_kinds)) {
       testSet.add(source);
       const base = source.replace(/\.(spec|test)\.[cm]?[jt]sx?$/, '').replace(/\/__tests__\//, '/');
@@ -148,7 +154,7 @@ function buildTestSet(manifestFiles) {
 }
 
 function hasTest(relPath, testSet, manifestFiles) {
-  if (testSet.has(relPath)) return true;
+  if (testSet.has(relPath)) {return true;}
   const ext = extname(relPath);
   const withoutExt = ext ? relPath.slice(0, -ext.length) : relPath;
   const candidates = [
@@ -159,7 +165,7 @@ function hasTest(relPath, testSet, manifestFiles) {
   ];
   for (const c of candidates) {
     const mirrorRel = c.replace(/\.(ts|tsx|mts|cts|js|jsx|mjs|cjs)$/, '.md');
-    if (manifestFiles[mirrorRel]) return true;
+    if (manifestFiles[mirrorRel]) {return true;}
   }
   const stem = basename(withoutExt).replace(
     /\.(controller|service|module|dto|route|page|component)$/i,
@@ -176,11 +182,11 @@ function atomWrite(absPath, content) {
 
 function readMirrorTags(mirrorRelPath) {
   const absPath = join(SOURCE_MIRROR_DIR, mirrorRelPath);
-  if (!existsSync(absPath)) return null;
+  if (!existsSync(absPath)) {return null;}
   const content = readFileSync(absPath, 'utf8');
-  if (!content.startsWith('---\n')) return null;
+  if (!content.startsWith('---\n')) {return null;}
   const end = content.indexOf('\n---\n', 4);
-  if (end === -1) return null;
+  if (end === -1) {return null;}
   const frontmatter = content.slice(4, end).split('\n');
   const tags = [];
   let inTags = false;
@@ -250,7 +256,7 @@ function main() {
 
   for (const [relMirror, entry] of Object.entries(manifestFiles)) {
     const source = entry.source;
-    if (!source) continue;
+    if (!source) {continue;}
 
     if (!isSourceFile(source)) {
       skipped++;
@@ -300,17 +306,17 @@ function main() {
     }
     sidecarsWritten++;
 
-    if (!existsSync(mirrorAbs)) continue;
+    if (!existsSync(mirrorAbs)) {continue;}
 
     const existingTags = readMirrorTags(relMirror);
-    if (existingTags === null) continue;
+    if (existingTags === null) {continue;}
 
     const tierTag = `kloel/tier-${tier}`;
     const merged = existingTags.filter((t) => !t.startsWith(TIER_TAG_PREFIX));
     merged.push(tierTag);
     merged.sort();
 
-    if (JSON.stringify(merged) === JSON.stringify(existingTags)) continue;
+    if (JSON.stringify(merged) === JSON.stringify(existingTags)) {continue;}
 
     if (!dry) {
       rewriteMirrorFrontmatterTags(relMirror, merged);

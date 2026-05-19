@@ -1,5 +1,4 @@
 'use client';
-
 import { colors, motion } from '@/lib/design-tokens';
 import { cn } from '@/lib/utils';
 import NextImage from 'next/image';
@@ -43,8 +42,8 @@ const VARIANT_STYLES: Record<
   },
   danger: {
     bg: colors.state.error,
-    bgHover: '#E5404F', // PULSE_VISUAL_OK: error hover shade
-    text: '#fff', // PULSE_VISUAL_OK: white text on danger button
+    bgHover: colors.semantic.error,
+    text: colors.text.silver,
   },
   success: {
     bg: colors.brand.green,

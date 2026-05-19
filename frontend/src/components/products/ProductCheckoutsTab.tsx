@@ -299,7 +299,7 @@ export function ProductCheckoutsTab({ productId }: { productId: string }) {
                 className="rounded-full px-2 py-0.5 text-xs font-medium"
                 style={{
                   backgroundColor: v ? 'rgba(16,185,129,0.12)' : 'rgba(232,93,48,0.12)',
-                  color: v ? '#7FE2BC' : colors.ember.primary,
+                  color: v ? colors.semantic.successText : colors.ember.primary,
                 }}
               >
                 {v ? 'ATIVO' : 'OFF'}

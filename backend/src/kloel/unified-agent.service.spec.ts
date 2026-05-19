@@ -1,7 +1,3 @@
-jest.mock('./openai-wrapper', () => ({
-  chatCompletionWithFallback: jest.fn(),
-}));
-
 import { ConfigService } from '@nestjs/config';
 import { UnifiedAgentActionsCommerceService } from './unified-agent-actions-commerce.service';
 import { UnifiedAgentActionsMessagingService } from './unified-agent-actions-messaging.service';
@@ -11,6 +7,10 @@ import { UnifiedAgentContextService } from './unified-agent-context.service';
 import { chatCompletionWithFallback } from './openai-wrapper';
 import { UnifiedAgentResponseService } from './unified-agent-response.service';
 import { UnifiedAgentService } from './unified-agent.service';
+
+jest.mock('./openai-wrapper', () => ({
+  chatCompletionWithFallback: jest.fn(),
+}));
 
 type UnifiedAgentPrismaMock = {
   $transaction: jest.Mock;
@@ -87,6 +87,7 @@ describe('UnifiedAgentService', () => {
   let paymentService: { createPayment: jest.Mock };
   let configMock: ConfigService;
   let planLimits: { ensureTokenBudget: jest.Mock; trackAiUsage: jest.Mock };
+  let dailyLimit: { ensureProactiveDailyLimit: jest.Mock };
   let service: UnifiedAgentService;
   let ctx: UnifiedAgentContextService;
   let response: UnifiedAgentResponseService;
@@ -112,14 +113,14 @@ describe('UnifiedAgentService', () => {
       kloelMemory: {
         findFirst: jest.fn().mockResolvedValue(null),
         findMany: jest.fn().mockResolvedValue([]),
-        upsert: jest.fn().mockResolvedValue(undefined),
+        upsert: jest.fn().mockResolvedValue({ id: 'memory-1' }),
       },
       product: {
         findFirst: jest.fn(),
         findMany: jest.fn().mockResolvedValue([]),
       },
       autopilotEvent: {
-        create: jest.fn().mockResolvedValue({}),
+        create: jest.fn().mockResolvedValue({ id: 'event-1' }),
       },
     };
 
@@ -128,7 +129,12 @@ describe('UnifiedAgentService', () => {
       sendMessage: jest.fn().mockResolvedValue({ error: false, delivery: 'sent', direct: true }),
     };
     transportRegistry = {
-      send: jest.fn().mockResolvedValue({ success: true, blocked: false, messageId: 'msg-1' }),
+      send: jest.fn().mockResolvedValue({
+        success: true,
+        blocked: false,
+        messageId: 'msg-1',
+        delivery: 'sent',
+      }),
     };
 
     paymentService = {
@@ -143,12 +149,24 @@ describe('UnifiedAgentService', () => {
 
     configMock = {
       get: jest.fn((key: string) => {
-        if (key === 'OPENAI_API_KEY') return undefined;
-        if (key === 'OPENAI_BRAIN_MODEL') return 'gpt-5.4';
-        if (key === 'OPENAI_BRAIN_FALLBACK_MODEL') return 'gpt-4.1';
-        if (key === 'OPENAI_WRITER_MODEL') return 'gpt-5.4-nano-2026-03-17';
-        if (key === 'OPENAI_WRITER_FALLBACK_MODEL') return 'gpt-4.1';
-        if (key === 'FRONTEND_URL') return 'https://app.kloel.test';
+        if (key === 'OPENAI_API_KEY') {
+          return 'test-openai-key';
+        }
+        if (key === 'OPENAI_BRAIN_MODEL') {
+          return 'gpt-5.4';
+        }
+        if (key === 'OPENAI_BRAIN_FALLBACK_MODEL') {
+          return 'gpt-4.1';
+        }
+        if (key === 'OPENAI_WRITER_MODEL') {
+          return 'gpt-5.4-nano-2026-03-17';
+        }
+        if (key === 'OPENAI_WRITER_FALLBACK_MODEL') {
+          return 'gpt-4.1';
+        }
+        if (key === 'FRONTEND_URL') {
+          return 'https://app.kloel.test';
+        }
         return undefined;
       }),
     } as never as ConfigService;
@@ -156,13 +174,22 @@ describe('UnifiedAgentService', () => {
       ensureTokenBudget: jest.fn().mockResolvedValue(undefined),
       trackAiUsage: jest.fn().mockResolvedValue(undefined),
     };
+    dailyLimit = {
+      ensureProactiveDailyLimit: jest.fn().mockResolvedValue({
+        allowed: true,
+        capAtDay: 1000,
+        remaining: 999,
+      }),
+    };
 
     const contextData = new UnifiedAgentContextDataService(prisma as never);
     ctx = new UnifiedAgentContextService(contextData);
     response = new UnifiedAgentResponseService(planLimits as never);
     const messaging = new UnifiedAgentActionsMessagingService(
-      transportRegistry as never,
+      whatsappService as never,
       {} as never,
+      transportRegistry as never,
+      dailyLimit as never,
     );
     const commerce = new UnifiedAgentActionsCommerceService(
       prisma as never,
@@ -174,7 +201,7 @@ describe('UnifiedAgentService', () => {
     const actions = new UnifiedAgentActionsService(
       prisma as never,
       {} as never,
-      {} as never,
+      whatsappService as never,
       messaging,
       {} as never,
       {} as never,
@@ -187,11 +214,6 @@ describe('UnifiedAgentService', () => {
     service = new UnifiedAgentService(
       prisma as never,
       configMock,
-      paymentService as never,
-      {} as never,
-      {} as never,
-      whatsappService as never,
-      {} as never,
       planLimits as never,
       { log: jest.fn().mockResolvedValue(undefined) } as never,
       ctx,
@@ -202,6 +224,72 @@ describe('UnifiedAgentService', () => {
 
   afterEach(() => {
     jest.clearAllMocks();
+  });
+
+  it('turns inbound WhatsApp intent into an outbound send_message action through the unified CIA loop', async () => {
+    (chatCompletionWithFallback as jest.Mock)
+      .mockResolvedValueOnce({
+        choices: [
+          {
+            message: {
+              content: 'Vou responder com objetividade.',
+              tool_calls: [
+                {
+                  id: 'tool-1',
+                  type: 'function',
+                  function: {
+                    name: 'send_message',
+                    arguments: JSON.stringify({ message: 'Claro. O produto custa R$ 890.' }),
+                  },
+                },
+              ],
+            },
+          },
+        ],
+        usage: { total_tokens: 120 },
+      })
+      .mockResolvedValueOnce({
+        choices: [{ message: { content: 'Claro. O produto custa R$ 890.' } }],
+        usage: { total_tokens: 40 },
+      });
+
+    const result = await service.processIncomingMessage({
+      workspaceId: 'ws-1',
+      contactId: 'contact-1',
+      phone: '5511999999999',
+      message: 'quanto custa?',
+      channel: 'whatsapp',
+      context: { deliveryMode: 'reactive' },
+      executeTools: true,
+    });
+
+    expect(transportRegistry.send).toHaveBeenCalledWith(
+      'ws-1',
+      expect.objectContaining({
+        channel: 'whatsapp',
+        recipientId: '5511999999999',
+        content: 'Claro. O produto custa R$ 890.',
+      }),
+    );
+    expect(prisma.autopilotEvent.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          workspaceId: 'ws-1',
+          contactId: 'contact-1',
+          intent: 'TOOL_CALL',
+          action: 'send_message',
+          status: 'completed',
+        }),
+      }),
+    );
+    expect(result.actions).toEqual([
+      expect.objectContaining({
+        tool: 'send_message',
+        args: { message: 'Claro. O produto custa R$ 890.' },
+        result: expect.objectContaining({ success: true, sent: true }),
+      }),
+    ]);
+    expect(result.response).toBe('Claro. O produto custa R$ 890.');
   });
 
   it('send_product_info always sends the generated product answer to WhatsApp', async () => {

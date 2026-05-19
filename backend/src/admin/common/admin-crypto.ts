@@ -89,9 +89,9 @@ export function decryptAdminSecret(payload: string, keyHex: string): string {
     throw new Error('admin secret ciphertext is malformed');
   }
   const [ivPart, tagPart, ctPart] = parts;
-  const iv = fromBase64Url(ivPart);
-  const tag = fromBase64Url(tagPart);
-  const ct = fromBase64Url(ctPart);
+  const iv = fromBase64Url(ivPart!);
+  const tag = fromBase64Url(tagPart!);
+  const ct = fromBase64Url(ctPart!);
 
   const key = decodeKey(keyHex);
   const decipher = createDecipheriv(ALGORITHM, key, iv);

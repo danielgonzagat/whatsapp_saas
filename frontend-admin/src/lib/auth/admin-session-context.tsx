@@ -23,7 +23,6 @@ export function AdminSessionProvider({ children }: { children: ReactNode }) {
 
   const persistSession = useCallback((session: AuthenticatedSession) => {
     adminSessionStorage.setAccessToken(session.accessToken);
-    adminSessionStorage.setRefreshToken(session.refreshToken);
     adminSessionStorage.setAdmin(session.admin);
     setAdminState(session.admin);
   }, []);
@@ -41,12 +40,11 @@ export function AdminSessionProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let cancelled = false;
 
-    adminSessionStorage.registerRefreshFn(async (rawRefresh) => {
+    adminSessionStorage.registerRefreshFn(async () => {
       try {
-        const session = await adminAuthApi.refresh(rawRefresh);
+        const session = await adminAuthApi.refresh();
         return {
           accessToken: session.accessToken,
-          refreshToken: session.refreshToken,
           admin: session.admin,
         } satisfies RefreshResult;
       } catch (err) {

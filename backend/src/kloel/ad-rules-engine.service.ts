@@ -1,5 +1,6 @@
-import { Injectable, Logger, Optional } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
+import { StructuredLogger } from '../logging/structured-logger';
 import * as Sentry from '@sentry/node';
 import tracer from 'dd-trace';
 import { Counter, Histogram, register } from 'prom-client';
@@ -48,7 +49,7 @@ interface AdRuleEvaluation {
 /** Ad rules engine service. */
 @Injectable()
 export class AdRulesEngineService {
-  private readonly logger = new Logger(AdRulesEngineService.name);
+  private readonly logger = StructuredLogger.from(AdRulesEngineService.name);
   private readonly counter =
     (register.getSingleMetric('kloel_ad_rules_total') as Counter<string>) ||
     new Counter({
@@ -117,7 +118,6 @@ export class AdRulesEngineService {
             await this.fireRule(rule, evaluation.banditAction ?? 'alert_only', evaluation.metrics);
           }
         } catch (err: unknown) {
-          // PULSE:OK — Per-rule failure is non-critical; other rules continue executing
           this.logger.error(`Error evaluating rule ${rule.id}: ${String(err)}`);
           this.counter.inc({ event: 'rule', result: 'error' });
           Sentry.captureException(err, {
@@ -130,7 +130,6 @@ export class AdRulesEngineService {
       this.counter.inc({ event: 'evaluation', result: 'success' });
       this.histogram.observe({ result: 'success' }, Date.now() - startedAt);
     } catch (err: unknown) {
-      // PULSE:OK — AdRules engine is a background job; errors are logged and retried next cycle
       this.logger.error(`AdRules engine error: ${String(err)}`);
       this.counter.inc({ event: 'evaluation', result: 'error' });
       this.histogram.observe({ result: 'error' }, Date.now() - startedAt);

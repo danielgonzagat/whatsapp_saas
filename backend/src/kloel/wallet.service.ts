@@ -1,5 +1,6 @@
-import { ForbiddenException, Injectable, Logger, Optional } from '@nestjs/common';
+import { ForbiddenException, Injectable, Optional } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
+import { StructuredLogger } from '../logging/structured-logger';
 import type { Prisma } from '@prisma/client';
 import { forEachSequential } from '../common/async-sequence';
 import { FinancialAlertService } from '../common/financial-alert.service';
@@ -27,7 +28,7 @@ class KloelWalletNotFoundError extends Error {
 
 @Injectable()
 export class WalletService {
-  private readonly logger = new Logger(WalletService.name);
+  private readonly logger = StructuredLogger.from(WalletService.name);
 
   constructor(
     private readonly prisma: PrismaService,
@@ -367,8 +368,7 @@ export class WalletService {
    * 📊 Histórico de transações
    */
   async getTransactionHistory(workspaceId: string, page = 1, limit = 20, type?: string) {
-    const wallet = await this.getOrCreateWallet(workspaceId);
-    const where: Record<string, unknown> = { walletId: wallet.id };
+    const where: Record<string, unknown> = { wallet: { workspaceId } };
     if (type) {
       where.type = type;
     }
@@ -466,7 +466,6 @@ export class WalletService {
             return;
           }
 
-          // PULSE:OK — each settlement needs atomic $transaction with unique amounts per wallet
           await this.prisma.$transaction(
             async (txn) => {
               // Guard the status flip with `updateMany` so a concurrent
@@ -539,7 +538,6 @@ export class WalletService {
           { details: { failures: perTxFailures } },
         );
       }
-      // PULSE:OK — cron job top-level catch prevents crashing the scheduler on transient DB failures
     } catch (err: unknown) {
       void this.opsAlert?.alertOnCriticalError(err, 'WalletService.reconciliationAlert');
       this.logger.error(`Reconciliation error: ${String(err)}`);

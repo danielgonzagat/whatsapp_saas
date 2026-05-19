@@ -1,4 +1,5 @@
 import { resolve, join, dirname } from 'node:path';
+import { OBSIDIAN_TAG_COLORS } from './shared/severity-tokens.mjs';
 
 // ── Configuration ───────────────────────────────────────────────────────────
 
@@ -17,9 +18,11 @@ export const LOCK_POLL_MS = Number(process.env.KLOEL_MIRROR_LOCK_POLL_MS || '75'
 export const GRAPH_SETTINGS_PATH = join(VAULT_ROOT, '.obsidian', 'graph.json');
 export const WORKSPACE_GRAPH_SEARCH = '';
 export const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
-export const DEBOUNCE_MS = 250;
-export const GIT_STATE_POLL_MS = 3000;
-export const GRAPH_LENS_ENFORCE_MS = 2000;
+export const DEBOUNCE_MS = Number(process.env.KLOEL_MIRROR_DEBOUNCE_MS || '250');
+export const GIT_STATE_POLL_MS = Number(process.env.KLOEL_MIRROR_GIT_STATE_POLL_MS || '15000');
+export const GRAPH_LENS_ENFORCE_MS = Number(
+  process.env.KLOEL_MIRROR_GRAPH_LENS_ENFORCE_MS || '60000',
+);
 export const MIRROR_FORMAT_VERSION = 21;
 export const SOURCE_BODY_MIRROR_MAX_BYTES = Number(
   process.env.KLOEL_SOURCE_BODY_MIRROR_MAX_BYTES || String(Number.MAX_SAFE_INTEGER),
@@ -27,12 +30,12 @@ export const SOURCE_BODY_MIRROR_MAX_BYTES = Number(
 export const GENERATED_PAGE_SIZE = Number(process.env.KLOEL_GRAPH_PAGE_SIZE || '120');
 export const DIRTY_WORKSPACE_TAG = 'workspace/dirty';
 export const DIRTY_WORKSPACE_QUERY = 'tag:#workspace/dirty';
-export const DIRTY_WORKSPACE_COLOR_RGB = 14724096; // Obsidian yellow #e0ac00.
+export const DIRTY_WORKSPACE_COLOR_RGB = OBSIDIAN_TAG_COLORS.DIRTY_WORKSPACE.rgb; // see OBSIDIAN_TAG_COLORS.DIRTY_WORKSPACE in shared/severity-tokens.mjs
 export const LOCAL_COMMIT_TAG = 'workspace/local-commit';
 export const LOCAL_COMMIT_QUERY = 'tag:#workspace/local-commit';
 export const METADATA_ONLY_TAG = 'mirror/metadata-only';
 export const METADATA_ONLY_QUERY = 'tag:#mirror/metadata-only';
-export const METADATA_ONLY_COLOR_RGB = 8421504; // Obsidian gray #808080.
+export const METADATA_ONLY_COLOR_RGB = OBSIDIAN_TAG_COLORS.METADATA_ONLY.rgb; // see OBSIDIAN_TAG_COLORS.METADATA_ONLY in shared/severity-tokens.mjs
 export const GRAPH_ACTION_REQUIRED_TAG = 'graph/action-required';
 export const GRAPH_ACTION_REQUIRED_QUERY = 'tag:#graph/action-required';
 export const GRAPH_ACTION_REQUIRED_COLOR_RGB = 16711680; // red.
@@ -155,11 +158,14 @@ export const CODE_STATE_COLOR_GROUPS = [
 
 /** Directories to mirror from the repo root into _source/. */
 export const SOURCE_DIRECTORIES = [
+  '.github',
+  '.husky',
   'backend',
+  'docker',
   'frontend',
+  'frontend-admin',
   'worker',
   'scripts',
-  '.github',
   'docs',
   'prisma',
   'nginx',
@@ -169,7 +175,10 @@ export const SOURCE_DIRECTORIES = [
 
 /** Root-level files eligible for mirroring. Supports glob-like wildcards. */
 export const ROOT_FILE_PATTERNS = [
+  { pattern: /^[^.][^/]*\.(?:md|json|ya?ml|toml|cjs|mjs|js)$/ },
+  { pattern: /^\.[^/]+\.(?:json|ya?ml|toml|cjs|mjs|js)$/ },
   { pattern: /^package\.json$/, target: 'package.json' },
+  { pattern: /^package-lock\.json$/, target: 'package-lock.json' },
   { pattern: /^pnpm-lock\.yaml$/, target: 'pnpm-lock.yaml' },
   { pattern: /^pnpm-workspace\.yaml$/, target: 'pnpm-workspace.yaml' },
   { pattern: /^tsconfig(\.\w+)?\.json$/, target: null }, // keep original name

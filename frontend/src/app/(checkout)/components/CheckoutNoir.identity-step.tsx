@@ -21,8 +21,8 @@ interface NoirIdentityStepProps {
   inputTheme: NoirInputTheme;
   submitError: string | null;
   loadingStep: boolean;
-  phoneLabel?: string;
-  btnStep1Text?: string;
+  phoneLabel?: string | undefined;
+  btnStep1Text?: string | undefined;
   doneCard: React.CSSProperties;
   activeCard: React.CSSProperties;
   numDone: React.CSSProperties;

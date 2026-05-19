@@ -33,23 +33,24 @@ ALTER TABLE "KloelWalletTransaction" ADD COLUMN IF NOT EXISTS "amountInCents" BI
 -- for non-negative values. Wallet balances are always non-negative.
 UPDATE "KloelWallet"
 SET
-  "availableBalanceInCents" = CAST(FLOOR("availableBalance" * 100 + 0.5) AS BIGINT),
-  "pendingBalanceInCents"   = CAST(FLOOR("pendingBalance" * 100 + 0.5) AS BIGINT),
-  "blockedBalanceInCents"   = CAST(FLOOR("blockedBalance" * 100 + 0.5) AS BIGINT)
+    "availableBalanceInCents" = CAST(FLOOR("availableBalance" * 100 + 0.5) AS BIGINT),
+    "pendingBalanceInCents" = CAST(FLOOR("pendingBalance" * 100 + 0.5) AS BIGINT),
+    "blockedBalanceInCents" = CAST(FLOOR("blockedBalance" * 100 + 0.5) AS BIGINT)
 WHERE
-  "availableBalanceInCents" = 0
-  AND "pendingBalanceInCents" = 0
-  AND "blockedBalanceInCents" = 0
-  AND ("availableBalance" <> 0 OR "pendingBalance" <> 0 OR "blockedBalance" <> 0);
+    "availableBalanceInCents" = 0
+    AND "pendingBalanceInCents" = 0
+    AND "blockedBalanceInCents" = 0
+    AND ("availableBalance" <> 0 OR "pendingBalance" <> 0 OR "blockedBalance" <> 0);
 
 -- Backfill KloelWalletTransaction.amountInCents. Withdrawal transactions
 -- have negative amount values in the existing Float column; preserve the
 -- sign in BigInt.
 UPDATE "KloelWalletTransaction"
-SET "amountInCents" = CASE
-  WHEN "amount" >= 0 THEN CAST(FLOOR("amount" * 100 + 0.5) AS BIGINT)
-  ELSE -CAST(FLOOR(ABS("amount") * 100 + 0.5) AS BIGINT)
-END
+SET
+    "amountInCents" = CASE
+        WHEN "amount" >= 0 THEN CAST(FLOOR("amount" * 100 + 0.5) AS BIGINT)
+        ELSE -CAST(FLOOR(ABS("amount") * 100 + 0.5) AS BIGINT)
+    END
 WHERE "amountInCents" = 0 AND "amount" <> 0;
 
 COMMIT;

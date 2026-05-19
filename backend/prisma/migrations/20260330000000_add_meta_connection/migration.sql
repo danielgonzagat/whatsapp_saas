@@ -22,7 +22,7 @@ CREATE TABLE "MetaConnection" (
 );
 
 -- CreateIndex
-CREATE UNIQUE INDEX "MetaConnection_workspaceId_key" ON "MetaConnection"("workspaceId");
+CREATE UNIQUE INDEX "MetaConnection_workspaceId_key" ON "MetaConnection" ("workspaceId");
 
 -- AddForeignKey
-ALTER TABLE "MetaConnection" ADD CONSTRAINT "MetaConnection_workspaceId_fkey" FOREIGN KEY ("workspaceId") REFERENCES "Workspace"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "MetaConnection" ADD CONSTRAINT "MetaConnection_workspaceId_fkey" FOREIGN KEY ("workspaceId") REFERENCES "Workspace" ("id") ON DELETE CASCADE ON UPDATE CASCADE;

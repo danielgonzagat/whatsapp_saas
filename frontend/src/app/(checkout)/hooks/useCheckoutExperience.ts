@@ -17,21 +17,8 @@ import type { UseCheckoutExperienceOptions } from './useCheckoutExperience.types
 import {
   buildOrderPayload as buildOrderPayloadHelper,
   resolveSuccessRedirect as resolveSuccessRedirectHelper,
-  type BuildOrderPayloadParams,
-} from './__companions__/useCheckoutExperience.helpers';
-import {
-  EMPTY_CHECKOUT_EXPERIENCE_FORM,
-  applyFieldFormatter,
-  buildCheckoutFormDraftKey,
-  buildInstallmentOptions,
-  computeShippingInCents,
-  preflightFinalizeOrder,
-  resolveCheckoutUnavailableReason,
-  resolvePaymentMethodCode,
-  resolveProductImage,
-  resolveShippingMethodLabel,
-  resolveShippingMode,
-} from './useCheckoutExperience.utils';
+} from './useCheckoutExperience.helpers';
+import { EMPTY_CHECKOUT_EXPERIENCE_FORM, applyFieldFormatter, buildCheckoutFormDraftKey, buildInstallmentOptions, computeShippingInCents, preflightFinalizeOrder, resolveCheckoutUnavailableReason, resolveProductImage, resolveShippingMode } from './useCheckoutExperience.utils';
 
 /** Use checkout experience. */
 export function useCheckoutExperience({
@@ -491,7 +478,7 @@ export function useCheckoutExperience({
 
     try {
       const payload = buildOrderPayload(resolvedPlanId, resolvedWorkspaceId);
-      const result = (await createOrder(payload)) as Record<string, unknown>;
+      const result = await createOrder(payload);
       setPixelEvent('Purchase');
 
       const successPath = resolveSuccessRedirect(result);

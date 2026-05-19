@@ -1,4 +1,5 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { Prisma } from '@prisma/client';
 import { Response } from 'express';
 import { LLMBudgetService, estimateChatCostCents } from './llm-budget.service';
@@ -6,6 +7,7 @@ import { PlanLimitsService } from '../billing/plan-limits.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { KloelComposerService } from './kloel-composer.service';
 import { KloelConversationStore } from './kloel-conversation-store';
+import { KLOEL_LLM_E2E_GUARD, KloelLLME2EGuard } from './kloel-llm-e2e-guard';
 import {
   createKloelErrorEvent,
   createKloelStatusEvent,
@@ -30,32 +32,13 @@ export type { LocalToolExecutor } from './kloel-reply-engine.service';
 
 type ComposerCapability = 'create_image' | 'create_site' | 'search_web';
 
-export interface ChatMessage {
-  role: 'system' | 'user' | 'assistant';
-  content: string;
-}
-
-export interface ThinkRequest {
-  message: string;
-  workspaceId?: string;
-  userId?: string;
-  userName?: string;
-  conversationId?: string;
-  mode?: 'chat' | 'onboarding' | 'sales';
-  companyContext?: string;
-  metadata?: Prisma.InputJsonValue;
-}
-
-export interface ThinkSyncResult {
-  response: string;
-  conversationId?: string;
-  title?: string;
-}
+export type { ChatMessage, ThinkRequest, ThinkSyncResult } from './kloel-thinker.types';
+import type { ThinkRequest, ThinkSyncResult } from './kloel-thinker.types';
 
 /** Orchestrates the Kloel thinking loop — SSE streaming and sync variants. */
 @Injectable()
 export class KloelThinkerService {
-  private readonly logger = new Logger(KloelThinkerService.name);
+  private readonly logger = StructuredLogger.from(KloelThinkerService.name);
   private readonly conversationStore: KloelConversationStore;
 
   constructor(
@@ -66,6 +49,7 @@ export class KloelThinkerService {
     private readonly wsContextService: KloelWorkspaceContextService,
     private readonly composerService: KloelComposerService,
     private readonly replyEngine: KloelReplyEngineService,
+    @Inject(KLOEL_LLM_E2E_GUARD) private readonly llmE2EGuard: KloelLLME2EGuard,
   ) {
     this.conversationStore = new KloelConversationStore(prisma, this.logger);
   }
@@ -88,12 +72,17 @@ export class KloelThinkerService {
       conversationId,
       mode = 'chat',
       metadata,
+      allowedTools,
     } = request;
     const signal = opts?.signal;
     const isAborted = () => !!signal?.aborted;
     const abortReason = () => signal?.reason;
     const isClientDisconnected = () => this.replyEngine.isClientDisconnected(abortReason());
-    const streamWriter = new KloelStreamWriter(res, { signal, logger: this.logger });
+    const streamWriter = new KloelStreamWriter(res, {
+      ...(signal !== undefined ? { signal } : {}),
+      logger: this.logger,
+      llmE2EGuard: this.llmE2EGuard,
+    });
     const processingTraceEntries: StoredProcessingTraceEntry[] = [];
     const safeWrite = (event: KloelStreamEvent) => {
       this.threadService.appendStoredProcessingTraceEntry(processingTraceEntries, event);
@@ -102,11 +91,15 @@ export class KloelThinkerService {
     streamWriter.init();
 
     try {
-      if (!this.replyEngine.hasOpenAiKey() && !process.env.ANTHROPIC_API_KEY) {
+      if (
+        !this.llmE2EGuard.isEnabled() &&
+        !this.replyEngine.hasOpenAiKey() &&
+        !process.env.ANTHROPIC_API_KEY
+      ) {
         safeWrite(
           createKloelErrorEvent({
             content:
-              'Assistente IA não disponível no momento. Configure OPENAI_API_KEY ou ANTHROPIC_API_KEY para habilitar o Kloel.',
+              'Assistente IA não disponível no momento. Configure DEEPSEEK_API_KEY, LLM_API_KEY, OPENAI_API_KEY ou ANTHROPIC_API_KEY para habilitar o Kloel.',
             error: 'ai_api_key_missing',
             done: true,
           }),
@@ -154,8 +147,9 @@ export class KloelThinkerService {
         ]);
         companyName = 'sua empresa';
         context = await this.wsContextService.getWorkspaceContext(workspaceId, userId);
-        if (enrichedCompanyContext)
+        if (enrichedCompanyContext) {
           context = [context, enrichedCompanyContext].filter(Boolean).join('\n\n');
+        }
         userName = this.replyEngine.contextFormatter.sanitizeUserNameForAssistant(
           reqUserName || agent?.name || userName,
         );
@@ -169,11 +163,11 @@ export class KloelThinkerService {
         historyState.recentMessages,
       );
       const dynamicContext = await this.replyEngine.buildDynamicRuntimeContext({
-        workspaceId,
-        userId,
+        ...(workspaceId !== undefined ? { workspaceId } : {}),
+        ...(userId !== undefined ? { userId } : {}),
         userName,
         expertiseLevel,
-        companyContext: enrichedCompanyContext,
+        ...(enrichedCompanyContext !== undefined ? { companyContext: enrichedCompanyContext } : {}),
       });
       const summaryMessage = this.threadService.buildThreadSummarySystemMessage(
         historyState.summary,
@@ -196,22 +190,23 @@ export class KloelThinkerService {
                 expertiseLevel,
               });
 
-      if (thread?.id) safeWrite(createKloelThreadEvent(thread.id, thread.title));
+      if (thread?.id) {
+        safeWrite(createKloelThreadEvent(thread.id, thread.title));
+      }
 
-      const persistedUserMessage =
-        thread?.id && workspaceId
-          ? await this.threadService.persistUserThreadMessage(
-              thread.id,
-              workspaceId,
-              message,
-              this.threadService.buildThreadMessageMetadata(metadata, {
-                clientRequestId,
-                mode,
-                transport: 'sse',
-                requestState: 'accepted',
-              }),
-            )
-          : null;
+      const persistedUserMessage = thread?.id
+        ? await this.threadService.persistUserThreadMessage(
+            thread.id,
+            workspaceId ?? '',
+            message,
+            this.threadService.buildThreadMessageMetadata(metadata, {
+              clientRequestId,
+              mode,
+              transport: 'sse',
+              requestState: 'accepted',
+            }),
+          )
+        : null;
 
       const branchCtx: ThinkBranchContext = {
         workspaceId,
@@ -255,7 +250,7 @@ export class KloelThinkerService {
         temperature: number,
       ) =>
         streamWriter.streamModelResponse({
-          openai: this.replyEngine.openai,
+          openai: this.replyEngine.openai!,
           writerMessages,
           temperature,
           responseMaxTokens,
@@ -271,6 +266,7 @@ export class KloelThinkerService {
           responseTemperature,
           responseMaxTokens,
           executeLocalTool,
+          allowedTools,
           signal,
           streamWriterResponse,
           branchCtx,
@@ -291,7 +287,9 @@ export class KloelThinkerService {
       if (workspaceId && streamedReply) {
         this.llmBudget.recordSpend(workspaceId, streamedReply.estimatedTokens).catch(() => {});
       }
-      if (!streamedReply) return;
+      if (!streamedReply) {
+        return;
+      }
       let fullResponse = streamedReply.fullResponse;
       if (!fullResponse.trim()) {
         safeWrite(
@@ -322,24 +320,18 @@ export class KloelThinkerService {
   async thinkSync(
     request: ThinkRequest,
     composerCapability: ComposerCapability | null,
-    enrichedCompanyContext: string | undefined,
+    _enrichedCompanyContext: string | undefined,
     effectiveCompanyContext: string | undefined,
     _executeLocalTool?: LocalToolExecutor,
   ): Promise<ThinkSyncResult> {
     try {
-      return await thinkSyncImpl(
-        request,
-        composerCapability,
-        enrichedCompanyContext,
-        effectiveCompanyContext,
-        {
-          replyEngine: this.replyEngine,
-          threadService: this.threadService,
-          composerService: this.composerService,
-          conversationStore: this.conversationStore,
-          planLimits: this.planLimits,
-        },
-      );
+      return await thinkSyncImpl(request, composerCapability, effectiveCompanyContext, {
+        replyEngine: this.replyEngine,
+        threadService: this.threadService,
+        composerService: this.composerService,
+        conversationStore: this.conversationStore,
+        planLimits: this.planLimits,
+      });
     } catch (error: unknown) {
       this.logger.error('Erro no KLOEL Thinker Sync:', error);
       throw error;

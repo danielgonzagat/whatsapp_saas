@@ -1,28 +1,30 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { Prisma } from '@prisma/client';
 import { Response } from 'express';
 import { PlanLimitsService } from '../billing/plan-limits.service';
-import { StorageService } from '../common/storage/storage.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { WhatsAppProviderRegistry } from '../whatsapp/providers/provider-registry';
-import { WhatsappService } from '../whatsapp/whatsapp.service';
-import { AudioService } from './audio.service';
-import { KloelBusinessConfigToolsService } from './kloel-business-config-tools.service';
-import { KloelChatToolsService } from './kloel-chat-tools.service';
-import { KloelComposerService } from './kloel-composer.service';
 import { KloelConversationStore } from './kloel-conversation-store';
 import { KloelLeadBrainService } from './kloel-lead-brain.service';
 import { KloelReplyEngineService } from './kloel-reply-engine.service';
 import { KloelThreadService } from './kloel-thread.service';
 import { KloelThinkerService, ThinkRequest, ThinkSyncResult } from './kloel-thinker.service';
 import { KloelToolDispatcherService } from './kloel-tool-dispatcher.service';
-import { KloelWhatsAppToolsService } from './kloel-whatsapp-tools.service';
 import { KloelWorkspaceContextService } from './kloel-workspace-context.service';
-import { SmartPaymentService } from './smart-payment.service';
-import { UnifiedAgentService } from './unified-agent.service';
+import { AgentRuntimeContextService } from './agent-runtime';
 
 type ComposerCapability = 'create_image' | 'create_site' | 'search_web';
 type UnknownRecord = Record<string, unknown>;
+type FollowupMetadata = {
+  phone?: string;
+  contactId?: string;
+  message?: string;
+  scheduledFor?: unknown;
+  delayMinutes?: unknown;
+  status?: string;
+  executedAt?: unknown;
+  [key: string]: unknown;
+};
 
 interface ComposerAttachmentMetadata {
   id?: string;
@@ -65,28 +67,19 @@ export interface FollowupListItem {
 /** Kloel main service — thin orchestrator over focused sub-services. */
 @Injectable()
 export class KloelService {
-  private readonly logger = new Logger(KloelService.name);
+  private readonly logger = StructuredLogger.from(KloelService.name);
   private readonly conversationStore: KloelConversationStore;
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly smartPaymentService: SmartPaymentService,
-    private readonly whatsappService: WhatsappService,
-    private readonly providerRegistry: WhatsAppProviderRegistry,
-    private readonly unifiedAgentService: UnifiedAgentService,
-    private readonly audioService: AudioService,
     private readonly planLimits: PlanLimitsService,
-    private readonly storageService: StorageService,
     private readonly threadService: KloelThreadService,
     private readonly wsContextService: KloelWorkspaceContextService,
-    private readonly chatToolsService: KloelChatToolsService,
-    private readonly bizConfigToolsService: KloelBusinessConfigToolsService,
-    private readonly whatsappToolsService: KloelWhatsAppToolsService,
     private readonly leadBrainService: KloelLeadBrainService,
-    private readonly composerService: KloelComposerService,
     private readonly thinkerService: KloelThinkerService,
     private readonly replyEngineService: KloelReplyEngineService,
     private readonly toolDispatcher: KloelToolDispatcherService,
+    @Optional() private readonly agentRuntime?: AgentRuntimeContextService,
   ) {
     this.conversationStore = new KloelConversationStore(prisma, this.logger);
   }
@@ -119,11 +112,15 @@ export class KloelService {
     message: string,
     mode: ThinkRequest['mode'],
   ): ComposerCapability | null {
-    if (mode !== 'chat') return null;
+    if (mode !== 'chat') {
+      return null;
+    }
     const normalized = String(message || '')
       .trim()
       .toLowerCase();
-    if (!normalized) return null;
+    if (!normalized) {
+      return null;
+    }
     const wantsSite = [
       'landing',
       'landing page',
@@ -152,7 +149,9 @@ export class KloelService {
       'quero criar',
       'preciso criar',
     ].some((t) => normalized.includes(t));
-    if (wantsSite && wantsCreation) return 'create_site';
+    if (wantsSite && wantsCreation) {
+      return 'create_site';
+    }
     return null;
   }
 
@@ -172,15 +171,21 @@ export class KloelService {
     const { workspaceId, metadata, companyContext } = params;
     const composerMetadata = this.extractComposerMetadata(metadata);
     const blocks: string[] = [];
-    if (companyContext) blocks.push(companyContext);
+    if (companyContext) {
+      blocks.push(companyContext);
+    }
     const attachmentBlock = this.buildAttachmentPromptContext(composerMetadata.attachments);
-    if (attachmentBlock) blocks.push(attachmentBlock);
+    if (attachmentBlock) {
+      blocks.push(attachmentBlock);
+    }
     if (workspaceId && composerMetadata.linkedProduct) {
       const linkedProductBlock = await this.wsContextService.buildLinkedProductPromptContext(
         workspaceId,
         composerMetadata.linkedProduct,
       );
-      if (linkedProductBlock) blocks.push(linkedProductBlock);
+      if (linkedProductBlock) {
+        blocks.push(linkedProductBlock);
+      }
     }
     return blocks.length > 0 ? blocks.join('\n\n') : undefined;
   }
@@ -188,7 +193,9 @@ export class KloelService {
   private buildAttachmentPromptContext(
     attachments: ComposerAttachmentMetadata[] | null | undefined,
   ): string | null {
-    if (!Array.isArray(attachments) || attachments.length === 0) return null;
+    if (!Array.isArray(attachments) || attachments.length === 0) {
+      return null;
+    }
     const lines = attachments
       .slice(0, 10)
       .map((a, i) => {
@@ -202,7 +209,9 @@ export class KloelService {
         return `- ${parts.join(' | ')}`;
       })
       .filter(Boolean);
-    if (lines.length === 0) return null;
+    if (lines.length === 0) {
+      return null;
+    }
     return ['ANEXOS VINCULADOS AO PROMPT:', ...lines].join('\n');
   }
 
@@ -215,6 +224,18 @@ export class KloelService {
     userId?: string,
   ): Promise<{ success: boolean; message?: string; error?: string; [key: string]: unknown }> {
     return this.toolDispatcher.executeTool(workspaceId, toolName, args, userId);
+  }
+
+  private buildScopedToolExecutor(allowedTools?: string[]): typeof this.executeTool {
+    if (allowedTools === undefined) {
+      return this.executeTool.bind(this);
+    }
+    return async (workspaceId, toolName, args, userId) => {
+      if (!allowedTools.includes(toolName)) {
+        return { success: false, error: 'tool_not_allowed', toolName, allowedTools };
+      }
+      return this.executeTool(workspaceId, toolName, args, userId);
+    };
   }
 
   // ── Public API ──
@@ -233,24 +254,41 @@ export class KloelService {
       composerMetadata.capability,
     );
     const enrichedCompanyContext = await this.buildComposerContext({
-      workspaceId,
-      metadata,
-      companyContext,
+      ...(workspaceId !== undefined ? { workspaceId } : {}),
+      ...(metadata !== undefined ? { metadata } : {}),
+      ...(companyContext !== undefined ? { companyContext } : {}),
     });
     const marketingAddendum = await this.replyEngineService.buildMarketingPromptAddendum(
       workspaceId,
       mode,
       message,
     );
+    const runtimeAddendum = await this.buildAgentRuntimePromptBlock({
+      ...(workspaceId !== undefined ? { workspaceId } : {}),
+      message,
+      mode,
+      ...(request.userId !== undefined ? { userId: request.userId } : {}),
+      ...(request.conversationId !== undefined ? { conversationId: request.conversationId } : {}),
+    });
     const effectiveCompanyContext =
-      [enrichedCompanyContext, marketingAddendum].filter(Boolean).join('\n\n') || undefined;
+      [enrichedCompanyContext, marketingAddendum, runtimeAddendum].filter(Boolean).join('\n\n') ||
+      undefined;
+    if (workspaceId) {
+      await this.agentRuntime?.recordTurnOutcome({
+        workspaceId,
+        channel: `dashboard:${mode}`,
+        userMessage: message,
+        ...(request.userId !== undefined ? { userId: request.userId } : {}),
+        ...(request.conversationId !== undefined ? { threadId: request.conversationId } : {}),
+      });
+    }
     return this.thinkerService.think(
       request,
       res,
       composerCapability,
       enrichedCompanyContext,
       effectiveCompanyContext,
-      this.executeTool.bind(this),
+      this.buildScopedToolExecutor(request.allowedTools),
       opts,
     );
   }
@@ -265,24 +303,45 @@ export class KloelService {
       composerMetadata.capability,
     );
     const enrichedCompanyContext = await this.buildComposerContext({
-      workspaceId,
-      metadata,
-      companyContext,
+      ...(workspaceId !== undefined ? { workspaceId } : {}),
+      ...(metadata !== undefined ? { metadata } : {}),
+      ...(companyContext !== undefined ? { companyContext } : {}),
     });
     const marketingAddendum = await this.replyEngineService.buildMarketingPromptAddendum(
       workspaceId,
       mode,
       message,
     );
+    const runtimeAddendum = await this.buildAgentRuntimePromptBlock({
+      ...(workspaceId !== undefined ? { workspaceId } : {}),
+      message,
+      mode,
+      ...(request.userId !== undefined ? { userId: request.userId } : {}),
+      ...(request.conversationId !== undefined ? { conversationId: request.conversationId } : {}),
+    });
     const effectiveCompanyContext =
-      [enrichedCompanyContext, marketingAddendum].filter(Boolean).join('\n\n') || undefined;
-    return this.thinkerService.thinkSync(
+      [enrichedCompanyContext, marketingAddendum, runtimeAddendum].filter(Boolean).join('\n\n') ||
+      undefined;
+    const result = await this.thinkerService.thinkSync(
       request,
       composerCapability,
       enrichedCompanyContext,
       effectiveCompanyContext,
-      this.executeTool.bind(this),
+      this.buildScopedToolExecutor(request.allowedTools),
     );
+    if (workspaceId) {
+      await this.agentRuntime?.recordTurnOutcome({
+        workspaceId,
+        channel: `dashboard:${mode}`,
+        userMessage: message,
+        assistantMessage: result.response,
+        ...(request.userId !== undefined ? { userId: request.userId } : {}),
+        ...(result.conversationId ?? request.conversationId
+          ? { threadId: result.conversationId ?? request.conversationId }
+          : {}),
+      });
+    }
+    return result;
   }
 
   /** Regenerate assistant message. */
@@ -300,7 +359,9 @@ export class KloelService {
   async getHistory(
     workspaceId: string,
   ): Promise<{ id: string; role: string; content: string; timestamp: Date }[]> {
-    if (!workspaceId) return [];
+    if (!workspaceId) {
+      return [];
+    }
     try {
       const messages = await this.prisma.kloelMessage.findMany({
         where: { workspaceId },
@@ -398,7 +459,9 @@ export class KloelService {
   async listFollowups(workspaceId: string, contactId?: string) {
     try {
       const whereClause: Prisma.KloelMemoryWhereInput = { workspaceId, category: 'followups' };
-      if (contactId) whereClause.metadata = { path: ['contactId'], equals: contactId };
+      if (contactId) {
+        whereClause.metadata = { path: ['contactId'], equals: contactId };
+      }
       const followups = await this.prisma.kloelMemory.findMany({
         where: { ...whereClause, workspaceId },
         orderBy: { createdAt: 'desc' },
@@ -408,7 +471,7 @@ export class KloelService {
       return {
         total: followups.length,
         followups: followups.map((f): FollowupListItem => {
-          const meta = (f.metadata as Record<string, unknown>) || {};
+          const meta = (f.metadata as FollowupMetadata) || {};
           return {
             id: f.id,
             key: f.key,
@@ -496,5 +559,25 @@ export class KloelService {
     data: { type: string; name: string; credentials: Prisma.InputJsonValue },
   ) {
     return this.prisma.integration.create({ data: { workspaceId, ...data } });
+  }
+
+  private async buildAgentRuntimePromptBlock(params: {
+    workspaceId?: string;
+    userId?: string;
+    conversationId?: string;
+    message: string;
+    mode: ThinkRequest['mode'];
+  }): Promise<string | undefined> {
+    if (!this.agentRuntime || !params.workspaceId) {
+      return undefined;
+    }
+    const context = await this.agentRuntime.buildContext({
+      workspaceId: params.workspaceId,
+      channel: `dashboard:${params.mode ?? 'chat'}`,
+      message: params.message,
+      ...(params.userId !== undefined ? { userId: params.userId } : {}),
+      ...(params.conversationId !== undefined ? { threadId: params.conversationId } : {}),
+    });
+    return context.systemPromptBlock;
   }
 }

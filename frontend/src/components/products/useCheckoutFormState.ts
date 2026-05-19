@@ -4,7 +4,6 @@ import { useState, useCallback, useEffect } from 'react';
 import {
   CheckoutFormState,
   createDefaultCheckoutForm,
-  Checkout,
 } from '@/components/products/ProductCheckoutsTab.helpers';
 
 const CHECKOUT_FORM_DRAFT_VERSION = 1;
@@ -60,7 +59,10 @@ function readCheckoutFormDraft(
 
 function saveCheckoutFormDraft(draft: ProductCheckoutFormDraft): void {
   try {
-    localStorage.setItem(draft.version ? buildCheckoutFormDraftKey(draft.productId) : '', JSON.stringify(draft));
+    localStorage.setItem(
+      draft.version ? buildCheckoutFormDraftKey(draft.productId) : '',
+      JSON.stringify(draft),
+    );
   } catch {
     // Silent fail on localStorage quota exceeded
   }
@@ -87,9 +89,11 @@ export function useCheckoutFormState(productId: string): CheckoutFormStateHook {
     const saved = localStorage.getItem(draftKey);
     const draft = readCheckoutFormDraft(saved, productId);
     if (draft) {
-      setForm(draft.form);
-      setShowModal(draft.showModal);
-      setEditingCheckoutId(draft.editingCheckoutId);
+      queueMicrotask(() => setForm(draft.form));
+      queueMicrotask(() => setShowModal(draft.showModal));
+      queueMicrotask(() => {
+        setEditingCheckoutId(draft.editingCheckoutId);
+      });
     }
   }, [productId, draftKey]);
 

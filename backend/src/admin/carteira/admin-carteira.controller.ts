@@ -9,7 +9,6 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
-import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import {
   AdminAction,
   AdminModule,
@@ -33,6 +32,7 @@ import { MarketplaceTreasuryReconcileService } from '../../marketplace-treasury/
 import { MarketplaceTreasuryService } from '../../marketplace-treasury/marketplace-treasury.service';
 import { AddFraudBlacklistDto } from './dto/add-fraud-blacklist.dto';
 import { AdminCarteiraLedgerQueryDto } from './dto/admin-carteira-ledger-query.dto';
+import { RouteClass } from '../../common/throttler/route-class.decorator';
 
 function parseSkip(value?: string): number | undefined {
   if (!value) {
@@ -68,8 +68,8 @@ function parseDateOrFail(raw: string | undefined, label: string): Date | undefin
  */
 @Public()
 @Controller('admin/carteira')
-@UseGuards(AdminAuthGuard, AdminPermissionGuard, ThrottlerGuard)
-@Throttle({ default: { limit: 5, ttl: 60000 } })
+@UseGuards(AdminAuthGuard, AdminPermissionGuard)
+@RouteClass('read')
 export class AdminCarteiraController {
   constructor(
     private readonly wallet: MarketplaceTreasuryService,
@@ -85,8 +85,6 @@ export class AdminCarteiraController {
 
   /** Balance. */
   @Get('balance')
-  @Throttle({ default: { limit: 30, ttl: 60000 } })
-  @Throttle({ default: { limit: 30, ttl: 60000 } })
   @RequireAdminPermission(AdminModule.CARTEIRA, AdminAction.VIEW)
   async balance(@Query('currency') currency?: string) {
     return this.wallet.readBalance(currency ?? 'BRL');
@@ -94,7 +92,6 @@ export class AdminCarteiraController {
 
   /** Ledger. */
   @Get('ledger')
-  @Throttle({ default: { limit: 30, ttl: 60000 } })
   @RequireAdminPermission(AdminModule.CARTEIRA, AdminAction.VIEW)
   async ledger(@Query() query: AdminCarteiraLedgerQueryDto) {
     const parsedKind =
@@ -104,28 +101,29 @@ export class AdminCarteiraController {
       )
         ? (query.kind as MarketplaceTreasuryLedgerKind)
         : undefined;
+    const parsedFrom = parseDateOrFail(query.from, 'from');
+    const parsedTo = parseDateOrFail(query.to, 'to');
+    const parsedSkip = parseSkip(query.skip);
+    const parsedTake = parseTake(query.take);
     return this.wallet.listLedger({
-      currency: query.currency,
-      kind: parsedKind,
-      from: parseDateOrFail(query.from, 'from'),
-      to: parseDateOrFail(query.to, 'to'),
-      skip: parseSkip(query.skip),
-      take: parseTake(query.take),
+      ...(query.currency !== undefined ? { currency: query.currency } : {}),
+      ...(parsedKind !== undefined ? { kind: parsedKind } : {}),
+      ...(parsedFrom !== undefined ? { from: parsedFrom } : {}),
+      ...(parsedTo !== undefined ? { to: parsedTo } : {}),
+      ...(parsedSkip !== undefined ? { skip: parsedSkip } : {}),
+      ...(parsedTake !== undefined ? { take: parsedTake } : {}),
     });
   }
 
   /** Run reconcile. */
   @Get('reconcile')
-  @Throttle({ default: { limit: 30, ttl: 60000 } })
   @RequireAdminPermission(AdminModule.CARTEIRA, AdminAction.VIEW)
   async runReconcile(@Query('currency') currency?: string) {
     return this.reconcile.reconcile(currency ?? 'BRL');
   }
 
   /** List connect accounts. */
-  // PULSE_OK: internal route, admin panel only
   @Get('connect/accounts')
-  @Throttle({ default: { limit: 30, ttl: 60000 } })
   @RequireAdminPermission(AdminModule.CARTEIRA, AdminAction.VIEW)
   async listConnectAccounts(@Query('workspaceId') workspaceId?: string) {
     const balances = await this.connectService.listBalances(
@@ -158,27 +156,25 @@ export class AdminCarteiraController {
   }
 
   /** Reconcile connect. */
-  // PULSE_OK: internal route, admin panel only
   @Get('connect/reconcile')
-  @Throttle({ default: { limit: 30, ttl: 60000 } })
   @RequireAdminPermission(AdminModule.CARTEIRA, AdminAction.VIEW)
   async reconcileConnect(@Query('workspaceId') workspaceId?: string) {
     return this.connectReconcile.reconcile({
-      workspaceId: workspaceId ? String(workspaceId).trim() : undefined,
+      ...(workspaceId ? { workspaceId: String(workspaceId).trim() } : {}),
     });
   }
 
   /** List payouts. */
-  // PULSE_OK: internal route, admin panel only
   @Get('payouts')
-  @Throttle({ default: { limit: 30, ttl: 60000 } })
   @RequireAdminPermission(AdminModule.CARTEIRA, AdminAction.VIEW)
   async listPayouts(@Query('skip') skip?: string, @Query('take') take?: string) {
+    const parsedSkip = parseSkip(skip);
+    const parsedTake = parseTake(take);
     const result = await this.audit.list({
       action: 'carteira.payout',
       entityType: 'marketplace_treasury',
-      skip: parseSkip(skip),
-      take: parseTake(take),
+      ...(parsedSkip !== undefined ? { skip: parsedSkip } : {}),
+      ...(parsedTake !== undefined ? { take: parsedTake } : {}),
     });
 
     return {
@@ -210,9 +206,7 @@ export class AdminCarteiraController {
   }
 
   /** List connect payout requests. */
-  // PULSE_OK: internal route, admin panel only
   @Get('connect/payout-requests')
-  @Throttle({ default: { limit: 30, ttl: 60000 } })
   @RequireAdminPermission(AdminModule.CARTEIRA, AdminAction.VIEW)
   async listConnectPayoutRequests(
     @Query('workspaceId') workspaceId?: string,
@@ -220,18 +214,18 @@ export class AdminCarteiraController {
     @Query('skip') skip?: string,
     @Query('take') take?: string,
   ) {
+    const parsedSkip = parseSkip(skip);
+    const parsedTake = parseTake(take);
     return this.connectPayoutApprovalService.listAdminRequests({
-      workspaceId: workspaceId ? String(workspaceId).trim() : undefined,
-      state: state ? String(state).trim() : undefined,
-      skip: parseSkip(skip),
-      take: parseTake(take),
+      ...(workspaceId ? { workspaceId: String(workspaceId).trim() } : {}),
+      ...(state ? { state: String(state).trim() } : {}),
+      ...(parsedSkip !== undefined ? { skip: parsedSkip } : {}),
+      ...(parsedTake !== undefined ? { take: parsedTake } : {}),
     });
   }
 
   /** List fraud blacklist rows. */
-  // PULSE_OK: internal route, admin panel only
   @Get('fraud/blacklist')
-  @Throttle({ default: { limit: 30, ttl: 60000 } })
   @RequireAdminPermission(AdminModule.CARTEIRA, AdminAction.VIEW)
   async listFraudBlacklist(
     @Query('type') type?: string,
@@ -240,11 +234,13 @@ export class AdminCarteiraController {
     @Query('take') take?: string,
   ) {
     const parsedType = type ? this.parseFraudBlacklistType(type) : undefined;
+    const parsedSkip = parseSkip(skip);
+    const parsedTake = parseTake(take);
     const result = await this.fraudEngine.listBlacklist({
-      type: parsedType,
-      value: value ? String(value).trim() : undefined,
-      skip: parseSkip(skip),
-      take: parseTake(take),
+      ...(parsedType !== undefined ? { type: parsedType } : {}),
+      ...(value !== undefined ? { value: String(value).trim() } : {}),
+      ...(parsedSkip !== undefined ? { skip: parsedSkip } : {}),
+      ...(parsedTake !== undefined ? { take: parsedTake } : {}),
     });
 
     return {
@@ -262,7 +258,6 @@ export class AdminCarteiraController {
   }
 
   /** Add fraud blacklist row. */
-  // PULSE_OK: internal route, admin panel only
   @Post('fraud/blacklist')
   @RequireAdminPermission(AdminModule.CARTEIRA, AdminAction.EDIT)
   async addFraudBlacklist(
@@ -279,12 +274,13 @@ export class AdminCarteiraController {
       throw new BadRequestException('reason is required');
     }
 
+    const expiresAt = parseDateOrFail(body.expiresAt ?? undefined, 'expiresAt');
     const row = await this.fraudEngine.addToBlacklist({
       type,
       value,
       reason,
       addedBy: admin.id,
-      expiresAt: parseDateOrFail(body.expiresAt ?? undefined, 'expiresAt'),
+      ...(expiresAt !== undefined ? { expiresAt } : {}),
     });
 
     await this.audit.append({
@@ -313,7 +309,6 @@ export class AdminCarteiraController {
   }
 
   /** Remove fraud blacklist row. */
-  // PULSE_OK: internal route, admin panel only
   @Post('fraud/blacklist/remove')
   @RequireAdminPermission(AdminModule.CARTEIRA, AdminAction.EDIT)
   async removeFraudBlacklist(
@@ -348,7 +343,6 @@ export class AdminCarteiraController {
   }
 
   /** Create payout. */
-  // PULSE_OK: internal route, admin panel only
   @Post('payouts')
   @RequireAdminPermission(AdminModule.CARTEIRA, AdminAction.EDIT)
   async createPayout(
@@ -417,7 +411,6 @@ export class AdminCarteiraController {
   }
 
   /** Approve connect payout request. */
-  // PULSE_OK: internal route, admin panel only
   @Post('connect/payout-requests/:approvalRequestId/approve')
   @RequireAdminPermission(AdminModule.CARTEIRA, AdminAction.APPROVE)
   async approveConnectPayoutRequest(
@@ -439,7 +432,6 @@ export class AdminCarteiraController {
   }
 
   /** Reject connect payout request. */
-  // PULSE_OK: internal route, admin panel only
   @Post('connect/payout-requests/:approvalRequestId/reject')
   @RequireAdminPermission(AdminModule.CARTEIRA, AdminAction.APPROVE)
   async rejectConnectPayoutRequest(
@@ -457,8 +449,9 @@ export class AdminCarteiraController {
       ...(await this.connectPayoutApprovalService.rejectRequest({
         approvalRequestId: normalizedId,
         adminUserId: admin.id,
-        reason:
-          typeof body?.reason === 'string' && body.reason.trim() ? body.reason.trim() : undefined,
+        ...(typeof body?.reason === 'string' && body.reason.trim()
+          ? { reason: body.reason.trim() }
+          : {}),
       })),
     };
   }

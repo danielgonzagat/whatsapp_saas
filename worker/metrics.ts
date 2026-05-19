@@ -1,6 +1,6 @@
 import { Queue } from 'bullmq';
 import { Counter, Gauge, Histogram, Registry, collectDefaultMetrics } from 'prom-client';
-import { autopilotQueue, connection, queueOptions, queueRegistry } from './queue';
+import { autopilotQueue, buildQueueOptions, connection, queueRegistry } from './queue';
 import { forEachSequential } from './utils/async-sequence';
 
 const registry = new Registry();
@@ -126,13 +126,13 @@ async function refreshQueueMetrics() {
     queueGauge.reset();
     const queueNames = Object.keys(queueRegistry);
     await forEachSequential(queueNames, async (name) => {
-      const q = queueRegistry[name];
+      const q = queueRegistry[Number(name)];
       const mainCounts = await q.getJobCounts();
       Object.entries(mainCounts).forEach(([state, value]) => {
         queueGauge.labels(name, state, 'main').set(typeof value === 'number' ? value : 0);
       });
 
-      const dlq = new Queue(`${name}-dlq`, queueOptions);
+      const dlq = new Queue(`${name}-dlq`, buildQueueOptions());
       const dlqCounts = await dlq.getJobCounts();
       Object.entries(dlqCounts).forEach(([state, value]) => {
         queueGauge.labels(`${name}-dlq`, state, 'dlq').set(typeof value === 'number' ? value : 0);

@@ -117,8 +117,8 @@ export function buildWorldState(
   });
   return {
     generatedAt: new Date().toISOString(),
-    backendUrl: input.runtimeEvidence.backendUrl,
-    frontendUrl: input.runtimeEvidence.frontendUrl,
+    ...(input.runtimeEvidence.backendUrl !== undefined ? { backendUrl: input.runtimeEvidence.backendUrl } : {}),
+    ...(input.runtimeEvidence.frontendUrl !== undefined ? { frontendUrl: input.runtimeEvidence.frontendUrl } : {}),
     actorProfiles,
     executedScenarios: results
       .filter((result) => result.executed)

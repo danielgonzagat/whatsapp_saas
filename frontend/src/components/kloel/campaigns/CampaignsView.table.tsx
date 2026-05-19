@@ -1,4 +1,5 @@
 'use client';
+import { colors } from '@/lib/design-tokens';
 
 import { kloelT } from '@/lib/i18n/t';
 import { KLOEL_THEME } from '@/lib/kloel-theme';
@@ -18,10 +19,10 @@ const BLUE = KLOEL_THEME.info;
 
 function statusBadgeColor(status: string | undefined): string {
   const s = (status || 'DRAFT').toUpperCase();
-  if (s === 'RUNNING') return BLUE;
-  if (s === 'COMPLETED') return GREEN;
-  if (s === 'SCHEDULED') return ACCENT;
-  if (s === 'PAUSED') return TEXT_TERTIARY;
+  if (s === 'RUNNING') {return BLUE;}
+  if (s === 'COMPLETED') {return GREEN;}
+  if (s === 'SCHEDULED') {return ACCENT;}
+  if (s === 'PAUSED') {return TEXT_TERTIARY;}
   return TEXT_TERTIARY;
 }
 
@@ -166,7 +167,7 @@ export function CampaignsTable({ campaigns, busyId, onLaunch, onPause }: Campaig
                   disabled={!!busyId}
                   style={{
                     background: ACCENT,
-                    color: '#0A0A0C',
+                    color: colors.background.void,
                     border: 'none',
                     borderRadius: 6,
                     padding: '4px 10px',

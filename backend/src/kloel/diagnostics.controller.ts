@@ -5,6 +5,8 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { ObservabilityQueriesService } from '../metrics/observability-queries.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { asProviderSettings } from '../whatsapp/provider-settings.types';
+import { RouteClass } from '../common/throttler/route-class.decorator';
+import { InternalEndpoint } from '../common/decorators/internal-endpoint.decorator';
 
 interface SystemMetrics {
   cpu: { usage: number; cores: number };
@@ -50,6 +52,7 @@ interface WorkspaceDiagnosticsSettings {
 @ApiTags('diagnostics')
 @UseGuards(JwtAuthGuard)
 @Controller('diag')
+@RouteClass('ai')
 export class DiagnosticsController {
   constructor(
     private readonly prisma: PrismaService,
@@ -57,6 +60,7 @@ export class DiagnosticsController {
   ) {}
 
   /** Basic health. */
+  @InternalEndpoint('diagnostics overview')
   @Get()
   @ApiOperation({ summary: 'Health check básico' })
   basicHealth() {
@@ -68,6 +72,7 @@ export class DiagnosticsController {
   }
 
   /** Full diagnostics. */
+  @InternalEndpoint('diagnostics full report')
   @Get('full')
   @ApiOperation({ summary: 'Diagnóstico completo do sistema' })
   async fullDiagnostics(): Promise<DiagnosticsReport & { deploy: Record<string, unknown> }> {
@@ -108,6 +113,7 @@ export class DiagnosticsController {
   }
 
   /** Workspace diagnostics. */
+  @InternalEndpoint('diagnostics per workspace')
   @Get('workspace/:workspaceId')
   @ApiOperation({ summary: 'Diagnóstico específico de um workspace' })
   async workspaceDiagnostics(@Param('workspaceId') workspaceId: string) {
@@ -167,6 +173,7 @@ export class DiagnosticsController {
   }
 
   /** Prometheus metrics. */
+  @InternalEndpoint('diagnostics metrics')
   @Get('metrics')
   @ApiOperation({ summary: 'Métricas para Prometheus/Grafana' })
   async prometheusMetrics() {
@@ -212,6 +219,7 @@ kloel_uptime_seconds ${process.uptime()}
   }
 
   /** Recent errors. */
+  @InternalEndpoint('diagnostics errors')
   @Get('errors')
   @ApiOperation({ summary: 'Últimos erros do sistema' })
   async recentErrors(@Query('limit') limit: string = '20') {
@@ -266,7 +274,7 @@ kloel_uptime_seconds ${process.uptime()}
     const start = Date.now();
 
     try {
-      await this.prisma.$queryRaw`SELECT 1`;
+      await this.prisma.$queryRaw<{ '?column?': 1 }[]>`SELECT 1`;
       return {
         connected: true,
         latencyMs: Date.now() - start,

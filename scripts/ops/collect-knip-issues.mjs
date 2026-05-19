@@ -11,7 +11,7 @@ const ISSUE_TYPES = ['files', 'dependencies', 'unlisted', 'unresolved', 'exports
 const PATH_SEPARATOR_RE = /[\\/]/;
 
 function inferWorkspace(file) {
-  if (typeof file !== 'string' || file.length === 0) return 'root';
+  if (typeof file !== 'string' || file.length === 0) {return 'root';}
   const [segment] = file.split(PATH_SEPARATOR_RE);
   if (['backend', 'frontend', 'worker', 'e2e', 'scripts'].includes(segment)) {
     return segment;
@@ -63,13 +63,13 @@ function normalizeFileIssues(issueFile, issues) {
 
 function normalizeTopLevelIssues(payload, issues) {
   for (const [issueType, issueValue] of Object.entries(payload)) {
-    if (!ISSUE_TYPES.includes(issueType) || !Array.isArray(issueValue)) continue;
+    if (!ISSUE_TYPES.includes(issueType) || !Array.isArray(issueValue)) {continue;}
     pushEntriesForType(issueType, '', issueValue, issues);
   }
 }
 
 function normalizeIssues(payload, issues) {
-  if (!payload || typeof payload !== 'object') return;
+  if (!payload || typeof payload !== 'object') {return;}
 
   if (Array.isArray(payload.issues)) {
     for (const issueFile of payload.issues) {

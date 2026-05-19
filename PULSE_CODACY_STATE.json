@@ -1,7 +1,7 @@
 {
   "version": 1,
-  "syncedAt": "2026-04-23T06:27:53.909Z",
-  "elapsedMs": 16932,
+  "syncedAt": "2026-05-18T09:39:00.608Z",
+  "elapsedMs": 27573,
   "source": "scripts/ops/sync-codacy-issues.mjs",
   "target": {
     "provider": "gh",
@@ -10,111 +10,117 @@
     "endpoint": "https://api.codacy.com/api/v3/analysis/organizations/gh/danielgonzagat/repositories/whatsapp_saas/issues/search"
   },
   "repositorySummary": {
-    "grade": 90,
-    "gradeLetter": "A",
-    "issuesCount": 7548,
-    "issuesPercentage": 8,
-    "loc": 463549,
+    "grade": 88,
+    "gradeLetter": "B",
+    "issuesCount": 12025,
+    "issuesPercentage": 10,
+    "loc": 632153,
     "lastAnalysedCommit": {
-      "sha": "372b52b4ebb9152b3278df0fae6a70a5cb96e281",
+      "sha": "3dea4140a5e65a032fec1d03af5d882d255f37ff",
       "authorName": "danielgonzagat",
-      "endedAnalysis": "2026-04-23T06:27:19.678Z"
+      "endedAnalysis": "2026-05-12T19:37:36.671Z"
     }
   },
-  "totalIssues": 7548,
-  "totalIssuesFromApi": 7548,
+  "totalIssues": 12025,
+  "totalIssuesFromApi": 12025,
   "duplicatePagesSkipped": 0,
-  "pagesFetched": 8,
+  "pagesFetched": 13,
   "bySeverity": {
-    "HIGH": 1076,
-    "MEDIUM": 2180,
-    "LOW": 4292,
+    "HIGH": 2225,
+    "MEDIUM": 3380,
+    "LOW": 6420,
     "UNKNOWN": 0
   },
   "bySeverityRaw": {
-    "Info": 4292,
-    "Warning": 2180,
-    "High": 649,
-    "Error": 427
+    "Info": 6420,
+    "Warning": 3380,
+    "High": 1416,
+    "Error": 809
   },
   "byCategory": {
-    "CodeStyle": 3246,
-    "BestPractice": 1657,
-    "Complexity": 1288,
-    "Security": 452,
-    "ErrorProne": 444,
-    "Documentation": 377,
-    "Comprehensibility": 54,
-    "Performance": 15,
-    "Compatibility": 9,
-    "UnusedCode": 6
+    "CodeStyle": 4593,
+    "Complexity": 3410,
+    "BestPractice": 1789,
+    "ErrorProne": 1105,
+    "Security": 680,
+    "UnusedCode": 186,
+    "Compatibility": 87,
+    "Comprehensibility": 83,
+    "Documentation": 78,
+    "Performance": 14
   },
   "byPatternId": {
-    "Lizard_nloc-minor": 659,
-    "SQLFluff_RF06_references.quoting": 537,
-    "markdownlint_MD013": 477,
-    "Lizard_ccn-minor": 377,
-    "TSLint_completed-docs": 373,
+    "Lizard_nloc-minor": 1455,
+    "markdownlint_MD013": 823,
+    "Lizard_ccn-minor": 817,
+    "curly": 733,
+    "maxstatements": 697,
+    "SQLFluff_RF06_references.quoting": 552,
+    "Lizard_ccn-medium": 377,
     "SQLFluff_LT02_layout.indent": 315,
-    "Semgrep_typescript.react.portability.i18next.jsx-not-internationalized.jsx-not-internationalized": 246,
-    "curly": 246,
-    "maxstatements": 204,
-    "TSLint_space-before-function-paren": 187,
-    "Semgrep_codacy.js.i18n.no-raw-jsx-text": 182,
-    "TSLint_object-literal-sort-keys": 168,
-    "TSLint_quotemark": 166,
-    "Semgrep_codacy.js.i18n.no-hardcoded-jsx-user-props": 147,
-    "Lizard_ccn-medium": 147,
-    "Semgrep_codacy.generic.sql.rac-table-access": 147,
-    "Lizard_parameter-count-minor": 146,
-    "TSLint_no-magic-numbers": 142,
-    "Semgrep_codacy.js.i18n.no-hardcoded-number-format": 132,
-    "Lizard_ccn-critical": 129,
-    "Semgrep_codacy.js.i18n.no-hardcoded-throw-error": 129,
-    "Lizard_nloc-medium": 125,
-    "SQLFluff_LT05_layout.long_lines": 124,
-    "SQLFluff_LT01_layout.spacing": 96,
-    "CSSLint_errors": 90,
-    "TSLint_only-arrow-functions": 79,
-    "Semgrep_codacy.js.i18n.no-hardcoded-console-error": 78,
-    "TSLint_typedef": 70,
-    "TSLint_newline-before-return": 68,
-    "Semgrep_javascript.lang.correctness.missing-template-string-indicator.missing-template-string-indicator": 68,
-    "TSLint_newline-per-chained-call": 67,
-    "Semgrep_javascript_pathtraversal_rule-non-literal-fs-filename": 62,
-    "Semgrep_typescript.react.best-practice.react-props-spreading.react-props-spreading": 56,
-    "Semgrep_ai.typescript.detect-openai.detect-openai": 54,
-    "TSLint_no-submodule-imports": 53,
-    "maxcomplexity": 53,
-    "markdownlint_MD040": 53,
-    "TSLint_no-null-keyword": 50,
-    "TSLint_member-access": 49,
-    "TSLint_no-implicit-dependencies": 48,
-    "TSLint_interface-name": 48,
-    "Agentlinter_clarity_undefined-term": 48,
-    "Semgrep_rules_lgpl_javascript_dos_rule-regex-dos": 45,
-    "Lizard_nloc-critical": 44,
-    "Semgrep_typescript.react.portability.i18next.i18next-key-format.i18next-key-format": 43,
-    "TSLint_ordered-imports": 42,
-    "Lizard_parameter-count-medium": 31,
-    "TSLint_file-name-casing": 30,
-    "Semgrep_javascript.lang.security.audit.detect-non-literal-fs-filename.detect-non-literal-fs-filename": 29,
-    "camelcase": 27
+    "Lizard_parameter-count-minor": 304,
+    "Semgrep_typescript.react.portability.i18next.jsx-not-internationalized.jsx-not-internationalized": 291,
+    "Lizard_ccn-critical": 278,
+    "Lizard_nloc-medium": 235,
+    "Lizard_file-nloc-minor": 212,
+    "maxcomplexity": 200,
+    "Semgrep_codacy.js.i18n.no-raw-jsx-text": 179,
+    "Semgrep_codacy.js.i18n.no-hardcoded-jsx-user-props": 175,
+    "Semgrep_codacy.js.i18n.no-hardcoded-throw-error": 165,
+    "Semgrep_codacy.js.i18n.no-hardcoded-number-format": 162,
+    "Semgrep_codacy.generic.sql.rac-table-access": 149,
+    "unused": 140,
+    "plusplus": 139,
+    "camelcase": 136,
+    "SQLFluff_LT05_layout.long_lines": 126,
+    "Semgrep_javascript.lang.security.audit.path-traversal.path-join-resolve-traversal.path-join-resolve-traversal": 112,
+    "Semgrep_javascript.lang.correctness.missing-template-string-indicator.missing-template-string-indicator": 103,
+    "SQLFluff_LT01_layout.spacing": 97,
+    "CSSLint_errors": 94,
+    "Semgrep_ai.typescript.detect-openai.detect-openai": 91,
+    "Semgrep_codacy.js.i18n.no-hardcoded-console-error": 88,
+    "Semgrep_javascript_dos_rule-non-literal-regexp": 81,
+    "Prospector_pylint": 80,
+    "singleGroups": 69,
+    "markdownlint_MD040": 69,
+    "Lizard_parameter-count-medium": 68,
+    "Semgrep_typescript.react.best-practice.react-props-spreading.react-props-spreading": 67,
+    "PyLint_C0103": 65,
+    "PyLintPython3_C0103": 65,
+    "maxlen": 64,
+    "Lizard_nloc-critical": 64,
+    "Semgrep_rules_lgpl_javascript_dos_rule-regex-dos": 62,
+    "markdownlint_MD004": 59,
+    "Agentlinter_clarity_undefined-term": 58,
+    "Semgrep_javascript.lang.security.audit.detect-non-literal-fs-filename.detect-non-literal-fs-filename": 53,
+    "ESLint8_es-x_no-modules": 47,
+    "Semgrep_javascript_pathtraversal_rule-non-literal-fs-filename": 47,
+    "Lizard_file-nloc-medium": 46,
+    "ESLint8_id-match": 46,
+    "ESLint8_@typescript-eslint_quotes": 46,
+    "ESLint8_@stylistic_quotes": 45,
+    "ESLint8_quotes": 45
   },
   "byTool": {
-    "TSLint (deprecated)": 1759,
-    "Lizard": 1688,
-    "Opengrep": 1634,
-    "SQLFluff": 1074,
-    "JSHint (deprecated)": 584,
-    "markdownlint": 546,
+    "Lizard": 3914,
+    "JSHint (deprecated)": 2229,
+    "Opengrep": 2152,
+    "SQLFluff": 1095,
+    "markdownlint": 1013,
+    "ESLint": 778,
+    "Pylint": 191,
+    "Pylint (deprecated)": 181,
     "CSSLint (deprecated)": 116,
-    "Agentlinter": 63,
-    "TSQLLint": 33,
-    "Checkov": 24,
-    "PMD": 23,
+    "Prospector": 108,
+    "Agentlinter": 82,
+    "PMD": 48,
+    "TSQLLint": 48,
+    "Ruff": 32,
+    "ShellCheck": 27,
+    "Checkov": 4,
     "Hadolint": 3,
-    "ShellCheck": 1
+    "Trivy": 3,
+    "Bandit": 1
   },
   "topFiles": [
     {
@@ -122,39 +128,67 @@
       "count": 101
     },
     {
-      "file": "frontend/src/components/kloel/carteira.tsx",
-      "count": 95
-    },
-    {
-      "file": "backend/src/auth/auth.service.ts",
-      "count": 92
-    },
-    {
-      "file": "frontend/src/components/kloel/products/ProductNerveCenterComissaoTab.tsx",
+      "file": "scripts/instrument_opsalert.py",
       "count": 84
     },
     {
-      "file": "frontend/src/hooks/useWhatsAppSession.ts",
+      "file": "scripts/instrument-ops-v2.py",
       "count": 82
     },
     {
-      "file": "backend/src/common/ledger-reconciliation.service.spec.ts",
-      "count": 78
+      "file": "scripts/instrument-v3.py",
+      "count": 81
     },
     {
       "file": "backend/prisma/migrations/20260328040000_add_missing_product_member_affiliate_tables/migration.sql",
       "count": 78
     },
     {
-      "file": "frontend/src/app/(checkout)/hooks/checkout-order-submit.ts",
-      "count": 66
+      "file": "scripts/instrument-ops-alert.py",
+      "count": 71
     },
     {
-      "file": "scripts/pulse/parsers/runtime-utils.ts",
+      "file": "CHANGELOG.md",
+      "count": 71
+    },
+    {
+      "file": "scripts/instrument_opsalert_v2.py",
+      "count": 70
+    },
+    {
+      "file": "scripts/orchestration/__parts__/hud-audit.mjs",
+      "count": 68
+    },
+    {
+      "file": "scripts/orchestration/__parts__/findings-watch.mjs",
+      "count": 68
+    },
+    {
+      "file": "worker/processors/cia/cognitive-state/__parts__/cognitive-state-inference.ts",
+      "count": 65
+    },
+    {
+      "file": "scripts/obsidian-mirror-daemon.mjs",
       "count": 62
     },
     {
+      "file": "scripts/__parts__/obsidian-mirror-daemon-content.mjs",
+      "count": 61
+    },
+    {
+      "file": "scripts/__parts__/obsidian-mirror-daemon-indexes.mjs",
+      "count": 60
+    },
+    {
       "file": "backend/prisma/migrations/20260414204000_add_checkout_social_identity/migration.sql",
+      "count": 60
+    },
+    {
+      "file": "scripts/orchestration/__parts__/pulse-bridge-emitter.mjs",
+      "count": 60
+    },
+    {
+      "file": "scripts/instrument-ops-alert-catches.py",
       "count": 60
     },
     {
@@ -162,31 +196,35 @@
       "count": 59
     },
     {
-      "file": "backend/src/ai-brain/agent-assist.service.ts",
+      "file": "scripts/fix_opsalert_contexts.py",
       "count": 58
     },
     {
-      "file": "frontend/src/components/plans/PlanShippingTab.tsx",
+      "file": "scripts/fix_context_strings.py",
       "count": 57
-    },
-    {
-      "file": "scripts/ops/collect-ratchet-metrics.mjs",
-      "count": 56
     },
     {
       "file": "backend/prisma/migrations/20260415120000_admin_identity_foundation/migration.sql",
       "count": 56
     },
     {
-      "file": "worker/processors/memory-processor.ts",
-      "count": 55
+      "file": "scripts/ops/collect-ratchet-metrics.mjs",
+      "count": 56
     },
     {
-      "file": "scripts/pulse/flow-projection.ts",
-      "count": 55
+      "file": "worker/processors/cia/cognitive-state/__parts__/cognitive-state-build.ts",
+      "count": 56
     },
     {
-      "file": "backend/prisma/migrations/20260417220000_connect_ledger/migration.sql",
+      "file": "frontend/src/components/kloel/KloelProductSurfacePatches.tsx",
+      "count": 56
+    },
+    {
+      "file": "worker/__parts__/flow-node-executor.interactions.ts",
+      "count": 56
+    },
+    {
+      "file": "backend/prisma/migrations/20260319170000_autonomy_runtime_ledger/migration.sql",
       "count": 55
     },
     {
@@ -194,7 +232,19 @@
       "count": 55
     },
     {
+      "file": "backend/prisma/migrations/20260417230000_prepaid_wallet/migration.sql",
+      "count": 55
+    },
+    {
+      "file": "backend/prisma/migrations/20260417220000_connect_ledger/migration.sql",
+      "count": 55
+    },
+    {
       "file": "backend/prisma/migrations/20260415200000_admin_destructive_intents/migration.sql",
+      "count": 54
+    },
+    {
+      "file": "worker/processors/cia/cognitive-state/__parts__/cognitive-state-scoring.ts",
       "count": 54
     },
     {
@@ -202,11 +252,11 @@
       "count": 53
     },
     {
-      "file": "backend/src/whatsapp/whatsapp-catchup.service.spec.ts",
-      "count": 52
+      "file": "worker/processors/cia/cognitive-state/__parts__/cognitive-state-persist.ts",
+      "count": 53
     },
     {
-      "file": "frontend/src/components/products/ProductCheckoutsTab.tsx",
+      "file": "backend/prisma/migrations/20260415210000_platform_wallet/migration.sql",
       "count": 52
     },
     {
@@ -214,15 +264,7 @@
       "count": 52
     },
     {
-      "file": "backend/prisma/migrations/20260415210000_platform_wallet/migration.sql",
-      "count": 52
-    },
-    {
-      "file": "backend/src/checkout/checkout.service.public.spec.ts",
-      "count": 51
-    },
-    {
-      "file": "frontend/src/components/kloel/settings/activity-section.tsx",
+      "file": "worker/utils/prisma-json.util.ts",
       "count": 51
     },
     {
@@ -230,19 +272,19 @@
       "count": 51
     },
     {
-      "file": "backend/prisma/migrations/20260417230000_prepaid_wallet/migration.sql",
+      "file": "worker/__parts__/flow-node-executor.ts",
       "count": 51
     },
     {
-      "file": "backend/prisma/migrations/20260319170000_autonomy_runtime_ledger/migration.sql",
+      "file": "worker/__parts__/scheduled-followup-handler.ts",
       "count": 51
     },
     {
-      "file": "frontend-admin/src/app/globals.css",
-      "count": 50
+      "file": "worker/processors/cia/cognitive-state/__parts__/cognitive-state-load.ts",
+      "count": 51
     },
     {
-      "file": "frontend-admin/src/components/admin/admin-sidebar.tsx",
+      "file": "PULSE_REPORT.md",
       "count": 50
     },
     {
@@ -250,19 +292,11 @@
       "count": 50
     },
     {
-      "file": "frontend/src/lib/api/meta.ts",
+      "file": "frontend-admin/src/app/globals.css",
       "count": 50
     },
     {
-      "file": "backend/src/checkout/checkout-order-support.ts",
-      "count": 50
-    },
-    {
-      "file": "frontend/src/components/kloel/theme/ThemeToggle.tsx",
-      "count": 50
-    },
-    {
-      "file": "scripts/pulse/types.ts",
+      "file": "scripts/decomp/lib/gate-rules.mjs",
       "count": 50
     },
     {
@@ -270,59 +304,367 @@
       "count": 50
     },
     {
-      "file": "frontend/src/app/(main)/products/[id]/plans/[planId]/page.tsx",
-      "count": 49
+      "file": "CERTIFICATION_RUNBOOK.md",
+      "count": 50
     },
     {
-      "file": "scripts/ops/codemods/i18n-wrap-jsx.mjs",
-      "count": 48
+      "file": "tmp/last60-edit-deletion-audit.md",
+      "count": 50
     },
     {
-      "file": "scripts/ops/check-tenant-keys.mjs",
-      "count": 47
+      "file": "tmp/last60-full-worker-audit/README.md",
+      "count": 50
     },
     {
-      "file": "scripts/pulse/parsers/facade-detector.ts",
-      "count": 46
+      "file": "worker/processors/cia/cognitive-state/__parts__/cognitive-state-types.ts",
+      "count": 50
     },
     {
-      "file": "scripts/ops/codemods/add-tsdoc-stubs.mjs",
-      "count": 46
-    },
-    {
-      "file": "backend/src/billing/payment-method.service.ts",
-      "count": 43
-    },
-    {
-      "file": "frontend-admin/src/app/(admin)/contas/[workspaceId]/page.tsx",
-      "count": 43
-    },
-    {
-      "file": "frontend/src/components/kloel/products/ProductNerveCenter.tsx",
-      "count": 43
-    },
-    {
-      "file": "frontend/src/components/kloel/dashboard/KloelDashboard.tsx",
-      "count": 42
-    },
-    {
-      "file": "PULSE_REPORT.md",
-      "count": 42
-    },
-    {
-      "file": "frontend/src/components/kloel/__tests__/ImageUpload.test.tsx",
-      "count": 41
-    },
-    {
-      "file": "scripts/ops/check-tenant-filter.mjs",
-      "count": 41
+      "file": "worker/processors/cia/cognitive-state/__parts__/cognitive-state-record.ts",
+      "count": 50
     }
   ],
   "highPriorityBatch": [
     {
+      "issueId": "316ebe77c6beb2d2bc55c6a8a53cb8a1",
+      "filePath": "scripts/__parts__/obsidian-mirror-daemon-content.mjs",
+      "lineNumber": 356,
+      "patternId": "curly",
+      "category": "ErrorProne",
+      "severityLevel": "High",
+      "tool": "JSHint (deprecated)",
+      "message": "Expected '{' and instead saw 'continue'.",
+      "commitSha": null,
+      "commitTimestamp": null
+    },
+    {
+      "issueId": "fb43e1655fe13b236ef076d1698a30eb",
+      "filePath": "scripts/__parts__/obsidian-mirror-daemon-indexes.mjs",
+      "lineNumber": 450,
+      "patternId": "curly",
+      "category": "ErrorProne",
+      "severityLevel": "High",
+      "tool": "JSHint (deprecated)",
+      "message": "Expected '{' and instead saw 'continue'.",
+      "commitSha": null,
+      "commitTimestamp": null
+    },
+    {
+      "issueId": "6dae3e1f8074045a6e2bf4a7936a836c",
+      "filePath": "scripts/__parts__/obsidian-mirror-daemon-content.mjs",
+      "lineNumber": 407,
+      "patternId": "curly",
+      "category": "ErrorProne",
+      "severityLevel": "High",
+      "tool": "JSHint (deprecated)",
+      "message": "Expected '{' and instead saw 'return'.",
+      "commitSha": null,
+      "commitTimestamp": null
+    },
+    {
+      "issueId": "6b1b4f4ce070d3e03d3394fa45bbbb07",
+      "filePath": "scripts/__parts__/obsidian-mirror-daemon-content.mjs",
+      "lineNumber": 409,
+      "patternId": "curly",
+      "category": "ErrorProne",
+      "severityLevel": "High",
+      "tool": "JSHint (deprecated)",
+      "message": "Expected '{' and instead saw 'return'.",
+      "commitSha": null,
+      "commitTimestamp": null
+    },
+    {
+      "issueId": "5490bc01c0262b2160b78ab7a371ca8f",
+      "filePath": "scripts/__parts__/obsidian-mirror-daemon-indexes.mjs",
+      "lineNumber": 507,
+      "patternId": "loopfunc",
+      "category": "ErrorProne",
+      "severityLevel": "High",
+      "tool": "JSHint (deprecated)",
+      "message": "Functions declared within loops referencing an outer scoped variable may lead to confusing semantics. (normalizePath, domainPageRelPath, writeGeneratedNote, buildDomainPageNote)",
+      "commitSha": null,
+      "commitTimestamp": null
+    },
+    {
+      "issueId": "5a72116e605cc32d0d2983454f183b42",
+      "filePath": "scripts/__parts__/obsidian-mirror-daemon-content.mjs",
+      "lineNumber": 482,
+      "patternId": "curly",
+      "category": "ErrorProne",
+      "severityLevel": "High",
+      "tool": "JSHint (deprecated)",
+      "message": "Expected '{' and instead saw 'return'.",
+      "commitSha": null,
+      "commitTimestamp": null
+    },
+    {
+      "issueId": "172bbc95bf4c1e364c78c79246f40386",
+      "filePath": "scripts/__parts__/obsidian-mirror-daemon-content.mjs",
+      "lineNumber": 501,
+      "patternId": "curly",
+      "category": "ErrorProne",
+      "severityLevel": "High",
+      "tool": "JSHint (deprecated)",
+      "message": "Expected '{' and instead saw 'return'.",
+      "commitSha": null,
+      "commitTimestamp": null
+    },
+    {
+      "issueId": "ccb4eaea9fd1516b4ba4f15786dc89f0",
+      "filePath": "scripts/pulse/parsers/service-tracer.ts",
+      "lineNumber": 148,
+      "patternId": "Lizard_ccn-critical",
+      "category": "Complexity",
+      "severityLevel": "Error",
+      "tool": "Lizard",
+      "message": "Method modelFromCallParts has a cyclomatic complexity of 13 (limit is 12)",
+      "commitSha": null,
+      "commitTimestamp": null
+    },
+    {
+      "issueId": "a9362ffd9ed23e6fa645e2d3267d6098",
+      "filePath": "scripts/__parts__/obsidian-mirror-daemon-content.mjs",
+      "lineNumber": 410,
+      "patternId": "curly",
+      "category": "ErrorProne",
+      "severityLevel": "High",
+      "tool": "JSHint (deprecated)",
+      "message": "Expected '{' and instead saw 'return'.",
+      "commitSha": null,
+      "commitTimestamp": null
+    },
+    {
+      "issueId": "d7553fbdd46e35918723036a01fb33ae",
+      "filePath": "scripts/__parts__/obsidian-mirror-daemon-content.mjs",
+      "lineNumber": 400,
+      "patternId": "curly",
+      "category": "ErrorProne",
+      "severityLevel": "High",
+      "tool": "JSHint (deprecated)",
+      "message": "Expected '{' and instead saw 'return'.",
+      "commitSha": null,
+      "commitTimestamp": null
+    },
+    {
+      "issueId": "f21c39e8c23c5e2bdb1bf2ffd24a92fc",
+      "filePath": "backend/src/meta/__parts__/meta-oauth-url.helpers.ts",
+      "lineNumber": 114,
+      "patternId": "Semgrep_javascript_dos_rule-non-literal-regexp",
+      "category": "Security",
+      "severityLevel": "Error",
+      "tool": "Opengrep",
+      "message": "The `RegExp` constructor was called with a non-literal value.",
+      "commitSha": null,
+      "commitTimestamp": null
+    },
+    {
+      "issueId": "764a7fde50f7680f27abf5259fdfcc76",
+      "filePath": "backend/src/meta/__parts__/meta-oauth-url.helpers.ts",
+      "lineNumber": 114,
+      "patternId": "Semgrep_javascript.lang.security.audit.detect-non-literal-regexp.detect-non-literal-regexp",
+      "category": "Security",
+      "severityLevel": "High",
+      "tool": "Opengrep",
+      "message": "RegExp() called with a `path` function argument, this might allow an attacker to cause a Regular Expression Denial-of-Service (ReDoS) within your application as RegExP blocks the main thread.",
+      "commitSha": null,
+      "commitTimestamp": null
+    },
+    {
+      "issueId": "b91e1b76e87fd3c92c2005011561d720",
+      "filePath": "backend/src/meta/__parts__/meta-auth-helpers.ts",
+      "lineNumber": 24,
+      "patternId": "Semgrep_rules_lgpl_javascript_dos_rule-regex-dos",
+      "category": "Security",
+      "severityLevel": "High",
+      "tool": "Opengrep",
+      "message": "Ensure that the regex used to compare with user supplied input is safe from regular expression denial of service.",
+      "commitSha": null,
+      "commitTimestamp": null
+    },
+    {
+      "issueId": "13c93063cf742c900009036e435b2ee5",
+      "filePath": "scripts/__parts__/obsidian-mirror-daemon-content.mjs",
+      "lineNumber": 1468,
+      "patternId": "Lizard_ccn-critical",
+      "category": "Complexity",
+      "severityLevel": "Error",
+      "tool": "Lizard",
+      "message": "Method visualFactTag has a cyclomatic complexity of 50 (limit is 12)",
+      "commitSha": null,
+      "commitTimestamp": null
+    },
+    {
+      "issueId": "b3089b86970e6b3983f26d271f43949e",
+      "filePath": "scripts/__parts__/obsidian-mirror-daemon-indexes.mjs",
+      "lineNumber": 259,
+      "patternId": "Lizard_nloc-critical",
+      "category": "Complexity",
+      "severityLevel": "Error",
+      "tool": "Lizard",
+      "message": "Method signalNotePath has 806 lines of code (limit is 100)",
+      "commitSha": null,
+      "commitTimestamp": null
+    },
+    {
+      "issueId": "deace7e0a185aac29551a66a1e529024",
+      "filePath": "scripts/__parts__/obsidian-mirror-daemon-content.mjs",
+      "lineNumber": 1,
+      "patternId": "Lizard_file-nloc-critical",
+      "category": "Complexity",
+      "severityLevel": "Error",
+      "tool": "Lizard",
+      "message": "File scripts/__parts__/obsidian-mirror-daemon-content.mjs has 1493 non-comment lines of code",
+      "commitSha": null,
+      "commitTimestamp": null
+    },
+    {
+      "issueId": "1e78a43ae946447a59dbeabd79ea9dec",
+      "filePath": "scripts/__parts__/obsidian-mirror-daemon-indexes.mjs",
+      "lineNumber": 1,
+      "patternId": "Lizard_file-nloc-critical",
+      "category": "Complexity",
+      "severityLevel": "Error",
+      "tool": "Lizard",
+      "message": "File scripts/__parts__/obsidian-mirror-daemon-indexes.mjs has 1351 non-comment lines of code",
+      "commitSha": null,
+      "commitTimestamp": null
+    },
+    {
+      "issueId": "d04bb727fc84a39ff38a1098742a81c1",
+      "filePath": "scripts/__parts__/obsidian-mirror-daemon-indexes.mjs",
+      "lineNumber": 156,
+      "patternId": "Lizard_ccn-critical",
+      "category": "Complexity",
+      "severityLevel": "Error",
+      "tool": "Lizard",
+      "message": "Method applyGraphDerivedTags has a cyclomatic complexity of 15 (limit is 12)",
+      "commitSha": null,
+      "commitTimestamp": null
+    },
+    {
+      "issueId": "db17136c8ea0a7d1ea107f9b5ec51ec4",
+      "filePath": "scripts/__parts__/obsidian-mirror-daemon-content.mjs",
+      "lineNumber": 484,
+      "patternId": "curly",
+      "category": "ErrorProne",
+      "severityLevel": "High",
+      "tool": "JSHint (deprecated)",
+      "message": "Expected '{' and instead saw 'return'.",
+      "commitSha": null,
+      "commitTimestamp": null
+    },
+    {
+      "issueId": "8a77b10feb538ddc74b9d0e2580cf9a1",
+      "filePath": "scripts/__parts__/obsidian-mirror-daemon-content.mjs",
+      "lineNumber": 398,
+      "patternId": "curly",
+      "category": "ErrorProne",
+      "severityLevel": "High",
+      "tool": "JSHint (deprecated)",
+      "message": "Expected '{' and instead saw 'return'.",
+      "commitSha": null,
+      "commitTimestamp": null
+    },
+    {
+      "issueId": "19a6b92c1ec98f311e21533b603e44ae",
+      "filePath": "scripts/__parts__/obsidian-mirror-daemon-utils.mjs",
+      "lineNumber": 329,
+      "patternId": "curly",
+      "category": "ErrorProne",
+      "severityLevel": "High",
+      "tool": "JSHint (deprecated)",
+      "message": "Expected '{' and instead saw 'return'.",
+      "commitSha": null,
+      "commitTimestamp": null
+    },
+    {
+      "issueId": "446d1dbf48035d6ce33d37b2a23ea59b",
+      "filePath": "scripts/__parts__/obsidian-mirror-daemon-content.mjs",
+      "lineNumber": 411,
+      "patternId": "curly",
+      "category": "ErrorProne",
+      "severityLevel": "High",
+      "tool": "JSHint (deprecated)",
+      "message": "Expected '{' and instead saw 'return'.",
+      "commitSha": null,
+      "commitTimestamp": null
+    },
+    {
+      "issueId": "4a8b69b58cc36d92ec2d4397171f6862",
+      "filePath": "scripts/__parts__/obsidian-mirror-daemon-content.mjs",
+      "lineNumber": 408,
+      "patternId": "curly",
+      "category": "ErrorProne",
+      "severityLevel": "High",
+      "tool": "JSHint (deprecated)",
+      "message": "Expected '{' and instead saw 'return'.",
+      "commitSha": null,
+      "commitTimestamp": null
+    },
+    {
+      "issueId": "5b24812a3ff311fdde18f7c34ad392f2",
+      "filePath": "scripts/__parts__/obsidian-mirror-daemon-content.mjs",
+      "lineNumber": 358,
+      "patternId": "curly",
+      "category": "ErrorProne",
+      "severityLevel": "High",
+      "tool": "JSHint (deprecated)",
+      "message": "Expected '{' and instead saw 'continue'.",
+      "commitSha": null,
+      "commitTimestamp": null
+    },
+    {
+      "issueId": "6c77c87b8fa162a29f85d82ca2723161",
+      "filePath": "scripts/__parts__/obsidian-mirror-daemon-utils.mjs",
+      "lineNumber": 53,
+      "patternId": "Semgrep_javascript.lang.security.audit.unsafe-formatstring.unsafe-formatstring",
+      "category": "Security",
+      "severityLevel": "High",
+      "tool": "Opengrep",
+      "message": "Detected string concatenation with a non-literal variable in a util.format / console.log function.",
+      "commitSha": null,
+      "commitTimestamp": null
+    },
+    {
+      "issueId": "7d2df5a8b80c4484a86fc03d3843474d",
+      "filePath": "scripts/__parts__/obsidian-mirror-daemon-utils.mjs",
+      "lineNumber": 313,
+      "patternId": "Semgrep_rules_lgpl_javascript_dos_rule-regex-dos",
+      "category": "Security",
+      "severityLevel": "High",
+      "tool": "Opengrep",
+      "message": "Ensure that the regex used to compare with user supplied input is safe from regular expression denial of service.",
+      "commitSha": null,
+      "commitTimestamp": null
+    },
+    {
+      "issueId": "54f9baff04324c55a5e5276efb608741",
+      "filePath": "scripts/__parts__/obsidian-mirror-daemon-content.mjs",
+      "lineNumber": 251,
+      "patternId": "Semgrep_rules_lgpl_javascript_dos_rule-regex-dos",
+      "category": "Security",
+      "severityLevel": "High",
+      "tool": "Opengrep",
+      "message": "Ensure that the regex used to compare with user supplied input is safe from regular expression denial of service.",
+      "commitSha": null,
+      "commitTimestamp": null
+    },
+    {
+      "issueId": "646e769be416b80cad3d2c2d3e36747f",
+      "filePath": "scripts/__parts__/obsidian-mirror-daemon-content.mjs",
+      "lineNumber": 224,
+      "patternId": "Semgrep_javascript.lang.security.insecure-object-assign.insecure-object-assign",
+      "category": "Security",
+      "severityLevel": "High",
+      "tool": "Opengrep",
+      "message": "Depending on the context, user control data in `Object.assign` can cause web response to include data that it should not have or can lead to a mass assignment vulnerability.",
+      "commitSha": null,
+      "commitTimestamp": null
+    },
+    {
       "issueId": "17b24a89ce4a7a1ad0e7948525a80028",
       "filePath": "package.json",
-      "lineNumber": 144,
+      "lineNumber": 176,
       "patternId": "Semgrep_json.npm.security.package-dependencies-check.package-dependencies-check",
       "category": "Security",
       "severityLevel": "High",
@@ -332,50 +674,74 @@
       "commitTimestamp": null
     },
     {
-      "issueId": "ff77ec9981e94eeb9efb3e9e28b3c9a3",
-      "filePath": "backend/src/flows/flow-template.service.ts",
-      "lineNumber": 23,
-      "patternId": "Lizard_nloc-critical",
-      "category": "Complexity",
-      "severityLevel": "Error",
-      "tool": "Lizard",
-      "message": "Method getRecommendedTemplates has 102 lines of code (limit is 100)",
-      "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
-      "commitTimestamp": "2025-12-03T13:33:54Z"
-    },
-    {
-      "issueId": "7939ef3e358a9ec474efc6d4e19b4f6a",
-      "filePath": "worker/package-lock.json",
-      "lineNumber": 1,
-      "patternId": "Lizard_file-nloc-critical",
-      "category": "Complexity",
-      "severityLevel": "Error",
-      "tool": "Lizard",
-      "message": "File worker/package-lock.json has 7173 non-comment lines of code",
-      "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
-      "commitTimestamp": "2025-12-03T13:33:54Z"
-    },
-    {
-      "issueId": "6ad4d91b1b0051d34ec5dcfc676b98",
-      "filePath": "package-lock.json",
-      "lineNumber": 1,
-      "patternId": "Lizard_file-nloc-critical",
-      "category": "Complexity",
-      "severityLevel": "Error",
-      "tool": "Lizard",
-      "message": "File package-lock.json has 6981 non-comment lines of code",
-      "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
-      "commitTimestamp": "2025-12-03T13:33:54Z"
-    },
-    {
-      "issueId": "6700ad36132a4eb262d59708e79b7f99",
-      "filePath": "backend/src/autopilot/autopilot.service.ts",
-      "lineNumber": 878,
-      "patternId": "Semgrep_javascript.lang.correctness.missing-template-string-indicator.missing-template-string-indicator",
-      "category": "ErrorProne",
+      "issueId": "384ad1e8a2c8c12e5b7b2648e6b6c0f7",
+      "filePath": "scripts/__parts__/obsidian-mirror-daemon-utils.mjs",
+      "lineNumber": 324,
+      "patternId": "Semgrep_rules_lgpl_javascript_dos_rule-regex-dos",
+      "category": "Security",
       "severityLevel": "High",
       "tool": "Opengrep",
-      "message": "This looks like a JavaScript template string.",
+      "message": "Ensure that the regex used to compare with user supplied input is safe from regular expression denial of service.",
+      "commitSha": null,
+      "commitTimestamp": null
+    },
+    {
+      "issueId": "c2d6358f46e14c4614c40c594d8562ba",
+      "filePath": "scripts/__parts__/obsidian-mirror-daemon-content.mjs",
+      "lineNumber": 273,
+      "patternId": "Semgrep_rules_lgpl_javascript_dos_rule-regex-dos",
+      "category": "Security",
+      "severityLevel": "High",
+      "tool": "Opengrep",
+      "message": "Ensure that the regex used to compare with user supplied input is safe from regular expression denial of service.",
+      "commitSha": null,
+      "commitTimestamp": null
+    },
+    {
+      "issueId": "8d1d4a4cc65d0553393b597bf089a4b8",
+      "filePath": "scripts/__parts__/obsidian-mirror-daemon-content.mjs",
+      "lineNumber": 105,
+      "patternId": "Semgrep_rules_lgpl_javascript_dos_rule-regex-dos",
+      "category": "Security",
+      "severityLevel": "High",
+      "tool": "Opengrep",
+      "message": "Ensure that the regex used to compare with user supplied input is safe from regular expression denial of service.",
+      "commitSha": null,
+      "commitTimestamp": null
+    },
+    {
+      "issueId": "d62f2852758387c0cd4d3e76f602fe1a",
+      "filePath": "scripts/__parts__/obsidian-mirror-daemon-utils.mjs",
+      "lineNumber": 329,
+      "patternId": "Semgrep_rules_lgpl_javascript_dos_rule-regex-dos",
+      "category": "Security",
+      "severityLevel": "High",
+      "tool": "Opengrep",
+      "message": "Ensure that the regex used to compare with user supplied input is safe from regular expression denial of service.",
+      "commitSha": null,
+      "commitTimestamp": null
+    },
+    {
+      "issueId": "825173add4b9659326a58aea4bc9ad8",
+      "filePath": "scripts/__parts__/obsidian-mirror-daemon-content.mjs",
+      "lineNumber": 253,
+      "patternId": "Semgrep_rules_lgpl_javascript_dos_rule-regex-dos",
+      "category": "Security",
+      "severityLevel": "High",
+      "tool": "Opengrep",
+      "message": "Ensure that the regex used to compare with user supplied input is safe from regular expression denial of service.",
+      "commitSha": null,
+      "commitTimestamp": null
+    },
+    {
+      "issueId": "ae029e5d640207e3ddbb24bf33cf4f0a",
+      "filePath": "backend/src/main.ts",
+      "lineNumber": 175,
+      "patternId": "Lizard_ccn-critical",
+      "category": "Complexity",
+      "severityLevel": "Error",
+      "tool": "Lizard",
+      "message": "Method bootstrap has a cyclomatic complexity of 20 (limit is 12)",
       "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
       "commitTimestamp": "2025-12-03T13:33:54Z"
     },
@@ -387,7 +753,31 @@
       "category": "Complexity",
       "severityLevel": "Error",
       "tool": "Lizard",
-      "message": "File backend/package-lock.json has 16950 non-comment lines of code",
+      "message": "File backend/package-lock.json has 16713 non-comment lines of code",
+      "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
+      "commitTimestamp": "2025-12-03T13:33:54Z"
+    },
+    {
+      "issueId": "6ad4d91b1b0051d34ec5dcfc676b98",
+      "filePath": "package-lock.json",
+      "lineNumber": 1,
+      "patternId": "Lizard_file-nloc-critical",
+      "category": "Complexity",
+      "severityLevel": "Error",
+      "tool": "Lizard",
+      "message": "File package-lock.json has 6962 non-comment lines of code",
+      "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
+      "commitTimestamp": "2025-12-03T13:33:54Z"
+    },
+    {
+      "issueId": "7939ef3e358a9ec474efc6d4e19b4f6a",
+      "filePath": "worker/package-lock.json",
+      "lineNumber": 1,
+      "patternId": "Lizard_file-nloc-critical",
+      "category": "Complexity",
+      "severityLevel": "Error",
+      "tool": "Lizard",
+      "message": "File worker/package-lock.json has 7726 non-comment lines of code",
       "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
       "commitTimestamp": "2025-12-03T13:33:54Z"
     },
@@ -399,21 +789,9 @@
       "category": "Complexity",
       "severityLevel": "Error",
       "tool": "Lizard",
-      "message": "File frontend/package-lock.json has 15726 non-comment lines of code",
+      "message": "File frontend/package-lock.json has 15724 non-comment lines of code",
       "commitSha": "605c73e05cdd564b5a4214caf9ec3ac7b49dbe75",
       "commitTimestamp": "2025-12-03T21:00:33Z"
-    },
-    {
-      "issueId": "a981d5b61ab957e9c2d98e13e455e397",
-      "filePath": "frontend/src/components/flow/NodeProperties.tsx",
-      "lineNumber": 25,
-      "patternId": "Lizard_nloc-critical",
-      "category": "Complexity",
-      "severityLevel": "Error",
-      "tool": "Lizard",
-      "message": "Method renderFields has 693 lines of code (limit is 100)",
-      "commitSha": "7e6e355d7324e74f00bdf7251acf6a9a9161b0d9",
-      "commitTimestamp": "2025-12-08T14:10:14Z"
     },
     {
       "issueId": "72f3c68162587a747ec24fe96c17b6ad",
@@ -428,57 +806,45 @@
       "commitTimestamp": "2025-12-08T14:10:14Z"
     },
     {
-      "issueId": "8da89ff2da97723b27f10f2fc167fa63",
-      "filePath": "backend/src/auth/email.service.ts",
-      "lineNumber": 273,
-      "patternId": "Semgrep_javascript.lang.security.html-in-template-string.html-in-template-string",
-      "category": "Security",
-      "severityLevel": "High",
-      "tool": "Opengrep",
-      "message": "This template literal looks like HTML and has interpolated variables.",
-      "commitSha": "c009e0f45286d80f111e372163a734b214113c81",
-      "commitTimestamp": "2025-12-08T15:58:25Z"
-    },
-    {
-      "issueId": "5ce26331ba431425a0c5a261bc7e810a",
-      "filePath": "backend/src/auth/email.service.ts",
-      "lineNumber": 334,
-      "patternId": "Semgrep_javascript.lang.correctness.missing-template-string-indicator.missing-template-string-indicator",
-      "category": "ErrorProne",
-      "severityLevel": "High",
-      "tool": "Opengrep",
-      "message": "This looks like a JavaScript template string.",
-      "commitSha": "c009e0f45286d80f111e372163a734b214113c81",
-      "commitTimestamp": "2025-12-08T15:58:25Z"
-    },
-    {
-      "issueId": "db877dea167862ef8b144cd0fb821e36",
-      "filePath": "frontend/src/components/kloel/CommandPalette.tsx",
-      "lineNumber": 1,
-      "patternId": "Lizard_ccn-critical",
-      "category": "Complexity",
-      "severityLevel": "Error",
-      "tool": "Lizard",
-      "message": "Method *global* has a cyclomatic complexity of 17 (limit is 12)",
-      "commitSha": "cac67c21165e0166efe93a57f8d7129bd3c1e5e7",
-      "commitTimestamp": "2025-12-08T19:43:51Z"
-    },
-    {
-      "issueId": "5102d3240b2eb3fe55ac51f99b6251bc",
-      "filePath": "frontend/src/components/kloel/CommandPalette.tsx",
-      "lineNumber": 1,
+      "issueId": "a981d5b61ab957e9c2d98e13e455e397",
+      "filePath": "frontend/src/components/flow/NodeProperties.tsx",
+      "lineNumber": 25,
       "patternId": "Lizard_nloc-critical",
       "category": "Complexity",
       "severityLevel": "Error",
       "tool": "Lizard",
-      "message": "Method *global* has 398 lines of code (limit is 100)",
+      "message": "Method renderFields has 693 lines of code (limit is 100)",
+      "commitSha": "7e6e355d7324e74f00bdf7251acf6a9a9161b0d9",
+      "commitTimestamp": "2025-12-08T14:10:14Z"
+    },
+    {
+      "issueId": "94b0583aa0adab6fff1563be30371447",
+      "filePath": "backend/src/kloel/kloel.service.ts",
+      "lineNumber": 71,
+      "patternId": "Lizard_parameter-count-critical",
+      "category": "Complexity",
+      "severityLevel": "Error",
+      "tool": "Lizard",
+      "message": "Method constructor has 18 parameters (limit is 12)",
+      "commitSha": "2644ddb0c8f081196c69826e0e4c587e6640e9ee",
+      "commitTimestamp": "2025-12-08T15:30:50Z"
+    },
+    {
+      "issueId": "c7ed0a97df79643e5d69a69a2a2973bc",
+      "filePath": "frontend/src/components/kloel/AgentConsole.tsx",
+      "lineNumber": 330,
+      "patternId": "Lizard_parameter-count-critical",
+      "category": "Complexity",
+      "severityLevel": "Error",
+      "tool": "Lizard",
+      "message": "Method AgentConsole has 14 parameters (limit is 12)",
       "commitSha": "cac67c21165e0166efe93a57f8d7129bd3c1e5e7",
       "commitTimestamp": "2025-12-08T19:43:51Z"
     },
     {
-      "issueId": "455f333f754c16d94ec46d311e96cd65",
+      "issueId": "497d9c3c5268a5bd2fb0e681440da1f2",
       "filePath": "backend/prisma/migrations/20251209150035_init_baseline/migration.sql",
-      "lineNumber": 1027,
+      "lineNumber": 1101,
       "patternId": "Semgrep_codacy.generic.sql.rac-table-access",
       "category": "Security",
       "severityLevel": "High",
@@ -488,237 +854,9 @@
       "commitTimestamp": "2025-12-09T17:52:34Z"
     },
     {
-      "issueId": "58c53db16d894f4c0f283f3301c9fa87",
+      "issueId": "ea1ae7735761c0ef76a5230f676b30be",
       "filePath": "backend/prisma/migrations/20251209150035_init_baseline/migration.sql",
-      "lineNumber": 1042,
-      "patternId": "Semgrep_codacy.generic.sql.rac-table-access",
-      "category": "Security",
-      "severityLevel": "High",
-      "tool": "Opengrep",
-      "message": "All queries must target RAC_* tables.Query does not reference RAC_* table.",
-      "commitSha": "d4cbff3eef95cb58b0c8f8cac20d50461e539df7",
-      "commitTimestamp": "2025-12-09T17:52:34Z"
-    },
-    {
-      "issueId": "87159d04b379e820140005ab2784176e",
-      "filePath": "backend/prisma/migrations/20251209150035_init_baseline/migration.sql",
-      "lineNumber": 1018,
-      "patternId": "Semgrep_codacy.generic.sql.rac-table-access",
-      "category": "Security",
-      "severityLevel": "High",
-      "tool": "Opengrep",
-      "message": "All queries must target RAC_* tables.Query does not reference RAC_* table.",
-      "commitSha": "d4cbff3eef95cb58b0c8f8cac20d50461e539df7",
-      "commitTimestamp": "2025-12-09T17:52:34Z"
-    },
-    {
-      "issueId": "ae6e4a67913ba540623eb026582d1d92",
-      "filePath": "backend/prisma/migrations/20251209150035_init_baseline/migration.sql",
-      "lineNumber": 1036,
-      "patternId": "Semgrep_codacy.generic.sql.rac-table-access",
-      "category": "Security",
-      "severityLevel": "High",
-      "tool": "Opengrep",
-      "message": "All queries must target RAC_* tables.Query does not reference RAC_* table.",
-      "commitSha": "d4cbff3eef95cb58b0c8f8cac20d50461e539df7",
-      "commitTimestamp": "2025-12-09T17:52:34Z"
-    },
-    {
-      "issueId": "3a7d6284db9f416c5e4797e7a91272e6",
-      "filePath": "backend/prisma/migrations/20251209150035_init_baseline/migration.sql",
-      "lineNumber": 1054,
-      "patternId": "Semgrep_codacy.generic.sql.rac-table-access",
-      "category": "Security",
-      "severityLevel": "High",
-      "tool": "Opengrep",
-      "message": "All queries must target RAC_* tables.Query does not reference RAC_* table.",
-      "commitSha": "d4cbff3eef95cb58b0c8f8cac20d50461e539df7",
-      "commitTimestamp": "2025-12-09T17:52:34Z"
-    },
-    {
-      "issueId": "f24b781cb18be0a2afff77ebd3a2c5b1",
-      "filePath": "backend/prisma/migrations/20251209150035_init_baseline/migration.sql",
-      "lineNumber": 1012,
-      "patternId": "Semgrep_codacy.generic.sql.rac-table-access",
-      "category": "Security",
-      "severityLevel": "High",
-      "tool": "Opengrep",
-      "message": "All queries must target RAC_* tables.Query does not reference RAC_* table.",
-      "commitSha": "d4cbff3eef95cb58b0c8f8cac20d50461e539df7",
-      "commitTimestamp": "2025-12-09T17:52:34Z"
-    },
-    {
-      "issueId": "831cb68972bafd88e86f8fdeb7ad4165",
-      "filePath": "backend/prisma/migrations/20251209150035_init_baseline/migration.sql",
-      "lineNumber": 949,
-      "patternId": "Semgrep_codacy.generic.sql.rac-table-access",
-      "category": "Security",
-      "severityLevel": "High",
-      "tool": "Opengrep",
-      "message": "All queries must target RAC_* tables.Query does not reference RAC_* table.",
-      "commitSha": "d4cbff3eef95cb58b0c8f8cac20d50461e539df7",
-      "commitTimestamp": "2025-12-09T17:52:34Z"
-    },
-    {
-      "issueId": "db0b11b8117a00666dcd2f9564178341",
-      "filePath": "backend/prisma/migrations/20251209150035_init_baseline/migration.sql",
-      "lineNumber": 1087,
-      "patternId": "Semgrep_codacy.generic.sql.rac-table-access",
-      "category": "Security",
-      "severityLevel": "High",
-      "tool": "Opengrep",
-      "message": "All queries must target RAC_* tables.Query does not reference RAC_* table.",
-      "commitSha": "d4cbff3eef95cb58b0c8f8cac20d50461e539df7",
-      "commitTimestamp": "2025-12-09T17:52:34Z"
-    },
-    {
-      "issueId": "38365d64f04f9340687f78e0f69c842b",
-      "filePath": "backend/prisma/migrations/20251209150035_init_baseline/migration.sql",
-      "lineNumber": 1063,
-      "patternId": "Semgrep_codacy.generic.sql.rac-table-access",
-      "category": "Security",
-      "severityLevel": "High",
-      "tool": "Opengrep",
-      "message": "All queries must target RAC_* tables.Query does not reference RAC_* table.",
-      "commitSha": "d4cbff3eef95cb58b0c8f8cac20d50461e539df7",
-      "commitTimestamp": "2025-12-09T17:52:34Z"
-    },
-    {
-      "issueId": "fcfa104fa2d552aefce7da1851bd4307",
-      "filePath": "backend/prisma/migrations/20251209150035_init_baseline/migration.sql",
-      "lineNumber": 976,
-      "patternId": "Semgrep_codacy.generic.sql.rac-table-access",
-      "category": "Security",
-      "severityLevel": "High",
-      "tool": "Opengrep",
-      "message": "All queries must target RAC_* tables.Query does not reference RAC_* table.",
-      "commitSha": "d4cbff3eef95cb58b0c8f8cac20d50461e539df7",
-      "commitTimestamp": "2025-12-09T17:52:34Z"
-    },
-    {
-      "issueId": "6fc9435b257bc897b8caa2508a9f44e7",
-      "filePath": "backend/prisma/migrations/20251209150035_init_baseline/migration.sql",
-      "lineNumber": 964,
-      "patternId": "Semgrep_codacy.generic.sql.rac-table-access",
-      "category": "Security",
-      "severityLevel": "High",
-      "tool": "Opengrep",
-      "message": "All queries must target RAC_* tables.Query does not reference RAC_* table.",
-      "commitSha": "d4cbff3eef95cb58b0c8f8cac20d50461e539df7",
-      "commitTimestamp": "2025-12-09T17:52:34Z"
-    },
-    {
-      "issueId": "1721c71f90db270b4156776fc3667b68",
-      "filePath": "backend/prisma/migrations/20251209150035_init_baseline/migration.sql",
-      "lineNumber": 1000,
-      "patternId": "Semgrep_codacy.generic.sql.rac-table-access",
-      "category": "Security",
-      "severityLevel": "High",
-      "tool": "Opengrep",
-      "message": "All queries must target RAC_* tables.Query does not reference RAC_* table.",
-      "commitSha": "d4cbff3eef95cb58b0c8f8cac20d50461e539df7",
-      "commitTimestamp": "2025-12-09T17:52:34Z"
-    },
-    {
-      "issueId": "6d1ee4c1599459df2dc3a98a0c4b2d94",
-      "filePath": "backend/prisma/migrations/20251209150035_init_baseline/migration.sql",
-      "lineNumber": 1045,
-      "patternId": "Semgrep_codacy.generic.sql.rac-table-access",
-      "category": "Security",
-      "severityLevel": "High",
-      "tool": "Opengrep",
-      "message": "All queries must target RAC_* tables.Query does not reference RAC_* table.",
-      "commitSha": "d4cbff3eef95cb58b0c8f8cac20d50461e539df7",
-      "commitTimestamp": "2025-12-09T17:52:34Z"
-    },
-    {
-      "issueId": "abb99bc0990e4077b672d8f72010cf66",
-      "filePath": "backend/prisma/migrations/20251209150035_init_baseline/migration.sql",
-      "lineNumber": 1051,
-      "patternId": "Semgrep_codacy.generic.sql.rac-table-access",
-      "category": "Security",
-      "severityLevel": "High",
-      "tool": "Opengrep",
-      "message": "All queries must target RAC_* tables.Query does not reference RAC_* table.",
-      "commitSha": "d4cbff3eef95cb58b0c8f8cac20d50461e539df7",
-      "commitTimestamp": "2025-12-09T17:52:34Z"
-    },
-    {
-      "issueId": "6be724a09e3a306a7eb8b34feb154176",
-      "filePath": "backend/prisma/migrations/20251209150035_init_baseline/migration.sql",
-      "lineNumber": 973,
-      "patternId": "Semgrep_codacy.generic.sql.rac-table-access",
-      "category": "Security",
-      "severityLevel": "High",
-      "tool": "Opengrep",
-      "message": "All queries must target RAC_* tables.Query does not reference RAC_* table.",
-      "commitSha": "d4cbff3eef95cb58b0c8f8cac20d50461e539df7",
-      "commitTimestamp": "2025-12-09T17:52:34Z"
-    },
-    {
-      "issueId": "ae613229b7b74fe9c2b64a3a338af76",
-      "filePath": "backend/prisma/migrations/20251209150035_init_baseline/migration.sql",
-      "lineNumber": 991,
-      "patternId": "Semgrep_codacy.generic.sql.rac-table-access",
-      "category": "Security",
-      "severityLevel": "High",
-      "tool": "Opengrep",
-      "message": "All queries must target RAC_* tables.Query does not reference RAC_* table.",
-      "commitSha": "d4cbff3eef95cb58b0c8f8cac20d50461e539df7",
-      "commitTimestamp": "2025-12-09T17:52:34Z"
-    },
-    {
-      "issueId": "241d74c2691511e449936793f81072ba",
-      "filePath": "backend/prisma/migrations/20251209150035_init_baseline/migration.sql",
-      "lineNumber": 961,
-      "patternId": "Semgrep_codacy.generic.sql.rac-table-access",
-      "category": "Security",
-      "severityLevel": "High",
-      "tool": "Opengrep",
-      "message": "All queries must target RAC_* tables.Query does not reference RAC_* table.",
-      "commitSha": "d4cbff3eef95cb58b0c8f8cac20d50461e539df7",
-      "commitTimestamp": "2025-12-09T17:52:34Z"
-    },
-    {
-      "issueId": "b0113d28ab1863aaacd7d6258fb21144",
-      "filePath": "backend/prisma/migrations/20251209150035_init_baseline/migration.sql",
-      "lineNumber": 958,
-      "patternId": "Semgrep_codacy.generic.sql.rac-table-access",
-      "category": "Security",
-      "severityLevel": "High",
-      "tool": "Opengrep",
-      "message": "All queries must target RAC_* tables.Query does not reference RAC_* table.",
-      "commitSha": "d4cbff3eef95cb58b0c8f8cac20d50461e539df7",
-      "commitTimestamp": "2025-12-09T17:52:34Z"
-    },
-    {
-      "issueId": "b60194fd3b78ef0ed4a5a8658d11584d",
-      "filePath": "backend/prisma/migrations/20251209150035_init_baseline/migration.sql",
-      "lineNumber": 1090,
-      "patternId": "Semgrep_codacy.generic.sql.rac-table-access",
-      "category": "Security",
-      "severityLevel": "High",
-      "tool": "Opengrep",
-      "message": "All queries must target RAC_* tables.Query does not reference RAC_* table.",
-      "commitSha": "d4cbff3eef95cb58b0c8f8cac20d50461e539df7",
-      "commitTimestamp": "2025-12-09T17:52:34Z"
-    },
-    {
-      "issueId": "9d165026f515438949876f773d789cb9",
-      "filePath": "backend/prisma/migrations/20251209150035_init_baseline/migration.sql",
-      "lineNumber": 988,
-      "patternId": "Semgrep_codacy.generic.sql.rac-table-access",
-      "category": "Security",
-      "severityLevel": "High",
-      "tool": "Opengrep",
-      "message": "All queries must target RAC_* tables.Query does not reference RAC_* table.",
-      "commitSha": "d4cbff3eef95cb58b0c8f8cac20d50461e539df7",
-      "commitTimestamp": "2025-12-09T17:52:34Z"
-    },
-    {
-      "issueId": "1fdd29fe70c914a01751cd3f132f0b72",
-      "filePath": "backend/prisma/migrations/20251209150035_init_baseline/migration.sql",
-      "lineNumber": 1075,
+      "lineNumber": 981,
       "patternId": "Semgrep_codacy.generic.sql.rac-table-access",
       "category": "Security",
       "severityLevel": "High",
@@ -730,31 +868,7 @@
     {
       "issueId": "1d7a786309674c9748803a9e192e1b3",
       "filePath": "backend/prisma/migrations/20251209150035_init_baseline/migration.sql",
-      "lineNumber": 1024,
-      "patternId": "Semgrep_codacy.generic.sql.rac-table-access",
-      "category": "Security",
-      "severityLevel": "High",
-      "tool": "Opengrep",
-      "message": "All queries must target RAC_* tables.Query does not reference RAC_* table.",
-      "commitSha": "d4cbff3eef95cb58b0c8f8cac20d50461e539df7",
-      "commitTimestamp": "2025-12-09T17:52:34Z"
-    },
-    {
-      "issueId": "497d9c3c5268a5bd2fb0e681440da1f2",
-      "filePath": "backend/prisma/migrations/20251209150035_init_baseline/migration.sql",
-      "lineNumber": 1066,
-      "patternId": "Semgrep_codacy.generic.sql.rac-table-access",
-      "category": "Security",
-      "severityLevel": "High",
-      "tool": "Opengrep",
-      "message": "All queries must target RAC_* tables.Query does not reference RAC_* table.",
-      "commitSha": "d4cbff3eef95cb58b0c8f8cac20d50461e539df7",
-      "commitTimestamp": "2025-12-09T17:52:34Z"
-    },
-    {
-      "issueId": "997e2de28670fb88b83e898370ab8cb2",
-      "filePath": "backend/prisma/migrations/20251209150035_init_baseline/migration.sql",
-      "lineNumber": 1006,
+      "lineNumber": 1059,
       "patternId": "Semgrep_codacy.generic.sql.rac-table-access",
       "category": "Security",
       "severityLevel": "High",
@@ -766,103 +880,7 @@
     {
       "issueId": "ca7d23d530b23f37d081f0468721295d",
       "filePath": "backend/prisma/migrations/20251209150035_init_baseline/migration.sql",
-      "lineNumber": 994,
-      "patternId": "Semgrep_codacy.generic.sql.rac-table-access",
-      "category": "Security",
-      "severityLevel": "High",
-      "tool": "Opengrep",
-      "message": "All queries must target RAC_* tables.Query does not reference RAC_* table.",
-      "commitSha": "d4cbff3eef95cb58b0c8f8cac20d50461e539df7",
-      "commitTimestamp": "2025-12-09T17:52:34Z"
-    },
-    {
-      "issueId": "b67aa4afafae0eaf817f24abd697cb3b",
-      "filePath": "backend/prisma/migrations/20251209150035_init_baseline/migration.sql",
-      "lineNumber": 1072,
-      "patternId": "Semgrep_codacy.generic.sql.rac-table-access",
-      "category": "Security",
-      "severityLevel": "High",
-      "tool": "Opengrep",
-      "message": "All queries must target RAC_* tables.Query does not reference RAC_* table.",
-      "commitSha": "d4cbff3eef95cb58b0c8f8cac20d50461e539df7",
-      "commitTimestamp": "2025-12-09T17:52:34Z"
-    },
-    {
-      "issueId": "d63fe5bf979369bd11d7bd56099b04a6",
-      "filePath": "backend/prisma/migrations/20251209150035_init_baseline/migration.sql",
-      "lineNumber": 1057,
-      "patternId": "Semgrep_codacy.generic.sql.rac-table-access",
-      "category": "Security",
-      "severityLevel": "High",
-      "tool": "Opengrep",
-      "message": "All queries must target RAC_* tables.Query does not reference RAC_* table.",
-      "commitSha": "d4cbff3eef95cb58b0c8f8cac20d50461e539df7",
-      "commitTimestamp": "2025-12-09T17:52:34Z"
-    },
-    {
-      "issueId": "9428ec7bffc004146dfed74c8d10dd7f",
-      "filePath": "backend/prisma/migrations/20251209150035_init_baseline/migration.sql",
-      "lineNumber": 1069,
-      "patternId": "Semgrep_codacy.generic.sql.rac-table-access",
-      "category": "Security",
-      "severityLevel": "High",
-      "tool": "Opengrep",
-      "message": "All queries must target RAC_* tables.Query does not reference RAC_* table.",
-      "commitSha": "d4cbff3eef95cb58b0c8f8cac20d50461e539df7",
-      "commitTimestamp": "2025-12-09T17:52:34Z"
-    },
-    {
-      "issueId": "92ff5028e73c3b3ac1b1188fdfbe9c29",
-      "filePath": "backend/prisma/migrations/20251209150035_init_baseline/migration.sql",
-      "lineNumber": 997,
-      "patternId": "Semgrep_codacy.generic.sql.rac-table-access",
-      "category": "Security",
-      "severityLevel": "High",
-      "tool": "Opengrep",
-      "message": "All queries must target RAC_* tables.Query does not reference RAC_* table.",
-      "commitSha": "d4cbff3eef95cb58b0c8f8cac20d50461e539df7",
-      "commitTimestamp": "2025-12-09T17:52:34Z"
-    },
-    {
-      "issueId": "c1d7e005412d7f387a7ff512194f56ad",
-      "filePath": "backend/prisma/migrations/20251209150035_init_baseline/migration.sql",
-      "lineNumber": 985,
-      "patternId": "Semgrep_codacy.generic.sql.rac-table-access",
-      "category": "Security",
-      "severityLevel": "High",
-      "tool": "Opengrep",
-      "message": "All queries must target RAC_* tables.Query does not reference RAC_* table.",
-      "commitSha": "d4cbff3eef95cb58b0c8f8cac20d50461e539df7",
-      "commitTimestamp": "2025-12-09T17:52:34Z"
-    },
-    {
-      "issueId": "ac2051121f80ca723b10a1a57f6d3f38",
-      "filePath": "backend/prisma/migrations/20251209150035_init_baseline/migration.sql",
-      "lineNumber": 1030,
-      "patternId": "Semgrep_codacy.generic.sql.rac-table-access",
-      "category": "Security",
-      "severityLevel": "High",
-      "tool": "Opengrep",
-      "message": "All queries must target RAC_* tables.Query does not reference RAC_* table.",
-      "commitSha": "d4cbff3eef95cb58b0c8f8cac20d50461e539df7",
-      "commitTimestamp": "2025-12-09T17:52:34Z"
-    },
-    {
-      "issueId": "be2626ff05372ed34bad951dadc8069d",
-      "filePath": "backend/prisma/migrations/20251209150035_init_baseline/migration.sql",
-      "lineNumber": 1021,
-      "patternId": "Semgrep_codacy.generic.sql.rac-table-access",
-      "category": "Security",
-      "severityLevel": "High",
-      "tool": "Opengrep",
-      "message": "All queries must target RAC_* tables.Query does not reference RAC_* table.",
-      "commitSha": "d4cbff3eef95cb58b0c8f8cac20d50461e539df7",
-      "commitTimestamp": "2025-12-09T17:52:34Z"
-    },
-    {
-      "issueId": "c1542d574cf5039c1a955182573240b9",
-      "filePath": "backend/prisma/migrations/20251209150035_init_baseline/migration.sql",
-      "lineNumber": 1081,
+      "lineNumber": 1029,
       "patternId": "Semgrep_codacy.generic.sql.rac-table-access",
       "category": "Security",
       "severityLevel": "High",
@@ -874,7 +892,7 @@
     {
       "issueId": "802ef020f1a7a8553d4c92b87c8e4eea",
       "filePath": "backend/prisma/migrations/20251209150035_init_baseline/migration.sql",
-      "lineNumber": 955,
+      "lineNumber": 990,
       "patternId": "Semgrep_codacy.generic.sql.rac-table-access",
       "category": "Security",
       "severityLevel": "High",
@@ -884,9 +902,9 @@
       "commitTimestamp": "2025-12-09T17:52:34Z"
     },
     {
-      "issueId": "82805f0ce482e4eb7502a5899799bb13",
+      "issueId": "b67aa4afafae0eaf817f24abd697cb3b",
       "filePath": "backend/prisma/migrations/20251209150035_init_baseline/migration.sql",
-      "lineNumber": 1015,
+      "lineNumber": 1107,
       "patternId": "Semgrep_codacy.generic.sql.rac-table-access",
       "category": "Security",
       "severityLevel": "High",
@@ -896,21 +914,9 @@
       "commitTimestamp": "2025-12-09T17:52:34Z"
     },
     {
-      "issueId": "1ecfc027a745708398eb6781cabb03d3",
+      "issueId": "92ff5028e73c3b3ac1b1188fdfbe9c29",
       "filePath": "backend/prisma/migrations/20251209150035_init_baseline/migration.sql",
-      "lineNumber": 1033,
-      "patternId": "Semgrep_codacy.generic.sql.rac-table-access",
-      "category": "Security",
-      "severityLevel": "High",
-      "tool": "Opengrep",
-      "message": "All queries must target RAC_* tables.Query does not reference RAC_* table.",
-      "commitSha": "d4cbff3eef95cb58b0c8f8cac20d50461e539df7",
-      "commitTimestamp": "2025-12-09T17:52:34Z"
-    },
-    {
-      "issueId": "3afda1ffcc2f418aea83b59cf66e1361",
-      "filePath": "backend/prisma/migrations/20251209150035_init_baseline/migration.sql",
-      "lineNumber": 1003,
+      "lineNumber": 1032,
       "patternId": "Semgrep_codacy.generic.sql.rac-table-access",
       "category": "Security",
       "severityLevel": "High",

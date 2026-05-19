@@ -18,12 +18,14 @@ import { AuthenticatedRequest } from '../common/interfaces/authenticated-request
 import { CreateVoiceProfileDto } from './dto/create-voice-profile.dto';
 import { GenerateAudioDto } from './dto/generate-audio.dto';
 import { VoiceService } from './voice.service';
+import { RouteClass } from '../common/throttler/route-class.decorator';
 
 /** Voice controller. */
 @ApiTags('Voice AI')
 @ApiBearerAuth()
 @Controller('voice')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
+@RouteClass('mutate')
 export class VoiceController {
   constructor(private readonly voiceService: VoiceService) {}
 

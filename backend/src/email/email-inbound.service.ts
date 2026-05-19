@@ -57,8 +57,8 @@ function normalizeAttachments(attachments: InboundEmailAttachment[]): MessageAtt
   return attachments.map((att) => ({
     name: att.filename || 'attachment',
     mimeType: att.mimeType || 'application/octet-stream',
-    base64: att.contentBase64,
-    url: att.url,
+    ...(att.contentBase64 !== undefined ? { base64: att.contentBase64 } : {}),
+    ...(att.url !== undefined ? { url: att.url } : {}),
   }));
 }
 
@@ -73,8 +73,10 @@ function maskEmail(value?: string): string | undefined {
   if (!value) {
     return value;
   }
-  const [local, domain] = value.split('@');
-  if (!domain) {
+  const parts = value.split('@');
+  const local = parts[0];
+  const domain = parts[1];
+  if (!local || !domain) {
     return '***';
   }
   return `${local.slice(0, 2)}***@${domain}`;
@@ -130,9 +132,9 @@ export class EmailInboundService {
       channel: 'EMAIL',
       externalId: email.messageId?.trim() || `email_${randomUUID()}`,
       from: email.from,
-      fromName: email.fromName,
+      ...(email.fromName !== undefined ? { fromName: email.fromName } : {}),
       content,
-      attachments,
+      ...(attachments !== undefined ? { attachments } : {}),
       metadata: {
         subject: email.subject,
         to: email.to,
@@ -173,7 +175,7 @@ export class EmailInboundService {
     try {
       const match = await this.prisma.workspace.findFirst({
         where: {
-          OR: [{ customDomain: domain || undefined }, { id: resolved.workspaceId }],
+          OR: [{ ...(domain ? { customDomain: domain } : {}) }, { id: resolved.workspaceId }],
         },
         select: { id: true },
       });

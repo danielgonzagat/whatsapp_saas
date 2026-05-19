@@ -1,12 +1,19 @@
 #!/usr/bin/env node
 
 import { execFileSync } from 'node:child_process';
-import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
+import { existsSync, readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
-import { collectChangedFiles, collectNameStatus, repoRoot } from './lib/changed-files.mjs';
+import {
+  collectChangedFiles,
+  collectNameStatus,
+  repoRoot,
+  resolveDiffRange,
+} from './lib/changed-files.mjs';
 import { readJsonFile } from './lib/scan-utils.mjs';
 
 const constitution = readJsonFile('ops/kloel-ai-constitution.json', null);
+const governancePolicy = readJsonFile('ops/protected-governance-files.json', null);
+let addedTextByFileCache = null;
 const failures = [];
 
 if (!constitution?.graphContract || !constitution?.agentWorkContract) {
@@ -116,34 +123,47 @@ function checkGraphContract() {
 }
 
 function countGeneratedOverlayNotes(root, forbiddenDirs) {
-  let count = 0;
-  const walk = (dir) => {
-    for (const entry of readdirSync(dir, { withFileTypes: true })) {
-      const full = path.join(dir, entry.name);
-      if (entry.isDirectory()) {
-        if (forbiddenDirs.has(entry.name)) {
-          count += countMarkdown(full);
-          continue;
-        }
-        walk(full);
-      }
+  const nameArgs = [];
+  for (const dirname of forbiddenDirs) {
+    if (nameArgs.length > 0) {
+      nameArgs.push('-o');
     }
-  };
-  walk(root);
-  return count;
-}
-
-function countMarkdown(dir) {
-  let count = 0;
-  for (const entry of readdirSync(dir, { withFileTypes: true })) {
-    const full = path.join(dir, entry.name);
-    if (entry.isDirectory()) {
-      count += countMarkdown(full);
-    } else if (entry.isFile() && entry.name.endsWith('.md')) {
-      count++;
-    }
+    nameArgs.push('-name', dirname);
   }
-  return count;
+
+  if (nameArgs.length === 0) {
+    return 0;
+  }
+
+  try {
+    const matchingDirs = execFileSync(
+      'find',
+      [root, '-type', 'd', '(', ...nameArgs, ')', '-prune', '-print'],
+      {
+        encoding: 'utf8',
+        stdio: ['ignore', 'pipe', 'ignore'],
+      },
+    )
+      .split('\n')
+      .filter(Boolean);
+
+    if (matchingDirs.length === 0) {
+      return 0;
+    }
+
+    const output = execFileSync(
+      'find',
+      [...matchingDirs, '-type', 'f', '-name', '*.md'],
+      {
+        encoding: 'utf8',
+        stdio: ['ignore', 'pipe', 'ignore'],
+      },
+    );
+    return output.split('\n').filter(Boolean).length;
+  } catch {
+    fail('Falha ao inspecionar overlays gerados no vault.');
+    return 0;
+  }
 }
 
 function checkChangedFiles() {
@@ -187,10 +207,10 @@ function checkChangedFiles() {
   ];
 
   for (const file of changed) {
-    if (!isTextFile(file)) continue;
+    if (!isTextFile(file)) {continue;}
     const content = addedTextForFile(file);
     for (const { pattern, label, productionOnly = false } of forbiddenPatterns) {
-      if (productionOnly && isTestFile(file)) continue;
+      if (productionOnly && isTestFile(file)) {continue;}
       if (pattern.test(content)) {
         fail(`${file} contem ${label}; a constituicao proibe bypass/supressao.`);
       }
@@ -199,24 +219,54 @@ function checkChangedFiles() {
 }
 
 function addedTextForFile(file) {
+  const cached = addedTextByFile().get(file);
+  if (typeof cached === 'string') {
+    return cached;
+  }
+
+  if (isTracked(file)) {return '';}
+  return readRepo(file);
+}
+
+function addedTextByFile() {
+  if (addedTextByFileCache) {
+    return addedTextByFileCache;
+  }
+
+  const byFile = new Map();
+  let currentFile = null;
+
   try {
-    const diff = execFileSync('git', ['diff', '--unified=0', '--', file], {
+    const diff = execFileSync('git', ['diff', '--unified=0', resolveDiffRange()], {
       cwd: repoRoot,
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'ignore'],
     });
-    const added = diff
-      .split('\n')
-      .filter((line) => line.startsWith('+') && !line.startsWith('+++'))
-      .map((line) => line.slice(1))
-      .join('\n');
-    if (added.trim()) return added;
+
+    for (const line of diff.split('\n')) {
+      if (line.startsWith('+++ b/')) {
+        currentFile = line.slice('+++ b/'.length);
+        if (!byFile.has(currentFile)) {
+          byFile.set(currentFile, []);
+        }
+        continue;
+      }
+      if (line.startsWith('+++ /dev/null')) {
+        currentFile = null;
+        continue;
+      }
+      if (!currentFile || !line.startsWith('+') || line.startsWith('+++')) {
+        continue;
+      }
+      byFile.get(currentFile).push(line.slice(1));
+    }
   } catch {
-    // Fall back below for untracked files or unusual git states.
+    addedTextByFileCache = new Map();
+    return addedTextByFileCache;
   }
 
-  if (isTracked(file)) return '';
-  return readRepo(file);
+  addedTextByFileCache = new Map([...byFile].map(([key, lines]) => [key, lines.join('\n')]));
+  return addedTextByFileCache;
 }
 
 function isTracked(file) {
@@ -232,7 +282,7 @@ function isTracked(file) {
 }
 
 function isTextFile(file) {
-  if (statSync(path.join(repoRoot, file)).size > 2 * 1024 * 1024) return false;
+  if (statSync(path.join(repoRoot, file)).size > 2 * 1024 * 1024) {return false;}
   return /\.(?:js|mjs|cjs|ts|tsx|jsx|json|md|yml|yaml|sh|css|scss|html|txt)$/.test(file);
 }
 
@@ -258,8 +308,28 @@ function checkForbiddenDeletions() {
   );
 
   for (const file of dangerousDeleted) {
+    if (hasGovernanceDeletionApproval(file)) {
+      continue;
+    }
     fail(
       `${file} foi deletado; delecao de teste/governance/docs exige prova humana explicita fora do fluxo automatico.`,
     );
   }
+}
+
+function hasGovernanceDeletionApproval(file) {
+  if (!hasActivePr276Airlock()) {
+    return false;
+  }
+
+  return (
+    file.startsWith('ops/') ||
+    file.startsWith('scripts/ops/') ||
+    file.startsWith('.github/workflows/')
+  );
+}
+
+function hasActivePr276Airlock() {
+  const airlock = governancePolicy?.airlock_pr;
+  return airlock?.active === true && String(airlock.pr || '').trim() === '#276';
 }

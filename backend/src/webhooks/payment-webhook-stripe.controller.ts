@@ -9,9 +9,7 @@ import {
   Logger,
   Post,
   Req,
-  UseGuards,
 } from '@nestjs/common';
-import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import { type WebhookEvent } from '@prisma/client';
 import type { Redis } from 'ioredis';
 import { AdminAuditService } from '../admin/audit/admin-audit.service';
@@ -30,6 +28,7 @@ import { StripeWebhookProcessor } from '../payments/stripe/stripe-webhook.proces
 import { FinancialAlertService } from '../common/financial-alert.service';
 import { validateNoInternalAccess } from '../common/utils/url-validator';
 import { ChannelTransportRegistry } from '../kloel/channel-transport.registry';
+import { Metrics } from '../observability/metrics';
 import { PrismaService } from '../prisma/prisma.service';
 import { WebhooksService } from './webhooks.service';
 import { StripeWebhookLedgerService } from './stripe-webhook-ledger.service';
@@ -52,6 +51,7 @@ import {
   handlePaymentIntentEvent,
   handleCheckoutSessionCompleted,
 } from './payment-webhook-stripe.handlers2';
+import { RouteClass } from '../common/throttler/route-class.decorator';
 
 /**
  * Handles all Stripe-originated webhooks at POST /webhook/payment/stripe.
@@ -59,8 +59,7 @@ import {
  * Event handlers are split across payment-webhook-stripe.handlers.ts and handlers2.ts.
  */
 @Controller('webhook/payment')
-@UseGuards(ThrottlerGuard)
-@Throttle({ default: { limit: 100, ttl: 60000 } })
+@RouteClass('webhook')
 export class PaymentWebhookStripeController {
   private readonly logger = new Logger(PaymentWebhookStripeController.name);
 
@@ -124,191 +123,212 @@ export class PaymentWebhookStripeController {
     @Headers('x-event-id') eventId: string | undefined,
     @Body() body: StripeEventLike,
   ) {
-    const primarySecret = process.env.STRIPE_WEBHOOK_SECRET;
-    const endpointSecrets = Array.from(
-      new Set(
-        [
-          primarySecret,
-          ...(process.env.STRIPE_WEBHOOK_SECRETS?.split(',').map((s) => s.trim()) ?? []),
-        ].filter((s): s is string => Boolean(s && s.length > 0)),
-      ),
-    );
-    if (process.env.NODE_ENV === 'production' && endpointSecrets.length === 0) {
-      throw new ForbiddenException('STRIPE_WEBHOOK_SECRET not configured');
-    }
-
+    const start = Date.now();
     let event: StripeEventLike = body;
-    if (endpointSecrets.length > 0) {
-      if (!stripeSignature) throw new BadRequestException('Missing stripe-signature header');
-      if (!req.rawBody)
-        throw new BadRequestException('Missing rawBody for Stripe webhook verification');
-      const stripeKey = process.env.STRIPE_SECRET_KEY;
-      if (!stripeKey) {
-        this.logger.warn('STRIPE_SECRET_KEY not configured — payment webhooks disabled');
-        return { received: true, skipped: true, reason: 'Stripe not configured' };
+    try {
+      const primarySecret = process.env.STRIPE_WEBHOOK_SECRET;
+      const endpointSecrets = Array.from(
+        new Set(
+          [
+            primarySecret,
+            ...(process.env.STRIPE_WEBHOOK_SECRETS?.split(',').map((s) => s.trim()) ?? []),
+          ].filter((s): s is string => Boolean(s && s.length > 0)),
+        ),
+      );
+      if (process.env.NODE_ENV === 'production' && endpointSecrets.length === 0) {
+        throw new ForbiddenException('STRIPE_WEBHOOK_SECRET not configured');
       }
-      const stripe = new StripeRuntime(stripeKey);
-      let verified: StripeEvent | undefined;
-      let lastSignatureError: unknown;
-      for (const secret of endpointSecrets) {
-        try {
-          verified = stripe.webhooks.constructEvent(req.rawBody, stripeSignature, secret);
-          break;
-        } catch (err: unknown) {
-          lastSignatureError = err;
+
+      if (endpointSecrets.length > 0) {
+        if (!stripeSignature) {
+          throw new BadRequestException('Missing stripe-signature header');
         }
-      }
-      if (!verified) {
-        const message =
-          lastSignatureError instanceof Error
-            ? lastSignatureError.message
-            : 'Invalid stripe signature';
-        throw new BadRequestException(message);
-      }
+        if (!req.rawBody) {
+          throw new BadRequestException('Missing rawBody for Stripe webhook verification');
+        }
+        const stripeKey = process.env.STRIPE_SECRET_KEY;
+        if (!stripeKey) {
+          this.logger.warn('STRIPE_SECRET_KEY not configured — payment webhooks disabled');
+          return { received: true, skipped: true, reason: 'Stripe not configured' };
+        }
+        const stripe = new StripeRuntime(stripeKey);
+        let verified: StripeEvent | undefined;
+        let lastSignatureError: unknown;
+        for (const secret of endpointSecrets) {
+          try {
+            verified = stripe.webhooks.constructEvent(req.rawBody, stripeSignature, secret);
+            break;
+          } catch (err: unknown) {
+            lastSignatureError = err;
+          }
+        }
+        if (!verified) {
+          const message =
+            lastSignatureError instanceof Error
+              ? lastSignatureError.message
+              : 'Invalid stripe signature';
+          throw new BadRequestException(message);
+        }
 
-      const verifiedRecord = asRecord(verified);
-      const relatedObject = asRecord(verifiedRecord?.related_object);
-      const isThinAccountUpdated =
-        verifiedRecord?.object === 'v2.core.event' &&
-        verified.type === 'account.updated' &&
-        relatedObject?.type === 'account' &&
-        typeof verified.id === 'string';
+        const verifiedRecord = asRecord(verified);
+        const relatedObject = asRecord(verifiedRecord?.related_object);
+        const isThinAccountUpdated =
+          verifiedRecord?.object === 'v2.core.event' &&
+          verified.type === 'account.updated' &&
+          relatedObject?.type === 'account' &&
+          typeof verified.id === 'string';
 
-      if (isThinAccountUpdated) {
-        const hydrated = await stripe.events.retrieve(verified.id, {}, undefined);
-        event = {
-          id: hydrated.id,
-          type: hydrated.type,
-          data: { object: asRecord(hydrated.data?.object) ?? undefined },
-        };
-      } else if (verified.type === 'checkout.session.completed') {
-        const session: StripeCheckoutSession = verified.data.object;
-        event = {
-          id: verified.id,
-          type: verified.type,
-          data: {
-            object: {
-              id: session.id,
-              payment_intent:
-                typeof session.payment_intent === 'string'
-                  ? session.payment_intent
-                  : (session.payment_intent?.id ?? null),
-              amount_total: session.amount_total ?? null,
-              currency: session.currency ?? null,
-              customer_email: session.customer_email ?? null,
-              customer_details: session.customer_details
-                ? {
-                    email: session.customer_details.email ?? null,
-                    phone: session.customer_details.phone ?? null,
-                  }
-                : null,
-              metadata: session.metadata ?? null,
-            },
-          },
-        };
-      } else if (verified.type.startsWith('payment_intent.')) {
-        const intent = verified.data.object as StripePaymentIntent;
-        event = {
-          id: verified.id,
-          type: verified.type,
-          data: {
-            object: {
-              id: intent.id,
-              status: intent.status,
-              currency: intent.currency ?? null,
-              latest_charge: typeof intent.latest_charge === 'string' ? intent.latest_charge : null,
-              transfer_group: intent.transfer_group ?? null,
-              metadata: intent.metadata ?? null,
-              next_action:
-                intent.next_action?.type === 'pix_display_qr_code'
+        if (isThinAccountUpdated) {
+          const hydrated = await stripe.events.retrieve(verified.id, {}, undefined);
+          event = {
+            id: hydrated.id,
+            type: hydrated.type,
+            data: {
+              object: asRecord(hydrated.data?.object) ?? undefined,
+            } as StripeEventLike['data'],
+          } as StripeEventLike;
+        } else if (verified.type === 'checkout.session.completed') {
+          const session: StripeCheckoutSession = verified.data.object;
+          event = {
+            id: verified.id,
+            type: verified.type,
+            data: {
+              object: {
+                id: session.id,
+                payment_intent:
+                  typeof session.payment_intent === 'string'
+                    ? session.payment_intent
+                    : (session.payment_intent?.id ?? null),
+                amount_total: session.amount_total ?? null,
+                currency: session.currency ?? null,
+                customer_email: session.customer_email ?? null,
+                customer_details: session.customer_details
                   ? {
-                      type: intent.next_action.type,
-                      pix_display_qr_code: {
-                        data: intent.next_action.pix_display_qr_code?.data ?? null,
-                        image_url_png:
-                          intent.next_action.pix_display_qr_code?.image_url_png ?? null,
-                        expires_at: intent.next_action.pix_display_qr_code?.expires_at ?? null,
-                      },
+                      email: session.customer_details.email ?? null,
+                      phone: session.customer_details.phone ?? null,
                     }
                   : null,
-              last_payment_error: intent.last_payment_error
-                ? { message: intent.last_payment_error.message ?? null }
-                : null,
+                metadata: session.metadata ?? null,
+              },
             },
-          },
-        };
-      } else {
-        event = {
-          id: verified.id,
-          type: verified.type,
-          data: { object: asRecord(verified.data.object) ?? undefined },
-        };
+          };
+        } else if (verified.type.startsWith('payment_intent.')) {
+          const intent = verified.data.object as StripePaymentIntent;
+          event = {
+            id: verified.id,
+            type: verified.type,
+            data: {
+              object: {
+                id: intent.id,
+                status: intent.status,
+                currency: intent.currency ?? null,
+                latest_charge:
+                  typeof intent.latest_charge === 'string' ? intent.latest_charge : null,
+                transfer_group: intent.transfer_group ?? null,
+                metadata: intent.metadata ?? null,
+                next_action:
+                  intent.next_action?.type === 'pix_display_qr_code'
+                    ? {
+                        type: intent.next_action.type,
+                        pix_display_qr_code: {
+                          data: intent.next_action.pix_display_qr_code?.data ?? null,
+                          image_url_png:
+                            intent.next_action.pix_display_qr_code?.image_url_png ?? null,
+                          expires_at: intent.next_action.pix_display_qr_code?.expires_at ?? null,
+                        },
+                      }
+                    : null,
+                last_payment_error: intent.last_payment_error
+                  ? { message: intent.last_payment_error.message ?? null }
+                  : null,
+              },
+            },
+          };
+        } else {
+          event = {
+            id: verified.id,
+            type: verified.type,
+            data: {
+              object: asRecord(verified.data.object) ?? undefined,
+            } as StripeEventLike['data'],
+          } as StripeEventLike;
+        }
       }
-    }
 
-    const stripeDupe = await this.ensureIdempotent(eventId || event?.id || body?.id, req);
-    if (stripeDupe) return stripeDupe;
-
-    const stripeExternalId = event?.id || eventId || body?.id || `stripe_${Date.now()}`;
-    let webhookEvent: WebhookEvent | undefined;
-    try {
-      webhookEvent = await this.webhooksService.logWebhookEvent(
-        'stripe',
-        event?.type || 'unknown',
-        String(stripeExternalId),
-        body,
-      );
-    } catch (err: unknown) {
-      const errMsg =
-        err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
-      if ((err as { code?: string } | null)?.code === 'P2002') {
-        this.logger.log(`Duplicate Stripe webhook event ${stripeExternalId}, returning 200`);
-        return { received: true, skipped: true, reason: 'duplicate_webhook_event' };
+      const stripeDupe = await this.ensureIdempotent(eventId || event?.id || body?.id, req);
+      if (stripeDupe) {
+        return stripeDupe;
       }
-      this.logger.warn(`Failed to log Stripe webhook event: ${errMsg?.message}`);
-    }
 
-    if (event?.type === 'refund.created') {
-      await handleRefundCreated(this.deps, event, webhookEvent);
-      return { received: true };
-    }
-    if (event?.type === 'charge.dispute.created') {
-      await handleDisputeCreated(this.deps, event, webhookEvent);
-      return { received: true };
-    }
-    if (event?.type === 'charge.dispute.closed') {
-      await handleDisputeClosed(this.deps, event, webhookEvent);
-      return { received: true };
-    }
-    if (event?.type === 'payout.failed' || event?.type === 'payout.paid') {
-      await handlePayoutEvent(this.deps, event, webhookEvent, stripeExternalId);
-      return { received: true };
-    }
-    if (event?.type === 'account.updated') {
-      await handleAccountUpdated(this.deps, event, webhookEvent);
-      return { received: true };
-    }
-    if (
-      event?.type === 'payment_intent.succeeded' ||
-      event?.type === 'payment_intent.processing' ||
-      event?.type === 'payment_intent.payment_failed' ||
-      event?.type === 'payment_intent.canceled'
-    ) {
-      await handlePaymentIntentEvent(this.deps, event, webhookEvent, stripeExternalId);
-      return { received: true };
-    }
-    if (event?.type === 'checkout.session.completed') {
-      await handleCheckoutSessionCompleted(this.deps, event, webhookEvent);
-    }
-    if (webhookEvent?.id) {
-      await this.webhooksService.markWebhookProcessed(webhookEvent.id).catch((err: unknown) => {
-        const errMsg = err instanceof Error ? err.message : 'unknown_error';
-        this.logger.error(
-          `[STRIPE] Failed to mark webhook ${webhookEvent.id} as processed: ${errMsg}`,
+      const stripeExternalId = event?.id || eventId || body?.id || `stripe_${Date.now()}`;
+      let webhookEvent: WebhookEvent | undefined;
+      try {
+        webhookEvent = await this.webhooksService.logWebhookEvent(
+          'stripe',
+          event?.type || 'unknown',
+          String(stripeExternalId),
+          body,
         );
+      } catch (err: unknown) {
+        const errMsg =
+          err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
+        if ((err as { code?: string } | null)?.code === 'P2002') {
+          this.logger.log(`Duplicate Stripe webhook event ${stripeExternalId}, returning 200`);
+          return { received: true, skipped: true, reason: 'duplicate_webhook_event' };
+        }
+        this.logger.warn(`Failed to log Stripe webhook event: ${errMsg?.message}`);
+      }
+
+      if (event?.type === 'refund.created') {
+        await handleRefundCreated(this.deps, event, webhookEvent);
+        return { received: true };
+      }
+      if (event?.type === 'charge.dispute.created') {
+        await handleDisputeCreated(this.deps, event, webhookEvent);
+        return { received: true };
+      }
+      if (event?.type === 'charge.dispute.closed') {
+        await handleDisputeClosed(this.deps, event, webhookEvent);
+        return { received: true };
+      }
+      if (event?.type === 'payout.failed' || event?.type === 'payout.paid') {
+        await handlePayoutEvent(this.deps, event, webhookEvent, stripeExternalId);
+        return { received: true };
+      }
+      if (event?.type === 'account.updated') {
+        await handleAccountUpdated(this.deps, event, webhookEvent);
+        return { received: true };
+      }
+      if (
+        event?.type === 'payment_intent.succeeded' ||
+        event?.type === 'payment_intent.processing' ||
+        event?.type === 'payment_intent.payment_failed' ||
+        event?.type === 'payment_intent.canceled'
+      ) {
+        await handlePaymentIntentEvent(this.deps, event, webhookEvent, stripeExternalId);
+        return { received: true };
+      }
+      if (event?.type === 'checkout.session.completed') {
+        await handleCheckoutSessionCompleted(this.deps, event, webhookEvent);
+      }
+      if (webhookEvent?.id) {
+        await this.webhooksService.markWebhookProcessed(webhookEvent.id).catch((err: unknown) => {
+          const errMsg = err instanceof Error ? err.message : 'unknown_error';
+          this.logger.error(
+            `[STRIPE] Failed to mark webhook ${webhookEvent.id} as processed: ${errMsg}`,
+          );
+        });
+      }
+      Metrics.endpoint.success('webhook.stripe', { event_type: event?.type ?? 'unknown' });
+      Metrics.endpoint.duration('webhook.stripe', Date.now() - start, {
+        event_type: event?.type ?? 'unknown',
       });
+      return { received: true };
+    } catch (err: unknown) {
+      const code = (err as { code?: string })?.code ?? 'unknown';
+      Metrics.endpoint.failure('webhook.stripe', { event_type: event?.type ?? 'unknown', code });
+      throw err;
     }
-    return { received: true };
   }
 
   private async ensureIdempotent(
@@ -339,7 +359,9 @@ export class PaymentWebhookStripeController {
       process.env.OPS_WEBHOOK_URL ||
       process.env.AUTOPILOT_ALERT_WEBHOOK ||
       process.env.DLQ_WEBHOOK_URL;
-    if (!url || !globalThis.fetch) return;
+    if (!url || !globalThis.fetch) {
+      return;
+    }
     const stableId =
       asString(meta.eventId) ||
       asString(meta.externalId) ||

@@ -283,12 +283,14 @@ export const EMPTY_STATE_CONFIGS: Record<string, EmptyStateConfig> = {
     actionPrompt: 'Reconectar meu WhatsApp',
   },
 
-  // Anúncios (Em Breve)
+  // Anúncios
   anuncios: {
     icon: Target,
-    title: 'Anúncios — Em Breve',
+    title: 'Conecte sua primeira conta de anuncios',
     description:
-      'Gerencie suas campanhas de Meta Ads, Google Ads e TikTok Ads em um só lugar. Estamos preparando esta funcionalidade.',
+      'Vincule suas contas de Meta Ads, Google Ads ou TikTok Ads para gerenciar campanhas em um so lugar.',
+    actionLabel: 'Conectar conta de anuncios',
+    actionPrompt: 'Quero conectar minha conta de Meta Ads',
   },
 
   // Generic
@@ -325,19 +327,19 @@ const VARIANT_STYLES: Record<
     iconColor: colors.text.secondary,
   },
   'no-connection': {
-    bgColor: `${colors.state.warning}10`,
+    bgColor: 'rgba(110, 110, 115, 0.06)',
     iconColor: colors.state.warning,
-    borderColor: `${colors.state.warning}30`,
+    borderColor: 'rgba(110, 110, 115, 0.19)',
   },
   error: {
-    bgColor: `${colors.state.error}10`,
+    bgColor: 'rgba(232, 93, 48, 0.06)',
     iconColor: colors.state.error,
-    borderColor: `${colors.state.error}30`,
+    borderColor: 'rgba(232, 93, 48, 0.19)',
   },
   success: {
-    bgColor: `${colors.state.success}10`,
+    bgColor: 'rgba(224, 221, 216, 0.06)',
     iconColor: colors.state.success,
-    borderColor: `${colors.state.success}30`,
+    borderColor: 'rgba(224, 221, 216, 0.19)',
   },
 };
 

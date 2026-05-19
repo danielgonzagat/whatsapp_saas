@@ -1,6 +1,5 @@
 import { MarketingSkillContextBuilder } from './marketing-skill.context';
 
-// PULSE_OK: assertions exist below
 describe('MarketingSkillContextBuilder', () => {
   it('builds a workspace snapshot with conversion and revenue context', async () => {
     const prisma = {

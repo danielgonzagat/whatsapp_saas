@@ -4,7 +4,6 @@ jest.mock('../queue/queue', () => ({
 
 import { CiaService } from './cia.service';
 
-// PULSE_OK: assertions exist below
 describe('CiaService', () => {
   let prisma: {
     kloelMemory: {
@@ -19,7 +18,7 @@ describe('CiaService', () => {
       findFirst: jest.Mock;
     };
     metaConnection: {
-      findUnique: jest.Mock;
+      findMany: jest.Mock;
     };
     integration: {
       findMany: jest.Mock;
@@ -64,7 +63,7 @@ describe('CiaService', () => {
         findFirst: jest.fn(),
       },
       metaConnection: {
-        findUnique: jest.fn().mockResolvedValue(null),
+        findMany: jest.fn().mockResolvedValue([]),
       },
       integration: {
         findMany: jest.fn().mockResolvedValue([]),
@@ -185,7 +184,7 @@ describe('CiaService', () => {
     });
 
     it('uses neutral subtitle when no channels are connected', async () => {
-      prisma.metaConnection.findUnique.mockResolvedValue(null);
+      prisma.metaConnection.findMany.mockResolvedValue([]);
       prisma.integration.findMany.mockResolvedValue([]);
 
       const surface = await service.getSurface('ws-1');
@@ -194,12 +193,14 @@ describe('CiaService', () => {
     });
 
     it('uses WhatsApp-specific subtitle when only WhatsApp is connected', async () => {
-      prisma.metaConnection.findUnique.mockResolvedValue({
-        whatsappPhoneNumberId: '5511999999999',
-        whatsappBusinessId: '123',
-        instagramAccountId: null,
-        pageId: null,
-      });
+      prisma.metaConnection.findMany.mockResolvedValue([
+        {
+          whatsappPhoneNumberId: '5511999999999',
+          whatsappBusinessId: '123',
+          instagramAccountId: null,
+          pageId: null,
+        },
+      ]);
       prisma.integration.findMany.mockResolvedValue([]);
 
       const surface = await service.getSurface('ws-1');
@@ -208,12 +209,14 @@ describe('CiaService', () => {
     });
 
     it('uses Instagram subtitle when only Instagram is connected', async () => {
-      prisma.metaConnection.findUnique.mockResolvedValue({
-        whatsappPhoneNumberId: null,
-        whatsappBusinessId: null,
-        instagramAccountId: '12345',
-        pageId: null,
-      });
+      prisma.metaConnection.findMany.mockResolvedValue([
+        {
+          whatsappPhoneNumberId: null,
+          whatsappBusinessId: null,
+          instagramAccountId: '12345',
+          pageId: null,
+        },
+      ]);
       prisma.integration.findMany.mockResolvedValue([]);
 
       const surface = await service.getSurface('ws-1');
@@ -222,12 +225,14 @@ describe('CiaService', () => {
     });
 
     it('uses Facebook subtitle when only Facebook is connected', async () => {
-      prisma.metaConnection.findUnique.mockResolvedValue({
-        whatsappPhoneNumberId: null,
-        whatsappBusinessId: null,
-        instagramAccountId: null,
-        pageId: 'fb-page-123',
-      });
+      prisma.metaConnection.findMany.mockResolvedValue([
+        {
+          whatsappPhoneNumberId: null,
+          whatsappBusinessId: null,
+          instagramAccountId: null,
+          pageId: 'fb-page-123',
+        },
+      ]);
       prisma.integration.findMany.mockResolvedValue([]);
 
       const surface = await service.getSurface('ws-1');
@@ -236,12 +241,14 @@ describe('CiaService', () => {
     });
 
     it('uses omnichannel subtitle when multiple channels are connected', async () => {
-      prisma.metaConnection.findUnique.mockResolvedValue({
-        whatsappPhoneNumberId: '5511999999999',
-        whatsappBusinessId: '123',
-        instagramAccountId: '12345',
-        pageId: 'fb-page-123',
-      });
+      prisma.metaConnection.findMany.mockResolvedValue([
+        {
+          whatsappPhoneNumberId: '5511999999999',
+          whatsappBusinessId: '123',
+          instagramAccountId: '12345',
+          pageId: 'fb-page-123',
+        },
+      ]);
       prisma.integration.findMany.mockResolvedValue([]);
 
       const surface = await service.getSurface('ws-1');
@@ -250,12 +257,14 @@ describe('CiaService', () => {
     });
 
     it('combines MetaConnection and Integration channels without duplicates', async () => {
-      prisma.metaConnection.findUnique.mockResolvedValue({
-        whatsappPhoneNumberId: '5511999999999',
-        whatsappBusinessId: '123',
-        instagramAccountId: null,
-        pageId: null,
-      });
+      prisma.metaConnection.findMany.mockResolvedValue([
+        {
+          whatsappPhoneNumberId: '5511999999999',
+          whatsappBusinessId: '123',
+          instagramAccountId: null,
+          pageId: null,
+        },
+      ]);
       prisma.integration.findMany.mockResolvedValue([{ type: 'INSTAGRAM' }, { type: 'STRIPE' }]);
 
       const surface = await service.getSurface('ws-1');
@@ -273,7 +282,7 @@ describe('CiaService', () => {
       ];
 
       for (const scenario of scenarios) {
-        prisma.metaConnection.findUnique.mockResolvedValue(scenario.meta);
+        prisma.metaConnection.findMany.mockResolvedValue(scenario.meta ? [scenario.meta] : []);
         prisma.integration.findMany.mockResolvedValue(scenario.integrations);
         const surface = await service.getSurface('ws-1');
         subtitles.push(surface.subtitle);
@@ -304,7 +313,7 @@ describe('CiaService', () => {
       prisma.kloelMemory.findMany.mockResolvedValue([]);
       prisma.kloelMemory.findUnique.mockResolvedValue(null);
       prisma.accountProofSnapshot.findFirst.mockResolvedValue(null);
-      prisma.metaConnection.findUnique.mockResolvedValue(null);
+      prisma.metaConnection.findMany.mockResolvedValue([]);
       prisma.integration.findMany.mockResolvedValue([]);
       accountAgent.getCapabilityRegistry.mockReturnValue([]);
       accountAgent.getConversationActionRegistry.mockReturnValue([]);

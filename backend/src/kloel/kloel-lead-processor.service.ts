@@ -1,11 +1,12 @@
-import { Injectable, Logger, Optional } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { Prisma } from '@prisma/client';
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { WhatsappService } from '../whatsapp/whatsapp.service';
 import { UnifiedAgentService } from './unified-agent.service';
 import { SmartPaymentService } from './smart-payment.service';
 import { chatCompletionWithFallback } from './openai-wrapper';
+import { createTextLlmClient } from '../lib/llm-provider';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
 import { KLOEL_SALES_PROMPT } from './kloel.prompts';
 import {
@@ -39,18 +40,17 @@ export interface FollowupListItem {
 /** Handles WhatsApp message processing, lead lifecycle, and follow-ups. */
 @Injectable()
 export class KloelLeadProcessorService {
-  private readonly logger = new Logger(KloelLeadProcessorService.name);
+  private readonly logger = StructuredLogger.from(KloelLeadProcessorService.name);
   private readonly openai: OpenAI;
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly whatsappService: WhatsappService,
     private readonly unifiedAgentService: UnifiedAgentService,
     private readonly smartPaymentService: SmartPaymentService,
     private readonly planLimits: PlanLimitsService,
     @Optional() private readonly opsAlert?: OpsAlertService,
   ) {
-    this.openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+    this.openai = createTextLlmClient() ?? new OpenAI({ apiKey: '' });
   }
 
   async processWhatsAppMessage(
@@ -108,7 +108,7 @@ export class KloelLeadProcessorService {
         try {
           const unifiedResult = await this.unifiedAgentService.processIncomingMessage({
             workspaceId,
-            contactId: contactId || undefined,
+            ...(contactId ? { contactId } : {}),
             phone: normalizedPhone || senderPhone,
             message,
             channel: 'whatsapp',
@@ -137,7 +137,9 @@ export class KloelLeadProcessorService {
         { role: 'user', content: message },
       ];
 
-      if (workspaceId) await this.planLimits.ensureTokenBudget(workspaceId);
+      if (workspaceId) {
+        await this.planLimits.ensureTokenBudget(workspaceId);
+      }
       const response = await chatCompletionWithFallback(
         this.openai,
         {
@@ -148,10 +150,11 @@ export class KloelLeadProcessorService {
         },
         resolveBackendOpenAIModel('writer_fallback'),
       );
-      if (workspaceId)
+      if (workspaceId) {
         await this.planLimits
           .trackAiUsage(workspaceId, response?.usage?.total_tokens ?? 500)
           .catch(() => {});
+      }
 
       const kloelResponse =
         response.choices[0]?.message?.content || 'Olá! Como posso ajudá-lo hoje?';
@@ -201,7 +204,9 @@ export class KloelLeadProcessorService {
             return {
               response: `${baseResponse}\n\nAqui está o link para finalizar sua compra:\n${paymentResult.paymentUrl}`,
               paymentLink: paymentResult.paymentUrl,
-              pixQrCode: paymentResult.pixQrCode,
+              ...(paymentResult.pixQrCode !== undefined
+                ? { pixQrCode: paymentResult.pixQrCode }
+                : {}),
             };
           }
         }
@@ -232,7 +237,7 @@ export class KloelLeadProcessorService {
       this.logger.log(`Pagamento gerado para lead ${leadId}: ${result.paymentUrl}`);
       return {
         paymentUrl: result.paymentUrl,
-        pixQrCode: result.pixQrCode,
+        ...(result.pixQrCode !== undefined ? { pixQrCode: result.pixQrCode } : {}),
         message: result.suggestedMessage,
       };
     } catch (error: unknown) {

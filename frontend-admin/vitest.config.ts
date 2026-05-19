@@ -9,6 +9,17 @@ export default defineConfig({
     globals: true,
     setupFiles: ['./vitest.setup.ts'],
     css: false,
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'lcov', 'json-summary', 'clover'],
+      reportsDirectory: './coverage',
+      thresholds: {
+        lines: 80,
+        branches: 75,
+        functions: 75,
+        statements: 80,
+      },
+    },
   },
   resolve: {
     alias: {

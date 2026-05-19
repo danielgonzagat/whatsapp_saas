@@ -27,61 +27,6 @@ jest.mock('../auth/email.service', () => ({
   })),
 }));
 
-const makeStubGuards = (overrides?: { allowed?: boolean; guardName?: string; reason?: string }) => {
-  const guardResult = {
-    allowed: overrides?.allowed ?? true,
-    action: 'send_recovery_email:help',
-    decision: overrides?.allowed === false ? 'block' : 'allow',
-    guardName: overrides?.guardName ?? 'all_guards',
-    reason: overrides?.reason ?? 'Ação aprovada pelas guardas determinísticas.',
-    reasonTag: overrides?.allowed === false ? 'opt_out' : 'all_guards_passed',
-    context: {},
-  } as const;
-  const evaluate = jest.fn().mockResolvedValue(guardResult);
-  return { evaluate };
-};
-
-const makeStubTransport = (overrides?: {
-  sendAvailable?: boolean;
-  sendResult?: { blocked: boolean; blockedReason?: string; success: boolean };
-}) => {
-  const capability = {
-    channel: 'email' as const,
-    sendAvailable: overrides?.sendAvailable ?? true,
-    sendBlockedReason:
-      overrides?.sendAvailable === false ? 'Email outbound nao configurado.' : null,
-    requiredSetup: [],
-  };
-  const getCapability = jest.fn().mockResolvedValue(capability);
-  const send = jest
-    .fn()
-    .mockResolvedValue(overrides?.sendResult ?? { success: true, blocked: false });
-  return { getCapability, send };
-};
-
-const makeStubBandit = (overrides?: { arm?: string }) => {
-  const register = jest.fn().mockResolvedValue(undefined);
-  const choose = jest
-    .fn()
-    .mockResolvedValue(
-      overrides?.arm
-        ? { arm: overrides.arm, decisionType: 'cart_recovery', workspaceId: 'ws-1' }
-        : null,
-    );
-  return { register, choose };
-};
-
-const makeStubMindPolicy = (chosen = 'help') => ({
-  choose: jest.fn().mockResolvedValue({
-    chosen,
-    decision: {
-      candidates: [{ action: chosen, beliefMean: 0.7 }],
-      fallbackActive: false,
-      reasonInternal: 'test policy',
-    },
-  }),
-});
-
 describe('CartRecoveryService', () => {
   let prisma: MockPrisma;
   let service: CartRecoveryService;
@@ -126,6 +71,50 @@ describe('CartRecoveryService', () => {
           price: overrides?.productPrice ?? 97,
         },
       },
+    };
+  }
+
+  function makeStubGuards(overrides?: { allowed?: boolean; guardName?: string; reason?: string }) {
+    return {
+      evaluate: jest.fn().mockResolvedValue({
+        allowed: overrides?.allowed ?? true,
+        guardName: overrides?.guardName ?? 'ok',
+        reason: overrides?.reason ?? null,
+      }),
+    };
+  }
+
+  function makeStubTransport(overrides?: { sendAvailable?: boolean; sendResult?: unknown }) {
+    return {
+      getCapability: jest.fn().mockResolvedValue({
+        sendAvailable: overrides?.sendAvailable ?? true,
+      }),
+      send: jest.fn().mockResolvedValue(
+        overrides?.sendResult ?? {
+          success: true,
+          blocked: false,
+        },
+      ),
+    };
+  }
+
+  function makeStubBandit(overrides?: { arm?: string }) {
+    return {
+      register: jest.fn().mockResolvedValue(undefined),
+      choose: jest.fn().mockResolvedValue(overrides?.arm ? { arm: overrides.arm } : null),
+    };
+  }
+
+  function makeStubMindPolicy(chosen = 'help') {
+    return {
+      choose: jest.fn().mockResolvedValue({
+        chosen,
+        decision: {
+          fallbackActive: false,
+          reasonInternal: 'test-policy',
+          candidates: [{ action: chosen, beliefMean: 0.8 }],
+        },
+      }),
     };
   }
 
@@ -295,7 +284,7 @@ describe('CartRecoveryService', () => {
         expect.objectContaining({
           channel: 'email',
           recipientId: 'cliente@kloel.test',
-          content: expect.stringContaining('Voce esqueceu algo'),
+          content: expect.stringContaining('Voce deixou algo'),
           guardContext: expect.objectContaining({
             channel: 'email',
             withinComplianceWindow: true,

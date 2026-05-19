@@ -1,8 +1,42 @@
 import { ConfigService } from '@nestjs/config';
-import { randomBytes } from 'node:crypto';
-import { authenticator } from 'otplib';
+import { createHmac, randomBytes } from 'node:crypto';
 import { AdminMfaService } from './admin-mfa.service';
 import { decryptAdminSecret } from '../common/admin-crypto';
+
+const BASE32_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+
+function base32Decode(secret: string): Buffer {
+  let value = 0;
+  let bits = 0;
+  const bytes: number[] = [];
+
+  for (const char of secret.toUpperCase()) {
+    const index = BASE32_ALPHABET.indexOf(char);
+    if (index < 0) {
+      throw new Error(`Invalid base32 character in MFA secret: ${char}`);
+    }
+
+    value = (value << 5) | index;
+    bits += 5;
+
+    if (bits >= 8) {
+      bytes.push((value >>> (bits - 8)) & 255);
+      bits -= 8;
+    }
+  }
+
+  return Buffer.from(bytes);
+}
+
+function generateTotp(secret: string): string {
+  const counter = Buffer.alloc(8);
+  counter.writeBigUInt64BE(BigInt(Math.floor(Date.now() / 1000 / 30)));
+  const digest = createHmac('sha1', base32Decode(secret)).update(counter).digest();
+  const offset = digest[digest.length - 1] & 15;
+  const binary = digest.readUInt32BE(offset) & 0x7fffffff;
+
+  return String(binary % 1_000_000).padStart(6, '0');
+}
 
 /**
  * Build a real ConfigService pre-seeded with the given values. Using the
@@ -52,7 +86,7 @@ describe('AdminMfaService', () => {
     const svc = new AdminMfaService(makeConfig({ ADMIN_MFA_ENCRYPTION_KEY: keyHex }));
     const setup = await svc.createSetup('admin@example.com');
     const plainSecret = decryptAdminSecret(setup.encryptedSecret, keyHex);
-    const currentCode = authenticator.generate(plainSecret);
+    const currentCode = generateTotp(plainSecret);
 
     expect(() => svc.verifyCode(setup.encryptedSecret, currentCode)).not.toThrow();
     expect(() => svc.verifyCode(setup.encryptedSecret, '000000')).toThrow();

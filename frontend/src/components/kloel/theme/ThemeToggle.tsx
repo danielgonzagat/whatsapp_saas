@@ -1,4 +1,5 @@
 'use client';
+import { colors } from '@/lib/design-tokens';
 
 import { kloelT } from '@/lib/i18n/t';
 import { KLOEL_THEME } from '@/lib/kloel-theme';
@@ -93,7 +94,7 @@ export function ThemeToggle() {
             left: isDark ? 36 : 2,
             width: 26,
             height: 26,
-            borderRadius: 999,
+            borderRadius: 16,
             background: isDark ? KLOEL_THEME.bgPrimary : KLOEL_THEME.bgCard,
             boxShadow: isDark
               ? `0 10px 18px rgba(0,0,0,0.28), 0 0 0 1px ${KLOEL_THEME.borderPrimary}`
@@ -112,8 +113,8 @@ export function ThemeToggle() {
               justifyContent: 'center',
               width: 20,
               height: 20,
-              borderRadius: 999,
-              color: isDark ? '#F5F5F7' : KLOEL_THEME.accent,
+              borderRadius: 16,
+              color: isDark ? colors.text.silver : KLOEL_THEME.accent,
               boxShadow: isDark
                 ? '0 0 8px rgba(232, 93, 48, 0.14)'
                 : '0 0 8px rgba(232, 93, 48, 0.24)',

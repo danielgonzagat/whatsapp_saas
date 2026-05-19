@@ -1,28 +1,16 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, ServiceUnavailableException, UseGuards } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
-import { HealthCheck, HealthCheckResult, HealthCheckService } from '@nestjs/terminus';
+import { AdminAuthGuard } from '../admin/auth/guards/admin-auth.guard';
 import { Public } from '../auth/public.decorator';
-import { BullMQHealthIndicator } from './indicators/bullmq.health-indicator';
-import { DatabaseBackupHealthIndicator } from './indicators/database-backup.health-indicator';
-import { EmailHealthIndicator } from './indicators/email.health-indicator';
-import { PrismaHealthIndicator } from './indicators/prisma.health-indicator';
-import { RedisHealthIndicator } from './indicators/redis.health-indicator';
-import { StripeHealthIndicator } from './indicators/stripe.health-indicator';
 import { SystemHealthService } from './system-health.service';
+import { RouteClass } from '../common/throttler/route-class.decorator';
+import { WebhookEndpoint } from '../common/decorators/webhook-endpoint.decorator';
 
 @ApiTags('System')
 @Controller('health')
+@RouteClass('read')
 export class SystemHealthController {
-  constructor(
-    private readonly health: SystemHealthService,
-    private readonly healthCheckService: HealthCheckService,
-    private readonly prismaIndicator: PrismaHealthIndicator,
-    private readonly redisIndicator: RedisHealthIndicator,
-    private readonly bullmqIndicator: BullMQHealthIndicator,
-    private readonly backupIndicator: DatabaseBackupHealthIndicator,
-    private readonly emailIndicator: EmailHealthIndicator,
-    private readonly stripeIndicator: StripeHealthIndicator,
-  ) {}
+  constructor(private readonly health: SystemHealthService) {}
 
   @Public()
   @Get()
@@ -39,18 +27,24 @@ export class SystemHealthController {
   }
 
   @Public()
+  @Get('liveness')
+  @ApiOperation({ summary: 'Liveness probe — process is alive' })
+  healthLiveness() {
+    return this.health.liveness();
+  }
+
+  @Public()
   @Get('readiness')
-  @HealthCheck()
-  @ApiOperation({ summary: 'Readiness probe — DB, Redis, BullMQ, email, Stripe, backup' })
-  async readiness(): Promise<HealthCheckResult> {
-    return this.healthCheckService.check([
-      () => this.prismaIndicator.isHealthy('database'),
-      () => this.redisIndicator.isHealthy('redis'),
-      () => this.bullmqIndicator.isHealthy('bullmq'),
-      () => this.emailIndicator.isHealthy('email'),
-      () => this.stripeIndicator.isHealthy('stripe'),
-      () => this.backupIndicator.isHealthy('backup'),
-    ]);
+  @ApiOperation({
+    summary:
+      'Readiness probe — Postgres, Redis (BullMQ), Stripe, Meta Cloud API, OpenAI, Anthropic',
+  })
+  async readiness() {
+    const result = await this.health.deepReadiness();
+    if (result.status === 'DOWN') {
+      throw new ServiceUnavailableException(result);
+    }
+    return result;
   }
 
   @Public()
@@ -62,8 +56,18 @@ export class SystemHealthController {
 
   @Public()
   @Get('system')
-  @ApiOperation({ summary: 'Deep system health with all integration details' })
-  async check() {
+  @ApiOperation({ summary: 'System health — production runtime and queue health' })
+  async system() {
     return this.health.check();
+  }
+
+  @UseGuards(AdminAuthGuard)
+  @WebhookEndpoint('External deep health check')
+  @Get('deep')
+  @ApiOperation({
+    summary: 'Deep diagnostic — admin-only with queue depths and performance metrics',
+  })
+  async deep() {
+    return this.health.deepDiagnostic();
   }
 }

@@ -1,4 +1,5 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { PrismaService } from '../prisma/prisma.service';
 import { persistWorkspaceCommercialGraph } from './brain-commercial-graph.persistence';
 import type {
@@ -39,7 +40,7 @@ function outcomeWeight(status: string): number {
 
 @Injectable()
 export class BrainCommercialGraphService {
-  private readonly logger = new Logger(BrainCommercialGraphService.name);
+  private readonly logger = StructuredLogger.from(BrainCommercialGraphService.name);
 
   constructor(private readonly prisma: PrismaService) {}
 

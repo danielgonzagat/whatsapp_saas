@@ -13,7 +13,7 @@ import { THANOS_ICONS } from '../thanos-icons';
 
 function makeContext(data?: Uint8ClampedArray, width = 8, height = 8) {
   const calls: string[] = [];
-  return {
+  return Object.assign(Object.create(null) as CanvasRenderingContext2D & { calls: string[] }, {
     calls,
     setTransform: () => calls.push('setTransform'),
     clearRect: () => calls.push('clearRect'),
@@ -24,7 +24,7 @@ function makeContext(data?: Uint8ClampedArray, width = 8, height = 8) {
     stroke: () => calls.push('stroke'),
     drawImage: () => calls.push('drawImage'),
     getImageData: () => ({ data: data ?? new Uint8ClampedArray(width * height * 4) }),
-  } as unknown as CanvasRenderingContext2D & { calls: string[] };
+  });
 }
 
 function makeParticle() {

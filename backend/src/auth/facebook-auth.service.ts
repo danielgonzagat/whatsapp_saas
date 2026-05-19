@@ -1,10 +1,10 @@
 import {
   Injectable,
-  Logger,
   ServiceUnavailableException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { StructuredLogger } from '../logging/structured-logger';
 import { getTraceHeaders } from '../common/trace-headers';
 import { GoogleVerifiedProfile } from './google-auth.service';
 
@@ -50,7 +50,7 @@ function sanitizeErrorMessage(error: unknown): string {
 /** Facebook auth service. */
 @Injectable()
 export class FacebookAuthService {
-  private readonly logger = new Logger(FacebookAuthService.name);
+  private readonly logger = StructuredLogger.from(FacebookAuthService.name);
   private readonly graphApiVersion: string;
 
   constructor(private readonly config: ConfigService) {

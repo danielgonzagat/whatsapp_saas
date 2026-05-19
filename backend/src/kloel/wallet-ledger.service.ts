@@ -1,4 +1,5 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import type { Prisma } from '@prisma/client';
 import { toPrismaJsonValue } from '../common/prisma/prisma-json.util';
 
@@ -46,7 +47,7 @@ import { toPrismaJsonValue } from '../common/prisma/prisma-json.util';
  */
 @Injectable()
 export class WalletLedgerService {
-  private readonly logger = new Logger(WalletLedgerService.name);
+  private readonly logger = StructuredLogger.from(WalletLedgerService.name);
 
   /**
    * Append a single ledger entry inside an existing Prisma transaction.
@@ -88,7 +89,7 @@ export class WalletLedgerService {
         bucket: entry.bucket,
         amountInCents: entry.amountInCents,
         reason: entry.reason,
-        metadata: entry.metadata ? toPrismaJsonValue(entry.metadata) : undefined,
+        ...(entry.metadata !== undefined ? { metadata: toPrismaJsonValue(entry.metadata) } : {}),
       },
     });
     this.logger.log({

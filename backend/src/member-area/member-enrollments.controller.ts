@@ -5,7 +5,6 @@ import {
   Delete,
   Get,
   NotFoundException,
-  Optional,
   Param,
   Post,
   Put,
@@ -20,7 +19,7 @@ import { AuthenticatedRequest } from '../common/interfaces';
 import { PrismaService } from '../prisma/prisma.service';
 import { EnrollStudentDto, readText } from './member-area.helpers';
 import { MemberAreaStatsService } from './member-area-stats.service';
-import { OpsAlertService } from '../observability/ops-alert.service';
+import { RouteClass } from '../common/throttler/route-class.decorator';
 
 /**
  * MEMBER ENROLLMENTS CONTROLLER — Student listing + lifecycle
@@ -31,12 +30,12 @@ import { OpsAlertService } from '../observability/ops-alert.service';
  */
 @Controller('member-areas')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
+@RouteClass('mutate')
 export class MemberEnrollmentsController {
   constructor(
     private readonly prisma: PrismaService,
     private readonly auditService: AuditService,
     private readonly stats: MemberAreaStatsService,
-    @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
 
   @Get(':id/students')
@@ -111,7 +110,7 @@ export class MemberEnrollmentsController {
         memberAreaId: areaId,
         studentName,
         studentEmail,
-        studentPhone,
+        ...(studentPhone !== undefined ? { studentPhone } : {}),
       },
     });
 

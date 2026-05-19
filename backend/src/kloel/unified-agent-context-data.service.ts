@@ -1,8 +1,11 @@
 import { Injectable } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import type { ChatCompletionMessageParam } from 'openai/resources/chat';
 import { PrismaService } from '../prisma/prisma.service';
 
 type UnknownRecord = Record<string, unknown>;
+type BrandVoiceValue = { style?: string; [key: string]: unknown };
+type ProductMemoryEntry = { name?: string; [key: string]: unknown };
 
 /**
  * Handles all database reads for the Unified Agent context:
@@ -11,7 +14,11 @@ type UnknownRecord = Record<string, unknown>;
  */
 @Injectable()
 export class UnifiedAgentContextDataService {
-  constructor(private readonly prisma: PrismaService) {}
+  private readonly logger = StructuredLogger.from(UnifiedAgentContextDataService.name);
+
+  constructor(private readonly prisma: PrismaService) {
+    this.logger.log('UnifiedAgentContextDataService initialized');
+  }
 
   // ───────── helpers ─────────
 
@@ -20,9 +27,12 @@ export class UnifiedAgentContextDataService {
   }
 
   private readText(value: unknown, fallback = ''): string {
-    if (typeof value === 'string') return value;
-    if (typeof value === 'number' || typeof value === 'boolean' || typeof value === 'bigint')
+    if (typeof value === 'string') {
+      return value;
+    }
+    if (typeof value === 'number' || typeof value === 'boolean' || typeof value === 'bigint') {
       return String(value);
+    }
     return fallback;
   }
 
@@ -41,12 +51,17 @@ export class UnifiedAgentContextDataService {
       where: { id: workspaceId },
       select: { name: true, providerSettings: true },
     });
+    const providerSettings = this.isRecord(workspace?.providerSettings)
+      ? workspace.providerSettings
+      : {};
+    const autopilot = this.isRecord(providerSettings.autopilot) ? providerSettings.autopilot : {};
     const brandVoice = await this.prisma.kloelMemory.findFirst({
       where: { workspaceId, key: 'brandVoice' },
     });
     return {
       ...workspace,
-      brandVoice: (brandVoice?.value as Record<string, unknown>)?.style as string | undefined,
+      brandVoice: (brandVoice?.value as BrandVoiceValue)?.style,
+      salesPolicy: this.isRecord(autopilot.salesPolicy) ? autopilot.salesPolicy : null,
     };
   }
 
@@ -68,7 +83,9 @@ export class UnifiedAgentContextDataService {
         where: { id: contactId, workspaceId },
         select,
       });
-      if (contact) return contact;
+      if (contact) {
+        return contact;
+      }
     }
 
     const contact = await this.prisma.contact.findFirst({
@@ -91,7 +108,9 @@ export class UnifiedAgentContextDataService {
         ? { workspaceId, contact: { phone } }
         : null;
 
-    if (!where) return [];
+    if (!where) {
+      return [];
+    }
 
     const messages = await this.prisma.message.findMany({
       where: { ...where, workspaceId },
@@ -118,7 +137,9 @@ export class UnifiedAgentContextDataService {
         ? { workspaceId, contact: { phone } }
         : null;
 
-    if (!where) return undefined;
+    if (!where) {
+      return undefined;
+    }
 
     const messages = await this.prisma.message.findMany({
       where: { ...where, workspaceId },
@@ -227,7 +248,7 @@ export class UnifiedAgentContextDataService {
         (m) =>
           !dbProducts.some(
             (d) =>
-              (((m.value as Record<string, unknown>)?.name as string) || '').toLowerCase() ===
+              (((m.value as ProductMemoryEntry)?.name as string) || '').toLowerCase() ===
               d.name.toLowerCase(),
           ),
       ),

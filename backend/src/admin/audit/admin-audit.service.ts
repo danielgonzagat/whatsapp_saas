@@ -3,6 +3,10 @@ import type { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { OpsAlertService } from '../../observability/ops-alert.service';
 
+function toAuditJson(value: unknown): Prisma.InputJsonValue {
+  return JSON.parse(JSON.stringify(value)) as Prisma.InputJsonValue;
+}
+
 /** Append audit input shape. */
 export interface AppendAuditInput {
   /** Admin user id property. */
@@ -61,14 +65,13 @@ export class AdminAuditService {
     try {
       await this.prisma.adminAuditLog.create({
         data: {
-          adminUserId: input.adminUserId ?? null,
+          ...(input.adminUserId ? { adminUser: { connect: { id: input.adminUserId } } } : {}),
           action: input.action,
           entityType: input.entityType ?? null,
           entityId: input.entityId ?? null,
-          details:
-            input.details === undefined || input.details === null
-              ? undefined
-              : (input.details as Prisma.InputJsonValue),
+          ...(input.details === undefined || input.details === null
+            ? {}
+            : { details: toAuditJson(input.details) }),
           ip: input.ip ?? null,
           userAgent: input.userAgent ?? null,
         },
@@ -118,7 +121,6 @@ export class AdminAuditService {
     const skip = Math.max(0, filters.skip ?? 0);
     const take = Math.min(200, Math.max(1, filters.take ?? 50));
 
-    // PULSE_OK: paginated via take/skip
     const [items, total] = await this.prisma.$transaction(
       [
         this.prisma.adminAuditLog.findMany({

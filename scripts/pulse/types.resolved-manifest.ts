@@ -3,14 +3,16 @@
 
 import type {
   PulseActorProfile,
-  PulseManifestCertificationTier,
-  PulseManifestFinalReadinessCriteria,
   PulseManifestFlowSpec,
   PulseManifestInvariantSpec,
   PulseManifestScenarioSpec,
   PulseTemporaryAcceptance,
 } from './types.health';
 import type { PulseModuleState } from './types.health';
+import type {
+  PulseManifestCertificationTier,
+  PulseManifestFinalReadinessCriteria,
+} from './types.manifest';
 import type { PulseScopeSurface, PulseShellComplexity } from './types.truth';
 
 /** Pulse resolved module resolution type. */

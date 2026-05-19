@@ -25,8 +25,8 @@ export function FormatCard({ item, onClick }: FormatCardProps) {
       onMouseEnter={() => setH(true)}
       onMouseLeave={() => setH(false)}
       style={{
-        background: h ? '#151517' : 'colors.background.surface',
-        border: `1px solid ${h ? `${c[0]}35` : '#1C1C1F'}`,
+        background: h ? colors.canvas.surfaceAlt : 'colors.background.surface',
+        border: `1px solid ${h ? `${c[0]}35` : colors.canvas.border}`,
         borderRadius: 6,
         padding: 0,
         cursor: 'pointer',
@@ -43,7 +43,7 @@ export function FormatCard({ item, onClick }: FormatCardProps) {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          background: h ? `${c[0]}05` : '#0D0D0F',
+          background: h ? `${c[0]}05` : colors.canvas.void,
           transition: 'all 0.3s',
         }}
       >

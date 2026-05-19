@@ -19,6 +19,7 @@ export interface MindPolicyHarnessResult {
 export interface MindPolicyInput {
   baseline?: string;
   baselineActionQuiet?: string;
+  channel?: string;
   context: MindJson;
   decisionType: string;
   epsilon?: number;
@@ -81,10 +82,12 @@ export function buildFallbackDecision(input: {
       `mindMean=${harnessResult.mindMean.toFixed(3)}`,
       `baselineMean=${harnessResult.baselineMean.toFixed(3)}`,
     ].join(' '),
-    outcomeKey: policy.outcomeKey,
+    ...(policy.outcomeKey !== undefined ? { outcomeKey: policy.outcomeKey } : {}),
     reasonInternal: `FALLBACK: MIND underperforming baseline (lift=${harnessResult.lift.toFixed(3)} < 0)`,
     utilityFail,
     utilitySuccess,
+    usedGlobalPrior: false,
+    priorWeight: 0,
   };
 }
 
@@ -101,6 +104,7 @@ export function buildPolicyArtifacts(input: {
 
   input.options.forEach((option, index) => {
     const belief = input.beliefs[index];
+    if (!belief) return;
     const pessimisticSuccess = Math.max(0, belief.mean);
     const pragmatic =
       pessimisticSuccess * input.utilitySuccess + (1 - pessimisticSuccess) * input.utilityFail;
@@ -160,6 +164,28 @@ export function buildPolicyDecision(input: {
   utilitySuccess: number;
 }): MindPolicyDecision {
   const winner = input.artifacts.candidates[0];
+  if (!winner) {
+    return {
+      workspaceId: input.policy.workspaceId,
+      subject: input.policy.subject,
+      decisionType: input.policy.decisionType,
+      context: input.policy.context,
+      baseline: input.baselineAction,
+      baselineAction: input.baselineAction,
+      calcSteps: input.artifacts.calcSteps,
+      candidates: [],
+      chosen: input.baselineAction,
+      epsilon: input.epsilon,
+      fallbackActive: true,
+      fallbackReason: 'no_action_candidates',
+      ...(input.policy.outcomeKey !== undefined ? { outcomeKey: input.policy.outcomeKey } : {}),
+      reasonInternal: 'FALLBACK: no action candidates available for MIND policy decision',
+      utilityFail: input.utilityFail,
+      utilitySuccess: input.utilitySuccess,
+      usedGlobalPrior: false,
+      priorWeight: 0,
+    };
+  }
   return {
     workspaceId: input.policy.workspaceId,
     subject: input.policy.subject,
@@ -173,17 +199,21 @@ export function buildPolicyDecision(input: {
     epsilon: input.epsilon,
     fallbackActive: false,
     fallbackReason: null,
-    outcomeKey: input.policy.outcomeKey,
+    ...(input.policy.outcomeKey !== undefined ? { outcomeKey: input.policy.outcomeKey } : {}),
     reasonInternal: `efe=${winner.efe.toFixed(3)} economic=${(winner.economicScore ?? 0).toFixed(3)} pragmatic=${winner.pragmatic.toFixed(3)} epistemic=${winner.epistemic.toFixed(3)} variance=${winner.uncertaintyAtChoice.toFixed(3)}`,
     utilityFail: input.utilityFail,
     utilitySuccess: input.utilitySuccess,
+    usedGlobalPrior: false,
+    priorWeight: 0,
   };
 }
 
 export function summarizePolicyHarness(
   rows: Array<{ baselineOutcome: number | null; outcome: number | null }>,
 ): MindPolicyHarnessResult {
-  const outcomes = rows.map((row) => row.outcome!).filter((value) => typeof value === 'number');
+  const outcomes = rows
+    .map((row) => row.outcome)
+    .filter((value): value is number => typeof value === 'number');
   const baselineOutcomes = rows
     .map((row) => row.baselineOutcome)
     .filter((value): value is number => typeof value === 'number');

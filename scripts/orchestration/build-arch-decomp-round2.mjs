@@ -39,7 +39,7 @@ const TARGETS = [
   ['scripts/pulse/structural-memory.ts', 844, 400],
 ];
 
-if (TARGETS.length % 2 === 1) TARGETS.pop();
+if (TARGETS.length % 2 === 1) {TARGETS.pop();}
 console.error(`round2: targets=${TARGETS.length}, tasks=${TARGETS.length / 2}`);
 
 const runId = `arch-decomp-round2-${new Date().toISOString().replace(/[:.]/g, '-').replace('Z', '')}`;

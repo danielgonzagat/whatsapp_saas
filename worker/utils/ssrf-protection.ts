@@ -323,7 +323,7 @@ export async function safeRequest(options: SafeRequestOptions): Promise<Response
     const response = await fetch(url, {
       method,
       headers: sanitizeHeaders(headers),
-      body: body || undefined,
+      body: body ?? null,
       signal: controller.signal,
       redirect: 'manual',
     });

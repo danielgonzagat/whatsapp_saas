@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 
-import { collectNameStatus } from './lib/changed-files.mjs';
+import { execFileSync } from 'node:child_process';
+import { collectNameStatus, repoRoot, resolveDiffRange } from './lib/changed-files.mjs';
 import {
   listFiles,
   loadApprovalEntries,
   matchesApproval,
-  readJsonFile,
   readRepoFile,
 } from './lib/scan-utils.mjs';
 
@@ -24,18 +24,6 @@ const skippedApprovals = loadApprovalEntries(
   'ops/skipped-tests-approvals.json',
   'ops/skipped-tests-approvals.json',
 );
-const baseline = readJsonFile('ops/ratchet-baseline.json', null);
-
-if (
-  !baseline ||
-  typeof baseline.testFileCount !== 'number' ||
-  typeof baseline.expectCount !== 'number'
-) {
-  console.error(
-    '[check-test-integrity] ops/ratchet-baseline.json precisa conter testFileCount e expectCount.',
-  );
-  process.exit(1);
-}
 
 const deletions = [];
 for (const entry of collectNameStatus()) {
@@ -111,16 +99,20 @@ for (const file of changedTestFiles) {
   }
 }
 
-if (allTestFiles.length < baseline.testFileCount) {
+const baseSha = resolveBaseSha();
+const baselineTestFiles = baseSha ? listBaseTestFiles(baseSha) : allTestFiles;
+const baselineExpectCount = baseSha ? countExpectAtBase(baseSha, baselineTestFiles) : expectCount;
+
+if (allTestFiles.length < baselineTestFiles.length) {
   failures.push(
-    `numero de arquivos de teste caiu de ${baseline.testFileCount} para ${allTestFiles.length}`,
+    `numero de arquivos de teste caiu de ${baselineTestFiles.length} para ${allTestFiles.length}`,
   );
 }
 
-const minimumExpectCount = Math.ceil(baseline.expectCount * 0.95);
+const minimumExpectCount = Math.ceil(baselineExpectCount * 0.95);
 if (expectCount < minimumExpectCount) {
   failures.push(
-    `numero de expect() caiu de ${baseline.expectCount} para ${expectCount} (minimo permitido ${minimumExpectCount})`,
+    `numero de expect() caiu de ${baselineExpectCount} para ${expectCount} (minimo permitido ${minimumExpectCount})`,
   );
 }
 
@@ -148,3 +140,42 @@ if (warnings.length > 0) {
 console.log(
   `[check-test-integrity] OK — ${allTestFiles.length} arquivo(s) de teste, ${expectCount} expect().`,
 );
+
+function resolveBaseSha() {
+  const range = resolveDiffRange();
+  const match = String(range || '').match(/^([0-9a-f]+)\.\.\.HEAD$/i);
+  return match ? match[1] : null;
+}
+
+function listBaseTestFiles(baseSha) {
+  try {
+    return execFileSync(
+      'git',
+      ['ls-tree', '-r', '--name-only', baseSha, '--', 'backend', 'frontend', 'worker', 'e2e'],
+      { cwd: repoRoot, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] },
+    )
+      .split('\n')
+      .filter((file) => TEST_FILE_RE.test(file))
+      .sort();
+  } catch {
+    return allTestFiles;
+  }
+}
+
+function countExpectAtBase(baseSha, files) {
+  let total = 0;
+  for (const file of files) {
+    try {
+      const content = execFileSync('git', ['show', `${baseSha}:${file}`], {
+        cwd: repoRoot,
+        encoding: 'utf8',
+        stdio: ['ignore', 'pipe', 'ignore'],
+      });
+      total += (content.match(EXPECT_RE) || []).length;
+    } catch {
+      // If git cannot read a historical file, keep the gate conservative for
+      // the files it can prove instead of accepting a stale baseline JSON.
+    }
+  }
+  return total;
+}

@@ -3,6 +3,8 @@ import { Queue as BullQueue, QueueEvents } from 'bullmq';
 import { createRedisClient, getRedisUrl, maskRedisUrl } from '../common/redis/redis.util';
 import { classifyWebhook } from './webhook-classifier';
 
+type GlobalWithFetch = { fetch?: typeof fetch; [key: string]: unknown };
+
 // ============================================================================
 // LAZY INITIALIZATION - Conexão só é criada quando acessada pela primeira vez
 // Isso garante que o bootstrap.ts já interceptou o ioredis antes da conexão
@@ -22,15 +24,6 @@ let _initialized = false;
 
 const queueLogger = new Logger('Queue');
 const isTestEnv = !!process.env.JEST_WORKER_ID || process.env.NODE_ENV === 'test';
-const REDIS_QUEUE_CONNECTION_NOT_INITIALIZED = 'Redis queue connection was not initialized';
-const QUEUE_OPTIONS_NOT_INITIALIZED = 'Queue options were not initialized';
-
-function queueInvariantError(message: string): Error {
-  const error = new Error();
-  error.message = message;
-  return error;
-}
-
 const serializePrimitiveQueueLogValue = (value: unknown): string | null => {
   if (typeof value === 'number' || typeof value === 'boolean') {
     return String(value);
@@ -97,9 +90,9 @@ function ensureInitialized() {
     return;
   }
 
-  log('🔌 [QUEUE] Inicializando conexão Redis (lazy)...');
+  log('[QUEUE] Inicializando conexão Redis (lazy)...');
   const redisUrl = getRedisUrl();
-  log('✅ [QUEUE] Conectando ao Redis:', maskRedisUrl(redisUrl));
+  log('[OK] [QUEUE] Conectando ao Redis:', maskRedisUrl(redisUrl));
 
   _connection = createRedisClient();
   _queueOptions = {
@@ -108,24 +101,18 @@ function ensureInitialized() {
   };
 
   _initialized = true;
-  log('✅ [QUEUE] Conexão Redis inicializada');
+  log('[OK] [QUEUE] Conexão Redis inicializada');
 }
 
 // Getters para acesso lazy
 function getConnection() {
   ensureInitialized();
-  if (!_connection) {
-    throw queueInvariantError(REDIS_QUEUE_CONNECTION_NOT_INITIALIZED);
-  }
-  return _connection;
+  return _connection!;
 }
 
 function getQueueOptions() {
   ensureInitialized();
-  if (!_queueOptions) {
-    throw queueInvariantError(QUEUE_OPTIONS_NOT_INITIALIZED);
-  }
-  return _queueOptions;
+  return _queueOptions!;
 }
 
 // Aliases para compatibilidade
@@ -135,16 +122,6 @@ export const connection = new Proxy({} as ReturnType<typeof createRedisClient>, 
     return currentConnection ? Reflect.get(currentConnection, prop) : undefined;
   },
 });
-
-/** Queue options. */
-export const queueOptions = new Proxy(
-  {},
-  {
-    get(_, prop) {
-      return (getQueueOptions() as Record<string | symbol, unknown>)[prop];
-    },
-  },
-);
 
 /** Queue registry. */
 export const queueRegistry: Record<string, BullQueue> = {};
@@ -165,7 +142,7 @@ async function notifyOps(input: {
   const webhookType = classifyWebhook(webhook);
   const isSlack = webhookType === 'slack';
   const isTeams = webhookType === 'teams';
-  const fetchFn = (globalThis as Record<string, unknown>).fetch as
+  const fetchFn = (globalThis as GlobalWithFetch).fetch as
     | undefined
     | ((
         input: string,
@@ -229,10 +206,11 @@ async function notifyOps(input: {
 }
 
 function attachDlq(queue: BullQueue) {
-  if (!_dlqQueues[queue.name]) {
-    _dlqQueues[queue.name] = new BullQueue(`${queue.name}-dlq`, getQueueOptions());
+  let dlq = _dlqQueues[queue.name];
+  if (!dlq) {
+    dlq = new BullQueue(`${queue.name}-dlq`, getQueueOptions());
+    _dlqQueues[queue.name] = dlq;
   }
-  const dlq = _dlqQueues[queue.name];
 
   if (!_queueEvents[queue.name]) {
     _queueEvents[queue.name] = new QueueEvents(queue.name, {
@@ -240,6 +218,10 @@ function attachDlq(queue: BullQueue) {
     });
   }
   const events = _queueEvents[queue.name];
+  if (!events) {
+    warn('[QUEUE] QueueEvents not found for', queue.name);
+    return;
+  }
 
   events.on('failed', (event) => {
     void handleQueueFailedEvent(queue, dlq, event);
@@ -279,15 +261,15 @@ async function moveJobToDlq(
       failedAt: new Date().toISOString(),
     },
     {
-      jobId,
+      ...(jobId !== undefined ? { jobId } : {}),
       removeOnComplete: true,
     },
   );
   await notifyOps({
     queue: queueName,
-    jobId: jobId,
+    ...(jobId !== undefined ? { jobId } : {}),
     jobName: job.name,
-    reason: failedReason,
+    ...(failedReason !== undefined ? { reason: failedReason } : {}),
   });
 }
 
@@ -319,9 +301,18 @@ async function handleQueueFailedEvent(
 
 const _queues: Record<string, BullQueue> = {};
 
+export function getDlqQueue(queue: BullQueue): BullQueue {
+  let dlq = _dlqQueues[queue.name];
+  if (!dlq) {
+    dlq = new BullQueue(`${queue.name}-dlq`, getQueueOptions());
+    _dlqQueues[queue.name] = dlq;
+  }
+  return dlq;
+}
+
 function getOrCreateQueue(name: string): BullQueue {
   if (!_queues[name]) {
-    log(`📦 [QUEUE] Criando fila "${name}" (lazy)...`);
+    log(`[QUEUE] Criando fila "${name}" (lazy)...`);
     _queues[name] = new BullQueue(name, getQueueOptions());
     attachDlq(_queues[name]);
     queueRegistry[name] = _queues[name];
@@ -414,3 +405,7 @@ export const memoryQueue = lazyQueueProxy('memory-jobs');
 export const crmQueue = lazyQueueProxy('crm-jobs');
 /** Webhook queue. */
 export const webhookQueue = lazyQueueProxy('webhook-jobs');
+/** Google Ads sync queue. */
+export const googleAdsSyncQueue = lazyQueueProxy('google-ads-sync-jobs');
+/** Meta Ads sync queue (retry 5x exponential backoff, 200 calls/hr rate limit). */
+export const metaAdsSyncQueue = lazyQueueProxy('ads-sync-meta');

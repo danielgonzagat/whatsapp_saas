@@ -145,9 +145,6 @@ export function mapProductEditorCheckouts(rawCheckouts: unknown): ProductEditorC
     if (cfg.enableCreditCard !== false) {
       paymentMethods.push('CARTÃO');
     }
-    if (cfg.enableBoleto) {
-      paymentMethods.push('BOLETO');
-    }
 
     return {
       id: checkout.id,

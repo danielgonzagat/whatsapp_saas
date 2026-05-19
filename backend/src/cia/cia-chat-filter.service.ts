@@ -1,5 +1,12 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { WahaChatSummary } from '../whatsapp/providers/whatsapp-api.provider';
+
+type RawCiaChat = Record<string, unknown>;
+type RawCiaChatId = Record<string, unknown> | string;
+type RawCiaLastMessage = Record<string, unknown> | null;
+type RawCiaLastMessageData = Record<string, unknown>;
+type RawCiaChatMetadata = Record<string, unknown>;
+type RawCiaMessageId = Record<string, unknown>;
 
 const CIA_REMOTE_PENDING_MAX_AGE_MS = Math.max(
   60_000,
@@ -30,8 +37,11 @@ const CIA_INLINE_BACKLOG_FALLBACK_LIMIT = Math.max(
  */
 @Injectable()
 export class CiaChatFilterService {
+  private readonly logger = new Logger(CiaChatFilterService.name);
+
   /** Resolve the best activity timestamp from a list of raw timestamp candidates. */
   resolveChatTimestamp(candidates: unknown[]): number {
+    this.logger.log('CiaChatFilterService initialized');
     for (const candidate of candidates) {
       if (typeof candidate === 'number' && Number.isFinite(candidate)) {
         return candidate > 1e12 ? candidate : candidate * 1000;
@@ -55,7 +65,7 @@ export class CiaChatFilterService {
 
   /** Normalise a raw provider chat list into typed WahaChatSummary[]. */
   normalizeChats(raw: unknown): WahaChatSummary[] {
-    const rawObj = raw as Record<string, unknown> | unknown[] | null;
+    const rawObj = raw as RawCiaChat | unknown[] | null;
     const candidates: unknown[] = Array.isArray(rawObj)
       ? rawObj
       : rawObj && typeof rawObj === 'object' && Array.isArray(rawObj.chats)
@@ -68,15 +78,12 @@ export class CiaChatFilterService {
 
     return candidates
       .map((chatRaw: unknown) => {
-        const chat = (chatRaw && typeof chatRaw === 'object' ? chatRaw : {}) as Record<
-          string,
-          unknown
-        >;
-        const chatIdObj = chat.id as Record<string, unknown> | string | undefined;
-        const lastMessage = chat.lastMessage as Record<string, unknown> | null | undefined;
-        const lastMsgData = lastMessage?._data as Record<string, unknown> | undefined;
-        const lastMsgId = lastMessage?.id as Record<string, unknown> | undefined;
-        const chatChat = chat._chat as Record<string, unknown> | undefined;
+        const chat = (chatRaw && typeof chatRaw === 'object' ? chatRaw : {}) as RawCiaChat;
+        const chatIdObj = chat.id as RawCiaChatId | undefined;
+        const lastMessage = chat.lastMessage as RawCiaLastMessage | undefined;
+        const lastMsgData = lastMessage?._data as RawCiaLastMessageData | undefined;
+        const lastMsgId = lastMessage?.id as RawCiaMessageId | undefined;
+        const chatChat = chat._chat as RawCiaChatMetadata | undefined;
 
         const activityTimestamp = this.resolveChatTimestamp([
           lastMessage?.timestamp,
@@ -108,7 +115,16 @@ export class CiaChatFilterService {
           chat.last_time,
         ]);
 
-        const lastMsgDataId = lastMsgData?.id as Record<string, unknown> | undefined;
+        const lastMsgDataId = (lastMsgData?.id as RawCiaMessageId) ?? undefined;
+
+        const lastMsgDataIdFromMe =
+          typeof lastMsgDataId === 'object' && lastMsgDataId !== null
+            ? (lastMsgDataId.fromMe as boolean | undefined)
+            : undefined;
+        const lastMsgIdFromMe =
+          typeof lastMsgId === 'object' && lastMsgId !== null
+            ? (lastMsgId.fromMe as boolean | undefined)
+            : undefined;
 
         return {
           id:
@@ -128,10 +144,10 @@ export class CiaChatFilterService {
           lastMessageFromMe:
             typeof lastMessage?.fromMe === 'boolean'
               ? lastMessage.fromMe
-              : typeof lastMsgDataId?.fromMe === 'boolean'
-                ? lastMsgDataId.fromMe
-                : typeof lastMsgId?.fromMe === 'boolean'
-                  ? lastMsgId.fromMe
+              : typeof lastMsgDataIdFromMe === 'boolean'
+                ? lastMsgDataIdFromMe
+                : typeof lastMsgIdFromMe === 'boolean'
+                  ? lastMsgIdFromMe
                   : null,
         } as WahaChatSummary;
       })
@@ -150,12 +166,14 @@ export class CiaChatFilterService {
   }
 
   resolveLatestRemoteMessageTimestamp(messages: Array<{ createdAt?: string | null }>): number {
-    return messages
-      .map((message) => {
-        const timestamp = message?.createdAt ? new Date(message.createdAt).getTime() : Number.NaN;
-        return Number.isFinite(timestamp) ? timestamp : 0;
-      })
-      .sort((left, right) => right - left)[0];
+    return (
+      messages
+        .map((message) => {
+          const timestamp = message?.createdAt ? new Date(message.createdAt).getTime() : Number.NaN;
+          return Number.isFinite(timestamp) ? timestamp : 0;
+        })
+        .sort((left, right) => right - left)[0] ?? 0
+    );
   }
 
   isFreshRemotePendingActivity(timestamp: number): boolean {

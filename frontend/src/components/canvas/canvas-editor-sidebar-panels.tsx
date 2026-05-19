@@ -2,7 +2,8 @@
 
 import { kloelT } from '@/lib/i18n/t';
 import { UI } from '@/lib/ui-tokens';
-import { PRODUCT_TEMPLATES, TEMPLATE_TAGS } from '@/lib/canvas-formats';
+import { TEMPLATE_TAGS } from '@/lib/canvas-formats';
+import type { ProductTemplate } from '@/hooks/useProductTemplates';
 import type { KloelEditor } from '@/lib/fabric';
 import { IC } from './CanvasIcons';
 import {
@@ -25,7 +26,7 @@ type SidebarPanelsProps = {
   uploadDrag: boolean;
   setUploadDrag: (v: boolean) => void;
   setLayerList: (fn: (prev: unknown[]) => unknown[]) => void;
-  handleApplyTemplate: (tpl: (typeof PRODUCT_TEMPLATES)[number]) => void;
+  handleApplyTemplate: (tpl: ProductTemplate) => void;
   handleAddText: (preset: 'heading' | 'subheading' | 'body') => void;
   handleAddShape: (shape: 'rect' | 'circle' | 'triangle' | 'line' | 'star') => void;
   handleDrop: (e: React.DragEvent) => void;
@@ -39,6 +40,8 @@ type SidebarPanelsProps = {
   resizeFidPrefix: string;
   initialW: number;
   initialH: number;
+  templates: ProductTemplate[];
+  tplLoading: boolean;
 };
 
 export function SidebarPanels({
@@ -62,6 +65,8 @@ export function SidebarPanels({
   resizeFidPrefix,
   initialW,
   initialH,
+  templates,
+  tplLoading,
 }: SidebarPanelsProps) {
   switch (sidebarTab) {
     case 'templates':
@@ -76,7 +81,17 @@ export function SidebarPanels({
             ))}
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-            {PRODUCT_TEMPLATES.map((tpl) => (
+            {tplLoading ? (
+              <p style={{ ...panelSubtext, gridColumn: '1 / -1' }}>
+                {kloelT('Carregando modelos...')}
+              </p>
+            ) : templates.length === 0 ? (
+              <p style={{ ...panelSubtext, gridColumn: '1 / -1' }}>
+                {kloelT('Nenhum modelo disponível.')}
+              </p>
+            ) : (
+              templates.map((tpl) => {
+                return (
               <button
                 type="button"
                 key={tpl.id}
@@ -88,7 +103,9 @@ export function SidebarPanels({
                   {tpl.name}
                 </span>
               </button>
-            ))}
+                );
+              })
+            )}
           </div>
           <div style={{ marginTop: 16 }}>
             <p style={{ ...panelSubtext, fontSize: 10 }}>

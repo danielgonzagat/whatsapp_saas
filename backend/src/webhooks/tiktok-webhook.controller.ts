@@ -10,17 +10,15 @@ import {
   Logger,
   Post,
   Req,
-  UseGuards,
 } from '@nestjs/common';
-import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import type { Redis } from 'ioredis';
 import { Public } from '../auth/public.decorator';
 import { RawBodyRequest } from '../common/interfaces/authenticated-request.interface';
 import { safeCompareStrings } from '../common/utils/crypto-compare.util';
 import { OmnichannelService } from '../inbox/omnichannel.service';
-import { PrismaService } from '../prisma/prisma.service';
 import { WebhooksService } from './webhooks.service';
 
+import { RouteClass } from '../common/throttler/route-class.decorator';
 type TikTokWebhookPayload = Record<string, unknown> | Array<unknown> | string | number | null;
 
 interface ParsedTikTokSignature {
@@ -113,7 +111,7 @@ function describeEvent(body: TikTokWebhookPayload): string {
  * `TikTok-Signature` whenever TikTok sends one.
  */
 @Controller('webhooks/tiktok')
-@UseGuards(ThrottlerGuard)
+@RouteClass('webhook')
 export class TikTokWebhookController {
   private readonly logger = new Logger(TikTokWebhookController.name);
 
@@ -121,7 +119,6 @@ export class TikTokWebhookController {
     @InjectRedis() private readonly redis: Redis,
     private readonly webhooksService: WebhooksService,
     private readonly omnichannelService: OmnichannelService,
-    private readonly prisma: PrismaService,
   ) {}
 
   /** Simple health probe for manual verification in a browser/curl. */
@@ -139,7 +136,6 @@ export class TikTokWebhookController {
   /** Receive TikTok webhook events and acknowledge the callback test. */
   @Public()
   @Post()
-  @Throttle({ default: { limit: 2000, ttl: 60000 } })
   @HttpCode(200)
   async handleWebhook(
     @Body() body: TikTokWebhookPayload,
@@ -148,45 +144,45 @@ export class TikTokWebhookController {
     @Req() req?: RawBodyRequest,
   ) {
     const parsedSignature = parseTikTokSignatureHeader(signatureHeader);
-    const hasSignatureHeader = String(signatureHeader || '').trim().length > 0;
+    const clientSecret = String(process.env.TIKTOK_CLIENT_SECRET || '').trim();
 
-    if (hasSignatureHeader && !parsedSignature) {
-      this.logger.warn('TikTok webhook rejected: malformed TikTok-Signature header');
-      throw new ForbiddenException('Malformed TikTok webhook signature');
-    }
-
-    if (parsedSignature) {
-      const clientSecret = String(process.env.TIKTOK_CLIENT_SECRET || '').trim();
-      const rawBody = stringifyRawBody(req, body);
-
-      if (!clientSecret) {
+    if (clientSecret) {
+      if (!parsedSignature) {
         this.logger.warn(
-          'TikTok webhook signature received but TIKTOK_CLIENT_SECRET is not configured',
+          'TikTok webhook rejected: missing valid signature while TIKTOK_CLIENT_SECRET is configured',
         );
-      } else {
-        const expectedDigest = createHmac('sha256', clientSecret)
-          .update(`${parsedSignature.timestamp}.${rawBody}`)
-          .digest();
-        const expectedHex = expectedDigest.toString('hex');
-        const expectedBase64 = expectedDigest.toString('base64');
-        const expectedBase64Url = expectedDigest.toString('base64url');
-        const expectedBase64NoPadding = expectedBase64.replace(/=+$/g, '');
-        const providedSignature = parsedSignature.signature;
-        const providedSignatureSpaceFixed = providedSignature.replace(/\s+/g, '+');
-        const signatureMatches =
-          safeCompareStrings(providedSignature, expectedHex) ||
-          safeCompareStrings(providedSignature, expectedBase64) ||
-          safeCompareStrings(providedSignature, expectedBase64Url) ||
-          safeCompareStrings(providedSignature, expectedBase64NoPadding) ||
-          safeCompareStrings(providedSignatureSpaceFixed, expectedBase64) ||
-          safeCompareStrings(providedSignatureSpaceFixed, expectedBase64NoPadding);
+        throw new ForbiddenException('Missing TikTok webhook signature');
+      }
 
-        if (!signatureMatches) {
-          this.logger.warn(
-            `TikTok webhook rejected: invalid signature (encoding=${parsedSignature.encoding})`,
-          );
-          throw new ForbiddenException('Invalid TikTok webhook signature');
-        }
+      const rawBody = stringifyRawBody(req, body);
+      const expectedDigest = createHmac('sha256', clientSecret)
+        .update(`${parsedSignature.timestamp}.${rawBody}`)
+        .digest();
+      const expectedHex = expectedDigest.toString('hex');
+      const expectedBase64 = expectedDigest.toString('base64');
+      const expectedBase64Url = expectedDigest.toString('base64url');
+      const expectedBase64NoPadding = expectedBase64.replace(/=+$/g, '');
+      const providedSignature = parsedSignature.signature;
+      const providedSignatureSpaceFixed = providedSignature.replace(/\s+/g, '+');
+      const signatureMatches =
+        safeCompareStrings(providedSignature, expectedHex) ||
+        safeCompareStrings(providedSignature, expectedBase64) ||
+        safeCompareStrings(providedSignature, expectedBase64Url) ||
+        safeCompareStrings(providedSignature, expectedBase64NoPadding) ||
+        safeCompareStrings(providedSignatureSpaceFixed, expectedBase64) ||
+        safeCompareStrings(providedSignatureSpaceFixed, expectedBase64NoPadding);
+
+      if (!signatureMatches) {
+        this.logger.warn(
+          `TikTok webhook rejected: invalid signature (encoding=${parsedSignature.encoding})`,
+        );
+        throw new ForbiddenException('Invalid TikTok webhook signature');
+      }
+    } else {
+      const hasSignatureHeader = String(signatureHeader || '').trim().length > 0;
+      if (hasSignatureHeader && !parsedSignature) {
+        this.logger.warn('TikTok webhook rejected: malformed TikTok-Signature header');
+        throw new ForbiddenException('Malformed TikTok webhook signature');
       }
     }
 
@@ -208,37 +204,18 @@ export class TikTokWebhookController {
         .catch(() => {});
     }
 
-    this.logger.log(`TikTok webhook acknowledged: event=${describeEvent(body)}`);
-
-    const workspaceId = await this.resolveTikTokWorkspace(body);
-    if (workspaceId) {
-      this.omnichannelService
-        .processTikTokWebhook(workspaceId, body as Record<string, unknown>)
-        .catch((err: unknown) => {
-          this.logger.error(`TikTok omnichannel processing failed: ${String(err)}`);
-        });
-    } else {
-      this.logger.warn('TikTok webhook: workspace not resolved, skipping inbox save');
+    if (body && typeof body === 'object' && !Array.isArray(body)) {
+      await this.omnichannelService.processTikTokWebhook(body).catch((error: unknown) => {
+        this.logger.warn(
+          `TikTok webhook inbox routing failed: ${
+            error instanceof Error ? error.message : 'unknown_error'
+          }`,
+        );
+      });
     }
 
+    this.logger.log(`TikTok webhook acknowledged: event=${describeEvent(body)}`);
+
     return { received: true };
-  }
-
-  /** Resolve workspace from TikTok webhook via providerSettings JSON lookup. */
-  private async resolveTikTokWorkspace(body: TikTokWebhookPayload): Promise<string | null> {
-    if (!body || typeof body !== 'object' || Array.isArray(body)) return null;
-
-    const workspaces = await this.prisma.workspace.findMany({
-      where: {
-        providerSettings: { path: ['tiktok', 'connected'], equals: true },
-      },
-      select: { id: true },
-      take: 50,
-    });
-
-    if (workspaces.length === 0) return null;
-    if (workspaces.length === 1) return workspaces[0].id;
-
-    return workspaces[0].id;
   }
 }

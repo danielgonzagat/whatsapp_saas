@@ -1,17 +1,19 @@
 import { Body, Controller, Get, Post, Query, Request, UseGuards } from '@nestjs/common';
-import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import { EmailService } from '../auth/email.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { AuthenticatedRequest } from '../common/interfaces';
 import { PrismaService } from '../prisma/prisma.service';
 import { ReportFiltersDto } from './dto/report-filters.dto';
+import { InternalEndpoint } from '../common/decorators/internal-endpoint.decorator';
 import { ReportsService } from './reports.service';
 
+import { RouteClass } from '../common/throttler/route-class.decorator';
+type ReportResponseDetails = { score?: number; [key: string]: unknown };
+
 // All dates stored as UTC via Prisma DateTime (toISOString)
-@UseGuards(ThrottlerGuard)
 @Controller('reports')
 @UseGuards(JwtAuthGuard)
-@Throttle({ default: { limit: 10, ttl: 60000 } })
+@RouteClass('read')
 export class ReportsController {
   constructor(
     private readonly reportsService: ReportsService,
@@ -24,14 +26,14 @@ export class ReportsController {
   }
 
   /** Get vendas. */
-  // PULSE_OK: admin-only route, accessed via admin panel
+  @InternalEndpoint('sales report')
   @Get('vendas')
   getVendas(@Query() f: ReportFiltersDto, @Request() req: AuthenticatedRequest) {
     return this.reportsService.getVendas(this.ws(req), f);
   }
 
   /** Get vendas summary. */
-  // PULSE_OK: admin-only route, accessed via admin panel
+  @InternalEndpoint('sales summary report')
   @Get('vendas/summary')
   getVendasSummary(@Query() f: ReportFiltersDto, @Request() req: AuthenticatedRequest) {
     return this.reportsService.getVendasSummary(this.ws(req), f);
@@ -62,28 +64,28 @@ export class ReportsController {
   }
 
   /** Get afiliados. */
-  // PULSE_OK: admin-only route, accessed via admin panel
+  @InternalEndpoint('affiliates report')
   @Get('afiliados')
   getAfiliados(@Query() f: ReportFiltersDto, @Request() req: AuthenticatedRequest) {
     return this.reportsService.getAfiliados(this.ws(req), f);
   }
 
   /** Get indicadores. */
-  // PULSE_OK: admin-only route, accessed via admin panel
+  @InternalEndpoint('indicators report')
   @Get('indicadores')
   getIndicadores(@Query() f: ReportFiltersDto, @Request() req: AuthenticatedRequest) {
     return this.reportsService.getIndicadores(this.ws(req), f);
   }
 
   /** Get assinaturas. */
-  // PULSE_OK: admin-only route, accessed via admin panel
+  @InternalEndpoint('subscriptions report')
   @Get('assinaturas')
   getAssinaturas(@Query() f: ReportFiltersDto, @Request() req: AuthenticatedRequest) {
     return this.reportsService.getAssinaturas(this.ws(req), f);
   }
 
   /** Get indicadores produto. */
-  // PULSE_OK: admin-only route, accessed via admin panel
+  @InternalEndpoint('product indicators report')
   @Get('indicadores-produto')
   getIndicadoresProduto(@Query() f: ReportFiltersDto, @Request() req: AuthenticatedRequest) {
     return this.reportsService.getIndicadoresProduto(this.ws(req), f);
@@ -96,7 +98,7 @@ export class ReportsController {
   }
 
   /** Get origem. */
-  // PULSE_OK: admin-only route, accessed via admin panel
+  @InternalEndpoint('source report')
   @Get('origem')
   getOrigem(@Query() f: ReportFiltersDto, @Request() req: AuthenticatedRequest) {
     return this.reportsService.getOrigem(this.ws(req), f);
@@ -137,7 +139,7 @@ export class ReportsController {
   }
 
   /** Get chargeback. */
-  // PULSE_OK: admin-only route, accessed via admin panel
+  @InternalEndpoint('chargeback report')
   @Get('chargeback')
   getChargeback(@Query() f: ReportFiltersDto, @Request() req: AuthenticatedRequest) {
     return this.reportsService.getChargeback(this.ws(req), f);
@@ -155,22 +157,24 @@ export class ReportsController {
       return { error: 'No email provided' };
     }
 
-    // Generate CSV from vendas summary
+    const periodParts = body.period?.split(',');
     const summary = await this.reportsService.getVendasSummary(workspaceId, {
-      startDate: body.period?.split(',')[0],
-      endDate: body.period?.split(',')[1],
+      ...(periodParts?.[0] !== undefined ? { startDate: periodParts[0] } : {}),
+      ...(periodParts?.[1] !== undefined ? { endDate: periodParts[1] } : {}),
     });
 
     await this.emailService.sendEmail({
       to: targetEmail,
       subject: 'Relatorio KLOEL — Resumo de Vendas',
-      html: `<div style="font-family:sans-serif;background:#0A0A0C;color:#e0e0e0;padding:40px;max-width:600px;margin:0 auto;">
-        <h1 style="color:#E85D30;">KLOEL — Relatorio</h1>
-        <p>Receita: R$ ${(summary.totalRevenue / 100).toFixed(2)}</p>
-        <p>Vendas: ${summary.totalCount}</p>
-        <p>Ticket Medio: R$ ${(summary.ticketMedio / 100).toFixed(2)}</p>
-        <p>Conversao: ${summary.conversao}%</p>
-      </div>`,
+      html: (await import('../common/utils/email-template-renderer.util')).renderEmailTemplate(
+        'report-summary',
+        {
+          totalRevenue: (summary.totalRevenue / 100).toFixed(2),
+          totalCount: String(summary.totalCount),
+          ticketMedio: (summary.ticketMedio / 100).toFixed(2),
+          conversao: String(summary.conversao),
+        },
+      ),
     });
     return { success: true, sentTo: targetEmail };
   }
@@ -207,8 +211,8 @@ export class ReportsController {
       take: 100,
     });
     const scores = responses
-      .map((r) => (r.details as Record<string, unknown> | null)?.score as number | undefined)
-      .filter((score): score is number => typeof score === 'number');
+      .map((r) => (r.details as ReportResponseDetails | null)?.score)
+      .filter((s): s is number => s != null);
     const avg =
       scores.length > 0 ? scores.reduce((a: number, b: number) => a + b, 0) / scores.length : 0;
     const promoters = scores.filter((s: number) => s >= 9).length;

@@ -1,0 +1,209 @@
+import { PlanLimitsService } from '../billing/plan-limits.service';
+import { KloelChatToolsService } from './kloel-chat-tools.service';
+import { KloelBusinessConfigToolsService } from './kloel-business-config-tools.service';
+import { KloelWhatsAppToolsService } from './kloel-whatsapp-tools.service';
+import { KloelComposerService } from './kloel-composer.service';
+import { AuditService } from '../audit/audit.service';
+import { OpsAlertService } from '../observability/ops-alert.service';
+
+type DispatcherPrismaMock = {
+  workspace: { findUnique: jest.Mock };
+  approvalRequest: { create: jest.Mock; findFirst: jest.Mock; updateMany: jest.Mock };
+  $transaction: jest.Mock;
+};
+
+type DispatcherChatToolsMock = Pick<
+  KloelChatToolsService,
+  | 'toolSaveProduct'
+  | 'toolListProducts'
+  | 'toolDeleteProduct'
+  | 'toolToggleAutopilot'
+  | 'toolSetBrandVoice'
+  | 'toolSetSalesPolicy'
+  | 'toolRememberUserInfo'
+  | 'toolCreateFlow'
+  | 'toolListFlows'
+  | 'toolGetDashboardSummary'
+  | 'toolCreateAgentJob'
+  | 'toolListAgentJobs'
+  | 'toolSetAgentJobEnabled'
+  | 'toolSearchAgentMemory'
+  | 'toolSearchAgentSessions'
+  | 'toolGetAgentArtifact'
+  | 'toolUpsertAgentSkill'
+  | 'toolRecordAgentSkillOutcome'
+  | 'toolRecordAgentDelegation'
+  | 'toolRecordAgentEvidence'
+  | 'toolSearchAgentEvidence'
+  | 'toolListAgentEvidence'
+  | 'toolVerifyAgentEvidence'
+  | 'toolCreatePaymentLink'
+>;
+
+type DispatcherBizConfigMock = Pick<
+  KloelBusinessConfigToolsService,
+  | 'toolListLeads'
+  | 'toolGetLeadDetails'
+  | 'toolSaveBusinessInfo'
+  | 'toolSetBusinessHours'
+  | 'toolCreateCampaign'
+  | 'toolUpdateBillingInfo'
+  | 'toolGetBillingStatus'
+  | 'toolChangePlan'
+>;
+
+type DispatcherWhatsappMock = Pick<
+  KloelWhatsAppToolsService,
+  | 'toolConnectWhatsapp'
+  | 'toolGetWhatsAppStatus'
+  | 'toolSendWhatsAppMessage'
+  | 'toolListWhatsAppContacts'
+  | 'toolCreateWhatsAppContact'
+  | 'toolListWhatsAppChats'
+  | 'toolGetWhatsAppMessages'
+  | 'toolGetWhatsAppBacklog'
+  | 'toolSetWhatsAppPresence'
+  | 'toolSyncWhatsAppHistory'
+  | 'toolSendAudio'
+  | 'toolSendDocument'
+  | 'toolSendVoiceNote'
+  | 'toolTranscribeAudio'
+>;
+
+type DispatcherComposerMock = Pick<KloelComposerService, 'searchWeb'>;
+
+type DispatcherAuditMock = Pick<AuditService, 'logWithTx'>;
+
+type DispatcherOpsAlertMock = Pick<OpsAlertService, 'alertOnCriticalError'>;
+
+type DispatcherPlanLimitsMock = Pick<PlanLimitsService, 'ensureTokenBudget' | 'trackAiUsage'>;
+
+export type {
+  DispatcherPrismaMock,
+  DispatcherChatToolsMock,
+  DispatcherBizConfigMock,
+  DispatcherWhatsappMock,
+  DispatcherComposerMock,
+  DispatcherAuditMock,
+  DispatcherOpsAlertMock,
+  DispatcherPlanLimitsMock,
+};
+
+const DEFAULT_WS_ID = 'ws-1';
+
+export function createPrismaMock(): DispatcherPrismaMock {
+  const prisma: DispatcherPrismaMock = {
+    workspace: {
+      findUnique: jest.fn().mockResolvedValue({ id: DEFAULT_WS_ID, providerSettings: {} }),
+    },
+    approvalRequest: {
+      create: jest.fn().mockResolvedValue({
+        id: 'ap-1',
+        kind: 'kloel_tool:create_campaign',
+        state: 'OPEN',
+        title: 'Title',
+        createdAt: new Date(),
+      }),
+      findFirst: jest.fn().mockResolvedValue(null),
+      updateMany: jest.fn().mockResolvedValue({ count: 1 }),
+    },
+    $transaction: jest
+      .fn()
+      .mockImplementation((arg: unknown) =>
+        typeof arg === 'function'
+          ? (arg as (tx: DispatcherPrismaMock) => unknown)(prisma)
+          : Promise.resolve(undefined),
+      ),
+  };
+  return prisma;
+}
+
+export function createPlanLimitsMock(): DispatcherPlanLimitsMock {
+  return {
+    ensureTokenBudget: jest.fn().mockResolvedValue(undefined),
+    trackAiUsage: jest.fn().mockResolvedValue(undefined),
+  };
+}
+
+export function createChatToolsMock(): DispatcherChatToolsMock {
+  return {
+    toolSaveProduct: jest.fn().mockResolvedValue({ success: true }),
+    toolListProducts: jest.fn().mockResolvedValue({ success: true, products: [] }),
+    toolDeleteProduct: jest.fn().mockResolvedValue({ success: true }),
+    toolToggleAutopilot: jest.fn().mockResolvedValue({ success: true, enabled: true }),
+    toolSetBrandVoice: jest.fn().mockResolvedValue({ success: true }),
+    toolSetSalesPolicy: jest.fn().mockResolvedValue({ success: true }),
+    toolRememberUserInfo: jest.fn().mockResolvedValue({ success: true }),
+    toolCreateFlow: jest.fn().mockResolvedValue({ success: true, flow: {} }),
+    toolListFlows: jest.fn().mockResolvedValue({ success: true, flows: [] }),
+    toolGetDashboardSummary: jest.fn().mockResolvedValue({ success: true, stats: {} }),
+    toolCreateAgentJob: jest.fn().mockResolvedValue({ success: true, key: 'agent_job:daily' }),
+    toolListAgentJobs: jest.fn().mockResolvedValue({ success: true, jobs: [] }),
+    toolSetAgentJobEnabled: jest.fn().mockResolvedValue({ success: true }),
+    toolSearchAgentMemory: jest.fn().mockResolvedValue({ success: true, memories: [] }),
+    toolSearchAgentSessions: jest.fn().mockResolvedValue({ success: true, sessions: [] }),
+    toolGetAgentArtifact: jest.fn().mockResolvedValue({ success: true, content: '{}' }),
+    toolUpsertAgentSkill: jest.fn().mockResolvedValue({ success: true, skillId: 'skill_1' }),
+    toolRecordAgentSkillOutcome: jest.fn().mockResolvedValue({ success: true }),
+    toolRecordAgentDelegation: jest.fn().mockResolvedValue({ success: true }),
+    toolRecordAgentEvidence: jest.fn().mockResolvedValue({ success: true }),
+    toolSearchAgentEvidence: jest.fn().mockResolvedValue({ success: true, evidence: [] }),
+    toolListAgentEvidence: jest.fn().mockResolvedValue({ success: true, evidence: [] }),
+    toolVerifyAgentEvidence: jest.fn().mockResolvedValue({ success: true }),
+    toolCreatePaymentLink: jest
+      .fn()
+      .mockResolvedValue({ success: true, paymentUrl: 'https://pay.test' }),
+  };
+}
+
+export function createBizConfigToolsMock(): DispatcherBizConfigMock {
+  return {
+    toolListLeads: jest.fn().mockResolvedValue({ success: true, leads: [] }),
+    toolGetLeadDetails: jest.fn().mockResolvedValue({ success: true }),
+    toolSaveBusinessInfo: jest.fn().mockResolvedValue({ success: true }),
+    toolSetBusinessHours: jest.fn().mockResolvedValue({ success: true }),
+    toolCreateCampaign: jest.fn().mockResolvedValue({ success: true, campaignId: 'c-1' }),
+    toolUpdateBillingInfo: jest.fn().mockResolvedValue({ success: true }),
+    toolGetBillingStatus: jest.fn().mockResolvedValue({ success: true }),
+    toolChangePlan: jest.fn().mockResolvedValue({ success: true }),
+  };
+}
+
+export function createWhatsappToolsMock(): DispatcherWhatsappMock {
+  return {
+    toolConnectWhatsapp: jest.fn().mockResolvedValue({ success: true }),
+    toolGetWhatsAppStatus: jest.fn().mockResolvedValue({ success: true, connected: false }),
+    toolSendWhatsAppMessage: jest.fn().mockResolvedValue({ success: true }),
+    toolListWhatsAppContacts: jest.fn().mockResolvedValue({ success: true, contacts: [] }),
+    toolCreateWhatsAppContact: jest.fn().mockResolvedValue({ success: true }),
+    toolListWhatsAppChats: jest.fn().mockResolvedValue({ success: true, chats: [] }),
+    toolGetWhatsAppMessages: jest.fn().mockResolvedValue({ success: true, messages: [] }),
+    toolGetWhatsAppBacklog: jest.fn().mockResolvedValue({ success: true, backlog: [] }),
+    toolSetWhatsAppPresence: jest.fn().mockResolvedValue({ success: true }),
+    toolSyncWhatsAppHistory: jest.fn().mockResolvedValue({ success: true }),
+    toolSendAudio: jest.fn().mockResolvedValue({ success: true }),
+    toolSendDocument: jest.fn().mockResolvedValue({ success: true }),
+    toolSendVoiceNote: jest.fn().mockResolvedValue({ success: true }),
+    toolTranscribeAudio: jest.fn().mockResolvedValue({ success: true, transcription: 'text' }),
+  };
+}
+
+export function createComposerMock(): DispatcherComposerMock {
+  return {
+    searchWeb: jest.fn().mockResolvedValue({ answer: 'search result', sources: [] }),
+  };
+}
+
+export function createAuditMock(): DispatcherAuditMock {
+  return {
+    logWithTx: jest.fn().mockResolvedValue(undefined),
+  };
+}
+
+export function createOpsAlertMock(): DispatcherOpsAlertMock {
+  return {
+    alertOnCriticalError: jest.fn(),
+  };
+}
+
+export { DEFAULT_WS_ID };

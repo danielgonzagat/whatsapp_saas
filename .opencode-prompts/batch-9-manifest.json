@@ -1,0 +1,71 @@
+{
+  "runId": "batch-9-2026-05-11d",
+  "concurrency": 6,
+  "timeoutSec": 0,
+  "staggerMs": 45000,
+  "dir": "/Users/danielpenin/whatsapp_saas",
+  "skipPermissions": true,
+  "_note": "Batch 9 — 12 prompts attacking Waves B, Q, H, I/2, D, J in parallel. Daniel authorized 20-50 simultaneous on 2026-05-11. Stagger 45s, conc 6, no timeout. Background dispatch authorized per same-day exception.",
+  "tasks": [
+    {
+      "id": "B1-tenant-product-sub-resources",
+      "title": "Wave B/1 — TenantSweep ProductSubResources (60 entries)",
+      "promptFile": ".opencode-prompts/batch-9/B1-tenant-product-sub-resources.md"
+    },
+    {
+      "id": "B2-tenant-checkout-service",
+      "title": "Wave B/2 — TenantSweep CheckoutService (41 entries)",
+      "promptFile": ".opencode-prompts/batch-9/B2-tenant-checkout-service.md"
+    },
+    {
+      "id": "B3-tenant-kloel-service",
+      "title": "Wave B/3 — TenantSweep KloelService (29 entries)",
+      "promptFile": ".opencode-prompts/batch-9/B3-tenant-kloel-service.md"
+    },
+    {
+      "id": "B4-tenant-affiliate-reports-member",
+      "title": "Wave B/4 — TenantSweep Affiliate+Reports+MemberArea (72 entries)",
+      "promptFile": ".opencode-prompts/batch-9/B4-tenant-affiliate-reports-member.md"
+    },
+    {
+      "id": "Q-backend-strict-mode",
+      "title": "Wave Q — Backend strict-mode FULL (434 → 0)",
+      "promptFile": ".opencode-prompts/batch-9/Q-backend-strict-mode-FULL.md"
+    },
+    {
+      "id": "Q-frontend-strict-mode",
+      "title": "Wave Q — Frontend strict-mode FULL (33 → 0)",
+      "promptFile": ".opencode-prompts/batch-9/Q-frontend-strict-mode-FULL.md"
+    },
+    {
+      "id": "H-coverage-kloel-rest",
+      "title": "Wave H/Coverage — Kloel rest (~33 specs)",
+      "promptFile": ".opencode-prompts/batch-9/H-coverage-kloel-rest.md"
+    },
+    {
+      "id": "H-coverage-auth-marketing-meta",
+      "title": "Wave H/Coverage — Auth + Marketing + Meta + AiBrain (~17 specs)",
+      "promptFile": ".opencode-prompts/batch-9/H-coverage-auth-marketing-meta.md"
+    },
+    {
+      "id": "I2-google-ads",
+      "title": "Wave I/2 — Google Ads complete (OAuth + Crypto + Sync + Enhanced Conversions)",
+      "promptFile": ".opencode-prompts/batch-9/I2-google-ads-integration.md"
+    },
+    {
+      "id": "I2-tiktok-ads",
+      "title": "Wave I/2 — TikTok Ads complete (OAuth + Crypto + Sync + Events API)",
+      "promptFile": ".opencode-prompts/batch-9/I2-tiktok-ads-integration.md"
+    },
+    {
+      "id": "D-codacy-high",
+      "title": "Wave D — Codacy HIGH fixes (RAC + email + package + decomp)",
+      "promptFile": ".opencode-prompts/batch-9/D-codacy-rac-and-high.md"
+    },
+    {
+      "id": "J-hardening-health-rate-dlq",
+      "title": "Wave J — Hardening Health + RateLimit + DLQ + Idempotency",
+      "promptFile": ".opencode-prompts/batch-9/J-hardening-health-rate-dlq.md"
+    }
+  ]
+}

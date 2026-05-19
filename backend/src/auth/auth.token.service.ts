@@ -1,11 +1,11 @@
 import { randomUUID } from 'node:crypto';
 import {
-  Logger,
   Optional,
   ServiceUnavailableException,
   UnauthorizedException,
 } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt'; // PULSE_OK: reasonable expiry (30m)
+import { JwtService } from '@nestjs/jwt';
+import { StructuredLogger } from '../logging/structured-logger';
 import { Prisma } from '@prisma/client';
 import type { Redis } from 'ioredis';
 import { OpsAlertService } from '../observability/ops-alert.service';
@@ -26,7 +26,7 @@ type TokenAgent = {
 
 /** Internal collaborator that owns JWT/refresh-token issuance and refresh-token rotation. */
 export class AuthTokenService {
-  private readonly logger = new Logger(AuthTokenService.name);
+  private readonly logger = StructuredLogger.from(AuthTokenService.name);
 
   constructor(
     private readonly prisma: PrismaService,
@@ -39,7 +39,7 @@ export class AuthTokenService {
     agentId: string,
     email: string,
     workspaceId: string,
-    role: string,
+    role: string | null | undefined,
     name?: string,
   ): Promise<string> {
     const jti = randomUUID();
@@ -47,7 +47,10 @@ export class AuthTokenService {
     if (name) {
       payload.name = name;
     }
-    return this.jwt.signAsync(payload, { expiresIn: getJwtExpiresIn() });
+    const expiresIn = getJwtExpiresIn();
+    return this.jwt.signAsync(payload, {
+      ...(expiresIn !== undefined ? { expiresIn } : {}),
+    });
   }
 
   private async loadWorkspaceMeta(agent: TokenAgent): Promise<{ id: string; name: string } | null> {
@@ -134,7 +137,7 @@ export class AuthTokenService {
         agent.id,
         agent.email,
         agent.workspaceId,
-        agent.role ?? 'USER',
+        agent.role,
         agent.name ?? undefined,
       );
 
@@ -253,9 +256,13 @@ export class AuthTokenService {
 
   /** Blacklist an access token JTI so it cannot be reused before natural expiry. */
   async revokeAccessToken(jti: string, exp: number): Promise<void> {
-    if (!this.redis) return;
+    if (!this.redis) {
+      return;
+    }
     const ttlSeconds = Math.max(0, Math.ceil(exp - Date.now() / 1000));
-    if (ttlSeconds <= 0) return;
+    if (ttlSeconds <= 0) {
+      return;
+    }
     try {
       await this.redis.setex(`jti:revoked:${jti}`, ttlSeconds, '1');
     } catch (error: unknown) {
@@ -267,7 +274,9 @@ export class AuthTokenService {
 
   /** Check whether an access token JTI has been revoked. */
   async isAccessTokenRevoked(jti: string): Promise<boolean> {
-    if (!this.redis) return false;
+    if (!this.redis) {
+      return false;
+    }
     try {
       const entry = await this.redis.exists(`jti:revoked:${jti}`);
       return entry === 1;

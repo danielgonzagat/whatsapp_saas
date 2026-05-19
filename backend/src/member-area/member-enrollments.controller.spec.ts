@@ -66,7 +66,7 @@ describe('MemberEnrollmentsController', () => {
     controller = new MemberEnrollmentsController(typedPrisma, audit, stats);
   });
 
-  it('supports legacy string enrollment fields without forwarding any casts', async () => {
+  it('supports legacy string enrollment fields without forwarding unsafe casts', async () => {
     prisma.memberArea.findFirst.mockResolvedValue({ id: 'area-1', workspaceId: 'ws-1' });
     prisma.memberEnrollment.findFirst.mockResolvedValue(null);
 

@@ -91,7 +91,6 @@ function findPathsBetweenRoles(
 function buildChainFromPath(
   path: PulseStructuralNode[],
   index: number,
-  graph: PulseStructuralGraph,
 ): PulseExecutionChain {
   const steps: PulseExecutionChainStep[] = path.map((node, i) => ({
     id: `${node.id}:step${i}`,
@@ -104,7 +103,7 @@ function buildChainFromPath(
     providersInvolved: extractProvidersFromMetadata(node.metadata),
   }));
 
-  const sideEffects = extractSideEffects(path, graph);
+  const sideEffects = extractSideEffects(path);
   const completeness = calculateChainCompleteness(steps);
   const failurePoints = identifyFailurePoints(steps);
 
@@ -189,7 +188,6 @@ function extractProvidersFromMetadata(metadata: StructuralMetadata | undefined):
 
 function extractSideEffects(
   path: PulseStructuralNode[],
-  graph: PulseStructuralGraph,
 ): Array<{
   type:
     | 'network_call'
@@ -356,7 +354,7 @@ export function buildExecutionChains(input: BuildExecutionChainsInput): PulseExe
     new Map(allPaths.map((p) => [p.map((n) => n.id).join(':'), p])).values(),
   );
 
-  const chains = uniquePaths.map((path, i) => buildChainFromPath(path, i, structuralGraph));
+  const chains = uniquePaths.map((path, i) => buildChainFromPath(path, i));
 
   const completeChains = chains.filter((c) => c.completeness.score >= 0.8).length;
   const partialChains = chains.filter(

@@ -34,7 +34,7 @@ function allow() {
 }
 
 const raw = readStdin();
-if (!raw) allow();
+if (!raw) {allow();}
 
 let payload;
 try {
@@ -43,9 +43,9 @@ try {
   allow();
 }
 
-if (payload.tool_name !== 'Bash') allow();
+if (payload.tool_name !== 'Bash') {allow();}
 const cmd = String((payload.tool_input || {}).command || '');
-if (!cmd) allow();
+if (!cmd) {allow();}
 
 const reasons = [];
 
@@ -143,5 +143,5 @@ if (/git\s+-c\s+core\.hooksPath/.test(cmd)) {
   reasons.push('git -c core.hooksPath= override detectado — bypass proibido.');
 }
 
-if (reasons.length > 0) block(reasons);
+if (reasons.length > 0) {block(reasons);}
 allow();

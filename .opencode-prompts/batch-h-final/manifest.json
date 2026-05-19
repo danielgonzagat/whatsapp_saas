@@ -1,0 +1,31 @@
+{
+  "runId": "batch-h-final-2026-05-12",
+  "concurrency": 4,
+  "timeoutSec": 0,
+  "staggerMs": 30000,
+  "dir": "/Users/danielpenin/whatsapp_saas",
+  "skipPermissions": true,
+  "_note": "Wave H final — 4 subagents paralelos. SQLite boot-window stagger 30s. Conc=4 para evitar SQLITE_BUSY.",
+  "tasks": [
+    {
+      "id": "Coverage-Autopilot",
+      "title": "Wave H — 4 specs autopilot (cycle, cycle-money, ops, ops-conversion)",
+      "promptFile": ".opencode-prompts/batch-h-final/Coverage-Autopilot.md"
+    },
+    {
+      "id": "Coverage-Cia",
+      "title": "Wave H — 4 specs CIA (runtime-state, inline-fallback, remote-backlog, backlog-run)",
+      "promptFile": ".opencode-prompts/batch-h-final/Coverage-Cia.md"
+    },
+    {
+      "id": "Coverage-Whatsapp",
+      "title": "Wave H — 5 specs WhatsApp (reconciler, dispatcher, session, rate-guard, catchup-orchestrator)",
+      "promptFile": ".opencode-prompts/batch-h-final/Coverage-Whatsapp.md"
+    },
+    {
+      "id": "Coverage-Mixed",
+      "title": "Wave H — 7 specs mixed (billing-webhook, checkout-social-*, mind-processor, media, pulse-artifact, storage-drivers)",
+      "promptFile": ".opencode-prompts/batch-h-final/Coverage-Mixed.md"
+    }
+  ]
+}

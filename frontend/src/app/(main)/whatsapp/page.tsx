@@ -1,10 +1,11 @@
 'use client';
 
 import { kloelT, kloelError } from '@/lib/i18n/t';
+import { colors } from '@/lib/design-tokens';
+import { externalBrands } from '@/lib/external-brand-tokens';
 /** Dynamic. */
 export const dynamic = 'force-dynamic';
 
-// PULSE_VISUAL_OK: Tailwind bracket hex values are intentional Meta integration
 // design colors. Token colors (colors.background.void, colors.background.surface, colors.border.space, colors.text.silver) are the
 // Monitor palette. Remaining hexes are custom Meta channel UI surface colors.
 
@@ -93,22 +94,32 @@ function ChannelCard({
   meta?: string[];
 }) {
   return (
-    <div className="rounded-2xl border border-[colors.border.space] bg-[colors.background.surface] p-5">
+    <div
+      className="rounded-2xl border p-5"
+      style={{ borderColor: colors.border.space, backgroundColor: colors.background.surface }}
+    >
       <div className="mb-3 flex items-center justify-between">
-        <h2 className="text-sm font-semibold uppercase tracking-[0.14em] text-[colors.text.silver]">
+        <h2
+          className="text-sm font-semibold uppercase tracking-[0.14em]"
+          style={{ color: colors.text.silver }}
+        >
           {title}
         </h2>
         <span
-          className={`rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] ${
-            connected ? 'bg-[#17331F] text-[#8EE39A]' : 'bg-[#2A1A1A] text-[#FF9B9B]'
-          }`}
+          className="rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em]"
+          style={{
+            backgroundColor: connected ? externalBrands.whatsappSuccessBg : 'var(--checkout-danger-bg)',
+            color: connected ? colors.semantic.successText : colors.semantic.errorText,
+          }}
         >
-          {connected ? 'Conectado' : 'Nao conectado'}
+          {connected ? kloelT('Conectado') : kloelT('Nao conectado')}
         </span>
       </div>
-      <p className="text-sm text-[#9B9BA1]">{description}</p>
+      <p className="text-sm" style={{ color: colors.text.faint }}>
+        {description}
+      </p>
       {meta?.length ? (
-        <div className="mt-4 space-y-2 text-xs text-[#B9B9BE]">
+        <div className="mt-4 space-y-2 text-xs" style={{ color: colors.text.faintLight }}>
           {meta.map((item) => (
             <div key={item}>{item}</div>
           ))}
@@ -179,18 +190,30 @@ export default function WhatsAppPage() {
     Boolean(metaStatus?.channels?.whatsapp?.connected) && Boolean(whatsAppStatus?.connected);
 
   return (
-    <div className="min-h-screen bg-[colors.background.void] px-6 py-8 text-[#EAEAF0]">
+    <div
+      className="min-h-screen px-6 py-8"
+      style={{ backgroundColor: colors.background.void, color: colors.text.silver }}
+    >
       <div className="mx-auto max-w-5xl">
-        <div className="mb-8 rounded-[28px] border border-[colors.border.space] bg-[linear-gradient(135deg,#161619_0%,#0E0E11_100%)] p-8">
+        <div
+          className="mb-8 rounded-[28px] border p-8"
+          style={{
+            borderColor: colors.border.space,
+            backgroundImage: `linear-gradient(135deg, ${externalBrands.whatsappGradientStart} 0%, ${externalBrands.whatsappGradientEnd} 100%)`,
+          }}
+        >
           <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
             <div className="max-w-2xl">
-              <p className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-[#7E7E85]">
+              <p
+                className="mb-3 text-xs font-semibold uppercase tracking-[0.18em]"
+                style={{ color: externalBrands.whatsappLabel }}
+              >
                 {kloelT(`Meta Cloud Runtime`)}
               </p>
               <h1 className="text-3xl font-semibold tracking-[-0.03em] text-white">
                 {kloelT(`WhatsApp oficial, sem QR, sem browser e sem WAHA`)}
               </h1>
-              <p className="mt-3 text-sm leading-6 text-[#A9A9B0]">
+              <p className="mt-3 text-sm leading-6" style={{ color: externalBrands.whatsappTextSecondary }}>
                 {kloelT(`Esta area valida o canal oficial da Meta que o Kloel usa para WhatsApp, Instagram,
                 Messenger e Ads. O backend e o worker agora operam a partir da Meta API oficial e do
                 estado persistido do workspace.`)}
@@ -201,7 +224,8 @@ export default function WhatsAppPage() {
               <button
                 type="button"
                 onClick={() => void load()}
-                className="rounded-full border border-[#35353B] px-5 py-2 text-sm font-medium text-[#F2F2F5]"
+                className="rounded-full border px-5 py-2 text-sm font-medium"
+                style={{ borderColor: colors.border.glow, color: externalBrands.whatsappButtonText }}
               >
                 {kloelT(`Atualizar`)}
               </button>
@@ -209,7 +233,8 @@ export default function WhatsAppPage() {
                 <button
                   type="button"
                   onClick={() => void handleDisconnect()}
-                  className="rounded-full bg-[#2D1616] px-5 py-2 text-sm font-medium text-[#FFB0B0]"
+                  className="rounded-full px-5 py-2 text-sm font-medium"
+                  style={{ backgroundColor: externalBrands.whatsappDangerBg, color: colors.semantic.errorText }}
                 >
                   {kloelT(`Desconectar Meta`)}
                 </button>
@@ -217,7 +242,11 @@ export default function WhatsAppPage() {
                 <button
                   type="button"
                   onClick={() => void handleConnect()}
-                  className="rounded-full bg-[colors.text.silver] px-5 py-2 text-sm font-semibold text-[colors.background.surface]"
+                  className="rounded-full px-5 py-2 text-sm font-semibold"
+                  style={{
+                    backgroundColor: colors.text.silver,
+                    color: colors.background.surface,
+                  }}
                 >
                   {kloelT(`Conectar com Meta`)}
                 </button>
@@ -226,7 +255,14 @@ export default function WhatsAppPage() {
           </div>
 
           {actionMessage ? (
-            <div className="mt-5 rounded-2xl border border-[#26262B] bg-[#121216] px-4 py-3 text-sm text-[#D7D7DD]">
+            <div
+              className="mt-5 rounded-2xl border px-4 py-3 text-sm"
+              style={{
+                borderColor: externalBrands.whatsappCardBorder,
+                backgroundColor: colors.background.surface,
+                color: externalBrands.whatsappCardText,
+              }}
+            >
               {actionMessage}
             </div>
           ) : null}
@@ -280,37 +316,72 @@ export default function WhatsAppPage() {
           />
         </div>
 
-        <div className="rounded-[24px] border border-[colors.border.space] bg-[colors.background.surface] p-6">
-          <h2 className="text-sm font-semibold uppercase tracking-[0.14em] text-[#7E7E85]">
+        <div
+          className="rounded-[24px] border p-6"
+          style={{
+            borderColor: colors.border.space,
+            backgroundColor: colors.background.surface,
+          }}
+        >
+          <h2
+            className="text-sm font-semibold uppercase tracking-[0.14em]"
+            style={{ color: externalBrands.whatsappLabel }}
+          >
             {kloelT(`Estado atual`)}
           </h2>
           {loading ? (
-            <p className="mt-4 text-sm text-[#A9A9B0]">{kloelT(`Carregando integracao Meta...`)}</p>
+            <p className="mt-4 text-sm" style={{ color: externalBrands.whatsappTextSecondary }}>
+              {kloelT(`Carregando integracao Meta...`)}
+            </p>
           ) : (
-            <div className="mt-4 grid gap-3 text-sm text-[#D4D4DA] md:grid-cols-2">
-              <div className="rounded-2xl border border-[colors.border.space] bg-[#0E0E10] px-4 py-3">
-                <div className="text-xs uppercase tracking-[0.14em] text-[#7E7E85]">
+            <div className="mt-4 grid gap-3 text-sm md:grid-cols-2" style={{ color: externalBrands.whatsappCardTextBright }}>
+              <div
+                className="rounded-2xl border px-4 py-3"
+                style={{ borderColor: colors.border.space, backgroundColor: externalBrands.whatsappCardBg }}
+              >
+                <div
+                  className="text-xs uppercase tracking-[0.14em]"
+                  style={{ color: externalBrands.whatsappLabel }}
+                >
                   {kloelT(`Meta Auth`)}
                 </div>
                 <div className="mt-2">
-                  {metaStatus?.connected ? 'Conectado' : 'Pendente'}
-                  {metaStatus?.tokenExpired ? ' com token expirado' : ''}
+                  {metaStatus?.connected ? kloelT('Conectado') : kloelT('Pendente')}
+                  {metaStatus?.tokenExpired ? kloelT(' com token expirado') : ''}
                 </div>
               </div>
-              <div className="rounded-2xl border border-[colors.border.space] bg-[#0E0E10] px-4 py-3">
-                <div className="text-xs uppercase tracking-[0.14em] text-[#7E7E85]">
-                  {kloelT(`Canal oficial`)}
+              <div
+                className="rounded-2xl border px-4 py-3"
+                style={{ borderColor: colors.border.space, backgroundColor: externalBrands.whatsappCardBg }}
+              >
+                <div
+                  className="text-xs uppercase tracking-[0.14em]"
+                  style={{ color: externalBrands.whatsappLabel }}
+                >
+                  {kloelT(`Provider ativo`)}
                 </div>
-                <div className="mt-2">API oficial da Meta</div>
+                <div className="mt-2">{kloelT('API oficial da Meta')}</div>
               </div>
-              <div className="rounded-2xl border border-[colors.border.space] bg-[#0E0E10] px-4 py-3">
-                <div className="text-xs uppercase tracking-[0.14em] text-[#7E7E85]">
-                  {kloelT(`Atencao necessaria`)}
+              <div
+                className="rounded-2xl border px-4 py-3"
+                style={{ borderColor: colors.border.space, backgroundColor: externalBrands.whatsappCardBg }}
+              >
+                <div
+                  className="text-xs uppercase tracking-[0.14em]"
+                  style={{ color: externalBrands.whatsappLabel }}
+                >
+                  {kloelT(`Runtime degradado`)}
                 </div>
-                <div className="mt-2">{whatsAppStatus?.degraded ? 'Sim' : 'Nao'}</div>
+                <div className="mt-2">{whatsAppStatus?.degraded ? kloelT('Sim') : kloelT('Nao')}</div>
               </div>
-              <div className="rounded-2xl border border-[colors.border.space] bg-[#0E0E10] px-4 py-3">
-                <div className="text-xs uppercase tracking-[0.14em] text-[#7E7E85]">
+              <div
+                className="rounded-2xl border px-4 py-3"
+                style={{ borderColor: colors.border.space, backgroundColor: externalBrands.whatsappCardBg }}
+              >
+                <div
+                  className="text-xs uppercase tracking-[0.14em]"
+                  style={{ color: externalBrands.whatsappLabel }}
+                >
                   {kloelT(`Motivo atual`)}
                 </div>
                 <div className="mt-2">

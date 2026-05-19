@@ -26,10 +26,8 @@ para evolução do `Payment Kernel` sobre uma base única.
   - [backend/src/kloel/unified-agent.service.ts](../../backend/src/kloel/unified-agent.service.ts)
 - Frontend público e social checkout alinhados ao contrato Stripe:
   - [frontend/src/app/(public)/pay/[id] /page.tsx](<../../frontend/src/app/(public)/pay/[id]/page.tsx>)
-  - [frontend/src/app/(checkout)/hooks/useCheckoutExperienceSocial.ts](<../../frontend/src/app/(checkout)
-    /hooks/useCheckoutExperienceSocial.ts>)
-  - [frontend/src/app/(checkout)/components/CheckoutPaymentSection.tsx](<../../frontend/src/app/(checkout)
-    /components/CheckoutPaymentSection.tsx>)
+  - [frontend/src/app/(checkout)/hooks/useCheckoutExperienceSocial.ts](<../../frontend/src/app/(checkout)/hooks/useCheckoutExperienceSocial.ts>)
+  - [frontend/src/app/(checkout)/components/CheckoutPaymentSection.tsx](<../../frontend/src/app/(checkout)/components/CheckoutPaymentSection.tsx>)
 - Dependências legadas removidas de `backend/package.json` e
   `frontend/package.json` .
 - Testes de integração/simulação convertidos para webhook Stripe.

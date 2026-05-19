@@ -1,5 +1,5 @@
 import { InjectRedis } from '@nestjs-modules/ioredis';
-import { Injectable, Logger, Optional } from '@nestjs/common';
+import { Inject, Injectable, Logger, Optional, forwardRef } from '@nestjs/common';
 import type Redis from 'ioredis';
 import { ChannelTransportRegistry } from '../kloel/channel-transport.registry';
 import { OpsAlertService } from '../observability/ops-alert.service';
@@ -29,19 +29,27 @@ const CIA_SHARED_REPLY_LOCK_MS = Math.max(
 
 export { CIA_SHARED_REPLY_LOCK_MS };
 
-interface CiaSendOptions {
+type SendActionResult = {
+  sent?: boolean;
+  success?: boolean;
+  error?: boolean | string;
+  messageId?: string | null;
+  message?: unknown;
+  blockedReason?: string;
+  [key: string]: unknown;
+};
+type SendCiaMessageOptions = {
   complianceMode?: string;
   externalId?: string;
   forceDirect?: boolean;
-  quotedMessageId?: string | null;
-}
-
-interface CiaSendResult {
-  error?: boolean;
-  message?: string;
-  messageId?: string;
-  success?: boolean;
-}
+  quotedMessageId?: string;
+};
+type SendIncomingPayloadData = {
+  pushName?: string | null;
+  notifyName?: string | null;
+  verifiedBizName?: string | null;
+  [key: string]: unknown;
+};
 
 /**
  * Shared sending helpers for CIA inline and remote backlog services:
@@ -55,6 +63,7 @@ export class CiaSendHelpersService {
   constructor(
     @InjectRedis() private readonly redis: Redis,
     private readonly agentEvents: AgentEventsService,
+    @Inject(forwardRef(() => ChannelTransportRegistry))
     private readonly transports: ChannelTransportRegistry,
     @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
@@ -110,8 +119,8 @@ export class CiaSendHelpersService {
     workspaceId: string,
     phone: string,
     text: string,
-    options: CiaSendOptions,
-  ): Promise<CiaSendResult> {
+    options: SendCiaMessageOptions,
+  ): Promise<SendActionResult> {
     const reserved = await this.reserveDailyMessageLimit(workspaceId);
     if (!reserved) {
       return {
@@ -138,10 +147,12 @@ export class CiaSendHelpersService {
       if (!sendResult.success) {
         await this.releaseDailyMessageLimit(workspaceId);
       }
+      const msg = sendResult.error ?? sendResult.blockedReason;
+      const msgId = sendResult.messageId;
       return {
         error: !sendResult.success,
-        message: sendResult.error ?? sendResult.blockedReason,
-        messageId: sendResult.messageId,
+        ...(msg !== undefined ? { message: msg } : {}),
+        ...(msgId !== undefined ? { messageId: msgId } : {}),
         success: sendResult.success,
       };
     } catch (error: unknown) {
@@ -169,7 +180,7 @@ export class CiaSendHelpersService {
       if (!outboundTools.has(String(action?.tool || ''))) {
         return false;
       }
-      const result = action?.result as Record<string, unknown> | undefined;
+      const result = action?.result as SendActionResult | undefined;
       return result?.sent === true || result?.success === true || result?.messageId;
     });
   }
@@ -220,10 +231,10 @@ export class CiaSendHelpersService {
   }
 
   extractRemoteSenderName(
-    payload: Record<string, unknown> | null | undefined,
+    payload: SendIncomingPayloadData | null | undefined,
     fallbackName?: string | null,
   ): string | null {
-    const data = payload?._data as Record<string, unknown> | undefined;
+    const data = payload?._data as SendIncomingPayloadData | undefined;
     const candidates: unknown[] = [
       fallbackName,
       data?.pushName,

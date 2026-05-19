@@ -88,7 +88,7 @@ export function appendRecentEvent(
       message: event.message,
       phase: event.phase || null,
       type: event.type,
-      ts: event.ts,
+      ...(event.ts ? { ts: event.ts } : {}),
     },
     recent,
   };

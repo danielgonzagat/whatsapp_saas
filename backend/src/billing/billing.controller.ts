@@ -9,7 +9,6 @@ import {
   Req,
   UseGuards,
 } from '@nestjs/common';
-import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Public } from '../auth/public.decorator';
 import { Roles } from '../auth/roles.decorator';
@@ -21,8 +20,11 @@ import { BillingService } from './billing.service';
 import { BillingCheckoutDto } from './dto/billing-checkout.dto';
 
 /** Billing controller. */
+import { InternalEndpoint } from '../common/decorators/internal-endpoint.decorator';
+import { RouteClass } from '../common/throttler/route-class.decorator';
 @Controller('billing')
-@UseGuards(JwtAuthGuard, WorkspaceGuard, ThrottlerGuard)
+@UseGuards(JwtAuthGuard, WorkspaceGuard)
+@RouteClass('mutate')
 export class BillingController {
   constructor(private readonly billingService: BillingService) {}
 
@@ -68,7 +70,7 @@ export class BillingController {
   }
 
   /** Get subscription. */
-  // PULSE_OK: called from frontend/src/lib/api/billing.ts
+  @InternalEndpoint('billing subscription status')
   @Get('subscription')
   async getSubscription(
     @Req() req: AuthenticatedRequest,
@@ -89,7 +91,6 @@ export class BillingController {
   @Post('activate-trial')
   @Roles('ADMIN', 'OWNER')
   @Idempotent()
-  @Throttle({ default: { limit: 3, ttl: 60000 } })
   async activateTrial(@Req() req: AuthenticatedRequest, @Query('workspaceId') workspaceId: string) {
     const effectiveWorkspaceId = resolveWorkspaceId(req, workspaceId);
     return this.billingService.activateTrial(effectiveWorkspaceId);
@@ -111,7 +112,6 @@ export class BillingController {
   @Post('checkout')
   @Roles('ADMIN')
   @Idempotent()
-  @Throttle({ default: { limit: 5, ttl: 60000 } }) // 5 checkouts por minuto máximo
   async createCheckout(@Req() req: AuthenticatedRequest, @Body() body: BillingCheckoutDto) {
     const workspaceId = resolveWorkspaceId(req, body.workspaceId);
     // Get user email from token (assumed populated by JwtStrategy)
@@ -123,7 +123,6 @@ export class BillingController {
   /** Handle webhook. */
   @Public()
   @Post('webhook')
-  @Throttle({ default: { limit: 100, ttl: 60000 } })
   async handleWebhook(@Headers('stripe-signature') signature: string, @Req() req: RawBodyRequest) {
     if (!signature) {
       throw new BadRequestException('Missing stripe-signature header');

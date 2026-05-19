@@ -301,7 +301,6 @@ function createScopeState(): PulseScopeState {
   };
 }
 
-// PULSE_OK: assertions exist below
 describe('buildResolvedManifest flow-group backfill', () => {
   it('synthesizes shared-auth-oauth when a scenario declares it and auth routes exist', () => {
     const resolved = buildResolvedManifest(

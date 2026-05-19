@@ -1,4 +1,5 @@
-import { Injectable, Logger, Optional } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { KloelLead, Prisma } from '@prisma/client';
 import { LLMBudgetService, estimateChatCostCents } from './llm-budget.service';
 import { PlanLimitsService } from '../billing/plan-limits.service';
@@ -6,20 +7,24 @@ import { PrismaService } from '../prisma/prisma.service';
 import { UnifiedAgentService } from './unified-agent.service';
 import { SmartPaymentService } from './smart-payment.service';
 import { chatCompletionWithFallback } from './openai-wrapper';
+import { createTextLlmClient } from '../lib/llm-provider';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
 import { KLOEL_SALES_PROMPT } from './kloel.prompts';
 import OpenAI from 'openai';
 import { OpsAlertService } from '../observability/ops-alert.service';
 
+import { asProviderSettings } from '../whatsapp/provider-settings.types';
 import {
   NON_DIGIT_RE,
   safeStr,
   asUnknownRecord,
   detectBuyIntent,
-} from './__companions__/kloel-lead-brain.service.companion';
-import type { ChatMessage } from './__companions__/kloel-lead-brain.service.companion';
+} from './kloel-lead-brain.helpers';
+import type { ChatMessage } from './kloel-lead-brain.helpers';
 export { NON_DIGIT_RE, safeStr, asUnknownRecord, detectBuyIntent };
 export type { ChatMessage };
+
+type ProductMemoryValue = { name?: string; price?: number; [key: string]: unknown };
 
 /**
  * Handles WhatsApp autopilot lead processing, buy-intent detection,
@@ -27,7 +32,7 @@ export type { ChatMessage };
  */
 @Injectable()
 export class KloelLeadBrainService {
-  private readonly logger = new Logger(KloelLeadBrainService.name);
+  private readonly logger = StructuredLogger.from(KloelLeadBrainService.name);
   private readonly openai: OpenAI;
 
   constructor(
@@ -38,11 +43,9 @@ export class KloelLeadBrainService {
     private readonly smartPaymentService: SmartPaymentService,
     @Optional() private readonly opsAlert?: OpsAlertService,
   ) {
-    this.openai = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
-      timeout: 60_000,
-      maxRetries: 0,
-    });
+    this.openai =
+      createTextLlmClient(undefined, { timeout: 60_000, maxRetries: 0 }) ??
+      new OpenAI({ apiKey: 'missing' });
   }
 
   async getOrCreateLead(workspaceId: string, phone: string): Promise<KloelLead> {
@@ -139,7 +142,7 @@ export class KloelLeadBrainService {
       });
       const lowerMessage = message.toLowerCase();
       for (const product of products) {
-        const productData = product.value as Record<string, unknown>;
+        const productData = product.value as ProductMemoryValue;
         const productName = safeStr(productData.name).toLowerCase();
         if (productName && lowerMessage.includes(productName)) {
           return { name: safeStr(productData.name), price: Number(productData.price) || 0 };
@@ -186,7 +189,7 @@ export class KloelLeadBrainService {
       this.logger.log(`Pagamento gerado para lead ${leadId}: ${result.paymentUrl}`);
       return {
         paymentUrl: result.paymentUrl,
-        pixQrCode: result.pixQrCode,
+        ...(result.pixQrCode !== undefined ? { pixQrCode: result.pixQrCode } : {}),
         message: result.suggestedMessage,
       };
     } catch (error: unknown) {
@@ -213,7 +216,7 @@ export class KloelLeadBrainService {
         where: { id: workspaceId },
         select: { providerSettings: true, name: true },
       });
-      const providerSettings = (workspace?.providerSettings ?? {}) as Record<string, unknown>;
+      const providerSettings = asProviderSettings(workspace?.providerSettings);
       const autonomyMode = safeStr(asUnknownRecord(providerSettings.autonomy)?.mode).toUpperCase();
       const autopilotEnabled =
         autonomyMode === 'LIVE' ||
@@ -250,7 +253,7 @@ export class KloelLeadBrainService {
         try {
           const unifiedResult = await this.unifiedAgentService.processIncomingMessage({
             workspaceId,
-            contactId: contactId || undefined,
+            ...(contactId ? { contactId } : {}),
             phone: normalizedPhone || senderPhone,
             message,
             channel: 'whatsapp',
@@ -350,7 +353,9 @@ export class KloelLeadBrainService {
             return {
               response: `${baseResponse}\n\nAqui está o link para finalizar sua compra:\n${paymentResult.paymentUrl}`,
               paymentLink: paymentResult.paymentUrl,
-              pixQrCode: paymentResult.pixQrCode,
+              ...(paymentResult.pixQrCode !== undefined
+                ? { pixQrCode: paymentResult.pixQrCode }
+                : {}),
             };
           }
         }

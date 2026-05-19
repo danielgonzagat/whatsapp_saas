@@ -4,55 +4,80 @@ import type {
   MfaSetupPayload,
 } from '../auth/admin-session-types';
 import { adminFetch } from './admin-client';
+import { AdminApiClientError, type AdminApiErrorShape } from './admin-errors';
+
+interface AdminAuthRouteOptions<TBody> {
+  body?: TBody;
+}
+
+async function adminAuthRouteFetch<TResponse = unknown, TBody = unknown>(
+  path: string,
+  options: AdminAuthRouteOptions<TBody> = {},
+): Promise<TResponse> {
+  const routePath = path.startsWith('/') ? path.slice(1) : path;
+  const response = await fetch(`/api/admin/auth/${routePath}`, {
+    method: 'POST',
+    headers: {
+      Accept: 'application/json',
+      ...(options.body !== undefined ? { 'Content-Type': 'application/json' } : {}),
+    },
+    credentials: 'include',
+    ...(options.body !== undefined ? { body: JSON.stringify(options.body) } : {}),
+  });
+
+  if (response.status === 204) {
+    return undefined as TResponse;
+  }
+
+  const text = await response.text();
+  const payload = text
+    ? ((): unknown => {
+        try {
+          return JSON.parse(text) as unknown;
+        } catch {
+          return { code: 'admin.internal.parse_error', message: text };
+        }
+      })()
+    : {};
+
+  if (!response.ok) {
+    throw new AdminApiClientError(response.status, payload as AdminApiErrorShape);
+  }
+
+  return payload as TResponse;
+}
 
 /** Admin auth api. */
 export const adminAuthApi = {
   login(email: string, password: string): Promise<LoginResponse> {
-    return adminFetch<LoginResponse>('/auth/login', {
-      method: 'POST',
-      auth: 'none',
-      body: { email, password },
-    });
+    return adminAuthRouteFetch<LoginResponse>('/login', { body: { email, password } });
   },
   changePassword(changeToken: string, newPassword: string): Promise<LoginResponse> {
-    return adminFetch<LoginResponse>('/auth/change-password', {
-      method: 'POST',
-      auth: 'explicit',
-      explicitToken: changeToken,
-      body: { newPassword },
+    return adminAuthRouteFetch<LoginResponse>('/change-password', {
+      body: { changeToken, newPassword },
     });
   },
   setupMfa(setupToken: string): Promise<MfaSetupPayload> {
-    return adminFetch<MfaSetupPayload>('/auth/mfa/setup', {
-      method: 'POST',
-      auth: 'explicit',
-      explicitToken: setupToken,
-    });
+    return adminAuthRouteFetch<MfaSetupPayload>('/mfa/setup', { body: { setupToken } });
   },
   verifyInitialMfa(setupToken: string, code: string): Promise<AuthenticatedSession> {
-    return adminFetch<AuthenticatedSession>('/auth/mfa/verify-initial', {
-      method: 'POST',
-      auth: 'explicit',
-      explicitToken: setupToken,
-      body: { code },
+    return adminAuthRouteFetch<AuthenticatedSession>('/mfa/verify-initial', {
+      body: { setupToken, code },
     });
   },
   verifyMfa(mfaToken: string, code: string): Promise<AuthenticatedSession> {
-    return adminFetch<AuthenticatedSession>('/auth/mfa/verify', {
-      method: 'POST',
-      auth: 'explicit',
-      explicitToken: mfaToken,
-      body: { code },
+    return adminAuthRouteFetch<AuthenticatedSession>('/mfa/verify', {
+      body: { mfaToken, code },
     });
   },
-  refresh(rawRefresh: string): Promise<AuthenticatedSession> {
-    return adminFetch<AuthenticatedSession>('/auth/refresh', {
-      method: 'POST',
-      auth: 'none',
-      body: { refreshToken: rawRefresh },
-    });
+  refresh(): Promise<AuthenticatedSession> {
+    return adminAuthRouteFetch<AuthenticatedSession>('/refresh');
   },
-  logout(): Promise<void> {
-    return adminFetch<void>('/auth/logout', { method: 'POST' });
+  async logout(): Promise<void> {
+    try {
+      await adminFetch<void>('/auth/logout', { method: 'POST' });
+    } finally {
+      await adminAuthRouteFetch<void>('/logout');
+    }
   },
 };

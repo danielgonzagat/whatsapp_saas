@@ -1,5 +1,4 @@
 'use client';
-// PULSE:OK — frontend heartbeat is best-effort telemetry only; it does not mutate cached user-facing data or require SWR invalidation.
 
 import { API_BASE } from '@/lib/http';
 import { useWorkspace } from '@/hooks/useWorkspaceId';

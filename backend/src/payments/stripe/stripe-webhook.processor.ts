@@ -1,4 +1,5 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
+import { StructuredLogger } from '../../logging/structured-logger';
 import * as Sentry from '@sentry/node';
 
 import { StripeService } from '../../billing/stripe.service';
@@ -7,6 +8,8 @@ import { forEachSequential } from '../../common/async-sequence';
 import { ConnectService } from '../connect/connect.service';
 import { LedgerService } from '../ledger/ledger.service';
 import type { SplitRole } from '../split/split.types';
+
+const stripeWebhookLogger = StructuredLogger.from('StripeWebhookProcessor');
 
 interface PersistedSplitLine {
   role: SplitRole;
@@ -69,7 +72,7 @@ function parseLines(json: string): PersistedSplitLine[] {
       }));
   } catch (error: unknown) {
     const err = error instanceof Error ? error : new Error('Unknown error');
-    console.error('[stripe-webhook] Failed to parse transfer reversals:', err.message);
+    stripeWebhookLogger.error('Failed to parse transfer reversals', err.message);
     try {
       Sentry.captureException(err);
     } catch {
@@ -114,7 +117,7 @@ function asId(value: unknown): string | null {
  */
 @Injectable()
 export class StripeWebhookProcessor {
-  private readonly logger = new Logger(StripeWebhookProcessor.name);
+  private readonly logger = StructuredLogger.from(StripeWebhookProcessor.name);
 
   constructor(
     private readonly stripeService: StripeService,

@@ -159,7 +159,12 @@ export function hookFunctionApiCalls(
 
 /** Has api call. */
 export function hasApiCall(text: string): boolean {
-  return hasEndpointCallEvidence(text) || hasApiNamedCallEvidence(text);
+  return hasEndpointCallEvidence(text) || hasApiNamedCallEvidence(text) || hasMutateCallEvidence(text);
+}
+
+function hasMutateCallEvidence(text: string): boolean {
+  const mutateRe = /\.(mutate|mutateAsync)\s*\(/g;
+  return mutateRe.test(text);
 }
 
 function hasEndpointCallEvidence(text: string): boolean {
@@ -260,6 +265,14 @@ export function findFunctionBodyEnd(
   }
 
   return bodyEnd;
+}
+
+/** Function is used as JSX prop value. */
+export function isUsedAsJsxProp(funcName: string, fileContent: string): boolean {
+  const jsxPropRe = new RegExp(
+    `\\b(on[A-Z]\\w*)\\s*=\\s*\\{\\s*${escapeRegExp(funcName)}\\s*\\}`,
+  );
+  return jsxPropRe.test(fileContent);
 }
 
 /** Calls callback prop. */

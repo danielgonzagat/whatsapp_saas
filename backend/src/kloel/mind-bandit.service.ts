@@ -1,4 +1,5 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import type { Prisma } from '@prisma/client';
 import { randomUUID } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
@@ -30,7 +31,7 @@ function score(alpha: number, beta: number, pulls: number, totalPulls: number): 
 
 @Injectable()
 export class MindBanditService {
-  private readonly logger = new Logger(MindBanditService.name);
+  private readonly logger = StructuredLogger.from(MindBanditService.name);
 
   constructor(private readonly prisma: PrismaService) {}
 
@@ -192,10 +193,11 @@ export class MindBanditService {
     });
 
     const sortedByScore = [...armStatuses].sort((a, b) => b.score - a.score);
-    const recommendation = sortedByScore.length > 0 ? sortedByScore[0].arm : null;
+    const topRecommendation = sortedByScore[0];
+    const recommendation = topRecommendation?.arm ?? null;
 
     const overallMean = totalPulls > 0 ? totalWins / totalPulls : 0;
-    const recommendationMean = sortedByScore.length > 0 ? sortedByScore[0].mean : 0;
+    const recommendationMean = topRecommendation?.mean ?? 0;
     const lift = overallMean > 0 ? (recommendationMean - overallMean) / overallMean : 0;
 
     return {

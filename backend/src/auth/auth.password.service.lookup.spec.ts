@@ -42,7 +42,6 @@ function buildIssueTokensResult(overrides: TokenOverrides = {}) {
   };
 }
 
-// PULSE_OK: assertions exist below
 describe('AuthPasswordService — lookup, anonymous, register', () => {
   let ctx: AuthPasswordSpecContext;
 
@@ -58,7 +57,7 @@ describe('AuthPasswordService — lookup, anonymous, register', () => {
 
       expect(result.exists).toBe(true);
       expect(ctx.prismaMock.agent.findFirst).toHaveBeenCalledWith({
-        where: { email: 'test@example.com', workspaceId: undefined },
+        where: { email: 'test@example.com', workspaceId: { not: '' } },
       });
     });
 

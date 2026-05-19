@@ -10,19 +10,19 @@ import {
   setBrowserAuthCookie,
   setBrowserCookie,
   WORKSPACE_BROWSER_SLOT,
-} from './__parts__/core-tokens.storage';
+} from './core-tokens-storage';
 import {
   reconcileFreshSharedAuthSession,
   syncBrowserStorageFromCookies,
   syncWorkspaceFromToken,
-} from './__parts__/core-tokens.sync';
+} from './core-tokens-sync';
 
 /** Resolve workspace from auth payload. */
 export function resolveWorkspaceFromAuthPayload(
   payload: Record<string, unknown> | null | undefined,
 ): {
   id: string;
-  name?: string;
+  name?: string | undefined;
 } | null {
   const explicitWorkspace = payload?.workspace as { id?: string; name?: string } | undefined;
   if (explicitWorkspace?.id) {
@@ -58,20 +58,14 @@ export function resolveWorkspaceFromAuthPayload(
   return null;
 }
 
-// Token management
-// Security note: Tokens stored in localStorage for SPA compatibility.
-// For higher security, migrate to httpOnly cookies with CSRF protection.
-// Current approach is standard for SPAs but vulnerable to XSS.
 export const tokenStorage = {
   getToken: (): string | null => {
     if (typeof window === 'undefined') {
       return null;
     }
     reconcileFreshSharedAuthSession();
-    // Do NOT clear localStorage if cookie is missing — the cookie may have expired
-    // while localStorage still has a valid token. Let the 401 handler deal with it.
-    syncBrowserStorageFromCookies({ clearLocalIfMissing: false });
-    return localStorage.getItem(PRIMARY_BROWSER_SLOT);
+    syncBrowserStorageFromCookies();
+    return readBrowserCookie(PRIMARY_BROWSER_SLOT) || readBrowserCookie(LEGACY_SESSION_COOKIE);
   },
 
   setToken: (
@@ -81,7 +75,6 @@ export const tokenStorage = {
     if (typeof window === 'undefined') {
       return;
     }
-    localStorage.setItem(PRIMARY_BROWSER_SLOT, token);
     setBrowserCookie(PRIMARY_BROWSER_SLOT, token, AUTH_COOKIE_MAX_AGE, {
       shareAcrossSubdomains: options?.shareAcrossSubdomains ?? !isAnonymousKloelToken(token),
     });
@@ -96,15 +89,13 @@ export const tokenStorage = {
       return null;
     }
     reconcileFreshSharedAuthSession();
-    syncBrowserStorageFromCookies();
-    return localStorage.getItem(RENEWAL_BROWSER_SLOT);
+    return readBrowserCookie(RENEWAL_BROWSER_SLOT);
   },
 
   setRefreshToken: (token: string, options?: { shareAcrossSubdomains?: boolean }): void => {
     if (typeof window === 'undefined') {
       return;
     }
-    localStorage.setItem(RENEWAL_BROWSER_SLOT, token);
     setBrowserCookie(RENEWAL_BROWSER_SLOT, token, AUTH_COOKIE_MAX_AGE, options);
     emitStorageChange();
   },
@@ -114,7 +105,6 @@ export const tokenStorage = {
       return null;
     }
     reconcileFreshSharedAuthSession();
-    syncBrowserStorageFromCookies();
     return syncWorkspaceFromToken();
   },
 
@@ -122,7 +112,6 @@ export const tokenStorage = {
     if (typeof window === 'undefined') {
       return;
     }
-    localStorage.setItem(WORKSPACE_BROWSER_SLOT, id);
     setBrowserCookie(WORKSPACE_BROWSER_SLOT, id, AUTH_COOKIE_MAX_AGE, options);
     emitStorageChange();
   },
@@ -131,9 +120,6 @@ export const tokenStorage = {
     if (typeof window === 'undefined') {
       return;
     }
-    localStorage.removeItem(PRIMARY_BROWSER_SLOT);
-    localStorage.removeItem(RENEWAL_BROWSER_SLOT);
-    localStorage.removeItem(WORKSPACE_BROWSER_SLOT);
     clearBrowserAuthCookies();
     emitStorageChange();
   },
@@ -144,7 +130,6 @@ export const tokenStorage = {
     }
     reconcileFreshSharedAuthSession();
     const token =
-      localStorage.getItem(PRIMARY_BROWSER_SLOT) ||
       readBrowserCookie(PRIMARY_BROWSER_SLOT) ||
       readBrowserCookie(LEGACY_SESSION_COOKIE);
     if (!token) {
@@ -155,12 +140,12 @@ export const tokenStorage = {
     }
 
     setBrowserCookie(PRIMARY_BROWSER_SLOT, token);
-    const refreshToken = localStorage.getItem(RENEWAL_BROWSER_SLOT);
+    const refreshToken = readBrowserCookie(RENEWAL_BROWSER_SLOT);
     if (refreshToken) {
       setBrowserCookie(RENEWAL_BROWSER_SLOT, refreshToken);
     }
 
-    const workspaceId = localStorage.getItem(WORKSPACE_BROWSER_SLOT);
+    const workspaceId = readBrowserCookie(WORKSPACE_BROWSER_SLOT);
     if (workspaceId) {
       setBrowserCookie(WORKSPACE_BROWSER_SLOT, workspaceId);
     }

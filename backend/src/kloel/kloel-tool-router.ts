@@ -1,7 +1,6 @@
-// PULSE:OK — tool router only serializes tool-call messages. It does not perform LLM calls;
 // KloelService enforces token budget before the follow-up completion that consumes this output.
 import { forEachSequential } from '../common/async-sequence';
-import { buildTimestampedRuntimeId } from './kloel-id.util';
+import { buildTimestampedRuntimeId, buildTimestampedRuntimeKey } from './kloel-id.util';
 import {
   type KloelStreamEvent,
   createKloelStatusEvent,
@@ -9,8 +8,14 @@ import {
   createKloelToolResultEvent,
 } from './kloel-stream-events';
 
+type UnknownRecord = Record<string, unknown>;
+
 const PATTERN_RE = /[_-]+/g;
 const S_RE = /\s+/g;
+const MAX_TOOL_MESSAGE_CONTENT_CHARS = 6000;
+const ARTIFACT_PREFIX = 'tool_artifact';
+
+type StoreToolArtifact = (workspaceId: string, key: string, content: string) => Promise<void>;
 type ToolMessage = {
   role: 'tool';
   tool_call_id: string;
@@ -32,6 +37,8 @@ interface KloelToolExecutionReceipt {
   result: Record<string, unknown> | null;
   /** Error property. */
   error?: string;
+  /** Artifact id property. */
+  artifactId?: string;
 }
 
 interface ExecuteAssistantToolCallsInput {
@@ -43,6 +50,7 @@ interface ExecuteAssistantToolCallsInput {
   };
   workspaceId: string;
   userId?: string;
+  allowedTools?: string[];
   safeWrite?: (event: KloelStreamEvent) => void;
   executeLocalTool: (
     workspaceId: string,
@@ -53,7 +61,6 @@ interface ExecuteAssistantToolCallsInput {
 }
 
 interface ExecuteAssistantToolCallsResult {
-  // PULSE:OK — toolMessages are plain transcript objects for the next completion;
   // budget is enforced upstream in KloelService before any LLM call.
   toolMessages: ToolMessage[];
   receipts: KloelToolExecutionReceipt[];
@@ -79,9 +86,37 @@ function toResultRecord(value: unknown): Record<string, unknown> | null {
     return null;
   }
   if (typeof value === 'object' && !Array.isArray(value)) {
-    return value as Record<string, unknown>;
+    return value as UnknownRecord;
   }
   return { value };
+}
+
+function parseToolArgs(raw: string | undefined): Record<string, unknown> {
+  const parsed: unknown = JSON.parse(raw || '{}');
+  return parsed && typeof parsed === 'object' && !Array.isArray(parsed)
+    ? (parsed as Record<string, unknown>)
+    : {};
+}
+
+function stringifyToolMessageContent(
+  result: Record<string, unknown> | null,
+  artifactId?: string,
+): string {
+  const content = JSON.stringify(result ?? null);
+  if (content.length <= MAX_TOOL_MESSAGE_CONTENT_CHARS) {
+    return content;
+  }
+  return JSON.stringify({
+    success: result?.success === true,
+    truncated: true,
+    originalChars: content.length,
+    preview: content.slice(0, MAX_TOOL_MESSAGE_CONTENT_CHARS),
+    ...(artifactId !== undefined ? { artifactId } : {}),
+    hint:
+      artifactId !== undefined
+        ? `Output completo armazenado como artefato durável. Use o artifactId para recuperar os dados completos via memória.`
+        : undefined,
+  });
 }
 
 /** Kloel tool router. */
@@ -97,6 +132,7 @@ export class KloelToolRouter {
         context: { workspaceId: string; phone: string; contactId: string },
       ): Promise<unknown>;
     },
+    private readonly storeToolArtifact?: StoreToolArtifact,
   ) {}
 
   /** Execute assistant tool calls. */
@@ -104,7 +140,6 @@ export class KloelToolRouter {
     input: ExecuteAssistantToolCallsInput,
   ): Promise<ExecuteAssistantToolCallsResult> {
     const receipts: KloelToolExecutionReceipt[] = [];
-    // PULSE:OK — local accumulation only; no model call happens in this router.
     const toolMessages: ToolMessage[] = [];
     const toolCalls = Array.isArray(input.assistantMessage?.tool_calls)
       ? input.assistantMessage.tool_calls
@@ -116,7 +151,7 @@ export class KloelToolRouter {
       let toolArgs: Record<string, unknown> = {};
 
       try {
-        toolArgs = JSON.parse(toolCall.function?.arguments || '{}');
+        toolArgs = parseToolArgs(toolCall.function?.arguments);
       } catch {
         this.logger.warn(`Failed to parse tool args for ${toolName}`);
       }
@@ -127,25 +162,38 @@ export class KloelToolRouter {
       input.safeWrite?.(createKloelToolCallEvent(callId, toolName, toolArgs));
 
       let result = toResultRecord(null);
+      const isAllowed =
+        input.allowedTools === undefined ? true : input.allowedTools.includes(toolName);
 
-      try {
-        result = toResultRecord(
-          await this.unifiedAgentService.executeTool(toolName, toolArgs, {
-            workspaceId: input.workspaceId,
-            phone: stringArgument(toolArgs.phone),
-            contactId: stringArgument(toolArgs.contactId),
-          }),
-        );
-      } catch (error: unknown) {
-        this.logger.warn(
-          `UnifiedAgent tool ${toolName} falhou: ${error instanceof Error ? error.message : 'unknown_error'}`,
-        );
+      if (!isAllowed) {
+        result = {
+          success: false,
+          error: 'tool_not_allowed',
+          toolName,
+          allowedTools: input.allowedTools,
+        };
       }
 
-      if (!result || result?.error === 'Unknown tool') {
-        result = toResultRecord(
-          await input.executeLocalTool(input.workspaceId, toolName, toolArgs, input.userId),
-        );
+      if (isAllowed) {
+        try {
+          result = toResultRecord(
+            await this.unifiedAgentService.executeTool(toolName, toolArgs, {
+              workspaceId: input.workspaceId,
+              phone: stringArgument(toolArgs.phone),
+              contactId: stringArgument(toolArgs.contactId),
+            }),
+          );
+        } catch (error: unknown) {
+          this.logger.warn(
+            `UnifiedAgent tool ${toolName} falhou: ${error instanceof Error ? error.message : 'unknown_error'}`,
+          );
+        }
+
+        if (!result || result?.error === 'Unknown tool') {
+          result = toResultRecord(
+            await input.executeLocalTool(input.workspaceId, toolName, toolArgs, input.userId),
+          );
+        }
       }
 
       const success =
@@ -160,22 +208,40 @@ export class KloelToolRouter {
             : 'tool_failed'
         : undefined;
 
+      let artifactId: string | undefined;
+      if (result) {
+        const rawContent = JSON.stringify(result);
+        if (rawContent.length > MAX_TOOL_MESSAGE_CONTENT_CHARS) {
+          artifactId = buildTimestampedRuntimeKey(`${ARTIFACT_PREFIX}:${toolName}`);
+          if (this.storeToolArtifact) {
+            try {
+              await this.storeToolArtifact(input.workspaceId, artifactId, rawContent);
+            } catch (storeError: unknown) {
+              this.logger.warn(
+                `Falha ao armazenar artefato ${artifactId}: ${storeError instanceof Error ? storeError.message : 'unknown_error'}`,
+              );
+              artifactId = undefined;
+            }
+          }
+        }
+      }
+
       receipts.push({
         callId,
         name: toolName,
         args: toolArgs,
         success,
         result,
-        error,
+        ...(error !== undefined ? { error } : {}),
+        ...(artifactId !== undefined ? { artifactId } : {}),
       });
 
-      // PULSE:OK — cast only serializes a tool result message for the caller's next
       // already-budgeted completion; this router does not invoke OpenAI directly.
       toolMessages.push({
         role: 'tool',
         tool_call_id: callId,
         name: toolName,
-        content: JSON.stringify(result ?? null),
+        content: stringifyToolMessageContent(result, artifactId),
       });
 
       input.safeWrite?.(
@@ -192,7 +258,8 @@ export class KloelToolRouter {
           tool: toolName,
           success,
           result,
-          error,
+          ...(error !== undefined ? { error } : {}),
+          ...(artifactId !== undefined ? { artifactId } : {}),
         }),
       );
     });

@@ -110,7 +110,7 @@ export function useReports(period = '30d') {
         return `/analytics/reports?startDate=${start}&endDate=${end}`;
       })()
     : `/analytics/reports?period=${period}`;
-  const { data, isLoading, error, mutate } = useSWR(url, swrFetcher, {
+  const { data, isLoading, error, mutate } = useSWR<FullReportResponse>(url, swrFetcher, {
     refreshInterval: 120_000,
     keepPreviousData: true,
   });
@@ -121,7 +121,7 @@ export function useReports(period = '30d') {
 
 /** Use ai report. */
 export function useAIReport() {
-  const { data, isLoading } = useSWR('/analytics/reports/ai', swrFetcher, {
+  const { data, isLoading } = useSWR<AIReportResponse>('/analytics/reports/ai', swrFetcher, {
     refreshInterval: 300_000,
     dedupingInterval: 10_000,
     keepPreviousData: true,
@@ -157,7 +157,7 @@ export function useSmartTime() {
 // ── Analytics Stats ──
 
 export function useAnalyticsStats() {
-  const { data, isLoading, error, mutate } = useSWR('/analytics/stats', swrFetcher, {
+  const { data, isLoading, error, mutate } = useSWR<AnalyticsStatsResponse>('/analytics/stats', swrFetcher, {
     refreshInterval: 120_000,
     keepPreviousData: true,
   });

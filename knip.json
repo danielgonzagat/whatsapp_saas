@@ -7,14 +7,29 @@
     "@types/node",
     "@jest/globals",
     "prettier",
-    "typescript"
+    "typescript",
+    "@nestjs/event-emitter",
+    "@nestjs/schedule",
+    "@opencode-ai/sdk",
+    "lucide-react",
+    "qrcode",
+    "react",
+    "zustand",
+    "@biomejs/biome",
+    "madge"
   ],
   "prisma": false,
   "ignoreWorkspaces": ["dist", "node_modules"],
   "workspaces": {
     ".": {
       "entry": ["scripts/**/*.{ts,mjs}"],
-      "project": ["scripts/**/*.{ts,mjs}"]
+      "project": ["scripts/**/*.{ts,mjs}"],
+      "ignore": [
+        "scripts/orchestration/**",
+        "scripts/obsidian-mirror-daemon.mjs",
+        "scripts/agent-orchestrator.ts"
+      ],
+      "ignoreDependencies": ["ts-node", "@nestjs/common", "@prisma/client"]
     },
     "backend": {
       "entry": [
@@ -25,10 +40,12 @@
         "src/**/*.controller.ts",
         "src/**/*.service.ts",
         "src/**/*.gateway.ts",
-        "prisma/**/*.ts"
+        "prisma/**/*.ts",
+        "scripts/**/*.ts"
       ],
-      "project": ["src/**/*.ts", "prisma/**/*.ts"],
-      "ignore": ["src/**/*.spec.ts", "test/**", "dist/**"]
+      "project": ["src/**/*.ts", "prisma/**/*.ts", "scripts/**/*.ts"],
+      "ignore": ["src/**/*.spec.ts", "test/**", "dist/**"],
+      "ignoreDependencies": ["dotenv", "swagger-ui-express"]
     },
     "frontend": {
       "entry": [
@@ -41,10 +58,11 @@
         "instrumentation-client.ts"
       ],
       "project": ["src/**/*.{ts,tsx}", "*.ts"],
-      "ignore": ["src/**/*.spec.ts", "src/**/*.test.ts", "src/**/*.test.tsx", ".next/**"]
+      "ignore": ["src/**/*.spec.ts", "src/**/*.test.ts", "src/**/*.test.tsx", ".next/**"],
+      "ignoreDependencies": ["baseline-browser-mapping", "tailwindcss", "tw-animate-css"]
     },
     "worker": {
-      "entry": [
+              "entry": [
         "bootstrap.ts",
         "processor.ts",
         "campaign-processor.ts",
@@ -53,6 +71,8 @@
         "scraper-processor.ts",
         "voice-processor.ts",
         "queue.ts",
+        "reprocess-dlq.ts",
+        "retry-jobs.ts",
         "providers/**/*.ts",
         "processors/**/*.ts",
         "utils/**/*.ts"

@@ -55,8 +55,8 @@ export default function ClientesPage() {
 
   const { data, error } = useSWR<ListClientsResponse>(['admin/clients', search, kycStatus], () =>
     adminClientsApi.list({
-      search: search || undefined,
-      kycStatus: kycStatus || undefined,
+      ...(search ? { search } : {}),
+      ...(kycStatus ? { kycStatus } : {}),
       take: 60,
     }),
   );

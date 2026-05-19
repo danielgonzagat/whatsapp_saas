@@ -48,7 +48,7 @@ function findShellFiles() {
     encoding: 'utf-8',
     maxBuffer: 16 * 1024 * 1024,
   });
-  if (r.status !== 0) return [];
+  if (r.status !== 0) {return [];}
   return r.stdout.trim().split('\n').filter(Boolean).sort();
 }
 
@@ -70,7 +70,7 @@ function parseShellcheckOutput(stdout) {
   // shellcheck -f json returns an array of files, each with "comments" array
   for (const fileResult of parsed) {
     const file = relative(REPO_ROOT, fileResult.file).replace(/\\/g, '/');
-    if (!fileResult.comments) continue;
+    if (!fileResult.comments) {continue;}
     for (const comment of fileResult.comments) {
       const severity = SEVERITY_MAP[comment.level] || 'medium';
       findings.push({

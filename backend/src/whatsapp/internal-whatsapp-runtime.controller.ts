@@ -5,27 +5,33 @@ import {
   Get,
   Headers,
   Inject,
-  Logger,
   Optional,
   Post,
   Query,
   UnauthorizedException,
   forwardRef,
 } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { Public } from '../auth/public.decorator';
 import { ChannelTransportRegistry } from '../kloel/channel-transport.registry';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { WorkspaceService } from '../workspaces/workspace.service';
 import { InboundMessage, InboundProcessorService } from './inbound-processor.service';
+import { toPrismaJsonValue } from '../common/prisma/prisma-json.util';
+import type { ContactCustomFields } from '../contacts/contact-custom-fields.types';
 import { WhatsappService } from './whatsapp.service';
+import { RouteClass } from '../common/throttler/route-class.decorator';
+import { WebhookEndpoint } from '../common/decorators/webhook-endpoint.decorator';
+import { InternalEndpoint } from '../common/decorators/internal-endpoint.decorator';
 
 const D_RE = /\D/g;
 
 /** Internal whats app runtime controller. */
 @Controller('internal/whatsapp-runtime')
+@RouteClass('mutate')
 export class InternalWhatsAppRuntimeController {
-  private readonly logger = new Logger(InternalWhatsAppRuntimeController.name);
+  private readonly logger = StructuredLogger.from(InternalWhatsAppRuntimeController.name);
 
   constructor(
     private readonly inboundProcessor: InboundProcessorService,
@@ -38,6 +44,7 @@ export class InternalWhatsAppRuntimeController {
   ) {}
 
   /** Ingest inbound. */
+  @WebhookEndpoint('WhatsApp runtime inbound messages webhook')
   @Post('inbound')
   @Public()
   async ingestInbound(
@@ -65,6 +72,7 @@ export class InternalWhatsAppRuntimeController {
   }
 
   /** Session connected. */
+  @WebhookEndpoint('WhatsApp session connected webhook')
   @Post('session-connected')
   @Public()
   async sessionConnected(
@@ -128,7 +136,7 @@ export class InternalWhatsAppRuntimeController {
     }
   }
 
-  // messageLimit: enforced via PlanLimitsService.trackMessageSend
+  @InternalEndpoint('worker whatsapp send-text handler')
   @Post('send-text')
   @Public()
   async sendText(
@@ -143,18 +151,14 @@ export class InternalWhatsAppRuntimeController {
     @Headers('x-internal-key') internalKey?: string,
   ) {
     this.assertInternalKey(internalKey);
-    return this.transports.send(body.workspaceId, {
-      workspaceId: body.workspaceId,
-      channel: 'whatsapp',
-      recipientId: body.to,
-      content: body.message,
-      quotedMessageId: body.quotedMessageId,
-      externalId: body.externalId,
+    return this.whatsappService.sendMessage(body.workspaceId, body.to, body.message, {
+      ...(body.quotedMessageId !== undefined ? { quotedMessageId: body.quotedMessageId } : {}),
+      ...(body.externalId !== undefined ? { externalId: body.externalId } : {}),
       forceDirect: true,
     });
   }
 
-  // messageLimit: enforced via PlanLimitsService.trackMessageSend
+  @InternalEndpoint('worker whatsapp send-media handler')
   @Post('send-media')
   @Public()
   async sendMedia(
@@ -177,15 +181,15 @@ export class InternalWhatsAppRuntimeController {
       recipientId: body.to,
       content: body.caption || '',
       mediaUrl: body.mediaUrl,
-      mediaType: body.mediaType,
-      caption: body.caption,
-      quotedMessageId: body.quotedMessageId,
-      externalId: body.externalId,
+      ...(body.mediaType !== undefined ? { mediaType: body.mediaType } : {}),
+      ...(body.caption !== undefined ? { caption: body.caption } : {}),
+      ...(body.quotedMessageId !== undefined ? { quotedMessageId: body.quotedMessageId } : {}),
+      ...(body.externalId !== undefined ? { externalId: body.externalId } : {}),
       forceDirect: true,
     });
   }
 
-  /** Get status. */
+  @InternalEndpoint('worker whatsapp status probe')
   @Get('status')
   @Public()
   async getStatus(
@@ -196,7 +200,7 @@ export class InternalWhatsAppRuntimeController {
     return this.whatsappService.getConnectionStatus(workspaceId);
   }
 
-  /** Get chats. */
+  @InternalEndpoint('worker whatsapp chats query')
   @Get('chats')
   @Public()
   async getChats(
@@ -207,7 +211,7 @@ export class InternalWhatsAppRuntimeController {
     return this.whatsappService.listChats(workspaceId);
   }
 
-  /** Get messages. */
+  @InternalEndpoint('worker whatsapp messages query')
   @Get('messages')
   @Public()
   async getMessages(
@@ -226,7 +230,7 @@ export class InternalWhatsAppRuntimeController {
     });
   }
 
-  /** Read chat. */
+  @InternalEndpoint('worker whatsapp read chat handler')
   @Post('read')
   @Public()
   async readChat(
@@ -237,7 +241,7 @@ export class InternalWhatsAppRuntimeController {
     return this.whatsappService.setPresence(body.workspaceId, body.chatId, 'seen');
   }
 
-  /** Sync contact. */
+  @InternalEndpoint('worker whatsapp sync-contact handler')
   @Post('sync-contact')
   @Public()
   async syncContact(
@@ -273,7 +277,7 @@ export class InternalWhatsAppRuntimeController {
       });
 
       const now = new Date().toISOString();
-      const existingFields = (existing?.customFields as Record<string, unknown>) || {};
+      const existingFields = (existing?.customFields as ContactCustomFields) || {};
 
       const contact = await this.prisma.contact.upsert({
         where: {
@@ -281,24 +285,24 @@ export class InternalWhatsAppRuntimeController {
         },
         update: {
           name,
-          customFields: {
+          customFields: toPrismaJsonValue({
             ...existingFields,
             remotePushName: name,
             remotePushNameUpdatedAt: now,
             whatsappSavedAt: now,
             nameResolutionStatus: 'resolved',
-          },
+          }),
         },
         create: {
           workspaceId,
           phone: normalizedPhone,
           name,
-          customFields: {
+          customFields: toPrismaJsonValue({
             remotePushName: name,
             remotePushNameUpdatedAt: now,
             whatsappSavedAt: now,
             nameResolutionStatus: 'resolved',
-          },
+          }),
         },
       });
 

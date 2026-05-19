@@ -10,9 +10,11 @@ import { HttpException } from '@nestjs/common';
 import { InsufficientWalletBalanceError } from '../wallet/wallet.types';
 
 import { UploadController } from './upload.controller';
+import { CANONICAL_MODEL_IDS } from '../lib/openai-models';
 
-// PULSE_OK: assertions exist below
 describe('UploadController', () => {
+  const brainModelEnvKeys = ['DEEPSEEK_BRAIN_MODEL', 'LLM_BRAIN_MODEL', 'OPENAI_BRAIN_MODEL'];
+  let originalBrainModelEnv: Record<string, string | undefined>;
   let controller: UploadController;
   let pdfProcessor: {
     processTextWithUsage: jest.Mock;
@@ -41,6 +43,12 @@ describe('UploadController', () => {
   };
 
   beforeEach(() => {
+    originalBrainModelEnv = {};
+    for (const key of brainModelEnvKeys) {
+      originalBrainModelEnv[key] = process.env[key];
+      process.env[key] = CANONICAL_MODEL_IDS.openAiTextMini;
+    }
+
     mockPdfParse.mockReset();
     mockPdfParse.mockResolvedValue({
       text: 'Conteudo comercial suficiente para analise do documento PDF.',
@@ -65,12 +73,18 @@ describe('UploadController', () => {
       settleUsageCharge: jest.fn().mockResolvedValue(undefined),
       refundUsageCharge: jest.fn().mockResolvedValue(undefined),
     };
-    controller = new UploadController(
-      pdfProcessor as never,
-      memoryService as never,
-      storageService as never,
-      walletService as never,
-    );
+    controller = new UploadController(pdfProcessor, memoryService, storageService, walletService);
+  });
+
+  afterEach(() => {
+    for (const key of brainModelEnvKeys) {
+      const original = originalBrainModelEnv[key];
+      if (original === undefined) {
+        delete process.env[key];
+      } else {
+        process.env[key] = original;
+      }
+    }
   });
 
   it('charges before storage side effects and settles after a successful PDF upload analysis', async () => {
@@ -102,13 +116,28 @@ describe('UploadController', () => {
         objections: 1,
       },
     });
-    expect(walletService.chargeForUsage).toHaveBeenCalledWith(
-      expect.objectContaining({
-        workspaceId: 'ws_1',
-        operation: 'ai_message',
-        quotedCostCents: expect.anything(),
-      }),
-    );
+    const [[chargeArg]] = walletService.chargeForUsage.mock.calls as Array<
+      [
+        {
+          metadata: { capability: string; channel: string; sourceName: string };
+          operation: string;
+          quotedCostCents: number;
+          requestId: string;
+          workspaceId: string;
+        },
+      ]
+    >;
+    expect(chargeArg).toMatchObject({
+      workspaceId: 'ws_1',
+      operation: 'ai_message',
+      requestId: 'ws_1:catalogo.pdf:128',
+      metadata: {
+        channel: 'kloel_upload',
+        capability: 'pdf_analysis',
+        sourceName: 'catalogo.pdf',
+      },
+    });
+    expect(chargeArg).toHaveProperty('quotedCostCents');
     expect(walletService.chargeForUsage.mock.invocationCallOrder[0]).toBeLessThan(
       storageService.upload.mock.invocationCallOrder[0],
     );

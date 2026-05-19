@@ -15,8 +15,8 @@ interface SidebarRecentsProps {
 interface ConversationExportSource {
   id: string;
   title: string;
-  updatedAt?: string;
-  lastMessagePreview?: string;
+  updatedAt?: string | undefined;
+  lastMessagePreview?: string | undefined;
 }
 
 function extractThreadMessages(payload: unknown): Array<Record<string, unknown>> {
@@ -105,7 +105,10 @@ export function SidebarRecents({ expanded }: SidebarRecentsProps) {
     return () => observer.disconnect();
   }, [expanded, hasMoreConversations, loadMoreConversations]);
 
-  if (!expanded || (conversations.length === 0 && !hasMoreConversations && !isLoadingMoreConversations)) {
+  if (
+    !expanded ||
+    (conversations.length === 0 && !hasMoreConversations && !isLoadingMoreConversations)
+  ) {
     return null;
   }
 

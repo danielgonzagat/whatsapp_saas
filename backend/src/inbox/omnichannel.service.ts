@@ -1,10 +1,8 @@
-import { Inject, Injectable, Logger, Optional, forwardRef } from '@nestjs/common';
+import { Injectable, Logger, Optional, Inject } from '@nestjs/common';
 import { forEachSequential } from '../common/async-sequence';
 import { StorageService } from '../common/storage/storage.service';
-import { CommercialDecisionOrchestratorService } from '../kloel/commercial-decision-orchestrator.service';
-import { UnifiedAgentService } from '../kloel/unified-agent.service';
-import { ChannelInboundHookService } from '../omnichannel/channel-inbound-hook.service';
-import { OmnichannelContactResolutionService } from '../omnichannel/contact-resolution.service';
+import { UNIFIED_AGENT_TOKEN } from '../kloel/tokens';
+import { DecisionOutcomeService } from '../kloel/decision-outcome.service';
 import { InboxService } from './inbox.service';
 import {
   buildAttachmentContent,
@@ -22,6 +20,18 @@ import { SmartRoutingService } from './smart-routing.service';
 
 export type { MessageAttachment, NormalizedMessage, ProcessedAttachment };
 
+type UnifiedAgentPort = {
+  processIncomingMessage(input: {
+    workspaceId: string;
+    phone: string;
+    message: string;
+    contactId: string;
+    channel: string;
+    executeTools?: boolean;
+    context?: { deliveryMode?: string; externalId?: string; fromName?: string; metadata?: Record<string, unknown> };
+  }): Promise<void>;
+};
+
 /** Omnichannel ingestion service — normalizes messages from every channel. */
 @Injectable()
 export class OmnichannelService {
@@ -31,16 +41,8 @@ export class OmnichannelService {
     private readonly inbox: InboxService,
     private readonly routing: SmartRoutingService,
     private readonly storage: StorageService,
-    private readonly contactResolution: OmnichannelContactResolutionService,
-    @Optional()
-    @Inject(forwardRef(() => UnifiedAgentService))
-    private readonly unifiedAgent?: UnifiedAgentService,
-    @Optional()
-    @Inject(forwardRef(() => ChannelInboundHookService))
-    private readonly mindHook?: ChannelInboundHookService,
-    @Optional()
-    @Inject(forwardRef(() => CommercialDecisionOrchestratorService))
-    private readonly commercialOrchestrator?: CommercialDecisionOrchestratorService,
+    private readonly decisionOutcome: DecisionOutcomeService,
+    @Optional() @Inject(UNIFIED_AGENT_TOKEN) private readonly _unifiedAgent?: UnifiedAgentPort,
   ) {}
 
   /** Unified entry point for ALL channels — saves, triggers CIA, and (optionally) routes. */
@@ -52,132 +54,67 @@ export class OmnichannelService {
     const processedAttachments = await this.maybeProcessAttachments(msg);
     const content = buildAttachmentContent(msg.content || '', messageType, processedAttachments);
 
-    const resolved = await this.contactResolution.resolveFromMessage(msg).catch((err) => {
-      this.logger.warn(
-        `[OMNI] Contact resolution failed for ${msg.channel}:${msg.from}, falling back to phone-based lookup: ${String(err)}`,
-      );
-      return null;
+    const mediaUrlVal = processedAttachments.length > 0 ? processedAttachments[0]?.url : undefined;
+    const savedMsg = await this.inbox.saveMessageByPhone({
+      workspaceId: msg.workspaceId,
+      phone: identifier,
+      content,
+      direction: 'INBOUND',
+      type: messageType,
+      channel: msg.channel,
+      ...(mediaUrlVal !== undefined ? { mediaUrl: mediaUrlVal } : {}),
     });
-
-    const savedMsg = resolved
-      ? await this.inbox.saveMessage({
-          workspaceId: msg.workspaceId,
-          contactId: resolved.id,
-          content,
-          direction: 'INBOUND',
-          type: messageType,
-          channel: msg.channel,
-          mediaUrl: processedAttachments.length > 0 ? processedAttachments[0].url : undefined,
-        })
-      : await this.inbox.saveMessageByPhone({
-          workspaceId: msg.workspaceId,
-          phone: identifier,
-          content,
-          direction: 'INBOUND',
-          type: messageType,
-          channel: msg.channel,
-          mediaUrl: processedAttachments.length > 0 ? processedAttachments[0].url : undefined,
-        });
 
     void this.routing;
 
-    this.triggerCia(msg, savedMsg, identifier);
-    this.triggerMindPercept(msg, savedMsg);
+    void this.decisionOutcome.recordEvent({
+      workspaceId: msg.workspaceId,
+      eventType: 'inbound.received',
+      eventKey: savedMsg.id,
+      correlation: {
+        contactId: savedMsg.contactId ?? identifier,
+        channel: msg.channel.toLowerCase(),
+      },
+    });
+
+    await this.maybeDispatchToUnifiedAgent(msg, identifier, content, savedMsg.contactId);
 
     return savedMsg;
   }
 
-  /** Fire-and-forget CIA processing after message is safely persisted. */
-  private triggerCia(
-    msg: NormalizedMessage,
-    savedMsg: { contactId?: string; id?: string },
-    identifier: string,
-  ) {
-    if (!this.unifiedAgent) return;
-
-    const normalizedChannel = String(msg.channel || '')
-      .trim()
-      .toLowerCase();
-
-    this.processCiaMessage(msg, savedMsg, identifier, normalizedChannel).catch((err: unknown) => {
-      const wrapped = ensureError(err);
-      this.logger.error(`[OMNI] CIA trigger failed for channel ${msg.channel}: ${wrapped.message}`);
-    });
+  private resolveUnifiedAgent(): UnifiedAgentPort | null {
+    return this._unifiedAgent ?? null;
   }
 
-  private async processCiaMessage(
+  private async maybeDispatchToUnifiedAgent(
     msg: NormalizedMessage,
-    savedMsg: { contactId?: string; id?: string },
     identifier: string,
-    normalizedChannel: string,
-  ) {
-    const deterministicEnabled = this.isDeterministicPipelineEnabled();
-    if (deterministicEnabled && this.commercialOrchestrator) {
-      try {
-        const decision = await this.commercialOrchestrator.orchestrateInbound({
-          workspaceId: msg.workspaceId,
-          contactId: savedMsg.contactId,
-          channel: normalizedChannel,
-          message: msg.content,
-          conversationId: savedMsg.id,
-        });
-        await this.unifiedAgent?.processMessage({
-          workspaceId: msg.workspaceId,
-          contactId: savedMsg.contactId || '',
-          phone: identifier,
-          message: msg.content,
-          predecidedActions: decision.actions,
-          context: {
-            source: 'omnichannel',
-            deliveryMode: 'reactive',
-            deterministicPipeline: true,
-            messageId: savedMsg.id,
-            providerMessageId: msg.externalId,
-            trace: decision.trace,
-          },
-        });
-        return;
-      } catch (err: unknown) {
-        const wrapped = ensureError(err);
-        this.logger.warn(
-          `[OMNI] deterministic pipeline failed, using legacy CIA: ${wrapped.message}`,
-        );
-      }
+    content: string,
+    contactId: string,
+  ): Promise<void> {
+    const unifiedAgent = this.resolveUnifiedAgent();
+    if (!unifiedAgent) {
+      return;
     }
-
-    await this.unifiedAgent?.processIncomingMessage({
-      workspaceId: msg.workspaceId,
-      contactId: savedMsg.contactId,
-      phone: identifier,
-      message: msg.content,
-      channel: normalizedChannel,
-      context: {
-        source: 'omnichannel',
-        deliveryMode: 'reactive',
-        messageId: savedMsg.id,
-        providerMessageId: msg.externalId,
-      },
-    });
-  }
-
-  private isDeterministicPipelineEnabled(): boolean {
-    const value = String(process.env.KLOEL_DETERMINISTIC_PIPELINE_ENABLED || '').toLowerCase();
-    return value === '1' || value === 'true' || value === 'yes' || value === 'on';
-  }
-
-  /** Fire-and-forget MIND percept event push after message is persisted. */
-  private triggerMindPercept(
-    msg: NormalizedMessage,
-    savedMsg: { contactId?: string; id?: string },
-  ) {
-    if (!this.mindHook) return;
-
-    this.mindHook.onMessageReceived(msg, savedMsg.contactId, savedMsg.id).catch((err: unknown) => {
-      const wrapped = ensureError(err);
-      this.logger.error(
-        `[OMNI] MIND percept hook failed for channel ${msg.channel}: ${wrapped.message}`,
-      );
-    });
+    try {
+      await unifiedAgent.processIncomingMessage({
+        workspaceId: msg.workspaceId,
+        phone: identifier,
+        message: content,
+        contactId,
+        channel: msg.channel.toLowerCase(),
+        executeTools: msg.channel === 'WHATSAPP',
+        context: {
+          deliveryMode: 'reactive',
+          externalId: msg.externalId,
+          fromName: msg.fromName || msg.from,
+          metadata: msg.metadata || {},
+        },
+      });
+    } catch (error: unknown) {
+      const wrapped = ensureError(error);
+      this.logger.warn(`[OMNI] Unified agent dispatch failed: ${wrapped.message}`);
+    }
   }
 
   private async maybeProcessAttachments(msg: NormalizedMessage): Promise<ProcessedAttachment[]> {
@@ -306,13 +243,13 @@ export class OmnichannelService {
         channel: 'INSTAGRAM',
         externalId: extracted.senderId,
         from: extracted.senderId,
-        fromName: extracted.senderName,
+        ...(extracted.senderName !== undefined ? { fromName: extracted.senderName } : {}),
         content: extracted.content,
-        attachments: extracted.attachments.length > 0 ? extracted.attachments : undefined,
+        ...(extracted.attachments.length > 0 ? { attachments: extracted.attachments } : {}),
         metadata: {
           raw: payload,
-          messageId: extracted.messageId,
-          timestamp: extracted.timestamp,
+          ...(extracted.messageId !== undefined ? { messageId: extracted.messageId } : {}),
+          ...(extracted.timestamp !== undefined ? { timestamp: extracted.timestamp } : {}),
         },
       };
 
@@ -324,155 +261,54 @@ export class OmnichannelService {
     }
   }
 
-  /**
-   * Processes a TikTok webhook payload — extracts direct messages, comments and
-   * lead-gen events into the unified inbox. Returns an honest status when the
-   * payload does not contain a processable message.
-   *
-   * TikTok's webhook API (Business Messaging / Lead Gen v2) ships different
-   * shapes for different event types. We probe for known structures and
-   * fall through gracefully when none match.
-   *
-   * @param workspaceId - Owning workspace id resolved from the TikTok connection.
-   * @param payload - Raw TikTok webhook body (already signature-verified).
-   * @returns The saved inbox message or a status indicator.
-   */
-  async processTikTokWebhook(workspaceId: string, payload: Record<string, unknown>) {
-    this.logger.log('[OMNI] Processing TikTok webhook', { workspaceId });
-
-    try {
-      const extracted = this.extractTikTokMessage(payload);
-      if (!extracted) {
-        this.logger.log('[OMNI] TikTok webhook without processable message content');
-        return { status: 'unsupported_event', channel: 'tiktok' };
-      }
-
-      const normalized: NormalizedMessage = {
-        workspaceId,
-        channel: 'TIKTOK',
-        externalId: extracted.senderId,
-        from: extracted.senderId,
-        fromName: extracted.senderName,
-        content: extracted.content,
-        attachments: extracted.attachments,
-        metadata: {
-          raw: payload,
-          messageId: extracted.messageId,
-          eventType: extracted.eventType,
-        },
-      };
-
-      return this.handleIncomingMessage(normalized);
-    } catch (err: unknown) {
-      const wrapped = ensureError(err);
-      this.logger.error('[OMNI] Erro ao processar TikTok webhook:', wrapped.message);
-      return { status: 'error', channel: 'tiktok', error: wrapped.message };
+  async processTikTokWebhook(payload: Record<string, unknown>) {
+    const nested = this.readRecord(payload.data) || this.readRecord(payload.message) || payload;
+    const workspaceId =
+      this.readText(payload.workspaceId) ||
+      this.readText(payload.workspace_id) ||
+      this.readText(nested.workspaceId) ||
+      this.readText(nested.workspace_id);
+    if (!workspaceId) {
+      return { status: 'no_workspace', channel: 'tiktok' };
     }
+
+    const externalId =
+      this.readText(nested.open_id) ||
+      this.readText(nested.openId) ||
+      this.readText(nested.user_id) ||
+      this.readText(nested.userId) ||
+      this.readText(nested.sender_id) ||
+      this.readText(nested.from);
+    if (!externalId) {
+      return { status: 'no_sender', channel: 'tiktok' };
+    }
+
+    const content =
+      this.readText(nested.text) ||
+      this.readText(nested.content) ||
+      this.readText(nested.comment_text) ||
+      this.readText(nested.message_text);
+    if (!content) {
+      return { status: 'empty_message', channel: 'tiktok' };
+    }
+
+    return this.handleIncomingMessage({
+      workspaceId,
+      channel: 'TIKTOK',
+      externalId,
+      from: externalId,
+      content,
+      metadata: { raw: payload },
+    });
   }
 
-  /** Probe a TikTok webhook body for known message structures. */
-  private extractTikTokMessage(payload: Record<string, unknown>): {
-    senderId: string;
-    senderName?: string;
-    content: string;
-    attachments?: MessageAttachment[];
-    messageId?: string;
-    eventType?: string;
-  } | null {
-    const body = payload?.body || payload;
-
-    if (typeof body !== 'object' || body === null || Array.isArray(body)) {
-      return null;
-    }
-
-    const b = body as Record<string, unknown>;
-
-    if (b.type === 'dm' || b.event === 'dm' || b.type === 'direct_message') {
-      return this.extractTikTokDm(b);
-    }
-
-    if (b.type === 'comment' || b.event === 'comment') {
-      return this.extractTikTokComment(b);
-    }
-
-    if (b.type === 'lead_gen' || b.event === 'lead_gen') {
-      return this.extractTikTokLeadGen(b);
-    }
-
-    if (typeof b.text === 'string' && b.text.trim()) {
-      const sid = this.fieldStr(b, 'sender_id') || this.fieldStr(b, 'user_id') || 'unknown';
-      const sname = this.fieldStr(b, 'sender_name');
-      const eventT = this.fieldStr(b, 'type') || this.fieldStr(b, 'event') || 'message';
-      return {
-        senderId: sid,
-        senderName: sname || undefined,
-        content: b.text.trim(),
-        messageId: this.fieldStr(b, 'message_id') ?? undefined,
-        eventType: eventT,
-      };
-    }
-
-    return null;
+  private readRecord(value: unknown): Record<string, unknown> | null {
+    return value && typeof value === 'object' && !Array.isArray(value)
+      ? (value as Record<string, unknown>)
+      : null;
   }
 
-  private extractTikTokDm(body: Record<string, unknown>) {
-    const data = (body.data || body) as Record<string, unknown>;
-    const sid =
-      this.fieldStr(data, 'sender_id') ||
-      this.fieldStr(data, 'user_id') ||
-      this.fieldStr(data, 'from') ||
-      'unknown';
-    const sname = this.fieldStr(data, 'sender_name');
-    return {
-      senderId: sid,
-      senderName: sname || undefined,
-      content:
-        this.fieldStr(data, 'text') ||
-        this.fieldStr(data, 'content') ||
-        this.fieldStr(data, 'message') ||
-        '',
-      messageId: this.fieldStr(data, 'message_id') ?? undefined,
-      eventType: 'dm',
-    };
-  }
-
-  private extractTikTokComment(body: Record<string, unknown>) {
-    const data = (body.data || body) as Record<string, unknown>;
-    const commentText =
-      this.fieldStr(data, 'text') ||
-      this.fieldStr(data, 'comment_text') ||
-      this.fieldStr(data, 'content') ||
-      '';
-    const sid = this.fieldStr(data, 'user_id') || this.fieldStr(data, 'commenter_id') || 'unknown';
-    const sname = this.fieldStr(data, 'user_name');
-    return {
-      senderId: sid,
-      senderName: sname || undefined,
-      content: `[Comentário TikTok] ${commentText}`,
-      messageId: this.fieldStr(data, 'comment_id') ?? undefined,
-      eventType: 'comment',
-    };
-  }
-
-  private extractTikTokLeadGen(body: Record<string, unknown>) {
-    const data = (body.data || body) as Record<string, unknown>;
-    const fields: string[] = [];
-    if (typeof data.name === 'string') fields.push(`Nome: ${data.name}`);
-    if (typeof data.email === 'string') fields.push(`Email: ${data.email}`);
-    if (typeof data.phone === 'string') fields.push(`Telefone: ${data.phone}`);
-    const sid = this.fieldStr(data, 'lead_id') || this.fieldStr(data, 'user_id') || 'unknown';
-    const sname = this.fieldStr(data, 'name');
-    return {
-      senderId: sid,
-      senderName: sname || undefined,
-      content: `[Lead TikTok] ${fields.join(' | ') || 'Novo lead'}`,
-      messageId: this.fieldStr(data, 'lead_id') ?? undefined,
-      eventType: 'lead_gen',
-    };
-  }
-
-  private fieldStr(obj: Record<string, unknown>, key: string): string | null {
-    const value = obj[key];
-    return typeof value === 'string' ? value : null;
+  private readText(value: unknown): string {
+    return typeof value === 'string' && value.trim() ? value.trim() : '';
   }
 }

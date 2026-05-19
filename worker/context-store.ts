@@ -9,48 +9,6 @@ import { redis } from './redis-client';
  * Allows multiple workers to coordinate flow execution.
  */
 
-export const contextStore = {
-  /**
-   * Waits for a user reply.
-   * Uses BLPOP (Blocking Left Pop) on a Redis list unique to the user.
-   * This blocks the specific async call, but allows other node events if managed correctly.
-   * NOTE: In a production worker, long polling blocks the connection.
-   * Ideally, we should use a state machine + separate jobs, but this maintains current logic compatibility.
-   */
-  async waitForReply(user: string, timeoutSeconds = 86400): Promise<string | null> {
-    const key = `reply:${user}`;
-    console.log(`⏳ [CTX] Waiting for reply from ${user} on key ${key}...`);
-
-    try {
-      // BLPOP returns [key, element] or null if timeout
-      const result = await redis.blpop(key, timeoutSeconds);
-
-      if (result) {
-        const [, message] = result;
-        return message;
-      }
-
-      return null; // Timeout
-    } catch (error) {
-      console.error('Error in waitForReply:', error);
-      return null;
-    }
-  },
-
-  /**
-   * Delivers a message to a waiting flow.
-   * Pushes to the Redis list which 'waitForReply' is blocking on.
-   */
-  async deliver(user: string, message: string) {
-    const key = `reply:${user}`;
-    console.log(`📨 [CTX] Delivering message from ${user} to key ${key}`);
-    await redis.rpush(key, message);
-
-    // Set expiry to clean up old keys if no one is listening
-    await redis.expire(key, 60 * 60 * 24); // 24 hours
-  },
-};
-
 /**
  * =====================================================================
  * GENERIC CONTEXT STORE (KEY/VALUE + ZSET)

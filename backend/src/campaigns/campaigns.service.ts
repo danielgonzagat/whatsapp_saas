@@ -140,7 +140,9 @@ export class CampaignsService {
       where: { id, workspaceId },
       data: {
         status: 'SCHEDULED',
-        scheduledAt: delay > 0 ? new Date(Date.now() + delay) : undefined,
+        ...((delay > 0
+          ? { scheduledAt: new Date(Date.now() + delay) }
+          : {}) as Prisma.CampaignUpdateManyMutationInput),
       },
     });
 
@@ -234,10 +236,10 @@ export class CampaignsService {
             },
           });
           if (!delivered) {
-            failed++;
+            failed += 1;
             return;
           }
-          sent++;
+          sent += 1;
           return;
         }
 
@@ -252,21 +254,21 @@ export class CampaignsService {
             bodyText,
           );
           if (!delivered.success) {
-            failed++;
+            failed += 1;
             return;
           }
-          sent++;
+          sent += 1;
           return;
         }
 
         this.logger.warn(
           `Campaign ${campaign.name}: no channel available for ${contact.name || contact.id}`,
         );
-        failed++;
+        failed += 1;
       } catch (e: unknown) {
         void this.opsAlert?.alertOnCriticalError(e, 'CampaignsService.processCampaignJob');
         this.logger.error(`Campaign send failed for contact ${contact.id}: ${String(e)}`);
-        failed++;
+        failed += 1;
       }
     });
 
@@ -347,13 +349,12 @@ export class CampaignsService {
       Array.from({ length: Math.max(1, Math.min(variants, 10)) }),
       async (_, i) => {
         const mutatedMessage = await this.mutateCopy(base.messageTemplate, i);
-        // PULSE:OK — each variant depends on mutateCopy result; sequential creation required
         const variant = await this.prisma.campaign.create({
           data: {
             name: `${base.name} - Var ${i + 1}`,
             status: 'DRAFT',
             messageTemplate: mutatedMessage,
-            filters: base.filters ?? Prisma.JsonNull,
+            filters: base.filters as Prisma.InputJsonValue,
             stats: { sent: 0, replied: 0 },
             aiStrategy: base.aiStrategy,
             parentId: base.id,
@@ -405,20 +406,25 @@ export class CampaignsService {
     }
 
     // Promove mensagem vencedora para pai e pausa perdedores
+    const bestMessageTemplate =
+      best.messageTemplate != null ? String(best.messageTemplate) : undefined;
+    const bestAiStrategy = best.aiStrategy != null ? String(best.aiStrategy) : undefined;
+    const bestId = best.id != null ? String(best.id) : undefined;
+
     await this.prisma.campaign.updateMany({
       where: { id: parent.id, workspaceId },
       data: {
-        messageTemplate: best.messageTemplate,
-        aiStrategy: best.aiStrategy,
+        ...(bestMessageTemplate ? { messageTemplate: bestMessageTemplate } : {}),
+        ...(bestAiStrategy ? { aiStrategy: bestAiStrategy } : {}),
       },
     });
     await this.prisma.campaign.updateMany({
-      where: { workspaceId, parentId: parent.id, NOT: { id: best.id } },
+      where: { workspaceId, parentId: parent.id, ...(bestId ? { NOT: { id: bestId } } : {}) },
       data: { status: 'PAUSED' },
     });
 
     return {
-      winner: best.id,
+      winner: bestId,
       score: bestScore,
       promotedTo: parent.id,
     };

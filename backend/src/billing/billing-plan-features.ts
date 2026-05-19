@@ -1,6 +1,7 @@
-import { Logger } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 
-const logger = new Logger('BillingPlanFeatures');
+
+const logger = StructuredLogger.from('BillingPlanFeatures');
 
 const PLAN_LIMITS: Record<
   string,
@@ -55,7 +56,11 @@ export async function activatePlanFeatures(
   workspaceId: string,
   plan: string,
 ): Promise<void> {
-  const limits = PLAN_LIMITS[plan.toUpperCase()] || PLAN_LIMITS.STARTER;
+  const limitsCandidate = PLAN_LIMITS[plan.toUpperCase()] ?? PLAN_LIMITS['STARTER'];
+  if (!limitsCandidate) {
+    return;
+  }
+  const limits = limitsCandidate;
   const workspace = await prisma.workspace.findUnique({
     where: { id: workspaceId },
     select: { providerSettings: true },

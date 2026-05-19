@@ -42,7 +42,6 @@ function stripAlwaysRespondDirective(input: string): string {
 /**
  * Middleware para sanitizar inputs de texto que vão para a IA.
  * Remove tentativas comuns de prompt injection e jailbreak.
- * PULSE:OK — no pagination parameters; this is a text sanitizer, not a data endpoint
  */
 @Injectable()
 export class PromptSanitizerMiddleware implements NestMiddleware {
@@ -143,7 +142,6 @@ export class PromptSanitizerMiddleware implements NestMiddleware {
     }
   }
 
-  /** @internal exposed for sanitizePromptInput utility */
   sanitizeString(input: string): string {
     let result = input;
 
@@ -161,12 +159,4 @@ export class PromptSanitizerMiddleware implements NestMiddleware {
 
     return result;
   }
-}
-
-/**
- * Função utilitária para sanitizar texto fora do middleware.
- */
-export function sanitizePromptInput(input: string): string {
-  const middleware = new PromptSanitizerMiddleware();
-  return middleware.sanitizeString(input);
 }

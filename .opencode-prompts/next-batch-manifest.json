@@ -1,0 +1,45 @@
+{
+  "runId": "next-batch-post-wave-b-2026-05-11",
+  "concurrency": 7,
+  "timeoutSec": 2400,
+  "dir": "/Users/danielpenin/whatsapp_saas",
+  "skipPermissions": true,
+  "_note": "Next batch dispatch AFTER Wave B (bj4jxcleb) returns. Tier-3 validate each delivery, CEO commit, then dispatch this manifest. Cap at 7 (RAM safety) — pick the 7 highest-value of the 14 ready prompts. Default order below; rearrange if a particular wave is blocking.",
+  "tasks": [
+    {
+      "id": "B-6-other-new-bugs",
+      "title": "Wave B Slice 6 — TenantSweep-OtherNewBugs (admin-chat, gdpr, worker)",
+      "promptFile": ".opencode-prompts/wave-b-tenant-sweep/06-other-new-bugs.md"
+    },
+    {
+      "id": "F-em-breve-cleanup",
+      "title": "Wave F — EmBreve / Planejado cleanup (7 files)",
+      "promptFile": ".opencode-prompts/wave-f-em-breve/01-em-breve-cleanup.md"
+    },
+    {
+      "id": "G-localstorage-migration",
+      "title": "Wave G — LocalStorage to Backend (4 migrations)",
+      "promptFile": ".opencode-prompts/wave-g-localstorage/01-localstorage-migration.md"
+    },
+    {
+      "id": "J-1-health-endpoints",
+      "title": "Wave J/1 — Health liveness/readiness/deep endpoints",
+      "promptFile": ".opencode-prompts/wave-j-hardening/01-health-endpoints.md"
+    },
+    {
+      "id": "J-3-idempotency-middleware",
+      "title": "Wave J/3 — Idempotency middleware (Redis-backed, applied to mutating routes)",
+      "promptFile": ".opencode-prompts/wave-j-hardening/03-idempotency-middleware.md"
+    },
+    {
+      "id": "H-kloel-A-coverage",
+      "title": "Wave H/Coverage-KLOEL-A — 6 service specs (ad-rules-engine + audio + onboarding + email-campaign + guest-chat)",
+      "promptFile": ".opencode-prompts/wave-h-coverage/01-kloel-A.md"
+    },
+    {
+      "id": "Q-1-dto-checkout",
+      "title": "Wave Q/1 — Strict-mode DTO sweep backend/src/checkout/dto (34 TS errors)",
+      "promptFile": ".opencode-prompts/wave-q-strict-mode/01-dto-sweep-checkout.md"
+    }
+  ]
+}

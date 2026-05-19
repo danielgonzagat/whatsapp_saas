@@ -1,11 +1,17 @@
+import { StructuredLogger } from '../logging/structured-logger';
+
+
 /** User name derivation service. */
 export class UserNameDerivationService {
+  private static readonly logger = StructuredLogger.from(UserNameDerivationService.name);
+
   /**
    * Derive user display name from email local part.
    * Replaces separators with spaces, capitalizes first letter.
    * Examples: "john.doe@example.com" → "John doe", "jane_smith@..." → "Jane smith"
    */
   static deriveNameFromEmail(email: string): string {
+    UserNameDerivationService.logger.log('UserNameDerivationService initialized');
     const local = email.split('@')[0] || 'User';
     const W_RE = /[\W_]+/g;
     const cleaned = local.replace(W_RE, ' ').trim();

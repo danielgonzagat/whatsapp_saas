@@ -1,5 +1,5 @@
 import { Queue } from 'bullmq';
-import { queueOptions, queueRegistry } from './queue';
+import { buildQueueOptions, queueRegistry } from './queue';
 import { redis } from './redis-client';
 import { forEachSequential } from './utils/async-sequence';
 
@@ -36,7 +36,6 @@ async function notify(queue: string, waiting: number, failed: number) {
     });
     lastAlert[queue] = now;
   } catch (err: unknown) {
-    // PULSE:OK — DLQ alert webhook non-critical; queue still monitored on next interval
     console.warn(
       '[DLQ Monitor] notify failed:',
       err instanceof Error ? err.message : 'unknown_error',
@@ -45,62 +44,67 @@ async function notify(queue: string, waiting: number, failed: number) {
 }
 
 async function healQueue(dlqName: string, originalQueueName: string) {
-  const dlq = new Queue(dlqName, queueOptions);
-  const originalQueue = new Queue(originalQueueName, queueOptions);
-
-  const jobs = await dlq.getJobs(['waiting', 'delayed', 'active'], 0, 20);
-  if (jobs.length === 0) {
-    return;
-  }
-
-  const TRANSIENT_ERRORS = [
-    'ETIMEDOUT',
-    'ECONNRESET',
-    'EADDRINUSE',
-    'socket hang up',
-    'network timeout',
-    '502 Bad Gateway',
-    '503 Service Unavailable',
-    '504 Gateway Timeout',
-    'rate limit',
-    'too many requests',
-    'Deadlock found',
-    'Connection terminated',
-  ];
-
-  await forEachSequential(jobs, async (job) => {
-    const reason = (job.data?.failedReason || job.failedReason || '').toLowerCase();
-    const isTransient = TRANSIENT_ERRORS.some((err) => reason.includes(err.toLowerCase()));
-
-    // Heal logic: If transient, retry immediately (move back to main queue)
-    // Limit retries to avoid infinite loops: check if we already healed this job ID before?
-    // For now, we trust the main queue retry count. But since we are in DLQ, main retries were exhausted.
-    // We give it a "second chance" batch (e.g. 3 more attempts).
-
-    if (isTransient) {
-      // Limit re-heal attempts to prevent infinite loops
-      const reHealKey = `dlq:reheal:${job.id}`;
-      const reHealCount = Number.parseInt((await redis.get(reHealKey)) || '0', 10);
-      if (reHealCount >= 3) {
-        console.warn(`[Self-Healing] Job ${job.id} re-healed 3 times, permanently dead — skipping`);
-        return;
-      }
-      await redis.set(reHealKey, String(reHealCount + 1), 'EX', 86400); // 24h TTL
-
-      console.log(
-        `[Self-Healing] Rescuing job ${job.id} from ${dlqName} (Reason: ${reason}, attempt ${reHealCount + 1}/3)`,
-      );
-
-      // Re-add to original queue with fresh attempts
-      await originalQueue.add(job.data.jobName || 'restored-job', job.data.data, {
-        attempts: 3, // Give 3 fresh attempts
-        backoff: { type: 'exponential', delay: 5000 },
-      });
-
-      // Remove from DLQ
-      await job.remove();
+  const dlq = new Queue(dlqName, buildQueueOptions());
+  const originalQueue = new Queue(originalQueueName, buildQueueOptions());
+  try {
+    const jobs = await dlq.getJobs(['waiting', 'delayed', 'active'], 0, 20);
+    if (jobs.length === 0) {
+      return;
     }
-  });
+
+    const TRANSIENT_ERRORS = [
+      'ETIMEDOUT',
+      'ECONNRESET',
+      'EADDRINUSE',
+      'socket hang up',
+      'network timeout',
+      '502 Bad Gateway',
+      '503 Service Unavailable',
+      '504 Gateway Timeout',
+      'rate limit',
+      'too many requests',
+      'Deadlock found',
+      'Connection terminated',
+    ];
+
+    await forEachSequential(jobs, async (job) => {
+      const reason = (job.data?.failedReason || job.failedReason || '').toLowerCase();
+      const isTransient = TRANSIENT_ERRORS.some((err) => reason.includes(err.toLowerCase()));
+
+      // Heal logic: If transient, retry immediately (move back to main queue)
+      // Limit retries to avoid infinite loops: check if we already healed this job ID before?
+      // For now, we trust the main queue retry count. But since we are in DLQ, main retries were exhausted.
+      // We give it a "second chance" batch (e.g. 3 more attempts).
+
+      if (isTransient) {
+        // Limit re-heal attempts to prevent infinite loops
+        const reHealKey = `dlq:reheal:${job.id}`;
+        const reHealCount = Number.parseInt((await redis.get(reHealKey)) || '0', 10);
+        if (reHealCount >= 3) {
+          console.warn(
+            `[Self-Healing] Job ${job.id} re-healed 3 times, permanently dead — skipping`,
+          );
+          return;
+        }
+        await redis.set(reHealKey, String(reHealCount + 1), 'EX', 86400); // 24h TTL
+
+        console.log(
+          `[Self-Healing] Rescuing job ${job.id} from ${dlqName} (Reason: ${reason}, attempt ${reHealCount + 1}/3)`,
+        );
+
+        // Re-add to original queue with fresh attempts
+        await originalQueue.add(job.data.jobName || 'restored-job', job.data.data, {
+          attempts: 3, // Give 3 fresh attempts
+          backoff: { type: 'exponential', delay: 5000 },
+        });
+
+        // Remove from DLQ
+        await job.remove();
+      }
+    });
+  } finally {
+    await Promise.allSettled([dlq.close(), originalQueue.close()]);
+  }
 }
 
 function toDlqMonitorError(err: unknown): Error {
@@ -111,14 +115,18 @@ function toDlqMonitorError(err: unknown): Error {
 }
 
 async function notifyIfDlqHasBacklog(dlqName: string): Promise<void> {
-  const dlq = new Queue(dlqName, queueOptions);
-  const counts = await dlq.getJobCounts();
-  const waiting = (counts.waiting || 0) + (counts.delayed || 0);
-  const failed = counts.failed || 0;
-  if (waiting <= 0 && failed <= 0) {
-    return;
+  const dlq = new Queue(dlqName, buildQueueOptions());
+  try {
+    const counts = await dlq.getJobCounts();
+    const waiting = (counts.waiting || 0) + (counts.delayed || 0);
+    const failed = counts.failed || 0;
+    if (waiting <= 0 && failed <= 0) {
+      return;
+    }
+    await notify(dlqName, waiting, failed);
+  } finally {
+    await dlq.close();
   }
-  await notify(dlqName, waiting, failed);
 }
 
 async function checkSingleDlq(name: string): Promise<void> {
@@ -129,7 +137,6 @@ async function checkSingleDlq(name: string): Promise<void> {
     // 2. Monitor leftovers
     await notifyIfDlqHasBacklog(dlqName);
   } catch (err: unknown) {
-    // PULSE:OK — DLQ heal failure is non-critical; other queues still checked
     console.warn('[DLQ Monitor] error checking/healing', dlqName, toDlqMonitorError(err).message);
   }
 }

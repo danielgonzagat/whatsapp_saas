@@ -351,7 +351,7 @@ describe('MindSimulatorService', () => {
   });
 
   describe('verdict thresholds', () => {
-    it('verdict is warning when baselineMatchRate is below 0.5', () => {
+    it('keeps verdict clean when MIND diverges from baseline without quality failures', () => {
       const report = service.simulate({
         workspaceId: 'ws-1',
         scenario: {
@@ -384,7 +384,7 @@ describe('MindSimulatorService', () => {
       });
 
       expect(report.summary.baselineMatchRate).toBe(0);
-      expect(report.summary.overallVerdict).toBe('critical');
+      expect(report.summary.overallVerdict).toBe('clean');
     });
   });
 });

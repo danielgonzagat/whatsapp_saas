@@ -72,7 +72,9 @@ function toChannelIdentifierResult(identifier: {
 export class ChannelIdentifierService {
   private readonly logger = new Logger(ChannelIdentifierService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) {
+    this.logger.debug?.(`ChannelIdentifierService initialized`);
+  }
 
   resolve(
     channel: string,
@@ -125,7 +127,7 @@ export class ChannelIdentifierService {
         contactId: contact.id,
         workspaceId,
         isPrimary: options?.isPrimary ?? true,
-        metadata: options?.metadata ? (options.metadata as Prisma.JsonObject) : undefined,
+        ...(options?.metadata ? { metadata: options.metadata as Prisma.JsonObject } : {}),
       },
     });
 
@@ -170,7 +172,7 @@ export class ChannelIdentifierService {
         contactId,
         workspaceId,
         isPrimary: options?.isPrimary ?? false,
-        metadata: options?.metadata ? (options.metadata as Prisma.JsonObject) : undefined,
+        ...(options?.metadata ? { metadata: options.metadata as Prisma.JsonObject } : {}),
       },
     });
     return toChannelIdentifierResult(created);
@@ -231,5 +233,47 @@ export class ChannelIdentifierService {
         data: { isPrimary: true },
       }),
     ]);
+  }
+
+  /**
+   * Mark a (workspace, channel, value) identifier as verified.
+   * Sets verifiedAt = now if the row exists; activates cross-channel match
+   * eligibility in ContactIdentityResolverService.findCrossChannelMatch.
+   * Returns the updated row or null if no matching identifier.
+   */
+  async markVerified(
+    workspaceId: string,
+    channel: string,
+    value: string,
+  ): Promise<{
+    id: string;
+    channel: string;
+    value: string;
+    contactId: string;
+    workspaceId: string;
+    isPrimary: boolean;
+  } | null> {
+    const normalizedChannel = normalizeChannelIdentifierChannel(channel);
+    const existing = await this.prisma.channelIdentifier.findUnique({
+      where: {
+        workspaceId_channel_value: { workspaceId, channel: normalizedChannel, value },
+      },
+      select: {
+        id: true,
+        channel: true,
+        value: true,
+        contactId: true,
+        workspaceId: true,
+        isPrimary: true,
+      },
+    });
+    if (!existing) {
+      return null;
+    }
+    await this.prisma.channelIdentifier.updateMany({
+      where: { id: existing.id, workspaceId },
+      data: { verifiedAt: new Date() },
+    });
+    return existing;
   }
 }

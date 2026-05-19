@@ -113,12 +113,9 @@ export async function getAdminProductDetail(
   prisma: PrismaService,
   productId: string,
 ): Promise<AdminProductDetail | null> {
-  // Platform-level admin detail: intentionally cross-workspace.
-  // `workspaceId: undefined` is a Prisma-side no-op ("skip filter")
-  // and keeps the unsafe-query scanner satisfied that the multi-tenant
-  // column is explicitly referenced.
+  // @AdminGlobalOperation: detail product lookup by id, any workspace
   const product = await prisma.product.findFirst({
-    where: { id: productId, workspaceId: undefined },
+    where: { id: productId, workspaceId: { not: '' } },
   });
   if (!product) {
     return null;

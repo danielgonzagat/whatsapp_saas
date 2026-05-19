@@ -1,11 +1,10 @@
 import { Body, Controller, Get, Post, Req, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../../common/guards/workspace.guard';
+import { InternalEndpoint } from '../../common/decorators/internal-endpoint.decorator';
 import { AuthenticatedRequest } from '../../common/interfaces';
 import { WhatsAppProviderRegistry } from '../providers/provider-registry';
-
-const WHATSAPP_META_COMPAT_WORKSPACE_REQUIRED =
-  'workspaceId is required for WhatsApp Meta compatibility routes';
+import { RouteClass } from '../../common/throttler/route-class.decorator';
 
 /**
  * Meta-compat stubs — endpoints that are not supported under the Meta Cloud API
@@ -13,17 +12,9 @@ const WHATSAPP_META_COMPAT_WORKSPACE_REQUIRED =
  */
 @Controller('whatsapp-api')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
+@RouteClass('mutate')
 export class WhatsAppMetaCompatController {
   constructor(private readonly providerRegistry: WhatsAppProviderRegistry) {}
-
-  private requireWorkspaceId(req: AuthenticatedRequest): string {
-    if (!req.workspaceId) {
-      const error = new Error();
-      error.message = WHATSAPP_META_COMPAT_WORKSPACE_REQUIRED;
-      throw error;
-    }
-    return req.workspaceId;
-  }
 
   private buildMetaUnsupportedResponse(feature: string, extra?: Record<string, unknown>) {
     return {
@@ -36,7 +27,7 @@ export class WhatsAppMetaCompatController {
   }
 
   /** Link session. */
-  // PULSE_OK: internal route, Meta Cloud API compatibility — returns unsupported for cloud-based providers
+  @InternalEndpoint('whatsapp session link')
   @Post('session/link')
   async linkSession(
     @Req() req: AuthenticatedRequest,
@@ -44,16 +35,14 @@ export class WhatsAppMetaCompatController {
   ) {
     void req;
     void body;
-    const status = await this.providerRegistry
-      .getSessionStatus(this.requireWorkspaceId(req))
-      .catch(() => null);
+    const status = await this.providerRegistry.getSessionStatus(req.workspaceId!).catch(() => null);
     return this.buildMetaUnsupportedResponse('legacy_session_link', {
       authUrl: status?.authUrl || null,
     });
   }
 
   /** Claim session. */
-  // PULSE_OK: internal route, Meta Cloud API compatibility — returns unsupported for cloud-based providers
+  @InternalEndpoint('whatsapp session claim')
   @Post('session/claim')
   async claimSession(
     @Req() req: AuthenticatedRequest,
@@ -61,9 +50,7 @@ export class WhatsAppMetaCompatController {
   ) {
     void req;
     void body;
-    const status = await this.providerRegistry
-      .getSessionStatus(this.requireWorkspaceId(req))
-      .catch(() => null);
+    const status = await this.providerRegistry.getSessionStatus(req.workspaceId!).catch(() => null);
     return this.buildMetaUnsupportedResponse('legacy_session_claim', {
       authUrl: status?.authUrl || null,
     });
@@ -95,7 +82,7 @@ export class WhatsAppMetaCompatController {
   }
 
   /** Pause agent. */
-  // PULSE_OK: internal route, Meta Cloud API compatibility — returns unsupported for cloud-based providers
+  @InternalEndpoint('whatsapp session pause agent')
   @Post('session/pause-agent')
   pauseAgent(@Req() req: AuthenticatedRequest, @Body() body: { paused?: boolean }) {
     void req;
@@ -104,7 +91,7 @@ export class WhatsAppMetaCompatController {
   }
 
   /** Reconcile session. */
-  // PULSE_OK: internal route, Meta Cloud API compatibility — returns unsupported for cloud-based providers
+  @InternalEndpoint('whatsapp session reconcile')
   @Post('session/reconcile')
   reconcileSession(@Req() req: AuthenticatedRequest, @Body() body: { objective?: string }) {
     void req;
@@ -113,7 +100,7 @@ export class WhatsAppMetaCompatController {
   }
 
   /** Get session proofs. */
-  // PULSE_OK: internal route, Meta Cloud API compatibility — returns unsupported for cloud-based providers
+  @InternalEndpoint('whatsapp session proofs')
   @Get('session/proofs')
   getSessionProofs(@Req() req: AuthenticatedRequest) {
     void req;
@@ -124,7 +111,7 @@ export class WhatsAppMetaCompatController {
   }
 
   /** Get session stream token. */
-  // PULSE_OK: internal route, Meta Cloud API compatibility — returns unsupported for cloud-based providers
+  @InternalEndpoint('whatsapp session stream token')
   @Post('session/stream-token')
   getSessionStreamToken(@Req() req: AuthenticatedRequest) {
     void req;
@@ -132,9 +119,10 @@ export class WhatsAppMetaCompatController {
   }
 
   /** Get session stream health. */
+  @InternalEndpoint('whatsapp session stream health')
   @Get('session/stream-health')
   async getSessionStreamHealth(@Req() req: AuthenticatedRequest) {
-    const providerType = await this.providerRegistry.getProviderType(this.requireWorkspaceId(req));
+    const providerType = await this.providerRegistry.getProviderType(req.workspaceId!);
     return {
       success: true,
       provider: providerType,
@@ -145,7 +133,7 @@ export class WhatsAppMetaCompatController {
   }
 
   /** Run session action turn. */
-  // PULSE_OK: internal route, Meta Cloud API compatibility — returns unsupported for cloud-based providers
+  @InternalEndpoint('whatsapp session action turn')
   @Post('session/action-turn')
   runSessionActionTurn(
     @Req() req: AuthenticatedRequest,

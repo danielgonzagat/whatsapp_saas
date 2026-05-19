@@ -97,6 +97,9 @@ function collectCandidateAfterCueWord(rawTokens: readonly string[], startIndex: 
   const candidate: string[] = [];
   for (let cursor = startIndex; cursor < rawTokens.length; cursor += 1) {
     const token = rawTokens[cursor];
+    if (!token) {
+      continue;
+    }
     const normalized = normalizeCatalogText(token);
     if (!normalized || STOPWORDS.has(normalized)) {
       if (candidate.length > 0) {
@@ -119,7 +122,8 @@ function collectCandidateAfterCueWord(rawTokens: readonly string[], startIndex: 
 function findCandidateFromCueWord(rawTokens: readonly string[]): string | null {
   const normalizedTokens = rawTokens.map((token) => normalizeCatalogText(token));
   for (let index = 0; index < normalizedTokens.length; index += 1) {
-    if (!PRODUCT_CUE_WORDS.has(normalizedTokens[index])) {
+    const token = normalizedTokens[index];
+    if (!token || !PRODUCT_CUE_WORDS.has(token)) {
       continue;
     }
     const candidate = collectCandidateAfterCueWord(rawTokens, index + 1);

@@ -1,4 +1,5 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { randomUUID } from 'crypto';
 import { MindBeliefService } from './mind-belief.service';
 import { MindCaseMemoryService } from './mind-case-memory.service';
@@ -18,6 +19,7 @@ import {
 } from './mind-catalog-decision-resolvers';
 import {
   resolveAdAlertActionDecision,
+  resolveBestVariantDecision,
   resolveBroadcastWindowDecision,
   resolveChannelChoiceDecision,
   resolveHumanTransferDecision,
@@ -27,7 +29,7 @@ import { KNOWN_DECISION_TYPES } from './mind-decision-baselines';
 
 @Injectable()
 export class MindService {
-  private readonly logger = new Logger(MindService.name);
+  private readonly logger = StructuredLogger.from(MindService.name);
   private readonly watermarks = new Map<string, Date>();
   private readonly activeTicks = new Set<string>();
 
@@ -100,7 +102,7 @@ export class MindService {
         });
       }
 
-      const nextWatermark = events.length ? events[events.length - 1].occurredAt : watermark;
+      const nextWatermark = events.at(-1)?.occurredAt ?? watermark;
 
       this.watermarks.set(workspaceId, nextWatermark);
 
@@ -291,6 +293,7 @@ export class MindService {
     concept: string,
     priceBand: string,
     lastPurchase?: string,
+    channelConstraint?: { channel?: string; allowedProductIds?: string[] },
   ): Promise<{ offer: string; confidence: number; fallback: boolean }> {
     return resolveProductOfferDecision(
       this.policy,
@@ -299,6 +302,7 @@ export class MindService {
       concept,
       priceBand,
       lastPurchase,
+      channelConstraint,
     );
   }
 
@@ -333,6 +337,21 @@ export class MindService {
       window,
       threshold,
       campaign,
+    );
+  }
+
+  async resolveBestVariant(
+    workspaceId: string,
+    flow: string,
+    variantIds: string[],
+    context?: Record<string, unknown>,
+  ): Promise<{ variant: string; confidence: number; fallback: boolean }> {
+    return resolveBestVariantDecision(
+      this.policy,
+      workspaceId,
+      flow,
+      variantIds,
+      context,
     );
   }
 }

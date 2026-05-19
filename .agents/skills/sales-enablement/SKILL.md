@@ -349,11 +349,11 @@ If context is missing, ask:
 
 ## Tool Integrations
 
-For partner sales enablement, see the [tools registry](../../tools/REGISTRY.md):
+For partner sales enablement, see the tools registry:
 
 | Tool | What It Does | Guide |
 |------|-------------|-------|
-| **Introw** | Partner engagement tracking, deal registration, mutual action plans | [introw.md](../../tools/integrations/introw.md) |
+| **Introw** | Partner engagement tracking, deal registration, mutual action plans | introw.md |
 
 ---
 

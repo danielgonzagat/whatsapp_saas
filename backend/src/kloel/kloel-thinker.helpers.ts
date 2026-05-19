@@ -9,7 +9,7 @@ import {
   StoredProcessingTraceEntry,
   StoredResponseVersion,
 } from './kloel-thread.service';
-import type { ChatMessage, ThinkRequest, ThinkSyncResult } from './kloel-thinker.service';
+import type { ChatMessage, ThinkRequest, ThinkSyncResult } from './kloel-thinker.types';
 
 const ERR_THREAD_NOT_FOUND = 'Conversa não encontrada.';
 const ERR_ASSISTANT_MSG_NOT_FOUND = 'Mensagem do assistente não encontrada.';
@@ -26,7 +26,6 @@ function buildRegenerationError(message: string) {
 export async function thinkSyncImpl(
   request: ThinkRequest,
   composerCapability: 'create_image' | 'create_site' | 'search_web' | null,
-  enrichedCompanyContext: string | undefined,
   effectiveCompanyContext: string | undefined,
   deps: {
     replyEngine: KloelReplyEngineService;
@@ -49,7 +48,7 @@ export async function thinkSyncImpl(
   if (!replyEngine.hasOpenAiKey() && !process.env.ANTHROPIC_API_KEY) {
     return {
       response:
-        'Assistente IA não disponível no momento. Configure OPENAI_API_KEY ou ANTHROPIC_API_KEY para habilitar o Kloel.',
+        'Assistente IA não disponível no momento. Configure DEEPSEEK_API_KEY, LLM_API_KEY, OPENAI_API_KEY ou ANTHROPIC_API_KEY para habilitar o Kloel.',
     };
   }
   const thread =
@@ -64,20 +63,23 @@ export async function thinkSyncImpl(
       ? await composerService.executeComposerCapability({
           capability: composerCapability,
           message,
-          workspaceId,
-          metadata,
-          composerContext: effectiveCompanyContext,
+          ...(workspaceId !== undefined ? { workspaceId } : {}),
+          ...(metadata !== undefined ? { metadata } : {}),
+          ...(effectiveCompanyContext !== undefined
+            ? { composerContext: effectiveCompanyContext }
+            : {}),
         })
       : null;
   const assistantMessage =
     capabilityResult?.content ||
     (await replyEngine.buildAssistantReply({
       message,
-      workspaceId,
-      userId,
-      userName: reqUserName,
+      ...(workspaceId ? { workspaceId } : {}),
+      ...(userId ? { userId } : {}),
+      ...(reqUserName ? { userName: reqUserName } : {}),
       mode,
-      companyContext: effectiveCompanyContext,
+      ...(effectiveCompanyContext !== undefined ? { companyContext: effectiveCompanyContext } : {}),
+      ...(request.allowedTools !== undefined ? { allowedTools: request.allowedTools } : {}),
       conversationState: historyState,
     }));
 
@@ -121,19 +123,29 @@ export async function thinkSyncImpl(
           ...(capabilityResult?.metadata || {}),
         }),
       );
-      await threadService.maybeRefreshThreadSummary(thread.id, workspaceId, replyEngine.openai);
+      await threadService.maybeRefreshThreadSummary(
+        thread.id,
+        workspaceId,
+        replyEngine.openai ?? undefined,
+      );
       resolvedTitle = await threadService.maybeGenerateThreadTitle(
         thread.id,
         thread.title,
         message,
         workspaceId,
-        replyEngine.openai,
+        replyEngine.openai ?? undefined,
       );
     }
     await conversationStore.saveMessage(workspaceId, 'user', message);
     await conversationStore.saveMessage(workspaceId, 'assistant', assistantMessage);
   }
-  return { response: assistantMessage, conversationId: thread?.id, title: resolvedTitle };
+  const convId = thread?.id;
+  const title = resolvedTitle;
+  return {
+    response: assistantMessage,
+    ...(convId ? { conversationId: convId } : {}),
+    ...(title ? { title } : {}),
+  };
 }
 
 /** Regenerate assistant response — extracted to keep KloelThinkerService under 400 lines. */
@@ -151,6 +163,14 @@ export async function regenerateThreadAssistantResponseImpl(
         findFirst: (args: unknown) => Promise<{ id: string; summary: string | null } | null>;
       };
       chatMessage: {
+        findFirst: (args: unknown) => Promise<{
+          id: string;
+          threadId: string;
+          role: string;
+          content: string;
+          metadata: Prisma.JsonValue | null;
+          createdAt: Date;
+        } | null>;
         findMany: (args: unknown) => Promise<
           Array<{
             id: string;
@@ -161,14 +181,7 @@ export async function regenerateThreadAssistantResponseImpl(
             createdAt: Date;
           }>
         >;
-        update: (args: unknown) => Promise<{
-          id: string;
-          threadId: string;
-          role: string;
-          content: string;
-          metadata: Prisma.JsonValue | null;
-          createdAt: Date;
-        }>;
+        updateMany: (args: unknown) => Promise<unknown>;
         deleteMany: (args: unknown) => Promise<unknown>;
       };
       auditLog: { create: (args: unknown) => Promise<unknown> };
@@ -193,11 +206,13 @@ export async function regenerateThreadAssistantResponseImpl(
     where: { id: conversationId, workspaceId },
     select: { id: true, summary: true },
   });
-  if (!thread) throw buildRegenerationError(ERR_THREAD_NOT_FOUND);
+  if (!thread) {
+    throw buildRegenerationError(ERR_THREAD_NOT_FOUND);
+  }
 
   const messages = (
     await prisma.chatMessage.findMany({
-      where: { threadId: conversationId },
+      where: { threadId: conversationId, workspaceId },
       orderBy: { createdAt: 'desc' },
       take: 500,
       select: {
@@ -214,15 +229,22 @@ export async function regenerateThreadAssistantResponseImpl(
   const assistantIndex = messages.findIndex(
     (m) => m.id === assistantMessageId && m.role === 'assistant',
   );
-  if (assistantIndex === -1) throw buildRegenerationError(ERR_ASSISTANT_MSG_NOT_FOUND);
+  if (assistantIndex === -1) {
+    throw buildRegenerationError(ERR_ASSISTANT_MSG_NOT_FOUND);
+  }
 
   const sourceUserIndex = [...messages.slice(0, assistantIndex)]
     .map((m, i) => ({ m, i }))
     .reverse()
     .find((e) => e.m.role === 'user')?.i;
-  if (sourceUserIndex === undefined) throw buildRegenerationError(ERR_NO_USER_MSG_TO_REGENERATE);
+  if (sourceUserIndex === undefined) {
+    throw buildRegenerationError(ERR_NO_USER_MSG_TO_REGENERATE);
+  }
 
   const sourceUserMessage = messages[sourceUserIndex];
+  if (!sourceUserMessage) {
+    throw buildRegenerationError(ERR_NO_USER_MSG_TO_REGENERATE);
+  }
   const historyBeforeUser = messages
     .slice(Math.max(0, sourceUserIndex - 20), sourceUserIndex)
     .filter((m) => String(m.content || '').trim().length > 0)
@@ -237,11 +259,13 @@ export async function regenerateThreadAssistantResponseImpl(
   const regeneratedContent = await replyEngine.buildAssistantReply({
     message: sourceUserMessage.content,
     workspaceId,
-    userId,
-    userName,
+    ...(userId ? { userId } : {}),
+    ...(userName ? { userName } : {}),
     mode: 'chat',
     conversationState: {
-      summary: (thread as { summary?: string | null }).summary ?? undefined,
+      ...(typeof (thread as { summary?: string | null }).summary === 'string'
+        ? { summary: (thread as { summary?: string | null }).summary as string }
+        : {}),
       recentMessages: historyBeforeUser,
       totalMessages: sourceUserIndex,
     },
@@ -251,6 +275,9 @@ export async function regenerateThreadAssistantResponseImpl(
 
   const deletedMessageIds = messages.slice(assistantIndex + 1).map((m) => m.id);
   const currentAssistantMessage = messages[assistantIndex];
+  if (!currentAssistantMessage) {
+    throw buildRegenerationError(ERR_ASSISTANT_MSG_NOT_FOUND);
+  }
   const currentMetadata = threadService.normalizeThreadMessageMetadataRecord(
     currentAssistantMessage.metadata,
   );
@@ -269,29 +296,31 @@ export async function regenerateThreadAssistantResponseImpl(
     } satisfies StoredResponseVersion,
   ];
 
+  const updatedMetadata = threadService.buildThreadMessageMetadata(
+    currentMetadata as Prisma.InputJsonValue,
+    {
+      regeneratedAt: new Date().toISOString(),
+      regeneratedFromUserMessageId: sourceUserMessage.id,
+      responseVersions,
+      activeResponseVersionIndex: Math.max(responseVersions.length - 1, 0),
+      processingTrace: regeneratedTraceEntries,
+      processingSummary: threadService.buildProcessingTraceSummary(regeneratedTraceEntries),
+    },
+  );
+
   const operations: Prisma.PrismaPromise<unknown>[] = [
-    prisma.chatMessage.update({
-      where: { id: assistantMessageId },
+    prisma.chatMessage.updateMany({
+      where: { id: assistantMessageId, workspaceId },
       data: {
         content: regeneratedContent,
-        metadata: threadService.buildThreadMessageMetadata(
-          currentMetadata as Prisma.InputJsonValue,
-          {
-            regeneratedAt: new Date().toISOString(),
-            regeneratedFromUserMessageId: sourceUserMessage.id,
-            responseVersions,
-            activeResponseVersionIndex: Math.max(responseVersions.length - 1, 0),
-            processingTrace: regeneratedTraceEntries,
-            processingSummary: threadService.buildProcessingTraceSummary(regeneratedTraceEntries),
-          },
-        ),
+        metadata: (updatedMetadata ?? null) as Prisma.JsonValue | null,
       },
     }) as Prisma.PrismaPromise<unknown>,
   ];
   if (deletedMessageIds.length > 0) {
     operations.push(
       prisma.chatMessage.deleteMany({
-        where: { id: { in: deletedMessageIds } },
+        where: { id: { in: deletedMessageIds }, workspaceId },
       }) as Prisma.PrismaPromise<unknown>,
       prisma.auditLog.create({
         data: {
@@ -310,15 +339,26 @@ export async function regenerateThreadAssistantResponseImpl(
   }
   operations.push(threadService.touchThread(conversationId, workspaceId));
 
-  const [updatedMessage] = (await prisma.$transaction(operations)) as Array<{
-    id: string;
-    threadId: string;
-    role: string;
-    content: string;
-    metadata: Prisma.JsonValue | null;
-    createdAt: Date;
-  }>;
-  await threadService.maybeRefreshThreadSummary(conversationId, workspaceId, replyEngine.openai);
+  await prisma.$transaction(operations);
+  const updatedMessage = await prisma.chatMessage.findFirst({
+    where: { id: assistantMessageId, workspaceId },
+    select: {
+      id: true,
+      threadId: true,
+      role: true,
+      content: true,
+      metadata: true,
+      createdAt: true,
+    },
+  });
+  if (!updatedMessage) {
+    throw buildRegenerationError(ERR_ASSISTANT_MSG_NOT_FOUND);
+  }
+  await threadService.maybeRefreshThreadSummary(
+    conversationId,
+    workspaceId,
+    replyEngine.openai ?? undefined,
+  );
   return {
     id: updatedMessage.id,
     threadId: updatedMessage.threadId,

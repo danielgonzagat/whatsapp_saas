@@ -2,11 +2,8 @@
 
 import { kloelT } from '@/lib/i18n/t';
 import { colors } from '@/lib/design-tokens';
-/** Dynamic. */
 export const dynamic = 'force-dynamic';
 
-import { Card } from '@/components/kloel/Card';
-import { ContextualEmptyState } from '@/components/kloel/EmptyStates';
 import { SectionPage } from '@/components/kloel/SectionPage';
 import { tokenStorage } from '@/lib/api';
 import { type VoiceProfile, mediaApi, videoApi, voiceApi } from '@/lib/api/media';
@@ -15,27 +12,23 @@ import { useCallback, useEffect, useState } from 'react';
 import useSWR from 'swr';
 import { errorMessage, readStringField } from './page.helpers';
 import {
-  btnPrimary,
-  btnSecondary,
-  inputStyle,
-  STATUS_COLORS,
   type Tab,
   type VideoJob,
-  VideoJobRow,
 } from './page.shared';
+import { VideoJobsTab } from './VideoJobsTab';
+import { VideoCreateTab } from './VideoCreateTab';
+import { VoiceProfilesTab } from './VoiceProfilesTab';
+import { MediaProcessingTab } from './MediaProcessingTab';
 
-/** Video page. */
 export default function VideoPage() {
   const [activeTab, setActiveTab] = useState<Tab>('jobs');
 
-  // Video jobs
   const { data, error, isLoading, mutate } = useSWR<VideoJob[] | { jobs: VideoJob[] }>(
     '/video/jobs',
     swrFetcher,
   );
   const jobs: VideoJob[] = Array.isArray(data) ? data : data?.jobs || [];
 
-  // Create video job
   const [createUrl, setCreateUrl] = useState('');
   const [createPrompt, setCreatePrompt] = useState('');
   const [creating, setCreating] = useState(false);
@@ -81,7 +74,6 @@ export default function VideoPage() {
     [mutate],
   );
 
-  // Voice profiles
   const [voiceProfiles, setVoiceProfiles] = useState<VoiceProfile[]>([]);
   const [voiceLoading, setVoiceLoading] = useState(false);
   const [voiceError, setVoiceError] = useState<string | null>(null);
@@ -89,8 +81,6 @@ export default function VideoPage() {
   const [newVoiceId, setNewVoiceId] = useState('');
   const [newVoiceProvider, setNewVoiceProvider] = useState('elevenlabs');
   const [creatingVoice, setCreatingVoice] = useState(false);
-
-  // Generate voice
   const [genText, setGenText] = useState('');
   const [genProfileId, setGenProfileId] = useState('');
   const [generating, setGenerating] = useState(false);
@@ -129,10 +119,12 @@ export default function VideoPage() {
     }
     setCreatingVoice(true);
     try {
+      const vid = newVoiceId.trim() || undefined;
+      const vprov = newVoiceProvider || undefined;
       const res = await voiceApi.createProfile({
         name: newVoiceName.trim(),
-        voiceId: newVoiceId.trim() || undefined,
-        provider: newVoiceProvider || undefined,
+        ...(vid !== undefined ? { voiceId: vid } : {}),
+        ...(vprov !== undefined ? { provider: vprov } : {}),
       });
       if (res.error) {
         throw new Error(res.error);
@@ -155,9 +147,10 @@ export default function VideoPage() {
     setGenResult(null);
     setGenError(null);
     try {
+      const vpid = genProfileId || undefined;
       const res = await voiceApi.generate({
         text: genText.trim(),
-        voiceProfileId: genProfileId || undefined,
+        ...(vpid !== undefined ? { voiceProfileId: vpid } : {}),
       });
       if (res.error) {
         throw new Error(res.error);
@@ -170,7 +163,6 @@ export default function VideoPage() {
     }
   }, [genText, genProfileId]);
 
-  // Media processing
   const [mediaUrl, setMediaUrl] = useState('');
   const [mediaPrompt, setMediaPrompt] = useState('');
   const [mediaType, setMediaType] = useState('video');
@@ -185,9 +177,11 @@ export default function VideoPage() {
     setMediaJobId(null);
     setMediaStatus(null);
     try {
+      const iurl = mediaUrl.trim() || undefined;
+      const mprompt = mediaPrompt.trim() || undefined;
       const res = await mediaApi.processVideo({
-        inputUrl: mediaUrl.trim() || undefined,
-        prompt: mediaPrompt.trim() || undefined,
+        ...(iurl !== undefined ? { inputUrl: iurl } : {}),
+        ...(mprompt !== undefined ? { prompt: mprompt } : {}),
         type: mediaType,
       });
       if (res.error) {
@@ -230,12 +224,11 @@ export default function VideoPage() {
       icon={'\u{1F3AC}'}
       description={kloelT(`Jobs de geracao e processamento de video`)}
     >
-      {/* Tab bar */}
       <div
         style={{
           display: 'flex',
           gap: 0,
-          borderBottom: '1px solid colors.border.space',
+          borderBottom: '1px solid var(--border-space)',
           marginBottom: 20,
         }}
       >
@@ -263,505 +256,67 @@ export default function VideoPage() {
         ))}
       </div>
 
-      {/* Jobs tab */}
-      {activeTab === 'jobs' &&
-        (isLoading ? (
-          <Card>
-            <div
-              style={{
-                padding: 32,
-                textAlign: 'center',
-                color: 'var(--app-text-secondary)',
-                fontFamily: "'Sora', sans-serif",
-              }}
-            >
-              {kloelT(`Carregando jobs...`)}
-            </div>
-          </Card>
-        ) : error ? (
-          <Card>
-            <div
-              style={{
-                padding: 32,
-                textAlign: 'center',
-                color:
-                  '#EF4444' /* PULSE_VISUAL_OK: error/danger red, non-Monitor status indicator */ /* PULSE_VISUAL_OK: error/danger red, non-Monitor status indicator */,
-                fontFamily: "'Sora', sans-serif",
-              }}
-            >
-              {kloelT(`Erro ao carregar video jobs`)}
-            </div>
-          </Card>
-        ) : jobs.length === 0 ? (
-          <ContextualEmptyState
-            context="generic"
-            title={kloelT(`Nenhum job de video`)}
-            description={kloelT(`Crie um job para gerar ou processar videos com IA.`)}
-          />
-        ) : (
-          <Card>
-            {jobs.map((job) => (
-              <VideoJobRow key={job.id} job={job} onRefresh={handleRefreshJob} />
-            ))}
-          </Card>
-        ))}
+      {activeTab === 'jobs' && (
+        <VideoJobsTab
+          jobs={jobs}
+          isLoading={isLoading}
+          error={error}
+          onRefresh={handleRefreshJob}
+        />
+      )}
 
-      {/* Create video tab */}
       {activeTab === 'create' && (
-        <Card>
-          <div style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 14 }}>
-            <div>
-              <p
-                style={{
-                  color: 'var(--app-text-secondary)',
-                  fontSize: 11,
-                  fontFamily: "'Sora', sans-serif",
-                  marginBottom: 6,
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.1em',
-                }}
-              >
-                {kloelT(`URL do video de entrada (opcional)`)}
-              </p>
-              <input
-                aria-label="URL do video de entrada"
-                type="url"
-                value={createUrl}
-                onChange={(e) => setCreateUrl(e.target.value)}
-                placeholder="https://..."
-                style={inputStyle}
-              />
-            </div>
-            <div>
-              <p
-                style={{
-                  color: 'var(--app-text-secondary)',
-                  fontSize: 11,
-                  fontFamily: "'Sora', sans-serif",
-                  marginBottom: 6,
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.1em',
-                }}
-              >
-                {kloelT(`Prompt / instrucao para a IA`)}
-              </p>
-              <textarea
-                value={createPrompt}
-                onChange={(e) => setCreatePrompt(e.target.value)}
-                placeholder={kloelT(`Descreva o video que deseja gerar...`)}
-                rows={4}
-                style={{ ...inputStyle, resize: 'vertical' }}
-              />
-            </div>
-            {createError && (
-              <div
-                style={{
-                  background: 'rgba(239,68,68,0.08)',
-                  border: '1px solid rgba(239,68,68,0.2)',
-                  borderRadius: 6,
-                  padding: '10px 14px',
-                  color:
-                    '#EF4444' /* PULSE_VISUAL_OK: error/danger red, non-Monitor status indicator */ /* PULSE_VISUAL_OK: error/danger red, non-Monitor status indicator */,
-                  fontSize: 13,
-                }}
-              >
-                {createError}
-              </div>
-            )}
-            {createSuccess && (
-              <div
-                style={{
-                  background: 'rgba(16,185,129,0.08)',
-                  border: '1px solid rgba(16,185,129,0.2)',
-                  borderRadius: 6,
-                  padding: '10px 14px',
-                  color:
-                    '#10B981' /* PULSE_VISUAL_OK: success emerald, non-Monitor status indicator */ /* PULSE_VISUAL_OK: success emerald, non-Monitor status indicator */,
-                  fontSize: 13,
-                }}
-              >
-                {createSuccess}
-              </div>
-            )}
-            <button
-              type="button"
-              onClick={handleCreate}
-              disabled={creating || (!createUrl.trim() && !createPrompt.trim())}
-              style={{
-                ...btnPrimary,
-                opacity: creating || (!createUrl.trim() && !createPrompt.trim()) ? 0.5 : 1,
-              }}
-            >
-              {creating ? 'Criando...' : 'Criar Job de Video'}
-            </button>
-          </div>
-        </Card>
+        <VideoCreateTab
+          createUrl={createUrl}
+          createPrompt={createPrompt}
+          creating={creating}
+          createError={createError}
+          createSuccess={createSuccess}
+          onUrlChange={setCreateUrl}
+          onPromptChange={setCreatePrompt}
+          onCreate={handleCreate}
+        />
       )}
 
-      {/* Voice profiles tab */}
       {activeTab === 'voice' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          {/* Create profile */}
-          <Card>
-            <div style={{ padding: 16 }}>
-              <p
-                style={{
-                  color: 'var(--app-text-secondary)',
-                  fontSize: 11,
-                  fontFamily: "'Sora', sans-serif",
-                  marginBottom: 12,
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.1em',
-                }}
-              >
-                {kloelT(`Novo perfil de voz`)}
-              </p>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                <input
-                  aria-label="Nome do perfil de voz"
-                  type="text"
-                  value={newVoiceName}
-                  onChange={(e) => setNewVoiceName(e.target.value)}
-                  placeholder={kloelT(`Nome do perfil`)}
-                  style={inputStyle}
-                />
-                <input
-                  aria-label="Voice ID do ElevenLabs"
-                  type="text"
-                  value={newVoiceId}
-                  onChange={(e) => setNewVoiceId(e.target.value)}
-                  placeholder={kloelT(`Voice ID (ex: ElevenLabs voice ID)`)}
-                  style={inputStyle}
-                />
-                <select
-                  value={newVoiceProvider}
-                  onChange={(e) => setNewVoiceProvider(e.target.value)}
-                  style={{ ...inputStyle, cursor: 'pointer' }}
-                >
-                  <option value="elevenlabs">{kloelT(`ElevenLabs`)}</option>
-                  <option value="openai">{kloelT(`OpenAI TTS`)}</option>
-                  <option value="google">{kloelT(`Google TTS`)}</option>
-                </select>
-                {voiceError && (
-                  <div
-                    style={{
-                      color:
-                        '#EF4444' /* PULSE_VISUAL_OK: error/danger red, non-Monitor status indicator */ /* PULSE_VISUAL_OK: error/danger red, non-Monitor status indicator */,
-                      fontSize: 12,
-                    }}
-                  >
-                    {voiceError}
-                  </div>
-                )}
-                <button
-                  type="button"
-                  onClick={handleCreateVoice}
-                  disabled={creatingVoice || !newVoiceName.trim()}
-                  style={{
-                    ...btnPrimary,
-                    opacity: creatingVoice || !newVoiceName.trim() ? 0.5 : 1,
-                  }}
-                >
-                  {creatingVoice ? 'Criando...' : 'Criar Perfil'}
-                </button>
-              </div>
-            </div>
-          </Card>
-
-          {/* Profile list */}
-          <Card>
-            <div style={{ padding: 16 }}>
-              <p
-                style={{
-                  color: 'var(--app-text-secondary)',
-                  fontSize: 11,
-                  fontFamily: "'Sora', sans-serif",
-                  marginBottom: 12,
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.1em',
-                }}
-              >
-                {kloelT(`Perfis cadastrados`)}
-              </p>
-              {voiceLoading ? (
-                <div style={{ color: 'var(--app-text-secondary)', fontSize: 13 }}>
-                  {kloelT(`Carregando...`)}
-                </div>
-              ) : voiceProfiles.length === 0 ? (
-                <div style={{ color: 'var(--app-text-tertiary)', fontSize: 13 }}>
-                  {kloelT(`Nenhum perfil criado ainda.`)}
-                </div>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  {voiceProfiles.map((p) => (
-                    <div
-                      key={p.id}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        padding: '10px 12px',
-                        background: 'rgba(255,255,255,0.02)',
-                        border: '1px solid var(--app-border-primary)',
-                        borderRadius: 6,
-                      }}
-                    >
-                      <div>
-                        <div
-                          style={{
-                            color: 'var(--app-text-primary)',
-                            fontSize: 13,
-                            fontWeight: 600,
-                          }}
-                        >
-                          {p.name}
-                        </div>
-                        <div
-                          style={{ color: 'var(--app-text-secondary)', fontSize: 11, marginTop: 2 }}
-                        >
-                          {p.provider || '—'} {p.voiceId ? `· ${p.voiceId}` : ''}
-                        </div>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => setGenProfileId(p.id)}
-                        style={{
-                          ...btnSecondary,
-                          padding: '4px 10px',
-                          fontSize: 11,
-                          borderColor:
-                            genProfileId === p.id ? colors.ember.primary : colors.border.space,
-                          color: genProfileId === p.id ? colors.ember.primary : colors.text.silver,
-                        }}
-                      >
-                        {genProfileId === p.id ? 'Selecionado' : 'Selecionar'}
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </Card>
-
-          {/* Generate */}
-          <Card>
-            <div style={{ padding: 16 }}>
-              <p
-                style={{
-                  color: 'var(--app-text-secondary)',
-                  fontSize: 11,
-                  fontFamily: "'Sora', sans-serif",
-                  marginBottom: 12,
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.1em',
-                }}
-              >
-                {kloelT(`Gerar audio`)}
-              </p>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                <textarea
-                  value={genText}
-                  onChange={(e) => setGenText(e.target.value)}
-                  placeholder={kloelT(`Texto para converter em audio...`)}
-                  rows={3}
-                  style={{ ...inputStyle, resize: 'vertical' }}
-                />
-                {genError && (
-                  <div
-                    style={{
-                      color:
-                        '#EF4444' /* PULSE_VISUAL_OK: error/danger red, non-Monitor status indicator */ /* PULSE_VISUAL_OK: error/danger red, non-Monitor status indicator */,
-                      fontSize: 12,
-                    }}
-                  >
-                    {genError}
-                  </div>
-                )}
-                {genResult && (
-                  <div
-                    style={{
-                      background: 'rgba(16,185,129,0.08)',
-                      border: '1px solid rgba(16,185,129,0.2)',
-                      borderRadius: 6,
-                      padding: '10px 14px',
-                    }}
-                  >
-                    <p
-                      style={{
-                        color:
-                          '#10B981' /* PULSE_VISUAL_OK: success emerald, non-Monitor status indicator */ /* PULSE_VISUAL_OK: success emerald, non-Monitor status indicator */,
-                        fontSize: 12,
-                        marginBottom: 4,
-                      }}
-                    >
-                      {kloelT(`Audio gerado`)}
-                    </p>
-                    {genResult.startsWith('http') ? (
-                      <audio controls src={genResult} style={{ width: '100%', marginTop: 4 }} />
-                    ) : (
-                      <p
-                        style={{
-                          color: 'var(--app-text-primary)',
-                          fontSize: 12,
-                          fontFamily: 'JetBrains Mono, monospace',
-                        }}
-                      >
-                        {genResult}
-                      </p>
-                    )}
-                  </div>
-                )}
-                <button
-                  type="button"
-                  onClick={handleGenerate}
-                  disabled={generating || !genText.trim()}
-                  style={{ ...btnPrimary, opacity: generating || !genText.trim() ? 0.5 : 1 }}
-                >
-                  {generating ? 'Gerando...' : 'Gerar Audio'}
-                </button>
-              </div>
-            </div>
-          </Card>
-        </div>
+        <VoiceProfilesTab
+          voiceProfiles={voiceProfiles}
+          voiceLoading={voiceLoading}
+          voiceError={voiceError}
+          newVoiceName={newVoiceName}
+          newVoiceId={newVoiceId}
+          newVoiceProvider={newVoiceProvider}
+          creatingVoice={creatingVoice}
+          genText={genText}
+          genProfileId={genProfileId}
+          generating={generating}
+          genResult={genResult}
+          genError={genError}
+          onNewVoiceNameChange={setNewVoiceName}
+          onNewVoiceIdChange={setNewVoiceId}
+          onNewVoiceProviderChange={setNewVoiceProvider}
+          onCreateVoice={handleCreateVoice}
+          onGenTextChange={setGenText}
+          onGenProfileIdChange={setGenProfileId}
+          onGenerate={handleGenerate}
+        />
       )}
 
-      {/* Media processing tab */}
       {activeTab === 'media' && (
-        <Card>
-          <div style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 14 }}>
-            <div>
-              <p
-                style={{
-                  color: 'var(--app-text-secondary)',
-                  fontSize: 11,
-                  fontFamily: "'Sora', sans-serif",
-                  marginBottom: 6,
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.1em',
-                }}
-              >
-                {kloelT(`Tipo de processamento`)}
-              </p>
-              <select
-                value={mediaType}
-                onChange={(e) => setMediaType(e.target.value)}
-                style={{ ...inputStyle, cursor: 'pointer' }}
-              >
-                <option value="video">{kloelT(`Video`)}</option>
-                <option value="audio">{kloelT(`Audio`)}</option>
-                <option value="image">{kloelT(`Imagem`)}</option>
-              </select>
-            </div>
-            <div>
-              <p
-                style={{
-                  color: 'var(--app-text-secondary)',
-                  fontSize: 11,
-                  fontFamily: "'Sora', sans-serif",
-                  marginBottom: 6,
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.1em',
-                }}
-              >
-                {kloelT(`URL da midia (opcional)`)}
-              </p>
-              <input
-                aria-label="URL da midia"
-                type="url"
-                value={mediaUrl}
-                onChange={(e) => setMediaUrl(e.target.value)}
-                placeholder="https://..."
-                style={inputStyle}
-              />
-            </div>
-            <div>
-              <p
-                style={{
-                  color: 'var(--app-text-secondary)',
-                  fontSize: 11,
-                  fontFamily: "'Sora', sans-serif",
-                  marginBottom: 6,
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.1em',
-                }}
-              >
-                {kloelT(`Instrucao / prompt`)}
-              </p>
-              <textarea
-                value={mediaPrompt}
-                onChange={(e) => setMediaPrompt(e.target.value)}
-                placeholder={kloelT(`Descreva o processamento desejado...`)}
-                rows={3}
-                style={{ ...inputStyle, resize: 'vertical' }}
-              />
-            </div>
-            {mediaError && (
-              <div
-                style={{
-                  background: 'rgba(239,68,68,0.08)',
-                  border: '1px solid rgba(239,68,68,0.2)',
-                  borderRadius: 6,
-                  padding: '10px 14px',
-                  color:
-                    '#EF4444' /* PULSE_VISUAL_OK: error/danger red, non-Monitor status indicator */ /* PULSE_VISUAL_OK: error/danger red, non-Monitor status indicator */,
-                  fontSize: 13,
-                }}
-              >
-                {mediaError}
-              </div>
-            )}
-            {mediaJobId && (
-              <div
-                style={{
-                  background: 'rgba(255,255,255,0.03)',
-                  border: '1px solid var(--app-border-primary)',
-                  borderRadius: 6,
-                  padding: '10px 14px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                }}
-              >
-                <div>
-                  <div
-                    style={{
-                      color: 'var(--app-text-primary)',
-                      fontSize: 12,
-                      fontFamily: 'JetBrains Mono, monospace',
-                    }}
-                  >
-                    {kloelT(`Job:`)} {mediaJobId}
-                  </div>
-                  <div
-                    style={{
-                      color:
-                        STATUS_COLORS[mediaStatus?.toUpperCase() || 'PENDING'] || colors.text.muted,
-                      fontSize: 12,
-                      marginTop: 2,
-                    }}
-                  >
-                    {mediaStatus || 'PENDING'}
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={handleCheckMediaJob}
-                  style={{ ...btnSecondary, padding: '4px 10px', fontSize: 11 }}
-                >
-                  {kloelT(`Verificar status`)}
-                </button>
-              </div>
-            )}
-            <button
-              type="button"
-              onClick={handleProcessMedia}
-              disabled={processingMedia}
-              style={{ ...btnPrimary, opacity: processingMedia ? 0.5 : 1 }}
-            >
-              {processingMedia ? 'Processando...' : 'Processar Midia'}
-            </button>
-          </div>
-        </Card>
+        <MediaProcessingTab
+          mediaUrl={mediaUrl}
+          mediaPrompt={mediaPrompt}
+          mediaType={mediaType}
+          processingMedia={processingMedia}
+          mediaJobId={mediaJobId}
+          mediaStatus={mediaStatus}
+          mediaError={mediaError}
+          onMediaUrlChange={setMediaUrl}
+          onMediaPromptChange={setMediaPrompt}
+          onMediaTypeChange={setMediaType}
+          onProcess={handleProcessMedia}
+          onCheck={handleCheckMediaJob}
+        />
       )}
     </SectionPage>
   );

@@ -48,8 +48,8 @@ export async function adminFetch<TResponse = unknown, TBody = unknown>(
     method: options.method ?? 'GET',
     headers,
     credentials: 'include',
-    body: options.body !== undefined ? JSON.stringify(options.body) : undefined,
-    signal: options.signal,
+    ...(options.body !== undefined ? { body: JSON.stringify(options.body) } : {}),
+    ...(options.signal ? { signal: options.signal } : {}),
   });
 
   if (response.status === 204) {

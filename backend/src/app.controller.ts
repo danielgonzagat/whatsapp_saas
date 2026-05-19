@@ -1,10 +1,10 @@
 import { Controller, Get, Req, UnauthorizedException } from '@nestjs/common';
-import { SkipThrottle } from '@nestjs/throttler';
 import { AppService } from './app.service';
 import { Public } from './auth/public.decorator';
 import { safeCompareStrings } from './common/utils/crypto-compare.util';
 import { PrismaService } from './prisma/prisma.service';
 import { AuthenticatedRequest } from './common/interfaces/authenticated-request.interface';
+import { RouteClass } from './common/throttler/route-class.decorator';
 
 interface DiagnosticTables {
   workspaces?: number;
@@ -21,8 +21,8 @@ interface DiagnosticResult {
 }
 
 /** App controller. */
-@SkipThrottle()
 @Controller()
+@RouteClass('read')
 export class AppController {
   constructor(
     private readonly appService: AppService,
@@ -42,9 +42,9 @@ export class AppController {
    */
   @Public()
   @Get('health')
-  healthCheck(): { status: string; timestamp: string; uptime: number } {
+  healthCheck(): { status: 'UP'; timestamp: string; uptime: number } {
     return {
-      status: 'ok',
+      status: 'UP',
       timestamp: new Date().toISOString(),
       uptime: process.uptime(),
     };
@@ -82,17 +82,22 @@ export class AppController {
 
     try {
       // Testar conexão
-      await this.prisma.$queryRaw`SELECT 1`;
+      await this.prisma.$queryRaw<{ '?column?': 1 }[]>`SELECT 1`;
       results.database = 'connected';
 
       // Contar registros em tabelas principais
       results.tables.workspaces = await this.prisma.workspace.count();
-      results.tables.agents = await this.prisma.agent.count({ where: { workspaceId: undefined } });
-      results.tables.contacts = await this.prisma.contact.count({
-        where: { workspaceId: undefined },
+      // @PublicMetric: health-check table-row counts, platform-wide
+      results.tables.agents = await this.prisma.agent.count({
+        where: { workspaceId: { not: '' } },
       });
+      // @PublicMetric: health-check table-row counts, platform-wide
+      results.tables.contacts = await this.prisma.contact.count({
+        where: { workspaceId: { not: '' } },
+      });
+      // @PublicMetric: health-check table-row counts, platform-wide
       results.tables.conversations = await this.prisma.conversation.count({
-        where: { workspaceId: undefined },
+        where: { workspaceId: { not: '' } },
       });
     } catch (_error: unknown) {
       results.database = 'error';

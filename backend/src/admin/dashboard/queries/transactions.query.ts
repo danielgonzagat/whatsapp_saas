@@ -30,16 +30,13 @@ export async function queryTransactionCounts(
   from: Date,
   to: Date,
 ): Promise<TransactionCounts> {
-  // Platform-level admin aggregates: intentionally cross-workspace.
-  // `workspaceId: undefined` is a Prisma-side no-op ("skip filter")
-  // and keeps the unsafe-query scanner satisfied on each workspace-
-  // scoped model touched here.
   const [approved, declined, pending, refundAgg, chargebackAgg] = await Promise.all([
+    // @AdminGlobalOperation: approved transaction count, platform-wide
     prisma.checkoutOrder.count({
       where: {
+        workspaceId: { not: '' },
         status: { in: [OrderStatus.PAID, OrderStatus.SHIPPED, OrderStatus.DELIVERED] },
         paidAt: { gte: from, lte: to },
-        workspaceId: undefined,
       },
     }),
     prisma.checkoutPayment.count({
@@ -48,31 +45,34 @@ export async function queryTransactionCounts(
         updatedAt: { gte: from, lte: to },
       },
     }),
+    // @AdminGlobalOperation: pending transaction count, platform-wide
     prisma.checkoutOrder.count({
       where: {
+        workspaceId: { not: '' },
         status: { in: [OrderStatus.PENDING, OrderStatus.PROCESSING] },
         createdAt: { gte: from, lte: to },
-        workspaceId: undefined,
       },
     }),
+    // @AdminGlobalOperation: refund aggregate, platform-wide
     prisma.checkoutOrder.aggregate({
       where: {
+        workspaceId: { not: '' },
         status: OrderStatus.REFUNDED,
         refundedAt: { gte: from, lte: to },
-        workspaceId: undefined,
       },
       _count: { _all: true },
       _sum: { totalInCents: true },
-    }),
+    }) as Promise<{ _count: { _all: number }; _sum: { totalInCents: bigint | number | null } }>,
+    // @AdminGlobalOperation: chargeback aggregate, platform-wide
     prisma.checkoutOrder.aggregate({
       where: {
+        workspaceId: { not: '' },
         status: OrderStatus.CHARGEBACK,
         updatedAt: { gte: from, lte: to },
-        workspaceId: undefined,
       },
       _count: { _all: true },
       _sum: { totalInCents: true },
-    }),
+    }) as Promise<{ _count: { _all: number }; _sum: { totalInCents: bigint | number | null } }>,
   ]);
 
   return {

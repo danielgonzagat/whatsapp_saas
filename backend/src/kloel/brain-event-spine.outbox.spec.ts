@@ -43,6 +43,52 @@ describe('BrainEventSpineService outbox helpers', () => {
     });
   });
 
+  it('claims pending events by type and returns processing payloads for workers', async () => {
+    const occurredAt = new Date('2026-05-13T10:00:00.000Z');
+    prisma.mindOutboxEvent.findMany
+      .mockResolvedValueOnce([{ id: 'outbox-1' }])
+      .mockResolvedValueOnce([
+        {
+          id: 'outbox-1',
+          eventType: 'agent.job.due',
+          subject: 'agent_job:daily',
+          payload: { prompt: 'Review memory' },
+          idempotencyKey: 'agent_job:daily:2026-05-13T09:59:00.000Z',
+          occurredAt,
+          attempts: 1,
+          lastError: null,
+        },
+      ]);
+    prisma.mindOutboxEvent.updateMany.mockResolvedValueOnce({ count: 1 });
+
+    const result = await service.claimPendingEvents({
+      workspaceId: 'ws-1',
+      eventType: 'agent.job.due',
+      limit: 5,
+    });
+
+    expect(prisma.mindOutboxEvent.updateMany).toHaveBeenCalledWith({
+      where: {
+        id: { in: ['outbox-1'] },
+        workspaceId: 'ws-1',
+        eventType: 'agent.job.due',
+        status: 'pending',
+      },
+      data: expect.objectContaining({
+        status: 'processing',
+        attempts: { increment: 1 },
+      }),
+    });
+    expect(result.events).toEqual([
+      expect.objectContaining({
+        id: 'outbox-1',
+        eventType: 'agent.job.due',
+        subject: 'agent_job:daily',
+        payload: { prompt: 'Review memory' },
+      }),
+    ]);
+  });
+
   it('records multiple events and returns count of successful writes', async () => {
     prisma.autopilotEvent.create
       .mockResolvedValueOnce({ id: 'event-1' })

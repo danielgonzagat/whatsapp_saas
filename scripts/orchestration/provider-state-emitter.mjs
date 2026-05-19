@@ -94,7 +94,7 @@ function scanPulse() {
       const end = Math.min(content.length, match.index + match[0].length + 120);
       const snippet = content.slice(start, end).replace(/\n/g, ' ');
       lines.push(`pulse:${snippet.slice(0, 60)}`);
-      if (idx > 5) break;
+      if (idx > 5) {break;}
     }
 
     if (lines.length > 0) {
@@ -161,7 +161,7 @@ function scanCiLogs() {
     }
 
     for (const provider of CANONICAL_PROVIDERS) {
-      if (evidence[provider]) continue;
+      if (evidence[provider]) {continue;}
 
       const errPattern = PROVIDER_ERROR_PATTERNS[provider];
       errPattern.lastIndex = 0;
@@ -190,11 +190,15 @@ function buildLegacyPulseSummary(providerName) {
   }
 
   const match = pulseContent.match(providerSectionRegex);
-  if (!match) return null;
+  if (!match) {return null;}
 
   const line = match[0];
-  if (/error|fail|down|broken/i.test(line)) return 'degraded';
-  if (/healthy|ok|operational/i.test(line)) return 'healthy';
+  if (/error|fail|down|broken/i.test(line)) {
+    return 'degraded';
+  }
+  if (/healthy|ok|operational/i.test(line)) {
+    return 'healthy';
+  }
   return null;
 }
 
@@ -249,7 +253,7 @@ function writeJsonAtomic(filePath, value) {
 
   if (existsSync(filePath)) {
     const current = readFileSync(filePath, 'utf8');
-    if (current === next) return false;
+    if (current === next) {return false;}
   }
 
   const tmp = `${filePath}.tmp`;

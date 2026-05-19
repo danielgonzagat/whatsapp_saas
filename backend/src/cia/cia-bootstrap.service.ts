@@ -1,4 +1,4 @@
-import { Inject, Injectable, Optional, forwardRef } from '@nestjs/common';
+import { Inject, Injectable, Optional, forwardRef, Logger } from '@nestjs/common';
 import { buildConversationOperationalState } from '../whatsapp/agent-conversation-state.util';
 import { AgentEventsService } from '../whatsapp/agent-events.service';
 import { CiaChatFilterService } from './cia-chat-filter.service';
@@ -8,12 +8,16 @@ import { PrismaService } from '../prisma/prisma.service';
 import { WhatsAppProviderRegistry } from '../whatsapp/providers/provider-registry';
 import { WhatsAppCatchupService } from '../whatsapp/whatsapp-catchup.service';
 import { asProviderSettings } from '../whatsapp/provider-settings.types';
+
+type BootstrapConversation = Record<string, unknown>;
+type OperationalMetadata = { canTakeMore?: boolean; [key: string]: unknown };
+
 import {
   CIA_CONTACT_CATALOG_LOOKBACK_DAYS,
   CIA_BOOTSTRAP_IMMEDIATE_LIMIT,
   CIA_BOOTSTRAP_AUTO_CONTINUE,
   CIA_BOOTSTRAP_AUTO_CONTINUE_LIMIT,
-} from './__parts__/cia-bootstrap.service.companion';
+} from '../whatsapp/cia-bootstrap.constants';
 
 export { CIA_BOOTSTRAP_AUTO_CONTINUE_LIMIT };
 
@@ -24,6 +28,8 @@ export { CIA_BOOTSTRAP_AUTO_CONTINUE_LIMIT };
  */
 @Injectable()
 export class CiaBootstrapService {
+  private readonly logger = new Logger(CiaBootstrapService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly providerRegistry: WhatsAppProviderRegistry,
@@ -33,7 +39,9 @@ export class CiaBootstrapService {
     @Inject(forwardRef(() => WhatsAppCatchupService))
     private readonly catchupService: WhatsAppCatchupService,
     @Optional() private readonly opsAlert?: OpsAlertService,
-  ) {}
+  ) {
+    this.logger.debug?.(`CiaBootstrapService initialized`);
+  }
 
   async listPendingConversations(workspaceId: string, limit: number) {
     const conversations =
@@ -80,9 +88,9 @@ export class CiaBootstrapService {
       .filter((conversation) => conversation.operational.pending);
   }
 
-  countPendingMessagesFromConversations(conversations: Record<string, unknown>[]): number {
+  countPendingMessagesFromConversations(conversations: BootstrapConversation[]): number {
     return conversations.reduce((sum, conversation) => {
-      const operational = conversation.operational as Record<string, unknown> | undefined;
+      const operational = conversation.operational as OperationalMetadata | undefined;
       return (
         sum +
         Math.max(1, Number(conversation.pendingMessages || operational?.pendingMessages || 0) || 0)
@@ -227,12 +235,13 @@ export class CiaBootstrapService {
         },
       );
 
+      const runIdVal = immediateRun?.runId;
       await this.agentEvents.publish({
         type: 'status',
         workspaceId,
         phase: 'instant_value',
         persistent: true,
-        runId: immediateRun?.runId,
+        ...(runIdVal !== undefined ? { runId: runIdVal } : {}),
         message: autoContinueBacklog
           ? `Já comecei a tratar ${immediateRun?.totalQueued || 0} conversas pendentes automaticamente.`
           : `Já comecei a responder os ${immediateRun?.totalQueued || 0} contatos mais recentes para te provar valor agora.`,

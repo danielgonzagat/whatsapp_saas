@@ -88,3 +88,16 @@ HUD_LAST_REFRESH.json
 artifacts/opencode-fleet/
 .opencode-archive/
 BLOCKER_RANK.json
+
+# Wave A purge — generated coverage/runtime artifacts must never enter git
+backend/coverage/
+frontend/coverage/
+frontend-admin/coverage/
+worker/coverage/
+coverage/
+.tmp/
+tmp/
+.notif-*/
+.eslint-seatbelt.tsv
+.pulse/current/
+e2e/playwright-cache/

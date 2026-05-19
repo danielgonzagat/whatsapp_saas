@@ -35,22 +35,22 @@ function DelayNodeComponent({ data, selected }: NodeProps<DelayNodeData>) {
   return (
     <div
       className={`
-      px-4 py-3 rounded-lg border-2 bg-[#111113] shadow-md min-w-[180px] max-w-[240px]
-      ${selected ? 'border-[#E85D30] ring-2 ring-[#E85D30]/30' : 'border-[#222226]'}
+      px-4 py-3 rounded-lg border-2 bg-[var(--bg-surface)] shadow-md min-w-[180px] max-w-[240px]
+      ${selected ? 'border-[var(--ember-primary)] ring-2 ring-[var(--ember-primary)]/30' : 'border-[var(--bg-border)]'}
     `}
     >
-      <Handle type="target" position={Position.Top} className="!bg-[#E85D30] !w-3 !h-3" />
+      <Handle type="target" position={Position.Top} className="!bg-[var(--ember-primary)] !w-3 !h-3" />
 
       <div className="flex items-center gap-2 mb-2">
-        <div className="p-1.5 bg-[#E85D30]/15 rounded-md">
-          <Clock className="w-4 h-4 text-[#E85D30]" aria-hidden="true" />
+        <div className="p-1.5 bg-[var(--ember-primary)]/15 rounded-md">
+          <Clock className="w-4 h-4 text-[var(--ember-primary)]" aria-hidden="true" />
         </div>
-        <span className="font-medium text-sm text-[#E0DDD8]">{data.label || 'Delay'}</span>
+        <span className="font-medium text-sm text-[var(--text-silver)]">{data.label || 'Delay'}</span>
       </div>
 
-      <div className="text-xs text-[#6E6E73] text-center py-1">{formatDelay()}</div>
+      <div className="text-xs text-[var(--text-muted)] text-center py-1">{formatDelay()}</div>
 
-      <Handle type="source" position={Position.Bottom} className="!bg-[#E85D30] !w-3 !h-3" />
+      <Handle type="source" position={Position.Bottom} className="!bg-[var(--ember-primary)] !w-3 !h-3" />
     </div>
   );
 }

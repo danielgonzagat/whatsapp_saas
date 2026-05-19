@@ -1,14 +1,14 @@
 import { Module, forwardRef } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
-import { CiaModule } from '../cia/cia.module';
 import { BillingModule } from '../billing/billing.module';
 import { CrmModule } from '../crm/crm.module';
 import { InboxModule } from '../inbox/inbox.module';
-import { KloelModule } from '../kloel/kloel.module';
 import { OmnichannelModule } from '../omnichannel/omnichannel.module';
 import { PrismaModule } from '../prisma/prisma.module';
 import { WorkspaceModule } from '../workspaces/workspace.module';
+
+const { KloelModule } = require('../kloel/kloel.module');
 import { AccountAgentService } from './account-agent.service';
 import { AgentEventsService } from './agent-events.service';
 import { WhatsAppApiController } from './controllers/whatsapp-api.controller';
@@ -20,13 +20,27 @@ import { WhatsAppProviderRegistry } from './providers/provider-registry';
 import { WahaProvider } from './providers/waha.provider';
 import { WhatsAppApiProvider } from './providers/whatsapp-api.provider';
 import { WhatsAppCatchupService } from './whatsapp-catchup.service';
+import { WhatsappCatchupOrchestratorService } from './whatsapp-catchup-orchestrator.service';
+import { WhatsappCatchupHistoryService } from './whatsapp-catchup-history.service';
 import { WhatsAppWatchdogService } from './whatsapp-watchdog.service';
 import { WhatsAppWatchdogRecoveryService } from './whatsapp-watchdog-recovery.service';
 import { WhatsAppWatchdogSessionService } from './whatsapp-watchdog-session.service';
 import { WhatsappController } from './whatsapp.controller';
 import { WhatsappSendRateGuardService } from './whatsapp-send-rate-guard.service';
 import { WhatsappService } from './whatsapp.service';
+import { WhatsappSessionService } from './whatsapp-session.service';
+import { WhatsappMessageDispatcherService } from './whatsapp-message-dispatcher.service';
+import { WhatsappMediaService } from './whatsapp-media.service';
+import { WhatsappReconcilerService } from './whatsapp-reconciler.service';
 import { WorkerRuntimeService } from './worker-runtime.service';
+import { WhatsappChatBacklogService } from './whatsapp.service.chats.backlog';
+import { WhatsappChatMessagesService } from './whatsapp.service.chats.messages';
+import {
+  WHATSAPP_MESSAGING,
+  INBOUND_PROCESSOR,
+  CIA_RUNTIME,
+  CATCHUP_HISTORY,
+} from './whatsapp.tokens';
 
 /** Whatsapp module. */
 @Module({
@@ -39,7 +53,7 @@ import { WorkerRuntimeService } from './worker-runtime.service';
     forwardRef(() => CrmModule),
     PrismaModule,
     forwardRef(() => KloelModule),
-    forwardRef(() => CiaModule),
+    forwardRef(() => require('../cia/cia.module').CiaModule),
     forwardRef(() => OmnichannelModule),
   ],
   controllers: [
@@ -51,6 +65,10 @@ import { WorkerRuntimeService } from './worker-runtime.service';
   ],
   providers: [
     WhatsappService,
+    WhatsappSessionService,
+    WhatsappMessageDispatcherService,
+    WhatsappMediaService,
+    WhatsappReconcilerService,
     WhatsappSendRateGuardService,
     InboundProcessorService,
     WhatsAppApiProvider,
@@ -60,23 +78,32 @@ import { WorkerRuntimeService } from './worker-runtime.service';
     WhatsAppWatchdogRecoveryService,
     WhatsAppWatchdogSessionService,
     WhatsAppCatchupService,
+    WhatsappCatchupOrchestratorService,
+    WhatsappCatchupHistoryService,
     AgentEventsService,
     AccountAgentService,
     WorkerRuntimeService,
+    WhatsappChatMessagesService,
+    WhatsappChatBacklogService,
+    { provide: WHATSAPP_MESSAGING, useExisting: WhatsappService },
+    { provide: INBOUND_PROCESSOR, useExisting: InboundProcessorService },
+    { provide: CIA_RUNTIME, useExisting: require('../cia/cia-runtime.service').CiaRuntimeService },
+    { provide: CATCHUP_HISTORY, useExisting: WhatsappCatchupHistoryService },
   ],
   exports: [
     WhatsappService,
+    WHATSAPP_MESSAGING,
     InboundProcessorService,
-    WhatsAppApiProvider,
-    WahaProvider,
-    WhatsAppProviderRegistry,
-    WhatsAppWatchdogService,
-    WhatsAppWatchdogRecoveryService,
-    WhatsAppWatchdogSessionService,
+    INBOUND_PROCESSOR,
+    CIA_RUNTIME,
+    WhatsappCatchupHistoryService,
     WhatsAppCatchupService,
+    CATCHUP_HISTORY,
     AgentEventsService,
     AccountAgentService,
     WorkerRuntimeService,
+    WhatsAppApiProvider,
+    WhatsAppProviderRegistry,
   ],
 })
 export class WhatsappModule {}

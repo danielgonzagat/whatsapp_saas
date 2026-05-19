@@ -12,7 +12,7 @@ import type { FraudCheckoutContext } from './fraud.types';
  * Provides an in-memory Prisma stub for `fraudBlacklist`, a Redis stub for
  * the velocity counters, and seed/context builders. Sibling spec files
  * import everything they need from this module so each topic can live in a
- * file under the architecture-allowlist budget.
+ * file under the architecture line budget.
  */
 
 let fraudRowSeq = 0;
@@ -25,7 +25,10 @@ const asMock = <T>(value: unknown): T => value as T;
 
 export function makePrismaStub(initial: FraudBlacklist[] = []) {
   const rows = [...initial];
-  const nextId = () => `fb_${++fraudRowSeq}`;
+  const nextId = () => {
+    fraudRowSeq += 1;
+    return `fb_${fraudRowSeq}`;
+  };
   return {
     rows,
     prisma: asMock<PrismaService>({
@@ -40,21 +43,23 @@ export function makePrismaStub(initial: FraudBlacklist[] = []) {
               value?: { contains: string; mode: string };
             };
           }) => {
-            if (!where) return rows;
+            if (!where) {
+              return rows;
+            }
             let filtered = rows;
             if (where.type) {
               filtered = filtered.filter((r) => r.type === where.type);
             }
-            const valueContains = where.value?.contains;
-            if (valueContains) {
+            if (where.value?.contains) {
+              const needle: string = where.value.contains;
               filtered = filtered.filter((r) =>
-                r.value.toLowerCase().includes(valueContains.toLowerCase()),
+                r.value.toLowerCase().includes(needle.toLowerCase()),
               );
             }
-            const orFilters = where.OR;
-            if (orFilters) {
+            if (where.OR) {
+              const or = where.OR;
               filtered = filtered.filter((r) =>
-                orFilters.some((cand) => cand.type === r.type && cand.value === r.value),
+                or.some((cand) => cand.type === r.type && cand.value === r.value),
               );
             }
             return filtered;
@@ -124,7 +129,9 @@ export function makeRedisStub() {
     del: jest.fn((...keys: string[]) => {
       let removed = 0;
       for (const key of keys) {
-        if (counters.delete(key)) removed += 1;
+        if (counters.delete(key)) {
+          removed += 1;
+        }
         ttl.delete(key);
       }
       return Promise.resolve(removed);
@@ -148,7 +155,12 @@ export async function buildEngine(
 }
 
 export const seedRow = (overrides: Partial<FraudBlacklist>): FraudBlacklist => ({
-  id: overrides.id ?? `fb_${++fraudRowSeq}`,
+  id:
+    overrides.id ??
+    (() => {
+      fraudRowSeq += 1;
+      return `fb_${fraudRowSeq}`;
+    })(),
   type: overrides.type ?? 'CPF',
   value: overrides.value ?? '12345678900',
   reason: overrides.reason ?? 'manual_block',

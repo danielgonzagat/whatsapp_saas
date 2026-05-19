@@ -2,7 +2,10 @@
 
 ## 1. Scope
 
-This document defines the operational policies, service-level agreements, and seller terms that govern the Kloel financial marketplace. All financial flows — including payments, splits, payouts, refunds, chargebacks, and prepaid wallet operations — are bound by these policies.
+This document defines the operational policies, service-level agreements,
+and seller terms that govern the Kloel financial marketplace.
+All financial flows — including payments, splits, payouts, refunds, chargebacks,
+and prepaid wallet operations — are bound by these policies.
 
 **Effective Date:** 2026-04-26
 **Version:** 1.0
@@ -168,25 +171,36 @@ This document defines the operational policies, service-level agreements, and se
 
 By creating a seller account on Kloel and completing the KYC onboarding flow, the seller agrees to:
 
-1. **Fee Acceptance:** The seller accepts Kloel's marketplace fee of 9.9% on gross sales plus any applicable gateway processing fees.
+1. **Fee Acceptance:** The seller accepts Kloel's marketplace fee of 9.9% on gross sales plus any applicable gateway
+   processing fees.
 
-2. **Payout Authorization:** The seller authorizes Kloel to hold funds for the 7-day maturation period and to execute payouts according to the schedule defined in Section 2.
+2. **Payout Authorization:** The seller authorizes Kloel to hold funds for the 7-day maturation period and to execute
+   payouts according to the schedule defined in Section 2.
 
-3. **Dispute Liability:** The seller accepts financial liability for chargebacks and disputes. Chargeback fees and disputed amounts are recoverable from the seller's available and pending balances.
+3. **Dispute Liability:** The seller accepts financial liability for chargebacks and disputes.
+   Chargeback fees and disputed amounts are recoverable from the seller's available and pending balances.
 
-4. **Refund Obligation:** The seller authorizes Kloel to process refunds upon buyer request within the 7-day refund window, with proportional deduction from all role accounts.
+4. **Refund Obligation:** The seller authorizes Kloel to process refunds upon buyer request within the 7-day refund
+   window, with proportional deduction from all role accounts.
 
-5. **Compliance with Law:** The seller represents that all products sold via Kloel comply with Brazilian consumer law (CDC), tax regulations, and applicable industry standards.
+5. **Compliance with Law:** The seller represents that all products sold via Kloel comply with Brazilian consumer law
+   (CDC), tax regulations, and applicable industry standards.
 
-6. **No Stripe Dashboard Access:** The seller acknowledges that all account management is performed exclusively through the Kloel platform. The seller does not have and will not request direct Stripe dashboard access.
+6. **No Stripe Dashboard Access:** The seller acknowledges that all account management is performed exclusively through
+   the Kloel platform. The seller does not have and will not request direct Stripe dashboard access.
 
-7. **Account Suspension:** Kloel reserves the right to suspend or restrict seller accounts for fraud, excessive disputes, policy violations, or regulatory non-compliance, with written notice and a 30-day cure period where applicable.
+7. **Account Suspension:** Kloel reserves the right to suspend or restrict seller accounts for fraud, excessive disputes,
+   policy violations, or regulatory non-compliance, with written notice and a 30-day cure period where applicable.
 
-8. **Data Processing:** The seller consents to Kloel processing personal and financial data as necessary for payment processing, fraud prevention, and regulatory compliance, in accordance with Brazil's LGPD.
+8. **Data Processing:** The seller consents to Kloel processing personal and financial data as necessary for payment
+   processing, fraud prevention, and regulatory compliance, in accordance with Brazil's LGPD.
 
-9. **Termination:** Either party may terminate the agreement with 30 days' written notice. Upon termination, all pending balances are settled within 60 days, subject to outstanding disputes and chargeback liability.
+9. **Termination:** Either party may terminate the agreement with 30 days' written notice.
+   Upon termination, all pending balances are settled within 60 days,
+   subject to outstanding disputes and chargeback liability.
 
-10. **Dispute Resolution:** Any disputes arising from this agreement shall first be resolved through good-faith negotiation. Unresolved disputes shall be submitted to the competent courts of São Paulo, Brazil.
+10. **Dispute Resolution:** Any disputes arising from this agreement shall first be resolved through good-faith
+    negotiation. Unresolved disputes shall be submitted to the competent courts of São Paulo, Brazil.
 
 ---
 

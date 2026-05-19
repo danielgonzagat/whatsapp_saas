@@ -1,9 +1,9 @@
 'use client';
+import { colors, typography } from '@/lib/design-tokens';
 import { kloelT } from '@/lib/i18n/t';
 import { CurrencyInput } from '@/components/kloel/FormExtras';
 import { useToast } from '@/components/kloel/ToastProvider';
 import { apiFetch } from '@/lib/api';
-import { colors, typography } from '@/lib/design-tokens';
 import { AlertTriangle, Check, CreditCard, FileText, QrCode } from 'lucide-react';
 import { useEffect, useState, useId } from 'react';
 import { mutate } from 'swr';
@@ -47,6 +47,7 @@ const PaymentMethodCard = ({
   title,
   desc,
   iconColor,
+  disabled = false,
 }: {
   enabled: boolean;
   onToggle: () => void;
@@ -54,15 +55,20 @@ const PaymentMethodCard = ({
   title: string;
   desc: string;
   iconColor?: string;
+  disabled?: boolean;
 }) => (
   <button
     type="button"
+    aria-disabled={disabled}
     onClick={onToggle}
+    disabled={disabled}
     className="relative flex items-center gap-4 rounded-xl p-5 text-left transition-all"
     style={{
       background: enabled ? `${colors.accent.webb}08` : colors.background.nebula,
       border: `2px solid ${enabled ? colors.accent.webb : colors.border.space}`,
       boxShadow: 'none',
+      cursor: disabled ? 'not-allowed' : 'pointer',
+      opacity: disabled ? 0.72 : 1,
     }}
   >
     {enabled && (
@@ -97,7 +103,6 @@ export function PlanPaymentTab({ planId, productId }: { planId: string; productI
   const [maxInstallments, setMaxInstallments] = useState('12');
   const [maxNoInterest, setMaxNoInterest] = useState('3');
   const [discountByPayment, setDiscountByPayment] = useState(false);
-  const [notifyBoleto, setNotifyBoleto] = useState(true);
   const [billingType, setBillingType] = useState('ONE_TIME');
   const [recurringInterval, setRecurringInterval] = useState('MONTHLY');
   const [trialEnabled, setTrialEnabled] = useState(false);
@@ -109,7 +114,7 @@ export function PlanPaymentTab({ planId, productId }: { planId: string; productI
   const [boletoMaxInstallments, setBoletoMaxInstallments] = useState('6');
   const [boletoInterest, setBoletoInterest] = useState(false);
   const [creditEnabled, setCreditEnabled] = useState(true);
-  const [boletoEnabled, setBoletoEnabled] = useState(true);
+  const [boletoEnabled, setBoletoEnabled] = useState(false);
   const [pixEnabled, setPixEnabled] = useState(true);
   const [saving, setSaving] = useState(false);
   const { showToast } = useToast();
@@ -132,9 +137,6 @@ export function PlanPaymentTab({ planId, productId }: { planId: string; productI
         }
         if (d.discountByPayment != null) {
           setDiscountByPayment(d.discountByPayment as boolean);
-        }
-        if (d.notifyBoleto != null) {
-          setNotifyBoleto(d.notifyBoleto as boolean);
         }
         if (d.billingType != null) {
           setBillingType(d.billingType as string);
@@ -171,16 +173,12 @@ export function PlanPaymentTab({ planId, productId }: { planId: string; productI
           if (pm.credit != null) {
             setCreditEnabled(pm.credit as boolean);
           }
-          if (pm.boleto != null) {
-            setBoletoEnabled(pm.boleto as boolean);
-          }
+          setBoletoEnabled(false);
           if (pm.pix != null) {
             setPixEnabled(pm.pix as boolean);
           }
         }
-        if (d.boletoEnabled != null) {
-          setBoletoEnabled(d.boletoEnabled as boolean);
-        }
+        setBoletoEnabled(false);
       },
     );
   }, [productId, planId]);
@@ -199,8 +197,9 @@ export function PlanPaymentTab({ planId, productId }: { planId: string; productI
             subscriptionPeriod: recurringInterval,
             trialEnabled,
             trialDays: Number(trialDays),
-            paymentMethods: { credit: creditEnabled, boleto: boletoEnabled, pix: pixEnabled },
-            boletoEnabled,
+            paymentMethods: { credit: creditEnabled, boleto: false, pix: pixEnabled },
+            boletoEnabled: false,
+            notifyBoleto: false,
             boletoInstallments: Number(boletoMaxInstallments),
           },
         },
@@ -260,15 +259,16 @@ export function PlanPaymentTab({ planId, productId }: { planId: string; productI
           icon={CreditCard}
           title={kloelT(`Cartão de crédito`)}
           desc={kloelT(`Parcelamento e pagamento à vista`)}
-          iconColor={kloelT(`#E0DDD8`)}
+          iconColor={colors.text.silver}
         />
         <PaymentMethodCard
           enabled={boletoEnabled}
-          onToggle={() => setBoletoEnabled(!boletoEnabled)}
+          onToggle={() => setBoletoEnabled(false)}
           icon={FileText}
           title={kloelT(`Boleto bancário`)}
-          desc={kloelT(`Compensação em 1-3 dias úteis`)}
-          iconColor={kloelT(`#6E6E73`)}
+          desc={kloelT(`Indisponível no checkout Stripe atual`)}
+          iconColor={colors.text.muted}
+          disabled
         />
         <PaymentMethodCard
           enabled={pixEnabled}
@@ -276,7 +276,7 @@ export function PlanPaymentTab({ planId, productId }: { planId: string; productI
           icon={QrCode}
           title="PIX"
           desc={kloelT(`Pagamento instantâneo, sem taxas`)}
-          iconColor={kloelT(`#E0DDD8`)}
+          iconColor={colors.text.silver}
         />
       </div>
 
@@ -367,11 +367,6 @@ export function PlanPaymentTab({ planId, productId }: { planId: string; productI
               </p>
             )}
           </div>
-          <PaymentToggle
-            checked={notifyBoleto}
-            onChange={setNotifyBoleto}
-            label={kloelT(`Avisar comprador sobre vencimento de boletos?`)}
-          />
         </div>
       </div>
 
@@ -495,7 +490,11 @@ export function PlanPaymentTab({ planId, productId }: { planId: string; productI
           onClick={handleSave}
           disabled={saving}
           className="rounded-xl px-8 py-3 text-sm font-semibold text-white transition-all disabled:opacity-50"
-          style={{ backgroundColor: '#E0DDD8', color: '#0A0A0C', boxShadow: 'none' }}
+          style={{
+            backgroundColor: colors.text.silver,
+            color: colors.background.void,
+            boxShadow: 'none',
+          }}
         >
           {saving ? 'Salvando...' : 'Salvar'}
         </button>

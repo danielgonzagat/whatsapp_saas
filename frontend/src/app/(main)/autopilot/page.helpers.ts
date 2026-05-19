@@ -1,8 +1,31 @@
-// Pure helpers extracted from autopilot/page.tsx to reduce the host
-// component's cyclomatic complexity. All transforms are byte-identical to the
-// original inline implementation.
-
-import type { AutopilotSmokeTestResult } from './page.ui';
+import {
+  apiFetch,
+  buildQuery,
+  getAutopilotActions,
+  getAutopilotConfig,
+  getAutopilotImpact,
+  getAutopilotMoneyReport,
+  getAutopilotPipeline,
+  getAutopilotRevenueEvents,
+  getAutopilotRuntimeConfig,
+  getAutopilotStats,
+  getAutopilotStatus,
+  getSystemHealth,
+} from '@/lib/api';
+import type { RuntimeConfig } from '@/lib/api';
+import type {
+  AutopilotAction,
+  AutopilotConfigData,
+  AutopilotImpact,
+  AutopilotInsight,
+  AutopilotPipeline,
+  AutopilotStats,
+  AutopilotStatus,
+  MoneyReport,
+  QueueStats,
+  RevenueEvent,
+  SystemHealth,
+} from './page.types';
 
 export function unwrapSettled<T>(
   result: PromiseSettledResult<unknown>,
@@ -12,7 +35,6 @@ export function unwrapSettled<T>(
   return result.status === 'fulfilled' ? transform(result.value) : fallback;
 }
 
-/** Unwrap data envelope. */
 export function unwrapDataEnvelope<T>(value: unknown): T | null {
   if (!value || typeof value !== 'object') {
     return (value ?? null) as T | null;
@@ -21,16 +43,6 @@ export function unwrapDataEnvelope<T>(value: unknown): T | null {
   return (inner !== undefined ? inner : (value as T)) ?? null;
 }
 
-/** Translate AskInsightsResult without answer into a Portuguese fallback summary. */
-export function askResultToSummary(result: Record<string, unknown>): string {
-  const keys = Object.keys(result).filter((k) => k !== 'question');
-  if (keys.length === 0) {
-    return 'Nenhum dado disponível na resposta.';
-  }
-  return `Resposta recebida com ${keys.length} campo${keys.length === 1 ? '' : 's'}.`;
-}
-
-/** Unwrap array envelope. */
 export function unwrapArrayEnvelope<T>(value: unknown): T[] {
   if (Array.isArray(value)) {
     return value as T[];
@@ -39,51 +51,129 @@ export function unwrapArrayEnvelope<T>(value: unknown): T[] {
   return Array.isArray(inner) ? (inner as T[]) : [];
 }
 
-function readString(source: Record<string, unknown>, key: string): string | undefined {
-  const value = source[key];
-  return typeof value === 'string' ? value : undefined;
+export interface AutopilotDataBundle {
+  status: AutopilotStatus | null;
+  stats: AutopilotStats | null;
+  impact: AutopilotImpact | null;
+  actions: AutopilotAction[];
+  pipeline: AutopilotPipeline | null;
+  systemHealth: SystemHealth | null;
+  moneyReport: MoneyReport | null;
+  revenueEvents: RevenueEvent[];
+  insights: AutopilotInsight[];
+  queueStats: QueueStats | null;
+  config: AutopilotConfigData | null;
+  runtimeConfig: RuntimeConfig | null;
+  partialError: boolean;
 }
 
-function readNumber(source: Record<string, unknown>, key: string): number | undefined {
-  const value = source[key];
-  return typeof value === 'number' ? value : undefined;
+export async function fetchAutopilotDataBundle(
+  effectiveWorkspaceId: string,
+  token: string,
+): Promise<AutopilotDataBundle> {
+  const [
+    statusResult,
+    statsResult,
+    impactResult,
+    actionsResult,
+    pipelineResult,
+    systemHealthResult,
+    moneyReportResult,
+    revenueEventsResult,
+    insightsResult,
+    queueStatsResult,
+    configResult,
+    runtimeConfigResult,
+  ] = await Promise.allSettled([
+    getAutopilotStatus(effectiveWorkspaceId, token),
+    getAutopilotStats(effectiveWorkspaceId, token),
+    getAutopilotImpact(effectiveWorkspaceId, token),
+    getAutopilotActions(effectiveWorkspaceId, { limit: 50, token }),
+    getAutopilotPipeline(effectiveWorkspaceId, token),
+    getSystemHealth(),
+    getAutopilotMoneyReport(effectiveWorkspaceId),
+    getAutopilotRevenueEvents(effectiveWorkspaceId, 20),
+    apiFetch<AutopilotInsight[] | { data: AutopilotInsight[] }>(
+      '/autopilot/insights' + buildQuery({ workspaceId: effectiveWorkspaceId }),
+    ),
+    apiFetch<QueueStats | { data: QueueStats }>(
+      '/autopilot/queue' + buildQuery({ workspaceId: effectiveWorkspaceId }),
+    ),
+    getAutopilotConfig(effectiveWorkspaceId, token),
+    getAutopilotRuntimeConfig(),
+  ]);
+
+  const statusData = unwrapSettled<AutopilotStatus | null>(
+    statusResult,
+    (v) => (v as AutopilotStatus) || null,
+    null,
+  );
+
+  const partialError =
+    statsResult.status === 'rejected' ||
+    impactResult.status === 'rejected' ||
+    actionsResult.status === 'rejected' ||
+    pipelineResult.status === 'rejected' ||
+    systemHealthResult.status === 'rejected';
+
+  return {
+    status: statusData,
+    stats: unwrapSettled<AutopilotStats | null>(
+      statsResult,
+      (v) => (v as AutopilotStats) || null,
+      null,
+    ),
+    impact: unwrapSettled<AutopilotImpact | null>(
+      impactResult,
+      (v) => (v as AutopilotImpact) || null,
+      null,
+    ),
+    actions: unwrapSettled<AutopilotAction[]>(actionsResult, unwrapArrayEnvelope, []),
+    pipeline: unwrapSettled<AutopilotPipeline | null>(
+      pipelineResult,
+      (v) => (v as AutopilotPipeline) || null,
+      null,
+    ),
+    systemHealth: unwrapSettled<SystemHealth | null>(
+      systemHealthResult,
+      (v) => (v as SystemHealth) || null,
+      null,
+    ),
+    moneyReport: unwrapSettled<MoneyReport | null>(moneyReportResult, unwrapDataEnvelope, null),
+    revenueEvents: unwrapSettled<RevenueEvent[]>(revenueEventsResult, unwrapArrayEnvelope, []),
+    insights: unwrapSettled<AutopilotInsight[]>(insightsResult, unwrapArrayEnvelope, []),
+    queueStats: unwrapSettled<QueueStats | null>(queueStatsResult, unwrapDataEnvelope, null),
+    config: unwrapSettled<AutopilotConfigData | null>(configResult, unwrapDataEnvelope, null),
+    runtimeConfig: unwrapSettled<RuntimeConfig | null>(
+      runtimeConfigResult,
+      (v) => (v as RuntimeConfig) || null,
+      null,
+    ),
+    partialError,
+  };
 }
 
-function readQueue(source: Record<string, unknown>): AutopilotSmokeTestResult['queue'] | undefined {
-  const value = source.queue;
-  if (!value || typeof value !== 'object') {
-    return undefined;
+export function askResultToSummary(value: Record<string, unknown>): string {
+  if (!value) {
+    return 'Sem dados disponíveis.';
   }
-  const queue = value as Record<string, unknown>;
-  return {
-    waiting: readNumber(queue, 'waiting'),
-    active: readNumber(queue, 'active'),
-    delayed: readNumber(queue, 'delayed'),
-    failed: readNumber(queue, 'failed'),
-  };
-}
-
-/** Normalize the backend smoke test envelope without exposing raw JSON in the UI. */
-export function readSmokeResult(raw: Record<string, unknown>): AutopilotSmokeTestResult {
-  const resultValue = raw.result;
-  const result =
-    resultValue && typeof resultValue === 'object' ? (resultValue as Record<string, unknown>) : {};
-  const mode = readString(raw, 'mode') === 'live' ? 'live' : 'dry-run';
-  const resultMode = readString(result, 'mode');
-
-  return {
-    smokeTestId: readString(raw, 'smokeTestId') || readString(raw, 'id') || 'smoke-test',
-    mode,
-    phone: readString(raw, 'phone') || '',
-    message: readString(raw, 'message') || '',
-    result: {
-      status: readString(result, 'status'),
-      stage: readString(result, 'stage'),
-      error: readString(result, 'error'),
-      previewText: readString(result, 'previewText'),
-      mode: resultMode === 'live' ? 'live' : resultMode === 'dry-run' ? 'dry-run' : undefined,
-      reason: readString(result, 'reason'),
-    },
-    queue: readQueue(raw),
-  };
+  const answer = value.answer;
+  if (typeof answer === 'string') {
+    return answer;
+  }
+  const keys = Object.keys(value);
+  if (keys.length === 0) {
+    return 'Resultado vazio.';
+  }
+  const parts = keys.slice(0, 3).map((k) => {
+    const v = value[k];
+    if (typeof v === 'string') {
+      return v.length > 80 ? v.slice(0, 80) + '…' : v;
+    }
+    if (typeof v === 'number') {
+      return String(v);
+    }
+    return k;
+  });
+  return parts.join(' · ') || 'Dados disponíveis.';
 }

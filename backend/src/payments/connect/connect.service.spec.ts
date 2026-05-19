@@ -227,7 +227,6 @@ describe('ConnectService.createCustomAccount', () => {
       2,
       expect.objectContaining({
         country: 'BR',
-        settings: undefined,
       }),
     );
     expect(result.stripeAccountId).toBe('acct_br_retry');

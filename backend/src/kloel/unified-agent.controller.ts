@@ -1,19 +1,21 @@
 import { Body, Controller, ForbiddenException, Get, Headers, Param, Post } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
-import { Throttle } from '@nestjs/throttler';
 import { Public } from '../auth/public.decorator';
 import { UnifiedAgentService } from './unified-agent.service';
+import { RouteClass } from '../common/throttler/route-class.decorator';
+import { InternalEndpoint } from '../common/decorators/internal-endpoint.decorator';
 
 /** Unified agent controller. */
 @ApiTags('unified-agent')
 @Controller('kloel/agent')
+@RouteClass('ai')
 export class UnifiedAgentController {
   constructor(private readonly agent: UnifiedAgentService) {}
 
   /** Process message. */
+  @InternalEndpoint('unified agent processing')
   @Post(':workspaceId/process')
   @Public()
-  @Throttle({ default: { limit: 2000, ttl: 60000 } })
   @ApiOperation({
     summary: 'Processa mensagem com o agente unificado IA+Autopilot',
     description: 'Analisa a mensagem e executa ações automaticamente usando tool calling',
@@ -39,44 +41,11 @@ export class UnifiedAgentController {
       contactId: body.contactId || '',
       phone: body.phone,
       message: body.message,
-      context: body.context,
+      ...(body.context !== undefined ? { context: body.context } : {}),
     });
 
     return {
       success: true,
-      ...result,
-    };
-  }
-
-  /** Simulate message. */
-  @Post(':workspaceId/simulate')
-  @ApiOperation({
-    summary: 'Simula processamento sem executar ações',
-    description: 'Útil para testes e debugging',
-  })
-  async simulateMessage(
-    @Param('workspaceId') workspaceId: string,
-    @Body()
-    body: {
-      contactId?: string;
-      phone: string;
-      message: string;
-      context?: Record<string, unknown>;
-    },
-  ) {
-    // Por enquanto, usa o mesmo método
-    // Em produção, poderia ter um flag para não executar ações
-    const result = await this.agent.processMessage({
-      workspaceId,
-      contactId: body.contactId || '',
-      phone: body.phone,
-      message: body.message,
-      context: { ...body.context, simulate: true },
-    });
-
-    return {
-      success: true,
-      simulated: true,
       ...result,
     };
   }

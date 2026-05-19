@@ -445,17 +445,17 @@ export function ValidationInput({
   style = {},
   theme,
 }: {
-  id?: string;
-  name?: string;
+  id?: string | undefined;
+  name?: string | undefined;
   value: string;
   onChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
   placeholder: string;
-  type?: string;
-  autoComplete?: string;
-  inputMode?: React.HTMLAttributes<HTMLInputElement>['inputMode'];
-  maxLength?: number;
-  disabled?: boolean;
-  style?: React.CSSProperties;
+  type?: string | undefined;
+  autoComplete?: string | undefined;
+  inputMode?: React.HTMLAttributes<HTMLInputElement>['inputMode'] | undefined;
+  maxLength?: number | undefined;
+  disabled?: boolean | undefined;
+  style?: React.CSSProperties | undefined;
   theme: CheckoutThemeInputTokens;
 }) {
   return (

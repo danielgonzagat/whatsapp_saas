@@ -10,11 +10,10 @@
  * ============================================
  */
 
-import { InjectRedis } from '@nestjs-modules/ioredis';
-import { Injectable, Logger, OnModuleDestroy, OnModuleInit, Optional } from '@nestjs/common';
+import { Injectable, OnModuleDestroy, OnModuleInit, Optional  } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
+import { StructuredLogger } from '../logging/structured-logger';
 import { Prisma } from '@prisma/client';
-import type Redis from 'ioredis';
 import { forEachSequential } from '../common/async-sequence';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -30,7 +29,7 @@ import {
 /** Whats app watchdog service. */
 @Injectable()
 export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
-  private readonly logger = new Logger(WhatsAppWatchdogService.name);
+  private readonly logger = StructuredLogger.from(WhatsAppWatchdogService.name);
   // Distributed-lock key for the watchdog health check. Composed from
   // colon-separated identifier segments so static-analysis "hard-coded
   // password" heuristics do not match the literal.
@@ -46,7 +45,6 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
     private readonly whatsappApi: WhatsAppApiProvider,
     private readonly recovery: WhatsAppWatchdogRecoveryService,
     private readonly sessionSvc: WhatsAppWatchdogSessionService,
-    @InjectRedis() private readonly redis: Redis,
     @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
 
@@ -181,11 +179,11 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
 
       const workspaceId = workspaceBySessionName.get(session.name);
       if (!workspaceId) {
-        orphanLiveSessions++;
+        orphanLiveSessions += 1;
         continue;
       }
 
-      syncedLiveSessions++;
+      syncedLiveSessions += 1;
       workspaceIdsToRefresh.add(workspaceId);
     }
 
@@ -373,8 +371,8 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
       consecutiveFailures: 0,
     };
 
-    health.lastReconnectAttempt = undefined;
-    health.reconnectBlockedReason = undefined;
+    delete health.lastReconnectAttempt;
+    delete health.reconnectBlockedReason;
 
     const success = await this.recovery.attemptReconnect(workspaceId, workspace?.name, health);
 

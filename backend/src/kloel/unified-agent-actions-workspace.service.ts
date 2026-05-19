@@ -1,4 +1,5 @@
-import { Injectable, Logger, Optional } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { Prisma } from '@prisma/client';
 import OpenAI from 'openai';
 import { PlanLimitsService } from '../billing/plan-limits.service';
@@ -6,13 +7,14 @@ import { PrismaService } from '../prisma/prisma.service';
 import { chatCompletionWithFallback } from './openai-wrapper';
 import type { ToolArgs } from './unified-agent.types';
 import { OpsAlertService } from '../observability/ops-alert.service';
-import { actionGetWorkspaceStatus as actionGetWorkspaceStatusFn } from './__companions__/unified-agent-actions-workspace.service.companion';
-import { MindService } from './mind.service';
+import { actionGetWorkspaceStatus as actionGetWorkspaceStatusFn } from './unified-agent-actions-workspace.helpers';
 import { MindGuardContextBuilderService } from './mind-guard-context-builder.service';
 import { MindGuardsService } from './mind-guards.service';
 import type { MindActionContext } from './mind-code-native.types';
+import { MindService } from './mind.service';
 
 type UnknownRecord = Record<string, unknown>;
+type MemoryValue = Record<string, unknown>;
 
 const WHITESPACE_G_RE = /\s+/g;
 
@@ -35,7 +37,7 @@ function readRecord(value: unknown): UnknownRecord | null {
  */
 @Injectable()
 export class UnifiedAgentActionsWorkspaceService {
-  private readonly logger = new Logger(UnifiedAgentActionsWorkspaceService.name);
+  private readonly logger = StructuredLogger.from(UnifiedAgentActionsWorkspaceService.name);
 
   constructor(
     private readonly prisma: PrismaService,
@@ -80,10 +82,13 @@ export class UnifiedAgentActionsWorkspaceService {
 
   // ───────── product actions ─────────
 
-  // PULSE_OK: workspaceId validated by caller guard
   async actionCreateProduct(workspaceId: string, args: ToolArgs) {
     const existingDb = await this.prisma.product.findFirst({
-      where: { workspaceId, name: args.name, active: true },
+      where: {
+        workspaceId,
+        ...(args.name !== undefined ? { name: args.name } : {}),
+        active: true,
+      },
       select: { id: true, name: true, price: true },
     });
     if (existingDb) {
@@ -103,7 +108,7 @@ export class UnifiedAgentActionsWorkspaceService {
     if (
       existingMem?.value &&
       typeof existingMem.value === 'object' &&
-      (existingMem.value as Record<string, unknown>).name === args.name
+      (existingMem.value as MemoryValue).name === args.name
     ) {
       return {
         success: true,
@@ -161,13 +166,19 @@ export class UnifiedAgentActionsWorkspaceService {
   }
 
   async actionUpdateProduct(workspaceId: string, args: ToolArgs) {
+    if (!args.productId) {
+      return { success: false, error: 'Product ID is required' };
+    }
+    const productId = args.productId;
     const result = await this.prisma.$transaction(
       async (tx) => {
         const product = await tx.kloelMemory.findFirst({
-          where: { workspaceId, key: args.productId, type: 'product' },
+          where: { workspaceId, key: productId, type: 'product' },
         });
-        if (!product) return { success: false as const, error: 'Produto não encontrado' };
-        const currentValue = product.value as Record<string, unknown>;
+        if (!product) {
+          return { success: false as const, error: 'Produto não encontrado' };
+        }
+        const currentValue = product.value as MemoryValue;
         const updatedValue = {
           ...currentValue,
           ...(args.name && { name: args.name }),
@@ -184,14 +195,17 @@ export class UnifiedAgentActionsWorkspaceService {
       },
       { isolationLevel: 'ReadCommitted' },
     );
-    if (!result.success) return result;
+    if (!result.success) {
+      return result;
+    }
     return { success: true, message: 'Produto atualizado com sucesso' };
   }
 
-  // PULSE_OK: workspaceId validated by caller guard
   async actionCreateFlow(workspaceId: string, args: ToolArgs) {
-    const flowName = typeof args.name === 'string' ? args.name : 'flow';
-    const flowKey = `flow_${Date.now()}_${flowName.toLowerCase().replace(WHITESPACE_G_RE, '_')}`;
+    if (!args.name) {
+      return { success: false, error: 'Flow name is required' };
+    }
+    const flowKey = `flow_${Date.now()}_${args.name.toLowerCase().replace(WHITESPACE_G_RE, '_')}`;
     await this.prisma.kloelMemory.create({
       data: {
         workspaceId,
@@ -215,10 +229,11 @@ export class UnifiedAgentActionsWorkspaceService {
     };
   }
 
-  // PULSE_OK: workspaceId validated by caller guard
   async actionUpdateWorkspaceSettings(workspaceId: string, args: ToolArgs) {
     const updates: UnknownRecord = {};
-    if (args.businessName) updates.name = args.businessName;
+    if (args.businessName) {
+      updates.name = args.businessName;
+    }
     if (Object.keys(updates).length > 0) {
       await this.prisma.workspace.update({ where: { id: workspaceId }, data: updates });
     }
@@ -247,7 +262,6 @@ export class UnifiedAgentActionsWorkspaceService {
     return { success: true, message: 'Configurações atualizadas com sucesso' };
   }
 
-  // PULSE_OK: workspaceId validated by caller guard
   async actionCreateBroadcast(workspaceId: string, args: ToolArgs, context?: UnknownRecord) {
     const broadcastKey = `broadcast_${Date.now()}`;
     const segment = this.str(args.stage, 'general');
@@ -442,7 +456,9 @@ export class UnifiedAgentActionsWorkspaceService {
     fallbackBrainModel: string,
   ) {
     const { description, objective, autoActivate = false } = args;
-    if (!openai) return { success: false, error: 'OpenAI não configurada' };
+    if (!openai) {
+      return { success: false, error: 'OpenAI não configurada' };
+    }
     const prompt = `Você é um especialista em automação comercial.\nCrie um fluxo de automação para WhatsApp com base na descrição:\n"${description}"\n\nObjetivo: ${objective}\n\nRetorne APENAS um JSON válido com nós e arestas.\n\nTipos de nós disponíveis: message, wait, condition, aiNode, mediaNode, endNode`;
     try {
       await this.planLimits.ensureTokenBudget(workspaceId);

@@ -52,7 +52,7 @@ describe('checkout-links', () => {
         isActive: true,
         checkoutName: 'Checkout 1',
         checkoutId: 'checkout_1',
-        paymentMethods: ['PIX', 'BOLETO'],
+        paymentMethods: ['PIX'],
       },
     ]);
   });

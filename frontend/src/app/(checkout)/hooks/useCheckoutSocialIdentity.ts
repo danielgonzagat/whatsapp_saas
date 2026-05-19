@@ -176,7 +176,9 @@ export function useCheckoutSocialIdentity({
 
     if (existing) {
       return () => {
-        window.fbAsyncInit = previousInit;
+        if (previousInit !== undefined) {
+          window.fbAsyncInit = previousInit;
+        }
       };
     }
 
@@ -188,7 +190,9 @@ export function useCheckoutSocialIdentity({
     document.head.appendChild(script);
 
     return () => {
-      window.fbAsyncInit = previousInit;
+      if (previousInit !== undefined) {
+        window.fbAsyncInit = previousInit;
+      }
     };
   }, [enabled, metaAppId, metaGraphVersion]);
 
@@ -537,7 +541,7 @@ async function requestGoogleAccessToken(tokenClient: GoogleTokenClient, hint?: s
     try {
       tokenClient.requestAccessToken({
         prompt: 'consent',
-        hint: hint?.trim() || undefined,
+        ...(hint?.trim() ? { hint: hint.trim() } : {}),
         scope: GOOGLE_PEOPLE_SCOPES,
       });
     } catch {

@@ -3,7 +3,7 @@ export type FlowNodeData = Record<string, unknown>;
 export type FlowNode = {
   id: string;
   type: string;
-  data?: FlowNodeData;
+  data: FlowNodeData | undefined;
   next?: string | null;
   yes?: string | null;
   no?: string | null;
@@ -45,7 +45,7 @@ export type PersistedFlowLogEntry = FlowLogEntry & {
 export type RawFlowNode = {
   id: string;
   type: string;
-  data?: FlowNodeData;
+  data: FlowNodeData | undefined;
 };
 
 export type RawFlowEdge = {
@@ -64,7 +64,7 @@ export type ExecutionState = {
   executionId?: string;
   logs?: PersistedFlowLogEntry[];
   waitingForResponse?: boolean;
-  timeoutAt?: number;
+  timeoutAt: number | undefined;
   /** Timestamp (ms) when the flow execution started — used for max-duration guard */
   startedAt?: number;
   stack?: Array<{ flowId: string; nodeId: string }>;

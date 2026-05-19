@@ -4,7 +4,6 @@ import {
   persistCustomerCognitiveState,
 } from '../processors/cia/cognitive-state';
 
-// PULSE_OK: assertions exist below
 describe('cia-cognitive-state', () => {
   it('preserves objections and advances the next best action with new buying signals', () => {
     const initial = buildSeedCognitiveState({
