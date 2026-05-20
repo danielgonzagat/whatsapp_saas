@@ -11,6 +11,15 @@ import { KloelWhatsAppToolsService } from './kloel-whatsapp-tools.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { KloelCodeToolsService } from './kloel-code-tools.service';
 import { KloelCodeAnalysisService } from './kloel-code-analysis.service';
+import { KloelProductSubResourceToolsService } from './kloel-product-sub-resource-tools.service';
+import { KloelWalletSalesToolsService } from './kloel-wallet-sales-tools.service';
+import {
+  titleForHighRiskTool,
+  promptForHighRiskTool,
+  isSupportedApprovedHighRiskTool,
+  sanitizeDetails,
+  isRecord,
+} from './kloel-tool-dispatcher.high-risk.helpers';
 
 type UnknownRecord = Record<string, unknown>;
 type ApprovedToolExecutionResult = {
@@ -42,6 +51,8 @@ export class KloelToolDispatcherService {
     private readonly auditService: AuditService,
     private readonly codeToolsService: KloelCodeToolsService,
     private readonly codeAnalysisService: KloelCodeAnalysisService,
+    @Optional() private readonly productSubTools?: KloelProductSubResourceToolsService,
+    @Optional() private readonly walletSalesTools?: KloelWalletSalesToolsService,
 
     @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
@@ -74,7 +85,7 @@ export class KloelToolDispatcherService {
     if (settings.billingSuspended === true) {
       return { success: false, error: 'billing_suspended' };
     }
-    this.logger.log(`Executando ferramenta: ${toolName}`, this.sanitizeDetails(args));
+    this.logger.log(`Executando ferramenta: ${toolName}`);
     try {
       switch (toolName) {
         case 'save_product':
@@ -119,6 +130,18 @@ export class KloelToolDispatcherService {
           return await this.chatToolsService.toolGetProductUrls(workspaceId, asToolArgs(args));
         case 'validate_coupon':
           return await this.chatToolsService.toolValidateCoupon(workspaceId, asToolArgs(args));
+        case 'get_wallet_balance':
+        case 'get_wallet_statement':
+        case 'list_orders':
+        case 'get_order_details':
+        case 'get_sales_summary':
+        case 'get_abandonments':
+          if (this.walletSalesTools) {
+            return await this.walletSalesTools.executeTool(toolName, workspaceId, asToolArgs(args));
+          }
+          return { success: false, error: 'wallet_sales_tools_not_available' };
+        case 'toggle_theme':
+          return await this.chatToolsService.toolToggleTheme(workspaceId, asToolArgs(args));
         case 'create_plan':
         case 'update_plan':
         case 'create_checkout':
@@ -127,6 +150,9 @@ export class KloelToolDispatcherService {
         case 'list_coupons':
         case 'delete_coupon':
         case 'generate_boleto':
+          if (this.productSubTools) {
+            return await this.productSubTools.executeTool(toolName, workspaceId, asToolArgs(args));
+          }
           return { success: false, error: 'product_sub_resource_tools_not_available' };
         case 'get_wallet_balance':
         case 'get_wallet_statement':
@@ -142,6 +168,8 @@ export class KloelToolDispatcherService {
         case 'configure_ai_persona':
           return await this.chatToolsService.toolConfigureAiPersona(workspaceId, asToolArgs(args));
         case 'update_workspace_settings':
+        case 'toggle_theme':
+          return await this.chatToolsService.toolToggleTheme(workspaceId, asToolArgs(args));
           return await this.bizConfigToolsService.toolSaveBusinessInfo(
             workspaceId,
             asToolArgs(args),
@@ -344,7 +372,7 @@ export class KloelToolDispatcherService {
             resource: 'KloelToolDispatcher',
             ...(resourceId !== undefined ? { resourceId } : {}),
             ...(userId !== undefined ? { agentId: userId } : {}),
-            details: this.sanitizeDetails(args),
+            details: sanitizeDetails(args),
           });
         },
         { isolationLevel: 'ReadCommitted' },
@@ -379,15 +407,15 @@ export class KloelToolDispatcherService {
         entityType: 'KloelTool',
         entityId: toolName,
         state: 'OPEN',
-        title: this.titleForHighRiskTool(toolName),
-        prompt: this.promptForHighRiskTool(toolName, args),
+        title: titleForHighRiskTool(toolName),
+        prompt: promptForHighRiskTool(toolName, args),
         payload: {
           toolName,
-          args: this.sanitizeDetails(args),
+          args: JSON.stringify(args),
           requestedByUserId: userId || null,
           risk: 'high',
           requiresApproval: true,
-        } as Prisma.InputJsonObject,
+        },
       },
       select: {
         id: true,
@@ -439,7 +467,7 @@ export class KloelToolDispatcherService {
       };
     }
 
-    if (!this.isSupportedApprovedHighRiskTool(payload.toolName)) {
+    if (!isSupportedApprovedHighRiskTool(payload.toolName)) {
       return {
         success: true,
         approvalRequestId: approval.id,
@@ -500,11 +528,11 @@ export class KloelToolDispatcherService {
     toolName: string;
     args: UnknownRecord;
   } | null {
-    if (!this.isRecord(payload)) {
+    if (!isRecord(payload)) {
       return null;
     }
     const toolName = typeof payload.toolName === 'string' ? payload.toolName.trim() : '';
-    if (!toolName || !this.isRecord(payload.args)) {
+    if (!toolName || !isRecord(payload.args)) {
       return null;
     }
     return { toolName, args: payload.args };
@@ -523,64 +551,6 @@ export class KloelToolDispatcherService {
       default:
         throw new Error(`unsupported_approved_tool:${toolName}`);
     }
-  }
-
-  private isSupportedApprovedHighRiskTool(toolName: string): boolean {
-    return toolName === 'create_campaign' || toolName === 'change_plan';
-  }
-
-  private titleForHighRiskTool(toolName: string): string {
-    if (toolName === 'create_campaign') {
-      return 'Aprovar criacao de campanha pela CIA';
-    }
-    if (toolName === 'change_plan') {
-      return 'Aprovar alteracao de plano pela CIA';
-    }
-    return `Aprovar acao ${toolName}`;
-  }
-
-  private promptForHighRiskTool(toolName: string, args: UnknownRecord): string {
-    if (toolName === 'create_campaign') {
-      const name =
-        typeof args.name === 'string' && args.name.trim() ? args.name.trim() : 'sem nome';
-      const audience =
-        typeof args.targetAudience === 'string' && args.targetAudience.trim()
-          ? args.targetAudience.trim()
-          : 'all';
-      return `A CIA quer criar a campanha "${name}" para o publico "${audience}". Revise antes de autorizar qualquer disparo.`;
-    }
-    if (toolName === 'change_plan') {
-      const plan =
-        typeof args.newPlan === 'string' && args.newPlan.trim()
-          ? args.newPlan.trim()
-          : typeof args.planId === 'string' && args.planId.trim()
-            ? args.planId.trim()
-            : typeof args.plan === 'string' && args.plan.trim()
-              ? args.plan.trim()
-              : 'plano solicitado';
-      return `A CIA quer alterar o plano do workspace para "${plan}". Revise impacto de cobranca e limites antes de autorizar.`;
-    }
-    return `A CIA solicitou a acao ${toolName}. Revise o contexto antes de executar.`;
-  }
-
-  /**
-   * Strip sensitive fields (password, token, secret, cpf, ssn, full PAN/card)
-   * from a tool args record before persisting to the audit log.
-   */
-  private sanitizeDetails(args: UnknownRecord): UnknownRecord {
-    const SENSITIVE_KEY_RE = /password|token|secret|cpf|ssn|card|pan/i;
-    const out: UnknownRecord = {};
-    for (const [k, v] of Object.entries(args ?? {})) {
-      if (SENSITIVE_KEY_RE.test(k)) {
-        continue;
-      }
-      out[k] = v;
-    }
-    return out;
-  }
-
-  private isRecord(value: unknown): value is UnknownRecord {
-    return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
   }
 
   private async toolSearchWeb(

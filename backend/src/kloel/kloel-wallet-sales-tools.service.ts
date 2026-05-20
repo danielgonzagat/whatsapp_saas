@@ -7,8 +7,10 @@
 import { Injectable } from '@nestjs/common';
 
 export interface WalletSalesToolResult {
-  success: false;
-  error: 'tool_not_implemented';
+  [key: string]: unknown;
+  success: boolean;
+  message?: string;
+  error?: string;
 }
 
 @Injectable()

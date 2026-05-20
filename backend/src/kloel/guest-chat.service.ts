@@ -13,6 +13,8 @@ import { OpsAlertService } from '../observability/ops-alert.service';
 import { AbiBuilderService } from './abi/abi-builder.service';
 import { validateAbiPayload } from './abi/abi-validator';
 import { UnifiedAgentService } from './unified-agent.service';
+import { KloelToolDispatcherService } from './kloel-tool-dispatcher.service';
+import { detectActionIntent, formatToolResult } from './guest-chat.action-intent.helpers';
 
 interface GuestConversation {
   messages: { role: 'user' | 'assistant'; content: string }[];
@@ -42,6 +44,7 @@ export class GuestChatService implements OnModuleDestroy {
     @Optional() @InjectRedis() private readonly redis?: Redis,
     @Optional() private readonly abiBuilder?: AbiBuilderService,
     @Optional() private readonly unifiedAgent?: UnifiedAgentService,
+    @Optional() private readonly toolDispatcher?: KloelToolDispatcherService,
   ) {
     const isTestEnv = !!process.env.JEST_WORKER_ID || process.env.NODE_ENV === 'test';
 
@@ -320,7 +323,30 @@ export class GuestChatService implements OnModuleDestroy {
         return this.unavailableMessage;
       }
 
-      // UNIFIED AGENT PATH — when workspaceId is provided, delegate to the real brain with tools
+      // DETERMINISTIC ACTION ROUTER — execute tools without LLM decision
+      if (workspaceId && this.toolDispatcher) {
+        const action = detectActionIntent(message);
+        if (action) {
+          this.logger.log(`Deterministic: tool=${action.tool} session=${sessionId}`);
+          try {
+            await this.persistConversationMessage(sessionId, 'user', message);
+            const result = await this.toolDispatcher.executeTool(
+              workspaceId,
+              action.tool,
+              action.args,
+            );
+            const reply = formatToolResult(action.tool, result);
+            await this.persistConversationMessage(sessionId, 'assistant', reply);
+            return reply;
+          } catch (err: unknown) {
+            this.logger.warn(
+              `Deterministic failed: ${err instanceof Error ? err.message : 'unknown'}, falling back to LLM`,
+            );
+          }
+        }
+      }
+
+      // UNIFIED AGENT PATH
       if (workspaceId && this.unifiedAgent) {
         this.logger.log(
           `Guest chat sync via UnifiedAgent: workspace=${workspaceId}, session=${sessionId}`,
@@ -465,6 +491,7 @@ export class GuestChatService implements OnModuleDestroy {
     conversation.lastMessageAt = new Date();
     await this.persistConversation(sessionId, conversation);
   }
+
 
   /**
    * 🧹 Limpar conversas antigas
