@@ -47,7 +47,7 @@ export interface TextEditSpec {
 }
 
 export interface ValidationResult {
-  language: 'ts' | 'json' | 'structural' | 'generic' | 'python' | 'go' | 'rust' | 'ruby' | 'shell';
+  language: 'ts' | 'json' | 'structural' | 'generic' | 'python' | 'go' | 'rust' | 'ruby' | 'shell' | 'java' | 'c' | 'cpp' | 'javascript';
   /** Syntactic-diagnostic count before the edit. */
   before: number;
   /** Syntactic-diagnostic count after the edit. */
@@ -71,8 +71,9 @@ export interface ApplyResult {
 }
 
 const TS_EXT = new Set(['.ts', '.tsx', '.mts', '.cts', '.js', '.jsx', '.mjs', '.cjs']);
+export { TS_EXT };
 
-function extOf(file: string): string {
+export function extOf(file: string): string {
   const i = file.lastIndexOf('.');
   return i < 0 ? '' : file.slice(i).toLowerCase();
 }

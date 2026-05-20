@@ -90,18 +90,38 @@ def validate_file(filepath: str, language: str) -> dict:
     tree = parser.parse(source_bytes)
     root = tree.root_node
 
-    # Check for ERROR nodes — these indicate parse failures
+    # Check for ERROR nodes and missing children
     errors = []
 
     def collect_errors(node, depth=0):
         if depth > 500:  # safety limit
             return
         if node.type == 'ERROR':
+            # Skip zero-width ERROR nodes at EOF (common tree-sitter artifact)
+            if node.start_byte < len(source_bytes):
+                errors.append(node)
+        if node.is_missing:
             errors.append(node)
         for child in node.children:
             collect_errors(child, depth + 1)
 
     collect_errors(root)
+
+    # Also check root-level error flag (catches cases where ERROR nodes
+    # aren't in the traversal but the tree is marked as having errors)
+    if not errors and root.has_error:
+        # Find any descendant that's an error
+        def find_error_descendant(node, depth=0):
+            if depth > 500: return None
+            if node.type == 'ERROR' and node.start_byte < len(source_bytes):
+                return node
+            for child in node.children:
+                r = find_error_descendant(child, depth + 1)
+                if r: return r
+            return None
+        err = find_error_descendant(root)
+        if err:
+            errors.append(err)
 
     if not errors:
         return {"ok": True, "errors": 0}

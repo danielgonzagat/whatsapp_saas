@@ -24,9 +24,14 @@ const maxOldSpaceSize = Math.max(2048, Number(process.env.JEST_MAX_OLD_SPACE_SIZ
 const workerIdleMemoryLimit = process.env.JEST_WORKER_IDLE_MEMORY_LIMIT || '512MB';
 const maxWorkers = process.env.JEST_MAX_WORKERS || '2';
 const verboseJestOutput = process.env.JEST_VERBOSE_OUTPUT === '1';
+// --maxWorkers conflicts with --runInBand. If the caller already requested
+// --runInBand (e.g. check:all backend-test passes it), skip --maxWorkers so
+// Jest doesn't error out with "only one is allowed".
+const passthroughHasRunInBand = passthroughArgs.includes('--runInBand');
+const workerArgs = passthroughHasRunInBand ? [] : [`--maxWorkers=${maxWorkers}`];
 const defaultJestArgs = verboseJestOutput
-  ? [`--workerIdleMemoryLimit=${workerIdleMemoryLimit}`, `--maxWorkers=${maxWorkers}`]
-  : ['--silent', `--workerIdleMemoryLimit=${workerIdleMemoryLimit}`, `--maxWorkers=${maxWorkers}`];
+  ? [`--workerIdleMemoryLimit=${workerIdleMemoryLimit}`, ...workerArgs]
+  : ['--silent', `--workerIdleMemoryLimit=${workerIdleMemoryLimit}`, ...workerArgs];
 const coverageEnabled = passthroughArgs.some(isCoverageArg);
 const coverageRoot = join(backendRoot, 'coverage');
 const coverageChunksRoot = join(coverageRoot, '.chunks');

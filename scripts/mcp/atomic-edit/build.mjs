@@ -21,6 +21,9 @@ const ts = require('typescript');
 const ENTRY = [
   'server.ts',
   'engine.ts',
+  'engine-rename.ts',
+  'engine-ops.ts',
+  'lang-bridge.ts',
   'guard.ts',
   'nav.ts',
   'symbols.ts',

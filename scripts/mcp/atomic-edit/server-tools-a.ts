@@ -14,6 +14,8 @@ import { runPostEditVerify, packageVerificationPlan, unusedSymbolFromLintMessage
 import { buildLintResidueActionCandidates, applyKnownLintResidueFixes } from './server-helpers-lint-fix.js';
 import { ok, fail, commit, type ToolOk } from './server-helpers-result.js';
 import { commitSemantic } from './server-helpers-commit-semantic.js';
+import { replaceCalleeKeepArgs, replaceCallArg, insertCallArg, removeCallArg } from './engine-ops.js';
+
 
 export function registerToolsA(server: McpServer): void {
 server.registerTool(

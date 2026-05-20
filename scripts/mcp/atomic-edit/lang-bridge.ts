@@ -170,6 +170,29 @@ const EXT_VALIDATORS: Record<string, {
   '.zsh': { check: () => probeCommand('zsh', ['--version']),      validate: validateShell,  lang: 'shell' },
 };
 
+/** Extensions covered by tree-sitter fallback (tried when native parser unavailable). */
+const TREE_SITTER_FALLBACK_EXTS = new Set([
+  '.java', '.kt', '.c', '.h', '.cc', '.cpp', '.hpp', '.cs',
+  '.swift', '.scala', '.php', '.css', '.scss', '.less', '.sql',
+  '.go', '.rs',
+]);
+
+/** Map extension to tree-sitter language tag for validation. */
+const EXT_TO_TS_LANG_PRE: Record<string, string> = {
+  '.java': 'java',   '.kt': 'java',
+  '.c': 'c',         '.h': 'c',
+  '.cc': 'cpp',      '.cpp': 'cpp',     '.hpp': 'cpp',
+  '.cs': 'cpp',
+  '.swift': 'cpp',
+  '.scala': 'java',
+  '.php': 'cpp',
+  '.css': 'javascript', '.scss': 'javascript', '.less': 'javascript',
+  '.sql': 'javascript',
+  '.go': 'go',
+  '.rs': 'rust',
+};
+
+
 // Also cover extensions that structural balance already handles but we
 // want to upgrade to real parsing when available:
 // .java, .kt, .c, .cpp, .cs, .swift, .scala — these need tree-sitter (Phase 2)
@@ -183,9 +206,36 @@ const EXT_VALIDATORS: Record<string, {
 export function validateLanguage(file: string, text: string): LangValidationResult {
   const ext = file.slice(file.lastIndexOf('.')).toLowerCase();
   const v = EXT_VALIDATORS[ext];
-  if (!v) return { language: 'generic', errorCount: 0, realParser: false };
+
+  // No native validator — try tree-sitter for covered extensions
+  if (!v) {
+    if (TREE_SITTER_FALLBACK_EXTS.has(ext)) {
+      const tsResult = tryTreeSitterValidation(ext, text);
+      if (tsResult && tsResult.errorCount >= 0) {
+        return {
+          language: EXT_TO_TS_LANG_PRE[ext] as LangValidationResult['language'],
+          errorCount: tsResult.errorCount,
+          firstError: tsResult.firstError,
+          realParser: true,
+        };
+      }
+    }
+    return { language: 'generic', errorCount: 0, realParser: false };
+  }
 
   if (!v.check()) {
+    // Native parser not available — try tree-sitter for covered extensions
+    if (TREE_SITTER_FALLBACK_EXTS.has(ext)) {
+      const tsResult = tryTreeSitterValidation(ext, text);
+      if (tsResult && tsResult.errorCount >= 0) {
+        return {
+          language: EXT_TO_TS_LANG_PRE[ext] as LangValidationResult['language'],
+          errorCount: tsResult.errorCount,
+          firstError: tsResult.firstError,
+          realParser: true,
+        };
+      }
+    }
     return { language: 'generic', errorCount: -1, realParser: false };
   }
 
@@ -211,6 +261,106 @@ export function validateLanguage(file: string, text: string): LangValidationResu
   }
 }
 
+/** Try tree-sitter validation — writes text to temp file, calls Python script. */
+function tryTreeSitterValidation(ext: string, text: string): { errorCount: number; firstError?: string } | null {
+  if (!ts3Available()) return null;
+  const lang = EXT_TO_TS_LANG_PRE[ext];
+  if (!lang) return null;
+
+  const tmpDir = os.tmpdir();
+  const tmpPath = path.join(tmpDir, `.atomic-lang-${process.pid}-${Date.now()}${ext}`);
+  try {
+    fs.writeFileSync(tmpPath, text, 'utf8');
+    return validateTreeSitter(tmpPath, ext, text);
+  } catch {
+    return null;
+  } finally {
+    try { fs.unlinkSync(tmpPath); } catch { /* cleanup */ }
+  }
+}
+
+
+// ─────────────────────────── tree-sitter bridge ───────────────────────────
+
+const TREE_SITTER_SCRIPT = path.join(
+  path.dirname(path.dirname(new URL(import.meta.url).pathname)),
+  'lang-validate.py',
+);
+
+const TREE_SITTER_LANGS = new Set([
+  '.java', '.kt', '.c', '.h', '.cc', '.cpp', '.hpp', '.cs',
+  '.swift', '.scala', '.php', '.css', '.scss', '.less', '.sql',
+  '.go',  // fallback when gofmt not available
+  '.rs',  // fallback when rustc not available
+]);
+
+/** Map extension to tree-sitter language tag. */
+const EXT_TO_TS_LANG: Record<string, string> = {
+  '.java': 'java',   '.kt': 'java',     // Kotlin uses Java grammar as approximation
+  '.c': 'c',         '.h': 'c',
+  '.cc': 'cpp',      '.cpp': 'cpp',     '.hpp': 'cpp',
+  '.cs': 'cpp',                          // C# ≈ C++ grammar for structural parse
+  '.swift': 'cpp',                       // Swift ≈ C++ grammar for structural parse
+  '.scala': 'java',                      // Scala ≈ Java grammar
+  '.php': 'cpp',                         // PHP ≈ C++ grammar
+  '.css': 'javascript',                  // CSS/SCSS → JS grammar (catches brace errors)
+  '.scss': 'javascript',
+  '.less': 'javascript',
+  '.sql': 'javascript',                  // SQL → JS grammar (catches string/brace issues)
+  '.go': 'go',
+  '.rs': 'rust',
+};
+
+let _ts3Available: boolean | null = null;
+
+function ts3Available(): boolean {
+  if (_ts3Available !== null) return _ts3Available;
+  try {
+    const r = childProcess.spawnSync('python3', ['-c', 'import tree_sitter; import tree_sitter_java'], {
+      timeout: 5000, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'],
+    });
+    _ts3Available = r.status === 0;
+  } catch {
+    _ts3Available = false;
+  }
+  return _ts3Available;
+}
+
+/**
+ * Validate using tree-sitter Python script. Returns {errorCount, firstError}.
+ * Returns errorCount=-1 if tree-sitter is not available.
+ */
+function validateTreeSitter(absPath: string, ext: string, text: string): { errorCount: number; firstError?: string } {
+  if (!ts3Available()) return { errorCount: -1 };
+  const lang = EXT_TO_TS_LANG[ext];
+  if (!lang) return { errorCount: -1 };
+
+  const tmpDir = os.tmpdir();
+  const tmpPath = path.join(tmpDir, `.atomic-ts-${process.pid}-${Date.now()}${ext}`);
+  try {
+    fs.writeFileSync(tmpPath, text, 'utf8');
+    const r = childProcess.spawnSync('python3', [TREE_SITTER_SCRIPT, tmpPath, lang], {
+      timeout: 15000,
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
+    if (r.error) return { errorCount: -1 };
+
+    const out = (r.stdout ?? '').trim();
+    if (!out) return { errorCount: -1 };
+
+    const parsed = JSON.parse(out);
+    if (parsed.skipped) return { errorCount: -1 };
+    return {
+      errorCount: parsed.errors ?? 0,
+      firstError: parsed.firstError,
+    };
+  } catch {
+    return { errorCount: -1 };
+  } finally {
+    try { fs.unlinkSync(tmpPath); } catch { /* cleanup */ }
+  }
+}
 /**
  * Flush the availability cache (useful after installing a new language toolchain
  * during the same session).
