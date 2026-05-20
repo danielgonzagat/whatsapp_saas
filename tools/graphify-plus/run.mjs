@@ -1,0 +1,142 @@
+#!/usr/bin/env node
+// tools/graphify-plus/run.mjs — orchestrator.
+//
+//   node tools/graphify-plus/run.mjs            # extract all + merge
+//   node tools/graphify-plus/run.mjs --fast     # skip the slow ones
+//   node tools/graphify-plus/run.mjs --extractors bullmq,nestjs
+//
+// Lê:   graphify-out/graph.json (base AST/cluster do graphify upstream)
+// Junta com shards em graphify-out/shards/*.json
+// Escreve graphify-out/enriched-graph.json
+
+import { argv } from 'node:process';
+import { spawn } from 'node:child_process';
+import { readFile, writeFile, stat } from 'node:fs/promises';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const ROOT = process.cwd();
+const SHARDS_DIR = join(ROOT, 'graphify-out', 'shards');
+const BASE = join(ROOT, 'graphify-out', 'graph.json');
+const OUT = join(ROOT, 'graphify-out', 'enriched-graph.json');
+
+const ALL = [
+  { name: 'bullmq', script: 'extractors/bullmq.mjs', fast: true },
+  { name: 'nestjs', script: 'extractors/nestjs.mjs', fast: true },
+  { name: 'nextjs', script: 'extractors/nextjs.mjs', fast: true },
+  { name: 'api-contract', script: 'extractors/api-contract.mjs', fast: true },
+  { name: 'metadata', script: 'extractors/metadata.mjs', fast: true },
+  { name: 'runtime-railway', script: 'extractors/runtime-railway.mjs', fast: false }, // network call
+];
+
+async function main() {
+  const fast = argv.includes('--fast');
+  const onlyArg = argv.find((a) => a.startsWith('--extractors='))?.split('=')[1];
+  const only = onlyArg ? onlyArg.split(',') : null;
+
+  const chosen = ALL.filter((e) => (fast ? e.fast : true)).filter((e) => (only ? only.includes(e.name) : true));
+
+  console.log(`[run] extractors: ${chosen.map((e) => e.name).join(', ')}`);
+
+  for (const e of chosen) {
+    await runChild(join(__dirname, e.script));
+  }
+
+  await merge();
+}
+
+function runChild(script) {
+  return new Promise((resolve, reject) => {
+    const child = spawn('node', [script], { stdio: 'inherit', env: process.env });
+    child.on('exit', (code) => (code === 0 ? resolve() : reject(new Error(`${script} exited ${code}`))));
+    child.on('error', reject);
+  });
+}
+
+async function merge() {
+  let base = { nodes: [], edges: [] };
+  try {
+    const baseStat = await stat(BASE);
+    if (baseStat.size < 200_000_000) {
+      const raw = await readFile(BASE, 'utf8');
+      const parsed = JSON.parse(raw);
+      // graphify upstream writes NetworkX format: links, relation. Normalise here.
+      base = {
+        nodes: parsed.nodes || [],
+        edges: (parsed.links || parsed.edges || []).map((l) => ({
+          source: l.source,
+          target: l.target,
+          kind: l.relation || l.kind || 'related',
+          meta: {
+            confidence: l.confidence,
+            confidence_score: l.confidence_score,
+            weight: l.weight,
+          },
+        })),
+      };
+    } else {
+      console.log(`[run] base graph.json too large (${baseStat.size} bytes) — emitting shards-only enriched graph`);
+    }
+  } catch (err) {
+    console.log(`[run] no base graph.json (${err.message}) — emitting shards-only enriched graph`);
+  }
+
+  const shardFiles = ['bullmq', 'nestjs', 'nextjs', 'api-contract', 'metadata', 'runtime-railway']
+    .map((n) => join(SHARDS_DIR, `${n}.json`));
+
+  const enriched = {
+    nodes: [...(base.nodes || [])],
+    edges: [...(base.edges || [])],
+    shards: {},
+  };
+
+  const seenNodes = new Set(enriched.nodes.map((n) => n.id));
+
+  for (const path of shardFiles) {
+    try {
+      const raw = await readFile(path, 'utf8');
+      const shard = JSON.parse(raw);
+      const name = path.split('/').pop().replace('.json', '');
+      enriched.shards[name] = shard.stats || {};
+      for (const node of shard.nodes || []) {
+        if (seenNodes.has(node.id)) continue;
+        enriched.nodes.push(node);
+        seenNodes.add(node.id);
+      }
+      for (const edge of shard.edges || []) {
+        enriched.edges.push(edge);
+      }
+    } catch (err) {
+      console.log(`[merge] skipped ${path}: ${err.message}`);
+    }
+  }
+
+  // Build inverted indexes for cheap lookup.
+  const fileIndex = {};
+  for (const n of enriched.nodes) {
+    if (!n.file) continue;
+    (fileIndex[n.file] ||= []).push(n.id);
+  }
+  const typeIndex = {};
+  for (const n of enriched.nodes) {
+    (typeIndex[n.type] ||= []).push(n.id);
+  }
+
+  enriched.index = { byFile: fileIndex, byType: typeIndex };
+  enriched.meta = {
+    generatedAt: new Date().toISOString(),
+    baseNodes: (base.nodes || []).length,
+    baseEdges: (base.edges || []).length,
+    totalNodes: enriched.nodes.length,
+    totalEdges: enriched.edges.length,
+    shardSummary: enriched.shards,
+  };
+
+  await writeFile(OUT, JSON.stringify(enriched));
+  console.log(`[run] wrote ${OUT}`);
+  console.log(`[run] enriched graph: ${enriched.nodes.length} nodes, ${enriched.edges.length} edges`);
+  console.log(`[run] shards merged: ${Object.keys(enriched.shards).length}`);
+}
+
+await main();
