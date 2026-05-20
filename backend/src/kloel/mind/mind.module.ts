@@ -30,7 +30,8 @@ import { MindPredictionService } from './mind-prediction.service';
     MultiTimescaleCoordinator,
     { provide: 'MULTI_TIMESCALE_CONFIG', useValue: { long: { intervalMs: 120_000 } } },
     MindBackgroundProcessor,
-    MindBackgroundScheduler,    MindPredictionService,
+    MindBackgroundScheduler,
+    MindPredictionService,
   ],
   exports: [
     ValenceTaggerService,

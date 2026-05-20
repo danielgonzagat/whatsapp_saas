@@ -126,7 +126,10 @@ export class KloelToolDispatcherService {
         case 'configure_ai_persona':
           return await this.chatToolsService.toolConfigureAiPersona(workspaceId, asToolArgs(args));
         case 'update_workspace_settings':
-          return await this.bizConfigToolsService.toolSaveBusinessInfo(workspaceId, asToolArgs(args));
+          return await this.bizConfigToolsService.toolSaveBusinessInfo(
+            workspaceId,
+            asToolArgs(args),
+          );
         case 'create_agent_job':
           return await this.chatToolsService.toolCreateAgentJob(workspaceId, asToolArgs(args));
         case 'list_agent_jobs':

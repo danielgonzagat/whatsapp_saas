@@ -89,15 +89,21 @@ export class ConsolidationService {
     events: readonly SpineEventRef[],
     cycleAt: string,
   ): readonly EpisodicProposal[] {
-    if (working.length === 0) return [];
+    if (working.length === 0) {
+      return [];
+    }
     const eventById = new Map(events.map((e) => [e.eventId, e]));
     const out: EpisodicProposal[] = [];
     for (const item of working) {
-      if (item.relatedEventIds.length < 1) continue;
+      if (item.relatedEventIds.length < 1) {
+        continue;
+      }
       const relatedEvents = item.relatedEventIds
         .map((id) => eventById.get(id))
         .filter((e): e is SpineEventRef => Boolean(e));
-      if (relatedEvents.length === 0) continue;
+      if (relatedEvents.length === 0) {
+        continue;
+      }
       const valenceMix = relatedEvents.reduce(
         (acc, e) => {
           const v = e.valence ?? 'neutral';
@@ -121,7 +127,9 @@ export class ConsolidationService {
     episodes: readonly EpisodicProposal[],
     cycleAt: string,
   ): readonly ConsolidatedProposal[] {
-    if (episodes.length < 3) return [];
+    if (episodes.length < 3) {
+      return [];
+    }
     const byPattern = new Map<string, EpisodicProposal[]>();
     for (const ep of episodes) {
       const pattern = this.extractPattern(ep.summary);
@@ -131,7 +139,9 @@ export class ConsolidationService {
     }
     const out: ConsolidatedProposal[] = [];
     for (const [pattern, eps] of byPattern.entries()) {
-      if (eps.length < 3) continue;
+      if (eps.length < 3) {
+        continue;
+      }
       out.push({
         skillId: `skill_${pattern}_${cycleAt}`,
         summary: `consolidated pattern "${pattern}" from ${eps.length} episode(s)`,
