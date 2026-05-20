@@ -1,4 +1,4 @@
-import { Injectable, Optional } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { StructuredLogger } from '../logging/structured-logger';
 import { PrismaService } from '../prisma/prisma.service';
 import { BrainEventSpineService } from './brain-event-spine.service';
@@ -88,7 +88,6 @@ export class BrainCapabilityExecutorService {
     private readonly planLimits: PlanLimitsService,
     private readonly abiBuilder: AbiBuilderService,
     private readonly mindPerception: MindPerceptionService,
-    @Optional() private readonly toolDispatcher?: KloelToolDispatcherService,
   ) {}
 
   private readonly memoryProjector = new MemoryProjector();
@@ -274,39 +273,6 @@ export class BrainCapabilityExecutorService {
     }
   }
 
-  /**
-   * Generic capability executor — routes ANY registered operator capability
-   * to the tool dispatcher. Added 2026-05-20 to close the deterministic
-   * action routing gap.
-   */
-  async executeCapability(
-    workspaceId: string,
-    intent: string,
-    context?: UnknownRecord,
-  ): Promise<CapabilityResult> {
-    const startedAt = Date.now();
-    try {
-      if (!this.toolDispatcher) {
-        return { ok: false, error: 'tool_dispatcher_not_available' };
-      }
-      const args = (context?.actionArgs ?? context?.toolArgs ?? context ?? {}) as Record<
-        string,
-        unknown
-      >;
-      const result = await this.toolDispatcher.executeTool(workspaceId, intent, args);
-      const ok =
-        result &&
-        typeof result === 'object' &&
-        (result as Record<string, unknown>).success !== false;
-      await this.emitCapabilityInvoked(workspaceId, intent, startedAt, ok);
-      return { ok: true, data: result };
-    } catch (error: unknown) {
-      const msg = error instanceof Error ? error.message : 'unknown';
-      this.logger.error(`executeCapability(${intent}) failed: ${msg}`);
-      await this.emitCapabilityInvoked(workspaceId, intent, startedAt, false);
-      return { ok: false, error: msg };
-    }
-  }
 
   async listProducts(workspaceId: string, args?: UnknownRecord): Promise<CapabilityResult> {
     const startedAt = Date.now();

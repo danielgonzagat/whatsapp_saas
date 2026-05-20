@@ -299,6 +299,8 @@ export class KloelService {
     const { message, workspaceId, mode = 'chat', metadata, companyContext } = request;
     const composerMetadata = this.extractComposerMetadata(metadata);
     // ── DETERMINISTIC ACTION ROUTER ──
+    // When the user requests a real action, execute the tool MANDATORILY
+    // rather than relying on the LLM to probabilistically decide to use tools.
     if (workspaceId) {
       const action = detectActionIntent(message);
       if (action) {
@@ -311,8 +313,10 @@ export class KloelService {
             request.userId,
           );
           const reply = formatToolResult(action.tool, result);
+          // Persist to conversation store and spine
           void this.conversationStore.saveMessage(workspaceId, 'user', message);
           void this.conversationStore.saveMessage(workspaceId, 'assistant', reply);
+          // Persist to spine as autopilot event
           void this.prisma.autopilotEvent.create({
             data: {
               workspaceId,
@@ -332,9 +336,11 @@ export class KloelService {
           this.logger.warn(
             `Deterministic failed: ${err instanceof Error ? err.message : 'unknown'}, falling back to LLM`,
           );
+          // Fall through to normal LLM path
         }
       }
     }
+    
     const composerCapability = this.resolveComposerCapability(
       message,
       mode,
