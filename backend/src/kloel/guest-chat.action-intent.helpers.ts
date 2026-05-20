@@ -60,9 +60,11 @@ export function detectActionIntent(
 
 export function extractProductName(msg: string): string {
   const m = msg.match(
-    /(?:produto|plano|oferta|checkout|cupom)\s+(?:chamad[oa]|de\s+)?["']?([A-Za-zÀ-ÿ0-9\s\-.]{2,50}?)(?:\s+(?:com|por|R\$|pre[çc]o|valor|\.\s|$)|$)/i,
+    /(?:produto|plano|oferta|checkout|cupom)\s+(?:chamad[oa]|de\s+)?["']?([A-Za-zÀ-ÿ0-9\s-]{2,50}?)(?:\s+(?:com|por|R\$|pre[çc]o|valor|\.|$)|$)/i,
   );
-  return m?.[1]?.trim() || '';
+  const name = m?.[1]?.trim() || '';
+  // Strip trailing punctuation that was captured as part of name
+  return name.replace(/[.,;:!]+$/, '').trim();
 }
 
 export function extractProductArgs(msg: string): Record<string, unknown> {
