@@ -12,7 +12,8 @@ import { KloelThinkerService, ThinkRequest, ThinkSyncResult } from './kloel-thin
 import { KloelToolDispatcherService } from './kloel-tool-dispatcher.service';
 import { KloelWorkspaceContextService } from './kloel-workspace-context.service';
 import { AgentRuntimeContextService } from './agent-runtime';
-import { detectActionIntent } from './guest-chat.action-intent.helpers';import { formatToolResult } from './guest-chat.action-intent.helpers';
+import { detectActionIntent } from './guest-chat.action-intent.helpers';
+import { formatToolResult } from './guest-chat.action-intent.helpers';
 
 type ComposerCapability = 'create_image' | 'create_site' | 'search_web';
 type UnknownRecord = Record<string, unknown>;
@@ -317,20 +318,22 @@ export class KloelService {
           void this.conversationStore.saveMessage(workspaceId, 'user', message);
           void this.conversationStore.saveMessage(workspaceId, 'assistant', reply);
           // Persist to spine as autopilot event
-          void this.prisma.autopilotEvent.create({
-            data: {
-              workspaceId,
-              intent: action.tool,
-              action: `kloel.${action.tool}`,
-              status: 'executed',
-              meta: {
-                userPreview: message.slice(0, 280),
-                replyPreview: reply.slice(0, 280),
-                mode,
-                deterministic: true,
+          void this.prisma.autopilotEvent
+            .create({
+              data: {
+                workspaceId,
+                intent: action.tool,
+                action: `kloel.${action.tool}`,
+                status: 'executed',
+                meta: {
+                  userPreview: message.slice(0, 280),
+                  replyPreview: reply.slice(0, 280),
+                  mode,
+                  deterministic: true,
+                },
               },
-            },
-          }).catch(() => {});
+            })
+            .catch(() => {});
           return { response: reply };
         } catch (err: unknown) {
           this.logger.warn(
@@ -340,7 +343,7 @@ export class KloelService {
         }
       }
     }
-    
+
     const composerCapability = this.resolveComposerCapability(
       message,
       mode,
@@ -380,7 +383,7 @@ export class KloelService {
         userMessage: message,
         assistantMessage: result.response,
         ...(request.userId !== undefined ? { userId: request.userId } : {}),
-        ...(result.conversationId ?? request.conversationId
+        ...((result.conversationId ?? request.conversationId)
           ? { threadId: result.conversationId ?? request.conversationId }
           : {}),
       });

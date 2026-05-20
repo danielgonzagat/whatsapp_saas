@@ -273,7 +273,6 @@ export class BrainCapabilityExecutorService {
     }
   }
 
-
   async listProducts(workspaceId: string, args?: UnknownRecord): Promise<CapabilityResult> {
     const startedAt = Date.now();
     try {
