@@ -11,9 +11,6 @@ import {
 } from './kloel-thread.service';
 import type { ChatMessage, ThinkRequest, ThinkSyncResult } from './kloel-thinker.types';
 import { type PrismaService } from '../prisma/prisma.service';
-import { type AbiBuilderService } from './abi/abi-builder.service';
-import { type BrainCapabilityExecutorService } from './brain-capability-executor.service';
-import { validateAbiPayload } from './abi/abi-validator';
 import { type LocalToolExecutor } from './kloel-reply-engine.types';
 
 const ERR_THREAD_NOT_FOUND = 'Conversa não encontrada.';
@@ -30,7 +27,6 @@ function buildRegenerationError(message: string) {
 /** Sync think loop — extracted to keep KloelThinkerService under 400 lines. */
 export async function thinkSyncImpl(
   request: ThinkRequest,
-  composerCapability: 'create_image' | 'create_site' | 'search_web' | null,
   effectiveCompanyContext: string | undefined,
   deps: {
     replyEngine: KloelReplyEngineService;
@@ -39,7 +35,7 @@ export async function thinkSyncImpl(
     composerService: KloelComposerService;
     conversationStore: KloelConversationStore;
     planLimits: PlanLimitsService;    abiBuilder?: AbiBuilderService;
-    capabilityExecutor?: BrainCapabilityExecutorService;    executeLocalTool?: LocalToolExecutor;
+    capabilityExecutor?: BrainCapabilityExecutorService;    executeLocalTool?: LocalToolExecutor;    abiStateJson?: string;
   },
 ): Promise<ThinkSyncResult> {
   const {
@@ -79,33 +75,8 @@ export async function thinkSyncImpl(
       : null;
 
 
-  console.error('[ABI-SYNC] FLAG=', process.env['KLOEL_THINKER_USE_ABI'], 'BUILDER=', !!deps.abiBuilder, 'EXEC=', !!deps.capabilityExecutor);
-  // Build ABI state if feature flag is on and deps are available
-  let abiStateJson: string | undefined;
-  const { abiBuilder, capabilityExecutor } = deps;
-  const useAbi = process.env['KLOEL_THINKER_USE_ABI'] === 'on';
-  if (useAbi && abiBuilder && capabilityExecutor && workspaceId) {
-    try {
-      const chatSubstrate = await capabilityExecutor.buildCognitiveSubstrate(workspaceId);
-      const abiResult = await abiBuilder.build({
-        audience: 'public',
-        currentInput: { raw: message, channel: 'web', arrivalTimestamp: new Date().toISOString() },
-        perceptionSnapshot: { channel: 'web', ...(workspaceId ? { workspaceId } : {}) },
-        ...(chatSubstrate ? { cognitiveSubstrate: chatSubstrate } : {}),
-      });
-      if (abiResult.status === 'ok') {
-        const validation = validateAbiPayload(abiResult.abi);
-        if (validation.status !== 'FAIL') {
-          const capped = JSON.stringify(abiResult.abi, (_k: string, v: unknown) =>
-            Array.isArray(v) ? v.slice(0, 8) : v
-          );
-          abiStateJson = capped.length > 24000 ? capped.slice(0, 24000) + '...(truncated)' : capped;
-        }
-      }
-    } catch {
-      // ABI build failed — use legacy prompt
-    }
-  }
+  // Use pre-built ABI state from caller (KloelThinkerService.thinkSync)
+  const abiStateJson = deps.abiStateJson;
   const assistantMessage =
     capabilityResult?.content ||
     (await replyEngine.buildAssistantReply({

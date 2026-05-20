@@ -188,7 +188,14 @@ describe('UnifiedAgentService', () => {
     };
 
     const contextData = new UnifiedAgentContextDataService(prisma as never);
-    ctx = new UnifiedAgentContextService(contextData);
+    ctx = {
+      getWorkspaceContext: jest.fn().mockResolvedValue({ id: 'ws-1', name: 'Test' }),
+      getContactContext: jest.fn().mockResolvedValue({ id: 'ct-1', name: 'Test' }),
+      getConversationHistory: jest.fn().mockResolvedValue([]),
+      buildAndPersistCompressedContext: jest.fn().mockResolvedValue('compressed'),
+      getProducts: jest.fn().mockResolvedValue([]),
+      buildSystemPrompt: jest.fn().mockReturnValue('prompt'),
+    } as unknown as UnifiedAgentContextService;
     response = new UnifiedAgentResponseService(planLimits as never);
     const messaging = new UnifiedAgentActionsMessagingService(
       whatsappService as never,
