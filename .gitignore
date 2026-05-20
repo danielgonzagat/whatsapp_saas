@@ -129,3 +129,7 @@ artifacts/pulse-liquefaction/
 # runtime state moved from root
 state/HUD_LAST_REFRESH.json
 state/FINDINGS_AGGREGATE.json
+
+# atomic-edit + kloel runtime state
+.atomic-edit-locks/
+.kloel/
