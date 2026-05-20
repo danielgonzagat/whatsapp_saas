@@ -586,5 +586,4 @@ export class KloelChatToolsService {
   toolToggleTheme(workspaceId: string, args: Record<string, unknown>): Promise<ToolResult> {
     return runToggleTheme(this.prisma, workspaceId, args);
   }
-
 }

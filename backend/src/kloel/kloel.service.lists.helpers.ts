@@ -26,7 +26,11 @@ export interface FollowupListItem {
   executedAt?: unknown;
 }
 
-export async function runListFollowups(prisma: PrismaService, workspaceId: string, contactId?: string) {
+export async function runListFollowups(
+  prisma: PrismaService,
+  workspaceId: string,
+  contactId?: string,
+) {
   try {
     const whereClause: Prisma.KloelMemoryWhereInput = { workspaceId, category: 'followups' };
     if (contactId) {
@@ -83,7 +87,8 @@ export async function runListPersonas(prisma: PrismaService, workspaceId: string
   });
 }
 
-export function runCreatePersona(prisma: PrismaService, 
+export function runCreatePersona(
+  prisma: PrismaService,
   workspaceId: string,
   data: {
     name: string;
@@ -124,7 +129,8 @@ export async function runListIntegrations(prisma: PrismaService, workspaceId: st
   });
 }
 
-export async function runCreateIntegration(prisma: PrismaService, 
+export async function runCreateIntegration(
+  prisma: PrismaService,
   workspaceId: string,
   data: { type: string; name: string; credentials: Prisma.InputJsonValue },
 ) {

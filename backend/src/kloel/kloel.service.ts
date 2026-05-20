@@ -1,5 +1,11 @@
 import { Injectable, Optional } from '@nestjs/common';
-import { runListFollowups, runListPersonas, runCreatePersona, runListIntegrations, runCreateIntegration } from './kloel.service.lists.helpers';
+import {
+  runListFollowups,
+  runListPersonas,
+  runCreatePersona,
+  runListIntegrations,
+  runCreateIntegration,
+} from './kloel.service.lists.helpers';
 import { StructuredLogger } from '../logging/structured-logger';
 import { Prisma } from '@prisma/client';
 import { Response } from 'express';
@@ -527,7 +533,6 @@ export class KloelService {
   ) {
     return runCreateIntegration(this.prisma, workspaceId, data);
   }
-
 
   private async buildAgentRuntimePromptBlock(params: {
     workspaceId?: string;

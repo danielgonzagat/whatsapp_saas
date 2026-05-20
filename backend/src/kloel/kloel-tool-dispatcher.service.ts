@@ -158,7 +158,6 @@ export class KloelToolDispatcherService {
           return await this.chatToolsService.toolDeleteProduct(workspaceId, asToolArgs(args));
         case 'get_settings':
           return { success: false, error: 'get_settings_tool_not_implemented' };
-        case 'get_wallet_statement':
         case 'request_withdrawal':
           if (this.walletSalesTools) {
             return await this.walletSalesTools.executeTool(toolName, workspaceId, asToolArgs(args));

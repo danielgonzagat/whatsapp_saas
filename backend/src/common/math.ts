@@ -45,6 +45,8 @@ export function clampScore(value: number): number {
  */
 export function daysSince(iso: string, nowMs: number): number {
   const ts = Date.parse(iso);
-  if (!Number.isFinite(ts)) return 0;
+  if (!Number.isFinite(ts)) {
+    return 0;
+  }
   return Math.max(0, (nowMs - ts) / (1000 * 60 * 60 * 24));
 }
