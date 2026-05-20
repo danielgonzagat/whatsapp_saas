@@ -65,11 +65,7 @@ async function maybeAlertFailedJobs(
 ): Promise<void> {
   const grew = failed > lastObservedFailed;
   lastObservedFailed = failed;
-  if (
-    failed < FAILED_JOBS_THRESHOLD ||
-    !grew ||
-    now - lastQueueAlert <= QUEUE_ALERT_COOLDOWN_MS
-  ) {
+  if (failed < FAILED_JOBS_THRESHOLD || !grew || now - lastQueueAlert <= QUEUE_ALERT_COOLDOWN_MS) {
     return;
   }
   lastQueueAlert = now;
