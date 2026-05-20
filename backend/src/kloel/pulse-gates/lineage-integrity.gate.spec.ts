@@ -3,14 +3,10 @@ import {
   ORGANISM_CANONICAL_NAME,
 } from '../lineage/genesis-event';
 import {
-  LineageGuardService,
-  LineageGuardVerdict,
-} from '../lineage/lineage-guard.service';
-import {
   LineageIntegrityGate,
   makeLineageIntegrityGate,
 } from './lineage-integrity.gate';
-import type { GateVerdict } from './pulse-gates.types';
+import { assertFail, assertPass, check, mockGuard } from './lineage-integrity.gate.spec.helpers';
 
 /**
  * UTP-PULSE-002 — lineage-integrity gate contract spec.
@@ -19,72 +15,10 @@ import type { GateVerdict } from './pulse-gates.types';
  *   - Positive (PASS): Genesis intact, hash matches, canonicalName = "Kloel".
  *   - Negative (FAIL): canonicalName changed, hash mismatch, absent Genesis.
  *
- * wrapped LineageGuardService.verify() is mocked to return synthetic
- * LineageGuardVerdict objects, keeping the spec focused on the gate's
- * verdict transformation logic.
+ * wrapped LineageGuardService.verify() is mocked (see spec.helpers) to return
+ * synthetic LineageGuardVerdict objects, keeping the spec focused on the
+ * gate's verdict transformation logic.
  */
-
-// ─── Mock helpers ────────────────────────────────────────────────────
-
-function mockGuard(
-  overrides: Partial<LineageGuardVerdict> = {},
-): LineageGuardService {
-  const base: LineageGuardVerdict = {
-    status: 'intact',
-    entryCount: 1,
-    tailSequenceNumber: 1,
-    tailHash: GENESIS_EVENT.hash,
-    genesisHash: GENESIS_EVENT.hash,
-    checkedAt: new Date().toISOString(),
-  };
-  return {
-    verify: () => Promise.resolve({ ...base, ...overrides }),
-  } as unknown as LineageGuardService;
-}
-
-function check(
-  verdictOverrides: Partial<LineageGuardVerdict>,
-  mode?: 'log_only' | 'hard_fail',
-): Promise<GateVerdict> {
-  return new LineageIntegrityGate(mockGuard(verdictOverrides), mode).check();
-}
-
-async function assertPass(v: Promise<GateVerdict>, expectedMode = 'hard_fail') {
-  const verdict = await v;
-  expect(verdict.status).toBe('PASS');
-  expect(verdict.gateName).toBe('lineage-integrity');
-  expect(verdict.mode).toBe(expectedMode);
-  expect(verdict.measuredBy).toBe('lineage-integrity.gate');
-  expect(verdict.measuredAt).toBeDefined();
-  expect(verdict.reason).toBeUndefined();
-  expect(verdict.evidence).toBeUndefined();
-}
-
-async function assertFail(
-  v: Promise<GateVerdict>,
-  reasonPattern: RegExp | string,
-  opts: {
-    mode?: 'log_only' | 'hard_fail';
-    evidenceCount?: number;
-  } = {},
-) {
-  const verdict = await v;
-  expect(verdict.status).toBe('FAIL');
-  expect(verdict.gateName).toBe('lineage-integrity');
-  expect(verdict.mode).toBe(opts.mode ?? 'hard_fail');
-  expect(verdict.measuredBy).toBe('lineage-integrity.gate');
-  expect(verdict.measuredAt).toBeDefined();
-  expect(verdict.reason).toBeDefined();
-  if (typeof reasonPattern === 'string') {
-    expect(verdict.reason).toBe(reasonPattern);
-  } else {
-    expect(verdict.reason).toMatch(reasonPattern);
-  }
-  if (opts.evidenceCount !== undefined) {
-    expect(verdict.evidence).toBeDefined();
-    expect(verdict.evidence!.length).toBe(opts.evidenceCount);
-  }
-}
 
 // ─── Positive (PASS) scenarios ───────────────────────────────────────
 
