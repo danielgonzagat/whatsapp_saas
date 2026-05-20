@@ -164,7 +164,8 @@ interface BuildAssistantReplyDeps {
   wsContextService: KloelWorkspaceContextService;
   contextFormatter: KloelContextFormatter;
   toolRouter: KloelToolRouter;
-  unavailableMessage: string;  abiStateJson?: string;
+  unavailableMessage: string;
+  abiStateJson?: string;
   hasOpenAiKey: () => boolean;
   buildDashboardPrompt: (params?: {
     userName?: string | null;
@@ -212,7 +213,8 @@ export async function buildAssistantReplyImpl(
     allowedTools?: string[];
     conversationState?: { summary?: string; recentMessages: ReplyMessage[]; totalMessages: number };
     onTraceEvent?: (event: KloelStreamEvent) => void;
-    executeLocalTool?: LocalToolExecutor;    prebuiltCognitiveState?: Record<string, unknown>;
+    executeLocalTool?: LocalToolExecutor;
+    prebuiltCognitiveState?: Record<string, unknown>;
   },
   deps: BuildAssistantReplyDeps,
 ): Promise<string> {
@@ -299,7 +301,10 @@ export async function buildAssistantReplyImpl(
     marketingPromptAddendum,
     summaryMessage,
     recentMessages: historyState.recentMessages,
-    ...(params.prebuiltCognitiveState !== undefined ? { prebuiltCognitiveState: params.prebuiltCognitiveState } : {}),    userMessage: message,
+    ...(params.prebuiltCognitiveState !== undefined
+      ? { prebuiltCognitiveState: params.prebuiltCognitiveState }
+      : {}),
+    userMessage: message,
   });
   onTraceEvent?.(createKloelStatusEvent('thinking'));
   if (workspaceId) {
@@ -318,7 +323,8 @@ export async function buildAssistantReplyImpl(
         ? { tool_choice: chatTools.length > 0 ? ('auto' as const) : ('none' as const) }
         : {}),
       // Disable thinking mode for DeepSeek v4 Pro tool calls (reasoning_content breaks multi-turn)
-      ...(isChatMode && chatTools.length > 0 ? { thinking: { type: 'disabled' as const } } : {}),      temperature: responseTemperature,
+      ...(isChatMode && chatTools.length > 0 ? { thinking: { type: 'disabled' as const } } : {}),
+      temperature: responseTemperature,
       top_p: 0.95,
       frequency_penalty: 0.3,
       presence_penalty: 0.2,
@@ -332,7 +338,7 @@ export async function buildAssistantReplyImpl(
       .catch(() => {});
   }
 
-  const initialMsg = response.choices[0]?.message;  // Strip reasoning_content to avoid DeepSeek v4 multi-turn error
+  const initialMsg = response.choices[0]?.message; // Strip reasoning_content to avoid DeepSeek v4 multi-turn error
   if (initialMsg) {
     const initialMsgWithReasoning = initialMsg as unknown as Record<string, unknown>;
     if (initialMsgWithReasoning.reasoning_content !== undefined) {
@@ -363,7 +369,10 @@ export async function buildAssistantReplyImpl(
           marketingPromptAddendum,
           summaryMessage,
           recentMessages: historyState.recentMessages,
-          ...(params.prebuiltCognitiveState !== undefined ? { prebuiltCognitiveState: params.prebuiltCognitiveState } : {}),          userMessage: message,
+          ...(params.prebuiltCognitiveState !== undefined
+            ? { prebuiltCognitiveState: params.prebuiltCognitiveState }
+            : {}),
+          userMessage: message,
           assistantMessage: initialMsg,
           toolMessages,
         }),
@@ -395,4 +404,3 @@ function filterChatToolsByAllowedTools(allowedTools?: string[]): typeof KLOEL_CH
     return typeof name === 'string' && allowed.has(name);
   });
 }
-

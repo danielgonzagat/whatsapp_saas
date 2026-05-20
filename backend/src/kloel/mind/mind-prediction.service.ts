@@ -19,13 +19,13 @@ import { PrismaService } from '../../prisma/prisma.service';
 
 export interface GeneratedPrediction {
   id: string;
-  predicate: string;        // e.g. "lead_from_instagram_converts"
-  expectedOutcome: string;  // e.g. "lead_converted" or "payment_approved"
-  confidence: number;       // 0-1
+  predicate: string; // e.g. "lead_from_instagram_converts"
+  expectedOutcome: string; // e.g. "lead_converted" or "payment_approved"
+  confidence: number; // 0-1
   generatedAt: string;
   evaluatedAt?: string;
   wasCorrect?: boolean;
-  surprise?: number;        // 0-1, higher = more surprising
+  surprise?: number; // 0-1, higher = more surprising
   evidenceEvents: string[]; // eventIds that support this prediction
 }
 
@@ -49,7 +49,8 @@ type AutopilotEventRow = {
 @Injectable()
 export class MindPredictionService {
   private readonly logger = new Logger(MindPredictionService.name);
-  private activePredictions: GeneratedPrediction[] = [];  private lastCycleAt?: string;
+  private activePredictions: GeneratedPrediction[] = [];
+  private lastCycleAt?: string;
 
   constructor(private readonly prisma: PrismaService) {}
 
@@ -67,11 +68,19 @@ export class MindPredictionService {
        FROM "RAC_AutopilotEvent"
        WHERE "workspaceId" = $1 AND "createdAt" > $2
        ORDER BY "createdAt" ASC LIMIT 500`,
-      workspaceId, since,
+      workspaceId,
+      since,
     );
 
     if (!rows || rows.length === 0) {
-      return { cycleAt, predictionsGenerated: 0, predictionsEvaluated: 0, correctPredictions: 0, meanSurprise: 0, predictions: [] };
+      return {
+        cycleAt,
+        predictionsGenerated: 0,
+        predictionsEvaluated: 0,
+        correctPredictions: 0,
+        meanSurprise: 0,
+        predictions: [],
+      };
     }
 
     // Step 2: Evaluate OLD predictions against NEW events (since last cycle)
@@ -104,26 +113,30 @@ export class MindPredictionService {
       }
 
       evaluated++;
-      if (pred.wasCorrect) correct++;
+      if (pred.wasCorrect) {
+        correct++;
+      }
       totalSurprise += pred.surprise;
 
       // Emit surprise as event
       if (pred.surprise > 0.3) {
-        void this.prisma.autopilotEvent.create({
-          data: {
-            workspaceId,
-            intent: 'surprise_detected',
-            action: 'mind.prediction.surprise',
-            status: 'executed',
-            meta: {
-              predictionId: pred.id,
-              predicate: pred.predicate,
-              expectedOutcome: pred.expectedOutcome,
-              surprise: pred.surprise,
-              wasCorrect: pred.wasCorrect,
+        void this.prisma.autopilotEvent
+          .create({
+            data: {
+              workspaceId,
+              intent: 'surprise_detected',
+              action: 'mind.prediction.surprise',
+              status: 'executed',
+              meta: {
+                predictionId: pred.id,
+                predicate: pred.predicate,
+                expectedOutcome: pred.expectedOutcome,
+                surprise: pred.surprise,
+                wasCorrect: pred.wasCorrect,
+              },
             },
-          },
-        }).catch(() => {});
+          })
+          .catch(() => {});
       }
     }
 
@@ -172,24 +185,27 @@ export class MindPredictionService {
     }
 
     // Replace active predictions with new ones
-    this.activePredictions = newPredictions;    this.lastCycleAt = cycleAt;
+    this.activePredictions = newPredictions;
+    this.lastCycleAt = cycleAt;
 
     // Emit predictions as events
     for (const pred of newPredictions) {
-      void this.prisma.autopilotEvent.create({
-        data: {
-          workspaceId,
-          intent: 'prediction_generated',
-          action: 'mind.prediction.generate',
-          status: 'executed',
-          meta: {
-            predictionId: pred.id,
-            predicate: pred.predicate,
-            expectedOutcome: pred.expectedOutcome,
-            confidence: pred.confidence,
+      void this.prisma.autopilotEvent
+        .create({
+          data: {
+            workspaceId,
+            intent: 'prediction_generated',
+            action: 'mind.prediction.generate',
+            status: 'executed',
+            meta: {
+              predictionId: pred.id,
+              predicate: pred.predicate,
+              expectedOutcome: pred.expectedOutcome,
+              confidence: pred.confidence,
+            },
           },
-        },
-      }).catch(() => {});
+        })
+        .catch(() => {});
     }
 
     const meanSurprise = evaluated > 0 ? totalSurprise / evaluated : 0;
@@ -218,14 +234,19 @@ export class MindPredictionService {
     confidence: number;
     evidenceIds: string[];
   }> {
-    const sequences = new Map<string, { count: number; totalPredecessor: number; evidenceIds: string[] }>();
+    const sequences = new Map<
+      string,
+      { count: number; totalPredecessor: number; evidenceIds: string[] }
+    >();
 
     for (let i = 0; i < rows.length - 1; i++) {
       const a = rows[i];
       const b = rows[i + 1];
       // Only consider events within 30 minutes of each other
       const timeDiff = new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-      if (timeDiff > 30 * 60 * 1000) continue;
+      if (timeDiff > 30 * 60 * 1000) {
+        continue;
+      }
 
       const key = `${a.intent}→${b.intent}`;
       const entry = sequences.get(key) || { count: 0, totalPredecessor: 0, evidenceIds: [] };
@@ -244,7 +265,12 @@ export class MindPredictionService {
         const predecessor = predecessorPart ?? '';
         const successor = successorPart ?? '';
         const confidence = v.count / Math.max(1, v.totalPredecessor);
-        return { predecessor, successor, confidence: Math.round(confidence * 100) / 100, evidenceIds: v.evidenceIds };
+        return {
+          predecessor,
+          successor,
+          confidence: Math.round(confidence * 100) / 100,
+          evidenceIds: v.evidenceIds,
+        };
       })
       .filter((s) => s.confidence > 0.3)
       .sort((a, b) => b.confidence - a.confidence);
