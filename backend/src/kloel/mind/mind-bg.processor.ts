@@ -8,6 +8,7 @@ import {
 import { ValenceAggregatorService } from './valence-aggregator.service';
 import { SpineEventRef } from './mind.types';
 import type { WorkingMemoryItem } from './consolidation.service';
+import { MindPredictionService } from './mind-prediction.service';
 
 /**
  * UTP-MIND-BG-001 — Background processor for the MIND substrate.
@@ -24,7 +25,7 @@ import type { WorkingMemoryItem } from './consolidation.service';
 
 export interface BgTickInput {
   readonly nowMs?: number;
-  readonly recentEvents: readonly SpineEventRef[];
+  readonly recentEvents: readonly SpineEventRef[];  readonly workspaceId?: string;
   readonly workingMemory: readonly WorkingMemoryItem[];
 }
 
@@ -45,6 +46,7 @@ export class MindBackgroundProcessor {
     private readonly valenceAggregator: ValenceAggregatorService,
     private readonly hebbian: HebbianService,
     private readonly consolidation: ConsolidationService,
+    private readonly prediction: MindPredictionService,
   ) {
     this.lastDecayMs = Date.now();
   }
@@ -62,7 +64,10 @@ export class MindBackgroundProcessor {
     if (due.includes('medium')) {
       this.hebbian.decay(new Date(nowMs), new Date(this.lastDecayMs));
       this.lastDecayMs = nowMs;
-      mood = this.valenceAggregator.aggregate(input.recentEvents, 24, nowMs);
+      mood = this.valenceAggregator.aggregate(input.recentEvents, 24, nowMs);      // Run prediction cycle on medium timescale (predictive coding B5)
+      if (input.workspaceId) {
+        void this.prediction.runCycle(input.workspaceId);
+      }
       this.coordinator.markFired('medium', nowMs);
     }
       // Auto-generate working memory items from recent events if none provided

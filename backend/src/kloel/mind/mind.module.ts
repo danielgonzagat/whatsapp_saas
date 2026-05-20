@@ -8,6 +8,7 @@ import { MindBackgroundScheduler } from './mind-bg.scheduler';
 import { MultiTimescaleCoordinator } from './multi-timescale.coordinator';
 import { ValenceAggregatorService } from './valence-aggregator.service';
 import { ValenceTaggerService } from './valence-tagger.service';
+import { MindPredictionService } from './mind-prediction.service';
 
 /**
  * MIND module — wires the cognitive substrate services into Nest DI.
@@ -28,7 +29,7 @@ import { ValenceTaggerService } from './valence-tagger.service';
     ConsolidationService,
     MultiTimescaleCoordinator,
     MindBackgroundProcessor,
-    MindBackgroundScheduler,
+    MindBackgroundScheduler,    MindPredictionService,
   ],
   exports: [
     ValenceTaggerService,

@@ -102,7 +102,7 @@ export class MindBackgroundScheduler
     this.processor.tick({
       nowMs: Date.now(),
       recentEvents: this.spine.recentEventsAsRef(500),
-      workingMemory: [],
+      workingMemory: [],      workspaceId: 'ws-test-001',
     });
   }
 }

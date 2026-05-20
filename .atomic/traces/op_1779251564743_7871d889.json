@@ -1,0 +1,80 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779251564743_7871d889",
+  "ts": "2026-05-20T04:32:44.743Z",
+  "file": "backend/src/kloel/mind/mind-prediction.service.ts",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "targetUnit": "text_span",
+  "intention": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 120,
+    "lineRewriteSurfaceChars": 115,
+    "expansionFactorAvoided": 0.96,
+    "bytesNet": 5,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "74f679c9a2e354426a80cada266aa63c07cac5a3a4e81c504dc34f4b30010c06",
+  "proposedSha256": "74f679c9a2e354426a80cada266aa63c07cac5a3a4e81c504dc34f4b30010c06",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- backend/src/kloel/mind/mind-prediction.service.ts (atomic char-level)\u001b[0m\n  \n      for (const pred of this.activePredictions) {\n        // Check if any \u001b[31m[-new-]\u001b[0m\u001b[32m{+NEW+}\u001b[0m event matches the expected outcome\n        const matchingEvents = \u001b[31m[-ro-]\u001b[0m\u001b[32m{+ne+}\u001b[0mw\u001b[32m{+Event+}\u001b[0ms.filter((r: any) => {\n          const intent = `${r.intent}_${r.status}`;\n          return intent.includes(pred.expectedOutcome) || r.intent.includes(pred.expectedOutcome);",
+  "preservedZones": [
+    {
+      "kind": "prefix_preserved",
+      "description": "Bytes 0–2753 — prefix preserved unchanged",
+      "byteStart": 0,
+      "byteEnd": 2754,
+      "byteLength": 2754,
+      "beforeHash": "2c1fd36e9d7fd49f7659aa0fe4565c62fe37b43a790c2362b2a9002abbafe2cf",
+      "afterHash": "2c1fd36e9d7fd49f7659aa0fe4565c62fe37b43a790c2362b2a9002abbafe2cf",
+      "sample": "  : [];\n\n    for (const pred of this.activePredictions) {\n      // Check if any "
+    },
+    {
+      "kind": "suffix_preserved",
+      "description": "Bytes 2825–8835 — suffix preserved unchanged",
+      "byteStart": 2825,
+      "byteEnd": 8836,
+      "byteLength": 6011,
+      "beforeHash": "6b33b8b40cb21571bb88c7e68705de6ff920f4eed417f881b92304108d587eac",
+      "afterHash": "6b33b8b40cb21571bb88c7e68705de6ff920f4eed417f881b92304108d587eac",
+      "sample": "s.filter((r: any) => {\n        const intent = `${r.intent}_${r.status}`;\n       "
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "byteStart": 2754,
+      "byteEnd": 2825,
+      "newByteLength": 76,
+      "oldTextHash": "7bbc8e5607e622713879d2de6987e181488b69d0159d72824abaf717cf273690",
+      "newTextHash": "de21d6850c30e122b9dc79b64221a822667052a8b00b77e4ee7df98e1ec2e84a",
+      "oldSample": "new event matches the expected outcome\n      const matchingEvents = row",
+      "newSample": "NEW event matches the expected outcome\n      const matchingEvents = newEvent",
+      "description": "Replace 71 bytes at offset 2754 with 76 bytes"
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~120 character(s) in `backend/src/kloel/mind/mind-prediction.service.ts` (sub-line atomic edit, expansion 0.96× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

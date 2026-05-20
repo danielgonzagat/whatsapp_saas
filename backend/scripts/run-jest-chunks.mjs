@@ -83,7 +83,7 @@ function removeCoverageDirectoryArgs(args) {
 }
 
 function ensureRunInBand(args) {
-  return args.includes('--runInBand') ? args : ['--runInBand', ...args];
+  return args.includes('--runInBand') ? args : args;
 }
 
 function hasPositionalSpec(args) {
