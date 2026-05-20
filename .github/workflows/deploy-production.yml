@@ -172,7 +172,7 @@ jobs:
 
       - name: Backend test
         env:
-          JEST_CHUNK_SIZE: 128
+          JEST_CHUNK_SIZE: 64
         run: npm test
         working-directory: backend
 
