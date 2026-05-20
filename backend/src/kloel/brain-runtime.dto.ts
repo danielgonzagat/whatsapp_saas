@@ -19,7 +19,7 @@ export type BrainSource =
   | 'checkout'
   | 'system';
 
-export interface BrainMessage {
+interface BrainMessage {
   content: string;
   role: 'assistant' | 'system' | 'user';
 }

@@ -36,6 +36,7 @@ export function useOfficialMarketingChannel({ channel, initialStep }: UseOfficia
   const [disconnectArmed, setDisconnectArmed] = useState(false);
   const [completeBusy, setCompleteBusy] = useState(false);
   const [completeMessage, setCompleteMessage] = useState<string | null>(null);
+  const [completed, setCompleted] = useState(false);
   const initialStepApplied = useRef(false);
   const productOptions = useMemo(() => {
     if (!Array.isArray(products)) {
@@ -68,13 +69,14 @@ export function useOfficialMarketingChannel({ channel, initialStep }: UseOfficia
         throw new Error(nextStatus.error);
       }
       setStatus(nextStatus.data || null);
-      const setupResponse = await apiFetch<{ setup?: unknown }>(
+      const setupResponse = await apiFetch<{ setup?: unknown; completedAt?: string | null }>(
         `/marketing/connect/channel-setup?channel=${encodeURIComponent(channel)}`,
       );
       if (setupResponse.error) {
         throw new Error(setupResponse.error);
       }
       setSetup(normalizeSetup(setupResponse.data?.setup));
+      setCompleted(Boolean(setupResponse.data?.completedAt));
       setSetupLoaded(true);
       if (channel === 'tiktok') {
         const nextTikTok = await apiFetch<TikTokStatus>('/marketing/connect/tiktok/status');
@@ -276,6 +278,7 @@ export function useOfficialMarketingChannel({ channel, initialStep }: UseOfficia
     }
     setCompleteMessage('Setup concluido. O canal esta liberado para operacao.');
     setSetup({ ...setup, currentStep: 3 });
+    setCompleted(true);
     setSetupLoaded(true);
     await refresh();
   }, [channel, setup, refresh]);
@@ -309,6 +312,7 @@ export function useOfficialMarketingChannel({ channel, initialStep }: UseOfficia
     disconnectArmed,
     completeBusy,
     completeMessage,
+    completed,
     tiktokMode,
     details,
     setupUnavailable,
