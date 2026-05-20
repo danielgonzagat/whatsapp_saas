@@ -27,6 +27,7 @@ import { tmpdir } from 'node:os';
 const REPO_ROOT = process.cwd();
 const REMOTE_FROM_ARG = argv.find((a) => a.startsWith('--repo='))?.split('=')[1];
 const REMOTE = REMOTE_FROM_ARG || 'danielgonzagat/whatsapp_saas';
+const DRY_RUN = argv.includes('--dry-run');
 
 async function processOne(jobFile) {
   const job = JSON.parse(await readFile(jobFile, 'utf8'));
@@ -63,6 +64,13 @@ async function processOne(jobFile) {
 
     const message = `${job.title}\n\n${job.body || ''}\n\nCo-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>\n`;
     await run(['git', '-c', 'commit.gpgsign=false', 'commit', '-m', message], { cwd: wt });
+
+    if (DRY_RUN) {
+      const sha = await captureOutput(['git', 'rev-parse', 'HEAD'], { cwd: wt });
+      console.log(`[auto-pr][dry-run] branch=${job.branch} sha=${sha.trim()} (no push, no PR)`);
+      return { dryRun: true, branch: job.branch, sha: sha.trim() };
+    }
+
     await run(['git', 'push', '-u', 'origin', job.branch], { cwd: wt });
 
     const prArgs = ['gh', 'pr', 'create', '--title', job.title, '--body', job.body || '', '--repo', REMOTE, '--base', (job.base || 'main').replace(/^origin\//, '')];

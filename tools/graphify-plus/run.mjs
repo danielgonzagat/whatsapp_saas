@@ -29,7 +29,10 @@ const ALL = [
   { name: 'metadata', script: 'extractors/metadata.mjs', fast: true },
   { name: 'test-impact', script: 'extractors/test-impact.mjs', fast: true }, // L8
   { name: 'bundle', script: 'extractors/bundle.mjs', fast: true }, // L9 — reads .next/ if present
+  { name: 'doc-freshness', script: 'extractors/doc-freshness.mjs', fast: true }, // W4
+  { name: 'type-flow', script: 'extractors/type-flow.mjs', fast: true }, // W4 — Prisma model fan-out
   { name: 'runtime-railway', script: 'extractors/runtime-railway.mjs', fast: false }, // network call
+  { name: 'runtime-sentry', script: 'extractors/runtime-sentry.mjs', fast: false }, // W4 — Sentry overlay
   { name: 'diagnostics', script: 'extractors/diagnostics.mjs', fast: false }, // L7 — runs tsc+eslint (slow)
 ];
 
@@ -95,6 +98,9 @@ async function merge() {
     'test-impact',
     'bundle',
     'diagnostics',
+    'doc-freshness',
+    'type-flow',
+    'runtime-sentry',
   ].map((n) => join(SHARDS_DIR, `${n}.json`));
 
   const enriched = {
