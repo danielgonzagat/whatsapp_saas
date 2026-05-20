@@ -1,0 +1,80 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779243187167_981795a8",
+  "ts": "2026-05-20T02:13:07.167Z",
+  "file": "backend/src/kloel/mind/mind-bg.processor.ts",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "targetUnit": "text_span",
+  "intention": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 24,
+    "lineRewriteSurfaceChars": 24,
+    "expansionFactorAvoided": 1,
+    "bytesNet": -3,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "4285ce8b714ea7f4cc5996878ebe64b5c36f0d64340170ac584fc55ead3141ed",
+  "proposedSha256": "4285ce8b714ea7f4cc5996878ebe64b5c36f0d64340170ac584fc55ead3141ed",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- backend/src/kloel/mind/mind-bg.processor.ts (atomic char-level)\u001b[0m\n          workingMemory: input.workingMemory,\n          recentEvents: input.recentEvents,\n          mode: '\u001b[31m[-d-]\u001b[0mr\u001b[31m[-y_run-]\u001b[0m\u001b[32m{+eal+}\u001b[0m',\n          nowIso: new Date(nowMs).toISOString(),\n        });",
+  "preservedZones": [
+    {
+      "kind": "prefix_preserved",
+      "description": "Bytes 0–2700 — prefix preserved unchanged",
+      "byteStart": 0,
+      "byteEnd": 2701,
+      "byteLength": 2701,
+      "beforeHash": "38b5b28e05d4f91e377dea640285b7e2eb16ee0a3e63ee055e61a9908df360da",
+      "afterHash": "38b5b28e05d4f91e377dea640285b7e2eb16ee0a3e63ee055e61a9908df360da",
+      "sample": ": input.workingMemory,\n        recentEvents: input.recentEvents,\n        mode: '"
+    },
+    {
+      "kind": "suffix_preserved",
+      "description": "Bytes 2708–3144 — suffix preserved unchanged",
+      "byteStart": 2708,
+      "byteEnd": 3145,
+      "byteLength": 437,
+      "beforeHash": "822cab37c0642b6b56d56ce7e7a07ae80fcf13576f49fb3763ced617b19084ed",
+      "afterHash": "822cab37c0642b6b56d56ce7e7a07ae80fcf13576f49fb3763ced617b19084ed",
+      "sample": "',\n        nowIso: new Date(nowMs).toISOString(),\n      });\n      this.coordinat"
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "byteStart": 2701,
+      "byteEnd": 2708,
+      "newByteLength": 4,
+      "oldTextHash": "08d41f0253bb0ecddca5238f78cff16fe4c0249735c00e41b591380f0c5e5bac",
+      "newTextHash": "aa33996d60e89311b4d1a920dae03c6d7fa3ae1956c52662e273aad4683e577f",
+      "oldSample": "dry_run",
+      "newSample": "real",
+      "description": "Replace 7 bytes at offset 2701 with 4 bytes"
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~24 character(s) in `backend/src/kloel/mind/mind-bg.processor.ts` (sub-line atomic edit, expansion 1× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

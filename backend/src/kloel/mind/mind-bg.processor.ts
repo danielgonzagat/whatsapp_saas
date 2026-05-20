@@ -69,7 +69,7 @@ export class MindBackgroundProcessor {
       consolidation = this.consolidation.runCycle({
         workingMemory: input.workingMemory,
         recentEvents: input.recentEvents,
-        mode: 'dry_run',
+        mode: 'real',
         nowIso: new Date(nowMs).toISOString(),
       });
       this.coordinator.markFired('long', nowMs);
