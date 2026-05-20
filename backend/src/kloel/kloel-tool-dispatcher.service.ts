@@ -120,21 +120,14 @@ export class KloelToolDispatcherService {
         case 'validate_coupon':
           return await this.chatToolsService.toolValidateCoupon(workspaceId, asToolArgs(args));
         case 'create_plan':
-          return await this.chatToolsService.toolCreatePlan(workspaceId, asToolArgs(args));
         case 'update_plan':
-          return await this.chatToolsService.toolUpdatePlan(workspaceId, asToolArgs(args));
         case 'create_checkout':
-          return await this.chatToolsService.toolCreateCheckout(workspaceId, asToolArgs(args));
         case 'update_checkout':
-          return await this.chatToolsService.toolUpdateCheckout(workspaceId, asToolArgs(args));
         case 'create_coupon':
-          return await this.chatToolsService.toolCreateCoupon(workspaceId, asToolArgs(args));
         case 'list_coupons':
-          return await this.chatToolsService.toolListCoupons(workspaceId, asToolArgs(args));
         case 'delete_coupon':
-          return await this.chatToolsService.toolDeleteCoupon(workspaceId, asToolArgs(args));
         case 'generate_boleto':
-          return await this.chatToolsService.toolGenerateBoleto(workspaceId, asToolArgs(args));
+          return { success: false, error: 'product_sub_resource_tools_not_available' };
         case 'get_analytics':
           return await this.chatToolsService.toolGetAnalytics(workspaceId, asToolArgs(args));
         case 'create_broadcast':
