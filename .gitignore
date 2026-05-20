@@ -120,3 +120,4 @@ scripts/mcp/atomic-edit/.smoke-fixture.*
 
 graphify-out/
 tools/graphify-plus/
+SESSION_STATE.md
