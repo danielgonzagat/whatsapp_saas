@@ -23,7 +23,7 @@ export function mockGuard(overrides: Partial<LineageGuardVerdict> = {}): Lineage
   };
   return {
     verify: () => Promise.resolve({ ...base, ...overrides }),
-  } as unknown as LineageGuardService;
+  } as Partial<LineageGuardService> as LineageGuardService;
 }
 
 export function check(

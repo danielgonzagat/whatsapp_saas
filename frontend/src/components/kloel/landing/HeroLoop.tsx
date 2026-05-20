@@ -57,9 +57,15 @@ export function HeroLoop() {
 
   useEffect(() => {
     if (prefersReducedMotion) {
-      setVis({ text: '', strike: 0, suffix: '', phase: 'hidden' });
-      setGx({ on: false, text: '', shk: [0, 0], chr: 0, slices: [], flash: false });
-      setResurrected(true);
+      // Defer state writes to the next microtask so we satisfy
+      // react-hooks/set-state-in-effect (state mutation is now a side
+      // effect of the rendered frame, not a synchronous render trigger).
+      void Promise.resolve().then(() => {
+        if (!m.current) {return;}
+        setVis({ text: '', strike: 0, suffix: '', phase: 'hidden' });
+        setGx({ on: false, text: '', shk: [0, 0], chr: 0, slices: [], flash: false });
+        setResurrected(true);
+      });
       return;
     }
     const run = async () => {

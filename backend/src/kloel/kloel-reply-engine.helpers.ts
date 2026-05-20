@@ -340,7 +340,10 @@ export async function buildAssistantReplyImpl(
 
   const initialMsg = response.choices[0]?.message; // Strip reasoning_content to avoid DeepSeek v4 multi-turn error
   if (initialMsg) {
-    const initialMsgWithReasoning = initialMsg as unknown as Record<string, unknown>;
+    const initialMsgWithReasoning: Record<string, unknown> = initialMsg as object as Record<
+      string,
+      unknown
+    >;
     if (initialMsgWithReasoning.reasoning_content !== undefined) {
       delete initialMsgWithReasoning.reasoning_content;
     }

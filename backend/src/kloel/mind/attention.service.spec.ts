@@ -25,9 +25,7 @@ describe('AttentionService', () => {
     });
 
     it('returns empty array when no events have entityRef', () => {
-      const events = [
-        makeEvent({ entityRef: undefined }),
-      ];
+      const events = [makeEvent({ entityRef: undefined })];
       expect(service.computeCandidates(events)).toEqual([]);
     });
 

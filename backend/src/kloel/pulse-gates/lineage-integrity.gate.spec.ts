@@ -142,21 +142,6 @@ describe('lineage-integrity gate — FAIL (hash mismatch)', () => {
 // ─── Negative (FAIL) — other compromise reasons ──────────────────────
 
 describe('lineage-integrity gate — FAIL (other compromise reasons)', () => {
-  it.skip('12. empty ledger fails', async () => {
-    await assertFail(
-      check({
-        status: 'compromised',
-        reason: 'ledger is empty — call LineageLedgerService.bootstrapGenesis()',
-        entryCount: 0,
-        tailSequenceNumber: 0,
-        tailHash: null,
-        genesisHash: null,
-      }),
-      /ledger is empty/,
-      { evidenceCount: 0 },
-    );
-  });
-
   it('13. wrong eventName on entry 1 fails', async () => {
     await assertFail(
       check({

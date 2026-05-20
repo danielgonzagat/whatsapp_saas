@@ -43,8 +43,16 @@ describe('ConsolidationService', () => {
 
     it('produces episodic proposals from working memory items with related events', () => {
       const events = [
-        makeEvent({ eventId: 'evt_001', eventName: 'commerce.payment.approved', valence: 'positive' }),
-        makeEvent({ eventId: 'evt_002', eventName: 'commerce.payment.approved', valence: 'positive' }),
+        makeEvent({
+          eventId: 'evt_001',
+          eventName: 'commerce.payment.approved',
+          valence: 'positive',
+        }),
+        makeEvent({
+          eventId: 'evt_002',
+          eventName: 'commerce.payment.approved',
+          valence: 'positive',
+        }),
       ];
       const wm = [
         makeWorkingItem({
@@ -63,9 +71,7 @@ describe('ConsolidationService', () => {
     });
 
     it('skips working memory items with fewer than 2 related event IDs', () => {
-      const events = [
-        makeEvent({ eventId: 'evt_001', eventName: 'commerce.payment.approved' }),
-      ];
+      const events = [makeEvent({ eventId: 'evt_001', eventName: 'commerce.payment.approved' })];
       const wm = [
         makeWorkingItem({
           itemId: 'wm_1',
@@ -99,12 +105,36 @@ describe('ConsolidationService', () => {
 
     it('produces consolidated proposals when 3+ episodes share a pattern', () => {
       const events = [
-        makeEvent({ eventId: 'evt_1', eventName: 'commerce.payment.approved', valence: 'positive' }),
-        makeEvent({ eventId: 'evt_2', eventName: 'commerce.payment.approved', valence: 'positive' }),
-        makeEvent({ eventId: 'evt_3', eventName: 'commerce.payment.declined', valence: 'negative' }),
-        makeEvent({ eventId: 'evt_4', eventName: 'commerce.payment.declined', valence: 'negative' }),
-        makeEvent({ eventId: 'evt_5', eventName: 'commerce.payment.approved', valence: 'positive' }),
-        makeEvent({ eventId: 'evt_6', eventName: 'commerce.payment.approved', valence: 'positive' }),
+        makeEvent({
+          eventId: 'evt_1',
+          eventName: 'commerce.payment.approved',
+          valence: 'positive',
+        }),
+        makeEvent({
+          eventId: 'evt_2',
+          eventName: 'commerce.payment.approved',
+          valence: 'positive',
+        }),
+        makeEvent({
+          eventId: 'evt_3',
+          eventName: 'commerce.payment.declined',
+          valence: 'negative',
+        }),
+        makeEvent({
+          eventId: 'evt_4',
+          eventName: 'commerce.payment.declined',
+          valence: 'negative',
+        }),
+        makeEvent({
+          eventId: 'evt_5',
+          eventName: 'commerce.payment.approved',
+          valence: 'positive',
+        }),
+        makeEvent({
+          eventId: 'evt_6',
+          eventName: 'commerce.payment.approved',
+          valence: 'positive',
+        }),
       ];
       const wm = [
         makeWorkingItem({
@@ -135,10 +165,26 @@ describe('ConsolidationService', () => {
 
     it('does not produce consolidated proposals when fewer than 3 episodes share a pattern', () => {
       const events = [
-        makeEvent({ eventId: 'evt_1', eventName: 'commerce.payment.approved', valence: 'positive' }),
-        makeEvent({ eventId: 'evt_2', eventName: 'commerce.payment.approved', valence: 'positive' }),
-        makeEvent({ eventId: 'evt_3', eventName: 'commerce.payment.approved', valence: 'positive' }),
-        makeEvent({ eventId: 'evt_4', eventName: 'commerce.payment.approved', valence: 'positive' }),
+        makeEvent({
+          eventId: 'evt_1',
+          eventName: 'commerce.payment.approved',
+          valence: 'positive',
+        }),
+        makeEvent({
+          eventId: 'evt_2',
+          eventName: 'commerce.payment.approved',
+          valence: 'positive',
+        }),
+        makeEvent({
+          eventId: 'evt_3',
+          eventName: 'commerce.payment.approved',
+          valence: 'positive',
+        }),
+        makeEvent({
+          eventId: 'evt_4',
+          eventName: 'commerce.payment.approved',
+          valence: 'positive',
+        }),
       ];
       const wm = [
         makeWorkingItem({
@@ -261,10 +307,7 @@ describe('ConsolidationService', () => {
       ];
       const result = service.runCycle({
         workingMemory: wm,
-        recentEvents: [
-          makeEvent({ eventId: 'evt_1' }),
-          makeEvent({ eventId: 'evt_2' }),
-        ],
+        recentEvents: [makeEvent({ eventId: 'evt_1' }), makeEvent({ eventId: 'evt_2' })],
       });
       expect(result.workingItemsConsidered).toBe(3);
     });

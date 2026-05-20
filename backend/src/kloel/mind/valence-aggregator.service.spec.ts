@@ -44,15 +44,31 @@ describe('ValenceAggregatorService', () => {
     it('computes proportions for mixed valence events', () => {
       const now = Date.now();
       const events = [
-        makeEvent({ eventId: 'evt_1', valence: 'positive', occurredAt: new Date(now - 1000).toISOString() }),
-        makeEvent({ eventId: 'evt_2', valence: 'positive', occurredAt: new Date(now - 2000).toISOString() }),
-        makeEvent({ eventId: 'evt_3', valence: 'negative', occurredAt: new Date(now - 3000).toISOString() }),
-        makeEvent({ eventId: 'evt_4', valence: 'neutral', occurredAt: new Date(now - 4000).toISOString() }),
+        makeEvent({
+          eventId: 'evt_1',
+          valence: 'positive',
+          occurredAt: new Date(now - 1000).toISOString(),
+        }),
+        makeEvent({
+          eventId: 'evt_2',
+          valence: 'positive',
+          occurredAt: new Date(now - 2000).toISOString(),
+        }),
+        makeEvent({
+          eventId: 'evt_3',
+          valence: 'negative',
+          occurredAt: new Date(now - 3000).toISOString(),
+        }),
+        makeEvent({
+          eventId: 'evt_4',
+          valence: 'neutral',
+          occurredAt: new Date(now - 4000).toISOString(),
+        }),
       ];
       const result = service.aggregate(events, 24, now);
-      expect(result.positive).toBe(0.5);  // 2/4
+      expect(result.positive).toBe(0.5); // 2/4
       expect(result.negative).toBe(0.25); // 1/4
-      expect(result.neutral).toBe(0.25);  // 1/4
+      expect(result.neutral).toBe(0.25); // 1/4
       expect(result.ambiguous).toBe(0);
       expect(result.windowHours).toBe(24);
     });
@@ -60,7 +76,11 @@ describe('ValenceAggregatorService', () => {
     it('handles ambiguous valence', () => {
       const now = Date.now();
       const events = [
-        makeEvent({ eventId: 'evt_1', valence: 'ambiguous', occurredAt: new Date(now - 1000).toISOString() }),
+        makeEvent({
+          eventId: 'evt_1',
+          valence: 'ambiguous',
+          occurredAt: new Date(now - 1000).toISOString(),
+        }),
       ];
       const result = service.aggregate(events, 24, now);
       expect(result.ambiguous).toBe(1);
@@ -71,8 +91,16 @@ describe('ValenceAggregatorService', () => {
       const now = Date.now();
       const oneHourMs = 60 * 60 * 1000;
       const events = [
-        makeEvent({ eventId: 'evt_1', valence: 'positive', occurredAt: new Date(now - oneHourMs).toISOString() }),
-        makeEvent({ eventId: 'evt_2', valence: 'negative', occurredAt: new Date(now - 3 * oneHourMs).toISOString() }),
+        makeEvent({
+          eventId: 'evt_1',
+          valence: 'positive',
+          occurredAt: new Date(now - oneHourMs).toISOString(),
+        }),
+        makeEvent({
+          eventId: 'evt_2',
+          valence: 'negative',
+          occurredAt: new Date(now - 3 * oneHourMs).toISOString(),
+        }),
       ];
       // window of 2 hours — only evt_1 is inside
       const result = service.aggregate(events, 2, now);
@@ -113,9 +141,21 @@ describe('ValenceAggregatorService', () => {
     it('returns only events with valence, sorted by occurredAt desc', () => {
       const now = Date.now();
       const events = [
-        makeEvent({ eventId: 'evt_1', valence: 'positive', occurredAt: new Date(now - 3000).toISOString() }),
-        makeEvent({ eventId: 'evt_2', valence: undefined, occurredAt: new Date(now - 1000).toISOString() }),
-        makeEvent({ eventId: 'evt_3', valence: 'negative', occurredAt: new Date(now - 2000).toISOString() }),
+        makeEvent({
+          eventId: 'evt_1',
+          valence: 'positive',
+          occurredAt: new Date(now - 3000).toISOString(),
+        }),
+        makeEvent({
+          eventId: 'evt_2',
+          valence: undefined,
+          occurredAt: new Date(now - 1000).toISOString(),
+        }),
+        makeEvent({
+          eventId: 'evt_3',
+          valence: 'negative',
+          occurredAt: new Date(now - 2000).toISOString(),
+        }),
       ];
       const result = service.toRecentTrace(events);
       expect(result).toHaveLength(2);

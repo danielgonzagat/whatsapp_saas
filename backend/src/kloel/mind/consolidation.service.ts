@@ -93,7 +93,7 @@ export class ConsolidationService {
     const eventById = new Map(events.map((e) => [e.eventId, e]));
     const out: EpisodicProposal[] = [];
     for (const item of working) {
-      if (item.relatedEventIds.length < 2) continue;
+      if (item.relatedEventIds.length < 1) continue;
       const relatedEvents = item.relatedEventIds
         .map((id) => eventById.get(id))
         .filter((e): e is SpineEventRef => Boolean(e));

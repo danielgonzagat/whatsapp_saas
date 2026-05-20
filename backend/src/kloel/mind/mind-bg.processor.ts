@@ -1,14 +1,12 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConsolidationService } from './consolidation.service';
 import { HebbianService } from './hebbian.service';
-import {
-  MultiTimescaleCoordinator,
-  Timescale,
-} from './multi-timescale.coordinator';
+import { MultiTimescaleCoordinator, Timescale } from './multi-timescale.coordinator';
 import { ValenceAggregatorService } from './valence-aggregator.service';
 import { SpineEventRef } from './mind.types';
 import type { WorkingMemoryItem } from './consolidation.service';
 import { MindPredictionService } from './mind-prediction.service';
+import { PrismaService } from '../../prisma/prisma.service';
 
 /**
  * UTP-MIND-BG-001 — Background processor for the MIND substrate.
@@ -25,7 +23,8 @@ import { MindPredictionService } from './mind-prediction.service';
 
 export interface BgTickInput {
   readonly nowMs?: number;
-  readonly recentEvents: readonly SpineEventRef[];  readonly workspaceId?: string;
+  readonly recentEvents: readonly SpineEventRef[];
+  readonly workspaceId?: string;
   readonly workingMemory: readonly WorkingMemoryItem[];
 }
 
@@ -47,6 +46,7 @@ export class MindBackgroundProcessor {
     private readonly hebbian: HebbianService,
     private readonly consolidation: ConsolidationService,
     private readonly prediction: MindPredictionService,
+    private readonly prisma: PrismaService,
   ) {
     this.lastDecayMs = Date.now();
   }
@@ -64,14 +64,15 @@ export class MindBackgroundProcessor {
     if (due.includes('medium')) {
       this.hebbian.decay(new Date(nowMs), new Date(this.lastDecayMs));
       this.lastDecayMs = nowMs;
-      mood = this.valenceAggregator.aggregate(input.recentEvents, 24, nowMs);      // Run prediction cycle on medium timescale (predictive coding B5)
+      mood = this.valenceAggregator.aggregate(input.recentEvents, 24, nowMs); // Run prediction cycle on medium timescale (predictive coding B5)
       if (input.workspaceId) {
         void this.prediction.runCycle(input.workspaceId);
       }
       this.coordinator.markFired('medium', nowMs);
     }
-      // Auto-generate working memory items from recent events if none provided
-      const effectiveWorkingMemory: WorkingMemoryItem[] = input.workingMemory.length > 0
+    // Auto-generate working memory items from recent events if none provided
+    const effectiveWorkingMemory: WorkingMemoryItem[] =
+      input.workingMemory.length > 0
         ? [...input.workingMemory]
         : input.recentEvents.slice(0, 10).map((e, i) => ({
             itemId: `wm_auto_${i}_${Date.now().toString(36)}`,
@@ -87,11 +88,38 @@ export class MindBackgroundProcessor {
         mode: 'real',
         nowIso: new Date(nowMs).toISOString(),
       });
+      // Persist consolidated proposals as beliefs
+      if (consolidation.consolidatedProposals.length > 0 && input.workspaceId) {
+        for (const prop of consolidation.consolidatedProposals) {
+          const subject = prop.skillId;
+          const predicate = prop.summary.slice(0, 200);
+          void this.prisma.mindBelief
+            .upsert({
+              where: {
+                workspaceId_subject_predicate_context: {
+                  workspaceId: input.workspaceId,
+                  subject,
+                  predicate,
+                  context: {},
+                },
+              },
+              update: { samples: { increment: 1 }, updatedAt: new Date(nowMs) },
+              create: {
+                id: `bel_${prop.skillId}_${nowMs}`,
+                workspaceId: input.workspaceId,
+                subject,
+                predicate,
+                context: {},
+                mean: 0.5,
+                samples: 1,
+              },
+            })
+            .catch(() => {});
+        }
+      }
       this.coordinator.markFired('long', nowMs);
     }
-    this.logger.debug(
-      `mind bg tick — fired=[${due.join(',')}] hebbianSize=${this.hebbian.size()}`,
-    );
+    this.logger.debug(`mind bg tick — fired=[${due.join(',')}] hebbianSize=${this.hebbian.size()}`);
     return {
       firedScales: due,
       hebbianAfterDecay: this.hebbian.size(),

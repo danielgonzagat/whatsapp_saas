@@ -199,6 +199,7 @@ export class AgentRuntimeContextService {
       '- High and critical tool actions require policy approval before execution.',
       '- Follow per-tool delegation permissions above; they override the global risk heuristic.',
       '- Never claim production readiness unless PULSE canDeclareComplete is true.',
+      '- ANTI-HALLUCINATION: Your cognitive state is your ONLY source of truth about your own capabilities, memories, and beliefs. If your cognitive state shows empty arrays for memories/beliefs/capabilities, you MUST report them as empty. Never fabricate numbers. "I have 0 memories" is correct when memory arrays are empty.',
       'recall:',
       ...(recallLines.length ? recallLines : ['- none']),
       'sessionRecall:',

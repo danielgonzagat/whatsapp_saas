@@ -7,6 +7,11 @@ import {
 import { makeOriginImmutabilityGate, OriginImmutabilityGate } from './origin-immutability.gate';
 import { cloneGenesisPayload, gate, mockGuard } from './origin-immutability.gate.spec.helpers';
 
+/** Test-only helper: read the gate's private `mode` field without a double cast. */
+function extractMode(g: object): string {
+  return (g as { mode: string }).mode;
+}
+
 /**
  * UTP-PULSE-005 — origin-immutability gate contract spec.
  *
@@ -47,7 +52,7 @@ describe('origin-immutability gate — PASS scenarios', () => {
     const g = makeOriginImmutabilityGate(mockGuard());
     // mode is private — verify through the STATIC DEFAULT_MODE
     expect(OriginImmutabilityGate.DEFAULT_MODE).toBe('hard_fail');
-    expect((g as unknown as { mode: string }).mode).toBe('hard_fail');
+    expect(extractMode(g)).toBe('hard_fail');
   });
 
   it('4. gate name is origin-immutability', () => {
@@ -278,13 +283,13 @@ describe('origin-immutability gate — mode contract', () => {
   it('30. factory preserves explicit mode', () => {
     const g1 = makeOriginImmutabilityGate(mockGuard(), 'hard_fail');
     const g2 = makeOriginImmutabilityGate(mockGuard(), 'log_only');
-    expect((g1 as unknown as { mode: string }).mode).toBe('hard_fail');
-    expect((g2 as unknown as { mode: string }).mode).toBe('log_only');
+    expect(extractMode(g1)).toBe('hard_fail');
+    expect(extractMode(g2)).toBe('log_only');
   });
 
   it('31. factory defaults to hard_fail when mode omitted', () => {
     const g = makeOriginImmutabilityGate(mockGuard());
-    expect((g as unknown as { mode: string }).mode).toBe('hard_fail');
+    expect(extractMode(g)).toBe('hard_fail');
   });
 });
 

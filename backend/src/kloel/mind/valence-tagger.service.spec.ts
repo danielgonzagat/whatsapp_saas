@@ -128,8 +128,16 @@ describe('ValenceTaggerService', () => {
   describe('coverage', () => {
     it('computes 100% coverage when all terminal events are tagged', () => {
       const events = [
-        makeEvent({ eventId: 'evt_1', eventName: 'commerce.payment.approved', valence: 'positive' }),
-        makeEvent({ eventId: 'evt_2', eventName: 'commerce.payment.declined', valence: 'negative' }),
+        makeEvent({
+          eventId: 'evt_1',
+          eventName: 'commerce.payment.approved',
+          valence: 'positive',
+        }),
+        makeEvent({
+          eventId: 'evt_2',
+          eventName: 'commerce.payment.declined',
+          valence: 'negative',
+        }),
       ];
       const result = service.coverage(events);
       expect(result.terminalCount).toBe(2);
@@ -139,7 +147,11 @@ describe('ValenceTaggerService', () => {
 
     it('computes 50% coverage when half of terminal events are untagged', () => {
       const events = [
-        makeEvent({ eventId: 'evt_1', eventName: 'commerce.payment.approved', valence: 'positive' }),
+        makeEvent({
+          eventId: 'evt_1',
+          eventName: 'commerce.payment.approved',
+          valence: 'positive',
+        }),
         makeEvent({ eventId: 'evt_2', eventName: 'commerce.payment.declined', valence: undefined }),
       ];
       const result = service.coverage(events);
@@ -172,7 +184,11 @@ describe('ValenceTaggerService', () => {
 
     it('ignores non-terminal events in the count', () => {
       const events = [
-        makeEvent({ eventId: 'evt_1', eventName: 'commerce.payment.approved', valence: 'positive' }),
+        makeEvent({
+          eventId: 'evt_1',
+          eventName: 'commerce.payment.approved',
+          valence: 'positive',
+        }),
         makeEvent({ eventId: 'evt_2', eventName: 'commerce.lead.contacted', valence: 'positive' }),
       ];
       const result = service.coverage(events);

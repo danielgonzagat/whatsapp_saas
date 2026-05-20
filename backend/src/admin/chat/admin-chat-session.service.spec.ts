@@ -5,7 +5,6 @@ import { AdminChatSessionService } from './admin-chat-session.service';
 
 type ListSessionsInput = Parameters<AdminChatSessionService['listSessions']>[0];
 
-
 const sessionWithoutMessages = {
   id: 'session_1',
   adminUserId: 'admin_1',

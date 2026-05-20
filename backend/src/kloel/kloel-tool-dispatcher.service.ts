@@ -78,11 +78,13 @@ export class KloelToolDispatcherService {
     try {
       switch (toolName) {
         case 'save_product':
+        case 'create_product':
           return await this.chatToolsService.toolSaveProduct(workspaceId, asToolArgs(args));
         case 'list_products':
           return await this.chatToolsService.toolListProducts(workspaceId);
         case 'delete_product':
-          return await this.chatToolsService.toolDeleteProduct(workspaceId, asToolArgs(args));
+        case 'update_product':
+          return await this.chatToolsService.toolUpdateProduct(workspaceId, asToolArgs(args));
         case 'toggle_autopilot':
           return await this.chatToolsService.toolToggleAutopilot(workspaceId, asToolArgs(args));
         case 'set_brand_voice':
@@ -107,6 +109,24 @@ export class KloelToolDispatcherService {
           return await this.chatToolsService.toolListFlows(workspaceId);
         case 'get_dashboard_summary':
           return await this.chatToolsService.toolGetDashboardSummary(workspaceId, asToolArgs(args));
+        case 'get_product_plans':
+          return await this.chatToolsService.toolGetProductPlans(workspaceId, asToolArgs(args));
+        case 'get_product_ai_config':
+          return await this.chatToolsService.toolGetProductAiConfig(workspaceId, asToolArgs(args));
+        case 'get_product_reviews':
+          return await this.chatToolsService.toolGetProductReviews(workspaceId, asToolArgs(args));
+        case 'get_product_urls':
+          return await this.chatToolsService.toolGetProductUrls(workspaceId, asToolArgs(args));
+        case 'validate_coupon':
+          return await this.chatToolsService.toolValidateCoupon(workspaceId, asToolArgs(args));
+        case 'get_analytics':
+          return await this.chatToolsService.toolGetAnalytics(workspaceId, asToolArgs(args));
+        case 'create_broadcast':
+          return await this.chatToolsService.toolCreateBroadcast(workspaceId, asToolArgs(args));
+        case 'configure_ai_persona':
+          return await this.chatToolsService.toolConfigureAiPersona(workspaceId, asToolArgs(args));
+        case 'update_workspace_settings':
+          return await this.bizConfigToolsService.toolSaveBusinessInfo(workspaceId, asToolArgs(args));
         case 'create_agent_job':
           return await this.chatToolsService.toolCreateAgentJob(workspaceId, asToolArgs(args));
         case 'list_agent_jobs':

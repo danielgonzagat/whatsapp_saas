@@ -211,8 +211,10 @@ export const KLOEL_CHAT_TOOLS_CODE: ChatCompletionTool[] = [
     function: {
       name: 'code_detect_issues',
       description:
-        'Analisa um arquivo em busca de problemas comuns: TODOs/FIXMEs, console.log direto, an'+'y explícito, ' +
-        '@'+'ts-ignore, testes com .only(), e código potencialmente morto (exportações usadas 1x ou menos).',
+        'Analisa um arquivo em busca de problemas comuns: TODOs/FIXMEs, console.log direto, an' +
+        'y explícito, ' +
+        '@' +
+        'ts-ignore, testes com .only(), e código potencialmente morto (exportações usadas 1x ou menos).',
       parameters: {
         type: 'object',
         properties: {

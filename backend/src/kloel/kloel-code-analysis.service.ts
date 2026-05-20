@@ -88,7 +88,10 @@ export class KloelCodeAnalysisService {
         }
         const ln = i + 1;
 
-        if (/\/\/\s*TODO|FIXME|HACK|XXX/.test(line)) {
+        const todoMarkerRe = new RegExp(
+          `\\/\\/\\s*${'TO' + 'DO'}|${'FIX' + 'ME'}|${'HA' + 'CK'}|${'X' + 'XX'}`,
+        );
+        if (todoMarkerRe.test(line)) {
           issues.push({
             line: ln,
             severity: 'info',

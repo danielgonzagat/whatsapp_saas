@@ -13,7 +13,7 @@ function ev(over: Partial<SpineEventRef> = {}): SpineEventRef {
     entityRef: over.entityRef ?? { entityType: 'lead', entityId: 'lead_1' },
     ...(over.valence !== undefined ? { valence: over.valence } : {}),
     ...(over.payload !== undefined ? { payload: over.payload } : {}),
-  } as SpineEventRef;
+  };
 }
 
 describe('Commercial detectors', () => {

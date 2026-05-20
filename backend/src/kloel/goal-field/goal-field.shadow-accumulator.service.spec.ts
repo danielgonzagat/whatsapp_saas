@@ -111,11 +111,7 @@ describe('GoalFieldShadowAccumulatorService — reject blocking', () => {
     }
     // after rebuild: need 20 consecutive
     for (let i = 0; i < 20; i++) {
-      acc.recordDecision(
-        'wks_a',
-        'accept',
-        T0 + (20 + 4 * 6 + 5 + i) * 60_000,
-      );
+      acc.recordDecision('wks_a', 'accept', T0 + (20 + 4 * 6 + 5 + i) * 60_000);
     }
     const final = acc.getState('wks_a')!;
     expect(final.consecutiveAccepts).toBeGreaterThanOrEqual(20);
@@ -164,11 +160,7 @@ describe('GoalFieldShadowAccumulatorService — temporal decay', () => {
     }
     expect(acc.isPromotionEligible('wks_a')).toBe(true);
 
-    const afterDecay = acc.recordDecision(
-      'wks_a',
-      'accept',
-      T0 + THIRTY_ONE_DAYS,
-    );
+    const afterDecay = acc.recordDecision('wks_a', 'accept', T0 + THIRTY_ONE_DAYS);
     expect(afterDecay.consecutiveAccepts).toBe(1);
     expect(afterDecay.totalRejects).toBe(0);
     expect(afterDecay.promotionEligible).toBe(false);

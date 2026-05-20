@@ -239,11 +239,10 @@ export function createCodeToolsMock(): DispatcherCodeToolsMock {
 }
 
 export { DEFAULT_WS_ID };
-  
+
 type DispatcherCodeAnalysisMock = Pick<
   KloelCodeAnalysisService,
-  | 'toolCodeLint'
-  | 'toolCodeDetectIssues'
+  'toolCodeLint' | 'toolCodeDetectIssues'
 >;
 
 export type { DispatcherCodeAnalysisMock };

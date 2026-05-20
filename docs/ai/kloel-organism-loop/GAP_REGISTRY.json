@@ -1,0 +1,17 @@
+{
+  "gaps": [
+    {"id":"GAP-20260520-006","title":"fallback_no_event_emission","status":"fixed_proven","evidence":"autopilotEvents 118→197. hebbianSize 0→55 após DB fallback no scheduler."},
+    {"id":"GAP-20260520-007","title":"mind_spine_ring_zero","status":"mitigated","evidence":"Scheduler agora lê do banco quando spine ring vazio. hebbianSize=55 prova processamento."},
+    {"id":"GAP-20260520-008","title":"event_persisted_but_not_perceived_by_mind","status":"fixed_proven","evidence":"MindBackgroundScheduler.executeTick() lê RAC_AutopilotEvent do banco. Hebbian formou 55 associações."},
+    {"id":"GAP-20260520-009","title":"Divergência banco vs spine ring","status":"mitigated","evidence":"Scheduler usa banco como fallback. Fonte canônica: DB (RAC_AutopilotEvent → BrainEventSpineService)."},
+    {"id":"GAP-20260520-010","title":"consolidation_episodes_zero","status":"open","severity":"high","evidence":"Consolidation cycle mostra episodes=0 mesmo com 197 eventos. Bloqueia formação de crenças."},
+    {"id":"GAP-20260520-011","title":"beliefs_still_empty","status":"open","severity":"high","evidence":"Mind state strongest/uncertain vazios. Depende de GAP-010."}
+  ],
+  "claims": [
+    {"id":"C-013","rawClaim":"autopilotEvents: 197 (DB persistence working)","status":"PROVEN_OBSERVED"},
+    {"id":"C-014","rawClaim":"hebbianSize: 55 (Mind processing DB events)","status":"PROVEN_OBSERVED","evidence":"log: mind bg tick — fired=[short,medium,long] hebbianSize=55"},
+    {"id":"C-015","rawClaim":"prediction cycle: generated=8","status":"PROVEN_OBSERVED"},
+    {"id":"C-016","rawClaim":"consolidation: episodes=0 (not yet forming beliefs)","status":"PROVEN_OBSERVED"}
+  ],
+  "updatedAt": "2026-05-20T14:15:00Z"
+}

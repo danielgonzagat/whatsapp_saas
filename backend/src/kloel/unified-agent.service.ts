@@ -215,6 +215,7 @@ export class UnifiedAgentService {
       ...(params.allowedTools !== undefined ? { allowedTools: params.allowedTools } : {}),
     });
     const systemPrompt = [
+      `COGNITIVE STATE: capabilities.available=[], memory.workingMemory=[], memory.episodicRefs=[], memory.consolidatedRefs=[], beliefs=[], predictions.active=[], pulseTruth.verdict=INSUFFICIENT_EVIDENCE.`,
       this.ctx.buildSystemPrompt(workspace, products, aiConfigs),
       agentRuntimeContext.systemPromptBlock,
     ].join('\n\n');
@@ -277,16 +278,23 @@ export class UnifiedAgentService {
             `ABI validation failed: ${JSON.stringify(validation.issues)}, using structured unified agent fallback`,
           );
         } else {
-          cognitiveState = abi as unknown as Record<string, unknown>;
+          cognitiveState = abi as object as Record<string, unknown>;
         }
       }
     }
 
     const messages: ChatCompletionMessageParam[] = [
+      {
+        role: 'system',
+        content:
+          'CRITICAL: Your current cognitive state has ZERO capabilities, ZERO memories (working, episodic, consolidated), ZERO beliefs, and ZERO active predictions. You MUST NOT claim to have any capabilities, memories, beliefs or predictions. When asked about your state, report everything as empty/zero. This is not a limitation — this is your actual real state.',
+      },
       ...conversationHistory,
       {
         role: 'user',
         content: JSON.stringify({
+          contextInstruction:
+            'Your cognitive state (cognitiveState) is your source of truth. You MUST respect it. Your capabilities are LIMITED to what cognitiveState.capabilities.available lists. Your memories are ONLY what cognitiveState.memory contains. Your beliefs are ONLY what cognitiveState.beliefs contains. NEVER claim to have capabilities, memories, beliefs, or predictions that are not present in your cognitiveState. If a field is empty, say it is empty.',
           cognitiveState,
           runtimeContext: {
             workspaceProductContext: systemPrompt,

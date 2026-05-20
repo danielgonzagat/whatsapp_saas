@@ -34,7 +34,7 @@ export function mockGuard(verdict: Partial<LineageGuardVerdict> = {}): LineageGu
       checkedAt: new Date().toISOString(),
       ...verdict,
     }),
-  } as unknown as LineageGuardService;
+  } as Partial<LineageGuardService> as LineageGuardService;
 }
 
 /**
