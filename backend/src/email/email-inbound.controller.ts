@@ -4,6 +4,10 @@ import { Public } from '../auth/public.decorator';
 import { safeCompareStrings } from '../common/utils/crypto-compare.util';
 import { EmailInboundService, type InboundEmail } from './email-inbound.service';
 
+/**
+ * @cluster whatsapp_saas/backend/email
+ * L11 multi-agent TaskGraph annotation (batched by tools/auto-pr/batch-job.mjs).
+ */
 interface EmailWebhookPayload {
   workspaceId?: string;
   from?: string;

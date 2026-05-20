@@ -9,6 +9,10 @@ import { DashboardService } from './dashboard.service';
 import { HomeQueryDto } from './dto/home-query.dto';
 import { RouteClass } from '../common/throttler/route-class.decorator';
 
+/**
+ * @cluster whatsapp_saas/backend/dashboard
+ * L11 multi-agent TaskGraph annotation (batched by tools/auto-pr/batch-job.mjs).
+ */
 const POST_PAYMENT_AUDIT_ACTIONS = [
   'payment_approved',
   'member_access_granted',

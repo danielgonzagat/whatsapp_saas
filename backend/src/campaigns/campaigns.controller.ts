@@ -23,6 +23,10 @@ import { RouteClass } from '../common/throttler/route-class.decorator';
 @Controller('campaigns')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
 @RouteClass('mutate')
+/**
+ * @cluster whatsapp_saas/backend/campaigns
+ * L11 multi-agent TaskGraph annotation (batched by tools/auto-pr/batch-job.mjs).
+ */
 export class CampaignsController {
   constructor(
     private readonly campaignsService: CampaignsService,

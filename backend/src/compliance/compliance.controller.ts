@@ -4,6 +4,10 @@ import { Public } from '../auth/public.decorator';
 import { ComplianceService } from './compliance.service';
 import { RouteClass } from '../common/throttler/route-class.decorator';
 
+/**
+ * @cluster whatsapp_saas/backend/compliance
+ * L11 multi-agent TaskGraph annotation (batched by tools/auto-pr/batch-job.mjs).
+ */
 type RawBodyRequest = Request & {
   rawBody?: Buffer;
 };

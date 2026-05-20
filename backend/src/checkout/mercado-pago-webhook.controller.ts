@@ -6,6 +6,10 @@ import { WebhooksService } from '../webhooks/webhooks.service';
 import { MercadoPagoPaymentSnapshot, MercadoPagoPixService } from './mercado-pago-pix.service';
 import { RouteClass } from '../common/throttler/route-class.decorator';
 
+/**
+ * @cluster whatsapp_saas/backend/checkout
+ * L11 multi-agent TaskGraph annotation (batched by tools/auto-pr/batch-job.mjs).
+ */
 type MercadoPagoWebhookBody = {
   id?: string | number;
   action?: string;

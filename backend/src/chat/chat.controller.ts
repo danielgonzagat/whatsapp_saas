@@ -12,6 +12,10 @@ import { RouteClass } from '../common/throttler/route-class.decorator';
 @Controller('chat')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
 @RouteClass('mutate')
+/**
+ * @cluster whatsapp_saas/backend/chat
+ * L11 multi-agent TaskGraph annotation (batched by tools/auto-pr/batch-job.mjs).
+ */
 export class ChatController {
   constructor(private readonly chatService: ChatService) {}
 

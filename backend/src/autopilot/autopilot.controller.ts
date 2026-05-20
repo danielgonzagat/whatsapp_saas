@@ -7,6 +7,10 @@ import { AuthenticatedRequest } from '../common/interfaces';
 import { AutopilotService } from './autopilot.service';
 import { RouteClass } from '../common/throttler/route-class.decorator';
 
+/**
+ * @cluster whatsapp_saas/backend/autopilot
+ * L11 multi-agent TaskGraph annotation (batched by tools/auto-pr/batch-job.mjs).
+ */
 const PATTERN_RE = /,/g;
 
 interface AutopilotActionRow {

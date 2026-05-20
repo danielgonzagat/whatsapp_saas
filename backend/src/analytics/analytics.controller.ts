@@ -9,6 +9,10 @@ import { SmartTimeService } from './smart-time/smart-time.service';
 import { AuthenticatedRequest } from '../common/interfaces/authenticated-request.interface';
 
 import { RouteClass } from '../common/throttler/route-class.decorator';
+/**
+ * @cluster whatsapp_saas/backend/analytics
+ * L11 multi-agent TaskGraph annotation (batched by tools/auto-pr/batch-job.mjs).
+ */
 function parseDateRange(startDate?: string, endDate?: string) {
   const end = endDate ? new Date(endDate) : new Date();
   const start = startDate ? new Date(startDate) : new Date(end.getTime() - 7 * 24 * 60 * 60 * 1000);

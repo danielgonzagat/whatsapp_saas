@@ -20,6 +20,10 @@ import { CreateEventDto } from './dto/create-event.dto';
 import { ListEventsQueryDto } from './dto/list-events-query.dto';
 
 import { RouteClass } from '../common/throttler/route-class.decorator';
+/**
+ * @cluster whatsapp_saas/backend/calendar
+ * L11 multi-agent TaskGraph annotation (batched by tools/auto-pr/batch-job.mjs).
+ */
 function parseDateOrFail(raw: string | undefined, label: string): Date | undefined {
   if (!raw) {
     return undefined;

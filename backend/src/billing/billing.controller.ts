@@ -25,6 +25,10 @@ import { RouteClass } from '../common/throttler/route-class.decorator';
 @Controller('billing')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
 @RouteClass('mutate')
+/**
+ * @cluster whatsapp_saas/backend/billing
+ * L11 multi-agent TaskGraph annotation (batched by tools/auto-pr/batch-job.mjs).
+ */
 export class BillingController {
   constructor(private readonly billingService: BillingService) {}
 

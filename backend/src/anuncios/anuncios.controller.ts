@@ -7,6 +7,10 @@ import { WebhookEndpoint } from '../common/decorators/webhook-endpoint.decorator
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 
+/**
+ * @cluster whatsapp_saas/backend/anuncios
+ * L11 multi-agent TaskGraph annotation (batched by tools/auto-pr/batch-job.mjs).
+ */
 interface WorkspaceRequest extends Request {
   workspaceId?: string;
 }

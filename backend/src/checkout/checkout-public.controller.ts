@@ -17,6 +17,10 @@ import { RouteClass } from '../common/throttler/route-class.decorator';
 @Controller('checkout/public')
 @Public()
 @RouteClass('public-checkout')
+/**
+ * @cluster whatsapp_saas/backend/checkout
+ * L11 multi-agent TaskGraph annotation (batched by tools/auto-pr/batch-job.mjs).
+ */
 export class CheckoutPublicController {
   constructor(
     private readonly checkoutService: CheckoutService,

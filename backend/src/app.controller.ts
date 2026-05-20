@@ -6,6 +6,10 @@ import { PrismaService } from './prisma/prisma.service';
 import { AuthenticatedRequest } from './common/interfaces/authenticated-request.interface';
 import { RouteClass } from './common/throttler/route-class.decorator';
 
+/**
+ * @cluster whatsapp_saas/backend/app.controller.ts
+ * L11 multi-agent TaskGraph annotation (batched by tools/auto-pr/batch-job.mjs).
+ */
 interface DiagnosticTables {
   workspaces?: number;
   agents?: number;

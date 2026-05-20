@@ -9,6 +9,10 @@ import { RouteClass } from '../throttler/route-class.decorator';
 /** Storage controller. */
 @Controller('storage')
 @RouteClass('mutate')
+/**
+ * @cluster whatsapp_saas/backend/common
+ * L11 multi-agent TaskGraph annotation (batched by tools/auto-pr/batch-job.mjs).
+ */
 export class StorageController {
   constructor(private readonly storage: StorageService) {}
 

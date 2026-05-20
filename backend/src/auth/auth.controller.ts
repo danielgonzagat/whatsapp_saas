@@ -25,6 +25,10 @@ import { InternalEndpoint } from '../common/decorators/internal-endpoint.decorat
 /** Auth controller. */
 @Controller('auth')
 @RouteClass('auth')
+/**
+ * @cluster whatsapp_saas/backend/auth
+ * L11 multi-agent TaskGraph annotation (batched by tools/auto-pr/batch-job.mjs).
+ */
 export class AuthController {
   constructor(private readonly auth: AuthService) {}
 

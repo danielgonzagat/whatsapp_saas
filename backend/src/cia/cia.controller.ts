@@ -10,6 +10,10 @@ import { RouteClass } from '../common/throttler/route-class.decorator';
 @Controller('cia')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
 @RouteClass('ai')
+/**
+ * @cluster whatsapp_saas/backend/cia
+ * L11 multi-agent TaskGraph annotation (batched by tools/auto-pr/batch-job.mjs).
+ */
 export class CiaController {
   constructor(private readonly ciaService: CiaService) {}
 

@@ -7,6 +7,10 @@ import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { RouteClass } from '../common/throttler/route-class.decorator';
 import { CopilotService } from './copilot.service';
 
+/**
+ * @cluster whatsapp_saas/backend/copilot
+ * L11 multi-agent TaskGraph annotation (batched by tools/auto-pr/batch-job.mjs).
+ */
 type CopilotRequest = {
   user?: {
     workspaceId?: string;

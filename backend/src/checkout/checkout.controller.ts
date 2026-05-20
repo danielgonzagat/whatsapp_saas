@@ -32,6 +32,10 @@ import { UpdateConfigDto } from './dto/update-config.dto';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 import { RouteClass } from '../common/throttler/route-class.decorator';
 
+/**
+ * @cluster whatsapp_saas/backend/checkout
+ * L11 multi-agent TaskGraph annotation (batched by tools/auto-pr/batch-job.mjs).
+ */
 const U0300__U036F_RE = /[\u0300-\u036f]/g;
 const A_Z0_9_RE = /[^a-z0-9]+/g;
 const PATTERN_RE = /^-|-$/g;

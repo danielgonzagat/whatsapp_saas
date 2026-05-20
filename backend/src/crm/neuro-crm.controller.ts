@@ -12,6 +12,10 @@ import { RouteClass } from '../common/throttler/route-class.decorator';
 @Controller('crm/neuro')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
 @RouteClass('ai')
+/**
+ * @cluster whatsapp_saas/backend/crm
+ * L11 multi-agent TaskGraph annotation (batched by tools/auto-pr/batch-job.mjs).
+ */
 export class NeuroCrmController {
   constructor(private readonly neuroService: NeuroCrmService) {}
 
