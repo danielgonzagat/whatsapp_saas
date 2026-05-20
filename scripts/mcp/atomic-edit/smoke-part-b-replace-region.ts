@@ -2,8 +2,8 @@ import * as childProcess from "node:child_process";
 import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
-import { check, sha } from "./smoke-state.js";
-interface PartBCtx { client: any; fixtureAbs: string; fixtureRel: string; repoRoot: string; }
+import { check, sha, type PartBCtx } from "./smoke-state.js";
+
 
 export async function partBReplaceRegion(ctx: PartBCtx): Promise<void> {
   const { client, fixtureAbs, fixtureRel, repoRoot } = ctx;
