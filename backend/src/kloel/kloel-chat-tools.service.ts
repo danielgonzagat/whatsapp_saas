@@ -564,7 +564,6 @@ export class KloelChatToolsService {
   async toolVerifyAgentEvidence(workspaceId: string): Promise<ToolResult> {
     return runVerifyAgentEvidence(this.agentEvidence, workspaceId);
   }
-
   // === PRODUCT MANAGEMENT TOOL DELEGATORS ===
 
   toolUpdateProduct(workspaceId: string, args: Record<string, unknown>): Promise<ToolResult> {

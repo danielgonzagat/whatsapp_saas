@@ -69,9 +69,15 @@ async function listOpenPRs() {
 }
 
 async function rolledUpFailures(pr, allowExternal = true) {
+  // For workflowRuns, only the LATEST run per workflow name counts —
+  // historical failures from previous commits on the branch are stale.
+  const latestByName = new Map();
+  for (const r of pr.workflowRuns || []) {
+    if (!latestByName.has(r.name)) latestByName.set(r.name, r);
+  }
   const all = [
     ...(pr.statusContexts || []).map((s) => ({ name: s.context, state: s.state })),
-    ...(pr.workflowRuns || []).map((r) => ({ name: r.name, state: r.conclusion })),
+    ...[...latestByName.values()].map((r) => ({ name: r.name, state: r.conclusion, databaseId: r.databaseId, status: r.status })),
   ];
   let failures = all.filter((c) => ['failure', 'cancelled', 'timed_out', 'action_required'].includes(String(c.state).toLowerCase()));
   if (allowExternal) {

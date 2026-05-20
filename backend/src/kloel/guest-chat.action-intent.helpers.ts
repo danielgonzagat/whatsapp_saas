@@ -60,7 +60,7 @@ export function detectActionIntent(
 
 export function extractProductName(msg: string): string {
   const m = msg.match(
-    /(?:produto|plano|oferta|checkout|cupom)\s+(?:chamad[oa]|de\s+)?["']?([A-Za-zÀ-ÿ0-9\s]{2,40}?)(?:\s+(?:com|por|R\$|preço|valor|$)|$)/i,
+    /(?:produto|plano|oferta|checkout|cupom)\s+(?:chamad[oa]|de\s+)?["']?([A-Za-zÀ-ÿ0-9\s\-.]{2,50}?)(?:\s+(?:com|por|R\$|pre[çc]o|valor|\.\s|$)|$)/i,
   );
   return m?.[1]?.trim() || '';
 }
