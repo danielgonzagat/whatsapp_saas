@@ -454,73 +454,14 @@ export class KloelThinkerService {
     _executeLocalTool?: LocalToolExecutor,
   ): Promise<ThinkSyncResult> {
     try {
-      // Build ABI state HERE where DI works — before delegating to thinkSyncImpl
-      let abiStateJson: string | undefined;
-      if (this.abiBuilder && request.workspaceId) {
-        try {
-          let chatSubstrate: any = undefined;
-          if (this.capabilityExecutor) {
-            chatSubstrate = await this.capabilityExecutor.buildCognitiveSubstrate(request.workspaceId);
-          } else {
-            // Direct fallback: query autopilot events ourselves
-            const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-            const rows = await this.prisma.$queryRawUnsafe<any[]>(
-              `SELECT intent, action, status, meta, "createdAt" FROM "RAC_AutopilotEvent" WHERE "workspaceId" = $1 AND "createdAt" > $2 ORDER BY "createdAt" ASC LIMIT 500`,
-              request.workspaceId, since,
-            );
-            if (rows && rows.length > 0) {
-              const events = rows.map((r: any, i: number) => ({
-                eventId: `evt_${new Date(r.createdAt).getTime().toString(36)}_${i.toString(36)}`,
-                eventName: `autopilot.${r.intent}.${r.status}`,
-                occurredAt: new Date(r.createdAt).toISOString(),
-                summary: `chat: ${String((typeof r.meta === 'object' && r.meta ? (r.meta as any).userPreview : '') || '').slice(0, 120)}`,
-                valence: 'neutral' as const,
-              }));
-              chatSubstrate = {
-                recentSalientEvents: events.slice(0, 30),
-                beliefs: [],
-                predictions: { active: [], recentSurprises: [] },
-                valence: { recentTrace: [], aggregatedMood: { positive: 0, negative: 0, neutral: 1, ambiguous: 0, windowHours: 24 } },
-                workingMemory: [],
-                episodicRefs: [],
-                consolidatedRefs: [],
-                pulseTruth: { noOverclaimStatus: 'PASS', capabilityHealthScore: 0, gates: [], certificationVerdict: { verdict: 'INSUFFICIENT_EVIDENCE', score: 0, measuredAt: new Date().toISOString() }, overclaimRisk: 0 },
-                attention: { candidates: [] },
-              };
-            }
-          }
-          if (chatSubstrate) {
-            const abiResult = await this.abiBuilder.build({
-              audience: 'public',
-              currentInput: { raw: request.message, channel: 'web', arrivalTimestamp: new Date().toISOString() },
-              perceptionSnapshot: { channel: 'web', workspaceId: request.workspaceId },
-              cognitiveSubstrate: chatSubstrate,
-            });
-            if (abiResult.status === 'ok') {
-              const validation = validateAbiPayload(abiResult.abi);
-              if (validation.status !== 'FAIL') {
-                const capped = JSON.stringify(abiResult.abi, (_k: string, v: unknown) =>
-                  Array.isArray(v) ? v.slice(0, 8) : v
-                );
-                abiStateJson = capped.length > 24000 ? capped.slice(0, 24000) + '...(truncated)' : capped;
-                this.logger.log(`ABI built: events=${chatSubstrate.recentSalientEvents?.length} beliefs=${chatSubstrate.beliefs?.length}`);
-              }
-            }
-          }
-        } catch (e: unknown) {
-          this.logger.warn(`ABI build failed in thinkSync: ${e instanceof Error ? e.message : String(e)}`);
-        }
-      }
-
       return await thinkSyncImpl(request, composerCapability, effectiveCompanyContext, {
         replyEngine: this.replyEngine,
         prisma: this.prisma,
         threadService: this.threadService,
         composerService: this.composerService,
         conversationStore: this.conversationStore,
-        planLimits: this.planLimits,
-        abiStateJson,
-        executeLocalTool: _executeLocalTool,
+        planLimits: this.planLimits,        abiBuilder: this.abiBuilder,
+        capabilityExecutor: this.capabilityExecutor,        executeLocalTool: _executeLocalTool,
       });
     } catch (error: unknown) {
       this.logger.error('Erro no KLOEL Thinker Sync:', error);

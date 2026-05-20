@@ -11,6 +11,9 @@ import {
 } from './kloel-thread.service';
 import type { ChatMessage, ThinkRequest, ThinkSyncResult } from './kloel-thinker.types';
 import { type PrismaService } from '../prisma/prisma.service';
+import { type AbiBuilderService } from './abi/abi-builder.service';
+import { type BrainCapabilityExecutorService } from './brain-capability-executor.service';
+import { validateAbiPayload } from './abi/abi-validator';
 import { type LocalToolExecutor } from './kloel-reply-engine.types';
 
 const ERR_THREAD_NOT_FOUND = 'Conversa não encontrada.';
@@ -27,6 +30,7 @@ function buildRegenerationError(message: string) {
 /** Sync think loop — extracted to keep KloelThinkerService under 400 lines. */
 export async function thinkSyncImpl(
   request: ThinkRequest,
+  composerCapability: 'create_image' | 'create_site' | 'search_web' | null,
   effectiveCompanyContext: string | undefined,
   deps: {
     replyEngine: KloelReplyEngineService;
@@ -35,7 +39,7 @@ export async function thinkSyncImpl(
     composerService: KloelComposerService;
     conversationStore: KloelConversationStore;
     planLimits: PlanLimitsService;    abiBuilder?: AbiBuilderService;
-    capabilityExecutor?: BrainCapabilityExecutorService;    executeLocalTool?: LocalToolExecutor;    abiStateJson?: string;
+    capabilityExecutor?: BrainCapabilityExecutorService;    executeLocalTool?: LocalToolExecutor;
   },
 ): Promise<ThinkSyncResult> {
   const {
@@ -75,8 +79,39 @@ export async function thinkSyncImpl(
       : null;
 
 
-  // Use pre-built ABI state from caller (KloelThinkerService.thinkSync)
-  const abiStateJson = deps.abiStateJson;
+  // DIRECT cognitive substrate build (bypasses DI-broken abiBuilder)
+  let prebuiltCognitiveState: Record<string, unknown> | undefined;
+  if (workspaceId) {
+    try {
+      const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+      const rows = await prisma.$queryRawUnsafe<any[]>(
+        `SELECT intent, action, status, meta, "createdAt" FROM "RAC_AutopilotEvent" WHERE "workspaceId" = $1 AND "createdAt" > $2 ORDER BY "createdAt" ASC LIMIT 500`,
+        workspaceId, since,
+      );
+      if (rows && rows.length > 0) {
+        const events = rows.map((r: any, i: number) => ({
+          eventId: `evt_${new Date(r.createdAt).getTime().toString(36)}_${i.toString(36)}`,
+          eventName: `autopilot.${r.intent}.${r.status}`,
+          occurredAt: new Date(r.createdAt).toISOString(),
+          summary: `chat: ${String((typeof r.meta === 'object' && r.meta ? (r.meta as any).userPreview : '') || '').slice(0, 120)}`,
+          valence: 'neutral' as const,
+        }));
+        prebuiltCognitiveState = {
+          recentSalientEvents: events.slice(0, 30),
+          beliefs: [],
+          predictions: { active: [], recentSurprises: [] },
+          valence: { recentTrace: [], aggregatedMood: { positive: 0, negative: 0, neutral: 1, ambiguous: 0, windowHours: 24 } },
+          workingMemory: [],
+          episodicRefs: [],
+          consolidatedRefs: [],
+          pulseTruth: { noOverclaimStatus: 'PASS', capabilityHealthScore: 0, gates: [], certificationVerdict: { verdict: 'INSUFFICIENT_EVIDENCE', score: 0, measuredAt: new Date().toISOString() }, overclaimRisk: 0 },
+          attention: { candidates: [] },
+          perception: { currentSnapshot: { channel: 'web', workspaceId }, recentSalientEvents: events.slice(0, 30) },
+          capabilityHealthScore: 0,
+        };
+      }
+    } catch { /* best-effort */ }
+  }
   const assistantMessage =
     capabilityResult?.content ||
     (await replyEngine.buildAssistantReply({
