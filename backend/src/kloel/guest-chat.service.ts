@@ -12,6 +12,7 @@ import { chatCompletionWithFallback, chatCompletionWithRetry } from './openai-wr
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { AbiBuilderService } from './abi/abi-builder.service';
 import { validateAbiPayload } from './abi/abi-validator';
+import { UnifiedAgentService } from './unified-agent.service';
 
 interface GuestConversation {
   messages: { role: 'user' | 'assistant'; content: string }[];
@@ -40,6 +41,7 @@ export class GuestChatService implements OnModuleDestroy {
     @Optional() private readonly opsAlert?: OpsAlertService,
     @Optional() @InjectRedis() private readonly redis?: Redis,
     @Optional() private readonly abiBuilder?: AbiBuilderService,
+    @Optional() private readonly unifiedAgent?: UnifiedAgentService,
   ) {
     const isTestEnv = !!process.env.JEST_WORKER_ID || process.env.NODE_ENV === 'test';
 
@@ -308,7 +310,7 @@ export class GuestChatService implements OnModuleDestroy {
   /**
    * 🔄 Chat síncrono (sem streaming)
    */
-  async chatSync(message: string, sessionId: string): Promise<string> {
+  async chatSync(message: string, sessionId: string, workspaceId?: string): Promise<string> {
     try {
       if (!message || message.trim().length === 0) {
         return '';
@@ -320,6 +322,31 @@ export class GuestChatService implements OnModuleDestroy {
         return this.unavailableMessage;
       }
 
+      // UNIFIED AGENT PATH — when workspaceId is provided, delegate to the real brain with tools
+      if (workspaceId && this.unifiedAgent) {
+        this.logger.log(`Guest chat sync via UnifiedAgent: workspace=${workspaceId}, session=${sessionId}`);
+        try {
+          const result = await this.unifiedAgent.processIncomingMessage({
+            workspaceId,
+            phone: sessionId,
+            message,
+            channel: 'web',
+            executeTools: true,
+          });
+          const reply = result.reply || result.response || this.unavailableMessage;
+          await this.persistConversationMessage(sessionId, 'user', message);
+          await this.persistConversationMessage(sessionId, 'assistant', reply);
+          this.logger.log(`UnifiedAgent reply: ${reply.substring(0, 100)}...`);
+          return reply;
+        } catch (uaError: unknown) {
+          this.logger.warn(
+            `UnifiedAgent failed (${uaError instanceof Error ? uaError.message : 'unknown'}), falling back to guest LLM`,
+          );
+          // Fall through to guest LLM path below
+        }
+      }
+
+      // GUEST LLM FALLBACK — original behavior without tools
       const { conversation, contextMessages } = await this.buildGuestMessages(message, sessionId);
 
       this.logger.log(
@@ -428,7 +455,19 @@ export class GuestChatService implements OnModuleDestroy {
     }
   }
 
-  /**
+  
+  private async persistConversationMessage(
+    sessionId: string,
+    role: 'user' | 'assistant',
+    content: string,
+  ): Promise<void> {
+    const conversation = await this.getOrCreateConversation(sessionId);
+    conversation.messages.push({ role, content });
+    conversation.lastMessageAt = new Date();
+    await this.persistConversation(sessionId, conversation);
+  }
+
+/**
    * 🧹 Limpar conversas antigas
    */
   private cleanupOldConversations(): void {
