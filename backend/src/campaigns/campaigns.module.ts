@@ -21,4 +21,8 @@ import { CampaignsService } from './campaigns.service';
   providers: [CampaignsService, CampaignEventEmitterService],
   exports: [CampaignsService],
 })
+/**
+ * @cluster whatsapp_saas/backend/campaigns
+ * L11 multi-agent TaskGraph annotation (batched by tools/auto-pr/batch-job.mjs).
+ */
 export class CampaignsModule {}

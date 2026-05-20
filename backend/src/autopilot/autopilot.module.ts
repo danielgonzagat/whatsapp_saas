@@ -41,4 +41,8 @@ import { SegmentationService } from './segmentation.service';
     SegmentationService,
   ],
 })
+/**
+ * @cluster whatsapp_saas/backend/autopilot
+ * L11 multi-agent TaskGraph annotation (batched by tools/auto-pr/batch-job.mjs).
+ */
 export class AutopilotModule {}
