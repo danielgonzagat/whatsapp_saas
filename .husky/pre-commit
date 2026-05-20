@@ -1,2 +1,10 @@
 #!/usr/bin/env sh
 npm run format:check
+
+# L11 multi-agent TaskGraph claim check — opt-in via env (AGENT_NAME identifies caller).
+# When AGENT_NAME is set, derive cluster IDs from staged files and warn on
+# unclaimed clusters or collisions. Set TASK_GRAPH_STRICT=1 to fail the commit.
+# Set TASK_GRAPH_BYPASS=1 to skip entirely (audit-logged to graphify-out/hooks.log).
+if [ -n "$AGENT_NAME" ] && [ -f tools/hooks/pre-commit-claim-check.mjs ]; then
+  node tools/hooks/pre-commit-claim-check.mjs || exit $?
+fi

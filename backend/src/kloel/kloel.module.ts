@@ -182,16 +182,13 @@ import {
 import { AbiBuilderService } from './abi/abi-builder.service';
 import { LineageModule } from './lineage/lineage.module';
 import { RiskClassModule } from './risk-class/risk-class.module';
+import { InboxModule } from '../inbox/inbox.module';
 
 /** Kloel module. */
 @Module({
   imports: [
     PrismaModule,
-    forwardRef(
-      () =>
-        (require('../whatsapp/whatsapp.module') as typeof import('../whatsapp/whatsapp.module'))
-          .WhatsappModule as typeof import('../whatsapp/whatsapp.module').WhatsappModule,
-    ),
+    forwardRef(() => require('../whatsapp/whatsapp.module').WhatsappModule),
     ScheduleModule.forRoot(),
     KycModule,
     forwardRef(() => CampaignsModule),
@@ -203,11 +200,7 @@ import { RiskClassModule } from './risk-class/risk-class.module';
     MetricsModule,
     KloelAudioModule,
     KloelRulesModule,
-    forwardRef(
-      () =>
-        (require('../inbox/inbox.module') as typeof import('../inbox/inbox.module'))
-          .InboxModule as typeof import('../inbox/inbox.module').InboxModule,
-    ),
+    forwardRef(() => InboxModule),
     ContactsModule,
     LineageModule,
     DriftModule,
