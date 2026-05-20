@@ -31,17 +31,17 @@ def _load_grammars():
     if _GRAMMARS:
         return
 
-    # Map language tags to (module_name, class_name, file_extensions)
+    # Map language tags to (module_name, attribute_name)
     _registry = {
-        'python':     ('tree_sitter_python', 'language_python'),
-        'java':       ('tree_sitter_java', 'language_java'),
-        'c':          ('tree_sitter_c', 'language_c'),
-        'cpp':        ('tree_sitter_cpp', 'language_cpp'),
-        'go':         ('tree_sitter_go', 'language_go'),
-        'rust':       ('tree_sitter_rust', 'language_rust'),
-        'javascript': ('tree_sitter_javascript', 'language_javascript'),
-        'typescript': ('tree_sitter_javascript', 'language_typescript'),
-        'tsx':        ('tree_sitter_javascript', 'language_tsx'),
+        'python':     ('tree_sitter_python', 'language'),
+        'java':       ('tree_sitter_java', 'language'),
+        'c':          ('tree_sitter_c', 'language'),
+        'cpp':        ('tree_sitter_cpp', 'language'),
+        'go':         ('tree_sitter_go', 'language'),
+        'rust':       ('tree_sitter_rust', 'language'),
+        'javascript': ('tree_sitter_javascript', 'language'),
+        'typescript': ('tree_sitter_javascript', 'language'),
+        'tsx':        ('tree_sitter_javascript', 'language'),
     }
 
     for lang, (mod_name, attr_name) in _registry.items():
@@ -53,7 +53,7 @@ def _load_grammars():
             else:
                 lang_obj = lang_fn
             _GRAMMARS[lang] = lang_obj
-        except ImportError:
+        except Exception:
             pass
 
 
@@ -85,7 +85,7 @@ def validate_file(filepath: str, language: str) -> dict:
 
     # Parse
     parser = tree_sitter.Parser()
-    parser.set_language(grammar)
+    parser.language = tree_sitter.Language(grammar)
 
     tree = parser.parse(source_bytes)
     root = tree.root_node
