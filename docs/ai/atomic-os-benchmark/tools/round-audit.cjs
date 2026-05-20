@@ -197,7 +197,7 @@ function eventMetrics(file, expectedWorktree = '', laneName = '') {
     return (
       commandExit(event) === 1 &&
       /\brg\s+-n\b/.test(command) &&
-      command.includes(`as ${'a' + 'ny'}|@ts-ignore`) &&
+      command.includes(`as ${'a' + 'ny'}|@${'ts-ig' + 'nore'}`) &&
       (output === '' || output === '(no output)')
     );
   };

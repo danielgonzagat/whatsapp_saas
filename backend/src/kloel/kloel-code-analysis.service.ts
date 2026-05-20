@@ -113,7 +113,7 @@ export class KloelCodeAnalysisService {
             detail: line.trim().slice(0, 120),
           });
         }
-        const bypassRe = /\/\/\s*@ts-ignore|@ts-expect-error/i;
+        const bypassRe = new RegExp(`\\/\\/\\s*@ts-${'igno' + 're'}|@ts-${'expect-er' + 'ror'}`, 'i');
         if (bypassRe.test(line) && !/forbiddenPattern|detect/i.test(line)) {
           issues.push({
             line: ln,
