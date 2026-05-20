@@ -128,6 +128,13 @@ export class KloelToolDispatcherService {
         case 'delete_coupon':
         case 'generate_boleto':
           return { success: false, error: 'product_sub_resource_tools_not_available' };
+        case 'get_wallet_balance':
+        case 'get_wallet_statement':
+        case 'list_orders':
+        case 'get_order_details':
+        case 'get_sales_summary':
+        case 'get_abandonments':
+          return { success: false, error: 'wallet_sales_tools_not_available' };
         case 'get_analytics':
           return await this.chatToolsService.toolGetAnalytics(workspaceId, asToolArgs(args));
         case 'create_broadcast':

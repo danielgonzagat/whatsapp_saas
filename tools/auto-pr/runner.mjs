@@ -66,8 +66,20 @@ async function processOne(jobFile) {
     await run(['git', 'push', '-u', 'origin', job.branch], { cwd: wt });
 
     const prArgs = ['gh', 'pr', 'create', '--title', job.title, '--body', job.body || '', '--repo', REMOTE, '--base', (job.base || 'main').replace(/^origin\//, '')];
-    if (job.labels?.length) prArgs.push('--label', job.labels.join(','));
-    const url = await captureOutput(prArgs, { cwd: wt });
+    // Labels are best-effort: gh fails the whole command if any label doesn't exist on the repo.
+    // Try with labels first; if that fails, retry without them.
+    let url;
+    if (job.labels?.length) {
+      const withLabels = [...prArgs, '--label', job.labels.join(',')];
+      try {
+        url = await captureOutput(withLabels, { cwd: wt });
+      } catch (err) {
+        console.warn(`[auto-pr] labels rejected (${err.message}); retrying without labels`);
+        url = await captureOutput(prArgs, { cwd: wt });
+      }
+    } else {
+      url = await captureOutput(prArgs, { cwd: wt });
+    }
     console.log(`[auto-pr] opened: ${url.trim()}`);
     return { url: url.trim() };
   } catch (err) {
