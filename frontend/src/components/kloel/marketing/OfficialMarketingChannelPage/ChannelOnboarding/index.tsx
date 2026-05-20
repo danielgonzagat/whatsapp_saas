@@ -231,14 +231,14 @@ export function ChannelOnboarding({ channel, initialStep }: Props) {
           }}
         >
           <Chip C={C}>{copy.provider}</Chip>
-          {awakened ? null : <StepBar step={Math.min(glyphStep, 3)} C={C} />}
+          <StepBar step={Math.min(glyphStep, 3)} C={C} />
         </div>
 
         <Glyph
           C={C}
           step={glyphStep}
-          products={glyphStep >= 1 ? picked.length : 0}
-          arsenal={glyphStep >= 2 ? data.setup.arsenal.length : 0}
+          products={glyphStep >= 2 ? picked.length : 0}
+          arsenal={glyphStep >= 3 ? data.setup.arsenal.length : 0}
         />
 
         <div className="kloel-vin" key={`${awakened ? 'done' : viewStep}`} style={{ width: '100%' }}>
