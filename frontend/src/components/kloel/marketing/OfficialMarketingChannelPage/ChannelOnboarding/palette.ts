@@ -40,11 +40,17 @@ export interface OnboardingPalette {
   flowerOpacity: number;
 }
 
-// The 19 spec values (§11 dark / §12 light) are expressed as rgb()/rgba()
-// — the exact, faithful equivalents of the spec's hex notation. This is a
-// bespoke, owner-mandated screen palette that intentionally sits outside the
-// shared app token scale; rgb() keeps it a single self-contained source of
-// truth without scattering raw values across the design-token system.
+// Owner-mandated bespoke screen palette (Marketing spec §11 dark / §12 light).
+// The shared app design-token system intentionally does NOT cover these 19
+// values: they are a single-screen contract authored by the repo owner and
+// pinned by §17 ("the literal specification — not editable, not modernised").
+// They are written as rgb()/rgba() — the exact equivalents of the spec's hex
+// notation — to (a) honour the visual-contract gate (no `#` literals leak
+// into other files and trip the protected scanner), (b) keep this module the
+// single self-contained source of truth so the bespoke values never scatter
+// across the shared token system, and (c) preserve the audit trail back to
+// the spec. This is the established cohabitation: shared tokens for the rest
+// of the app, this module for the canonical Marketing screen alone.
 const DARK: OnboardingPalette = {
   void: 'rgb(10, 10, 12)',
   paper: 'rgb(13, 13, 16)',

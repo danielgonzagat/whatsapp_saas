@@ -100,8 +100,8 @@ export function normalizeProduct(raw: unknown): ProductOption | null {
 /**
  * Best-effort real price for the catalogue row. Reads the common product
  * shapes (reais in `price`/`amount`, or cents in `priceCents`). Returns null
- * when no numeric price exists so the UI shows nothing rather than a fake
- * value (honest-state contract).
+ * when no numeric price exists so the UI shows nothing rather than an
+ * invented value (an honest empty state).
  */
 function extractPrice(record: Record<string, unknown>): number | null {
   const direct = record.price ?? record.amount ?? record.value;

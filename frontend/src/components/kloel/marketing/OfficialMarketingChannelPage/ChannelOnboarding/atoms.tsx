@@ -105,6 +105,14 @@ export function CTA({
           e.currentTarget.style.background = v.bg;
         }
       }}
+      onFocus={(e) => {
+        if (!disabled) {
+          e.currentTarget.style.boxShadow = `0 0 0 2px ${C.ember}`;
+        }
+      }}
+      onBlur={(e) => {
+        e.currentTarget.style.boxShadow = 'none';
+      }}
     >
       {children}
     </button>

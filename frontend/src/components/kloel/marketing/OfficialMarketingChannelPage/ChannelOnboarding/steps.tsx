@@ -3,6 +3,10 @@ import type { OnboardingPalette } from './palette';
 import { SORA, MONO, PILL_RADIUS, TONE_LABELS, EDGE_LABELS } from './palette';
 import { CTA, Arrow, Back, Dial, Vinheta, NavRow } from './atoms';
 
+/** BRL currency formatter for the catalogue row prices (spec §7). */
+const BRL = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
+
+
 export interface ProductRow {
   id: string;
   name: string;
@@ -129,7 +133,7 @@ export function StepProducts({
                       fontVariantNumeric: 'tabular-nums',
                     }}
                   >
-                    R$ {p.price}
+                    {BRL.format(Number(p.price))}
                   </span>
                 ) : null}
               </button>
