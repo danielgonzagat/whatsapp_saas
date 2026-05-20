@@ -182,14 +182,16 @@ import {
 import { AbiBuilderService } from './abi/abi-builder.service';
 import { LineageModule } from './lineage/lineage.module';
 import { RiskClassModule } from './risk-class/risk-class.module';
-import { KloelProductSubResourceToolsService } from './kloel-product-sub-resource-tools.service';
-import { KloelWalletSalesToolsService } from './kloel-wallet-sales-tools.service';
 
 /** Kloel module. */
 @Module({
   imports: [
     PrismaModule,
-    forwardRef(() => require('../whatsapp/whatsapp.module').WhatsappModule),
+    forwardRef(
+      () =>
+        (require('../whatsapp/whatsapp.module') as typeof import('../whatsapp/whatsapp.module'))
+          .WhatsappModule as typeof import('../whatsapp/whatsapp.module').WhatsappModule,
+    ),
     ScheduleModule.forRoot(),
     KycModule,
     forwardRef(() => CampaignsModule),
@@ -201,7 +203,11 @@ import { KloelWalletSalesToolsService } from './kloel-wallet-sales-tools.service
     MetricsModule,
     KloelAudioModule,
     KloelRulesModule,
-    forwardRef(() => require('../inbox/inbox.module').InboxModule),
+    forwardRef(
+      () =>
+        (require('../inbox/inbox.module') as typeof import('../inbox/inbox.module'))
+          .InboxModule as typeof import('../inbox/inbox.module').InboxModule,
+    ),
     ContactsModule,
     LineageModule,
     DriftModule,
@@ -255,8 +261,6 @@ import { KloelWalletSalesToolsService } from './kloel-wallet-sales-tools.service
     KloelThreadService,
     KloelThreadSummaryService,
     KloelChatToolsService,
-    KloelProductSubResourceToolsService,
-    KloelWalletSalesToolsService,
     KloelCodeToolsService,
     KloelBusinessConfigToolsService,
     KloelCodeAnalysisService,
@@ -383,8 +387,6 @@ import { KloelWalletSalesToolsService } from './kloel-wallet-sales-tools.service
     KloelThreadService,
     KloelThreadSummaryService,
     KloelChatToolsService,
-    KloelProductSubResourceToolsService,
-    KloelWalletSalesToolsService,
     KloelBusinessConfigToolsService,
     KloelWhatsAppToolsService,
     KloelLeadBrainService,

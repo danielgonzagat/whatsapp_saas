@@ -121,3 +121,7 @@ scripts/mcp/atomic-edit/.smoke-fixture.*
 graphify-out/
 tools/graphify-plus/
 SESSION_STATE.md
+
+# concurrent-agent recreated broken services (delete-on-sight)
+backend/src/kloel/kloel-product-sub-resource-tools.service.ts
+backend/src/kloel/kloel-wallet-sales-tools.service.ts
