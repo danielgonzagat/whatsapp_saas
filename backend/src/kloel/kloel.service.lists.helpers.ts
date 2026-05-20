@@ -62,7 +62,7 @@ export async function runListFollowups(
     };
   } catch (error: unknown) {
     const msg = error instanceof Error ? error.message : 'unknown error';
-    this.logger.error(`Erro ao listar follow-ups: ${msg}`);
+    console.error(`Erro ao listar follow-ups: ${msg}`);
     return { total: 0, followups: [] };
   }
 }

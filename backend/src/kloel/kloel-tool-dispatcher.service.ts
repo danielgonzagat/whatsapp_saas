@@ -93,7 +93,6 @@ export class KloelToolDispatcherService {
           return await this.chatToolsService.toolSaveProduct(workspaceId, asToolArgs(args));
         case 'list_products':
           return await this.chatToolsService.toolListProducts(workspaceId);
-        case 'delete_product':
         case 'update_product':
           return await this.chatToolsService.toolUpdateProduct(workspaceId, asToolArgs(args));
         case 'toggle_autopilot':
