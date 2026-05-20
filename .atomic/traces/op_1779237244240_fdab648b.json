@@ -1,0 +1,80 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779237244240_fdab648b",
+  "ts": "2026-05-20T00:34:04.240Z",
+  "file": "backend/src/kloel/kloel-reply-engine.helpers.ts",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "insert_after_anchor",
+  "operator": "insert_after_anchor",
+  "targetUnit": "text_span",
+  "intention": "insert_after_anchor",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 105,
+    "lineRewriteSurfaceChars": 24,
+    "expansionFactorAvoided": 0.23,
+    "bytesNet": 105,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "3567a579b455098d3359b5bc2c00230326539279af9b0601b53543babccd6fe7",
+  "proposedSha256": "3567a579b455098d3359b5bc2c00230326539279af9b0601b53543babccd6fe7",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- backend/src/kloel/kloel-reply-engine.helpers.ts (atomic char-level)\u001b[0m\n    void companyName;\n    void wsContextService;\n  \u001b[32m{+  if (deps.abiStateJson) {\n      systemPrompt = `${systemPrompt}\\nstate_payload=${deps.abiStateJson}`;\n    }+}\u001b[0m\n  \n    const messages = await deps.buildChatModelMessages({",
+  "preservedZones": [
+    {
+      "kind": "prefix_preserved",
+      "description": "Bytes 0–10829 — prefix preserved unchanged",
+      "byteStart": 0,
+      "byteEnd": 10830,
+      "byteLength": 10830,
+      "beforeHash": "37efa364c1b084505c4d061f9d74d787372b66e288b905aebd2409b886f76d18",
+      "afterHash": "37efa364c1b084505c4d061f9d74d787372b66e288b905aebd2409b886f76d18",
+      "sample": "     expertiseLevel,\n      });\n  }\n  void companyName;\n  void wsContextService;\n"
+    },
+    {
+      "kind": "suffix_preserved",
+      "description": "Bytes 10830–14171 — suffix preserved unchanged",
+      "byteStart": 10830,
+      "byteEnd": 14172,
+      "byteLength": 3342,
+      "beforeHash": "fb692626ebe199712c637a6d0e9e56d5b24d8ce117de4c66918e366ae551f771",
+      "afterHash": "fb692626ebe199712c637a6d0e9e56d5b24d8ce117de4c66918e366ae551f771",
+      "sample": "\n  const messages = await deps.buildChatModelMessages({\n    systemPrompt,\n    dy"
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "byteStart": 10830,
+      "byteEnd": 10830,
+      "newByteLength": 105,
+      "oldTextHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "newTextHash": "b1f3d100ccaed67858ee27d0af7b10c97cdedb588e4cfc92d0b8edf07e2ad3a5",
+      "oldSample": "",
+      "newSample": "  if (deps.abiStateJson) {\n    systemPrompt = `${systemPrompt}\\nstate_payload=${deps.abiStateJson}`;\n  }\n",
+      "description": "Insert 105 bytes at offset 10830"
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `insert_after_anchor` changed ~105 character(s) in `backend/src/kloel/kloel-reply-engine.helpers.ts` (sub-line atomic edit, expansion 0.23× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

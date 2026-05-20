@@ -386,6 +386,7 @@ export class KloelReplyEngineService {
     conversationState?: { summary?: string; recentMessages: ReplyMessage[]; totalMessages: number };
     onTraceEvent?: (event: KloelStreamEvent) => void;
     executeLocalTool?: LocalToolExecutor;
+    abiStateJson?: string;
   }): Promise<string> {
     if (!this.openai) {
       return this.unavailableMessage;
@@ -406,7 +407,7 @@ export class KloelReplyEngineService {
       buildMarketingPromptAddendum: (wid, mode, msg) =>
         this.buildMarketingPromptAddendum(wid, mode, msg),
       buildChatModelMessages: async (p) => this.buildChatModelMessages(p),
-      buildDynamicRuntimeContext: (p) => this.buildDynamicRuntimeContext(p),
+      buildDynamicRuntimeContext: (p) => this.buildDynamicRuntimeContext(p),      abiStateJson: params.abiStateJson,
     });
   }
 }

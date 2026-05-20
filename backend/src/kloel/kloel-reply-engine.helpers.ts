@@ -164,7 +164,7 @@ interface BuildAssistantReplyDeps {
   wsContextService: KloelWorkspaceContextService;
   contextFormatter: KloelContextFormatter;
   toolRouter: KloelToolRouter;
-  unavailableMessage: string;
+  unavailableMessage: string;  abiStateJson?: string;
   hasOpenAiKey: () => boolean;
   buildDashboardPrompt: (params?: {
     userName?: string | null;
@@ -289,6 +289,9 @@ export async function buildAssistantReplyImpl(
   }
   void companyName;
   void wsContextService;
+  if (deps.abiStateJson) {
+    systemPrompt = `${systemPrompt}\nstate_payload=${deps.abiStateJson}`;
+  }
 
   const messages = await deps.buildChatModelMessages({
     systemPrompt,

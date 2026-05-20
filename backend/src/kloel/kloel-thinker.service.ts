@@ -456,10 +456,12 @@ export class KloelThinkerService {
     try {
       return await thinkSyncImpl(request, composerCapability, effectiveCompanyContext, {
         replyEngine: this.replyEngine,
+        prisma: this.prisma,
         threadService: this.threadService,
         composerService: this.composerService,
         conversationStore: this.conversationStore,
-        planLimits: this.planLimits,
+        planLimits: this.planLimits,        abiBuilder: this.abiBuilder,
+        capabilityExecutor: this.capabilityExecutor,
       });
     } catch (error: unknown) {
       this.logger.error('Erro no KLOEL Thinker Sync:', error);

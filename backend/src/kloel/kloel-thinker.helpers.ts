@@ -10,6 +10,10 @@ import {
   StoredResponseVersion,
 } from './kloel-thread.service';
 import type { ChatMessage, ThinkRequest, ThinkSyncResult } from './kloel-thinker.types';
+import { type PrismaService } from '../prisma/prisma.service';
+import { type AbiBuilderService } from './abi/abi-builder.service';
+import { type BrainCapabilityExecutorService } from './brain-capability-executor.service';
+import { validateAbiPayload } from './abi/abi-validator';
 
 const ERR_THREAD_NOT_FOUND = 'Conversa não encontrada.';
 const ERR_ASSISTANT_MSG_NOT_FOUND = 'Mensagem do assistente não encontrada.';
@@ -29,10 +33,12 @@ export async function thinkSyncImpl(
   effectiveCompanyContext: string | undefined,
   deps: {
     replyEngine: KloelReplyEngineService;
+    prisma: PrismaService;
     threadService: KloelThreadService;
     composerService: KloelComposerService;
     conversationStore: KloelConversationStore;
-    planLimits: PlanLimitsService;
+    planLimits: PlanLimitsService;    abiBuilder?: AbiBuilderService;
+    capabilityExecutor?: BrainCapabilityExecutorService;
   },
 ): Promise<ThinkSyncResult> {
   const {
@@ -44,7 +50,7 @@ export async function thinkSyncImpl(
     mode = 'chat',
     metadata,
   } = request;
-  const { replyEngine, threadService, composerService, conversationStore } = deps;
+  const { replyEngine, prisma, threadService, composerService, conversationStore } = deps;
   if (!replyEngine.hasOpenAiKey() && !process.env.ANTHROPIC_API_KEY) {
     return {
       response:
@@ -70,6 +76,33 @@ export async function thinkSyncImpl(
             : {}),
         })
       : null;
+
+  // Build ABI state if feature flag is on and deps are available
+  let abiStateJson: string | undefined;
+  const { abiBuilder, capabilityExecutor } = deps;
+  const useAbi = process.env['KLOEL_THINKER_USE_ABI'] === 'on';
+  if (useAbi && abiBuilder && capabilityExecutor && workspaceId) {
+    try {
+      const chatSubstrate = await capabilityExecutor.buildCognitiveSubstrate(workspaceId);
+      const abiResult = await abiBuilder.build({
+        audience: 'public',
+        currentInput: { raw: message, channel: 'web', arrivalTimestamp: new Date().toISOString() },
+        perceptionSnapshot: { channel: 'web', ...(workspaceId ? { workspaceId } : {}) },
+        ...(chatSubstrate ? { cognitiveSubstrate: chatSubstrate } : {}),
+      });
+      if (abiResult.status === 'ok') {
+        const validation = validateAbiPayload(abiResult.abi);
+        if (validation.status !== 'FAIL') {
+          const capped = JSON.stringify(abiResult.abi, (_k: string, v: unknown) =>
+            Array.isArray(v) ? v.slice(0, 8) : v
+          );
+          abiStateJson = capped.length > 24000 ? capped.slice(0, 24000) + '...(truncated)' : capped;
+        }
+      }
+    } catch {
+      // ABI build failed — use legacy prompt
+    }
+  }
   const assistantMessage =
     capabilityResult?.content ||
     (await replyEngine.buildAssistantReply({
@@ -80,7 +113,7 @@ export async function thinkSyncImpl(
       mode,
       ...(effectiveCompanyContext !== undefined ? { companyContext: effectiveCompanyContext } : {}),
       ...(request.allowedTools !== undefined ? { allowedTools: request.allowedTools } : {}),
-      conversationState: historyState,
+      conversationState: historyState,      ...(abiStateJson !== undefined ? { abiStateJson } : {}),
     }));
 
   let resolvedTitle = thread?.title;
@@ -138,6 +171,27 @@ export async function thinkSyncImpl(
     }
     await conversationStore.saveMessage(workspaceId, 'user', message);
     await conversationStore.saveMessage(workspaceId, 'assistant', assistantMessage);
+    // Persist this conversational turn to the cognitive spine so it
+    // becomes CROSS-SESSION memory (MindPerceptionService reads
+    // autopilotEvent → working/episodic/consolidated/beliefs → ABI).
+    void prisma.autopilotEvent
+      .create({
+        data: {
+          workspaceId,
+          intent: 'kloel_chat_turn',
+          action: 'kloel.chat.turn',
+          status: 'executed',
+          meta: {
+            userPreview: message.slice(0, 280),
+            replyPreview: assistantMessage.slice(0, 280),
+            mode,
+            conversationId: conversationId ?? null,
+          },
+        },
+      })
+      .catch(() => {
+        // fire-and-forget — never blocks the reply
+      });
   }
   const convId = thread?.id;
   const title = resolvedTitle;
