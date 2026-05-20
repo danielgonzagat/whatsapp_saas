@@ -5,13 +5,8 @@ import {
   GenesisEvent,
   GenesisPayload,
 } from '../lineage/genesis-event';
-import {
-  makeOriginImmutabilityGate,
-} from './origin-immutability.gate';
-import type {
-  LineageGuardService,
-  LineageGuardVerdict,
-} from '../lineage/lineage-guard.service';
+import { makeOriginImmutabilityGate } from './origin-immutability.gate';
+import type { LineageGuardService, LineageGuardVerdict } from '../lineage/lineage-guard.service';
 
 /**
  * Shared helpers for the origin-immutability gate spec — split out so the
@@ -28,9 +23,7 @@ import type {
  * from its verify() method. The gate only calls `guard.verify()` and reads
  * `verdict.status` + `verdict.reason`.
  */
-export function mockGuard(
-  verdict: Partial<LineageGuardVerdict> = {},
-): LineageGuardService {
+export function mockGuard(verdict: Partial<LineageGuardVerdict> = {}): LineageGuardService {
   return {
     verify: jest.fn<Promise<LineageGuardVerdict>, []>().mockResolvedValue({
       status: 'intact',
@@ -59,9 +52,7 @@ export function gate(
  * Because GENESIS_PAYLOAD is Object.freeze'd at module level, we deep-clone
  * it to produce tampered variants for self-check tests.
  */
-export function cloneGenesisPayload(
-  overrides?: Partial<GenesisPayload>,
-): GenesisPayload {
+export function cloneGenesisPayload(overrides?: Partial<GenesisPayload>): GenesisPayload {
   const orig = GENESIS_EVENT.payload;
   return {
     canonicalName: overrides?.canonicalName ?? orig.canonicalName,

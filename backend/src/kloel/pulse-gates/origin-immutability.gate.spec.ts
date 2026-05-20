@@ -1,20 +1,11 @@
 import {
   GENESIS_EVENT,
-  GENESIS_EVENT_ID,
   ORGANISM_CANONICAL_NAME,
   computeGenesisHash,
+  verifyGenesisEvent,
 } from '../lineage/genesis-event';
-import {
-  makeOriginImmutabilityGate,
-  OriginImmutabilityGate,
-} from './origin-immutability.gate';
-import type { GateVerdict } from './pulse-gates.types';
-import {
-  cloneGenesisPayload,
-  gate,
-  mockGuard,
-  tamperedGenesisEvent,
-} from './origin-immutability.gate.spec.helpers';
+import { makeOriginImmutabilityGate, OriginImmutabilityGate } from './origin-immutability.gate';
+import { cloneGenesisPayload, gate, mockGuard } from './origin-immutability.gate.spec.helpers';
 
 /**
  * UTP-PULSE-005 — origin-immutability gate contract spec.
@@ -165,7 +156,6 @@ describe('origin-immutability gate — self-check integrity functions', () => {
   it('14. verifyGenesisEvent accepts the canonical GENESIS_EVENT', () => {
     // The gate calls verifyGenesisEvent(GENESIS_EVENT) at the top of check().
     // This test proves the underlying function accepts the canonical event.
-    const { verifyGenesisEvent } = require('../lineage/genesis-event');
     expect(verifyGenesisEvent(GENESIS_EVENT)).toBe(true);
   });
 
@@ -177,7 +167,9 @@ describe('origin-immutability gate — self-check integrity functions', () => {
   });
 
   it('16. tampered canonicalName produces different hash', () => {
-    const payload = cloneGenesisPayload({ canonicalName: 'NotKloel' as typeof ORGANISM_CANONICAL_NAME });
+    const payload = cloneGenesisPayload({
+      canonicalName: 'NotKloel' as typeof ORGANISM_CANONICAL_NAME,
+    });
     const hash = computeGenesisHash(payload);
     expect(hash).not.toBe(GENESIS_EVENT.hash);
   });
@@ -225,29 +217,24 @@ describe('origin-immutability gate — self-check integrity functions', () => {
   });
 
   it('21. tampered eventId fails verifyGenesisEvent', () => {
-    const { verifyGenesisEvent } = require('../lineage/genesis-event');
     const tampered = { ...GENESIS_EVENT, eventId: '01JDEADBEEF0000000000000GE' };
     expect(verifyGenesisEvent(tampered)).toBe(false);
   });
 
   it('22. wrong eventName fails verifyGenesisEvent', () => {
-    const { verifyGenesisEvent } = require('../lineage/genesis-event');
     const tampered = { ...GENESIS_EVENT, eventName: 'lineage.tampered' };
     expect(verifyGenesisEvent(tampered)).toBe(false);
   });
 
   it('23. null input fails verifyGenesisEvent', () => {
-    const { verifyGenesisEvent } = require('../lineage/genesis-event');
     expect(verifyGenesisEvent(null)).toBe(false);
   });
 
   it('24. non-object input fails verifyGenesisEvent', () => {
-    const { verifyGenesisEvent } = require('../lineage/genesis-event');
     expect(verifyGenesisEvent('not-an-object')).toBe(false);
   });
 
   it('25. missing payload fails verifyGenesisEvent', () => {
-    const { verifyGenesisEvent } = require('../lineage/genesis-event');
     const { payload: _, ...noPayload } = GENESIS_EVENT;
     expect(verifyGenesisEvent(noPayload)).toBe(false);
   });
@@ -313,7 +300,8 @@ describe('origin-immutability gate — verdict shape contract', () => {
   it('33. FAIL verdict always carries a reason', async () => {
     const v = await gate('hard_fail', {
       status: 'compromised',
-      reason: 'entry 1 eventId mismatch — expected 01JD90000000000000000000GE got 01JDEADBEEF0000000000000GE',
+      reason:
+        'entry 1 eventId mismatch — expected 01JD90000000000000000000GE got 01JDEADBEEF0000000000000GE',
     }).check();
     expect(v.status).toBe('FAIL');
     expect(v.reason).toBeDefined();

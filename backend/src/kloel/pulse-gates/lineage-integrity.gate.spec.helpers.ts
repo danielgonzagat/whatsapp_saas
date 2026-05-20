@@ -1,10 +1,5 @@
-import {
-  GENESIS_EVENT,
-} from '../lineage/genesis-event';
-import type {
-  LineageGuardService,
-  LineageGuardVerdict,
-} from '../lineage/lineage-guard.service';
+import { GENESIS_EVENT } from '../lineage/genesis-event';
+import type { LineageGuardService, LineageGuardVerdict } from '../lineage/lineage-guard.service';
 import { LineageIntegrityGate } from './lineage-integrity.gate';
 import type { GateVerdict } from './pulse-gates.types';
 
@@ -17,9 +12,7 @@ import type { GateVerdict } from './pulse-gates.types';
  * expectations so the actual it() blocks read like a checklist.
  */
 
-export function mockGuard(
-  overrides: Partial<LineageGuardVerdict> = {},
-): LineageGuardService {
+export function mockGuard(overrides: Partial<LineageGuardVerdict> = {}): LineageGuardService {
   const base: LineageGuardVerdict = {
     status: 'intact',
     entryCount: 1,
@@ -40,10 +33,7 @@ export function check(
   return new LineageIntegrityGate(mockGuard(verdictOverrides), mode).check();
 }
 
-export async function assertPass(
-  v: Promise<GateVerdict>,
-  expectedMode = 'hard_fail',
-) {
+export async function assertPass(v: Promise<GateVerdict>, expectedMode = 'hard_fail') {
   const verdict = await v;
   expect(verdict.status).toBe('PASS');
   expect(verdict.gateName).toBe('lineage-integrity');

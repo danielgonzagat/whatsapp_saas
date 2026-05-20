@@ -1,11 +1,5 @@
-import {
-  GENESIS_EVENT,
-  ORGANISM_CANONICAL_NAME,
-} from '../lineage/genesis-event';
-import {
-  LineageIntegrityGate,
-  makeLineageIntegrityGate,
-} from './lineage-integrity.gate';
+import { GENESIS_EVENT, ORGANISM_CANONICAL_NAME } from '../lineage/genesis-event';
+import { LineageIntegrityGate, makeLineageIntegrityGate } from './lineage-integrity.gate';
 import { assertFail, assertPass, check, mockGuard } from './lineage-integrity.gate.spec.helpers';
 
 /**
@@ -330,8 +324,6 @@ describe('lineage-integrity gate — identity', () => {
 
   it('25. measuredAt is an ISO 8601 timestamp', async () => {
     const v = await check({ status: 'intact' });
-    expect(v.measuredAt).toMatch(
-      /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/,
-    );
+    expect(v.measuredAt).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
   });
 });
