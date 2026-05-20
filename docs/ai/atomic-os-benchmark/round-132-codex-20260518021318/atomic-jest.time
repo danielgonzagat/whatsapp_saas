@@ -1,9 +1,0 @@
-PASS src/kloel/unified-agent.service.spec.ts (12.352 s)
-
-Test Suites: 1 passed, 1 total
-Tests:       13 passed, 13 total
-Snapshots:   0 total
-Time:        12.634 s
-real 13.80
-user 18.51
-sys 1.77

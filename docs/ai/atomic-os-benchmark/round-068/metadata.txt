@@ -1,4 +1,0 @@
-round=068
-normal_worktree=/private/tmp/kloel-ab068-normal-20260517111944
-atomic_worktree=/private/tmp/kloel-ab068-atomic-20260517111944
-task=two-symbol unified-agent helper extraction after shell-escaped-json parser repair

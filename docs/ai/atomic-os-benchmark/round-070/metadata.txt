@@ -1,6 +1,0 @@
-round=070
-stamp=20260517120823
-normal=/private/tmp/kloel-ab070-normal-20260517120823
-atomic=/private/tmp/kloel-ab070-atomic-20260517120823
-task=repeat round 069 class methods actionSucceeded+num extraction
-atomic_update=extract_class_methods_to_file dynamic validation no embedded typecheck

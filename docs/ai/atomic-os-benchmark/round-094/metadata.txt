@@ -1,5 +1,0 @@
-round=094
-normal_worktree=/private/tmp/kloel-ab094-normal-20260517192409
-atomic_worktree=/private/tmp/kloel-ab094-atomic-20260517192409
-task=extract_execute_tool_router_cluster_plus_actionSucceeded_compact_shape
-repeat_reason=round093_atomic_serviceLines_sourceChurn_shape_gap

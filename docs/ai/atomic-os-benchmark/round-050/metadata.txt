@@ -1,9 +1,0 @@
-round=050
-created_at=2026-05-16 23:50:16 -03
-base=565b0f84daa9f20b33a174374191a9f1f519a26e
-normal_dir=/private/tmp/kloel-ab050-normal-20260516235011
-atomic_dir=/private/tmp/kloel-ab050-atomic-20260516235011
-normal_branch=codex/ab050-normal-20260516235011
-atomic_branch=codex/ab050-atomic-20260516235011
-harness=codex-exec-json-stdin-no-global-mcp
-reason=rerun-after-round-049-global-mcp-transport-failure

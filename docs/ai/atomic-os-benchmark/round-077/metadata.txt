@@ -1,6 +1,0 @@
-round=077
-base=565b0f84daa9f20b33a174374191a9f1f519a26e
-normal=/private/tmp/kloel-ab077-normal-20260517135211
-atomic=/private/tmp/kloel-ab077-atomic-20260517135211
-task=extract UnifiedAgentService.actionSucceeded and UnifiedAgentService.num to unified-agent-action.helpers.ts
-atomic_change=OpenCode custom command preprompt-shell macro fast-path with dynamic variant: normal=max, atomic=minimal

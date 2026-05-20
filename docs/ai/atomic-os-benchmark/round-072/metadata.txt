@@ -1,8 +1,0 @@
-round=072
-stamp=20260517123217
-normal=/private/tmp/kloel-ab072-normal-20260517123217
-atomic=/private/tmp/kloel-ab072-atomic-20260517123217
-task=repeat round 069 class methods actionSucceeded+num extraction
-normal_isolation=watchdog XDG_CONFIG_HOME plus local opencode/.opencode quarantine; atomic tools forbidden
-dependency_isolation=watchdog links node_modules and backend/node_modules dynamically before launch
-atomic_update=extract_class_methods_to_file dynamic validation no embedded typecheck

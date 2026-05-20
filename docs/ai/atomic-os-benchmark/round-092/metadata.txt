@@ -1,5 +1,0 @@
-round=092
-normal_worktree=/private/tmp/kloel-ab092-normal-20260517184415
-atomic_worktree=/private/tmp/kloel-ab092-atomic-20260517184415
-task=extract_execute_tool_router_cluster_plus_actionSucceeded
-repeat_reason=round091_lint_residual_after_import_cleanup

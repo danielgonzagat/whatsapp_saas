@@ -1,5 +1,0 @@
-normal_agent=019e35c7-dee3-7de1-8423-beae09f05682
-normal_nickname=Carson
-atomic_agent=019e35c7-e171-7fd3-9925-888e44123167
-atomic_nickname=Hooke
-started_at=2026-05-17 08:52:20 -03

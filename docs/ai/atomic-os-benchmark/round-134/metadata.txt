@@ -1,8 +1,0 @@
-round=134
-created_at=2026-05-18T15:13:36Z
-base_round=133
-normal_worktree=/Users/danielpenin/kloel-ab-worktrees/kloel-ab134-normal-20260518121336
-atomic_worktree=/Users/danielpenin/kloel-ab-worktrees/kloel-ab134-atomic-20260518121336
-normal_branch=ab/round134-normal-20260518121336
-atomic_branch=ab/round134-atomic-20260518121336
-mission=repeat seven-helper topology-aware tier with final-validation-aware auditor

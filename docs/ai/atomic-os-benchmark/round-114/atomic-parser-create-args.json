@@ -1,4 +1,0 @@
-{
-  "file": "backend/src/kloel/unified-agent-tool-parser.helpers.ts",
-  "content": "import type { StructuredLogger } from '../logging/structured-logger';\n\ntype UnknownRecord = Record<string, unknown>;\n\nexport function parseToolArgs(\n  logger: StructuredLogger,\n  toolName: string,\n  rawArguments: string | undefined,\n): UnknownRecord {\n  try {\n    const parsed: unknown = JSON.parse(rawArguments || '{}');\n    return parsed && typeof parsed === 'object' && !Array.isArray(parsed)\n      ? (parsed as UnknownRecord)\n      : {};\n  } catch {\n    logger.warn(`Failed to parse tool args for ${toolName}`);\n    return {};\n  }\n}\n"
-}

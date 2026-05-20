@@ -1,9 +1,0 @@
-stamp=20260516215250
-round_dir=docs/ai/atomic-os-benchmark/round-040
-normal_dir=/private/tmp/kloel-ab040-normal-20260516215250
-atomic_dir=/private/tmp/kloel-ab040-atomic-20260516215250
-normal_branch=codex/ab040-normal-20260516215250
-atomic_branch=codex/ab040-atomic-20260516215250
-base_head=565b0f84daa9f20b33a174374191a9f1f519a26e
-atomic_os_update=reusable_atomic_eslint_helper_reduce_prompt_input
-previous_verdict=round-039_no_scale_atomic_lost_input_tokens

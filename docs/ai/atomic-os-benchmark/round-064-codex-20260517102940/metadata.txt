@@ -1,6 +1,0 @@
-round=064
-stamp=20260517102940
-normal=/private/tmp/kloel-ab064-normal-20260517102940
-atomic=/private/tmp/kloel-ab064-atomic-20260517102940
-round_dir=/Users/danielpenin/whatsapp_saas/docs/ai/atomic-os-benchmark/round-064-codex-20260517102940
-head=565b0f84daa9f20b33a174374191a9f1f519a26e

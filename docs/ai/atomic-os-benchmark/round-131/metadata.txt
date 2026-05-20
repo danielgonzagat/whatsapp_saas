@@ -1,6 +1,0 @@
-round=131
-timestamp=20260518101359
-normal_worktree=/Users/danielpenin/kloel-ab-worktrees/kloel-ab131-normal-20260518101359
-atomic_worktree=/Users/danielpenin/kloel-ab-worktrees/kloel-ab131-atomic-20260518101359
-complexity=seven-helper unified-agent split with dynamic current-anchor macro facade compaction
-policy=repeat same tier after Round 130 rigid-oldText failure; do not scale until ATOMIC zero-loss

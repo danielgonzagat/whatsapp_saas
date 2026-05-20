@@ -1,9 +1,0 @@
-stamp=20260516205042
-round_dir=docs/ai/atomic-os-benchmark/round-033
-normal_dir=/private/tmp/kloel-ab033-normal-20260516205042
-atomic_dir=/private/tmp/kloel-ab033-atomic-20260516205042
-normal_branch=codex/ab033-normal-20260516205042
-atomic_branch=codex/ab033-atomic-20260516205042
-base_head=565b0f84daa9f20b33a174374191a9f1f519a26e
-atomic_os_update=direct_stdio_mcp_invocation_no_discovery
-previous_verdict=round-032_no_scale_atomic_lost_duration_tokens_unique_commands_due_mcp_discovery

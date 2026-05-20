@@ -1,2 +1,0 @@
-normal_pid=46206
-atomic_pid=46207

@@ -1,1 +1,0 @@
-bash "/Users/danielpenin/whatsapp_saas/docs/ai/atomic-os-benchmark/round-127/atomic-fastpath.sh"

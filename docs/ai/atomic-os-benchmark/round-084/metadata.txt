@@ -1,5 +1,0 @@
-ROUND=084
-TS=20260517155640
-NORMAL=/private/tmp/kloel-ab084-normal-20260517155640
-ATOMIC=/private/tmp/kloel-ab084-atomic-20260517155640
-ROUND_DIR=/Users/danielpenin/whatsapp_saas/docs/ai/atomic-os-benchmark/round-084

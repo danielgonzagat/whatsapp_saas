@@ -1,8 +1,0 @@
-round=111
-created_at=2026-05-18T04:32:30Z
-normal_worktree=/Users/danielpenin/kloel-ab-worktrees/kloel-ab111-normal-20260518043230
-atomic_worktree=/Users/danielpenin/kloel-ab-worktrees/kloel-ab111-atomic-20260518043230
-normal_branch=ab/round111-normal-20260518043230
-atomic_branch=ab/round111-atomic-20260518043230
-task=three_module_unified_agent_router_runtime_parser_split
-decision_basis=rounds_109_110_confirmed_atomic_stability_scale_one_step

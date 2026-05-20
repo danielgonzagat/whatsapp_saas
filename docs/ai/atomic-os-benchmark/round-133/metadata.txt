@@ -1,8 +1,0 @@
-round=133
-created_at=2026-05-18T14:45:13Z
-base_round=132
-normal_worktree=/Users/danielpenin/kloel-ab-worktrees/kloel-ab133-normal-20260518114512
-atomic_worktree=/Users/danielpenin/kloel-ab-worktrees/kloel-ab133-atomic-20260518114512
-normal_branch=ab/round133-normal-20260518114512
-atomic_branch=ab/round133-atomic-20260518114512
-mission=repeat seven-helper topology-aware tier after compacting successful atomic preprompt output

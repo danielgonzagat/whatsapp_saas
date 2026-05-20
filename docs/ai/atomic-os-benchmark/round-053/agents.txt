@@ -1,5 +1,0 @@
-normal_agent=019e35ba-3f50-76f2-9f45-06623fe409ad
-normal_nickname=Avicenna
-atomic_agent=019e35ba-3cf5-7d23-ac77-d2530d702359
-atomic_nickname=Epicurus
-started_at=2026-05-17 08:37:30 -03

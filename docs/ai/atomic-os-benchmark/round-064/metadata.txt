@@ -1,8 +1,0 @@
-round=064
-timestamp=20260517103612
-task=bounded_formatPromptValue_extraction
-normal_worktree=/private/tmp/kloel-ab064-normal-20260517103612
-atomic_worktree=/private/tmp/kloel-ab064-atomic-20260517103612
-normal_branch=bench/ab064-normal-20260517103612
-atomic_branch=bench/ab064-atomic-20260517103612
-objective=repeat current tier after round 063 zero-loss; ATOMIC uses embedded validation to increase margin before complexity escalation
