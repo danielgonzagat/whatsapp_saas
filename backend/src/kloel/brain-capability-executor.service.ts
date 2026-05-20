@@ -260,7 +260,7 @@ export class BrainCapabilityExecutorService {
       return {
         ok: true,
         data: {
-          cognitiveState: result.abi as unknown as UnknownRecord,
+          cognitiveState: result.abi as object as UnknownRecord,
           gaps,
           dissolution,
           workQueue,

@@ -20,6 +20,8 @@
  * module stays unit-testable.
  */
 
+
+import { validateLanguage } from './lang-bridge.js';
 import * as ts from 'typescript';
 import { structuralErrors } from './engine-structural.js';
 export type { EditZones } from './engine-zones.js';
@@ -45,7 +47,7 @@ export interface TextEditSpec {
 }
 
 export interface ValidationResult {
-  language: 'ts' | 'json' | 'structural' | 'generic';
+  language: 'ts' | 'json' | 'structural' | 'generic' | 'python' | 'go' | 'rust' | 'ruby' | 'shell';
   /** Syntactic-diagnostic count before the edit. */
   before: number;
   /** Syntactic-diagnostic count after the edit. */
@@ -153,6 +155,26 @@ export function validate(file: string, before: string, after: string): Validatio
       ok: aOk || !bOk, // only forbid breaking a previously-valid JSON
       introduced: !aOk && bOk ? 'edit produced invalid JSON' : undefined,
     };
+  }
+  // Try real language parser before falling back to structural balance
+  const langResult = validateLanguage(file, after);
+  if (langResult.realParser || langResult.language !== 'generic') {
+    if (langResult.realParser) {
+      // Parser was available and ran — use its result
+      const extLang = extOf(file).replace('.', '');
+      // We need the BEFORE state too — parse the original
+      const beforeResult = validateLanguage(file, before);
+      const b = beforeResult.realParser ? beforeResult.errorCount : 0;
+      const a = langResult.errorCount;
+      return {
+        language: langResult.language as ValidationResult['language'],
+        before: b,
+        after: a,
+        ok: a <= b,
+        introduced: a > b ? langResult.firstError : undefined,
+      };
+    }
+    // Parser not available — fall through to structural
   }
   if (STRUCTURAL_EXT.has(ext)) {
     const b = structuralErrors(ext, before);

@@ -1,10 +1,7 @@
-// Placeholder — concurrent-agent iterations of this service referenced
-// `KloelSale.leadName` (the schema uses `leadPhone` + `productName` and
-// links to a Lead via `leadId`). Until the migration adds those columns
-// — if it ever does — this is a no-op stub. The dispatcher falls back
-// to the `wallet_sales_tools_not_available` reply already wired in
-// `kloel-tool-dispatcher.service.ts`.
 import { Injectable } from '@nestjs/common';
+import { PrismaService } from '../prisma/prisma.service';
+
+type UnknownRecord = Record<string, unknown>;
 
 export interface WalletSalesToolResult {
   [key: string]: unknown;
@@ -15,11 +12,213 @@ export interface WalletSalesToolResult {
 
 @Injectable()
 export class KloelWalletSalesToolsService {
-  executeTool(
-    _toolName: string,
-    _workspaceId: string,
-    _args: Record<string, unknown>,
+  constructor(private readonly prisma: PrismaService) {}
+
+  private str(v: unknown, fb = ''): string {
+    return typeof v === 'string'
+      ? v
+      : typeof v === 'number' || typeof v === 'boolean'
+        ? String(v)
+        : fb;
+  }
+
+  async executeTool(
+    toolName: string,
+    workspaceId: string,
+    args: UnknownRecord,
   ): Promise<WalletSalesToolResult> {
-    return Promise.resolve({ success: false, error: 'tool_not_implemented' });
+    switch (toolName) {
+      case 'get_wallet_balance':
+        return this.getWalletBalance(workspaceId);
+      case 'get_wallet_statement':
+        return this.getWalletStatement(workspaceId, args);
+      case 'list_orders':
+        return this.listOrders(workspaceId, args);
+      case 'get_order_details':
+        return this.getOrderDetails(workspaceId, args);
+      case 'get_sales_summary':
+        return this.getSalesSummary(workspaceId, args);
+      case 'get_abandonments':
+        return this.getAbandonments(workspaceId, args);
+      default:
+        return { success: false, error: 'Unknown tool: ' + toolName };
+    }
+  }
+
+  async getWalletBalance(workspaceId: string): Promise<WalletSalesToolResult> {
+    try {
+      const paid = await this.prisma.kloelSale.aggregate({
+        where: { workspaceId, status: 'paid' },
+        _sum: { amount: true },
+      });
+      const pending = await this.prisma.kloelSale.aggregate({
+        where: { workspaceId, status: 'pending' },
+        _sum: { amount: true },
+      });
+      const refunded = await this.prisma.kloelSale.aggregate({
+        where: { workspaceId, status: 'refunded' },
+        _sum: { amount: true },
+      });
+      return {
+        success: true,
+        balance: {
+          available: (paid._sum.amount || 0) - (refunded._sum.amount || 0),
+          pending: pending._sum.amount || 0,
+          totalPaid: paid._sum.amount || 0,
+          totalRefunded: refunded._sum.amount || 0,
+          currency: 'BRL',
+        },
+      };
+    } catch (err: unknown) {
+      return { success: false, error: err instanceof Error ? err.message : 'Erro' };
+    }
+  }
+
+  async getWalletStatement(
+    workspaceId: string,
+    args: UnknownRecord,
+  ): Promise<WalletSalesToolResult> {
+    try {
+      const limit = Math.min(typeof args.limit === 'number' ? args.limit : 20, 100);
+      const sales = await this.prisma.kloelSale.findMany({
+        where: { workspaceId },
+        orderBy: { createdAt: 'desc' },
+        take: limit,
+        select: {
+          id: true,
+          amount: true,
+          status: true,
+          paymentMethod: true,
+          productName: true,
+          leadPhone: true,
+          createdAt: true,
+          metadata: true,
+        },
+      });
+      return {
+        success: true,
+        transactions: sales.map((s) => ({
+          id: s.id,
+          amount: s.amount,
+          status: s.status,
+          method: s.paymentMethod,
+          product: s.productName,
+          phone: s.leadPhone,
+          date: s.createdAt,
+        })),
+      };
+    } catch (err: unknown) {
+      return { success: false, error: err instanceof Error ? err.message : 'Erro' };
+    }
+  }
+
+  async listOrders(workspaceId: string, args: UnknownRecord): Promise<WalletSalesToolResult> {
+    try {
+      const limit = Math.min(typeof args.limit === 'number' ? args.limit : 20, 100);
+      const status = typeof args.status === 'string' ? args.status : undefined;
+      const where: UnknownRecord = { workspaceId };
+      if (status) {
+        where.status = status;
+      }
+      const orders = await this.prisma.kloelSale.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        take: limit,
+      });
+      return {
+        success: true,
+        orders: orders.map((o) => ({
+          id: o.id,
+          amount: o.amount,
+          status: o.status,
+          method: o.paymentMethod,
+          product: o.productName,
+          phone: o.leadPhone,
+          date: o.createdAt,
+        })),
+      };
+    } catch (err: unknown) {
+      return { success: false, error: err instanceof Error ? err.message : 'Erro' };
+    }
+  }
+
+  async getOrderDetails(workspaceId: string, args: UnknownRecord): Promise<WalletSalesToolResult> {
+    try {
+      const order = await this.prisma.kloelSale.findFirst({
+        where: { workspaceId, id: this.str(args.orderId) },
+      });
+      if (!order) {
+        return { success: false, error: 'Venda nao encontrada' };
+      }
+      return {
+        success: true,
+        order: {
+          id: order.id,
+          amount: order.amount,
+          status: order.status,
+          method: order.paymentMethod,
+          product: order.productName,
+          phone: order.leadPhone,
+          createdAt: order.createdAt,
+        },
+      };
+    } catch (err: unknown) {
+      return { success: false, error: err instanceof Error ? err.message : 'Erro' };
+    }
+  }
+
+  async getSalesSummary(workspaceId: string, args: UnknownRecord): Promise<WalletSalesToolResult> {
+    try {
+      const days = typeof args.days === 'number' ? args.days : 7;
+      const sales = await this.prisma.kloelSale.findMany({
+        where: { workspaceId },
+        select: { amount: true, status: true, createdAt: true },
+      });
+      const cutoff = new Date(Date.now() - days * 86400000);
+      const recent = sales.filter((s) => s.createdAt && new Date(s.createdAt) > cutoff);
+      const paid = recent.filter((s) => s.status === 'paid');
+      return {
+        success: true,
+        summary: {
+          period: days + ' dias',
+          totalSales: recent.length,
+          totalRevenue: paid.reduce((sum, s) => sum + (s.amount || 0), 0),
+          paidCount: paid.length,
+          pendingCount: recent.filter((s) => s.status === 'pending').length,
+        },
+      };
+    } catch (err: unknown) {
+      return { success: false, error: err instanceof Error ? err.message : 'Erro' };
+    }
+  }
+
+  async getAbandonments(workspaceId: string, args: UnknownRecord): Promise<WalletSalesToolResult> {
+    try {
+      const days = typeof args.days === 'number' ? args.days : 7;
+      const cutoff = new Date(Date.now() - days * 86400000);
+      const list = await this.prisma.kloelSale.findMany({
+        where: {
+          workspaceId,
+          status: { in: ['pending', 'cancelled', 'overdue'] },
+          createdAt: { gte: cutoff },
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 50,
+      });
+      return {
+        success: true,
+        abandonments: list.map((a) => ({
+          id: a.id,
+          amount: a.amount,
+          status: a.status,
+          product: a.productName,
+          phone: a.leadPhone,
+          date: a.createdAt,
+        })),
+        total: list.length,
+      };
+    } catch (err: unknown) {
+      return { success: false, error: err instanceof Error ? err.message : 'Erro' };
+    }
   }
 }

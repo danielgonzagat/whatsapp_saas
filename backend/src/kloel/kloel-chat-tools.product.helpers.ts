@@ -293,11 +293,11 @@ export async function runToggleTheme(
   try {
     await prisma.kloelMemory.upsert({
       where: { workspaceId_key: { workspaceId, key: 'uiTheme' } },
-      update: { value: theme as unknown as object, category: 'preferences' },
+      update: { value: { theme }, category: 'preferences' },
       create: {
         workspaceId,
         key: 'uiTheme',
-        value: theme as unknown as object,
+        value: { theme },
         category: 'preferences',
       },
     });
