@@ -34,7 +34,7 @@ const WATCH = argv.includes('--watch');
 const DRY = argv.includes('--dry-run');
 const PR_FILTER = argv.find((a) => a.startsWith('--pr='))?.split('=')[1];
 const LABEL_FILTER = argv.find((a) => a.startsWith('--label='))?.split('=')[1];
-const PREFIX_FILTER = argv.find((a) => a.startsWith('--prefix='))?.split('=')[1] || 'auto/,chore/batch-';
+const PREFIX_FILTER = argv.find((a) => a.startsWith('--prefix='))?.split('=')[1] || 'auto/,chore/batch-,chore/decompose-';
 const PREFIXES = PREFIX_FILTER.split(',').filter(Boolean);
 const POLL_MS = Number(argv.find((a) => a.startsWith('--poll-ms='))?.split('=')[1] || 300_000);
 
