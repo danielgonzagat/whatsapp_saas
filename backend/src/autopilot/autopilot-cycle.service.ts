@@ -13,6 +13,10 @@ import { AutopilotCycleMoneyService } from './autopilot-cycle-money.service';
 
 /** Legacy autopilot execution cycle: conversation processing, compliance. */
 @Injectable()
+/**
+ * @cluster whatsapp_saas/backend/autopilot
+ * L11 multi-agent TaskGraph annotation (batched by tools/auto-pr/batch-job.mjs).
+ */
 export class AutopilotCycleService {
   private readonly logger = StructuredLogger.from(AutopilotCycleService.name);
 

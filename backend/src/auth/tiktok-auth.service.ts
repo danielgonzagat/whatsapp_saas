@@ -10,6 +10,10 @@ import { getTraceHeaders } from '../common/trace-headers';
 import { GoogleVerifiedProfile } from './google-auth.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
 
+/**
+ * @cluster whatsapp_saas/backend/auth
+ * L11 multi-agent TaskGraph annotation (batched by tools/auto-pr/batch-job.mjs).
+ */
 const TIKTOK_AUTHORIZE_TOKEN_URL = 'https://open.tiktokapis.com/v2/oauth/token/';
 const TIKTOK_USER_INFO_URL =
   'https://open.tiktokapis.com/v2/user/info/?fields=open_id,union_id,display_name,avatar_url';

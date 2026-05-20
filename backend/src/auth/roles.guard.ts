@@ -4,6 +4,10 @@ import { ROLES_METADATA } from './roles.decorator';
 
 /** Roles guard. */
 @Injectable()
+/**
+ * @cluster whatsapp_saas/backend/auth
+ * L11 multi-agent TaskGraph annotation (batched by tools/auto-pr/batch-job.mjs).
+ */
 export class RolesGuard implements CanActivate {
   constructor(private reflector: Reflector) {}
 

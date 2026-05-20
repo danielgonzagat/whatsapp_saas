@@ -11,6 +11,10 @@ import { BillingCheckoutWebhookService } from './billing-checkout-webhook.servic
 import { BillingSubscriptionService } from './billing-subscription.service';
 
 @Injectable()
+/**
+ * @cluster whatsapp_saas/backend/billing
+ * L11 multi-agent TaskGraph annotation (batched by tools/auto-pr/batch-job.mjs).
+ */
 export class BillingService {
   private readonly logger = StructuredLogger.from(BillingService.name);
   private stripe!: StripeClient;

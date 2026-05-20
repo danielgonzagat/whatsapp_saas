@@ -8,6 +8,10 @@ import { PrismaService } from '../prisma/prisma.service';
 import type { StripeClient, StripeSubscription } from './stripe-types';
 import type { WhatsappNotifier } from './billing-webhook.types';
 
+/**
+ * @cluster whatsapp_saas/backend/billing
+ * L11 multi-agent TaskGraph annotation (batched by tools/auto-pr/batch-job.mjs).
+ */
 export class BillingCheckoutHelperService {
   private readonly logger = StructuredLogger.from(BillingCheckoutHelperService.name);
 

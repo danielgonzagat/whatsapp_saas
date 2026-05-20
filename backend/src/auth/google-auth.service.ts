@@ -8,6 +8,10 @@ import { StructuredLogger } from '../logging/structured-logger';
 import { LoginTicket, OAuth2Client, TokenPayload } from 'google-auth-library';
 import { getTraceHeaders } from '../common/trace-headers';
 
+/**
+ * @cluster whatsapp_saas/backend/auth
+ * L11 multi-agent TaskGraph annotation (batched by tools/auto-pr/batch-job.mjs).
+ */
 const W_RE = /[\W_]+/g;
 
 const AUDIENCE_ISSUER_TOKEN_US_RE =

@@ -14,6 +14,10 @@ import {
 } from '../common/utils/unsubscribe-footer.util';
 
 /** Names of every HTML template shipped with the auth module. */
+/**
+ * @cluster whatsapp_saas/backend/auth
+ * L11 multi-agent TaskGraph annotation (batched by tools/auto-pr/batch-job.mjs).
+ */
 type TemplateName =
   | 'password-reset'
   | 'verification'

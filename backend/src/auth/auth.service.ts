@@ -38,6 +38,10 @@ import {
 
 /** Auth service. */
 @Injectable()
+/**
+ * @cluster whatsapp_saas/backend/auth
+ * L11 multi-agent TaskGraph annotation (batched by tools/auto-pr/batch-job.mjs).
+ */
 export class AuthService {
   private readonly logger = StructuredLogger.from(AuthService.name);
 
