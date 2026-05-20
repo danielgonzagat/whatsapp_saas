@@ -2,11 +2,8 @@ import { createHash, randomBytes } from 'node:crypto';
 import { UnauthorizedException } from '@nestjs/common';
 import type { Prisma } from '@prisma/client';
 
-export function normalizeEmail(email: string): string {
-  return String(email || '')
-    .trim()
-    .toLowerCase();
-}
+import { normalizeEmail } from '../common/string';
+export { normalizeEmail };
 
 export function assertAgentCanAuthenticate(agent: {
   disabledAt?: Date | null;

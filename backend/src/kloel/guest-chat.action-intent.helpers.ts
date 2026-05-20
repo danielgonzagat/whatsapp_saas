@@ -5,11 +5,14 @@ export function detectActionIntent(
   if (/cria(r|ndo)? (produto|oferta|novo)/.test(msg) || /cadastra(r|ndo)? produto/.test(msg)) {
     return { tool: 'create_product', args: extractProductArgs(msg) };
   }
-  if (/lista(r|ndo)? (produtos|meus produtos|ofertas)/.test(msg)) {
+  if (/lista(r|ndo)? (produtos|meus produtos|ofertas|cat[aá]logo)/.test(msg)) {
     return { tool: 'list_products', args: {} };
   }
-  if (/edita(r|ndo)? produto|atualiza(r|ndo)? produto/.test(msg)) {
+  if (/edita(r|ndo)? produto|atualiza(r|ndo)? produto|muda(r|ndo)? produto|alterar produto/.test(msg)) {
     return { tool: 'update_product', args: extractProductArgs(msg) };
+  }
+  if (/(apaga(r|ndo)?|deleta(r|ndo)?|exclui(r|ndo)?|remove(r|ndo)?) produto/.test(msg)) {
+    return { tool: 'delete_product', args: { productName: extractProductName(msg) } };
   }
   if (/cria(r|ndo)? (plano|parcelamento)/.test(msg)) {
     return { tool: 'create_plan', args: { productName: extractProductName(msg) } };
@@ -32,7 +35,7 @@ export function detectActionIntent(
   if (/(minhas )?vendas|pedidos/.test(msg)) {
     return { tool: 'list_orders', args: {} };
   }
-  if (/abandonos|abandonou/.test(msg)) {
+  if (/abandonos|abandonou|carrinho abandonado/.test(msg)) {
     return { tool: 'get_abandonments', args: {} };
   }
   if (/relatorio|resumo.*venda/.test(msg)) {
@@ -40,6 +43,15 @@ export function detectActionIntent(
   }
   if (/modo (escuro|claro)|tema|dark mode/.test(msg)) {
     return { tool: 'toggle_theme', args: { theme: /escuro|dark/.test(msg) ? 'dark' : 'light' } };
+  }
+  if (/(meus |minhas )?configura[cç][oõ]es|dados (pessoais|fiscais|banc[aá]rios)/.test(msg)) {
+    return { tool: 'get_settings', args: {} };
+  }
+  if (/extrato|hist[oó]rico.*financeiro/.test(msg)) {
+    return { tool: 'get_wallet_statement', args: {} };
+  }
+  if (/saque|solicitar saque/.test(msg)) {
+    return { tool: 'request_withdrawal', args: {} };
   }
   return null;
 }
@@ -57,7 +69,10 @@ export function extractProductArgs(msg: string): Record<string, unknown> {
   if (name) {
     args.name = name;
   }
-  const pm = msg.match(/R\$\s*(\d+[.,]?\d*)/);
+  // "R$ 147", "R$147", "preco 147", "preço 147", "147 reais", "R$ 147,00"
+  const pm = msg.match(/(?:R\$\s*|pre[çc]o\s+)(\d+[.,]?\d*)/i) ||
+             msg.match(/(\d+[.,]?\d*)\s*(?:reais|real)/i) ||
+             msg.match(/R\$\s*(\d+[.,]?\d*)/i);
   if (pm) {
     args.price = parseFloat(pm[1].replace(',', '.'));
   }
