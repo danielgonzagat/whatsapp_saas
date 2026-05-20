@@ -125,3 +125,7 @@ SESSION_STATE.md
 tools/loop-runner/
 tools/test-affected/
 artifacts/pulse-liquefaction/
+
+# runtime state moved from root
+state/HUD_LAST_REFRESH.json
+state/FINDINGS_AGGREGATE.json
