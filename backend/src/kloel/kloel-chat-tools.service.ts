@@ -910,35 +910,35 @@ export class KloelChatToolsService {
   }
   // === STUB TOOLS (not yet implemented in service; dispatcher references them) ===
 
-  async toolCreatePlan(_workspaceId: string, _args: unknown): Promise<ToolResult> {
-    return { success: false, error: 'tool_not_implemented' };
+  toolCreatePlan(_workspaceId: string, _args: unknown): Promise<ToolResult> {
+    return Promise.resolve({ success: false, error: 'tool_not_implemented' });
   }
 
-  async toolUpdatePlan(_workspaceId: string, _args: unknown): Promise<ToolResult> {
-    return { success: false, error: 'tool_not_implemented' };
+  toolUpdatePlan(_workspaceId: string, _args: unknown): Promise<ToolResult> {
+    return Promise.resolve({ success: false, error: 'tool_not_implemented' });
   }
 
-  async toolCreateCheckout(_workspaceId: string, _args: unknown): Promise<ToolResult> {
-    return { success: false, error: 'tool_not_implemented' };
+  toolCreateCheckout(_workspaceId: string, _args: unknown): Promise<ToolResult> {
+    return Promise.resolve({ success: false, error: 'tool_not_implemented' });
   }
 
-  async toolUpdateCheckout(_workspaceId: string, _args: unknown): Promise<ToolResult> {
-    return { success: false, error: 'tool_not_implemented' };
+  toolUpdateCheckout(_workspaceId: string, _args: unknown): Promise<ToolResult> {
+    return Promise.resolve({ success: false, error: 'tool_not_implemented' });
   }
 
-  async toolCreateCoupon(_workspaceId: string, _args: unknown): Promise<ToolResult> {
-    return { success: false, error: 'tool_not_implemented' };
+  toolCreateCoupon(_workspaceId: string, _args: unknown): Promise<ToolResult> {
+    return Promise.resolve({ success: false, error: 'tool_not_implemented' });
   }
 
-  async toolListCoupons(_workspaceId: string, _args: unknown): Promise<ToolResult> {
-    return { success: false, error: 'tool_not_implemented' };
+  toolListCoupons(_workspaceId: string, _args: unknown): Promise<ToolResult> {
+    return Promise.resolve({ success: false, error: 'tool_not_implemented' });
   }
 
-  async toolDeleteCoupon(_workspaceId: string, _args: unknown): Promise<ToolResult> {
-    return { success: false, error: 'tool_not_implemented' };
+  toolDeleteCoupon(_workspaceId: string, _args: unknown): Promise<ToolResult> {
+    return Promise.resolve({ success: false, error: 'tool_not_implemented' });
   }
 
-  async toolGenerateBoleto(_workspaceId: string, _args: unknown): Promise<ToolResult> {
-    return { success: false, error: 'tool_not_implemented' };
+  toolGenerateBoleto(_workspaceId: string, _args: unknown): Promise<ToolResult> {
+    return Promise.resolve({ success: false, error: 'tool_not_implemented' });
   }
 }
