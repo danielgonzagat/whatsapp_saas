@@ -201,12 +201,8 @@ export interface EvidenceInput {
 import { clamp } from '../../common/math';
 export { clamp };
 
-export function filterByWorkspace(
-  events: readonly SpineEventRef[],
-  workspaceId: string,
-): readonly SpineEventRef[] {
-  return events.filter((e) => e.workspaceId === workspaceId);
-}
+import { filterByWorkspace } from '../spine-events.helpers';
+export { filterByWorkspace };
 
 export function assetStrengthFromScore(score: number): AssetStrength {
   if (score >= 0.75) return 'formidable';

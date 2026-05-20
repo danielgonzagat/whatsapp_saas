@@ -140,9 +140,5 @@ export interface DetectionInput {
 import { clamp, daysSince } from '../../common/math';
 export { clamp, daysSince };
 
-export function filterByWorkspace(
-  events: readonly SpineEventRef[],
-  workspaceId: string,
-): readonly SpineEventRef[] {
-  return events.filter((e) => e.workspaceId === workspaceId);
-}
+import { filterByWorkspace } from '../spine-events.helpers';
+export { filterByWorkspace };

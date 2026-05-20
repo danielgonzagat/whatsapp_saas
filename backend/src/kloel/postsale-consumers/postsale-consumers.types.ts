@@ -230,29 +230,8 @@ export interface DetectionInput {
 
 import { clamp, daysSince } from '../../common/math';
 export { clamp, daysSince };
-export function filterByWorkspace(
-  events: readonly SpineEventRef[],
-  workspaceId: string,
-): readonly SpineEventRef[] {
-  return events.filter((e) => e.workspaceId === workspaceId);
-}
-
-export function filterByWorkspaceAndEntity(
-  events: readonly SpineEventRef[],
-  workspaceId: string,
-  entityRef?: { readonly entityType: string; readonly entityId: string },
-): readonly SpineEventRef[] {
-  const workspaceEvents = filterByWorkspace(events, workspaceId);
-  if (!entityRef) {
-    return workspaceEvents;
-  }
-
-  return workspaceEvents.filter(
-    (event) =>
-      event.entityRef?.entityType === entityRef.entityType &&
-      event.entityRef.entityId === entityRef.entityId,
-  );
-}
+import { filterByWorkspace, filterByWorkspaceAndEntity } from '../spine-events.helpers';
+export { filterByWorkspace, filterByWorkspaceAndEntity };
 
 export function latestEvent(
   events: readonly SpineEventRef[],

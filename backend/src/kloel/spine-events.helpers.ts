@@ -34,7 +34,9 @@ export function filterByWorkspaceAndEntity(
   entityRef?: { readonly entityType: string; readonly entityId: string },
 ): readonly SpineEventRef[] {
   const workspaceEvents = filterByWorkspace(events, workspaceId);
-  if (!entityRef) return workspaceEvents;
+  if (!entityRef) {
+    return workspaceEvents;
+  }
   return workspaceEvents.filter(
     (event) =>
       event.entityRef?.entityType === entityRef.entityType &&
