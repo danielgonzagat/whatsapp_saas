@@ -15,6 +15,8 @@ import { buildLintResidueActionCandidates, applyKnownLintResidueFixes } from './
 import { ok, fail, commit, type ToolOk } from './server-helpers-result.js';
 import { commitSemantic } from './server-helpers-commit-semantic.js';
 import { replaceCalleeKeepArgs, replaceCallArg, insertCallArg, removeCallArg } from './engine-ops.js';
+import { universalReplaceLiteral, universalReplacePropertyValue, universalRenamePropertyKey } from './engine-universal.js';
+import { replaceOperator, reorderListItem, changeSignature, replaceBodyKeepSignature, addDecorator, replaceDecorator, moveIntoScope } from './engine-complete.js';
 
 
 export function registerToolsA(server: McpServer): void {
@@ -373,5 +375,301 @@ server.registerTool(
     }
   },
 );
+
+// ──────────────────────── v5: call/argument operations (all languages) ──
+
+server.registerTool(
+  'atomic_replace_callee',
+  {
+    title: 'Replace function/method name — preserve all arguments',
+    description:
+      'Replace the callee at a call site, preserving all arguments exactly. Works on every language. ' +
+      'Example: sendMessage(phone, content) → sendTemplateMessage(phone, content).',
+    inputSchema: {
+      file: z.string(),
+      line: z.number().int().min(1).describe('Line of the call expression'),
+      column: z.number().int().min(1).describe('Column within the callee identifier'),
+      newCallee: z.string().describe('Replacement function/method name'),
+      preview: z.boolean().optional().describe('dry-run: validate + show result, do not write'),
+    },
+  },
+  async (a) => {
+    try {
+      const { absPath, relPath } = resolveSafeTarget(a.file);
+      const before = readUtf8(absPath);
+      const r = replaceCalleeKeepArgs(relPath, before, a.line, a.column, a.newCallee);
+      if (!r.validation.ok) return fail('rejected: ' + (r.validation.introduced ?? 'syntax regression'));
+      if (r.newText === before) return ok({ ok: true, changed: false, note: 'callee already matches', file: relPath });
+      if (a.preview ?? false) return ok({ ok: true, preview: true, changed: false, file: relPath, oldCallee: r.oldCallee, newCallee: r.newCallee });
+      atomicWrite(absPath, r.newText);
+      return ok({ ok: true, changed: true, file: relPath, oldCallee: r.oldCallee, newCallee: r.newCallee });
+    } catch (e) { return fail(e instanceof Error ? e.message : String(e)); }
+  },
+);
+
+server.registerTool(
+  'atomic_replace_arg',
+  {
+    title: 'Replace one argument in a call — preserve everything else',
+    description: 'Replace arg at argIndex (0-based) in a call. Works on every language. Example: foo(a, old, c)→foo(a, new, c).',
+    inputSchema: {
+      file: z.string(),
+      line: z.number().int().min(1), column: z.number().int().min(1),
+      argIndex: z.number().int().min(0).describe('0-based argument index'),
+      newText: z.string().describe('Replacement argument text'),
+      preview: z.boolean().optional(),
+    },
+  },
+  async (a) => {
+    try {
+      const { absPath, relPath } = resolveSafeTarget(a.file);
+      const before = readUtf8(absPath);
+      const r = replaceCallArg(relPath, before, a.line, a.column, a.argIndex, a.newText);
+      if (!r.validation.ok) return fail('rejected: ' + (r.validation.introduced ?? 'syntax regression'));
+      if (r.newText === before) return ok({ ok: true, changed: false, note: 'no change', file: relPath });
+      if (a.preview ?? false) return ok({ ok: true, preview: true, changed: false, file: relPath });
+      atomicWrite(absPath, r.newText);
+      return ok({ ok: true, changed: true, file: relPath });
+    } catch (e) { return fail(e instanceof Error ? e.message : String(e)); }
+  },
+);
+
+server.registerTool(
+  'atomic_insert_arg',
+  {
+    title: 'Insert a new argument into a call',
+    description: 'Insert newText at argIndex (0-based). Example: foo(a,c)→foo(a,b,c).',
+    inputSchema: {
+      file: z.string(),
+      line: z.number().int().min(1), column: z.number().int().min(1),
+      argIndex: z.number().int().min(0).describe('0-based insertion position'),
+      newText: z.string().describe('New argument text'),
+      preview: z.boolean().optional(),
+    },
+  },
+  async (a) => {
+    try {
+      const { absPath, relPath } = resolveSafeTarget(a.file);
+      const before = readUtf8(absPath);
+      const r = insertCallArg(relPath, before, a.line, a.column, a.argIndex, a.newText);
+      if (!r.validation.ok) return fail('rejected: ' + (r.validation.introduced ?? 'syntax regression'));
+      if (a.preview ?? false) return ok({ ok: true, preview: true, changed: false, file: relPath });
+      atomicWrite(absPath, r.newText);
+      return ok({ ok: true, changed: true, file: relPath });
+    } catch (e) { return fail(e instanceof Error ? e.message : String(e)); }
+  },
+);
+
+server.registerTool(
+  'atomic_remove_arg',
+  {
+    title: 'Remove an argument from a call',
+    description: 'Remove arg at argIndex (0-based). Cleans up commas. Example: bar(x,y,z)→bar(x,z).',
+    inputSchema: {
+      file: z.string(),
+      line: z.number().int().min(1), column: z.number().int().min(1),
+      argIndex: z.number().int().min(0).describe('0-based argument index to remove'),
+      preview: z.boolean().optional(),
+    },
+  },
+  async (a) => {
+    try {
+      const { absPath, relPath } = resolveSafeTarget(a.file);
+      const before = readUtf8(absPath);
+      const r = removeCallArg(relPath, before, a.line, a.column, a.argIndex);
+      if (!r.validation.ok) return fail('rejected: ' + (r.validation.introduced ?? 'syntax regression'));
+      if (r.newText === before) return ok({ ok: true, changed: false, note: 'no change', file: relPath });
+      if (a.preview ?? false) return ok({ ok: true, preview: true, changed: false, file: relPath });
+      atomicWrite(absPath, r.newText);
+      return ok({ ok: true, changed: true, file: relPath });
+    } catch (e) { return fail(e instanceof Error ? e.message : String(e)); }
+  },
+);
+
+// ──────────────────────── v6: universal literal/property ops ──────────
+
+server.registerTool(
+  'atomic_replace_literal_universal',
+  {
+    title: 'Replace a literal value — every language',
+    description: 'Replace string/number/boolean/null at line:column. Works on every language.',
+    inputSchema: {
+      file: z.string(), line: z.number().int().min(1), column: z.number().int().min(1),
+      newLiteral: z.string().describe('Replacement source text'),
+      preview: z.boolean().optional(),
+    },
+  },
+  async (a) => {
+    try {
+      const { absPath, relPath } = resolveSafeTarget(a.file);
+      const before = readUtf8(absPath);
+      const r = universalReplaceLiteral(relPath, before, a.line, a.column, a.newLiteral);
+      if (!r.validation.ok) return fail('rejected: ' + (r.validation.introduced ?? 'syntax regression'));
+      if (r.newText === before) return ok({ ok: true, changed: false, note: 'no change', file: relPath });
+      if (a.preview ?? false) return ok({ ok: true, preview: true, changed: false, file: relPath, oldText: r.oldText, newLiteral: r.newLiteral });
+      atomicWrite(absPath, r.newText);
+      return ok({ ok: true, changed: true, file: relPath, oldText: r.oldText, newLiteral: r.newLiteral });
+    } catch (e) { return fail(e instanceof Error ? e.message : String(e)); }
+  },
+);
+
+server.registerTool(
+  'atomic_replace_property_value_universal',
+  {
+    title: 'Replace property value — every language',
+    description: 'Replace value of property preserving key. Detects colon/equals/TOML/YAML style.',
+    inputSchema: { file: z.string(), property: z.string(), value: z.string(), preview: z.boolean().optional() },
+  },
+  async (a) => {
+    try {
+      const { absPath, relPath } = resolveSafeTarget(a.file);
+      const before = readUtf8(absPath);
+      const r = universalReplacePropertyValue(relPath, before, a.property, a.value);
+      if (!r.validation.ok) return fail('rejected: ' + (r.validation.introduced ?? 'syntax regression'));
+      if (r.newText === before) return ok({ ok: true, changed: false, note: 'no change', file: relPath });
+      if (a.preview ?? false) return ok({ ok: true, preview: true, changed: false, file: relPath, key: r.key, oldValue: r.oldValue, newValue: r.newValue });
+      atomicWrite(absPath, r.newText);
+      return ok({ ok: true, changed: true, file: relPath, key: r.key, oldValue: r.oldValue, newValue: r.newValue });
+    } catch (e) { return fail(e instanceof Error ? e.message : String(e)); }
+  },
+);
+
+server.registerTool(
+  'atomic_rename_property_key_universal',
+  {
+    title: 'Rename property key — preserve value — every language',
+    description: 'Rename property key preserving its value. Works on every language style.',
+    inputSchema: { file: z.string(), property: z.string(), newKey: z.string(), preview: z.boolean().optional() },
+  },
+  async (a) => {
+    try {
+      const { absPath, relPath } = resolveSafeTarget(a.file);
+      const before = readUtf8(absPath);
+      const r = universalRenamePropertyKey(relPath, before, a.property, a.newKey);
+      if (!r.validation.ok) return fail('rejected: ' + (r.validation.introduced ?? 'syntax regression'));
+      if (a.preview ?? false) return ok({ ok: true, preview: true, changed: false, file: relPath, key: r.key, newKey: r.newKey });
+      atomicWrite(absPath, r.newText);
+      return ok({ ok: true, changed: true, file: relPath, key: r.key, newKey: r.newKey });
+    } catch (e) { return fail(e instanceof Error ? e.message : String(e)); }
+  },
+);
+
+// ──────────────────────── v7: complete topology ops ──────────────
+
+server.registerTool('atomic_replace_operator', {
+  title: 'Replace binary/logical operator — preserve operands',
+  description: 'Replace operator at line:column. Example: if (count < limit) → if (count <= limit).',
+  inputSchema: { file: z.string(), line: z.number().int().min(1), column: z.number().int().min(1), newOp: z.string(), preview: z.boolean().optional() },
+}, async (a) => {
+  try {
+    const { absPath, relPath } = resolveSafeTarget(a.file);
+    const before = readUtf8(absPath);
+    const r = replaceOperator(relPath, before, a.line, a.column, a.newOp);
+    if (!r.validation.ok) return fail('rejected: ' + (r.validation.introduced ?? 'syntax regression'));
+    if (r.newText === before) return ok({ ok: true, changed: false, note: 'operator already matches', file: relPath });
+    if (a.preview ?? false) return ok({ ok: true, preview: true, changed: false, file: relPath, oldOp: r.oldOp, newOp: r.newOp });
+    atomicWrite(absPath, r.newText);
+    return ok({ ok: true, changed: true, file: relPath, oldOp: r.oldOp, newOp: r.newOp });
+  } catch (e) { return fail(e instanceof Error ? e.message : String(e)); }
+});
+
+server.registerTool('atomic_reorder_list', {
+  title: 'Move item in comma-separated list — tracked as movement',
+  description: 'Move item fromIndex→toIndex in a { } ( ) or [ ] list. Tracked as movement, not delete+create.',
+  inputSchema: { file: z.string(), line: z.number().int().min(1), column: z.number().int().min(1), fromIndex: z.number().int().min(0), toIndex: z.number().int().min(0), preview: z.boolean().optional() },
+}, async (a) => {
+  try {
+    const { absPath, relPath } = resolveSafeTarget(a.file);
+    const before = readUtf8(absPath);
+    const r = reorderListItem(relPath, before, a.line, a.column, a.fromIndex, a.toIndex);
+    if (!r.validation.ok) return fail('rejected: ' + (r.validation.introduced ?? 'syntax regression'));
+    if (r.newText === before) return ok({ ok: true, changed: false, file: relPath });
+    if (a.preview ?? false) return ok({ ok: true, preview: true, changed: false, file: relPath, moved: r.moved, fromIndex: r.fromIndex, toIndex: r.toIndex });
+    atomicWrite(absPath, r.newText);
+    return ok({ ok: true, changed: true, file: relPath, moved: r.moved, fromIndex: r.fromIndex, toIndex: r.toIndex });
+  } catch (e) { return fail(e instanceof Error ? e.message : String(e)); }
+});
+
+server.registerTool('atomic_change_signature', {
+  title: 'Change function signature — preserve body',
+  description: 'Modes: rename_param, add_param, remove_param, add_return_type. Preserves body byte-exact.',
+  inputSchema: { file: z.string(), fnLine: z.number().int().min(1), fnColumn: z.number().int().min(1), mode: z.enum(['rename_param', 'add_param', 'remove_param', 'add_return_type']), paramIndex: z.number().int().min(-1), newValue: z.string(), preview: z.boolean().optional() },
+}, async (a) => {
+  try {
+    const { absPath, relPath } = resolveSafeTarget(a.file);
+    const before = readUtf8(absPath);
+    const r = changeSignature(relPath, before, a.fnLine, a.fnColumn, a.mode, a.paramIndex, a.newValue);
+    if (!r.validation.ok) return fail('rejected: ' + (r.validation.introduced ?? 'syntax regression'));
+    if (r.newText === before) return ok({ ok: true, changed: false, file: relPath });
+    if (a.preview ?? false) return ok({ ok: true, preview: true, changed: false, file: relPath });
+    atomicWrite(absPath, r.newText);
+    return ok({ ok: true, changed: true, file: relPath });
+  } catch (e) { return fail(e instanceof Error ? e.message : String(e)); }
+});
+
+server.registerTool('atomic_replace_body', {
+  title: 'Replace function body — preserve signature',
+  description: 'Swap function/method implementation while keeping signature byte-exact.',
+  inputSchema: { file: z.string(), fnLine: z.number().int().min(1), fnColumn: z.number().int().min(1), newBody: z.string(), preview: z.boolean().optional() },
+}, async (a) => {
+  try {
+    const { absPath, relPath } = resolveSafeTarget(a.file);
+    const before = readUtf8(absPath);
+    const r = replaceBodyKeepSignature(relPath, before, a.fnLine, a.fnColumn, a.newBody);
+    if (!r.validation.ok) return fail('rejected: ' + (r.validation.introduced ?? 'syntax regression'));
+    if (a.preview ?? false) return ok({ ok: true, preview: true, changed: false, file: relPath });
+    atomicWrite(absPath, r.newText);
+    return ok({ ok: true, changed: true, file: relPath });
+  } catch (e) { return fail(e instanceof Error ? e.message : String(e)); }
+});
+
+server.registerTool('atomic_add_decorator', {
+  title: 'Add decorator/annotation before function/method/class',
+  description: 'Add @decorator, @Annotation, #[attr] etc. preserving the target.',
+  inputSchema: { file: z.string(), targetLine: z.number().int().min(2), decorator: z.string().describe('e.g. "@auth.requires_login" or "@UseGuards(AuthGuard)"'), preview: z.boolean().optional() },
+}, async (a) => {
+  try {
+    const { absPath, relPath } = resolveSafeTarget(a.file);
+    const before = readUtf8(absPath);
+    const r = addDecorator(relPath, before, a.targetLine, a.decorator);
+    if (!r.validation.ok) return fail('rejected: ' + (r.validation.introduced ?? 'syntax regression'));
+    if (a.preview ?? false) return ok({ ok: true, preview: true, changed: false, file: relPath });
+    atomicWrite(absPath, r.newText);
+    return ok({ ok: true, changed: true, file: relPath });
+  } catch (e) { return fail(e instanceof Error ? e.message : String(e)); }
+});
+
+server.registerTool('atomic_replace_decorator', {
+  title: 'Replace a decorator/annotation — preserve target',
+  description: 'Swap decorator on line before target. Finds the matching decorator and replaces it.',
+  inputSchema: { file: z.string(), targetLine: z.number().int().min(2), oldDecorator: z.string(), newDecorator: z.string(), preview: z.boolean().optional() },
+}, async (a) => {
+  try {
+    const { absPath, relPath } = resolveSafeTarget(a.file);
+    const before = readUtf8(absPath);
+    const r = replaceDecorator(relPath, before, a.targetLine, a.oldDecorator, a.newDecorator);
+    if (!r.validation.ok) return fail('rejected: ' + (r.validation.introduced ?? 'syntax regression'));
+    if (a.preview ?? false) return ok({ ok: true, preview: true, changed: false, file: relPath });
+    atomicWrite(absPath, r.newText);
+    return ok({ ok: true, changed: true, file: relPath });
+  } catch (e) { return fail(e instanceof Error ? e.message : String(e)); }
+});
+
+server.registerTool('atomic_move_into_scope', {
+  title: 'Move lines into a scope (if/try/with) — preserve content',
+  description: 'Wrap lines startLine..endLine in a new scope. Re-indents preserved content. Example: move lines into try/catch.',
+  inputSchema: { file: z.string(), startLine: z.number().int().min(1), endLine: z.number().int().min(1), scopeHeader: z.string().describe('e.g. "if (user != null) {" or "try:"'), scopeFooter: z.string().describe('e.g. "}" or "" for Python'), preview: z.boolean().optional() },
+}, async (a) => {
+  try {
+    const { absPath, relPath } = resolveSafeTarget(a.file);
+    const before = readUtf8(absPath);
+    const r = moveIntoScope(relPath, before, a.startLine, a.endLine, a.scopeHeader, a.scopeFooter);
+    if (!r.validation.ok) return fail('rejected: ' + (r.validation.introduced ?? 'syntax regression'));
+    if (r.newText === before) return ok({ ok: true, changed: false, file: relPath });
+    if (a.preview ?? false) return ok({ ok: true, preview: true, changed: false, file: relPath });
+    atomicWrite(absPath, r.newText);
+    return ok({ ok: true, changed: true, file: relPath });
+  } catch (e) { return fail(e instanceof Error ? e.message : String(e)); }
+});
 
 }

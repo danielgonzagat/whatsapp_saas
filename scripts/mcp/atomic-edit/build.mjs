@@ -23,6 +23,8 @@ const ENTRY = [
   'engine.ts',
   'engine-rename.ts',
   'engine-ops.ts',
+  'engine-universal.ts',
+  'engine-complete.ts',
   'lang-bridge.ts',
   'guard.ts',
   'nav.ts',
