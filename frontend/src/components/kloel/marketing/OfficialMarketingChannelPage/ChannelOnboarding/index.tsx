@@ -6,8 +6,6 @@ import { useOfficialMarketingChannel } from '../use-official-marketing-channel';
 import { useOnboardingPalette } from './use-onboarding-palette';
 import {
   SORA,
-  MONO,
-  PILL_RADIUS,
   CHANNEL_COPY,
   TONE_VALUES,
   EDGE_VALUES,
@@ -132,7 +130,7 @@ export function ChannelOnboarding({ channel, initialStep }: Props) {
       return (
         <StepConnect
           C={C}
-          provider={copy.provider}
+          sub={copy.sub}
           verb={copy.verb}
           busy={busy}
           onConnect={handleConnect}
@@ -232,24 +230,7 @@ export function ChannelOnboarding({ channel, initialStep }: Props) {
             gap: 18,
           }}
         >
-          <div
-            style={{
-              fontFamily: MONO,
-              fontSize: 10.5,
-              letterSpacing: 1.8,
-              textTransform: 'uppercase',
-              color: C.muted,
-              background: C.glass,
-              backdropFilter: 'blur(20px)',
-              WebkitBackdropFilter: 'blur(20px)',
-              border: `1px solid ${C.border}`,
-              borderRadius: PILL_RADIUS,
-              padding: '8px 18px',
-              boxShadow: C.glassShadow === 'none' ? undefined : C.glassShadow,
-            }}
-          >
-            {copy.pill}
-          </div>
+          <Chip C={C}>{copy.provider}</Chip>
           {awakened ? null : <StepBar step={Math.min(glyphStep, 3)} C={C} />}
         </div>
 
