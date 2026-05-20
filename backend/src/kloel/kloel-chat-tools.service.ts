@@ -557,8 +557,7 @@ export class KloelChatToolsService {
   // === PRODUCT MANAGEMENT TOOL DELEGATORS ===
 
   toolUpdateProduct(workspaceId: string, args: Record<string, unknown>): Promise<ToolResult> {
-    type A = Parameters<typeof runUpdateProduct>[2];
-    return runUpdateProduct(this.prisma, workspaceId, args as A);
+    return runUpdateProduct(this.prisma, workspaceId, args as never);
   }
   toolGetProductPlans(workspaceId: string, args: { productId: string }): Promise<ToolResult> {
     return runGetProductPlans(this.prisma, workspaceId, args);
@@ -573,15 +572,13 @@ export class KloelChatToolsService {
     return runGetProductAiConfig(this.prisma, workspaceId, args);
   }
   toolValidateCoupon(_workspaceId: string, args: Record<string, unknown>): Promise<ToolResult> {
-    type A = Parameters<typeof runValidateCoupon>[2];
-    return runValidateCoupon(this.prisma, _workspaceId, args as A);
+    return runValidateCoupon(this.prisma, _workspaceId, args as never);
   }
   toolGetAnalytics(workspaceId: string, args: Record<string, unknown>): Promise<ToolResult> {
-    return runGetAnalytics(this.prisma, workspaceId, args as Parameters<typeof runGetAnalytics>[2]);
+    return runGetAnalytics(this.prisma, workspaceId, args as never);
   }
   toolCreateBroadcast(workspaceId: string, args: Record<string, unknown>): Promise<ToolResult> {
-    type A = Parameters<typeof runCreateBroadcast>[2];
-    return runCreateBroadcast(this.prisma, workspaceId, args as A);
+    return runCreateBroadcast(this.prisma, workspaceId, args as never);
   }
   toolConfigureAiPersona(workspaceId: string, args: Record<string, unknown>): Promise<ToolResult> {
     return runConfigureAiPersona(this.prisma, workspaceId, args);
@@ -589,4 +586,5 @@ export class KloelChatToolsService {
   toolToggleTheme(workspaceId: string, args: Record<string, unknown>): Promise<ToolResult> {
     return runToggleTheme(this.prisma, workspaceId, args);
   }
+
 }
