@@ -461,7 +461,7 @@ export class KloelThinkerService {
         composerService: this.composerService,
         conversationStore: this.conversationStore,
         planLimits: this.planLimits,        abiBuilder: this.abiBuilder,
-        capabilityExecutor: this.capabilityExecutor,
+        capabilityExecutor: this.capabilityExecutor,        executeLocalTool: _executeLocalTool,
       });
     } catch (error: unknown) {
       this.logger.error('Erro no KLOEL Thinker Sync:', error);

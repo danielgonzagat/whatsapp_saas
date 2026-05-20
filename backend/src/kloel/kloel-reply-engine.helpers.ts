@@ -317,7 +317,8 @@ export async function buildAssistantReplyImpl(
       ...(isChatMode
         ? { tool_choice: chatTools.length > 0 ? ('auto' as const) : ('none' as const) }
         : {}),
-      temperature: responseTemperature,
+      // Disable thinking mode for DeepSeek v4 Pro tool calls (reasoning_content breaks multi-turn)
+      ...(isChatMode && chatTools.length > 0 ? { thinking: { type: 'disabled' as const } } : {}),      temperature: responseTemperature,
       top_p: 0.95,
       frequency_penalty: 0.3,
       presence_penalty: 0.2,
@@ -331,7 +332,10 @@ export async function buildAssistantReplyImpl(
       .catch(() => {});
   }
 
-  const initialMsg = response.choices[0]?.message;
+  const initialMsg = response.choices[0]?.message;  // Strip reasoning_content to avoid DeepSeek v4 Pro multi-turn error
+  if (initialMsg && (initialMsg as any).reasoning_content) {
+    (initialMsg as any).reasoning_content = null;
+  }
   let assistantMessage = initialMsg?.content || deps.unavailableMessage;
 
   if (mode === 'chat' && initialMsg?.tool_calls?.length && workspaceId && executeLocalTool) {

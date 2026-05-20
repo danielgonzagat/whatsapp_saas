@@ -14,6 +14,7 @@ import { type PrismaService } from '../prisma/prisma.service';
 import { type AbiBuilderService } from './abi/abi-builder.service';
 import { type BrainCapabilityExecutorService } from './brain-capability-executor.service';
 import { validateAbiPayload } from './abi/abi-validator';
+import { type LocalToolExecutor } from './kloel-reply-engine.types';
 
 const ERR_THREAD_NOT_FOUND = 'Conversa não encontrada.';
 const ERR_ASSISTANT_MSG_NOT_FOUND = 'Mensagem do assistente não encontrada.';
@@ -38,7 +39,7 @@ export async function thinkSyncImpl(
     composerService: KloelComposerService;
     conversationStore: KloelConversationStore;
     planLimits: PlanLimitsService;    abiBuilder?: AbiBuilderService;
-    capabilityExecutor?: BrainCapabilityExecutorService;
+    capabilityExecutor?: BrainCapabilityExecutorService;    executeLocalTool?: LocalToolExecutor;
   },
 ): Promise<ThinkSyncResult> {
   const {
@@ -77,6 +78,8 @@ export async function thinkSyncImpl(
         })
       : null;
 
+
+  console.error('[ABI-SYNC] FLAG=', process.env['KLOEL_THINKER_USE_ABI'], 'BUILDER=', !!deps.abiBuilder, 'EXEC=', !!deps.capabilityExecutor);
   // Build ABI state if feature flag is on and deps are available
   let abiStateJson: string | undefined;
   const { abiBuilder, capabilityExecutor } = deps;
@@ -113,7 +116,7 @@ export async function thinkSyncImpl(
       mode,
       ...(effectiveCompanyContext !== undefined ? { companyContext: effectiveCompanyContext } : {}),
       ...(request.allowedTools !== undefined ? { allowedTools: request.allowedTools } : {}),
-      conversationState: historyState,      ...(abiStateJson !== undefined ? { abiStateJson } : {}),
+      conversationState: historyState,      ...(abiStateJson !== undefined ? { abiStateJson } : {}),      ...(deps.executeLocalTool !== undefined ? { executeLocalTool: deps.executeLocalTool } : {}),
     }));
 
   let resolvedTitle = thread?.title;
