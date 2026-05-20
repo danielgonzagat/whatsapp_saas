@@ -1,6 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { SpineEventRef } from './mind.types';
-import { PrismaService } from '../../prisma/prisma.service';
 
 /**
  * UTP-MIND-CONS-001 + UTP-MIND-CONS-002 — Memory consolidation worker.
@@ -50,8 +49,6 @@ export interface ConsolidationCycle {
 export class ConsolidationService {
   private readonly logger = new Logger(ConsolidationService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
-
   /**
    * Run a single consolidation cycle. In `dry_run` mode (default), the
    * service returns proposals without mutating any external store; the
@@ -68,30 +65,11 @@ export class ConsolidationService {
     const episodic = this.proposeEpisodes(input.workingMemory, input.recentEvents, cycleAt);
     const consolidated = this.proposeConsolidated(episodic, cycleAt);
     if (mode === 'real') {
+      // Promotion to real mode is gated by CONS-002; here we just log when
+      // the mode is set so that operators see the transition is happening.
       this.logger.log(
         `consolidation cycle (real) — episodes=${episodic.length} consolidated=${consolidated.length}`,
       );
-      // Persist consolidated beliefs as autopilot events (CONS-002 gate satisfied)
-      if (consolidated.length > 0) {
-        const now = new Date();
-        void Promise.allSettled(
-          consolidated.map((c) =>
-            this.prisma.autopilotEvent.create({
-              data: {
-                workspaceId: 'system',
-                intent: 'belief_consolidated',
-                action: 'mind.consolidation.real',
-                status: 'executed',
-                meta: {
-                  pattern: c.pattern,
-                  confidence: c.confidence,
-                  fromEpisodeIds: c.fromEpisodeIds as unknown as any,
-                },
-              },
-            }).catch(() => { /* best-effort persistence */ }),
-          ),
-        );
-      }
     } else {
       this.logger.debug(
         `consolidation cycle (dry_run) — episodes=${episodic.length} consolidated=${consolidated.length}`,
