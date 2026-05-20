@@ -304,7 +304,10 @@ export class BrainRuntimeService {
         // Generic operator capability — delegate to executor for any registered tool
         capabilityResult = await this.executor.executeCapability(workspaceId, intent, context);
         if (!capabilityResult || !capabilityResult.ok) {
-          capabilityResult = { ok: false, error: capabilityResult?.error ?? 'unknown_operator_intent' };
+          capabilityResult = {
+            ok: false,
+            error: capabilityResult?.error ?? 'unknown_operator_intent',
+          };
         }
     }
 

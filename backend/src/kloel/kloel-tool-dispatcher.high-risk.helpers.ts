@@ -33,7 +33,6 @@ export function promptForHighRiskTool(toolName: string, args: UnknownRecord): st
   return `A CIA solicitou a acao ${toolName}. Revise o contexto antes de executar.`;
 }
 
-
 export function isSupportedApprovedHighRiskTool(toolName: string): boolean {
   return toolName === 'create_campaign' || toolName === 'change_plan';
 }

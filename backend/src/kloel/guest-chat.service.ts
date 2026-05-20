@@ -492,7 +492,6 @@ export class GuestChatService implements OnModuleDestroy {
     await this.persistConversation(sessionId, conversation);
   }
 
-
   /**
    * 🧹 Limpar conversas antigas
    */

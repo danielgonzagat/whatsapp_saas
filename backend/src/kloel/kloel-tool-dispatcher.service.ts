@@ -154,13 +154,6 @@ export class KloelToolDispatcherService {
             return await this.productSubTools.executeTool(toolName, workspaceId, asToolArgs(args));
           }
           return { success: false, error: 'product_sub_resource_tools_not_available' };
-        case 'get_wallet_balance':
-        case 'get_wallet_statement':
-        case 'list_orders':
-        case 'get_order_details':
-        case 'get_sales_summary':
-        case 'get_abandonments':
-          return { success: false, error: 'wallet_sales_tools_not_available' };
         case 'get_analytics':
           return await this.chatToolsService.toolGetAnalytics(workspaceId, asToolArgs(args));
         case 'create_broadcast':
@@ -168,8 +161,6 @@ export class KloelToolDispatcherService {
         case 'configure_ai_persona':
           return await this.chatToolsService.toolConfigureAiPersona(workspaceId, asToolArgs(args));
         case 'update_workspace_settings':
-        case 'toggle_theme':
-          return await this.chatToolsService.toolToggleTheme(workspaceId, asToolArgs(args));
           return await this.bizConfigToolsService.toolSaveBusinessInfo(
             workspaceId,
             asToolArgs(args),

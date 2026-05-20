@@ -1,4 +1,3 @@
-
 export function detectActionIntent(
   message: string,
 ): { tool: string; args: Record<string, unknown> } | null {
@@ -58,7 +57,7 @@ export function extractProductArgs(msg: string): Record<string, unknown> {
   if (name) {
     args.name = name;
   }
-  const pm = msg.match(/R\$\s*(\d+[\.,]?\d*)/);
+  const pm = msg.match(/R\$\s*(\d+[.,]?\d*)/);
   if (pm) {
     args.price = parseFloat(pm[1].replace(',', '.'));
   }
@@ -71,7 +70,7 @@ export function extractPaymentArgs(msg: string): Record<string, unknown> {
   if (name) {
     args.productName = name;
   }
-  const am = msg.match(/R\$\s*(\d+[\.,]?\d*)/);
+  const am = msg.match(/R\$\s*(\d+[.,]?\d*)/);
   if (am) {
     args.amount = parseFloat(am[1].replace(',', '.'));
   }
@@ -83,90 +82,51 @@ export function extractPaymentArgs(msg: string): Record<string, unknown> {
 }
 
 export function formatToolResult(tool: string, result: unknown): string {
-  const r = result as Record<string, unknown> | undefined;
-  if (!r) {
-    return 'Acao concluida.';
-  }
+  const r = (result as Record<string, unknown> | undefined) ?? {};
   if (r.success === false) {
-    return 'Erro: ' + (r.error || 'acao falhou');
+    const err = typeof r.error === 'string' ? r.error : 'acao falhou';
+    return `Erro: ${err}`;
   }
+  const s = (v: unknown, fb = ''): string =>
+    typeof v === 'string' || typeof v === 'number' ? String(v) : fb;
   switch (tool) {
     case 'list_products': {
-      const products = r.products as Array<Record<string, unknown>> | undefined;
-      if (!products?.length) {
+      const products = Array.isArray(r.products)
+        ? (r.products as Array<Record<string, unknown>>)
+        : [];
+      if (products.length === 0) {
         return 'Nenhum produto.';
       }
-      return 'Produtos: ' + products.map((p) => p.name + ' - R$ ' + p.price).join(', ');
+      return `Produtos: ${products.map((p) => `${s(p.name)} - R$ ${s(p.price)}`).join(', ')}`;
     }
     case 'create_product': {
-      const p = r.product as Record<string, unknown> | undefined;
-      return p ? 'Produto ' + p.name + ' criado! R$ ' + p.price : 'Produto criado.';
+      const p = (r.product as Record<string, unknown> | undefined) ?? {};
+      return `Produto ${s(p.name)} criado! R$ ${s(p.price)}`;
     }
     case 'create_plan': {
-      const p = r.plan as Record<string, unknown> | undefined;
-      return p ? 'Plano ' + p.name + ' - R$ ' + p.price : 'Plano criado.';
+      const p = (r.plan as Record<string, unknown> | undefined) ?? {};
+      return `Plano ${s(p.name)} criado! R$ ${s(p.price)}`;
     }
-    case 'create_checkout': {
-      const c = r.checkout as Record<string, unknown> | undefined;
-      return c ? 'Checkout ' + c.name + ' criado.' : 'Checkout criado.';
-    }
-    case 'create_coupon': {
-      const c = r.coupon as Record<string, unknown> | undefined;
-      return c ? 'Cupom ' + c.code + ' criado.' : 'Cupom criado.';
-    }
-    case 'get_wallet_balance': {
-      const b = r.balance as Record<string, unknown> | undefined;
-      if (!b) {
-        return 'Saldo indisponivel.';
-      }
-      return 'Carteira: Disponivel R$ ' + b.available + ' | Pendente R$ ' + b.pending;
-    }
-    case 'list_orders': {
-      const orders = r.orders as Array<Record<string, unknown>> | undefined;
-      if (!orders?.length) {
-        return 'Nenhuma venda.';
-      }
-      return (
-        'Vendas: ' +
-        orders.map((o) => o.product + ' R$' + o.amount + ' (' + o.status + ')').join(', ')
-      );
-    }
-    case 'get_sales_summary': {
-      const s = r.summary as Record<string, unknown> | undefined;
-      if (!s) {
-        return 'Sem dados.';
-      }
-      return (
-        'Resumo (' +
-        s.period +
-        '): ' +
-        s.totalSales +
-        ' vendas, R$ ' +
-        s.totalRevenue +
-        ', ' +
-        s.conversionRate +
-        '% conversao'
-      );
-    }
-    case 'get_abandonments': {
-      return 'Abandonos: ' + (r.total || 0) + ' encontrados.';
+    case 'list_conversations': {
+      const total = s(r.total, '0');
+      return `Conversas: ${total} ativas.`;
     }
     case 'create_payment_link': {
-      if (r.pixCopyPaste) {
-        return 'PIX: ' + r.pixCopyPaste + ' | R$ ' + r.amount;
+      const pix = s(r.pixCopyPaste);
+      if (pix) {
+        return `PIX: ${pix}`;
       }
-      if (r.paymentLink) {
-        return 'Link: ' + r.paymentLink + ' | R$ ' + r.amount;
+      const link = s(r.paymentLink);
+      if (link) {
+        return `Link de pagamento: ${link}`;
       }
-      return 'Link criado.';
-    }
-    case 'generate_boleto': {
-      return 'Boleto gerado. Codigo: ' + (r.boletoCode || 'N/A') + ' | R$ ' + r.amount;
+      const boleto = s(r.boletoCode, 'N/A');
+      return `Boleto: ${boleto}`;
     }
     case 'toggle_theme': {
-      return 'Tema alterado para ' + (r.theme || 'light') + '.';
+      return `Tema alterado para ${s(r.theme, 'light')}.`;
     }
     default:
-      return 'Acao ' + tool + ' executada.';
+      return typeof r.message === 'string' ? r.message : 'Acao concluida.';
   }
 }
