@@ -66,8 +66,22 @@ async function main() {
   assertGte(meta.nodes.filter((n) => n.type === 'adr').length, 1, 'ADRs indexed');
   assertGte(meta.edges.filter((e) => e.kind === 'mentions').length, 500, 'symbol mentions');
 
+  console.log('▸ asserting test-impact shard (L8)');
+  try {
+    const ti = JSON.parse(await readFile(join(ROOT, 'graphify-out/shards/test-impact.json'), 'utf8'));
+    assertGte(ti.nodes.filter((n) => n.type === 'spec').length, 100, 'specs indexed');
+    assertGte(ti.edges.filter((e) => e.kind === 'exercises').length, 50, 'spec→symbol exercises edges');
+  } catch (e) {
+    console.error(`  FAIL test-impact: ${e.message}`);
+    failed++;
+  }
+
   console.log('▸ smoke-testing edit-by-graph');
   await run(['tools/graphify-plus/lib/edit-by-graph.mjs', 'deps', 'AutopilotOpsService']);
+
+  console.log('▸ smoke-testing taskgraph lock (L11)');
+  await run(['tools/agent-coordination/taskgraph.mjs', 'claim', 'test-cluster-smoke', 'smoke-test']);
+  await run(['tools/agent-coordination/taskgraph.mjs', 'release', 'test-cluster-smoke', 'smoke-test']);
 
   console.log(failed === 0 ? '\n✓ ALL SMOKE TESTS PASSED' : `\n✗ ${failed} ASSERTIONS FAILED`);
   process.exit(failed === 0 ? 0 : 1);

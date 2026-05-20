@@ -27,7 +27,10 @@ const ALL = [
   { name: 'nextjs', script: 'extractors/nextjs.mjs', fast: true },
   { name: 'api-contract', script: 'extractors/api-contract.mjs', fast: true },
   { name: 'metadata', script: 'extractors/metadata.mjs', fast: true },
+  { name: 'test-impact', script: 'extractors/test-impact.mjs', fast: true }, // L8
+  { name: 'bundle', script: 'extractors/bundle.mjs', fast: true }, // L9 — reads .next/ if present
   { name: 'runtime-railway', script: 'extractors/runtime-railway.mjs', fast: false }, // network call
+  { name: 'diagnostics', script: 'extractors/diagnostics.mjs', fast: false }, // L7 — runs tsc+eslint (slow)
 ];
 
 async function main() {
@@ -82,8 +85,17 @@ async function merge() {
     console.log(`[run] no base graph.json (${err.message}) — emitting shards-only enriched graph`);
   }
 
-  const shardFiles = ['bullmq', 'nestjs', 'nextjs', 'api-contract', 'metadata', 'runtime-railway']
-    .map((n) => join(SHARDS_DIR, `${n}.json`));
+  const shardFiles = [
+    'bullmq',
+    'nestjs',
+    'nextjs',
+    'api-contract',
+    'metadata',
+    'runtime-railway',
+    'test-impact',
+    'bundle',
+    'diagnostics',
+  ].map((n) => join(SHARDS_DIR, `${n}.json`));
 
   const enriched = {
     nodes: [...(base.nodes || [])],
