@@ -18,11 +18,15 @@ const backendRoot = process.cwd();
 const srcRoot = join(backendRoot, 'src');
 const jestBin = join(backendRoot, 'node_modules', 'jest', 'bin', 'jest.js');
 const passthroughArgs = process.argv.slice(2);
-const chunkSize = Math.max(1, Number(process.env.JEST_CHUNK_SIZE || 256));
+const chunkSize = Math.max(1, Number(process.env.JEST_CHUNK_SIZE || 48));
 const startChunk = Math.max(1, Number(process.env.JEST_CHUNK_START || 1));
 const maxOldSpaceSize = Math.max(2048, Number(process.env.JEST_MAX_OLD_SPACE_SIZE) || 3072);
+const workerIdleMemoryLimit = process.env.JEST_WORKER_IDLE_MEMORY_LIMIT || '512MB';
+const maxWorkers = process.env.JEST_MAX_WORKERS || '2';
 const verboseJestOutput = process.env.JEST_VERBOSE_OUTPUT === '1';
-const defaultJestArgs = verboseJestOutput ? [] : ['--silent'];
+const defaultJestArgs = verboseJestOutput
+  ? [`--workerIdleMemoryLimit=${workerIdleMemoryLimit}`, `--maxWorkers=${maxWorkers}`]
+  : ['--silent', `--workerIdleMemoryLimit=${workerIdleMemoryLimit}`, `--maxWorkers=${maxWorkers}`];
 const coverageEnabled = passthroughArgs.some(isCoverageArg);
 const coverageRoot = join(backendRoot, 'coverage');
 const coverageChunksRoot = join(coverageRoot, '.chunks');

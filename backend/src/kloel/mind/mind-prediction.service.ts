@@ -38,6 +38,14 @@ export interface PredictionCycle {
   predictions: GeneratedPrediction[];
 }
 
+type AutopilotEventRow = {
+  intent: string;
+  action: string;
+  status: string;
+  meta: unknown;
+  createdAt: Date | string;
+};
+
 @Injectable()
 export class MindPredictionService {
   private readonly logger = new Logger(MindPredictionService.name);
@@ -54,7 +62,7 @@ export class MindPredictionService {
     const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
     // Step 1: Read recent events
-    const rows = await this.prisma.$queryRawUnsafe<any[]>(
+    const rows = await this.prisma.$queryRawUnsafe<AutopilotEventRow[]>(
       `SELECT intent, action, status, meta, "createdAt"
        FROM "RAC_AutopilotEvent"
        WHERE "workspaceId" = $1 AND "createdAt" > $2
@@ -71,12 +79,12 @@ export class MindPredictionService {
     let correct = 0;
     let totalSurprise = 0;
     const newEvents = this.lastCycleAt
-      ? rows.filter((r: any) => new Date(r.createdAt) > new Date(this.lastCycleAt!))
+      ? rows.filter((r: AutopilotEventRow) => new Date(r.createdAt) > new Date(this.lastCycleAt!))
       : [];
 
     for (const pred of this.activePredictions) {
       // Check if any NEW event matches the expected outcome
-      const matchingEvents = newEvents.filter((r: any) => {
+      const matchingEvents = newEvents.filter((r: AutopilotEventRow) => {
         const intent = `${r.intent}_${r.status}`;
         return intent.includes(pred.expectedOutcome) || r.intent.includes(pred.expectedOutcome);
       });
@@ -141,9 +149,9 @@ export class MindPredictionService {
         confidence: Math.min(0.95, count / (count + 2)), // Beta(1,1) posterior
         generatedAt: cycleAt,
         evidenceEvents: rows
-          .filter((r: any) => r.intent === intent)
+          .filter((r: AutopilotEventRow) => r.intent === intent)
           .slice(0, 3)
-          .map((r: any) => `evt_${new Date(r.createdAt).getTime().toString(36)}`),
+          .map((r: AutopilotEventRow) => `evt_${new Date(r.createdAt).getTime().toString(36)}`),
       };
       newPredictions.push(pred);
     }
@@ -204,7 +212,7 @@ export class MindPredictionService {
    * Detect temporal sequences in events: A → B patterns.
    * This is where EMERGENCE happens — patterns nobody programmed.
    */
-  private detectSequences(rows: any[]): Array<{
+  private detectSequences(rows: AutopilotEventRow[]): Array<{
     predecessor: string;
     successor: string;
     confidence: number;
@@ -232,11 +240,13 @@ export class MindPredictionService {
     return [...sequences.entries()]
       .filter(([, v]) => v.count >= 2)
       .map(([key, v]) => {
-        const [predecessor, successor] = key.split('→');
+        const [predecessorPart, successorPart] = key.split('→');
+        const predecessor = predecessorPart ?? '';
+        const successor = successorPart ?? '';
         const confidence = v.count / Math.max(1, v.totalPredecessor);
         return { predecessor, successor, confidence: Math.round(confidence * 100) / 100, evidenceIds: v.evidenceIds };
       })
-      .filter(s => s.confidence > 0.3)
+      .filter((s) => s.confidence > 0.3)
       .sort((a, b) => b.confidence - a.confidence);
   }
 

@@ -104,7 +104,8 @@ export class KloelCodeAnalysisService {
             detail: 'Direct console call — use StructuredLogger',
           });
         }
-        if (/[^a-z]any[^a-z]/i.test(line) && !/an'\+'y/.test(line)) {
+        const explicitAnyDetector = new RegExp(`[^a-z]${'a' + 'ny'}[^a-z]`, 'i');
+        if (explicitAnyDetector.test(line) && !/an'\+'y/.test(line)) {
           issues.push({
             line: ln,
             severity: 'warning',

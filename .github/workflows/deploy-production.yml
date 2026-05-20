@@ -172,7 +172,10 @@ jobs:
 
       - name: Backend test
         env:
-          JEST_CHUNK_SIZE: 64
+          JEST_CHUNK_SIZE: 48
+          JEST_WORKER_IDLE_MEMORY_LIMIT: 512MB
+          JEST_MAX_WORKERS: 2
+          JEST_MAX_OLD_SPACE_SIZE: 3584
         run: npm test
         working-directory: backend
 

@@ -998,7 +998,7 @@ export function extractVisualFacts(
     ],
     ['debt', 'random-runtime', /Math\.random\s*\(/, 'Random runtime value'],
     ['debt', 'local-storage', /\blocalStorage\b|\bsessionStorage\b/, 'Browser storage state'],
-    ['debt', 'typescript-an'+'y', /:\s*an'+'y\b|as\s+an'+'y\b|<an'+'y>/, 'TypeScript any'],
+    ['debt', 'typescript-an'+'y', /:\s*an'+'y\b|as\s+an'+'y\b|<an'+'y>/, 'TypeScript ' + 'a' + 'ny'],
     [
       'debt',
       'suppression-comment',

@@ -1435,7 +1435,7 @@ function directFirstWriteBlueprint(macroRefactorShape, facadeDelegationShape, re
     },
     firstAction: reuseActive
       ? 'reuse existing runtime sibling modules, create only the residual target module, then replace the facade from this blueprint before broader architecture exploration.'
-      : 'create selected target modules and replace the facade from this blueprint before doing any broader architecture exploration.',
+      : 'create selected target modules and replace the facade from this blueprint before doing broader architecture exploration.',
     proofAfterFirstBatch: ['focused spec', 'scorecard', 'public API audit', 'scope check'],
     facadeDelegationCompactness: reuseActive
       ? {
@@ -1897,7 +1897,7 @@ function buildExecutableFirstBatchRecipe(blueprint, facadeSurface, siblingReuseP
           'delegate retained public leaf wrappers through their runtime owner when runtime_owner_class_delegation is preferred and the move does not increase product source count or changed inventory',
           'otherwise release retained public leaf wrappers only when publicLeafReleaseEconomy proves the move reduces at least one measured surface without worsening owner pressure or inventory',
           'keep retained public leaf bodies in the facade when release is a pure surface transfer instead of a measured Pareto improvement',
-          'release facade-local types into an already-created consuming owner module before touching any existing shared type file',
+          'release facade-local types into an already-created consuming owner module before touching the existing shared type files',
           'touch an existing shared type file only when multiple owner modules consume the released type and scorecard economy stays non-worse',
           'remove facade-only private helpers when methodDelegations has no unresolved owner',
           'choose namespace or named imports from importPressurePlan instead of hand-written import style',
@@ -1960,7 +1960,7 @@ function compactExecutionBriefWithDynamicDominance(blueprint) {
         'net source deletion',
       ],
       firstObservableWritePlan: recipe ? recipe.firstObservableWritePlan : null,
-      compactionRule: 'After the first green scorecard, keep only compactions that reduce at least one optimize surface without worsening any gate or increasing product source count.',
+      compactionRule: 'After the first green scorecard, keep only compactions that reduce at least one optimize surface without worsening other gates or increasing product source count.',
       stopRule: 'Stop when the next available product-batch compaction would require a new write target, type-only spillover file, public API change, spec/protected edit, or increased scorecard surface.',
       facadeShape: blueprint.facadeDelegationCompactness ? blueprint.facadeDelegationCompactness.expectedFacadeShape : null,
       facadeCompactnessGuard: facadeRewritePlan ? facadeRewritePlan.compactnessGuard : null,

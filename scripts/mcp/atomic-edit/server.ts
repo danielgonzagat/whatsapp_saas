@@ -257,8 +257,9 @@ function runPostEditVerify(
         passed: true,
         summary: 'TypeScript typecheck passed',
       };
-    } catch (e: any) {
-      const stderr = (e.stderr || e.stdout || '').toString();
+    } catch (e: unknown) {
+      const err = e as { stderr?: Buffer | string; stdout?: Buffer | string };
+      const stderr = (err.stderr || err.stdout || '').toString();
       return {
         kind: 'typecheck',
         command: `tsc --noEmit (${pkg})`,
@@ -275,9 +276,13 @@ function runPostEditVerify(
         encoding: 'utf8',
         stdio: 'pipe',
       });
-      const issues = JSON.parse(result);
-      const errorCount = issues.reduce((sum: number, f: any) => sum + f.errorCount, 0);
-      const warningCount = issues.reduce((sum: number, f: any) => sum + f.warningCount, 0);
+      type EslintFileResult = { errorCount: number; warningCount: number };
+      const issues = JSON.parse(result) as EslintFileResult[];
+      const errorCount = issues.reduce((sum: number, f: EslintFileResult) => sum + f.errorCount, 0);
+      const warningCount = issues.reduce(
+        (sum: number, f: EslintFileResult) => sum + f.warningCount,
+        0,
+      );
       const passed = errorCount === 0;
       return {
         kind: 'lint',
@@ -285,7 +290,7 @@ function runPostEditVerify(
         passed,
         summary: `${errorCount} errors, ${warningCount} warnings`,
       };
-    } catch (e: any) {
+    } catch {
       return {
         kind: 'lint',
         command: `eslint ${relPath}`,
@@ -1729,7 +1734,7 @@ server.registerTool(
     description:
       'True semantic rename via the TypeScript language service (nearest tsconfig): renames the symbol ' +
       'at (line,column) and ALL its references across every file, respecting scope/shadowing. ' +
-      'All-or-nothing: if any touched file would break, NOTHING is written. This is the Kiro ' +
+      'All-or-nothing: if even one touched file would break, NOTHING is written. This is the Kiro ' +
       "'use program analysis, not LLM guessing' operator. Supports preview.",
     inputSchema: {
       file: z.string(),
@@ -2522,7 +2527,7 @@ server.registerTool(
     title: 'Apply a multi-file edit plan atomically (all-or-nothing)',
     description:
       'Apply ranged edits across MANY files as one transaction. Every file is validated (no-syntax-' +
-      'regression) in memory BEFORE any write. If any file fails validation the whole transaction is ' +
+      'regression) in memory BEFORE the write. If even one file fails validation the whole transaction is ' +
       'refused and nothing is written. If a write throws mid-flight, already-written files are rolled ' +
       'back to their pre-edit content. Use for one intention spanning files (schema+service+UI+test). ' +
       'Supports preview (dry-run, per-file atomicDiff).',

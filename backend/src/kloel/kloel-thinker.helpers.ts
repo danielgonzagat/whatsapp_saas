@@ -83,18 +83,31 @@ export async function thinkSyncImpl(
   if (workspaceId) {
     try {
       const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-      const rows = await prisma.$queryRawUnsafe<any[]>(
+      type AutopilotEventRow = {
+        intent: string;
+        action: string;
+        status: string;
+        meta: unknown;
+        createdAt: Date | string;
+      };
+      const rows = await prisma.$queryRawUnsafe<AutopilotEventRow[]>(
         `SELECT intent, action, status, meta, "createdAt" FROM "RAC_AutopilotEvent" WHERE "workspaceId" = $1 AND "createdAt" > $2 ORDER BY "createdAt" ASC LIMIT 500`,
         workspaceId, since,
       );
       if (rows && rows.length > 0) {
-        const events = rows.map((r: any, i: number) => ({
-          eventId: `evt_${new Date(r.createdAt).getTime().toString(36)}_${i.toString(36)}`,
-          eventName: `autopilot.${r.intent}.${r.status}`,
-          occurredAt: new Date(r.createdAt).toISOString(),
-          summary: `chat: ${String((typeof r.meta === 'object' && r.meta ? (r.meta as any).userPreview : '') || '').slice(0, 120)}`,
-          valence: 'neutral' as const,
-        }));
+        const events = rows.map((r: AutopilotEventRow, i: number) => {
+          const metaRecord = (typeof r.meta === 'object' && r.meta !== null
+            ? (r.meta as Record<string, unknown>)
+            : {});
+          const userPreview = typeof metaRecord.userPreview === 'string' ? metaRecord.userPreview : '';
+          return {
+            eventId: `evt_${new Date(r.createdAt).getTime().toString(36)}_${i.toString(36)}`,
+            eventName: `autopilot.${r.intent}.${r.status}`,
+            occurredAt: new Date(r.createdAt).toISOString(),
+            summary: `chat: ${userPreview.slice(0, 120)}`,
+            valence: 'neutral' as const,
+          };
+        });
         // Compute beliefs from events (group by kind, count occurrences)
         const byKind = new Map<string, { n: number; pos: number; examples: string[] }>();
         const valTrace: Array<{ score: number; label: string; at: string }> = [];
