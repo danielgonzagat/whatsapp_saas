@@ -210,7 +210,7 @@ export async function buildCognitiveSubstrate(
     evidenceCount < 20
       ? { verdict: 'INSUFFICIENT_EVIDENCE' as const, score: 0, measuredAt: measuredAtIso }
       : {
-          verdict: (successRate >= 0.8 ? 'SIM' : 'NAO') as 'SIM' | 'NAO',
+          verdict: successRate >= 0.8 ? ('SIM' as const) : ('NAO' as const),
           score: Number(successRate.toFixed(4)),
           measuredAt: measuredAtIso,
         };
