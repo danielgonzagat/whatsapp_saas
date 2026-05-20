@@ -32,7 +32,7 @@ export function ev(over: Partial<SpineEventRef>): SpineEventRef {
   if (over.correlationId !== undefined) {
     e['correlationId'] = over.correlationId;
   }
-  return e as SpineEventRef;
+  return e as unknown as SpineEventRef;
 }
 
 // Access all detectors via the array
