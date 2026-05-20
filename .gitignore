@@ -109,3 +109,8 @@ scripts/mcp/atomic-edit/dist/
 # scripts/mcp/atomic-edit/audit-atomicity.mjs, do not version individual ops)
 docs/ai/traces/
 scripts/mcp/atomic-edit/.smoke-fixture.*
+
+# atomic-edit operation traces (per-call audit logs; aggregate via
+# scripts/mcp/atomic-edit/audit-atomicity.mjs, do not version individual ops)
+.atomic/traces/
+.atomic/macro-traces/
