@@ -4,78 +4,50 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { spawn, spawnSync } = require('node:child_process');
+const { psRows, killPid, killProcessTree, killContaminants } = require('./opencode-round-watchdog.proc.cjs');
+const {
+  syncAtomicToolchainFile,
+  syncAtomicToolchain,
+  linkWorktreeDependencies,
+  writeMinimalOpenCodeConfig,
+  moveGeneratedPath,
+  prepareNormalLaneIsolation,
+  restoreNormalLaneIsolation,
+} = require('./opencode-round-watchdog.isolation.cjs');
+const {
+  findForbiddenNormalUse,
+  commandPinsAtomicWorktree,
+  findAtomicWorktreeEscape,
+} = require('./opencode-round-watchdog.diagnostics.cjs');
+const {
+  usage,
+  arg,
+  flagEnabled,
+  policyValue,
+  policyNumber,
+  absolute,
+  roundDir,
+  normalWorktree,
+  atomicWorktree,
+  normalPromptFile,
+  atomicPromptFile,
+  idleMs,
+  maxMs,
+  model,
+  pollMs,
+  defaultVariant,
+  normalVariant,
+  atomicVariant,
+  coordinatorRoot,
+  syncAtomicToolchainEnabled,
+  minifyAtomicPromptEnabled,
+  atomicCommandMode,
+  atomicToolchainPaths,
+  worktreeNodeModuleLinks,
+  atomicCallToolSegments,
+  atomicCallToolPath,
+} = require('./opencode-round-watchdog.config.cjs');
 
-function usage() {
-  console.error(
-    'Usage: opencode-round-watchdog.cjs --round-dir <dir> --normal-worktree <dir> --atomic-worktree <dir> --normal-prompt <file> --atomic-prompt <file> --idle-ms <ms> --max-ms <ms> --poll-ms <ms> --model <provider/model>',
-  );
-  process.exit(2);
-}
-
-function arg(name, fallback = '') {
-  const index = process.argv.indexOf(name);
-  if (index === -1) return fallback;
-  return process.argv[index + 1] || fallback;
-}
-
-function flagEnabled(name, envName) {
-  const index = process.argv.indexOf(name);
-  if (index !== -1) {
-    const next = process.argv[index + 1] || '';
-    if (!next || next.startsWith('--')) return true;
-    return ['1', 'true', 'yes', 'on'].includes(next.toLowerCase());
-  }
-  const envValue = process.env[envName] || '';
-  return ['1', 'true', 'yes', 'on'].includes(envValue.toLowerCase());
-}
-
-function policyValue(flag, envName) {
-  const value = arg(flag, process.env[envName] || '');
-  if (!value) throw new Error(flag + ' or ' + envName + ' must be supplied by the benchmark policy compiler');
-  return value;
-}
-
-function policyNumber(flag, envName) {
-  const value = Number(policyValue(flag, envName));
-  if (!Number.isFinite(value) || value <= 0) throw new Error(flag + ' must be a positive number');
-  return value;
-}
-
-function absolute(value, label) {
-  if (!value) usage();
-  const resolved = path.resolve(value);
-  if (!path.isAbsolute(resolved)) throw new Error(label + ' must resolve to an absolute path');
-  return resolved;
-}
-
-const roundDir = absolute(arg('--round-dir'), 'round-dir');
-const normalWorktree = absolute(arg('--normal-worktree'), 'normal-worktree');
-const atomicWorktree = absolute(arg('--atomic-worktree'), 'atomic-worktree');
-const normalPromptFile = absolute(arg('--normal-prompt'), 'normal-prompt');
-const atomicPromptFile = absolute(arg('--atomic-prompt'), 'atomic-prompt');
-const idleMs = policyNumber('--idle-ms', 'ATOMIC_WATCHDOG_IDLE_MS');
-const maxMs = policyNumber('--max-ms', 'ATOMIC_WATCHDOG_MAX_MS');
-const model = policyValue('--model', 'ATOMIC_WATCHDOG_MODEL');
-const pollMs = policyNumber('--poll-ms', 'ATOMIC_WATCHDOG_POLL_MS');
-const defaultVariant = arg('--variant', process.env.ATOMIC_WATCHDOG_VARIANT || 'max');
-const normalVariant = arg('--normal-variant', process.env.ATOMIC_WATCHDOG_NORMAL_VARIANT || defaultVariant);
-const atomicVariant = arg('--atomic-variant', process.env.ATOMIC_WATCHDOG_ATOMIC_VARIANT || defaultVariant);
-const coordinatorRoot = path.resolve(__dirname, '..', '..', '..', '..');
-const syncAtomicToolchainEnabled = flagEnabled('--sync-atomic-toolchain', 'ATOMIC_SYNC_TOOLCHAIN');
-const minifyAtomicPromptEnabled = flagEnabled('--minify-atomic-prompt', 'ATOMIC_MINIFY_ATOMIC_PROMPT');
-const atomicCommandMode = arg('--atomic-command-mode', process.env.ATOMIC_COMMAND_MODE || 'prompt');
-const atomicToolchainPaths = (process.env.ATOMIC_TOOLCHAIN_PATHS || '')
-  .split(path.delimiter)
-  .map((value) => value.trim())
-  .filter(Boolean);
-const worktreeNodeModuleLinks = (process.env.ATOMIC_WORKTREE_NODE_MODULE_LINKS || 'node_modules:backend/node_modules')
-  .split(path.delimiter)
-  .map((value) => value.trim())
-  .filter(Boolean);
-const atomicCallToolSegments = ['docs', 'ai', 'atomic-os-benchmark', 'tools', 'atomic-call.cjs'];
-function atomicCallToolPath(root) {
-  return path.join(root, ...atomicCallToolSegments);
-}
 if (syncAtomicToolchainEnabled && atomicToolchainPaths.length === 0) {
   throw new Error('ATOMIC_TOOLCHAIN_PATHS must be supplied when toolchain sync is enabled');
 }
@@ -173,66 +145,6 @@ function prepareAtomicPrepromptCommand(worktreeRoot, promptFile) {
   return { commandName, commandFile, commandTextFile, runnerFile };
 }
 
-function psRows() {
-  const result = spawnSync('ps', ['-axo', 'pid=,ppid=,command='], { encoding: 'utf8' });
-  if (result.error) return [];
-  return result.stdout
-    .split(/\n/)
-    .map((line) => line.trim())
-    .filter(Boolean)
-    .map((line) => {
-      const match = line.match(/^(\d+)\s+(\d+)\s+(.+)$/);
-      if (!match) return null;
-      return { pid: Number(match[1]), ppid: Number(match[2]), command: match[3] };
-    })
-    .filter(Boolean);
-}
-
-function killPid(pid, signal = 'SIGTERM') {
-  try {
-    process.kill(pid, signal);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-function killProcessTree(rootPid) {
-  const rows = psRows();
-  const children = new Map();
-  for (const row of rows) {
-    if (!children.has(row.ppid)) children.set(row.ppid, []);
-    children.get(row.ppid).push(row.pid);
-  }
-  const stack = [rootPid];
-  const all = [];
-  while (stack.length) {
-    const pid = stack.pop();
-    if (!pid || all.includes(pid)) continue;
-    all.push(pid);
-    for (const child of children.get(pid) || []) stack.push(child);
-  }
-  for (const pid of all.reverse()) killPid(pid);
-  return all;
-}
-
-function killContaminants() {
-  const needles = [roundDir, normalWorktree, atomicWorktree];
-  const killed = [];
-  for (const row of psRows()) {
-    if (row.pid === process.pid) continue;
-    const touchesRound = needles.some((needle) => row.command.includes(needle));
-    if (!touchesRound) continue;
-    if (/\bcodex exec\b/.test(row.command)) {
-      killed.push(...killProcessTree(row.pid));
-      continue;
-    }
-    if (/round_dir=.*atomic-os-benchmark/.test(row.command) && row.command.includes('codex exec')) {
-      killed.push(...killProcessTree(row.pid));
-    }
-  }
-  return [...new Set(killed)].sort((a, b) => a - b);
-}
 
 function fileSize(file) {
   try {
@@ -251,108 +163,6 @@ function writeJson(file, payload) {
   fs.writeFileSync(file, JSON.stringify(payload, null, 2) + '\n');
 }
 
-function syncAtomicToolchainFile(relativePath, worktreeRoot) {
-  const source = path.join(coordinatorRoot, relativePath);
-  const destination = path.join(worktreeRoot, relativePath);
-  if (!fs.existsSync(source)) return null;
-  fs.mkdirSync(path.dirname(destination), { recursive: true });
-  fs.cpSync(source, destination, { recursive: true, force: true, dereference: false });
-  return relativePath;
-}
-
-function syncAtomicToolchain(worktreeRoot) {
-  if (!syncAtomicToolchainEnabled) return [];
-  const synced = [];
-  for (const relativePath of atomicToolchainPaths) {
-    const copied = syncAtomicToolchainFile(relativePath, worktreeRoot);
-    if (copied) synced.push(copied);
-  }
-  return synced;
-}
-
-function linkWorktreeDependencies(worktreeRoot) {
-  const linked = [];
-  for (const relativePath of worktreeNodeModuleLinks) {
-    const source = path.join(coordinatorRoot, relativePath);
-    const destination = path.join(worktreeRoot, relativePath);
-    if (!fs.existsSync(source) || fs.existsSync(destination)) continue;
-    fs.mkdirSync(path.dirname(destination), { recursive: true });
-    fs.symlinkSync(source, destination, 'dir');
-    linked.push(relativePath);
-  }
-  return linked;
-}
-
-function writeMinimalOpenCodeConfig(file) {
-  fs.mkdirSync(path.dirname(file), { recursive: true });
-  fs.writeFileSync(file, JSON.stringify({ permission: { edit: 'allow' }, instructions: [] }, null, 2) + '\n');
-}
-
-function moveGeneratedPath(source, label) {
-  let destination = path.join(roundDir, label);
-  let suffix = 0;
-  while (fs.existsSync(destination)) {
-    suffix += 1;
-    destination = path.join(roundDir, label + '-' + suffix);
-  }
-  fs.renameSync(source, destination);
-  return destination;
-}
-
-function prepareNormalLaneIsolation() {
-  const backupSuffix = '.__atomic_benchmark_backup';
-  const localConfig = path.join(normalWorktree, 'opencode.json');
-  const localConfigBackup = path.join(normalWorktree, 'opencode.json' + backupSuffix);
-  const localOpenCode = path.join(normalWorktree, '.opencode');
-  const localOpenCodeBackup = path.join(normalWorktree, '.opencode' + backupSuffix);
-  if (fs.existsSync(localConfigBackup) || fs.existsSync(localOpenCodeBackup)) {
-    throw new Error('stale normal OpenCode isolation backup exists; refusing to overwrite benchmark state');
-  }
-  const xdgRoot = path.join(roundDir, 'normal-opencode-xdg');
-  const xdgConfig = path.join(xdgRoot, 'opencode', 'opencode.json');
-  const hadLocalConfig = fs.existsSync(localConfig);
-  const hadLocalOpenCode = fs.existsSync(localOpenCode);
-  if (hadLocalConfig) {
-    fs.copyFileSync(localConfig, path.join(roundDir, 'normal-opencode.original.json'));
-    fs.renameSync(localConfig, localConfigBackup);
-  }
-  if (hadLocalOpenCode) fs.renameSync(localOpenCode, localOpenCodeBackup);
-  writeMinimalOpenCodeConfig(localConfig);
-  writeMinimalOpenCodeConfig(xdgConfig);
-  return {
-    enabled: true,
-    xdgRoot,
-    localConfig,
-    localConfigBackup,
-    localOpenCode,
-    localOpenCodeBackup,
-    hadLocalConfig,
-    hadLocalOpenCode,
-    generatedMoves: [],
-    restored: false,
-    restoreError: null,
-  };
-}
-
-function restoreNormalLaneIsolation(isolation) {
-  if (!isolation || isolation.restored) return;
-  try {
-    if (fs.existsSync(isolation.localConfig)) fs.unlinkSync(isolation.localConfig);
-    if (isolation.hadLocalConfig && fs.existsSync(isolation.localConfigBackup)) {
-      fs.renameSync(isolation.localConfigBackup, isolation.localConfig);
-    }
-    if (fs.existsSync(isolation.localOpenCode)) {
-      isolation.generatedMoves.push(moveGeneratedPath(isolation.localOpenCode, 'normal-opencode-generated-after-isolation'));
-    }
-    if (isolation.hadLocalOpenCode && fs.existsSync(isolation.localOpenCodeBackup)) {
-      fs.renameSync(isolation.localOpenCodeBackup, isolation.localOpenCode);
-    }
-    isolation.restored = true;
-  } catch (error) {
-    isolation.restoreError = error instanceof Error ? error.message : String(error);
-    throw error;
-  }
-}
 
 function readJsonlLoose(file) {
   let text = '';
@@ -370,57 +180,6 @@ function readJsonlLoose(file) {
     } catch {}
   }
   return events;
-}
-
-function findForbiddenNormalUse(lane) {
-  const forbiddenCommand = /atomic-call[.]cjs|scripts[/]mcp[/]atomic-edit|[.]atomic[/]traces|docs[/]ai[/]traces/;
-  const forbiddenInput = /atomic-edit_|atomic-call[.]cjs|scripts[/]mcp[/]atomic-edit/;
-  const events = readJsonlLoose(lane.outFile);
-  for (let index = 0; index < events.length; index += 1) {
-    const event = events[index];
-    const tool = String(event.part?.tool || event.item?.tool || event.tool || '');
-    if (tool.startsWith('atomic-edit_')) {
-      return { eventIndex: index, kind: 'atomic_mcp_tool', tool };
-    }
-    const command = String(event.part?.state?.input?.command || event.item?.command || '');
-    if (forbiddenCommand.test(command)) {
-      return { eventIndex: index, kind: 'atomic_command_or_trace_access', command: command.slice(0, 500) };
-    }
-    const input = JSON.stringify(event.part?.state?.input || event.item?.input || {});
-    if (forbiddenInput.test(input)) {
-      return { eventIndex: index, kind: 'atomic_tool_input', tool, input: input.slice(0, 500) };
-    }
-  }
-  return null;
-}
-
-function commandPinsAtomicWorktree(command) {
-  return (
-    command.includes('cd ' + atomicWorktree) &&
-    command.includes('ATOMIC_OS_REPO_ROOT=' + atomicWorktree) &&
-    command.includes(atomicCallToolPath(atomicWorktree))
-  );
-}
-
-function findAtomicWorktreeEscape(lane) {
-  const events = readJsonlLoose(lane.outFile);
-  for (let index = 0; index < events.length; index += 1) {
-    const event = events[index];
-    const command = String(event.part?.state?.input?.command || event.item?.command || '');
-    if (!command.includes('atomic-call.cjs')) continue;
-    const workdir = String(event.part?.state?.input?.workdir || event.item?.cwd || '');
-    const workdirOk = workdir && path.resolve(workdir) === atomicWorktree;
-    if (!workdirOk && !commandPinsAtomicWorktree(command)) {
-      return {
-        eventIndex: index,
-        kind: 'atomic_worktree_escape',
-        workdir: workdir || null,
-        expectedWorktree: atomicWorktree,
-        command: command.slice(0, 500),
-      };
-    }
-  }
-  return null;
 }
 
 function startLane(name, worktree, promptFile, options = {}) {
