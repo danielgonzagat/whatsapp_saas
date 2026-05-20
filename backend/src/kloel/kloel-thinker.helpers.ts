@@ -13,7 +13,6 @@ import type { ChatMessage, ThinkRequest, ThinkSyncResult } from './kloel-thinker
 import { type PrismaService } from '../prisma/prisma.service';
 import { type AbiBuilderService } from './abi/abi-builder.service';
 import { type BrainCapabilityExecutorService } from './brain-capability-executor.service';
-import { validateAbiPayload } from './abi/abi-validator';
 import { type LocalToolExecutor } from './kloel-reply-engine.types';
 
 const ERR_THREAD_NOT_FOUND = 'Conversa não encontrada.';
@@ -122,7 +121,7 @@ export async function thinkSyncImpl(
       mode,
       ...(effectiveCompanyContext !== undefined ? { companyContext: effectiveCompanyContext } : {}),
       ...(request.allowedTools !== undefined ? { allowedTools: request.allowedTools } : {}),
-      conversationState: historyState,      ...(abiStateJson !== undefined ? { abiStateJson } : {}),      ...(deps.executeLocalTool !== undefined ? { executeLocalTool: deps.executeLocalTool } : {}),
+      conversationState: historyState,      ...(prebuiltCognitiveState !== undefined ? { prebuiltCognitiveState } : {}),      ...(deps.executeLocalTool !== undefined ? { executeLocalTool: deps.executeLocalTool } : {}),
     }));
 
   let resolvedTitle = thread?.title;

@@ -212,7 +212,7 @@ export async function buildAssistantReplyImpl(
     allowedTools?: string[];
     conversationState?: { summary?: string; recentMessages: ReplyMessage[]; totalMessages: number };
     onTraceEvent?: (event: KloelStreamEvent) => void;
-    executeLocalTool?: LocalToolExecutor;
+    executeLocalTool?: LocalToolExecutor;    prebuiltCognitiveState?: Record<string, unknown>;
   },
   deps: BuildAssistantReplyDeps,
 ): Promise<string> {
@@ -299,7 +299,7 @@ export async function buildAssistantReplyImpl(
     marketingPromptAddendum,
     summaryMessage,
     recentMessages: historyState.recentMessages,
-    userMessage: message,
+    ...(params.prebuiltCognitiveState !== undefined ? { prebuiltCognitiveState: params.prebuiltCognitiveState } : {}),    userMessage: message,
   });
   onTraceEvent?.(createKloelStatusEvent('thinking'));
   if (workspaceId) {
@@ -360,7 +360,7 @@ export async function buildAssistantReplyImpl(
           marketingPromptAddendum,
           summaryMessage,
           recentMessages: historyState.recentMessages,
-          userMessage: message,
+          ...(params.prebuiltCognitiveState !== undefined ? { prebuiltCognitiveState: params.prebuiltCognitiveState } : {}),          userMessage: message,
           assistantMessage: initialMsg,
           toolMessages,
         }),

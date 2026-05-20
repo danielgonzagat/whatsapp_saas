@@ -1,0 +1,80 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779242462010_6449182f",
+  "ts": "2026-05-20T02:01:02.010Z",
+  "file": "backend/src/kloel/kloel-reply-engine.service.ts",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "insert_after_anchor",
+  "operator": "insert_after_anchor",
+  "targetUnit": "text_span",
+  "intention": "insert_after_anchor",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 105,
+    "lineRewriteSurfaceChars": 26,
+    "expansionFactorAvoided": 0.25,
+    "bytesNet": 105,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "67b0cae6b5aaf046ba02d5fa2ea007e74f60ff3a31453c1bf0aaaa877e82d53e",
+  "proposedSha256": "67b0cae6b5aaf046ba02d5fa2ea007e74f60ff3a31453c1bf0aaaa877e82d53e",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- backend/src/kloel/kloel-reply-engine.service.ts (atomic char-level)\u001b[0m\n      };\n  \n      if (this.abiBuilder) {\u001b[32m{+    if (params.prebuiltCognitiveState) {\n        cognitiveState = params.prebuiltCognitiveState;\n      } else+}\u001b[0m\n        try {\n          const abiResult = await this.abiBuilder.build({",
+  "preservedZones": [
+    {
+      "kind": "prefix_preserved",
+      "description": "Bytes 0–7218 — prefix preserved unchanged",
+      "byteStart": 0,
+      "byteEnd": 7219,
+      "byteLength": 7219,
+      "beforeHash": "49617e1403ba309f30d697418f9bcd6554ce9dc111c21b37e43d714783989ca4",
+      "afterHash": "49617e1403ba309f30d697418f9bcd6554ce9dc111c21b37e43d714783989ca4",
+      "sample": "      perceptionSnapshot: { channel: 'web' },\n    };\n\n    if (this.abiBuilder) {"
+    },
+    {
+      "kind": "suffix_preserved",
+      "description": "Bytes 7219–14356 — suffix preserved unchanged",
+      "byteStart": 7219,
+      "byteEnd": 14357,
+      "byteLength": 7138,
+      "beforeHash": "ff0751387fb581ebdbfee5709ae229691ac1a48b80bdf3219d54aacc809c91e8",
+      "afterHash": "ff0751387fb581ebdbfee5709ae229691ac1a48b80bdf3219d54aacc809c91e8",
+      "sample": "\n      try {\n        const abiResult = await this.abiBuilder.build({\n          a"
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "byteStart": 7219,
+      "byteEnd": 7219,
+      "newByteLength": 105,
+      "oldTextHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "newTextHash": "a7b19d54a0e135b5e1d18c6f4a128e89f4472017e6d2a693d81c376d82f1d738",
+      "oldSample": "",
+      "newSample": "    if (params.prebuiltCognitiveState) {\n      cognitiveState = params.prebuiltCognitiveState;\n    } else",
+      "description": "Insert 105 bytes at offset 7219"
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `insert_after_anchor` changed ~105 character(s) in `backend/src/kloel/kloel-reply-engine.service.ts` (sub-line atomic edit, expansion 0.25× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

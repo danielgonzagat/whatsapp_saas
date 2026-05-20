@@ -184,7 +184,7 @@ export class KloelReplyEngineService {
       content?: string | null;
       tool_calls?: OpenAI.Chat.ChatCompletionAssistantMessageParam['tool_calls'];
     };
-    toolMessages?: Array<{ role?: 'tool'; tool_call_id: string; name: string; content: string }>;
+    toolMessages?: Array<{ role?: 'tool'; tool_call_id: string; name: string; content: string }>;    prebuiltCognitiveState?: Record<string, unknown>;
   }): Promise<ChatCompletionMessageParam[]> {
     const currentInput = {
       raw: params.userMessage,
@@ -198,7 +198,9 @@ export class KloelReplyEngineService {
       perceptionSnapshot: { channel: 'web' },
     };
 
-    if (this.abiBuilder) {
+    if (this.abiBuilder) {    if (params.prebuiltCognitiveState) {
+      cognitiveState = params.prebuiltCognitiveState;
+    } else
       try {
         const abiResult = await this.abiBuilder.build({
           audience: 'public',
