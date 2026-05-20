@@ -154,7 +154,7 @@ class AdminSessionStorage {
             return null;
           }
           this.setAccessToken(result.accessToken);
-          this.setRefreshToken(result.refreshToken);
+          this.setRefreshToken(result.refreshToken ?? null);
           this.setAdmin(result.admin);
           return result.accessToken;
         })
@@ -179,8 +179,10 @@ class AdminSessionStorage {
 export interface RefreshResult {
   /** Access token property. */
   accessToken: string;
-  /** Refresh token property. */
-  refreshToken: string;
+  /** Refresh token property. Optional because the admin frontend stores the
+   * refresh token in an httpOnly cookie and the JS-visible refresh response
+   * therefore only carries the new access token + admin profile. */
+  refreshToken?: string;
   /** Admin property. */
   admin: StoredAdmin;
 }
