@@ -12,6 +12,7 @@ import { KloelThinkerService, ThinkRequest, ThinkSyncResult } from './kloel-thin
 import { KloelToolDispatcherService } from './kloel-tool-dispatcher.service';
 import { KloelWorkspaceContextService } from './kloel-workspace-context.service';
 import { AgentRuntimeContextService } from './agent-runtime';
+import { detectActionIntent } from './guest-chat.action-intent.helpers';import { formatToolResult } from './guest-chat.action-intent.helpers';
 
 type ComposerCapability = 'create_image' | 'create_site' | 'search_web';
 type UnknownRecord = Record<string, unknown>;
@@ -297,6 +298,43 @@ export class KloelService {
   async thinkSync(request: ThinkRequest): Promise<ThinkSyncResult> {
     const { message, workspaceId, mode = 'chat', metadata, companyContext } = request;
     const composerMetadata = this.extractComposerMetadata(metadata);
+    // ── DETERMINISTIC ACTION ROUTER ──
+    if (workspaceId) {
+      const action = detectActionIntent(message);
+      if (action) {
+        this.logger.log(`Deterministic: tool=${action.tool} workspace=${workspaceId}`);
+        try {
+          const result = await this.toolDispatcher.executeTool(
+            workspaceId,
+            action.tool,
+            action.args,
+            request.userId,
+          );
+          const reply = formatToolResult(action.tool, result);
+          void this.conversationStore.saveMessage(workspaceId, 'user', message);
+          void this.conversationStore.saveMessage(workspaceId, 'assistant', reply);
+          void this.prisma.autopilotEvent.create({
+            data: {
+              workspaceId,
+              intent: action.tool,
+              action: `kloel.${action.tool}`,
+              status: 'executed',
+              meta: {
+                userPreview: message.slice(0, 280),
+                replyPreview: reply.slice(0, 280),
+                mode,
+                deterministic: true,
+              },
+            },
+          }).catch(() => {});
+          return { response: reply };
+        } catch (err: unknown) {
+          this.logger.warn(
+            `Deterministic failed: ${err instanceof Error ? err.message : 'unknown'}, falling back to LLM`,
+          );
+        }
+      }
+    }
     const composerCapability = this.resolveComposerCapability(
       message,
       mode,

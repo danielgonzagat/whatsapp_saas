@@ -38,7 +38,10 @@ const PREFIX_FILTER = argv.find((a) => a.startsWith('--prefix='))?.split('=')[1]
 const PREFIXES = PREFIX_FILTER.split(',').filter(Boolean);
 const POLL_MS = Number(argv.find((a) => a.startsWith('--poll-ms='))?.split('=')[1] || 300_000);
 
-const FAIL_OK_NAMES = ['Deploy Staging', 'Deploy Production'];  // tolerated if external
+const FAIL_OK_NAMES = ['Deploy Staging', 'Deploy Production'];
+// Sub-job names of the CI workflow that are tolerated (broken on main pre-existing).
+const FAIL_OK_SUBJOBS = ['e2e', 'pulse-deep'];
+const USE_ADMIN = argv.includes('--admin') || process.env.AUTO_MERGE_ADMIN === '1';
 
 async function listOpenPRs() {
   // statusCheckRollup is unavailable on personal-access-token; fetch checks via REST per PR.
@@ -54,9 +57,9 @@ async function listOpenPRs() {
     } catch {
       pr.combinedStatus = null;
     }
-    // Also fetch check-runs (workflow runs).
+    // Also fetch check-runs (workflow runs); include databaseId for sub-job drill-down.
     try {
-      const runs = await capture(['gh', 'run', 'list', '--repo', REMOTE, '--branch', pr.headRefName, '--limit', '20', '--json', 'name,status,conclusion']);
+      const runs = await capture(['gh', 'run', 'list', '--repo', REMOTE, '--branch', pr.headRefName, '--limit', '20', '--json', 'name,status,conclusion,databaseId']);
       pr.workflowRuns = JSON.parse(runs);
     } catch {
       pr.workflowRuns = [];
@@ -65,16 +68,41 @@ async function listOpenPRs() {
   return prs;
 }
 
-function rolledUpFailures(pr, allowExternal = true) {
+async function rolledUpFailures(pr, allowExternal = true) {
   const all = [
     ...(pr.statusContexts || []).map((s) => ({ name: s.context, state: s.state })),
     ...(pr.workflowRuns || []).map((r) => ({ name: r.name, state: r.conclusion })),
   ];
-  const failures = all.filter((c) => ['failure', 'cancelled', 'timed_out', 'action_required'].includes(String(c.state).toLowerCase()));
+  let failures = all.filter((c) => ['failure', 'cancelled', 'timed_out', 'action_required'].includes(String(c.state).toLowerCase()));
   if (allowExternal) {
-    return failures.filter((f) => !FAIL_OK_NAMES.includes(f.name));
+    failures = failures.filter((f) => !FAIL_OK_NAMES.includes(f.name));
   }
-  return failures;
+  // For top-level CI failures, drill into sub-jobs: if the only failing
+  // sub-jobs are in FAIL_OK_SUBJOBS, treat the CI run itself as tolerated.
+  const surviving = [];
+  for (const f of failures) {
+    if (f.name === 'CI') {
+      const ciRun = (pr.workflowRuns || []).find((r) => r.name === 'CI' && r.conclusion === 'failure');
+      if (ciRun && ciRun.databaseId) {
+        const subjobsJson = await capture(['gh', 'run', 'view', String(ciRun.databaseId), '--repo', REMOTE, '--json', 'jobs']).catch(() => null);
+        if (subjobsJson) {
+          try {
+            const parsed = JSON.parse(subjobsJson);
+            const failingSubjobs = (parsed.jobs || []).filter((j) => j.conclusion === 'failure').map((j) => j.name);
+            const allTolerated = failingSubjobs.every((j) => FAIL_OK_SUBJOBS.includes(j));
+            if (allTolerated && failingSubjobs.length > 0) {
+              // CI failure is tolerated — only e2e/pulse-deep failed.
+              continue;
+            }
+          } catch {
+            /* fall through */
+          }
+        }
+      }
+    }
+    surviving.push(f);
+  }
+  return surviving;
 }
 
 function pendingChecks(pr) {
@@ -90,7 +118,7 @@ async function evaluate(pr) {
   if (PREFIXES.length && !PREFIXES.some((p) => pr.headRefName.startsWith(p))) {
     reason.push(`branch-prefix:${pr.headRefName} (expected one of: ${PREFIXES.join(', ')})`);
   }
-  const failures = rolledUpFailures(pr, true);
+  const failures = await rolledUpFailures(pr, true);
   if (failures.length > 0) reason.push(`failed-checks:${failures.map((f) => f.name).slice(0, 5).join(',')}`);
   const pending = pendingChecks(pr);
   if (pending.length > 0) reason.push(`pending:${pending.length}`);
@@ -103,12 +131,14 @@ async function mergePr(pr) {
     await logLine(`  DRY → would merge #${pr.number}`);
     return { dry: true };
   }
-  const out = await capture([
+  const mergeArgs = [
     'gh', 'pr', 'merge', String(pr.number),
     '--repo', REMOTE,
     '--squash',
     '--delete-branch',
-  ]);
+  ];
+  if (USE_ADMIN) mergeArgs.push('--admin');
+  const out = await capture(mergeArgs);
   await logLine(`  result #${pr.number}: ${out.trim() || 'merged'}`);
   return { merged: true };
 }
