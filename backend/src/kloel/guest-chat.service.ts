@@ -108,9 +108,7 @@ export class GuestChatService implements OnModuleDestroy {
       });
 
       if (abiResult.status !== 'ok') {
-        this.logger.warn(
-          `ABI build failed: ${abiResult.reason}, using structured guest fallback`,
-        );
+        this.logger.warn(`ABI build failed: ${abiResult.reason}, using structured guest fallback`);
       } else {
         const abi = abiResult.abi;
         const validation = validateAbiPayload(abi);
@@ -324,7 +322,9 @@ export class GuestChatService implements OnModuleDestroy {
 
       // UNIFIED AGENT PATH — when workspaceId is provided, delegate to the real brain with tools
       if (workspaceId && this.unifiedAgent) {
-        this.logger.log(`Guest chat sync via UnifiedAgent: workspace=${workspaceId}, session=${sessionId}`);
+        this.logger.log(
+          `Guest chat sync via UnifiedAgent: workspace=${workspaceId}, session=${sessionId}`,
+        );
         try {
           const result = await this.unifiedAgent.processIncomingMessage({
             workspaceId,
@@ -455,7 +455,6 @@ export class GuestChatService implements OnModuleDestroy {
     }
   }
 
-  
   private async persistConversationMessage(
     sessionId: string,
     role: 'user' | 'assistant',
@@ -467,7 +466,7 @@ export class GuestChatService implements OnModuleDestroy {
     await this.persistConversation(sessionId, conversation);
   }
 
-/**
+  /**
    * 🧹 Limpar conversas antigas
    */
   private cleanupOldConversations(): void {
