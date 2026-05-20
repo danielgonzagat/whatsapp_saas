@@ -119,3 +119,4 @@ scripts/mcp/atomic-edit/.smoke-fixture.*
 .claude/scheduled_tasks.lock
 
 graphify-out/
+tools/graphify-plus/
