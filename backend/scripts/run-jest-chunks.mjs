@@ -22,7 +22,7 @@ const chunkSize = Math.max(1, Number(process.env.JEST_CHUNK_SIZE || 256));
 const startChunk = Math.max(1, Number(process.env.JEST_CHUNK_START || 1));
 const maxOldSpaceSize = Math.max(3072, Number(process.env.JEST_MAX_OLD_SPACE_SIZE) || 4096);
 const verboseJestOutput = process.env.JEST_VERBOSE_OUTPUT === '1';
-const defaultJestArgs = verboseJestOutput || process.env.CI ? [] : ['--silent'];
+const defaultJestArgs = verboseJestOutput ? [] : ['--silent'];
 const coverageEnabled = passthroughArgs.some(isCoverageArg);
 const coverageRoot = join(backendRoot, 'coverage');
 const coverageChunksRoot = join(coverageRoot, '.chunks');
@@ -48,7 +48,7 @@ function runJest(args) {
       stdio: verboseJestOutput ? 'inherit' : 'pipe',
     },
   );
-  if (!verboseJestOutput && (result.error || result.signal || result.status !== 0)) {
+  if (result.error || result.signal || result.status !== 0) {
     writeBufferedOutput(result);
   }
   if (result.error) {

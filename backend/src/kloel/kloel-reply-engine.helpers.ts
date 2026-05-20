@@ -332,9 +332,9 @@ export async function buildAssistantReplyImpl(
       .catch(() => {});
   }
 
-  const initialMsg = response.choices[0]?.message;  // Strip reasoning_content to avoid DeepSeek v4 Pro multi-turn error
-  if (initialMsg && (initialMsg as any).reasoning_content) {
-    (initialMsg as any).reasoning_content = null;
+  const initialMsg = response.choices[0]?.message;  // Strip reasoning_content to avoid DeepSeek v4 multi-turn error
+  if (initialMsg && (initialMsg as any).reasoning_content !== undefined) {
+    delete (initialMsg as any).reasoning_content;
   }
   let assistantMessage = initialMsg?.content || deps.unavailableMessage;
 

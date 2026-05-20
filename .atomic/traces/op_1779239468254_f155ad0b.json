@@ -1,0 +1,80 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779239468254_f155ad0b",
+  "ts": "2026-05-20T01:11:08.254Z",
+  "file": "backend/src/lib/openai-models.ts",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "targetUnit": "text_span",
+  "intention": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 27,
+    "lineRewriteSurfaceChars": 27,
+    "expansionFactorAvoided": 1,
+    "bytesNet": -2,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "3aa28b0c195357e0bb8947f1b42d9a7718d6a596ee99b51c985fafd5b967776e",
+  "proposedSha256": "3aa28b0c195357e0bb8947f1b42d9a7718d6a596ee99b51c985fafd5b967776e",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- backend/src/lib/openai-models.ts (atomic char-level)\u001b[0m\n  \n  const DEFAULT_MODELS: Record<BackendOpenAIModelRole, string> = {\n    brain: 'deepseek-\u001b[31m[-v4-pro-]\u001b[0m\u001b[32m{+chat+}\u001b[0m',\n    brain_fallback: 'deepseek-v4-flash',\n    writer: 'deepseek-v4-pro',",
+  "preservedZones": [
+    {
+      "kind": "prefix_preserved",
+      "description": "Bytes 0–456 — prefix preserved unchanged",
+      "byteStart": 0,
+      "byteEnd": 457,
+      "byteLength": 457,
+      "beforeHash": "9eac3f63872619eb1bfe0fee6ba793bb3419598947904c96580748f4c39ec8de",
+      "afterHash": "9eac3f63872619eb1bfe0fee6ba793bb3419598947904c96580748f4c39ec8de",
+      "sample": "t DEFAULT_MODELS: Record<BackendOpenAIModelRole, string> = {\n  brain: 'deepseek-"
+    },
+    {
+      "kind": "suffix_preserved",
+      "description": "Bytes 463–2946 — suffix preserved unchanged",
+      "byteStart": 463,
+      "byteEnd": 2947,
+      "byteLength": 2484,
+      "beforeHash": "fb723d5c5da896ae50cf887d22e93a799801ec5ba3898725876803e63e7c4ae8",
+      "afterHash": "fb723d5c5da896ae50cf887d22e93a799801ec5ba3898725876803e63e7c4ae8",
+      "sample": "',\n  brain_fallback: 'deepseek-v4-flash',\n  writer: 'deepseek-v4-pro',\n  writer_"
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "byteStart": 457,
+      "byteEnd": 463,
+      "newByteLength": 4,
+      "oldTextHash": "550297f3a7402591c8eba05f71ffbf7fcadbb5824681e19fb1a4ee29bf4e5aba",
+      "newTextHash": "31e06f7d89feb99a0e6c0affe198748c3bb5bef5e3cc92d95cb9e996197d3fc3",
+      "oldSample": "v4-pro",
+      "newSample": "chat",
+      "description": "Replace 6 bytes at offset 457 with 4 bytes"
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~27 character(s) in `backend/src/lib/openai-models.ts` (sub-line atomic edit, expansion 1× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}
