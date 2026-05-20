@@ -114,3 +114,6 @@ scripts/mcp/atomic-edit/.smoke-fixture.*
 # scripts/mcp/atomic-edit/audit-atomicity.mjs, do not version individual ops)
 .atomic/traces/
 .atomic/macro-traces/
+
+# claude code session locks
+.claude/scheduled_tasks.lock
