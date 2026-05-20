@@ -1,0 +1,80 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779244072537_a0f4d4a6",
+  "ts": "2026-05-20T02:27:52.537Z",
+  "file": "backend/src/kloel/mind/mind-bg.processor.ts",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "insert_before_anchor",
+  "operator": "insert_before_anchor",
+  "targetUnit": "text_span",
+  "intention": "insert_before_anchor",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 481,
+    "lineRewriteSurfaceChars": 31,
+    "expansionFactorAvoided": 0.06,
+    "bytesNet": 481,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "1026b93469431837d5309b8d0e304cf9d86394a2e88c51a754313eba8a4ca160",
+  "proposedSha256": "1026b93469431837d5309b8d0e304cf9d86394a2e88c51a754313eba8a4ca160",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- backend/src/kloel/mind/mind-bg.processor.ts (atomic char-level)\u001b[0m\n        this.coordinator.markFired('medium', nowMs);\n      }\n  \u001b[32m{+      // Auto-generate working memory items from recent events if none provided\n        const effectiveWorkingMemory: WorkingMemoryItem[] = input.workingMemory.length > 0\n          ? [...input.workingMemory]\n          : input.recentEvents.slice(0, 10).map((e, i) => ({\n              itemId: `wm_auto_${i}_${Date.now().toString(36)}`,\n              kind: 'fact' as const,\n              content: e.summary || e.eventName || `event_${i}`,\n              relatedEventIds: [e.eventId],\n            }));+}\u001b[0m\n      if (due.includes('long')) {\n        consolidation = this.consolidation.runCycle({",
+  "preservedZones": [
+    {
+      "kind": "prefix_preserved",
+      "description": "Bytes 0–2519 — prefix preserved unchanged",
+      "byteStart": 0,
+      "byteEnd": 2520,
+      "byteLength": 2520,
+      "beforeHash": "00e0f82ecb33ebff32b26c78269fe1bd21537dda9aca6a719d6f7d91b6b878e6",
+      "afterHash": "00e0f82ecb33ebff32b26c78269fe1bd21537dda9aca6a719d6f7d91b6b878e6",
+      "sample": "vents, 24, nowMs);\n      this.coordinator.markFired('medium', nowMs);\n    }\n    "
+    },
+    {
+      "kind": "suffix_preserved",
+      "description": "Bytes 2520–3141 — suffix preserved unchanged",
+      "byteStart": 2520,
+      "byteEnd": 3142,
+      "byteLength": 622,
+      "beforeHash": "47d9bc23d17f0e43d0676de613fcfd55d19ebbfa22639e5addcb3b6d90e4e7ac",
+      "afterHash": "47d9bc23d17f0e43d0676de613fcfd55d19ebbfa22639e5addcb3b6d90e4e7ac",
+      "sample": "if (due.includes('long')) {\n      consolidation = this.consolidation.runCycle({\n"
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "byteStart": 2520,
+      "byteEnd": 2520,
+      "newByteLength": 481,
+      "oldTextHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "newTextHash": "30f697bac27566b68b5cbd55037f8a984a3eba6e1a99ccb85115c5329f846ecc",
+      "oldSample": "",
+      "newSample": "  // Auto-generate working memory items from recent events if none provided\n      const effectiveWorkingMemory: WorkingMemoryItem[] = input.workingMemory.length > 0\n        ? [...input.workingMemory]\n",
+      "description": "Insert 481 bytes at offset 2520"
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `insert_before_anchor` changed ~481 character(s) in `backend/src/kloel/mind/mind-bg.processor.ts` (sub-line atomic edit, expansion 0.06× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

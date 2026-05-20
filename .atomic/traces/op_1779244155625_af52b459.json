@@ -1,0 +1,80 @@
+{
+  "traceVersion": "1.0",
+  "operationId": "op_1779244155625_af52b459",
+  "ts": "2026-05-20T02:29:15.625Z",
+  "file": "backend/src/kloel/mind/mind-bg.processor.ts",
+  "repoRoot": "/Users/danielpenin/whatsapp_saas",
+  "operation": "atomic_edit",
+  "operator": "atomic_edit",
+  "targetUnit": "text_span",
+  "intention": "atomic_edit",
+  "fallback": false,
+  "metrics": {
+    "changedChars": 299,
+    "lineRewriteSurfaceChars": 276,
+    "expansionFactorAvoided": 0.92,
+    "bytesNet": 23,
+    "lineRewriteAvoided": false
+  },
+  "validation": {
+    "language": "ts",
+    "syntaxErrorsBefore": 0,
+    "syntaxErrorsAfter": 0
+  },
+  "preview": false,
+  "changed": true,
+  "afterSha256": "5f659c5c5e5d6b3c81298d5e3f29f29cdeb5b7bcd639a1a36fdb7bc732af358a",
+  "proposedSha256": "5f659c5c5e5d6b3c81298d5e3f29f29cdeb5b7bcd639a1a36fdb7bc732af358a",
+  "rollback": {
+    "available": true,
+    "strategy": "explicit pre-edit snapshot (before-text retained by caller)"
+  },
+  "inlinePreview": "\u001b[2m--- backend/src/kloel/mind/mind-bg.processor.ts (atomic char-level)\u001b[0m\n              itemId: `wm_auto_${i}_${Date.now().toString(36)}`,\n              kind: 'fact' as const,\n              content: e.\u001b[31m[-summary || -]\u001b[0me\u001b[31m[-.e-]\u001b[0mventName\u001b[32m{+,\n  +}\u001b[0m \u001b[31m[-||-]\u001b[0m \u001b[31m[-`-]\u001b[0m\u001b[32m{+          add+}\u001b[0me\u001b[31m[-v-]\u001b[0m\u001b[32m{+dAt: n+}\u001b[0me\u001b[32m{+w Date(+}\u001b[0mn\u001b[32m{+owMs).+}\u001b[0mt\u001b[31m[-_${-]\u001b[0m\u001b[32m{+oISOStr+}\u001b[0mi\u001b[31m[-}`-]\u001b[0m\u001b[32m{+ng()+}\u001b[0m,\n              relatedEventIds: [e.eventId],\n            }));",
+  "preservedZones": [
+    {
+      "kind": "prefix_preserved",
+      "description": "Bytes 0–2899 — prefix preserved unchanged",
+      "byteStart": 0,
+      "byteEnd": 2900,
+      "byteLength": 2900,
+      "beforeHash": "e8b3657bebee47e128851f36d6edcb88f1446b1149e181088bd877a3da19bbd8",
+      "afterHash": "e8b3657bebee47e128851f36d6edcb88f1446b1149e181088bd877a3da19bbd8",
+      "sample": "now().toString(36)}`,\n            kind: 'fact' as const,\n            content: e."
+    },
+    {
+      "kind": "suffix_preserved",
+      "description": "Bytes 2938–3625 — suffix preserved unchanged",
+      "byteStart": 2938,
+      "byteEnd": 3626,
+      "byteLength": 688,
+      "beforeHash": "426c7355bf09dd584e4b13edfe4696ce97d4aff29e634c64419a0bfd459a7f48",
+      "afterHash": "426c7355bf09dd584e4b13edfe4696ce97d4aff29e634c64419a0bfd459a7f48",
+      "sample": ",\n            relatedEventIds: [e.eventId],\n          }));\n    if (due.includes("
+    }
+  ],
+  "modifiedZones": [
+    {
+      "kind": "changed_span",
+      "byteStart": 2900,
+      "byteEnd": 2938,
+      "newByteLength": 61,
+      "oldTextHash": "97c8026e9cce54cc22175d22ca8178c3c587b6852d538257977c1440c4e32ca5",
+      "newTextHash": "e3d6b5f37a91086cef927ef7dd583affe8ad8b707ab821cb1288b333e8d98911",
+      "oldSample": "summary || e.eventName || `event_${i}`",
+      "newSample": "eventName,\n            addedAt: new Date(nowMs).toISOString()",
+      "description": "Replace 38 bytes at offset 2900 with 61 bytes"
+    }
+  ],
+  "movementZones": [],
+  "semanticImpact": "unclassified_code_edit",
+  "audit": {
+    "whatChanged": "Operation `atomic_edit` changed ~299 character(s) in `backend/src/kloel/mind/mind-bg.processor.ts` (sub-line atomic edit, expansion 0.92× — it did not rewrite surrounding code).",
+    "whatPreserved": "Everything outside the highlighted [-removed-]{+added+} span in that one file is byte-identical. No other file was touched by this operation.",
+    "howToValidate": "Read the atomicDiff above — it shows EXACTLY the changed characters, nothing else. Then exercise the affected behavior in the running product to confirm intent.",
+    "notProven": "Runtime/product behavior is NOT proven by this tool. Structural validity ≠ correct behavior. Prove behavior by running the flow in the app.",
+    "nonTouched": "Single-file, single-span: auth, payments, database, protected files, and every other source file are provably untouched by this operation.",
+    "promiseClass": "structurally-validated",
+    "zeroCodeTrust": 60,
+    "trustCeilingReason": "ceiling < 75: an edit tool proves structure + exact scope, not product behavior. Reaching 75 (validate by explanation) or 100 (validate by the product) requires running the changed flow — do that in the app, not here."
+  }
+}

@@ -20,7 +20,7 @@ const jestBin = join(backendRoot, 'node_modules', 'jest', 'bin', 'jest.js');
 const passthroughArgs = process.argv.slice(2);
 const chunkSize = Math.max(1, Number(process.env.JEST_CHUNK_SIZE || 256));
 const startChunk = Math.max(1, Number(process.env.JEST_CHUNK_START || 1));
-const maxOldSpaceSize = Math.max(3072, Number(process.env.JEST_MAX_OLD_SPACE_SIZE) || 4096);
+const maxOldSpaceSize = Math.max(2048, Number(process.env.JEST_MAX_OLD_SPACE_SIZE) || 3072);
 const verboseJestOutput = process.env.JEST_VERBOSE_OUTPUT === '1';
 const defaultJestArgs = verboseJestOutput ? [] : ['--silent'];
 const coverageEnabled = passthroughArgs.some(isCoverageArg);

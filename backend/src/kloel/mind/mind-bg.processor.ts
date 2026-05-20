@@ -65,9 +65,19 @@ export class MindBackgroundProcessor {
       mood = this.valenceAggregator.aggregate(input.recentEvents, 24, nowMs);
       this.coordinator.markFired('medium', nowMs);
     }
+      // Auto-generate working memory items from recent events if none provided
+      const effectiveWorkingMemory: WorkingMemoryItem[] = input.workingMemory.length > 0
+        ? [...input.workingMemory]
+        : input.recentEvents.slice(0, 10).map((e, i) => ({
+            itemId: `wm_auto_${i}_${Date.now().toString(36)}`,
+            kind: 'fact' as const,
+            content: e.eventName,
+            addedAt: new Date(nowMs).toISOString(),
+            relatedEventIds: [e.eventId],
+          }));
     if (due.includes('long')) {
       consolidation = this.consolidation.runCycle({
-        workingMemory: input.workingMemory,
+        workingMemory: effectiveWorkingMemory,
         recentEvents: input.recentEvents,
         mode: 'real',
         nowIso: new Date(nowMs).toISOString(),
