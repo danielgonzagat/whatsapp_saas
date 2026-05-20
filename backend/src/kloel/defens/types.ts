@@ -198,9 +198,8 @@ export interface EvidenceInput {
   readonly nowMs?: number;
 }
 
-export function clamp(value: number, min: number, max: number): number {
-  return Math.max(min, Math.min(max, value));
-}
+import { clamp } from '../../common/math';
+export { clamp };
 
 export function filterByWorkspace(
   events: readonly SpineEventRef[],

@@ -14,7 +14,7 @@ Total models referenced: 170.
 | `message` | 33 | `backend/src/analytics/agent-performance.service.ts`<br>`backend/src/analytics/analytics.service.ts`<br>`backend/src/analytics/smart-time/smart-time.service.ts`<br>… +30 |
 | `agent` | 31 | `backend/src/admin/accounts/kyc/admin-kyc.service.ts`<br>`backend/src/admin/accounts/queries/kyc-queue.query.ts`<br>`backend/src/admin/compliance/admin-compliance.service.ts`<br>… +28 |
 | `conversation` | 25 | `backend/src/admin/dashboard/admin-dashboard.service.ts`<br>`backend/src/admin/marketing/admin-marketing.service.ts`<br>`backend/src/admin/notifications/admin-notifications.service.ts`<br>… +22 |
-| `autopilotEvent` | 25 | `backend/src/autopilot/autopilot-analytics-insights.service.ts`<br>`backend/src/autopilot/autopilot-analytics-report.service.ts`<br>`backend/src/autopilot/autopilot-analytics.service.ts`<br>… +22 |
+| `autopilotEvent` | 24 | `backend/src/autopilot/autopilot-analytics-insights.service.ts`<br>`backend/src/autopilot/autopilot-analytics-report.service.ts`<br>`backend/src/autopilot/autopilot-analytics.service.ts`<br>… +21 |
 | `flow` | 19 | `backend/src/analytics/advanced-analytics.service.ts`<br>`backend/src/analytics/analytics.service.ts`<br>`backend/src/billing/billing-subscription.service.ts`<br>… +16 |
 | `auditLog` | 18 | `backend/src/audit/audit.service.ts`<br>`backend/src/autopilot/autopilot-cycle-money.service.ts`<br>`backend/src/autopilot/autopilot.service.ts`<br>… +15 |
 | `checkoutProductPlan` | 17 | `backend/src/admin/products/queries/detail-product.query.ts`<br>`backend/src/admin/products/queries/list-products.query.ts`<br>`backend/src/affiliate/affiliate.controller.ts`<br>… +14 |
@@ -105,7 +105,7 @@ Total models referenced: 170.
 | `productCheckout` | 2 | `backend/src/kloel/kloel-product-sub-resource-tools.service.ts`<br>`backend/src/kloel/product-sub-resources/product-checkout.controller.ts` |
 | `mindDailyReport` | 2 | `backend/src/kloel/kloel-reflexivity.service.ts`<br>`backend/src/kloel/mind-report.service.ts` |
 | `externalPaymentLink` | 2 | `backend/src/kloel/kloel-workspace-context-data.service.ts`<br>`backend/src/whatsapp/account-agent.product-materializer.ts` |
-| `persona` | 2 | `backend/src/kloel/kloel-workspace-context.service.ts`<br>`backend/src/kloel/kloel.service.ts` |
+| `persona` | 2 | `backend/src/kloel/kloel-workspace-context.service.ts`<br>`backend/src/kloel/kloel.service.lists.helpers.ts` |
 | `mindCase` | 2 | `backend/src/kloel/mind-case-memory.service.ts`<br>`backend/src/kloel/mind-observability.service.ts` |
 | `mindGuardAudit` | 2 | `backend/src/kloel/mind-guards.service.ts`<br>`backend/src/kloel/mind-observability.service.ts` |
 | `productCommission` | 2 | `backend/src/kloel/product-sub-resources/helpers/affiliate.helpers.ts`<br>`backend/src/kloel/product-sub-resources/product-commission.controller.ts` |
