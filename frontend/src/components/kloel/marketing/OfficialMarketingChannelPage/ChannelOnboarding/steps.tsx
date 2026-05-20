@@ -15,13 +15,13 @@ export interface ProductRow {
 
 /** Passo 0 · Identidade */
 export function StepConnect({
-  provider,
+  sub,
   verb,
   busy,
   onConnect,
   C,
 }: {
-  provider: string;
+  sub: string;
   verb: string;
   busy: boolean;
   onConnect: () => void;
@@ -36,7 +36,7 @@ export function StepConnect({
           <br />à inteligência
         </>
       }
-      sub={provider}
+      sub={sub}
       action={
         <CTA C={C} variant="ember" disabled={busy} onClick={onConnect}>
           {verb} <Arrow />
