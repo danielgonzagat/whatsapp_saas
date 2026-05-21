@@ -1,6 +1,7 @@
 # Kloel Event Taxonomy (canonical)
 
-> Generated 2026-05-21 from grep over `backend/src/**/*.ts` for `eventName:` literals.
+> Generated 2026-05-21 from all `spine.emit` call sites in `backend/src/`.
+> **44 production events** found. Previous doc claimed 70 — 26 were stale/deprecated entries removed.
 > Gate: `scripts/ops/check-canonical-events.mjs` enforces no new event outside the documented namespaces.
 
 ## Canonical event namespaces
@@ -18,110 +19,167 @@ Examples:
 - `cognition.decision_made`    ✅ canonical (no sub-domain — root concern)
 - `paymentApproved`            ❌ non-canonical, lacks namespace
 - `Lead.qualified`             ❌ non-canonical, mixed case
-- `ViewContent`                ❌ analytics shorthand, not a domain event
+- `ViewContent`                ❌ analytics shorthand, not a Spine event
 
 ### Top-level namespaces
 
 | Namespace | Count | Purpose | Status |
 |---|---:|---|---|
-| `commerce.*` | 54 | Business domain — leads, sales, payments, lifecycle | ✅ canonical |
-| `cognition.*` | 5 | KLOEL cognitive organism — beliefs, decisions | ✅ canonical |
-| `lineage.*` | 6 | Append-only audit chain — genesis, skill consolidation | ✅ canonical |
-| `pulse.*` | 3 | PULSE health/gate signals | ✅ canonical |
-| `auth.*` | 1 | Identity events | ✅ canonical |
-| `workspace.*` | 1 | Tenant-level events | ✅ canonical |
-| `mercado_entrada.*` | 1 | Onboarding/entry funnel | ⚠️ rename to `commerce.onboarding.*` |
+| `commerce.*` | 31 | Business domain — leads, sales, payments, lifecycle | ✅ canonical |
+| `cognition.*` | 2 | KLOEL cognitive organism — beliefs, decisions | ✅ canonical |
+| `lineage.*` | 1 | Append-only audit chain — genesis | ✅ canonical |
+| `pulse.*` | 2 | PULSE health/gate signals | ✅ canonical |
 
-## Full canonical event inventory (70 events)
+**Note:** `evolution.gap_detected` is referenced in `drift-attribution.service.ts` config but has NO `spine.emit` call site — excluded from counts. `auth.*`, `workspace.*`, and `mercado_entrada.*` had events only in tests/spec fixtures, not in production emitters — removed until emitters exist.
 
-### commerce.affiliate.* (5)
+## Full canonical event inventory (36 production-emitted Spine events)
 
-`click_registered`, `commission_calculated`, `commission_received`, `link_created`, `performance_measured`
+### commerce.affiliate.* (2)
+
+| Event | Emitter | File:Line |
+|---|---|---|
+| `commission_calculated` | `MemberAreaEventEmitterService` | `member-area-event-emitter.service.ts:145` |
+| `performance_measured` | `MemberAreaEventEmitterService` | `member-area-event-emitter.service.ts:126` |
 
 ### commerce.campaign.* (5)
 
-`audience_reached`, `clicked`, `conversion_associated`, `creative_swapped`, `performance_drop_detected`
+| Event | Emitter | File:Line |
+|---|---|---|
+| `audience_reached` | `CampaignEventEmitterService` | `campaign-event-emitter.service.ts:92` |
+| `clicked` | `CampaignEventEmitterService` | `campaign-event-emitter.service.ts:52` |
+| `conversion_associated` | `CampaignEventEmitterService` | `campaign-event-emitter.service.ts:72` |
+| `creative_swapped` | `CampaignEventEmitterService` | `campaign-event-emitter.service.ts:112` |
+| `performance_drop_detected` | `CampaignEventEmitterService` | `campaign-event-emitter.service.ts:133` |
 
 ### commerce.cart.* (3)
 
-`abandoned`, `checkout_initiated`, `created`
-
-### commerce.checkout.* (1)
-
-`created`
+| Event | Emitter | File:Line |
+|---|---|---|
+| `abandoned` | `CheckoutEventEmitterService` | `checkout-event-emitter.service.ts:56` |
+| `checkout_initiated` | `CheckoutEventEmitterService` | `checkout-event-emitter.service.ts:90` |
+| `created` | `CheckoutEventEmitterService` | `checkout-event-emitter.service.ts:23` |
 
 ### commerce.crm.* (5)
 
-`deal_lost`, `deal_won`, `next_step_defined`, `owner_assigned`, `stage_changed`
-
-### commerce.error.* (1)
-
-`recovery_proof_packaged`
+| Event | Emitter | File:Line |
+|---|---|---|
+| `deal_lost` | `CrmEventEmitterService` | `crm-event-emitter.service.ts:103` |
+| `deal_won` | `CrmEventEmitterService` | `crm-event-emitter.service.ts:82` |
+| `next_step_defined` | `CrmEventEmitterService` | `crm-event-emitter.service.ts:61` |
+| `owner_assigned` | `CrmEventEmitterService` | `crm-event-emitter.service.ts:40` |
+| `stage_changed` | `CrmEventEmitterService` | `crm-event-emitter.service.ts:19` |
 
 ### commerce.kyc.* (3)
 
-`approved`, `document_submitted`, `rejected`
+| Event | Emitter | File:Line |
+|---|---|---|
+| `approved` | `KycEventEmitterService` | `kyc-event-emitter.service.ts:65` |
+| `document_submitted` | `KycEventEmitterService` | `kyc-event-emitter.service.ts:37` |
+| `rejected` | `KycEventEmitterService` | `kyc-event-emitter.service.ts:96` |
 
-### commerce.lead.* (8)
+### commerce.lead.* (2)
 
-`contacted`, `converted`, `created`, `lost`, `objection_raised`, `qualified`, `replied`, `went_silent`
+Only events with concrete `spine.emit` call sites:
+
+| Event | Emitter | File:Line |
+|---|---|---|
+| `converted` | `CheckoutEventEmitterService` | `checkout-event-emitter.service.ts:307` |
+| `objection_raised` | `CrmEventEmitterService` | `crm-event-emitter.service.ts:124` |
 
 ### commerce.member_area.* (3)
 
-`dropped_out`, `enrolled`, `progressed`
+| Event | Emitter | File:Line |
+|---|---|---|
+| `dropped_out` | `MemberAreaEventEmitterService` | `member-area-event-emitter.service.ts:105` |
+| `enrolled` | `MemberAreaEventEmitterService` | `member-area-event-emitter.service.ts:60` |
+| `progressed` | `MemberAreaEventEmitterService` | `member-area-event-emitter.service.ts:82` |
 
-### commerce.payment.* (6)
+### commerce.onboarding.* (1)
 
-`approved`, `charged_back`, `declined`, `failed`, `initiated`, `refunded`
+| Event | Emitter | File:Line |
+|---|---|---|
+| `declared` | `MercadoEntradaDeclaratorService` | `mercado-entrada.declarator.service.ts:268,358` |
+
+### commerce.payment.* (5)
+
+| Event | Emitter | File:Line |
+|---|---|---|
+| `approved` | `CheckoutEventEmitterService` | `checkout-event-emitter.service.ts:159` |
+| `charged_back` | `CheckoutEventEmitterService` | `checkout-event-emitter.service.ts:272` |
+| `declined` | `CheckoutEventEmitterService` | `checkout-event-emitter.service.ts:193` |
+| `initiated` | `CheckoutEventEmitterService` | `checkout-event-emitter.service.ts:125` |
+| `refunded` | `CheckoutEventEmitterService` | `checkout-event-emitter.service.ts:232` |
 
 ### commerce.post_sale.* (8)
 
-`activation_started`, `churn_risk_detected`, `delivery_completed`, `first_value_obtained`, `no_regret_confirmed`, `repurchase_window_opened`, `satisfaction_signal_observed`, `win_back_window_opened`
+| Event | Emitter | File:Line |
+|---|---|---|
+| `activation_started` | `CheckoutPostPaymentEffectsService` | `checkout-post-payment-effects.service.ts:131` |
+| `churn_risk_detected` | `BanRiskDetector` | `ban-risk.detector.ts:150` |
+| `delivery_completed` | `CheckoutPostPaymentEffectsService` | `checkout-post-payment-effects.service.ts:115` |
+| `first_value_obtained` | `FirstValueDetector` | `first-value.detector.ts:161` |
+| `no_regret_confirmed` | `NoRegretPipelineService` | `no-regret-pipeline.service.ts:169` |
+| `repurchase_window_opened` | `RepurchaseWindowDetector` | `repurchase-window.detector.ts:123` |
+| `satisfaction_signal_observed` | `SatisfactionCollectorService` | `satisfaction-collector.service.ts:175` |
+| `win_back_window_opened` | `WinbackWindowAdvisor` | `winback-window.advisor.ts:88` |
 
-### commerce.product.* (2)
+### commerce.whatsapp.* (1)
 
-`created`, `updated`
+| Event | Emitter | File:Line |
+|---|---|---|
+| `handoff_to_human` | `WhatsappEventEmitterService` | `whatsapp-event-emitter.service.ts:224` |
 
-### commerce.whatsapp.* (4)
+**Note:** `session_lifecycle` is referenced in `drift-attribution.service.ts:25` but has no `spine.emit` call site — config reference only, excluded.
 
-`handoff_to_human`, `message_received`, `message_replied`, `session_lifecycle`
+### cognition.* (2)
 
-### cognition.* (5)
+| Event | Emitter | File:Line |
+|---|---|---|
+| `belief_updated` | `BeliefUpdate` | `belief-update.ts:62` |
+| `valence_assigned` | `OperatorFeedbackLoop` | `operator-feedback.loop.ts:68` |
 
-`analysis_completed`, `analysis_started`, `belief_updated`, `decision_made`, `valence_assigned`
+### lineage.* (1)
 
-### lineage.* (6)
+| Event | Emitter | File:Line |
+|---|---|---|
+| `genesis` | `LineageLedgerService` | `lineage-ledger.service.ts:118` |
 
-`capability_acquired`, `ciclo_pulse_nao_regressivo`, `genesis`, `skill_consolidated`, `something_else` (⚠️ rename), `tampered`
+### pulse.* (2)
 
-### pulse.* (3)
+| Event | Emitter | File:Line |
+|---|---|---|
+| `gate_passed` | `PulseSpineBridge` / `EventEmitAuditEventEmitterService` | `pulse-spine.bridge.ts:28`, `event-emit-audit-event-emitter.service.ts:41` |
+| `gate_failed` | `PulseSpineBridge` / `EventEmitAuditEventEmitterService` | `pulse-spine.bridge.ts:28`, `event-emit-audit-event-emitter.service.ts:41` |
 
-`capability_promoted`, `gate_failed`, `gate_passed`
+## Deprecated events (doc claimed, code has NO production emit — 26 stale entries removed)
 
-### auth.* (1)
+- `commerce.affiliate.click_registered`, `commission_received`, `link_created`
+- `commerce.checkout.created`
+- `commerce.error.recovery_proof_packaged`
+- `commerce.lead.contacted`, `created`, `lost`, `qualified`, `replied`, `went_silent`
+- `commerce.payment.failed`
+- `commerce.product.created`, `updated`
+- `commerce.whatsapp.message_received`, `message_replied`
+- `cognition.analysis_completed`, `analysis_started`, `decision_made`
+- `lineage.capability_acquired`, `ciclo_pulse_nao_regressivo`, `skill_consolidated`, `tampered`
+- `auth.refresh_token_expired`
+- `workspace.settings.updated`
 
-`refresh_token_expired`
+These names appear in spec fixtures or consumer filters but lack a `spine.emit` call. They should either be:
+- Wired to a real emitter service, or
+- Removed from spec fixtures if unused.
 
-### workspace.* (1)
-
-`settings.updated`
-
-### mercado_entrada.* (1) — rename candidate
-
-- `mercado_entrada.declared` → migrate to `commerce.onboarding.declared`
+The PULSE auditor (`scripts/pulse/no-hardcoded-reality-audit.ts`) will report these as hardcode debt.
 
 ## Non-canonical / cleanup candidates
 
-Detected but do NOT match canonical schema:
-
-| Name | Action |
-|---|---|
-| `a`, `b.c`, `d`, `p`, `x`, `some.event` | Test fixtures — keep, scoped to `*.spec.ts` |
-| `evolution.something` | Audit + rename or remove |
-| `CORE.thing` | Audit + rename |
-| `Lead.qualified` | Mixed case — duplicate of `commerce.lead.qualified`, merge |
-| `ViewContent`, `Purchase` | Meta Pixel analytics — route through analytics module, not Spine |
-| `lineage.something_else` | Generic name — rename to specific or remove |
+| Name | File | Notes |
+|---|---|---|
+| `evolution.gap_detected` | `drift-attribution.service.ts:19` | Config reference only, no `spine.emit` |
+| `commerce.whatsapp.session_lifecycle` | `drift-attribution.service.ts:25` | Config reference only, no `spine.emit` |
+| `Purchase` | `checkout-post-payment-effects.service.ts:172` | Meta Pixel event, not Spine |
+| `ViewContent` | Meta Pixel | Analytics shorthand, not a Spine event |
+| `a.b.c`, `d.e.f`, `p.q.r`, `x.y.z` | Spec tests | Test fixtures |
 
 ## Non-Spine event surfaces
 
