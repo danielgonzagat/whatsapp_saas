@@ -63,7 +63,8 @@ describe('LacunasController', () => {
       expect(loggerLog).toHaveBeenCalledWith(
         'Lacuna suggestion recorded: missing-feature from ws-1',
       );
-      expect(result).toEqual({ ok: true });
+      expect((result as { ok: boolean }).ok).toBe(true);
+      expect((result as { id: string }).id).toMatch(/^ws-1_/);
     });
 
     it('defaults intent to "unspecified" when not provided in body (alternate route)', async () => {
@@ -94,10 +95,9 @@ describe('LacunasController', () => {
 
       await controller.suggest(body, req);
 
-      expect(fsMkdirSync).toHaveBeenCalledWith(
-        expect.stringContaining('artifacts'),
-        { recursive: true },
-      );
+      expect(fsMkdirSync).toHaveBeenCalledWith(expect.stringContaining('artifacts'), {
+        recursive: true,
+      });
       expect(fsAppendFileSync).toHaveBeenCalledTimes(1);
     });
 
@@ -153,10 +153,9 @@ describe('LacunasController', () => {
       expect(loggerWarn).toHaveBeenCalledWith(
         `Failed to persist lacuna suggestion: ${fsError.message}`,
       );
-      expect(loggerLog).toHaveBeenCalledWith(
-        'Lacuna suggestion recorded: error-test from ws-1',
-      );
-      expect(result).toEqual({ ok: true });
+      expect(loggerLog).toHaveBeenCalledWith('Lacuna suggestion recorded: error-test from ws-1');
+      expect((result as { ok: boolean }).ok).toBe(true);
+      expect((result as { id: string }).id).toMatch(/^ws-1_/);
     });
   });
 });
