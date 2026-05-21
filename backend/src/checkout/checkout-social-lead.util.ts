@@ -21,9 +21,17 @@ export function normalizeEmail(value?: string | null) {
 }
 
 /** Normalize phone. */
+import { digitsOrNull } from '../common/phone';
+
+/**
+ * Checkout-flavoured phone normalizer: returns null when empty so the
+ * Prisma where-clause treats missing as null rather than empty-string.
+ *
+ * Thin wrapper around the canonical `digitsOrNull` helper; kept here
+ * for the existing import path stability.
+ */
 export function normalizePhone(value?: string | null) {
-  const digits = String(value || '').replace(D_RE, '');
-  return digits || null;
+  return digitsOrNull(value);
 }
 
 /** Extract address from enrichment. */

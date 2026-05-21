@@ -80,8 +80,11 @@ export const EXPECTED_TOOL_ALPHABET = [
   'send_whatsapp_message',
 ];
 
+import { digitsOnly } from '../common/phone';
+
+/** Re-export from canonical `common/phone::digitsOnly` for legacy callers. */
 export function normalizePhone(value: string): string {
-  return String(value || '').replace(/\D/g, '');
+  return digitsOnly(value);
 }
 
 export function normalizeChatId(value: string): string {
