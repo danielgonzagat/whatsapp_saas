@@ -6,12 +6,9 @@ import { WhatsAppApiProvider } from './whatsapp-api.provider';
 import type { WhatsAppProviderType, SessionStatus, UnknownRecord } from './provider-registry.types';
 import { MissingWahaProviderError } from './provider-registry.types';
 
+import { readString } from '../../common/parse';
 export function readRecord(value: unknown): UnknownRecord {
   return typeof value === 'object' && value !== null ? (value as UnknownRecord) : {};
-}
-
-function readString(value: unknown): string | undefined {
-  return typeof value === 'string' && value.trim() ? value : undefined;
 }
 
 function readStringArray(value: unknown): string[] | undefined {
