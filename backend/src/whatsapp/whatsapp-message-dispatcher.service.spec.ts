@@ -17,7 +17,7 @@ jest.mock('../queue/queue', () => ({
 }));
 
 function getFlowQueueAddMock(): jest.Mock {
-  const queueRef = flowQueue as unknown as { add: jest.Mock };
+  const queueRef = flowQueue as never as { add: jest.Mock };
   return queueRef.add;
 }
 
