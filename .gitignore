@@ -112,3 +112,4 @@ state/FINDINGS_AGGREGATE.json
 # codegraph build artifacts
 .codegraph/
 .world/
+.task-graph/

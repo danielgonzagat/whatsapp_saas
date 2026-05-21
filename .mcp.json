@@ -79,6 +79,16 @@
       "command": "bash",
       "args": ["scripts/mcp/pulse-mcp/launcher.sh"],
       "description": "PULSE actionable — scan / scan_module / report / health_by_module / top_gates / dispatch_fix (PULSE acts via OpenCode subagent fan-out) / dispatch_status / history / mesh_routes. PULSE detects + scores + dispatches remediation; atomic-edit + kaisser handle the safe writes."
+    },
+    "test-runner": {
+      "command": "bash",
+      "args": ["scripts/mcp/test-runner-mcp/launcher.sh"],
+      "description": "Test execution loop — run_jest / run_vitest / run_tsc / run_eslint / coverage_for_module / affected_tests / test_summary / mesh_routes. Returns STRUCTURED pass/fail + coverage delta so agents can verify before declaring done. Fixes Wave L declared-done-but-broken failure mode."
+    },
+    "task-graph": {
+      "command": "bash",
+      "args": ["scripts/mcp/task-graph-mcp/launcher.sh"],
+      "description": "Persistent task queue with locks. task_import_issue (gh CLI) / task_import_plan / task_list / task_next (claims next ready, respects deps + locks) / task_update / task_lock_acquire+release (prevents concurrent agent collision) / task_stats / mesh_routes. Storage in .task-graph/. Survives sessions."
     }
   }
 }
