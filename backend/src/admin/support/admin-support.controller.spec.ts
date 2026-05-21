@@ -68,7 +68,7 @@ describe('AdminSupportController', () => {
       const output = await controller.updateStatus('c-1', dto, admin);
 
       expect(updateStatus).toHaveBeenCalledWith('c-1', 'CLOSED', 'a-1');
-      expect(output).toEqual({ ok: true });
+      expect(output).toEqual({ conversationId: 'c-1', ok: true });
     });
 
     it('propagates error when service rejects', async () => {
@@ -91,7 +91,7 @@ describe('AdminSupportController', () => {
       const output = await controller.reply('c-1', dto, admin);
 
       expect(reply).toHaveBeenCalledWith('c-1', 'a-1', 'mensagem de resposta');
-      expect(output).toEqual({ ok: true });
+      expect(output).toEqual({ conversationId: 'c-1', ok: true });
     });
 
     it('propagates error when service rejects', async () => {
