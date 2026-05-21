@@ -5,7 +5,8 @@ export async function runUpdateProduct(
   prisma: PrismaService,
   workspaceId: string,
   args: {
-    productId: string;
+    productId?: string;
+    productName?: string;
     name?: string;
     price?: number;
     description?: string;
@@ -25,11 +26,19 @@ export async function runUpdateProduct(
     commissionPercent?: number;
   },
 ): Promise<ToolResult> {
-  const { productId, ...fields } = args;
+  let productId = args.productId || '';
+  if (!productId && args.productName) {
+    const p = await prisma.product.findFirst({
+      where: { workspaceId, name: { contains: args.productName, mode: 'insensitive' } },
+      select: { id: true },
+    });
+    productId = p?.id || '';
+  }
   if (!productId) {
     return { success: false, error: 'productId_required' };
   }
   const updateData: Record<string, unknown> = {};
+  const { productId: _pid, productName: _pname, ...fields } = args;
   if (fields.name !== undefined) {
     updateData.name = fields.name;
   }

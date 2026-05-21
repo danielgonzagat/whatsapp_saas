@@ -163,6 +163,7 @@ export function extractProductName(msg: string): string {
 
 export function extractProductArgs(msg: string): Record<string, unknown> {
   const args: Record<string, unknown> = {};
+  args.productName = extractProductName(msg);
   const name = extractProductName(msg);
   if (name) {
     args.name = name;

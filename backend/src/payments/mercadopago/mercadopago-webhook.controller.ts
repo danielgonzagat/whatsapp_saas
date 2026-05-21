@@ -117,13 +117,20 @@ export class MercadoPagoWebhookController {
       return { received: true };
     }
 
-    // Map MP status to Payment row.
-    await this.prisma.payment.updateMany({
+    // Map MP status to Payment row. Resolve workspaceId first to keep the
+    // update workspace-scoped (multi-tenant safety).
+    const existingPayment = await this.prisma.payment.findFirst({
       where: { externalId, provider: 'mercadopago' },
-      data: {
-        status: mapPixStatusToPaymentStatus(status),
-      },
+      select: { workspaceId: true },
     });
+    if (existingPayment) {
+      await this.prisma.payment.updateMany({
+        where: { workspaceId: existingPayment.workspaceId, externalId, provider: 'mercadopago' },
+        data: {
+          status: mapPixStatusToPaymentStatus(status),
+        },
+      });
+    }
 
     await this.prisma.webhookEvent.update({
       where: { provider_externalId: { provider: 'mercadopago', externalId } },
