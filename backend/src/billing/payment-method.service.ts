@@ -75,8 +75,8 @@ export class PaymentMethodService {
           let needsRecreate = false;
           try {
             const existing = await this.stripe.customers.retrieve(workspace.stripeCustomerId);
-            // existing is either Customer or DeletedCustomer; tests may mock as
-            // undefined — treat undefined as "live, no deleted flag".
+            // existing is either Customer or DeletedCustomer; defensive guard
+            // for the unlikely undefined return — treat as "live, no deleted flag".
             const deleted =
               existing && typeof existing === 'object' && 'deleted' in existing
                 ? Boolean((existing as { deleted?: boolean }).deleted)
