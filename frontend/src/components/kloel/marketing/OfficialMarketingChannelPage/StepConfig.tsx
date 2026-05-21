@@ -4,6 +4,7 @@ import {
   secondaryButtonStyle,
   inputStyle,
   textAreaStyle,
+  FULL_ROUND_RADIUS,
 } from './shared-styles';
 
 interface ChannelConfig {
@@ -75,14 +76,7 @@ function CardGroup({
               {label}
             </div>
             {desc ? (
-              <div
-                style={{
-                  fontSize: 10,
-                  color: KLOEL_THEME.textSecondary,
-                  marginTop: 2,
-                  lineHeight: 1.4,
-                }}
-              >
+              <div style={{ fontSize: 10, color: KLOEL_THEME.textSecondary, marginTop: 2, lineHeight: 1.4 }}>
                 {desc}
               </div>
             ) : null}
@@ -120,7 +114,8 @@ export function StepConfig({
     <div>
       <h2 style={sectionTitleStyle}>Configurar a IA</h2>
       <p style={{ margin: '0 0 20px', fontSize: 13, color: KLOEL_THEME.textSecondary }}>
-        Defina como a IA se comporta nas conversas deste canal. Tudo pode ser alterado depois.
+        Defina como a IA se comporta nas conversas deste canal. Tudo pode ser alterado
+        depois.
       </p>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
@@ -204,8 +199,7 @@ export function StepConfig({
               height: 24,
               borderRadius: 12,
               border: 'none',
-              background:
-                config.followUpEnabled !== false ? accentColor : KLOEL_THEME.borderPrimary,
+              background: config.followUpEnabled !== false ? accentColor : KLOEL_THEME.borderPrimary,
               cursor: 'pointer',
               position: 'relative',
               transition: 'background .2s',
@@ -219,7 +213,7 @@ export function StepConfig({
                 left: config.followUpEnabled !== false ? 23 : 3,
                 width: 18,
                 height: 18,
-                borderRadius: '50%',
+                borderRadius: FULL_ROUND_RADIUS,
                 background: KLOEL_THEME.textOnAccent,
                 transition: 'left .2s',
               }}

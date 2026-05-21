@@ -12,6 +12,9 @@ import { chatCompletionWithFallback, chatCompletionWithRetry } from './openai-wr
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { AbiBuilderService } from './abi/abi-builder.service';
 import { validateAbiPayload } from './abi/abi-validator';
+import { UnifiedAgentService } from './unified-agent.service';
+import { KloelToolDispatcherService } from './kloel-tool-dispatcher.service';
+import { detectActionIntent, formatToolResult } from './guest-chat.action-intent.helpers';
 
 interface GuestConversation {
   messages: { role: 'user' | 'assistant'; content: string }[];
@@ -40,6 +43,8 @@ export class GuestChatService implements OnModuleDestroy {
     @Optional() private readonly opsAlert?: OpsAlertService,
     @Optional() @InjectRedis() private readonly redis?: Redis,
     @Optional() private readonly abiBuilder?: AbiBuilderService,
+    @Optional() private readonly unifiedAgent?: UnifiedAgentService,
+    @Optional() private readonly toolDispatcher?: KloelToolDispatcherService,
   ) {
     const isTestEnv = !!process.env.JEST_WORKER_ID || process.env.NODE_ENV === 'test';
 
@@ -106,9 +111,7 @@ export class GuestChatService implements OnModuleDestroy {
       });
 
       if (abiResult.status !== 'ok') {
-        this.logger.warn(
-          `ABI build failed: ${abiResult.reason}, using structured guest fallback`,
-        );
+        this.logger.warn(`ABI build failed: ${abiResult.reason}, using structured guest fallback`);
       } else {
         const abi = abiResult.abi;
         const validation = validateAbiPayload(abi);
@@ -308,7 +311,7 @@ export class GuestChatService implements OnModuleDestroy {
   /**
    * 🔄 Chat síncrono (sem streaming)
    */
-  async chatSync(message: string, sessionId: string): Promise<string> {
+  async chatSync(message: string, sessionId: string, workspaceId?: string): Promise<string> {
     try {
       if (!message || message.trim().length === 0) {
         return '';
@@ -320,6 +323,56 @@ export class GuestChatService implements OnModuleDestroy {
         return this.unavailableMessage;
       }
 
+      // DETERMINISTIC ACTION ROUTER — execute tools without LLM decision
+      if (workspaceId && this.toolDispatcher) {
+        const action = detectActionIntent(message);
+        if (action) {
+          this.logger.log(`Deterministic: tool=${action.tool} session=${sessionId}`);
+          try {
+            await this.persistConversationMessage(sessionId, 'user', message);
+            const result = await this.toolDispatcher.executeTool(
+              workspaceId,
+              action.tool,
+              action.args,
+            );
+            const reply = formatToolResult(action.tool, result);
+            await this.persistConversationMessage(sessionId, 'assistant', reply);
+            return reply;
+          } catch (err: unknown) {
+            this.logger.warn(
+              `Deterministic failed: ${err instanceof Error ? err.message : 'unknown'}, falling back to LLM`,
+            );
+          }
+        }
+      }
+
+      // UNIFIED AGENT PATH
+      if (workspaceId && this.unifiedAgent) {
+        this.logger.log(
+          `Guest chat sync via UnifiedAgent: workspace=${workspaceId}, session=${sessionId}`,
+        );
+        try {
+          const result = await this.unifiedAgent.processIncomingMessage({
+            workspaceId,
+            phone: sessionId,
+            message,
+            channel: 'web',
+            executeTools: true,
+          });
+          const reply = result.reply || result.response || this.unavailableMessage;
+          await this.persistConversationMessage(sessionId, 'user', message);
+          await this.persistConversationMessage(sessionId, 'assistant', reply);
+          this.logger.log(`UnifiedAgent reply: ${reply.substring(0, 100)}...`);
+          return reply;
+        } catch (uaError: unknown) {
+          this.logger.warn(
+            `UnifiedAgent failed (${uaError instanceof Error ? uaError.message : 'unknown'}), falling back to guest LLM`,
+          );
+          // Fall through to guest LLM path below
+        }
+      }
+
+      // GUEST LLM FALLBACK — original behavior without tools
       const { conversation, contextMessages } = await this.buildGuestMessages(message, sessionId);
 
       this.logger.log(
@@ -426,6 +479,17 @@ export class GuestChatService implements OnModuleDestroy {
         `Guest chat Redis write failed (${error instanceof Error ? error.message : 'unknown_error'}). Continuing with local cache.`,
       );
     }
+  }
+
+  private async persistConversationMessage(
+    sessionId: string,
+    role: 'user' | 'assistant',
+    content: string,
+  ): Promise<void> {
+    const conversation = await this.getOrCreateConversation(sessionId);
+    conversation.messages.push({ role, content });
+    conversation.lastMessageAt = new Date();
+    await this.persistConversation(sessionId, conversation);
   }
 
   /**

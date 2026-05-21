@@ -9,11 +9,8 @@
 
 /** ── utility ── */
 
-export function clampScore(value: number): number {
-  if (value < 0) return 0;
-  if (value > 1) return 1;
-  return value;
-}
+import { clampScore } from '../../common/math';
+export { clampScore };
 
 /** ── pre-existing shared types ── */
 

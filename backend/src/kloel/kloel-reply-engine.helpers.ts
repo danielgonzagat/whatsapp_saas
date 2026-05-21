@@ -23,7 +23,7 @@ export const CRIE_CADASTRAR_CADASTRE_RE =
 export const PRODUTO_CAT_A__LOGO_AUT_RE =
   /(produto|cat[aá]logo|autopilot|marca|voz|brand voice|fluxo|flow|dashboard|painel|whatsapp|contato|contatos|chat|chats|mensagem|mensagens|backlog|hist[oó]rico|presen[cç]a|presence|link de pagamento|pagamento|payment|web|internet|google|site|landing|homepage|copy|email|campanha|campanhas|checkout|carrinho|afiliad|seo|not[ií]cia|noticias|hoje|status)/i;
 
-type UnknownRecord = Record<string, unknown>;
+import type { UnknownRecord } from '../common/types';
 
 /** Builds the dynamic runtime context string for the reply engine. */
 export async function buildDynamicRuntimeContextHelper(params: {
@@ -165,6 +165,7 @@ interface BuildAssistantReplyDeps {
   contextFormatter: KloelContextFormatter;
   toolRouter: KloelToolRouter;
   unavailableMessage: string;
+  abiStateJson?: string;
   hasOpenAiKey: () => boolean;
   buildDashboardPrompt: (params?: {
     userName?: string | null;
@@ -213,6 +214,7 @@ export async function buildAssistantReplyImpl(
     conversationState?: { summary?: string; recentMessages: ReplyMessage[]; totalMessages: number };
     onTraceEvent?: (event: KloelStreamEvent) => void;
     executeLocalTool?: LocalToolExecutor;
+    prebuiltCognitiveState?: Record<string, unknown>;
   },
   deps: BuildAssistantReplyDeps,
 ): Promise<string> {
@@ -289,6 +291,9 @@ export async function buildAssistantReplyImpl(
   }
   void companyName;
   void wsContextService;
+  if (deps.abiStateJson) {
+    systemPrompt = `${systemPrompt}\nstate_payload=${deps.abiStateJson}`;
+  }
 
   const messages = await deps.buildChatModelMessages({
     systemPrompt,
@@ -296,6 +301,9 @@ export async function buildAssistantReplyImpl(
     marketingPromptAddendum,
     summaryMessage,
     recentMessages: historyState.recentMessages,
+    ...(params.prebuiltCognitiveState !== undefined
+      ? { prebuiltCognitiveState: params.prebuiltCognitiveState }
+      : {}),
     userMessage: message,
   });
   onTraceEvent?.(createKloelStatusEvent('thinking'));
@@ -314,6 +322,8 @@ export async function buildAssistantReplyImpl(
       ...(isChatMode
         ? { tool_choice: chatTools.length > 0 ? ('auto' as const) : ('none' as const) }
         : {}),
+      // Disable thinking mode for DeepSeek v4 Pro tool calls (reasoning_content breaks multi-turn)
+      ...(isChatMode && chatTools.length > 0 ? { thinking: { type: 'disabled' as const } } : {}),
       temperature: responseTemperature,
       top_p: 0.95,
       frequency_penalty: 0.3,
@@ -328,7 +338,16 @@ export async function buildAssistantReplyImpl(
       .catch(() => {});
   }
 
-  const initialMsg = response.choices[0]?.message;
+  const initialMsg = response.choices[0]?.message; // Strip reasoning_content to avoid DeepSeek v4 multi-turn error
+  if (initialMsg) {
+    const initialMsgWithReasoning: Record<string, unknown> = initialMsg as object as Record<
+      string,
+      unknown
+    >;
+    if (initialMsgWithReasoning.reasoning_content !== undefined) {
+      delete initialMsgWithReasoning.reasoning_content;
+    }
+  }
   let assistantMessage = initialMsg?.content || deps.unavailableMessage;
 
   if (mode === 'chat' && initialMsg?.tool_calls?.length && workspaceId && executeLocalTool) {
@@ -353,6 +372,9 @@ export async function buildAssistantReplyImpl(
           marketingPromptAddendum,
           summaryMessage,
           recentMessages: historyState.recentMessages,
+          ...(params.prebuiltCognitiveState !== undefined
+            ? { prebuiltCognitiveState: params.prebuiltCognitiveState }
+            : {}),
           userMessage: message,
           assistantMessage: initialMsg,
           toolMessages,
@@ -385,4 +407,3 @@ function filterChatToolsByAllowedTools(allowedTools?: string[]): typeof KLOEL_CH
     return typeof name === 'string' && allowed.has(name);
   });
 }
-

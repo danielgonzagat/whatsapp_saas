@@ -1,6 +1,6 @@
 import type { PrismaClient } from '@prisma/client';
 
-type UnknownRecord = Record<string, unknown>;
+import type { UnknownRecord } from '../common/types';
 
 interface WorkspaceActionArgs {
   includeMetrics?: boolean;

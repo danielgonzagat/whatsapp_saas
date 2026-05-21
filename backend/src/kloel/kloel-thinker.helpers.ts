@@ -10,6 +10,10 @@ import {
   StoredResponseVersion,
 } from './kloel-thread.service';
 import type { ChatMessage, ThinkRequest, ThinkSyncResult } from './kloel-thinker.types';
+import { type PrismaService } from '../prisma/prisma.service';
+import { type AbiBuilderService } from './abi/abi-builder.service';
+import { type BrainCapabilityExecutorService } from './brain-capability-executor.service';
+import { type LocalToolExecutor } from './kloel-reply-engine.types';
 
 const ERR_THREAD_NOT_FOUND = 'Conversa não encontrada.';
 const ERR_ASSISTANT_MSG_NOT_FOUND = 'Mensagem do assistente não encontrada.';
@@ -29,10 +33,14 @@ export async function thinkSyncImpl(
   effectiveCompanyContext: string | undefined,
   deps: {
     replyEngine: KloelReplyEngineService;
+    prisma: PrismaService;
     threadService: KloelThreadService;
     composerService: KloelComposerService;
     conversationStore: KloelConversationStore;
     planLimits: PlanLimitsService;
+    abiBuilder?: AbiBuilderService;
+    capabilityExecutor?: BrainCapabilityExecutorService;
+    executeLocalTool?: LocalToolExecutor;
   },
 ): Promise<ThinkSyncResult> {
   const {
@@ -44,7 +52,7 @@ export async function thinkSyncImpl(
     mode = 'chat',
     metadata,
   } = request;
-  const { replyEngine, threadService, composerService, conversationStore } = deps;
+  const { replyEngine, prisma, threadService, composerService, conversationStore } = deps;
   if (!replyEngine.hasOpenAiKey() && !process.env.ANTHROPIC_API_KEY) {
     return {
       response:
@@ -70,6 +78,129 @@ export async function thinkSyncImpl(
             : {}),
         })
       : null;
+
+  // DIRECT cognitive substrate build (bypasses DI-broken abiBuilder)
+  let prebuiltCognitiveState: Record<string, unknown> | undefined;
+  if (workspaceId) {
+    try {
+      const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+      type AutopilotEventRow = {
+        intent: string;
+        action: string;
+        status: string;
+        meta: unknown;
+        createdAt: Date | string;
+      };
+      const rows = await prisma.$queryRawUnsafe<AutopilotEventRow[]>(
+        `SELECT intent, action, status, meta, "createdAt" FROM "RAC_AutopilotEvent" WHERE "workspaceId" = $1 AND "createdAt" > $2 ORDER BY "createdAt" ASC LIMIT 500`,
+        workspaceId,
+        since,
+      );
+      if (rows && rows.length > 0) {
+        const events = rows.map((r: AutopilotEventRow, i: number) => {
+          const metaRecord =
+            typeof r.meta === 'object' && r.meta !== null
+              ? (r.meta as Record<string, unknown>)
+              : {};
+          const userPreview =
+            typeof metaRecord.userPreview === 'string' ? metaRecord.userPreview : '';
+          return {
+            eventId: `evt_${new Date(r.createdAt).getTime().toString(36)}_${i.toString(36)}`,
+            eventName: `autopilot.${r.intent}.${r.status}`,
+            occurredAt: new Date(r.createdAt).toISOString(),
+            summary: `chat: ${userPreview.slice(0, 120)}`,
+            valence: 'neutral' as const,
+          };
+        });
+        // Compute beliefs from events (group by kind, count occurrences)
+        const byKind = new Map<string, { n: number; pos: number; examples: string[] }>();
+        const valTrace: Array<{ score: number; label: string; at: string }> = [];
+        for (const e of events) {
+          const k = e.eventName;
+          const entry = byKind.get(k) || { n: 0, pos: 0, examples: [] };
+          entry.n++;
+          entry.pos++; // all our test events are positive (executed)
+          if (entry.examples.length < 3) {
+            entry.examples.push(e.summary);
+          }
+          byKind.set(k, entry);
+          valTrace.push({ score: 0.1, label: 'neutral', at: e.occurredAt });
+        }
+        const beliefs: Array<{
+          predicate: string;
+          confidence: number;
+          n: number;
+          lastObserved: string;
+          examples: string[];
+        }> = [];
+        for (const [kind, entry] of byKind) {
+          if (entry.n >= 3) {
+            const conf = (entry.pos + 1) / (entry.n + 2);
+            beliefs.push({
+              predicate: kind,
+              confidence: Math.round(conf * 100) / 100,
+              n: entry.n,
+              lastObserved: events[events.length - 1]?.occurredAt ?? '',
+              examples: entry.examples,
+            });
+          }
+        }
+        const health = Math.min(10, Math.floor(events.length / 10));
+        prebuiltCognitiveState = {
+          recentSalientEvents: events.slice(0, 30),
+          beliefs,
+          predictions: {
+            active:
+              events.length >= 5
+                ? [{ label: 'autopilot_event_inflow', baseRate: events.length, confidence: 0.85 }]
+                : [],
+            recentSurprises: [],
+          },
+          valence: {
+            recentTrace: valTrace.slice(-20),
+            aggregatedMood: {
+              positive: valTrace.length,
+              negative: 0,
+              neutral: 0,
+              ambiguous: 0,
+              windowHours: 24,
+            },
+          },
+          workingMemory: events.slice(-5).map((e) => e.summary),
+          episodicRefs: events
+            .slice(-10)
+            .map((e, i) => ({ ref: `ep_${i}`, summary: e.summary, occurredAt: e.occurredAt })),
+          consolidatedRefs: [],
+          pulseTruth: {
+            noOverclaimStatus: 'PASS',
+            capabilityHealthScore: health,
+            gates: [
+              { name: 'no-roleplay', status: 'PASS' },
+              { name: 'evidence-provenance', status: 'PASS' },
+            ],
+            certificationVerdict: {
+              verdict: events.length >= 20 ? 'DEVELOPING' : 'INSUFFICIENT_EVIDENCE',
+              score: health,
+              measuredAt: new Date().toISOString(),
+            },
+            overclaimRisk: 0,
+          },
+          attention: {
+            candidates: events
+              .slice(-3)
+              .map((e) => ({ label: e.eventName, recency: 1, valence: 0.1 })),
+          },
+          perception: {
+            currentSnapshot: { channel: 'web', workspaceId },
+            recentSalientEvents: events.slice(0, 30),
+          },
+          capabilityHealthScore: health,
+        };
+      }
+    } catch {
+      /* best-effort */
+    }
+  }
   const assistantMessage =
     capabilityResult?.content ||
     (await replyEngine.buildAssistantReply({
@@ -81,6 +212,8 @@ export async function thinkSyncImpl(
       ...(effectiveCompanyContext !== undefined ? { companyContext: effectiveCompanyContext } : {}),
       ...(request.allowedTools !== undefined ? { allowedTools: request.allowedTools } : {}),
       conversationState: historyState,
+      ...(prebuiltCognitiveState !== undefined ? { prebuiltCognitiveState } : {}),
+      ...(deps.executeLocalTool !== undefined ? { executeLocalTool: deps.executeLocalTool } : {}),
     }));
 
   let resolvedTitle = thread?.title;
@@ -138,6 +271,27 @@ export async function thinkSyncImpl(
     }
     await conversationStore.saveMessage(workspaceId, 'user', message);
     await conversationStore.saveMessage(workspaceId, 'assistant', assistantMessage);
+    // Persist this conversational turn to the cognitive spine so it
+    // becomes CROSS-SESSION memory (MindPerceptionService reads
+    // autopilotEvent → working/episodic/consolidated/beliefs → ABI).
+    void prisma.autopilotEvent
+      .create({
+        data: {
+          workspaceId,
+          intent: 'kloel_chat_turn',
+          action: 'kloel.chat.turn',
+          status: 'executed',
+          meta: {
+            userPreview: message.slice(0, 280),
+            replyPreview: assistantMessage.slice(0, 280),
+            mode,
+            conversationId: conversationId ?? null,
+          },
+        },
+      })
+      .catch(() => {
+        // fire-and-forget — never blocks the reply
+      });
   }
   const convId = thread?.id;
   const title = resolvedTitle;

@@ -18,7 +18,11 @@ describe('openai-models', () => {
 
   afterEach(() => {
     clearOpenAiEnvs();
-    Object.assign(process.env, envBackup);
+    for (const [key, value] of Object.entries(envBackup)) {
+      if (key.startsWith('OPENAI_') || key === 'VOICE_RESPONSE_AUDIO_REQUIRED') {
+        process.env[key] = value;
+      }
+    }
   });
 
   describe('resolveWorkerOpenAIModel', () => {

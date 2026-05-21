@@ -18,6 +18,7 @@ import { RouteClass } from '../common/throttler/route-class.decorator';
 interface GuestChatDto {
   message: string;
   sessionId?: string; // Para manter contexto entre mensagens
+  workspaceId?: string; // Para usar o Unified Agent com tools (opcional)
 }
 
 /**
@@ -100,7 +101,7 @@ export class GuestChatController {
     );
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
 
-    const reply = await this.guestChatService.chatSync(dto.message, sessionId);
+    const reply = await this.guestChatService.chatSync(dto.message, sessionId, dto.workspaceId);
     res.json({ reply, sessionId });
   }
 

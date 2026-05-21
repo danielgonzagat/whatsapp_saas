@@ -27,12 +27,18 @@ jest.mock('../observability/ops-alert.service', () => ({
   OpsAlertService: class MockOpsAlertService {},
 }));
 
+jest.mock('./kloel-code-tools.service', () => ({
+  KloelCodeToolsService: class MockKloelCodeToolsService {},
+}));
+
 import { KloelChatToolsService } from './kloel-chat-tools.service';
 import { KloelBusinessConfigToolsService } from './kloel-business-config-tools.service';
 import { KloelWhatsAppToolsService } from './kloel-whatsapp-tools.service';
 import { KloelComposerService } from './kloel-composer.service';
 import { AuditService } from '../audit/audit.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
+import { KloelCodeToolsService } from './kloel-code-tools.service';
+import { KloelCodeAnalysisService } from './kloel-code-analysis.service';
 import {
   createPrismaMock,
   createPlanLimitsMock,
@@ -42,6 +48,8 @@ import {
   createComposerMock,
   createAuditMock,
   createOpsAlertMock,
+  createCodeToolsMock,
+  createCodeAnalysisMock,
   DEFAULT_WS_ID,
 } from './kloel-tool-dispatcher.service.fixtures';
 import type {
@@ -53,6 +61,8 @@ import type {
   DispatcherAuditMock,
   DispatcherOpsAlertMock,
   DispatcherPlanLimitsMock,
+  DispatcherCodeToolsMock,
+  DispatcherCodeAnalysisMock,
 } from './kloel-tool-dispatcher.service.fixtures';
 
 describe('KloelToolDispatcherService — chat tools routing', () => {
@@ -65,6 +75,8 @@ describe('KloelToolDispatcherService — chat tools routing', () => {
   let composerService: DispatcherComposerMock;
   let auditService: DispatcherAuditMock;
   let opsAlert: DispatcherOpsAlertMock;
+  let codeToolsService: DispatcherCodeToolsMock;
+  let codeAnalysisService: DispatcherCodeAnalysisMock;
 
   beforeEach(async () => {
     prisma = createPrismaMock();
@@ -75,6 +87,8 @@ describe('KloelToolDispatcherService — chat tools routing', () => {
     composerService = createComposerMock();
     auditService = createAuditMock();
     opsAlert = createOpsAlertMock();
+    codeToolsService = createCodeToolsMock();
+    codeAnalysisService = createCodeAnalysisMock();
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -86,6 +100,8 @@ describe('KloelToolDispatcherService — chat tools routing', () => {
         { provide: KloelWhatsAppToolsService, useValue: whatsappToolsService },
         { provide: KloelComposerService, useValue: composerService },
         { provide: AuditService, useValue: auditService },
+        { provide: KloelCodeToolsService, useValue: codeToolsService },
+        { provide: KloelCodeAnalysisService, useValue: codeAnalysisService },
         { provide: OpsAlertService, useValue: opsAlert },
       ],
     }).compile();

@@ -9,26 +9,40 @@
  * {"type":"module"} so Node treats the emitted .js as ESM even though the
  * repo root is CommonJS.
  */
-import { createRequire } from "node:module";
-import * as fs from "node:fs";
-import * as path from "node:path";
-import { fileURLToPath } from "node:url";
+import { createRequire } from 'node:module';
+import * as fs from 'node:fs';
+import * as path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 const dir = path.dirname(fileURLToPath(import.meta.url));
 const require = createRequire(import.meta.url);
-const ts = require("typescript");
+const ts = require('typescript');
 
-const ENTRY = ["server.ts", "engine.ts", "guard.ts", "nav.ts", "symbols.ts", "advanced.ts"].map(
-  (f) => path.join(dir, f),
-);
-const OUT = path.join(dir, "dist");
+const ENTRY = [
+  'server.ts',
+  'engine.ts',
+  'engine-rename.ts',
+  'engine-ops.ts',
+  'engine-universal.ts',
+  'engine-complete.ts',
+  'lang-bridge.ts',
+  'guard.ts',
+  'nav.ts',
+  'symbols.ts',
+  'advanced.ts',
+  'trace.ts',
+  'textunit.ts',
+  'founder.ts',
+  'smoke.ts',
+].map((f) => path.join(dir, f));
+const OUT = path.join(dir, 'dist');
 
 const options = {
   module: ts.ModuleKind.ESNext,
   moduleResolution: ts.ModuleResolutionKind.Bundler,
   target: ts.ScriptTarget.ES2022,
-  lib: ["lib.es2022.d.ts"],
-  types: ["node"],
+  lib: ['lib.es2022.d.ts'],
+  types: ['node'],
   outDir: OUT,
   rootDir: dir,
   strict: true,
@@ -46,10 +60,13 @@ if (errors.length > 0) {
   const fmt = ts.formatDiagnosticsWithColorAndContext(errors, {
     getCurrentDirectory: () => dir,
     getCanonicalFileName: (f) => f,
-    getNewLine: () => "\n",
+    getNewLine: () => '\n',
   });
   process.stderr.write(fmt + `\natomic-edit build FAILED (${errors.length} error(s))\n`);
   process.exit(1);
 }
-fs.writeFileSync(path.join(OUT, "package.json"), JSON.stringify({ type: "module" }) + "\n");
+fs.writeFileSync(path.join(OUT, 'package.json'), JSON.stringify({ type: 'module' }) + '\n');
+for (const asset of ['worker-scope-check.mjs']) {
+  fs.copyFileSync(path.join(dir, asset), path.join(OUT, asset));
+}
 process.stderr.write(`atomic-edit build OK -> ${OUT}\n`);

@@ -4,6 +4,13 @@ import { getErrorMessage } from './utils/error-message';
 
 const QUEUE_THRESHOLD =
   Number.parseInt(process.env.AUTOPILOT_QUEUE_WAITING_THRESHOLD || '200', 10) || 200;
+// Transient failures (a handful of jobs) must NOT spam the warn channel —
+// they were the root cause of the runtime probe flapping in 2026-05. Only
+// alert when the failed-job count rises beyond a meaningful threshold AND
+// keeps growing between checks; otherwise stay silent.
+const FAILED_JOBS_THRESHOLD =
+  Number.parseInt(process.env.AUTOPILOT_QUEUE_FAILED_THRESHOLD || '25', 10) || 25;
+let lastObservedFailed = 0;
 const ALERT_WEBHOOK =
   process.env.AUTOPILOT_ALERT_WEBHOOK || process.env.OPS_WEBHOOK_URL || process.env.DLQ_WEBHOOK_URL;
 let lastQueueAlert = 0;
@@ -56,12 +63,22 @@ async function maybeAlertFailedJobs(
   waiting: number,
   now: number,
 ): Promise<void> {
-  if (failed <= 0 || now - lastQueueAlert <= QUEUE_ALERT_COOLDOWN_MS) {
+  const grew = failed > lastObservedFailed;
+  lastObservedFailed = failed;
+  if (failed < FAILED_JOBS_THRESHOLD || !grew || now - lastQueueAlert <= QUEUE_ALERT_COOLDOWN_MS) {
     return;
   }
   lastQueueAlert = now;
-  log.warn('autopilot_queue_failed', { failed, waiting });
-  await sendOpsAlert(log, 'Autopilot queue has failed jobs', { failed, waiting });
+  log.warn('autopilot_queue_failed', {
+    failed,
+    waiting,
+    threshold: FAILED_JOBS_THRESHOLD,
+  });
+  await sendOpsAlert(log, 'Autopilot queue has failed jobs', {
+    failed,
+    waiting,
+    threshold: FAILED_JOBS_THRESHOLD,
+  });
 }
 
 export async function checkAutopilotQueueHealth(log: WorkerLogger): Promise<void> {

@@ -1,6 +1,6 @@
 /** Type definitions for KloelToolExecutorService tool arguments. */
 
-type UnknownRecord = Record<string, unknown>;
+import type { UnknownRecord } from '../common/types';
 
 /** Generic tool result shape returned by all tool* methods. */
 export interface ToolResult {
