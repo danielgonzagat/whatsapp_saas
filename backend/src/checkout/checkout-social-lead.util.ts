@@ -2,7 +2,6 @@ import { Prisma } from '@prisma/client';
 import type { GoogleAuthService } from '../auth/google-auth.service';
 import type { UpdateSocialLeadDto } from './dto/update-social-lead.dto';
 
-const D_RE = /\D/g;
 
 type GooglePeopleProfile = Awaited<ReturnType<GoogleAuthService['fetchPeopleProfile']>>;
 

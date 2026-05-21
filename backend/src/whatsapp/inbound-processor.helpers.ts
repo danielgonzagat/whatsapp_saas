@@ -9,8 +9,6 @@ import type Redis from 'ioredis';
 import type { ProviderSettings } from './provider-settings.types';
 import { extractFallbackTopic as extractFallbackTopicValue } from './whatsapp-normalization.util';
 
-const PHONE_NON_DIGIT_RE = /\D/g;
-
 import { whatsappDigits } from '../common/phone';
 
 /**

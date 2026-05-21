@@ -9,8 +9,6 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 
-import { Prisma } from '@prisma/client';
-
 import { Public } from '../../auth/public.decorator';
 import { PrismaService } from '../../prisma/prisma.service';
 
@@ -86,7 +84,7 @@ export class MercadoPagoWebhookController {
           eventType: body?.type ?? body?.action ?? 'payment',
           // MP webhook payload has optional fields; cast to Prisma's
           // InputJsonValue (JSON-serialisable plain object).
-          payload: (body ?? {}) as object as Prisma.InputJsonValue,
+          payload: { ...(body ?? {}) },
           status: 'received',
           receivedAt: new Date(),
         },

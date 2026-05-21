@@ -242,6 +242,10 @@ export class MindPredictionService {
     for (let i = 0; i < rows.length - 1; i++) {
       const a = rows[i];
       const b = rows[i + 1];
+      // Loop bounds guarantee both indexes exist; narrow for strict TS.
+      if (!a || !b) {
+        continue;
+      }
       // Only consider events within 30 minutes of each other
       const timeDiff = new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
       if (timeDiff > 30 * 60 * 1000) {

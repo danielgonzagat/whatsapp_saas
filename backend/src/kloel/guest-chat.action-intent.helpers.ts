@@ -151,7 +151,7 @@ export function detectActionIntent(
 
 export function extractProductName(msg: string): string {
   const m = msg.match(
-    /(?:produto|plano|oferta|checkout|cupom)\s+(?:chamad[oa]|de\s+)?["']?([A-Za-zÀ-ÿ0-9\s\-.]{2,60}?)(?:\s*(?:R\$|pre[çc]o|valor|\bcom\b|\bpor\b|$)|$)/i,
+    /(?:produtos?|planos?|ofertas?|checkouts?|cupons?)\s+(?:chamad[oa]|de\s+)?["']?([A-Za-zÀ-ÿ0-9\s\-.]{2,60}?)(?:\s*(?:R\$|pre[çc]o|valor|\bcom\b|\bpor\b|$)|$)/i,
   );
   const name = (m?.[1] || '').trim();
   // Strip leading prepositions and trailing punctuation
