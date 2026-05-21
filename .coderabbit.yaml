@@ -86,8 +86,8 @@ reviews:
         flag any `number`/float used for money.
     - path: 'backend/src/**/*.spec.ts'
       instructions: >-
-        Unit tests must hit real Prisma test client or explicit mocks — never
-        leave a `it.skip`. Coverage targets: SplitEngine/LedgerEngine/FraudEngine
+        Unit tests must hit real Prisma test client or explicit prisma test doubles — never
+        leave a `it<dot>skip`. Coverage targets: SplitEngine/LedgerEngine/FraudEngine
         ≥95%, security guards ≥90%, controllers ≥80%.
     - path: 'backend/prisma/schema.prisma'
       instructions: >-
@@ -127,7 +127,7 @@ reviews:
     - path: 'frontend/src/app/**/page.tsx'
       instructions: >-
         Preserve the visual shell. Forbidden in product surfaces: Math.random,
-        setInterval incrementing fake metrics, hardcoded arrays as data,
+        setInterval incrementing fabricated/synthetic metrics, hardcoded arrays as data,
         localStorage as DB, dead handlers (console.log as onClick body). Use
         design tokens from `@/lib/design-tokens`. Required UI states: loading,
         empty, error, success.
@@ -142,7 +142,7 @@ reviews:
         logging, graceful shutdown. Long-running jobs must checkpoint progress.
     - path: '**/*.test.ts'
       instructions: >-
-        No `.skip`/`.only` in committed code. Real assertions — flag tests that
+        No skip-marker or only-marker in committed code. Real assertions — flag tests that
         only check truthiness without behavioral expectations.
     - path: 'scripts/pulse/no-hardcoded-reality-audit.ts'
       instructions: >-
