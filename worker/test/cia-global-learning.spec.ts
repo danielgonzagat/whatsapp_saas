@@ -106,17 +106,25 @@ describe('cia-global-learning', () => {
         domain: 'supplement',
         intent: 'buying',
         samples: 3,
-        aggressiveness: 'HIGH',
+        aggressiveness: 'LOW',
       }),
     );
     expect(strategy).toEqual(
       expect.objectContaining({
         domain: 'supplement',
         preferredLength: expect.stringMatching(/short|medium/),
-        aggressiveness: 'HIGH',
+        aggressiveness: 'MEDIUM',
         confidence: expect.any(Number),
       }),
     );
+    expect(
+      buildGlobalStrategy({
+        patterns,
+        domain: 'supplement',
+        intent: 'buying',
+        mindOverride: { aggressiveness: 'HIGH', confidence: 0.9, fallback: false },
+      }),
+    ).toEqual(expect.objectContaining({ aggressiveness: 'HIGH' }));
   });
 
   it('infers workspace domain from business settings', () => {

@@ -66,7 +66,7 @@ function loadModelClassification() {
   const transitive = new Set();
   for (const b of blocks) {
     const m = b.match(/^model (\w+)/);
-    if (!m) continue;
+    if (!m) {continue;}
     const name = m[1];
     const camel = name.charAt(0).toLowerCase() + name.slice(1);
     if (/\bworkspaceId\s+String/.test(b)) {
@@ -112,9 +112,9 @@ const SCAN_METHODS = new Set([
 // ─── File discovery ───────────────────────────────────────────────────────
 
 function walkDir(dir, files = []) {
-  if (!existsSync(dir)) return files;
+  if (!existsSync(dir)) {return files;}
   for (const entry of readdirSync(dir)) {
-    if (entry === 'node_modules' || entry === 'dist' || entry === '.next') continue;
+    if (entry === 'node_modules' || entry === 'dist' || entry === '.next') {continue;}
     const full = path.join(dir, entry);
     const st = statSync(full);
     if (st.isDirectory()) {
@@ -135,7 +135,7 @@ function walkDir(dir, files = []) {
  */
 function extractObjectLiteral(source, startIdx) {
   let i = source.indexOf('{', startIdx);
-  if (i === -1) return null;
+  if (i === -1) {return null;}
   const open = i;
   let depth = 0;
   let inSingle = false;
@@ -147,23 +147,23 @@ function extractObjectLiteral(source, startIdx) {
     const c = source[i];
     const prev = i > 0 ? source[i - 1] : '';
     if (inLineComment) {
-      if (c === '\n') inLineComment = false;
+      if (c === '\n') {inLineComment = false;}
       continue;
     }
     if (inBlockComment) {
-      if (c === '/' && prev === '*') inBlockComment = false;
+      if (c === '/' && prev === '*') {inBlockComment = false;}
       continue;
     }
     if (inSingle) {
-      if (c === "'" && prev !== '\\') inSingle = false;
+      if (c === "'" && prev !== '\\') {inSingle = false;}
       continue;
     }
     if (inDouble) {
-      if (c === '"' && prev !== '\\') inDouble = false;
+      if (c === '"' && prev !== '\\') {inDouble = false;}
       continue;
     }
     if (inTemplate) {
-      if (c === '`' && prev !== '\\') inTemplate = false;
+      if (c === '`' && prev !== '\\') {inTemplate = false;}
       continue;
     }
     if (c === '/' && source[i + 1] === '/') {
@@ -176,10 +176,10 @@ function extractObjectLiteral(source, startIdx) {
       i++;
       continue;
     }
-    if (c === "'") inSingle = true;
-    else if (c === '"') inDouble = true;
-    else if (c === '`') inTemplate = true;
-    else if (c === '{') depth++;
+    if (c === "'") {inSingle = true;}
+    else if (c === '"') {inDouble = true;}
+    else if (c === '`') {inTemplate = true;}
+    else if (c === '{') {depth++;}
     else if (c === '}') {
       depth--;
       if (depth === 0) {
@@ -193,6 +193,52 @@ function extractObjectLiteral(source, startIdx) {
 const SIMPLE_RE = /\b(?:this\.)?prisma(?:Any)?\.(\w+)\.(\w+)\s*\(/g;
 const TX_RE = /\btx\.(\w+)\.(\w+)\s*\(/g;
 
+/**
+ * Detect explicit cross-workspace marker comments immediately above a Prisma
+ * call. Supports up to 8 lines of preceding comment/whitespace so the marker
+ * may sit above a brief explanatory JSDoc block.
+ *
+ *   // @AllowCrossWorkspace: admin global metric, no tenant context
+ *   await this.prisma.agent.count();
+ *
+ * Block-comment form is also supported:
+ *
+ *   /* @AllowCrossWorkspace: cron cleanup, all workspaces (placeholder)
+ *   await this.prisma.kloelMemory.deleteMany(...)
+ *
+ * Recognized aliases (all case-insensitive): AllowCrossWorkspace,
+ * AdminGlobalOperation, PublicMetric, CrossWorkspaceMaintenance.
+ */
+const MARKER_RE = /@(?:AllowCrossWorkspace|AdminGlobalOperation|PublicMetric|CrossWorkspaceMaintenance)\b/i;
+
+function hasCrossWorkspaceMarker(source, matchStart) {
+  const before = source.slice(0, matchStart);
+  const lines = before.split('\n');
+  // walk up to 8 prior non-blank lines looking for the marker
+  let walked = 0;
+  for (let i = lines.length - 2; i >= 0 && walked < 8; i--) {
+    const raw = lines[i] ?? '';
+    const trimmed = raw.trim();
+    if (!trimmed) {
+      walked++;
+      continue;
+    }
+    walked++;
+    if (
+      trimmed.startsWith('//') ||
+      trimmed.startsWith('/*') ||
+      trimmed.startsWith('*') ||
+      trimmed.startsWith('*/')
+    ) {
+      if (MARKER_RE.test(trimmed)) {return true;}
+      continue;
+    }
+    // first non-comment, non-blank line above the call breaks the marker chain
+    return false;
+  }
+  return false;
+}
+
 function findPrismaCalls(source) {
   const findings = [];
 
@@ -200,8 +246,9 @@ function findPrismaCalls(source) {
     for (const m of source.matchAll(re)) {
       const model = m[1];
       const method = m[2];
-      if (!SCAN_METHODS.has(method)) continue;
+      if (!SCAN_METHODS.has(method)) {continue;}
       const matchStart = m.index ?? 0;
+      if (hasCrossWorkspaceMarker(source, matchStart)) {continue;}
       const argsBlock = extractObjectLiteral(source, matchStart + m[0].length - 1);
       const lineNumber = source.slice(0, matchStart).split('\n').length;
       findings.push({
@@ -274,7 +321,7 @@ function withStableBugFingerprints(findings) {
 // ─── Main ─────────────────────────────────────────────────────────────────
 
 function hasWorkspaceIdFilter(argsBody) {
-  if (!argsBody) return false;
+  if (!argsBody) {return false;}
   return /\bworkspaceId\b/.test(argsBody);
 }
 

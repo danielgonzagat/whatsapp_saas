@@ -8,7 +8,7 @@ function isPrimitiveJson(value: unknown): value is string | number | boolean {
 /** Coerce scalar json. */
 export function coerceScalarJson(value: unknown): Prisma.InputJsonValue | undefined {
   if (value === null) {
-    return null;
+    return undefined;
   }
   if (isPrimitiveJson(value)) {
     return value;

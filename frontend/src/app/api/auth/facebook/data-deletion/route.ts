@@ -12,7 +12,7 @@ export function GET() {
   return NextResponse.redirect(legalConstants.urls.dataDeletion, { status: 307 });
 }
 
-/** Post. */
+/** Post — proxies to GDPR backend for processing. */
 export async function POST(request: NextRequest) {
   try {
     const backendUrl = getBackendUrl();
@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.text();
-    const response = await fetch(`${backendUrl}/auth/facebook/data-deletion`, {
+    const response = await fetch(`${backendUrl}/gdpr/facebook-callback`, {
       method: 'POST',
       headers: {
         Accept: 'application/json',

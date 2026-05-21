@@ -34,7 +34,7 @@ export function runStep(step, dry) {
   }
 
   const args = step.args ? [...step.args] : [];
-  if (dry) args.push('--dry');
+  if (dry) {args.push('--dry');}
 
   let result;
   try {
@@ -66,8 +66,8 @@ export function runStep(step, dry) {
         const parsed = JSON.parse(stderr.startsWith('{') ? stderr : '');
         summary = JSON.stringify(parsed);
       } catch {
-        if (stderr.length < 120) summary = stderr;
-        else summary = stderr.slice(0, 120) + '...';
+        if (stderr.length < 120) {summary = stderr;}
+        else {summary = stderr.slice(0, 120) + '...';}
       }
     }
   } else if (result.signal === 'SIGTERM' || stderr.includes('ETIMEDOUT')) {
@@ -80,7 +80,7 @@ export function runStep(step, dry) {
     };
   } else {
     summary = stderr || stdout || `exit code ${exitCode}`;
-    if (summary.length > 200) summary = summary.slice(0, 200) + '...';
+    if (summary.length > 200) {summary = summary.slice(0, 200) + '...';}
   }
 
   return {

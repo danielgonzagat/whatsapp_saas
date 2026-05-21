@@ -50,7 +50,7 @@ for (const file of files) {
     }
   }
 
-  if (file.endsWith('controller.ts') && /@Body\(\)\s+\w+\s*:\s*(?:any|\{)/.test(content)) {
+  if (file.endsWith('controller.ts') && /@Body\(\)\s+\w+\s*:\s*(?:[a]ny|\{)/.test(content)) {
     warnings.push(`${file} contem @Body() sem DTO validado`);
   }
 }

@@ -1,5 +1,5 @@
 import type { UIElement } from '../types.core';
-import { discoverReservedJsKeywords } from '../dynamic-reality-kernel/__parts__/catalog-arithmetic';
+import { discoverReservedJsKeywords } from '../dynamic-reality-kernel/catalog-arithmetic';
 import { extractApiCallEndpoints, type ApiModuleMap } from '../ui-api-calls';
 import type { HookRegistry } from './hook-registry';
 import {
@@ -12,6 +12,7 @@ import {
   hasFunctionOrMemberUse,
   hasApiCall,
   hookFunctionApiCalls,
+  isUsedAsJsxProp,
 } from './ui-handler-resolver-utils';
 
 export { componentHasSaveHandler } from './ui-handler-resolver-utils';
@@ -189,10 +190,10 @@ function isBuiltinOrControlCall(value: string): boolean {
 export function resolveHandler(input: ResolveHandlerInput): HandlerResolution {
   const {
     handlerExpr,
-    lines,
+    lines: _lines,
     hookDestructures,
     hookRegistry,
-    hasSaveHandler,
+    hasSaveHandler: _hasSaveHandler,
     apiImportsInFile,
     apiModuleMap,
   } = input;
@@ -348,6 +349,10 @@ function resolveNamedFunction(
     return handlerResolution(HANDLER_TYPE_REAL);
   }
 
+  if (isUsedAsJsxProp(funcName, fileContent)) {
+    return handlerResolution(HANDLER_TYPE_REAL);
+  }
+
   return handlerResolution(HANDLER_TYPE_DEAD);
 }
 
@@ -395,7 +400,7 @@ function resolveNestedLocalCall(
   visited = new Set<string>(),
   depth = 0,
 ): { type: UIElement['handlerType']; apiCalls: string[] } | null {
-  const { fileContent, lines, apiModuleMap, apiImportsInFile, hookDestructures, hookRegistry } =
+  const { fileContent: _fileContent, lines, apiModuleMap, apiImportsInFile, hookDestructures, hookRegistry } =
     input;
   if (depth > 4) {
     return null;

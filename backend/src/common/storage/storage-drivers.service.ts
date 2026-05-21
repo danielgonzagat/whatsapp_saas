@@ -13,6 +13,13 @@ import { OpsAlertService } from '../../observability/ops-alert.service';
 
 const TRAILING_SLASHES_RE = /\/+$/;
 
+type UploadResult = { url: string; path: string; size: number };
+type LocalUploadFallback = (buf: Buffer, path: string) => Promise<UploadResult>;
+type ByteArrayTransformable = {
+  transformToByteArray: () => Promise<Uint8Array>;
+};
+type SupportedObjectBody = AsyncIterable<Buffer | Uint8Array | string | ArrayBuffer>;
+
 function describeUnknownError(error: unknown): string {
   if (error instanceof Error && error.message.trim()) {
     return error.message.trim();
@@ -21,6 +28,22 @@ function describeUnknownError(error: unknown): string {
     return error.trim();
   }
   return 'Unknown error';
+}
+
+function hasTransformToByteArray(body: unknown): body is ByteArrayTransformable {
+  if (typeof body !== 'object' || body === null || !('transformToByteArray' in body)) {
+    return false;
+  }
+  const maybeTransform = (body as { transformToByteArray?: unknown }).transformToByteArray;
+  return typeof maybeTransform === 'function';
+}
+
+function isAsyncIterableObject(body: unknown): body is SupportedObjectBody {
+  if (typeof body !== 'object' || body === null) {
+    return false;
+  }
+  const maybeIterator = (body as { [Symbol.asyncIterator]?: unknown })[Symbol.asyncIterator];
+  return typeof maybeIterator === 'function';
 }
 
 /**
@@ -44,16 +67,15 @@ export class StorageDriversService {
     buffer: Buffer,
     relativePath: string,
     mimeType?: string,
-    uploadToLocal?: (
-      buf: Buffer,
-      path: string,
-    ) => Promise<{ url: string; path: string; size: number }>,
-  ): Promise<{ url: string; path: string; size: number }> {
-    const bucket = this.config.get('S3_BUCKET');
-    const region = this.config.get('S3_REGION', 'us-east-1');
+    uploadToLocal?: LocalUploadFallback,
+  ): Promise<UploadResult> {
+    const bucket = this.getConfigString('S3_BUCKET');
+    const region = this.getConfigString('S3_REGION') ?? 'us-east-1';
     if (!bucket) {
       this.logger.warn('S3_BUCKET not configured, falling back to local storage');
-      if (uploadToLocal) return uploadToLocal(buffer, relativePath);
+      if (uploadToLocal) {
+        return uploadToLocal(buffer, relativePath);
+      }
       throw new Error('S3_BUCKET not configured and no local fallback provided');
     }
     try {
@@ -67,7 +89,7 @@ export class StorageDriversService {
           ACL: 'public-read',
         }),
       );
-      const cdnBase = this.config.get('CDN_BASE_URL');
+      const cdnBase = this.getConfigString('CDN_BASE_URL');
       const url = cdnBase
         ? `${cdnBase}/${relativePath}`
         : `https://${bucket}.s3.${region}.amazonaws.com/${relativePath}`;
@@ -77,7 +99,9 @@ export class StorageDriversService {
       void this.opsAlert?.alertOnCriticalError(error, 'StorageDriversService.uploadToS3');
       const errorMsg = describeUnknownError(error);
       this.logger.error(`S3 upload failed: ${errorMsg}, falling back to local`);
-      if (uploadToLocal) return uploadToLocal(buffer, relativePath);
+      if (uploadToLocal) {
+        return uploadToLocal(buffer, relativePath);
+      }
       throw error;
     }
   }
@@ -87,18 +111,20 @@ export class StorageDriversService {
     buffer: Buffer,
     relativePath: string,
     mimeType?: string,
-    uploadToLocal?: (
-      buf: Buffer,
-      path: string,
-    ) => Promise<{ url: string; path: string; size: number }>,
-  ): Promise<{ url: string; path: string; size: number }> {
+    uploadToLocal?: LocalUploadFallback,
+  ): Promise<UploadResult> {
     const client = this.getR2Client();
     if (!client) {
       this.logger.warn('R2 not fully configured, falling back to local storage');
-      if (uploadToLocal) return uploadToLocal(buffer, relativePath);
+      if (uploadToLocal) {
+        return uploadToLocal(buffer, relativePath);
+      }
       throw new Error('R2 not configured and no local fallback provided');
     }
-    const bucket = this.config.get('R2_BUCKET');
+    const bucket = this.getConfigString('R2_BUCKET');
+    if (!bucket) {
+      throw new Error('R2 not configured and no local fallback provided');
+    }
     try {
       await client.send(
         new PutObjectCommand({
@@ -115,7 +141,9 @@ export class StorageDriversService {
       void this.opsAlert?.alertOnCriticalError(error, 'StorageDriversService.uploadToR2');
       const errorMsg = describeUnknownError(error);
       this.logger.error(`R2 upload failed: ${errorMsg}, falling back to local`);
-      if (uploadToLocal) return uploadToLocal(buffer, relativePath);
+      if (uploadToLocal) {
+        return uploadToLocal(buffer, relativePath);
+      }
       throw error;
     }
   }
@@ -125,13 +153,15 @@ export class StorageDriversService {
     relativePath: string,
     deleteFromLocal?: (path: string) => Promise<boolean>,
   ): Promise<boolean> {
-    const bucket = this.config.get('S3_BUCKET');
+    const bucket = this.getConfigString('S3_BUCKET');
     if (!bucket) {
-      if (deleteFromLocal) return deleteFromLocal(relativePath);
+      if (deleteFromLocal) {
+        return deleteFromLocal(relativePath);
+      }
       return false;
     }
     try {
-      const client = new S3Client({ region: this.config.get('S3_REGION', 'us-east-1') });
+      const client = new S3Client({ region: this.getConfigString('S3_REGION') ?? 'us-east-1' });
       await client.send(new DeleteObjectCommand({ Bucket: bucket, Key: relativePath }));
       return true;
     } catch {
@@ -146,11 +176,16 @@ export class StorageDriversService {
   ): Promise<boolean> {
     const client = this.getR2Client();
     if (!client) {
-      if (deleteFromLocal) return deleteFromLocal(relativePath);
+      if (deleteFromLocal) {
+        return deleteFromLocal(relativePath);
+      }
       return false;
     }
     try {
-      const bucket = this.config.get('R2_BUCKET');
+      const bucket = this.getConfigString('R2_BUCKET');
+      if (!bucket) {
+        return false;
+      }
       await client.send(new DeleteObjectCommand({ Bucket: bucket, Key: relativePath }));
       return true;
     } catch {
@@ -163,10 +198,12 @@ export class StorageDriversService {
     relativePath: string,
     getMimeTypeForPath: (path: string) => string,
   ): Promise<{ buffer: Buffer; mimeType: string } | null> {
-    const bucket = this.config.get('S3_BUCKET');
-    if (!bucket) return null;
+    const bucket = this.getConfigString('S3_BUCKET');
+    if (!bucket) {
+      return null;
+    }
     try {
-      const client = new S3Client({ region: this.config.get('S3_REGION', 'us-east-1') });
+      const client = new S3Client({ region: this.getConfigString('S3_REGION') ?? 'us-east-1' });
       const response = await client.send(
         new GetObjectCommand({ Bucket: bucket, Key: relativePath }),
       );
@@ -188,8 +225,10 @@ export class StorageDriversService {
     getMimeTypeForPath: (path: string) => string,
   ): Promise<{ buffer: Buffer; mimeType: string } | null> {
     const client = this.getR2Client();
-    const bucket = this.config.get('R2_BUCKET');
-    if (!client || !bucket) return null;
+    const bucket = this.getConfigString('R2_BUCKET');
+    if (!client || !bucket) {
+      return null;
+    }
     try {
       const response = await client.send(
         new GetObjectCommand({ Bucket: bucket, Key: relativePath }),
@@ -221,7 +260,14 @@ export class StorageDriversService {
           details: { error: 'R2 not fully configured, using local fallback' },
         };
       }
-      const bucket = this.config.get('R2_BUCKET');
+      const bucket = this.getConfigString('R2_BUCKET');
+      if (!bucket) {
+        return {
+          status: 'DEGRADED',
+          driver: 'r2',
+          details: { error: 'R2_BUCKET not configured, using local fallback' },
+        };
+      }
       await client.send(new HeadBucketCommand({ Bucket: bucket }));
       return { status: 'UP', driver: 'r2', details: { bucket } };
     } catch (error: unknown) {
@@ -248,11 +294,11 @@ export class StorageDriversService {
     details?: Record<string, unknown>;
   }> {
     try {
-      const bucket = this.config.get('S3_BUCKET');
+      const bucket = this.getConfigString('S3_BUCKET');
       if (!bucket) {
         return { status: 'DEGRADED', driver: 's3', details: { error: 'S3_BUCKET not configured' } };
       }
-      const client = new S3Client({ region: this.config.get('S3_REGION', 'us-east-1') });
+      const client = new S3Client({ region: this.getConfigString('S3_REGION') ?? 'us-east-1' });
       await client.send(new HeadBucketCommand({ Bucket: bucket }));
       return { status: 'UP', driver: 's3', details: { bucket } };
     } catch (error: unknown) {
@@ -263,21 +309,26 @@ export class StorageDriversService {
   }
 
   /** Verify R2 connection on startup. */
-  async verifyR2Connection() {
+  async verifyR2Connection(): Promise<void> {
     const client = this.getR2Client();
-    if (!client) return;
-    const bucket = this.config.get('R2_BUCKET');
+    if (!client) {
+      return;
+    }
+    const bucket = this.getConfigString('R2_BUCKET');
+    if (!bucket) {
+      return;
+    }
     await client.send(new HeadBucketCommand({ Bucket: bucket }));
     this.logger.log(`R2 connection verified (bucket: ${bucket})`);
   }
 
   /** Build R2 public URL for a relative path. */
   buildR2PublicUrl(relativePath: string): string {
-    const r2PublicUrl = this.config.get('R2_PUBLIC_URL');
+    const r2PublicUrl = this.getConfigString('R2_PUBLIC_URL');
     if (r2PublicUrl) {
       return `${r2PublicUrl.replace(TRAILING_SLASHES_RE, '')}/${relativePath}`;
     }
-    const cdnBase = this.config.get('CDN_BASE_URL');
+    const cdnBase = this.getConfigString('CDN_BASE_URL');
     if (cdnBase) {
       return `${cdnBase}/${relativePath}`;
     }
@@ -285,15 +336,19 @@ export class StorageDriversService {
   }
 
   getR2Client(): S3Client | null {
-    if (this.r2Client) return this.r2Client;
-    const bucket = this.config.get('R2_BUCKET');
-    const accountId = this.config.get('R2_ACCOUNT_ID');
-    const accessKeyId = this.config.get('R2_ACCESS_KEY_ID');
-    const secretAccessKey = this.config.get('R2_SECRET_ACCESS_KEY');
-    if (!bucket || !accountId || !accessKeyId || !secretAccessKey) return null;
+    if (this.r2Client) {
+      return this.r2Client;
+    }
+    const bucket = this.getConfigString('R2_BUCKET');
+    const accountId = this.getConfigString('R2_ACCOUNT_ID');
+    const accessKeyId = this.getConfigString('R2_ACCESS_KEY_ID');
+    const secretAccessKey = this.getConfigString('R2_SECRET_ACCESS_KEY');
+    if (!bucket || !accountId || !accessKeyId || !secretAccessKey) {
+      return null;
+    }
     try {
       const endpoint =
-        this.config.get('R2_ENDPOINT') || `https://${accountId}.r2.cloudflarestorage.com`;
+        this.getConfigString('R2_ENDPOINT') ?? `https://${accountId}.r2.cloudflarestorage.com`;
       this.r2Client = new S3Client({
         region: 'auto',
         endpoint,
@@ -320,17 +375,29 @@ export class StorageDriversService {
     }
   }
 
+  private getConfigString(key: string): string | undefined {
+    const value = this.config.get<string>(key);
+    return typeof value === 'string' && value.trim() ? value : undefined;
+  }
+
   private async objectBodyToBuffer(body: unknown): Promise<Buffer> {
-    if (!body) return Buffer.alloc(0);
-    if (Buffer.isBuffer(body)) return body;
-    if (typeof (body as Record<string, unknown>).transformToByteArray === 'function') {
-      return Buffer.from(
-        await (body as { transformToByteArray: () => Promise<Uint8Array> }).transformToByteArray(),
-      );
+    if (!body) {
+      return Buffer.alloc(0);
+    }
+    if (Buffer.isBuffer(body)) {
+      return body;
+    }
+    if (body instanceof Uint8Array) {
+      return Buffer.from(body);
+    }
+    if (hasTransformToByteArray(body)) {
+      return Buffer.from(await body.transformToByteArray());
+    }
+    if (!isAsyncIterableObject(body)) {
+      throw new Error('Unsupported storage object body');
     }
     const chunks: Buffer[] = [];
-    const streamBody = body as AsyncIterable<Buffer | Uint8Array | string | ArrayBuffer>;
-    for await (const chunk of streamBody) {
+    for await (const chunk of body) {
       if (Buffer.isBuffer(chunk)) {
         chunks.push(chunk);
         continue;

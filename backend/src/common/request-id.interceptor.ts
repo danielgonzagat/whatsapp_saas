@@ -3,6 +3,31 @@ import { Observable } from 'rxjs';
 import { tap } from 'rxjs/operators';
 import { v4 as uuid } from 'uuid';
 
+interface RequestIdRequest {
+  headers?: Record<string, unknown>;
+  id?: string;
+}
+
+interface RequestIdResponse {
+  headersSent?: boolean;
+  setHeader: (name: string, value: string) => void;
+}
+
+function readHeader(headers: unknown, key: string): string | undefined {
+  if (typeof headers !== 'object' || headers === null || Array.isArray(headers)) {
+    return undefined;
+  }
+  const value = (headers as Record<string, unknown>)[key];
+  if (typeof value === 'string' && value.trim()) {
+    return value;
+  }
+  if (Array.isArray(value)) {
+    const first = value.find((entry): entry is string => typeof entry === 'string' && !!entry);
+    return first?.trim() ? first : undefined;
+  }
+  return undefined;
+}
+
 /**
  * Interceptor global para correlação de requisições.
  * Gera/propaga X-Request-Id e injeta em req.id para logs.
@@ -11,11 +36,13 @@ import { v4 as uuid } from 'uuid';
 export class RequestIdInterceptor implements NestInterceptor {
   /** Intercept. */
   intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
-    const request = context.switchToHttp().getRequest();
-    const response = context.switchToHttp().getResponse();
+    const request = context.switchToHttp().getRequest<RequestIdRequest>();
+    const response = context.switchToHttp().getResponse<RequestIdResponse>();
 
-    const incomingId = request.headers['x-request-id'] || request.headers['x-correlation-id'];
-    const requestId = (incomingId as string) || uuid();
+    const incomingId =
+      readHeader(request.headers, 'x-request-id') ??
+      readHeader(request.headers, 'x-correlation-id');
+    const requestId = incomingId || uuid();
 
     request.id = requestId;
     if (!response.headersSent) {

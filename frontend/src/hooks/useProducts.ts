@@ -41,8 +41,10 @@ export function useProduct(id: string | null) {
 
 /* ── Product categories ── */
 export function useProductCategories() {
-  const { data, isLoading } = useSWR('/products/categories/list', swrFetcher);
-  return { categories: Array.isArray(data) ? data : [], isLoading };
+  const { data, isLoading, error } = useSWR('/products/categories/list', swrFetcher);
+  const raw = data as { categories?: string[] } | undefined;
+  const categories = Array.isArray(raw?.categories) ? raw.categories : [];
+  return { categories, isLoading, error };
 }
 
 /* ── Mutations ── */

@@ -2,7 +2,6 @@
 
 import { kloelT } from '@/lib/i18n/t';
 import { colors } from '@/lib/design-tokens';
-// PULSE:OK — AI generate POST navigates to editor on success; deleteDesign uses useCanvasDesigns hook which calls mutate internally.
 
 import { IC } from '@/components/canvas/CanvasIcons';
 import { CreateModal } from '@/components/canvas/CreateModal';
@@ -15,7 +14,6 @@ import { useEffect, useState } from 'react';
 import { mutate } from 'swr';
 
 const S = "var(--font-sora), 'Sora', sans-serif";
-const _M = "var(--font-jetbrains), 'JetBrains Mono', monospace";
 
 const SKELETON_SLOTS = ['alpha', 'beta', 'gamma', 'delta', 'epsilon', 'zeta'] as const;
 
@@ -33,7 +31,7 @@ function RecentSkeletonGrid() {
           key={`canvas-skeleton-${slot}`}
           style={{
             background: 'var(--app-bg-card)',
-            border: '1px solid #1C1C1F',
+            border: `1px solid ${colors.canvas.border}`,
             borderRadius: 6,
             overflow: 'hidden',
           }}
@@ -41,7 +39,7 @@ function RecentSkeletonGrid() {
           <div
             style={{
               height: 112,
-              background: 'linear-gradient(135deg, #161618 0%, #1C1C1F 50%, #161618 100%)',
+              background: `linear-gradient(135deg, ${colors.canvas.surface} 0%, ${colors.canvas.border} 50%, ${colors.canvas.surface} 100%)`,
             }}
           />
           <div style={{ padding: '10px 12px', display: 'grid', gap: 8 }}>
@@ -49,16 +47,16 @@ function RecentSkeletonGrid() {
               style={{
                 width: '70%',
                 height: 10,
-                borderRadius: 999,
+                borderRadius: 16,
                 background:
-                  '#1C1C1F' /* PULSE_VISUAL_OK: intermediate surface tone, near elevated */,
+                  colors.canvas.border,
               }}
             />
             <div
               style={{
                 width: '42%',
                 height: 9,
-                borderRadius: 999,
+                borderRadius: 16,
                 background: 'var(--app-bg-secondary)',
               }}
             />
@@ -122,7 +120,7 @@ export default function CanvasInicio() {
             alignItems: 'center',
             gap: 10,
             background: 'var(--app-bg-card)',
-            border: '1px solid #1C1C1F',
+            border: `1px solid ${colors.canvas.border}`,
             borderRadius: 6,
             padding: '10px 16px',
           }}
@@ -187,7 +185,7 @@ export default function CanvasInicio() {
           <div
             style={{
               background: 'var(--app-bg-card)',
-              border: '1px dashed #1C1C1F',
+              border: `1px dashed ${colors.canvas.border}`,
               borderRadius: 6,
               padding: '48px 24px',
               textAlign: 'center',
@@ -266,7 +264,7 @@ function DesignCard({
     <div
       style={{
         background: 'var(--app-bg-card)',
-        border: '1px solid #1C1C1F',
+        border: `1px solid ${colors.canvas.border}`,
         borderRadius: 6,
         transition: 'all 0.25s',
         overflow: 'hidden',
@@ -290,9 +288,9 @@ function DesignCard({
           height: 22,
           borderRadius: 4,
           background: 'var(--app-bg-primary)',
-          border: '1px solid #2A2A2E',
+          border: `1px solid ${colors.canvas.hover}`,
           color:
-            '#FF6B6B' /* PULSE_VISUAL_OK: soft error red, non-Monitor */ /* PULSE_VISUAL_OK: soft error red, non-Monitor */,
+            colors.checkout.danger,
           cursor: 'pointer',
           display: 'flex',
           alignItems: 'center',
@@ -362,8 +360,8 @@ function DesignCard({
                 style={{
                   width: 20,
                   height: 20,
-                  borderRadius: 3,
-                  background: 'radial-gradient(circle, colors.ember.glow40, transparent)',
+                  borderRadius: 4,
+                  background: `radial-gradient(circle, ${colors.ember.glow40}, transparent)`,
                 }}
               />
             </div>

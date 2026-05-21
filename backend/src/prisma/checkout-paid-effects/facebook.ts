@@ -14,7 +14,9 @@ export async function sendFacebookCapiPurchaseFromPaidUpdate(
   args: Prisma.CheckoutOrderUpdateManyArgs,
 ) {
   const scope = args.data.status === 'PAID' ? readPaidCheckoutOrderScope(args) : null;
-  if (!scope) return;
+  if (!scope) {
+    return;
+  }
   const order = await prisma.checkoutOrder.findUnique({
     where: { id: scope.orderId },
     select: {
@@ -45,7 +47,9 @@ export async function sendFacebookCapiPurchaseFromPaidUpdate(
       },
     },
   });
-  if (!order || order.workspaceId !== scope.workspaceId) return;
+  if (!order || order.workspaceId !== scope.workspaceId) {
+    return;
+  }
   const pixels: CheckoutPixelForPostPayment[] = order.plan.checkoutConfig?.pixels || [];
   const FacebookCAPIServiceClass = (await import('../../checkout/facebook-capi.service'))
     .FacebookCAPIService;
@@ -69,18 +73,20 @@ export async function sendFacebookCapiPurchaseFromPaidUpdate(
       },
       select: { id: true },
     });
-    if (existing) continue;
+    if (existing) {
+      continue;
+    }
     const sent = await facebookCapi.sendEvent({
       pixelId: pixel.pixelId,
       accessToken: pixel.accessToken,
       eventName: 'Purchase',
-      email: order.customerEmail || undefined,
-      phone: order.customerPhone || undefined,
+      ...(order.customerEmail ? { email: order.customerEmail } : {}),
+      ...(order.customerPhone ? { phone: order.customerPhone } : {}),
       amount: order.totalInCents,
       currency: 'BRL',
       productId: order.plan.productId,
-      ip: order.ipAddress || undefined,
-      userAgent: order.userAgent || undefined,
+      ...(order.ipAddress ? { ip: order.ipAddress } : {}),
+      ...(order.userAgent ? { userAgent: order.userAgent } : {}),
     });
     if (sent) {
       await prisma.auditLog.create({

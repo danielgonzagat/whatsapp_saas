@@ -16,8 +16,9 @@ const steps = [
   { label: 'model-strings', command: 'node scripts/ops/check-model-strings.mjs' },
   { label: 'code-quality', command: 'node scripts/ops/check-code-quality.mjs' },
   { label: 'data-integrity', command: 'node scripts/ops/check-data-integrity.mjs' },
-  { label: 'ratchet', command: 'npm run ratchet:check' },
-  { label: 'lint', command: 'npm run lint && npm --prefix worker run lint:check' },
+  // The ratchet needs coverage/PULSE artifacts generated later in CI. The
+  // workflow keeps the dedicated Quality ratchet gate after those artifacts exist.
+  { label: 'changed-eslint', command: 'npm run guard:changed-eslint' },
   { label: 'frontend-typecheck', command: 'npm run frontend:typecheck' },
   { label: 'backend-typecheck', command: 'npm run backend:typecheck' },
   { label: 'worker-typecheck', command: 'npm run worker:typecheck' },

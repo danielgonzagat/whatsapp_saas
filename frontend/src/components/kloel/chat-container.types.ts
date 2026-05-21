@@ -38,7 +38,7 @@ export interface AgentStreamEvent {
 export interface AgentTraceEntry {
   id: string;
   type: AgentStreamEvent['type'];
-  phase?: string;
+  phase?: string | undefined;
   message: string;
   timestamp: Date;
 }
@@ -46,7 +46,7 @@ export interface AgentTraceEntry {
 export interface AgentCursorTarget {
   x: number;
   y: number;
-  actionType?: string;
-  text?: string;
+  actionType?: string | undefined;
+  text?: string | undefined;
   timestamp: number;
 }

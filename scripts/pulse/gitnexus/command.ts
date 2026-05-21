@@ -1,11 +1,34 @@
 /**
  * GitNexus command runner — safe CLI invocation for all gitnexus commands.
  */
-import { execFile } from 'node:child_process';
+import { spawn } from 'node:child_process';
 
 import type { GitNexusCommandResult } from './types';
 
 const DEFAULT_TIMEOUT_MS = 300_000;
+const MAX_BUFFER_BYTES = 10 * 1024 * 1024;
+
+function appendLimited(current: string, chunk: Buffer): string {
+  const next = current + chunk.toString('utf8');
+  if (Buffer.byteLength(next, 'utf8') <= MAX_BUFFER_BYTES) return next;
+  return next.slice(next.length - MAX_BUFFER_BYTES);
+}
+
+function killProcessGroup(pid: number | undefined): void {
+  if (!pid) return;
+  try {
+    process.kill(-pid, 'SIGKILL');
+    return;
+  } catch {
+    // Fallback for platforms or shells that do not expose a process group.
+  }
+
+  try {
+    process.kill(pid, 'SIGKILL');
+  } catch {
+    // Best-effort termination. The caller still resolves with a timeout.
+  }
+}
 
 export function runGitNexus(
   args: string[],
@@ -14,52 +37,61 @@ export function runGitNexus(
 ): Promise<GitNexusCommandResult> {
   const start = Date.now();
   return new Promise((resolve) => {
-    const child = execFile(
+    const limitMs = timeoutMs ?? DEFAULT_TIMEOUT_MS;
+    let stdout = '';
+    let stderr = '';
+    let timedOut = false;
+    let settled = false;
+    let timeout: NodeJS.Timeout | undefined;
+    let timeoutFallback: NodeJS.Timeout | undefined;
+
+    const finish = (result: GitNexusCommandResult): void => {
+      if (settled) return;
+      settled = true;
+      if (timeout) clearTimeout(timeout);
+      if (timeoutFallback) clearTimeout(timeoutFallback);
+      resolve(result);
+    };
+
+    const child = spawn(
       'npx',
       ['-y', 'gitnexus@latest', ...args],
       {
         cwd: cwd ?? process.cwd(),
-        timeout: timeoutMs ?? DEFAULT_TIMEOUT_MS,
-        maxBuffer: 10 * 1024 * 1024,
         env: { ...process.env },
-        killSignal: 'SIGKILL',
-      },
-      (error, stdout, stderr) => {
-        const durationMs = Date.now() - start;
-        if (error) {
-          const timedOut =
-            (error as NodeJS.ErrnoException).code === 'ETIMEDOUT' ||
-            (error as { killed?: boolean }).killed === true;
-          const errCode = (error as NodeJS.ErrnoException).code;
-          resolve({
-            command: 'gitnexus',
-            args,
-            exitCode:
-              errCode === 'ETIMEDOUT'
-                ? null
-                : ((error as { exitCode?: number | null }).exitCode ?? (Number(errCode) || 1)),
-            stdout: stdout ?? '',
-            stderr:
-              (stderr ?? '') +
-              (timedOut ? `\nTimeout after ${timeoutMs ?? DEFAULT_TIMEOUT_MS}ms` : ''),
-            durationMs,
-            timedOut,
-          });
-          return;
-        }
-        resolve({
-          command: 'gitnexus',
-          args,
-          exitCode: 0,
-          stdout: stdout ?? '',
-          stderr: stderr ?? '',
-          durationMs,
-          timedOut: false,
-        });
+        detached: true,
+        stdio: ['ignore', 'pipe', 'pipe'],
       },
     );
+
+    timeoutFallback = setTimeout(() => {
+      finish({
+        command: 'gitnexus',
+        args,
+        exitCode: null,
+        stdout,
+        stderr,
+        durationMs: Date.now() - start,
+        timedOut: true,
+      });
+    }, limitMs + 5_000);
+
+    timeout = setTimeout(() => {
+      timedOut = true;
+      stderr += `\nTimeout after ${limitMs}ms`;
+      killProcessGroup(child.pid);
+    }, limitMs);
+
+    child.stdout?.on('data', (chunk: Buffer) => {
+      stdout = appendLimited(stdout, chunk);
+    });
+
+    child.stderr?.on('data', (chunk: Buffer) => {
+      stderr = appendLimited(stderr, chunk);
+    });
+
     child.on('error', (err) => {
-      resolve({
+      finish({
         command: 'gitnexus',
         args,
         exitCode: null,
@@ -67,6 +99,18 @@ export function runGitNexus(
         stderr: err.message,
         durationMs: Date.now() - start,
         timedOut: false,
+      });
+    });
+
+    child.on('close', (code, signal) => {
+      finish({
+        command: 'gitnexus',
+        args,
+        exitCode: timedOut ? null : (code ?? (signal ? 1 : null)),
+        stdout,
+        stderr,
+        durationMs: Date.now() - start,
+        timedOut,
       });
     });
   });

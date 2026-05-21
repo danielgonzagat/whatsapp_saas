@@ -1,13 +1,13 @@
 'use client';
+import { colors } from '@/lib/design-tokens';
 
 import { kloelT } from '@/lib/i18n/t';
 import { apiFetch } from '@/lib/api';
 import { useEffect, useId, useRef, useState } from 'react';
 import { mutate } from 'swr';
-import { colors } from '@/lib/design-tokens';
 
 /* ── Design Tokens ── */
-const _BG_VOID = 'colors.background.void';
+
 const BG_SURFACE = 'colors.background.surface';
 const BG_ELEVATED = 'colors.background.elevated';
 const BORDER = 'colors.border.space';
@@ -15,9 +15,8 @@ const TEXT_PRIMARY = 'colors.text.silver';
 const TEXT_MUTED = 'colors.text.muted';
 const TEXT_DIM = 'colors.text.dim';
 const EMBER = 'colors.ember.primary';
-const GREEN = '#10B981';
+const GREEN = colors.semantic.success;
 const FONT_BODY = "'Sora', sans-serif";
-const _FONT_MONO = "'JetBrains Mono', monospace";
 
 /* ── Inline SVG Icons ── */
 const LinkIcon = () => (
@@ -116,7 +115,6 @@ export function PlanThankYouTab({ planId, productId }: { planId: string; product
   const uid = useId();
   const [_loading, setLoading] = useState(true);
   const [urlCard, setUrlCard] = useState('');
-  const [urlBoleto, setUrlBoleto] = useState('');
   const [urlPix, setUrlPix] = useState('');
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -138,7 +136,6 @@ export function PlanThankYouTab({ planId, productId }: { planId: string; product
         const p = (envelope?.data ?? envelope) as Record<string, unknown> | undefined;
         if (p) {
           setUrlCard((p.thankyouUrl as string | undefined) ?? '');
-          setUrlBoleto((p.thankyouBoletoUrl as string | undefined) ?? '');
           setUrlPix((p.thankyouPixUrl as string | undefined) ?? '');
         }
       })
@@ -153,7 +150,6 @@ export function PlanThankYouTab({ planId, productId }: { planId: string; product
         method: 'PUT',
         body: {
           thankyouUrl: urlCard || null,
-          thankyouBoletoUrl: urlBoleto || null,
           thankyouPixUrl: urlPix || null,
         },
       });
@@ -231,36 +227,6 @@ export function PlanThankYouTab({ planId, productId }: { planId: string; product
           </div>
         </div>
 
-        {/* Boleto URL */}
-        <div>
-          <label htmlFor={`${uid}-url-boleto`} style={labelStyle}>
-            {kloelT(`URL de obrigado para boletos`)}
-          </label>
-          <div style={{ position: 'relative' }}>
-            <div
-              style={{
-                position: 'absolute',
-                left: '12px',
-                top: '50%',
-                transform: 'translateY(-50%)',
-                display: 'flex',
-                alignItems: 'center',
-              }}
-            >
-              <LinkIcon />
-            </div>
-            <input
-              id={`${uid}-url-boleto`}
-              type="url"
-              aria-label="URL de obrigado para boletos"
-              value={urlBoleto}
-              onChange={(e) => setUrlBoleto(e.target.value)}
-              placeholder="https://seusite.com/obrigado-boleto"
-              style={{ ...inputStyle, paddingLeft: '36px' }}
-            />
-          </div>
-        </div>
-
         {/* Pix URL */}
         <div>
           <label htmlFor={`${uid}-url-pix`} style={labelStyle}>
@@ -330,7 +296,7 @@ export function PlanThankYouTab({ planId, productId }: { planId: string; product
             justifyContent: 'center',
             gap: '8px',
             background: EMBER,
-            color: '#FFFFFF',
+            color: colors.text.silver,
             border: 'none',
             borderRadius: '6px',
             padding: '12px 20px',
@@ -356,7 +322,7 @@ export function PlanThankYouTab({ planId, productId }: { planId: string; product
         <button
           type="button"
           onClick={() => {
-            window.open(`/preview/${planId}`, '_blank');
+            window.open(`/preview/${planId}`, '_blank', 'noopener,noreferrer');
           }}
           style={{
             flex: 1,
@@ -409,7 +375,7 @@ export function PlanThankYouTab({ planId, productId }: { planId: string; product
           disabled={saving}
           style={{
             background: EMBER,
-            color: '#FFFFFF',
+            color: colors.text.silver,
             border: 'none',
             borderRadius: '6px',
             padding: '10px 24px',

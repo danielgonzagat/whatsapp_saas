@@ -1,5 +1,6 @@
-import { Logger } from '@nestjs/common';
+
 import { ConfigService } from '@nestjs/config';
+import { StructuredLogger } from '../../logging/structured-logger';
 import { getTraceHeaders } from '../../common/trace-headers';
 import { OpsAlertService } from '../../observability/ops-alert.service';
 import { WAHA_MESSAGE_EVENT, WAHA_MESSAGE_WILDCARD_EVENT } from './waha-message-event-name';
@@ -18,10 +19,10 @@ const PATTERN_RE_3 = /\/+$/;
  * WahaProvider composes this class instead of extending it.
  */
 export class WahaTransport {
-  protected readonly logger: Logger;
+  protected readonly logger: StructuredLogger;
   protected readonly baseUrl: string;
   protected readonly apiKey: string;
-  protected opsAlert?: OpsAlertService;
+  protected opsAlert: OpsAlertService | undefined;
   protected readonly defaultWebhookEvents = [
     'session.status',
     WAHA_MESSAGE_EVENT,
@@ -34,7 +35,7 @@ export class WahaTransport {
     protected readonly configService: ConfigService,
     loggerContext: string,
   ) {
-    this.logger = new Logger(loggerContext);
+    this.logger = StructuredLogger.from(loggerContext);
     this.baseUrl = this.resolveBaseUrlFromConfig();
     this.apiKey = this.resolveApiKeyFromConfig();
     this.quietErrorPaths.add('/chats/overview');
@@ -213,12 +214,15 @@ export class WahaTransport {
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
-      const res = await fetch(url, {
+      const init: RequestInit = {
         method,
         headers,
-        body: body ? JSON.stringify(body) : undefined,
         signal: controller.signal,
-      });
+      };
+      if (body !== undefined) {
+        init.body = JSON.stringify(body);
+      }
+      const res = await fetch(url, init);
 
       clearTimeout(timeout);
       return res;

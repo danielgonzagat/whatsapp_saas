@@ -3,10 +3,15 @@ import { flowQueue } from '../../queue/queue';
 import { formatBrlAmount } from '../../kloel/money-format.util';
 import { PaidCheckoutEffectClient, readPaidCheckoutOrderScope } from './shared';
 
-const DIGITS_RE = /\D/g;
+import { digitsOnly } from '../../common/phone';
 
+/**
+ * Local checkout-effects normalizer: digitsOnly with a 10-digit floor.
+ * Returns null below the floor (avoids creating a WhatsApp conversation
+ * for malformed numbers like inferred-from-cardholder-name attempts).
+ */
 function normalizePhone(phone: string | null) {
-  const digits = String(phone || '').replace(DIGITS_RE, '');
+  const digits = digitsOnly(phone);
   return digits.length >= 10 ? digits : null;
 }
 
@@ -61,7 +66,9 @@ export async function enqueuePurchaseWhatsappFromPaidCheckoutUpdate(
   args: Prisma.CheckoutOrderUpdateManyArgs,
 ) {
   const scope = args.data.status === 'PAID' ? readPaidCheckoutOrderScope(args) : null;
-  if (!scope) return;
+  if (!scope) {
+    return;
+  }
 
   const existing = await prisma.auditLog.findFirst({
     where: {
@@ -72,7 +79,9 @@ export async function enqueuePurchaseWhatsappFromPaidCheckoutUpdate(
     },
     select: { id: true },
   });
-  if (existing) return;
+  if (existing) {
+    return;
+  }
 
   const order = await prisma.checkoutOrder.findUnique({
     where: { id: scope.orderId },
@@ -133,7 +142,7 @@ export async function enqueuePurchaseWhatsappFromPaidCheckoutUpdate(
         productName: order.plan.product?.name || 'Seu pedido',
         orderNumber: order.orderNumber || order.id,
         totalInCents: order.totalInCents,
-        memberAreaUrl: memberArea?.slug ? `/area/${memberArea.slug}` : undefined,
+        ...(memberArea?.slug ? { memberAreaUrl: `/area/${memberArea.slug}` } : {}),
       }),
       externalId: jobId,
     },

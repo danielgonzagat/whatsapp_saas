@@ -189,7 +189,7 @@ test.describe('Mobile Surface Audit', () => {
 
     for (const route of routes) {
       await page.goto(`${appUrl}${route.path}`, { waitUntil: 'domcontentloaded' });
-      await page.waitForLoadState('networkidle').catch(() => undefined);
+      await page.waitForLoadState('networkidle', { timeout: 2_000 }).catch(() => undefined);
       await dismissCookieBanner(page);
       await route.assert();
 

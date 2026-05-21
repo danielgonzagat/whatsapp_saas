@@ -18,9 +18,9 @@ import {
 
 interface ConversationLike {
   id: string;
-  title?: string;
-  updatedAt?: string;
-  lastMessagePreview?: string;
+  title?: string | undefined;
+  updatedAt?: string | undefined;
+  lastMessagePreview?: string | undefined;
 }
 
 interface ConversationRowProps {
@@ -195,7 +195,7 @@ export function ConversationRow({
           >
             <span
               style={{
-                fontSize: 14,
+                fontSize: 16,
                 fontWeight: 600,
                 color: TEXT,
                 whiteSpace: isMobile ? 'normal' : 'nowrap',
@@ -208,7 +208,7 @@ export function ConversationRow({
             <span
               style={{
                 flexShrink: 0,
-                fontSize: 10,
+                fontSize: 16,
                 color: MUTED_2,
                 fontFamily: M,
                 whiteSpace: 'nowrap',
@@ -222,7 +222,7 @@ export function ConversationRow({
             style={{
               margin: 0,
               color: MUTED,
-              fontSize: 12,
+              fontSize: 16,
               lineHeight: 1.55,
               overflow: 'hidden',
               textOverflow: 'ellipsis',

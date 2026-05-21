@@ -1,0 +1,16 @@
+{
+  "runId": "batch-17-2026-05-12e-h-coverage",
+  "concurrency": 1,
+  "timeoutSec": 0,
+  "staggerMs": 0,
+  "dir": "/Users/danielpenin/whatsapp_saas",
+  "skipPermissions": true,
+  "_note": "Batch 17 — H coverage auto-discover only (single subagent, conservative).",
+  "tasks": [
+    {
+      "id": "H-coverage-rest",
+      "title": "Wave H — Auto-discover all services without spec",
+      "promptFile": ".opencode-prompts/batch-17/H-coverage-rest.md"
+    }
+  ]
+}

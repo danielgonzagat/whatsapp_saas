@@ -9,11 +9,13 @@ import { AdminPermissionGuard } from '../auth/guards/admin-permission.guard';
 import { AdminConfigService } from './admin-config.service';
 import { ListConfigOverviewDto } from './dto/list-config-overview.dto';
 import { UpdateWorkspaceConfigDto } from './dto/update-workspace-config.dto';
+import { RouteClass } from '../../common/throttler/route-class.decorator';
 
 /** Admin config controller. */
 @Public()
 @Controller('admin/config')
 @UseGuards(AdminAuthGuard, AdminPermissionGuard)
+@RouteClass('read')
 export class AdminConfigController {
   constructor(private readonly config: AdminConfigService) {}
 

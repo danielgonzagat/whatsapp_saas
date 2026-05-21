@@ -1,5 +1,5 @@
 import { InjectRedis } from '@nestjs-modules/ioredis';
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { OrderStatus } from '@prisma/client';
 import Redis from 'ioredis';
 import { PrismaService } from '../prisma/prisma.service';
@@ -11,12 +11,10 @@ import {
   resolveDashboardHomeRange,
   sumByBuckets,
 } from './home-aggregation.util';
-
 type SetupChecklistItem = {
   key: string;
   completed: boolean;
 };
-
 const SETUP_CHECKPOINT_COPY: Record<string, { label: string; description: string }> = {
   profile: {
     label: 'Perfil comercial configurado',
@@ -45,7 +43,6 @@ const SETUP_CHECKPOINT_COPY: Record<string, { label: string; description: string
     description: 'A IA precisa saber se começa em atendimento, venda ou recuperação.',
   },
 };
-
 function readSetupChecklist(value: unknown): SetupChecklistItem[] {
   if (!Array.isArray(value)) {
     return [];
@@ -61,15 +58,14 @@ function readSetupChecklist(value: unknown): SetupChecklistItem[] {
     return [{ key: record.key, completed: record.completed }];
   });
 }
-
 /** Dashboard service. */
 @Injectable()
 export class DashboardService {
+  private readonly logger = new Logger(DashboardService.name);
   constructor(
     private prisma: PrismaService,
     @InjectRedis() private readonly redis: Redis,
   ) {}
-
   async getStats(workspaceId: string) {
     const workspace = await this.prisma.workspace.findUnique({
       where: { id: workspaceId },
@@ -77,13 +73,11 @@ export class DashboardService {
     });
     const billingSuspended =
       asProviderSettings(workspace?.providerSettings).billingSuspended === true;
-
     const [totalContacts, totalCampaigns, totalFlows] = await Promise.all([
       this.prisma.contact.count({ where: { workspaceId } }),
       this.prisma.campaign.count({ where: { workspaceId } }),
       this.prisma.flow.count({ where: { workspaceId } }),
     ]);
-
     const messageStats = await this.prisma.message.groupBy({
       by: ['status'],
       where: {
@@ -93,7 +87,6 @@ export class DashboardService {
       },
       _count: { status: true },
     });
-
     const statsMap = messageStats.reduce(
       (acc, curr) => {
         acc[curr.status] = curr._count.status;
@@ -101,25 +94,19 @@ export class DashboardService {
       },
       {} as Record<string, number>,
     );
-
     const sent = statsMap.SENT || 0;
     const delivered = statsMap.DELIVERED || 0;
     const read = statsMap.READ || 0;
     const failed = statsMap.FAILED || 0;
     const totalOutbound = sent + delivered + read + failed;
-
     const deliveryRate = totalOutbound > 0 ? ((delivered + read) / totalOutbound) * 100 : 0;
-
     const deliveredOrRead = delivered + read;
     const readRate = deliveredOrRead > 0 ? (read / deliveredOrRead) * 100 : 0;
-
     const activeConversations = await this.prisma.conversation.count({
       where: { workspaceId, status: 'OPEN' },
     });
-
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
-
     const flowExecutions = await this.prisma.flowExecution.groupBy({
       by: ['status'],
       where: {
@@ -128,7 +115,6 @@ export class DashboardService {
       },
       _count: { status: true },
     });
-
     const flowStats = flowExecutions.reduce(
       (acc, curr) => {
         acc[curr.status] = curr._count.status;
@@ -136,51 +122,47 @@ export class DashboardService {
       },
       {} as Record<string, number>,
     );
-
     const key = `metrics:${workspaceId}`;
+    this.logger.log('Fetching Redis operational metrics', {
+      context: 'DashboardService.getStats',
+      workspaceId,
+    });
     const events = await this.redis.lrange(key, 0, -1);
     let healthScore = 100;
     let avgLatency = 0;
-
     if (events.length > 0) {
       let success = 0;
       let totalLatency = 0;
       events.forEach((e) => {
         const [ok, lat] = e.split(':');
         if (ok === '1') {
-          success++;
+          success += 1;
         }
         totalLatency += Number(lat || 0);
       });
       healthScore = Math.round((success / events.length) * 100);
       avgLatency = Math.round(totalLatency / events.length);
     }
-
     return {
       contacts: totalContacts,
       campaigns: totalCampaigns,
       flows: totalFlows,
       messages: totalOutbound,
-
       // Calculated Rates
       deliveryRate: Number(deliveryRate.toFixed(1)),
       readRate: Number(readRate.toFixed(1)),
       errorRate: totalOutbound > 0 ? Number(((failed / totalOutbound) * 100).toFixed(1)) : 0,
-
       // Operational
       activeConversations,
       healthScore,
       avgLatency,
-
       // Flow Funnel (Today)
       flowCompleted: flowStats.COMPLETED || 0,
       flowRunning: flowStats.RUNNING || 0,
       flowFailed: flowStats.FAILED || 0,
-
       billingSuspended,
     };
   }
-
   /** Get home snapshot. */
   async getHomeSnapshot(
     workspaceId: string,
@@ -204,7 +186,6 @@ export class DashboardService {
       1,
     );
     const endOfPreviousMonth = new Date(startOfMonth.getTime() - 1);
-
     const [
       wallet,
       currentPaidOrders,
@@ -363,7 +344,6 @@ export class DashboardService {
         select: { value: true },
       }),
     ]);
-
     const currentRevenueInCents = currentPaidOrders.reduce(
       (sum, order) => sum + Number(order.totalInCents || 0),
       0,
@@ -378,7 +358,6 @@ export class DashboardService {
       paidOrderCount > 0 ? Math.round(currentRevenueInCents / paidOrderCount) : 0;
     const checkoutCompletionRatePct =
       orderCount > 0 ? Number(((paidOrderCount / orderCount) * 100).toFixed(1)) : 0;
-
     const revenueSeries = sumByBuckets(
       currentPaidOrders,
       range.buckets,
@@ -397,7 +376,6 @@ export class DashboardService {
       (row) => row.createdAt,
     );
     const allOrdersSeries = countByBuckets(currentOrders, range.buckets, (row) => row.createdAt);
-
     const conversionSeries = paidOrdersSeries.map((value, index) => {
       const total = allOrdersSeries[index] || 0;
       return total > 0 ? Number(((value / total) * 100).toFixed(1)) : 0;
@@ -406,7 +384,6 @@ export class DashboardService {
       const totalPaid = paidOrdersSeries[index] || 0;
       return totalPaid > 0 ? Math.round(value / totalPaid) : 0;
     });
-
     const productStats = new Map<
       string,
       {
@@ -419,7 +396,6 @@ export class DashboardService {
         totalSales: number;
       }
     >();
-
     currentPaidOrders.forEach((order) => {
       const product = order.plan?.product;
       if (!product?.id) {
@@ -437,12 +413,13 @@ export class DashboardService {
           totalSales: 0,
         });
       }
-
       const current = productStats.get(key);
+      if (!current) {
+        return;
+      }
       current.totalRevenueInCents += Number(order.totalInCents || 0);
       current.totalSales += 1;
     });
-
     const topProducts = Array.from(productStats.values())
       .sort((left, right) => right.totalRevenueInCents - left.totalRevenueInCents)
       .slice(0, 4)
@@ -450,7 +427,6 @@ export class DashboardService {
         ...item,
         isTop: index === 0,
       }));
-
     const averageResponseTimeSeconds = computeAverageResponseTimeSeconds(responseMessages);
     const revenueDeltaPct =
       previousRevenueInCents > 0
@@ -461,7 +437,6 @@ export class DashboardService {
             ).toFixed(1),
           )
         : null;
-
     const operationalHealth = computeOperationalHealth([
       currentRevenueInCents > 0,
       topProducts.length > 0,
@@ -486,7 +461,6 @@ export class DashboardService {
       (checkpoint) => checkpoint.active,
     ).length;
     const totalHealthCheckpoints = operationalHealth.totalCheckpoints + setupCheckpoints.length;
-
     return {
       generatedAt: new Date().toISOString(),
       range: {
@@ -534,7 +508,6 @@ export class DashboardService {
             : conversation.mode === 'AI' && conversation.unreadCount === 0
               ? 'ai'
               : 'waiting';
-
         return {
           id: conversation.id,
           contactName:

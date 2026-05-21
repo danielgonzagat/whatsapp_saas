@@ -16,6 +16,34 @@ export { QRCodePane } from './WhatsAppExperience.qr-pane';
 
 export type WhatsAppExperienceProps = WhatsAppExperienceControllerProps;
 
+const META_OAUTH_HOSTS = new Set([
+  'facebook.com',
+  'www.facebook.com',
+  'business.facebook.com',
+  'instagram.com',
+  'www.instagram.com',
+  'api.instagram.com',
+]);
+
+function isTrustedMetaUrl(value: string): boolean {
+  try {
+    const target = new URL(value);
+    return target.protocol === 'https:' && META_OAUTH_HOSTS.has(target.hostname);
+  } catch {
+    return false;
+  }
+}
+
+function navigateMetaUrl(url: string) {
+  const link = document.createElement('a');
+  link.href = url;
+  link.rel = 'noopener noreferrer';
+  link.style.display = 'none';
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+}
+
 /** Whats app experience. */
 export default function WhatsAppExperience(props: WhatsAppExperienceProps) {
   const {
@@ -54,10 +82,14 @@ export default function WhatsAppExperience(props: WhatsAppExperienceProps) {
     reconfigure,
     workspaceId,
     operator,
+    metaAuthUrl,
+    isMetaProvider,
+    metaConnecting,
+    setMetaConnecting,
   } = useWhatsAppExperienceController(props);
 
-  if (!workspaceId) return null;
-  if (activated) return <ActivatedScreen />;
+  if (!workspaceId) {return null;}
+  if (activated) {return <ActivatedScreen />;}
 
   if (showWizard) {
     return (
@@ -88,6 +120,21 @@ export default function WhatsAppExperience(props: WhatsAppExperienceProps) {
         onToggleFollowUp={toggleFollowUp}
         onActivateAi={() => void activateAi()}
         onRefreshQrCode={() => void refreshQrCode()}
+        metaAuthUrl={metaAuthUrl}
+        isMetaProvider={isMetaProvider}
+        metaConnecting={metaConnecting}
+        onConnectMeta={(url) => {
+          if (!isTrustedMetaUrl(url)) {
+            setMetaConnecting(false);
+            return;
+          }
+          setMetaConnecting(true);
+          try {
+            navigateMetaUrl(url);
+          } catch {
+            setMetaConnecting(false);
+          }
+        }}
       />
     );
   }

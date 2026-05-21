@@ -39,7 +39,7 @@ interface NoirPaymentStepProps {
   finalizeOrder: () => Promise<void>;
   C: NoirColors;
   inputTheme: NoirInputTheme;
-  btnFinalizeText?: string;
+  btnFinalizeText?: string | undefined;
   fmt: { brl: (v: number) => string };
 }
 

@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { BillingLegacyProvidersSection } from './billing-legacy-providers-section';
-import { colors } from '@/lib/design-tokens';
+
 import {
   SettingsCard,
   SettingsHeader,
@@ -88,7 +88,7 @@ export function BillingSettingsSection({
   const [billingError, setBillingError] = useState('');
   const [billingSuccess, setBillingSuccess] = useState('');
   const [cards, setCards] = useState<
-    Array<{ id: string; last4?: string; brand?: string; expiry?: string; isDefault?: boolean }>
+    Array<{ id: string; last4?: string | undefined; brand?: string | undefined; expiry?: string | undefined; isDefault?: boolean | undefined }>
   >([]);
   const [salesPeriod, setSalesPeriod] = useState<'week' | 'month'>('week');
   const [salesReport, setSalesReport] = useState<SalesReportSummary | null>(null);
@@ -237,7 +237,7 @@ export function BillingSettingsSection({
         <div
           className={`rounded-md border px-4 py-3 text-sm ${
             billingError
-              ? 'border-[#E05252]/25 bg-[#E05252]/10 text-[#F7A8A8]'
+              ? 'border-[var(--semantic-error-soft)]/25 bg-[var(--semantic-error-soft)]/10 text-[var(--semantic-error-text)]'
               : 'border-[var(--app-border-primary)] bg-[var(--app-bg-card)] text-[var(--app-text-primary)]'
           }`}
         >

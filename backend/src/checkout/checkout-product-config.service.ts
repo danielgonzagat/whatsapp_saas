@@ -1,4 +1,5 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { buildCheckoutMarketplacePricing } from './checkout-marketplace-pricing.util';
@@ -10,7 +11,7 @@ const DEFAULT_MARKETPLACE_FEE_PERCENT = 9.9;
 /** Idempotency: enforced at HTTP layer via @Idempotent() guard + Stripe idempotencyKey. */
 @Injectable()
 export class CheckoutProductConfigService {
-  private readonly logger = new Logger(CheckoutProductConfigService.name);
+  private readonly logger = StructuredLogger.from(CheckoutProductConfigService.name);
 
   constructor(private readonly prisma: PrismaService) {}
 
@@ -34,7 +35,6 @@ export class CheckoutProductConfigService {
   }
 
   /** Resolve marketplace fee percent for a given payment method and base total. */
-  // PULSE_OK: rate-limited by CheckoutPublicController
   async resolveMarketplaceFeePercent(
     paymentMethod: 'CREDIT_CARD' | 'PIX' | 'BOLETO',
     baseTotalInCents: number,
@@ -65,7 +65,6 @@ export class CheckoutProductConfigService {
   }
 
   /** Build pricing preview using marketplace fee resolution. */
-  // PULSE_OK: rate-limited by CheckoutPublicController
   async buildPricingPreview(baseTotalInCents: number) {
     const marketplaceFeePercent = await this.resolveMarketplaceFeePercent('PIX', baseTotalInCents);
     return buildCheckoutMarketplacePricing({
@@ -105,7 +104,6 @@ export class CheckoutProductConfigService {
   }
 
   /** Ensure a legacy checkout exists for the given plan. */
-  // PULSE_OK: rate-limited by CheckoutPublicController
   async ensureLegacyCheckoutForPlan(planId: string, planLinkManager: CheckoutPlanLinkManager) {
     const plan = await this.prisma.checkoutProductPlan.findUnique({
       where: { id: planId },
@@ -175,7 +173,6 @@ export class CheckoutProductConfigService {
   }
 
   /** Reset checkout config to defaults. */
-  // PULSE_OK: rate-limited by CheckoutPublicController
   async resetConfig(planId: string) {
     return this.prisma.$transaction(
       async (tx) => {
@@ -237,7 +234,6 @@ export class CheckoutProductConfigService {
   }
 
   /** Ensure legacy checkouts exist for all PLAN-kind entries of a product. */
-  // PULSE_OK: rate-limited by CheckoutPublicController
   async ensureLegacyCheckoutsForProduct(
     productId: string,
     planLinkManager: CheckoutPlanLinkManager,

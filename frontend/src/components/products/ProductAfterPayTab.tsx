@@ -1,10 +1,12 @@
 'use client';
+import { colors } from '@/lib/design-tokens';
 
 import { kloelT } from '@/lib/i18n/t';
 import { apiFetch } from '@/lib/api';
+import { useToast } from '@/components/kloel/ToastProvider';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { mutate } from 'swr';
-import { colors } from '@/lib/design-tokens';
+
 
 const SORA = "var(--font-sora), 'Sora', sans-serif";
 const V = {
@@ -16,7 +18,7 @@ const V = {
   t2: 'var(--text-moonlight, colors.text.muted)',
   t3: 'var(--text-dust, colors.text.dim)',
   ta: 'var(--app-text-on-accent, colors.background.void)',
-  g: '#10B981',
+  g: colors.semantic.success,
 };
 
 const PRODUCT_AFTER_PAY_COPY = {
@@ -91,7 +93,7 @@ function Toggle({ label, checked, onChange, desc }: ToggleProps) {
         style={{
           width: 36,
           height: 20,
-          borderRadius: 10,
+          borderRadius: 8,
           background: checked ? V.g : V.b,
           position: 'relative',
           transition: 'background .2s',
@@ -102,7 +104,7 @@ function Toggle({ label, checked, onChange, desc }: ToggleProps) {
             width: 16,
             height: 16,
             borderRadius: 8,
-            background: '#fff',
+            background: colors.text.silver,
             position: 'absolute',
             top: 2,
             left: checked ? 18 : 2,
@@ -116,6 +118,7 @@ function Toggle({ label, checked, onChange, desc }: ToggleProps) {
 
 /** Product after pay tab. */
 export function ProductAfterPayTab({ productId }: { productId: string }) {
+  const { showToast } = useToast();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -180,8 +183,10 @@ export function ProductAfterPayTab({ productId }: { productId: string }) {
         clearTimeout(savedTimer.current);
       }
       savedTimer.current = setTimeout(() => setSaved(false), 2000);
+      showToast('After Pay salvo', 'success');
     } catch (caughtError: unknown) {
       setError(toAfterPayErrorMessage(caughtError, PRODUCT_AFTER_PAY_COPY.saveError));
+      showToast(toAfterPayErrorMessage(caughtError, PRODUCT_AFTER_PAY_COPY.saveError), 'error');
     } finally {
       setSaving(false);
     }

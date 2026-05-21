@@ -1,12 +1,18 @@
-import { Injectable, Logger, Optional } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
+import type { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { formatBrlAmount } from './money-format.util';
 import { UnifiedAgentActionsMessagingService } from './unified-agent-actions-messaging.service';
-import type { ToolArgs } from './unified-agent.service';
+import type { ToolArgs } from './unified-agent.types';
 import { OpsAlertService } from '../observability/ops-alert.service';
-import { actionHandleObjection as actionHandleObjectionFn } from './__companions__/unified-agent-actions-sales.service.companion';
+import { actionHandleObjection as actionHandleObjectionFn } from './unified-agent-actions-sales.helpers';
+import { MindGuardContextBuilderService } from './mind-guard-context-builder.service';
+import { MindGuardsService } from './mind-guards.service';
+import type { MindActionContext } from './mind-code-native.types';
+import { MindService } from './mind.service';
 
-type UnknownRecord = Record<string, unknown>;
+import type { UnknownRecord } from '../common/types';
 
 function describeUnknownError(error: unknown): string {
   if (error instanceof Error && error.message.trim()) {
@@ -18,18 +24,71 @@ function describeUnknownError(error: unknown): string {
   return 'Unknown error';
 }
 
+function readString(value: unknown, fallback = ''): string {
+  return typeof value === 'string' && value.trim() ? value.trim() : fallback;
+}
+
+function isRecord(value: unknown): value is UnknownRecord {
+  return typeof value === 'object' && value !== null;
+}
+
+function isDeterministicPipeline(context?: UnknownRecord): boolean {
+  return context?.deterministicPipeline === true;
+}
+
+function toJsonValue(value: unknown): Prisma.InputJsonValue | null {
+  if (value === null) return null;
+  if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+    return value;
+  }
+  if (Array.isArray(value)) {
+    const output: Array<Prisma.InputJsonValue | null> = [];
+    for (const item of value) {
+      output.push(toJsonValue(item));
+    }
+    return output;
+  }
+  if (isRecord(value)) {
+    const output: { [key: string]: Prisma.InputJsonValue | null } = {};
+    for (const [key, item] of Object.entries(value)) {
+      output[key] = toJsonValue(item);
+    }
+    return output;
+  }
+  return null;
+}
+
+function priceBandFor(price: number): string {
+  if (price >= 1000) return 'over_1000';
+  if (price >= 500) return 'over_500';
+  if (price >= 300) return 'over_300';
+  if (price >= 100) return 'over_100';
+  return 'under_100';
+}
+
+function discountPercentFromMind(action: string | undefined, requestedPercent: number): number {
+  if (action === 'coupon_5') return 5;
+  if (action === 'coupon_10') return 10;
+  if (action === 'coupon_15') return 15;
+  if (action === 'coupon_20') return 20;
+  return requestedPercent;
+}
+
 /**
  * Handles sales/negotiation tool actions: discount, objection handling,
  * lead qualification, meeting scheduling, anti-churn, and ghost reactivation.
  */
 @Injectable()
 export class UnifiedAgentActionsSalesService {
-  private readonly logger = new Logger(UnifiedAgentActionsSalesService.name);
+  private readonly logger = StructuredLogger.from(UnifiedAgentActionsSalesService.name);
 
   constructor(
     private readonly prisma: PrismaService,
     private readonly messaging: UnifiedAgentActionsMessagingService,
     @Optional() private readonly opsAlert?: OpsAlertService,
+    @Optional() private readonly mind?: MindService,
+    @Optional() private readonly guardContextBuilder?: MindGuardContextBuilderService,
+    @Optional() private readonly guards?: MindGuardsService,
   ) {}
 
   async actionApplyDiscount(
@@ -40,7 +99,10 @@ export class UnifiedAgentActionsSalesService {
     context?: UnknownRecord,
   ) {
     try {
-      const discountPercent = Math.min(Math.max(Number(args?.discountPercent) || 10, 1), 30);
+      const requestedDiscountPercent = Math.min(
+        Math.max(Number(args?.discountPercent) || 10, 1),
+        30,
+      );
       const reason = args?.reason || 'Oferta especial';
       const expiresIn = args?.expiresIn || '24h';
       const recentMemory = await this.prisma.kloelMemory.findFirst({
@@ -57,6 +119,79 @@ export class UnifiedAgentActionsSalesService {
         originalPrice = ((productData as UnknownRecord).price as number) || 0;
         productName = ((productData as UnknownRecord).name as string) || 'produto';
       }
+      const predecided = isDeterministicPipeline(context);
+      const segment = readString(
+        args.segment,
+        readString(context?.segment, readString(args.stage, 'general')),
+      );
+      const priceBand = readString(args.priceBand, priceBandFor(originalPrice));
+      const productOffer = predecided
+        ? args.productOffer
+        : this.mind
+          ? await this.mind.resolveProductOffer(workspaceId, segment, 'discount', priceBand)
+          : null;
+      const couponDecision = predecided
+        ? args.couponDecision
+        : this.mind
+          ? await this.mind.resolveCoupon(workspaceId, priceBand, 0, segment)
+          : null;
+      const couponAction = isRecord(couponDecision) ? readString(couponDecision.action) : undefined;
+      const metaSource = predecided ? 'orchestrator_predecided' : 'legacy_action_decision';
+      const couponJson = toJsonValue(couponDecision);
+      const productJson = toJsonValue(productOffer);
+      if (couponAction === 'no_coupon' || couponAction === 'human_negotiate') {
+        await this.prisma.autopilotEvent.create({
+          data: {
+            workspaceId,
+            contactId,
+            intent: 'NEGOTIATION',
+            action:
+              couponAction === 'human_negotiate'
+                ? 'DISCOUNT_HUMAN_NEGOTIATION'
+                : 'DISCOUNT_SKIPPED',
+            status: 'completed',
+            meta: {
+              priceBand,
+              productOffer: productJson,
+              couponDecision: couponJson,
+              decisionTraceId: args.decisionTraceId || null,
+              inboundCorrelationId: args.inboundCorrelationId || null,
+              source: metaSource,
+            },
+          },
+        });
+        return {
+          success: true,
+          discountApplied: false,
+          messageSent: false,
+          mind: { couponDecision, productOffer },
+        };
+      }
+      const discountPercent = discountPercentFromMind(couponAction, requestedDiscountPercent);
+      const discountContext = await this.buildDiscountGuardContext(workspaceId, {
+        ...(context || {}),
+        contactId,
+        discountPercent,
+        maxDiscountPercent: 30,
+        minMarginPercent: 0,
+        productName,
+      });
+      const guard = await this.guards?.evaluate({
+        workspaceId,
+        decisionType: 'coupon_offer',
+        action: 'apply_discount',
+        context: discountContext,
+      });
+      if (guard && !guard.allowed) {
+        return {
+          success: false,
+          blocked: true,
+          discountApplied: false,
+          messageSent: false,
+          reason: guard.reason,
+          guardName: guard.guardName,
+        };
+      }
       const finalPrice = originalPrice * (1 - discountPercent / 100);
       await this.prisma.autopilotEvent.create({
         data: {
@@ -65,7 +200,19 @@ export class UnifiedAgentActionsSalesService {
           intent: 'NEGOTIATION',
           action: 'DISCOUNT_APPLIED',
           status: 'executed',
-          meta: { discountPercent, reason, expiresIn, originalPrice, finalPrice, productName },
+          meta: {
+            discountPercent,
+            reason,
+            expiresIn,
+            originalPrice,
+            finalPrice,
+            productName,
+            priceBand,
+            decisionTraceId: args.decisionTraceId || null,
+            inboundCorrelationId: args.inboundCorrelationId || null,
+            mind: { couponDecision: couponJson, productOffer: productJson },
+            source: metaSource,
+          },
         },
       });
       const priceFormatted = new Intl.NumberFormat('pt-BR', {
@@ -105,6 +252,13 @@ export class UnifiedAgentActionsSalesService {
     }
   }
 
+  private async buildDiscountGuardContext(
+    workspaceId: string,
+    context: MindActionContext,
+  ): Promise<MindActionContext> {
+    return (await this.guardContextBuilder?.buildForDiscount(workspaceId, context)) ?? context;
+  }
+
   async actionHandleObjection(
     workspaceId: string,
     contactId: string,
@@ -112,6 +266,16 @@ export class UnifiedAgentActionsSalesService {
     args: ToolArgs,
     context?: UnknownRecord,
   ) {
+    if (this.mind && !isDeterministicPipeline(context)) {
+      try {
+        const segment = readString(context?.segment, readString(args.stage, 'general'));
+        const concept = readString(args.objectionType, 'objection');
+        await this.mind.resolveProductOffer(workspaceId, segment, concept, 'unknown');
+      } catch (error: unknown) {
+        const msg = describeUnknownError(error);
+        this.logger.warn(`MIND product offer fallback for objection: ${msg}`);
+      }
+    }
     return actionHandleObjectionFn({
       workspaceId,
       contactId,
@@ -121,7 +285,7 @@ export class UnifiedAgentActionsSalesService {
       prisma: this.prisma,
       messaging: this.messaging,
       logger: this.logger,
-      opsAlert: this.opsAlert,
+      ...(this.opsAlert !== undefined ? { opsAlert: this.opsAlert } : {}),
     });
   }
 
@@ -142,7 +306,7 @@ export class UnifiedAgentActionsSalesService {
       await this.prisma.contact
         .update({
           where: { id: contactId },
-          data: { purchaseProbability: String(this.getStageScore(stage)) },
+          data: { purchaseProbability: this.getStagePurchaseProbabilityBucket(stage) },
         })
         .catch((err: unknown) => {
           const errStr = describeUnknownError(err);
@@ -180,14 +344,14 @@ export class UnifiedAgentActionsSalesService {
     }
   }
 
-  private getStageScore(stage: string): number {
-    const scores: Record<string, number> = {
-      awareness: 10,
-      interest: 30,
-      decision: 60,
-      action: 90,
+  private getStagePurchaseProbabilityBucket(stage: string): string {
+    const buckets: Record<string, string> = {
+      awareness: 'LOW',
+      interest: 'MEDIUM',
+      decision: 'HIGH',
+      action: 'VERY_HIGH',
     };
-    return scores[stage] || 20;
+    return buckets[stage] || 'LOW';
   }
 
   async actionScheduleMeeting(
@@ -229,9 +393,11 @@ export class UnifiedAgentActionsSalesService {
           err instanceof Error ? err.message : typeof err === 'string' ? err : 'unknown';
         if (!isTestEnv) {
           const code = (err as { code?: string } | null)?.code;
-          if (code === 'P2003')
+          if (code === 'P2003') {
             this.logger.debug(`Skipping meeting event log due to FK (contactId=${contactId})`);
-          else this.logger.warn(`Failed to log meeting event: ${errMsg}`);
+          } else {
+            this.logger.warn(`Failed to log meeting event: ${errMsg}`);
+          }
         }
       }
       // messageLimit: enforced via PlanLimitsService.trackMessageSend
@@ -274,6 +440,9 @@ export class UnifiedAgentActionsSalesService {
           'Você está em atendimento prioritário.\n\nVou te conectar com nosso time de suporte prioritário para resolver qualquer questão.',
       };
       const message = strategyMessages[strategy] || strategyMessages.feedback;
+      if (!message) {
+        return { success: false, error: 'No strategy message found' };
+      }
       try {
         await this.prisma.autopilotEvent.create({
           data: {
@@ -291,9 +460,11 @@ export class UnifiedAgentActionsSalesService {
           err instanceof Error ? err.message : typeof err === 'string' ? err : 'unknown';
         if (!isTestEnv) {
           const code = (err as { code?: string } | null)?.code;
-          if (code === 'P2003')
+          if (code === 'P2003') {
             this.logger.debug(`Skipping retention event log due to FK (contactId=${contactId})`);
-          else this.logger.warn(`Failed to log retention event: ${errMsg}`);
+          } else {
+            this.logger.warn(`Failed to log retention event: ${errMsg}`);
+          }
         }
       }
       // messageLimit: enforced via PlanLimitsService.trackMessageSend
@@ -334,6 +505,9 @@ export class UnifiedAgentActionsSalesService {
           'Mais de 500 pessoas já estão usando.\n\nOs resultados têm sido incríveis. Dá uma olhada no que estão falando!',
       };
       const message = reactivationMessages[strategy] || reactivationMessages.curiosity;
+      if (!message) {
+        return { success: false, error: 'No reactivation message found' };
+      }
       await this.prisma.autopilotEvent.create({
         data: {
           workspaceId,

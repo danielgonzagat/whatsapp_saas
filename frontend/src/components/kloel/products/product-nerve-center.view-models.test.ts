@@ -4,7 +4,6 @@ import {
   mapProductEditorPlans,
 } from './product-nerve-center.view-models';
 
-// PULSE_OK: assertions exist below
 describe('product-nerve-center.view-models', () => {
   it('maps raw plans into stable editor view models', () => {
     const plans = mapProductEditorPlans([

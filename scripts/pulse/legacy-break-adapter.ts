@@ -49,7 +49,7 @@ export function convertBreakToSignal(item: Break): PulseSignalEvidence {
     detector: 'legacy-compatibility',
     truthMode: truthModeFromBreak(item),
     summary: sanitizedLegacyText(item.description, item, 'Legacy compatibility evidence'),
-    detail: detail || undefined,
+    ...(detail ? { detail } : {}),
     location: {
       file: item.file,
       line: item.line,

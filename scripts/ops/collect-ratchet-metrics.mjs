@@ -1,19 +1,21 @@
 #!/usr/bin/env node
 
-import { execFileSync, spawnSync } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { collectMadgeCycles } from './check-madge-cycles.mjs';
+import {
+  collectCodacyMetrics,
+  collectCoverageMetrics,
+  collectPulseMetrics,
+} from './collect-ratchet-metrics.artifacts.mjs';
 import { collectKnipIssues } from './collect-knip-issues.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(here, '..', '..');
 const pulseHealthPath = path.join(repoRoot, 'PULSE_HEALTH.json');
 const pulseCertificatePath = path.join(repoRoot, 'PULSE_CERTIFICATE.json');
-const pulseCodacyStatePath = path.join(repoRoot, 'PULSE_CODACY_STATE.json');
-const ratchetBaselinePath = path.join(repoRoot, 'ratchet.json');
-
 const CODE_PATHS = ['backend/src', 'frontend/src', 'worker', 'scripts'];
 const PRODUCT_CODE_PATHS = ['backend/src', 'frontend/src', 'worker'];
 const FRONTEND_PATHS = ['frontend/src'];
@@ -26,7 +28,6 @@ const LINE_COUNT_EXTENSIONS = new Set([
   '.cjs',
   '.css',
   '.scss',
-  '.prisma',
 ]);
 const SOURCE_EXTENSIONS = new Set(['.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs']);
 const STYLE_EXTENSIONS = new Set(['.ts', '.tsx', '.js', '.jsx', '.css', '.scss']);
@@ -79,15 +80,6 @@ const ALLOWED_HEX_COLORS = new Set([
   '#3A3A3F',
   '#E85D30',
   '#F5F5F5',
-]);
-const DEAD_CODE_BREAK_TYPES = new Set(['DEAD_EXPORT', 'DEAD_COMPONENT']);
-const CIRCULAR_BREAK_TYPES = new Set(['CIRCULAR_IMPORT', 'CIRCULAR_MODULE_DEPENDENCY']);
-const ANTI_HARDCODE_BREAK_TYPES = new Set(['AI_PSEUDO_THINKING_HARDCODED']);
-const VISUAL_CONTRACT_BREAK_TYPES = new Set([
-  'VISUAL_CONTRACT_FONT_BELOW_MIN',
-  'VISUAL_CONTRACT_HEX_OUTSIDE_TOKENS',
-  'VISUAL_CONTRACT_EMOJI_UI',
-  'VISUAL_CONTRACT_GENERIC_SPINNER',
 ]);
 const IGNORED_TRACKED_SEGMENTS = new Set([
   'node_modules',
@@ -182,14 +174,14 @@ function countExplicitAnyMetrics(files) {
   for (const relPath of files) {
     const lines = readLines(relPath);
     lines.forEach((line, index) => {
-      if (COMMENT_ONLY_RE.test(line)) return;
+      if (COMMENT_ONLY_RE.test(line)) {return;}
 
       let lineCount = 0;
       for (const pattern of EXPLICIT_ANY_PATTERNS) {
         lineCount += countRegexMatches(line, pattern);
       }
 
-      if (lineCount === 0) return;
+      if (lineCount === 0) {return;}
       total += lineCount;
       if (samples.length < 20) {
         samples.push(sampleEntry(relPath, index + 1, line));
@@ -217,10 +209,8 @@ function countCommentDirective(files, directive) {
   for (const relPath of files) {
     const lines = readLines(relPath);
     lines.forEach((line, index) => {
-      // nosemgrep: javascript.lang.security.audit.detect-non-literal-regexp.regex-dos-vulnerability.regex-dos-vulnerability
-      // Safe: `directive` is a call-site literal RegExp passed from collectRatchetMetrics; `line` is a repo-source line. No user input.
-      if (!directive.test(line)) return;
-      if (!COMMENT_MARKERS_RE.test(line)) return;
+      if (!Boolean(line.match(directive))) {return;}
+      if (!COMMENT_MARKERS_RE.test(line)) {return;}
       total += 1;
       if (samples.length < 20) {
         samples.push(sampleEntry(relPath, index + 1, line));
@@ -238,10 +228,8 @@ function countHardcodedAiSpeech(files) {
   for (const relPath of files) {
     const lines = readLines(relPath);
     lines.forEach((line, index) => {
-      // nosemgrep: javascript.lang.security.audit.detect-non-literal-regexp.regex-dos-vulnerability.regex-dos-vulnerability
-      // Safe: AI_SPEECH_PATTERNS are module-scope literal RegExps; `line` is a repo-source line. No user input, no nested quantifiers.
-      const matched = AI_SPEECH_PATTERNS.some((pattern) => pattern.test(line));
-      if (!matched) return;
+      const matched = AI_SPEECH_PATTERNS.some((pattern) => Boolean(line.match(pattern)));
+      if (!matched) {return;}
       total += 1;
       if (samples.length < 20) {
         samples.push(sampleEntry(relPath, index + 1, line));
@@ -259,11 +247,11 @@ function countEmojiOccurrences(files) {
   for (const relPath of files) {
     const lines = readLines(relPath);
     lines.forEach((line, index) => {
-      if (COMMENT_ONLY_RE.test(line)) return;
+      if (COMMENT_ONLY_RE.test(line)) {return;}
       const sanitizedLine = line.replace(LINE_SUFFIX_COMMENT_RE, '');
-      if (!STRING_OR_JSX_CHAR_RE.test(sanitizedLine)) return;
+      if (!STRING_OR_JSX_CHAR_RE.test(sanitizedLine)) {return;}
       const matches = sanitizedLine.match(EMOJI_RE);
-      if (!matches || matches.length === 0) return;
+      if (!matches || matches.length === 0) {return;}
       total += matches.length;
       if (samples.length < 20) {
         samples.push(
@@ -285,7 +273,7 @@ function countHardcodedHexColors(files) {
     lines.forEach((line, index) => {
       const matches = line.match(HEX_COLOR_RE) || [];
       const violating = matches.filter((match) => !ALLOWED_HEX_COLORS.has(normalizedHex(match)));
-      if (violating.length === 0) return;
+      if (violating.length === 0) {return;}
       total += violating.length;
       if (samples.length < 20) {
         samples.push(sampleEntry(relPath, index + 1, line, { matches: violating }));
@@ -301,7 +289,7 @@ function countChatFontsBelow16(files) {
   const samples = [];
 
   for (const relPath of files) {
-    if (!CHAT_FILE_HINT_RE.test(relPath)) continue;
+    if (!CHAT_FILE_HINT_RE.test(relPath)) {continue;}
 
     const lines = readLines(relPath);
     lines.forEach((line, index) => {
@@ -345,7 +333,7 @@ function countFilesOverLimit(files, maxLines) {
 
   for (const relPath of files) {
     const lineCount = readLines(relPath).length;
-    if (lineCount <= maxLines) continue;
+    if (lineCount <= maxLines) {continue;}
     total += 1;
     if (samples.length < 20) {
       samples.push({ file: relPath, lines: lineCount });
@@ -353,231 +341,6 @@ function countFilesOverLimit(files, maxLines) {
   }
 
   return createMetric(total, 'max', samples, { limit: maxLines });
-}
-
-function ensurePulseArtifacts({ refreshPulse = false, ciSafeMode = false } = {}) {
-  if (!refreshPulse && existsSync(pulseHealthPath) && existsSync(pulseCertificatePath)) {
-    return true;
-  }
-
-  if (ciSafeMode) {
-    return false;
-  }
-
-  const result = spawnSync(
-    process.execPath,
-    [path.join(repoRoot, 'scripts', 'pulse', 'run.js'), '--report'],
-    {
-      cwd: repoRoot,
-      encoding: 'utf8',
-      env: {
-        ...process.env,
-        PULSE_EXECUTION_TRACE_PATH:
-          process.env.PULSE_EXECUTION_TRACE_PATH ||
-          path.join(repoRoot, 'PULSE_EXECUTION_TRACE.json'),
-      },
-      maxBuffer: 64 * 1024 * 1024,
-    },
-  );
-
-  if (result.status !== 0) {
-    throw new Error(
-      `PULSE refresh failed with exit code ${result.status ?? 1}.\n${result.stdout || ''}\n${result.stderr || ''}`.trim(),
-    );
-  }
-
-  return true;
-}
-
-function readPulseArtifacts() {
-  const health = JSON.parse(readFileSync(pulseHealthPath, 'utf8'));
-  const certificate = JSON.parse(readFileSync(pulseCertificatePath, 'utf8'));
-  return { health, certificate };
-}
-
-function readRatchetBaseline() {
-  if (!existsSync(ratchetBaselinePath)) {
-    return {};
-  }
-
-  try {
-    const parsed = JSON.parse(readFileSync(ratchetBaselinePath, 'utf8'));
-    return parsed?.ratchet || {};
-  } catch {
-    return {};
-  }
-}
-
-function collectPulseMetrics({ refreshPulse = false } = {}) {
-  const artifactsReady = ensurePulseArtifacts({
-    refreshPulse,
-    ciSafeMode: !refreshPulse && process.env.CI === 'true',
-  });
-
-  if (!artifactsReady) {
-    const baseline = readRatchetBaseline();
-    return {
-      pulseScore: createMetric(Number(baseline.pulse_score_min || 0), 'min', [], {
-        rawScore: null,
-        environment: 'ci-baseline-fallback',
-        fallback: 'ratchet.json',
-      }),
-      facadeCount: createMetric(Number(baseline.facade_count_max || 0), 'max', [], {
-        fallback: 'ratchet.json',
-      }),
-      deadCodeFiles: createMetric(Number(baseline.dead_code_files_max || 0), 'max', [], {
-        fallback: 'ratchet.json',
-      }),
-      orphanPrismaModels: createMetric(Number(baseline.orphan_prisma_models_max || 0), 'max', [], {
-        fallback: 'ratchet.json',
-      }),
-      circularImports: createMetric(Number(baseline.circular_imports_max || 0), 'max', [], {
-        fallback: 'ratchet.json',
-      }),
-      antiHardcodeBreaks: createMetric(Number(baseline.anti_hardcode_breaks_max || 0), 'max', [], {
-        fallback: 'ratchet.json',
-      }),
-      visualContractBreaks: createMetric(
-        Number(baseline.visual_contract_breaks_max || 0),
-        'max',
-        [],
-        { fallback: 'ratchet.json' },
-      ),
-      browserStressPassRate: createMetric(
-        Number(baseline.browser_stress_pass_rate_min || 0),
-        'min',
-        [],
-        {
-          executed: false,
-          fallback: 'ratchet.json',
-        },
-      ),
-    };
-  }
-
-  const { health, certificate } = readPulseArtifacts();
-  const deadCodeFiles = [
-    ...new Set(
-      (health.breaks || [])
-        .filter((item) => DEAD_CODE_BREAK_TYPES.has(item.type))
-        .map((item) => item.file),
-    ),
-  ];
-  const circularBreaks = (health.breaks || []).filter((item) =>
-    CIRCULAR_BREAK_TYPES.has(item.type),
-  );
-  const antiHardcodeBreaks = (health.breaks || []).filter((item) =>
-    ANTI_HARDCODE_BREAK_TYPES.has(item.type),
-  );
-  const visualContractBreaks = (health.breaks || []).filter((item) =>
-    VISUAL_CONTRACT_BREAK_TYPES.has(item.type),
-  );
-
-  return {
-    pulseScore: createMetric(Number(certificate.score || 0), 'min', [], {
-      rawScore: Number(certificate.rawScore || 0),
-      environment: certificate.environment || 'unknown',
-    }),
-    facadeCount: createMetric(Number(health.stats?.facades || 0), 'max'),
-    deadCodeFiles: createMetric(
-      deadCodeFiles.length,
-      'max',
-      deadCodeFiles.slice(0, 20).map((file) => ({ file })),
-    ),
-    orphanPrismaModels: createMetric(Number(health.stats?.modelOrphans || 0), 'max'),
-    circularImports: createMetric(
-      circularBreaks.length,
-      'max',
-      circularBreaks.slice(0, 20).map((item) => ({
-        file: item.file,
-        line: item.line,
-        content: item.description,
-      })),
-    ),
-    antiHardcodeBreaks: createMetric(
-      antiHardcodeBreaks.length,
-      'max',
-      antiHardcodeBreaks.slice(0, 20).map((item) => ({
-        file: item.file,
-        line: item.line,
-        content: item.description,
-      })),
-    ),
-    visualContractBreaks: createMetric(
-      visualContractBreaks.length,
-      'max',
-      visualContractBreaks.slice(0, 20).map((item) => ({
-        file: item.file,
-        line: item.line,
-        content: item.description,
-      })),
-    ),
-    browserStressPassRate: createMetric(
-      Number(certificate.evidenceSummary?.browser?.passRate || 0),
-      'min',
-      [],
-      {
-        executed: Boolean(certificate.evidenceSummary?.browser?.executed),
-      },
-    ),
-  };
-}
-
-function collectCodacyMetrics() {
-  // PULSE_CODACY_STATE.json is produced by scripts/ops/sync-codacy-issues.mjs
-  // on the nightly workflow (and on-demand locally). It is the source of
-  // truth for Codacy-reported issue counts because the Codacy REST API is
-  // rate-limited and intermittently reports stale totals; we only ever read
-  // the committed snapshot here so ratchet checks are deterministic.
-  if (!existsSync(pulseCodacyStatePath)) {
-    const fallback = readRatchetBaseline();
-    return {
-      total: createMetric(Number(fallback.codacy_total_issues_max || 0), 'max', [], {
-        fallback: 'ratchet.json',
-        reason: 'PULSE_CODACY_STATE.json missing',
-      }),
-      high: createMetric(Number(fallback.codacy_high_severity_issues_max || 0), 'max', [], {
-        fallback: 'ratchet.json',
-      }),
-      medium: createMetric(Number(fallback.codacy_medium_severity_issues_max || 0), 'max', [], {
-        fallback: 'ratchet.json',
-      }),
-    };
-  }
-
-  try {
-    const parsed = JSON.parse(readFileSync(pulseCodacyStatePath, 'utf8'));
-    const total = Number(parsed.totalIssues || 0);
-    const bySeverity = parsed.bySeverity || {};
-    const topFiles = Array.isArray(parsed.topFiles) ? parsed.topFiles : [];
-    const topFileSamples = topFiles.slice(0, 20).map((entry) => ({
-      file: entry.file,
-      lines: entry.count,
-    }));
-    return {
-      total: createMetric(total, 'max', topFileSamples, {
-        syncedAt: parsed.syncedAt || null,
-        apiTotal: parsed.totalIssuesFromApi ?? null,
-      }),
-      high: createMetric(Number(bySeverity.HIGH || 0), 'max'),
-      medium: createMetric(Number(bySeverity.MEDIUM || 0), 'max'),
-    };
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    const fallback = readRatchetBaseline();
-    return {
-      total: createMetric(Number(fallback.codacy_total_issues_max || 0), 'max', [], {
-        fallback: 'ratchet.json',
-        reason: `PULSE_CODACY_STATE.json invalid: ${message}`,
-      }),
-      high: createMetric(Number(fallback.codacy_high_severity_issues_max || 0), 'max', [], {
-        fallback: 'ratchet.json',
-      }),
-      medium: createMetric(Number(fallback.codacy_medium_severity_issues_max || 0), 'max', [], {
-        fallback: 'ratchet.json',
-      }),
-    };
-  }
 }
 
 export function collectRatchetMetrics(options = {}) {
@@ -606,6 +369,7 @@ export function collectRatchetMetrics(options = {}) {
   const knipMetrics = collectKnipIssues();
   const madgeMetrics = collectMadgeCycles();
   const codacyMetrics = collectCodacyMetrics();
+  const coverageMetrics = collectCoverageMetrics();
 
   return {
     generatedAt: new Date().toISOString(),
@@ -641,6 +405,8 @@ export function collectRatchetMetrics(options = {}) {
       codacy_total_issues_max: codacyMetrics.total.value,
       codacy_high_severity_issues_max: codacyMetrics.high.value,
       codacy_medium_severity_issues_max: codacyMetrics.medium.value,
+      coverage_lines_min: coverageMetrics.linesMin.value,
+      coverage_branches_min: coverageMetrics.branchesMin.value,
     },
     details: {
       pulse_score_min: pulseMetrics.pulseScore,
@@ -701,6 +467,8 @@ export function collectRatchetMetrics(options = {}) {
       codacy_total_issues_max: codacyMetrics.total,
       codacy_high_severity_issues_max: codacyMetrics.high,
       codacy_medium_severity_issues_max: codacyMetrics.medium,
+      coverage_lines_min: coverageMetrics.linesMin,
+      coverage_branches_min: coverageMetrics.branchesMin,
     },
     inputs: {
       pulseHealthPath: path.relative(repoRoot, pulseHealthPath),

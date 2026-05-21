@@ -43,7 +43,7 @@ interface BlancAddressStepProps {
   inputTheme: BlancInputTheme;
   submitError: string | null;
   shippingInCents: number;
-  btnStep2Text?: string;
+  btnStep2Text?: string | undefined;
   setStep: (n: number) => void;
   updateField: (field: string) => React.ChangeEventHandler<HTMLSelectElement | HTMLInputElement>;
   goStep: (n: number) => void;
@@ -150,7 +150,7 @@ export function BlancAddressStep({
         <div style={{ fontSize: 13, color: UI.muted, lineHeight: 1.6 }}>
           <strong>{kloelT(`Endereço para entrega:`)}</strong>
           <br />
-          {form.street || 'Endereço'}, {form.number || 'S/N'} - {form.neighborhood}
+          {form.street || kloelT('Endereço')}, {form.number || kloelT('S/N')} - {form.neighborhood}
           <br />
           {form.complement ? (
             <>
@@ -162,8 +162,8 @@ export function BlancAddressStep({
           <br />
           <strong style={{ display: 'block', marginTop: 8 }}>{kloelT(`Forma de entrega:`)}</strong>
           {shippingInCents === 0
-            ? 'Frete padrão Grátis'
-            : `Frete padrão ${fmt.brl(shippingInCents)}`}
+            ? `${kloelT('Frete padrão')} ${kloelT('Grátis')}`
+            : `${kloelT('Frete padrão')} ${fmt.brl(shippingInCents)}`}
         </div>
       </div>
     );
@@ -204,7 +204,7 @@ export function BlancAddressStep({
         <div style={{ display: 'flex', gap: 12, alignItems: 'flex-end' }}>
           <div style={{ minWidth: 180 }}>
             <label htmlFor={`${fid}-cep`} style={L}>
-              CEP
+              {kloelT('CEP')}
             </label>
             <SharedValidationInput
               theme={inputTheme}
@@ -281,14 +281,14 @@ export function BlancAddressStep({
           </div>
           <div style={{ flex: '0 0 24%' }}>
             <label htmlFor={`${fid}-state`} style={L}>
-              UF
+              {kloelT('UF')}
             </label>
             <SharedValidationInput
               theme={inputTheme}
               id={`${fid}-state`}
               value={form.state}
               onChange={updateField('state')}
-              placeholder="UF"
+              placeholder={kloelT('UF')}
             />
           </div>
         </div>
@@ -336,7 +336,7 @@ export function BlancAddressStep({
             color: shippingInCents === 0 ? colors.accent : colors.text,
           }}
         >
-          {shippingInCents === 0 ? 'Grátis' : fmt.brl(shippingInCents)}
+          {shippingInCents === 0 ? kloelT('Grátis') : fmt.brl(shippingInCents)}
         </span>
       </div>
       {submitError && step === 2 ? (
@@ -357,7 +357,7 @@ export function BlancAddressStep({
           fontWeight: 700,
         }}
       >
-        {btnStep2Text || 'Ir para Pagamento'}
+        {btnStep2Text || kloelT('Ir para Pagamento')}
       </button>
     </div>
   );

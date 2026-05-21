@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
 /**
@@ -26,7 +26,11 @@ import { PrismaService } from '../prisma/prisma.service';
  */
 @Injectable()
 export class ObservabilityQueriesService {
-  constructor(private readonly prisma: PrismaService) {}
+  private readonly logger = new Logger(ObservabilityQueriesService.name);
+
+  constructor(private readonly prisma: PrismaService) {
+    this.logger.log('ObservabilityQueriesService initialized');
+  }
 
   /**
    * Count Meta (Facebook/Instagram/WhatsApp) connections currently in
@@ -34,8 +38,9 @@ export class ObservabilityQueriesService {
    * global infrastructure health aggregates.
    */
   async countConnectedMetaWorkspaces(): Promise<number> {
+    // @PublicMetric: platform-wide Meta connection gauge for /diag/metrics
     return this.prisma.metaConnection.count({
-      where: { status: 'connected', workspaceId: undefined },
+      where: { status: 'connected' },
     });
   }
 
@@ -45,8 +50,9 @@ export class ObservabilityQueriesService {
    * `kloel_messages_today` — a platform-wide volume gauge.
    */
   async countAllMessagesSince(since: Date): Promise<number> {
+    // @PublicMetric: platform-wide message volume gauge for /diag/metrics
     return this.prisma.message.count({
-      where: { createdAt: { gte: since }, workspaceId: undefined },
+      where: { createdAt: { gte: since } },
     });
   }
 
@@ -56,8 +62,9 @@ export class ObservabilityQueriesService {
    * `kloel_autopilot_events_today` — a platform-wide volume gauge.
    */
   async countAllAutopilotEventsSince(since: Date): Promise<number> {
+    // @PublicMetric: platform-wide autopilot events gauge for /diag/metrics
     return this.prisma.autopilotEvent.count({
-      where: { createdAt: { gte: since }, workspaceId: undefined },
+      where: { createdAt: { gte: since } },
     });
   }
 }

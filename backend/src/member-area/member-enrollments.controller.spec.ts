@@ -1,3 +1,6 @@
+import { SpineEmitterService } from '../kloel/spine/spine-emitter.service';
+import { ValenceTaggerService } from '../kloel/mind/valence-tagger.service';
+import { MemberAreaEventEmitterService } from '../kloel/member-area-emitter/member-area-event-emitter.service';
 import { BadRequestException } from '@nestjs/common';
 import type { AuditService } from '../audit/audit.service';
 import type { AuthenticatedRequest } from '../common/interfaces';
@@ -63,10 +66,14 @@ describe('MemberEnrollmentsController', () => {
     const stats = new MemberAreaStatsService(typedPrisma);
     const audit = { log: jest.fn() } as never as AuditService;
 
-    controller = new MemberEnrollmentsController(typedPrisma, audit, stats);
+    const emitter = new MemberAreaEventEmitterService(
+      new SpineEmitterService(new ValenceTaggerService()),
+    );
+
+    controller = new MemberEnrollmentsController(typedPrisma, audit, stats, emitter);
   });
 
-  it('supports legacy string enrollment fields without forwarding any casts', async () => {
+  it('supports legacy string enrollment fields without forwarding unsafe casts', async () => {
     prisma.memberArea.findFirst.mockResolvedValue({ id: 'area-1', workspaceId: 'ws-1' });
     prisma.memberEnrollment.findFirst.mockResolvedValue(null);
 

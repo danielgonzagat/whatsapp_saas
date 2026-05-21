@@ -48,7 +48,7 @@ export function TrialPaywallModal({
 
         <div className="flex flex-col items-center text-center">
           {/* Icon */}
-          <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-md bg-[#E0DDD8]">
+          <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-md bg-[var(--text-silver)]">
             <Smartphone className="h-8 w-8 text-white" aria-hidden="true" />
           </div>
 
@@ -103,7 +103,7 @@ export function TrialPaywallModal({
               </div>
               <div className="flex items-center gap-3">
                 <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-100">
-                  <Zap className="h-4 w-4 text-[#E0DDD8]" aria-hidden="true" />
+                  <Zap className="h-4 w-4 text-[var(--text-silver)]" aria-hidden="true" />
                 </div>
                 <span className="text-sm text-gray-700">
                   {kloelT(`7 dias de uso completo sem cobrança`)}
@@ -124,7 +124,7 @@ export function TrialPaywallModal({
           <div className="flex w-full flex-col gap-3">
             <Button
               onClick={onActivateTrial}
-              className="w-full rounded-md bg-[#E0DDD8] py-6 text-base font-medium text-[#0A0A0C] hover:bg-[#E0DDD8]"
+              className="w-full rounded-md bg-[var(--text-silver)] py-6 text-base font-medium text-[var(--bg-void)] hover:bg-[var(--text-silver)]"
             >
               {isRenew ? 'Ativar assinatura agora' : 'Ativar teste grátis agora'}
             </Button>

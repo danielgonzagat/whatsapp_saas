@@ -52,14 +52,13 @@ describe('Card', () => {
     const { container } = render(<Card>Hover test</Card>);
     const el = container.firstChild as HTMLElement;
 
-    const initialColor = el.style.borderColor;
-    expect(initialColor).toBe('rgb(34, 34, 38)');
+    expect(el.style.border).toContain('var(--bg-border');
 
     fireEvent.mouseEnter(el);
-    expect(el.style.borderColor).toBe('rgb(51, 51, 56)');
+    expect(el.style.border).toContain('var(--border-glow');
 
     fireEvent.mouseLeave(el);
-    expect(el.style.borderColor).toBe('rgb(34, 34, 38)');
+    expect(el.style.border).toContain('var(--bg-border');
   });
 
   it('handles null onClick without error', () => {

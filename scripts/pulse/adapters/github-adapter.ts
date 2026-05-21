@@ -4,9 +4,7 @@
  */
 
 import * as https from 'https';
-import type { PulseSignal } from '../__parts__/types.capabilities/05-external-signals';
-import type { PulseScopeFile } from '../types.truth.scope';
-
+import type { PulseSignal } from '../types.capabilities/05-external-signals';
 interface GitHubAdapterConfig {
   owner: string;
   repo: string;

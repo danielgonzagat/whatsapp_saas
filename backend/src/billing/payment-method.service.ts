@@ -1,13 +1,17 @@
 import { randomUUID } from 'node:crypto';
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { StructuredLogger } from '../logging/structured-logger';
 import * as Sentry from '@sentry/node';
 import { PrismaService } from '../prisma/prisma.service';
 import { StripeRuntime } from './stripe-runtime';
 import type { StripeClient, StripeCustomer } from './stripe-types';
 // @@index: optimistic lock via updatedAt — concurrent writes resolved by DB constraint
-// PULSE:OK — cache.invalidate — payment methods are fetched live from Stripe; no Redis cache layer; TTL N/A
 
+/**
+ * @cluster whatsapp_saas/backend/billing
+ * L11 multi-agent TaskGraph annotation (batched by tools/auto-pr/batch-job.mjs).
+ */
 const ERROR_WORKSPACE_NOT_FOUND = 'Workspace não encontrado';
 const ERROR_BILLING_UNAVAILABLE = 'Infraestrutura de cobrança indisponível';
 const ERROR_PAYMENT_METHOD_NOT_OWNED = 'Método de pagamento não pertence a este workspace';
@@ -20,7 +24,7 @@ const ERROR_PAYMENT_METHOD_NOT_OWNED = 'Método de pagamento não pertence a est
  */
 @Injectable()
 export class PaymentMethodService {
-  private readonly logger = new Logger(PaymentMethodService.name);
+  private readonly logger = StructuredLogger.from(PaymentMethodService.name);
   private stripe: StripeClient | null = null;
 
   constructor(
@@ -102,7 +106,6 @@ export class PaymentMethodService {
         url.searchParams.set(key, value);
         return url.toString();
       } catch {
-        // PULSE:OK — URL parse failure; fallback to manual query string concatenation
         const sep = base.includes('?') ? '&' : '?';
         return `${base}${sep}${encodeURIComponent(key)}=${encodeURIComponent(value)}`;
       }
@@ -212,7 +215,6 @@ export class PaymentMethodService {
           isDefault: pm.id === defaultMethodId,
         })),
       };
-      // PULSE:OK — listing payment methods is non-destructive; Stripe API errors return empty list for graceful degradation
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'unknown_error';
       this.logger.error(`Erro ao listar payment methods: ${errorMessage}`);

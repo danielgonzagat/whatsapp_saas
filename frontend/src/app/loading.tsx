@@ -1,7 +1,6 @@
 import { kloelT } from '@/lib/i18n/t';
-import { KloelLoadingState } from '@/components/kloel/KloelBrand';
 import { colors } from '@/lib/design-tokens';
-
+import { KloelLoadingState } from '@/components/kloel/KloelBrand';
 /** Root loading. */
 export default function RootLoading() {
   return (
@@ -18,7 +17,7 @@ export default function RootLoading() {
     >
       <KloelLoadingState
         size={118}
-        traceColor={kloelT(`#FFFFFF`)}
+        traceColor={colors.text.silver}
         label={kloelT(`Kloel`)}
         hint={kloelT(`inicializando a plataforma`)}
         minHeight={320}

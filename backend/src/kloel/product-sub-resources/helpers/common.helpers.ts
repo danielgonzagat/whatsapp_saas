@@ -6,13 +6,8 @@ const U0300__U036F_RE = /[\u0300-\u036f]/g;
 const A_Z0_9_RE = /[^a-z0-9]+/g;
 const PATTERN_RE = /^-+|-+$/g;
 
-export function safeStr(v: unknown, fb = ''): string {
-  return typeof v === 'string'
-    ? v
-    : typeof v === 'number' || typeof v === 'boolean'
-      ? String(v)
-      : fb;
-}
+import { safeStr } from '../../../common/string';
+export { safeStr };
 
 /** Loose body type — accepts idempotencyKey and any other fields for safe retry.
  *  Values are narrowed at each consumption site via parseObject/parseNumber/etc.

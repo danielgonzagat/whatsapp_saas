@@ -35,6 +35,8 @@ const PATTERN_RE = /:[^:@]*@/;
  * ## Discovery order
  *
  *   1. REDIS_URL           (preferred — accepts .railway.internal hosts)
+ *      If REDIS_URL is unsafe in production but Railway component
+ *      variables are available, the internal component URL wins.
  *   2. REDIS_HOST + REDIS_PORT + REDIS_PASSWORD (component assembly)
  *   3. REDIS_FALLBACK_URL  (last-resort env override)
  *   4. mode-dependent fallback (above)
@@ -96,6 +98,10 @@ function assertProductionSafeRedisUrl(url: string): string {
     );
   }
   return url;
+}
+
+function isUnsafeProductionRedisUrl(url: string): boolean {
+  return isProductionLikeRuntime() && (isRailwayPublicProxy(url) || isLocalhost(url));
 }
 
 /** Mask redis url. */
@@ -168,6 +174,11 @@ function resolveFromModeFallback(): string | null {
   return 'redis://localhost:6379';
 }
 
+function hasRedisComponentsConfigured(): boolean {
+  const { host, password } = readRedisComponents();
+  return Boolean(host && password);
+}
+
 /**
  * Resolve a Redis URL from the environment. Returns:
  *   - a string URL when one is found OR when in dev fallback mode
@@ -177,8 +188,17 @@ function resolveFromModeFallback(): string | null {
  * can be resolved.
  */
 export function resolveRedisUrl(): string | null {
-  // 1. REDIS_URL — accepts any host including .railway.internal
+  // 1. REDIS_URL — accepts any host including .railway.internal.
+  // If an unsafe explicit URL is present alongside Railway's internal
+  // component variables, prefer the internal route instead of failing
+  // before the safer evidence source is considered.
   if (process.env.REDIS_URL) {
+    if (isUnsafeProductionRedisUrl(process.env.REDIS_URL)) {
+      const fromComponents = resolveFromComponents(readRedisComponents());
+      if (fromComponents !== null) {
+        return fromComponents;
+      }
+    }
     return assertProductionSafeRedisUrl(process.env.REDIS_URL);
   }
 
@@ -202,14 +222,11 @@ export function resolveRedisUrl(): string | null {
  * Useful for callers that want to log "Redis configured" without
  * triggering full URL resolution.
  */
-function isRedisConfigured(): boolean {
+export function isRedisConfigured(): boolean {
   if (process.env.REDIS_URL) {
     return true;
   }
-  const host = process.env.REDIS_HOST ?? process.env.REDISHOST ?? process.env.REDIS_HOSTNAME;
-  const password =
-    process.env.REDIS_PASSWORD ?? process.env.REDISPASSWORD ?? process.env.REDIS_PASS;
-  if (host && password) {
+  if (hasRedisComponentsConfigured()) {
     return true;
   }
   if (process.env.REDIS_FALLBACK_URL) {

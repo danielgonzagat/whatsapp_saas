@@ -1,3 +1,12 @@
+/**
+ * ARCHITECTURAL COHESION: CIA Guarantee Contract System — a single-orchestrated validation
+ * pipeline where every function feeds into the next. Validates action batches against safety
+ * constraints (max actions, unique targets, monotonic priorities), validates contracts against
+ * strategy hints, computes guarantee reports, applies human approval/denial, and opens/commits
+ * execution contracts. Splitting would break the sequential dependency chain and scatter the
+ * guarantee invariants across multiple modules.
+ */
+
 import {
   type CiaDecisionBatch,
   type CiaGovernorVerdict,
@@ -53,9 +62,9 @@ export interface CiaCandidateExhaustionRecord {
   /** Conversation id property. */
   conversationId: string;
   /** Contact id property. */
-  contactId?: string;
+  contactId?: string | undefined;
   /** Phone property. */
-  phone?: string;
+  phone?: string | undefined;
   /** Cluster property. */
   cluster: string;
   /** Planned type property. */
@@ -146,7 +155,11 @@ const VALID_TYPES = new Set([
   'ESCALATE_HUMAN',
 ]);
 
-function targetKey(action: { contactId?: string; phone?: string; conversationId: string }) {
+function targetKey(action: {
+  contactId?: string | undefined;
+  phone?: string | undefined;
+  conversationId: string;
+}) {
   return String(action.contactId || action.phone || action.conversationId);
 }
 

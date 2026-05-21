@@ -6,5 +6,5 @@ export class GoogleOAuthDto {
   @IsString()
   @IsNotEmpty()
   @MaxLength(4096)
-  credential: string;
+  credential!: string;
 }

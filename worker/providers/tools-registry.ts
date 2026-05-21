@@ -1,3 +1,11 @@
+/**
+ * ARCHITECTURAL COHESION: Tool Registry — the single tool-to-handler binding table for all
+ * AI-agent-callable tools. Defines OpenAI-compatible function definitions with metadata,
+ * parameter schemas, and execution handlers (getClientInfo, getAgentProfile, createDeal, etc.).
+ * Tool count limits and registration are enforced here. Splitting would create two sources of
+ * truth for the tool catalog and risk handler/definition drift.
+ */
+
 import { randomUUID } from 'node:crypto';
 import type Stripe from 'stripe';
 import { prisma } from '../db';

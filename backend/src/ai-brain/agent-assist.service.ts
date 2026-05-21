@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { Injectable, Optional } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { StructuredLogger } from '../logging/structured-logger';
 import OpenAI from 'openai';
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { chatCompletionWithRetry } from '../kloel/openai-wrapper';
@@ -23,6 +24,10 @@ import {
   settleAiUsageIfNeeded,
 } from './agent-assist.helpers';
 
+/**
+ * @cluster whatsapp_saas/backend/ai-brain
+ * L11 multi-agent TaskGraph annotation (batched by tools/auto-pr/batch-job.mjs).
+ */
 interface ExecuteAiOperationArgs<T> {
   estimatedCostCents?: bigint;
   handler: (completion: OpenAI.Chat.ChatCompletion) => T;
@@ -36,6 +41,7 @@ interface ExecuteAiOperationArgs<T> {
 /** Agent assist service — sentiment, summary, reply suggestions and pitch generation. */
 @Injectable()
 export class AgentAssistService {
+  private readonly logger = StructuredLogger.from(AgentAssistService.name);
   private openai: OpenAI | null;
 
   constructor(
@@ -72,10 +78,18 @@ export class AgentAssistService {
       requestId,
       assistantAction: operation,
       metadata: { model },
-      estimatedCostCents,
+      ...(estimatedCostCents !== undefined ? { estimatedCostCents } : {}),
     });
     try {
       await this.ensureBudget(workspaceId);
+      this.logger.log('Calling OpenAI', {
+        context: 'AgentAssistService.executeAiOperation',
+        model,
+        operation,
+      });
+      if (!this.openai) {
+        throw new Error('OpenAI client not configured');
+      }
       const completion = await chatCompletionWithRetry(this.openai, { model, messages });
       if (estimatedCostCents !== undefined && usageCharged) {
         await settleAiUsageIfNeeded({
@@ -90,6 +104,11 @@ export class AgentAssistService {
       await this.trackUsage(workspaceId, completion?.usage?.total_tokens);
       return handler(completion);
     } catch (error: unknown) {
+      this.logger.error(
+        'AI operation failed',
+        error instanceof Error ? error.message : String(error),
+        { context: 'AgentAssistService.executeAiOperation', model, operation },
+      );
       void this.opsAlert?.alertOnCriticalError(error, 'AgentAssistService.handler');
       if (!(error instanceof AgentAssistWalletAccessError)) {
         await refundAiUsageIfNeeded({
@@ -152,7 +171,7 @@ export class AgentAssistService {
           const content = completion.choices[0]?.message?.content?.toLowerCase() || '';
           return { sentiment: classifySentimentLabel(content), raw: content };
         },
-        estimatedCostCents,
+        ...(estimatedCostCents !== undefined ? { estimatedCostCents } : {}),
       });
       if (workspaceId) {
         await this.prisma.autopilotEvent
@@ -174,6 +193,11 @@ export class AgentAssistService {
       }
       return result;
     } catch (error: unknown) {
+      this.logger.error(
+        'Sentiment analysis failed',
+        error instanceof Error ? error.message : String(error),
+        { context: 'AgentAssistService.analyzeSentiment', workspaceId },
+      );
       void this.opsAlert?.alertOnCriticalError(error, 'AgentAssistService.now');
       if (workspaceId) {
         await this.prisma.autopilotEvent
@@ -234,7 +258,7 @@ export class AgentAssistService {
       model,
       messages,
       handler: (completion) => ({ summary: completion.choices[0]?.message?.content || '' }),
-      estimatedCostCents,
+      ...(estimatedCostCents !== undefined ? { estimatedCostCents } : {}),
     });
   }
 
@@ -274,7 +298,7 @@ export class AgentAssistService {
       handler: (completion) => ({
         suggestion: completion.choices[0]?.message?.content || latest,
       }),
-      estimatedCostCents,
+      ...(estimatedCostCents !== undefined ? { estimatedCostCents } : {}),
     });
   }
 
@@ -315,7 +339,7 @@ export class AgentAssistService {
       handler: (completion) => ({
         pitch: completion.choices[0]?.message?.content || base,
       }),
-      estimatedCostCents,
+      ...(estimatedCostCents !== undefined ? { estimatedCostCents } : {}),
     });
   }
 }

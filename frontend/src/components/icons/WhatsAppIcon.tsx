@@ -1,4 +1,5 @@
 'use client';
+import { colors } from '@/lib/design-tokens';
 
 import { kloelT } from '@/lib/i18n/t';
 import type * as React from 'react';
@@ -8,7 +9,7 @@ interface WhatsAppIconProps extends React.SVGProps<SVGSVGElement> {
 }
 
 /** Whats app icon. */
-export function WhatsAppIcon({ color = '#25D366', className, ...props }: WhatsAppIconProps) {
+export function WhatsAppIcon({ color = colors.canvas.lime, className, ...props }: WhatsAppIconProps) {
   return (
     <svg viewBox="0 0 32 32" fill="none" aria-hidden="true" className={className} {...props}>
       <path

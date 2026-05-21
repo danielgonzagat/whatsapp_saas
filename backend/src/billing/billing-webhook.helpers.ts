@@ -1,8 +1,9 @@
+import { Logger } from '@nestjs/common';
 /**
  * Pure helper functions for BillingWebhookService.
  * Extracted to keep the service file under the architecture line budget.
  */
-import { Logger } from '@nestjs/common';
+
 import { FinancialAlertService } from '../common/financial-alert.service';
 import { getTraceHeaders } from '../common/trace-headers';
 import { PrismaService } from '../prisma/prisma.service';
@@ -34,11 +35,19 @@ export function readInvoiceSubscriptionId(invoice: StripeInvoice): string | null
 
 /** Map a Stripe subscription status string to the local lifecycle enum. */
 export function mapStripeStatus(status: string | null | undefined): string {
-  if (!status) return 'ACTIVE';
+  if (!status) {
+    return 'ACTIVE';
+  }
   const normalized = status.toLowerCase();
-  if (['canceled', 'cancelled'].includes(normalized)) return 'CANCELED';
-  if (['past_due', 'incomplete', 'unpaid'].includes(normalized)) return 'PAST_DUE';
-  if (['trialing'].includes(normalized)) return 'TRIALING';
+  if (['canceled', 'cancelled'].includes(normalized)) {
+    return 'CANCELED';
+  }
+  if (['past_due', 'incomplete', 'unpaid'].includes(normalized)) {
+    return 'PAST_DUE';
+  }
+  if (['trialing'].includes(normalized)) {
+    return 'TRIALING';
+  }
   return 'ACTIVE';
 }
 
@@ -53,7 +62,9 @@ export async function notifyOpsHelper(
   const globalFetch = (globalThis as Record<string, unknown>).fetch as
     | ((url: string, init?: Record<string, unknown>) => Promise<unknown>)
     | undefined;
-  if (!webhook || !globalFetch) return;
+  if (!webhook || !globalFetch) {
+    return;
+  }
   try {
     await globalFetch(webhook, {
       method: 'POST',
@@ -90,7 +101,9 @@ async function resolveCustomerPhone(
   session: StripeCheckoutSession,
 ): Promise<string | null> {
   const customerEmail = session.customer_email || session.customer_details?.email;
-  if (!customerEmail) return null;
+  if (!customerEmail) {
+    return null;
+  }
   const contact = await prisma.contact.findFirst({
     where: { workspaceId, email: customerEmail },
     select: { phone: true },
@@ -102,13 +115,13 @@ async function resolveCustomerPhone(
 export async function notifyCustomerPaymentConfirmedHelper(
   logger: Logger,
   prisma: PrismaService,
-  whatsappService: WhatsappNotifier | null,
+  notifier: WhatsappNotifier | null,
   workspaceId: string,
   session: StripeCheckoutSession,
   plan: string,
   financialAlert?: FinancialAlertService,
 ): Promise<void> {
-  if (!whatsappService) {
+  if (!notifier) {
     logger.log('WhatsappService não disponível para notificação');
     return;
   }
@@ -119,12 +132,14 @@ export async function notifyCustomerPaymentConfirmedHelper(
       return;
     }
     let amount = session.amount_total ? session.amount_total / 100 : 0;
-    if (!amount) amount = FALLBACK_PLAN_PRICES[plan.toUpperCase()] || 0;
+    if (!amount) {
+      amount = FALLBACK_PLAN_PRICES[plan.toUpperCase()] || 0;
+    }
     const formattedAmount = amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
     const paymentIntentId =
       typeof session.payment_intent === 'string' ? session.payment_intent : session.id;
     const message = buildConfirmationMessage(plan, formattedAmount, paymentIntentId);
-    await whatsappService.sendMessage(workspaceId, phone, message);
+    await notifier.sendMessage(workspaceId, phone, message);
     logger.log(`Notificação de pagamento enviada para ${phone}`);
   } catch (err: unknown) {
     const errorMessage = err instanceof Error ? err.message : 'unknown_error';

@@ -19,7 +19,6 @@ const F = "'Sora', sans-serif";
 const SURFACE = KLOEL_THEME.bgCard;
 const SURFACE_ALT = KLOEL_THEME.bgSecondary;
 const TEXT = KLOEL_THEME.textPrimary;
-const _MUTED = KLOEL_THEME.textSecondary;
 const MUTED_2 = KLOEL_THEME.textTertiary;
 const DIVIDER = KLOEL_THEME.borderPrimary;
 const EMBER = KLOEL_THEME.accent;
@@ -275,11 +274,11 @@ export function KloelChatComposer({
                   gap: 8,
                   minHeight: 36,
                   border: `1px solid color-mix(in srgb, ${EMBER} 28%, ${DIVIDER})`,
-                  borderRadius: 999,
+                  borderRadius: 16,
                   padding: '0 12px',
                   background: `color-mix(in srgb, ${EMBER} 12%, ${SURFACE_ALT})`,
                   color: EMBER,
-                  fontSize: 13,
+                  fontSize: 16,
                   fontWeight: 700,
                   fontFamily: F,
                   cursor: 'pointer',

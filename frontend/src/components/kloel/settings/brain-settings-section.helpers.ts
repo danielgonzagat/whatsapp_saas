@@ -172,7 +172,7 @@ export async function invokeAiTool(
   tool: AiToolKind,
   text: string,
   workspaceId: string,
-): Promise<{ data?: AiToolData; error?: string }> {
+): Promise<{ data?: AiToolData | undefined; error?: string | undefined }> {
   if (tool === 'analyzeSentiment') {
     const res = await aiAssistantApi.analyzeSentiment(text);
     return { data: res.data as AiToolData | undefined, error: res.error };
@@ -194,5 +194,10 @@ export function formatAiToolOutput(data: AiToolData | undefined): string {
   if (data?.sentiment) {
     return `${data.sentiment} (score: ${data.score ?? '\u2014'}, label: ${data.label ?? '\u2014'})`;
   }
-  return data?.summary || data?.suggestion || data?.pitch || JSON.stringify(data, null, 2);
+  return (
+    data?.summary ||
+    data?.suggestion ||
+    data?.pitch ||
+    'A Kloel recebeu a analise, mas ainda nao encontrou um resumo claro para exibir.'
+  );
 }

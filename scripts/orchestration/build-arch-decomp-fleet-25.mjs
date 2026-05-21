@@ -91,7 +91,7 @@ const TARGETS = [
 ];
 
 // Round to even count for pairing (drops last if odd).
-if (TARGETS.length % 2 === 1) TARGETS.pop();
+if (TARGETS.length % 2 === 1) {TARGETS.pop();}
 console.error(`targets=${TARGETS.length}, tasks=${TARGETS.length / 2}`);
 
 const runId = `arch-decomp-25-${new Date().toISOString().replace(/[:.]/g, '-').replace('Z', '')}`;

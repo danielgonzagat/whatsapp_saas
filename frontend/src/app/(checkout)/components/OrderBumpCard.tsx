@@ -1,4 +1,5 @@
 'use client';
+import { colors } from '@/lib/design-tokens';
 
 import { kloelT } from '@/lib/i18n/t';
 import Image from 'next/image';
@@ -48,10 +49,10 @@ export default function OrderBumpCard({
   bump,
   checked,
   onToggle,
-  accentColor = '#D4AF37',
-  cardBg = '#141416',
-  mutedColor = '#8A8A8E',
-  textColor: _textColor = '#E8E6E1',
+  accentColor = colors.checkout.accent,
+  cardBg = colors.checkout.bg,
+  mutedColor = colors.text.muted,
+  textColor: _textColor = colors.checkout.textPrimary,
 }: OrderBumpCardProps) {
   const borderCol = bump.highlightColor || accentColor;
 
@@ -82,14 +83,14 @@ export default function OrderBumpCard({
             width: '22px',
             height: '22px',
             borderRadius: '6px',
-            border: `2px solid ${checked ? borderCol : '#3A3A3E'}`,
+            border: `2px solid ${checked ? borderCol : colors.text.dim}`,
             background: checked ? borderCol : 'transparent',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             flexShrink: 0,
             transition: 'all 0.2s',
-            color: '#FFFFFF',
+            color: colors.text.silver,
           }}
         >
           {checked && (

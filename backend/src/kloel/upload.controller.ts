@@ -1,22 +1,18 @@
 import {
   BadRequestException,
   Controller,
-  FileTypeValidator,
   HttpException,
   HttpStatus,
-  Logger,
-  MaxFileSizeValidator,
-  ParseFilePipe,
   Post,
   Req,
-  UploadedFile,
   UploadedFiles,
   UseGuards,
   UseInterceptors,
   Optional,
 } from '@nestjs/common';
-import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
-import { ApiBearerAuth, ApiBody, ApiConsumes, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { FilesInterceptor } from '@nestjs/platform-express';
+import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { StructuredLogger } from '../logging/structured-logger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { resolveWorkspaceId } from '../auth/workspace-access';
 import { forEachSequential } from '../common/async-sequence';
@@ -37,7 +33,7 @@ import {
 } from '../wallet/wallet.types';
 import { MemoryService } from './memory.service';
 import {
-  PDF_ANALYSIS_SYSTEM_PROMPT,
+  PDF_ANALYSIS_OUTPUT_CONTRACT,
   PdfProcessorService,
   buildPdfAnalysisPrompt,
 } from './pdf-processor.service';
@@ -47,10 +43,11 @@ import {
   deleteStoredFileIfNeeded as companionDeleteStored,
   insufficientWalletMessage as companionInsufficientWallet,
   storeUploadedFile as companionStoreFile,
-} from './__companions__/upload-helpers';
+} from './upload-helpers';
 
+import { RouteClass } from '../common/throttler/route-class.decorator';
+import { InternalEndpoint } from '../common/decorators/internal-endpoint.decorator';
 const JPG_JPEG_PNG_GIF_WEBP_RE = /\.(jpg|jpeg|png|gif|webp|pdf|txt|doc|docx|xls|xlsx)$/i;
-const IMAGE___JPEG_PNG_GIF_W_RE = /^(image\/(jpeg|png|gif|webp)|application\/pdf|text\/plain)$/;
 const DOC_DOCX_RE = /\.(doc|docx)$/i;
 
 interface UploadedFileType {
@@ -82,8 +79,9 @@ function countAnalysisItems(value: unknown): number {
 /** Upload controller. */
 @ApiTags('KLOEL Upload')
 @Controller('kloel/upload')
+@RouteClass('mutate')
 export class UploadController {
-  private readonly logger = new Logger(UploadController.name);
+  private readonly logger = StructuredLogger.from(UploadController.name);
 
   constructor(
     private readonly pdfProcessor: PdfProcessorService,
@@ -105,12 +103,38 @@ export class UploadController {
     return companionDeleteStored(this.storageService, this.logger, this.opsAlert, relativePath);
   }
 
+  private validateUploadedFile(file: UploadedFileType) {
+    const detectedMime = detectUploadedMime(file);
+    if (!detectedMime) {
+      throw new BadRequestException('Tipo de arquivo não permitido ou assinatura inválida.');
+    }
+    if (!ALLOWED_UPLOAD_MIMES.has(detectedMime)) {
+      throw new BadRequestException(
+        `Tipo de arquivo não suportado neste endpoint: ${detectedMime}`,
+      );
+    }
+    file.mimetype = detectedMime;
+  }
+
+  private async processUploadedFileResult(file: UploadedFileType, workspaceId: string) {
+    this.validateUploadedFile(file);
+    const result = await this.processFile(file, workspaceId);
+
+    return {
+      success: true,
+      filename: file.originalname,
+      size: file.size,
+      mimetype: file.mimetype,
+      ...result,
+    };
+  }
+
   private estimatePdfAnalysisQuote(text: string, sourceName: string): bigint | undefined {
     try {
       return estimateOpenAiChatQuoteCostCents({
         model: resolveBackendOpenAIModel('brain'),
         messages: [
-          { role: 'system', content: PDF_ANALYSIS_SYSTEM_PROMPT },
+          { role: 'user', content: JSON.stringify({ contract: PDF_ANALYSIS_OUTPUT_CONTRACT }) },
           { role: 'user', content: buildPdfAnalysisPrompt(text, sourceName) },
         ],
       });
@@ -218,103 +242,21 @@ export class UploadController {
       void this.opsAlert?.alertOnCriticalError(error, 'UploadController.refundUsageCharge');
       this.logger.error(
         `Failed to refund upload pdf_analysis workspace=${workspaceId} request=${requestId}: ${
-          error instanceof Error
-            ? error instanceof Error
-              ? error.message
-              : String(error)
-            : String(error)
+          error instanceof Error ? error.message : String(error)
         }`,
       );
     }
   }
 
-  /**
-   * Endpoint generico de upload de arquivos
-   * Suporta: PDF, TXT, imagens, documentos
-   */
-  // PULSE_TODO: verify if still needed, no caller detected
-  @Post()
-  @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard, WorkspaceGuard)
-  @ApiOperation({ summary: 'Upload de arquivo para ensinar a IA' })
-  @ApiConsumes('multipart/form-data')
-  @ApiBody({
-    schema: {
-      type: 'object',
-      properties: {
-        file: {
-          type: 'string',
-          format: 'binary',
-          description: 'Arquivo para upload (PDF, TXT, imagem)',
-        },
-      },
-    },
-  })
-  @UseInterceptors(
-    FileInterceptor('file', {
-      limits: { fileSize: 10 * 1024 * 1024 },
-      fileFilter: (_req, file, cb) => {
-        const allowed = JPG_JPEG_PNG_GIF_WEBP_RE;
-        cb(null, allowed.test(file.originalname));
-      },
-    }),
-  )
-  async uploadFile(
-    @UploadedFile(
-      new ParseFilePipe({
-        validators: [
-          new MaxFileSizeValidator({ maxSize: 10 * 1024 * 1024 }), // 10MB
-          new FileTypeValidator({
-            fileType: IMAGE___JPEG_PNG_GIF_W_RE,
-          }),
-        ],
-      }),
-    )
-    file: UploadedFileType,
-    @Req() req: AuthenticatedRequest,
-  ) {
-    if (!file) {
-      throw new BadRequestException('Nenhum arquivo enviado');
-    }
-
+  async uploadFile(file: UploadedFileType, req: AuthenticatedRequest) {
     const workspaceId = resolveWorkspaceId(req);
-
-    this.logger.log(
-      `Upload recebido: ${file.originalname} (${file.mimetype}) - ${file.size} bytes`,
-    );
-
-    // Validar tamanho (max 10MB)
-    const maxSize = 10 * 1024 * 1024;
-    if (file.size > maxSize) {
-      throw new BadRequestException('Arquivo muito grande. Máximo permitido: 10MB');
-    }
-
-    const detectedMime = detectUploadedMime(file);
-    if (!detectedMime) {
-      throw new BadRequestException('Tipo de arquivo não permitido ou assinatura inválida.');
-    }
-    if (!ALLOWED_UPLOAD_MIMES.has(detectedMime)) {
-      throw new BadRequestException(
-        `Tipo de arquivo não suportado neste endpoint: ${detectedMime}`,
-      );
-    }
-    file.mimetype = detectedMime;
-
-    // Processar baseado no tipo
-    const result = await this.processFile(file, workspaceId);
-
-    return {
-      success: true,
-      filename: file.originalname,
-      size: file.size,
-      type: file.mimetype,
-      ...result,
-    };
+    return this.processUploadedFileResult(file, workspaceId);
   }
 
   /**
    * Upload de múltiplos arquivos
    */
+  @InternalEndpoint('multiple file upload')
   @Post('multiple')
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
@@ -351,25 +293,8 @@ export class UploadController {
         return;
       }
       try {
-        const detectedMime = detectUploadedMime(file);
-        if (!detectedMime) {
-          throw new BadRequestException('Tipo de arquivo não permitido ou assinatura inválida.');
-        }
-        if (!ALLOWED_UPLOAD_MIMES.has(detectedMime)) {
-          throw new BadRequestException(
-            `Tipo de arquivo não suportado neste endpoint: ${detectedMime}`,
-          );
-        }
-        file.mimetype = detectedMime;
-
-        const result = await this.processFile(file, workspaceId);
-        results.push({
-          success: true,
-          filename: file.originalname,
-          size: file.size,
-          type: file.mimetype,
-          ...result,
-        });
+        const result = await this.processUploadedFileResult(file, workspaceId);
+        results.push(result);
       } catch (error: unknown) {
         void this.opsAlert?.alertOnCriticalError(error, 'UploadController.push');
         results.push({
@@ -423,7 +348,7 @@ export class UploadController {
         requestId,
         sourceName: originalname,
         textLength: extractedText.length,
-        estimatedCostCents,
+        ...(estimatedCostCents !== undefined ? { estimatedCostCents } : {}),
       });
 
       let stored:

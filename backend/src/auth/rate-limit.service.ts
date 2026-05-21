@@ -2,10 +2,10 @@ import {
   HttpException,
   HttpStatus,
   Injectable,
-  Logger,
   Optional,
   ServiceUnavailableException,
 } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { InjectRedis } from '@nestjs-modules/ioredis';
 import type { Redis } from 'ioredis';
 
@@ -18,10 +18,23 @@ import type { Redis } from 'ioredis';
  * Invariant: rate limit must enforce across all instances consistently.
  */
 @Injectable()
+/**
+ * @cluster whatsapp_saas/backend/auth
+ * L11 multi-agent TaskGraph annotation (batched by tools/auto-pr/batch-job.mjs).
+ */
 export class RateLimitService {
-  private logger = new Logger(RateLimitService.name);
+  private readonly logger = StructuredLogger.from(RateLimitService.name);
 
   constructor(@Optional() @InjectRedis() private readonly redis: Redis | null = null) {}
+
+  private isExplicitE2ETestHarness(): boolean {
+    return (
+      process.env.NODE_ENV !== 'production' &&
+      !process.env.JEST_WORKER_ID &&
+      process.env.NODE_ENV !== 'test' &&
+      (process.env.E2E_TEST_MODE === 'true' || process.env.OPENAI_API_KEY === 'e2e-dummy-key')
+    );
+  }
 
   async checkRateLimit(key: string, limit = 5, windowMs = 5 * 60 * 1000) {
     const throwTooMany = () => {
@@ -42,7 +55,7 @@ export class RateLimitService {
     // deployment is to require Redis. If Redis is unavailable, reject the
     // request with 503. In development/test, set RATE_LIMIT_DISABLED=true to
     // bypass entirely.
-    if (process.env.RATE_LIMIT_DISABLED === 'true') {
+    if (process.env.RATE_LIMIT_DISABLED === 'true' || this.isExplicitE2ETestHarness()) {
       return;
     }
 

@@ -16,10 +16,10 @@ interface CouponPopupProps {
   applyCoupon: (code?: string) => Promise<void>;
   colors: BlancColors;
   inputTheme: BlancInputTheme;
-  couponPopupTitle?: string;
-  couponPopupDesc?: string;
-  couponPopupDismiss?: string;
-  couponPopupBtnText?: string;
+  couponPopupTitle?: string | undefined;
+  couponPopupDesc?: string | undefined;
+  couponPopupDismiss?: string | undefined;
+  couponPopupBtnText?: string | undefined;
 }
 
 export function BlancCouponPopup({

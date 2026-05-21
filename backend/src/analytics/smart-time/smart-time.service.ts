@@ -1,10 +1,18 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 
 /** Smart time service. */
 @Injectable()
+/**
+ * @cluster whatsapp_saas/backend/analytics
+ * L11 multi-agent TaskGraph annotation (batched by tools/auto-pr/batch-job.mjs).
+ */
 export class SmartTimeService {
-  constructor(private prisma: PrismaService) {}
+  private readonly logger = new Logger(SmartTimeService.name);
+
+  constructor(private prisma: PrismaService) {
+    this.logger.log('SmartTimeService initialized');
+  }
 
   /**
    * Calculates the best time of day (0-23) and day of week (0-6) to send messages
@@ -65,12 +73,16 @@ export class SmartTimeService {
     // 5. Build heatmap: normalize hour×day scores to [0, 1]
     const maxCount = Math.max(...hourBuckets, 1);
     const heatmap: Array<{ hour: number; day: string; score: number }> = [];
-    for (let h = 0; h < 24; h++) {
-      for (let d = 0; d < 7; d++) {
+    for (let h = 0; h < 24; h += 1) {
+      for (let d = 0; d < 7; d += 1) {
         const count = hourBuckets[h] * (dayBuckets[d] / total) * 24;
         const score = Math.round((count / maxCount) * 100) / 100;
         if (score > 0) {
-          heatmap.push({ hour: h, day: DAY_NAMES[d], score });
+          const dayName = DAY_NAMES[d];
+          if (!dayName) {
+            continue;
+          }
+          heatmap.push({ hour: h, day: dayName, score });
         }
       }
     }

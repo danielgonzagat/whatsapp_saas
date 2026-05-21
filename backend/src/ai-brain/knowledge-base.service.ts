@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
-import { BadRequestException, Injectable, Logger, Optional } from '@nestjs/common';
+import { BadRequestException, Injectable, Optional } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { Parser } from 'htmlparser2';
 import { AuditService } from '../audit/audit.service';
 import { getTraceHeaders } from '../common/trace-headers'; // propagates X-Request-ID
@@ -24,6 +25,10 @@ import {
 import { VectorService } from './vector.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
 
+/**
+ * @cluster whatsapp_saas/backend/ai-brain
+ * L11 multi-agent TaskGraph annotation (batched by tools/auto-pr/batch-job.mjs).
+ */
 const S_RE = /\s+/g;
 const SENTENCE_ENDINGS = ['. ', '? ', '! '];
 const KNOWLEDGE_BASE_EMBEDDING_MODEL = 'text-embedding-3-small';
@@ -116,7 +121,7 @@ class KnowledgeBaseWalletAccessError extends Error {
 /** Knowledge base service. */
 @Injectable()
 export class KnowledgeBaseService {
-  private readonly logger = new Logger(KnowledgeBaseService.name);
+  private readonly logger = StructuredLogger.from(KnowledgeBaseService.name);
 
   constructor(
     private prisma: PrismaService,
@@ -127,7 +132,6 @@ export class KnowledgeBaseService {
   ) {}
 
   /** Create. */
-  // PULSE_OK: workspaceId validated by caller guard
   async create(workspaceId: string, name: string) {
     return this.prisma.knowledgeBase.create({
       data: { workspaceId, name },

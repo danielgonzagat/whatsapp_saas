@@ -81,7 +81,7 @@ export interface KloelStreamThreadPayload {
   /** Conversation id property. */
   conversationId: string;
   /** Title property. */
-  title?: string;
+  title?: string | undefined;
 }
 
 /** Kloel stream options shape. */
@@ -125,13 +125,16 @@ export function extractWrappedPayload<T>(payload: unknown): T {
 }
 
 /** Send authenticated kloel message. */
-export async function sendAuthenticatedKloelMessage(input: {
-  message: string;
-  conversationId?: string | null;
-  mode?: 'chat' | 'onboarding' | 'sales';
-  companyContext?: string;
-  metadata?: KloelChatRequestMetadata;
-}): Promise<KloelSyncResponse> {
+export async function sendAuthenticatedKloelMessage(
+  input: {
+    message: string;
+    conversationId?: string | null;
+    mode?: 'chat' | 'onboarding' | 'sales';
+    companyContext?: string;
+    metadata?: KloelChatRequestMetadata;
+  },
+  options: { signal?: AbortSignal } = {},
+): Promise<KloelSyncResponse> {
   const res = await apiFetch<KloelSyncResponse>('/kloel/think/sync', {
     method: 'POST',
     body: {
@@ -141,6 +144,7 @@ export async function sendAuthenticatedKloelMessage(input: {
       companyContext: input.companyContext,
       metadata: input.metadata,
     },
+    ...(options.signal ? { signal: options.signal } : {}),
   });
 
   mutate((key: unknown) => typeof key === 'string' && key.startsWith('/kloel'));

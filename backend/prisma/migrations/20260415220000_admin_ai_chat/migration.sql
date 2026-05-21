@@ -20,7 +20,7 @@ CREATE TABLE "admin_chat_sessions" (
 );
 
 CREATE INDEX "admin_chat_sessions_admin_user_id_last_used_at_idx"
-  ON "admin_chat_sessions"("admin_user_id", "last_used_at");
+ON "admin_chat_sessions" ("admin_user_id", "last_used_at");
 
 -- CreateTable
 CREATE TABLE "admin_chat_messages" (
@@ -37,10 +37,10 @@ CREATE TABLE "admin_chat_messages" (
 );
 
 CREATE INDEX "admin_chat_messages_session_id_created_at_idx"
-  ON "admin_chat_messages"("session_id", "created_at");
+ON "admin_chat_messages" ("session_id", "created_at");
 
 -- AddForeignKey
 ALTER TABLE "admin_chat_messages"
-  ADD CONSTRAINT "admin_chat_messages_session_id_fkey"
-  FOREIGN KEY ("session_id") REFERENCES "admin_chat_sessions"("id")
-  ON DELETE CASCADE ON UPDATE CASCADE;
+ADD CONSTRAINT "admin_chat_messages_session_id_fkey"
+FOREIGN KEY ("session_id") REFERENCES "admin_chat_sessions" ("id")
+ON DELETE CASCADE ON UPDATE CASCADE;

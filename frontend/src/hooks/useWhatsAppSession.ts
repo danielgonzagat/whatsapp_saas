@@ -22,7 +22,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 interface UseWhatsAppSessionOptions {
   enabled?: boolean;
   workspaceId?: string;
-  onConnectionChange?: (connected: boolean) => void;
+  onConnectionChange?: ((connected: boolean) => void) | undefined;
 }
 
 const PENDING_QR_STATUSES = new Set([
@@ -284,7 +284,10 @@ export function useWhatsAppSession({
       setStatus(data);
       setQrCode(data.qrCode || null);
       setConnecting(isPendingQrStatus(data.status) && !data.connected);
-      setStatusMessage(resolveStatusMessage(data));
+      setStatusMessage(resolveStatusMessage({
+        connected: data.connected,
+        ...(data.status != null ? { status: data.status } : {}),
+      }));
       setError(null);
     } catch (err) {
       console.error(SESSION_LOG.loadStatus, err);

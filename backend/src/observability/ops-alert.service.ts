@@ -153,7 +153,7 @@ export class OpsAlertService {
     try {
       Sentry.captureMessage(`Ops degradation: ${context} - ${message}`, {
         tags: { type: 'ops_degradation', context },
-        extra,
+        ...(extra ? { extra } : {}),
         level: 'warning',
       });
     } catch {

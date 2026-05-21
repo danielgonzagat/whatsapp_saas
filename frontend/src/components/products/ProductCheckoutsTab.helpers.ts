@@ -44,7 +44,8 @@ export interface CheckoutFormState {
 const DEFAULT_PAYMENT_METHODS = ['PIX', 'CARTAO'] as const;
 
 /** Checkout_payment_methods. */
-export const CHECKOUT_PAYMENT_METHODS = ['BOLETO', 'CARTAO', 'PIX', 'RECEBA_E_PAGUE'] as const;
+export const CHECKOUT_PAYMENT_METHODS = ['CARTAO', 'PIX'] as const;
+const CHECKOUT_PAYMENT_METHOD_SET = new Set<string>(CHECKOUT_PAYMENT_METHODS);
 
 /** Checkout_tab_copy. */
 export const CHECKOUT_TAB_COPY = {
@@ -82,7 +83,7 @@ export function createCheckoutForm(checkout?: Checkout): CheckoutFormState {
   }
 
   const configuredMethods = Array.isArray(checkout.config?.paymentMethods)
-    ? checkout.config.paymentMethods
+    ? checkout.config.paymentMethods.filter((method) => CHECKOUT_PAYMENT_METHOD_SET.has(method))
     : [];
 
   return {

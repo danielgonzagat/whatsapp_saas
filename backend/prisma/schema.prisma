@@ -56,6 +56,66 @@ enum FlowExecutionStatus {
   WAITING_INPUT
 }
 
+enum EmailCampaignStatus {
+  DRAFT
+  SCHEDULED
+  SENDING
+  SENT
+  FAILED
+  CANCELLED
+}
+
+enum EmailRecipientStatus {
+  PENDING
+  SENT
+  DELIVERED
+  OPENED
+  CLICKED
+  REPLIED
+  FAILED
+  BOUNCED
+  UNSUBSCRIBED
+}
+
+enum EmailDeliveryEvent {
+  SENT
+  FAILED
+  DELIVERED
+  OPENED
+  CLICKED
+  REPLIED
+  BOUNCED
+  COMPLAINT
+  UNSUBSCRIBED
+}
+
+enum MailboxProvider {
+  GMAIL
+  MICROSOFT
+  IMAP_SMTP
+}
+
+enum MailboxStatus {
+  PENDING
+  ACTIVE
+  DISCONNECTED
+  EXPIRED
+  ERROR
+}
+
+enum GdprType {
+  EXPORT
+  DELETE
+}
+
+enum GdprStatus {
+  PENDING
+  VERIFYING
+  PROCESSING
+  COMPLETE
+  FAILED
+}
+
 model Workspace {
   id        String   @id @default(uuid())
   name      String
@@ -65,6 +125,9 @@ model Workspace {
   // Settings (Jitter / Anti-ban)
   jitterMin Int @default(5)
   jitterMax Int @default(15)
+
+  // Kloel MIND global prior opt-out
+  globalPriorOptOut Boolean @default(false)
 
   // Provider Configs (Meta, WPP, Evolution, etc)
   providerSettings Json @default("{}")
@@ -77,18 +140,20 @@ model Workspace {
   stripeCustomerId String?
 
   // Relations
-  contacts        Contact[]
-  flows           Flow[]
-  flowExecutions  FlowExecution[]
-  tags            Tag[]
-  campaigns       Campaign[]
-  variables       Variable[]
-  conversations   Conversation[]
-  agents          Agent[]
-  messages        Message[]
-  scrapingJobs    ScrapingJob[]
-  voiceJobs       VoiceJob[]
-  monitoredGroups MonitoredGroup[]
+  contacts           Contact[]
+  identityLinks      ContactIdentityLink[]
+  channelIdentifiers ChannelIdentifier[]
+  flows              Flow[]
+  flowExecutions     FlowExecution[]
+  tags               Tag[]
+  campaigns          Campaign[]
+  variables          Variable[]
+  conversations      Conversation[]
+  agents             Agent[]
+  messages           Message[]
+  scrapingJobs       ScrapingJob[]
+  voiceJobs          VoiceJob[]
+  monitoredGroups    MonitoredGroup[]
 
   // Omnichannel & Routing
   queues       Queue[]
@@ -116,6 +181,7 @@ model Workspace {
   voiceProfiles VoiceProfile[]
 
   auditLogs                  AuditLog[]
+  gdprRequests               GdprRequest[]
   autopilotEvents            AutopilotEvent[]
   autonomyRuns               AutonomyRun[]
   autonomyExecutions         AutonomyExecution[]
@@ -138,18 +204,22 @@ model Workspace {
   affiliatePartners   AffiliatePartner[]
 
   // Kloel & Commerce Relations
-  documents             Document[]
-  followUps             FollowUp[]
-  kloelMessages         KloelMessage[]
-  kloelMemories         KloelMemory[]
-  kloelLeads            KloelLead[]
-  kloelSales            KloelSale[]
-  kloelWallets          KloelWallet[]
-  kloelSites            KloelSite[]
-  kloelDesigns          KloelDesign[]
-  checkoutSocialLeads   CheckoutSocialLead[]
-  customerSubscriptions CustomerSubscription[]
-  physicalOrders        PhysicalOrder[]
+  documents               Document[]
+  followUps               FollowUp[]
+  emailCampaigns          EmailCampaign[]
+  emailCampaignRecipients EmailCampaignRecipient[]
+  emailCampaignDeliveries EmailCampaignDelivery[]
+  mailboxConnections      MailboxConnection[]
+  kloelMessages           KloelMessage[]
+  kloelMemories           KloelMemory[]
+  kloelLeads              KloelLead[]
+  kloelSales              KloelSale[]
+  kloelWallets            KloelWallet[]
+  kloelSites              KloelSite[]
+  kloelDesigns            KloelDesign[]
+  checkoutSocialLeads     CheckoutSocialLead[]
+  customerSubscriptions   CustomerSubscription[]
+  physicalOrders          PhysicalOrder[]
 
   // Bank Accounts & Wallet Anticipations
   bankAccounts        BankAccount[]
@@ -170,8 +240,44 @@ model Workspace {
   // Webinars
   webinars Webinar[]
 
+  // Integration Credentials (Google Ads OAuth, etc.)
+  integrationCredentials IntegrationCredential[]
+
   // Meta Platform Connection
-  metaConnection MetaConnection?
+  metaConnections MetaConnection[]
+
+  // Channel setup - operational wizard state
+  channelSetups   ChannelSetup[]
+  channelProducts ChannelProduct[]
+  channelArsenal  ChannelArsenal[]
+  channelConfigs  ChannelConfig[]
+
+  // MIND - Cognitive Bayesian Runtime
+  mindBeliefs           MindBelief[]
+  mindPredictions       MindPrediction[]
+  mindPolicies          MindPolicy[]
+  mindWorkspaceState    MindWorkspaceState?
+  mindCases             MindCase[]
+  mindConceptDetections MindConceptDetection[]
+  mindGraphNodes        MindGraphNode[]
+  mindGraphEdges        MindGraphEdge[]
+  mindOutboxEvents      MindOutboxEvent[]
+  mindBanditArms        MindBanditArm[]
+  mindGuardAudits       MindGuardAudit[]
+  mindDailyReports      MindDailyReport[]
+  mindGlobalPriors      MindGlobalPrior[]
+
+  // Facebook Messenger Messages
+  fbMessages FbMessage[]
+
+  // Ad Accounts, Campaigns & Insights
+  adAccounts  AdAccount[]
+  adCampaigns AdCampaign[]
+  adInsights  AdInsight[]
+
+  // Instagram Marketing
+  igPosts    IgPost[]
+  igInsights IgInsight[]
 
   @@map("RAC_Workspace")
 }
@@ -214,6 +320,9 @@ model Agent {
   disabledAt DateTime?
   deletedAt  DateTime?
 
+  // Onboarding
+  onboardingCompletedAt DateTime?
+
   // KYC Profile
   birthDate         DateTime?
   documentType      String? // CPF, CNPJ
@@ -235,6 +344,7 @@ model Agent {
   magicLinkTokens      MagicLinkToken[]
   socialAccounts       SocialAccount[]
   dataDeletionRequests DataDeletionRequest[]
+  gdprRequests         GdprRequest[]
 
   assignedConversations Conversation[]
   messages              Message[]
@@ -300,7 +410,11 @@ model Contact {
   nextBestAction      String? // "Send Offer", "Wait 2 days"
   aiSummary           String? // Auto-generated summary
 
-  insights ContactInsight[]
+  insights           ContactInsight[]
+  channelIdentifiers ChannelIdentifier[]
+
+  identityLinksAsSource  ContactIdentityLink[] @relation("IdentityLinksAsSource")
+  identityLinksAsLinked  ContactIdentityLink[] @relation("IdentityLinksAsLinked")
 
   workspaceId String
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
@@ -317,6 +431,7 @@ model Contact {
   checkoutSocialLeads CheckoutSocialLead[]
 
   @@unique([workspaceId, phone])
+  @@unique([id, workspaceId])
   @@map("RAC_Contact")
 }
 
@@ -332,6 +447,49 @@ model ContactInsight {
   createdAt DateTime @default(now())
 
   @@map("RAC_ContactInsight")
+}
+
+model ContactIdentityLink {
+  id              String   @id @default(uuid())
+  workspaceId     String
+  contactId       String
+  linkedContactId String
+  workspace       Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  contact         Contact   @relation("IdentityLinksAsSource", fields: [contactId, workspaceId], references: [id, workspaceId], onDelete: Cascade)
+  linkedContact   Contact   @relation("IdentityLinksAsLinked", fields: [linkedContactId, workspaceId], references: [id, workspaceId], onDelete: Cascade)
+  confidence      Float    @default(1.0)
+  matchReason     String?   // phone_match, email_match, operator_merge
+  merged          Boolean   @default(false)
+  mergedAt        DateTime?
+  mergedBy        String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([workspaceId, contactId, linkedContactId])
+  @@index([workspaceId, contactId])
+  @@index([workspaceId, linkedContactId])
+  @@map("RAC_ContactIdentityLink")
+}
+
+model ChannelIdentifier {
+  id          String    @id @default(uuid())
+  channel     String // WHATSAPP, INSTAGRAM, MESSENGER, EMAIL, TIKTOK
+  value       String // channel-specific identifier (phone, IG-SID, FB-PSID, email)
+  contactId   String
+  workspaceId String
+  contact     Contact   @relation(fields: [contactId, workspaceId], references: [id, workspaceId], onDelete: Cascade)
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  isPrimary  Boolean   @default(false)
+  verifiedAt DateTime?
+  metadata   Json?     @default("{}")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([workspaceId, channel, value])
+  @@index([contactId])
+  @@map("RAC_ChannelIdentifier")
 }
 
 model SystemInsight {
@@ -1057,6 +1215,25 @@ model DataDeletionRequest {
   @@map("RAC_DataDeletionRequest")
 }
 
+model GdprRequest {
+  id          String     @id @default(cuid())
+  workspaceId String
+  workspace   Workspace  @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  userId      String
+  user        Agent      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type        GdprType
+  code        String     @unique
+  status      GdprStatus @default(PENDING)
+  requestedAt DateTime   @default(now())
+  completedAt DateTime?
+  evidenceUrl String?    @db.Text
+
+  @@index([code])
+  @@index([workspaceId, userId])
+  @@index([userId])
+  @@map("RAC_GdprRequest")
+}
+
 model RiscEvent {
   id          String    @id @default(cuid())
   subject     String
@@ -1528,7 +1705,7 @@ model Product {
   images   Json? // Array of image URLs
 
   // Payment Integration
-  paymentLink String?  // Stripe, Mercado Pago, etc
+  paymentLink String? // Stripe, Mercado Pago, etc
 
   // Status
   active   Boolean @default(true)
@@ -1599,6 +1776,7 @@ model Product {
   checkoutPlans       CheckoutProductPlan[]
   checkoutSocialLeads CheckoutSocialLead[]
   campaigns           ProductCampaign[]
+  channelProducts     ChannelProduct[]
 
   @@unique([workspaceId, sku])
   @@index([workspaceId, active])
@@ -1670,15 +1848,20 @@ model ChatThread {
 }
 
 model ChatMessage {
-  id        String     @id @default(uuid())
-  threadId  String
-  thread    ChatThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
-  role      String
-  content   String
-  metadata  Json?
-  createdAt DateTime   @default(now())
+  id          String     @id @default(uuid())
+  threadId    String
+  thread      ChatThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  workspaceId String
+  userId      String?
+  role        String
+  content     String
+  metadata    Json?
+  createdAt   DateTime   @default(now())
+  deletedAt   DateTime?
 
   @@index([threadId, createdAt])
+  @@index([workspaceId, createdAt])
+  @@index([userId, createdAt])
   @@map("RAC_ChatMessage")
 }
 
@@ -1693,8 +1876,8 @@ model KloelSale {
   status            String    @default("pending") // "pending", "paid", "cancelled", "refunded", "overdue"
   paymentMethod     String? // "PIX", "CREDIT_CARD", "BOLETO"
   paymentLink       String?
-  externalPaymentId String?  @unique // ID do pagamento no gateway (Stripe, Mercado Pago, etc)
-  externalId        String?  // Legacy
+  externalPaymentId String?   @unique // ID do pagamento no gateway (Stripe, Mercado Pago, etc)
+  externalId        String? // Legacy
   paidAt            DateTime?
   metadata          Json?
 
@@ -1816,6 +1999,138 @@ model Document {
 // =========================================
 // FOLLOW-UP SCHEDULING
 // =========================================
+model EmailCampaign {
+  id          String    @id @default(uuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  name      String
+  subject   String
+  htmlBody  String
+  fromEmail String?
+  fromName  String?
+  replyTo   String?
+
+  status            EmailCampaignStatus @default(DRAFT)
+  totalRecipients   Int                 @default(0)
+  sentCount         Int                 @default(0)
+  deliveredCount    Int                 @default(0)
+  openedCount       Int                 @default(0)
+  clickedCount      Int                 @default(0)
+  repliedCount      Int                 @default(0)
+  failedCount       Int                 @default(0)
+  bouncedCount      Int                 @default(0)
+  unsubscribedCount Int                 @default(0)
+
+  provider String? // resend, sendgrid, smtp, log
+
+  scheduledAt DateTime?
+  startedAt   DateTime?
+  completedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  recipients EmailCampaignRecipient[]
+  deliveries EmailCampaignDelivery[]
+
+  @@index([workspaceId])
+  @@index([workspaceId, status])
+  @@map("RAC_EmailCampaign")
+}
+
+model EmailCampaignRecipient {
+  id          String        @id @default(uuid())
+  campaignId  String
+  campaign    EmailCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  workspaceId String
+  workspace   Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  email String
+  name  String?
+
+  status            EmailRecipientStatus @default(PENDING)
+  providerMessageId String?
+  errorMessage      String?
+
+  sentAt         DateTime?
+  deliveredAt    DateTime?
+  openedAt       DateTime?
+  clickedAt      DateTime?
+  repliedAt      DateTime?
+  failedAt       DateTime?
+  bouncedAt      DateTime?
+  unsubscribedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  deliveries EmailCampaignDelivery[]
+
+  @@index([campaignId])
+  @@index([workspaceId, email])
+  @@index([providerMessageId])
+  @@map("RAC_EmailCampaignRecipient")
+}
+
+model EmailCampaignDelivery {
+  id          String                 @id @default(uuid())
+  campaignId  String
+  campaign    EmailCampaign          @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  recipientId String
+  recipient   EmailCampaignRecipient @relation(fields: [recipientId], references: [id], onDelete: Cascade)
+  workspaceId String
+  workspace   Workspace              @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  event             EmailDeliveryEvent
+  providerMessageId String?
+  metadata          Json?
+
+  occurredAt DateTime @default(now())
+  createdAt  DateTime @default(now())
+
+  @@index([campaignId])
+  @@index([recipientId])
+  @@index([providerMessageId])
+  @@map("RAC_EmailCampaignDelivery")
+}
+
+model MailboxConnection {
+  id                String          @id @default(uuid())
+  workspaceId       String
+  workspace         Workspace       @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  provider          MailboxProvider
+  email             String
+  status            MailboxStatus   @default(PENDING)
+  providerAccountId String?
+  accessToken       String? // encrypted OAuth access token
+  refreshToken      String? // encrypted OAuth refresh token
+  expiresAt         DateTime?
+  imapHost          String?
+  imapPort          Int?
+  imapSecure        Boolean         @default(true)
+  imapUsername      String?
+  imapPassword      String? // encrypted IMAP/app password
+  smtpHost          String?
+  smtpPort          Int?
+  smtpSecure        Boolean         @default(true)
+  smtpUsername      String?
+  smtpPassword      String? // encrypted SMTP/app password
+  metadata          Json?
+  connectedAt       DateTime?
+  disconnectedAt    DateTime?
+  lastSyncAt        DateTime?
+  lastErrorAt       DateTime?
+  lastError         String?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  @@unique([workspaceId, provider, email])
+  @@index([workspaceId, status])
+  @@index([workspaceId, provider])
+  @@map("RAC_MailboxConnection")
+}
+
 model FollowUp {
   id          String    @id @default(uuid())
   workspaceId String
@@ -3093,7 +3408,7 @@ model Webinar {
 
 model MetaConnection {
   id                    String    @id @default(uuid())
-  workspaceId           String    @unique
+  workspaceId           String
   workspace             Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   accessToken           String
   tokenExpiresAt        DateTime?
@@ -3108,10 +3423,462 @@ model MetaConnection {
   pixelId               String?
   catalogId             String?
   status                String    @default("connected")
+  channel               String    @default("whatsapp")
   connectedAt           DateTime  @default(now())
   updatedAt             DateTime  @updatedAt
 
+  @@unique([workspaceId, channel])
   @@map("RAC_MetaConnection")
+}
+
+model ChannelSetup {
+  id                 String    @id @default(uuid())
+  workspaceId        String
+  workspace          Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  channel            String
+  completedAt        DateTime?
+  lastReconfiguredAt DateTime?
+  currentStep        Int       @default(0)
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  @@unique([workspaceId, channel])
+  @@index([workspaceId, channel])
+  @@map("RAC_ChannelSetup")
+}
+
+model ChannelProduct {
+  id          String    @id @default(uuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  channel     String
+  productId   String
+  product     Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  includedAt  DateTime  @default(now())
+
+  @@unique([workspaceId, channel, productId])
+  @@index([workspaceId, channel])
+  @@index([productId])
+  @@map("RAC_ChannelProduct")
+}
+
+model ChannelArsenal {
+  id          String    @id @default(uuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  channel     String
+  assetId     String
+  type        String
+  label       String?
+  storageRef  String
+  metadata    Json?
+  uploadedAt  DateTime  @default(now())
+
+  @@unique([workspaceId, channel, assetId])
+  @@index([workspaceId, channel])
+  @@map("RAC_ChannelArsenal")
+}
+
+model ChannelConfig {
+  id                String    @id @default(uuid())
+  workspaceId       String
+  workspace         Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  channel           String
+  tone              String    @default("consultivo")
+  aggressiveness    String    @default("normal")
+  businessHours     Json      @default("{}")
+  followupEnabled   Boolean   @default(true)
+  dailyMessageLimit Int       @default(20)
+  transferCriteria  Json      @default("{}")
+  language          String    @default("pt-BR")
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@unique([workspaceId, channel])
+  @@index([workspaceId, channel])
+  @@map("RAC_ChannelConfig")
+}
+
+model MindBelief {
+  id          String    @id
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  subject     String
+  predicate   String
+  context     Json      @db.JsonB
+  mean        Float
+  variance    Float     @default(0.25)
+  samples     Int       @default(0)
+  alpha       Float     @default(1.0)
+  beta        Float     @default(1.0)
+  lastUpdate  DateTime  @default(now())
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([workspaceId, subject, predicate, context])
+  @@index([workspaceId, predicate])
+  @@index([workspaceId, subject])
+  @@map("RAC_MindBelief")
+}
+
+model MindPrediction {
+  id                String    @id
+  workspaceId       String
+  workspace         Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  subject           String
+  predicate         String
+  context           Json      @db.JsonB
+  predictedMean     Float
+  predictedVariance Float
+  horizonSec        Int
+  deadline          DateTime
+  actual            Float?
+  surprise          Float?
+  resolvedAt        DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@index([workspaceId, subject])
+  @@index([workspaceId, predicate, createdAt(sort: Desc)])
+  @@map("RAC_MindPrediction")
+}
+
+model MindPolicy {
+  id              String    @id
+  workspaceId     String
+  workspace       Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  subject         String
+  decisionType    String
+  context         Json      @db.JsonB
+  candidates      Json      @db.JsonB
+  chosen          String
+  baseline        String
+  reasonInternal  String?
+  outcomeKey      String?
+  outcome         Float?
+  baselineOutcome Float?
+  resolvedAt      DateTime?
+  calcSteps       Json      @db.JsonB
+  epsilon         Float
+  utilitySuccess  Float
+  utilityFail     Float
+  fallbackActive  Boolean
+  fallbackReason  String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([workspaceId, decisionType, createdAt(sort: Desc)])
+  @@map("RAC_MindPolicy")
+}
+
+model MindWorkspaceState {
+  id              String    @id
+  workspaceId     String    @unique
+  workspace       Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  lastWatermark   DateTime?
+  lastTickAt      DateTime?
+  lastTickMs      Int       @default(0)
+  tickLeaseOwner  String?
+  tickLeaseUntil  DateTime?
+  tickCount       Int       @default(0)
+  lastError       String?
+  perceivedWindow Int       @default(0)
+  surpriseWindow  Float     @default(0)
+  openDecisions   Int       @default(0)
+  health          Json      @default("{}") @db.JsonB
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@map("RAC_MindWorkspaceState")
+}
+
+model MindCase {
+  id          String    @id
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  subject     String
+  caseType    String
+  text        String    @db.Text
+  tokens      String[]
+  features    Json      @db.JsonB
+  action      String
+  outcome     Float?
+  occurredAt  DateTime
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([workspaceId, caseType, occurredAt(sort: Desc)])
+  @@index([workspaceId, subject, occurredAt(sort: Desc)])
+  @@map("RAC_MindCase")
+}
+
+model MindConceptDetection {
+  id          String    @id
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  subject     String
+  concept     String
+  confidence  Float
+  evidence    String    @db.Text
+  features    Json      @db.JsonB
+  occurredAt  DateTime
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([workspaceId, concept, occurredAt(sort: Desc)])
+  @@index([workspaceId, subject, occurredAt(sort: Desc)])
+  @@map("RAC_MindConceptDetection")
+}
+
+model MindGraphNode {
+  id          String    @id
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  kind        String
+  label       String
+  weight      Float     @default(1)
+  metadata    Json      @default("{}") @db.JsonB
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([workspaceId, kind, label])
+  @@index([workspaceId, kind, weight])
+  @@map("RAC_MindGraphNode")
+}
+
+model MindGraphEdge {
+  id          String    @id
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  fromNode    String
+  toNode      String
+  relation    String
+  weight      Float     @default(1)
+  samples     Int       @default(1)
+  metadata    Json      @default("{}") @db.JsonB
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([workspaceId, fromNode, relation, toNode])
+  @@index([workspaceId, relation, weight])
+  @@map("RAC_MindGraphEdge")
+}
+
+model MindOutboxEvent {
+  id             String    @id
+  workspaceId    String
+  workspace      Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  eventType      String
+  subject        String
+  payload        Json      @db.JsonB
+  idempotencyKey String
+  status         String    @default("pending")
+  attempts       Int       @default(0)
+  dispatchedAt   DateTime?
+  lastError      String?
+  occurredAt     DateTime
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@unique([workspaceId, idempotencyKey])
+  @@index([workspaceId, eventType, occurredAt(sort: Desc)])
+  @@index([status, createdAt])
+  @@map("RAC_MindOutboxEvent")
+}
+
+model MindBanditArm {
+  id           String    @id
+  workspaceId  String
+  workspace    Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  decisionType String
+  arm          String
+  context      Json      @db.JsonB
+  alpha        Float     @default(1)
+  beta         Float     @default(1)
+  pulls        Int       @default(0)
+  wins         Int       @default(0)
+  isActive     Boolean   @default(true)
+  promotedAt   DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@unique([workspaceId, decisionType, arm])
+  @@index([workspaceId, decisionType, isActive])
+  @@map("RAC_MindBanditArm")
+}
+
+model MindGuardAudit {
+  id          String    @id
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  guardName   String
+  action      String
+  decision    String
+  allowed     Boolean
+  reason      String
+  context     Json      @db.JsonB
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([workspaceId, guardName, createdAt(sort: Desc)])
+  @@map("RAC_MindGuardAudit")
+}
+
+model MindDailyReport {
+  id          String    @id
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  reportDate  DateTime
+  content     String    @db.Text
+  storageKey  String?
+  metrics     Json      @db.JsonB
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([workspaceId, reportDate])
+  @@map("RAC_MindDailyReport")
+}
+
+model MindGlobalPrior {
+  id           String     @id
+  workspaceId  String?
+  workspace    Workspace? @relation(fields: [workspaceId], references: [id], onDelete: SetNull)
+  domain       String
+  predicate    String
+  context      Json       @db.JsonB
+  mean         Float
+  variance     Float
+  samples      Int
+  anonymizedBy String
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  @@unique([domain, predicate, context])
+  @@index([domain, predicate])
+  @@map("RAC_MindGlobalPrior")
+}
+
+model KloelGlobalPrior {
+  id           String   @id @default(cuid())
+  channel      String
+  decisionType String
+  action       String
+  observations Int      @default(0)
+  successes    Int      @default(0)
+  updatedAt    DateTime @updatedAt
+
+  @@unique([channel, decisionType, action])
+  @@index([channel, decisionType])
+  @@map("RAC_KloelGlobalPrior")
+}
+
+model FbMessage {
+  id             String    @id @default(uuid())
+  workspaceId    String
+  workspace      Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  mid            String? // Facebook message ID (unique per workspace)
+  direction      String // INBOUND | OUTBOUND
+  text           String?
+  senderPsid     String? // Page-scoped ID of sender
+  recipientPsid  String? // Page-scoped ID of recipient
+  pageId         String?
+  deliveryStatus String    @default("SENT") // SENT | DELIVERED | READ | FAILED
+  errorCode      String?
+  errorMessage   String?
+  metadata       Json? // Raw webhook payload for audit
+  deliveredAt    DateTime?
+  readAt         DateTime?
+  failedAt       DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@unique([workspaceId, mid])
+  @@index([workspaceId, pageId, createdAt])
+  @@index([workspaceId, senderPsid])
+  @@map("RAC_FbMessage")
+}
+
+model AdAccount {
+  id          String    @id @default(uuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  platform    String
+  accountId   String
+  accountName String?
+  status      String    @default("connected")
+  lastSyncAt  DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([workspaceId, platform, accountId])
+  @@index([workspaceId])
+  @@map("RAC_AdAccount")
+}
+
+model AdCampaign {
+  id           String    @id @default(uuid())
+  workspaceId  String
+  workspace    Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  accountId    String
+  platform     String
+  campaignId   String
+  campaignName String?
+  status       String?
+  spend        Float     @default(0)
+  revenue      Float     @default(0)
+  roas         Float     @default(0)
+  conversions  Int       @default(0)
+  impressions  Int       @default(0)
+  clicks       Int       @default(0)
+  ctr          Float     @default(0)
+  cpc          Float     @default(0)
+  lastSyncAt   DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@unique([workspaceId, platform, campaignId])
+  @@index([workspaceId, platform])
+  @@map("RAC_AdCampaign")
+}
+
+model AdInsight {
+  id          String    @id @default(uuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  accountId   String
+  platform    String
+  date        DateTime
+  spend       Float     @default(0)
+  revenue     Float     @default(0)
+  roas        Float     @default(0)
+  conversions Int       @default(0)
+  impressions Int       @default(0)
+  clicks      Int       @default(0)
+  ctr         Float     @default(0)
+  cpc         Float     @default(0)
+  createdAt   DateTime  @default(now())
+
+  @@unique([workspaceId, platform, accountId, date])
+  @@index([workspaceId, platform, date])
+  @@map("RAC_AdInsight")
+}
+
+model IntegrationCredential {
+  id              String    @id @default(uuid())
+  workspaceId     String
+  workspace       Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  platform        String    @default("google")
+  accessToken     String
+  refreshToken    String?
+  expiresAt       DateTime?
+  keyVersion      Int       @default(1)
+  loginCustomerId String?
+  status          String    @default("connected")
+  connectedAt     DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@unique([workspaceId, platform])
+  @@map("RAC_IntegrationCredential")
 }
 
 // ============================================================================
@@ -3426,13 +4193,17 @@ enum AdminChatRole {
 model AdminChatSession {
   id          String             @id @default(cuid())
   adminUserId String             @map("admin_user_id")
+  workspaceId String             @default("__admin__") @map("workspace_id")
   title       String?
   createdAt   DateTime           @default(now()) @map("created_at")
+  updatedAt   DateTime           @updatedAt @map("updated_at")
   lastUsedAt  DateTime           @default(now()) @map("last_used_at")
   expiresAt   DateTime           @map("expires_at")
+  deletedAt   DateTime?          @map("deleted_at")
   messages    AdminChatMessage[]
 
   @@index([adminUserId, lastUsedAt])
+  @@index([workspaceId, deletedAt])
   @@map("admin_chat_sessions")
 }
 
@@ -3668,4 +4439,148 @@ model DailyMessageCounter {
   @@unique([workspaceId, date])
   @@index([workspaceId, date])
   @@map("RAC_DailyMessageCounter")
+}
+
+model DailyLimitCounter {
+  id          String   @id @default(uuid())
+  workspaceId String
+  channel     String
+  day         DateTime @db.Date
+  used        Int      @default(0)
+  capAtDay    Int      @default(25)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([workspaceId, channel, day])
+  @@index([workspaceId, channel, day])
+  @@map("RAC_DailyLimitCounter")
+}
+
+model IgPost {
+  id            String    @id @default(uuid())
+  workspaceId   String
+  workspace     Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  igAccountId   String
+  igMediaId     String?
+  igContainerId String?
+  imageUrl      String
+  caption       String?
+  permalink     String?
+  status        String    @default("published")
+  publishedAt   DateTime  @default(now())
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([workspaceId, igAccountId])
+  @@index([workspaceId, createdAt])
+  @@map("RAC_IgPost")
+}
+
+model IgInsight {
+  id                  String    @id @default(uuid())
+  workspaceId         String
+  workspace           Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  igAccountId         String
+  date                DateTime
+  impressions         Int       @default(0)
+  reach               Int       @default(0)
+  followerCount       Int       @default(0)
+  profileViews        Int       @default(0)
+  websiteClicks       Int       @default(0)
+  emailContacts       Int       @default(0)
+  phoneCallClicks     Int       @default(0)
+  textMessageClicks   Int       @default(0)
+  getDirectionsClicks Int       @default(0)
+  onlineFollowers     Json?
+  createdAt           DateTime  @default(now())
+
+  @@unique([workspaceId, igAccountId, date])
+  @@index([workspaceId, igAccountId])
+  @@index([workspaceId, date])
+  @@map("RAC_IgInsight")
+}
+
+model PipelineState {
+  id             String   @id @default(cuid())
+  workspaceId    String   @unique
+  state          String   @default("legacy")
+  transitionedAt DateTime @default(now())
+  transitionedBy String?
+  snapshot       Json?
+  fallbackRate1h Float    @default(0)
+
+  @@index([state])
+  @@map("RAC_PipelineState")
+}
+
+model DecisionShadow {
+  id                    String   @id @default(cuid())
+  workspaceId           String
+  channel               String
+  inboundCorrelationId  String
+  orchestratorDecision  Json
+  legacyBaseline        Json
+  outcomeKey            String
+  outcomeAt             DateTime?
+  outcomeValue          Json?
+  createdAt             DateTime @default(now())
+
+  @@index([workspaceId, channel, createdAt])
+  @@unique([workspaceId, inboundCorrelationId])
+  @@map("RAC_DecisionShadow")
+}
+
+model DecisionOutcome {
+  id               String    @id @default(cuid())
+  workspaceId      String
+  decisionType     String
+  chosenAction     String
+  baselineAction   String?
+  outcomeKey       String    @unique
+  expectedWindow   Int
+  contextSnapshot  Json
+  outcomeAt        DateTime?
+  outcomeName      String?
+  outcomeValue     Json?
+  economicValue    Float?
+  wonVsBaseline    Boolean?
+  createdAt        DateTime  @default(now())
+
+  @@index([workspaceId, decisionType, createdAt])
+  @@map("RAC_DecisionOutcome")
+}
+
+model DecisionOutcomeEvent {
+  id           String   @id @default(cuid())
+  workspaceId  String
+  eventType    String
+  eventKey     String
+  correlation  Json?
+  processed    Boolean  @default(false)
+  processedAt  DateTime?
+  createdAt    DateTime @default(now())
+
+  @@index([workspaceId, eventType, createdAt])
+  @@index([workspaceId, processed, createdAt])
+  @@map("RAC_DecisionOutcomeEvent")
+}
+
+/// UTP-LINEAGE-007 — Persistência aditiva do Lineage Ledger.
+/// Implementa PCI.3 §5.1 (docs/contracts/pci/03-genesis-lineage.md).
+/// Append-only: NUNCA editar entradas existentes. Sem updatedAt por design.
+model LineageEntry {
+  id              String   @id @default(uuid()) @db.Uuid
+  ledgerEntryId   String   @unique
+  sequenceNumber  Int      @unique
+  prevEntryHash   String
+  eventId         String
+  eventName       String
+  timestampUtc    DateTime
+  payloadJson     Json
+  hash            String   @unique
+  createdAt       DateTime @default(now())
+
+  @@index([sequenceNumber])
+  @@index([eventName])
+  @@map("RAC_LineageEntry")
 }

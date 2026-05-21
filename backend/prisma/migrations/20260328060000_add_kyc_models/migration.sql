@@ -58,10 +58,10 @@ CREATE TABLE IF NOT EXISTS "FiscalData" (
 );
 
 -- CreateIndex
-CREATE INDEX IF NOT EXISTS "KycDocument_workspaceId_idx" ON "KycDocument"("workspaceId");
-CREATE INDEX IF NOT EXISTS "KycDocument_agentId_idx" ON "KycDocument"("agentId");
-CREATE UNIQUE INDEX IF NOT EXISTS "FiscalData_workspaceId_key" ON "FiscalData"("workspaceId");
-CREATE INDEX IF NOT EXISTS "FiscalData_workspaceId_idx" ON "FiscalData"("workspaceId");
+CREATE INDEX IF NOT EXISTS "KycDocument_workspaceId_idx" ON "KycDocument" ("workspaceId");
+CREATE INDEX IF NOT EXISTS "KycDocument_agentId_idx" ON "KycDocument" ("agentId");
+CREATE UNIQUE INDEX IF NOT EXISTS "FiscalData_workspaceId_key" ON "FiscalData" ("workspaceId");
+CREATE INDEX IF NOT EXISTS "FiscalData_workspaceId_idx" ON "FiscalData" ("workspaceId");
 
 -- AddForeignKey
-ALTER TABLE "KycDocument" ADD CONSTRAINT "KycDocument_agentId_fkey" FOREIGN KEY ("agentId") REFERENCES "Agent"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "KycDocument" ADD CONSTRAINT "KycDocument_agentId_fkey" FOREIGN KEY ("agentId") REFERENCES "Agent" ("id") ON DELETE CASCADE ON UPDATE CASCADE;

@@ -39,7 +39,7 @@ export function GoogleSignInButton({
     }
     const message =
       'Login com Google não configurado no frontend. Defina NEXT_PUBLIC_GOOGLE_CLIENT_ID.';
-    setLocalError(message);
+    queueMicrotask(() => setLocalError(message));
     onError?.(message);
   }, [clientId, onError]);
 
@@ -49,7 +49,7 @@ export function GoogleSignInButton({
     }
 
     if (window.google?.accounts?.id) {
-      setSdkReady(true);
+      queueMicrotask(() => setSdkReady(true));
       return;
     }
 
@@ -80,7 +80,7 @@ export function GoogleSignInButton({
       existingScript.addEventListener('error', handleFailure);
 
       if (window.google?.accounts?.id) {
-        setSdkReady(true);
+        queueMicrotask(() => setSdkReady(true));
       }
 
       return () => {
@@ -116,7 +116,7 @@ export function GoogleSignInButton({
 
     const target = buttonContainerRef.current;
     target.innerHTML = '';
-    setLocalError(null);
+    queueMicrotask(() => setLocalError(null));
 
     if (initializedRef.current !== clientId) {
       window.google.accounts.id.initialize({

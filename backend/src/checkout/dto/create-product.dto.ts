@@ -3,7 +3,7 @@ import { IsArray, IsNumber, IsOptional, IsString, Max, MaxLength, Min } from 'cl
 /** Create product dto. */
 export class CreateProductDto {
   /** Name property. */
-  @IsString() @MaxLength(255) name: string;
+  @IsString() @MaxLength(255) name!: string;
   /** Slug property. */
   @IsOptional() @IsString() @MaxLength(255) slug?: string;
   /** Description property. */

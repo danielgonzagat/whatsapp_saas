@@ -54,4 +54,4 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
 USER node
 
 # xvfb-run is retained for scraper workloads that still launch Chromium.
-CMD ["sh", "-c", "xvfb-run --server-args='-screen 0 1440x900x24 -ac' npm run start:prod"]
+CMD ["sh", "-c", "xvfb-run --server-args='-screen 0 1440x900x24 -ac' node dist/bootstrap.js"]

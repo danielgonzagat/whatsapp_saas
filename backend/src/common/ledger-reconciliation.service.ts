@@ -160,8 +160,11 @@ export class LedgerReconciliationService {
       payment?: { status?: string; externalId?: string; gateway?: string } | null;
     };
     const prismaExt = this.prisma as object as Record<string, PrismaDelegate>;
-    // PULSE_OK: bounded by paidAt date range and status filter
-    const orders = (await prismaExt.checkoutOrder.findMany({
+    const checkoutOrder = prismaExt.checkoutOrder;
+    if (!checkoutOrder) {
+      throw new Error('checkoutOrder delegate not found on PrismaService');
+    }
+    const orders = (await checkoutOrder.findMany({
       where: {
         paidAt: { not: null, gte: since },
         status: { in: ['PAID', 'SHIPPED', 'DELIVERED'] },
@@ -210,7 +213,7 @@ export class LedgerReconciliationService {
 
       const webhookEvent = await this.prisma.webhookEvent.findFirst({
         where: {
-          provider: order.payment.gateway,
+          ...(order.payment.gateway !== undefined ? { provider: order.payment.gateway } : {}),
           externalId,
         },
         select: { id: true, status: true },
@@ -323,13 +326,17 @@ export class LedgerReconciliationService {
       groupBy: (...args: unknown[]) => Promise<unknown[]>;
     };
     const prismaExt = this.prisma as object as Record<string, PrismaDelegate>;
+    const kloelWallet = prismaExt.kloelWallet;
+    if (!kloelWallet) {
+      throw new Error('kloelWallet delegate not found on PrismaService');
+    }
     const drifts: DriftReport[] = [];
 
     // Read all wallets. Production volumes here are small (one wallet
     // per workspace, hundreds to low thousands), and the ledger sum is
     // bounded by the wallet's history. If this method becomes slow,
     // the next step is a per-workspace cron pass instead of all-at-once.
-    const wallets = (await prismaExt.kloelWallet.findMany({
+    const wallets = (await kloelWallet.findMany({
       select: {
         id: true,
         workspaceId: true,
@@ -351,7 +358,11 @@ export class LedgerReconciliationService {
       // BigInt column requires the raw form because Prisma's groupBy
       // type system does not always cooperate with `_sum` on BigInt
       // — we cast to `any` and trust the runtime shape.
-      const aggregates = (await prismaExt.kloelWalletLedger.groupBy({
+      const kloelWalletLedger = prismaExt.kloelWalletLedger;
+      if (!kloelWalletLedger) {
+        throw new Error('kloelWalletLedger delegate not found on PrismaService');
+      }
+      const aggregates = (await kloelWalletLedger.groupBy({
         by: ['bucket', 'direction'],
         where: { walletId: wallet.id },
         _sum: { amountInCents: true },

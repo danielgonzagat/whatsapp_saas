@@ -1,18 +1,18 @@
 'use client';
 
+import { Check } from 'lucide-react';
+
 import { kloelT } from '@/lib/i18n/t';
 import { UI } from '@/lib/ui-tokens';
 import { KLOEL_THEME } from '@/lib/kloel-theme';
 
 export { QRCodePane } from './WhatsAppExperience.qr-pane';
 
-const E = 'UI.accent';
+const E = UI.accent;
 const V = KLOEL_THEME.bgPrimary;
-const G = 'UI.success';
+const G = UI.success;
 const S = KLOEL_THEME.textSecondary;
-const C = KLOEL_THEME.bgCard;
 const U = KLOEL_THEME.bgSecondary;
-const B = KLOEL_THEME.borderPrimary;
 const F = "'Sora', system-ui, sans-serif";
 const M = "'JetBrains Mono', monospace";
 
@@ -58,6 +58,8 @@ export function resolveEffectiveProvider(
   sessionProvider: unknown,
   phoneNumberId: unknown,
 ): { providerToken: string; isWahaProvider: boolean; effectiveProvider: string } {
+  void phoneNumberId;
+
   const providerToken = String(
     liveProvider || connectionProvider || workspaceProvider || sessionProvider || '',
   )
@@ -73,8 +75,8 @@ export function resolveEffectiveProvider(
 
 export function buildEffectiveConnection(params: {
   sessionSnapshot: ConnectionSnapshot;
-  liveStatus?: LiveStatusShape;
-  connection?: MarketingWhatsAppConnection;
+  liveStatus?: LiveStatusShape | undefined;
+  connection?: MarketingWhatsAppConnection | undefined;
   effectiveProvider: string;
   isWahaProvider: boolean;
 }) {
@@ -134,7 +136,7 @@ export function resolveConnectedPhone(phoneNumber: unknown, phoneNumberId: unkno
     return phoneNumber;
   }
   if (typeof phoneNumberId === 'string' && phoneNumberId.trim()) {
-    return phoneNumberId;
+    return 'Número autorizado';
   }
   return 'Aguardando número';
 }
@@ -191,30 +193,6 @@ export function Steps({ current, steps }: { current: number; steps: readonly str
   );
 }
 
-export function NonWahaProviderHint() {
-  return (
-    <div
-      style={{
-        maxWidth: 420,
-        margin: '0 auto',
-        border: `1px solid ${B}`,
-        borderRadius: UI.radiusMd,
-        padding: '18px 20px',
-        background: C,
-        color: S,
-        fontSize: 13,
-        lineHeight: 1.7,
-      }}
-    >
-      {kloelT(`O provider ativo deste workspace nao esta em WAHA. O QR Code so aparece quando o runtime do
-      WhatsApp opera em`)}{' '}
-      <span style={{ color: E, fontWeight: 600 }}>WAHA</span>
-      {kloelT(`. Atualize o provider
-      do backend e recarregue esta tela para iniciar a conexao por QR.`)}
-    </div>
-  );
-}
-
 export function ConnectedCelebration() {
   return (
     <div style={{ animation: 'celebrate .5s ease both' }}>
@@ -229,9 +207,10 @@ export function ConnectedCelebration() {
           justifyContent: 'center',
           margin: '0 auto 16px',
           fontSize: 28,
+          color: G,
         }}
       >
-        ✓
+        <Check aria-hidden="true" size={28} strokeWidth={2.4} />
       </div>
       <p style={{ fontSize: 15, fontWeight: 600, color: G, fontFamily: F }}>
         {kloelT(`WhatsApp conectado com sucesso!`)}

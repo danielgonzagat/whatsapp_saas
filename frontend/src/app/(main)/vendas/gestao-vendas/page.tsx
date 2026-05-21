@@ -6,21 +6,25 @@ export const dynamic = 'force-dynamic';
 
 import { Card } from '@/components/kloel/Card';
 import { PageTitle } from '@/components/kloel/PageTitle';
+import { useToast } from '@/components/kloel/ToastProvider';
 import { useCRMMutations, useContacts } from '@/hooks/useCRM';
 import { colors, typography } from '@/lib/design-tokens';
 import { useState } from 'react';
 
 /** Gestao vendas page. */
 export default function GestaoVendasPage() {
+  const { showToast } = useToast();
   const [search, setSearch] = useState('');
   const [tagFilter, setTagFilter] = useState('');
   const [page, setPage] = useState('1');
 
+  const cSearch = search || undefined;
+  const cTag = tagFilter || undefined;
   const { contacts, total, hasMore, isLoading, mutate } = useContacts({
     page,
     limit: '20',
-    search: search || undefined,
-    tag: tagFilter || undefined,
+    ...(cSearch !== undefined ? { search: cSearch } : {}),
+    ...(cTag !== undefined ? { tag: cTag } : {}),
   });
 
   const { addTag, removeTag } = useCRMMutations();
@@ -45,8 +49,9 @@ export default function GestaoVendasPage() {
     try {
       await removeTag(phone, tag);
       mutate();
-    } catch (e) {
-      console.error('Failed to remove tag', e);
+      showToast('Tag removida', 'success');
+    } catch {
+      showToast('Erro ao remover tag', 'error');
     }
   };
 
@@ -96,7 +101,7 @@ export default function GestaoVendasPage() {
                 opacity: 0.4,
               }}
             >
-              {kloelT(`&#128269;`)}
+              {kloelT(`&rgb(18, 130, 105);`)}
             </span>
           </div>
           <input
@@ -131,7 +136,7 @@ export default function GestaoVendasPage() {
                 height: 20,
                 border: '2px solid transparent',
                 borderTopColor: 'colors.ember.primary',
-                borderRadius: '50%',
+                borderRadius: '16%',
                 animation: 'spin 1s linear infinite',
               }}
             />
@@ -200,7 +205,7 @@ export default function GestaoVendasPage() {
                               style={{
                                 width: 32,
                                 height: 32,
-                                borderRadius: '50%',
+                                borderRadius: '16%',
                                 background: colors.background.nebula,
                                 border: `1px solid ${colors.border.space}`,
                                 display: 'flex',
@@ -274,6 +279,7 @@ export default function GestaoVendasPage() {
                                 {tag}
                                 <button
                                   type="button"
+                                  aria-label={`Remover tag ${tag}`}
                                   onClick={() => handleRemoveTag(phone, tag)}
                                   style={{
                                     background: 'none',
@@ -353,7 +359,9 @@ export default function GestaoVendasPage() {
                         <td style={{ padding: '12px 16px' }}>
                           <button
                             type="button"
-                            onClick={() => window.open(`https://wa.me/${phone}`, '_blank')}
+                            onClick={() =>
+                              window.open(`https://wa.me/${phone}`, '_blank', 'noopener,noreferrer')
+                            }
                             style={{
                               padding: '4px 10px',
                               background: 'rgba(232, 93, 48, 0.08)',

@@ -16,6 +16,7 @@ import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { AuthenticatedRequest } from '../common/interfaces';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateLessonDto, CreateModuleDto, UpdateLessonDto } from './member-area.helpers';
+import { RouteClass } from '../common/throttler/route-class.decorator';
 
 function parseReleaseDate(raw: string | undefined | null): Date | null {
   if (!raw) {
@@ -37,6 +38,7 @@ function parseReleaseDate(raw: string | undefined | null): Date | null {
  */
 @Controller('member-areas')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
+@RouteClass('mutate')
 export class MemberModulesController {
   constructor(
     private readonly prisma: PrismaService,
@@ -54,6 +56,14 @@ export class MemberModulesController {
   ) {
     const workspaceId = req.user.workspaceId;
 
+    const area = await this.prisma.memberArea.findFirst({
+      where: { id, workspaceId },
+    });
+
+    if (!area) {
+      throw new NotFoundException('Member area not found');
+    }
+
     // Idempotency: check for existingRecord with same name in this area
     if (dto.name) {
       const existingRecord = await this.prisma.memberModule.findFirst({
@@ -62,14 +72,6 @@ export class MemberModulesController {
       if (existingRecord) {
         return { data: existingRecord };
       }
-    }
-
-    const area = await this.prisma.memberArea.findFirst({
-      where: { id, workspaceId },
-    });
-
-    if (!area) {
-      throw new NotFoundException('Member area not found');
     }
 
     const mod = await this.prisma.memberModule.create({
@@ -205,16 +207,6 @@ export class MemberModulesController {
   ) {
     const workspaceId = req.user.workspaceId;
 
-    // Idempotency: check for existingRecord with same name in this module
-    if (dto.name) {
-      const existingRecord = await this.prisma.memberLesson.findFirst({
-        where: { moduleId, name: dto.name },
-      });
-      if (existingRecord) {
-        return { data: existingRecord };
-      }
-    }
-
     const area = await this.prisma.memberArea.findFirst({
       where: { id, workspaceId },
     });
@@ -231,6 +223,16 @@ export class MemberModulesController {
       throw new NotFoundException('Module not found');
     }
 
+    // Idempotency: check for existingRecord with same name in this module
+    if (dto.name) {
+      const existingRecord = await this.prisma.memberLesson.findFirst({
+        where: { moduleId, name: dto.name },
+      });
+      if (existingRecord) {
+        return { data: existingRecord };
+      }
+    }
+
     const lesson = await this.prisma.memberLesson.create({
       data: {
         moduleId,
@@ -241,7 +243,7 @@ export class MemberModulesController {
         videoUrl: dto.videoUrl || null,
         textContent: dto.textContent || null,
         downloadUrl: dto.downloadUrl || null,
-        quizData: dto.quizData || null,
+        ...(dto.quizData !== undefined ? { quizData: dto.quizData } : {}),
         durationMin: dto.durationMin ?? null,
       },
     });

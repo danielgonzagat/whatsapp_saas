@@ -7,20 +7,32 @@ export const dynamic = 'force-dynamic';
 
 import { Card } from '@/components/kloel/Card';
 import { SectionPage } from '@/components/kloel/SectionPage';
-import { launchApi } from '@/lib/api/launch';
+import { launchApi, type Launcher, type LauncherListPayload } from '@/lib/api/launch';
 import { useRouter } from 'next/navigation';
-import { useState, useId } from 'react';
+import { useState } from 'react';
+import useSWR from 'swr';
+import { NewLauncherModal } from './NewLauncherModal';
+import { AddGroupModal } from './AddGroupModal';
 
 const SORA = "'Sora', sans-serif";
-const MONO = "'JetBrains Mono', monospace";
 const EMBER = colors.ember.primary;
 
-interface Launcher {
-  id: string;
-  name: string;
-  slug?: string;
-  description?: string;
-  createdAt: string;
+function extractLaunchers(payload: LauncherListPayload | undefined): Launcher[] {
+  if (!payload) {
+    return [];
+  }
+  if (Array.isArray(payload)) {
+    return payload;
+  }
+  return payload.launchers || payload.data || [];
+}
+
+async function fetchLaunchers(): Promise<Launcher[]> {
+  const res = await launchApi.listLaunchers();
+  if (res.error) {
+    throw new Error(res.error);
+  }
+  return extractLaunchers(res.data);
 }
 
 function LauncherRow({
@@ -39,7 +51,7 @@ function LauncherRow({
         alignItems: 'center',
         gap: 16,
         padding: '14px 16px',
-        borderBottom: '1px solid colors.border.space',
+        borderBottom: '1px solid var(--border-space)',
       }}
     >
       <div style={{ flex: 1, minWidth: 0 }}>
@@ -71,7 +83,7 @@ function LauncherRow({
               fontSize: 11,
               color: EMBER,
               marginTop: 4,
-              fontFamily: MONO,
+              fontFamily: "'JetBrains Mono', monospace",
               wordBreak: 'break-all',
             }}
           >
@@ -118,430 +130,34 @@ function LauncherRow({
   );
 }
 
-function NewLauncherModal({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
-  const fid = useId();
-  const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const handleSubmit = async () => {
-    if (!name.trim()) {
-      return;
-    }
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await launchApi.createLauncher({
-        name: name.trim(),
-        description: description.trim() || undefined,
-      });
-      if (res.error) {
-        throw new Error(res.error);
-      }
-      onCreated();
-      onClose();
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Erro ao criar launcher');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <div
-      style={{
-        position: 'fixed',
-        inset: 0,
-        zIndex: 1000,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-      }}
-    >
-      <button
-        type="button"
-        onClick={onClose}
-        aria-label="Fechar modal"
-        style={{
-          position: 'absolute',
-          inset: 0,
-          background: 'rgba(0,0,0,0.6)',
-          backdropFilter: 'blur(4px)',
-          border: 'none',
-          padding: 0,
-          cursor: 'pointer',
-        }}
-      />
-      <div
-        style={{
-          position: 'relative',
-          width: '100%',
-          maxWidth: 440,
-          background: 'var(--app-bg-card)',
-          border: '1px solid var(--app-border-primary)',
-          borderRadius: 6,
-          padding: 28,
-        }}
-      >
-        <h2
-          style={{
-            fontFamily: SORA,
-            fontSize: 18,
-            fontWeight: 700,
-            color: 'var(--app-text-primary)',
-            margin: '0 0 4px',
-          }}
-        >
-          {kloelT(`Novo Launcher`)}
-        </h2>
-        <p
-          style={{
-            fontFamily: SORA,
-            fontSize: 13,
-            color: 'var(--app-text-secondary)',
-            margin: '0 0 24px',
-          }}
-        >
-          {kloelT(`Crie um launcher para gerenciar grupos de WhatsApp.`)}
-        </p>
-
-        <label
-          style={{
-            fontFamily: SORA,
-            fontSize: 12,
-            fontWeight: 500,
-            color: 'var(--app-text-secondary)',
-            display: 'block',
-            marginBottom: 6,
-          }}
-          htmlFor={`${fid}-nome`}
-        >
-          {kloelT(`Nome *`)}
-        </label>
-        <input
-          type="text"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder={kloelT(`Ex: Lancamento Produto X`)}
-          style={{
-            width: '100%',
-            padding: '10px 14px',
-            background: 'var(--app-bg-primary)',
-            border: '1px solid var(--app-border-primary)',
-            borderRadius: 6,
-            color: 'var(--app-text-primary)',
-            fontFamily: SORA,
-            fontSize: 13,
-            outline: 'none',
-            marginBottom: 16,
-            boxSizing: 'border-box' as const,
-          }}
-          id={`${fid}-nome`}
-        />
-
-        <label
-          style={{
-            fontFamily: SORA,
-            fontSize: 12,
-            fontWeight: 500,
-            color: 'var(--app-text-secondary)',
-            display: 'block',
-            marginBottom: 6,
-          }}
-          htmlFor={`${fid}-desc`}
-        >
-          {kloelT(`Descricao (opcional)`)}
-        </label>
-        <textarea
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          placeholder={kloelT(`Descricao do lancamento`)}
-          rows={3}
-          style={{
-            width: '100%',
-            padding: '10px 14px',
-            background: 'var(--app-bg-primary)',
-            border: '1px solid var(--app-border-primary)',
-            borderRadius: 6,
-            color: 'var(--app-text-primary)',
-            fontFamily: SORA,
-            fontSize: 13,
-            outline: 'none',
-            marginBottom: 16,
-            boxSizing: 'border-box' as const,
-            resize: 'vertical',
-          }}
-          id={`${fid}-desc`}
-        />
-
-        {error && (
-          <div
-            style={{
-              marginBottom: 16,
-              padding: '10px 14px',
-              background: 'rgba(239,68,68,0.1)',
-              border: '1px solid rgba(239,68,68,0.3)',
-              borderRadius: 6,
-              color:
-                '#EF4444' /* PULSE_VISUAL_OK: error/danger red, non-Monitor status indicator */ /* PULSE_VISUAL_OK: error/danger red, non-Monitor status indicator */,
-              fontFamily: SORA,
-              fontSize: 13,
-            }}
-          >
-            {error}
-          </div>
-        )}
-
-        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-          <button
-            type="button"
-            onClick={onClose}
-            style={{
-              padding: '9px 18px',
-              background: 'none',
-              border: '1px solid var(--app-border-primary)',
-              borderRadius: 6,
-              color: 'var(--app-text-secondary)',
-              fontFamily: SORA,
-              fontSize: 13,
-              fontWeight: 500,
-              cursor: 'pointer',
-            }}
-          >
-            {kloelT(`Cancelar`)}
-          </button>
-          <button
-            type="button"
-            onClick={handleSubmit}
-            disabled={loading || !name.trim()}
-            style={{
-              padding: '9px 22px',
-              background: EMBER,
-              border: 'none',
-              borderRadius: 6,
-              color:
-                '#fff' /* PULSE_VISUAL_OK: universal white shorthand */ /* PULSE_VISUAL_OK: universal white shorthand */,
-              fontFamily: SORA,
-              fontSize: 13,
-              fontWeight: 600,
-              cursor: loading ? 'wait' : 'pointer',
-              opacity: !name.trim() ? 0.5 : 1,
-            }}
-          >
-            {loading ? 'Criando...' : 'Criar'}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function AddGroupModal({
-  launcherId,
-  onClose,
-  onAdded,
-}: {
-  launcherId: string;
-  onClose: () => void;
-  onAdded: () => void;
-}) {
-  const fid = useId();
-  const [groupLink, setGroupLink] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const handleSubmit = async () => {
-    if (!groupLink.trim()) {
-      return;
-    }
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await launchApi.addGroups(launcherId, { groupLink: groupLink.trim() });
-      if (res.error) {
-        throw new Error(res.error);
-      }
-      onAdded();
-      onClose();
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Erro ao adicionar grupo');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <div
-      style={{
-        position: 'fixed',
-        inset: 0,
-        zIndex: 1000,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-      }}
-    >
-      <button
-        type="button"
-        onClick={onClose}
-        aria-label="Fechar modal"
-        style={{
-          position: 'absolute',
-          inset: 0,
-          background: 'rgba(0,0,0,0.6)',
-          backdropFilter: 'blur(4px)',
-          border: 'none',
-          padding: 0,
-          cursor: 'pointer',
-        }}
-      />
-      <div
-        style={{
-          position: 'relative',
-          width: '100%',
-          maxWidth: 440,
-          background: 'var(--app-bg-card)',
-          border: '1px solid var(--app-border-primary)',
-          borderRadius: 6,
-          padding: 28,
-        }}
-      >
-        <h2
-          style={{
-            fontFamily: SORA,
-            fontSize: 18,
-            fontWeight: 700,
-            color: 'var(--app-text-primary)',
-            margin: '0 0 4px',
-          }}
-        >
-          {kloelT(`Adicionar Grupo`)}
-        </h2>
-        <p
-          style={{
-            fontFamily: SORA,
-            fontSize: 13,
-            color: 'var(--app-text-secondary)',
-            margin: '0 0 24px',
-          }}
-        >
-          {kloelT(`Cole o link de convite do grupo WhatsApp.`)}
-        </p>
-
-        <label
-          style={{
-            fontFamily: SORA,
-            fontSize: 12,
-            fontWeight: 500,
-            color: 'var(--app-text-secondary)',
-            display: 'block',
-            marginBottom: 6,
-          }}
-          htmlFor={`${fid}-link`}
-        >
-          {kloelT(`Link do grupo *`)}
-        </label>
-        <input
-          type="url"
-          value={groupLink}
-          onChange={(e) => setGroupLink(e.target.value)}
-          placeholder="https://chat.whatsapp.com/..."
-          style={{
-            width: '100%',
-            padding: '10px 14px',
-            background: 'var(--app-bg-primary)',
-            border: '1px solid var(--app-border-primary)',
-            borderRadius: 6,
-            color: 'var(--app-text-primary)',
-            fontFamily: SORA,
-            fontSize: 13,
-            outline: 'none',
-            marginBottom: 16,
-            boxSizing: 'border-box' as const,
-          }}
-          id={`${fid}-link`}
-        />
-
-        {error && (
-          <div
-            style={{
-              marginBottom: 16,
-              padding: '10px 14px',
-              background: 'rgba(239,68,68,0.1)',
-              border: '1px solid rgba(239,68,68,0.3)',
-              borderRadius: 6,
-              color:
-                '#EF4444' /* PULSE_VISUAL_OK: error/danger red, non-Monitor status indicator */ /* PULSE_VISUAL_OK: error/danger red, non-Monitor status indicator */,
-              fontFamily: SORA,
-              fontSize: 13,
-            }}
-          >
-            {error}
-          </div>
-        )}
-
-        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-          <button
-            type="button"
-            onClick={onClose}
-            style={{
-              padding: '9px 18px',
-              background: 'none',
-              border: '1px solid var(--app-border-primary)',
-              borderRadius: 6,
-              color: 'var(--app-text-secondary)',
-              fontFamily: SORA,
-              fontSize: 13,
-              fontWeight: 500,
-              cursor: 'pointer',
-            }}
-          >
-            {kloelT(`Cancelar`)}
-          </button>
-          <button
-            type="button"
-            onClick={handleSubmit}
-            disabled={loading || !groupLink.trim()}
-            style={{
-              padding: '9px 22px',
-              background: EMBER,
-              border: 'none',
-              borderRadius: 6,
-              color:
-                '#fff' /* PULSE_VISUAL_OK: universal white shorthand */ /* PULSE_VISUAL_OK: universal white shorthand */,
-              fontFamily: SORA,
-              fontSize: 13,
-              fontWeight: 600,
-              cursor: loading ? 'wait' : 'pointer',
-              opacity: !groupLink.trim() ? 0.5 : 1,
-            }}
-          >
-            {loading ? 'Adicionando...' : 'Adicionar'}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 /** Launchpad page. */
 export default function LaunchpadPage() {
   const router = useRouter();
-  const [launchers, _setLaunchers] = useState<Launcher[]>([]);
-  const isLoading = false;
-  const error = null;
-  const mutate = () => {
-    /* no list endpoint yet */
-  };
+  const {
+    data: launchers = [],
+    isLoading,
+    error,
+    mutate: refreshLaunchers,
+  } = useSWR<Launcher[]>('/launch/launchers', fetchLaunchers);
 
   const [showNewModal, setShowNewModal] = useState(false);
   const [addGroupFor, setAddGroupFor] = useState<string | null>(null);
 
+  const handleLauncherCreated = (created: Launcher) => {
+    void refreshLaunchers(
+      (current = []) => [created, ...current.filter((launcher) => launcher.id !== created.id)],
+      { revalidate: true },
+    );
+  };
+
+  const handleGroupAdded = () => {
+    void refreshLaunchers();
+  };
+
   return (
     <SectionPage
       title={kloelT(`Launchpad`)}
-      icon={kloelT(`&#128640;`)}
+      icon={kloelT(`&rgb(18, 134, 64);`)}
       description={kloelT(`Gerencie lancamentos com grupos WhatsApp automatizados`)}
       back={() => router.push('/ferramentas/gerencie')}
     >
@@ -557,8 +173,7 @@ export default function LaunchpadPage() {
             background: EMBER,
             border: 'none',
             borderRadius: 6,
-            color:
-              '#fff' /* PULSE_VISUAL_OK: universal white shorthand */ /* PULSE_VISUAL_OK: universal white shorthand */,
+            color: colors.text.silver,
             fontFamily: SORA,
             fontSize: 13,
             fontWeight: 600,
@@ -588,8 +203,7 @@ export default function LaunchpadPage() {
             style={{
               padding: 32,
               textAlign: 'center',
-              color:
-                '#EF4444' /* PULSE_VISUAL_OK: error/danger red, non-Monitor status indicator */ /* PULSE_VISUAL_OK: error/danger red, non-Monitor status indicator */,
+              color: colors.semantic.error,
               fontFamily: SORA,
             }}
           >
@@ -627,14 +241,17 @@ export default function LaunchpadPage() {
       )}
 
       {showNewModal && (
-        <NewLauncherModal onClose={() => setShowNewModal(false)} onCreated={() => mutate()} />
+        <NewLauncherModal
+          onClose={() => setShowNewModal(false)}
+          onCreated={handleLauncherCreated}
+        />
       )}
 
       {addGroupFor && (
         <AddGroupModal
           launcherId={addGroupFor}
           onClose={() => setAddGroupFor(null)}
-          onAdded={() => mutate()}
+          onAdded={handleGroupAdded}
         />
       )}
     </SectionPage>

@@ -21,6 +21,8 @@ import { Idempotent } from '../common/idempotency.guard';
 import type { AuthenticatedRequest } from '../common/interfaces/authenticated-request.interface';
 import { resolveKloelCapabilityModel } from '../lib/ai-models';
 import { PrismaService } from '../prisma/prisma.service';
+import { BRAND_COLORS, CANVAS_COLORS } from '../common/kloel-colors';
+import { RouteClass } from '../common/throttler/route-class.decorator';
 
 const IMAGE_GEN_TOKEN_EQUIVALENT = 1000;
 
@@ -42,14 +44,10 @@ interface GenerateCanvasImageDto {
   height?: number;
 }
 
-interface GenerateCanvasTextDto {
-  type: string;
-  productId?: string;
-}
-
 /** Canvas controller. */
 @UseGuards(JwtAuthGuard)
 @Controller('canvas')
+@RouteClass('mutate')
 export class CanvasController {
   constructor(
     private readonly prisma: PrismaService,
@@ -102,7 +100,7 @@ export class CanvasController {
         height: dto.height,
         productId: dto.productId || null,
         elements: dto.elements ?? [],
-        background: dto.background || '#0A0A0C',
+        background: dto.background || CANVAS_COLORS.DEFAULT_BG,
       },
     });
     return { design, success: true };
@@ -173,7 +171,7 @@ Formato: ${product.format || 'Digital'}
 ${dto.prompt}
 
 [INSTRUCOES]
-Gere uma descricao visual detalhada para criacao de imagem de marketing. Dark theme (#0A0A0C bg, #E85D30 accent, #E0DDD8 text). Font: Sora. Profissional e moderno.`;
+Gere uma descricao visual detalhada para criacao de imagem de marketing. Dark theme (${BRAND_COLORS.VOID} bg, ${BRAND_COLORS.EMBER} accent, ${BRAND_COLORS.SILVER} text). Font: Sora. Profissional e moderno.`;
       }
     }
 
@@ -194,51 +192,7 @@ Gere uma descricao visual detalhada para criacao de imagem de marketing. Dark th
     if (workspaceId) {
       await this.planLimits.trackAiUsage(workspaceId, IMAGE_GEN_TOKEN_EQUIVALENT).catch(() => {});
     }
-    const imageUrl = response.data[0]?.url;
+    const imageUrl = response.data?.[0]?.url;
     return { success: true, imageUrl, prompt: enrichedPrompt };
-  }
-
-  // POST /canvas/generate-text — suggest marketing text based on product
-  @Post('generate-text')
-  async generateText(@Request() req: AuthenticatedRequest, @Body() dto: GenerateCanvasTextDto) {
-    const workspaceId = req.user?.workspaceId;
-    let context = '';
-
-    if (dto.productId && workspaceId) {
-      const product = await this.prisma.product.findFirst({
-        where: { id: dto.productId, workspaceId },
-      });
-      if (product) {
-        context = `${product.name} — ${product.currency || 'R$'} ${product.price}`;
-      }
-    }
-
-    const templates: Record<string, string[]> = {
-      headline: [
-        context ? `Descubra ${context.split(' — ')[0]}` : 'Transforme seu negocio',
-        'A revolucao que voce esperava comeca aqui',
-        'Pare de perder tempo. Comece a ganhar dinheiro.',
-        context ? `${context.split(' — ')[0]} — Oferta por tempo limitado` : 'Oferta especial',
-      ],
-      subtitle: [
-        'Descubra como milhares de empreendedores ja estao usando',
-        'O metodo comprovado que gera resultados em 30 dias',
-        context
-          ? `Tudo que voce precisa por apenas ${context.split(' — ')[1] || ''}`
-          : 'Acesso imediato',
-      ],
-      cta: [
-        'Comecar agora',
-        'Quero acesso',
-        'Garantir minha vaga',
-        'Comprar com desconto',
-        'Testar gratis',
-      ],
-    };
-
-    return {
-      suggestions: templates[dto.type] || templates.headline,
-      context,
-    };
   }
 }

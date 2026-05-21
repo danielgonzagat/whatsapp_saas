@@ -15,10 +15,12 @@ import { AuthenticatedRequest } from '../../common/interfaces/authenticated-requ
 import { MetaWhatsAppService } from '../meta-whatsapp.service';
 import { normalizeMetaGraphSegment } from '../meta-input.util';
 import { MessengerService } from './messenger.service';
+import { RouteClass } from '../../common/throttler/route-class.decorator';
 
 /** Messenger controller. Resolves access token from DB — never accepts it from client. */
 @Controller('meta/messenger')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
+@RouteClass('webhook')
 export class MessengerController {
   constructor(
     private readonly messengerService: MessengerService,
@@ -39,7 +41,7 @@ export class MessengerController {
     },
   ) {
     const workspaceId = resolveWorkspaceId(req);
-    const resolved = await this.metaWhatsApp.resolveConnection(workspaceId);
+    const resolved = await this.metaWhatsApp.resolveConnection(workspaceId, 'facebook');
     if (!resolved.accessToken) {
       throw new BadRequestException('meta_connection_required');
     }
@@ -70,7 +72,7 @@ export class MessengerController {
   @Get('conversations')
   async getConversations(@Req() req: AuthenticatedRequest, @Query('pageId') pageId: string) {
     const workspaceId = resolveWorkspaceId(req);
-    const resolved = await this.metaWhatsApp.resolveConnection(workspaceId);
+    const resolved = await this.metaWhatsApp.resolveConnection(workspaceId, 'facebook');
     if (!resolved.accessToken) {
       throw new BadRequestException('meta_connection_required');
     }

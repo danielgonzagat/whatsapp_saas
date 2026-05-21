@@ -82,10 +82,9 @@ function hasForbiddenUsage(relPath, content) {
 }
 
 function visit(currentDir) {
-  // nosemgrep: javascript.lang.security.audit.path-traversal.non-literal-fs-filename.non-literal-fs-filename
-  // Safe: currentDir is seeded from rootDir (path.resolve of this script's own dirname) and only recursed into real directory entries; no user input.
-  for (const entry of fs.readdirSync(currentDir, { withFileTypes: true })) {
-    const absPath = path.join(currentDir, entry.name);
+  const resolvedDir = path.resolve(currentDir);
+  for (const entry of fs.readdirSync(resolvedDir, { withFileTypes: true })) {
+    const absPath = path.resolve(resolvedDir, entry.name);
     const relPath = path.relative(rootDir, absPath).replace(/\\/g, '/');
 
     if (ignoredPatterns.some((pattern) => pattern.test(relPath))) {
@@ -101,8 +100,6 @@ function visit(currentDir) {
       continue;
     }
 
-    // nosemgrep: javascript.lang.security.audit.path-traversal.non-literal-fs-filename.non-literal-fs-filename
-    // Safe: absPath is path.join(currentDir, entry.name) where currentDir derives from rootDir and entry.name comes from fs.readdirSync; no user input.
     const content = fs.readFileSync(absPath, 'utf8');
 
     if (hasForbiddenUsage(relPath, content)) {

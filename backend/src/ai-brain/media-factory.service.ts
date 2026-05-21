@@ -1,12 +1,19 @@
 import { Injectable, ServiceUnavailableException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { StructuredLogger } from '../logging/structured-logger';
 import OpenAI from 'openai';
 import { chatCompletionWithRetry } from '../kloel/openai-wrapper';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
+import { CANONICAL_MODEL_IDS } from '../lib/openai-models';
 
 /** Media factory service. */
 @Injectable()
+/**
+ * @cluster whatsapp_saas/backend/ai-brain
+ * L11 multi-agent TaskGraph annotation (batched by tools/auto-pr/batch-job.mjs).
+ */
 export class MediaFactoryService {
+  private readonly logger = StructuredLogger.from(MediaFactoryService.name);
   private openai: OpenAI | null;
 
   constructor(private config: ConfigService) {
@@ -21,14 +28,22 @@ export class MediaFactoryService {
     }
 
     // tokenBudget: non-workspace context, budget tracked at caller level
+    this.logger.log('Calling OpenAI image generation', {
+      context: 'MediaFactoryService.generateImage',
+      model: CANONICAL_MODEL_IDS.imageGeneration,
+    });
     const response = await this.openai.images.generate({
-      model: 'dall-e-3',
+      model: resolveBackendOpenAIModel('image_generation', this.config),
       prompt: prompt,
       n: 1,
       size: '1024x1024',
     });
 
-    return { url: response.data[0].url };
+    const first = response.data?.[0];
+    if (!first?.url) {
+      throw new ServiceUnavailableException('Image generation returned no URL');
+    }
+    return { url: first.url };
   }
 
   /** Generate voice. */
@@ -54,6 +69,11 @@ export class MediaFactoryService {
     `;
 
     // tokenBudget: non-workspace context, budget tracked at caller level
+    this.logger.log('Calling OpenAI', {
+      context: 'MediaFactoryService.generateSocialContent',
+      model: 'writer',
+      platform,
+    });
     const completion = await chatCompletionWithRetry(this.openai, {
       model: resolveBackendOpenAIModel('writer'),
       messages: [{ role: 'user', content: prompt }],

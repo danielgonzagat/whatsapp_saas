@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AdminAuditService } from '../audit/admin-audit.service';
 import { AdminDashboardService } from '../dashboard/admin-dashboard.service';
@@ -8,11 +8,15 @@ import { listAdminTransactions } from '../transactions/queries/list-transactions
 /** Admin reports service. */
 @Injectable()
 export class AdminReportsService {
+  private readonly logger = new Logger(AdminReportsService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly dashboard: AdminDashboardService,
     private readonly audit: AdminAuditService,
-  ) {}
+  ) {
+    this.logger.log('AdminReportsService initialized');
+  }
 
   /** Overview. */
   async overview(period: AdminHomePeriod, from?: Date, to?: Date) {
@@ -51,7 +55,12 @@ export class AdminReportsService {
     from?: Date,
     to?: Date,
   ): Promise<Array<Record<string, unknown>>> {
-    const range = resolveAdminHomeRange({ period, compare: 'NONE', from, to });
+    const range = resolveAdminHomeRange({
+      period,
+      compare: 'NONE',
+      ...(from !== undefined ? { from } : {}),
+      ...(to !== undefined ? { to } : {}),
+    });
     const rows = await listAdminTransactions(this.prisma, {
       from: range.from,
       to: range.to,

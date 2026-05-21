@@ -1,1 +1,1 @@
-export { buildFlowProjection } from './flow-projection/__parts__/builder';
+export { buildFlowProjection } from './flow-projection/builder';

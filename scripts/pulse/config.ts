@@ -2,13 +2,14 @@ import { safeJoin } from './safe-path';
 import * as path from 'path';
 import type { PulseConfig } from './types.manifest';
 import { pathExists, readDir, readTextFile } from './safe-fs';
-import { detectSourceRoots } from './source-root-detector/__parts__/api';
-import type { DetectedSourceRoot } from './source-root-detector/__parts__/types';
+import { detectSourceRoots } from './source-root-detector/api';
+import type { DetectedSourceRoot } from './source-root-detector/types';
+import { walkFiles } from './parsers/utils';
 
 function hasMatchingFile(rootDir: string, matcher: (relativePath: string) => boolean): boolean {
   if (!pathExists(rootDir)) return false;
   try {
-    const files = readDir(rootDir, { recursive: true }) as string[];
+    const files = walkFiles(rootDir, ['.ts', '.tsx', '.js', '.jsx']);
     return files.some((file) => matcher(String(file).split(path.sep).join('/')));
   } catch {
     return false;
@@ -31,18 +32,22 @@ function pickRoot(
 }
 
 function findSchemaPath(rootDir: string): string {
+  const candidateDirs = [safeJoin(rootDir, 'prisma')];
   try {
-    const schemas = (readDir(rootDir, { recursive: true }) as string[])
-      .map((entry) => String(entry).split(path.sep).join('/'))
-      .filter(
-        (entry) => !entry.split('/').some((part) => part === 'node_modules' || part === 'dist'),
-      )
-      .filter((entry) => path.basename(entry) === 'schema.prisma')
-      .sort();
-    return schemas[0] ? safeJoin(rootDir, schemas[0]) : '';
+    for (const entry of readDir(rootDir)) {
+      if (entry.startsWith('.') || entry === 'node_modules' || entry === 'dist') continue;
+      const prismaDir = safeJoin(rootDir, entry, 'prisma');
+      if (pathExists(prismaDir)) candidateDirs.push(prismaDir);
+    }
   } catch {
-    return '';
+    // fall back to known dirs
   }
+
+  for (const candidate of candidateDirs) {
+    const schemaPath = safeJoin(candidate, 'schema.prisma');
+    if (pathExists(schemaPath)) return schemaPath;
+  }
+  return '';
 }
 
 function detectGlobalPrefix(backendRoot: string): string {

@@ -1,15 +1,19 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { TerminusModule } from '@nestjs/terminus';
+import { AdminGuardsModule } from '../admin/auth/admin-guards.module';
 import { BillingModule } from '../billing/billing.module';
 import { MetricsModule } from '../metrics/metrics.module';
 import { PrismaModule } from '../prisma/prisma.module';
 import { WhatsappModule } from '../whatsapp/whatsapp.module';
 import { HealthController } from './health.controller';
 import { HealthService } from './health.service';
+import { AnthropicHealthIndicator } from './indicators/anthropic.health-indicator';
 import { BullMQHealthIndicator } from './indicators/bullmq.health-indicator';
 import { DatabaseBackupHealthIndicator } from './indicators/database-backup.health-indicator';
 import { EmailHealthIndicator } from './indicators/email.health-indicator';
+import { MetaHealthIndicator } from './indicators/meta.health-indicator';
+import { OpenAIHealthIndicator } from './indicators/openai.health-indicator';
 import { PrismaHealthIndicator } from './indicators/prisma.health-indicator';
 import { RedisHealthIndicator } from './indicators/redis.health-indicator';
 import { StripeHealthIndicator } from './indicators/stripe.health-indicator';
@@ -27,6 +31,7 @@ import { SystemHealthService } from './system-health.service';
     MetricsModule,
     TerminusModule,
     BillingModule,
+    AdminGuardsModule,
   ],
   controllers: [SystemHealthController, HealthController],
   providers: [
@@ -38,6 +43,9 @@ import { SystemHealthService } from './system-health.service';
     DatabaseBackupHealthIndicator,
     EmailHealthIndicator,
     StripeHealthIndicator,
+    MetaHealthIndicator,
+    OpenAIHealthIndicator,
+    AnthropicHealthIndicator,
   ],
   exports: [SystemHealthService],
 })

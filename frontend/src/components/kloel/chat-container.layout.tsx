@@ -163,7 +163,7 @@ export function ChatLayout({
                     onClose={onAgentDesktopClose}
                     onConnectionChange={(connected) => {
                       onAgentConnectionChange(connected);
-                      if (connected) onAgentStreamEnable();
+                      if (connected) {onAgentStreamEnable();}
                     }}
                   />
                 ) : (
@@ -198,10 +198,10 @@ export function ChatLayout({
                 onAgentStreamEnable={onAgentStreamEnable}
                 onQuickAction={onQuickAction}
                 onCancelProcessing={onCancelProcessing}
-                onMessageEdit={onMessageEdit}
                 onMessageRetry={onMessageRetry}
-                onAssistantFeedback={onAssistantFeedback}
-                onAssistantRegenerate={onAssistantRegenerate}
+                {...(onMessageEdit !== undefined ? { onMessageEdit } : {})}
+                {...(onAssistantFeedback !== undefined ? { onAssistantFeedback } : {})}
+                {...(onAssistantRegenerate !== undefined ? { onAssistantRegenerate } : {})}
               />
             )}
           </div>

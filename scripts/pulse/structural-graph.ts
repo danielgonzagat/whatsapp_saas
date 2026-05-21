@@ -65,10 +65,6 @@ function extractMetadataArray(metadata: PulseStructuralNode['metadata'], key: st
   return Array.isArray(value) ? value : [];
 }
 
-function getSideEffectNodes(nodes: PulseStructuralNode[], file: string): PulseStructuralNode[] {
-  return nodes.filter((node) => node.role === 'side_effect' && node.file === file);
-}
-
 function buildNode(
   id: string,
   kind: PulseStructuralNode['kind'],
@@ -280,6 +276,17 @@ export function buildStructuralGraph(input: BuildStructuralGraphInput): PulseStr
     ),
   );
 
+  const nodesById = new Map(nodes.map((node) => [node.id, node] as const));
+  const sideEffectsByFile = new Map<string, PulseStructuralNode[]>();
+  for (const node of nodes) {
+    if (node.role !== 'side_effect') {
+      continue;
+    }
+    const current = sideEffectsByFile.get(node.file) || [];
+    current.push(node);
+    sideEffectsByFile.set(node.file, current);
+  }
+
   const apiByPath = new Map(
     apiNodes.map((node) => [String(node.metadata.normalizedPath || ''), node] as const),
   );
@@ -365,7 +372,7 @@ export function buildStructuralGraph(input: BuildStructuralGraphInput): PulseStr
   }
 
   for (const proxyNode of proxyNodes) {
-    const sideEffects = getSideEffectNodes(nodes, proxyNode.file);
+    const sideEffects = sideEffectsByFile.get(proxyNode.file) || [];
     for (const sideEffectNode of sideEffects) {
       edges.push(
         buildEdge(proxyNode.id, sideEffectNode.id, 'emits', truthMode, 'proxy-side-effect-signal'),
@@ -431,7 +438,7 @@ export function buildStructuralGraph(input: BuildStructuralGraphInput): PulseStr
       }
     }
 
-    const sideEffects = getSideEffectNodes(nodes, serviceNode.file);
+    const sideEffects = sideEffectsByFile.get(serviceNode.file) || [];
     for (const sideEffectNode of sideEffects) {
       edges.push(
         buildEdge(
@@ -446,7 +453,7 @@ export function buildStructuralGraph(input: BuildStructuralGraphInput): PulseStr
   }
 
   for (const routeNode of routeNodes) {
-    const sideEffects = getSideEffectNodes(nodes, routeNode.file);
+    const sideEffects = sideEffectsByFile.get(routeNode.file) || [];
     for (const sideEffectNode of sideEffects) {
       edges.push(
         buildEdge(routeNode.id, sideEffectNode.id, 'emits', truthMode, 'route-side-effect-signal'),
@@ -491,7 +498,7 @@ export function buildStructuralGraph(input: BuildStructuralGraphInput): PulseStr
       const current = queue.shift()!;
       const nextEdges = outwardByNode.get(current) || [];
       for (const edge of nextEdges) {
-        const targetNode = nodes.find((node) => node.id === edge.to);
+        const targetNode = nodesById.get(edge.to);
         if (!targetNode) {
           continue;
         }
@@ -524,7 +531,9 @@ export function buildStructuralGraph(input: BuildStructuralGraphInput): PulseStr
     nodes,
     edges,
     resolvedManifest: input.resolvedManifest,
-    executionEvidence: input.executionEvidence,
+    ...(input.executionEvidence !== undefined
+      ? { executionEvidence: input.executionEvidence }
+      : {}),
   });
 
   return {

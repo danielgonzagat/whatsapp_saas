@@ -88,7 +88,10 @@ export function discoverPrismaClientMethodNamesFromRuntimeTypeEvidence(): Set<st
   const declarationCandidates = [
     declarationPathFromPackageEvidence('@prisma/client/runtime/library.js'),
     path.resolve(process.cwd(), 'backend/node_modules/.prisma/client/index.d.ts'),
-  ].filter((candidate): candidate is string => Boolean(candidate) && fs.existsSync(candidate));
+  ].filter((candidate): candidate is string => {
+    if (!candidate) return false;
+    return fs.existsSync(candidate);
+  });
 
   for (const declarationPath of declarationCandidates) {
     const sourceFile = sourceFileFromDeclarationPath(declarationPath);

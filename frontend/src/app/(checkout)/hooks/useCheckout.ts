@@ -1,6 +1,5 @@
 'use client';
 
-// PULSE:OK — public checkout hooks use one-shot POST calls (order creation, coupon validation, upsell accept/decline).
 // These do not read from SWR caches, so no invalidation is needed on the client side.
 
 import { API_BASE } from '@/lib/http';
@@ -10,6 +9,7 @@ import { mutate } from 'swr';
 /* ─── Types ────────────────────────────────────────────────────────────────── */
 
 export interface OrderStatusData {
+  [key: string]: unknown;
   /** Id property. */
   id: string;
   /** Order number property. */
@@ -17,15 +17,20 @@ export interface OrderStatusData {
   /** Status property. */
   status: string;
   /** Payment property. */
-  payment?: {
-    status: string;
-    pixQrCode?: string;
-    pixCopyPaste?: string;
-    pixExpiresAt?: string;
-    boletoUrl?: string;
-    boletoBarcode?: string;
-    boletoExpiresAt?: string;
-  };
+  payment?:
+    | {
+        status: string;
+        pixQrCode?: string | undefined;
+        pixCopyPaste?: string | undefined;
+        pixExpiresAt?: string | undefined;
+        boletoUrl?: string | undefined;
+        boletoBarcode?: string | undefined;
+        boletoExpiresAt?: string | undefined;
+      }
+    | undefined;
+  paymentData?: Record<string, unknown> | undefined;
+  plan?: { upsells?: unknown[] } | undefined;
+  data?: { id?: string; orderNumber?: string; [key: string]: unknown } | undefined;
 }
 
 /** Create order data shape. */
@@ -35,59 +40,59 @@ export interface CreateOrderData {
   /** Workspace id property. */
   workspaceId: string;
   /** Checkout code property. */
-  checkoutCode?: string;
+  checkoutCode?: string | undefined;
   /** Captured lead id property. */
-  capturedLeadId?: string;
+  capturedLeadId?: string | undefined;
   /** Device fingerprint property. */
-  deviceFingerprint?: string;
+  deviceFingerprint?: string | undefined;
   /** Customer name property. */
   customerName: string;
   /** Customer email property. */
   customerEmail: string;
   /** Customer cpf property. */
-  customerCPF?: string;
+  customerCPF?: string | undefined;
   /** Customer phone property. */
-  customerPhone?: string;
+  customerPhone?: string | undefined;
   /** Shipping address property. */
   shippingAddress: Record<string, unknown>;
   /** Shipping method property. */
-  shippingMethod?: string;
+  shippingMethod?: string | undefined;
   /** Shipping price property. */
-  shippingPrice?: number;
+  shippingPrice?: number | undefined;
   /** Order quantity property. */
-  orderQuantity?: number;
+  orderQuantity?: number | undefined;
   /** Subtotal in cents property. */
   subtotalInCents: number;
   /** Discount in cents property. */
-  discountInCents?: number;
+  discountInCents?: number | undefined;
   /** Bump total in cents property. */
-  bumpTotalInCents?: number;
+  bumpTotalInCents?: number | undefined;
   /** Total in cents property. */
   totalInCents: number;
   /** Coupon code property. */
-  couponCode?: string;
+  couponCode?: string | undefined;
   /** Coupon discount property. */
-  couponDiscount?: number;
+  couponDiscount?: number | undefined;
   /** Accepted bumps property. */
-  acceptedBumps?: string[];
+  acceptedBumps?: string[] | undefined;
   /** Payment method property. */
   paymentMethod: 'CREDIT_CARD' | 'PIX' | 'BOLETO';
   /** Installments property. */
-  installments?: number;
+  installments?: number | undefined;
   /** Card holder name property. */
-  cardHolderName?: string;
+  cardHolderName?: string | undefined;
   /** Affiliate id property. */
-  affiliateId?: string;
+  affiliateId?: string | undefined;
   /** Utm source property. */
-  utmSource?: string;
+  utmSource?: string | undefined;
   /** Utm medium property. */
-  utmMedium?: string;
+  utmMedium?: string | undefined;
   /** Utm campaign property. */
-  utmCampaign?: string;
+  utmCampaign?: string | undefined;
   /** Utm content property. */
-  utmContent?: string;
+  utmContent?: string | undefined;
   /** Utm term property. */
-  utmTerm?: string;
+  utmTerm?: string | undefined;
 }
 
 /** Coupon result shape. */
@@ -156,7 +161,9 @@ export function useOrderStatus(orderId: string, pollIntervalMs = 3000) {
     };
 
     fetchStatus();
-    intervalRef.current = setInterval(fetchStatus, pollIntervalMs);
+    if (pollIntervalMs > 0) {
+      intervalRef.current = setInterval(fetchStatus, pollIntervalMs);
+    }
 
     return () => stopPolling();
   }, [orderId, pollIntervalMs, stopPolling]);
@@ -166,7 +173,7 @@ export function useOrderStatus(orderId: string, pollIntervalMs = 3000) {
 
 /* ─── createOrder ──────────────────────────────────────────────────────────── */
 
-export async function createOrder(data: CreateOrderData) {
+export async function createOrder(data: CreateOrderData): Promise<OrderStatusData> {
   const res = await fetchCheckoutApi('/checkout/public/order', {
     method: 'POST',
     headers: {
@@ -176,11 +183,11 @@ export async function createOrder(data: CreateOrderData) {
   });
 
   if (!res.ok) {
-    const body = await res.json().catch(() => ({}));
+    const body: { message?: string } = await res.json().catch(() => ({}));
     throw new Error(body.message || 'Erro ao criar pedido');
   }
 
-  const result = await res.json();
+  const result: OrderStatusData = await res.json();
   mutate((key: unknown) => typeof key === 'string' && key.startsWith('/checkout'));
   return result;
 }
@@ -200,40 +207,40 @@ export async function validateCoupon(
   });
 
   if (!res.ok) {
-    const body = await res.json().catch(() => ({}));
+    const body: { message?: string } = await res.json().catch(() => ({}));
     throw new Error(body.message || 'Cupom invalido');
   }
 
-  return res.json();
+  return res.json() as Promise<CouponResult>;
 }
 
 /* ─── acceptUpsell / declineUpsell ─────────────────────────────────────────── */
 
-export async function acceptUpsell(orderId: string, upsellId: string) {
+export async function acceptUpsell(orderId: string, upsellId: string): Promise<OrderStatusData> {
   const res = await fetchCheckoutApi(`/checkout/public/upsell/${orderId}/accept/${upsellId}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
   });
 
   if (!res.ok) {
-    const body = await res.json().catch(() => ({}));
+    const body: { message?: string } = await res.json().catch(() => ({}));
     throw new Error(body.message || 'Erro ao aceitar oferta');
   }
 
-  return res.json();
+  return res.json() as Promise<OrderStatusData>;
 }
 
 /** Decline upsell. */
-export async function declineUpsell(orderId: string, upsellId: string) {
+export async function declineUpsell(orderId: string, upsellId: string): Promise<OrderStatusData> {
   const res = await fetchCheckoutApi(`/checkout/public/upsell/${orderId}/decline/${upsellId}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
   });
 
   if (!res.ok) {
-    const body = await res.json().catch(() => ({}));
+    const body: { message?: string } = await res.json().catch(() => ({}));
     throw new Error(body.message || 'Erro ao recusar oferta');
   }
 
-  return res.json();
+  return res.json() as Promise<OrderStatusData>;
 }

@@ -3,7 +3,6 @@ import {
   Controller,
   Delete,
   Get,
-  Logger,
   NotFoundException,
   Param,
   Post,
@@ -12,18 +11,21 @@ import {
   UseGuards,
   Optional,
 } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { AuditService } from '../audit/audit.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthenticatedRequest } from '../common/interfaces/authenticated-request.interface';
 import { OpsAlertService } from '../observability/ops-alert.service';
+import { RouteClass } from '../common/throttler/route-class.decorator';
 
 /** Ad rules controller. */
 @Controller('ad-rules')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
+@RouteClass('ai')
 export class AdRulesController {
-  private readonly logger = new Logger(AdRulesController.name);
+  private readonly logger = StructuredLogger.from(AdRulesController.name);
   constructor(
     private readonly prisma: PrismaService,
     private readonly auditService: AuditService,
@@ -67,8 +69,8 @@ export class AdRulesController {
         name: dto.name,
         condition: dto.condition,
         action: dto.action,
-        alertMethod: dto.alertMethod,
-        alertTarget: dto.alertTarget,
+        ...(dto.alertMethod !== undefined ? { alertMethod: dto.alertMethod } : {}),
+        ...(dto.alertTarget !== undefined ? { alertTarget: dto.alertTarget } : {}),
       },
     });
   }

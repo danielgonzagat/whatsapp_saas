@@ -34,19 +34,19 @@ ALTER TABLE IF EXISTS "platform_wallet_ledger" RENAME TO "marketplace_treasury_l
 ALTER TABLE IF EXISTS "platform_fees" RENAME TO "marketplace_fees";
 
 ALTER INDEX IF EXISTS "platform_wallets_currency_key"
-  RENAME TO "marketplace_treasuries_currency_key";
+RENAME TO "marketplace_treasuries_currency_key";
 ALTER INDEX IF EXISTS "platform_wallet_ledger_wallet_id_created_at_idx"
-  RENAME TO "marketplace_treasury_ledger_wallet_id_created_at_idx";
+RENAME TO "marketplace_treasury_ledger_wallet_id_created_at_idx";
 ALTER INDEX IF EXISTS "platform_wallet_ledger_kind_created_at_idx"
-  RENAME TO "marketplace_treasury_ledger_kind_created_at_idx";
+RENAME TO "marketplace_treasury_ledger_kind_created_at_idx";
 ALTER INDEX IF EXISTS "platform_wallet_ledger_order_id_idx"
-  RENAME TO "marketplace_treasury_ledger_order_id_idx";
+RENAME TO "marketplace_treasury_ledger_order_id_idx";
 ALTER INDEX IF EXISTS "platform_wallet_ledger_order_kind_unique"
-  RENAME TO "marketplace_treasury_ledger_order_kind_unique";
+RENAME TO "marketplace_treasury_ledger_order_kind_unique";
 ALTER INDEX IF EXISTS "platform_fees_method_active_from_idx"
-  RENAME TO "marketplace_fees_method_active_from_idx";
+RENAME TO "marketplace_fees_method_active_from_idx";
 ALTER INDEX IF EXISTS "platform_fees_active_to_idx"
-  RENAME TO "marketplace_fees_active_to_idx";
+RENAME TO "marketplace_fees_active_to_idx";
 
 DO $$
 BEGIN

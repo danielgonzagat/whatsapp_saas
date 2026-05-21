@@ -6,65 +6,39 @@ import {
   CHECKOUT_PAYMENT_METHODS,
   CHECKOUT_TAB_COPY,
   Checkout,
-  CheckoutFormState,
   createCheckoutForm,
-  createDefaultCheckoutForm,
   toCheckoutErrorMessage,
 } from '@/components/products/ProductCheckoutsTab.helpers';
+import { useCheckoutFormState } from '@/components/products/useCheckoutFormState';
 import { colors } from '@/lib/design-tokens';
 import { Pencil, Plus, Trash2, X } from 'lucide-react';
-import { useCallback, useEffect, useId, useState } from 'react';
+import { useCallback, useEffect, useId, useState, useSyncExternalStore } from 'react';
 import { mutate } from 'swr';
 
-const CHECKOUT_FORM_DRAFT_VERSION = 1;
-
-type ProductCheckoutFormDraft = {
-  version: number;
-  productId: string;
-  savedAt: string;
-  form: CheckoutFormState;
-  editingCheckoutId: string | null;
-  showModal: boolean;
-};
-
-function buildCheckoutFormDraftKey(productId: string): string {
-  return `kloel:product-checkout-form-draft:${productId}`;
+/**
+ * Network-online subscription helpers driving {@link useSyncExternalStore}.
+ * Defined at module scope so React sees a stable subscribe ref; the SSR
+ * snapshot returns `true` so the server HTML never claims the user is offline,
+ * eliminating the hydration mismatch the previous lazy-init pattern caused.
+ */
+function subscribeOnlineStatus(callback: () => void): () => void {
+  if (typeof window === 'undefined') {
+    return () => undefined;
+  }
+  window.addEventListener('online', callback);
+  window.addEventListener('offline', callback);
+  return () => {
+    window.removeEventListener('online', callback);
+    window.removeEventListener('offline', callback);
+  };
 }
 
-function readCheckoutFormDraft(
-  raw: string | null,
-  productId: string,
-): ProductCheckoutFormDraft | null {
-  if (!raw) {
-    return null;
-  }
-  try {
-    const parsed = JSON.parse(raw) as Partial<ProductCheckoutFormDraft>;
-    if (
-      parsed.version !== CHECKOUT_FORM_DRAFT_VERSION ||
-      parsed.productId !== productId ||
-      !parsed.form
-    ) {
-      return null;
-    }
-    return {
-      version: CHECKOUT_FORM_DRAFT_VERSION,
-      productId,
-      savedAt: typeof parsed.savedAt === 'string' ? parsed.savedAt : new Date().toISOString(),
-      form: {
-        ...createDefaultCheckoutForm(),
-        ...parsed.form,
-        paymentMethods: Array.isArray(parsed.form.paymentMethods)
-          ? parsed.form.paymentMethods
-          : createDefaultCheckoutForm().paymentMethods,
-      },
-      editingCheckoutId:
-        typeof parsed.editingCheckoutId === 'string' ? parsed.editingCheckoutId : null,
-      showModal: parsed.showModal === true,
-    };
-  } catch {
-    return null;
-  }
+function getOnlineSnapshot(): boolean {
+  return typeof navigator === 'undefined' ? true : navigator.onLine;
+}
+
+function getServerOnlineSnapshot(): boolean {
+  return true;
 }
 
 /** Product checkouts tab. */
@@ -73,20 +47,28 @@ export function ProductCheckoutsTab({ productId }: { productId: string }) {
   const [items, setItems] = useState<Checkout[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [showModal, setShowModal] = useState(false);
-  const [editingCheckoutId, setEditingCheckoutId] = useState<string | null>(null);
-  const [form, setForm] = useState<CheckoutFormState>(createDefaultCheckoutForm());
+  const {
+    form,
+    showModal,
+    editingCheckoutId,
+    setForm,
+    setShowModal,
+    setEditingCheckoutId,
+    resetForm: hookResetForm,
+    clearDraft,
+  } = useCheckoutFormState(productId);
   const [creating, setCreating] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [checkoutPendingDelete, setCheckoutPendingDelete] = useState<Checkout | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
-  const [isOnline, setIsOnline] = useState(true);
-  const checkoutFormDraftKey = buildCheckoutFormDraftKey(productId);
+  const isOnline = useSyncExternalStore(subscribeOnlineStatus, getOnlineSnapshot, getServerOnlineSnapshot);
 
   const fetch_ = useCallback(() => {
-    setLoadError(null);
     apiFetch<Checkout[]>(`/products/${productId}/checkouts`)
-      .then((r) => setItems(Array.isArray(r) ? r : []))
+      .then((r) => {
+        setLoadError(null);
+        setItems(Array.isArray(r) ? r : []);
+      })
       .catch((error: unknown) => {
         setItems([]);
         setLoadError(toCheckoutErrorMessage(error, CHECKOUT_TAB_COPY.loadError));
@@ -97,54 +79,9 @@ export function ProductCheckoutsTab({ productId }: { productId: string }) {
     fetch_();
   }, [fetch_]);
 
-  useEffect(() => {
-    if (typeof window === 'undefined') {
-      return;
-    }
-    const syncNetworkState = () => setIsOnline(window.navigator.onLine);
-    syncNetworkState();
-    window.addEventListener('online', syncNetworkState);
-    window.addEventListener('offline', syncNetworkState);
-    return () => {
-      window.removeEventListener('online', syncNetworkState);
-      window.removeEventListener('offline', syncNetworkState);
-    };
-  }, []);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') {
-      return;
-    }
-    const savedDraft = readCheckoutFormDraft(
-      window.localStorage.getItem(checkoutFormDraftKey),
-      productId,
-    );
-    if (!savedDraft) {
-      return;
-    }
-    setForm(savedDraft.form);
-    setEditingCheckoutId(savedDraft.editingCheckoutId);
-    setShowModal(savedDraft.showModal);
-  }, [checkoutFormDraftKey, productId]);
-
-  useEffect(() => {
-    if (typeof window === 'undefined' || !showModal) {
-      return;
-    }
-    const payload: ProductCheckoutFormDraft = {
-      version: CHECKOUT_FORM_DRAFT_VERSION,
-      productId,
-      savedAt: new Date().toISOString(),
-      form,
-      editingCheckoutId,
-      showModal,
-    };
-    window.localStorage.setItem(checkoutFormDraftKey, JSON.stringify(payload));
-  }, [checkoutFormDraftKey, editingCheckoutId, form, productId, showModal]);
 
   const resetForm = () => {
-    setForm(createDefaultCheckoutForm());
-    setEditingCheckoutId(null);
+    hookResetForm();
     setSubmitError(null);
   };
 
@@ -165,7 +102,7 @@ export function ProductCheckoutsTab({ productId }: { productId: string }) {
       } else {
         await apiFetch(`/products/${productId}/checkouts`, { method: 'POST', body });
       }
-      window.localStorage.removeItem(checkoutFormDraftKey);
+      clearDraft();
       setShowModal(false);
       resetForm();
       mutate((key: unknown) => typeof key === 'string' && key.startsWith('/products'));
@@ -299,7 +236,7 @@ export function ProductCheckoutsTab({ productId }: { productId: string }) {
                 className="rounded-full px-2 py-0.5 text-xs font-medium"
                 style={{
                   backgroundColor: v ? 'rgba(16,185,129,0.12)' : 'rgba(232,93,48,0.12)',
-                  color: v ? '#7FE2BC' : colors.ember.primary,
+                  color: v ? colors.semantic.successText : colors.ember.primary,
                 }}
               >
                 {v ? 'ATIVO' : 'OFF'}

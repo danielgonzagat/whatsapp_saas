@@ -5,7 +5,6 @@ import {
   Delete,
   Get,
   NotFoundException,
-  Optional,
   Param,
   Post,
   Put,
@@ -17,10 +16,11 @@ import { AuditService } from '../audit/audit.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { AuthenticatedRequest } from '../common/interfaces';
+import { MemberAreaEventEmitterService } from '../kloel/member-area-emitter/member-area-event-emitter.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { EnrollStudentDto, readText } from './member-area.helpers';
 import { MemberAreaStatsService } from './member-area-stats.service';
-import { OpsAlertService } from '../observability/ops-alert.service';
+import { RouteClass } from '../common/throttler/route-class.decorator';
 
 /**
  * MEMBER ENROLLMENTS CONTROLLER — Student listing + lifecycle
@@ -31,12 +31,13 @@ import { OpsAlertService } from '../observability/ops-alert.service';
  */
 @Controller('member-areas')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
+@RouteClass('mutate')
 export class MemberEnrollmentsController {
   constructor(
     private readonly prisma: PrismaService,
     private readonly auditService: AuditService,
     private readonly stats: MemberAreaStatsService,
-    @Optional() private readonly opsAlert?: OpsAlertService,
+    private readonly emitter: MemberAreaEventEmitterService,
   ) {}
 
   @Get(':id/students')
@@ -111,11 +112,19 @@ export class MemberEnrollmentsController {
         memberAreaId: areaId,
         studentName,
         studentEmail,
-        studentPhone,
+        ...(studentPhone !== undefined ? { studentPhone } : {}),
       },
     });
 
     await this.stats.recalculate(areaId, workspaceId);
+
+    this.emitter.emitEnrolled({
+      enrollmentId: enrollment.id,
+      workspaceId,
+      memberAreaId: areaId,
+      studentEmail,
+      studentName,
+    });
 
     return enrollment;
   }
@@ -180,6 +189,13 @@ export class MemberEnrollmentsController {
 
     await this.stats.recalculate(areaId, workspaceId);
 
+    this.emitter.emitDroppedOut({
+      enrollmentId: studentId,
+      workspaceId,
+      memberAreaId: areaId,
+      studentEmail: enrollment.studentEmail,
+    });
+
     return { success: true };
   }
 
@@ -222,7 +238,7 @@ export class MemberEnrollmentsController {
     }
 
     const lessonWeight = 100 / totalLessons;
-    const { newProgress } = await this.prisma.$transaction(
+    const { newProgress, enrollmentId } = await this.prisma.$transaction(
       async (tx) => {
         const enrollment = await tx.memberEnrollment.findFirst({
           where: { memberAreaId: areaId, workspaceId, studentEmail },
@@ -242,12 +258,21 @@ export class MemberEnrollmentsController {
           data: { progress: computed },
         });
 
-        return { newProgress: computed };
+        return { newProgress: computed, enrollmentId: enrollment.id };
       },
       { isolationLevel: 'ReadCommitted' },
     );
 
     await this.stats.recalculate(areaId, workspaceId);
+
+    this.emitter.emitProgressed({
+      enrollmentId,
+      workspaceId,
+      memberAreaId: areaId,
+      studentEmail,
+      progress: newProgress,
+      totalLessons,
+    });
 
     return { progress: newProgress, totalLessons, completed: body.completed };
   }

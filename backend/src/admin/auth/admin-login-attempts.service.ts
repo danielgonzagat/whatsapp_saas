@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { StructuredLogger } from '../../logging/structured-logger';
 import { PrismaService } from '../../prisma/prisma.service';
 
 const WINDOW_MS = 15 * 60 * 1000;
@@ -14,6 +15,8 @@ const MAX_ATTEMPTS = 5;
  */
 @Injectable()
 export class AdminLoginAttemptsService {
+  private readonly logger = StructuredLogger.from(AdminLoginAttemptsService.name);
+
   constructor(private readonly prisma: PrismaService) {}
 
   /** Is locked. */
@@ -30,7 +33,16 @@ export class AdminLoginAttemptsService {
       ],
       { isolationLevel: 'ReadCommitted' },
     );
-    return emailFailures >= MAX_ATTEMPTS || ipFailures >= MAX_ATTEMPTS;
+    if (emailFailures >= MAX_ATTEMPTS || ipFailures >= MAX_ATTEMPTS) {
+      this.logger.warn('Login attempts lock threshold reached', {
+        context: 'AdminLoginAttemptsService.isLocked',
+        emailFailures,
+        ipFailures,
+        maxAttempts: MAX_ATTEMPTS,
+      });
+      return true;
+    }
+    return false;
   }
 
   /** Record. */

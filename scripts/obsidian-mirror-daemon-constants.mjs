@@ -1,4 +1,5 @@
 import { resolve, join, dirname } from 'node:path';
+import { OBSIDIAN_TAG_COLORS } from './shared/severity-tokens.mjs';
 
 // ── Configuration ───────────────────────────────────────────────────────────
 
@@ -17,22 +18,24 @@ export const LOCK_POLL_MS = Number(process.env.KLOEL_MIRROR_LOCK_POLL_MS || '75'
 export const GRAPH_SETTINGS_PATH = join(VAULT_ROOT, '.obsidian', 'graph.json');
 export const WORKSPACE_GRAPH_SEARCH = '';
 export const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
-export const DEBOUNCE_MS = 250;
-export const GIT_STATE_POLL_MS = 3000;
-export const GRAPH_LENS_ENFORCE_MS = 2000;
+export const DEBOUNCE_MS = Number(process.env.KLOEL_MIRROR_DEBOUNCE_MS || '250');
+export const GIT_STATE_POLL_MS = Number(process.env.KLOEL_MIRROR_GIT_STATE_POLL_MS || '15000');
+export const GRAPH_LENS_ENFORCE_MS = Number(
+  process.env.KLOEL_MIRROR_GRAPH_LENS_ENFORCE_MS || '60000',
+);
 export const MIRROR_FORMAT_VERSION = 21;
 export const SOURCE_BODY_MIRROR_MAX_BYTES = Number(
-  process.env.KLOEL_SOURCE_BODY_MIRROR_MAX_BYTES || String(Number.MAX_SAFE_INTEGER),
+  process.env.KLOEL_SOURCE_BODY_MIRROR_MAX_BYTES || String(MAX_FILE_SIZE),
 );
 export const GENERATED_PAGE_SIZE = Number(process.env.KLOEL_GRAPH_PAGE_SIZE || '120');
 export const DIRTY_WORKSPACE_TAG = 'workspace/dirty';
 export const DIRTY_WORKSPACE_QUERY = 'tag:#workspace/dirty';
-export const DIRTY_WORKSPACE_COLOR_RGB = 14724096; // Obsidian yellow #e0ac00.
+export const DIRTY_WORKSPACE_COLOR_RGB = OBSIDIAN_TAG_COLORS.DIRTY_WORKSPACE.rgb; // see OBSIDIAN_TAG_COLORS.DIRTY_WORKSPACE in shared/severity-tokens.mjs
 export const LOCAL_COMMIT_TAG = 'workspace/local-commit';
 export const LOCAL_COMMIT_QUERY = 'tag:#workspace/local-commit';
 export const METADATA_ONLY_TAG = 'mirror/metadata-only';
 export const METADATA_ONLY_QUERY = 'tag:#mirror/metadata-only';
-export const METADATA_ONLY_COLOR_RGB = 8421504; // Obsidian gray #808080.
+export const METADATA_ONLY_COLOR_RGB = OBSIDIAN_TAG_COLORS.METADATA_ONLY.rgb; // see OBSIDIAN_TAG_COLORS.METADATA_ONLY in shared/severity-tokens.mjs
 export const GRAPH_ACTION_REQUIRED_TAG = 'graph/action-required';
 export const GRAPH_ACTION_REQUIRED_QUERY = 'tag:#graph/action-required';
 export const GRAPH_ACTION_REQUIRED_COLOR_RGB = 16711680; // red.
@@ -118,12 +121,26 @@ export const MACHINE_DIR = '_machine';
 export const CAMERA_DIR = '_camera';
 export const OBRA_DIR = '_obra';
 export const CLUSTER_DIR = '_clusters';
+export const WORKSPACE_DYNAMIC_DIR = '_workspace';
+export const WORKSPACE_DYNAMIC_NOTE = 'current.md';
 export const VISUAL_FACT_DIR = '_visual';
 
+// ── Color priority (first match wins in Obsidian) ───────────────────────────
+// ACTION first: dirty work-in-progress → TODO → missing proof → danger →
+// isolation/debt → static issue signals. Only files with NO action/danger
+// signal fall through to "what it does" (effect) and "where it lives"
+// (surface). So the graph reads as: hot cluster = attack here; the calm
+// rest = anatomy. Reordered 2026-05-18 to make "what to do" obvious.
 export const CODE_STATE_COLOR_GROUPS = [
   { query: DIRTY_WORKSPACE_QUERY, color: { a: 1, rgb: DIRTY_WORKSPACE_COLOR_RGB } },
   { query: GRAPH_ACTION_REQUIRED_QUERY, color: { a: 1, rgb: GRAPH_ACTION_REQUIRED_COLOR_RGB } },
   { query: GRAPH_EVIDENCE_GAP_QUERY, color: { a: 1, rgb: GRAPH_EVIDENCE_GAP_COLOR_RGB } },
+  { query: GRAPH_RISK_CRITICAL_QUERY, color: { a: 1, rgb: GRAPH_RISK_CRITICAL_COLOR_RGB } },
+  { query: GRAPH_RISK_HIGH_QUERY, color: { a: 1, rgb: 16724787 } },
+  { query: GRAPH_ORPHAN_QUERY, color: { a: 1, rgb: GRAPH_ORPHAN_COLOR_RGB } },
+  { query: SIGNAL_STATIC_HIGH_QUERY, color: { a: 1, rgb: SIGNAL_STATIC_HIGH_COLOR_RGB } },
+  { query: SIGNAL_HOTSPOT_QUERY, color: { a: 1, rgb: 14524637 } },
+  { query: SIGNAL_EXTERNAL_QUERY, color: { a: 1, rgb: SIGNAL_EXTERNAL_COLOR_RGB } },
   { query: GRAPH_EFFECT_SECURITY_QUERY, color: { a: 1, rgb: GRAPH_EFFECT_SECURITY_COLOR_RGB } },
   { query: GRAPH_EFFECT_ERROR_QUERY, color: { a: 1, rgb: GRAPH_EFFECT_ERROR_COLOR_RGB } },
   { query: GRAPH_EFFECT_ENTRYPOINT_QUERY, color: { a: 1, rgb: GRAPH_EFFECT_ENTRYPOINT_COLOR_RGB } },
@@ -133,21 +150,15 @@ export const CODE_STATE_COLOR_GROUPS = [
   { query: GRAPH_EFFECT_STATE_QUERY, color: { a: 1, rgb: GRAPH_EFFECT_STATE_COLOR_RGB } },
   { query: GRAPH_EFFECT_CONTRACT_QUERY, color: { a: 1, rgb: GRAPH_EFFECT_CONTRACT_COLOR_RGB } },
   { query: GRAPH_EFFECT_CONFIG_QUERY, color: { a: 1, rgb: GRAPH_EFFECT_CONFIG_COLOR_RGB } },
-  { query: METADATA_ONLY_QUERY, color: { a: 1, rgb: METADATA_ONLY_COLOR_RGB } },
-  { query: PULSE_MACHINE_QUERY, color: { a: 1, rgb: PULSE_MACHINE_COLOR_RGB } },
-  { query: SIGNAL_STATIC_HIGH_QUERY, color: { a: 1, rgb: SIGNAL_STATIC_HIGH_COLOR_RGB } },
-  { query: SIGNAL_HOTSPOT_QUERY, color: { a: 1, rgb: 14524637 } },
-  { query: SIGNAL_EXTERNAL_QUERY, color: { a: 1, rgb: SIGNAL_EXTERNAL_COLOR_RGB } },
-  { query: GRAPH_RISK_CRITICAL_QUERY, color: { a: 1, rgb: GRAPH_RISK_CRITICAL_COLOR_RGB } },
-  { query: GRAPH_RISK_HIGH_QUERY, color: { a: 1, rgb: 16724787 } },
-  { query: GRAPH_PROOF_TEST_QUERY, color: { a: 1, rgb: GRAPH_PROOF_TEST_COLOR_RGB } },
   { query: GRAPH_RUNTIME_API_QUERY, color: { a: 1, rgb: GRAPH_RUNTIME_API_COLOR_RGB } },
+  { query: GRAPH_PROOF_TEST_QUERY, color: { a: 1, rgb: GRAPH_PROOF_TEST_COLOR_RGB } },
   { query: GRAPH_SURFACE_UI_QUERY, color: { a: 1, rgb: GRAPH_SURFACE_UI_COLOR_RGB } },
   { query: GRAPH_SURFACE_BACKEND_QUERY, color: { a: 1, rgb: GRAPH_SURFACE_BACKEND_COLOR_RGB } },
   { query: GRAPH_SURFACE_WORKER_QUERY, color: { a: 1, rgb: GRAPH_SURFACE_WORKER_COLOR_RGB } },
   { query: GRAPH_SURFACE_SOURCE_QUERY, color: { a: 1, rgb: GRAPH_SURFACE_SOURCE_COLOR_RGB } },
   { query: GRAPH_GOVERNANCE_QUERY, color: { a: 1, rgb: GRAPH_GOVERNANCE_COLOR_RGB } },
-  { query: GRAPH_ORPHAN_QUERY, color: { a: 1, rgb: GRAPH_ORPHAN_COLOR_RGB } },
+  { query: PULSE_MACHINE_QUERY, color: { a: 1, rgb: PULSE_MACHINE_COLOR_RGB } },
+  { query: METADATA_ONLY_QUERY, color: { a: 1, rgb: METADATA_ONLY_COLOR_RGB } },
   { query: GRAPH_MOLECULE_QUERY, color: { a: 1, rgb: GRAPH_MOLECULE_COLOR_RGB } },
 ];
 
@@ -155,11 +166,15 @@ export const CODE_STATE_COLOR_GROUPS = [
 
 /** Directories to mirror from the repo root into _source/. */
 export const SOURCE_DIRECTORIES = [
+  '.github',
+  '.husky',
+  '.pulse',
   'backend',
+  'docker',
   'frontend',
+  'frontend-admin',
   'worker',
   'scripts',
-  '.github',
   'docs',
   'prisma',
   'nginx',
@@ -169,7 +184,10 @@ export const SOURCE_DIRECTORIES = [
 
 /** Root-level files eligible for mirroring. Supports glob-like wildcards. */
 export const ROOT_FILE_PATTERNS = [
+  { pattern: /^[^.][^/]*\.(?:md|json|ya?ml|toml|cjs|mjs|js)$/ },
+  { pattern: /^\.[^/]+\.(?:json|ya?ml|toml|cjs|mjs|js)$/ },
   { pattern: /^package\.json$/, target: 'package.json' },
+  { pattern: /^package-lock\.json$/, target: 'package-lock.json' },
   { pattern: /^pnpm-lock\.yaml$/, target: 'pnpm-lock.yaml' },
   { pattern: /^pnpm-workspace\.yaml$/, target: 'pnpm-workspace.yaml' },
   { pattern: /^tsconfig(\.\w+)?\.json$/, target: null }, // keep original name
@@ -212,13 +230,21 @@ export const SKIP_DIR_PATTERNS = [
   /test-results/,
   /^tmp$/,
   /^Obsidian$/,
-  /^\.pulse$/,
   /^\.omx$/,
   /^\.gitnexus$/,
   /^\.kilo$/,
   /^\.beads$/,
   /^\.agents$/,
   /^\.serena$/,
+  /^\.pulse$/,
+  /^\.atomic$/,
+  /^\.atomic-edit-locks$/,
+  /^\.opencode-prompts$/,
+  /^\.smart-env$/,
+  /^\.claudian$/,
+  /^artifacts$/,
+  /atomic-os-benchmark/,
+  /opencode-fleet/,
 ];
 
 export const SKIP_FILE_PATTERNS = [

@@ -1,0 +1,34 @@
+{
+  "runId": "wave-b-tenant-sweep-2026-05-11",
+  "concurrency": 5,
+  "timeoutSec": 1800,
+  "dir": "/Users/danielpenin/whatsapp_saas",
+  "skipPermissions": true,
+  "tasks": [
+    {
+      "id": "01-auth-service",
+      "title": "Wave B Slice 1 — TenantSweep-AuthService",
+      "promptFile": ".opencode-prompts/wave-b-tenant-sweep/01-auth-service.md"
+    },
+    {
+      "id": "02-kloel-service",
+      "title": "Wave B Slice 2 — TenantSweep-KloelService",
+      "promptFile": ".opencode-prompts/wave-b-tenant-sweep/02-kloel-service.md"
+    },
+    {
+      "id": "03-wallet-service",
+      "title": "Wave B Slice 3 — TenantSweep-WalletService",
+      "promptFile": ".opencode-prompts/wave-b-tenant-sweep/03-wallet-service.md"
+    },
+    {
+      "id": "04-checkout-service",
+      "title": "Wave B Slice 4 — TenantSweep-CheckoutService",
+      "promptFile": ".opencode-prompts/wave-b-tenant-sweep/04-checkout-service.md"
+    },
+    {
+      "id": "05-whatsapp-catchup-service",
+      "title": "Wave B Slice 5 — TenantSweep-WhatsappCatchupService",
+      "promptFile": ".opencode-prompts/wave-b-tenant-sweep/05-whatsapp-catchup-service.md"
+    }
+  ]
+}

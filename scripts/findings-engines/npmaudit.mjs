@@ -35,7 +35,7 @@ function parseAuditOutput(stdout, packagePath) {
   // npm audit returns { "vulnerabilities": { "pkg": { ... } } }
   const vulns = parsed.vulnerabilities || {};
   for (const [name, vuln] of Object.entries(vulns)) {
-    if (!vuln || typeof vuln !== 'object') continue;
+    if (!vuln || typeof vuln !== 'object') {continue;}
     const severity = SEVERITY_MAP[vuln.severity] || 'low';
     const viaIds =
       vuln.via && Array.isArray(vuln.via)
@@ -68,7 +68,7 @@ function parseAuditOutput(stdout, packagePath) {
 
 function getNpmVersion() {
   const r = spawnSync('npm', ['--version'], { encoding: 'utf-8' });
-  if (r.status === 0 && r.stdout) return `npm ${r.stdout.trim()}`;
+  if (r.status === 0 && r.stdout) {return `npm ${r.stdout.trim()}`;}
   return 'npm unknown';
 }
 
@@ -80,12 +80,12 @@ const errors = [];
 for (const ws of WORKSPACES) {
   const cwd = ws ? resolve(REPO_ROOT, ws) : REPO_ROOT;
   const packageJson = resolve(cwd, 'package.json');
-  if (!existsSync(packageJson)) continue;
+  if (!existsSync(packageJson)) {continue;}
   const lockFile = resolve(cwd, 'package-lock.json');
   const pkgFile = relative(REPO_ROOT, packageJson).replace(/\\/g, '/');
 
   // Only run audit if lockfile exists (audit needs it)
-  if (!existsSync(lockFile)) continue;
+  if (!existsSync(lockFile)) {continue;}
 
   const r = spawnSync('npm', ['audit', '--json'], {
     cwd,

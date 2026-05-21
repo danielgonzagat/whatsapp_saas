@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
 /**
@@ -11,7 +11,11 @@ import { PrismaService } from '../prisma/prisma.service';
  */
 @Injectable()
 export class MemberAreaStatsService {
-  constructor(private readonly prisma: PrismaService) {}
+  private readonly logger = new Logger(MemberAreaStatsService.name);
+
+  constructor(private readonly prisma: PrismaService) {
+    this.logger.log('MemberAreaStatsService initialized');
+  }
 
   async recalculate(areaId: string, workspaceId: string) {
     const [enrollmentAgg, moduleCount, lessonCount] = await Promise.all([

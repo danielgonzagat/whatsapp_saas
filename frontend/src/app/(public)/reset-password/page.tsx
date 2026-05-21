@@ -110,7 +110,7 @@ function ResetPasswordContent() {
         body: JSON.stringify({ token, password }),
       });
 
-      const data = await res.json().catch(() => ({}));
+      const data: { message?: string } = await res.json().catch(() => ({}));
 
       if (!res.ok) {
         setError(data.message || 'Erro ao redefinir senha. Tente novamente.');
@@ -458,7 +458,7 @@ export default function ResetPasswordPage() {
         >
           <KloelLoadingState
             size={88}
-            traceColor={kloelT(`#FFFFFF`)}
+            traceColor={colors.text.silver}
             label={kloelT(`Kloel`)}
             hint={kloelT(`preparando a redefinicao`)}
             minHeight={280}

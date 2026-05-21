@@ -37,6 +37,7 @@ function hasScenarioResults(value: unknown): value is { results: PulseScenarioRe
   return (
     Boolean(value) &&
     typeof value === 'object' &&
+    value !== null &&
     'results' in value &&
     Array.isArray(value.results)
   );

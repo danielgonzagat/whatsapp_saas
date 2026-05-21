@@ -1,13 +1,22 @@
-import { Injectable, Logger, Optional } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
+import { StructuredLogger } from '../logging/structured-logger';
 import { forEachSequential } from '../common/async-sequence';
+import { EmailService } from '../auth/email.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
+import { ChannelTransportRegistry } from './channel-transport.registry';
+import { MindBanditService } from './mind-bandit.service';
+import { MindCaseMemoryService } from './mind-case-memory.service';
+import { MindGuardsService } from './mind-guards.service';
+import { MindPolicyService } from './mind-policy.service';
+import { resolveCartRecoveryDecision } from './mind-recovery-decision-resolvers';
+import { renderEmailTemplate } from '../common/utils/email-template-renderer.util';
+import { escapeHtml } from '../common/utils/html-escape.util';
 import {
   buildListUnsubscribeHeader,
   buildUnsubscribeFooterHtml,
 } from '../common/utils/unsubscribe-footer.util';
-// @@index: optimistic lock via updatedAt — concurrent writes resolved by DB constraint
 
 type CartRecoveryMetadata = Record<string, unknown>;
 
@@ -19,33 +28,105 @@ function readCartRecoveryMetadata(value: unknown): CartRecoveryMetadata {
   return value as CartRecoveryMetadata;
 }
 
-/** Cart recovery service. */
+function resolvePriceBand(price: unknown): string {
+  const n = typeof price === 'number' ? price : Number(price);
+  if (!Number.isFinite(n) || n <= 0) return 'unknown';
+  if (n <= 50) return 'under_50';
+  if (n <= 100) return 'under_100';
+  if (n <= 300) return 'under_300';
+  if (n <= 500) return 'under_500';
+  return 'over_500';
+}
+
+function renderRecoveryEmail(productName: string, orderNumber: string, action: string): string {
+  const escapedProductName = escapeHtml(productName);
+  const bodyByAction: Record<string, string> = {
+    proof:
+      'Se a sua duvida for confianca, podemos te mostrar informacoes claras sobre <strong>' +
+      escapedProductName +
+      '</strong> para voce decidir com calma.',
+    urgency:
+      'Seu pedido de <strong>' +
+      escapedProductName +
+      '</strong> ficou em aberto. Se ainda fizer sentido para voce, pode retomar quando estiver pronto.',
+    help:
+      'Notamos que voce iniciou a compra de <strong>' +
+      escapedProductName +
+      '</strong> mas nao finalizou. Se ficou alguma duvida real, responda este email e ajudamos sem pressa.',
+    faq:
+      'Tem duvidas sobre <strong>' +
+      escapedProductName +
+      '</strong>? Acesse nossa pagina de perguntas frequentes ou responda este email.',
+    discount:
+      'Se o valor foi a principal duvida sobre <strong>' +
+      escapedProductName +
+      '</strong>, responda este email para avaliarmos a melhor condicao disponivel antes de voce decidir.',
+    pause:
+      'Seu pedido de <strong>' +
+      escapedProductName +
+      '</strong> esta aguardando. Sem pressa — quando estiver pronto, e so voltar.',
+  };
+
+  const body = bodyByAction[action] ?? bodyByAction.help ?? '';
+  const renderedTemplate = renderEmailTemplate('cart-recovery', {
+    productName,
+    orderNumber,
+  });
+  const templateBody = [
+    '<p style="color:#666;line-height:1.6;margin-bottom:24px;">',
+    'Notamos que voce iniciou a compra de <strong>' +
+      escapedProductName +
+      '</strong> mas nao finalizou.',
+    'Seu pedido ainda esta disponivel — complete sua compra agora!',
+    '</p>',
+  ].join('\n');
+  const recoveryBody =
+    '<p style="color:#666;line-height:1.6;margin-bottom:24px;">' + body + '</p>';
+
+  return renderedTemplate
+    .replace('Voce deixou algo no carrinho!', 'Sua compra ficou em aberto')
+    .replace(templateBody, recoveryBody);
+}
+
+/** Cart recovery service with MIND-driven recovery action decisions. */
 @Injectable()
 export class CartRecoveryService {
-  private readonly logger = new Logger(CartRecoveryService.name);
+  private readonly logger = StructuredLogger.from(CartRecoveryService.name);
   constructor(
     private readonly prisma: PrismaService,
     @Optional() private readonly opsAlert?: OpsAlertService,
+    @Optional() private readonly mindPolicy?: MindPolicyService,
+    @Optional() private readonly cases?: MindCaseMemoryService,
+    @Optional() private readonly guards?: MindGuardsService,
+    @Optional() private readonly transportRegistry?: ChannelTransportRegistry,
+    @Optional() private readonly bandit?: MindBanditService,
   ) {}
 
-  /** Check abandoned carts. */
-  @Cron('0 */30 * * * *') // Every 30 minutes
+  /** Check abandoned carts and dispatch MIND-chosen recovery actions. */
+  @Cron('0 */30 * * * *')
   async checkAbandonedCarts() {
     try {
       const thirtyMinAgo = new Date(Date.now() - 30 * 60 * 1000);
 
-      // Find PENDING orders older than 30 minutes that haven't received recovery emails
-      const abandoned = await this.prisma.checkoutOrder.findMany({
-        where: {
-          workspaceId: undefined,
-          status: 'PENDING',
-          createdAt: { lt: thirtyMinAgo },
-        },
-        include: { plan: { include: { product: true } } },
-        take: 50,
+      const workspaces = await this.prisma.workspace.findMany({
+        select: { id: true },
+        take: 500,
       });
+      const workspaceIds = workspaces.map((workspace) => workspace.id);
+      const abandoned =
+        workspaceIds.length > 0
+          ? await this.prisma.checkoutOrder.findMany({
+              where: {
+                workspaceId: { in: workspaceIds },
+                status: 'PENDING',
+                createdAt: { lt: thirtyMinAgo },
+              },
+              include: { plan: { include: { product: true } } },
+              orderBy: { createdAt: 'asc' },
+              take: 50,
+            })
+          : [];
 
-      // Filter out orders that already had recovery email sent (stored in metadata)
       const toRecover = abandoned.filter((order) => {
         const metadata = readCartRecoveryMetadata(order.metadata);
         return metadata.recoveryEmailSent !== true;
@@ -56,55 +137,133 @@ export class CartRecoveryService {
       }
       this.logger.log(`Found ${toRecover.length} abandoned carts to recover`);
 
-      const { EmailService } = await import('../auth/email.service');
-
       await forEachSequential(toRecover, async (order) => {
         try {
           if (!order.customerEmail) {
             return;
           }
 
-          const emailService = new EmailService();
-          const productName = order.plan?.product?.name || 'Seu pedido';
+          const orderWithPlan = order;
+          const productName = orderWithPlan.plan?.product?.name || 'Seu pedido';
           const customerEmail = order.customerEmail;
+          const wsId = order.workspaceId;
+          const product = order.plan?.product;
+          const priceBand = resolvePriceBand(product?.price);
+          const ageMinutes = Math.round((Date.now() - order.createdAt.getTime()) / 60000);
+
+          const emailCapable = await this.transportRegistry
+            ?.getCapability(wsId, 'email')
+            .then((cap) => cap.sendAvailable)
+            .catch(() => false);
+          if (this.transportRegistry && !emailCapable) {
+            this.logger.warn(
+              `Email channel not available for workspace ${wsId} — skipping cart recovery for order ${order.id}`,
+            );
+            return;
+          }
+
+          let recoveryAction = 'help';
+          let mindDecisionMeta: Record<string, unknown> = {};
+
+          if (wsId && this.mindPolicy) {
+            try {
+              const recoveryResult = await resolveCartRecoveryDecision(
+                this.mindPolicy,
+                this.cases,
+                this.bandit,
+                wsId,
+                order.id,
+                productName,
+                priceBand,
+                ageMinutes,
+              );
+              recoveryAction = recoveryResult.action;
+              mindDecisionMeta = {
+                ...(recoveryResult.memoryAction
+                  ? { mindCaseMemoryAction: recoveryResult.memoryAction }
+                  : {}),
+                ...(recoveryResult.banditAction ? { banditArm: recoveryResult.banditAction } : {}),
+                mindRecoveryAction: recoveryResult.action,
+                mindReason: recoveryResult.reasonInternal,
+              };
+            } catch (mindErr: unknown) {
+              this.logger.warn(
+                `MIND cart_recovery fallback for order ${order.id}: ${String(mindErr)}`,
+              );
+            }
+          }
+
+          if (this.guards && !this.transportRegistry) {
+            try {
+              const guardResult = await this.guards.evaluate({
+                workspaceId: wsId,
+                decisionType: 'cart_recovery',
+                action: `send_recovery_email:${recoveryAction}`,
+                context: {
+                  channel: 'email',
+                  withinComplianceWindow: true,
+                  productId: product?.id,
+                },
+              });
+              if (!guardResult.allowed) {
+                this.logger.warn(
+                  `Cart recovery blocked by guard ${guardResult.guardName} for order ${order.id}: ${guardResult.reason}`,
+                );
+                return;
+              }
+            } catch (guardErr: unknown) {
+              this.logger.warn(
+                `Guard evaluation failed for cart recovery order ${order.id}: ${String(guardErr)}`,
+              );
+            }
+          }
+
+          const emailBody = renderRecoveryEmail(productName, order.orderNumber, recoveryAction);
           const unsubscribeFooter = buildUnsubscribeFooterHtml({
             email: customerEmail,
-            workspaceId: order.workspaceId ?? undefined,
+            workspaceId: wsId,
           });
           const listUnsubscribe = buildListUnsubscribeHeader({
             email: customerEmail,
-            workspaceId: order.workspaceId ?? undefined,
+            workspaceId: wsId,
           });
+          const html = emailBody + unsubscribeFooter;
 
-          await emailService.sendEmail({
-            to: customerEmail,
-            subject: `Voce esqueceu algo — ${productName}`,
-            html: `
-            <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; padding: 20px;">
-              <div style="max-width: 500px; margin: 0 auto; background: white; border-radius: 12px; padding: 40px; box-shadow: 0 4px 20px rgba(0,0,0,0.1);">
-                <div style="font-size: 24px; font-weight: bold; color: #E85D30; margin-bottom: 20px;">KLOEL</div>
-                <h1 style="font-size: 22px; color: #1a1a1a; margin-bottom: 16px;">Voce deixou algo no carrinho!</h1>
-                <p style="color: #666; line-height: 1.6; margin-bottom: 24px;">
-                  Notamos que voce iniciou a compra de <strong>${productName}</strong> mas nao finalizou.
-                  Seu pedido ainda esta disponivel — complete sua compra agora!
-                </p>
-                <p style="color: #666; line-height: 1.6; margin-bottom: 24px;">
-                  Pedido #${order.orderNumber}
-                </p>
-                <div style="margin-top: 32px; font-size: 12px; color: #999;">
-                  <p>KLOEL - Inteligencia Comercial Autonoma</p>
-                </div>
-              </div>
-            </div>
-            ${unsubscribeFooter}
-          `,
-            headers: {
-              'List-Unsubscribe': listUnsubscribe,
-              'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
-            },
-          });
+          if (this.transportRegistry) {
+            const sendResult = await this.transportRegistry.send(wsId, {
+              workspaceId: wsId,
+              channel: 'email',
+              recipientId: customerEmail,
+              content: html,
+              externalId: `cart-recovery:${order.id}`,
+              complianceMode: 'proactive',
+              guardContext: {
+                channel: 'email',
+                withinComplianceWindow: true,
+                productId: product?.id,
+              },
+            });
+            if (!sendResult.success) {
+              this.logger.warn(
+                `Cart recovery transport failed for order ${order.id}: ${
+                  sendResult.error || sendResult.blockedReason || 'unknown_error'
+                }`,
+              );
+              return;
+            }
+          } else {
+            const emailService = new EmailService();
+            await emailService.sendEmail({
+              to: customerEmail,
+              subject: `Seu pedido ainda esta aberto - ${productName}`,
+              html,
+              headers: {
+                'List-Unsubscribe': listUnsubscribe,
+                'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+              },
+            });
+          }
 
-          // Mark as sent using metadata field
           await this.prisma.checkoutOrder.updateMany({
             where: { id: order.id, workspaceId: order.workspaceId },
             data: {
@@ -112,19 +271,18 @@ export class CartRecoveryService {
                 ...readCartRecoveryMetadata(order.metadata),
                 recoveryEmailSent: true,
                 recoveryEmailSentAt: new Date().toISOString(),
+                ...mindDecisionMeta,
               },
             },
           });
 
-          this.logger.log(`Recovery email sent for order ${order.id}`);
+          this.logger.log(`Recovery email sent for order ${order.id} (action=${recoveryAction})`);
         } catch (e: unknown) {
-          // PULSE:OK — Cart recovery is best-effort background job; other orders still processed
           this.logger.error(`Cart recovery failed for ${order.id}: ${String(e)}`);
         }
       });
     } catch (e: unknown) {
       void this.opsAlert?.alertOnCriticalError(e, 'CartRecoveryService.checkAbandonedCarts');
-      // PULSE:OK — cart recovery is non-critical background cron; errors logged and retried next cycle
       this.logger.error(`checkAbandonedCarts cron failed: ${String(e)}`);
     }
   }

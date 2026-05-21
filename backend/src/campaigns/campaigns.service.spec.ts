@@ -1,3 +1,4 @@
+import { CampaignEventEmitterService } from '../kloel/campaign-emitter/campaign-event-emitter.service';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { CampaignsService } from './campaigns.service';
@@ -65,6 +66,10 @@ describe('CampaignsService', () => {
   let mockPrisma: ReturnType<typeof buildMockPrisma>;
   let mockAudit: { log: jest.Mock; logWithTx: jest.Mock; getLogs: jest.Mock };
   let mockSmartTime: { getBestTime: jest.Mock };
+  let mockCampaignEmitter: {
+    emitAudienceReached: jest.Mock;
+    emitCreativeSwapped: jest.Mock;
+  };
 
   beforeEach(async () => {
     mockQueueAdd.mockResolvedValue(undefined);
@@ -78,6 +83,10 @@ describe('CampaignsService', () => {
     mockSmartTime = {
       getBestTime: jest.fn().mockResolvedValue({ bestHour: 10 }),
     };
+    mockCampaignEmitter = {
+      emitAudienceReached: jest.fn(),
+      emitCreativeSwapped: jest.fn(),
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -85,6 +94,7 @@ describe('CampaignsService', () => {
         { provide: PrismaService, useValue: mockPrisma },
         { provide: AuditService, useValue: mockAudit },
         { provide: SmartTimeService, useValue: mockSmartTime },
+        { provide: CampaignEventEmitterService, useValue: mockCampaignEmitter },
       ],
     }).compile();
 

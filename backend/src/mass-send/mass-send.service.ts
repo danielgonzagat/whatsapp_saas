@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
 import { Queue } from 'bullmq';
 import { createRedisClient } from '../common/redis/redis.util';
 
@@ -6,13 +6,19 @@ const D_RE = /\D/g;
 
 /** Mass send service. */
 @Injectable()
-export class MassSendService {
+export class MassSendService implements OnModuleDestroy {
+  private readonly logger = new Logger(MassSendService.name);
   private queue: Queue;
 
   constructor() {
+    this.logger.log('MassSendService initialized');
     this.queue = new Queue('mass-send', {
       connection: createRedisClient(),
     });
+  }
+
+  async onModuleDestroy(): Promise<void> {
+    await this.queue.close();
   }
 
   /** Enqueue campaign. */
@@ -35,7 +41,6 @@ export class MassSendService {
     if (sanitized.length === 0) {
       throw new BadRequestException('Nenhum número válido após sanitização');
     }
-    // PULSE:OK — worker processor pending implementation
     const job = await this.queue.add('dispatch', {
       workspaceId,
       user,

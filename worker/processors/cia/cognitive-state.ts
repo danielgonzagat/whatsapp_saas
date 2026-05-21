@@ -4,9 +4,9 @@ export {
   type CognitiveActionType,
   type CustomerCognitiveState,
   type RecordDecisionOutcomeInput,
-} from './cognitive-state/__parts__/cognitive-state-types';
+} from './cognitive-state/cognitive-state-types';
 
-export { buildSeedCognitiveState } from './cognitive-state/__parts__/cognitive-state-build';
-export { loadCustomerCognitiveState } from './cognitive-state/__parts__/cognitive-state-load';
-export { persistCustomerCognitiveState } from './cognitive-state/__parts__/cognitive-state-persist';
-export { recordDecisionOutcome } from './cognitive-state/__parts__/cognitive-state-record';
+export { buildSeedCognitiveState } from './cognitive-state/cognitive-state-build';
+export { loadCustomerCognitiveState } from './cognitive-state/cognitive-state-load';
+export { persistCustomerCognitiveState } from './cognitive-state/cognitive-state-persist';
+export { recordDecisionOutcome } from './cognitive-state/cognitive-state-record';

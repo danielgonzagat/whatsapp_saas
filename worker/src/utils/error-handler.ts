@@ -11,29 +11,6 @@ export class WorkerError extends Error {
   }
 }
 
-/** Handle error and return structured info for logging/monitoring. */
-export const handleError = (error: unknown, jobName: string) => {
-  const safeMessage = error instanceof Error ? error.message : String(error);
-  const safeName = error instanceof Error ? error.name : typeof error;
-  console.error('[%s] Error: %s (%s)', jobName, safeMessage, safeName);
-
-  if (error instanceof WorkerError) {
-    return {
-      success: false,
-      error: error.message,
-      code: error.code,
-      retryable: error.retryable,
-    };
-  }
-
-  return {
-    success: false,
-    error: safeMessage,
-    code: 'UNKNOWN_ERROR',
-    retryable: true,
-  };
-};
-
 /** HTTP status codes that indicate a permanent (non-retryable) failure. */
 const PERMANENT_HTTP_STATUSES = new Set([400, 401, 402, 403, 404, 405, 409, 410, 422]);
 

@@ -487,6 +487,34 @@ describe('ConnectPayoutApprovalService', () => {
     ).rejects.toBeInstanceOf(BadRequestException);
   });
 
+  it('keeps admin global listing scoped to approval requests with a workspace', async () => {
+    const { service, prisma } = buildService();
+    prisma.approvalRequest.findMany.mockResolvedValueOnce([]);
+    prisma.approvalRequest.count.mockResolvedValueOnce(0);
+
+    await service.listAdminRequests({
+      state: 'OPEN',
+    });
+
+    expect(prisma.approvalRequest.findMany).toHaveBeenCalledWith({
+      where: {
+        kind: 'connect_payout',
+        workspaceId: { not: '' },
+        state: 'OPEN',
+      },
+      orderBy: { createdAt: 'desc' },
+      skip: 0,
+      take: 50,
+    });
+    expect(prisma.approvalRequest.count).toHaveBeenCalledWith({
+      where: {
+        kind: 'connect_payout',
+        workspaceId: { not: '' },
+        state: 'OPEN',
+      },
+    });
+  });
+
   it('throws when approving a missing request', async () => {
     const { service, prisma } = buildService();
     prisma.approvalRequest.findUnique.mockResolvedValueOnce(null);

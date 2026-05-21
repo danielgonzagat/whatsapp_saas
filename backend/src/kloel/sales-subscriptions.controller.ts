@@ -3,7 +3,6 @@ import {
   Body,
   Controller,
   Get,
-  Logger,
   NotFoundException,
   Param,
   Post,
@@ -13,18 +12,21 @@ import {
   UseGuards,
   Optional,
 } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { Prisma } from '@prisma/client';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { AuthenticatedRequest } from '../common/interfaces';
 import { PrismaService } from '../prisma/prisma.service';
 import { ChangeSubscriptionPlanDto } from './dto/sales-actions.dto';
 import { OpsAlertService } from '../observability/ops-alert.service';
+import { RouteClass } from '../common/throttler/route-class.decorator';
 
 /** Customer-subscription sub-controller (mounted under /sales). */
 @UseGuards(JwtAuthGuard)
 @Controller('sales')
+@RouteClass('read')
 export class SalesSubscriptionsController {
-  private readonly logger = new Logger(SalesSubscriptionsController.name);
+  private readonly logger = StructuredLogger.from(SalesSubscriptionsController.name);
 
   constructor(
     private readonly prisma: PrismaService,

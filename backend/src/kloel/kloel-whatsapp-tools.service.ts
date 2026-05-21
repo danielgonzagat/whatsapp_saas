@@ -1,15 +1,17 @@
-import { Injectable, Logger, Optional } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { WhatsAppProviderRegistry } from '../whatsapp/providers/provider-registry';
 import { WhatsappService } from '../whatsapp/whatsapp.service';
 import { AudioService } from './audio.service';
+import { ChannelTransportRegistry } from './channel-transport.registry';
 import {
   NON_DIGIT_RE,
   toolSendAudio as toolSendAudioFn,
   toolSendDocument as toolSendDocumentFn,
-} from './__companions__/kloel-whatsapp-tools.service.companion';
+} from './kloel-whatsapp-tools.helpers';
 import type {
   ToolResult,
   ToolSendWhatsAppMessageArgs,
@@ -21,7 +23,7 @@ import type {
   ToolSendAudioArgs,
   ToolSendDocumentArgs,
   ToolTranscribeAudioArgs,
-} from './__companions__/kloel-whatsapp-tools.service.companion';
+} from './kloel-whatsapp-tools.helpers';
 export { NON_DIGIT_RE };
 export type {
   ToolResult,
@@ -39,12 +41,13 @@ export type {
 /** Handles all WhatsApp-related tool calls from the AI chat. */
 @Injectable()
 export class KloelWhatsAppToolsService {
-  private readonly logger = new Logger(KloelWhatsAppToolsService.name);
+  private readonly logger = StructuredLogger.from(KloelWhatsAppToolsService.name);
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly whatsappService: WhatsappService,
-    private readonly providerRegistry: WhatsAppProviderRegistry,
+    @Optional() private readonly whatsappService: WhatsappService,
+    @Optional() private readonly providerRegistry: WhatsAppProviderRegistry,
+    private readonly transports: ChannelTransportRegistry,
     private readonly audioService: AudioService,
     private readonly planLimits: PlanLimitsService,
     @Optional() private readonly opsAlert?: OpsAlertService,
@@ -145,7 +148,15 @@ export class KloelWhatsAppToolsService {
 
     try {
       await this.planLimits.ensureDailyMessageQuota(workspaceId);
-      await this.whatsappService.sendMessage(workspaceId, normalizedPhone, message);
+      const send = await this.transports.send(workspaceId, {
+        workspaceId,
+        channel: 'whatsapp',
+        recipientId: normalizedPhone,
+        content: message,
+      });
+      if (!send.success) {
+        throw new Error(send.blockedReason || send.error || 'Falha ao enviar mensagem');
+      }
       await this.prisma.message.updateMany({
         where: { id: msg.id, workspaceId },
         data: { status: 'SENT' },
@@ -194,8 +205,8 @@ export class KloelWhatsAppToolsService {
   ): Promise<ToolResult> {
     const contact = await this.whatsappService.createContact(workspaceId, {
       phone: args?.phone,
-      name: args?.name,
-      email: args?.email,
+      ...(args?.name !== undefined ? { name: args.name } : {}),
+      ...(args?.email !== undefined ? { email: args.email } : {}),
     });
     return {
       success: true,
@@ -292,9 +303,9 @@ export class KloelWhatsAppToolsService {
       {
         audioService: this.audioService,
         planLimits: this.planLimits,
-        whatsappService: this.whatsappService,
+        transports: this.transports,
         logger: this.logger,
-        opsAlert: this.opsAlert,
+        ...(this.opsAlert !== undefined ? { opsAlert: this.opsAlert } : {}),
       },
       workspaceId,
       args,
@@ -306,9 +317,9 @@ export class KloelWhatsAppToolsService {
       {
         prisma: this.prisma,
         planLimits: this.planLimits,
-        whatsappService: this.whatsappService,
+        transports: this.transports,
         logger: this.logger,
-        opsAlert: this.opsAlert,
+        ...(this.opsAlert !== undefined ? { opsAlert: this.opsAlert } : {}),
       },
       workspaceId,
       args,

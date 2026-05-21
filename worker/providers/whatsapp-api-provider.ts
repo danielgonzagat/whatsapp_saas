@@ -13,16 +13,16 @@ interface WorkspaceOrId {
 
 /** Options for sending text messages. */
 interface SendTextOptions {
-  quotedMessageId?: string;
-  externalId?: string;
-  chatId?: string;
+  quotedMessageId?: string | undefined;
+  externalId?: string | undefined;
+  chatId?: string | undefined;
 }
 
 /** Options for sending media messages. */
 interface SendMediaOptions {
-  quotedMessageId?: string;
-  externalId?: string;
-  chatId?: string;
+  quotedMessageId?: string | undefined;
+  externalId?: string | undefined;
+  chatId?: string | undefined;
 }
 
 /** Options for retrieving chat messages. */

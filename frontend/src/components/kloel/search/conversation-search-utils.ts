@@ -37,7 +37,7 @@ export interface ConversationSearchResult {
   /** Title property. */
   title: string;
   /** Updated at property. */
-  updatedAt?: string;
+  updatedAt?: string | undefined;
   /** Matched content property. */
   matchedContent?: string;
   /** Preview html property. */

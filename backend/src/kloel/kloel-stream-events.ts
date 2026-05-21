@@ -65,6 +65,8 @@ interface KloelToolResultEvent {
   result: unknown;
   /** Error property. */
   error?: string;
+  /** Artifact id property. */
+  artifactId?: string;
   /** Done property. */
   done: false;
 }
@@ -104,10 +106,11 @@ export function createKloelThreadEvent(
   conversationId: string,
   title?: string | null,
 ): KloelThreadEvent {
+  const resolvedTitle = typeof title === 'string' ? title : undefined;
   return {
     type: 'thread',
     conversationId,
-    title: typeof title === 'string' ? title : undefined,
+    ...(resolvedTitle ? { title: resolvedTitle } : {}),
     done: false,
   };
 }
@@ -121,7 +124,7 @@ export function createKloelStatusEvent(
     type: 'status',
     phase,
     streaming: phase === 'streaming_token',
-    message,
+    ...(typeof message === 'string' ? { message } : {}),
     done: false,
   };
 }
@@ -157,6 +160,7 @@ export function createKloelToolResultEvent(input: {
   success: boolean;
   result: unknown;
   error?: string;
+  artifactId?: string;
 }): KloelToolResultEvent {
   return {
     type: 'tool_result',
@@ -164,7 +168,8 @@ export function createKloelToolResultEvent(input: {
     tool: input.tool,
     success: input.success,
     result: input.result,
-    error: input.error,
+    ...(input.error !== undefined ? { error: input.error } : {}),
+    ...(input.artifactId !== undefined ? { artifactId: input.artifactId } : {}),
     done: false,
   };
 }
@@ -178,7 +183,7 @@ export function createKloelErrorEvent(input: {
   return {
     type: 'error',
     error: input.error,
-    content: input.content,
+    ...(input.content !== undefined ? { content: input.content } : {}),
     done: input.done === true,
   };
 }

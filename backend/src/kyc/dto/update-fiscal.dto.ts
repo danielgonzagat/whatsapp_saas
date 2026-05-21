@@ -3,7 +3,7 @@ import { IsIn, IsOptional, IsString, MaxLength } from 'class-validator';
 /** Update fiscal dto. */
 export class UpdateFiscalDto {
   /** Type property. */
-  @IsString() @IsIn(['PF', 'PJ']) type: string;
+  @IsString() @IsIn(['PF', 'PJ']) type!: string;
   /** Cpf property. */
   @IsOptional() @IsString() @MaxLength(14) cpf?: string;
   /** Full name property. */

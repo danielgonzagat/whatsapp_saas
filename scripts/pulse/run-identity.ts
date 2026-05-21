@@ -38,17 +38,6 @@ export interface PulsePreservedIdentity {
   reuseReason: string;
 }
 
-/** Identity keys injected into every PULSE artifact. */
-const IDENTITY_KEYS = ['runId', 'generatedAt'] as const;
-
-/** Preserved-identity keys for reused artifacts. */
-const PRESERVED_KEYS: ReadonlyArray<keyof PulsePreservedIdentity> = [
-  'preservedFromPreviousRun',
-  'originalRunId',
-  'originalGeneratedAt',
-  'reuseReason',
-];
-
 /**
  * Create a canonical run identity for a PULSE execution.
  *

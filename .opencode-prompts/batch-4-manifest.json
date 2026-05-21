@@ -1,0 +1,45 @@
+{
+  "runId": "batch-4-2026-05-11",
+  "concurrency": 7,
+  "timeoutSec": 2400,
+  "dir": "/Users/danielpenin/whatsapp_saas",
+  "skipPermissions": true,
+  "_note": "Batch 4 — dispatch AFTER batch-3 returns. Heavy on hardcode liq (M-1) + decomp (K-1) + remaining strict-mode (Q-5/6) + integration (I-1) + coverage (H-Admin-A, H-Autopilot-A). Mix of big-impact slices.",
+  "tasks": [
+    {
+      "id": "Q-5-payments-split-ledger",
+      "title": "Wave Q/5 — Strict-mode sweep backend/src/payments/{split,ledger}",
+      "promptFile": ".opencode-prompts/wave-q-strict-mode/05-payments-split-ledger.md"
+    },
+    {
+      "id": "Q-6-pulse-common-utils",
+      "title": "Wave Q/6 — Strict-mode sweep backend/src/{pulse/dto,common/utils}",
+      "promptFile": ".opencode-prompts/wave-q-strict-mode/06-pulse-common-utils.md"
+    },
+    {
+      "id": "M-1-convergence-plan",
+      "title": "Wave M/1 — LiqSlice ConvergencePlan (4607 hardcode findings, 50%+ reduction)",
+      "promptFile": ".opencode-prompts/wave-m-hardcode/01-convergence-plan.md"
+    },
+    {
+      "id": "K-1-inbox-workspace",
+      "title": "Wave K/1 — Decomp InboxWorkspace.tsx 582 lines into ≤300 cohesive parts",
+      "promptFile": ".opencode-prompts/wave-k-decomp/01-inbox-workspace.md"
+    },
+    {
+      "id": "I-1-meta-marketing",
+      "title": "Wave I/1 — Meta Marketing complete (OAuth + CAPI + sync + webhook + token-crypto)",
+      "promptFile": ".opencode-prompts/wave-i-integrations/01-meta-marketing-complete.md"
+    },
+    {
+      "id": "H-admin-A-coverage",
+      "title": "Wave H/Coverage-ADMIN-A — 5 admin service specs",
+      "promptFile": ".opencode-prompts/wave-h-coverage/05-admin-A.md"
+    },
+    {
+      "id": "H-autopilot-A-coverage",
+      "title": "Wave H/Coverage-AUTOPILOT-A — 4 autopilot service specs",
+      "promptFile": ".opencode-prompts/wave-h-coverage/06-autopilot-A.md"
+    }
+  ]
+}

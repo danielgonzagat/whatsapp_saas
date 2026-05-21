@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { AdminRole, AdminUserStatus, Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AdminAuditService } from '../audit/admin-audit.service';
@@ -40,11 +40,15 @@ export interface UpdateAdminUserInput {
 /** Admin users service. */
 @Injectable()
 export class AdminUsersService {
+  private readonly logger = new Logger(AdminUsersService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly permissions: AdminPermissionsService,
     private readonly audit: AdminAuditService,
-  ) {}
+  ) {
+    this.logger.log('AdminUsersService initialized');
+  }
 
   /** Create. */
   async create(input: CreateAdminUserInput) {
@@ -88,7 +92,6 @@ export class AdminUsersService {
   }
 
   /** List. */
-  // PULSE_OK: bounded by admin user count (low cardinality)
   async list() {
     const users = await this.prisma.adminUser.findMany({
       orderBy: { createdAt: 'desc' },
@@ -149,14 +152,10 @@ export class AdminUsersService {
     return data;
   }
 
-  private async reseedPermissionsForRoleChange(id: string, role: AdminRole): Promise<void> {
-    await this.prisma.adminPermission.deleteMany({ where: { adminUserId: id } });
-    await this.permissions.seedDefaults(id, role);
-  }
-
   private buildUpdateAuditDetails(
     current: { role: AdminRole; status: AdminUserStatus; name: string },
     patch: UpdateAdminUserInput,
+    revokedSessions: number,
   ): Prisma.InputJsonValue {
     return {
       before: { role: current.role, status: current.status, name: current.name },
@@ -165,7 +164,17 @@ export class AdminUsersService {
         status: patch.status ?? null,
         name: patch.name ?? null,
       },
+      revokedSessions,
     };
+  }
+
+  private shouldRevokeSessionsAfterUpdate(
+    current: { role: AdminRole; status: AdminUserStatus },
+    patch: UpdateAdminUserInput,
+  ): boolean {
+    const roleChanged = patch.role !== undefined && patch.role !== current.role;
+    const statusChanged = patch.status !== undefined && patch.status !== current.status;
+    return roleChanged || statusChanged;
   }
 
   /** Update. */
@@ -181,6 +190,7 @@ export class AdminUsersService {
 
         const data = this.buildAdminUserUpdateData(patch, current.role);
         const needsReseed = this.isRoleChange(patch, current.role);
+        const shouldRevokeSessions = this.shouldRevokeSessionsAfterUpdate(current, patch);
 
         const result = await tx.adminUser.update({ where: { id }, data });
 
@@ -200,13 +210,26 @@ export class AdminUsersService {
           }
         }
 
+        let revokedSessions = 0;
+        if (shouldRevokeSessions) {
+          const revoked = await tx.adminSession.updateMany({
+            where: {
+              adminUserId: id,
+              revokedAt: null,
+              expiresAt: { gt: new Date() },
+            },
+            data: { revokedAt: new Date() },
+          });
+          revokedSessions = revoked.count;
+        }
+
         await tx.adminAuditLog.create({
           data: {
             adminUserId: patch.actorId,
             action: 'admin.users.updated',
             entityType: 'AdminUser',
             entityId: id,
-            details: this.buildUpdateAuditDetails(current, patch),
+            details: this.buildUpdateAuditDetails(current, patch, revokedSessions),
           },
         });
 

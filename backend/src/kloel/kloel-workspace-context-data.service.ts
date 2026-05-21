@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { PrismaService } from '../prisma/prisma.service';
 import type { KloelContextFormatterLimits } from './kloel-context-formatter.types';
 import { buildWorkspaceProductSelect } from './kloel-workspace-context-product-select';
@@ -60,7 +61,11 @@ export interface WorkspaceContextRawData {
 /** Fetches all raw data needed to build workspace context in one parallel round-trip. */
 @Injectable()
 export class KloelWorkspaceContextDataService {
-  constructor(private readonly prisma: PrismaService) {}
+  private readonly logger = StructuredLogger.from(KloelWorkspaceContextDataService.name);
+
+  constructor(private readonly prisma: PrismaService) {
+    this.logger.log('KloelWorkspaceContextDataService initialized');
+  }
 
   async fetchAll(
     workspaceId: string,

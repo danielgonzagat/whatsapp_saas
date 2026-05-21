@@ -34,7 +34,9 @@ const datadogLogsEnabled =
 let sentryModulePromise: Promise<typeof import('@sentry/nextjs')> | null = null;
 
 function getSentryModule() {
-  if (!sentryEnabled) return null;
+  if (!sentryEnabled) {
+    return null;
+  }
   if (!sentryModulePromise) {
     sentryModulePromise = import('@sentry/nextjs');
   }
@@ -179,7 +181,9 @@ export function onRouterTransitionStart(
   if (datadogRumEnabled) {
     onDatadogRouterTransitionStart(...args);
   }
-  if (!sentryEnabled) return;
+  if (!sentryEnabled) {
+    return;
+  }
   void getSentryModule()?.then((Sentry) => {
     (Sentry.captureRouterTransitionStart as (...params: unknown[]) => unknown)(...args);
   });

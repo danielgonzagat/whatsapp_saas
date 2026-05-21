@@ -7,29 +7,29 @@
 
 -- CreateEnum
 CREATE TYPE "FraudBlacklistType" AS ENUM (
-  'CPF',
-  'CNPJ',
-  'EMAIL',
-  'IP',
-  'DEVICE_FINGERPRINT',
-  'CARD_BIN'
+    'CPF',
+    'CNPJ',
+    'EMAIL',
+    'IP',
+    'DEVICE_FINGERPRINT',
+    'CARD_BIN'
 );
 
 -- CreateTable
 CREATE TABLE "fraud_blacklist" (
-  "id" TEXT NOT NULL,
-  "type" "FraudBlacklistType" NOT NULL,
-  "value" TEXT NOT NULL,
-  "reason" TEXT NOT NULL,
-  "added_by" TEXT,
-  "expires_at" TIMESTAMP(3),
-  "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "id" TEXT NOT NULL,
+    "type" "FraudBlacklistType" NOT NULL,
+    "value" TEXT NOT NULL,
+    "reason" TEXT NOT NULL,
+    "added_by" TEXT,
+    "expires_at" TIMESTAMP(3),
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
-  CONSTRAINT "fraud_blacklist_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "fraud_blacklist_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateIndex
-CREATE UNIQUE INDEX "fraud_blacklist_type_value_key" ON "fraud_blacklist"("type", "value");
+CREATE UNIQUE INDEX "fraud_blacklist_type_value_key" ON "fraud_blacklist" ("type", "value");
 
 -- CreateIndex
-CREATE INDEX "fraud_blacklist_expires_at_idx" ON "fraud_blacklist"("expires_at");
+CREATE INDEX "fraud_blacklist_expires_at_idx" ON "fraud_blacklist" ("expires_at");

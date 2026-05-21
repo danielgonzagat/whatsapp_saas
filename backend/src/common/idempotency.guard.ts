@@ -40,6 +40,49 @@ const POLL_INTERVAL_MS = 200;
 
 const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
+type IdempotencyRecord = Record<string, unknown>;
+
+interface IdempotencyRequest {
+  headers?: IdempotencyRecord;
+  user?: unknown;
+  workspaceId?: unknown;
+  route?: unknown;
+  url?: unknown;
+  method?: unknown;
+  body?: unknown;
+  _idempotencyKey?: string;
+  _idempotencyTtl?: number;
+}
+
+interface IdempotencyResponse {
+  status: (code: number) => { json: (body: unknown) => unknown };
+}
+
+function isRecord(value: unknown): value is IdempotencyRecord {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function readStringProperty(source: unknown, key: string): string | undefined {
+  if (!isRecord(source)) {
+    return undefined;
+  }
+  const value = source[key];
+  return typeof value === 'string' && value.trim() ? value : undefined;
+}
+
+function readNumberProperty(source: unknown, key: string): number | undefined {
+  if (!isRecord(source)) {
+    return undefined;
+  }
+  const value = source[key];
+  return typeof value === 'number' && Number.isFinite(value) ? value : undefined;
+}
+
+function parseCacheEntry(value: string): IdempotencyRecord | null {
+  const parsed: unknown = JSON.parse(value);
+  return isRecord(parsed) ? parsed : null;
+}
+
 /**
  * IdempotencyGuard enforces Wave 1 invariant I1 (cached-response replay-safe)
  * and Wave 2 invariant I13 (body-fingerprint scoping).
@@ -84,8 +127,8 @@ export class IdempotencyGuard implements CanActivate {
       return true;
     }
 
-    const request = context.switchToHttp().getRequest();
-    const idempotencyKey = request.headers['x-idempotency-key'];
+    const request = context.switchToHttp().getRequest<IdempotencyRequest>();
+    const idempotencyKey = readStringProperty(request.headers, 'x-idempotency-key');
     if (!idempotencyKey) {
       return true;
     }
@@ -94,22 +137,15 @@ export class IdempotencyGuard implements CanActivate {
     const v2Enabled = this.featureFlags?.isEnabled('idempotency.v2') ?? true;
 
     if (v2Enabled) {
-      return this.canActivateV2(context, idempotencyKey as string, ttl);
+      return this.canActivateV2(context, idempotencyKey, ttl);
     }
-    return this.canActivateV1(context, idempotencyKey as string, ttl);
+    return this.canActivateV1(context, idempotencyKey, ttl);
   }
 
   // ------------------------------------------------------------
   // v2 — scoped key + body fingerprint (I13, P6-5)
   // ------------------------------------------------------------
-  private buildV2Context(request: {
-    user?: { workspaceId?: string; sub?: string; id?: string };
-    workspaceId?: string;
-    route?: { path?: string };
-    url?: string;
-    method?: string;
-    body?: unknown;
-  }): {
+  private buildV2Context(request: IdempotencyRequest): {
     workspaceId: string;
     actorId: string;
     routeTemplate: string;
@@ -117,10 +153,17 @@ export class IdempotencyGuard implements CanActivate {
     bodyFp: string;
   } {
     return {
-      workspaceId: request.user?.workspaceId ?? request.workspaceId ?? 'anon',
-      actorId: request.user?.sub ?? request.user?.id ?? 'anon',
-      routeTemplate: request.route?.path ?? request.url ?? 'unknown',
-      method: request.method ?? 'UNKNOWN',
+      workspaceId:
+        readStringProperty(request.user, 'workspaceId') ??
+        (typeof request.workspaceId === 'string' ? request.workspaceId : undefined) ??
+        'anon',
+      actorId:
+        readStringProperty(request.user, 'sub') ?? readStringProperty(request.user, 'id') ?? 'anon',
+      routeTemplate:
+        readStringProperty(request.route, 'path') ??
+        (typeof request.url === 'string' ? request.url : undefined) ??
+        'unknown',
+      method: typeof request.method === 'string' ? request.method : 'UNKNOWN',
       bodyFp: bodyFingerprint(request.body ?? null),
     };
   }
@@ -155,7 +198,7 @@ export class IdempotencyGuard implements CanActivate {
     idempotencyKey: string,
     ttl: number,
   ): Promise<boolean> {
-    const request = context.switchToHttp().getRequest();
+    const request = context.switchToHttp().getRequest<IdempotencyRequest>();
     const { workspaceId, actorId, routeTemplate, method, bodyFp } = this.buildV2Context(request);
 
     const scopeKey = buildScopeKey({
@@ -218,7 +261,7 @@ export class IdempotencyGuard implements CanActivate {
     idempotencyKey: string,
     ttl: number,
   ): Promise<boolean> {
-    const request = context.switchToHttp().getRequest();
+    const request = context.switchToHttp().getRequest<IdempotencyRequest>();
     const cacheKey = `idempotency:${idempotencyKey}`;
 
     try {
@@ -262,7 +305,7 @@ export class IdempotencyGuard implements CanActivate {
   ): Promise<{ kind: 'responded' | 'proceed' }> {
     let cached: Record<string, unknown> | undefined;
     try {
-      cached = JSON.parse(existing);
+      cached = parseCacheEntry(existing) ?? undefined;
     } catch {
       // Corrupt cache entry — treat as if no entry exists.
       await this.redis.del(cacheKey).catch(() => undefined);
@@ -285,11 +328,11 @@ export class IdempotencyGuard implements CanActivate {
             return { kind: 'proceed' };
           }
           try {
-            const retryParsed = JSON.parse(retry) as Record<string, unknown>;
+            const retryParsed = parseCacheEntry(retry);
             if (retryParsed?.processing !== true && retryParsed?.body !== undefined) {
               return {
                 kind: 'responded',
-                statusCode: Number(retryParsed.statusCode || 200),
+                statusCode: readNumberProperty(retryParsed, 'statusCode') ?? 200,
                 body: retryParsed.body,
               };
             }
@@ -305,8 +348,7 @@ export class IdempotencyGuard implements CanActivate {
         return { kind: 'proceed' };
       }
       if (polled.kind === 'responded') {
-        const response = context.switchToHttp().getResponse();
-        response.status(polled.statusCode || 200).json(polled.body);
+        this.respondFromCache(context, polled.statusCode ?? 200, polled.body);
         return { kind: 'responded' };
       }
       // Poll exhausted. The placeholder is stale (crashed peer?). Clear it
@@ -321,8 +363,7 @@ export class IdempotencyGuard implements CanActivate {
 
     if (cached?.body !== undefined) {
       // Normal cached response. Return it verbatim.
-      const response = context.switchToHttp().getResponse();
-      response.status(cached.statusCode || 200).json(cached.body);
+      this.respondFromCache(context, readNumberProperty(cached, 'statusCode') ?? 200, cached.body);
       return { kind: 'responded' };
     }
 
@@ -331,5 +372,10 @@ export class IdempotencyGuard implements CanActivate {
     this.logger.warn(`Idempotency entry ${cacheKey} has no body; clearing`);
     await this.redis.del(cacheKey).catch(() => undefined);
     return { kind: 'proceed' };
+  }
+
+  private respondFromCache(context: ExecutionContext, statusCode: number, body: unknown): void {
+    const response = context.switchToHttp().getResponse<IdempotencyResponse>();
+    response.status(statusCode).json(body);
   }
 }

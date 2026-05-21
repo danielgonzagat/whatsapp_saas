@@ -1,6 +1,20 @@
 import { CallHandler, ExecutionContext, Injectable, NestInterceptor } from '@nestjs/common';
 import { Observable } from 'rxjs';
 
+interface HttpTracingRequest {
+  id?: unknown;
+  headers?: Record<string, unknown>;
+}
+
+interface HttpTracingResponse {
+  headersSent?: boolean;
+  setHeader?: (name: string, value: string) => void;
+}
+
+function readRequestId(value: unknown): string {
+  return typeof value === 'string' && value.trim() ? value : '';
+}
+
 /**
  * Propagates X-Request-Id on all inbound/outbound HTTP calls.
  *
@@ -20,10 +34,11 @@ import { Observable } from 'rxjs';
 export class HttpTracingInterceptor implements NestInterceptor {
   /** Intercept. */
   intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
-    const req = context.switchToHttp().getRequest();
-    const requestId: string = req.id || '';
+    const req = context.switchToHttp().getRequest<HttpTracingRequest>();
+    const requestId = readRequestId(req.id);
 
     if (requestId) {
+      req.headers ??= {};
       req.headers['x-request-id'] = requestId;
     }
 
@@ -31,8 +46,8 @@ export class HttpTracingInterceptor implements NestInterceptor {
     // RequestIdInterceptor already does this; we set it again as
     // a belt-and-braces measure for code paths that bypass the
     // RequestId interceptor (e.g. SSE handlers using @Res()).
-    const res = context.switchToHttp().getResponse();
-    if (requestId && res && typeof res.setHeader === 'function' && !res.headersSent) {
+    const res = context.switchToHttp().getResponse<HttpTracingResponse>();
+    if (requestId && typeof res.setHeader === 'function' && res.headersSent !== true) {
       res.setHeader('X-Request-Id', requestId);
     }
 

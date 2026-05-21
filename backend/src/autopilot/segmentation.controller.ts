@@ -4,12 +4,14 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { forEachSequential } from '../common/async-sequence';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { PRESET_SEGMENTS, SegmentCriteria, SegmentationService } from './segmentation.service';
+import { RouteClass } from '../common/throttler/route-class.decorator';
 
 /** Segmentation controller. */
 @ApiTags('Segmentation')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
 @Controller('segmentation')
+@RouteClass('ai')
 export class SegmentationController {
   constructor(private readonly segmentationService: SegmentationService) {}
 

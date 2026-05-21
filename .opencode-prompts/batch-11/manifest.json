@@ -1,0 +1,26 @@
+{
+  "runId": "batch-11-2026-05-11f",
+  "concurrency": 3,
+  "timeoutSec": 0,
+  "staggerMs": 60000,
+  "dir": "/Users/danielpenin/whatsapp_saas",
+  "skipPermissions": true,
+  "_note": "Batch 11 — Wave L (PULSE expectations) + Wave M (hardcoded liquefication top 10 files) + Wave D5 (Codacy MEDIUM convergence). Conservative conc 3, stagger 60s.",
+  "tasks": [
+    {
+      "id": "L-pulse-expectations",
+      "title": "Wave L — PULSE 11 pending expectations evidence",
+      "promptFile": ".opencode-prompts/batch-10b/L-pulse-expectations.md"
+    },
+    {
+      "id": "M-hardcoded-top10",
+      "title": "Wave M — Hardcoded liquefication top 10 PULSE files",
+      "promptFile": ".opencode-prompts/batch-11/M-hardcoded-top10.md"
+    },
+    {
+      "id": "D5-codacy-medium",
+      "title": "Wave D5 — Codacy MEDIUM convergence (~3200 → ≤200)",
+      "promptFile": ".opencode-prompts/batch-11/D-codacy-medium.md"
+    }
+  ]
+}

@@ -1,6 +1,17 @@
 // Static data extracted from chat-container.tsx to reduce file-level NLOC
 // and cyclomatic complexity. No React, no JSX, no runtime logic.
 
+import type { AgentStats } from './AgentConsole';
+
+export const EMPTY_AGENT_STATS: AgentStats = {
+  messagesReceived: 0,
+  messagesSent: 0,
+  actionsExecuted: 0,
+  leadsQualified: 0,
+  activeConversations: 0,
+  avgResponseTime: 'ao vivo',
+};
+
 export const AUTH_ERROR_MESSAGES: Record<string, string> = {
   email_exists: 'E-mail já cadastrado. Faça login para continuar.',
   access_blocked: 'Acesso bloqueado. Contate o suporte.',

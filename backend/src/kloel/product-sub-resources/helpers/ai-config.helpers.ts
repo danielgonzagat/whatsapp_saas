@@ -13,7 +13,7 @@ import {
   flattenSalesArguments,
   flattenUpsellDownsell,
   flattenFollowUpTechnical,
-} from './__companions__/ai-config.helpers.companion';
+} from './ai-config.flatten-helpers';
 
 function normalizeAiTone(value: unknown): string | undefined {
   const normalized = safeStr(value).trim();
@@ -54,28 +54,28 @@ function normalizeAiObjections(value: unknown): LooseObject[] {
   }
 
   return value
-    .map((entry, index) => {
-      const objection = parseObject(entry);
-      const label = safeStr(
-        objection.label || objection.id || objection.q || objection.question,
-        `Objeção ${index + 1}`,
-      ).trim();
-      const response = safeStr(objection.response || objection.a || objection.answer).trim();
+    .map((entry, index): LooseObject | null => {
+    const objection = parseObject(entry);
+    const label = safeStr(
+      objection.label || objection.id || objection.q || objection.question,
+      `Objeção ${index + 1}`,
+    ).trim();
+    const response = safeStr(objection.response || objection.a || objection.answer).trim();
 
-      if (!label && !response) {
-        return null;
-      }
+    if (!label && !response) {
+      return null;
+    }
 
-      return {
-        id: safeStr(objection.id, `objection-${index + 1}`),
-        label,
-        response,
-        q: label,
-        a: response,
-        enabled: objection.enabled !== false,
-      };
+    return {
+      id: safeStr(objection.id, `objection-${index + 1}`),
+      label,
+      response,
+      q: label,
+      a: response,
+      enabled: objection.enabled !== false,
+    };
     })
-    .filter(Boolean);
+    .filter(Boolean) as LooseObject[];
 }
 
 const CUSTOMER_PROFILE_KEYS = [

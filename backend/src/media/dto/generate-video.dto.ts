@@ -5,7 +5,7 @@ export class GenerateVideoDto {
   /** Image url property. */
   @IsString()
   @MaxLength(2048)
-  imageUrl: string;
+  imageUrl!: string;
 
   /** Prompt property. */
   @IsOptional()

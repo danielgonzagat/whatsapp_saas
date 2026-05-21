@@ -12,7 +12,7 @@ export interface StateMachineEntry {
   enumName: string;
   observedTransitions: StatusTransition[];
   totalEnumMembers: number;
-  missingEnumMembers?: string[];
+  missingEnumMembers?: string[] | undefined;
 }
 
 export interface DataflowRawSignal {
@@ -37,8 +37,8 @@ export interface EntityLifecycle {
   hasWorkspaceIsolation: boolean;
   hasMutableState: boolean;
   hasVersionHistory: boolean;
-  stateMachine?: StateMachineEntry[];
-  rawSignals?: DataflowRawSignal[];
+  stateMachine?: StateMachineEntry[] | undefined;
+  rawSignals?: DataflowRawSignal[] | undefined;
 }
 
 export interface DataflowStateMutation {

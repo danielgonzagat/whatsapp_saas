@@ -1,3 +1,11 @@
+/**
+ * ARCHITECTURAL COHESION: CIA Agent Harness — the central orchestration loop that ties
+ * state→plan→execute→learn together. Processes workspace state, executes action plans with
+ * governor approval, dispatches actions, handles idempotency, and records outcomes. This
+ * is the main agent runtime; splitting the loop phases would scatter the control flow and
+ * make the execution lifecycle impossible to audit in a single pass.
+ */
+
 import { planCiaActions } from './brain';
 import { type CiaSeedConversation, buildCiaWorkspaceStateFromSeed } from './build-state';
 import { type CiaGuaranteeReport, assertCiaGuarantees, buildCiaGuaranteeReport } from './contracts';
@@ -31,11 +39,11 @@ export interface CiaHarnessEvent {
   /** Message property. */
   message: string;
   /** Contact id property. */
-  contactId?: string;
+  contactId?: string | undefined;
   /** Phone property. */
-  phone?: string;
+  phone?: string | undefined;
   /** Meta property. */
-  meta?: Record<string, unknown>;
+  meta?: Record<string, unknown> | undefined;
 }
 
 /** Cia harness summary shape. */

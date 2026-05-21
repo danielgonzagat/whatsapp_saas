@@ -21,7 +21,7 @@ const ddMenu: React.CSSProperties = {
   left: 0,
   marginTop: 4,
   background: colors.background.surface,
-  border: '1px solid #1C1C1F',
+  border: `1px solid ${colors.canvas.border}`,
   borderRadius: 6,
   boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
   padding: '4px 0',
@@ -52,7 +52,7 @@ const ddShortcut: React.CSSProperties = {
 const ddSep: React.CSSProperties = {
   height: 1,
   background:
-    '#1C1C1F' /* PULSE_VISUAL_OK: intermediate surface tone, near elevated */ /* PULSE_VISUAL_OK: intermediate surface tone, near elevated */,
+    colors.canvas.border,
   margin: '4px 0',
 };
 
@@ -112,7 +112,7 @@ export function EditorTopBar({
   const toggleDropdown = (id: DropdownId) => setDropdown((prev) => (prev === id ? null : id));
 
   const handleItemHover = (e: React.MouseEvent) =>
-    setRowBackground(e, '#1C1C1F' /* PULSE_VISUAL_OK: intermediate surface tone, near elevated */);
+    setRowBackground(e, colors.canvas.border);
   const handleItemLeave = (e: React.MouseEvent) => setRowBackground(e, 'none');
 
   const closeAndRun = (fn?: () => void) => {
@@ -125,7 +125,7 @@ export function EditorTopBar({
       style={{
         height: 42,
         background: colors.background.surface,
-        borderBottom: '1px solid #1C1C1F',
+        borderBottom: `1px solid ${colors.canvas.border}`,
         display: 'flex',
         alignItems: 'center',
         padding: '0 12px',
@@ -148,7 +148,7 @@ export function EditorTopBar({
       >
         {IC.home(16)}
       </button>
-      <span style={{ color: '#2A2A2E' }}>|</span>
+      <span style={{ color: colors.canvas.hover }}>|</span>
 
       {/* ── Arquivo dropdown ── */}
       <div style={{ position: 'relative' }} data-dropdown>
@@ -158,7 +158,7 @@ export function EditorTopBar({
           style={{
             background:
               dropdown === 'file'
-                ? '#1C1C1F' /* PULSE_VISUAL_OK: intermediate surface tone, near elevated */
+                ? colors.canvas.border
                 : 'none',
             border: 'none',
             color: colors.text.silver,
@@ -245,7 +245,7 @@ export function EditorTopBar({
           style={{
             background:
               dropdown === 'resize'
-                ? '#1C1C1F' /* PULSE_VISUAL_OK: intermediate surface tone, near elevated */
+                ? colors.canvas.border
                 : 'none',
             border: 'none',
             color: colors.text.silver,
@@ -281,15 +281,15 @@ export function EditorTopBar({
             <div style={ddSep} />
             <div style={{ padding: '8px 12px', display: 'flex', alignItems: 'center', gap: 6 }}>
               <input
-                aria-label="Largura personalizada"
+                aria-label={kloelT(`Largura personalizada`)}
                 type="number"
-                placeholder="L"
+                placeholder={kloelT(`L`)}
                 value={customW}
                 onChange={(e) => setCustomW(e.target.value)}
                 style={{
                   width: 60,
                   background: colors.background.void,
-                  border: '1px solid #1C1C1F',
+                  border: `1px solid ${colors.canvas.border}`,
                   borderRadius: 4,
                   color: colors.text.silver,
                   fontSize: 11,
@@ -301,15 +301,15 @@ export function EditorTopBar({
               />
               <span style={{ color: colors.text.dim, fontSize: 11 }}>x</span>
               <input
-                aria-label="Altura personalizada"
+                aria-label={kloelT(`Altura personalizada`)}
                 type="number"
-                placeholder="A"
+                placeholder={kloelT(`A`)}
                 value={customH}
                 onChange={(e) => setCustomH(e.target.value)}
                 style={{
                   width: 60,
                   background: colors.background.void,
-                  border: '1px solid #1C1C1F',
+                  border: `1px solid ${colors.canvas.border}`,
                   borderRadius: 4,
                   color: colors.text.silver,
                   fontSize: 11,
@@ -354,7 +354,7 @@ export function EditorTopBar({
           style={{
             background:
               dropdown === 'edit'
-                ? '#1C1C1F' /* PULSE_VISUAL_OK: intermediate surface tone, near elevated */
+                ? colors.canvas.border
                 : 'none',
             border: 'none',
             color: colors.text.silver,
@@ -460,7 +460,7 @@ export function EditorTopBar({
         }}
       >
         <input
-          aria-label="Nome do design"
+          aria-label={kloelT(`Nome do design`)}
           value={designName}
           onChange={(e) => onNameChange(e.target.value)}
           style={{
@@ -489,7 +489,7 @@ export function EditorTopBar({
               style={{
                 width: 5,
                 height: 5,
-                borderRadius: '50%',
+                borderRadius: '16%',
                 background: colors.ember.primary,
                 animation: 'pE 1.5s ease-in-out infinite',
                 display: 'inline-block',

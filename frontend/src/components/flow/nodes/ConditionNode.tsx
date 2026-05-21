@@ -33,8 +33,8 @@ function ConditionNodeComponent({ data, selected }: NodeProps<ConditionNodeData>
   return (
     <div
       className={`
-      px-4 py-3 rounded-lg border-2 bg-[#111113] shadow-md min-w-[200px] max-w-[280px]
-      ${selected ? 'border-yellow-500 ring-2 ring-yellow-500/30' : 'border-[#222226]'}
+      px-4 py-3 rounded-lg border-2 bg-[var(--bg-surface)] shadow-md min-w-[200px] max-w-[280px]
+      ${selected ? 'border-yellow-500 ring-2 ring-yellow-500/30' : 'border-[var(--bg-border)]'}
     `}
     >
       <Handle type="target" position={Position.Top} className="!bg-yellow-500 !w-3 !h-3" />
@@ -43,10 +43,10 @@ function ConditionNodeComponent({ data, selected }: NodeProps<ConditionNodeData>
         <div className="p-1.5 bg-yellow-500/15 rounded-md">
           <GitBranch className="w-4 h-4 text-yellow-400" aria-hidden="true" />
         </div>
-        <span className="font-medium text-sm text-[#E0DDD8]">{data.label || 'Condição'}</span>
+        <span className="font-medium text-sm text-[var(--text-silver)]">{data.label || 'Condição'}</span>
       </div>
 
-      <div className="text-xs text-[#6E6E73]">
+      <div className="text-xs text-[var(--text-muted)]">
         {data.condition ? (
           <span>
             {kloelT(`Se`)} <strong>{data.condition}</strong> {data.operator}{' '}
@@ -72,7 +72,7 @@ function ConditionNodeComponent({ data, selected }: NodeProps<ConditionNodeData>
         />
       </div>
 
-      <div className="flex justify-between text-[10px] text-[#3A3A3F] mt-1 px-2">
+      <div className="flex justify-between text-[10px] text-[var(--text-dim)] mt-1 px-2">
         <span>{kloelT(`Sim`)}</span>
         <span>{kloelT(`Nao`)}</span>
       </div>

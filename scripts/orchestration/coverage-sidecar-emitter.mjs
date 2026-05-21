@@ -28,7 +28,7 @@ import {
   unlinkSync,
 } from 'node:fs';
 import { resolve, join, relative, dirname } from 'node:path';
-import { rewriteMirrorFrontmatterTags } from '../obsidian-mirror-daemon-indexes.mjs';
+import { rewriteMirrorFrontmatterTags } from '../__parts__/obsidian-mirror-daemon-indexes.mjs';
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
@@ -61,7 +61,7 @@ function parseArgs() {
   const ti = args.indexOf('--threshold');
   if (ti !== -1 && args[ti + 1]) {
     const n = Number(args[ti + 1]);
-    if (Number.isFinite(n) && n >= 0 && n <= 100) threshold = n;
+    if (Number.isFinite(n) && n >= 0 && n <= 100) {threshold = n;}
   }
   return { dry, emit, threshold };
 }
@@ -70,11 +70,11 @@ function parseArgs() {
 
 function findCoverageFiles(dir) {
   const files = { lcov: null, json: null };
-  if (!existsSync(dir)) return files;
+  if (!existsSync(dir)) {return files;}
   const lcovPath = join(dir, 'lcov.info');
-  if (existsSync(lcovPath)) files.lcov = lcovPath;
+  if (existsSync(lcovPath)) {files.lcov = lcovPath;}
   const jsonPath = join(dir, 'coverage-final.json');
-  if (existsSync(jsonPath)) files.json = jsonPath;
+  if (existsSync(jsonPath)) {files.json = jsonPath;}
   return files;
 }
 
@@ -98,7 +98,7 @@ function toCoverageEntry(raw) {
 
 function repoRelative(absPath) {
   const rel = relative(REPO_ROOT, absPath);
-  if (rel.startsWith('..')) return null;
+  if (rel.startsWith('..')) {return null;}
   return rel.replace(/\\/g, '/');
 }
 
@@ -125,7 +125,7 @@ function writeAtomic(path, content) {
 
 function findExistingSidecars(root) {
   const out = [];
-  if (!existsSync(root)) return out;
+  if (!existsSync(root)) {return out;}
   const stack = [root];
   while (stack.length) {
     const dir = stack.pop();
@@ -155,7 +155,7 @@ function collectCoverage() {
 
   for (const ws of COVERAGE_SOURCES) {
     const cov = findCoverageFiles(ws.dir);
-    if (!cov.lcov && !cov.json) continue;
+    if (!cov.lcov && !cov.json) {continue;}
     workspacesFound.push(ws.label);
 
     if (cov.lcov) {
@@ -164,7 +164,7 @@ function collectCoverage() {
         const parsed = parseLcov(content);
         for (const [absPath, raw] of parsed) {
           const rel = repoRelative(absPath);
-          if (!rel) continue;
+          if (!rel) {continue;}
           if (!allCoverage.has(rel) || allCoverage.get(rel).source !== 'lcov') {
             allCoverage.set(rel, { stats: toCoverageEntry(raw), source: 'lcov' });
           }
@@ -180,7 +180,7 @@ function collectCoverage() {
         const parsed = parseIstanbul(content);
         for (const [absPath, raw] of parsed) {
           const rel = repoRelative(absPath);
-          if (!rel) continue;
+          if (!rel) {continue;}
           if (!allCoverage.has(rel)) {
             allCoverage.set(rel, { stats: toCoverageEntry(raw), source: 'jest' });
           }
@@ -278,7 +278,7 @@ function main() {
       const mirrorAbs = join(SOURCE_MIRROR_DIR, relMirror);
       if (existsSync(mirrorAbs)) {
         const changed = handleBelowTag(relMirror, mirrorAbs, dry, threshold, stats.lines.pct);
-        if (changed) taggedBelow++;
+        if (changed) {taggedBelow++;}
       }
     }
   }
@@ -331,11 +331,11 @@ function main() {
 }
 
 function handleBelowTag(relMirror, mirrorAbs, dry, threshold, pct) {
-  if (!existsSync(mirrorAbs)) return false;
+  if (!existsSync(mirrorAbs)) {return false;}
   const content = readFileSync(mirrorAbs, 'utf8');
-  if (!content.startsWith('---\n')) return false;
+  if (!content.startsWith('---\n')) {return false;}
   const end = content.indexOf('\n---\n', 4);
-  if (end === -1) return false;
+  if (end === -1) {return false;}
   const frontmatter = content.slice(4, end).split('\n');
   const existing = [];
   let inTags = false;
@@ -359,8 +359,8 @@ function handleBelowTag(relMirror, mirrorAbs, dry, threshold, pct) {
   }
   merged.sort();
 
-  if (JSON.stringify(merged) === JSON.stringify(existing)) return false;
-  if (dry) return true;
+  if (JSON.stringify(merged) === JSON.stringify(existing)) {return false;}
+  if (dry) {return true;}
   return rewriteMirrorFrontmatterTags(relMirror, merged);
 }
 

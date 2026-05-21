@@ -20,21 +20,21 @@ const WORKSPACES = ['backend', 'frontend', 'worker'];
 const SECURITY_RULES = new Set(['no-eval', 'no-implied-eval', 'no-script-url', 'no-new-func']);
 
 function isSecurityRule(ruleId) {
-  if (ruleId.startsWith('security/') || ruleId.startsWith('security-node/')) return true;
-  if (SECURITY_RULES.has(ruleId)) return true;
+  if (ruleId.startsWith('security/') || ruleId.startsWith('security-node/')) {return true;}
+  if (SECURITY_RULES.has(ruleId)) {return true;}
   return false;
 }
 
 function pickCategory(ruleId, fatal) {
-  if (fatal || (ruleId && ruleId.startsWith('parser/'))) return 'syntax';
+  if (fatal || (ruleId && ruleId.startsWith('parser/'))) {return 'syntax';}
 
-  if (isSecurityRule(ruleId)) return 'security';
+  if (isSecurityRule(ruleId)) {return 'security';}
 
   if (ruleId === 'no-unused-vars' || ruleId === '@typescript-eslint/no-unused-vars') {
     return 'dead-code';
   }
 
-  if (ruleId && ruleId.startsWith('unused-imports/')) return 'import-unused';
+  if (ruleId && ruleId.startsWith('unused-imports/')) {return 'import-unused';}
 
   if (
     ruleId === 'complexity' ||
@@ -47,15 +47,15 @@ function pickCategory(ruleId, fatal) {
     return 'complexity';
   }
 
-  if (ruleId && ruleId.startsWith('@typescript-eslint/')) return 'type';
+  if (ruleId && ruleId.startsWith('@typescript-eslint/')) {return 'type';}
 
   return 'lint';
 }
 
 function pickSeverity(fatal, severity) {
-  if (fatal) return 'critical';
-  if (severity === 2) return 'high';
-  if (severity === 1) return 'medium';
+  if (fatal) {return 'critical';}
+  if (severity === 2) {return 'high';}
+  if (severity === 1) {return 'medium';}
   return 'low';
 }
 
@@ -107,7 +107,7 @@ function mapFindings(rawResults) {
 
   for (const result of rawResults) {
     const file = relative(REPO_ROOT, result.filePath).replace(/\\/g, '/');
-    if (NOISE_PATH_RE.test(file)) continue;
+    if (NOISE_PATH_RE.test(file)) {continue;}
 
     for (const msg of result.messages) {
       const rule = msg.ruleId ?? 'eslint-fatal';
@@ -147,7 +147,7 @@ const errors = [];
 
 for (const workspace of WORKSPACES) {
   const configPath = resolve(REPO_ROOT, workspace, 'eslint.config.mjs');
-  if (!existsSync(configPath)) continue;
+  if (!existsSync(configPath)) {continue;}
 
   const { findings, error } = runEslint(workspace);
   if (error) {

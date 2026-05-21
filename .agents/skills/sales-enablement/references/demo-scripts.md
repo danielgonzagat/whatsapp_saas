@@ -10,7 +10,9 @@ Scene-by-scene templates for different call types, with timing, talk tracks, and
 ### Scene 1: Opening (3 min)
 
 **Talk track:**
-> "Thanks for taking the time, [Name]. I've done some research on [Company] but I'd love to hear from you directly. My goal for today is to understand what you're working on and see if there's a fit — and if there's not, I'll tell you that too. Sound good?"
+> "Thanks for taking the time, [Name]. I've done some research on [Company] but I'd love to hear from you directly.
+  My goal for today is to understand what you're working on and see if there's a fit — and if there's not,
+  I'll tell you that too. Sound good?"
 
 **What to establish:**
 
@@ -54,7 +56,8 @@ Scene-by-scene templates for different call types, with timing, talk tracks, and
 - Failed attempts to solve this (shows urgency)
 - The "magic wand" answer reveals their ideal state
 
-**Interaction tip:** Take notes visibly. Repeat back what you hear: "So if I understand correctly, the biggest issue is [X], which costs you about [Y] per month. Is that right?"
+**Interaction tip:** Take notes visibly. Repeat back what you hear: "So if I understand correctly,
+  the biggest issue is [X], which costs you about [Y] per month. Is that right?"
 
 ---
 
@@ -96,7 +99,9 @@ Scene-by-scene templates for different call types, with timing, talk tracks, and
 ### Scene 6: Close (2 min)
 
 **Talk track:**
-> "Based on what you've shared, I think there's a strong fit — specifically around [pain point 1] and [pain point 2]. What I'd suggest as a next step is a 30-minute demo where I can show you exactly how we'd address those. I'll customize it to your workflow. Does [specific date/time] work?"
+> "Based on what you've shared, I think there's a strong fit — specifically around [pain point 1] and [pain point 2].
+  What I'd suggest as a next step is a 30-minute demo where I can show you exactly how we'd address those.
+  I'll customize it to your workflow. Does [specific date/time] work?"
 
 **What to do:**
 
@@ -114,7 +119,8 @@ Scene-by-scene templates for different call types, with timing, talk tracks, and
 ### Scene 1: Opening & Recap (5 min)
 
 **Talk track:**
-> "Last time we spoke, you mentioned [pain point 1], [pain point 2], and [goal]. I've put together a demo focused on those three areas. If I've missed anything, flag it and we'll adjust. Sound good?"
+> "Last time we spoke, you mentioned [pain point 1], [pain point 2], and [goal].
+  I've put together a demo focused on those three areas. If I've missed anything, flag it and we'll adjust. Sound good?"
 
 **What to do:**
 
@@ -159,7 +165,8 @@ Same as Workflow 1 — restate pain, show solution, highlight outcome.
 Show something they can't do today and can't get from competitors.
 
 **Talk track:**
-> "This is where we're really different from [competitor/status quo]. [Explain the unique capability]. For example, [Customer] uses this to [specific outcome]."
+> "This is where we're really different from [competitor/status quo]. [Explain the unique capability].
+  For example, [Customer] uses this to [specific outcome]."
 
 **Interaction point:**
 > "How would your team use this?"
@@ -169,7 +176,8 @@ Show something they can't do today and can't get from competitors.
 ### Scene 5: Proof Point (3 min)
 
 **Talk track:**
-> "Let me share a quick example. [Customer similar to them] was in a similar situation — [brief challenge]. After implementing, they saw [specific metrics]. Their [role] said [quote]."
+> "Let me share a quick example. [Customer similar to them] was in a similar situation — [brief challenge].
+  After implementing, they saw [specific metrics]. Their [role] said [quote]."
 
 **What to do:**
 
@@ -181,7 +189,9 @@ Show something they can't do today and can't get from competitors.
 ### Scene 6: Close (5 min)
 
 **Talk track:**
-> "Based on what we've covered, here's what I'd recommend as next steps: [specific next step]. This typically takes [timeline]. Who else on your team should be involved? I can set up a [follow-up meeting type] for [date]."
+> "Based on what we've covered, here's what I'd recommend as next steps: [specific next step].
+  This typically takes [timeline]. Who else on your team should be involved? I can set up a [follow-up meeting type] for
+  [date]."
 
 **What to do:**
 
@@ -200,9 +210,12 @@ Show something they can't do today and can't get from competitors.
 ### Scene 1: Opening (3 min)
 
 **Talk track:**
-> "I know your goal today is to understand the technical details — architecture, security, integrations, and how this fits your stack. I'll walk through each area and leave plenty of time for questions. What's your top priority for this session?"
+> "I know your goal today is to understand the technical details — architecture, security, integrations,
+  and how this fits your stack. I'll walk through each area and leave plenty of time for questions.
+  What's your top priority for this session?"
 
-**Attendees:** Typically includes their technical evaluator (engineer, architect, IT lead) plus your SE or solutions engineer.
+**Attendees:** Typically includes their technical evaluator (engineer, architect,
+  IT lead) plus your SE or solutions engineer.
 
 ---
 
@@ -289,7 +302,9 @@ Show something they can't do today and can't get from competitors.
 ### Scene 1: Opening (2 min)
 
 **Talk track:**
-> "Thanks for your time, [Name]. [Champion] has been evaluating [your product] and the results look strong. I'll keep this focused on the business impact and what a partnership looks like. I know your time is valuable so I'll aim to leave 10 minutes for questions."
+> "Thanks for your time, [Name]. [Champion] has been evaluating [your product] and the results look strong.
+  I'll keep this focused on the business impact and what a partnership looks like.
+  I know your time is valuable so I'll aim to leave 10 minutes for questions."
 
 **What to do:**
 
@@ -302,7 +317,9 @@ Show something they can't do today and can't get from competitors.
 ### Scene 2: The Problem & Cost (5 min)
 
 **Talk track:**
-> "Based on what [Champion] shared, your team is spending [X hours/$ amount] on [problem]. That's [annual cost]. It's also creating [secondary impact: risk, delays, churn]. This isn't unique to you — it's an industry-wide challenge, and the companies solving it are seeing [outcome]."
+> "Based on what [Champion] shared, your team is spending [X hours/$ amount] on [problem]. That's [annual cost].
+  It's also creating [secondary impact: risk, delays, churn]. This isn't unique to you — it's an industry-wide challenge,
+  and the companies solving it are seeing [outcome]."
 
 **What to do:**
 
@@ -315,7 +332,9 @@ Show something they can't do today and can't get from competitors.
 ### Scene 3: The Solution & Differentiation (5 min)
 
 **Talk track:**
-> "Here's what we do differently. [One-sentence explanation]. For your team specifically, this means [specific benefit 1] and [specific benefit 2]. [Champion]'s team has already seen [early result or reaction from evaluation]."
+> "Here's what we do differently. [One-sentence explanation].
+  For your team specifically, this means [specific benefit 1] and [specific benefit 2].
+  [Champion]'s team has already seen [early result or reaction from evaluation]."
 
 **What to do:**
 
@@ -328,7 +347,9 @@ Show something they can't do today and can't get from competitors.
 ### Scene 4: ROI & Business Case (5 min)
 
 **Talk track:**
-> "Here's the business case. Based on your team's numbers: [walk through ROI calculation]. Expected payback period is [X months]. Over 3 years, the total value is [$ amount]. [Customer similar to them] saw [specific result] within [timeframe]."
+> "Here's the business case. Based on your team's numbers: [walk through ROI calculation].
+  Expected payback period is [X months]. Over 3 years, the total value is [$ amount].
+  [Customer similar to them] saw [specific result] within [timeframe]."
 
 **What to do:**
 
@@ -341,7 +362,8 @@ Show something they can't do today and can't get from competitors.
 ### Scene 5: Q&A and Decision (5-10 min)
 
 **Talk track:**
-> "What questions do you have? And — assuming the business case holds up, what does the decision process look like from here?"
+> "What questions do you have? And — assuming the business case holds up,
+  what does the decision process look like from here?"
 
 **What to do:**
 
@@ -378,3 +400,4 @@ When a prospect asks to see something during the demo:
 3. **If it's not possible** — "We don't do that today. Here's how customers handle it: [alternative]."
 
 Never say "I'll get back to you" without writing it down and following up within 24 hours.
+

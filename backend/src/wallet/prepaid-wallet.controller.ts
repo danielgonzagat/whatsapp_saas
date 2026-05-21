@@ -1,37 +1,27 @@
-import {
-  Body,
-  Controller,
-  Get,
-  Logger,
-  Param,
-  Patch,
-  Post,
-  Query,
-  UseGuards,
-} from '@nestjs/common';
-import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
+import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import * as Sentry from '@sentry/node';
 
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { Idempotent } from '../common/idempotency.guard';
+import { Metrics } from '../observability/metrics';
 import { PrismaService } from '../prisma/prisma.service';
 
+import { InternalEndpoint } from '../common/decorators/internal-endpoint.decorator';
 import { WalletService } from './wallet.service';
 import { InsufficientWalletBalanceError } from './wallet.types';
+import { RouteClass } from '../common/throttler/route-class.decorator';
 
 @Controller('wallet/prepaid')
-@UseGuards(JwtAuthGuard, WorkspaceGuard, ThrottlerGuard)
-@Throttle({ default: { limit: 5, ttl: 60000 } })
+@UseGuards(JwtAuthGuard, WorkspaceGuard)
+@RouteClass('mutate')
 export class PrepaidWalletController {
-  private readonly logger = new Logger(PrepaidWalletController.name);
-
   constructor(
     private readonly walletService: WalletService,
     private readonly prisma: PrismaService,
   ) {}
 
-  // PULSE_OK: internal route, called by worker process for prepaid wallet balance queries
+  @InternalEndpoint('wallet balance check')
   @Get(':workspaceId/balance')
   async getBalance(@Param('workspaceId') workspaceId: string) {
     const wallet = await this.prisma.prepaidWallet.findUnique({
@@ -66,7 +56,7 @@ export class PrepaidWalletController {
     };
   }
 
-  // PULSE_OK: internal route, called by worker process for prepaid wallet top-ups
+  @InternalEndpoint('wallet topup')
   @Post(':workspaceId/topup')
   @Idempotent()
   async createTopup(
@@ -80,30 +70,38 @@ export class PrepaidWalletController {
       buyerIp?: string;
     },
   ) {
+    const start = Date.now();
     const amountCents = BigInt(body.amountCents ?? 0);
     if (amountCents <= 0n) {
       throw new RangeError('amountCents must be greater than 0');
     }
     const method = body.method === 'card' ? 'card' : 'pix';
 
-    const result = await this.walletService.createTopupIntent({
-      workspaceId,
-      amountCents,
-      method,
-      buyerEmail: body.buyerEmail ?? null,
-      buyerCpf: body.buyerCpf ?? null,
-      buyerIp: body.buyerIp ?? null,
-    });
-
-    return {
-      paymentIntentId: result.paymentIntentId,
-      clientSecret: result.clientSecret,
-      pixQrCode: result.pixQrCode ?? null,
-      pixQrCodeUrl: result.pixQrCodeUrl ?? null,
-    };
+    try {
+      const result = await this.walletService.createTopupIntent({
+        workspaceId,
+        amountCents,
+        method,
+        buyerEmail: body.buyerEmail ?? null,
+        buyerCpf: body.buyerCpf ?? null,
+        buyerIp: body.buyerIp ?? null,
+      });
+      Metrics.endpoint.success('wallet.createTopup', { workspaceId });
+      Metrics.endpoint.duration('wallet.createTopup', Date.now() - start, { workspaceId });
+      return {
+        paymentIntentId: result.paymentIntentId,
+        clientSecret: result.clientSecret,
+        pixQrCode: result.pixQrCode ?? null,
+        pixQrCodeUrl: result.pixQrCodeUrl ?? null,
+      };
+    } catch (err: unknown) {
+      const code = (err as { code?: string })?.code ?? 'unknown';
+      Metrics.endpoint.failure('wallet.createTopup', { workspaceId, code });
+      throw err;
+    }
   }
 
-  // PULSE_OK: internal route, called by worker process for prepaid wallet transaction history
+  @InternalEndpoint('wallet transactions')
   @Get(':workspaceId/transactions')
   async getTransactions(
     @Param('workspaceId') workspaceId: string,
@@ -154,7 +152,7 @@ export class PrepaidWalletController {
     };
   }
 
-  // PULSE_OK: internal route, called by worker process for auto-recharge configuration
+  @InternalEndpoint('wallet auto-recharge settings')
   @Patch(':workspaceId/auto-recharge')
   @Idempotent()
   async configureAutoRecharge(
@@ -202,7 +200,7 @@ export class PrepaidWalletController {
     };
   }
 
-  // PULSE_OK: internal route, called by worker process for prepaid wallet spend operations
+  @InternalEndpoint('wallet spend')
   @Post(':workspaceId/spend')
   @Idempotent()
   async spend(
@@ -216,16 +214,21 @@ export class PrepaidWalletController {
       metadata?: Record<string, unknown>;
     },
   ) {
+    const start = Date.now();
     try {
       const result = await this.walletService.chargeForUsage({
         workspaceId,
         operation: body.operation,
-        units: body.units,
-        quotedCostCents: body.quotedCostCents ? BigInt(body.quotedCostCents) : undefined,
+        ...(body.units !== undefined ? { units: body.units } : {}),
+        ...(body.quotedCostCents !== undefined
+          ? { quotedCostCents: BigInt(body.quotedCostCents) }
+          : {}),
         requestId: body.requestId,
-        metadata: body.metadata,
+        ...(body.metadata !== undefined ? { metadata: body.metadata } : {}),
       });
 
+      Metrics.endpoint.success('wallet.spend', { workspaceId });
+      Metrics.endpoint.duration('wallet.spend', Date.now() - start, { workspaceId });
       return {
         success: true,
         newBalanceCents: result.newBalanceCents.toString(),
@@ -234,6 +237,7 @@ export class PrepaidWalletController {
       };
     } catch (err: unknown) {
       if (err instanceof InsufficientWalletBalanceError) {
+        Metrics.endpoint.failure('wallet.spend', { workspaceId, code: 'insufficient_balance' });
         Sentry.captureException(err, {
           extra: {
             walletId: err.walletId,
@@ -250,6 +254,8 @@ export class PrepaidWalletController {
           requestedCents: err.requestedCents.toString(),
         };
       }
+      const code = (err as { code?: string })?.code ?? 'unknown';
+      Metrics.endpoint.failure('wallet.spend', { workspaceId, code });
       throw err;
     }
   }

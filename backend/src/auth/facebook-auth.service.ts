@@ -1,13 +1,17 @@
 import {
   Injectable,
-  Logger,
   ServiceUnavailableException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { StructuredLogger } from '../logging/structured-logger';
 import { getTraceHeaders } from '../common/trace-headers';
 import { GoogleVerifiedProfile } from './google-auth.service';
 
+/**
+ * @cluster whatsapp_saas/backend/auth
+ * L11 multi-agent TaskGraph annotation (batched by tools/auto-pr/batch-job.mjs).
+ */
 type FacebookDebugResponse = {
   data?: {
     app_id?: string;
@@ -50,7 +54,7 @@ function sanitizeErrorMessage(error: unknown): string {
 /** Facebook auth service. */
 @Injectable()
 export class FacebookAuthService {
-  private readonly logger = new Logger(FacebookAuthService.name);
+  private readonly logger = StructuredLogger.from(FacebookAuthService.name);
   private readonly graphApiVersion: string;
 
   constructor(private readonly config: ConfigService) {

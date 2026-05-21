@@ -79,8 +79,9 @@ function mergeIdentityCore(
   CheckoutSocialIdentitySnapshot,
   'leadId' | 'provider' | 'name' | 'email' | 'avatarUrl' | 'deviceFingerprint'
 > {
+  const leadId = incoming.leadId || current?.leadId;
   return {
-    leadId: incoming.leadId || current?.leadId,
+    ...(leadId !== undefined ? { leadId } : {}),
     provider: resolveIdentityProvider(current, incoming),
     ...resolveIdentityDisplayFields(current, incoming),
     deviceFingerprint:

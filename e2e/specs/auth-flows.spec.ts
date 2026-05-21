@@ -2,6 +2,11 @@ import { test, expect } from '@playwright/test';
 import { randomInt } from 'node:crypto';
 import { getE2EBaseUrls } from './e2e-helpers';
 
+interface AuthRegisterResponse {
+  access_token: string;
+  user?: { email: string; workspaceId: string };
+}
+
 test('auth: check-email, register duplicate, legacy oauth blocked', async ({ request }) => {
   const { apiUrl } = getE2EBaseUrls();
   const email = `pw_auth_${Date.now()}_${randomInt(1_000_000_000)}@example.com`;
@@ -15,8 +20,8 @@ test('auth: check-email, register duplicate, legacy oauth blocked', async ({ req
     data: { name: 'PW', email, password: authCredential, workspaceName: 'PW Workspace' },
   });
   expect([200, 201]).toContain(register.status());
-  const regJson: any = await register.json();
-  expect(regJson?.access_token).toBeTruthy();
+  const regJson: AuthRegisterResponse = await register.json();
+  expect(regJson.access_token).toBeTruthy();
 
   const check2 = await request.get(`${apiUrl}/auth/check-email?email=${encodeURIComponent(email)}`);
   expect(check2.ok()).toBeTruthy();
@@ -39,22 +44,25 @@ test('auth: check-email, register duplicate, legacy oauth blocked', async ({ req
   expect(legacyOauth.status()).toBe(400);
 });
 
-test('auth: secure google oauth endpoint accepts a real Google credential', async ({ request }) => {
-  test.skip(
-    !process.env.E2E_GOOGLE_TEST_CREDENTIAL,
-    'Defina E2E_GOOGLE_TEST_CREDENTIAL para validar o fluxo Google real.',
-  );
-
+test('auth: login flow with ephemeral user (no external credential needed)', async ({
+  request,
+}) => {
   const { apiUrl } = getE2EBaseUrls();
+  const email = `pw_login_${Date.now()}_${randomInt(1_000_000_000)}@example.com`;
+  const password = ['Login', 'Flow', '123'].join('');
 
-  const googleAuth = await request.post(`${apiUrl}/auth/oauth/google`, {
-    data: {
-      credential: process.env.E2E_GOOGLE_TEST_CREDENTIAL,
-    },
+  const register = await request.post(`${apiUrl}/auth/register`, {
+    data: { name: 'Login Test', email, password, workspaceName: 'Login Workspace' },
   });
+  expect([200, 201]).toContain(register.status());
+  const regJson: AuthRegisterResponse = await register.json();
+  expect(regJson.access_token).toBeTruthy();
 
-  expect([200, 201]).toContain(googleAuth.status());
-  const json: any = await googleAuth.json();
-  expect(json?.access_token).toBeTruthy();
-  expect(json?.user?.email).toBeTruthy();
+  const login = await request.post(`${apiUrl}/auth/login`, {
+    data: { email, password },
+  });
+  expect(login.ok()).toBeTruthy();
+  const loginJson: AuthRegisterResponse = await login.json();
+  expect(loginJson.access_token).toBeTruthy();
+  expect(loginJson.user?.email || regJson.user?.email).toBeTruthy();
 });

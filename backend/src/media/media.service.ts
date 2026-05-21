@@ -1,5 +1,5 @@
 import { extname } from 'node:path';
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Queue } from 'bullmq';
 import { v4 as uuid } from 'uuid';
@@ -13,6 +13,7 @@ import { PrismaService } from '../prisma/prisma.service';
 /** Media service. */
 @Injectable()
 export class MediaService {
+  private readonly logger = new Logger(MediaService.name);
   private mediaQueue: Queue;
   private readonly baseUrl: string;
   private readonly allowedStorageHosts: Set<string>;
@@ -45,10 +46,9 @@ export class MediaService {
         type: 'VIDEO_GENERATION',
         status: 'PENDING',
         inputUrl: data.imageUrl,
-        prompt: data.prompt,
+        ...(data.prompt !== undefined ? { prompt: data.prompt } : {}),
       },
     });
-    // PULSE:OK — worker processor pending implementation
     await this.mediaQueue.add('generate-video', {
       jobId: job.id,
       inputUrl: data.imageUrl,
@@ -81,23 +81,33 @@ export class MediaService {
       throw new BadRequestException('Arquivo inválido');
     }
 
-    const stored = await this.storage.upload(file.buffer, {
-      filename: `${uuid()}${extname(file.originalname || '')}`,
+    this.logger.log('Uploading document to storage', {
+      context: 'MediaService.uploadDocument',
+      fileName: file.originalname,
       mimeType: file.mimetype,
+      fileSize: file.size,
+    });
+
+    const uploadOpts: Record<string, unknown> = {
+      filename: `${uuid()}${extname(file.originalname || '')}`,
       folder: 'documents',
       workspaceId,
-    });
+    };
+    if (file.mimetype) {
+      uploadOpts.mimeType = file.mimetype;
+    }
+    const stored = await this.storage.upload(file.buffer, uploadOpts);
 
     const doc = await this.prisma.document.create({
       data: {
         workspaceId,
-        name: metadata.name || file.originalname,
-        fileName: file.originalname,
+        name: metadata.name || file.originalname || 'document',
+        fileName: file.originalname || 'file',
         filePath: stored.path,
-        mimeType: file.mimetype,
-        fileSize: file.size,
-        description: metadata.description,
-        category: metadata.category,
+        mimeType: file.mimetype || 'application/octet-stream',
+        fileSize: file.size || 0,
+        description: metadata.description || '',
+        category: metadata.category || '',
         isActive: true,
       },
     });
@@ -207,6 +217,10 @@ export class MediaService {
 
     const signedUrl = this.storage.getSignedUrl(doc.filePath, {
       downloadName: doc.fileName,
+    });
+    this.logger.log('Fetching document from remote storage', {
+      context: 'MediaService.getDocumentFile',
+      documentId: doc.id,
     });
     const response = await safeStorageFetch(signedUrl, {
       allowedHosts: this.allowedStorageHosts,

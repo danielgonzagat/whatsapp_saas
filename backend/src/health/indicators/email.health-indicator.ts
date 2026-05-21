@@ -137,7 +137,7 @@ export class EmailHealthIndicator extends HealthIndicator {
         const response = await this.fetchWithTimeout('https://api.resend.com/emails', {
           method: 'HEAD',
           headers: {
-            Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
+            Authorization: `Bearer ${process.env.RESEND_API_KEY ?? ''}`,
           },
           timeoutMs: EMAIL_PROVIDER_TIMEOUT_MS,
           provider,
@@ -154,7 +154,7 @@ export class EmailHealthIndicator extends HealthIndicator {
         const response = await this.fetchWithTimeout('https://api.sendgrid.com/v3/scopes', {
           method: 'GET',
           headers: {
-            Authorization: `Bearer ${process.env.SENDGRID_API_KEY}`,
+            Authorization: `Bearer ${process.env.SENDGRID_API_KEY ?? ''}`,
           },
           timeoutMs: EMAIL_PROVIDER_TIMEOUT_MS,
           provider,
@@ -186,7 +186,7 @@ export class EmailHealthIndicator extends HealthIndicator {
     url: string,
     config: {
       method: 'HEAD' | 'GET';
-      headers: Record<string, string | undefined>;
+      headers: Record<string, string>;
       timeoutMs: number;
       provider: EmailProvider;
       attempt: number;
@@ -200,7 +200,11 @@ export class EmailHealthIndicator extends HealthIndicator {
     try {
       const response = await fetch(url, {
         method: config.method,
-        headers: config.headers,
+        headers: Object.fromEntries(
+          Object.entries(config.headers).filter((entry): entry is [string, string] => {
+            return typeof entry[1] === 'string';
+          }),
+        ),
         signal: controller.signal,
       });
 

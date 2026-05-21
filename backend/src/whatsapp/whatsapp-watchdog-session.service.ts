@@ -8,7 +8,8 @@
  * ============================================
  */
 
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { Counter, Gauge, register } from 'prom-client';
 import { PrismaService } from '../prisma/prisma.service';
 import { WhatsAppProviderRegistry } from './providers/provider-registry';
@@ -16,20 +17,13 @@ import { asProviderSettings } from './provider-settings.types';
 import { toPrismaJsonValue } from '../common/prisma/prisma-json.util';
 import { WhatsAppWatchdogRecoveryService } from './whatsapp-watchdog-recovery.service';
 
-export interface SessionHealth {
-  workspaceId: string;
-  connected: boolean;
-  lastCheck: Date;
-  consecutiveFailures: number;
-  lastReconnectAttempt?: Date;
-  upSince?: Date;
-  reconnectBlockedReason?: string;
-}
+export type { SessionHealth } from './whatsapp-watchdog.types';
+import type { SessionHealth } from './whatsapp-watchdog.types';
 
 /** Manages per-workspace session health state and check logic. */
 @Injectable()
 export class WhatsAppWatchdogSessionService {
-  private readonly logger = new Logger(WhatsAppWatchdogSessionService.name);
+  private readonly logger = StructuredLogger.from(WhatsAppWatchdogSessionService.name);
   private readonly sessionHealth = new Map<string, SessionHealth>();
 
   private readonly ALERT_THRESHOLD = 3;
@@ -215,7 +209,7 @@ export class WhatsAppWatchdogSessionService {
       this.logger.log(`Session reconnected: ${workspaceName || workspaceId}`);
     }
     health.consecutiveFailures = 0;
-    health.reconnectBlockedReason = undefined;
+    delete health.reconnectBlockedReason;
 
     await this.persistSessionDiagnostics(workspaceId, {
       lastHeartbeatAt: now.toISOString(),
@@ -242,7 +236,7 @@ export class WhatsAppWatchdogSessionService {
     normalizedStatus: string,
     now: Date,
   ): Promise<void> {
-    health.consecutiveFailures++;
+    health.consecutiveFailures += 1;
 
     this.logger.warn(
       `Session disconnected: ${workspaceName || workspaceId} ` +
@@ -250,7 +244,11 @@ export class WhatsAppWatchdogSessionService {
     );
 
     const reconnectBlockedReason = await this.getReconnectBlockReason(workspaceId);
-    health.reconnectBlockedReason = reconnectBlockedReason || undefined;
+    if (reconnectBlockedReason) {
+      health.reconnectBlockedReason = reconnectBlockedReason;
+    } else {
+      delete health.reconnectBlockedReason;
+    }
 
     await this.persistSessionDiagnostics(workspaceId, {
       lastWatchdogDisconnectedAt: now.toISOString(),
@@ -303,7 +301,7 @@ export class WhatsAppWatchdogSessionService {
         await this.handleConnectedSession(workspaceId, workspaceName, health, wasConnected, now);
       } else if (this.pendingStatuses.has(normalizedStatus)) {
         health.consecutiveFailures = 0;
-        health.reconnectBlockedReason = undefined;
+        delete health.reconnectBlockedReason;
         this.logger.debug(
           `Session awaiting action: ${workspaceName || workspaceId} (status: ${normalizedStatus})`,
         );
@@ -323,7 +321,7 @@ export class WhatsAppWatchdogSessionService {
           : typeof error === 'string'
             ? error
             : 'unknown error';
-      health.consecutiveFailures++;
+      health.consecutiveFailures += 1;
       health.lastCheck = now;
       this.healthCheckCounter.inc({ workspaceId, status: 'error' });
       this.logger.error(`Check failed for ${workspaceName || workspaceId}: ${msg}`);

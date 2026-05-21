@@ -4,7 +4,7 @@ import type { CSSProperties } from 'react';
 export const INBOX_DIGIT_RE = /\D/g;
 
 /** Channel filter type. */
-export type ChannelFilter = 'all' | 'whatsapp' | 'email' | 'instagram';
+export type ChannelFilter = 'all' | 'whatsapp' | 'email' | 'instagram' | 'facebook' | 'tiktok';
 /** Status filter type. */
 export type StatusFilter = 'open' | 'closed' | 'all';
 

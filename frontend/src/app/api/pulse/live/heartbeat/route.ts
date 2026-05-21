@@ -1,4 +1,3 @@
-// PULSE:OK — server-side heartbeat proxy forwards telemetry only; there is no SWR cache key to invalidate in this route.
 import { findFirstSequential } from '@/lib/async-sequence';
 import { type NextRequest, NextResponse } from 'next/server';
 import { getBackendCandidateUrls } from '../../../_lib/backend-url';

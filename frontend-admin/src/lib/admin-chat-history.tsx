@@ -10,7 +10,11 @@ import {
   useRef,
   useState,
 } from 'react';
-import { adminChatApi, type AdminChatSessionView } from '@/lib/api/admin-chat-api';
+import {
+  adminChatApi,
+  type AdminChatSessionListPage,
+  type AdminChatSessionView,
+} from '@/lib/api/admin-chat-api';
 import { useAdminSession } from '@/lib/auth/admin-session-context';
 
 const SESSION_CACHE_SLOT = 'kloel-admin:chat-sessions';
@@ -36,9 +40,12 @@ interface AdminChatHistoryContextValue {
   sessions: AdminChatSessionSummary[];
   activeSessionId: string | null;
   setActiveSessionId: (sessionId: string | null) => void;
-  refreshSessions: () => Promise<void>;
+  refreshSessions: (workspaceId?: string) => Promise<void>;
   upsertSession: (session: AdminChatSessionView) => void;
   getSessionById: (sessionId: string) => AdminChatSessionSummary | null;
+  createServerSession: (workspaceId: string, title?: string) => Promise<AdminChatSessionSummary | null>;
+  updateServerSession: (id: string, workspaceId: string, title: string) => Promise<void>;
+  deleteServerSession: (id: string, workspaceId: string) => Promise<void>;
 }
 
 const AdminChatHistoryContext = createContext<AdminChatHistoryContextValue | null>(null);
@@ -55,13 +62,25 @@ function readCache<T>(key: string, fallback: T): T {
   }
 }
 
-function writeCache<T>(key: string, value: T) {
+function writeSessionCache<T>(key: string, value: T) {
   if (typeof window === 'undefined') {
     return;
   }
   try {
-    window.localStorage.setItem(key, JSON.stringify(value));
+    window.sessionStorage.setItem(key, JSON.stringify(value));
   } catch {}
+}
+
+function readSessionCache<T>(key: string, fallback: T): T {
+  if (typeof window === 'undefined') {
+    return fallback;
+  }
+  try {
+    const raw = window.sessionStorage.getItem(key);
+    return raw ? (JSON.parse(raw) as T) : fallback;
+  } catch {
+    return fallback;
+  }
 }
 
 function deriveSessionTitle(session: AdminChatSessionView): string {
@@ -120,27 +139,45 @@ export function AdminChatHistoryProvider({ children }: { children: ReactNode }) 
     const cachedSessions = readCache<AdminChatSessionSummary[]>(SESSION_CACHE_SLOT, []);
     sessionsRef.current = cachedSessions;
     setSessions(cachedSessions);
-    setActiveSessionIdRaw(readCache<string | null>(ACTIVE_SESSION_CACHE_SLOT, null));
+  }, []);
+
+  useEffect(() => {
+    setActiveSessionIdRaw(readSessionCache<string | null>(ACTIVE_SESSION_CACHE_SLOT, null));
+  }, []);
+
+  const setActiveSessionId = useCallback((sessionId: string | null) => {
+    setActiveSessionIdRaw(sessionId);
+    writeSessionCache(ACTIVE_SESSION_CACHE_SLOT, sessionId);
   }, []);
 
   const persistSessions = useCallback((nextSessions: AdminChatSessionSummary[]) => {
     const normalized = sortSessions(nextSessions).slice(0, 50);
     sessionsRef.current = normalized;
     setSessions(normalized);
-    writeCache(SESSION_CACHE_SLOT, normalized);
+    writeSessionCache(SESSION_CACHE_SLOT, normalized);
   }, []);
 
-  const refreshSessions = useCallback(async () => {
+  const refreshSessions = useCallback(async (workspaceId?: string) => {
     if (!admin) {
       return;
     }
     try {
-      const payload = await adminChatApi.listSessions();
-      persistSessions(payload.map(mapSession));
+      const payload = await adminChatApi.listSessions(
+        workspaceId ? { workspaceId } : undefined,
+      );
+      if (Array.isArray(payload)) {
+        persistSessions(payload.map(mapSession));
+      } else {
+        persistSessions((payload as AdminChatSessionListPage).items.map(mapSession));
+      }
     } catch {
       // Keep cached sessions when the API is temporarily unavailable.
     }
   }, [admin, persistSessions]);
+
+  const refresh = useCallback(() => {
+    void refreshSessions();
+  }, [refreshSessions]);
 
   useEffect(() => {
     if (!admin) {
@@ -156,32 +193,18 @@ export function AdminChatHistoryProvider({ children }: { children: ReactNode }) 
       return;
     }
 
-    const handleWindowFocus = () => {
-      void refreshSessions();
-    };
-
-    const handleVisibility = () => {
-      if (document.visibilityState === 'visible') {
-        void refreshSessions();
-      }
-    };
-
-    window.addEventListener('focus', handleWindowFocus);
-    document.addEventListener('visibilitychange', handleVisibility);
+    window.addEventListener('focus', refresh);
+    document.addEventListener('visibilitychange', refresh);
 
     return () => {
-      window.removeEventListener('focus', handleWindowFocus);
-      document.removeEventListener('visibilitychange', handleVisibility);
+      window.removeEventListener('focus', refresh);
+      document.removeEventListener('visibilitychange', refresh);
     };
-  }, [admin, refreshSessions]);
+  }, [admin, refresh]);
 
   useEffect(() => {
-    writeCache(ACTIVE_SESSION_CACHE_SLOT, activeSessionId);
+    writeSessionCache(ACTIVE_SESSION_CACHE_SLOT, activeSessionId);
   }, [activeSessionId]);
-
-  const setActiveSessionId = useCallback((sessionId: string | null) => {
-    setActiveSessionIdRaw(sessionId);
-  }, []);
 
   const upsertSession = useCallback((session: AdminChatSessionView) => {
     const mapped = mapSession(session);
@@ -191,11 +214,77 @@ export function AdminChatHistoryProvider({ children }: { children: ReactNode }) 
         ...current.filter((entry) => entry.id !== mapped.id),
       ]).slice(0, 50);
       sessionsRef.current = next;
-      writeCache(SESSION_CACHE_SLOT, next);
+      writeSessionCache(SESSION_CACHE_SLOT, next);
       return next;
     });
     setActiveSessionIdRaw(mapped.id);
   }, []);
+
+  const createServerSession = useCallback(
+    async (workspaceId: string, title?: string) => {
+      if (!admin) {return null;}
+      try {
+        const view = await adminChatApi.createSession(
+          title !== undefined ? { workspaceId, title } : { workspaceId },
+        );
+        const mapped = mapSession(view);
+        setSessions((current) => {
+          const next = sortSessions([
+            mapped,
+            ...current.filter((entry) => entry.id !== mapped.id),
+          ]).slice(0, 50);
+          sessionsRef.current = next;
+          writeSessionCache(SESSION_CACHE_SLOT, next);
+          return next;
+        });
+        setActiveSessionIdRaw(mapped.id);
+        return mapped;
+      } catch {
+        return null;
+      }
+    },
+    [admin],
+  );
+
+  const updateServerSession = useCallback(
+    async (id: string, workspaceId: string, title: string) => {
+      if (!admin) {return;}
+      try {
+        const view = await adminChatApi.updateSession(id, { workspaceId, title });
+        const mapped = mapSession(view);
+        setSessions((current) => {
+          const next = sortSessions([
+            mapped,
+            ...current.filter((entry) => entry.id !== mapped.id),
+          ]).slice(0, 50);
+          sessionsRef.current = next;
+          writeSessionCache(SESSION_CACHE_SLOT, next);
+          return next;
+        });
+      } catch {
+        void refreshSessions(workspaceId);
+      }
+    },
+    [admin, refreshSessions],
+  );
+
+  const deleteServerSession = useCallback(
+    async (id: string, workspaceId: string) => {
+      if (!admin) {return;}
+      try {
+        await adminChatApi.deleteSession(id, workspaceId);
+        setSessions((current) => {
+          const next = current.filter((entry) => entry.id !== id);
+          sessionsRef.current = next;
+          writeSessionCache(SESSION_CACHE_SLOT, next);
+          return next;
+        });
+      } catch {
+        void refreshSessions(workspaceId);
+      }
+    },
+    [admin, refreshSessions],
+  );
 
   const getSessionById = useCallback(
     (sessionId: string) => sessionsRef.current.find((session) => session.id === sessionId) || null,
@@ -210,8 +299,21 @@ export function AdminChatHistoryProvider({ children }: { children: ReactNode }) 
       refreshSessions,
       upsertSession,
       getSessionById,
+      createServerSession,
+      updateServerSession,
+      deleteServerSession,
     }),
-    [activeSessionId, getSessionById, refreshSessions, sessions, setActiveSessionId, upsertSession],
+    [
+      activeSessionId,
+      getSessionById,
+      refreshSessions,
+      sessions,
+      setActiveSessionId,
+      upsertSession,
+      createServerSession,
+      updateServerSession,
+      deleteServerSession,
+    ],
   );
 
   return (

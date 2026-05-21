@@ -1,6 +1,7 @@
 'use client';
 
 import { kloelT } from '@/lib/i18n/t';
+import { Search } from 'lucide-react';
 /** Dynamic. */
 export const dynamic = 'force-dynamic';
 
@@ -138,7 +139,7 @@ export default function VerTodasPage() {
               opacity: 0.4,
             }}
           >
-            {kloelT(`&#128269;`)}
+            <Search size={16} aria-hidden="true" />
           </span>
         </div>
         <select

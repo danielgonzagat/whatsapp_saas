@@ -31,37 +31,6 @@ export interface QrCodeResponse {
   message?: string;
 }
 
-/** Waha chat summary shape. */
-export interface WahaChatSummary {
-  id: string;
-  unreadCount?: number;
-  timestamp?: number;
-  lastMessageTimestamp?: number;
-  lastMessageRecvTimestamp?: number;
-  lastMessageFromMe?: boolean | null;
-  name?: string | null;
-  contact?: { pushName?: string; name?: string } | null;
-  pushName?: string | null;
-  notifyName?: string | null;
-  lastMessage?: { _data?: { notifyName?: string; verifiedBizName?: string } } | null;
-}
-
-/** Waha chat message shape. */
-export interface WahaChatMessage {
-  id: string;
-  from?: string;
-  to?: string;
-  fromMe?: boolean;
-  body?: string;
-  type?: string;
-  hasMedia?: boolean;
-  mediaUrl?: string;
-  mimetype?: string;
-  timestamp?: number;
-  chatId?: string;
-  raw?: unknown;
-}
-
 /** Waha lid mapping shape. */
 export interface WahaLidMapping {
   lid: string;
@@ -113,6 +82,14 @@ export interface WahaSessionConfigDiagnostics {
   error?: string;
 }
 
+interface WahaSessionRaw {
+  engine?: { state?: unknown };
+  state?: unknown;
+  session?: { state?: unknown; config?: unknown; status?: unknown };
+  status?: unknown;
+  [key: string]: unknown;
+}
+
 // ─── Status mapping ───────────────────────────────────────────────────────────
 
 const WAHA_SESSION_STATUS_MAP: Record<string, NonNullable<SessionStatus['state']>> = {
@@ -130,7 +107,7 @@ const WAHA_SESSION_STATUS_MAP: Record<string, NonNullable<SessionStatus['state']
 };
 
 /** Normalize waha session status. */
-export function normalizeWahaSessionStatus(raw: unknown): string | null {
+function normalizeWahaSessionStatus(raw: unknown): string | null {
   if (typeof raw !== 'string') {
     return null;
   }
@@ -139,7 +116,7 @@ export function normalizeWahaSessionStatus(raw: unknown): string | null {
 }
 
 /** Map waha session status. */
-export function mapWahaSessionStatus(rawStatus: string | null): SessionStatus['state'] {
+function mapWahaSessionStatus(rawStatus: string | null): SessionStatus['state'] {
   if (!rawStatus) {
     return null;
   }
@@ -151,9 +128,10 @@ export function resolveWahaSessionState(data: Record<string, unknown>): {
   rawStatus: string;
   state: SessionStatus['state'];
 } {
-  const engine = data?.engine as Record<string, unknown> | undefined;
-  const session = data?.session as Record<string, unknown> | undefined;
-  const rawCandidates = [engine?.state, data?.state, session?.state, data?.status, session?.status]
+  const raw = data as WahaSessionRaw;
+  const engine = raw.engine;
+  const session = raw.session;
+  const rawCandidates = [engine?.state, raw.state, session?.state, raw.status, session?.status]
     .map((value) => normalizeWahaSessionStatus(value))
     .filter((value): value is string => Boolean(value));
 

@@ -4,13 +4,17 @@ import {
   ConflictException,
   Injectable,
   InternalServerErrorException,
-  Logger,
 } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { Prisma } from '@prisma/client';
 import { DbInitErrorService } from './db-init-error.service';
 import { UserNameDerivationService } from './user-name-derivation.service';
 import { PrismaService } from '../prisma/prisma.service';
 
+/**
+ * @cluster whatsapp_saas/backend/auth
+ * L11 multi-agent TaskGraph annotation (batched by tools/auto-pr/batch-job.mjs).
+ */
 type ResolvedAgent = {
   id: string;
   email: string;
@@ -39,7 +43,7 @@ const AGENT_SELECT = {
   deletedAt: true,
 } as const;
 
-function _buildAuthLogMessage(event: string, payload: Record<string, unknown>) {
+export function _buildAuthLogMessage(event: string, payload: Record<string, unknown>) {
   return JSON.stringify({ event, ...payload });
 }
 
@@ -49,7 +53,7 @@ function _buildAuthLogMessage(event: string, payload: Record<string, unknown>) {
  */
 @Injectable()
 export class AuthOAuthResolverService {
-  private readonly logger = new Logger(AuthOAuthResolverService.name);
+  private readonly logger = StructuredLogger.from(AuthOAuthResolverService.name);
 
   constructor(private readonly prisma: PrismaService) {}
 
@@ -126,14 +130,24 @@ export class AuthOAuthResolverService {
     },
   ): Promise<ResolvedAgent> {
     const nextAgentData: Prisma.AgentUpdateInput = {};
-    if (!agent.provider) nextAgentData.provider = opts.normalizedProvider;
-    if (!agent.providerId && agent.provider === opts.normalizedProvider)
+    if (!agent.provider) {
+      nextAgentData.provider = opts.normalizedProvider;
+    }
+    if (!agent.providerId && agent.provider === opts.normalizedProvider) {
       nextAgentData.providerId = opts.normalizedProviderId;
-    if (opts.image && agent.avatarUrl !== opts.image) nextAgentData.avatarUrl = opts.image;
-    if (opts.emailVerified && !agent.emailVerified) nextAgentData.emailVerified = true;
-    if (!opts.syntheticEmail && agent.email !== opts.normalizedEmail)
+    }
+    if (opts.image && agent.avatarUrl !== opts.image) {
+      nextAgentData.avatarUrl = opts.image;
+    }
+    if (opts.emailVerified && !agent.emailVerified) {
+      nextAgentData.emailVerified = true;
+    }
+    if (!opts.syntheticEmail && agent.email !== opts.normalizedEmail) {
       nextAgentData.email = opts.normalizedEmail;
-    if (!agent.name || agent.name.trim() === '') nextAgentData.name = opts.finalName;
+    }
+    if (!agent.name || agent.name.trim() === '') {
+      nextAgentData.name = opts.finalName;
+    }
 
     if (Object.keys(nextAgentData).length === 0) {
       return agent;
@@ -172,7 +186,7 @@ export class AuthOAuthResolverService {
             workspaceId: workspace.id,
             provider: opts.normalizedProvider,
             providerId: opts.normalizedProviderId,
-            avatarUrl: opts.image,
+            ...(opts.image !== undefined ? { avatarUrl: opts.image } : {}),
             emailVerified: !!opts.emailVerified,
           },
           select: AGENT_SELECT,

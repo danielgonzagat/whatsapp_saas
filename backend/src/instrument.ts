@@ -1,7 +1,7 @@
 /**
  * KLOEL observability bootstrap.
  *
- * This file MUST be imported before any other module. It initialises:
+ * This file MUST be imported before every other module. It initialises:
  *   - Datadog APM (dd-trace) with Prisma/ioredis/http instrumentation
  *   - Sentry error tracking with release + environment context
  *   - Custom business metrics (dogstatsd)
@@ -20,10 +20,11 @@ import { initSentryContext } from './observability/sentry-context';
 const ddEnabled = Boolean(process.env.DD_API_KEY || process.env.DATADOG_API_KEY);
 
 if (ddEnabled) {
+  const version = process.env.DD_VERSION || process.env.RAILWAY_GIT_COMMIT_SHA || undefined;
   tracer.init({
     service: process.env.DD_SERVICE || 'kloel-backend',
     env: process.env.DD_ENV || process.env.NODE_ENV || 'development',
-    version: process.env.DD_VERSION || process.env.RAILWAY_GIT_COMMIT_SHA || undefined,
+    ...(version !== undefined ? { version } : {}),
 
     // Log correlation: inject dd.trace_id / dd.span_id into every log line
     logInjection: true,
@@ -80,7 +81,7 @@ const isProduction = process.env.NODE_ENV === 'production';
 
 Sentry.init({
   dsn,
-  enabled: Boolean(dsn),
+  enabled: Boolean(dsn) && process.env.NODE_ENV !== 'test',
   environment: process.env.SENTRY_ENVIRONMENT || process.env.NODE_ENV || 'development',
   release,
 

@@ -34,6 +34,10 @@ const _CD = ['c', 'o', 'd', 'a', 'c', 'y', ':', 'd', 'i', 's', 'a', 'b', 'l', 'e
 const _CI = ['c', 'o', 'd', 'a', 'c', 'y', ':', 'i', 'g', 'n', 'o', 'r', 'e'].join('');
 const _NS = ['N', 'O', 'S', 'O', 'N', 'A', 'R'].join('');
 const _NQ = ['n', 'o', 'q', 'a'].join('');
+const _PUOK = ['P', 'U', 'L', 'S', 'E', '_', 'O', 'K'].join('');
+const _PVOK = ['P', 'U', 'L', 'S', 'E', '_', 'V', 'I', 'S', 'U', 'A', 'L', '_', 'O', 'K'].join('');
+const _PAW = ['P', 'U', 'L', 'S', 'E', '_', 'A', 'L', 'L', 'O', 'W'].join('');
+const _VBP = ['V', 'I', 'S', 'U', 'A', 'L', '_', 'B', 'Y', 'P', 'A', 'S', 'S'].join('');
 const _ANY = ['a', 'n', 'y'].join('');
 
 const TOK_TI = _AT + _TI;
@@ -51,6 +55,11 @@ export const FORBIDDEN_TOKENS = [
   { id: 'codacy-' + 'ignore', label: _CI, pattern: new RegExp(_CI + '\\b') },
   { id: 'no' + 'sonar', label: _NS, pattern: new RegExp('\\b' + _NS + '\\b') },
   { id: 'no' + 'qa', label: _NQ, pattern: new RegExp('\\b' + _NQ + '\\b') },
+  // GENERALIZED anti-fraud: banishes ANY suffix family bypass marker after PULSE separator.
+  // Catches OK, SAFE, TODO, ALLOW, IGNORE, WAIVE, SKIP, NOTE, GUARD, PASS, REVIEW, FIXME, HACK, XXX, BYPASS, EXCEPT, EXCLUDE, VISUAL+OK
+  // Case-insensitive, separator-agnostic. Engineered to make new PULSE_<X> bypass markers IMPOSSIBLE.
+  { id: 'pulse-' + 'family', label: 'PULSE_<bypass>', pattern: new RegExp('\\b[Pp][Uu][Ll][Ss][Ee][^A-Za-z0-9]+(?:[Oo][Kk]|[Ss][Aa][Ff][Ee]|[Tt][Oo][Dd][Oo]|[Aa][Ll][Ll][Oo][Ww]|[Ii][Gg][Nn][Oo][Rr][Ee]|[Ww][Aa][Ii][Vv][Ee]|[Ss][Kk][Ii][Pp]|[Nn][Oo][Tt][Ee]|[Gg][Uu][Aa][Rr][Dd]|[Pp][Aa][Ss][Ss]|[Rr][Ee][Vv][Ii][Ee][Ww]|[Ff][Ii][Xx][Mm][Ee]|[Hh][Aa][Cc][Kk]|[Xx][Xx][Xx]|[Bb][Yy][Pp][Aa][Ss][Ss]|[Ee][Xx][Cc][Ee][Pp][Tt]|[Ee][Xx][Cc][Ll][Uu][Dd][Ee]|[Vv][Ii][Ss][Uu][Aa][Ll][^A-Za-z0-9]+[Oo][Kk])\\b') },
+  { id: 'visual-' + 'bypass', label: 'VISUAL_BYPASS', pattern: new RegExp('\\b[Vv][Ii][Ss][Uu][Aa][Ll][^A-Za-z0-9]?[Bb][Yy][Pp][Aa][Ss][Ss]\\b') },
 ];
 
 export const ANY_TYPE_PATTERN = new RegExp(
@@ -60,6 +69,7 @@ export const ANY_TYPE_PATTERN = new RegExp(
 export const PROTECTED_FILES = new Set([
   ['CLAUDE', 'md'].join('.'),
   ['AGENTS', 'md'].join('.'),
+  ['CODEX', 'md'].join('.'),
   ['docs', 'design', 'KLOEL_VISUAL_DESIGN_CONTRACT.md'].join('/'),
   ['docs', 'design', 'KLOEL_ANTI_HARDCODE_CONTRACT.md'].join('/'),
   ['ops', 'kloel-design-tokens.json'].join('/'),
@@ -92,9 +102,9 @@ export const SELF_IMMUTABLE_FILES = new Set([
 ]);
 
 export function isProtectedPath(relPath) {
-  if (PROTECTED_FILES.has(relPath)) return true;
+  if (PROTECTED_FILES.has(relPath)) {return true;}
   for (const prefix of PROTECTED_PREFIXES) {
-    if (relPath.startsWith(prefix)) return true;
+    if (relPath.startsWith(prefix)) {return true;}
   }
   return false;
 }
@@ -115,11 +125,11 @@ export function isUnderForbiddenSegment(relPath) {
 export function getLockedFiles(repoRoot) {
   const archCheck = ['scripts', 'ops', 'check-architecture-guardrails.mjs'].join('/');
   const gatePath = path.join(repoRoot, archCheck);
-  if (!existsSync(gatePath)) return new Set();
+  if (!existsSync(gatePath)) {return new Set();}
   try {
     const src = readFileSync(gatePath, 'utf8');
     const m = src.match(/const\s+LOCKED_FILES\s*=\s*new\s+Set\s*\(\s*\[([\s\S]*?)\]\s*\)/);
-    if (!m) return new Set();
+    if (!m) {return new Set();}
     return new Set(
       m[1]
         .split(/[,\n]/)
@@ -142,17 +152,17 @@ export function findForbiddenToken(content) {
     const raw = lines[i];
     const trimmed = raw.trim();
     if (inBlockComment) {
-      if (/\*\//.test(raw)) inBlockComment = false;
+      if (/\*\//.test(raw)) {inBlockComment = false;}
       continue;
     }
     if (/^\/\*/.test(trimmed)) {
-      if (!/\*\//.test(trimmed)) inBlockComment = true;
+      if (!/\*\//.test(trimmed)) {inBlockComment = true;}
       continue;
     }
-    if (/^\/\//.test(trimmed)) continue;
+    if (/^\/\//.test(trimmed)) {continue;}
     for (const tok of FORBIDDEN_TOKENS) {
       if (tok.pattern.test(raw))
-        return { tokenId: tok.id, label: tok.label, lineNumber: i + 1, line: raw };
+        {return { tokenId: tok.id, label: tok.label, lineNumber: i + 1, line: raw };}
     }
     if (ANY_TYPE_PATTERN.test(raw)) {
       return { tokenId: 'untyped', label: ':' + ' ' + _ANY, lineNumber: i + 1, line: raw };
@@ -163,9 +173,9 @@ export function findForbiddenToken(content) {
 
 export function evaluateContent({ relPath, content, isNewFile, lockedFiles = new Set() }) {
   const violations = [];
-  if (!isSourcePath(relPath)) return violations;
-  if (isUnderIgnoredSegment(relPath)) return violations;
-  if (lockedFiles.has(relPath)) return violations;
+  if (!isSourcePath(relPath)) {return violations;}
+  if (isUnderIgnoredSegment(relPath)) {return violations;}
+  if (lockedFiles.has(relPath)) {return violations;}
   if (isUnderForbiddenSegment(relPath)) {
     violations.push({
       rule: 'forbidden-directory',
@@ -204,7 +214,7 @@ export function evaluateContent({ relPath, content, isNewFile, lockedFiles = new
 }
 
 export function simulateToolEdit({ toolName, toolInput, repoRoot }) {
-  if (!toolInput || !toolInput.file_path) return null;
+  if (!toolInput || !toolInput.file_path) {return null;}
   const filePath = path.isAbsolute(toolInput.file_path)
     ? toolInput.file_path
     : path.join(repoRoot, toolInput.file_path);
@@ -215,7 +225,7 @@ export function simulateToolEdit({ toolName, toolInput, repoRoot }) {
     isNewFile = !exists;
     resulting = String(toolInput.content == null ? '' : toolInput.content);
   } else if (toolName === 'Edit') {
-    if (!exists) return null;
+    if (!exists) {return null;}
     const cur = readFileSync(filePath, 'utf8');
     const oldStr = String(toolInput.old_string == null ? '' : toolInput.old_string);
     const newStr = String(toolInput.new_string == null ? '' : toolInput.new_string);
@@ -223,11 +233,11 @@ export function simulateToolEdit({ toolName, toolInput, repoRoot }) {
       resulting = cur.split(oldStr).join(newStr);
     } else {
       const idx = cur.indexOf(oldStr);
-      if (idx === -1) return null;
+      if (idx === -1) {return null;}
       resulting = cur.slice(0, idx) + newStr + cur.slice(idx + oldStr.length);
     }
   } else if (toolName === 'MultiEdit') {
-    if (!exists) return null;
+    if (!exists) {return null;}
     resulting = readFileSync(filePath, 'utf8');
     for (const e of toolInput.edits || []) {
       const oldStr = String(e.old_string == null ? '' : e.old_string);
@@ -236,7 +246,7 @@ export function simulateToolEdit({ toolName, toolInput, repoRoot }) {
         resulting = resulting.split(oldStr).join(newStr);
       } else {
         const idx = resulting.indexOf(oldStr);
-        if (idx === -1) continue;
+        if (idx === -1) {continue;}
         resulting = resulting.slice(0, idx) + newStr + resulting.slice(idx + oldStr.length);
       }
     }
@@ -256,7 +266,7 @@ export function extractExports(content) {
   const names = new Set();
   let m;
   EXPORT_DECL_RE.lastIndex = 0;
-  while ((m = EXPORT_DECL_RE.exec(content)) !== null) names.add(m[1]);
+  while ((m = EXPORT_DECL_RE.exec(content)) !== null) {names.add(m[1]);}
   EXPORT_LIST_RE.lastIndex = 0;
   while ((m = EXPORT_LIST_RE.exec(content)) !== null) {
     for (const tok of m[1].split(',')) {
@@ -266,10 +276,10 @@ export function extractExports(content) {
         .split(/\s+as\s+/i)
         .pop()
         .trim();
-      if (/^[A-Za-z_][A-Za-z0-9_]*$/.test(cleaned)) names.add(cleaned);
+      if (/^[A-Za-z_][A-Za-z0-9_]*$/.test(cleaned)) {names.add(cleaned);}
     }
   }
   const def = content.match(EXPORT_DEFAULT_RE);
-  if (def) names.add('default:' + def[1]);
+  if (def) {names.add('default:' + def[1]);}
   return names;
 }

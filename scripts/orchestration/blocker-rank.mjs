@@ -40,11 +40,11 @@ const SEVERITY_WEIGHT = { critical: 4, high: 2, medium: 1, low: 0.5 };
 
 function userImpact(filePath) {
   const p = filePath.toLowerCase();
-  if (/(stripe|payment|checkout|billing|wallet|auth|whatsapp|inbox|webhook)/i.test(p)) return 5;
-  if (/(api|route|controller)/i.test(p) || /src\/.+\/(routes?|controllers?)/i.test(p)) return 5;
-  if (/(service|handler|repository)/i.test(p) || /lib\/.+\.service/i.test(p)) return 4;
-  if (/(util|lib|helper)/i.test(p)) return 2;
-  if (/(test|spec|script|doc|fixture)/i.test(p)) return 1;
+  if (/(stripe|payment|checkout|billing|wallet|auth|whatsapp|inbox|webhook)/i.test(p)) {return 5;}
+  if (/(api|route|controller)/i.test(p) || /src\/.+\/(routes?|controllers?)/i.test(p)) {return 5;}
+  if (/(service|handler|repository)/i.test(p) || /lib\/.+\.service/i.test(p)) {return 4;}
+  if (/(util|lib|helper)/i.test(p)) {return 2;}
+  if (/(test|spec|script|doc|fixture)/i.test(p)) {return 1;}
   return 1;
 }
 
@@ -109,7 +109,7 @@ function loadSidecars() {
   for (const abs of walkSidecars(SOURCE_DIR)) {
     const rel = relative(SOURCE_DIR, abs).replace(/\\/g, '/');
     const m = rel.match(/^(.+?)\.(tier|phase|findings|coverage)\.json$/);
-    if (!m) continue;
+    if (!m) {continue;}
     const baseFile = m[1];
     const kind = m[2];
 
@@ -134,7 +134,7 @@ function locFromMirrorMd(baseFile) {
   try {
     const content = readFileSync(mdPath, 'utf8');
     const m = content.match(/^bytes:\s*(\d+)/m);
-    if (m) return Math.max(1, Math.round(parseInt(m[1], 10) / 40)); // ~40 bytes/line heuristic
+    if (m) {return Math.max(1, Math.round(parseInt(m[1], 10) / 40));} // ~40 bytes/line heuristic
   } catch {
     /* ignore */
   }
@@ -241,12 +241,12 @@ function parseArgs() {
   const out = { top: 50, dry: false, pretty: false, emit: true };
   for (let i = 0; i < args.length; i++) {
     const a = args[i];
-    if (a === '--top') out.top = parseInt(args[++i], 10) || 50;
+    if (a === '--top') {out.top = parseInt(args[++i], 10) || 50;}
     else if (a === '--dry') {
       out.dry = true;
       out.emit = false;
-    } else if (a === '--emit') out.emit = true;
-    else if (a === '--pretty') out.pretty = true;
+    } else if (a === '--emit') {out.emit = true;}
+    else if (a === '--pretty') {out.pretty = true;}
   }
   return out;
 }

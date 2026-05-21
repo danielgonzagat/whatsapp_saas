@@ -1,14 +1,14 @@
 import * as path from 'path';
 import type { PulseConvergenceOwnerLane } from './types.gate-failure';
 import type { PulseScopeFileKind, PulseScopeSurface } from './types.truth.scope';
-import { ROOT_CONFIG_FILES } from './__parts__/scope-state.constants/main';
+import { ROOT_CONFIG_FILES } from './scope-state.constants/main';
 import {
   discoverWorkspaceStructure,
   type WorkspaceStructure,
-} from './__parts__/scope-state.constants/workspace-walk';
+} from './scope-state.constants/workspace-walk';
 import { normalizePath } from './scope-state.codacy';
-import { discoverSourceExtensionsFromObservedTypescript } from './dynamic-reality-kernel/__parts__/token-evidence';
-import { deriveStringUnionMembersFromTypeContract } from './dynamic-reality-kernel/__parts__/type-contract-labels';
+import { discoverSourceExtensionsFromObservedTypescript } from './dynamic-reality-kernel/token-evidence';
+import { deriveStringUnionMembersFromTypeContract } from './dynamic-reality-kernel/type-contract-labels';
 
 /**
  * Path-classification helpers extracted from `scope-state.ts` so the parent
@@ -284,6 +284,6 @@ export function classifyExcludeReason(dirName: string): string {
 }
 
 /** Return true when a file could not be classified into any known surface. */
-export function isUnknownFile(surface: PulseScopeSurface, kind: PulseScopeFileKind): boolean {
+export function isUnknownFile(surface: PulseScopeSurface, _kind: PulseScopeFileKind): boolean {
   return surface === 'misc';
 }

@@ -1,4 +1,5 @@
-import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import type { Prisma, PrepaidWalletTransaction } from '@prisma/client';
 import * as Sentry from '@sentry/node';
 
@@ -37,7 +38,7 @@ interface PixNextAction {
  */
 @Injectable()
 export class WalletService {
-  private readonly logger = new Logger(WalletService.name);
+  private readonly logger = StructuredLogger.from(WalletService.name);
 
   constructor(
     private readonly stripeService: StripeService,
@@ -488,11 +489,16 @@ export class WalletService {
   private shapeIntentResult(intent: StripePaymentIntent): CreateTopupIntentResult {
     const action = intent.next_action as PixNextAction | null | undefined;
     const isPix = action?.type === 'pix_display_qr_code';
-    return {
+    const result: CreateTopupIntentResult = {
       paymentIntentId: intent.id,
       clientSecret: intent.client_secret ?? null,
-      pixQrCode: isPix ? action?.pix_display_qr_code?.data : undefined,
-      pixQrCodeUrl: isPix ? action?.pix_display_qr_code?.image_url_png : undefined,
     };
+    if (isPix && action?.pix_display_qr_code?.data) {
+      result.pixQrCode = action.pix_display_qr_code.data;
+    }
+    if (isPix && action?.pix_display_qr_code?.image_url_png) {
+      result.pixQrCodeUrl = action.pix_display_qr_code.image_url_png;
+    }
+    return result;
   }
 }

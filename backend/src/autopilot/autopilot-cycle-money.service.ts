@@ -1,8 +1,7 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { Queue } from 'bullmq';
 import { SmartTimeService } from '../analytics/smart-time/smart-time.service';
-import { PlanLimitsService } from '../billing/plan-limits.service';
 import { forEachSequential } from '../common/async-sequence';
 import { createRedisClient } from '../common/redis/redis.util';
 import { PrismaService } from '../prisma/prisma.service';
@@ -12,15 +11,17 @@ import { PrismaService } from '../prisma/prisma.service';
  * Keeps AutopilotCycleService under 400 lines.
  */
 @Injectable()
+/**
+ * @cluster whatsapp_saas/backend/autopilot
+ * L11 multi-agent TaskGraph annotation (batched by tools/auto-pr/batch-job.mjs).
+ */
 export class AutopilotCycleMoneyService {
-  private readonly logger = new Logger(AutopilotCycleMoneyService.name);
+  private readonly logger = StructuredLogger.from(AutopilotCycleMoneyService.name);
   private readonly campaignQueue: Queue;
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly config: ConfigService,
     private readonly smartTime: SmartTimeService,
-    private readonly planLimits: PlanLimitsService,
   ) {
     const connection = createRedisClient();
     this.campaignQueue = new Queue('campaign-jobs', { connection });
@@ -295,6 +296,26 @@ export class AutopilotCycleMoneyService {
         { workspaceId, contactId, operation, durationMs: Date.now() - startedAt, status: 'ok' },
         'Autopilot next-best-action succeeded',
       );
+      try {
+        await this.prisma.autopilotEvent.create({
+          data: {
+            workspaceId,
+            contactId,
+            intent: 'NBA',
+            action: result.action,
+            status: 'recommended',
+            reason: result.reason,
+            meta: {
+              recommendedMessage: result.recommendedMessage,
+              lastMessageAt: result.lastMessageAt,
+            },
+          },
+        });
+      } catch (err: unknown) {
+        this.logger.warn(
+          `Failed to log autopilotEvent for nextBestAction: ${err instanceof Error ? err.message : 'unknown error'}`,
+        );
+      }
       return result;
     } catch (error: unknown) {
       this.logger.error(

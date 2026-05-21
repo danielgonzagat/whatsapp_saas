@@ -14,8 +14,3 @@ function sanitizeQueueIdPart(value: unknown): string {
 export function buildQueueJobId(prefix: string, ...parts: unknown[]): string {
   return [sanitizeQueueIdPart(prefix), ...parts.map(sanitizeQueueIdPart)].join('__');
 }
-
-/** Build queue dedup id. */
-export function buildQueueDedupId(prefix: string, ...parts: unknown[]): string {
-  return buildQueueJobId(prefix, ...parts);
-}

@@ -1,7 +1,8 @@
+import { createElement } from 'react';
 import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { KloelBrandLockup } from '../KloelBrand';
+import { KloelBrandLockup, KloelMushroomVisual } from '../KloelBrand';
 import { KloelAuthScreen } from '../auth/kloel-auth-screen';
 import { CookieProvider } from '../cookies/CookieProvider';
 import KloelLanding from '../landing/KloelLanding';
@@ -16,9 +17,8 @@ vi.mock('next/link', () => ({
 }));
 
 vi.mock('next/image', () => ({
-  default: ({ src, alt = '', ...props }: React.ImgHTMLAttributes<HTMLImageElement>) => (
-    <img src={typeof src === 'string' ? src : ''} alt={alt} {...props} />
-  ),
+  default: ({ src, alt = '', ...props }: React.ImgHTMLAttributes<HTMLImageElement>) =>
+    createElement('img', { src: typeof src === 'string' ? src : '', alt, ...props }),
 }));
 
 vi.mock('@/components/kloel/auth/auth-provider', () => ({
@@ -120,8 +120,48 @@ describe('public reduced-motion surfaces', () => {
       <KloelBrandLockup animated={false} spores="none" markSize={48} fontSize={20} />,
     );
 
-    expect(container.querySelector('img')).toBeNull();
-    expect(container.querySelector('svg')).not.toBeNull();
+    const img = container.querySelector<HTMLImageElement>(
+      'img[src="/kloel-mushroom-animated.svg"]',
+    );
+    expect(img).not.toBeNull();
+    expect(img!.hasAttribute('data-reduced-motion')).toBe(false);
+    expect(img!.style.transform).toBe('translate3d(0,0,0)');
+  });
+
+  it('applies GPU transform layer when reduced motion is not preferred', () => {
+    mockReducedMotion(false);
+
+    const { container } = render(<KloelMushroomVisual size={32} />);
+
+    const img = container.querySelector<HTMLImageElement>(
+      'img[src="/kloel-mushroom-animated.svg"]',
+    );
+    expect(img).not.toBeNull();
+    expect(img!.hasAttribute('data-reduced-motion')).toBe(false);
+    expect(img!.style.transform).toBe('translate3d(0,0,0)');
+  });
+
+  it('uses canonical SVG path and supplies accessible alt text', () => {
+    const { container } = render(<KloelMushroomVisual size={48} title="Kloel Brain" />);
+
+    const img = container.querySelector<HTMLImageElement>(
+      'img[src="/kloel-mushroom-animated.svg"]',
+    );
+    expect(img).not.toBeNull();
+    expect(img!.getAttribute('alt')).toBe('Kloel Brain');
+    expect(img!.getAttribute('role')).toBe('img');
+  });
+
+  it('marks mushroom as presentational when ariaHidden is true', () => {
+    const { container } = render(<KloelMushroomVisual size={24} ariaHidden />);
+
+    const img = container.querySelector<HTMLImageElement>(
+      'img[src="/kloel-mushroom-animated.svg"]',
+    );
+    expect(img).not.toBeNull();
+    expect(img!.getAttribute('aria-hidden')).toBe('true');
+    expect(img!.getAttribute('alt')).toBe('');
+    expect(img!.getAttribute('role')).toBe('presentation');
   });
 
   it('keeps the auth screen deterministic under reduced motion without disabling Google auth', async () => {
@@ -160,7 +200,7 @@ describe('public reduced-motion surfaces', () => {
 
     expect(screen.getByText('O Kloel escala.')).toBeInTheDocument();
     expect(screen.getByText('O Marketing Artificial começou.')).toBeInTheDocument();
-    expect(container.querySelector('img[src="/kloel-mushroom-animated.svg"]')).toBeNull();
+    expect(container.querySelector('img[src="/kloel-mushroom-animated.svg"]')).not.toBeNull();
   });
 
   it('renders the thanos section in a static reveal state under reduced motion', () => {
@@ -235,5 +275,182 @@ describe('public reduced-motion surfaces', () => {
         value: originalLocation,
       });
     }
+  });
+});
+
+const CANONICAL_SVG = [
+  '<svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">',
+  '  <style>',
+  '    @media (prefers-reduced-motion: no-preference) {',
+  '      .cap-group { animation: cap-breathe 3s ease-in-out infinite; }',
+  '      .circuit-cap { animation: pump-cap 3s ease-in-out infinite; }',
+  '      .node-cap { animation: node-cap-pulse 3s ease-in-out infinite; }',
+  '    }',
+  '    @keyframes cap-breathe {',
+  '      0%   { transform: scaleY(1); }',
+  '      100% { transform: scaleY(1); }',
+  '    }',
+  '    @keyframes pump-cap {',
+  '      0%   { stroke-opacity: 0.35; }',
+  '      100% { stroke-opacity: 0.35; }',
+  '    }',
+  '    @keyframes node-cap-pulse {',
+  '      0%   { r: 2.5; }',
+  '      100% { r: 2.5; }',
+  '    }',
+  '    .spore { opacity: 0; }',
+  '    @media (prefers-reduced-motion: no-preference) {',
+  '      .sp-L1 { animation: sp-L1 3s ease-out infinite 0s; opacity: 1; }',
+  '    }',
+  '    @keyframes sp-L1 {',
+  '      0%,43%{ opacity:0; cx:38; cy:96; }',
+  '      100%{ opacity:0; cx:-10; cy:90; }',
+  '    }',
+  '  </style>',
+  '  <g>',
+  '    <g class="cap-group">',
+  '      <line class="circuit-cap" x1="70" y1="70" x2="90" y2="50" stroke="#FFFFFF"/>',
+  '      <circle class="node-cap" cx="70" cy="70" fill="#FFFFFF"/>',
+  '    </g>',
+  '    <circle class="sp-L1 spore" cx="38" cy="96" r="2.2" fill="#E85D30"/>',
+  '  </g>',
+  '</svg>',
+].join('\n');
+
+function mockSvgFetch(svg = CANONICAL_SVG) {
+  vi.stubGlobal(
+    'fetch',
+    vi.fn().mockResolvedValue({
+      ok: true,
+      text: () => Promise.resolve(svg),
+    }),
+  );
+}
+
+describe('KloelMushroomVisual traceColor', () => {
+  beforeEach(() => {
+    mockReducedMotion(false);
+  });
+
+  afterEach(() => {
+    cleanup();
+    vi.unstubAllGlobals();
+  });
+
+  it('renders img fallback synchronously before SVG loads (no fetch mock)', () => {
+    const { container } = render(<KloelMushroomVisual size={48} />);
+
+    expect(container.querySelector('img[src="/kloel-mushroom-animated.svg"]')).not.toBeNull();
+  });
+
+  it('injects traceColor into circuit strokes and node fills', async () => {
+    mockSvgFetch();
+
+    const { container } = render(
+      <KloelMushroomVisual size={48} traceColor="#00FF00" title="Test" />,
+    );
+
+    await waitFor(() => {
+      const svg = container.querySelector('svg');
+      expect(svg).not.toBeNull();
+    });
+
+    const html = container.innerHTML;
+    expect(html).toContain('stroke="#00FF00"');
+    expect(html).toContain('fill="#00FF00"');
+    expect(html).not.toContain('stroke="#FFFFFF"');
+    expect(html).not.toContain('fill="#FFFFFF"');
+  });
+
+  it('keeps default white traces when traceColor is #FFFFFF', async () => {
+    mockSvgFetch();
+
+    const { container } = render(<KloelMushroomVisual size={32} traceColor="#FFFFFF" />);
+
+    await waitFor(() => {
+      const svg = container.querySelector('svg');
+      expect(svg).not.toBeNull();
+    });
+
+    const html = container.innerHTML;
+    expect(html).toContain('stroke="#FFFFFF"');
+    expect(html).toContain('fill="#FFFFFF"');
+  });
+
+  it('injects animation-disabling CSS when animated is false', async () => {
+    mockSvgFetch();
+
+    const { container } = render(<KloelMushroomVisual size={32} animated={false} />);
+
+    await waitFor(() => {
+      const svg = container.querySelector('svg');
+      expect(svg).not.toBeNull();
+    });
+
+    const svgEl = container.querySelector('svg')!;
+    const styles = svgEl.querySelectorAll('style');
+    const combined = Array.from(styles)
+      .map((s) => s.textContent ?? '')
+      .join('');
+
+    expect(combined).toContain('animation:none');
+  });
+
+  it('hides spores when spores=none', async () => {
+    mockSvgFetch();
+
+    const { container } = render(<KloelMushroomVisual size={32} spores="none" />);
+
+    await waitFor(() => {
+      const svg = container.querySelector('svg');
+      expect(svg).not.toBeNull();
+    });
+
+    const svgEl = container.querySelector('svg')!;
+    const styles = svgEl.querySelectorAll('style');
+    const combined = Array.from(styles)
+      .map((s) => s.textContent ?? '')
+      .join('');
+
+    expect(combined).toContain('display:none');
+  });
+
+  it('shows static spores when spores=static', async () => {
+    mockSvgFetch();
+
+    const { container } = render(<KloelMushroomVisual size={32} spores="static" />);
+
+    await waitFor(() => {
+      const svg = container.querySelector('svg');
+      expect(svg).not.toBeNull();
+    });
+
+    const svgEl = container.querySelector('svg')!;
+    const styles = svgEl.querySelectorAll('style');
+    const combined = Array.from(styles)
+      .map((s) => s.textContent ?? '')
+      .join('');
+
+    expect(combined).toContain('opacity:.6');
+    expect(combined).toContain('animation:none');
+  });
+
+  it('preserves SVG prefers-reduced-motion media query', async () => {
+    mockSvgFetch();
+
+    const { container } = render(<KloelMushroomVisual size={32} />);
+
+    await waitFor(() => {
+      const svg = container.querySelector('svg');
+      expect(svg).not.toBeNull();
+    });
+
+    const svgEl = container.querySelector('svg')!;
+    const styles = svgEl.querySelectorAll('style');
+    const combined = Array.from(styles)
+      .map((s) => s.textContent ?? '')
+      .join('');
+
+    expect(combined).toContain('prefers-reduced-motion: no-preference');
   });
 });

@@ -1,4 +1,5 @@
 'use client';
+import { colors } from '@/lib/design-tokens';
 
 import { kloelT } from '@/lib/i18n/t';
 import { KLOEL_THEME } from '@/lib/kloel-theme';
@@ -87,10 +88,10 @@ export function KloelStatusCard({
               fill="none"
               stroke={
                 preparationPercent >= 80
-                  ? '#22C55E'
+                  ? colors.checkout.success
                   : preparationPercent >= 50
-                    ? '#F59E0B'
-                    : '#EF4444'
+                    ? colors.semantic.warning
+                    : colors.semantic.error
               }
               strokeWidth="8"
               strokeLinecap="round"
@@ -147,7 +148,7 @@ export function KloelStatusCard({
           <div>
             <p className="text-xs text-[var(--app-text-secondary)]">{kloelT(`Tom de voz`)}</p>
             <p
-              className={`font-semibold ${voiceToneDefined ? 'text-[#10B981]' : 'text-[var(--app-text-tertiary)]'}`}
+              className={`font-semibold ${voiceToneDefined ? 'text-[var(--semantic-success)]' : 'text-[var(--app-text-tertiary)]'}`}
             >
               {voiceToneDefined ? 'Definido' : 'Nao definido'}
             </p>
@@ -158,7 +159,7 @@ export function KloelStatusCard({
           <div>
             <p className="text-xs text-[var(--app-text-secondary)]">{kloelT(`Checkout`)}</p>
             <p
-              className={`font-semibold ${checkoutConfigured ? 'text-[#10B981]' : 'text-[var(--app-text-tertiary)]'}`}
+              className={`font-semibold ${checkoutConfigured ? 'text-[var(--semantic-success)]' : 'text-[var(--app-text-tertiary)]'}`}
             >
               {checkoutConfigured ? 'Configurado' : 'Nao configurado'}
             </p>

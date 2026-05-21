@@ -22,8 +22,8 @@ export interface AuthenticatedSession {
   state: 'authenticated';
   /** Access token property. */
   accessToken: string;
-  /** Refresh token property. */
-  refreshToken: string;
+  /** Refresh token property. Present only in direct backend responses; the admin frontend stores it in an httpOnly cookie. */
+  refreshToken?: string;
   /** Admin property. */
   admin: {
     id: string;

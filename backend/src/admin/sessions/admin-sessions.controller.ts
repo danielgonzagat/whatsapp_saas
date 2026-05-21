@@ -7,11 +7,13 @@ import { AdminAuthGuard } from '../auth/guards/admin-auth.guard';
 import { AdminPermissionGuard } from '../auth/guards/admin-permission.guard';
 import type { AuthenticatedAdmin } from '../auth/admin-token.types';
 import { AdminSessionsService } from './admin-sessions.service';
+import { RouteClass } from '../../common/throttler/route-class.decorator';
 
 /** Admin sessions controller. */
 @Public()
 @Controller('admin/sessions')
 @UseGuards(AdminAuthGuard, AdminPermissionGuard)
+@RouteClass('read')
 export class AdminSessionsController {
   constructor(private readonly sessions: AdminSessionsService) {}
 
@@ -22,7 +24,6 @@ export class AdminSessionsController {
   }
 
   /** List for user. */
-  // PULSE_OK: internal route, admin panel only
   @Get('user/:id')
   @RequireAdminPermission(AdminModule.IAM, AdminAction.VIEW)
   async listForUser(@Param('id') id: string) {

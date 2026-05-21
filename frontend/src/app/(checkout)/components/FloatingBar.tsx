@@ -1,4 +1,5 @@
 'use client';
+import { colors } from '@/lib/design-tokens';
 
 import { kloelT } from '@/lib/i18n/t';
 import { useEffect, useState } from 'react';
@@ -18,9 +19,9 @@ interface FloatingBarProps {
 export default function FloatingBar({
   enabled,
   message = 'Compra 100% segura e protegida',
-  accentColor = '#D4AF37',
-  textColor = '#E8E6E1',
-  backgroundColor = '#141416',
+  accentColor = colors.checkout.accent,
+  textColor = colors.checkout.textPrimary,
+  backgroundColor = colors.checkout.bg,
 }: FloatingBarProps) {
   const [visible, setVisible] = useState(false);
   const [dismissed, setDismissed] = useState(false);

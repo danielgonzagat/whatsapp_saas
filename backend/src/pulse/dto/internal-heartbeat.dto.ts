@@ -15,20 +15,20 @@ export class PulseInternalHeartbeatDto {
   /** Node id property. */
   @IsString()
   @MaxLength(160)
-  nodeId: string;
+  nodeId!: string;
 
   /** Role property. */
   @IsIn(['backend', 'worker', 'frontend', 'scanner'])
-  role: 'backend' | 'worker' | 'frontend' | 'scanner';
+  role!: 'backend' | 'worker' | 'frontend' | 'scanner';
 
   /** Status property. */
   @IsIn(['UP', 'DEGRADED', 'DOWN'])
-  status: 'UP' | 'DEGRADED' | 'DOWN';
+  status!: 'UP' | 'DEGRADED' | 'DOWN';
 
   /** Summary property. */
   @IsString()
   @MaxLength(600)
-  summary: string;
+  summary!: string;
 
   /** Workspace id property. */
   @IsOptional()

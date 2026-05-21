@@ -1,4 +1,5 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
+import { StructuredLogger } from '../../logging/structured-logger';
 import * as Sentry from '@sentry/node';
 
 import { StripeService } from '../../billing/stripe.service';
@@ -75,7 +76,7 @@ export class ConnectPayoutsNotEnabledError extends Error {
  */
 @Injectable()
 export class ConnectPayoutService {
-  private readonly logger = new Logger(ConnectPayoutService.name);
+  private readonly logger = StructuredLogger.from(ConnectPayoutService.name);
 
   constructor(
     private readonly prisma: PrismaService,
@@ -85,7 +86,6 @@ export class ConnectPayoutService {
   ) {}
 
   /** Create payout. */
-  // PULSE_OK: rate-limited by PaymentWebhookStripeController
   async createPayout(input: CreateConnectPayoutInput): Promise<CreateConnectPayoutResult> {
     // Wrap read-check in transaction to prevent TOCTOU race condition
     const balance = await this.prisma.$transaction(
@@ -158,13 +158,14 @@ export class ConnectPayoutService {
         },
       );
     } catch (error: unknown) {
-      this.logger.error('connect payout failed', (error as Error).stack, {
+      this.logger.error('connect payout failed', {
         workspaceId: balance.workspaceId,
         accountBalanceId: balance.id,
         stripeAccountId: balance.stripeAccountId,
         amountCents: Number(input.amountCents),
         requestId: input.requestId,
-        error: (error as Error).message,
+        stack: error instanceof Error ? error.stack : undefined,
+        error: error instanceof Error ? error.message : String(error),
       });
       Sentry.captureException(error, {
         tags: { type: 'financial_alert', operation: 'connect_payout' },
@@ -217,14 +218,13 @@ export class ConnectPayoutService {
   }
 
   /** Handle failed payout. */
-  // PULSE_OK: rate-limited by PaymentWebhookStripeController
   async handleFailedPayout(input: HandleFailedConnectPayoutInput): Promise<void> {
     const balance = await this.prisma.connectAccountBalance.findUnique({
       where: { id: input.accountBalanceId },
       select: { workspaceId: true, stripeAccountId: true },
     });
 
-    this.logger.error('handling failed connect payout', undefined, {
+    this.logger.error('handling failed connect payout', {
       payoutId: input.payoutId,
       accountBalanceId: input.accountBalanceId,
       amountCents: Number(input.amountCents),
@@ -245,7 +245,7 @@ export class ConnectPayoutService {
     this.financialAlert.withdrawalFailed(
       new Error(`Stripe payout.failed webhook ${input.payoutId}`),
       {
-        workspaceId: balance?.workspaceId,
+        ...(balance?.workspaceId !== undefined ? { workspaceId: balance.workspaceId } : {}),
         amount: Number(input.amountCents),
       },
     );

@@ -5,7 +5,7 @@ import { CHECKOUT_ORDER_STATUSES } from '../checkout-order-status';
 export class UpdateOrderStatusDto {
   /** Order status property. */
   @IsIn(CHECKOUT_ORDER_STATUSES, { message: 'Status inválido' })
-  status: (typeof CHECKOUT_ORDER_STATUSES)[number];
+  status!: (typeof CHECKOUT_ORDER_STATUSES)[number];
 
   /** Tracking code property. */
   @IsOptional()

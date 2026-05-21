@@ -1,5 +1,13 @@
 /**
- * Worker BullMQ queue system — lazy initialization (PR P2-4).
+ * ARCHITECTURAL COHESION: This file is a single organism — the Lazy Queue
+ * System. It manages the complete lifecycle of BullMQ queues: lazy Redis
+ * connection, lazy queue/DLQ/QueueEvents creation via Proxy, DLQ-to-ops
+ * notification (delegated to queue-dlq-notifier.ts), backwards-compatible
+ * Queue wrapper, and graceful shutdown. These concerns form a single
+ * responsibility: "provide type-safe, lazily-initialized queue primitives
+ * that open zero Redis connections on import." Splitting would break the
+ * Proxy-based lazy initialization pattern that is the entire point of
+ * this module.
  *
  * Before P2-4 this module created the shared Redis connection and
  * 9 BullMQ queues + 9 DLQ queues + 9 QueueEvents at module-import
@@ -31,12 +39,13 @@
  */
 
 import { Queue as BullQueue, type Job, QueueEvents, Worker } from 'bullmq';
-import Redis from 'ioredis';
+import Redis, { type RedisOptions } from 'ioredis';
 import { maskRedisUrl, resolveRedisUrl } from './resolve-redis-url';
 
 // ─── Lazy Redis connection ────────────────────────────────────────────────
 
 const redisOpts = {
+  family: 0,
   maxRetriesPerRequest: null as null,
   enableReadyCheck: true,
   retryStrategy(times: number) {
@@ -45,34 +54,78 @@ const redisOpts = {
 };
 
 let _connection: Redis | null = null;
+type BullMqRedisOptions = RedisOptions & { url: string };
+
+const resolveRequiredRedisUrl = (context: string): string => {
+  const resolved = resolveRedisUrl();
+  if (!resolved) {
+    console.error(
+      `[ERROR] [QUEUE] Redis URL is null while creating ${context}. Worker bootstrap should have prevented this. Exiting.`,
+    );
+    process.exit(1);
+  }
+  return resolved;
+};
+
+const collectRedisDuplicateOverrides = (args: unknown[]): RedisOptions => {
+  const overrides: RedisOptions = {};
+  for (const arg of args) {
+    if (arg && typeof arg === 'object' && !Array.isArray(arg)) {
+      Object.assign(overrides, arg);
+    }
+  }
+  return overrides;
+};
+
+const createRedisConnection = (
+  context: string,
+  overrides: RedisOptions = {},
+  attachQueueLogs = false,
+): Redis => {
+  const resolved = resolveRequiredRedisUrl(context);
+  const options: RedisOptions = { ...redisOpts, ...overrides };
+  const client = new Redis(resolved, options);
+
+  const duplicateConnection: Redis['duplicate'] = (...args: Parameters<Redis['duplicate']>) =>
+    createRedisConnection(
+      `${context}:duplicate`,
+      { ...options, ...collectRedisDuplicateOverrides(args) },
+      attachQueueLogs,
+    );
+  client.duplicate = duplicateConnection;
+
+  if (attachQueueLogs) {
+    client.on('error', (err) => {
+      console.error('[ERROR] [QUEUE] Redis error:', err.message);
+    });
+    client.on('connect', () => {
+      console.log('[QUEUE] Conectado ao Redis');
+    });
+    client.on('ready', () => {
+      console.log('[OK] [QUEUE] Redis pronto para comandos');
+    });
+  }
+
+  return client;
+};
+
+const buildBullMqConnectionOptions = (context: string): BullMqRedisOptions => ({
+  url: resolveRequiredRedisUrl(context),
+  ...redisOpts,
+});
 
 function getConnection(): Redis {
   if (_connection) {
     return _connection;
   }
 
-  const resolved = resolveRedisUrl();
-  if (!resolved) {
-    console.error(
-      '❌ [QUEUE] Redis URL is null. Worker bootstrap should have prevented this. Exiting.',
-    );
-    process.exit(1);
-  }
+  const resolved = resolveRequiredRedisUrl('shared BullMQ connection');
 
   console.log('========================================');
-  console.log(`✅ [QUEUE] Connecting to Redis: ${maskRedisUrl(resolved)}`);
+  console.log(`[OK] [QUEUE] Connecting to Redis: ${maskRedisUrl(resolved)}`);
   console.log('========================================');
 
-  _connection = new Redis(resolved, redisOpts);
-  _connection.on('error', (err) => {
-    console.error('❌ [QUEUE] Redis error:', err.message);
-  });
-  _connection.on('connect', () => {
-    console.log('📡 [QUEUE] Conectado ao Redis');
-  });
-  _connection.on('ready', () => {
-    console.log('✅ [QUEUE] Redis pronto para comandos');
-  });
+  _connection = createRedisConnection('shared BullMQ connection', {}, true);
   return _connection;
 }
 
@@ -95,7 +148,7 @@ const defaultBackoff = Math.max(
   Number.parseInt(process.env.QUEUE_BACKOFF_MS || '5000', 10) || 5000,
 );
 
-function buildQueueOptions() {
+export function buildQueueOptions() {
   return {
     connection: getConnection(),
     defaultJobOptions: {
@@ -112,6 +165,56 @@ const dlqRegistryMap = new Map<string, BullQueue>();
 const queueEventsRegistry = new Map<string, QueueEvents>();
 const additionalWorkers: Worker[] = [];
 
+function logBullMqBackgroundError(label: string, err: Error): void {
+  console.warn(`[QUEUE] ${label} background error: ${err.message}`);
+}
+
+type ErrorEmitter = {
+  on: (event: 'error', handler: (err: Error) => void) => unknown;
+};
+
+function hasErrorEmitter(value: unknown): value is ErrorEmitter {
+  return Boolean(
+    value &&
+    typeof value === 'object' &&
+    'on' in value &&
+    typeof (value as { on?: unknown }).on === 'function',
+  );
+}
+
+function attachQueueErrorLogger(queue: BullQueue, label: string): void {
+  if (hasErrorEmitter(queue)) {
+    queue.on('error', (err) => logBullMqBackgroundError(label, err));
+  }
+}
+
+function attachQueueEventsErrorLogger(events: QueueEvents, label: string): void {
+  if (hasErrorEmitter(events)) {
+    events.on('error', (err) => logBullMqBackgroundError(label, err));
+  }
+}
+
+function attachWorkerErrorLogger(worker: Worker, label: string): void {
+  if (hasErrorEmitter(worker)) {
+    worker.on('error', (err) => logBullMqBackgroundError(label, err));
+  }
+}
+
+function extractWorkspaceIdFromJobData(data: unknown): unknown {
+  if (!data || typeof data !== 'object' || Array.isArray(data)) {
+    return undefined;
+  }
+  const record = data as Record<string, unknown>;
+  if (typeof record.workspaceId === 'string') {
+    return record.workspaceId;
+  }
+  const workspace = record.workspace;
+  if (workspace && typeof workspace === 'object' && !Array.isArray(workspace)) {
+    return (workspace as Record<string, unknown>).id;
+  }
+  return undefined;
+}
+
 function getOrCreateQueue(name: string): BullQueue {
   const existing = queueRegistryMap.get(name);
   if (existing) {
@@ -119,6 +222,7 @@ function getOrCreateQueue(name: string): BullQueue {
   }
 
   const queue = new BullQueue(name, buildQueueOptions());
+  attachQueueErrorLogger(queue, `queue:${name}`);
   queueRegistryMap.set(name, queue);
   attachDlq(queue);
   return queue;
@@ -131,6 +235,7 @@ function attachDlq(queue: BullQueue) {
   }
 
   const dlq = new BullQueue(dlqName, buildQueueOptions());
+  attachQueueErrorLogger(dlq, `queue:${dlqName}`);
   dlqRegistryMap.set(dlqName, dlq);
 
   const events = getQueueEvents(queue.name);
@@ -152,6 +257,9 @@ function attachDlq(queue: BullQueue) {
           return;
         }
 
+        const workspaceId = extractWorkspaceIdFromJobData(job.data);
+        const correlationId = (job.data as Record<string, unknown> | undefined)?.correlationId;
+
         await dlq.add(
           'failed',
           {
@@ -161,14 +269,18 @@ function attachDlq(queue: BullQueue) {
             opts: job.opts,
             failedReason,
             failedAt: new Date().toISOString(),
+            ...(correlationId ? { correlationId } : {}),
+            ...(workspaceId ? { workspaceId } : {}),
           },
-          { jobId: job.id, removeOnComplete: true },
+          { ...(job.id ? { jobId: job.id } : {}), removeOnComplete: true },
         );
         await notifyOps({
           queue: queue.name,
           jobId: job.id ?? undefined,
           jobName: job.name,
           reason: failedReason,
+          workspaceId,
+          correlationId,
         });
       } catch (err: unknown) {
         console.error(
@@ -190,11 +302,10 @@ export function getQueueEvents(queueName: string): QueueEvents {
   }
 
   // QueueEvents requires its own blocking connection per BullMQ docs.
-  const resolved = resolveRedisUrl();
-  if (!resolved) {
-    throw new Error('Cannot create QueueEvents: Redis URL unavailable');
-  }
-  const events = new QueueEvents(queueName, { connection: new Redis(resolved, redisOpts) });
+  const events = new QueueEvents(queueName, {
+    connection: buildBullMqConnectionOptions(`QueueEvents:${queueName}`),
+  });
+  attachQueueEventsErrorLogger(events, `queueEvents:${queueName}`);
   queueEventsRegistry.set(queueName, events);
   return events;
 }
@@ -229,6 +340,8 @@ export const crmQueue = lazyQueue('crm-jobs');
 export const autopilotQueue = lazyQueue('autopilot-jobs');
 /** Webhook queue. */
 export const webhookQueue = lazyQueue('webhook-jobs');
+/** Silent 24h resolver queue. */
+export const silent24hResolverQueue = lazyQueue('silent-24h-resolver');
 
 // queueOptions is built lazily so reading it does not trigger
 // connection creation unless someone actually consumes it.
@@ -252,118 +365,12 @@ export const queueRegistry: BullQueue[] = [
   crmQueue,
   autopilotQueue,
   webhookQueue,
+  silent24hResolverQueue,
 ];
 
 // ─── DLQ webhook notifier ─────────────────────────────────────────────────
 
-interface DlqEvent {
-  queue: string;
-  jobId?: string | number;
-  jobName?: string;
-  reason?: string;
-}
-
-interface DlqPayload extends DlqEvent {
-  type: 'dlq_event';
-  env: string;
-  at: string;
-}
-
-const buildDlqPayload = (input: DlqEvent): DlqPayload => ({
-  type: 'dlq_event',
-  queue: input.queue,
-  jobId: input.jobId,
-  jobName: input.jobName,
-  reason: input.reason,
-  env: process.env.NODE_ENV || 'dev',
-  at: new Date().toISOString(),
-});
-
-const buildSlackBody = (payload: DlqPayload): { text: string } => ({
-  text: `DLQ ${payload.queue} -> job ${payload.jobName || payload.jobId || 'unknown'} (${payload.reason || 'no reason'}) [${payload.env}]`,
-});
-
-const buildTeamsBody = (payload: DlqPayload): Record<string, unknown> => ({
-  '@type': 'MessageCard',
-  '@context': 'http://schema.org/extensions',
-  summary: 'DLQ Event',
-  themeColor: 'E53935',
-  title: `DLQ ${payload.queue}`,
-  sections: [
-    {
-      facts: [
-        { name: 'Job', value: String(payload.jobName || payload.jobId || 'unknown') },
-        { name: 'Reason', value: payload.reason || 'n/a' },
-        { name: 'Env', value: payload.env },
-        { name: 'At', value: payload.at },
-      ],
-    },
-  ],
-});
-
-const buildWebhookBody = (
-  payload: DlqPayload,
-  type: 'slack' | 'teams' | 'generic',
-): Record<string, unknown> => {
-  if (type === 'slack') {
-    return buildSlackBody(payload);
-  }
-  if (type === 'teams') {
-    return buildTeamsBody(payload);
-  }
-  return JSON.parse(JSON.stringify(payload)) as Record<string, unknown>;
-};
-
-const resolveFetch = (): typeof globalThis.fetch | undefined =>
-  typeof globalThis.fetch === 'function' ? globalThis.fetch : undefined;
-
-const normalizeError = (err: unknown): Error =>
-  err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
-
-async function notifyOps(input: DlqEvent) {
-  const webhook = process.env.DLQ_WEBHOOK_URL || process.env.OPS_WEBHOOK_URL;
-  if (!webhook) {
-    return;
-  }
-  const fetchFn = resolveFetch();
-  if (!fetchFn) {
-    return;
-  }
-
-  try {
-    const payload = buildDlqPayload(input);
-    const body = buildWebhookBody(payload, classifyWebhook(webhook));
-    await fetchFn(webhook, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    });
-  } catch (err: unknown) {
-    const e = normalizeError(err);
-    console.warn('[DLQ] Falha ao notificar webhook (%s): %s', webhook, e.message || err);
-  }
-}
-
-function classifyWebhook(webhook: string): 'slack' | 'teams' | 'generic' {
-  try {
-    const host = new URL(webhook).hostname.toLowerCase();
-    if (host === 'hooks.slack.com') {
-      return 'slack';
-    }
-    if (
-      host === 'outlook.office.com' ||
-      host === 'outlook.office365.com' ||
-      host.endsWith('.office.com') ||
-      host.endsWith('.office365.com')
-    ) {
-      return 'teams';
-    }
-  } catch {
-    return 'generic';
-  }
-
-  return 'generic';
-}
+import { notifyOps } from './queue-dlq-notifier';
 
 // ─── Backwards-compatible Queue wrapper class ────────────────────────────
 
@@ -374,13 +381,14 @@ function classifyWebhook(webhook: string): 'slack' | 'teams' | 'generic' {
 export class Queue {
   private queue: BullQueue;
   private name: string;
-  private worker?: Worker;
+  private worker?: Worker | undefined;
   private closed = false;
 
   constructor(name: string) {
     this.name = name;
     this.queue = new BullQueue(name, buildQueueOptions());
-    console.log(`📦 [Queue] Criada fila "${name}" com conexão Redis configurada`);
+    attachQueueErrorLogger(this.queue, `legacyQueue:${name}`);
+    console.log(`[PKG] [Queue] Criada fila "${name}" com conexão Redis configurada`);
   }
 
   /** Push. */
@@ -396,10 +404,14 @@ export class Queue {
         async (job: Job) => {
           await callback(job.data);
         },
-        { connection: getConnection(), lockDuration: 120_000 },
+        {
+          connection: buildBullMqConnectionOptions(`QueueWorker:${this.name}`),
+          lockDuration: 120_000,
+        },
       );
+      attachWorkerErrorLogger(this.worker, `legacyWorker:${this.name}`);
       additionalWorkers.push(this.worker);
-      console.log(`👷 [Queue] Worker criado para fila "${this.name}"`);
+      console.log(`[Queue] Worker criado para fila "${this.name}"`);
     }
   }
 
@@ -492,5 +504,5 @@ export async function shutdownQueueSystem(timeoutMs = 10_000): Promise<void> {
   await awaitCloserOrTimeout(closers, timeoutMs);
   await closeSharedConnection();
   resetQueueRegistries();
-  console.log('✅ [QUEUE] shutdownQueueSystem complete');
+  console.log('[OK] [QUEUE] shutdownQueueSystem complete');
 }

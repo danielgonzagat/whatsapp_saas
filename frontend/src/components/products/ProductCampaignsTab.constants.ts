@@ -1,3 +1,4 @@
+import { colors } from '@/lib/design-tokens';
 import { kloelT } from '@/lib/i18n/t';
 
 /** Sora. */
@@ -6,14 +7,14 @@ export const SORA = "var(--font-sora), 'Sora', sans-serif";
 export const MONO = "var(--font-jetbrains), 'JetBrains Mono', monospace";
 /** V. */
 export const V = {
-  s: 'var(--bg-space, #111113)',
-  e: 'var(--bg-nebula, #19191C)',
-  b: 'var(--border-space, #222226)',
-  em: '#E85D30',
-  t: 'var(--text-starlight, #E0DDD8)',
-  t2: 'var(--text-moonlight, #6E6E73)',
-  t3: 'var(--text-dust, #3A3A3F)',
-  ta: 'var(--app-text-on-accent, #0A0A0C)',
+  s: colors.background.space,
+  e: colors.background.nebula,
+  b: colors.border.space,
+  em: colors.ember.primary,
+  t: colors.text.starlight,
+  t2: colors.text.moonlight,
+  t3: colors.text.dim,
+  ta: colors.text.inverted,
   bl: 'var(--app-info)',
   r: 'var(--app-error)',
   g: 'var(--app-success)',

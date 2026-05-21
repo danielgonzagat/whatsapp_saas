@@ -95,8 +95,8 @@ async function fetchWhatsAppUpstream(
 ) {
   const rawBody = method === 'GET' ? undefined : await request.text();
   const headers = buildHeaders(request, {
-    body: rawBody,
-    accept: options?.accept,
+    ...(rawBody !== undefined ? { body: rawBody } : {}),
+    ...(options?.accept !== undefined ? { accept: options.accept } : {}),
   });
   let lastError: unknown;
 
@@ -107,7 +107,7 @@ async function fetchWhatsAppUpstream(
       const attempt = await fetch(url, {
         method,
         headers,
-        body: rawBody || undefined,
+        ...(rawBody !== undefined ? { body: rawBody } : {}),
         cache: 'no-store',
         redirect: 'manual',
       });

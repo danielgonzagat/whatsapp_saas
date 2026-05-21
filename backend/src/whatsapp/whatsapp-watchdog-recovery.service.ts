@@ -9,23 +9,24 @@
 
 import { randomUUID } from 'node:crypto';
 import { InjectRedis } from '@nestjs-modules/ioredis';
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import type Redis from 'ioredis';
 import * as Sentry from '@sentry/node';
 import { safeCompareStrings } from '../common/utils/crypto-compare.util';
 import { PrismaService } from '../prisma/prisma.service';
-import { CiaRuntimeService } from './cia-runtime.service';
+import { CIA_RUNTIME_SERVICE, type CiaRuntimePort } from '../cia/cia-runtime.port';
 import { WhatsAppProviderRegistry } from './providers/provider-registry';
 import { asProviderSettings } from './provider-settings.types';
 import { WhatsAppCatchupService } from './whatsapp-catchup.service';
 import { toPrismaJsonValue } from '../common/prisma/prisma-json.util';
-import type { SessionHealth } from './whatsapp-watchdog-session.service';
-import { alertOpsHelper } from './__companions__/whatsapp-watchdog-recovery.service.companion';
+import type { SessionHealth } from './whatsapp-watchdog.types';
+import { alertOpsHelper } from './whatsapp-watchdog.helpers';
 
 /** Watchdog recovery and reconnect service. */
 @Injectable()
 export class WhatsAppWatchdogRecoveryService {
-  private readonly logger = new Logger(WhatsAppWatchdogRecoveryService.name);
+  private readonly logger = StructuredLogger.from(WhatsAppWatchdogRecoveryService.name);
 
   private readonly RECONNECT_COOLDOWN_MS = 60_000;
   private readonly MAX_RECONNECT_BACKOFF_MS = 15 * 60_000;
@@ -50,7 +51,7 @@ export class WhatsAppWatchdogRecoveryService {
     private readonly prisma: PrismaService,
     private readonly providerRegistry: WhatsAppProviderRegistry,
     private readonly catchupService: WhatsAppCatchupService,
-    private readonly ciaRuntime: CiaRuntimeService,
+    @Inject(CIA_RUNTIME_SERVICE) private readonly ciaRuntime: CiaRuntimePort,
     @InjectRedis() private readonly redis: Redis,
   ) {}
 
@@ -301,7 +302,7 @@ export class WhatsAppWatchdogRecoveryService {
           health.consecutiveFailures = 0;
           health.connected = true;
           health.upSince = new Date();
-          health.reconnectBlockedReason = undefined;
+          delete health.reconnectBlockedReason;
           await this.catchupService.triggerCatchup(workspaceId, 'watchdog_reconnected');
           await this.tryBootstrapAutonomy(workspaceId, workspaceName, 'watchdog_reconnected');
           await this.maintainConnectedWorkspace(workspaceId, workspaceName, 'watchdog_reconnected');
@@ -314,7 +315,7 @@ export class WhatsAppWatchdogRecoveryService {
           );
           health.connected = false;
           health.consecutiveFailures = 0;
-          health.reconnectBlockedReason = undefined;
+          delete health.reconnectBlockedReason;
           return false;
         }
 

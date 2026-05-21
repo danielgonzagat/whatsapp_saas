@@ -1,5 +1,6 @@
 'use client';
-
+import { colors as designTokens } from '@/lib/design-tokens';
+import { CHECKOUT_VISUAL } from './checkout-theme-tokens';
 import { kloelT } from '@/lib/i18n/t';
 import type {
   PublicCheckoutTestimonial,
@@ -9,18 +10,7 @@ import type * as React from 'react';
 import { useId } from 'react';
 import { useCheckoutExperience } from '../hooks/useCheckoutExperience';
 import PixelTracker from './PixelTracker';
-import {
-  type CheckoutThemeInputTokens,
-  type CheckoutThemeStepTokens,
-  Star,
-  StepBubble as SharedStepBubble,
-  StepLine as SharedStepLine,
-  buildFooterPrimaryLine,
-  fmt,
-  formatCnpj,
-  normalizeTestimonials as normalizeThemeTestimonials,
-  PAYMENT_BADGES,
-} from './checkout-theme-shared';
+import { type CheckoutThemeInputTokens, type CheckoutThemeStepTokens, StepBubble as SharedStepBubble, StepLine as SharedStepLine, buildFooterPrimaryLine, fmt, formatCnpj, normalizeTestimonials as normalizeThemeTestimonials, PAYMENT_BADGES } from './checkout-theme-shared';
 import { BlancAddressStep } from './CheckoutBlanc.address-step';
 import { BlancIdentityStep } from './CheckoutBlanc.identity-step';
 import { BlancCouponPopup, BlancSuccessModal } from './CheckoutBlanc.modals';
@@ -36,28 +26,7 @@ type CheckoutBlancProps = PublicCheckoutThemeProps;
 
 const DEFAULT_PRODUCT = { name: 'Produto', priceInCents: 0, brand: 'Kloel' };
 
-const DEFAULT_TESTIMONIALS = [
-  {
-    name: 'Patrícia Almeida',
-    stars: 5,
-    text: 'Recebi tudo certo e a experiência do checkout foi rápida, simples e segura.',
-    avatar: 'PA',
-  },
-  {
-    name: 'Simone Silva',
-    stars: 5,
-    text: 'Fluxo direto ao ponto. Consegui pagar em poucos minutos sem ficar perdida.',
-    avatar: 'SS',
-  },
-  {
-    name: 'Fátima Pereira',
-    stars: 5,
-    text: 'Visual muito limpo e confirmação clara do pedido. Passa confiança.',
-    avatar: 'FP',
-  },
-];
-
-const BLANC_STAR_SLOTS = ['one', 'two', 'three', 'four', 'five'] as const;
+const DEFAULT_TESTIMONIALS: Array<{ name: string; stars: number; text: string; avatar: string }> = [];
 
 const BLANC = {
   white: 'rgb(255 255 255)',
@@ -176,10 +145,10 @@ export default function CheckoutBlanc({
   const colors: BlancColors = {
     accent: config?.accentColor || BLANC.accent,
     accent2: config?.accentColor2 || config?.accentColor || BLANC.accent,
-    bg: config?.backgroundColor || '#f5f5f5',
+    bg: config?.backgroundColor || designTokens.background.void,
     card: config?.cardColor || BLANC.white,
-    text: config?.textColor || '#1a1a1a',
-    muted: config?.mutedTextColor || '#6b7280',
+    text: config?.textColor || designTokens.background.void,
+    muted: config?.mutedTextColor || designTokens.text.muted,
   };
 
   const stepTheme: CheckoutThemeStepTokens = { ...DEFAULT_STEP_THEME, lineActive: colors.accent };
@@ -234,13 +203,13 @@ export default function CheckoutBlanc({
         color: colors.text,
       }}
     >
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&display=swap');*{margin:0;padding:0;box-sizing:border-box}button{cursor:pointer}input::placeholder{color:#aaa!important}@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}@keyframes spin{to{transform:rotate(360deg)}}@keyframes modalIn{from{opacity:0;transform:scale(.94)}to{opacity:1;transform:scale(1)}}.ck-mobile-only{display:none}@media(max-width:900px){.ck-main{flex-direction:column!important}.ck-col{flex:1 1 100%!important;min-width:0!important}.ck-mobile-only{display:block!important}.ck-desktop-only{display:none!important}.ck-lock-text{display:none!important}}`}</style>
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&display=swap');*{margin:0;padding:0;box-sizing:border-box}button{cursor:pointer}input::placeholder{color:${CHECKOUT_VISUAL.blancPlaceholder}!important}@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}@keyframes spin{to{transform:rotate(360deg)}}@keyframes modalIn{from{opacity:0;transform:scale(.94)}to{opacity:1;transform:scale(1)}}.ck-mobile-only{display:none}@media(max-width:900px){.ck-main{flex-direction:column!important}.ck-col{flex:1 1 100%!important;min-width:0!important}.ck-mobile-only{display:block!important}.ck-desktop-only{display:none!important}.ck-lock-text{display:none!important}}`}</style>
 
       {pixelEvent && pixels.length > 0 ? <PixelTracker pixels={pixels} event={pixelEvent} /> : null}
 
       <header
         style={{
-          background: 'linear-gradient(135deg,#3d1232,#5a1a4a,#3d1232)',
+          background: `linear-gradient(135deg,${CHECKOUT_VISUAL.blancBgStart},${CHECKOUT_VISUAL.blancBgMid},${CHECKOUT_VISUAL.blancBgStart})`,
           padding: '22px 24px',
         }}
       >
@@ -301,7 +270,7 @@ export default function CheckoutBlanc({
                   color: BLANC.white,
                 }}
               >
-                PAGAMENTO
+                {kloelT('PAGAMENTO')}
               </div>
               <div
                 style={{
@@ -321,10 +290,10 @@ export default function CheckoutBlanc({
 
       <div
         style={{
-          background: '#fef9e7',
+          background: designTokens.background.surface,
           padding: '10px 24px',
           textAlign: 'center',
-          borderBottom: '1px solid #f0e6c0',
+          borderBottom: `1px solid ${CHECKOUT_VISUAL.blancBorder}`,
         }}
       >
         <div style={{ fontSize: 14, fontWeight: 700 }}>{headerPrimary}</div>
@@ -344,7 +313,7 @@ export default function CheckoutBlanc({
           n={1}
           state={step === 1 ? 'active' : step > 1 ? 'done' : 'locked'}
           onClick={() => {
-            if (mobileCanOpenStep1) goStep(1);
+            if (mobileCanOpenStep1) {goStep(1);}
           }}
           label={kloelT(`Informações pessoais`)}
           theme={stepTheme}
@@ -354,7 +323,7 @@ export default function CheckoutBlanc({
           n={2}
           state={step === 2 ? 'active' : step > 2 ? 'done' : 'locked'}
           onClick={() => {
-            if (mobileCanOpenStep2) goStep(2);
+            if (mobileCanOpenStep2) {goStep(2);}
           }}
           label={kloelT(`Entrega`)}
           theme={stepTheme}
@@ -363,7 +332,7 @@ export default function CheckoutBlanc({
         <SharedStepBubble
           n={3}
           state={step >= 3 ? 'active' : 'locked'}
-          onClick={step >= 3 ? () => goStep(3) : undefined}
+          {...(step >= 3 ? { onClick: () => goStep(3) } : {})}
           label={kloelT(`Pagamento`)}
           theme={stepTheme}
         />
@@ -409,7 +378,7 @@ export default function CheckoutBlanc({
             inputTheme={inputTheme}
             submitError={submitError}
             shippingInCents={shippingInCents}
-            btnStep2Text={config?.btnStep2Text}
+            {...(config?.btnStep2Text !== undefined ? { btnStep2Text: config.btnStep2Text } : {})}
             setStep={setStep}
             updateField={updateFieldStr}
             goStep={goStep}
@@ -469,7 +438,7 @@ export default function CheckoutBlanc({
 
       <footer
         style={{
-          background: '#f5f5f5',
+          background: designTokens.background.void,
           borderTop: `1px solid ${BLANC.softLine}`,
           padding: '40px 24px',
           textAlign: 'center',
@@ -491,8 +460,8 @@ export default function CheckoutBlanc({
                 }}
               >
                 {PAYMENT_BADGES.filter((item) => {
-                  if (item === 'Pix') return supportsPix;
-                  if (item === 'Boleto') return supportsBoleto;
+                  if (item === 'Pix') {return supportsPix;}
+                  if (item === 'Boleto') {return supportsBoleto;}
                   return supportsCard;
                 }).map((code) => (
                   <span
@@ -504,7 +473,7 @@ export default function CheckoutBlanc({
                       borderRadius: 6,
                       fontSize: 11,
                       fontWeight: 700,
-                      color: '#64748b',
+                      color: designTokens.text.muted,
                     }}
                   >
                     {code}
@@ -525,7 +494,7 @@ export default function CheckoutBlanc({
               width="15"
               height="15"
               viewBox="0 0 24 24"
-              fill="#aaa"
+              fill={designTokens.text.muted}
               stroke="none"
               aria-hidden="true"
             >
@@ -533,7 +502,7 @@ export default function CheckoutBlanc({
               <path
                 d={kloelT(`M7 11V7a5 5 0 0110 0v4`)}
                 fill="none"
-                stroke="#aaa"
+                stroke={designTokens.text.muted}
                 strokeWidth="2"
               />
             </svg>
@@ -542,12 +511,12 @@ export default function CheckoutBlanc({
                 style={{
                   fontSize: 11,
                   fontWeight: 700,
-                  color: '#666',
+                  color: designTokens.text.muted,
                   letterSpacing: '0.1em',
                   lineHeight: 1.1,
                 }}
               >
-                PAGAMENTO
+                {kloelT('PAGAMENTO')}
               </div>
               <div
                 style={{

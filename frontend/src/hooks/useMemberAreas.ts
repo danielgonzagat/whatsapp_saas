@@ -17,7 +17,7 @@ interface MemberAreasResponse {
 
 /** Use member areas. */
 export function useMemberAreas() {
-  const { data, isLoading, error, mutate } = useSWR('/member-areas', swrFetcher);
+  const { data, isLoading, error, mutate } = useSWR<MemberAreasResponse>('/member-areas', swrFetcher);
   const d = data as MemberAreasResponse | unknown[] | undefined;
   const areas =
     d && typeof d === 'object' && 'areas' in d ? d.areas || [] : Array.isArray(d) ? d : [];
@@ -121,13 +121,11 @@ export function useMemberAreaMutations() {
 /* ── Students ── */
 export function useMemberAreaStudents(areaId: string | null, q?: string) {
   const qs = q ? `?q=${encodeURIComponent(q)}` : '';
-  const { data, isLoading, error, mutate } = useSWR(
+  const { data, isLoading, error, mutate } = useSWR<{ students?: unknown[] }>(
     areaId ? `/member-areas/${areaId}/students${qs}` : null,
     swrFetcher,
   );
-  const students = Array.isArray(data)
-    ? data
-    : ((data as { students?: unknown[] } | undefined)?.students ?? []);
+  const students = Array.isArray(data) ? (data as unknown[]) : (data?.students ?? []);
   return { students, isLoading, error, mutate };
 }
 

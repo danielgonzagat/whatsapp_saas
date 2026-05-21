@@ -1,4 +1,5 @@
 'use client';
+import { colors } from '@/lib/design-tokens';
 
 import { kloelT } from '@/lib/i18n/t';
 import type { WhatsAppProofEntry } from '@/lib/api';
@@ -88,14 +89,16 @@ export function AgentCursor({
 
   useEffect(() => {
     if (takeoverActive || !streamConnected) {
-      setBubbleVisible(false);
+      queueMicrotask(() => setBubbleVisible(false));
       return;
     }
 
     const nextThought = String(thought || '').trim();
     if (nextThought) {
-      setBubbleText(nextThought);
-      setBubbleVisible(true);
+      queueMicrotask(() => setBubbleText(nextThought));
+      queueMicrotask(() => {
+        setBubbleVisible(true);
+      });
       if (hideBubbleTimerRef.current) {
         clearTimeout(hideBubbleTimerRef.current);
       }
@@ -106,7 +109,7 @@ export function AgentCursor({
     }
 
     if (isThinking) {
-      setBubbleVisible(true);
+      queueMicrotask(() => setBubbleVisible(true));
       if (hideBubbleTimerRef.current) {
         clearTimeout(hideBubbleTimerRef.current);
         hideBubbleTimerRef.current = null;
@@ -138,8 +141,8 @@ export function AgentCursor({
     }
 
     const center = { x: rect.width / 2, y: rect.height / 2 };
-    setDisplayPoint(center);
-    setHasPosition(true);
+    queueMicrotask(() => setDisplayPoint(center));
+    queueMicrotask(() => setHasPosition(true));
   }, [containerRef, hasPosition, imageRef, streamConnected, takeoverActive]);
 
   useEffect(() => {
@@ -284,7 +287,7 @@ export function AgentCursor({
 
       {bubbleVisible ? (
         <div
-          className="absolute max-w-[240px] rounded-2xl border border-white/10 bg-[rgba(17,17,17,0.88)] px-3 py-2 text-xs text-[#f0f0f0] shadow-[0_4px_16px_rgba(0,0,0,0.3)] backdrop-blur-md"
+          className="absolute max-w-[240px] rounded-2xl border border-white/10 bg-[rgba(17,17,17,0.88)] px-3 py-2 text-xs text-[var(--text-soft-white)] shadow-[0_4px_16px_rgba(0,0,0,0.3)] backdrop-blur-md"
           style={{
             ...bubbleStyle,
             willChange: 'left, top, opacity, transform',
@@ -298,8 +301,9 @@ export function AgentCursor({
               {[0, 1, 2].map((dot) => (
                 <span
                   key={dot}
-                  className="inline-block h-1 w-1 rounded-full bg-[#888]"
+                  className="inline-block h-1 w-1 rounded-full"
                   style={{
+                    backgroundColor: colors.text.muted,
                     animation: `agent-thinking-dots 900ms ease-in-out ${dot * 200}ms infinite`,
                   }}
                 />
@@ -328,7 +332,7 @@ export function AgentCursor({
           <g filter={`url(#${svgFilterId}-shadow)`}>
             <path
               d={kloelT(`M3 2L3 28L9.5 21.5L15.5 31L19.5 29L13.5 19L22 17L3 2Z`)}
-              fill="#111111"
+              fill={colors.background.surface}
               stroke="white"
               strokeWidth="1.8"
               strokeLinejoin="round"
@@ -347,7 +351,7 @@ export function AgentCursor({
                 dx="0"
                 dy="1"
                 stdDeviation="1.5"
-                floodColor={kloelT(`#000000`)}
+                floodColor="black"
                 floodOpacity="0.4"
               />
             </filter>

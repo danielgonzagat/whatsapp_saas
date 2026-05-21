@@ -13,7 +13,7 @@ import {
 import Link from 'next/link';
 import type { AgentActivity } from '../AgentConsole';
 import { SettingsCard, kloelSettingsClass } from './contract';
-import { colors } from '@/lib/design-tokens';
+
 
 interface ActivityItem {
   id: string;
@@ -23,20 +23,20 @@ interface ActivityItem {
 }
 
 interface ActivitySectionProps {
-  activities?: AgentActivity[];
+  activities?: AgentActivity[] | undefined;
 }
 
 const ACTIVITY_ICON_MAP: Record<
   ActivityItem['type'],
   { icon: typeof MessageSquare; bg: string; color: string }
 > = {
-  response: { icon: MessageSquare, bg: 'bg-[#3B82F6]/12', color: 'text-[#93C5FD]' },
-  sent: { icon: Send, bg: 'bg-[colors.ember.primary]/12', color: 'text-[#F2B29D]' },
-  error: { icon: XCircle, bg: 'bg-[#E05252]/12', color: 'text-[#F7A8A8]' },
-  sale: { icon: ShoppingCart, bg: 'bg-[#10B981]/12', color: 'text-[#7FE2BC]' },
-  checkout_click: { icon: CreditCard, bg: 'bg-[#3B82F6]/12', color: 'text-[#93C5FD]' },
-  reconnect: { icon: Smartphone, bg: 'bg-[#10B981]/12', color: 'text-[#7FE2BC]' },
-  low_credits: { icon: AlertTriangle, bg: 'bg-[colors.ember.primary]/12', color: 'text-[#F2B29D]' },
+  response: { icon: MessageSquare, bg: 'bg-[var(--semantic-info)]/12', color: 'text-[var(--semantic-info-text)]' },
+  sent: { icon: Send, bg: 'bg-[colors.ember.primary]/12', color: 'text-[var(--semantic-ember-text)]' },
+  error: { icon: XCircle, bg: 'bg-[var(--semantic-error-soft)]/12', color: 'text-[var(--semantic-error-text)]' },
+  sale: { icon: ShoppingCart, bg: 'bg-[var(--semantic-success)]/12', color: 'text-[var(--semantic-success-text)]' },
+  checkout_click: { icon: CreditCard, bg: 'bg-[var(--semantic-info)]/12', color: 'text-[var(--semantic-info-text)]' },
+  reconnect: { icon: Smartphone, bg: 'bg-[var(--semantic-success)]/12', color: 'text-[var(--semantic-success-text)]' },
+  low_credits: { icon: AlertTriangle, bg: 'bg-[colors.ember.primary]/12', color: 'text-[var(--semantic-ember-text)]' },
 };
 
 const AGENT_ACTIVITY_TYPE_MAP: Partial<Record<AgentActivity['type'], ActivityItem['type']>> = {

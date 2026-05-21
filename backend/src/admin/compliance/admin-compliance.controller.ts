@@ -6,11 +6,13 @@ import { AdminAuthGuard } from '../auth/guards/admin-auth.guard';
 import { AdminPermissionGuard } from '../auth/guards/admin-permission.guard';
 import { ListHomeQueryDto } from '../dashboard/dto/list-home.dto';
 import { AdminComplianceService } from './admin-compliance.service';
+import { RouteClass } from '../../common/throttler/route-class.decorator';
 
 /** Admin compliance controller. */
 @Public()
 @Controller('admin/compliance')
 @UseGuards(AdminAuthGuard, AdminPermissionGuard)
+@RouteClass('read')
 export class AdminComplianceController {
   constructor(private readonly compliance: AdminComplianceService) {}
 

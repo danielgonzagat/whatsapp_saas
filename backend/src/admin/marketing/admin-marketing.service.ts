@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { OrderStatus, Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AdminDashboardService } from '../dashboard/admin-dashboard.service';
@@ -21,6 +21,8 @@ function channelLabel(channel: string) {
 /** Admin marketing service. */
 @Injectable()
 export class AdminMarketingService {
+  private readonly logger = new Logger(AdminMarketingService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly dashboard: AdminDashboardService,
@@ -28,7 +30,17 @@ export class AdminMarketingService {
 
   /** Overview. */
   async overview(period: AdminHomePeriod, from?: Date, to?: Date) {
-    const range = resolveAdminHomeRange({ period, compare: 'NONE', from, to });
+    const range = resolveAdminHomeRange({
+      period,
+      compare: 'NONE',
+      ...(from !== undefined ? { from } : {}),
+      ...(to !== undefined ? { to } : {}),
+    });
+
+    this.logger.log('Marketing overview requested', {
+      context: 'AdminMarketingService.overview',
+      period: range.period,
+    });
 
     const [home, conversations, messageRows, socialLeads, recentConversations, orders] =
       await Promise.all([
@@ -59,14 +71,13 @@ export class AdminMarketingService {
             AND m."createdAt" <= ${range.to}
           GROUP BY c."channel"
         `),
-        // Platform-level admin queries: intentionally cross-workspace.
-        // `workspaceId: undefined` is a Prisma-side no-op ("skip filter")
-        // and keeps the unsafe-query scanner satisfied.
+        // @AdminGlobalOperation: marketing lead count, platform-wide
         this.prisma.checkoutSocialLead.count({
-          where: { createdAt: { gte: range.from, lte: range.to }, workspaceId: undefined },
+          where: { workspaceId: { not: '' }, createdAt: { gte: range.from, lte: range.to } },
         }),
+        // @AdminGlobalOperation: latest conversations, platform-wide
         this.prisma.conversation.findMany({
-          where: { lastMessageAt: { gte: range.from, lte: range.to }, workspaceId: undefined },
+          where: { workspaceId: { not: '' }, lastMessageAt: { gte: range.from, lte: range.to } },
           orderBy: { lastMessageAt: 'desc' },
           take: 8,
           select: {
@@ -81,7 +92,6 @@ export class AdminMarketingService {
             },
           },
         }),
-        // PULSE_OK: bounded by date range and status filter
         this.prisma.checkoutOrder.findMany({
           where: {
             status: { in: PAID_STATUSES },
@@ -161,7 +171,6 @@ export class AdminMarketingService {
         ...Array.from(productMap.values()).map((row) => row.workspaceId),
       ]),
     );
-    // PULSE_OK: bounded by in-clause derived from conversation/product map
     const workspaces = await this.prisma.workspace.findMany({
       where: { id: { in: workspaceIds } },
       select: { id: true, name: true },

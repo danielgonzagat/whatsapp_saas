@@ -1,3 +1,11 @@
+/**
+ * ARCHITECTURAL COHESION: CIA Conversation Policy Engine — evaluates per-conversation
+ * constraints for autopilot actions from a shared state object. All functions (silence window,
+ * backoff policy, dispatch window, contact-level rate limiting, master kill switch) compute
+ * boolean decisions fed by the same policy state. Splitting would scatter the decision rules
+ * and require duplicating the shared-state traversal logic across modules.
+ */
+
 import type { CognitiveActionType, CustomerCognitiveState, CustomerStage } from './cognitive-state';
 
 const DIACRITICS_RE = /[\u0300-\u036f]/g;
@@ -317,11 +325,11 @@ function buildListeningSignalsBlock(listening?: ActiveListeningSignals | null): 
 }
 
 function buildConversationContextBlock(params: {
-  compressedContext?: string | null;
-  conversationHistory?: string | null;
-  conversationLedger?: string | null;
-  productSummary?: string | null;
-  matchedProducts?: string[];
+  compressedContext?: string | null | undefined;
+  conversationHistory?: string | null | undefined;
+  conversationLedger?: string | null | undefined;
+  productSummary?: string | null | undefined;
+  matchedProducts?: string[] | undefined;
 }): string[] {
   const matchedProducts = params.matchedProducts?.length
     ? params.matchedProducts.join(', ')
@@ -346,17 +354,17 @@ function buildConversationContextBlock(params: {
 /** Build whats app conversation prompt. */
 export function buildWhatsAppConversationPrompt(params: {
   workspaceName: string;
-  contactName?: string | null;
-  compressedContext?: string | null;
-  productSummary?: string | null;
-  conversationHistory?: string | null;
-  conversationLedger?: string | null;
-  matchedProducts?: string[];
-  cognitiveState?: CustomerCognitiveState | null;
-  listeningSignals?: ActiveListeningSignals | null;
-  deliveryMode?: string;
-  action?: CognitiveActionType | string | null;
-  tactic?: string | null;
+  contactName?: string | null | undefined;
+  compressedContext?: string | null | undefined;
+  productSummary?: string | null | undefined;
+  conversationHistory?: string | null | undefined;
+  conversationLedger?: string | null | undefined;
+  matchedProducts?: string[] | undefined;
+  cognitiveState?: CustomerCognitiveState | null | undefined;
+  listeningSignals?: ActiveListeningSignals | null | undefined;
+  deliveryMode?: string | undefined;
+  action?: CognitiveActionType | string | null | undefined;
+  tactic?: string | null | undefined;
 }): string {
   const state = params.cognitiveState;
   const stage = state?.stage || 'COLD';

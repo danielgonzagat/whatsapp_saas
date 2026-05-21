@@ -1,13 +1,15 @@
-// NOTE: No frontend integration yet — endpoints available for future use
 import { Body, Controller, Get, Param, Post, Req, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { resolveWorkspaceId } from '../auth/workspace-access';
 import { AuthenticatedRequest } from '../common/interfaces/authenticated-request.interface';
+import { InternalEndpoint } from '../common/decorators/internal-endpoint.decorator';
 import { VideoService } from './video.service';
+import { RouteClass } from '../common/throttler/route-class.decorator';
 
 /** Video controller. */
 @UseGuards(JwtAuthGuard)
 @Controller('video')
+@RouteClass('mutate')
 export class VideoController {
   constructor(private readonly videoService: VideoService) {}
 
@@ -29,7 +31,7 @@ export class VideoController {
   }
 
   /** Get job. */
-  // PULSE_OK: internal route, called by worker process for video job polling
+  @InternalEndpoint('video job status')
   @Get('job/:id')
   async getJob(@Req() req: AuthenticatedRequest, @Param('id') id: string) {
     const workspaceId = resolveWorkspaceId(req);

@@ -3,9 +3,9 @@ import {
   BadRequestException,
   ConflictException,
   Injectable,
-  Logger,
   NotFoundException,
 } from '@nestjs/common';
+import { StructuredLogger } from '../../logging/structured-logger';
 import type { Prisma } from '@prisma/client';
 
 import { toPrismaJsonValue } from '../../common/prisma/prisma-json.util';
@@ -29,7 +29,7 @@ export class ConnectPayoutApprovalService {
     private readonly connectPayoutService: ConnectPayoutService,
   ) {}
 
-  private readonly logger = new Logger(ConnectPayoutApprovalService.name);
+  private readonly logger = StructuredLogger.from(ConnectPayoutApprovalService.name);
 
   /** Create request. */
   async createRequest(
@@ -137,10 +137,10 @@ export class ConnectPayoutApprovalService {
 
     return this.listRequestsInternal({
       workspaceId: input.workspaceId,
-      entityId: input.accountBalanceId,
-      state: input.state,
-      skip: input.skip,
-      take: input.take,
+      ...(input.accountBalanceId !== undefined ? { entityId: input.accountBalanceId } : {}),
+      ...(input.state !== undefined ? { state: input.state } : {}),
+      ...(input.skip !== undefined ? { skip: input.skip } : {}),
+      ...(input.take !== undefined ? { take: input.take } : {}),
     });
   }
 
@@ -152,10 +152,10 @@ export class ConnectPayoutApprovalService {
     take?: number;
   }): Promise<{ items: ConnectPayoutApprovalSummary[]; total: number }> {
     return this.listRequestsInternal({
-      workspaceId: input.workspaceId,
-      state: input.state,
-      skip: input.skip,
-      take: input.take,
+      ...(input.workspaceId !== undefined ? { workspaceId: input.workspaceId } : {}),
+      ...(input.state !== undefined ? { state: input.state } : {}),
+      ...(input.skip !== undefined ? { skip: input.skip } : {}),
+      ...(input.take !== undefined ? { take: input.take } : {}),
     });
   }
 
@@ -192,18 +192,15 @@ export class ConnectPayoutApprovalService {
         currency: payload.currency.toLowerCase(),
       });
     } catch (error: unknown) {
-      this.logger.error(
-        {
-          workspaceId: payload.workspaceId,
-          externalId: payload.requestId,
-          operation: 'approve_payout',
-          approvalRequestId: approval.id,
-          stripeAccountId: payload.stripeAccountId,
-          amountCents: payload.amountCents,
-        },
-        'Financial operation failed: approve_payout',
-        error,
-      );
+      this.logger.error('Financial operation failed: approve_payout', {
+        workspaceId: payload.workspaceId,
+        externalId: payload.requestId,
+        operation: 'approve_payout',
+        approvalRequestId: approval.id,
+        stripeAccountId: payload.stripeAccountId,
+        amountCents: payload.amountCents,
+        error: error instanceof Error ? error.message : String(error),
+      });
 
       await this.prisma.approvalRequest.updateMany({
         where: { id: approval.id, workspaceId: approval.workspaceId },
@@ -373,9 +370,9 @@ export class ConnectPayoutApprovalService {
     skip?: number;
     take?: number;
   }): Promise<{ items: ConnectPayoutApprovalSummary[]; total: number }> {
-    const where = {
+    const where: Prisma.ApprovalRequestWhereInput = {
       kind: CONNECT_PAYOUT_APPROVAL_KIND,
-      ...(input.workspaceId ? { workspaceId: input.workspaceId } : {}),
+      workspaceId: input.workspaceId ? input.workspaceId : { not: '' },
       ...(input.entityId ? { entityId: input.entityId } : {}),
       ...(input.state ? { state: input.state } : {}),
     };
@@ -384,13 +381,17 @@ export class ConnectPayoutApprovalService {
 
     const [items, total] = await this.prisma.$transaction(
       [
+        // @AdminGlobalOperation: payout approval queue, platform-wide
         this.prisma.approvalRequest.findMany({
-          where,
+          where: { ...where },
           orderBy: { createdAt: 'desc' },
           skip,
           take,
         }),
-        this.prisma.approvalRequest.count({ where }),
+        // @AdminGlobalOperation: payout approval total, platform-wide
+        this.prisma.approvalRequest.count({
+          where: { ...where },
+        }),
       ],
       { isolationLevel: 'ReadCommitted' },
     );

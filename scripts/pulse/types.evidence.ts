@@ -2,16 +2,15 @@
 // Actor evidence, execution traces, world state, gate results, and certification types
 
 import type {
-  PulseGateName,
   PulseEnvironment,
-  PulseManifestFinalReadinessCriteria,
   PulseCertificationProfile,
   PulseActorKind,
 } from './types.health';
+import type { PulseGateName, PulseManifestFinalReadinessCriteria } from './types.manifest';
 import type { PulseTruthMode } from './types.structural';
-import type { PulseCapabilityStateSummary } from './__parts__/types.capabilities/03-capability';
-import type { PulseFlowProjectionSummary } from './__parts__/types.capabilities/04-flow-projection';
-import type { PulseExternalSignalSummary } from './__parts__/types.capabilities/05-external-signals';
+import type { PulseCapabilityStateSummary } from './types.capabilities/03-capability';
+import type { PulseFlowProjectionSummary } from './types.capabilities/04-flow-projection';
+import type { PulseExternalSignalSummary } from './types.capabilities/05-external-signals';
 import type { PulseExecutionMatrixSummary } from './types.execution-matrix';
 import type { PulseResolvedManifestSummary } from './types.resolved-manifest';
 import type {
@@ -121,6 +120,15 @@ export interface PulseWorldStateSession {
   passedScenarios: number;
 }
 
+/** Pulse async expectation status type. */
+export type PulseAsyncExpectationStatus =
+  | 'pending'
+  | 'satisfied'
+  | 'failed'
+  | 'timed_out'
+  | 'missing_evidence'
+  | 'not_executed';
+
 /** Pulse world state shape. */
 export interface PulseWorldState {
   /** Generated at property. */
@@ -141,7 +149,7 @@ export interface PulseWorldState {
   asyncExpectationsStatus: Array<{
     scenarioId: string;
     expectation: string;
-    status: 'pending' | 'satisfied' | 'failed' | 'timed_out' | 'missing_evidence' | 'not_executed';
+    status: PulseAsyncExpectationStatus;
   }>;
   /** Artifacts by scenario property. */
   artifactsByScenario: Record<string, string[]>;
@@ -161,13 +169,13 @@ export interface PulseExecutionPhase {
   /** Started at property. */
   startedAt: string;
   /** Finished at property. */
-  finishedAt?: string;
+  finishedAt?: string | undefined;
   /** Duration ms property. */
-  durationMs?: number;
+  durationMs?: number | undefined;
   /** Error summary property. */
-  errorSummary?: string;
+  errorSummary?: string | undefined;
   /** Metadata property. */
-  metadata?: Record<string, string | number | boolean>;
+  metadata?: Record<string, string | number | boolean> | undefined;
 }
 
 /** Pulse certification target shape. */
@@ -177,9 +185,9 @@ export interface PulseCertificationTarget {
   /** Final property. */
   final: boolean;
   /** Profile property. */
-  profile?: PulseCertificationProfile | null;
+  profile?: PulseCertificationProfile | null | undefined;
   /** Certification scope property. */
-  certificationScope?: PulseCertificationProfile | null;
+  certificationScope?: PulseCertificationProfile | null | undefined;
 }
 
 /** Pulse execution trace shape. */
@@ -191,9 +199,9 @@ export interface PulseExecutionTrace {
   /** Updated at property. */
   updatedAt: string;
   /** Environment property. */
-  environment?: PulseEnvironment;
+  environment?: PulseEnvironment | undefined;
   /** Certification target property. */
-  certificationTarget?: PulseCertificationTarget;
+  certificationTarget?: PulseCertificationTarget | undefined;
   /** Phases property. */
   phases: PulseExecutionPhase[];
   /** Summary property. */
@@ -235,7 +243,7 @@ export interface PulseExecutionEvidence {
 /** Pulse gate result shape. */
 export interface PulseGateResult {
   /** Status property. */
-  status: 'pass' | 'fail';
+  status: PulseGateResultStatus;
   /** Reason property. */
   reason: string;
   /** Failure class property. */
@@ -249,6 +257,9 @@ export interface PulseGateResult {
   /** Affected flow ids property. */
   affectedFlowIds?: string[];
 }
+
+/** Pulse gate result status type. */
+export type PulseGateResultStatus = 'pass' | 'fail';
 
 /** Pulse certification tier status shape. */
 export interface PulseCertificationTierStatus {

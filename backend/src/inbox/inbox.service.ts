@@ -1,6 +1,6 @@
 import { ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { ModuleRef } from '@nestjs/core';
 import { Prisma } from '@prisma/client';
+import { ChannelTransportRegistry } from '../kloel/channel-transport.registry';
 import { PrismaService } from '../prisma/prisma.service';
 import { WebhookDispatcherService } from '../webhooks/webhook-dispatcher.service';
 import {
@@ -35,7 +35,7 @@ export class InboxService {
     private prisma: PrismaService,
     private gateway: InboxGateway,
     private webhookDispatcher: WebhookDispatcherService,
-    private moduleRef: ModuleRef,
+    private channelTransports: ChannelTransportRegistry,
   ) {}
 
   /** List agents. */
@@ -189,15 +189,17 @@ export class InboxService {
       contactId: contact.id,
       content: data.content,
       direction: data.direction,
-      externalId: data.externalId,
-      type: data.type,
-      channel: data.channel,
-      mediaUrl: data.mediaUrl,
-      status: data.status,
-      createdAt: data.createdAt,
-      countAsUnread: data.countAsUnread,
-      resetUnreadOnOutbound: data.resetUnreadOnOutbound,
-      silent: data.silent,
+      ...(data.externalId !== undefined ? { externalId: data.externalId } : {}),
+      ...(data.type !== undefined ? { type: data.type } : {}),
+      ...(data.channel !== undefined ? { channel: data.channel } : {}),
+      ...(data.mediaUrl !== undefined ? { mediaUrl: data.mediaUrl } : {}),
+      ...(data.status !== undefined ? { status: data.status } : {}),
+      ...(data.createdAt !== undefined ? { createdAt: data.createdAt } : {}),
+      ...(data.countAsUnread !== undefined ? { countAsUnread: data.countAsUnread } : {}),
+      ...(data.resetUnreadOnOutbound !== undefined
+        ? { resetUnreadOnOutbound: data.resetUnreadOnOutbound }
+        : {}),
+      ...(data.silent !== undefined ? { silent: data.silent } : {}),
     });
   }
 
@@ -326,9 +328,9 @@ export class InboxService {
         conversationId: conversation.id,
         content: data.content,
         direction: data.direction,
-        externalId: data.externalId,
+        ...(data.externalId !== undefined ? { externalId: data.externalId } : {}),
         type: data.type || 'TEXT',
-        mediaUrl: data.mediaUrl,
+        ...(data.mediaUrl !== undefined ? { mediaUrl: data.mediaUrl } : {}),
         status: data.status || 'DELIVERED',
         createdAt: messageCreatedAt,
       },
@@ -363,7 +365,6 @@ export class InboxService {
       return Number.isNaN(value.getTime()) ? null : value;
     }
 
-    // PULSE_OK: date validated via Number.isNaN(parsed.getTime()) right below — returns null on invalid
     const parsed = new Date(value);
     return Number.isNaN(parsed.getTime()) ? null : parsed;
   }
@@ -529,15 +530,22 @@ export class InboxService {
       throw new NotFoundException('Contato sem telefone associado');
     }
 
-    // Send via WhatsApp (lazy-resolve to avoid circular dependency)
-    const { WhatsappService } = await import('../whatsapp/whatsapp.service');
-    const whatsapp = this.moduleRef.get(WhatsappService, { strict: false });
-    // messageLimit: enforced via PlanLimitsService.trackMessageSend
-    const result = await whatsapp.sendMessage(workspaceId, phone, content);
+    const result = await this.channelTransports.send(workspaceId, {
+      workspaceId,
+      channel: 'whatsapp',
+      recipientId: phone,
+      content,
+    });
 
-    // Direct sends persist the message internally; for queued sends,
-    // persist immediately so the inbox reflects the reply right away.
-    if (isQueuedSendResult(result)) {
+    if (!result.success) {
+      throw new ForbiddenException(
+        result.blockedReason || result.error || 'Mensagem bloqueada pelas regras do canal',
+      );
+    }
+
+    // Persist after the transport accepts the send so the inbox reflects the
+    // human reply immediately, including queued provider deliveries.
+    if (isQueuedSendResult(result) || result.success) {
       await this.saveMessage({
         workspaceId,
         contactId: conversation.contactId,

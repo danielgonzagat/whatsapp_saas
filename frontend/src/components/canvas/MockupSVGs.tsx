@@ -151,11 +151,11 @@ export const DocSVG: React.FC<MockupProps> = ({ c1, c2 }) => (
       stroke={colors.border.space}
       strokeWidth="1"
     />
-    <rect x="4" y="4" width="36" height="52" rx="1" fill="#FAFAFA" />
+    <rect x="4" y="4" width="36" height="52" rx="1" fill={colors.text.silver} />
     <rect x="7" y="8" width="18" height="2.5" rx="1" fill={c1} opacity="0.6" />
-    <rect x="7" y="13" width="28" height="1.5" rx="0.75" fill="#D1D5DB" />
-    <rect x="7" y="16" width="24" height="1.5" rx="0.75" fill="#D1D5DB" />
-    <rect x="7" y="19" width="20" height="1.5" rx="0.75" fill="#D1D5DB" />
+    <rect x="7" y="13" width="28" height="1.5" rx="0.75" fill={colors.text.muted} />
+    <rect x="7" y="16" width="24" height="1.5" rx="0.75" fill={colors.text.muted} />
+    <rect x="7" y="19" width="20" height="1.5" rx="0.75" fill={colors.text.muted} />
     <rect
       x="7"
       y="24"
@@ -165,8 +165,8 @@ export const DocSVG: React.FC<MockupProps> = ({ c1, c2 }) => (
       fill={`url(#dc${c1.slice(1)})`}
       opacity="0.5"
     />
-    <rect x="7" y="41" width="26" height="1.5" rx="0.75" fill="#D1D5DB" />
-    <rect x="7" y="44" width="22" height="1.5" rx="0.75" fill="#D1D5DB" />
+    <rect x="7" y="41" width="26" height="1.5" rx="0.75" fill={colors.text.muted} />
+    <rect x="7" y="44" width="22" height="1.5" rx="0.75" fill={colors.text.muted} />
     <rect x="7" y="49" width="14" height="3.5" rx="1.75" fill={c1} opacity="0.5" />
     <defs>
       <linearGradient id={`dc${c1.slice(1)}`} x1="7" y1="24" x2="37" y2="38">

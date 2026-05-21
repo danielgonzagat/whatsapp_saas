@@ -20,7 +20,7 @@ type FacebookPermissionsResponse = {
 /** Facebook auth result type. */
 export type FacebookAuthResult = {
   accessToken: string;
-  userId?: string;
+  userId?: string | undefined;
 };
 
 const FACEBOOK_REQUIRED_SCOPE = 'email';
@@ -101,7 +101,7 @@ async function hasGrantedEmailPermission(
 }
 
 /** Request facebook access token with email scope. */
-export async function requestFacebookAccessTokenWithEmailScope(): Promise<FacebookAuthResult> {
+export async function requestMetaAccessTokenWithEmailScope(): Promise<FacebookAuthResult> {
   const facebook = resolveSdk();
   const currentStatus = await getLoginStatus(facebook);
 

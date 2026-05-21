@@ -1,5 +1,4 @@
 import { revalidateTag } from 'next/cache';
-// PULSE:OK — server-side proxy route, SWR cache managed by client-side callers
 import { findFirstSequential } from '@/lib/async-sequence';
 import { type NextRequest, NextResponse } from 'next/server';
 import { getBackendCandidateUrls } from '../../../_lib/backend-url';

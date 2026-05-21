@@ -3,6 +3,7 @@ import {
   Body,
   Controller,
   Get,
+  NotFoundException,
   Param,
   Post,
   Put,
@@ -12,7 +13,6 @@ import {
   UsePipes,
   ValidationPipe,
 } from '@nestjs/common';
-import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Roles } from '../auth/roles.decorator';
 import { resolveWorkspaceId } from '../auth/workspace-access';
@@ -21,7 +21,7 @@ import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { AuthenticatedRequest } from '../common/interfaces';
 import { flowQueue } from '../queue/queue';
 import { WorkspaceService } from '../workspaces/workspace.service';
-import { CreateFlowDto } from './dto/flow.dto';
+import { CreateFlowDto, UpdateFlowDto } from './dto/flow.dto';
 import { LogExecutionDto } from './dto/log-execution.dto';
 import { RunFlowDto } from './dto/run-flow.dto';
 import { SaveFlowVersionDto } from './dto/save-flow-version.dto';
@@ -29,10 +29,10 @@ import { FlowTemplateService } from './flow-template.service';
 import { FlowsService } from './flows.service';
 
 /** Flows controller. */
-@UseGuards(ThrottlerGuard)
+import { RouteClass } from '../common/throttler/route-class.decorator';
 @Controller('flows')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
-@Throttle({ default: { limit: 10, ttl: 60000 } })
+@RouteClass('mutate')
 export class FlowsController {
   constructor(
     private readonly flows: FlowsService,
@@ -152,9 +152,18 @@ export class FlowsController {
     @Req() req: AuthenticatedRequest,
     @Param('workspaceId') workspaceId: string,
     @Param('flowId') flowId: string,
-    @Body() body: CreateFlowDto,
+    @Body() body: UpdateFlowDto,
   ) {
-    return this.saveFlow(req, workspaceId, flowId, body);
+    const effectiveWorkspaceId = resolveWorkspaceId(req, workspaceId);
+    const existing = await this.flows.get(effectiveWorkspaceId, flowId);
+    if (!existing) {
+      throw new BadRequestException('Flow não encontrado ou não pertence a este workspace');
+    }
+    return this.flows.save(effectiveWorkspaceId, flowId, {
+      nodes: body.nodes ?? existing.nodes,
+      edges: body.edges ?? existing.edges,
+      ...(body.name !== undefined ? { name: body.name } : {}),
+    });
   }
 
   /** Save flow version. */
@@ -172,10 +181,10 @@ export class FlowsController {
     return this.flows.saveVersion({
       workspaceId: effectiveWorkspaceId,
       flowId,
-      nodes,
-      edges,
-      label,
-      createdById: req?.user?.sub,
+      nodes: nodes ?? [],
+      edges: edges ?? [],
+      ...(label !== undefined ? { label } : {}),
+      ...(req?.user?.sub !== undefined ? { createdById: req?.user?.sub } : {}),
     });
   }
   /** Log execution. */
@@ -192,7 +201,7 @@ export class FlowsController {
     return this.flows.logExecution({
       workspaceId: effectiveWorkspaceId,
       flowId,
-      user,
+      ...(user !== undefined ? { user } : {}),
       logs: Array.isArray(logs) ? logs : [],
     });
   }
@@ -223,6 +232,13 @@ export class FlowsController {
   ) {
     const workspaceId = resolveWorkspaceId(req);
     const execution = await this.flows.retryExecution(workspaceId, executionId);
+    if (!execution) {
+      throw new NotFoundException('Execution not found');
+    }
+
+    if (!execution) {
+      throw new BadRequestException('Execution not found');
+    }
 
     const flow = execution.flow;
     const user = execution.contact.phone;
@@ -233,7 +249,7 @@ export class FlowsController {
       flowId: flow.id,
       user,
       workspace,
-      executionId: execution.id, // Pass existing ID to resume/retry
+      executionId: execution.id,
     });
 
     return { ok: true, executionId: execution.id };

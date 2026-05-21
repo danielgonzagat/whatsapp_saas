@@ -1,0 +1,36 @@
+{
+  "runId": "batch-10b-2026-05-11e",
+  "concurrency": 5,
+  "timeoutSec": 0,
+  "staggerMs": 45000,
+  "dir": "/Users/danielpenin/whatsapp_saas",
+  "skipPermissions": true,
+  "_note": "Batch 10b — 5 prompts attacking remaining waves (Q backend final, K decomp pages/views, B4 tenant rest, H coverage remaining, L PULSE expectations). Authorized background per 2026-05-11.",
+  "tasks": [
+    {
+      "id": "Q-backend-final",
+      "title": "Wave Q — Backend strict-mode FINAL (145 → 0)",
+      "promptFile": ".opencode-prompts/batch-10b/Q-backend-final.md"
+    },
+    {
+      "id": "K-decomp-pages-views",
+      "title": "Wave K — Decompose pages/views >300 lines",
+      "promptFile": ".opencode-prompts/batch-10b/K-decomp-pages-views.md"
+    },
+    {
+      "id": "B4-tenant-affiliate-reports-member",
+      "title": "Wave B/4 — TenantSweep Affiliate+Reports+MemberArea",
+      "promptFile": ".opencode-prompts/batch-10b/B4-tenant-affiliate-reports-member.md"
+    },
+    {
+      "id": "H-coverage-remaining",
+      "title": "Wave H — Coverage remaining services (inbox/crm/flows/gdpr/health/metrics/etc)",
+      "promptFile": ".opencode-prompts/batch-10b/H-coverage-remaining.md"
+    },
+    {
+      "id": "L-pulse-expectations",
+      "title": "Wave L — PULSE 11 pending expectations → observed evidence",
+      "promptFile": ".opencode-prompts/batch-10b/L-pulse-expectations.md"
+    }
+  ]
+}
