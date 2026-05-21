@@ -5,7 +5,7 @@ import { StripeRuntime } from '../billing/stripe-runtime';
 import { PrismaService } from '../prisma/prisma.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
 
-const NON_DIGIT_RE = /\D/g;
+import { digitsOnly } from '../common/phone';
 
 /** Generic tool result shape. */
 interface ToolResult {
@@ -120,7 +120,7 @@ export class KloelBusinessConfigToolsService {
         include: contactInclude,
       });
     } else if (phone) {
-      const normalizedPhone = phone.replace(NON_DIGIT_RE, '');
+      const normalizedPhone = digitsOnly(phone);
       contact = await this.prisma.contact.findFirst({
         where: { phone: { contains: normalizedPhone }, workspaceId },
         include: contactInclude,

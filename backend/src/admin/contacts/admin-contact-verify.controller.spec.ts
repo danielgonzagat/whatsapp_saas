@@ -2,8 +2,7 @@ import { NotFoundException } from '@nestjs/common';
 import { AdminContactVerifyController } from './admin-contact-verify.controller';
 import { ChannelIdentifierService } from '../../contacts/channel-identifier.service';
 import { PrismaService } from '../../prisma/prisma.service';
-import { type FlexMock } from '../../../test/helpers/prisma.mock';
-
+import { type FlexMock, createPartialPrismaMock } from '../../../test/helpers/prisma.mock';
 
 function makeIdentifierResult(overrides: Record<string, unknown> = {}) {
   return {
@@ -21,23 +20,23 @@ function makeIdentifierResult(overrides: Record<string, unknown> = {}) {
 describe('AdminContactVerifyController', () => {
   function buildController() {
     const markVerified = jest.fn() as FlexMock<ChannelIdentifierService['markVerified']>;
-    const findUnique = jest.fn();
     const channelIdentifier = {
       markVerified,
     } as ChannelIdentifierService;
 
-    const prisma = {
-      contact: {
-        findUnique,
-      },
-    } as PrismaService;
+    const prisma = createPartialPrismaMock({
+      contact: ['findUnique'],
+    });
 
     return {
       channelIdentifier,
       markVerified,
-      findUnique,
-      prisma,
-      controller: new AdminContactVerifyController(channelIdentifier, prisma),
+      findUnique: prisma.contact.findUnique,
+      prisma: prisma as unknown as PrismaService,
+      controller: new AdminContactVerifyController(
+        channelIdentifier,
+        prisma as unknown as PrismaService,
+      ),
     };
   }
 

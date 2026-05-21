@@ -16,7 +16,7 @@ import { hash as bcryptHash } from 'bcrypt';
 import type { Redis } from 'ioredis';
 import { EmailService } from './email.service';
 import { RateLimitService } from './rate-limit.service';
-import { NON_DIGIT_RE } from '../common/phone';
+import { digitsOnly } from '../common/phone';
 
 /**
  * @cluster whatsapp_saas/backend/auth
@@ -29,7 +29,7 @@ import { NON_DIGIT_RE } from '../common/phone';
  * regardless of caller formatting (`+55…` vs `55…` vs `(11) 9...`).
  */
 function normalizePhone(phone: string): string {
-  return String(phone || '').replace(NON_DIGIT_RE, '');
+  return digitsOnly(phone);
 }
 
 /**

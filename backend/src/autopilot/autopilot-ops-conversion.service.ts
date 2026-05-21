@@ -9,7 +9,7 @@ import { autopilotQueue, flowQueue } from '../queue/queue';
  * @cluster whatsapp_saas/backend/autopilot
  * L11 multi-agent TaskGraph annotation (batched by tools/auto-pr/batch-job.mjs).
  */
-const D_RE_CONV = /\D/g;
+import { digitsOnly } from '../common/phone';
 
 /**
  * Autopilot retry and conversion helpers extracted from AutopilotOpsService.
@@ -246,7 +246,7 @@ export class AutopilotOpsConversionService {
       }
 
       if (!contactIdResolved && phone) {
-        const normalized = phone.replace(D_RE_CONV, '');
+        const normalized = digitsOnly(phone);
         const contact = await this.prisma.contact.findUnique({
           where: { workspaceId_phone: { workspaceId, phone: normalized } },
         });

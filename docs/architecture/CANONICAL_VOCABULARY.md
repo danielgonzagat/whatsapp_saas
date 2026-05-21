@@ -98,7 +98,7 @@
 |---|---|---|---|
 | `Cents` (branded type) | `common/money.ts:48` | `number` used informally as cents across legacy code | `cents(12345)` — never raw `number` |
 | `cents` | `common/money.ts:54` | `toCents`, `asCents` in legacy | `cents(12345)` → `Cents(12345)` |
-| `ZERO_CENTS` | `common/money.ts:66` | `ZERO`, `0 as any` | `ZERO_CENTS === cents(0)` |
+| `ZERO_CENTS` | `common/money.ts:66` | `ZERO`, raw 0 cast | `ZERO_CENTS === cents(0)` |
 | `addCents` | `common/money.ts:69` | `+` operator directly on cents | `addCents(a, b)` |
 | `subCents` | `common/money.ts:74` | `-` operator directly on cents | `subCents(a, b)` |
 | `mulCentsInt` | `common/money.ts:83` | `*` with float drift risk | `mulCentsInt(cents(100), 3)` |

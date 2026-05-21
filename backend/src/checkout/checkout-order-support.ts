@@ -4,8 +4,7 @@ import { Prisma } from '@prisma/client';
 import * as Sentry from '@sentry/node';
 import { PrismaService } from '../prisma/prisma.service';
 import { normalizeCheckoutOrderQuantity } from './checkout-order-pricing.util';
-import { NON_DIGIT_RE } from '../common/phone';
-
+import { digitsOnly } from '../common/phone';
 type CheckoutLineItem = {
   id: string;
   title: string;
@@ -66,7 +65,7 @@ export class CheckoutOrderSupport {
 
   /** Normalize phone digits. */
   normalizePhoneDigits(value?: string | null) {
-    return String(value || '').replace(NON_DIGIT_RE, '');
+    return digitsOnly(value);
   }
 
   /** Normalize email. */
