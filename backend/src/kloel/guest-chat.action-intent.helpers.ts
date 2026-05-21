@@ -184,15 +184,21 @@ export function extractPlanArgs(msg: string): Record<string, unknown> {
   const nm = msg.match(
     /(?:nome|chamad[oa]|plano)\s*:?\s*([A-Za-zÀ-ÿ0-9\s\-]{2,30}?)(?:\s*(?:,|\.|pre[çc]o|R\$|valor|com|por|$))/i,
   );
-  if (nm && nm[1]) args.planName = nm[1].trim();
+  if (nm && nm[1]) {
+    args.planName = nm[1].trim();
+  }
   // Price
   const pm =
     msg.match(/(?:R\$\s*|pre[çc]o\s*:?\s*)(\d+[.,]?\d*)/i) ||
     msg.match(/(\d+[.,]?\d*)\s*(?:reais|real)/i);
-  if (pm && pm[1]) args.price = parseFloat(pm[1].replace(',', '.'));
+  if (pm && pm[1]) {
+    args.price = parseFloat(pm[1].replace(',', '.'));
+  }
   // Quantity
   const qm = msg.match(/(?:qtd|quantidade|itens?)\s*:?\s*(\d+)/i);
-  if (qm && qm[1]) args.quantity = parseInt(qm[1], 10);
+  if (qm && qm[1]) {
+    args.quantity = parseInt(qm[1], 10);
+  }
   return args;
 }
 
