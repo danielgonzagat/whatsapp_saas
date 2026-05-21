@@ -2,12 +2,7 @@ import type { Prisma } from '@prisma/client';
 import { decryptString, isEncrypted } from '../lib/crypto';
 import type { EmailDeliveryOverride } from './email-smtp-delivery';
 
-function asRecord(value: unknown): Record<string, unknown> | null {
-  return value && typeof value === 'object' && !Array.isArray(value)
-    ? (value as Record<string, unknown>)
-    : null;
-}
-
+import { asRecord } from '../common/types';
 function readString(value: unknown): string | undefined {
   return typeof value === 'string' && value.trim() ? value.trim() : undefined;
 }

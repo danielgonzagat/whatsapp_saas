@@ -19,3 +19,25 @@
  * qualidade de IA" (output validado/parseado quando usado como ação).
  */
 export type UnknownRecord = Record<string, unknown>;
+
+/**
+ * Narrow an `unknown` to a plain record (or null) at runtime.
+ *
+ * The "plain record" criterion is: truthy, `typeof === 'object'`,
+ * and NOT an Array. Returns the same value cast to `UnknownRecord`
+ * so the caller can safely index into it after the null check.
+ *
+ * Found 5 byte-identical local declarations across `backend/src/payments`,
+ * `backend/src/kloel`, and `backend/src/webhooks` before this canonical
+ * home was introduced (Round 10, 2026-05-21).
+ *
+ * Two NON-canonical sibling shapes exist and stay separate:
+ * - `agent-runtime.session-store.search.ts` returns `{}` instead of
+ *   null (different no-match semantics)
+ * - `webhooks.service.ts` accepts Arrays (no Array.isArray guard).
+ */
+export function asRecord(value: unknown): UnknownRecord | null {
+  return value && typeof value === 'object' && !Array.isArray(value)
+    ? (value as UnknownRecord)
+    : null;
+}

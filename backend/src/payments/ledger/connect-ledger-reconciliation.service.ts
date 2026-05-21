@@ -6,6 +6,7 @@ import { FinancialAlertService } from '../../common/financial-alert.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { OpsAlertService } from '../../observability/ops-alert.service';
 
+import { asRecord } from '../../common/types';
 type JsonPrimitive = string | number | boolean | null;
 type JsonValue = JsonPrimitive | JsonObject | JsonValue[];
 type JsonObject = { [key: string]: JsonValue };
@@ -64,12 +65,6 @@ export interface ConnectLedgerReconciliationResult {
 export interface ConnectLedgerReconciliationInput {
   /** Workspace id property. */
   workspaceId?: string;
-}
-
-function asRecord(value: unknown): Record<string, unknown> | null {
-  return value && typeof value === 'object' && !Array.isArray(value)
-    ? (value as Record<string, unknown>)
-    : null;
 }
 
 function toBigInt(value: unknown): bigint {
