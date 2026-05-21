@@ -23,7 +23,7 @@ import { detectActionIntent } from './guest-chat.action-intent.helpers';
 import { formatToolResult } from './guest-chat.action-intent.helpers';
 
 type ComposerCapability = 'create_image' | 'create_site' | 'search_web';
-type UnknownRecord = Record<string, unknown>;
+import type { UnknownRecord } from '../common/types';
 
 interface ComposerAttachmentMetadata {
   id?: string;

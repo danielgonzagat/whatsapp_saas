@@ -6,7 +6,7 @@ import { UnifiedAgentActionsService } from './unified-agent-actions.service';
 import { RiskGateService } from './risk-class/risk-gate.service';
 import type { ToolArgs } from './unified-agent.types';
 
-type UnknownRecord = Record<string, unknown>;
+import type { UnknownRecord } from '../common/types';
 
 @Injectable()
 export class UnifiedAgentToolExecutorService {

@@ -11,7 +11,7 @@ import { MemoryProjector } from './commem/memory.projector';
 
 import { buildCognitiveSubstrate as buildCognitiveSubstrateImpl } from './brain-capability-executor.substrate';
 
-type UnknownRecord = Record<string, unknown>;
+import type { UnknownRecord } from '../common/types';
 
 export interface CapabilityResult {
   ok: boolean;

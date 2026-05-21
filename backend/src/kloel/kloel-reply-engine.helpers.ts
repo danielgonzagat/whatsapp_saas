@@ -23,7 +23,7 @@ export const CRIE_CADASTRAR_CADASTRE_RE =
 export const PRODUTO_CAT_A__LOGO_AUT_RE =
   /(produto|cat[aá]logo|autopilot|marca|voz|brand voice|fluxo|flow|dashboard|painel|whatsapp|contato|contatos|chat|chats|mensagem|mensagens|backlog|hist[oó]rico|presen[cç]a|presence|link de pagamento|pagamento|payment|web|internet|google|site|landing|homepage|copy|email|campanha|campanhas|checkout|carrinho|afiliad|seo|not[ií]cia|noticias|hoje|status)/i;
 
-type UnknownRecord = Record<string, unknown>;
+import type { UnknownRecord } from '../common/types';
 
 /** Builds the dynamic runtime context string for the reply engine. */
 export async function buildDynamicRuntimeContextHelper(params: {

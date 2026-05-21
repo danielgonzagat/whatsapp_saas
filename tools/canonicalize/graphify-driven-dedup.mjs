@@ -40,6 +40,13 @@ const byLabel = new Map(); // label → [{ id, source_file, source_location }]
 for (const node of graph.nodes) {
   const label = node.label;
   if (typeof label !== 'string') continue;
+  // Only consider CODE nodes — graphify also indexes markdown headings as
+  // labels (e.g., "## Mission" in a runbook) which are not real dupes.
+  if (node.file_type !== 'code') continue;
+  // Skip non-source files even if file_type=code (json/sql/prisma artifacts
+  // that graphify may include).
+  const src = String(node.source_file ?? '');
+  if (!/\.(ts|tsx|mts|cts|js|mjs|cjs|jsx)$/.test(src)) continue;
   const fn = FN_RE.exec(label);
   const ty = TYPE_RE.exec(label);
   const key = fn ? fn[1] : ty ? ty[1] : null;
@@ -48,18 +55,46 @@ for (const node of graph.nodes) {
   if (!byLabel.has(key)) byLabel.set(key, []);
   byLabel.get(key).push({
     id: node.id,
-    file: node.source_file,
+    file: src,
     line: node.source_location,
     kind: fn ? 'function' : 'type',
   });
 }
 
-// Filter to actual duplicates (>1 distinct source_file)
+// ─────────── domain-locality filter ───────────
+// A symbol that appears in multiple files of the SAME bounded context
+// (e.g., `Task` in 3 different files inside `backend/src/kloel/mind/`)
+// is intentionally domain-local — each module has its own. We only want
+// CROSS-DOMAIN duplicates (same name, different bounded contexts).
+//
+// Bounded context = first 3 path segments for backend/src, frontend/src,
+// worker, etc. (e.g., `backend/src/kloel`, `frontend/src/components`).
+
+function boundedContext(file) {
+  const parts = file.split('/');
+  // Strip trailing filename
+  const dir = parts.slice(0, -1);
+  if (dir[0] === 'backend' && dir[1] === 'src') return dir.slice(0, 4).join('/');
+  if (dir[0] === 'frontend' && dir[1] === 'src') return dir.slice(0, 4).join('/');
+  if (dir[0] === 'frontend-admin' && dir[1] === 'src') return dir.slice(0, 4).join('/');
+  if (dir[0] === 'worker') return dir.slice(0, 3).join('/');
+  return dir.slice(0, 3).join('/');
+}
+
+// Filter to actual duplicates (>1 distinct bounded context)
 const duplicates = [];
 for (const [name, instances] of byLabel) {
   const distinctFiles = new Set(instances.map((i) => i.file));
   if (distinctFiles.size < 2) continue;
-  duplicates.push({ name, count: distinctFiles.size, instances });
+  const distinctContexts = new Set(instances.map((i) => boundedContext(i.file)));
+  // Real dedup candidate only when the symbol spans >1 bounded context
+  if (distinctContexts.size < 2) continue;
+  duplicates.push({
+    name,
+    count: distinctFiles.size,
+    contextCount: distinctContexts.size,
+    instances,
+  });
 }
 
 // Count callers per id using edges (relation: 'calls' for function calls)
@@ -129,15 +164,22 @@ const md = [
   '- ✅ `canonicalized` — already consolidated; see DEPRECATION_MAP.md',
   '- ⏳ `pending` — duplicate detected, not yet consolidated',
   '',
-  '## Top 50 dedup candidates (sorted by # files, then total callers)',
+  '## Top 50 cross-context dedup candidates',
   '',
-  '| Symbol | Kind | # files | Total callers | Status |',
-  '|---|---|---:|---:|---|',
+  '> Only includes symbols whose label appears in **>=2 distinct bounded contexts**',
+  '> (e.g., `Task` defined in both `backend/src/kloel/mind` and `backend/src/auth`).',
+  '> Same-name duplicates contained within a single bounded context are filtered',
+  '> as intentionally domain-local.',
+  '',
+  '| Symbol | Kind | # files | # contexts | Total callers | Status |',
+  '|---|---|---:|---:|---:|---|',
 ];
 for (const d of duplicates.slice(0, 50)) {
   const kind = d.instances[0].kind;
   const status = ALREADY_CANONICAL.has(d.name) ? '✅ done' : '⏳ pending';
-  md.push(`| \`${d.name}\` | ${kind} | ${d.count} | ${d.totalCallers} | ${status} |`);
+  md.push(
+    `| \`${d.name}\` | ${kind} | ${d.count} | ${d.contextCount} | ${d.totalCallers} | ${status} |`,
+  );
 }
 md.push('');
 md.push('## How to use this register');

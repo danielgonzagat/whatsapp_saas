@@ -24,7 +24,7 @@ import {
 import { BrainCapabilityExecutorService } from './brain-capability-executor.service';
 import { UnifiedAgentToolExecutorService } from './unified-agent-tool-executor';
 
-type UnknownRecord = Record<string, unknown>;
+import type { UnknownRecord } from '../common/types';
 
 function isAllowedTool(toolName: string, allowedTools?: string[]): boolean {
   return !allowedTools || allowedTools.includes(toolName);

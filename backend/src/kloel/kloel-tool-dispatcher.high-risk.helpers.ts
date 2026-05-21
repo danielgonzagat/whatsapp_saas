@@ -1,4 +1,5 @@
-export type UnknownRecord = Record<string, unknown>;
+import type { UnknownRecord } from '../common/types';
+export type { UnknownRecord };
 
 export function titleForHighRiskTool(toolName: string): string {
   if (toolName === 'create_campaign') {

@@ -13,7 +13,7 @@ import { MindGuardContextBuilderService } from './mind-guard-context-builder.ser
 import { MindGuardsService } from './mind-guards.service';
 import type { MindActionContext } from './mind-code-native.types';
 
-type UnknownRecord = Record<string, unknown>;
+import type { UnknownRecord } from '../common/types';
 type ProductMemoryValue = {
   name?: string;
   price?: number;

@@ -22,7 +22,7 @@ import {
   isRecord,
 } from './kloel-tool-dispatcher.high-risk.helpers';
 
-type UnknownRecord = Record<string, unknown>;
+import type { UnknownRecord } from '../common/types';
 type ApprovedToolExecutionResult = {
   success: boolean;
   approvalRequestId: string;

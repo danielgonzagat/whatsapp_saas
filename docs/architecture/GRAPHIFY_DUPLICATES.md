@@ -4,68 +4,73 @@
 > (`graphify-out/enriched-graph.json`). Catches non-exported duplicates
 > the regex-based scanner in `scan.mjs` misses.
 
-Generated from 92123 nodes / 192894 edges.
+Generated from 92003 nodes / 191074 edges.
 
-Total duplicate-label groups: **1566**.
+Total duplicate-label groups: **847**.
 
 **Status legend:**
 - ✅ `canonicalized` — already consolidated; see DEPRECATION_MAP.md
 - ⏳ `pending` — duplicate detected, not yet consolidated
 
-## Top 50 dedup candidates (sorted by # files, then total callers)
+## Top 50 cross-context dedup candidates
 
-| Symbol | Kind | # files | Total callers | Status |
-|---|---|---:|---:|---|
-| `Mission` | type | 103 | 0 | ⏳ pending |
-| `Decision` | type | 90 | 0 | ⏳ pending |
-| `main` | function | 87 | 0 | ⏳ pending |
-| `Task` | type | 84 | 0 | ⏳ pending |
-| `Validation` | type | 80 | 0 | ⏳ pending |
-| `Result` | type | 73 | 0 | ⏳ pending |
-| `timestamp_ms` | function | 58 | 0 | ⏳ pending |
-| `Evidence` | type | 57 | 0 | ⏳ pending |
-| `Diagnosis` | type | 52 | 0 | ⏳ pending |
-| `REPO_ROOT` | type | 46 | 0 | ⏳ pending |
-| `POST` | function | 41 | 0 | ⏳ pending |
-| `Scorecard` | type | 41 | 0 | ⏳ pending |
-| `Summary` | type | 39 | 0 | ⏳ pending |
-| `Objective` | type | 39 | 0 | ⏳ pending |
-| `clamp` | function | 34 | 0 | ✅ done |
-| `Recommendation` | type | 32 | 0 | ⏳ pending |
-| `Contents` | type | 31 | 0 | ⏳ pending |
-| `Constraints` | type | 31 | 0 | ⏳ pending |
-| `makeEvent` | function | 30 | 0 | ⏳ pending |
-| `buildService` | function | 29 | 0 | ⏳ pending |
-| `UnknownRecord` | type | 28 | 0 | ⏳ pending |
-| `Verdict` | type | 28 | 0 | ⏳ pending |
-| `MockPrisma` | type | 27 | 0 | ⏳ pending |
-| `unique` | function | 27 | 0 | ⏳ pending |
-| `Gates` | type | 27 | 0 | ⏳ pending |
-| `PrismaMock` | type | 24 | 0 | ⏳ pending |
-| `Status` | type | 23 | 0 | ⏳ pending |
-| `FlexMock` | type | 22 | 0 | ⏳ pending |
-| `Setup` | type | 22 | 0 | ⏳ pending |
-| `readText` | function | 21 | 0 | ⏳ pending |
-| `Method` | type | 21 | 0 | ⏳ pending |
-| `isRecord` | function | 20 | 0 | ⏳ pending |
-| `Wins` | type | 20 | 0 | ⏳ pending |
-| `Conclusion` | type | 19 | 0 | ⏳ pending |
-| `Props` | type | 18 | 0 | ⏳ pending |
-| `readString` | function | 17 | 0 | ⏳ pending |
-| `baseInput` | function | 17 | 0 | ⏳ pending |
-| `makeSpine` | function | 17 | 0 | ⏳ pending |
-| `build` | function | 16 | 0 | ⏳ pending |
-| `MISSAO` | type | 16 | 0 | ⏳ pending |
-| `VAULT_ROOT` | type | 15 | 0 | ⏳ pending |
-| `ATOMIC_OS_REPO_ROOT` | type | 15 | 0 | ⏳ pending |
-| `read_json` | function | 15 | 0 | ⏳ pending |
-| `call_atomic` | function | 15 | 0 | ⏳ pending |
-| `safeStr` | function | 14 | 0 | ✅ done |
-| `REPO` | type | 13 | 0 | ⏳ pending |
-| `TABS` | type | 12 | 0 | ⏳ pending |
-| `ROOT` | type | 12 | 0 | ⏳ pending |
-| `asRecord` | function | 12 | 0 | ⏳ pending |
-| `constructor` | function | 12 | 0 | ⏳ pending |
+> Only includes symbols whose label appears in **>=2 distinct bounded contexts**
+> (e.g., `Task` defined in both `backend/src/kloel/mind` and `backend/src/auth`).
+> Same-name duplicates contained within a single bounded context are filtered
+> as intentionally domain-local.
+
+| Symbol | Kind | # files | # contexts | Total callers | Status |
+|---|---|---:|---:|---:|---|
+| `main` | function | 79 | 27 | 0 | ⏳ pending |
+| `REPO_ROOT` | type | 46 | 14 | 0 | ⏳ pending |
+| `clamp` | function | 34 | 21 | 0 | ✅ done |
+| `makeEvent` | function | 30 | 9 | 0 | ⏳ pending |
+| `buildService` | function | 29 | 12 | 0 | ⏳ pending |
+| `UnknownRecord` | type | 28 | 4 | 0 | ⏳ pending |
+| `MockPrisma` | type | 27 | 7 | 0 | ⏳ pending |
+| `unique` | function | 27 | 12 | 0 | ⏳ pending |
+| `PrismaMock` | type | 24 | 6 | 0 | ⏳ pending |
+| `FlexMock` | type | 22 | 8 | 0 | ⏳ pending |
+| `readText` | function | 21 | 5 | 0 | ⏳ pending |
+| `isRecord` | function | 20 | 16 | 0 | ⏳ pending |
+| `Props` | type | 18 | 3 | 0 | ⏳ pending |
+| `readString` | function | 17 | 12 | 0 | ⏳ pending |
+| `baseInput` | function | 17 | 6 | 0 | ⏳ pending |
+| `makeSpine` | function | 17 | 6 | 0 | ⏳ pending |
+| `build` | function | 16 | 11 | 0 | ⏳ pending |
+| `VAULT_ROOT` | type | 15 | 4 | 0 | ⏳ pending |
+| `safeStr` | function | 14 | 4 | 0 | ✅ done |
+| `ROOT` | type | 13 | 11 | 0 | ⏳ pending |
+| `REPO` | type | 13 | 2 | 0 | ⏳ pending |
+| `TABS` | type | 12 | 3 | 0 | ⏳ pending |
+| `asRecord` | function | 12 | 10 | 0 | ⏳ pending |
+| `constructor` | function | 12 | 2 | 0 | ⏳ pending |
+| `sha256` | function | 12 | 8 | 0 | ⏳ pending |
+| `fail` | function | 12 | 6 | 0 | ⏳ pending |
+| `input` | function | 11 | 6 | 0 | ⏳ pending |
+| `readRecord` | function | 10 | 7 | 0 | ⏳ pending |
+| `formatCurrency` | function | 10 | 3 | 0 | ✅ done |
+| `StatCard` | function | 10 | 3 | 0 | ⏳ pending |
+| `sleep` | function | 10 | 7 | 0 | ⏳ pending |
+| `buildController` | function | 10 | 10 | 0 | ⏳ pending |
+| `MIRROR_ROOT` | type | 10 | 4 | 0 | ⏳ pending |
+| `parseArgs` | function | 10 | 4 | 0 | ⏳ pending |
+| `asString` | function | 9 | 9 | 0 | ⏳ pending |
+| `canActivate` | function | 9 | 8 | 0 | ⏳ pending |
+| `SOURCE_MIRROR_DIR` | type | 9 | 4 | 0 | ⏳ pending |
+| `normalizePath` | function | 9 | 6 | 0 | ⏳ pending |
+| `errorMessage` | function | 8 | 5 | 0 | ⏳ pending |
+| `ConceptRow` | type | 8 | 2 | 0 | ⏳ pending |
+| `uniqueStrings` | function | 8 | 6 | 0 | ⏳ pending |
+| `isObject` | function | 8 | 2 | 0 | ⏳ pending |
+| `check` | function | 8 | 3 | 0 | ⏳ pending |
+| `formatDate` | function | 7 | 4 | 0 | ⏳ pending |
+| `formatDateTime` | function | 7 | 3 | 0 | ⏳ pending |
+| `formatInteger` | function | 7 | 3 | 0 | ⏳ pending |
+| `ChatMessage` | type | 7 | 2 | 0 | ⏳ pending |
+| `createService` | function | 7 | 3 | 0 | ⏳ pending |
+| `makePrisma` | function | 7 | 5 | 0 | ⏳ pending |
+| `makePrismaStub` | function | 7 | 5 | 0 | ⏳ pending |
 
 ## How to use this register
 

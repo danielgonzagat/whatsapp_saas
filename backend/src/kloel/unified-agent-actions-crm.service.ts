@@ -18,7 +18,7 @@ import {
   predecidedHumanTransfer,
 } from './unified-agent-actions-crm-predecided.helpers';
 
-type UnknownRecord = Record<string, unknown>;
+import type { UnknownRecord } from '../common/types';
 
 function isDeterministicPipeline(context?: UnknownRecord): boolean {
   return context?.deterministicPipeline === true;

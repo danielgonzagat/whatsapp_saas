@@ -4,7 +4,7 @@ import type { ToolArgs } from './unified-agent.types';
 import type { MindPolicyService } from './mind-policy.service';
 import { resolveFollowupTimingDecision } from './mind-recovery-decision-resolvers';
 
-type UnknownRecord = Record<string, unknown>;
+import type { UnknownRecord } from '../common/types';
 
 export interface FollowUpTimingResult {
   delayHours: number;

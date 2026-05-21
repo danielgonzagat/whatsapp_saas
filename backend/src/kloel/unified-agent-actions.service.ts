@@ -28,7 +28,7 @@ function actionNum(v: unknown, fb = 0): number {
 }
 import { OpsAlertService } from '../observability/ops-alert.service';
 
-type UnknownRecord = Record<string, unknown>;
+import type { UnknownRecord } from '../common/types';
 
 /**
  * Orchestrator for all Unified Agent tool actions.
