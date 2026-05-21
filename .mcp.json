@@ -89,6 +89,11 @@
       "command": "bash",
       "args": ["scripts/mcp/task-graph-mcp/launcher.sh"],
       "description": "Persistent task queue with locks. task_import_issue (gh CLI) / task_import_plan / task_list / task_next (claims next ready, respects deps + locks) / task_update / task_lock_acquire+release (prevents concurrent agent collision) / task_stats / mesh_routes. Storage in .task-graph/. Survives sessions."
+    },
+    "postgres": {
+      "command": "bash",
+      "args": ["scripts/mcp/postgres-mcp/launcher.sh"],
+      "description": "Read-only Postgres via DATABASE_URL (auto-loaded from backend/.env). pg_query (SELECT-only, parameterized, 100 row cap) / pg_tables / pg_table_describe / pg_count / pg_recent / pg_explain / mesh_routes. REJECTS INSERT/UPDATE/DELETE/DROP/ALTER. Safe runtime data inspection."
     }
   }
 }
