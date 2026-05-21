@@ -349,7 +349,7 @@ export class SmartPaymentService {
         negotiatedAmount,
         discountPercent,
         reason: parsed.reason || 'Análise automática',
-        installments: parsed.installments,
+        ...(parsed.installments !== undefined ? { installments: parsed.installments } : {}),
         approved: parsed.approved !== false,
       };
     } catch (err: unknown) {
