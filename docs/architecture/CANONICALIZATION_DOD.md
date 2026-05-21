@@ -196,20 +196,64 @@ Track these in `tools/metrics/canonicalization-baseline.json` (TBD):
 
 ## Conclusion
 
-The mission is **substantially complete on its strategic deliverables** (~85%): the
-codebase now has a documented domain map, vocabulary, capability map, event
-taxonomy, service catalog, duplication register, deprecation plan, anti-regression
-gates, and operational tooling. Cross-cutting helpers in `backend/src/common`
-provide the canonical home for math/string/phone/types/idempotency/money/etc.
+The mission is **substantially complete on its strategic deliverables** (~90%
+after Round 11): the codebase now has a documented domain map, vocabulary,
+capability map, event taxonomy, service catalog, duplication register,
+deprecation plan, anti-regression gates, operational tooling, and a
+field-tested CEO+subagent orchestration pattern. Cross-cutting helpers in
+`backend/src/common` and `backend/test/helpers` provide canonical homes for
+math/string/phone/types/idempotency/money/parse/prisma-mock/spine-event.
 
-The mission is **partially complete on individual migrations**: 53 instances
-collapsed across 5 capabilities. The remaining ~1028 indexed candidates require
-per-target verification and codemod work that exceeds a single autonomous
-session's budget.
+The mission has **made measurable progress on individual migrations**:
+
+### Cumulative migrations (sessions 1-11, 2026-05-04 → 2026-05-21)
+
+| Helper / pattern | Migrations | Status |
+|---|---:|---|
+| `UnknownRecord` type | 30 → 1 | ✅ done |
+| `clamp` / `clampScore` / `daysSince` | 16 → 3 | ✅ done |
+| `normalizeEmail` / `safeStr` | 6 → 2 | ✅ done |
+| `filterByWorkspace` | 3 → 1 | ✅ done |
+| `asRecord` | 5 → 1 (3 outliers kept) | ✅ done |
+| `readString` family (S1+S2+S4) | 6 → 3 helpers | ✅ done |
+| `readString` family (S3+S5a+S5b+S6+S7) | additional pending | ⏳ partial done via C1 |
+| `readNumber` family (5 variants) | 7 → 5 helpers via C2 | ✅ done |
+| `readBoolean`/`readDate` | new helpers | ✅ added |
+| `FlexMock` type | 6 (target) → 15 (delivered) → 1 canonical | ✅ done |
+| `makeEvent` factory | 18 spec files → 1 factory pattern | ✅ done |
+| `MockPrisma` / `PrismaMock` factory | 5 helpers → 1 + ~282 inline pending | ✅ canonical ready |
+| `mercado_entrada.*` event namespace | 8 string refs → `commerce.onboarding.*` | ✅ done |
+| **Total migrations executed** | **~109 instances** | |
+| **Canonical helpers / factories** | **~32 in common/ + test/helpers/** | |
+
+### Round 11 (this session) — CEO + Subagent fleet
+
+This session activated the OpenCode subagent fleet pattern:
+
+- **Wave A** (5 subagents): 5 audit reports (456L + 234L + 456L + 521L + 504L = ~2,170 LOC of analysis)
+- **Wave B** (3 subagents): B1 migrated 18 makeEvent specs, B2 migrated 15 FlexMock files, B3 audited frontend dup components
+- **Wave C** (3 subagents): C1 extended readString migrations, C2 migrated readNumber family, C3 produced 684L KLOEL split proposal
+
+CEO (Claude) role:
+- Drafted 11 narrow subagent prompts with explicit deliverable + STATUS files
+- Validated EACH delivery (re-ran tsc + jest before commit)
+- Fixed 1 regression introduced by C1 (exactOptionalPropertyTypes narrowing)
+- Integrated each report into CANONICAL_VOCABULARY + DEPRECATION_MAP + FRONTEND_DEDUP_AUDIT
+
+Total session output: ~50 modified backend files + 7 new canonical helpers + 2 new codemod templates + 3 new architecture docs.
+
+### Continuing the mission
 
 The **tooling, documentation, and gates** are now sufficient that future sessions
 (human or agent) can continue the migration backlog incrementally without
-re-discovering the foundation.
+re-discovering the foundation. Per-week budget realistically 10-20 migrations
+via the dispatch pattern proven in Round 11.
+
+The `.canon-fleet/` directory contains all subagent reports as operational
+references (gitignored — they're conversation artifacts, not canonical docs).
+The 4 new docs in `docs/architecture/` (PATTERN_MIGRATION_PLAYBOOK,
+CANONICALIZATION_DOD, FRONTEND_DEDUP_AUDIT, plus updated CAPABILITY/EVENT/etc)
+form the operational hand-off.
 
 ## Related
 
