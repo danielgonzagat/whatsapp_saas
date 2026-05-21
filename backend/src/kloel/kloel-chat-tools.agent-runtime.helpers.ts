@@ -10,12 +10,7 @@ import type {
   AgentSkillUsageOutcome,
 } from './agent-runtime';
 
-export interface ToolResult {
-  success: boolean;
-  message?: string;
-  error?: string;
-  [key: string]: unknown;
-}
+export type { ToolResult } from './kloel-tool-executor.types';
 
 export interface ToolUpsertAgentSkillArgs {
   id: string;
