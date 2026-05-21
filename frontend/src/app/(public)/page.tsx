@@ -1,12 +1,7 @@
-import { FloatingChat } from '@/components/kloel/landing/FloatingChat';
-import KloelLanding from '@/components/kloel/landing/KloelLanding';
+import HomeView from '@/components/kloel/home/HomeView';
 
-/** Landing page. */
-export default function LandingPage() {
-  return (
-    <>
-      <KloelLanding />
-      <FloatingChat />
-    </>
-  );
+/** / — crystallised by tools/crystallization/run.mjs.
+ *  Replaces stub (reason: tiny-6-loc) with the canonical view in this module. */
+export default function HomePage() {
+  return <HomeView />;
 }
