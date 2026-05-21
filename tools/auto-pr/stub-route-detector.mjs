@@ -22,7 +22,10 @@ const ROOT = join(__dirname, '..', '..');
 const APP_DIR = join(ROOT, 'frontend/src/app');
 const OUT = join(ROOT, 'graphify-out', 'stub-routes.json');
 
-const NEXT_FILE_RE = /^(page|route|layout)\.(t|j)sx?$/;
+// Layouts and route handlers can legitimately be tiny (just provide a wrapper
+// or HTTP method export). Restrict stub detection to `page.tsx`/`page.jsx` only —
+// those are user-facing screens where a tiny LOC IS a stub signal.
+const NEXT_FILE_RE = /^page\.(t|j)sx?$/;
 
 function executableLines(src) {
   return src
@@ -40,7 +43,13 @@ function executableLines(src) {
 function detectReason(src, file) {
   if (/redirect\(['"`]\/[^'"`]+['"`]\)/.test(src) && !/<[A-Z]/.test(src)) return 'redirect-only';
   if (/return\s+null\s*[;}]/.test(src)) return 'returns-null';
-  if (/Coming soon|Em breve|Placeholder|TODO|FIXME/i.test(src)) return 'placeholder-marker';
+  // Only flag TRUE placeholder markers — exclude HTML attribute "placeholder="
+  // and Portuguese word "todos" (= "all"). Matches must be UI copy or comments.
+  if (/(?:Coming\s+soon|Em\s+breve|Em\s+constru[ção]+)/i.test(src)) return 'placeholder-marker';
+  if (/\/\/\s*(?:TODO|FIXME|HACK|XXX)\b/.test(src) || /\/\*\s*(?:TODO|FIXME|HACK|XXX)\b/.test(src)) {
+    const loc = executableLines(src);
+    if (loc < 30) return 'placeholder-comment-only';
+  }
   const loc = executableLines(src);
   if (loc < 15) return `tiny-${loc}-loc`;
   return null;
