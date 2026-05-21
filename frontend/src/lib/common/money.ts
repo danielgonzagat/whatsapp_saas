@@ -30,7 +30,9 @@ export function formatBRL(value: number | null | undefined): string {
  * display `R$ 0,00`.
  */
 export function formatBRLOptional(value: number | null | undefined): string {
-  if (typeof value !== 'number' || !Number.isFinite(value)) return '';
+  if (typeof value !== 'number' || !Number.isFinite(value)) {
+    return '';
+  }
   return BRL_FORMATTER.format(value);
 }
 
