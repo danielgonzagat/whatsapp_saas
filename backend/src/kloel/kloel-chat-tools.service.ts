@@ -557,13 +557,13 @@ export class KloelChatToolsService {
   // === PRODUCT MANAGEMENT TOOL DELEGATORS ===
 
   toolUpdateProduct(workspaceId: string, args: Record<string, unknown>): Promise<ToolResult> {
-    return runUpdateProduct(this.prisma, workspaceId, args as never);
+    return runUpdateProduct(this.prisma, workspaceId, args);
   }
   toolGetProductPlans(workspaceId: string, args: Record<string, unknown>): Promise<ToolResult> {
     return runGetProductPlans(this.prisma, workspaceId, args);
   }
   toolGetProductUrls(workspaceId: string, args: Record<string, unknown>): Promise<ToolResult> {
-    return runGetProductUrls(this.prisma, workspaceId, args as never);
+    return runGetProductUrls(this.prisma, workspaceId, args);
   }
   toolGetProductReviews(workspaceId: string, args: { productId: string }): Promise<ToolResult> {
     return runGetProductReviews(this.prisma, workspaceId, args);
