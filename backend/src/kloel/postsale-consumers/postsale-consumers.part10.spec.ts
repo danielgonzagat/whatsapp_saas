@@ -15,25 +15,9 @@ import { WinBackWindowAdvisor } from './winback-window.advisor';
 import { LtvProjectionService } from './ltv-projection.service';
 import { NoRegretPipelineService } from './no-regret-pipeline.service';
 import type { DetectionInput, LtvProjection } from './postsale-consumers.types';
+import { makeEventFactory } from '../../../test/helpers/spine-event-factory';
 
-function makeEvent(
-  eventName: string,
-  workspaceId: string,
-  occurredAt: string,
-  overrides: Partial<SpineEventRef> = {},
-): SpineEventRef {
-  let seq = (makeEvent as { _seq: number })._seq ?? 0;
-  seq++;
-  (makeEvent as { _seq: number })._seq = seq;
-  return {
-    eventId: `evt_${String(seq).padStart(5, '0')}`,
-    eventName,
-    workspaceId,
-    occurredAt,
-    truthMode: 'observed',
-    ...overrides,
-  };
-}
+const makeEvent = makeEventFactory();
 
 function makeSpine(): SpineEmitterService {
   return new SpineEmitterService(new ValenceTaggerService());

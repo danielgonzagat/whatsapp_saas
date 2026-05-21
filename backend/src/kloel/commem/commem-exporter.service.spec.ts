@@ -5,24 +5,9 @@ import { AttributionGuard } from './attribution.guard';
 import { CommemExporterService } from './commem-exporter.service';
 import type { SpineEventRef } from '../mind/mind.types';
 import type { MemoryProjection } from './commem.types';
+import { makeEventFactoryMs } from '../../../test/helpers/spine-event-factory';
 
-let seq = 0;
-function makeEvent(
-  eventName: string,
-  workspaceId: string,
-  occurredAtMs: number,
-  overrides: Partial<SpineEventRef> = {},
-): SpineEventRef {
-  seq++;
-  return {
-    eventId: `evt_${String(seq).padStart(5, '0')}`,
-    eventName,
-    workspaceId,
-    occurredAt: new Date(occurredAtMs).toISOString(),
-    truthMode: 'observed',
-    ...overrides,
-  };
-}
+const makeEvent = makeEventFactoryMs();
 
 function nowMs(): number {
   return Date.now();
@@ -41,7 +26,6 @@ describe('CommemExporterService', () => {
     exporter = new ExporterService();
     guard = new AttributionGuard();
     svc = new CommemExporterService(ledgerService, projector, exporter, guard);
-    seq = 0;
   });
 
   test('exports aggregated data for a workspace with events', () => {
