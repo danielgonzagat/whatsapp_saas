@@ -4,8 +4,7 @@ import type {
   ProviderMessageEnvelope,
 } from './whatsapp-service.types';
 import { normalizeNumber, resolveTimestampExt, toIsoTimestamp } from './whatsapp-service.helpers';
-
-const D_RE = /\D/g;
+import { NON_DIGIT_RE } from '../common/phone';
 
 function readText(value: unknown): string {
   if (typeof value === 'string') {
@@ -18,7 +17,7 @@ function readText(value: unknown): string {
 }
 
 function normalizeNumberLocal(num: string): string {
-  return num.replace(D_RE, '');
+  return num.replace(NON_DIGIT_RE, '');
 }
 
 export function normalizeContactEntry(

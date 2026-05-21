@@ -11,8 +11,8 @@ import {
 import { normalizeJsonObjExt } from './whatsapp-service.helpers';
 import type { ProviderSettings } from './provider-settings.types';
 import { WhatsAppEventEmitterService } from '../kloel/whatsapp-emitter/whatsapp-event-emitter.service';
+import { NON_DIGIT_RE } from '../common/phone';
 
-const D_RE = /\D/g;
 const PATTERN_RE = /-/g;
 
 @Injectable()
@@ -38,7 +38,7 @@ export class WhatsappSessionService {
   }
 
   private normalizeNumber(num: string): string {
-    return num.replace(D_RE, '');
+    return num.replace(NON_DIGIT_RE, '');
   }
 
   private normalizeChatId(chatId: string): string {

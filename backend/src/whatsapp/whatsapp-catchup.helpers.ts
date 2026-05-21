@@ -1,12 +1,12 @@
 import type { WhatsAppProviderRegistry } from './providers/provider-registry';
 import type { WahaLidMapping } from './providers/whatsapp-api.provider';
+import { NON_DIGIT_RE } from '../common/phone';
 
-const D_RE = /\D/g;
 const LID_RE = /@lid$/i;
 
 export function normalizePhoneExt(phone: string): string {
   return String(phone || '')
-    .replace(D_RE, '')
+    .replace(NON_DIGIT_RE, '')
     .replace('@c.us', '')
     .replace('@s.whatsapp.net', '');
 }

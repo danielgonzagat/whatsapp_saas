@@ -28,10 +28,9 @@ import type { NormalizedContact, NormalizedChat } from './whatsapp-service.types
 import { WhatsappSessionService } from './whatsapp-session.service';
 import { WhatsappMessageDispatcherService } from './whatsapp-message-dispatcher.service';
 import { WhatsappReconcilerService } from './whatsapp-reconciler.service';
+import { NON_DIGIT_RE } from '../common/phone';
 
 type ExternalProviderPayload = Record<string, unknown>;
-
-const D_RE = /\D/g;
 
 @Injectable()
 export class WhatsappService {
@@ -73,7 +72,7 @@ export class WhatsappService {
     return '';
   }
   private normalizeNumber(num: string): string {
-    return num.replace(D_RE, '');
+    return num.replace(NON_DIGIT_RE, '');
   }
   private isIndividualChatId(c?: string | null): boolean {
     const v = String(c || '').trim();

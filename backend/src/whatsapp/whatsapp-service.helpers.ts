@@ -1,4 +1,4 @@
-const D_RE = /\D/g;
+import { NON_DIGIT_RE } from '../common/phone';
 
 export function readText(value: unknown): string {
   if (typeof value === 'string') {
@@ -11,7 +11,7 @@ export function readText(value: unknown): string {
 }
 
 export function normalizeNumber(num: string): string {
-  return num.replace(D_RE, '');
+  return num.replace(NON_DIGIT_RE, '');
 }
 
 export function normalizeJsonObjExt(value: unknown): Record<string, unknown> {

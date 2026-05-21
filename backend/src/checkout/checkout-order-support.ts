@@ -1,11 +1,10 @@
 import { Logger } from '@nestjs/common';
-import { BadRequestException, NotFoundException  } from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import * as Sentry from '@sentry/node';
 import { PrismaService } from '../prisma/prisma.service';
 import { normalizeCheckoutOrderQuantity } from './checkout-order-pricing.util';
-
-const D_RE = /\D/g;
+import { NON_DIGIT_RE } from '../common/phone';
 
 type CheckoutLineItem = {
   id: string;
@@ -67,7 +66,7 @@ export class CheckoutOrderSupport {
 
   /** Normalize phone digits. */
   normalizePhoneDigits(value?: string | null) {
-    return String(value || '').replace(D_RE, '');
+    return String(value || '').replace(NON_DIGIT_RE, '');
   }
 
   /** Normalize email. */
