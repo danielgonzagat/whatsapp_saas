@@ -6,20 +6,28 @@ import type { ToolResult } from './kloel-chat-tools.agent-runtime.helpers';
 export async function runGetProductPlans(
   prisma: PrismaService,
   workspaceId: string,
-  args: { productId: string },
+  args: { productId?: string; productName?: string },
 ): Promise<ToolResult> {
-  if (!args.productId) {
+  let pid = args.productId || '';
+  if (!pid && args.productName) {
+    const p = await prisma.product.findFirst({
+      where: { workspaceId, name: { contains: args.productName, mode: 'insensitive' } },
+      select: { id: true },
+    });
+    pid = p?.id || '';
+  }
+  if (!pid) {
     return { success: false, error: 'productId_required' };
   }
   const product = await prisma.product.findFirst({
-    where: { id: args.productId, workspaceId },
+    where: { id: pid, workspaceId },
     select: { id: true, name: true, price: true },
   });
   if (!product) {
     return { success: false, error: 'product_not_found' };
   }
   const plans = await prisma.productPlan.findMany({
-    where: { productId: args.productId },
+    where: { productId: pid },
     select: {
       id: true,
       name: true,

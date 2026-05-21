@@ -155,7 +155,10 @@ export function extractProductName(msg: string): string {
   );
   const name = (m?.[1] || '').trim();
   // Strip leading prepositions and trailing punctuation
-  return name.replace(/^(para|do|da|de|no|na|em|o|a)\s+/i, '').replace(/[.,;:!]+$/, '').trim();
+  return name
+    .replace(/^(para|do|da|de|no|na|em|o|a)\s+/i, '')
+    .replace(/[.,;:!]+$/, '')
+    .trim();
 }
 
 export function extractProductArgs(msg: string): Record<string, unknown> {

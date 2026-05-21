@@ -559,7 +559,7 @@ export class KloelChatToolsService {
   toolUpdateProduct(workspaceId: string, args: Record<string, unknown>): Promise<ToolResult> {
     return runUpdateProduct(this.prisma, workspaceId, args as never);
   }
-  toolGetProductPlans(workspaceId: string, args: { productId: string }): Promise<ToolResult> {
+  toolGetProductPlans(workspaceId: string, args: Record<string, unknown>): Promise<ToolResult> {
     return runGetProductPlans(this.prisma, workspaceId, args);
   }
   toolGetProductUrls(workspaceId: string, args: { productId: string }): Promise<ToolResult> {

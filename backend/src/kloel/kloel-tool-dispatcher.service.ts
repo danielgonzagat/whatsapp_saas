@@ -7,6 +7,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { KloelBusinessConfigToolsService } from './kloel-business-config-tools.service';
 import { KloelChatToolsService } from './kloel-chat-tools.service';
 import { KloelComposerService } from './kloel-composer.service';
+import { runToolSearchWeb } from './kloel-tool-dispatcher.search-web.helpers';
 import { KloelWhatsAppToolsService } from './kloel-whatsapp-tools.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { KloelCodeToolsService } from './kloel-code-tools.service';
@@ -59,9 +60,13 @@ export class KloelToolDispatcherService {
 
   /** Resolve productId from productName if not already provided. */
   private async resolveProductId(workspaceId: string, args: UnknownRecord): Promise<string | null> {
-    if (typeof args.productId === 'string' && args.productId) return args.productId;
+    if (typeof args.productId === 'string' && args.productId) {
+      return args.productId;
+    }
     const name = typeof args.productName === 'string' ? args.productName : null;
-    if (!name) return null;
+    if (!name) {
+      return null;
+    }
     const product = await this.prisma.product.findFirst({
       where: { workspaceId, name: { contains: name, mode: 'insensitive' } },
       select: { id: true },
@@ -124,7 +129,7 @@ export class KloelToolDispatcherService {
             userId,
           );
         case 'search_web':
-          return await this.toolSearchWeb(workspaceId, args);
+          return await runToolSearchWeb(this.planLimits, this.composerService, workspaceId, args);
         case 'create_flow':
           return await this.chatToolsService.toolCreateFlow(workspaceId, asToolArgs(args));
         case 'list_flows':
@@ -133,22 +138,30 @@ export class KloelToolDispatcherService {
           return await this.chatToolsService.toolGetDashboardSummary(workspaceId, asToolArgs(args));
         case 'get_product_plans': {
           const pid = await this.resolveProductId(workspaceId, args);
-          if (pid) (args as Record<string, unknown>).productId = pid;
+          if (pid) {
+            (args as Record<string, unknown>).productId = pid;
+          }
           return await this.chatToolsService.toolGetProductPlans(workspaceId, asToolArgs(args));
         }
         case 'get_product_ai_config': {
           const pid = await this.resolveProductId(workspaceId, args);
-          if (pid) (args as Record<string, unknown>).productId = pid;
+          if (pid) {
+            (args as Record<string, unknown>).productId = pid;
+          }
           return await this.chatToolsService.toolGetProductAiConfig(workspaceId, asToolArgs(args));
         }
         case 'get_product_reviews': {
           const pid = await this.resolveProductId(workspaceId, args);
-          if (pid) (args as Record<string, unknown>).productId = pid;
+          if (pid) {
+            (args as Record<string, unknown>).productId = pid;
+          }
           return await this.chatToolsService.toolGetProductReviews(workspaceId, asToolArgs(args));
         }
         case 'get_product_urls': {
           const pid = await this.resolveProductId(workspaceId, args);
-          if (pid) (args as Record<string, unknown>).productId = pid;
+          if (pid) {
+            (args as Record<string, unknown>).productId = pid;
+          }
           return await this.chatToolsService.toolGetProductUrls(workspaceId, asToolArgs(args));
         }
         case 'validate_coupon':
@@ -575,35 +588,6 @@ export class KloelToolDispatcherService {
         return this.bizConfigToolsService.toolChangePlan(workspaceId, args as never);
       default:
         throw new Error(`unsupported_approved_tool:${toolName}`);
-    }
-  }
-
-  private async toolSearchWeb(
-    workspaceId: string,
-    args: { query?: string },
-  ): Promise<{
-    success: boolean;
-    query?: string;
-    summary?: string;
-    sources?: unknown[];
-    error?: string;
-  }> {
-    const query = String(args?.query || '').trim();
-    if (!query) {
-      return { success: false, error: 'missing_query' };
-    }
-    try {
-      await this.planLimits.ensureTokenBudget(workspaceId);
-      const digest = await this.composerService.searchWeb(query);
-      await this.planLimits
-        .trackAiUsage(workspaceId, Math.max(180, Math.ceil(digest.answer.length / 4)))
-        .catch(() => {});
-      return { success: true, query, summary: digest.answer, sources: digest.sources };
-    } catch (error: unknown) {
-      void this.opsAlert?.alertOnCriticalError(error, 'KloelToolDispatcherService.trackAiUsage');
-      const msg = error instanceof Error ? error.message : 'web_search_failed';
-      this.logger.warn(`Falha em search_web para "${query}": ${msg}`);
-      return { success: false, error: msg };
     }
   }
 }
