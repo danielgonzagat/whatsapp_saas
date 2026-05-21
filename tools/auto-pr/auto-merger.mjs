@@ -34,11 +34,22 @@ const WATCH = argv.includes('--watch');
 const DRY = argv.includes('--dry-run');
 const PR_FILTER = argv.find((a) => a.startsWith('--pr='))?.split('=')[1];
 const LABEL_FILTER = argv.find((a) => a.startsWith('--label='))?.split('=')[1];
-const PREFIX_FILTER = argv.find((a) => a.startsWith('--prefix='))?.split('=')[1] || 'auto/,chore/batch-,chore/decompose-';
+const PREFIX_FILTER = argv.find((a) => a.startsWith('--prefix='))?.split('=')[1] || 'auto/,chore/batch-,chore/decompose-,fix/marketing-visual-,fix/marketing-channel-';
 const PREFIXES = PREFIX_FILTER.split(',').filter(Boolean);
 const POLL_MS = Number(argv.find((a) => a.startsWith('--poll-ms='))?.split('=')[1] || 300_000);
 
-const FAIL_OK_NAMES = ['Deploy Staging', 'Deploy Production'];  // tolerated if external
+// STRICT MODE (ratified by Daniel 2026-05-21): merges require ALL gates green
+// AND review APPROVED. Tolerated-failure lists default to empty; --admin is
+// off by default. To opt back into the permissive behavior an explicit flag
+// is required (--tolerate-deploy / --tolerate-ci-subjobs / --admin) AND the
+// invoking session must justify the call. This protects the codebase from
+// shipping anything that didn't pass every guard.
+const TOLERATE_DEPLOY = argv.includes('--tolerate-deploy') || process.env.AUTO_MERGE_TOLERATE_DEPLOY === '1';
+const TOLERATE_CI_SUB = argv.includes('--tolerate-ci-subjobs') || process.env.AUTO_MERGE_TOLERATE_CI_SUB === '1';
+const FAIL_OK_NAMES = TOLERATE_DEPLOY ? ['Deploy Staging', 'Deploy Production'] : [];
+const FAIL_OK_SUBJOBS = TOLERATE_CI_SUB ? ['e2e', 'pulse-deep'] : [];
+const USE_ADMIN = argv.includes('--admin') || process.env.AUTO_MERGE_ADMIN === '1';
+const REQUIRE_APPROVED = !argv.includes('--no-require-approval');
 
 async function listOpenPRs() {
   // statusCheckRollup is unavailable on personal-access-token; fetch checks via REST per PR.
@@ -54,9 +65,9 @@ async function listOpenPRs() {
     } catch {
       pr.combinedStatus = null;
     }
-    // Also fetch check-runs (workflow runs).
+    // Also fetch check-runs (workflow runs); include databaseId for sub-job drill-down.
     try {
-      const runs = await capture(['gh', 'run', 'list', '--repo', REMOTE, '--branch', pr.headRefName, '--limit', '20', '--json', 'name,status,conclusion']);
+      const runs = await capture(['gh', 'run', 'list', '--repo', REMOTE, '--branch', pr.headRefName, '--limit', '20', '--json', 'name,status,conclusion,databaseId']);
       pr.workflowRuns = JSON.parse(runs);
     } catch {
       pr.workflowRuns = [];
@@ -65,16 +76,47 @@ async function listOpenPRs() {
   return prs;
 }
 
-function rolledUpFailures(pr, allowExternal = true) {
+async function rolledUpFailures(pr, allowExternal = true) {
+  // For workflowRuns, only the LATEST run per workflow name counts —
+  // historical failures from previous commits on the branch are stale.
+  const latestByName = new Map();
+  for (const r of pr.workflowRuns || []) {
+    if (!latestByName.has(r.name)) latestByName.set(r.name, r);
+  }
   const all = [
     ...(pr.statusContexts || []).map((s) => ({ name: s.context, state: s.state })),
-    ...(pr.workflowRuns || []).map((r) => ({ name: r.name, state: r.conclusion })),
+    ...[...latestByName.values()].map((r) => ({ name: r.name, state: r.conclusion, databaseId: r.databaseId, status: r.status })),
   ];
-  const failures = all.filter((c) => ['failure', 'cancelled', 'timed_out', 'action_required'].includes(String(c.state).toLowerCase()));
+  let failures = all.filter((c) => ['failure', 'cancelled', 'timed_out', 'action_required'].includes(String(c.state).toLowerCase()));
   if (allowExternal) {
-    return failures.filter((f) => !FAIL_OK_NAMES.includes(f.name));
+    failures = failures.filter((f) => !FAIL_OK_NAMES.includes(f.name));
   }
-  return failures;
+  // For top-level CI failures, drill into sub-jobs: if the only failing
+  // sub-jobs are in FAIL_OK_SUBJOBS, treat the CI run itself as tolerated.
+  const surviving = [];
+  for (const f of failures) {
+    if (f.name === 'CI') {
+      const ciRun = (pr.workflowRuns || []).find((r) => r.name === 'CI' && r.conclusion === 'failure');
+      if (ciRun && ciRun.databaseId) {
+        const subjobsJson = await capture(['gh', 'run', 'view', String(ciRun.databaseId), '--repo', REMOTE, '--json', 'jobs']).catch(() => null);
+        if (subjobsJson) {
+          try {
+            const parsed = JSON.parse(subjobsJson);
+            const failingSubjobs = (parsed.jobs || []).filter((j) => j.conclusion === 'failure').map((j) => j.name);
+            const allTolerated = failingSubjobs.every((j) => FAIL_OK_SUBJOBS.includes(j));
+            if (allTolerated && failingSubjobs.length > 0) {
+              // CI failure is tolerated — only e2e/pulse-deep failed.
+              continue;
+            }
+          } catch {
+            /* fall through */
+          }
+        }
+      }
+    }
+    surviving.push(f);
+  }
+  return surviving;
 }
 
 function pendingChecks(pr) {
@@ -85,12 +127,13 @@ async function evaluate(pr) {
   const reason = [];
   if (pr.mergeable !== 'MERGEABLE') reason.push(`mergeable=${pr.mergeable}`);
   if (pr.reviewDecision === 'CHANGES_REQUESTED') reason.push(`review=CHANGES_REQUESTED`);
+  if (REQUIRE_APPROVED && pr.reviewDecision !== 'APPROVED') reason.push(`review-not-approved (got: ${pr.reviewDecision || 'NONE'}; required: APPROVED)`);
   if (PR_FILTER && String(pr.number) !== PR_FILTER) reason.push(`filter-mismatch:${pr.number}!=${PR_FILTER}`);
   if (LABEL_FILTER && !(pr.labels || []).some((l) => l.name === LABEL_FILTER)) reason.push(`missing-label:${LABEL_FILTER}`);
   if (PREFIXES.length && !PREFIXES.some((p) => pr.headRefName.startsWith(p))) {
     reason.push(`branch-prefix:${pr.headRefName} (expected one of: ${PREFIXES.join(', ')})`);
   }
-  const failures = rolledUpFailures(pr, true);
+  const failures = await rolledUpFailures(pr, true);
   if (failures.length > 0) reason.push(`failed-checks:${failures.map((f) => f.name).slice(0, 5).join(',')}`);
   const pending = pendingChecks(pr);
   if (pending.length > 0) reason.push(`pending:${pending.length}`);
@@ -103,12 +146,14 @@ async function mergePr(pr) {
     await logLine(`  DRY → would merge #${pr.number}`);
     return { dry: true };
   }
-  const out = await capture([
+  const mergeArgs = [
     'gh', 'pr', 'merge', String(pr.number),
     '--repo', REMOTE,
     '--squash',
     '--delete-branch',
-  ]);
+  ];
+  if (USE_ADMIN) mergeArgs.push('--admin');
+  const out = await capture(mergeArgs);
   await logLine(`  result #${pr.number}: ${out.trim() || 'merged'}`);
   return { merged: true };
 }

@@ -72,13 +72,22 @@ async function main() {
     files.push(emitFlagAdvisory(spec));
   }
 
+  // Dedupe by path — multiple flows share the same module/controller/service
+  // skeleton. The last-write wins, which is fine because we only emit the
+  // skeleton when no real file exists yet.
+  const dedup = new Map();
+  for (const f of files.filter(Boolean)) {
+    dedup.set(f.path, f);
+  }
+  const finalFiles = [...dedup.values()];
+
   const branch = `auto/compiled-${spec.name}-${Date.now()}`;
   const job = {
     title: `feat(${spec.name}): compiled from intent`,
-    body: composePRBody(spec, files),
+    body: composePRBody(spec, finalFiles),
     branch,
     base: 'origin/main',
-    files: files.filter(Boolean),
+    files: finalFiles,
     shell: [
       'cd backend && npx prisma format',
       'cd backend && npx prisma generate',

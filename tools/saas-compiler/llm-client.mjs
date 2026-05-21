@@ -23,7 +23,7 @@ export async function chat({ system, user, model, maxTokens = 4096, temperature 
   if (p === 'anthropic') return anthropic({ system, user, model: model || 'claude-opus-4-7', maxTokens, temperature });
   if (p === 'deepseek') return openaiCompatible({
     apiKey: DEEPSEEK, baseUrl: 'https://api.deepseek.com/v1',
-    system, user, model: model || 'deepseek-chat', maxTokens, temperature,
+    system, user, model: model || 'deepseek-v4-pro', maxTokens, temperature,
   });
   return openaiCompatible({
     apiKey: OPENAI, baseUrl: 'https://api.openai.com/v1',
