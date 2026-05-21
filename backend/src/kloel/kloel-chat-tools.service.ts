@@ -117,27 +117,16 @@ export class KloelChatToolsService {
     @Optional() private readonly agentEvidence?: AgentRuntimeEvidenceStoreService,
   ) {}
   async toolSaveProduct(workspaceId: string, args: ToolSaveProductArgs): Promise<ToolResult> {
-    if (!args.name || typeof args.name !== 'string' || !args.name.trim()) {
-      return { success: false, error: 'product_name_required' };
-    }
-    const price = typeof args.price === 'number' && Number.isFinite(args.price) ? args.price : 0;
-    try {
-      const product = await this.prisma.product.create({
-        data: {
-          workspaceId,
-          name: args.name.trim(),
-          price,
-          description: args.description || '',
-          active: true,
-          status: 'DRAFT',
-        },
-      });
-      return { success: true, product, message: `Produto "${args.name}" criado com sucesso!` };
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'unknown_error';
-      this.logger.error(`toolSaveProduct failed: ${msg}`);
-      return { success: false, error: msg };
-    }
+    const product = await this.prisma.product.create({
+      data: {
+        workspaceId,
+        name: args.name,
+        price: args.price,
+        description: args.description || '',
+        active: true,
+      },
+    });
+    return { success: true, product, message: `Produto "${args.name}" cadastrado com sucesso!` };
   }
   async toolListProducts(workspaceId: string): Promise<ToolResult> {
     const products = filterLegacyProducts(

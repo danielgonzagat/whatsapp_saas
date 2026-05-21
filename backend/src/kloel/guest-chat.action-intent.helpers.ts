@@ -2,6 +2,8 @@ export function detectActionIntent(
   message: string,
 ): { tool: string; args: Record<string, unknown> } | null {
   const msg = message.toLowerCase().trim();
+
+  // ── PRODUTOS ──
   if (/cria(r|ndo)? (produto|oferta|novo)/.test(msg) || /cadastra(r|ndo)? produto/.test(msg)) {
     return { tool: 'create_product', args: extractProductArgs(msg) };
   }
@@ -16,24 +18,51 @@ export function detectActionIntent(
   if (/(apaga(r|ndo)?|deleta(r|ndo)?|exclui(r|ndo)?|remove(r|ndo)?) produto/.test(msg)) {
     return { tool: 'delete_product', args: { productName: extractProductName(msg) } };
   }
+
+  // ── PLANOS ──
   if (/cria(r|ndo)? (plano|parcelamento)/.test(msg)) {
     return { tool: 'create_plan', args: { productName: extractProductName(msg) } };
   }
+  if (/lista(r|ndo)? planos?/.test(msg)) {
+    return { tool: 'get_product_plans', args: { productName: extractProductName(msg) } };
+  }
+
+  // ── CHECKOUTS ──
   if (/cria(r|ndo)? checkout/.test(msg)) {
     return { tool: 'create_checkout', args: { productName: extractProductName(msg) } };
   }
+
+  // ── CUPONS ──
   if (/cria(r|ndo)? cupom/.test(msg)) {
     return { tool: 'create_coupon', args: { productName: extractProductName(msg) } };
   }
+  if (/lista(r|ndo)? cupons?/.test(msg)) {
+    return { tool: 'list_coupons', args: {} };
+  }
+  if (/(apaga(r|ndo)?|deleta(r|ndo)?|remove(r|ndo)?) cupom/.test(msg)) {
+    return { tool: 'delete_coupon', args: { productName: extractProductName(msg) } };
+  }
+
+  // ── PAGAMENTOS ──
   if (/(gera(r|ndo)?|emiti(r|ndo)?) (pix|cobrança|pagamento)/.test(msg)) {
     return { tool: 'create_payment_link', args: extractPaymentArgs(msg) };
   }
   if (/(gera(r|ndo)?|emiti(r|ndo)?) boleto/.test(msg)) {
     return { tool: 'generate_boleto', args: extractPaymentArgs(msg) };
   }
+
+  // ── CARTEIRA ──
   if (/(meu )?saldo|carteira/.test(msg)) {
     return { tool: 'get_wallet_balance', args: {} };
   }
+  if (/extrato|hist[oó]rico.*financeiro/.test(msg)) {
+    return { tool: 'get_wallet_statement', args: {} };
+  }
+  if (/saque|solicitar saque/.test(msg)) {
+    return { tool: 'request_withdrawal', args: {} };
+  }
+
+  // ── VENDAS ──
   if (/(minhas )?vendas|pedidos/.test(msg)) {
     return { tool: 'list_orders', args: {} };
   }
@@ -43,27 +72,68 @@ export function detectActionIntent(
   if (/relatorio|resumo.*venda/.test(msg)) {
     return { tool: 'get_sales_summary', args: {} };
   }
+  if (/m[eé]tricas|analytics|dashboard/.test(msg)) {
+    return { tool: 'get_analytics', args: {} };
+  }
+
+  // ── CRM / LEADS ──
+  if (
+    /(busca(r|ndo)?|procura(r|ndo)?|pesquisa(r|ndo)?) (lead|cliente|contato|comprador)/.test(msg)
+  ) {
+    return { tool: 'search_agent_memory', args: { query: msg } };
+  }
+
+  // ── CONVERSAS / MEMÓRIA ──
+  if (
+    /(busca(r|ndo)?|procura(r|ndo)?|pesquisa(r|ndo)?) (conversa|mem[oó]ria|hist[oó]rico|sess[aã]o)/.test(
+      msg,
+    )
+  ) {
+    return { tool: 'search_agent_sessions', args: { query: msg } };
+  }
+
+  // ── APARÊNCIA ──
   if (/modo (escuro|claro)|tema|dark mode/.test(msg)) {
     return { tool: 'toggle_theme', args: { theme: /escuro|dark/.test(msg) ? 'dark' : 'light' } };
   }
+
+  // ── CONFIGURAÇÕES ──
   if (/(meus |minhas )?configura[cç][oõ]es|dados (pessoais|fiscais|banc[aá]rios)/.test(msg)) {
     return { tool: 'get_settings', args: {} };
   }
-  if (/extrato|hist[oó]rico.*financeiro/.test(msg)) {
-    return { tool: 'get_wallet_statement', args: {} };
+
+  // ── URLs / PÁGINAS ──
+  if (/urls?.*(produto|p[aá]gina)/.test(msg) || /p[aá]gina.*vendas/.test(msg)) {
+    return { tool: 'get_product_urls', args: { productName: extractProductName(msg) } };
   }
-  if (/saque|solicitar saque/.test(msg)) {
-    return { tool: 'request_withdrawal', args: {} };
+
+  // ── AFILIADOS ──
+  if (/afiliados?|comiss[aã]o|programa.*afiliado/.test(msg)) {
+    return { tool: 'get_affiliate_config', args: {} };
   }
+
+  // ── CÓDIGO (Meta 1 — self-code consciousness) ──
+  if (/git.status|git status|estado do git/.test(msg)) {
+    return { tool: 'git_status', args: {} };
+  }
+  if (/git.log|git log|hist[oó]rico.*commit/.test(msg)) {
+    return { tool: 'git_log', args: {} };
+  }
+  if (/c[oó]digo.*(fonte|source)|ler.*arquivo|read.*file/.test(msg)) {
+    return { tool: 'code_outline', args: { query: msg } };
+  }
+  if (/build|compila[rç]|status.*build/.test(msg)) {
+    return { tool: 'build_status', args: {} };
+  }
+
   return null;
 }
 
 export function extractProductName(msg: string): string {
   const m = msg.match(
-    /(?:produto|plano|oferta|checkout|cupom)\s+(?:chamad[oa]|de\s+)?["']?([A-Za-zÀ-ÿ0-9\s-]{2,50}?)(?:\s+(?:com|por|R\$|pre[çc]o|valor|\.|$)|$)/i,
+    /(?:produto|plano|oferta|checkout|cupom)\s+(?:chamad[oa]|de\s+)?["']?([A-Za-zÀ-ÿ0-9\s\-.]{2,60}?)(?:\s*(?:R\$|pre[çc]o|valor|\bcom\b|\bpor\b|$)|$)/i,
   );
   const name = m?.[1]?.trim() || '';
-  // Strip trailing punctuation that was captured as part of name
   return name.replace(/[.,;:!]+$/, '').trim();
 }
 

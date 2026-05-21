@@ -410,7 +410,7 @@ export class KloelToolDispatcherService {
         prompt: promptForHighRiskTool(toolName, args),
         payload: {
           toolName,
-          args: JSON.stringify(args),
+          args: sanitizeDetails(args) as Prisma.InputJsonValue,
           requestedByUserId: userId || null,
           risk: 'high',
           requiresApproval: true,
