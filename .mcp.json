@@ -94,6 +94,11 @@
       "command": "bash",
       "args": ["scripts/mcp/postgres-mcp/launcher.sh"],
       "description": "Read-only Postgres via DATABASE_URL (auto-loaded from backend/.env). pg_query (SELECT-only, parameterized, 100 row cap) / pg_tables / pg_table_describe / pg_count / pg_recent / pg_explain / mesh_routes. REJECTS INSERT/UPDATE/DELETE/DROP/ALTER. Safe runtime data inspection."
+    },
+    "sentry-bridge": {
+      "command": "bash",
+      "args": ["scripts/mcp/sentry-bridge-mcp/launcher.sh"],
+      "description": "Sentry REST API — sentry_top_issues / sentry_recent_issues (regression detector since N min) / sentry_issue_detail (stack trace) / sentry_issue_events / sentry_releases (crash-free %) / sentry_errors_since_commit / sentry_event_search (query syntax) / sentry_resolve_issue (WRITE) / sentry_assign_issue (WRITE) / sentry_project_stats / mesh_routes. Auto-auth via SENTRY_PERSONAL_TOKEN from .env.pulse.local. Closes the regression detection loop."
     }
   }
 }
