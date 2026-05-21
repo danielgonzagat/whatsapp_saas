@@ -2,8 +2,6 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ChannelIdentifierService } from './channel-identifier.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { type FlexMock } from '../../test/helpers/prisma.mock';
-;
-
 interface MockPrisma {
   channelIdentifier: {
     findUnique: FlexMock<(args: unknown) => unknown>;

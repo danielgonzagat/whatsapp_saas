@@ -1,7 +1,5 @@
 import { CartRecoveryService } from './cart-recovery.service';
 import { type FlexMock } from '../../test/helpers/prisma.mock';
-;
-
 type MockPrisma = {
   workspace: {
     findMany: FlexMock;
@@ -27,10 +25,12 @@ function makeStubGuards(result: Record<string, unknown> = { allowed: true }) {
   };
 }
 
-function makeStubTransport(options: {
-  sendAvailable?: boolean;
-  sendResult?: Record<string, unknown>;
-} = {}) {
+function makeStubTransport(
+  options: {
+    sendAvailable?: boolean;
+    sendResult?: Record<string, unknown>;
+  } = {},
+) {
   return {
     getCapability: jest.fn().mockResolvedValue({
       sendAvailable: options.sendAvailable ?? true,
@@ -42,9 +42,7 @@ function makeStubTransport(options: {
 function makeStubBandit(options: { arm?: string } = {}) {
   return {
     register: jest.fn().mockResolvedValue(undefined),
-    choose: jest
-      .fn()
-      .mockResolvedValue(options.arm ? { arm: options.arm } : null),
+    choose: jest.fn().mockResolvedValue(options.arm ? { arm: options.arm } : null),
   };
 }
 
@@ -387,11 +385,7 @@ describe('CartRecoveryService', () => {
         sendEmail.mockClear();
         prisma.checkoutOrder.findMany.mockResolvedValue([pendingOrder()]);
         const stubMindPolicy = makeStubMindPolicy(action);
-        service = new CartRecoveryService(
-          prisma as never,
-          undefined,
-          stubMindPolicy as never,
-        );
+        service = new CartRecoveryService(prisma as never, undefined, stubMindPolicy as never);
 
         await service.checkAbandonedCarts();
 

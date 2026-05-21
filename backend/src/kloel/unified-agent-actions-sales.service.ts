@@ -132,7 +132,9 @@ export class UnifiedAgentActionsSalesService {
         : this.mind
           ? await this.mind.resolveCoupon(workspaceId, priceBand, 0, segment)
           : null;
-      const couponAction = isRecord(couponDecision) ? readString(couponDecision.action, '') : undefined;
+      const couponAction = isRecord(couponDecision)
+        ? readString(couponDecision.action, '')
+        : undefined;
       const metaSource = predecided ? 'orchestrator_predecided' : 'legacy_action_decision';
       const couponJson = toJsonValue(couponDecision);
       const productJson = toJsonValue(productOffer);

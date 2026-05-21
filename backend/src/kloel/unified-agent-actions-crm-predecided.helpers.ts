@@ -91,8 +91,7 @@ export function predecidedFollowUpTiming(
   requestedDelayHours: number,
 ): FollowUpTimingResult {
   const timing = isRecord(args.followupTimingDecision) ? args.followupTimingDecision : {};
-  const outcomeKey =
-    typeof timing.outcomeKey === 'string' ? timing.outcomeKey : undefined;
+  const outcomeKey = typeof timing.outcomeKey === 'string' ? timing.outcomeKey : undefined;
   const meta: FollowUpTimingResult['meta'] = {
     baseline: 'orchestrator_predecided',
     chosen: readString(timing.chosen, readString(timing.bucket, 'orchestrator_predecided')),

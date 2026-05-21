@@ -138,7 +138,7 @@ export function createPrismaMock(options: CreatePrismaMockOptions = {}): PrismaM
   if (options.overrides) {
     for (const [model, methods] of Object.entries(options.overrides)) {
       if (prisma[model]) {
-        Object.assign(prisma[model] as PrismaMockModel, methods);
+        Object.assign(prisma[model], methods);
       } else {
         prisma[model] = methods as PrismaMockModel;
       }
@@ -178,7 +178,7 @@ export function createPartialPrismaMock(
   if (overrides) {
     for (const [model, methods] of Object.entries(overrides)) {
       if (prisma[model]) {
-        Object.assign(prisma[model] as PrismaMockModel, methods);
+        Object.assign(prisma[model], methods);
       } else {
         prisma[model] = methods as PrismaMockModel;
       }

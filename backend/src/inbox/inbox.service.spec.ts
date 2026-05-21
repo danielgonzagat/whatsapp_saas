@@ -20,8 +20,6 @@ import { type FlexMock } from '../../test/helpers/prisma.mock';
  * `tx` object and that all three Prisma calls (findFirst, message.create,
  * conversation.update) happen against the SAME client.
  */
-;
-
 type MockPrisma = {
   conversation: {
     findFirst: FlexMock;

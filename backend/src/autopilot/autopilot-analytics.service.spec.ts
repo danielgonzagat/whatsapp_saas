@@ -5,8 +5,6 @@ import { AutopilotAnalyticsInsightsService } from './autopilot-analytics-insight
 import { AutopilotAnalyticsReportService } from './autopilot-analytics-report.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { type FlexMock } from '../../test/helpers/prisma.mock';
-;
-
 describe('AutopilotAnalyticsService', () => {
   let service: AutopilotAnalyticsService;
 

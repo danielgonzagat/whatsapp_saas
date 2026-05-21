@@ -11,15 +11,12 @@ import { MigrationOrchestrator } from './migration.orchestrator';
 import { DiversificationRecommender } from './diversification.recommender';
 import type { DetectionInput } from './types';
 import { makeEventFactory } from '../../../test/helpers/spine-event-factory';
+import { baseInput } from '../../../test/helpers/detection-input-factory';
 
 const makeEvent = makeEventFactory();
 
 function makeSpine(): SpineEmitterService {
   return new SpineEmitterService(new ValenceTaggerService());
-}
-
-function baseInput(events: SpineEventRef[], workspaceId: string, nowMs?: number): DetectionInput {
-  return { events, workspaceId, nowMs: nowMs ?? Date.now() };
 }
 
 describe('CHANNEL-001 — Concentration Detector', () => {
@@ -40,9 +37,14 @@ describe('CHANNEL-001 — Concentration Detector', () => {
   test('detects high concentration when single channel dominates', () => {
     const now = Date.now();
     const events = Array.from({ length: 10 }, (_, i) =>
-      makeEvent('commerce.payment.approved', 'wks_001', new Date(now - i * 86400000).toISOString(), {
-        payload: { channel: 'whatsapp', amountCents: 1000 },
-      }),
+      makeEvent(
+        'commerce.payment.approved',
+        'wks_001',
+        new Date(now - i * 86400000).toISOString(),
+        {
+          payload: { channel: 'whatsapp', amountCents: 1000 },
+        },
+      ),
     );
     const result = svc.detect(baseInput(events, 'wks_001', now));
     expect(result.concentrationLevel).toBe('critical');
@@ -149,9 +151,14 @@ describe('CHANNEL-003 — Ban Risk Detector', () => {
   test('detects elevated risk from policy violations', () => {
     const now = Date.now();
     const events = [
-      makeEvent('commerce.whatsapp.policy_violation', 'wks_001', new Date(now - 1000).toISOString(), {
-        payload: { channel: 'whatsapp' },
-      }),
+      makeEvent(
+        'commerce.whatsapp.policy_violation',
+        'wks_001',
+        new Date(now - 1000).toISOString(),
+        {
+          payload: { channel: 'whatsapp' },
+        },
+      ),
       makeEvent('commerce.whatsapp.restriction', 'wks_001', new Date(now - 2000).toISOString(), {
         payload: { channel: 'whatsapp' },
       }),
@@ -190,7 +197,11 @@ describe('CHANNEL-004 — Policy Change Watcher', () => {
 
   test('returns existential for ban keywords', () => {
     const now = Date.now();
-    const result = svc.assess(baseInput([], 'wks_001', now), 'whatsapp', 'WhatsApp prohibits business notifications');
+    const result = svc.assess(
+      baseInput([], 'wks_001', now),
+      'whatsapp',
+      'WhatsApp prohibits business notifications',
+    );
     expect(result.severity).toBe('existential');
     expect(result.requiresAction).toBe(true);
     expect(result.estimatedImpactPercent).toBe(100);
@@ -203,7 +214,11 @@ describe('CHANNEL-004 — Policy Change Watcher', () => {
         payload: { channel: 'whatsapp' },
       }),
     ];
-    const result = svc.assess(baseInput(events, 'wks_001', now), 'whatsapp', 'WhatsApp restricts bulk messaging');
+    const result = svc.assess(
+      baseInput(events, 'wks_001', now),
+      'whatsapp',
+      'WhatsApp restricts bulk messaging',
+    );
     expect(result.requiresAction).toBe(true);
     expect(result.affectedFeatures).toContain('autopilot_pause_recommended');
   });

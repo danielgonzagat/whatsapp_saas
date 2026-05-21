@@ -35,7 +35,6 @@ jest.mock('bullmq', () => ({
 describe('AutopilotService', () => {
   let service: AutopilotService;
 
-  ;
   type MockedPrismaShape = {
     $transaction: FlexMock;
     workspace: { findUnique: FlexMock; update: FlexMock };

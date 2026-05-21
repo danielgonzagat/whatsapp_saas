@@ -111,7 +111,9 @@ export function readStringArray(value: unknown): string[] {
  * caller needs to distinguish "no field set" from "field set to []".
  */
 export function readStringArrayOr(value: unknown): string[] | undefined {
-  if (!Array.isArray(value)) return undefined;
+  if (!Array.isArray(value)) {
+    return undefined;
+  }
   return value.filter((entry): entry is string => typeof entry === 'string');
 }
 
@@ -132,8 +134,12 @@ export function readNumber(value: unknown): number | undefined {
  * `undefined` for empty strings, nulls, NaN.
  */
 export function readNumberLoose(value: unknown): number | undefined {
-  if (value === '' || value === null || value === undefined) return undefined;
-  if (typeof value === 'number' && Number.isFinite(value)) return value;
+  if (value === '' || value === null || value === undefined) {
+    return undefined;
+  }
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value;
+  }
   if (typeof value === 'string' && value.trim()) {
     const parsed = Number(value);
     return Number.isFinite(parsed) ? parsed : undefined;
@@ -155,7 +161,9 @@ export function readNumberOr(value: unknown, fallback: number): number {
  * Use only when callers immediately do arithmetic.
  */
 export function readNumberForce(value: unknown): number {
-  if (typeof value === 'number' && Number.isFinite(value)) return value;
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value;
+  }
   if (typeof value === 'string') {
     const parsed = Number(value);
     return Number.isFinite(parsed) ? parsed : 0;
@@ -164,10 +172,17 @@ export function readNumberForce(value: unknown): number {
 }
 
 /**
- * Parse a base-10 integer. Returns `undefined` on non-finite.
+ * Parse a base-10 integer. Returns `undefined` on non-finite or non-scalar input.
  */
 export function readInt(value: unknown): number | undefined {
-  if (value === '' || value === null || value === undefined) return undefined;
+  if (value === '' || value === null || value === undefined) {
+    return undefined;
+  }
+  // Only accept scalar inputs (number/string) — objects stringify to
+  // '[object Object]' and would produce NaN; reject early.
+  if (typeof value !== 'number' && typeof value !== 'string') {
+    return undefined;
+  }
   const parsed = Number.parseInt(String(value), 10);
   return Number.isFinite(parsed) ? parsed : undefined;
 }
@@ -179,9 +194,15 @@ export function readInt(value: unknown): number | undefined {
  * Returns `undefined` otherwise.
  */
 export function readBoolean(value: unknown): boolean | undefined {
-  if (typeof value === 'boolean') return value;
-  if (value === 'true' || value === '1' || value === 1) return true;
-  if (value === 'false' || value === '0' || value === 0) return false;
+  if (typeof value === 'boolean') {
+    return value;
+  }
+  if (value === 'true' || value === '1' || value === 1) {
+    return true;
+  }
+  if (value === 'false' || value === '0' || value === 0) {
+    return false;
+  }
   return undefined;
 }
 
@@ -192,7 +213,9 @@ export function readBoolean(value: unknown): boolean | undefined {
  * via > 1e11 threshold), or ISO string. Returns `undefined` otherwise.
  */
 export function readDate(value: unknown): Date | undefined {
-  if (value instanceof Date && !Number.isNaN(value.getTime())) return value;
+  if (value instanceof Date && !Number.isNaN(value.getTime())) {
+    return value;
+  }
   if (typeof value === 'number' && Number.isFinite(value)) {
     const ms = value > 100_000_000_000 ? value : value * 1000;
     const d = new Date(ms);

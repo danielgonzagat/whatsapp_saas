@@ -12,8 +12,6 @@ import { PrismaService } from '../prisma/prisma.service';
 import { chatCompletionWithRetry } from '../kloel/openai-wrapper';
 import { CANONICAL_MODEL_IDS } from '../lib/openai-models';
 import { type FlexMock } from '../../test/helpers/prisma.mock';
-;
-
 jest.mock('../kloel/openai-wrapper', () => ({
   chatCompletionWithRetry: jest.fn(),
 }));

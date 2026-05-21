@@ -16,15 +16,12 @@ import { LtvProjectionService } from './ltv-projection.service';
 import { NoRegretPipelineService } from './no-regret-pipeline.service';
 import type { DetectionInput, LtvProjection } from './postsale-consumers.types';
 import { makeEventFactory } from '../../../test/helpers/spine-event-factory';
+import { baseInput } from '../../../test/helpers/detection-input-factory';
 
 const makeEvent = makeEventFactory();
 
 function makeSpine(): SpineEmitterService {
   return new SpineEmitterService(new ValenceTaggerService());
-}
-
-function baseInput(events: SpineEventRef[], workspaceId: string, nowMs?: number): DetectionInput {
-  return { events, workspaceId, nowMs: nowMs ?? Date.now() };
 }
 
 async function flushAsyncConsumers(): Promise<void> {

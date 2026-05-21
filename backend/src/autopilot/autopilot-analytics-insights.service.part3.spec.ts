@@ -13,9 +13,7 @@ jest.mock('../kloel/openai-wrapper', () => ({
 }));
 
 jest.mock('../lib/openai-models', () => {
-  const actual = jest.requireActual<typeof import('../lib/openai-models')>(
-    '../lib/openai-models',
-  );
+  const actual = jest.requireActual<typeof import('../lib/openai-models')>('../lib/openai-models');
   return {
     ...actual,
     resolveBackendOpenAIModel: jest.fn(() => actual.CANONICAL_MODEL_IDS.openAiTextMock),

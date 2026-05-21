@@ -27,7 +27,6 @@ function isRecord(value: unknown): value is AuditRequestRecord {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
-
 function readHeader(headers: unknown, key: string): string | undefined {
   if (!isRecord(headers)) {
     return undefined;

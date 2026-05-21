@@ -63,7 +63,6 @@ function isRecord(value: unknown): value is IdempotencyRecord {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
-
 function readNumberProperty(source: unknown, key: string): number | undefined {
   if (!isRecord(source)) {
     return undefined;
