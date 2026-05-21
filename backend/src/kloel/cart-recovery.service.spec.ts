@@ -1,12 +1,6 @@
 import { CartRecoveryService } from './cart-recovery.service';
-
-type FlexMock = jest.Mock & {
-  mockResolvedValue: (v: unknown) => FlexMock;
-  mockResolvedValueOnce: (v: unknown) => FlexMock;
-  mockRejectedValue: (e: unknown) => FlexMock;
-  mockReturnValue: (v: unknown) => FlexMock;
-  mockImplementation: (fn: (...args: unknown[]) => unknown) => FlexMock;
-};
+import { type FlexMock } from '../../test/helpers/prisma.mock';
+;
 
 type MockPrisma = {
   workspace: {

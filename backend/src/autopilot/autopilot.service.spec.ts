@@ -8,20 +8,12 @@ import { AutopilotAnalyticsService } from './autopilot-analytics.service';
 import { AutopilotCycleService } from './autopilot-cycle.service';
 import { AutopilotOpsService } from './autopilot-ops.service';
 import { AutopilotOpsConversionService } from './autopilot-ops-conversion.service';
-
-type AnyMock = jest.Mock & {
-  mockResolvedValue: (v: unknown) => AnyMock;
-  mockResolvedValueOnce: (v: unknown) => AnyMock;
-  mockRejectedValue: (err: unknown) => AnyMock;
-  mockReturnValue: (v: unknown) => AnyMock;
-  mockReturnValueOnce: (v: unknown) => AnyMock;
-  mockImplementation: (fn: (...args: unknown[]) => unknown) => AnyMock;
-};
-const mockQueueAdd: AnyMock = jest.fn() as AnyMock;
-let mockAutopilotAdd: AnyMock;
-let mockRedisSet: AnyMock;
-let mockRedisGet: AnyMock;
-let mockQueueGetJobCounts: AnyMock;
+import { type FlexMock } from '../../test/helpers/prisma.mock';
+const mockQueueAdd: FlexMock = jest.fn() as FlexMock;
+let mockAutopilotAdd: FlexMock;
+let mockRedisSet: FlexMock;
+let mockRedisGet: FlexMock;
+let mockQueueGetJobCounts: FlexMock;
 
 jest.mock('../queue/queue', () => ({
   autopilotQueue: { add: jest.fn(), getJobCounts: jest.fn() },
@@ -43,13 +35,7 @@ jest.mock('bullmq', () => ({
 describe('AutopilotService', () => {
   let service: AutopilotService;
 
-  type FlexMock = jest.Mock & {
-    mockResolvedValue: (v: unknown) => FlexMock;
-    mockResolvedValueOnce: (v: unknown) => FlexMock;
-    mockRejectedValue: (err: unknown) => FlexMock;
-    mockReturnValue: (v: unknown) => FlexMock;
-    mockImplementation: (fn: (...args: unknown[]) => unknown) => FlexMock;
-  };
+  ;
   type MockedPrismaShape = {
     $transaction: FlexMock;
     workspace: { findUnique: FlexMock; update: FlexMock };

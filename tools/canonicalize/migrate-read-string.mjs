@@ -43,13 +43,37 @@ const VARIANTS = {
     files: ['backend/src/kloel/owner-criterion/observers/correction.observer.ts'],
     aliasLocalAs: 'readString',
   },
+  // S3: account-agent.parsers — exported readString returning string | null (no trim)
+  S3: {
+    canonicalName: 'readStringOrNull',
+    re: /function readString\(value: unknown\): string \| null \{\s*return typeof value === 'string' && value\.trim\(\) \? value : null;\s*\}/m,
+    files: ['backend/src/whatsapp/account-agent.parsers.ts'],
+    aliasLocalAs: 'readString',
+  },
+  // S5a: readStringOr — trimmed, fallback param
+  S5a: {
+    canonicalName: 'readStringOr',
+    re: /function readString\(value: unknown, fallback = ''\): string \{\s*return typeof value === 'string' && value\.trim\(\) \? value\.trim\(\) : fallback;\s*\}/m,
+    files: [
+      'backend/src/kloel/unified-agent-actions-workspace.service.ts',
+      'backend/src/kloel/unified-agent-actions-sales.service.ts',
+    ],
+    aliasLocalAs: 'readString',
+  },
+  // S5b: readStringOrUntrimmed — no trim, fallback param
+  S5b: {
+    canonicalName: 'readStringOrUntrimmed',
+    re: /function readString\(value: unknown, fallback = ''\): string \{\s*return typeof value === 'string' \? value : fallback;\s*\}/m,
+    files: ['backend/src/kloel/unified-agent-actions-crm-predecided.helpers.ts'],
+    aliasLocalAs: 'readString',
+  },
 };
 
 const arg = process.argv[2] ?? 'help';
 const dryRun = process.argv.includes('--dry-run');
 
 if (arg === 'help' || !arg) {
-  console.log('Usage: node migrate-read-string.mjs <S1|S2|S4|all> [--dry-run]');
+  console.log('Usage: node migrate-read-string.mjs <S1|S2|S3|S4|S5a|S5b|all> [--dry-run]');
   process.exit(0);
 }
 

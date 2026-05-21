@@ -5,6 +5,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { InboxGateway } from './inbox.gateway';
 import { WebhookDispatcherService } from '../webhooks/webhook-dispatcher.service';
 import { ChannelTransportRegistry } from '../kloel/channel-transport.registry';
+import { type FlexMock } from '../../test/helpers/prisma.mock';
 
 /**
  * P6-6 (I14 + I15) coverage for the inbox service.
@@ -19,14 +20,7 @@ import { ChannelTransportRegistry } from '../kloel/channel-transport.registry';
  * `tx` object and that all three Prisma calls (findFirst, message.create,
  * conversation.update) happen against the SAME client.
  */
-
-type FlexMock = jest.Mock & {
-  mockResolvedValue: (v: unknown) => FlexMock;
-  mockResolvedValueOnce: (v: unknown) => FlexMock;
-  mockRejectedValue: (e: unknown) => FlexMock;
-  mockReturnValue: (v: unknown) => FlexMock;
-  mockImplementation: (fn: (...args: unknown[]) => unknown) => FlexMock;
-};
+;
 
 type MockPrisma = {
   conversation: {

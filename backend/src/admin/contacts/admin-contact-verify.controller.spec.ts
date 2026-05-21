@@ -2,8 +2,8 @@ import { NotFoundException } from '@nestjs/common';
 import { AdminContactVerifyController } from './admin-contact-verify.controller';
 import { ChannelIdentifierService } from '../../contacts/channel-identifier.service';
 import { PrismaService } from '../../prisma/prisma.service';
+import { type FlexMock } from '../../../test/helpers/prisma.mock';
 
-type FlexMock<T extends (...args: never[]) => unknown> = jest.Mock<ReturnType<T>, Parameters<T>>;
 
 function makeIdentifierResult(overrides: Record<string, unknown> = {}) {
   return {
