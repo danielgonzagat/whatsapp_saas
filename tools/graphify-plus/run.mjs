@@ -5,9 +5,9 @@
 //   node tools/graphify-plus/run.mjs --fast     # skip the slow ones
 //   node tools/graphify-plus/run.mjs --extractors bullmq,nestjs
 //
-// Lê:   graphify-out/graph.json (base AST/cluster do graphify upstream)
-// Junta com shards em graphify-out/shards/*.json
-// Escreve graphify-out/enriched-graph.json
+// Reads:   .codegraph/codegraph.db (CodeGraph SQLite, via codegraph-export)
+// Merges:  graphify-out/shards/*.json (deterministic per-framework extractors)
+// Writes:  graphify-out/enriched-graph.json
 
 import { argv } from 'node:process';
 import { spawn } from 'node:child_process';
@@ -18,10 +18,11 @@ import { fileURLToPath } from 'node:url';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = process.cwd();
 const SHARDS_DIR = join(ROOT, 'graphify-out', 'shards');
-const BASE = join(ROOT, 'graphify-out', 'graph.json');
+const BASE = join(ROOT, 'graphify-out', 'codegraph-base.json');
 const OUT = join(ROOT, 'graphify-out', 'enriched-graph.json');
 
 const ALL = [
+  { name: 'codegraph-export', script: 'extractors/codegraph-export.mjs', fast: true }, // replaces upstream graphify base
   { name: 'bullmq', script: 'extractors/bullmq.mjs', fast: true },
   { name: 'nestjs', script: 'extractors/nestjs.mjs', fast: true },
   { name: 'nextjs', script: 'extractors/nextjs.mjs', fast: true },
@@ -67,19 +68,11 @@ async function merge() {
     if (baseStat.size < 200_000_000) {
       const raw = await readFile(BASE, 'utf8');
       const parsed = JSON.parse(raw);
-      // graphify upstream writes NetworkX format: links, relation. Normalise here.
+      // codegraph-export already emits the normalised graphify-plus shape:
+      //   { nodes: [{id,label,type,file,line,meta}], edges: [{source,target,kind,meta}] }
       base = {
         nodes: parsed.nodes || [],
-        edges: (parsed.links || parsed.edges || []).map((l) => ({
-          source: l.source,
-          target: l.target,
-          kind: l.relation || l.kind || 'related',
-          meta: {
-            confidence: l.confidence,
-            confidence_score: l.confidence_score,
-            weight: l.weight,
-          },
-        })),
+        edges: parsed.edges || [],
       };
     } else {
       console.log(`[run] base graph.json too large (${baseStat.size} bytes) — emitting shards-only enriched graph`);
