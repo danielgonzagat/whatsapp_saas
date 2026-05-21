@@ -4,6 +4,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { AdminComplianceService } from './admin-compliance.service';
 import { listAdminTransactions } from '../transactions/queries/list-transactions.query';
 import { resolveAdminHomeRange } from '../dashboard/range.util';
+import { createPartialPrismaMock } from '../../../test/helpers/prisma.mock';
 
 jest.mock('../transactions/queries/list-transactions.query', () => ({
   listAdminTransactions: jest.fn(),
@@ -47,13 +48,12 @@ describe('AdminComplianceService', () => {
     ...overrides,
   });
 
-  const mockAuditLogFindMany = jest.fn<Promise<unknown>, unknown[]>();
-  const mockAgentFindMany = jest.fn<Promise<unknown>, unknown[]>();
-
-  const prismaMock = {
-    adminAuditLog: { findMany: mockAuditLogFindMany },
-    agent: { findMany: mockAgentFindMany },
-  };
+  const prismaMock = createPartialPrismaMock({
+    adminAuditLog: ['findMany'],
+    agent: ['findMany'],
+  }) as unknown as { adminAuditLog: { findMany: jest.Mock }; agent: { findMany: jest.Mock } };
+  const mockAuditLogFindMany = prismaMock.adminAuditLog.findMany;
+  const mockAgentFindMany = prismaMock.agent.findMany;
 
   const mockListAdminTransactions = listAdminTransactions as jest.MockedFunction<
     typeof listAdminTransactions

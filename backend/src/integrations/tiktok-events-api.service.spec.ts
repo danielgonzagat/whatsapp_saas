@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { PrismaService } from '../prisma/prisma.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { TikTokEventsApiService } from './tiktok-events-api.service';
+import { createPartialPrismaMock } from '../../test/helpers/prisma.mock';
 
 jest.mock('./tiktok-token-crypto', () => ({
   decryptTikTokToken: (s: string) => s,
@@ -42,19 +43,18 @@ function parseTikTokTrackBody(init: RequestInit): TikTokTrackBody {
 
 describe('TikTokEventsApiService', () => {
   let service: TikTokEventsApiService;
-  let prisma: { integrationCredential: { findUnique: jest.Mock } };
+  let prisma: ReturnType<typeof createPartialPrismaMock>;
   let opsAlert: { alertOnDegradation: jest.Mock };
   const originalFetch = global.fetch;
 
   beforeEach(async () => {
-    prisma = {
-      integrationCredential: {
-        findUnique: jest.fn().mockResolvedValue({
-          accessToken: 'token-abc',
-          status: 'connected',
-        }),
-      },
-    };
+    prisma = createPartialPrismaMock({
+      integrationCredential: ['findUnique'],
+    });
+    prisma.integrationCredential.findUnique.mockResolvedValue({
+      accessToken: 'token-abc',
+      status: 'connected',
+    });
     opsAlert = { alertOnDegradation: jest.fn().mockResolvedValue(undefined) };
     const module: TestingModule = await Test.createTestingModule({
       providers: [

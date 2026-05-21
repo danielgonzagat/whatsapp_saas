@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { AdminRole } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AdminSessionsService } from './admin-sessions.service';
+import { createPartialPrismaMock } from '../../../test/helpers/prisma.mock';
 
 describe('AdminSessionsService', () => {
   let service: AdminSessionsService;
@@ -28,19 +29,16 @@ describe('AdminSessionsService', () => {
     adminAuditLog: { create: mockAuditLogCreate },
   };
 
-  const mockSessionFindMany = jest.fn();
-  const mockTransaction = jest.fn();
-
-  const prismaMock = {
-    adminSession: { findMany: mockSessionFindMany },
-    $transaction: mockTransaction,
-  };
+  const prismaMock = createPartialPrismaMock({
+    adminSession: ['findMany'],
+  }) as unknown as { adminSession: { findMany: jest.Mock }; $transaction: jest.Mock };
+  const mockSessionFindMany = prismaMock.adminSession.findMany;
 
   beforeEach(async () => {
     jest.clearAllMocks();
 
     mockSessionFindMany.mockResolvedValue([sessionRecord]);
-    mockTransaction.mockImplementation(async (cbOrArray: unknown) => {
+    prismaMock.$transaction = jest.fn(async (cbOrArray: unknown) => {
       if (typeof cbOrArray === 'function') {
         return (cbOrArray as (tx: unknown) => unknown)(mockTx);
       }

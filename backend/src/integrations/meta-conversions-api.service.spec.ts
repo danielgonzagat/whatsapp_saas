@@ -1,4 +1,5 @@
 import { MetaConversionsApiService } from './meta-conversions-api.service';
+import { createPartialPrismaMock } from '../../test/helpers/prisma.mock';
 
 describe('MetaConversionsApiService', () => {
   describe('hashEmail', () => {
@@ -63,18 +64,16 @@ describe('MetaConversionsApiService', () => {
 
   describe('sendEvent', () => {
     let service: MetaConversionsApiService;
-    let mockPrisma: { metaConnection: { findFirst: jest.Mock } };
+    let mockPrisma: ReturnType<typeof createPartialPrismaMock>;
     let mockMetaSdk: { graphApiGet: jest.Mock };
     let mockOpsAlert: { alertOnCriticalError: jest.Mock };
 
     beforeEach(() => {
       process.env.META_TEST_EVENT_CODE = 'TEST_EVENT_CODE_123';
 
-      mockPrisma = {
-        metaConnection: {
-          findFirst: jest.fn(),
-        },
-      };
+      mockPrisma = createPartialPrismaMock({
+        metaConnection: ['findFirst'],
+      });
 
       mockMetaSdk = {
         graphApiGet: jest.fn(),

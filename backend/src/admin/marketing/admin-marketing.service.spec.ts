@@ -6,6 +6,7 @@ import { AdminMarketingService } from './admin-marketing.service';
 jest.mock('../dashboard/range.util', () => ({ resolveAdminHomeRange: jest.fn() }));
 
 import { resolveAdminHomeRange } from '../dashboard/range.util';
+import { createPartialPrismaMock } from '../../../test/helpers/prisma.mock';
 
 const makeDashboardStub = () => ({
   kpis: {
@@ -33,28 +34,24 @@ const makeDashboardStub = () => ({
 
 describe('AdminMarketingService', () => {
   let service: AdminMarketingService;
-
-  const mockConversationFindMany = jest.fn();
   const mockQueryRaw = jest.fn();
-  const mockSocialLeadCount = jest.fn();
-  const mockOrderFindMany = jest.fn();
-  const mockWorkspaceFindMany = jest.fn();
-
-  const prismaMock = {
-    conversation: {
-      findMany: mockConversationFindMany,
-    },
-    $queryRaw: mockQueryRaw,
-    checkoutSocialLead: {
-      count: mockSocialLeadCount,
-    },
-    checkoutOrder: {
-      findMany: mockOrderFindMany,
-    },
-    workspace: {
-      findMany: mockWorkspaceFindMany,
-    },
+  const prismaMock = createPartialPrismaMock({
+    conversation: ['findMany'],
+    checkoutSocialLead: ['count'],
+    checkoutOrder: ['findMany'],
+    workspace: ['findMany'],
+  }) as unknown as {
+    conversation: { findMany: jest.Mock };
+    checkoutSocialLead: { count: jest.Mock };
+    checkoutOrder: { findMany: jest.Mock };
+    workspace: { findMany: jest.Mock };
+    $queryRaw: jest.Mock;
   };
+  (prismaMock as Record<string, unknown>).$queryRaw = mockQueryRaw;
+  const mockConversationFindMany = prismaMock.conversation.findMany;
+  const mockSocialLeadCount = prismaMock.checkoutSocialLead.count;
+  const mockOrderFindMany = prismaMock.checkoutOrder.findMany;
+  const mockWorkspaceFindMany = prismaMock.workspace.findMany;
 
   const dashboardMock = {
     getHome: jest.fn(),

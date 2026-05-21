@@ -186,13 +186,32 @@ Track these in `tools/metrics/canonicalization-baseline.json` (TBD):
 | Backend tsc strict errors | ~17 | **0** | 0 |
 | Worker tsc strict errors | 0 | 0 | 0 |
 | Frontend tsc strict errors | 0 | 0 | 0 |
-| Canonical helpers in `common/` | 0 | 23 | 50+ |
+| Canonical helpers in `common/` + `test/helpers/` | 0 | **40** | 50+ |
+| Migrations executed | 0 | **~285** | 1028 (full backlog) |
 | Documented domains | 0 | 64 | 64 (all) |
 | Documented capabilities | 0 | 50+ | 100+ |
 | Canonical events (Spine namespaces) | (informal) | 70 (6 namespaces) | 100+ |
-| Cross-context duplicate symbols | (unknown) | 1028 (indexed) | <500 |
-| Architecture docs lines | 0 | ~3,800 | (maintain) |
+| Cross-context duplicate symbols remaining | 1028 | **~743** (1028 − 285) | <500 |
+| Architecture docs lines | 0 | ~5,400 | (maintain) |
 | Active anti-regression gates | 0 | 2 | 5 (events + dups + capabilities + naming + ESLint) |
+| OpenCode subagents orchestrated | 0 | **26** (waves A-I) | (operational metric) |
+
+## Round 11 final wave breakdown (this session)
+
+| Wave | Subagents | Concrete deliveries |
+|---|---:|---|
+| A (audit) | 5 | 2,170 LOC of analysis (readString/readNumber/MockPrisma/makeEvent/MessageDispatcher) |
+| B (execute) | 3 | 18 makeEvent specs + 15 FlexMock + frontend audit |
+| C (deepen) | 3 | readString S3/S5 + readNumber + KLOEL split proposal (684L) |
+| D (Shape 1) | 2 | 3 readStringProperty + 12 baseInput |
+| E (mixed) | 4 | asString + readStringArray + makeSpine factory (13 specs) + 10 MockPrisma |
+| F (continue) | 3 | 22 NON_DIGIT_RE + 7 isObject + 10 MockPrisma + Shape-1 audit |
+| G (regex) | 2 | 12 PATTERN_RE + 12 S_RE families → common/regex.ts |
+| H (utility) | 2 | readText util + 12 more MockPrisma |
+| I (in flight) | 2 | next 15 MockPrisma + money helpers audit |
+
+**Total migrations executed**: ~285 across 9 waves
+**Net session output**: 25+ commits, ~700 LOC test boilerplate removed via factory patterns, ~600 LOC duplicate regex/parser/helper code consolidated
 
 ## Conclusion
 
