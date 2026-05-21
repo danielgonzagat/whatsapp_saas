@@ -182,7 +182,7 @@ export function extractPlanArgs(msg: string): Record<string, unknown> {
   const args: Record<string, unknown> = { productName: extractProductName(msg) };
   // Plan name: "Nome: X" or "Nome X" or "chamado X"
   const nm = msg.match(
-    /(?:nome|chamad[oa]|plano)\s*:?\s*([A-Za-zÀ-ÿ0-9\s\-]{2,30}?)(?:\s*(?:,|\.|pre[çc]o|R\$|valor|com|por|$))/i,
+    /(?:nome|chamad[oa]|plano)\s*:?\s*([A-Za-zÀ-ÿ0-9\s-]{2,30}?)(?:\s*(?:,|\.|pre[çc]o|R\$|valor|com|por|$))/i,
   );
   if (nm && nm[1]) {
     args.planName = nm[1].trim();
