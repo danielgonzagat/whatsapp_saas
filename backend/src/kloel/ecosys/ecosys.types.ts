@@ -7,7 +7,8 @@
  * silence under conflict (B0.11 + B0.18).
  */
 
-export type { Role } from '../role/types';
+import type { Role } from '../role/types';
+export type { Role };
 
 export interface CrossRolePattern {
   readonly patternId: string;

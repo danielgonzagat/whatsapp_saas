@@ -2,7 +2,8 @@ import type { PrismaClient } from '@prisma/client';
 
 export const NON_DIGIT_RE = /\D/g;
 
-export type { ToolResult } from './kloel-tool-executor.types';
+import type { ToolResult } from './kloel-tool-executor.types';
+export type { ToolResult };
 export interface ToolSendWhatsAppMessageArgs {
   phone: string;
   message: string;
