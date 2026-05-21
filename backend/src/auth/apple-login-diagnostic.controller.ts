@@ -4,6 +4,10 @@ import { Controller, Get } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Public } from './public.decorator';
 
+/**
+ * @cluster whatsapp_saas/backend/auth
+ * L11 multi-agent TaskGraph annotation (Wave 4 loop-runner).
+ */
 interface AppleProbeResult {
   result: string;
   status?: number;
