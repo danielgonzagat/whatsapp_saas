@@ -63,7 +63,11 @@ export class MercadoPagoWebhookSignatureVerifier {
       return { ok: false, reason: 'malformed_x_signature' };
     }
 
-    const tsMs = parsed.ts * 1000;
+    // MP sends `ts` in EPOCH MILLISECONDS (e.g. 1742505638683). Validated
+    // against MP webhook docs (search_documentation, 2026-05-20). Earlier
+    // versions of this verifier multiplied by 1000 assuming seconds; that
+    // bug rejected every real webhook as `expired_ts`.
+    const tsMs = parsed.ts;
     const nowMs = args.nowMs ?? Date.now();
     if (Math.abs(nowMs - tsMs) > MercadoPagoWebhookSignatureVerifier.MAX_AGE_MS) {
       return { ok: false, reason: 'expired_ts' };
@@ -74,7 +78,12 @@ export class MercadoPagoWebhookSignatureVerifier {
       return { ok: false, reason: 'webhook_secret_unset' };
     }
 
-    const manifest = `id:${String(dataId)};request-id:${requestId};ts:${parsed.ts};`;
+    // MP docs: `data.id` query-param case "must be used in lowercase".
+    // For numeric payment IDs this is a no-op; for alphanumeric ORDER IDs
+    // (e.g. ORD01JQ4S4KY8HWQ6NA5PXB65B3D3) it matters. Lowercase always
+    // — robust for both delivery shapes.
+    const normalizedDataId = String(dataId).toLowerCase();
+    const manifest = `id:${normalizedDataId};request-id:${requestId};ts:${parsed.ts};`;
     const expectedHex = createHmac('sha256', secret).update(manifest).digest('hex');
 
     let actualBuf: Buffer;

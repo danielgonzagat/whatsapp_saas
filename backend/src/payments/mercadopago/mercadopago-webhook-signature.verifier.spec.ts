@@ -38,7 +38,10 @@ function signManifest(secret: string, dataId: string, requestId: string, ts: num
 
 describe('MercadoPagoWebhookSignatureVerifier', () => {
   const fixedNow = 1_700_000_000_000;
-  const fixedTs = Math.floor(fixedNow / 1000);
+  // MP sends `ts` in EPOCH MILLISECONDS (confirmed via MP webhook docs).
+  // Earlier this fixture used `Math.floor(fixedNow / 1000)` (seconds) — that
+  // matched a buggy verifier impl. Both are now corrected.
+  const fixedTs = fixedNow;
 
   afterEach(() => {
     delete process.env.MERCADOPAGO_ACCESS_TOKEN;
@@ -108,7 +111,7 @@ describe('MercadoPagoWebhookSignatureVerifier', () => {
 
   it('refuses expired ts (>10min old)', () => {
     const v = buildVerifier();
-    const oldTs = fixedTs - 11 * 60; // 11 minutes ago
+    const oldTs = fixedTs - 11 * 60 * 1000; // 11 minutes ago, in ms
     const sigHeader = signManifest(TEST_SECRET, TEST_DATA_ID, TEST_REQUEST_ID, oldTs);
     const res = v.verify({
       signatureHeader: sigHeader,
@@ -178,5 +181,44 @@ describe('MercadoPagoWebhookSignatureVerifier', () => {
       dataId: TEST_DATA_ID,
     });
     expect(res).toEqual({ ok: false, reason: 'mp_not_configured' });
+  });
+
+  it('lowercases alphanumeric data.id in the manifest (MP spec)', () => {
+    // MP docs: "This query param can be found in the notification received
+    // in uppercase, but it must be used in lowercase". Order IDs are
+    // alphanumeric so case matters; payment IDs are numeric (no-op).
+    const v = buildVerifier();
+    const upperDataId = 'ORD01JQ4S4KY8HWQ6NA5PXB65B3D3';
+    // Signature must be generated against the LOWERCASE version
+    const sigHeader = signManifest(
+      TEST_SECRET,
+      upperDataId.toLowerCase(),
+      TEST_REQUEST_ID,
+      fixedTs,
+    );
+    expect(
+      v.verify({
+        signatureHeader: sigHeader,
+        requestId: TEST_REQUEST_ID,
+        dataId: upperDataId, // verifier receives uppercase from body/url
+        nowMs: fixedNow,
+      }),
+    ).toEqual({ ok: true });
+  });
+
+  it('accepts fresh ts in milliseconds (within 10min window)', () => {
+    // Regression test: earlier impl multiplied ts by 1000 assuming seconds.
+    // MP sends epoch ms directly; this test locks in the unit.
+    const v = buildVerifier();
+    const tsMs = fixedNow - 5 * 60 * 1000; // 5 min ago
+    const sigHeader = signManifest(TEST_SECRET, TEST_DATA_ID, TEST_REQUEST_ID, tsMs);
+    expect(
+      v.verify({
+        signatureHeader: sigHeader,
+        requestId: TEST_REQUEST_ID,
+        dataId: TEST_DATA_ID,
+        nowMs: fixedNow,
+      }),
+    ).toEqual({ ok: true });
   });
 });
