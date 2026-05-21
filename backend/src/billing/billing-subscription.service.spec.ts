@@ -4,42 +4,38 @@ import { PrismaService } from '../prisma/prisma.service';
 import { BillingSubscriptionService } from './billing-subscription.service';
 import { BillingCheckoutHelperService } from './billing-checkout-helper.service';
 import type { StripeClient } from './stripe-types';
+import { createPartialPrismaMock } from '../../test/helpers/prisma.mock';
 
 describe('BillingSubscriptionService', () => {
   let service: BillingSubscriptionService;
-  let prisma: {
-    subscription: { findUnique: jest.Mock; findFirst: jest.Mock; update: jest.Mock; updateMany: jest.Mock; upsert: jest.Mock };
-    message: { count: jest.Mock };
-    flow: { count: jest.Mock };
-    contact: { count: jest.Mock };
-    workspace: { findUnique: jest.Mock; update: jest.Mock };
-    auditLog: { create: jest.Mock };
-    $transaction: jest.Mock;
-  };
+  let prisma: ReturnType<typeof createPartialPrismaMock>;
   let configService: ConfigService;
   let stripe: { subscriptions: { retrieve: jest.Mock; update: jest.Mock } };
 
   beforeEach(() => {
-    prisma = {
-      subscription: {
-        findUnique: jest.fn(),
-        findFirst: jest.fn(),
-        update: jest.fn().mockResolvedValue({}),
-        updateMany: jest.fn().mockResolvedValue({ count: 1 }),
-        upsert: jest.fn().mockResolvedValue({}),
-      },
-      message: { count: jest.fn().mockResolvedValue(0) },
-      flow: { count: jest.fn().mockResolvedValue(0) },
-      contact: { count: jest.fn().mockResolvedValue(0) },
-      workspace: { findUnique: jest.fn(), update: jest.fn().mockResolvedValue({}) },
-      auditLog: { create: jest.fn().mockResolvedValue({}) },
-      $transaction: jest.fn().mockImplementation((cb: (tx: unknown) => Promise<unknown>) =>
-        cb({
-          subscription: prisma.subscription,
-          auditLog: prisma.auditLog,
-        }),
-      ),
-    };
+    const txPrisma = createPartialPrismaMock({
+      subscription: ['findUnique', 'findFirst', 'update', 'updateMany', 'upsert'],
+      message: ['count'],
+      flow: ['count'],
+      contact: ['count'],
+      workspace: ['findUnique', 'update'],
+      auditLog: ['create'],
+    });
+    txPrisma.subscription.update.mockResolvedValue({});
+    txPrisma.subscription.updateMany.mockResolvedValue({ count: 1 });
+    txPrisma.subscription.upsert.mockResolvedValue({});
+    txPrisma.message.count.mockResolvedValue(0);
+    txPrisma.flow.count.mockResolvedValue(0);
+    txPrisma.contact.count.mockResolvedValue(0);
+    txPrisma.workspace.update.mockResolvedValue({});
+    txPrisma.auditLog.create.mockResolvedValue({});
+    txPrisma.$transaction = jest.fn().mockImplementation((cb: (tx: unknown) => Promise<unknown>) =>
+      cb({
+        subscription: txPrisma.subscription,
+        auditLog: txPrisma.auditLog,
+      }),
+    );
+    prisma = txPrisma;
     configService = new ConfigService({ TRIAL_DAYS: '7', TRIAL_CREDITS_USD: '5' });
     stripe = {
       subscriptions: {
@@ -48,7 +44,7 @@ describe('BillingSubscriptionService', () => {
       },
     };
     service = new BillingSubscriptionService(
-      prisma as PrismaService,
+      prisma as unknown as PrismaService,
       configService,
       {} as ModuleRef,
       stripe as StripeClient,

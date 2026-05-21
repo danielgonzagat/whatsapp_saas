@@ -9,20 +9,19 @@ jest.mock('./gdpr.helpers', () => ({
 }));
 
 import { parseFacebookSignedRequest } from './gdpr.helpers';
+import { createPartialPrismaMock } from '../../test/helpers/prisma.mock';
 
 describe('GdprFacebookCallbackService', () => {
   let service: GdprFacebookCallbackService;
-  let prisma: {
-    agent: { findFirst: jest.Mock };
-    gdprRequest: { create: jest.Mock };
-  };
+  let prisma: ReturnType<typeof createPartialPrismaMock>;
   const originalFrontend = process.env.FRONTEND_URL;
 
   beforeEach(async () => {
-    prisma = {
-      agent: { findFirst: jest.fn() },
-      gdprRequest: { create: jest.fn().mockResolvedValue({}) },
-    };
+    prisma = createPartialPrismaMock({
+      agent: ['findFirst'],
+      gdprRequest: ['create'],
+    });
+    prisma.gdprRequest.create.mockResolvedValue({});
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         GdprFacebookCallbackService,
