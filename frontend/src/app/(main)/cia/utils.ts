@@ -5,13 +5,8 @@ export const S_RE = /\s+/g;
 export const B_W_RE = /\b\w/g;
 export const PATTERN_RE_2 = /_/g;
 
-export function formatCurrency(value: number) {
-  return new Intl.NumberFormat('pt-BR', {
-    style: 'currency',
-    currency: 'BRL',
-    maximumFractionDigits: 2,
-  }).format(Number(value || 0));
-}
+import { formatCurrency } from '@/lib/common/money';
+export { formatCurrency };
 
 export function formatPhaseLabel(value?: string | null) {
   const raw = String(value || '').trim();
