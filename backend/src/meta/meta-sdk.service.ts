@@ -96,7 +96,11 @@ export class MetaSdkService {
       validateExternalUrl(url.toString(), new Set(['graph.facebook.com']));
       const res = await fetch(url.toString(), {
         method: 'POST',
-        headers: { ...getTraceHeaders(), 'Content-Type': 'application/json' },
+        headers: {
+          ...getTraceHeaders(),
+          'Content-Type': 'application/json',
+          'WhatsApp-API-Version': this.graphApiVersion,
+        },
         body: JSON.stringify({ ...data, access_token: accessToken }),
         signal: AbortSignal.timeout(30000),
       });

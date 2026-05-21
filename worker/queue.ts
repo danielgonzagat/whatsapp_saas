@@ -155,7 +155,7 @@ export function buildQueueOptions() {
       attempts: defaultAttempts,
       backoff: { type: 'exponential', delay: defaultBackoff },
       removeOnComplete: true,
-      removeOnFail: 50,
+      removeOnFail: { age: 60 * 60 * 24 * 7, count: 100 },
     },
   };
 }

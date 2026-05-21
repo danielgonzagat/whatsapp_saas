@@ -109,6 +109,9 @@ export const Metrics = {
     depth(q: string, d: number) {
       gauge('queue.depth', d, { queue: q });
     },
+    lag(q: string, ms: number, t?: Record<string, string>) {
+      gauge('queue.lag_ms', ms, { ...t, queue: q });
+    },
   },
   billing: {
     subscriptionCreated(plan: string, t?: Record<string, string>) {

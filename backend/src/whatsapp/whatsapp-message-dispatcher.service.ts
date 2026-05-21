@@ -93,19 +93,23 @@ export class WhatsappMessageDispatcherService {
       }
       return dr;
     }
-    await flowQueue.add('send-message', {
-      type: 'direct',
-      workspaceId: ws,
-      workspace: ew,
-      to,
-      message,
-      user: to,
-      mediaUrl: opts?.mediaUrl,
-      mediaType: opts?.mediaType,
-      caption: opts?.caption,
-      externalId: opts?.externalId,
-      quotedMessageId: opts?.quotedMessageId,
-    });
+    await flowQueue.add(
+      'send-message',
+      {
+        type: 'direct',
+        workspaceId: ws,
+        workspace: ew,
+        to,
+        message,
+        user: to,
+        mediaUrl: opts?.mediaUrl,
+        mediaType: opts?.mediaType,
+        caption: opts?.caption,
+        externalId: opts?.externalId,
+        quotedMessageId: opts?.quotedMessageId,
+      },
+      { priority: 5 },
+    );
     await this.planLimits.trackMessageSend(ws);
     return { ok: true, queued: true, delivery: 'queued' };
   }
@@ -143,14 +147,18 @@ export class WhatsappMessageDispatcherService {
         diagnostics: r.diagnostics,
       };
     }
-    await flowQueue.add('send-message', {
-      type: 'template',
-      workspaceId: ws,
-      workspace: ew,
-      to,
-      template,
-      user: to,
-    });
+    await flowQueue.add(
+      'send-message',
+      {
+        type: 'template',
+        workspaceId: ws,
+        workspace: ew,
+        to,
+        template,
+        user: to,
+      },
+      { priority: 5 },
+    );
     await this.planLimits.trackMessageSend(ws);
     return { ok: true, queued: true, delivery: 'queued' };
   }
