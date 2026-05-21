@@ -3,6 +3,10 @@ import { ConfigService } from '@nestjs/config';
 import { StructuredLogger } from '../logging/structured-logger';
 import OpenAI from 'openai';
 
+/**
+ * @cluster whatsapp_saas/backend/ai-brain
+ * L11 multi-agent TaskGraph annotation (batched by tools/auto-pr/batch-job.mjs).
+ */
 const N_RE = /\n/g;
 
 type EmbeddingResult = { embedding: number[]; tokensUsed: number };

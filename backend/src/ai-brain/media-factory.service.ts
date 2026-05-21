@@ -8,6 +8,10 @@ import { CANONICAL_MODEL_IDS } from '../lib/openai-models';
 
 /** Media factory service. */
 @Injectable()
+/**
+ * @cluster whatsapp_saas/backend/ai-brain
+ * L11 multi-agent TaskGraph annotation (batched by tools/auto-pr/batch-job.mjs).
+ */
 export class MediaFactoryService {
   private readonly logger = StructuredLogger.from(MediaFactoryService.name);
   private openai: OpenAI | null;

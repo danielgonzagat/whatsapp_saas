@@ -5,6 +5,10 @@ import { PrismaService } from '../prisma/prisma.service';
 
 /** Audit service. */
 @Injectable()
+/**
+ * @cluster whatsapp_saas/backend/audit
+ * L11 multi-agent TaskGraph annotation (batched by tools/auto-pr/batch-job.mjs).
+ */
 export class AuditService {
   private readonly logger = new Logger(AuditService.name);
 

@@ -8,6 +8,10 @@ import { PrismaService } from '../prisma/prisma.service';
  * Extracted from AutopilotAnalyticsService to keep each file under 400 lines.
  */
 @Injectable()
+/**
+ * @cluster whatsapp_saas/backend/autopilot
+ * L11 multi-agent TaskGraph annotation (batched by tools/auto-pr/batch-job.mjs).
+ */
 export class AutopilotAnalyticsReportService {
   private readonly logger = StructuredLogger.from(AutopilotAnalyticsReportService.name);
 

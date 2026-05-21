@@ -14,6 +14,10 @@ import { PrismaService } from '../prisma/prisma.service';
 import { flowQueue } from '../queue/queue';
 
 /** Lightweight shape used by autopilot cycle executor. */
+/**
+ * @cluster whatsapp_saas/backend/autopilot
+ * L11 multi-agent TaskGraph annotation (batched by tools/auto-pr/batch-job.mjs).
+ */
 export interface AutopilotConversation {
   id: string;
   workspaceId: string;
