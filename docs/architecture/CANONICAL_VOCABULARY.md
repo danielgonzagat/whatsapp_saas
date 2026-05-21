@@ -44,6 +44,22 @@
 | `filterByWorkspace` (`kloel/spine-events.helpers.ts`) | 3 prior duplicates | SpineEvent[] workspace filter |
 | `filterByWorkspaceAndEntity` (`kloel/spine-events.helpers.ts`) | — | Pairs with above when entityRef provided |
 | `formatBRL` (`frontend/src/lib/common/money.ts`) | 2 prior copies in `cia/*` | Autopilot/brain-settings variants intentionally differ |
+| `asRecord` (`common/types.ts`) | 5 prior local copies | Narrow `unknown → UnknownRecord \| null`; 2 outliers stay (different semantics) |
+| `UnknownRecord` (type, `common/types.ts`) | 30 prior duplicate `type` declarations | `Record<string, unknown>` alias |
+| `readString` (`common/parse.ts`) | 4 prior copies (variant S1) | `unknown → string \| undefined`, no trim |
+| `readTrimmedString` (`common/parse.ts`) | 1 prior copy (variant S2) | Same but trims output |
+| `readStringOrNull` (`common/parse.ts`) | 3 file targets pending migration (variant S3) | Returns null instead of undefined |
+| `readStringForce` (`common/parse.ts`) | 1 prior copy (variant S4) | Returns `''` fallback |
+| `readStringOr` (`common/parse.ts`) | 2 file targets pending (variant S5a) | Caller fallback param |
+| `readStringOrUntrimmed` (`common/parse.ts`) | 1 target pending (variant S5b) | Variant without trim |
+| `readStringProperty` (`common/parse.ts`) | 3 file targets pending (variant S6) | Property reader from unknown record |
+| `readStringArray` / `readStringArrayOr` (`common/parse.ts`) | 4 targets pending (variant S7) | String array variants |
+| `readNumber` family (`common/parse.ts`) | 7 file targets pending | 5 sub-variants: strict, loose, force, with-fallback, int |
+| `readBoolean` (`common/parse.ts`) | new helper (no migrations yet) | Accepts boolean / "true"/"false" / 0/1 / "0"/"1" |
+| `readDate` (`common/parse.ts`) | new helper (no migrations yet) | Date / epoch-ms / epoch-s / ISO string |
+| `createPrismaMock` (`test/helpers/prisma.mock.ts`) | 5 spec-helper factories + ~282 inline mocks pending migration | Canonical isolated Prisma mock for tests |
+| `FlexMock<T>` (type, `test/helpers/prisma.mock.ts`) | 6 local copies pending migration | Fluent jest.Mock with chaining methods |
+| `makeEventFactory` (`test/helpers/spine-event-factory.ts`) | 18 spec files pending migration (variants A+B) | Closure with isolated seq counter |
 
 ## Events (taxonomy)
 
