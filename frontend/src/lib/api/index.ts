@@ -323,6 +323,9 @@ export { onboardingApi } from './onboarding';
 export { adRulesApi } from './ad-rules';
 export { kloelLeadsApi } from './kloel-leads';
 
+// Copilot suggestions
+export { type CopilotSuggestionsResponse, getCopilotSuggestions } from './copilot';
+
 // CRM & Segmentation & Neuro
 export {
   type CrmContactTag,

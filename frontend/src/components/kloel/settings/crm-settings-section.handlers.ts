@@ -49,12 +49,15 @@ export async function runCreateContact(
     return { ok: false, error: 'Informe o telefone do contato.' };
   }
   try {
-    await crmApi.createContact({
+    const response = await crmApi.createContact({
       phone: form.phone.trim(),
       ...(form.name.trim() ? { name: form.name.trim() } : {}),
       ...(form.email.trim() ? { email: form.email.trim() } : {}),
       ...(form.notes.trim() ? { notes: form.notes.trim() } : {}),
     });
+    if (response.error) {
+      return { ok: false, error: response.error };
+    }
     return { ok: true };
   } catch (createError) {
     return { ok: false, error: errorMessage(createError, 'Nao foi possivel criar o contato.') };
@@ -89,12 +92,15 @@ export async function runCreateDeal(
     return { ok: false, error: 'Preencha contato, etapa inicial e titulo do deal.' };
   }
   try {
-    await crmApi.createDeal({
+    const response = await crmApi.createDeal({
       contactId: form.contactId,
       stageId: form.stageId,
       title: form.title.trim(),
       value: Number(form.value || 0),
     });
+    if (response.error) {
+      return { ok: false, error: response.error };
+    }
     return { ok: true };
   } catch (createError) {
     return { ok: false, error: errorMessage(createError, 'Nao foi possivel criar o deal.') };

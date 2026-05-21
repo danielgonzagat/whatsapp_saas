@@ -243,7 +243,7 @@ export class PaymentMethodService {
       },
     });
 
-    return { ok: true };
+    return { ok: true, paymentMethodId };
   }
 
   /**
@@ -264,6 +264,6 @@ export class PaymentMethodService {
 
     await this.stripe.paymentMethods.detach(paymentMethodId);
 
-    return { ok: true };
+    return { ok: true, paymentMethodId };
   }
 }

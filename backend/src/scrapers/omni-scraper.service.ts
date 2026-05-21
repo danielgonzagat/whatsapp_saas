@@ -1,4 +1,4 @@
-import { Injectable, Logger, NotImplementedException } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import {
   GoogleMapsStrategy,
   InstagramStrategy,
@@ -32,12 +32,7 @@ export class OmniScraperService {
   async scrape(source: string, query: string, filters: Record<string, unknown>) {
     const strategy = this.strategies.get(source);
     if (!strategy) {
-      throw new NotImplementedException(`Strategy ${source} not implemented`);
-    }
-
-    const cap = strategy.capability();
-    if (cap.status !== 'available' && cap.status !== 'available_direct') {
-      throw new NotImplementedException(cap.message);
+      throw new Error(`Strategy ${source} not implemented`);
     }
 
     this.logger.log(`Starting scrape for ${source}: ${query}`);
