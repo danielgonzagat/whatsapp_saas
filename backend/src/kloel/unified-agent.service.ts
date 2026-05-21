@@ -484,6 +484,9 @@ export class UnifiedAgentService {
     args: ToolArgs,
     ctx: { workspaceId: string; contactId?: string; phone?: string },
   ): Promise<unknown> {
+    if (!this.toolExecutor) {
+      throw new Error('UnifiedAgentToolExecutorService is not wired in this context');
+    }
     return this.toolExecutor.execute(
       ctx.workspaceId,
       ctx.contactId || '',

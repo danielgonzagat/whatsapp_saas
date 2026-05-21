@@ -413,7 +413,7 @@ export class KloelReplyEngineService {
         this.buildMarketingPromptAddendum(wid, mode, msg),
       buildChatModelMessages: async (p) => this.buildChatModelMessages(p),
       buildDynamicRuntimeContext: (p) => this.buildDynamicRuntimeContext(p),
-      abiStateJson: params.abiStateJson,
+      ...(params.abiStateJson !== undefined ? { abiStateJson: params.abiStateJson } : {}),
     });
   }
 }

@@ -140,7 +140,7 @@ export async function thinkSyncImpl(
               predicate: kind,
               confidence: Math.round(conf * 100) / 100,
               n: entry.n,
-              lastObserved: events[events.length - 1].occurredAt,
+              lastObserved: events[events.length - 1]?.occurredAt ?? '',
               examples: entry.examples,
             });
           }

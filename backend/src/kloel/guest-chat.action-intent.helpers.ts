@@ -151,7 +151,7 @@ export function detectActionIntent(
 
 export function extractProductName(msg: string): string {
   const m = msg.match(
-    /(?:produtos?|planos?|ofertas?|checkouts?|cupons?)\s+(?:chamad[oa]|de\s+)?["']?([A-Za-zÀ-ÿ0-9\s\-.]{2,60}?)(?:\s*(?:R\$|pre[çc]o|valor|\bcom\b|\bpor\b|$)|$)/i,
+    /(?:produtos?|planos?|ofertas?|checkouts?|cupons?)\s+(?:chamad[oa]|de\s+)?["']?([A-Za-zÀ-ÿ0-9\s\-.]{2,60}?)(?:\s*(?:R\$|pre[çc]o|valor|\bcom\b|\bpor\b|\.\s+[A-ZÀ]|$)|$)/i,
   );
   const name = (m?.[1] || '').trim();
   // Strip leading prepositions and trailing punctuation
@@ -172,7 +172,7 @@ export function extractProductArgs(msg: string): Record<string, unknown> {
     msg.match(/(?:R\$\s*|pre[çc]o\s+)(\d+[.,]?\d*)/i) ||
     msg.match(/(\d+[.,]?\d*)\s*(?:reais|real)/i) ||
     msg.match(/R\$\s*(\d+[.,]?\d*)/i);
-  if (pm) {
+  if (pm && pm[1]) {
     args.price = parseFloat(pm[1].replace(',', '.'));
   }
   return args;
@@ -185,11 +185,11 @@ export function extractPaymentArgs(msg: string): Record<string, unknown> {
     args.productName = name;
   }
   const am = msg.match(/R\$\s*(\d+[.,]?\d*)/);
-  if (am) {
+  if (am && am[1]) {
     args.amount = parseFloat(am[1].replace(',', '.'));
   }
   const nm = msg.match(/para\s+([A-Za-zÀ-ÿ]{3,30}(?:\s+[A-Za-zÀ-ÿ]{3,30})?)/i);
-  if (nm) {
+  if (nm && nm[1]) {
     args.customerName = nm[1].trim();
   }
   return args;

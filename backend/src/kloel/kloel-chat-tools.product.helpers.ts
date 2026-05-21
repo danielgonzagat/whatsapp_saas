@@ -49,13 +49,21 @@ export async function runGetProductPlans(
 export async function runGetProductUrls(
   prisma: PrismaService,
   workspaceId: string,
-  args: { productId: string },
+  args: { productId?: string; productName?: string },
 ): Promise<ToolResult> {
-  if (!args.productId) {
+  let pid = args.productId || '';
+  if (!pid && args.productName) {
+    const p = await prisma.product.findFirst({
+      where: { workspaceId, name: { contains: args.productName, mode: 'insensitive' } },
+      select: { id: true },
+    });
+    pid = p?.id || '';
+  }
+  if (!pid) {
     return { success: false, error: 'productId_required' };
   }
   const product = await prisma.product.findFirst({
-    where: { id: args.productId, workspaceId },
+    where: { id: pid, workspaceId },
     select: {
       id: true,
       name: true,
@@ -239,8 +247,8 @@ export async function runCreateBroadcast(
       workspaceId,
       name: args.name,
       messageTemplate: args.message,
-      filters: args.targetTags?.length ? { tags: args.targetTags } : undefined,
-      scheduledAt: args.scheduleAt ? new Date(args.scheduleAt) : undefined,
+      ...(args.targetTags?.length ? { filters: { tags: args.targetTags } } : {}),
+      ...(args.scheduleAt ? { scheduledAt: new Date(args.scheduleAt) } : {}),
       status: 'DRAFT',
     },
   });
