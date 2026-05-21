@@ -4,13 +4,30 @@
 > This runbook tells you exactly what to set, where, in what order, to
 > light up PIX in production.
 
+## State of the integration (2026-05-20 22:18 UTC)
+
+Already configured via MP MCP (this session):
+
+- ✅ Application: **Kloel Pix** (`AppID 2812418499399617`)
+- ✅ Webhook URL (production AND sandbox): `https://api.kloel.com/webhooks/mercadopago`
+- ✅ Subscribed topics: `payment`
+- ✅ Webhook secret: generated (visible at dashboard, first 7 chars `d150fcb***`)
+- ✅ Sandbox test user: `User ID 3416957722`, nickname `TESTUSER2349230630667070318` (R$ 10.000 balance) — password viewable at dashboard
+- ✅ Signature verifier code spec-compliant per MP webhook docs (ts in ms,
+  data.id lowercased — both bugs caught + fixed via MP MCP search_documentation)
+
+Remaining manual steps (owner only): retrieve full webhook secret +
+paste into Railway env panel + merge `feat/kloel-cognitive-organism` to
+main so Railway redeploys backend with MP module + Vercel picks up
+`NEXT_PUBLIC_MERCADOPAGO_PUBLIC_KEY`.
+
 ## Prerequisites
 
-- Mercado Pago application "Kloel pix" created at
-  https://www.mercadopago.com.br/developers/panel/applications
+- Mercado Pago application "Kloel pix" exists at
+  https://www.mercadopago.com.br/developers/panel/app/2812418499399617
 - Railway project `production` exists (`a30c8458-fd36-4b01-a13d-ee342a276865`)
 - Vercel project for the frontend domains is connected
-- Branch `feat/kloel-cognitive-organism` (or `main` after merge) deployed
+- Branch `feat/kloel-cognitive-organism` merged to main → Railway auto-deploys
 
 ## 1. Local development setup
 
