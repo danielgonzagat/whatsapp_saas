@@ -39,7 +39,12 @@ export class PaymentMethodService {
   }
 
   /**
-   * Obtém ou cria um Stripe Customer para o workspace
+   * Obtém ou cria um Stripe Customer para o workspace.
+   *
+   * Auto-recupera de customer deletado no Stripe: se o stripeCustomerId
+   * persistido no DB referenciar um customer que não existe mais (ou foi
+   * deletado), limpa o registro e cria novo. Evita erro recorrente
+   * "No such customer: cus_*" (Sentry NODE-V, ~12 eventos/15d).
    */
   // All dates stored as UTC via Prisma DateTime (toISOString)
   async getOrCreateCustomerId(workspaceId: string): Promise<string> {
@@ -56,12 +61,52 @@ export class PaymentMethodService {
           throw new Error(ERROR_WORKSPACE_NOT_FOUND);
         }
 
-        if (workspace.stripeCustomerId) {
-          return workspace.stripeCustomerId;
+        if (!this.stripe) {
+          if (workspace.stripeCustomerId) {
+            return workspace.stripeCustomerId;
+          }
+          throw new Error(ERROR_BILLING_UNAVAILABLE);
         }
 
-        if (!this.stripe) {
-          throw new Error(ERROR_BILLING_UNAVAILABLE);
+        // If we have a persisted customer id, verify it still exists in Stripe.
+        // A deleted (or test-data-wiped) customer surfaces as
+        // StripeInvalidRequestError code='resource_missing'.
+        if (workspace.stripeCustomerId) {
+          let needsRecreate = false;
+          try {
+            const existing = await this.stripe.customers.retrieve(workspace.stripeCustomerId);
+            // existing is either Customer or DeletedCustomer; tests may mock as
+            // undefined — treat undefined as "live, no deleted flag".
+            const deleted =
+              existing && typeof existing === 'object' && 'deleted' in existing
+                ? Boolean((existing as { deleted?: boolean }).deleted)
+                : false;
+            if (!deleted) {
+              return workspace.stripeCustomerId;
+            }
+            this.logger.warn(
+              `Stripe customer ${workspace.stripeCustomerId} marked deleted for workspace ${workspaceId}; recreating`,
+            );
+            needsRecreate = true;
+          } catch (err: unknown) {
+            const code = (err as { code?: string }).code;
+            const status = (err as { statusCode?: number }).statusCode;
+            if (code === 'resource_missing' || status === 404) {
+              this.logger.warn(
+                `Stripe customer ${workspace.stripeCustomerId} not found (resource_missing) for workspace ${workspaceId}; recreating`,
+              );
+              needsRecreate = true;
+            } else {
+              // Unexpected error — surface it instead of silently masking
+              throw err;
+            }
+          }
+          if (needsRecreate) {
+            await tx.workspace.update({
+              where: { id: workspaceId },
+              data: { stripeCustomerId: null },
+            });
+          }
         }
 
         // Criar customer no Stripe
