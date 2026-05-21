@@ -114,3 +114,93 @@ export function readStringArrayOr(value: unknown): string[] | undefined {
   if (!Array.isArray(value)) return undefined;
   return value.filter((entry): entry is string => typeof entry === 'string');
 }
+
+// ─── readNumber family (canonical home for A2 audit) ──────────────
+
+/**
+ * Strict number: accepts only finite `typeof value === 'number'`.
+ * Returns `undefined` for strings, null, undefined, NaN, Infinity.
+ *
+ * Use when input MUST already be a number (parsed JSON, typed DTO).
+ */
+export function readNumber(value: unknown): number | undefined {
+  return typeof value === 'number' && Number.isFinite(value) ? value : undefined;
+}
+
+/**
+ * Lenient number: accepts strings via `Number()` coercion. Returns
+ * `undefined` for empty strings, nulls, NaN.
+ */
+export function readNumberLoose(value: unknown): number | undefined {
+  if (value === '' || value === null || value === undefined) return undefined;
+  if (typeof value === 'number' && Number.isFinite(value)) return value;
+  if (typeof value === 'string' && value.trim()) {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : undefined;
+  }
+  return undefined;
+}
+
+/**
+ * Number with caller-provided fallback. Uses `Number()` coercion.
+ * Note: `Number('')` is 0 — guard empty strings if that matters.
+ */
+export function readNumberOr(value: unknown, fallback: number): number {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+/**
+ * Force number: returns 0 instead of undefined for non-numbers.
+ * Use only when callers immediately do arithmetic.
+ */
+export function readNumberForce(value: unknown): number {
+  if (typeof value === 'number' && Number.isFinite(value)) return value;
+  if (typeof value === 'string') {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : 0;
+  }
+  return 0;
+}
+
+/**
+ * Parse a base-10 integer. Returns `undefined` on non-finite.
+ */
+export function readInt(value: unknown): number | undefined {
+  if (value === '' || value === null || value === undefined) return undefined;
+  const parsed = Number.parseInt(String(value), 10);
+  return Number.isFinite(parsed) ? parsed : undefined;
+}
+
+// ─── readBoolean ────────────────────────────────────────────────────
+
+/**
+ * Parse a boolean from: native boolean, "true"/"false", 0/1, "0"/"1".
+ * Returns `undefined` otherwise.
+ */
+export function readBoolean(value: unknown): boolean | undefined {
+  if (typeof value === 'boolean') return value;
+  if (value === 'true' || value === '1' || value === 1) return true;
+  if (value === 'false' || value === '0' || value === 0) return false;
+  return undefined;
+}
+
+// ─── readDate ───────────────────────────────────────────────────────
+
+/**
+ * Parse a Date from: Date instance, epoch ms, epoch s (auto-detected
+ * via > 1e11 threshold), or ISO string. Returns `undefined` otherwise.
+ */
+export function readDate(value: unknown): Date | undefined {
+  if (value instanceof Date && !Number.isNaN(value.getTime())) return value;
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    const ms = value > 100_000_000_000 ? value : value * 1000;
+    const d = new Date(ms);
+    return Number.isNaN(d.getTime()) ? undefined : d;
+  }
+  if (typeof value === 'string' && value.trim()) {
+    const d = new Date(value);
+    return Number.isNaN(d.getTime()) ? undefined : d;
+  }
+  return undefined;
+}
