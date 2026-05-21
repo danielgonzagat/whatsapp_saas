@@ -51,6 +51,7 @@ import {
   runConfigureAiPersona,
   runToggleTheme,
 } from './kloel-chat-tools.product.helpers';
+import { runGetAffiliateConfig, runGetSettings } from './kloel-chat-tools.settings.helpers';
 const NON_SLUG_CHAR_RE = /[^a-z0-9_:-]+/g;
 function safeStr(value: unknown, fallback = ''): string {
   if (typeof value === 'string') {
@@ -584,5 +585,11 @@ export class KloelChatToolsService {
   }
   toolToggleTheme(workspaceId: string, args: Record<string, unknown>): Promise<ToolResult> {
     return runToggleTheme(this.prisma, workspaceId, args);
+  }
+  toolGetAffiliateConfig(workspaceId: string): Promise<ToolResult> {
+    return runGetAffiliateConfig(this.prisma, workspaceId);
+  }
+  toolGetSettings(workspaceId: string): Promise<ToolResult> {
+    return runGetSettings(this.prisma, workspaceId);
   }
 }

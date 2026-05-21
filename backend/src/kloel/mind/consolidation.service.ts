@@ -95,7 +95,7 @@ export class ConsolidationService {
     const eventById = new Map(events.map((e) => [e.eventId, e]));
     const out: EpisodicProposal[] = [];
     for (const item of working) {
-      if (item.relatedEventIds.length < 1) {
+      if (item.relatedEventIds.length < 2) {
         continue;
       }
       const relatedEvents = item.relatedEventIds

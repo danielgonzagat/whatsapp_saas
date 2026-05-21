@@ -57,6 +57,18 @@ export class KloelToolDispatcherService {
     @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
 
+  /** Resolve productId from productName if not already provided. */
+  private async resolveProductId(workspaceId: string, args: UnknownRecord): Promise<string | null> {
+    if (typeof args.productId === 'string' && args.productId) return args.productId;
+    const name = typeof args.productName === 'string' ? args.productName : null;
+    if (!name) return null;
+    const product = await this.prisma.product.findFirst({
+      where: { workspaceId, name: { contains: name, mode: 'insensitive' } },
+      select: { id: true },
+    });
+    return product?.id ?? null;
+  }
+
   /** Execute a named tool, delegating to the appropriate sub-service. */
   async executeTool(
     workspaceId: string,
@@ -119,14 +131,26 @@ export class KloelToolDispatcherService {
           return await this.chatToolsService.toolListFlows(workspaceId);
         case 'get_dashboard_summary':
           return await this.chatToolsService.toolGetDashboardSummary(workspaceId, asToolArgs(args));
-        case 'get_product_plans':
+        case 'get_product_plans': {
+          const pid = await this.resolveProductId(workspaceId, args);
+          if (pid) (args as Record<string, unknown>).productId = pid;
           return await this.chatToolsService.toolGetProductPlans(workspaceId, asToolArgs(args));
-        case 'get_product_ai_config':
+        }
+        case 'get_product_ai_config': {
+          const pid = await this.resolveProductId(workspaceId, args);
+          if (pid) (args as Record<string, unknown>).productId = pid;
           return await this.chatToolsService.toolGetProductAiConfig(workspaceId, asToolArgs(args));
-        case 'get_product_reviews':
+        }
+        case 'get_product_reviews': {
+          const pid = await this.resolveProductId(workspaceId, args);
+          if (pid) (args as Record<string, unknown>).productId = pid;
           return await this.chatToolsService.toolGetProductReviews(workspaceId, asToolArgs(args));
-        case 'get_product_urls':
+        }
+        case 'get_product_urls': {
+          const pid = await this.resolveProductId(workspaceId, args);
+          if (pid) (args as Record<string, unknown>).productId = pid;
           return await this.chatToolsService.toolGetProductUrls(workspaceId, asToolArgs(args));
+        }
         case 'validate_coupon':
           return await this.chatToolsService.toolValidateCoupon(workspaceId, asToolArgs(args));
         case 'get_wallet_balance':
@@ -156,7 +180,7 @@ export class KloelToolDispatcherService {
         case 'delete_product':
           return await this.chatToolsService.toolDeleteProduct(workspaceId, asToolArgs(args));
         case 'get_settings':
-          return { success: false, error: 'get_settings_tool_not_implemented' };
+          return await this.chatToolsService.toolGetSettings(workspaceId);
         case 'request_withdrawal':
           if (this.walletSalesTools) {
             return await this.walletSalesTools.executeTool(toolName, workspaceId, asToolArgs(args));
@@ -164,6 +188,8 @@ export class KloelToolDispatcherService {
           return { success: false, error: 'wallet_sales_tools_not_available' };
         case 'get_analytics':
           return await this.chatToolsService.toolGetAnalytics(workspaceId, asToolArgs(args));
+        case 'get_affiliate_config':
+          return await this.chatToolsService.toolGetAffiliateConfig(workspaceId);
         case 'create_broadcast':
           return await this.chatToolsService.toolCreateBroadcast(workspaceId, asToolArgs(args));
         case 'configure_ai_persona':
