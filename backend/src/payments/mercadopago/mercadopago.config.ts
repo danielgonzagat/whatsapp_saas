@@ -43,9 +43,7 @@ export class MercadoPagoConfigService {
 
     this.config = { accessToken, publicKey, webhookSecret, sandbox };
     this.logger.log(
-      `MercadoPago adapter READY (sandbox=${sandbox}, webhookSecretSet=${Boolean(
-        webhookSecret,
-      )})`,
+      `MercadoPago adapter READY (sandbox=${sandbox}, webhookSecretSet=${Boolean(webhookSecret)})`,
     );
   }
 

@@ -1,10 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 
 import { MercadoPagoConfigService } from './mercadopago.config';
-import type {
-  CreatePixChargeInput,
-  PixChargeResult,
-} from './mercadopago.types';
+import type { CreatePixChargeInput, PixChargeResult } from './mercadopago.types';
 import { toPixChargeStatus } from './mercadopago.types';
 
 /**
@@ -102,18 +99,19 @@ export class MercadoPagoPixChargeService {
       );
       const errorMsg =
         json && typeof json === 'object' && typeof json['message'] === 'string'
-          ? (json['message'] as string)
+          ? json['message']
           : `http_${response.status}`;
       throw new Error(`mp_pix_create_failed: ${errorMsg}`);
     }
 
-    const externalId = String(json['id'] ?? '');
+    const idVal = json['id'];
+    const externalId = typeof idVal === 'string' || typeof idVal === 'number' ? String(idVal) : '';
     if (!externalId) {
       throw new Error('mp_pix_response_missing_id');
     }
 
     const status = toPixChargeStatus(
-      typeof json['status'] === 'string' ? (json['status'] as string) : undefined,
+      typeof json['status'] === 'string' ? json['status'] : undefined,
     );
 
     const pointOfInteraction = json['point_of_interaction'] as
@@ -143,7 +141,9 @@ export class MercadoPagoPixChargeService {
    * of the webhook body (defense-in-depth: webhook tells us "something
    * changed", we read MP source-of-truth).
    */
-  async getStatus(externalId: string): Promise<{ status: ReturnType<typeof toPixChargeStatus>; raw: unknown }> {
+  async getStatus(
+    externalId: string,
+  ): Promise<{ status: ReturnType<typeof toPixChargeStatus>; raw: unknown }> {
     if (!this.config.isAvailable()) {
       throw new Error('mercadopago_not_configured');
     }
@@ -170,9 +170,11 @@ export class MercadoPagoPixChargeService {
       throw new Error(`mp_pix_status_http_${response.status}`);
     }
     const json = (await response.json().catch(() => null)) as Record<string, unknown> | null;
-    if (!json) throw new Error('mp_pix_status_invalid_response');
+    if (!json) {
+      throw new Error('mp_pix_status_invalid_response');
+    }
     const status = toPixChargeStatus(
-      typeof json['status'] === 'string' ? (json['status'] as string) : undefined,
+      typeof json['status'] === 'string' ? json['status'] : undefined,
     );
     return { status, raw: json };
   }

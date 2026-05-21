@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { createHmac, timingSafeEqual } from 'node:crypto';
 
 import { MercadoPagoConfigService } from './mercadopago.config';
@@ -24,8 +24,6 @@ import { MercadoPagoConfigService } from './mercadopago.config';
  */
 @Injectable()
 export class MercadoPagoWebhookSignatureVerifier {
-  private readonly logger = new Logger(MercadoPagoWebhookSignatureVerifier.name);
-
   /** Reject webhooks older than 10 minutes (anti-replay window). */
   private static readonly MAX_AGE_MS = 10 * 60 * 1000;
 
@@ -50,14 +48,20 @@ export class MercadoPagoWebhookSignatureVerifier {
       return { ok: false, reason: 'mp_not_configured' };
     }
     const { signatureHeader, requestId, dataId } = args;
-    if (!signatureHeader) return { ok: false, reason: 'missing_x_signature' };
-    if (!requestId) return { ok: false, reason: 'missing_x_request_id' };
+    if (!signatureHeader) {
+      return { ok: false, reason: 'missing_x_signature' };
+    }
+    if (!requestId) {
+      return { ok: false, reason: 'missing_x_request_id' };
+    }
     if (dataId === undefined || dataId === null || String(dataId).trim() === '') {
       return { ok: false, reason: 'missing_data_id' };
     }
 
     const parsed = parseSignatureHeader(signatureHeader);
-    if (!parsed) return { ok: false, reason: 'malformed_x_signature' };
+    if (!parsed) {
+      return { ok: false, reason: 'malformed_x_signature' };
+    }
 
     const tsMs = parsed.ts * 1000;
     const nowMs = args.nowMs ?? Date.now();
@@ -66,7 +70,9 @@ export class MercadoPagoWebhookSignatureVerifier {
     }
 
     const secret = this.config.get().webhookSecret;
-    if (!secret) return { ok: false, reason: 'webhook_secret_unset' };
+    if (!secret) {
+      return { ok: false, reason: 'webhook_secret_unset' };
+    }
 
     const manifest = `id:${String(dataId)};request-id:${requestId};ts:${parsed.ts};`;
     const expectedHex = createHmac('sha256', secret).update(manifest).digest('hex');
@@ -100,16 +106,22 @@ function parseSignatureHeader(header: string): { ts: number; v1: string } | null
   let v1: string | null = null;
   for (const part of parts) {
     const eq = part.indexOf('=');
-    if (eq < 0) continue;
+    if (eq < 0) {
+      continue;
+    }
     const key = part.slice(0, eq).trim();
     const value = part.slice(eq + 1).trim();
     if (key === 'ts') {
       const parsedTs = Number.parseInt(value, 10);
-      if (Number.isFinite(parsedTs)) ts = parsedTs;
+      if (Number.isFinite(parsedTs)) {
+        ts = parsedTs;
+      }
     } else if (key === 'v1') {
       v1 = value;
     }
   }
-  if (ts === null || !v1) return null;
+  if (ts === null || !v1) {
+    return null;
+  }
   return { ts, v1 };
 }
