@@ -1,6 +1,7 @@
-import ParceriasView from '@/components/kloel/parcerias/ParceriasView';
+import ParceriasShell from '@/components/kloel/parcerias/ParceriasView';
 
-/** Parcerias page. */
+/** /parcerias — crystallised by tools/crystallization/run.mjs.
+ *  Replaces stub (reason: tiny-1-loc) with the canonical view in this module. */
 export default function ParceriasPage() {
-  return <ParceriasView defaultTab="colaboradores" />;
+  return <ParceriasShell />;
 }
