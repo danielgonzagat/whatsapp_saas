@@ -2,6 +2,7 @@ import { Test, type TestingModule } from '@nestjs/testing';
 import { AdminAction, AdminModule, AdminRole } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AdminPermissionsService } from './admin-permissions.service';
+import { createPartialPrismaMock } from '../../../test/helpers/prisma.mock';
 
 type PermissionRow = {
   adminUserId: string;
@@ -10,43 +11,30 @@ type PermissionRow = {
   allowed: boolean;
 };
 
-type PermissionsPrismaMock = Record<string, unknown> & {
-  $transaction: jest.Mock;
-  adminPermission: {
-    findUnique: jest.Mock;
-    findMany: jest.Mock;
-    createMany: jest.Mock;
-    deleteMany: jest.Mock;
-  };
-  adminAuditLog: {
-    create: jest.Mock;
-  };
-};
-
-function buildPrismaMock(overrides: Partial<PermissionsPrismaMock> = {}): PermissionsPrismaMock {
-  const txMock: PermissionsPrismaMock = {
-    $transaction: jest
-      .fn()
-      .mockImplementation(async (callback: (tx: PermissionsPrismaMock) => Promise<unknown>) =>
-        callback(txMock),
-      ),
-    adminPermission: {
-      findUnique: jest.fn().mockResolvedValue(null),
-      findMany: jest.fn().mockResolvedValue([]),
-      createMany: jest.fn().mockResolvedValue({ count: 1 }),
-      deleteMany: jest.fn().mockResolvedValue({ count: 0 }),
-    },
-    adminAuditLog: {
-      create: jest.fn().mockResolvedValue({ id: 'audit_1' }),
-    },
-    ...overrides,
-  };
-  return txMock;
+function buildPrismaMock(
+  overrides: Record<string, unknown> = {},
+): ReturnType<typeof createPartialPrismaMock> {
+  const base = createPartialPrismaMock({
+    adminPermission: ['findUnique', 'findMany', 'createMany', 'deleteMany'],
+    adminAuditLog: ['create'],
+  });
+  (base.adminPermission.findMany as jest.Mock).mockResolvedValue([]);
+  (base.adminPermission.createMany as jest.Mock).mockResolvedValue({ count: 1 });
+  (base.adminPermission.deleteMany as jest.Mock).mockResolvedValue({ count: 0 });
+  (base.adminAuditLog.create as jest.Mock).mockResolvedValue({ id: 'audit_1' });
+  for (const [key, val] of Object.entries(overrides)) {
+    if (base[key] && typeof val === 'object' && val !== null && !Array.isArray(val)) {
+      Object.assign(base[key], val);
+    } else {
+      (base as unknown as Record<string, unknown>)[key] = val;
+    }
+  }
+  return base;
 }
 
 describe('AdminPermissionsService', () => {
   let service: AdminPermissionsService;
-  let prismaMock: PermissionsPrismaMock;
+  let prismaMock: ReturnType<typeof createPartialPrismaMock>;
 
   beforeEach(async () => {
     prismaMock = buildPrismaMock();
