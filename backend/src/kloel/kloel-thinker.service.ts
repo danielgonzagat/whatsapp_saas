@@ -461,7 +461,7 @@ export class KloelThinkerService {
         composerService: this.composerService,
         conversationStore: this.conversationStore,
         planLimits: this.planLimits,
-        abiBuilder: this.abiBuilder,
+        ...(this.abiBuilder !== undefined ? { abiBuilder: this.abiBuilder } : {}),
         ...(this.capabilityExecutor !== undefined
           ? { capabilityExecutor: this.capabilityExecutor }
           : {}),
