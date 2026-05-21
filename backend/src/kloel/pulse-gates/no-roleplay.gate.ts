@@ -1,4 +1,5 @@
 import { fail, Gate, GateEvidence, GateMode, GateVerdict, pass } from './pulse-gates.types';
+import { isObject } from '../../common/types';
 
 /**
  * UTP-PULSE-001 — `no-roleplay` gate.
@@ -85,9 +86,6 @@ const ROLEPLAY_PATTERNS: ReadonlyArray<{
   { id: 'en-you-are-no-longer', re: /\byou are no longer\b/i },
 ];
 
-function isObject(v: unknown): v is Record<string, unknown> {
-  return typeof v === 'object' && v !== null && !Array.isArray(v);
-}
 
 /**
  * Walk every string leaf in the payload and test against role-play

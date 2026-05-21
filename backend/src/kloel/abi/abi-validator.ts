@@ -7,6 +7,7 @@ import {
   AbiValence,
   CognitiveStateAbi,
 } from './abi-schema';
+import { isObject } from '../../common/types';
 
 /**
  * UTP-ABI-003 — Cognitive State ABI validator.
@@ -114,9 +115,6 @@ function pass(version: string): AbiValidationVerdict {
   };
 }
 
-function isObject(v: unknown): v is Record<string, unknown> {
-  return typeof v === 'object' && v !== null && !Array.isArray(v);
-}
 
 /**
  * Validate the structural shape — required keys, enum values, basic types.

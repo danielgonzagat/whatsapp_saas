@@ -7,6 +7,7 @@ import {
   GateVerdict,
   pass,
 } from './pulse-gates.types';
+import { isObject } from '../../common/types';
 
 /**
  * UTP-PULSE-003 — `identity-projection` gate.
@@ -25,9 +26,6 @@ import {
  */
 const MEASURED_BY = 'identity-projection.gate' as const;
 
-function isObject(v: unknown): v is Record<string, unknown> {
-  return typeof v === 'object' && v !== null && !Array.isArray(v);
-}
 
 function hasNonEmptyString(
   obj: Record<string, unknown>,

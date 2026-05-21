@@ -49,3 +49,18 @@ export function asRecord(value: unknown): UnknownRecord | null {
 export function asString(value: unknown): string | null {
   return typeof value === 'string' && value.length > 0 ? value : null;
 }
+
+/**
+ * Boolean type guard: returns true iff `value` is a plain object
+ * (not null, not array, not other special objects).
+ *
+ * Different from {@link asRecord} which RETURNS the narrowed value;
+ * `isObject` returns a boolean predicate suitable for early-return
+ * guard patterns.
+ *
+ * Wave F (2026-05-21) found 8 byte-identical declarations across
+ * `backend/src/kloel/abi/` and `backend/src/kloel/pulse-gates/`.
+ */
+export function isObject(value: unknown): value is UnknownRecord {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
