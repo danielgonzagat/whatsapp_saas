@@ -9,7 +9,7 @@ import type { SplitRole } from '../split/split.types';
 
 import { ConnectService } from './connect.service';
 
-import { asRecord } from '../../common/types';
+import { asRecord, asString } from '../../common/types';
 interface PersistedManualTransfer {
   role: SplitRole;
   accountId: string;
@@ -74,9 +74,6 @@ const ROLE_PRIORITY: Record<SplitRole, number> = {
   seller: 5,
 };
 
-function asString(value: unknown): string | null {
-  return typeof value === 'string' && value.length > 0 ? value : null;
-}
 
 function parseBigIntString(value: unknown): bigint {
   if (typeof value === 'string' && /^-?\d+$/.test(value)) {

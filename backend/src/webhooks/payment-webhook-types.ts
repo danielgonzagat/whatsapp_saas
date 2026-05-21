@@ -1,5 +1,6 @@
 import { MarketplaceTreasuryLedgerKind, Prisma, type ConnectAccountType } from '@prisma/client';
 import type { SplitRole } from '../payments/split/split.types';
+import { asString } from '../common/types';
 
 export const D_RE = /\D/g;
 
@@ -181,10 +182,8 @@ export function asRecord(value: unknown): Record<string, unknown> | null {
     : null;
 }
 
-/** Casts unknown to non-empty string or null. */
-export function asString(value: unknown): string | null {
-  return typeof value === 'string' && value.length > 0 ? value : null;
-}
+/** Casts unknown to non-empty string or null. Re-exported from canonical. */
+export { asString };
 
 /** Casts unknown to string[]. */
 export function asStringArray(value: unknown): string[] {

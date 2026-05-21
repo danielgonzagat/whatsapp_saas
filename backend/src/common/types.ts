@@ -41,3 +41,11 @@ export function asRecord(value: unknown): UnknownRecord | null {
     ? (value as UnknownRecord)
     : null;
 }
+
+/**
+ * Narrow an `unknown` to a non-empty string (or null).
+ * Length-based emptiness check (not trim).
+ */
+export function asString(value: unknown): string | null {
+  return typeof value === 'string' && value.length > 0 ? value : null;
+}
