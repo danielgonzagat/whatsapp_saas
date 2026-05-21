@@ -5,16 +5,7 @@ import type {
 } from './whatsapp-service.types';
 import { normalizeNumber, resolveTimestampExt, toIsoTimestamp } from './whatsapp-service.helpers';
 import { NON_DIGIT_RE } from '../common/phone';
-
-function readText(value: unknown): string {
-  if (typeof value === 'string') {
-    return value.trim();
-  }
-  if (typeof value === 'number' || typeof value === 'boolean') {
-    return String(value).trim();
-  }
-  return '';
-}
+import { readText } from '../common/utils';
 
 function normalizeNumberLocal(num: string): string {
   return num.replace(NON_DIGIT_RE, '');

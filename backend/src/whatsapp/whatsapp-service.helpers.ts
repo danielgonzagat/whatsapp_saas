@@ -1,14 +1,5 @@
 import { NON_DIGIT_RE } from '../common/phone';
-
-export function readText(value: unknown): string {
-  if (typeof value === 'string') {
-    return value.trim();
-  }
-  if (typeof value === 'number' || typeof value === 'boolean') {
-    return String(value).trim();
-  }
-  return '';
-}
+import { readText } from '../common/utils';
 
 export function normalizeNumber(num: string): string {
   return num.replace(NON_DIGIT_RE, '');
