@@ -69,6 +69,16 @@
       "command": "bash",
       "args": ["scripts/mcp/saas-compiler-mcp/launcher.sh"],
       "description": "SaaS compiler — intent.md → spec.json → code → PR → verify-in-prod → auto-rollback. 11 tools: intent_to_spec / spec_to_code / verify_intent / compile_run / build_corpus / crystallize / etc. Closes the end-to-end SaaS authoring loop."
+    },
+    "kaisser": {
+      "command": "bash",
+      "args": ["scripts/mcp/kaisser-mcp/launcher.sh"],
+      "description": "Kaisser SDLC verbs as MCP — doctor / deploy_dry_run / audit_log / plan_list/tasks/rounds / backlog_list / handoff_write/read/drift / meta / nextid / pr_review_fetch / mesh_routes. Wraps kaisser CLI v3.16.0 (164 verbs) so any agent can drive the SDLC programmatically."
+    },
+    "pulse": {
+      "command": "bash",
+      "args": ["scripts/mcp/pulse-mcp/launcher.sh"],
+      "description": "PULSE actionable — scan / scan_module / report / health_by_module / top_gates / dispatch_fix (PULSE acts via OpenCode subagent fan-out) / dispatch_status / history / mesh_routes. PULSE detects + scores + dispatches remediation; atomic-edit + kaisser handle the safe writes."
     }
   }
 }
