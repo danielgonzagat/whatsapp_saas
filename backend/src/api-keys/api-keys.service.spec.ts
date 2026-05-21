@@ -5,6 +5,7 @@ import { NotFoundException } from '@nestjs/common';
 import { ApiKeysService } from './api-keys.service';
 import { AuditService } from '../audit/audit.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { createPartialPrismaMock } from '../../test/helpers/prisma.mock';
 
 type MockedApiKeyRecord = {
   id: string;
@@ -16,50 +17,17 @@ type MockedApiKeyRecord = {
   workspace?: { id: string; name: string };
 };
 
-type AsMock = jest.Mock<(...args: unknown[]) => unknown>;
-type MockedApiKeyDelegate = {
-  findMany: AsMock & {
-    mockResolvedValue: (v: unknown) => AsMock;
-    mockResolvedValueOnce: (v: unknown) => AsMock;
-  };
-  create: AsMock & {
-    mockResolvedValue: (v: unknown) => AsMock;
-  };
-  findFirst: AsMock & {
-    mockResolvedValue: (v: unknown) => AsMock;
-    mockResolvedValueOnce: (v: unknown) => AsMock;
-  };
-  deleteMany: AsMock & {
-    mockResolvedValue: (v: unknown) => AsMock;
-  };
-  update: AsMock & {
-    mockResolvedValue: (v: unknown) => AsMock;
-    mockRejectedValue: (err: unknown) => AsMock;
-  };
-};
-
 type MockedLogFn = jest.Mock<(args: Record<string, unknown>) => Promise<void>>;
 
 describe('ApiKeysService', () => {
   let service: ApiKeysService;
 
-  const mockAuditLog = {
-    create: jest.fn().mockResolvedValue({} as never),
-  };
 
-  const mockApiKey: MockedApiKeyDelegate = {
-    findMany: jest.fn(),
-    create: jest.fn(),
-    findFirst: jest.fn(),
-    deleteMany: jest.fn(),
-    update: jest.fn(),
-  };
-
-  type MockedPrisma = { apiKey: typeof mockApiKey; auditLog: typeof mockAuditLog };
-  const mockPrisma: MockedPrisma = {
-    apiKey: mockApiKey,
-    auditLog: mockAuditLog,
-  };
+  const mockPrisma = createPartialPrismaMock({
+    apiKey: ['findMany', 'create', 'findFirst', 'deleteMany', 'update'],
+    auditLog: ['create'],
+  });
+  const mockApiKey = mockPrisma.apiKey;
 
   type MockedAuditService = { log: MockedLogFn };
   const mockAuditService: MockedAuditService = {

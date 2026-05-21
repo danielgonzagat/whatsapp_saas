@@ -4,6 +4,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { DestructiveIntentRegistry } from './destructive-handler.registry';
 import { DestructiveIntentService } from './destructive-intent.service';
 import { OpsAlertService } from '../../observability/ops-alert.service';
+import { createPartialPrismaMock } from '../../../test/helpers/prisma.mock';
 
 jest.mock('../common/admin-crypto', () => ({
   sha256Hex: jest.fn((s: string) => `hash:${s}`),
@@ -69,17 +70,12 @@ const mockHandler = {
 describe('DestructiveIntentService', () => {
   let service: DestructiveIntentService;
 
-  const mockCreate = jest.fn();
-  const mockUpdate = jest.fn();
-  const mockFindUnique = jest.fn();
-
-  const prismaMock = {
-    destructiveIntent: {
-      create: mockCreate,
-      update: mockUpdate,
-      findUnique: mockFindUnique,
-    },
-  };
+  const prismaMock = createPartialPrismaMock({
+    destructiveIntent: ['create', 'update', 'findUnique'],
+  }) as unknown as { destructiveIntent: { create: jest.Mock; update: jest.Mock; findUnique: jest.Mock } };
+  const mockCreate = prismaMock.destructiveIntent.create;
+  const mockUpdate = prismaMock.destructiveIntent.update;
+  const mockFindUnique = prismaMock.destructiveIntent.findUnique;
 
   const registryMock = {
     resolve: jest.fn(),

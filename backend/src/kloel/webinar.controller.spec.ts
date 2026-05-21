@@ -1,16 +1,10 @@
 import { NotFoundException } from '@nestjs/common';
 import { WebinarController } from './webinar.controller';
+import { createPartialPrismaMock } from '../../test/helpers/prisma.mock';
 
-const prismaMock = {
-  webinar: {
-    findMany: jest.fn(),
-    create: jest.fn(),
-    findFirst: jest.fn(),
-    findFirstOrThrow: jest.fn(),
-    updateMany: jest.fn(),
-    deleteMany: jest.fn(),
-  },
-};
+const prismaMock = createPartialPrismaMock({
+  webinar: ['findMany', 'create', 'findFirst', 'findFirstOrThrow', 'updateMany', 'deleteMany'],
+});
 
 const auditServiceMock = {
   log: jest.fn(),

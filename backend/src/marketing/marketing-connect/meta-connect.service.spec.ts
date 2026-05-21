@@ -1,17 +1,14 @@
 import { MetaConnectService } from './meta-connect.service';
+import { createPartialPrismaMock } from '../../../test/helpers/prisma.mock';
 
 describe('MetaConnectService', () => {
-  const workspaceFindUnique = jest.fn();
-  const metaConnectionFindFirst = jest.fn();
+  let prismaMock: ReturnType<typeof createPartialPrismaMock>;
+  let workspaceFindUnique: jest.Mock;
+  let metaConnectionFindFirst: jest.Mock;
   const metaForWorkspace = jest.fn();
   const safeBuildEmbeddedSignupUrl = jest.fn();
   const getProviderType = jest.fn();
   const getSessionStatus = jest.fn();
-
-  const prismaMock = {
-    workspace: { findUnique: workspaceFindUnique },
-    metaConnection: { findFirst: metaConnectionFindFirst },
-  };
 
   const metaWhatsAppMock = { safeBuildEmbeddedSignupUrl };
 
@@ -48,6 +45,13 @@ describe('MetaConnectService', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+
+    prismaMock = createPartialPrismaMock({
+      workspace: ['findUnique'],
+      metaConnection: ['findFirst'],
+    });
+    workspaceFindUnique = prismaMock.workspace.findUnique;
+    metaConnectionFindFirst = prismaMock.metaConnection.findFirst;
 
     safeBuildEmbeddedSignupUrl.mockReturnValue('https://auth.example.com/connect');
     metaForWorkspace.mockResolvedValue(disconnectedMetaState);

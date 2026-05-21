@@ -1,18 +1,20 @@
 import { WhatsAppSummaryService } from './whatsapp-summary.service';
+import { createPartialPrismaMock } from '../../../test/helpers/prisma.mock';
 
 describe('WhatsAppSummaryService', () => {
-  const workspaceFindUnique = jest.fn();
-  const kloelSaleGroupBy = jest.fn();
-
-  const prismaMock = {
-    workspace: { findUnique: workspaceFindUnique },
-    kloelSale: { groupBy: kloelSaleGroupBy },
-  };
-
+  let prismaMock: ReturnType<typeof createPartialPrismaMock>;
+  let workspaceFindUnique: jest.Mock;
+  let kloelSaleGroupBy: jest.Mock;
   let service: WhatsAppSummaryService;
 
   beforeEach(() => {
     jest.clearAllMocks();
+    prismaMock = createPartialPrismaMock({
+      workspace: ['findUnique'],
+      kloelSale: ['groupBy'],
+    });
+    workspaceFindUnique = prismaMock.workspace.findUnique;
+    kloelSaleGroupBy = prismaMock.kloelSale.groupBy;
     service = new WhatsAppSummaryService(prismaMock as never);
   });
 

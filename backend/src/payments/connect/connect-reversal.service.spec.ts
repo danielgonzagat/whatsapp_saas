@@ -6,6 +6,7 @@ import { ConnectService } from '../connect/connect.service';
 import { LedgerService } from '../ledger/ledger.service';
 
 import { ConnectReversalService } from './connect-reversal.service';
+import { createPartialPrismaMock } from '../../../test/helpers/prisma.mock';
 
 function makeWebhookData() {
   return {
@@ -34,23 +35,12 @@ function makeWebhookData() {
   };
 }
 
-type ConnectReversalPrismaMock = Record<string, unknown> & {
-  $transaction?: jest.Mock;
-  adminAuditLog?: {
-    create: jest.Mock;
-  };
-};
-
-function withTransaction(prisma: Record<string, unknown>) {
-  const prismaMock = prisma as ConnectReversalPrismaMock;
-  prismaMock.adminAuditLog ??= {
-    create: jest.fn().mockResolvedValue({ id: 'audit_1' }),
-  };
-  prismaMock.$transaction ??= jest
-    .fn()
-    .mockImplementation(async (callback: (tx: ConnectReversalPrismaMock) => Promise<unknown>) =>
-      callback(prismaMock),
-    );
+function withTransaction() {
+  const prismaMock = createPartialPrismaMock({
+    checkoutPayment: ['findFirst'],
+    adminAuditLog: ['create'],
+  });
+  prismaMock.adminAuditLog.create.mockResolvedValue({ id: 'audit_1' });
   return prismaMock;
 }
 
@@ -60,12 +50,12 @@ async function buildService({
   connect,
   ledger,
 }: {
-  prisma: Record<string, unknown>;
+  prisma: ReturnType<typeof withTransaction>;
   stripe: Record<string, unknown>;
   connect: Record<string, unknown>;
   ledger: Record<string, unknown>;
 }) {
-  const prismaMock = withTransaction(prisma);
+  const prismaMock = prisma;
   const moduleRef: TestingModule = await Test.createTestingModule({
     providers: [
       ConnectReversalService,
@@ -81,14 +71,11 @@ async function buildService({
 
 describe('ConnectReversalService.processRefund', () => {
   it('reverses seller + manual stakeholder transfers and debits their ledgers on full refund', async () => {
-    const prisma = {
-      checkoutPayment: {
-        findFirst: jest.fn().mockResolvedValue({
-          id: 'cp_1',
-          webhookData: makeWebhookData(),
-        }),
-      },
-    };
+    const prisma = withTransaction();
+    prisma.checkoutPayment.findFirst.mockResolvedValue({
+      id: 'cp_1',
+      webhookData: makeWebhookData(),
+    });
     const stripe = {
       stripe: {
         transfers: {
@@ -197,14 +184,11 @@ describe('ConnectReversalService.processRefund', () => {
   });
 
   it('distributes fractional refund cents to the highest-remainder stakeholder on tiny partial refunds', async () => {
-    const prisma = {
-      checkoutPayment: {
-        findFirst: jest.fn().mockResolvedValue({
-          id: 'cp_1',
-          webhookData: makeWebhookData(),
-        }),
-      },
-    };
+    const prisma = withTransaction();
+    prisma.checkoutPayment.findFirst.mockResolvedValue({
+      id: 'cp_1',
+      webhookData: makeWebhookData(),
+    });
     const stripe = {
       stripe: {
         transfers: {
@@ -268,11 +252,8 @@ describe('ConnectReversalService.processRefund', () => {
   });
 
   it('throws when the persisted reversal snapshot is missing', async () => {
-    const prisma = {
-      checkoutPayment: {
-        findFirst: jest.fn().mockResolvedValue(null),
-      },
-    };
+    const prisma = withTransaction();
+    prisma.checkoutPayment.findFirst.mockResolvedValue(null);
     const stripe = {
       stripe: {
         transfers: {
@@ -302,14 +283,11 @@ describe('ConnectReversalService.processRefund', () => {
 
 describe('ConnectReversalService.processDispute', () => {
   it('reverses seller destination transfer plus manual transfers and debits chargeback ledger entries', async () => {
-    const prisma = {
-      checkoutPayment: {
-        findFirst: jest.fn().mockResolvedValue({
-          id: 'cp_1',
-          webhookData: makeWebhookData(),
-        }),
-      },
-    };
+    const prisma = withTransaction();
+    prisma.checkoutPayment.findFirst.mockResolvedValue({
+      id: 'cp_1',
+      webhookData: makeWebhookData(),
+    });
     const stripe = {
       stripe: {
         transfers: {
@@ -380,14 +358,11 @@ describe('ConnectReversalService.processDispute', () => {
   });
 
   it('distributes fractional dispute cents to the highest-remainder stakeholder on tiny partial disputes', async () => {
-    const prisma = {
-      checkoutPayment: {
-        findFirst: jest.fn().mockResolvedValue({
-          id: 'cp_1',
-          webhookData: makeWebhookData(),
-        }),
-      },
-    };
+    const prisma = withTransaction();
+    prisma.checkoutPayment.findFirst.mockResolvedValue({
+      id: 'cp_1',
+      webhookData: makeWebhookData(),
+    });
     const stripe = {
       stripe: {
         transfers: {
@@ -451,14 +426,11 @@ describe('ConnectReversalService.processDispute', () => {
   });
 
   it('throws when a seller transfer is expected but not found on Stripe', async () => {
-    const prisma = {
-      checkoutPayment: {
-        findFirst: jest.fn().mockResolvedValue({
-          id: 'cp_1',
-          webhookData: makeWebhookData(),
-        }),
-      },
-    };
+    const prisma = withTransaction();
+    prisma.checkoutPayment.findFirst.mockResolvedValue({
+      id: 'cp_1',
+      webhookData: makeWebhookData(),
+    });
     const stripe = {
       stripe: {
         transfers: {

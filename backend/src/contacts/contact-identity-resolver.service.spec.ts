@@ -1,7 +1,13 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ContactIdentityResolverService } from './contact-identity-resolver.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { type FlexMock } from '../../test/helpers/prisma.mock';
+
+type FlexMock<T extends (...args: never[]) => unknown> = jest.Mock<ReturnType<T>, Parameters<T>> & {
+  mockResolvedValue: (v: Awaited<ReturnType<T>>) => FlexMock<T>;
+  mockResolvedValueOnce: (v: Awaited<ReturnType<T>>) => FlexMock<T>;
+  mockRejectedValue: (e: unknown) => FlexMock<T>;
+};
+
 interface MockPrisma {
   channelIdentifier: {
     findUnique: FlexMock<(args: unknown) => unknown>;

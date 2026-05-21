@@ -1,7 +1,13 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ContactIdentityMergeService } from './contact-identity-merge.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { type FlexMock } from '../../test/helpers/prisma.mock';
+
+type FlexMock<T extends (...args: never[]) => unknown> = jest.Mock<ReturnType<T>, Parameters<T>> & {
+  mockResolvedValue: (v: Awaited<ReturnType<T>>) => FlexMock<T>;
+  mockResolvedValueOnce: (v: Awaited<ReturnType<T>>) => FlexMock<T>;
+  mockRejectedValue: (e: unknown) => FlexMock<T>;
+};
+
 interface MockPrisma {
   contactIdentityLink: {
     findUnique: FlexMock<(args: unknown) => unknown>;
@@ -109,11 +115,9 @@ describe('ContactIdentityMergeService', () => {
     });
 
     it('returns existing link if reverse direction exists', async () => {
-      mockPrisma.contactIdentityLink.findUnique.mockResolvedValueOnce(null).mockResolvedValueOnce({
-        id: 'link-2',
-        contactId: 'contact-a',
-        linkedContactId: 'contact-b',
-      });
+      mockPrisma.contactIdentityLink.findUnique
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce({ id: 'link-2', contactId: 'contact-a', linkedContactId: 'contact-b' });
 
       const result = await service.mergeContacts({
         workspaceId: 'ws-1',
