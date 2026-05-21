@@ -145,7 +145,7 @@ describe('MercadoPagoWebhookSignatureVerifier', () => {
 
   it('refuses when webhook secret is unset', () => {
     const v = buildVerifier({ secret: '' });
-    const sigHeader = signManifest('any', TEST_DATA_ID, TEST_REQUEST_ID, fixedTs);
+    const sigHeader = signManifest('dummy', TEST_DATA_ID, TEST_REQUEST_ID, fixedTs);
     const res = v.verify({
       signatureHeader: sigHeader,
       requestId: TEST_REQUEST_ID,
