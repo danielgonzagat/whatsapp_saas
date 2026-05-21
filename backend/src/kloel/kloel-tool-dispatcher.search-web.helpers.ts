@@ -1,7 +1,9 @@
 import type { PlanLimitsService } from '../billing/plan-limits.service';
 import type { KloelComposerService } from './kloel-composer.service';
 
-export async function runToolSearchWeb(planLimits: PlanLimitsService, composerService: KloelComposerService, 
+export async function runToolSearchWeb(
+  planLimits: PlanLimitsService,
+  composerService: KloelComposerService,
   workspaceId: string,
   args: { query?: string },
 ): Promise<{
@@ -23,9 +25,9 @@ export async function runToolSearchWeb(planLimits: PlanLimitsService, composerSe
       .catch(() => {});
     return { success: true, query, summary: digest.answer, sources: digest.sources };
   } catch (error: unknown) {
-    void this.opsAlert?.alertOnCriticalError(error, 'KloelToolDispatcherService.trackAiUsage');
+    // opsAlert removed (helper context has no class state)
     const msg = error instanceof Error ? error.message : 'web_search_failed';
-    this.logger.warn(`Falha em search_web para "${query}": ${msg}`);
+    console.warn(`Falha em search_web para "${query}": ${msg}`);
     return { success: false, error: msg };
   }
 }
