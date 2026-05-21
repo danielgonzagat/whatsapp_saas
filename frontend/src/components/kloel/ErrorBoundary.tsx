@@ -1,4 +1,5 @@
 'use client';
+import { colors } from '@/lib/design-tokens';
 
 import { kloelT } from '@/lib/i18n/t';
 import { Component, type ReactNode, type ErrorInfo } from 'react';
@@ -51,7 +52,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
           <div
             style={{
               background: 'var(--app-bg-card)',
-              border: '1px solid #E85D30',
+              border: `1px solid ${colors.ember.primary}`,
               borderRadius: 6,
               padding: 40,
               maxWidth: 480,
@@ -78,7 +79,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
                 height="24"
                 viewBox="0 0 24 24"
                 fill="none"
-                stroke="#E85D30"
+                stroke={colors.ember.primary}
                 strokeWidth="2"
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -122,7 +123,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
                 fontSize: 14,
                 fontWeight: 600,
                 color: 'var(--app-text-on-accent)',
-                backgroundColor: '#E0DDD8',
+                backgroundColor: colors.text.silver,
                 border: 'none',
                 borderRadius: 6,
                 padding: '10px 28px',

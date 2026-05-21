@@ -1,0 +1,16 @@
+export { VendasTab } from './VendasTab';
+export { AfterPayTab } from './AfterPayTab';
+export { ChurnTab } from './ChurnTab';
+export { AbandonosTab } from './AbandonosTab';
+export { SatisfacaoTab } from './SatisfacaoTab';
+export { EnvioRelatoriosTab } from './EnvioRelatoriosTab';
+export { AfiliadosTab } from './AfiliadosTab';
+export { IndicadoresTab } from './IndicadoresTab';
+export { AssinaturasTab } from './AssinaturasTab';
+export { IndProdTab } from './IndProdTab';
+export { RecusaTab } from './RecusaTab';
+export { OrigemTab } from './OrigemTab';
+export { MetricasTab } from './MetricasTab';
+export { EstornosTab } from './EstornosTab';
+export { ChargebackTab } from './ChargebackTab';
+export { EngajamentoTab } from './EngajamentoTab';

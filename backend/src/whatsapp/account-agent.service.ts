@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException  } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { Prisma } from '@prisma/client';
 import * as Sentry from '@sentry/node';
 import { toPrismaJsonValue } from '../common/prisma/prisma-json.util';
@@ -33,10 +34,8 @@ export type {
   AccountInputSessionPayload,
 } from './account-agent.types';
 import { AgentEventsService } from './agent-events.service';
-import {
-  detectCatalogGapExt,
-  respondToInputSessionExt,
-} from './__companions__/account-agent.service.companion';
+import { detectCatalogGapExt } from './account-agent.gap-detector';
+import { respondToInputSessionExt } from './account-agent.input-session';
 import {
   listAccountWorkItems,
   materializeAccountCapabilityGaps,
@@ -45,9 +44,11 @@ import {
   upsertInputCollectionSession,
 } from './account-agent.work-items';
 
+type AccountAgentMetadata = Record<string, unknown>;
+
 @Injectable()
 export class AccountAgentService {
-  private readonly logger = new Logger(AccountAgentService.name);
+  private readonly logger = StructuredLogger.from(AccountAgentService.name);
   constructor(
     private readonly prisma: PrismaService,
     private readonly agentEvents: AgentEventsService,
@@ -126,7 +127,9 @@ export class AccountAgentService {
     });
     return rows.flatMap((r) => {
       const p = parseApprovalPayload(r.payload);
-      if (!p) return [];
+      if (!p) {
+        return [];
+      }
       return [
         {
           ...p,
@@ -158,7 +161,9 @@ export class AccountAgentService {
     });
     return rows.flatMap((r) => {
       const p = parseInputSessionPayload(r.payload);
-      if (!p) return [];
+      if (!p) {
+        return [];
+      }
       const s = normalizeInputSessionStatus(r.state);
       const a = asRecord(r.answers) ?? asRecord(p.answers) ?? {};
       const pn =
@@ -171,9 +176,9 @@ export class AccountAgentService {
           canonical: true,
           status: s,
           answers: {
-            description: typeof a.description === 'string' ? a.description : p.answers.description,
-            offers: typeof a.offers === 'string' ? a.offers : p.answers.offers,
-            company: typeof a.company === 'string' ? a.company : p.answers.company,
+            description: typeof a.description === 'string' ? a.description : null,
+            offers: typeof a.offers === 'string' ? a.offers : null,
+            company: typeof a.company === 'string' ? a.company : null,
           },
           currentPrompt: getPromptForStage(s, pn),
         },
@@ -374,29 +379,37 @@ export class AccountAgentService {
   private async findApproval(workspaceId: string, approvalId: string) {
     const approvals = await this.listApprovals(workspaceId);
     const a = approvals.find((i) => i.id === approvalId);
-    if (!a) throw new NotFoundException('Aprovação de conta não encontrada');
+    if (!a) {
+      throw new NotFoundException('Aprovação de conta não encontrada');
+    }
     const key = this.buildApprovalKey(a.normalizedProductName);
     const record = await this.prisma.kloelMemory.findUnique({
       where: { workspaceId_key: { workspaceId, key } },
     });
-    if (!record) throw new NotFoundException('Registro de aprovação não encontrado');
+    if (!record) {
+      throw new NotFoundException('Registro de aprovação não encontrado');
+    }
     return { record, approval: a };
   }
 
   private async findInputSession(workspaceId: string, sessionId: string) {
     const sessions = await this.listInputSessions(workspaceId);
     const s = sessions.find((i) => i.id === sessionId);
-    if (!s) throw new NotFoundException('Sessão de input não encontrada');
+    if (!s) {
+      throw new NotFoundException('Sessão de input não encontrada');
+    }
     const key = this.buildInputSessionKey(s.normalizedProductName);
     const record = await this.prisma.kloelMemory.findUnique({
       where: { workspaceId_key: { workspaceId, key } },
     });
-    if (!record) throw new NotFoundException('Registro da sessão não encontrado');
+    if (!record) {
+      throw new NotFoundException('Registro da sessão não encontrado');
+    }
     const recordTyped = {
       key: record.key,
       metadata:
         record.metadata && typeof record.metadata === 'object' && !Array.isArray(record.metadata)
-          ? (record.metadata as Record<string, unknown>)
+          ? (record.metadata as AccountAgentMetadata)
           : null,
     };
     return { record: recordTyped, session: s };
@@ -409,7 +422,9 @@ export class AccountAgentService {
     });
     if (existing?.value) {
       const p = parseInputSessionPayload(existing.value);
-      if (p) return p;
+      if (p) {
+        return p;
+      }
     }
     const session: AccountInputSessionPayload = {
       id: randomUUID(),
@@ -480,7 +495,9 @@ export class AccountAgentService {
   }
 
   private async enqueueContactResumption(workspaceId: string, session: AccountInputSessionPayload) {
-    if (!session.contactId && !session.phone) return;
+    if (!session.contactId && !session.phone) {
+      return;
+    }
     try {
       await autopilotQueue.add(
         'scan-contact',

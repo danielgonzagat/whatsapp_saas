@@ -27,15 +27,17 @@ const CHAT_THEME = {
 
 interface MessageBubbleProps {
   message: Message;
-  onQuickAction?: (actionId: string, label: string) => void;
-  pendingActionId?: string | null;
-  isBusy?: boolean;
-  showSlowHint?: boolean;
-  onCancelProcessing?: () => void;
-  onMessageEdit?: (messageId: string, nextContent: string) => Promise<void>;
-  onMessageRetry?: (messageId: string) => Promise<void>;
-  onAssistantFeedback?: (messageId: string, type: 'positive' | 'negative' | null) => Promise<void>;
-  onAssistantRegenerate?: (messageId: string) => Promise<void>;
+  onQuickAction?: ((actionId: string, label: string) => void) | undefined;
+  pendingActionId?: string | null | undefined;
+  isBusy?: boolean | undefined;
+  showSlowHint?: boolean | undefined;
+  onCancelProcessing?: (() => void) | undefined;
+  onMessageEdit?: ((messageId: string, nextContent: string) => Promise<void>) | undefined;
+  onMessageRetry?: ((messageId: string) => Promise<void>) | undefined;
+  onAssistantFeedback?:
+    | ((messageId: string, type: 'positive' | 'negative' | null) => Promise<void>)
+    | undefined;
+  onAssistantRegenerate?: ((messageId: string) => Promise<void>) | undefined;
 }
 
 /** Message bubble. */
@@ -84,12 +86,12 @@ export function MessageBubble({
 
   useEffect(() => {
     if (!isEditing) {
-      setDraftContent(message.content);
+      queueMicrotask(() => setDraftContent(message.content));
     }
   }, [isEditing, message.content]);
 
   useEffect(() => {
-    setActiveVersionIndex(Math.max(assistantVersions.length - 1, 0));
+    queueMicrotask(() => setActiveVersionIndex(Math.max(assistantVersions.length - 1, 0)));
   }, [assistantVersions.length, latestVersionId, message.id]);
 
   const visibleAssistantContent =
@@ -216,7 +218,7 @@ export function MessageBubble({
                 summary={processingSummary}
                 isProcessing={isAssistantProcessing}
                 showSlowHint={showSlowHint}
-                onCancel={onCancelProcessing}
+                {...(onCancelProcessing ? { onCancel: onCancelProcessing } : {})}
                 theme={CHAT_THEME}
               />
             ) : null}

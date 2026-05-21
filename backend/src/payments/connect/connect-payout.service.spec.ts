@@ -1,3 +1,4 @@
+import { expectValueOf } from '../../../test/expect-value-of';
 import {
   AccountBalanceNotFoundError,
   InsufficientAvailableBalanceError,
@@ -144,7 +145,7 @@ describe('ConnectPayoutService.createPayout', () => {
         stripeAccountId: DEFAULT_STRIPE_ACCOUNT_ID,
       },
     });
-    expect(financialAlert.withdrawalFailed).toHaveBeenCalledWith(expect.any(Error), {
+    expect(financialAlert.withdrawalFailed).toHaveBeenCalledWith(expectValueOf(Error), {
       workspaceId: DEFAULT_WORKSPACE_ID,
       amount: Number(request.amountCents),
     });

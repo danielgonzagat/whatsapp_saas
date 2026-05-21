@@ -28,7 +28,7 @@ function collectAddedLines(relPath) {
 
   for (const line of diff.split('\n')) {
     const match = /^@@ -\d+(?:,\d+)? \+(\d+)(?:,(\d+))? @@/.exec(line);
-    if (!match) continue;
+    if (!match) {continue;}
 
     const start = Number(match[1]);
     const length = match[2] === undefined ? 1 : Number(match[2]);

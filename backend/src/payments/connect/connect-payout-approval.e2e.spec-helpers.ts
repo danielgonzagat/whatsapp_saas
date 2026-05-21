@@ -40,7 +40,7 @@ function buildUpdateApprovalRequestMock(now: Date) {
  * Constructs the in-memory Prisma + ConnectPayoutService stubs the spec
  * needs and returns the wired service. Sibling spec files import this so
  * each topic (createRequest / approveRequest+rejectRequest / list) lives
- * in a smaller file under the architecture-allowlist budget.
+ * in a smaller file under the architecture line budget.
  */
 
 export function buildService(overrides?: {

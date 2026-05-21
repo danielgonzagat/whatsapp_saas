@@ -30,14 +30,14 @@ export function EmergencyModeCard({ value, saving = false, onSave }: EmergencyMo
   const [fixedMessage, setFixedMessage] = useState(value?.fixedMessage || '');
 
   useEffect(() => {
-    setEmergencyAction(value?.emergencyAction || '');
-    setFixedMessage(value?.fixedMessage || '');
+    queueMicrotask(() => setEmergencyAction(value?.emergencyAction || ''));
+    queueMicrotask(() => setFixedMessage(value?.fixedMessage || ''));
   }, [value]);
 
   return (
     <SettingsCard className="p-6">
       <SettingsHeader
-        icon={<AlertTriangle className="h-5 w-5 text-[#E85D30]" aria-hidden="true" />}
+        icon={<AlertTriangle className="h-5 w-5 text-[var(--ember-primary)]" aria-hidden="true" />}
         title={kloelT(`Modo de Emergencia`)}
         description={kloelT(
           `Configure o que o Kloel deve fazer quando houver problemas tecnicos ou instabilidades.`,

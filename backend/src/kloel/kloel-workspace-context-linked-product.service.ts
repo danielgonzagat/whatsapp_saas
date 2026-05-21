@@ -1,9 +1,12 @@
 import { Injectable } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { PrismaService } from '../prisma/prisma.service';
 import { KloelContextFormatter } from './kloel-context-formatter';
 import type { KloelContextFormatterLimits } from './kloel-context-formatter.types';
 import { buildWorkspaceProductSelect } from './kloel-workspace-context-product-select';
 import type { WorkspaceProductContextInput } from './kloel-workspace-context.types';
+
+type AffiliateProductRecord = Record<string, unknown>;
 
 /**
  * Handles linked-product context building (owned + affiliate) for AI prompts.
@@ -14,6 +17,8 @@ import type { WorkspaceProductContextInput } from './kloel-workspace-context.typ
  */
 @Injectable()
 export class KloelWorkspaceContextLinkedProductService {
+  private readonly logger = StructuredLogger.from(KloelWorkspaceContextLinkedProductService.name);
+
   constructor(private readonly prisma: PrismaService) {}
 
   private async fetchWorkspaceProductPromptRecord(
@@ -40,18 +45,24 @@ export class KloelWorkspaceContextLinkedProductService {
       | null
       | undefined,
   ): Promise<string | null> {
-    if (!linkedProduct) return null;
+    if (!linkedProduct) {
+      return null;
+    }
     const linkedSource = linkedProduct.source === 'affiliate' ? 'affiliate' : 'owned';
 
     if (linkedSource === 'owned') {
       const ownedProductId = String(linkedProduct.productId || linkedProduct.id || '').trim();
-      if (!ownedProductId) return null;
+      if (!ownedProductId) {
+        return null;
+      }
       const product = await this.fetchWorkspaceProductPromptRecord(
         workspaceId,
         ownedProductId,
         limits,
       );
-      if (!product) return null;
+      if (!product) {
+        return null;
+      }
       const contextFormatter = new KloelContextFormatter(limits);
       return [
         'PRODUTO VINCULADO AO PROMPT:',
@@ -63,7 +74,9 @@ export class KloelWorkspaceContextLinkedProductService {
     const affiliateProductId = String(
       linkedProduct.affiliateProductId || linkedProduct.id || '',
     ).trim();
-    if (!affiliateProductId) return null;
+    if (!affiliateProductId) {
+      return null;
+    }
 
     const [request, link] = await Promise.all([
       this.prisma.affiliateRequest.findFirst({
@@ -77,7 +90,7 @@ export class KloelWorkspaceContextLinkedProductService {
     ]);
 
     const affiliateProductRecord = request?.affiliateProduct || link?.affiliateProduct;
-    const affiliateProduct = affiliateProductRecord as Record<string, unknown> | null;
+    const affiliateProduct = affiliateProductRecord as AffiliateProductRecord | null;
     const contextFormatter = new KloelContextFormatter(limits);
     const affiliateProductProductId =
       typeof affiliateProduct?.productId === 'string' ? affiliateProduct.productId : null;
@@ -91,7 +104,17 @@ export class KloelWorkspaceContextLinkedProductService {
               where: { id: targetProductId },
               select: { workspaceId: true },
             })
-            .catch(() => null)
+            .catch((err) => {
+              this.logger.error(
+                'Failed to resolve producer workspace for linked product',
+                err instanceof Error ? err.message : String(err),
+                {
+                  context: 'KloelWorkspaceContextLinkedProduct.buildLinkedProductPromptContext',
+                  targetProductId,
+                },
+              );
+              return null;
+            })
         )?.workspaceId || null
       : null;
     const catalogProduct =
@@ -100,7 +123,18 @@ export class KloelWorkspaceContextLinkedProductService {
             producerWorkspaceId,
             targetProductId,
             limits,
-          ).catch(() => null)
+          ).catch((err) => {
+            this.logger.error(
+              'Failed to fetch catalog product for linked context',
+              err instanceof Error ? err.message : String(err),
+              {
+                context: 'KloelWorkspaceContextLinkedProduct.buildLinkedProductPromptContext',
+                producerWorkspaceId,
+                targetProductId,
+              },
+            );
+            return null;
+          })
         : null;
 
     const affiliateLines = [

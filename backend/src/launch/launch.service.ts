@@ -1,4 +1,4 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { asProviderSettings } from '../whatsapp/provider-settings.types';
 
@@ -30,10 +30,11 @@ function resolveLaunchInviteLink(data: AddGroupInput): string {
 /** Launch service. */
 @Injectable()
 export class LaunchService {
+  private readonly logger = new Logger(LaunchService.name);
+
   constructor(private prisma: PrismaService) {}
 
   /** List launchers. */
-  // PULSE_OK: bounded by workspace scope, launchers cardinality is low
   async listLaunchers(workspaceId: string) {
     return this.prisma.groupLauncher.findMany({
       where: { workspaceId },
@@ -66,9 +67,9 @@ export class LaunchService {
       data: {
         name: data.name || data.role || 'Grupo do lançamento',
         inviteLink,
-        capacity: data.capacity,
-        current: data.current,
-        isActive: data.isActive,
+        ...(data.capacity !== undefined ? { capacity: data.capacity } : {}),
+        ...(data.current !== undefined ? { current: data.current } : {}),
+        ...(data.isActive !== undefined ? { isActive: data.isActive } : {}),
         launcher: { connect: { id: launcherId } },
       },
     });
@@ -114,10 +115,16 @@ export class LaunchService {
     const encoded = encodeURIComponent(command);
 
     // Se tiver telefone, gera wa.me. Se não, gera link interno curto (redir).
+    this.logger.log('Calling WhatsApp', {
+      context: 'LaunchService.generateStartLink',
+      endpoint: 'wa.me',
+      hasPhone: !!phone,
+      hasFlowId: !!flowId,
+    });
     if (phone) {
       return `https://wa.me/${phone}?text=${encoded}`;
     }
-    return `https://api.whatsapp.com/send?text=${encoded}`; // Link genérico que pede pra escolher o contato
+    return `https://api.whatsapp.com/send?text=${encoded}`;
   }
 
   /** Track click. */

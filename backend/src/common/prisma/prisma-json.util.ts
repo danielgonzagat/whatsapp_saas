@@ -2,12 +2,12 @@ import { Prisma } from '@prisma/client';
 import { coerceScalarJson, isPlainJsonObject } from './prisma-json-scalar.util';
 
 function coerceObjectEntries(value: object): Prisma.InputJsonObject {
-  const result: Record<string, Prisma.InputJsonValue> = {};
+  const result: Record<string, Prisma.InputJsonValue | null> = {};
   for (const [key, entry] of Object.entries(value)) {
     if (entry === undefined) {
       continue;
     }
-    result[key] = toPrismaJsonValue(entry);
+    result[key] = entry === null ? null : toPrismaJsonValue(entry);
   }
   return result;
 }
@@ -19,7 +19,7 @@ export function toPrismaJsonValue(value: unknown): Prisma.InputJsonValue {
     return scalar;
   }
   if (Array.isArray(value)) {
-    return value.map((entry) => toPrismaJsonValue(entry));
+    return value.map((entry) => (entry === null ? null : toPrismaJsonValue(entry)));
   }
   if (isPlainJsonObject(value)) {
     return coerceObjectEntries(value);
@@ -29,5 +29,5 @@ export function toPrismaJsonValue(value: unknown): Prisma.InputJsonValue {
 
 /** To prisma json array. */
 export function toPrismaJsonArray(value: readonly unknown[]): Prisma.InputJsonArray {
-  return value.map((entry) => toPrismaJsonValue(entry));
+  return value.map((entry) => (entry === null ? null : toPrismaJsonValue(entry)));
 }

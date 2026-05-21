@@ -1,11 +1,12 @@
-// PULSE:OK — helper/wrapper module only. Real budget enforcement happens in caller services
+import { StructuredLogger } from '../logging/structured-logger';
 // via PlanLimitsService.ensureTokenBudget() before invoking these helpers.
 import { randomInt } from 'node:crypto';
-import { Logger } from '@nestjs/common';
-import OpenAI, { type Uploadable } from 'openai';
+
+import OpenAI from 'openai';
+import { isDeepSeekChatModel } from '../lib/llm-provider';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
 
-const logger = new Logger('OpenAIWrapper');
+const logger = StructuredLogger.from('OpenAIWrapper');
 const isTestEnv = !!process.env.JEST_WORKER_ID || process.env.NODE_ENV === 'test';
 type NonStreamingChatParams = OpenAI.Chat.ChatCompletionCreateParamsNonStreaming;
 type StreamingChatParams = OpenAI.Chat.ChatCompletionCreateParamsStreaming;
@@ -210,7 +211,19 @@ function assertMessagesFitInputLimit(messages: unknown): void {
   }
 }
 
-// PULSE:OK — normalization helpers do not call the provider; caller-level budget
+function shouldUseDeepSeekThinking(): boolean {
+  return process.env.DEEPSEEK_THINKING !== 'disabled';
+}
+
+function deepSeekThinkingMinTokens(): number {
+  const parsed = Number(process.env.DEEPSEEK_THINKING_MIN_TOKENS ?? 512);
+  return Number.isFinite(parsed) && parsed >= 64 ? Math.floor(parsed) : 512;
+}
+
+function deepSeekReasoningEffort(): 'high' | 'max' {
+  return process.env.DEEPSEEK_REASONING_EFFORT === 'max' ? 'max' : 'high';
+}
+
 // enforcement happens before chatCompletionWithRetry/chatCompletionStreamWithRetry.
 export function normalizeChatCompletionParams(
   params: NonStreamingChatParams,
@@ -223,11 +236,36 @@ export function normalizeChatCompletionParams(params: AnyChatParams): AnyChatPar
   // dynamic writes to max_completion_tokens / delete max_tokens below.
   const payload = { ...params };
 
-  // --- Clamp 1: max output tokens ----------------------------------
+  // --- Clamp 1: max output tokens ----------------------------------  // Strip reasoning_content from all messages to prevent DeepSeek v4
+  // multi-turn error: "reasoning_content must be passed back to the API"
+  if (Array.isArray(payload.messages)) {
+    for (const msg of payload.messages) {
+      if (msg && typeof msg === 'object' && 'reasoning_content' in msg) {
+        delete (msg as Record<string, unknown>).reasoning_content;
+      }
+    }
+  }
+
   const rawMaxTokens = payload.max_tokens ?? payload.max_completion_tokens;
-  payload.max_completion_tokens = clampMaxCompletionTokens(rawMaxTokens);
-  if ('max_tokens' in payload) {
-    delete payload.max_tokens;
+  const clampedMaxTokens = clampMaxCompletionTokens(rawMaxTokens);
+  if (isDeepSeekChatModel(payload.model)) {
+    payload.max_tokens = shouldUseDeepSeekThinking()
+      ? Math.max(clampedMaxTokens, deepSeekThinkingMinTokens())
+      : clampedMaxTokens;
+    (payload as Record<string, unknown>).thinking = {
+      type: shouldUseDeepSeekThinking() ? 'enabled' : 'disabled',
+    };
+    if (shouldUseDeepSeekThinking()) {
+      (payload as Record<string, unknown>).reasoning_effort = deepSeekReasoningEffort();
+    }
+    if ('max_completion_tokens' in payload) {
+      delete payload.max_completion_tokens;
+    }
+  } else {
+    payload.max_completion_tokens = clampedMaxTokens;
+    if ('max_tokens' in payload) {
+      delete payload.max_tokens;
+    }
   }
 
   // --- Clamp 2: serialized input size -------------------------------
@@ -236,7 +274,6 @@ export function normalizeChatCompletionParams(params: AnyChatParams): AnyChatPar
   // not let that through.
   assertMessagesFitInputLimit(payload.messages);
 
-  // PULSE:OK — returning a normalized payload object is not an LLM call.
   return payload;
 }
 
@@ -279,61 +316,6 @@ export async function chatCompletionStreamWithRetry(
       >,
     options,
   );
-}
-
-/**
- * Wrapper para embeddings
- */
-// I16: callers SHOULD invoke LLMBudgetService.assertBudget() before this
-// wrapper. The wrapper itself enforces per-request clamps (max tokens,
-// max input size) via normalizeChatCompletionParams. See llm-budget.service.ts.
-export async function embeddingsWithRetry(
-  client: OpenAI,
-  params: OpenAI.Embeddings.EmbeddingCreateParams,
-  options?: RetryOptions,
-): Promise<OpenAI.Embeddings.CreateEmbeddingResponse> {
-  return callOpenAIWithRetry(() => client.embeddings.create(params), options);
-}
-
-/**
- * Wrapper para TTS (text-to-speech)
- */
-// I16: callers SHOULD invoke LLMBudgetService.assertBudget() before this
-// wrapper. The wrapper itself enforces per-request clamps (max tokens,
-// max input size) via normalizeChatCompletionParams. See llm-budget.service.ts.
-export async function ttsWithRetry(
-  client: OpenAI,
-  params: OpenAI.Audio.Speech.SpeechCreateParams,
-  options?: RetryOptions,
-): Promise<Response> {
-  return callOpenAIWithRetry(
-    () => client.audio.speech.create(params) as Promise<Response>,
-    options,
-  );
-}
-
-/**
- * Wrapper para Whisper (speech-to-text)
- */
-// I16: callers SHOULD invoke LLMBudgetService.assertBudget() before this
-// wrapper. The wrapper itself enforces per-request clamps (max tokens,
-// max input size) via normalizeChatCompletionParams. See llm-budget.service.ts.
-export async function transcribeWithRetry(
-  client: OpenAI,
-  file: Uploadable,
-  model = resolveBackendOpenAIModel('audio_understanding'),
-  options?: RetryOptions,
-): Promise<string> {
-  const result = await callOpenAIWithRetry<{ text: string } | string>(
-    () =>
-      client.audio.transcriptions.create({
-        file: file,
-        model,
-        response_format: 'text',
-      }),
-    options,
-  );
-  return typeof result === 'string' ? result : result.text;
 }
 
 /**

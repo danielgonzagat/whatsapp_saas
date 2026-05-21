@@ -1,10 +1,10 @@
 import {
   Injectable,
-  Logger,
   NotFoundException,
   ServiceUnavailableException,
   UnauthorizedException,
 } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { CheckoutSocialLeadStatus, CheckoutSocialProvider } from '@prisma/client';
 import { AppleAuthService } from '../auth/apple-auth.service';
 import { FacebookAuthService } from '../auth/facebook-auth.service';
@@ -14,7 +14,7 @@ import { buildQueueJobId } from '../queue/job-id.util';
 import { crmQueue } from '../queue/queue';
 import { CaptureSocialLeadDto } from './dto/capture-social-lead.dto';
 import { UpdateSocialLeadDto } from './dto/update-social-lead.dto';
-import { findLatestCandidate as companionFindLatestCandidate } from './__companions__/checkout-social-lead-candidate';
+import { findLatestCandidate as companionFindLatestCandidate } from './checkout-social-lead.candidate';
 import {
   extractAddressFromEnrichment,
   mergeGooglePeopleProfile,
@@ -62,7 +62,7 @@ type CheckoutSocialLeadPrefill = {
 /** Checkout social lead service. */
 @Injectable()
 export class CheckoutSocialLeadService {
-  private readonly logger = new Logger(CheckoutSocialLeadService.name);
+  private readonly logger = StructuredLogger.from(CheckoutSocialLeadService.name);
 
   constructor(
     private readonly prisma: PrismaService,
@@ -72,7 +72,6 @@ export class CheckoutSocialLeadService {
   ) {}
 
   /** Capture lead. */
-  // PULSE_OK: rate-limited by CheckoutPublicController
   async captureLead(dto: CaptureSocialLeadDto) {
     const plan = await this.resolvePlanBySlug(dto.slug);
     const provider = this.parseProvider(dto.provider);
@@ -134,7 +133,6 @@ export class CheckoutSocialLeadService {
   }
 
   /** Get lead prefill. */
-  // PULSE_OK: rate-limited by CheckoutPublicController
   async getLeadPrefill(input: {
     slug: string;
     checkoutCode?: string | null;
@@ -197,7 +195,6 @@ export class CheckoutSocialLeadService {
   }
 
   /** Hydrate google profile. */
-  // PULSE_OK: rate-limited by CheckoutPublicController
   async hydrateGoogleProfile(leadId: string, accessToken: string) {
     const updatedLead = await this.prisma.$transaction(
       async (tx) => {
@@ -296,7 +293,6 @@ export class CheckoutSocialLeadService {
   }
 
   /** Update lead. */
-  // PULSE_OK: rate-limited by CheckoutPublicController
   async updateLead(leadId: string, dto: UpdateSocialLeadDto) {
     const result = await this.prisma.$transaction(
       async (tx) => {
@@ -337,7 +333,9 @@ export class CheckoutSocialLeadService {
               phone: normalizedPhone,
               cpf: normalizeOptional(dto.cpf) || existing.cpf || null,
               stepReached: nextStep,
-              enrichmentData: mergedEnrichmentData,
+              ...(mergedEnrichmentData !== undefined
+                ? { enrichmentData: mergedEnrichmentData }
+                : {}),
             },
             select: {
               id: true,
@@ -376,7 +374,6 @@ export class CheckoutSocialLeadService {
   }
 
   /** Mark converted from order. */
-  // PULSE_OK: rate-limited by CheckoutPublicController
   async markConvertedFromOrder(input: ConversionInput) {
     const target = input.capturedLeadId
       ? await this.prisma.checkoutSocialLead.findFirst({
@@ -408,7 +405,6 @@ export class CheckoutSocialLeadService {
   }
 
   /** Sync lead contact. */
-  // PULSE_OK: rate-limited by CheckoutPublicController
   async syncLeadContact(leadId: string) {
     const lead = await this.prisma.checkoutSocialLead.findUnique({
       where: { id: leadId },
@@ -503,10 +499,12 @@ export class CheckoutSocialLeadService {
     }
     if (provider === CheckoutSocialProvider.APPLE) {
       return this.appleAuthService.verifyCredential({
-        identityToken: dto.identityToken,
-        authorizationCode: dto.authorizationCode,
-        redirectUri: dto.redirectUri,
-        user: dto.user,
+        ...(dto.identityToken !== undefined ? { identityToken: dto.identityToken } : {}),
+        ...(dto.authorizationCode !== undefined
+          ? { authorizationCode: dto.authorizationCode }
+          : {}),
+        ...(dto.redirectUri !== undefined ? { redirectUri: dto.redirectUri } : {}),
+        ...(dto.user !== undefined ? { user: dto.user } : {}),
       });
     }
     return this.googleAuthService.verifyCredential(dto.credential || '');
@@ -551,8 +549,10 @@ export class CheckoutSocialLeadService {
         },
       },
       update: {
-        name: normalizeOptional(input.name) || undefined,
-        email: normalizeEmail(input.email) || undefined,
+        ...(normalizeOptional(input.name) ? { name: normalizeOptional(input.name) } : {}),
+        ...(normalizeEmail(input.email) !== undefined
+          ? { email: normalizeEmail(input.email) }
+          : {}),
       },
       select: { id: true },
     });

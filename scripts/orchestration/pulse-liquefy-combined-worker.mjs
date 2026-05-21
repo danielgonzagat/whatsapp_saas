@@ -39,7 +39,7 @@ const CONCURRENCY = Number(
 const LOCKED_FILES = new Set(['scripts/pulse/no-hardcoded-reality-audit.ts']);
 
 function isExcluded(filePath) {
-  if (LOCKED_FILES.has(filePath)) return true;
+  if (LOCKED_FILES.has(filePath)) {return true;}
   return false;
 }
 

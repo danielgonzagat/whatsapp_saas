@@ -56,6 +56,16 @@ describe('getWhatsAppProviderFromEnv — ADR 0001 §D7', () => {
     expect(getWhatsAppProviderFromEnv()).toBe('whatsapp-api');
   });
 
+  it('returns whatsapp-api when set to whatsapp-web-agent (alias)', () => {
+    process.env.WHATSAPP_PROVIDER_DEFAULT = 'whatsapp-web-agent';
+    expect(getWhatsAppProviderFromEnv()).toBe('whatsapp-api');
+  });
+
+  it('returns meta-cloud when set to meta (alias)', () => {
+    process.env.WHATSAPP_PROVIDER_DEFAULT = 'meta';
+    expect(getWhatsAppProviderFromEnv()).toBe('meta-cloud');
+  });
+
   it('is case-insensitive and trims whitespace', () => {
     process.env.WHATSAPP_PROVIDER_DEFAULT = '  WAHA  ';
     expect(getWhatsAppProviderFromEnv()).toBe('whatsapp-api');

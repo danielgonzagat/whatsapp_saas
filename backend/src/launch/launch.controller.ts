@@ -10,7 +10,6 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { Throttle } from '@nestjs/throttler';
 import { Response } from 'express';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Public } from '../auth/public.decorator';
@@ -19,16 +18,19 @@ import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { AuthenticatedRequest } from '../common/interfaces/authenticated-request.interface';
 import { AddGroupDto, CreateLauncherDto } from './dto/create-launcher.dto';
 import { LaunchService } from './launch.service';
+import { RouteClass } from '../common/throttler/route-class.decorator';
+import { InternalEndpoint } from '../common/decorators/internal-endpoint.decorator';
 
 /** Launch controller. */
 @ApiTags('Launchpad')
 @Controller('launch')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
+@RouteClass('read')
 export class LaunchController {
   constructor(private readonly launchService: LaunchService) {}
 
   /** List launchers. */
-  // PULSE_OK: admin-only route, accessed via admin panel
+  @InternalEndpoint('launch launchers listing')
   @Get('launchers')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'List all launchers for the workspace' })
@@ -67,7 +69,6 @@ export class LaunchController {
   /** Join launch. */
   @Public()
   @Get('join/:slug')
-  @Throttle({ default: { limit: 30, ttl: 60000 } })
   @ApiOperation({ summary: 'Public redirect link for joining groups' })
   async joinLaunch(@Param('slug') slug: string, @Res() res: Response) {
     const link = await this.launchService.getRedirectLink(slug);

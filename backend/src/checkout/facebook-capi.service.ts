@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import * as Sentry from '@sentry/node';
 import { getTraceHeaders } from '../common/trace-headers';
 
@@ -19,7 +20,7 @@ interface CAPIEventData {
 /** Facebook capi service. */
 @Injectable()
 export class FacebookCAPIService {
-  private readonly logger = new Logger(FacebookCAPIService.name);
+  private readonly logger = StructuredLogger.from(FacebookCAPIService.name);
 
   private sha256(value: string): string {
     return createHash('sha256').update(value.toLowerCase().trim()).digest('hex');
@@ -78,7 +79,6 @@ export class FacebookCAPIService {
         this.logger.log(`Facebook CAPI Purchase event sent for pixel ${data.pixelId}`);
         return true;
       }
-      // PULSE:OK — CAPI is a best-effort analytics side-effect; webhook processing must not fail because of it
     } catch (error: unknown) {
       this.logger.error(`Facebook CAPI error: ${String(error)}`);
       Sentry.captureException(error, {

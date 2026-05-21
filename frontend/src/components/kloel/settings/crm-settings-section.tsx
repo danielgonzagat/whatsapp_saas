@@ -1,4 +1,5 @@
 'use client';
+import { colors } from '@/lib/design-tokens';
 
 import { kloelT } from '@/lib/i18n/t';
 import { KloelMushroomMark } from '@/components/kloel/KloelBrand';
@@ -17,7 +18,7 @@ import {
   ArrowRight,
   KanbanSquare,
   Plus,
-  RefreshCw,
+  RotateCw,
   Sparkles,
   XCircle,
 } from 'lucide-react';
@@ -31,7 +32,7 @@ import {
 } from './contract';
 import { errorMessage, formatMoney } from './crm-settings-section.helpers';
 import { ContactCard, SegmentationCard, StatCard, fieldClass } from './crm-settings-section.parts';
-import { colors } from '@/lib/design-tokens';
+
 
 /** Crm settings section. */
 export function CrmSettingsSection() {
@@ -47,7 +48,7 @@ export function CrmSettingsSection() {
   const [selectedPipelineId, setSelectedPipelineId] = useState<string>('');
   const [selectedPreset, setSelectedPreset] = useState<string>('');
   const [presetContacts, setPresetContacts] = useState<
-    Array<{ id: string; phone: string; name?: string }>
+    Array<{ id: string; phone: string; name?: string | undefined }>
   >([]);
   const [presetTotal, setPresetTotal] = useState(0);
 
@@ -202,10 +203,10 @@ export function CrmSettingsSection() {
 
     try {
       await crmApi.createContact({
-        name: contactForm.name.trim() || undefined,
         phone: contactForm.phone.trim(),
-        email: contactForm.email.trim() || undefined,
-        notes: contactForm.notes.trim() || undefined,
+        ...(contactForm.name.trim() ? { name: contactForm.name.trim() } : {}),
+        ...(contactForm.email.trim() ? { email: contactForm.email.trim() } : {}),
+        ...(contactForm.notes.trim() ? { notes: contactForm.notes.trim() } : {}),
       });
       setContactForm({ name: '', phone: '', email: '', notes: '' });
       setSuccess('Contato criado no CRM.');
@@ -355,7 +356,7 @@ export function CrmSettingsSection() {
                 traceColor="colors.ember.primary"
               />
             ) : (
-              <RefreshCw className="mr-2 h-4 w-4" aria-hidden="true" />
+              <RotateCw className="mr-2 h-4 w-4" aria-hidden="true" />
             )}
 
             {kloelT(`Atualizar`)}
@@ -534,7 +535,7 @@ export function CrmSettingsSection() {
                   <div className="flex items-center gap-2">
                     <span
                       className="h-3 w-3 rounded-full"
-                      style={{ backgroundColor: stage.color || '#d1d5db' }}
+                      style={{ backgroundColor: stage.color || colors.background.surface }}
                     />
                     <div>
                       <p className="text-sm font-semibold text-[var(--app-text-primary)]">

@@ -57,10 +57,10 @@ export function getWorkspaceLocalHour(
 
 /** Is within workspace window. */
 export function isWithinWorkspaceWindow(input: {
-  settings?: WorkspaceSettings | null;
+  settings?: WorkspaceSettings | null | undefined;
   startHour: number;
   endHour: number;
-  now?: Date;
+  now?: Date | undefined;
 }): boolean {
   const nowHour = getWorkspaceLocalHour(input.settings, input.now || new Date());
   if (input.startHour <= input.endHour) {
@@ -71,11 +71,11 @@ export function isWithinWorkspaceWindow(input: {
 
 /** Get delay until workspace window opens. */
 export function getDelayUntilWorkspaceWindowOpens(input: {
-  settings?: WorkspaceSettings | null;
+  settings?: WorkspaceSettings | null | undefined;
   startHour: number;
   endHour: number;
-  now?: Date;
-  stepMinutes?: number;
+  now?: Date | undefined;
+  stepMinutes?: number | undefined;
 }): number {
   const now = input.now || new Date();
   const stepMinutes = Math.max(5, input.stepMinutes || 15);

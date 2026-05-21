@@ -1,14 +1,24 @@
 import { Prisma } from '@prisma/client';
 import { escapeHtml } from '../../common/utils/html-escape.util';
+import { BRAND_COLORS } from '../../common/kloel-colors';
 import { formatBrlAmount } from '../../kloel/money-format.util';
 import { PaidCheckoutEffectClient, readPaidCheckoutOrderScope } from './shared';
+
+export type CheckoutEmailSender = (input: {
+  to: string;
+  subject: string;
+  html: string;
+}) => Promise<boolean>;
 
 export async function sendPurchaseConfirmationEmailFromPaidCheckoutUpdate(
   prisma: PaidCheckoutEffectClient,
   args: Prisma.CheckoutOrderUpdateManyArgs,
+  sendEmail?: CheckoutEmailSender,
 ) {
   const scope = args.data.status === 'PAID' ? readPaidCheckoutOrderScope(args) : null;
-  if (!scope) return;
+  if (!scope) {
+    return;
+  }
 
   const existing = await prisma.auditLog.findFirst({
     where: {
@@ -52,8 +62,11 @@ export async function sendPurchaseConfirmationEmailFromPaidCheckoutUpdate(
     select: { slug: true },
   });
 
-  const EmailServiceClass = (await import('../../auth/email.service')).EmailService;
-  const sent = await new EmailServiceClass().sendEmail({
+  if (!sendEmail) {
+    return;
+  }
+
+  const sent = await sendEmail({
     to: order.customerEmail,
     subject: `Pagamento confirmado - ${order.plan.product?.name || 'Seu pedido'}`,
     html: buildPurchaseConfirmationEmailHtml({
@@ -61,7 +74,7 @@ export async function sendPurchaseConfirmationEmailFromPaidCheckoutUpdate(
       productName: order.plan.product?.name || 'Seu pedido',
       orderNumber: order.orderNumber || order.id,
       totalInCents: order.totalInCents,
-      memberAreaUrl: memberArea?.slug ? `/area/${memberArea.slug}` : undefined,
+      ...(memberArea?.slug ? { memberAreaUrl: `/area/${memberArea.slug}` } : {}),
     }),
   });
 
@@ -90,28 +103,24 @@ function buildPurchaseConfirmationEmailHtml(input: {
   totalInCents: number;
   memberAreaUrl?: string;
 }) {
+  const { renderEmailTemplate } = require('../../common/utils/email-template-renderer.util');
   const formattedAmount = formatBrlAmount(input.totalInCents / 100);
-  return [
-    '<div style="font-family:sans-serif;max-width:600px;margin:0 auto;background:#0A0A0C;color:#e0e0e0;padding:40px;">',
-    '<h1 style="color:#E85D30;">KLOEL</h1>',
-    '<p>Ola ',
-    escapeHtml(input.customerName),
-    ',</p>',
-    '<p>Seu pagamento foi confirmado.</p>',
-    '<div style="background:#151517;padding:20px;border-radius:6px;margin:20px 0;">',
-    '<p><strong>Produto:</strong> ',
-    escapeHtml(input.productName),
-    '</p>',
-    '<p><strong>Valor:</strong> ',
-    escapeHtml(formattedAmount),
-    '</p>',
-    '<p><strong>Pedido:</strong> #',
-    escapeHtml(input.orderNumber),
-    '</p>',
-    '</div>',
-    input.memberAreaUrl
-      ? `<p>Acesse sua area de membros: <a href="${escapeHtml(input.memberAreaUrl)}" style="color:#E85D30;">${escapeHtml(input.memberAreaUrl)}</a></p>`
-      : '<p>Se o produto tiver area de membros, seu acesso ja foi liberado automaticamente.</p>',
-    '</div>',
-  ].join('');
+  const memberAreaSection = input.memberAreaUrl
+    ? [
+        '<p>Acesse sua area de membros: <a href="',
+        escapeHtml(input.memberAreaUrl),
+        '" style="color:',
+        BRAND_COLORS.EMBER,
+        ';">',
+        escapeHtml(input.memberAreaUrl),
+        '</a></p>',
+      ].join('')
+    : '<p>Se o produto tiver area de membros, seu acesso ja foi liberado automaticamente.</p>';
+  return renderEmailTemplate('payment-confirmation', {
+    customerName: input.customerName,
+    productName: input.productName,
+    orderNumber: input.orderNumber,
+    formattedAmount,
+    memberAreaSection,
+  });
 }

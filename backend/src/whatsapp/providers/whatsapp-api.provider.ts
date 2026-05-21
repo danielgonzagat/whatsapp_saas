@@ -28,11 +28,6 @@ export type {
   WahaSessionConfigDiagnostics,
   WahaSessionOverview,
 } from './whatsapp-api.provider.types';
-export {
-  mapWahaSessionStatus,
-  normalizeWahaSessionStatus,
-  resolveWahaSessionState,
-} from './whatsapp-api.provider.types';
 
 /** Whats app api provider. */
 @Injectable()
@@ -477,6 +472,10 @@ export class WhatsAppApiProvider {
     const details = await this.metaWhatsApp.getPhoneNumberDetails(workspaceId);
     const runtimeConfig = this.getRuntimeConfigDiagnostics();
 
+    const degradedReason = details.degradedReason;
+    const authUrl = details.authUrl;
+    const phoneNumberId = details.phoneNumberId;
+
     return {
       sessionName: this.getResolvedSessionId(workspaceId),
       available: true,
@@ -494,10 +493,10 @@ export class WhatsAppApiProvider {
       configMismatch: false,
       mismatchReasons: [],
       sessionRestartRisk: false,
-      error: details.degradedReason || undefined,
-      authUrl: details.authUrl,
-      phoneNumberId: details.phoneNumberId,
-      whatsappBusinessId: details.whatsappBusinessId,
+      whatsappBusinessId: details.whatsappBusinessId ?? null,
+      ...(degradedReason !== undefined && degradedReason !== null ? { error: degradedReason } : {}),
+      ...(authUrl !== undefined && authUrl !== null ? { authUrl } : {}),
+      ...(phoneNumberId !== undefined && phoneNumberId !== null ? { phoneNumberId } : {}),
     };
   }
 

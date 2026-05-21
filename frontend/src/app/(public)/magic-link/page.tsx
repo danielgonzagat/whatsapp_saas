@@ -1,4 +1,5 @@
 'use client';
+import { colors } from '@/lib/design-tokens';
 
 import { kloelT } from '@/lib/i18n/t';
 import { authApi } from '@/lib/api';
@@ -64,8 +65,8 @@ export default function MagicLinkPage() {
     <main
       style={{
         minHeight: '100vh',
-        background: '#0A0A0C',
-        color: '#E0DDD8',
+        background: colors.background.void,
+        color: colors.text.silver,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -76,8 +77,8 @@ export default function MagicLinkPage() {
         style={{
           width: '100%',
           maxWidth: 480,
-          background: '#111113',
-          border: '1px solid #222226',
+          background: colors.background.surface,
+          border: `1px solid ${colors.background.border}`,
           borderRadius: 6,
           padding: '32px 28px',
           textAlign: 'center',
@@ -89,7 +90,7 @@ export default function MagicLinkPage() {
             fontSize: 11,
             letterSpacing: '0.16em',
             textTransform: 'uppercase',
-            color: '#E85D30',
+            color: colors.ember.primary,
             margin: '0 0 16px',
           }}
         >
@@ -111,7 +112,7 @@ export default function MagicLinkPage() {
             fontFamily: sora,
             fontSize: 16,
             lineHeight: 1.7,
-            color: status === 'error' ? '#E85D30' : '#6E6E73',
+            color: status === 'error' ? colors.ember.primary : colors.text.muted,
             margin: 0,
           }}
         >

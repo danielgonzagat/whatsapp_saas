@@ -3,13 +3,20 @@
 > **Date**: 2026-05-02
 > **Branch**: `chore/ai-constitution-obsidian-graph-lock`
 > **Status**: Active research synthesis. Extends `HUD_UPGRADE_PLAN.md`.
-> **Goal**: Document the complete arsenal Obsidian offers in 2026, decide what to weaponize for KLOEL's path to production, and lay out the multi-wave dispatch plan.
+> **Goal**: Document the complete arsenal Obsidian offers in 2026,
+> decide what to weaponize for KLOEL's path to production, and lay out the multi-wave dispatch plan.
 
 ---
 
 ## Methodology
 
-Researched Obsidian's full surface area (Apr-May 2026 state) without preconceptions: core plugins, community ecosystem (~2,750 plugins), plugin development API, Bases (new core DB), Local REST API + MCP servers (5 mature options), Canvas, Properties, Templater, Tasks/TaskNotes, Kanban, Excalidraw, QuickAdd, Tag Wrangler, Linter, BRAT, Homepage, Periodic Notes, Webhook plugins, URI scheme, Apple Shortcuts/Raycast/Alfred integration, Sync alternatives (LiveSync, Git, Syncthing), AI-agent stacks (engraph, MegaMem, claude-obsidian), and Karpathy's LLM Wiki pattern. Each weapon evaluated for leverage on KLOEL's path-to-production.
+Researched Obsidian's full surface area (Apr-May 2026 state) without preconceptions: core plugins,
+community ecosystem (~2,750 plugins), plugin development API, Bases (new core DB),
+Local REST API + MCP servers (5 mature options), Canvas, Properties, Templater, Tasks/TaskNotes, Kanban, Excalidraw,
+QuickAdd, Tag Wrangler, Linter, BRAT, Homepage, Periodic Notes, Webhook plugins, URI scheme,
+Apple Shortcuts/Raycast/Alfred integration, Sync alternatives (LiveSync, Git, Syncthing), AI-agent stacks (engraph,
+MegaMem, claude-obsidian), and Karpathy's LLM Wiki pattern. Each weapon evaluated for leverage on KLOEL's
+path-to-production.
 
 ---
 
@@ -123,11 +130,15 @@ Researched Obsidian's full surface area (Apr-May 2026 state) without preconcepti
 
 The vault becomes:
 
-1. **Single state machine for production readiness** — every dimension (tier, phase, severity, coverage, ci, providers) is a queryable property.
-2. **Dual-consumer** — Daniel sees Bases tables / Canvas walls / Graph; Claude sees same data via MCP REST queries (~50 tokens vs ~1500 per file Read).
-3. **Living documentation** — ADRs, plans, runbooks, contracts, decisions all interlinked as graph nodes; tagged + propertied for auto-classification.
+1. **Single state machine for production readiness** — every dimension (tier, phase, severity, coverage, ci,
+   providers) is a queryable property.
+2. **Dual-consumer** — Daniel sees Bases tables / Canvas walls / Graph;
+   Claude sees same data via MCP REST queries (~50 tokens vs ~1500 per file Read).
+3. **Living documentation** — ADRs, plans, runbooks, contracts, decisions all interlinked as graph nodes;
+   tagged + propertied for auto-classification.
 4. **Time-machine** — Obsidian Git auto-commits vault hourly; daily snapshots in `Daily/` show progress.
-5. **Edit-once propagate-everywhere** — Daniel changes a property in a Base; agents see new state; Graph re-colors; Tasks queue re-ranks.
+5. **Edit-once propagate-everywhere** — Daniel changes a property in a Base; agents see new state; Graph re-colors;
+   Tasks queue re-ranks.
 
 ### Karpathy LLM Wiki adaptation for KLOEL
 
@@ -230,7 +241,9 @@ L1 lens · W1 orchestrator · D1 ADR.
 
 ## Dispatch strategy
 
-All work via OpenCode V4 Pro subagents in parallel where dependencies allow. I orchestrate, validate, and update memory only. Estimated total OpenCode time across Waves 4-7: ~30 hours of parallel subagent work, ~6-8 hours wall-clock.
+All work via OpenCode V4 Pro subagents in parallel where dependencies allow.
+I orchestrate, validate, and update memory only. Estimated total OpenCode time across Waves 4-7: ~30 hours of parallel
+subagent work, ~6-8 hours wall-clock.
 
 Validation gate at each wave:
 
@@ -243,20 +256,49 @@ Validation gate at each wave:
 
 ## Sources
 
-- Bases: [help.obsidian.md/bases](https://help.obsidian.md/bases) · [DeepWiki](https://deepwiki.com/obsidianmd/obsidian-help/5-bases-database-system) · [practicalpkm.com](https://practicalpkm.com/bases-plugin-overview/) · [roadmap](https://help.obsidian.md/bases/roadmap)
-- Local REST API + MCP: [coddingtonbear/obsidian-local-rest-api](https://github.com/coddingtonbear/obsidian-local-rest-api) · [cyanheads/obsidian-mcp-server](https://mcpservers.org/servers/cyanheads/obsidian-mcp-server) · [ToKiDoO/mcp-obsidian-advanced](https://github.com/ToKiDoO/mcp-obsidian-advanced) · [dsebastien/obsidian-cli-rest](https://github.com/dsebastien/obsidian-cli-rest) · [ianyimi/obsidian-agents-server](https://github.com/ianyimi/obsidian-agents-server)
-- engraph + AI agents: [devwhodevs/engraph](https://github.com/devwhodevs/engraph) · [C-Bjorn/MegaMem](https://github.com/C-Bjorn/MegaMem) · [drewburchfield/obsidian-graph](https://github.com/drewburchfield/obsidian-graph)
-- Karpathy LLM Wiki: [original gist](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f) · [Ar9av/obsidian-wiki](https://github.com/Ar9av/obsidian-wiki) · [AgriciDaniel/claude-obsidian](https://github.com/AgriciDaniel/claude-obsidian) · [aaronfulkerson.com](https://aaronfulkerson.com/2026/04/12/karpathys-pattern-for-an-llm-wiki-in-production/)
-- Plugin API: [obsidianmd/obsidian-api](https://github.com/obsidianmd/obsidian-api) · [Plugin Development DeepWiki](https://deepwiki.com/obsidianmd/obsidian-api/3-plugin-development) · [Plugin Docs](https://docs.obsidian.md/Plugins/User+interface/Commands)
-- Roadmap: [obsidian.md/roadmap](https://obsidian.md/roadmap/) · [Bases roadmap](https://help.obsidian.md/bases/roadmap) · [2026 Report Card](https://practicalpkm.com/2026-obsidian-report-card/)
-- Tasks: [Tasks plugin guide 2026 (Recapio)](https://recapio.com/blog/obsidian-tasks-plugin) · [TaskNotes](https://taskforge.md/blog/tasknotes-integration/)
-- Canvas: [obsidian.md/canvas](https://obsidian.md/canvas) · [Advanced Canvas](https://github.com/Developer-Mike/obsidian-advanced-canvas)
-- Webhooks: [Post Webhook](https://github.com/Masterb1234/obsidian-post-webhook) · [obsidian-webhooks-v2](https://github.com/trashhalo/obsidian-webhooks-v2)
-- Templater + automation: [dzhg.dev](https://dzhg.dev/posts/obsidian-templates-automation/) · [XDA](https://www.xda-developers.com/turned-obsidian-into-daily-journal-with-dataview-templater/)
-- DevOps: [DevOps Companion](https://github.com/jkom4/obsidian-devops-compagnon) · [Mischa van den Burg](https://mischavandenburg.com/zet/articles/obsidian-introduction/)
-- Mermaid Gantt: [nosy.science automated Gantt](https://nosy.science/2025/05/04/automating-gantt-charts-in-obsidian-with-mermaid-and-dataview/) · [forum auto-Gantt](https://forum.obsidian.md/t/automatic-gantt-chart-from-obsidian-tasks-dataview/50512)
-- Sync: [stephanmiller.com](https://www.stephanmiller.com/sync-obsidian-vault-across-devices/) · [LiveSync](https://www.xda-developers.com/made-own-obsidian-sync-server-nas-plugin/)
-- Plugin lists: [Top Plugins 2026 (Obsibrain)](https://www.obsibrain.com/blog/top-obsidian-plugins-in-2026-the-essential-list-for-power-users) · [Sébastien Dubois](https://www.dsebastien.net/the-must-have-obsidian-plugins-for-2026/) · [Desktop Commander 14 Best](https://desktopcommander.app/blog/best-obsidian-plugins/)
-- URI / Shortcuts: [Advanced URI](https://vinzent03.github.io/obsidian-advanced-uri/) · [TaskForge deep linking](https://taskforge.md/deep-linking/) · [Raycast Obsidian](https://www.raycast.com/marcjulian/obsidian)
-- Properties: [Properties DeepWiki](https://deepwiki.com/obsidianmd/obsidian-help/4.3-properties-and-metadata) · [help.obsidian.md/Advanced+topics/YAML+front+matter](https://help.obsidian.md/Advanced+topics/YAML+front+matter)
-- Tag Wrangler / Linter / BRAT: [Tag Wrangler](https://www.obsidianstats.com/plugins/tag-wrangler) · [Top Plugins 2026](https://www.obsibrain.com/blog/top-obsidian-plugins-in-2026-the-essential-list-for-power-users)
+- Bases: [help.obsidian.md/bases](https://help.obsidian.md/bases) ·
+  [DeepWiki](https://deepwiki.com/obsidianmd/obsidian-help/5-bases-database-system) ·
+  [practicalpkm.com](https://practicalpkm.com/bases-plugin-overview/) · [roadmap](https://help.obsidian.md/bases/roadmap)
+- Local REST API + MCP:
+  [coddingtonbear/obsidian-local-rest-api](https://github.com/coddingtonbear/obsidian-local-rest-api) ·
+  [cyanheads/obsidian-mcp-server](https://mcpservers.org/servers/cyanheads/obsidian-mcp-server) ·
+  [ToKiDoO/mcp-obsidian-advanced](https://github.com/ToKiDoO/mcp-obsidian-advanced) ·
+  [dsebastien/obsidian-cli-rest](https://github.com/dsebastien/obsidian-cli-rest) ·
+  [ianyimi/obsidian-agents-server](https://github.com/ianyimi/obsidian-agents-server)
+- engraph + AI agents: [devwhodevs/engraph](https://github.com/devwhodevs/engraph) ·
+  [C-Bjorn/MegaMem](https://github.com/C-Bjorn/MegaMem) ·
+  [drewburchfield/obsidian-graph](https://github.com/drewburchfield/obsidian-graph)
+- Karpathy LLM Wiki: [original gist](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f) ·
+  [Ar9av/obsidian-wiki](https://github.com/Ar9av/obsidian-wiki) ·
+  [AgriciDaniel/claude-obsidian](https://github.com/AgriciDaniel/claude-obsidian) ·
+  [aaronfulkerson.com](https://aaronfulkerson.com/2026/04/12/karpathys-pattern-for-an-llm-wiki-in-production/)
+- Plugin API: [obsidianmd/obsidian-api](https://github.com/obsidianmd/obsidian-api) · [Plugin Development
+  DeepWiki](https://deepwiki.com/obsidianmd/obsidian-api/3-plugin-development) · [Plugin
+  Docs](https://docs.obsidian.md/Plugins/User+interface/Commands)
+- Roadmap: [obsidian.md/roadmap](https://obsidian.md/roadmap/) · [Bases roadmap](https://help.obsidian.md/bases/roadmap)
+  · [2026 Report Card](https://practicalpkm.com/2026-obsidian-report-card/)
+- Tasks: [Tasks plugin guide 2026 (Recapio)](https://recapio.com/blog/obsidian-tasks-plugin) ·
+  [TaskNotes](https://taskforge.md/blog/tasknotes-integration/)
+- Canvas: [obsidian.md/canvas](https://obsidian.md/canvas) · [Advanced
+  Canvas](https://github.com/Developer-Mike/obsidian-advanced-canvas)
+- Webhooks: [Post Webhook](https://github.com/Masterb1234/obsidian-post-webhook) ·
+  [obsidian-webhooks-v2](https://github.com/trashhalo/obsidian-webhooks-v2)
+- Templater + automation: [dzhg.dev](https://dzhg.dev/posts/obsidian-templates-automation/) ·
+  [XDA](https://www.xda-developers.com/turned-obsidian-into-daily-journal-with-dataview-templater/)
+- DevOps: [DevOps Companion](https://github.com/jkom4/obsidian-devops-compagnon) · [Mischa van den
+  Burg](https://mischavandenburg.com/zet/articles/obsidian-introduction/)
+- Mermaid Gantt: [nosy.science automated
+  Gantt](https://nosy.science/2025/05/04/automating-gantt-charts-in-obsidian-with-mermaid-and-dataview/) · [forum
+  auto-Gantt](https://forum.obsidian.md/t/automatic-gantt-chart-from-obsidian-tasks-dataview/50512)
+- Sync: [stephanmiller.com](https://www.stephanmiller.com/sync-obsidian-vault-across-devices/) ·
+  [LiveSync](https://www.xda-developers.com/made-own-obsidian-sync-server-nas-plugin/)
+- Plugin lists: [Top Plugins 2026
+  (Obsibrain)](https://www.obsibrain.com/blog/top-obsidian-plugins-in-2026-the-essential-list-for-power-users) ·
+  [Sébastien Dubois](https://www.dsebastien.net/the-must-have-obsidian-plugins-for-2026/) · [Desktop Commander 14
+  Best](https://desktopcommander.app/blog/best-obsidian-plugins/)
+- URI / Shortcuts: [Advanced URI](https://vinzent03.github.io/obsidian-advanced-uri/) · [TaskForge deep
+  linking](https://taskforge.md/deep-linking/) · [Raycast Obsidian](https://www.raycast.com/marcjulian/obsidian)
+- Properties: [Properties DeepWiki](https://deepwiki.com/obsidianmd/obsidian-help/4.3-properties-and-metadata) ·
+  [help.obsidian.md/Advanced+topics/YAML+front+matter](https://help.obsidian.md/Advanced+topics/YAML+front+matter)
+- Tag Wrangler / Linter / BRAT: [Tag Wrangler](https://www.obsidianstats.com/plugins/tag-wrangler) · [Top Plugins
+  2026](https://www.obsibrain.com/blog/top-obsidian-plugins-in-2026-the-essential-list-for-power-users)

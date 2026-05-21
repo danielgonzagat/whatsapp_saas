@@ -3,6 +3,7 @@ import { createHmac, timingSafeEqual } from 'node:crypto';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { Injectable, Logger, OnModuleInit, Optional } from '@nestjs/common';
+
 import { ConfigService } from '@nestjs/config';
 import { v4 as uuid } from 'uuid';
 import { getTraceHeaders } from '../trace-headers';
@@ -12,6 +13,16 @@ import { OpsAlertService } from '../../observability/ops-alert.service';
 
 const BACKSLASH_RE = /\\/g;
 const LEADING_SLASHES_RE = /^\/+/;
+
+function readConfigString(
+  config: ConfigService,
+  key: string,
+  defaultValue?: string,
+): string | undefined {
+  const value =
+    defaultValue === undefined ? config.get<string>(key) : config.get<string>(key, defaultValue);
+  return typeof value === 'string' && value.trim() ? value : undefined;
+}
 
 /** Storage service. */
 @Injectable()
@@ -175,10 +186,10 @@ export class StorageService implements OnModuleInit {
     const contentType =
       options.mimeType || response.headers.get('content-type') || 'application/octet-stream';
     return this.upload(buffer, {
-      filename: options.filename,
       mimeType: contentType,
       folder: options.folder || 'downloads',
-      workspaceId: options.workspaceId,
+      ...(options.filename !== undefined ? { filename: options.filename } : {}),
+      ...(options.workspaceId !== undefined ? { workspaceId: options.workspaceId } : {}),
     });
   }
 
@@ -275,7 +286,7 @@ export class StorageService implements OnModuleInit {
     return {
       relativePath,
       absolutePath,
-      downloadName: payload.d || undefined,
+      ...(payload.d !== undefined ? { downloadName: payload.d } : {}),
     };
   }
 
@@ -456,20 +467,22 @@ export class StorageService implements OnModuleInit {
   }
 
   private buildRemotePublicUrl(relativePath: string): string {
-    const cdnBase = this.config.get('CDN_BASE_URL');
+    const cdnBase = readConfigString(this.config, 'CDN_BASE_URL');
     if (cdnBase) {
       return `${cdnBase}/${relativePath}`;
     }
     if (this.driver === 's3') {
-      const bucket = this.config.get('S3_BUCKET');
-      const region = this.config.get('S3_REGION', 'us-east-1');
+      const bucket = readConfigString(this.config, 'S3_BUCKET');
+      const region = readConfigString(this.config, 'S3_REGION', 'us-east-1') ?? 'us-east-1';
       if (bucket) {
         return `https://${bucket}.s3.${region}.amazonaws.com/${relativePath}`;
       }
     }
     if (this.driver === 'r2') {
       const r2Url = this.drivers.buildR2PublicUrl(relativePath);
-      if (r2Url) return r2Url;
+      if (r2Url) {
+        return r2Url;
+      }
     }
     this.logger.warn(
       `Remote storage URL fallback used for "${relativePath}". Serving a signed local URL instead of exposing /uploads.`,

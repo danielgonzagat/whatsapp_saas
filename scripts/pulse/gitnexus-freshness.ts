@@ -4,7 +4,7 @@
 import { execSync } from 'child_process';
 import * as path from 'path';
 
-import { ensureDir, pathExists, readJsonFile, readTextFile, writeTextFile } from './safe-fs';
+import { ensureDir, pathExists, readJsonFile, writeTextFile } from './safe-fs';
 import type { GitNexusFreshness } from './types.gitnexus-freshness';
 
 const ARTIFACT_FILE_NAME = 'PULSE_GITNEXUS_FRESHNESS.json';

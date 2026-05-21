@@ -212,6 +212,11 @@ export function checkOrderingTiming(config: PulseConfig): Break[] {
       continue;
     }
 
+    // (a) Server-side API routes (app/api/*) don't use SWR by definition
+    if (/\/api\//i.test(file)) {
+      continue;
+    }
+
     let content: string;
     try {
       content = readTextFile(file, 'utf8');
@@ -219,13 +224,22 @@ export function checkOrderingTiming(config: PulseConfig): Break[] {
       continue;
     }
 
+    // (b) One-shot POST hooks — no SWR reads, no cache to invalidate
+    if (/\/hooks\//i.test(file) && !/useSWR/.test(content)) {
+      continue;
+    }
+
     const relFile = path.relative(config.rootDir, file);
 
     // SWR with very long revalidateOnFocus=false and no revalidateInterval
     if (/useSWR/.test(content)) {
+      // (c) If the file calls mutate() after write ops, stale config is explicitly managed
+      const hasMutateCall = /\bmutate\s*\(/.test(content);
+
       const hasStaleConfig =
         /revalidateOnFocus\s*:\s*false/.test(content) &&
-        !/refreshInterval|revalidateOnMount\s*:\s*true/.test(content);
+        !/refreshInterval|revalidateOnMount\s*:\s*true/.test(content) &&
+        !hasMutateCall;
       if (hasStaleConfig) {
         breaks.push({
           type: 'ORDERING_WEBHOOK_OOO',

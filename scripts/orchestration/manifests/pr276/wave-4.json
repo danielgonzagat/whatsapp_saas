@@ -1,0 +1,50 @@
+{
+  "runId": "pr276-wave-4",
+  "concurrency": 4,
+  "timeoutSec": 5400,
+  "staggerMs": 12000,
+  "dir": "/Users/danielpenin/whatsapp_saas",
+  "skipPermissions": true,
+  "tasks": [
+    {
+      "id": "codacy-errorprone-batch",
+      "title": "codacy: top 10 ErrorProne fixes",
+      "promptFile": "/Users/danielpenin/whatsapp_saas/artifacts/opencode-fleet/pr276-w4-prompts/codacy-errorprone-batch.md"
+    },
+    {
+      "id": "codacy-bestpractice-batch",
+      "title": "codacy: 50 BestPractice fixes",
+      "promptFile": "/Users/danielpenin/whatsapp_saas/artifacts/opencode-fleet/pr276-w4-prompts/codacy-bestpractice-batch.md"
+    },
+    {
+      "id": "codacy-unused-batch",
+      "title": "codacy: 186 UnusedCode resolution",
+      "promptFile": "/Users/danielpenin/whatsapp_saas/artifacts/opencode-fleet/pr276-w4-prompts/codacy-unused-batch.md"
+    },
+    {
+      "id": "codacy-sqlfluff-batch",
+      "title": "codacy: format all Prisma migrations via sqlfluff",
+      "promptFile": "/Users/danielpenin/whatsapp_saas/artifacts/opencode-fleet/pr276-w4-prompts/codacy-sqlfluff-batch.md"
+    },
+    {
+      "id": "classify-unobserved-routes",
+      "title": "classify 296 unobserved routes (admin/webhook/internal/dead)",
+      "promptFile": "/Users/danielpenin/whatsapp_saas/artifacts/opencode-fleet/pr276-w4-prompts/classify-unobserved-routes.md"
+    },
+    {
+      "id": "anti-fraud-allowlist-bypass",
+      "title": "migrate bypass-marker gate to PULSE_* allowlist",
+      "promptFile": "/Users/danielpenin/whatsapp_saas/artifacts/opencode-fleet/pr276-w4-prompts/anti-fraud-allowlist-bypass.md"
+    },
+    {
+      "id": "scripts-python-cleanup",
+      "title": "move Python ad-hoc scripts to scripts/legacy/",
+      "promptFile": "/Users/danielpenin/whatsapp_saas/artifacts/opencode-fleet/pr276-w4-prompts/scripts-python-cleanup.md"
+    },
+    {
+      "id": "e2e-specs-ci-wire",
+      "title": "wire 27 e2e specs to CI with docker compose ephemeral DB",
+      "promptFile": "/Users/danielpenin/whatsapp_saas/artifacts/opencode-fleet/pr276-w4-prompts/e2e-specs-ci-wire.md"
+    }
+  ]
+}

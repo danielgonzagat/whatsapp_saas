@@ -12,7 +12,7 @@ import {
 } from 'node:fs';
 import { join, relative, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { rewriteMirrorFrontmatterTags } from '../obsidian-mirror-daemon-indexes.mjs';
+import { rewriteMirrorFrontmatterTags } from '../__parts__/obsidian-mirror-daemon-indexes.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = resolve(join(__dirname, '..', '..'));
@@ -239,11 +239,11 @@ function pathToModule(relPath) {
 
 function readMirrorTags(mirrorRelPath) {
   const absPath = join(SOURCE_MIRROR_DIR, mirrorRelPath);
-  if (!existsSync(absPath)) return null;
+  if (!existsSync(absPath)) {return null;}
   const content = readFileSync(absPath, 'utf8');
-  if (!content.startsWith('---\n')) return null;
+  if (!content.startsWith('---\n')) {return null;}
   const end = content.indexOf('\n---\n', 4);
-  if (end === -1) return null;
+  if (end === -1) {return null;}
   const frontmatter = content.slice(4, end).split('\n');
   const tags = [];
   let inTags = false;
@@ -350,14 +350,14 @@ function main() {
     phaseDistribution[phase]++;
 
     const existingTags = readMirrorTags(mirrorRel);
-    if (existingTags === null) continue;
+    if (existingTags === null) {continue;}
 
     const phaseTag = `kloel/phase-${phase}`;
     const merged = existingTags.filter((t) => !t.startsWith(PHASE_TAG_PREFIX));
     merged.push(phaseTag);
     merged.sort();
 
-    if (JSON.stringify(merged) === JSON.stringify(existingTags)) continue;
+    if (JSON.stringify(merged) === JSON.stringify(existingTags)) {continue;}
 
     if (!dry) {
       rewriteMirrorFrontmatterTags(mirrorRel, merged);

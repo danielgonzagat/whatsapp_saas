@@ -5,12 +5,11 @@ import { forEachSequential } from '../common/async-sequence';
 import {
   autopilotQueue,
   campaignQueue,
-  connection,
   crmQueue,
   flowQueue,
+  getDlqQueue,
   mediaQueue,
   memoryQueue,
-  queueOptions,
   scraperQueue,
   voiceQueue,
   webhookQueue,
@@ -56,11 +55,7 @@ export class QueueHealthService {
     const results: QueueSummary[] = [];
 
     await forEachSequential(this.queues, async (queue) => {
-      // IMPORTANTE: usar queueOptions com connection explícita, não queue.opts
-      const dlq = new Queue(`${queue.name}-dlq`, {
-        ...queueOptions,
-        connection,
-      });
+      const dlq = getDlqQueue(queue);
       const [mainCounts, dlqCounts] = await Promise.all([
         queue.getJobCounts('waiting', 'active', 'delayed', 'failed'),
         dlq.getJobCounts('waiting', 'active', 'delayed', 'failed'),

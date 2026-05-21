@@ -5,20 +5,22 @@ import {
   ForbiddenException,
   Headers,
   HttpCode,
+  Inject,
   Logger,
   Post,
-  UseGuards,
 } from '@nestjs/common';
-import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import type Redis from 'ioredis';
 import { Public } from '../auth/public.decorator';
 import { safeCompareStrings } from '../common/utils/crypto-compare.util';
 import { PrismaService } from '../prisma/prisma.service';
 import { AgentEventsService } from '../whatsapp/agent-events.service';
-import { CiaRuntimeService } from '../whatsapp/cia-runtime.service';
+import { CIA_RUNTIME_SERVICE, type CiaRuntimePort } from '../cia/cia-runtime.port';
 import { InboundProcessorService } from '../whatsapp/inbound-processor.service';
 import { WhatsAppApiProvider } from '../whatsapp/providers/whatsapp-api.provider';
 import { WhatsAppCatchupService } from '../whatsapp/whatsapp-catchup.service';
+
+import { RouteClass } from '../common/throttler/route-class.decorator';
+import { Throttle } from "@nestjs/throttler";
 
 interface WahaWebhookPayload {
   event?: string;
@@ -34,7 +36,7 @@ interface WahaWebhookPayload {
  * Event ordering: legacy WAHA events carried event.timestamp for sequencing.
  */
 @Controller('webhooks/whatsapp-api')
-@UseGuards(ThrottlerGuard)
+@RouteClass('webhook')
 export class WhatsAppApiWebhookController {
   private readonly logger = new Logger(WhatsAppApiWebhookController.name);
   private readonly ignoredLegacyWebhookLogTtlMs = 15 * 60_000;
@@ -45,7 +47,7 @@ export class WhatsAppApiWebhookController {
     private readonly inboundProcessor: InboundProcessorService,
     private readonly catchupService: WhatsAppCatchupService,
     private readonly agentEvents: AgentEventsService,
-    private readonly ciaRuntime: CiaRuntimeService,
+    @Inject(CIA_RUNTIME_SERVICE) private readonly ciaRuntime: CiaRuntimePort,
     private readonly whatsappApi: WhatsAppApiProvider,
     @InjectRedis() private readonly redis: Redis,
   ) {
@@ -59,9 +61,9 @@ export class WhatsAppApiWebhookController {
   }
 
   /** Handle webhook. */
+  @Throttle({ default: { limit: 2000, ttl: 60000 } })
   @Public()
   @Post()
-  @Throttle({ default: { limit: 2000, ttl: 60000 } })
   @HttpCode(200)
   handleWebhook(
     @Body() body: WahaWebhookPayload,

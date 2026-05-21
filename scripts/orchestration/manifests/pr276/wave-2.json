@@ -1,0 +1,50 @@
+{
+  "runId": "pr276-wave-2",
+  "concurrency": 4,
+  "timeoutSec": 5400,
+  "staggerMs": 12000,
+  "dir": "/Users/danielpenin/whatsapp_saas",
+  "skipPermissions": true,
+  "tasks": [
+    {
+      "id": "refine-orphan-prisma-detector",
+      "title": "PULSE orphan-prisma detector: handle bracket/relation/raw-sql",
+      "promptFile": "/Users/danielpenin/whatsapp_saas/artifacts/opencode-fleet/pr276-w2-prompts/refine-orphan-prisma-detector.md"
+    },
+    {
+      "id": "break-madge-cycles",
+      "title": "break 9 backend madge cycles",
+      "promptFile": "/Users/danielpenin/whatsapp_saas/artifacts/opencode-fleet/pr276-w2-prompts/break-madge-cycles.md"
+    },
+    {
+      "id": "resolve-knip-backend",
+      "title": "resolve 119 knip issues",
+      "promptFile": "/Users/danielpenin/whatsapp_saas/artifacts/opencode-fleet/pr276-w2-prompts/resolve-knip-backend.md"
+    },
+    {
+      "id": "codacy-security-batch-1",
+      "title": "codacy: top 10 Security findings",
+      "promptFile": "/Users/danielpenin/whatsapp_saas/artifacts/opencode-fleet/pr276-w2-prompts/codacy-security-batch-1.md"
+    },
+    {
+      "id": "codacy-complexity-batch-1",
+      "title": "codacy: top 10 Complexity (Lizard) refactors",
+      "promptFile": "/Users/danielpenin/whatsapp_saas/artifacts/opencode-fleet/pr276-w2-prompts/codacy-complexity-batch-1.md"
+    },
+    {
+      "id": "codacy-i18n-jsx-batch-1",
+      "title": "codacy: i18n JSX wrap 100 raw strings",
+      "promptFile": "/Users/danielpenin/whatsapp_saas/artifacts/opencode-fleet/pr276-w2-prompts/codacy-i18n-jsx-batch-1.md"
+    },
+    {
+      "id": "codacy-curly-batch-1",
+      "title": "codacy: 700+ curly fixes",
+      "promptFile": "/Users/danielpenin/whatsapp_saas/artifacts/opencode-fleet/pr276-w2-prompts/codacy-curly-batch-1.md"
+    },
+    {
+      "id": "codacy-md013-batch-1",
+      "title": "codacy: MD013 line-length 700+ fixes",
+      "promptFile": "/Users/danielpenin/whatsapp_saas/artifacts/opencode-fleet/pr276-w2-prompts/codacy-md013-batch-1.md"
+    }
+  ]
+}

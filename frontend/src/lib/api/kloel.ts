@@ -12,6 +12,46 @@ export interface KloelHealth {
   /** Identity property. */
   identity: string;
 }
+export interface KloelApprovalRequest {
+  /** Approval id. */
+  id: string;
+  /** Approval kind. */
+  kind: string;
+  /** Approval scope. */
+  scope?: string | null;
+  /** Entity type. */
+  entityType?: string | null;
+  /** Entity id. */
+  entityId?: string | null;
+  /** State. */
+  state: string;
+  /** Title. */
+  title: string;
+  /** Prompt. */
+  prompt: string;
+  /** Payload. */
+  payload: JsonRecord;
+  /** Created at ISO string. */
+  createdAt: string;
+  /** Updated at ISO string. */
+  updatedAt: string;
+}
+
+interface KloelApprovalListResponse {
+  /** Pending approvals. */
+  approvals?: KloelApprovalRequest[];
+}
+
+export type KloelApprovalDecision = 'approve' | 'reject' | 'adjust';
+
+export interface KloelApprovalDecisionResponse {
+  /** Success flag. */
+  success: boolean;
+  /** Approval id. */
+  approvalRequestId: string;
+  /** Resulting state. */
+  state: string;
+}
 
 function isRecord(value: unknown): value is JsonRecord {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
@@ -28,6 +68,35 @@ export async function getKloelHealth(): Promise<KloelHealth> {
     status: data?.status === 'online' ? 'online' : 'offline',
     identity: typeof data?.identity === 'string' ? data.identity : '',
   };
+}
+
+/** List pending Kloel approval requests. */
+export async function listPendingKloelApprovals(): Promise<KloelApprovalRequest[]> {
+  const res = await apiFetch<KloelApprovalListResponse>('/kloel/approvals/pending');
+  if (res.error) {
+    throw new Error(res.error);
+  }
+  return Array.isArray(res.data?.approvals) ? res.data.approvals : [];
+}
+
+/** Decide a pending Kloel approval request. */
+export async function decideKloelApproval(
+  approvalRequestId: string,
+  decision: KloelApprovalDecision,
+  body: { note?: string; adjustment?: JsonRecord } = {},
+): Promise<KloelApprovalDecisionResponse> {
+  const res = await apiFetch<KloelApprovalDecisionResponse>(
+    `/kloel/approvals/${encodeURIComponent(approvalRequestId)}/${decision}`,
+    {
+      method: 'POST',
+      body,
+    },
+  );
+  if (res.error) {
+    throw new Error(res.error);
+  }
+  mutate('kloel:pending-approvals');
+  return res.data as KloelApprovalDecisionResponse;
 }
 
 // PDF Upload

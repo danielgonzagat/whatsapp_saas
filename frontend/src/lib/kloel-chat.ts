@@ -93,4 +93,36 @@ export interface KloelChatQuickAction {
 }
 
 /** Kloel_chat_quick_actions. */
-export const KLOEL_CHAT_QUICK_ACTIONS: KloelChatQuickAction[] = [];
+export const KLOEL_CHAT_QUICK_ACTIONS: KloelChatQuickAction[] = [
+  {
+    id: 'create-ad',
+    label: 'Criar anuncio',
+    prompt: 'Crie uma campanha de anuncio para o produto com melhor potencial agora.',
+    icon: 'megaphone',
+  },
+  {
+    id: 'write-copy',
+    label: 'Escrever copy',
+    prompt:
+      'Escreva uma copy de venda usando os produtos, provas e objeções atuais do meu negócio.',
+    icon: 'pen',
+  },
+  {
+    id: 'sales-strategy',
+    label: 'Estrategia de venda',
+    prompt: 'Analise o funil atual e proponha a próxima ação comercial com base nos dados reais.',
+    icon: 'chart',
+  },
+  {
+    id: 'analyze-product',
+    label: 'Analisar produto',
+    prompt: 'Analise meus produtos ativos e diga qual deles deve receber foco comercial agora.',
+    icon: 'search',
+  },
+  {
+    id: 'create-page',
+    label: 'Criar pagina',
+    prompt: 'Crie uma estrutura de pagina de venda para o produto com maior prioridade.',
+    icon: 'layout',
+  },
+];

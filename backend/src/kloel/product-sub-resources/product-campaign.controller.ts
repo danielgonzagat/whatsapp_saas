@@ -34,8 +34,10 @@ import {
 } from './helpers/campaign.helpers';
 
 /** Product campaign controller. */
+import { RouteClass } from '../../common/throttler/route-class.decorator';
 @Controller('products/:productId/campaigns')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
+@RouteClass('mutate')
 export class ProductCampaignController {
   constructor(
     private readonly prisma: PrismaService,
@@ -195,8 +197,8 @@ export class ProductCampaignController {
     const updatedProductCampaign = await this.prisma.productCampaign.update({
       where: { id: campaignId },
       data: removeUndefined({
-        name: body.name ? safeStr(body.name).trim() : undefined,
-        pixelId: body.pixelId !== undefined ? safeStr(body.pixelId).trim() || null : undefined,
+        ...(body.name !== undefined ? { name: safeStr(body.name).trim() } : {}),
+        ...(body.pixelId !== undefined ? { pixelId: safeStr(body.pixelId).trim() || null } : {}),
       }),
     });
 

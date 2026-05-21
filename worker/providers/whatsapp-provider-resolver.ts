@@ -35,8 +35,15 @@ export function getWhatsAppProviderFromEnv(): WhatsAppProvider {
   const envDefault = String(process.env.WHATSAPP_PROVIDER_DEFAULT || '')
     .trim()
     .toLowerCase();
-  if (envDefault === 'whatsapp-api' || envDefault === 'waha') {
+  if (
+    envDefault === 'whatsapp-api' ||
+    envDefault === 'waha' ||
+    envDefault === 'whatsapp-web-agent'
+  ) {
     return 'whatsapp-api';
+  }
+  if (envDefault === 'meta' || envDefault === 'meta-cloud') {
+    return 'meta-cloud';
   }
   return 'meta-cloud';
 }

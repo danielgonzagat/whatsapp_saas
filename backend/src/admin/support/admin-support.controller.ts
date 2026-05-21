@@ -9,11 +9,13 @@ import { AdminPermissionGuard } from '../auth/guards/admin-permission.guard';
 import { AdminSupportService } from './admin-support.service';
 import { ReplySupportTicketDto } from './dto/reply-support-ticket.dto';
 import { UpdateSupportTicketStatusDto } from './dto/update-support-ticket-status.dto';
+import { RouteClass } from '../../common/throttler/route-class.decorator';
 
 /** Admin support controller. */
 @Public()
 @Controller('admin/support')
 @UseGuards(AdminAuthGuard, AdminPermissionGuard)
+@RouteClass('read')
 export class AdminSupportController {
   constructor(private readonly support: AdminSupportService) {}
 

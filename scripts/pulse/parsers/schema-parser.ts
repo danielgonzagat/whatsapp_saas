@@ -1,4 +1,4 @@
-import type { PrismaModel, PrismaField, PrismaRelation } from '../types.core';
+import type { PrismaModel } from '../types.core';
 import type { PulseConfig } from '../types.manifest';
 import { pathExists, readTextFile } from '../safe-fs';
 
@@ -64,6 +64,13 @@ export function parseSchema(config: PulseConfig): PrismaModel[] {
     if (braceDepth === 0) {
       models.push(currentModel);
       currentModel = null;
+      continue;
+    }
+
+    // Parse @@map annotation (before skipping all @@ lines)
+    const mapMatch = trimmed.match(/^@@map\s*\(\s*"([^"]+)"\s*\)/);
+    if (mapMatch) {
+      currentModel.tableName = mapMatch[1];
       continue;
     }
 

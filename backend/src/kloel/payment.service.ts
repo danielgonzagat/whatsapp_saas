@@ -2,15 +2,18 @@ import { createHash } from 'node:crypto';
 import {
   BadRequestException,
   Injectable,
-  Logger,
+  Optional,
   ServiceUnavailableException,
 } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { AuditService } from '../audit/audit.service';
 import { StripeService } from '../billing/stripe.service';
 import type { StripePaymentIntent } from '../billing/stripe-types';
 import { FinancialAlertService } from '../common/financial-alert.service';
 import { FraudEngine } from '../payments/fraud/fraud.engine';
 import { PrismaService } from '../prisma/prisma.service';
+import { BrainEventSpineService } from './brain-event-spine.service';
+import type { SaleEventPayload } from './brain-event-taxonomy';
 // @@index: optimistic lock via updatedAt — concurrent writes resolved by DB constraint
 
 interface PixDisplayQrCode {
@@ -30,6 +33,8 @@ type KloelSaleMetadata = {
   pixCopyPaste?: string | null;
   pixHostedInstructionsUrl?: string | null;
 };
+
+type KloelSaleRow = { status?: string; amount?: number; [key: string]: unknown };
 
 interface PaymentWebhookPayload {
   id?: string;
@@ -106,7 +111,7 @@ function buildPaymentIdempotencyKey(data: {
 /** Payment service. */
 @Injectable()
 export class PaymentService {
-  private readonly logger = new Logger(PaymentService.name);
+  private readonly logger = StructuredLogger.from(PaymentService.name);
 
   constructor(
     private readonly prisma: PrismaService,
@@ -114,6 +119,7 @@ export class PaymentService {
     private readonly auditService: AuditService,
     private readonly financialAlert: FinancialAlertService,
     private readonly fraudEngine: FraudEngine,
+    @Optional() private readonly events?: BrainEventSpineService,
   ) {
     // Verify kloelSale model exists at runtime
     if (typeof this.prisma.kloelSale?.create !== 'function') {
@@ -154,7 +160,7 @@ export class PaymentService {
   private extractPixDetails(paymentIntent: StripePaymentIntent) {
     const nextAction = paymentIntent.next_action as PixNextAction | null | undefined;
     const pixData =
-      nextAction?.type === 'pix_display_qr_code' ? nextAction.pix_display_qr_code : null;
+      nextAction?.type === 'pix_display_qr_code' ? (nextAction.pix_display_qr_code ?? null) : null;
     const paymentLink =
       pixData?.hosted_instructions_url || pixData?.image_url_png || pixData?.data || undefined;
 
@@ -169,7 +175,7 @@ export class PaymentService {
     paymentLink?: string;
     pixData: PixDisplayQrCode | null;
   }): Promise<void> {
-    await this.prisma.$transaction(
+    const isReplay = await this.prisma.$transaction(
       async (tx) => {
         const existingSale = await tx.kloelSale.findFirst({
           where: {
@@ -179,7 +185,7 @@ export class PaymentService {
           select: { id: true },
         });
         if (existingSale) {
-          return;
+          return true;
         }
 
         await tx.kloelSale.create({
@@ -188,11 +194,11 @@ export class PaymentService {
             status: 'pending',
             amount: params.data.amount,
             paymentMethod: 'PIX',
-            paymentLink: params.paymentLink,
+            ...(params.paymentLink !== undefined ? { paymentLink: params.paymentLink } : {}),
             externalPaymentId: params.paymentIntent.id,
             workspaceId: params.data.workspaceId,
             metadata: {
-              companyName: params.companyName || undefined,
+              ...(params.companyName !== undefined ? { companyName: params.companyName } : {}),
               pixQrCodeUrl: params.pixData?.image_url_png || null,
               pixCopyPaste: params.pixData?.data || null,
               pixHostedInstructionsUrl: params.pixData?.hosted_instructions_url || null,
@@ -216,9 +222,44 @@ export class PaymentService {
             description: params.data.description,
           },
         });
+
+        return false;
       },
       { isolationLevel: 'ReadCommitted' },
     );
+
+    if (!isReplay) {
+      const saleEvent: SaleEventPayload = {
+        occurredAt: new Date(),
+        workspaceId: params.data.workspaceId,
+        subject: `lead:${params.data.leadId}`,
+        eventType: 'sale.created',
+        idempotencyKey: `sale:${params.idempotencyKey}`,
+        payload: {
+          amount: params.data.amount,
+          externalPaymentId: params.paymentIntent.id,
+          leadId: params.data.leadId,
+          paymentMethod: 'PIX',
+          status: 'pending',
+        },
+      };
+      try {
+        await this.events?.recordCommercial(saleEvent);
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : String(error);
+        this.logger.warn(
+          JSON.stringify({
+            event: 'mind_sale_event_record_failed',
+            workspaceId: params.data.workspaceId,
+            provider: 'mind_event_spine',
+            operation: 'record_sale_created',
+            status: 'error',
+            errorCode: error instanceof Error ? error.name : 'unknown_error',
+            message: message.slice(0, 512),
+          }),
+        );
+      }
+    }
   }
 
   private buildCreatePaymentResponse(params: {
@@ -226,12 +267,15 @@ export class PaymentService {
     paymentLink?: string;
     pixData: PixDisplayQrCode | null;
   }): CreatePaymentResult {
+    const invoiceUrl = params.pixData?.hosted_instructions_url || undefined;
+    const pixQrCodeUrl = params.pixData?.image_url_png || undefined;
+    const pixCopyPaste = params.pixData?.data || undefined;
     return {
       id: params.paymentIntent.id,
-      invoiceUrl: params.pixData?.hosted_instructions_url || undefined,
-      pixQrCodeUrl: params.pixData?.image_url_png || undefined,
-      pixCopyPaste: params.pixData?.data || undefined,
-      paymentLink: params.paymentLink,
+      ...(invoiceUrl !== undefined ? { invoiceUrl } : {}),
+      ...(pixQrCodeUrl !== undefined ? { pixQrCodeUrl } : {}),
+      ...(pixCopyPaste !== undefined ? { pixCopyPaste } : {}),
+      ...(params.paymentLink !== undefined ? { paymentLink: params.paymentLink } : {}),
       status: params.paymentIntent.status,
     };
   }
@@ -271,10 +315,10 @@ export class PaymentService {
         workspaceId: data.workspaceId,
         leadId: data.leadId,
         customerPhone: data.customerPhone,
-        customerEmail: data.customerEmail,
+        ...(data.customerEmail !== undefined ? { customerEmail: data.customerEmail } : {}),
         description: data.description,
         amountInCents,
-        idempotencyKey: data.idempotencyKey,
+        ...(data.idempotencyKey !== undefined ? { idempotencyKey: data.idempotencyKey } : {}),
       });
       const paymentIntent = await this.createStripePixPaymentIntent(
         data,
@@ -290,16 +334,16 @@ export class PaymentService {
       await this.persistStripePixSale({
         data,
         paymentIntent,
-        companyName: workspace?.name,
+        ...(workspace?.name !== undefined ? { companyName: workspace.name } : {}),
         idempotencyKey,
-        paymentLink,
-        pixData,
+        ...(paymentLink !== undefined ? { paymentLink } : {}),
+        pixData: pixData ?? null,
       });
 
       return this.buildCreatePaymentResponse({
         paymentIntent,
-        paymentLink,
-        pixData,
+        ...(paymentLink !== undefined ? { paymentLink } : {}),
+        pixData: pixData ?? null,
       });
     } catch (err: unknown) {
       if (err instanceof BadRequestException) {
@@ -344,7 +388,7 @@ export class PaymentService {
     if (!sale) {
       return null;
     }
-    const metadata = ((sale.metadata as Record<string, unknown> | null) || {}) as KloelSaleMetadata;
+    const metadata = (sale.metadata as KloelSaleMetadata) || {};
 
     const status =
       typeof sale.status === 'string'
@@ -358,7 +402,7 @@ export class PaymentService {
       select: { slug: true },
       take: 2,
     });
-    const memberAreaSlug = activeMemberAreas.length === 1 ? activeMemberAreas[0].slug : undefined;
+    const memberAreaSlug = activeMemberAreas.length === 1 ? activeMemberAreas[0]?.slug : undefined;
 
     return {
       id: sale.externalPaymentId || sale.id,
@@ -391,13 +435,14 @@ export class PaymentService {
     if (!payment?.id) {
       return;
     }
+    const paymentId = payment.id;
 
     // Move find inside $transaction to prevent concurrent webhook deliveries
     // from racing between find and update.
     await this.prisma.$transaction(
       async (tx) => {
         const sale = await tx.kloelSale.findFirst({
-          where: { workspaceId, externalPaymentId: payment.id },
+          where: { workspaceId, externalPaymentId: paymentId },
           select: { id: true, status: true },
         });
 
@@ -421,7 +466,7 @@ export class PaymentService {
           resource: 'KloelSale',
           resourceId: typeof sale.id === 'string' ? sale.id : '',
           details: {
-            externalPaymentId: payment.id,
+            externalPaymentId: paymentId,
             event,
             previousStatus: sale.status,
             newStatus: 'paid',
@@ -444,11 +489,11 @@ export class PaymentService {
       take: 1000,
     });
 
-    const paid = sales.filter((s: Record<string, unknown>) => s.status === 'paid');
+    const paid = sales.filter((s: KloelSaleRow) => s.status === 'paid');
     return {
       totalSales: paid.length,
       totalAmount: paid.reduce(
-        (sum: number, s: Record<string, unknown>) => sum + ((s.amount as number) || 0),
+        (sum: number, s: KloelSaleRow) => sum + ((s.amount as number) || 0),
         0,
       ),
     };

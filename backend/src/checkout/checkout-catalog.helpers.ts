@@ -44,14 +44,26 @@ interface CouponLike {
 }
 
 function isCouponEligible(coupon: CouponLike, planId: string, orderValue: number): boolean {
-  if (!coupon.isActive) return false;
+  if (!coupon.isActive) {
+    return false;
+  }
   const now = new Date();
-  if (coupon.startsAt && coupon.startsAt > now) return false;
-  if (coupon.expiresAt && coupon.expiresAt < now) return false;
-  if (coupon.maxUses && coupon.usedCount >= coupon.maxUses) return false;
-  if (coupon.minOrderValue && orderValue < coupon.minOrderValue) return false;
+  if (coupon.startsAt && coupon.startsAt > now) {
+    return false;
+  }
+  if (coupon.expiresAt && coupon.expiresAt < now) {
+    return false;
+  }
+  if (coupon.maxUses && coupon.usedCount >= coupon.maxUses) {
+    return false;
+  }
+  if (coupon.minOrderValue && orderValue < coupon.minOrderValue) {
+    return false;
+  }
   const appliesTo = coupon.appliesTo as string[] | null;
-  if (appliesTo && appliesTo.length > 0 && !appliesTo.includes(planId)) return false;
+  if (appliesTo && appliesTo.length > 0 && !appliesTo.includes(planId)) {
+    return false;
+  }
   return true;
 }
 

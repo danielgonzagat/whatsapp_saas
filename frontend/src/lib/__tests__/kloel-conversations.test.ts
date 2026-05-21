@@ -26,7 +26,13 @@ vi.mock('../api/core', () => ({
   apiFetch: vi.fn(),
 }));
 
-import { streamAuthenticatedKloelMessage } from '../kloel-conversations';
+import { apiFetch } from '../api/core';
+import {
+  sendAuthenticatedKloelMessage,
+  streamAuthenticatedKloelMessage,
+} from '../kloel-conversations';
+
+const apiFetchMock = vi.mocked(apiFetch);
 
 function buildSseResponse(lines: string[]) {
   const encoder = new TextEncoder();
@@ -46,6 +52,97 @@ function buildSseResponse(lines: string[]) {
     },
   });
 }
+
+function expectSyncKloelRequest(signal: AbortSignal) {
+  expect(apiFetchMock).toHaveBeenCalledWith('/kloel/think/sync', {
+    method: 'POST',
+    body: {
+      message: 'oi',
+      conversationId: 'thread-1',
+      mode: 'chat',
+      companyContext: undefined,
+      metadata: undefined,
+    },
+    signal,
+  });
+}
+
+function expectKloelMutateQueued() {
+  expect(mutateMock).toHaveBeenCalledOnce();
+  const [mutatePredicate] = mutateMock.mock.calls[0] ?? [];
+  expect(typeof mutatePredicate).toBe('function');
+}
+
+function buildSyncInput() {
+  return {
+    message: 'oi',
+    conversationId: 'thread-1',
+    mode: 'chat' as const,
+  };
+}
+
+function mockSyncSuccess() {
+  apiFetchMock.mockResolvedValue({
+    status: 200,
+    data: {
+      response: 'Resposta',
+      conversationId: 'thread-1',
+      title: 'Nova conversa',
+    },
+  });
+}
+
+describe('sendAuthenticatedKloelMessage', () => {
+  beforeEach(() => {
+    mutateMock.mockReset();
+    apiFetchMock.mockReset();
+  });
+
+  it('passes abort signals to authenticated sync requests', async () => {
+    const controller = new AbortController();
+    mockSyncSuccess();
+
+    await expect(
+      sendAuthenticatedKloelMessage(
+        buildSyncInput(),
+        {
+          signal: controller.signal,
+        },
+      ),
+    ).resolves.toMatchObject({
+      response: 'Resposta',
+      conversationId: 'thread-1',
+    });
+
+    expectSyncKloelRequest(controller.signal);
+    expectKloelMutateQueued();
+  });
+
+  it('surfaces request failures without mutating recents', async () => {
+    apiFetchMock.mockRejectedValue(new Error('network failure'));
+
+    await expect(sendAuthenticatedKloelMessage(buildSyncInput())).rejects.toThrow(
+      'network failure',
+    );
+
+    expect(mutateMock).not.toHaveBeenCalled();
+  });
+
+  it('surfaces aborted requests without mutating recents', async () => {
+    const controller = new AbortController();
+    const abortError = new DOMException('Aborted', 'AbortError');
+    apiFetchMock.mockRejectedValue(abortError);
+
+    const promise = sendAuthenticatedKloelMessage(buildSyncInput(), {
+      signal: controller.signal,
+    });
+    controller.abort();
+
+    await expect(promise).rejects.toThrow('Aborted');
+    expectSyncKloelRequest(controller.signal);
+    expect(mutateMock).not.toHaveBeenCalled();
+  });
+});
 
 describe('streamAuthenticatedKloelMessage', () => {
   beforeEach(() => {
@@ -78,7 +175,7 @@ describe('streamAuthenticatedKloelMessage', () => {
 
     const seenEvents: string[] = [];
     const chunks: string[] = [];
-    const threads: Array<{ conversationId: string; title?: string }> = [];
+    const threads: Array<{ conversationId: string; title?: string | undefined }> = [];
 
     await new Promise<void>((resolve, reject) => {
       streamAuthenticatedKloelMessage(

@@ -15,11 +15,10 @@
 import { kloelT } from '@/lib/i18n/t';
 import { UI } from '@/lib/ui-tokens';
 import { useId } from 'react';
-import type * as React from 'react';
 import { Bc, Cc, Mn, Pl, Px, Star, Tag as SharedTag, clampQty, fmt } from './checkout-theme-shared';
 import type { CheckoutThemeInputTokens } from './checkout-theme-shared';
 import type { CheckoutVisualTheme } from './checkout-theme-tokens';
-import { ProductThumb } from './__companions__/ProductThumb';
+import { ProductThumb } from './ProductThumb';
 
 export { Bc, Cc, Px, ProductThumb };
 

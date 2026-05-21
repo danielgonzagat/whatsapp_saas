@@ -1,6 +1,8 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional, Inject } from '@nestjs/common';
 import { forEachSequential } from '../common/async-sequence';
 import { StorageService } from '../common/storage/storage.service';
+import { UNIFIED_AGENT_TOKEN } from '../kloel/tokens';
+import { DecisionOutcomeService } from '../kloel/decision-outcome.service';
 import { InboxService } from './inbox.service';
 import {
   buildAttachmentContent,
@@ -18,6 +20,18 @@ import { SmartRoutingService } from './smart-routing.service';
 
 export type { MessageAttachment, NormalizedMessage, ProcessedAttachment };
 
+type UnifiedAgentPort = {
+  processIncomingMessage(input: {
+    workspaceId: string;
+    phone: string;
+    message: string;
+    contactId: string;
+    channel: string;
+    executeTools?: boolean;
+    context?: { deliveryMode?: string; externalId?: string; fromName?: string; metadata?: Record<string, unknown> };
+  }): Promise<void>;
+};
+
 /** Omnichannel ingestion service — normalizes messages from every channel. */
 @Injectable()
 export class OmnichannelService {
@@ -27,9 +41,11 @@ export class OmnichannelService {
     private readonly inbox: InboxService,
     private readonly routing: SmartRoutingService,
     private readonly storage: StorageService,
+    private readonly decisionOutcome: DecisionOutcomeService,
+    @Optional() @Inject(UNIFIED_AGENT_TOKEN) private readonly _unifiedAgent?: UnifiedAgentPort,
   ) {}
 
-  /** Unified entry point for ALL channels — saves and (optionally) routes the message. */
+  /** Unified entry point for ALL channels — saves, triggers CIA, and (optionally) routes. */
   async handleIncomingMessage(msg: NormalizedMessage) {
     this.logger.log(`[OMNI] Incoming from ${msg.channel}: ${msg.from}`);
 
@@ -38,6 +54,7 @@ export class OmnichannelService {
     const processedAttachments = await this.maybeProcessAttachments(msg);
     const content = buildAttachmentContent(msg.content || '', messageType, processedAttachments);
 
+    const mediaUrlVal = processedAttachments.length > 0 ? processedAttachments[0]?.url : undefined;
     const savedMsg = await this.inbox.saveMessageByPhone({
       workspaceId: msg.workspaceId,
       phone: identifier,
@@ -45,15 +62,59 @@ export class OmnichannelService {
       direction: 'INBOUND',
       type: messageType,
       channel: msg.channel,
-      mediaUrl: processedAttachments.length > 0 ? processedAttachments[0].url : undefined,
+      ...(mediaUrlVal !== undefined ? { mediaUrl: mediaUrlVal } : {}),
     });
 
-    // Smart routing hook — kept as a no-op until conversation re-routing is wired
-    // through this entry point. Reading the service prevents an unused-property
-    // warning while preserving the public DI surface.
     void this.routing;
 
+    void this.decisionOutcome.recordEvent({
+      workspaceId: msg.workspaceId,
+      eventType: 'inbound.received',
+      eventKey: savedMsg.id,
+      correlation: {
+        contactId: savedMsg.contactId ?? identifier,
+        channel: msg.channel.toLowerCase(),
+      },
+    });
+
+    await this.maybeDispatchToUnifiedAgent(msg, identifier, content, savedMsg.contactId);
+
     return savedMsg;
+  }
+
+  private resolveUnifiedAgent(): UnifiedAgentPort | null {
+    return this._unifiedAgent ?? null;
+  }
+
+  private async maybeDispatchToUnifiedAgent(
+    msg: NormalizedMessage,
+    identifier: string,
+    content: string,
+    contactId: string,
+  ): Promise<void> {
+    const unifiedAgent = this.resolveUnifiedAgent();
+    if (!unifiedAgent) {
+      return;
+    }
+    try {
+      await unifiedAgent.processIncomingMessage({
+        workspaceId: msg.workspaceId,
+        phone: identifier,
+        message: content,
+        contactId,
+        channel: msg.channel.toLowerCase(),
+        executeTools: msg.channel === 'WHATSAPP',
+        context: {
+          deliveryMode: 'reactive',
+          externalId: msg.externalId,
+          fromName: msg.fromName || msg.from,
+          metadata: msg.metadata || {},
+        },
+      });
+    } catch (error: unknown) {
+      const wrapped = ensureError(error);
+      this.logger.warn(`[OMNI] Unified agent dispatch failed: ${wrapped.message}`);
+    }
   }
 
   private async maybeProcessAttachments(msg: NormalizedMessage): Promise<ProcessedAttachment[]> {
@@ -182,13 +243,13 @@ export class OmnichannelService {
         channel: 'INSTAGRAM',
         externalId: extracted.senderId,
         from: extracted.senderId,
-        fromName: extracted.senderName,
+        ...(extracted.senderName !== undefined ? { fromName: extracted.senderName } : {}),
         content: extracted.content,
-        attachments: extracted.attachments.length > 0 ? extracted.attachments : undefined,
+        ...(extracted.attachments.length > 0 ? { attachments: extracted.attachments } : {}),
         metadata: {
           raw: payload,
-          messageId: extracted.messageId,
-          timestamp: extracted.timestamp,
+          ...(extracted.messageId !== undefined ? { messageId: extracted.messageId } : {}),
+          ...(extracted.timestamp !== undefined ? { timestamp: extracted.timestamp } : {}),
         },
       };
 
@@ -198,5 +259,56 @@ export class OmnichannelService {
       this.logger.error('[OMNI] Erro ao processar Instagram webhook:', wrapped.message);
       return { status: 'error', channel: 'instagram', error: wrapped.message };
     }
+  }
+
+  async processTikTokWebhook(payload: Record<string, unknown>) {
+    const nested = this.readRecord(payload.data) || this.readRecord(payload.message) || payload;
+    const workspaceId =
+      this.readText(payload.workspaceId) ||
+      this.readText(payload.workspace_id) ||
+      this.readText(nested.workspaceId) ||
+      this.readText(nested.workspace_id);
+    if (!workspaceId) {
+      return { status: 'no_workspace', channel: 'tiktok' };
+    }
+
+    const externalId =
+      this.readText(nested.open_id) ||
+      this.readText(nested.openId) ||
+      this.readText(nested.user_id) ||
+      this.readText(nested.userId) ||
+      this.readText(nested.sender_id) ||
+      this.readText(nested.from);
+    if (!externalId) {
+      return { status: 'no_sender', channel: 'tiktok' };
+    }
+
+    const content =
+      this.readText(nested.text) ||
+      this.readText(nested.content) ||
+      this.readText(nested.comment_text) ||
+      this.readText(nested.message_text);
+    if (!content) {
+      return { status: 'empty_message', channel: 'tiktok' };
+    }
+
+    return this.handleIncomingMessage({
+      workspaceId,
+      channel: 'TIKTOK',
+      externalId,
+      from: externalId,
+      content,
+      metadata: { raw: payload },
+    });
+  }
+
+  private readRecord(value: unknown): Record<string, unknown> | null {
+    return value && typeof value === 'object' && !Array.isArray(value)
+      ? (value as Record<string, unknown>)
+      : null;
+  }
+
+  private readText(value: unknown): string {
+    return typeof value === 'string' && value.trim() ? value.trim() : '';
   }
 }

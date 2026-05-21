@@ -1,9 +1,9 @@
 import {
   BadRequestException,
+  Body,
   Controller,
   Get,
   Headers,
-  Logger,
   NotFoundException,
   Param,
   Post,
@@ -12,17 +12,25 @@ import {
   UseGuards,
   Optional,
 } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { StripeService } from '../billing/stripe.service';
 import { AuthenticatedRequest } from '../common/interfaces';
 import { PrismaService } from '../prisma/prisma.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
+import { Idempotent } from '../common/idempotency.guard';
+import { RouteClass } from '../common/throttler/route-class.decorator';
+
+type RefundSaleBody = {
+  approvalRequestId?: string;
+};
 
 /** Sales controller — KloelSale CRUD. */
 @UseGuards(JwtAuthGuard)
 @Controller('sales')
+@RouteClass('read')
 export class SalesController {
-  private readonly logger = new Logger(SalesController.name);
+  private readonly logger = StructuredLogger.from(SalesController.name);
 
   constructor(
     private readonly prisma: PrismaService,
@@ -131,7 +139,7 @@ export class SalesController {
     });
 
     const chart: number[] = [];
-    for (let i = 29; i >= 0; i--) {
+    for (let i = 29; i >= 0; i -= 1) {
       const dayStart = new Date();
       dayStart.setHours(0, 0, 0, 0);
       dayStart.setDate(dayStart.getDate() - i);
@@ -160,17 +168,38 @@ export class SalesController {
 
   /** Refund sale. */
   @Post(':id/refund')
+  @Idempotent()
   async refundSale(
     @Request() req: AuthenticatedRequest,
     @Param('id') id: string,
+    @Body() body?: RefundSaleBody,
     @Headers('x-idempotency-key') idempotencyKey?: string,
   ) {
     const workspaceId = req.user?.workspaceId;
+    const approvalRequestId =
+      typeof body?.approvalRequestId === 'string' ? body.approvalRequestId.trim() : '';
     const sale = await this.prisma.kloelSale.findFirst({
       where: { id, workspaceId },
     });
     if (!sale) {
       throw new NotFoundException('Sale not found');
+    }
+
+    if (approvalRequestId) {
+      const approval = await this.prisma.approvalRequest.findFirst({
+        where: {
+          id: approvalRequestId,
+          workspaceId,
+          kind: 'sale:refund',
+          entityType: 'KloelSale',
+          entityId: id,
+          state: 'APPROVED',
+        },
+        select: { id: true, payload: true },
+      });
+      if (!approval || !approval.payload || typeof approval.payload !== 'object') {
+        throw new BadRequestException('Approved sale refund request not found');
+      }
     }
 
     // Idempotency: if the sale is already refunded/requested and caller sent an idempotency key,
@@ -181,6 +210,39 @@ export class SalesController {
 
     if (sale.status !== 'paid') {
       throw new BadRequestException('Only paid sales can be refunded');
+    }
+
+    if (!approvalRequestId) {
+      const approval = await this.prisma.approvalRequest.create({
+        data: {
+          workspaceId,
+          kind: 'sale:refund',
+          scope: 'workspace',
+          entityType: 'KloelSale',
+          entityId: id,
+          state: 'OPEN',
+          title: `Aprovar reembolso da venda ${id}`,
+          prompt: `Reembolso de venda no valor de ${sale.amount}. Revise o pedido e o impacto financeiro antes de autorizar.`,
+          payload: {
+            saleId: id,
+            amount: sale.amount,
+            externalPaymentId: sale.externalPaymentId || null,
+            paymentMethod: sale.paymentMethod || null,
+            requestedByUserId: req.user?.sub || null,
+            idempotencyKey: idempotencyKey || null,
+            risk: 'high',
+            requiresApproval: true,
+          },
+        },
+        select: { id: true, state: true, title: true, createdAt: true },
+      });
+      return {
+        approvalRequired: true,
+        approvalRequestId: approval.id,
+        approvalState: approval.state,
+        approval,
+        message: 'Reembolso enviado para aprovacao humana antes de acionar o gateway.',
+      };
     }
 
     if (sale.externalPaymentId) {
@@ -204,6 +266,19 @@ export class SalesController {
         );
       }
     }
+
+    await this.prisma.approvalRequest.updateMany({
+      where: { id: approvalRequestId, workspaceId, state: 'APPROVED' },
+      data: {
+        state: 'COMPLETED',
+        respondedAt: new Date(),
+        response: {
+          action: 'approved_sale_refund_executed',
+          saleId: id,
+          executedAt: new Date().toISOString(),
+        },
+      },
+    });
 
     if (sale.externalPaymentId?.startsWith('pi_')) {
       await this.prisma.kloelSale.updateMany({
@@ -249,7 +324,6 @@ export class SalesController {
       });
     } catch (err: unknown) {
       void this.opsAlert?.alertOnCriticalError(err, 'SalesController.create');
-      // PULSE:OK — AuditLog write failure is non-critical; refund already processed above
       this.logger.error(`Failed to create audit log for refund: ${String(err)}`);
     }
 

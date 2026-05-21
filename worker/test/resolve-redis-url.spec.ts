@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
   RedisConfigurationError,
   describeRedisResolution,
+  isRedisConfigured,
   resolveRedisUrl,
 } from '../resolve-redis-url';
 
@@ -54,6 +55,7 @@ describe('resolveRedisUrl', () => {
   });
 
   it('keeps localhost fallback for plain development runtimes', () => {
+    expect(isRedisConfigured()).toBe(false);
     expect(resolveRedisUrl()).toBe('redis://localhost:6379');
     expect(describeRedisResolution().mode).toBe('auto');
   });
@@ -70,6 +72,16 @@ describe('resolveRedisUrl', () => {
     process.env.REDIS_URL = 'redis://default:secret@mainline.proxy.rlwy.net:12345';
 
     expect(() => resolveRedisUrl()).toThrow(/public proxy/i);
+  });
+
+  it('prefers internal Railway component variables over unsafe explicit Redis URL', () => {
+    process.env.RAILWAY_SERVICE_ID = 'svc_123';
+    process.env.REDIS_URL = 'redis://default:secret@127.0.0.1:6379';
+    process.env.REDISHOST = 'redis.railway.internal';
+    process.env.REDISPORT = '6379';
+    process.env.REDISPASSWORD = 'component-secret';
+
+    expect(resolveRedisUrl()).toBe('redis://default:component-secret@redis.railway.internal:6379');
   });
 
   it('does not assemble passwordless Redis hosts in Railway runtimes', () => {

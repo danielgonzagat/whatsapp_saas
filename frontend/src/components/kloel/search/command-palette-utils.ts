@@ -15,8 +15,8 @@ export function buildRecentPreview(input?: string): string {
 export function mapRecentConversation(conversation: {
   id: string;
   title: string;
-  updatedAt?: string;
-  lastMessagePreview?: string;
+  updatedAt?: string | undefined;
+  lastMessagePreview?: string | undefined;
 }): ConversationSearchResult {
   return {
     id: conversation.id,

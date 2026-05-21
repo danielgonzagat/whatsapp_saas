@@ -14,13 +14,13 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ForbiddenException } from '@nestjs/common';
-import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import type { Redis } from 'ioredis';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Public } from '../auth/public.decorator';
 import { getTraceHeaders } from '../common/trace-headers';
 import { validateNoInternalAccess } from '../common/utils/url-validator';
 import { PrismaService } from '../prisma/prisma.service';
+import { asProviderSettings } from '../whatsapp/provider-settings.types';
 import { WebhooksService } from './webhooks.service';
 
 /**
@@ -30,6 +30,8 @@ import { WebhooksService } from './webhooks.service';
  * read are the parsed body, the raw body (for signature verification)
  * and the request URL (used when emitting ops alerts on duplicates).
  */
+import { RouteClass } from '../common/throttler/route-class.decorator';
+import { WebhookEndpoint } from '../common/decorators/webhook-endpoint.decorator';
 interface WebhookRequestLike {
   body?: unknown;
   rawBody?: string | Buffer;
@@ -59,8 +61,7 @@ type OpsAlertMeta = Record<string, unknown>;
  * Event ordering: events carry eventDate/createdAt; out-of-order duplicates are rejected.
  */
 @Controller('hooks')
-@UseGuards(ThrottlerGuard)
-@Throttle({ default: { limit: 100, ttl: 60000 } })
+@RouteClass('webhook')
 export class WebhooksController {
   private readonly logger = new Logger(WebhooksController.name);
 
@@ -85,6 +86,17 @@ export class WebhooksController {
     this.verifySignatureOrThrow(signature, req);
     await this.assertWorkspaceNotSuspended(workspaceId);
     await this.checkIdempotencyOrThrow(eventId, req);
+
+    const catchExternalId =
+      eventId ||
+      createHmac('sha256', process.env.HOOKS_WEBHOOK_SECRET || 'hooks_salt')
+        .update(Buffer.from(JSON.stringify(body || {})))
+        .digest('hex')
+        .slice(0, 24);
+    const catchDupe = await this.logWebhookEventSafe('hooks_catch', flowId, catchExternalId, body);
+    if (catchDupe) {
+      return { status: 'success', ...catchDupe };
+    }
 
     this.logger.log(`Webhook received for flow ${flowId} in workspace ${workspaceId}`);
 
@@ -125,6 +137,22 @@ export class WebhooksController {
     await this.assertWorkspaceNotSuspended(workspaceId);
     await this.checkIdempotencyOrThrow(eventId, req);
 
+    const financeExternalId =
+      eventId ||
+      createHmac('sha256', process.env.HOOKS_WEBHOOK_SECRET || 'hooks_salt')
+        .update(Buffer.from(JSON.stringify(body)))
+        .digest('hex')
+        .slice(0, 24);
+    const financeDupe = await this.logWebhookEventSafe(
+      'hooks_finance',
+      body.status || 'unknown',
+      financeExternalId,
+      body,
+    );
+    if (financeDupe) {
+      return { status: 'received', ...financeDupe };
+    }
+
     try {
       const res = await this.webhooksService.processFinanceEvent(workspaceId, body);
       return { status: 'received', ...res };
@@ -139,8 +167,8 @@ export class WebhooksController {
   }
 
   /** Recent finance. */
-  // PULSE_OK: webhook endpoint, called by frontend after Stripe finance webhook
   @UseGuards(JwtAuthGuard)
+  @WebhookEndpoint('Stripe/payment webhook forwarder')
   @Post('finance/:workspaceId/recent')
   async recentFinance(
     @Param('workspaceId') workspaceId: string,
@@ -199,6 +227,38 @@ export class WebhooksController {
     await this.redis.expire(dedupeKey, 300); // 5 min
   }
 
+  /**
+   * Log a webhook event to the WebhookEvent audit table. On P2002 unique
+   * constraint violation (replay), returns the duplicate response 200 shape.
+   */
+  private async logWebhookEventSafe(
+    provider: string,
+    eventType: string,
+    externalId: string,
+    body: unknown,
+  ): Promise<{ skipped: true; duplicate: true } | undefined> {
+    try {
+      await this.webhooksService.logWebhookEvent(
+        provider,
+        eventType,
+        externalId,
+        body as WebhookJsonPayload,
+      );
+    } catch (err: unknown) {
+      const code = (err as { code?: string } | null)?.code;
+      if (code === 'P2002') {
+        this.logger.log(
+          `Duplicate webhook event ${externalId} (provider=${provider}), returning 200`,
+        );
+        return { skipped: true, duplicate: true };
+      }
+      this.logger.warn(
+        `Failed to log webhook event for ${provider}: ${err instanceof Error ? err.message : 'unknown'}`,
+      );
+    }
+    return undefined;
+  }
+
   private async assertWorkspaceNotSuspended(pathWorkspaceId?: string) {
     const workspaceId = pathWorkspaceId?.trim();
     if (!workspaceId) {
@@ -208,7 +268,7 @@ export class WebhooksController {
       where: { id: workspaceId },
       select: { providerSettings: true },
     });
-    if ((ws?.providerSettings as Record<string, unknown>)?.billingSuspended) {
+    if (asProviderSettings(ws?.providerSettings).billingSuspended) {
       throw new ForbiddenException('Workspace suspended (billing)');
     }
   }
@@ -274,6 +334,23 @@ export class WebhooksController {
   ) {
     this.verifySignatureOrThrow(signature, req);
     await this.checkIdempotencyOrThrow(undefined, req);
+
+    const messageStatusExternalId =
+      body.externalId ||
+      createHmac('sha256', process.env.HOOKS_WEBHOOK_SECRET || 'hooks_salt')
+        .update(Buffer.from(JSON.stringify(body)))
+        .digest('hex')
+        .slice(0, 24);
+    const msgDupe = await this.logWebhookEventSafe(
+      'hooks_message_status',
+      body.status,
+      messageStatusExternalId,
+      body,
+    );
+    if (msgDupe) {
+      return { updated: 0, ...msgDupe };
+    }
+
     const { workspaceId, externalId, status, errorCode, phone, channel } = body || {};
     return this.webhooksService.updateMessageStatus({
       workspaceId,
@@ -304,6 +381,23 @@ export class WebhooksController {
   ) {
     this.verifySignatureOrThrow(signature, req);
     await this.checkIdempotencyOrThrow(undefined, req);
+
+    const emailStatusExternalId =
+      body.externalId ||
+      createHmac('sha256', process.env.HOOKS_WEBHOOK_SECRET || 'hooks_salt')
+        .update(Buffer.from(JSON.stringify(body)))
+        .digest('hex')
+        .slice(0, 24);
+    const emailDupe = await this.logWebhookEventSafe(
+      'hooks_email_status',
+      body.status,
+      emailStatusExternalId,
+      body,
+    );
+    if (emailDupe) {
+      return { updated: 0, ...emailDupe };
+    }
+
     return this.webhooksService.updateMessageStatus({
       ...body,
       channel: 'EMAIL',
@@ -330,6 +424,20 @@ export class WebhooksController {
     this.verifyMetaSignature(hubSignature, req);
     await this.assertWorkspaceNotSuspended(workspaceId);
     await this.checkIdempotencyOrThrow(undefined, req);
+
+    const igExternalId = createHmac('sha256', process.env.HOOKS_WEBHOOK_SECRET || 'hooks_salt')
+      .update(Buffer.from(JSON.stringify(body)))
+      .digest('hex')
+      .slice(0, 24);
+    const igDupe = await this.logWebhookEventSafe(
+      'hooks_instagram',
+      'instagram_webhook',
+      igExternalId,
+      body,
+    );
+    if (igDupe) {
+      return { status: 'success', ...igDupe };
+    }
 
     this.logger.log(`[INSTAGRAM] Webhook received for workspace ${workspaceId}`);
 

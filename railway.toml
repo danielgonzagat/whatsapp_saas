@@ -3,6 +3,7 @@ builder = "RAILPACK"
 buildCommand = "npm run railway:backend:build"
 
 [deploy]
+preDeployCommand = "node backend/prisma/ensure-migrations.js"
 startCommand = "npm run railway:backend:start"
 healthcheckPath = "/health/live"
 restartPolicyType = "ON_FAILURE"

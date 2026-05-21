@@ -1,4 +1,5 @@
 'use client';
+import { colors } from '@/lib/design-tokens';
 
 import { kloelT } from '@/lib/i18n/t';
 import { KloelMushroomMark } from '@/components/kloel/KloelBrand';
@@ -11,7 +12,7 @@ import {
   getAnalyticsDailyActivity,
   getAnalyticsDashboard,
 } from '@/lib/api';
-import { BarChart3, RefreshCw, XCircle } from 'lucide-react';
+import { BarChart3, RotateCw, XCircle } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   SettingsCard,
@@ -119,9 +120,9 @@ export function AnalyticsSettingsSection() {
           className={kloelSettingsClass.outlineButton}
         >
           {loading ? (
-            <KloelMushroomMark size={18} title="Atualizando analytics" traceColor="#E85D30" />
+            <KloelMushroomMark size={18} title="Atualizando analytics" traceColor={colors.ember.primary} />
           ) : (
-            <RefreshCw className="mr-2 h-4 w-4" aria-hidden="true" />
+            <RotateCw className="mr-2 h-4 w-4" aria-hidden="true" />
           )}
 
           {kloelT(`Atualizar`)}

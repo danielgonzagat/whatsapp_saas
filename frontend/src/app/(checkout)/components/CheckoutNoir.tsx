@@ -1,24 +1,14 @@
 'use client';
+import { colors } from '@/lib/design-tokens';
+import { CHECKOUT_VISUAL } from './checkout-theme-tokens';
 
 import { kloelT } from '@/lib/i18n/t';
-import type {
-  PublicCheckoutTestimonial,
-  PublicCheckoutThemeProps,
-} from '@/lib/public-checkout-contract';
+import type { PublicCheckoutThemeProps } from '@/lib/public-checkout-contract';
 import type * as React from 'react';
 import { useId } from 'react';
 import { useCheckoutExperience } from '../hooks/useCheckoutExperience';
 import PixelTracker from './PixelTracker';
-import {
-  type CheckoutThemeInputTokens,
-  type CheckoutThemeStepTokens,
-  PAYMENT_BADGES,
-  StepBubble as SharedStepBubble,
-  StepLine as SharedStepLine,
-  buildFooterPrimaryLine,
-  fmt,
-  formatCnpj,
-} from './checkout-theme-shared';
+import { CheckoutThemeStepTokens, PAYMENT_BADGES, StepBubble as SharedStepBubble, StepLine as SharedStepLine, buildFooterPrimaryLine, fmt, formatCnpj } from './checkout-theme-shared';
 import { NoirAddressStep } from './CheckoutNoir.address-step';
 import {
   DEFAULT_C,
@@ -173,7 +163,7 @@ export default function CheckoutNoir({
   const numDone: React.CSSProperties = {
     width: 26,
     height: 26,
-    borderRadius: '50%',
+    borderRadius: '16%',
     background: C.green,
     display: 'flex',
     alignItems: 'center',
@@ -182,7 +172,7 @@ export default function CheckoutNoir({
   const numActive: React.CSSProperties = {
     width: 26,
     height: 26,
-    borderRadius: '50%',
+    borderRadius: '16%',
     background: C.accent,
     display: 'flex',
     alignItems: 'center',
@@ -191,7 +181,7 @@ export default function CheckoutNoir({
   const numLock: React.CSSProperties = {
     width: 26,
     height: 26,
-    borderRadius: '50%',
+    borderRadius: '16%',
     background: C.surface2,
     display: 'flex',
     alignItems: 'center',
@@ -249,7 +239,7 @@ export default function CheckoutNoir({
 
       <header
         style={{
-          background: 'linear-gradient(135deg,#1a0a14,#2d1525,#1a0a14)',
+          background: `linear-gradient(135deg,${CHECKOUT_VISUAL.noirBgStart},${CHECKOUT_VISUAL.noirBgMid},${CHECKOUT_VISUAL.noirBgStart})`,
           padding: '22px 24px',
         }}
       >
@@ -267,7 +257,7 @@ export default function CheckoutNoir({
             style={{
               fontSize: 32,
               fontWeight: 300,
-              color: '#fff',
+              color: colors.text.silver,
               letterSpacing: '0.02em',
               fontFamily: "'DM Sans',sans-serif",
             }}
@@ -281,7 +271,7 @@ export default function CheckoutNoir({
               display: 'flex',
               alignItems: 'center',
               gap: 8,
-              color: '#fff',
+              color: colors.text.silver,
             }}
           >
             <svg
@@ -307,7 +297,7 @@ export default function CheckoutNoir({
                   fontWeight: 700,
                   letterSpacing: '0.1em',
                   lineHeight: 1.1,
-                  color: '#fff',
+                  color: colors.text.silver,
                 }}
               >
                 PAGAMENTO
@@ -353,7 +343,7 @@ export default function CheckoutNoir({
           n={1}
           state={step === 1 ? 'active' : step > 1 ? 'done' : 'locked'}
           onClick={() => {
-            if (mobileCanOpenStep1) goStep(1);
+            if (mobileCanOpenStep1) {goStep(1);}
           }}
           label={kloelT(`Informações pessoais`)}
           theme={stepTheme}
@@ -363,7 +353,7 @@ export default function CheckoutNoir({
           n={2}
           state={step === 2 ? 'active' : step > 2 ? 'done' : 'locked'}
           onClick={() => {
-            if (mobileCanOpenStep2) goStep(2);
+            if (mobileCanOpenStep2) {goStep(2);}
           }}
           label={kloelT(`Entrega`)}
           theme={stepTheme}
@@ -372,7 +362,7 @@ export default function CheckoutNoir({
         <SharedStepBubble
           n={3}
           state={step >= 3 ? 'active' : 'locked'}
-          onClick={step >= 3 ? () => goStep(3) : undefined}
+          {...(step >= 3 ? { onClick: () => goStep(3) } : {})}
           label={kloelT(`Pagamento`)}
           theme={stepTheme}
         />
@@ -419,11 +409,15 @@ export default function CheckoutNoir({
             inputTheme={inputTheme}
             submitError={submitError}
             shippingInCents={shippingInCents}
-            btnStep2Text={config?.btnStep2Text}
+            {...(config?.btnStep2Text !== undefined ? { btnStep2Text: config.btnStep2Text } : {})}
             setStep={setStep}
             updateField={updateFieldStr}
             goStep={goStep}
-            {...stepCardProps}
+            doneCard={doneCard}
+            activeCard={activeCard}
+            lockedCard={lockedCard}
+            numDone={numDone}
+            numLock={numLock}
           />
         </div>
 
@@ -483,8 +477,8 @@ export default function CheckoutNoir({
                 }}
               >
                 {PAYMENT_BADGES.filter((item) => {
-                  if (item === 'Pix') return supportsPix;
-                  if (item === 'Boleto') return supportsBoleto;
+                  if (item === 'Pix') {return supportsPix;}
+                  if (item === 'Boleto') {return supportsBoleto;}
                   return supportsCard;
                 }).map((code) => (
                   <span

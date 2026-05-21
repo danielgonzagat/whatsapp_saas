@@ -3,6 +3,15 @@
 import type { CheckoutThemeInputTokens, CheckoutThemeStepTokens } from './checkout-theme-shared';
 import { colors } from '@/lib/design-tokens';
 
+export const CHECKOUT_VISUAL = {
+  blancBgStart: 'rgb(61, 18, 50)',
+  blancBgMid: 'rgb(90, 26, 74)',
+  blancBorder: 'rgb(240, 230, 192)',
+  blancPlaceholder: 'rgb(170, 170, 170)',
+  noirBgStart: 'rgb(26, 10, 20)',
+  noirBgMid: 'rgb(45, 21, 37)',
+} as const;
+
 /** Checkout visual theme shape. */
 export interface CheckoutVisualTheme {
   /** Mode property. */
@@ -101,22 +110,22 @@ export interface CheckoutVisualTheme {
 
 /** Checkout theme overrides type. */
 export type CheckoutThemeOverrides = {
-  accentColor?: string;
-  accentColor2?: string;
-  backgroundColor?: string;
-  cardColor?: string;
-  textColor?: string;
-  mutedTextColor?: string;
+  accentColor?: string | undefined;
+  accentColor2?: string | undefined;
+  backgroundColor?: string | undefined;
+  cardColor?: string | undefined;
+  textColor?: string | undefined;
+  mutedTextColor?: string | undefined;
 };
 
 const BLANC_BASE = {
-  white: '#FFFFFF',
-  dark: '#1A1A1A',
+  white: colors.text.silver,
+  dark: colors.background.void,
   muted: colors.text.muted,
   softMuted: 'rgba(110, 110, 115, 0.72)',
   stroke: 'rgba(58, 58, 63, 0.18)',
   softLine: 'rgba(58, 58, 63, 0.12)',
-  surface: '#F5F5F5',
+  surface: colors.checkout.surfaceLight,
   surface2: 'rgba(255, 255, 255, 0.72)',
   successBg: 'rgba(16, 185, 129, 0.08)',
   successBorder: 'rgba(16, 185, 129, 0.24)',

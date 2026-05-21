@@ -99,6 +99,8 @@ export interface PulseConvergenceUnit {
   asyncExpectations: string[];
   /** Dynamic finding event labels property. */
   findingEvents: string[];
+  /** Break type labels property. */
+  breakTypes: string[];
   /** Artifact paths property. */
   artifactPaths: string[];
   /** Related files property. */
@@ -108,7 +110,7 @@ export interface PulseConvergenceUnit {
   /** Exit criteria property. */
   exitCriteria: string[];
   /** Expected gate shift property. */
-  expectedGateShift?: string;
+  expectedGateShift?: string | undefined;
 }
 
 /** Pulse convergence plan summary shape. */

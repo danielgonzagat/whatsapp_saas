@@ -70,7 +70,9 @@ describe('SmartTimeService', () => {
       messages.push({ createdAt: d });
     }
     for (let h = 0; h < 24; h++) {
-      if (h === peakHour) continue;
+      if (h === peakHour) {
+        continue;
+      }
       for (let i = 0; i < 5; i++) {
         const d = new Date(now.getTime());
         d.setHours(h);

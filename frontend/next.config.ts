@@ -51,7 +51,9 @@ const nextConfig: NextConfig = {
         codecovWebpackPlugin({
           enableBundleAnalysis: true,
           bundleName: 'whatsapp-saas-frontend',
-          uploadToken: process.env.CODECOV_TOKEN,
+          ...(process.env.CODECOV_TOKEN !== undefined
+            ? { uploadToken: process.env.CODECOV_TOKEN }
+            : {}),
           // gitService lets the plugin attach commit metadata correctly in
           // CI runs that aren't pulling git state from the workspace.
           gitService: 'github',
@@ -93,9 +95,11 @@ if (
 const baseExport = sentryBuildPluginEnabled
   ? withSentryConfig(nextConfig, {
       silent: true,
-      authToken: process.env.SENTRY_AUTH_TOKEN,
-      org: process.env.SENTRY_ORG,
-      project: process.env.SENTRY_PROJECT,
+      ...(process.env.SENTRY_AUTH_TOKEN !== undefined
+        ? { authToken: process.env.SENTRY_AUTH_TOKEN }
+        : {}),
+      ...(process.env.SENTRY_ORG !== undefined ? { org: process.env.SENTRY_ORG } : {}),
+      ...(process.env.SENTRY_PROJECT !== undefined ? { project: process.env.SENTRY_PROJECT } : {}),
     })
   : nextConfig;
 

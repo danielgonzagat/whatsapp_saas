@@ -12,4 +12,8 @@ import { JwtSetValidator } from './utils/jwt-set.validator';
   providers: [ComplianceService, JwtSetValidator],
   exports: [ComplianceService],
 })
+/**
+ * @cluster whatsapp_saas/backend/compliance
+ * L11 multi-agent TaskGraph annotation (batched by tools/auto-pr/batch-job.mjs).
+ */
 export class ComplianceModule {}

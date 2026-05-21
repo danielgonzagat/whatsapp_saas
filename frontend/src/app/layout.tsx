@@ -61,7 +61,7 @@ export const metadata: Metadata = {
 
 /** Viewport. */
 export const viewport: Viewport = {
-  themeColor: '#FFFFFF',
+  themeColor: colors.text.silver,
   width: 'device-width',
   initialScale: 1,
   viewportFit: 'cover',
@@ -76,17 +76,14 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         className={`${sora.variable} ${jetbrainsMono.variable} antialiased`}
         style={{
           fontFamily: "var(--font-sora), 'Sora', sans-serif",
-          background: '#FFFFFF',
+          background: colors.text.silver,
           color: colors.background.void,
         }}
       >
         <Script
           id="kloel-public-landing-canvas-guard"
+          src="/kloel-public-landing-canvas-guard.js"
           strategy="beforeInteractive"
-          dangerouslySetInnerHTML={{
-            __html:
-              "(() => { const original = HTMLCanvasElement.prototype.getContext; HTMLCanvasElement.prototype.getContext = function(type, options) { if (type === '2d' && this && this.style && this.style.mixBlendMode === 'screen') return null; return original.call(this, type, options); }; })();",
-          }}
         />
         <DatadogRumRouter />
         <NextIntlClientProvider locale={locale} messages={messages}>

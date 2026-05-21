@@ -1,4 +1,5 @@
 'use client';
+import { colors } from '@/lib/design-tokens';
 
 import { kloelT } from '@/lib/i18n/t';
 import { Button } from '@/components/ui/button';
@@ -76,7 +77,7 @@ export function HeaderMinimal({
                   style={{
                     fontSize: 11,
                     fontWeight: 500,
-                    color: '#E85D30',
+                    color: colors.ember.primary,
                     fontFamily: "'Sora', sans-serif",
                   }}
                 >
@@ -126,8 +127,8 @@ export function HeaderMinimal({
                   style={{
                     width: 6,
                     height: 6,
-                    borderRadius: 3,
-                    background: '#E0DDD8',
+                    borderRadius: 4,
+                    background: colors.text.silver,
                     display: 'inline-block',
                   }}
                 />
@@ -199,7 +200,7 @@ export function HeaderMinimal({
                   }}
                   style={{
                     borderRadius: 6,
-                    background: '#E0DDD8',
+                    background: colors.text.silver,
                     padding: '8px 16px',
                     fontSize: 13,
                     fontWeight: 600,
@@ -218,7 +219,7 @@ export function HeaderMinimal({
                       width: 28,
                       height: 28,
                       borderRadius: 6,
-                      background: '#E85D30',
+                      background: colors.ember.primary,
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',

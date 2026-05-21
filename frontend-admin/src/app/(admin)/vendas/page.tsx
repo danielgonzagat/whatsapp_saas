@@ -96,10 +96,10 @@ export default function VendasPage() {
     ['admin/sales/overview', search, status, method, gateway],
     () =>
       adminSalesApi.overview({
-        search: search || undefined,
-        status: status || undefined,
-        method: method || undefined,
-        gateway: gateway || undefined,
+        ...(search ? { search } : {}),
+        ...(status ? { status } : {}),
+        ...(method ? { method } : {}),
+        ...(gateway ? { gateway } : {}),
       }),
     { refreshInterval: 60_000, revalidateOnFocus: false },
   );
@@ -121,7 +121,7 @@ export default function VendasPage() {
     try {
       await adminTransactionsApi.operate(orderId, {
         action,
-        note: note || undefined,
+        ...(note ? { note } : {}),
       });
       await mutate();
     } finally {

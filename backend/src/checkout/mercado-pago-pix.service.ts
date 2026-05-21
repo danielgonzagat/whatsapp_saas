@@ -1,5 +1,6 @@
 import { createHmac, timingSafeEqual } from 'node:crypto';
-import { Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
+import { Injectable, ServiceUnavailableException } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 
 export interface CreatePixPaymentInput {
   idempotencyKey: string;
@@ -143,7 +144,7 @@ function extractQrData(raw: Record<string, unknown>): {
 /** Mercado Pago Pix service — creates Pix payments without wiring into checkout flow. */
 @Injectable()
 export class MercadoPagoPixService {
-  private readonly logger = new Logger(MercadoPagoPixService.name);
+  private readonly logger = StructuredLogger.from(MercadoPagoPixService.name);
 
   /** Create a Pix payment at Mercado Pago. Does NOT mark the order as paid. */
   async createPixPayment(input: CreatePixPaymentInput): Promise<PixPaymentResult> {

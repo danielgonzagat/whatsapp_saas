@@ -16,12 +16,15 @@ import { AuthenticatedRequest } from '../common/interfaces';
 import { PrismaService } from '../prisma/prisma.service';
 import { ShipOrderDto } from './dto/sales-actions.dto';
 import { OrderAlertsService } from './order-alerts.service';
+import { RouteClass } from '../common/throttler/route-class.decorator';
+import { InternalEndpoint } from '../common/decorators/internal-endpoint.decorator';
 
 const A_Z_A_Z0_9_RE = /[^a-zA-Z0-9.-]/g;
 
 /** Physical-order and order-alert sub-controller (mounted under /sales). */
 @UseGuards(JwtAuthGuard)
 @Controller('sales')
+@RouteClass('read')
 export class SalesOrdersController {
   constructor(
     private readonly prisma: PrismaService,
@@ -123,9 +126,9 @@ export class SalesOrdersController {
       data: {
         status: 'SHIPPED',
         trackingCode: sanitizedCode,
-        shippingMethod: dto.shippingMethod,
+        ...(dto.shippingMethod !== undefined ? { shippingMethod: dto.shippingMethod } : {}),
         shippedAt: new Date(),
-        trackingUrl,
+        ...(trackingUrl ? { trackingUrl } : {}),
       },
     });
     return {
@@ -142,6 +145,7 @@ export class SalesOrdersController {
   }
 
   /** Deliver order. */
+  @InternalEndpoint('sales order delivery')
   @Put('orders/:id/deliver')
   async deliverOrder(@Request() req: AuthenticatedRequest, @Param('id') id: string) {
     const workspaceId = req.user?.workspaceId;

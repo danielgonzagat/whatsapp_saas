@@ -42,11 +42,21 @@ if (!tsNodeBin) {
   process.exit(1);
 }
 
+const userArgs = process.argv.slice(2);
+
+const ENTRY_MAP = {
+  'unified-readiness': 'unified-readiness-report.ts',
+};
+
+const entryFileName = ENTRY_MAP[userArgs[0]] || 'index.ts';
+const forwardedArgs = ENTRY_MAP[userArgs[0]] ? userArgs.slice(1) : userArgs;
+
 const args = [
+  '--transpile-only',
   '--project',
   path.join(rootDir, 'scripts', 'pulse', 'tsconfig.json'),
-  path.join(rootDir, 'scripts', 'pulse', 'index.ts'),
-  ...process.argv.slice(2),
+  path.join(rootDir, 'scripts', 'pulse', entryFileName),
+  ...forwardedArgs,
 ];
 
 const result = spawnSync(tsNodeBin, args, {

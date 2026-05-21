@@ -68,7 +68,7 @@ const skipReasons = {
 function getAttrByName(element, name) {
   const attributes = element.getAttributes();
   for (const attr of attributes) {
-    if (attr.getKind() !== SyntaxKind.JsxAttribute) continue;
+    if (attr.getKind() !== SyntaxKind.JsxAttribute) {continue;}
     const nameNode = attr.getNameNode();
     if (nameNode && nameNode.getText() === name) {
       return attr;
@@ -84,7 +84,7 @@ function hasAttr(element, name) {
 function hasSpreadAttribute(element) {
   const attributes = element.getAttributes();
   for (const attr of attributes) {
-    if (attr.getKind() === SyntaxKind.JsxSpreadAttribute) return true;
+    if (attr.getKind() === SyntaxKind.JsxSpreadAttribute) {return true;}
   }
   return false;
 }
@@ -118,7 +118,7 @@ function labelWrapsFormControl(labelJsxElement) {
     const k = d.getKind();
     if (k === SyntaxKind.JsxOpeningElement || k === SyntaxKind.JsxSelfClosingElement) {
       const tag = d.getTagNameNode()?.getText();
-      if (tag && FORM_CONTROLS.has(tag)) return true;
+      if (tag && FORM_CONTROLS.has(tag)) {return true;}
     }
   }
   return false;
@@ -139,7 +139,7 @@ function extractLabelText(labelJsxElement) {
   for (const child of children) {
     if (child.getKind() === SyntaxKind.JsxText) {
       const t = child.getText().trim();
-      if (t) parts.push(t);
+      if (t) {parts.push(t);}
     }
   }
   return parts.join(' ');
@@ -159,7 +159,7 @@ for (const sourceFile of sourceFiles) {
   for (const labelEl of jsxElements) {
     const opening = labelEl.getOpeningElement();
     const tagName = opening.getTagNameNode()?.getText();
-    if (tagName !== 'label') continue;
+    if (tagName !== 'label') {continue;}
 
     if (hasAttr(opening, 'htmlFor')) {
       skipReasons.labelAlreadyHasHtmlFor += 1;
@@ -201,15 +201,15 @@ for (const sourceFile of sourceFiles) {
     for (let i = labelIdx + 1; i < siblings.length; i += 1) {
       const sib = siblings[i];
       const k = sib.getKind();
-      if (k === SyntaxKind.JsxText) continue;
-      if (k === SyntaxKind.JsxExpression) continue;
+      if (k === SyntaxKind.JsxText) {continue;}
+      if (k === SyntaxKind.JsxExpression) {continue;}
       if (k !== SyntaxKind.JsxElement && k !== SyntaxKind.JsxSelfClosingElement) {
         continue;
       }
       const sibTag = getOpeningTagName(sib);
-      if (!sibTag) continue;
+      if (!sibTag) {continue;}
       // Another label marks scope end.
-      if (sibTag === 'label') break;
+      if (sibTag === 'label') {break;}
       if (FORM_CONTROLS.has(sibTag)) {
         controlCandidates.push(sib);
       }
@@ -288,5 +288,5 @@ for (const [key, val] of Object.entries(skipReasons)) {
 }
 if (exampleIds.length > 0) {
   console.log('--- Example generated ids ---');
-  for (const id of exampleIds) console.log(`  ${id}`);
+  for (const id of exampleIds) {console.log(`  ${id}`);}
 }

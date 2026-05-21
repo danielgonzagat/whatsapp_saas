@@ -1,5 +1,6 @@
 import { InjectRedis } from '@nestjs-modules/ioredis';
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
+import { StructuredLogger } from '../../logging/structured-logger';
 import * as Sentry from '@sentry/node';
 import type { FraudBlacklist, FraudBlacklistType } from '@prisma/client';
 import type Redis from 'ioredis';
@@ -172,7 +173,7 @@ function normalizeFraudValue(type: FraudBlacklistType, value: string): string {
  */
 @Injectable()
 export class FraudEngine {
-  private readonly logger = new Logger(FraudEngine.name);
+  private readonly logger = StructuredLogger.from(FraudEngine.name);
   private readonly config = buildConfig();
 
   /**

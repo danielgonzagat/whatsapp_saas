@@ -1,8 +1,10 @@
+import { Logger } from '@nestjs/common';
 import * as Sentry from '@sentry/node';
 import { Prisma } from '@prisma/client';
 import { CheckoutOrderSupport } from './checkout-order-support';
 import { CheckoutPaymentService } from './checkout-payment.service';
-import { Logger } from '@nestjs/common';
+import type { CheckoutPaymentE2EStubResult } from './checkout-payment-e2e-guard';
+
 import { PrismaService } from '../prisma/prisma.service';
 
 /** Parameters for processOrderPostPayment. */
@@ -20,7 +22,7 @@ interface ProcessOrderPostPaymentParams {
     couponCode?: string;
     shippingAddress: Prisma.InputJsonValue;
   };
-  orderData: { paymentMethod: Prisma.EnumPaymentMethodFilter['equals'] };
+  orderData: { paymentMethod: 'CREDIT_CARD' | 'PIX' | 'BOLETO' };
   qualityGate: { phoneDigits: string };
   normalizedBaseTotalInCents: number;
   normalizedInstallments: number;
@@ -36,7 +38,7 @@ export async function processOrderPostPayment(
     orderSupport: CheckoutOrderSupport;
     logger: Logger;
   },
-): Promise<Record<string, unknown> | null> {
+): Promise<Record<string, unknown> | CheckoutPaymentE2EStubResult | null> {
   const { order, orderNumber, correlationId, data, orderData, qualityGate } = params;
   const { prisma, paymentService, orderSupport, logger } = deps;
 
@@ -44,7 +46,7 @@ export async function processOrderPostPayment(
     logger.log(JSON.stringify({ event, ...payload }));
   };
 
-  let paymentData: Record<string, unknown> | null = null;
+  let paymentData: Record<string, unknown> | CheckoutPaymentE2EStubResult | null = null;
   try {
     paymentData = await paymentService.processPayment({
       orderId: order.id,
@@ -52,22 +54,24 @@ export async function processOrderPostPayment(
       workspaceId: data.workspaceId,
       customerName: data.customerName,
       customerEmail: data.customerEmail,
-      customerCPF: data.customerCPF,
-      customerPhone: data.customerPhone,
+      ...(data.customerCPF !== undefined ? { customerCPF: data.customerCPF } : {}),
+      ...(data.customerPhone !== undefined ? { customerPhone: data.customerPhone } : {}),
       paymentMethod: orderData.paymentMethod,
       totalInCents: params.normalizedBaseTotalInCents,
       installments: params.normalizedInstallments,
-      cardHolderName: params.cardHolderName,
+      ...(params.cardHolderName !== undefined ? { cardHolderName: params.cardHolderName } : {}),
     });
+    const shippingAddr =
+      data.shippingAddress && typeof data.shippingAddress === 'object'
+        ? (data.shippingAddress as Record<string, unknown>)
+        : undefined;
+
     const contactSync = await orderSupport.ensureCheckoutContactRecord({
       workspaceId: data.workspaceId,
       customerName: data.customerName,
       customerEmail: data.customerEmail,
       customerPhone: qualityGate.phoneDigits,
-      shippingAddress:
-        data.shippingAddress && typeof data.shippingAddress === 'object'
-          ? (data.shippingAddress as Record<string, unknown>)
-          : undefined,
+      ...(shippingAddr !== undefined ? { shippingAddress: shippingAddr } : {}),
     });
     if (!contactSync.synced && !contactSync.skipped) {
       logOrderEvent('checkout_contact_sync_failed', {

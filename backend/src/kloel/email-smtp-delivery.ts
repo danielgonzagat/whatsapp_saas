@@ -1,0 +1,210 @@
+import { createConnection } from 'node:net';
+import { connect as tlsConnect } from 'node:tls';
+import type { OpsAlertService } from '../observability/ops-alert.service';
+
+export type EmailProvider = 'resend' | 'sendgrid' | 'smtp' | 'log';
+
+export interface EmailSmtpDeliveryOverride {
+  host: string;
+  port?: number;
+  secure?: boolean;
+  user?: string;
+  pass?: string;
+}
+
+export interface EmailDeliveryOverride {
+  provider?: Exclude<EmailProvider, 'log'>;
+  fromEmail?: string;
+  fromName?: string;
+  resendApiKey?: string;
+  sendgridApiKey?: string;
+  smtp?: EmailSmtpDeliveryOverride;
+}
+
+export interface ResolvedEmailDelivery {
+  fromEmail: string;
+  fromName: string;
+  provider: EmailProvider;
+  resendApiKey?: string;
+  sendgridApiKey?: string;
+  smtp?: Required<Pick<EmailSmtpDeliveryOverride, 'host' | 'port' | 'secure'>> &
+    Pick<EmailSmtpDeliveryOverride, 'user' | 'pass'>;
+}
+
+function dotStuffSmtpBody(value: string): string {
+  return value
+    .split('\n')
+    .map((line) => {
+      const normalized = line.endsWith('\r') ? line.slice(0, -1) : line;
+      return normalized.startsWith('.') ? `.${normalized}` : normalized;
+    })
+    .join('\r\n');
+}
+
+function decodeHtmlEntities(raw: string): string {
+  return raw
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&amp;/g, '&');
+}
+
+function htmlToPlainText(html: string): string {
+  let text = '';
+  let insideTag = false;
+  let lastWasWhitespace = false;
+  for (const char of html) {
+    if (char === '<') {
+      insideTag = true;
+      continue;
+    }
+    if (char === '>') {
+      insideTag = false;
+      continue;
+    }
+    if (insideTag) {
+      continue;
+    }
+    const whitespace = char === ' ' || char === '\n' || char === '\r' || char === '\t';
+    if (whitespace) {
+      if (!lastWasWhitespace) {
+        text += ' ';
+      }
+      lastWasWhitespace = true;
+      continue;
+    }
+    text += char;
+    lastWasWhitespace = false;
+  }
+  return decodeHtmlEntities(text).trim();
+}
+
+export function sanitizeSmtpHeaderValue(value: string): string {
+  let sanitized = '';
+  for (const char of value) {
+    if (char === '\r' || char === '\n' || char === '\0') {
+      continue;
+    }
+    sanitized += char;
+  }
+  return sanitized.trim();
+}
+
+function sanitizeSmtpAddress(value: string): string {
+  const headerSafe = sanitizeSmtpHeaderValue(value);
+  let sanitized = '';
+  for (const char of headerSafe) {
+    if (char === '<' || char === '>') {
+      continue;
+    }
+    sanitized += char;
+  }
+  return sanitized.trim();
+}
+
+function buildSmtpMessage(
+  to: string,
+  subject: string,
+  html: string,
+  delivery: ResolvedEmailDelivery,
+): string {
+  const boundary = `KLOEL_${Date.now()}`;
+  const plain = htmlToPlainText(html);
+  const fromName = sanitizeSmtpHeaderValue(delivery.fromName);
+  const fromEmail = sanitizeSmtpAddress(delivery.fromEmail);
+  const toEmail = sanitizeSmtpAddress(to);
+  const safeSubject = sanitizeSmtpHeaderValue(subject);
+  return [
+    `From: ${fromName} <${fromEmail}>`,
+    `To: ${toEmail}`,
+    `Subject: ${safeSubject}`,
+    'MIME-Version: 1.0',
+    `Content-Type: multipart/alternative; boundary="${boundary}"`,
+    '',
+    `--${boundary}`,
+    'Content-Type: text/plain; charset=UTF-8',
+    '',
+    dotStuffSmtpBody(plain),
+    `--${boundary}`,
+    'Content-Type: text/html; charset=UTF-8',
+    '',
+    dotStuffSmtpBody(html),
+    `--${boundary}--`,
+    '',
+  ].join('\r\n');
+}
+
+export function sendViaSmtp(params: {
+  to: string;
+  subject: string;
+  html: string;
+  delivery: ResolvedEmailDelivery;
+  alert?: OpsAlertService;
+}): Promise<boolean> {
+  const { to, subject, html, delivery, alert } = params;
+  if (!delivery.smtp?.host) {
+    return Promise.resolve(false);
+  }
+
+  const { host, port, secure, user, pass } = delivery.smtp;
+  const fromEmail = sanitizeSmtpAddress(delivery.fromEmail);
+  const toEmail = sanitizeSmtpAddress(to);
+  const message = buildSmtpMessage(to, subject, html, delivery);
+
+  return new Promise((resolve, reject) => {
+    const socket = secure
+      ? tlsConnect(port, host, { rejectUnauthorized: true })
+      : createConnection(port, host);
+
+    socket.setTimeout(30_000, () => {
+      socket.destroy();
+      reject(new Error('SMTP connection timed out'));
+    });
+
+    socket.on('error', (err: Error) => {
+      void alert?.alertOnCriticalError(err, 'EmailCampaignService.sendViaSmtp');
+      reject(err);
+    });
+
+    const readResponse = (): Promise<string> =>
+      new Promise((res, rej) => {
+        socket.once('data', (data: Buffer) => {
+          const response = data.toString();
+          if (/^[45]/.test(response)) {
+            rej(new Error(`SMTP error: ${response.trim()}`));
+          } else {
+            res(response);
+          }
+        });
+      });
+
+    const sendCmd = async (cmd: string): Promise<string> => {
+      socket.write(`${cmd}\r\n`);
+      return readResponse();
+    };
+
+    void (async () => {
+      try {
+        await readResponse();
+        await sendCmd(`EHLO ${host}`);
+        if (user && pass) {
+          await sendCmd('AUTH LOGIN');
+          await sendCmd(Buffer.from(user).toString('base64'));
+          await sendCmd(Buffer.from(pass).toString('base64'));
+        }
+        await sendCmd(`MAIL FROM:<${fromEmail}>`);
+        await sendCmd(`RCPT TO:<${toEmail}>`);
+        await sendCmd('DATA');
+        socket.write(`${message}\r\n.\r\n`);
+        await readResponse();
+        await sendCmd('QUIT');
+        socket.end();
+        resolve(true);
+      } catch (err: unknown) {
+        socket.end();
+        reject(err instanceof Error ? err : new Error(String(err)));
+      }
+    })();
+  });
+}

@@ -5,6 +5,10 @@ import { PrismaService } from '../prisma/prisma.service';
 
 /** Api keys service. */
 @Injectable()
+/**
+ * @cluster whatsapp_saas/backend/api-keys
+ * L11 multi-agent TaskGraph annotation (batched by tools/auto-pr/batch-job.mjs).
+ */
 export class ApiKeysService {
   private readonly logger = new Logger(ApiKeysService.name);
   constructor(
@@ -32,6 +36,9 @@ export class ApiKeysService {
     }
 
     const [saltHex, derivedHex] = parts;
+    if (saltHex === undefined || derivedHex === undefined) {
+      return false;
+    }
     const salt = Buffer.from(saltHex, 'hex');
     const expected = Buffer.from(derivedHex, 'hex');
 
@@ -60,7 +67,6 @@ export class ApiKeysService {
   }
 
   /** Create. */
-  // PULSE_OK: workspaceId validated by caller guard
   async create(workspaceId: string, name: string) {
     const rawKey = this.generateKey();
     const keyHash = this.hashKey(rawKey);

@@ -18,7 +18,7 @@ export interface GoogleButtonCallbackDeps {
   /** Set is submitting property. */
   setIsSubmitting: (value: boolean) => void;
   /** On error property. */
-  onError?: (message: string) => void;
+  onError?: ((message: string) => void) | undefined;
 }
 
 /** Create google credential callback. */

@@ -1,4 +1,4 @@
-import { deriveStringUnionMembersFromTypeContract } from '../dynamic-reality-kernel/__parts__/type-contract-labels';
+import { deriveStringUnionMembersFromTypeContract } from '../dynamic-reality-kernel/type-contract-labels';
 
 /**
  * Returns the string-literal union members of `PulseRuntimeProbeStatus` declared in

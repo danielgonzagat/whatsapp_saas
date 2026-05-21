@@ -20,7 +20,7 @@ function headerValueToString(value: string | string[] | undefined): string {
   return String(value || '');
 }
 
-function readHeader(req: MinimalRequest, name: string) {
+function readHeader(req: MinimalRequest | undefined | null, name: string) {
   if (!req) {
     return '';
   }
@@ -38,7 +38,7 @@ function readHeader(req: MinimalRequest, name: string) {
 }
 
 function firstListEntry(value: string): string {
-  return value.split(',')[0].trim();
+  return value.split(',')[0]?.trim() ?? '';
 }
 
 type OriginComponents = {

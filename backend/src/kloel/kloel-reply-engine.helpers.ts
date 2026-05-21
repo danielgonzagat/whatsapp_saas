@@ -7,11 +7,10 @@ import { KloelWorkspaceContextService } from './kloel-workspace-context.service'
 import { KloelThreadService } from './kloel-thread.service';
 import { KloelToolRouter } from './kloel-tool-router';
 import { createKloelStatusEvent, type KloelStreamEvent } from './kloel-stream-events';
-import { buildKloelDashboardPrompt } from './__companions__/kloel-reply-engine.helpers.companion';
-import { KLOEL_ONBOARDING_PROMPT, KLOEL_SALES_PROMPT } from './kloel.prompts';
-import { chatCompletionWithFallback } from './openai-wrapper';
+import { CANONICAL_FALLBACK_SYSTEM_PROMPT } from './kloel.prompts';
+import { chatCompletionWithFallback, LLM_MAX_COMPLETION_TOKENS } from './openai-wrapper';
 import { KLOEL_CHAT_TOOLS } from './kloel-chat-tools.definition';
-import type { ExpertiseLevel, LocalToolExecutor, ReplyMessage } from './kloel-reply-engine.service';
+import type { ExpertiseLevel, LocalToolExecutor, ReplyMessage } from './kloel-reply-engine.types';
 
 export const KLOEL_STREAM_ABORT_REASON_TIMEOUT = 'request_timeout';
 export const KLOEL_STREAM_ABORT_REASON_CLIENT_DISCONNECTED = 'client_disconnected';
@@ -24,7 +23,7 @@ export const CRIE_CADASTRAR_CADASTRE_RE =
 export const PRODUTO_CAT_A__LOGO_AUT_RE =
   /(produto|cat[aá]logo|autopilot|marca|voz|brand voice|fluxo|flow|dashboard|painel|whatsapp|contato|contatos|chat|chats|mensagem|mensagens|backlog|hist[oó]rico|presen[cç]a|presence|link de pagamento|pagamento|payment|web|internet|google|site|landing|homepage|copy|email|campanha|campanhas|checkout|carrinho|afiliad|seo|not[ií]cia|noticias|hoje|status)/i;
 
-type UnknownRecord = Record<string, unknown>;
+import type { UnknownRecord } from '../common/types';
 
 /** Builds the dynamic runtime context string for the reply engine. */
 export async function buildDynamicRuntimeContextHelper(params: {
@@ -166,6 +165,7 @@ interface BuildAssistantReplyDeps {
   contextFormatter: KloelContextFormatter;
   toolRouter: KloelToolRouter;
   unavailableMessage: string;
+  abiStateJson?: string;
   hasOpenAiKey: () => boolean;
   buildDashboardPrompt: (params?: {
     userName?: string | null;
@@ -191,7 +191,7 @@ interface BuildAssistantReplyDeps {
       tool_calls?: OpenAI.Chat.ChatCompletionAssistantMessageParam['tool_calls'];
     };
     toolMessages?: Array<{ role?: 'tool'; tool_call_id: string; name: string; content: string }>;
-  }) => ChatCompletionMessageParam[];
+  }) => Promise<ChatCompletionMessageParam[]>;
   buildDynamicRuntimeContext: (params: {
     workspaceId?: string;
     userId?: string;
@@ -210,9 +210,11 @@ export async function buildAssistantReplyImpl(
     userName?: string;
     mode?: 'chat' | 'onboarding' | 'sales';
     companyContext?: string;
+    allowedTools?: string[];
     conversationState?: { summary?: string; recentMessages: ReplyMessage[]; totalMessages: number };
     onTraceEvent?: (event: KloelStreamEvent) => void;
     executeLocalTool?: LocalToolExecutor;
+    prebuiltCognitiveState?: Record<string, unknown>;
   },
   deps: BuildAssistantReplyDeps,
 ): Promise<string> {
@@ -223,13 +225,16 @@ export async function buildAssistantReplyImpl(
     userName: reqUserName,
     mode = 'chat',
     companyContext,
+    allowedTools,
     conversationState,
     onTraceEvent,
     executeLocalTool,
   } = params;
   const { openai, prisma, planLimits, threadService, wsContextService, toolRouter } = deps;
 
-  if (!deps.hasOpenAiKey() && !process.env.ANTHROPIC_API_KEY) return deps.unavailableMessage;
+  if (!deps.hasOpenAiKey() && !process.env.ANTHROPIC_API_KEY) {
+    return deps.unavailableMessage;
+  }
 
   const companyName = 'sua empresa';
   let userName = 'Usuário';
@@ -251,11 +256,11 @@ export async function buildAssistantReplyImpl(
   const historyState = conversationState || { recentMessages: [], totalMessages: 0 };
   const expertiseLevel = deps.detectExpertiseLevel(message, historyState.recentMessages);
   const dynamicContext = await deps.buildDynamicRuntimeContext({
-    workspaceId,
-    userId,
+    ...(workspaceId !== undefined ? { workspaceId } : {}),
+    ...(userId !== undefined ? { userId } : {}),
     userName,
     expertiseLevel,
-    companyContext,
+    ...(companyContext !== undefined ? { companyContext } : {}),
   });
   const summaryMessage = threadService.buildThreadSummarySystemMessage(historyState.summary);
   const marketingPromptAddendum = await deps.buildMarketingPromptAddendum(
@@ -263,19 +268,19 @@ export async function buildAssistantReplyImpl(
     mode,
     message,
   );
-  const responseMaxTokens = deps.shouldUseLongFormBudget(message) ? 4096 : 2048;
+  // No hardcoded output cap: the operator/model decides via the
+  // LLM_MAX_COMPLETION_TOKENS env (DeepSeek V4 Pro's real ceiling).
+  // shouldUseLongFormBudget is kept only as a forward signal; it no
+  // longer artificially halves the reply.
+  void deps.shouldUseLongFormBudget(message);
+  const responseMaxTokens = LLM_MAX_COMPLETION_TOKENS;
   const responseTemperature = 0.7;
 
   let systemPrompt: string;
   switch (mode) {
     case 'onboarding':
-      systemPrompt = KLOEL_ONBOARDING_PROMPT;
-      break;
     case 'sales':
-      systemPrompt = KLOEL_SALES_PROMPT(
-        companyName,
-        await wsContextService.getWorkspaceContext(workspaceId || '', userId),
-      );
+      systemPrompt = CANONICAL_FALLBACK_SYSTEM_PROMPT;
       break;
     default:
       systemPrompt = deps.buildDashboardPrompt({
@@ -284,26 +289,41 @@ export async function buildAssistantReplyImpl(
         expertiseLevel,
       });
   }
+  void companyName;
+  void wsContextService;
+  if (deps.abiStateJson) {
+    systemPrompt = `${systemPrompt}\nstate_payload=${deps.abiStateJson}`;
+  }
 
-  const messages = deps.buildChatModelMessages({
+  const messages = await deps.buildChatModelMessages({
     systemPrompt,
     dynamicContext,
     marketingPromptAddendum,
     summaryMessage,
     recentMessages: historyState.recentMessages,
+    ...(params.prebuiltCognitiveState !== undefined
+      ? { prebuiltCognitiveState: params.prebuiltCognitiveState }
+      : {}),
     userMessage: message,
   });
   onTraceEvent?.(createKloelStatusEvent('thinking'));
-  if (workspaceId) await planLimits.ensureTokenBudget(workspaceId);
+  if (workspaceId) {
+    await planLimits.ensureTokenBudget(workspaceId);
+  }
 
   const isChatMode = mode === 'chat';
+  const chatTools = filterChatToolsByAllowedTools(allowedTools);
   const response = await chatCompletionWithFallback(
     openai,
     {
       model: resolveBackendOpenAIModel(isChatMode ? 'brain' : 'writer'),
       messages,
-      tools: isChatMode ? KLOEL_CHAT_TOOLS : undefined,
-      tool_choice: isChatMode ? 'auto' : undefined,
+      ...(isChatMode ? { tools: chatTools } : {}),
+      ...(isChatMode
+        ? { tool_choice: chatTools.length > 0 ? ('auto' as const) : ('none' as const) }
+        : {}),
+      // Disable thinking mode for DeepSeek v4 Pro tool calls (reasoning_content breaks multi-turn)
+      ...(isChatMode && chatTools.length > 0 ? { thinking: { type: 'disabled' as const } } : {}),
       temperature: responseTemperature,
       top_p: 0.95,
       frequency_penalty: 0.3,
@@ -312,12 +332,22 @@ export async function buildAssistantReplyImpl(
     },
     resolveBackendOpenAIModel(isChatMode ? 'brain_fallback' : 'writer_fallback'),
   );
-  if (workspaceId)
+  if (workspaceId) {
     await planLimits
       .trackAiUsage(workspaceId, response?.usage?.total_tokens ?? 500)
       .catch(() => {});
+  }
 
-  const initialMsg = response.choices[0]?.message;
+  const initialMsg = response.choices[0]?.message; // Strip reasoning_content to avoid DeepSeek v4 multi-turn error
+  if (initialMsg) {
+    const initialMsgWithReasoning: Record<string, unknown> = initialMsg as object as Record<
+      string,
+      unknown
+    >;
+    if (initialMsgWithReasoning.reasoning_content !== undefined) {
+      delete initialMsgWithReasoning.reasoning_content;
+    }
+  }
   let assistantMessage = initialMsg?.content || deps.unavailableMessage;
 
   if (mode === 'chat' && initialMsg?.tool_calls?.length && workspaceId && executeLocalTool) {
@@ -325,8 +355,9 @@ export async function buildAssistantReplyImpl(
     const { toolMessages, usedSearchWeb } = await toolRouter.executeAssistantToolCalls({
       assistantMessage: initialMsg,
       workspaceId,
-      userId,
-      safeWrite: onTraceEvent,
+      ...(userId !== undefined ? { userId } : {}),
+      ...(allowedTools !== undefined ? { allowedTools } : {}),
+      ...(onTraceEvent !== undefined ? { safeWrite: onTraceEvent } : {}),
       executeLocalTool,
     });
     onTraceEvent?.(createKloelStatusEvent('tool_result'));
@@ -335,12 +366,15 @@ export async function buildAssistantReplyImpl(
       openai,
       {
         model: resolveBackendOpenAIModel('writer'),
-        messages: deps.buildChatModelMessages({
+        messages: await deps.buildChatModelMessages({
           systemPrompt,
           dynamicContext,
           marketingPromptAddendum,
           summaryMessage,
           recentMessages: historyState.recentMessages,
+          ...(params.prebuiltCognitiveState !== undefined
+            ? { prebuiltCognitiveState: params.prebuiltCognitiveState }
+            : {}),
           userMessage: message,
           assistantMessage: initialMsg,
           toolMessages,
@@ -363,4 +397,13 @@ export async function buildAssistantReplyImpl(
   return assistantMessage;
 }
 
-export { buildKloelDashboardPrompt };
+function filterChatToolsByAllowedTools(allowedTools?: string[]): typeof KLOEL_CHAT_TOOLS {
+  if (allowedTools === undefined) {
+    return KLOEL_CHAT_TOOLS;
+  }
+  const allowed = new Set(allowedTools);
+  return KLOEL_CHAT_TOOLS.filter((tool) => {
+    const name = 'function' in tool ? tool.function?.name : undefined;
+    return typeof name === 'string' && allowed.has(name);
+  });
+}

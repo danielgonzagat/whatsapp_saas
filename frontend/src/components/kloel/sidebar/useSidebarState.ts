@@ -42,7 +42,7 @@ export function useSidebarState(): SidebarState {
   const [expandedNav, setExpandedNav] = useState<string | null>(null);
 
   useEffect(() => {
-    setExpandedRaw(getInitialExpanded());
+    queueMicrotask(() => setExpandedRaw(getInitialExpanded()));
   }, []);
 
   // Persist expanded state to localStorage

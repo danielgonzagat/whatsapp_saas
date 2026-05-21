@@ -1,0 +1,326 @@
+import { ChatCompletionTool } from 'openai/resources/chat';
+
+export const KLOEL_CHAT_TOOLS_SETTINGS_CAMPAIGNS: ChatCompletionTool[] = [
+  {
+    type: 'function',
+    function: {
+      name: 'save_business_info',
+      description: 'Salva informações do negócio',
+      parameters: {
+        type: 'object',
+        properties: {
+          businessName: { type: 'string', description: 'Nome do negócio' },
+          description: { type: 'string', description: 'Descrição do negócio' },
+          segment: { type: 'string', description: 'Segmento (ecommerce, serviços, etc)' },
+        },
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'set_business_hours',
+      description: 'Define o horário de funcionamento',
+      parameters: {
+        type: 'object',
+        properties: {
+          weekdayStart: { type: 'string', description: 'Horário início dias úteis (ex: 09:00)' },
+          weekdayEnd: { type: 'string', description: 'Horário fim dias úteis (ex: 18:00)' },
+          saturdayStart: { type: 'string', description: 'Horário início sábado' },
+          saturdayEnd: { type: 'string', description: 'Horário fim sábado' },
+          workOnSunday: { type: 'boolean', description: 'Funciona aos domingos?' },
+        },
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'create_campaign',
+      description: 'Cria uma campanha de mensagens em massa',
+      parameters: {
+        type: 'object',
+        properties: {
+          name: { type: 'string', description: 'Nome da campanha' },
+          message: { type: 'string', description: 'Mensagem da campanha' },
+          targetAudience: {
+            type: 'string',
+            description: 'Público-alvo (ex: todos, leads_quentes)',
+          },
+        },
+        required: ['name', 'message'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'create_agent_job',
+      description:
+        'Agenda um job autônomo governado do Kloel para lembrar, auditar ou revisar algo no tempo',
+      parameters: {
+        type: 'object',
+        properties: {
+          jobId: { type: 'string', description: 'Identificador estável opcional do job' },
+          title: { type: 'string', description: 'Título curto do job' },
+          prompt: { type: 'string', description: 'Tarefa operacional que o Kloel deve executar' },
+          everyMinutes: { type: 'number', description: 'Intervalo em minutos para recorrência' },
+          runAt: { type: 'string', description: 'Data ISO para execução única' },
+          toolScope: {
+            type: 'array',
+            items: { type: 'string' },
+            description: 'Ferramentas permitidas para o job',
+          },
+        },
+        required: ['title', 'prompt'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'list_agent_jobs',
+      description: 'Lista jobs autônomos governados registrados na memória operacional do Kloel',
+      parameters: { type: 'object', properties: {} },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'set_agent_job_enabled',
+      description: 'Pausa ou reativa um job autônomo governado do Kloel sem apagar seu histórico',
+      parameters: {
+        type: 'object',
+        properties: {
+          jobId: { type: 'string', description: 'ID ou chave do job autônomo' },
+          enabled: { type: 'boolean', description: 'true para ativar, false para pausar' },
+        },
+        required: ['jobId', 'enabled'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'search_agent_memory',
+      description:
+        'Busca memórias episódicas, operacionais e procedurais persistidas pelo runtime do Kloel',
+      parameters: {
+        type: 'object',
+        properties: {
+          query: { type: 'string', description: 'Consulta textual sobre memória passada' },
+          limit: { type: 'number', description: 'Quantidade máxima de memórias retornadas' },
+        },
+        required: ['query'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'search_agent_sessions',
+      description:
+        'Busca conversas e sessões passadas do Kloel agrupadas por thread, sessão ou contato, com janela focada no assunto pesquisado',
+      parameters: {
+        type: 'object',
+        properties: {
+          query: { type: 'string', description: 'Assunto para recall de sessão/conversa passada' },
+          limit: { type: 'number', description: 'Quantidade máxima de sessões retornadas' },
+        },
+        required: ['query'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'get_agent_artifact',
+      description:
+        'Recupera o payload completo de um artefato durável criado quando uma ferramenta retornou dados grandes demais para o contexto',
+      parameters: {
+        type: 'object',
+        properties: {
+          artifactId: {
+            type: 'string',
+            description: 'ID retornado anteriormente em tool_result ou mensagem truncada',
+          },
+          maxChars: {
+            type: 'number',
+            description: 'Limite máximo de caracteres a recuperar nesta chamada',
+          },
+        },
+        required: ['artifactId'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'upsert_agent_skill',
+      description:
+        'Registra ou atualiza uma skill procedural governada para o Kloel reutilizar em tarefas futuras',
+      parameters: {
+        type: 'object',
+        properties: {
+          id: { type: 'string', description: 'Identificador da skill' },
+          title: { type: 'string', description: 'Nome da skill' },
+          summary: { type: 'string', description: 'Resumo do procedimento' },
+          category: {
+            type: 'string',
+            enum: ['commercial', 'operational', 'pulse', 'workspace'],
+          },
+          riskLevel: { type: 'string', enum: ['safe', 'normal', 'high', 'critical'] },
+          allowedTools: { type: 'array', items: { type: 'string' } },
+          requiredEvidence: { type: 'array', items: { type: 'string' } },
+          validation: { type: 'array', items: { type: 'string' } },
+          rollback: { type: 'array', items: { type: 'string' } },
+          metrics: { type: 'array', items: { type: 'string' } },
+          body: { type: 'string', description: 'Passos do procedimento' },
+        },
+        required: ['id', 'title', 'summary'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'record_agent_delegation',
+      description:
+        'Registra uma observação durável sobre delegação/subagente, incluindo tarefa, resultado e sessão filha',
+      parameters: {
+        type: 'object',
+        properties: {
+          sessionId: { type: 'string', description: 'Sessão principal ou thread associada' },
+          task: { type: 'string', description: 'Tarefa delegada' },
+          result: { type: 'string', description: 'Resultado observado da delegação' },
+          childSessionId: { type: 'string', description: 'Sessão filha/subagente, se houver' },
+          metadata: {
+            type: 'object',
+            additionalProperties: true,
+            description: 'Metadados auditáveis e não sensíveis da delegação',
+          },
+        },
+        required: ['task', 'result'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'record_agent_skill_outcome',
+      description:
+        'Registra resultado observado de uma skill procedural para o Kloel aprender quais procedimentos funcionam melhor',
+      parameters: {
+        type: 'object',
+        properties: {
+          skillId: { type: 'string', description: 'Identificador da skill procedural' },
+          outcome: {
+            type: 'string',
+            enum: ['selected', 'succeeded', 'failed', 'patched', 'viewed'],
+            description: 'Resultado observado do uso da skill',
+          },
+          reason: { type: 'string', description: 'Resumo curto da evidência ou motivo' },
+          provenance: {
+            type: 'string',
+            enum: ['default', 'workspace', 'background_review', 'imported'],
+            description: 'Origem auditável da skill',
+          },
+          pinned: {
+            type: 'boolean',
+            description: 'Marca a skill como preferida quando houver evidência operacional',
+          },
+          lifecycleState: {
+            type: 'string',
+            enum: ['active', 'stale', 'archived'],
+            description: 'Estado operacional da skill',
+          },
+        },
+        required: ['skillId', 'outcome'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'record_agent_evidence',
+      description:
+        'Registra evidência operacional durável com hash de integridade para decisões, validações, PULSE, eventos comerciais ou resultados de ferramenta',
+      parameters: {
+        type: 'object',
+        properties: {
+          source: { type: 'string', description: 'Origem da evidência' },
+          content: { type: 'string', description: 'Conteúdo observado da evidência' },
+          type: {
+            type: 'string',
+            enum: [
+              'tool_result',
+              'runtime_observation',
+              'validation',
+              'pulse',
+              'commercial_event',
+              'manual',
+            ],
+          },
+          actor: { type: 'string', description: 'Ator associado, se houver' },
+          url: { type: 'string', description: 'URL da fonte, se houver' },
+          eventTimestamp: { type: 'string', description: 'Timestamp do evento observado' },
+          verification: {
+            type: 'string',
+            enum: ['unverified', 'single_source', 'multi_source_verified'],
+          },
+          notes: { type: 'string', description: 'Notas curtas de interpretação' },
+          metadata: { type: 'object', additionalProperties: true },
+        },
+        required: ['source', 'content'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'search_agent_evidence',
+      description: 'Busca evidências operacionais persistidas por palavra-chave',
+      parameters: {
+        type: 'object',
+        properties: {
+          query: { type: 'string', description: 'Termo a buscar em conteúdo, origem, ator ou URL' },
+          limit: { type: 'number', description: 'Quantidade máxima de evidências retornadas' },
+        },
+        required: ['query'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'list_agent_evidence',
+      description: 'Lista evidências operacionais persistidas com filtros opcionais',
+      parameters: {
+        type: 'object',
+        properties: {
+          type: {
+            type: 'string',
+            enum: [
+              'tool_result',
+              'runtime_observation',
+              'validation',
+              'pulse',
+              'commercial_event',
+              'manual',
+            ],
+          },
+          actor: { type: 'string', description: 'Ator associado' },
+          limit: { type: 'number', description: 'Quantidade máxima de evidências retornadas' },
+        },
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'verify_agent_evidence',
+      description: 'Verifica a integridade das evidências persistidas e retorna resumo por tipo',
+      parameters: { type: 'object', properties: {} },
+    },
+  },
+];

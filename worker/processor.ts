@@ -2,8 +2,19 @@ import { type Job, Worker } from 'bullmq';
 import { FlowEngineGlobal } from './flow-engine-global';
 import { WorkerLogger } from './logger';
 import { jobCounter, jobDuration } from './metrics';
-import { PlanLimitsProvider } from './providers/plan-limits';
-import { autopilotQueue, connection, shutdownQueueSystem } from './queue';
+import {
+  checkFlowSubscription,
+  checkIdempotentCompletion,
+  executeResolvedFlow,
+  resolveFlowDefinition,
+  runSubscriptionAndRateGuards,
+} from './processor-flow-guards';
+import {
+  autopilotQueue,
+  buildQueueOptions,
+  shutdownQueueSystem,
+  silent24hResolverQueue,
+} from './queue';
 import './campaign-processor'; // Start Campaign Worker
 import './scraper-processor'; // Start Scraper Worker
 import './media-processor'; // Start Media Worker
@@ -11,17 +22,36 @@ import './voice-processor'; // Start Voice Worker
 import './processors/memory-processor'; // Start Memory Worker
 import './processors/webhook-processor'; // Start Webhook Worker
 import './processors/crm-processor'; // Start CRM Worker
+import './processors/silent-24h-resolver.processor'; // Start Silent 24h Resolver Worker
 import './metrics-server'; // Expose /metrics and /health
 import './dlq-monitor'; // Monitor DLQs and alert ops
 import { redisPub } from './redis-client';
 import { getErrorMessage } from './utils/error-message';
-import { handleScheduledFollowup } from './__parts__/scheduled-followup-handler';
-import { handleSendMessage } from './__companions__/send-message-handler.companion';
-import { autopilotScanner } from './__companions__/autopilot-scanner.companion';
+import { handleScheduledFollowup } from './scheduled-followup-handler';
+import { handleSendMessage } from './send-message-handler';
+import { autopilotScanner } from './autopilot-scanner.engine';
+import {
+  checkIdempotent,
+  endJob,
+  extractWorkspaceId,
+  logError,
+  markCompleted,
+  startJob,
+} from './processor-base';
+import { startAutopilotHealthMonitor } from './processor-health-monitor';
 
 /**
  * =======================================================
  * WORKER ENGINE — VERSION PRO (TS SAFE)
+ *
+ * ARCHITECTURAL COHESION: This file is the Worker Process Lifecycle
+ * controller. It wires together the Flow Engine, BullMQ workers, scheduler
+ * repeatables, autopilot health monitoring, graceful shutdown handlers, and
+ * legacy scanner. Flow guards and health monitoring are extracted to dedicated
+ * modules (processor-flow-guards.ts, processor-health-monitor.ts). What
+ * remains is the boot-time wiring, the job dispatch switch, event handlers,
+ * and the SIGTERM/SIGINT shutdown orchestration — all of which form a single
+ * "process lifecycle" responsibility.
  * =======================================================
  */
 
@@ -74,6 +104,23 @@ if (SHOULD_SCHEDULE) {
     });
   }
 
+  void (async () => {
+    try {
+      await silent24hResolverQueue.add(
+        'resolve-expired',
+        {},
+        {
+          jobId: 'silent-24h-resolve-expired',
+          repeat: { pattern: '*/5 * * * *' },
+          removeOnComplete: true,
+        },
+      );
+      log.info('silent_24h_resolver_scheduled', { pattern: '*/5 * * * *' });
+    } catch (err: unknown) {
+      log.warn('silent_24h_resolver_schedule_failed', { error: getErrorMessage(err) });
+    }
+  })();
+
   log.info('cia_main_loop_disabled', {
     reason: 'observer_reactive_only',
     role: WORKER_ROLE,
@@ -86,71 +133,10 @@ if (SHOULD_SCHEDULE) {
 }
 
 /* ------------------------------------------------------------------ */
-/*  Queue health monitor                                               */
+/*  Queue health monitor (extracted → processor-health-monitor.ts)      */
 /* ------------------------------------------------------------------ */
 
-const QUEUE_THRESHOLD =
-  Number.parseInt(process.env.AUTOPILOT_QUEUE_WAITING_THRESHOLD || '200', 10) || 200;
-const ALERT_WEBHOOK =
-  process.env.AUTOPILOT_ALERT_WEBHOOK || process.env.OPS_WEBHOOK_URL || process.env.DLQ_WEBHOOK_URL;
-let lastQueueAlert = 0;
-const QUEUE_ALERT_COOLDOWN_MS = 5 * 60_000;
-
-async function sendOpsAlert(message: string, meta: Record<string, unknown> = {}): Promise<void> {
-  if (!ALERT_WEBHOOK || typeof globalThis.fetch !== 'function') {
-    return;
-  }
-  try {
-    await globalThis.fetch(ALERT_WEBHOOK, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        type: 'autopilot_alert',
-        message,
-        meta,
-        at: new Date().toISOString(),
-        env: process.env.NODE_ENV || 'dev',
-      }),
-      signal: AbortSignal.timeout(10000),
-    });
-  } catch (err: unknown) {
-    log.warn('autopilot_alert_failed', { error: getErrorMessage(err) });
-  }
-}
-
-async function maybeAlertHighQueue(waiting: number, failed: number, now: number): Promise<void> {
-  if (waiting <= QUEUE_THRESHOLD || now - lastQueueAlert <= QUEUE_ALERT_COOLDOWN_MS) {
-    return;
-  }
-  lastQueueAlert = now;
-  log.warn('autopilot_queue_high', { waiting, failed, threshold: QUEUE_THRESHOLD });
-  await sendOpsAlert('Autopilot queue high', { waiting, failed, threshold: QUEUE_THRESHOLD });
-}
-
-async function maybeAlertFailedJobs(failed: number, waiting: number, now: number): Promise<void> {
-  if (failed <= 0 || now - lastQueueAlert <= QUEUE_ALERT_COOLDOWN_MS) {
-    return;
-  }
-  lastQueueAlert = now;
-  log.warn('autopilot_queue_failed', { failed, waiting });
-  await sendOpsAlert('Autopilot queue has failed jobs', { failed, waiting });
-}
-
-async function checkAutopilotQueueHealth(): Promise<void> {
-  try {
-    const counts = await autopilotQueue.getJobCounts();
-    const waiting = (counts.waiting || 0) + (counts.delayed || 0);
-    const failed = counts.failed || 0;
-    const now = Date.now();
-
-    await maybeAlertHighQueue(waiting, failed, now);
-    await maybeAlertFailedJobs(failed, waiting, now);
-  } catch (err: unknown) {
-    log.warn('autopilot_queue_monitor_error', { error: getErrorMessage(err) });
-  }
-}
-
-const autopilotMonitorInterval = setInterval(checkAutopilotQueueHealth, 60_000);
+const autopilotMonitorInterval = startAutopilotHealthMonitor(log);
 
 /* ------------------------------------------------------------------ */
 /*  Graceful shutdown                                                  */
@@ -177,110 +163,8 @@ process.on('SIGINT', () => {
 });
 
 /* ------------------------------------------------------------------ */
-/*  Flow guard helpers                                                 */
+/*  Flow guard helpers (extracted → processor-flow-guards.ts)          */
 /* ------------------------------------------------------------------ */
-
-type SkippedFlowResult = { ok: false; skipped: true; reason: string };
-
-async function checkFlowSubscription(
-  jobId: Job['id'],
-  workspaceId: string,
-): Promise<SkippedFlowResult | null> {
-  const subStatus = await PlanLimitsProvider.checkSubscriptionStatus(workspaceId);
-  if (subStatus.active) {
-    return null;
-  }
-  log.warn('flow_blocked_subscription', { jobId, workspaceId, reason: subStatus.reason });
-  return { ok: false, skipped: true, reason: subStatus.reason };
-}
-
-async function checkFlowRateLimit(
-  jobId: Job['id'],
-  workspaceId: string,
-): Promise<SkippedFlowResult | null> {
-  const rate = await PlanLimitsProvider.checkFlowRunRate(workspaceId);
-  if (rate.allowed) {
-    return null;
-  }
-  log.warn('flow_blocked_rate', { jobId, workspaceId, reason: rate.reason });
-  return { ok: false, skipped: true, reason: rate.reason };
-}
-
-async function resolveFlowDefinition(
-  job: Job,
-  flowId: string,
-  workspaceId: string | undefined,
-): Promise<Awaited<ReturnType<FlowEngineGlobal['loadFlow']>>> {
-  if (!job.data.flow?.nodes) {
-    return engine.loadFlow(flowId, workspaceId);
-  }
-  const flowDef = engine.parseFlowDefinition(
-    flowId || 'temp-run',
-    job.data.flow.nodes,
-    job.data.flow.edges,
-    job.data.workspace?.id || 'default',
-  );
-  if (job.data.startNode) {
-    flowDef.startNode = job.data.startNode;
-  }
-  return flowDef;
-}
-
-async function checkIdempotentCompletion(
-  jobId: Job['id'],
-  executionId: string | undefined,
-  workspaceId: string | undefined,
-): Promise<{ ok: true; skipped: true; reason: 'already_completed' } | null> {
-  if (!executionId) {
-    return null;
-  }
-  const existingExec = await engine.getExecution(executionId, workspaceId);
-  if (!existingExec) {
-    return null;
-  }
-  if (existingExec.status !== 'COMPLETED' && existingExec.status !== 'FAILED') {
-    return null;
-  }
-  log.warn('flow_already_completed', { jobId, executionId, status: existingExec.status });
-  return { ok: true, skipped: true, reason: 'already_completed' };
-}
-
-async function runSubscriptionAndRateGuards(
-  jobId: Job['id'],
-  workspaceId: string | undefined,
-  subscriptionChecked: boolean,
-): Promise<SkippedFlowResult | null> {
-  if (!subscriptionChecked && workspaceId) {
-    const blocked = await checkFlowSubscription(jobId, workspaceId);
-    if (blocked) {
-      return blocked;
-    }
-  }
-
-  if (workspaceId) {
-    const blocked = await checkFlowRateLimit(jobId, workspaceId);
-    if (blocked) {
-      return blocked;
-    }
-  }
-  return null;
-}
-
-async function executeResolvedFlow(
-  job: Job,
-  flowDef: Awaited<ReturnType<typeof resolveFlowDefinition>>,
-  user: string,
-  flowId: string | undefined,
-  initialVars: Parameters<typeof engine.startFlow>[2],
-  executionId: string | undefined,
-): Promise<void> {
-  if (flowDef) {
-    await engine.startFlow(user, flowDef, initialVars, executionId);
-    log.info('flow_completed', { jobId: job.id, flowId, user });
-  } else {
-    log.error('flow_not_found', { jobId: job.id, flowId });
-  }
-}
 
 /* ------------------------------------------------------------------ */
 /*  Job handler: run-flow                                              */
@@ -294,24 +178,37 @@ async function handleRunFlow(job: Job) {
   let workspaceId = job.data.workspaceId || workspace?.id;
   let subscriptionChecked = false;
 
-  // 1. Check Subscription Status (if workspace known)
   if (workspace?.id) {
     const blocked = await checkFlowSubscription(job.id, workspace.id);
     subscriptionChecked = true;
     if (blocked) {
+      log.warn('flow_blocked_subscription', {
+        jobId: job.id,
+        workspaceId: workspace.id,
+        reason: blocked.reason,
+      });
       return blocked;
     }
   }
 
-  // Idempotency Check
-  const alreadyCompleted = await checkIdempotentCompletion(job.id, executionId, workspaceId);
+  const alreadyCompleted = await checkIdempotentCompletion(
+    engine,
+    job.id,
+    executionId,
+    workspaceId,
+  );
   if (alreadyCompleted) {
+    log.warn('flow_already_completed', {
+      jobId: job.id,
+      executionId,
+      workspaceId,
+      reason: alreadyCompleted.reason,
+    });
     return alreadyCompleted;
   }
 
-  const flowDef = await resolveFlowDefinition(job, flowId, workspaceId);
+  const flowDef = await resolveFlowDefinition(engine, job, flowId, workspaceId);
 
-  // Derive workspaceId if not provided
   if (!workspaceId && flowDef?.workspaceId) {
     workspaceId = flowDef.workspaceId;
   }
@@ -321,7 +218,7 @@ async function handleRunFlow(job: Job) {
     return guarded;
   }
 
-  await executeResolvedFlow(job, flowDef, user, flowId, initialVars, executionId);
+  await executeResolvedFlow(engine, log, job, flowDef, user, flowId, initialVars, executionId);
 
   return { ok: true };
 }
@@ -334,62 +231,83 @@ export const flowWorker = SHOULD_EXECUTE
   ? new Worker(
       'flow-jobs',
       async (job: Job) => {
-        const start = process.hrtime.bigint();
+        const meta = startJob(job, log);
+        const correlationId = meta.correlationId;
+        const ctxLog = log.withContext(correlationId, meta.workspaceId);
+
         try {
+          const dedup = await checkIdempotent(job);
+          if (dedup) {
+            ctxLog.info('job_skipped_idempotent', { jobId: job.id });
+            const durationMs = endJob(meta, ctxLog, job.name, 'skipped');
+            jobDuration.observe(
+              { queue: job.queueName, name: job.name, status: 'skipped' },
+              durationMs / 1000,
+            );
+            jobCounter.inc({ queue: job.queueName, name: job.name, status: 'skipped' });
+            return { ok: true, skipped: true, reason: 'idempotent' };
+          }
+
+          let result: unknown;
           switch (job.name) {
             case 'run-flow':
-              return await handleRunFlow(job);
-
+              result = await handleRunFlow(job);
+              break;
             case 'resume-flow':
               if (job.data?.user && job.data?.message) {
                 await engine.onUserResponse(job.data.user, job.data.message, job.data.workspaceId);
-                return { ok: true };
+                result = { ok: true };
+              } else {
+                ctxLog.warn('resume_invalid_job', { jobId: job.id, data: job.data });
+                result = { error: true, reason: 'invalid_resume_job' };
               }
-              log.warn('resume_invalid_job', { jobId: job.id, data: job.data });
-              return { error: true, reason: 'invalid_resume_job' };
-
+              break;
             case 'send-message':
-              return await handleSendMessage(job);
-
+              result = await handleSendMessage(job);
+              break;
             case 'incoming-message': {
               const { user, message, workspaceId } = job.data || {};
               if (user && message) {
                 await engine.onUserResponse(user, message, workspaceId);
-                log.info('incoming_routed', { user, workspaceId });
+                ctxLog.info('incoming_routed', { user, workspaceId });
               } else {
-                log.warn('incoming_invalid_payload', { data: job.data });
+                ctxLog.warn('incoming_invalid_payload', { data: job.data });
               }
-              return { ok: true };
+              result = { ok: true };
+              break;
             }
-
             case 'scheduled-followup':
-              return await handleScheduledFollowup(job);
-
+              result = await handleScheduledFollowup(job);
+              break;
             default:
-              log.warn('unknown_job', { name: job.name, jobId: job.id });
-              return null;
+              ctxLog.warn('unknown_job', { name: job.name, jobId: job.id });
+              result = null;
           }
+
+          await markCompleted(job);
+          const durationMs = endJob(meta, ctxLog, job.name, 'completed');
+          jobDuration.observe(
+            { queue: job.queueName, name: job.name, status: 'processed' },
+            durationMs / 1000,
+          );
+          jobCounter.inc({ queue: job.queueName, name: job.name, status: 'processed' });
+          return result;
         } catch (err) {
-          log.error('job_error', {
-            jobId: job.id,
-            error: getErrorMessage(err),
-          });
+          logError(meta, ctxLog, err, job.name);
+          const durationMs = endJob(meta, ctxLog, job.name, 'failed');
+          jobDuration.observe(
+            { queue: job.queueName, name: job.name, status: 'failed' },
+            durationMs / 1000,
+          );
+          jobCounter.inc({ queue: job.queueName, name: job.name, status: 'failed' });
+
+          if (typeof job.data === 'object' && job.data !== null && !Object.isFrozen(job.data)) {
+            (job.data as Record<string, unknown>).correlationId = correlationId;
+          }
           throw err;
-        } finally {
-          const duration = Number(process.hrtime.bigint() - start) / 1e9;
-          const labels: { queue: string; name: string } = {
-            queue: job.queueName,
-            name: job.name,
-          };
-          jobDuration.observe({ ...labels, status: 'processed' }, duration);
-          jobCounter.inc({ ...labels, status: 'processed' });
         }
       },
-      {
-        connection,
-        concurrency: 1,
-        lockDuration: 60000,
-      },
+      { ...buildQueueOptions(), concurrency: 1, lockDuration: 60000 },
     )
   : null;
 
@@ -407,30 +325,27 @@ flowWorker?.on('completed', (job: Job) => {
 });
 
 flowWorker?.on('failed', (job: Job | undefined, err: Error) => {
-  log.error('job_failed', { jobId: job?.id, error: err?.message });
+  const workspaceId = job ? extractWorkspaceId(job) : 'unknown';
+  const correlationId =
+    job?.data && typeof job.data === 'object'
+      ? ((job.data as Record<string, unknown>)?.correlationId ?? 'unknown')
+      : 'unknown';
+  log.error('job_failed', {
+    jobId: job?.id,
+    error: err?.message,
+    correlationId,
+    workspaceId,
+  });
   const labels: { queue: string; name: string } = {
     queue: job?.queueName || 'flow-jobs',
     name: job?.name || 'unknown',
   };
   jobCounter.inc({ ...labels, status: 'failed' });
 
-  const workspaceId = (() => {
-    const d = job?.data as Record<string, unknown> | undefined;
-    const ws = d?.workspace;
-    if (ws && typeof ws === 'object' && !Array.isArray(ws)) {
-      const wsId = (ws as Record<string, unknown>).id;
-      if (typeof wsId === 'string') {
-        return wsId;
-      }
-    }
-    if (typeof d?.workspaceId === 'string') {
-      return d.workspaceId;
-    }
-    return 'global';
-  })();
   const payload = {
     type: 'job_failed',
     workspaceId,
+    correlationId,
     jobId: job?.id,
     queue: job?.queueName,
     name: job?.name,

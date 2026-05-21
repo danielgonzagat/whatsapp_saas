@@ -1,4 +1,5 @@
 'use client';
+import { colors } from '@/lib/design-tokens';
 
 import { kloelT } from '@/lib/i18n/t';
 import { Button } from '@/components/ui/button';
@@ -26,7 +27,7 @@ export function PlanActivationSuccessModal({
 
   useEffect(() => {
     if (isOpen) {
-      setShowCheck(false);
+      queueMicrotask(() => setShowCheck(false));
       if (checkTimer.current) {
         clearTimeout(checkTimer.current);
       }
@@ -51,13 +52,20 @@ export function PlanActivationSuccessModal({
           <div className="relative flex h-24 w-24 items-center justify-center">
             {/* Outer ring */}
             <svg className="absolute h-full w-full" viewBox="0 0 100 100" aria-hidden="true">
-              <circle cx="50" cy="50" r="45" fill="none" stroke="#E5E7EB" strokeWidth="6" />
               <circle
                 cx="50"
                 cy="50"
                 r="45"
                 fill="none"
-                stroke="#22C55E"
+                stroke={colors.text.faint}
+                strokeWidth="6"
+              />
+              <circle
+                cx="50"
+                cy="50"
+                r="45"
+                fill="none"
+                stroke={colors.checkout.success}
                 strokeWidth="6"
                 strokeLinecap="round"
                 strokeDasharray={`${showCheck ? 283 : 0} 283`}

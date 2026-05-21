@@ -12,7 +12,6 @@ import {
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { DealStatus } from '@prisma/client';
-import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { resolveWorkspaceId } from '../auth/workspace-access';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
@@ -23,12 +22,12 @@ import { ListContactsQueryDto } from './dto/list-contacts.query.dto';
 import { UpsertContactDto } from './dto/upsert-contact.dto';
 
 /** Crm controller. */
+import { RouteClass } from '../common/throttler/route-class.decorator';
 @ApiTags('CRM')
 @ApiBearerAuth()
-@UseGuards(ThrottlerGuard)
 @Controller('crm')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
-@Throttle({ default: { limit: 10, ttl: 60000 } })
+@RouteClass('read')
 export class CrmController {
   constructor(private readonly crmService: CrmService) {}
 
@@ -56,7 +55,7 @@ export class CrmController {
     return this.crmService.listContacts(effectiveWorkspaceId, {
       page: Number(page) || 1,
       limit: Number(limit) || 20,
-      search,
+      ...(search !== undefined ? { search } : {}),
     });
   }
 
@@ -135,12 +134,16 @@ export class CrmController {
     const workspaceId = body.workspaceId;
     const effectiveWorkspaceId = resolveWorkspaceId(req, workspaceId);
     return this.crmService.createDeal(effectiveWorkspaceId, {
-      contactId: body.contactId,
-      contactPhone: body.contactPhone || body.contact,
-      contactName: body.contactName,
-      stageId: body.stageId || body.stage,
       title: body.title,
       value: body.value,
+      ...(body.contactId !== undefined ? { contactId: body.contactId } : {}),
+      ...(body.contactPhone !== undefined || body.contact !== undefined
+        ? { contactPhone: body.contactPhone || body.contact }
+        : {}),
+      ...(body.contactName !== undefined ? { contactName: body.contactName } : {}),
+      ...(body.stageId !== undefined || body.stage !== undefined
+        ? { stageId: body.stageId || body.stage }
+        : {}),
     });
   }
 
@@ -196,10 +199,10 @@ export class CrmController {
   ) {
     const effectiveWorkspaceId = resolveWorkspaceId(req, workspaceId);
     return this.crmService.listDeals(effectiveWorkspaceId, {
-      campaignId,
-      pipelineId,
-      stageId,
-      search,
+      ...(campaignId !== undefined ? { campaignId } : {}),
+      ...(pipelineId !== undefined ? { pipelineId } : {}),
+      ...(stageId !== undefined ? { stageId } : {}),
+      ...(search !== undefined ? { search } : {}),
     });
   }
 }

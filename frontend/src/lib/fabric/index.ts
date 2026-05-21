@@ -1,3 +1,4 @@
+import { colors } from '@/lib/design-tokens';
 import { Canvas } from 'fabric';
 
 import { BackgroundManager } from './BackgroundManager';
@@ -60,7 +61,7 @@ export class KloelEditor {
     this.canvas = new Canvas(el, {
       width,
       height,
-      backgroundColor: '#ffffff',
+      backgroundColor: colors.text.silver,
       preserveObjectStacking: true,
       stopContextMenu: true,
       fireRightClick: true,
@@ -137,7 +138,7 @@ export class KloelEditor {
     } catch {
       // If JSON is incompatible (e.g. old Polotno format), clear and start fresh
       this.canvas.clear();
-      this.canvas.backgroundColor = '#ffffff';
+      this.canvas.backgroundColor = colors.text.silver;
       this.canvas.requestRenderAll();
     }
     this.history.clear();
@@ -147,7 +148,7 @@ export class KloelEditor {
   /** Clear. */
   clear(): void {
     this.canvas.clear();
-    this.canvas.backgroundColor = '#ffffff';
+    this.canvas.backgroundColor = colors.text.silver;
     this.canvas.requestRenderAll();
     this.history.clear();
     this.history.saveState();

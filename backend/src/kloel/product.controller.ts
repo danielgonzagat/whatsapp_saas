@@ -4,7 +4,6 @@ import {
   Controller,
   Delete,
   Get,
-  Logger,
   NotFoundException,
   Param,
   Post,
@@ -14,6 +13,7 @@ import {
   UseGuards,
   Optional,
 } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { normalizeStorageUrlForRequest } from '../common/storage/public-storage-url.util';
@@ -23,6 +23,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { buildProductMetrics } from './product-metrics.helpers';
 import { syncProductToMemory, deleteProductFromMemory } from './product-memory-sync.helpers';
 import { OpsAlertService } from '../observability/ops-alert.service';
+import { RouteClass } from '../common/throttler/route-class.decorator';
 
 interface CreateProductDto {
   name: string;
@@ -81,8 +82,9 @@ interface UpdateProductDto extends Partial<CreateProductDto> {
  */
 @Controller('products')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
+@RouteClass('mutate')
 export class ProductController {
-  private readonly logger = new Logger(ProductController.name);
+  private readonly logger = StructuredLogger.from(ProductController.name);
 
   constructor(
     private readonly prisma: PrismaService,
@@ -282,23 +284,25 @@ export class ProductController {
         currency: dto.currency || 'BRL',
         category: dto.category || null,
         imageUrl: dto.imageUrl || null,
-        sku: dto.sku,
+        ...(dto.sku !== undefined ? { sku: dto.sku } : {}),
         tags: dto.tags || [],
         format: dto.format || 'DIGITAL',
         status: dto.status || 'DRAFT',
         active: dto.status === 'APPROVED',
         salesPageUrl: dto.salesPageUrl || null,
         thankyouUrl: dto.thankyouUrl || null,
-        thankyouBoletoUrl: dto.thankyouBoletoUrl,
-        thankyouPixUrl: dto.thankyouPixUrl,
-        reclameAquiUrl: dto.reclameAquiUrl,
+        ...(dto.thankyouBoletoUrl !== undefined
+          ? { thankyouBoletoUrl: dto.thankyouBoletoUrl }
+          : {}),
+        ...(dto.thankyouPixUrl !== undefined ? { thankyouPixUrl: dto.thankyouPixUrl } : {}),
+        ...(dto.reclameAquiUrl !== undefined ? { reclameAquiUrl: dto.reclameAquiUrl } : {}),
         supportEmail: dto.supportEmail || null,
         warrantyDays: dto.warrantyDays || null,
         isSample: dto.isSample || false,
         shippingType: dto.shippingType || null,
         shippingValue: dto.shippingValue || null,
         originCep: dto.originCep || null,
-        slug: dto.slug,
+        ...(dto.slug !== undefined ? { slug: dto.slug } : {}),
         metadata: (dto.metadata || {}) as Prisma.InputJsonValue,
       },
     });
@@ -423,7 +427,6 @@ export class ProductController {
     const results = await Promise.all(
       dto.products.map(async (product) => {
         try {
-          // PULSE:OK — import needs per-product error tracking; createMany doesn't return individual results
           const created = await this.prisma.product.create({
             data: {
               workspaceId,

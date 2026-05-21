@@ -1,4 +1,5 @@
-import { Injectable, Logger, Optional } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { KloelLead, Prisma } from '@prisma/client';
 import { LLMBudgetService, estimateChatCostCents } from './llm-budget.service';
 import { PlanLimitsService } from '../billing/plan-limits.service';
@@ -6,20 +7,25 @@ import { PrismaService } from '../prisma/prisma.service';
 import { UnifiedAgentService } from './unified-agent.service';
 import { SmartPaymentService } from './smart-payment.service';
 import { chatCompletionWithFallback } from './openai-wrapper';
+import { createTextLlmClient } from '../lib/llm-provider';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
-import { KLOEL_SALES_PROMPT } from './kloel.prompts';
 import OpenAI from 'openai';
 import { OpsAlertService } from '../observability/ops-alert.service';
+import { AbiBuilderService } from './abi/abi-builder.service';
+import { validateAbiPayload } from './abi/abi-validator';
 
+import { asProviderSettings } from '../whatsapp/provider-settings.types';
 import {
   NON_DIGIT_RE,
   safeStr,
   asUnknownRecord,
   detectBuyIntent,
-} from './__companions__/kloel-lead-brain.service.companion';
-import type { ChatMessage } from './__companions__/kloel-lead-brain.service.companion';
+} from './kloel-lead-brain.helpers';
+import type { ChatMessage } from './kloel-lead-brain.helpers';
 export { NON_DIGIT_RE, safeStr, asUnknownRecord, detectBuyIntent };
 export type { ChatMessage };
+
+type ProductMemoryValue = { name?: string; price?: number; [key: string]: unknown };
 
 /**
  * Handles WhatsApp autopilot lead processing, buy-intent detection,
@@ -27,7 +33,7 @@ export type { ChatMessage };
  */
 @Injectable()
 export class KloelLeadBrainService {
-  private readonly logger = new Logger(KloelLeadBrainService.name);
+  private readonly logger = StructuredLogger.from(KloelLeadBrainService.name);
   private readonly openai: OpenAI;
 
   constructor(
@@ -37,12 +43,11 @@ export class KloelLeadBrainService {
     private readonly unifiedAgentService: UnifiedAgentService,
     private readonly smartPaymentService: SmartPaymentService,
     @Optional() private readonly opsAlert?: OpsAlertService,
+    @Optional() private readonly abiBuilder?: AbiBuilderService,
   ) {
-    this.openai = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
-      timeout: 60_000,
-      maxRetries: 0,
-    });
+    this.openai =
+      createTextLlmClient(undefined, { timeout: 60_000, maxRetries: 0 }) ??
+      new OpenAI({ apiKey: 'missing' });
   }
 
   async getOrCreateLead(workspaceId: string, phone: string): Promise<KloelLead> {
@@ -67,7 +72,9 @@ export class KloelLeadBrainService {
         take: 30,
         select: { role: true, content: true },
       });
-      return messages.map((m) => ({ role: m.role as 'user' | 'assistant', content: m.content }));
+      return messages
+        .filter((m) => m.role === 'user' || m.role === 'assistant')
+        .map((m) => ({ role: m.role as 'user' | 'assistant', content: m.content }));
     } catch (_error: unknown) {
       return [];
     }
@@ -139,7 +146,7 @@ export class KloelLeadBrainService {
       });
       const lowerMessage = message.toLowerCase();
       for (const product of products) {
-        const productData = product.value as Record<string, unknown>;
+        const productData = product.value as ProductMemoryValue;
         const productName = safeStr(productData.name).toLowerCase();
         if (productName && lowerMessage.includes(productName)) {
           return { name: safeStr(productData.name), price: Number(productData.price) || 0 };
@@ -186,7 +193,7 @@ export class KloelLeadBrainService {
       this.logger.log(`Pagamento gerado para lead ${leadId}: ${result.paymentUrl}`);
       return {
         paymentUrl: result.paymentUrl,
-        pixQrCode: result.pixQrCode,
+        ...(result.pixQrCode !== undefined ? { pixQrCode: result.pixQrCode } : {}),
         message: result.suggestedMessage,
       };
     } catch (error: unknown) {
@@ -213,7 +220,7 @@ export class KloelLeadBrainService {
         where: { id: workspaceId },
         select: { providerSettings: true, name: true },
       });
-      const providerSettings = (workspace?.providerSettings ?? {}) as Record<string, unknown>;
+      const providerSettings = asProviderSettings(workspace?.providerSettings);
       const autonomyMode = safeStr(asUnknownRecord(providerSettings.autonomy)?.mode).toUpperCase();
       const autopilotEnabled =
         autonomyMode === 'LIVE' ||
@@ -250,7 +257,7 @@ export class KloelLeadBrainService {
         try {
           const unifiedResult = await this.unifiedAgentService.processIncomingMessage({
             workspaceId,
-            contactId: contactId || undefined,
+            ...(contactId ? { contactId } : {}),
             phone: normalizedPhone || senderPhone,
             message,
             channel: 'whatsapp',
@@ -272,11 +279,56 @@ export class KloelLeadBrainService {
 
       const conversationHistory = await this.getLeadConversationHistory(lead.id, workspaceId);
       const context = await getWorkspaceContext(workspaceId);
-      const salesSystemPrompt = KLOEL_SALES_PROMPT(workspace?.name || 'nossa empresa', context);
+      void workspace;
+      const currentInput = {
+        raw: message,
+        channel: 'whatsapp',
+        arrivalTimestamp: new Date().toISOString(),
+      };
+      let effectiveUserContent = JSON.stringify({
+        cognitiveState: {
+          abiStatus: this.abiBuilder ? 'unavailable_or_invalid' : 'builder_not_injected',
+          audience: 'public',
+          workspaceContext: context,
+          perceptionSnapshot: { channel: 'whatsapp' },
+        },
+        currentInput,
+      });
+
+      if (this.abiBuilder) {
+        const abiResult = await this.abiBuilder.build({
+          audience: 'public',
+          currentInput,
+          perceptionSnapshot: {
+            channel: 'whatsapp',
+          },
+        });
+
+        if (abiResult.status !== 'ok') {
+          this.logger.warn(
+            `ABI build failed: ${abiResult.reason}, using structured lead brain fallback`,
+          );
+        } else {
+          const abi = abiResult.abi;
+          const validation = validateAbiPayload(abi);
+
+          if (validation.status === 'FAIL') {
+            this.logger.warn(
+              `ABI validation failed: ${JSON.stringify(validation.issues)}, using structured lead brain fallback`,
+            );
+          } else {
+            effectiveUserContent = JSON.stringify({
+              cognitiveState: abi,
+              workspaceContext: context,
+              currentInput,
+            });
+          }
+        }
+      }
+
       const messages: ChatMessage[] = [
-        { role: 'system', content: salesSystemPrompt },
         ...conversationHistory,
-        { role: 'user', content: message },
+        { role: 'user', content: effectiveUserContent },
       ];
 
       await this.planLimits.ensureTokenBudget(workspaceId);
@@ -350,7 +402,9 @@ export class KloelLeadBrainService {
             return {
               response: `${baseResponse}\n\nAqui está o link para finalizar sua compra:\n${paymentResult.paymentUrl}`,
               paymentLink: paymentResult.paymentUrl,
-              pixQrCode: paymentResult.pixQrCode,
+              ...(paymentResult.pixQrCode !== undefined
+                ? { pixQrCode: paymentResult.pixQrCode }
+                : {}),
             };
           }
         }

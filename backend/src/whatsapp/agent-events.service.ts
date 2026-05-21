@@ -1,5 +1,6 @@
 import { InjectRedis } from '@nestjs-modules/ioredis';
-import { Injectable, Logger, OnModuleDestroy, OnModuleInit, Optional } from '@nestjs/common';
+import { Injectable, OnModuleDestroy, OnModuleInit, Optional  } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import type { Redis } from 'ioredis';
 import { AuditService } from '../audit/audit.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
@@ -91,7 +92,7 @@ function normalizeAgentMessage(event: NormalizableAgentEvent) {
 /** Agent events service. */
 @Injectable()
 export class AgentEventsService implements OnModuleInit, OnModuleDestroy {
-  private readonly logger = new Logger(AgentEventsService.name);
+  private readonly logger = StructuredLogger.from(AgentEventsService.name);
   private subscriber: Redis | null = null;
   private readonly listeners = new Map<string, Set<AgentListener>>();
   private readonly history = new Map<string, AgentStreamEvent[]>();
@@ -99,7 +100,7 @@ export class AgentEventsService implements OnModuleInit, OnModuleDestroy {
 
   constructor(
     @InjectRedis() private readonly redis: Redis,
-    @Optional() private readonly auditService?: AuditService,
+    @Optional() _auditService?: AuditService,
     @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
 
@@ -157,17 +158,19 @@ export class AgentEventsService implements OnModuleInit, OnModuleDestroy {
 
   /** Publish. */
   async publish(event: Omit<AgentStreamEvent, 'ts'> & { ts?: string }): Promise<void> {
+    const tokenVal =
+      typeof event.token === 'string'
+        ? event.token
+        : typeof event.meta?.token === 'string'
+          ? event.meta.token
+          : undefined;
+
     const normalized: AgentStreamEvent = {
       ...event,
       ts: event.ts || new Date().toISOString(),
       message: normalizeAgentMessage(event),
       streaming: event.streaming ?? event.meta?.streaming === true,
-      token:
-        typeof event.token === 'string'
-          ? event.token
-          : typeof event.meta?.token === 'string'
-            ? event.meta.token
-            : undefined,
+      ...(tokenVal !== undefined ? { token: tokenVal } : {}),
     };
 
     if (!normalized.workspaceId || !normalized.message) {
@@ -215,6 +218,7 @@ export class AgentEventsService implements OnModuleInit, OnModuleDestroy {
     if (this.isStreamingEvent(event) && previousHistory.length > 0) {
       const last = previousHistory[previousHistory.length - 1];
       if (
+        last &&
         this.isStreamingEvent(last) &&
         last.type === event.type &&
         (last.phase || '') === (event.phase || '') &&

@@ -293,68 +293,67 @@ O estado de rigor maximo do Codacy faz parte da governance.
 <claude-mem-context>
 # Memory Context
 
-# [whatsapp_saas] recent context, 2026-04-29 8:56pm GMT-3
+# [whatsapp_saas] recent context, 2026-05-18 6:03pm GMT-3
 
 Legend: 🎯session 🔴bugfix 🟣feature 🔄refactor ✅change 🔵discovery ⚖️decision
 Format: ID TIME TYPE TITLE
 Fetch details: get_observations([IDs]) | Search: mem-search skill
 
-Stats: 50 obs (23,883t read) | 3,461,087t work | 99% savings
+Stats: 50 obs (20,276t read) | 1,688,324t work | 99% savings
 
-### Apr 29, 2026
+### May 11, 2026
+1341 2:43p 🔵 Visual Diff (Chromium) CI Gate Failed — login-desktop 180px Diff + Chat Test Context Disposed
+1342 2:44p 🔴 Backend TypeScript Typecheck and Build Now Pass Clean — Zero Errors
+1343 2:45p 🔵 Working Railway CLI Deploy Command for Kloel Backend Service
+1345 2:47p 🔵 New PR Push Triggered Fresh CI Run — Visual Snapshot Baseline Fix Attempt
+1346 2:49p 🟣 Kloel Backend Successfully Deployed to Railway Production
+1347 2:50p 🔵 Worker Service Health Check Confirmed Healthy — Redis Connected, Autopilot Queue Active
+1348 " 🔴 WhatsAppProviderRegistry Added to WhatsappModule Exports
+1349 2:51p 🔴 Visual Baseline Updated — signup-mobile.png Snapshot Regenerated from CI Artifact
+1350 2:57p ⚖️ Kloel CIA v3 Execution Contract — Full Mission Definition Issued
+1351 " 🔵 PR #266 Gap Analysis — Foundation Delivered, Production State Not Reached
+1352 " 🔵 Baseline Lift Bug — outcome and baselineOutcome Always Equal, Lift Always Zero
+1353 " ⚖️ Email Channel Architecture Mandate — Per-Workspace OAuth Mailbox, Not Shared Sender
+1354 " 🔵 Meta OAuth Error Root Cause — 11-Step Diagnostic Tree Defined
+1355 2:58p 🔵 Fourth CI Push — New Run Group 25687403xxx, Both Vercel Deploys Passing, Visual Diff Still Pending After 300s
+1356 3:00p 🔵 CI Quality Job Failure — Prettier Lint Errors in 5 Backend Files on codex/pr266-exec Branch
+1357 " 🔵 Visual Diff CI Failure — login-mobile Playwright Snapshot Has 123 Pixel Mismatch on Linux
+1358 " 🔵 Worktree at /private/tmp/kloel-pr266-exec Has No node_modules — Fixed by Symlinking from Main Repo
+1359 " ✅ Worktree Branch Fast-Forward Merged to origin/main (v0.4.1) — PR #287 and #288 Now Incorporated
+1360 3:01p ⚖️ Railway Full Automation Mandate — Auto-Deploy on PR Merge + Production Perfection
+1361 3:02p 🔵 Backend Docker Build — 5 npm Vulnerabilities Found During Railway Deploy
+1362 " 🔵 Worktree Full npm ci Install — Node v25.9.0 Used Despite Package Engine Requiring Node 20.x
+1363 3:03p ⚖️ 4-Problem Production Fix Mandate Issued — Kloel Platform (Eighth Issuance)
+1364 " 🔴 Visual Baseline signup-tablet-visual-linux.png Updated on fix/quatro-problemas-producao
+1365 3:05p 🔵 CI Run 25680826106 — All Three Jobs Passed (quality, architecture, e2e) on main After v0.4.1 Merge
+1366 " 🔵 Auth Screen Decomposed into 5 New Files — Social Buttons, Icons, Hooks, Form Fields, and State Machine
+1367 " ✅ 51 Visual Regression Snapshots Updated in PR #266 — Login, Signup, Landing, Settings, KYC, and More
+1368 " ✅ Railway Backend Docker Image Built and Deployed — amd64/linux
+1369 3:06p 🔵 Kloel Backend Production Health — All Services UP After Deployment
+1370 " 🔵 Backend Production Logs — Two Residual Warnings After Clean Deploy
+1371 " 🔵 Worker Health Check — Redis Connected, 3 Delayed Autopilot Jobs in Queue
+1372 " 🔵 Backend Stack Architecture — Node 20, dd-trace, Prisma Auto-Migrate on Start
+1373 " 🔵 Backend npm Audit — 5 Vulnerabilities Fully Catalogued, All Fixable Without Breaking Changes
+1375 3:09p ✅ Backend Upgraded to Node 22, Firebase Warning Downgraded, npm Vulnerabilities Eliminated
+1376 " 🔴 ledger.service.ts — Missing Prisma Namespace Import Fixed (TS2503)
+1383 3:14p 🔴 Backend TypeScript Typecheck and Build Now Pass Clean — Zero Errors
+1384 " ✅ Railway Backend Redeployment Triggered — New Deployment a9f749e3 with Node 22 + Clean Build
+1385 3:15p 🔴 Visual Baseline signup-desktop-visual-linux.png Updated — Second Iteration
+1386 " 🔵 PR #289 CI State — Visual Baselines Cascading, Non-Visual Gates All Green
+1387 " 🔵 Worker `__companions__` Directory Excluded from TypeScript Compilation
+1388 " 🔵 fallback-email.helpers.ts and templates/fallback-email.html Deleted in Wave-14
+1389 " 🔵 Railway Worker Has Two Environment Deployments with Different Root Configs
+1390 " 🔵 PR266 Visual Regression Root Cause — macOS Snapshots Committed as Linux Baseline
+1391 " ✅ Deploy-Production Workflow Manually Re-Triggered — Run 25688283908
+1392 3:16p 🔵 Kilo Code Review Failing with Sandbox Infrastructure Error — Transient, Not Code Issue
+1406 3:25p 🔵 PR #289 CI Status — Most Checks Passing, Three Still In Progress
+1407 3:26p ⚖️ Railway Full Automation and Production Perfection Mandate Issued
+1412 3:30p 🔵 Kloel Backend and Worker Production Health Confirmed — Both Services UP
+1413 " 🔵 Backend Railway Deployment Startup Sequence — Full NestJS Boot Captured
+1414 " 🔵 Working Tree State — Branch chore/purga-total-debt Has ~160 Modified Files Pre-Commit
+1415 3:31p ⚖️ Kloel CIA v3 Execution Contract Re-Issued in New Session — Full Mandate Active
 
-4299 4:19p 🔄 Pillar Scanners Refactored to Return Rich PillarScanResult Instead of Binary ObservabilityStatus
-4300 " 🔄 buildCapabilityObservability Rebuilt Around Evidence-First Architecture
-4301 " 🔴 Simulation Detection Regex Narrowed to Prevent False Positives on Test Files
-4307 4:23p 🔴 property-tester.ts — All False Positive Execution Statuses Eliminated
-4308 " 🔴 property-tester.ts buildPropertyTestEvidence() Summary — Planned/NotExecuted Counters Added
-4309 " 🔄 property-tester.ts — generateFallbackCandidates Removal Attempted; ENUM_CANDIDATE_NAMES Removed
-4310 4:24p ⚖️ PULSE Mission Scope — Full AI Autonomy from Zero to Production
-4311 " ⚖️ Architectural Principle — "Hardcode of Grammar Allowed, Hardcode of Reality Forbidden"
-4312 " ⚖️ PULSE 8 Organs — Complete Operational Vision
-4313 " 🔵 PULSE Current State — Score 77, PARTIAL Certification, 3/3 Convergence Cycles Passing
-4314 " ⚖️ PULSE 20 Technology Gaps — Ordered Implementation Roadmap to Perfect Machine
-4315 " ⚖️ PULSE Layer Architecture — Scope → Capability → Flow → Vision → Directive
-4316 4:25p 🔄 execution-harness.ts generateTestHarnessCode() — 4 Test Templates Collapsed to 1 Blueprint
-4322 4:26p ⚖️ PULSE Mission Defined — Full AI Autonomy from Zero to Production
-4323 " ⚖️ Architectural Principle — "Hardcode of Grammar Allowed, Hardcode of Reality Forbidden"
-4324 " 🔵 PULSE Current State — 9 Missing Technologies to Reach "Perfect Machine"
-4325 " ⚖️ PULSE 20 Technology Gaps — Ordered Implementation Roadmap
-4326 " ⚖️ PULSE 8 Organs — Complete Operational Architecture
-4327 " 🔵 PULSE Structural Gaps — 6 Specific Blockers Preventing Certified Status
-4328 4:30p ⚖️ PULSE Architectural Principle — "Hardcode of Grammar Allowed, Hardcode of Reality Forbidden"
-4329 " ⚖️ PULSE Completion Criterion — Binary 72-Hour Zero-Prompt Production Test
-4330 " 🔵 PULSE Current State at Mission Start — Score 77, PARTIAL, 3/3 Convergence Cycles Passing
-4331 " ⚖️ PULSE 20 Technology Gaps — Ordered Implementation Roadmap to Perfect Machine
-4332 " ⚖️ PULSE Autonomous Engineer Mission — Full AI Handoff, Zero Human Involvement
-4333 4:32p 🔵 PULSE Audit Session Git State — Branch chore/codacy-tsdoc-pulse-updates-apr23
-4343 4:37p ⚖️ PULSE Autonomous Engineer Mission — Full AI Handoff, Zero Human Involvement
-4344 " 🔵 PULSE Current State — Score 77, PARTIAL Certification, 20 Technology Gaps
-4345 " ⚖️ Architectural Principle — "Hardcode of Grammar Allowed, Hardcode of Reality Forbidden"
-4346 " ⚖️ PULSE 20 Technology Gaps — Ordered Implementation Roadmap to Perfect Machine
-4347 4:38p ⚖️ PULSE Mission — Full AI Autonomy, Zero Human Technical Involvement
-4348 " ⚖️ PULSE 20-Technology Gap Roadmap — Ordered Implementation to Perfect Machine
-4349 " ⚖️ PULSE Architectural Principle — "Hardcode of Grammar Allowed, Hardcode of Reality Forbidden"
-4360 4:42p ⚖️ PULSE Autonomous Engineer Mission — Full AI Handoff, Zero Human Involvement
-4361 " ⚖️ Architectural Principle — "Hardcode of Grammar Allowed, Hardcode of Reality Forbidden"
-4362 " 🔵 PULSE Current State — Score 77, PARTIAL Certification, 3/3 Convergence Cycles Passing
-4363 " ⚖️ PULSE 20 Technology Gaps — Ordered Implementation Roadmap to Perfect Machine
-4364 " ⚖️ PULSE Completion Criterion — Binary 72-Hour Zero-Prompt Production Test
-4365 " 🔵 PULSE 8 Organs — Complete Operational Vision of the Finished Machine
-4366 4:44p ⚖️ PULSE Mission Restated — Complete Autonomous Technical Substitute Specification
-4367 " 🔴 OpsAlertModule Product Code Contamination Reverted
-4368 " 🟣 OpsAlertService @Optional() Injection Added to Auth Services
-4375 4:45p ⚖️ PULSE Mission Definition — Full AI Autonomy, Zero Human Involvement
-4376 " ⚖️ Architectural Principle — "Hardcode of Grammar Allowed, Hardcode of Reality Forbidden"
-4377 " ⚖️ PULSE 8 Organs — Complete Vision of the Finished Machine
-4378 " 🔵 PULSE Current State at Mission Handoff — Score 77, PARTIAL, 20 Technology Gaps
-4379 " ⚖️ PULSE 20 Technology Gaps — Ordered Implementation Roadmap to Perfect Machine
-4386 4:47p 🟣 PULSE Observability Coverage — Error Budget Pillar Now Scans Real Code Instead of Always Returning Missing
-4387 " 🔴 PULSE Path Coverage Engine — Three Logic Fixes for Scope, Risk Classification, and Safe Execution
-4388 4:48p 🔵 PULSE human_required Emitter Map — Generator Functions Identified
-4395 4:50p ⚖️ PULSE Investigation — Remove Human Blocking Semantics from Artifacts
-
-Access 3461k tokens of past work via get_observations([IDs]) or mem-search skill.
+Access 1688k tokens of past work via get_observations([IDs]) or mem-search skill.
 </claude-mem-context>
 
 ## PULSE Auditor Immutability

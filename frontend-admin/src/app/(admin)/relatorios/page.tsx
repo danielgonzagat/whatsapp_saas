@@ -57,8 +57,8 @@ export default function RelatoriosPage() {
     () =>
       adminReportsApi.overview({
         period,
-        from: period === 'CUSTOM' ? customRange.from : undefined,
-        to: period === 'CUSTOM' ? customRange.to : undefined,
+        ...(period === 'CUSTOM' && customRange.from ? { from: customRange.from } : {}),
+        ...(period === 'CUSTOM' && customRange.to ? { to: customRange.to } : {}),
       }),
   );
 
@@ -67,8 +67,8 @@ export default function RelatoriosPage() {
     try {
       const rows = await adminReportsApi.exportCsvRows({
         period,
-        from: period === 'CUSTOM' ? customRange.from : undefined,
-        to: period === 'CUSTOM' ? customRange.to : undefined,
+        ...(period === 'CUSTOM' && customRange.from ? { from: customRange.from } : {}),
+        ...(period === 'CUSTOM' && customRange.to ? { to: customRange.to } : {}),
       });
       downloadCsv(`kloel-relatorio-${new Date().toISOString().slice(0, 10)}.csv`, rows);
     } finally {

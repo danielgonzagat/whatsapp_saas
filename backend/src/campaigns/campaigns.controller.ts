@@ -10,7 +10,6 @@ import {
   UsePipes,
   ValidationPipe,
 } from '@nestjs/common';
-import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { resolveWorkspaceId } from '../auth/workspace-access';
 import { PlanLimitsService } from '../billing/plan-limits.service';
@@ -20,10 +19,10 @@ import { CampaignsService } from './campaigns.service';
 import { CreateCampaignDto } from './dto/create-campaign.dto';
 
 /** Campaigns controller. */
-@UseGuards(ThrottlerGuard)
+import { RouteClass } from '../common/throttler/route-class.decorator';
 @Controller('campaigns')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
-@Throttle({ default: { limit: 10, ttl: 60000 } })
+@RouteClass('mutate')
 export class CampaignsController {
   constructor(
     private readonly campaignsService: CampaignsService,

@@ -8,7 +8,8 @@
  * ============================================
  */
 
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { AuditService } from '../audit/audit.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { getFlowTemplate } from './conversational-onboarding-flow-templates';
@@ -33,7 +34,7 @@ interface PrismaWithDynamicModels {
 /** Handles tool-call execution and memory/flow persistence for onboarding. */
 @Injectable()
 export class ConversationalOnboardingToolsService {
-  private readonly logger = new Logger(ConversationalOnboardingToolsService.name);
+  private readonly logger = StructuredLogger.from(ConversationalOnboardingToolsService.name);
   private readonly prismaExt: PrismaWithDynamicModels;
 
   constructor(

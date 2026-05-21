@@ -1,8 +1,9 @@
 import { Body, Controller, Get, Post, Req, Res } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt'; // PULSE_OK: reasonable expiry (30m)
+import { JwtService } from '@nestjs/jwt';
 import type { Request, Response } from 'express';
 import { Public } from '../auth/public.decorator';
 import { CookieConsentService } from './cookie-consent.service';
+import { RouteClass } from '../common/throttler/route-class.decorator';
 
 const COOKIE_NAME = 'kloel_consent';
 const COOKIE_MAX_AGE_MS = 1000 * 60 * 60 * 24 * 365;
@@ -37,6 +38,7 @@ function resolveCookieDomain(host?: string | null): string | undefined {
 /** Cookie consent controller. */
 @Public()
 @Controller('api/v1/cookie-consent')
+@RouteClass('read')
 export class CookieConsentController {
   constructor(
     private readonly cookieConsentService: CookieConsentService,

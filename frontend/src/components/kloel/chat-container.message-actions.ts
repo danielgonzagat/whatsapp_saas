@@ -1,6 +1,6 @@
 // Message action handlers for ChatContainer.
 // Pure hook — no JSX, no 'use client' needed (used only in the client component).
-import { useCallback, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import {
   regenerateKloelConversationMessage,
   updateKloelMessageFeedback,
@@ -13,7 +13,7 @@ import type { Message } from './chat-message.types';
 type SetMessages = React.Dispatch<React.SetStateAction<Message[]>>;
 
 function normalizeMessageMeta(metadata: unknown): Record<string, unknown> | undefined {
-  if (!metadata || typeof metadata !== 'object' || Array.isArray(metadata)) return undefined;
+  if (!metadata || typeof metadata !== 'object' || Array.isArray(metadata)) {return undefined;}
   return metadata as Record<string, unknown>;
 }
 
@@ -35,12 +35,14 @@ export function useMessageActions({
   sendMessageRef,
 }: UseMessageActionsParams) {
   const activeIdRef = useRef(activeConversationId);
-  activeIdRef.current = activeConversationId;
+  useEffect(() => {
+    activeIdRef.current = activeConversationId;
+  }, [activeConversationId]);
 
   const handleMessageRetry = useCallback(
     async (messageId: string) => {
       const sourceMessage = messages.find((m) => m.id === messageId && m.role === 'user');
-      if (!sourceMessage) return;
+      if (!sourceMessage) {return;}
       await sendMessageRef.current(sourceMessage.content);
     },
     [messages, sendMessageRef],
@@ -48,7 +50,7 @@ export function useMessageActions({
 
   const handleMessageEdit = useCallback(
     async (messageId: string, nextContent: string) => {
-      if (!activeIdRef.current) return;
+      if (!activeIdRef.current) {return;}
       const updated = await updateKloelThreadMessage(messageId, nextContent);
       setMessages((prev) =>
         prev.map((m) =>
@@ -64,7 +66,7 @@ export function useMessageActions({
 
   const handleAssistantFeedback = useCallback(
     async (messageId: string, type: 'positive' | 'negative' | null) => {
-      if (!activeIdRef.current) return;
+      if (!activeIdRef.current) {return;}
       const updated = await updateKloelMessageFeedback(messageId, type);
       setMessages((prev) =>
         prev.map((m) =>
@@ -77,11 +79,11 @@ export function useMessageActions({
 
   const handleAssistantRegenerate = useCallback(
     async (messageId: string) => {
-      if (!activeIdRef.current) return;
+      if (!activeIdRef.current) {return;}
       setIsTyping(true);
       setMessages((prev) => {
         const idx = prev.findIndex((m) => m.id === messageId);
-        if (idx === -1) return prev;
+        if (idx === -1) {return prev;}
         const msg = prev[idx];
         const preserved = getAssistantResponseVersions(msg.meta, msg.content, msg.id);
         return [
@@ -101,7 +103,7 @@ export function useMessageActions({
         );
         setMessages((prev) => {
           const idx = prev.findIndex((m) => m.id === messageId);
-          if (idx === -1) return prev;
+          if (idx === -1) {return prev;}
           return [
             ...prev.slice(0, idx),
             {

@@ -1,3 +1,4 @@
+import { expectValueOf } from '../../test/expect-value-of';
 import {
   callOpenAIWithRetry,
   chatCompletionWithFallback,
@@ -12,11 +13,11 @@ import OpenAI from 'openai';
 
 const LEGACY_PRIMARY_MODEL = ['gpt', '-4'].join('');
 const LEGACY_FALLBACK_MODEL = ['gpt', '-4.1'].join('');
+const DEEPSEEK_PRIMARY_MODEL = 'deepseek-v4-pro';
 
 // Mock do OpenAI
 jest.mock('openai');
 
-// PULSE_OK: assertions exist below
 describe('OpenAI Wrapper', () => {
   type RetryableTestError = Error & { status: number };
 
@@ -112,12 +113,12 @@ describe('OpenAI Wrapper', () => {
 
       // 1º erro -> delay attempt=0 => 50ms
       await Promise.resolve();
-      expect(setTimeoutSpy).toHaveBeenCalledWith(expect.any(Function), 50);
+      expect(setTimeoutSpy).toHaveBeenCalledWith(expectValueOf(Function), 50);
       await jest.advanceTimersByTimeAsync(50);
 
       // 2º erro -> delay attempt=1 => 100ms
       await Promise.resolve();
-      expect(setTimeoutSpy).toHaveBeenCalledWith(expect.any(Function), 100);
+      expect(setTimeoutSpy).toHaveBeenCalledWith(expectValueOf(Function), 100);
       await jest.advanceTimersByTimeAsync(100);
 
       await expect(promise).resolves.toEqual({ success: true });
@@ -307,6 +308,21 @@ describe('OpenAI Wrapper', () => {
           max_tokens: 100,
         }),
       ).not.toThrow();
+    });
+
+    it('enables DeepSeek thinking and high reasoning effort by default', () => {
+      const out = normalizeChatCompletionParams({
+        model: DEEPSEEK_PRIMARY_MODEL,
+        messages: baseMessages,
+        max_tokens: 128,
+      });
+
+      expect(out.max_tokens).toBeGreaterThanOrEqual(512);
+      expect('max_completion_tokens' in out).toBe(false);
+      expect(out).toMatchObject({
+        thinking: { type: 'enabled' },
+        reasoning_effort: 'high',
+      });
     });
   });
 });

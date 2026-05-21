@@ -1,8 +1,8 @@
+import { expectValueOf } from '../../test/expect-value-of';
 import { createHmac } from 'node:crypto';
 import { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import * as request from 'supertest';
-import { EmailService } from '../auth/email.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { ComplianceController } from './compliance.controller';
 import { ComplianceService } from './compliance.service';
@@ -65,10 +65,6 @@ describe('ComplianceController', () => {
           useValue: prismaMock,
         },
         {
-          provide: EmailService,
-          useValue: { sendDataDeletionConfirmationEmail: jest.fn() },
-        },
-        {
           provide: JwtSetValidator,
           useValue: { validate: jest.fn() },
         },
@@ -127,7 +123,7 @@ describe('ComplianceController', () => {
     expect(prismaMock.dataDeletionRequest.create).toHaveBeenCalled();
     expect(response.body).toEqual(
       expect.objectContaining({
-        confirmation_code: expect.any(String),
+        confirmation_code: expectValueOf(String),
         url: expect.stringContaining('/data-deletion/status/'),
       }),
     );

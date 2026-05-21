@@ -4,7 +4,7 @@
  */
 import * as crypto from 'node:crypto';
 import * as path from 'node:path';
-import { buildArtifactRegistry } from './artifact-registry/__parts__/registry';
+import { buildArtifactRegistry } from './artifact-registry/registry';
 import { ensureDir, renamePath, writeTextFile } from './safe-fs';
 import type { PulseAutonomyState, PulseAutonomyUnitSnapshot } from './types.autonomy';
 import {
@@ -15,7 +15,7 @@ import {
   type PulseAutonomySummarySnapshot,
   type PulseRequiredValidation,
 } from './autonomy-types';
-import { deriveStringUnionMembersFromTypeContract } from './dynamic-reality-kernel/__parts__/type-contract-labels';
+import { deriveStringUnionMembersFromTypeContract } from './dynamic-reality-kernel/type-contract-labels';
 import { compact, unique, readOptionalArtifact } from './autonomy-memory';
 import {
   getStalledUnitIds,
@@ -23,7 +23,6 @@ import {
   extractMissingStructuralRoles,
   compareAutomationUnits,
   isRiskSafeForAutomation,
-  getAutomationExecutionCost,
 } from './autonomy-decision-ranking';
 
 export {

@@ -11,14 +11,14 @@ CREATE TYPE "PlatformWalletBucket" AS ENUM ('AVAILABLE', 'PENDING', 'RESERVED');
 
 -- CreateEnum
 CREATE TYPE "PlatformLedgerKind" AS ENUM (
-  'PLATFORM_FEE_CREDIT',
-  'CHARGEBACK_RESERVE',
-  'REFUND_DEBIT',
-  'CHARGEBACK_DEBIT',
-  'PAYOUT_DEBIT',
-  'ADJUSTMENT_CREDIT',
-  'ADJUSTMENT_DEBIT',
-  'RESERVE_RELEASE'
+    'PLATFORM_FEE_CREDIT',
+    'CHARGEBACK_RESERVE',
+    'REFUND_DEBIT',
+    'CHARGEBACK_DEBIT',
+    'PAYOUT_DEBIT',
+    'ADJUSTMENT_CREDIT',
+    'ADJUSTMENT_DEBIT',
+    'RESERVE_RELEASE'
 );
 
 -- CreateTable
@@ -34,7 +34,7 @@ CREATE TABLE "platform_wallets" (
     CONSTRAINT "platform_wallets_pkey" PRIMARY KEY ("id")
 );
 
-CREATE UNIQUE INDEX "platform_wallets_currency_key" ON "platform_wallets"("currency");
+CREATE UNIQUE INDEX "platform_wallets_currency_key" ON "platform_wallets" ("currency");
 
 -- CreateTable
 CREATE TABLE "platform_wallet_ledger" (
@@ -54,15 +54,15 @@ CREATE TABLE "platform_wallet_ledger" (
     CONSTRAINT "platform_wallet_ledger_pkey" PRIMARY KEY ("id")
 );
 
-CREATE INDEX "platform_wallet_ledger_wallet_id_created_at_idx" ON "platform_wallet_ledger"("wallet_id", "created_at");
-CREATE INDEX "platform_wallet_ledger_kind_created_at_idx" ON "platform_wallet_ledger"("kind", "created_at");
-CREATE INDEX "platform_wallet_ledger_order_id_idx" ON "platform_wallet_ledger"("order_id");
+CREATE INDEX "platform_wallet_ledger_wallet_id_created_at_idx" ON "platform_wallet_ledger" ("wallet_id", "created_at");
+CREATE INDEX "platform_wallet_ledger_kind_created_at_idx" ON "platform_wallet_ledger" ("kind", "created_at");
+CREATE INDEX "platform_wallet_ledger_order_id_idx" ON "platform_wallet_ledger" ("order_id");
 
 -- I-ADMIN-W5 — (order_id, kind) uniqueness for non-NULL order_id.
 -- Replaying the split for the same order can never double-credit.
 CREATE UNIQUE INDEX "platform_wallet_ledger_order_kind_unique"
-  ON "platform_wallet_ledger"("order_id", "kind")
-  WHERE "order_id" IS NOT NULL;
+ON "platform_wallet_ledger" ("order_id", "kind")
+WHERE "order_id" IS NOT NULL;
 
 -- CreateTable
 CREATE TABLE "platform_fees" (
@@ -79,23 +79,23 @@ CREATE TABLE "platform_fees" (
     CONSTRAINT "platform_fees_pkey" PRIMARY KEY ("id")
 );
 
-CREATE INDEX "platform_fees_method_active_from_idx" ON "platform_fees"("method", "active_from");
-CREATE INDEX "platform_fees_active_to_idx" ON "platform_fees"("active_to");
+CREATE INDEX "platform_fees_method_active_from_idx" ON "platform_fees" ("method", "active_from");
+CREATE INDEX "platform_fees_active_to_idx" ON "platform_fees" ("active_to");
 
 -- AddForeignKey
 ALTER TABLE "platform_wallet_ledger"
-  ADD CONSTRAINT "platform_wallet_ledger_wallet_id_fkey"
-  FOREIGN KEY ("wallet_id") REFERENCES "platform_wallets"("id")
-  ON DELETE CASCADE ON UPDATE CASCADE;
+ADD CONSTRAINT "platform_wallet_ledger_wallet_id_fkey"
+FOREIGN KEY ("wallet_id") REFERENCES "platform_wallets" ("id")
+ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- Seed a default BRL wallet so the admin UI always has something to
 -- display. Zero balances, no ledger entries. Idempotent: ON CONFLICT
 -- DO NOTHING so re-runs are safe.
 INSERT INTO "platform_wallets" ("id", "currency", "created_at", "updated_at")
-  VALUES (
+VALUES (
     'platform_wallet_brl_seed',
     'BRL',
     NOW(),
     NOW()
-  )
-  ON CONFLICT ("currency") DO NOTHING;
+)
+ON CONFLICT ("currency") DO NOTHING;

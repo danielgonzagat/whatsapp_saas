@@ -9,13 +9,19 @@ import { AdminChatModule } from './chat/admin-chat.module';
 import { AdminClientsModule } from './clients/admin-clients.module';
 import { AdminComplianceModule } from './compliance/admin-compliance.module';
 import { AdminConfigModule } from './config/admin-config.module';
+import { AdminContactsModule } from './contacts/admin-contacts.module';
 import { AdminDashboardModule } from './dashboard/admin-dashboard.module';
 import { AdminDestructiveModule } from './destructive/admin-destructive.module';
 import { AdminMarketingModule } from './marketing/admin-marketing.module';
+import { AdminBrainModule } from './brain/admin-brain.module';
+import { AdminMindModule } from './mind/admin-mind.module';
 import { AdminNotificationsModule } from './notifications/admin-notifications.module';
+import { AdminOperationsModule } from './operations/operations.module';
 import { AdminPermissionsModule } from './permissions/admin-permissions.module';
+import { AdminPipelineModule } from './pipeline/pipeline.module';
 import { AdminProductsModule } from './products/admin-products.module';
 import { AdminReportsModule } from './reports/admin-reports.module';
+import { AdminRuntimeTraceModule } from './runtime-trace/runtime-trace.module';
 import { AdminSalesModule } from './sales/admin-sales.module';
 import { AdminSeedModule } from './seed/admin-seed.module';
 import { AdminSessionsModule } from './sessions/admin-sessions.module';
@@ -34,7 +40,10 @@ import { AdminUsersModule } from './users/admin-users.module';
     AdminDestructiveModule,
     AdminConfigModule,
     AdminMarketingModule,
+    AdminBrainModule,
+    AdminMindModule,
     AdminComplianceModule,
+    AdminContactsModule,
     AdminReportsModule,
     AdminNotificationsModule,
     AdminSalesModule,
@@ -47,6 +56,9 @@ import { AdminUsersModule } from './users/admin-users.module';
     AdminSessionsModule,
     AdminSupportModule,
     AdminSeedModule,
+    AdminOperationsModule,
+    AdminPipelineModule,
+    AdminRuntimeTraceModule,
   ],
   providers: [
     {

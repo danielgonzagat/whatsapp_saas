@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { JwtService } from '@nestjs/jwt'; // PULSE_OK: reasonable expiry (30m)
+import { JwtService } from '@nestjs/jwt';
 import type { AdminUser } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { generateRawRefreshToken, sha256Hex } from '../common/admin-crypto';
@@ -79,7 +79,7 @@ export class AdminSessionFactory {
     const payload: Omit<AdminJwtPayload, 'iat' | 'exp' | 'aud'> = {
       sub: options.sub,
       scope: options.scope,
-      sid: options.sessionId,
+      ...(options.sessionId !== undefined ? { sid: options.sessionId } : {}),
     };
     return this.jwt.signAsync(payload, { expiresIn: options.ttlSeconds });
   }

@@ -9,11 +9,8 @@ export function buildAuthLogMessage(event: string, payload: Record<string, unkno
 }
 
 /** Normalize an email to its canonical lookup form. */
-export function normalizeEmail(email: string): string {
-  return String(email || '')
-    .trim()
-    .toLowerCase();
-}
+import { normalizeEmail } from '../common/string';
+export { normalizeEmail };
 
 /** Throw a friendly UnauthorizedException when an agent is not allowed to sign in. */
 export function assertAgentCanAuthenticate(agent: {

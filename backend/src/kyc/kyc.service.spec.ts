@@ -1,3 +1,4 @@
+import { expectValueOf } from '../../test/expect-value-of';
 import { buildService } from './kyc.service.spec.helpers';
 
 describe('KycService.submitKyc', () => {
@@ -56,7 +57,7 @@ describe('KycService.submitKyc', () => {
         accountNumber: '123456',
       },
       tosAcceptance: expect.objectContaining({
-        acceptedAt: expect.any(String),
+        acceptedAt: expectValueOf(String),
         ipAddress: '203.0.113.10',
         userAgent: 'Mozilla/5.0',
       }),
@@ -68,11 +69,11 @@ describe('KycService.submitKyc', () => {
     });
     expect(prisma.agent.update).toHaveBeenNthCalledWith(1, {
       where: { id: 'agent_1', workspaceId: 'ws_1' },
-      data: { kycStatus: 'submitted', kycSubmittedAt: expect.any(Date) },
+      data: { kycStatus: 'submitted', kycSubmittedAt: expectValueOf(Date) },
     });
     expect(prisma.agent.update).toHaveBeenNthCalledWith(2, {
       where: { id: 'agent_1', workspaceId: 'ws_1' },
-      data: { kycStatus: 'approved', kycApprovedAt: expect.any(Date) },
+      data: { kycStatus: 'approved', kycApprovedAt: expectValueOf(Date) },
     });
     expect(result).toEqual({
       success: true,
@@ -147,7 +148,7 @@ describe('KycService.submitKyc', () => {
         accountNumber: '123456',
       },
       tosAcceptance: expect.objectContaining({
-        acceptedAt: expect.any(String),
+        acceptedAt: expectValueOf(String),
         ipAddress: '203.0.113.11',
         userAgent: 'Mozilla/5.0 (PJ)',
       }),

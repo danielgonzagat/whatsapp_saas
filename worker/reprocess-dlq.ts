@@ -34,9 +34,8 @@ async function main() {
         },
       });
       await job.remove();
-      console.log(`✔ Requeued ${job.id} -> ${targetQueueName}:${name}`);
+      console.log(`[OK] Requeued ${job.id} -> ${targetQueueName}:${name}`);
     } catch (err: unknown) {
-      // PULSE:OK — Per-job requeue failure is non-critical; other jobs still processed
       console.error(
         'Failed to requeue DLQ job',
         { jobId: job.id },

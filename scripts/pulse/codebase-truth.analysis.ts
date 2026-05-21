@@ -10,13 +10,11 @@ import type {
 import type { PulseManifest } from './types.manifest';
 import type { CoreParserData, InteractionChain, PageFunctionalMap } from './functional-map-types';
 import {
-  normalizeText,
   tokenize,
   slugify,
   unique,
   titleCase,
   singularize,
-  getRouteSegments,
   isUserFacingGroup,
   shouldIgnoreSemanticToken,
   basenameWithoutExt,
@@ -24,13 +22,11 @@ import {
 } from './codebase-truth.string-utils';
 
 export {
-  normalizeText,
   tokenize,
   slugify,
   unique,
   titleCase,
   singularize,
-  getRouteSegments,
   isUserFacingGroup,
   shouldIgnoreSemanticToken,
   basenameWithoutExt,

@@ -28,10 +28,12 @@ import {
   getWorkspaceId,
 } from './helpers/common.helpers';
 import { buildCouponData, serializeCoupon } from './helpers/plan.helpers';
+import { RouteClass } from '../../common/throttler/route-class.decorator';
 
 /** Product coupon controller. */
 @Controller('products/:productId/coupons')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
+@RouteClass('mutate')
 export class ProductCouponController {
   constructor(
     private readonly prisma: PrismaService,
@@ -149,7 +151,13 @@ export class ProductCouponController {
 
   /** Validate. */
   @Post('validate')
-  async validate(@Param('productId') productId: string, @Body() body: ValidateCouponDto) {
+  async validate(
+    @Param('productId') productId: string,
+    @Body() body: ValidateCouponDto,
+    @Request() req: AuthenticatedRequest,
+  ) {
+    await ensureWorkspaceProductAccess(this.prisma, productId, getWorkspaceId(req));
+
     const coupon = await this.prisma.productCoupon.findUnique({
       where: {
         productId_code: {

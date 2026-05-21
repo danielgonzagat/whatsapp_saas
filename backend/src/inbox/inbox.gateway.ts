@@ -1,5 +1,5 @@
 import { Logger } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt'; // PULSE_OK: reasonable expiry (30m)
+import { JwtService } from '@nestjs/jwt';
 import {
   ConnectedSocket,
   MessageBody,
@@ -22,7 +22,7 @@ import { Server, Socket } from 'socket.io';
 })
 export class InboxGateway implements OnGatewayConnection, OnGatewayDisconnect {
   /** Server property. */
-  @WebSocketServer() server: Server;
+  @WebSocketServer() server!: Server;
   private logger: Logger = new Logger('InboxGateway');
 
   constructor(private readonly jwt: JwtService) {}

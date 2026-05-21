@@ -1,0 +1,63 @@
+# tools/e2e-sandbox/docker-compose.yml
+# Embedded sandbox: postgres + redis + mock services (stripe/meta/waha) for E2E
+# without touching real Railway. Boots in ~10s.
+#
+# Up:    npm run sandbox:up
+# Down:  npm run sandbox:down
+# Logs:  docker compose -f tools/e2e-sandbox/docker-compose.yml logs -f
+# Seed:  npm run sandbox:seed
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: kloel-sandbox-postgres
+    environment:
+      POSTGRES_USER: kloel
+      POSTGRES_PASSWORD: kloel
+      POSTGRES_DB: kloel_sandbox
+    ports:
+      - "55432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U kloel"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+    tmpfs:
+      - /var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    container_name: kloel-sandbox-redis
+    ports:
+      - "56379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+    tmpfs:
+      - /data
+
+  # Stripe mock — github.com/stripe/stripe-mock — speaks the Stripe API spec.
+  stripe-mock:
+    image: stripe/stripe-mock:latest
+    container_name: kloel-sandbox-stripe-mock
+    ports:
+      - "12111:12111"
+      - "12112:12112"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:12111/v1/charges || exit 0"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # Lightweight HTTP mock for Meta Graph API + WAHA + arbitrary webhooks.
+  # Uses mockoon-cli which speaks the routes defined in mocks.json.
+  meta-waha-mock:
+    image: mockoon/cli:latest
+    container_name: kloel-sandbox-meta-waha-mock
+    command: ["--data", "/data/mocks.json", "--port", "3030"]
+    ports:
+      - "13030:3030"
+    volumes:
+      - ./mocks.json:/data/mocks.json:ro

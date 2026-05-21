@@ -191,15 +191,9 @@ export function normalizePublicCheckoutResponse(input: unknown): PublicCheckoutR
           timerMessage: asOptionalString(configRecord.timerMessage),
           timerExpiredMessage: asOptionalString(configRecord.timerExpiredMessage),
           timerPosition: asOptionalString(configRecord.timerPosition),
-          showStockCounter:
-            configRecord.showStockCounter === undefined
-              ? undefined
-              : asBoolean(configRecord.showStockCounter),
-          stockMessage: asOptionalString(configRecord.stockMessage),
-          fakeStockCount:
-            configRecord.fakeStockCount === undefined
-              ? undefined
-              : asNumber(configRecord.fakeStockCount, 0),
+          showStockCounter: false,
+          stockMessage: undefined,
+          fakeStockCount: 0,
           shippingMode:
             configRecord.shippingMode === 'VARIABLE'
               ? 'VARIABLE'
@@ -257,7 +251,7 @@ export function normalizePublicCheckoutResponse(input: unknown): PublicCheckoutR
               : asBoolean(configRecord.enableTestimonials),
           testimonials: Array.isArray(configRecord.testimonials)
             ? configRecord.testimonials
-                .map<PublicCheckoutTestimonial | null>((entry) => {
+                .map<PublicCheckoutTestimonial | null>((entry: unknown) => {
                   const testimonial = asRecord(entry);
                   if (!testimonial) {
                     return null;
@@ -303,7 +297,7 @@ export function normalizePublicCheckoutResponse(input: unknown): PublicCheckoutR
       : undefined,
     orderBumps: Array.isArray(record.orderBumps)
       ? record.orderBumps
-          .map<PublicCheckoutOrderBump | null>((entry) => {
+          .map<PublicCheckoutOrderBump | null>((entry: unknown) => {
             const bump = asRecord(entry);
             if (!bump) {
               return null;

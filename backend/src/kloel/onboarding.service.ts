@@ -1,4 +1,5 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import type { Prisma } from '@prisma/client';
 import { forEachSequential } from '../common/async-sequence';
 import { toPrismaJsonValue } from '../common/prisma/prisma-json.util';
@@ -30,6 +31,9 @@ interface OnboardingProfileInput {
   aiUseCase: string;
 }
 
+type OnboardingStateRecord = Record<string, unknown>;
+type CompletedMemoryRecord = Record<string, unknown>;
+
 const SETUP_CHECKLIST_KEYS = [
   'profile',
   'product',
@@ -43,7 +47,7 @@ function isOnboardingState(value: unknown): value is OnboardingState {
   if (value === null || typeof value !== 'object') {
     return false;
   }
-  const v = value as Record<string, unknown>;
+  const v = value as OnboardingStateRecord;
   return (
     typeof v.currentStep === 'number' &&
     typeof v.completed === 'boolean' &&
@@ -59,13 +63,13 @@ function isCompletedMemory(value: unknown): value is OnboardingCompletedMemory {
   if (value === null || typeof value !== 'object' || Array.isArray(value)) {
     return false;
   }
-  return (value as Record<string, unknown>).completed === true;
+  return (value as CompletedMemoryRecord).completed === true;
 }
 
 /** Onboarding service. */
 @Injectable()
 export class OnboardingService {
-  private readonly logger = new Logger(OnboardingService.name);
+  private readonly logger = StructuredLogger.from(OnboardingService.name);
   private readonly steps = [
     {
       id: 'welcome',
@@ -157,8 +161,12 @@ export class OnboardingService {
       data: {},
       completed: false,
     });
+    const firstStep = this.steps[0];
+    if (!firstStep) {
+      throw new Error('Onboarding steps must not be empty');
+    }
     return {
-      message: this.steps[0].question,
+      message: firstStep.question,
       step: 1,
       total: this.steps.length,
     };
@@ -177,8 +185,11 @@ export class OnboardingService {
     }
 
     const currentStep = this.steps[state.currentStep];
+    if (!currentStep) {
+      throw new Error(`Invalid onboarding step index: ${state.currentStep}`);
+    }
     state.data[currentStep.field] = response;
-    state.currentStep++;
+    state.currentStep += 1;
 
     if (state.currentStep >= this.steps.length) {
       state.completed = true;
@@ -194,8 +205,12 @@ export class OnboardingService {
     }
 
     await this.saveState(workspaceId, state);
+    const nextStep = this.steps[state.currentStep];
+    if (!nextStep) {
+      throw new Error(`Invalid onboarding step index: ${state.currentStep}`);
+    }
     return {
-      message: this.steps[state.currentStep].question,
+      message: nextStep.question,
       step: state.currentStep + 1,
       total: this.steps.length,
       completed: false,

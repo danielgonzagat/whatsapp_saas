@@ -1,116 +1,119 @@
-export type ChannelKey = 'whatsapp' | 'instagram' | 'facebook' | 'email' | 'tiktok';
+export type ChannelKey = 'whatsapp' | 'instagram' | 'facebook' | 'tiktok' | 'email';
 
-export interface ChannelConnection {
+export interface ChannelConnectionStatus {
   connected?: boolean;
-  status?: string;
-  authUrl?: string;
-  phoneNumberId?: string | null;
-  whatsappBusinessId?: string | null;
-  phoneNumber?: string | null;
-  pageName?: string | null;
-  pageId?: string | null;
-  username?: string | null;
-  instagramAccountId?: string | null;
+  status?: string | null;
+  [key: string]: unknown;
 }
 
 export interface ConnectStatus {
-  channels?: {
-    whatsapp?: ChannelConnection;
-    instagram?: ChannelConnection;
-    facebook?: ChannelConnection;
-    email?: ChannelConnection & {
-      provider?: string;
-      providerAvailable?: boolean;
-      fromEmail?: string;
-      fromName?: string;
-    };
-  };
+  channels?: Partial<Record<ChannelKey, ChannelConnectionStatus>>;
+  [key: string]: unknown;
 }
 
 export interface TikTokStatus {
   connected?: boolean;
-  status?: string;
-  kind?: string | null;
-  openId?: string | null;
-  advertiserIds?: string[];
-  expiresAt?: string | null;
-  secretConfigured?: boolean;
+  status?: string | null;
+  [key: string]: unknown;
 }
 
-export const CHANNEL_META: Record<
-  ChannelKey,
-  { label: string; color: string; summary: string; proof: string[]; steps: string[] }
-> = {
+export type TikTokMode = 'sell' | 'listen' | 'blocked';
+
+export interface TikTokModeData {
+  mode: TikTokMode;
+  details: {
+    clientConfigured: boolean;
+    secretConfigured: boolean;
+    outboundApproved: boolean;
+    tokenValid: boolean;
+    recentOutbound: boolean;
+    missingVariables: string[];
+    requiredSteps: string[];
+  };
+}
+
+interface ChannelMeta {
+  label: string;
+  summary: string;
+  color: string;
+  proof: string[];
+}
+
+const CHANNEL_COLORS: Record<ChannelKey, string> = {
+  whatsapp: 'rgb(37, 211, 102)',
+  instagram: 'rgb(225, 48, 108)',
+  facebook: 'rgb(24, 119, 242)',
+  tiktok: 'rgb(0, 0, 0)',
+  email: 'rgb(234, 67, 53)',
+};
+
+const CHANNEL_SUMMARIES: Record<ChannelKey, string> = {
+  whatsapp: 'Gerencie conversas, automatize respostas e escale vendas pelo WhatsApp.',
+  instagram: 'Conecte seu Instagram para responder DMs e automatizar interações.',
+  facebook: 'Integre sua página do Facebook para gerenciar mensagens do Messenger.',
+  tiktok: 'Conecte o TikTok for Business para unificar dados de campanha.',
+  email: 'Configure seu email para campanhas automatizadas de marketing.',
+};
+
+const CHANNEL_PROOFS: Record<ChannelKey, string[]> = {
+  whatsapp: ['Mensagens ilimitadas', 'Respostas automáticas', 'Integração oficial'],
+  instagram: ['DMs automatizadas', 'Métricas de engajamento', 'Integração oficial'],
+  facebook: ['Chat no Messenger', 'Automação de respostas', 'Integração oficial'],
+  tiktok: ['Campanhas integradas', 'Dados unificados', 'Conexão oficial'],
+  email: ['Campanhas automáticas', 'Métricas de abertura', 'Integração SMTP'],
+};
+
+export const CHANNEL_META: Record<ChannelKey, ChannelMeta> = {
   whatsapp: {
     label: 'WhatsApp',
-    color: colors.ember.primary,
-    summary: 'Conecte o WABA e o número do cliente pelo Embedded Signup oficial da Meta.',
-    proof: ['WABA do workspace', 'Número próprio', 'Envio e webhooks via Cloud API'],
-    steps: [
-      'Abrir Embedded Signup oficial da Meta',
-      'Selecionar ou criar WABA e número do cliente',
-      'Voltar para o KLOEL com Cloud API ativa',
-    ],
+    summary: CHANNEL_SUMMARIES.whatsapp,
+    color: CHANNEL_COLORS.whatsapp,
+    proof: CHANNEL_PROOFS.whatsapp,
   },
   instagram: {
-    label: 'Instagram Direct',
-    color: colors.ember.primary,
-    summary: 'Conecte a conta Meta com Instagram Business para operar Direct e comentários.',
-    proof: ['Instagram Business', 'Permissões de mensagens', 'Perfil e insights reais'],
-    steps: [
-      'Abrir login oficial da Meta',
-      'Selecionar a Page com Instagram Business vinculado',
-      'Voltar para o KLOEL com Direct e comentários autorizados',
-    ],
+    label: 'Instagram',
+    summary: CHANNEL_SUMMARIES.instagram,
+    color: CHANNEL_COLORS.instagram,
+    proof: CHANNEL_PROOFS.instagram,
   },
   facebook: {
-    label: 'Messenger Facebook',
-    color: colors.ember.primary,
-    summary: 'Conecte a Page Meta para automatizar conversas do Messenger.',
-    proof: ['Page vinculada', 'Page access token', 'Messenger API'],
-    steps: [
-      'Abrir login oficial da Meta',
-      'Selecionar a Page do cliente',
-      'Voltar para o KLOEL com Messenger autorizado',
-    ],
-  },
-  email: {
-    label: 'Email',
-    color: colors.text.silver,
-    summary: 'Ative o provider configurado no backend para enviar testes e campanhas.',
-    proof: ['Provider server-side', 'Remetente configurado', 'Envio de teste'],
-    steps: [
-      'Validar provider configurado no backend',
-      'Ativar o canal de email do workspace',
-      'Enviar teste real para confirmar entrega',
-    ],
+    label: 'Facebook',
+    summary: CHANNEL_SUMMARIES.facebook,
+    color: CHANNEL_COLORS.facebook,
+    proof: CHANNEL_PROOFS.facebook,
   },
   tiktok: {
     label: 'TikTok',
-    color: colors.ember.primary,
-    summary: 'Conecte creator e advertiser pelos fluxos oficiais do TikTok.',
-    proof: ['Creator OAuth', 'Advertiser OAuth', 'Tokens salvos no workspace'],
-    steps: [
-      'Conectar a conta TikTok do usuário',
-      'Conectar o advertiser autorizado no Business API',
-      'Voltar para o KLOEL com tokens do workspace salvos',
-    ],
+    summary: CHANNEL_SUMMARIES.tiktok,
+    color: CHANNEL_COLORS.tiktok,
+    proof: CHANNEL_PROOFS.tiktok,
+  },
+  email: {
+    label: 'Email',
+    summary: CHANNEL_SUMMARIES.email,
+    color: CHANNEL_COLORS.email,
+    proof: CHANNEL_PROOFS.email,
   },
 };
 
-export function trustedExternalUrl(value: string, allowedHosts: string[]) {
+export function statusText(connected?: boolean, status?: string | null): string {
+  if (connected) {
+    return 'Conectado';
+  }
+  if (status === 'server_not_configured') {
+    return 'Indisponível';
+  }
+  if (status === 'unavailable') {
+    return 'Indisponível';
+  }
+  return 'Desconectado';
+}
+
+export function trustedExternalUrl(url: string, hosts: string[]): boolean {
   try {
-    const url = new URL(value);
-    return url.protocol === 'https:' && allowedHosts.includes(url.hostname);
+    const parsed = new URL(url);
+    return hosts.some((host) => parsed.hostname === host || parsed.hostname.endsWith('.' + host));
   } catch {
     return false;
   }
 }
-
-export function statusText(connected?: boolean, status?: string) {
-  if (connected) {
-    return 'Conectado';
-  }
-  return status === 'server_not_configured' ? 'Configuração pendente' : 'Desconectado';
-}
-import { colors } from '@/lib/design-tokens';

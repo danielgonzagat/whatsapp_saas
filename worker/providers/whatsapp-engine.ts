@@ -1,3 +1,11 @@
+/**
+ * ARCHITECTURAL COHESION: WhatsApp Engine — the single provider-agnostic facade over multiple
+ * WhatsApp providers. Covers message sending with anti-ban protection, session management,
+ * message queueing, and media/video/voice/document/audio/sticker dispatch. All channel types
+ * funnel through one routing surface; splitting by message type would duplicate the anti-ban,
+ * session, and queue concerns across files.
+ */
+
 import { randomInt, randomUUID, timingSafeEqual } from 'node:crypto';
 import { autoProvider } from './auto-provider';
 import { unifiedWhatsAppProvider } from './unified-whatsapp-provider';
@@ -195,12 +203,12 @@ export const WhatsAppEngine = {
     workspace: WorkspaceLike,
     to: string,
     message: string,
-    options?: { quotedMessageId?: string; chatId?: string },
+    options?: { quotedMessageId?: string | undefined; chatId?: string | undefined },
   ) {
     const normalizedWorkspace = normalizeWorkspace(workspace);
     return withWorkspaceActionLock(normalizedWorkspace.id, async () => {
       console.log(
-        `\n⚡ [UWE-Ω] Enviando mensagem | workspace=${normalizedWorkspace.id} | provider=${normalizedWorkspace.whatsappProvider}`,
+        `\n[UWE-Ω] Enviando mensagem | workspace=${normalizedWorkspace.id} | provider=${normalizedWorkspace.whatsappProvider}`,
       );
 
       const subStatus = await PlanLimitsProvider.checkSubscriptionStatus(normalizedWorkspace.id);
@@ -230,7 +238,7 @@ export const WhatsAppEngine = {
         });
         return assertProviderSendResult(result, 'text');
       } catch (error: unknown) {
-        console.error(`❌ [UWE-Ω] Error sending message: ${errorMessage(error)}`);
+        console.error(`[ERROR] [UWE-Ω] Error sending message: ${errorMessage(error)}`);
 
         const status = errorStatus(error);
         const messageText = errorMessage(error);
@@ -238,7 +246,7 @@ export const WhatsAppEngine = {
         const isServerErr = typeof status === 'number' && status >= 500;
 
         if (isRateLimit) {
-          console.warn(`⏳ [UWE-Ω] Rate Limit detected. Waiting 10s before retry...`);
+          console.warn(`[UWE-Ω] Rate Limit detected. Waiting 10s before retry...`);
           await sleep(10000);
           await HealthMonitor.pushAlert(normalizedWorkspace.id, 'rate_limit', {
             provider: normalizedWorkspace.whatsappProvider,
@@ -277,12 +285,12 @@ export const WhatsAppEngine = {
     type: 'image' | 'video' | 'audio' | 'document',
     url: string,
     caption?: string,
-    options?: { quotedMessageId?: string; chatId?: string },
+    options?: { quotedMessageId?: string | undefined; chatId?: string | undefined },
   ) {
     const normalizedWorkspace = normalizeWorkspace(workspace);
     return withWorkspaceActionLock(normalizedWorkspace.id, async () => {
       console.log(
-        `\n⚡ [UWE-Ω] Enviando Mídia (${type}) | workspace=${normalizedWorkspace.id} | provider=${normalizedWorkspace.whatsappProvider}`,
+        `\n[UWE-Ω] Enviando Mídia (${type}) | workspace=${normalizedWorkspace.id} | provider=${normalizedWorkspace.whatsappProvider}`,
       );
 
       const subStatus = await PlanLimitsProvider.checkSubscriptionStatus(normalizedWorkspace.id);
@@ -317,7 +325,7 @@ export const WhatsAppEngine = {
         );
         return assertProviderSendResult(result, 'media');
       } catch (error: unknown) {
-        console.error(`❌ [UWE-Ω] Error sending media: ${errorMessage(error)}`);
+        console.error(`[ERROR] [UWE-Ω] Error sending media: ${errorMessage(error)}`);
 
         try {
           const fallback = await autoProvider.sendMedia(

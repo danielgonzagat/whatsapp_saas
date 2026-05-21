@@ -24,30 +24,30 @@ type Layout = {
 };
 
 interface MediaPreviewBoxProps {
-  accept?: string;
-  alt?: string;
-  emptyContent?: ReactNode;
-  emptySubtitle?: string;
-  emptyTitle?: string;
-  fallbackUrl?: string | null;
-  hint?: string;
-  inputAriaLabel?: string;
-  label?: string;
-  layout?: Layout;
-  onClear?: () => void;
+  accept?: string | undefined;
+  alt?: string | undefined;
+  emptyContent?: ReactNode | undefined;
+  emptySubtitle?: string | undefined;
+  emptyTitle?: string | undefined;
+  fallbackUrl?: string | null | undefined;
+  hint?: string | undefined;
+  inputAriaLabel?: string | undefined;
+  label?: string | undefined;
+  layout?: Layout | undefined;
+  onClear?: (() => void) | undefined;
   onSelectFile: (file: File) => void;
-  previewFit?: 'contain' | 'cover';
-  previewUrl?: string | null;
-  removeButtonAriaLabel?: string;
-  showRemoveButton?: boolean;
-  theme?: Theme;
-  uploading?: boolean;
+  previewFit?: 'contain' | 'cover' | undefined;
+  previewUrl?: string | null | undefined;
+  removeButtonAriaLabel?: string | undefined;
+  showRemoveButton?: boolean | undefined;
+  theme?: Theme | undefined;
+  uploading?: boolean | undefined;
 }
 
 const defaultTheme: Required<Theme> = {
   accentColor: colors.ember.primary,
   borderColor: colors.border.space,
-  frameBackground: 'rgba(255,255,255,0.04)', // PULSE_VISUAL_OK: translucent overlay
+  frameBackground: 'rgba(255,255,255,0.04)',
   labelColor: colors.text.muted,
   mutedColor: colors.text.dim,
   textColor: colors.text.silver,
@@ -180,14 +180,14 @@ export function MediaPreviewBox({
                   right: 8,
                   background: 'rgba(0,0,0,0.6)',
                   border: 'none',
-                  borderRadius: '50%',
+                  borderRadius: '16%',
                   width: 28,
                   height: 28,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   cursor: 'pointer',
-                  color: '#fff',
+                  color: colors.text.silver,
                 }}
               >
                 <X className="h-4 w-4" aria-hidden="true" />

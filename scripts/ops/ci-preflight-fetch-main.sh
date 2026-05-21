@@ -1,32 +1,16 @@
 #!/usr/bin/env bash
 #
-# CI preflight that ensures `origin/main` exists in the local git object
-# graph before the architecture guardrails run.
+# CI preflight that ensures the local git object graph contains the refs used by
+# PR guardrails before `check:all` runs.
 #
-# Why this exists:
-#   The architecture guardrail script (`check-architecture-guardrails.mjs`)
-#   resolves the diff base via `git rev-parse --verify origin/main` when it
-#   runs under `pull_request` events (GITHUB_BASE_REF != ''). GitHub's
-#   `actions/checkout@v4` defaults to a shallow clone (`fetch-depth: 1`)
-#   which only materializes the PR head, not origin/main — so the rev-parse
-#   aborts with "fatal: Needed a single revision".
+# GitHub's default checkout for PR jobs is shallow and usually materializes only
+# the synthetic PR merge/head ref. Guardrails then need `origin/$GITHUB_BASE_REF`
+# for three-dot diffs. Without fetching that base ref, nested checks fail with
+# `fatal: Needed a single revision` even when the top-level architecture job
+# already passed.
 #
-#   The `architecture` top-level job in ci-cd.yml already sets
-#   `fetch-depth: 0` and runs the guardrail correctly. The `quality` job
-#   also runs the same guardrail (transitively via `npm run check:all` ->
-#   check-all-gates -> check-architecture-guardrails), but it uses the
-#   default shallow clone, so this preflight patches up the missing ref
-#   without touching the protected workflow file.
-#
-# Why a shell script (not an inline one-liner in package.json):
-#   - Inline multi-line scripts in JSON are a maintenance hazard.
-#   - Shell scripts are portable across local dev + CI.
-#   - Errors are swallowed (|| true) so local dev, offline dev, or non-git
-#     contexts keep working. Missing origin/main in CI is the only failure
-#     mode we care about; the guardrail itself still runs and catches real
-#     violations.
-#
-# Idempotent: running twice does nothing the second time.
+# Idempotent and best-effort: if fetch fails locally/offline, downstream gates
+# still emit the authoritative failure.
 
 set +e
 
@@ -34,24 +18,36 @@ if ! command -v git >/dev/null 2>&1; then
   exit 0
 fi
 
-# If the repo is a shallow clone (CI default with fetch-depth: 1), unshallow
-# it so that BOTH HEAD and origin/main have enough history for `git
-# merge-base HEAD origin/main` to succeed. A single-commit fetch of main
-# on top of a single-commit HEAD is not sufficient — merge-base needs a
-# common ancestor, which only exists if both refs share enough history.
+base_ref="${GITHUB_BASE_REF:-main}"
+
+fetch_branch() {
+  branch="$1"
+  if [ -z "$branch" ]; then
+    return 0
+  fi
+  git fetch --no-tags --prune origin \
+    "+refs/heads/${branch}:refs/remotes/origin/${branch}" >/dev/null 2>&1 || true
+}
+
+# If the repo is shallow, deepen/unshallow first so merge-base can resolve a
+# common ancestor between HEAD and the fetched base branch.
 if [ -f .git/shallow ]; then
-  git fetch --unshallow --no-tags origin main >/dev/null 2>&1 || \
-    git fetch --deepen=500 --no-tags origin main >/dev/null 2>&1 || \
+  git fetch --unshallow --no-tags origin >/dev/null 2>&1 || \
+    git fetch --deepen=500 --no-tags origin >/dev/null 2>&1 || \
     true
 fi
 
-# Regardless of shallow state, make sure origin/main itself exists locally.
-if ! git rev-parse --verify --quiet origin/main >/dev/null 2>&1; then
-  git fetch --no-tags --prune origin main >/dev/null 2>&1 || true
+fetch_branch main
+fetch_branch "$base_ref"
+
+# Best-effort probes: merge-base must resolve. If it doesn't, the downstream
+# guardrail will surface its own error with full context.
+if git rev-parse --verify --quiet "origin/$base_ref" >/dev/null 2>&1; then
+  git merge-base HEAD "origin/$base_ref" >/dev/null 2>&1 || true
 fi
 
-# Best-effort probe: merge-base must resolve. If it doesn't, the downstream
-# guardrail will surface its own error with full context.
-git merge-base HEAD origin/main >/dev/null 2>&1 || true
+if [ "$base_ref" != "main" ] && git rev-parse --verify --quiet origin/main >/dev/null 2>&1; then
+  git merge-base HEAD origin/main >/dev/null 2>&1 || true
+fi
 
 exit 0

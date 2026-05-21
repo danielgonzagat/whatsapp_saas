@@ -5,9 +5,11 @@ import { safeCompareStrings } from '../common/utils/crypto-compare.util';
 import { PrismaService } from '../prisma/prisma.service';
 import { MetricsService } from './metrics.service';
 import { QueueHealthService } from './queue-health.service';
+import { RouteClass } from '../common/throttler/route-class.decorator';
 
 /** Metrics controller. */
 @Controller('metrics')
+@RouteClass('read')
 export class MetricsController {
   constructor(
     private readonly metrics: MetricsService,

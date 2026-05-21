@@ -7,6 +7,9 @@ import {
   unlinkSync,
   mkdirSync,
   readdirSync,
+  openSync,
+  readSync,
+  closeSync,
 } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
@@ -31,6 +34,8 @@ import {
   SKIP_SECRET_PATTERNS,
   EXT_TO_LANG,
   LANG_BY_FILENAME,
+  SOURCE_DIRECTORIES,
+  ROOT_FILE_PATTERNS,
 } from '../obsidian-mirror-daemon-constants.mjs';
 
 // ── Module-level state ──────────────────────────────────────────────────────
@@ -470,4 +475,38 @@ export function collectAllSourceFiles() {
   }
 
   return entries.sort();
+}
+
+// ── Forward-ported from HEAD (isConfiguredSourcePath / sha256File / writeJsonAtomic) ──
+export function isConfiguredSourcePath(fullPath) {
+  const rel = normalizePath(relative(REPO_ROOT, fullPath));
+  if (rel.startsWith('..') || rel === '') {
+    return false;
+  }
+  const [top] = rel.split('/');
+  if (SOURCE_DIRECTORIES.includes(top)) {
+    return true;
+  }
+  return ROOT_FILE_PATTERNS.some(({ pattern }) => pattern.test(rel));
+}
+export function sha256File(filePath) {
+  const hash = createHash('sha256');
+  const fd = openSync(filePath, 'r');
+  const buffer = Buffer.allocUnsafe(1024 * 1024);
+  try {
+    let bytesRead = readSync(fd, buffer, 0, buffer.length, null);
+    while (bytesRead > 0) {
+      hash.update(buffer.subarray(0, bytesRead));
+      bytesRead = readSync(fd, buffer, 0, buffer.length, null);
+    }
+  } finally {
+    closeSync(fd);
+  }
+  return hash.digest('hex');
+}
+export function writeJsonAtomic(filePath, data) {
+  ensureDir(dirname(filePath));
+  const tmp = `${filePath}.tmp`;
+  writeFileSync(tmp, `${JSON.stringify(data, null, 2)}\n`, 'utf8');
+  renameSync(tmp, filePath);
 }

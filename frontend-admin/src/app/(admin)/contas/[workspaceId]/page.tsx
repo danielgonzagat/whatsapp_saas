@@ -70,11 +70,10 @@ export default function AccountDetailPage({
     try {
       await adminAccountsApi.updateState(workspaceId, {
         action,
-        reason: actionReason || undefined,
-        frozenBalanceInCents:
-          action === 'FREEZE'
-            ? Math.max(0, Math.round(Number(freezeAmount || '0') * 100))
-            : undefined,
+        ...(actionReason ? { reason: actionReason } : {}),
+        ...(action === 'FREEZE'
+          ? { frozenBalanceInCents: Math.max(0, Math.round(Number(freezeAmount || '0') * 100)) }
+          : {}),
       });
       await mutate();
     } catch (actionError) {
@@ -192,9 +191,9 @@ export default function AccountDetailPage({
                   label="Última ação"
                   value={data.lifecycle.updatedAt ? 1 : null}
                   kind="integer"
-                  unavailableReason={
-                    data.lifecycle.updatedAt ? undefined : 'Sem ações administrativas'
-                  }
+                  {...(data.lifecycle.updatedAt
+                    ? {}
+                    : { unavailableReason: 'Sem ações administrativas' })}
                 />
               </div>
               <div className="grid gap-3 md:grid-cols-[1.4fr_0.8fr_1fr_1fr]">

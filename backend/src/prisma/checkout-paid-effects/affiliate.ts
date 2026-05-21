@@ -14,7 +14,9 @@ export async function createAffiliateCommissionFromPaidCheckoutUpdate(
   args: Prisma.CheckoutOrderUpdateManyArgs,
 ) {
   const scope = args.data.status === 'PAID' ? readPaidCheckoutOrderScope(args) : null;
-  if (!scope) return;
+  if (!scope) {
+    return;
+  }
 
   await prisma.$transaction(async (tx) => {
     const order = await tx.checkoutOrder.findUnique({
@@ -44,7 +46,7 @@ export async function createAffiliateCommissionFromPaidCheckoutUpdate(
     }
 
     const lockKey = `${scope.workspaceId}:${order.id}:affiliate_commission`;
-    await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${lockKey}, 0))`;
+    await tx.$executeRaw<number>`SELECT pg_advisory_xact_lock(hashtextextended(${lockKey}, 0))`;
 
     const created = await appendAuditEventIfMissing(tx, {
       workspaceId: scope.workspaceId,

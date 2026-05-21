@@ -1,10 +1,22 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { PIPELINE_STAGE_COLORS } from '../common/kloel-colors';
+import type { ContactCustomFields } from '../contacts/contact-custom-fields.types';
 
 /** Pipeline service. */
 @Injectable()
 export class PipelineService {
-  constructor(private prisma: PrismaService) {}
+  private readonly logger = new Logger(PipelineService.name);
+
+  constructor(private prisma: PrismaService) {
+    this.logger.log('PipelineService initialized');
+  }
 
   /** Get pipeline. */
   async getPipeline(workspaceId: string) {
@@ -28,11 +40,11 @@ export class PipelineService {
           isDefault: true,
           stages: {
             create: [
-              { name: 'Lead', color: '#E5E7EB', order: 0 },
-              { name: 'Contacted', color: '#FEF3C7', order: 1 },
-              { name: 'Proposal', color: '#DBEAFE', order: 2 },
-              { name: 'Won', color: '#D1FAE5', order: 3 },
-              { name: 'Lost', color: '#FEE2E2', order: 4 },
+              { name: 'Lead', color: PIPELINE_STAGE_COLORS.LEAD_LIGHT, order: 0 },
+              { name: 'Contacted', color: PIPELINE_STAGE_COLORS.CONTACTED_LIGHT, order: 1 },
+              { name: 'Proposal', color: PIPELINE_STAGE_COLORS.PROPOSAL_LIGHT, order: 2 },
+              { name: 'Won', color: PIPELINE_STAGE_COLORS.WON_LIGHT, order: 3 },
+              { name: 'Lost', color: PIPELINE_STAGE_COLORS.LOST_LIGHT, order: 4 },
             ],
           },
         },
@@ -99,36 +111,31 @@ export class PipelineService {
     // Find first stage of default pipeline
     const pipeline = await this.getPipeline(workspaceId);
     const firstStage = pipeline.stages[0];
-
-    if (data.contactId) {
-      const contact = await this.prisma.contact.findUnique({
-        where: { id: data.contactId },
-        select: { workspaceId: true, customFields: true },
-      });
-      if (!contact || contact.workspaceId !== workspaceId) {
-        throw new ForbiddenException('Contato não pertence a este workspace');
-      }
-      const cf = (contact.customFields || {}) as Record<string, unknown>;
-      const sourceCampaignId =
-        typeof cf.lastCampaignId === 'string' ? cf.lastCampaignId : undefined;
-
-      return this.prisma.deal.create({
-        data: {
-          title: data.title || '',
-          value: data.value || 0,
-          contactId: data.contactId,
-          stageId: firstStage.id,
-          ...(sourceCampaignId ? { sourceCampaignId } : {}),
-        },
-      });
+    if (!firstStage) {
+      throw new NotFoundException('Pipeline has no stages');
     }
+
+    if (!data.contactId) {
+      throw new BadRequestException('contactId is required to create a deal');
+    }
+
+    const contact = await this.prisma.contact.findUnique({
+      where: { id: data.contactId },
+      select: { workspaceId: true, customFields: true },
+    });
+    if (!contact || contact.workspaceId !== workspaceId) {
+      throw new ForbiddenException('Contato não pertence a este workspace');
+    }
+    const cf = (contact.customFields || {}) as ContactCustomFields;
+    const sourceCampaignId = typeof cf.lastCampaignId === 'string' ? cf.lastCampaignId : undefined;
 
     return this.prisma.deal.create({
       data: {
         title: data.title || '',
         value: data.value || 0,
-        contactId: data.contactId,
-        stageId: firstStage.id,
+        contact: { connect: { id: data.contactId } },
+        stage: { connect: { id: firstStage.id } },
+        ...(sourceCampaignId !== undefined ? { sourceCampaignId } : {}),
       },
     });
   }

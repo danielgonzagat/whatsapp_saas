@@ -15,8 +15,10 @@ import {
 } from './helpers/common.helpers';
 
 /** Product ai config controller. */
+import { RouteClass } from '../../common/throttler/route-class.decorator';
 @Controller('products/:productId/ai-config')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
+@RouteClass('mutate')
 export class ProductAIConfigController {
   constructor(private readonly prisma: PrismaService) {}
 

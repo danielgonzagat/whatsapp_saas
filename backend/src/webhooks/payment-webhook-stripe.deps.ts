@@ -8,10 +8,13 @@ import type { ConnectPayoutService } from '../payments/connect/connect-payout.se
 import type { ConnectReversalService } from '../payments/connect/connect-reversal.service';
 import type { StripeWebhookProcessor } from '../payments/stripe/stripe-webhook.processor';
 import type { PrismaService } from '../prisma/prisma.service';
-import type { WhatsappService } from '../whatsapp/whatsapp.service';
 
 import type { StripeWebhookLedgerService } from './stripe-webhook-ledger.service';
 import type { WebhooksService } from './webhooks.service';
+
+export interface PaymentWebhookNotifier {
+  sendMessage(workspaceId: string, phone: string, message: string): Promise<unknown>;
+}
 
 /**
  * Shared deps injected from the controller into Stripe webhook handler
@@ -23,7 +26,7 @@ export interface StripeHandlerDeps {
   logger: Logger;
   prisma: PrismaService;
   autopilot: AutopilotService;
-  whatsapp: WhatsappService;
+  whatsapp: PaymentWebhookNotifier;
   webhooksService: WebhooksService;
   stripeWebhookProcessor: StripeWebhookProcessor;
   connectReversalService: ConnectReversalService;

@@ -44,7 +44,7 @@ function allow() {
 }
 
 const raw = readStdin();
-if (!raw) allow();
+if (!raw) {allow();}
 
 let payload;
 try {
@@ -54,7 +54,7 @@ try {
 }
 
 const patchText = String(payload?.tool_input?.command ?? payload?.tool_input?.patch ?? '');
-if (!patchText) allow();
+if (!patchText) {allow();}
 
 // Parse patch envelope. Format used by Codex (apply_patch):
 //   *** Begin Patch
@@ -96,7 +96,7 @@ for (const line of lines) {
   }
 }
 
-if (files.length === 0) allow();
+if (files.length === 0) {allow();}
 
 const lockedFiles = getLockedFiles(REPO_ROOT);
 const violations = [];
@@ -156,7 +156,7 @@ for (const f of files) {
     isNewFile: true, // for added-only scan, treat as fresh
     lockedFiles,
   }).filter((v) => v.rule.startsWith('forbidden-token') || v.rule === 'forbidden-directory');
-  for (const v of tokenResult) violations.push('[' + v.rule + '] ' + v.detail);
+  for (const v of tokenResult) {violations.push('[' + v.rule + '] ' + v.detail);}
 
   // Then: line-limit check using estimated content
   const sizeResult = evaluateContent({
@@ -165,8 +165,8 @@ for (const f of files) {
     isNewFile,
     lockedFiles,
   }).filter((v) => v.rule === 'line-limit');
-  for (const v of sizeResult) violations.push('[' + v.rule + '] ' + v.detail);
+  for (const v of sizeResult) {violations.push('[' + v.rule + '] ' + v.detail);}
 }
 
-if (violations.length > 0) block(violations);
+if (violations.length > 0) {block(violations);}
 allow();

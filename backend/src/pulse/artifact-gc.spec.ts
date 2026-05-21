@@ -2,8 +2,8 @@ import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 import { pathToFileURL } from 'url';
-import { buildArtifactRegistry } from '../../../scripts/pulse/artifact-registry';
 import { cleanupPulseArtifacts } from '../../../scripts/pulse/artifact-gc';
+import type { PulseArtifactRegistry } from '../../../scripts/pulse/artifact-registry/discovery';
 
 const FIXTURE_RELATIVE_PATHS = {
   auditFeatureMatrix: 'AUDIT_FEATURE_MATRIX.md',
@@ -63,7 +63,13 @@ describe('cleanupPulseArtifacts', () => {
   });
 
   it('enforces a single-state artifact set while preserving Codacy input and canonical dir', () => {
-    const registry = buildArtifactRegistry(tempDir);
+    const registry: PulseArtifactRegistry = {
+      rootDir: tempDir,
+      canonicalDir: path.join(tempDir, '.pulse/current'),
+      tempDir: path.join(tempDir, '.pulse/tmp'),
+      artifacts: [],
+      mirrors: [],
+    };
     const cleanup = cleanupPulseArtifacts(registry);
 
     // Canonical and tmp dirs must always exist after GC (FASE 13 hardening).

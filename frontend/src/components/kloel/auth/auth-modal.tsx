@@ -1,11 +1,13 @@
 'use client';
 
 import { kloelT } from '@/lib/i18n/t';
+import { colors } from '@/lib/design-tokens';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ArrowLeft, Check, Eye, EyeOff, X } from 'lucide-react';
+import Link from 'next/link';
 import { useCallback, useEffect, useState, useId } from 'react';
 import { authApi } from '@/lib/api/auth';
 import { KloelMushroomVisual, KloelWordmark } from '../KloelBrand';
@@ -22,8 +24,8 @@ type AuthStep = 'email' | 'details';
 interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
-  initialMode?: AuthMode;
-  initialEmail?: string;
+  initialMode?: AuthMode | undefined;
+  initialEmail?: string | undefined;
 }
 
 /** Auth modal. */
@@ -253,12 +255,12 @@ export function AuthModal({
             <div className="mb-3">
               <KloelMushroomVisual
                 size={56}
-                traceColor={kloelT(`#0A0A0C`)}
+                traceColor={colors.background.void}
                 animated={isLoading}
                 spores={isLoading ? 'animated' : 'none'}
               />
             </div>
-            <KloelWordmark color="#0A0A0C" fontSize={20} fontWeight={600} />
+            <KloelWordmark color={colors.background.void} fontSize={20} fontWeight={600} />
             <h1 className="text-xl font-semibold text-gray-900">
               {mode === 'signup' ? 'Criar sua conta' : 'Entrar no Kloel'}
             </h1>
@@ -463,13 +465,13 @@ export function AuthModal({
                     />
                     <label htmlFor={`${fid}-terms`} className="text-sm text-gray-600">
                       {kloelT(`Eu concordo com os`)}{' '}
-                      <a href="#" className="text-gray-900 hover:underline">
+                      <Link href="/terms" className="text-gray-900 hover:underline">
                         {kloelT(`Termos de Uso`)}
-                      </a>{' '}
+                      </Link>{' '}
                       {kloelT(`e a`)}{' '}
-                      <a href="#" className="text-gray-900 hover:underline">
+                      <Link href="/privacy" className="text-gray-900 hover:underline">
                         {kloelT(`Politica de Privacidade`)}
-                      </a>
+                      </Link>
                       .
                     </label>
                   </div>

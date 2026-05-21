@@ -52,7 +52,7 @@ const skipReasons = {
 function getAttrByName(element, name) {
   const attributes = element.getAttributes();
   for (const attr of attributes) {
-    if (attr.getKind() !== SyntaxKind.JsxAttribute) continue;
+    if (attr.getKind() !== SyntaxKind.JsxAttribute) {continue;}
     const nameNode = attr.getNameNode();
     if (nameNode && nameNode.getText() === name) {
       return attr;

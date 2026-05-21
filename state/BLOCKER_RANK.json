@@ -1,0 +1,1659 @@
+{
+  "schema": "kloel.blocker-rank.v1",
+  "computedAt": "2026-05-15T13:47:35.227Z",
+  "source": "manifest-orphans",
+  "totalFiles": 978,
+  "totalRanked": 978,
+  "topN": [
+    {
+      "file": "backend/src/inbox/inbox.token.ts",
+      "score": 22.058823529411768,
+      "breakdown": {
+        "tier_weight": 3,
+        "phase_priority": 1,
+        "user_impact": 5,
+        "effort_hours": 0.7
+      },
+      "tier": 2,
+      "phase": 6,
+      "module": "backend/inbox",
+      "loc": 1,
+      "findingsCount": 1,
+      "severityCounts": {
+        "critical": 0,
+        "high": 1,
+        "medium": 0,
+        "low": 0
+      },
+      "topFinding": {
+        "line": 1,
+        "rule": "graph/orphan",
+        "engine": "obsidian-mirror",
+        "message": "Mirror manifest marks this source as graph/orphan."
+      },
+      "evidence": [
+        "manifest:backend/src/inbox/inbox.token.ts.md",
+        "phase:unknown-from-manifest",
+        "manifest-orphan:backend/src/inbox/inbox.token.ts"
+      ],
+      "rank": 1
+    },
+    {
+      "file": "frontend/src/app/(main)/payments/page.tsx",
+      "score": 21.22641509433962,
+      "breakdown": {
+        "tier_weight": 3,
+        "phase_priority": 1,
+        "user_impact": 5,
+        "effort_hours": 0.7
+      },
+      "tier": 2,
+      "phase": 6,
+      "module": "frontend/app",
+      "loc": 3,
+      "findingsCount": 1,
+      "severityCounts": {
+        "critical": 0,
+        "high": 1,
+        "medium": 0,
+        "low": 0
+      },
+      "topFinding": {
+        "line": 1,
+        "rule": "graph/orphan",
+        "engine": "obsidian-mirror",
+        "message": "Mirror manifest marks this source as graph/orphan."
+      },
+      "evidence": [
+        "manifest:frontend/src/app/(main)/payments/page.tsx.md",
+        "phase:unknown-from-manifest",
+        "manifest-orphan:frontend/src/app/(main)/payments/page.tsx"
+      ],
+      "rank": 2
+    },
+    {
+      "file": "backend/src/common/decorators/webhook-endpoint.decorator.ts",
+      "score": 20.454545454545453,
+      "breakdown": {
+        "tier_weight": 3,
+        "phase_priority": 1,
+        "user_impact": 5,
+        "effort_hours": 0.7
+      },
+      "tier": 2,
+      "phase": 6,
+      "module": "backend/common",
+      "loc": 5,
+      "findingsCount": 1,
+      "severityCounts": {
+        "critical": 0,
+        "high": 1,
+        "medium": 0,
+        "low": 0
+      },
+      "topFinding": {
+        "line": 1,
+        "rule": "graph/orphan",
+        "engine": "obsidian-mirror",
+        "message": "Mirror manifest marks this source as graph/orphan."
+      },
+      "evidence": [
+        "manifest:backend/src/common/decorators/webhook-endpoint.decorator.ts.md",
+        "phase:unknown-from-manifest",
+        "manifest-orphan:backend/src/common/decorators/webhook-endpoint.decorator.ts"
+      ],
+      "rank": 3
+    },
+    {
+      "file": "backend/prisma/migrations/20251211193956_add_external_payment_links/down.sql",
+      "score": 20.089285714285715,
+      "breakdown": {
+        "tier_weight": 3,
+        "phase_priority": 1,
+        "user_impact": 5,
+        "effort_hours": 0.7
+      },
+      "tier": 2,
+      "phase": 6,
+      "module": "backend/prisma",
+      "loc": 6,
+      "findingsCount": 1,
+      "severityCounts": {
+        "critical": 0,
+        "high": 1,
+        "medium": 0,
+        "low": 0
+      },
+      "topFinding": {
+        "line": 1,
+        "rule": "graph/orphan",
+        "engine": "obsidian-mirror",
+        "message": "Mirror manifest marks this source as graph/orphan."
+      },
+      "evidence": [
+        "manifest:backend/prisma/migrations/20251211193956_add_external_payment_links/down.sql.md",
+        "phase:unknown-from-manifest",
+        "manifest-orphan:backend/prisma/migrations/20251211193956_add_external_payment_links/down.sql"
+      ],
+      "rank": 4
+    },
+    {
+      "file": "backend/prisma/migrations/20260331000000_add_webhook_event/down.sql",
+      "score": 20.089285714285715,
+      "breakdown": {
+        "tier_weight": 3,
+        "phase_priority": 1,
+        "user_impact": 5,
+        "effort_hours": 0.7
+      },
+      "tier": 2,
+      "phase": 6,
+      "module": "backend/prisma",
+      "loc": 6,
+      "findingsCount": 1,
+      "severityCounts": {
+        "critical": 0,
+        "high": 1,
+        "medium": 0,
+        "low": 0
+      },
+      "topFinding": {
+        "line": 1,
+        "rule": "graph/orphan",
+        "engine": "obsidian-mirror",
+        "message": "Mirror manifest marks this source as graph/orphan."
+      },
+      "evidence": [
+        "manifest:backend/prisma/migrations/20260331000000_add_webhook_event/down.sql.md",
+        "phase:unknown-from-manifest",
+        "manifest-orphan:backend/prisma/migrations/20260331000000_add_webhook_event/down.sql"
+      ],
+      "rank": 5
+    },
+    {
+      "file": "backend/src/whatsapp/whatsapp.tokens.ts",
+      "score": 20.089285714285715,
+      "breakdown": {
+        "tier_weight": 3,
+        "phase_priority": 1,
+        "user_impact": 5,
+        "effort_hours": 0.7
+      },
+      "tier": 2,
+      "phase": 6,
+      "module": "backend/whatsapp",
+      "loc": 6,
+      "findingsCount": 1,
+      "severityCounts": {
+        "critical": 0,
+        "high": 1,
+        "medium": 0,
+        "low": 0
+      },
+      "topFinding": {
+        "line": 1,
+        "rule": "graph/orphan",
+        "engine": "obsidian-mirror",
+        "message": "Mirror manifest marks this source as graph/orphan."
+      },
+      "evidence": [
+        "manifest:backend/src/whatsapp/whatsapp.tokens.ts.md",
+        "phase:unknown-from-manifest",
+        "manifest-orphan:backend/src/whatsapp/whatsapp.tokens.ts"
+      ],
+      "rank": 6
+    },
+    {
+      "file": "frontend/src/app/(main)/billing/page.tsx",
+      "score": 20,
+      "breakdown": {
+        "tier_weight": 2,
+        "phase_priority": 1,
+        "user_impact": 5,
+        "effort_hours": 0.5
+      },
+      "tier": 3,
+      "phase": 6,
+      "module": "frontend/app",
+      "loc": 4,
+      "findingsCount": 1,
+      "severityCounts": {
+        "critical": 0,
+        "high": 0,
+        "medium": 1,
+        "low": 0
+      },
+      "topFinding": {
+        "line": 1,
+        "rule": "graph/orphan",
+        "engine": "obsidian-mirror",
+        "message": "Mirror manifest marks this source as graph/orphan."
+      },
+      "evidence": [
+        "manifest:frontend/src/app/(main)/billing/page.tsx.md",
+        "phase:unknown-from-manifest",
+        "manifest-orphan:frontend/src/app/(main)/billing/page.tsx"
+      ],
+      "rank": 7
+    },
+    {
+      "file": "backend/src/checkout/checkout-shipping.types.ts",
+      "score": 20,
+      "breakdown": {
+        "tier_weight": 2,
+        "phase_priority": 1,
+        "user_impact": 5,
+        "effort_hours": 0.5
+      },
+      "tier": 3,
+      "phase": 6,
+      "module": "backend/checkout",
+      "loc": 7,
+      "findingsCount": 1,
+      "severityCounts": {
+        "critical": 0,
+        "high": 0,
+        "medium": 1,
+        "low": 0
+      },
+      "topFinding": {
+        "line": 1,
+        "rule": "graph/orphan",
+        "engine": "obsidian-mirror",
+        "message": "Mirror manifest marks this source as graph/orphan."
+      },
+      "evidence": [
+        "manifest:backend/src/checkout/checkout-shipping.types.ts.md",
+        "phase:unknown-from-manifest",
+        "manifest-orphan:backend/src/checkout/checkout-shipping.types.ts"
+      ],
+      "rank": 8
+    },
+    {
+      "file": "backend/src/whatsapp/whatsapp-media.service.ts",
+      "score": 20,
+      "breakdown": {
+        "tier_weight": 2,
+        "phase_priority": 1,
+        "user_impact": 5,
+        "effort_hours": 0.5
+      },
+      "tier": 3,
+      "phase": 6,
+      "module": "backend/whatsapp",
+      "loc": 9,
+      "findingsCount": 1,
+      "severityCounts": {
+        "critical": 0,
+        "high": 0,
+        "medium": 1,
+        "low": 0
+      },
+      "topFinding": {
+        "line": 1,
+        "rule": "graph/orphan",
+        "engine": "obsidian-mirror",
+        "message": "Mirror manifest marks this source as graph/orphan."
+      },
+      "evidence": [
+        "manifest:backend/src/whatsapp/whatsapp-media.service.ts.md",
+        "phase:unknown-from-manifest",
+        "manifest-orphan:backend/src/whatsapp/whatsapp-media.service.ts"
+      ],
+      "rank": 9
+    },
+    {
+      "file": "backend/src/whatsapp/whatsapp-watchdog.types.ts",
+      "score": 20,
+      "breakdown": {
+        "tier_weight": 2,
+        "phase_priority": 1,
+        "user_impact": 5,
+        "effort_hours": 0.5
+      },
+      "tier": 3,
+      "phase": 6,
+      "module": "backend/whatsapp",
+      "loc": 5,
+      "findingsCount": 1,
+      "severityCounts": {
+        "critical": 0,
+        "high": 0,
+        "medium": 1,
+        "low": 0
+      },
+      "topFinding": {
+        "line": 1,
+        "rule": "graph/orphan",
+        "engine": "obsidian-mirror",
+        "message": "Mirror manifest marks this source as graph/orphan."
+      },
+      "evidence": [
+        "manifest:backend/src/whatsapp/whatsapp-watchdog.types.ts.md",
+        "phase:unknown-from-manifest",
+        "manifest-orphan:backend/src/whatsapp/whatsapp-watchdog.types.ts"
+      ],
+      "rank": 10
+    },
+    {
+      "file": "backend/prisma/migrations/20260408190000_add_checkout_shipping_and_affiliate_config/migration.sql",
+      "score": 19.73684210526316,
+      "breakdown": {
+        "tier_weight": 2,
+        "phase_priority": 1,
+        "user_impact": 5,
+        "effort_hours": 0.5
+      },
+      "tier": 3,
+      "phase": 6,
+      "module": "backend/prisma",
+      "loc": 13,
+      "findingsCount": 1,
+      "severityCounts": {
+        "critical": 0,
+        "high": 0,
+        "medium": 1,
+        "low": 0
+      },
+      "topFinding": {
+        "line": 1,
+        "rule": "graph/orphan",
+        "engine": "obsidian-mirror",
+        "message": "Mirror manifest marks this source as graph/orphan."
+      },
+      "evidence": [
+        "manifest:backend/prisma/migrations/20260408190000_add_checkout_shipping_and_affiliate_config/migration.sql.md",
+        "phase:unknown-from-manifest",
+        "manifest-orphan:backend/prisma/migrations/20260408190000_add_checkout_shipping_and_affiliate_config/migration.sql"
+      ],
+      "rank": 11
+    },
+    {
+      "file": "backend/src/auth/email-templates/report-summary.html",
+      "score": 19.396551724137936,
+      "breakdown": {
+        "tier_weight": 3,
+        "phase_priority": 1,
+        "user_impact": 5,
+        "effort_hours": 0.8
+      },
+      "tier": 2,
+      "phase": 6,
+      "module": "backend/auth",
+      "loc": 8,
+      "findingsCount": 1,
+      "severityCounts": {
+        "critical": 0,
+        "high": 1,
+        "medium": 0,
+        "low": 0
+      },
+      "topFinding": {
+        "line": 1,
+        "rule": "graph/orphan",
+        "engine": "obsidian-mirror",
+        "message": "Mirror manifest marks this source as graph/orphan."
+      },
+      "evidence": [
+        "manifest:backend/src/auth/email-templates/report-summary.html.md",
+        "phase:unknown-from-manifest",
+        "manifest-orphan:backend/src/auth/email-templates/report-summary.html"
+      ],
+      "rank": 12
+    },
+    {
+      "file": "backend/src/auth/email-templates/data-request-confirmation.html",
+      "score": 19.06779661016949,
+      "breakdown": {
+        "tier_weight": 3,
+        "phase_priority": 1,
+        "user_impact": 5,
+        "effort_hours": 0.8
+      },
+      "tier": 2,
+      "phase": 6,
+      "module": "backend/auth",
+      "loc": 9,
+      "findingsCount": 1,
+      "severityCounts": {
+        "critical": 0,
+        "high": 1,
+        "medium": 0,
+        "low": 0
+      },
+      "topFinding": {
+        "line": 1,
+        "rule": "graph/orphan",
+        "engine": "obsidian-mirror",
+        "message": "Mirror manifest marks this source as graph/orphan."
+      },
+      "evidence": [
+        "manifest:backend/src/auth/email-templates/data-request-confirmation.html.md",
+        "phase:unknown-from-manifest",
+        "manifest-orphan:backend/src/auth/email-templates/data-request-confirmation.html"
+      ],
+      "rank": 13
+    },
+    {
+      "file": "backend/src/whatsapp/whatsapp-catchup-lock.helpers.ts",
+      "score": 18.442622950819676,
+      "breakdown": {
+        "tier_weight": 3,
+        "phase_priority": 1,
+        "user_impact": 5,
+        "effort_hours": 0.8
+      },
+      "tier": 2,
+      "phase": 6,
+      "module": "backend/whatsapp",
+      "loc": 11,
+      "findingsCount": 1,
+      "severityCounts": {
+        "critical": 0,
+        "high": 1,
+        "medium": 0,
+        "low": 0
+      },
+      "topFinding": {
+        "line": 1,
+        "rule": "graph/orphan",
+        "engine": "obsidian-mirror",
+        "message": "Mirror manifest marks this source as graph/orphan."
+      },
+      "evidence": [
+        "manifest:backend/src/whatsapp/whatsapp-catchup-lock.helpers.ts.md",
+        "phase:unknown-from-manifest",
+        "manifest-orphan:backend/src/whatsapp/whatsapp-catchup-lock.helpers.ts"
+      ],
+      "rank": 14
+    },
+    {
+      "file": "backend/src/auth/email-templates/payment-confirmation.html",
+      "score": 18.14516129032258,
+      "breakdown": {
+        "tier_weight": 3,
+        "phase_priority": 1,
+        "user_impact": 5,
+        "effort_hours": 0.8
+      },
+      "tier": 2,
+      "phase": 6,
+      "module": "backend/auth",
+      "loc": 12,
+      "findingsCount": 1,
+      "severityCounts": {
+        "critical": 0,
+        "high": 1,
+        "medium": 0,
+        "low": 0
+      },
+      "topFinding": {
+        "line": 1,
+        "rule": "graph/orphan",
+        "engine": "obsidian-mirror",
+        "message": "Mirror manifest marks this source as graph/orphan."
+      },
+      "evidence": [
+        "manifest:backend/src/auth/email-templates/payment-confirmation.html.md",
+        "phase:unknown-from-manifest",
+        "manifest-orphan:backend/src/auth/email-templates/payment-confirmation.html"
+      ],
+      "rank": 15
+    },
+    {
+      "file": "e2e/.e2e-auth.0.json",
+      "score": 17.857142857142858,
+      "breakdown": {
+        "tier_weight": 3,
+        "phase_priority": 1,
+        "user_impact": 5,
+        "effort_hours": 0.8
+      },
+      "tier": 2,
+      "phase": 6,
+      "module": "e2e/.e2e-auth.0.json",
+      "loc": 13,
+      "findingsCount": 1,
+      "severityCounts": {
+        "critical": 0,
+        "high": 1,
+        "medium": 0,
+        "low": 0
+      },
+      "topFinding": {
+        "line": 1,
+        "rule": "graph/orphan",
+        "engine": "obsidian-mirror",
+        "message": "Mirror manifest marks this source as graph/orphan."
+      },
+      "evidence": [
+        "manifest:e2e/_dot_e2e-auth.0.json.md",
+        "phase:unknown-from-manifest",
+        "manifest-orphan:e2e/.e2e-auth.0.json"
+      ],
+      "rank": 16
+    },
+    {
+      "file": "e2e/.e2e-auth.1.json",
+      "score": 17.857142857142858,
+      "breakdown": {
+        "tier_weight": 3,
+        "phase_priority": 1,
+        "user_impact": 5,
+        "effort_hours": 0.8
+      },
+      "tier": 2,
+      "phase": 6,
+      "module": "e2e/.e2e-auth.1.json",
+      "loc": 13,
+      "findingsCount": 1,
+      "severityCounts": {
+        "critical": 0,
+        "high": 1,
+        "medium": 0,
+        "low": 0
+      },
+      "topFinding": {
+        "line": 1,
+        "rule": "graph/orphan",
+        "engine": "obsidian-mirror",
+        "message": "Mirror manifest marks this source as graph/orphan."
+      },
+      "evidence": [
+        "manifest:e2e/_dot_e2e-auth.1.json.md",
+        "phase:unknown-from-manifest",
+        "manifest-orphan:e2e/.e2e-auth.1.json"
+      ],
+      "rank": 17
+    },
+    {
+      "file": "e2e/.e2e-auth.10.json",
+      "score": 17.857142857142858,
+      "breakdown": {
+        "tier_weight": 3,
+        "phase_priority": 1,
+        "user_impact": 5,
+        "effort_hours": 0.8
+      },
+      "tier": 2,
+      "phase": 6,
+      "module": "e2e/.e2e-auth.10.json",
+      "loc": 13,
+      "findingsCount": 1,
+      "severityCounts": {
+        "critical": 0,
+        "high": 1,
+        "medium": 0,
+        "low": 0
+      },
+      "topFinding": {
+        "line": 1,
+        "rule": "graph/orphan",
+        "engine": "obsidian-mirror",
+        "message": "Mirror manifest marks this source as graph/orphan."
+      },
+      "evidence": [
+        "manifest:e2e/_dot_e2e-auth.10.json.md",
+        "phase:unknown-from-manifest",
+        "manifest-orphan:e2e/.e2e-auth.10.json"
+      ],
+      "rank": 18
+    },
+    {
+      "file": "e2e/.e2e-auth.11.json",
+      "score": 17.857142857142858,
+      "breakdown": {
+        "tier_weight": 3,
+        "phase_priority": 1,
+        "user_impact": 5,
+        "effort_hours": 0.8
+      },
+      "tier": 2,
+      "phase": 6,
+      "module": "e2e/.e2e-auth.11.json",
+      "loc": 13,
+      "findingsCount": 1,
+      "severityCounts": {
+        "critical": 0,
+        "high": 1,
+        "medium": 0,
+        "low": 0
+      },
+      "topFinding": {
+        "line": 1,
+        "rule": "graph/orphan",
+        "engine": "obsidian-mirror",
+        "message": "Mirror manifest marks this source as graph/orphan."
+      },
+      "evidence": [
+        "manifest:e2e/_dot_e2e-auth.11.json.md",
+        "phase:unknown-from-manifest",
+        "manifest-orphan:e2e/.e2e-auth.11.json"
+      ],
+      "rank": 19
+    },
+    {
+      "file": "e2e/.e2e-auth.12.json",
+      "score": 17.857142857142858,
+      "breakdown": {
+        "tier_weight": 3,
+        "phase_priority": 1,
+        "user_impact": 5,
+        "effort_hours": 0.8
+      },
+      "tier": 2,
+      "phase": 6,
+      "module": "e2e/.e2e-auth.12.json",
+      "loc": 13,
+      "findingsCount": 1,
+      "severityCounts": {
+        "critical": 0,
+        "high": 1,
+        "medium": 0,
+        "low": 0
+      },
+      "topFinding": {
+        "line": 1,
+        "rule": "graph/orphan",
+        "engine": "obsidian-mirror",
+        "message": "Mirror manifest marks this source as graph/orphan."
+      },
+      "evidence": [
+        "manifest:e2e/_dot_e2e-auth.12.json.md",
+        "phase:unknown-from-manifest",
+        "manifest-orphan:e2e/.e2e-auth.12.json"
+      ],
+      "rank": 20
+    },
+    {
+      "file": "e2e/.e2e-auth.13.json",
+      "score": 17.857142857142858,
+      "breakdown": {
+        "tier_weight": 3,
+        "phase_priority": 1,
+        "user_impact": 5,
+        "effort_hours": 0.8
+      },
+      "tier": 2,
+      "phase": 6,
+      "module": "e2e/.e2e-auth.13.json",
+      "loc": 13,
+      "findingsCount": 1,
+      "severityCounts": {
+        "critical": 0,
+        "high": 1,
+        "medium": 0,
+        "low": 0
+      },
+      "topFinding": {
+        "line": 1,
+        "rule": "graph/orphan",
+        "engine": "obsidian-mirror",
+        "message": "Mirror manifest marks this source as graph/orphan."
+      },
+      "evidence": [
+        "manifest:e2e/_dot_e2e-auth.13.json.md",
+        "phase:unknown-from-manifest",
+        "manifest-orphan:e2e/.e2e-auth.13.json"
+      ],
+      "rank": 21
+    },
+    {
+      "file": "e2e/.e2e-auth.14.json",
+      "score": 17.857142857142858,
+      "breakdown": {
+        "tier_weight": 3,
+        "phase_priority": 1,
+        "user_impact": 5,
+        "effort_hours": 0.8
+      },
+      "tier": 2,
+      "phase": 6,
+      "module": "e2e/.e2e-auth.14.json",
+      "loc": 13,
+      "findingsCount": 1,
+      "severityCounts": {
+        "critical": 0,
+        "high": 1,
+        "medium": 0,
+        "low": 0
+      },
+      "topFinding": {
+        "line": 1,
+        "rule": "graph/orphan",
+        "engine": "obsidian-mirror",
+        "message": "Mirror manifest marks this source as graph/orphan."
+      },
+      "evidence": [
+        "manifest:e2e/_dot_e2e-auth.14.json.md",
+        "phase:unknown-from-manifest",
+        "manifest-orphan:e2e/.e2e-auth.14.json"
+      ],
+      "rank": 22
+    },
+    {
+      "file": "e2e/.e2e-auth.15.json",
+      "score": 17.857142857142858,
+      "breakdown": {
+        "tier_weight": 3,
+        "phase_priority": 1,
+        "user_impact": 5,
+        "effort_hours": 0.8
+      },
+      "tier": 2,
+      "phase": 6,
+      "module": "e2e/.e2e-auth.15.json",
+      "loc": 13,
+      "findingsCount": 1,
+      "severityCounts": {
+        "critical": 0,
+        "high": 1,
+        "medium": 0,
+        "low": 0
+      },
+      "topFinding": {
+        "line": 1,
+        "rule": "graph/orphan",
+        "engine": "obsidian-mirror",
+        "message": "Mirror manifest marks this source as graph/orphan."
+      },
+      "evidence": [
+        "manifest:e2e/_dot_e2e-auth.15.json.md",
+        "phase:unknown-from-manifest",
+        "manifest-orphan:e2e/.e2e-auth.15.json"
+      ],
+      "rank": 23
+    },
+    {
+      "file": "e2e/.e2e-auth.16.json",
+      "score": 17.857142857142858,
+      "breakdown": {
+        "tier_weight": 3,
+        "phase_priority": 1,
+        "user_impact": 5,
+        "effort_hours": 0.8
+      },
+      "tier": 2,
+      "phase": 6,
+      "module": "e2e/.e2e-auth.16.json",
+      "loc": 13,
+      "findingsCount": 1,
+      "severityCounts": {
+        "critical": 0,
+        "high": 1,
+        "medium": 0,
+        "low": 0
+      },
+      "topFinding": {
+        "line": 1,
+        "rule": "graph/orphan",
+        "engine": "obsidian-mirror",
+        "message": "Mirror manifest marks this source as graph/orphan."
+      },
+      "evidence": [
+        "manifest:e2e/_dot_e2e-auth.16.json.md",
+        "phase:unknown-from-manifest",
+        "manifest-orphan:e2e/.e2e-auth.16.json"
+      ],
+      "rank": 24
+    },
+    {
+      "file": "e2e/.e2e-auth.17.json",
+      "score": 17.857142857142858,
+      "breakdown": {
+        "tier_weight": 3,
+        "phase_priority": 1,
+        "user_impact": 5,
+        "effort_hours": 0.8
+      },
+      "tier": 2,
+      "phase": 6,
+      "module": "e2e/.e2e-auth.17.json",
+      "loc": 13,
+      "findingsCount": 1,
+      "severityCounts": {
+        "critical": 0,
+        "high": 1,
+        "medium": 0,
+        "low": 0
+      },
+      "topFinding": {
+        "line": 1,
+        "rule": "graph/orphan",
+        "engine": "obsidian-mirror",
+        "message": "Mirror manifest marks this source as graph/orphan."
+      },
+      "evidence": [
+        "manifest:e2e/_dot_e2e-auth.17.json.md",
+        "phase:unknown-from-manifest",
+        "manifest-orphan:e2e/.e2e-auth.17.json"
+      ],
+      "rank": 25
+    },
+    {
+      "file": "e2e/.e2e-auth.18.json",
+      "score": 17.857142857142858,
+      "breakdown": {
+        "tier_weight": 3,
+        "phase_priority": 1,
+        "user_impact": 5,
+        "effort_hours": 0.8
+      },
+      "tier": 2,
+      "phase": 6,
+      "module": "e2e/.e2e-auth.18.json",
+      "loc": 13,
+      "findingsCount": 1,
+      "severityCounts": {
+        "critical": 0,
+        "high": 1,
+        "medium": 0,
+        "low": 0
+      },
+      "topFinding": {
+        "line": 1,
+        "rule": "graph/orphan",
+        "engine": "obsidian-mirror",
+        "message": "Mirror manifest marks this source as graph/orphan."
+      },
+      "evidence": [
+        "manifest:e2e/_dot_e2e-auth.18.json.md",
+        "phase:unknown-from-manifest",
+        "manifest-orphan:e2e/.e2e-auth.18.json"
+      ],
+      "rank": 26
+    },
+    {
+      "file": "e2e/.e2e-auth.19.json",
+      "score": 17.857142857142858,
+      "breakdown": {
+        "tier_weight": 3,
+        "phase_priority": 1,
+        "user_impact": 5,
+        "effort_hours": 0.8
+      },
+      "tier": 2,
+      "phase": 6,
+      "module": "e2e/.e2e-auth.19.json",
+      "loc": 13,
+      "findingsCount": 1,
+      "severityCounts": {
+        "critical": 0,
+        "high": 1,
+        "medium": 0,
+        "low": 0
+      },
+      "topFinding": {
+        "line": 1,
+        "rule": "graph/orphan",
+        "engine": "obsidian-mirror",
+        "message": "Mirror manifest marks this source as graph/orphan."
+      },
+      "evidence": [
+        "manifest:e2e/_dot_e2e-auth.19.json.md",
+        "phase:unknown-from-manifest",
+        "manifest-orphan:e2e/.e2e-auth.19.json"
+      ],
+      "rank": 27
+    },
+    {
+      "file": "e2e/.e2e-auth.2.json",
+      "score": 17.857142857142858,
+      "breakdown": {
+        "tier_weight": 3,
+        "phase_priority": 1,
+        "user_impact": 5,
+        "effort_hours": 0.8
+      },
+      "tier": 2,
+      "phase": 6,
+      "module": "e2e/.e2e-auth.2.json",
+      "loc": 13,
+      "findingsCount": 1,
+      "severityCounts": {
+        "critical": 0,
+        "high": 1,
+        "medium": 0,
+        "low": 0
+      },
+      "topFinding": {
+        "line": 1,
+        "rule": "graph/orphan",
+        "engine": "obsidian-mirror",
+        "message": "Mirror manifest marks this source as graph/orphan."
+      },
+      "evidence": [
+        "manifest:e2e/_dot_e2e-auth.2.json.md",
+        "phase:unknown-from-manifest",
+        "manifest-orphan:e2e/.e2e-auth.2.json"
+      ],
+      "rank": 28
+    },
+    {
+      "file": "e2e/.e2e-auth.20.json",
+      "score": 17.857142857142858,
+      "breakdown": {
+        "tier_weight": 3,
+        "phase_priority": 1,
+        "user_impact": 5,
+        "effort_hours": 0.8
+      },
+      "tier": 2,
+      "phase": 6,
+      "module": "e2e/.e2e-auth.20.json",
+      "loc": 13,
+      "findingsCount": 1,
+      "severityCounts": {
+        "critical": 0,
+        "high": 1,
+        "medium": 0,
+        "low": 0
+      },
+      "topFinding": {
+        "line": 1,
+        "rule": "graph/orphan",
+        "engine": "obsidian-mirror",
+        "message": "Mirror manifest marks this source as graph/orphan."
+      },
+      "evidence": [
+        "manifest:e2e/_dot_e2e-auth.20.json.md",
+        "phase:unknown-from-manifest",
+        "manifest-orphan:e2e/.e2e-auth.20.json"
+      ],
+      "rank": 29
+    },
+    {
+      "file": "e2e/.e2e-auth.21.json",
+      "score": 17.857142857142858,
+      "breakdown": {
+        "tier_weight": 3,
+        "phase_priority": 1,
+        "user_impact": 5,
+        "effort_hours": 0.8
+      },
+      "tier": 2,
+      "phase": 6,
+      "module": "e2e/.e2e-auth.21.json",
+      "loc": 13,
+      "findingsCount": 1,
+      "severityCounts": {
+        "critical": 0,
+        "high": 1,
+        "medium": 0,
+        "low": 0
+      },
+      "topFinding": {
+        "line": 1,
+        "rule": "graph/orphan",
+        "engine": "obsidian-mirror",
+        "message": "Mirror manifest marks this source as graph/orphan."
+      },
+      "evidence": [
+        "manifest:e2e/_dot_e2e-auth.21.json.md",
+        "phase:unknown-from-manifest",
+        "manifest-orphan:e2e/.e2e-auth.21.json"
+      ],
+      "rank": 30
+    },
+    {
+      "file": "e2e/.e2e-auth.22.json",
+      "score": 17.857142857142858,
+      "breakdown": {
+        "tier_weight": 3,
+        "phase_priority": 1,
+        "user_impact": 5,
+        "effort_hours": 0.8
+      },
+      "tier": 2,
+      "phase": 6,
+      "module": "e2e/.e2e-auth.22.json",
+      "loc": 13,
+      "findingsCount": 1,
+      "severityCounts": {
+        "critical": 0,
+        "high": 1,
+        "medium": 0,
+        "low": 0
+      },
+      "topFinding": {
+        "line": 1,
+        "rule": "graph/orphan",
+        "engine": "obsidian-mirror",
+        "message": "Mirror manifest marks this source as graph/orphan."
+      },
+      "evidence": [
+        "manifest:e2e/_dot_e2e-auth.22.json.md",
+        "phase:unknown-from-manifest",
+        "manifest-orphan:e2e/.e2e-auth.22.json"
+      ],
+      "rank": 31
+    },
+    {
+      "file": "e2e/.e2e-auth.25.json",
+      "score": 17.857142857142858,
+      "breakdown": {
+        "tier_weight": 3,
+        "phase_priority": 1,
+        "user_impact": 5,
+        "effort_hours": 0.8
+      },
+      "tier": 2,
+      "phase": 6,
+      "module": "e2e/.e2e-auth.25.json",
+      "loc": 13,
+      "findingsCount": 1,
+      "severityCounts": {
+        "critical": 0,
+        "high": 1,
+        "medium": 0,
+        "low": 0
+      },
+      "topFinding": {
+        "line": 1,
+        "rule": "graph/orphan",
+        "engine": "obsidian-mirror",
+        "message": "Mirror manifest marks this source as graph/orphan."
+      },
+      "evidence": [
+        "manifest:e2e/_dot_e2e-auth.25.json.md",
+        "phase:unknown-from-manifest",
+        "manifest-orphan:e2e/.e2e-auth.25.json"
+      ],
+      "rank": 32
+    },
+    {
+      "file": "e2e/.e2e-auth.3.json",
+      "score": 17.857142857142858,
+      "breakdown": {
+        "tier_weight": 3,
+        "phase_priority": 1,
+        "user_impact": 5,
+        "effort_hours": 0.8
+      },
+      "tier": 2,
+      "phase": 6,
+      "module": "e2e/.e2e-auth.3.json",
+      "loc": 13,
+      "findingsCount": 1,
+      "severityCounts": {
+        "critical": 0,
+        "high": 1,
+        "medium": 0,
+        "low": 0
+      },
+      "topFinding": {
+        "line": 1,
+        "rule": "graph/orphan",
+        "engine": "obsidian-mirror",
+        "message": "Mirror manifest marks this source as graph/orphan."
+      },
+      "evidence": [
+        "manifest:e2e/_dot_e2e-auth.3.json.md",
+        "phase:unknown-from-manifest",
+        "manifest-orphan:e2e/.e2e-auth.3.json"
+      ],
+      "rank": 33
+    },
+    {
+      "file": "e2e/.e2e-auth.4.json",
+      "score": 17.857142857142858,
+      "breakdown": {
+        "tier_weight": 3,
+        "phase_priority": 1,
+        "user_impact": 5,
+        "effort_hours": 0.8
+      },
+      "tier": 2,
+      "phase": 6,
+      "module": "e2e/.e2e-auth.4.json",
+      "loc": 13,
+      "findingsCount": 1,
+      "severityCounts": {
+        "critical": 0,
+        "high": 1,
+        "medium": 0,
+        "low": 0
+      },
+      "topFinding": {
+        "line": 1,
+        "rule": "graph/orphan",
+        "engine": "obsidian-mirror",
+        "message": "Mirror manifest marks this source as graph/orphan."
+      },
+      "evidence": [
+        "manifest:e2e/_dot_e2e-auth.4.json.md",
+        "phase:unknown-from-manifest",
+        "manifest-orphan:e2e/.e2e-auth.4.json"
+      ],
+      "rank": 34
+    },
+    {
+      "file": "e2e/.e2e-auth.5.json",
+      "score": 17.857142857142858,
+      "breakdown": {
+        "tier_weight": 3,
+        "phase_priority": 1,
+        "user_impact": 5,
+        "effort_hours": 0.8
+      },
+      "tier": 2,
+      "phase": 6,
+      "module": "e2e/.e2e-auth.5.json",
+      "loc": 13,
+      "findingsCount": 1,
+      "severityCounts": {
+        "critical": 0,
+        "high": 1,
+        "medium": 0,
+        "low": 0
+      },
+      "topFinding": {
+        "line": 1,
+        "rule": "graph/orphan",
+        "engine": "obsidian-mirror",
+        "message": "Mirror manifest marks this source as graph/orphan."
+      },
+      "evidence": [
+        "manifest:e2e/_dot_e2e-auth.5.json.md",
+        "phase:unknown-from-manifest",
+        "manifest-orphan:e2e/.e2e-auth.5.json"
+      ],
+      "rank": 35
+    },
+    {
+      "file": "e2e/.e2e-auth.6.json",
+      "score": 17.857142857142858,
+      "breakdown": {
+        "tier_weight": 3,
+        "phase_priority": 1,
+        "user_impact": 5,
+        "effort_hours": 0.8
+      },
+      "tier": 2,
+      "phase": 6,
+      "module": "e2e/.e2e-auth.6.json",
+      "loc": 13,
+      "findingsCount": 1,
+      "severityCounts": {
+        "critical": 0,
+        "high": 1,
+        "medium": 0,
+        "low": 0
+      },
+      "topFinding": {
+        "line": 1,
+        "rule": "graph/orphan",
+        "engine": "obsidian-mirror",
+        "message": "Mirror manifest marks this source as graph/orphan."
+      },
+      "evidence": [
+        "manifest:e2e/_dot_e2e-auth.6.json.md",
+        "phase:unknown-from-manifest",
+        "manifest-orphan:e2e/.e2e-auth.6.json"
+      ],
+      "rank": 36
+    },
+    {
+      "file": "e2e/.e2e-auth.7.json",
+      "score": 17.857142857142858,
+      "breakdown": {
+        "tier_weight": 3,
+        "phase_priority": 1,
+        "user_impact": 5,
+        "effort_hours": 0.8
+      },
+      "tier": 2,
+      "phase": 6,
+      "module": "e2e/.e2e-auth.7.json",
+      "loc": 13,
+      "findingsCount": 1,
+      "severityCounts": {
+        "critical": 0,
+        "high": 1,
+        "medium": 0,
+        "low": 0
+      },
+      "topFinding": {
+        "line": 1,
+        "rule": "graph/orphan",
+        "engine": "obsidian-mirror",
+        "message": "Mirror manifest marks this source as graph/orphan."
+      },
+      "evidence": [
+        "manifest:e2e/_dot_e2e-auth.7.json.md",
+        "phase:unknown-from-manifest",
+        "manifest-orphan:e2e/.e2e-auth.7.json"
+      ],
+      "rank": 37
+    },
+    {
+      "file": "e2e/.e2e-auth.8.json",
+      "score": 17.857142857142858,
+      "breakdown": {
+        "tier_weight": 3,
+        "phase_priority": 1,
+        "user_impact": 5,
+        "effort_hours": 0.8
+      },
+      "tier": 2,
+      "phase": 6,
+      "module": "e2e/.e2e-auth.8.json",
+      "loc": 13,
+      "findingsCount": 1,
+      "severityCounts": {
+        "critical": 0,
+        "high": 1,
+        "medium": 0,
+        "low": 0
+      },
+      "topFinding": {
+        "line": 1,
+        "rule": "graph/orphan",
+        "engine": "obsidian-mirror",
+        "message": "Mirror manifest marks this source as graph/orphan."
+      },
+      "evidence": [
+        "manifest:e2e/_dot_e2e-auth.8.json.md",
+        "phase:unknown-from-manifest",
+        "manifest-orphan:e2e/.e2e-auth.8.json"
+      ],
+      "rank": 38
+    },
+    {
+      "file": "e2e/.e2e-auth.9.json",
+      "score": 17.857142857142858,
+      "breakdown": {
+        "tier_weight": 3,
+        "phase_priority": 1,
+        "user_impact": 5,
+        "effort_hours": 0.8
+      },
+      "tier": 2,
+      "phase": 6,
+      "module": "e2e/.e2e-auth.9.json",
+      "loc": 13,
+      "findingsCount": 1,
+      "severityCounts": {
+        "critical": 0,
+        "high": 1,
+        "medium": 0,
+        "low": 0
+      },
+      "topFinding": {
+        "line": 1,
+        "rule": "graph/orphan",
+        "engine": "obsidian-mirror",
+        "message": "Mirror manifest marks this source as graph/orphan."
+      },
+      "evidence": [
+        "manifest:e2e/_dot_e2e-auth.9.json.md",
+        "phase:unknown-from-manifest",
+        "manifest-orphan:e2e/.e2e-auth.9.json"
+      ],
+      "rank": 39
+    },
+    {
+      "file": "backend/src/inbox/inbox.interface.ts",
+      "score": 17.857142857142858,
+      "breakdown": {
+        "tier_weight": 2,
+        "phase_priority": 1,
+        "user_impact": 5,
+        "effort_hours": 0.6
+      },
+      "tier": 3,
+      "phase": 6,
+      "module": "backend/inbox",
+      "loc": 17,
+      "findingsCount": 1,
+      "severityCounts": {
+        "critical": 0,
+        "high": 0,
+        "medium": 1,
+        "low": 0
+      },
+      "topFinding": {
+        "line": 1,
+        "rule": "graph/orphan",
+        "engine": "obsidian-mirror",
+        "message": "Mirror manifest marks this source as graph/orphan."
+      },
+      "evidence": [
+        "manifest:backend/src/inbox/inbox.interface.ts.md",
+        "phase:unknown-from-manifest",
+        "manifest-orphan:backend/src/inbox/inbox.interface.ts"
+      ],
+      "rank": 40
+    },
+    {
+      "file": "frontend/src/components/kloel/inbox/parts/InboxErrorBanner.tsx",
+      "score": 17.857142857142858,
+      "breakdown": {
+        "tier_weight": 2,
+        "phase_priority": 1,
+        "user_impact": 5,
+        "effort_hours": 0.6
+      },
+      "tier": 3,
+      "phase": 6,
+      "module": "frontend/components",
+      "loc": 17,
+      "findingsCount": 1,
+      "severityCounts": {
+        "critical": 0,
+        "high": 0,
+        "medium": 1,
+        "low": 0
+      },
+      "topFinding": {
+        "line": 1,
+        "rule": "graph/orphan",
+        "engine": "obsidian-mirror",
+        "message": "Mirror manifest marks this source as graph/orphan."
+      },
+      "evidence": [
+        "manifest:frontend/src/components/kloel/inbox/parts/InboxErrorBanner.tsx.md",
+        "phase:unknown-from-manifest",
+        "manifest-orphan:frontend/src/components/kloel/inbox/parts/InboxErrorBanner.tsx"
+      ],
+      "rank": 41
+    },
+    {
+      "file": "backend/src/marketing/mailbox-gmail-oauth/constants.ts",
+      "score": 17.578125,
+      "breakdown": {
+        "tier_weight": 3,
+        "phase_priority": 1,
+        "user_impact": 5,
+        "effort_hours": 0.9
+      },
+      "tier": 2,
+      "phase": 6,
+      "module": "backend/marketing",
+      "loc": 14,
+      "findingsCount": 1,
+      "severityCounts": {
+        "critical": 0,
+        "high": 1,
+        "medium": 0,
+        "low": 0
+      },
+      "topFinding": {
+        "line": 1,
+        "rule": "graph/orphan",
+        "engine": "obsidian-mirror",
+        "message": "Mirror manifest marks this source as graph/orphan."
+      },
+      "evidence": [
+        "manifest:backend/src/marketing/mailbox-gmail-oauth/constants.ts.md",
+        "phase:unknown-from-manifest",
+        "manifest-orphan:backend/src/marketing/mailbox-gmail-oauth/constants.ts"
+      ],
+      "rank": 42
+    },
+    {
+      "file": "backend/prisma/migrations/20260428000000_fix_checkout_product_fk/migration.sql",
+      "score": 17.44186046511628,
+      "breakdown": {
+        "tier_weight": 2,
+        "phase_priority": 1,
+        "user_impact": 5,
+        "effort_hours": 0.6
+      },
+      "tier": 3,
+      "phase": 6,
+      "module": "backend/prisma",
+      "loc": 18,
+      "findingsCount": 1,
+      "severityCounts": {
+        "critical": 0,
+        "high": 0,
+        "medium": 1,
+        "low": 0
+      },
+      "topFinding": {
+        "line": 1,
+        "rule": "graph/orphan",
+        "engine": "obsidian-mirror",
+        "message": "Mirror manifest marks this source as graph/orphan."
+      },
+      "evidence": [
+        "manifest:backend/prisma/migrations/20260428000000_fix_checkout_product_fk/migration.sql.md",
+        "phase:unknown-from-manifest",
+        "manifest-orphan:backend/prisma/migrations/20260428000000_fix_checkout_product_fk/migration.sql"
+      ],
+      "rank": 43
+    },
+    {
+      "file": "backend/prisma/migrations/20260331000000_add_webhook_event/migration.sql",
+      "score": 17.307692307692307,
+      "breakdown": {
+        "tier_weight": 3,
+        "phase_priority": 1,
+        "user_impact": 5,
+        "effort_hours": 0.9
+      },
+      "tier": 2,
+      "phase": 6,
+      "module": "backend/prisma",
+      "loc": 15,
+      "findingsCount": 1,
+      "severityCounts": {
+        "critical": 0,
+        "high": 1,
+        "medium": 0,
+        "low": 0
+      },
+      "topFinding": {
+        "line": 1,
+        "rule": "graph/orphan",
+        "engine": "obsidian-mirror",
+        "message": "Mirror manifest marks this source as graph/orphan."
+      },
+      "evidence": [
+        "manifest:backend/prisma/migrations/20260331000000_add_webhook_event/migration.sql.md",
+        "phase:unknown-from-manifest",
+        "manifest-orphan:backend/prisma/migrations/20260331000000_add_webhook_event/migration.sql"
+      ],
+      "rank": 44
+    },
+    {
+      "file": "backend/src/auth/user-name-derivation.service.ts",
+      "score": 17.307692307692307,
+      "breakdown": {
+        "tier_weight": 3,
+        "phase_priority": 1,
+        "user_impact": 5,
+        "effort_hours": 0.9
+      },
+      "tier": 2,
+      "phase": 6,
+      "module": "backend/auth",
+      "loc": 15,
+      "findingsCount": 1,
+      "severityCounts": {
+        "critical": 0,
+        "high": 1,
+        "medium": 0,
+        "low": 0
+      },
+      "topFinding": {
+        "line": 1,
+        "rule": "graph/orphan",
+        "engine": "obsidian-mirror",
+        "message": "Mirror manifest marks this source as graph/orphan."
+      },
+      "evidence": [
+        "manifest:backend/src/auth/user-name-derivation.service.ts.md",
+        "phase:unknown-from-manifest",
+        "manifest-orphan:backend/src/auth/user-name-derivation.service.ts"
+      ],
+      "rank": 45
+    },
+    {
+      "file": "backend/src/auth/email-templates/social-recovery.html",
+      "score": 17.045454545454547,
+      "breakdown": {
+        "tier_weight": 3,
+        "phase_priority": 1,
+        "user_impact": 5,
+        "effort_hours": 0.9
+      },
+      "tier": 2,
+      "phase": 6,
+      "module": "backend/auth",
+      "loc": 16,
+      "findingsCount": 1,
+      "severityCounts": {
+        "critical": 0,
+        "high": 1,
+        "medium": 0,
+        "low": 0
+      },
+      "topFinding": {
+        "line": 1,
+        "rule": "graph/orphan",
+        "engine": "obsidian-mirror",
+        "message": "Mirror manifest marks this source as graph/orphan."
+      },
+      "evidence": [
+        "manifest:backend/src/auth/email-templates/social-recovery.html.md",
+        "phase:unknown-from-manifest",
+        "manifest-orphan:backend/src/auth/email-templates/social-recovery.html"
+      ],
+      "rank": 46
+    },
+    {
+      "file": "backend/src/whatsapp/cia-bootstrap.constants.ts",
+      "score": 17.045454545454547,
+      "breakdown": {
+        "tier_weight": 2,
+        "phase_priority": 1,
+        "user_impact": 5,
+        "effort_hours": 0.6
+      },
+      "tier": 3,
+      "phase": 6,
+      "module": "backend/whatsapp",
+      "loc": 19,
+      "findingsCount": 1,
+      "severityCounts": {
+        "critical": 0,
+        "high": 0,
+        "medium": 1,
+        "low": 0
+      },
+      "topFinding": {
+        "line": 1,
+        "rule": "graph/orphan",
+        "engine": "obsidian-mirror",
+        "message": "Mirror manifest marks this source as graph/orphan."
+      },
+      "evidence": [
+        "manifest:backend/src/whatsapp/cia-bootstrap.constants.ts.md",
+        "phase:unknown-from-manifest",
+        "manifest-orphan:backend/src/whatsapp/cia-bootstrap.constants.ts"
+      ],
+      "rank": 47
+    },
+    {
+      "file": "backend/src/payments/connect/connect-helpers.ts",
+      "score": 16.791044776119403,
+      "breakdown": {
+        "tier_weight": 3,
+        "phase_priority": 1,
+        "user_impact": 5,
+        "effort_hours": 0.9
+      },
+      "tier": 2,
+      "phase": 6,
+      "module": "backend/payments",
+      "loc": 17,
+      "findingsCount": 1,
+      "severityCounts": {
+        "critical": 0,
+        "high": 1,
+        "medium": 0,
+        "low": 0
+      },
+      "topFinding": {
+        "line": 1,
+        "rule": "graph/orphan",
+        "engine": "obsidian-mirror",
+        "message": "Mirror manifest marks this source as graph/orphan."
+      },
+      "evidence": [
+        "manifest:backend/src/payments/connect/connect-helpers.ts.md",
+        "phase:unknown-from-manifest",
+        "manifest-orphan:backend/src/payments/connect/connect-helpers.ts"
+      ],
+      "rank": 48
+    },
+    {
+      "file": "backend/src/app.service.ts",
+      "score": 16,
+      "breakdown": {
+        "tier_weight": 2,
+        "phase_priority": 1,
+        "user_impact": 4,
+        "effort_hours": 0.5
+      },
+      "tier": 3,
+      "phase": 6,
+      "module": "backend/app.service.ts",
+      "loc": 7,
+      "findingsCount": 1,
+      "severityCounts": {
+        "critical": 0,
+        "high": 0,
+        "medium": 1,
+        "low": 0
+      },
+      "topFinding": {
+        "line": 1,
+        "rule": "graph/orphan",
+        "engine": "obsidian-mirror",
+        "message": "Mirror manifest marks this source as graph/orphan."
+      },
+      "evidence": [
+        "manifest:backend/src/app.service.ts.md",
+        "phase:unknown-from-manifest",
+        "manifest-orphan:backend/src/app.service.ts"
+      ],
+      "rank": 49
+    },
+    {
+      "file": "frontend/src/app/auth/apple/callback/route.ts",
+      "score": 15.625,
+      "breakdown": {
+        "tier_weight": 3,
+        "phase_priority": 1,
+        "user_impact": 5,
+        "effort_hours": 1
+      },
+      "tier": 2,
+      "phase": 6,
+      "module": "frontend/app",
+      "loc": 22,
+      "findingsCount": 1,
+      "severityCounts": {
+        "critical": 0,
+        "high": 1,
+        "medium": 0,
+        "low": 0
+      },
+      "topFinding": {
+        "line": 1,
+        "rule": "graph/orphan",
+        "engine": "obsidian-mirror",
+        "message": "Mirror manifest marks this source as graph/orphan."
+      },
+      "evidence": [
+        "manifest:frontend/src/app/auth/apple/callback/route.ts.md",
+        "phase:unknown-from-manifest",
+        "manifest-orphan:frontend/src/app/auth/apple/callback/route.ts"
+      ],
+      "rank": 50
+    }
+  ]
+}

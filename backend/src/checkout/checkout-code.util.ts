@@ -6,8 +6,7 @@ const BASE36_ALPHABET = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 const CODE_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
 /** Default_public_checkout_code_length. */
 export const DEFAULT_PUBLIC_CHECKOUT_CODE_LENGTH = 8;
-// SECURITY: regex built from numeric constant, not user input — no ReDoS risk.
-const PUBLIC_CHECKOUT_CODE_REGEX = new RegExp(`^[A-Z0-9]{${DEFAULT_PUBLIC_CHECKOUT_CODE_LENGTH}}$`);
+const PUBLIC_CHECKOUT_CODE_REGEX = /^[A-Z0-9]{8}$/;
 
 /** Normalize public checkout code. */
 export function normalizePublicCheckoutCode(value: string | null | undefined) {

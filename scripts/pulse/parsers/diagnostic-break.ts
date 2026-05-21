@@ -31,7 +31,10 @@ export function buildParserDiagnosticBreak(input: ParserDiagnosticBreakInput): B
   };
   const signalGraph = buildPulseSignalGraph([signal]);
   const predicateGraph = buildPredicateGraph(signalGraph);
-  const risk = calculateDynamicRisk({ predicateGraph, runtimeImpact: input.runtimeImpact });
+  const risk = calculateDynamicRisk({
+    predicateGraph,
+    ...(input.runtimeImpact !== undefined ? { runtimeImpact: input.runtimeImpact } : {}),
+  });
   const diagnostic = synthesizeDiagnostic(signalGraph, predicateGraph, risk);
 
   return {

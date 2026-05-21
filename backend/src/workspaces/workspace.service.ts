@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { Workspace } from '@prisma/client';
 import { CacheService } from '../common/cache/cache.service';
 import { toPrismaJsonValue } from '../common/prisma/prisma-json.util';
@@ -9,13 +9,20 @@ import {
   resolveDefaultWhatsAppProvider,
 } from '../whatsapp/providers/provider-env';
 
+type SettingsPatch = Record<string, unknown>;
+type EmailSubSettings = Record<string, unknown> & { enabled?: boolean };
+
 /** Workspace service. */
 @Injectable()
 export class WorkspaceService {
+  private readonly logger = new Logger(WorkspaceService.name);
+
   constructor(
     private prisma: PrismaService,
     private readonly cache: CacheService,
-  ) {}
+  ) {
+    this.logger.debug?.(`WorkspaceService initialized`);
+  }
 
   private getDefaultWhatsAppProvider(): 'meta-cloud' | 'whatsapp-api' {
     return resolveDefaultWhatsAppProvider();
@@ -67,7 +74,7 @@ export class WorkspaceService {
   async patchSettings(id: string, patch: Record<string, unknown>) {
     const ws = await this.getWorkspace(id);
     const current = asProviderSettings(ws.providerSettings);
-    const securePatch = { ...(patch || {}) } as Record<string, unknown> & {
+    const securePatch = { ...(patch || {}) } as SettingsPatch & {
       autonomy?: { mode?: string } & Record<string, unknown>;
       autopilot?: { enabled?: boolean } & Record<string, unknown>;
     };
@@ -136,7 +143,7 @@ export class WorkspaceService {
     const settings = asProviderSettings(ws.providerSettings);
     return {
       whatsapp: true,
-      email: !!(settings.email as Record<string, unknown> | undefined)?.enabled,
+      email: !!(settings.email as EmailSubSettings | undefined)?.enabled,
     };
   }
 
@@ -150,7 +157,7 @@ export class WorkspaceService {
       data: {
         providerSettings: toPrismaJsonValue({
           ...settings,
-          email: { ...((settings.email as Record<string, unknown>) || {}), enabled: !!email },
+          email: { ...((settings.email as EmailSubSettings) || {}), enabled: !!email },
         }),
       },
     });
@@ -241,5 +248,18 @@ export class WorkspaceService {
         normalizeWhatsAppProvider(asProviderSettings(ws.providerSettings)?.whatsappProvider) ||
         this.getDefaultWhatsAppProvider(),
     };
+  }
+
+  async setGlobalPriorOptOut(id: string, optOut: boolean) {
+    await this.invalidateWorkspaceCache(id);
+    return this.prisma.workspace.update({
+      where: { id },
+      data: { globalPriorOptOut: optOut },
+    });
+  }
+
+  async getGlobalPriorOptOut(id: string): Promise<boolean> {
+    const ws = await this.getWorkspace(id);
+    return ws.globalPriorOptOut;
   }
 }

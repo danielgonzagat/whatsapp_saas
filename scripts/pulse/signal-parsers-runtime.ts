@@ -2,7 +2,7 @@
  * Runtime signal parsers: sentry, datadog, prometheus.
  * Companion to signal-parsers.ts — handles observability-platform sources.
  */
-import type { PulseSignalDraft } from './signal-parsers';
+import type { PulseSignalDraft } from './signal-parsers.types';
 import {
   asObject,
   asArray,
@@ -69,7 +69,7 @@ export function parseSentrySignals(
 
   const issues = asArray(data.issues || data.events)
     .map((entry) => asObject(entry))
-    .filter(Boolean);
+    .filter((entry): entry is Record<string, unknown> => Boolean(entry));
   return issues
     .filter((issue) => String(issue.status || 'open').toLowerCase() !== 'resolved')
     .map((issue, index) => {
@@ -151,7 +151,7 @@ export function parseDatadogSignals(
 
   const monitors = asArray(data.monitors || data.incidents || data.endpoints)
     .map((entry) => asObject(entry))
-    .filter(Boolean);
+    .filter((entry): entry is Record<string, unknown> => Boolean(entry));
   return monitors
     .filter((monitor) => {
       const status = String(monitor.status || monitor.state || '').toLowerCase();
@@ -248,7 +248,7 @@ export function parsePrometheusSignals(
     ...asArray(asObject(data.data)?.result),
   ]
     .map((entry) => asObject(entry))
-    .filter(Boolean);
+    .filter((entry): entry is Record<string, unknown> => Boolean(entry));
 
   return alerts
     .filter((alert) => {

@@ -5,7 +5,29 @@ export type KloelHostKind = 'marketing' | 'auth' | 'app' | 'pay' | 'unknown';
 /** Kloel host target type. */
 export type KloelHostTarget = Exclude<KloelHostKind, 'unknown'>;
 
-const PROD_ROOT_DOMAIN = 'kloel.com';
+// Allow operators to override the production root domain (e.g. for white-label
+// or staging clones) via NEXT_PUBLIC_PROD_ROOT_DOMAIN. Falls back to kloel.com.
+// Hostname-only — strip scheme, path, query, port, and leading "//", so
+// downstream host-equality checks (detectProductionHost, getSharedCookieDomain)
+// behave the same whether the env value is "kloel.com", "https://kloel.com/",
+// "//kloel.com:8080/whatever".
+const PROD_ROOT_DOMAIN = (() => {
+  const raw = String(process.env.NEXT_PUBLIC_PROD_ROOT_DOMAIN || '').trim();
+  if (!raw) {
+    return 'kloel.com';
+  }
+  try {
+    // Force a scheme so the URL parser accepts bare hosts and `//host`.
+    const candidate = /^https?:\/\//i.test(raw) ? raw : `https://${raw.replace(/^\/+/, '')}`;
+    const host = new URL(candidate).hostname.toLowerCase();
+    return host || 'kloel.com';
+  } catch {
+    return raw
+      .toLowerCase()
+      .replace(/^https?:\/\//, '')
+      .replace(PATTERN_RE, '');
+  }
+})();
 const AUTH_PATH_PREFIXES = [
   '/login',
   '/register',

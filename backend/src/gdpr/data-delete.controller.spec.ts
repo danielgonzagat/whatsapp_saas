@@ -1,32 +1,22 @@
 import { BadRequestException } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
 import { DataDeleteController } from './data-delete.controller';
 
 describe('DataDeleteController', () => {
-  let prisma: {
-    agent: {
-      update: jest.Mock;
-    };
-  };
-  let audit: {
-    log: jest.Mock;
-  };
+  const requestDeletion = jest.fn();
   let controller: DataDeleteController;
 
   beforeEach(() => {
-    prisma = {
-      agent: {
-        update: jest.fn().mockResolvedValue({ id: 'u-1', name: '[DELETED]' }),
-      },
-    };
-    audit = {
-      log: jest.fn().mockResolvedValue(undefined),
-    };
-    controller = new DataDeleteController(prisma as never as PrismaService, audit as never);
+    requestDeletion.mockReset().mockResolvedValue({
+      id: 'gdpr-delete-1',
+      type: 'DELETE',
+      status: 'PENDING',
+      code: 'delete-code',
+    });
+    controller = new DataDeleteController({ requestDeletion } as never);
   });
 
   it('throws BadRequestException when userId is missing', async () => {
-    const req = { user: { sub: undefined } } as never;
+    const req = { user: { sub: undefined, workspaceId: 'ws-1' } } as never;
 
     await expect(controller.deleteData(req)).rejects.toThrow(BadRequestException);
     await expect(controller.deleteData(req)).rejects.toThrow(
@@ -40,30 +30,21 @@ describe('DataDeleteController', () => {
     await expect(controller.deleteData(req)).rejects.toThrow(BadRequestException);
   });
 
-  it('anonymizes user and logs audit entries', async () => {
+  it('delegates deletion to the full GDPR request workflow', async () => {
     const req = {
       user: { sub: 'u-1', workspaceId: 'ws-1' },
     } as never;
 
     const result = await controller.deleteData(req);
 
-    expect(result).toHaveProperty('status', 'deleted');
-    expect(result.userId).toBe('u-1');
-    expect(result.deletedAt).toBeDefined();
-    expect(result.note).toContain('anonymized');
-
-    expect(audit.log).toHaveBeenCalledTimes(2);
-    expect(audit.log).toHaveBeenCalledWith(
-      expect.objectContaining({ action: 'GDPR_DATA_DELETE_REQUESTED' }),
+    expect(requestDeletion).toHaveBeenCalledWith('u-1', 'ws-1');
+    expect(result).toEqual(
+      expect.objectContaining({
+        id: 'gdpr-delete-1',
+        type: 'DELETE',
+        status: 'PENDING',
+      }),
     );
-    expect(audit.log).toHaveBeenCalledWith(
-      expect.objectContaining({ action: 'GDPR_DATA_DELETE_COMPLETED' }),
-    );
-
-    expect(prisma.agent.update).toHaveBeenCalledWith({
-      where: { id: 'u-1', workspaceId: 'ws-1' },
-      data: { name: '[DELETED]', email: 'deleted-u-1@removed.local' },
-    });
   });
 
   it('rejects deletion when workspaceId is not provided', async () => {
@@ -72,17 +53,6 @@ describe('DataDeleteController', () => {
     } as never;
 
     await expect(controller.deleteData(req)).rejects.toThrow('User identity required');
-  });
-
-  it('returns correct deletion note', async () => {
-    const req = {
-      user: { sub: 'u-3', workspaceId: 'ws-3' },
-    } as never;
-
-    const result = await controller.deleteData(req);
-
-    expect(result.note).toBe(
-      'Personal data has been anonymized. Audit logs retained per legal obligation.',
-    );
+    expect(requestDeletion).not.toHaveBeenCalled();
   });
 });

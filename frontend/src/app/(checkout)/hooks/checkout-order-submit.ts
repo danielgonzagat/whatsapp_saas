@@ -40,15 +40,15 @@ type FormState = {
 };
 
 interface FinalizeCheckoutOrderArgs {
-  affiliateContext?: PublicCheckoutAffiliateContext | null;
-  capturedLeadId?: string;
-  checkoutCode?: string;
-  deviceFingerprint?: string;
+  affiliateContext?: PublicCheckoutAffiliateContext | null | undefined;
+  capturedLeadId?: string | undefined;
+  checkoutCode?: string | undefined;
+  deviceFingerprint?: string | undefined;
   discount: number;
   form: FormState;
   installments: number;
   payMethod: 'card' | 'pix' | 'boleto';
-  paymentProvider?: PublicCheckoutPaymentProvider;
+  paymentProvider?: PublicCheckoutPaymentProvider | undefined;
   planId: string;
   qty: number;
   shippingInCents: number;

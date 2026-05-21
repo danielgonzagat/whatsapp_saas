@@ -36,7 +36,7 @@ function ProjectSkeletonGrid() {
           key={`project-skeleton-${slot}`}
           style={{
             background: 'var(--app-bg-card)',
-            border: '1px solid #1C1C1F',
+            border: `1px solid ${colors.canvas.border}`,
             borderRadius: 6,
             overflow: 'hidden',
           }}
@@ -44,7 +44,7 @@ function ProjectSkeletonGrid() {
           <div
             style={{
               height: 96,
-              background: 'linear-gradient(135deg, #161618 0%, #1C1C1F 50%, #161618 100%)',
+              background: `linear-gradient(135deg, ${colors.canvas.surface} 0%, ${colors.canvas.border} 50%, ${colors.canvas.surface} 100%)`,
             }}
           />
           <div style={{ padding: '10px 12px', display: 'grid', gap: 8 }}>
@@ -52,16 +52,16 @@ function ProjectSkeletonGrid() {
               style={{
                 width: '74%',
                 height: 10,
-                borderRadius: 999,
+                borderRadius: 16,
                 background:
-                  '#1C1C1F' /* PULSE_VISUAL_OK: intermediate surface tone, near elevated */,
+                  colors.canvas.border,
               }}
             />
             <div
               style={{
                 width: '46%',
                 height: 9,
-                borderRadius: 999,
+                borderRadius: 16,
                 background: 'var(--app-bg-secondary)',
               }}
             />
@@ -90,7 +90,7 @@ export default function CanvasProjetos() {
             alignItems: 'center',
             gap: 10,
             background: 'var(--app-bg-card)',
-            border: '1px solid #1C1C1F',
+            border: `1px solid ${colors.canvas.border}`,
             borderRadius: 6,
             padding: '10px 16px',
           }}
@@ -119,7 +119,7 @@ export default function CanvasProjetos() {
               style={{
                 padding: '5px 12px',
                 background: 'none',
-                border: '1px solid #1C1C1F',
+                border: `1px solid ${colors.canvas.border}`,
                 borderRadius: 4,
                 color: 'var(--app-text-secondary)',
                 fontSize: 11,
@@ -140,7 +140,7 @@ export default function CanvasProjetos() {
         <div
           style={{
             background: 'var(--app-bg-card)',
-            border: '1px dashed #1C1C1F',
+            border: `1px dashed ${colors.canvas.border}`,
             borderRadius: 6,
             padding: '48px 24px',
             textAlign: 'center',
@@ -192,7 +192,7 @@ function ProjectCard({
       onMouseLeave={() => setH(false)}
       style={{
         background: 'var(--app-bg-card)',
-        border: `1px solid ${h ? colors.ember.primary : '#1C1C1F'}`,
+        border: `1px solid ${h ? colors.ember.primary : colors.canvas.border}`,
         borderRadius: 6,
         overflow: 'hidden',
         textAlign: 'left',
@@ -243,7 +243,7 @@ function ProjectCard({
               style={{
                 width: 20,
                 height: 20,
-                borderRadius: 3,
+                borderRadius: 4,
                 background: 'radial-gradient(circle, colors.ember.glow40, transparent)',
               }}
             />
@@ -286,7 +286,7 @@ function ProjectCard({
             top: 6,
             right: 6,
             background: 'var(--app-bg-card)',
-            border: '1px solid #1C1C1F',
+            border: `1px solid ${colors.canvas.border}`,
             borderRadius: 4,
             padding: 4,
             cursor: 'pointer',

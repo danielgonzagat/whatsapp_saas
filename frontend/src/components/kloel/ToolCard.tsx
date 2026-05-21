@@ -1,4 +1,5 @@
 'use client';
+import { colors } from '@/lib/design-tokens';
 
 import { useState } from 'react';
 import { resolveBadgeLabel, resolveCursor, triggerClickOnActivation } from './ToolCard.helpers';
@@ -7,9 +8,9 @@ interface ToolCardProps {
   icon: string;
   title: string;
   desc: string;
-  badge?: string;
-  disabled?: boolean;
-  onClick?: () => void;
+  badge?: string | undefined;
+  disabled?: boolean | undefined;
+  onClick?: (() => void) | undefined;
 }
 
 /** Tool card. */
@@ -23,8 +24,8 @@ export function ToolCard({ icon, title, desc, badge, disabled, onClick }: ToolCa
     display: 'flex',
     alignItems: 'flex-start',
     gap: 14,
-    background: isHot ? '#19191C' : '#111113',
-    border: `1px solid ${isHot ? '#333338' : '#222226'}`,
+    background: isHot ? colors.background.elevated : colors.background.surface,
+    border: `1px solid ${isHot ? colors.border.glow : colors.background.border}`,
     borderRadius: 6,
     padding: '18px 20px',
     cursor: resolveCursor(interactive, disabled),
@@ -43,7 +44,7 @@ export function ToolCard({ icon, title, desc, badge, disabled, onClick }: ToolCa
             fontFamily: "'Sora', sans-serif",
             fontSize: 9,
             fontWeight: 700,
-            color: disabled ? '#E85D30' : '#6E6E73',
+            color: disabled ? colors.ember.primary : colors.text.muted,
             background: disabled ? 'rgba(232, 93, 48, 0.1)' : 'rgba(110, 110, 115, 0.1)',
             padding: '2px 8px',
             borderRadius: 4,

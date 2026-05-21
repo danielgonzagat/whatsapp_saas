@@ -1,4 +1,11 @@
-import { Injectable, Logger } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  Inject,
+  InternalServerErrorException,
+  NotFoundException,
+} from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import type { ImagesResponse, ImageGenerateParamsNonStreaming } from 'openai/resources/images';
 import OpenAI from 'openai';
 import { Prisma } from '@prisma/client';
@@ -6,12 +13,7 @@ import { PlanLimitsService } from '../billing/plan-limits.service';
 import { StorageService } from '../common/storage/storage.service';
 import { getTraceHeaders } from '../common/trace-headers';
 import { resolveKloelCapabilityModel } from '../lib/ai-models';
-import {
-  buildComposerImageE2EStub,
-  buildComposerWebSearchE2EStub,
-  isComposerWebSearchE2EStubEnabled,
-} from './kloel-composer-web-search-e2e-stub';
-
+import { KloelComposerE2EGuard, KLOEL_COMPOSER_E2E_GUARD } from './kloel-composer-e2e-guard';
 const MODEL_RE = /model/i;
 const INVALID_RE = /invalid/i;
 
@@ -21,14 +23,21 @@ function composeAbortSignal(
   signal: AbortSignal | undefined,
   timeoutSignal: AbortSignal,
 ): AbortSignal {
-  if (!signal) return timeoutSignal;
+  if (!signal) {
+    return timeoutSignal;
+  }
   const controller = new AbortController();
   const abortFrom = (source: AbortSignal) => {
-    if (!controller.signal.aborted) controller.abort(source.reason);
+    if (!controller.signal.aborted) {
+      controller.abort(source.reason);
+    }
   };
   for (const source of [signal, timeoutSignal]) {
-    if (source.aborted) abortFrom(source);
-    else source.addEventListener('abort', () => abortFrom(source), { once: true });
+    if (source.aborted) {
+      abortFrom(source);
+    } else {
+      source.addEventListener('abort', () => abortFrom(source), { once: true });
+    }
   }
   return controller.signal;
 }
@@ -75,14 +84,17 @@ function asUnknownRecord(value: unknown): Record<string, unknown> | null {
 /** Handles composer capabilities: web search, image generation, site generation. */
 @Injectable()
 export class KloelComposerService {
-  private readonly logger = new Logger(KloelComposerService.name);
-  private readonly openai: OpenAI;
+  private readonly logger = StructuredLogger.from(KloelComposerService.name);
+  private readonly openai: OpenAI | null;
 
   constructor(
     private readonly planLimits: PlanLimitsService,
     private readonly storageService: StorageService,
+    @Inject(KLOEL_COMPOSER_E2E_GUARD) private readonly e2EGuard: KloelComposerE2EGuard,
   ) {
-    this.openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+    this.openai = process.env.OPENAI_API_KEY
+      ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+      : null;
   }
 
   buildCapabilityPrompt(message: string, composerContext?: string): string {
@@ -91,30 +103,54 @@ export class KloelComposerService {
 
   formatSearchDigestAsMarkdown(digest: WebSearchDigest): string {
     const body = String(digest.answer || '').trim() || 'Nenhum resultado confiável foi encontrado.';
-    if (!Array.isArray(digest.sources) || digest.sources.length === 0) return body;
+    if (!Array.isArray(digest.sources) || digest.sources.length === 0) {
+      return body;
+    }
     const sourcesBlock = digest.sources
       .map((source, index) => `- [${index + 1}] ${source.title || source.url} — ${source.url}`)
       .join('\n');
     return `${body}\n\nFontes:\n${sourcesBlock}`;
   }
 
+  codeNativeSearchWeb(query: string): WebSearchDigest {
+    const normalizedQuery = String(query || '').trim();
+    if (!normalizedQuery) return { answer: '', sources: [], totalTokens: 0 };
+
+    const terms = normalizedQuery
+      .split(/\s+/)
+      .filter((w) => w.length > 2)
+      .slice(0, 5);
+    const termList =
+      terms.length > 0 ? terms.map((t) => `"${t}"`).join(', ') : 'os termos informados';
+
+    return {
+      answer:
+        `Pesquisa web indisponível no momento (motor LLM não configurado). ` +
+        `A busca por ${termList} não pode ser completada. ` +
+        `Verifique a configuração da API key ou tente novamente mais tarde.`,
+      sources: [],
+      totalTokens: 0,
+    };
+  }
+
   async searchWeb(query: string): Promise<WebSearchDigest> {
     const normalizedQuery = String(query || '').trim();
-    if (!normalizedQuery) return { answer: '', sources: [] };
-
-    // E2E test harness: the workflow runs with OPENAI_API_KEY=e2e-dummy-key
-    // so any real OpenAI Responses API call fails. The chat composer e2e
-    // spec `kloel-chat-composer-real.spec.ts:289` exercises the web-search
-    // capability and asserts the assistant message exposes
-    // metadata.webSources plus content matching /openai\.com/i. Returning
-    // a deterministic digest keeps the rest of the pipeline (capability
-    // dispatcher, token accounting, message metadata) intact.
-    // Production never reaches this branch — guarded by NODE_ENV.
-    if (isComposerWebSearchE2EStubEnabled()) {
-      return buildComposerWebSearchE2EStub(normalizedQuery);
+    if (!normalizedQuery) {
+      return { answer: '', sources: [] };
     }
 
-    // PULSE:OK — callers enforce PlanLimitsService.ensureTokenBudget() before calling searchWeb
+    // E2E test harness: must check the guard before the openai
+    // null-guard because tests run without an OPENAI_API_KEY and
+    // openai is null in that environment.
+    if (this.e2EGuard.isEnabled()) {
+      return this.e2EGuard.buildSearchResult(normalizedQuery);
+    }
+
+    if (!this.openai) {
+      this.logger.warn('searchWeb falling back to code-native — no OpenAI client');
+      return this.codeNativeSearchWeb(normalizedQuery);
+    }
+
     const response = await this.openai.responses.create({
       model: KLOEL_SEARCH_WEB_MODEL,
       input: normalizedQuery,
@@ -148,7 +184,9 @@ export class KloelComposerService {
       }))
       .filter((source) => source.url)
       .filter((source) => {
-        if (seen.has(source.url)) return false;
+        if (seen.has(source.url)) {
+          return false;
+        }
         seen.add(source.url);
         return true;
       })
@@ -178,17 +216,19 @@ export class KloelComposerService {
         filename,
         mimeType: 'image/png',
         folder,
-        workspaceId,
+        ...(workspaceId !== undefined ? { workspaceId } : {}),
       });
       return stored.url;
     }
     const remoteImageUrl = String(response?.data?.[0]?.url || '').trim();
-    if (!remoteImageUrl) return null;
+    if (!remoteImageUrl) {
+      return null;
+    }
     const stored = await this.storageService.uploadFromUrl(remoteImageUrl, {
       filename,
       mimeType: 'image/png',
       folder,
-      workspaceId,
+      ...(workspaceId !== undefined ? { workspaceId } : {}),
     });
     return stored.url;
   }
@@ -205,7 +245,9 @@ export class KloelComposerService {
     const prompt = this.buildCapabilityPrompt(message, composerContext);
 
     if (capability === 'search_web') {
-      if (workspaceId) await this.planLimits.ensureTokenBudget(workspaceId);
+      if (workspaceId) {
+        await this.planLimits.ensureTokenBudget(workspaceId);
+      }
       const digest = await this.searchWeb(prompt);
       const content = this.formatSearchDigestAsMarkdown(digest);
       const usageTokens = Number(digest.totalTokens || 0);
@@ -220,11 +262,14 @@ export class KloelComposerService {
     }
 
     if (capability === 'create_image') {
-      if (isComposerWebSearchE2EStubEnabled()) {
-        return buildComposerImageE2EStub();
+      if (this.e2EGuard.isEnabled()) {
+        return this.e2EGuard.buildImageResult();
+      }
+      if (!this.openai) {
+        throw new Error(ERR_IMAGE_API_KEY_MISSING);
       }
       if (!process.env.OPENAI_API_KEY) {
-        throw new Error(ERR_IMAGE_API_KEY_MISSING);
+        throw new NotFoundException(ERR_IMAGE_API_KEY_MISSING);
       }
       if (workspaceId) {
         await this.planLimits.ensureTokenBudget(workspaceId);
@@ -249,9 +294,9 @@ export class KloelComposerService {
           MODEL_RE.test(errorCode) ||
           INVALID_RE.test(errorMessage)
         ) {
-          throw new Error(ERR_IMAGE_GENERATION_RETRY);
+          throw new InternalServerErrorException(ERR_IMAGE_GENERATION_RETRY);
         }
-        throw new Error(ERR_IMAGE_GENERATION_FAILED);
+        throw new InternalServerErrorException(ERR_IMAGE_GENERATION_FAILED);
       }
 
       const rawImageUrl = String(
@@ -261,7 +306,7 @@ export class KloelComposerService {
             : ''),
       ).trim();
       if (!rawImageUrl) {
-        throw new Error(ERR_IMAGE_GENERATION_FAILED);
+        throw new InternalServerErrorException(ERR_IMAGE_GENERATION_FAILED);
       }
 
       const generatedImageFilename = `kloel-image-${workspaceId || 'workspace'}-${Date.now()}.png`;
@@ -269,7 +314,7 @@ export class KloelComposerService {
       try {
         const persistedImageUrl = await this.persistGeneratedImageAsset({
           response,
-          workspaceId,
+          ...(workspaceId !== undefined ? { workspaceId } : {}),
           filename: generatedImageFilename,
         });
         if (persistedImageUrl) {
@@ -298,7 +343,7 @@ export class KloelComposerService {
 
     if (capability === 'create_site') {
       if (!process.env.ANTHROPIC_API_KEY) {
-        throw new Error(ERR_SITE_API_KEY_MISSING);
+        throw new NotFoundException(ERR_SITE_API_KEY_MISSING);
       }
       if (workspaceId) {
         await this.planLimits.ensureTokenBudget(workspaceId);
@@ -334,13 +379,15 @@ export class KloelComposerService {
 
       if (!response.ok) {
         const errorText = await response.text().catch(() => '');
-        throw new Error(`Anthropic API error ${response.status}: ${errorText}`);
+        throw new InternalServerErrorException(
+          `Anthropic API error ${response.status}: ${errorText}`,
+        );
       }
 
       const result = await response.json();
       const html = String(result?.content?.[0]?.text || '').trim();
       if (!html) {
-        throw new Error(ERR_SITE_EMPTY_HTML);
+        throw new InternalServerErrorException(ERR_SITE_EMPTY_HTML);
       }
 
       const usageTokens =
@@ -355,6 +402,6 @@ export class KloelComposerService {
       };
     }
 
-    throw new Error(ERR_UNSUPPORTED_CAPABILITY);
+    throw new BadRequestException(ERR_UNSUPPORTED_CAPABILITY);
   }
 }

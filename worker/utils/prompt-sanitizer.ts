@@ -113,7 +113,7 @@ export function sanitizeUserInput(input: string, options: SanitizeOptions = {}):
   let injectionAttempts = 0;
   for (const pattern of INJECTION_PATTERNS) {
     if (pattern.test(sanitized)) {
-      injectionAttempts++;
+      injectionAttempts += 1;
       sanitized = sanitized.replace(pattern, '[REMOVIDO]');
     }
   }
@@ -229,7 +229,7 @@ export function isInputSafe(input: string): { safe: boolean; warnings: string[] 
 export function hashPromptForAudit(prompt: string): string {
   // Usando uma função simples de hash (para produção, usar crypto)
   let hash = 0;
-  for (let i = 0; i < prompt.length; i++) {
+  for (let i = 0; i < prompt.length; i += 1) {
     const char = prompt.charCodeAt(i);
     hash = (hash << 5) - hash + char;
     hash = hash & hash;

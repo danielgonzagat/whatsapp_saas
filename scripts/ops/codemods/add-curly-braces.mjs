@@ -30,7 +30,7 @@ function walk(dir, out = []) {
     const full = path.join(dir, name);
     const stat = fs.statSync(full);
     if (stat.isDirectory()) {
-      if (['node_modules', 'dist', '.next', 'coverage', '.turbo'].includes(name)) continue;
+      if (['node_modules', 'dist', '.next', 'coverage', '.turbo'].includes(name)) {continue;}
       walk(full, out);
     } else if (/\.(ts|tsx|mts|cts)$/.test(name) && !name.endsWith('.d.ts')) {
       out.push(full);
@@ -64,13 +64,13 @@ for (const file of files) {
       ts.isWhileStatement(node) ||
       ts.isDoStatement(node)
     ) {
-      if (node.statement) bodies.push(node.statement);
+      if (node.statement) {bodies.push(node.statement);}
     }
 
     for (const body of bodies) {
-      if (!body) continue;
-      if (ts.isBlock(body)) continue;
-      if (ts.isEmptyStatement(body)) continue;
+      if (!body) {continue;}
+      if (ts.isBlock(body)) {continue;}
+      if (ts.isEmptyStatement(body)) {continue;}
       const start = body.getStart(sf);
       const end = body.getEnd();
       edits.push({ start, end, text: source.slice(start, end) });
@@ -81,7 +81,7 @@ for (const file of files) {
 
   visit(sf);
 
-  if (edits.length === 0) continue;
+  if (edits.length === 0) {continue;}
 
   edits.sort((a, b) => b.start - a.start);
 

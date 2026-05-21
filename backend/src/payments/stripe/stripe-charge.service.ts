@@ -1,4 +1,5 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
+import { StructuredLogger } from '../../logging/structured-logger';
 
 import { StripeService } from '../../billing/stripe.service';
 import type { StripePaymentIntent } from '../../billing/stripe-types';
@@ -16,22 +17,27 @@ import type { CreateSaleChargeInput, CreateSaleChargeResult } from './stripe-cha
  */
 @Injectable()
 export class StripeChargeService {
-  private readonly logger = new Logger(StripeChargeService.name);
+  private readonly logger = StructuredLogger.from(StripeChargeService.name);
 
   constructor(private readonly stripeService: StripeService) {}
 
   /** Create sale charge. */
-  // PULSE_OK: rate-limited by CheckoutPublicController
   async createSaleCharge(input: CreateSaleChargeInput): Promise<CreateSaleChargeResult> {
     const splitInput: SplitInput = {
       buyerPaidCents: input.buyerPaidCents,
       saleValueCents: input.saleValueCents,
       interestCents: input.interestCents,
       marketplaceFeeCents: input.marketplaceFeeCents,
-      supplier: input.splitConfig?.supplier,
-      affiliate: input.splitConfig?.affiliate,
-      coproducer: input.splitConfig?.coproducer,
-      manager: input.splitConfig?.manager,
+      ...(input.splitConfig?.supplier !== undefined
+        ? { supplier: input.splitConfig.supplier }
+        : {}),
+      ...(input.splitConfig?.affiliate !== undefined
+        ? { affiliate: input.splitConfig.affiliate }
+        : {}),
+      ...(input.splitConfig?.coproducer !== undefined
+        ? { coproducer: input.splitConfig.coproducer }
+        : {}),
+      ...(input.splitConfig?.manager !== undefined ? { manager: input.splitConfig.manager } : {}),
       // Seller residue is keyed by the destination connected account id so the
       // downstream marketplace settlement processor can map the seller line
       // without depending on provider-side merchant context like on_behalf_of.
@@ -60,7 +66,7 @@ export class StripeChargeService {
           ? { payment_method_options: input.paymentMethodOptions }
           : {}),
         transfer_group: transferGroup,
-        receipt_email: input.buyerEmail,
+        ...(input.buyerEmail !== undefined ? { receipt_email: input.buyerEmail } : {}),
         metadata: {
           ...(input.metadata ?? {}),
           type: 'sale',

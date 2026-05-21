@@ -1,9 +1,8 @@
-import { Body, Controller, Delete, Get, HttpCode, Param, Post, Query, Req } from '@nestjs/common';
-import { Throttle } from '@nestjs/throttler';
+import { Body, Controller, Get, HttpCode, Param, Post, Query, Req } from '@nestjs/common';
 import type { Request } from 'express';
 import { Public } from '../auth/public.decorator';
-import type { AuthenticatedRequest } from '../common/interfaces/authenticated-request.interface';
 import { ComplianceService } from './compliance.service';
+import { RouteClass } from '../common/throttler/route-class.decorator';
 
 type RawBodyRequest = Request & {
   rawBody?: Buffer;
@@ -11,6 +10,7 @@ type RawBodyRequest = Request & {
 
 /** Compliance controller. */
 @Controller()
+@RouteClass('read')
 export class ComplianceController {
   constructor(private readonly complianceService: ComplianceService) {}
 
@@ -33,7 +33,6 @@ export class ComplianceController {
   /** Google risc events. */
   @Public()
   @HttpCode(202)
-  @Throttle({ default: { limit: 100, ttl: 60000 } })
   @Post('auth/google/risc-events')
   async googleRiscEvents(@Req() req: RawBodyRequest) {
     const rawJwt =
@@ -43,24 +42,9 @@ export class ComplianceController {
   }
 
   /** Deletion status. */
-  // PULSE_OK: called from frontend/src/app/api/compliance/deletion-status/[code]/route.ts
   @Get('compliance/deletion-status/:code')
   async deletionStatus(@Param('code') code: string) {
     return this.complianceService.getDeletionStatus(code);
-  }
-
-  /** Data export. */
-  // PULSE_TODO: verify if still needed, no caller detected
-  @Get('user/data-export')
-  async dataExport(@Req() req: AuthenticatedRequest) {
-    return this.complianceService.exportUserData(req.user.sub, req.user.workspaceId);
-  }
-
-  /** Delete current user. */
-  // PULSE_TODO: verify if still needed, no caller detected
-  @Delete('user/data-deletion')
-  async deleteCurrentUser(@Req() req: AuthenticatedRequest) {
-    return this.complianceService.deleteCurrentUser(req.user.sub, req.user.workspaceId);
   }
 
   /** Unsubscribe from marketing emails (GET — user clicks link in email). */

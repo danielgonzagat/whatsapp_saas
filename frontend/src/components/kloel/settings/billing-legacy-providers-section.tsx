@@ -47,7 +47,7 @@ export function BillingLegacyProvidersSection() {
               <p className="text-sm font-semibold">{kloelT(`MercadoPago — Descontinuado`)}</p>
               <p className="mt-1 text-xs opacity-85">
                 {kloelT(
-                  `MercadoPago foi descontinuado. Use Stripe para receber pagamentos dos seus clientes. O Stripe oferece checkout, PIX, boleto e cartao de credito.`,
+                  `MercadoPago foi descontinuado. Use Stripe para receber pagamentos dos seus clientes. O Stripe oferece checkout, PIX e cartao de credito.`,
                 )}
               </p>
             </div>

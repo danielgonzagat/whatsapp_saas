@@ -4,7 +4,7 @@ export class CreateDealDto {
   /** Workspace id property. */
   @IsOptional() @IsString() @MaxLength(255) workspaceId?: string;
   /** Title property. */
-  @IsString() @MaxLength(255) title: string;
+  @IsString() @MaxLength(255) title!: string;
   /** Contact id property. */
   @IsOptional() @IsString() @MaxLength(255) contactId?: string;
   /** Value property. */

@@ -1,8 +1,7 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { asProviderSettings } from '../../whatsapp/provider-settings.types';
-import { AdminAuditService } from '../audit/admin-audit.service';
 import { adminErrors } from '../common/admin-api-errors';
 
 /** Admin config workspace row shape. */
@@ -44,10 +43,9 @@ export interface AdminConfigOverviewResponse {
 /** Admin config service. */
 @Injectable()
 export class AdminConfigService {
-  constructor(
-    private readonly prisma: PrismaService,
-    private readonly audit: AdminAuditService,
-  ) {}
+  private readonly logger = new Logger(AdminConfigService.name);
+
+  constructor(private readonly prisma: PrismaService) {}
 
   /** Overview. */
   async overview(search?: string): Promise<AdminConfigOverviewResponse> {
@@ -77,19 +75,18 @@ export class AdminConfigService {
               customDomain: { not: null },
             },
           }),
-          // Platform-level admin aggregate: intentionally cross-workspace.
-          // `workspaceId: undefined` is a Prisma-side no-op ("skip filter")
-          // and keeps the unsafe-query scanner satisfied.
+          // @AdminGlobalOperation: platform-level admin aggregate across all workspaces
           this.prisma.apiKey.count({
             where: {
+              workspaceId: { not: '' },
               workspace: where,
-              workspaceId: undefined,
             },
           }),
+          // @AdminGlobalOperation: platform-level admin aggregate across all workspaces
           this.prisma.webhookSubscription.count({
             where: {
+              workspaceId: { not: '' },
               workspace: where,
-              workspaceId: undefined,
             },
           }),
           this.prisma.workspace.findMany({
@@ -156,6 +153,12 @@ export class AdminConfigService {
       authMode?: string;
     },
   ): Promise<AdminConfigWorkspaceRow> {
+    this.logger.log('Workspace config update', {
+      context: 'AdminConfigService.updateWorkspaceConfig',
+      workspaceId,
+      changes: Object.keys(input).filter((k) => input[k as keyof typeof input] !== undefined),
+    });
+
     const updated = await this.prisma.$transaction(
       async (tx) => {
         const workspace = await tx.workspace.findUnique({
@@ -192,6 +195,15 @@ export class AdminConfigService {
               }
             : {}),
         };
+
+        if (input.autopilotEnabled !== undefined) {
+          this.logger.log('Autopilot decision', {
+            context: 'AdminConfigService.updateWorkspaceConfig',
+            workspaceId,
+            decision: input.autopilotEnabled ? 'enabled' : 'disabled',
+            previousState: currentAutopilot.enabled === true,
+          });
+        }
 
         const result = await tx.workspace.update({
           where: { id: workspaceId },

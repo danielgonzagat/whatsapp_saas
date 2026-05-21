@@ -65,39 +65,24 @@ export interface ProviderSessionSnapshot {
 
 /** Provider autonomy settings shape. */
 export interface ProviderAutonomySettings {
-  /** Mode property. */
   mode?: string;
-  /** Reason property. */
   reason?: string;
-  /** Last transition at property. */
   lastTransitionAt?: string;
-  /** Reactive enabled property. */
   reactiveEnabled?: boolean;
-  /** Proactive enabled property. */
   proactiveEnabled?: boolean;
-  /** Auto bootstrap on connected property. */
   autoBootstrapOnConnected?: boolean;
-
   [key: string]: unknown;
 }
 
 /** Provider cia runtime shape. */
 export interface ProviderCiaRuntime {
-  /** Current run id property. */
   currentRunId?: string | null;
-  /** State property. */
   state?: string;
-  /** Mode property. */
   mode?: string;
-  /** Started at property. */
   startedAt?: string;
-  /** Auto started property. */
   autoStarted?: boolean;
-  /** Last progress at property. */
   lastProgressAt?: string;
-  /** Updated at property. */
   updatedAt?: string;
-
   [key: string]: unknown;
 }
 

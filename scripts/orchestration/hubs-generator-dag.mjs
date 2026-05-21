@@ -11,7 +11,7 @@ export function genDag(blockers) {
     const p = b.phase;
     if (phaseStats[p] !== undefined) {
       phaseStats[p].total++;
-      if (b.tier === 1) phaseStats[p].tier1++;
+      if (b.tier === 1) {phaseStats[p].tier1++;}
     }
   }
 

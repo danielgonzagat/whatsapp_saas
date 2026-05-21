@@ -1,4 +1,4 @@
-import { Injectable, Logger, Optional } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import OpenAI from 'openai';
 import { PlanLimitsService } from '../billing/plan-limits.service';
@@ -6,7 +6,14 @@ import { chatCompletionWithRetry } from '../kloel/openai-wrapper';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
-import { OpsAlertService } from '../observability/ops-alert.service';
+
+function toFlowJson(value: unknown): Prisma.InputJsonValue {
+  return JSON.parse(JSON.stringify(value)) as Prisma.InputJsonValue;
+}
+
+function isSuggestionRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}
 
 /** Flow optimizer service. */
 @Injectable()
@@ -18,9 +25,8 @@ export class FlowOptimizerService {
     private prisma: PrismaService,
     private config: ConfigService,
     private readonly planLimits: PlanLimitsService,
-    @Optional() private readonly opsAlert?: OpsAlertService,
   ) {
-    const apiKey = this.config.get('OPENAI_API_KEY');
+    const apiKey = this.config.get<string>('OPENAI_API_KEY');
     this.openai = apiKey ? new OpenAI({ apiKey }) : null;
   }
 
@@ -74,7 +80,8 @@ export class FlowOptimizerService {
       .catch(() => {});
     let suggestion: Record<string, unknown> = {};
     try {
-      suggestion = JSON.parse(completion.choices[0]?.message?.content || '{}');
+      const parsed = JSON.parse(completion.choices[0]?.message?.content || '{}') as unknown;
+      suggestion = isSuggestionRecord(parsed) ? parsed : {};
     } catch {
       /* invalid JSON from model */
     }
@@ -85,8 +92,8 @@ export class FlowOptimizerService {
         data: {
           flowId,
           workspaceId,
-          nodes: suggestion.nodes as Prisma.InputJsonValue,
-          edges: flow.edges, // Keep edges for now
+          nodes: toFlowJson(suggestion.nodes),
+          edges: toFlowJson(flow.edges),
           label:
             'AI Auto-Optimization: ' +
             (typeof suggestion.reason === 'string' ? suggestion.reason : ''),

@@ -11,12 +11,13 @@ import { LoginDto } from './dto/login.dto';
 import { MfaVerifyDto } from './dto/mfa-verify.dto';
 import { RefreshDto } from './dto/refresh.dto';
 import { AdminAuthGuard } from './guards/admin-auth.guard';
+import { RouteClass } from '../../common/throttler/route-class.decorator';
 
 function readForwardedForIp(header: string | string[] | undefined): string | null {
   if (typeof header !== 'string' || header.length === 0) {
     return null;
   }
-  const first = header.split(',')[0].trim();
+  const first = header.split(',')[0]!.trim();
   return first.length > 0 ? first : null;
 }
 
@@ -36,6 +37,7 @@ function extractUserAgent(req: Request): string {
 /** Admin auth controller. */
 @Public()
 @Controller('admin/auth')
+@RouteClass('auth')
 export class AdminAuthController {
   constructor(private readonly auth: AdminAuthService) {}
 
@@ -92,7 +94,6 @@ export class AdminAuthController {
   @UseGuards(AdminAuthGuard)
   @AllowPendingMfa()
   @HttpCode(HttpStatus.OK)
-  // PULSE_OK: reasonable expiry (30m)
   async mfaVerify(
     @CurrentAdmin() admin: AuthenticatedAdmin,
     @Body() dto: MfaVerifyDto,

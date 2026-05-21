@@ -48,7 +48,7 @@ const SECTIONS = [
   {
     title: 'Ver todas as ferramentas',
     description:
-      'Catalogo completo das capacidades do frontend, com status ativo, parcial e planejado.',
+      'Catalogo completo das capacidades do frontend, com status ativo e em desenvolvimento.',
     icon: '\u2630',
     href: '/ferramentas/ver-todas',
     count: FRONTEND_CAPABILITIES.length,
@@ -160,7 +160,7 @@ export default function FerramentasPage() {
                 fontWeight: 600,
               }}
             >
-              {kloelT(`Explorar &#8594;`)}
+              {kloelT(`Explorar &rgba(136, 85, 153, 0.267);`)}
             </div>
           </Card>
         ))}

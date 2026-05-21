@@ -23,10 +23,12 @@ import {
   getWorkspaceId,
 } from './helpers/common.helpers';
 import { buildPlanData, serializePlan } from './helpers/plan.helpers';
+import { RouteClass } from '../../common/throttler/route-class.decorator';
 
 /** Product plan controller. */
 @Controller('products/:productId/plans')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
+@RouteClass('mutate')
 export class ProductPlanController {
   constructor(
     private readonly prisma: PrismaService,

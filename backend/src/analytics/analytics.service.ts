@@ -11,7 +11,13 @@ import {
   buildSalesSummary,
   computeTrendPct,
   resolveReportWindow,
-} from './__companions__/analytics.service.companion';
+} from './analytics.helpers';
+
+/**
+ * @cluster whatsapp_saas/backend/analytics
+ * L11 multi-agent TaskGraph annotation (batched by tools/auto-pr/batch-job.mjs).
+ */
+type ExecutionLog = Record<string, unknown>;
 
 /** Analytics service. */
 @Injectable()
@@ -83,11 +89,11 @@ export class AnalyticsService {
         const scoreStats = { high: 0, medium: 0, low: 0 };
         leadScore.forEach((c) => {
           if (c.leadScore > 70) {
-            scoreStats.high++;
+            scoreStats.high += 1;
           } else if (c.leadScore > 30) {
-            scoreStats.medium++;
+            scoreStats.medium += 1;
           } else {
-            scoreStats.low++;
+            scoreStats.low += 1;
           }
         });
 
@@ -152,20 +158,23 @@ export class AnalyticsService {
     const activity: Record<string, { inbound: number; outbound: number }> = {};
 
     // Initialize last 7 days
-    for (let i = 0; i < 7; i++) {
+    for (let i = 0; i < 7; i += 1) {
       const d = new Date();
       d.setDate(d.getDate() - i);
-      const key = d.toISOString().split('T')[0];
+      const key = d.toISOString().slice(0, 10);
       activity[key] = { inbound: 0, outbound: 0 };
     }
 
     messages.forEach((m) => {
       const key = m.createdAt.toISOString().split('T')[0];
+      if (!key) {
+        return;
+      }
       if (activity[key]) {
         if (m.direction === 'INBOUND') {
-          activity[key].inbound++;
+          activity[key].inbound += 1;
         } else {
-          activity[key].outbound++;
+          activity[key].outbound += 1;
         }
       }
     });
@@ -200,7 +209,7 @@ export class AnalyticsService {
     const nodeVisits: Record<string, number> = {};
     executions.forEach((exec) => {
       if (Array.isArray(exec.logs)) {
-        const logs = exec.logs as Record<string, unknown>[];
+        const logs = exec.logs as ExecutionLog[];
         const visitedNodes = new Set<string>();
         logs.forEach((log) => {
           if (typeof log.nodeId === 'string') {
@@ -387,9 +396,16 @@ export class AnalyticsService {
       if (recent.length >= 2) {
         const sorted = recent.map((m) => m.createdAt.getTime()).sort((a, b) => a - b);
         const intervals: number[] = [];
-        for (let i = 1; i < sorted.length; i++) {
-          const delta = (sorted[i] - sorted[i - 1]) / 1000;
-          if (delta > 0 && delta < 3600) intervals.push(delta);
+        for (let i = 1; i < sorted.length; i += 1) {
+          const curr = sorted[i];
+          const prev = sorted[i - 1];
+          if (curr === undefined || prev === undefined) {
+            continue;
+          }
+          const delta = (curr - prev) / 1000;
+          if (delta > 0 && delta < 3600) {
+            intervals.push(delta);
+          }
         }
         if (intervals.length > 0) {
           const sum = intervals.reduce((a, b) => a + b, 0);

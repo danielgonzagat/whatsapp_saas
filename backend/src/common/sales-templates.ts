@@ -24,12 +24,12 @@ const CALENDAR_LINK_RE = /\{\{calendarLink\}\}/g;
  * substitution at use-site.
  */
 
-const SALES_TEMPLATES: Readonly<Record<string, string>> = Object.freeze({
+export const SALES_TEMPLATES: Readonly<Record<string, string>> = Object.freeze({
   SEND_PRICE: 'Posso te passar os valores e opções agora. Quer que eu envie o preço detalhado?',
   FOLLOW_UP:
     'Vi que não conseguimos concluir. Posso te ajudar em algo ou enviar uma condição especial?',
   FOLLOW_UP_SOFT:
-    'Oi! Só checando se posso te ajudar com algo ou se prefere que eu volte mais tarde. 🙂',
+    'Oi! Só checando se posso te ajudar com algo ou se prefere que eu volte mais tarde.',
   FOLLOW_UP_STRONG:
     'Última chamada: reservei uma condição especial pra você hoje. Quer fechar agora?',
   SEND_CALENDAR: 'Aqui está meu link de agenda para marcarmos rápido: {{calendarLink}}',

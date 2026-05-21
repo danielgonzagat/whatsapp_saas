@@ -1,0 +1,54 @@
+{
+  "dir": "/Users/danielpenin/whatsapp_saas",
+  "skipPermissions": true,
+  "concurrency": 8,
+  "timeoutSec": 0,
+  "staggerMs": 9000,
+  "tasks": [
+    {
+      "id": "h12-whatsapp-brain",
+      "title": "Fix whatsapp-brain.service.spec DI",
+      "prompt": "Interactive supervised OpenCode worker, repo /Users/danielpenin/whatsapp_saas. FIRST read scripts/decomp/opencode-subagent-delegation-rules.md and CLAUDE.md. ABSOLUTE: no frontend/*.tsx/e2e/protected-file edits; no @ts-ignore/NOSONAR/skip/biome-ignore/eslint-disable; no git restore; DO NOT weaken/delete/skip tests to mask bugs — fix the real setup/code. ROOT CAUSE KNOWN: WhatsAppBrainService constructor now requires DecisionOutcomeService at index [2] (cognitive B17 dissolution wiring) but backend/src/kloel/whatsapp-brain.service.spec.ts TestModule does not provide it. TASK: run `cd backend && npx jest src/kloel/whatsapp-brain.service.spec.ts --no-coverage`. Read whatsapp-brain.service.ts to see ALL constructor deps, read the spec. Add the missing provider(s) to the test module with a correct mock (or the real provider if trivial) matching how other cognitive emitter deps are mocked elsewhere in the codebase (grep for DecisionOutcomeService usage in other *.spec.ts for the canonical mock shape). Re-run until ALL tests pass. Then `cd backend && npx tsc --noEmit -p tsconfig.json` must be 0 errors. Report root cause, files changed, before/after test counts."
+    },
+    {
+      "id": "h12-kloel-whatsapp-tools",
+      "title": "Fix kloel-whatsapp-tools.service.spec DI",
+      "prompt": "Interactive supervised OpenCode worker, repo /Users/danielpenin/whatsapp_saas. FIRST read scripts/decomp/opencode-subagent-delegation-rules.md and CLAUDE.md. ABSOLUTE: no frontend/*.tsx/e2e/protected edits; no suppression; no git restore; no test weakening (fix real setup/code). ROOT CAUSE: KloelWhatsAppToolsService constructor deps are (PrismaService, WhatsappService, WhatsAppProviderRegistry, <MISSING at index 3>, AudioService, PlanLimitsService, OpsAlertService); the spec TestModule lacks the index-3 provider. TASK: run `cd backend && npx jest src/kloel/kloel-whatsapp-tools.service.spec.ts --no-coverage`. Read kloel-whatsapp-tools.service.ts constructor to identify the index-3 dependency, read the spec, add the correct provider/mock to the TestModule (grep other specs for the canonical mock of that dep). Re-run until ALL pass. Then tsc 0 errors. Report root cause + before/after."
+    },
+    {
+      "id": "h12-kloel-tool-executor-wa",
+      "title": "Fix kloel-tool-executor-whatsapp.service.spec DI",
+      "prompt": "Interactive supervised OpenCode worker, repo /Users/danielpenin/whatsapp_saas. FIRST read scripts/decomp/opencode-subagent-delegation-rules.md and CLAUDE.md. ABSOLUTE: no frontend/*.tsx/e2e/protected edits; no suppression; no git restore; no test weakening. ROOT CAUSE: KloelToolExecutorWhatsAppService constructor deps (PrismaService, WhatsappService, WhatsAppProviderRegistry, <MISSING index 3>, AudioService, PlanLimitsService, OpsAlertService); spec TestModule lacks index-3 provider. TASK: run `cd backend && npx jest src/kloel/kloel-tool-executor-whatsapp.service.spec.ts --no-coverage`. Read the service constructor, identify the missing dep, add correct provider/mock to TestModule (grep other specs for canonical mock). Re-run until ALL pass. Then tsc 0 errors. Report root cause + before/after."
+    },
+    {
+      "id": "h12-unified-agent-actions",
+      "title": "Fix unified-agent-actions.service.spec",
+      "prompt": "Interactive supervised OpenCode worker, repo /Users/danielpenin/whatsapp_saas. FIRST read scripts/decomp/opencode-subagent-delegation-rules.md and CLAUDE.md. ABSOLUTE: no frontend/*.tsx/e2e/protected edits; no suppression; no git restore; no test weakening — fix real code/setup. TASK: run `cd backend && npx jest src/kloel/unified-agent-actions.service.spec.ts --no-coverage` and read the FULL failure output (cause unknown — could be DI, a changed method contract from cognitive wiring, or an assertion mismatch). Read unified-agent-actions.service.ts + the spec fully. Diagnose the real root cause and fix the real code or test setup (NOT by deleting/skipping assertions). Re-run until ALL pass. Then `cd backend && npx tsc --noEmit -p tsconfig.json` = 0 errors. Report root cause, files changed, before/after."
+    },
+    {
+      "id": "h12-channel-transport-registry",
+      "title": "Fix channel-transport.registry.spec",
+      "prompt": "Interactive supervised OpenCode worker, repo /Users/danielpenin/whatsapp_saas. FIRST read scripts/decomp/opencode-subagent-delegation-rules.md and CLAUDE.md. ABSOLUTE: no frontend/*.tsx/e2e/protected edits; no suppression; no git restore; no test weakening. TASK: run `cd backend && npx jest src/kloel/channel-transport.registry.spec.ts --no-coverage`, read full failure (cause unknown). Read channel-transport.registry.ts + spec fully. Diagnose + fix real code/setup. Re-run until ALL pass. Then tsc 0 errors. Report root cause + before/after."
+    },
+    {
+      "id": "h12-upload-controller",
+      "title": "Fix upload.controller.spec",
+      "prompt": "Interactive supervised OpenCode worker, repo /Users/danielpenin/whatsapp_saas. FIRST read scripts/decomp/opencode-subagent-delegation-rules.md and CLAUDE.md. ABSOLUTE: no frontend/*.tsx/e2e/protected edits; no suppression; no git restore; no test weakening. TASK: run `cd backend && npx jest src/kloel/upload.controller.spec.ts --no-coverage`, read full failure. Read upload.controller.ts + spec fully. Diagnose + fix real code/test setup (likely a new injected dependency from cognitive event-emit wiring missing in TestModule). Re-run until ALL pass. Then tsc 0 errors. Report root cause + before/after."
+    },
+    {
+      "id": "h12-pdf-processor-controller",
+      "title": "Fix pdf-processor.controller.spec",
+      "prompt": "Interactive supervised OpenCode worker, repo /Users/danielpenin/whatsapp_saas. FIRST read scripts/decomp/opencode-subagent-delegation-rules.md and CLAUDE.md. ABSOLUTE: no frontend/*.tsx/e2e/protected edits; no suppression; no git restore; no test weakening. TASK: run `cd backend && npx jest src/kloel/pdf-processor.controller.spec.ts --no-coverage`, read full failure. Read pdf-processor.controller.ts + spec fully. Diagnose + fix real code/test setup. Re-run until ALL pass. Then tsc 0 errors. Report root cause + before/after."
+    },
+    {
+      "id": "h12-leads-service",
+      "title": "Fix leads.service.spec",
+      "prompt": "Interactive supervised OpenCode worker, repo /Users/danielpenin/whatsapp_saas. FIRST read scripts/decomp/opencode-subagent-delegation-rules.md and CLAUDE.md. ABSOLUTE: no frontend/*.tsx/e2e/protected edits; no suppression; no git restore; no test weakening — fix real code/setup. TASK: run `cd backend && npx jest src/kloel/leads.service.spec.ts --no-coverage`, read full failure. Read leads.service.ts + spec fully. Diagnose root cause (likely cognitive emitter dep injected into LeadsService for commerce.lead.* B17 events, missing in TestModule). Add correct provider/mock or fix real code. Re-run until ALL pass. Then tsc 0 errors. Report root cause + before/after."
+    },
+    {
+      "id": "h12-kloel-composer",
+      "title": "Fix kloel-composer.service.spec",
+      "prompt": "Interactive supervised OpenCode worker, repo /Users/danielpenin/whatsapp_saas. FIRST read scripts/decomp/opencode-subagent-delegation-rules.md and CLAUDE.md. ABSOLUTE: no frontend/*.tsx/e2e/protected edits; no suppression; no git restore; no test weakening. TASK: run `cd backend && npx jest src/kloel/kloel-composer.service.spec.ts --no-coverage`, read full failure. Read kloel-composer.service.ts + spec fully. Diagnose + fix real code/test setup. Re-run until ALL pass. Then tsc 0 errors. Report root cause + before/after."
+    }
+  ]
+}

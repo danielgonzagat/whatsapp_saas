@@ -12,9 +12,8 @@
  *   - real:     structural evidence + runtime observation confirmed
  *   - production: all DoD gates met (blocking + required + optional)
  *
- * The engine outputs two artifacts:
- *   - PULSE_DOD_ENGINE.json — per-capability gate evaluation
- *   - PULSE_DOD_STATE.json  — full classification state with scoring
+ * The engine outputs per-capability gate evaluation and classification state
+ * artifacts with scoring.
  */
 
 export type DoDGateStatus = 'pass' | 'fail' | 'not_applicable' | 'not_tested';
@@ -64,7 +63,7 @@ export interface DoDEngineState {
   evaluations: CapabilityDoD[];
 }
 
-// ── PULSE_DOD_STATE types ─────────────────────────────────────────────────
+// ── Definition-of-Done state types ────────────────────────────────────────
 
 /** Per-gate requirement tuned by capability risk level. */
 export interface DoDRiskGateSpec {
@@ -77,7 +76,7 @@ export interface DoDRiskGateSpec {
   blocking: boolean;
 }
 
-/** Per-capability classification entry written to PULSE_DOD_STATE.json. */
+/** Per-capability classification entry written to the DoD state artifact. */
 export interface DoDCapabilityEntry {
   capabilityId: string;
   capabilityName: string;
@@ -105,7 +104,7 @@ export interface DoDStateSummary {
   overallMaxScore: number;
 }
 
-/** Full DoD state artifact written to PULSE_DOD_STATE.json. */
+/** Full DoD state artifact written by the engine. */
 export interface DoDState {
   generatedAt: string;
   summary: DoDStateSummary;

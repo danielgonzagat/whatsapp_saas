@@ -1,0 +1,24 @@
+{
+  "runId": "kloel-cia-w8-high-risk-audit-2026-05-11",
+  "concurrency": 3,
+  "timeoutSec": 420,
+  "dir": "/Users/danielpenin/whatsapp_saas",
+  "skipPermissions": false,
+  "tasks": [
+    {
+      "id": "refunds-audit",
+      "title": "W8 high-risk refunds audit",
+      "promptFile": ".opencode-prompts/batch-10/high-risk-refunds-audit.md"
+    },
+    {
+      "id": "payouts-audit",
+      "title": "W8 high-risk payouts audit",
+      "promptFile": ".opencode-prompts/batch-10/high-risk-payouts-audit.md"
+    },
+    {
+      "id": "mass-send-ads-audit",
+      "title": "W8 high-risk mass send ads audit",
+      "promptFile": ".opencode-prompts/batch-10/high-risk-mass-send-ads-audit.md"
+    }
+  ]
+}

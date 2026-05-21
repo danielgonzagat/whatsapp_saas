@@ -171,7 +171,7 @@ export function estimateOpenAiTextCostFromCharsCents(input: {
     inputTokens: estimatedInputTokens,
     cachedInputTokens: input.cachedInputTokens,
     outputTokens: input.maxOutputTokens,
-    policy: input.policy,
+    ...(input.policy !== undefined ? { policy: input.policy } : {}),
   });
 }
 

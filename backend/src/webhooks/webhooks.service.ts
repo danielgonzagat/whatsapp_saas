@@ -10,16 +10,22 @@ import {
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import type { Redis } from 'ioredis';
+import { getCorrelationId } from '../common/observability/correlation-store';
 import { InboxGateway } from '../inbox/inbox.gateway';
 import { OmnichannelService } from '../inbox/omnichannel.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { asProviderSettings } from '../whatsapp/provider-settings.types';
 import { flowQueue } from '../queue/queue';
 
 const D_RE = /\D/g;
 
 /** Arbitrary JSON payload received on the generic catch-hook endpoint. */
 type WebhookJsonPayload = Record<string, unknown>;
+
+import type { UnknownRecord } from '../common/types';
+type WebhookLogDetails = { status?: string; phone?: string; [key: string]: unknown };
+type WebhookFinanceSettings = Record<string, unknown>;
 
 /** Finance trigger body: status + phone + any extra provider-specific fields. */
 interface FinanceWebhookBody {
@@ -49,8 +55,8 @@ interface MessageStatusTarget {
 }
 
 /** Runtime-narrow helper: returns an object when `value` is a non-null record. */
-function asRecord(value: unknown): Record<string, unknown> | null {
-  return typeof value === 'object' && value !== null ? (value as Record<string, unknown>) : null;
+function asRecord(value: unknown): UnknownRecord | null {
+  return typeof value === 'object' && value !== null ? (value as UnknownRecord) : null;
 }
 
 function toPrismaJsonValue(value: unknown): Prisma.InputJsonValue {
@@ -80,6 +86,7 @@ export class WebhooksService {
 
   /** Process webhook. */
   async processWebhook(workspaceId: string, flowId: string, payload: WebhookJsonPayload) {
+    const correlationId = getCorrelationId();
     // 1. Validate Workspace & Flow
     const flow = await this.prisma.flow.findFirst({
       where: { id: flowId, workspaceId },
@@ -116,9 +123,11 @@ export class WebhooksService {
       workspaceId,
       flowId,
       user: phone,
+      correlationId,
       initialVars: {
         webhook: payload, // Access via {{webhook.email}}, {{webhook.data.id}}
         source: 'webhook',
+        correlationId,
       },
     });
 
@@ -130,6 +139,7 @@ export class WebhooksService {
    * Ex: { status: "paid", phone: "...", amount: 1000 }
    */
   async processFinanceEvent(workspaceId: string, payload: FinanceWebhookBody) {
+    const correlationId = getCorrelationId();
     const ws = await this.prisma.workspace.findUnique({
       where: { id: workspaceId },
       select: { providerSettings: true },
@@ -137,8 +147,8 @@ export class WebhooksService {
     if (!ws) {
       throw new ForbiddenException('Workspace not found');
     }
-    const settings = (ws.providerSettings as Record<string, unknown>) || {};
-    const finance = (settings.finance as Record<string, unknown>) || {};
+    const settings = asProviderSettings(ws.providerSettings);
+    const finance = ((settings as UnknownRecord).finance as WebhookFinanceSettings) || {};
 
     const status = String(payload?.status || '').toLowerCase();
     const map: Record<string, string | undefined> = {
@@ -164,9 +174,11 @@ export class WebhooksService {
       workspaceId,
       flowId,
       user: phone,
+      correlationId,
       initialVars: {
         finance: payload,
         source: 'finance_webhook',
+        correlationId,
       },
     });
 
@@ -191,7 +203,6 @@ export class WebhooksService {
         'WebhooksService.processFinanceWebhook',
         { workspaceId },
       );
-      // PULSE:OK — Finance event logging non-critical; flow trigger already queued
       this.logger.warn(
         `Failed to log finance event: ${err instanceof Error ? err.message : 'unknown'}`,
       );
@@ -217,12 +228,12 @@ export class WebhooksService {
       },
     });
     return logs.map((l) => {
-      const details = (l.details as Record<string, unknown>) || {};
+      const details = (l.details as WebhookLogDetails) || {};
       return {
         at: l.createdAt,
         flowId: l.resourceId,
-        status: details.status as string | undefined,
-        phone: details.phone as string | undefined,
+        status: details.status,
+        phone: details.phone,
         amount: details.amount as number | undefined,
         provider: details.provider as string | undefined,
       };
@@ -386,12 +397,12 @@ export class WebhooksService {
 
   /** Update message status. */
   async updateMessageStatus(input: {
-    workspaceId?: string;
-    externalId?: string;
+    workspaceId?: string | undefined;
+    externalId?: string | undefined;
     status: string;
-    errorCode?: string;
-    phone?: string;
-    channel?: string;
+    errorCode?: string | undefined;
+    phone?: string | undefined;
+    channel?: string | undefined;
   }) {
     const status = (input.status || '').toUpperCase();
     const workspaceId = input.workspaceId;

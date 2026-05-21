@@ -124,7 +124,9 @@ describe('LedgerService — double-entry conservation', () => {
         ['DEBIT_PAYOUT', 'DEBIT_CHARGEBACK', 'DEBIT_REFUND', 'MATURE'].includes(e.type),
       )
       .reduce((sum, e) => {
-        if (e.type === 'MATURE') return sum;
+        if (e.type === 'MATURE') {
+          return sum;
+        }
         return sum + e.amountCents;
       }, 0n);
 

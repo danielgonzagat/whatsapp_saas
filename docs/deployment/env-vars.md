@@ -46,22 +46,26 @@ for the new production-readiness surface added in this branch.
 
 ## Meta platform and official channels
 
-| Variable                             | Where                            | Required          | Example                 | Purpose                                                       |
-| ------------------------------------ | -------------------------------- | ----------------- | ----------------------- | ------------------------------------------------------------- |
-| `META_APP_ID`                        | Railway backend, Vercel frontend | Yes               | `1234567890`            | Primary Meta app id for shared Meta integrations              |
-| `META_APP_SECRET`                    | Railway backend                  | Yes               | Meta app secret         | Primary Meta app secret for shared Meta integrations          |
-| `META_AUTH_APP_ID`                   | Railway backend                  | Optional          | `1234567890`            | Dedicated Meta app id for Facebook Login token validation     |
-| `META_AUTH_APP_SECRET`               | Railway backend                  | Optional          | Meta auth app secret    | Dedicated Meta app secret for Facebook Login token validation |
-| `META_CONFIG_ID`                     | Railway backend                  | Recommended       | Meta config id          | Enables Embedded Signup configuration binding                 |
-| `META_GRAPH_API_VERSION`             | Railway backend, Vercel frontend | Recommended       | `v21.0`                 | Locks Meta Graph version used by SDK/API calls                |
-| `NEXT_PUBLIC_META_APP_ID`            | Vercel frontend                  | Yes               | `1234567890`            | Initializes the Facebook JS SDK                               |
-| `NEXT_PUBLIC_META_AUTH_APP_ID`       | Vercel frontend                  | Optional          | `1234567890`            | Dedicated Meta auth app id for the Facebook Login JS SDK      |
-| `NEXT_PUBLIC_META_GRAPH_API_VERSION` | Vercel frontend                  | Recommended       | `v21.0`                 | Keeps JS SDK version aligned with backend                     |
-| `META_VERIFY_TOKEN`                  | Railway backend                  | Yes               | `openssl rand -hex 24`  | Verifies Meta webhook GET subscription challenge              |
-| `META_WEBHOOK_VERIFY_TOKEN`          | Railway backend                  | Legacy alias      | `openssl rand -hex 24`  | Backward-compatible alias accepted by the backend             |
-| `META_ACCESS_TOKEN`                  | Railway backend                  | Optional fallback | long-lived system token | Fallback token for official WhatsApp operations               |
-| `META_PHONE_NUMBER_ID`               | Railway backend                  | Optional fallback | `123456789`             | Fallback WhatsApp Cloud phone number id                       |
-| `META_WABA_ID`                       | Railway backend                  | Optional fallback | `987654321`             | Fallback WhatsApp Business Account id                         |
+| Variable                             | Where                            | Required          | Example                 | Purpose                                                            |
+| ------------------------------------ | -------------------------------- | ----------------- | ----------------------- | ------------------------------------------------------------------ |
+| `META_APP_ID`                        | Railway backend, Vercel frontend | Yes               | `1234567890`            | Primary Meta app id for shared Meta integrations                   |
+| `META_APP_SECRET`                    | Railway backend                  | Yes               | Meta app secret         | Primary Meta app secret for shared Meta integrations               |
+| `META_AUTH_APP_ID`                   | Railway backend                  | Optional          | `1234567890`            | Dedicated Meta app id for Facebook Login token validation          |
+| `META_AUTH_APP_SECRET`               | Railway backend                  | Optional          | Meta auth app secret    | Dedicated Meta app secret for Facebook Login token validation      |
+| `META_CONFIG_ID`                     | Railway backend                  | Recommended       | Meta config id          | Fallback Embedded Signup config used when per-channel var is unset |
+| `META_CONFIG_ID_WHATSAPP`            | Railway backend                  | Optional          | Meta config id          | Per-channel Embedded Signup config for WhatsApp OAuth              |
+| `META_CONFIG_ID_INSTAGRAM`           | Railway backend                  | Optional          | Meta config id          | Per-channel Embedded Signup config for Instagram OAuth             |
+| `META_CONFIG_ID_MESSENGER`           | Railway backend                  | Optional          | Meta config id          | Per-channel Embedded Signup config for Messenger OAuth             |
+| `META_CONFIG_ID_ADS`                 | Railway backend                  | Optional          | Meta config id          | Per-channel Embedded Signup config for Ads OAuth                   |
+| `META_GRAPH_API_VERSION`             | Railway backend, Vercel frontend | Recommended       | `v21.0`                 | Locks Meta Graph version used by SDK/API calls                     |
+| `NEXT_PUBLIC_META_APP_ID`            | Vercel frontend                  | Yes               | `1234567890`            | Initializes the Facebook JS SDK                                    |
+| `NEXT_PUBLIC_META_AUTH_APP_ID`       | Vercel frontend                  | Optional          | `1234567890`            | Dedicated Meta auth app id for the Facebook Login JS SDK           |
+| `NEXT_PUBLIC_META_GRAPH_API_VERSION` | Vercel frontend                  | Recommended       | `v21.0`                 | Keeps JS SDK version aligned with backend                          |
+| `META_VERIFY_TOKEN`                  | Railway backend                  | Yes               | `openssl rand -hex 24`  | Verifies Meta webhook GET subscription challenge                   |
+| `META_WEBHOOK_VERIFY_TOKEN`          | Railway backend                  | Legacy alias      | `openssl rand -hex 24`  | Backward-compatible alias accepted by the backend                  |
+| `META_ACCESS_TOKEN`                  | Railway backend                  | Optional fallback | long-lived system token | Fallback token for official WhatsApp operations                    |
+| `META_PHONE_NUMBER_ID`               | Railway backend                  | Optional fallback | `123456789`             | Fallback WhatsApp Cloud phone number id                            |
+| `META_WABA_ID`                       | Railway backend                  | Optional fallback | `987654321`             | Fallback WhatsApp Business Account id                              |
 
 ## Legal / compliance content
 

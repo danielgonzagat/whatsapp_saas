@@ -7,11 +7,13 @@ import { RequireAdminPermission } from '../auth/decorators/admin-permission.deco
 import { NoAudit } from '../auth/decorators/no-audit.decorator';
 import { AdminAuditService } from './admin-audit.service';
 import { ListAuditQueryDto } from './dto/list-audit.dto';
+import { RouteClass } from '../../common/throttler/route-class.decorator';
 
 /** Admin audit controller. */
 @Public()
 @Controller('admin/audit')
 @UseGuards(AdminAuthGuard, AdminPermissionGuard)
+@RouteClass('read')
 export class AdminAuditController {
   constructor(private readonly audit: AdminAuditService) {}
 

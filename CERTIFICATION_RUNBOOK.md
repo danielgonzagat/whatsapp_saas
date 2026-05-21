@@ -2,12 +2,14 @@
 
 ## Mission
 
-Implement and certify the Kloel financial marketplace strictly in Stripe sandbox until all 12 blocks are complete, all 20 mandatory E2E scenarios are executed with evidence, and no pending business decisions remain open.
+Implement and certify the Kloel financial marketplace strictly in Stripe sandbox until all 12 blocks are complete,
+all 20 mandatory E2E scenarios are executed with evidence, and no pending business decisions remain open.
 
 ## Governance Boundary
 
 - Protected governance and infrastructure files are read-only for AI CLI in this repository.
-- If a required change touches `ops/**`, `scripts/ops/**`, workflow files, root `package.json`, ESLint governance files, `AGENTS.md`, or any other protected surface, the change must be requested from Daniel explicitly.
+- If a required change touches `ops/**`, `scripts/ops/**`, workflow files, root `package.json`, ESLint governance files,
+  `AGENTS.md`, or any other protected surface, the change must be requested from Daniel explicitly.
 - This runbook may document governance blockers, but it cannot self-authorize protected-file edits.
 
 ## Operating Rules
@@ -25,9 +27,11 @@ Implement and certify the Kloel financial marketplace strictly in Stripe sandbox
 These decisions are treated as immutable implementation requirements for this runbook:
 
 - Stripe model: marketplace.
-- Marketplace settlement model: buyer funds first settle into the Kloel-controlled marketplace flow, and seller / stakeholders are settled afterward through Kloel's internal ledger and payout controls.
+- Marketplace settlement model: buyer funds first settle into the Kloel-controlled marketplace flow,
+  and seller / stakeholders are settled afterward through Kloel's internal ledger and payout controls.
 - Direct-charge flow with seller-side `on_behalf_of` is off-contract for this certification track.
-- Merchant-of-record and legal / fiscal operation follow the approved marketplace setup; this runbook is authoritative only for the marketplace settlement model.
+- Merchant-of-record and legal / fiscal operation follow the approved marketplace setup;
+  this runbook is authoritative only for the marketplace settlement model.
 - Kloel fee target remains `9.9%`.
 - Installment interest: `3.99%` monthly, embedded in installment math.
 - Connected accounts: `Custom`.
@@ -54,14 +58,18 @@ These decisions are treated as immutable implementation requirements for this ru
 - Existing split engine detected with `BigInt` arithmetic in `backend/src/payments/split/split.engine.ts`.
 - Existing connect ledger and maturation services detected.
 - Existing fraud engine detected, but initial audit indicates it is still MVP-level and likely below prompt scope.
-- Initial audit found seller-side `on_behalf_of` coupling in the checkout charge flow. Active sale creation and webhook normalization have since been moved to a marketplace-owned settlement path; the remaining certification gap is concentrated in post-payment transfer timing and payout control.
-- Legacy onboarding flow relied on Stripe `accountLinks`; the active backend contract now submits onboarding data through Kloel-owned `accounts.update(...)`, but seller-facing role flows still need E2E evidence.
+- Initial audit found seller-side `on_behalf_of` coupling in the checkout charge flow.
+  Active sale creation and webhook normalization have since been moved to a marketplace-owned settlement path;
+  the remaining certification gap is concentrated in post-payment transfer timing and payout control.
+- Legacy onboarding flow relied on Stripe `accountLinks`; the active backend contract now submits onboarding data
+  through Kloel-owned `accounts.update(...)`, but seller-facing role flows still need E2E evidence.
 - Dirty worktree detected before work start: `AGENTS.md` modified and left untouched.
 
 ### Initial Compliance Notes
 
 - `SECURITY.md` currently contains a placeholder `sk_live_...` string and therefore fails the literal checkpoint "zero occurrences of sk*live*\* anywhere" until remediated or explicitly exempted by Daniel.
-- Root governance boundary prohibits direct edits to `ops/**`, `scripts/ops/**`, root `package.json`, and other protected files even if such edits would improve automation.
+- Root governance boundary prohibits direct edits to `ops/**`, `scripts/ops/**`, root `package.json`,
+  and other protected files even if such edits would improve automation.
 
 ## Evidence Index
 
@@ -101,9 +109,13 @@ These decisions are treated as immutable implementation requirements for this ru
 
 ## Riscos Identificados
 
-- RISK-0001: The active checkout + webhook ingress path is now marketplace-owned, but immediate post-payment transfer logic and payout-timing control still require further refactor before the end-to-end marketplace certification story is complete.
-- RISK-0002: "Zero occurrences of `sk_live_*` anywhere" currently fails due to placeholder documentation content, not an actual leaked credential.
-- RISK-0003: Governance boundary may block automation improvements if a required verification or guard depends on protected files.
+- RISK-0001: The active checkout + webhook ingress path is now marketplace-owned,
+  but immediate post-payment transfer logic and payout-timing control still require further refactor before the end-to-end
+  marketplace certification story is complete.
+- RISK-0002: "Zero occurrences of `sk_live_*` anywhere" currently fails due to placeholder documentation content,
+  not an actual leaked credential.
+- RISK-0003: Governance boundary may block automation improvements if a required verification or guard depends on
+  protected files.
 
 ## Block Status Summary
 
@@ -126,7 +138,8 @@ These decisions are treated as immutable implementation requirements for this ru
 
 ### Objetivo
 
-Infraestrutura de desenvolvimento segura, testavel, separada de producao, sem risco de vazamento ou uso acidental de dinheiro real.
+Infraestrutura de desenvolvimento segura, testavel, separada de producao,
+sem risco de vazamento ou uso acidental de dinheiro real.
 
 ### Checklist
 
@@ -159,7 +172,8 @@ Infraestrutura de desenvolvimento segura, testavel, separada de producao, sem ri
   - `WalletService` agora aceita `quotedCostCents` e expõe `refundUsageCharge(...)` + `settleUsageCharge(...)`, permitindo consumo cobrado por custo real do provedor sem depender exclusivamente de `usage_prices`.
   - `AgentAssistService` voltou a compilar e testar em cima desse rail provider-priced.
   - `KnowledgeBaseService` agora pre-cota `kb_ingestion`, bloqueia com erro seller-friendly quando a wallet não cobre o consumo e envia ao worker o contexto para liquidação exata.
-  - O worker agora acumula `usage.total_tokens` nas embeddings, liquida a wallet de forma idempotente e limpa vetores parciais se a ingestão falhar.
+  - O worker agora acumula `usage.total_tokens` nas embeddings,
+    liquida a wallet de forma idempotente e limpa vetores parciais se a ingestão falhar.
   - `StripeService` agora recusa inicializar com `sk_live_*` fora de `NODE_ENV=production` ou sem `KLOEL_LIVE_MODE=confirmed`, fechando o guard rail mínimo contra uso acidental de dinheiro real.
 - Escopo ainda não certificado dentro do Bloco 9:
   - prova sandbox ponta a ponta de recarga PIX/cartão nesta branch atual;
@@ -192,16 +206,32 @@ Infraestrutura de desenvolvimento segura, testavel, separada de producao, sem ri
   - `ConnectService.createCustomAccount(...)` já cria `Custom Accounts` com `card_payments` e `transfers`, persiste o espelho local em `ConnectAccountBalance` e mantém o onboarding status consultável pelo dashboard Kloel.
   - `ConnectController` agora expõe `POST /payments/connect/:workspaceId/accounts/:accountBalanceId/onboarding`, recebendo dados de onboarding pela própria UI do Kloel e derivando `ipAddress` / `userAgent` do request para `tos_acceptance`.
   - `ConnectService.submitOnboardingProfile(...)` substitui o caminho ativo de `accountLinks.create` por `stripe.accounts.update(...)`, cobrindo `businessType`, `businessProfile`, `individual`, `company`, `externalAccount`, `metadata` e `tosAcceptance`.
-  - O `submitKyc()` do fluxo já existente em [ContaView](/Users/danielpenin/whatsapp_saas/frontend/src/components/kloel/conta/ContaView.tsx) agora cria a conta `SELLER` quando necessário e sincroniza o onboarding Connect a partir dos dados fiscais, documentos e conta bancária já coletados pelo Kloel.
-  - A própria [ContaView](/Users/danielpenin/whatsapp_saas/frontend/src/components/kloel/conta/ContaView.tsx) agora renderiza um card seller-facing de "Conta de recebimento" com status operacional (`Ainda não iniciado`, `Ação necessária`, `Em verificação`, `Restrita`, `Ativa`) e tradução de `requirements.currently_due` / `requirements.past_due` para linguagem Kloel.
-  - A área de [ParceriasView](/Users/danielpenin/whatsapp_saas/frontend/src/components/kloel/parcerias/ParceriasView.tsx) agora permite o seller convidar afiliados por email sem sair do Kloel; o backend emite um token opaco com hash persistido, envia o convite transacional e o cadastro com `affiliateInviteToken` ativa o parceiro e provisiona a conta `AFFILIATE`.
-  - A aba de comissões em [ProductNerveCenterComissaoTab](/Users/danielpenin/whatsapp_saas/frontend/src/components/kloel/products/ProductNerveCenterComissaoTab.tsx) agora dispara o mesmo loop Kloel-owned para `COPRODUCER` e `MANAGER`: ao criar a comissão com email, o backend registra o parceiro, envia o convite, provisiona a Connected Account correta no cadastro e desfaz a comissão se o convite falhar.
-  - Os testes focados do módulo Connect e do módulo KYC estão verdes para criação de contas, status de onboarding, submissão individual, submissão company/tokenized bank account, seller PF/PJ e propagação de `IP/user-agent` no `submitKyc()`.
+  - O `submitKyc()` do fluxo já existente em
+    [ContaView](/Users/danielpenin/whatsapp_saas/frontend/src/components/kloel/conta/ContaView.tsx) agora cria a conta
+    `SELLER` quando necessário e sincroniza o onboarding Connect a partir dos dados fiscais,
+    documentos e conta bancária já coletados pelo Kloel.
+  - A própria [ContaView](/Users/danielpenin/whatsapp_saas/frontend/src/components/kloel/conta/ContaView.tsx) agora
+    renderiza um card seller-facing de "Conta de recebimento" com status operacional (`Ainda não iniciado`,
+    `Ação necessária`, `Em verificação`, `Restrita`, `Ativa`) e tradução de `requirements.currently_due` /
+    `requirements.past_due` para linguagem Kloel.
+  - A área de
+    [ParceriasView](/Users/danielpenin/whatsapp_saas/frontend/src/components/kloel/parcerias/ParceriasView.tsx) agora
+    permite o seller convidar afiliados por email sem sair do Kloel;
+    o backend emite um token opaco com hash persistido, envia o convite transacional e o cadastro com
+    `affiliateInviteToken` ativa o parceiro e provisiona a conta `AFFILIATE`.
+  - A aba de comissões em
+    [ProductNerveCenterComissaoTab](/Users/danielpenin/whatsapp_saas/frontend/src/components/kloel/products/ProductNerveCenterComissaoTab.tsx) agora dispara o mesmo loop Kloel-owned para `COPRODUCER` e `MANAGER`: ao criar a comissão com email, o backend registra o parceiro, envia o convite, provisiona a Connected Account correta no cadastro e desfaz a comissão se o convite falhar.
+  - Os testes focados do módulo Connect e do módulo KYC estão verdes para criação de contas, status de onboarding,
+    submissão individual, submissão company/tokenized bank account,
+    seller PF/PJ e propagação de `IP/user-agent` no `submitKyc()`.
 - Escopo ainda nao certificado dentro do Bloco 2:
   - o fluxo seller-facing de fornecedor ainda precisa existir e ser validado ponta a ponta no frontend Kloel;
-  - a bateria E2E sandbox ainda nao inclui a execucao documentada do convite/cadastro do afiliado, coprodutor e gerente, nem o cadastro completo de fornecedor;
-  - a auditoria visual abrangente de zero menções a Stripe em todas as telas do onboarding seller ainda não foi executada;
-  - o checkpoint literal de `settings.payouts.schedule.interval = 'manual'` para todas as contas continua dependente da capacidade real aceita pelo Stripe para BR no modelo escolhido.
+  - a bateria E2E sandbox ainda nao inclui a execucao documentada do convite/cadastro do afiliado, coprodutor e gerente,
+    nem o cadastro completo de fornecedor;
+  - a auditoria visual abrangente de zero menções a Stripe em todas as telas do onboarding seller ainda não foi
+    executada;
+  - o checkpoint literal de `settings.payouts.schedule.interval = 'manual'` para todas as contas continua dependente da
+    capacidade real aceita pelo Stripe para BR no modelo escolhido.
 
 ## Block 3 — SplitEngine
 
@@ -223,8 +253,10 @@ Infraestrutura de desenvolvimento segura, testavel, separada de producao, sem ri
   - `calculateSplit()` agora aceita um parametro opcional `workspaceId` e emite um `logger.log(...)` estruturado apos cada computacao bem-sucedida com `{ operation: 'splitCalculated', workspaceId, saleValueCents, numLines, totalDistributed, residue }`.
   - `SplitController` expoe `POST /payments/split/:workspaceId/preview` protegido por `JwtAuthGuard` + `WorkspaceGuard`, aceitando `SplitPreviewDto` validado via `class-validator` / `class-transformer` (strings → bigint), chamando `calculateSplit()` e retornando o resultado como strings centavos.
   - `SplitPreviewDto` contem validacoes em todos os campos monetarios, com `@ValidateNested()` + `@Type()` para sub-objetos `supplier`, `affiliate`, `coproducer` e `manager`.
-  - A bateria de testes do controlador (4 tests) cobre: preview valido com supplier + affiliate, conservacao da soma, cap/clamp do supplier quando excede o disponivel, e affiliate 100% com seller recebendo 0.
-  - A bateria do engine permanece verde com 17 testes (4 hipoteses + edge cases + validacao + property-based invariants), garantindo conservacao `Σ(splits) + kloelTotal + residue === buyerPaid` e nao-negatividade de todas as linhas.
+  - A bateria de testes do controlador (4 tests) cobre: preview valido com supplier + affiliate, conservacao da soma,
+    cap/clamp do supplier quando excede o disponivel, e affiliate 100% com seller recebendo 0.
+  - A bateria do engine permanece verde com 17 testes (4 hipoteses + edge cases + validacao + property-based invariants),
+    garantindo conservacao `Σ(splits) + kloelTotal + residue === buyerPaid` e nao-negatividade de todas as linhas.
 
 ## Block 4 — LedgerEngine
 
@@ -246,14 +278,20 @@ Infraestrutura de desenvolvimento segura, testavel, separada de producao, sem ri
 - Estado certificado nesta tranche:
   - `ConnectAccountBalance` e `ConnectLedgerEntry` schemas no Prisma com balances em `BigInt`, constraint `@@unique([referenceType, referenceId, type])` como idempotency guard, e `ConnectMaturationRule` para delays configuraveis por produto e role.
   - `LedgerService` implementa o contrato dual-balance do ADR 0003: `creditPending` (PENDING), `moveFromPendingToAvailable` (MATURE), `debitAvailableForPayout` (DEBIT_PAYOUT), `debitForChargeback` (DEBIT_CHARGEBACK com cascading PENDING → AVAILABLE), `debitForRefund` (DEBIT_REFUND com mesmo cascade), `creditAvailableByAdjustment` (ADJUSTMENT para correcoes operacionais), e `getBalance` (snapshot).
-  - Todos os metodos de escrita sao idempotentes via `findFirst()` + unique constraint no DB, em transacoes `SERIALIZABLE` para isolacao contra race conditions.
-  - Auditoria estruturada: cada operacao emite `this.logger.log({ event: 'connect_ledger_write', operation, entryId, amountCents, ... })` com valores em string para portabilidade JSON.
+  - Todos os metodos de escrita sao idempotentes via `findFirst()` + unique constraint no DB,
+    em transacoes `SERIALIZABLE` para isolacao contra race conditions.
+  - Auditoria estruturada: cada operacao emite `this.logger.log({ event: 'connect_ledger_write', operation, entryId,
+amountCents, ... })` com valores em string para portabilidade JSON.
   - `ConnectLedgerMaturationService` executa via `@Cron(CronExpression.EVERY_MINUTE)` promovendo entradas `CREDIT_PENDING` com `scheduledFor <= now` para AVAILABLE, com `forEachSequential` para evitar concorrencia interna, alertas financeiros e trilha administrativa (`adminAuditLog`) em falhas.
   - `ConnectLedgerReconciliationService` executa via `@Cron('0 */15 * * * *')` reconciliando balances materializados contra re-play deterministico do ledger; emite alertas e trilha administrativa em drifts detectados.
-  - Cobertura de testes: 89 testes (7 suites), 99.15% statements / 93.57% branches / 100% functions / 99.13% lines nos arquivos de ledger. `ledger.service.ts` com 100%.
-  - Testes de concorrencia: `Promise.allSettled` simulando debitos simultaneos (payouts concorrentes) garantem que o saldo nunca fica negativo.
+  - Cobertura de testes: 89 testes (7 suites), 99.15% statements / 93.57% branches / 100% functions / 99.13% lines nos
+    arquivos de ledger. `ledger.service.ts` com 100%.
+  - Testes de concorrencia: `Promise.allSettled` simulando debitos simultaneos (payouts concorrentes) garantem que o
+    saldo nunca fica negativo.
   - Testes de conservacao: invariante `pending + available === lifetimeReceived - lifetimePaidOut - lifetimeChargebacks` e double-entry `totalCredits - totalDebits === pending + available`.
-  - Testes de edge cases: chargeback absorvendo 100% de PENDING, 100% de AVAILABLE, spill PENDING→AVAILABLE; refund permitindo AVAILABLE negativo; adjustment com floor em 0 no `lifetimePaidOut`; todos os paths de erro (balance nao encontrado, entry nao encontrada, amount <= 0).
+  - Testes de edge cases: chargeback absorvendo 100% de PENDING, 100% de AVAILABLE, spill PENDING→AVAILABLE;
+    refund permitindo AVAILABLE negativo; adjustment com floor em 0 no `lifetimePaidOut`;
+    todos os paths de erro (balance nao encontrado, entry nao encontrada, amount <= 0).
   - Resultado: `cd backend && npx jest ledger` → 89 tests passed, 7 suites green.
 
 ## Block 5 — FraudEngine
@@ -278,17 +316,28 @@ Infraestrutura de desenvolvimento segura, testavel, separada de producao, sem ri
 - EV-0019 (Block 5 final certification)
 - Estado certificado nesta tranche:
   - `FraudEngine` agora combina blacklist global (CPF, CNPJ, email, IP, device fingerprint, card BIN), velocity via Redis para todos os tipos (IP, device, email, CPF, CNPJ), soft signals (missing_identifier, foreign_bin, ip_mismatch, high_amount), e logging estruturado da decisão em formato JSON.
-  - **Mudança de comportamento**: o engine nunca mais retorna `action: 'block'`. Blacklist hits e violações de velocity agora resultam em `action: 'review'` com score no threshold REVIEW (0.5). O `scoreToAction` foi truncado para nunca ultrapassar `review`.
-  - **IP-geolocation mismatch**: novo campo `ipCountry` no `FraudCheckoutContext`; quando `orderCountry === 'BR'` e `ipCountry` difere de `'BR'`, adiciona o sinal `ip_mismatch` com peso de `foreignBin` (0.35).
-  - Todas as regras de velocity cobertas por testes: IP, device fingerprint, email, CPF document, CNPJ document, acumulação de múltiplas violações, e fallback fail-closed (`velocity_unavailable` → `review`).
-  - Administração de blacklist: `addToBlacklist` (upsert idempotente), `removeFromBlacklist`, `listBlacklist` com filtro por tipo e paginação — todos testados com mock Prisma.
-  - Configuração via env validada: todos os thresholds, scores, velocity window e high-amount ceiling aceitam override por variável de ambiente com fallback para defaults seguros. Valores inválidos (negativos, não-numéricos) são rejeitados.
-  - 44 testes passando no `fraud.engine.spec.ts`, cobertura estimada ≥95% em todos os caminhos do engine (blacklist, velocity, soft signals, admin, threshold mapping).
+  - **Mudança de comportamento**: o engine nunca mais retorna `action: 'block'`.
+    Blacklist hits e violações de velocity agora resultam em `action: 'review'` com score no threshold REVIEW (0.5).
+    O `scoreToAction` foi truncado para nunca ultrapassar `review`.
+  - **IP-geolocation mismatch**: novo campo `ipCountry` no `FraudCheckoutContext`;
+    quando `orderCountry === 'BR'` e `ipCountry` difere de `'BR'`,
+    adiciona o sinal `ip_mismatch` com peso de `foreignBin` (0.35).
+  - Todas as regras de velocity cobertas por testes: IP, device fingerprint, email, CPF document, CNPJ document,
+    acumulação de múltiplas violações, e fallback fail-closed (`velocity_unavailable` → `review`).
+  - Administração de blacklist: `addToBlacklist` (upsert idempotente), `removeFromBlacklist`,
+    `listBlacklist` com filtro por tipo e paginação — todos testados com mock Prisma.
+  - Configuração via env validada: todos os thresholds, scores,
+    velocity window e high-amount ceiling aceitam override por variável de ambiente com fallback para defaults seguros.
+    Valores inválidos (negativos, não-numéricos) são rejeitados.
+  - 44 testes passando no `fraud.engine.spec.ts`, cobertura estimada ≥95% em todos os caminhos do engine (blacklist,
+    velocity, soft signals, admin, threshold mapping).
   - `CheckoutPaymentService`, `Kloel PaymentService` e `WalletService` continuam com seus mocks de `FraudEngine` na camada de teste de integração, preservando a compatibilidade com o contrato de decisão.
 - Escopo ainda nao certificado dentro do Bloco 5:
-  - o checklist literal ainda pede um middleware unificado; o comportamento atual ja cobre todos os call sites de `paymentIntents.create` existentes na camada de servico;
+  - o checklist literal ainda pede um middleware unificado; o comportamento atual ja cobre todos os call sites de
+    `paymentIntents.create` existentes na camada de servico;
   - faltam evidencias E2E sandbox do cenario `15` no runbook;
-  - o score numérico ainda permite `review` e `require_3ds` como ações possíveis via `scoreToAction`, mas `block` foi removido do contrato de decisão.
+  - o score numérico ainda permite `review` e `require_3ds` como ações possíveis via `scoreToAction`,
+    mas `block` foi removido do contrato de decisão.
 
 ## Block 6 — Checkout E2E com Ciencia do Split
 
@@ -310,11 +359,15 @@ Infraestrutura de desenvolvimento segura, testavel, separada de producao, sem ri
 - EV-0020
 - Estado certificado nesta tranche:
   - `StripeChargeService.createSaleCharge()` chama `calculateSplit()` antes de criar o PaymentIntent (stripe-charge.service.ts:40).
-  - As linhas de split (`split_lines`) são serializadas como JSON no metadata do PaymentIntent e persistem no `webhookData.checkoutPayment` para processamento downstream pelo `StripeWebhookProcessor`.
+  - As linhas de split (`split_lines`) são serializadas como JSON no metadata do PaymentIntent e persistem no
+    `webhookData.checkoutPayment` para processamento downstream pelo `StripeWebhookProcessor`.
   - `CheckoutPaymentService.processPayment()` encadeia: validação de pedido → antifraud (`FraudEngine.evaluate`) → `StripeChargeService.createSaleCharge` (com split) → persistência do pagamento (com split data) → efeitos pós-venda.
-  - 4 novos testes E2E em `checkout-split-e2e.spec.ts` cobrindo: chamada split-aware ao Stripe, persistência de split no webhookData, idempotência de pagamento duplicado, e propagação de dados PIX.
-  - A suíte `checkout-payment.service.spec.ts` com 10 testes cobre: cartão, PIX, auto-criação de seller account, efeitos pós-aprovação, tratamento de erro, e 3 ações do FraudEngine (block, review, require_3ds).
-  - Testes existentes verificam que `FraudEngine.evaluate` é chamado com CPF, IP, device fingerprint, BIN, orderCountry e amountCents antes do PaymentIntent.
+  - 4 novos testes E2E em `checkout-split-e2e.spec.ts` cobrindo: chamada split-aware ao Stripe,
+    persistência de split no webhookData, idempotência de pagamento duplicado, e propagação de dados PIX.
+  - A suíte `checkout-payment.service.spec.ts` com 10 testes cobre: cartão, PIX, auto-criação de seller account,
+    efeitos pós-aprovação, tratamento de erro, e 3 ações do FraudEngine (block, review, require_3ds).
+  - Testes existentes verificam que `FraudEngine.evaluate` é chamado com CPF, IP, device fingerprint, BIN,
+    orderCountry e amountCents antes do PaymentIntent.
 
 ## Block 7 — Webhook Handlers Completos e Idempotentes
 
@@ -341,10 +394,13 @@ Infraestrutura de desenvolvimento segura, testavel, separada de producao, sem ri
   - `charge.dispute.closed`: novo handler `handleDisputeClosed` restaura o pagamento para `APPROVED` se disputa vencida (`status=won`), registra trilha de auditoria (`system.sale.dispute_won` ou `system.sale.dispute_lost`), e atualiza `checkoutPayment.status`, `checkoutOrder.status` e `kloelSale.status` quando vencida.
   - Roteamento do controller atualizado para incluir `charge.dispute.closed` na switch de eventos.
   - **Idempotência comprovada em 3 camadas**:
-    1. **Redis cache** (`ensureIdempotent`): hash SHA-256 do payload com TTL 300s via `SET NX` — eventos duplicados retornam `{ duplicate: true }` sem processar.
+    1. **Redis cache** (`ensureIdempotent`): hash SHA-256 do payload com TTL 300s via `SET NX` — eventos duplicados
+       retornam `{ duplicate: true }` sem processar.
     2. **DB unique constraint** (`logWebhookEvent.upsert`): constraint `@@unique([provider, externalId])` no modelo `WebhookEvent` — violação P2002 retorna `{ skipped: true, reason: 'duplicate_webhook_event' }`.
     3. **Stripe idempotencyKeys**: `StripeWebhookProcessor.dispatchTransfer` usa `idempotencyKey: ${paymentIntentId}:${role}`; `ConnectPayoutService.createPayout` usa `idempotencyKey: requestId`. Reenvios nunca duplicam transfers ou payouts.
-  - 7 novos testes de idempotência em `payment-webhook.controller.idempotency.spec.ts` cobrindo: dedup Redis, dedup DB, replay de refund.created, replay de dispute.created, dispute.won (restaura venda), dispute.lost (audita apenas), e processamento normal com Redis OK.
+  - 7 novos testes de idempotência em `payment-webhook.controller.idempotency.spec.ts` cobrindo: dedup Redis, dedup DB,
+    replay de refund.created, replay de dispute.created, dispute.won (restaura venda), dispute.lost (audita apenas),
+    e processamento normal com Redis OK.
   - Todos os handlers marcam `webhookEvent.status = 'processed'` via `webhooksService.markWebhookProcessed` após execução bem-sucedida.
 
 ## Block 8 — Fluxo de Payout Manual
@@ -370,9 +426,13 @@ Infraestrutura de desenvolvimento segura, testavel, separada de producao, sem ri
     - `createRequest`: valida workspace, saldo disponível, previne duplicatas (OPEN existente), cria `approvalRequest` com trilha de auditoria `system.connect.withdrawal_approval_requested`.
     - `approveRequest`: valida request-state=OPEN, executa `connectPayoutService.createPayout()`, em sucesso marca `APPROVED` com `payoutId`/`status`, em falha marca `FAILED` com `error` + Sentry + audit trail duplo (`admin.carteira.connect_withdrawal_approval_failed` + `system.connect.payout_request_failed`).
     - `rejectRequest`: valida request-state=OPEN, marca `REJECTED` com `reason` e `rejectedByAdminId`, trilha `admin.carteira.connect_withdrawal_rejected`.
-  - O webhook `payout.paid` registra auditoria `system.connect.payout_paid` confirmando chegada; `payout.failed` aciona `handleFailedPayout` revertendo o ledger.
-  - 9 novos testes E2E em `connect-payout-approval.e2e.spec.ts` cobrindo: criação de request, prevenção de duplicata, saldo insuficiente, workspace inválido, aprovação com execução, falha de payout → FAILED, rejeição com razão, aprovação de request inexistente/fechada, e listagem de histórico.
-  - 10 testes pré-existentes em `connect-payout.service.spec.ts` cobrindo: criação de payout, conta inexistente, saldo insuficiente, payouts desabilitados, rollback em falha Stripe.
+  - O webhook `payout.paid` registra auditoria `system.connect.payout_paid` confirmando chegada;
+    `payout.failed` aciona `handleFailedPayout` revertendo o ledger.
+  - 9 novos testes E2E em `connect-payout-approval.e2e.spec.ts` cobrindo: criação de request, prevenção de duplicata,
+    saldo insuficiente, workspace inválido, aprovação com execução, falha de payout → FAILED, rejeição com razão,
+    aprovação de request inexistente/fechada, e listagem de histórico.
+  - 10 testes pré-existentes em `connect-payout.service.spec.ts` cobrindo: criação de payout, conta inexistente,
+    saldo insuficiente, payouts desabilitados, rollback em falha Stripe.
 
 ## Block 9 — Wallet Prepaid para API/AI
 
@@ -393,9 +453,13 @@ Infraestrutura de desenvolvimento segura, testavel, separada de producao, sem ri
 - Estado certificado nesta tranche:
   - `PrepaidWalletController` (`/wallet/prepaid`) expoe GET balance, POST topup (PIX/card), GET transactions, PATCH auto-recharge, POST spend, todos protegidos por JWT + WorkspaceGuard.
   - `WalletService` agora captura `InsufficientWalletBalanceError` e `wallet_not_found_on_webhook` via Sentry, fechando o gap de observabilidade de erros financeiros na wallet prepaid.
-  - Workspace isolation: cada endpoint valida que o workspaceId do token corresponde ao wallet acessado — query de wallet sempre filtra por `workspaceId`.
-  - Auto-recharge: endpoint `PATCH auto-recharge` permite habilitar/desabilitar com threshold e amount configuraveis; campos persistidos tanto no `create` quanto no `update` do upsert.
-  - 21 testes novos no `prepaid-wallet.controller.spec.ts` cobrindo: balance criaçao/consulta, topup PIX/card, bloqueio antifraude, transaçoes com isolate workspace, auto-recharge enable/disable/reject, spend com sucesso/insuficiente/idempotente/isolate workspace, e full lifecycle topup→spend→check balance.
+  - Workspace isolation: cada endpoint valida que o workspaceId do token corresponde ao wallet acessado — query de
+    wallet sempre filtra por `workspaceId`.
+  - Auto-recharge: endpoint `PATCH auto-recharge` permite habilitar/desabilitar com threshold e amount configuraveis;
+    campos persistidos tanto no `create` quanto no `update` do upsert.
+  - 21 testes novos no `prepaid-wallet.controller.spec.ts` cobrindo: balance criaçao/consulta, topup PIX/card,
+    bloqueio antifraude, transaçoes com isolate workspace, auto-recharge enable/disable/reject,
+    spend com sucesso/insuficiente/idempotente/isolate workspace, e full lifecycle topup→spend→check balance.
   - 131 testes totais de wallet (21 controller + 110 service) passando.
 
 ## Block 10 — Bateria Completa de Testes E2E em Sandbox
@@ -436,9 +500,11 @@ Infraestrutura de desenvolvimento segura, testavel, separada de producao, sem ri
     - LedgerService: cenarios 16, 20 (10 vendas simultaneas, stress 100 vendas).
     - WalletService: cenarios 17, 18 (wallet PIX + consumo, wallet cartao + auto-recharge).
     - FraudEngine: cenario 15 (fraude bloqueada → review).
-  - 4 cenarios `sandbox_external` (1, 8, 9, 20) requerem ambiente Stripe test com Stripe CLI para verificacao ponta a ponta completa.
+  - 4 cenarios `sandbox_external` (1, 8, 9, 20) requerem ambiente Stripe test com Stripe CLI para verificacao ponta a
+    ponta completa.
   - 16 cenarios `sandbox_code` validaveis pelos testes unitarios e de integracao existentes.
-  - Arquivo `certification-e2e-scenarios.spec.ts` valida o mapeamento com 8 assertions verificando cobertura, unicidade de IDs, e distribuiçao por modulo.
+  - Arquivo `certification-e2e-scenarios.spec.ts` valida o mapeamento com 8 assertions verificando cobertura,
+    unicidade de IDs, e distribuiçao por modulo.
 
 ## Block 11 — Observabilidade, Audit Trail e Monitoramento
 
@@ -455,12 +521,20 @@ Infraestrutura de desenvolvimento segura, testavel, separada de producao, sem ri
 
 - EV-0025
 - Estado certificado nesta tranche:
-  - **Sentry**: integrado no `WalletService` para captura de `InsufficientWalletBalanceError` e `wallet_not_found_on_webhook`. Todos os servicos financeiros (SplitEngine, LedgerService, ConnectPayoutService, ConnectPayoutApprovalService, ConnectReversalService, StripeWebhookProcessor, FraudEngine, ConnectService, ConnectLedgerMaturationService, ConnectLedgerReconciliationService) ja possuem `Logger` estruturado do NestJS com mensagens em ingles padrao `module:event`.
+  - **Sentry**: integrado no `WalletService` para captura de `InsufficientWalletBalanceError` e
+    `wallet_not_found_on_webhook`. Todos os servicos financeiros (SplitEngine, LedgerService, ConnectPayoutService,
+    ConnectPayoutApprovalService, ConnectReversalService, StripeWebhookProcessor, FraudEngine, ConnectService,
+    ConnectLedgerMaturationService, ConnectLedgerReconciliationService) ja possuem `Logger` estruturado do NestJS com
+    mensagens em ingles padrao `module:event`.
   - **Audit Trail**: `AdminAuditLog` (modelo Prisma `admin_audit_logs`) escrito em todas as operaçoes de payout (`withdrawal_approval_requested`, `withdrawal_approved`, `withdrawal_rejected`, `payout_paid`, `payout_failed`), reversal (`chargeback_cascade`), e reconciliaçao (`ledger_drift_detected`).
-  - **Grafana Dashboard**: arquivo JSON em `docs/monitoring/kloel-financial-grafana-dashboard.json` com 12 paineis cobrindo:
+  - **Grafana Dashboard**: arquivo JSON em `docs/monitoring/kloel-financial-grafana-dashboard.json` com 12 paineis
+    cobrindo:
     - 4 Golden Signals: latencia p95, taxa de requisiçoes (RPS), taxa de erros (5xx), saturaçao de pool DB.
-    - 8 paineis financeiros: PaymentIntents por status, Payouts requisitados/executados, erros de saldo insuficiente na wallet, computaçoes do SplitEngine, drifts de conservaçao do ledger, decisoes do FraudEngine, eventos de webhook processados, erros da API Stripe.
-  - Alertas configurados para: latencia > 2s, erro rate > 1%, saturaçao DB > 80%, drift de ledger > 0, erros Stripe API > 5/min.
+    - 8 paineis financeiros: PaymentIntents por status, Payouts requisitados/executados,
+      erros de saldo insuficiente na wallet, computaçoes do SplitEngine, drifts de conservaçao do ledger,
+      decisoes do FraudEngine, eventos de webhook processados, erros da API Stripe.
+  - Alertas configurados para: latencia > 2s, erro rate > 1%, saturaçao DB > 80%, drift de ledger > 0,
+    erros Stripe API > 5/min.
 
 ## Block 12 — Politicas Operacionais e Contrato com Seller
 
@@ -478,14 +552,20 @@ Infraestrutura de desenvolvimento segura, testavel, separada de producao, sem ri
 - Estado certificado nesta tranche:
   - Documento completo em `docs/runbooks/financial-operations-policy.md` cobrindo 10 seçoes:
     1. Scope — define o escopo da politica e data efetiva.
-    2. Payout Schedule — maturaçao de 7 dias calendario para todos os 5 roles, aprovaçao manual, limitaçoes de valor e estado.
+    2. Payout Schedule — maturaçao de 7 dias calendario para todos os 5 roles, aprovaçao manual,
+       limitaçoes de valor e estado.
     3. Fee Structure — 9.9% marketplace fee (imutavel), 2.99% gateway, 3.99% juros mensais de parcelamento.
     4. Refund Policy — janela de 7 dias, reembolso completo com cascata proporcional em todos os roles.
-    5. Chargeback/Dispute Handling — ciclo de 3 fases (created/won/lost), responsabilidade do seller, prevençao via FraudEngine + 3DS.
-    6. Prepaid Wallet Policies — top-up minimo R$10, PIX/cartao, auto-recharge configuravel, deduçao atomica, idempotencia.
-    7. Seller Agreement Terms — 10 clausulas cobrindo aceitaçao de fees, responsabilidade por disputes, conformidade CDC/LGPD, zero acesso ao dashboard Stripe, suspensao de conta, rescisao.
-    8. Operational Playbook — SLA de resposta a incidentes (P0=15min, P1=1h, P2=4h, P3=24h), criterios P0, reconciliaçao de rotina a cada 15min.
-    9. Communication — emails transacionais (confirmaçao de pagamento, status de payout, alerta de saldo baixo, notificaçao de disputa).
+    5. Chargeback/Dispute Handling — ciclo de 3 fases (created/won/lost), responsabilidade do seller,
+       prevençao via FraudEngine + 3DS.
+    6. Prepaid Wallet Policies — top-up minimo R$10, PIX/cartao, auto-recharge configuravel, deduçao atomica,
+       idempotencia.
+    7. Seller Agreement Terms — 10 clausulas cobrindo aceitaçao de fees, responsabilidade por disputes,
+       conformidade CDC/LGPD, zero acesso ao dashboard Stripe, suspensao de conta, rescisao.
+    8. Operational Playbook — SLA de resposta a incidentes (P0=15min, P1=1h, P2=4h, P3=24h), criterios P0,
+       reconciliaçao de rotina a cada 15min.
+    9. Communication — emails transacionais (confirmaçao de pagamento, status de payout, alerta de saldo baixo,
+       notificaçao de disputa).
     10. Revision History — versionamento do documento.
 
 ## Key Inventory
@@ -575,8 +655,10 @@ AGUARDANDO APROVAÇÃO HUMANA DO DANIEL PARA ATIVAR MODO LIVE.
 
 `scripts/pulse/no-hardcoded-reality-audit.ts` is a locked PULSE governance surface.
 
-No AI CLI may edit, weaken, bypass, rename, delete, chmod, unflag, move, or replace this auditor. This prohibition applies to Codex, Claude, OpenCode, and any autonomous or assisted AI agent.
+No AI CLI may edit, weaken, bypass, rename, delete, chmod, unflag, move, or replace this auditor.
+This prohibition applies to Codex, Claude, OpenCode, and any autonomous or assisted AI agent.
 
-The auditor must keep scanning every source file inside `scripts/pulse/**` and must preserve hardcode debt when hardcode is deleted without a dynamic production replacement, including accumulated Git history debt.
+The auditor must keep scanning every source file inside `scripts/pulse/**` and must preserve hardcode debt when hardcode
+is deleted without a dynamic production replacement, including accumulated Git history debt.
 
 If the auditor itself needs to change, stop. The human owner must perform that change outside autonomous AI execution.

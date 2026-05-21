@@ -1,4 +1,5 @@
-import { BadRequestException, Logger, NotFoundException } from '@nestjs/common';
+import { Logger } from '@nestjs/common';
+import { BadRequestException, NotFoundException  } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import * as Sentry from '@sentry/node';
 import { PrismaService } from '../prisma/prisma.service';
@@ -132,17 +133,23 @@ export class CheckoutOrderSupport {
     orderQuantity: number,
   ): CheckoutLineItem[] {
     const categoryId = resolveCheckoutItemCategory({
-      productCategory: planRecord.product?.category,
-      productFormat: planRecord.product?.format,
+      ...(planRecord.product?.category !== undefined
+        ? { productCategory: planRecord.product?.category ?? null }
+        : {}),
+      ...(planRecord.product?.format !== undefined
+        ? { productFormat: planRecord.product?.format ?? null }
+        : {}),
     });
 
+    const pictureUrl = this.resolveProductImage(planRecord.product);
+    const description = planRecord.product?.description || planRecord.name;
     const items: CheckoutLineItem[] = [
       {
         id: planRecord.id,
         title: planRecord.name || planRecord.product?.name || 'Produto',
-        description: planRecord.product?.description || planRecord.name,
-        pictureUrl: this.resolveProductImage(planRecord.product),
-        categoryId,
+        ...(description !== undefined ? { description } : {}),
+        ...(pictureUrl !== undefined ? { pictureUrl } : {}),
+        ...(categoryId !== undefined ? { categoryId } : {}),
         quantity: normalizeCheckoutOrderQuantity(orderQuantity),
         unitPriceInCents: Math.max(0, Math.round(Number(planRecord.priceInCents || 0))),
         warranty: false,
@@ -153,12 +160,14 @@ export class CheckoutOrderSupport {
       if (!acceptedBumpIds.includes(bump.id)) {
         continue;
       }
+      const bumpPictureUrl = bump.image || undefined;
+      const bumpDescription = bump.description || bump.title;
       items.push({
         id: bump.id,
         title: bump.productName || bump.title,
-        description: bump.description || bump.title,
-        pictureUrl: bump.image || undefined,
-        categoryId,
+        ...(bumpDescription !== undefined ? { description: bumpDescription } : {}),
+        ...(bumpPictureUrl !== undefined ? { pictureUrl: bumpPictureUrl } : {}),
+        ...(categoryId !== undefined ? { categoryId } : {}),
         quantity: 1,
         unitPriceInCents: Math.max(0, Math.round(Number(bump.priceInCents || 0))),
         warranty: false,
@@ -279,12 +288,12 @@ export class CheckoutOrderSupport {
           workspaceId: input.workspaceId,
           phone,
           name: input.customerName,
-          email,
+          ...(email !== undefined ? { email } : {}),
           customFields,
         },
         update: {
-          name: input.customerName || undefined,
-          email,
+          ...(input.customerName ? { name: input.customerName } : {}),
+          ...(email !== undefined ? { email } : {}),
           customFields,
         },
       });

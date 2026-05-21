@@ -1,23 +1,38 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { Prisma } from '@prisma/client';
+import { toPrismaJsonValue } from '../common/prisma/prisma-json.util';
 import { PrismaService } from '../prisma/prisma.service';
-import type { ToolResult } from './kloel-tool-executor.service';
+import { asProviderSettings } from '../whatsapp/provider-settings.types';
 import type {
+  ToolResult,
   ToolCreateCampaignArgs,
   ToolGetLeadDetailsArgs,
   ToolListLeadsArgs,
   ToolSaveBusinessInfoArgs,
   ToolSetBusinessHoursArgs,
-} from './kloel-tool-executor.service';
+} from './kloel-tool-executor.types';
 
 const NON_DIGIT_RE = /\D/g;
+
+function centsFromUnknown(value: unknown): number {
+  if (typeof value === 'bigint') {
+    return Number(value);
+  }
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return Math.trunc(value);
+  }
+  return 0;
+}
 
 /** CRM, campaign, and business-config tool implementations for KloelToolExecutorService. */
 @Injectable()
 export class KloelToolExecutorCrmService {
-  private readonly logger = new Logger(KloelToolExecutorCrmService.name);
+  private readonly logger = StructuredLogger.from(KloelToolExecutorCrmService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) {
+    this.logger.log('KloelToolExecutorCrmService initialized');
+  }
 
   async toolListLeads(workspaceId: string, args: ToolListLeadsArgs): Promise<ToolResult> {
     const { limit = 10, status } = args;
@@ -80,7 +95,9 @@ export class KloelToolExecutorCrmService {
         include: contactInclude,
       });
     }
-    if (!contact) return { success: false, error: 'Lead não encontrado.' };
+    if (!contact) {
+      return { success: false, error: 'Lead não encontrado.' };
+    }
     return {
       success: true,
       lead: {
@@ -113,15 +130,15 @@ export class KloelToolExecutorCrmService {
     if (description || segment) {
       await this.prisma.$transaction(async (tx) => {
         const workspace = await tx.workspace.findUnique({ where: { id: workspaceId } });
-        const currentSettings = (workspace?.providerSettings as Record<string, unknown>) || {};
+        const currentSettings = asProviderSettings(workspace?.providerSettings);
         await tx.workspace.update({
           where: { id: workspaceId },
           data: {
-            providerSettings: {
+            providerSettings: toPrismaJsonValue({
               ...currentSettings,
               businessDescription: description,
               businessSegment: segment,
-            },
+            }),
             ...(businessName ? { name: businessName } : {}),
           },
         });
@@ -143,10 +160,15 @@ export class KloelToolExecutorCrmService {
     };
     await this.prisma.$transaction(async (tx) => {
       const workspace = await tx.workspace.findUnique({ where: { id: workspaceId } });
-      const currentSettings = (workspace?.providerSettings as Record<string, unknown>) || {};
+      const currentSettings = asProviderSettings(workspace?.providerSettings);
       await tx.workspace.update({
         where: { id: workspaceId },
-        data: { providerSettings: { ...currentSettings, businessHours } },
+        data: {
+          providerSettings: toPrismaJsonValue({
+            ...currentSettings,
+            businessHours,
+          }),
+        },
       });
     });
     return { success: true, businessHours, message: 'Horário de funcionamento configurado.' };
@@ -200,15 +222,50 @@ export class KloelToolExecutorCrmService {
         dateFilter = new Date();
         dateFilter.setHours(0, 0, 0, 0);
     }
-    const [contacts, messages, flows] = await Promise.all([
+    const [contacts, messages, flows, paidOrders, wallet] = await Promise.all([
       this.prisma.contact.count({ where: { workspaceId, createdAt: { gte: dateFilter } } }),
       this.prisma.message.count({ where: { workspaceId, createdAt: { gte: dateFilter } } }),
       this.prisma.flow.count({ where: { workspaceId, isActive: true } }),
+      this.prisma.checkoutOrder.aggregate({
+        where: { workspaceId, status: 'PAID', paidAt: { gte: dateFilter } },
+        _count: { _all: true },
+        _sum: { totalInCents: true },
+      }),
+      this.prisma.kloelWallet.findUnique({
+        where: { workspaceId },
+        select: {
+          availableBalanceInCents: true,
+          pendingBalanceInCents: true,
+          blockedBalanceInCents: true,
+        },
+      }),
     ]);
+    const revenueInCents = paidOrders._sum.totalInCents || 0;
+    const availableInCents = centsFromUnknown(wallet?.availableBalanceInCents);
+    const pendingInCents = centsFromUnknown(wallet?.pendingBalanceInCents);
+    const blockedInCents = centsFromUnknown(wallet?.blockedBalanceInCents);
+    const totalInCents = availableInCents + pendingInCents + blockedInCents;
     return {
       success: true,
       period,
-      stats: { newContacts: contacts, messages, activeFlows: flows },
+      stats: {
+        newContacts: contacts,
+        messages,
+        activeFlows: flows,
+        paidOrders: paidOrders._count._all,
+        revenueInCents,
+        revenue: revenueInCents / 100,
+        wallet: {
+          availableInCents,
+          pendingInCents,
+          blockedInCents,
+          totalInCents,
+          available: availableInCents / 100,
+          pending: pendingInCents / 100,
+          blocked: blockedInCents / 100,
+          total: totalInCents / 100,
+        },
+      },
     };
   }
 

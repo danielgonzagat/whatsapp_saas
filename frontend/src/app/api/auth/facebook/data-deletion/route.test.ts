@@ -58,7 +58,7 @@ describe('facebook data deletion proxy route', () => {
     const response = await POST(createRequest());
 
     expect(fetchSpy).toHaveBeenCalledWith(
-      'https://backend.example.com/auth/facebook/data-deletion',
+      'https://backend.example.com/gdpr/facebook-callback',
       expect.objectContaining({
         method: 'POST',
         headers: expect.objectContaining({

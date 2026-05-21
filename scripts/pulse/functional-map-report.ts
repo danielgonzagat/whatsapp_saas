@@ -1,16 +1,13 @@
 // PULSE — Functional Map Report Generator
 // Produces FUNCTIONAL_MAP.md with per-page interaction tables
-import { safeJoin, safeResolve } from './safe-path';
-
-import * as path from 'path';
+import { safeJoin } from './safe-path';
 import type {
   FunctionalMapResult,
   InteractionStatus,
-  PageFunctionalMap,
 } from './functional-map-types';
 import { escapeMarkdownTableCell } from './markdown-utils';
 import { writeTextFile } from './safe-fs';
-import { deriveStringUnionMembersFromTypeContract } from './dynamic-reality-kernel/__parts__/type-contract-labels';
+import { deriveStringUnionMembersFromTypeContract } from './dynamic-reality-kernel/type-contract-labels';
 
 function statusEmoji(status: InteractionStatus): string {
   return status;
@@ -228,7 +225,6 @@ export function renderFunctionalMapSummary(result: FunctionalMapResult): void {
   const RED = '\x1b[31m';
   const GREEN = '\x1b[32m';
   const YELLOW = '\x1b[33m';
-  const CYAN = '\x1b[36m';
   const MAGENTA = '\x1b[35m';
 
   const { summary } = result;

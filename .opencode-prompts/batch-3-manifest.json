@@ -1,0 +1,45 @@
+{
+  "runId": "batch-3-post-next-batch-2026-05-11",
+  "concurrency": 7,
+  "timeoutSec": 2400,
+  "dir": "/Users/danielpenin/whatsapp_saas",
+  "skipPermissions": true,
+  "_note": "Batch 3 — dispatch AFTER next-batch-post-wave-b returns. Mix of strict-mode unblockers + coverage + 1 hardening. Tier-3 each delivery before commit.",
+  "tasks": [
+    {
+      "id": "Q-2-dto-kloel",
+      "title": "Wave Q/2 — Strict-mode DTO sweep backend/src/kloel/dto (17 errors)",
+      "promptFile": ".opencode-prompts/wave-q-strict-mode/02-dto-sweep-kloel.md"
+    },
+    {
+      "id": "Q-3-dto-auth",
+      "title": "Wave Q/3 — Strict-mode DTO sweep backend/src/auth/dto (17 errors)",
+      "promptFile": ".opencode-prompts/wave-q-strict-mode/03-dto-sweep-auth.md"
+    },
+    {
+      "id": "Q-4-payments-connect",
+      "title": "Wave Q/4 — Strict-mode sweep backend/src/payments/connect (15 errors, financial)",
+      "promptFile": ".opencode-prompts/wave-q-strict-mode/04-payments-connect.md"
+    },
+    {
+      "id": "H-auth-A-coverage",
+      "title": "Wave H/Coverage-AUTH-A — 4 service specs (auth-oauth-resolver, auth-oauth, auth-partner, auth-verification)",
+      "promptFile": ".opencode-prompts/wave-h-coverage/02-auth-A.md"
+    },
+    {
+      "id": "H-checkout-A-coverage",
+      "title": "Wave H/Coverage-CHECKOUT-A — 6 service specs (checkout-catalog-config + 5 more)",
+      "promptFile": ".opencode-prompts/wave-h-coverage/03-checkout-A.md"
+    },
+    {
+      "id": "H-whatsapp-A-coverage",
+      "title": "Wave H/Coverage-WHATSAPP-A — 6 service specs (agent-events + 5 cia-*)",
+      "promptFile": ".opencode-prompts/wave-h-coverage/04-whatsapp-A.md"
+    },
+    {
+      "id": "J-2-rate-limit-global",
+      "title": "Wave J/2 — Rate limit global ThrottlerGuard calibrated per route class",
+      "promptFile": ".opencode-prompts/wave-j-hardening/02-rate-limit-global.md"
+    }
+  ]
+}

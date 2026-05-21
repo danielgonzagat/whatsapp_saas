@@ -1,0 +1,99 @@
+import type { Conversation } from '@/lib/api';
+import { Bot, User as UserIcon } from 'lucide-react';
+import { formatInboxTime as formatTime } from './inbox-workspace-utils';
+
+interface ConversationListItemProps {
+  conversation: Conversation;
+  isActive: boolean;
+  onSelect: (id: string) => void;
+}
+
+/** Conversation list item. */
+export function InboxConversationListItem({
+  conversation: c,
+  isActive,
+  onSelect,
+}: ConversationListItemProps) {
+  const name = c.contact?.name || c.contact?.phone || 'Contato';
+  const phone = c.contact?.phone || '';
+  const isHandledByHuman = !!c.assignedAgent;
+
+  return (
+    <button
+      type="button"
+      onClick={() => onSelect(c.id)}
+      className={`w-full px-[var(--inbox-panel-x)] py-[var(--inbox-panel-y)] text-left transition-colors ${isActive ? 'bg-[var(--bg-elevated)]' : 'hover:bg-[var(--bg-elevated)]'}`}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0 flex items-center gap-2">
+          {isHandledByHuman ? (
+            <span
+              className="flex shrink-0 items-center gap-1 rounded-full bg-[var(--ember-primary)]/15 px-[var(--inbox-chip-x)] py-[2px] text-[length:var(--inbox-body-xs)] font-semibold text-[var(--ember-primary)]"
+              title={c.assignedAgent?.name || 'Agente'}
+            >
+              <UserIcon
+                style={{
+                  width: 'calc(var(--inbox-icon-sm) - 2px)',
+                  height: 'calc(var(--inbox-icon-sm) - 2px)',
+                }}
+                aria-hidden="true"
+              />
+            </span>
+          ) : (
+            <span
+              className="flex shrink-0 items-center gap-1 rounded-full bg-emerald-500/15 px-[var(--inbox-chip-x)] py-[2px] text-[length:var(--inbox-body-xs)] font-semibold text-emerald-400"
+              title="IA"
+            >
+              <Bot
+                style={{
+                  width: 'calc(var(--inbox-icon-sm) - 2px)',
+                  height: 'calc(var(--inbox-icon-sm) - 2px)',
+                }}
+                aria-hidden="true"
+              />
+            </span>
+          )}
+          <div className="min-w-0">
+            <p className="truncate text-[length:var(--inbox-body)] font-semibold text-[var(--text-silver)]">
+              {name}
+            </p>
+            {phone ? (
+              <p className="mt-0.5 truncate text-[length:var(--inbox-body-xs)] text-[var(--text-muted)]">
+                {phone}
+              </p>
+            ) : null}
+          </div>
+        </div>
+        <div className="flex flex-col items-end gap-1">
+          {c.unreadCount ? (
+            <span className="rounded-full bg-[var(--ember-primary)] px-[var(--inbox-chip-x)] py-[2px] text-[length:var(--inbox-body-xs)] font-semibold text-[var(--bg-void)]">
+              {c.unreadCount}
+            </span>
+          ) : null}
+          <span className="text-[length:var(--inbox-body-xs)] text-[var(--text-muted)]">
+            {formatTime(c.lastMessageAt)}
+          </span>
+        </div>
+      </div>
+      <div className="mt-2 flex flex-wrap items-center gap-2 text-[length:var(--inbox-body-xs)] text-[var(--text-muted)]">
+        <span className="rounded-full bg-[var(--bg-elevated)] px-[var(--inbox-chip-x)] py-[2px]">
+          {c.status || ''}
+        </span>
+        {c.channel ? (
+          <span className="rounded-full bg-[var(--bg-elevated)] px-[var(--inbox-chip-x)] py-[2px]">
+            {c.channel}
+          </span>
+        ) : null}
+        {isHandledByHuman ? (
+          <span className="rounded-full bg-[var(--ember-primary)]/10 px-[var(--inbox-chip-x)] py-[2px] text-[var(--ember-primary)]">
+            {c.assignedAgent?.name || 'Agente'}
+          </span>
+        ) : (
+          <span className="rounded-full bg-emerald-500/10 px-[var(--inbox-chip-x)] py-[2px] text-emerald-400">
+            IA
+          </span>
+        )}
+      </div>
+    </button>
+  );
+}

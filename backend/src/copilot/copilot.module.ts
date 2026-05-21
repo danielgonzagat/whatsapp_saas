@@ -12,4 +12,8 @@ import { CopilotService } from './copilot.service';
   providers: [CopilotService, CopilotGateway],
   exports: [CopilotService],
 })
+/**
+ * @cluster whatsapp_saas/backend/copilot
+ * L11 multi-agent TaskGraph annotation (batched by tools/auto-pr/batch-job.mjs).
+ */
 export class CopilotModule {}

@@ -37,10 +37,10 @@ function parseGitleaksOutput(stdout) {
   } catch {
     return findings;
   }
-  if (!Array.isArray(parsed)) return findings;
+  if (!Array.isArray(parsed)) {return findings;}
   for (const leak of parsed) {
     const file = relative(REPO_ROOT, leak.File || '').replace(/\\/g, '/');
-    if (!file) continue;
+    if (!file) {continue;}
     const rule = leak.RuleID || 'gitleaks/unknown';
     const message = leak.Description || `Secret detected: ${rule}`;
     findings.push({

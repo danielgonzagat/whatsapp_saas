@@ -50,7 +50,7 @@ export async function appendLog(
   await context.publish(`flow:log:${state.workspaceId}`, {
     id: entry.id,
     timestamp: entry.ts,
-    type: typeMap[logEntry.event] || logEntry.event || 'flow_log',
+    type: typeMap[logEntry.event ?? ''] || logEntry.event || 'flow_log',
     nodeId: logEntry.nodeId,
     nodeType: logEntry.nodeType,
     message: logEntry.message || (logEntry.result ? JSON.stringify(logEntry.result) : undefined),
@@ -82,7 +82,6 @@ export async function markStatus(
   try {
     flowStatusCounter.inc({ workspaceId: state.workspaceId || 'unknown', status });
   } catch (err) {
-    // PULSE:OK — Prometheus metric increment non-critical; flow state already persisted
     log.error('flow_status_metric_error', {
       error: err instanceof Error ? err.message : String(err),
     });
@@ -152,7 +151,6 @@ export async function failExecution(
   try {
     flowStatusCounter.inc({ workspaceId: state.workspaceId || 'unknown', status: 'FAILED' });
   } catch (err) {
-    // PULSE:OK — Prometheus metric increment non-critical; FAILED status already persisted
     log.error('flow_status_metric_error', {
       error: err instanceof Error ? err.message : String(err),
     });

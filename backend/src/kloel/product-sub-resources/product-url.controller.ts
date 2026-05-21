@@ -25,8 +25,10 @@ import {
 } from './helpers/common.helpers';
 
 /** Product url controller. */
+import { RouteClass } from '../../common/throttler/route-class.decorator';
 @Controller('products/:productId/urls')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
+@RouteClass('mutate')
 export class ProductUrlController {
   constructor(
     private readonly prisma: PrismaService,
