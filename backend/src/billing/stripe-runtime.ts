@@ -11,7 +11,7 @@ const stripeRequire = createRequire(__filename);
 //
 // Strategy: probe both shapes; prefer the one that is a callable constructor.
 function resolveStripeConstructor(): typeof import('stripe') {
-  const mod = stripeRequire('stripe') as unknown as
+  const mod = stripeRequire('stripe') as never as
     | typeof import('stripe')
     | { default: typeof import('stripe'); Stripe?: typeof import('stripe') };
 

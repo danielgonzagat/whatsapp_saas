@@ -15,7 +15,7 @@ describe('AdminNotificationsService', () => {
     adminLoginAttempt: ['count'],
     workspace: ['count', 'findMany'],
     adminAuditLog: ['findMany', 'findFirst'],
-  }) as unknown as {
+  }) as never as {
     checkoutOrder: { findMany: jest.Mock };
     agent: { findMany: jest.Mock };
     conversation: { findMany: jest.Mock };

@@ -32,10 +32,10 @@ describe('AdminContactVerifyController', () => {
       channelIdentifier,
       markVerified,
       findUnique: prisma.contact.findUnique,
-      prisma: prisma as unknown as PrismaService,
+      prisma: prisma as never as PrismaService,
       controller: new AdminContactVerifyController(
         channelIdentifier,
-        prisma as unknown as PrismaService,
+        prisma as never as PrismaService,
       ),
     };
   }

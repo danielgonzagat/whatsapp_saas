@@ -72,7 +72,9 @@ describe('DestructiveIntentService', () => {
 
   const prismaMock = createPartialPrismaMock({
     destructiveIntent: ['create', 'update', 'findUnique'],
-  }) as unknown as { destructiveIntent: { create: jest.Mock; update: jest.Mock; findUnique: jest.Mock } };
+  }) as never as {
+    destructiveIntent: { create: jest.Mock; update: jest.Mock; findUnique: jest.Mock };
+  };
   const mockCreate = prismaMock.destructiveIntent.create;
   const mockUpdate = prismaMock.destructiveIntent.update;
   const mockFindUnique = prismaMock.destructiveIntent.findUnique;

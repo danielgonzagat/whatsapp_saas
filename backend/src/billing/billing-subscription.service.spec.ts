@@ -44,7 +44,7 @@ describe('BillingSubscriptionService', () => {
       },
     };
     service = new BillingSubscriptionService(
-      prisma as unknown as PrismaService,
+      prisma as never as PrismaService,
       configService,
       {} as ModuleRef,
       stripe as StripeClient,
@@ -124,15 +124,13 @@ describe('BillingSubscriptionService', () => {
     });
 
     it('upserts subscription with TRIAL status when no active subscription', async () => {
-      prisma.subscription.findUnique
-        .mockResolvedValueOnce(null)
-        .mockResolvedValueOnce({
-          status: 'TRIAL',
-          plan: 'STARTER',
-          stripeId: null,
-          currentPeriodEnd: new Date(Date.now() + 7 * 86400_000),
-          cancelAtPeriodEnd: false,
-        });
+      prisma.subscription.findUnique.mockResolvedValueOnce(null).mockResolvedValueOnce({
+        status: 'TRIAL',
+        plan: 'STARTER',
+        stripeId: null,
+        currentPeriodEnd: new Date(Date.now() + 7 * 86400_000),
+        cancelAtPeriodEnd: false,
+      });
       await service.activateTrial('ws-1');
       expect(prisma.subscription.upsert).toHaveBeenCalled();
       const upsertCall = prisma.subscription.upsert.mock.calls[0][0];

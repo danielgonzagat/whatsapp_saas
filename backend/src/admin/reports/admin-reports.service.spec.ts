@@ -67,7 +67,7 @@ describe('AdminReportsService', () => {
 
   const prismaMock = createPartialPrismaMock({
     adminAuditLog: ['findMany'],
-  }) as unknown as { adminAuditLog: { findMany: jest.Mock } };
+  }) as never as { adminAuditLog: { findMany: jest.Mock } };
   const mockAuditLogFindMany = prismaMock.adminAuditLog.findMany;
 
   const dashboardMock = {

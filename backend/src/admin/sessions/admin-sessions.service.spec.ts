@@ -31,7 +31,7 @@ describe('AdminSessionsService', () => {
 
   const prismaMock = createPartialPrismaMock({
     adminSession: ['findMany'],
-  }) as unknown as { adminSession: { findMany: jest.Mock }; $transaction: jest.Mock };
+  }) as never as { adminSession: { findMany: jest.Mock }; $transaction: jest.Mock };
   const mockSessionFindMany = prismaMock.adminSession.findMany;
 
   beforeEach(async () => {

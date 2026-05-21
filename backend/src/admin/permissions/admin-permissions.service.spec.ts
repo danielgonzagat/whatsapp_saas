@@ -26,7 +26,7 @@ function buildPrismaMock(
     if (base[key] && typeof val === 'object' && val !== null && !Array.isArray(val)) {
       Object.assign(base[key], val);
     } else {
-      (base as unknown as Record<string, unknown>)[key] = val;
+      (base as never as Record<string, unknown>)[key] = val;
     }
   }
   return base;

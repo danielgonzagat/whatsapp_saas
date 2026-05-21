@@ -40,7 +40,7 @@ describe('AdminMarketingService', () => {
     checkoutSocialLead: ['count'],
     checkoutOrder: ['findMany'],
     workspace: ['findMany'],
-  }) as unknown as {
+  }) as never as {
     conversation: { findMany: jest.Mock };
     checkoutSocialLead: { count: jest.Mock };
     checkoutOrder: { findMany: jest.Mock };
