@@ -14,6 +14,10 @@ import { RouteClass } from '../common/throttler/route-class.decorator';
 @Controller('audit')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
 @RouteClass('read')
+/**
+ * @cluster whatsapp_saas/backend/audit
+ * L11 multi-agent TaskGraph annotation (Wave 4 loop-runner).
+ */
 export class AuditController {
   constructor(private readonly auditService: AuditService) {}
 
