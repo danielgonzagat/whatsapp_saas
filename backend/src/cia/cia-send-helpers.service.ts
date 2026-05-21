@@ -5,8 +5,8 @@ import { ChannelTransportRegistry } from '../kloel/channel-transport.registry';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { AgentEventsService } from '../whatsapp/agent-events.service';
 import { NON_DIGIT_RE } from '../common/phone';
+import { WHITESPACE_G_RE } from '../common/regex';
 
-const WHITESPACE_G_RE = /\s+/g;
 const PATTERN_RE = /[?!.;,]+$/g;
 export const WHITESPACE_RE = /\s+/;
 

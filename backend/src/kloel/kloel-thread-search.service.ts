@@ -3,8 +3,8 @@ import { StructuredLogger } from '../logging/structured-logger';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { extractThreadSearchTags, stripHtmlTags } from './thread-search.util';
+import { WHITESPACE_G_RE } from '../common/regex';
 
-const S_RE = /\s+/g;
 
 interface ThreadSearchRow {
   id: string;
@@ -38,7 +38,7 @@ export class KloelThreadSearchService {
     rawLimit: string | undefined,
   ): Promise<ThreadSearchResult[]> {
     const normalizedQuery = String(rawQuery || '')
-      .replace(S_RE, ' ')
+      .replace(WHITESPACE_G_RE, ' ')
       .trim();
     const safeLimit = Math.min(Math.max(Number(rawLimit) || 20, 1), 20);
 
@@ -131,7 +131,7 @@ export class KloelThreadSearchService {
       const matchedContent =
         stripHtmlTags(previewHtml) ||
         String(row.matchedContent || '')
-          .replace(S_RE, ' ')
+          .replace(WHITESPACE_G_RE, ' ')
           .trim()
           .slice(0, 200);
 
@@ -207,7 +207,7 @@ export class KloelThreadSearchService {
       })
       .map((message) => {
         const matchedContent = String(message.content || '')
-          .replace(S_RE, ' ')
+          .replace(WHITESPACE_G_RE, ' ')
           .trim();
         return {
           id: message.thread.id,
@@ -224,7 +224,7 @@ export class KloelThreadSearchService {
       .filter((thread) => !seen.has(thread.id))
       .map((thread) => {
         const matchedContent = String(thread.messages?.[0]?.content || '')
-          .replace(S_RE, ' ')
+          .replace(WHITESPACE_G_RE, ' ')
           .trim();
         return {
           id: thread.id,

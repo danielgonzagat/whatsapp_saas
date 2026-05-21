@@ -1,6 +1,5 @@
+import { TRAILING_SLASH_RE } from '../common/regex';
 import { getRequestOrigin } from '../common/storage/public-storage-url.util';
-
-const PATTERN_RE = /\/+$/;
 
 const KLOEL_HOSTNAMES = new Set(['kloel.com', 'www.kloel.com', 'app.kloel.com', 'auth.kloel.com']);
 
@@ -34,7 +33,7 @@ function normalizePayOrigin(candidate?: string | null) {
     if (remapped) {
       url.hostname = remapped;
     }
-    return url.toString().replace(PATTERN_RE, '');
+    return url.toString().replace(TRAILING_SLASH_RE, '');
   } catch {
     return null;
   }

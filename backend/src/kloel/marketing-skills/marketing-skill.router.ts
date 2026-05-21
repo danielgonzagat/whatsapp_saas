@@ -1,10 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { MARKETING_SKILL_CATALOG } from './marketing-skill.catalog';
 import type { MarketingSkillCatalogEntry, MarketingSkillRouteHit } from './marketing-skill.types';
+import { WHITESPACE_G_RE } from '../../common/regex';
 
 const DIACRITICS_RE = /[\u0300-\u036f]/g;
 const NON_WORD_RE = /[^a-z0-9\s/+-]+/g;
-const SPACE_RE = /\s+/g;
 
 function normalizeText(value: string): string {
   return value
@@ -12,7 +12,7 @@ function normalizeText(value: string): string {
     .replace(DIACRITICS_RE, '')
     .toLowerCase()
     .replace(NON_WORD_RE, ' ')
-    .replace(SPACE_RE, ' ')
+    .replace(WHITESPACE_G_RE, ' ')
     .trim();
 }
 

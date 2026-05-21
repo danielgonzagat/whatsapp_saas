@@ -2,9 +2,10 @@ import { Prisma } from '@prisma/client';
 import { AuthenticatedRequest } from '../common/interfaces';
 import { normalizeStorageUrlForRequest } from '../common/storage/public-storage-url.util';
 
+export { SLUG_EDGE_HYPHEN_RE } from '../common/regex';
+
 export const U0300__U036F_RE = /[\u0300-\u036f]/g;
 export const A_Z0_9_RE = /[^a-z0-9]+/g;
-export const PATTERN_RE = /^-|-$/g;
 
 export interface CreateMemberAreaDto {
   name: string;

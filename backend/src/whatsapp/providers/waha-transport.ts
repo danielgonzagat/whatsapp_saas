@@ -5,10 +5,11 @@ import { getTraceHeaders } from '../../common/trace-headers';
 import { OpsAlertService } from '../../observability/ops-alert.service';
 import { WAHA_MESSAGE_EVENT, WAHA_MESSAGE_WILDCARD_EVENT } from './waha-message-event-name';
 
+import { TRAILING_SLASH_RE } from '../../common/regex';
+
 const A_Z_A_Z__A_Z_A_Z_D_RE = /^[a-zA-Z][a-zA-Z\d+\-.]*:\/\//;
 const PATTERN_RE = /^\/\//;
 const PATTERN_RE_2 = /^\/+/;
-const PATTERN_RE_3 = /\/+$/;
 
 /**
  * Low-level HTTP transport for the WAHA (WhatsApp HTTP API) provider.
@@ -120,7 +121,7 @@ export class WahaTransport {
       ) {
         return '';
       }
-      return url.toString().replace(PATTERN_RE_3, '');
+      return url.toString().replace(TRAILING_SLASH_RE, '');
     } catch {
       return '';
     }

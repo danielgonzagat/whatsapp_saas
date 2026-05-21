@@ -15,9 +15,9 @@ import { MindService } from './mind.service';
 
 import type { UnknownRecord } from '../common/types';
 import { readStringOr as readString } from '../common/parse';
+import { WHITESPACE_G_RE } from '../common/regex';
 type MemoryValue = Record<string, unknown>;
 
-const WHITESPACE_G_RE = /\s+/g;
 
 function isDeterministicPipeline(context?: UnknownRecord): boolean {
   return context?.deterministicPipeline === true;

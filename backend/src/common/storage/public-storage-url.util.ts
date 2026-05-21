@@ -1,4 +1,4 @@
-const PATTERN_RE = /\/+$/;
+import { TRAILING_SLASH_RE } from '../regex';
 
 type MinimalRequest = {
   get?: (name: string) => string | undefined;
@@ -61,14 +61,17 @@ function readOriginComponents(req: MinimalRequest | undefined | null): OriginCom
 
 function buildOriginFromComponents(parts: OriginComponents): string {
   if (parts.forwardedHost) {
-    return `${parts.forwardedProto || 'https'}://${parts.forwardedHost}`.replace(PATTERN_RE, '');
+    return `${parts.forwardedProto || 'https'}://${parts.forwardedHost}`.replace(
+      TRAILING_SLASH_RE,
+      '',
+    );
   }
   if (parts.directHost) {
     const protocol = parts.forwardedProto || parts.requestProtocol || 'http';
-    return `${protocol}://${parts.directHost}`.replace(PATTERN_RE, '');
+    return `${protocol}://${parts.directHost}`.replace(TRAILING_SLASH_RE, '');
   }
   if (parts.originHeader) {
-    return parts.originHeader.replace(PATTERN_RE, '');
+    return parts.originHeader.replace(TRAILING_SLASH_RE, '');
   }
   return '';
 }

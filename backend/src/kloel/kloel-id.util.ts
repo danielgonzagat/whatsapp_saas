@@ -1,9 +1,8 @@
 import { randomUUID } from 'node:crypto';
-
-const PATTERN_RE = /-/g;
+import { UUID_DASH_RE } from '../common/regex';
 
 function buildEntropySegment(length = 8) {
-  return randomUUID().replace(PATTERN_RE, '').slice(0, length);
+  return randomUUID().replace(UUID_DASH_RE, '').slice(0, length);
 }
 
 /** Build timestamped underscore-delimited runtime id. */
