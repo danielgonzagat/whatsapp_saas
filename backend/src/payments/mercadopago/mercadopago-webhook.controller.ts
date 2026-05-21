@@ -86,7 +86,7 @@ export class MercadoPagoWebhookController {
           eventType: body?.type ?? body?.action ?? 'payment',
           // MP webhook payload has optional fields; cast to Prisma's
           // InputJsonValue (JSON-serialisable plain object).
-          payload: (body ?? {}) as unknown as Prisma.InputJsonValue,
+          payload: (body ?? {}) as object as Prisma.InputJsonValue,
           status: 'received',
           receivedAt: new Date(),
         },
