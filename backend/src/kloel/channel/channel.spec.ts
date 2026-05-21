@@ -1,5 +1,3 @@
-import { ValenceTaggerService } from '../mind/valence-tagger.service';
-import { SpineEmitterService } from '../spine/spine-emitter.service';
 import type { SpineEventRef } from '../mind/mind.types';
 import { ConcentrationDetector } from './concentration.detector';
 import { HealthMonitor } from './health.monitor';
@@ -12,12 +10,9 @@ import { DiversificationRecommender } from './diversification.recommender';
 import type { DetectionInput } from './types';
 import { makeEventFactory } from '../../../test/helpers/spine-event-factory';
 import { baseInput } from '../../../test/helpers/detection-input-factory';
+import { makeSpine } from '../../../test/helpers/spine-factory';
 
 const makeEvent = makeEventFactory();
-
-function makeSpine(): SpineEmitterService {
-  return new SpineEmitterService(new ValenceTaggerService());
-}
 
 describe('CHANNEL-001 — Concentration Detector', () => {
   let svc: ConcentrationDetector;

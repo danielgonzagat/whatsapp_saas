@@ -1,5 +1,3 @@
-import { ValenceTaggerService } from '../mind/valence-tagger.service';
-import { SpineEmitterService } from '../spine/spine-emitter.service';
 import type { SpineEventRef } from '../mind/mind.types';
 import { AntiRemorseService } from './anti-remorse.service';
 import { ActivationCompanionService } from './activation-companion.service';
@@ -19,10 +17,6 @@ import { makeEventFactory } from '../../../test/helpers/spine-event-factory';
 import { baseInput } from '../../../test/helpers/detection-input-factory';
 
 const makeEvent = makeEventFactory();
-
-function makeSpine(): SpineEmitterService {
-  return new SpineEmitterService(new ValenceTaggerService());
-}
 
 async function flushAsyncConsumers(): Promise<void> {
   await new Promise((resolve) => setImmediate(resolve));

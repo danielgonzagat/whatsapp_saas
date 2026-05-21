@@ -32,7 +32,7 @@ import {
   entryMarketFromCandidate,
 } from './mercado-entrada.declarator.service';
 import { SpineEmitterService } from '../spine/spine-emitter.service';
-import { ValenceTaggerService } from '../mind/valence-tagger.service';
+import { makeSpine } from '../../../test/helpers/spine-factory';
 import type { SpineEventEnvelope } from '../spine/spine-event.types';
 import type { Role } from '../role/types';
 import type { MaturityStage } from '../maturity/maturity.types';
@@ -48,10 +48,6 @@ function makeService(spine?: SpineEmitterService): MercadoEntradaDeclaratorServi
   svc.setSpine(spine);
   svc.onModuleInit();
   return svc;
-}
-
-function makeSpine(): SpineEmitterService {
-  return new SpineEmitterService(new ValenceTaggerService());
 }
 
 function spineEventsOfKind(
