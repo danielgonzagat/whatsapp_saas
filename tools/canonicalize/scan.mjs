@@ -14,7 +14,8 @@ const ROOTS = [
   'backend/src',
   'frontend/src',
   'frontend-admin/src',
-  'worker/src',
+  // worker/ is a flat directory (no src/), files live at worker/*.ts
+  'worker',
 ];
 
 const SKIP_RE = /(node_modules|dist|\.next|build|coverage|__tests__|\.spec\.|\.test\.)/;
@@ -47,8 +48,15 @@ const decoratorModule = /@Module\(/;
 const decoratorProcessor = /@Processor\(/;
 const eventEmit = /\.emit\s*\(\s*['"`]([\w.:_-]+)['"`]/g;
 const eventOn = /\.on\s*\(\s*['"`]([\w.:_-]+)['"`]/g;
-const queueRegister = /Queue\s*\(\s*['"`]([\w._-]+)['"`]/g;
+// NestJS event-emitter
+const nestEventEmit = /eventEmitter\.emit\s*\(\s*['"`]([\w.:_-]+)['"`]/g;
+const nestOnEvent = /@OnEvent\s*\(\s*['"`]([\w.:_-]+)['"`]/g;
+// BullMQ — direct Queue/Worker + NestJS @Processor + @Process + BullModule.registerQueue
+const queueRegister = /(?:new\s+Queue|BullModule\.registerQueue|registerQueue)\s*\(\s*[{'"]*[^'"]*['"`]?(?:name\s*:\s*)?['"`]([\w._-]+)['"`]/g;
 const bullProcessor = /@Processor\(\s*['"`]([\w._-]+)['"`]/g;
+const bullProcess = /@Process\(\s*['"`]([\w._-]+)['"`]/g;
+// `new Worker('queue-name', ...)` — vanilla BullMQ pattern used by the worker/ tree
+const bullWorker = /new\s+Worker\s*\(\s*['"`]([\w._-]+)['"`]/g;
 const httpVerbs = /@(Get|Post|Put|Delete|Patch)\s*\(\s*(?:['"`]([^'"`)]*)['"`])?\s*\)/g;
 const prismaModel = /prisma\.([a-zA-Z_]\w*)\./g;
 
@@ -107,8 +115,13 @@ for (const file of tsFiles) {
     }
   }
 
-  // events
-  for (const [re, kind] of [[eventEmit, 'emit'], [eventOn, 'listen']]) {
+  // events — native + NestJS event-emitter
+  for (const [re, kind] of [
+    [eventEmit, 'emit'],
+    [eventOn, 'listen'],
+    [nestEventEmit, 'emit'],
+    [nestOnEvent, 'listen'],
+  ]) {
     re.lastIndex = 0;
     let em;
     while ((em = re.exec(src))) {
@@ -118,7 +131,7 @@ for (const file of tsFiles) {
     }
   }
 
-  // queues
+  // queues — BullMQ direct + NestJS BullModule.registerQueue
   queueRegister.lastIndex = 0;
   let qm;
   while ((qm = queueRegister.exec(src))) {
@@ -128,6 +141,20 @@ for (const file of tsFiles) {
   }
   bullProcessor.lastIndex = 0;
   while ((qm = bullProcessor.exec(src))) {
+    const q = qm[1];
+    if (!queues.has(q)) queues.set(q, []);
+    queues.get(q).push(rel);
+  }
+  // @Process('name') — BullMQ NestJS adapter; counts as queue consumer
+  bullProcess.lastIndex = 0;
+  while ((qm = bullProcess.exec(src))) {
+    const q = qm[1];
+    if (!queues.has(q)) queues.set(q, []);
+    queues.get(q).push(rel);
+  }
+  // new Worker('queue', ...) — vanilla BullMQ consumer (worker/ tree)
+  bullWorker.lastIndex = 0;
+  while ((qm = bullWorker.exec(src))) {
     const q = qm[1];
     if (!queues.has(q)) queues.set(q, []);
     queues.get(q).push(rel);
@@ -196,18 +223,23 @@ for (const [eventName, refs] of events) {
 // Semantic duplication: same canonical concept across multiple implementations.
 
 const CANONICAL_PATTERNS = [
-  { canonical: 'send_message', regex: /^(sendMessage|sendWhatsapp|sendText|sendChannel|dispatchText|dispatchMessage|deliverMessage|emitMessage|postMessage|publishMessage|wahaSend)/i },
-  { canonical: 'normalize_phone', regex: /^(normalizePhone|normalizeNumber|cleanPhone|formatPhone|toE164|phoneToE164|phoneNormalize)/i },
-  { canonical: 'resolve_tenant', regex: /^(resolveTenant|resolveWorkspace|getTenantId|getWorkspaceId|extractTenant|tenantFromRequest)/i },
-  { canonical: 'parse_webhook', regex: /^(parseWebhook|webhookParse|extractEvent|decodeWebhook|parseInbound|inboundParse)/i },
-  { canonical: 'idempotency_check', regex: /^(isIdempotent|alreadyProcessed|checkIdempotency|dedupeEvent|hasBeenSeen)/i },
-  { canonical: 'recover_cart', regex: /^(recoverCart|abandonedCart|recoverAbandonedCart|reactivateCart|cartRecovery)/i },
-  { canonical: 'score_intent', regex: /^(scoreIntent|commercialIntent|computeIntent|intentScore)/i },
-  { canonical: 'qualify_contact', regex: /^(qualifyContact|qualifyLead|leadQualification|contactQualify)/i },
-  { canonical: 'authenticate_user', regex: /^(authenticate|loginUser|signIn|verifyCredentials|checkCredentials)/i },
-  { canonical: 'connect_channel', regex: /^(connectChannel|connectWhatsapp|startSession|initSession|attachChannel)/i },
-  { canonical: 'process_payment', regex: /^(processPayment|chargePayment|capturePayment|confirmPayment|payNow)/i },
-  { canonical: 'create_checkout', regex: /^(createCheckout|startCheckout|initCheckout|buildCheckout|newCheckout)/i },
+  { canonical: 'send_message', regex: /^(sendMessage|sendWhatsapp|sendText|sendChannel|dispatchText|dispatchMessage|deliverMessage|emitMessage|postMessage|publishMessage|wahaSend|MessageDispatch)/i },
+  { canonical: 'normalize_phone', regex: /^(normalizePhone|normalizeNumber|cleanPhone|formatPhone|toE164|phoneToE164|phoneNormalize|phoneDigits|phoneOptional|phoneWhatsapp)/i },
+  { canonical: 'resolve_tenant', regex: /^(resolveTenant|resolveWorkspace|getTenantId|getWorkspaceId|extractTenant|tenantFromRequest|workspaceFrom|WorkspaceContext)/i },
+  { canonical: 'parse_webhook', regex: /^(parseWebhook|webhookParse|extractEvent|decodeWebhook|parseInbound|inboundParse|WebhookVerifier|verifyWebhookSignature|webhookHandler)/i },
+  { canonical: 'idempotency_check', regex: /^(isIdempotent|alreadyProcessed|checkIdempotency|dedupeEvent|hasBeenSeen|Idempotency(Guard|Service|Interceptor|Fingerprint))/i },
+  { canonical: 'recover_cart', regex: /^(recoverCart|abandonedCart|recoverAbandonedCart|reactivateCart|cartRecovery|CartRecovery)/i },
+  { canonical: 'score_intent', regex: /^(scoreIntent|commercialIntent|computeIntent|intentScore|RuntimeIntentResolver|IntentScorer|Mind(Catalog|Commercial|Recovery)Decision)/i },
+  { canonical: 'qualify_contact', regex: /^(qualifyContact|qualifyLead|leadQualification|contactQualify|ContactQualification|LeadProcessor)/i },
+  { canonical: 'authenticate_user', regex: /^(authenticate|loginUser|signIn|verifyCredentials|checkCredentials|AuthService|JwtAuth|AdminAuth)/i },
+  { canonical: 'connect_channel', regex: /^(connectChannel|connectWhatsapp|startSession|initSession|attachChannel|ChannelSession|WhatsappSession|MetaConnect|WahaConnect)/i },
+  { canonical: 'process_payment', regex: /^(processPayment|chargePayment|capturePayment|confirmPayment|payNow|PaymentIntent|StripeCharge|MercadoPagoCharge|PaymentService)/i },
+  { canonical: 'create_checkout', regex: /^(createCheckout|startCheckout|initCheckout|buildCheckout|newCheckout|CheckoutSession|CheckoutPayment)/i },
+  { canonical: 'verify_webhook_signature', regex: /^(verifyWebhookSignature|validateStripeSignature|validateMpSignature|validateMercadoPagoSignature|checkSignature|hmacVerify)/i },
+  { canonical: 'split_payment', regex: /^(splitPayment|splitEngine|computeSplit|SplitEngine|MarketplaceSplit)/i },
+  { canonical: 'ledger_entry', regex: /^(LedgerEntry|ledgerWrite|recordTransaction|writeLedger|appendLedger|LedgerService)/i },
+  { canonical: 'fraud_check', regex: /^(fraudCheck|FraudEngine|assessFraud|fraudScore|riskScore|RiskClass)/i },
+  { canonical: 'kyc_verify', regex: /^(verifyKyc|KycVerification|kycSubmit|KycService|onboardingKyc)/i },
 ];
 
 const capabilityMap = new Map();
