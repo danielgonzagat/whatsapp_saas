@@ -54,6 +54,21 @@
       "command": "bash",
       "args": ["scripts/mcp/atomic-edit-mcp-launcher.sh"],
       "description": "Structured code action space (v3, 14 tools) — READ: code_browse / code_outline / code_read_symbol (CodeStruct readCode, the dominant accuracy lever). EDIT: replace_range / insert_at / delete_range / apply_edits (LSP TextEdit[]) / replace_literal / edit_symbol (replace|insert_after|remove by AST selector) / rename_symbol (in-file) / rename_symbol_cross_file (project-wide tsconfig language service) / add_import / remove_import (deduped, comma-safe) / replace_property_value (scoped). Every mutating op: syntax-regression-validated, atomic write, optional sha256 optimistic-concurrency guard, preview dry-run, governance-protected files refused. Closes the line-oriented action bottleneck."
+    },
+    "codegraph": {
+      "command": "codegraph",
+      "args": ["serve", "--mcp"],
+      "description": "Codegraph deterministic code intelligence — 19 langs, 13 frameworks. SQLite+FTS5+tree-sitter index at .codegraph/codegraph.db. Read tools: query / context / callers / callees / impact / node / status / files / affected. Canonical read layer for all 4 agents."
+    },
+    "graphify-plus": {
+      "command": "bash",
+      "args": ["scripts/mcp/graphify-plus-mcp/launcher.sh"],
+      "description": "Graphify-plus operational layer on top of CodeGraph — hot_clusters / blast_radius / metadata_for_file / stub_route_inventory / runtime_errors / affected_specs / auto_pr_dispatch / playwright_diff / codacy_drain_jobs / session_state / taskgraph_lock_status. Action layer that turns the read graph into autonomous PRs."
+    },
+    "saas-compiler": {
+      "command": "bash",
+      "args": ["scripts/mcp/saas-compiler-mcp/launcher.sh"],
+      "description": "SaaS compiler — intent.md → spec.json → code → PR → verify-in-prod → auto-rollback. 11 tools: intent_to_spec / spec_to_code / verify_intent / compile_run / build_corpus / crystallize / etc. Closes the end-to-end SaaS authoring loop."
     }
   }
 }
