@@ -36,15 +36,7 @@ export function normalizeJsonObjExt(value: unknown): Record<string, unknown> {
     : {};
 }
 
-function normalizeOptionalText(value: unknown): string {
-  if (typeof value === 'string') {
-    return value.trim();
-  }
-  if (typeof value === 'number' || typeof value === 'boolean') {
-    return String(value).trim();
-  }
-  return '';
-}
+import { readText as normalizeOptionalText } from '../common/utils';
 
 export function resolveTimestampExt(value: unknown): number {
   const val = (value && typeof value === 'object' ? value : {}) as Record<string, unknown>;

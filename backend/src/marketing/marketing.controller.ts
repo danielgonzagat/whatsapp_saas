@@ -21,7 +21,7 @@ import { PrismaService } from '../prisma/prisma.service';
 
 import { RouteClass } from '../common/throttler/route-class.decorator';
 import { InternalEndpoint } from '../common/decorators/internal-endpoint.decorator';
-const NAME_RE = /\{\{name\}\}/g;
+import { NAME_RE } from '../common/regex';
 
 const CHANNELS = ['WHATSAPP', 'INSTAGRAM', 'MESSENGER', 'EMAIL', 'TIKTOK'];
 

@@ -34,7 +34,7 @@ import { RouteClass } from '../common/throttler/route-class.decorator';
 
 import { SLUG_EDGE_HYPHEN_RE } from '../common/regex';
 
-const U0300__U036F_RE = /[\u0300-\u036f]/g;
+import { DIACRITICS_RE } from '../common/regex';
 const A_Z0_9_RE = /[^a-z0-9]+/g;
 
 function normalizeTimerType(value: unknown): TimerType | undefined {
@@ -73,7 +73,7 @@ export class CheckoutController {
     const base = String(value || 'checkout')
       .toLowerCase()
       .normalize('NFD')
-      .replace(U0300__U036F_RE, '')
+      .replace(DIACRITICS_RE, '')
       .replace(A_Z0_9_RE, '-')
       .replace(SLUG_EDGE_HYPHEN_RE, '')
       .slice(0, 48);
@@ -138,7 +138,7 @@ export class CheckoutController {
       dto.slug = `${(dto.name || 'product')
         .toLowerCase()
         .normalize('NFD')
-        .replace(U0300__U036F_RE, '')
+        .replace(DIACRITICS_RE, '')
         .replace(A_Z0_9_RE, '-')
         .replace(SLUG_EDGE_HYPHEN_RE, '')}-${Date.now().toString(36)}`;
     }

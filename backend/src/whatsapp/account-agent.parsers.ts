@@ -15,12 +15,8 @@ import type {
 import { readStringOrNull as readString } from '../common/parse';
 export { readString };
 
-export function asRecord(value: unknown): Record<string, unknown> | null {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) {
-    return null;
-  }
-  return value as Record<string, unknown>;
-}
+import { asRecord } from '../common/types';
+export { asRecord };
 
 
 function readNullableString(value: unknown): string | null {

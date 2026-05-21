@@ -175,22 +175,12 @@ export function mapStripeIntentStatusForCheckout(
   return 'PENDING';
 }
 
-/** Casts unknown to Record or null. */
-export function asRecord(value: unknown): Record<string, unknown> | null {
-  return value && typeof value === 'object' && !Array.isArray(value)
-    ? (value as Record<string, unknown>)
-    : null;
-}
+export { asRecord } from '../common/types';
 
 /** Casts unknown to non-empty string or null. Re-exported from canonical. */
 export { asString };
 
-/** Casts unknown to string[]. */
-export function asStringArray(value: unknown): string[] {
-  return Array.isArray(value)
-    ? value.filter((item): item is string => typeof item === 'string')
-    : [];
-}
+export { readStringArray as asStringArray } from '../common/parse';
 
 /** Parses an integer-like value to bigint, returning 0n on failure. */
 export function parseBigIntNumberish(value: unknown): bigint {

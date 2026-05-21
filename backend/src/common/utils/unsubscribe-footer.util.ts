@@ -3,7 +3,7 @@ import { join } from 'node:path';
 import { escapeHtml } from './html-escape.util';
 import { generateUnsubscribeToken } from './unsubscribe-token.util';
 
-const PLACEHOLDER_RE = /\{\{\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*\}\}/g;
+import { PLACEHOLDER_RE } from '../regex';
 
 const FOOTER_TEMPLATE_PATH = join(
   __dirname,

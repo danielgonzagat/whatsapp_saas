@@ -8,7 +8,7 @@ import { resolveBackendOpenAIModel } from '../lib/openai-models';
 import { MemoryService } from './memory.service';
 import { chatCompletionWithRetry } from './openai-wrapper';
 
-const JSON_N___N_RE = /```json\n?|\n?```/g;
+import { JSON_CODE_FENCE_RE } from '../common/regex';
 const A_Z_A_Z0_9_RE = /[^a-zA-Z0-9]/g;
 /** Output contract used by document analysis calls and cost quotes. */
 export const PDF_ANALYSIS_OUTPUT_CONTRACT =
@@ -101,7 +101,7 @@ export class PdfProcessorService {
         temperature: 0.3,
       });
       const content = response.choices[0]?.message?.content || '{}';
-      const cleanJson = content.replace(JSON_N___N_RE, '').trim();
+      const cleanJson = content.replace(JSON_CODE_FENCE_RE, '').trim();
       return {
         analysis: JSON.parse(cleanJson) as PdfAnalysis,
         usage: (response.usage ?? null) as PdfProcessorUsage,

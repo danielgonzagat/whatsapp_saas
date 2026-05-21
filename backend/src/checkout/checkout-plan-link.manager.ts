@@ -10,7 +10,7 @@ import {
 
 import { SLUG_EDGE_HYPHEN_RE } from '../common/regex';
 
-const U0300__U036F_RE = /[\u0300-\u036f]/g;
+import { DIACRITICS_RE } from '../common/regex';
 const A_Z0_9_RE = /[^a-z0-9]+/g;
 
 type PublicIdentifierIgnore = {
@@ -28,7 +28,7 @@ export class CheckoutPlanLinkManager {
       .trim()
       .toLowerCase()
       .normalize('NFD')
-      .replace(U0300__U036F_RE, '')
+      .replace(DIACRITICS_RE, '')
       .replace(A_Z0_9_RE, '-')
       .replace(SLUG_EDGE_HYPHEN_RE, '')
       .slice(0, 56);
