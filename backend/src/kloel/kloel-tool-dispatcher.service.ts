@@ -58,22 +58,6 @@ export class KloelToolDispatcherService {
     @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
 
-  /** Resolve productId from productName if not already provided. */
-  private async resolveProductId(workspaceId: string, args: UnknownRecord): Promise<string | null> {
-    if (typeof args.productId === 'string' && args.productId) {
-      return args.productId;
-    }
-    const name = typeof args.productName === 'string' ? args.productName : null;
-    if (!name) {
-      return null;
-    }
-    const product = await this.prisma.product.findFirst({
-      where: { workspaceId, name: { contains: name, mode: 'insensitive' } },
-      select: { id: true },
-    });
-    return product?.id ?? null;
-  }
-
   /** Execute a named tool, delegating to the appropriate sub-service. */
   async executeTool(
     workspaceId: string,
@@ -136,34 +120,14 @@ export class KloelToolDispatcherService {
           return await this.chatToolsService.toolListFlows(workspaceId);
         case 'get_dashboard_summary':
           return await this.chatToolsService.toolGetDashboardSummary(workspaceId, asToolArgs(args));
-        case 'get_product_plans': {
-          const pid = await this.resolveProductId(workspaceId, args);
-          if (pid) {
-            (args as Record<string, unknown>).productId = pid;
-          }
+        case 'get_product_plans':
           return await this.chatToolsService.toolGetProductPlans(workspaceId, asToolArgs(args));
-        }
-        case 'get_product_ai_config': {
-          const pid = await this.resolveProductId(workspaceId, args);
-          if (pid) {
-            (args as Record<string, unknown>).productId = pid;
-          }
+        case 'get_product_ai_config':
           return await this.chatToolsService.toolGetProductAiConfig(workspaceId, asToolArgs(args));
-        }
-        case 'get_product_reviews': {
-          const pid = await this.resolveProductId(workspaceId, args);
-          if (pid) {
-            (args as Record<string, unknown>).productId = pid;
-          }
+        case 'get_product_reviews':
           return await this.chatToolsService.toolGetProductReviews(workspaceId, asToolArgs(args));
-        }
-        case 'get_product_urls': {
-          const pid = await this.resolveProductId(workspaceId, args);
-          if (pid) {
-            (args as Record<string, unknown>).productId = pid;
-          }
+        case 'get_product_urls':
           return await this.chatToolsService.toolGetProductUrls(workspaceId, asToolArgs(args));
-        }
         case 'validate_coupon':
           return await this.chatToolsService.toolValidateCoupon(workspaceId, asToolArgs(args));
         case 'get_wallet_balance':
