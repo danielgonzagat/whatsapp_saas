@@ -37,9 +37,9 @@ async function main() {
   const ctx = await buildContext();
   const llmProvider = provider();
   if (!llmProvider) {
-    console.error('[intent-to-spec] no LLM key — emitting deterministic stub spec');
+    console.error('[intent-to-spec] no LLM key — emitting deterministic fallback spec');
     await writeFile(specPath, JSON.stringify(deterministicSpec(intent), null, 2));
-    console.log(`[intent-to-spec] wrote ${specPath} (stub)`);
+    console.log(`[intent-to-spec] wrote ${specPath} (fallback)`);
     return;
   }
   const system = SYSTEM_PROMPT(ctx);

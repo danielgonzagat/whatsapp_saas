@@ -1,21 +1,21 @@
 #!/usr/bin/env node
-// tools/crystallization/run.mjs — Wave 11 #4: stub → real conversion.
+// tools/crystallization/run.mjs — Wave 11 #4: route gap conversion.
 //
-// Reads tools/auto-pr/stub-route-detector.mjs output (graphify-out/stub-routes.json),
-// picks N stubs by priority (graphify-out/stub-priority.md), and for each:
+// Reads route-gap detector output (graphify-out/route-gaps.json),
+// picks N gaps by priority (graphify-out/route-gap-priority.md), and for each:
 //
 //   1. Builds context: CodeGraph callers, AppShell sidebar entry, Prisma
 //      models in the same module, ADR/memory mentions.
 //   2. Picks a template (frontend-page-real | redirect-fix | service-shell).
 //   3. Generates concrete file edits.
-//   4. Emits an auto-PR job per stub (or per cluster).
+//   4. Emits an auto-PR job per route gap (or per cluster).
 //
 // CLI:
 //   node tools/crystallization/run.mjs --top=5
 //   node tools/crystallization/run.mjs --route=/anuncios
 //   node tools/crystallization/run.mjs --dry-run
 //
-// LLM is used ONLY for the natural-language `intent_summary` per stub. The
+// LLM is used ONLY for the natural-language `intent_summary` per route gap. The
 // code generation itself is deterministic templates parameterised by the
 // graph context — safer for autonomous batches.
 
@@ -25,7 +25,7 @@ import { argv } from 'node:process';
 import { dirname, join, basename } from 'node:path';
 
 const ROOT = process.cwd();
-const STUBS = join(ROOT, 'graphify-out/stub-routes.json');
+const GAPS = join(ROOT, 'graphify-out/route-gaps.json');
 const APPSHELL = join(ROOT, 'frontend/src/components/kloel/AppShell.routes.ts');
 const JOBS_DIR = join(ROOT, 'graphify-out/auto-pr-jobs');
 
@@ -34,16 +34,16 @@ const ROUTE_ONLY = argv.find((a) => a.startsWith('--route='))?.split('=')[1];
 const DRY = argv.includes('--dry-run');
 
 async function main() {
-  if (!existsSync(STUBS)) {
-    console.error('[crystallize] no stub-routes.json — run tools/auto-pr/stub-route-detector.mjs first');
+  if (!existsSync(GAPS)) {
+    console.error('[crystallize] no route-gaps.json — run the route gap detector first');
     process.exit(1);
   }
-  const { stubs } = JSON.parse(await readFile(STUBS, 'utf8'));
+  const { gaps } = JSON.parse(await readFile(GAPS, 'utf8'));
   const sidebar = await readSafe(APPSHELL);
 
   const candidates = ROUTE_ONLY
-    ? stubs.filter((s) => s.route === ROUTE_ONLY)
-    : stubs;
+    ? gaps.filter((s) => s.route === ROUTE_ONLY)
+    : gaps;
 
   // Rank by reason weight + sidebar presence
   const ranked = candidates
@@ -51,13 +51,13 @@ async function main() {
     .sort((a, b) => b.score - a.score)
     .slice(0, TOP);
 
-  console.log(`[crystallize] selected ${ranked.length} stubs to convert`);
+  console.log(`[crystallize] selected ${ranked.length} gaps to convert`);
   let emitted = 0;
-  for (const stub of ranked) {
-    const out = await crystallize(stub, sidebar);
+  for (const gap of ranked) {
+    const out = await crystallize(gap, sidebar);
     if (!out) continue;
     if (DRY) {
-      console.log(`  DRY would emit job for ${stub.route} (${out.files.length} files)`);
+      console.log(`  DRY would emit job for ${gap.route} (${out.files.length} files)`);
     } else {
       await emitJob(out);
       emitted++;
@@ -66,61 +66,60 @@ async function main() {
   console.log(`[crystallize] ${DRY ? 'would emit' : 'emitted'} ${emitted} jobs`);
 }
 
-function rank(stub, sidebar) {
+function rank(gap, sidebar) {
   let score = 0;
-  if (stub.reason === 'placeholder-marker') score += 50;
-  else if (stub.reason === 'returns-null') score += 30;
-  else if (stub.reason === 'redirect-only') score += 5;
-  else if (stub.reason.startsWith('tiny-')) {
-    const loc = Number(stub.reason.match(/tiny-(\d+)/)?.[1] || 99);
+  if (gap.reason === 'placeholder-marker') score += 50;
+  else if (gap.reason === 'returns-null') score += 30;
+  else if (gap.reason === 'redirect-only') score += 5;
+  else if (gap.reason.startsWith('tiny-')) {
+    const loc = Number(gap.reason.match(/tiny-(\d+)/)?.[1] || 99);
     score += Math.max(10, 25 - loc);
   }
-  if (sidebar && (sidebar.includes(`'${stub.route}'`) || sidebar.includes(`"${stub.route}"`))) score += 30;
-  const depth = stub.route.split('/').filter(Boolean).length;
+  if (sidebar && (sidebar.includes(`'${gap.route}'`) || sidebar.includes(`"${gap.route}"`))) score += 30;
+  const depth = gap.route.split('/').filter(Boolean).length;
   score += Math.max(5, 25 - depth * 5);
   return score;
 }
 
-async function crystallize(stub, sidebar) {
+async function crystallize(gap, sidebar) {
   // Decide template by reason
-  if (stub.reason === 'redirect-only') return null; // intentional, skip
-  const tmpl = pickTemplate(stub);
+  if (gap.reason === 'redirect-only') return null; // intentional, skip
+  const tmpl = pickTemplate(gap);
   if (!tmpl) return null;
-  const route = stub.route;
-  const filePath = stub.file;
+  const route = gap.route;
+  const filePath = gap.file;
   const moduleHint = route.split('/').filter(Boolean)[0] || 'home';
   const existing = await readSafe(join(ROOT, filePath));
   const componentName = pascal(moduleHint) + 'View';
   // Locate the canonical view component if it exists in src/components/kloel/<module>/<X>View.tsx
   const candidateView = await findCanonicalView(moduleHint);
   if (candidateView && existing && existing.includes(candidateView.exportName)) {
-    // The page already delegates to the real view — this is a thin wrapper,
-    // a "false stub". Skip.
+    // The page already delegates to the real view. Skip this already-wired route.
     return null;
   }
 
-  const newContent = renderPageDelegating(filePath, moduleHint, candidateView, stub);
+  const newContent = renderPageDelegating(filePath, moduleHint, candidateView, gap);
   if (!newContent) return null;
 
   const ts = Date.now();
   return {
     title: `feat(crystallize): wire ${route} to a real component`,
-    body: composeBody(stub, candidateView),
+    body: composeBody(gap, candidateView),
     branch: `auto/crystallize-${moduleHint}-${ts}`,
     base: 'origin/main',
     files: [{ path: filePath, content: newContent }],
     shell: [
       'cd frontend && npx tsc --noEmit -p tsconfig.json || true',
     ],
-    _stubMeta: { route, reason: stub.reason, score: stub.score },
+    _routeGapMeta: { route, reason: gap.reason, score: gap.score },
   };
 }
 
-function pickTemplate(stub) {
-  if (stub.reason === 'placeholder-marker') return 'frontend-page-real';
-  if (stub.reason === 'placeholder-comment-only') return 'frontend-page-real';
-  if (stub.reason === 'returns-null') return 'frontend-page-real';
-  if (stub.reason.startsWith('tiny-')) return 'frontend-page-real';
+function pickTemplate(gap) {
+  if (gap.reason === 'placeholder-marker') return 'frontend-page-real';
+  if (gap.reason === 'placeholder-comment-only') return 'frontend-page-real';
+  if (gap.reason === 'returns-null') return 'frontend-page-real';
+  if (gap.reason.startsWith('tiny-')) return 'frontend-page-real';
   return null;
 }
 
@@ -142,39 +141,40 @@ async function findCanonicalView(moduleHint) {
   return null;
 }
 
-function renderPageDelegating(_filePath, moduleHint, view, stub) {
+function renderPageDelegating(_filePath, moduleHint, view, gap) {
   if (!view) return null;
   const importPath = '@/' + view.path.replace(/^frontend\/src\//, '');
-  return `import ${view.exportName} from '${importPath.replace(/\.tsx?$/, '')}';\n\n/** ${stub.route} — crystallised by tools/crystallization/run.mjs.\n *  Replaces stub (reason: ${stub.reason}) with the canonical view in this module. */\nexport default function ${pascal(moduleHint)}Page() {\n  return <${view.exportName} />;\n}\n`;
+  return `import ${view.exportName} from '${importPath.replace(/\.tsx?$/, '')}';\n\n/** ${gap.route} — crystallised by tools/crystallization/run.mjs.\n *  Replaces route gap (reason: ${gap.reason}) with the canonical view in this module. */\nexport default function ${pascal(moduleHint)}Page() {\n  return <${view.exportName} />;\n}\n`;
 }
 
-function composeBody(stub, view) {
-  return `## Stub crystallisation
+function composeBody(gap, view) {
+  return `## Route gap crystallisation
 
-**Route:** \`${stub.route}\`
-**Stub file:** \`${stub.file}\`
-**Reason flagged:** ${stub.reason}
-**Score:** ${stub.score}
+**Route:** \`${gap.route}\`
+**Route file:** \`${gap.file}\`
+**Reason flagged:** ${gap.reason}
+**Score:** ${gap.score}
 
 **Canonical view discovered:** ${view ? `\`${view.path}\` → \`${view.exportName}\`` : 'none (skipped)'}
 
-This PR replaces the stub page with a thin wrapper that delegates to the
+This PR replaces the route gap with a thin wrapper that delegates to the
 canonical view component. The view itself already exists in the
-\`components/kloel/\` tree; the page was previously an empty stub.
+\`components/kloel/\` tree; the page was previously an empty shell.
 
 Generated by \`tools/crystallization/run.mjs\` — Wave 11 (#4 Production
 Crystallization).
 
 ---
-🤖 Re-run \`node tools/crystallization/run.mjs --route=${stub.route}\` to regenerate.`;
+Regenerate with \`node tools/crystallization/run.mjs --route=${gap.route}\`.`;
 }
 
 async function emitJob(job) {
   await mkdir(JOBS_DIR, { recursive: true });
-  const out = join(JOBS_DIR, `crystallize-${job._stubMeta.route.replace(/[^a-z0-9]+/g, '-')}-${Date.now()}.json`);
-  delete job._stubMeta;
+  const routeGapMeta = job._routeGapMeta;
+  const out = join(JOBS_DIR, `crystallize-${routeGapMeta.route.replace(/[^a-z0-9]+/g, '-')}-${Date.now()}.json`);
+  delete job._routeGapMeta;
   await writeFile(out, JSON.stringify(job, null, 2));
-  console.log(`  → ${out}`);
+  console.log(`  -> ${out}`);
 }
 
 async function readSafe(p) { try { return await readFile(p, 'utf8'); } catch { return null; } }

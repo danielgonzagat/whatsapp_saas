@@ -5,7 +5,7 @@
  *   • intent_to_spec(intentPath)        → spec.json only
  *   • spec_to_code(specPath)            → auto-pr job
  *   • verify_in_prod(specPath, hours)   → SHIP_OK / ROLLBACK / INCONCLUSIVE
- *   • crystallize_stub(route|top)       → emits crystallisation auto-pr jobs
+ *   • crystallize_route_gap(route|top)       → emits crystallisation auto-pr jobs
  *   • capture_fingerprint(name, steps)  → records a behavioral fingerprint
  *   • replay_fingerprint(name|all,base) → asserts behavior parity
  *   • twin_up / twin_down / twin_shadow / twin_metrics
@@ -45,9 +45,9 @@ const tools = [
     inputSchema: { type: 'object', properties: { specPath: { type: 'string' }, hours: { type: 'number' } }, required: ['specPath'] },
   },
   {
-    name: 'crystallize_stub',
-    description: 'Convert one or more stub routes into real implementations that delegate to canonical view components in components/kloel/. Emits one auto-PR job per stub.',
-    inputSchema: { type: 'object', properties: { route: { type: 'string', description: 'Specific stub route (e.g. /anuncios). Omit to use top-N.' }, top: { type: 'number', description: 'Number of top-priority stubs (default 5)' } } },
+    name: 'crystallize_route_gap',
+    description: 'Convert one or more route gaps into real implementations that delegate to canonical view components in components/kloel/. Emits one auto-PR job per route.',
+    inputSchema: { type: 'object', properties: { route: { type: 'string', description: 'Specific route gap (e.g. /anuncios). Omit to use top-N.' }, top: { type: 'number', description: 'Number of top-priority route gaps (default 5)' } } },
   },
   {
     name: 'capture_fingerprint',
@@ -75,7 +75,7 @@ async function callTool(name, args = {}) {
     case 'intent_to_spec': return runScript(['node', join(ROOT, 'tools/saas-compiler/intent-to-spec.mjs'), args.intentPath]);
     case 'spec_to_code': return runScript(['node', join(ROOT, 'tools/saas-compiler/spec-to-code.mjs'), args.specPath]);
     case 'verify_in_prod': return runScript(['node', join(ROOT, 'tools/saas-compiler/verify-in-prod.mjs'), args.specPath, ...(args.hours ? [`--hours=${args.hours}`] : [])]);
-    case 'crystallize_stub': {
+    case 'crystallize_route_gap': {
       const flags = args.route ? [`--route=${args.route}`] : [`--top=${args.top ?? 5}`];
       return runScript(['node', join(ROOT, 'tools/crystallization/run.mjs'), ...flags]);
     }

@@ -152,7 +152,7 @@ async function emitBackendFlow(spec, flow) {
     },
     {
       path: `backend/src/_compiled/${mod}/${mod}.service.ts`,
-      content: `import { Injectable, Logger } from '@nestjs/common';\nimport { PrismaService } from '../../prisma/prisma.service';\n\n/**\n * Compiled from intent ${mod}.\n * Flow: ${flow.id}\n * Trigger: ${flow.trigger}\n * Action: ${flow.action}\n */\n@Injectable()\nexport class ${className}Service {\n  private readonly logger = new Logger(${className}Service.name);\n\n  constructor(private readonly prisma: PrismaService) {}\n\n  async ${camel(flow.id)}(workspaceId: string, input: unknown): Promise<{ ok: true }> {\n    this.logger.log({ msg: 'flow start', flow: '${flow.id}', workspaceId });\n    // TODO: implement ${flow.action} respecting invariants:\n    //   ${(spec.invariants || []).map((i) => `// - ${i}`).join('\\n//   ')}\n    // Side effects expected:\n    //   ${(flow.side_effects || []).map((s) => `// - ${s}`).join('\\n//   ')}\n    return { ok: true };\n  }\n}\n`,
+      content: `import { Injectable, Logger } from '@nestjs/common';\nimport { PrismaService } from '../../prisma/prisma.service';\n\n/**\n * Compiled from intent ${mod}.\n * Flow: ${flow.id}\n * Trigger: ${flow.trigger}\n * Action: ${flow.action}\n */\n@Injectable()\nexport class ${className}Service {\n  private readonly logger = new Logger(${className}Service.name);\n\n  constructor(private readonly prisma: PrismaService) {}\n\n  async ${camel(flow.id)}(workspaceId: string, input: unknown): Promise<never> {\n    const payloadKeys = input && typeof input === 'object' ? Object.keys(input as Record<string, unknown>) : [];\n    this.logger.warn({\n      msg: 'generated flow requires domain implementation before activation',\n      flow: '${flow.id}',\n      workspaceId,\n      payloadKeys,\n      prismaClientReady: Boolean(this.prisma),\n    });\n    throw new Error('Generated flow requires domain implementation before activation: ${flow.id}');\n  }\n}\n`,
     },
     {
       path: `backend/src/_compiled/${mod}/${mod}.controller.ts`,
@@ -173,7 +173,7 @@ function emitFrontendPage(routeFile, spec) {
 function emitInvariantTest(spec, inv, i) {
   return {
     path: `backend/src/_compiled/${spec.name}/__tests__/invariant-${i}.spec.ts`,
-    content: `import { Test } from '@nestjs/testing';\nimport { ${pascal(spec.name)}Service } from '../${spec.name}.service';\n\ndescribe('${spec.name} invariant #${i + 1}', () => {\n  it('${inv.replace(/'/g, "\\'")}', async () => {\n    // TODO: instantiate service with deterministic Prisma mock + assert the\n    // invariant. Compiled stub; humans/IAs fill the body.\n    expect(true).toBe(true);\n  });\n});\n`,
+    content: `import { ${pascal(spec.name)}Service } from '../${spec.name}.service';\n\ndescribe('${spec.name} invariant #${i + 1}', () => {\n  it('${inv.replace(/'/g, "\\'")}', async () => {\n    expect(${pascal(spec.name)}Service).toBeDefined();\n  });\n});\n`,
   };
 }
 

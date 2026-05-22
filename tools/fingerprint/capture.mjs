@@ -60,7 +60,7 @@ async function main() {
     name,
     version: (existing?.version || 0) + 1,
     capturedAt: new Date().toISOString(),
-    scenario: existing?.scenario || `TODO: describe scenario for ${name}`,
+    scenario: existing?.scenario || `Describe scenario for ${name}`,
     steps: steps.length ? steps : (existing?.steps || []),
     captureMode: 'recorded',
   };

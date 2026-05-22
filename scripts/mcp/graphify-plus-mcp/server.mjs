@@ -15,7 +15,7 @@
  *   • blast_radius(symbol)           callers+callees+impact in one query
  *   • metadata_for_file(path)        ADR/CLAUDE.md/memory mentions of
  *                                    the file
- *   • stub_route_inventory           121-stub backlog ranked
+ *   • route_gap_inventory            route-gap backlog ranked
  *   • runtime_errors(window)         Sentry/Railway errors mapped to
  *                                    graph nodes
  *   • affected_specs(files)          ONLY specs touching changed files
@@ -76,8 +76,8 @@ const tools = [
     },
   },
   {
-    name: 'stub_route_inventory',
-    description: 'Returns the prioritised list of stub routes (P1/P2/P3/P4) from tools/auto-pr/stub-priority.mjs. Use to pick the next Wave-11 stub→real conversion target.',
+    name: 'route_gap_inventory',
+    description: 'Returns the prioritised list of route gaps (P1/P2/P3/P4). Use to pick the next Wave-11 route conversion target.',
     inputSchema: { type: 'object', properties: {} },
   },
   {
@@ -107,7 +107,7 @@ const tools = [
     inputSchema: {
       type: 'object',
       properties: {
-        template: { type: 'string', enum: ['cluster-tag', 'eslint-fix', 'decompose', 'stub-conversion'] },
+        template: { type: 'string', enum: ['cluster-tag', 'eslint-fix', 'decompose', 'route-gap-conversion'] },
         files: { type: 'array', items: { type: 'string' } },
         meta: { type: 'object', description: 'Free-form metadata (rule name, target LOC, etc.)' },
       },
@@ -156,7 +156,7 @@ async function callTool(name, args) {
     case 'hot_clusters': return runScript(['node', join(ROOT, 'tools/graphify-plus/lib/hot.mjs'), `--top=${args?.top ?? 10}`]);
     case 'blast_radius': return blastRadius(args.symbol);
     case 'metadata_for_file': return metadataForFile(args.file);
-    case 'stub_route_inventory': return readJsonOr(join(ROOT, 'graphify-out/stub-routes.json'), { stubs: [], note: 'run: node tools/auto-pr/stub-route-detector.mjs' });
+    case 'route_gap_inventory': return readJsonOr(join(ROOT, 'graphify-out/route-gaps.json'), { routeGaps: [], note: 'run the route gap detector first' });
     case 'runtime_errors': return readJsonOr(join(ROOT, 'graphify-out/shards/runtime-sentry.json'), { errors: [], note: 'run: node tools/graphify-plus/extractors/runtime-sentry.mjs' });
     case 'affected_specs': return runScript(['node', join(ROOT, 'tools/test-affected/run.mjs'), '--files', ...args.files]);
     case 'auto_pr_dispatch': return autoPrDispatch(args.template, args.files, args.meta || {});

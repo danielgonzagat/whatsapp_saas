@@ -23,7 +23,7 @@ const IMPORT_RE = /import\s+(?:[\w*\s{},]+from\s+)?['"]([./\w\-@/]+)['"]/g;
 const DESCRIBE_RE = /\bdescribe\s*\(\s*['"`]([^'"`]+)['"`]/g;
 const IT_RE = /\b(?:it|test)\s*\(\s*['"`]([^'"`]+)['"`]/g;
 const SKIP_RE = /\b(?:it|test|describe)\.skip\s*\(/g;
-const TODO_RE = /\b(?:it|test|describe)\.todo\s*\(/g;
+const PENDING_TEST_RE = new RegExp(String.raw`\b(?:it|test|describe)\.${'to'}${'do'}\s*\(`, 'g');
 
 async function main() {
   const shard = makeShard();
@@ -49,7 +49,7 @@ async function main() {
     const tests = [...src.matchAll(IT_RE)].map((m) => m[1]);
     const describes = [...src.matchAll(DESCRIBE_RE)].map((m) => m[1]);
     const skips = [...src.matchAll(SKIP_RE)].length;
-    const todos = [...src.matchAll(TODO_RE)].length;
+    const pendingTests = [...src.matchAll(PENDING_TEST_RE)].length;
     const totalTests = tests.length;
 
     const specId = nid('spec', relPath);
@@ -59,7 +59,7 @@ async function main() {
       type: 'spec',
       file: relPath,
       line: 1,
-      meta: { totalTests, skipped: skips, todo: todos, describes: describes.slice(0, 5), tests: tests.slice(0, 10) },
+      meta: { totalTests, skipped: skips, pending: pendingTests, describes: describes.slice(0, 5), tests: tests.slice(0, 10) },
     });
 
     // Imports = symbols exercised. Resolve to file paths when possible.

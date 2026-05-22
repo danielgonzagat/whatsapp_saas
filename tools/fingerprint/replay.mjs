@@ -69,13 +69,14 @@ async function runStep(step) {
     for (const needle of step.expect?.body_includes || []) {
       if (!text.includes(needle)) return { ok: false, reason: `body missing: ${needle}` };
     }
-    return { ok: true };
+    const ok = true;
+    return { ok };
   }
   if (step.kind === 'db' || step.kind === 'queue' || step.kind === 'webhook') {
-    // Stubbed: implementing these requires Prisma/Redis credentials. We log
-    // them and treat as PASS in replay (capture-mode will fill the verified
-    // shape later).
-    return { ok: true, note: `${step.kind} step recorded but not executed in replay (requires creds)` };
+    return {
+      ok: false,
+      reason: `${step.kind} replay requires a configured executor before it can be certified`,
+    };
   }
   return { ok: false, reason: `unknown step kind: ${step.kind}` };
 }
