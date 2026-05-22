@@ -7,7 +7,7 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { hash as bcryptHash } from 'bcrypt';
-import { v4 as uuidv4 } from 'uuid';
+import { randomUUID as uuidv4 } from 'node:crypto';
 import { AuditService } from '../audit/audit.service';
 import { EmailService } from '../auth/email.service';
 import { BCRYPT_ROUNDS } from '../common/constants';
