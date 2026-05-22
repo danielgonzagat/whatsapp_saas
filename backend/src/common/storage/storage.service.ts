@@ -1,11 +1,10 @@
 import { safeJoin, safeResolve } from '../../common/safe-path';
-import { createHmac, timingSafeEqual } from 'node:crypto';
+import { createHmac, timingSafeEqual, randomUUID } from 'node:crypto';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { Injectable, Logger, OnModuleInit, Optional } from '@nestjs/common';
 
 import { ConfigService } from '@nestjs/config';
-import { v4 as uuid } from 'uuid';
 import { getTraceHeaders } from '../trace-headers';
 import { validateNoInternalAccess } from '../utils/url-validator';
 import { StorageDriversService } from './storage-drivers.service';
@@ -86,7 +85,7 @@ export class StorageService implements OnModuleInit {
     } = {},
   ): Promise<{ url: string; path: string; size: number }> {
     const ext = this.getExtensionFromMime(options.mimeType || 'application/octet-stream');
-    const filename = options.filename || `${uuid()}${ext}`;
+    const filename = options.filename || `${randomUUID()}${ext}`;
     const folder = options.folder || 'media';
     const relativePath = safeJoin(folder, filename);
     switch (this.driver) {
