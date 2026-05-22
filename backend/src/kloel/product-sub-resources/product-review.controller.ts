@@ -23,10 +23,12 @@ import {
   parseNumber,
 } from './helpers/common.helpers';
 import { serializeReview } from './helpers/plan.helpers';
+import { RouteClass } from '../../common/throttler/route-class.decorator';
 
 /** Product review controller. */
 @Controller('products/:productId/reviews')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
+@RouteClass('mutate')
 export class ProductReviewController {
   constructor(
     private readonly prisma: PrismaService,

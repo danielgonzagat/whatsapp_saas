@@ -7,11 +7,13 @@ import { AdminAuthGuard } from '../auth/guards/admin-auth.guard';
 import { AdminPermissionGuard } from '../auth/guards/admin-permission.guard';
 import { AdminDashboardService } from './admin-dashboard.service';
 import { AdminHomeCompareDto, AdminHomePeriodDto, ListHomeQueryDto } from './dto/list-home.dto';
+import { RouteClass } from '../../common/throttler/route-class.decorator';
 
 /** Admin dashboard controller. */
 @Public()
 @Controller('admin/dashboard')
 @UseGuards(AdminAuthGuard, AdminPermissionGuard)
+@RouteClass('read')
 export class AdminDashboardController {
   constructor(private readonly dashboard: AdminDashboardService) {}
 

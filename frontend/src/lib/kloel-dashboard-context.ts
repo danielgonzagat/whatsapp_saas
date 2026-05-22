@@ -36,31 +36,31 @@ export interface DashboardContextParams {
 /** Dashboard context metadata shape. */
 export interface DashboardContextMetadata {
   /** Source property. */
-  source?: string;
+  source?: string | undefined;
   /** Lead id property. */
-  leadId?: string;
+  leadId?: string | undefined;
   /** Phone property. */
-  phone?: string;
+  phone?: string | undefined;
   /** Email property. */
-  email?: string;
+  email?: string | undefined;
   /** Name property. */
-  name?: string;
+  name?: string | undefined;
   /** Product id property. */
-  productId?: string;
+  productId?: string | undefined;
   /** Product name property. */
-  productName?: string;
+  productName?: string | undefined;
   /** Plan id property. */
-  planId?: string;
+  planId?: string | undefined;
   /** Plan name property. */
-  planName?: string;
+  planName?: string | undefined;
   /** Checkout slug property. */
-  checkoutSlug?: string;
+  checkoutSlug?: string | undefined;
   /** Draft property. */
-  draft?: string;
+  draft?: string | undefined;
   /** Purpose property. */
-  purpose?: string;
+  purpose?: string | undefined;
   /** Source label property. */
-  sourceLabel?: string;
+  sourceLabel?: string | undefined;
 }
 
 const SOURCE_LABELS: Record<string, string> = {

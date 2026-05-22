@@ -256,7 +256,7 @@ function ensureTikTok(pixelId: string): void {
     s.src = `https://analytics.tiktok.com/i18n/pixel/events.js?sdkid=${id}&lib=ttq`;
     document.head.appendChild(s);
   };
-  pw.ttq = cast<PixelWindow['ttq']>(ttqObj);
+  pw.ttq = cast<NonNullable<PixelWindow['ttq']>>(ttqObj);
   (ttqObj.load as (id: string) => void)(pixelId);
   (ttqObj.page as () => void)();
 }

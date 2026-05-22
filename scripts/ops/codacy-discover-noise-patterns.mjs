@@ -112,7 +112,7 @@ const FAMILIES = [
 
 function detectFamily(patternId) {
   for (const fam of FAMILIES) {
-    if (fam.matches(patternId)) return fam;
+    if (fam.matches(patternId)) {return fam;}
   }
   return null;
 }
@@ -128,7 +128,7 @@ function main() {
 
   for (const [patternId, count] of Object.entries(byPatternId)) {
     const fam = detectFamily(patternId);
-    if (!fam) continue;
+    if (!fam) {continue;}
     matched.push({
       id: patternId,
       count,
@@ -142,8 +142,8 @@ function main() {
 
   // Stable sort: by tool, then by count desc, then by id.
   matched.sort((a, b) => {
-    if (a.toolUuid !== b.toolUuid) return a.toolUuid.localeCompare(b.toolUuid);
-    if (b.count !== a.count) return b.count - a.count;
+    if (a.toolUuid !== b.toolUuid) {return a.toolUuid.localeCompare(b.toolUuid);}
+    if (b.count !== a.count) {return b.count - a.count;}
     return a.id.localeCompare(b.id);
   });
 

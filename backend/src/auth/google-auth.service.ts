@@ -1,13 +1,17 @@
 import {
   Injectable,
-  Logger,
   ServiceUnavailableException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { StructuredLogger } from '../logging/structured-logger';
 import { LoginTicket, OAuth2Client, TokenPayload } from 'google-auth-library';
 import { getTraceHeaders } from '../common/trace-headers';
 
+/**
+ * @cluster whatsapp_saas/backend/auth
+ * L11 multi-agent TaskGraph annotation (batched by tools/auto-pr/batch-job.mjs).
+ */
 const W_RE = /[\W_]+/g;
 
 const AUDIENCE_ISSUER_TOKEN_US_RE =
@@ -79,7 +83,7 @@ export interface GooglePeopleProfile {
 /** Google auth service. */
 @Injectable()
 export class GoogleAuthService {
-  private readonly logger = new Logger(GoogleAuthService.name);
+  private readonly logger = StructuredLogger.from(GoogleAuthService.name);
   private static readonly PEOPLE_API_URL =
     'https://people.googleapis.com/v1/people/me?personFields=names,emailAddresses,phoneNumbers,addresses';
 
@@ -159,7 +163,7 @@ export class GoogleAuthService {
       providerId,
       email,
       name: trimmedName || derivedName,
-      image: trimmedPicture || undefined,
+      ...(trimmedPicture !== undefined ? { image: trimmedPicture } : {}),
       emailVerified,
     };
   }

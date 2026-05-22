@@ -5,22 +5,28 @@ import { resolveWorkspaceId } from '../auth/workspace-access';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { AuthenticatedRequest } from '../common/interfaces';
 import { AutopilotService } from './autopilot.service';
+import { RouteClass } from '../common/throttler/route-class.decorator';
 
 const PATTERN_RE = /,/g;
 
 interface AutopilotActionRow {
   createdAt: Date | string;
-  contactId?: string;
-  contact?: string;
+  contact?: string | null;
+  contactId?: string | null;
+  contactPhone?: string | null;
   intent?: string;
   action?: string;
   status?: string;
   reason?: string;
+  nextRetryAt?: string | null;
+  intentConfidence?: unknown;
+  meta?: unknown;
 }
 
 /** Autopilot controller. */
 @Controller('autopilot')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
+@RouteClass('ai')
 export class AutopilotController {
   constructor(private readonly autopilotService: AutopilotService) {}
 
@@ -90,11 +96,9 @@ export class AutopilotController {
     @Query('status') status?: string,
   ) {
     const effectiveWorkspaceId = resolveWorkspaceId(req, workspaceId);
-    const data: AutopilotActionRow[] = await this.autopilotService.getRecentActions(
-      effectiveWorkspaceId,
-      200,
-      status,
-    );
+    const data: AutopilotActionRow[] = (
+      await this.autopilotService.getRecentActions(effectiveWorkspaceId, 200, status)
+    ).map((row) => ({ ...row }));
     const rows = [
       ['createdAt', 'contactId', 'contact', 'intent', 'action', 'status', 'reason'].join(','),
       ...data.map((d) =>
@@ -171,9 +175,11 @@ export class AutopilotController {
   ) {
     const workspaceId = resolveWorkspaceId(req, body.workspaceId);
     return this.autopilotService.updateConfig(workspaceId, {
-      conversionFlowId: body.conversionFlowId,
-      currencyDefault: body.currencyDefault,
-      recoveryTemplateName: body.recoveryTemplateName,
+      ...(body.conversionFlowId !== undefined ? { conversionFlowId: body.conversionFlowId } : {}),
+      ...(body.currencyDefault !== undefined ? { currencyDefault: body.currencyDefault } : {}),
+      ...(body.recoveryTemplateName !== undefined
+        ? { recoveryTemplateName: body.recoveryTemplateName }
+        : {}),
     });
   }
 
@@ -198,9 +204,9 @@ export class AutopilotController {
     if (!body.forceLocal && (body.phone || body.contactId)) {
       return this.autopilotService.enqueueProcessing({
         workspaceId,
-        phone: body.phone,
-        contactId: body.contactId,
-        message: body.message,
+        ...(body.phone !== undefined ? { phone: body.phone } : {}),
+        ...(body.contactId !== undefined ? { contactId: body.contactId } : {}),
+        ...(body.message !== undefined ? { message: body.message } : {}),
       });
     }
     const result = await this.autopilotService.runAutopilotCycle(workspaceId);
@@ -224,10 +230,10 @@ export class AutopilotController {
     const workspaceId = resolveWorkspaceId(req, body.workspaceId);
     return this.autopilotService.runSmokeTest({
       workspaceId,
-      phone: body.phone,
-      message: body.message,
-      waitMs: body.waitMs,
-      liveSend: body.liveSend,
+      ...(body.phone !== undefined ? { phone: body.phone } : {}),
+      ...(body.message !== undefined ? { message: body.message } : {}),
+      ...(body.waitMs !== undefined ? { waitMs: body.waitMs } : {}),
+      ...(body.liveSend !== undefined ? { liveSend: body.liveSend } : {}),
     });
   }
 
@@ -301,20 +307,6 @@ export class AutopilotController {
     const effective = resolveWorkspaceId(req, workspaceId);
     const clampedRevenueLimit = Math.min(Math.max(Number(limit) || 20, 1), 100);
     return this.autopilotService.getRevenueEvents(effective, clampedRevenueLimit);
-  }
-
-  /** Process. */
-  @Post('process')
-  async process(
-    @Req() req: AuthenticatedRequest,
-    @Body() body: { workspaceId?: string; forceLocal?: boolean },
-  ) {
-    const workspaceId = resolveWorkspaceId(req, body.workspaceId);
-    if (!body.forceLocal) {
-      return this.autopilotService.runAutopilotCycle(workspaceId);
-    }
-    const result = await this.autopilotService.runAutopilotCycle(workspaceId);
-    return { workspaceId, ...result, mode: 'local' };
   }
 
   /** Next best. */

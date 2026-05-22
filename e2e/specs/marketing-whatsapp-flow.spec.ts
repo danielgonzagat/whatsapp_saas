@@ -4,9 +4,6 @@ import { dismissCookieBanner, getE2EBaseUrls, seedE2EAuthSession } from './e2e-h
 const { appUrl: APP_URL } = getE2EBaseUrls();
 
 const TEST_WORKSPACE_ID = 'e2e-workspace-id';
-const QR_DATA_URL =
-  'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO7Zx2QAAAAASUVORK5CYII=';
-
 function createTestJwt(payload: Record<string, unknown>) {
   const encoded = Buffer.from(JSON.stringify(payload))
     .toString('base64')
@@ -41,12 +38,12 @@ function asJsonRecord(value: unknown): JsonRecord {
 }
 
 async function installMarketingWhatsAppFlowMocks(page: Page) {
-  let sessionState: 'disconnected' | 'qr_pending' | 'connected' = 'disconnected';
+  let sessionState: 'disconnected' | 'connected' = 'disconnected';
   let settingsState: JsonRecord = {
     providerSettings: {
-      whatsappProvider: 'whatsapp-api',
+      whatsappProvider: 'meta-cloud',
       whatsappApiSession: {
-        provider: 'whatsapp-api',
+        provider: 'meta-cloud',
         status: 'DISCONNECTED',
       },
     },
@@ -94,13 +91,8 @@ async function installMarketingWhatsAppFlowMocks(page: Page) {
         ...settingsState.providerSettings,
         whatsappApiSession: {
           ...(settingsState.providerSettings?.whatsappApiSession || {}),
-          provider: 'whatsapp-api',
-          status:
-            sessionState === 'connected'
-              ? 'CONNECTED'
-              : sessionState === 'qr_pending'
-                ? 'SCAN_QR_CODE'
-                : 'DISCONNECTED',
+          provider: 'meta-cloud',
+          status: sessionState === 'connected' ? 'CONNECTED' : 'DISCONNECTED',
           phoneNumber: sessionState === 'connected' ? '+55 11 99999-9999' : null,
           pushName: sessionState === 'connected' ? 'Loja E2E' : null,
         },
@@ -159,9 +151,10 @@ async function installMarketingWhatsAppFlowMocks(page: Page) {
       body: JSON.stringify({
         channels: {
           whatsapp: {
-            provider: 'whatsapp-api',
+            provider: 'meta-cloud',
             connected: sessionState === 'connected',
             status: sessionState === 'connected' ? 'connected' : 'disconnected',
+            authUrl: 'https://www.facebook.com/v21.0/dialog/oauth?client_id=e2e',
           },
         },
       }),
@@ -224,6 +217,70 @@ async function installMarketingWhatsAppFlowMocks(page: Page) {
       status: 200,
       contentType: 'application/json',
       body: JSON.stringify(summaryState),
+    });
+  });
+
+  await page.route('**/marketing/connect/channel-setup**', async (route) => {
+    if (route.request().method() === 'POST') {
+      const body = route.request().postDataJSON() as JsonRecord;
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          setup: {
+            currentStep: Number(body.currentStep ?? 0),
+            selectedProductIds: Array.isArray(body.selectedProductIds) ? body.selectedProductIds : [],
+            arsenal: Array.isArray(body.arsenal) ? body.arsenal : [],
+            config: asJsonRecord(body.config),
+          },
+        }),
+      });
+      return;
+    }
+
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        setup: {
+          currentStep: 0,
+          selectedProductIds: [],
+          arsenal: [],
+          config: {},
+        },
+      }),
+    });
+  });
+
+  await page.route('**/channel-setup/whatsapp', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        arsenal: [],
+        channel: 'whatsapp',
+        completed: false,
+        config: null,
+        products: productsPayload.products,
+        selectedProductIds: [],
+        setup: null,
+      }),
+    });
+  });
+
+  await page.route('**/channel-setup/whatsapp/products', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        arsenal: [],
+        channel: 'whatsapp',
+        completed: false,
+        config: null,
+        products: productsPayload.products,
+        selectedProductIds: ['prod-1'],
+        setup: { currentStep: 1 },
+      }),
     });
   });
 
@@ -294,55 +351,30 @@ async function installMarketingWhatsAppFlowMocks(page: Page) {
     });
   });
 
-  await page.route('**/whatsapp-api/session/start', async (route) => {
-    sessionState = 'qr_pending';
-    syncSessionSnapshot();
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({
-        success: true,
-        message: 'session_started',
-      }),
-    });
-  });
-
-  await page.route('**/whatsapp-api/session/qr', async (route) => {
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({
-        available: sessionState !== 'disconnected',
-        qr: sessionState === 'disconnected' ? null : QR_DATA_URL,
-        message:
-          sessionState === 'disconnected'
-            ? 'QR Code não disponível.'
-            : 'Escaneie o QR Code para conectar.',
-      }),
-    });
-  });
-
   await page.route('**/whatsapp-api/session/status', async (route) => {
-    if (sessionState === 'qr_pending') {
-      setTimeout(() => {
-        sessionState = 'connected';
-        syncSessionSnapshot();
-      }, 2_000);
-    }
-
     syncSessionSnapshot();
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
       body: JSON.stringify({
         connected: sessionState === 'connected',
-        status:
-          sessionState === 'connected'
-            ? 'CONNECTED'
-            : sessionState === 'qr_pending'
-              ? 'SCAN_QR_CODE'
-              : 'DISCONNECTED',
-        provider: 'whatsapp-api',
+        status: sessionState === 'connected' ? 'CONNECTED' : 'DISCONNECTED',
+        provider: 'meta-cloud',
+        phone: sessionState === 'connected' ? '+55 11 99999-9999' : undefined,
+        pushName: sessionState === 'connected' ? 'Loja E2E' : undefined,
+      }),
+    });
+  });
+
+  await page.route('**/whatsapp/session-status/*', async (route) => {
+    syncSessionSnapshot();
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        connected: sessionState === 'connected',
+        status: sessionState === 'connected' ? 'CONNECTED' : 'DISCONNECTED',
+        provider: 'meta-cloud',
         phone: sessionState === 'connected' ? '+55 11 99999-9999' : undefined,
         pushName: sessionState === 'connected' ? 'Loja E2E' : undefined,
       }),
@@ -352,6 +384,14 @@ async function installMarketingWhatsAppFlowMocks(page: Page) {
 
 test.describe('Marketing WhatsApp flow', () => {
   test.beforeEach(async ({ page }) => {
+    page.on('pageerror', (err) => {
+      console.error('[E2E][pageerror]', err.message);
+    });
+    page.on('console', (msg) => {
+      if (msg.type() === 'error') {
+        console.error('[E2E][console.error]', msg.text());
+      }
+    });
     await seedE2EAuthSession(page, {
       token: TEST_TOKEN,
       workspaceId: TEST_WORKSPACE_ID,
@@ -359,31 +399,29 @@ test.describe('Marketing WhatsApp flow', () => {
     await installMarketingWhatsAppFlowMocks(page);
   });
 
-  test('shows the qr visibly and completes the setup wizard after connection', async ({ page }) => {
+  test('shows the Meta wizard steps without exposing the old QR path', async ({ page }) => {
     await page.goto(`${APP_URL}/marketing/whatsapp`, {
       waitUntil: 'domcontentloaded',
     });
     await dismissCookieBanner(page);
 
     await expect(page.getByText('Conectar WhatsApp')).toBeVisible({ timeout: 15_000 });
-    await expect(page.getByAltText('QR Code do WhatsApp')).toBeVisible({ timeout: 15000 });
-    await expect(page.getByText('QR Code pronto para leitura.')).toBeVisible();
+    await expect(page.getByText(/Conex(?:ão|ao) oficial|autorizacao oficial da Meta/i)).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByAltText('QR Code do WhatsApp')).toHaveCount(0);
 
-    await expect(page.getByText('Selecione os produtos')).toBeVisible({ timeout: 15000 });
-    await page.getByRole('button', { name: 'Selecionar todos' }).click();
-    // Wizard renders the arrow as ASCII "->", not the Unicode "→".
-    await page.getByRole('button', { name: 'Próximo ->' }).click();
+    await page.getByRole('button', { name: /(?:Pr[oó]ximo|avançar passo)/i }).click();
+    await expect(page.getByText('Passo 2 de 4')).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByRole('heading', { name: 'Produtos liberados no canal' })).toBeVisible();
 
-    await expect(page.getByText('Arsenal de vendas')).toBeVisible();
-    await page.getByRole('button', { name: 'Pular por agora ->' }).click();
+    await page.getByLabel('Produto Teste').check();
+    await page.getByRole('button', { name: 'Salvar produtos' }).click();
+    await expect(page.getByText('Produtos do canal salvos.')).toBeVisible();
+    await page.getByRole('button', { name: /avançar passo/i }).click();
+    await expect(page.getByText('Passo 3 de 4')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Arsenal do canal' })).toBeVisible();
 
-    await expect(page.getByText('Configurar a IA')).toBeVisible();
-    const acceptCookiesButton = page.getByRole('button', { name: 'Aceitar tudo' });
-    if (await acceptCookiesButton.isVisible().catch(() => false)) {
-      await acceptCookiesButton.click();
-    }
-    await page.getByRole('button', { name: 'Salvar e ativar IA' }).click();
-
-    await expect(page.getByText('IA Ativada!')).toBeVisible();
+    await page.getByRole('button', { name: /(?:Pr[oó]ximo|avançar passo)/i }).click();
+    await expect(page.getByText('Passo 4 de 4')).toBeVisible();
+    await expect(page.getByRole('combobox', { name: 'Tom' })).toBeVisible();
   });
 });

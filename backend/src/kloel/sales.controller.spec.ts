@@ -3,7 +3,6 @@ import { SalesSubscriptionsController } from './sales-subscriptions.controller';
 
 // ─── SalesSubscriptionsController ────────────────────────────────────────────
 
-// PULSE_OK: assertions exist below
 describe('SalesSubscriptionsController', () => {
   let prisma: {
     customerSubscription: {
@@ -112,6 +111,11 @@ describe('SalesController', () => {
       findFirst: jest.Mock;
       updateMany: jest.Mock;
     };
+    approvalRequest: {
+      create: jest.Mock;
+      findFirst: jest.Mock;
+      updateMany: jest.Mock;
+    };
     auditLog: {
       create: jest.Mock;
     };
@@ -128,6 +132,16 @@ describe('SalesController', () => {
   beforeEach(() => {
     prisma = {
       kloelSale: {
+        findFirst: jest.fn(),
+        updateMany: jest.fn().mockResolvedValue({ count: 1 }),
+      },
+      approvalRequest: {
+        create: jest.fn().mockResolvedValue({
+          id: 'apr_refund_1',
+          state: 'OPEN',
+          title: 'Aprovar reembolso',
+          createdAt: new Date('2026-05-11T00:00:00.000Z'),
+        }),
         findFirst: jest.fn(),
         updateMany: jest.fn().mockResolvedValue({ count: 1 }),
       },
@@ -149,7 +163,7 @@ describe('SalesController', () => {
     );
   });
 
-  it('refunds Stripe-backed sales via payment_intent instead of a legacy gateway client', async () => {
+  it('creates an approval request before refunding Stripe-backed sales', async () => {
     prisma.kloelSale.findFirst.mockResolvedValue({
       id: 'sale-1',
       status: 'paid',
@@ -157,11 +171,61 @@ describe('SalesController', () => {
       amount: 139.9,
     });
 
+    const result = await controller.refundSale(
+      {
+        user: { workspaceId: 'ws-1', sub: 'agent-1' },
+      } as never as Parameters<SalesController['refundSale']>[0],
+      'sale-1',
+      undefined,
+      'idem-1',
+    );
+
+    expect(stripeService.stripe.refunds.create).not.toHaveBeenCalled();
+    expect(prisma.approvalRequest.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          workspaceId: 'ws-1',
+          kind: 'sale:refund',
+          entityType: 'KloelSale',
+          entityId: 'sale-1',
+          state: 'OPEN',
+          payload: expect.objectContaining({
+            saleId: 'sale-1',
+            amount: 139.9,
+            externalPaymentId: 'pi_stripe_123',
+            idempotencyKey: 'idem-1',
+            risk: 'high',
+            requiresApproval: true,
+          }),
+        }),
+      }),
+    );
+    expect(result).toEqual(
+      expect.objectContaining({
+        approvalRequired: true,
+        approvalRequestId: 'apr_refund_1',
+      }),
+    );
+  });
+
+  it('refunds Stripe-backed sales via payment_intent only after approval', async () => {
+    prisma.kloelSale.findFirst.mockResolvedValue({
+      id: 'sale-1',
+      status: 'paid',
+      externalPaymentId: 'pi_stripe_123',
+      amount: 139.9,
+    });
+    prisma.approvalRequest.findFirst.mockResolvedValue({
+      id: 'apr_refund_1',
+      payload: { saleId: 'sale-1', amount: 139.9 },
+    });
+
     await controller.refundSale(
       {
         user: { workspaceId: 'ws-1', sub: 'agent-1' },
       } as never as Parameters<SalesController['refundSale']>[0],
       'sale-1',
+      { approvalRequestId: 'apr_refund_1' },
       'idem-1',
     );
 
@@ -172,6 +236,12 @@ describe('SalesController', () => {
       {
         idempotencyKey: 'idem-1',
       },
+    );
+    expect(prisma.approvalRequest.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 'apr_refund_1', workspaceId: 'ws-1', state: 'APPROVED' },
+        data: expect.objectContaining({ state: 'COMPLETED' }),
+      }),
     );
     expect(prisma.kloelSale.updateMany).toHaveBeenCalledWith({
       where: { id: 'sale-1', workspaceId: 'ws-1' },
@@ -187,5 +257,27 @@ describe('SalesController', () => {
         details: expect.objectContaining({ status: 'pending_webhook' }),
       }),
     });
+  });
+
+  it('rejects refund execution without an approved request', async () => {
+    prisma.kloelSale.findFirst.mockResolvedValue({
+      id: 'sale-1',
+      status: 'paid',
+      externalPaymentId: 'pi_stripe_123',
+      amount: 139.9,
+    });
+    prisma.approvalRequest.findFirst.mockResolvedValue(null);
+
+    await expect(
+      controller.refundSale(
+        {
+          user: { workspaceId: 'ws-1', sub: 'agent-1' },
+        } as never as Parameters<SalesController['refundSale']>[0],
+        'sale-1',
+        { approvalRequestId: 'apr_missing' },
+        'idem-1',
+      ),
+    ).rejects.toThrow('Approved sale refund request not found');
+    expect(stripeService.stripe.refunds.create).not.toHaveBeenCalled();
   });
 });

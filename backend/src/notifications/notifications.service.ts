@@ -36,18 +36,18 @@ export class NotificationsService {
             privateKey: privateKey.replace(N_RE, '\n'),
           }),
         });
-        this.logger.log('✅ Firebase Admin SDK inicializado');
+        this.logger.log('[OK] Firebase Admin SDK inicializado');
       } else {
-        this.logger.warn('⚠️ Firebase não configurado - push notifications desabilitadas');
+        this.logger.log('Firebase não configurado - push notifications desabilitadas');
       }
     } catch (error: unknown) {
       void this.opsAlert?.alertOnCriticalError(error, 'NotificationsService.initFirebase');
       if ((error as { code?: string } | null)?.code === 'app/duplicate-app') {
         this.firebaseApp = admin.app();
-        this.logger.log('✅ Firebase Admin SDK já inicializado');
+        this.logger.log('[OK] Firebase Admin SDK já inicializado');
       } else {
         this.logger.error(
-          `❌ Erro ao inicializar Firebase: ${error instanceof Error ? error.message : 'unknown_error'}`,
+          `[ERROR] Erro ao inicializar Firebase: ${error instanceof Error ? error.message : 'unknown_error'}`,
         );
       }
     }
@@ -121,7 +121,7 @@ export class NotificationsService {
       return { sent: 0, failed: 0 };
     }
 
-    this.logger.log(`📱 Enviando push para ${devices.length} devices do agent ${agentId}`);
+    this.logger.log(`[PUSH] Enviando push para ${devices.length} devices do agent ${agentId}`);
 
     if (!this.firebaseApp) {
       this.logger.warn('Firebase não configurado - push não enviado');
@@ -165,7 +165,7 @@ export class NotificationsService {
       const response = await admin.messaging().sendEachForMulticast(message);
 
       this.logger.log(
-        `✅ Push enviado: ${response.successCount} sucesso, ${response.failureCount} falhas`,
+        `[OK] Push enviado: ${response.successCount} sucesso, ${response.failureCount} falhas`,
       );
 
       // Remover tokens inválidos
@@ -173,7 +173,10 @@ export class NotificationsService {
         const tokensToRemove: string[] = [];
         response.responses.forEach((resp, idx) => {
           if (!resp.success && resp.error?.code === 'messaging/registration-token-not-registered') {
-            tokensToRemove.push(tokens[idx]);
+            const tok = tokens[idx];
+            if (tok) {
+              tokensToRemove.push(tok);
+            }
           }
         });
 
@@ -181,7 +184,7 @@ export class NotificationsService {
           await this.prisma.deviceToken.deleteMany({
             where: { token: { in: tokensToRemove } },
           });
-          this.logger.log(`🗑️ ${tokensToRemove.length} tokens inválidos removidos`);
+          this.logger.log(`${tokensToRemove.length} tokens inválidos removidos`);
         }
       }
 
@@ -192,7 +195,7 @@ export class NotificationsService {
     } catch (error: unknown) {
       void this.opsAlert?.alertOnCriticalError(error, 'NotificationsService.sendPushNotification');
       this.logger.error(
-        `❌ Erro ao enviar push: ${error instanceof Error ? error.message : 'unknown_error'}`,
+        `[ERROR] Erro ao enviar push: ${error instanceof Error ? error.message : 'unknown_error'}`,
       );
       return {
         sent: 0,
@@ -238,7 +241,7 @@ export class NotificationsService {
   ) {
     return this.sendPushToWorkspace(
       workspaceId,
-      `💬 ${contactName}`,
+      `[MSG] ${contactName}`,
       messagePreview.substring(0, 100),
       {
         type: 'new_message',
@@ -253,7 +256,7 @@ export class NotificationsService {
   async notifyPaymentReceived(workspaceId: string, amount: number, customerName: string) {
     return this.sendPushToWorkspace(
       workspaceId,
-      '💰 Pagamento Recebido!',
+      '[PAGO] Pagamento Recebido!',
       `${customerName} pagou R$ ${amount.toFixed(2)}`,
       {
         type: 'payment_received',

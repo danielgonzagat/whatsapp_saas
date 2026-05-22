@@ -32,47 +32,6 @@ export interface QrCodeResponse {
   message?: string;
 }
 
-/** Normalize waha session status. */
-export function normalizeWahaSessionStatus(raw: unknown): string | null {
-  if (typeof raw !== 'string') {
-    return null;
-  }
-
-  const normalized = raw.trim().toUpperCase();
-  return normalized || null;
-}
-
-/** Map waha session status. */
-export function mapWahaSessionStatus(rawStatus: string | null): SessionStatus['state'] {
-  switch (rawStatus) {
-    case 'CONNECTED':
-      return 'CONNECTED';
-    case 'CONNECTION_INCOMPLETE':
-      return 'CONNECTION_INCOMPLETE';
-    case 'DEGRADED':
-      return 'DEGRADED';
-    case 'DISCONNECTED':
-      return 'DISCONNECTED';
-    default:
-      return null;
-  }
-}
-
-/** Resolve waha session state. */
-export function resolveWahaSessionState(data: Record<string, unknown> | null | undefined): {
-  rawStatus: string;
-  state: SessionStatus['state'];
-} {
-  const rawStatus = normalizeWahaSessionStatus(
-    data?.state || data?.status || data?.rawStatus || 'DISCONNECTED',
-  );
-
-  return {
-    rawStatus: rawStatus || 'DISCONNECTED',
-    state: mapWahaSessionStatus(rawStatus || 'DISCONNECTED'),
-  };
-}
-
 /** Waha chat summary shape. */
 export interface WahaChatSummary {
   /** Id property. */

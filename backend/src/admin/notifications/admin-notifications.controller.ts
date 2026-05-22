@@ -7,11 +7,13 @@ import { RequireAdminPermission } from '../auth/decorators/admin-permission.deco
 import { AdminAuthGuard } from '../auth/guards/admin-auth.guard';
 import { AdminPermissionGuard } from '../auth/guards/admin-permission.guard';
 import { AdminNotificationsService } from './admin-notifications.service';
+import { RouteClass } from '../../common/throttler/route-class.decorator';
 
 /** Admin notifications controller. */
 @Public()
 @Controller('admin/notifications')
 @UseGuards(AdminAuthGuard, AdminPermissionGuard)
+@RouteClass('read')
 export class AdminNotificationsController {
   constructor(private readonly notifications: AdminNotificationsService) {}
 

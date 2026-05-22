@@ -15,7 +15,7 @@ export interface JwtPayload {
   role: string;
   /** Name property. */
   name?: string;
-  /** Issued-at (auto-added by jsonwebtoken) // PULSE_OK: reasonable expiry (30m) */
+  /** Issued-at (auto-added by jsonwebtoken)
   iat?: number;
   /** Expiration (auto-added by jsonwebtoken) */
   exp?: number;

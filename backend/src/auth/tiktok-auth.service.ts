@@ -1,15 +1,19 @@
 import {
   Injectable,
-  Logger,
   Optional,
   ServiceUnavailableException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { StructuredLogger } from '../logging/structured-logger';
 import { getTraceHeaders } from '../common/trace-headers';
 import { GoogleVerifiedProfile } from './google-auth.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
 
+/**
+ * @cluster whatsapp_saas/backend/auth
+ * L11 multi-agent TaskGraph annotation (batched by tools/auto-pr/batch-job.mjs).
+ */
 const TIKTOK_AUTHORIZE_TOKEN_URL = 'https://open.tiktokapis.com/v2/oauth/token/';
 const TIKTOK_USER_INFO_URL =
   'https://open.tiktokapis.com/v2/user/info/?fields=open_id,union_id,display_name,avatar_url';
@@ -87,7 +91,7 @@ function buildSyntheticTikTokEmail(providerId: string): string {
 /** TikTok auth service. */
 @Injectable()
 export class TikTokAuthService {
-  private readonly logger = new Logger(TikTokAuthService.name);
+  private readonly logger = StructuredLogger.from(TikTokAuthService.name);
 
   constructor(
     private readonly config: ConfigService,
@@ -153,9 +157,11 @@ export class TikTokAuthService {
     return this.buildVerifiedProfile(
       {
         accessToken: input.accessToken,
-        openId: input.openId,
-        refreshToken: input.refreshToken,
-        expiresInSeconds: input.expiresInSeconds,
+        ...(input.openId !== undefined ? { openId: input.openId } : {}),
+        ...(input.refreshToken !== undefined ? { refreshToken: input.refreshToken } : {}),
+        ...(input.expiresInSeconds !== undefined
+          ? { expiresInSeconds: input.expiresInSeconds }
+          : {}),
       },
       { requireUserInfo: true },
     );

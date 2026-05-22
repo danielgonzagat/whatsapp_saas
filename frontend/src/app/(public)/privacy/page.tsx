@@ -11,6 +11,7 @@ import {
   legalConstants,
   legalContentTables,
 } from '@/lib/legal-constants';
+import { PRIVACY_TOC } from './privacy.toc';
 
 /** Metadata. */
 export const metadata = buildLegalMetadata({
@@ -20,23 +21,6 @@ export const metadata = buildLegalMetadata({
   path: '/privacy',
   locale: 'pt_BR',
 });
-
-const toc = [
-  { id: 'quem-somos', label: '1. Quem somos' },
-  { id: 'dados-coletados', label: '2. Dados que coletamos' },
-  { id: 'finalidades-bases', label: '3. Finalidades e bases legais' },
-  { id: 'compartilhamento', label: '4. Compartilhamento com terceiros' },
-  { id: 'cookies', label: '5. Cookies' },
-  { id: 'retencao', label: '6. Retenção' },
-  { id: 'seguranca', label: '7. Segurança' },
-  { id: 'direitos', label: '8. Direitos do titular' },
-  { id: 'transferencia', label: '9. Transferência internacional' },
-  { id: 'menores', label: '10. Menores de idade' },
-  { id: 'alteracoes', label: '11. Alterações desta política' },
-  { id: 'contato', label: '12. Contato, ANPD e canais de privacidade' },
-  { id: 'google-use', label: '13. Uso de informações do Google' },
-  { id: 'meta-use', label: '14. Uso de informações da Meta' },
-];
 
 /** Privacy page. */
 export default function PrivacyPage() {
@@ -51,7 +35,7 @@ export default function PrivacyPage() {
       lastUpdatedLabel={formatLastUpdated(legalConstants.lastUpdated, 'pt-BR')}
       alternateHref="/privacy/en"
       alternateLabel={kloelT(`English version`)}
-      toc={toc}
+      toc={PRIVACY_TOC}
       schemaType={kloelT(`PrivacyPolicy`)}
       path="/privacy"
       inLanguage={kloelT(`pt-BR`)}
@@ -155,7 +139,7 @@ export default function PrivacyPage() {
           marketing opcional e cumprimento de obrigações legais.`)}
         </p>
         <LegalTable
-          headers={['Tratamento', 'Finalidade', 'Base legal']}
+          headers={[kloelT(`Tratamento`), kloelT(`Finalidade`), kloelT(`Base legal`)]}
           rows={legalContentTables.legalBases}
         />
       </LegalSection>
@@ -167,7 +151,7 @@ export default function PrivacyPage() {
           monitorar segurança e executar integrações autorizadas por você.`)}
         </p>
         <LegalTable
-          headers={['Terceiro', 'Finalidade', 'Região', 'Base da transferência']}
+          headers={[kloelT(`Terceiro`), kloelT(`Finalidade`), kloelT(`Região`), kloelT(`Base da transferência`)]}
           rows={legalContentTables.thirdParties}
         />
         <p>
@@ -194,7 +178,7 @@ export default function PrivacyPage() {
           serviço.`)}
         </p>
         <LegalTable
-          headers={['Categoria', 'Prazo', 'Justificativa']}
+          headers={[kloelT(`Categoria`), kloelT(`Prazo`), kloelT(`Justificativa`)]}
           rows={legalContentTables.retention}
         />
       </LegalSection>
@@ -202,11 +186,11 @@ export default function PrivacyPage() {
       <LegalSection id="seguranca" title={kloelT(`7. Segurança`)}>
         <LegalList
           items={[
-            'TLS para dados em trânsito entre navegador, APIs, provedores e painéis administrativos.',
-            'Criptografia em repouso para bancos, backups, segredos e material sensível mantido pela plataforma.',
-            'Princípio de least privilege para credenciais internas, service accounts e integrações.',
-            'Logs de auditoria, trilhas de eventos críticos, rate limiting e políticas de resposta a incidentes.',
-            'Suporte a 2FA e mecanismos de revogação de sessões, refresh tokens e integrações revogadas.',
+            kloelT(`TLS para dados em trânsito entre navegador, APIs, provedores e painéis administrativos.`),
+            kloelT(`Criptografia em repouso para bancos, backups, segredos e material sensível mantido pela plataforma.`),
+            kloelT(`Princípio de least privilege para credenciais internas, service accounts e integrações.`),
+            kloelT(`Logs de auditoria, trilhas de eventos críticos, rate limiting e políticas de resposta a incidentes.`),
+            kloelT(`Suporte a 2FA e mecanismos de revogação de sessões, refresh tokens e integrações revogadas.`),
           ]}
         />
         <p>
@@ -288,7 +272,7 @@ export default function PrivacyPage() {
           Google, incluindo os requisitos de Uso Limitado (Limited Use).`)}
         </p>
         <LegalTable
-          headers={['Escopo', 'Dado acessado', 'Finalidade', 'Armazenamento']}
+          headers={[kloelT(`Escopo`), kloelT(`Dado acessado`), kloelT(`Finalidade`), kloelT(`Armazenamento`)]}
           rows={legalContentTables.googleScopes}
         />
         <p>
@@ -306,7 +290,7 @@ export default function PrivacyPage() {
           ativos empresariais autorizados e operar canais oficiais dentro da plataforma.`)}
         </p>
         <LegalTable
-          headers={['Permissão', 'Finalidade']}
+          headers={[kloelT(`Permissão`), kloelT(`Finalidade`)]}
           rows={legalContentTables.metaPermissions}
         />
         <p>

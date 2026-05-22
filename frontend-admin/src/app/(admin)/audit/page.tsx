@@ -108,16 +108,23 @@ export default function AuditPage() {
   const fromId = useId();
   const toId = useId();
 
-  const filters = useMemo(
-    () => ({
-      action: actionFilter || undefined,
-      entityType: entityTypeFilter || undefined,
-      entityId: entityIdFilter || undefined,
-      from: isoOrUndefined(fromFilter),
-      to: isoOrUndefined(toFilter),
-    }),
-    [actionFilter, entityTypeFilter, entityIdFilter, fromFilter, toFilter],
-  );
+  const filters = useMemo(() => {
+    const f: {
+      action?: string;
+      entityType?: string;
+      entityId?: string;
+      from?: string;
+      to?: string;
+    } = {};
+    if (actionFilter) {f.action = actionFilter;}
+    if (entityTypeFilter) {f.entityType = entityTypeFilter;}
+    if (entityIdFilter) {f.entityId = entityIdFilter;}
+    const fromIso = isoOrUndefined(fromFilter);
+    if (fromIso !== undefined) {f.from = fromIso;}
+    const toIso = isoOrUndefined(toFilter);
+    if (toIso !== undefined) {f.to = toIso;}
+    return f;
+  }, [actionFilter, entityTypeFilter, entityIdFilter, fromFilter, toFilter]);
 
   const skip = page * PAGE_SIZE;
   const swrKey = 'admin/audit?' + JSON.stringify({ ...filters, skip });

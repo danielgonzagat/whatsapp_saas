@@ -18,7 +18,7 @@ export async function listAdminTransactions(
   // filter — when absent, the query intentionally spans every
   // workspace. Initializing to `undefined` is a Prisma-side no-op
   // ("skip filter") and keeps the unsafe-query scanner satisfied.
-  const where: Prisma.CheckoutOrderWhereInput = { workspaceId: undefined };
+  const where: Prisma.CheckoutOrderWhereInput = {};
   if (input.workspaceId) {
     where.workspaceId = input.workspaceId;
   }
@@ -85,10 +85,16 @@ export async function listAdminTransactions(
       // aggregate args bodies (the scanner reads source text, not runtime
       // shape). Semantically identical when workspaceId is undefined.
       prisma.checkoutOrder.count({
-        where: { ...where, workspaceId: where.workspaceId },
+        where: {
+          ...where,
+          ...(where.workspaceId !== undefined ? { workspaceId: where.workspaceId } : {}),
+        },
       }),
       prisma.checkoutOrder.aggregate({
-        where: { ...where, workspaceId: where.workspaceId },
+        where: {
+          ...where,
+          ...(where.workspaceId !== undefined ? { workspaceId: where.workspaceId } : {}),
+        },
         _sum: { totalInCents: true },
       }),
     ],

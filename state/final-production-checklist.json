@@ -1,0 +1,152 @@
+{
+  "generatedAt": "2026-05-10T22:24:57.863Z",
+  "unifiedVerdict": "NOT_READY_FOR_PRODUCTION",
+  "sourceArtifacts": {
+    "pulseHealth": "/Users/danielpenin/whatsapp_saas/PULSE_HEALTH.json",
+    "pulseWorldState": "/Users/danielpenin/whatsapp_saas/PULSE_WORLD_STATE.json",
+    "pulseCodacyState": "/Users/danielpenin/whatsapp_saas/PULSE_CODACY_STATE.json"
+  },
+  "summary": {
+    "total": 15,
+    "pass": 6,
+    "fail": 7,
+    "warn": 2
+  },
+  "categories": [
+    {
+      "category": "Build & CI",
+      "items": [
+        {
+          "id": "build-artifacts",
+          "label": "Build artifacts present for all packages",
+          "status": "pass",
+          "detail": "backend/dist, frontend/.next, worker/dist all present",
+          "priority": "P0"
+        },
+        {
+          "id": "ci-commits",
+          "label": "No recent CI breakage commits",
+          "status": "warn",
+          "detail": "1 CI-related commit(s) in last 20: 71989bd50 fix(madge): wave-15 25→0 circular dependencies (interface toke",
+          "priority": "P1"
+        },
+        {
+          "id": "git-clean",
+          "label": "Working tree is clean",
+          "status": "warn",
+          "detail": "5 modified/deleted, 2 untracked file(s)",
+          "priority": "P2"
+        }
+      ]
+    },
+    {
+      "category": "Testing",
+      "items": [
+        {
+          "id": "coverage",
+          "label": "Test coverage meets threshold (>=60%)",
+          "status": "fail",
+          "detail": "2 package(s) with coverage, average 28.3% lines",
+          "priority": "P0"
+        }
+      ]
+    },
+    {
+      "category": "Environment",
+      "items": [
+        {
+          "id": "env-files",
+          "label": "Environment template files present",
+          "status": "pass",
+          "detail": "All .env.example files present",
+          "priority": "P0"
+        },
+        {
+          "id": "hooks",
+          "label": "Git hooks integrity verified",
+          "status": "pass",
+          "detail": "All Husky hooks present",
+          "priority": "P0"
+        }
+      ]
+    },
+    {
+      "category": "PULSE Health",
+      "items": [
+        {
+          "id": "pulse-score",
+          "label": "PULSE health score >= 70",
+          "status": "pass",
+          "detail": "Current PULSE score: 94/100 (PARTIAL)",
+          "priority": "P0"
+        },
+        {
+          "id": "pulse-certification",
+          "label": "PULSE certification status is CERTIFIED",
+          "status": "fail",
+          "detail": "Status: NOT_CERTIFIED, gaps: scopeClosed: Observed Codacy files are missing from repo inventory: .agents/skills/marketing-psychology/SKILL.md, scripts/pulse/parsers/facade-detector.ts, scripts/pulse/parsers/runtime-utils.ts., truthExtractionPass: Runtime-critical product capabilities are still not materially real: Ops Alert., staticPass: Static certification found 1 critical/high scan finding(s) and Codacy still reports 1076 HIGH issue(s)., runtimePass: Runtime evidence was not collected. Run PULSE with --deep or --total., invariantPass: Invariant evidence is missing for: financial-audit-trail., securityPass: Security certification objective found blocking evidence. Objective: dynamic security certification objective. Evidence requirement: runtime, static, or external evidence must not expose blocking security predicates. Blocking finding predicates: backend/prisma/migrations/20251209150035_init_baseline/migration.sql (37), backend/src/auth/email.service.ts, package.json., recoveryPass: Recovery evidence was not attached in scan mode., performancePass: Performance evidence was not exercised in scan mode., observabilityPass: Observability evidence was not attached in scan mode., customerPass: customer synthetic evidence is missing for: customer-auth-shell, customer-product-and-checkout, customer-whatsapp-and-inbox., operatorPass: operator synthetic scenarios have no observed (runtime-executed) evidence — 0 scenario(s) passed via structural inference only (truthMode='inferred'). Real HTTP/Playwright/DB execution is required., adminPass: admin synthetic evidence is missing for: admin-settings-kyc-banking, admin-whatsapp-session-control., soakPass: soak synthetic evidence is missing for: operator-campaigns-and-flows, operator-autopilot-run, system-payment-reconciliation., evidenceFresh: Execution trace is missing, so the certification run cannot prove which phases actually executed., noOverclaimPass: overclaim:completionProofReadiness — certification cannot complete while .pulse/current/PULSE_PROOF_READINESS.json has non-observed production proof (status=executable_unproved, canAdvance=false, planned=1886, inferred=0, not_available=0, nonObserved=1886, executableUnproved=1886)., criticalPathObservedPass: 3931 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:ad-insights, matrix:capability:capability:ad-rules, matrix:capability:capability:admin-chat, matrix:capability:capability:admin-clients, matrix:capability:capability:admin-compliance, matrix:capability:capability:admin-config, matrix:capability:capability:admin-dashboard, matrix:capability:capability:admin-destructive. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json., typeIntegrityPass: Found 7 type-integrity escape-hatch finding(s): frontend/src/lib/fabric/BackgroundManager.ts:51 (as any), scripts/pulse/test-honesty/ast-detection.ts:24 (as any), scripts/pulse/test-honesty/ast-detection.ts:25 (@ts-ignore), scripts/pulse/test-honesty/ast-detection.ts:26 (@ts-expect-error), scripts/pulse/test-honesty/main.ts:39 (as any), scripts/pulse/test-honesty/main.ts:40 (@ts-ignore), scripts/pulse/test-honesty/main.ts:41 (@ts-expect-error).",
+          "priority": "P0"
+        },
+        {
+          "id": "observability",
+          "label": "Observability coverage is adequate",
+          "status": "fail",
+          "detail": "Observability score: 0, status: UNKNOWN",
+          "priority": "P1"
+        }
+      ]
+    },
+    {
+      "category": "World State",
+      "items": [
+        {
+          "id": "scenario-execution",
+          "label": "All declared scenarios are executed",
+          "status": "fail",
+          "detail": "0/11 scenarios executed",
+          "priority": "P1"
+        },
+        {
+          "id": "scenario-passing",
+          "label": "All executed scenarios pass",
+          "status": "pass",
+          "detail": "0/0 scenarios passing",
+          "priority": "P1"
+        },
+        {
+          "id": "async-evidence",
+          "label": "No missing async expectations evidence",
+          "status": "fail",
+          "detail": "11 expectations with missing evidence",
+          "priority": "P1"
+        }
+      ]
+    },
+    {
+      "category": "Codacy",
+      "items": [
+        {
+          "id": "codacy-high",
+          "label": "Zero HIGH-severity Codacy issues",
+          "status": "fail",
+          "detail": "1076 HIGH issues (2180 medium, 4292 low)",
+          "priority": "P0"
+        },
+        {
+          "id": "codacy-grade",
+          "label": "Codacy grade is A",
+          "status": "pass",
+          "detail": "Grade: A (90)",
+          "priority": "P1"
+        },
+        {
+          "id": "codacy-security",
+          "label": "Zero Codacy security issues",
+          "status": "fail",
+          "detail": "452 security issues",
+          "priority": "P0"
+        }
+      ]
+    }
+  ]
+}

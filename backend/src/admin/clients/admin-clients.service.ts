@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { OrderStatus, Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import type { AdminClientMetricMaps, ListClientsResponse } from './admin-client.types';
@@ -62,6 +62,8 @@ function resolveListClientsPagination(input: ListClientsInput): { skip: number; 
 /** Admin clients service. */
 @Injectable()
 export class AdminClientsService {
+  private readonly logger = new Logger(AdminClientsService.name);
+
   constructor(private readonly prisma: PrismaService) {}
 
   /** List. */
@@ -167,6 +169,12 @@ export class AdminClientsService {
     };
 
     const items = workspaces.map((workspace) => buildAdminClientRow(workspace, maps));
+
+    this.logger.log('Clients list retrieved', {
+      context: 'AdminClientsService.list',
+      total,
+      returned: items.length,
+    });
 
     return { items, total };
   }

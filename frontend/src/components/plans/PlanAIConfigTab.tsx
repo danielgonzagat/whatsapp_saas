@@ -224,8 +224,7 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
       });
       mutate((key: unknown) => typeof key === 'string' && key.startsWith('/products'));
       setShowSaved(true);
-      if (savedTimer.current) clearTimeout(savedTimer.current);
-      // PULSE:OK — visual saved badge reset after a successful onSave() + mutate() cycle.
+      if (savedTimer.current) {clearTimeout(savedTimer.current);}
       savedTimer.current = setTimeout(() => setShowSaved(false), 3000);
     } catch {}
     setSaving(false);
@@ -507,7 +506,7 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
           }}
         >
           {saving ? (
-            <KloelMushroomMark size={18} title="Salvando IA do plano" traceColor="#ffffff" />
+            <KloelMushroomMark size={18} title="Salvando IA do plano" traceColor={colors.text.silver} />
           ) : showSaved ? (
             <CheckCircle className="h-4 w-4" aria-hidden="true" />
           ) : (

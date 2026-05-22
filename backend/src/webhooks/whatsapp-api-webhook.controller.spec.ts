@@ -1,4 +1,6 @@
 import { IS_PUBLIC_METADATA } from '../auth/public.decorator';
+import { ROUTE_CLASS_METADATA_KEY } from '../common/throttler/route-class.decorator';
+import { ROUTE_CLASS_LIMITS } from '../common/throttler/throttler-config';
 import { WhatsAppApiWebhookController } from './whatsapp-api-webhook.controller';
 
 describe('WhatsAppApiWebhookController', () => {
@@ -124,11 +126,16 @@ describe('WhatsAppApiWebhookController', () => {
   });
 
   it('keeps the WAHA webhook public and with elevated throttling metadata', () => {
-    const handler = WhatsAppApiWebhookController.prototype.handleWebhook;
+    const handler = Object.getOwnPropertyDescriptor(
+      WhatsAppApiWebhookController.prototype,
+      'handleWebhook',
+    )?.value as ((...args: unknown[]) => unknown) | undefined;
 
     expect(Reflect.getMetadata(IS_PUBLIC_METADATA, handler)).toBe(true);
-    expect(Reflect.getMetadata('THROTTLER:LIMITdefault', handler)).toBe(2000);
-    expect(Reflect.getMetadata('THROTTLER:TTLdefault', handler)).toBe(60000);
+    expect(Reflect.getMetadata(ROUTE_CLASS_METADATA_KEY, WhatsAppApiWebhookController)).toBe(
+      'webhook',
+    );
+    expect(ROUTE_CLASS_LIMITS.webhook).toEqual({ limit: 100, ttl: 60000 });
   });
 
   it('maps sessionName to workspaceId when processing inbound messages', async () => {

@@ -78,9 +78,9 @@ export const partnershipsApi = {
   // ── Affiliates ──
   listAffiliates: (params?: { type?: string; status?: string; search?: string }) => {
     const qs = new URLSearchParams();
-    if (params?.type) qs.set('type', params.type);
-    if (params?.status) qs.set('status', params.status);
-    if (params?.search) qs.set('search', params.search);
+    if (params?.type) {qs.set('type', params.type);}
+    if (params?.status) {qs.set('status', params.status);}
+    if (params?.search) {qs.set('search', params.search);}
     const q = qs.toString();
     return apiFetch<{ affiliates: Affiliate[] }>(`/partnerships/affiliates${q ? `?${q}` : ''}`);
   },

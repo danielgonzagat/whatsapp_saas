@@ -127,9 +127,9 @@ export function CardPaymentFields({
             letterSpacing: '0.06em',
           }}
         >
-          <span>{form.cardName || 'NOME E SOBRENOME'}</span>
+          <span>{form.cardName || kloelT('NOME E SOBRENOME')}</span>
           <span>
-            <span style={{ fontSize: 8 }}>validade</span> {form.cardExp || '••/••'}
+            <span style={{ fontSize: 8 }}>{kloelT('validade')}</span> {form.cardExp || '••/••'}
           </span>
         </div>
       </div>
@@ -193,7 +193,7 @@ export function CardPaymentFields({
             id={`${fid}-card-cpf`}
             value={form.cardCpf}
             onChange={updateField('cardCpf')}
-            placeholder="000.000.000-00"
+            placeholder={kloelT('000.000.000-00')}
           />
         </div>
         <div>
@@ -224,8 +224,8 @@ export function CardPaymentFields({
           </select>
           <div style={{ fontSize: 11, color: theme.mutedText, marginTop: 4 }}>
             {pricing.installmentInterestInCents > 0
-              ? `Juros total do parcelamento: ${fmtFn.brl(pricing.installmentInterestInCents)}`
-              : 'Parcelamento sem juros na opção selecionada.'}
+              ? `${kloelT('Juros total do parcelamento:')} ${fmtFn.brl(pricing.installmentInterestInCents)}`
+              : kloelT('Parcelamento sem juros na opção selecionada.')}
           </div>
         </div>
       </div>

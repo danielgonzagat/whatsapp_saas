@@ -2,10 +2,10 @@ import {
   BadRequestException,
   HttpException,
   Injectable,
-  Logger,
   ServiceUnavailableException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { StructuredLogger } from '../logging/structured-logger';
 import { encryptString } from '../lib/crypto';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
@@ -17,6 +17,10 @@ import { GoogleAuthService, GoogleVerifiedProfile } from './google-auth.service'
 import { RateLimitService } from './rate-limit.service';
 import { TikTokAuthService } from './tiktok-auth.service';
 
+/**
+ * @cluster whatsapp_saas/backend/auth
+ * L11 multi-agent TaskGraph annotation (batched by tools/auto-pr/batch-job.mjs).
+ */
 function buildAuthLogMessage(event: string, payload: Record<string, unknown>) {
   return JSON.stringify({ event, ...payload });
 }
@@ -24,7 +28,7 @@ function buildAuthLogMessage(event: string, payload: Record<string, unknown>) {
 /** Handles all OAuth / social-login flows for AuthService. */
 @Injectable()
 export class AuthOAuthService {
-  private readonly logger = new Logger(AuthOAuthService.name);
+  private readonly logger = StructuredLogger.from(AuthOAuthService.name);
 
   constructor(
     private readonly prisma: PrismaService,
@@ -71,6 +75,9 @@ export class AuthOAuthService {
       select: { id: true, accessToken: true, refreshToken: true },
     });
 
+    const profileData =
+      (profile.profileData as Prisma.InputJsonValue | null | undefined) || undefined;
+
     const data: Prisma.SocialAccountUncheckedCreateInput = {
       agentId,
       provider: profile.provider,
@@ -79,25 +86,34 @@ export class AuthOAuthService {
         .trim()
         .toLowerCase(),
       accessToken:
-        encryptedAccessToken || (options?.overwriteTokens ? null : current?.accessToken) || null,
+        encryptedAccessToken ?? (options?.overwriteTokens ? null : (current?.accessToken ?? null)),
       refreshToken:
-        encryptedRefreshToken || (options?.overwriteTokens ? null : current?.refreshToken) || null,
+        encryptedRefreshToken ??
+        (options?.overwriteTokens ? null : (current?.refreshToken ?? null)),
       tokenExpiresAt: profile.tokenExpiresAt || null,
-      profileData: (profile.profileData as Prisma.InputJsonValue | null | undefined) || undefined,
       revokedAt: null,
       lastUsedAt: new Date(),
     };
+    if (profileData !== undefined) {
+      data.profileData = profileData;
+    }
 
     return this.prisma.socialAccount.upsert({
       where: { agentId_provider: { agentId, provider: profile.provider } },
       create: data,
       update: {
-        providerUserId: data.providerUserId,
-        email: data.email,
-        accessToken: data.accessToken,
-        refreshToken: data.refreshToken,
-        tokenExpiresAt: data.tokenExpiresAt,
-        profileData: data.profileData,
+        providerUserId: profile.providerId,
+        email: String(profile.email || '')
+          .trim()
+          .toLowerCase(),
+        accessToken:
+          encryptedAccessToken ??
+          (options?.overwriteTokens ? null : (current?.accessToken ?? null)),
+        refreshToken:
+          encryptedRefreshToken ??
+          (options?.overwriteTokens ? null : (current?.refreshToken ?? null)),
+        tokenExpiresAt: profile.tokenExpiresAt || null,
+        ...(profileData !== undefined ? { profileData } : {}),
         revokedAt: null,
         lastUsedAt: new Date(),
       },
@@ -148,9 +164,9 @@ export class AuthOAuthService {
     await this.rateLimitService.checkRateLimit(`oauth:tiktok:${data.ip || 'ip-unknown'}`);
     return this.tikTokAuthService.verifyAccessToken({
       accessToken: data.accessToken,
-      openId: data.openId,
-      refreshToken: data.refreshToken,
-      expiresInSeconds: data.expiresInSeconds,
+      ...(data.openId !== undefined ? { openId: data.openId } : {}),
+      ...(data.refreshToken !== undefined ? { refreshToken: data.refreshToken } : {}),
+      ...(data.expiresInSeconds !== undefined ? { expiresInSeconds: data.expiresInSeconds } : {}),
     });
   }
 
@@ -221,9 +237,9 @@ export class AuthOAuthService {
           normalizedProviderId,
           normalizedEmail,
           finalName,
-          image,
-          emailVerified,
-          syntheticEmail,
+          ...(image !== undefined ? { image } : {}),
+          ...(emailVerified !== undefined ? { emailVerified } : {}),
+          ...(syntheticEmail !== undefined ? { syntheticEmail } : {}),
         });
 
         await this.upsertSocialAccount(patched.id, {
@@ -244,8 +260,8 @@ export class AuthOAuthService {
         normalizedEmail,
         normalizedProvider,
         normalizedProviderId,
-        image,
-        emailVerified,
+        ...(image !== undefined ? { image } : {}),
+        ...(emailVerified !== undefined ? { emailVerified } : {}),
       });
 
       await this.upsertSocialAccount(created.id, {
@@ -278,9 +294,7 @@ export class AuthOAuthService {
               response: safeResponse,
             }),
           );
-        } catch {
-          // PULSE:OK — Error log stringify failure; original error is re-thrown below
-        }
+        } catch {}
         throw error;
       }
 

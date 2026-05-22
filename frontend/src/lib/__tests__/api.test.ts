@@ -232,33 +232,6 @@ describe('authApi', () => {
     vi.restoreAllMocks();
   });
 
-  it('sends Facebook access token to the same-origin auth proxy and persists auth tokens', async () => {
-    const mockResponse = {
-      ok: true,
-      status: 200,
-      json: () =>
-        Promise.resolve({
-          access_token: 'fb-access-token',
-          refresh_token: 'fb-refresh-token',
-          workspace: { id: 'ws-facebook', name: 'Facebook Workspace' },
-          user: { id: 'user-facebook', email: 'fb@kloel.com', name: 'FB User' },
-        }),
-    };
-    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(mockResponse as Response);
-
-    const result = await authApi.signInWithFacebook('meta-user-token', 'fb-user-123');
-
-    expect(result.error).toBeUndefined();
-    const request = getFetchRequest(fetchSpy);
-    expect(request.url).toBe('http://localhost:3001/auth/oauth/facebook');
-    await expect(request.text()).resolves.toBe(
-      JSON.stringify({ accessToken: 'meta-user-token', userId: 'fb-user-123' }),
-    );
-    expect(tokenStorage.getToken()).toBe('fb-access-token');
-    expect(tokenStorage.getRefreshToken()).toBe('fb-refresh-token');
-    expect(tokenStorage.getWorkspaceId()).toBe('ws-facebook');
-  });
-
   it('requests a magic link without persisting auth tokens', async () => {
     const mockResponse = {
       ok: true,

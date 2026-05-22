@@ -1,9 +1,10 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import OpenAI from 'openai';
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { extractFallbackTopic as extractFallbackTopicValue } from '../whatsapp/whatsapp-normalization.util';
 import { chatCompletionWithFallback } from './openai-wrapper';
-import type { ActionEntry } from './unified-agent.service';
+import type { ActionEntry } from './unified-agent.types';
 import {
   AGENDAR_AGENDA_REUNI_A_RE,
   CANCEL_CANCELAR_REEMBOL_RE,
@@ -21,7 +22,7 @@ import {
   countResponseWords,
   computeReplyStyleBudget,
   buildReplyStyleInstruction,
-} from './__companions__/unified-agent-response.service.companion';
+} from './unified-agent-response.helpers';
 
 /**
  * Handles response generation, reply style, and fallback logic
@@ -29,7 +30,7 @@ import {
  */
 @Injectable()
 export class UnifiedAgentResponseService {
-  private readonly logger = new Logger(UnifiedAgentResponseService.name);
+  private readonly logger = StructuredLogger.from(UnifiedAgentResponseService.name);
   constructor(private readonly planLimits: PlanLimitsService) {}
   async composeWriterReply(
     openai: OpenAI | null,
@@ -46,7 +47,9 @@ export class UnifiedAgentResponseService {
     const { workspaceId, customerMessage, assistantDraft, actions, historyTurns } = params;
     const fallbackReply = this.finalizeReplyStyle(customerMessage, assistantDraft, historyTurns);
 
-    if (!openai) return fallbackReply;
+    if (!openai) {
+      return fallbackReply;
+    }
 
     const compactActions = actions.map((action) => ({
       tool: action.tool,
@@ -55,7 +58,9 @@ export class UnifiedAgentResponseService {
     }));
 
     try {
-      if (workspaceId) await this.planLimits.ensureTokenBudget(workspaceId);
+      if (workspaceId) {
+        await this.planLimits.ensureTokenBudget(workspaceId);
+      }
       const writerResponse = await chatCompletionWithFallback(
         openai,
         {
@@ -111,7 +116,9 @@ export class UnifiedAgentResponseService {
       .replace(S_______S_RE, ' ')
       .trim();
 
-    if (!normalized) return undefined;
+    if (!normalized) {
+      return undefined;
+    }
 
     const budget = computeReplyStyleBudget(customerMessage, historyTurns);
     const allowEmoji = Array.from(customerMessage).some((character) =>
@@ -146,8 +153,12 @@ export class UnifiedAgentResponseService {
         selectedWords = sentenceWords;
         continue;
       }
-      if (selectedSentences.length >= effectiveSentenceBudget) break;
-      if (selectedWords + sentenceWords > budget.maxWords) break;
+      if (selectedSentences.length >= effectiveSentenceBudget) {
+        break;
+      }
+      if (selectedWords + sentenceWords > budget.maxWords) {
+        break;
+      }
       selectedSentences.push(sentence);
       selectedWords += sentenceWords;
     }
@@ -174,7 +185,9 @@ export class UnifiedAgentResponseService {
       }))
       .filter((message) => message.content && message.quotedMessageId);
 
-    if (!normalizedMessages.length) return [];
+    if (!normalizedMessages.length) {
+      return [];
+    }
 
     if (normalizedMessages.length === 1 || !openai) {
       return this.buildMirroredReplyPlanFallback(normalizedMessages, params.draftReply);
@@ -212,7 +225,6 @@ export class UnifiedAgentResponseService {
         .replace(JSON_RE, '')
         .replace(PATTERN_RE_3, '')
         .trim();
-      // PULSE:OK — inside try/catch; parser confused by multi-line template literal
       const parsed = JSON.parse(raw);
       const replies = Array.isArray(parsed?.replies) ? parsed.replies : [];
 
@@ -247,12 +259,14 @@ export class UnifiedAgentResponseService {
       .filter(Boolean) || [normalizedDraft];
 
     if (customerMessages.length === 1) {
+      const first = customerMessages[0];
+      if (!first) {
+        return [];
+      }
       return [
         {
-          quotedMessageId: customerMessages[0].quotedMessageId,
-          text:
-            this.finalizeReplyStyle(customerMessages[0].content, normalizedDraft, 0) ||
-            normalizedDraft,
+          quotedMessageId: first.quotedMessageId,
+          text: this.finalizeReplyStyle(first.content, normalizedDraft, 0) || normalizedDraft,
         },
       ];
     }
@@ -278,67 +292,74 @@ export class UnifiedAgentResponseService {
     const topic = extractFallbackTopicValue(message);
 
     if (PRE_C__O_QUANTO_VALOR_C_RE.test(normalized)) {
+      const response = this.finalizeReplyStyle(
+        message,
+        topic
+          ? `Boa, você foi direto ao ponto. Posso confirmar preço, pagamento e disponibilidade de ${topic}. Quer que eu siga por aí?`
+          : 'Boa, sem rodeio fica melhor. Posso confirmar preço, pagamento e disponibilidade. Me diz o produto ou procedimento.',
+      );
       return {
         actions: [],
-        response: this.finalizeReplyStyle(
-          message,
-          topic
-            ? `Boa, você foi direto ao ponto. Posso confirmar preço, pagamento e disponibilidade de ${topic}. Quer que eu siga por aí?`
-            : 'Boa, sem rodeio fica melhor. Posso confirmar preço, pagamento e disponibilidade. Me diz o produto ou procedimento.',
-        ),
+        ...(response !== undefined ? { response } : {}),
         intent: 'BUYING_INTENT',
         confidence: 0.45,
       };
     }
 
     if (AGENDAR_AGENDA_REUNI_A_RE.test(normalized)) {
+      const response = this.finalizeReplyStyle(
+        message,
+        'Perfeito, organização ainda existe. Me diz o dia ou horário e eu organizo isso com você.',
+      );
       return {
         actions: [],
-        response: this.finalizeReplyStyle(
-          message,
-          'Perfeito, organização ainda existe. Me diz o dia ou horário e eu organizo isso com você.',
-        ),
+        ...(response !== undefined ? { response } : {}),
         intent: 'SCHEDULING',
         confidence: 0.4,
       };
     }
 
     if (CANCEL_CANCELAR_REEMBOL_RE.test(normalized)) {
+      const response = this.finalizeReplyStyle(
+        message,
+        'Entendi. Me diz o que aconteceu para eu te ajudar nisso agora.',
+      );
       return {
         actions: [],
-        response: this.finalizeReplyStyle(
-          message,
-          'Entendi. Me diz o que aconteceu para eu te ajudar nisso agora.',
-        ),
+        ...(response !== undefined ? { response } : {}),
         intent: 'CHURN_RISK',
         confidence: 0.4,
       };
     }
 
     if (OL__A__BOM_DIA_BOA_TARD_RE.test(normalized)) {
+      const response = this.finalizeReplyStyle(message, 'Oi. Como posso te ajudar?');
       return {
         actions: [],
-        response: this.finalizeReplyStyle(message, 'Oi. Como posso te ajudar?'),
+        ...(response !== undefined ? { response } : {}),
         intent: 'GREETING',
         confidence: 0.35,
       };
     }
 
+    const response = this.finalizeReplyStyle(
+      message,
+      topic
+        ? `Entendi. Você falou de ${topic}. Me diz o que quer confirmar e eu te respondo sem enrolação.`
+        : 'Entendi. Me diz o produto, exame ou objetivo e eu sigo com a informação certa, sem teatro.',
+    );
     return {
       actions: [],
-      response: this.finalizeReplyStyle(
-        message,
-        topic
-          ? `Entendi. Você falou de ${topic}. Me diz o que quer confirmar e eu te respondo sem enrolação.`
-          : 'Entendi. Me diz o produto, exame ou objetivo e eu sigo com a informação certa, sem teatro.',
-      ),
+      ...(response !== undefined ? { response } : {}),
       intent: 'UNKNOWN',
       confidence: 0.2,
     };
   }
 
   extractIntent(actions: Array<{ tool: string; args: unknown }>, _message: string): string {
-    if (actions.length === 0) return 'IDLE';
+    if (actions.length === 0) {
+      return 'IDLE';
+    }
     const toolIntentMap: Record<string, string> = {
       create_payment_link: 'BUYING',
       send_product_info: 'INTERESTED',
@@ -351,7 +372,10 @@ export class UnifiedAgentResponseService {
       qualify_lead: 'QUALIFICATION',
     };
     for (const action of actions) {
-      if (toolIntentMap[action.tool]) return toolIntentMap[action.tool];
+      const intent = toolIntentMap[action.tool];
+      if (intent) {
+        return intent;
+      }
     }
     return 'FOLLOW_UP';
   }
@@ -363,7 +387,9 @@ export class UnifiedAgentResponseService {
   ): number {
     let confidence = 0.5;
     confidence += Math.min(actions.length * 0.1, 0.3);
-    if (response.choices[0].message.tool_calls?.length) confidence += 0.15;
+    if (response.choices[0]?.message?.tool_calls?.length) {
+      confidence += 0.15;
+    }
     return Math.min(confidence, 1);
   }
 

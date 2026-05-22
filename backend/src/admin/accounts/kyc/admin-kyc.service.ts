@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { AdminAuditService } from '../../audit/admin-audit.service';
 import { adminErrors } from '../../common/admin-api-errors';
@@ -16,6 +16,8 @@ import { adminErrors } from '../../common/admin-api-errors';
  */
 @Injectable()
 export class AdminKycService {
+  private readonly logger = new Logger(AdminKycService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AdminAuditService,
@@ -52,6 +54,13 @@ export class AdminKycService {
       ],
       { isolationLevel: 'ReadCommitted' },
     );
+
+    this.logger.log('KYC agent approved', {
+      context: 'AdminKycService.approveAgent',
+      agentId,
+      workspaceId: agent.workspaceId,
+      previousStatus: agent.kycStatus,
+    });
 
     await this.audit.append({
       adminUserId: actorId,
@@ -98,6 +107,13 @@ export class AdminKycService {
       { isolationLevel: 'ReadCommitted' },
     );
 
+    this.logger.log('KYC agent rejected', {
+      context: 'AdminKycService.rejectAgent',
+      agentId,
+      workspaceId: agent.workspaceId,
+      previousStatus: agent.kycStatus,
+    });
+
     await this.audit.append({
       adminUserId: actorId,
       action: 'admin.kyc.rejected',
@@ -129,6 +145,13 @@ export class AdminKycService {
         kycApprovedAt: null,
         kycRejectedReason: reason,
       },
+    });
+
+    this.logger.log('KYC reverification requested', {
+      context: 'AdminKycService.reverifyAgent',
+      agentId,
+      workspaceId: agent.workspaceId,
+      previousStatus: agent.kycStatus,
     });
 
     await this.audit.append({

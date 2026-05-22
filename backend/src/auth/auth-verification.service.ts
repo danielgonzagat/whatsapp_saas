@@ -1,12 +1,7 @@
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
+import { StructuredLogger } from '../logging/structured-logger';
 import { InjectRedis } from '@nestjs-modules/ioredis';
-import {
-  BadRequestException,
-  Injectable,
-  Logger,
-  Optional,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { BadRequestException, Injectable, Optional, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -22,8 +17,13 @@ import { UserNameDerivationService } from './user-name-derivation.service';
  * WhatsApp OTP and password recovery are delegated to AuthWhatsappPasswordService.
  */
 @Injectable()
+/**
+ * @cluster whatsapp_saas/backend/auth
+ * L11 multi-agent TaskGraph annotation (batched by tools/auto-pr/batch-job.mjs).
+ */
 export class AuthVerificationService {
-  private readonly logger = new Logger(AuthVerificationService.name);
+  private readonly logger = StructuredLogger.from(AuthVerificationService.name);
+
   private readonly rateLimitService: RateLimitService;
 
   constructor(
@@ -34,6 +34,7 @@ export class AuthVerificationService {
     @Optional() private readonly opsAlert?: OpsAlertService,
     @Optional() @InjectRedis() private readonly redis?: Redis,
   ) {
+    this.logger.debug?.(`AuthVerificationService initialized`);
     this.rateLimitService = new RateLimitService(this.redis || null);
   }
 

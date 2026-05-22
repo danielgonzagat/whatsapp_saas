@@ -7,45 +7,50 @@ import {
   updateVariantOutcome,
 } from '../processors/cia/self-improvement';
 
-function prismaClientMock(client: { kloelMemory: unknown }): PrismaClient {
+function prismaClientMock(client: { kloelMemory: unknown; mindBanditArm?: unknown }): PrismaClient {
   return client as PrismaClient;
 }
 
 describe('cia-self-improvement', () => {
   it('picks the best stored variant while still supporting exploration defaults', async () => {
-    const randomSpy = vi.spyOn(Math, 'random').mockReturnValue(0.99);
     const prisma = {
-      kloelMemory: {
+      mindBanditArm: {
         findMany: vi.fn(async () => [
           {
-            value: {
-              key: 'followup:proof',
+            alpha: 8,
+            arm: 'followup:proof',
+            beta: 1,
+            context: {
               text: 'variante melhor',
-              score: 8,
-              uses: 2,
             },
+            id: 'arm-1',
+            pulls: 2,
           },
         ]),
+        updateMany: vi.fn(async () => ({ count: 1 })),
+        upsert: vi.fn(async () => ({})),
       },
+      kloelMemory: {},
     };
 
     const variant = await pickVariant(prismaClientMock(prisma), 'ws-1', 'followup');
 
     expect(variant.text).toBe('variante melhor');
-    expect(variant.score).toBe(8);
-    randomSpy.mockRestore();
+    expect(variant.uses).toBe(2);
   });
 
   it('records decision logs and updates variant scores from outcomes', async () => {
     const create = vi.fn(async () => ({}));
-    const upsert = vi.fn(async () => ({}));
-    const findUnique = vi.fn(async () => null);
+    const update = vi.fn(async () => ({}));
+    const upsertArm = vi.fn(async () => ({}));
 
     const prisma = {
       kloelMemory: {
         create,
-        upsert,
-        findUnique,
+      },
+      mindBanditArm: {
+        update,
+        upsert: upsertArm,
       },
     };
 
@@ -82,10 +87,11 @@ describe('cia-self-improvement', () => {
         }),
       }),
     );
-    expect(upsert).toHaveBeenCalledWith(
+    expect(update).toHaveBeenCalledWith(
       expect.objectContaining({
-        create: expect.objectContaining({
-          category: 'cia_variant',
+        data: expect.objectContaining({
+          alpha: { increment: 1 },
+          beta: { increment: 0 },
         }),
       }),
     );

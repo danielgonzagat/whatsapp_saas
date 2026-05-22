@@ -37,7 +37,7 @@ export function FormatPills({ onPillClick }: FormatPillsProps) {
             alignItems: 'center',
             gap: 5,
             padding: '8px 8px',
-            background: hp === p.id ? '#151517' : 'transparent',
+            background: hp === p.id ? colors.canvas.surfaceAlt : 'transparent',
             border: 'none',
             borderRadius: 6,
             cursor: 'pointer',
@@ -54,7 +54,7 @@ export function FormatPills({ onPillClick }: FormatPillsProps) {
                 hp === p.id
                   ? `linear-gradient(135deg,${p.c[0]},${p.c[1]})`
                   : 'colors.background.surface',
-              border: `1px solid ${hp === p.id ? `${p.c[0]}50` : '#1C1C1F'}`,
+              border: `1px solid ${hp === p.id ? `${p.c[0]}50` : colors.canvas.border}`,
               transition: 'all 0.3s',
               display: 'flex',
               alignItems: 'center',
@@ -63,13 +63,13 @@ export function FormatPills({ onPillClick }: FormatPillsProps) {
             }}
           >
             {hp === p.id ? (
-              <span style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>{p.l.charAt(0)}</span>
+              <span style={{ fontSize: 13, fontWeight: 700, color: colors.text.silver }}>{p.l.charAt(0)}</span>
             ) : (
               <div
                 style={{
                   width: 14,
                   height: 14,
-                  borderRadius: 3,
+                  borderRadius: 4,
                   background: `linear-gradient(135deg,${p.c[0]}50,${p.c[1]}50)`,
                 }}
               />

@@ -1,35 +1,66 @@
-import * as fs from 'fs';
-import * as os from 'os';
+import { spawnSync } from 'child_process';
 import * as path from 'path';
-import { pathToFileURL } from 'url';
-import { buildConvergencePlan } from '../../../scripts/pulse/convergence-plan';
-import { buildExternalSignalState } from '../../../scripts/pulse/external-signals';
-import type {
-  PulseCapabilityState,
-  PulseCertification,
-  PulseCodacyEvidence,
-  PulseExternalSignalState,
-  PulseFlowProjection,
-  PulseResolvedManifest,
-  PulseScopeState,
-} from '../../../scripts/pulse/types';
 
-type ExternalSignalSnapshot = 'github' | 'sentry';
-
-function writeJsonSnapshot(rootDir: string, snapshot: ExternalSignalSnapshot, value: unknown) {
-  const rootUrl = pathToFileURL(`${rootDir}${path.sep}`);
-  const payload = JSON.stringify(value, null, 2);
-  switch (snapshot) {
-    case 'github':
-      fs.writeFileSync(new URL('PULSE_GITHUB_STATE.json', rootUrl), payload);
-      return;
-    case 'sentry':
-      fs.writeFileSync(new URL('PULSE_SENTRY_STATE.json', rootUrl), payload);
-      return;
-  }
+interface ExternalSignalFixtureResult {
+  readonly totalSignals: number;
+  readonly runtimeSignals: number;
+  readonly changeSignals: number;
+  readonly sentrySignal: {
+    readonly capabilityIds: readonly string[];
+    readonly flowIds: readonly string[];
+    readonly executionMode: string;
+    readonly recentChangeRefsLength: number;
+  };
+  readonly firstPlanQueueItem: {
+    readonly source: string;
+    readonly kind: string;
+  };
 }
 
-function createScopeState(rootDir: string): PulseScopeState {
+function runExternalSignalFixture(): ExternalSignalFixtureResult {
+  const repoRoot = path.resolve(__dirname, '../../..');
+  const script = String.raw`
+const fs = require('fs');
+const os = require('os');
+const path = require('path');
+const Module = require('module');
+const ts = require('typescript');
+
+const repoRoot = process.cwd();
+const originalLoad = Module._load;
+Module._load = function load(request, parent, isMain) {
+  if (
+    request === './external-signals/snapshot-config' &&
+    parent &&
+    parent.filename.includes(path.join('scripts', 'pulse'))
+  ) {
+    return { PULSE_EXTERNAL_INPUT_FILES: ['PULSE_CODACY_STATE.json'] };
+  }
+  return originalLoad.apply(this, arguments);
+};
+
+require.extensions['.ts'] = function compileTypeScript(module, filename) {
+  const source = fs.readFileSync(filename, 'utf8');
+  const output = ts.transpileModule(source, {
+    compilerOptions: {
+      esModuleInterop: true,
+      module: ts.ModuleKind.CommonJS,
+      target: ts.ScriptTarget.ES2021,
+    },
+    fileName: filename,
+  }).outputText;
+  module._compile(output, filename);
+};
+
+const { buildConvergencePlan } = require(path.join(repoRoot, 'scripts/pulse/convergence-plan.ts'));
+const { buildExternalSignalState } = require(path.join(repoRoot, 'scripts/pulse/external-signals.ts'));
+
+function writeJsonSnapshot(rootDir, snapshot, value) {
+  const fileName = snapshot === 'github' ? 'PULSE_GITHUB_STATE.json' : 'PULSE_SENTRY_STATE.json';
+  fs.writeFileSync(path.join(rootDir, fileName), JSON.stringify(value, null, 2));
+}
+
+function createScopeState(rootDir) {
   return {
     generatedAt: new Date().toISOString(),
     rootDir,
@@ -91,12 +122,7 @@ function createScopeState(rootDir: string): PulseScopeState {
       stale: false,
       loc: 40,
       totalIssues: 0,
-      severityCounts: {
-        HIGH: 0,
-        MEDIUM: 0,
-        LOW: 0,
-        UNKNOWN: 0,
-      },
+      severityCounts: { HIGH: 0, MEDIUM: 0, LOW: 0, UNKNOWN: 0 },
       toolCounts: {},
       topFiles: [],
       highPriorityBatch: [],
@@ -147,7 +173,7 @@ function createScopeState(rootDir: string): PulseScopeState {
   };
 }
 
-function createCapabilityState(): PulseCapabilityState {
+function createCapabilityState() {
   return {
     generatedAt: new Date().toISOString(),
     summary: {
@@ -214,7 +240,7 @@ function createCapabilityState(): PulseCapabilityState {
   };
 }
 
-function createFlowProjection(): PulseFlowProjection {
+function createFlowProjection() {
   return {
     generatedAt: new Date().toISOString(),
     summary: {
@@ -252,7 +278,7 @@ function createFlowProjection(): PulseFlowProjection {
   };
 }
 
-function createCodacyEvidence(): PulseCodacyEvidence {
+function createCodacyEvidence() {
   return {
     generatedAt: new Date().toISOString(),
     summary: {
@@ -268,63 +294,9 @@ function createCodacyEvidence(): PulseCodacyEvidence {
   };
 }
 
-describe('buildExternalSignalState', () => {
-  let rootDir: string;
-
-  beforeEach(() => {
-    rootDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pulse-external-'));
-  });
-
-  afterEach(() => {
-    fs.rmSync(rootDir, { recursive: true, force: true });
-  });
-
-  it('normalizes snapshot-first signals and maps them to capabilities and flows', () => {
-    writeJsonSnapshot(rootDir, 'github', {
-      commits: [
-        {
-          sha: 'abc123',
-          message: 'touch checkout path',
-          files: ['backend/src/payments/service.ts'],
-          committedAt: '2026-04-22T12:00:00.000Z',
-        },
-      ],
-    });
-    writeJsonSnapshot(rootDir, 'sentry', {
-      issues: [
-        {
-          id: 'issue-1',
-          title: 'Checkout runtime error',
-          files: ['backend/src/payments/service.ts'],
-          routes: ['/checkout'],
-          count: 6,
-          lastSeen: '2026-04-22T12:10:00.000Z',
-        },
-      ],
-    });
-
-    const state = buildExternalSignalState({
-      rootDir,
-      scopeState: createScopeState(rootDir),
-      codacyEvidence: createCodacyEvidence(),
-      capabilityState: createCapabilityState(),
-      flowProjection: createFlowProjection(),
-    });
-
-    expect(state.summary.totalSignals).toBeGreaterThanOrEqual(2);
-    expect(state.summary.runtimeSignals).toBeGreaterThanOrEqual(1);
-    expect(state.summary.changeSignals).toBeGreaterThanOrEqual(1);
-
-    const sentrySignal = state.signals.find((signal) => signal.source === 'sentry');
-    expect(sentrySignal).toMatchObject({
-      capabilityIds: ['payments-checkout'],
-      flowIds: ['checkout-flow'],
-      executionMode: 'ai_safe',
-    });
-    expect(sentrySignal?.recentChangeRefs.length).toBeGreaterThan(0);
-  });
-
-  it('pushes observed runtime signals to the top of the convergence queue', () => {
+async function main() {
+  const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pulse-external-'));
+  try {
     writeJsonSnapshot(rootDir, 'github', {
       commits: [
         {
@@ -348,13 +320,17 @@ describe('buildExternalSignalState', () => {
       ],
     });
 
-    const externalSignalState: PulseExternalSignalState = buildExternalSignalState({
+    const scopeState = createScopeState(rootDir);
+    const capabilityState = createCapabilityState();
+    const flowProjection = createFlowProjection();
+    const externalSignalState = buildExternalSignalState({
       rootDir,
-      scopeState: createScopeState(rootDir),
+      scopeState,
       codacyEvidence: createCodacyEvidence(),
-      capabilityState: createCapabilityState(),
-      flowProjection: createFlowProjection(),
+      capabilityState,
+      flowProjection,
     });
+    const sentrySignal = externalSignalState.signals.find((signal) => signal.source === 'sentry');
 
     const certification = {
       timestamp: new Date().toISOString(),
@@ -376,7 +352,7 @@ describe('buildExternalSignalState', () => {
         soak: { results: [] },
         worldState: { asyncExpectationsStatus: [] },
       },
-    } as never as PulseCertification;
+    };
     const resolvedManifest = {
       scenarioSpecs: [],
       flowSpecs: [],
@@ -417,23 +393,77 @@ describe('buildExternalSignalState', () => {
         warningCount: 0,
       },
       temporaryAcceptances: [],
-    } as never as PulseResolvedManifest;
-
+    };
     const plan = buildConvergencePlan({
       health: { breaks: [] },
       resolvedManifest,
-      scopeState: createScopeState(rootDir),
+      scopeState,
       certification,
-      capabilityState: createCapabilityState(),
-      flowProjection: createFlowProjection(),
-      parityGaps: {
-        summary: { totalGaps: 0, criticalGaps: 0, highGaps: 0, byKind: {} },
-        gaps: [],
-      } as never,
+      capabilityState,
+      flowProjection,
+      parityGaps: { summary: { totalGaps: 0, criticalGaps: 0, highGaps: 0, byKind: {} }, gaps: [] },
       externalSignalState,
     });
 
-    expect(plan.queue[0]).toMatchObject({
+    process.stdout.write(
+      JSON.stringify({
+        totalSignals: externalSignalState.summary.totalSignals,
+        runtimeSignals: externalSignalState.summary.runtimeSignals,
+        changeSignals: externalSignalState.summary.changeSignals,
+        sentrySignal: {
+          capabilityIds: sentrySignal.capabilityIds,
+          flowIds: sentrySignal.flowIds,
+          executionMode: sentrySignal.executionMode,
+          recentChangeRefsLength: sentrySignal.recentChangeRefs.length,
+        },
+        firstPlanQueueItem: {
+          source: plan.queue[0].source,
+          kind: plan.queue[0].kind,
+        },
+      }),
+    );
+  } finally {
+    fs.rmSync(rootDir, { recursive: true, force: true });
+  }
+}
+
+main().catch((error) => {
+  console.error(error);
+  process.exit(1);
+});
+`;
+
+  const result = spawnSync(process.execPath, ['--max-old-space-size=8192', '-e', script], {
+    cwd: repoRoot,
+    encoding: 'utf8',
+    env: { ...process.env, NODE_ENV: 'test' },
+    maxBuffer: 1024 * 1024,
+  });
+
+  if (result.status !== 0) {
+    throw new Error(`external signal fixture failed\nstdout:\n${result.stdout}\nstderr:\n${result.stderr}`);
+  }
+
+  return JSON.parse(result.stdout) as ExternalSignalFixtureResult;
+}
+
+describe('buildExternalSignalState', () => {
+  const fixture = runExternalSignalFixture();
+
+  it('normalizes snapshot-first signals and maps them to capabilities and flows', () => {
+    expect(fixture.totalSignals).toBeGreaterThanOrEqual(2);
+    expect(fixture.runtimeSignals).toBeGreaterThanOrEqual(1);
+    expect(fixture.changeSignals).toBeGreaterThanOrEqual(1);
+    expect(fixture.sentrySignal).toMatchObject({
+      capabilityIds: ['payments-checkout'],
+      flowIds: ['checkout-flow'],
+      executionMode: 'ai_safe',
+    });
+    expect(fixture.sentrySignal.recentChangeRefsLength).toBeGreaterThan(0);
+  });
+
+  it('pushes observed runtime signals to the top of the convergence queue', () => {
+    expect(fixture.firstPlanQueueItem).toMatchObject({
       source: 'external',
       kind: 'runtime',
     });

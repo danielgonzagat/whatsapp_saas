@@ -21,8 +21,8 @@ function MessageNodeComponent({ data, selected }: NodeProps<MessageNodeData>) {
   return (
     <div
       className={`
-      px-4 py-3 rounded-lg border-2 bg-[#111113] shadow-md min-w-[200px] max-w-[280px]
-      ${selected ? 'border-green-500 ring-2 ring-green-500/30' : 'border-[#222226]'}
+      px-4 py-3 rounded-lg border-2 bg-[var(--bg-surface)] shadow-md min-w-[200px] max-w-[280px]
+      ${selected ? 'border-green-500 ring-2 ring-green-500/30' : 'border-[var(--bg-border)]'}
     `}
     >
       <Handle type="target" position={Position.Top} className="!bg-green-500 !w-3 !h-3" />
@@ -31,10 +31,10 @@ function MessageNodeComponent({ data, selected }: NodeProps<MessageNodeData>) {
         <div className="p-1.5 bg-green-500/15 rounded-md">
           <MessageCircle className="w-4 h-4 text-green-400" aria-hidden="true" />
         </div>
-        <span className="font-medium text-sm text-[#E0DDD8]">{data.label || 'Mensagem'}</span>
+        <span className="font-medium text-sm text-[var(--text-silver)]">{data.label || 'Mensagem'}</span>
       </div>
 
-      <div className="text-xs text-[#6E6E73] truncate">
+      <div className="text-xs text-[var(--text-muted)] truncate">
         {data.message || 'Configure a mensagem...'}
       </div>
 

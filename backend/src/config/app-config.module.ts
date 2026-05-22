@@ -166,7 +166,24 @@ import { redisInProductionValidator } from './redis-env-validator';
         // ============================================
         // AI PROVIDERS
         // ============================================
+        DEEPSEEK_API_KEY: Joi.string().optional(),
+        DEEPSEEK_BASE_URL: Joi.string().uri().optional(),
+        DEEPSEEK_THINKING: Joi.string().valid('enabled', 'disabled').optional(),
+        DEEPSEEK_THINKING_MIN_TOKENS: Joi.string().optional(),
+        DEEPSEEK_BRAIN_MODEL: Joi.string().optional(),
+        DEEPSEEK_BRAIN_FALLBACK_MODEL: Joi.string().optional(),
+        DEEPSEEK_WRITER_MODEL: Joi.string().optional(),
+        DEEPSEEK_WRITER_FALLBACK_MODEL: Joi.string().optional(),
+        DEEPSEEK_GUEST_EMERGENCY_MODEL: Joi.string().optional(),
+        LLM_API_KEY: Joi.string().optional(),
+        LLM_BASE_URL: Joi.string().uri().optional(),
+        LLM_BRAIN_MODEL: Joi.string().optional(),
+        LLM_BRAIN_FALLBACK_MODEL: Joi.string().optional(),
+        LLM_WRITER_MODEL: Joi.string().optional(),
+        LLM_WRITER_FALLBACK_MODEL: Joi.string().optional(),
+        LLM_GUEST_EMERGENCY_MODEL: Joi.string().optional(),
         OPENAI_API_KEY: Joi.string().optional(),
+        OPENAI_BASE_URL: Joi.string().uri().optional(),
         OPENAI_BRAIN_MODEL: Joi.string().optional(),
         OPENAI_BRAIN_FALLBACK_MODEL: Joi.string().optional(),
         OPENAI_WRITER_MODEL: Joi.string().optional(),
@@ -190,4 +207,8 @@ import { redisInProductionValidator } from './redis-env-validator';
     }),
   ],
 })
+/**
+ * @cluster whatsapp_saas/backend/config
+ * L11 multi-agent TaskGraph annotation (batched by tools/auto-pr/batch-job.mjs).
+ */
 export class AppConfigModule {}

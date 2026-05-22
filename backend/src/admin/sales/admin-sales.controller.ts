@@ -5,11 +5,13 @@ import { RequireAdminPermission } from '../auth/decorators/admin-permission.deco
 import { AdminAuthGuard } from '../auth/guards/admin-auth.guard';
 import { AdminPermissionGuard } from '../auth/guards/admin-permission.guard';
 import { AdminSalesService } from './admin-sales.service';
+import { RouteClass } from '../../common/throttler/route-class.decorator';
 
 /** Admin sales controller. */
 @Public()
 @Controller('admin/sales')
 @UseGuards(AdminAuthGuard, AdminPermissionGuard)
+@RouteClass('mutate')
 export class AdminSalesController {
   constructor(private readonly sales: AdminSalesService) {}
 
@@ -22,6 +24,11 @@ export class AdminSalesController {
     @Query('method') method?: PaymentMethod,
     @Query('gateway') gateway?: string,
   ) {
-    return this.sales.overview({ search, status, method, gateway });
+    return this.sales.overview({
+      ...(search !== undefined ? { search } : {}),
+      ...(status !== undefined ? { status } : {}),
+      ...(method !== undefined ? { method } : {}),
+      ...(gateway !== undefined ? { gateway } : {}),
+    });
   }
 }

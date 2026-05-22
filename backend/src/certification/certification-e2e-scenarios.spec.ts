@@ -212,4 +212,74 @@ describe('Certification E2E Scenario Coverage (Block 10)', () => {
     expect(scenario19.moduleName).toBe('ConnectReversalService');
     expect(scenario19.description).toContain('pending + available');
   });
+
+  it('every scenario moduleName maps to a file on disk that exports the expected entity', () => {
+    const fs = require('fs');
+    const path = require('path');
+
+    const SERVICE_IMPORTS: Record<string, { relativePath: string; exportName: string }> = {
+      CheckoutPaymentService: {
+        relativePath: '../checkout/checkout-payment.service.ts',
+        exportName: 'CheckoutPaymentService',
+      },
+      SplitEngine: {
+        relativePath: '../payments/split/split.engine.ts',
+        exportName: 'calculateSplit',
+      },
+      ConnectReversalService: {
+        relativePath: '../payments/connect/connect-reversal.service.ts',
+        exportName: 'ConnectReversalService',
+      },
+      ConnectLedgerMaturationService: {
+        relativePath: '../payments/ledger/connect-ledger-maturation.service.ts',
+        exportName: 'ConnectLedgerMaturationService',
+      },
+      ConnectPayoutApprovalService: {
+        relativePath: '../payments/connect/connect-payout-approval.service.ts',
+        exportName: 'ConnectPayoutApprovalService',
+      },
+      LedgerService: {
+        relativePath: '../payments/ledger/ledger.service.ts',
+        exportName: 'LedgerService',
+      },
+      WalletService: {
+        relativePath: '../wallet/wallet.service.ts',
+        exportName: 'WalletService',
+      },
+      FraudEngine: {
+        relativePath: '../payments/fraud/fraud.engine.ts',
+        exportName: 'FraudEngine',
+      },
+    };
+
+    const uniqueModules = [...new Set(SCENARIOS.map((s) => s.moduleName))];
+    const failures: string[] = [];
+
+    for (const name of uniqueModules) {
+      const mapping = SERVICE_IMPORTS[name];
+      if (!mapping) {
+        failures.push(`${name}: no import mapping registered`);
+        continue;
+      }
+      const filePath = path.resolve(__dirname, mapping.relativePath);
+      if (!fs.existsSync(filePath)) {
+        failures.push(`${name}: file not found — ${mapping.relativePath}`);
+        continue;
+      }
+      const source = fs.readFileSync(filePath, 'utf-8');
+      const hasExport = new RegExp(
+        `export\\s+(?:async\\s+)?(?:function|class|const)\\s+${mapping.exportName}\\b`,
+        'm',
+      ).test(source);
+      if (!hasExport) {
+        failures.push(
+          `${name}: export "${mapping.exportName}" not found in ${mapping.relativePath}`,
+        );
+      }
+    }
+
+    if (failures.length > 0) {
+      throw new Error(`import-resolution failures:\n${failures.join('\n')}`);
+    }
+  });
 });

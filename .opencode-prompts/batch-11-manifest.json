@@ -1,0 +1,24 @@
+{
+  "runId": "kloel-cia-w8-w9-next-gap-audit-2026-05-11",
+  "concurrency": 3,
+  "timeoutSec": 420,
+  "dir": "/Users/danielpenin/whatsapp_saas",
+  "skipPermissions": false,
+  "tasks": [
+    {
+      "id": "admin-compliance-audit",
+      "title": "W8 admin compliance audit",
+      "promptFile": ".opencode-prompts/batch-11/admin-compliance-audit.md"
+    },
+    {
+      "id": "webhook-observability-audit",
+      "title": "W8 webhook observability audit",
+      "promptFile": ".opencode-prompts/batch-11/webhook-observability-audit.md"
+    },
+    {
+      "id": "golden-path-local-blockers-audit",
+      "title": "W9 golden path local blockers audit",
+      "promptFile": ".opencode-prompts/batch-11/golden-path-local-blockers-audit.md"
+    }
+  ]
+}

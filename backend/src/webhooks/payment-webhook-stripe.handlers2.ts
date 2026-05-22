@@ -19,7 +19,7 @@ import type { StripeHandlerDeps } from './payment-webhook-stripe.handlers';
 import {
   updatePaymentAndSaleForSessionHelper,
   sendCheckoutConfirmationHelper,
-} from './__companions__/payment-webhook-stripe.handlers2.companion';
+} from './payment-webhook-stripe.handlers2.helpers';
 
 export type { StripeHandlerDeps };
 
@@ -37,7 +37,9 @@ export async function handlePaymentIntentEvent(
 
   if (workspaceId) {
     const ws = await deps.prisma.workspace.findUnique({ where: { id: workspaceId } });
-    if (!ws) throw new BadRequestException('invalid_workspaceId');
+    if (!ws) {
+      throw new BadRequestException('invalid_workspaceId');
+    }
   }
 
   const checkoutPaymentStatus = mapStripeIntentStatusForCheckout(
@@ -55,12 +57,12 @@ export async function handlePaymentIntentEvent(
           status: checkoutPaymentStatus,
           ...(intent.next_action?.type === 'pix_display_qr_code'
             ? {
-                pixQrCode: intent.next_action.pix_display_qr_code?.image_url_png || undefined,
-                pixCopyPaste: intent.next_action.pix_display_qr_code?.data || undefined,
+                pixQrCode: intent.next_action.pix_display_qr_code?.image_url_png || null,
+                pixCopyPaste: intent.next_action.pix_display_qr_code?.data || null,
                 pixExpiresAt:
                   typeof intent.next_action.pix_display_qr_code?.expires_at === 'number'
                     ? new Date(intent.next_action.pix_display_qr_code.expires_at * 1000)
-                    : undefined,
+                    : null,
               }
             : {}),
         },
@@ -71,21 +73,10 @@ export async function handlePaymentIntentEvent(
   if (workspaceId && intent.id && !isApprovedSaleIntent) {
     if (checkoutPaymentStatus === 'APPROVED') {
       await deps.prisma
-        // PULSE_OK: already in $transaction
         .$transaction(async (tx) => {
           await tx.kloelSale.updateMany({
-            where: { workspaceId, externalPaymentId: intent.id },
+            where: { workspaceId, externalPaymentId: intent.id ?? null },
             data: { status: 'paid', paidAt: new Date() },
-          });
-        }, FINANCIAL_TRANSACTION_OPTIONS)
-        .catch(() => undefined);
-    } else if (checkoutPaymentStatus === 'CANCELED') {
-      await deps.prisma
-        // PULSE_OK: already in $transaction
-        .$transaction(async (tx) => {
-          await tx.kloelSale.updateMany({
-            where: { workspaceId, externalPaymentId: intent.id },
-            data: { status: 'cancelled' },
           });
         }, FINANCIAL_TRANSACTION_OPTIONS)
         .catch(() => undefined);
@@ -107,15 +98,14 @@ export async function handlePaymentIntentEvent(
         await deps.ledger.persistConnectPostSaleSnapshot(intent.id, postSaleResult.connectPostSale);
         await deps.ledger.appendMarketplaceTreasurySaleCredit(intent.id);
         await deps.prisma
-          // PULSE_OK: already in $transaction
           .$transaction(async (tx) => {
             await tx.checkoutPayment.updateMany({
-              where: { externalId: intent.id },
+              where: { externalId: intent.id ?? null },
               data: { status: 'APPROVED' },
             });
             if (workspaceId) {
               await tx.kloelSale.updateMany({
-                where: { workspaceId, externalPaymentId: intent.id },
+                where: { workspaceId, externalPaymentId: intent.id ?? null },
                 data: { status: 'paid', paidAt: new Date() },
               });
             }
@@ -211,9 +201,13 @@ export async function handleCheckoutSessionCompleted(
   const rawSession = event.data?.object;
   const session: StripeCheckoutSessionLike = rawSession ?? {};
   const workspaceId = session.metadata?.workspaceId;
-  if (!workspaceId) throw new BadRequestException('missing_workspaceId');
+  if (!workspaceId) {
+    throw new BadRequestException('missing_workspaceId');
+  }
   const ws = await deps.prisma.workspace.findUnique({ where: { id: workspaceId } });
-  if (!ws) throw new BadRequestException('invalid_workspaceId');
+  if (!ws) {
+    throw new BadRequestException('invalid_workspaceId');
+  }
 
   const email = session.customer_details?.email || session.customer_email;
   const phone = session.customer_details?.phone || session.metadata?.phone;
@@ -221,7 +215,9 @@ export async function handleCheckoutSessionCompleted(
   const currency = session.currency?.toUpperCase() || 'BRL';
 
   let contact = null;
-  if (email) contact = await deps.prisma.contact.findFirst({ where: { workspaceId, email } });
+  if (email) {
+    contact = await deps.prisma.contact.findFirst({ where: { workspaceId, email } });
+  }
   if (!contact && phone) {
     contact = await deps.prisma.contact.findFirst({
       where: { workspaceId, phone: String(phone).replace(D_RE, '') },

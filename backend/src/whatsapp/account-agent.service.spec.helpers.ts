@@ -71,6 +71,20 @@ export function createMockStores(): AccountAgentMockStores {
 
 const memoryKey = (workspaceId: string, key: string) => `${workspaceId}:${key}`;
 
+function normalizeWorkspaceId(record: Record<string, unknown>): Record<string, unknown> {
+  if (
+    record.workspace &&
+    typeof record.workspace === 'object' &&
+    !Array.isArray(record.workspace) &&
+    'connect' in record.workspace
+  ) {
+    const connect = (record.workspace as { connect: { id: string } }).connect;
+    const { workspace, ...rest } = record;
+    return { ...rest, workspaceId: connect.id };
+  }
+  return record;
+}
+
 export function createMockPrisma(stores: AccountAgentMockStores): MockPrisma {
   const { memoryStore, products, externalLinks, approvalRequests, inputSessions, workItems } =
     stores;
@@ -111,9 +125,12 @@ export function createMockPrisma(stores: AccountAgentMockStores): MockPrisma {
           ({ where }: { where?: { workspaceId?: string; active?: boolean } } = {}) =>
             Promise.resolve(
               products.filter((product) => {
-                if (where?.workspaceId && product.workspaceId !== where.workspaceId) return false;
-                if (typeof where?.active === 'boolean' && product.active !== where.active)
+                if (where?.workspaceId && product.workspaceId !== where.workspaceId) {
                   return false;
+                }
+                if (typeof where?.active === 'boolean' && product.active !== where.active) {
+                  return false;
+                }
                 return true;
               }).length,
             ),
@@ -155,12 +172,20 @@ export function createMockPrisma(stores: AccountAgentMockStores): MockPrisma {
           };
         } = {}) => {
           const items = Array.from(memoryStore.values()).filter((item) => {
-            if (where?.workspaceId && item.workspaceId !== where.workspaceId) return false;
-            if (where?.category && item.category !== where.category) return false;
+            if (where?.workspaceId && item.workspaceId !== where.workspaceId) {
+              return false;
+            }
+            if (where?.category && item.category !== where.category) {
+              return false;
+            }
             if (where?.OR) {
               return where.OR.some((entry) => {
-                if (entry.type) return item.type === entry.type;
-                if (entry.category) return item.category === entry.category;
+                if (entry.type) {
+                  return item.type === entry.type;
+                }
+                if (entry.category) {
+                  return item.category === entry.category;
+                }
                 return false;
               });
             }
@@ -183,9 +208,11 @@ export function createMockPrisma(stores: AccountAgentMockStores): MockPrisma {
           }) => {
             const key = memoryKey(where.workspaceId_key.workspaceId, where.workspaceId_key.key);
             const existing = memoryStore.get(key);
-            const next = existing
-              ? { ...existing, ...update, workspaceId: existing.workspaceId, key: existing.key }
-              : { id: `memory-${memoryStore.size + 1}`, ...create };
+            const next = (
+              existing
+                ? { ...existing, ...update, workspaceId: existing.workspaceId, key: existing.key }
+                : { id: `memory-${memoryStore.size + 1}`, ...create }
+            ) as MemoryRecord;
             memoryStore.set(key, next);
             return Promise.resolve(next);
           },
@@ -222,8 +249,12 @@ export function createMockPrisma(stores: AccountAgentMockStores): MockPrisma {
         .mockImplementation(
           ({ where }: { where?: { workspaceId?: string; kind?: string } } = {}) => {
             const items = Array.from(approvalRequests.values()).filter((item) => {
-              if (where?.workspaceId && item.workspaceId !== where.workspaceId) return false;
-              if (where?.kind && item.kind !== where.kind) return false;
+              if (where?.workspaceId && item.workspaceId !== where.workspaceId) {
+                return false;
+              }
+              if (where?.kind && item.kind !== where.kind) {
+                return false;
+              }
               return true;
             });
             return Promise.resolve(items);
@@ -254,8 +285,12 @@ export function createMockPrisma(stores: AccountAgentMockStores): MockPrisma {
         .mockImplementation(
           ({ where }: { where?: { workspaceId?: string; kind?: string } } = {}) => {
             const items = Array.from(inputSessions.values()).filter((item) => {
-              if (where?.workspaceId && item.workspaceId !== where.workspaceId) return false;
-              if (where?.kind && item.kind !== where.kind) return false;
+              if (where?.workspaceId && item.workspaceId !== where.workspaceId) {
+                return false;
+              }
+              if (where?.kind && item.kind !== where.kind) {
+                return false;
+              }
               return true;
             });
             return Promise.resolve(items);
@@ -285,7 +320,9 @@ export function createMockPrisma(stores: AccountAgentMockStores): MockPrisma {
         .fn()
         .mockImplementation(({ where }: { where?: { workspaceId?: string } } = {}) => {
           const items = Array.from(workItems.values()).filter((item) => {
-            if (where?.workspaceId && item.workspaceId !== where.workspaceId) return false;
+            if (where?.workspaceId && item.workspaceId !== where.workspaceId) {
+              return false;
+            }
             return true;
           });
           return Promise.resolve(items);
@@ -299,11 +336,16 @@ export function createMockPrisma(stores: AccountAgentMockStores): MockPrisma {
         .fn()
         .mockImplementation(
           ({ where }: { where: { id?: string; workspaceId?: string } } = { where: {} }) => {
-            if (!where.id) return Promise.resolve(null);
-            const item = workItems.get(where.id);
-            if (!item) return Promise.resolve(null);
-            if (where.workspaceId && item.workspaceId !== where.workspaceId)
+            if (!where.id) {
               return Promise.resolve(null);
+            }
+            const item = workItems.get(where.id);
+            if (!item) {
+              return Promise.resolve(null);
+            }
+            if (where.workspaceId && item.workspaceId !== where.workspaceId) {
+              return Promise.resolve(null);
+            }
             return Promise.resolve(item);
           },
         ),
@@ -320,14 +362,16 @@ export function createMockPrisma(stores: AccountAgentMockStores): MockPrisma {
             update: Record<string, unknown>;
           }) => {
             const existing = workItems.get(where.id);
-            const next = existing ? { ...existing, ...update } : { ...create };
+            const next = existing
+              ? normalizeWorkspaceId({ ...existing, ...update })
+              : normalizeWorkspaceId({ ...create });
             workItems.set(where.id, next);
             return Promise.resolve(next);
           },
         ),
-      create: jest.fn().mockImplementation(({ data }: { data: { id: string } }) => {
-        const next = { ...data };
-        workItems.set(data.id, next);
+      create: jest.fn().mockImplementation(({ data }: { data: Record<string, unknown> }) => {
+        const next = normalizeWorkspaceId({ ...data });
+        workItems.set(data.id as string, next);
         return Promise.resolve(next);
       }),
       updateMany: jest
@@ -341,9 +385,12 @@ export function createMockPrisma(stores: AccountAgentMockStores): MockPrisma {
             data: Record<string, unknown>;
           }) => {
             const existing = workItems.get(where.id);
-            if (!existing) return Promise.resolve({ count: 0 });
-            if (where.workspaceId && existing.workspaceId !== where.workspaceId)
+            if (!existing) {
               return Promise.resolve({ count: 0 });
+            }
+            if (where.workspaceId && existing.workspaceId !== where.workspaceId) {
+              return Promise.resolve({ count: 0 });
+            }
             workItems.set(where.id, { ...existing, ...data });
             return Promise.resolve({ count: 1 });
           },

@@ -16,6 +16,7 @@ on:
   pull_request:
     branches:
       - main
+      - chore/purga-total-debt
     paths:
       # Run on any change that could affect the visual surface.
       - 'frontend/**'
@@ -155,7 +156,7 @@ jobs:
           nohup npm run start -- --hostname 127.0.0.1 --port 3000 >/tmp/kloel-visual-frontend.log 2>&1 &
           echo $! >/tmp/kloel-visual-frontend.pid
 
-          for attempt in {1..60}; do
+          for _ in {1..60}; do
             if curl -fsS http://127.0.0.1:3000/login >/dev/null; then
               echo "Local frontend fallback is ready."
               exit 0

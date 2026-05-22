@@ -208,4 +208,6 @@ export function parseBigIntNumberish(value: unknown): bigint {
 }
 
 /** Marketplace treasury ledger kind for reversals. */
-export { MarketplaceTreasuryLedgerKind };
+{
+  MarketplaceTreasuryLedgerKind;
+}

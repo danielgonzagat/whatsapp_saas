@@ -6,7 +6,6 @@ import {
   Get,
   HttpException,
   HttpStatus,
-  Logger,
   NotFoundException,
   Param,
   Post,
@@ -16,12 +15,14 @@ import {
   UseGuards,
   Optional,
 } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { AuditService } from '../audit/audit.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { AuthenticatedRequest } from '../common/interfaces';
 import { getTraceHeaders } from '../common/trace-headers';
 import { resolveKloelCapabilityModel } from '../lib/ai-models';
 import { PrismaService } from '../prisma/prisma.service';
+import { BRAND_COLORS } from '../common/kloel-colors';
 import {
   estimateAnthropicMessageQuoteCostCents,
   estimateOpenAiChatQuoteCostCents,
@@ -37,6 +38,7 @@ import {
   WalletNotFoundError,
 } from '../wallet/wallet.types';
 
+import { RouteClass } from '../common/throttler/route-class.decorator';
 const U0300__U036F_RE = /[\u0300-\u036f]/g;
 const A_Z0_9_RE = /[^a-z0-9]+/g;
 const PATTERN_RE = /^-|-$/g;
@@ -47,8 +49,9 @@ type SiteProvider = 'openai' | 'anthropic';
 /** Site controller. */
 @UseGuards(JwtAuthGuard)
 @Controller('kloel/site')
+@RouteClass('mutate')
 export class SiteController {
-  private readonly logger = new Logger(SiteController.name);
+  private readonly logger = StructuredLogger.from(SiteController.name);
 
   constructor(
     private readonly prisma: PrismaService,
@@ -260,7 +263,7 @@ export class SiteController {
     const systemPrompt = [
       'You are a landing page generator. Return ONLY valid HTML (no markdown, no code fences).',
       'The HTML must be a complete, self-contained page with inline CSS.',
-      'Use modern design: dark background (#0A0A0C), light text (#E0DDD8), accent (#E85D30).',
+      `Use modern design: dark background (${BRAND_COLORS.VOID}), light text (${BRAND_COLORS.SILVER}), accent (${BRAND_COLORS.EMBER}).`,
       dto.currentHtml
         ? `The user wants to edit an existing page. Here is the current HTML:\n${dto.currentHtml}`
         : '',
@@ -283,7 +286,7 @@ export class SiteController {
       prompt: dto.prompt,
       providerPreference,
       model,
-      estimatedCostCents,
+      ...(estimatedCostCents !== undefined ? { estimatedCostCents } : {}),
     });
 
     try {
@@ -339,6 +342,11 @@ export class SiteController {
 
       // tokenBudget: site generation is a one-shot action; budget enforced at plan level
       // Fallback to Anthropic
+      if (!anthropicKey) {
+        throw new ServiceUnavailableException(
+          'ANTHROPIC_API_KEY is required for fallback site generation.',
+        );
+      }
       const anthropicRequestBody = {
         model,
         max_tokens: SITE_GENERATION_MAX_OUTPUT_TOKENS,
@@ -352,7 +360,7 @@ export class SiteController {
         headers: {
           ...getTraceHeaders(),
           'Content-Type': 'application/json',
-          'x-api-key': anthropicKey,
+          'x-api-key': anthropicKey ?? '',
           'anthropic-version': '2023-06-01',
         },
         body: JSON.stringify(anthropicRequestBody),

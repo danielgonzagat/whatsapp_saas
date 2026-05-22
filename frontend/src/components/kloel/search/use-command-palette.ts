@@ -12,9 +12,9 @@ import { mapRecentConversation, mapSearchPayload } from './command-palette-utils
 /** Use command palette args shape. */
 export interface UseCommandPaletteArgs {
   /** Open property. */
-  open: boolean;
+  open?: boolean | undefined;
   /** Initial search property. */
-  initialSearch?: string;
+  initialSearch?: string | undefined;
 }
 
 /** Use command palette. */

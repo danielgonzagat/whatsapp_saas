@@ -1,6 +1,6 @@
 'use client';
 
-import { requestFacebookAccessTokenWithEmailScope } from '@/lib/facebook-sdk';
+import { requestMetaAccessTokenWithEmailScope } from '@/lib/facebook-sdk';
 import { API_BASE } from '@/lib/http';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
@@ -176,7 +176,9 @@ export function useCheckoutSocialIdentity({
 
     if (existing) {
       return () => {
-        window.fbAsyncInit = previousInit;
+        if (previousInit !== undefined) {
+          window.fbAsyncInit = previousInit;
+        }
       };
     }
 
@@ -188,7 +190,9 @@ export function useCheckoutSocialIdentity({
     document.head.appendChild(script);
 
     return () => {
-      window.fbAsyncInit = previousInit;
+      if (previousInit !== undefined) {
+        window.fbAsyncInit = previousInit;
+      }
     };
   }, [enabled, metaAppId, metaGraphVersion]);
 
@@ -334,7 +338,9 @@ export function useCheckoutSocialIdentity({
     [checkoutCode, deviceFingerprint, hydrateGooglePeopleProfile, slug, snapshot],
   );
 
-  callbackRef.current = handleGoogleCredential;
+  useEffect(() => {
+    callbackRef.current = handleGoogleCredential;
+  }, [handleGoogleCredential]);
 
   const handleFacebookAccessToken = useCallback(
     async (accessToken: string, userId?: string) => {
@@ -454,7 +460,7 @@ export function useCheckoutSocialIdentity({
         body: JSON.stringify(payload),
       }).catch(() => undefined);
     },
-    [snapshot?.leadId],
+    [snapshot],
   );
 
   return {
@@ -491,7 +497,7 @@ export function useCheckoutSocialIdentity({
 
       setError('');
       try {
-        const auth = await requestFacebookAccessTokenWithEmailScope();
+        const auth = await requestMetaAccessTokenWithEmailScope();
         await handleFacebookAccessToken(auth.accessToken, auth.userId);
       } catch (error) {
         setError(error instanceof Error ? error.message : 'Falha ao autenticar com Facebook.');
@@ -535,7 +541,7 @@ async function requestGoogleAccessToken(tokenClient: GoogleTokenClient, hint?: s
     try {
       tokenClient.requestAccessToken({
         prompt: 'consent',
-        hint: hint?.trim() || undefined,
+        ...(hint?.trim() ? { hint: hint.trim() } : {}),
         scope: GOOGLE_PEOPLE_SCOPES,
       });
     } catch {

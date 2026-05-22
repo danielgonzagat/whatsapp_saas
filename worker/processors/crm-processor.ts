@@ -5,8 +5,9 @@ import { FlowEngineGlobal } from '../flow-engine-global';
 import { WorkerLogger } from '../logger';
 import { processCheckoutSocialLeadEnrichment } from './checkout-social-lead-enrichment';
 import { PlanLimitsProvider } from '../providers/plan-limits';
-import { connection } from '../queue';
+import { buildQueueOptions } from '../queue';
 import { isRetryableError, WorkerError } from '../src/utils/error-handler';
+import { checkIdempotent, endJob, logError, markCompleted, startJob } from '../processor-base';
 
 const log = new WorkerLogger('ghost-closer');
 const engine = FlowEngineGlobal.get();
@@ -15,9 +16,20 @@ const engine = FlowEngineGlobal.get();
 export const ghostCloserWorker = new Worker(
   'crm-jobs',
   async (job: Job) => {
-    log.info('job_start', { jobId: job.id, name: job.name });
+    const meta = startJob(job, log);
+    const ctxLog = log.withContext(meta.correlationId, meta.workspaceId);
+
     try {
+      const dedup = await checkIdempotent(job);
+      if (dedup) {
+        ctxLog.info('job_skipped_idempotent', { jobId: job.id });
+        endJob(meta, ctxLog, job.name, 'skipped');
+        return { ok: true, skipped: true, reason: 'idempotent' };
+      }
+
+      ctxLog.info('job_start', { jobId: job.id, name: job.name });
       await job.updateProgress(10);
+
       switch (job.name) {
         case 'check-inactivity':
           await checkInactivity(job.data.workspaceId);
@@ -28,15 +40,16 @@ export const ghostCloserWorker = new Worker(
           }
           break;
         default:
-          log.warn('unknown_job', { name: job.name });
+          ctxLog.warn('unknown_job', { name: job.name });
       }
+
       await job.updateProgress(100);
+      await markCompleted(job);
+      endJob(meta, ctxLog, job.name, 'completed');
+      return;
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'unknown error';
-      log.error('job_failed', {
-        jobId: job.id,
-        error: msg,
-      });
+      logError(meta, ctxLog, err, job.name);
 
       if (!isRetryableError(err)) {
         throw new WorkerError(msg, 'CRM_PERMANENT', false);
@@ -45,16 +58,10 @@ export const ghostCloserWorker = new Worker(
       throw err;
     }
   },
-  { connection, concurrency: 1, lockDuration: 120_000 },
+  { ...buildQueueOptions(), concurrency: 1, lockDuration: 120_000 },
 );
 
 async function checkInactivity(workspaceId: string) {
-  // 1. Find leads that match criteria:
-  // - High Score (> 50)
-  // - No message in last 2 hours
-  // - Status OPEN
-  // - Not already in a flow? (optional check)
-
   const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000);
   const limitCheck = await PlanLimitsProvider.checkMessageLimit(workspaceId);
   if (!limitCheck.allowed) {
@@ -72,20 +79,17 @@ async function checkInactivity(workspaceId: string) {
         },
       },
     },
-    take: 50, // Batch process
+    take: 50,
   });
 
   await forEachSequential(leads, async (lead) => {
-    // Check if we already nudged recently (custom field or tag)
     const hasNudged = (lead.customFields as Record<string, unknown> | null)?.last_nudge_at;
     if (hasNudged && new Date(String(hasNudged)) > twoHoursAgo) {
       return;
     }
 
-    log.info('ghost_closer_trigger', { phone: lead.phone });
+    log.info('ghost_closer_trigger', { phone: lead.phone, workspaceId });
 
-    // Trigger Nudge Flow
-    // Ideally, we should have a configured "Nudge Flow ID" in workspace settings
     const workspace = await prisma.workspace.findUnique({ where: { id: workspaceId } });
     const nudgeFlowId = (workspace?.providerSettings as Record<string, unknown> | null)
       ?.nudgeFlowId as string | undefined;
@@ -95,7 +99,6 @@ async function checkInactivity(workspaceId: string) {
         where: { id: nudgeFlowId, workspaceId },
       });
       if (flow) {
-        // Start flow
         await engine.startFlow(
           lead.phone,
           engine.parseFlowDefinition(
@@ -103,7 +106,7 @@ async function checkInactivity(workspaceId: string) {
             flow.nodes as Array<{
               id: string;
               type: string;
-              data?: Record<string, unknown>;
+              data: Record<string, unknown> | undefined;
             }>,
             flow.edges as Array<{
               source: string;
@@ -114,7 +117,6 @@ async function checkInactivity(workspaceId: string) {
           ),
         );
 
-        // Update last nudge scoped by workspace so no accidental tenant cross.
         await prisma.contact.updateMany({
           where: { id: lead.id, workspaceId },
           data: {

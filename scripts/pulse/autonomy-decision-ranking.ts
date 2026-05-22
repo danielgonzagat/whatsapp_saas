@@ -92,7 +92,7 @@ export function getStalledUnitIds(previousState?: PulseAutonomyState | null): Se
         record.directiveAfter.score > record.directiveBefore.score) ||
       (record.directiveBefore?.blockingTier !== null &&
         record.directiveAfter?.blockingTier !== null &&
-        record.directiveAfter.blockingTier < record.directiveBefore.blockingTier);
+        (record.directiveAfter?.blockingTier ?? Infinity) < (record.directiveBefore?.blockingTier ?? Infinity));
     if (!didImprove) current.stalled += 1;
     attempts.set(unitId, current);
   }

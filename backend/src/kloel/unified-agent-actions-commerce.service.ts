@@ -1,15 +1,26 @@
 import { randomUUID } from 'node:crypto';
-import { Injectable, Logger, Optional } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { StructuredLogger } from '../logging/structured-logger';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { PaymentService } from './payment.service';
 import { formatBrlAmount } from './money-format.util';
 import { UnifiedAgentActionsMessagingService } from './unified-agent-actions-messaging.service';
-import type { ToolArgs } from './unified-agent.service';
+import type { ToolArgs } from './unified-agent.types';
 import { OpsAlertService } from '../observability/ops-alert.service';
+import { MindGuardContextBuilderService } from './mind-guard-context-builder.service';
+import { MindGuardsService } from './mind-guards.service';
+import type { MindActionContext } from './mind-code-native.types';
 
-type UnknownRecord = Record<string, unknown>;
+import type { UnknownRecord } from '../common/types';
+type ProductMemoryValue = {
+  name?: string;
+  price?: number;
+  description?: string;
+  paymentLink?: string;
+  [key: string]: unknown;
+};
 
 /**
  * Handles commerce tool actions: send product info, create payment link.
@@ -17,7 +28,7 @@ type UnknownRecord = Record<string, unknown>;
  */
 @Injectable()
 export class UnifiedAgentActionsCommerceService {
-  private readonly logger = new Logger(UnifiedAgentActionsCommerceService.name);
+  private readonly logger = StructuredLogger.from(UnifiedAgentActionsCommerceService.name);
 
   constructor(
     private readonly prisma: PrismaService,
@@ -26,6 +37,8 @@ export class UnifiedAgentActionsCommerceService {
     private readonly auditService: AuditService,
     private readonly messaging: UnifiedAgentActionsMessagingService,
     @Optional() private readonly opsAlert?: OpsAlertService,
+    @Optional() private readonly guardContextBuilder?: MindGuardContextBuilderService,
+    @Optional() private readonly guards?: MindGuardsService,
   ) {}
 
   // ───────── helpers ─────────
@@ -52,8 +65,12 @@ export class UnifiedAgentActionsCommerceService {
     const chunks: string[] = [];
     const safeName = String(name || '').trim();
     const safeDescription = String(description || '').trim();
-    if (safeName) chunks.push(safeName);
-    if (safeDescription) chunks.push(safeDescription);
+    if (safeName) {
+      chunks.push(safeName);
+    }
+    if (safeDescription) {
+      chunks.push(safeDescription);
+    }
     if (price !== null && price !== undefined && String(price).trim() !== '') {
       const numericPrice = Number(price);
       const formattedPrice = Number.isFinite(numericPrice)
@@ -61,7 +78,9 @@ export class UnifiedAgentActionsCommerceService {
         : String(price);
       chunks.push(`Preço: ${formattedPrice}`);
     }
-    if (paymentLink) chunks.push(`Link de pagamento: ${paymentLink}`);
+    if (paymentLink) {
+      chunks.push(`Link de pagamento: ${paymentLink}`);
+    }
     return chunks.join('\n');
   }
 
@@ -119,12 +138,12 @@ export class UnifiedAgentActionsCommerceService {
       return { success: false, error: 'Produto não encontrado' };
     }
 
-    const productData = product.value as Record<string, unknown>;
+    const productData = product.value as ProductMemoryValue;
     const message = this.buildProductInfoMessage(
       productData.name as string,
-      productData.description as string,
-      includePrice ? (productData.price as number) : null,
-      includeLink ? (productData.paymentLink as string) : undefined,
+      productData.description,
+      includePrice ? productData.price : null,
+      includeLink ? productData.paymentLink : undefined,
     );
     const sendResult = await this.messaging.actionSendMessage(
       workspaceId,
@@ -151,12 +170,34 @@ export class UnifiedAgentActionsCommerceService {
       const productName = this.str(args.productName);
       const description = this.str(args.description, `Pagamento - ${productName}`);
       const contact = await this.prisma.contact.findFirst({ where: { workspaceId, phone } });
+      const paymentContext = await this.buildPaymentGuardContext(workspaceId, {
+        ...(context || {}),
+        contactId: contact?.id,
+        maxPaymentAmount: this.num(context?.maxPaymentAmount, 5000),
+        paymentAmount: amount,
+        paymentExternalId: this.str(context?.paymentExternalId),
+        productName,
+      });
+      const guard = await this.guards?.evaluate({
+        workspaceId,
+        decisionType: 'product_offer',
+        action: 'create_payment_link',
+        context: paymentContext,
+      });
+      if (guard && !guard.allowed) {
+        return {
+          success: false,
+          blocked: true,
+          error: guard.reason,
+          guardName: guard.guardName,
+        };
+      }
       const payment = await this.paymentService.createPayment({
         workspaceId,
         leadId: contact?.id || phone,
         customerName: contact?.name || 'Cliente',
         customerPhone: phone,
-        customerEmail: contact?.email || undefined,
+        ...(contact?.email ? { customerEmail: contact.email } : {}),
         amount,
         description,
         idempotencyKey: `kloel-pix:${workspaceId}:${phone}:${amount}:${productName}`,
@@ -258,5 +299,12 @@ export class UnifiedAgentActionsCommerceService {
         fallback: true,
       };
     }
+  }
+
+  private async buildPaymentGuardContext(
+    workspaceId: string,
+    context: MindActionContext,
+  ): Promise<MindActionContext> {
+    return (await this.guardContextBuilder?.buildForPayment(workspaceId, context)) ?? context;
   }
 }

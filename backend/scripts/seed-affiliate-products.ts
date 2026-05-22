@@ -24,17 +24,17 @@ async function main() {
 
   console.log(`✅ Encontrados ${products.length} produto(s):\n`);
 
-  for (const product of products) {
+  await products.reduce(async (prev, product) => {
+    await prev;
     console.log(`   → ${product.name} (id: ${product.id})`);
 
-    // biome-ignore lint/performance/noAwaitInLoops: seed script iterates products sequentially for clear logging
     const existing = await prisma.affiliateProduct.findUnique({
       where: { productId: product.id },
     });
 
     if (existing) {
       console.log(`     ↳ AffiliateProduct já existe (id: ${existing.id}). Pulando.\n`);
-      continue;
+      return;
     }
 
     const affiliateProduct = await prisma.affiliateProduct.create({
@@ -52,7 +52,7 @@ async function main() {
     });
 
     console.log(`     ↳ AffiliateProduct criado (id: ${affiliateProduct.id})\n`);
-  }
+  }, Promise.resolve());
 
   console.log('✅ Seed concluído.\n');
 }

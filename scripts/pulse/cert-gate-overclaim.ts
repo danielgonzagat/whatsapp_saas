@@ -8,7 +8,7 @@
  * This gate is pure: callers supply the pre-loaded artifact data; no I/O here.
  */
 import type { PulseGateResult } from './types.evidence';
-import { gateFail } from './__parts__/cert-gate-evaluators/gate-fail';
+import { gateFail } from './cert-gate-evaluators/gate-fail';
 
 /** Minimal shape of the cycleProof sub-object inside autonomyProof. */
 export interface PulseCycleProof {
@@ -28,8 +28,8 @@ export interface PulseAutonomyReadiness {
 
 /** Minimal proof-readiness summary used to prevent planned/inferred proof overclaims. */
 export interface PulseProofReadinessSummary {
-  canAdvance?: boolean;
-  status?: string;
+  canAdvance?: boolean | undefined;
+  status?: string | undefined;
   plannedEvidence?: number;
   inferredEvidence?: number;
   notAvailableEvidence?: number;

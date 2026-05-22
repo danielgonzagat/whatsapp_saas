@@ -90,17 +90,18 @@ async function fetchWithRetry(url, init) {
   if (!url.startsWith(API_BASE)) {
     throw new Error(`SSRF guard: request URL must start with ${API_BASE}, got: ${url}`);
   }
-  let lastErr;
-  for (let attempt = 0; attempt < MAX_RETRIES; attempt += 1) {
+
+  async function tryOnce(attempt) {
     try {
-      // biome-ignore lint/performance/noAwaitInLoops: retry loop with exponential backoff — each attempt must observe the previous attempt's outcome before deciding to retry
       const response = await fetch(url, init);
       if (response.status === 429 || response.status >= 500) {
-        lastErr = new Error(`Codacy responded ${response.status} on attempt ${attempt + 1}`);
         const retryAfter = Number(response.headers.get('retry-after')) || 0;
         const backoff = Math.max(retryAfter * 1000, RETRY_BASE_MS * 2 ** attempt);
         await sleep(backoff);
-        continue;
+        if (attempt + 1 >= MAX_RETRIES) {
+          throw new Error(`Codacy responded ${response.status} after ${MAX_RETRIES} attempts`);
+        }
+        return tryOnce(attempt + 1);
       }
       if (!response.ok) {
         const body = await response.text().catch(() => '');
@@ -110,12 +111,15 @@ async function fetchWithRetry(url, init) {
       }
       return response.json();
     } catch (error) {
-      lastErr = error;
-      if (attempt === MAX_RETRIES - 1) break;
+      if (attempt + 1 >= MAX_RETRIES) {
+        throw error;
+      }
       await sleep(RETRY_BASE_MS * 2 ** attempt);
+      return tryOnce(attempt + 1);
     }
   }
-  throw lastErr ?? new Error('Codacy request failed for unknown reason');
+
+  return tryOnce(0);
 }
 
 async function fetchRepositorySummary(token) {
@@ -131,7 +135,7 @@ async function fetchRepositorySummary(token) {
 
 async function fetchIssuesPage(token, cursor) {
   const qs = new URLSearchParams({ limit: String(PAGE_LIMIT) });
-  if (cursor) qs.set('cursor', cursor);
+  if (cursor) {qs.set('cursor', cursor);}
   const url = `${API_BASE}/analysis/organizations/${PROVIDER}/${ORGANIZATION}/repositories/${REPOSITORY}/issues/search?${qs.toString()}`;
   return fetchWithRetry(url, {
     method: 'POST',

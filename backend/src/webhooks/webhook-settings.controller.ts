@@ -10,10 +10,11 @@ import {
   Request,
   UseGuards,
 } from '@nestjs/common';
-import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import { AuditService } from '../audit/audit.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { PrismaService } from '../prisma/prisma.service';
+import { RouteClass } from '../common/throttler/route-class.decorator';
+import { InternalEndpoint } from '../common/decorators/internal-endpoint.decorator';
 
 /**
  * CRUD for outbound webhookEvent subscription URLs.
@@ -21,8 +22,8 @@ import { PrismaService } from '../prisma/prisma.service';
  * Ordering/sequence is managed by the WebhookDispatcherService via BullMQ jobId.
  */
 @Controller('settings/webhooks')
-@UseGuards(JwtAuthGuard, ThrottlerGuard)
-@Throttle({ default: { limit: 20, ttl: 60000 } })
+@UseGuards(JwtAuthGuard)
+@RouteClass('webhook')
 export class WebhookSettingsController {
   constructor(
     private prisma: PrismaService,
@@ -30,17 +31,19 @@ export class WebhookSettingsController {
   ) {}
 
   /** List. */
+  @InternalEndpoint('webhook settings listing')
   @Get()
-  async list(@Request() req) {
+  async list(@Request() req: { user: { workspaceId: string } }) {
     return this.prisma.webhookSubscription.findMany({
       where: { workspaceId: req.user.workspaceId },
     });
   }
 
   /** Create. */
+  @InternalEndpoint('webhook settings creation')
   @Post()
   async create(
-    @Request() req,
+    @Request() req: { user: { workspaceId: string } },
     @Body() body: { url: string; events: string[] },
     @Headers('x-idempotency-key') idempotencyKey?: string,
   ) {
@@ -65,8 +68,9 @@ export class WebhookSettingsController {
   }
 
   /** Delete. */
+  @InternalEndpoint('webhook settings deletion')
   @Delete(':id')
-  async delete(@Request() req, @Param('id') id: string) {
+  async delete(@Request() req: { user: { workspaceId: string } }, @Param('id') id: string) {
     await this.auditService.log({
       workspaceId: req.user.workspaceId,
       action: 'DELETE_RECORD',

@@ -16,10 +16,12 @@ import { AuthenticatedRequest } from '../../common/interfaces/authenticated-requ
 import { normalizeMetaGraphSegment } from '../meta-input.util';
 import { MetaWhatsAppService } from '../meta-whatsapp.service';
 import { InstagramService } from './instagram.service';
+import { RouteClass } from '../../common/throttler/route-class.decorator';
 
 /** Instagram controller. */
 @Controller('meta/instagram')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
+@RouteClass('mutate')
 export class InstagramController {
   constructor(
     private readonly instagramService: InstagramService,
@@ -31,7 +33,7 @@ export class InstagramController {
     igAccountId?: string,
     accessToken?: string,
   ) {
-    const resolved = await this.metaWhatsApp.resolveConnection(workspaceId);
+    const resolved = await this.metaWhatsApp.resolveConnection(workspaceId, 'instagram');
     const finalIgAccountId = normalizeMetaGraphSegment(
       igAccountId || resolved.instagramAccountId || '',
       'Instagram account id',
@@ -49,7 +51,6 @@ export class InstagramController {
   }
 
   /** Get profile. */
-  // PULSE_OK: admin-only route, accessed via admin panel (Meta Instagram integration)
   @Get('profile')
   async getProfile(
     @Req() req: AuthenticatedRequest,
@@ -80,7 +81,6 @@ export class InstagramController {
   }
 
   /** Get account insights. */
-  // PULSE_OK: admin-only route, accessed via admin panel (Meta Instagram integration)
   @Get('insights/account')
   async getAccountInsights(
     @Req() req: AuthenticatedRequest,

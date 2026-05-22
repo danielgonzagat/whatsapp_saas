@@ -4,6 +4,7 @@
 import { kloelError } from '@/lib/i18n/t';
 import { streamAuthenticatedKloelMessage } from '@/lib/kloel-conversations';
 import { appendAssistantTraceFromEvent } from '@/lib/kloel-message-ui';
+import type { KloelStreamEvent } from '@/lib/kloel-stream-events';
 import { apiUrl } from '@/lib/http';
 import { mutate } from 'swr';
 import { parseGuestStreamLine } from './chat-container.helpers';
@@ -33,23 +34,31 @@ export async function runGuestChat(deps: GuestChatDeps): Promise<void> {
       },
       body: JSON.stringify({ message: content.trim(), sessionId: guestSessionId }),
     });
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
     mutate((key: unknown) => typeof key === 'string' && key.startsWith('/chat'));
     const reader = response.body?.getReader();
-    if (!reader) throw kloelError('Stream not available');
+    if (!reader) {
+      throw kloelError('Stream not available');
+    }
     const decoder = new TextDecoder();
     let fullContent = '';
     let buffer = '';
 
     const readGuestStream = async (): Promise<void> => {
       const { done, value } = await reader.read();
-      if (done) return;
+      if (done) {
+        return;
+      }
       buffer += decoder.decode(value, { stream: true });
       const lines = buffer.split('\n');
       buffer = lines.pop() || '';
       for (const line of lines) {
         const update = parseGuestStreamLine(line);
-        if (!update) continue;
+        if (!update) {
+          continue;
+        }
         if (update.errorContent) {
           fullContent = update.errorContent;
           setMessages((prev) =>
@@ -70,7 +79,9 @@ export async function runGuestChat(deps: GuestChatDeps): Promise<void> {
     };
 
     await readGuestStream();
-    if (!fullContent.trim()) throw new Error('empty_stream');
+    if (!fullContent.trim()) {
+      throw new Error('empty_stream');
+    }
     setMessages((prev) =>
       prev.map((m) => (m.id === assistantId ? { ...m, isStreaming: false } : m)),
     );
@@ -84,7 +95,7 @@ export async function runGuestChat(deps: GuestChatDeps): Promise<void> {
         body: JSON.stringify({ message: content.trim(), sessionId: guestSessionId }),
       });
       if (syncResponse.ok) {
-        const data = await syncResponse.json();
+        const data: { reply?: string; response?: string } = await syncResponse.json();
         const reply = data.reply ?? data.response ?? 'Sem resposta';
         setMessages((prev) =>
           prev.map((m) =>
@@ -153,95 +164,94 @@ export function runAuthedChat(deps: AuthedChatDeps): void {
     loadConversation,
     loadedConversationIdRef,
     authedChatStreamRef,
-    extractErrorMessage,
   } = deps;
 
   let streamedReply = '';
   let nextConversationId = activeConversationId || null;
   let nextTitle =
     conversations.find((c) => c.id === activeConversationId)?.title || 'Nova conversa';
-
   setIsCancelableReply(true);
-  authedChatStreamRef.current = streamAuthenticatedKloelMessage(
-    {
-      message: content.trim(),
-      conversationId: activeConversationId || undefined,
-      mode: 'chat',
-      metadata: { clientRequestId, source: 'kloel_chat_container' },
+  const streamOptions = {
+    onEvent: (event: KloelStreamEvent) => {
+      setMessages((prev) =>
+        prev.map((message) =>
+          message.id === assistantId
+            ? { ...message, meta: appendAssistantTraceFromEvent(message.meta, event) }
+            : message,
+        ),
+      );
     },
-    {
-      onEvent: (event) => {
-        setMessages((prev) =>
-          prev.map((message) =>
-            message.id === assistantId
-              ? { ...message, meta: appendAssistantTraceFromEvent(message.meta, event) }
-              : message,
-          ),
-        );
-      },
-      onChunk: (chunk) => {
-        streamedReply += chunk;
-        setMessages((prev) =>
-          prev.map((m) =>
-            m.id === assistantId ? { ...m, content: streamedReply, isStreaming: true } : m,
-          ),
-        );
-      },
-      onThread: (thread) => {
-        nextConversationId = thread.conversationId;
-        nextTitle =
-          thread.title ||
-          conversations.find((c) => c.id === thread.conversationId)?.title ||
-          nextTitle ||
-          'Nova conversa';
-        loadedConversationIdRef.current = thread.conversationId;
-        setActiveConversationId(thread.conversationId);
-        setActiveConversation(thread.conversationId);
+    onChunk: (chunk: string) => {
+      streamedReply += chunk;
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === assistantId ? { ...m, content: streamedReply, isStreaming: true } : m,
+        ),
+      );
+    },
+    onThread: (thread: { conversationId: string; title?: string | undefined }) => {
+      nextConversationId = thread.conversationId;
+      nextTitle =
+        thread.title ||
+        conversations.find((c) => c.id === thread.conversationId)?.title ||
+        nextTitle ||
+        'Nova conversa';
+      loadedConversationIdRef.current = thread.conversationId;
+      setActiveConversationId(thread.conversationId);
+      setActiveConversation(thread.conversationId);
+      upsertConversation({
+        id: thread.conversationId,
+        title: nextTitle,
+        updatedAt: new Date().toISOString(),
+      });
+    },
+    onDone: () => {
+      authedChatStreamRef.current = null;
+      setIsCancelableReply(false);
+      setShowSlowHint(false);
+      setMessages((prev) =>
+        prev.map((m) => (m.id === assistantId ? { ...m, isStreaming: false } : m)),
+      );
+      if (nextConversationId) {
         upsertConversation({
-          id: thread.conversationId,
+          id: nextConversationId,
           title: nextTitle,
           updatedAt: new Date().toISOString(),
         });
-      },
-      onDone: () => {
-        authedChatStreamRef.current = null;
-        setIsCancelableReply(false);
-        setShowSlowHint(false);
-        setMessages((prev) =>
-          prev.map((m) => (m.id === assistantId ? { ...m, isStreaming: false } : m)),
-        );
-        if (nextConversationId) {
-          upsertConversation({
-            id: nextConversationId,
-            title: nextTitle,
-            updatedAt: new Date().toISOString(),
-          });
-          void refreshConversations();
-          void loadConversation(nextConversationId);
-        }
-        setIsTyping(false);
-      },
-      onError: (error) => {
-        authedChatStreamRef.current = null;
-        setIsCancelableReply(false);
-        setShowSlowHint(false);
-        setMessages((prev) =>
-          prev.map((m) =>
-            m.id === assistantId
-              ? {
-                  ...m,
-                  content:
-                    streamedReply.trim() ||
-                    error ||
-                    'Desculpe, ocorreu um erro ao continuar sua conversa.',
-                  isStreaming: false,
-                }
-              : m,
-          ),
-        );
-        setIsTyping(false);
-      },
+        void refreshConversations();
+        void loadConversation(nextConversationId);
+      }
+      setIsTyping(false);
     },
+    onError: (error: string) => {
+      authedChatStreamRef.current = null;
+      setIsCancelableReply(false);
+      setShowSlowHint(false);
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === assistantId
+            ? {
+                ...m,
+                content:
+                  streamedReply.trim() ||
+                  error ||
+                  'Desculpe, ocorreu um erro ao continuar sua conversa.',
+                isStreaming: false,
+              }
+            : m,
+        ),
+      );
+      setIsTyping(false);
+    },
+  };
+  authedChatStreamRef.current = streamAuthenticatedKloelMessage(
+    {
+      message: content.trim(),
+      ...(activeConversationId ? { conversationId: activeConversationId } : {}),
+      mode: 'chat',
+      metadata: { clientRequestId, source: 'kloel_chat_container' },
+    },
+    streamOptions,
   );
 }
 

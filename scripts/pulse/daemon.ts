@@ -1,11 +1,11 @@
 import * as path from 'node:path';
 
-import type { FullScanResult } from './daemon/__parts__/types';
-import { fullScan } from './daemon/__parts__/fullScan';
+import type { FullScanResult } from './daemon/types';
+import { fullScan } from './daemon/fullScan';
 import type { PulseConfig } from './types';
 
-export { fullScan } from './daemon/__parts__/fullScan';
-export type { FullScanOptions, FullScanResult } from './daemon/__parts__/types';
+export { fullScan } from './daemon/fullScan';
+export type { FullScanOptions, FullScanResult } from './daemon/types';
 
 export type PulseWatchChangeKind =
   | 'frontend'

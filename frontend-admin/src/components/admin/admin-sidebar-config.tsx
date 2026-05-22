@@ -50,14 +50,14 @@ export interface AdminSidebarSection {
   items: AdminSidebarItem[];
 }
 
-/** Admin sidebar icon type. */
-export type AdminSidebarIcon = ComponentType<SVGProps<SVGSVGElement>>;
-
 interface SharedIconProps extends Omit<SVGProps<SVGSVGElement>, 'color'> {
   size?: number;
   color?: string;
   style?: CSSProperties;
 }
+
+/** Admin sidebar icon type. Accepts both plain SVG props and the SharedIconProps shape used by icon components in this module. */
+export type AdminSidebarIcon = ComponentType<SharedIconProps>;
 
 /** Home icon. */
 export function HomeIcon({ size = 18, color = 'currentColor', style, ...props }: SharedIconProps) {

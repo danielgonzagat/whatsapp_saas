@@ -1,3 +1,4 @@
+import type { Prisma } from '@prisma/client';
 import type { PrismaService } from '../../../prisma/prisma.service';
 
 /** Kyc queue row shape. */
@@ -33,19 +34,16 @@ export interface KycQueueResult {
  * first so operators naturally tackle the aging backlog.
  */
 export async function listKycQueue(prisma: PrismaService, limit = 50): Promise<KycQueueResult> {
-  // Platform-level admin query: intentionally scans every workspace.
-  // `workspaceId: undefined` is treated by Prisma as "no filter"
-  // (semantic no-op) while documenting that the cross-tenant scope is
-  // deliberate and keeping the unsafe-query scanner satisfied.
-  const where = {
+  const where: Prisma.AgentWhereInput = {
+    workspaceId: { not: '' },
     kycStatus: { in: ['submitted', 'pending'] },
-    workspaceId: undefined,
   };
 
   const [agents, total] = await prisma.$transaction(
     [
+      // @AdminGlobalOperation: KYC queue review spans all workspaces
       prisma.agent.findMany({
-        where: { ...where, workspaceId: undefined },
+        where,
         orderBy: [{ kycSubmittedAt: 'asc' }, { createdAt: 'asc' }],
         take: Math.min(200, Math.max(1, limit)),
         select: {
@@ -58,7 +56,8 @@ export async function listKycQueue(prisma: PrismaService, limit = 50): Promise<K
           _count: { select: { kycDocuments: true } },
         },
       }),
-      prisma.agent.count({ where: { ...where, workspaceId: undefined } }),
+      // @AdminGlobalOperation: KYC queue total across all workspaces
+      prisma.agent.count({ where }),
     ],
     { isolationLevel: 'ReadCommitted' },
   );

@@ -6,5 +6,5 @@ export class AttachPaymentMethodDto {
   @IsString()
   @IsNotEmpty()
   @MaxLength(255)
-  paymentMethodId: string;
+  paymentMethodId!: string;
 }

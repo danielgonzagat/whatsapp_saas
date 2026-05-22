@@ -29,6 +29,7 @@ import { AuthenticatedRequest } from '../common/interfaces/authenticated-request
 import { GenerateVideoDto } from './dto/generate-video.dto';
 import { UploadDocumentDto } from './dto/upload-document.dto';
 import { MediaService } from './media.service';
+import { RouteClass } from '../common/throttler/route-class.decorator';
 
 interface UploadedFileType {
   fieldname: string;
@@ -59,6 +60,7 @@ const ALLOWED_DOCUMENT_MIMES = new Set([
 /** Media controller. */
 @Controller('media')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
+@RouteClass('mutate')
 export class MediaController {
   constructor(private readonly mediaService: MediaService) {}
 
@@ -126,9 +128,9 @@ export class MediaController {
 
     const workspaceId = resolveWorkspaceId(req, body?.workspaceId);
     return this.mediaService.uploadDocument(workspaceId, file, {
-      name: body.name,
-      description: body.description,
-      category: body.category,
+      ...(body.name !== undefined ? { name: body.name } : {}),
+      ...(body.description !== undefined ? { description: body.description } : {}),
+      ...(body.category !== undefined ? { category: body.category } : {}),
     });
   }
 

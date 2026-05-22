@@ -6,8 +6,8 @@ import type { PulseCodebaseTruth, PulseDiscoveredFlowCandidate } from './types.t
 import type { PulseManifest } from './types.manifest';
 import type { PulseResolvedFlowGroup } from './types.resolved-manifest';
 import { unique, titleCase, matchesOverride } from './resolved-manifest.module-helpers';
+import type { SemanticFlowDescriptor } from './resolved-manifest.types';
 import {
-  type SemanticFlowDescriptor,
   describeFlow,
   inferAction,
   inferFlowSpecMatch,

@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { queryGmvInCents } from './queries/gmv.query';
@@ -108,6 +108,8 @@ interface Snapshot {
 /** Admin dashboard service. */
 @Injectable()
 export class AdminDashboardService {
+  private readonly logger = new Logger(AdminDashboardService.name);
+
   constructor(private readonly prisma: PrismaService) {}
 
   /** Get home. */
@@ -117,11 +119,22 @@ export class AdminDashboardService {
     from?: Date,
     to?: Date,
   ): Promise<HomeResponse> {
-    const range = resolveAdminHomeRange({ period, compare, from, to });
+    const range = resolveAdminHomeRange({
+      period,
+      compare,
+      ...(from !== undefined ? { from } : {}),
+      ...(to !== undefined ? { to } : {}),
+    });
     const current = await this.snapshot(range.from, range.to);
     const previousSnap = range.previous
       ? await this.snapshot(range.previous.from, range.previous.to)
       : null;
+
+    this.logger.log('Dashboard home data fetched', {
+      context: 'AdminDashboardService.getHome',
+      period: range.period,
+      gmvInCents: current.gmvInCents,
+    });
 
     const [
       byGateway,
@@ -239,13 +252,11 @@ export class AdminDashboardService {
     to: Date,
   ): Promise<{ conversationCount: number; responseTimeMinutes: number | null }> {
     const [conversationCount, responseRows] = await Promise.all([
-      // Platform-level admin aggregate: intentionally cross-workspace.
-      // `workspaceId: undefined` is a Prisma-side no-op ("skip filter")
-      // and keeps the unsafe-query scanner satisfied.
+      // @AdminGlobalOperation: platform-level admin aggregate across all workspaces
       this.prisma.conversation.count({
         where: {
+          workspaceId: { not: '' },
           lastMessageAt: { gte: from, lte: to },
-          workspaceId: undefined,
         },
       }),
       this.prisma.$queryRaw<Array<{ avg_minutes: number | string | null }>>(Prisma.sql`
@@ -376,7 +387,7 @@ export class AdminDashboardService {
           value: current.churnRate,
           previous: previous?.churnRate ?? null,
           deltaPct:
-            current.churnRate === null || previous?.churnRate === null
+            current.churnRate === null || !previous || previous.churnRate === null
               ? null
               : deltaPct(current.churnRate, previous.churnRate),
         },

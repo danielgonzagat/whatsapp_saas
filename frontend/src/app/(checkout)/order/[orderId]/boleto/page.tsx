@@ -27,6 +27,7 @@ export default function BoletoPaymentPage() {
   const barcode = data?.payment?.boletoBarcode;
   const boletoUrl = data?.payment?.boletoUrl;
   const expiresAt = data?.payment?.boletoExpiresAt;
+  const hasBoletoData = Boolean(barcode || boletoUrl);
 
   const handleCopy = useCallback(() => {
     if (!barcode) {
@@ -42,7 +43,7 @@ export default function BoletoPaymentPage() {
   }, [barcode]);
 
   const font = "'DM Sans', sans-serif";
-  const accent = '#D4AF37';
+  const accent = colors.checkout.accent;
 
   const formattedExpiry = expiresAt
     ? new Date(expiresAt).toLocaleDateString('pt-BR', {
@@ -51,6 +52,16 @@ export default function BoletoPaymentPage() {
         year: 'numeric',
       })
     : null;
+  const title = loading
+    ? kloelT(`Carregando boleto`)
+    : hasBoletoData
+      ? kloelT(`Boleto gerado`)
+      : kloelT(`Boleto indisponivel`);
+  const subtitle = loading
+    ? kloelT(`Buscando os dados do pedido`)
+    : hasBoletoData
+      ? kloelT(`Copie o codigo de barras ou abra o PDF para pagar`)
+      : kloelT(`Este pedido nao possui boleto gerado. Use Pix ou cartao no checkout.`);
 
   return (
     <div
@@ -67,13 +78,18 @@ export default function BoletoPaymentPage() {
       <div style={{ maxWidth: '440px', width: '100%', textAlign: 'center' }}>
         {/* Header */}
         <div style={{ marginBottom: '24px' }}>
-          <div style={{ fontSize: '40px', marginBottom: '8px' }}>{kloelT(`&#128196;`)}</div>
-          <h1 style={{ color: '#E8E6E1', fontSize: '22px', fontWeight: 700, margin: '0 0 4px' }}>
-            {kloelT(`Boleto gerado`)}
+          <div style={{ fontSize: '40px', marginBottom: '8px' }}>{kloelT(`&rgb(18, 129, 150);`)}</div>
+          <h1
+            style={{
+              color: colors.checkout.textPrimary,
+              fontSize: '22px',
+              fontWeight: 700,
+              margin: '0 0 4px',
+            }}
+          >
+            {title}
           </h1>
-          <p style={{ color: '#8A8A8E', fontSize: '14px', margin: 0 }}>
-            {kloelT(`Copie o codigo de barras ou abra o PDF para pagar`)}
-          </p>
+          <p style={{ color: colors.text.muted, fontSize: '14px', margin: 0 }}>{subtitle}</p>
         </div>
 
         {/* Expiration */}
@@ -83,12 +99,12 @@ export default function BoletoPaymentPage() {
               display: 'inline-flex',
               alignItems: 'center',
               gap: '8px',
-              background: '#1A1A1E',
-              border: '1px solid #2A2A2E',
-              borderRadius: '10px',
+              background: colors.checkout.surface,
+              border: `1px solid ${colors.checkout.border}`,
+              borderRadius: '8px',
               padding: '10px 20px',
               marginBottom: '24px',
-              color: '#8A8A8E',
+              color: colors.text.muted,
               fontSize: '13px',
             }}
           >
@@ -100,23 +116,45 @@ export default function BoletoPaymentPage() {
         {/* Barcode display */}
         <div
           style={{
-            background: '#141416',
-            border: '1px solid #2A2A2E',
+            background: colors.checkout.bg,
+            border: `1px solid ${colors.checkout.border}`,
             borderRadius: '12px',
             padding: '20px',
             marginBottom: '16px',
           }}
         >
-          {loading || !barcode ? (
-            <div style={{ color: '#8A8A8E', fontSize: '14px', padding: '20px 0' }}>
+          {loading ? (
+            <div style={{ color: colors.text.muted, fontSize: '14px', padding: '20px 0' }}>
               {kloelT(`Carregando boleto...`)}
+            </div>
+          ) : !hasBoletoData ? (
+            <div
+              style={{
+                color: colors.text.muted,
+                fontSize: '14px',
+                padding: '20px 0',
+                lineHeight: 1.6,
+              }}
+            >
+              {kloelT(`Nenhum boleto foi encontrado para este pedido.`)}
+            </div>
+          ) : !barcode ? (
+            <div
+              style={{
+                color: colors.text.muted,
+                fontSize: '14px',
+                padding: '20px 0',
+                lineHeight: 1.6,
+              }}
+            >
+              {kloelT(`Boleto disponivel apenas em PDF.`)}
             </div>
           ) : (
             <div
               style={{
                 fontFamily: 'monospace',
                 fontSize: '13px',
-                color: '#E8E6E1',
+                color: colors.checkout.textPrimary,
                 wordBreak: 'break-all',
                 lineHeight: '1.6',
                 letterSpacing: '1px',
@@ -127,60 +165,72 @@ export default function BoletoPaymentPage() {
           )}
         </div>
 
-        {/* Buttons */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          <button
-            type="button"
-            onClick={handleCopy}
-            disabled={!barcode}
-            style={{
-              width: '100%',
-              padding: '14px',
-              background: copied ? '#1A2E1A' : `${accent}18`,
-              border: `1px solid ${copied ? '#22c55e' : accent}44`,
-              borderRadius: '10px',
-              color: copied ? '#22c55e' : accent,
-              fontSize: '14px',
-              fontWeight: 600,
-              cursor: 'pointer',
-              fontFamily: font,
-              transition: 'all 0.2s',
-            }}
-          >
-            {copied ? 'Copiado!' : 'Copiar codigo de barras'}
-          </button>
-
-          {boletoUrl && (
-            <a
-              href={boletoUrl}
-              target="_blank"
-              rel="noopener noreferrer"
+        {hasBoletoData && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            <button
+              type="button"
+              onClick={handleCopy}
+              disabled={!barcode}
               style={{
                 width: '100%',
                 padding: '14px',
-                background: '#141416',
-                border: '1px solid #2A2A2E',
-                borderRadius: '10px',
-                color: '#E8E6E1',
+                background: copied ? colors.checkout.successBg : `${accent}18`,
+                border: `1px solid ${copied ? colors.checkout.success : accent}44`,
+                borderRadius: '8px',
+                color: copied ? colors.checkout.success : accent,
                 fontSize: '14px',
                 fontWeight: 600,
-                cursor: 'pointer',
+                cursor: barcode ? 'pointer' : 'not-allowed',
                 fontFamily: font,
-                textDecoration: 'none',
-                display: 'block',
-                boxSizing: 'border-box',
-                textAlign: 'center',
+                transition: 'all 0.2s',
               }}
             >
-              {kloelT(`Abrir PDF do boleto`)}
-            </a>
-          )}
-        </div>
+              {copied ? 'Copiado!' : 'Copiar codigo de barras'}
+            </button>
+
+            {boletoUrl && (
+              <a
+                href={boletoUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  width: '100%',
+                  padding: '14px',
+                  background: colors.checkout.bg,
+                  border: `1px solid ${colors.checkout.border}`,
+                  borderRadius: '8px',
+                  color: colors.checkout.textPrimary,
+                  fontSize: '14px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  fontFamily: font,
+                  textDecoration: 'none',
+                  display: 'block',
+                  boxSizing: 'border-box',
+                  textAlign: 'center',
+                }}
+              >
+                {kloelT(`Abrir PDF do boleto`)}
+              </a>
+            )}
+          </div>
+        )}
 
         {/* Info */}
-        <p style={{ color: '#8A8A8E', fontSize: '12px', marginTop: '20px', lineHeight: '1.5' }}>
-          {kloelT(`O pagamento pode levar ate 3 dias uteis para ser compensado. Voce recebera uma confirmacao
-          por e-mail.`)}
+        <p
+          style={{
+            color: colors.text.muted,
+            fontSize: '12px',
+            marginTop: '20px',
+            lineHeight: '1.5',
+          }}
+        >
+          {hasBoletoData
+            ? kloelT(`O pagamento pode levar ate 3 dias uteis para ser compensado. Voce recebera uma confirmacao
+          por e-mail.`)
+            : kloelT(
+                `Se voce acabou de tentar pagar por boleto, volte ao checkout e escolha Pix ou cartao.`,
+              )}
         </p>
       </div>
     </div>

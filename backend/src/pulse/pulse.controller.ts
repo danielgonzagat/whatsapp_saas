@@ -8,10 +8,12 @@ import type { JwtPayload } from '../common/interfaces/jwt-payload.interface';
 import { PulseFrontendHeartbeatDto } from './dto/frontend-heartbeat.dto';
 import { PulseInternalHeartbeatDto } from './dto/internal-heartbeat.dto';
 import { PulseService } from './pulse.service';
+import { RouteClass } from '../common/throttler/route-class.decorator';
 
 /** Pulse controller. */
 @ApiTags('Pulse')
 @Controller('pulse')
+@RouteClass('read')
 export class PulseController {
   constructor(private readonly pulse: PulseService) {}
 

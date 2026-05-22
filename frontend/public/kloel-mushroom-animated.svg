@@ -72,6 +72,24 @@
     @keyframes sp-UR2 { 0%,43%{ opacity:0; cx:152; cy:82;  } 49%{ opacity:.45; } 100%{ opacity:0; cx:190; cy:38;  } }
     @keyframes sp-R1  { 0%,43%{ opacity:0; cx:160; cy:88;  } 49%{ opacity:.6;  } 100%{ opacity:0; cx:210; cy:65;  } }
     @keyframes sp-R2  { 0%,43%{ opacity:0; cx:163; cy:95;  } 49%{ opacity:.7;  } 100%{ opacity:0; cx:212; cy:90;  } }
+
+    @media (prefers-reduced-motion: no-preference) {
+      .sp-L1  { animation: sp-L1  3s ease-out infinite 0s;   opacity: 1; }
+      .sp-L2  { animation: sp-L2  3s ease-out infinite .04s;  opacity: 1; }
+      .sp-UL1 { animation: sp-UL1 3s ease-out infinite .07s;  opacity: 1; }
+      .sp-UL2 { animation: sp-UL2 3s ease-out infinite .02s;  opacity: 1; }
+      .sp-TL1 { animation: sp-TL1 3s ease-out infinite .09s;  opacity: 1; }
+      .sp-TL2 { animation: sp-TL2 3s ease-out infinite .05s;  opacity: 1; }
+      .sp-T1  { animation: sp-T1  3s ease-out infinite .03s;  opacity: 1; }
+      .sp-T2  { animation: sp-T2  3s ease-out infinite .08s;  opacity: 1; }
+      .sp-TR1 { animation: sp-TR1 3s ease-out infinite .06s;  opacity: 1; }
+      .sp-TR2 { animation: sp-TR2 3s ease-out infinite .01s;  opacity: 1; }
+      .sp-UR1 { animation: sp-UR1 3s ease-out infinite .1s;   opacity: 1; }
+      .sp-UR2 { animation: sp-UR2 3s ease-out infinite .04s;  opacity: 1; }
+      .sp-R1  { animation: sp-R1  3s ease-out infinite .07s;  opacity: 1; }
+      .sp-R2  { animation: sp-R2  3s ease-out infinite .02s;  opacity: 1; }
+    }
+    .spore { opacity: 0; }
   </style>
 
   <g transform="translate(0,0)">
@@ -82,20 +100,20 @@
       <circle class="node-stem" cx="100" cy="135" fill="#FFFFFF"/>
     </g>
 
-    <circle r="2.2" fill="#E85D30" style="animation:sp-L1  3s ease-out infinite 0s"/>
-    <circle r="1.5" fill="#E85D30" style="animation:sp-L2  3s ease-out infinite .04s"/>
-    <circle r="2.4" fill="#E85D30" style="animation:sp-UL1 3s ease-out infinite .07s"/>
-    <circle r="1.4" fill="#E85D30" style="animation:sp-UL2 3s ease-out infinite .02s"/>
-    <circle r="2.0" fill="#E85D30" style="animation:sp-TL1 3s ease-out infinite .09s"/>
-    <circle r="1.6" fill="#E85D30" style="animation:sp-TL2 3s ease-out infinite .05s"/>
-    <circle r="2.8" fill="#E85D30" style="animation:sp-T1  3s ease-out infinite .03s"/>
-    <circle r="1.8" fill="#E85D30" style="animation:sp-T2  3s ease-out infinite .08s"/>
-    <circle r="2.2" fill="#E85D30" style="animation:sp-TR1 3s ease-out infinite .06s"/>
-    <circle r="1.5" fill="#E85D30" style="animation:sp-TR2 3s ease-out infinite .01s"/>
-    <circle r="2.0" fill="#E85D30" style="animation:sp-UR1 3s ease-out infinite .1s"/>
-    <circle r="1.4" fill="#E85D30" style="animation:sp-UR2 3s ease-out infinite .04s"/>
-    <circle r="1.8" fill="#E85D30" style="animation:sp-R1  3s ease-out infinite .07s"/>
-    <circle r="2.0" fill="#E85D30" style="animation:sp-R2  3s ease-out infinite .02s"/>
+    <circle class="sp-L1 spore"  cx="38"  cy="96" r="2.2" fill="#E85D30"/>
+    <circle class="sp-L2 spore"  cx="36"  cy="88" r="1.5" fill="#E85D30"/>
+    <circle class="sp-UL1 spore" cx="48"  cy="75" r="2.4" fill="#E85D30"/>
+    <circle class="sp-UL2 spore" cx="53"  cy="80" r="1.4" fill="#E85D30"/>
+    <circle class="sp-TL1 spore" cx="70"  cy="58" r="2.0" fill="#E85D30"/>
+    <circle class="sp-TL2 spore" cx="78"  cy="62" r="1.6" fill="#E85D30"/>
+    <circle class="sp-T1 spore"  cx="94"  cy="48" r="2.8" fill="#E85D30"/>
+    <circle class="sp-T2 spore"  cx="106" cy="50" r="1.8" fill="#E85D30"/>
+    <circle class="sp-TR1 spore" cx="122" cy="56" r="2.2" fill="#E85D30"/>
+    <circle class="sp-TR2 spore" cx="128" cy="62" r="1.5" fill="#E85D30"/>
+    <circle class="sp-UR1 spore" cx="148" cy="75" r="2.0" fill="#E85D30"/>
+    <circle class="sp-UR2 spore" cx="152" cy="82" r="1.4" fill="#E85D30"/>
+    <circle class="sp-R1 spore"  cx="160" cy="88" r="1.8" fill="#E85D30"/>
+    <circle class="sp-R2 spore"  cx="163" cy="95" r="2.0" fill="#E85D30"/>
 
     <g class="cap-group">
       <path d="M40,100 Q35,50 70,30 Q100,15 130,30 Q165,50 160,100 Z" fill="#E85D30"/>

@@ -10,14 +10,14 @@ import {
   resolveWorkspaceFromAuthPayload,
   tokenStorage,
 } from '@/lib/api';
-import { CheckCircle2, ExternalLink, RefreshCcw, Smartphone, Unplug } from 'lucide-react';
+import { CheckCircle2, ExternalLink, RotateCcw, Smartphone, Unplug } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { AgentCursorTarget } from './AgentCursor';
 
 interface AgentDesktopTraceEntry {
   id: string;
   type: string;
-  phase?: string;
+  phase?: string | undefined;
   message: string;
   timestamp: Date;
 }
@@ -42,6 +42,44 @@ function formatTimestamp(value?: Date) {
     hour: '2-digit',
     minute: '2-digit',
   });
+}
+
+type ConnectionStateKey = 'connected' | 'disconnected' | 'reconnecting';
+
+const CONNECTION_STATE_LABELS: Record<ConnectionStateKey, string> = {
+  connected: 'Conectado',
+  disconnected: 'Desconectado',
+  reconnecting: 'Reconectando',
+};
+
+function resolveConnectionStateKey(status?: WhatsAppConnectionStatus | null): ConnectionStateKey {
+  const raw = String(status?.status || '').toLowerCase();
+  const candidates: Array<[boolean, ConnectionStateKey]> = [
+    [Boolean(status?.connected), 'connected'],
+    [raw.includes('reconnect') || raw.includes('reconnecting'), 'reconnecting'],
+  ];
+  return candidates.find(([matches]) => matches)?.[1] ?? 'disconnected';
+}
+
+function formatConnectionState(status?: WhatsAppConnectionStatus | null): string {
+  return CONNECTION_STATE_LABELS[resolveConnectionStateKey(status)];
+}
+
+function formatOperatorReason(value?: string | null): string {
+  const raw = String(value || '').toLowerCase();
+  if (!raw) {
+    return 'A conexão oficial ainda não está ativa.';
+  }
+  if (raw.includes('expired') || raw.includes('token')) {
+    return 'A autorização expirou. Conecte novamente.';
+  }
+  if (raw.includes('permission') || raw.includes('scope')) {
+    return 'A autorização precisa ser renovada com as permissões corretas.';
+  }
+  if (raw.includes('rate') || raw.includes('limit')) {
+    return 'O canal atingiu um limite temporário. Tente novamente em alguns minutos.';
+  }
+  return 'A conexão precisa ser revisada. Conecte novamente quando quiser.';
 }
 
 /** Agent desktop viewer. */
@@ -131,7 +169,7 @@ export function AgentDesktopViewer({
     } finally {
       setWorking(false);
     }
-  }, [ensureWorkspaceId, refreshStatus, status?.authUrl]);
+  }, [ensureWorkspaceId, refreshStatus, status]);
 
   useEffect(() => {
     if (!isVisible || !autoConnect) {
@@ -196,7 +234,7 @@ export function AgentDesktopViewer({
             ) : (
               <Unplug className="h-3.5 w-3.5" aria-hidden="true" />
             )}
-            {status?.connected ? 'WhatsApp conectado' : 'Conexao oficial pendente'}
+            {status?.connected ? kloelT('WhatsApp conectado') : kloelT('Conexao oficial pendente')}
           </div>
 
           <p className="mt-4 text-sm leading-6 text-[colors.text.muted]">
@@ -210,21 +248,23 @@ export function AgentDesktopViewer({
                 {kloelT(`Numero`)}
               </p>
               <p className="mt-2 text-sm text-[colors.text.silver]">
-                {status?.phone || 'Nao conectado'}
+                {status?.phone || kloelT('Nao conectado')}
               </p>
             </div>
             <div className="rounded-2xl border border-white/8 bg-black/20 p-4">
               <p className="text-[11px] uppercase tracking-[0.24em] text-[colors.text.dim]">
-                {kloelT(`Phone Number ID`)}
+                {kloelT(`Conexao oficial`)}
               </p>
-              <p className="mt-2 break-all text-sm text-[colors.text.silver]">
-                {status?.phoneNumberId || 'Nao resolvido'}
+              <p className="mt-2 text-sm text-[colors.text.silver]">
+                {formatConnectionState(status)}
               </p>
             </div>
             <div className="rounded-2xl border border-white/8 bg-black/20 p-4">
-              <p className="text-[11px] uppercase tracking-[0.24em] text-[colors.text.dim]">WABA</p>
-              <p className="mt-2 break-all text-sm text-[colors.text.silver]">
-                {status?.whatsappBusinessId || 'Nao resolvido'}
+              <p className="text-[11px] uppercase tracking-[0.24em] text-[colors.text.dim]">
+                {kloelT(`Canais Meta`)}
+              </p>
+              <p className="mt-2 text-sm text-[colors.text.silver]">
+                {kloelT(`WhatsApp, Instagram e Messenger`)}
               </p>
             </div>
             <div className="rounded-2xl border border-white/8 bg-black/20 p-4">
@@ -232,14 +272,14 @@ export function AgentDesktopViewer({
                 {kloelT(`Estado`)}
               </p>
               <p className="mt-2 text-sm text-[colors.text.silver]">
-                {status?.status || 'Desconhecido'}
+                {formatConnectionState(status)}
               </p>
             </div>
           </div>
 
           {status?.degradedReason && !status.connected ? (
             <div className="mt-4 rounded-2xl border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
-              {status.degradedReason}
+              {formatOperatorReason(status.degradedReason)}
             </div>
           ) : null}
 
@@ -257,7 +297,7 @@ export function AgentDesktopViewer({
               className="inline-flex items-center gap-2 rounded-full bg-[colors.text.silver] px-4 py-2 text-sm font-medium text-[colors.background.void] transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-60"
             >
               <ExternalLink className="h-4 w-4" aria-hidden="true" />
-              {status?.connected ? 'Reconectar Meta' : 'Conectar com Meta'}
+              {status?.connected ? kloelT('Reconectar Meta') : kloelT('Conectar com Meta')}
             </button>
             <button
               type="button"
@@ -265,8 +305,8 @@ export function AgentDesktopViewer({
               disabled={working}
               className="inline-flex items-center gap-2 rounded-full border border-white/10 px-4 py-2 text-sm text-[colors.text.muted] transition hover:border-white/20 hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
             >
-              <RefreshCcw
-                className={`h-4 w-4 ${working ? 'animate-spin' : ''}`}
+              <RotateCcw
+                className={`h-4 w-4 ${working ? 'animate-pulse' : ''}`}
                 aria-hidden="true"
               />
 
@@ -295,7 +335,7 @@ export function AgentDesktopViewer({
               {kloelT(`Pensamento atual`)}
             </p>
             <p className="mt-3 text-sm leading-6 text-[colors.text.silver]">
-              {latestThought || (isThinking ? 'Processando...' : 'Aguardando evento do Kloel.')}
+              {latestThought || (isThinking ? kloelT('Processando...') : kloelT('Aguardando evento do Kloel.'))}
             </p>
           </div>
 
@@ -330,9 +370,9 @@ export function AgentDesktopViewer({
             <div className="absolute inset-0 bg-[colors.background.surface]" />
             <div className="relative flex h-full items-end justify-between px-4 py-3 text-xs text-[colors.text.muted]">
               <span>
-                {kloelT(`Workspace`)} {workspaceId || 'nao resolvido'}
+                {kloelT(`Workspace`)} {workspaceId || kloelT('nao resolvido')}
               </span>
-              <span>{status?.connected ? 'Meta ativa' : 'Aguardando autorizacao'}</span>
+              <span>{status?.connected ? kloelT('Meta ativa') : kloelT('Aguardando autorizacao')}</span>
             </div>
           </div>
         </section>

@@ -80,7 +80,6 @@ const requiredFiles = [
   ['.editorconfig', 'EditorConfig exists'],
   ['.prettierrc.json', 'Root Prettier config exists'],
   ['commitlint.config.cjs', 'Commitlint config exists'],
-  ['.eslint-seatbelt.tsv', 'ESLint seatbelt baseline exists'],
   ['codecov.yml', 'Codecov config exists'],
   ['knip.json', 'Knip config exists'],
   ['.mcp.json', 'MCP config exists'],
@@ -96,7 +95,6 @@ const requiredFiles = [
   ['scripts/ops/run-scoped-pre-push.mjs', 'Scoped pre-push validator exists'],
   ['scripts/ops/collect-knip-issues.mjs', 'Knip collector exists'],
   ['scripts/ops/check-madge-cycles.mjs', 'Madge cycle checker exists'],
-  ['scripts/ops/run-eslint-seatbelt.mjs', 'Seatbelt runner exists'],
   ['scripts/ops/normalize-lcov-paths.mjs', 'LCOV normalizer exists'],
   ['backend/src/instrument.ts', 'Sentry bootstrap file exists'],
   [
@@ -111,7 +109,6 @@ for (const [relPath, title] of requiredFiles) {
 }
 
 for (const relPath of [
-  '.eslint-seatbelt.tsv',
   'ratchet.json',
   'PULSE_HEALTH.json',
   'PULSE_CLI_DIRECTIVE.json',
@@ -143,12 +140,14 @@ check(
   'Root ops audit script is registered',
   'package.json must expose ops:audit',
 );
+check(
+  packageJson.scripts?.['railway:runtime:check'] === 'node scripts/ops/check-railway-runtime.mjs',
+  'Root Railway runtime check script is registered',
+  'package.json must expose railway:runtime:check',
+);
 for (const requiredScript of [
   'prepare',
   'lint',
-  'seatbelt:update',
-  'seatbelt:bootstrap',
-  'seatbelt:check',
   'format',
   'format:check',
   'quality:graph',
@@ -166,6 +165,7 @@ for (const requiredScript of [
   'prisma:generate',
   'db:migrate:prod',
   'guard:db-push',
+  'railway:runtime:check',
   'prepush:scoped',
   'sync:install',
   'sync:run',
@@ -357,7 +357,6 @@ for (const keyword of [
   'Dependabot',
   'Codecov',
   'Codacy',
-  'seatbelt',
   'Code scanning',
   'Copilot',
   'Branch Protection',

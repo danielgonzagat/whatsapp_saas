@@ -18,7 +18,7 @@ const LEADING_DOT_SLASH_RE = /^\.?\//;
 
 function normalizeSfPath(rawPath, workspace) {
   const trimmed = String(rawPath || '').trim();
-  if (!trimmed) return trimmed;
+  if (!trimmed) {return trimmed;}
 
   const unixPath = trimmed.replace(BACKSLASH_RE, '/');
   if (path.isAbsolute(unixPath)) {
@@ -31,8 +31,8 @@ function normalizeSfPath(rawPath, workspace) {
   }
 
   if (workspace === 'backend') {
-    if (unixPath.startsWith('src/')) return `backend/${unixPath}`;
-    if (unixPath.startsWith('prisma/')) return `backend/${unixPath}`;
+    if (unixPath.startsWith('src/')) {return `backend/${unixPath}`;}
+    if (unixPath.startsWith('prisma/')) {return `backend/${unixPath}`;}
   }
 
   if (workspace === 'frontend' && unixPath.startsWith('src/')) {

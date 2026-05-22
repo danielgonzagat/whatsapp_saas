@@ -4,6 +4,7 @@ import {
   Controller,
   Delete,
   Get,
+  NotFoundException,
   Param,
   Post,
   Put,
@@ -14,10 +15,8 @@ import {
   UploadedFile,
   UseGuards,
   UseInterceptors,
-  Optional,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { SkipThrottle, Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import { Prisma } from '@prisma/client';
 import { Response } from 'express';
 import { memoryStorage } from 'multer';
@@ -30,10 +29,9 @@ import { PrismaService } from '../prisma/prisma.service';
 import { ConversationalOnboardingService } from './conversational-onboarding.service';
 import { KloelService } from './kloel.service';
 import { KloelThreadSearchService } from './kloel-thread-search.service';
+import { KloelToolDispatcherService } from './kloel-tool-dispatcher.service';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { StorageService } from '../common/storage/storage.service';
-import { OpsAlertService } from '../observability/ops-alert.service';
-
 import {
   listThreads,
   createThread,
@@ -43,12 +41,10 @@ import {
   addThreadMessage,
   updateThreadMessage,
   updateMessageFeedback,
-  handleUploadFile,
-  handleUploadChatFile,
-  requestDataDeletion,
-  exportData,
-} from './__companions__/kloel.controller.companion';
-
+} from './kloel-thread.controller-helpers';
+import { handleUploadFile, handleUploadChatFile } from './kloel-upload.controller-helpers';
+import { RouteClass } from '../common/throttler/route-class.decorator';
+import { InternalEndpoint } from '../common/decorators/internal-endpoint.decorator';
 interface ThinkDto {
   message: string;
   workspaceId?: string;
@@ -65,16 +61,17 @@ interface MemoryDto {
 interface OnboardingChatDto {
   message: string;
 }
-
+interface ApprovalDecisionDto {
+  note?: string;
+  adjustment?: Prisma.InputJsonValue;
+}
 const KLOEL_UPLOAD_GENERIC_MIME_RE =
   /^(image\/(jpeg|png|gif|webp)|application\/pdf|application\/msword|application\/vnd\.openxmlformats-officedocument\.wordprocessingml\.document)$/;
 const KLOEL_UPLOAD_CHAT_MIME_RE =
   /^(image\/(jpeg|png|gif|webp)|application\/pdf|application\/msword|application\/vnd\.openxmlformats-officedocument\.wordprocessingml\.document|application\/vnd\.ms-excel|application\/vnd\.openxmlformats-officedocument\.spreadsheetml\.sheet|text\/plain|text\/csv|audio\/(mpeg|wav|webm|ogg|mp4|x-m4a))$/;
-
 const UPLOAD_MAX = 25 * 1024 * 1024;
-
-/** Kloel controller. */
 @Controller('kloel')
+@RouteClass('ai')
 export class KloelController {
   constructor(
     private readonly kloelService: KloelService,
@@ -82,19 +79,77 @@ export class KloelController {
     private readonly storageService: StorageService,
     private readonly prisma: PrismaService,
     private readonly threadSearchService: KloelThreadSearchService,
-    @Optional() private readonly opsAlert?: OpsAlertService,
+    private readonly toolDispatcher: KloelToolDispatcherService,
   ) {}
-
   private readUserId(user: unknown) {
-    if (!user || typeof user !== 'object') return undefined;
+    if (!user || typeof user !== 'object') {
+      return undefined;
+    }
     const sub = 'sub' in user ? user.sub : undefined;
-    if (typeof sub === 'string' && sub.trim()) return sub;
+    if (typeof sub === 'string' && sub.trim()) {
+      return sub;
+    }
     const legacyId = 'id' in user ? user.id : undefined;
     return typeof legacyId === 'string' && legacyId.trim() ? legacyId : undefined;
   }
-
-  // ═══ THINK ═══
-
+  private readWorkspaceId(req: AuthenticatedRequest) {
+    const workspaceId = req.workspaceId || req.user?.workspaceId;
+    if (!workspaceId) {
+      throw new BadRequestException('workspace_id_required');
+    }
+    return workspaceId;
+  }
+  private normalizeApprovalNote(body?: ApprovalDecisionDto) {
+    return typeof body?.note === 'string' && body.note.trim() ? body.note.trim() : null;
+  }
+  private async transitionApprovalRequest(input: {
+    approvalRequestId: string;
+    req: AuthenticatedRequest;
+    state: 'APPROVED' | 'REJECTED' | 'ADJUSTMENT_REQUESTED';
+    body?: ApprovalDecisionDto;
+  }) {
+    const approvalRequestId = String(input.approvalRequestId || '').trim();
+    if (!approvalRequestId) {
+      throw new BadRequestException('approval_request_id_required');
+    }
+    const workspaceId = this.readWorkspaceId(input.req);
+    const approval = await this.prisma.approvalRequest.findFirst({
+      where: { id: approvalRequestId, workspaceId },
+      select: { id: true, state: true },
+    });
+    if (!approval) {
+      throw new NotFoundException('approval_request_not_found');
+    }
+    if (approval.state !== 'OPEN') {
+      throw new BadRequestException('approval_request_not_open');
+    }
+    const userId = this.readUserId(input.req.user);
+    const response: Prisma.InputJsonObject = {
+      action: input.state.toLowerCase(),
+      decidedAt: new Date().toISOString(),
+      ...(userId ? { decidedByUserId: userId } : {}),
+      note: this.normalizeApprovalNote(input.body),
+      ...(input.state === 'ADJUSTMENT_REQUESTED'
+        ? { adjustment: input.body?.adjustment ?? null }
+        : {}),
+    };
+    const result = await this.prisma.approvalRequest.updateMany({
+      where: { id: approvalRequestId, workspaceId, state: 'OPEN' },
+      data: {
+        state: input.state,
+        respondedAt: new Date(),
+        response,
+      },
+    });
+    if (result.count !== 1) {
+      throw new BadRequestException('approval_request_not_open');
+    }
+    return {
+      success: true,
+      approvalRequestId,
+      state: input.state,
+    };
+  }
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Post('think')
   async think(
@@ -107,20 +162,24 @@ export class KloelController {
     const userName = typeof req.user?.name === 'string' ? req.user.name : undefined;
     const abortController = new AbortController();
     const abortWithReason = (reason: string) => {
-      if (!abortController.signal.aborted) abortController.abort(reason);
+      if (!abortController.signal.aborted) {
+        abortController.abort(reason);
+      }
     };
     const timeoutMs = Number(process.env.KLOEL_THINK_TIMEOUT_MS || 240000);
     const timeout = setTimeout(() => abortWithReason('request_timeout'), timeoutMs);
     req.on('close', () => abortWithReason('client_disconnected'));
     res.on('close', () => abortWithReason('client_disconnected'));
     try {
+      const { metadata: rawMetadata, ...requestDto } = dto;
+      const metadata = rawMetadata as Prisma.InputJsonValue | undefined;
       return await this.kloelService.think(
         {
-          ...dto,
+          ...requestDto,
           workspaceId,
-          userId,
-          userName,
-          metadata: dto.metadata as Prisma.InputJsonValue | undefined,
+          ...(userId !== undefined ? { userId } : {}),
+          ...(userName !== undefined ? { userName } : {}),
+          ...(metadata !== undefined ? { metadata } : {}),
         },
         res,
         { signal: abortController.signal, timeoutMs },
@@ -129,26 +188,113 @@ export class KloelController {
       clearTimeout(timeout);
     }
   }
-
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Get('history')
   async getHistory(@Request() req: AuthenticatedRequest): Promise<unknown[]> {
     return this.kloelService.getHistory(req.user?.workspaceId);
   }
-
+  @UseGuards(JwtAuthGuard, WorkspaceGuard)
+  @Get('approvals/pending')
+  async getPendingApprovals(@Request() req: AuthenticatedRequest) {
+    const workspaceId = req.workspaceId || req.user?.workspaceId;
+    if (!workspaceId) {
+      throw new BadRequestException('workspace_id_required');
+    }
+    const approvals = await this.prisma.approvalRequest.findMany({
+      where: { workspaceId, state: 'OPEN' },
+      orderBy: { createdAt: 'desc' },
+      take: 50,
+      select: {
+        id: true,
+        kind: true,
+        scope: true,
+        entityType: true,
+        entityId: true,
+        state: true,
+        title: true,
+        prompt: true,
+        payload: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+    return { approvals };
+  }
+  @UseGuards(JwtAuthGuard, WorkspaceGuard)
+  @InternalEndpoint('approval request approve')
+  @Post('approvals/:approvalRequestId/approve')
+  async approveApprovalRequest(
+    @Param('approvalRequestId') approvalRequestId: string,
+    @Body() body: ApprovalDecisionDto,
+    @Request() req: AuthenticatedRequest,
+  ) {
+    const transition = await this.transitionApprovalRequest({
+      approvalRequestId,
+      req,
+      state: 'APPROVED',
+      body,
+    });
+    const userId = this.readUserId(req.user);
+    const execution = await this.toolDispatcher.executeApprovedApprovalRequest({
+      workspaceId: this.readWorkspaceId(req),
+      approvalRequestId: transition.approvalRequestId,
+      ...(userId !== undefined ? { userId } : {}),
+    });
+    return execution.executed
+      ? {
+          ...transition,
+          state: execution.state,
+          executed: true,
+          result: execution.result,
+        }
+      : transition;
+  }
+  @UseGuards(JwtAuthGuard, WorkspaceGuard)
+  @InternalEndpoint('approval request reject')
+  @Post('approvals/:approvalRequestId/reject')
+  async rejectApprovalRequest(
+    @Param('approvalRequestId') approvalRequestId: string,
+    @Body() body: ApprovalDecisionDto,
+    @Request() req: AuthenticatedRequest,
+  ) {
+    return this.transitionApprovalRequest({
+      approvalRequestId,
+      req,
+      state: 'REJECTED',
+      body,
+    });
+  }
+  @UseGuards(JwtAuthGuard, WorkspaceGuard)
+  @InternalEndpoint('approval request adjust')
+  @Post('approvals/:approvalRequestId/adjust')
+  async adjustApprovalRequest(
+    @Param('approvalRequestId') approvalRequestId: string,
+    @Body() body: ApprovalDecisionDto,
+    @Request() req: AuthenticatedRequest,
+  ) {
+    return this.transitionApprovalRequest({
+      approvalRequestId,
+      req,
+      state: 'ADJUSTMENT_REQUESTED',
+      body,
+    });
+  }
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Post('think/sync')
   async thinkSync(@Body() dto: ThinkDto, @Request() req: AuthenticatedRequest) {
     const workspaceId = req.workspaceId || req.user?.workspaceId;
+    const userId = this.readUserId(req.user);
+    const userName = typeof req.user?.name === 'string' ? req.user.name : undefined;
+    const { metadata: rawMetadata, ...requestDto } = dto;
+    const metadata = rawMetadata as Prisma.InputJsonValue | undefined;
     return this.kloelService.thinkSync({
-      ...dto,
+      ...requestDto,
       workspaceId,
-      userId: this.readUserId(req.user),
-      userName: typeof req.user?.name === 'string' ? req.user.name : undefined,
-      metadata: dto.metadata as Prisma.InputJsonValue | undefined,
+      ...(userId !== undefined ? { userId } : {}),
+      ...(userName !== undefined ? { userName } : {}),
+      ...(metadata !== undefined ? { metadata } : {}),
     });
   }
-
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Post('memory/save')
   async saveMemory(@Body() dto: MemoryDto, @Request() req: AuthenticatedRequest) {
@@ -160,8 +306,8 @@ export class KloelController {
     );
     return { success: true };
   }
-
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
+  @InternalEndpoint('PDF processing trigger')
   @Post('pdf/process')
   async processPdf(
     @Body() dto: { workspaceId: string; content: string },
@@ -174,16 +320,11 @@ export class KloelController {
       ),
     };
   }
-
   @Public()
   @Get('health')
-  @SkipThrottle()
   health() {
     return { status: 'online', identity: 'KLOEL - Inteligência Comercial Autônoma' };
   }
-
-  // ═══ UPLOADS ═══
-
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Post('upload-generic')
   @UseInterceptors(
@@ -228,7 +369,6 @@ export class KloelController {
       req,
     );
   }
-
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Post('upload-chat')
   @UseInterceptors(
@@ -282,11 +422,7 @@ export class KloelController {
       req,
     );
   }
-
-  // ═══ ONBOARDING ═══
-
-  @UseGuards(JwtAuthGuard, WorkspaceGuard, ThrottlerGuard)
-  @Throttle({ default: { limit: 5, ttl: 60000 } })
+  @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Post('onboarding/:workspaceId/start')
   async startConversationalOnboarding(
     @Req() req: AuthenticatedRequest,
@@ -296,9 +432,7 @@ export class KloelController {
       message: await this.conversationalOnboarding.start(resolveWorkspaceId(req, workspaceId)),
     };
   }
-
-  @UseGuards(JwtAuthGuard, WorkspaceGuard, ThrottlerGuard)
-  @Throttle({ default: { limit: 20, ttl: 60000 } })
+  @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Post('onboarding/:workspaceId/chat')
   async chatOnboarding(
     @Req() req: AuthenticatedRequest,
@@ -312,9 +446,7 @@ export class KloelController {
       )) as string,
     };
   }
-
-  @UseGuards(JwtAuthGuard, WorkspaceGuard, ThrottlerGuard)
-  @Throttle({ default: { limit: 20, ttl: 60000 } })
+  @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Post('onboarding/:workspaceId/chat/stream')
   async chatOnboardingStream(
     @Req() req: AuthenticatedRequest,
@@ -328,9 +460,7 @@ export class KloelController {
       res,
     );
   }
-
-  @UseGuards(JwtAuthGuard, WorkspaceGuard, ThrottlerGuard)
-  @Throttle({ default: { limit: 30, ttl: 60000 } })
+  @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Get('onboarding/:workspaceId/status')
   async getOnboardingStatus(
     @Req() req: AuthenticatedRequest,
@@ -338,15 +468,11 @@ export class KloelController {
   ) {
     return this.conversationalOnboarding.getStatus(resolveWorkspaceId(req, workspaceId));
   }
-
-  // ═══ FOLLOWUPS ═══
-
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Get('followups')
   async listFollowups(@Req() req: AuthenticatedRequest) {
     return this.kloelService.listFollowups(resolveWorkspaceId(req));
   }
-
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Get('followups/:contactId')
   async listContactFollowups(
@@ -355,15 +481,23 @@ export class KloelController {
   ) {
     return this.kloelService.listFollowups(resolveWorkspaceId(req), contactId);
   }
-
-  // ═══ THREADS ═══
-
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Get('threads')
-  async listChatThreads(@Req() req: AuthenticatedRequest) {
-    return listThreads({ prisma: this.prisma }, resolveWorkspaceId(req));
+  async listChatThreads(
+    @Req() req: AuthenticatedRequest,
+    @Query('limit') limit?: string,
+    @Query('cursor') cursor?: string,
+  ) {
+    const parsedLimit = limit ? Number.parseInt(limit, 10) : undefined;
+    const parsedCursor = cursor ? Number.parseInt(cursor, 10) : undefined;
+    const numericLimit = Number.isFinite(parsedLimit) ? parsedLimit : undefined;
+    const numericCursor = Number.isFinite(parsedCursor) ? parsedCursor : undefined;
+    return listThreads({ prisma: this.prisma }, resolveWorkspaceId(req), {
+      ...(numericLimit !== undefined ? { limit: numericLimit } : {}),
+      ...(numericCursor !== undefined ? { cursor: numericCursor } : {}),
+      paginated: Boolean(limit || cursor),
+    });
   }
-
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Post('threads')
   async createChatThread(
@@ -372,8 +506,8 @@ export class KloelController {
   ) {
     return createThread({ prisma: this.prisma }, resolveWorkspaceId(req), dto);
   }
-
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
+  @InternalEndpoint('thread search')
   @Get('threads/search')
   @Get('conversations/search')
   async searchThreads(
@@ -383,7 +517,6 @@ export class KloelController {
   ) {
     return this.threadSearchService.search(resolveWorkspaceId(req), q, limit);
   }
-
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Put('threads/:id')
   async updateChatThread(
@@ -393,20 +526,18 @@ export class KloelController {
   ) {
     return updateThread({ prisma: this.prisma }, id, dto.title, resolveWorkspaceId(req));
   }
-
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Delete('threads/:id')
   async deleteChatThread(@Param('id') id: string, @Req() req: AuthenticatedRequest) {
     return deleteThread({ prisma: this.prisma }, id, resolveWorkspaceId(req));
   }
-
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Get('threads/:id/messages')
   async getChatThreadMessages(@Param('id') id: string, @Req() req: AuthenticatedRequest) {
     return getThreadMessages({ prisma: this.prisma }, id, resolveWorkspaceId(req));
   }
-
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
+  @InternalEndpoint('thread message creation')
   @Post('threads/:id/messages')
   async addChatThreadMessage(
     @Param('id') id: string,
@@ -421,7 +552,6 @@ export class KloelController {
   ) {
     return addThreadMessage({ prisma: this.prisma }, id, dto, resolveWorkspaceId(req));
   }
-
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Put('messages/:id')
   async updateChatThreadMessage(
@@ -431,7 +561,6 @@ export class KloelController {
   ) {
     return updateThreadMessage({ prisma: this.prisma }, id, dto, resolveWorkspaceId(req));
   }
-
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Post('messages/:id/feedback')
   async updateChatMessageFeedback(
@@ -441,7 +570,6 @@ export class KloelController {
   ) {
     return updateMessageFeedback({ prisma: this.prisma }, id, dto, resolveWorkspaceId(req));
   }
-
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Post('conversations/:id/regenerate')
   async regenerateConversationMessage(
@@ -450,32 +578,17 @@ export class KloelController {
     @Req() req: AuthenticatedRequest,
   ) {
     const messageId = String(dto?.messageId || '').trim();
-    if (!messageId) throw new BadRequestException('messageId é obrigatório.');
+    if (!messageId) {
+      throw new BadRequestException('messageId é obrigatório.');
+    }
+    const userId = typeof req.user?.sub === 'string' ? req.user.sub : undefined;
+    const userName = typeof req.user?.name === 'string' ? req.user.name : undefined;
     return this.kloelService.regenerateThreadAssistantResponse({
       workspaceId: resolveWorkspaceId(req),
       conversationId: id,
       assistantMessageId: messageId,
-      userId: req.user?.sub,
-      userName: req.user?.name,
+      ...(userId !== undefined ? { userId } : {}),
+      ...(userName !== undefined ? { userName } : {}),
     });
-  }
-
-  // ═══ LGPD ═══
-
-  @UseGuards(JwtAuthGuard, WorkspaceGuard)
-  @Post('data/request-deletion')
-  async handleDataDeletion(@Request() req: AuthenticatedRequest) {
-    await requestDataDeletion(
-      { prisma: this.prisma },
-      req.workspaceId || req.user?.workspaceId,
-      req.user?.sub,
-    );
-    return { success: true, message: 'Dados pessoais anonimizados conforme LGPD' };
-  }
-
-  @UseGuards(JwtAuthGuard, WorkspaceGuard)
-  @Get('data/export')
-  async handleDataExport(@Request() req: AuthenticatedRequest) {
-    return exportData({ prisma: this.prisma }, req.workspaceId || req.user?.workspaceId);
   }
 }

@@ -1,0 +1,39 @@
+{
+  "dir": "/Users/danielpenin/whatsapp_saas",
+  "skipPermissions": true,
+  "concurrency": 6,
+  "timeoutSec": 0,
+  "staggerMs": 9000,
+  "tasks": [
+    {
+      "id": "h11-evol-gapdetector",
+      "title": "Fix EVOL GapDetectorService logic",
+      "prompt": "You are an interactive supervised OpenCode worker in repo /Users/danielpenin/whatsapp_saas. FIRST read scripts/decomp/opencode-subagent-delegation-rules.md and CLAUDE.md. ABSOLUTE: no frontend/*.tsx/e2e/protected-file edits; no @ts-ignore/NOSONAR/skip/biome-ignore/eslint-disable; no git restore; no spec weakening to mask bugs (you MUST fix real code, not the test, unless the test contradicts the PCI contract — if so STOP and report). TASK: backend/src/kloel/evol/gap-detector.service.ts has logic bugs. Run `cd backend && npx jest src/kloel/evol/evol.spec.ts --no-coverage`. Failing: UTP-EVOL-006 (gap NOT detected from runtime metric above threshold), UTP-EVOL-015 (gaps not sorted by revenueRisk desc), UTP-EVOL-016 (estimateTotalRisk returns 0), UTP-EVOL-017 (detects 2 of 3 input sources, must detect 3). Read the spec to learn exact expected contract, read gap-detector.service.ts + evol.types.ts fully, find why runtime-metric-above-threshold gaps and one of the three input sources are not detected and why total risk sums to 0. Fix the real detection/sorting/risk-sum logic. Re-run the spec until ALL 30 tests pass. Then run `cd backend && npx tsc --noEmit -p tsconfig.json` and confirm 0 errors. Report: files changed, root cause, before/after test counts, tsc result."
+    },
+    {
+      "id": "h11-commem-valuequant",
+      "title": "Fix Commem ValueQuantifierService LTV",
+      "prompt": "You are an interactive supervised OpenCode worker in repo /Users/danielpenin/whatsapp_saas. FIRST read scripts/decomp/opencode-subagent-delegation-rules.md and CLAUDE.md. ABSOLUTE: no frontend/*.tsx/e2e/protected-file edits; no suppression comments; no git restore; no spec weakening (fix real code, not the test; if test contradicts PCI, STOP and report). TASK: backend/src/kloel/commem/value-quantifier.service.ts. Run `cd backend && npx jest src/kloel/commem/value-quantifier.service.spec.ts --no-coverage`. Failing: 'LTV inference from payment approved events adds capital', 'LTV inference from CRM deal_won events', 'composite value includes LTV insights discoveries and base capital', 'positive-valence events contribute more value', 'negative-valence events reduce value'. Read the spec for exact expected numbers/contract, read value-quantifier.service.ts + commem.types.ts fully. NOTE a recent hardening edit changed event construction to conditional spreads `...(ev.entityRef !== undefined ? {entityRef: ev.entityRef} : {})` for entityRef/correlationId/payload — verify this did not break event filtering/aggregation; the real bug is likely in LTV/valence aggregation logic. Fix real code. Re-run spec until ALL pass. Then `cd backend && npx tsc --noEmit -p tsconfig.json` = 0 errors. Report root cause + before/after."
+    },
+    {
+      "id": "h11-commem-exporter",
+      "title": "Fix Commem ExporterService empty-export",
+      "prompt": "You are an interactive supervised OpenCode worker in repo /Users/danielpenin/whatsapp_saas. FIRST read scripts/decomp/opencode-subagent-delegation-rules.md and CLAUDE.md. ABSOLUTE: no frontend/*.tsx/e2e/protected edits; no suppression; no git restore; no spec weakening (fix real code; if spec contradicts PCI STOP+report). TASK: backend/src/kloel/commem/commem-exporter.service.ts. Run `cd backend && npx jest src/kloel/commem/commem-exporter.service.spec.ts --no-coverage`. Failing: 'returns empty export for empty events' — spec expects result.capsule to be null when there are zero events, but exporter returns a non-null capsule. Read spec + exporter + commem.types.ts. Fix the exporter so an empty-events export yields capsule=null (or whatever the spec/PCI contract requires) WITHOUT breaking the non-empty path. Re-run spec until ALL pass. Then tsc 0 errors. Report root cause + before/after."
+    },
+    {
+      "id": "h11-offer-detectors",
+      "title": "Fix OFFER promise/positioning detectors",
+      "prompt": "You are an interactive supervised OpenCode worker in repo /Users/danielpenin/whatsapp_saas. FIRST read scripts/decomp/opencode-subagent-delegation-rules.md and CLAUDE.md. ABSOLUTE: no frontend/*.tsx/e2e/protected edits; no suppression; no git restore; no spec weakening (fix real code; if spec contradicts PCI STOP+report). TASK: backend/src/kloel/offer/promise-strength.detector.ts and positioning-mismatch.detector.ts. Run `cd backend && npx jest src/kloel/offer/offer.spec.ts --no-coverage`. Failing: UTP-OFFER-002 'classifies weak copy with low conversion as weak', UTP-OFFER-004 'detects trust gap when trust objections are high and promise lacks proof', UTP-OFFER-004 'returns no mismatch when promise aligns with audience and feedback is clean'. Read the spec for the exact thresholds/classification contract, read both detector files fully. Fix the real scoring/classification logic so weak copy classifies as weak, trust-gap is detected, and clean-aligned input yields no mismatch. Re-run spec until ALL pass. Then tsc 0 errors. Report root cause + before/after."
+    },
+    {
+      "id": "h11-hypproof-microexp",
+      "title": "Fix HYPPROOF MicroExperimentDesigner",
+      "prompt": "You are an interactive supervised OpenCode worker in repo /Users/danielpenin/whatsapp_saas. FIRST read scripts/decomp/opencode-subagent-delegation-rules.md and CLAUDE.md. ABSOLUTE: no frontend/*.tsx/e2e/protected edits; no suppression; no git restore; no spec weakening (fix real code; if spec contradicts PCI STOP+report). TASK: backend/src/kloel/hypproof/ (micro-experiment designer service). Run `cd backend && npx jest src/kloel/hypproof/hypproof.spec.ts --no-coverage`. Failing: 'MicroExperimentDesignerService (HYPPROOF-002) designs experiment for valid hypothesis'. Read the spec for the exact expected experiment shape/fields, read the micro-experiment designer source + hypproof.types.ts + hypothesis-formulator.ts fully. NOTE hypothesis-formulator.ts was hardened to conditionally spread payablePain; verify Hypothesis shape still satisfies the designer. Fix the real designer logic so it produces the expected experiment for a valid hypothesis. Re-run spec until ALL pass. Then tsc 0 errors. Report root cause + before/after."
+    },
+    {
+      "id": "h11-agency-portfolio",
+      "title": "Fix AGENCY PortfolioStateService team load",
+      "prompt": "You are an interactive supervised OpenCode worker in repo /Users/danielpenin/whatsapp_saas. FIRST read scripts/decomp/opencode-subagent-delegation-rules.md and CLAUDE.md. ABSOLUTE: no frontend/*.tsx/e2e/protected edits; no suppression; no git restore; no spec weakening (fix real code; if spec contradicts PCI STOP+report). TASK: backend/src/kloel/agency/portfolio-state.service.ts. Run `cd backend && npx jest src/kloel/agency/agency.spec.ts --no-coverage`. Failing: 'AGENCY-009 — PortfolioStateService builds team load summary for balanced team'. Read the spec for the exact expected team-load summary contract, read portfolio-state.service.ts + agency.types.ts fully. Fix the real team-load summarization logic so a balanced team produces the expected summary. Re-run spec until ALL pass. Then tsc 0 errors. Report root cause + before/after."
+    }
+  ]
+}

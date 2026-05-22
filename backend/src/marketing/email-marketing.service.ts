@@ -1,0 +1,397 @@
+import {
+  BadRequestException,
+  Injectable,
+  Logger,
+  OnModuleDestroy,
+  OnModuleInit,
+  Optional,
+} from '@nestjs/common';
+import { Queue, Worker } from 'bullmq';
+import { EmailService } from '../auth/email.service';
+import { getRedisUrl } from '../common/redis/redis.util';
+import { OpsAlertService } from '../observability/ops-alert.service';
+import { PrismaService } from '../prisma/prisma.service';
+import type { CreateEmailCampaignDto } from './dto/create-email-campaign.dto';
+import {
+  buildCampaignEmail,
+  buildCampaignStatUpdate,
+  resolveEmailMarketingProvider,
+} from './email-marketing.helpers';
+import type {
+  EmailCampaign,
+  EmailCampaignRecipient,
+  EmailCampaignDelivery,
+  Prisma,
+} from '@prisma/client';
+type EmailCampaignJob = { campaignId: string; workspaceId: string };
+type EmailDeliveryLog = {
+  campaignId: string;
+  recipientId: string;
+  workspaceId: string;
+  event: 'SENT' | 'FAILED';
+  providerMessageId?: string;
+  errorMessage?: string;
+};
+const QUEUE_NAME = 'email-marketing-jobs';
+type EmailCampaignWithRecipients = EmailCampaign & {
+  recipients: EmailCampaignRecipient[];
+};
+type EmailCampaignWithDeliveries = EmailCampaign & {
+  recipients: (EmailCampaignRecipient & {
+    deliveries: EmailCampaignDelivery[];
+  })[];
+};
+type CampaignListRow = Pick<
+  EmailCampaign,
+  | 'id'
+  | 'name'
+  | 'subject'
+  | 'status'
+  | 'totalRecipients'
+  | 'sentCount'
+  | 'deliveredCount'
+  | 'openedCount'
+  | 'clickedCount'
+  | 'repliedCount'
+  | 'failedCount'
+  | 'provider'
+  | 'createdAt'
+  | 'updatedAt'
+>;
+@Injectable()
+export class EmailMarketingService implements OnModuleInit, OnModuleDestroy {
+  private readonly logger = new Logger(EmailMarketingService.name);
+  private queue: Queue<EmailCampaignJob> | null = null;
+  private worker: Worker<EmailCampaignJob> | null = null;
+  private readonly fromEmail = process.env.EMAIL_FROM || 'noreply@kloel.com';
+  private readonly fromName = process.env.EMAIL_FROM_NAME || 'KLOEL';
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly emailService: EmailService,
+    @Optional() private readonly opsAlert?: OpsAlertService,
+  ) {}
+  onModuleInit() {
+    void this.initWorker();
+  }
+  async onModuleDestroy() {
+    await Promise.all([this.worker?.close(), this.queue?.close()]);
+  }
+  private initWorker() {
+    try {
+      const connection = { url: getRedisUrl() };
+      this.queue = new Queue<EmailCampaignJob>(QUEUE_NAME, { connection });
+      this.worker = new Worker<EmailCampaignJob>(
+        QUEUE_NAME,
+        async (job) => {
+          const { campaignId, workspaceId } = job.data;
+          this.logger.log(`Processing email campaign job: ${campaignId}`);
+          await this.processCampaignSend(campaignId, workspaceId);
+        },
+        {
+          connection,
+          concurrency: 1,
+          removeOnComplete: { count: 100 },
+          removeOnFail: { count: 50 },
+        },
+      );
+      this.worker.on('completed', (job) => {
+        this.logger.log(`Email campaign job completed: ${job.data.campaignId}`);
+      });
+      this.worker.on('failed', (job, err) => {
+        this.logger.error(`Email campaign job failed: ${job?.data.campaignId}: ${err.message}`);
+      });
+      this.logger.log('Email marketing queue worker started');
+    } catch (err) {
+      void this.opsAlert?.alertOnCriticalError(err, 'EmailMarketingService.initWorker');
+      this.logger.warn(
+        `Redis not available — email marketing scheduling disabled (${(err as Error)?.message})`,
+      );
+    }
+  }
+  private getProvider(): 'resend' | 'sendgrid' | 'smtp' | 'log' {
+    return resolveEmailMarketingProvider();
+  }
+  async createCampaign(workspaceId: string, dto: CreateEmailCampaignDto): Promise<EmailCampaign> {
+    const provider = this.getProvider();
+    const fromEmail = dto.fromEmail || this.fromEmail;
+    const fromName = dto.fromName || this.fromName;
+    const campaign = await this.prisma.emailCampaign.create({
+      data: {
+        workspaceId,
+        name: dto.name,
+        subject: dto.subject,
+        htmlBody: dto.htmlBody,
+        fromEmail,
+        fromName,
+        ...(dto.replyTo !== undefined ? { replyTo: dto.replyTo } : {}),
+        status: 'DRAFT',
+        totalRecipients: dto.recipients.length,
+        provider,
+        recipients: {
+          create: dto.recipients.map((r) => ({
+            workspaceId,
+            email: r.email,
+            ...(r.name ? { name: r.name } : {}),
+            status: 'PENDING',
+          })),
+        },
+      },
+      include: { recipients: true },
+    });
+    this.logger.log(
+      `Campaign "${campaign.name}" created with ${campaign.totalRecipients} recipients`,
+    );
+    return campaign;
+  }
+  async listCampaigns(workspaceId: string): Promise<CampaignListRow[]> {
+    return this.prisma.emailCampaign.findMany({
+      where: { workspaceId },
+      select: {
+        id: true,
+        name: true,
+        subject: true,
+        status: true,
+        totalRecipients: true,
+        sentCount: true,
+        deliveredCount: true,
+        openedCount: true,
+        clickedCount: true,
+        repliedCount: true,
+        failedCount: true,
+        provider: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+  async getCampaign(id: string, workspaceId: string): Promise<EmailCampaignWithRecipients | null> {
+    return this.prisma.emailCampaign.findFirst({
+      where: { id, workspaceId },
+      include: { recipients: true },
+    });
+  }
+  async getCampaignWithDeliveries(
+    id: string,
+    workspaceId: string,
+  ): Promise<EmailCampaignWithDeliveries | null> {
+    return this.prisma.emailCampaign.findFirst({
+      where: { id, workspaceId },
+      include: {
+        recipients: {
+          include: { deliveries: true },
+        },
+      },
+    });
+  }
+  async enqueueSend(campaignId: string, workspaceId: string): Promise<EmailCampaign> {
+    const campaign = await this.prisma.emailCampaign.findFirst({
+      where: { id: campaignId, workspaceId },
+    });
+    if (!campaign) {
+      throw new Error('Campaign not found');
+    }
+    if (campaign.status !== 'DRAFT') {
+      throw new Error(`Cannot send campaign in status: ${campaign.status}`);
+    }
+    await this.assertCampaignSendApproved(campaignId, workspaceId);
+    await this.prisma.emailCampaign.update({
+      where: { id: campaignId, workspaceId },
+      data: { status: 'SCHEDULED' },
+    });
+    if (!this.queue) {
+      this.logger.warn('Queue not available — sending campaign directly');
+      await this.processCampaignSend(campaignId, workspaceId);
+      return this.prisma.emailCampaign.findFirstOrThrow({
+        where: { id: campaignId, workspaceId },
+        include: { recipients: true },
+      });
+    }
+    await this.queue.add(campaignId, { campaignId, workspaceId }, { jobId: campaignId });
+    this.logger.log(`Campaign "${campaign.name}" enqueued for sending`);
+    return this.prisma.emailCampaign.findFirstOrThrow({
+      where: { id: campaignId, workspaceId },
+      include: { recipients: true },
+    });
+  }
+  private async processCampaignSend(campaignId: string, workspaceId: string): Promise<void> {
+    const campaign = await this.prisma.emailCampaign.findFirst({
+      where: { id: campaignId, workspaceId },
+      include: { recipients: true },
+    });
+    if (!campaign) {
+      this.logger.error(`Campaign ${campaignId} not found`);
+      return;
+    }
+    const provider = this.getProvider();
+    await this.prisma.emailCampaign.update({
+      where: { id: campaignId, workspaceId },
+      data: {
+        status: 'SENDING',
+        startedAt: new Date(),
+      },
+    });
+    this.logger.log(
+      `Starting send for campaign "${campaign.name}" with ${campaign.recipients.length} recipients via ${provider}`,
+    );
+    let sentCount = 0;
+    let failedCount = 0;
+    for (let i = 0; i < campaign.recipients.length; i += 1) {
+      const recipient = campaign.recipients[i]!;
+      if (recipient.status === 'UNSUBSCRIBED') {
+        continue;
+      }
+      try {
+        const email = buildCampaignEmail({
+          htmlBody: campaign.htmlBody,
+          subject: campaign.subject,
+          recipientEmail: recipient.email,
+          recipientName: recipient.name,
+          workspaceId,
+        });
+        const success = await this.emailService.sendEmail(email);
+        if (success) {
+          sentCount += 1;
+          await this.recordDeliveryEvent({
+            campaignId,
+            recipientId: recipient.id,
+            workspaceId,
+            event: 'SENT',
+          });
+        } else {
+          failedCount += 1;
+          await this.recordDeliveryEvent({
+            campaignId,
+            recipientId: recipient.id,
+            workspaceId,
+            event: 'FAILED',
+            errorMessage: 'Provider returned failure',
+          });
+        }
+        if (i < campaign.recipients.length - 1) {
+          await new Promise((resolve) => setTimeout(resolve, 100));
+        }
+      } catch (err: unknown) {
+        failedCount += 1;
+        const errorMsg = err instanceof Error ? err.message : 'unknown_error';
+        void this.opsAlert?.alertOnCriticalError(err, 'EmailMarketingService.processCampaignSend');
+        this.logger.error(`Failed to send to ${recipient.email}: ${errorMsg}`);
+        await this.recordDeliveryEvent({
+          campaignId,
+          recipientId: recipient.id,
+          workspaceId,
+          event: 'FAILED',
+          errorMessage: errorMsg,
+        });
+      }
+    }
+    await this.prisma.emailCampaign.update({
+      where: { id: campaignId, workspaceId },
+      data: {
+        status: 'SENT',
+        sentCount,
+        failedCount,
+        completedAt: new Date(),
+      },
+    });
+    this.logger.log(
+      `Campaign "${campaign.name}" completed: ${sentCount} sent, ${failedCount} failed`,
+    );
+  }
+  private async assertCampaignSendApproved(campaignId: string, workspaceId: string): Promise<void> {
+    const approval = await this.prisma.approvalRequest.findFirst({
+      where: {
+        workspaceId,
+        kind: 'email_campaign:send',
+        entityType: 'EmailCampaign',
+        entityId: campaignId,
+        state: { in: ['APPROVED', 'COMPLETED'] },
+      },
+      select: { id: true },
+    });
+    if (!approval) {
+      throw new BadRequestException('Approved email campaign send request not found');
+    }
+  }
+  private async recordDeliveryEvent(log: EmailDeliveryLog): Promise<void> {
+    const event = log.event;
+    const isSent = event === 'SENT';
+    await Promise.all([
+      this.prisma.emailCampaignDelivery.create({
+        data: {
+          campaignId: log.campaignId,
+          recipientId: log.recipientId,
+          workspaceId: log.workspaceId,
+          event,
+          ...(log.providerMessageId ? { providerMessageId: log.providerMessageId } : {}),
+        },
+      }),
+      this.prisma.emailCampaignRecipient.updateMany({
+        where: { id: log.recipientId, workspaceId: log.workspaceId },
+        data: isSent
+          ? { status: 'SENT' as const, sentAt: new Date() }
+          : {
+              status: 'FAILED' as const,
+              failedAt: new Date(),
+              ...(log.errorMessage ? { errorMessage: log.errorMessage } : {}),
+            },
+      }),
+    ]);
+  }
+  async reconcileDeliveryFromWebhook(params: {
+    providerMessageId: string;
+    event:
+      | 'DELIVERED'
+      | 'OPENED'
+      | 'CLICKED'
+      | 'REPLIED'
+      | 'BOUNCED'
+      | 'COMPLAINT'
+      | 'UNSUBSCRIBED';
+    metadata?: Record<string, unknown>;
+  }): Promise<boolean> {
+    const { providerMessageId, event, metadata } = params;
+    const recipient = await this.prisma.emailCampaignRecipient.findFirst({
+      where: { providerMessageId, workspaceId: { not: '' } },
+      include: { campaign: true },
+    });
+    if (!recipient) {
+      this.logger.warn(`No recipient found for providerMessageId: ${providerMessageId}`);
+      return false;
+    }
+    const campaignId = recipient.campaignId;
+    const workspaceId = recipient.workspaceId;
+    const statusMap: Record<string, Prisma.EmailCampaignRecipientUpdateInput> = {
+      DELIVERED: { status: 'DELIVERED', deliveredAt: new Date() },
+      OPENED: { status: 'OPENED', openedAt: new Date() },
+      CLICKED: { status: 'CLICKED', clickedAt: new Date() },
+      REPLIED: { status: 'REPLIED', repliedAt: new Date() },
+      BOUNCED: { status: 'BOUNCED', bouncedAt: new Date() },
+      UNSUBSCRIBED: { status: 'UNSUBSCRIBED', unsubscribedAt: new Date() },
+    };
+    const recipientUpdate = statusMap[event] || {};
+    const campaignUpdate = buildCampaignStatUpdate(event);
+    await this.prisma.emailCampaignDelivery.create({
+      data: {
+        campaignId,
+        recipientId: recipient.id,
+        workspaceId,
+        event,
+        providerMessageId,
+        ...(metadata ? { metadata: metadata as Prisma.InputJsonObject } : {}),
+      },
+    });
+    await this.prisma.emailCampaignRecipient.updateMany({
+      where: { id: recipient.id, workspaceId },
+      data: recipientUpdate,
+    });
+    if (campaignUpdate) {
+      await this.prisma.emailCampaign.updateMany({
+        where: { id: campaignId, workspaceId },
+        data: campaignUpdate,
+      });
+    }
+    this.logger.log(`Webhook reconciled: ${event} for ${recipient.email} (campaign ${campaignId})`);
+    return true;
+  }
+}

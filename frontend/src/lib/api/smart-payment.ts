@@ -1,7 +1,54 @@
 import { apiFetch } from './core';
 
+export interface SmartPaymentResultPayload {
+  id: string;
+  paymentLink?: string;
+  pixCode?: string;
+  billingType?: 'PIX' | 'CREDIT_CARD';
+  suggestedMessage?: string;
+}
+
+interface SmartPaymentBackendResponse {
+  paymentId?: string;
+  id?: string;
+  paymentUrl?: string;
+  paymentLink?: string;
+  pixCopyPaste?: string;
+  pixCode?: string;
+  billingType?: 'PIX' | 'BOLETO' | 'CREDIT_CARD';
+  suggestedMessage?: string;
+}
+
+export function normalizeSmartPaymentResult(
+  payload: SmartPaymentBackendResponse,
+): SmartPaymentResultPayload {
+  const result: SmartPaymentResultPayload = {
+    id: payload.paymentId || payload.id || '',
+  };
+
+  const paymentLink = payload.paymentUrl || payload.paymentLink;
+  if (paymentLink) {
+    result.paymentLink = paymentLink;
+  }
+
+  const pixCode = payload.pixCopyPaste || payload.pixCode;
+  if (pixCode) {
+    result.pixCode = pixCode;
+  }
+
+  if (payload.billingType === 'PIX' || payload.billingType === 'CREDIT_CARD') {
+    result.billingType = payload.billingType;
+  }
+
+  if (payload.suggestedMessage) {
+    result.suggestedMessage = payload.suggestedMessage;
+  }
+
+  return result;
+}
+
 export const smartPaymentApi = {
-  create: (
+  create: async (
     workspaceId: string,
     data: {
       amount: number;
@@ -12,11 +59,16 @@ export const smartPaymentApi = {
       method?: string;
       dueDate?: string;
     },
-  ) =>
-    apiFetch<{ paymentLink?: string; pixCode?: string; boletoUrl?: string; id: string }>(
+  ) => {
+    const response = await apiFetch<SmartPaymentBackendResponse>(
       `/kloel/payment/${encodeURIComponent(workspaceId)}/create`,
       { method: 'POST', body: data },
-    ),
+    );
+    return {
+      ...response,
+      data: response.data ? normalizeSmartPaymentResult(response.data) : undefined,
+    };
+  },
 
   negotiate: (
     workspaceId: string,

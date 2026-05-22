@@ -4,7 +4,7 @@ import type { PulseConfig } from './types.manifest';
 import type { PageEntry } from './functional-map-types';
 import { walkFiles } from './parsers/utils';
 import { pathExists, readTextFile } from './safe-fs';
-import { resolveImportPath } from './functional-map.helpers/__parts__/public';
+import { resolveImportPath } from './functional-map.helpers/public';
 import { getFrontendSourceDirs } from './frontend-roots';
 
 // ===== Step 1: Discover all pages =====

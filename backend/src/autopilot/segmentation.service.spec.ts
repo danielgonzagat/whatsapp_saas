@@ -2,7 +2,6 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { SegmentationService, PRESET_SEGMENTS } from './segmentation.service';
 import { PrismaService } from '../prisma/prisma.service';
 
-// PULSE_OK: assertions exist below
 describe('SegmentationService', () => {
   let service: SegmentationService;
   let prisma: jest.Mocked<PrismaService>;

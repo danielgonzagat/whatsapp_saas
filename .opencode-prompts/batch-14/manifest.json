@@ -1,0 +1,25 @@
+{
+  "runId": "kloel-cia-batch-14-macro-proof-map-2026-05-12",
+  "concurrency": 3,
+  "timeoutSec": 600,
+  "staggerMs": 10000,
+  "dir": "/Users/danielpenin/whatsapp_saas",
+  "skipPermissions": true,
+  "tasks": [
+    {
+      "id": "A-pulse-golden-path-map",
+      "title": "Kloel CIA — Pulse and Golden Path map",
+      "promptFile": ".opencode-prompts/batch-14/A-pulse-golden-path-map.md"
+    },
+    {
+      "id": "B-cia-organism-gap-map",
+      "title": "Kloel CIA — Organism gap map",
+      "promptFile": ".opencode-prompts/batch-14/B-cia-organism-gap-map.md"
+    },
+    {
+      "id": "C-external-smoke-runbook-gap",
+      "title": "Kloel CIA — External smoke runbook gap",
+      "promptFile": ".opencode-prompts/batch-14/C-external-smoke-runbook-gap.md"
+    }
+  ]
+}

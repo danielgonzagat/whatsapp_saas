@@ -4,9 +4,14 @@ import { PlanLimitsService } from '../billing/plan-limits.service';
 import { chatCompletionWithRetry } from '../kloel/openai-wrapper';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
 
-const PATTERN_RE = /[.*+?^${}()|[\]\\]/g;
-
 const D_RE = /\D/g;
+const TRANSLATION_PROVIDER_CONFIG_REQUIRED = 'OpenAI configuration is required for translation';
+
+function translationConfigError(): Error {
+  const error = new Error();
+  error.message = TRANSLATION_PROVIDER_CONFIG_REQUIRED;
+  return error;
+}
 
 /**
  * Dicionário de traduções estáticas para mensagens comuns
@@ -230,7 +235,11 @@ export class I18nService {
       }
       // tokenBudget: caller responsible for pre-flight budget check
       await this.ensureBudget(workspaceId);
-      const response = await chatCompletionWithRetry(this.openai, {
+      const openai = this.openai;
+      if (!openai) {
+        throw translationConfigError();
+      }
+      const response = await chatCompletionWithRetry(openai, {
         model: resolveBackendOpenAIModel('writer'),
         messages: [
           {
@@ -258,7 +267,6 @@ export class I18nService {
         return detected as SupportedLanguage;
       }
     } catch (error: unknown) {
-      // PULSE:OK — Language detection non-critical; falls back to pt-BR default
       this.logger.error(`Error detecting language: ${String(error)}`);
     }
 
@@ -273,16 +281,12 @@ export class I18nService {
     lang: SupportedLanguage = 'pt-BR',
     params?: Record<string, string | number>,
   ): string {
-    const langDict = translations[lang] || translations['pt-BR'];
-    let text = langDict[key] || translations['pt-BR'][key] || key;
+    const langDict = translations[lang] ?? translations['pt-BR'];
+    let text = langDict?.[key] ?? translations['pt-BR']?.[key] ?? key;
 
-    // Substitui placeholders {param} por valores
     if (params) {
       for (const [param, value] of Object.entries(params)) {
-        // Escape param key to prevent ReDoS — params are developer-controlled
-        // but we escape defensively as defense-in-depth.
-        const escaped = param.replace(PATTERN_RE, '\\$&');
-        text = text.replace(new RegExp(`\\{${escaped}\\}`, 'g'), String(value));
+        text = text.replaceAll(`{${param}}`, String(value));
       }
     }
 
@@ -312,6 +316,9 @@ export class I18nService {
 
       // tokenBudget: caller responsible for pre-flight budget check
       await this.ensureBudget(workspaceId);
+      if (!this.openai) {
+        return text;
+      }
       const response = await chatCompletionWithRetry(this.openai, {
         model: resolveBackendOpenAIModel('writer'),
         messages: [

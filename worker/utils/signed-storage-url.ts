@@ -19,7 +19,7 @@ const getBackendBaseUrl = (): string =>
 const isInvalidNormalizedPath = (normalized: string): boolean =>
   !normalized || normalized === '.' || normalized.startsWith('..') || normalized.includes('/../');
 
-const normalizeRelativePath = (relativePath: string): string => {
+const normalizeRelativePath = (relativePath: string | null | undefined): string => {
   const normalized = path.posix
     .normalize(String(relativePath || '').replace(BACKSLASH_RE, '/'))
     .replace(LEADING_SLASHES_RE, '');
@@ -45,7 +45,10 @@ interface SignedUrlPayload {
   d?: string;
 }
 
-const buildPayload = (relativePath: string, options: SignedUrlOptions): SignedUrlPayload => {
+const buildPayload = (
+  relativePath: string | null | undefined,
+  options: SignedUrlOptions,
+): SignedUrlPayload => {
   const payload: SignedUrlPayload = { p: normalizeRelativePath(relativePath) };
   if (isValidExpiry(options.expiresInSeconds)) {
     payload.exp = Date.now() + options.expiresInSeconds * 1000;
@@ -61,7 +64,7 @@ const signPayload = (encodedPayload: string): string =>
 
 /** Build signed local storage url. */
 export function buildSignedLocalStorageUrl(
-  relativePath: string,
+  relativePath: string | null | undefined,
   options: SignedUrlOptions = {},
 ): string {
   const payload = buildPayload(relativePath, options);

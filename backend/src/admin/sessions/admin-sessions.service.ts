@@ -1,19 +1,18 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { AdminRole } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
-import { AdminAuditService } from '../audit/admin-audit.service';
 import { adminErrors } from '../common/admin-api-errors';
 
 /** Admin sessions service. */
 @Injectable()
 export class AdminSessionsService {
-  constructor(
-    private readonly prisma: PrismaService,
-    private readonly audit: AdminAuditService,
-  ) {}
+  private readonly logger = new Logger(AdminSessionsService.name);
+
+  constructor(private readonly prisma: PrismaService) {
+    this.logger.log('AdminSessionsService initialized');
+  }
 
   /** List own. */
-  // PULSE_OK: bounded by single admin user's sessions
   async listOwn(adminUserId: string) {
     return this.prisma.adminSession.findMany({
       where: { adminUserId },
@@ -30,7 +29,6 @@ export class AdminSessionsService {
   }
 
   /** List for user. */
-  // PULSE_OK: bounded by single target user's sessions
   async listForUser(targetId: string) {
     return this.prisma.adminSession.findMany({
       where: { adminUserId: targetId },

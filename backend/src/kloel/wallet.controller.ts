@@ -1,6 +1,5 @@
 import { Body, Controller, Delete, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiParam, ApiQuery, ApiTags } from '@nestjs/swagger';
-import { Throttle } from '@nestjs/throttler';
 import { Prisma } from '@prisma/client';
 import { AuditService } from '../audit/audit.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -12,13 +11,14 @@ import { PrismaService } from '../prisma/prisma.service';
 import { formatBrlAmount } from './money-format.util';
 import { AddBankAccountDto } from './dto/wallet-actions.dto';
 import { WalletService } from './wallet.service';
+import { RouteClass } from '../common/throttler/route-class.decorator';
 
 // All dates stored as UTC via Prisma DateTime (toISOString)
 @ApiTags('KLOEL Wallet')
 @ApiBearerAuth()
 @Controller('kloel/wallet')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
-@Throttle({ default: { limit: 15, ttl: 60000 } })
+@RouteClass('mutate')
 export class WalletController {
   constructor(
     private readonly walletService: WalletService,
@@ -42,6 +42,7 @@ export class WalletController {
 
   /** Process sale. */
   @Post(':workspaceId/process-sale')
+  @Idempotent()
   @ApiOperation({ summary: 'Processa uma venda com split' })
   @ApiParam({ name: 'workspaceId', description: 'ID do workspace' })
   async processSale(
@@ -66,6 +67,7 @@ export class WalletController {
 
   /** Confirm payment. */
   @Post(':workspaceId/confirm/:transactionId')
+  @Idempotent()
   @ApiOperation({ summary: 'Confirma pagamento e libera saldo' })
   async confirmPayment(
     @Param('workspaceId') workspaceId: string,
@@ -77,6 +79,7 @@ export class WalletController {
 
   /** Withdraw. */
   @Post(':workspaceId/withdraw')
+  @Idempotent()
   @ApiOperation({ summary: 'Solicita saque' })
   @UseGuards(KycApprovedGuard)
   @KycRequired()
@@ -89,9 +92,91 @@ export class WalletController {
       bankCode?: string;
       agency?: string;
       account?: string;
+      approvalRequestId?: string;
     },
   ) {
-    return this.walletService.requestWithdrawal(workspaceId, body.amount, body);
+    const approvalRequestId =
+      typeof body.approvalRequestId === 'string' ? body.approvalRequestId.trim() : '';
+
+    if (approvalRequestId) {
+      const approval = await this.prisma.approvalRequest.findFirst({
+        where: {
+          id: approvalRequestId,
+          workspaceId,
+          kind: 'wallet:withdrawal',
+          entityType: 'KloelWallet',
+          state: 'APPROVED',
+        },
+        select: { id: true, payload: true },
+      });
+      if (!approval || !approval.payload || typeof approval.payload !== 'object') {
+        return { success: false, message: 'Saque aprovado nao encontrado.' };
+      }
+      const payload = approval.payload as Record<string, unknown>;
+      const amount = typeof payload.amount === 'number' ? payload.amount : Number(payload.amount);
+      if (!Number.isFinite(amount) || amount <= 0) {
+        return { success: false, message: 'Valor de saque aprovado invalido.' };
+      }
+      const bankInfo =
+        payload.bankInfo && typeof payload.bankInfo === 'object'
+          ? (payload.bankInfo as Record<string, unknown>)
+          : {};
+      const result = await this.walletService.requestWithdrawal(workspaceId, amount, bankInfo);
+      if (result.success) {
+        await this.prisma.approvalRequest.updateMany({
+          where: { id: approval.id, workspaceId, state: 'APPROVED' },
+          data: {
+            state: 'COMPLETED',
+            respondedAt: new Date(),
+            response: {
+              action: 'approved_wallet_withdrawal_executed',
+              amount,
+              transactionId: result.transactionId ?? null,
+              executedAt: new Date().toISOString(),
+            },
+          },
+        });
+      }
+      return { ...result, approvalExecuted: result.success === true };
+    }
+
+    if (!body.amount || body.amount <= 0 || !Number.isFinite(body.amount)) {
+      return { success: false, message: 'Valor de saque invalido.' };
+    }
+
+    const approval = await this.prisma.approvalRequest.create({
+      data: {
+        workspaceId,
+        kind: 'wallet:withdrawal',
+        scope: 'workspace',
+        entityType: 'KloelWallet',
+        entityId: workspaceId,
+        state: 'OPEN',
+        title: `Aprovar saque de ${formatBrlAmount(body.amount)}`,
+        prompt: `Saque de ${formatBrlAmount(body.amount)} solicitado para a carteira do workspace. Revise KYC, saldo e dados bancarios antes de autorizar.`,
+        payload: {
+          amount: body.amount,
+          bankInfo: {
+            ...(body.pixKey !== undefined ? { pixKey: body.pixKey } : {}),
+            ...(body.bankCode !== undefined ? { bankCode: body.bankCode } : {}),
+            ...(body.agency !== undefined ? { agency: body.agency } : {}),
+            ...(body.account !== undefined ? { account: body.account } : {}),
+          },
+          risk: 'critical',
+          requiresApproval: true,
+        },
+      },
+      select: { id: true, state: true, title: true, createdAt: true },
+    });
+
+    return {
+      success: true,
+      approvalRequired: true,
+      approvalRequestId: approval.id,
+      approvalState: approval.state,
+      approval,
+      message: 'Saque enviado para aprovacao humana antes da execucao.',
+    };
   }
 
   /** Get transactions. */
@@ -213,10 +298,14 @@ export class WalletController {
     transactions.forEach((t) => {
       const day = new Date(t.createdAt).getDate() - 1;
       if (day >= 0 && day < daysInMonth) {
+        const entry = daily[day];
+        if (!entry) {
+          return;
+        }
         if (t.amount > 0) {
-          daily[day].income += t.amount;
+          entry.income += t.amount;
         } else {
-          daily[day].expense += Math.abs(t.amount);
+          entry.expense += Math.abs(t.amount);
         }
       }
     });

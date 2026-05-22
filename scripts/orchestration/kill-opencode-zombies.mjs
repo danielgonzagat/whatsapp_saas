@@ -63,7 +63,7 @@ function loadActiveFleetPids() {
   }
   const cutoff = Date.now() - ACTIVE_FLEET_WINDOW_MS;
   for (const d of dirs) {
-    if (!d.isDirectory()) continue;
+    if (!d.isDirectory()) {continue;}
     const pidsPath = join(FLEET_ARTIFACTS, d.name, 'pids.json');
     let st;
     try {
@@ -71,12 +71,12 @@ function loadActiveFleetPids() {
     } catch {
       continue;
     }
-    if (st.mtimeMs < cutoff) continue;
+    if (st.mtimeMs < cutoff) {continue;}
     try {
       const data = JSON.parse(readFileSync(pidsPath, 'utf8'));
       if (Array.isArray(data?.pids)) {
         for (const pid of data.pids) {
-          if (Number.isFinite(pid)) exempt.add(Number(pid));
+          if (Number.isFinite(pid)) {exempt.add(Number(pid));}
         }
       }
     } catch {
@@ -99,9 +99,9 @@ function parseEtime(etime) {
   let h = 0;
   let m = 0;
   let s = 0;
-  if (segs.length === 3) [h, m, s] = segs;
-  else if (segs.length === 2) [m, s] = segs;
-  else if (segs.length === 1) [s] = segs;
+  if (segs.length === 3) {[h, m, s] = segs;}
+  else if (segs.length === 2) {[m, s] = segs;}
+  else if (segs.length === 1) {[s] = segs;}
   return days * 86400 + h * 3600 + m * 60 + s;
 }
 
@@ -114,26 +114,26 @@ function listCandidates() {
   const myPpid = process.ppid;
   const candidates = [];
   for (const line of raw.split('\n')) {
-    if (!line.trim()) continue;
+    if (!line.trim()) {continue;}
     const m = line.match(/^\s*(\d+)\s+(\d+)\s+(\S+)\s+(.+)$/);
-    if (!m) continue;
+    if (!m) {continue;}
     const pid = Number(m[1]);
     const ppid = Number(m[2]);
     const etime = m[3];
     const cmd = m[4];
-    if (pid === myPid || pid === myPpid) continue;
+    if (pid === myPid || pid === myPpid) {continue;}
     const isOpencode =
       /\bopencode(-ai)?\b.*\brun\b/.test(cmd) || /\.opencode\/bin\/\.opencode\b/.test(cmd);
     const isClaudeSubagent = /\bclaude\b.*--output-format\b/.test(cmd);
-    if (!isOpencode && !isClaudeSubagent) continue;
+    if (!isOpencode && !isClaudeSubagent) {continue;}
     candidates.push({ pid, ppid, etimeSec: parseEtime(etime), cmd: cmd.slice(0, 120) });
   }
   return candidates;
 }
 
 function isZombie(p) {
-  if (p.ppid === 1) return 'orphan';
-  if (p.etimeSec > maxAgeSec) return 'aged';
+  if (p.ppid === 1) {return 'orphan';}
+  if (p.etimeSec > maxAgeSec) {return 'aged';}
   return null;
 }
 
@@ -171,7 +171,7 @@ async function main() {
           try {
             process.kill(z.pid, 'SIGKILL');
             const r = results.find((x) => x.pid === z.pid);
-            if (r) r.action = 'SIGKILL';
+            if (r) {r.action = 'SIGKILL';}
           } catch {
             /* already gone */
           }
@@ -182,7 +182,7 @@ async function main() {
     }
   } else {
     for (const z of zombies)
-      results.push({ pid: z.pid, reason: z.reason, action: 'dry-run', cmd: z.cmd });
+      {results.push({ pid: z.pid, reason: z.reason, action: 'dry-run', cmd: z.cmd });}
   }
 
   const summary = {

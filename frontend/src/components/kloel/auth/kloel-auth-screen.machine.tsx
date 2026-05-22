@@ -19,12 +19,12 @@ export function AuthManifestTyping() {
   const basePhrase = 'O Marketing Digital não sabe o que você precisa, ';
   const accentPhrase = 'o Kloel sabe.';
   const phrase = `${basePhrase}${accentPhrase}`;
-  const [text, setText] = useState('');
+  const [animatedText, setAnimatedText] = useState('');
   const prefersReducedMotion = usePrefersReducedMotion();
+  const text = prefersReducedMotion ? phrase : animatedText;
 
   useEffect(() => {
     if (prefersReducedMotion) {
-      setText(phrase);
       return;
     }
 
@@ -42,13 +42,13 @@ export function AuthManifestTyping() {
           return;
         }
         index += 1;
-        setText(source.slice(0, index));
+        setAnimatedText(source.slice(0, index));
         if (index >= source.length) {
           schedule(() => {
             if (!alive) {
               return;
             }
-            setText('');
+            setAnimatedText('');
             typePhrase(source);
           }, TYPING_RESTART_DELAY_MS);
           return;
@@ -58,7 +58,6 @@ export function AuthManifestTyping() {
       schedule(step, TYPING_START_DELAY_MS);
     };
 
-    setText('');
     typePhrase(phrase);
 
     return () => {

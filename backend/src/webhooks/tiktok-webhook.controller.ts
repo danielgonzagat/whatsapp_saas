@@ -10,15 +10,15 @@ import {
   Logger,
   Post,
   Req,
-  UseGuards,
 } from '@nestjs/common';
-import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import type { Redis } from 'ioredis';
 import { Public } from '../auth/public.decorator';
 import { RawBodyRequest } from '../common/interfaces/authenticated-request.interface';
 import { safeCompareStrings } from '../common/utils/crypto-compare.util';
+import { OmnichannelService } from '../inbox/omnichannel.service';
 import { WebhooksService } from './webhooks.service';
 
+import { RouteClass } from '../common/throttler/route-class.decorator';
 type TikTokWebhookPayload = Record<string, unknown> | Array<unknown> | string | number | null;
 
 interface ParsedTikTokSignature {
@@ -111,13 +111,14 @@ function describeEvent(body: TikTokWebhookPayload): string {
  * `TikTok-Signature` whenever TikTok sends one.
  */
 @Controller('webhooks/tiktok')
-@UseGuards(ThrottlerGuard)
+@RouteClass('webhook')
 export class TikTokWebhookController {
   private readonly logger = new Logger(TikTokWebhookController.name);
 
   constructor(
     @InjectRedis() private readonly redis: Redis,
     private readonly webhooksService: WebhooksService,
+    private readonly omnichannelService: OmnichannelService,
   ) {}
 
   /** Simple health probe for manual verification in a browser/curl. */
@@ -135,7 +136,6 @@ export class TikTokWebhookController {
   /** Receive TikTok webhook events and acknowledge the callback test. */
   @Public()
   @Post()
-  @Throttle({ default: { limit: 2000, ttl: 60000 } })
   @HttpCode(200)
   async handleWebhook(
     @Body() body: TikTokWebhookPayload,
@@ -144,45 +144,45 @@ export class TikTokWebhookController {
     @Req() req?: RawBodyRequest,
   ) {
     const parsedSignature = parseTikTokSignatureHeader(signatureHeader);
-    const hasSignatureHeader = String(signatureHeader || '').trim().length > 0;
+    const clientSecret = String(process.env.TIKTOK_CLIENT_SECRET || '').trim();
 
-    if (hasSignatureHeader && !parsedSignature) {
-      this.logger.warn('TikTok webhook rejected: malformed TikTok-Signature header');
-      throw new ForbiddenException('Malformed TikTok webhook signature');
-    }
-
-    if (parsedSignature) {
-      const clientSecret = String(process.env.TIKTOK_CLIENT_SECRET || '').trim();
-      const rawBody = stringifyRawBody(req, body);
-
-      if (!clientSecret) {
+    if (clientSecret) {
+      if (!parsedSignature) {
         this.logger.warn(
-          'TikTok webhook signature received but TIKTOK_CLIENT_SECRET is not configured',
+          'TikTok webhook rejected: missing valid signature while TIKTOK_CLIENT_SECRET is configured',
         );
-      } else {
-        const expectedDigest = createHmac('sha256', clientSecret)
-          .update(`${parsedSignature.timestamp}.${rawBody}`)
-          .digest();
-        const expectedHex = expectedDigest.toString('hex');
-        const expectedBase64 = expectedDigest.toString('base64');
-        const expectedBase64Url = expectedDigest.toString('base64url');
-        const expectedBase64NoPadding = expectedBase64.replace(/=+$/g, '');
-        const providedSignature = parsedSignature.signature;
-        const providedSignatureSpaceFixed = providedSignature.replace(/\s+/g, '+');
-        const signatureMatches =
-          safeCompareStrings(providedSignature, expectedHex) ||
-          safeCompareStrings(providedSignature, expectedBase64) ||
-          safeCompareStrings(providedSignature, expectedBase64Url) ||
-          safeCompareStrings(providedSignature, expectedBase64NoPadding) ||
-          safeCompareStrings(providedSignatureSpaceFixed, expectedBase64) ||
-          safeCompareStrings(providedSignatureSpaceFixed, expectedBase64NoPadding);
+        throw new ForbiddenException('Missing TikTok webhook signature');
+      }
 
-        if (!signatureMatches) {
-          this.logger.warn(
-            `TikTok webhook rejected: invalid signature (encoding=${parsedSignature.encoding})`,
-          );
-          throw new ForbiddenException('Invalid TikTok webhook signature');
-        }
+      const rawBody = stringifyRawBody(req, body);
+      const expectedDigest = createHmac('sha256', clientSecret)
+        .update(`${parsedSignature.timestamp}.${rawBody}`)
+        .digest();
+      const expectedHex = expectedDigest.toString('hex');
+      const expectedBase64 = expectedDigest.toString('base64');
+      const expectedBase64Url = expectedDigest.toString('base64url');
+      const expectedBase64NoPadding = expectedBase64.replace(/=+$/g, '');
+      const providedSignature = parsedSignature.signature;
+      const providedSignatureSpaceFixed = providedSignature.replace(/\s+/g, '+');
+      const signatureMatches =
+        safeCompareStrings(providedSignature, expectedHex) ||
+        safeCompareStrings(providedSignature, expectedBase64) ||
+        safeCompareStrings(providedSignature, expectedBase64Url) ||
+        safeCompareStrings(providedSignature, expectedBase64NoPadding) ||
+        safeCompareStrings(providedSignatureSpaceFixed, expectedBase64) ||
+        safeCompareStrings(providedSignatureSpaceFixed, expectedBase64NoPadding);
+
+      if (!signatureMatches) {
+        this.logger.warn(
+          `TikTok webhook rejected: invalid signature (encoding=${parsedSignature.encoding})`,
+        );
+        throw new ForbiddenException('Invalid TikTok webhook signature');
+      }
+    } else {
+      const hasSignatureHeader = String(signatureHeader || '').trim().length > 0;
+      if (hasSignatureHeader && !parsedSignature) {
+        this.logger.warn('TikTok webhook rejected: malformed TikTok-Signature header');
+        throw new ForbiddenException('Malformed TikTok webhook signature');
       }
     }
 
@@ -202,6 +202,16 @@ export class TikTokWebhookController {
       await this.webhooksService
         .logWebhookEvent('tiktok', describeEvent(body), dedupeKey, body as Record<string, unknown>)
         .catch(() => {});
+    }
+
+    if (body && typeof body === 'object' && !Array.isArray(body)) {
+      await this.omnichannelService.processTikTokWebhook(body).catch((error: unknown) => {
+        this.logger.warn(
+          `TikTok webhook inbox routing failed: ${
+            error instanceof Error ? error.message : 'unknown_error'
+          }`,
+        );
+      });
     }
 
     this.logger.log(`TikTok webhook acknowledged: event=${describeEvent(body)}`);

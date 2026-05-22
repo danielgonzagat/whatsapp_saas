@@ -1,0 +1,26 @@
+{
+  "runId": "batch-8-2026-05-11c",
+  "concurrency": 3,
+  "timeoutSec": 0,
+  "staggerMs": 60000,
+  "dir": "/Users/danielpenin/whatsapp_saas",
+  "skipPermissions": true,
+  "_note": "Batch 8 — Wave H coverage expansion in parallel with batch-7 strict-mode. Conflict-free (batch-7 modifies .service.ts; batch-8 creates .spec.ts). Stagger 60s. Background auth granted by Daniel 2026-05-11 for PR#276 closure.",
+  "tasks": [
+    {
+      "id": "H-coverage-checkout-whatsapp",
+      "title": "Wave H/Coverage — Checkout + WhatsApp specs (~28 new)",
+      "promptFile": ".opencode-prompts/batch-8/wave-h-coverage-checkout-whatsapp.md"
+    },
+    {
+      "id": "H-coverage-admin-rest",
+      "title": "Wave H/Coverage-ADMIN — admin services rest (~17 new)",
+      "promptFile": ".opencode-prompts/batch-8/wave-h-coverage-admin-rest.md"
+    },
+    {
+      "id": "H-coverage-autopilot-billing",
+      "title": "Wave H/Coverage — Autopilot + Billing (~14 new)",
+      "promptFile": ".opencode-prompts/batch-8/wave-h-coverage-autopilot-billing.md"
+    }
+  ]
+}

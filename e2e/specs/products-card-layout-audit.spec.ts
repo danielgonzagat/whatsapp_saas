@@ -12,11 +12,29 @@ async function captureProductsCard(
   slug: string,
 ) {
   const auth = await ensureE2EAdmin(request);
-  const { appUrl } = getE2EBaseUrls();
+  const { appUrl, apiUrl } = getE2EBaseUrls();
+  const productRes = await request.post(`${apiUrl}/products`, {
+    headers: {
+      Authorization: `Bearer ${auth.token}`,
+      'x-workspace-id': auth.workspaceId,
+    },
+    data: {
+      name: `E2E Layout Product ${slug} ${Date.now()}`,
+      description: 'Product fixture for the card layout audit.',
+      price: 9900,
+      category: 'digital',
+      status: 'APPROVED',
+    },
+  });
+  if (![200, 201].includes(productRes.status())) {
+    throw new Error(
+      `products-card-layout-audit: product fixture failed (${productRes.status()}): ${await productRes.text()}`,
+    );
+  }
 
   await page.setViewportSize(viewport);
   await bootstrapAuthenticatedPage(page, auth, { landingPath: '/products' });
-  await page.goto(`${appUrl}/products`, { waitUntil: 'networkidle' });
+  await page.goto(`${appUrl}/products`, { waitUntil: 'domcontentloaded' });
 
   const editButton = page.getByRole('button', { name: /editar/i }).first();
   await expect(editButton).toBeVisible({ timeout: 15000 });
@@ -29,7 +47,9 @@ async function captureProductsCard(
   });
 
   return page.evaluate(() => {
-    const edit = document.querySelector('button[aria-label="Editar"]') as HTMLElement | null;
+    const edit = Array.from(document.querySelectorAll('button')).find((button) =>
+      /editar/i.test(button.getAttribute('aria-label') || button.textContent || ''),
+    ) as HTMLElement | null;
     // Anchor card discovery to the edit button so the test does not depend on
     // exhaustive textContent scans. Walk ancestors until we find a div whose
     // descendants include both 'Preço' and a status (Rascunho/Ativo/Em analise).
@@ -39,7 +59,7 @@ async function captureProductsCard(
       while (cursor && cursor !== document.body) {
         const text = (cursor.textContent || '').trim();
         if (
-          text.includes('Preço') &&
+          /(Preço|Preco)/.test(text) &&
           (text.includes('Rascunho') || text.includes('Ativo') || text.includes('Em analise'))
         ) {
           firstCard = cursor;

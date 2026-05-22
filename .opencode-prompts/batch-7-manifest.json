@@ -1,0 +1,31 @@
+{
+  "runId": "batch-7-2026-05-11b",
+  "concurrency": 4,
+  "timeoutSec": 0,
+  "staggerMs": 45000,
+  "dir": "/Users/danielpenin/whatsapp_saas",
+  "skipPermissions": true,
+  "_note": "Batch 7 — 4 prompts: Wave Q frontend (95 errors), Wave Q backend kloel (~60), Wave Q backend payments+marketing (~50), Wave Q backend rest (~200). Stagger 45s to give each subagent time to clear boot window before next launches. Background dispatch authorized by Daniel for PR#276 closure mission.",
+  "tasks": [
+    {
+      "id": "Q-10d-frontend-rest",
+      "title": "Wave Q/10d — Frontend strict-mode (95 → 0)",
+      "promptFile": ".opencode-prompts/batch-7/wave-q10-frontend-rest.md"
+    },
+    {
+      "id": "Q-7-backend-kloel",
+      "title": "Wave Q/7 — Backend strict-mode kloel (~60)",
+      "promptFile": ".opencode-prompts/batch-7/wave-q-backend-kloel.md"
+    },
+    {
+      "id": "Q-8-backend-payments-marketing",
+      "title": "Wave Q/8 — Backend strict-mode payments + marketing + webhooks (~50)",
+      "promptFile": ".opencode-prompts/batch-7/wave-q-backend-payments-marketing.md"
+    },
+    {
+      "id": "Q-9-backend-rest",
+      "title": "Wave Q/9 — Backend strict-mode rest of /src (~200)",
+      "promptFile": ".opencode-prompts/batch-7/wave-q-backend-rest.md"
+    }
+  ]
+}

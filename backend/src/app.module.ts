@@ -3,6 +3,7 @@ import { Logger, MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { SentryModule } from '@sentry/nestjs/setup';
+import type Redis from 'ioredis';
 // rawbody removed (stripe webhook controller removed)
 
 import { AppController } from './app.controller';
@@ -46,17 +47,20 @@ import { WhatsappModule } from './whatsapp/whatsapp.module';
 import { WorkspaceModule } from './workspaces/workspace.module';
 
 import { ThrottlerModule } from '@nestjs/throttler';
-import { TestModeThrottlerGuard } from './common/test-mode-throttler.guard';
+import { THROTTLE_TIERS } from './common/throttler/throttler-config';
+import { RouteClassGuard } from './common/throttler/route-class.guard';
 
 import { AdminModule } from './admin/admin.module';
 import { AffiliateModule } from './affiliate/affiliate.module';
 import { AiBrainModule } from './ai-brain/ai-brain.module';
 import { AnalyticsModule } from './analytics/analytics.module';
+import { AnunciosModule } from './anuncios/anuncios.module';
 import { AudioModule } from './audio/audio.module';
 import { AuditModule } from './audit/audit.module';
 import { getJwtSecret } from './auth/jwt-config';
 import { AutopilotModule } from './autopilot/autopilot.module';
 import { CalendarModule } from './calendar/calendar.module';
+import { ChatModule } from './chat/chat.module';
 import { CheckoutModule } from './checkout/checkout.module';
 import { CiaModule } from './cia/cia.module';
 import { PromptSanitizerMiddleware } from './common/middleware/prompt-sanitizer.middleware';
@@ -65,24 +69,70 @@ import { StorageModule } from './common/storage/storage.module';
 import { CookieConsentModule } from './cookie-consent/cookie-consent.module';
 import { ComplianceModule } from './compliance/compliance.module';
 import { CopilotModule } from './copilot/copilot.module';
+
 import { FollowUpModule } from './followup/followup.module';
 import { GdprModule } from './gdpr/gdpr.module';
 import { GrowthModule } from './growth/growth.module';
 import { I18nModule } from './i18n/i18n.module';
 import { KloelModule } from './kloel/kloel.module';
 import { AuditLogMiddleware } from './kloel/middleware';
+import { IdempotencyMiddleware } from './common/idempotency/idempotency.middleware';
+import { IdempotencyModule } from './common/idempotency/idempotency.module';
 import { KycModule } from './kyc/kyc.module';
 import { MarketingModule } from './marketing/marketing.module';
 import { MarketplaceModule } from './marketplace/marketplace.module';
 import { MemberAreaModule } from './member-area/member-area.module';
 import { MetaModule } from './meta/meta.module';
+import { CorrelationIdMiddleware } from './common/observability/correlation-id.middleware';
+import { ObservabilityModule } from './common/observability/observability.module';
 import { OpsAlertModule } from './observability/ops-alert.module';
 import { OpsModule } from './ops/ops.module';
 import { PartnershipsModule } from './partnerships/partnerships.module';
+import { AbiAbModule } from './kloel/abi-ab/abi-ab.module';
+import { AffilModule } from './kloel/affil/affil.module';
+import { EcosysModule } from './kloel/ecosys/ecosys.module';
+import { LegitModule } from './kloel/legit/legit.module';
+import { MoveModule } from './kloel/move/move.module';
+import { GoalFieldModule } from './kloel/goal-field/goal-field.module';
+import { DailyDashboardModule } from './kloel/daily-dashboard/daily-dashboard.module';
+import { ColdstartModule } from './kloel/coldstart/coldstart.module';
+import { CashModule } from './kloel/cash/cash.module';
+import { HypproofModule } from './kloel/hypproof/hypproof.module';
+import { InsightModule } from './kloel/insight/insight.module';
+import { OfferModule } from './kloel/offer/offer.module';
+import { PostsaleConsumersModule } from './kloel/postsale-consumers/postsale-consumers.module';
+import { RecoveryModule } from './kloel/recovery/recovery.module';
+import { DelegationModule } from './kloel/delegation/delegation.module';
+import { LineageModule } from './kloel/lineage/lineage.module';
+import { LocalIdentityModule } from './kloel/local-identity/local-identity.module';
+import { MaturityModule } from './kloel/maturity/maturity.module';
+import { MindModule } from './kloel/mind/mind.module';
+import { SpineModule } from './kloel/spine/spine.module';
+import { VtierModule } from './kloel/v-tier/v-tier.module';
+import { TeamModule as KloelTeamModule } from './kloel/team/team.module';
+import { TrustModule } from './kloel/trust/trust.module';
+import { WisdomModule } from './kloel/wisdom/wisdom.module';
+import { AgencyModule } from './kloel/agency/agency.module';
+import { HealthyMoneyModule } from './kloel/healthy-money/healthy-money.module';
+import { CapabilityRegistryModule } from './kloel/capability-registry/capability-registry.module';
+import { ClarityModule } from './kloel/clarity/clarity.module';
+import { CommemModule } from './kloel/commem/commem.module';
+import { CreatorModule } from './kloel/creator/creator.module';
+import { RoleModule } from './kloel/role/role.module';
+import { WowModule } from './kloel/wow/wow.module';
+import { ChannelModule } from './kloel/channel/channel.module';
+import { ChannelPolicyModule } from './kloel/channel-policy/channel-policy.module';
+import { DefensModule } from './kloel/defens/defens.module';
+import { EvolModule } from './kloel/evol/evol.module';
+import { PulseGatesModule } from './kloel/pulse-gates/pulse-gates.module';
+import { IncentModule } from './kloel/incent/incent.module';
 import { PipelineModule } from './pipeline/pipeline.module';
+import { ProductCategoriesModule } from './product-categories/product-categories.module';
 import { PublicApiModule } from './public-api/public-api.module';
 import { PulseModule } from './pulse/pulse.module';
 import { ReportsModule } from './reports/reports.module';
+import { TikTokAdsModule } from './tiktok-ads/tiktok-ads.module';
+import { UnsubscribeModule } from './unsubscribe/unsubscribe.module';
 import { VideoModule } from './video/video.module';
 import {
   PaymentWebhookStripeController,
@@ -90,8 +140,17 @@ import {
 } from './webhooks/payment-webhook.controller';
 import { StripeWebhookLedgerService } from './webhooks/stripe-webhook-ledger.service';
 
+/**
+ * @cluster whatsapp_saas/backend/app.module.ts
+ * L11 multi-agent TaskGraph annotation (batched by tools/auto-pr/batch-job.mjs).
+ */
 const appLogger = new Logger('AppModule');
 const isProd = process.env.NODE_ENV === 'production';
+const REDIS_GLOBAL_LISTENER_BUDGET = 256;
+
+function setRedisClientListenerBudget(client: Redis): void {
+  client.setMaxListeners(Math.max(client.getMaxListeners(), REDIS_GLOBAL_LISTENER_BUDGET));
+}
 
 /** App module. */
 @Module({
@@ -108,13 +167,11 @@ const isProd = process.env.NODE_ENV === 'production';
       }),
     }),
 
-    // Rate Limiting Global
-    ThrottlerModule.forRoot([
-      {
-        ttl: 60000,
-        limit: 60,
-      },
-    ]),
+    // Rate Limiting Global — route-class based tiers with per-tenant isolation
+    // Route class definitions and documentation: src/common/throttler/throttler-config.ts
+    ThrottlerModule.forRoot({
+      throttlers: THROTTLE_TIERS,
+    }),
 
     // Internacionalização global
     I18nModule,
@@ -128,8 +185,8 @@ const isProd = process.env.NODE_ENV === 'production';
     // Global cache service (wraps the global Redis connection)
     CacheModule,
 
-    // Redis para filas e workers - SEMPRE carregado para satisfazer @InjectRedis()
-    // Se Redis não estiver configurado, usa URL fictícia e conexões falham silenciosamente
+    // Redis global para cache, rate limit, idempotência e eventos.
+    // Em produção o resolver falha cedo quando Redis não estiver configurado.
     RedisModule.forRootAsync({
       useFactory: () => {
         const isTestEnv = !!process.env.JEST_WORKER_ID || process.env.NODE_ENV === 'test';
@@ -176,6 +233,7 @@ const isProd = process.env.NODE_ENV === 'production';
             },
             reconnectOnError: () => configured, // Reconecta apenas se configurado
           },
+          onClientReady: setRedisClientListenerBudget,
         };
       },
     }),
@@ -205,10 +263,12 @@ const isProd = process.env.NODE_ENV === 'production';
     MarketplaceModule,
     AuditModule,
     AutopilotModule,
-    CopilotModule,
+
     AiBrainModule,
     GrowthModule,
     CalendarModule, // 📅 Integração com calendários
+    ChatModule, // 💬 Chat conversation persistence
+    CopilotModule, // 💬 Sales copilot HTTP + socket surface
     KloelModule, // 🧠 KLOEL - IA Comercial Autônoma
     CiaModule, // 🧠 CIA Runtime Surface
     FollowUpModule, // 📅 Agendamento de follow-ups
@@ -223,16 +283,60 @@ const isProd = process.env.NODE_ENV === 'production';
     ReportsModule, // Reports & Analytics (Vendas, Assinaturas, Churn, etc.)
     MetaModule, // Meta Platform (OAuth, Graph API, Webhooks)
     PipelineModule, // 🧭 Sales pipeline / CRM board
+    ProductCategoriesModule, // 🏷️ Workspace-scoped product categories
     GdprModule, // LGPD/GDPR data export and deletion
     CookieConsentModule, // Cookie consent management
     ComplianceModule, // OAuth/Meta/LGPD compliance callbacks and user rights endpoints
     FinancialAlertModule, // Financial alerting (global)
     OpsAlertModule, // OPS critical error alerting (global)
+    CapabilityRegistryModule, // 📋 Capability Registry — real runtime evidence for no-overclaim gate (PCI.4 §3.4)
+    AbiAbModule, // 🔬 UTP-ABI-005 — A/B telemetry for ABI substitution decisions
+    LineageModule, // 🧬 Camada I — Genesis + Lineage Ledger + Identity Projector (cognitive organism)
+    MindModule, // 🧠 MIND substrate — valence/attention/hebbian/consolidation/multi-timescale/BG (UTP-MIND-*)
+    LocalIdentityModule, // 🏷️ Camada V — Per-workspace operational profile (UTP-LOCAL-IDENT-001..007)
+    GoalFieldModule, // 🎯 Camada III — Dynamic Goal Field (29 detectors + emerge/select/survive/shadow)
+    DailyDashboardModule, // 📊 R6 — Daily commercial dashboard (hot leads, abandoned carts, mood, opportunities)
+    InsightModule, // 💡 Camada VII — Strategic Insight Engine (detectors + ranker + confidence + delivery)
+    OfferModule, // 🎯 Camada XV — Offer Evolution Intelligence (bonus, promise, versioning, positioning, pricing)
+    MaturityModule, // 📊 Camada VIII — Commercial Maturity Recognition (signals + classify + filter + guard)
+    SpineModule, // 🧪 Spine — in-process event spine (B17 surface emitters publish here)
+    PulseGatesModule, // 🛡️ PULSE gates — bridge gate verdicts into spine events (UTP-PULSE-SPINE-001)
+    RecoveryModule, // 🛡️ Camada XIV — Mature Failure Recovery (self-detection, acknowledgment, explanation, non-repeat, tactics, narrative, trust-after-error)
+    DelegationModule, // ⚖️ Camada XIII — Delegation Confidence Tracking (state tracker, graduation, suggestions, rollback, evidence)
+    TrustModule, // 🛡️ Camada IX — Trust Capital Protection (fatigue, desperation, brand, silence, handoff, recovery)
+    KloelTeamModule, // 👥 Camada XII — Team Augmentation (pre-call context, next-best-action, forgotten-followup, blind-spot, handoff)
+    ColdstartModule, // 🚀 Camada XVII — Cold-Start Discovery (no-history → first truth in ≤30 days)
+    CashModule, // 💰 Camada XXII — Cash Protection (track, project, runway, risk, volatility, protective actions, unsafe operation blocking)
+    HypproofModule, // 🧪 Camada XX — Hypothesis → Experiment → Proof → Belief → Narrative (UTP-HYPPROOF-001..008)
+    PostsaleConsumersModule, // 📦 Camada XVIII — Post-Sale & LTV Engine (anti-remorse, activation, LV, churn, retention, win-back, LTV)
+    WisdomModule, // 🧠 Camada VI — Cross-Workspace Commercial Wisdom (k-anonymity, diff-privacy, patterns)
+    WowModule, // ⚡ Camada XI — First-Hour Wow (cold-start ingestion, pattern detection, evidence delivery)
+    HealthyMoneyModule, // 💰 Camada XIX — Healthy Money Optimization (revenue quality, margin, refund risk, brand wear, sale blocking)
+    AgencyModule, // 🏢 Camada XXV — Agency Intelligence (portfolio state, per-client context, priority ranking, margin, churn risk, load balance, knowledge leak guard, handoff)
+    ClarityModule, // 🎯 Camada XX — Clarity Cognitive Prioritization (attention ranking, hierarchy projection, noise filter, anxiety detection, feedback loop, short narrative)
+    CommemModule, // 🧠 Camada XXI — Commem: Memory Exporter (ledger aggregation, memory projection, capsule export, time machine, value quantification, narrative, attribution guard)
+    CreatorModule, // 🎬 Camada XXVI — Creator Intelligence (audience-partner fit, mention timing, saturation, authenticity, engagement-vs-conversion, trust capital)
+    RoleModule, // 🎭 Camada XXIII — Role-Aware Commercial Intelligence (role detection, leverage map, recommendation guard, multi-hat, hierarchy/wisdom extenders) (UTP-ROLE-001..008)
+    AffilModule, // 🤝 Camada XXIII — Affiliate Intelligence & Protection (offer quality, producer trust, audience fit, angle, fatigue, waste, budget, account, commission, switch, scale vs abandon, discovery loop) (UTP-AFFIL-001..012)
+    MoveModule, // 🏃 Camada XXXI — Real Movement (friction detection, step decomposition, tiny action suggestion, partial execution, alternative routes, pattern learning, no-blame tone) (UTP-MOVE-001..007)
+    ChannelModule, // 📡 Camada XXVIII — Channel Survival Intelligence (concentration, health, ban-risk, policy, contingency, migration, diversification)
+    ChannelPolicyModule, // 📋 Per-channel terminal valence + truthMode policy registry
+    DefensModule, // 🛡️ Camada 30 — Defensibility Assets (asset registry, growth, owned audience, social proof, case library, positioning, authority, tradeoffs, narrative)
+    EvolModule, // 🧬 Camada XXXII — Self-Evolution (gap detection, proposals, human authorization, agent dispatch, experiment runner, rollback, firewall, codacy enforcement, audit)
+    IncentModule, // 🤝 Camada XXXIV — Incentive Integrity (explain, detect conflict, silence, monitor bias, disclose, audit, feedback, attribution)
+    EcosysModule, // 🤝 Camada XXVII — Ecosystem Intelligence (cross-role fits, privacy guard, conflict detector, suggestion delivery)
+    LegitModule, // ⚖️ Camada LEGIT — Legal & Regulatory Compliance (LGPD/GDPR/CCPA, policies, consent, regulated content, image rights, risk flags, legal consult)
     PulseModule, // PULSE live organism collector
+    VtierModule, // V-tier certification — V1..V16 runtime verification (cognitive organism)
+    AnunciosModule, // 📊 Anuncios — Meta/Google/TikTok ad accounts, campaigns, insights
+    TikTokAdsModule, // 🎵 TikTok Ads — OAuth + Events API + sync
     AdminModule, // adm.kloel.com identity, audit, permissions (SP-0..2)
     PaymentsModule, // 💳 Stripe Connect — split, ledger, fraud, charge, webhook (FASES 1-7)
     MarketplaceTreasuryModule, // 💼 Marketplace treasury ledger / reconciliation
     WalletModule, // ⚡ Prepaid wallet for usage-metered services (FASE 4)
+    UnsubscribeModule, // ✉️ Token-signed unsubscribe endpoint (LGPD/GDPR)
+    IdempotencyModule, // 🔁 Idempotency middleware + service
+    ObservabilityModule, // 🔍 Correlation-id + OpenTelemetry spans
   ],
   controllers: [AppController, PaymentWebhookStripeController, PaymentWebhookGenericController],
   providers: [
@@ -249,7 +353,7 @@ const isProd = process.env.NODE_ENV === 'production';
     },
     {
       provide: APP_GUARD,
-      useClass: TestModeThrottlerGuard,
+      useClass: RouteClassGuard,
     },
     {
       provide: APP_GUARD,
@@ -295,6 +399,8 @@ export class AppModule implements NestModule {
         'copilot/*path',
         'autopilot/*path',
       );
+    consumer.apply(IdempotencyMiddleware).forRoutes('*path');
+    consumer.apply(CorrelationIdMiddleware).forRoutes('*path');
     consumer.apply(AuditLogMiddleware).forRoutes('*path');
   }
 }

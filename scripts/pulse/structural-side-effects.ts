@@ -6,7 +6,7 @@ import { readTextFile } from './safe-fs';
 import {
   deriveUnitValue,
   discoverKnownHttpClientMethods,
-} from './dynamic-reality-kernel/__parts__/catalog-arithmetic';
+} from './dynamic-reality-kernel/catalog-arithmetic';
 
 type SideEffectSignal =
   | 'network_call'

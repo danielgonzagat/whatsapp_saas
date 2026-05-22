@@ -1,5 +1,29 @@
 import { LooseObject, parseObject, safeStr, toStringList } from './common.helpers';
 
+export interface CampaignMetrics {
+  sentCount: number;
+  deliveredCount: number;
+  readCount: number;
+  failedCount: number;
+  repliedCount: number;
+  convertedCount: number;
+  conversionRate: number;
+  totalSpentCents: number;
+  revenueCents: number;
+  roas: number;
+}
+
+export interface AdAlertContext {
+  workspaceId: string;
+  ruleId: string;
+  ruleName: string;
+  campaignBudgetExhausted: boolean;
+  metric: CampaignMetrics;
+  threshold: string;
+  windowHours: number;
+  campaign: string;
+}
+
 export function findLinkedCampaignForProductCampaign(
   campaigns: LooseObject[],
   productCampaign: LooseObject,

@@ -1,6 +1,5 @@
 import { Body, Controller, Delete, Get, Param, Post, Req, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Roles } from '../auth/roles.decorator';
 import { resolveWorkspaceId } from '../auth/workspace-access';
@@ -9,13 +8,14 @@ import { Idempotent } from '../common/idempotency.guard';
 import { AuthenticatedRequest } from '../common/interfaces';
 import { AttachPaymentMethodDto } from './dto/attach-payment-method.dto';
 import { PaymentMethodService } from './payment-method.service';
+import { RouteClass } from '../common/throttler/route-class.decorator';
 
 /** Payment method controller. */
 @ApiTags('Billing - Payment Methods')
 @ApiBearerAuth()
 @Controller('billing/payment-methods')
-@UseGuards(JwtAuthGuard, WorkspaceGuard, ThrottlerGuard)
-@Throttle({ default: { limit: 20, ttl: 60000 } })
+@UseGuards(JwtAuthGuard, WorkspaceGuard)
+@RouteClass('mutate')
 export class PaymentMethodController {
   constructor(private readonly paymentMethodService: PaymentMethodService) {}
 

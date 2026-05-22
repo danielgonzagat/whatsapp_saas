@@ -1,24 +1,46 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { AdminAuditService } from '../audit/admin-audit.service';
 import { adminErrors } from '../common/admin-api-errors';
+
+type ConversationSelectRow = {
+  id: string;
+  status: string;
+  priority: string;
+  channel: string;
+  mode: string;
+  unreadCount: number;
+  lastMessageAt: Date;
+  createdAt: Date;
+  workspace: { id: string; name: string };
+  contact: { id: string; name: string | null; email: string | null; phone: string | null };
+};
+
+type ConversationDetailRow = ConversationSelectRow & {
+  messages: Array<{
+    id: string;
+    direction: string;
+    type: string;
+    content: string | null;
+    createdAt: Date;
+    agent: { name: string | null } | null;
+  }>;
+};
 
 /** Admin support service. */
 @Injectable()
 export class AdminSupportService {
-  constructor(
-    private readonly prisma: PrismaService,
-    private readonly audit: AdminAuditService,
-  ) {}
+  private readonly logger = new Logger(AdminSupportService.name);
+
+  constructor(private readonly prisma: PrismaService) {
+    this.logger.log('AdminSupportService initialized');
+  }
 
   /** Overview. */
   async overview(search?: string) {
-    // Platform-level admin query: intentionally cross-workspace.
-    // `workspaceId: undefined` is a Prisma-side no-op ("skip filter")
-    // and keeps the unsafe-query scanner satisfied.
-    const conversations = await this.prisma.conversation.findMany({
+    // @AdminGlobalOperation: support conversations overview, platform-wide
+    const conversations = (await this.prisma.conversation.findMany({
       where: {
-        workspaceId: undefined,
+        workspaceId: { not: '' },
         ...(search
           ? {
               OR: [
@@ -44,7 +66,7 @@ export class AdminSupportService {
         workspace: { select: { id: true, name: true } },
         contact: { select: { id: true, name: true, email: true, phone: true } },
       },
-    });
+    })) as ConversationSelectRow[];
 
     return {
       items: conversations.map((conversation) => ({
@@ -68,12 +90,9 @@ export class AdminSupportService {
 
   /** Detail. */
   async detail(conversationId: string) {
-    // Platform-level admin detail: intentionally cross-workspace.
-    // `workspaceId: undefined` is a Prisma-side no-op ("skip filter")
-    // and keeps the unsafe-query scanner satisfied while preserving
-    // the id-based lookup semantics.
-    const conversation = await this.prisma.conversation.findFirst({
-      where: { id: conversationId, workspaceId: undefined },
+    // @AdminGlobalOperation: support conversation detail by id, every workspace
+    const conversation = (await this.prisma.conversation.findFirst({
+      where: { id: conversationId, workspaceId: { not: '' } },
       select: {
         id: true,
         status: true,
@@ -98,7 +117,7 @@ export class AdminSupportService {
           },
         },
       },
-    });
+    })) as ConversationDetailRow | null;
     if (!conversation) {
       throw adminErrors.userNotFound();
     }
@@ -137,7 +156,7 @@ export class AdminSupportService {
           content: 'Escalei este caso para análise de um manager da operação.',
         },
       ],
-      messages: conversation.messages.map((message) => ({
+      messages: conversation.messages.map((message: ConversationDetailRow['messages'][number]) => ({
         id: message.id,
         direction: message.direction,
         type: message.type,

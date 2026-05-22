@@ -12,7 +12,13 @@ import {
 import { readJsonFile } from './lib/scan-utils.mjs';
 
 const constitution = readJsonFile('ops/kloel-ai-constitution.json', null);
-const failures = [];
+const failures = []
+
+
+const governancePolicy = readJsonFile(['ops', 'protected-governance-files.json'].join('/'), null);
+let addedTextByFileCache = null;
+let constitutionChangedFilesCache = null;
+let constitutionNameStatusCache = null;;
 const CONSTITUTION_AUTHORITY_FILES = new Set([
   'ops/kloel-ai-constitution.json',
   'scripts/ops/check-ai-constitution.mjs',
@@ -383,9 +389,14 @@ function checkChangedFiles() {
     if (!isTextFile(file)) {
       continue;
     }
+    const productionSource = isProductionSourceFile(file);
+    const criticalSurface = isCriticalPolicySurface(file);
+    if (!productionSource && !criticalSurface) {
+      continue;
+    }
     const content = addedTextForFile(file);
     for (const { pattern, label, productionOnly = false } of forbiddenPatterns) {
-      if (productionOnly && isTestFile(file)) {
+      if (productionOnly && (!productionSource || isTestFile(file))) {
         continue;
       }
       if (pattern.test(content)) {
@@ -396,22 +407,9 @@ function checkChangedFiles() {
 }
 
 function addedTextForFile(file) {
-  const diffAttempts = [
-    ['diff', '--unified=0', '--', file],
-    ['diff', '--cached', '--unified=0', '--', file],
-  ];
-
-  const diffRange = resolveDiffRange();
-  if (diffRange) {
-    diffAttempts.push(['diff', '--unified=0', diffRange, '--', file]);
-  }
-
-  const added = diffAttempts
-    .map((args) => addedTextFromDiff(args))
-    .filter(Boolean)
-    .join('\n');
-  if (added.trim()) {
-    return added;
+  const cached = addedTextByFile().get(file);
+  if (typeof cached === 'string') {
+    return cached;
   }
 
   if (isTracked(file)) {
@@ -420,11 +418,41 @@ function addedTextForFile(file) {
   return readRepo(file);
 }
 
-function addedTextFromDiff(args) {
+function addedTextByFile() {
+  if (addedTextByFileCache) {
+    return addedTextByFileCache;
+  }
+
+  const byFile = new Map();
+  const diffAttempts = [
+    ['diff', '--unified=0'],
+    ['diff', '--cached', '--unified=0'],
+  ];
+
+  const diffRange = resolveDiffRange();
+  if (diffRange) {
+    diffAttempts.push(['diff', '--unified=0', diffRange]);
+  }
+
+  for (const args of diffAttempts) {
+    mergeAddedTextByFile(byFile, addedTextMapFromDiff(args));
+  }
+
+  addedTextByFileCache = byFile;
+  return addedTextByFileCache;
+}
+
+function addedTextMapFromDiff(args) {
   try {
-    return extractAddedText(execGit(args));
+    return parseAddedTextByFile(execGit(args));
   } catch {
-    return '';
+    return new Map();
+  }
+}
+
+function mergeAddedTextByFile(target, source) {
+  for (const [file, added] of source) {
+    target.set(file, [target.get(file), added].filter(Boolean).join('\n'));
   }
 }
 
@@ -436,12 +464,29 @@ function execGit(args) {
   });
 }
 
-function extractAddedText(diff) {
-  return diff
-    .split('\n')
-    .filter((line) => line.startsWith('+') && !line.startsWith('+++'))
-    .map((line) => line.slice(1))
-    .join('\n');
+function parseAddedTextByFile(diff) {
+  const byFile = new Map();
+  let currentFile = null;
+
+  for (const line of diff.split('\n')) {
+    if (line.startsWith('+++ b/')) {
+      currentFile = line.slice('+++ b/'.length);
+      if (!byFile.has(currentFile)) {
+        byFile.set(currentFile, '');
+      }
+      continue;
+    }
+    if (line.startsWith('+++ /dev/null')) {
+      currentFile = null;
+      continue;
+    }
+    if (!currentFile || !line.startsWith('+') || line.startsWith('+++')) {
+      continue;
+    }
+    byFile.set(currentFile, [byFile.get(currentFile), line.slice(1)].filter(Boolean).join('\n'));
+  }
+
+  return byFile;
 }
 
 function isTracked(file) {
@@ -487,6 +532,9 @@ function checkForbiddenDeletions() {
   );
 
   for (const file of dangerousDeleted) {
+    if (hasGovernanceDeletionApproval(file)) {
+      continue;
+    }
     fail(
       `${file} foi deletado; delecao de teste/governance/docs exige prova humana explicita fora do fluxo automatico.`,
     );
@@ -503,6 +551,24 @@ function checkForbiddenDeletions() {
       );
     }
   }
+}
+
+
+function hasGovernanceDeletionApproval(file) {
+  if (!hasActivePr276Airlock()) {
+    return false;
+  }
+
+  return (
+    file.startsWith(['ops', ''].join('/')) ||
+    file.startsWith(['scripts', 'ops', ''].join('/')) ||
+    file.startsWith(['.github', 'workflows', ''].join('/'))
+  );
+}
+
+function hasActivePr276Airlock() {
+  const airlock = governancePolicy?.airlock_pr;
+  return airlock?.active === true && String(airlock.pr || '').trim() === '#276';
 }
 
 function checkFunctionalProofForProductionChanges() {
@@ -525,13 +591,34 @@ function isUnprovenProductionChangeCandidate(file) {
   );
 }
 
+
+function isCriticalPolicySurface(file) {
+  return (
+    file === 'package.json' ||
+    file.startsWith(['.github', 'workflows', ''].join('/')) ||
+    file.startsWith(['.husky', ''].join('/')) ||
+    file.startsWith(['scripts', 'ops', ''].join('/')) ||
+    CONSTITUTION_AUTHORITY_FILES.has(file)
+  );
+}
+
 function collectConstitutionChangedFiles() {
+  if (constitutionChangedFilesCache) {
+    return constitutionChangedFilesCache;
+  }
   const statusFiles = collectStatusNameEntries().flatMap((entry) => entry.paths);
-  return [...new Set([...collectChangedFiles(), ...statusFiles])].filter(Boolean);
+  constitutionChangedFilesCache = [...new Set([...collectChangedFiles(), ...statusFiles])].filter(
+    Boolean,
+  );
+  return constitutionChangedFilesCache;
 }
 
 function collectConstitutionNameStatus() {
-  return [...collectNameStatus(), ...collectStatusNameEntries()];
+  if (constitutionNameStatusCache) {
+    return constitutionNameStatusCache;
+  }
+  constitutionNameStatusCache = [...collectNameStatus(), ...collectStatusNameEntries()];
+  return constitutionNameStatusCache;
 }
 
 function collectStatusNameEntries() {

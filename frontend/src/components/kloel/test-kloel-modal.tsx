@@ -1,4 +1,5 @@
 'use client';
+import { colors } from '@/lib/design-tokens';
 
 import { kloelT } from '@/lib/i18n/t';
 import { KloelMushroomMark } from '@/components/kloel/KloelBrand';
@@ -88,11 +89,11 @@ export function TestKloelModal({ isOpen, onClose }: TestKloelModalProps) {
             <Button
               onClick={handleSendTest}
               disabled={status === 'sending'}
-              className="w-full rounded-md bg-[#E0DDD8] py-6 text-[#0A0A0C] hover:bg-[#E0DDD8]"
+              className="w-full rounded-md bg-[var(--text-silver)] py-6 text-[var(--bg-void)] hover:bg-[var(--text-silver)]"
             >
               {status === 'sending' ? (
                 <>
-                  <KloelMushroomMark size={18} title="Enviando teste" traceColor="#E85D30" />
+                  <KloelMushroomMark size={18} title="Enviando teste" traceColor={colors.ember.primary} />
 
                   {kloelT(`Enviando...`)}
                 </>

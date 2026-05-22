@@ -61,7 +61,7 @@ function sidecarPathFor(repoRel) {
 async function pollExists(path, expect = true, timeoutMs = POLL_TIMEOUT_MS) {
   const deadline = Date.now() + timeoutMs;
   while (Date.now() < deadline) {
-    if (existsSync(path) === expect) return true;
+    if (existsSync(path) === expect) {return true;}
     await sleep(POLL_INTERVAL_MS);
   }
   return false;
@@ -73,7 +73,7 @@ async function pollContent(path, predicate, timeoutMs = POLL_TIMEOUT_MS) {
     if (existsSync(path)) {
       try {
         const content = JSON.parse(readFileSync(path, 'utf8'));
-        if (predicate(content)) return content;
+        if (predicate(content)) {return content;}
       } catch {
         /* ignore parse races */
       }
@@ -238,12 +238,12 @@ async function runTest5Soak(report) {
     try {
       const out = spawnSync('ps', ['-o', 'rss=', '-p', String(pid)], { encoding: 'utf8' });
       const k = parseInt(out.stdout.trim(), 10);
-      if (!isNaN(k)) rssMB = Math.round(k / 1024);
+      if (!isNaN(k)) {rssMB = Math.round(k / 1024);}
     } catch {
       /* ignore */
     }
     samples.push({ at: nowISO(), alive, rssMB });
-    if (!alive) break;
+    if (!alive) {break;}
     await sleep(60_000);
   }
   const allAlive = samples.every((s) => s.alive);
@@ -310,7 +310,7 @@ async function main() {
     await runTest2Fix(report, abs);
     await runTest3Delete(report, abs);
     await runTest4Move(report);
-    if (soak) await runTest5Soak(report);
+    if (soak) {await runTest5Soak(report);}
   } finally {
     try {
       rmSync(TEST_DIR, { recursive: true, force: true });

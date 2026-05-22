@@ -1,10 +1,10 @@
 import { Body, Controller, ForbiddenException, Headers, Post, Query } from '@nestjs/common';
-import { Throttle } from '@nestjs/throttler';
 import { Prisma } from '@prisma/client';
 import { Public } from '../auth/public.decorator';
 import { PrismaService } from '../prisma/prisma.service';
 import { WebhooksService } from '../webhooks/webhooks.service';
 import { MercadoPagoPaymentSnapshot, MercadoPagoPixService } from './mercado-pago-pix.service';
+import { RouteClass } from '../common/throttler/route-class.decorator';
 
 type MercadoPagoWebhookBody = {
   id?: string | number;
@@ -52,7 +52,7 @@ function toJsonValue(value: unknown): Prisma.InputJsonValue {
 
 @Controller('checkout/webhooks/mercado-pago')
 @Public()
-@Throttle({ default: { limit: 120, ttl: 60000 } })
+@RouteClass('webhook')
 export class MercadoPagoWebhookController {
   constructor(
     private readonly prisma: PrismaService,
@@ -150,6 +150,8 @@ export class MercadoPagoWebhookController {
     }
 
     const status = mapMercadoPagoStatus(payment.status);
+    const pixExpiresAt = payment.expiresAt ? new Date(payment.expiresAt) : null;
+
     await this.prisma.checkoutPayment.updateMany({
       where: {
         OR: [{ externalId: payment.externalId }, { orderId }],
@@ -159,7 +161,7 @@ export class MercadoPagoWebhookController {
         externalId: payment.externalId,
         pixQrCode: payment.qrCodeBase64,
         pixCopyPaste: payment.copyPaste,
-        pixExpiresAt: payment.expiresAt ? new Date(payment.expiresAt) : undefined,
+        pixExpiresAt,
         webhookData: toJsonValue({
           provider: 'mercado_pago',
           eventType,

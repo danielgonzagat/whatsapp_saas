@@ -1,10 +1,15 @@
-import { Injectable, Logger, NestMiddleware, OnModuleDestroy, Optional } from '@nestjs/common';
+import { Injectable, NestMiddleware, OnModuleDestroy, Optional } from '@nestjs/common';
+import type { Prisma } from '@prisma/client';
+import { StructuredLogger } from '../../logging/structured-logger';
 import { NextFunction, Request, Response } from 'express';
 import { sanitizePayload } from '../../common/sanitize-payload';
 import { getTraceHeaders } from '../../common/trace-headers';
 import { validateNoInternalAccess } from '../../common/utils/url-validator';
 import { PrismaService } from '../../prisma/prisma.service';
 import { OpsAlertService } from '../../observability/ops-alert.service';
+
+type AuditResponseBody = Record<string, unknown>;
+type AuditRequestBody = Record<string, unknown>;
 
 interface AuditLogEntry {
   timestamp: Date;
@@ -28,10 +33,10 @@ interface AuditLogEntry {
  */
 function parseErrorPayload(responseBody: unknown): Record<string, unknown> | undefined {
   if (typeof responseBody !== 'string') {
-    return responseBody as Record<string, unknown>;
+    return responseBody as AuditResponseBody;
   }
   try {
-    return JSON.parse(responseBody) as Record<string, unknown>;
+    return JSON.parse(responseBody) as AuditResponseBody;
   } catch {
     return undefined;
   }
@@ -53,6 +58,11 @@ function extractErrorMessage(obj: Record<string, unknown>): string | null {
   return null;
 }
 
+function cloneAuditDetails(details: Record<string, unknown>): Prisma.InputJsonObject {
+  const parsed: unknown = JSON.parse(JSON.stringify(details));
+  return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
+}
+
 const HEALTH_PATH_FRAGMENTS = ['/health', '/diag'] as const;
 const MUTATION_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 const LOGGED_GET_PATH_FRAGMENTS = ['/kloel', '/agent', '/payment', '/autopilot'] as const;
@@ -72,12 +82,12 @@ function matchesLoggedGetPath(path: string): boolean {
  */
 @Injectable()
 export class AuditLogMiddleware implements NestMiddleware, OnModuleDestroy {
-  private readonly logger = new Logger('AuditLog');
+  private readonly logger = StructuredLogger.from('AuditLog');
   private logBuffer: AuditLogEntry[] = [];
   private readonly BUFFER_SIZE = 50;
   private readonly FLUSH_INTERVAL_MS = 30000; // 30 segundos
 
-  private flushInterval?: NodeJS.Timeout;
+  private flushInterval: NodeJS.Timeout | null = null;
 
   constructor(
     private readonly prisma: PrismaService,
@@ -96,16 +106,17 @@ export class AuditLogMiddleware implements NestMiddleware, OnModuleDestroy {
 
   /** On module destroy. */
   onModuleDestroy(): void {
-    if (this.flushInterval) {
+    if (this.flushInterval !== null) {
       clearInterval(this.flushInterval);
-      this.flushInterval = undefined;
+      this.flushInterval = null;
     }
   }
 
   /** Use. */
   use(req: Request, res: Response, next: NextFunction): void {
     const startTime = Date.now();
-    const { method, path, ip } = req;
+    const { method, path } = req;
+    const ip = req.ip || 'unknown';
 
     // Capturar resposta
     // messageLimit: this is HTTP response send, not WhatsApp message send
@@ -128,7 +139,7 @@ export class AuditLogMiddleware implements NestMiddleware, OnModuleDestroy {
           method,
           path,
           ip,
-          workspaceId,
+          ...(workspaceId !== undefined ? { workspaceId } : {}),
           statusCode,
           responseTimeMs,
           responseBody,
@@ -158,20 +169,22 @@ export class AuditLogMiddleware implements NestMiddleware, OnModuleDestroy {
   }): AuditLogEntry {
     const { req, method, path, ip, workspaceId, statusCode, responseTimeMs, responseBody } = params;
     const user = (req as Request & { user?: { userId?: string; sub?: string } }).user;
-    const sanitizedBody = sanitizePayload(req.body) as Record<string, unknown> | undefined;
+    const sanitizedBody = sanitizePayload(req.body) as AuditRequestBody | undefined;
+    const userId = user?.userId || user?.sub;
+    const errorValue = statusCode >= 400 ? this.extractError(responseBody) : undefined;
 
     return {
       timestamp: new Date(),
       method,
       path,
-      workspaceId,
-      userId: user?.userId || user?.sub,
-      ip: ip || 'unknown',
+      ...(workspaceId !== undefined ? { workspaceId } : {}),
+      ...(userId !== undefined ? { userId } : {}),
+      ip,
       userAgent: req.headers['user-agent'] || 'unknown',
       statusCode,
       responseTimeMs,
-      requestBody: sanitizedBody,
-      error: statusCode >= 400 ? this.extractError(responseBody) : undefined,
+      ...(sanitizedBody !== undefined ? { requestBody: sanitizedBody } : {}),
+      ...(errorValue !== undefined ? { error: errorValue } : {}),
     };
   }
 
@@ -255,22 +268,20 @@ export class AuditLogMiddleware implements NestMiddleware, OnModuleDestroy {
       await this.prisma.auditLog
         .createMany({
           data: logsToFlush
-            .filter((log) => log.workspaceId)
+            .filter((log): log is typeof log & { workspaceId: string } => !!log.workspaceId)
             .map((log) => ({
               workspaceId: log.workspaceId,
               action: `HTTP_${log.method}`,
               resource: log.path,
-              details: JSON.parse(
-                JSON.stringify({
-                  statusCode: log.statusCode,
-                  responseTimeMs: log.responseTimeMs,
-                  requestBody: log.requestBody
-                    ? (sanitizePayload(log.requestBody) as Record<string, unknown>)
-                    : undefined,
-                  error: log.error || undefined,
-                }),
-              ),
-              agentId: log.userId,
+              details: cloneAuditDetails({
+                statusCode: log.statusCode,
+                responseTimeMs: log.responseTimeMs,
+                requestBody: log.requestBody
+                  ? (sanitizePayload(log.requestBody) as AuditRequestBody)
+                  : undefined,
+                error: log.error || undefined,
+              }),
+              ...(log.userId !== undefined ? { agentId: log.userId } : {}),
               ipAddress: log.ip,
               userAgent: log.userAgent,
             })),
@@ -299,41 +310,4 @@ export class AuditLogMiddleware implements NestMiddleware, OnModuleDestroy {
       this.logBuffer.unshift(...logsToFlush);
     }
   }
-}
-
-/**
- * Decorator para marcar operacoes como auditaveis com metadados extras.
- */
-export function AuditOperation(operationType: string) {
-  return (_target: unknown, propertyKey: string, descriptor: PropertyDescriptor) => {
-    const originalMethod = descriptor.value;
-
-    descriptor.value = async function (...args: unknown[]) {
-      const logger = new Logger('AuditOperation');
-      const startTime = Date.now();
-
-      try {
-        const result = await originalMethod.apply(this, args);
-        logger.log({
-          operation: operationType,
-          method: propertyKey,
-          duration: Date.now() - startTime,
-          success: true,
-        });
-        return result;
-      } catch (error: unknown) {
-        void this.opsAlert?.alertOnCriticalError(error, 'AuditLogMiddleware.now');
-        logger.error({
-          operation: operationType,
-          method: propertyKey,
-          duration: Date.now() - startTime,
-          success: false,
-          error: error instanceof Error ? error.message : 'unknown_error',
-        });
-        throw error;
-      }
-    };
-
-    return descriptor;
-  };
 }

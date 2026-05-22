@@ -8,6 +8,7 @@ import { StripeChargeService } from '../payments/stripe/stripe-charge.service';
 import { PrismaService } from '../prisma/prisma.service';
 
 import { CheckoutPaymentService } from './checkout-payment.service';
+import { CHECKOUT_PAYMENT_E2E_GUARD } from './checkout-payment-e2e-guard';
 import { CheckoutPostPaymentEffectsService } from './checkout-post-payment-effects.service';
 import { CheckoutSocialLeadService } from './checkout-social-lead.service';
 import {
@@ -18,6 +19,8 @@ import {
   makeChargeResult,
   makeOrder,
 } from './checkout-payment.service.fixtures';
+import { CHECKOUT_PAYMENT_E2E_GUARD } from "./checkout-payment-e2e-guard";
+import { CheckoutEventEmitterService } from "../kloel/checkout-emitter/checkout-event-emitter.service";
 
 const SELLER_ACCOUNT_BALANCE = Object.freeze({
   id: 'cab_seller_1',
@@ -99,7 +102,16 @@ describe('Checkout E2E Split Chain', () => {
         { provide: FinancialAlertService, useValue: financialAlert },
         { provide: AuditService, useValue: auditService },
         { provide: CheckoutSocialLeadService, useValue: { markConvertedFromOrder: jest.fn() } },
+        { provide: CHECKOUT_PAYMENT_E2E_GUARD, useValue: { isEnabled: jest.fn().mockReturnValue(false), buildResult: jest.fn() } },
+        { provide: CheckoutEventEmitterService, useValue: { paymentInitiated: jest.fn().mockResolvedValue(undefined), paymentApproved: jest.fn().mockResolvedValue(undefined), paymentDeclined: jest.fn().mockResolvedValue(undefined) } },
         { provide: CheckoutPostPaymentEffectsService, useValue: postPaymentEffects },
+        {
+          provide: CHECKOUT_PAYMENT_E2E_GUARD,
+          useValue: {
+            isEnabled: jest.fn(() => false),
+            buildResult: jest.fn(),
+          },
+        },
       ],
     }).compile();
 

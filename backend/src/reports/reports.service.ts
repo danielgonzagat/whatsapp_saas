@@ -125,7 +125,7 @@ export class ReportsService {
 
     let monthly: unknown[] = [];
     try {
-      monthly = await this.prisma.$queryRaw`
+      monthly = await this.prisma.$queryRaw<{ month: string; total: number }[]>`
         SELECT TO_CHAR("cancelledAt", 'Mon') as month,
           COUNT(*)::int as total
         FROM "CustomerSubscription"
@@ -135,7 +135,6 @@ export class ReportsService {
         ORDER BY DATE_TRUNC('month', "cancelledAt") ASC LIMIT 12
       `;
     } catch (err: unknown) {
-      // PULSE:OK — Monthly churn query failure returns partial data; not a blocking operation
       this.logger.error(`getChurn monthly query failed: ${String(err)}`);
     }
 
@@ -189,7 +188,6 @@ export class ReportsService {
       description?: string;
     },
   ) {
-    // PULSE_OK: date validated via Number.isNaN(parseDate.getTime()) + BadRequestException on line below
     const parsedDate = new Date(data.date);
     if (Number.isNaN(parsedDate.getTime())) {
       throw new BadRequestException('Invalid date');
@@ -218,8 +216,8 @@ export class ReportsService {
         amount: data.amount,
         platform: data.platform,
         date: parsedDate,
-        campaign: data.campaign,
-        description: data.description,
+        ...(data.campaign !== undefined ? { campaign: data.campaign } : {}),
+        ...(data.description !== undefined ? { description: data.description } : {}),
       },
     });
   }

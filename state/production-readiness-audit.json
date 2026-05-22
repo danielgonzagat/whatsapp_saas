@@ -1,0 +1,114 @@
+{
+  "generatedAt": "2026-05-10T22:24:57.863Z",
+  "pipeline": "scripts/pulse/unified-readiness-report.ts",
+  "unifiedVerdict": "NOT_READY_FOR_PRODUCTION",
+  "certificateStatus": "NOT_CERTIFIED",
+  "failures": [
+    "Test coverage: 2 package(s) with coverage, average 28.3% lines"
+  ],
+  "readinessStatus": "fail (6 passes, 7 failures, 2 warnings)",
+  "healthScore": 94,
+  "certificationStatus": "NOT_CERTIFIED",
+  "codacySummary": {
+    "grade": "A",
+    "totalIssues": 7548,
+    "highIssues": 1076,
+    "mediumIssues": 2180
+  },
+  "worldState": {
+    "totalScenarios": 11,
+    "executedScenarios": 0,
+    "pendingExpectations": 11,
+    "missingEvidence": 11,
+    "sessionSummary": [
+      {
+        "kind": "customer-whatsapp-and-inbox",
+        "passed": 0,
+        "total": 2
+      },
+      {
+        "kind": "operator-campaigns-and-flows",
+        "passed": 0,
+        "total": 1
+      },
+      {
+        "kind": "operator-autopilot-run",
+        "passed": 0,
+        "total": 2
+      },
+      {
+        "kind": "admin-settings-kyc-banking",
+        "passed": 0,
+        "total": 2
+      },
+      {
+        "kind": "admin-whatsapp-session-control",
+        "passed": 0,
+        "total": 2
+      },
+      {
+        "kind": "system-payment-reconciliation",
+        "passed": 0,
+        "total": 2
+      }
+    ]
+  },
+  "runtimeChecks": {
+    "build": {
+      "pass": true,
+      "label": "Build artifacts exist",
+      "detail": "backend/dist, frontend/.next, worker/dist all present"
+    },
+    "ciLastRun": {
+      "pass": false,
+      "label": "Recent CI-related commits found",
+      "detail": "1 CI-related commit(s) in last 20: 71989bd50 fix(madge): wave-15 25→0 circular dependencies (interface toke"
+    },
+    "gitStatus": {
+      "pass": false,
+      "label": "Working tree dirty",
+      "detail": "5 modified/deleted, 2 untracked file(s)"
+    },
+    "testCoverage": {
+      "pass": false,
+      "label": "Coverage below threshold",
+      "detail": "2 package(s) with coverage, average 28.3% lines"
+    },
+    "envFiles": {
+      "pass": true,
+      "label": "Environment file templates exist",
+      "detail": "All .env.example files present"
+    },
+    "hooksIntegrity": {
+      "pass": true,
+      "label": "Git hooks integrity",
+      "detail": "All Husky hooks present"
+    }
+  },
+  "criticalGaps": [
+    {
+      "rank": 1,
+      "issue": "1076 HIGH-severity Codacy issues remain",
+      "impact": "Code quality and potential security risks blocking production readiness",
+      "fix": "Address HIGH Codacy issues, starting with Security and ErrorProne categories"
+    },
+    {
+      "rank": 2,
+      "issue": "PULSE certification is NOT_CERTIFIED",
+      "impact": "System lacks production certification evidence",
+      "fix": "Close certification gaps: scopeClosed: Observed Codacy files are missing from repo inventory: .agents/skills/marketing-psychology/SKILL.md, scripts/pulse/parsers/facade-detector.ts, scripts/pulse/parsers/runtime-utils.ts., truthExtractionPass: Runtime-critical product capabilities are still not materially real: Ops Alert., staticPass: Static certification found 1 critical/high scan finding(s) and Codacy still reports 1076 HIGH issue(s)., runtimePass: Runtime evidence was not collected. Run PULSE with --deep or --total., invariantPass: Invariant evidence is missing for: financial-audit-trail., securityPass: Security certification objective found blocking evidence. Objective: dynamic security certification objective. Evidence requirement: runtime, static, or external evidence must not expose blocking security predicates. Blocking finding predicates: backend/prisma/migrations/20251209150035_init_baseline/migration.sql (37), backend/src/auth/email.service.ts, package.json., recoveryPass: Recovery evidence was not attached in scan mode., performancePass: Performance evidence was not exercised in scan mode., observabilityPass: Observability evidence was not attached in scan mode., customerPass: customer synthetic evidence is missing for: customer-auth-shell, customer-product-and-checkout, customer-whatsapp-and-inbox., operatorPass: operator synthetic scenarios have no observed (runtime-executed) evidence — 0 scenario(s) passed via structural inference only (truthMode='inferred'). Real HTTP/Playwright/DB execution is required., adminPass: admin synthetic evidence is missing for: admin-settings-kyc-banking, admin-whatsapp-session-control., soakPass: soak synthetic evidence is missing for: operator-campaigns-and-flows, operator-autopilot-run, system-payment-reconciliation., evidenceFresh: Execution trace is missing, so the certification run cannot prove which phases actually executed., noOverclaimPass: overclaim:completionProofReadiness — certification cannot complete while .pulse/current/PULSE_PROOF_READINESS.json has non-observed production proof (status=executable_unproved, canAdvance=false, planned=1886, inferred=0, not_available=0, nonObserved=1886, executableUnproved=1886)., criticalPathObservedPass: 3931 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:ad-insights, matrix:capability:capability:ad-rules, matrix:capability:capability:admin-chat, matrix:capability:capability:admin-clients, matrix:capability:capability:admin-compliance, matrix:capability:capability:admin-config, matrix:capability:capability:admin-dashboard, matrix:capability:capability:admin-destructive. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json., typeIntegrityPass: Found 7 type-integrity escape-hatch finding(s): frontend/src/lib/fabric/BackgroundManager.ts:51 (as any), scripts/pulse/test-honesty/ast-detection.ts:24 (as any), scripts/pulse/test-honesty/ast-detection.ts:25 (@ts-ignore), scripts/pulse/test-honesty/ast-detection.ts:26 (@ts-expect-error), scripts/pulse/test-honesty/main.ts:39 (as any), scripts/pulse/test-honesty/main.ts:40 (@ts-ignore), scripts/pulse/test-honesty/main.ts:41 (@ts-expect-error)."
+    },
+    {
+      "rank": 3,
+      "issue": "11 async expectations have missing evidence",
+      "impact": "World state cannot be verified for key scenarios",
+      "fix": "Run governed scenario evidence collection for pending expectations"
+    },
+    {
+      "rank": 4,
+      "issue": "Test coverage below threshold",
+      "impact": "Insufficient test coverage for production confidence",
+      "fix": "Increase test coverage to >=60% across all packages"
+    }
+  ]
+}

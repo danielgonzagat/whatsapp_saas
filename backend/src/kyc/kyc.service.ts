@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   Injectable,
+  Logger,
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
@@ -11,6 +12,7 @@ import { BCRYPT_ROUNDS } from '../common/constants';
 import { ConnectService } from '../payments/connect/connect.service';
 import { StorageService } from '../common/storage/storage.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { KycEventEmitterService } from '../kloel/kyc-emitter/kyc-event-emitter.service';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { UpdateBankDto } from './dto/update-bank.dto';
 import { UpdateFiscalDto } from './dto/update-fiscal.dto';
@@ -22,22 +24,27 @@ import {
   buildPersonName,
   buildDateOfBirth,
   buildConnectAddress,
+} from './kyc.helpers';
+import type { UploadedFile, SubmitKycContext } from './kyc.helpers';
+export { trimToUndefined, digitsOnly, buildPersonName, buildDateOfBirth, buildConnectAddress };
+export type { UploadedFile, SubmitKycContext };
+import {
   doAdminApprove,
   doAutoApproveIfComplete,
   syncSellerConnectOnboarding,
-} from './__parts__/kyc.service.companion';
-import type { UploadedFile, SubmitKycContext } from './__parts__/kyc.service.companion';
-export { trimToUndefined, digitsOnly, buildPersonName, buildDateOfBirth, buildConnectAddress };
-export type { UploadedFile, SubmitKycContext };
+} from './kyc.connect-onboarding';
 
 /** Kyc service. */
 @Injectable()
 export class KycService {
+  private readonly logger = new Logger(KycService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly storage: StorageService,
     private readonly auditService: AuditService,
     private readonly connectService: ConnectService,
+    private readonly kycEventEmitter: KycEventEmitterService,
   ) {}
 
   private get syncDeps() {
@@ -77,7 +84,9 @@ export class KycService {
   /** Update profile. */
   async updateProfile(agentId: string, dto: UpdateProfileDto) {
     const data: Prisma.AgentUpdateInput = { ...dto };
-    if (dto.birthDate) data.birthDate = new Date(dto.birthDate);
+    if (dto.birthDate) {
+      data.birthDate = new Date(dto.birthDate);
+    }
 
     return this.prisma.$transaction(
       async (tx) => {
@@ -85,7 +94,10 @@ export class KycService {
           where: { id: agentId, workspaceId: { not: '' } },
           select: { kycStatus: true, workspaceId: true },
         });
-        if (agent?.kycStatus === 'rejected') {
+        if (!agent) {
+          throw new Error('Agent not found');
+        }
+        if (agent.kycStatus === 'rejected') {
           data.kycStatus = 'pending';
           data.kycRejectedReason = null;
         }
@@ -97,11 +109,16 @@ export class KycService {
 
   /** Upload avatar. */
   async uploadAvatar(agentId: string, file: UploadedFile) {
-    if (!file) throw new BadRequestException('No file provided');
-    if (file.size > 5 * 1024 * 1024) throw new BadRequestException('File too large (max 5MB)');
+    if (!file) {
+      throw new BadRequestException('No file provided');
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      throw new BadRequestException('File too large (max 5MB)');
+    }
     const allowedMimes = ['image/jpeg', 'image/png', 'image/webp'];
-    if (!allowedMimes.includes(file.mimetype))
+    if (!allowedMimes.includes(file.mimetype)) {
       throw new BadRequestException('Only JPG, PNG, and WebP images are allowed');
+    }
     const ext = file.originalname?.split('.').pop() || 'jpg';
     const filename = `kyc/avatars/avatar_${agentId}_${Date.now()}.${ext}`;
     const result = await this.storage.upload(file.buffer, { filename, mimeType: file.mimetype });
@@ -154,13 +171,19 @@ export class KycService {
       'PROOF_OF_ADDRESS',
       'COMPANY_DOCUMENT',
     ];
-    if (!allowedTypes.includes(type))
+    if (!allowedTypes.includes(type)) {
       throw new BadRequestException(`Invalid document type. Allowed: ${allowedTypes.join(', ')}`);
-    if (!file) throw new BadRequestException('No file provided');
-    if (file.size > 10 * 1024 * 1024) throw new BadRequestException('File too large (max 10MB)');
+    }
+    if (!file) {
+      throw new BadRequestException('No file provided');
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      throw new BadRequestException('File too large (max 10MB)');
+    }
     const allowedMimes = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
-    if (!allowedMimes.includes(file.mimetype))
+    if (!allowedMimes.includes(file.mimetype)) {
       throw new BadRequestException('Only JPG, PNG, WebP, and PDF files are allowed');
+    }
     const ext = file.originalname?.split('.').pop() || 'pdf';
     const filename = `kyc/documents/kyc_${type}_${agentId}_${Date.now()}.${ext}`;
     const result = await this.storage.upload(file.buffer, { filename, mimeType: file.mimetype });
@@ -182,12 +205,17 @@ export class KycService {
     const doc = await this.prisma.kycDocument.findUnique({
       where: workspaceId ? { id: documentId, workspaceId } : { id: documentId },
     });
-    if (!doc) throw new NotFoundException('Document not found');
-    if (doc.agentId !== agentId) throw new BadRequestException('Not your document');
-    if (doc.status !== 'pending')
+    if (!doc) {
+      throw new NotFoundException('Document not found');
+    }
+    if (doc.agentId !== agentId) {
+      throw new BadRequestException('Not your document');
+    }
+    if (doc.status !== 'pending') {
       throw new BadRequestException(
         'Cannot delete a document that is already under review or approved',
       );
+    }
     await this.auditService.log({
       workspaceId: doc.workspaceId,
       action: 'DELETE_RECORD',
@@ -247,11 +275,16 @@ export class KycService {
           where: { id: agentId, workspaceId: { not: '' } },
           select: { password: true, provider: true, workspaceId: true },
         });
-        if (!agent) throw new NotFoundException('Agent not found');
-        if (agent.provider && !agent.password)
+        if (!agent) {
+          throw new NotFoundException('Agent not found');
+        }
+        if (agent.provider && !agent.password) {
           throw new BadRequestException('OAuth users cannot change password here');
+        }
         const valid = await bcryptCompare(dto.currentPassword, agent.password);
-        if (!valid) throw new UnauthorizedException('Current password is incorrect');
+        if (!valid) {
+          throw new UnauthorizedException('Current password is incorrect');
+        }
         const hashedPassword = await bcryptHash(dto.newPassword, BCRYPT_ROUNDS);
         await tx.agent.update({
           where: { id: agentId, workspaceId: agent.workspaceId },
@@ -337,8 +370,9 @@ export class KycService {
   /** Submit kyc. */
   async submitKyc(agentId: string, workspaceId: string, context?: SubmitKycContext) {
     const completion = await this.getCompletion(agentId, workspaceId);
-    if (completion.percentage < 100)
+    if (completion.percentage < 100) {
       throw new BadRequestException('Complete all required sections before submitting');
+    }
 
     await this.prisma.$transaction(
       async (tx) => {
@@ -346,9 +380,12 @@ export class KycService {
           where: { id: agentId, workspaceId },
           select: { kycStatus: true },
         });
-        if (agent?.kycStatus === 'submitted')
+        if (agent?.kycStatus === 'submitted') {
           throw new BadRequestException('KYC already submitted and under review');
-        if (agent?.kycStatus === 'approved') throw new BadRequestException('KYC already approved');
+        }
+        if (agent?.kycStatus === 'approved') {
+          throw new BadRequestException('KYC already approved');
+        }
 
         await tx.agent.update({
           where: { id: agentId, workspaceId },
@@ -358,16 +395,31 @@ export class KycService {
       { isolationLevel: 'ReadCommitted' },
     );
 
+    this.logger.log('Calling Stripe Connect', {
+      context: 'KycService.submitKyc',
+      action: 'syncSellerConnectOnboarding',
+    });
     await syncSellerConnectOnboarding(this.syncDeps, agentId, workspaceId, context);
 
+    this.kycEventEmitter.emitDocumentSubmitted({
+      agentId,
+      workspaceId,
+    });
+
     const autoResult = await this.autoApproveIfComplete(agentId, workspaceId);
-    if (autoResult.approved)
+    if (autoResult.approved) {
+      this.kycEventEmitter.emitApproved({
+        agentId,
+        workspaceId,
+        autoApproved: true,
+      });
       return {
         success: true,
         status: 'approved',
         autoApproved: true,
         percentage: autoResult.percentage,
       };
+    }
     return { success: true, status: 'submitted' };
   }
 
@@ -381,6 +433,16 @@ export class KycService {
   }
 
   async adminApprove(agentId: string) {
-    return doAdminApprove({ prisma: this.prisma }, agentId);
+    const agent = await this.prisma.agent.findUnique({
+      where: { id: agentId },
+      select: { workspaceId: true },
+    });
+    const result = await doAdminApprove({ prisma: this.prisma }, agentId);
+    this.kycEventEmitter.emitApproved({
+      agentId,
+      workspaceId: agent?.workspaceId ?? '',
+      autoApproved: false,
+    });
+    return result;
   }
 }

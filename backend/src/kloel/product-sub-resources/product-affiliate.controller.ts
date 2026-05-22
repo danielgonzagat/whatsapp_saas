@@ -33,6 +33,7 @@ import {
   safeStr,
 } from './helpers/common.helpers';
 
+import { RouteClass } from '../../common/throttler/route-class.decorator';
 interface AffiliateConfigContext {
   commissionType: string | undefined;
   nextCommissionType: string | undefined;
@@ -156,6 +157,7 @@ function buildProductPayload(
 /** Product affiliate controller. */
 @Controller('products/:productId/affiliates')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
+@RouteClass('mutate')
 export class ProductAffiliateController {
   constructor(private readonly prisma: PrismaService) {}
 
@@ -340,13 +342,14 @@ export class ProductAffiliateController {
       throw new NotFoundException('Link de afiliado não encontrado');
     }
 
+    const active = body.active === true;
     await this.prisma.$transaction(async (tx) => {
       await tx.affiliateLink.update({
         where: { id: linkId },
-        data: { active: body.active },
+        data: { active: Boolean(body.active) },
       });
 
-      if (body.active) {
+      if (active) {
         await tx.affiliateRequest.updateMany({
           where: {
             affiliateProductId: link.affiliateProductId,

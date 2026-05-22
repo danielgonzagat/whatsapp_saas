@@ -14,10 +14,12 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { resolveWorkspaceId } from '../auth/workspace-access';
 import type { AuthenticatedRequest } from '../common/interfaces/authenticated-request.interface';
 import { CreateFollowUpDto, FollowUpService, UpdateFollowUpDto } from './followup.service';
+import { RouteClass } from '../common/throttler/route-class.decorator';
 
 /** Follow up controller. */
 @Controller('followups')
 @UseGuards(JwtAuthGuard)
+@RouteClass('mutate')
 export class FollowUpController {
   constructor(private readonly followUpService: FollowUpService) {}
 

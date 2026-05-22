@@ -1,4 +1,5 @@
 'use client';
+import { colors } from '@/lib/design-tokens';
 import { API_BASE } from '@/lib/http';
 import type React from 'react';
 import { use, useEffect, useState } from 'react';
@@ -18,7 +19,7 @@ export default function CheckoutPreview({ params }: { params: Promise<{ planId: 
   }, [planId]);
 
   if (!config) {
-    return <div style={{ background: '#0A0A0C', minHeight: '100vh' }} />;
+    return <div style={{ background: colors.background.void, minHeight: '100vh' }} />;
   }
 
   const Theme = config.theme === 'NOIR' ? CheckoutNoirSocial : CheckoutBlancSocial;

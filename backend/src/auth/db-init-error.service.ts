@@ -1,4 +1,5 @@
 import { ServiceUnavailableException } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { Prisma } from '@prisma/client';
 
 /**
@@ -10,7 +11,13 @@ import { Prisma } from '@prisma/client';
  * - P1001, P1002: Connectivity issues
  * - PrismaClientInitializationError: Connection pool exhaustion or startup errors
  */
+/**
+ * @cluster whatsapp_saas/backend/auth
+ * L11 multi-agent TaskGraph annotation (batched by tools/auto-pr/batch-job.mjs).
+ */
 export class DbInitErrorService {
+  private static readonly logger = StructuredLogger.from(DbInitErrorService.name);
+
   /** Throw friendly db init error. */
   static throwFriendlyDbInitError(error: unknown): never {
     const message = error instanceof Error ? error.message : '';
@@ -21,6 +28,11 @@ export class DbInitErrorService {
     ) {
       // P2021: table does not exist | P2022: column does not exist
       // Ambos indicam schema/migrations fora de sincronia.
+      DbInitErrorService.logger.error(
+        'Database schema mismatch',
+        error instanceof Error ? error.message : String(error),
+        { context: 'DbInitErrorService.throwFriendlyDbInitError', code: error.code },
+      );
       throw new ServiceUnavailableException(
         'Serviço indisponível. Banco de dados ainda não inicializado (migrations não aplicadas).',
       );
@@ -28,6 +40,9 @@ export class DbInitErrorService {
 
     // Casos comuns quando o schema ainda não existe / migrations não aplicadas.
     if (message.toLowerCase().includes('database not initialized')) {
+      DbInitErrorService.logger.error('Database not initialized', message, {
+        context: 'DbInitErrorService.throwFriendlyDbInitError',
+      });
       throw new ServiceUnavailableException(
         'Serviço indisponível. Banco de dados ainda não inicializado (migrations não aplicadas).',
       );
@@ -38,12 +53,22 @@ export class DbInitErrorService {
       error instanceof Prisma.PrismaClientKnownRequestError &&
       (error.code === 'P1001' || error.code === 'P1002')
     ) {
+      DbInitErrorService.logger.error(
+        'Database connectivity error',
+        error instanceof Error ? error.message : String(error),
+        { context: 'DbInitErrorService.throwFriendlyDbInitError', code: error.code },
+      );
       throw new ServiceUnavailableException(
         'Serviço indisponível. Não foi possível conectar ao banco de dados.',
       );
     }
 
     if (error instanceof Prisma.PrismaClientInitializationError) {
+      DbInitErrorService.logger.error(
+        'Prisma client initialization error',
+        error instanceof Error ? error.message : String(error),
+        { context: 'DbInitErrorService.throwFriendlyDbInitError' },
+      );
       throw new ServiceUnavailableException(
         'Serviço indisponível. Não foi possível conectar ao banco de dados.',
       );

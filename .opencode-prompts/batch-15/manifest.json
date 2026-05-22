@@ -1,0 +1,13 @@
+{
+  "runId": "kloel-cia-batch-15-frontend-typecheck-2026-05-12",
+  "concurrency": 1,
+  "timeoutSeconds": 1200,
+  "staggerMs": 0,
+  "tasks": [
+    {
+      "id": "A-frontend-typecheck-recovery",
+      "title": "Kloel CIA — frontend typecheck recovery",
+      "prompt": ".opencode-prompts/batch-15/A-frontend-typecheck-recovery.md"
+    }
+  ]
+}

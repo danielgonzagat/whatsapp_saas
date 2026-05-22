@@ -52,7 +52,7 @@ function findDockerfiles() {
       maxBuffer: 16 * 1024 * 1024,
     },
   );
-  if (r.status !== 0) return [];
+  if (r.status !== 0) {return [];}
   return r.stdout.trim().split('\n').filter(Boolean).sort();
 }
 
@@ -70,7 +70,7 @@ function parseHadolintOutput(stdout) {
   } catch {
     return findings;
   }
-  if (!Array.isArray(parsed)) return findings;
+  if (!Array.isArray(parsed)) {return findings;}
   for (const issue of parsed) {
     const file = relative(REPO_ROOT, issue.file).replace(/\\/g, '/');
     const severity = SEVERITY_MAP[issue.level] || 'medium';
@@ -113,7 +113,7 @@ const files = findDockerfiles();
 const allFindings = [];
 
 for (const file of files) {
-  if (!existsSync(file)) continue;
+  if (!existsSync(file)) {continue;}
   const r = spawnSync('hadolint', ['-f', 'json', file], {
     encoding: 'utf-8',
     maxBuffer: 16 * 1024 * 1024,

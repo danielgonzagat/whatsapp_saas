@@ -1,0 +1,45 @@
+{
+  "runId": "pr276-wave-5",
+  "concurrency": 4,
+  "timeoutSec": 7200,
+  "staggerMs": 15000,
+  "dir": "/Users/danielpenin/whatsapp_saas",
+  "skipPermissions": true,
+  "tasks": [
+    {
+      "id": "coverage-backend-real-specs",
+      "title": "backend coverage 80%/75% with real specs",
+      "promptFile": "/Users/danielpenin/whatsapp_saas/artifacts/opencode-fleet/pr276-w5-prompts/coverage-backend-real-specs.md"
+    },
+    {
+      "id": "coverage-worker-real-specs",
+      "title": "worker coverage 80%/75% with real specs",
+      "promptFile": "/Users/danielpenin/whatsapp_saas/artifacts/opencode-fleet/pr276-w5-prompts/coverage-worker-real-specs.md"
+    },
+    {
+      "id": "classify-routes-apply",
+      "title": "apply @WebhookEndpoint + @InternalEndpoint to 296 routes",
+      "promptFile": "/Users/danielpenin/whatsapp_saas/artifacts/opencode-fleet/pr276-w5-prompts/classify-routes-apply.md"
+    },
+    {
+      "id": "observability-finish-dogstatsd",
+      "title": "Sentry + dogstatsd in 4 critical endpoints + correlation-id spec",
+      "promptFile": "/Users/danielpenin/whatsapp_saas/artifacts/opencode-fleet/pr276-w5-prompts/observability-finish-dogstatsd.md"
+    },
+    {
+      "id": "pulse-recert-fix-and-cycles",
+      "title": "fix PULSE TS errors and run 3 cycles",
+      "promptFile": "/Users/danielpenin/whatsapp_saas/artifacts/opencode-fleet/pr276-w5-prompts/pulse-recert-fix-and-cycles.md"
+    },
+    {
+      "id": "globals-css-important-refactor",
+      "title": "refactor 148 !important via specificity + redo globals decomp",
+      "promptFile": "/Users/danielpenin/whatsapp_saas/artifacts/opencode-fleet/pr276-w5-prompts/globals-css-important-refactor.md"
+    },
+    {
+      "id": "codacy-i18n-jsx-batch-2",
+      "title": "wrap 200 more raw JSX strings",
+      "promptFile": "/Users/danielpenin/whatsapp_saas/artifacts/opencode-fleet/pr276-w5-prompts/codacy-i18n-jsx-batch-2.md"
+    }
+  ]
+}

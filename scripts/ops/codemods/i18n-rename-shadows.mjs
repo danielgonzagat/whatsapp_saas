@@ -20,9 +20,9 @@ function walk(d, o = []) {
     const f = path.join(d, n);
     const s = fs.statSync(f);
     if (s.isDirectory()) {
-      if (['node_modules', 'dist', '.next', 'coverage'].includes(n)) continue;
+      if (['node_modules', 'dist', '.next', 'coverage'].includes(n)) {continue;}
       walk(f, o);
-    } else if (/\.(ts|tsx)$/.test(n) && !n.endsWith('.d.ts')) o.push(f);
+    } else if (/\.(ts|tsx)$/.test(n) && !n.endsWith('.d.ts')) {o.push(f);}
   }
   return o;
 }
@@ -31,7 +31,7 @@ let filesChanged = 0,
   renames = 0;
 for (const file of roots.flatMap((r) => (fs.statSync(r).isDirectory() ? walk(r) : [r]))) {
   const src = fs.readFileSync(file, 'utf8');
-  if (!/import\s*\{[^}]*\bt\b[^}]*\}\s*from\s*['"]@\/lib\/i18n\/t['"]/.test(src)) continue;
+  if (!/import\s*\{[^}]*\bt\b[^}]*\}\s*from\s*['"]@\/lib\/i18n\/t['"]/.test(src)) {continue;}
   const sf = ts.createSourceFile(
     file,
     src,
@@ -44,12 +44,12 @@ for (const file of roots.flatMap((r) => (fs.statSync(r).isDirectory() ? walk(r) 
   function collect(node, replacement) {
     // Rename the parameter identifier at its declaration site and
     // every reference to it inside the enclosing function scope.
-    if (!ts.isIdentifier(node.name)) return;
+    if (!ts.isIdentifier(node.name)) {return;}
     const original = node.name;
     const paramName = original.text;
-    if (paramName !== 't') return;
+    if (paramName !== 't') {return;}
     const parentFn = findEnclosingFn(node);
-    if (!parentFn) return;
+    if (!parentFn) {return;}
     // Replace the parameter name
     edits.push({ start: original.getStart(sf), end: original.getEnd(), text: replacement });
     // Walk the function body and replace every Identifier text 't' that
@@ -58,13 +58,13 @@ for (const file of roots.flatMap((r) => (fs.statSync(r).isDirectory() ? walk(r) 
     // rebound, since we only start from a parameter named `t`).
     (function walkScope(scope) {
       ts.forEachChild(scope, (child) => {
-        if (!child) return;
+        if (!child) {return;}
         if (ts.isIdentifier(child) && child !== original && child.text === 't') {
           const parent = child.parent;
           // skip property access like `.t` or object literal key `t: ...`
-          if (parent && ts.isPropertyAccessExpression(parent) && parent.name === child) return;
-          if (parent && ts.isPropertyAssignment(parent) && parent.name === child) return;
-          if (parent && ts.isBindingElement(parent) && parent.propertyName === child) return;
+          if (parent && ts.isPropertyAccessExpression(parent) && parent.name === child) {return;}
+          if (parent && ts.isPropertyAssignment(parent) && parent.name === child) {return;}
+          if (parent && ts.isBindingElement(parent) && parent.propertyName === child) {return;}
           edits.push({ start: child.getStart(sf), end: child.getEnd(), text: replacement });
         }
         // Do not descend into nested functions that re-declare `t` — they
@@ -83,7 +83,7 @@ for (const file of roots.flatMap((r) => (fs.statSync(r).isDirectory() ? walk(r) 
         ts.isArrowFunction(cur) ||
         ts.isMethodDeclaration(cur)
       )
-        return cur;
+        {return cur;}
       cur = cur.parent;
     }
     return null;
@@ -113,16 +113,16 @@ for (const file of roots.flatMap((r) => (fs.statSync(r).isDirectory() ? walk(r) 
   }
   visit(sf);
 
-  if (!edits.length) continue;
+  if (!edits.length) {continue;}
   // Dedupe overlapping edits
   const seen = new Map();
   for (const e of edits) {
     const key = `${e.start}-${e.end}`;
-    if (!seen.has(key)) seen.set(key, e);
+    if (!seen.has(key)) {seen.set(key, e);}
   }
   const ordered = [...seen.values()].sort((a, b) => b.start - a.start);
   let out = src;
-  for (const e of ordered) out = out.slice(0, e.start) + e.text + out.slice(e.end);
+  for (const e of ordered) {out = out.slice(0, e.start) + e.text + out.slice(e.end);}
   fs.writeFileSync(file, out);
   filesChanged++;
   renames += ordered.length;

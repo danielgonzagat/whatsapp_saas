@@ -37,10 +37,11 @@ export async function GET(request: NextRequest) {
   }
 
   const nonce = crypto.randomUUID();
+  const checkoutCode = request.nextUrl.searchParams.get('checkoutCode')?.trim() || undefined;
   const state: CheckoutAppleState = {
     nonce,
     slug,
-    checkoutCode: request.nextUrl.searchParams.get('checkoutCode')?.trim() || undefined,
+    ...(checkoutCode !== undefined ? { checkoutCode } : {}),
     deviceFingerprint,
     returnTo,
     sourceUrl: new URL(returnTo, request.nextUrl.origin).toString(),

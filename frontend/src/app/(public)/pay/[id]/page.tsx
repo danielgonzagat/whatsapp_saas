@@ -1,6 +1,7 @@
 'use client';
 
 import { kloelT } from '@/lib/i18n/t';
+import { colors } from '@/lib/design-tokens';
 import {
   KloelBrandLockup,
   KloelLoadingState,
@@ -21,8 +22,6 @@ import {
   XCircle,
 } from 'lucide-react';
 import { use, useEffect, useRef, useState } from 'react';
-import { colors } from '@/lib/design-tokens';
-
 interface PaymentDetails {
   id: string;
   amount: number;
@@ -107,9 +106,9 @@ export default function PaymentPage({ params }: { params: Promise<{ id: string }
           }
           return;
         }
-        const data = await res.json();
+        const data: PaymentDetails = await res.json();
         setPayment(data);
-      } catch (_err) {
+      } catch {
         setError('Não foi possível conectar ao servidor');
       } finally {
         setLoading(false);
@@ -147,7 +146,7 @@ export default function PaymentPage({ params }: { params: Promise<{ id: string }
       <div className="min-h-screen bg-[colors.background.void] flex items-center justify-center px-4">
         <KloelLoadingState
           size={96}
-          traceColor={kloelT(`#FFFFFF`)}
+          traceColor={colors.text.silver}
           label={kloelT(`Kloel`)}
           hint={kloelT(`carregando o checkout`)}
           minHeight={320}

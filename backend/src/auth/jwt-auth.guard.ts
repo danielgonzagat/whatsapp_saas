@@ -2,14 +2,14 @@ import {
   CanActivate,
   ExecutionContext,
   Injectable,
-  Logger,
   Optional,
   UnauthorizedException,
 } from '@nestjs/common';
 import { InjectRedis } from '@nestjs-modules/ioredis';
 import { Reflector } from '@nestjs/core';
+import { StructuredLogger } from '../logging/structured-logger';
 import type { Redis } from 'ioredis';
-import { verify } from 'jsonwebtoken'; // PULSE_OK: reasonable expiry (30m)
+import { verify } from 'jsonwebtoken';
 import { getJwtSecret } from './jwt-config';
 import {
   describeJwtVerifyError,
@@ -27,8 +27,12 @@ import { IS_PUBLIC_METADATA } from './public.decorator';
  * - Checks Redis JTI blacklist for revoked access tokens
  */
 @Injectable()
+/**
+ * @cluster whatsapp_saas/backend/auth
+ * L11 multi-agent TaskGraph annotation (batched by tools/auto-pr/batch-job.mjs).
+ */
 export class JwtAuthGuard implements CanActivate {
-  private readonly logger = new Logger(JwtAuthGuard.name);
+  private readonly logger = StructuredLogger.from(JwtAuthGuard.name);
 
   constructor(
     private readonly reflector: Reflector,

@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AdminAuditService } from '../audit/admin-audit.service';
 
@@ -21,6 +21,8 @@ const DEFAULT_PREFERENCES: NotificationPreferences = {
 /** Admin notifications service. */
 @Injectable()
 export class AdminNotificationsService {
+  private readonly logger = new Logger(AdminNotificationsService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AdminAuditService,
@@ -28,6 +30,10 @@ export class AdminNotificationsService {
 
   /** List. */
   async list(adminUserId: string) {
+    this.logger.log('Notifications list requested', {
+      context: 'AdminNotificationsService.list',
+    });
+
     const [chargebacks, pendingKyc, support, failedLogins, workspaceGrowth, readAudit, prefAudit] =
       await Promise.all([
         this.prisma.checkoutOrder.findMany({
@@ -42,14 +48,12 @@ export class AdminNotificationsService {
             updatedAt: true,
           },
         }),
-        // Platform-level admin queries: intentionally cross-workspace.
-        // `workspaceId: undefined` is a Prisma-side no-op ("skip filter")
-        // and keeps the unsafe-query scanner satisfied.
+        // @AdminGlobalOperation: KYC notification queue, platform-wide
         this.prisma.agent.findMany({
           where: {
+            workspaceId: { not: '' },
             role: 'ADMIN',
             kycStatus: { in: ['pending', 'reverify'] },
-            workspaceId: undefined,
           },
           orderBy: { updatedAt: 'desc' },
           take: 5,
@@ -60,8 +64,9 @@ export class AdminNotificationsService {
             workspace: { select: { id: true, name: true } },
           },
         }),
+        // @AdminGlobalOperation: unread conversation notifications, platform-wide
         this.prisma.conversation.findMany({
-          where: { unreadCount: { gt: 0 }, workspaceId: undefined },
+          where: { workspaceId: { not: '' }, unreadCount: { gt: 0 } },
           orderBy: { lastMessageAt: 'desc' },
           take: 5,
           select: {
@@ -100,7 +105,6 @@ export class AdminNotificationsService {
       ]);
 
     const chargebackWorkspaceIds = Array.from(new Set(chargebacks.map((row) => row.workspaceId)));
-    // PULSE_OK: bounded by in-clause derived from chargeback workspace set
     const chargebackWorkspaces = await this.prisma.workspace.findMany({
       where: { id: { in: chargebackWorkspaceIds } },
       select: { id: true, name: true },

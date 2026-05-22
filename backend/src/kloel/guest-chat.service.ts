@@ -1,38 +1,50 @@
-import { Injectable, Logger, OnModuleDestroy, Optional } from '@nestjs/common';
+import { InjectRedis } from '@nestjs-modules/ioredis';
+import { Injectable, OnModuleDestroy, Optional } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { StructuredLogger } from '../logging/structured-logger';
 import { Request, Response } from 'express';
+import type Redis from 'ioredis';
 import OpenAI from 'openai';
-import { AuditService } from '../audit/audit.service';
 import { findFirstSequential } from '../common/async-sequence';
+import { createTextLlmClient, resolveTextLlmApiKey } from '../lib/llm-provider';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
-import { KLOEL_GUEST_SYSTEM_PROMPT } from './kloel.prompts';
 import { chatCompletionWithFallback, chatCompletionWithRetry } from './openai-wrapper';
 import { OpsAlertService } from '../observability/ops-alert.service';
+import { AbiBuilderService } from './abi/abi-builder.service';
+import { validateAbiPayload } from './abi/abi-validator';
+import { UnifiedAgentService } from './unified-agent.service';
+import { KloelToolDispatcherService } from './kloel-tool-dispatcher.service';
+import { detectActionIntent, formatToolResult } from './guest-chat.action-intent.helpers';
 
 interface GuestConversation {
-  messages: { role: 'user' | 'assistant' | 'system'; content: string }[];
+  messages: { role: 'user' | 'assistant'; content: string }[];
   createdAt: Date;
   lastMessageAt: Date;
 }
 
-// cache.invalidate — guest conversations stored in-memory Map; cleaned up via periodic timer
+const GUEST_CONVERSATION_TTL_SECONDS = 24 * 60 * 60;
+
+// cache.invalidate — Redis is the primary guest conversation store; local Map is fallback.
 @Injectable()
 export class GuestChatService implements OnModuleDestroy {
-  private readonly logger = new Logger(GuestChatService.name);
+  private readonly logger = StructuredLogger.from(GuestChatService.name);
   private readonly openai: OpenAI;
   private readonly unavailableMessage =
     'Eu continuo aqui, mas a camada de IA esta instavel agora. Tenta de novo em alguns segundos que eu retomo de onde paramos.';
 
-  // In-memory store para conversas de visitantes (em produção, usar Redis)
+  // Local fallback when Redis is temporarily unavailable.
   private conversations: Map<string, GuestConversation> = new Map();
 
   // Limpar conversas antigas a cada 1 hora
-  private cleanupInterval?: NodeJS.Timeout;
+  private cleanupInterval?: NodeJS.Timeout | undefined;
 
   constructor(
     private readonly configService: ConfigService,
-    @Optional() private readonly auditService?: AuditService,
     @Optional() private readonly opsAlert?: OpsAlertService,
+    @Optional() @InjectRedis() private readonly redis?: Redis,
+    @Optional() private readonly abiBuilder?: AbiBuilderService,
+    @Optional() private readonly unifiedAgent?: UnifiedAgentService,
+    @Optional() private readonly toolDispatcher?: KloelToolDispatcherService,
   ) {
     const isTestEnv = !!process.env.JEST_WORKER_ID || process.env.NODE_ENV === 'test';
 
@@ -43,13 +55,11 @@ export class GuestChatService implements OnModuleDestroy {
         `GuestChatService initialized. API Key present: ${!!apiKey}, length: ${apiKey?.length || 0}`,
       );
       if (!apiKey) {
-        this.logger.error('OPENAI_API_KEY not found! Check your .env file.');
+        this.logger.error('Primary LLM API key not found! Check your .env file.');
       }
     }
 
-    this.openai = new OpenAI({
-      apiKey: apiKey,
-    });
+    this.openai = createTextLlmClient(this.configService) ?? new OpenAI({ apiKey: 'missing' });
 
     // Limpar conversas inativas (mais de 24h)
     if (!isTestEnv) {
@@ -68,9 +78,7 @@ export class GuestChatService implements OnModuleDestroy {
 
   /** Leitura unificada da chave OpenAI (process.env → ConfigService) */
   private getOpenAiKey(): string | undefined {
-    return (
-      process.env.OPENAI_API_KEY || this.configService.get<string>('OPENAI_API_KEY') || undefined
-    );
+    return resolveTextLlmApiKey(this.configService);
   }
 
   private writeStreamChunk(
@@ -80,14 +88,68 @@ export class GuestChatService implements OnModuleDestroy {
     res.write(`data: ${JSON.stringify(data)}\n\n`);
   }
 
-  private buildGuestMessages(message: string, sessionId: string) {
-    const conversation = this.getOrCreateConversation(sessionId);
+  private async buildGuestMessages(message: string, sessionId: string) {
+    const conversation = await this.getOrCreateConversation(sessionId);
     conversation.messages.push({ role: 'user', content: message });
     conversation.lastMessageAt = new Date();
+    await this.persistConversation(sessionId, conversation);
+
+    const historyMessages = conversation.messages.slice(0, -1).slice(-9);
+    const currentInput = {
+      raw: message,
+      channel: 'web',
+      arrivalTimestamp: new Date().toISOString(),
+    };
+
+    if (this.abiBuilder) {
+      const abiResult = await this.abiBuilder.build({
+        audience: 'public',
+        currentInput,
+        perceptionSnapshot: {
+          channel: 'web',
+        },
+      });
+
+      if (abiResult.status !== 'ok') {
+        this.logger.warn(`ABI build failed: ${abiResult.reason}, using structured guest fallback`);
+      } else {
+        const abi = abiResult.abi;
+        const validation = validateAbiPayload(abi);
+
+        if (validation.status === 'FAIL') {
+          this.logger.warn(
+            `ABI validation failed: ${JSON.stringify(validation.issues)}, using structured guest fallback`,
+          );
+        } else {
+          const contextMessages = [
+            ...historyMessages,
+            {
+              role: 'user' as const,
+              content: JSON.stringify({
+                cognitiveState: abi,
+                currentInput,
+              }),
+            },
+          ];
+
+          return { conversation, contextMessages };
+        }
+      }
+    }
 
     const contextMessages = [
-      { role: 'system' as const, content: KLOEL_GUEST_SYSTEM_PROMPT },
-      ...conversation.messages.slice(-10),
+      ...historyMessages,
+      {
+        role: 'user' as const,
+        content: JSON.stringify({
+          cognitiveState: {
+            abiStatus: this.abiBuilder ? 'unavailable_or_invalid' : 'builder_not_injected',
+            audience: 'public',
+            perceptionSnapshot: { channel: 'web' },
+          },
+          currentInput,
+        }),
+      },
     ];
 
     return {
@@ -104,7 +166,7 @@ export class GuestChatService implements OnModuleDestroy {
 
   private async generateGuestReply(
     contextMessages: {
-      role: 'user' | 'assistant' | 'system';
+      role: 'user' | 'assistant';
       content: string;
     }[],
     sessionId: string,
@@ -193,6 +255,12 @@ export class GuestChatService implements OnModuleDestroy {
     res.flushHeaders();
 
     try {
+      if (!message || message.trim().length === 0) {
+        res.write(`data: [DONE]\n\n`);
+        res.end();
+        return;
+      }
+
       const apiKey = this.getOpenAiKey();
       if (!apiKey) {
         this.writeStreamChunk(res, {
@@ -206,7 +274,7 @@ export class GuestChatService implements OnModuleDestroy {
         return;
       }
 
-      const { conversation, contextMessages } = this.buildGuestMessages(message, sessionId);
+      const { conversation, contextMessages } = await this.buildGuestMessages(message, sessionId);
 
       const fullResponse = await this.generateGuestReply(contextMessages, sessionId);
 
@@ -218,6 +286,7 @@ export class GuestChatService implements OnModuleDestroy {
 
       // Salvar resposta na conversa
       conversation.messages.push({ role: 'assistant', content: fullResponse });
+      await this.persistConversation(sessionId, conversation);
 
       // Enviar done
       res.write(`data: [DONE]\n\n`);
@@ -242,15 +311,69 @@ export class GuestChatService implements OnModuleDestroy {
   /**
    * 🔄 Chat síncrono (sem streaming)
    */
-  async chatSync(message: string, sessionId: string): Promise<string> {
+  async chatSync(message: string, sessionId: string, workspaceId?: string): Promise<string> {
     try {
+      if (!message || message.trim().length === 0) {
+        return '';
+      }
+
       const apiKey = this.getOpenAiKey();
       if (!apiKey) {
         this.logger.error('OPENAI_API_KEY not configured');
         return this.unavailableMessage;
       }
 
-      const { conversation, contextMessages } = this.buildGuestMessages(message, sessionId);
+      // DETERMINISTIC ACTION ROUTER — execute tools without LLM decision
+      if (workspaceId && this.toolDispatcher) {
+        const action = detectActionIntent(message);
+        if (action) {
+          this.logger.log(`Deterministic: tool=${action.tool} session=${sessionId}`);
+          try {
+            await this.persistConversationMessage(sessionId, 'user', message);
+            const result = await this.toolDispatcher.executeTool(
+              workspaceId,
+              action.tool,
+              action.args,
+            );
+            const reply = formatToolResult(action.tool, result);
+            await this.persistConversationMessage(sessionId, 'assistant', reply);
+            return reply;
+          } catch (err: unknown) {
+            this.logger.warn(
+              `Deterministic failed: ${err instanceof Error ? err.message : 'unknown'}, falling back to LLM`,
+            );
+          }
+        }
+      }
+
+      // UNIFIED AGENT PATH
+      if (workspaceId && this.unifiedAgent) {
+        this.logger.log(
+          `Guest chat sync via UnifiedAgent: workspace=${workspaceId}, session=${sessionId}`,
+        );
+        try {
+          const result = await this.unifiedAgent.processIncomingMessage({
+            workspaceId,
+            phone: sessionId,
+            message,
+            channel: 'web',
+            executeTools: true,
+          });
+          const reply = result.reply || result.response || this.unavailableMessage;
+          await this.persistConversationMessage(sessionId, 'user', message);
+          await this.persistConversationMessage(sessionId, 'assistant', reply);
+          this.logger.log(`UnifiedAgent reply: ${reply.substring(0, 100)}...`);
+          return reply;
+        } catch (uaError: unknown) {
+          this.logger.warn(
+            `UnifiedAgent failed (${uaError instanceof Error ? uaError.message : 'unknown'}), falling back to guest LLM`,
+          );
+          // Fall through to guest LLM path below
+        }
+      }
+
+      // GUEST LLM FALLBACK — original behavior without tools
+      const { conversation, contextMessages } = await this.buildGuestMessages(message, sessionId);
 
       this.logger.log(
         `Guest chat sync: session=${sessionId}, message="${message.substring(0, 50)}..."`,
@@ -259,6 +382,7 @@ export class GuestChatService implements OnModuleDestroy {
       const reply = await this.generateGuestReply(contextMessages, sessionId);
 
       conversation.messages.push({ role: 'assistant', content: reply });
+      await this.persistConversation(sessionId, conversation);
 
       this.logger.log(`Guest chat sync reply: ${reply.substring(0, 100)}...`);
 
@@ -276,15 +400,96 @@ export class GuestChatService implements OnModuleDestroy {
   /**
    * 📋 Obter ou criar conversa
    */
-  private getOrCreateConversation(sessionId: string): GuestConversation {
-    if (!this.conversations.has(sessionId)) {
-      this.conversations.set(sessionId, {
-        messages: [],
-        createdAt: new Date(),
-        lastMessageAt: new Date(),
-      });
+  private getRedisKey(sessionId: string): string {
+    return `kloel:guest-chat:${sessionId}`;
+  }
+
+  private parseConversation(raw: string | null): GuestConversation | null {
+    if (!raw) {
+      return null;
     }
-    return this.conversations.get(sessionId);
+    try {
+      const parsed = JSON.parse(raw) as {
+        messages?: GuestConversation['messages'];
+        createdAt?: string;
+        lastMessageAt?: string;
+      };
+      if (!Array.isArray(parsed.messages)) {
+        return null;
+      }
+      return {
+        messages: parsed.messages.filter(
+          (message): message is GuestConversation['messages'][number] =>
+            message.role === 'user' || message.role === 'assistant',
+        ),
+        createdAt: parsed.createdAt ? new Date(parsed.createdAt) : new Date(),
+        lastMessageAt: parsed.lastMessageAt ? new Date(parsed.lastMessageAt) : new Date(),
+      };
+    } catch {
+      return null;
+    }
+  }
+
+  private async getOrCreateConversation(sessionId: string): Promise<GuestConversation> {
+    const cached = this.conversations.get(sessionId);
+    if (cached) {
+      return cached;
+    }
+
+    if (this.redis) {
+      try {
+        const stored = this.parseConversation(await this.redis.get(this.getRedisKey(sessionId)));
+        if (stored) {
+          this.conversations.set(sessionId, stored);
+          return stored;
+        }
+      } catch (error: unknown) {
+        this.logger.warn(
+          `Guest chat Redis read failed (${error instanceof Error ? error.message : 'unknown_error'}). Falling back to local cache.`,
+        );
+      }
+    }
+
+    const created: GuestConversation = {
+      messages: [],
+      createdAt: new Date(),
+      lastMessageAt: new Date(),
+    };
+    this.conversations.set(sessionId, created);
+    return created;
+  }
+
+  private async persistConversation(
+    sessionId: string,
+    conversation: GuestConversation,
+  ): Promise<void> {
+    this.conversations.set(sessionId, conversation);
+    if (!this.redis) {
+      return;
+    }
+    try {
+      await this.redis.set(
+        this.getRedisKey(sessionId),
+        JSON.stringify(conversation),
+        'EX',
+        GUEST_CONVERSATION_TTL_SECONDS,
+      );
+    } catch (error: unknown) {
+      this.logger.warn(
+        `Guest chat Redis write failed (${error instanceof Error ? error.message : 'unknown_error'}). Continuing with local cache.`,
+      );
+    }
+  }
+
+  private async persistConversationMessage(
+    sessionId: string,
+    role: 'user' | 'assistant',
+    content: string,
+  ): Promise<void> {
+    const conversation = await this.getOrCreateConversation(sessionId);
+    conversation.messages.push({ role, content });
+    conversation.lastMessageAt = new Date();
+    await this.persistConversation(sessionId, conversation);
   }
 
   /**
@@ -298,7 +503,7 @@ export class GuestChatService implements OnModuleDestroy {
     for (const [sessionId, conversation] of this.conversations.entries()) {
       if (now - conversation.lastMessageAt.getTime() > maxAge) {
         this.conversations.delete(sessionId);
-        cleaned++;
+        cleaned += 1;
       }
     }
 

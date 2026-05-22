@@ -7,7 +7,6 @@ import {
   Optional,
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { EmailService } from '../auth/email.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { verifyUnsubscribeToken } from '../common/utils/unsubscribe-token.util';
 import { JwtSetValidator, SecurityEventTokenPayload } from './utils/jwt-set.validator';
@@ -23,13 +22,12 @@ export class ComplianceService {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly emailService: EmailService,
     private readonly jwtSetValidator: JwtSetValidator,
     @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
 
   /** Get deletion status.
-   * PULSE_OK — DataDeletionRequest is a system-level compliance model
+   * DataDeletionRequest is a system-level compliance model
    * looked up by globally-unique confirmationCode, not workspace-scoped.
    */
   async getDeletionStatus(code: string) {
@@ -51,7 +49,7 @@ export class ComplianceService {
   }
 
   /** Handle facebook data deletion.
-   * PULSE_OK — Facebook data deletion webhook mandated by Meta Platform
+   * Facebook data deletion webhook mandated by Meta Platform
    * policies. Operates on provider-level identifiers across all workspaces.
    * DataDeletionRequest is a cross-system compliance model.
    */
@@ -84,7 +82,6 @@ export class ComplianceService {
   }
 
   /** Handle facebook deauthorize.
-   * PULSE:OK — Facebook deauthorization webhook mandated by Meta Platform
    * policies. Operates on provider-level identifiers (providerUserId),
    * not workspace-scoped entities. Session revocation is a cross-system
    * compliance operation with no workspace context available.
@@ -112,7 +109,6 @@ export class ComplianceService {
     return { ok: true };
   }
 
-  // PULSE_OK: utility validator — no data mutation, used by system-level compliance webhooks
   private parseFacebookSignedRequest(signedRequest: string) {
     try {
       return validateSignedRequest(signedRequest, process.env.META_APP_SECRET || '');
@@ -161,125 +157,6 @@ export class ComplianceService {
     }
 
     return { accepted: true };
-  }
-
-  /** Export user data. */
-  async exportUserData(agentId: string, workspaceId?: string | null) {
-    const [agent, socialAccounts, dataDeletionRequests, auditLogs, workspace] = await Promise.all([
-      this.prisma.agent.findFirst({
-        where: workspaceId ? { id: agentId, workspaceId } : { id: agentId },
-        select: {
-          id: true,
-          name: true,
-          email: true,
-          role: true,
-          phone: true,
-          provider: true,
-          providerId: true,
-          workspaceId: true,
-          avatarUrl: true,
-          emailVerified: true,
-          createdAt: true,
-          updatedAt: true,
-          disabledAt: true,
-          deletedAt: true,
-        },
-      }),
-      // PULSE_OK: bounded by single agent's social accounts
-      this.prisma.socialAccount.findMany({
-        where: { agentId },
-        orderBy: { createdAt: 'asc' },
-        select: {
-          provider: true,
-          providerUserId: true,
-          email: true,
-          tokenExpiresAt: true,
-          revokedAt: true,
-          createdAt: true,
-          updatedAt: true,
-          lastUsedAt: true,
-        },
-      }),
-      this.prisma.dataDeletionRequest.findMany({
-        where: { userId: agentId },
-        orderBy: { requestedAt: 'desc' },
-        select: {
-          provider: true,
-          providerUserId: true,
-          status: true,
-          confirmationCode: true,
-          requestedAt: true,
-          completedAt: true,
-        },
-      }),
-      this.prisma.auditLog.findMany({
-        where: workspaceId ? { agentId, workspaceId } : { agentId },
-        orderBy: { createdAt: 'desc' },
-        take: 1000,
-        select: {
-          action: true,
-          resource: true,
-          resourceId: true,
-          ipAddress: true,
-          createdAt: true,
-        },
-      }),
-      workspaceId
-        ? this.prisma.workspace.findUnique({
-            where: { id: workspaceId },
-            select: {
-              id: true,
-              name: true,
-              createdAt: true,
-              updatedAt: true,
-            },
-          })
-        : null,
-    ]);
-
-    return {
-      exportedAt: new Date().toISOString(),
-      agent,
-      workspace,
-      socialAccounts,
-      dataDeletionRequests,
-      auditLogs,
-    };
-  }
-
-  /** Delete current user. */
-  async deleteCurrentUser(agentId: string, workspaceId?: string | null) {
-    const agent = await this.prisma.agent.findFirst({
-      where: workspaceId ? { id: agentId, workspaceId } : { id: agentId },
-      select: {
-        email: true,
-        workspaceId: true,
-      },
-    });
-    const confirmationCode = this.generateConfirmationCode();
-    const request = await this.prisma.dataDeletionRequest.create({
-      data: {
-        provider: 'self',
-        userId: agentId,
-        status: 'processing',
-        confirmationCode,
-        rawPayload: {
-          workspaceId: workspaceId || null,
-        },
-      },
-    });
-
-    await this.softDeleteAgent(agentId, request.id);
-    if (agent?.email) {
-      await this.emailService.sendDataDeletionConfirmationEmail(agent.email);
-    }
-
-    return {
-      status: 'completed',
-      confirmationCode,
-      requestedAt: request.requestedAt,
-      completedAt: new Date().toISOString(),
-    };
   }
 
   private async routeRiscEvent(eventType: string, subject: string) {
@@ -360,7 +237,6 @@ export class ComplianceService {
   }
 
   /**
-   * PULSE:OK — System-level compliance operation. Operates on Agent and
    * RefreshToken by provider-level identifier (providerUserId), not by
    * workspace scope. Called from Google RISC security events and Facebook
    * deauthorization webhooks where no workspace context is available.
@@ -378,7 +254,6 @@ export class ComplianceService {
   }
 
   /**
-   * PULSE:OK — System-level compliance operation. Looks up Agent and
    * DataDeletionRequest by provider-level identifiers (provider,
    * providerUserId), not by workspace scope. Called from Facebook data
    * deletion and Google RISC webhook handlers where no workspace context
@@ -407,7 +282,6 @@ export class ComplianceService {
   }
 
   /**
-   * PULSE:OK — System-level lookup by provider identifiers (provider,
    * providerUserId). Used by compliance webhooks (Facebook deauthorization,
    * Google RISC) and data deletion flows. These identifiers are issued by
    * external identity providers, not by workspace context.
@@ -446,7 +320,6 @@ export class ComplianceService {
   }
 
   /**
-   * PULSE:OK — System-level GDPR data deletion operation. Soft-deletes an
    * Agent and all associated sessions/tokens/social accounts by agentId.
    * Called from Facebook data deletion, Google RISC account-purged, and
    * user-initiated account deletion flows where the agent has already been

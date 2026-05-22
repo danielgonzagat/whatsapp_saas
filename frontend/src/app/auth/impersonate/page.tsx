@@ -17,7 +17,7 @@ export default function AuthImpersonatePage() {
   useEffect(() => {
     const payload = readImpersonationPayload();
     if (!payload?.access_token) {
-      setStatus('invalid');
+      queueMicrotask(() => setStatus('invalid'));
       return;
     }
     applyImpersonationPayload(payload);
@@ -30,7 +30,7 @@ export default function AuthImpersonatePage() {
     const safeTarget = new URL(next, window.location.origin);
     const sanitizedPath = safeTarget.pathname + safeTarget.search + safeTarget.hash;
     window.history.replaceState(null, '', '/auth/impersonate');
-    setStatus('done');
+    queueMicrotask(() => setStatus('done'));
     window.location.replace(sanitizedPath);
   }, [fallbackNext]);
 

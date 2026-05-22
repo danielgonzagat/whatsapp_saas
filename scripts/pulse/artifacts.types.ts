@@ -5,9 +5,9 @@
  * circular dependency back to artifacts.ts.
  */
 import type { PulseAgentOrchestrationState, PulseAutonomyState } from './types.autonomy';
-import type { PulseCapabilityState } from './__parts__/types.capabilities/03-capability';
-import type { PulseExternalSignalState } from './__parts__/types.capabilities/05-external-signals';
-import type { PulseFlowProjection } from './__parts__/types.capabilities/04-flow-projection';
+import type { PulseCapabilityState } from './types.capabilities/03-capability';
+import type { PulseExternalSignalState } from './types.capabilities/05-external-signals';
+import type { PulseFlowProjection } from './types.capabilities/04-flow-projection';
 import type { PulseParityGapsArtifact } from './types.capabilities.parity';
 import type { PulseCertification, PulseGateResult } from './types.evidence';
 import type { PulseCodebaseTruth } from './types.truth';

@@ -1,4 +1,8 @@
 /** Normalize a raw endpoint string to a canonical path. */
+export function isExternalEndpoint(raw: string): boolean {
+  return /^https?:\/\//i.test(raw.trim());
+}
+
 export function normalizeEndpoint(raw: string): string {
   let p = raw;
 

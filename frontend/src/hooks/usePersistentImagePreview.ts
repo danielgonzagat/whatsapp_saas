@@ -22,8 +22,8 @@ export function usePersistentImagePreview(options: UsePersistentImagePreviewOpti
       return;
     }
 
-    setPreviewUrlState(storedPreview);
-    setHasLocalPreview(true);
+    queueMicrotask(() => setPreviewUrlState(storedPreview));
+    queueMicrotask(() => setHasLocalPreview(true));
   }, [storageKey]);
 
   const setPreviewUrl = (nextPreviewUrl: string) => {

@@ -6,6 +6,7 @@ import {
   rememberGuestWorkspaceClaimCandidate,
 } from '@/lib/anonymous-session';
 import {
+  apiFetch,
   authApi,
   billingApi,
   resolveWorkspaceFromAuthPayload,
@@ -17,7 +18,7 @@ import {
   isAnonymousKloelPayload,
   isAnonymousKloelToken,
 } from '@/lib/auth-identity';
-import { completeOnboardingProfile, getOnboardingStatus } from '@/lib/api/onboarding';
+import { completeOnboardingProfile } from '@/lib/api/onboarding';
 import {
   type ReactNode,
   createContext,
@@ -40,7 +41,7 @@ interface Subscription {
   status: 'none' | 'trial' | 'active' | 'expired' | 'suspended';
   trialDaysLeft: number;
   creditsBalance: number;
-  plan?: string;
+  plan?: string | undefined;
 }
 interface AuthState {
   isAuthenticated: boolean;
@@ -62,10 +63,7 @@ interface AuthContextType extends AuthState {
   ) => Promise<{ success: boolean; error?: string }>;
   signIn: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   signInWithGoogle: (credential: string) => Promise<{ success: boolean; error?: string }>;
-  signInWithFacebook: (
-    accessToken: string,
-    userId?: string,
-  ) => Promise<{ success: boolean; error?: string }>;
+  signInWithFacebook: (accessToken: string, userId?: string) => Promise<{ success: boolean; error?: string }>;
   requestMagicLink: (
     email: string,
     redirectTo?: string,
@@ -80,7 +78,6 @@ interface AuthContextType extends AuthState {
   authModalMode: 'signup' | 'login';
 }
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
-const ONBOARDING_STORAGE_SLOT = 'kloel_onboarding_completed';
 function isUnauthorizedStatus(status?: number): boolean {
   return status === 401 || status === 403;
 }
@@ -101,7 +98,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     workspace: null,
     subscription: { status: 'none', trialDaysLeft: 0, creditsBalance: 0 },
   });
-  // Hydrate from JWT on client mount — avoids SSR/client mismatch (React #418)
+  // Hydrate from JWT on client mount — avoids SSR/client mismatch (React rgb(68, 17, 136))
   const hydratedRef = useRef(false);
   useEffect(() => {
     if (hydratedRef.current) {
@@ -113,23 +110,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const payload = decodeKloelJwtPayload(token);
       if (payload?.sub && payload?.email && !isAnonymousKloelPayload(payload)) {
         tokenStorage.ensureAuthCookie();
-        setAuthState({
-          isAuthenticated: true,
-          isLoading: true,
-          justSignedUp: false,
-          hasCompletedOnboarding: localStorage.getItem(ONBOARDING_STORAGE_SLOT) === 'true',
-          user: { id: payload.sub, email: payload.email, name: payload.name || '' },
-          workspace: (() => {
-            const storedWorkspaceId = tokenStorage.getWorkspaceId();
-            if (storedWorkspaceId) {
-              return { id: storedWorkspaceId, name: '' };
-            }
-            if (payload.workspaceId) {
-              return { id: payload.workspaceId, name: '' };
-            }
-            return null;
-          })(),
-          subscription: { status: 'none', trialDaysLeft: 0, creditsBalance: 0 },
+        const payloadSub = payload.sub;
+        const payloadEmail = payload.email;
+        const payloadName = payload.name || '';
+        const payloadWorkspaceId = payload.workspaceId;
+        queueMicrotask(() => {
+          setAuthState({
+            isAuthenticated: true,
+            isLoading: true,
+            justSignedUp: false,
+            hasCompletedOnboarding: false,
+            user: { id: payloadSub, email: payloadEmail, name: payloadName },
+            workspace: (() => {
+              const storedWorkspaceId = tokenStorage.getWorkspaceId();
+              if (storedWorkspaceId) {
+                return { id: storedWorkspaceId, name: '' };
+              }
+              if (payloadWorkspaceId) {
+                return { id: payloadWorkspaceId, name: '' };
+              }
+              return null;
+            })(),
+            subscription: { status: 'none', trialDaysLeft: 0, creditsBalance: 0 },
+          });
         });
       }
     }
@@ -212,17 +215,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         trialDaysLeft: 0,
         creditsBalance: 0,
       };
-      let onboardingCompleted = localStorage.getItem(ONBOARDING_STORAGE_SLOT) === 'true';
-      if (workspace?.id) {
+      let onboardingCompleted = false;
+      if (user?.id) {
         try {
-          const onboardingRes = await getOnboardingStatus(workspace.id);
-          onboardingCompleted = onboardingCompleted || onboardingRes.data?.completed === true;
-          if (onboardingCompleted) {
-            localStorage.setItem(ONBOARDING_STORAGE_SLOT, 'true');
-          }
+          const meRes = await apiFetch<{ user?: { onboardingCompletedAt?: string | null } }>(
+            '/auth/me',
+          );
+          onboardingCompleted = Boolean(meRes.data?.user?.onboardingCompletedAt);
         } catch (error) {
           logAuthBootstrapIssue('Failed to load onboarding status during auth bootstrap:', error);
         }
+      }
+      if (workspace?.id) {
         try {
           const subRes = await billingApi.getSubscription();
           if (subRes.data) {
@@ -260,7 +264,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [claimGuestWhatsAppSession]);
   useEffect(() => {
-    checkAuthStatus();
+    queueMicrotask(() => {
+      void checkAuthStatus();
+    });
   }, [checkAuthStatus]);
   const refreshSubscription = useCallback(async () => {
     if (!authState.workspace?.id) {
@@ -306,16 +312,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         trialDaysLeft: 0,
         creditsBalance: 0,
       };
-      let onboardingCompleted = localStorage.getItem(ONBOARDING_STORAGE_SLOT) === 'true';
-      if (workspace?.id) {
-        const onboardingRes = await getOnboardingStatus(workspace.id).catch((error: unknown) => {
+      let onboardingCompleted = false;
+      if (user?.id) {
+        const meRes = await apiFetch<{ user?: { onboardingCompletedAt?: string | null } }>(
+          '/auth/me',
+        ).catch((error: unknown) => {
           logAuthBootstrapIssue('Failed to load onboarding status after auth response:', error);
           return null;
         });
-        onboardingCompleted = onboardingCompleted || onboardingRes?.data?.completed === true;
-        if (onboardingCompleted) {
-          localStorage.setItem(ONBOARDING_STORAGE_SLOT, 'true');
-        }
+        onboardingCompleted = Boolean(meRes?.data?.user?.onboardingCompletedAt);
+      }
+      if (workspace?.id) {
         const subRes = await billingApi.getSubscription();
         if (subRes.data) {
           subscription = {
@@ -440,7 +447,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (res.data?.user) {
       return hydrateFromAuthResponse(res.data, {
         fallbackEmail: res.data.user.email,
-        fallbackName: res.data.user.name ?? undefined,
+        ...(res.data.user.name ? { fallbackName: res.data.user.name } : {}),
       });
     }
     return { success: false, error: 'Falha ao autenticar com Google.' };
@@ -468,7 +475,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (res.data?.user) {
       return hydrateFromAuthResponse(res.data, {
         fallbackEmail: res.data.user.email,
-        fallbackName: res.data.user.name ?? undefined,
+        ...(res.data.user.name ? { fallbackName: res.data.user.name } : {}),
       });
     }
     return { success: false, error: 'Falha ao autenticar com Facebook.' };
@@ -515,19 +522,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
   };
   const completeOnboarding = async () => {
-    localStorage.setItem(ONBOARDING_STORAGE_SLOT, 'true');
     setAuthState((prev) => ({
       ...prev,
       hasCompletedOnboarding: true,
       justSignedUp: false,
     }));
+    try {
+      await apiFetch('/auth/me/onboarding-complete', { method: 'PUT' });
+    } catch (error) {
+      logAuthBootstrapIssue('Failed to persist onboarding completion:', error);
+    }
     const workspaceId = authState.workspace?.id;
     if (!workspaceId) {
       return;
     }
     const result = await completeOnboardingProfile(workspaceId);
     if (result.error) {
-      logAuthBootstrapIssue('Failed to persist onboarding completion:', result.error);
+      logAuthBootstrapIssue('Failed to persist onboarding profile:', result.error);
     }
   };
   const dismissOnboardingForSession = () => {

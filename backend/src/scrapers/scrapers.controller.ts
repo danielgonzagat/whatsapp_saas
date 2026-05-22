@@ -17,20 +17,21 @@ import { resolveWorkspaceId } from '../auth/workspace-access';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { ScrapersService } from './scrapers.service';
 import { AuthenticatedRequest } from '../common/interfaces/authenticated-request.interface';
+import { RouteClass } from '../common/throttler/route-class.decorator';
 
 class CreateJobDto {
   @IsString()
   @MaxLength(2048)
-  workspaceId: string;
+  workspaceId!: string;
 
   @IsString()
   @MaxLength(2048)
   @IsIn(['MAPS', 'INSTAGRAM', 'GROUP'])
-  type: string;
+  type!: string;
 
   @IsString()
   @MaxLength(2048)
-  query: string;
+  query!: string;
 
   @IsOptional()
   @IsString()
@@ -41,6 +42,7 @@ class CreateJobDto {
 /** Scrapers controller. */
 @Controller('scrapers')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
+@RouteClass('mutate')
 export class ScrapersController {
   constructor(private readonly scrapersService: ScrapersService) {}
 

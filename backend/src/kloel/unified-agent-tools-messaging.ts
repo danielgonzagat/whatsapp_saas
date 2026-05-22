@@ -219,4 +219,25 @@ export const UNIFIED_AGENT_TOOLS_MESSAGING: ChatCompletionTool[] = [
       },
     },
   },
+  {
+    type: 'function',
+    function: {
+      name: 'send_message_via_channel',
+      description:
+        'Envia uma mensagem para um contato atraves do canal conectado (WhatsApp, Instagram, Email etc)',
+      parameters: {
+        type: 'object',
+        properties: {
+          phone: { type: 'string', description: 'Telefone do destinatario' },
+          message: { type: 'string', description: 'Conteudo da mensagem' },
+          channel: {
+            type: 'string',
+            enum: ['whatsapp', 'instagram', 'messenger', 'email'],
+            description: 'Canal de envio',
+          },
+        },
+        required: ['phone', 'message'],
+      },
+    },
+  },
 ];

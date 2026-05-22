@@ -36,7 +36,7 @@ function parseArgs() {
   const dry = args.includes('--dry');
   let only = null;
   for (const a of args) {
-    if (a.startsWith('--only=')) only = a.slice('--only='.length).split(',').filter(Boolean);
+    if (a.startsWith('--only=')) {only = a.slice('--only='.length).split(',').filter(Boolean);}
   }
   return { dry, only };
 }
@@ -45,8 +45,8 @@ function discoverEngines() {
   const entries = readdirSync(ENGINES_DIR);
   const engines = [];
   for (const name of entries) {
-    if (name.startsWith('_')) continue;
-    if (!name.endsWith('.mjs')) continue;
+    if (name.startsWith('_')) {continue;}
+    if (!name.endsWith('.mjs')) {continue;}
     engines.push({ id: name.replace(/\.mjs$/, ''), file: join(ENGINES_DIR, name) });
   }
   return engines.sort((a, b) => a.id.localeCompare(b.id));
@@ -185,8 +185,8 @@ function aggregate(reports) {
     .sort((a, b) => {
       const sa = SEVERITY_WEIGHT[a.dominantSeverity] ?? 0;
       const sb = SEVERITY_WEIGHT[b.dominantSeverity] ?? 0;
-      if (sa !== sb) return sb - sa;
-      if (a.count !== b.count) return b.count - a.count;
+      if (sa !== sb) {return sb - sa;}
+      if (a.count !== b.count) {return b.count - a.count;}
       return a.file.localeCompare(b.file);
     });
   return {

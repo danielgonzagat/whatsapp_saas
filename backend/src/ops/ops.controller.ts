@@ -9,19 +9,20 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
-import { Queue } from 'bullmq';
 import type { Redis } from 'ioredis';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Roles } from '../auth/roles.decorator';
 import { forEachSequential } from '../common/async-sequence';
 import { QueueHealthService } from '../metrics/queue-health.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { connection, queueOptions, queueRegistry } from '../queue/queue';
+import { getDlqQueue, queueRegistry } from '../queue/queue';
+import { RouteClass } from '../common/throttler/route-class.decorator';
 
 /** Ops controller. */
 @Controller('ops/queues')
 @UseGuards(JwtAuthGuard)
 @Roles('ADMIN')
+@RouteClass('read')
 export class OpsController {
   constructor(
     private readonly queueHealth: QueueHealthService,
@@ -66,7 +67,7 @@ export class OpsController {
       const retryOpts = { ...job.opts, jobId: `dlq-retry:${job.id || Date.now()}` };
       await main.add(job.name || 'default', job.data, retryOpts);
       await job.remove();
-      retried++;
+      retried += 1;
     });
 
     return { queue: name, retried };
@@ -140,9 +141,6 @@ export class OpsController {
 
   private getDlq(name: string) {
     const queue = this.getQueue(name);
-    return new Queue(`${queue.name}-dlq`, {
-      ...queueOptions,
-      connection,
-    });
+    return getDlqQueue(queue);
   }
 }

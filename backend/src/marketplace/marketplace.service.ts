@@ -1,10 +1,22 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
+import type { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+
+function requireTemplateJson(value: Prisma.JsonValue, field: string): Prisma.InputJsonValue {
+  if (value === null) {
+    throw new Error(`Template ${field} is missing`);
+  }
+  return value;
+}
 
 /** Marketplace service. */
 @Injectable()
 export class MarketplaceService {
-  constructor(private readonly prisma: PrismaService) {}
+  private readonly logger = new Logger(MarketplaceService.name);
+
+  constructor(private readonly prisma: PrismaService) {
+    this.logger.log('MarketplaceService initialized');
+  }
 
   /** List templates. */
   async listTemplates(category?: string) {
@@ -36,14 +48,15 @@ export class MarketplaceService {
       throw new Error('Template not found');
     }
 
-    // Clone Flow
+    const nodes = requireTemplateJson(template.nodes, 'nodes');
+    const edges = requireTemplateJson(template.edges, 'edges');
     const newFlow = await this.prisma.flow.create({
       data: {
-        workspaceId,
+        workspace: { connect: { id: workspaceId } },
         name: template.name,
         description: template.description,
-        nodes: template.nodes,
-        edges: template.edges,
+        nodes,
+        edges,
         isActive: false,
         triggerType: 'MANUAL',
       },

@@ -1,5 +1,5 @@
 import type { PulsePredicateGraph } from './predicate-graph';
-import { splitIdentifierTokensFromObservedName } from './dynamic-reality-kernel/__parts__/token-evidence';
+import { splitIdentifierTokensFromObservedName } from './dynamic-reality-kernel/token-evidence';
 
 export interface PulseDynamicRiskInput {
   predicateGraph: PulsePredicateGraph;

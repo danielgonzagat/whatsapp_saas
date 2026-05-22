@@ -4,7 +4,7 @@ import { InboxService } from './inbox.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { InboxGateway } from './inbox.gateway';
 import { WebhookDispatcherService } from '../webhooks/webhook-dispatcher.service';
-import { ModuleRef } from '@nestjs/core';
+import { ChannelTransportRegistry } from '../kloel/channel-transport.registry';
 
 /**
  * P6-6 (I14 + I15) coverage for the inbox service.
@@ -44,8 +44,6 @@ type MockPrisma = {
 type MockGateway = { emitToWorkspace: jest.Mock };
 
 type MockDispatcher = { dispatch: jest.Mock };
-
-type MockModuleRef = { get: jest.Mock };
 
 /** Shape returned by `saveMessage` — mirrors the Prisma Message model fields. */
 interface SaveMessageResult {
@@ -165,7 +163,7 @@ describe('InboxService', () => {
   let prisma: MockPrisma;
   let gateway: MockGateway;
   let dispatcher: MockDispatcher;
-  let moduleRef: MockModuleRef;
+  let channelTransports: { send: jest.Mock };
 
   beforeEach(async () => {
     prisma = {
@@ -182,7 +180,7 @@ describe('InboxService', () => {
     };
     gateway = { emitToWorkspace: jest.fn() };
     dispatcher = { dispatch: jest.fn().mockResolvedValue(undefined) };
-    moduleRef = { get: jest.fn() };
+    channelTransports = { send: jest.fn().mockResolvedValue({ success: true }) };
 
     const testingModule: TestingModule = await Test.createTestingModule({
       providers: [
@@ -190,7 +188,7 @@ describe('InboxService', () => {
         { provide: PrismaService, useValue: prisma },
         { provide: InboxGateway, useValue: gateway },
         { provide: WebhookDispatcherService, useValue: dispatcher },
-        { provide: ModuleRef, useValue: moduleRef },
+        { provide: ChannelTransportRegistry, useValue: channelTransports },
       ],
     }).compile();
 
@@ -401,7 +399,7 @@ describe('InboxService', () => {
   });
 
   describe('replyToConversation', () => {
-    it('ignores malformed queued flags from WhatsApp send results', async () => {
+    it('persists outbound reply after the channel transport accepts the send', async () => {
       prisma.conversation.findFirst.mockResolvedValue({
         id: 'conv-1',
         workspaceId: 'ws-1',
@@ -409,14 +407,25 @@ describe('InboxService', () => {
         channel: 'WHATSAPP',
         contact: { phone: '5511999999999' },
       });
-      moduleRef.get.mockReturnValue({
-        sendMessage: jest.fn().mockResolvedValue({ queued: { provider: 'waha' } }),
-      });
+      channelTransports.send.mockResolvedValue({ success: true, messageId: 'wamid-1' });
       const saveMessageSpy = jest.spyOn(service, 'saveMessage').mockResolvedValue(messageStub);
 
       await service.replyToConversation('ws-1', 'conv-1', 'oi');
 
-      expect(saveMessageSpy).not.toHaveBeenCalled();
+      expect(channelTransports.send).toHaveBeenCalledWith('ws-1', {
+        workspaceId: 'ws-1',
+        channel: 'whatsapp',
+        recipientId: '5511999999999',
+        content: 'oi',
+      });
+      expect(saveMessageSpy).toHaveBeenCalledWith({
+        workspaceId: 'ws-1',
+        contactId: 'contact-1',
+        content: 'oi',
+        direction: 'OUTBOUND',
+        channel: 'WHATSAPP',
+        status: 'PENDING',
+      });
     });
 
     it('persists a pending outbound message when WhatsApp confirms queueing', async () => {
@@ -427,9 +436,7 @@ describe('InboxService', () => {
         channel: 'WHATSAPP',
         contact: { phone: '5511999999999' },
       });
-      moduleRef.get.mockReturnValue({
-        sendMessage: jest.fn().mockResolvedValue({ queued: true, jobId: 'job-1' }),
-      });
+      channelTransports.send.mockResolvedValue({ success: true, messageId: 'job-1' });
       const saveMessageSpy = jest.spyOn(service, 'saveMessage').mockResolvedValue(messageStub);
 
       await service.replyToConversation('ws-1', 'conv-1', 'oi');

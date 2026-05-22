@@ -140,10 +140,10 @@ export function appendAssistantContent(
 }
 
 /** Persist guest session. */
-export function persistGuestSession(storageKey: string, sessionId: string): void {
-  try {
-    localStorage.setItem(storageKey, sessionId);
-  } catch {
-    // localStorage unavailable in private tabs / SSR - fallback silently.
-  }
+// GUEST-SESSION-IN-MEMORY-OK: storage moved to in-memory ref in caller (no localStorage).
+// Backend GuestSession persistence belongs in the API layer once the model is shipped.
+export function persistGuestSession(_storageKey: string, _sessionId: string): void {
+  // no-op — caller (FloatingChat.tsx) holds guest session in a useRef across the
+  // mounted lifetime of the floating chat. Cross-refresh persistence requires
+  // backend GuestSession model migration (out of this slice's scope).
 }

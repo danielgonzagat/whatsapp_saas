@@ -1,8 +1,15 @@
+const mockFlowQueueAdd = jest.fn();
+
+jest.mock('../queue/queue', () => ({
+  flowQueue: { add: (...args: unknown[]) => mockFlowQueueAdd(...args) },
+}));
+
 import { Test, TestingModule } from '@nestjs/testing';
-import { WebhooksService } from './webhooks.service';
-import { PrismaService } from '../prisma/prisma.service';
+import { correlationStore } from '../common/observability/correlation-store';
 import { InboxGateway } from '../inbox/inbox.gateway';
 import { OmnichannelService } from '../inbox/omnichannel.service';
+import { PrismaService } from '../prisma/prisma.service';
+import { WebhooksService } from './webhooks.service';
 
 describe('WebhooksService', () => {
   let service: WebhooksService;
@@ -28,6 +35,7 @@ describe('WebhooksService', () => {
   let omnichannel: Record<string, never>;
 
   beforeEach(async () => {
+    mockFlowQueueAdd.mockReset().mockResolvedValue({ id: 'job-1' });
     prisma = {
       message: {
         updateMany: jest.fn().mockResolvedValue({ count: 0 }),
@@ -140,5 +148,66 @@ describe('WebhooksService', () => {
     });
     expect(res.updated).toBe(0);
     expect(prisma.auditLog.create).toHaveBeenCalled();
+  });
+
+  it('propagates the request correlation id into generic webhook flow jobs', async () => {
+    prisma.flow.findFirst.mockResolvedValue({ id: 'flow-1', workspaceId: 'ws1' });
+
+    await correlationStore.run(
+      { correlationId: 'corr-webhook-1', requestId: 'corr-webhook-1' },
+      async () => {
+        await service.processWebhook('ws1', 'flow-1', { phone: '+55 (11) 99999-0000' });
+      },
+    );
+
+    expect(mockFlowQueueAdd).toHaveBeenCalledWith(
+      'run-flow',
+      expect.objectContaining({
+        workspaceId: 'ws1',
+        flowId: 'flow-1',
+        user: '5511999990000',
+        correlationId: 'corr-webhook-1',
+        initialVars: expect.objectContaining({
+          source: 'webhook',
+          correlationId: 'corr-webhook-1',
+        }),
+      }),
+    );
+  });
+
+  it('propagates the request correlation id into finance webhook flow jobs', async () => {
+    prisma.workspace.findUnique.mockResolvedValue({
+      providerSettings: { finance: { flowPaidId: 'flow-paid' } },
+    });
+
+    await correlationStore.run(
+      { correlationId: 'corr-finance-1', requestId: 'corr-finance-1' },
+      async () => {
+        await service.processFinanceEvent('ws1', {
+          status: 'paid',
+          phone: '+55 (11) 98888-0000',
+          amount: 199,
+        });
+      },
+    );
+
+    expect(mockFlowQueueAdd).toHaveBeenCalledWith(
+      'run-flow',
+      expect.objectContaining({
+        workspaceId: 'ws1',
+        flowId: 'flow-paid',
+        user: '5511988880000',
+        correlationId: 'corr-finance-1',
+        initialVars: expect.objectContaining({
+          source: 'finance_webhook',
+          correlationId: 'corr-finance-1',
+        }),
+      }),
+    );
+    expect(prisma.auditLog.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ workspaceId: 'ws1', action: 'FINANCE_EVENT' }),
+      }),
+    );
   });
 });

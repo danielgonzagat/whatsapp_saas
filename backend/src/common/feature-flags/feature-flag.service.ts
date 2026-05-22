@@ -106,7 +106,7 @@ export class FeatureFlagService {
       this.logger.warn(`Feature flag ${envName}="${raw}" is not 'true'/'false'; using default`);
     }
 
-    return this.FLAG_DEFAULTS[flag];
+    return this.FLAG_DEFAULTS[flag]!;
   }
 
   /**

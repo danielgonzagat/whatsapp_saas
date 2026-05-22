@@ -49,6 +49,10 @@ export interface WizardPanelProps {
   onToggleFollowUp: () => void;
   onActivateAi: () => void;
   onRefreshQrCode: () => void;
+  metaAuthUrl: string | null;
+  isMetaProvider: boolean;
+  metaConnecting: boolean;
+  onConnectMeta: (url: string) => void;
 }
 
 function WizardChrome({
@@ -105,7 +109,20 @@ function WizardChrome({
 export function WizardPanel(props: WizardPanelProps) {
   return (
     <WizardChrome error={props.error} step={props.step}>
-      {props.step === 0 ? <ConnectionStep {...props} /> : null}
+      {props.step === 0 ? (
+        <ConnectionStep
+          effectiveConnection={props.effectiveConnection}
+          isWahaProvider={props.isWahaProvider}
+          qrCode={props.qrCode}
+          scanProgress={props.scanProgress}
+          busyKey={props.busyKey}
+          onRefreshQrCode={props.onRefreshQrCode}
+          metaAuthUrl={props.metaAuthUrl}
+          isMetaProvider={props.isMetaProvider}
+          metaConnecting={props.metaConnecting}
+          onConnectMeta={props.onConnectMeta}
+        />
+      ) : null}
       {props.step === 1 ? <ProductsStep {...props} /> : null}
       {props.step === 2 ? <ArsenalStep {...props} /> : null}
       {props.step === 3 ? <ConfigStep {...props} /> : null}

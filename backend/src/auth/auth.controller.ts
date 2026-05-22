@@ -1,5 +1,4 @@
-import { Body, Controller, Get, HttpException, Post, Query, Req, Res } from '@nestjs/common';
-import { Throttle } from '@nestjs/throttler';
+import { Body, Controller, Get, HttpException, Post, Put, Query, Req, Res } from '@nestjs/common';
 import { Request, Response } from 'express';
 import * as Sentry from '@sentry/node';
 import { AuthenticatedRequest } from '../common/interfaces';
@@ -20,16 +19,18 @@ import { VerifyMagicLinkDto } from './dto/verify-magic-link.dto';
 import { VerifyEmailDto } from './dto/verify-email.dto';
 import { SendWhatsAppCodeDto, VerifyWhatsAppCodeDto } from './dto/whatsapp-auth.dto';
 import { Public } from './public.decorator';
+import { RouteClass } from '../common/throttler/route-class.decorator';
+import { InternalEndpoint } from '../common/decorators/internal-endpoint.decorator';
 
 /** Auth controller. */
 @Controller('auth')
+@RouteClass('auth')
 export class AuthController {
   constructor(private readonly auth: AuthService) {}
 
   /** Check email. */
   @Public()
   @Post('check-email')
-  @Throttle({ default: { limit: 5, ttl: 60000 } })
   async checkEmail(@Body() body: CheckEmailDto) {
     return this.auth.checkEmail(body.email);
   }
@@ -37,7 +38,6 @@ export class AuthController {
   /** Check email query. */
   @Public()
   @Get('check-email')
-  @Throttle({ default: { limit: 5, ttl: 60000 } })
   async checkEmailQuery(@Query('email') email?: string) {
     if (!email) {
       return { exists: false };
@@ -48,14 +48,16 @@ export class AuthController {
   /** Register. */
   @Public()
   @Post('register')
-  @Throttle({ default: { limit: 5, ttl: 60000 } })
   async register(
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
     @Body() body: RegisterDto,
   ) {
     try {
-      const result = await this.auth.register({ ...body, ip: req.ip });
+      const result = await this.auth.register({
+        ...body,
+        ...(req.ip !== undefined ? { ip: req.ip } : {}),
+      });
       // Set httpOnly cookie for enhanced security (dual mode: cookie + body)
       if (result?.access_token) {
         res.cookie('kloel_token', result.access_token, {
@@ -86,13 +88,15 @@ export class AuthController {
   /** Login. */
   @Public()
   @Post('login')
-  @Throttle({ default: { limit: 10, ttl: 60000 } })
   async login(
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
     @Body() body: LoginDto,
   ) {
-    const result = await this.auth.login({ ...body, ip: req.ip });
+    const result = await this.auth.login({
+      ...body,
+      ...(req.ip !== undefined ? { ip: req.ip } : {}),
+    });
     if (result?.access_token) {
       Sentry.addBreadcrumb({
         message: `login: user authenticated`,
@@ -113,7 +117,6 @@ export class AuthController {
   /** Refresh. */
   @Public()
   @Post('refresh')
-  @Throttle({ default: { limit: 10, ttl: 60000 } })
   async refresh(@Body() body: RefreshDto) {
     const token = body.refreshToken || body.refresh_token;
     if (!token) {
@@ -128,9 +131,11 @@ export class AuthController {
    */
   @Public()
   @Post('oauth')
-  @Throttle({ default: { limit: 5, ttl: 60000 } })
   async oauthLogin(@Req() req: Request, @Body() body: Record<string, unknown>) {
-    return this.auth.oauthLogin({ ...body, ip: req.ip });
+    return this.auth.oauthLogin({
+      ...body,
+      ...(req.ip !== undefined ? { ip: req.ip } : {}),
+    });
   }
 
   /**
@@ -139,23 +144,21 @@ export class AuthController {
    */
   @Public()
   @Post('oauth/google')
-  @Throttle({ default: { limit: 5, ttl: 60000 } })
   async googleOAuthLogin(@Req() req: Request, @Body() body: GoogleOAuthDto) {
     return this.auth.loginWithGoogleCredential({
       credential: body.credential,
-      ip: req.ip,
+      ...(req.ip !== undefined ? { ip: req.ip } : {}),
     });
   }
 
   /** Facebook o auth login. */
   @Public()
   @Post('oauth/facebook')
-  @Throttle({ default: { limit: 5, ttl: 60000 } })
   async facebookOAuthLogin(@Req() req: Request, @Body() body: FacebookOAuthDto) {
     return this.auth.loginWithFacebookAccessToken({
       accessToken: body.accessToken,
-      userId: body.userId,
-      ip: req.ip,
+      ...(body.userId !== undefined ? { userId: body.userId } : {}),
+      ...(req.ip !== undefined ? { ip: req.ip } : {}),
     });
   }
 
@@ -165,55 +168,56 @@ export class AuthController {
    */
   @Public()
   @Post('oauth/apple')
-  @Throttle({ default: { limit: 5, ttl: 60000 } })
   async appleOAuthLogin(@Req() req: Request, @Body() body: AppleOAuthDto) {
+    if (!body.identityToken) {
+      throw new HttpException('identityToken is required', 400);
+    }
     return this.auth.loginWithAppleCredential({
       identityToken: body.identityToken,
-      authorizationCode: body.authorizationCode,
-      redirectUri: body.redirectUri,
-      user: body.user,
-      ip: req.ip,
+      ...(body.authorizationCode !== undefined
+        ? { authorizationCode: body.authorizationCode }
+        : {}),
+      ...(body.redirectUri !== undefined ? { redirectUri: body.redirectUri } : {}),
+      ...(body.user !== undefined ? { user: body.user } : {}),
+      ...(req.ip !== undefined ? { ip: req.ip } : {}),
     });
   }
 
   /** TikTok o auth login. */
   @Public()
   @Post('oauth/tiktok')
-  @Throttle({ default: { limit: 5, ttl: 60000 } })
   async tikTokOAuthLogin(@Req() req: Request, @Body() body: TikTokOAuthDto) {
     if (body.accessToken) {
       return this.auth.loginWithTikTokAccessToken({
         accessToken: body.accessToken,
-        openId: body.openId,
-        refreshToken: body.refreshToken,
-        expiresInSeconds: body.expiresInSeconds,
-        ip: req.ip,
+        ...(body.openId !== undefined ? { openId: body.openId } : {}),
+        ...(body.refreshToken !== undefined ? { refreshToken: body.refreshToken } : {}),
+        ...(body.expiresInSeconds !== undefined ? { expiresInSeconds: body.expiresInSeconds } : {}),
+        ...(req.ip !== undefined ? { ip: req.ip } : {}),
       });
     }
 
     return this.auth.loginWithTikTokAuthorizationCode({
       code: body.code || '',
-      redirectUri: body.redirectUri,
-      ip: req.ip,
+      ...(body.redirectUri !== undefined ? { redirectUri: body.redirectUri } : {}),
+      ...(req.ip !== undefined ? { ip: req.ip } : {}),
     });
   }
 
   /** Request magic link. */
   @Public()
   @Post('magic-link/request')
-  @Throttle({ default: { limit: 5, ttl: 60000 } })
   requestMagicLink(@Req() req: Request, @Body() body: RequestMagicLinkDto) {
     return this.auth.requestMagicLink({
       email: body.email,
-      redirectTo: body.redirectTo,
-      ip: req.ip,
+      ...(body.redirectTo !== undefined ? { redirectTo: body.redirectTo } : {}),
+      ...(req.ip !== undefined ? { ip: req.ip } : {}),
     });
   }
 
   /** Verify magic link. */
   @Public()
   @Post('magic-link/verify')
-  @Throttle({ default: { limit: 10, ttl: 60000 } })
   verifyMagicLink(@Req() req: Request, @Body() body: VerifyMagicLinkDto) {
     return this.auth.verifyMagicLink(body.token, req.ip);
   }
@@ -223,7 +227,6 @@ export class AuthController {
    */
   @Public()
   @Post('whatsapp/send-code')
-  @Throttle({ default: { limit: 3, ttl: 60000 } })
   async sendWhatsAppCode(@Req() req: Request, @Body() body: SendWhatsAppCodeDto) {
     return this.auth.sendWhatsAppCode(body.phone, req.ip);
   }
@@ -233,7 +236,6 @@ export class AuthController {
    */
   @Public()
   @Post('whatsapp/verify')
-  @Throttle({ default: { limit: 5, ttl: 60000 } })
   async verifyWhatsAppCode(@Req() req: Request, @Body() body: VerifyWhatsAppCodeDto) {
     return this.auth.verifyWhatsAppCode(body.phone, body.code, req.ip);
   }
@@ -243,7 +245,6 @@ export class AuthController {
 
   @Public()
   @Post('anonymous')
-  @Throttle({ default: { limit: 3, ttl: 60000 } })
   async createAnonymous(@Req() req: Request) {
     return this.auth.createAnonymous(req.ip);
   }
@@ -258,7 +259,6 @@ export class AuthController {
    */
   @Public()
   @Post('forgot-password')
-  @Throttle({ default: { limit: 5, ttl: 60000 } })
   async forgotPassword(@Req() req: Request, @Body() body: ForgotPasswordDto) {
     return this.auth.forgotPassword(body.email, req.ip);
   }
@@ -268,7 +268,6 @@ export class AuthController {
    */
   @Public()
   @Post('reset-password')
-  @Throttle({ default: { limit: 5, ttl: 60000 } })
   async resetPassword(@Req() req: Request, @Body() body: ResetPasswordDto) {
     return this.auth.resetPassword(body.token, body.newPassword, req.ip);
   }
@@ -282,7 +281,6 @@ export class AuthController {
    */
   @Public()
   @Post('verify-email')
-  @Throttle({ default: { limit: 5, ttl: 60000 } })
   async verifyEmail(@Req() req: Request, @Body() body: VerifyEmailDto) {
     return this.auth.verifyEmail(body.token, req.ip);
   }
@@ -292,7 +290,6 @@ export class AuthController {
    */
   @Public()
   @Post('resend-verification')
-  @Throttle({ default: { limit: 3, ttl: 60000 } })
   async resendVerificationEmail(@Req() req: Request, @Body() body: CheckEmailDto) {
     return this.auth.resendVerificationEmail(body.email, req.ip);
   }
@@ -301,6 +298,7 @@ export class AuthController {
    * Envia verificação de email para usuário logado
    * (Requer autenticação)
    */
+  @InternalEndpoint('auth verification email trigger')
   @Post('send-verification')
   async sendVerificationEmail(@Req() req: AuthenticatedRequest) {
     const agentId = req.user?.sub;
@@ -318,5 +316,25 @@ export class AuthController {
       throw new Error('Usuário não autenticado');
     }
     return this.auth.logout(agentId, req.user?.jti, req.user?.exp);
+  }
+
+  /** Get authenticated user profile including onboarding status. */
+  @Get('me')
+  getMe(@Req() req: AuthenticatedRequest) {
+    const agentId = req.user?.sub;
+    if (!agentId) {
+      throw new Error('Usuário não autenticado');
+    }
+    return this.auth.getMe(agentId);
+  }
+
+  /** Mark onboarding as completed for the authenticated user. */
+  @Put('me/onboarding-complete')
+  async completeOnboarding(@Req() req: AuthenticatedRequest) {
+    const agentId = req.user?.sub;
+    if (!agentId) {
+      throw new Error('Usuário não autenticado');
+    }
+    return this.auth.completeOnboarding(agentId);
   }
 }

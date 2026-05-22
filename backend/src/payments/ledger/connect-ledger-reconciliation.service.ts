@@ -1,5 +1,6 @@
-import { Injectable, Logger, Optional } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
+import { StructuredLogger } from '../../logging/structured-logger';
 
 import { FinancialAlertService } from '../../common/financial-alert.service';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -87,7 +88,7 @@ function toBigInt(value: unknown): bigint {
 /** Connect ledger reconciliation service. */
 @Injectable()
 export class ConnectLedgerReconciliationService {
-  private readonly logger = new Logger(ConnectLedgerReconciliationService.name);
+  private readonly logger = StructuredLogger.from(ConnectLedgerReconciliationService.name);
 
   constructor(
     private readonly prisma: PrismaService,
@@ -123,7 +124,7 @@ export class ConnectLedgerReconciliationService {
     input: ConnectLedgerReconciliationInput = {},
   ): Promise<ConnectLedgerReconciliationResult> {
     const balances = await this.prisma.connectAccountBalance.findMany({
-      where: input.workspaceId ? { workspaceId: input.workspaceId } : undefined,
+      ...(input.workspaceId ? { where: { workspaceId: input.workspaceId } } : {}),
       orderBy: [{ workspaceId: 'asc' }, { accountType: 'asc' }, { createdAt: 'asc' }],
       take: 5000,
     });
@@ -131,7 +132,6 @@ export class ConnectLedgerReconciliationService {
     const drifts: ConnectLedgerReconciliationDrift[] = [];
 
     for (const balance of balances) {
-      // PULSE_OK: bounded per balance within for loop, entries per balance are low
       const entries = (await this.prisma.connectLedgerEntry.findMany({
         where: { accountBalanceId: balance.id },
         orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],

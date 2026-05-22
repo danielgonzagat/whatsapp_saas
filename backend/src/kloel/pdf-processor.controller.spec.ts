@@ -2,7 +2,25 @@ import { HttpException } from '@nestjs/common';
 
 import { InsufficientWalletBalanceError } from '../wallet/wallet.types';
 
+jest.mock('../wallet/provider-llm-billing', () => ({
+  estimateOpenAiChatQuoteCostCents: jest.fn(() => BigInt(1000)),
+  quoteOpenAiChatActualCostCents: jest.fn(() => BigInt(1200)),
+}));
+
 import { PdfProcessorController } from './pdf-processor.controller';
+
+jest.mock('../wallet/provider-llm-billing', () => ({
+  estimateOpenAiChatQuoteCostCents: jest.fn(() => 7n),
+  quoteOpenAiChatActualCostCents: jest.fn(() => 5n),
+}));
+
+jest.mock('../lib/openai-models', () => {
+  const actual = jest.requireActual<typeof import('../lib/openai-models')>('../lib/openai-models');
+  return {
+    ...actual,
+    resolveBackendOpenAIModel: jest.fn(() => actual.CANONICAL_MODEL_IDS.openAiTextMini),
+  };
+});
 
 describe('PdfProcessorController', () => {
   let controller: PdfProcessorController;
@@ -27,7 +45,17 @@ describe('PdfProcessorController', () => {
     controller = new PdfProcessorController(pdfProcessor as never, walletService as never);
   });
 
-  it('charges and settles wallet usage for direct text processing', async () => {
+  function textUploadFile(text = 'Conteudo comercial suficiente para analise completa.') {
+    const buffer = Buffer.from(text, 'utf-8');
+    return {
+      buffer,
+      mimetype: 'text/plain',
+      originalname: 'catalogo.txt',
+      size: buffer.length,
+    };
+  }
+
+  it('charges and settles wallet usage for uploaded text processing', async () => {
     pdfProcessor.processTextWithUsage.mockResolvedValue({
       analysis: {
         products: [{ name: 'Oferta principal' }],
@@ -41,18 +69,15 @@ describe('PdfProcessorController', () => {
       },
     });
 
-    const result = await controller.processText('ws_1', {
-      text: 'Conteudo comercial suficiente para analise completa.',
-      sourceName: 'catalogo.txt',
-    });
+    const result = await controller.uploadPdf('ws_1', textUploadFile());
 
     expect(result).toEqual({
       status: 'processed',
-      sourceName: 'catalogo.txt',
-      textLength: 52,
+      filename: 'catalogo.txt',
       analysis: {
         products: 1,
         hasCompanyInfo: true,
+        hasSalesScript: false,
         objections: 1,
       },
       details: {
@@ -84,10 +109,7 @@ describe('PdfProcessorController', () => {
     );
 
     try {
-      await controller.processText('ws_1', {
-        text: 'Conteudo comercial suficiente para analise completa.',
-        sourceName: 'catalogo.txt',
-      });
+      await controller.uploadPdf('ws_1', textUploadFile());
       throw new Error('expected payment required exception');
     } catch (error) {
       expect(error).toBeInstanceOf(HttpException);
@@ -100,12 +122,9 @@ describe('PdfProcessorController', () => {
   it('refunds wallet usage when downstream processing fails after debit', async () => {
     pdfProcessor.processTextWithUsage.mockRejectedValue(new Error('analysis provider failed'));
 
-    await expect(
-      controller.processText('ws_1', {
-        text: 'Conteudo comercial suficiente para analise completa.',
-        sourceName: 'catalogo.txt',
-      }),
-    ).rejects.toThrow('analysis provider failed');
+    await expect(controller.uploadPdf('ws_1', textUploadFile())).rejects.toThrow(
+      'analysis provider failed',
+    );
 
     expect(walletService.refundUsageCharge).toHaveBeenCalledWith(
       expect.objectContaining({

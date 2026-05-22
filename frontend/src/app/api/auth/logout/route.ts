@@ -1,4 +1,3 @@
-// PULSE:OK — server-side proxy route, client callers invoke mutate('auth') after receiving this response
 import { type NextRequest, NextResponse } from 'next/server';
 import { getBackendUrl } from '../../_lib/backend-url';
 import { clearSharedAuthCookies } from '../_lib/shared-auth-cookies';

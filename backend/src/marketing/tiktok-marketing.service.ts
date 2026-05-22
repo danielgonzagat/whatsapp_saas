@@ -1,7 +1,23 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { createHmac, timingSafeEqual } from 'crypto';
+import { Prisma } from '@prisma/client';
 import { encryptMetaToken } from '../meta/meta-token-crypto';
 import { PrismaService } from '../prisma/prisma.service';
+import { asProviderSettings, type ProviderSettings } from '../whatsapp/provider-settings.types';
+
+interface TikTokProviderSubsettings {
+  connected?: boolean;
+  status?: string;
+  kind?: string;
+  accessToken?: string;
+  refreshToken?: string | null;
+  openId?: string | null;
+  advertiserIds?: string[];
+  scope?: string | null;
+  expiresAt?: string | null;
+  connectedAt?: string;
+  [key: string]: unknown;
+}
 
 const CREATOR_AUTH_URL = 'https://www.tiktok.com/v2/auth/authorize/';
 const CREATOR_TOKEN_URL = 'https://open.tiktokapis.com/v2/oauth/token/';
@@ -98,6 +114,8 @@ function verifyState(rawState: unknown, secret: string): SignedStatePayload | nu
 
 @Injectable()
 export class TikTokMarketingService {
+  private readonly logger = new Logger(TikTokMarketingService.name);
+
   constructor(private readonly prisma: PrismaService) {}
 
   async getStatus(workspaceId: string) {
@@ -105,18 +123,35 @@ export class TikTokMarketingService {
       where: { id: workspaceId },
       select: { providerSettings: true },
     });
-    const settings = (workspace?.providerSettings as Record<string, unknown>) || {};
-    const tiktok = (settings.tiktok || {}) as Record<string, unknown>;
+    const settings = asProviderSettings(workspace?.providerSettings);
+    const tiktok = (settings.tiktok || {}) as TikTokProviderSubsettings;
+
+    const expiresAt = typeof tiktok.expiresAt === 'string' ? tiktok.expiresAt : null;
+    const expired = expiresAt ? new Date(expiresAt).getTime() < Date.now() : false;
+    const clientConfigured = Boolean(this.tryReadTikTokClientKey());
+    const secretConfigured = Boolean(this.tryReadTikTokSecret());
+
+    const connected = Boolean(tiktok.connected) && !expired;
+    const status =
+      !clientConfigured || !secretConfigured
+        ? 'config_missing'
+        : connected
+          ? 'connected'
+          : expired && tiktok.connected
+            ? 'expired'
+            : 'disconnected';
 
     return {
-      connected: Boolean(tiktok.connected),
-      status: tiktok.connected ? 'connected' : 'disconnected',
+      connected,
+      status,
       kind: typeof tiktok.kind === 'string' ? tiktok.kind : null,
       openId: typeof tiktok.openId === 'string' ? tiktok.openId : null,
       advertiserIds: Array.isArray(tiktok.advertiserIds) ? tiktok.advertiserIds : [],
-      expiresAt: typeof tiktok.expiresAt === 'string' ? tiktok.expiresAt : null,
-      clientConfigured: Boolean(this.tryReadTikTokClientKey()),
-      secretConfigured: Boolean(this.tryReadTikTokSecret()),
+      expiresAt,
+      expired,
+      clientConfigured,
+      secretConfigured,
+      configReady: clientConfigured && secretConfigured,
     };
   }
 
@@ -183,7 +218,12 @@ export class TikTokMarketingService {
     try {
       clientKey = this.readTikTokClientKey();
       secret = this.readTikTokSecret();
-    } catch {
+    } catch (error) {
+      this.logger.error(
+        'Failed to read TikTok client credentials',
+        error instanceof Error ? error.message : String(error),
+        { context: 'TikTokMarketingService.completeOAuth' },
+      );
       return { connected: false, status: 'server_not_configured' };
     }
 
@@ -206,7 +246,7 @@ export class TikTokMarketingService {
       where: { id: workspaceId },
       select: { providerSettings: true },
     });
-    const currentSettings = (workspace?.providerSettings as Record<string, unknown>) || {};
+    const currentSettings = asProviderSettings(workspace?.providerSettings);
     const nextSettings = {
       ...currentSettings,
       tiktok: {
@@ -221,14 +261,39 @@ export class TikTokMarketingService {
         expiresAt: expiresAtFromSeconds(tokenData.expires_in || token.expires_in),
         connectedAt: new Date().toISOString(),
       },
-    } satisfies Record<string, unknown>;
+    } satisfies ProviderSettings;
 
     await this.prisma.workspace.update({
       where: { id: workspaceId },
-      data: { providerSettings: nextSettings },
+      data: {
+        providerSettings: JSON.parse(JSON.stringify(nextSettings)) as Prisma.InputJsonObject,
+      },
     });
 
     return { connected: true, status: 'connected', kind, advertiserIds };
+  }
+
+  async disconnect(workspaceId: string) {
+    const workspace = await this.prisma.workspace.findUnique({
+      where: { id: workspaceId },
+      select: { providerSettings: true },
+    });
+    const currentSettings = asProviderSettings(workspace?.providerSettings);
+    const nextSettings = {
+      ...currentSettings,
+      tiktok: {} as Record<string, never>,
+    } satisfies ProviderSettings;
+
+    await this.prisma.workspace.update({
+      where: { id: workspaceId },
+      data: {
+        providerSettings: JSON.parse(JSON.stringify(nextSettings)) as Prisma.InputJsonObject,
+      },
+    });
+
+    this.logger.log(`TikTok disconnected for workspace ${workspaceId}`);
+
+    return { status: 'disconnected' };
   }
 
   private tryReadTikTokClientKey() {
@@ -280,6 +345,10 @@ export class TikTokMarketingService {
     secret: string;
     redirectUri: string;
   }): Promise<TikTokTokenPayload> {
+    this.logger.log('Calling TikTok API', {
+      context: 'TikTokMarketingService.exchangeToken',
+      kind: input.kind,
+    });
     const response =
       input.kind === 'advertiser'
         ? await fetch(ADVERTISER_TOKEN_URL, {
@@ -296,7 +365,12 @@ export class TikTokMarketingService {
 
     try {
       return (await response.json()) as TikTokTokenPayload;
-    } catch {
+    } catch (error) {
+      this.logger.error(
+        'Failed to parse TikTok token response',
+        error instanceof Error ? error.message : String(error),
+        { context: 'TikTokMarketingService.exchangeToken' },
+      );
       return { error: 'invalid_token_response' };
     }
   }

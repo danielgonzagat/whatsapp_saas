@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest';
 import { planCiaActions } from '../processors/cia/brain';
 import type { CiaWorkspaceState } from '../processors/cia/build-state';
 
-// PULSE_OK: assertions exist below
 describe('cia-brain', () => {
   it('prioritizes payment recovery and hot leads while respecting the action cap', () => {
     const state: CiaWorkspaceState = {

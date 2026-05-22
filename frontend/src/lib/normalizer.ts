@@ -9,9 +9,9 @@ export interface NormalizedList<T> {
   /** Total property. */
   total: number;
   /** Page property. */
-  page?: number;
+  page?: number | undefined;
   /** Has more property. */
-  hasMore?: boolean;
+  hasMore?: boolean | undefined;
 }
 
 /**

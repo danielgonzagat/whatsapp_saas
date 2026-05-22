@@ -47,13 +47,28 @@ const TECHNICAL_TOKENS = new Set([
   'v3',
 ]);
 
+function readCachedValue<T>(cache: Map<string, T>, key: string): T | null {
+  return cache.has(key) ? (cache.get(key) ?? null) : null;
+}
+
+const normalizedTextCache = new Map<string, string>();
+const tokenCache = new Map<string, string[]>();
+const routeSegmentsCache = new Map<string, string[]>();
+const structuralFamiliesCache = new Map<string, string[]>();
+const familyTokensCache = new Map<string, string[]>();
+
 function unique<T>(values: T[]): T[] {
   return [...new Set(values)];
 }
 
 /** Normalize structural text. */
 export function normalizeStructuralText(value: string): string {
-  return String(value || '')
+  const key = String(value || '');
+  const cached = readCachedValue(normalizedTextCache, key);
+  if (cached !== null) {
+    return cached;
+  }
+  const normalized = key
     .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
     .replace(/([A-Z]+)([A-Z][a-z])/g, '$1 $2')
     .normalize('NFD')
@@ -61,6 +76,8 @@ export function normalizeStructuralText(value: string): string {
     .replace(/[^a-zA-Z0-9]+/g, ' ')
     .trim()
     .toLowerCase();
+  normalizedTextCache.set(key, normalized);
+  return normalized;
 }
 
 function singularize(token: string): string {
@@ -88,7 +105,14 @@ function normalizeTokens(tokens: string[]): string[] {
 
 /** Tokenize structural text. */
 export function tokenizeStructuralText(value: string): string[] {
-  return normalizeTokens(normalizeStructuralText(value).split(/\s+/));
+  const key = String(value || '');
+  const cached = readCachedValue(tokenCache, key);
+  if (cached !== null) {
+    return cached;
+  }
+  const tokens = normalizeTokens(normalizeStructuralText(key).split(/\s+/));
+  tokenCache.set(key, tokens);
+  return tokens;
 }
 
 /** Slugify structural. */
@@ -106,7 +130,12 @@ export function titleCaseStructural(value: string): string {
 }
 
 function routeSegments(value: string): string[] {
-  const rawSegments = String(value || '')
+  const key = String(value || '');
+  const cached = readCachedValue(routeSegmentsCache, key);
+  if (cached !== null) {
+    return cached;
+  }
+  const rawSegments = key
     .split('/')
     .map((segment) => segment.trim())
     .filter(Boolean)
@@ -117,6 +146,7 @@ function routeSegments(value: string): string[] {
     rawSegments.flatMap((segment) => normalizeStructuralText(segment).split(/\s+/)),
   );
 
+  routeSegmentsCache.set(key, normalized);
   return normalized;
 }
 
@@ -140,7 +170,12 @@ export function deriveTextFamily(value: string, maxTokens: number = 2): string |
 
 /** Derive structural families. */
 export function deriveStructuralFamilies(values: Array<string | null | undefined>): string[] {
-  return unique(
+  const cacheKey = values.map((value) => value ?? '').join('\u0000');
+  const cached = readCachedValue(structuralFamiliesCache, cacheKey);
+  if (cached !== null) {
+    return cached;
+  }
+  const families = unique(
     values
       .flatMap((value) => {
         if (!value) {
@@ -150,14 +185,22 @@ export function deriveStructuralFamilies(values: Array<string | null | undefined
       })
       .filter(Boolean),
   );
+  structuralFamiliesCache.set(cacheKey, families);
+  return families;
 }
 
 /** Get family tokens. */
 export function getFamilyTokens(value: string | string[] | null | undefined): string[] {
-  if (Array.isArray(value)) {
-    return normalizeTokens(value.flatMap((entry) => String(entry || '').split(/[-/\s]+/)));
+  const cacheKey = Array.isArray(value) ? value.join('\u0000') : String(value || '');
+  const cached = readCachedValue(familyTokensCache, cacheKey);
+  if (cached !== null) {
+    return cached;
   }
-  return normalizeTokens(String(value || '').split(/[-/\s]+/));
+  const tokens = Array.isArray(value)
+    ? normalizeTokens(value.flatMap((entry) => String(entry || '').split(/[-/\s]+/)))
+    : normalizeTokens(String(value || '').split(/[-/\s]+/));
+  familyTokensCache.set(cacheKey, tokens);
+  return tokens;
 }
 
 /** Families overlap. */

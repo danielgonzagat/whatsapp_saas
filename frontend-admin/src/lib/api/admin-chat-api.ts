@@ -45,6 +45,23 @@ export interface SendMessageInput {
   content: string;
 }
 
+/** Paginated session list shape. */
+export interface AdminChatSessionListPage {
+  /** Items property. */
+  items: AdminChatSessionView[];
+  /** Next cursor property. */
+  nextCursor: string | null;
+}
+
+function buildQueryParams(params: Record<string, string | undefined>): string {
+  const filtered = Object.entries(params).filter(([, v]) => v !== undefined) as [string, string][];
+  if (filtered.length === 0) {
+    return '';
+  }
+  const qs = new URLSearchParams(filtered).toString();
+  return `?${qs}`;
+}
+
 /** Admin chat api. */
 export const adminChatApi = {
   sendMessage(input: SendMessageInput): Promise<AdminChatSessionView> {
@@ -53,10 +70,49 @@ export const adminChatApi = {
       body: input,
     });
   },
-  listSessions(): Promise<AdminChatSessionView[]> {
-    return adminFetch<AdminChatSessionView[]>('/chat/sessions');
+  listSessions(params?: {
+    workspaceId?: string;
+    cursor?: string;
+    take?: number;
+  }): Promise<AdminChatSessionView[] | AdminChatSessionListPage> {
+    const qs = buildQueryParams({
+      workspaceId: params?.workspaceId,
+      cursor: params?.cursor,
+      take: params?.take !== undefined ? String(params.take) : undefined,
+    });
+    return adminFetch<AdminChatSessionView[] | AdminChatSessionListPage>(
+      `/chat/sessions${qs}`,
+    );
   },
-  getSession(id: string): Promise<AdminChatSessionView> {
-    return adminFetch<AdminChatSessionView>(`/chat/sessions/${encodeURIComponent(id)}`);
+  getSession(id: string, workspaceId?: string): Promise<AdminChatSessionView> {
+    const qs = buildQueryParams({ workspaceId });
+    return adminFetch<AdminChatSessionView>(
+      `/chat/sessions/${encodeURIComponent(id)}${qs}`,
+    );
+  },
+  createSession(body: { workspaceId: string; title?: string }): Promise<AdminChatSessionView> {
+    return adminFetch<AdminChatSessionView>('/chat/sessions', {
+      method: 'POST',
+      body,
+    });
+  },
+  updateSession(
+    id: string,
+    body: { workspaceId: string; title?: string },
+  ): Promise<AdminChatSessionView> {
+    const qs = buildQueryParams({ workspaceId: body.workspaceId });
+    return adminFetch<AdminChatSessionView>(
+      `/chat/sessions/${encodeURIComponent(id)}${qs}`,
+      {
+        method: 'PATCH',
+        body: { title: body.title },
+      },
+    );
+  },
+  deleteSession(id: string, workspaceId: string): Promise<void> {
+    const qs = buildQueryParams({ workspaceId });
+    return adminFetch<void>(`/chat/sessions/${encodeURIComponent(id)}${qs}`, {
+      method: 'DELETE',
+    });
   },
 };

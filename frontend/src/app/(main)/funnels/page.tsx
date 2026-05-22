@@ -1,4 +1,5 @@
 'use client';
+import { colors } from '@/lib/design-tokens';
 
 import { kloelT } from '@/lib/i18n/t';
 /** Dynamic. */
@@ -8,7 +9,7 @@ import { KloelMushroomMark } from '@/components/kloel/KloelBrand';
 import { useAuth } from '@/components/kloel/auth/auth-provider';
 import { type Conversation, listConversations, listFlowExecutions } from '@/lib/api';
 import type { FlowExecutionSummary } from '@/lib/api/flows';
-import { BarChart3, GitBranch, RefreshCw, Search, XCircle } from 'lucide-react';
+import { BarChart3, GitBranch, RotateCw, Search, XCircle } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -36,7 +37,7 @@ type AssignedFilter = 'ALL' | 'UNASSIGNED' | 'ASSIGNED';
 const FUNNELS_REFRESH_TITLE = kloelT(`Atualizando funis`);
 const FUNNELS_LOADING_CONVERSATIONS_TITLE = kloelT(`Carregando conversas`);
 const FUNNELS_LOADING_EXECUTIONS_TITLE = kloelT(`Carregando execucoes`);
-const FUNNELS_BRAND_TRACE_COLOR = '#E85D30';
+const FUNNELS_BRAND_TRACE_COLOR = colors.ember.primary;
 
 /** Funnels page. */
 export default function FunnelsPage() {
@@ -198,7 +199,7 @@ export default function FunnelsPage() {
                 traceColor={FUNNELS_BRAND_TRACE_COLOR}
               />
             ) : (
-              <RefreshCw className="h-4 w-4" aria-hidden="true" />
+              <RotateCw className="h-4 w-4" aria-hidden="true" />
             )}
 
             {kloelT(`Atualizar`)}

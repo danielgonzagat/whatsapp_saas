@@ -10,40 +10,13 @@ import { useWorkspaceId } from '@/hooks/useWorkspaceId';
 import { createCheckoutSession, tokenStorage } from '@/lib/api';
 import { colors } from '@/lib/design-tokens';
 import { buildDashboardHref } from '@/lib/kloel-dashboard-context';
-import {
-  BarChart3,
-  Bot,
-  Check,
-  Crown,
-  Headphones,
-  MessageCircle,
-  Rocket,
-  Sparkles,
-  Users,
-  Zap,
-} from 'lucide-react';
+import { usePricingPlans, type Plan } from '@/hooks/usePricingPlans';
+import { Check } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
-interface PlanFeature {
-  text: string;
-  included: boolean;
-}
-
-interface Plan {
-  id: string;
-  name: string;
-  description: string;
-  price: number;
-  priceId?: string; // Internal plan identifier
-  icon: React.ElementType;
-  features: PlanFeature[];
-  popular?: boolean;
-  cta: string;
-}
-
 function navigateCurrentWindow(url: string) {
-  if (typeof document === 'undefined') return;
+  if (typeof document === 'undefined') {return;}
   const link = document.createElement('a');
   link.href = url;
   link.rel = 'noopener noreferrer';
@@ -53,87 +26,14 @@ function navigateCurrentWindow(url: string) {
   link.remove();
 }
 
-const PLANS: Plan[] = [
-  {
-    id: 'starter',
-    name: 'Starter',
-    description: 'Para quem está começando a vender pelo WhatsApp',
-    price: 97,
-    icon: Zap,
-    cta: 'Começar agora',
-    features: [
-      { text: '1.000 mensagens/mês', included: true },
-      { text: '1 número WhatsApp', included: true },
-      { text: 'IA de vendas básica', included: true },
-      { text: 'Autopilot (100 respostas/mês)', included: true },
-      { text: '3 fluxos de automação', included: true },
-      { text: 'Suporte por email', included: true },
-      { text: 'Campanhas ilimitadas', included: false },
-      { text: 'API de integração', included: false },
-      { text: 'Suporte prioritário', included: false },
-    ],
-  },
-  {
-    id: 'pro',
-    name: 'Pro',
-    description: 'Para negócios em crescimento que querem escalar',
-    price: 297,
-    icon: Crown,
-    popular: true,
-    cta: 'Escolher Pro',
-    features: [
-      { text: '10.000 mensagens/mês', included: true },
-      { text: '3 números WhatsApp', included: true },
-      { text: 'IA de vendas avançada', included: true },
-      { text: 'Autopilot ilimitado', included: true },
-      { text: 'Fluxos ilimitados', included: true },
-      { text: 'Suporte por chat', included: true },
-      { text: 'Campanhas ilimitadas', included: true },
-      { text: 'API de integração', included: true },
-      { text: 'Suporte prioritário', included: false },
-    ],
-  },
-  {
-    id: 'enterprise',
-    name: 'Enterprise',
-    description: 'Para empresas que precisam de escala e suporte dedicado',
-    price: 997,
-    icon: Rocket,
-    cta: 'Falar com vendas',
-    features: [
-      { text: 'Mensagens ilimitadas', included: true },
-      { text: 'Números ilimitados', included: true },
-      { text: 'IA personalizada', included: true },
-      { text: 'Autopilot ilimitado', included: true },
-      { text: 'Fluxos ilimitados', included: true },
-      { text: 'Suporte 24/7', included: true },
-      { text: 'Campanhas ilimitadas', included: true },
-      { text: 'API de integração', included: true },
-      { text: 'Suporte prioritário', included: true },
-    ],
-  },
-];
 
-interface Benefit {
-  icon: React.ElementType;
-  title: string;
-  description: string;
-}
-
-const BENEFITS: Benefit[] = [
-  { icon: MessageCircle, title: 'WhatsApp Oficial', description: 'Conexão direta com API oficial' },
-  { icon: Bot, title: 'IA que Vende', description: 'Autopilot responde e fecha vendas' },
-  { icon: Users, title: 'CRM Integrado', description: 'Gerencie leads automaticamente' },
-  { icon: BarChart3, title: 'Analytics', description: 'Métricas em tempo real' },
-  { icon: Headphones, title: 'Suporte Humano', description: 'Time pronto para ajudar' },
-  { icon: Sparkles, title: 'Updates Gratuitos', description: 'Novas features todo mês' },
-];
 
 /** Pricing page. */
 export default function PricingPage() {
   const router = useRouter();
   const { userEmail } = useAuth();
   const workspaceId = useWorkspaceId();
+  const { plans: PLANS, benefits: BENEFITS, isLoading: plansLoading, error: plansError } = usePricingPlans();
   const [isLoading, setIsLoading] = useState<string | null>(null);
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
   const [_error, setError] = useState<string | null>(null);
@@ -228,8 +128,8 @@ export default function PricingPage() {
               onClick={() => setBillingCycle('monthly')}
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                 billingCycle === 'monthly'
-                  ? 'bg-[#222226] text-[#E0DDD8]'
-                  : 'text-[#6E6E73] hover:text-[#E0DDD8]'
+                  ? 'bg-[var(--bg-border)] text-[var(--text-silver)]'
+                  : 'text-[var(--text-muted)] hover:text-[var(--text-silver)]'
               }`}
             >
               {kloelT(`Mensal`)}
@@ -239,8 +139,8 @@ export default function PricingPage() {
               onClick={() => setBillingCycle('yearly')}
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
                 billingCycle === 'yearly'
-                  ? 'bg-[#222226] text-[#E0DDD8]'
-                  : 'text-[#6E6E73] hover:text-[#E0DDD8]'
+                  ? 'bg-[var(--bg-border)] text-[var(--text-silver)]'
+                  : 'text-[var(--text-muted)] hover:text-[var(--text-silver)]'
               }`}
             >
               {kloelT(`Anual`)}
@@ -258,7 +158,16 @@ export default function PricingPage() {
       {/* Plans */}
       <Section spacing="md">
         <CenterStage size="L">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {plansLoading ? (
+            <div className="text-center py-8" style={{ color: colors.text.muted }}>
+              {kloelT('Carregando planos...')}
+            </div>
+          ) : PLANS.length === 0 ? (
+            <div className="text-center py-8" style={{ color: colors.text.muted }}>
+              {kloelT('Nenhum plano disponível no momento.')}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {PLANS.map((plan) => {
               const Icon = plan.icon;
               const price = getPrice(plan.price);
@@ -267,7 +176,7 @@ export default function PricingPage() {
                 <div
                   key={plan.id}
                   className={`relative rounded-md p-6 transition-all ${
-                    plan.popular ? 'ring-2 ring-[#E85D30]' : ''
+                    plan.popular ? 'ring-2 ring-[var(--ember-primary)]' : ''
                   }`}
                   style={{
                     backgroundColor: colors.background.surface1,
@@ -332,7 +241,7 @@ export default function PricingPage() {
                     onClick={() => handleSelectPlan(plan)}
                     disabled={isLoading === plan.id}
                     className={`w-full py-3 rounded-md font-medium transition-all ${
-                      plan.popular ? 'hover:opacity-90' : 'hover:bg-[#19191C]'
+                      plan.popular ? 'hover:opacity-90' : 'hover:bg-[var(--bg-elevated)]'
                     }`}
                     style={{
                       backgroundColor: plan.popular ? colors.brand.green : 'transparent',
@@ -345,7 +254,7 @@ export default function PricingPage() {
                   <button
                     type="button"
                     onClick={() => router.push(buildPlanDashboardHref(plan))}
-                    className="mt-3 w-full rounded-md border px-4 py-3 text-sm font-medium transition-colors hover:bg-[#19191C]"
+                    className="mt-3 w-full rounded-md border px-4 py-3 text-sm font-medium transition-colors hover:bg-[var(--bg-elevated)]"
                     style={{
                       borderColor: colors.stroke,
                       color: colors.text.primary,
@@ -389,15 +298,35 @@ export default function PricingPage() {
                     ))}
                   </div>
                 </div>
-              );
-            })}
+            )})}
           </div>
+          )}
         </CenterStage>
       </Section>
 
       {/* Benefits */}
       <Section spacing="lg">
         <CenterStage size="L">
+          {plansError ? (
+            <div
+              className="text-center p-4 rounded-md mb-4"
+              style={{
+                color: colors.state.error,
+                backgroundColor: `${colors.state.error}10`,
+                border: `1px solid ${colors.state.error}30`,
+              }}
+            >
+              {kloelT('Erro ao carregar informações.')}{' '}
+              <button
+                type="button"
+                onClick={() => window.location.reload()}
+                style={{ color: colors.brand.green, textDecoration: 'underline' }}
+              >
+                {kloelT('Tentar novamente')}
+              </button>
+            </div>
+          ) : null}
+
           <h2
             className="text-2xl font-bold text-center mb-8"
             style={{ color: colors.text.primary }}
@@ -405,7 +334,8 @@ export default function PricingPage() {
             {kloelT(`Tudo que você precisa para vender mais`)}
           </h2>
 
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+          {plansLoading ? null : BENEFITS.length === 0 ? null : (
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             {BENEFITS.map((benefit) => {
               const Icon = benefit.icon;
               return (
@@ -427,9 +357,10 @@ export default function PricingPage() {
                     {benefit.description}
                   </p>
                 </div>
-              );
+              )
             })}
           </div>
+          )}
         </CenterStage>
       </Section>
 

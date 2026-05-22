@@ -1,10 +1,11 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { PrismaService } from '../prisma/prisma.service';
 // @@index: optimistic lock via updatedAt — concurrent writes resolved by DB constraint
 
 @Injectable()
 export class OrderAlertsService {
-  private readonly logger = new Logger(OrderAlertsService.name);
+  private readonly logger = StructuredLogger.from(OrderAlertsService.name);
 
   constructor(private readonly prisma: PrismaService) {}
 

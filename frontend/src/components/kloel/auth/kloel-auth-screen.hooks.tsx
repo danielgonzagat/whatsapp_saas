@@ -1,7 +1,31 @@
 'use client';
-import { kloelError } from '@/lib/i18n/t';
-import { requestFacebookAccessTokenWithEmailScope } from '@/lib/facebook-sdk';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { kloelError } from '@/lib/i18n/t';
+
+function requestFacebookAccessTokenWithEmailScope(): Promise<{
+  accessToken: string;
+  userId?: string;
+}> {
+  return new Promise((resolve, reject) => {
+    if (!window.FB) {
+      reject(kloelError('Facebook SDK não carregado.'));
+      return;
+    }
+    window.FB.login(
+      (response: { authResponse?: { accessToken?: string; userID?: string } }) => {
+        if (!response.authResponse) {
+          reject(kloelError('Login com Facebook foi cancelado.'));
+          return;
+        }
+        resolve({
+          accessToken: response.authResponse.accessToken || '',
+          ...(response.authResponse.userID ? { userId: response.authResponse.userID } : {}),
+        });
+      },
+      { scope: 'email,public_profile' },
+    );
+  });
+}
 
 /* ────────────────────────────────────────────────────────────
    GOOGLE SIGN-IN HOOK
@@ -31,7 +55,7 @@ export function useGoogleSignIn(
       return;
     }
     if (window.google?.accounts?.id) {
-      setSdkLoaded(true);
+      queueMicrotask(() => setSdkLoaded(true));
       return;
     }
 
@@ -42,7 +66,7 @@ export function useGoogleSignIn(
     if (existing) {
       existing.addEventListener('load', onLoad);
       if (window.google?.accounts?.id) {
-        setSdkLoaded(true);
+        queueMicrotask(() => setSdkLoaded(true));
       }
       return () => existing.removeEventListener('load', onLoad);
     }
@@ -164,7 +188,11 @@ export function useFacebookSignIn(
 
     if (existing) {
       return () => {
-        window.fbAsyncInit = previousInit;
+        if (previousInit) {
+          window.fbAsyncInit = previousInit;
+        } else {
+          delete window.fbAsyncInit;
+        }
       };
     }
 
@@ -176,7 +204,11 @@ export function useFacebookSignIn(
     document.head.appendChild(script);
 
     return () => {
-      window.fbAsyncInit = previousInit;
+      if (previousInit) {
+        window.fbAsyncInit = previousInit;
+      } else {
+        delete window.fbAsyncInit;
+      }
     };
   }, [appId, disabled, version]);
 
@@ -185,7 +217,11 @@ export function useFacebookSignIn(
       throw kloelError('Login com Facebook indisponível no momento.');
     }
 
-    await cbRef.current(await requestFacebookAccessTokenWithEmailScope());
+    const fbResult = await requestFacebookAccessTokenWithEmailScope();
+    await cbRef.current({
+      accessToken: fbResult.accessToken,
+      ...(fbResult.userId !== undefined ? { userId: fbResult.userId } : {}),
+    });
   }, [appId, disabled, sdkReady]);
 
   return {

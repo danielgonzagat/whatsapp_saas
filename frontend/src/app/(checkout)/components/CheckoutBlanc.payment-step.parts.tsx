@@ -18,7 +18,7 @@ import {
   PixDetails as SharedPixDetails,
   Px,
 } from './checkout-shared-payment-parts';
-import type { CheckoutThemeInputTokens } from './checkout-theme-shared';
+
 import type { BlancInputTheme } from './CheckoutBlanc.order-summary.parts';
 
 export type BlancCardForm = {

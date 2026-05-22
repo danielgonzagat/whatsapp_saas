@@ -12,9 +12,18 @@ const RUNTIME_LENS_PATH = resolve(VAULT_ROOT, '.obsidian', 'graph.lens.runtime.j
 const WORKSPACE_GRAPH_SEARCH = '';
 
 const CODE_STATE_COLOR_GROUPS = [
+  // Priority-first (must match CODE_STATE_COLOR_GROUPS in
+  // obsidian-mirror-daemon-constants.mjs) so the watchdog reapply on
+  // Obsidian-death is consistent with the daemon's live writes.
   { query: 'tag:#workspace/dirty', color: { a: 1, rgb: 14724096 } },
   { query: 'tag:#graph/action-required', color: { a: 1, rgb: 16711680 } },
   { query: 'tag:#graph/evidence-gap', color: { a: 1, rgb: 16711935 } },
+  { query: 'tag:#graph/risk-critical', color: { a: 1, rgb: 16711680 } },
+  { query: 'tag:#graph/risk-high', color: { a: 1, rgb: 16724787 } },
+  { query: 'tag:#graph/orphan', color: { a: 1, rgb: 16711935 } },
+  { query: 'tag:#signal/static-high', color: { a: 1, rgb: 16711680 } },
+  { query: 'tag:#signal/hotspot', color: { a: 1, rgb: 14524637 } },
+  { query: 'tag:#signal/external', color: { a: 1, rgb: 65535 } },
   { query: 'tag:#graph/effect-security', color: { a: 1, rgb: 10040524 } },
   { query: 'tag:#graph/effect-error', color: { a: 1, rgb: 16724736 } },
   { query: 'tag:#graph/effect-entrypoint', color: { a: 1, rgb: 65280 } },
@@ -24,21 +33,15 @@ const CODE_STATE_COLOR_GROUPS = [
   { query: 'tag:#graph/effect-state', color: { a: 1, rgb: 13789470 } },
   { query: 'tag:#graph/effect-contract', color: { a: 1, rgb: 12632256 } },
   { query: 'tag:#graph/effect-config', color: { a: 1, rgb: 11184810 } },
-  { query: 'tag:#mirror/metadata-only', color: { a: 1, rgb: 8421504 } },
-  { query: 'tag:#source/pulse-machine', color: { a: 1, rgb: 10040524 } },
-  { query: 'tag:#signal/static-high', color: { a: 1, rgb: 16711680 } },
-  { query: 'tag:#signal/hotspot', color: { a: 1, rgb: 14524637 } },
-  { query: 'tag:#signal/external', color: { a: 1, rgb: 65535 } },
-  { query: 'tag:#graph/risk-critical', color: { a: 1, rgb: 16711680 } },
-  { query: 'tag:#graph/risk-high', color: { a: 1, rgb: 16724787 } },
-  { query: 'tag:#graph/proof-test', color: { a: 1, rgb: 65280 } },
   { query: 'tag:#graph/runtime-api', color: { a: 1, rgb: 65535 } },
+  { query: 'tag:#graph/proof-test', color: { a: 1, rgb: 65280 } },
   { query: 'tag:#graph/surface-ui', color: { a: 1, rgb: 255 } },
   { query: 'tag:#graph/surface-backend', color: { a: 1, rgb: 6737151 } },
   { query: 'tag:#graph/surface-worker', color: { a: 1, rgb: 5635925 } },
   { query: 'tag:#graph/surface-source', color: { a: 1, rgb: 11184810 } },
   { query: 'tag:#graph/governance', color: { a: 1, rgb: 10040524 } },
-  { query: 'tag:#graph/orphan', color: { a: 1, rgb: 16711935 } },
+  { query: 'tag:#source/pulse-machine', color: { a: 1, rgb: 10040524 } },
+  { query: 'tag:#mirror/metadata-only', color: { a: 1, rgb: 8421504 } },
   { query: 'tag:#graph/molecule', color: { a: 1, rgb: 12632256 } },
 ];
 
@@ -74,7 +77,7 @@ function installLensFiles() {
 }
 
 function currentLensName() {
-  if (!existsSync(GRAPH_SETTINGS_PATH)) return 'missing';
+  if (!existsSync(GRAPH_SETTINGS_PATH)) {return 'missing';}
   const current = JSON.parse(readFileSync(GRAPH_SETTINGS_PATH, 'utf8'));
   const currentKeys = Object.keys(current).sort();
   const colorQueries = (current.colorGroups || []).map((group) => group.query).sort();

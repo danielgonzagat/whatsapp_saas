@@ -2,7 +2,7 @@
 
 import { t } from '@/lib/i18n/t';
 import type { PublicCheckoutConfig } from '@/lib/public-checkout-contract';
-import type { Dispatch, RefObject, SetStateAction } from 'react';
+import type { RefObject } from 'react';
 import type {
   CheckoutSocialIdentitySnapshot,
   CheckoutSocialProvider,
@@ -142,9 +142,9 @@ export function LeadField({
         value={value}
         onChange={onChange}
         placeholder={placeholder}
-        type={type}
-        disabled={disabled}
-        style={style}
+        {...(type !== undefined ? { type } : {})}
+        {...(disabled !== undefined ? { disabled } : {})}
+        {...(style !== undefined ? { style } : {})}
       />
     </div>
   );
@@ -152,7 +152,7 @@ export function LeadField({
 
 interface IdentityPanelProps {
   theme: CheckoutVisualTheme;
-  config?: PublicCheckoutConfig;
+  config?: PublicCheckoutConfig | undefined;
   fid: string;
   form: LeadFormState;
   updateField: LeadFieldChange;
@@ -185,7 +185,6 @@ export function IdentityPanel({
   submitError,
   step,
   loadingStep,
-  goStep,
   socialIdentity,
   socialLoadingProvider,
   socialError,
@@ -293,7 +292,7 @@ export function IdentityPanel({
 
 interface DeliveryPanelProps {
   theme: CheckoutVisualTheme;
-  config?: PublicCheckoutConfig;
+  config?: PublicCheckoutConfig | undefined;
   fid: string;
   form: LeadFormState;
   updateField: LeadFieldChange;
@@ -314,7 +313,6 @@ export function DeliveryPanel({
   updateField,
   submitError,
   step,
-  goStep,
   labelStyle,
   renderHeader,
   renderAction,

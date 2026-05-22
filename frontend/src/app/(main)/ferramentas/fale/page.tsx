@@ -1,4 +1,5 @@
 'use client';
+import { colors } from '@/lib/design-tokens';
 
 import { kloelT } from '@/lib/i18n/t';
 /** Dynamic. */
@@ -43,7 +44,7 @@ export default function FalePage() {
         }}
       >
         <span style={{ fontSize: 16 }}>{'\u25B6'}</span>
-        <span style={{ fontSize: 13, color: '#C9A84C', fontWeight: 500 }}>
+        <span style={{ fontSize: 13, color: colors.semantic.warning, fontWeight: 500 }}>
           {counts.active} {kloelT(`operacionais agora`)}
           {counts.planned ? ` • ${counts.planned} em roadmap controlado` : ''}.
         </span>

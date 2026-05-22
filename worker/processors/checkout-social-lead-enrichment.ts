@@ -16,9 +16,9 @@ type JsonValue = JsonPrimitive | JsonValue[] | { [key: string]: JsonValue };
 type EnrichmentSettings = {
   enabled: boolean;
   apiUrl: string;
-  apiKey?: string;
-  provider?: string;
-  headers?: Record<string, string>;
+  apiKey?: string | undefined;
+  provider?: string | undefined;
+  headers?: Record<string, string> | undefined;
 };
 
 /** Process checkout social lead enrichment. */
@@ -90,8 +90,8 @@ export async function processCheckoutSocialLeadEnrichment(leadId: string) {
     await prisma.checkoutSocialLead.update({
       where: { id: lead.id, workspaceId: lead.workspaceId },
       data: {
-        phone: normalizedPhone || undefined,
-        cpf: normalizedCpf || undefined,
+        ...(normalizedPhone ? { phone: normalizedPhone } : {}),
+        ...(normalizedCpf ? { cpf: normalizedCpf } : {}),
         enrichmentData: enrichmentData as Prisma.InputJsonValue,
         enrichmentStatus: CheckoutSocialLeadEnrichmentStatus.COMPLETED,
         status: CheckoutSocialLeadStatus.ENRICHED,
@@ -110,7 +110,7 @@ export async function processCheckoutSocialLeadEnrichment(leadId: string) {
         create: {
           workspaceId: lead.workspaceId,
           phone: normalizedPhone,
-          name: lead.name || undefined,
+          name: lead.name ?? null,
           email: lead.email,
           customFields: {
             checkoutSocialLead: true,
@@ -118,7 +118,7 @@ export async function processCheckoutSocialLeadEnrichment(leadId: string) {
           },
         },
         update: {
-          name: lead.name || undefined,
+          name: lead.name ?? null,
           email: lead.email,
         },
       });

@@ -1,13 +1,13 @@
-import { Injectable, Logger, Optional } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { Prisma } from '@prisma/client';
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { WhatsappService } from '../whatsapp/whatsapp.service';
 import { UnifiedAgentService } from './unified-agent.service';
 import { SmartPaymentService } from './smart-payment.service';
 import { chatCompletionWithFallback } from './openai-wrapper';
+import { createTextLlmClient } from '../lib/llm-provider';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
-import { KLOEL_SALES_PROMPT } from './kloel.prompts';
 import {
   NON_DIGIT_RE,
   safeStr,
@@ -22,6 +22,8 @@ import {
 } from './kloel-lead-processor-helpers';
 import OpenAI from 'openai';
 import { OpsAlertService } from '../observability/ops-alert.service';
+import { AbiBuilderService } from './abi/abi-builder.service';
+import { validateAbiPayload } from './abi/abi-validator';
 
 export interface FollowupListItem {
   id: string;
@@ -39,18 +41,18 @@ export interface FollowupListItem {
 /** Handles WhatsApp message processing, lead lifecycle, and follow-ups. */
 @Injectable()
 export class KloelLeadProcessorService {
-  private readonly logger = new Logger(KloelLeadProcessorService.name);
+  private readonly logger = StructuredLogger.from(KloelLeadProcessorService.name);
   private readonly openai: OpenAI;
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly whatsappService: WhatsappService,
     private readonly unifiedAgentService: UnifiedAgentService,
     private readonly smartPaymentService: SmartPaymentService,
     private readonly planLimits: PlanLimitsService,
     @Optional() private readonly opsAlert?: OpsAlertService,
+    @Optional() private readonly abiBuilder?: AbiBuilderService,
   ) {
-    this.openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+    this.openai = createTextLlmClient() ?? new OpenAI({ apiKey: '' });
   }
 
   async processWhatsAppMessage(
@@ -108,7 +110,7 @@ export class KloelLeadProcessorService {
         try {
           const unifiedResult = await this.unifiedAgentService.processIncomingMessage({
             workspaceId,
-            contactId: contactId || undefined,
+            ...(contactId ? { contactId } : {}),
             phone: normalizedPhone || senderPhone,
             message,
             channel: 'whatsapp',
@@ -130,14 +132,61 @@ export class KloelLeadProcessorService {
 
       const conversationHistory = await getLeadConversationHistory(this.prisma, lead.id);
       const context = await getWorkspaceContextFn(workspaceId);
-      const salesSystemPrompt = KLOEL_SALES_PROMPT(workspace?.name || 'nossa empresa', context);
+      void workspace;
+      let effectiveUserContent = JSON.stringify({
+        cognitiveState: {
+          source: 'lead-processor',
+          abiStatus: this.abiBuilder ? 'pending' : 'unavailable',
+          workspaceContext: context,
+        },
+        currentInput: {
+          raw: message,
+          channel: 'whatsapp',
+          arrivalTimestamp: new Date().toISOString(),
+        },
+      });
+
+      if (this.abiBuilder) {
+        const abiResult = await this.abiBuilder.build({
+          audience: 'public',
+          currentInput: {
+            raw: message,
+            channel: 'whatsapp',
+            arrivalTimestamp: new Date().toISOString(),
+          },
+          perceptionSnapshot: {
+            channel: 'whatsapp',
+          },
+        });
+
+        if (abiResult.status !== 'ok') {
+          this.logger.warn(`ABI build failed: ${abiResult.reason}`);
+        } else {
+          const abi = abiResult.abi;
+          const validation = validateAbiPayload(abi);
+
+          if (validation.status === 'FAIL') {
+            this.logger.warn(`ABI validation failed: ${JSON.stringify(validation.issues)}`);
+          } else {
+            effectiveUserContent = JSON.stringify({
+              cognitiveState: abi,
+              currentInput: {
+                raw: message,
+                channel: 'whatsapp',
+              },
+            });
+          }
+        }
+      }
+
       const messages: ChatMessage[] = [
-        { role: 'system', content: salesSystemPrompt },
         ...conversationHistory,
-        { role: 'user', content: message },
+        { role: 'user', content: effectiveUserContent },
       ];
 
-      if (workspaceId) await this.planLimits.ensureTokenBudget(workspaceId);
+      if (workspaceId) {
+        await this.planLimits.ensureTokenBudget(workspaceId);
+      }
       const response = await chatCompletionWithFallback(
         this.openai,
         {
@@ -148,10 +197,11 @@ export class KloelLeadProcessorService {
         },
         resolveBackendOpenAIModel('writer_fallback'),
       );
-      if (workspaceId)
+      if (workspaceId) {
         await this.planLimits
           .trackAiUsage(workspaceId, response?.usage?.total_tokens ?? 500)
           .catch(() => {});
+      }
 
       const kloelResponse =
         response.choices[0]?.message?.content || 'Olá! Como posso ajudá-lo hoje?';
@@ -201,7 +251,9 @@ export class KloelLeadProcessorService {
             return {
               response: `${baseResponse}\n\nAqui está o link para finalizar sua compra:\n${paymentResult.paymentUrl}`,
               paymentLink: paymentResult.paymentUrl,
-              pixQrCode: paymentResult.pixQrCode,
+              ...(paymentResult.pixQrCode !== undefined
+                ? { pixQrCode: paymentResult.pixQrCode }
+                : {}),
             };
           }
         }
@@ -232,7 +284,7 @@ export class KloelLeadProcessorService {
       this.logger.log(`Pagamento gerado para lead ${leadId}: ${result.paymentUrl}`);
       return {
         paymentUrl: result.paymentUrl,
-        pixQrCode: result.pixQrCode,
+        ...(result.pixQrCode !== undefined ? { pixQrCode: result.pixQrCode } : {}),
         message: result.suggestedMessage,
       };
     } catch (error: unknown) {

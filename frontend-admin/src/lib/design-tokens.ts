@@ -103,6 +103,16 @@ export const colors = {
     error: '#E85D30',
     info: '#6E6E73',
   },
+
+  // Status Dot Colors — vibrant indicators for product/entity status
+  status: {
+    success: '#22C55E',
+    warning: '#F59E0B',
+    error: '#EF4444',
+  },
+
+  // Light theme surface (browser chrome meta tag default)
+  lightBg: '#FFFFFF',
 } as const;
 
 // ════════════════════════════════════════════

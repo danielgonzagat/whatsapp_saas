@@ -5,7 +5,7 @@ export class CreateEventDto {
   /** Summary property. */
   @IsString()
   @MaxLength(500)
-  summary: string;
+  summary!: string;
 
   /** Description property. */
   @IsOptional()
@@ -15,11 +15,11 @@ export class CreateEventDto {
 
   /** Start time property (ISO 8601 string). */
   @IsDateString()
-  startTime: string;
+  startTime!: string;
 
   /** End time property (ISO 8601 string). */
   @IsDateString()
-  endTime: string;
+  endTime!: string;
 
   /** Attendees property. */
   @IsOptional()

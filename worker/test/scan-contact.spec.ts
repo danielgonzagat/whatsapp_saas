@@ -4,8 +4,8 @@ import { runScanContact } from '../processors/autopilot-processor';
 import * as unifiedAgentIntegrator from '../providers/unified-agent-integrator';
 import * as queueModule from '../queue';
 import * as redisClientModule from '../redis-client';
-import { setMockContact, setupDefaultMocks } from './__parts__/scan-contact.setup';
-import { addSweepTests } from './__parts__/scan-contact.cases.sweep';
+import { setMockContact, setupDefaultMocks } from './scan-contact.setup';
+import { addSweepTests } from './scan-contact.cases.sweep';
 
 type MockPrisma = Record<string, Record<string, Mock>>;
 
@@ -98,6 +98,15 @@ vi.mock('../queue', () => ({
   autopilotQueue: { add: vi.fn() },
   flowQueue: { add: vi.fn() },
   voiceQueue: { add: vi.fn() },
+  buildQueueOptions: vi.fn(() => ({
+    connection: { incr: vi.fn(async () => 1), expire: vi.fn(async () => null) },
+    defaultJobOptions: {
+      attempts: 3,
+      backoff: { type: 'exponential', delay: 5000 },
+      removeOnComplete: true,
+      removeOnFail: 50,
+    },
+  })),
 }));
 
 vi.mock('../redis-client', () => ({

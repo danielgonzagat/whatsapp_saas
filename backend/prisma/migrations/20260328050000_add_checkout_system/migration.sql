@@ -330,32 +330,32 @@ CREATE TABLE IF NOT EXISTS "UpsellOrder" (
 );
 
 -- Unique indexes (idempotent)
-CREATE UNIQUE INDEX IF NOT EXISTS "PhysicalProduct_slug_key" ON "PhysicalProduct"("slug");
-CREATE UNIQUE INDEX IF NOT EXISTS "CheckoutProductPlan_slug_key" ON "CheckoutProductPlan"("slug");
-CREATE UNIQUE INDEX IF NOT EXISTS "CheckoutProductPlan_referenceCode_key" ON "CheckoutProductPlan"("referenceCode");
-CREATE UNIQUE INDEX IF NOT EXISTS "CheckoutConfig_planId_key" ON "CheckoutConfig"("planId");
-CREATE UNIQUE INDEX IF NOT EXISTS "CheckoutCoupon_workspaceId_code_key" ON "CheckoutCoupon"("workspaceId", "code");
-CREATE UNIQUE INDEX IF NOT EXISTS "CheckoutOrder_orderNumber_key" ON "CheckoutOrder"("orderNumber");
-CREATE UNIQUE INDEX IF NOT EXISTS "CheckoutPayment_orderId_key" ON "CheckoutPayment"("orderId");
+CREATE UNIQUE INDEX IF NOT EXISTS "PhysicalProduct_slug_key" ON "PhysicalProduct" ("slug");
+CREATE UNIQUE INDEX IF NOT EXISTS "CheckoutProductPlan_slug_key" ON "CheckoutProductPlan" ("slug");
+CREATE UNIQUE INDEX IF NOT EXISTS "CheckoutProductPlan_referenceCode_key" ON "CheckoutProductPlan" ("referenceCode");
+CREATE UNIQUE INDEX IF NOT EXISTS "CheckoutConfig_planId_key" ON "CheckoutConfig" ("planId");
+CREATE UNIQUE INDEX IF NOT EXISTS "CheckoutCoupon_workspaceId_code_key" ON "CheckoutCoupon" ("workspaceId", "code");
+CREATE UNIQUE INDEX IF NOT EXISTS "CheckoutOrder_orderNumber_key" ON "CheckoutOrder" ("orderNumber");
+CREATE UNIQUE INDEX IF NOT EXISTS "CheckoutPayment_orderId_key" ON "CheckoutPayment" ("orderId");
 
 -- Regular indexes (idempotent)
-CREATE INDEX IF NOT EXISTS "PhysicalProduct_workspaceId_idx" ON "PhysicalProduct"("workspaceId");
-CREATE INDEX IF NOT EXISTS "PhysicalProduct_slug_idx" ON "PhysicalProduct"("slug");
-CREATE INDEX IF NOT EXISTS "CheckoutProductPlan_productId_idx" ON "CheckoutProductPlan"("productId");
-CREATE INDEX IF NOT EXISTS "CheckoutProductPlan_slug_idx" ON "CheckoutProductPlan"("slug");
-CREATE INDEX IF NOT EXISTS "CheckoutProductPlan_referenceCode_idx" ON "CheckoutProductPlan"("referenceCode");
-CREATE INDEX IF NOT EXISTS "OrderBump_planId_idx" ON "OrderBump"("planId");
-CREATE INDEX IF NOT EXISTS "Upsell_planId_idx" ON "Upsell"("planId");
-CREATE INDEX IF NOT EXISTS "CheckoutCoupon_workspaceId_idx" ON "CheckoutCoupon"("workspaceId");
-CREATE INDEX IF NOT EXISTS "CheckoutCoupon_code_idx" ON "CheckoutCoupon"("code");
-CREATE INDEX IF NOT EXISTS "CheckoutPixel_checkoutConfigId_idx" ON "CheckoutPixel"("checkoutConfigId");
-CREATE INDEX IF NOT EXISTS "CheckoutOrder_workspaceId_idx" ON "CheckoutOrder"("workspaceId");
-CREATE INDEX IF NOT EXISTS "CheckoutOrder_planId_idx" ON "CheckoutOrder"("planId");
-CREATE INDEX IF NOT EXISTS "CheckoutOrder_customerEmail_idx" ON "CheckoutOrder"("customerEmail");
-CREATE INDEX IF NOT EXISTS "CheckoutOrder_orderNumber_idx" ON "CheckoutOrder"("orderNumber");
-CREATE INDEX IF NOT EXISTS "CheckoutOrder_status_idx" ON "CheckoutOrder"("status");
-CREATE INDEX IF NOT EXISTS "CheckoutPayment_externalId_idx" ON "CheckoutPayment"("externalId");
-CREATE INDEX IF NOT EXISTS "UpsellOrder_orderId_idx" ON "UpsellOrder"("orderId");
+CREATE INDEX IF NOT EXISTS "PhysicalProduct_workspaceId_idx" ON "PhysicalProduct" ("workspaceId");
+CREATE INDEX IF NOT EXISTS "PhysicalProduct_slug_idx" ON "PhysicalProduct" ("slug");
+CREATE INDEX IF NOT EXISTS "CheckoutProductPlan_productId_idx" ON "CheckoutProductPlan" ("productId");
+CREATE INDEX IF NOT EXISTS "CheckoutProductPlan_slug_idx" ON "CheckoutProductPlan" ("slug");
+CREATE INDEX IF NOT EXISTS "CheckoutProductPlan_referenceCode_idx" ON "CheckoutProductPlan" ("referenceCode");
+CREATE INDEX IF NOT EXISTS "OrderBump_planId_idx" ON "OrderBump" ("planId");
+CREATE INDEX IF NOT EXISTS "Upsell_planId_idx" ON "Upsell" ("planId");
+CREATE INDEX IF NOT EXISTS "CheckoutCoupon_workspaceId_idx" ON "CheckoutCoupon" ("workspaceId");
+CREATE INDEX IF NOT EXISTS "CheckoutCoupon_code_idx" ON "CheckoutCoupon" ("code");
+CREATE INDEX IF NOT EXISTS "CheckoutPixel_checkoutConfigId_idx" ON "CheckoutPixel" ("checkoutConfigId");
+CREATE INDEX IF NOT EXISTS "CheckoutOrder_workspaceId_idx" ON "CheckoutOrder" ("workspaceId");
+CREATE INDEX IF NOT EXISTS "CheckoutOrder_planId_idx" ON "CheckoutOrder" ("planId");
+CREATE INDEX IF NOT EXISTS "CheckoutOrder_customerEmail_idx" ON "CheckoutOrder" ("customerEmail");
+CREATE INDEX IF NOT EXISTS "CheckoutOrder_orderNumber_idx" ON "CheckoutOrder" ("orderNumber");
+CREATE INDEX IF NOT EXISTS "CheckoutOrder_status_idx" ON "CheckoutOrder" ("status");
+CREATE INDEX IF NOT EXISTS "CheckoutPayment_externalId_idx" ON "CheckoutPayment" ("externalId");
+CREATE INDEX IF NOT EXISTS "UpsellOrder_orderId_idx" ON "UpsellOrder" ("orderId");
 
 -- Foreign Keys (idempotent via DO blocks)
 DO $$ BEGIN

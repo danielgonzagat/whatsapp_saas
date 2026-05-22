@@ -156,7 +156,6 @@ export class MarketplaceTreasuryService {
     const skip = Math.max(0, filters.skip ?? 0);
     const take = Math.min(200, Math.max(1, filters.take ?? 50));
 
-    // PULSE_OK: paginated via skip/take from filters
     const [rows, total] = await this.prisma.$transaction(
       [
         this.prisma.marketplaceTreasuryLedger.findMany({
@@ -211,7 +210,7 @@ export class MarketplaceTreasuryService {
           orderId: input.orderId ?? null,
           feeSnapshotId: input.feeSnapshotId ?? null,
           reason: input.reason,
-          metadata: input.metadata,
+          ...(input.metadata !== undefined ? { metadata: input.metadata } : {}),
         },
       });
       const delta = input.direction === 'credit' ? input.amountInCents : -input.amountInCents;
@@ -285,7 +284,7 @@ export class MarketplaceTreasuryService {
             kind: MarketplaceTreasuryLedgerKind.PAYOUT_DEBIT,
             orderId: input.requestId,
             reason: 'marketplace_treasury_payout_debit',
-            metadata: input.metadata,
+            ...(input.metadata !== undefined ? { metadata: input.metadata } : {}),
           },
         });
 
@@ -347,7 +346,7 @@ export class MarketplaceTreasuryService {
             kind: MarketplaceTreasuryLedgerKind.ADJUSTMENT_CREDIT,
             orderId: input.requestId,
             reason: input.reason,
-            metadata: input.metadata,
+            ...(input.metadata !== undefined ? { metadata: input.metadata } : {}),
           },
         });
 

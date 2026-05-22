@@ -1,5 +1,5 @@
 import { Logger, OnModuleInit, Optional } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt'; // PULSE_OK: reasonable expiry (30m)
+import { JwtService } from '@nestjs/jwt';
 import {
   OnGatewayConnection,
   OnGatewayDisconnect,
@@ -10,6 +10,32 @@ import Redis from 'ioredis';
 import { Server, Socket } from 'socket.io';
 import { createRedisClient } from '../common/redis/redis.util';
 import { OpsAlertService } from '../observability/ops-alert.service';
+
+type GatewayPayload = Record<string, unknown>;
+
+function isGatewayPayload(value: unknown): value is GatewayPayload {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function parseJsonRecord(raw: string): GatewayPayload | null {
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    return isGatewayPayload(parsed) ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+function readString(value: unknown): string | undefined {
+  return typeof value === 'string' && value.trim() ? value : undefined;
+}
+
+function readWorkspaceId(payload: unknown): string | undefined {
+  if (!isGatewayPayload(payload)) {
+    return undefined;
+  }
+  return readString(payload.workspaceId);
+}
 
 /** Flows gateway. */
 @WebSocketGateway({
@@ -22,7 +48,7 @@ import { OpsAlertService } from '../observability/ops-alert.service';
 })
 export class FlowsGateway implements OnGatewayConnection, OnGatewayDisconnect, OnModuleInit {
   /** Server property. */
-  @WebSocketServer() server: Server;
+  @WebSocketServer() server!: Server;
   private logger: Logger = new Logger('FlowsGateway');
 
   private readonly sub: Redis;
@@ -36,7 +62,7 @@ export class FlowsGateway implements OnGatewayConnection, OnGatewayDisconnect, O
   }
 
   /** On module init. */
-  async onModuleInit() {
+  async onModuleInit(): Promise<void> {
     // Dedicated subscription to flow logs (pattern flow:log:<workspaceId>)
     await this.sub.psubscribe('flow:log:*');
     await this.sub.psubscribe('alerts:*');
@@ -44,22 +70,12 @@ export class FlowsGateway implements OnGatewayConnection, OnGatewayDisconnect, O
       const workspaceId = channel.split(':').pop();
       if (workspaceId) {
         if (channel.startsWith('flow:log:')) {
-          let flowLogPayload: Record<string, unknown> | null = null;
-          try {
-            flowLogPayload = JSON.parse(message);
-          } catch {
-            /* invalid JSON in flow log */
-          }
+          const flowLogPayload = parseJsonRecord(message);
           if (flowLogPayload) {
             this.server.to(`workspace:${workspaceId}`).emit('flow:log', flowLogPayload);
           }
         } else if (channel.startsWith('alerts:')) {
-          let alertPayload: Record<string, unknown> | null = null;
-          try {
-            alertPayload = JSON.parse(message);
-          } catch {
-            /* invalid JSON in alert */
-          }
+          const alertPayload = parseJsonRecord(message);
           if (alertPayload) {
             this.server.to(`workspace:${workspaceId}`).emit('alert', alertPayload);
           }
@@ -69,7 +85,7 @@ export class FlowsGateway implements OnGatewayConnection, OnGatewayDisconnect, O
   }
 
   /** Handle connection. */
-  handleConnection(client: Socket) {
+  handleConnection(client: Socket): void {
     const token = this.extractToken(client);
     if (!token) {
       this.logger.warn(`Client ${client.id} disconnected: missing token`);
@@ -78,9 +94,10 @@ export class FlowsGateway implements OnGatewayConnection, OnGatewayDisconnect, O
     }
 
     try {
-      const payload = this.jwtService.verify(token);
-      const workspaceId = (client.handshake.query.workspaceId as string) || payload.workspaceId;
-      if (!workspaceId || (payload.workspaceId && payload.workspaceId !== workspaceId)) {
+      const payload: unknown = this.jwtService.verify(token);
+      const payloadWorkspaceId = readWorkspaceId(payload);
+      const workspaceId = readString(client.handshake.query.workspaceId) ?? payloadWorkspaceId;
+      if (!workspaceId || (payloadWorkspaceId && payloadWorkspaceId !== workspaceId)) {
         this.logger.warn(`Client ${client.id} disconnect: workspace mismatch`);
         client.disconnect(true);
         return;
@@ -97,12 +114,14 @@ export class FlowsGateway implements OnGatewayConnection, OnGatewayDisconnect, O
   }
 
   /** Handle disconnect. */
-  handleDisconnect(client: Socket) {
+  handleDisconnect(client: Socket): void {
     this.logger.log(`Client disconnected: ${client.id}`);
   }
 
   private extractToken(client: Socket): string | null {
-    const auth = client.handshake.auth?.token || client.handshake.query?.token;
+    const auth =
+      readString((client.handshake.auth as { token?: unknown } | undefined)?.token) ??
+      readString(client.handshake.query?.token);
     if (typeof auth === 'string') {
       return auth.startsWith('Bearer ') ? auth.slice(7) : auth;
     }

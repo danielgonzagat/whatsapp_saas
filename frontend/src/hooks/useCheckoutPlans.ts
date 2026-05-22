@@ -10,11 +10,11 @@ import useSWR from 'swr';
 interface DashboardProduct {
   id: string;
   name: string;
-  slug?: string;
-  description?: string;
-  images?: string[];
-  category?: string;
-  price?: number;
+  slug?: string | undefined;
+  description?: string | undefined;
+  images?: string[] | undefined;
+  category?: string | undefined;
+  price?: number | undefined;
 }
 
 interface DashboardProductInput extends Partial<DashboardProduct> {

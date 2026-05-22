@@ -1,5 +1,7 @@
 import type { PrismaService } from '../prisma/prisma.service';
 import { WhatsAppCatchupService } from './whatsapp-catchup.service';
+import { WhatsappCatchupOrchestratorService } from './whatsapp-catchup-orchestrator.service';
+import { WhatsappCatchupHistoryService } from './whatsapp-catchup-history.service';
 
 /** Catchup prisma mock type. */
 export type CatchupPrismaMock = {
@@ -65,9 +67,13 @@ export type CatchupWorkerRuntimeMock = {
   isAvailable: jest.Mock;
 };
 
-type CatchupServiceInternals = {
+type CatchupOrchestratorInternals = {
   runCatchup: (workspaceId: string, reason: string, lockToken: string) => Promise<unknown>;
 };
+
+function readObjectProperty(target: object, propertyKey: PropertyKey): unknown {
+  return Reflect.get(target, propertyKey) as unknown;
+}
 
 /** Run catchup. */
 export function runCatchup(
@@ -76,7 +82,20 @@ export function runCatchup(
   reason: string,
   lockToken: string,
 ) {
-  return (service as never as CatchupServiceInternals).runCatchup(workspaceId, reason, lockToken);
+  const orchestrator = readObjectProperty(service, 'orchestrator');
+  if (!(orchestrator instanceof WhatsappCatchupOrchestratorService)) {
+    throw new Error('catchup_orchestrator_unavailable');
+  }
+  const runCatchupMethod = readObjectProperty(orchestrator, 'runCatchup');
+  if (typeof runCatchupMethod !== 'function') {
+    throw new Error('catchup_run_method_unavailable');
+  }
+  return (runCatchupMethod as CatchupOrchestratorInternals['runCatchup']).call(
+    orchestrator,
+    workspaceId,
+    reason,
+    lockToken,
+  );
 }
 
 /** Apply catchup environment defaults used across spec setups. */
@@ -190,14 +209,20 @@ export function buildCatchupMocks(): CatchupMocks {
 
 /** Construct the service under test from a bundle of catchup mocks. */
 export function buildCatchupService(mocks: CatchupMocks): WhatsAppCatchupService {
-  return new WhatsAppCatchupService(
+  const history = new WhatsappCatchupHistoryService(
     mocks.prisma as never as PrismaService,
     mocks.providerRegistry as never,
-    mocks.inboundProcessor as never,
-    mocks.ciaRuntime as never,
-    mocks.inbox as never,
+    mocks.inbox,
+  );
+  const orchestrator = new WhatsappCatchupOrchestratorService(
+    mocks.prisma as never as PrismaService,
+    mocks.providerRegistry as never,
+    mocks.inboundProcessor,
+    mocks.ciaRuntime,
     mocks.workerRuntime as never,
     mocks.redis as never,
     mocks.agentEvents as never,
+    history,
   );
+  return new WhatsAppCatchupService(orchestrator);
 }

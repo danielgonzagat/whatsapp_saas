@@ -10,7 +10,6 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
-import { Throttle } from '@nestjs/throttler';
 import { AdminAction, AdminModule } from '@prisma/client';
 import { Public } from '../../auth/public.decorator';
 import { CurrentAdmin } from '../auth/decorators/current-admin.decorator';
@@ -22,36 +21,36 @@ import type { AuthenticatedAdmin } from '../auth/admin-token.types';
 import { AdminTransactionsService } from './admin-transactions.service';
 import { ListTransactionsQueryDto } from './dto/list-transactions.dto';
 import { OperateTransactionDto } from './dto/operate-transaction.dto';
+import { RouteClass } from '../../common/throttler/route-class.decorator';
 
 /** Admin transactions controller. */
 @Public()
 @Controller('admin/transactions')
 @UseGuards(AdminAuthGuard, AdminPermissionGuard)
+@RouteClass('read')
 export class AdminTransactionsController {
   constructor(private readonly transactions: AdminTransactionsService) {}
 
   /** List. */
   @Get()
-  @Throttle({ default: { limit: 30, ttl: 60000 } })
   @NoAudit()
   @RequireAdminPermission(AdminModule.VENDAS, AdminAction.VIEW)
   async list(@Query() query: ListTransactionsQueryDto) {
     return this.transactions.list({
-      search: query.search,
-      status: query.status,
-      method: query.method,
-      gateway: query.gateway,
-      workspaceId: query.workspaceId,
-      from: query.from,
-      to: query.to,
-      skip: query.skip,
-      take: query.take,
+      ...(query.search !== undefined ? { search: query.search } : {}),
+      ...(query.status !== undefined ? { status: query.status } : {}),
+      ...(query.method !== undefined ? { method: query.method } : {}),
+      ...(query.gateway !== undefined ? { gateway: query.gateway } : {}),
+      ...(query.workspaceId !== undefined ? { workspaceId: query.workspaceId } : {}),
+      ...(query.from !== undefined ? { from: query.from } : {}),
+      ...(query.to !== undefined ? { to: query.to } : {}),
+      ...(query.skip !== undefined ? { skip: query.skip } : {}),
+      ...(query.take !== undefined ? { take: query.take } : {}),
     });
   }
 
   /** Operate. */
   @Post(':orderId/operate')
-  @Throttle({ default: { limit: 10, ttl: 60000 } })
   @RequireAdminPermission(AdminModule.VENDAS, AdminAction.EDIT)
   @HttpCode(HttpStatus.NO_CONTENT)
   async operate(

@@ -49,7 +49,6 @@ type CheckoutServiceInternals = {
   };
 };
 
-// PULSE_OK: assertions exist below
 describe('CheckoutService public resolution', () => {
   let service: CheckoutService;
   let internalService: CheckoutServiceInternals;

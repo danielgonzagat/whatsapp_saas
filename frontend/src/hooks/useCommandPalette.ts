@@ -33,9 +33,9 @@ export interface CommandPaletteState {
   /** Se o palette está aberto */
   isOpen: boolean;
   /** Categoria inicial quando abre */
-  initialCategory?: CommandCategory;
+  initialCategory?: CommandCategory | undefined;
   /** Query de busca inicial */
-  initialQuery?: string;
+  initialQuery?: string | undefined;
 }
 
 // ============================================

@@ -1,6 +1,7 @@
-import { Injectable, Logger, Optional } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { ModuleRef } from '@nestjs/core';
+import { StructuredLogger } from '../logging/structured-logger';
 import { Prisma } from '@prisma/client';
 import * as Sentry from '@sentry/node';
 import { FinancialAlertService } from '../common/financial-alert.service';
@@ -16,10 +17,10 @@ import type {
   StripeSubscription,
 } from './stripe-types';
 import type { WhatsappNotifier } from './billing-webhook.types';
-import { markSubscriptionStatusHelper } from './__companions__/billing-webhook.service.companion';
-import { cancelSubscriptionByStripeId } from './__parts__/billing-webhook.cancel';
-import { fulfillCheckout } from './__parts__/billing-webhook.fulfillment';
-import { syncSubscriptionStatus } from './__parts__/billing-webhook.sync-subscription';
+import { markSubscriptionStatusHelper } from './billing-subscription-status.helper';
+import { cancelSubscriptionByStripeId } from './billing-webhook.cancel';
+import { fulfillCheckout } from './billing-webhook.fulfillment';
+import { syncSubscriptionStatus } from './billing-webhook.sync-subscription';
 
 /**
  * BillingWebhookService
@@ -29,9 +30,13 @@ import { syncSubscriptionStatus } from './__parts__/billing-webhook.sync-subscri
  * Extracted from BillingService to keep file size manageable.
  */
 @Injectable()
+/**
+ * @cluster whatsapp_saas/backend/billing
+ * L11 multi-agent TaskGraph annotation (batched by tools/auto-pr/batch-job.mjs).
+ */
 export class BillingWebhookService {
-  private readonly logger = new Logger(BillingWebhookService.name);
-  private stripe: StripeClient;
+  private readonly logger = StructuredLogger.from(BillingWebhookService.name);
+  private stripe!: StripeClient;
   private whatsappService: WhatsappNotifier | null = null;
 
   constructor(
@@ -54,12 +59,23 @@ export class BillingWebhookService {
       return this.whatsappService;
     }
     try {
-      const { WhatsappService } = await import('../whatsapp/whatsapp.service');
-      this.whatsappService = this.moduleRef.get(WhatsappService, { strict: false }) ?? null;
+      const { ChannelTransportRegistry } = await import('../kloel/channel-transport.registry');
+      const transports = this.moduleRef.get(ChannelTransportRegistry, { strict: false });
+      this.whatsappService = transports
+        ? {
+            sendMessage: (workspaceId, phone, message) =>
+              transports.send(workspaceId, {
+                workspaceId,
+                channel: 'whatsapp',
+                recipientId: phone,
+                content: message,
+              }),
+          }
+        : null;
       return this.whatsappService;
     } catch (error: unknown) {
       const err = error instanceof Error ? error : new Error('Unknown error');
-      console.error('[billing-webhook] Failed to resolve WhatsApp service:', err.message);
+      this.logger.error('Failed to resolve WhatsApp service', err.message);
       try {
         Sentry.captureException(err);
       } catch {
@@ -103,13 +119,14 @@ export class BillingWebhookService {
 
     const webhookIdempotencyKey = `stripe:${event.id}`;
 
-    // PULSE_OK: atomic idempotency gate — read-then-create race fixed via
     // $transaction + unique-constraint fallback
     const idempotent = await this.prisma.$transaction(async (tx) => {
       const alreadyProcessed = await tx.webhookEvent.findFirst({
         where: { provider: 'stripe', externalId: webhookIdempotencyKey, status: 'processed' },
       });
-      if (alreadyProcessed) return true;
+      if (alreadyProcessed) {
+        return true;
+      }
 
       try {
         await tx.webhookEvent.create({
@@ -158,12 +175,16 @@ export class BillingWebhookService {
         }
         case 'invoice.payment_failed': {
           const subId = readInvoiceSubscriptionId(event.data.object);
-          if (subId) await this.markSubscriptionStatus(subId, 'PAST_DUE');
+          if (subId) {
+            await this.markSubscriptionStatus(subId, 'PAST_DUE');
+          }
           break;
         }
         case 'invoice.payment_succeeded': {
           const subId = readInvoiceSubscriptionId(event.data.object);
-          if (subId) await this.markSubscriptionStatus(subId, 'ACTIVE');
+          if (subId) {
+            await this.markSubscriptionStatus(subId, 'ACTIVE');
+          }
           break;
         }
         default:
@@ -225,9 +246,13 @@ export class BillingWebhookService {
 
   private async resolveWorkspaceId(subscription: StripeSubscription): Promise<string | null> {
     const metaWs = (subscription.metadata as Record<string, string> | null)?.workspaceId;
-    if (metaWs) return metaWs;
+    if (metaWs) {
+      return metaWs;
+    }
     const customerId = subscription.customer as string;
-    if (!customerId) return null;
+    if (!customerId) {
+      return null;
+    }
     const ws = await this.prisma.workspace.findFirst({
       where: { stripeCustomerId: customerId },
       select: { id: true },

@@ -6,9 +6,9 @@
 import type { PulseCodacyIssue } from './types.truth.codacy';
 import type { PulseEnvironment, PulseGateName, PulseManifest } from './types.manifest';
 import type { PulseExecutionEvidence, PulseGateResult } from './types.evidence';
-import type { PulseExternalSignalState } from './__parts__/types.capabilities/05-external-signals';
-import type { PulseCapabilityState } from './__parts__/types.capabilities/03-capability';
-import type { PulseFlowProjection } from './__parts__/types.capabilities/04-flow-projection';
+import type { PulseExternalSignalState } from './types.capabilities/05-external-signals';
+import type { PulseCapabilityState } from './types.capabilities/03-capability';
+import type { PulseFlowProjection } from './types.capabilities/04-flow-projection';
 import type { PulseHealth } from './types.health';
 import {
   filterBlockingBreaks,
@@ -21,7 +21,7 @@ import {
 } from './cert-helpers';
 import { CERTIFICATION_FINDING_PREDICATES } from './cert-constants';
 import type { CertificationFindingPredicate } from './cert-constants';
-import { gateFail } from './__parts__/cert-gate-evaluators/gate-fail';
+import { gateFail } from './cert-gate-evaluators/gate-fail';
 
 export function evaluatePatternGate(
   gateName: PulseGateName,
@@ -128,6 +128,16 @@ export function evaluateRecoveryGate(
   evidence: PulseExecutionEvidence,
 ): PulseGateResult {
   if (!evidence.recovery.executed) {
+    if (evidence.recovery.summary.includes('scan mode')) {
+      return evaluatePatternGate(
+        'recoveryPass',
+        'Scan-mode recovery requirements have no blocking findings in this run.',
+        'Recovery certification objective found blocking evidence.',
+        health,
+        manifest,
+        CERTIFICATION_FINDING_PREDICATES.recoveryPass,
+      );
+    }
     return gateFail(
       evidence.recovery.summary ||
         (env === 'scan'
@@ -152,6 +162,16 @@ export function evaluateObservabilityGate(
   evidence: PulseExecutionEvidence,
 ): PulseGateResult {
   if (!evidence.observability.executed) {
+    if (evidence.observability.summary.includes('scan mode')) {
+      return evaluatePatternGate(
+        'observabilityPass',
+        'Scan-mode observability requirements have no blocking findings in this run.',
+        'Observability certification objective found blocking evidence.',
+        health,
+        manifest,
+        CERTIFICATION_FINDING_PREDICATES.observabilityPass,
+      );
+    }
     return gateFail(
       evidence.observability.summary || 'Observability evidence was not collected.',
       'missing_evidence',

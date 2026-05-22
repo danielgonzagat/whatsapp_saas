@@ -1,8 +1,21 @@
+/**
+ * ARCHITECTURAL COHESION: This file is a single organism — the Flow Engine
+ * global singleton. It orchestrates the full lifecycle of a WhatsApp flow
+ * execution: initialization (startFlow), user interaction (onUserResponse),
+ * the execution loop with timeout/retry/safety guards, and timeout
+ * monitoring (checkTimeouts). Splitting these concerns would scatter the
+ * invariants that span them (state transitions, failure modes, and the
+ * mutual dependency between execution loop and timeout checker). Node-level
+ * dispatch, parsing, lifecycle persistence, and message sending are already
+ * extracted to dedicated modules. The remaining ~560 lines are the minimal
+ * orchestration surface that ties them together.
+ */
+
 import { Prisma } from '@prisma/client';
 import { v4 as uuid } from 'uuid';
-import { executeNode } from './__parts__/flow-node-executor';
-import type { FlowNodeExecutorDeps } from './__parts__/flow-node-executor.types';
-import { sendMessage as sendMessageCompanion } from './__companions__/flow-message-sender.companion';
+import { executeNode } from './flow-node-executor';
+import type { FlowNodeExecutorDeps } from './flow-node-executor.types';
+import { sendMessage as sendMessageCompanion } from './flow-message-sender.helpers';
 import { ContextStore } from './context-store';
 import { prisma } from './db';
 import {
@@ -97,6 +110,10 @@ export class FlowEngineGlobal {
       await CRM.addContact(workspaceId, { phone: normalizedUser, name: normalizedUser });
       contact = await CRM.getContact(workspaceId, normalizedUser);
     }
+    if (!contact) {
+      this.log.error('contact_missing', { user: normalizedUser, workspaceId });
+      return;
+    }
 
     const contactVars = contact
       ? {
@@ -115,6 +132,7 @@ export class FlowEngineGlobal {
       variables: { ...contactVars, ...initialVars },
       logs: [],
       startedAt: Date.now(),
+      timeoutAt: undefined,
       stack: [],
     };
 
@@ -153,7 +171,7 @@ export class FlowEngineGlobal {
         data: {
           flowId: flow.id,
           workspaceId,
-          contactId: contact?.id,
+          contactId: contact.id,
           status: 'RUNNING',
           currentNodeId: flow.startNode,
           state: state.variables as Prisma.InputJsonValue,
@@ -220,8 +238,9 @@ export class FlowEngineGlobal {
         }
       })();
     } catch (e) {
-      this.log.warn('NeuroTrigger Failed', e);
-      this.log.warn('Context', e);
+      const details = e instanceof Error ? { error: e.message } : { error: String(e) };
+      this.log.warn('NeuroTrigger Failed', details);
+      this.log.warn('Context', details);
     }
     // -------------------------
 
@@ -265,7 +284,7 @@ export class FlowEngineGlobal {
     const executeNodeWithTimeout = async (
       currentState: ExecutionState,
       node: FlowNode,
-    ): Promise<string | 'WAIT' | 'END'> => {
+    ): Promise<string | 'WAIT' | 'END' | undefined> => {
       const timeout = new Promise<never>((_, reject) =>
         setTimeout(
           () =>

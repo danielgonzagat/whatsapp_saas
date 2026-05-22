@@ -1,16 +1,20 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import OpenAI from 'openai';
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { forEachSequential } from '../common/async-sequence';
+import { createTextLlmClient } from '../lib/llm-provider';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
 import { MemoryService } from './memory.service';
 import { chatCompletionWithRetry } from './openai-wrapper';
 
 const JSON_N___N_RE = /```json\n?|\n?```/g;
 const A_Z_A_Z0_9_RE = /[^a-zA-Z0-9]/g;
-/** Pdf_analysis_system_prompt. */
-export const PDF_ANALYSIS_SYSTEM_PROMPT =
-  'Analista de documentos comerciais. Retorne apenas JSON válido.';
+/** Output contract used by document analysis calls and cost quotes. */
+export const PDF_ANALYSIS_OUTPUT_CONTRACT =
+  'Analise o documento comercial e devolva apenas JSON valido no schema solicitado.';
+
+type PdfAnalysis = Record<string, unknown>;
 
 type PdfProcessorUsage = {
   prompt_tokens?: number | null;
@@ -41,14 +45,14 @@ Retorne JSON:
 /** Pdf processor service. */
 @Injectable()
 export class PdfProcessorService {
-  private readonly logger = new Logger(PdfProcessorService.name);
+  private readonly logger = StructuredLogger.from(PdfProcessorService.name);
   private openai: OpenAI;
 
   constructor(
     private readonly memoryService: MemoryService,
     private readonly planLimits: PlanLimitsService,
   ) {
-    this.openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+    this.openai = createTextLlmClient() ?? new OpenAI({ apiKey: 'missing' });
   }
 
   /**
@@ -91,10 +95,7 @@ export class PdfProcessorService {
       const response = await chatCompletionWithRetry(this.openai, {
         model: resolveBackendOpenAIModel('brain'),
         messages: [
-          {
-            role: 'system',
-            content: PDF_ANALYSIS_SYSTEM_PROMPT,
-          },
+          { role: 'user', content: JSON.stringify({ contract: PDF_ANALYSIS_OUTPUT_CONTRACT }) },
           { role: 'user', content: prompt },
         ],
         temperature: 0.3,
@@ -102,7 +103,7 @@ export class PdfProcessorService {
       const content = response.choices[0]?.message?.content || '{}';
       const cleanJson = content.replace(JSON_N___N_RE, '').trim();
       return {
-        analysis: JSON.parse(cleanJson) as Record<string, unknown>,
+        analysis: JSON.parse(cleanJson) as PdfAnalysis,
         usage: (response.usage ?? null) as PdfProcessorUsage,
       };
     } catch (error: unknown) {
@@ -145,8 +146,8 @@ export class PdfProcessorService {
       await this.memoryService.saveProduct(workspaceId, `${pdfId}_product_${i}`, {
         name: product.name,
         description: product.description,
-        price: product.price,
-        benefits: product.benefits,
+        price: product.price ?? 0,
+        ...(product.benefits !== undefined ? { benefits: product.benefits } : {}),
       });
     });
 

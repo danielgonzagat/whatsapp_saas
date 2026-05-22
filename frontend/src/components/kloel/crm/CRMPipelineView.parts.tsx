@@ -1,3 +1,4 @@
+import { colors } from '@/lib/design-tokens';
 import type { CSSProperties } from 'react';
 
 /** Loading strip. */
@@ -104,7 +105,7 @@ export function DetailRow({
       <span
         style={{
           fontSize: 13,
-          color: color || '#E0DDD8',
+          color: color || colors.text.silver,
           fontFamily: mono
             ? "var(--font-jetbrains), 'JetBrains Mono', monospace"
             : "var(--font-sora), 'Sora', sans-serif",

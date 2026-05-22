@@ -79,7 +79,7 @@ function readBaseLines(baseSha, file) {
   // Returns the file content at the base ref, or null if the file did not
   // exist there (new file). git show errors out on missing paths; we catch
   // and return null to signal "no baseline, treat as 0 violations".
-  if (!baseSha) return null;
+  if (!baseSha) {return null;}
   try {
     const content = execFileSync('git', ['show', `${baseSha}:${file}`], {
       cwd: repoRoot,
@@ -101,7 +101,7 @@ function resolveBaseShaForDelta() {
     return null;
   }
   const match = range.match(/^([0-9a-f]+)\.\.\.HEAD$/i);
-  if (match) return match[1];
+  if (match) {return match[1];}
   return null;
 }
 
@@ -248,9 +248,7 @@ function scanViolations(file, lines, tokens, exceptions) {
       });
     }
 
-    // nosemgrep: javascript.lang.security.audit.detect-non-literal-regexp.regex-dos-vulnerability.regex-dos-vulnerability
-    // Safe: IMPORTANT_RE is a module-scope literal regex; `line` is a line of the repo's own tracked source file. No user input, no nested quantifiers.
-    if (IMPORTANT_RE.test(line) && !matchesException(exceptions, file, 'important', '!important')) {
+    if (Boolean(line.match(IMPORTANT_RE)) && !matchesException(exceptions, file, 'important', '!important')) {
       violations.push({
         file,
         line: lineNumber,
@@ -261,9 +259,7 @@ function scanViolations(file, lines, tokens, exceptions) {
 
     if (
       !tokens.allowGradients &&
-      // nosemgrep: javascript.lang.security.audit.detect-non-literal-regexp.regex-dos-vulnerability.regex-dos-vulnerability
-      // Safe: GRADIENT_RE is a module-scope literal regex; `line` is a tracked-source line. No user input, no nested quantifiers.
-      GRADIENT_RE.test(line) &&
+      Boolean(line.match(GRADIENT_RE)) &&
       !matchesException(exceptions, file, 'gradient', 'any')
     ) {
       violations.push({
@@ -274,9 +270,7 @@ function scanViolations(file, lines, tokens, exceptions) {
       });
     }
 
-    // nosemgrep: javascript.lang.security.audit.detect-non-literal-regexp.regex-dos-vulnerability.regex-dos-vulnerability
-    // Safe: literal char-class regex applied to a line of the repo's own tracked source. No user input, no nested quantifiers.
-    if (/['"`<>]/.test(line)) {
+    if (Boolean(line.match(/['"`<>]/))) {
       const emojiMatches = line.match(EMOJI_RE) || [];
       if (
         emojiMatches.length > 0 &&
@@ -292,15 +286,9 @@ function scanViolations(file, lines, tokens, exceptions) {
     }
 
     if (
-      // nosemgrep: javascript.lang.security.audit.detect-non-literal-regexp.regex-dos-vulnerability.regex-dos-vulnerability
-      // Safe: SPINNER_RE is a module-scope literal regex; `line` is a tracked-source line. No user input, no nested quantifiers.
-      SPINNER_RE.test(line) &&
-      // nosemgrep: javascript.lang.security.audit.detect-non-literal-regexp.regex-dos-vulnerability.regex-dos-vulnerability
-      // Safe: SPINNER_ICON_RE is a module-scope literal regex; `line` is a tracked-source line. No user input, no nested quantifiers.
-      SPINNER_ICON_RE.test(line) &&
-      // nosemgrep: javascript.lang.security.audit.detect-non-literal-regexp.regex-dos-vulnerability.regex-dos-vulnerability
-      // Safe: literal alternation regex applied to a tracked-source line. No user input, no nested quantifiers.
-      !/PulseLoader|KloelBrand|brand/i.test(line)
+      Boolean(line.match(SPINNER_RE)) &&
+      Boolean(line.match(SPINNER_ICON_RE)) &&
+      !Boolean(line.match(/PulseLoader|KloelBrand|brand/i))
     ) {
       violations.push({
         file,
@@ -310,9 +298,7 @@ function scanViolations(file, lines, tokens, exceptions) {
       });
     }
 
-    // nosemgrep: javascript.lang.security.audit.detect-non-literal-regexp.regex-dos-vulnerability.regex-dos-vulnerability
-    // Safe: CHAT_FILE_HINT_RE is a module-scope literal alternation regex; `file` is a repo-relative path from the git diff. No user input, no nested quantifiers.
-    if (!CHAT_FILE_HINT_RE.test(file)) {
+    if (!Boolean(file.match(CHAT_FILE_HINT_RE))) {
       return;
     }
 

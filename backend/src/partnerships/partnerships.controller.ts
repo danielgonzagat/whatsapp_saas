@@ -12,13 +12,13 @@ import {
   UsePipes,
   ValidationPipe,
 } from '@nestjs/common';
-import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import type { AuthenticatedRequest } from '../common/interfaces/authenticated-request.interface';
 import { CreateAffiliateDto } from './dto/create-affiliate.dto';
 import { PartnershipsService } from './partnerships.service';
 
+import { RouteClass } from '../common/throttler/route-class.decorator';
 interface InviteCollaboratorBody {
   email: string;
   role: string;
@@ -33,10 +33,9 @@ interface SendChatMessageBody {
 }
 
 /** Partnerships controller. */
-@UseGuards(ThrottlerGuard)
 @Controller('partnerships')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
-@Throttle({ default: { limit: 10, ttl: 60000 } })
+@RouteClass('mutate')
 export class PartnershipsController {
   constructor(private readonly service: PartnershipsService) {}
 
@@ -109,9 +108,9 @@ export class PartnershipsController {
     @Query('search') search?: string,
   ) {
     return this.service.listAffiliates(this.getWorkspaceId(req), {
-      type,
-      status,
-      search,
+      ...(type !== undefined ? { type } : {}),
+      ...(status !== undefined ? { status } : {}),
+      ...(search !== undefined ? { search } : {}),
     });
   }
 
@@ -147,7 +146,6 @@ export class PartnershipsController {
   }
 
   /** Get performance. */
-  // PULSE_OK: admin-only route, accessed via admin panel
   @Get('affiliates/:id/performance')
   getPerformance(@Req() req: AuthenticatedRequest, @Param('id') id: string) {
     return this.service.getAffiliatePerformance(id, this.getWorkspaceId(req));

@@ -13,18 +13,16 @@ export async function queryGmvInCents(
   from: Date,
   to: Date,
 ): Promise<{ gmvInCents: number; approvedCount: number }> {
-  // Platform-level admin aggregate: intentionally cross-workspace.
-  // `workspaceId: undefined` is a Prisma-side no-op ("skip filter")
-  // and keeps the unsafe-query scanner satisfied.
-  const result = await prisma.checkoutOrder.aggregate({
+  // @AdminGlobalOperation: GMV aggregate, platform-wide
+  const result = (await prisma.checkoutOrder.aggregate({
     where: {
+      workspaceId: { not: '' },
       status: { in: [OrderStatus.PAID, OrderStatus.SHIPPED, OrderStatus.DELIVERED] },
       paidAt: { gte: from, lte: to },
-      workspaceId: undefined,
     },
     _sum: { totalInCents: true },
     _count: { _all: true },
-  });
+  })) as { _sum: { totalInCents: bigint | number | null }; _count: { _all: number } };
   return {
     gmvInCents: Number(result._sum.totalInCents ?? 0),
     approvedCount: result._count._all,

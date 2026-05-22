@@ -1,9 +1,11 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
+import { SpineEmitterService } from '../kloel/spine/spine-emitter.service';
 import { Prisma } from '@prisma/client';
 import * as Sentry from '@sentry/node';
 import { forEachSequential } from '../common/async-sequence';
-import { escapeHtml } from '../common/utils/html-escape.util';
 import { formatBrlAmount } from '../kloel/money-format.util';
+import { CheckoutEventEmitterService } from '../kloel/checkout-emitter/checkout-event-emitter.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { CheckoutSocialLeadService } from './checkout-social-lead.service';
 import { FacebookCAPIService } from './facebook-capi.service';
@@ -18,6 +20,7 @@ type CheckoutPixelConfig = {
 
 type CheckoutOrderForEffects = {
   id?: string;
+  workspaceId?: string | null;
   orderNumber?: string | null;
   customerName?: string | null;
   customerEmail?: string | null;
@@ -36,16 +39,17 @@ type CheckoutOrderForEffects = {
 /** Checkout post payment effects service. */
 @Injectable()
 export class CheckoutPostPaymentEffectsService {
-  private readonly logger = new Logger(CheckoutPostPaymentEffectsService.name);
+  private readonly logger = StructuredLogger.from(CheckoutPostPaymentEffectsService.name);
 
   constructor(
     private readonly prisma: PrismaService,
     private readonly facebookCAPI: FacebookCAPIService,
     private readonly checkoutSocialLeadService: CheckoutSocialLeadService,
+    private readonly checkoutEventEmitter: CheckoutEventEmitterService,
+    @Optional() private readonly spine?: SpineEmitterService,
   ) {}
 
   /** Mark lead converted + auto-enroll in linked member areas. */
-  // PULSE_OK: rate-limited by CheckoutPublicController
   async markLeadConverted(order: CheckoutOrderForEffects, workspaceId?: string) {
     if (!workspaceId || !order.id) {
       return;
@@ -56,17 +60,35 @@ export class CheckoutPostPaymentEffectsService {
       typeof orderMetadata.capturedLeadId === 'string' ? orderMetadata.capturedLeadId : null;
     const deviceFingerprint =
       typeof orderMetadata.deviceFingerprint === 'string' ? orderMetadata.deviceFingerprint : null;
+    const correlationId =
+      typeof orderMetadata.correlationId === 'string' ? orderMetadata.correlationId : undefined;
 
-    await this.checkoutSocialLeadService
-      .markConvertedFromOrder({
+    const conversionInput = {
+      workspaceId,
+      orderId: order.id,
+      ...(capturedLeadId !== null ? { capturedLeadId } : {}),
+      ...(order.customerEmail !== undefined && order.customerEmail !== null
+        ? { customerEmail: order.customerEmail }
+        : {}),
+      ...(order.customerPhone !== undefined && order.customerPhone !== null
+        ? { customerPhone: order.customerPhone }
+        : {}),
+      ...(deviceFingerprint !== null ? { deviceFingerprint } : {}),
+    };
+
+    const converted = await this.checkoutSocialLeadService
+      .markConvertedFromOrder(conversionInput)
+      .catch(() => null);
+
+    if (converted) {
+      void this.checkoutEventEmitter.leadConverted({
         workspaceId,
         orderId: order.id,
-        capturedLeadId,
-        customerEmail: order.customerEmail || undefined,
-        customerPhone: order.customerPhone || undefined,
-        deviceFingerprint,
-      })
-      .catch(() => undefined);
+        leadId: converted.id,
+        customerEmail: order.customerEmail ?? null,
+        correlationId,
+      });
+    }
 
     await this.autoEnrollInMemberAreas(
       workspaceId,
@@ -78,10 +100,48 @@ export class CheckoutPostPaymentEffectsService {
   }
 
   /** Send purchase signals. */
-  // PULSE_OK: rate-limited by CheckoutPublicController
   async sendPurchaseSignals(order: CheckoutOrderForEffects, chargedAmount: number) {
     await this.sendFacebookPurchaseEvent(order);
     await this.sendPaymentConfirmationEmail(order, chargedAmount);
+    void this.emitPostSaleBridgeEvents(order);
+  }
+
+  private emitPostSaleBridgeEvents(order: CheckoutOrderForEffects): void {
+    if (!this.spine || !order.id || !order.workspaceId) {
+      return;
+    }
+    const entityRef = { entityType: 'order' as const, entityId: order.id };
+    void this.spine.emit({
+      eventName: 'commerce.post_sale.delivery_completed',
+      workspaceId: order.workspaceId,
+      entityRef,
+      truthMode: 'observed',
+      provenance: {
+        source: 'production',
+        processor: 'checkout-post-payment-effects',
+        processorVersion: '1.0.0',
+        schemaVersion: '1.0.0',
+      },
+      payload: {
+        deliveryKind: 'purchase_confirmation',
+        channel: 'email',
+      },
+    }).catch(() => undefined);
+    void this.spine.emit({
+      eventName: 'commerce.post_sale.activation_started',
+      workspaceId: order.workspaceId,
+      entityRef,
+      truthMode: 'observed',
+      provenance: {
+        source: 'production',
+        processor: 'checkout-post-payment-effects',
+        processorVersion: '1.0.0',
+        schemaVersion: '1.0.0',
+      },
+      payload: {
+        activationKind: 'post_purchase',
+      },
+    }).catch(() => undefined);
   }
 
   private readOrderMetadata(metadata: Prisma.JsonValue | null | undefined) {
@@ -110,13 +170,23 @@ export class CheckoutPostPaymentEffectsService {
           pixelId: pixel.pixelId,
           accessToken: pixel.accessToken,
           eventName: 'Purchase',
-          email: order.customerEmail || undefined,
-          phone: order.customerPhone || undefined,
+          ...(order.customerEmail !== undefined && order.customerEmail !== null
+            ? { email: order.customerEmail }
+            : {}),
+          ...(order.customerPhone !== undefined && order.customerPhone !== null
+            ? { phone: order.customerPhone }
+            : {}),
           amount: Number(order.totalInCents || 0),
           currency: 'BRL',
-          productId: order.plan?.productId || undefined,
-          ip: order.ipAddress || undefined,
-          userAgent: order.userAgent || undefined,
+          ...(order.plan?.productId !== undefined && order.plan?.productId !== null
+            ? { productId: order.plan.productId }
+            : {}),
+          ...(order.ipAddress !== undefined && order.ipAddress !== null
+            ? { ip: order.ipAddress }
+            : {}),
+          ...(order.userAgent !== undefined && order.userAgent !== null
+            ? { userAgent: order.userAgent }
+            : {}),
         });
       });
     } catch (error: unknown) {
@@ -217,31 +287,14 @@ export class CheckoutPostPaymentEffectsService {
     order: CheckoutOrderForEffects,
     chargedAmount: number,
   ): string {
-    const safeCustomerName = escapeHtml(order.customerName || '');
-    const safeProductName = escapeHtml(order.plan?.product?.name || '\u2014');
-    const safeOrderId = escapeHtml(order.orderNumber || order.id || '');
     const amountSource = chargedAmount || Number(order.totalInCents || 0) / 100;
-    const formattedAmount = escapeHtml(formatBrlAmount(amountSource));
-
-    return [
-      '<div style="font-family:sans-serif;max-width:600px;margin:0 auto;background:#0A0A0C;color:#e0e0e0;padding:40px;">',
-      '<h1 style="color:#E85D30;">KLOEL</h1>',
-      '<p>Ola ',
-      safeCustomerName,
-      ',</p>',
-      '<p>Seu pagamento foi confirmado!</p>',
-      '<div style="background:#151517;padding:20px;border-radius:6px;margin:20px 0;">',
-      '<p><strong>Produto:</strong> ',
-      safeProductName,
-      '</p>',
-      '<p><strong>Valor:</strong> ',
-      formattedAmount,
-      '</p>',
-      '<p><strong>Pedido:</strong> #',
-      safeOrderId,
-      '</p>',
-      '</div>',
-      '</div>',
-    ].join('');
+    const { renderEmailTemplate } = require('../common/utils/email-template-renderer.util');
+    return renderEmailTemplate('payment-confirmation', {
+      customerName: order.customerName || '',
+      productName: order.plan?.product?.name || '\u2014',
+      orderNumber: order.orderNumber || order.id || '',
+      formattedAmount: formatBrlAmount(amountSource),
+      memberAreaSection: '',
+    });
   }
 }

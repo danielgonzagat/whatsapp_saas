@@ -1,4 +1,4 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, Optional } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Prisma } from '@prisma/client';
 import OpenAI from 'openai';
@@ -6,12 +6,9 @@ import { PlanLimitsService } from '../billing/plan-limits.service';
 import { chatCompletionWithRetry } from '../kloel/openai-wrapper';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
 import { PrismaService } from '../prisma/prisma.service';
-import { buildFallbackAnalysis, normalizeAnalysis } from './__companions__/neuro-crm-analysis';
-import {
-  type AnalysisContact,
-  type AnalysisResult,
-  type RawAnalysis,
-} from './__companions__/neuro-crm-analysis.shared';
+import { CrmEventEmitterService } from '../kloel/crm-emitter/crm-event-emitter.service';
+import { buildFallbackAnalysis, normalizeAnalysis } from './neuro-crm.helpers';
+import { type AnalysisContact, type AnalysisResult, type RawAnalysis } from './neuro-crm.types';
 
 interface ClusterPoint {
   contact: {
@@ -35,6 +32,7 @@ export class NeuroCrmService {
     private readonly prisma: PrismaService,
     private readonly config: ConfigService,
     private readonly planLimits: PlanLimitsService,
+    @Optional() private readonly crmEmitter?: CrmEventEmitterService,
   ) {
     const apiKey = this.config.get<string>('OPENAI_API_KEY');
     this.openai = apiKey ? new OpenAI({ apiKey }) : null;
@@ -108,7 +106,7 @@ export class NeuroCrmService {
 
     const k = Math.min(3, Math.max(1, points.length));
     let centroids = points.slice(0, k).map((p) => ({ x: p.x, y: p.y }));
-    for (let iter = 0; iter < 5; iter++) {
+    for (let iter = 0; iter < 5; iter += 1) {
       const buckets: ClusterPoint[][] = Array.from({ length: k }, () => []);
       for (const p of points) {
         let best = 0;
@@ -120,16 +118,19 @@ export class NeuroCrmService {
             best = idx;
           }
         });
-        buckets[best].push(p);
+        const bucket = buckets[best];
+        if (bucket) {
+          bucket.push(p);
+        }
       }
       centroids = buckets.map((bucket, idx) => {
         if (!bucket.length) {
-          return centroids[idx];
+          const fallback = centroids[idx];
+          return fallback ?? { x: 0, y: 0 };
         }
-        return {
-          x: bucket.reduce((a: number, b: ClusterPoint) => a + b.x, 0) / bucket.length,
-          y: bucket.reduce((a: number, b: ClusterPoint) => a + b.y, 0) / bucket.length,
-        };
+        const xSum = bucket.reduce((a, b) => a + b.x, 0);
+        const ySum = bucket.reduce((a, b) => a + b.y, 0);
+        return { x: xSum / bucket.length, y: ySum / bucket.length };
       });
     }
 
@@ -230,6 +231,22 @@ Simule um diálogo de 6 turnos Lead/Agente com foco em conversão.`;
       history,
       contact.customFields,
     );
+
+    if (result.intent === 'COMPLAINT' || result.sentiment === 'NEGATIVE') {
+      const objectionKind =
+        result.intent === 'COMPLAINT' ? 'complaint' : 'negative_sentiment';
+      void this.crmEmitter
+        ?.emitObjectionRaised(workspaceId, contactId, objectionKind)
+        .catch(() => {});
+      void this.createInsight(
+        contactId,
+        workspaceId,
+        'OBJECTION_RAISED',
+        `Objection detected: ${objectionKind} (intent=${result.intent}, sentiment=${result.sentiment})`,
+        -3,
+      ).catch(() => {});
+    }
+
     await this.createInsightIfSignificant(contactId, workspaceId, analysisContact, result);
     return result;
   }
@@ -301,7 +318,6 @@ Return strictly JSON with:
     }
   }
 
-  // PULSE_OK: workspaceId validated by caller guard; updateMany scoped to workspaceId + contactId
   private async persistAnalysis(
     workspaceId: string,
     contactId: string,
@@ -353,7 +369,7 @@ Return strictly JSON with:
       select: { id: true },
     });
     if (!contact) {
-      return [];
+      throw new NotFoundException('Contact not found');
     }
 
     return this.prisma.contactInsight.findMany({
@@ -372,7 +388,6 @@ Return strictly JSON with:
   }
 
   /** Create insight.
-   * PULSE:OK — ContactInsight inherits workspace ownership transitively
    * through Contact.workspaceId. Ownership is verified by the contact
    * lookup below before the insight is created.
    */

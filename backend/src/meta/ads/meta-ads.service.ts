@@ -1,14 +1,21 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { MetaSdkService } from '../meta-sdk.service';
 
 /** Meta ads service. */
 @Injectable()
 export class MetaAdsService {
+  private readonly logger = new Logger(MetaAdsService.name);
+
   constructor(private readonly metaSdk: MetaSdkService) {}
 
   /** Get campaigns. */
   async getCampaigns(adAccountId: string, accessToken: string, params?: Record<string, unknown>) {
     const fields = 'id,name,status,objective,daily_budget,lifetime_budget,start_time,stop_time';
+    this.logger.log('Calling Meta Ads API', {
+      context: 'MetaAdsService.getCampaigns',
+      adAccountId,
+      endpoint: 'campaigns',
+    });
     return this.metaSdk.graphApiGet(
       `act_${adAccountId}/campaigns`,
       { fields, ...params },
@@ -24,6 +31,11 @@ export class MetaAdsService {
   ) {
     const fields =
       'spend,impressions,clicks,ctr,cpc,cpm,reach,frequency,actions,action_values,cost_per_action_type';
+    this.logger.log('Calling Meta Ads API', {
+      context: 'MetaAdsService.getAccountInsights',
+      adAccountId,
+      endpoint: 'insights',
+    });
     return this.metaSdk.graphApiGet(
       `act_${adAccountId}/insights`,
       {
@@ -41,6 +53,11 @@ export class MetaAdsService {
   /** Get campaign insights. */
   async getCampaignInsights(campaignId: string, accessToken: string, since: string, until: string) {
     const fields = 'spend,impressions,clicks,ctr,cpc,reach,actions,action_values';
+    this.logger.log('Calling Meta Ads API', {
+      context: 'MetaAdsService.getCampaignInsights',
+      campaignId,
+      endpoint: 'insights',
+    });
     return this.metaSdk.graphApiGet(
       `${campaignId}/insights`,
       { fields, time_range: JSON.stringify({ since, until }) },
@@ -50,11 +67,22 @@ export class MetaAdsService {
 
   /** Update campaign status. */
   async updateCampaignStatus(campaignId: string, status: 'ACTIVE' | 'PAUSED', accessToken: string) {
+    this.logger.log('Calling Meta Ads API', {
+      context: 'MetaAdsService.updateCampaignStatus',
+      campaignId,
+      status,
+      endpoint: 'status',
+    });
     return this.metaSdk.graphApiPost(campaignId, { status }, accessToken);
   }
 
   /** Get lead forms. */
   async getLeadForms(pageId: string, accessToken: string) {
+    this.logger.log('Calling Meta Ads API', {
+      context: 'MetaAdsService.getLeadForms',
+      pageId,
+      endpoint: 'leadgen_forms',
+    });
     return this.metaSdk.graphApiGet(
       `${pageId}/leadgen_forms`,
       { fields: 'id,name,status,leads_count' },
@@ -64,6 +92,11 @@ export class MetaAdsService {
 
   /** Get leads. */
   async getLeads(formId: string, accessToken: string) {
+    this.logger.log('Calling Meta Ads API', {
+      context: 'MetaAdsService.getLeads',
+      formId,
+      endpoint: 'leads',
+    });
     return this.metaSdk.graphApiGet(
       `${formId}/leads`,
       { fields: 'id,created_time,field_data' },

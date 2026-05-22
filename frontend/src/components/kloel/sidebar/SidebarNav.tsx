@@ -13,7 +13,7 @@ interface SidebarNavProps {
   expanded: boolean;
   nav: NavItem[];
   activeView: string;
-  activeSubView?: string | null;
+  activeSubView?: string | null | undefined;
   expandedNav: string | null;
   onNavClick: (key: string, sub?: string) => void;
   onToggleNav: (key: string) => void;
@@ -41,8 +41,7 @@ export function SidebarNav({
         const Icon = getIconComponent(item.icon);
         const isActive = activeView === item.key;
         const isExpanded = expandedNav === item.key;
-        const activeSubParent = activeSubView?.split(':')[0];
-        const _parentHasActiveSub = activeSubParent === item.key;
+
         const isHovered = hoveredItem === item.key;
         const hasSubs = item.sub.length > 0;
 

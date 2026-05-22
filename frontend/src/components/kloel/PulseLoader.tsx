@@ -1,6 +1,6 @@
 'use client';
 
-import { kloelT } from '@/lib/i18n/t';
+import { colors } from '@/lib/design-tokens';
 import type { CSSProperties } from 'react';
 import { KloelMushroomVisual } from './KloelBrand';
 
@@ -28,8 +28,8 @@ export function PulseLoader({ width = 88, height = 18, style }: PulseLoaderProps
         ...style,
       }}
     >
-      <KloelMushroomVisual size={size} traceColor={kloelT(`#FFFFFF`)} animated spores="animated" />{' '}
-      {/* PULSE_VISUAL_OK: traceColor passed as prop, white default */}
+      <KloelMushroomVisual size={size} traceColor={colors.text.silver} animated spores="animated" />{' '}
+      {}
     </div>
   );
 }

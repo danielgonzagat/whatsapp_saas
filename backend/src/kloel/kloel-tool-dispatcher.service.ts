@@ -1,14 +1,36 @@
-import { Injectable, Logger, Optional } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
+import { Prisma } from '@prisma/client';
 import { AuditService } from '../audit/audit.service';
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { KloelBusinessConfigToolsService } from './kloel-business-config-tools.service';
 import { KloelChatToolsService } from './kloel-chat-tools.service';
 import { KloelComposerService } from './kloel-composer.service';
+import { runToolSearchWeb } from './kloel-tool-dispatcher.search-web.helpers';
 import { KloelWhatsAppToolsService } from './kloel-whatsapp-tools.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
+import { KloelCodeToolsService } from './kloel-code-tools.service';
+import { KloelCodeAnalysisService } from './kloel-code-analysis.service';
+import { KloelProductSubResourceToolsService } from './kloel-product-sub-resource-tools.service';
+import { KloelWalletSalesToolsService } from './kloel-wallet-sales-tools.service';
+import {
+  titleForHighRiskTool,
+  promptForHighRiskTool,
+  isSupportedApprovedHighRiskTool,
+  sanitizeDetails,
+  isRecord,
+} from './kloel-tool-dispatcher.high-risk.helpers';
 
-type UnknownRecord = Record<string, unknown>;
+import type { UnknownRecord } from '../common/types';
+type ApprovedToolExecutionResult = {
+  success: boolean;
+  approvalRequestId: string;
+  state: string;
+  executed: boolean;
+  toolName?: string;
+  result?: unknown;
+};
 
 /**
  * Dispatcher for KloelService tool execution. Extracted from kloel.service.ts
@@ -18,7 +40,7 @@ type UnknownRecord = Record<string, unknown>;
 /** Idempotency: enforced at HTTP layer via @Idempotent() guard + Stripe idempotencyKey. */
 @Injectable()
 export class KloelToolDispatcherService {
-  private readonly logger = new Logger(KloelToolDispatcherService.name);
+  private readonly logger = StructuredLogger.from(KloelToolDispatcherService.name);
 
   constructor(
     private readonly prisma: PrismaService,
@@ -28,6 +50,11 @@ export class KloelToolDispatcherService {
     private readonly whatsappToolsService: KloelWhatsAppToolsService,
     private readonly composerService: KloelComposerService,
     private readonly auditService: AuditService,
+    private readonly codeToolsService: KloelCodeToolsService,
+    private readonly codeAnalysisService: KloelCodeAnalysisService,
+    @Optional() private readonly productSubTools?: KloelProductSubResourceToolsService,
+    @Optional() private readonly walletSalesTools?: KloelWalletSalesToolsService,
+
     @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
 
@@ -59,19 +86,26 @@ export class KloelToolDispatcherService {
     if (settings.billingSuspended === true) {
       return { success: false, error: 'billing_suspended' };
     }
-    this.logger.log(`Executando ferramenta: ${toolName}`, args);
+    this.logger.log(`Executando ferramenta: ${toolName}`);
     try {
       switch (toolName) {
         case 'save_product':
+        case 'create_product':
           return await this.chatToolsService.toolSaveProduct(workspaceId, asToolArgs(args));
         case 'list_products':
           return await this.chatToolsService.toolListProducts(workspaceId);
-        case 'delete_product':
-          return await this.chatToolsService.toolDeleteProduct(workspaceId, asToolArgs(args));
+        case 'update_product':
+          return await this.chatToolsService.toolUpdateProduct(workspaceId, asToolArgs(args));
         case 'toggle_autopilot':
           return await this.chatToolsService.toolToggleAutopilot(workspaceId, asToolArgs(args));
         case 'set_brand_voice':
           return await this.chatToolsService.toolSetBrandVoice(workspaceId, asToolArgs(args));
+        case 'set_sales_policy':
+          return await this.chatToolsService.toolSetSalesPolicy(
+            workspaceId,
+            asToolArgs(args),
+            userId,
+          );
         case 'remember_user_info':
           return await this.chatToolsService.toolRememberUserInfo(
             workspaceId,
@@ -79,13 +113,101 @@ export class KloelToolDispatcherService {
             userId,
           );
         case 'search_web':
-          return await this.toolSearchWeb(workspaceId, args);
+          return await runToolSearchWeb(this.planLimits, this.composerService, workspaceId, args);
         case 'create_flow':
           return await this.chatToolsService.toolCreateFlow(workspaceId, asToolArgs(args));
         case 'list_flows':
           return await this.chatToolsService.toolListFlows(workspaceId);
         case 'get_dashboard_summary':
           return await this.chatToolsService.toolGetDashboardSummary(workspaceId, asToolArgs(args));
+        case 'get_product_plans':
+          return await this.chatToolsService.toolGetProductPlans(workspaceId, asToolArgs(args));
+        case 'get_product_ai_config':
+          return await this.chatToolsService.toolGetProductAiConfig(workspaceId, asToolArgs(args));
+        case 'get_product_reviews':
+          return await this.chatToolsService.toolGetProductReviews(workspaceId, asToolArgs(args));
+        case 'get_product_urls':
+          return await this.chatToolsService.toolGetProductUrls(workspaceId, asToolArgs(args));
+        case 'validate_coupon':
+          return await this.chatToolsService.toolValidateCoupon(workspaceId, asToolArgs(args));
+        case 'get_wallet_balance':
+        case 'get_wallet_statement':
+        case 'list_orders':
+        case 'get_order_details':
+        case 'get_sales_summary':
+        case 'get_abandonments':
+          if (this.walletSalesTools) {
+            return await this.walletSalesTools.executeTool(toolName, workspaceId, asToolArgs(args));
+          }
+          return { success: false, error: 'wallet_sales_tools_not_available' };
+        case 'toggle_theme':
+          return await this.chatToolsService.toolToggleTheme(workspaceId, asToolArgs(args));
+        case 'create_plan':
+        case 'update_plan':
+        case 'create_checkout':
+        case 'update_checkout':
+        case 'create_coupon':
+        case 'list_coupons':
+        case 'delete_coupon':
+        case 'generate_boleto':
+          if (this.productSubTools) {
+            return await this.productSubTools.executeTool(toolName, workspaceId, asToolArgs(args));
+          }
+          return { success: false, error: 'product_sub_resource_tools_not_available' };
+        case 'delete_product':
+          return await this.chatToolsService.toolDeleteProduct(workspaceId, asToolArgs(args));
+        case 'get_settings':
+          return await this.chatToolsService.toolGetSettings(workspaceId);
+        case 'request_withdrawal':
+          if (this.walletSalesTools) {
+            return await this.walletSalesTools.executeTool(toolName, workspaceId, asToolArgs(args));
+          }
+          return { success: false, error: 'wallet_sales_tools_not_available' };
+        case 'get_analytics':
+          return await this.chatToolsService.toolGetAnalytics(workspaceId, asToolArgs(args));
+        case 'get_affiliate_config':
+          return await this.chatToolsService.toolGetAffiliateConfig(workspaceId);
+        case 'create_broadcast':
+          return await this.chatToolsService.toolCreateBroadcast(workspaceId, asToolArgs(args));
+        case 'configure_ai_persona':
+          return await this.chatToolsService.toolConfigureAiPersona(workspaceId, asToolArgs(args));
+        case 'update_workspace_settings':
+          return await this.bizConfigToolsService.toolSaveBusinessInfo(
+            workspaceId,
+            asToolArgs(args),
+          );
+        case 'create_agent_job':
+          return await this.chatToolsService.toolCreateAgentJob(workspaceId, asToolArgs(args));
+        case 'list_agent_jobs':
+          return await this.chatToolsService.toolListAgentJobs(workspaceId);
+        case 'set_agent_job_enabled':
+          return await this.chatToolsService.toolSetAgentJobEnabled(workspaceId, asToolArgs(args));
+        case 'search_agent_memory':
+          return await this.chatToolsService.toolSearchAgentMemory(workspaceId, asToolArgs(args));
+        case 'search_agent_sessions':
+          return await this.chatToolsService.toolSearchAgentSessions(workspaceId, asToolArgs(args));
+        case 'get_agent_artifact':
+          return await this.chatToolsService.toolGetAgentArtifact(workspaceId, asToolArgs(args));
+        case 'upsert_agent_skill':
+          return await this.chatToolsService.toolUpsertAgentSkill(workspaceId, asToolArgs(args));
+        case 'record_agent_skill_outcome':
+          return await this.chatToolsService.toolRecordAgentSkillOutcome(
+            workspaceId,
+            asToolArgs(args),
+          );
+        case 'record_agent_delegation':
+          return await this.chatToolsService.toolRecordAgentDelegation(
+            workspaceId,
+            asToolArgs(args),
+          );
+        case 'record_agent_evidence':
+          return await this.chatToolsService.toolRecordAgentEvidence(workspaceId, asToolArgs(args));
+        case 'search_agent_evidence':
+          return await this.chatToolsService.toolSearchAgentEvidence(workspaceId, asToolArgs(args));
+        case 'list_agent_evidence':
+          return await this.chatToolsService.toolListAgentEvidence(workspaceId, asToolArgs(args));
+        case 'verify_agent_evidence':
+          return await this.chatToolsService.toolVerifyAgentEvidence(workspaceId);
         case 'create_payment_link':
           return await this.dispatchCreatePaymentLink(workspaceId, args, userId);
         case 'connect_whatsapp':
@@ -152,7 +274,7 @@ export class KloelToolDispatcherService {
             asToolArgs(args),
           );
         case 'create_campaign':
-          return await this.bizConfigToolsService.toolCreateCampaign(workspaceId, asToolArgs(args));
+          return await this.requestHighRiskApproval(workspaceId, toolName, args, userId);
         case 'update_billing_info':
           return await this.bizConfigToolsService.toolUpdateBillingInfo(
             workspaceId,
@@ -161,7 +283,54 @@ export class KloelToolDispatcherService {
         case 'get_billing_status':
           return await this.bizConfigToolsService.toolGetBillingStatus(workspaceId);
         case 'change_plan':
-          return await this.bizConfigToolsService.toolChangePlan(workspaceId, asToolArgs(args));
+          return await this.requestHighRiskApproval(workspaceId, toolName, args, userId);
+        case 'read_source_file':
+          return await this.codeToolsService.toolReadSourceFile(
+            typeof args.path === 'string' ? args.path : '',
+            typeof args.startLine === 'number' ? args.startLine : undefined,
+            typeof args.endLine === 'number' ? args.endLine : undefined,
+          );
+        case 'list_source_dir':
+          return await this.codeToolsService.toolListSourceDir(
+            typeof args.path === 'string' ? args.path : undefined,
+          );
+        case 'search_codebase':
+          return await this.codeToolsService.toolSearchCodebase(
+            typeof args.pattern === 'string' ? args.pattern : '',
+            typeof args.glob === 'string' ? args.glob : undefined,
+          );
+        case 'code_outline':
+          return await this.codeToolsService.toolCodeOutline(
+            typeof args.path === 'string' ? args.path : '',
+          );
+        case 'read_prisma_schema':
+          return await this.codeToolsService.toolReadPrismaSchema();
+        case 'git_log':
+          return await this.codeToolsService.toolGitLog(
+            typeof args.count === 'number' ? args.count : undefined,
+          );
+        case 'git_diff':
+          return await this.codeToolsService.toolGitDiff(
+            typeof args.target === 'string' ? args.target : undefined,
+          );
+        case 'git_status':
+          return await this.codeToolsService.toolGitStatus();
+        case 'run_backend_tests':
+          return await this.codeToolsService.toolRunBackendTests(
+            typeof args.pattern === 'string' ? args.pattern : undefined,
+          );
+        case 'build_status':
+          return await this.codeToolsService.toolBuildStatus(
+            typeof args.scope === 'string' ? args.scope : undefined,
+          );
+        case 'code_lint':
+          return await this.codeAnalysisService.toolCodeLint(
+            typeof args.path === 'string' ? args.path : '',
+          );
+        case 'code_detect_issues':
+          return await this.codeAnalysisService.toolCodeDetectIssues(
+            typeof args.path === 'string' ? args.path : '',
+          );
         default:
           return { success: false, error: `Ferramenta desconhecida: ${toolName}` };
       }
@@ -203,9 +372,9 @@ export class KloelToolDispatcherService {
             workspaceId,
             action: 'KLOEL_TOOL_PAYMENT_LINK_DISPATCHED',
             resource: 'KloelToolDispatcher',
-            resourceId,
-            agentId: userId,
-            details: this.sanitizeDetails(args),
+            ...(resourceId !== undefined ? { resourceId } : {}),
+            ...(userId !== undefined ? { agentId: userId } : {}),
+            details: sanitizeDetails(args),
           });
         },
         { isolationLevel: 'ReadCommitted' },
@@ -226,44 +395,163 @@ export class KloelToolDispatcherService {
     return result;
   }
 
-  /**
-   * Strip sensitive fields (password, token, secret, cpf, ssn, full PAN/card)
-   * from a tool args record before persisting to the audit log.
-   */
-  private sanitizeDetails(args: UnknownRecord): UnknownRecord {
-    const SENSITIVE_KEY_RE = /password|token|secret|cpf|ssn|card|pan/i;
-    const out: UnknownRecord = {};
-    for (const [k, v] of Object.entries(args ?? {})) {
-      if (SENSITIVE_KEY_RE.test(k)) continue;
-      out[k] = v;
-    }
-    return out;
+  private async requestHighRiskApproval(
+    workspaceId: string,
+    toolName: string,
+    args: UnknownRecord,
+    userId?: string,
+  ): Promise<{ success: boolean; message?: string; [key: string]: unknown }> {
+    const approval = await this.prisma.approvalRequest.create({
+      data: {
+        workspaceId,
+        kind: `kloel_tool:${toolName}`,
+        scope: 'workspace',
+        entityType: 'KloelTool',
+        entityId: toolName,
+        state: 'OPEN',
+        title: titleForHighRiskTool(toolName),
+        prompt: promptForHighRiskTool(toolName, args),
+        payload: {
+          toolName,
+          args: sanitizeDetails(args) as Prisma.InputJsonValue,
+          requestedByUserId: userId || null,
+          risk: 'high',
+          requiresApproval: true,
+        },
+      },
+      select: {
+        id: true,
+        kind: true,
+        state: true,
+        title: true,
+        createdAt: true,
+      },
+    });
+
+    return {
+      success: true,
+      approvalRequired: true,
+      approvalRequestId: approval.id,
+      approvalState: approval.state,
+      message: 'Acao de alto risco enviada para aprovacao humana antes da execucao.',
+      approval,
+    };
   }
 
-  private async toolSearchWeb(
-    workspaceId: string,
-    args: { query?: string },
-  ): Promise<{
-    success: boolean;
-    query?: string;
-    summary?: string;
-    sources?: unknown[];
-    error?: string;
-  }> {
-    const query = String(args?.query || '').trim();
-    if (!query) return { success: false, error: 'missing_query' };
+  async executeApprovedApprovalRequest(input: {
+    workspaceId: string;
+    approvalRequestId: string;
+    userId?: string;
+  }): Promise<ApprovedToolExecutionResult> {
+    const approval = await this.prisma.approvalRequest.findFirst({
+      where: {
+        id: input.approvalRequestId,
+        workspaceId: input.workspaceId,
+        state: 'APPROVED',
+      },
+    });
+    if (!approval) {
+      return {
+        success: false,
+        approvalRequestId: input.approvalRequestId,
+        state: 'APPROVED',
+        executed: false,
+      };
+    }
+
+    const payload = this.readApprovedToolPayload(approval.payload);
+    if (!payload || approval.kind !== `kloel_tool:${payload.toolName}`) {
+      return {
+        success: true,
+        approvalRequestId: approval.id,
+        state: approval.state,
+        executed: false,
+      };
+    }
+
+    if (!isSupportedApprovedHighRiskTool(payload.toolName)) {
+      return {
+        success: true,
+        approvalRequestId: approval.id,
+        state: approval.state,
+        executed: false,
+        toolName: payload.toolName,
+      };
+    }
+
     try {
-      await this.planLimits.ensureTokenBudget(workspaceId);
-      const digest = await this.composerService.searchWeb(query);
-      await this.planLimits
-        .trackAiUsage(workspaceId, Math.max(180, Math.ceil(digest.answer.length / 4)))
-        .catch(() => {});
-      return { success: true, query, summary: digest.answer, sources: digest.sources };
+      const result = await this.executeApprovedHighRiskTool(
+        input.workspaceId,
+        payload.toolName,
+        payload.args,
+      );
+      await this.prisma.approvalRequest.updateMany({
+        where: { id: approval.id, workspaceId: input.workspaceId, state: 'APPROVED' },
+        data: {
+          state: 'COMPLETED',
+          respondedAt: new Date(),
+          response: {
+            action: 'approved_executed',
+            executedToolName: payload.toolName,
+            executedByUserId: input.userId ?? null,
+            executedAt: new Date().toISOString(),
+            result: result as Prisma.InputJsonValue,
+          },
+        },
+      });
+      return {
+        success: true,
+        approvalRequestId: approval.id,
+        state: 'COMPLETED',
+        executed: true,
+        toolName: payload.toolName,
+        result,
+      };
     } catch (error: unknown) {
-      void this.opsAlert?.alertOnCriticalError(error, 'KloelToolDispatcherService.trackAiUsage');
-      const msg = error instanceof Error ? error.message : 'web_search_failed';
-      this.logger.warn(`Falha em search_web para "${query}": ${msg}`);
-      return { success: false, error: msg };
+      await this.prisma.approvalRequest.updateMany({
+        where: { id: approval.id, workspaceId: input.workspaceId, state: 'APPROVED' },
+        data: {
+          state: 'FAILED',
+          respondedAt: new Date(),
+          response: {
+            action: 'approved_execution_failed',
+            executedToolName: payload.toolName,
+            executedByUserId: input.userId ?? null,
+            failedAt: new Date().toISOString(),
+            error: error instanceof Error ? error.message : String(error),
+          },
+        },
+      });
+      throw error;
+    }
+  }
+
+  private readApprovedToolPayload(payload: Prisma.JsonValue): {
+    toolName: string;
+    args: UnknownRecord;
+  } | null {
+    if (!isRecord(payload)) {
+      return null;
+    }
+    const toolName = typeof payload.toolName === 'string' ? payload.toolName.trim() : '';
+    if (!toolName || !isRecord(payload.args)) {
+      return null;
+    }
+    return { toolName, args: payload.args };
+  }
+
+  private async executeApprovedHighRiskTool(
+    workspaceId: string,
+    toolName: string,
+    args: UnknownRecord,
+  ): Promise<unknown> {
+    switch (toolName) {
+      case 'create_campaign':
+        return this.bizConfigToolsService.toolCreateCampaign(workspaceId, args as never);
+      case 'change_plan':
+        return this.bizConfigToolsService.toolChangePlan(workspaceId, args as never);
+      default:
+        throw new Error(`unsupported_approved_tool:${toolName}`);
     }
   }
 }

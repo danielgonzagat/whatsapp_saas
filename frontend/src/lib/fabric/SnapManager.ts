@@ -1,7 +1,8 @@
+import { colors } from '@/lib/design-tokens';
 import { type Canvas, type FabricObject, Line } from 'fabric';
 
 const THRESHOLD = 5;
-const GUIDELINE_COLOR = '#E85D30';
+const GUIDELINE_COLOR = colors.ember.primary;
 const GUIDELINE_DASH = [3, 3];
 
 /** Snap manager. */

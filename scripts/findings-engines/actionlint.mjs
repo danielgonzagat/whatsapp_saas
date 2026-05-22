@@ -30,7 +30,7 @@ function getVersion() {
 
 function findWorkflowFiles() {
   const workflowsDir = resolve(REPO_ROOT, '.github', 'workflows');
-  if (!existsSync(workflowsDir)) return [];
+  if (!existsSync(workflowsDir)) {return [];}
   const r = spawnSync(
     'find',
     [workflowsDir, '-type', 'f', '-name', '*.yml', '-o', '-name', '*.yaml'],
@@ -39,7 +39,7 @@ function findWorkflowFiles() {
       maxBuffer: 16 * 1024 * 1024,
     },
   );
-  if (r.status !== 0) return [];
+  if (r.status !== 0) {return [];}
   return r.stdout.trim().split('\n').filter(Boolean).sort();
 }
 
@@ -49,7 +49,7 @@ function parseActionlintOutput(stdout) {
   const findings = [];
   const lines = stdout.trim().split('\n');
   for (const line of lines) {
-    if (!line) continue;
+    if (!line) {continue;}
     // Try two formats:
     // Format 1: file:line:col: severity rule: message
     const m = line.match(/^(.+?):(\d+):(\d+):\s+(error|warning):\s+(.+)$/);
@@ -95,7 +95,7 @@ const files = findWorkflowFiles();
 const allFindings = [];
 
 for (const file of files) {
-  if (!existsSync(file)) continue;
+  if (!existsSync(file)) {continue;}
   const r = spawnSync('actionlint', ['-ignore', 'SC2086', file], {
     encoding: 'utf-8',
     maxBuffer: 16 * 1024 * 1024,

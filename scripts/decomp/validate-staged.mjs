@@ -35,7 +35,7 @@ const governanceApprovals =
   protectedManifest?.approvalFile &&
   Array.isArray(protectedManifest.protectedExact) &&
   Array.isArray(protectedManifest.protectedPrefixes)
-    ? loadApprovalEntries(protectedManifest.approvalFile, protectedManifest.approvalFile)
+    ? loadApprovalEntries(protectedManifest.approvalFile, 'governance-change-approvals')
     : [];
 
 const violations = [];
@@ -44,15 +44,13 @@ for (const line of stagedRaw.split('\n').filter(Boolean)) {
   const [status, relPath] = line.split('\t');
   if (!relPath) continue;
 
-  // Bloqueia commit que toque arquivos protegidos (sem authorization-marker)
-  if (isProtectedPath(relPath)) {
-    if (!hasGovernanceApproval(relPath)) {
-      violations.push(
-        '[protected] ' +
-          relPath +
-          ' — arquivo protegido por CLAUDE.md, somente Daniel pode editar.',
-      );
-    }
+  // Bloqueia commit que toque arquivos protegidos sem aprovacao ativa registrada.
+  if (isProtectedPath(relPath) && !hasGovernanceApproval(relPath)) {
+    violations.push(
+      '[protected] ' +
+        relPath +
+        ' — arquivo protegido por CLAUDE.md, somente Daniel pode editar.',
+    );
     continue;
   }
   // SELF_IMMUTABLE M is permitted at pre-commit because Layer 1 (Pre-Tool

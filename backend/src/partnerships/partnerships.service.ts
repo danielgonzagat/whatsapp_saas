@@ -5,7 +5,6 @@ import {
   Injectable,
   Logger,
   NotFoundException,
-  Optional,
   ServiceUnavailableException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -13,9 +12,8 @@ import { AuditService } from '../audit/audit.service';
 import { EmailService } from '../auth/email.service';
 import { generateUniquePublicCheckoutCode } from '../checkout/checkout-code.util';
 import { buildPayCheckoutUrl } from '../checkout/checkout-public-url.util';
-import { isPublicCodeTaken } from './__companions__/partnerships.service.companion';
+import { isPublicCodeTaken } from './partnerships.helpers';
 import { PrismaService } from '../prisma/prisma.service';
-import { OpsAlertService } from '../observability/ops-alert.service';
 
 const INVITABLE_PARTNER_TYPES = new Set(['AFFILIATE', 'SUPPLIER', 'COPRODUCER', 'MANAGER']);
 const PARTNER_ROLE_LABELS: Record<string, string> = {
@@ -36,7 +34,6 @@ export class PartnershipsService {
     private readonly auditService: AuditService,
     private readonly configService: ConfigService,
     private readonly emailService: EmailService,
-    @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
 
   private generateOpaqueToken(size = 32) {
@@ -76,7 +73,6 @@ export class PartnershipsService {
 
   // ═══ COLLABORATORS ═══
 
-  // PULSE_OK: bounded by workspace scope
   async listCollaborators(workspaceId: string) {
     const agents = await this.prisma.agent.findMany({
       where: { workspaceId },
@@ -321,19 +317,21 @@ export class PartnershipsService {
         workspaceId,
         partnerName,
         partnerEmail,
-        partnerPhone: data.partnerPhone,
+        ...(data.partnerPhone !== undefined ? { partnerPhone: data.partnerPhone } : {}),
         type: partnerType,
         commissionRate: data.commissionRate || 30,
         status: requiresInvite ? 'PENDING' : 'ACTIVE',
         affiliateCode: code,
         affiliateLink: buildPayCheckoutUrl(undefined, code),
         productIds: data.productIds || [],
-        metadata: inviteTokenHash
+        ...(inviteTokenHash !== null
           ? {
-              inviteTokenHash,
-              inviteSentAt: new Date().toISOString(),
+              metadata: {
+                inviteTokenHash,
+                inviteSentAt: new Date().toISOString(),
+              },
             }
-          : undefined,
+          : {}),
         approvedAt: requiresInvite ? null : new Date(),
       },
     });
@@ -462,11 +460,17 @@ export class PartnershipsService {
 
       for (const order of orders) {
         const saleDate = order.paidAt ?? order.createdAt;
-        monthlyPerformance[saleDate.getUTCMonth()] += 1;
+        if (saleDate instanceof Date) {
+          const idx = saleDate.getUTCMonth();
+          monthlyPerformance[idx] = (monthlyPerformance[idx] ?? 0) + 1;
+        }
       }
 
       if (latestOrder) {
-        lastSaleAt = (latestOrder.paidAt ?? latestOrder.createdAt).toISOString();
+        const ts = latestOrder.paidAt ?? latestOrder.createdAt;
+        if (ts) {
+          lastSaleAt = ts.toISOString();
+        }
       }
     }
 

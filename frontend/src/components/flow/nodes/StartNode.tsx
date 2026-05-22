@@ -35,8 +35,8 @@ function StartNodeComponent({ data, selected }: NodeProps<StartNodeData>) {
   return (
     <div
       className={`
-      px-4 py-3 rounded-full border-2 bg-[#111113] shadow-md min-w-[160px]
-      ${selected ? 'border-emerald-500 ring-2 ring-emerald-500/30' : 'border-[#222226]'}
+      px-4 py-3 rounded-full border-2 bg-[var(--bg-surface)] shadow-md min-w-[160px]
+      ${selected ? 'border-emerald-500 ring-2 ring-emerald-500/30' : 'border-[var(--bg-border)]'}
     `}
     >
       <div className="flex items-center gap-2 justify-center">

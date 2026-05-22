@@ -31,17 +31,17 @@ export interface AgentEventPayload {
   /** Message property. */
   message: string;
   /** Phase property. */
-  phase?: string;
+  phase?: string | undefined;
   /** Run id property. */
-  runId?: string;
+  runId?: string | undefined;
   /** Persistent property. */
-  persistent?: boolean;
+  persistent?: boolean | undefined;
   /** Streaming property. */
-  streaming?: boolean;
+  streaming?: boolean | undefined;
   /** Token property. */
-  token?: string;
+  token?: string | undefined;
   /** Meta property. */
-  meta?: Record<string, unknown>;
+  meta?: Record<string, unknown> | undefined;
 }
 
 type BacklogRunState = {
@@ -151,10 +151,10 @@ export async function getBacklogRunState(workspaceId: string): Promise<BacklogRu
 /** Finish backlog run task. */
 export async function finishBacklogRunTask(input: {
   workspaceId: string;
-  runId?: string;
-  contactId?: string;
-  contactName?: string;
-  phone?: string;
+  runId?: string | undefined;
+  contactId?: string | undefined;
+  contactName?: string | undefined;
+  phone?: string | undefined;
   status: 'sent' | 'failed' | 'skipped';
   summary: string;
 }) {
@@ -215,8 +215,8 @@ export async function finishBacklogRunTask(input: {
   if (next.finished >= next.total) {
     try {
       if (prisma.autonomyRun) {
-        await prisma.autonomyRun.update({
-          where: { id: input.runId },
+        await prisma.autonomyRun.updateMany({
+          where: { id: input.runId, workspaceId: input.workspaceId },
           data: {
             status: next.failed > 0 ? 'FAILED' : 'COMPLETED',
             endedAt: new Date(),
