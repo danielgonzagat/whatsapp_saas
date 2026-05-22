@@ -4,7 +4,7 @@ import type { ChatCompletionMessageParam } from 'openai/resources/chat';
 import { CANONICAL_FALLBACK_SYSTEM_PROMPT } from './kloel.prompts';
 import { UnifiedAgentContextDataService } from './unified-agent-context-data.service';
 
-type UnknownRecord = Record<string, unknown>;
+import type { UnknownRecord } from '../common/types';
 
 const D__D_S_RE = /^\+?\d[\d\s()-]+$/;
 const CONTATO_RE = /^contato$/i;

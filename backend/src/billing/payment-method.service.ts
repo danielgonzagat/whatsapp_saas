@@ -8,6 +8,10 @@ import { StripeRuntime } from './stripe-runtime';
 import type { StripeClient, StripeCustomer } from './stripe-types';
 // @@index: optimistic lock via updatedAt — concurrent writes resolved by DB constraint
 
+/**
+ * @cluster whatsapp_saas/backend/billing
+ * L11 multi-agent TaskGraph annotation (batched by tools/auto-pr/batch-job.mjs).
+ */
 const ERROR_WORKSPACE_NOT_FOUND = 'Workspace não encontrado';
 const ERROR_BILLING_UNAVAILABLE = 'Infraestrutura de cobrança indisponível';
 const ERROR_PAYMENT_METHOD_NOT_OWNED = 'Método de pagamento não pertence a este workspace';

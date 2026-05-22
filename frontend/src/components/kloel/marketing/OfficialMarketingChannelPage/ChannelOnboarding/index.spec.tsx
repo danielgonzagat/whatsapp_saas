@@ -100,9 +100,12 @@ describe('ChannelOnboarding container — palette + theme', () => {
     hookMock.mockReturnValue(makeData());
   });
 
-  it('renders the dark palette by default and shows the WhatsApp pill on step 0', () => {
+  it('renders the dark palette by default and the META BUSINESS chip + step-0 sub on whatsapp', () => {
     render(<ChannelOnboarding channel="whatsapp" />);
-    expect(screen.getByText('WHATSAPP')).toBeTruthy();
+    // Provider chip above the step bar (spec §10 / Divergence 1).
+    expect(screen.getAllByText('META BUSINESS').length).toBeGreaterThan(0);
+    // Step-0 mono subtitle under the headline (Divergence 2).
+    expect(screen.getByText('LOGIN META · OAUTH OFICIAL')).toBeTruthy();
     // Step 0 vignette ships the "Dê um corpo" headline + verb button.
     expect(screen.getByText(/Vincular número/)).toBeTruthy();
     // Use the resolved palette to assert the void background is in the tree.

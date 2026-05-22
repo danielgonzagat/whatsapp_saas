@@ -120,6 +120,9 @@ describe('coverage-fill: Dial selection + small CTA size', () => {
     expect(buttons[0].style.background).toBe(D.ember);
     expect(buttons[1].style.background).toBe(D.hi);
     expect(buttons[2].style.background).toBe(D.hi);
+
+    fireEvent.click(buttons[1]);
+    expect(onChange).toHaveBeenCalledWith(1);
   });
 });
 

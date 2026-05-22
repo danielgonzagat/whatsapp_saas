@@ -3,7 +3,7 @@ import type { ActionEntry, PredecidedAction, ToolArgs } from './unified-agent.ty
 import { getBrainCapabilityRisk } from './brain-capability-policy';
 import type { BrainCapabilityRisk } from './brain-capability-policy';
 
-type UnknownRecord = Record<string, unknown>;
+import type { UnknownRecord } from '../common/types';
 
 type RiskClassLabel = 'R1' | 'R2' | 'R3';
 

@@ -11,7 +11,7 @@ binding, change one function) become macroscopic patches → diff noise,
 artificial multi-agent conflicts, silent drift, blind edits, review cost.
 This is the **Line-Oriented Action Bottleneck**, confirmed by CodeStruct
 (Amazon, arXiv 2604.05407 — removing structured read costs −7.8pp Pass@1 and
-7.8× more brittle `str_replace`), *To Diff or Not to Diff?* (arXiv 2604.27296),
+7.8× more brittle `str_replace`), _To Diff or Not to Diff?_ (arXiv 2604.27296),
 the Aider edit-format study, Diff-XYZ, and Kiro's program-analysis argument.
 
 This repo ships a fix: the **`atomic-edit` MCP server**
@@ -52,7 +52,7 @@ built-in `Edit` does not.
 
 ## Hard guarantees (rely on these)
 
-- No edit that *introduces* a new syntax error is written (pre-existing errors
+- No edit that _introduces_ a new syntax error is written (pre-existing errors
   tolerated — surgical, never "make it worse").
 - Writes are atomic (temp + fsync + rename); batched edits and cross-file
   rename are all-or-nothing.
@@ -88,7 +88,7 @@ npx tsx scripts/mcp/atomic-edit/smoke.ts   # expect: 47 passed, 0 failed
   inherit it automatically — no per-invocation flag. Verify with
   `opencode mcp list` (expect `✓ atomic-edit connected`).
 - **Codex CLI (universal, same shared tool):** registered in
-  `~/.codex/config.toml` `[mcp_servers.atomic-edit]` pointing at the *same*
+  `~/.codex/config.toml` `[mcp_servers.atomic-edit]` pointing at the _same_
   launcher; `~/.codex/AGENTS.md` carries the universal doctrine (mainstream
   banned, shared MCP atomic is default; the old local cjs is offline fallback
   only). Verify with `codex mcp list` (expect `atomic-edit … enabled`). Note:
@@ -98,3 +98,49 @@ npx tsx scripts/mcp/atomic-edit/smoke.ts   # expect: 47 passed, 0 failed
 
 Runtime is plain `node dist/server.js` (launcher self-builds on staleness; no
 tsx/npx). Full design + tool reference: `scripts/mcp/atomic-edit/README.md`.
+
+---
+
+## LAW — Native CLI Shell Allowed; Native Diff Renderer Banned (2026-05-15)
+
+The native CLI (Claude Code / Codex) stays as the chat/orchestration shell.
+The native **edit/diff renderer is banned**: the only thing that may appear
+on screen when code changes is the atomic tool's output.
+
+Prohibited (for CODE):
+
+- native `Edit` / `Write` / `MultiEdit` / `NotebookEdit`
+- native `apply_patch`
+- shell in-place mutation of code (`sed -i`, `> file.ts`, `tee`, `perl -i`…)
+- line-oriented red/green diff as edit proof
+- a file changed without an `AtomicEditTrace`
+
+Mandatory:
+
+- every code mutation via `mcp__atomic-edit__*`
+- the tool returns a compact human `summary` (✅ + file + `[-removed-]{+added+}`
+  - validation + zeroCodeTrust + trace path) and persists the full
+    `AtomicEditTrace` to `docs/ai/traces/`
+- the native TUI shows only the tool output
+- session end: `trace-coverage-audit.mjs` flags any code change with no trace
+
+Default: **atomic tool or nothing.** Prose/`.md` and non-edit tools
+(npm/git/build/grep/cat) are NOT blocked — the rule is about code.
+
+Enforcement wired:
+
+- Claude Code: `.claude/settings.json` PreToolUse →
+  `scripts/mcp/atomic-edit/atomic-only-hook.mjs` (denies native code edit +
+  shell in-place code mutation; tested). Stop →
+  `scripts/mcp/atomic-edit/trace-coverage-audit.mjs` (advisory; `--strict`
+  for a hard CI gate). Activates on the next fresh session (hooks + MCP load
+  at session start — documented limitation).
+- Codex: `[mcp_servers.atomic-edit]` in `~/.codex/config.toml` + the
+  "mainstream BANNED for code" doctrine in `~/.codex/AGENTS.md` (both in
+  place). A hard Codex PreToolUse deny-hook is the honest residual — it
+  needs Codex's hook-I/O schema verified from a real Codex run; not faked.
+
+Acceptance: inside Claude/Codex you see only
+`whatsappPhoneNumberId: [-'5511999999999'-]{+null+}` — never
+`- whatsappPhoneNumberId: '5511999999999'` / `+ … null`. If a sub-line
+change shows a whole-line red/green block, the rule was bypassed.

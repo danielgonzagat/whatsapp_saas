@@ -5,6 +5,56 @@ import { addNamedImport, editSymbol, previewDiff, removeNamedImport, renameSymbo
 import { resolveSafeTarget, REPO_ROOT } from './guard.js';
 import { atomicWrite, fail, guardSha, log, ok, readUtf8, sha256, type ToolOk } from './server-core.js';
 export function registerSemanticTools(server: McpServer): void {
+// ───────────────────────── v4: universal rename (all languages) ──────────
+server.registerTool(
+  "atomic_rename_symbol_universal",
+  {
+    title: "Scope-correct rename — TS via ts-morph, others via identifier matching",
+    description:
+      "Rename the symbol at (line,column) across the file. For TS/JS files: uses ts-morph " +
+      "(scope-correct, respects binding/shadowing). For all other languages: uses identifier-based " +
+      "word-boundary matching with syntax validation. Supports tree-sitter scope analysis when " +
+      "available. This is the universal version of rename_symbol that works on ANY source file.",
+    inputSchema: {
+      file: z.string(),
+      line: z.number().int().min(1),
+      column: z.number().int().min(1),
+      newName: z.string().min(1),
+      preview: z.boolean().optional().describe("dry-run: validate + list occurrences, do not write"),
+    },
+  },
+  async (a) => {
+    try {
+      const { absPath, relPath } = resolveSafeTarget(a.file);
+      const before = readUtf8(absPath);
+      const { universalRename } = await import('./engine-rename.js');
+      const r = await universalRename(relPath, before, { line: a.line, column: a.column }, a.newName);
+      if (!r.validation.ok) {
+        return fail('Rename rejected: ' + (r.validation.introduced ?? 'syntax regression'));
+      }
+      if (r.newText === before) {
+        return ok({ ok: true, changed: false, note: 'no change (names already identical)', file: relPath });
+      }
+      if (a.preview ?? false) {
+        return ok({
+          ok: true, preview: true, changed: false, file: relPath,
+          oldName: r.oldName, newName: r.newName, occurrences: r.occurrences,
+          method: r.method,
+        });
+      }
+      atomicWrite(absPath, r.newText);
+      log(`universal rename ${r.oldName}→${r.newName}: ${r.occurrences} occurrences via ${r.method}`);
+      return ok({
+        ok: true, changed: true, file: relPath,
+        oldName: r.oldName, newName: r.newName, occurrences: r.occurrences,
+        method: r.method,
+      });
+    } catch (e) {
+      return fail(e instanceof Error ? e.message : String(e));
+    }
+  },
+);
+
 // ───────────────────────── v2: symbol-named edits + cross-file rename ──────
 server.registerTool(
   "atomic_edit_symbol",

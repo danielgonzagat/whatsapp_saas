@@ -2,8 +2,23 @@ import { WorkerLogger } from './logger';
 import { autopilotQueue } from './queue';
 import { getErrorMessage } from './utils/error-message';
 
+export function parseNonNegativeEnvInt(raw: string | undefined, fallback: number): number {
+  if (raw === undefined || raw.trim() === '') {
+    return fallback;
+  }
+  const parsed = Number(raw);
+  return Number.isInteger(parsed) && parsed >= 0 ? parsed : fallback;
+}
+
 const QUEUE_THRESHOLD =
   Number.parseInt(process.env.AUTOPILOT_QUEUE_WAITING_THRESHOLD || '200', 10) || 200;
+// Transient failures (a handful of jobs) must NOT spam the warn channel —
+// they were the root cause of the runtime probe flapping in 2026-05. Only
+// alert when the failed-job count rises beyond a meaningful threshold AND
+// keeps growing between checks; otherwise stay silent.
+const FAILED_JOBS_THRESHOLD =
+  Number.parseInt(process.env.AUTOPILOT_QUEUE_FAILED_THRESHOLD || '25', 10) || 25;
+let lastObservedFailed = 0;
 const ALERT_WEBHOOK =
   process.env.AUTOPILOT_ALERT_WEBHOOK || process.env.OPS_WEBHOOK_URL || process.env.DLQ_WEBHOOK_URL;
 let lastQueueAlert = 0;
@@ -13,10 +28,14 @@ const AUTOPILOT_QUEUE_CHECK_INTERVAL_MS = 60_000;
 // milliseconds ago are reaped on every health tick — they are graveyards
 // from past outages whose retry budget is long exhausted. Recent failures
 // (within the grace window) keep alerting so on-call still sees them.
-const AUTOPILOT_FAILED_DRAIN_GRACE_MS =
-  Number.parseInt(process.env.AUTOPILOT_FAILED_DRAIN_GRACE_MS || '', 10) || 60 * 60_000;
-const AUTOPILOT_FAILED_DRAIN_LIMIT =
-  Number.parseInt(process.env.AUTOPILOT_FAILED_DRAIN_LIMIT || '', 10) || 1000;
+const AUTOPILOT_FAILED_DRAIN_GRACE_MS = parseNonNegativeEnvInt(
+  process.env.AUTOPILOT_FAILED_DRAIN_GRACE_MS,
+  60 * 60_000,
+);
+const AUTOPILOT_FAILED_DRAIN_LIMIT = parseNonNegativeEnvInt(
+  process.env.AUTOPILOT_FAILED_DRAIN_LIMIT,
+  1000,
+);
 
 
 async function sendOpsAlert(
@@ -65,12 +84,22 @@ async function maybeAlertFailedJobs(
   waiting: number,
   now: number,
 ): Promise<void> {
-  if (failed <= 0 || now - lastQueueAlert <= QUEUE_ALERT_COOLDOWN_MS) {
+  const grew = failed > lastObservedFailed;
+  lastObservedFailed = failed;
+  if (failed < FAILED_JOBS_THRESHOLD || !grew || now - lastQueueAlert <= QUEUE_ALERT_COOLDOWN_MS) {
     return;
   }
   lastQueueAlert = now;
-  log.warn('autopilot_queue_failed', { failed, waiting });
-  await sendOpsAlert(log, 'Autopilot queue has failed jobs', { failed, waiting });
+  log.warn('autopilot_queue_failed', {
+    failed,
+    waiting,
+    threshold: FAILED_JOBS_THRESHOLD,
+  });
+  await sendOpsAlert(log, 'Autopilot queue has failed jobs', {
+    failed,
+    waiting,
+    threshold: FAILED_JOBS_THRESHOLD,
+  });
 }
 
 /**

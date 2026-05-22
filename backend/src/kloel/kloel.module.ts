@@ -9,6 +9,12 @@ import { KloelWorkspaceContextDataService } from './kloel-workspace-context-data
 import { KloelToolExecutorCrmService } from './kloel-tool-executor-crm.service';
 import { GuestChatController } from './guest-chat.controller';
 import { GuestChatService } from './guest-chat.service';
+import { KloelCodeToolsService } from './kloel-code-tools.service';
+import { KloelCodeAnalysisService } from './kloel-code-analysis.service';
+
+import { KloelReflexivityService } from './kloel-reflexivity.service';
+import { UnifiedAgentToolExecutorService } from './unified-agent-tool-executor';
+
 import { KloelBusinessConfigToolsService } from './kloel-business-config-tools.service';
 import { KloelChatToolsService } from './kloel-chat-tools.service';
 import { KloelComposerService } from './kloel-composer.service';
@@ -176,6 +182,9 @@ import {
 import { AbiBuilderService } from './abi/abi-builder.service';
 import { LineageModule } from './lineage/lineage.module';
 import { RiskClassModule } from './risk-class/risk-class.module';
+import { InboxModule } from '../inbox/inbox.module';
+import { KloelProductSubResourceToolsService } from './kloel-product-sub-resource-tools.service';
+import { KloelWalletSalesToolsService } from './kloel-wallet-sales-tools.service';
 
 /** Kloel module. */
 @Module({
@@ -193,7 +202,7 @@ import { RiskClassModule } from './risk-class/risk-class.module';
     MetricsModule,
     KloelAudioModule,
     KloelRulesModule,
-    forwardRef(() => require('../inbox/inbox.module').InboxModule),
+    forwardRef(() => InboxModule),
     ContactsModule,
     LineageModule,
     DriftModule,
@@ -247,8 +256,17 @@ import { RiskClassModule } from './risk-class/risk-class.module';
     KloelThreadService,
     KloelThreadSummaryService,
     KloelChatToolsService,
+    KloelCodeToolsService,
+    KloelProductSubResourceToolsService,
+    KloelWalletSalesToolsService,
     KloelBusinessConfigToolsService,
+    KloelCodeAnalysisService,
+
+    KloelReflexivityService,
+
     KloelWhatsAppToolsService,
+    UnifiedAgentToolExecutorService,
+
     KloelLeadBrainService,
     KloelToolDispatcherService,
     KloelToolExecutorService,
@@ -358,6 +376,8 @@ import { RiskClassModule } from './risk-class/risk-class.module';
   ],
   exports: [
     KloelService,
+    KloelCodeToolsService,
+
     KloelThinkerService,
     KloelReplyEngineService,
     KloelThreadSearchService,
@@ -375,6 +395,7 @@ import { RiskClassModule } from './risk-class/risk-class.module';
     GuestChatService,
     WhatsAppBrainService,
     PaymentService,
+
     OnboardingService,
     ConversationalOnboardingService,
     MemoryCrudService,

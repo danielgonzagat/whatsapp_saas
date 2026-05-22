@@ -185,6 +185,7 @@ export class KloelReplyEngineService {
       tool_calls?: OpenAI.Chat.ChatCompletionAssistantMessageParam['tool_calls'];
     };
     toolMessages?: Array<{ role?: 'tool'; tool_call_id: string; name: string; content: string }>;
+    prebuiltCognitiveState?: Record<string, unknown>;
   }): Promise<ChatCompletionMessageParam[]> {
     const currentInput = {
       raw: params.userMessage,
@@ -199,38 +200,42 @@ export class KloelReplyEngineService {
     };
 
     if (this.abiBuilder) {
-      try {
-        const abiResult = await this.abiBuilder.build({
-          audience: 'public',
-          currentInput,
-          perceptionSnapshot: {
-            channel: 'web',
-          },
-        });
+      if (params.prebuiltCognitiveState) {
+        cognitiveState = params.prebuiltCognitiveState;
+      } else {
+        try {
+          const abiResult = await this.abiBuilder.build({
+            audience: 'public',
+            currentInput,
+            perceptionSnapshot: {
+              channel: 'web',
+            },
+          });
 
-        if (abiResult.status !== 'ok') {
-          this.logger.warn(
-            `ABI build failed: ${abiResult.reason}, using structured reply fallback`,
-          );
-        } else {
-          const validation = validateAbiPayload(abiResult.abi);
-
-          if (validation.status === 'FAIL') {
+          if (abiResult.status !== 'ok') {
             this.logger.warn(
-              `ABI validation failed: ${JSON.stringify(validation.issues)}, using structured reply fallback`,
+              `ABI build failed: ${abiResult.reason}, using structured reply fallback`,
             );
           } else {
-            cognitiveState = { ...abiResult.abi };
+            const validation = validateAbiPayload(abiResult.abi);
+
+            if (validation.status === 'FAIL') {
+              this.logger.warn(
+                `ABI validation failed: ${JSON.stringify(validation.issues)}, using structured reply fallback`,
+              );
+            } else {
+              cognitiveState = { ...abiResult.abi };
+            }
           }
-        }
-      } catch (error: unknown) {
-        const msg =
-          error instanceof Error
-            ? error.message
+        } catch (error: unknown) {
+          const msg =
+            error instanceof Error
+              ? error.message
               : typeof error === 'string'
                 ? error
                 : 'unknown error';
-        this.logger.warn(`ABI build exception: ${msg}, using structured reply fallback`);
+          this.logger.warn(`ABI build exception: ${msg}, using structured reply fallback`);
+        }
       }
     }
 
@@ -386,6 +391,7 @@ export class KloelReplyEngineService {
     conversationState?: { summary?: string; recentMessages: ReplyMessage[]; totalMessages: number };
     onTraceEvent?: (event: KloelStreamEvent) => void;
     executeLocalTool?: LocalToolExecutor;
+    abiStateJson?: string;
   }): Promise<string> {
     if (!this.openai) {
       return this.unavailableMessage;
@@ -407,6 +413,7 @@ export class KloelReplyEngineService {
         this.buildMarketingPromptAddendum(wid, mode, msg),
       buildChatModelMessages: async (p) => this.buildChatModelMessages(p),
       buildDynamicRuntimeContext: (p) => this.buildDynamicRuntimeContext(p),
+      ...(params.abiStateJson !== undefined ? { abiStateJson: params.abiStateJson } : {}),
     });
   }
 }

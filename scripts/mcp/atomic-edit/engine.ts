@@ -5,7 +5,7 @@
  * coarse line/block/hunk operators, so microscopic intentions become
  * macroscopic patches. This engine implements the missing primitives —
  * range / insert / delete / batched-TextEdit / scoped-rename / literal-swap —
- * each STRUCTURALLY VALIDATED before every byte is written. It is the engine;
+ * each STRUCTURALLY VALIDATED before any byte is written. It is the engine;
  * `server.ts` exposes it to the agent as first-class MCP tools.
  *
  * Invariants this engine enforces (which a raw line-rewrite does not):
@@ -19,20 +19,35 @@
  * Pure functions here; all I/O and process concerns live in server.ts so this
  * module stays unit-testable.
  */
-import * as ts from "typescript";
+
+
+import { validateLanguage } from './lang-bridge.js';
+import * as ts from 'typescript';
+import { structuralErrors } from './engine-structural.js';
+export type { EditZones } from './engine-zones.js';
+import type { EditZones } from './engine-zones.js';
+export { EMPTY_ZONES, computeZones } from './engine-zones.js';
+import { EMPTY_ZONES, computeZones } from './engine-zones.js';
+import * as crypto from 'crypto';
+import type { PreservationZone, ModifiedZone, MovementZone } from './trace.js';
+
+const sha256 = (s: string): string => crypto.createHash('sha256').update(s).digest('hex');
+
 export interface Position {
   /** 1-based line. */
   line: number;
   /** 1-based column (UTF-16 code units within the line). */
   column: number;
 }
+
 export interface TextEditSpec {
   start: Position;
   end: Position;
   newText: string;
 }
+
 export interface ValidationResult {
-  language: "ts" | "json" | "generic";
+  language: 'ts' | 'json' | 'structural' | 'generic' | 'python' | 'go' | 'rust' | 'ruby' | 'shell' | 'java' | 'c' | 'cpp' | 'javascript';
   /** Syntactic-diagnostic count before the edit. */
   before: number;
   /** Syntactic-diagnostic count after the edit. */
@@ -41,6 +56,7 @@ export interface ValidationResult {
   /** Human-readable first introduced error, when ok === false. */
   introduced?: string;
 }
+
 export interface ApplyResult {
   newText: string;
   validation: ValidationResult;
@@ -50,26 +66,33 @@ export interface ApplyResult {
   lineSurfaceChars: number;
   /** lineSurfaceChars / max(changedChars,1) — the thesis Expansion Factor. */
   expansionFactor: number;
+  /** Exact byte-level zones of preservation, modification, and movement. */
+  zones: EditZones;
 }
-const TS_EXT = new Set([".ts", ".tsx", ".mts", ".cts", ".js", ".jsx", ".mjs", ".cjs"]);
-function extOf(file: string): string {
-  const i = file.lastIndexOf(".");
-  return i < 0 ? "" : file.slice(i).toLowerCase();
+
+const TS_EXT = new Set(['.ts', '.tsx', '.mts', '.cts', '.js', '.jsx', '.mjs', '.cjs']);
+export { TS_EXT };
+
+export function extOf(file: string): string {
+  const i = file.lastIndexOf('.');
+  return i < 0 ? '' : file.slice(i).toLowerCase();
 }
+
 function scriptKindFor(file: string): ts.ScriptKind {
   switch (extOf(file)) {
-    case ".tsx":
+    case '.tsx':
       return ts.ScriptKind.TSX;
-    case ".jsx":
+    case '.jsx':
       return ts.ScriptKind.JSX;
-    case ".js":
-    case ".mjs":
-    case ".cjs":
+    case '.js':
+    case '.mjs':
+    case '.cjs':
       return ts.ScriptKind.JS;
     default:
       return ts.ScriptKind.TS;
   }
 }
+
 /**
  * Count syntactic parse diagnostics. `parseDiagnostics` is TypeScript-internal
  * but is the standard fast syntactic check used across the ecosystem (prettier,
@@ -87,18 +110,20 @@ function syntacticErrorCount(file: string, text: string): number {
   const diags = (sf as unknown as { parseDiagnostics?: unknown[] }).parseDiagnostics;
   return Array.isArray(diags) ? diags.length : 0;
 }
+
 function firstIntroducedError(file: string, text: string): string | undefined {
   const sf = ts.createSourceFile(file, text, ts.ScriptTarget.Latest, true, scriptKindFor(file));
   const diags = (sf as unknown as { parseDiagnostics?: ts.Diagnostic[] }).parseDiagnostics;
   if (!Array.isArray(diags) || diags.length === 0) return undefined;
   const d = diags[0];
-  const msg = ts.flattenDiagnosticMessageText(d.messageText, "\n");
-  if (typeof d.start === "number") {
+  const msg = ts.flattenDiagnosticMessageText(d.messageText, '\n');
+  if (typeof d.start === 'number') {
     const { line, character } = ts.getLineAndCharacterOfPosition(sf, d.start);
     return `${msg} (at ${line + 1}:${character + 1})`;
   }
   return msg;
 }
+
 /** Validate that `after` did not regress relative to `before`. */
 export function validate(file: string, before: string, after: string): ValidationResult {
   const ext = extOf(file);
@@ -106,14 +131,14 @@ export function validate(file: string, before: string, after: string): Validatio
     const b = syntacticErrorCount(file, before);
     const a = syntacticErrorCount(file, after);
     return {
-      language: "ts",
+      language: 'ts',
       before: b,
       after: a,
       ok: a <= b,
       introduced: a > b ? firstIntroducedError(file, after) : undefined,
     };
   }
-  if (ext === ".json") {
+  if (ext === '.json') {
     const safe = (s: string): boolean => {
       try {
         JSON.parse(s);
@@ -125,15 +150,89 @@ export function validate(file: string, before: string, after: string): Validatio
     const bOk = safe(before);
     const aOk = safe(after);
     return {
-      language: "json",
+      language: 'json',
       before: bOk ? 0 : 1,
       after: aOk ? 0 : 1,
       ok: aOk || !bOk, // only forbid breaking a previously-valid JSON
-      introduced: !aOk && bOk ? "edit produced invalid JSON" : undefined,
+      introduced: !aOk && bOk ? 'edit produced invalid JSON' : undefined,
     };
   }
-  return { language: "generic", before: 0, after: 0, ok: true };
+  // Try real language parser before falling back to structural balance
+  const langResult = validateLanguage(file, after);
+  if (langResult.realParser || langResult.language !== 'generic') {
+    if (langResult.realParser) {
+      // Parser was available and ran — use its result
+      const extLang = extOf(file).replace('.', '');
+      // We need the BEFORE state too — parse the original
+      const beforeResult = validateLanguage(file, before);
+      const b = beforeResult.realParser ? beforeResult.errorCount : 0;
+      const a = langResult.errorCount;
+      return {
+        language: langResult.language as ValidationResult['language'],
+        before: b,
+        after: a,
+        ok: a <= b,
+        introduced: a > b ? langResult.firstError : undefined,
+      };
+    }
+    // Parser not available — fall through to structural
+  }
+  if (STRUCTURAL_EXT.has(ext)) {
+    const b = structuralErrors(ext, before);
+    const a = structuralErrors(ext, after);
+    return {
+      language: 'structural',
+      before: b.length,
+      after: a.length,
+      ok: a.length <= b.length, // only forbid regressing structural balance
+      introduced: a.length > b.length ? a[0] : undefined,
+    };
+  }
+  return { language: 'generic', before: 0, after: 0, ok: true };
 }
+
+/**
+ * Languages with no TS-grade parser available here. We do NOT fake a full
+ * parse (that would be dishonest). We do a delimiter/string-aware structural
+ * balance — the single check that catches the overwhelmingly most common
+ * atomic-edit breakage (a deleted `)`, an unterminated string, a stray
+ * `}`), is language-agnostic, and produces no false positives on valid
+ * code. Indentation/semantic correctness is explicitly out of scope and
+ * declared so (`language: "structural"`, not the language name).
+ */
+const STRUCTURAL_EXT = new Set([
+  '.py',
+  '.go',
+  '.rs',
+  '.java',
+  '.kt',
+  '.c',
+  '.h',
+  '.cc',
+  '.cpp',
+  '.hpp',
+  '.cs',
+  '.rb',
+  '.php',
+  '.swift',
+  '.scala',
+  '.sh',
+  '.bash',
+  '.zsh',
+  '.css',
+  '.scss',
+  '.less',
+  '.sql',
+  '.yaml',
+  '.yml',
+  '.toml',
+]);
+
+
+/** Quote chars that start a string per family. Hash-comment langs use #;
+ * C-family use // and /​* *​/. We stay conservative: only well-known forms,
+ * never guessing, so valid code never trips. */
+
 /** Convert a 1-based (line,column) to an absolute UTF-16 offset. */
 export function posToOffset(text: string, pos: Position): number {
   if (pos.line < 1 || pos.column < 1) {
@@ -142,14 +241,14 @@ export function posToOffset(text: string, pos: Position): number {
   let offset = 0;
   let line = 1;
   while (line < pos.line) {
-    const nl = text.indexOf("\n", offset);
+    const nl = text.indexOf('\n', offset);
     if (nl === -1) {
       throw new Error(`line ${pos.line} does not exist (file has ${line} line(s))`);
     }
     offset = nl + 1;
     line++;
   }
-  const lineEnd = text.indexOf("\n", offset);
+  const lineEnd = text.indexOf('\n', offset);
   const lineLen = (lineEnd === -1 ? text.length : lineEnd) - offset;
   // column may equal lineLen + 1 (one past the last char = end-of-line insert).
   if (pos.column - 1 > lineLen + 1) {
@@ -159,20 +258,23 @@ export function posToOffset(text: string, pos: Position): number {
   }
   return offset + (pos.column - 1);
 }
+
 function offsetToLine(text: string, offset: number): number {
   let line = 1;
   for (let i = 0; i < offset && i < text.length; i++) {
-    if (text[i] === "\n") line++;
+    if (text[i] === '\n') line++;
   }
   return line;
 }
+
 function lineSurface(text: string, startOff: number, endOff: number): number {
-  const firstNl = text.lastIndexOf("\n", startOff - 1);
+  const firstNl = text.lastIndexOf('\n', startOff - 1);
   const lineStart = firstNl === -1 ? 0 : firstNl + 1;
-  let lineEnd = text.indexOf("\n", endOff);
+  let lineEnd = text.indexOf('\n', endOff);
   if (lineEnd === -1) lineEnd = text.length;
   return lineEnd - lineStart;
 }
+
 /**
  * Apply one or more non-overlapping TextEdits atomically (LSP semantics).
  * Edits are validated against each other (no overlap) and applied
@@ -181,7 +283,8 @@ function lineSurface(text: string, startOff: number, endOff: number): number {
  * whether to persist (it must NOT persist when validation.ok === false).
  */
 export function applyEdits(file: string, original: string, edits: TextEditSpec[]): ApplyResult {
-  if (edits.length === 0) throw new Error("no edits provided");
+  if (edits.length === 0) throw new Error('no edits provided');
+
   const resolved = edits
     .map((e) => {
       const start = posToOffset(original, e.start);
@@ -194,11 +297,13 @@ export function applyEdits(file: string, original: string, edits: TextEditSpec[]
       return { start, end, newText: e.newText };
     })
     .sort((a, b) => a.start - b.start);
+
   for (let i = 1; i < resolved.length; i++) {
     if (resolved[i].start < resolved[i - 1].end) {
-      throw new Error("overlapping edits are not allowed in a single atomic batch");
+      throw new Error('overlapping edits are not allowed in a single atomic batch');
     }
   }
+
   let next = original;
   let changedChars = 0;
   let surfaceMin = Number.POSITIVE_INFINITY;
@@ -211,6 +316,7 @@ export function applyEdits(file: string, original: string, edits: TextEditSpec[]
     surfaceMin = Math.min(surfaceMin, s);
     surfaceMax = Math.max(surfaceMax, s);
   }
+
   const validation = validate(file, original, next);
   const lineSurfaceChars = Number.isFinite(surfaceMin) ? surfaceMax : 0;
   return {
@@ -219,14 +325,70 @@ export function applyEdits(file: string, original: string, edits: TextEditSpec[]
     changedChars,
     lineSurfaceChars,
     expansionFactor: Number((lineSurfaceChars / Math.max(changedChars, 1)).toFixed(2)),
+    zones: computeZones(original, next),
   };
 }
+
+export type WrapKind = 'try-catch' | 'block' | 'if';
+
+/**
+ * Lever #4 — semantic refactor: wrap an exact range in a try/catch, a bare
+ * block, or an `if (condition)`. One intention ("make this resilient" /
+ * "guard this") expressed as ONE validated atomic op instead of a hand
+ * line-rewrite. Re-indents the wrapped body, preserves the base indent, and
+ * routes through the same no-syntax-regression validate(). `if` REQUIRES an
+ * explicit condition (no behaviour invented).
+ */
+export function wrapRange(
+  file: string,
+  original: string,
+  start: Position,
+  end: Position,
+  kind: WrapKind,
+  condition?: string,
+): ApplyResult {
+  const s = posToOffset(original, start);
+  const e = posToOffset(original, end);
+  if (e < s) throw new Error(`wrap end before start`);
+  if (kind === 'if' && !condition) throw new Error(`'if' wrap requires an explicit condition`);
+  const lineStartOff = original.lastIndexOf('\n', s - 1) + 1;
+  const baseIndentMatch = /^[ \t]*/.exec(original.slice(lineStartOff, s));
+  const indent = baseIndentMatch ? baseIndentMatch[0] : '';
+  const body = original.slice(s, e);
+  const reindented = body
+    .split('\n')
+    .map((ln, i) => (i === 0 ? ln : ln.length ? `  ${ln}` : ln))
+    .join('\n');
+  const open = kind === 'try-catch' ? 'try {' : kind === 'if' ? `if (${condition}) {` : '{';
+  const close =
+    kind === 'try-catch' ? `} catch (error) {\n${indent}  throw error;\n${indent}}` : '}';
+  const wrapped = `${open}\n${indent}  ${reindented}\n${indent}${close}`;
+  const next = original.slice(0, s) + wrapped + original.slice(e);
+  const validation = validate(file, original, next);
+  const changedChars = Math.max(e - s, wrapped.length);
+  const firstNl = original.lastIndexOf('\n', s - 1);
+  const ls = firstNl === -1 ? 0 : firstNl + 1;
+  let le = original.indexOf('\n', e);
+  if (le === -1) le = original.length;
+  const lineSurfaceChars = le - ls;
+  return {
+    newText: next,
+    validation,
+    changedChars,
+    lineSurfaceChars,
+    expansionFactor: Number((lineSurfaceChars / Math.max(changedChars, 1)).toFixed(2)),
+    zones: computeZones(original, next),
+  };
+}
+
 export interface RenameResult {
   newText: string;
   occurrences: number;
   symbol: string;
   validation: ValidationResult;
+  zones: EditZones;
 }
+
 /**
  * Scope-correct, single-file rename of the identifier at (line,column).
  * Uses ts-morph so binding/shadowing is respected — this is the
@@ -244,9 +406,9 @@ export async function renameSymbol(
     throw new Error(`invalid identifier: ${JSON.stringify(newName)}`);
   }
   if (!TS_EXT.has(extOf(file))) {
-    throw new Error(`rename_symbol only supports TS/JS files, got ${extOf(file) || "(none)"}`);
+    throw new Error(`rename_symbol only supports TS/JS files, got ${extOf(file) || '(none)'}`);
   }
-  const { Project } = await import("ts-morph");
+  const { Project } = await import('ts-morph');
   const project = new Project({
     useInMemoryFileSystem: true,
     compilerOptions: { allowJs: true, jsx: ts.JsxEmit.Preserve, noEmit: true },
@@ -255,16 +417,19 @@ export async function renameSymbol(
   const offset = posToOffset(original, pos);
   const node = sf.getDescendantAtPos(offset);
   if (!node) throw new Error(`no AST node at ${pos.line}:${pos.column}`);
-  const id = node.getKindName() === "Identifier" ? node : node.getFirstAncestorByKind?.(ts.SyntaxKind.Identifier);
-  if (!id || id.getKindName() !== "Identifier") {
-    throw new Error(`position ${pos.line}:${pos.column} is not on an identifier (got ${node.getKindName()})`);
+  const id =
+    node.getKindName() === 'Identifier'
+      ? node
+      : node.getFirstAncestorByKind?.(ts.SyntaxKind.Identifier);
+  if (!id || id.getKindName() !== 'Identifier') {
+    throw new Error(
+      `position ${pos.line}:${pos.column} is not on an identifier (got ${node.getKindName()})`,
+    );
   }
   const oldName = id.getText();
   const renameable = id.asKindOrThrow(ts.SyntaxKind.Identifier);
   // count references before mutating
-  const refs = renameable
-    .findReferences()
-    .reduce((n, r) => n + r.getReferences().length, 0);
+  const refs = renameable.findReferences().reduce((n, r) => n + r.getReferences().length, 0);
   renameable.rename(newName);
   const next = sf.getFullText();
   return {
@@ -272,13 +437,17 @@ export async function renameSymbol(
     occurrences: refs,
     symbol: `${oldName} -> ${newName}`,
     validation: validate(file, original, next),
+    zones: computeZones(original, next),
   };
 }
+
 export interface LiteralSwapResult {
   newText: string;
   matched: { line: number; column: number; old: string }[];
   validation: ValidationResult;
+  zones: EditZones;
 }
+
 /**
  * Replace a string/numeric/boolean/null literal whose source text equals
  * `currentText`, optionally constrained to `onLine`. This is the direct
@@ -294,9 +463,9 @@ export async function replaceLiteral(
   onLine?: number,
 ): Promise<LiteralSwapResult> {
   if (!TS_EXT.has(extOf(file))) {
-    throw new Error(`replace_literal only supports TS/JS files, got ${extOf(file) || "(none)"}`);
+    throw new Error(`replace_literal only supports TS/JS files, got ${extOf(file) || '(none)'}`);
   }
-  const { Project, SyntaxKind } = await import("ts-morph");
+  const { Project, SyntaxKind } = await import('ts-morph');
   const project = new Project({
     useInMemoryFileSystem: true,
     compilerOptions: { allowJs: true, jsx: ts.JsxEmit.Preserve, noEmit: true },
@@ -319,11 +488,11 @@ export async function replaceLiteral(
     });
   if (hits.length === 0) {
     throw new Error(
-      `no literal with text ${JSON.stringify(currentText)}${onLine ? ` on line ${onLine}` : ""}`,
+      `no literal with text ${JSON.stringify(currentText)}${onLine ? ` on line ${onLine}` : ''}`,
     );
   }
   if (hits.length > 1) {
-    const lines = hits.map((h) => h.getStartLineNumber()).join(", ");
+    const lines = hits.map((h) => h.getStartLineNumber()).join(', ');
     throw new Error(
       `ambiguous: ${hits.length} literals match (lines ${lines}); pass onLine to disambiguate`,
     );
@@ -338,8 +507,9 @@ export async function replaceLiteral(
   ];
   target.replaceWithText(newText);
   const next = sf.getFullText();
-  return { newText: next, matched, validation: validate(file, original, next) };
+  return { newText: next, matched, validation: validate(file, original, next), zones: computeZones(original, next) };
 }
+
 /**
  * Exact-string replacement with the ergonomics of the blunt builtin `edit`
  * (oldText -> newText, uniqueness-checked) BUT routed through the same
@@ -357,21 +527,29 @@ export function replaceText(
   newText: string,
   occurrence?: number,
 ): ApplyResult {
-  if (oldText.length === 0) throw new Error("oldText must be non-empty");
-  if (oldText === newText) throw new Error("oldText and newText are identical");
+  if (oldText.length === 0) throw new Error('oldText must be non-empty');
+  if (oldText === newText) throw new Error('oldText and newText are identical');
+
   const offsets: number[] = [];
   for (let i = original.indexOf(oldText); i !== -1; i = original.indexOf(oldText, i + 1)) {
     offsets.push(i);
   }
   if (offsets.length === 0) {
-    throw new Error(`oldText not found (verbatim, incl. whitespace): ${JSON.stringify(oldText.slice(0, 80))}`);
+    throw new Error(
+      `oldText not found (verbatim, incl. whitespace): ${JSON.stringify(oldText.slice(0, 80))}`,
+    );
   }
   let start: number;
   if (occurrence == null) {
     if (offsets.length > 1) {
+      const candidates = offsets.map((o) => {
+        const before = original.slice(0, o).split('\n');
+        return `line ${before.length}`;
+      });
       throw new Error(
-        `ambiguous: ${offsets.length} occurrences of oldText; add surrounding context to make it unique, ` +
-          `or pass occurrence (1-${offsets.length})`,
+        `ambiguous: ${offsets.length} occurrences of oldText. ` +
+          `Candidates: [${candidates.join(', ')}]. ` +
+          `Add surrounding context to make it unique, or pass occurrence (1-${offsets.length})`,
       );
     }
     start = offsets[0];
@@ -391,6 +569,8 @@ export function replaceText(
     changedChars,
     lineSurfaceChars,
     expansionFactor: Number((lineSurfaceChars / Math.max(changedChars, 1)).toFixed(2)),
+    zones: computeZones(original, next),
   };
 }
+
 export { offsetToLine };

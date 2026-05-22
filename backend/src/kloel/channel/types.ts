@@ -137,21 +137,8 @@ export interface DetectionInput {
   readonly nowMs?: number;
 }
 
-export function clamp(value: number, min: number, max: number): number {
-  return Math.max(min, Math.min(max, value));
-}
+import { clamp, daysSince } from '../../common/math';
+export { clamp, daysSince };
 
-export function daysSince(iso: string, nowMs: number): number {
-  const ts = Date.parse(iso);
-  if (!Number.isFinite(ts)) {
-    return 0;
-  }
-  return Math.max(0, (nowMs - ts) / (1000 * 60 * 60 * 24));
-}
-
-export function filterByWorkspace(
-  events: readonly SpineEventRef[],
-  workspaceId: string,
-): readonly SpineEventRef[] {
-  return events.filter((e) => e.workspaceId === workspaceId);
-}
+import { filterByWorkspace } from '../spine-events.helpers';
+export { filterByWorkspace };

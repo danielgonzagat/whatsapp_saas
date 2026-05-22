@@ -45,4 +45,8 @@ import { CIA_RUNTIME_SERVICE } from './cia-runtime.port';
     CiaSendHelpersService,
   ],
 })
+/**
+ * @cluster whatsapp_saas/backend/cia
+ * L11 multi-agent TaskGraph annotation (batched by tools/auto-pr/batch-job.mjs).
+ */
 export class CiaModule {}

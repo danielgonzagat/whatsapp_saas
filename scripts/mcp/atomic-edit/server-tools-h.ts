@@ -1,0 +1,392 @@
+import * as childProcess from 'node:child_process';
+import * as fs from 'node:fs';
+import * as os from 'node:os';
+import * as path from 'node:path';
+import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { z } from 'zod';
+import { applyEdits, replaceText, renameSymbol, replaceLiteral, validate, wrapRange, type WrapKind, type TextEditSpec, type ApplyResult, type ValidationResult, computeZones } from './engine.js';
+import { resolveAllowedRootForAbsolutePath, resolveSafeTarget, REPO_ROOT } from './guard.js';
+import { buildTrace, levelFor, shapePayload, writeTrace } from './trace.js';
+import { browse, outline, readSymbol } from './nav.js';
+import { editSymbol, renameSymbolCrossFile, previewDiff, characterDiff, addNamedImport, removeNamedImport, replacePropertyValue, type SymbolOp, type SemanticEditResult, renamePropertyKey, addAwaitToCall } from './advanced.js';
+import { sha256, guardSha, log, atomicWrite, readUtf8, normalizeRepoRelPath, normalizeAllowedPath, relPathAllowed, changedSpanMetrics, hasArg, normalizeEslintDryRunArgs, requireEslintDryRunArgs, parseEslintJson, targetDetails, shellPath, nearestPackageRelPath, type EslintDryRunResult } from './server-helpers-io.js';
+import { runPostEditVerify, packageVerificationPlan, unusedSymbolFromLintMessage } from './server-helpers-verify.js';
+import { buildLintResidueActionCandidates, applyKnownLintResidueFixes } from './server-helpers-lint-fix.js';
+import { ok, fail, commit, type ToolOk } from './server-helpers-result.js';
+import { matchesGlob, matchesGlobPart, globFindFiles } from './server-helpers-glob.js';
+import { commitSemantic } from './server-helpers-commit-semantic.js';
+import { chooseIntegration, riskLevelFor, validationPlan, evidenceWeight, classifyTruth, readJsonOptional, readTextOptional, lockRoot, safeLockId, lockDir, lockFile, autoLockFile, autoLockCleanup, readLockRecord, listLocks, lowerText, PRODUCT_INTEGRATION_IDS, type ProductIntegrationId, type ProductIntegrationProfile, EvidenceKindSchema, EvidenceStatusSchema } from './server-helpers-product-locks.js';
+
+export function registerToolsH(server: McpServer): void {
+server.registerTool(
+  'product_intent_contract',
+  {
+    title: 'Turn a human product goal into an atomic product contract',
+    description:
+      'Classifies a plain-language goal into a named product integration, acceptance criteria, risk, proof plan, non-goals, and the next smallest atomic action. This prevents agents from coding before they know the behavior to prove.',
+    inputSchema: {
+      goal: z.string().min(1),
+      targetIntegration: z.enum(PRODUCT_INTEGRATION_IDS).optional(),
+      actor: z
+        .string()
+        .optional()
+        .describe('non-technical actor or user role affected by the behavior'),
+    },
+  },
+  async (a) => {
+    try {
+      const profile = chooseIntegration(a.goal, a.targetIntegration);
+      const risk = riskLevelFor(a.goal, profile);
+      const summaryForHuman =
+        `Contrato de produto: ${profile.label}\n` +
+        `Resultado pedido: ${a.goal}\n` +
+        `Como validar sem codigo: ${profile.acceptanceCriteria.join(' -> ')}\n` +
+        `Proxima menor acao: provar ou implementar exatamente o primeiro criterio ainda vermelho.`;
+      return ok({
+        ok: true,
+        summaryForHuman,
+        summary: summaryForHuman,
+        goal: a.goal,
+        actor: a.actor ?? 'founder/operator',
+        targetIntegration: profile.id,
+        integrationLabel: profile.label,
+        riskLevel: risk,
+        surfaces: profile.surfaces,
+        acceptanceCriteria: profile.acceptanceCriteria,
+        behaviorProofRequired: profile.behaviorProof,
+        nonGoals: [
+          'nao reconstruir tooling sem regressao objetiva',
+          'nao declarar comportamento real sem evidencia runtime/API/DB/browser',
+          'nao pedir decisao tecnica ao fundador quando a decisao e implementacional',
+        ],
+        externalBlockers: profile.externalBlockers,
+        validationPlan: validationPlan(profile, risk),
+        zeroCodeTrustTarget: 100,
+        nextAtomicAction:
+          'usar code_outline/code_read_symbol na superficie minima e anexar a primeira prova comportamental que falha ou passa',
+      });
+    } catch (e) {
+      return fail(e instanceof Error ? e.message : String(e));
+    }
+  },
+);
+
+server.registerTool(
+  'zero_code_trust_score',
+  {
+    title: 'Score whether a non-technical founder can trust this delivery without reading code',
+    description:
+      'Computes the Zero-Code Trust score from attached evidence. 100 means product-behavior validation, 75 means explanation-only, 50 means code/diff review still needed, lower means technical interpretation or manual repair remains.',
+    inputSchema: {
+      evidence: z
+        .array(
+          z.object({
+            kind: EvidenceKindSchema,
+            status: EvidenceStatusSchema,
+            summary: z.string().optional(),
+            artifactPaths: z.array(z.string()).optional(),
+          }),
+        )
+        .min(1),
+      founderCanValidateByProduct: z.boolean().optional(),
+      requiresCodeReview: z.boolean().optional(),
+      requiresTechnicalDecision: z.boolean().optional(),
+      requiresManualFix: z.boolean().optional(),
+    },
+  },
+  async (a) => {
+    try {
+      const rawScore = Math.max(
+        ...a.evidence.map((entry) => evidenceWeight(entry.kind, entry.status)),
+      );
+      const failed = a.evidence.filter((entry) => entry.status === 'failed');
+      let score = rawScore;
+      if (a.founderCanValidateByProduct) score = Math.max(score, 100);
+      if (a.requiresCodeReview) score = Math.min(score, 50);
+      if (a.requiresTechnicalDecision) score = Math.min(score, 25);
+      if (a.requiresManualFix) score = 0;
+      if (failed.length > 0) score = Math.min(score, 40);
+      const verdict =
+        score >= 100
+          ? 'PRODUCT_VALIDATABLE'
+          : score >= 75
+            ? 'EXPLANATION_VALIDATABLE'
+            : score >= 50
+              ? 'CODE_REVIEW_STILL_NEEDED'
+              : score > 0
+                ? 'TECHNICAL_HELP_STILL_NEEDED'
+                : 'MANUAL_FIX_REQUIRED';
+      const summaryForHuman = `Zero-Code Trust ${score}/100: ${verdict}. ${failed.length > 0 ? `${failed.length} evidencia(s) falharam.` : 'Sem falha explicita nas evidencias anexadas.'}`;
+      return ok({ ok: true, summaryForHuman, summary: summaryForHuman, score, verdict, failed });
+    } catch (e) {
+      return fail(e instanceof Error ? e.message : String(e));
+    }
+  },
+);
+
+server.registerTool(
+  'behavior_receipt',
+  {
+    title: 'Generate a founder-facing behavior receipt',
+    description:
+      'Turns validation artifacts into a no-code receipt: what changed in the product, where to click/call, what was proven, and what remains unproven. This is the product-facing closeout for an atomic delivery.',
+    inputSchema: {
+      productBehavior: z.string().min(1),
+      changedFiles: z.array(z.string()).optional(),
+      validation: z
+        .array(
+          z.object({
+            kind: EvidenceKindSchema,
+            status: EvidenceStatusSchema,
+            command: z.string().optional(),
+            summary: z.string().optional(),
+            artifactPaths: z.array(z.string()).optional(),
+          }),
+        )
+        .min(1),
+      clickPath: z.array(z.string()).optional(),
+      notProven: z.array(z.string()).optional(),
+      risks: z.array(z.string()).optional(),
+    },
+  },
+  async (a) => {
+    try {
+      const trust = Math.max(
+        ...a.validation.map((entry) => evidenceWeight(entry.kind, entry.status)),
+      );
+      const failing = a.validation.filter((entry) => entry.status === 'failed');
+      const productProof = a.validation.some(
+        (entry) =>
+          entry.status === 'passed' &&
+          [
+            'api',
+            'db',
+            'browser',
+            'runtime_probe',
+            'external_provider',
+            'manual_product_check',
+          ].includes(entry.kind),
+      );
+      const score =
+        failing.length > 0
+          ? Math.min(trust, 40)
+          : productProof && a.clickPath?.length
+            ? 100
+            : trust;
+      const summaryForHuman =
+        `O que mudou: ${a.productBehavior}\n` +
+        `Como validar: ${a.clickPath && a.clickPath.length > 0 ? a.clickPath.join(' -> ') : 'usar os artefatos de validacao anexados'}\n` +
+        `Prova: ${a.validation.map((entry) => `${entry.kind}:${entry.status}`).join(', ')}\n` +
+        `Nao provado: ${a.notProven && a.notProven.length > 0 ? a.notProven.join('; ') : 'nenhum item declarado'}\n` +
+        `Zero-Code Trust: ${score}/100`;
+      return ok({
+        ok: true,
+        summaryForHuman,
+        summary: summaryForHuman,
+        productBehavior: a.productBehavior,
+        changedFiles: a.changedFiles ?? [],
+        validation: a.validation,
+        clickPath: a.clickPath ?? [],
+        notProven: a.notProven ?? [],
+        risks: a.risks ?? [],
+        zeroCodeTrust: score,
+        productProof,
+        failing,
+      });
+    } catch (e) {
+      return fail(e instanceof Error ? e.message : String(e));
+    }
+  },
+);
+
+server.registerTool(
+  'truth_receipt',
+  {
+    title: 'Classify delivery claims as real, partial, stub, fake, blocked, or unproven',
+    description:
+      'Anti-facade receipt. Each claim must carry evidence. Runtime/API/DB/browser/provider evidence can become REAL; tests/builds are PARTIAL; mocks/stubs cannot be sold as product behavior.',
+    inputSchema: {
+      claims: z
+        .array(
+          z.object({
+            claim: z.string().min(1),
+            evidenceKind: EvidenceKindSchema,
+            status: EvidenceStatusSchema,
+            artifactPaths: z.array(z.string()).optional(),
+            externalBlocker: z.string().optional(),
+          }),
+        )
+        .min(1),
+    },
+  },
+  async (a) => {
+    try {
+      const classified = a.claims.map((claim) => ({
+        ...claim,
+        truth: classifyTruth(claim.evidenceKind, claim.status, Boolean(claim.externalBlocker)),
+      }));
+      const blocking = classified.filter((claim) => claim.truth !== 'REAL');
+      const summaryForHuman =
+        blocking.length === 0
+          ? `Todas as ${classified.length} alegacoes tem prova de comportamento real.`
+          : `${blocking.length}/${classified.length} alegacao(oes) ainda nao sao REAL: ${blocking.map((claim) => `${claim.claim}=${claim.truth}`).join('; ')}`;
+      return ok({
+        ok: true,
+        summaryForHuman,
+        summary: summaryForHuman,
+        claims: classified,
+        blocking,
+      });
+    } catch (e) {
+      return fail(e instanceof Error ? e.message : String(e));
+    }
+  },
+);
+
+server.registerTool(
+  'continuity_status',
+  {
+    title: 'Read the current product/atomic continuity state',
+    description:
+      'Summarizes progress docs, workboard, locks, PULSE certificate, runtime evidence, and the next honest action. Use at the start of a session so continuation comes from verified repo state, not chat memory.',
+    inputSchema: {},
+  },
+  async () => {
+    try {
+      const progress = readTextOptional('docs/ai/ATOMIC_EDIT_PROGRESS.md');
+      const workboard = readTextOptional('docs/ai/ATOMIC_EDIT_WORKBOARD.md');
+      const cert =
+        readJsonOptional<Record<string, unknown>>('PULSE_CERTIFICATE.json') ??
+        readJsonOptional<Record<string, unknown>>('.pulse/current/PULSE_CERTIFICATE.json');
+      const runtime = readJsonOptional<Record<string, unknown>>(
+        '.pulse/current/PULSE_RUNTIME_EVIDENCE.json',
+      );
+      const gates =
+        cert && typeof cert.gates === 'object' && cert.gates !== null
+          ? (cert.gates as Record<string, unknown>)
+          : {};
+      const runtimePass = gates.runtimePass as Record<string, unknown> | undefined;
+      const pulseStatus = typeof cert?.status === 'string' ? cert.status : 'unknown';
+      const score = typeof cert?.score === 'number' ? cert.score : null;
+      const runtimeSummary =
+        typeof runtime?.summary === 'string' ? runtime.summary : 'runtime evidence missing';
+      const nextAction =
+        pulseStatus === 'CERTIFIED'
+          ? 'usar o principio em trabalho de produto; nao reconstruir tooling sem regressao objetiva'
+          : runtimePass?.status === 'fail'
+            ? 'corrigir ou anexar evidencia runtime observada antes de declarar producao'
+            : 'atacar o proximo gate PULSE vermelho com evidencia de produto';
+      const summaryForHuman =
+        `Continuidade: PULSE=${pulseStatus}${score === null ? '' : ` score=${score}`}. ` +
+        `Runtime: ${runtimeSummary}. Locks ativos: ${listLocks().length}. Proxima acao: ${nextAction}.`;
+      return ok({
+        ok: true,
+        summaryForHuman,
+        summary: summaryForHuman,
+        progressPresent: Boolean(progress),
+        workboardPresent: Boolean(workboard),
+        pulseStatus,
+        pulseScore: score,
+        runtimeSummary,
+        runtimePass: runtimePass ?? null,
+        locks: listLocks(),
+        nextAction,
+      });
+    } catch (e) {
+      return fail(e instanceof Error ? e.message : String(e));
+    }
+  },
+);
+
+server.registerTool(
+  'atomic_lock_acquire',
+  {
+    title: 'Acquire a POSIX mkdir front lock',
+    description:
+      'Claims a product/agent front by atomically creating .atomic-edit-locks/<frontId>/ via mkdir. If it already exists, acquisition fails. This is the real anti-TOCTOU primitive for multi-agent work.',
+    inputSchema: {
+      frontId: z.string().min(1),
+      owner: z.string().min(1),
+      objective: z.string().min(1),
+      allowedFiles: z.array(z.string()).optional(),
+      blockedFiles: z.array(z.string()).optional(),
+      acceptanceCriteria: z.array(z.string()).optional(),
+    },
+  },
+  async (a) => {
+    try {
+      fs.mkdirSync(lockRoot(), { recursive: true });
+      const dir = lockDir(a.frontId);
+      fs.mkdirSync(dir);
+      const now = new Date().toISOString();
+      const record = {
+        frontId: safeLockId(a.frontId),
+        owner: a.owner,
+        objective: a.objective,
+        startedAt: now,
+        heartbeatAt: now,
+        allowedFiles: a.allowedFiles ?? [],
+        blockedFiles: a.blockedFiles ?? [],
+        acceptanceCriteria: a.acceptanceCriteria ?? [],
+        status: 'claimed',
+      };
+      atomicWrite(lockFile(a.frontId), JSON.stringify(record, null, 2));
+      const summaryForHuman = `Lock adquirido: ${a.frontId} por ${a.owner}. Frente valida para trabalho atomico.`;
+      return ok({ ok: true, summaryForHuman, summary: summaryForHuman, lock: record });
+    } catch (e) {
+      return fail(e instanceof Error ? e.message : String(e));
+    }
+  },
+);
+
+server.registerTool(
+  'atomic_lock_status',
+  {
+    title: 'List active atomic front locks',
+    description: 'Lists .atomic-edit-locks fronts and their owner/objective/heartbeat metadata.',
+    inputSchema: {},
+  },
+  async () => {
+    try {
+      const locks = listLocks();
+      const summaryForHuman = `Locks ativos: ${locks.length}`;
+      return ok({ ok: true, summaryForHuman, summary: summaryForHuman, locks });
+    } catch (e) {
+      return fail(e instanceof Error ? e.message : String(e));
+    }
+  },
+);
+
+server.registerTool(
+  'atomic_lock_release',
+  {
+    title: 'Release an atomic front lock',
+    description:
+      'Releases a lock only when the owner matches, unless force=true is supplied for coordinator orphan recovery. Only paths under .atomic-edit-locks/<frontId>/ are removable.',
+    inputSchema: {
+      frontId: z.string().min(1),
+      owner: z.string().min(1),
+      force: z.boolean().optional(),
+      reason: z.string().optional(),
+    },
+  },
+  async (a) => {
+    try {
+      const dir = lockDir(a.frontId);
+      const current = readLockRecord(safeLockId(a.frontId));
+      if (!fs.existsSync(dir)) return ok({ ok: true, changed: false, note: 'lock already absent' });
+      if (!a.force && current?.owner !== a.owner) {
+        return fail(
+          `lock owned by ${String(current?.owner ?? 'unknown')}; release refused for ${a.owner}`,
+        );
+      }
+      fs.rmSync(dir, { recursive: true, force: false });
+      const summaryForHuman = `Lock liberado: ${a.frontId}${a.reason ? ` (${a.reason})` : ''}.`;
+      return ok({ ok: true, changed: true, summaryForHuman, summary: summaryForHuman });
+    } catch (e) {
+      return fail(e instanceof Error ? e.message : String(e));
+    }
+  },
+);
+
+}

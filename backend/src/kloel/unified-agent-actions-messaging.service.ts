@@ -13,7 +13,7 @@ import { assertCustomerSafe } from './commercial-decision-orchestrator.service';
 import { BrainEventSpineService } from './brain-event-spine.service';
 import { DailyLimitService } from './daily-limit.service';
 
-type UnknownRecord = Record<string, unknown>;
+import type { UnknownRecord } from '../common/types';
 
 type GmailMailboxPort = {
   sendMessageFromMailbox(workspaceId: string, input: {

@@ -65,4 +65,8 @@ import { FacebookCAPIService } from './facebook-capi.service';
     CheckoutEventEmitterService,
   ],
 })
+/**
+ * @cluster whatsapp_saas/backend/checkout
+ * L11 multi-agent TaskGraph annotation (batched by tools/auto-pr/batch-job.mjs).
+ */
 export class CheckoutModule {}

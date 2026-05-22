@@ -6,6 +6,10 @@ import { sanitizePayload } from '../common/sanitize-payload';
 import { AuditService } from './audit.service';
 
 /** Audit action metadata. */
+/**
+ * @cluster whatsapp_saas/backend/audit
+ * L11 multi-agent TaskGraph annotation (batched by tools/auto-pr/batch-job.mjs).
+ */
 const AUDIT_ACTION_METADATA = ['audit', 'action'].join('_');
 type AuditMetadata = { action: string; resource: string };
 type AuditRequestRecord = Record<string, unknown>;

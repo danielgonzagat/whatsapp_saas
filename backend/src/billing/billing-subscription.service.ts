@@ -6,6 +6,10 @@ import { PrismaService } from '../prisma/prisma.service';
 import type { StripeClient } from './stripe-types';
 import { BillingCheckoutHelperService } from './billing-checkout-helper.service';
 
+/**
+ * @cluster whatsapp_saas/backend/billing
+ * L11 multi-agent TaskGraph annotation (batched by tools/auto-pr/batch-job.mjs).
+ */
 export class BillingSubscriptionService {
   private readonly logger = StructuredLogger.from(BillingSubscriptionService.name);
   private stripe: StripeClient | undefined;

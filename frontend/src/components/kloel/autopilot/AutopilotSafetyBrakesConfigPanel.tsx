@@ -46,6 +46,7 @@ export default function AutopilotSafetyBrakesConfigPanel({
         <button
           type="button"
           onClick={onToggleEditingConfig}
+          aria-label={isEditingConfig ? 'Cancelar edição' : 'Editar configuração'}
           className="p-2 rounded-lg transition-colors hover:bg-white/5"
           style={{
             color: isEditingConfig ? colors.semantic.error : colors.text.muted,

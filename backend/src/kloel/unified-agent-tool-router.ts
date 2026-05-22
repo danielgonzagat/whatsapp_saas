@@ -5,7 +5,7 @@ import type { AgentRuntimeContextService } from './agent-runtime';
 import type { RiskGateService } from './risk-class/risk-gate.service';
 import type { UnifiedAgentActionsService } from './unified-agent-actions.service';
 import type { ToolArgs } from './unified-agent.types';
-type UnknownRecord = Record<string, unknown>;
+import type { UnknownRecord } from '../common/types';
 type ToolRouterLogger = {
   log(message: string, meta?: unknown): void;
   warn(message: string): void;

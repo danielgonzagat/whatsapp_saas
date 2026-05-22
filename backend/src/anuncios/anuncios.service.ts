@@ -5,6 +5,10 @@ import { GoogleAdsProvider } from '../integrations/google-ads.provider';
 import { TikTokAdsProvider } from '../integrations/tiktok-ads.provider';
 import type { AdProvider } from '../integrations/ad-provider.interface';
 
+/**
+ * @cluster whatsapp_saas/backend/anuncios
+ * L11 multi-agent TaskGraph annotation (batched by tools/auto-pr/batch-job.mjs).
+ */
 export interface AccountResponse {
   id: string;
   platform: string;

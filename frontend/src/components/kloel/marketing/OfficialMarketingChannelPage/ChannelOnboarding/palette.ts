@@ -115,12 +115,12 @@ export function paletteFor(theme: KloelAppTheme): OnboardingPalette {
 export const SORA = "'Sora', system-ui, sans-serif";
 export const MONO = "'JetBrains Mono', ui-monospace, monospace";
 
-/** Per-channel copy — the only three textual elements that vary (spec §10). */
+/** Per-channel copy — the textual elements that vary (spec §10). */
 export interface ChannelCopy {
-  /** Top pill, uppercase. */
-  pill: string;
-  /** Provider chip / step-0 mono subtitle. */
+  /** Provider chip above the step bar (mono uppercase). */
   provider: string;
+  /** Step-0 sub line under the headline (mono uppercase). */
+  sub: string;
   /** Step-0 primary button verb. */
   verb: string;
   /** Awakened headline subject (capitalised, not uppercase). */
@@ -129,32 +129,32 @@ export interface ChannelCopy {
 
 export const CHANNEL_COPY: Record<ChannelKey, ChannelCopy> = {
   whatsapp: {
-    pill: 'WHATSAPP',
     provider: 'META BUSINESS',
+    sub: 'LOGIN META · OAUTH OFICIAL',
     verb: 'Vincular número',
     awakeName: 'WhatsApp',
   },
   instagram: {
-    pill: 'INSTAGRAM',
     provider: 'META BUSINESS',
+    sub: 'CONTA BUSINESS · GRAPH API',
     verb: 'Vincular conta',
     awakeName: 'Instagram',
   },
   tiktok: {
-    pill: 'TIKTOK',
     provider: 'TIKTOK FOR BUSINESS',
+    sub: 'CREATOR OU ADVERTISER',
     verb: 'Vincular conta',
     awakeName: 'TikTok',
   },
   facebook: {
-    pill: 'FACEBOOK',
     provider: 'META BUSINESS',
+    sub: 'PÁGINA COMERCIAL · MESSENGER',
     verb: 'Vincular Página',
     awakeName: 'Facebook',
   },
   email: {
-    pill: 'EMAIL',
     provider: 'DOMÍNIO PRÓPRIO',
+    sub: 'DKIM · SPF · DMARC',
     verb: 'Verificar domínio',
     awakeName: 'Email',
   },

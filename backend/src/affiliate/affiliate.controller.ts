@@ -29,6 +29,10 @@ import {
 } from './affiliate-helpers';
 
 import { RouteClass } from '../common/throttler/route-class.decorator';
+/**
+ * @cluster whatsapp_saas/backend/affiliate
+ * L11 multi-agent TaskGraph annotation (Wave 4 loop-runner).
+ */
 interface ListProductDto {
   commissionPct?: number;
   commissionType?: string;

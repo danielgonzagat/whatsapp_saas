@@ -172,9 +172,8 @@ export function resolveDomain(rawDomain: string): string | null {
   return null;
 }
 
-export function clamp(value: number, min: number, max: number): number {
-  return Math.min(max, Math.max(min, value));
-}
+import { clamp } from '../../common/math';
+export { clamp };
 
 export function commercialImpactWeight(impact: CommercialImpact): number {
   const weights: Record<CommercialImpact, number> = {

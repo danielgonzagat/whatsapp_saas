@@ -11,6 +11,10 @@ import { DbInitErrorService } from './db-init-error.service';
 import { UserNameDerivationService } from './user-name-derivation.service';
 import { PrismaService } from '../prisma/prisma.service';
 
+/**
+ * @cluster whatsapp_saas/backend/auth
+ * L11 multi-agent TaskGraph annotation (batched by tools/auto-pr/batch-job.mjs).
+ */
 type ResolvedAgent = {
   id: string;
   email: string;

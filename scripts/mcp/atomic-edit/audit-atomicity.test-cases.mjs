@@ -1,0 +1,137 @@
+// Self-test fixtures for audit-atomicity. Extracted from
+// audit-atomicity.mjs to keep the main script under the
+// architecture guard line budget.
+
+export function buildSelfTestCases() {
+  return [
+    {
+      name: 'native-coarse-offender',
+      expectedPass: false,
+      expectedTopologyPass: false,
+      trace: {
+        operationId: 'self-test-native-coarse',
+        file: 'src/native-coarse.ts',
+        operator: 'native-edit',
+        fallback: false,
+        metrics: {
+          changedChars: 5,
+          lineRewriteSurfaceChars: 200,
+          expansionFactorAvoided: 0,
+          lineRewriteAvoided: false,
+        },
+      },
+    },
+    {
+      name: 'fallback-offender',
+      expectedPass: false,
+      expectedTopologyPass: false,
+      trace: {
+        operationId: 'self-test-fallback',
+        file: 'src/fallback.ts',
+        operator: 'atomic_replace_text',
+        fallback: true,
+        metrics: {
+          changedChars: 25,
+          lineRewriteSurfaceChars: 25,
+          expansionFactorAvoided: 1,
+          lineRewriteAvoided: false,
+        },
+      },
+    },
+    {
+      name: 'atomic-positive',
+      expectedPass: true,
+      expectedTopologyPass: true,
+      trace: {
+        operationId: 'self-test-atomic-positive',
+        file: 'src/atomic-positive.ts',
+        operator: 'atomic_replace_text',
+        targetUnit: 'object_property_value',
+        semanticImpact: 'contract_literal_swap',
+        preservedZones: [{ kind: 'property_key', description: 'Property key stayed unchanged.' }],
+        modifiedZones: [{ kind: 'literal_value', description: 'Only the literal value changed.' }],
+        movementZones: [],
+        fallback: false,
+        metrics: {
+          changedChars: 25,
+          lineRewriteSurfaceChars: 100,
+          expansionFactorAvoided: 4,
+          lineRewriteAvoided: false,
+        },
+      },
+    },
+    {
+      name: 'honest-preview',
+      expectedPass: true,
+      expectedTopologyPass: true,
+      expectedPreviewHonestyPass: true,
+      trace: {
+        operationId: 'self-test-honest-preview',
+        file: 'src/honest-preview.ts',
+        operator: 'atomic_replace_text',
+        targetUnit: 'literal_value',
+        semanticImpact: 'preview_only_change',
+        preservedZones: [{ kind: 'property_key', description: 'Property key stayed unchanged.' }],
+        modifiedZones: [{ kind: 'literal_value', description: 'Preview proposal was not written.' }],
+        movementZones: [],
+        preview: true,
+        changed: false,
+        rollback: { available: false, strategy: 'dry-run only; no target file write occurred' },
+        afterSha256: 'before-hash',
+        proposedSha256: 'after-hash',
+        fallback: false,
+        metrics: {
+          changedChars: 4,
+          lineRewriteSurfaceChars: 80,
+          expansionFactorAvoided: 20,
+          lineRewriteAvoided: false,
+        },
+      },
+    },
+    {
+      name: 'dishonest-preview-looks-committed',
+      expectedPass: false,
+      expectedTopologyPass: true,
+      expectedPreviewHonestyPass: false,
+      trace: {
+        operationId: 'self-test-dishonest-preview',
+        file: 'src/dishonest-preview.ts',
+        operator: 'atomic_replace_text',
+        targetUnit: 'literal_value',
+        semanticImpact: 'preview_only_change',
+        preservedZones: [{ kind: 'property_key', description: 'Property key stayed unchanged.' }],
+        modifiedZones: [{ kind: 'literal_value', description: 'Preview incorrectly claimed a write.' }],
+        movementZones: [],
+        preview: true,
+        changed: true,
+        rollback: { available: true, strategy: 'committed rollback snapshot' },
+        afterSha256: 'after-hash',
+        proposedSha256: 'after-hash',
+        fallback: false,
+        metrics: {
+          changedChars: 4,
+          lineRewriteSurfaceChars: 80,
+          expansionFactorAvoided: 20,
+          lineRewriteAvoided: false,
+        },
+      },
+    },
+    {
+      name: 'atomic-without-topology',
+      expectedPass: true,
+      expectedTopologyPass: false,
+      trace: {
+        operationId: 'self-test-atomic-no-topology',
+        file: 'src/atomic-no-topology.ts',
+        operator: 'atomic_replace_text',
+        fallback: false,
+        metrics: {
+          changedChars: 40,
+          lineRewriteSurfaceChars: 120,
+          expansionFactorAvoided: 3,
+          lineRewriteAvoided: false,
+        },
+      },
+    },
+  ];
+}

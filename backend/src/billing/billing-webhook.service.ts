@@ -30,6 +30,10 @@ import { syncSubscriptionStatus } from './billing-webhook.sync-subscription';
  * Extracted from BillingService to keep file size manageable.
  */
 @Injectable()
+/**
+ * @cluster whatsapp_saas/backend/billing
+ * L11 multi-agent TaskGraph annotation (batched by tools/auto-pr/batch-job.mjs).
+ */
 export class BillingWebhookService {
   private readonly logger = StructuredLogger.from(BillingWebhookService.name);
   private stripe!: StripeClient;

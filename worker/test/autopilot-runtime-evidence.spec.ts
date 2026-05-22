@@ -1,7 +1,10 @@
 import { describe, expect, it, afterAll } from 'vitest';
 import { buildQueueJobId } from '../job-id';
 import { WorkerLogger } from '../logger';
-import { checkAutopilotQueueHealth } from '../processor-health-monitor';
+import {
+  checkAutopilotQueueHealth,
+  parseNonNegativeEnvInt,
+} from '../processor-health-monitor';
 import { getHealth } from '../metrics';
 import { shutdownQueueSystem } from '../queue';
 import {
@@ -47,6 +50,13 @@ describe('autopilot N3 evidence: operator run / enqueue / health', () => {
   // --- Health monitor evidence -------------------------------------------
 
   describe('health monitor evidence', () => {
+    it('parseNonNegativeEnvInt accepts zero and falls back for invalid drain limits', () => {
+      expect(parseNonNegativeEnvInt('0', 1000)).toBe(0);
+      expect(parseNonNegativeEnvInt('-1', 1000)).toBe(1000);
+      expect(parseNonNegativeEnvInt('not-a-number', 1000)).toBe(1000);
+      expect(parseNonNegativeEnvInt(undefined, 1000)).toBe(1000);
+    });
+
     it('checkAutopilotQueueHealth is importable and resolves (error-tolerant by contract)', async () => {
       // The function swallows all internal errors via try/catch. It is designed
       // to never throw. This validates the import chain resolves and the queue

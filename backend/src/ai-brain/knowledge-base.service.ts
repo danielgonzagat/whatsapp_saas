@@ -25,6 +25,10 @@ import {
 import { VectorService } from './vector.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
 
+/**
+ * @cluster whatsapp_saas/backend/ai-brain
+ * L11 multi-agent TaskGraph annotation (batched by tools/auto-pr/batch-job.mjs).
+ */
 const S_RE = /\s+/g;
 const SENTENCE_ENDINGS = ['. ', '? ', '! '];
 const KNOWLEDGE_BASE_EMBEDDING_MODEL = 'text-embedding-3-small';

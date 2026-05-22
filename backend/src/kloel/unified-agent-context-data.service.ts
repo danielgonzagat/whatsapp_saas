@@ -3,7 +3,7 @@ import { StructuredLogger } from '../logging/structured-logger';
 import type { ChatCompletionMessageParam } from 'openai/resources/chat';
 import { PrismaService } from '../prisma/prisma.service';
 
-type UnknownRecord = Record<string, unknown>;
+import type { UnknownRecord } from '../common/types';
 type BrandVoiceValue = { style?: string; [key: string]: unknown };
 type ProductMemoryEntry = { name?: string; [key: string]: unknown };
 

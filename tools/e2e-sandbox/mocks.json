@@ -1,0 +1,101 @@
+{
+  "uuid": "kloel-sandbox-mocks",
+  "lastMigration": 32,
+  "name": "Kloel Sandbox Mocks",
+  "endpointPrefix": "",
+  "latency": 0,
+  "port": 3030,
+  "hostname": "0.0.0.0",
+  "routes": [
+    {
+      "uuid": "meta-graph-me",
+      "documentation": "Meta Graph API /me",
+      "method": "get",
+      "endpoint": "v18.0/me",
+      "responses": [
+        {
+          "uuid": "ok",
+          "body": "{\"id\":\"sandbox-page-1\",\"name\":\"Kloel Sandbox Page\"}",
+          "latency": 0,
+          "statusCode": 200,
+          "label": "ok",
+          "headers": [{ "key": "Content-Type", "value": "application/json" }],
+          "bodyType": "INLINE",
+          "rules": [],
+          "default": true
+        }
+      ],
+      "enabled": true,
+      "responseMode": null,
+      "type": "http"
+    },
+    {
+      "uuid": "waha-send-text",
+      "documentation": "WAHA sendText",
+      "method": "post",
+      "endpoint": "api/sendText",
+      "responses": [
+        {
+          "uuid": "ok",
+          "body": "{\"id\":\"sandbox-msg-1\",\"timestamp\":1234567890,\"ack\":\"PENDING\"}",
+          "latency": 0,
+          "statusCode": 200,
+          "label": "ok",
+          "headers": [{ "key": "Content-Type", "value": "application/json" }],
+          "bodyType": "INLINE",
+          "rules": [],
+          "default": true
+        }
+      ],
+      "enabled": true,
+      "responseMode": null,
+      "type": "http"
+    },
+    {
+      "uuid": "waha-sessions",
+      "documentation": "WAHA sessions list",
+      "method": "get",
+      "endpoint": "api/sessions",
+      "responses": [
+        {
+          "uuid": "ok",
+          "body": "[{\"name\":\"default\",\"status\":\"WORKING\",\"engine\":\"WEBJS\"}]",
+          "latency": 0,
+          "statusCode": 200,
+          "label": "ok",
+          "headers": [{ "key": "Content-Type", "value": "application/json" }],
+          "bodyType": "INLINE",
+          "rules": [],
+          "default": true
+        }
+      ],
+      "enabled": true,
+      "responseMode": null,
+      "type": "http"
+    }
+  ],
+  "rootChildren": [
+    { "type": "route", "uuid": "meta-graph-me" },
+    { "type": "route", "uuid": "waha-send-text" },
+    { "type": "route", "uuid": "waha-sessions" }
+  ],
+  "proxyMode": false,
+  "proxyHost": "",
+  "proxyRemovePrefix": false,
+  "tlsOptions": {
+    "enabled": false,
+    "type": "CERT",
+    "pfxPath": "",
+    "certPath": "",
+    "keyPath": "",
+    "caPath": "",
+    "passphrase": ""
+  },
+  "cors": true,
+  "headers": [],
+  "proxyReqHeaders": [],
+  "proxyResHeaders": [],
+  "data": [],
+  "folders": [],
+  "callbacks": []
+}

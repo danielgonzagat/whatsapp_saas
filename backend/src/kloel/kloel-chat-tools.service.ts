@@ -39,6 +39,19 @@ import {
   runUpsertAgentSkill,
   runVerifyAgentEvidence,
 } from './kloel-chat-tools.agent-runtime.helpers';
+import { runUpdateProduct } from './kloel-chat-tools.update-product.helper';
+import {
+  runGetProductPlans,
+  runGetProductUrls,
+  runGetProductReviews,
+  runGetProductAiConfig,
+  runValidateCoupon,
+  runGetAnalytics,
+  runCreateBroadcast,
+  runConfigureAiPersona,
+  runToggleTheme,
+} from './kloel-chat-tools.product.helpers';
+import { runGetAffiliateConfig, runGetSettings } from './kloel-chat-tools.settings.helpers';
 const NON_SLUG_CHAR_RE = /[^a-z0-9_:-]+/g;
 function safeStr(value: unknown, fallback = ''): string {
   if (typeof value === 'string') {
@@ -472,7 +485,7 @@ export class KloelChatToolsService {
     });
     return { success: true, ...paymentResult };
   }
-    async toolCreateAgentJob(workspaceId: string, args: ToolCreateAgentJobArgs): Promise<ToolResult> {
+  async toolCreateAgentJob(workspaceId: string, args: ToolCreateAgentJobArgs): Promise<ToolResult> {
     return runCreateAgentJob(this.agentScheduler, workspaceId, args);
   }
   async toolListAgentJobs(workspaceId: string): Promise<ToolResult> {
@@ -540,5 +553,43 @@ export class KloelChatToolsService {
   }
   async toolVerifyAgentEvidence(workspaceId: string): Promise<ToolResult> {
     return runVerifyAgentEvidence(this.agentEvidence, workspaceId);
+  }
+  // === PRODUCT MANAGEMENT TOOL DELEGATORS ===
+
+  toolUpdateProduct(workspaceId: string, args: Record<string, unknown>): Promise<ToolResult> {
+    return runUpdateProduct(this.prisma, workspaceId, args);
+  }
+  toolGetProductPlans(workspaceId: string, args: Record<string, unknown>): Promise<ToolResult> {
+    return runGetProductPlans(this.prisma, workspaceId, args);
+  }
+  toolGetProductUrls(workspaceId: string, args: Record<string, unknown>): Promise<ToolResult> {
+    return runGetProductUrls(this.prisma, workspaceId, args);
+  }
+  toolGetProductReviews(workspaceId: string, args: { productId: string }): Promise<ToolResult> {
+    return runGetProductReviews(this.prisma, workspaceId, args);
+  }
+  toolGetProductAiConfig(workspaceId: string, args: { productId: string }): Promise<ToolResult> {
+    return runGetProductAiConfig(this.prisma, workspaceId, args);
+  }
+  toolValidateCoupon(_workspaceId: string, args: Record<string, unknown>): Promise<ToolResult> {
+    return runValidateCoupon(this.prisma, _workspaceId, args as never);
+  }
+  toolGetAnalytics(workspaceId: string, args: Record<string, unknown>): Promise<ToolResult> {
+    return runGetAnalytics(this.prisma, workspaceId, args as never);
+  }
+  toolCreateBroadcast(workspaceId: string, args: Record<string, unknown>): Promise<ToolResult> {
+    return runCreateBroadcast(this.prisma, workspaceId, args as never);
+  }
+  toolConfigureAiPersona(workspaceId: string, args: Record<string, unknown>): Promise<ToolResult> {
+    return runConfigureAiPersona(this.prisma, workspaceId, args);
+  }
+  toolToggleTheme(workspaceId: string, args: Record<string, unknown>): Promise<ToolResult> {
+    return runToggleTheme(this.prisma, workspaceId, args);
+  }
+  toolGetAffiliateConfig(workspaceId: string): Promise<ToolResult> {
+    return runGetAffiliateConfig(this.prisma, workspaceId);
+  }
+  toolGetSettings(workspaceId: string): Promise<ToolResult> {
+    return runGetSettings(this.prisma, workspaceId);
   }
 }

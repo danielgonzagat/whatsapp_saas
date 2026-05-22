@@ -49,11 +49,13 @@ describe('palette (spec §11/§12)', () => {
     expect(EDGE_LABELS).toHaveLength(3);
   });
 
-  it('every channel has the three textual elements (spec §10)', () => {
+  it('every channel has the four textual elements (spec §10)', () => {
     for (const key of ['whatsapp', 'instagram', 'tiktok', 'facebook', 'email'] as const) {
       const c = CHANNEL_COPY[key];
-      expect(c.pill).toBe(c.pill.toUpperCase());
+      expect(c.provider).toBe(c.provider.toUpperCase());
       expect(c.provider.length).toBeGreaterThan(0);
+      expect(c.sub).toBe(c.sub.toUpperCase());
+      expect(c.sub.length).toBeGreaterThan(0);
       expect(c.verb.length).toBeGreaterThan(0);
       expect(c.awakeName).not.toBe(c.awakeName.toUpperCase());
     }
@@ -128,18 +130,18 @@ describe('Glyph (spec §6)', () => {
 });
 
 describe('step vignettes wired by props', () => {
-  it('StepConnect shows provider + verb and connects', () => {
+  it('StepConnect shows the per-channel sub line + verb and connects', () => {
     const onConnect = vi.fn();
     render(
       <StepConnect
         C={D}
-        provider="META BUSINESS"
+        sub="LOGIN META · OAUTH OFICIAL"
         verb="Vincular número"
         busy={false}
         onConnect={onConnect}
       />,
     );
-    expect(screen.getByText('META BUSINESS')).toBeTruthy();
+    expect(screen.getByText('LOGIN META · OAUTH OFICIAL')).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: /Vincular número/ }));
     expect(onConnect).toHaveBeenCalled();
   });

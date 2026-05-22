@@ -16,7 +16,7 @@ import {
 
 type AnalyticsResult = Record<string, unknown>;
 
-type UnknownRecord = Record<string, unknown>;
+import type { UnknownRecord } from '../common/types';
 
 /**
  * Handles billing tool actions and product data query tools for the Unified Agent.

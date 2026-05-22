@@ -1,4 +1,19 @@
 // Helpers extracted from tier-tags-emitter
+import { existsSync, readFileSync } from 'node:fs';
+import { resolve, join, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+// Lost in the decomposition that split this file out of tier-tags-emitter:
+// the constant stayed in the parent while the consumer moved here. Repo root
+// is scripts/orchestration/../.. — same as the parent's REPO_ROOT.
+const PULSE_MANIFEST_PATH = join(
+  resolve(join(dirname(fileURLToPath(import.meta.url)), '..', '..')),
+  'pulse.manifest.json',
+);
+
+// Also lost in the same decomposition (was a parent-module constant).
+const SHELL_SIZE_THRESHOLD = 500;
+
 export function buildFileSignalMap(breaks, repoRoot) {
   const map = new Map();
   for (const b of breaks) {

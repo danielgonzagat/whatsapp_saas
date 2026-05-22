@@ -4,6 +4,10 @@ import { DealStatus, Prisma } from '@prisma/client';
 import { forEachSequential } from '../common/async-sequence';
 import { PrismaService } from '../prisma/prisma.service';
 
+/**
+ * @cluster whatsapp_saas/backend/autopilot
+ * L11 multi-agent TaskGraph annotation (batched by tools/auto-pr/batch-job.mjs).
+ */
 const DEAL_STATUS_VALUES = new Set<string>(Object.values(DealStatus));
 
 const isDealStatus = (value: string): value is DealStatus => DEAL_STATUS_VALUES.has(value);

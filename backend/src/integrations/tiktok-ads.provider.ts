@@ -142,7 +142,7 @@ export class TikTokAdsProvider implements AdProvider {
             workspaceId,
             platform: TIKTOK_ADS_PLATFORM,
             accessToken: encryptedAccessToken || accessToken,
-            refreshToken: encryptedRefreshToken,
+            refreshToken: encryptedRefreshToken ?? null,
             expiresAt,
             keyVersion: 1,
             loginCustomerId: advertiserIds[0] || null,
@@ -150,7 +150,7 @@ export class TikTokAdsProvider implements AdProvider {
           },
           update: {
             accessToken: encryptedAccessToken || accessToken,
-            refreshToken: encryptedRefreshToken,
+            refreshToken: encryptedRefreshToken ?? null,
             expiresAt,
             keyVersion: 1,
             loginCustomerId: advertiserIds[0] || null,
@@ -293,7 +293,7 @@ export class TikTokAdsProvider implements AdProvider {
         where: tiktokCredentialWhere(workspaceId),
         data: {
           accessToken: encryptedAccessToken || newAccessToken,
-          refreshToken: encryptedRefreshToken,
+          refreshToken: encryptedRefreshToken ?? null,
           expiresAt,
           updatedAt: new Date(),
         },

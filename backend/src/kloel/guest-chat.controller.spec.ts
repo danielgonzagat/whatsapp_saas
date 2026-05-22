@@ -81,7 +81,7 @@ describe('GuestChatController', () => {
 
       await controller.guestChatSync(dto, req, res);
 
-      expect(chatSyncMock).toHaveBeenCalledWith('Hi', 'sess-2');
+      expect(chatSyncMock).toHaveBeenCalledWith('Hi', 'sess-2', undefined);
       expect(json).toHaveBeenCalledWith({ reply: 'Hello, welcome to Kloel!', sessionId: 'sess-2' });
     });
   });

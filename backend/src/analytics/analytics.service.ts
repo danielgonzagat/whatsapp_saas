@@ -13,6 +13,10 @@ import {
   resolveReportWindow,
 } from './analytics.helpers';
 
+/**
+ * @cluster whatsapp_saas/backend/analytics
+ * L11 multi-agent TaskGraph annotation (batched by tools/auto-pr/batch-job.mjs).
+ */
 type ExecutionLog = Record<string, unknown>;
 
 /** Analytics service. */

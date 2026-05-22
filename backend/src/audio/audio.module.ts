@@ -8,4 +8,8 @@ import { TranscriptionService } from './transcription.service';
   providers: [TranscriptionService],
   exports: [TranscriptionService],
 })
+/**
+ * @cluster whatsapp_saas/backend/audio
+ * L11 multi-agent TaskGraph annotation (batched by tools/auto-pr/batch-job.mjs).
+ */
 export class AudioModule {}
