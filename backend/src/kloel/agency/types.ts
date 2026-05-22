@@ -217,21 +217,8 @@ export const LEAK_CHECK_FIELDS = [
   'openIssues',
   'satisfactionScore',
 ] as const satisfies readonly (keyof ClientContextBundle)[];
-export function clamp(value: number, min: number, max: number): number {
-  return Math.max(min, Math.min(max, value));
-}
-
-export function clampScore(value: number): number {
-  return clamp(value, 0, 1);
-}
-
-export function daysSince(iso: string, nowMs: number): number {
-  const ts = Date.parse(iso);
-  if (!Number.isFinite(ts)) {
-    return 0;
-  }
-  return Math.max(0, (nowMs - ts) / (1000 * 60 * 60 * 24));
-}
+import { clamp, clampScore, daysSince } from '../../common/math';
+export { clamp, clampScore, daysSince };
 
 let _handoffSeq = 0;
 

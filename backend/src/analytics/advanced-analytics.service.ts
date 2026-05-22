@@ -5,6 +5,10 @@ import { QueueStatsService } from './queue-stats.service';
 
 // cache.invalidate — analytics queries are read-only aggregations; no cached writes to invalidate
 @Injectable()
+/**
+ * @cluster whatsapp_saas/backend/analytics
+ * L11 multi-agent TaskGraph annotation (batched by tools/auto-pr/batch-job.mjs).
+ */
 export class AdvancedAnalyticsService {
   private readonly logger = new Logger(AdvancedAnalyticsService.name);
 

@@ -10,6 +10,10 @@ import { validateNoInternalAccess } from '../common/utils/url-validator';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
 import { OpsAlertService } from '../observability/ops-alert.service';
 
+/**
+ * @cluster whatsapp_saas/backend/audio
+ * L11 multi-agent TaskGraph annotation (batched by tools/auto-pr/batch-job.mjs).
+ */
 const OGG_MP3_WAV_M4A_OPUS_RE = /\.(ogg|mp3|wav|m4a|opus)(\?|$)/i;
 
 /** Transcription service. */

@@ -11,6 +11,10 @@ import { PrismaService } from '../prisma/prisma.service';
  * Keeps AutopilotCycleService under 400 lines.
  */
 @Injectable()
+/**
+ * @cluster whatsapp_saas/backend/autopilot
+ * L11 multi-agent TaskGraph annotation (batched by tools/auto-pr/batch-job.mjs).
+ */
 export class AutopilotCycleMoneyService {
   private readonly logger = StructuredLogger.from(AutopilotCycleMoneyService.name);
   private readonly campaignQueue: Queue;

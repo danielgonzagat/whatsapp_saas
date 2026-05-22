@@ -1,5 +1,5 @@
 {
-  "_comment": "Codex CLI hook config. Mirrors the Claude Code PreToolUse hooks at .claude/settings.json so any AI CLI in this repo enforces the same workspace gates. Single source of truth for rules: scripts/decomp/lib/gate-rules.mjs.",
+  "_comment": "Codex CLI hook config. Mirrors Claude Code workspace gates and adds the atomic-edit-only code mutation gate so any AI CLI in this repo refuses native code edits. Shared workspace rules still live in scripts/decomp/lib/gate-rules.mjs.",
   "hooks": {
     "PreToolUse": [
       {
@@ -18,6 +18,12 @@
         "hooks": [
           {
             "type": "command",
+            "command": "node ${CODEX_PROJECT_DIR:-$PWD}/scripts/mcp/atomic-edit/atomic-only-hook.mjs",
+            "timeout": 30,
+            "statusMessage": "Atomic edit gate (bash)"
+          },
+          {
+            "type": "command",
             "command": "node ${CODEX_PROJECT_DIR:-$PWD}/scripts/decomp/preflight-bash-gate.mjs",
             "timeout": 30,
             "statusMessage": "Workspace gate (bash)"
@@ -29,9 +35,28 @@
         "hooks": [
           {
             "type": "command",
+            "command": "node ${CODEX_PROJECT_DIR:-$PWD}/scripts/mcp/atomic-edit/atomic-only-hook.mjs",
+            "timeout": 30,
+            "statusMessage": "Atomic edit gate (apply_patch)"
+          },
+          {
+            "type": "command",
             "command": "node ${CODEX_PROJECT_DIR:-$PWD}/scripts/decomp/adapters/apply-patch-gate.mjs",
             "timeout": 30,
             "statusMessage": "Workspace gate (apply_patch)"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node ${CODEX_PROJECT_DIR:-$PWD}/scripts/mcp/atomic-edit/trace-coverage-audit.mjs 2>&1 | tail -6 || true",
+            "timeout": 30,
+            "statusMessage": "Atomic trace coverage audit"
           }
         ]
       }

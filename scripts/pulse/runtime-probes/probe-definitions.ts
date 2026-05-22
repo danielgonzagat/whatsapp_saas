@@ -13,9 +13,9 @@ export interface RuntimeProbeDefinition {
 export const DEFAULT_PROBE_DEFINITIONS: RuntimeProbeDefinition[] = [
   {
     probeId: 'health-liveness',
-    target: 'GET /health/liveness',
+    target: 'GET /health/live',
     method: 'GET',
-    path: '/health/liveness',
+    path: '/health/live',
     required: true,
     expectedStatus: 200,
     timeoutMs: 5000,

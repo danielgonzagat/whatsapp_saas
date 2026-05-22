@@ -5,6 +5,8 @@ import { KloelWhatsAppToolsService } from './kloel-whatsapp-tools.service';
 import { KloelComposerService } from './kloel-composer.service';
 import { AuditService } from '../audit/audit.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
+import { KloelCodeToolsService } from './kloel-code-tools.service';
+import { KloelCodeAnalysisService } from './kloel-code-analysis.service';
 
 type DispatcherPrismaMock = {
   workspace: { findUnique: jest.Mock };
@@ -72,6 +74,20 @@ type DispatcherWhatsappMock = Pick<
 
 type DispatcherComposerMock = Pick<KloelComposerService, 'searchWeb'>;
 
+type DispatcherCodeToolsMock = Pick<
+  KloelCodeToolsService,
+  | 'toolReadSourceFile'
+  | 'toolListSourceDir'
+  | 'toolSearchCodebase'
+  | 'toolCodeOutline'
+  | 'toolReadPrismaSchema'
+  | 'toolGitLog'
+  | 'toolGitDiff'
+  | 'toolGitStatus'
+  | 'toolRunBackendTests'
+  | 'toolBuildStatus'
+>;
+
 type DispatcherAuditMock = Pick<AuditService, 'logWithTx'>;
 
 type DispatcherOpsAlertMock = Pick<OpsAlertService, 'alertOnCriticalError'>;
@@ -84,6 +100,7 @@ export type {
   DispatcherBizConfigMock,
   DispatcherWhatsappMock,
   DispatcherComposerMock,
+  DispatcherCodeToolsMock,
   DispatcherAuditMock,
   DispatcherOpsAlertMock,
   DispatcherPlanLimitsMock,
@@ -206,4 +223,33 @@ export function createOpsAlertMock(): DispatcherOpsAlertMock {
   };
 }
 
+export function createCodeToolsMock(): DispatcherCodeToolsMock {
+  return {
+    toolReadSourceFile: jest.fn().mockResolvedValue({ success: true, content: 'file content' }),
+    toolListSourceDir: jest.fn().mockResolvedValue({ success: true, entries: [] }),
+    toolSearchCodebase: jest.fn().mockResolvedValue({ success: true, matches: [] }),
+    toolCodeOutline: jest.fn().mockResolvedValue({ success: true, symbols: [] }),
+    toolReadPrismaSchema: jest.fn().mockResolvedValue({ success: true, schema: '' }),
+    toolGitLog: jest.fn().mockResolvedValue({ success: true, log: '' }),
+    toolGitDiff: jest.fn().mockResolvedValue({ success: true, diff: '' }),
+    toolGitStatus: jest.fn().mockResolvedValue({ success: true, status: '' }),
+    toolRunBackendTests: jest.fn().mockResolvedValue({ success: true, results: [] }),
+    toolBuildStatus: jest.fn().mockResolvedValue({ success: true, status: 'ok' }),
+  };
+}
+
 export { DEFAULT_WS_ID };
+
+type DispatcherCodeAnalysisMock = Pick<
+  KloelCodeAnalysisService,
+  'toolCodeLint' | 'toolCodeDetectIssues'
+>;
+
+export type { DispatcherCodeAnalysisMock };
+
+export function createCodeAnalysisMock(): DispatcherCodeAnalysisMock {
+  return {
+    toolCodeLint: jest.fn().mockResolvedValue({ success: true, issues: [] }),
+    toolCodeDetectIssues: jest.fn().mockResolvedValue({ success: true, issues: [] }),
+  };
+}

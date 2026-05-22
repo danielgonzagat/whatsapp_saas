@@ -7,14 +7,8 @@
  * silence under conflict (B0.11 + B0.18).
  */
 
-export type Role =
-  | 'produtor'
-  | 'afiliado'
-  | 'agencia'
-  | 'gestor'
-  | 'closer'
-  | 'creator'
-  | 'especialista';
+import type { Role } from '../role/types';
+export type { Role };
 
 export interface CrossRolePattern {
   readonly patternId: string;

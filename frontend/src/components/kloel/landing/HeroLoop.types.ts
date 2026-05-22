@@ -1,12 +1,5 @@
 export type HeroLoopPhase = 'idle' | 'typing' | 'strike' | 'death' | 'hidden';
 
-export type ViewState = {
-  text: string;
-  strike: number;
-  suffix: string;
-  phase: HeroLoopPhase;
-};
-
 export type GlitchSlice = {
   top: number;
   h: number;
@@ -20,4 +13,11 @@ export type GlitchState = {
   chr: number;
   slices: GlitchSlice[];
   flash: boolean;
+};
+
+export type ViewState = {
+  text: string;
+  strike: number;
+  suffix: string;
+  phase: HeroLoopPhase;
 };

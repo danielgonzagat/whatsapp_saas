@@ -20,7 +20,7 @@ import {
 
 type WahaSessionConfig = WahaSessionConfigShape;
 
-type UnknownRecord = Record<string, unknown>;
+import type { UnknownRecord } from '../../common/types';
 
 /**
  * Session config and diagnostics layer for WAHA.

@@ -36,7 +36,7 @@ import type {
 
 import { asProviderSettings } from '../whatsapp/provider-settings.types';
 
-type UnknownRecord = Record<string, unknown>;
+import type { UnknownRecord } from '../common/types';
 
 /** Service that executes all AI-chat tool calls on behalf of KloelService. */
 @Injectable()

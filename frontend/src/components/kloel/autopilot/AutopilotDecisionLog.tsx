@@ -155,6 +155,7 @@ export default function AutopilotDecisionLog({
             type="button"
             onClick={onRefresh}
             disabled={isLoading}
+            aria-label="Atualizar ações"
             className="p-2 rounded-lg transition-colors hover:bg-white/5"
             style={{ color: colors.text.muted }}
           >

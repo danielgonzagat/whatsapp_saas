@@ -1,4 +1,4 @@
-# kloel-atomic-edit MCP server (v2)
+# kloel-atomic-edit MCP server (v4)
 
 Closes the **Line-Oriented Action Bottleneck**: built-in coding-agent editors
 operate at line/block/hunk granularity, so microscopic intentions become
@@ -17,7 +17,7 @@ research identifies as defective.
 | **Aider edit-format study** | Edit format materially changes model output (lazy-coding 3×, pass 26%→61%). → strict pre-write validation + preview. |
 | **Diff-XYZ / Kiro** | Fragile line offsets bad; semantic rename must come from the language service, not LLM text guessing. → `atomic_rename_symbol_cross_file` via tsconfig. |
 
-## Tools (15)
+## Tools (25)
 
 **Read (address by name, not line guess):**
 - `code_browse` — structured directory listing
@@ -34,6 +34,21 @@ research identifies as defective.
 - `atomic_rename_symbol_cross_file` — project-wide scope-correct rename (tsconfig language service), all-or-nothing
 - `atomic_add_import` / `atomic_remove_import` — named imports, deduped, comma-safe
 - `atomic_replace_property_value` — replace an object property's value, optionally scoped to a symbol
+
+**Product-oriented operating layer (turn the principle into CLI behavior):**
+- `product_intent_contract` — plain-language goal -> named integration, risk,
+  acceptance criteria, behavior proof plan, and next atomic action
+- `zero_code_trust_score` — computes whether Daniel can validate by product,
+  explanation, code review, technical interpretation, or manual fix
+- `behavior_receipt` — founder-facing "what changed / where to test / what was
+  proven / what is not proven" receipt
+- `truth_receipt` — anti-facade classifier: `REAL`, `PARTIAL`, `STUB`,
+  `MOCK_ONLY`, `EXTERNAL_BLOCKED`, `UNPROVEN`, `BROKEN`
+- `continuity_status` — reads progress/workboard/PULSE/runtime evidence/locks
+  so a fresh session resumes from repo state
+- `atomic_lock_acquire` / `atomic_lock_status` / `atomic_lock_release` —
+  POSIX `mkdir` front locks under `.atomic-edit-locks/` for real multi-agent
+  coordination; status reads both JSON locks and legacy `key=value` locks
 
 ## Guarantees the blunt editors do not give
 
@@ -52,10 +67,17 @@ research identifies as defective.
 
 ```sh
 npx tsx scripts/mcp/atomic-edit/smoke.ts
-# 47 passed, 0 failed — engine + live MCP stdio round-trip (15 tools)
+# 83 passed, 0 failed — engine + live MCP stdio round-trip (25 tools)
 #   + preview dry-run + cross-file rename via real tsconfig
 #   + sha256 concurrency guard + import/property ops
 #   + governance-guard refusal of CLAUDE.md
+#   + product intent / trust / behavior / truth / continuity / lock tools
+
+node scripts/mcp/atomic-edit/smoke.mjs
+# 83 passed, 0 failed — production launcher/dist path
+
+node scripts/mcp/atomic-edit/audit-atomicity.mjs --json
+# pass=true, atomic_edit_ratio=1, fallback_rate=0, coarse_unjustified=0
 ```
 
 ## Runtime
@@ -68,6 +90,9 @@ source with no manual build step. `dist/` is gitignored (regenerable).
 
 ## Activation across sessions & tools
 
+- **Codex CLI:** registered globally in `~/.codex/config.toml` as
+  `[mcp_servers.atomic-edit]`, pointing at
+  `scripts/mcp/atomic-edit-mcp-launcher.sh`.
 - **Claude Code:** registered in `.mcp.json` as `atomic-edit` (committed). New
   project MCP server needs one-time trust approval on next session start.
 - **OpenCode (all agents + subagents):** registered in project `opencode.json`
@@ -88,3 +113,8 @@ Operating guidance: `docs/ai/ATOMIC_EDIT_OPERATING_GUIDE.md`.
 - Selector-based AST replacement covers named declarations
   (function/class/method/interface/type/var); arbitrary sub-expression
   selectors are a documented future layer, not silently faked.
+- Product-layer tools do not magically finish integrations. They force every
+  CLI using this MCP to name the product behavior, reject facade/stub claims,
+  demand runtime/API/DB/browser evidence, emit a no-code receipt, and resume
+  from repository state. A delivery reaches Zero-Code Trust 100 only when
+  behavior is actually validated by the product.

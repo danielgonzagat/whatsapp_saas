@@ -16,6 +16,10 @@ import { AutopilotOpsService } from './autopilot-ops.service';
 
 /** Autopilot orchestration service — delegates to sub-services. */
 @Injectable()
+/**
+ * @cluster whatsapp_saas/backend/autopilot
+ * L11 multi-agent TaskGraph annotation (batched by tools/auto-pr/batch-job.mjs).
+ */
 export class AutopilotService {
   private readonly logger = StructuredLogger.from(AutopilotService.name);
 

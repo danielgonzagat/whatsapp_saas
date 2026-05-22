@@ -1,0 +1,169 @@
+import * as childProcess from 'node:child_process';
+import * as fs from 'node:fs';
+import * as os from 'node:os';
+import * as path from 'node:path';
+import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { z } from 'zod';
+import { applyEdits, replaceText, renameSymbol, replaceLiteral, validate, wrapRange, type WrapKind, type TextEditSpec, type ApplyResult, type ValidationResult, computeZones } from './engine.js';
+import { resolveAllowedRootForAbsolutePath, resolveSafeTarget, REPO_ROOT } from './guard.js';
+import { buildTrace, levelFor, shapePayload, writeTrace } from './trace.js';
+import { browse, outline, readSymbol } from './nav.js';
+import { editSymbol, renameSymbolCrossFile, previewDiff, characterDiff, addNamedImport, removeNamedImport, replacePropertyValue, type SymbolOp, type SemanticEditResult, renamePropertyKey, addAwaitToCall } from './advanced.js';
+import { sha256, guardSha, log, atomicWrite, readUtf8, normalizeRepoRelPath, normalizeAllowedPath, relPathAllowed, changedSpanMetrics, hasArg, normalizeEslintDryRunArgs, requireEslintDryRunArgs, parseEslintJson, targetDetails, shellPath, nearestPackageRelPath, type EslintDryRunResult } from './server-helpers-io.js';
+import { runPostEditVerify, packageVerificationPlan, unusedSymbolFromLintMessage } from './server-helpers-verify.js';
+import { buildLintResidueActionCandidates, applyKnownLintResidueFixes } from './server-helpers-lint-fix.js';
+import { ok, fail, commit, type ToolOk } from './server-helpers-result.js';
+import { shaArg } from './server-helpers-schema.js';
+import { matchesGlob, matchesGlobPart, globFindFiles } from './server-helpers-glob.js';
+import { commitSemantic } from './server-helpers-commit-semantic.js';
+
+
+export function registerToolsE1(server: McpServer): void {
+server.registerTool(
+  'atomic_add_import',
+  {
+    title: 'Add a named import (deduped)',
+    description:
+      "Add `import { name [as alias] } from 'module'` — merges into an existing declaration, creates " +
+      "one if absent, no-ops if already present. Syntax-validated, atomic. Solves the thesis's " +
+      "'adicionar import sem duplicar'.",
+    inputSchema: {
+      file: z.string(),
+      module: z.string(),
+      name: z.string(),
+      alias: z.string().optional(),
+      typeOnly: z.boolean().optional(),
+      ...shaArg,
+    },
+  },
+  async (a) => {
+    try {
+      const { absPath, relPath } = resolveSafeTarget(a.file);
+      const before = readUtf8(absPath);
+      guardSha(before, a.expectedSha256);
+      const r = await addNamedImport(
+        relPath,
+        before,
+        a.module,
+        a.name,
+        a.alias,
+        a.typeOnly ?? false,
+      );
+      return commitSemantic(relPath, absPath, before, r, a.preview ?? false);
+    } catch (e) {
+      return fail(e instanceof Error ? e.message : String(e));
+    }
+  },
+);
+
+server.registerTool(
+  'atomic_remove_import',
+  {
+    title: 'Remove a named import',
+    description:
+      'Remove a named import by imported-or-local name; drops the whole declaration if it was the last ' +
+      'specifier. Syntax-validated, atomic — no dangling commas or broken lines.',
+    inputSchema: { file: z.string(), module: z.string(), name: z.string(), ...shaArg },
+  },
+  async (a) => {
+    try {
+      const { absPath, relPath } = resolveSafeTarget(a.file);
+      const before = readUtf8(absPath);
+      guardSha(before, a.expectedSha256);
+      const r = await removeNamedImport(relPath, before, a.module, a.name);
+      return commitSemantic(relPath, absPath, before, r, a.preview ?? false);
+    } catch (e) {
+      return fail(e instanceof Error ? e.message : String(e));
+    }
+  },
+);
+
+server.registerTool(
+  'atomic_replace_property_value',
+  {
+    title: "Replace an object property's value",
+    description:
+      'Replace the initializer of property `property` with `value` (raw code), optionally scoped to a ' +
+      'symbol selector so identically-named properties elsewhere are untouched. Refuses ambiguity. ' +
+      'Syntax-validated, atomic.',
+    inputSchema: {
+      file: z.string(),
+      property: z.string(),
+      value: z
+        .string()
+        .describe("replacement initializer source (e.g. 'null', \"'x'\", '{ a: 1 }')"),
+      selector: z.string().optional().describe("scope to this symbol (e.g. 'buildConfig')"),
+      ...shaArg,
+    },
+  },
+  async (a) => {
+    try {
+      const { absPath, relPath } = resolveSafeTarget(a.file);
+      const before = readUtf8(absPath);
+      guardSha(before, a.expectedSha256);
+      const r = await replacePropertyValue(relPath, before, a.property, a.value, a.selector);
+      return commitSemantic(relPath, absPath, before, r, a.preview ?? false);
+    } catch (e) {
+      return fail(e instanceof Error ? e.message : String(e));
+    }
+  },
+);
+
+server.registerTool(
+  'atomic_rename_property_key',
+  {
+    title: 'Rename an object property key while preserving its value',
+    description:
+      'Rename object property `property` to `newKey` while preserving its initializer/value exactly. ' +
+      'Optional selector scope; refuses ambiguity, missing property, invalid identifiers, and non-assignment forms. ' +
+      'Syntax-validated, atomic. Supports preview + expectedSha256.',
+    inputSchema: {
+      file: z.string(),
+      property: z.string(),
+      newKey: z.string(),
+      selector: z.string().optional().describe("scope to this symbol (e.g. 'buildConfig')"),
+      ...shaArg,
+    },
+  },
+  async (a) => {
+    try {
+      const { absPath, relPath } = resolveSafeTarget(a.file);
+      const before = readUtf8(absPath);
+      guardSha(before, a.expectedSha256);
+      const r = await renamePropertyKey(relPath, before, a.property, a.newKey, a.selector);
+      return commitSemantic(relPath, absPath, before, r, a.preview ?? false);
+    } catch (e) {
+      return fail(e instanceof Error ? e.message : String(e));
+    }
+  },
+);
+server.registerTool(
+  'atomic_add_await_to_call',
+  {
+    title: 'Wrap a CallExpression in await (semantic)',
+    description:
+      'Find a CallExpression by callee name/text and optional selector scope; wrap exactly that ' +
+      'call expression as `await <callText>`, preserving callee, arguments, and call text exactly. ' +
+      'Refuses missing target, ambiguity, already-awaited call, non-async context, and syntax regression. ' +
+      'Supports preview + expectedSha256.',
+    inputSchema: {
+      file: z.string(),
+      callee: z.string().describe('callee expression text to match (e.g. "fetch" or "obj.method")'),
+      selector: z.string().optional().describe("scope to this symbol (e.g. 'buildConfig')"),
+      ...shaArg,
+    },
+  },
+  async (a) => {
+    try {
+      const { absPath, relPath } = resolveSafeTarget(a.file);
+      const before = readUtf8(absPath);
+      guardSha(before, a.expectedSha256);
+      const r = await addAwaitToCall(relPath, before, a.callee, a.selector);
+      return commitSemantic(relPath, absPath, before, r, a.preview ?? false);
+    } catch (e) {
+      return fail(e instanceof Error ? e.message : String(e));
+    }
+  },
+);
+
+}

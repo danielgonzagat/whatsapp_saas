@@ -156,7 +156,7 @@ async function emitBackendFlow(spec, flow) {
     },
     {
       path: `backend/src/_compiled/${mod}/${mod}.controller.ts`,
-      content: `import { Body, Controller, Post, Req, UseGuards } from '@nestjs/common';\nimport { JwtAuthGuard } from '../../auth/jwt-auth.guard';\nimport { WorkspaceGuard } from '../../auth/workspace.guard';\nimport { ${className}Service } from './${mod}.service';\n\n@Controller('${mod}')\n@UseGuards(JwtAuthGuard, WorkspaceGuard)\nexport class ${className}Controller {\n  constructor(private readonly svc: ${className}Service) {}\n\n  @Post('${flow.id}')\n  async trigger(@Req() req: any, @Body() input: unknown) {\n    return this.svc.${camel(flow.id)}(req.workspaceId, input);\n  }\n}\n`,
+      content: `import { Body, Controller, Post, Req, UseGuards } from '@nestjs/common';\nimport { JwtAuthGuard } from '../../auth/jwt-auth.guard';\nimport { WorkspaceGuard } from '../../auth/workspace.guard';\nimport { ${className}Service } from './${mod}.service';\n\n@Controller('${mod}')\n@UseGuards(JwtAuthGuard, WorkspaceGuard)\nexport class ${className}Controller {\n  constructor(private readonly svc: ${className}Service) {}\n\n  @Post('${flow.id}')\n  async trigger(@Req() req: { workspaceId: string }, @Body() input: unknown) {\n    return this.svc.${camel(flow.id)}(req.workspaceId, input);\n  }\n}\n`,
     },
   ];
   return files;

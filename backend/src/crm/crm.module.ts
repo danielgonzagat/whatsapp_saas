@@ -16,4 +16,8 @@ import { NeuroCrmService } from './neuro-crm.service';
   providers: [CrmService, NeuroCrmService, SpineEmitterService, CrmEventEmitterService],
   exports: [CrmService, NeuroCrmService, CrmEventEmitterService],
 })
+/**
+ * @cluster whatsapp_saas/backend/crm
+ * L11 multi-agent TaskGraph annotation (batched by tools/auto-pr/batch-job.mjs).
+ */
 export class CrmModule {}

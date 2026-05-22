@@ -3,7 +3,13 @@ import { ensureE2EAdmin, getE2EBaseUrls } from './specs/e2e-helpers';
 
 const { apiUrl: API_URL } = getE2EBaseUrls();
 
-test('branched flow with wait accepts inbound response', async ({ request }) => {
+/**
+ * Branched flow execution via API.
+ * Complements flow-wait.spec.ts (single-path wait) by exercising
+ * a flow with conditional branching (yes/no handles) and verifying
+ * the correct branch is taken after inbound input.
+ */
+test('branched flow with wait resolves correct path on inbound', async ({ request }) => {
   test.setTimeout(90_000);
 
   const { token, workspaceId } = await ensureE2EAdmin(request);
@@ -56,16 +62,18 @@ test('branched flow with wait accepts inbound response', async ({ request }) => 
   const { executionId } = await start.json();
   expect(executionId).toBeTruthy();
 
+  // Send inbound message matching the "sim" keyword (yes branch)
   const incoming = await request.post(`${API_URL}/whatsapp/${workspaceId}/incoming`, {
     data: { from: '5511999999999', message: 'sim' },
     headers: { authorization: `Bearer ${token}` },
   });
   expect(incoming.ok()).toBeTruthy();
 
+  // Poll for completion
   let status = 'RUNNING';
   const deadline = Date.now() + 35_000;
   while (status === 'RUNNING' && Date.now() < deadline) {
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    await new Promise((r) => setTimeout(r, 1000));
     const res = await request.get(`${API_URL}/flows/execution/${executionId}`, {
       headers: { authorization: `Bearer ${token}` },
     });

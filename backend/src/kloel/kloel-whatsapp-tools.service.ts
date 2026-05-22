@@ -45,8 +45,8 @@ export class KloelWhatsAppToolsService {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly whatsappService: WhatsappService,
-    private readonly providerRegistry: WhatsAppProviderRegistry,
+    @Optional() private readonly whatsappService: WhatsappService,
+    @Optional() private readonly providerRegistry: WhatsAppProviderRegistry,
     private readonly transports: ChannelTransportRegistry,
     private readonly audioService: AudioService,
     private readonly planLimits: PlanLimitsService,

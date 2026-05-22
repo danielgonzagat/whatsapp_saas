@@ -21,4 +21,8 @@ import { AnunciosService } from './anuncios.service';
   ],
   exports: [AnunciosService, MetaConversionsApiService],
 })
+/**
+ * @cluster whatsapp_saas/backend/anuncios
+ * L11 multi-agent TaskGraph annotation (batched by tools/auto-pr/batch-job.mjs).
+ */
 export class AnunciosModule {}

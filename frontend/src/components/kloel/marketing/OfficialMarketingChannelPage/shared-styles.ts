@@ -1,6 +1,13 @@
 import { type CSSProperties } from 'react';
 import { KLOEL_THEME } from '@/lib/kloel-theme';
 
+/**
+ * Fully-rounded radius for circular indicators. Referenced via constant so it
+ * stays a single named source of truth (and on the design-token scale's
+ * intent of "pill" rather than an ad-hoc literal).
+ */
+export const FULL_ROUND_RADIUS = 999;
+
 export function buttonStyle(color: string): CSSProperties {
   return {
     border: 'none',

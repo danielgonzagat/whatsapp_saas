@@ -152,7 +152,10 @@
     "gitnexus:check": "npx gitnexus status",
     "gitnexus:impact": "npx gitnexus impact",
     "ops:verify-backup": "node scripts/ops/verify-backup.mjs",
-    "railway:runtime:check": "node scripts/ops/check-railway-runtime.mjs"
+    "railway:runtime:check": "node scripts/ops/check-railway-runtime.mjs",
+    "canonical:scan": "node tools/canonicalize/scan.mjs",
+    "canonical:check": "node scripts/ops/check-canonical-duplicates.mjs && node scripts/ops/check-canonical-events.mjs",
+    "canonical:baseline": "node scripts/ops/check-canonical-duplicates.mjs --baseline"
   },
   "lint-staged": {
     "*.{json,md,yml,yaml}": [
@@ -184,7 +187,7 @@
   "dependencies": {
     "@nestjs/event-emitter": "^3.1.0",
     "@nestjs/schedule": "^6.1.3",
-    "@opencode-ai/sdk": "^1.15.5",
+    "@opencode-ai/sdk": "^1.15.7",
     "lucide-react": "^0.577.0",
     "pg": "^8.21.0",
     "qrcode": "^1.5.4",

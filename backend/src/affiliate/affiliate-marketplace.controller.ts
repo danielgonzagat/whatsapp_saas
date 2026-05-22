@@ -16,6 +16,10 @@ import { RouteClass } from '../common/throttler/route-class.decorator';
 @Controller('affiliate')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
 @RouteClass('mutate')
+/**
+ * @cluster whatsapp_saas/backend/affiliate
+ * L11 multi-agent TaskGraph annotation for claim/release coordination.
+ */
 export class AffiliateMarketplaceController {
   constructor(private readonly prisma: PrismaService) {}
 

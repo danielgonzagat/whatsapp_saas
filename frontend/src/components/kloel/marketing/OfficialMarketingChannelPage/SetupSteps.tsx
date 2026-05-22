@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { KLOEL_THEME } from '@/lib/kloel-theme';
 import type { ChannelKey } from '../OfficialMarketingChannelPage.helpers';
 import { CHANNEL_META } from '../OfficialMarketingChannelPage.helpers';
+import { FULL_ROUND_RADIUS } from './shared-styles';
 
 export const SETUP_STEPS = Object.freeze([
   'Conectar',
@@ -91,7 +92,7 @@ export function SetupSteps({ currentStep, setupLoaded, channel, onStepClick }: P
                 style={{
                   width: 34,
                   height: 34,
-                  borderRadius: '50%',
+                  borderRadius: FULL_ROUND_RADIUS,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',

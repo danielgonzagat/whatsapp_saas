@@ -8,7 +8,7 @@ import {
   createKloelToolResultEvent,
 } from './kloel-stream-events';
 
-type UnknownRecord = Record<string, unknown>;
+import type { UnknownRecord } from '../common/types';
 
 const PATTERN_RE = /[_-]+/g;
 const S_RE = /\s+/g;

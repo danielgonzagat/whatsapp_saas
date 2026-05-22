@@ -15,7 +15,7 @@ type BackendOpenAIModelRole =
 type ConfigLike = Pick<ConfigService, 'get'> | undefined;
 
 const DEFAULT_MODELS: Record<BackendOpenAIModelRole, string> = {
-  brain: 'deepseek-v4-pro',
+  brain: 'deepseek-v4-flash',
   brain_fallback: 'deepseek-v4-flash',
   writer: 'deepseek-v4-pro',
   writer_fallback: 'deepseek-v4-flash',

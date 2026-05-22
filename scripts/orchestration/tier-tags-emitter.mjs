@@ -4,7 +4,7 @@ import { buildFileSignalMap, buildModuleStateMap, inferTier } from './tier-tags-
 import { readFileSync, existsSync, writeFileSync, renameSync } from 'node:fs';
 import { join, relative, resolve, dirname, extname, basename } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { rewriteMirrorFrontmatterTags } from '../obsidian-mirror-daemon-indexes.mjs';
+import { rewriteMirrorFrontmatterTags } from '../__parts__/obsidian-mirror-daemon-indexes.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = resolve(join(__dirname, '..', '..'));

@@ -109,7 +109,6 @@ export default function AutopilotPage() {
         handleToggle={handleToggle}
         onDismissError={() => setError(null)}
         onRefresh={fetchAutopilotData}
-        onNavigate={navigate}
       />
       <AutopilotRulesPanel
         actions={actions}

@@ -13,7 +13,7 @@ import { MindGuardsService } from './mind-guards.service';
 import type { MindActionContext } from './mind-code-native.types';
 import { MindService } from './mind.service';
 
-type UnknownRecord = Record<string, unknown>;
+import type { UnknownRecord } from '../common/types';
 type MemoryValue = Record<string, unknown>;
 
 const WHITESPACE_G_RE = /\s+/g;

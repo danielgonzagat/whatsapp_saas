@@ -183,9 +183,8 @@ export interface AttributionEntry {
   readonly weight: number;
 }
 
-export function clamp(value: number, min: number, max: number): number {
-  return Math.max(min, Math.min(max, value));
-}
+import { clamp } from '../../common/math';
+export { clamp };
 export function makeIncidentId(prefix: string, seq: number): string {
   const ts = Date.now().toString(36);
   const rnd = Math.random().toString(36).slice(2, 6);

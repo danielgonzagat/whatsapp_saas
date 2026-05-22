@@ -3,7 +3,82 @@ import type { ChatCompletionTool } from 'openai/resources/chat';
 /**
  * Sales, leads, and scheduling tool definitions for the Unified Agent.
  */
+
+/**
+ * CRITICAL GAP TOOLS: Wallet, Sales, Reports — Added 2026-05-20
+ */
+const WALLET_SALES_TOOLS: ChatCompletionTool[] = [
+  {
+    type: 'function',
+    function: {
+      name: 'get_wallet_balance',
+      description: 'Consulta o saldo da carteira (disponivel, pendente, total)',
+      parameters: { type: 'object', properties: {} },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'get_wallet_statement',
+      description: 'Lista o extrato de transacoes da carteira',
+      parameters: {
+        type: 'object',
+        properties: { limit: { type: 'number', description: 'Maximo de registros' } },
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'list_orders',
+      description: 'Lista vendas/pedidos do workspace',
+      parameters: {
+        type: 'object',
+        properties: {
+          status: { type: 'string', description: 'Filtrar por status (paid, pending, refunded)' },
+          limit: { type: 'number' },
+        },
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'get_order_details',
+      description: 'Detalha uma venda especifica',
+      parameters: {
+        type: 'object',
+        properties: { orderId: { type: 'string' } },
+        required: ['orderId'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'get_sales_summary',
+      description: 'Resumo de vendas dos ultimos N dias',
+      parameters: {
+        type: 'object',
+        properties: { days: { type: 'number', description: 'Dias para o resumo (default 7)' } },
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'get_abandonments',
+      description: 'Lista carrinhos abandonados e vendas expiradas',
+      parameters: {
+        type: 'object',
+        properties: { days: { type: 'number', description: 'Dias para buscar (default 7)' } },
+      },
+    },
+  },
+];
 export const UNIFIED_AGENT_TOOLS_SALES: ChatCompletionTool[] = [
+  ...WALLET_SALES_TOOLS,
+
   // === VENDAS ===
   {
     type: 'function',

@@ -140,6 +140,10 @@ import {
 } from './webhooks/payment-webhook.controller';
 import { StripeWebhookLedgerService } from './webhooks/stripe-webhook-ledger.service';
 
+/**
+ * @cluster whatsapp_saas/backend/app.module.ts
+ * L11 multi-agent TaskGraph annotation (batched by tools/auto-pr/batch-job.mjs).
+ */
 const appLogger = new Logger('AppModule');
 const isProd = process.env.NODE_ENV === 'production';
 const REDIS_GLOBAL_LISTENER_BUDGET = 256;
