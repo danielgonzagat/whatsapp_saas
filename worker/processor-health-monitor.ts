@@ -37,7 +37,6 @@ const AUTOPILOT_FAILED_DRAIN_LIMIT = parseNonNegativeEnvInt(
   1000,
 );
 
-
 async function sendOpsAlert(
   log: WorkerLogger,
   message: string,
@@ -148,7 +147,6 @@ export async function checkAutopilotQueueHealth(log: WorkerLogger): Promise<void
     log.warn('autopilot_queue_monitor_error', { error: getErrorMessage(err) });
   }
 }
-
 
 export function startAutopilotHealthMonitor(log: WorkerLogger): ReturnType<typeof setInterval> {
   return setInterval(() => {

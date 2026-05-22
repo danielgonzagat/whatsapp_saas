@@ -1,10 +1,7 @@
 import { describe, expect, it, afterAll } from 'vitest';
 import { buildQueueJobId } from '../job-id';
 import { WorkerLogger } from '../logger';
-import {
-  checkAutopilotQueueHealth,
-  parseNonNegativeEnvInt,
-} from '../processor-health-monitor';
+import { checkAutopilotQueueHealth, parseNonNegativeEnvInt } from '../processor-health-monitor';
 import { getHealth } from '../metrics';
 import { shutdownQueueSystem } from '../queue';
 import {
