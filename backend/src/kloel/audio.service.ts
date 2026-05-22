@@ -5,7 +5,7 @@ import { BadRequestException, Injectable, Optional } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { StructuredLogger } from '../logging/structured-logger';
 import OpenAI from 'openai';
-import { v4 as uuid } from 'uuid';
+import { randomUUID as uuid } from 'node:crypto';
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { getTraceHeaders } from '../common/trace-headers';
 import {
