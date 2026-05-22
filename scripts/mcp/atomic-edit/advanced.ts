@@ -165,6 +165,21 @@ export async function renameSymbolCrossFile(
     : new Project({ compilerOptions: { allowJs: true, noEmit: true } });
   if (!tsconfig)
     project.addSourceFilesAtPaths(path.join(path.dirname(absFile), '**/*.{ts,tsx,js,jsx}'));
+  // A tsconfig commonly EXCLUDES test files (e.g. "**/*spec.ts"), but a correct
+  // cross-file rename must still reach references that live INSIDE specs — test
+  // object keys ({ method: jest.fn() }), `Pick<Class,'method'>` string-literal
+  // type members, and property access on typed test doubles. Without loading
+  // them the language service silently under-collects, forcing manual fixups.
+  // Explicitly add the test/spec sources (node_modules/dist excluded).
+  {
+    const projRoot = tsconfig ? path.dirname(tsconfig) : path.dirname(absFile);
+    project.addSourceFilesAtPaths([
+      path.join(projRoot, '**/*.spec.{ts,tsx}'),
+      path.join(projRoot, '**/*.test.{ts,tsx}'),
+      `!${path.join(projRoot, '**/node_modules/**')}`,
+      `!${path.join(projRoot, '**/dist/**')}`,
+    ]);
+  }
 
   const sf = project.getSourceFile(absFile) ?? project.addSourceFileAtPath(absFile);
   const original = new Map<string, string>();
