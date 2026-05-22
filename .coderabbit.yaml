@@ -221,7 +221,7 @@ reviews:
       enabled: false
     detekt:
       enabled: false
-    dotenv-linter:
+    dotenvLint:
       enabled: true
     eslint:
       enabled: true
@@ -274,7 +274,7 @@ reviews:
       enabled: true
     shellcheck:
       enabled: true
-    shopify-cli:
+    shopifyThemeCheck:
       enabled: false
     sqlfluff:
       enabled: true
@@ -289,10 +289,8 @@ chat:
   integrations:
     jira:
       usage: auto
-      project_keys: []
     linear:
       usage: auto
-      team_keys: []
 
 knowledge_base:
   opt_out: false
