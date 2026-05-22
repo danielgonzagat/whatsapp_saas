@@ -1,49 +1,54 @@
 import { InjectRedis } from '@nestjs-modules/ioredis';
-import { Inject, Injectable, Logger, Optional, forwardRef } from '@nestjs/common';
+import { Inject, Injectable, Optional, forwardRef } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { Prisma } from '@prisma/client';
 import Redis from 'ioredis';
-import { InboxService } from '../inbox/inbox.service';
-import { ChannelTransportRegistry } from '../kloel/channel-transport.registry';
+import { INBOX_SERVICE } from '../inbox/inbox.token';
+import type { IInboxService } from '../inbox/inbox.interface';
 import { UnifiedAgentService } from '../kloel/unified-agent.service';
-import { ChannelInboundHookService } from '../omnichannel/channel-inbound-hook.service';
+import { DecisionOutcomeService } from '../kloel/decision-outcome.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
+import { ChannelInboundHookService } from '../omnichannel/channel-inbound-hook.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { buildQueueDedupId, buildQueueJobId } from '../queue/job-id.util';
 import { autopilotQueue, flowQueue, voiceQueue } from '../queue/queue';
 import { AccountAgentService } from './account-agent.service';
-import { resolveConversationOwner } from './agent-conversation-state.util';
-import { triggerWhatsappMindPercept } from './inbound-mind-percept';
 import {
+  InboundMessage,
+  type InboundIngestMode,
   getDefaultContent,
   mapMessageType,
   normalizePhone,
-  resolveTrustedContactName,
 } from './inbound-processor.helpers';
-import { WhatsappService } from './whatsapp.service';
+import { isPlaceholderContactName as isPlaceholderContactNameValue } from './whatsapp-normalization.util';
+import { WHATSAPP_MESSAGING } from './whatsapp.tokens';
+import type { IWhatsappMessaging } from './whatsapp.interfaces';
 import { WorkerRuntimeService } from './worker-runtime.service';
-import type { ProviderSettings } from './provider-settings.types';
+import { asProviderSettings, type ProviderSettings } from './provider-settings.types';
+import type { ContactCustomFields } from '../contacts/contact-custom-fields.types';
+import { executeInlineAutopilot } from './inbound-processor.inline-autopilot';
+import { triggerWhatsappMindPercept } from './inbound-mind-percept';
+import { WhatsAppEventEmitterService } from '../kloel/whatsapp-emitter/whatsapp-event-emitter.service';
+
 import {
   checkDuplicateExt,
   isWorkspaceSelfInboundExt,
   isAutonomousEnabledExt,
   shouldUseInlineReactiveProcessingExt,
   shouldForceLiveAutonomyFallbackExt,
-  shouldBypassHumanLockExt,
-  shouldAutoReclaimHumanLockExt,
-  buildInlineFallbackReplyExt,
-  hasOutboundActionExt,
-  buildPendingInboundBatchExt,
-} from './__companions__/inbound-processor.service.companion';
-import {
-  recordAutopilotSkip as recordAutopilotSkipPart,
-  sendInlineFallbackReply,
-  sendInlineReplyPlan,
-} from './__parts__/inbound-inline-autopilot';
-import type {
-  InboundMessage,
-  InboundIngestMode,
-} from './__companions__/inbound-processor.service.companion';
-export type { InboundMessage } from './__companions__/inbound-processor.service.companion';
+} from './inbound-processor.helpers';
+
+export type { InboundMessage } from './inbound-processor.helpers';
+
+type InboundRawPayload = {
+  pushName?: string;
+  notifyName?: string;
+  _data?: { pushName?: string; notifyName?: string; [key: string]: unknown };
+  message?: { pushName?: string; notifyName?: string; [key: string]: unknown };
+  sender?: { pushName?: string; name?: string; [key: string]: unknown };
+  contact?: { pushName?: string; name?: string; [key: string]: unknown };
+  [key: string]: unknown;
+};
 
 interface ProcessResult {
   deduped: boolean;
@@ -53,7 +58,7 @@ interface ProcessResult {
 
 @Injectable()
 export class InboundProcessorService {
-  private readonly logger = new Logger(InboundProcessorService.name);
+  private readonly logger = StructuredLogger.from(InboundProcessorService.name);
   private readonly contactDebounceMs = Math.max(
     500,
     Number.parseInt(process.env.AUTOPILOT_CONTACT_DEBOUNCE_MS || '2000', 10) || 2000,
@@ -65,20 +70,42 @@ export class InboundProcessorService {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly inbox: InboxService,
+    @Inject(forwardRef(() => INBOX_SERVICE)) private readonly inbox: IInboxService,
     @InjectRedis() private readonly redis: Redis,
     private readonly accountAgent: AccountAgentService,
     private readonly workerRuntime: WorkerRuntimeService,
     private readonly unifiedAgent: UnifiedAgentService,
-    @Inject(forwardRef(() => WhatsappService)) private readonly whatsappService: WhatsappService,
-    private readonly transports: ChannelTransportRegistry,
-    @Optional()
-    @Inject(forwardRef(() => ChannelInboundHookService))
-    private readonly mindHook?: ChannelInboundHookService,
+    @Inject(forwardRef(() => WHATSAPP_MESSAGING))
+    private readonly whatsappService: IWhatsappMessaging,
+    private readonly decisionOutcome: DecisionOutcomeService,
     @Optional() private readonly opsAlert?: OpsAlertService,
+    @Optional() private readonly mindHook?: ChannelInboundHookService,
+    @Optional() private readonly whatsappEmitter?: WhatsAppEventEmitterService,
   ) {}
 
-  // ═══ PROCESS (thin wrapper) ═══
+  private isPlaceholderContactName(value: unknown, phone?: string | null): boolean {
+    return isPlaceholderContactNameValue(value, phone);
+  }
+
+  private resolveTrustedContactName(phone: string, ...candidates: unknown[]): string {
+    for (const c of candidates) {
+      const n =
+        typeof c === 'string'
+          ? c.trim()
+          : typeof c === 'number' || typeof c === 'boolean'
+            ? String(c).trim()
+            : '';
+      if (n && !this.isPlaceholderContactName(n, phone)) {
+        return n;
+      }
+    }
+    return '';
+  }
+
+  private isWorkspaceSelfInbound(settings: ProviderSettings, from: string, phone: string): boolean {
+    return isWorkspaceSelfInboundExt(settings, from, phone);
+  }
+
   async process(msg: InboundMessage): Promise<ProcessResult> {
     return this._processImpl(msg);
   }
@@ -95,13 +122,13 @@ export class InboundProcessorService {
       where: { id: msg.workspaceId },
       select: { providerSettings: true },
     });
-    const settings = (workspace?.providerSettings as Record<string, unknown>) || {};
-    if (isWorkspaceSelfInboundExt(settings, msg.from, phone)) {
+    const settings = asProviderSettings(workspace?.providerSettings);
+    if (this.isWorkspaceSelfInbound(settings, msg.from, phone)) {
       this.logger.warn(`[SELF_CONTACT] Ignorando mensagem da própria sessão: ${msg.from}`);
       return { deduped: true };
     }
-    const raw = (msg.raw ?? {}) as Record<string, Record<string, unknown>>;
-    const trustedSenderName = resolveTrustedContactName(
+    const raw = (msg.raw ?? {}) as InboundRawPayload;
+    const trustedSenderName = this.resolveTrustedContactName(
       phone,
       msg.senderName,
       raw?.pushName,
@@ -117,7 +144,7 @@ export class InboundProcessorService {
     );
     const contact = await this.prisma.contact.upsert({
       where: { workspaceId_phone: { workspaceId: msg.workspaceId, phone } },
-      update: trustedSenderName ? { name: trustedSenderName || undefined } : {},
+      update: trustedSenderName ? { name: trustedSenderName } : {},
       create: { workspaceId: msg.workspaceId, phone, name: trustedSenderName || null },
       select: { id: true, customFields: true },
     });
@@ -126,7 +153,7 @@ export class InboundProcessorService {
         contact.customFields &&
         typeof contact.customFields === 'object' &&
         !Array.isArray(contact.customFields)
-          ? { ...(contact.customFields as Record<string, unknown>) }
+          ? { ...(contact.customFields as ContactCustomFields) }
           : {};
       await this.prisma.contact.updateMany({
         where: { id: contact.id, workspaceId: msg.workspaceId },
@@ -135,7 +162,7 @@ export class InboundProcessorService {
             ...cf,
             remotePushName: trustedSenderName,
             remotePushNameUpdatedAt: new Date().toISOString(),
-          },
+          } as Prisma.InputJsonObject,
         },
       });
       await this.whatsappService
@@ -152,8 +179,8 @@ export class InboundProcessorService {
         direction: 'INBOUND',
         externalId: msg.providerMessageId,
         type: mapMessageType(msg.type),
-        mediaUrl: msg.mediaUrl,
-        createdAt: msg.createdAt,
+        ...(msg.mediaUrl !== undefined ? { mediaUrl: msg.mediaUrl } : {}),
+        ...(msg.createdAt !== undefined ? { createdAt: msg.createdAt } : {}),
         countAsUnread: msg.ingestMode !== 'catchup',
         silent: msg.ingestMode === 'catchup',
       });
@@ -182,7 +209,31 @@ export class InboundProcessorService {
       300,
     );
     const isCatchup = msg.ingestMode === 'catchup';
-    if (!isCatchup) await this.deliverToFlowContext(phone, processedContent, msg.workspaceId);
+
+    void this.decisionOutcome.recordEvent({
+      workspaceId: msg.workspaceId,
+      eventType: 'inbound.received',
+      eventKey: savedMessage.id,
+      correlation: {
+        contactId: contact.id,
+        channel: 'whatsapp',
+      },
+    });
+
+    if (this.whatsappEmitter) {
+      this.whatsappEmitter.emitMessageReceived({
+        workspaceId: msg.workspaceId,
+        contactId: contact.id,
+        messageId: savedMessage.id,
+        phone,
+        provider: msg.provider,
+        correlationId: savedMessage.conversationId ?? undefined,
+      });
+    }
+
+    if (!isCatchup) {
+      await this.deliverToFlowContext(phone, processedContent, msg.workspaceId);
+    }
     if (!isCatchup && msg.type === 'audio' && msg.mediaUrl) {
       await voiceQueue.add('transcribe-audio', {
         workspaceId: msg.workspaceId,
@@ -201,7 +252,7 @@ export class InboundProcessorService {
       messageContent: processedContent,
     });
     triggerWhatsappMindPercept({
-      mindHook: this.mindHook,
+      ...(this.mindHook !== undefined ? { mindHook: this.mindHook } : {}),
       logger: this.logger,
       msg,
       contactId: contact.id,
@@ -241,7 +292,6 @@ export class InboundProcessorService {
     );
   }
 
-  // ═══ triggerAutopilot (big, inline) ═══
   private async triggerAutopilot(
     workspaceId: string,
     contactId: string,
@@ -258,32 +308,56 @@ export class InboundProcessorService {
         !autonomousEnabled && this.shouldForceLiveAutonomyFallback(settings, ingestMode);
       if (autonomousEnabled || liveFallback) {
         if (this.shouldUseInlineReactiveProcessing(settings, ingestMode)) {
-          await this.triggerInlineAutopilot({
-            workspaceId,
-            contactId,
-            phone,
-            messageContent,
-            messageId,
-            providerMessageId,
-            source: 'waha_inline_reactive',
-            reason: 'inline_reactive_primary',
-            settings,
-          });
+          await executeInlineAutopilot(
+            {
+              prisma: this.prisma,
+              redis: this.redis,
+              unifiedAgent: this.unifiedAgent,
+              whatsappService: this.whatsappService,
+              ...(this.opsAlert ? { opsAlert: this.opsAlert } : {}),
+              logger: this.logger,
+              contactDebounceMs: this.contactDebounceMs,
+              sharedReplyLockMs: this.sharedReplyLockMs,
+            },
+            {
+              workspaceId,
+              contactId,
+              phone,
+              messageContent,
+              messageId,
+              providerMessageId,
+              source: 'waha_inline_reactive',
+              reason: 'inline_reactive_primary',
+              ...(settings !== undefined ? { settings } : {}),
+            },
+          );
           return;
         }
         const workerAvailable = await this.workerRuntime.isAvailable();
         if (!workerAvailable) {
-          await this.triggerInlineAutopilot({
-            workspaceId,
-            contactId,
-            phone,
-            messageContent,
-            messageId,
-            providerMessageId,
-            source: 'waha_inline_fallback',
-            reason: 'worker_unavailable',
-            settings,
-          });
+          await executeInlineAutopilot(
+            {
+              prisma: this.prisma,
+              redis: this.redis,
+              unifiedAgent: this.unifiedAgent,
+              whatsappService: this.whatsappService,
+              ...(this.opsAlert ? { opsAlert: this.opsAlert } : {}),
+              logger: this.logger,
+              contactDebounceMs: this.contactDebounceMs,
+              sharedReplyLockMs: this.sharedReplyLockMs,
+            },
+            {
+              workspaceId,
+              contactId,
+              phone,
+              messageContent,
+              messageId,
+              providerMessageId,
+              source: 'waha_inline_fallback',
+              reason: 'worker_unavailable',
+              ...(settings !== undefined ? { settings } : {}),
+            },
+          );
           return;
         }
         const scanKey = `autopilot:scan-contact:${workspaceId}:${contactId}`;
@@ -313,7 +387,9 @@ export class InboundProcessorService {
             const m = String(
               (error instanceof Error ? error : new Error(String(error))).message || '',
             );
-            if (!m.includes('Job is already waiting')) throw error;
+            if (!m.includes('Job is already waiting')) {
+              throw error;
+            }
           }
         }
       }
@@ -332,13 +408,14 @@ export class InboundProcessorService {
           'comprar',
           'assinar',
         ].some((k) => lower.includes(k))
-      )
+      ) {
         await flowQueue.add('run-flow', {
           workspaceId,
           flowId: hotFlowId,
           user: phone,
           initialVars: { source: 'hot_signal', lastMessage: messageContent },
         });
+      }
     } catch (err: unknown) {
       this.logger.warn(
         `[AUTOPILOT] Erro: ${(err instanceof Error ? err : new Error(String(err))).message}`,
@@ -362,231 +439,10 @@ export class InboundProcessorService {
   ): boolean {
     return shouldUseInlineReactiveProcessingExt(settings, ingestMode);
   }
-
-  // ═══ triggerInlineAutopilot (big, inline) ═══
-  private async triggerInlineAutopilot(input: {
-    workspaceId: string;
-    contactId: string;
-    phone: string;
-    messageContent: string;
-    messageId: string;
-    providerMessageId: string;
-    source: string;
-    reason: 'inline_reactive_primary' | 'worker_unavailable';
-    settings?: ProviderSettings;
-  }) {
-    const conversation = await this.prisma.conversation.findFirst({
-      where: {
-        workspaceId: input.workspaceId,
-        OR: [{ contactId: input.contactId }, { contact: { phone: input.phone } }],
-      },
-      orderBy: { updatedAt: 'desc' },
-      select: {
-        id: true,
-        mode: true,
-        status: true,
-        assignedAgentId: true,
-        lastMessageAt: true,
-        messages: {
-          take: 3,
-          orderBy: { createdAt: 'desc' },
-          select: { direction: true, createdAt: true },
-        },
-      },
-    });
-    const owner = resolveConversationOwner(conversation);
-    const bypass = this.shouldBypassHumanLock(input.settings);
-    const reclaim = this.shouldAutoReclaimHumanLock(input.settings, conversation);
-    if (conversation && owner !== 'AGENT' && reclaim) {
-      await this.prisma.conversation.updateMany({
-        where: { id: conversation.id, workspaceId: input.workspaceId },
-        data: { mode: 'AI', assignedAgentId: null },
-      });
-      await this.recordAutopilotSkip(
-        input.workspaceId,
-        input.contactId,
-        'human_lock_auto_reclaimed',
-        {
-          conversationId: conversation.id,
-          previousMode: conversation.mode || null,
-          previousAssignedAgentId: conversation.assignedAgentId || null,
-        },
-      );
-    }
-    if (conversation && owner !== 'AGENT' && !bypass && !reclaim) {
-      await this.recordAutopilotSkip(input.workspaceId, input.contactId, 'human_mode_lock', {
-        conversationId: conversation.id,
-        mode: conversation.mode || null,
-        status: conversation.status || null,
-        assignedAgentId: conversation.assignedAgentId || null,
-      });
-      return;
-    }
-    const inlineKey = `autopilot:inline:${input.workspaceId}:${input.contactId}`;
-    const reserved = await this.redis.set(
-      inlineKey,
-      input.messageId,
-      'PX',
-      Math.max(5000, this.contactDebounceMs + 3000),
-      'NX',
-    );
-    if (reserved !== 'OK') return;
-    const replyLockKey = this.getSharedReplyLockKey(
-      input.workspaceId,
-      input.contactId,
-      input.phone,
-    );
-    const replyRsv = await this.redis.set(
-      replyLockKey,
-      input.messageId,
-      'PX',
-      this.sharedReplyLockMs,
-      'NX',
-    );
-    if (replyRsv !== 'OK') return;
-    let keepReplyLock = false;
-    await this.sleep(this.contactDebounceMs);
-    const pendingBatch = await buildPendingInboundBatchExt(
-      { prisma: this.prisma },
-      {
-        workspaceId: input.workspaceId,
-        contactId: input.contactId,
-        phone: input.phone,
-        fallbackMessageContent: input.messageContent,
-        fallbackProviderMessageId: input.providerMessageId,
-      },
-    );
-    const aggMsg = pendingBatch?.aggregatedMessage || input.messageContent;
-    const latestQid = pendingBatch?.latestQuotedMessageId || input.providerMessageId;
-    try {
-      const result = await this.unifiedAgent.processIncomingMessage({
-        workspaceId: input.workspaceId,
-        contactId: input.contactId,
-        phone: input.phone,
-        message: aggMsg,
-        channel: 'whatsapp',
-        context: {
-          source: input.source,
-          deliveryMode: 'reactive',
-          messageId: input.messageId,
-          providerMessageId: latestQid,
-          pendingQuotedMessageIds: pendingBatch?.messages.map((m) => m.quotedMessageId),
-          pendingMessageCount: pendingBatch?.messages.length || 1,
-          forceDirect: true,
-        },
-      });
-      if (this.hasOutboundAction(result?.actions || [])) {
-        keepReplyLock = true;
-        return;
-      }
-      const reply = String(
-        result?.reply || result?.response || this.buildInlineFallbackReply(aggMsg),
-      ).trim();
-      if (!reply) return;
-      const replyPlan = await this.unifiedAgent.buildQuotedReplyPlan({
-        workspaceId: input.workspaceId,
-        contactId: input.contactId,
-        phone: input.phone,
-        draftReply: reply,
-        customerMessages: pendingBatch?.messages || [
-          { content: input.messageContent, quotedMessageId: latestQid },
-        ],
-      });
-      await sendInlineReplyPlan(
-        { transports: this.transports, logger: this.logger },
-        {
-          workspaceId: input.workspaceId,
-          phone: input.phone,
-          messageId: input.messageId,
-          latestQuotedMessageId: latestQid,
-          replyPlan,
-        },
-      );
-      keepReplyLock = true;
-    } catch (agentError: unknown) {
-      this.logger.error(
-        `[AUTOPILOT] Inline agent failed: ${(agentError instanceof Error ? agentError : new Error(String(agentError))).message}`,
-      );
-      void this.opsAlert?.alertOnCriticalError(
-        agentError,
-        'InboundProcessorService.triggerInlineAutopilot',
-        {
-          workspaceId: input.workspaceId,
-          metadata: { contactId: input.contactId, phone: input.phone },
-        },
-      );
-
-      const fallbackReply = this.buildInlineFallbackReply(aggMsg);
-      if (fallbackReply) {
-        try {
-          keepReplyLock = await sendInlineFallbackReply(
-            { transports: this.transports },
-            {
-              workspaceId: input.workspaceId,
-              phone: input.phone,
-              messageId: input.messageId,
-              latestQuotedMessageId: latestQid,
-              fallbackReply,
-            },
-          );
-        } catch (fallbackErr: unknown) {
-          this.logger.error(
-            `[AUTOPILOT] Fallback reply also failed: ${(fallbackErr instanceof Error ? fallbackErr : new Error(String(fallbackErr))).message}`,
-          );
-        }
-      }
-    } finally {
-      if (!keepReplyLock) await this.releaseSharedReplyLock(replyLockKey);
-    }
-  }
-  private hasOutboundAction(actions: Array<{ tool?: string; result?: unknown }> = []): boolean {
-    return hasOutboundActionExt(actions);
-  }
-  private shouldBypassHumanLock(settings?: ProviderSettings): boolean {
-    return shouldBypassHumanLockExt(settings);
-  }
-  private shouldAutoReclaimHumanLock(
-    settings?: ProviderSettings,
-    conversation?: {
-      mode?: string | null;
-      status?: string | null;
-      assignedAgentId?: string | null;
-      messages?: Array<{ direction?: string | null; createdAt?: Date | string | null }>;
-    } | null,
-  ): boolean {
-    return shouldAutoReclaimHumanLockExt(settings, conversation);
-  }
   private shouldForceLiveAutonomyFallback(
     settings?: ProviderSettings,
     ingestMode?: InboundIngestMode,
   ): boolean {
     return shouldForceLiveAutonomyFallbackExt(settings, ingestMode);
-  }
-  private buildInlineFallbackReply(messageContent: string): string {
-    return buildInlineFallbackReplyExt(messageContent);
-  }
-  private getSharedReplyLockKey(
-    workspaceId: string,
-    contactId?: string | null,
-    phone?: string | null,
-  ): string {
-    return `autopilot:reply:${workspaceId}:${contactId || normalizePhone(String(phone || ''))}`;
-  }
-  private async releaseSharedReplyLock(key: string) {
-    await this.redis.del(key).catch(() => undefined);
-  }
-  private async sleep(ms: number) {
-    await new Promise((r) => setTimeout(r, ms));
-  }
-  private async recordAutopilotSkip(
-    workspaceId: string,
-    contactId: string,
-    reason: string,
-    meta?: Record<string, unknown>,
-  ) {
-    await recordAutopilotSkipPart(
-      { prisma: this.prisma, logger: this.logger, opsAlert: this.opsAlert },
-      { workspaceId, contactId, reason, meta },
-    );
   }
 }

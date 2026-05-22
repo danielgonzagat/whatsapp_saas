@@ -12,6 +12,8 @@ interface ProductRow {
   active: boolean;
 }
 
+type BrandVoiceMemoryValue = { style?: string; [key: string]: unknown };
+
 interface CampaignRow {
   id: string;
   name: string;
@@ -118,7 +120,7 @@ export class MarketingSkillContextBuilder {
 
     const brandVoiceValue =
       brandVoiceMemory?.value && typeof brandVoiceMemory.value === 'object'
-        ? (brandVoiceMemory.value as Record<string, unknown>)
+        ? (brandVoiceMemory.value as BrandVoiceMemoryValue)
         : null;
     const affiliateProductCount = affiliateProducts.length;
 

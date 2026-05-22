@@ -8,7 +8,7 @@ import Link from 'next/link';
 import { type FormEvent, useCallback, useEffect, useId, useRef, useState } from 'react';
 import { useAuth } from './auth-provider';
 import { TheMachine } from './kloel-auth-screen.machine';
-import { useGoogleSignIn } from './kloel-auth-screen.hooks';
+import { useFacebookSignIn, useGoogleSignIn } from './kloel-auth-screen.hooks';
 import { SocialButtons } from './kloel-auth-screen.social-buttons';
 import { AuthFormFields } from './kloel-auth-screen.form-fields';
 
@@ -24,7 +24,9 @@ const sora = "var(--font-sora), 'Sora', sans-serif";
 const jetbrains = "var(--font-jetbrains), 'JetBrains Mono', monospace";
 
 function navigateCurrentWindow(url: string) {
-  if (typeof document === 'undefined') return;
+  if (typeof document === 'undefined') {
+    return;
+  }
   const link = document.createElement('a');
   link.href = url;
   link.rel = 'noopener noreferrer';
@@ -36,18 +38,38 @@ function navigateCurrentWindow(url: string) {
 
 function resolveOAuthErrorMessage(errorCode: string, reason: string): string {
   if (errorCode === 'apple_auth_failed') {
-    if (reason === 'missing_identity_token')
+    if (reason === 'missing_identity_token') {
       return 'A Apple nao retornou o token de autenticacao. Tente novamente.';
-    if (reason === 'not_configured')
-      return 'Autenticacao com Apple nao esta disponivel no momento.';
-    if (reason === 'backend_not_configured')
-      return 'Servico indisponivel. Tente novamente mais tarde.';
-    if (reason === 'backend_rejected')
-      return 'Autenticacao com Apple foi recusada. Verifique suas credenciais.';
-    if (reason === 'timeout') return 'A autenticacao com Apple expirou. Tente novamente.';
-    if (reason === 'unexpected_error')
-      return 'Erro inesperado ao autenticar com Apple. Tente novamente.';
+    }
+    if (reason === 'timeout') {
+      return 'A autenticacao com Apple expirou. Tente novamente.';
+    }
     return 'Falha ao autenticar com Apple.';
+  }
+  if (errorCode === 'tiktok_auth_failed') {
+    if (reason === 'missing_code') {
+      return 'O TikTok nao retornou o codigo de autorizacao. Tente novamente.';
+    }
+    if (reason === 'state_mismatch') {
+      return 'A sessao de login com TikTok expirou ou ficou invalida. Tente novamente.';
+    }
+    if (reason === 'access_denied') {
+      return 'O login com TikTok foi cancelado ou negado.';
+    }
+    if (reason === 'timeout') {
+      return 'O TikTok demorou para responder. Tente novamente.';
+    }
+    if (
+      reason === 'client_key_missing' ||
+      reason === 'client_secret_missing' ||
+      reason === 'backend_not_configured'
+    ) {
+      return 'Login com TikTok indisponivel no momento.';
+    }
+    if (reason === 'token_exchange_failed') {
+      return 'Nao foi possivel validar o login com TikTok. Tente novamente.';
+    }
+    return 'Falha ao autenticar com TikTok.';
   }
   return 'Nao foi possivel concluir a autenticacao social.';
 }
@@ -55,10 +77,16 @@ function resolveOAuthErrorMessage(errorCode: string, reason: string): string {
 /* ────────────────────────────────────────────────────────────
    MAIN EXPORT
    ──────────────────────────────────────────────────────────── */
-// PULSE_OK: form state preserved in React state, connection errors shown to user
 export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps) {
   const fid = useId();
-  const { signIn, signUp, signInWithGoogle, requestMagicLink, isAuthenticated } = useAuth();
+  const {
+    signIn,
+    signUp,
+    signInWithGoogle,
+    signInWithFacebook,
+    requestMagicLink,
+    isAuthenticated,
+  } = useAuth();
   const redirectingRef = useRef(false);
 
   const [mode, setMode] = useState<Mode>(initialMode);
@@ -69,23 +97,32 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
   const [affiliateInviteWorkspaceName, setAffiliateInviteWorkspaceName] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isAppleLoading, setIsAppleLoading] = useState(false);
   const [error, setError] = useState('');
   const [forgotSent, setForgotSent] = useState(false);
   const [magicLinkSent, setMagicLinkSent] = useState('');
   const shouldBypassExistingSessionRedirect = useCallback(() => {
-    if (typeof window === 'undefined') return false;
+    if (typeof window === 'undefined') {
+      return false;
+    }
     return new URLSearchParams(window.location.search).get('forceAuth') === '1';
   }, []);
 
   const resolveNextPath = useCallback((fallbackPath = '/') => {
-    if (typeof window === 'undefined') return fallbackPath;
+    if (typeof window === 'undefined') {
+      return fallbackPath;
+    }
     return sanitizeNextPath(new URLSearchParams(window.location.search).get('next'), fallbackPath);
   }, []);
 
   const redirectToApp = useCallback(
     (fallbackPath = '/') => {
-      if (typeof window === 'undefined') return;
-      if (redirectingRef.current) return;
+      if (typeof window === 'undefined') {
+        return;
+      }
+      if (redirectingRef.current) {
+        return;
+      }
       redirectingRef.current = true;
       const nextPath = resolveNextPath(fallbackPath);
       const destination = new URL(buildAppUrl(nextPath, window.location.host));
@@ -96,29 +133,43 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
   );
 
   useEffect(() => {
-    if (isAuthenticated && !shouldBypassExistingSessionRedirect()) redirectToApp();
+    if (isAuthenticated && !shouldBypassExistingSessionRedirect()) {
+      redirectToApp();
+    }
   }, [isAuthenticated, redirectToApp, shouldBypassExistingSessionRedirect]);
 
   useEffect(() => {
-    if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined') {
+      return;
+    }
     const params = new URLSearchParams(window.location.search);
     const inviteToken = params.get('affiliateInviteToken')?.trim() || '';
-    if (!inviteToken) return;
+    if (!inviteToken) {
+      return;
+    }
     const inviteEmail = params.get('email')?.trim() || '';
     const inviteName = params.get('partnerName')?.trim() || '';
     const inviterWorkspaceName = params.get('inviterWorkspaceName')?.trim() || '';
     setMode('register');
     setAffiliateInviteToken(inviteToken);
     setAffiliateInviteWorkspaceName(inviterWorkspaceName);
-    if (inviteEmail) setEmail(inviteEmail);
-    if (inviteName) setName(inviteName);
+    if (inviteEmail) {
+      setEmail(inviteEmail);
+    }
+    if (inviteName) {
+      setName(inviteName);
+    }
   }, []);
 
   useEffect(() => {
-    if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined') {
+      return;
+    }
     const params = new URLSearchParams(window.location.search);
     const oauthError = params.get('error')?.trim() || '';
-    if (!oauthError) return;
+    if (!oauthError) {
+      return;
+    }
     const reason = params.get('reason')?.trim() || '';
     setError(resolveOAuthErrorMessage(oauthError, reason));
   }, []);
@@ -154,7 +205,7 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
     const result =
       mode === 'register'
         ? await signUp(email, name, password, {
-            affiliateInviteToken: affiliateInviteToken || undefined,
+            ...(affiliateInviteToken ? { affiliateInviteToken } : {}),
           })
         : await signIn(email, password);
     if (!result.success) {
@@ -188,6 +239,26 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
 
   const googleButtonRef = useRef<HTMLDivElement>(null);
   useGoogleSignIn(handleGoogleCredential, googleButtonRef);
+
+  const handleFacebookCredential = useCallback(
+    async (payload: { accessToken: string; userId?: string }) => {
+      setError('');
+      setMagicLinkSent('');
+      setIsLoading(true);
+      const result = await signInWithFacebook(payload.accessToken, payload.userId);
+      if (!result.success) {
+        setError(result.error || 'Falha ao autenticar com Facebook.');
+        setIsLoading(false);
+        return;
+      }
+      redirectToApp();
+    },
+    [redirectToApp, signInWithFacebook],
+  );
+
+  const facebookSignIn = useFacebookSignIn(handleFacebookCredential);
+  const tikTokAvailable =
+    typeof process !== 'undefined' && Boolean(process.env.NEXT_PUBLIC_TIKTOK_CLIENT_KEY?.trim());
 
   const handleForgotPassword = async () => {
     if (!email.trim()) {
@@ -232,16 +303,29 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
   }, [email, requestMagicLink, resolveNextPath]);
 
   const handleApple = async () => {
-    setIsLoading(true);
+    setIsAppleLoading(true);
     try {
       const destination = new URL('/api/auth/apple/start', window.location.origin);
       destination.searchParams.set('next', resolveNextPath('/'));
       window.location.href = destination.toString();
     } catch {
       setError('Login com Apple indisponível no momento.');
-      setIsLoading(false);
+      setIsAppleLoading(false);
     }
   };
+
+  const handleTikTok = useCallback(() => {
+    if (!tikTokAvailable || typeof window === 'undefined') {
+      return;
+    }
+    setError('');
+    setForgotSent(false);
+    setMagicLinkSent('');
+    setIsLoading(true);
+    const destination = new URL('/api/auth/tiktok/start', window.location.origin);
+    destination.searchParams.set('next', resolveNextPath('/'));
+    window.location.assign(destination.toString());
+  }, [resolveNextPath, tikTokAvailable]);
 
   const inputBase: React.CSSProperties = {
     width: '100%',
@@ -316,7 +400,7 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
                   textTransform: 'uppercase',
                 }}
               >
-                {mode === 'login' ? 'Acesso seguro' : 'Nova conta'}
+                {mode === 'login' ? kloelT('Acesso seguro') : kloelT('Nova conta')}
               </span>
               <h1
                 style={{
@@ -329,7 +413,7 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
                   textWrap: 'balance',
                 }}
               >
-                {mode === 'login' ? 'Entrar' : 'Criar conta'}
+                {mode === 'login' ? kloelT('Entrar') : kloelT('Criar conta')}
               </h1>
               <p
                 style={{
@@ -343,8 +427,8 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
                 }}
               >
                 {mode === 'login'
-                  ? 'Acesse sua conta.'
-                  : 'Crie sua conta e comece a usar a inteligencia comercial autonoma.'}
+                  ? kloelT('Acesse sua conta.')
+                  : kloelT('Crie sua conta e comece a usar a inteligencia comercial autonoma.')}
               </p>
               {mode === 'register' && affiliateInviteToken ? (
                 <p
@@ -360,8 +444,8 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
                   }}
                 >
                   {affiliateInviteWorkspaceName
-                    ? `Convite de afiliado para ${affiliateInviteWorkspaceName}`
-                    : 'Convite de afiliado detectado'}
+                    ? kloelT(`Convite de afiliado para ${affiliateInviteWorkspaceName}`)
+                    : kloelT('Convite de afiliado detectado')}
                 </p>
               ) : null}
             </div>
@@ -370,7 +454,13 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
             <SocialButtons
               googleButtonRef={googleButtonRef}
               isLoading={isLoading}
+              isAppleLoading={isAppleLoading}
               onAppleClick={handleApple}
+              onFacebookClick={() => void facebookSignIn.signIn()}
+              facebookAvailable={facebookSignIn.available}
+              facebookSdkReady={facebookSignIn.sdkReady}
+              onTikTokClick={handleTikTok}
+              tikTokAvailable={tikTokAvailable}
             />
 
             {/* divider */}
@@ -384,7 +474,7 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
                   textTransform: 'lowercase',
                 }}
               >
-                ou
+                {kloelT('ou')}
               </span>
               <div style={{ flex: 1, height: 1, background: colors.border.space }} />
             </div>

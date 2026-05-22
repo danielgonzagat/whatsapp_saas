@@ -154,7 +154,7 @@ async function tryMarketingUpstream(
       new Request(url, {
         method: args.method,
         headers: args.headers,
-        body: args.rawBody || undefined,
+        ...(args.rawBody !== undefined ? { body: args.rawBody } : {}),
         cache: 'no-store',
         redirect: 'manual',
       }),

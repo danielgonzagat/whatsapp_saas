@@ -1,3 +1,4 @@
+import { expectValueOf } from '../../test/expect-value-of';
 import { Test, TestingModule } from '@nestjs/testing';
 import { PartnershipsService } from './partnerships.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -5,8 +6,8 @@ import { ConfigService } from '@nestjs/config';
 import { ConflictException, NotFoundException, ServiceUnavailableException } from '@nestjs/common';
 import { AuditService } from '../audit/audit.service';
 import { EmailService } from '../auth/email.service';
-import type { PartnershipsPrismaMock } from './__companions__/partnerships.service.spec.companion';
-import { createPartnershipsPrismaMock } from './__companions__/partnerships.service.spec.companion';
+import type { PartnershipsPrismaMock } from './partnerships.service.spec.fixtures';
+import { createPartnershipsPrismaMock } from './partnerships.service.spec.fixtures';
 
 describe('PartnershipsService', () => {
   let service: PartnershipsService;
@@ -273,8 +274,8 @@ describe('PartnershipsService', () => {
       expect(result.status).toBe('PENDING');
       expect(result.metadata).toEqual(
         expect.objectContaining({
-          inviteTokenHash: expect.any(String),
-          inviteSentAt: expect.any(String),
+          inviteTokenHash: expectValueOf(String),
+          inviteSentAt: expectValueOf(String),
         }),
       );
 
@@ -456,7 +457,7 @@ describe('PartnershipsService', () => {
         totalSales: 7,
         totalRevenue: 2450,
         commission: 25,
-        monthlyPerformance: expect.any(Array),
+        monthlyPerformance: expectValueOf(Array),
         lastSaleAt: new Date(Date.UTC(currentYear, 3, 1)).toISOString(),
       });
       expect(result.monthlyPerformance).toHaveLength(12);
@@ -584,7 +585,7 @@ describe('PartnershipsService', () => {
 
       expect(prisma.partnerMessage.updateMany).toHaveBeenCalledWith({
         where: { partnerId: 'p1', senderType: 'PARTNER', readAt: null },
-        data: { readAt: expect.any(Date) },
+        data: { readAt: expectValueOf(Date) },
       });
     });
   });

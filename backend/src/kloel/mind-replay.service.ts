@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 
 export interface ReplayCandidate {
   action: string;
@@ -115,6 +116,12 @@ function replaySteps(input: ReplayInput): ReplayStep[] {
 
 @Injectable()
 export class MindReplayService {
+  private readonly logger = StructuredLogger.from(MindReplayService.name);
+
+  constructor() {
+    this.logger.debug?.(`MindReplayService initialized`);
+  }
+
   replayDecision(input: ReplayInput): ReplayResult {
     if (input.candidates.length === 0) {
       return emptyReplayResult(input);
@@ -122,6 +129,9 @@ export class MindReplayService {
 
     const steps = replaySteps(input);
     const winner = steps[0];
+    if (!winner) {
+      return emptyReplayResult(input);
+    }
     const baselineAction = input.baseline ?? steps[steps.length - 1]?.action ?? 'pass';
 
     return {

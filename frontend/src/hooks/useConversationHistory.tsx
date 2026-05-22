@@ -15,9 +15,26 @@ import { mutate } from 'swr';
 interface Conversation {
   id: string;
   title: string;
-  updatedAt?: string;
-  lastMessagePreview?: string;
+  updatedAt?: string | undefined;
+  lastMessagePreview?: string | undefined;
 }
+
+interface ConversationApiPayload {
+  items?: Conversation[];
+  total?: number;
+  nextCursor?: string | null;
+  hasMore?: boolean;
+  [key: string]: unknown;
+}
+
+interface ThreadPage {
+  items: Conversation[];
+  total: number;
+  nextCursor: string | null;
+  hasMore: boolean;
+}
+
+const CONVERSATION_PAGE_SIZE = 20;
 
 interface ConversationHistoryContextType {
   conversations: Conversation[];
@@ -53,39 +70,6 @@ const ConversationHistoryContext = createContext<ConversationHistoryContextType>
   clearAll: () => {},
 });
 
-const CONVERSATIONS_CACHE_SLOT = 'kloel:conversations';
-const ACTIVE_CONVERSATION_CACHE_SLOT = 'kloel:activeConv';
-const CONVERSATION_PAGE_SIZE = 20;
-
-interface ThreadPage {
-  items: Conversation[];
-  total: number;
-  nextCursor: string | null;
-  hasMore: boolean;
-}
-
-type ConversationApiPayload = Conversation[] | ThreadPage;
-
-function readCache<T>(key: string, fallback: T): T {
-  try {
-    const raw = localStorage.getItem(key);
-    if (raw === null) {
-      return fallback;
-    }
-    return JSON.parse(raw) as T;
-  } catch {
-    return fallback;
-  }
-}
-
-function writeCache<T>(key: string, value: T): void {
-  try {
-    localStorage.setItem(key, JSON.stringify(value));
-  } catch {
-    // Storage full or unavailable
-  }
-}
-
 function isValidConversationId(value?: string | null): boolean {
   const normalized = String(value || '').trim();
   return Boolean(normalized) && !normalized.startsWith('local_');
@@ -117,7 +101,9 @@ function unwrapConversationPayload(
   return response as ConversationApiPayload;
 }
 
-function readThreadPage(response: { data?: ConversationApiPayload } | ConversationApiPayload): ThreadPage {
+function readThreadPage(
+  response: { data?: ConversationApiPayload } | ConversationApiPayload,
+): ThreadPage {
   const payload = unwrapConversationPayload(response);
   if (Array.isArray(payload)) {
     return { items: payload, total: payload.length, nextCursor: null, hasMore: false };
@@ -135,34 +121,35 @@ export function ConversationHistoryProvider({ children }: { children: ReactNode 
   const { isAuthenticated, isLoading } = useAuth();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeConv, setActiveConv] = useState<string | null>(null);
-  const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [hasMoreConversations, setHasMoreConversations] = useState(false);
   const [isLoadingMoreConversations, setIsLoadingMoreConversations] = useState(false);
   const [totalConversations, setTotalConversations] = useState<number | null>(null);
-  const [cacheHydrated, setCacheHydrated] = useState(false);
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
   const didSyncRef = useRef(false);
 
   const applyConversations = useCallback((nextConversations: Conversation[]) => {
     const normalized = sortConversations(
-      nextConversations.filter((conversation) => isValidConversationId(conversation?.id)).map(normalizeConversation),
+      nextConversations
+        .filter((conversation) => isValidConversationId(conversation?.id))
+        .map(normalizeConversation),
     );
 
     setConversations(normalized);
-    writeCache(CONVERSATIONS_CACHE_SLOT, normalized);
+    setActiveConv((current) =>
+      current && !normalized.some((conversation) => conversation.id === current) ? null : current,
+    );
   }, []);
 
-  const mergeConversations = useCallback((nextConversations: Conversation[]) => {
+  const mergeConversations = useCallback((incoming: Conversation[]) => {
     setConversations((prev) => {
-      const byId = new Map<string, Conversation>();
-      for (const conversation of [...prev, ...nextConversations]) {
-        if (!isValidConversationId(conversation.id)) {
+      const existing = new Map(prev.map((c) => [c.id, c]));
+      for (const conv of incoming) {
+        if (!isValidConversationId(conv?.id)) {
           continue;
         }
-        byId.set(conversation.id, normalizeConversation(conversation));
+        existing.set(conv.id, normalizeConversation(conv));
       }
-      const merged = sortConversations(Array.from(byId.values()));
-      writeCache(CONVERSATIONS_CACHE_SLOT, merged);
-      return merged;
+      return sortConversations(Array.from(existing.values()));
     });
   }, []);
 
@@ -171,14 +158,16 @@ export function ConversationHistoryProvider({ children }: { children: ReactNode 
       return;
     }
     try {
-      const res = await apiFetch<ConversationApiPayload>(`/kloel/threads?limit=${CONVERSATION_PAGE_SIZE}`);
+      const res = await apiFetch<ConversationApiPayload>(
+        `/kloel/threads?limit=${CONVERSATION_PAGE_SIZE}`,
+      );
       const page = readThreadPage(res);
       applyConversations(page.items);
       setNextCursor(page?.nextCursor ?? null);
       setHasMoreConversations(Boolean(page?.hasMore));
       setTotalConversations(typeof page?.total === 'number' ? page.total : page.items.length);
     } catch {
-      // Keep cached conversations when backend is temporarily unavailable
+      // Keep current conversations when backend is temporarily unavailable
     }
   }, [applyConversations, isAuthenticated]);
 
@@ -234,36 +223,16 @@ export function ConversationHistoryProvider({ children }: { children: ReactNode 
   }, [conversations, isAuthenticated, mergeConversations]);
 
   useEffect(() => {
-    const cachedConversations = readCache<Conversation[]>(CONVERSATIONS_CACHE_SLOT, []).filter(
-      (conversation) => isValidConversationId(conversation?.id),
-    );
-    const cachedActiveConversation = readCache<string | null>(ACTIVE_CONVERSATION_CACHE_SLOT, null);
-
-    setConversations(cachedConversations);
-    setActiveConv(
-      cachedActiveConversation && isValidConversationId(cachedActiveConversation)
-        ? cachedActiveConversation
-        : null,
-    );
-    setCacheHydrated(true);
-  }, []);
-
-  useEffect(() => {
     if (isLoading) {
       return;
     }
 
     if (!isAuthenticated) {
       didSyncRef.current = false;
-      setConversations([]);
-      setActiveConv(null);
-      setNextCursor(null);
-      setHasMoreConversations(false);
-      setTotalConversations(null);
-      try {
-        localStorage.removeItem(CONVERSATIONS_CACHE_SLOT);
-        localStorage.removeItem(ACTIVE_CONVERSATION_CACHE_SLOT);
-      } catch {}
+      queueMicrotask(() => {
+        setConversations([]);
+        setActiveConv(null);
+      });
       return;
     }
 
@@ -272,7 +241,9 @@ export function ConversationHistoryProvider({ children }: { children: ReactNode 
     }
     didSyncRef.current = true;
 
-    void refreshConversations();
+    queueMicrotask(() => {
+      void refreshConversations();
+    });
   }, [isAuthenticated, isLoading, refreshConversations]);
 
   useEffect(() => {
@@ -300,21 +271,6 @@ export function ConversationHistoryProvider({ children }: { children: ReactNode 
       document.removeEventListener('visibilitychange', handleVisibilityRefresh);
     };
   }, [isAuthenticated, isLoading, refreshConversations]);
-
-  // Update cache whenever conversations change (write-through cache)
-  useEffect(() => {
-    if (!cacheHydrated) {
-      return;
-    }
-    writeCache(CONVERSATIONS_CACHE_SLOT, conversations);
-  }, [cacheHydrated, conversations]);
-
-  useEffect(() => {
-    if (!cacheHydrated) {
-      return;
-    }
-    writeCache(ACTIVE_CONVERSATION_CACHE_SLOT, activeConv);
-  }, [activeConv, cacheHydrated]);
 
   const addConversation = useCallback(async (title?: string): Promise<string | null> => {
     try {
@@ -374,7 +330,6 @@ export function ConversationHistoryProvider({ children }: { children: ReactNode 
         ...prev.filter((entry) => entry.id !== conversation.id),
       ];
 
-      writeCache(CONVERSATIONS_CACHE_SLOT, next);
       return next;
     });
   }, []);
@@ -382,10 +337,6 @@ export function ConversationHistoryProvider({ children }: { children: ReactNode 
   const clearAll = useCallback(() => {
     setConversations([]);
     setActiveConv(null);
-    try {
-      localStorage.removeItem(CONVERSATIONS_CACHE_SLOT);
-      localStorage.removeItem(ACTIVE_CONVERSATION_CACHE_SLOT);
-    } catch {}
   }, []);
 
   return (

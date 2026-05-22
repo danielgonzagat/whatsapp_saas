@@ -69,7 +69,6 @@ async function publishAlert(workspaceId: string, type: string, data: Record<stri
       }),
     );
   } catch (err: unknown) {
-    // PULSE:OK — Alert publish non-critical; rate limiting still enforced regardless
     console.error('[RateLimiter] Failed to publish alert', err);
   }
 }

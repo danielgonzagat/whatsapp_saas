@@ -1,11 +1,13 @@
 import { Body, Controller, Post, Request, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { AuthenticatedRequest } from '../common/interfaces';
 import { NotificationsService } from './notifications.service';
-import type { AuthenticatedRequest } from '../common/interfaces/authenticated-request.interface';
+import { RouteClass } from '../common/throttler/route-class.decorator';
 
 /** Notifications controller. */
 @Controller('notifications')
 @UseGuards(JwtAuthGuard)
+@RouteClass('mutate')
 export class NotificationsController {
   constructor(private readonly notificationsService: NotificationsService) {}
 

@@ -1,4 +1,5 @@
-import { Injectable, Logger, Optional } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -10,7 +11,7 @@ import {
   NON_DIGIT_RE,
   toolSendAudio as toolSendAudioFn,
   toolSendDocument as toolSendDocumentFn,
-} from './__companions__/kloel-whatsapp-tools.service.companion';
+} from './kloel-whatsapp-tools.helpers';
 import type {
   ToolResult,
   ToolSendWhatsAppMessageArgs,
@@ -22,7 +23,7 @@ import type {
   ToolSendAudioArgs,
   ToolSendDocumentArgs,
   ToolTranscribeAudioArgs,
-} from './__companions__/kloel-whatsapp-tools.service.companion';
+} from './kloel-whatsapp-tools.helpers';
 export { NON_DIGIT_RE };
 export type {
   ToolResult,
@@ -40,12 +41,12 @@ export type {
 /** Handles all WhatsApp-related tool calls from the AI chat. */
 @Injectable()
 export class KloelWhatsAppToolsService {
-  private readonly logger = new Logger(KloelWhatsAppToolsService.name);
+  private readonly logger = StructuredLogger.from(KloelWhatsAppToolsService.name);
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly whatsappService: WhatsappService,
-    private readonly providerRegistry: WhatsAppProviderRegistry,
+    @Optional() private readonly whatsappService: WhatsappService,
+    @Optional() private readonly providerRegistry: WhatsAppProviderRegistry,
     private readonly transports: ChannelTransportRegistry,
     private readonly audioService: AudioService,
     private readonly planLimits: PlanLimitsService,
@@ -204,8 +205,8 @@ export class KloelWhatsAppToolsService {
   ): Promise<ToolResult> {
     const contact = await this.whatsappService.createContact(workspaceId, {
       phone: args?.phone,
-      name: args?.name,
-      email: args?.email,
+      ...(args?.name !== undefined ? { name: args.name } : {}),
+      ...(args?.email !== undefined ? { email: args.email } : {}),
     });
     return {
       success: true,
@@ -304,7 +305,7 @@ export class KloelWhatsAppToolsService {
         planLimits: this.planLimits,
         transports: this.transports,
         logger: this.logger,
-        opsAlert: this.opsAlert,
+        ...(this.opsAlert !== undefined ? { opsAlert: this.opsAlert } : {}),
       },
       workspaceId,
       args,
@@ -318,7 +319,7 @@ export class KloelWhatsAppToolsService {
         planLimits: this.planLimits,
         transports: this.transports,
         logger: this.logger,
-        opsAlert: this.opsAlert,
+        ...(this.opsAlert !== undefined ? { opsAlert: this.opsAlert } : {}),
       },
       workspaceId,
       args,

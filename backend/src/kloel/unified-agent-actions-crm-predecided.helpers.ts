@@ -1,9 +1,10 @@
-import type { Logger } from '@nestjs/common';
+import { Logger } from '@nestjs/common';
+
 import type { ToolArgs } from './unified-agent.types';
 import type { MindPolicyService } from './mind-policy.service';
 import { resolveFollowupTimingDecision } from './mind-recovery-decision-resolvers';
 
-type UnknownRecord = Record<string, unknown>;
+import type { UnknownRecord } from '../common/types';
 
 export interface FollowUpTimingResult {
   delayHours: number;
@@ -27,10 +28,12 @@ function nearestFollowUpBucket(
   requestedDelayHours: number,
   buckets: Record<string, number>,
 ): string {
-  return Object.entries(buckets).sort(
-    ([, left], [, right]) =>
-      Math.abs(left - requestedDelayHours) - Math.abs(right - requestedDelayHours),
-  )[0][0];
+  const [bucket] =
+    Object.entries(buckets).sort(
+      ([, left], [, right]) =>
+        Math.abs(left - requestedDelayHours) - Math.abs(right - requestedDelayHours),
+    )[0] ?? [];
+  return bucket ?? 'immediate';
 }
 
 export async function chooseFollowUpTiming(input: {
@@ -71,8 +74,8 @@ export async function chooseFollowUpTiming(input: {
       meta: {
         baseline,
         chosen: timing.bucket,
-        outcomeKey: timing.outcomeKey,
-        reasonInternal: timing.reasonInternal,
+        ...(timing.outcomeKey !== undefined ? { outcomeKey: timing.outcomeKey } : {}),
+        ...(timing.reasonInternal !== undefined ? { reasonInternal: timing.reasonInternal } : {}),
       },
     };
   } catch (error: unknown) {
@@ -108,12 +111,13 @@ export function predecidedHumanTransfer(args: ToolArgs): {
   fallback?: boolean;
 } {
   const decision = isRecord(args.handoffDecision) ? args.handoffDecision : {};
+  const conf =
+    typeof decision.confidence === 'number' && Number.isFinite(decision.confidence)
+      ? decision.confidence
+      : undefined;
   return {
     action: readString(decision.action, 'transfer_now'),
-    confidence:
-      typeof decision.confidence === 'number' && Number.isFinite(decision.confidence)
-        ? decision.confidence
-        : undefined,
+    ...(conf !== undefined ? { confidence: conf } : {}),
     fallback: decision.fallback === true,
   };
 }

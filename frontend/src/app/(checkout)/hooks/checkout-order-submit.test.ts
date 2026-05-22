@@ -55,7 +55,6 @@ const baseArgs = {
   workspaceId: 'ws_123',
 };
 
-// PULSE_OK: assertions exist below
 describe('finalizeCheckoutOrder — Stripe-only checkout', () => {
   beforeEach(() => {
     mockedCreateOrder.mockReset();
@@ -65,6 +64,7 @@ describe('finalizeCheckoutOrder — Stripe-only checkout', () => {
     mockedCreateOrder.mockResolvedValue({
       id: 'order_123',
       orderNumber: 'KLOEL-123',
+      status: 'PENDING',
       plan: { upsells: [] },
       paymentData: {
         clientSecret: 'pi_test_secret_123',
@@ -95,6 +95,7 @@ describe('finalizeCheckoutOrder — Stripe-only checkout', () => {
     mockedCreateOrder.mockResolvedValue({
       id: 'order_pix_1',
       orderNumber: 'KLOEL-PIX-1',
+      status: 'PENDING',
       paymentData: {
         approved: false,
         pixQrCode: 'data:image/png;base64,qr',

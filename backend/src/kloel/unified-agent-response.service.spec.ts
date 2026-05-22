@@ -1,0 +1,346 @@
+import { Test, TestingModule } from '@nestjs/testing';
+import { UnifiedAgentResponseService } from './unified-agent-response.service';
+import { PlanLimitsService } from '../billing/plan-limits.service';
+import OpenAI from 'openai';
+import { CANONICAL_MODEL_IDS } from '../lib/openai-models';
+import { chatCompletionWithFallback } from './openai-wrapper';
+
+jest.mock('./openai-wrapper', () => ({
+  chatCompletionWithFallback: jest.fn(),
+}));
+
+jest.mock('openai', () => ({
+  default: jest.fn().mockImplementation(() => ({
+    apiKey: 'mock-key',
+  })),
+}));
+
+describe('UnifiedAgentResponseService', () => {
+  let service: UnifiedAgentResponseService;
+  let planLimits: PlanLimitsService;
+  let planLimitsMock: { ensureTokenBudget: jest.Mock; trackAiUsage: jest.Mock };
+  const chatCompletionWithFallbackMock = jest.mocked(chatCompletionWithFallback);
+
+  const wsId = 'ws-1';
+
+  beforeEach(async () => {
+    planLimitsMock = {
+      ensureTokenBudget: jest.fn().mockResolvedValue(undefined),
+      trackAiUsage: jest.fn().mockResolvedValue(undefined),
+    };
+
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        UnifiedAgentResponseService,
+        { provide: PlanLimitsService, useValue: planLimitsMock },
+      ],
+    }).compile();
+
+    service = module.get<UnifiedAgentResponseService>(UnifiedAgentResponseService);
+    planLimits = module.get<PlanLimitsService>(PlanLimitsService);
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
+  describe('composeWriterReply', () => {
+    it('returns fallback reply when OpenAI is null', async () => {
+      const result = await service.composeWriterReply(
+        null,
+        CANONICAL_MODEL_IDS.openAiLegacyGpt4,
+        CANONICAL_MODEL_IDS.openAiLegacyGpt35,
+        {
+          customerMessage: 'Oi',
+          assistantDraft: 'Olá, como vai?',
+          actions: [],
+          historyTurns: 0,
+        },
+      );
+
+      expect(result).toContain('Olá');
+    });
+
+    it('returns undefined when draft and message are empty', async () => {
+      const result = await service.composeWriterReply(
+        null,
+        CANONICAL_MODEL_IDS.openAiLegacyGpt4,
+        CANONICAL_MODEL_IDS.openAiLegacyGpt35,
+        {
+          customerMessage: '',
+          assistantDraft: null,
+          actions: [],
+          historyTurns: 0,
+        },
+      );
+
+      expect(result).toBeUndefined();
+    });
+
+    it('calls OpenAI with correct params', async () => {
+      const fakeCompletion = {
+        choices: [{ message: { content: 'Olá! Como posso te ajudar hoje?' } }],
+        usage: { total_tokens: 100 },
+      };
+      chatCompletionWithFallbackMock.mockResolvedValue(fakeCompletion);
+
+      const result = await service.composeWriterReply(
+        new OpenAI({ apiKey: 'test-key' }),
+        CANONICAL_MODEL_IDS.openAiLegacyGpt4,
+        CANONICAL_MODEL_IDS.openAiLegacyGpt35,
+        {
+          workspaceId: wsId,
+          customerMessage: 'Oi',
+          assistantDraft: 'Rascunho',
+          actions: [{ tool: 'send_message', args: { message: 'Oi' }, result: 'ok' }],
+          historyTurns: 2,
+        },
+      );
+
+      expect(result).toContain('ajudar');
+      expect(chatCompletionWithFallbackMock).toHaveBeenCalled();
+      expect(planLimitsMock.ensureTokenBudget).toHaveBeenCalledWith(wsId);
+    });
+
+    it('falls back on OpenAI error', async () => {
+      chatCompletionWithFallbackMock.mockRejectedValue(new Error('API error'));
+
+      const result = await service.composeWriterReply(
+        new OpenAI({ apiKey: 'test-key' }),
+        CANONICAL_MODEL_IDS.openAiLegacyGpt4,
+        CANONICAL_MODEL_IDS.openAiLegacyGpt35,
+        {
+          customerMessage: 'Oi',
+          assistantDraft: 'Olá, como vai?',
+          actions: [],
+          historyTurns: 0,
+        },
+      );
+
+      expect(result).toContain('Olá');
+    });
+
+    it('tracks AI usage when workspaceId provided', async () => {
+      chatCompletionWithFallbackMock.mockResolvedValue({
+        choices: [{ message: { content: 'Resposta' } }],
+        usage: { total_tokens: 200 },
+      });
+
+      await service.composeWriterReply(
+        new OpenAI({ apiKey: 'test-key' }),
+        CANONICAL_MODEL_IDS.openAiLegacyGpt4,
+        CANONICAL_MODEL_IDS.openAiLegacyGpt35,
+        {
+          workspaceId: wsId,
+          customerMessage: 'Oi',
+          assistantDraft: null,
+          actions: [],
+          historyTurns: 0,
+        },
+      );
+
+      expect(planLimitsMock.trackAiUsage).toHaveBeenCalledWith(wsId, 200);
+    });
+  });
+
+  describe('finalizeReplyStyle', () => {
+    it('returns undefined for empty reply', () => {
+      const result = service.finalizeReplyStyle('Oi', '');
+      expect(result).toBeUndefined();
+    });
+
+    it('returns undefined for null reply', () => {
+      const result = service.finalizeReplyStyle('Oi', null);
+      expect(result).toBeUndefined();
+    });
+
+    it('returns trimmed reply for short messages', () => {
+      const result = service.finalizeReplyStyle('Oi', 'Olá! Tudo bem?');
+      expect(result).toContain('Olá');
+    });
+
+    it('limits reply length for longer conversations', () => {
+      const longReply = 'Frase um. '.repeat(20);
+      const result = service.finalizeReplyStyle(
+        'Me fale tudo sobre o produto e seus detalhes e benefícios',
+        longReply,
+        10,
+      );
+
+      expect(result).toContain('Frase um.');
+      expect(result!.length).toBeLessThan(longReply.length);
+    });
+  });
+
+  describe('buildQuotedReplyPlan', () => {
+    it('returns empty array for empty messages', async () => {
+      const result = await service.buildQuotedReplyPlan(
+        null,
+        CANONICAL_MODEL_IDS.openAiLegacyGpt4,
+        CANONICAL_MODEL_IDS.openAiLegacyGpt35,
+        planLimits,
+        {
+          workspaceId: wsId,
+          draftReply: 'Oi',
+          customerMessages: [],
+        },
+      );
+
+      expect(result).toEqual([]);
+    });
+
+    it('uses fallback for single message', async () => {
+      const result = await service.buildQuotedReplyPlan(
+        null,
+        CANONICAL_MODEL_IDS.openAiLegacyGpt4,
+        CANONICAL_MODEL_IDS.openAiLegacyGpt35,
+        planLimits,
+        {
+          workspaceId: wsId,
+          draftReply: 'Olá, como vai?',
+          customerMessages: [{ content: 'Oi', quotedMessageId: 'msg-1' }],
+        },
+      );
+
+      expect(result).toHaveLength(1);
+      expect(result[0].quotedMessageId).toBe('msg-1');
+    });
+
+    it('calls OpenAI for multiple messages', async () => {
+      chatCompletionWithFallbackMock.mockResolvedValue({
+        choices: [
+          {
+            message: {
+              content:
+                '{"replies":[{"index":1,"text":"Resposta 1"},{"index":2,"text":"Resposta 2"}]}',
+            },
+          },
+        ],
+        usage: { total_tokens: 150 },
+      });
+
+      const result = await service.buildQuotedReplyPlan(
+        new OpenAI({ apiKey: 'test-key' }),
+        CANONICAL_MODEL_IDS.openAiLegacyGpt4,
+        CANONICAL_MODEL_IDS.openAiLegacyGpt35,
+        planLimits,
+        {
+          workspaceId: wsId,
+          draftReply: 'Respostas',
+          customerMessages: [
+            { content: 'Msg 1', quotedMessageId: 'id-1' },
+            { content: 'Msg 2', quotedMessageId: 'id-2' },
+          ],
+        },
+      );
+
+      expect(result).toHaveLength(2);
+    });
+
+    it('falls back on OpenAI error', async () => {
+      chatCompletionWithFallbackMock.mockRejectedValue(new Error('API error'));
+
+      const result = await service.buildQuotedReplyPlan(
+        new OpenAI({ apiKey: 'test-key' }),
+        CANONICAL_MODEL_IDS.openAiLegacyGpt4,
+        CANONICAL_MODEL_IDS.openAiLegacyGpt35,
+        planLimits,
+        {
+          workspaceId: wsId,
+          draftReply: 'Respostas',
+          customerMessages: [
+            { content: 'Msg 1', quotedMessageId: 'id-1' },
+            { content: 'Msg 2', quotedMessageId: 'id-2' },
+          ],
+        },
+      );
+
+      expect(result).toHaveLength(2);
+    });
+
+    it('falls back when OpenAI returns wrong count', async () => {
+      chatCompletionWithFallbackMock.mockResolvedValue({
+        choices: [
+          {
+            message: { content: '{"replies":[{"index":1,"text":"Apenas uma"}]}' },
+          },
+        ],
+        usage: { total_tokens: 50 },
+      });
+
+      const result = await service.buildQuotedReplyPlan(
+        new OpenAI({ apiKey: 'test-key' }),
+        CANONICAL_MODEL_IDS.openAiLegacyGpt4,
+        CANONICAL_MODEL_IDS.openAiLegacyGpt35,
+        planLimits,
+        {
+          workspaceId: wsId,
+          draftReply: 'Respostas',
+          customerMessages: [
+            { content: 'Msg 1', quotedMessageId: 'id-1' },
+            { content: 'Msg 2', quotedMessageId: 'id-2' },
+          ],
+        },
+      );
+
+      expect(result).toHaveLength(2);
+    });
+  });
+
+  describe('buildFallbackResult', () => {
+    it('detects BUYING_INTENT for price messages', () => {
+      const result = service.buildFallbackResult('quanto custa o produto?');
+
+      expect(result.intent).toBe('BUYING_INTENT');
+      expect(result.confidence).toBe(0.45);
+    });
+
+    it('detects SCHEDULING for meeting messages', () => {
+      const result = service.buildFallbackResult('quero agendar uma reunião');
+
+      expect(result.intent).toBe('SCHEDULING');
+      expect(result.confidence).toBe(0.4);
+    });
+
+    it('detects CHURN_RISK for cancel messages', () => {
+      const result = service.buildFallbackResult('quero cancelar minha conta');
+
+      expect(result.intent).toBe('CHURN_RISK');
+      expect(result.confidence).toBe(0.4);
+    });
+
+    it('detects GREETING for hello messages', () => {
+      const result = service.buildFallbackResult('Olá, bom dia');
+
+      expect(result.intent).toBe('GREETING');
+      expect(result.confidence).toBe(0.35);
+    });
+
+    it('falls back to UNKNOWN for unrecognized messages', () => {
+      const result = service.buildFallbackResult('xyz random text');
+
+      expect(result.intent).toBe('UNKNOWN');
+      expect(result.confidence).toBe(0.2);
+    });
+  });
+
+  describe('extractIntent', () => {
+    it('returns IDLE for empty actions', () => {
+      const intent = service.extractIntent([], 'mensagem neutra');
+      expect(intent).toBe('IDLE');
+    });
+
+    it('maps tool to intent', () => {
+      const intent = service.extractIntent(
+        [{ tool: 'create_payment_link', args: {} }],
+        'quero pagar',
+      );
+      expect(intent).toBe('BUYING');
+    });
+
+    it('returns FOLLOW_UP for unknown tools', () => {
+      const intent = service.extractIntent([{ tool: 'unknown_tool', args: {} }], 'message');
+      expect(intent).toBe('FOLLOW_UP');
+    });
+  });
+});

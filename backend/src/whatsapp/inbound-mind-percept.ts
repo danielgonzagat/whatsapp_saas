@@ -1,6 +1,7 @@
 import { Logger } from '@nestjs/common';
+
 import { ChannelInboundHookService } from '../omnichannel/channel-inbound-hook.service';
-import type { InboundMessage } from './inbound-processor.service';
+import type { InboundMessage } from './inbound-processor.helpers';
 
 interface TriggerWhatsappMindPerceptInput {
   mindHook?: ChannelInboundHookService;
@@ -25,7 +26,7 @@ export function triggerWhatsappMindPercept(input: TriggerWhatsappMindPerceptInpu
         channel: 'WHATSAPP',
         externalId: msg.providerMessageId,
         from: phone,
-        fromName: msg.senderName,
+        ...(msg.senderName !== undefined ? { fromName: msg.senderName } : {}),
         content,
         metadata: {
           provider: msg.provider,

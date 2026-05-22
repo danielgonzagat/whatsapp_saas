@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
 /** Cookie consent record type. */
@@ -18,7 +18,11 @@ type CookieConsentInput = {
 /** Cookie consent service. */
 @Injectable()
 export class CookieConsentService {
-  constructor(private readonly prisma: PrismaService) {}
+  private readonly logger = new Logger(CookieConsentService.name);
+
+  constructor(private readonly prisma: PrismaService) {
+    this.logger.log('CookieConsentService initialized');
+  }
 
   /** Normalize. */
   normalize(input?: CookieConsentInput | null): CookieConsentRecord {
@@ -47,7 +51,12 @@ export class CookieConsentService {
             ? parsed.updatedAt
             : consent.updatedAt,
       };
-    } catch {
+    } catch (error: unknown) {
+      this.logger.error(
+        'Failed to parse cookie consent value',
+        error instanceof Error ? error.message : String(error),
+        { context: 'CookieConsentService.parseCookieValue' },
+      );
       return null;
     }
   }

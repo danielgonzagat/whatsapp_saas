@@ -7,7 +7,7 @@ import { ensureDir, pathExists, readTextFile, renamePath, writeTextFile } from '
 import type {
   PulseArtifactDefinition,
   PulseArtifactRegistry,
-} from './artifact-registry/__parts__/discovery';
+} from './artifact-registry/discovery';
 import { injectRunIdentity, type PulseRunIdentity } from './run-identity';
 import { safeJoin } from './lib/safe-path';
 

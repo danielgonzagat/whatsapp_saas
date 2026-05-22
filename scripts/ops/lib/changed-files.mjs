@@ -1,4 +1,5 @@
 import { execFileSync, spawnSync } from 'node:child_process';
+import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -71,6 +72,14 @@ function splitLines(output) {
 }
 
 export function collectChangedFiles() {
+  const changedFilesPath = process.env.KLOEL_CHANGED_FILES_FILE;
+  if (changedFilesPath) {
+    const fromEnvFile = splitLines(readFileSync(changedFilesPath, 'utf8'));
+    if (fromEnvFile.length > 0) {
+      return fromEnvFile;
+    }
+  }
+
   const diffRange = resolveDiffRange();
   const fromRange = splitLines(runGit(['diff', '--name-only', diffRange], { allowFailure: true }));
   if (fromRange.length > 0) {

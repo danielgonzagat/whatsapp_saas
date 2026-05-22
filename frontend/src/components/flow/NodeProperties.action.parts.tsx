@@ -3,11 +3,6 @@
 import { kloelT } from '@/lib/i18n/t';
 import type { NodeFieldsProps } from './NodeProperties.types';
 
-/**
- * HTTP methods exposed by the webhook action node. Defined as a constant so the
- * JSX option labels are not raw literal strings (they remain protocol tokens
- * and are intentionally not internationalised).
- */
 const WEBHOOK_HTTP_METHODS = ['GET', 'POST', 'PUT', 'DELETE'] as const;
 
 /** Webhook URL placeholder text used as an example, not user-facing copy. */
@@ -108,7 +103,7 @@ export function ActionFields({ id, node, handleChange }: NodeFieldsProps) {
             >
               {WEBHOOK_HTTP_METHODS.map((method) => (
                 <option key={method} value={method}>
-                  {method}
+                  {kloelT(method)}
                 </option>
               ))}
             </select>

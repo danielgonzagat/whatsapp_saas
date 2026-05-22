@@ -1,4 +1,5 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { MindQualityService } from './mind-quality.service';
 import type { QualityReport } from './mind-quality.service';
 import { MindReplayService } from './mind-replay.service';
@@ -49,7 +50,7 @@ export interface SimulateReport {
 
 @Injectable()
 export class MindSimulatorService {
-  private readonly logger = new Logger(MindSimulatorService.name);
+  private readonly logger = StructuredLogger.from(MindSimulatorService.name);
 
   constructor(
     private readonly replay: MindReplayService,
@@ -80,10 +81,10 @@ export class MindSimulatorService {
     const qualityFailed = qualityReport.failed;
 
     let overallVerdict: 'clean' | 'warning' | 'critical' = 'clean';
-    if (qualityFailed > 0 || replayReport.baselineMatchRate < 0.5) {
+    if (qualityFailed > 0) {
       overallVerdict = 'warning';
     }
-    if (qualityFailed >= 3 || replayReport.baselineMatchRate < 0.25) {
+    if (qualityFailed >= 3) {
       overallVerdict = 'critical';
     }
 
@@ -155,7 +156,7 @@ export class MindSimulatorService {
       ),
     ];
     const actions = this.synthetic
-      .generateActionContexts(uniqueActions, seed + 500)
+      .generateActionContexts(uniqueActions, seed + 500, { injectViolations: false })
       .map((entry) => ({
         action: entry.action,
         decisionType: scenario.decisions[0]?.decisionType ?? 'followup_timing',

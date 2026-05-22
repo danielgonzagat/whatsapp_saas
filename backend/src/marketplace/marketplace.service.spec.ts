@@ -114,7 +114,7 @@ describe('MarketplaceService', () => {
 
       expect(prisma.flow.create).toHaveBeenCalledWith({
         data: {
-          workspaceId,
+          workspace: { connect: { id: workspaceId } },
           name: template.name,
           description: template.description,
           nodes: template.nodes,

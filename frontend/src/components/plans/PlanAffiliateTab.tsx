@@ -1,10 +1,11 @@
 'use client';
+import { colors } from '@/lib/design-tokens';
 
 import { kloelT } from '@/lib/i18n/t';
 import { apiFetch } from '@/lib/api';
 import { useEffect, useRef, useState } from 'react';
 import { mutate } from 'swr';
-import { colors } from '@/lib/design-tokens';
+
 
 const FONT_BODY = "var(--font-sora), 'Sora', sans-serif";
 const FONT_MONO = "var(--font-jetbrains), 'JetBrains Mono', monospace";
@@ -162,7 +163,7 @@ export function PlanAffiliateTab({
               width: 44,
               height: 24,
               borderRadius: 12,
-              background: enabled ? '#10B981' : 'colors.border.space',
+              background: enabled ? colors.semantic.success : 'colors.border.space',
               border: 'none',
               position: 'relative',
               cursor: 'pointer',
@@ -173,8 +174,8 @@ export function PlanAffiliateTab({
               style={{
                 width: 18,
                 height: 18,
-                borderRadius: 9,
-                background: '#fff',
+                borderRadius: 8,
+                background: colors.text.silver,
                 position: 'absolute',
                 top: 3,
                 left: enabled ? 23 : 3,

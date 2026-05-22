@@ -1,4 +1,5 @@
 'use client';
+import { colors } from '@/lib/design-tokens';
 
 import { kloelT } from '@/lib/i18n/t';
 /** Dynamic. */
@@ -43,7 +44,7 @@ export default function GerenciePage() {
         }}
       >
         <span style={{ fontSize: 16 }}>{'\u2022'}</span>
-        <span style={{ fontSize: 13, color: '#E85D30', fontWeight: 500 }}>
+        <span style={{ fontSize: 13, color: colors.ember.primary, fontWeight: 500 }}>
           {counts.active} {kloelT(`operacionais agora`)}
           {counts.planned ? ` • ${counts.planned} em roadmap controlado` : ''}.
         </span>

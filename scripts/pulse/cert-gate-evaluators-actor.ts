@@ -21,7 +21,7 @@ import {
   chooseStructuredFailureClass,
   deriveGateOrderFromResults,
 } from './cert-helpers';
-import { gateFail } from './__parts__/cert-gate-evaluators/gate-fail';
+import { gateFail } from './cert-gate-evaluators/gate-fail';
 
 export { chooseStructuredFailureClass };
 

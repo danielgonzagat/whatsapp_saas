@@ -5,16 +5,24 @@ import { resolveWorkspaceId } from '../auth/workspace-access';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { AuthenticatedRequest } from '../common/interfaces/authenticated-request.interface';
 import { AuditService } from './audit.service';
+import { InternalEndpoint } from '../common/decorators/internal-endpoint.decorator';
+import { RouteClass } from '../common/throttler/route-class.decorator';
 
 /** Audit controller. */
 @ApiTags('Audit')
 @ApiBearerAuth()
 @Controller('audit')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
+@RouteClass('read')
+/**
+ * @cluster whatsapp_saas/backend/audit
+ * L11 multi-agent TaskGraph annotation (Wave 4 loop-runner).
+ */
 export class AuditController {
   constructor(private readonly auditService: AuditService) {}
 
   /** Get logs. */
+  @InternalEndpoint('audit log access')
   @Get()
   @ApiOperation({ summary: 'Get audit logs for the workspace' })
   async getLogs(

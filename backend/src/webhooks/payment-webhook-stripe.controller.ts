@@ -9,9 +9,7 @@ import {
   Logger,
   Post,
   Req,
-  UseGuards,
 } from '@nestjs/common';
-import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import { type WebhookEvent } from '@prisma/client';
 import type { Redis } from 'ioredis';
 import { AdminAuditService } from '../admin/audit/admin-audit.service';
@@ -30,6 +28,7 @@ import { StripeWebhookProcessor } from '../payments/stripe/stripe-webhook.proces
 import { FinancialAlertService } from '../common/financial-alert.service';
 import { validateNoInternalAccess } from '../common/utils/url-validator';
 import { ChannelTransportRegistry } from '../kloel/channel-transport.registry';
+import { Metrics } from '../observability/metrics';
 import { PrismaService } from '../prisma/prisma.service';
 import { WebhooksService } from './webhooks.service';
 import { StripeWebhookLedgerService } from './stripe-webhook-ledger.service';
@@ -52,6 +51,7 @@ import {
   handlePaymentIntentEvent,
   handleCheckoutSessionCompleted,
 } from './payment-webhook-stripe.handlers2';
+import { RouteClass } from '../common/throttler/route-class.decorator';
 
 /**
  * Handles all Stripe-originated webhooks at POST /webhook/payment/stripe.
@@ -59,8 +59,7 @@ import {
  * Event handlers are split across payment-webhook-stripe.handlers.ts and handlers2.ts.
  */
 @Controller('webhook/payment')
-@UseGuards(ThrottlerGuard)
-@Throttle({ default: { limit: 100, ttl: 60000 } })
+@RouteClass('webhook')
 export class PaymentWebhookStripeController {
   private readonly logger = new Logger(PaymentWebhookStripeController.name);
 
@@ -124,6 +123,9 @@ export class PaymentWebhookStripeController {
     @Headers('x-event-id') eventId: string | undefined,
     @Body() body: StripeEventLike,
   ) {
+    const start = Date.now();
+    let event: StripeEventLike | undefined;
+    try {
     const primarySecret = process.env.STRIPE_WEBHOOK_SECRET;
     const endpointSecrets = Array.from(
       new Set(
@@ -137,11 +139,14 @@ export class PaymentWebhookStripeController {
       throw new ForbiddenException('STRIPE_WEBHOOK_SECRET not configured');
     }
 
-    let event: StripeEventLike = body;
+    event = body;
     if (endpointSecrets.length > 0) {
-      if (!stripeSignature) throw new BadRequestException('Missing stripe-signature header');
-      if (!req.rawBody)
+      if (!stripeSignature) {
+        throw new BadRequestException('Missing stripe-signature header');
+      }
+      if (!req.rawBody) {
         throw new BadRequestException('Missing rawBody for Stripe webhook verification');
+      }
       const stripeKey = process.env.STRIPE_SECRET_KEY;
       if (!stripeKey) {
         this.logger.warn('STRIPE_SECRET_KEY not configured — payment webhooks disabled');
@@ -179,8 +184,8 @@ export class PaymentWebhookStripeController {
         event = {
           id: hydrated.id,
           type: hydrated.type,
-          data: { object: asRecord(hydrated.data?.object) ?? undefined },
-        };
+          data: { object: asRecord(hydrated.data?.object) ?? undefined } as StripeEventLike['data'],
+        } as StripeEventLike;
       } else if (verified.type === 'checkout.session.completed') {
         const session: StripeCheckoutSession = verified.data.object;
         event = {
@@ -241,13 +246,15 @@ export class PaymentWebhookStripeController {
         event = {
           id: verified.id,
           type: verified.type,
-          data: { object: asRecord(verified.data.object) ?? undefined },
-        };
+          data: { object: asRecord(verified.data.object) ?? undefined } as StripeEventLike['data'],
+        } as StripeEventLike;
       }
     }
 
     const stripeDupe = await this.ensureIdempotent(eventId || event?.id || body?.id, req);
-    if (stripeDupe) return stripeDupe;
+    if (stripeDupe) {
+      return stripeDupe;
+    }
 
     const stripeExternalId = event?.id || eventId || body?.id || `stripe_${Date.now()}`;
     let webhookEvent: WebhookEvent | undefined;
@@ -308,7 +315,14 @@ export class PaymentWebhookStripeController {
         );
       });
     }
+    Metrics.endpoint.success('webhook.stripe', { event_type: event?.type ?? 'unknown' });
+    Metrics.endpoint.duration('webhook.stripe', Date.now() - start, { event_type: event?.type ?? 'unknown' });
     return { received: true };
+    } catch (err: unknown) {
+      const code = (err as { code?: string })?.code ?? 'unknown';
+      Metrics.endpoint.failure('webhook.stripe', { event_type: event?.type ?? 'unknown', code });
+      throw err;
+    }
   }
 
   private async ensureIdempotent(
@@ -339,7 +353,9 @@ export class PaymentWebhookStripeController {
       process.env.OPS_WEBHOOK_URL ||
       process.env.AUTOPILOT_ALERT_WEBHOOK ||
       process.env.DLQ_WEBHOOK_URL;
-    if (!url || !globalThis.fetch) return;
+    if (!url || !globalThis.fetch) {
+      return;
+    }
     const stableId =
       asString(meta.eventId) ||
       asString(meta.externalId) ||

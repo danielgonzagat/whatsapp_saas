@@ -1,20 +1,20 @@
 import { createReadStream, existsSync } from 'node:fs';
 import { basename } from 'node:path';
 import { Controller, ForbiddenException, Get, NotFoundException, Param, Res } from '@nestjs/common';
-import { Throttle } from '@nestjs/throttler';
 import { Response } from 'express';
 import { Public } from '../../auth/public.decorator';
 import { StorageService } from './storage.service';
+import { RouteClass } from '../throttler/route-class.decorator';
 
 /** Storage controller. */
 @Controller('storage')
+@RouteClass('mutate')
 export class StorageController {
   constructor(private readonly storage: StorageService) {}
 
   /** Serve signed local file. */
   @Public()
   @Get('local/:token')
-  @Throttle({ default: { limit: 100, ttl: 60000 } })
   async serveSignedLocalFile(@Param('token') token: string, @Res() res: Response) {
     return this.serveSignedFile(token, res);
   }
@@ -22,7 +22,6 @@ export class StorageController {
   /** Serve signed access file. */
   @Public()
   @Get('access/:token')
-  @Throttle({ default: { limit: 100, ttl: 60000 } })
   async serveSignedAccessFile(@Param('token') token: string, @Res() res: Response) {
     return this.serveSignedFile(token, res);
   }

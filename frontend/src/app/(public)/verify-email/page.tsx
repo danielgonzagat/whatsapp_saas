@@ -28,10 +28,10 @@ function VerifyEmailContent() {
       return;
     }
     calledRef.current = true;
+    let redirectTimer: number | undefined;
+    let cancelled = false;
 
     if (!token) {
-      setState('error');
-      setErrorMessage('Token de verificacao invalido ou ausente.');
       return;
     }
 
@@ -43,7 +43,11 @@ function VerifyEmailContent() {
           body: JSON.stringify({ token }),
         });
 
-        const data = await res.json().catch(() => ({}));
+        const data: { message?: string } = await res.json().catch(() => ({}));
+
+        if (cancelled) {
+          return;
+        }
 
         if (!res.ok) {
           setState('error');
@@ -52,17 +56,29 @@ function VerifyEmailContent() {
         }
 
         setState('success');
-        setTimeout(() => {
+        redirectTimer = window.setTimeout(() => {
           router.push('/login');
         }, 3000);
       } catch {
+        if (cancelled) {
+          return;
+        }
         setState('error');
         setErrorMessage('Erro de conexao. Tente novamente.');
       }
     };
 
     verify();
+    return () => {
+      cancelled = true;
+      if (redirectTimer !== undefined) {
+        window.clearTimeout(redirectTimer);
+      }
+    };
   }, [token, router]);
+
+  const viewState = token ? state : 'error';
+  const viewErrorMessage = token ? errorMessage : 'Token de verificacao invalido ou ausente.';
 
   return (
     <div
@@ -81,12 +97,12 @@ function VerifyEmailContent() {
           <KloelBrandLockup markSize={22} fontSize={18} fontWeight={600} />
         </div>
 
-        {state === 'loading' && (
+        {viewState === 'loading' && (
           <>
             <div style={{ margin: '0 auto 24px', display: 'flex', justifyContent: 'center' }}>
               <KloelMushroomVisual
                 size={52}
-                traceColor={kloelT(`#FFFFFF`)}
+                traceColor={colors.text.silver}
                 animated
                 spores="animated"
               />
@@ -113,7 +129,7 @@ function VerifyEmailContent() {
           </>
         )}
 
-        {state === 'success' && (
+        {viewState === 'success' && (
           <>
             {/* Checkmark */}
             <div
@@ -184,10 +200,10 @@ function VerifyEmailContent() {
           </>
         )}
 
-        {state === 'error' && (
+        {viewState === 'error' && (
           <>
             <div style={{ margin: '0 auto 24px', display: 'flex', justifyContent: 'center' }}>
-              <KloelMushroomVisual size={56} traceColor={kloelT(`#FFFFFF`)} spores="static" />
+              <KloelMushroomVisual size={56} traceColor={colors.text.silver} spores="static" />
             </div>
             <h1
               style={{
@@ -207,7 +223,7 @@ function VerifyEmailContent() {
                 marginBottom: 24,
               }}
             >
-              {errorMessage}
+              {viewErrorMessage}
             </p>
             <button
               type="button"
@@ -252,7 +268,7 @@ export default function VerifyEmailPage() {
         >
           <KloelLoadingState
             size={88}
-            traceColor={kloelT(`#FFFFFF`)}
+            traceColor={colors.text.silver}
             label={kloelT(`Kloel`)}
             hint={kloelT(`verificando o acesso`)}
             minHeight={280}

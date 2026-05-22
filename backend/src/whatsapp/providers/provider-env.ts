@@ -36,11 +36,6 @@ export function normalizeWhatsAppProvider(value: unknown): ResolvedWhatsAppProvi
   return null;
 }
 
-/** Is waha runtime configured. */
-export function isWahaRuntimeConfigured(env: NodeJS.ProcessEnv = process.env): boolean {
-  return Boolean(String(env.WAHA_API_URL || env.WAHA_BASE_URL || env.WAHA_URL || '').trim());
-}
-
 /** Resolve default whats app provider. */
 export function resolveDefaultWhatsAppProvider(
   env: NodeJS.ProcessEnv = process.env,

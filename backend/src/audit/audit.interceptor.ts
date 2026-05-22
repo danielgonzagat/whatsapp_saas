@@ -1,22 +1,57 @@
-import {
-  CallHandler,
-  ExecutionContext,
-  Injectable,
-  NestInterceptor,
-  SetMetadata,
-} from '@nestjs/common';
+import { CallHandler, ExecutionContext, Injectable, NestInterceptor } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { Observable } from 'rxjs';
 import { tap } from 'rxjs/operators';
 import { sanitizePayload } from '../common/sanitize-payload';
-import type { AuthenticatedRequest } from '../common/interfaces/authenticated-request.interface';
 import { AuditService } from './audit.service';
 
 /** Audit action metadata. */
+/**
+ * @cluster whatsapp_saas/backend/audit
+ * L11 multi-agent TaskGraph annotation (batched by tools/auto-pr/batch-job.mjs).
+ */
 const AUDIT_ACTION_METADATA = ['audit', 'action'].join('_');
-/** Audit action. */
-export const AuditAction = (action: string, resource: string) =>
-  SetMetadata(AUDIT_ACTION_METADATA, { action, resource });
+type AuditMetadata = { action: string; resource: string };
+type AuditRequestRecord = Record<string, unknown>;
+
+interface AuditRequest {
+  user?: unknown;
+  ip?: string;
+  headers?: AuditRequestRecord;
+  params?: unknown;
+  body?: unknown;
+}
+
+function isRecord(value: unknown): value is AuditRequestRecord {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function readStringProperty(source: unknown, key: string): string | undefined {
+  if (!isRecord(source)) {
+    return undefined;
+  }
+  const value = source[key];
+  return typeof value === 'string' && value.trim() ? value : undefined;
+}
+
+function readHeader(headers: unknown, key: string): string | undefined {
+  if (!isRecord(headers)) {
+    return undefined;
+  }
+  const value = headers[key];
+  if (typeof value === 'string' && value.trim()) {
+    return value;
+  }
+  if (Array.isArray(value)) {
+    const firstString = value.find((entry): entry is string => typeof entry === 'string');
+    return firstString?.trim() ? firstString : undefined;
+  }
+  return undefined;
+}
+
+function readResourceId(response: unknown, params: unknown): string | undefined {
+  return readStringProperty(response, 'id') ?? readStringProperty(params, 'id');
+}
 
 /** Audit interceptor. */
 @Injectable()
@@ -28,33 +63,26 @@ export class AuditInterceptor implements NestInterceptor {
 
   /** Intercept. */
   intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
-    const metadata = this.reflector.get(AUDIT_ACTION_METADATA, context.getHandler());
+    const metadata = this.reflector.get<AuditMetadata>(AUDIT_ACTION_METADATA, context.getHandler());
 
     // If no audit metadata, skip
     if (!metadata) {
       return next.handle();
     }
 
-    const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
+    const request = context.switchToHttp().getRequest<AuditRequest>();
     const { user, ip, headers, params, body } = request;
+    const workspaceId = readStringProperty(user, 'workspaceId');
+    const agentId = readStringProperty(user, 'sub');
 
-    if (!user || !user.workspaceId) {
+    if (!workspaceId) {
       return next.handle();
     }
 
     return next.handle().pipe(
       tap((response) => {
         // Determine resource ID from response or params
-        const responseRecord =
-          typeof response === 'object' && response !== null
-            ? (response as Record<string, unknown>)
-            : {};
-        const resourceId =
-          typeof responseRecord.id === 'string'
-            ? responseRecord.id
-            : typeof params?.id === 'string'
-              ? params.id
-              : null;
+        const resourceId = readResourceId(response, params);
 
         // Filter sensitive data from details via shared sanitizer
         const details = sanitizePayload({
@@ -62,19 +90,17 @@ export class AuditInterceptor implements NestInterceptor {
           body,
         });
 
-        const forwardedFor = headers['x-forwarded-for'];
-        const userAgent = headers['user-agent'];
-        const ipAddress =
-          typeof forwardedFor === 'string' ? forwardedFor : typeof ip === 'string' ? ip : undefined;
+        const ipAddress = ip || readHeader(headers, 'x-forwarded-for');
+        const userAgent = readHeader(headers, 'user-agent');
         void this.auditService.log({
-          workspaceId: user.workspaceId,
-          agentId: user.sub,
+          workspaceId,
+          ...(agentId !== undefined ? { agentId } : {}),
           action: metadata.action,
           resource: metadata.resource,
-          resourceId: resourceId ?? undefined,
+          ...(resourceId !== undefined ? { resourceId } : {}),
           details: details as Record<string, unknown>,
-          ipAddress,
-          userAgent: typeof userAgent === 'string' ? userAgent : undefined,
+          ...(ipAddress !== undefined ? { ipAddress } : {}),
+          ...(userAgent !== undefined ? { userAgent } : {}),
         });
       }),
     );

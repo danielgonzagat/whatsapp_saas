@@ -139,8 +139,8 @@ function FieldContainer({
   children,
 }: {
   label: string;
-  full?: boolean;
-  helper?: string;
+  full?: boolean | undefined;
+  helper?: string | undefined;
   children: React.ReactNode;
 }) {
   return (

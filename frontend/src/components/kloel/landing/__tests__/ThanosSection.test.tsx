@@ -26,13 +26,21 @@ function mockReducedMotion(matches = true) {
 
 function mockIntersectionObserver() {
   class MockIntersectionObserver {
+    readonly root = null;
+    readonly rootMargin = '';
+    readonly thresholds: number[] = [];
+
     constructor(private readonly callback: IntersectionObserverCallback) {}
     observe() {
       this.callback(
         [{ isIntersecting: true } as IntersectionObserverEntry],
-        this as unknown as IntersectionObserver,
+        this,
       );
     }
+    takeRecords() {
+      return [];
+    }
+    unobserve() {}
     disconnect() {}
   }
   vi.stubGlobal('IntersectionObserver', MockIntersectionObserver);
@@ -84,7 +92,7 @@ function mockCanvas() {
     value: 160,
   });
   vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(
-    context as unknown as CanvasRenderingContext2D,
+    Object.assign(Object.create(null) as CanvasRenderingContext2D, context),
   );
   return context;
 }

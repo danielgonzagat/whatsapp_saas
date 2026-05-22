@@ -11,22 +11,45 @@ import {
   Res,
   UseGuards,
 } from '@nestjs/common';
+import type { Prisma } from '@prisma/client';
 import { Response } from 'express';
 import { Public } from '../auth/public.decorator';
 import { resolveWorkspaceId } from '../auth/workspace-access';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
+import { Idempotent } from '../common/idempotency.guard';
 import { AuthenticatedRequest } from '../common/interfaces/authenticated-request.interface';
+import { InternalEndpoint } from '../common/decorators/internal-endpoint.decorator';
 import { getTraceHeaders } from '../common/trace-headers';
 import { PrismaService } from '../prisma/prisma.service';
 import { MetaSdkService } from './meta-sdk.service';
 import { decryptMetaToken, encryptMetaToken } from './meta-token-crypto';
 import { MetaWhatsAppService } from './meta-whatsapp.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
+import { RouteClass } from '../common/throttler/route-class.decorator';
 import {
   buildDiagnosticsPayload,
   humanizeMetaError,
   sanitizeReturnTo as sanitizeReturnToHelper,
-} from './__parts__/meta-auth-helpers';
+} from './oauth/meta-auth-helpers';
+import { readRecord, readStrictText } from './read-model/meta-read-helpers';
+
+interface MetaAuthPage {
+  id?: string;
+  name?: string;
+  access_token?: string;
+  instagram_business_account?: {
+    id?: string;
+    username?: string;
+    [key: string]: unknown;
+  };
+  [key: string]: unknown;
+}
+
+interface MetaAuthAdAccount {
+  id?: string;
+  name?: string;
+  [key: string]: unknown;
+}
 
 /**
  * Meta Platform OAuth controller.
@@ -38,6 +61,7 @@ import {
  *  GET  /meta/auth/status      — connection status (authed)
  */
 @Controller('meta/auth')
+@RouteClass('mutate')
 export class MetaAuthController {
   private readonly logger = new Logger(MetaAuthController.name);
 
@@ -77,11 +101,11 @@ export class MetaAuthController {
         continue;
       }
       try {
-        const parsed = JSON.parse(candidate);
+        const parsed = readRecord(JSON.parse(candidate) as unknown);
         return {
-          workspaceId: String(parsed?.workspaceId || '').trim(),
-          channel: parsed?.channel ? String(parsed.channel).trim() : null,
-          returnTo: parsed?.returnTo ? String(parsed.returnTo).trim() : null,
+          workspaceId: readStrictText(parsed.workspaceId)?.trim() || '',
+          channel: readStrictText(parsed.channel)?.trim() || null,
+          returnTo: readStrictText(parsed.returnTo)?.trim() || null,
         };
       } catch {
         continue;
@@ -124,8 +148,8 @@ export class MetaAuthController {
     const workspaceId = resolveWorkspaceId(req);
     return {
       url: this.metaWhatsApp.buildEmbeddedSignupUrl(workspaceId, {
-        channel,
-        returnTo: this.sanitizeReturnTo(returnTo, channel),
+        ...(channel !== undefined ? { channel } : {}),
+        ...(returnTo !== undefined ? { returnTo: this.sanitizeReturnTo(returnTo, channel) } : {}),
       }),
     };
   }
@@ -135,6 +159,7 @@ export class MetaAuthController {
   // (2) that it matches what is registered in the Meta app, and
   // (3) which scopes are requested per channel — all without dumping secrets.
 
+  @InternalEndpoint('Meta OAuth configuration diagnostics')
   @Get('diagnostics')
   @UseGuards(WorkspaceGuard)
   getDiagnostics() {
@@ -198,13 +223,17 @@ export class MetaAuthController {
         headers: getTraceHeaders(),
         signal: AbortSignal.timeout(30000),
       });
-      const tokenData = await tokenRes.json();
+      const tokenData = readRecord(await tokenRes.json());
+      const tokenError = readRecord(tokenData.error);
 
-      if (tokenData.error) {
-        const rawMetaError = String(
-          tokenData.error.message || tokenData.error.error_user_msg || '',
-        );
-        const rawErrorCode = tokenData.error.code ?? tokenData.error.type ?? null;
+      if (Object.keys(tokenError).length > 0) {
+        const rawMetaError =
+          readStrictText(tokenError.message) || readStrictText(tokenError.error_user_msg) || '';
+        const errorCodeValue = tokenError.code ?? tokenError.type ?? null;
+        const rawErrorCode =
+          typeof errorCodeValue === 'string' || typeof errorCodeValue === 'number'
+            ? errorCodeValue
+            : null;
         this.logger.error(
           JSON.stringify({
             event: 'meta_oauth_token_exchange_failed',
@@ -226,7 +255,7 @@ export class MetaAuthController {
         );
       }
 
-      const shortLivedToken = tokenData.access_token;
+      const shortLivedToken = readStrictText(tokenData.access_token) || '';
 
       // 2. Exchange for long-lived token
       const longLived = await this.metaSdk.exchangeToken(shortLivedToken);
@@ -250,7 +279,7 @@ export class MetaAuthController {
 
       const pages = Array.isArray(pagesRes.data) ? pagesRes.data : [];
       if (pages.length > 0) {
-        const page = pages[0] as Record<string, unknown>; // Use first page
+        const page = pages[0] as MetaAuthPage; // Use first page
         pageId = typeof page.id === 'string' ? page.id : null;
         pageName = typeof page.name === 'string' ? page.name : null;
         pageAccessToken = typeof page.access_token === 'string' ? page.access_token : null;
@@ -259,7 +288,7 @@ export class MetaAuthController {
           page.instagram_business_account &&
           typeof page.instagram_business_account === 'object' &&
           !Array.isArray(page.instagram_business_account)
-            ? (page.instagram_business_account as Record<string, unknown>)
+            ? (page.instagram_business_account as MetaAuthPage['instagram_business_account'])
             : null;
         if (instagramBusinessAccount) {
           instagramAccountId =
@@ -281,7 +310,7 @@ export class MetaAuthController {
       let adAccountId: string | null = null;
       const adAccounts = Array.isArray(adAccountsRes.data) ? adAccountsRes.data : [];
       if (adAccounts.length > 0) {
-        const firstAdAccount = adAccounts[0] as Record<string, unknown>;
+        const firstAdAccount = adAccounts[0] as MetaAuthAdAccount;
         adAccountId = typeof firstAdAccount.id === 'string' ? firstAdAccount.id : null;
       }
 
@@ -292,43 +321,51 @@ export class MetaAuthController {
       const tokenExpiresAt = expiresIn ? new Date(Date.now() + expiresIn * 1000) : null;
 
       // 6. Upsert MetaConnection
+      const connectionCreate: Prisma.MetaConnectionCreateInput = {
+        workspace: { connect: { id: workspaceId } },
+        accessToken: encryptMetaToken(accessToken) || accessToken,
+        tokenExpiresAt,
+        pageId,
+        pageName,
+        pageAccessToken: encryptMetaToken(pageAccessToken) ?? null,
+        instagramAccountId,
+        instagramUsername,
+        whatsappPhoneNumberId: whatsappAssets.whatsappPhoneNumberId || null,
+        whatsappBusinessId: whatsappAssets.whatsappBusinessId || null,
+        adAccountId,
+        status: 'connected',
+        channel: parsedState.channel || 'whatsapp',
+      };
+      const connectionUpdate: Prisma.MetaConnectionUpdateInput = {
+        accessToken: encryptMetaToken(accessToken) || accessToken,
+        tokenExpiresAt,
+        pageId,
+        pageName,
+        pageAccessToken: encryptMetaToken(pageAccessToken) ?? null,
+        instagramAccountId,
+        instagramUsername,
+        whatsappPhoneNumberId: whatsappAssets.whatsappPhoneNumberId || null,
+        whatsappBusinessId: whatsappAssets.whatsappBusinessId || null,
+        adAccountId,
+        status: 'connected',
+        updatedAt: new Date(),
+        channel: parsedState.channel || 'whatsapp',
+      };
+      const resolvedChannel = parsedState.channel || 'whatsapp';
       await this.prisma.metaConnection.upsert({
-        where: { workspaceId },
-        create: {
-          workspaceId,
-          accessToken: encryptMetaToken(accessToken) || accessToken,
-          tokenExpiresAt,
-          pageId,
-          pageName,
-          pageAccessToken: encryptMetaToken(pageAccessToken),
-          instagramAccountId,
-          instagramUsername,
-          whatsappPhoneNumberId: whatsappAssets.whatsappPhoneNumberId || null,
-          whatsappBusinessId: whatsappAssets.whatsappBusinessId || null,
-          adAccountId,
-          status: 'connected',
-        },
-        update: {
-          accessToken: encryptMetaToken(accessToken) || accessToken,
-          tokenExpiresAt,
-          pageId,
-          pageName,
-          pageAccessToken: encryptMetaToken(pageAccessToken),
-          instagramAccountId,
-          instagramUsername,
-          whatsappPhoneNumberId: whatsappAssets.whatsappPhoneNumberId || null,
-          whatsappBusinessId: whatsappAssets.whatsappBusinessId || null,
-          adAccountId,
-          status: 'connected',
-          updatedAt: new Date(),
-        },
+        where: { workspaceId_channel: { workspaceId, channel: resolvedChannel } },
+        create: { ...connectionCreate, channel: resolvedChannel },
+        update: connectionUpdate,
       });
 
-      this.logger.log(`Meta connected for workspace ${workspaceId} (page: ${pageName || 'none'})`);
+      this.logger.log(
+        `Meta connected for workspace ${workspaceId} channel=${resolvedChannel} (page: ${pageName || 'none'})`,
+      );
 
       return res.redirect(
         this.buildFrontendRedirect(returnTo, parsedState.channel, {
           meta: 'success',
+          channel: parsedState.channel || '',
         }),
       );
     } catch (err: unknown) {
@@ -359,20 +396,24 @@ export class MetaAuthController {
   // ─── Disconnect ──────────────────────────────────────────────────
 
   @Post('disconnect')
+  @Idempotent()
   @UseGuards(WorkspaceGuard)
   async disconnect(@Req() req: AuthenticatedRequest) {
     const workspaceId = resolveWorkspaceId(req);
 
-    const connection = await this.prisma.metaConnection.findUnique({
+    const connections = await this.prisma.metaConnection.findMany({
       where: { workspaceId },
     });
 
-    if (!connection) {
+    if (connections.length === 0) {
       throw new HttpException('No Meta connection found', HttpStatus.NOT_FOUND);
     }
 
-    // Revoke permission on Meta's side (best-effort)
-    const resolvedAccessToken = decryptMetaToken(connection.accessToken);
+    // Revoke permission on Meta's side (best-effort, use first token)
+    const firstConnection = connections[0];
+    const resolvedAccessToken = firstConnection
+      ? decryptMetaToken(firstConnection.accessToken)
+      : null;
     if (resolvedAccessToken) {
       try {
         await this.metaSdk.graphApiDelete('me/permissions', resolvedAccessToken);
@@ -383,7 +424,7 @@ export class MetaAuthController {
       }
     }
 
-    await this.prisma.metaConnection.delete({
+    await this.prisma.metaConnection.deleteMany({
       where: { workspaceId },
     });
 
@@ -399,7 +440,7 @@ export class MetaAuthController {
   async getStatus(@Req() req: AuthenticatedRequest) {
     const workspaceId = resolveWorkspaceId(req);
 
-    const connection = await this.prisma.metaConnection.findUnique({
+    const connections = await this.prisma.metaConnection.findMany({
       where: { workspaceId },
       select: {
         status: true,
@@ -418,42 +459,84 @@ export class MetaAuthController {
       },
     });
 
-    if (!connection) {
+    if (connections.length === 0) {
       return { connected: false };
     }
 
+    const merged = connections.reduce(
+      (acc, c) => {
+        if (c.pageId) {
+          acc.pageId = c.pageId;
+        }
+        if (c.pageName) {
+          acc.pageName = c.pageName;
+        }
+        if (c.instagramAccountId) {
+          acc.instagramAccountId = c.instagramAccountId;
+        }
+        if (c.instagramUsername) {
+          acc.instagramUsername = c.instagramUsername;
+        }
+        if (c.whatsappPhoneNumberId) {
+          acc.whatsappPhoneNumberId = c.whatsappPhoneNumberId;
+        }
+        if (c.whatsappBusinessId) {
+          acc.whatsappBusinessId = c.whatsappBusinessId;
+        }
+        if (c.adAccountId) {
+          acc.adAccountId = c.adAccountId;
+        }
+        if (c.pixelId) {
+          acc.pixelId = c.pixelId;
+        }
+        if (c.catalogId) {
+          acc.catalogId = c.catalogId;
+        }
+        if (c.tokenExpiresAt) {
+          acc.tokenExpiresAt = c.tokenExpiresAt;
+        }
+        return acc;
+      },
+      {} as Record<string, unknown>,
+    );
+
     const tokenExpired =
-      connection.tokenExpiresAt && new Date(connection.tokenExpiresAt) < new Date();
+      merged.tokenExpiresAt && new Date(merged.tokenExpiresAt as Date) < new Date();
 
     return {
       connected: true,
       tokenExpired: !!tokenExpired,
       channels: {
         whatsapp: {
-          connected: Boolean(connection.whatsappPhoneNumberId),
+          connected: Boolean(merged.whatsappPhoneNumberId),
           provider: 'meta-cloud',
-          phoneNumberId: connection.whatsappPhoneNumberId,
-          whatsappBusinessId: connection.whatsappBusinessId,
-          status: connection.whatsappPhoneNumberId ? 'connected' : 'connection_incomplete',
+          phoneNumberId: merged.whatsappPhoneNumberId,
+          whatsappBusinessId: merged.whatsappBusinessId,
+          status: merged.whatsappPhoneNumberId ? 'connected' : 'connection_incomplete',
         },
         instagram: {
-          connected: Boolean(connection.instagramAccountId),
-          instagramAccountId: connection.instagramAccountId,
-          username: connection.instagramUsername,
-          status: connection.instagramAccountId ? 'connected' : 'disconnected',
+          connected: Boolean(merged.instagramAccountId),
+          instagramAccountId: merged.instagramAccountId,
+          username: merged.instagramUsername,
+          status: merged.instagramAccountId ? 'connected' : 'disconnected',
         },
         messenger: {
-          connected: Boolean(connection.pageId),
-          pageId: connection.pageId,
-          status: connection.pageId ? 'connected' : 'disconnected',
+          connected: Boolean(merged.pageId),
+          pageId: merged.pageId,
+          status: merged.pageId ? 'connected' : 'disconnected',
+        },
+        facebook: {
+          connected: Boolean(merged.pageId),
+          pageId: merged.pageId,
+          status: merged.pageId ? 'connected' : 'disconnected',
         },
         ads: {
-          connected: Boolean(connection.adAccountId),
-          adAccountId: connection.adAccountId,
-          status: connection.adAccountId ? 'connected' : 'disconnected',
+          connected: Boolean(merged.adAccountId),
+          adAccountId: merged.adAccountId,
+          status: merged.adAccountId ? 'connected' : 'disconnected',
         },
       },
-      ...connection,
+      ...merged,
     };
   }
 }

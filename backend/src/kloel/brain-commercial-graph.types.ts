@@ -16,6 +16,8 @@ export interface CommercialGraphRecommendation {
   action: string;
   confidence: number;
   reason: string;
+  toxicityFlag?: 'healthy' | 'regression' | 'toxic';
+  toxicPolicyCount?: number;
 }
 
 export interface CommercialGraphWindow {

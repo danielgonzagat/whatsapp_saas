@@ -1,15 +1,14 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Get,
   Logger,
-  Optional,
   Param,
   Post,
   Request,
   UseGuards,
 } from '@nestjs/common';
-import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { forEachSequential } from '../common/async-sequence';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
@@ -18,14 +17,22 @@ import {
   buildListUnsubscribeHeader,
   buildUnsubscribeFooterHtml,
 } from '../common/utils/unsubscribe-footer.util';
-import { MetaWhatsAppService } from '../meta/meta-whatsapp.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { WhatsAppProviderRegistry } from '../whatsapp/providers/provider-registry';
-import { OpsAlertService } from '../observability/ops-alert.service';
 
+import { RouteClass } from '../common/throttler/route-class.decorator';
+import { InternalEndpoint } from '../common/decorators/internal-endpoint.decorator';
 const NAME_RE = /\{\{name\}\}/g;
 
 const CHANNELS = ['WHATSAPP', 'INSTAGRAM', 'MESSENGER', 'EMAIL', 'TIKTOK'];
+
+type DirectEmailRecipient = { email: string; name?: string };
+type DirectEmailSendBody = {
+  subject?: string;
+  html?: string;
+  recipients?: DirectEmailRecipient[];
+  campaignName?: string;
+  approvalRequestId?: string;
+};
 
 /**
  * Marketing Command Center Controller
@@ -35,19 +42,13 @@ const CHANNELS = ['WHATSAPP', 'INSTAGRAM', 'MESSENGER', 'EMAIL', 'TIKTOK'];
  * Channel connect/email/WhatsApp summary endpoints live in
  * MarketingConnectController.
  */
-@UseGuards(ThrottlerGuard)
 @Controller('marketing')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
-@Throttle({ default: { limit: 10, ttl: 60000 } })
+@RouteClass('read')
 export class MarketingController {
   private readonly logger = new Logger(MarketingController.name);
 
-  constructor(
-    private readonly prisma: PrismaService,
-    private readonly metaWhatsApp: MetaWhatsAppService,
-    private readonly whatsappProviders: WhatsAppProviderRegistry,
-    @Optional() private readonly opsAlert?: OpsAlertService,
-  ) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   /**
    * Aggregate stats: totalMessages, totalLeads, totalSales, totalRevenue
@@ -86,7 +87,7 @@ export class MarketingController {
   /**
    * Channel status — for each channel, count messages and derive status
    */
-  // PULSE_OK: admin-only route, accessed via admin panel
+  @InternalEndpoint('marketing channels listing')
   @Get('channels')
   async getChannels(@Request() req: { user: { workspaceId: string; email?: string } }) {
     const workspaceId = req.user.workspaceId;
@@ -110,9 +111,7 @@ export class MarketingController {
     });
 
     // Resolve conversationId → channel for message counts
-    const convIds = msgGroups
-      .map((g) => g.conversationId)
-      .filter((id): id is string => typeof id === 'string');
+    const convIds = msgGroups.map((g) => g.conversationId).filter((v): v is string => Boolean(v));
     const convs =
       convIds.length > 0
         ? await this.prisma.conversation.findMany({
@@ -124,8 +123,11 @@ export class MarketingController {
 
     const msgsByChannel = new Map<string, number>();
     for (const g of msgGroups) {
-      const ch =
-        typeof g.conversationId === 'string' ? channelByConvId.get(g.conversationId) : null;
+      const convId = g.conversationId;
+      if (!convId) {
+        continue;
+      }
+      const ch = channelByConvId.get(convId);
       if (ch) {
         msgsByChannel.set(ch, (msgsByChannel.get(ch) || 0) + g._count.id);
       }
@@ -281,14 +283,12 @@ export class MarketingController {
     if (recentInbound.length > 0) {
       const convIds = [
         ...new Set(
-          recentInbound
-            .map((m) => m.conversationId)
-            .filter((id): id is string => typeof id === 'string'),
+          recentInbound.map((m) => m.conversationId).filter((v): v is string => Boolean(v)),
         ),
       ];
       const minCreatedAt = recentInbound.reduce(
         (min, m) => (m.createdAt < min ? m.createdAt : min),
-        recentInbound[0].createdAt,
+        recentInbound[0]!.createdAt,
       );
       const outboundReplies = await this.prisma.message.findMany({
         take: 500,
@@ -301,21 +301,22 @@ export class MarketingController {
         select: { conversationId: true, createdAt: true },
         orderBy: { createdAt: 'asc' },
       });
-      // Build map of first reply per conversation
       const firstReplyByConv = new Map<string, Date>();
       for (const r of outboundReplies) {
-        if (r.conversationId && !firstReplyByConv.has(r.conversationId)) {
-          firstReplyByConv.set(r.conversationId, r.createdAt);
+        const cid = r.conversationId;
+        if (cid && !firstReplyByConv.has(cid)) {
+          firstReplyByConv.set(cid, r.createdAt);
         }
       }
       for (const msg of recentInbound) {
-        if (!msg.conversationId) {
+        const cid = msg.conversationId;
+        if (!cid) {
           continue;
         }
-        const reply = firstReplyByConv.get(msg.conversationId);
+        const reply = firstReplyByConv.get(cid);
         if (reply && reply > msg.createdAt) {
           totalResponseMs += reply.getTime() - msg.createdAt.getTime();
-          responseCount++;
+          responseCount += 1;
         }
       }
     }
@@ -338,18 +339,95 @@ export class MarketingController {
   /**
    * Send email campaign to a list of recipients
    */
+  @InternalEndpoint('marketing email send')
   @Post('email/send')
   async sendEmailCampaign(
     @Request() req: { user: { workspaceId: string; email?: string } },
-    @Body()
-    body: {
-      subject: string;
-      html: string;
-      recipients: { email: string; name?: string }[];
-      campaignName?: string;
-    },
+    @Body() body: DirectEmailSendBody,
   ) {
     const workspaceId = req.user?.workspaceId;
+    const approvalRequestId =
+      typeof body.approvalRequestId === 'string' ? body.approvalRequestId.trim() : '';
+    let sendBody = body;
+
+    if (approvalRequestId) {
+      const approval = await this.prisma.approvalRequest.findFirst({
+        where: {
+          id: approvalRequestId,
+          workspaceId,
+          kind: 'marketing_email:direct_send',
+          entityType: 'MarketingEmailDirectSend',
+          state: 'APPROVED',
+        },
+        select: { id: true, payload: true },
+      });
+      if (!approval || !approval.payload || typeof approval.payload !== 'object') {
+        throw new BadRequestException('Approved direct email send request not found');
+      }
+      const payload = approval.payload as Record<string, unknown>;
+      const recipients: DirectEmailRecipient[] = Array.isArray(payload.recipients)
+        ? payload.recipients
+            .filter((recipient): recipient is Record<string, unknown> =>
+              Boolean(recipient && typeof recipient === 'object'),
+            )
+            .map((recipient) => {
+              const parsed: DirectEmailRecipient = {
+                email: typeof recipient.email === 'string' ? recipient.email : '',
+              };
+              if (typeof recipient.name === 'string') {
+                parsed.name = recipient.name;
+              }
+              return parsed;
+            })
+            .filter((recipient) => recipient.email)
+        : [];
+      sendBody = {
+        recipients,
+        ...(typeof payload.subject === 'string' ? { subject: payload.subject } : {}),
+        ...(typeof payload.html === 'string' ? { html: payload.html } : {}),
+        ...(typeof payload.campaignName === 'string' ? { campaignName: payload.campaignName } : {}),
+      };
+    }
+
+    if (!sendBody.subject || !sendBody.html || !sendBody.recipients?.length) {
+      throw new BadRequestException('Missing required fields: subject, html, recipients');
+    }
+    const subject = sendBody.subject;
+    const htmlTemplate = sendBody.html;
+    const recipients = sendBody.recipients;
+
+    if (!approvalRequestId) {
+      const approval = await this.prisma.approvalRequest.create({
+        data: {
+          workspaceId,
+          kind: 'marketing_email:direct_send',
+          scope: 'workspace',
+          entityType: 'MarketingEmailDirectSend',
+          entityId: `direct-email:${Date.now()}`,
+          state: 'OPEN',
+          title: `Aprovar envio direto de email: ${sendBody.campaignName || subject}`,
+          prompt: `Envio direto de email para ${recipients.length} destinatario(s). Revise assunto, HTML e destinatarios antes de autorizar.`,
+          payload: {
+            subject,
+            html: htmlTemplate,
+            recipients,
+            campaignName: sendBody.campaignName || null,
+            requestedByEmail: req.user.email || null,
+            risk: 'high',
+            requiresApproval: true,
+          },
+        },
+        select: { id: true, state: true, title: true, createdAt: true },
+      });
+      return {
+        approvalRequired: true,
+        approvalRequestId: approval.id,
+        approvalState: approval.state,
+        approval,
+        message: 'Envio direto de email enviado para aprovacao humana antes do disparo.',
+      };
+    }
+
     // Since this controller doesn't inject EmailCampaignService, we use a simpler approach
     // Just validate and forward - the actual sending uses the same Resend/SendGrid infra
     const fromEmail = process.env.EMAIL_FROM || 'noreply@kloel.com';
@@ -359,23 +437,15 @@ export class MarketingController {
         ? 'sendgrid'
         : 'log';
 
-    if (!body.subject || !body.html || !body.recipients?.length) {
-      return { error: 'Missing required fields: subject, html, recipients' };
-    }
-
-    if (body.recipients.length > 500) {
-      return { error: 'Maximum 500 recipients per campaign' };
-    }
-
     this.logger.log(
-      `Email campaign "${body.campaignName || body.subject}" to ${body.recipients.length} recipients via ${provider}`,
+      `Email campaign "${sendBody.campaignName || subject}" to ${recipients.length} recipients via ${provider}`,
     );
 
     let sent = 0;
     let failed = 0;
 
-    await forEachSequential(body.recipients, async (recipient) => {
-      const personalizedBody = body.html.replace(NAME_RE, recipient.name || 'Cliente');
+    await forEachSequential(recipients, async (recipient) => {
+      const personalizedBody = htmlTemplate.replace(NAME_RE, recipient.name || 'Cliente');
       const footerHtml = buildUnsubscribeFooterHtml({
         email: recipient.email,
         workspaceId,
@@ -404,16 +474,16 @@ export class MarketingController {
             body: JSON.stringify({
               from: fromEmail,
               to: recipient.email,
-              subject: body.subject,
+              subject,
               html: htmlWithUnsub,
               headers: emailHeaders,
             }),
             signal: AbortSignal.timeout(30000),
           });
           if (res.ok) {
-            sent++;
+            sent += 1;
           } else {
-            failed++;
+            failed += 1;
           }
         } else if (provider === 'sendgrid') {
           // Not SSRF: hardcoded SendGrid API endpoint
@@ -427,27 +497,43 @@ export class MarketingController {
             body: JSON.stringify({
               personalizations: [{ to: [{ email: recipient.email }], headers: emailHeaders }],
               from: { email: fromEmail },
-              subject: body.subject,
+              subject,
               content: [{ type: 'text/html', value: htmlWithUnsub }],
             }),
             signal: AbortSignal.timeout(30000),
           });
           if (res.ok || res.status === 202) {
-            sent++;
+            sent += 1;
           } else {
-            failed++;
+            failed += 1;
           }
         } else {
-          this.logger.log(`[DEV] Would send to ${recipient.email}: ${body.subject}`);
-          sent++;
+          this.logger.log(`[DEV] Would send to ${recipient.email}: ${subject}`);
+          sent += 1;
         }
         // Rate limit: 100ms between sends
         await new Promise((r) => setTimeout(r, 100));
       } catch {
-        failed++;
+        failed += 1;
       }
     });
 
-    return { sent, failed, total: body.recipients.length, provider };
+    await this.prisma.approvalRequest.updateMany({
+      where: { id: approvalRequestId, workspaceId, state: 'APPROVED' },
+      data: {
+        state: 'COMPLETED',
+        respondedAt: new Date(),
+        response: {
+          action: 'approved_direct_email_send_executed',
+          executedAt: new Date().toISOString(),
+          sent,
+          failed,
+          total: recipients.length,
+          provider,
+        },
+      },
+    });
+
+    return { sent, failed, total: recipients.length, provider, approvalExecuted: true };
   }
 }

@@ -38,7 +38,7 @@ function readHeader(req: MinimalRequest | undefined | null, name: string) {
 }
 
 function firstListEntry(value: string): string {
-  return value.split(',')[0].trim();
+  return value.split(',')[0]?.trim() ?? '';
 }
 
 type OriginComponents = {

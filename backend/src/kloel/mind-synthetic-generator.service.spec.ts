@@ -225,6 +225,29 @@ describe('MindSyntheticGeneratorService', () => {
 
       expect(unsupportedCount).toBeGreaterThan(0);
     });
+
+    it('can generate healthy production smoke contexts without injected violations', () => {
+      const entries = service.generateActionContexts(
+        ['send_audio_clip', 'send_document', 'send_text'],
+        0,
+        { injectViolations: false },
+      );
+
+      expect(entries).toEqual([
+        {
+          action: 'send_audio_clip',
+          context: { supportsAudio: true, supportsDocument: true, contactOptOut: false },
+        },
+        {
+          action: 'send_document',
+          context: { supportsAudio: true, supportsDocument: true, contactOptOut: false },
+        },
+        {
+          action: 'send_text',
+          context: { supportsAudio: true, supportsDocument: true, contactOptOut: false },
+        },
+      ]);
+    });
   });
 
   describe('builtinRecipes', () => {

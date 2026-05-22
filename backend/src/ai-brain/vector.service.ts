@@ -1,7 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { StructuredLogger } from '../logging/structured-logger';
 import OpenAI from 'openai';
 
+/**
+ * @cluster whatsapp_saas/backend/ai-brain
+ * L11 multi-agent TaskGraph annotation (batched by tools/auto-pr/batch-job.mjs).
+ */
 const N_RE = /\n/g;
 
 type EmbeddingResult = { embedding: number[]; tokensUsed: number };
@@ -9,7 +14,8 @@ type EmbeddingResult = { embedding: number[]; tokensUsed: number };
 /** Vector service. */
 @Injectable()
 export class VectorService {
-  private openai!: OpenAI;
+  private readonly logger = StructuredLogger.from(VectorService.name);
+  private openai: OpenAI | null = null;
 
   constructor(private configService: ConfigService) {
     const apiKey = this.configService.get<string>('OPENAI_API_KEY');
@@ -28,6 +34,11 @@ export class VectorService {
     const cleanText = text.replace(N_RE, ' ').slice(0, 8000);
 
     // tokenBudget: non-workspace context, budget tracked at caller level
+    this.logger.log('Calling OpenAI embeddings', {
+      context: 'VectorService.getEmbedding',
+      model: 'text-embedding-3-small',
+      textLength: cleanText.length,
+    });
     const response = await this.openai.embeddings.create({
       model: 'text-embedding-3-small',
       input: cleanText,
@@ -35,7 +46,11 @@ export class VectorService {
 
     const responseWithUsage = response as { usage?: { total_tokens?: number } };
     const usage = responseWithUsage?.usage?.total_tokens || 0;
-    return { embedding: response.data[0].embedding, tokensUsed: usage };
+    const first = response.data[0];
+    if (!first) {
+      return { embedding: [], tokensUsed: 0 };
+    }
+    return { embedding: first.embedding, tokensUsed: usage };
   }
 
   /**
@@ -46,10 +61,15 @@ export class VectorService {
     let normA = 0;
     let normB = 0;
 
-    for (let i = 0; i < vecA.length; i++) {
-      dotProduct += vecA[i] * vecB[i];
-      normA += vecA[i] * vecA[i];
-      normB += vecB[i] * vecB[i];
+    for (let i = 0; i < vecA.length; i += 1) {
+      const a = vecA[i];
+      const b = vecB[i];
+      if (a === undefined || b === undefined) {
+        continue;
+      }
+      dotProduct += a * b;
+      normA += a * a;
+      normB += b * b;
     }
 
     return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));

@@ -1,11 +1,12 @@
 import { Body, Controller, Get, Param, Post, Req, UseGuards } from '@nestjs/common';
-import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
+import { Idempotent } from '../common/idempotency.guard';
 import type { AuthenticatedRequest } from '../common/interfaces/authenticated-request.interface';
-import { ChannelTransportRegistry } from '../kloel/channel-transport.registry';
 import { WhatsappService } from './whatsapp.service';
 
+import { RouteClass } from '../common/throttler/route-class.decorator';
+import { WebhookEndpoint } from '../common/decorators/webhook-endpoint.decorator';
 type LegacySendBody = {
   to: string;
   message: string;
@@ -28,15 +29,11 @@ type LegacyBulkBody = {
  * Camada de compatibilidade para contratos antigos /whatsapp/:workspaceId/*
  * enquanto o runtime interno permanece WAHA-only.
  */
-@UseGuards(ThrottlerGuard)
 @Controller('whatsapp/:workspaceId')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
-@Throttle({ default: { limit: 10, ttl: 60000 } })
+@RouteClass('mutate')
 export class WhatsappController {
-  constructor(
-    private readonly whatsappService: WhatsappService,
-    private readonly transports: ChannelTransportRegistry,
-  ) {}
+  constructor(private readonly whatsappService: WhatsappService) {}
 
   private resolveWorkspaceId(req: AuthenticatedRequest, workspaceId: string) {
     return req?.workspaceId || workspaceId;
@@ -44,6 +41,7 @@ export class WhatsappController {
 
   /** Send. */
   @Post('send')
+  @Idempotent()
   async send(
     @Req() req: AuthenticatedRequest,
     @Param('workspaceId') workspaceId: string,
@@ -51,20 +49,18 @@ export class WhatsappController {
   ) {
     const resolvedWorkspaceId = this.resolveWorkspaceId(req, workspaceId);
     // messageLimit: enforced via PlanLimitsService.trackMessageSend
-    return this.transports.send(resolvedWorkspaceId, {
-      workspaceId: resolvedWorkspaceId,
-      channel: 'whatsapp',
-      recipientId: body?.to,
-      content: body?.message,
-      mediaUrl: body?.mediaUrl,
-      mediaType: body?.mediaType,
-      caption: body?.caption,
-      externalId: body?.externalId,
+    return this.whatsappService.sendMessage(resolvedWorkspaceId, body?.to, body?.message, {
+      ...(body?.mediaUrl !== undefined ? { mediaUrl: body.mediaUrl } : {}),
+      ...(body?.mediaType !== undefined ? { mediaType: body.mediaType } : {}),
+      ...(body?.caption !== undefined ? { caption: body.caption } : {}),
+      ...(body?.externalId !== undefined ? { externalId: body.externalId } : {}),
     });
   }
 
   /** Incoming. */
+  @WebhookEndpoint('Meta WhatsApp webhook')
   @Post('incoming')
+  @Idempotent()
   async incoming(
     @Req() req: AuthenticatedRequest,
     @Param('workspaceId') workspaceId: string,
@@ -76,6 +72,7 @@ export class WhatsappController {
 
   /** Opt in bulk. */
   @Post('opt-in/bulk')
+  @Idempotent()
   async optInBulk(
     @Req() req: AuthenticatedRequest,
     @Param('workspaceId') workspaceId: string,
@@ -87,6 +84,7 @@ export class WhatsappController {
 
   /** Opt out bulk. */
   @Post('opt-out/bulk')
+  @Idempotent()
   async optOutBulk(
     @Req() req: AuthenticatedRequest,
     @Param('workspaceId') workspaceId: string,

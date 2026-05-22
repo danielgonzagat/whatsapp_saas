@@ -48,7 +48,7 @@ function allow() {
 }
 
 const raw = readStdin();
-if (!raw) allow();
+if (!raw) {allow();}
 
 let payload;
 try {
@@ -59,8 +59,8 @@ try {
 
 const toolName = payload.tool_name;
 const toolInput = payload.tool_input;
-if (!toolInput || !toolInput.file_path) allow();
-if (!['Write', 'Edit', 'MultiEdit'].includes(toolName)) allow();
+if (!toolInput || !toolInput.file_path) {allow();}
+if (!['Write', 'Edit', 'MultiEdit'].includes(toolName)) {allow();}
 
 const filePath = toolInput.file_path;
 const relPath = path.isAbsolute(filePath) ? path.relative(REPO_ROOT, filePath) : filePath;
@@ -90,7 +90,7 @@ try {
   // simulação falhou — não bloqueia (tool real vai falhar/funcionar normalmente)
   allow();
 }
-if (!sim) allow();
+if (!sim) {allow();}
 
 const lockedFiles = getLockedFiles(REPO_ROOT);
 const violations = evaluateContent({

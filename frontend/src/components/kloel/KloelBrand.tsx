@@ -1,7 +1,7 @@
 'use client';
 
-import { kloelT } from '@/lib/i18n/t';
 import { colors } from '@/lib/design-tokens';
+import Image from 'next/image';
 import type { CSSProperties, ReactNode } from 'react';
 import { useEffect, useRef, useState } from 'react';
 
@@ -10,14 +10,14 @@ const SVG_TAG_END = '>';
 const STYLE_BLOCK_END = '</style>';
 
 type MushroomVisualProps = {
-  size?: number;
-  traceColor?: string;
-  style?: CSSProperties;
-  title?: string;
-  animated?: boolean;
-  spores?: 'none' | 'animated' | 'static';
-  ariaHidden?: boolean;
-  fit?: 'default' | 'icon';
+  size?: number | undefined;
+  traceColor?: string | undefined;
+  style?: CSSProperties | undefined;
+  title?: string | undefined;
+  animated?: boolean | undefined;
+  spores?: 'none' | 'animated' | 'static' | undefined;
+  ariaHidden?: boolean | undefined;
+  fit?: 'default' | 'icon' | undefined;
 };
 
 type MarkProps = {
@@ -65,11 +65,15 @@ let cachedSvgText: string | null = null;
 let activeFetch: Promise<string> | null = null;
 
 function fetchMushroomSvg(): Promise<string> {
-  if (cachedSvgText) return Promise.resolve(cachedSvgText);
+  if (cachedSvgText) {
+    return Promise.resolve(cachedSvgText);
+  }
   if (!activeFetch) {
     activeFetch = fetch('/kloel-mushroom-animated.svg')
       .then((r) => {
-        if (!r.ok) throw new Error(`Mushroom SVG fetch failed: ${r.status}`);
+        if (!r.ok) {
+          throw new Error(`Mushroom SVG fetch failed: ${r.status}`);
+        }
         return r.text();
       })
       .then((text) => {
@@ -125,7 +129,7 @@ function processSvg(
     ].join('');
   });
 
-  if (traceColor.toLowerCase() !== '#ffffff') {
+  if (traceColor.toLowerCase() !== 'rgb(255, 255, 255)') {
     result = result.replace(/\bstroke=(["'])#?ffffff\1/gi, (_match, quote: string) =>
       ['stroke=', quote, traceColor, quote].join(''),
     );
@@ -163,7 +167,7 @@ function processSvg(
 /** Kloel mushroom visual. */
 export function KloelMushroomVisual({
   size = 20,
-  traceColor = '#FFFFFF',
+  traceColor = colors.text.silver,
   style,
   title = 'Kloel',
   animated = true,
@@ -181,7 +185,9 @@ export function KloelMushroomVisual({
     let cancelled = false;
     fetchMushroomSvg()
       .then((raw) => {
-        if (cancelled) return;
+        if (cancelled) {
+          return;
+        }
         setSvgText(processSvg(raw, traceColor, effectiveAnimated, effectiveSpores));
       })
       .catch(() => {});
@@ -203,11 +209,15 @@ export function KloelMushroomVisual({
 
   useEffect(() => {
     const host = svgHostRef.current;
-    if (!host || !svgText || typeof DOMParser === 'undefined') return;
+    if (!host || !svgText || typeof DOMParser === 'undefined') {
+      return;
+    }
 
     const parsed = new DOMParser().parseFromString(svgText, 'image/svg+xml');
     const svg = parsed.documentElement;
-    if (svg.nodeName.toLowerCase() !== 'svg') return;
+    if (svg.nodeName.toLowerCase() !== 'svg') {
+      return;
+    }
 
     host.replaceChildren(document.importNode(svg, true));
   }, [svgText]);
@@ -230,7 +240,7 @@ export function KloelMushroomVisual({
           ...style,
         }}
       >
-        <img
+        <Image
           src="/kloel-mushroom-animated.svg"
           aria-hidden
           alt=""
@@ -262,7 +272,7 @@ export function KloelMushroomVisual({
   }
 
   return (
-    <img
+    <Image
       src="/kloel-mushroom-animated.svg"
       aria-hidden={ariaHidden}
       aria-label={ariaHidden ? undefined : title}
@@ -278,7 +288,7 @@ export function KloelMushroomVisual({
 /** Kloel mushroom mark. */
 export function KloelMushroomMark({
   size = 20,
-  traceColor = '#FFFFFF', // PULSE_VISUAL_OK: SVG circuit trace, default white
+  traceColor = colors.text.silver,
   style,
   title = 'Kloel',
   animated = true,
@@ -327,7 +337,7 @@ export function KloelWordmark({
 export function KloelBrandLockup({
   markSize = 20,
   gap = 10,
-  traceColor = '#FFFFFF', // PULSE_VISUAL_OK: SVG circuit trace, default white
+  traceColor = colors.text.silver,
   textColor = colors.text.silver,
   fontSize = 16,
   fontWeight = 600,
@@ -359,7 +369,7 @@ export function KloelBrandLockup({
 /** Kloel loading state. */
 export function KloelLoadingState({
   size = 84,
-  traceColor = '#FFFFFF', // PULSE_VISUAL_OK: SVG circuit trace, default white
+  traceColor = colors.text.silver,
   label = 'Carregando Kloel',
   hint,
   textColor = colors.text.silver,

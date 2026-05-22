@@ -1,5 +1,5 @@
 import { buildPaymentWebhookController as buildController } from '../../test/payment-webhook-controller-harness';
-import { registerWooCommerceIdempotencyTests } from './__companions__/payment-webhook.controller.idempotency.spec.companion';
+import { registerWooCommerceIdempotencyTests } from './payment-webhook.controller.idempotency.spec.helpers';
 
 describe('PaymentWebhookController — idempotency and replay safety', () => {
   beforeEach(() => {

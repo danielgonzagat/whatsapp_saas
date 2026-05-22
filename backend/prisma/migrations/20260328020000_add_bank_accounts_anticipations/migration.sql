@@ -31,8 +31,8 @@ CREATE TABLE IF NOT EXISTS "WalletAnticipation" (
     CONSTRAINT "WalletAnticipation_pkey" PRIMARY KEY ("id")
 );
 
-CREATE INDEX IF NOT EXISTS "BankAccount_workspaceId_idx" ON "BankAccount"("workspaceId");
-CREATE INDEX IF NOT EXISTS "WalletAnticipation_workspaceId_createdAt_idx" ON "WalletAnticipation"("workspaceId", "createdAt");
+CREATE INDEX IF NOT EXISTS "BankAccount_workspaceId_idx" ON "BankAccount" ("workspaceId");
+CREATE INDEX IF NOT EXISTS "WalletAnticipation_workspaceId_createdAt_idx" ON "WalletAnticipation" ("workspaceId", "createdAt");
 
-ALTER TABLE "BankAccount" ADD CONSTRAINT "BankAccount_workspaceId_fkey" FOREIGN KEY ("workspaceId") REFERENCES "Workspace"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-ALTER TABLE "WalletAnticipation" ADD CONSTRAINT "WalletAnticipation_workspaceId_fkey" FOREIGN KEY ("workspaceId") REFERENCES "Workspace"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "BankAccount" ADD CONSTRAINT "BankAccount_workspaceId_fkey" FOREIGN KEY ("workspaceId") REFERENCES "Workspace" ("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "WalletAnticipation" ADD CONSTRAINT "WalletAnticipation_workspaceId_fkey" FOREIGN KEY ("workspaceId") REFERENCES "Workspace" ("id") ON DELETE CASCADE ON UPDATE CASCADE;

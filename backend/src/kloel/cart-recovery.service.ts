@@ -1,6 +1,8 @@
-import { Injectable, Logger, Optional } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
+import { StructuredLogger } from '../logging/structured-logger';
 import { forEachSequential } from '../common/async-sequence';
+import { EmailService } from '../auth/email.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { ChannelTransportRegistry } from './channel-transport.registry';
@@ -9,6 +11,8 @@ import { MindCaseMemoryService } from './mind-case-memory.service';
 import { MindGuardsService } from './mind-guards.service';
 import { MindPolicyService } from './mind-policy.service';
 import { resolveCartRecoveryDecision } from './mind-recovery-decision-resolvers';
+import { renderEmailTemplate } from '../common/utils/email-template-renderer.util';
+import { escapeHtml } from '../common/utils/html-escape.util';
 import {
   buildListUnsubscribeHeader,
   buildUnsubscribeFooterHtml,
@@ -35,60 +39,59 @@ function resolvePriceBand(price: unknown): string {
 }
 
 function renderRecoveryEmail(productName: string, orderNumber: string, action: string): string {
+  const escapedProductName = escapeHtml(productName);
   const bodyByAction: Record<string, string> = {
     proof:
-      '<p style="color: #666; line-height: 1.6; margin-bottom: 24px;">Centenas de clientes ja transformaram seus resultados com <strong>' +
-      productName +
-      '</strong>. Junte-se a eles!</p>',
+      'Se a sua duvida for confianca, podemos te mostrar informacoes claras sobre <strong>' +
+      escapedProductName +
+      '</strong> para voce decidir com calma.',
     urgency:
-      '<p style="color: #666; line-height: 1.6; margin-bottom: 24px;">Seu pedido de <strong>' +
-      productName +
-      '</strong> expira em breve. Garanta agora antes que acabe!</p>',
+      'Seu pedido de <strong>' +
+      escapedProductName +
+      '</strong> ficou em aberto. Se ainda fizer sentido para voce, pode retomar quando estiver pronto.',
     help:
-      '<p style="color: #666; line-height: 1.6; margin-bottom: 24px;">Notamos que voce iniciou a compra de <strong>' +
-      productName +
-      '</strong> mas nao finalizou. Seu pedido ainda esta disponivel.</p>',
+      'Notamos que voce iniciou a compra de <strong>' +
+      escapedProductName +
+      '</strong> mas nao finalizou. Se ficou alguma duvida real, responda este email e ajudamos sem pressa.',
     faq:
-      '<p style="color: #666; line-height: 1.6; margin-bottom: 24px;">Tem duvidas sobre <strong>' +
-      productName +
-      '</strong>? Acesse nossa pagina de perguntas frequentes ou responda este email.</p>',
+      'Tem duvidas sobre <strong>' +
+      escapedProductName +
+      '</strong>? Acesse nossa pagina de perguntas frequentes ou responda este email.',
     discount:
-      '<p style="color: #666; line-height: 1.6; margin-bottom: 24px;">Temos uma oferta especial para voce! Use o codigo <strong>VOLTEI10</strong> e ganhe 10% de desconto em <strong>' +
-      productName +
-      '</strong>.</p>',
+      'Se o valor foi a principal duvida sobre <strong>' +
+      escapedProductName +
+      '</strong>, responda este email para avaliarmos a melhor condicao disponivel antes de voce decidir.',
     pause:
-      '<p style="color: #666; line-height: 1.6; margin-bottom: 24px;">Seu pedido de <strong>' +
-      productName +
-      '</strong> esta aguardando. Sem pressa — quando estiver pronto, e so voltar.</p>',
+      'Seu pedido de <strong>' +
+      escapedProductName +
+      '</strong> esta aguardando. Sem pressa — quando estiver pronto, e so voltar.',
   };
 
   const body = bodyByAction[action] ?? bodyByAction.help ?? '';
-  const outerStyle =
-    "font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; padding: 20px;";
-  const containerStyle =
-    'max-width: 500px; margin: 0 auto; background: white; border-radius: 12px; padding: 40px; box-shadow: 0 4px 20px rgba(0,0,0,0.1);';
-  const brandStyle = 'font-size: 24px; font-weight: bold; color: #E85D30; margin-bottom: 20px;';
-  const titleStyle = 'font-size: 22px; color: #1a1a1a; margin-bottom: 16px;';
-  const orderStyle = 'color: #666; line-height: 1.6; margin-bottom: 24px;';
-  const footerStyle = 'margin-top: 32px; font-size: 12px; color: #999;';
+  const renderedTemplate = renderEmailTemplate('cart-recovery', {
+    productName,
+    orderNumber,
+  });
+  const templateBody = [
+    '<p style="color:#666;line-height:1.6;margin-bottom:24px;">',
+    'Notamos que voce iniciou a compra de <strong>' +
+      escapedProductName +
+      '</strong> mas nao finalizou.',
+    'Seu pedido ainda esta disponivel — complete sua compra agora!',
+    '</p>',
+  ].join('\n');
+  const recoveryBody =
+    '<p style="color:#666;line-height:1.6;margin-bottom:24px;">' + body + '</p>';
 
-  return [
-    '<div style="' + outerStyle + '">',
-    '<div style="' + containerStyle + '">',
-    '<div style="' + brandStyle + '">KLOEL</div>',
-    '<h1 style="' + titleStyle + '">Voce deixou algo no carrinho!</h1>',
-    body,
-    '<p style="' + orderStyle + '">Pedido #' + orderNumber + '</p>',
-    '<div style="' + footerStyle + '"><p>KLOEL - Inteligencia Comercial Autonoma</p></div>',
-    '</div>',
-    '</div>',
-  ].join('');
+  return renderedTemplate
+    .replace('Voce deixou algo no carrinho!', 'Sua compra ficou em aberto')
+    .replace(templateBody, recoveryBody);
 }
 
 /** Cart recovery service with MIND-driven recovery action decisions. */
 @Injectable()
 export class CartRecoveryService {
-  private readonly logger = new Logger(CartRecoveryService.name);
+  private readonly logger = StructuredLogger.from(CartRecoveryService.name);
   constructor(
     private readonly prisma: PrismaService,
     @Optional() private readonly opsAlert?: OpsAlertService,
@@ -104,9 +107,10 @@ export class CartRecoveryService {
   async checkAbandonedCarts() {
     try {
       const thirtyMinAgo = new Date(Date.now() - 30 * 60 * 1000);
+
       const workspaces = await this.prisma.workspace.findMany({
         select: { id: true },
-        orderBy: { createdAt: 'asc' },
+        take: 500,
       });
       const workspaceIds = workspaces.map((workspace) => workspace.id);
       const abandoned =
@@ -139,7 +143,8 @@ export class CartRecoveryService {
             return;
           }
 
-          const productName = order.plan?.product?.name || 'Seu pedido';
+          const orderWithPlan = order;
+          const productName = orderWithPlan.plan?.product?.name || 'Seu pedido';
           const customerEmail = order.customerEmail;
           const wsId = order.workspaceId;
           const product = order.plan?.product;
@@ -222,39 +227,35 @@ export class CartRecoveryService {
             email: customerEmail,
             workspaceId: wsId,
           });
-
-          const subject = `Voce esqueceu algo — ${productName}`;
-          const html = `${emailBody}${unsubscribeFooter}`;
+          const html = emailBody + unsubscribeFooter;
 
           if (this.transportRegistry) {
             const sendResult = await this.transportRegistry.send(wsId, {
               workspaceId: wsId,
               channel: 'email',
               recipientId: customerEmail,
-              content: `${subject}\n${html}`,
+              content: html,
+              externalId: `cart-recovery:${order.id}`,
+              complianceMode: 'proactive',
               guardContext: {
                 channel: 'email',
                 withinComplianceWindow: true,
                 productId: product?.id,
-                listUnsubscribe,
               },
             });
-
             if (!sendResult.success) {
               this.logger.warn(
-                `Cart recovery email blocked or failed by transport registry for order ${order.id}: ${
-                  sendResult.blockedReason ?? sendResult.error ?? 'unknown_error'
+                `Cart recovery transport failed for order ${order.id}: ${
+                  sendResult.error || sendResult.blockedReason || 'unknown_error'
                 }`,
               );
               return;
             }
           } else {
-            const { EmailService } = await import('../auth/email.service');
             const emailService = new EmailService();
-
             await emailService.sendEmail({
               to: customerEmail,
-              subject,
+              subject: `Seu pedido ainda esta aberto - ${productName}`,
               html,
               headers: {
                 'List-Unsubscribe': listUnsubscribe,

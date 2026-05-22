@@ -202,3 +202,60 @@ export function resolveSymbol(sf: SourceFile, selector: string): ResolvedSymbol 
   if (!node) throw new Error(`internal: resolved "${selector}" but node not found`);
   return { node, info };
 }
+
+export interface NodeAtPosition {
+  node: Node;
+  kind: string;
+  startLine: number;
+  endLine: number;
+  startColumn: number;
+  endColumn: number;
+  text: string;
+}
+
+export function resolveNodeAtPosition(sf: SourceFile, line: number, column: number): NodeAtPosition {
+  let deepest: Node | undefined;
+  let depth = -1;
+  const walk = (node: Node, d: number): void => {
+    const startLine = node.getStartLineNumber();
+    const endLine = node.getEndLineNumber();
+    const start = node.getStart();
+    const end = node.getEnd();
+    const startLinePos = node.getStartLinePos();
+    const startCol = start - startLinePos + 1;
+    const textBeforeEnd = node.getSourceFile().getFullText().slice(0, end);
+    const endLineStart = textBeforeEnd.lastIndexOf('\n');
+    const endCol = end - (endLineStart === -1 ? 0 : endLineStart + 1) + 1;
+    if (
+      (startLine < line || (startLine === line && startCol <= column)) &&
+      (endLine > line || (endLine === line && endCol >= column))
+    ) {
+      if (d > depth) {
+        deepest = node;
+        depth = d;
+      }
+      for (const child of node.getChildren()) {
+        walk(child, d + 1);
+      }
+    }
+  };
+  walk(sf, 0);
+  if (!deepest) {
+    throw new Error(`no node found at line ${line}, column ${column}`);
+  }
+  const node = deepest;
+  const start = node.getStart();
+  const end = node.getEnd();
+  const startLinePos = node.getStartLinePos();
+  const textBeforeEnd = node.getSourceFile().getFullText().slice(0, end);
+  const endLineStart = textBeforeEnd.lastIndexOf('\n');
+  return {
+    node,
+    kind: node.getKindName(),
+    startLine: node.getStartLineNumber(),
+    endLine: node.getEndLineNumber(),
+    startColumn: start - startLinePos + 1,
+    endColumn: end - (endLineStart === -1 ? 0 : endLineStart + 1) + 1,
+    text: node.getText(),
+  };
+}

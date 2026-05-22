@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { Injectable, Logger } from '@nestjs/common';
 import { forEachSequential } from '../common/async-sequence';
+import { getCorrelationId } from '../common/observability/correlation-store';
 import { PrismaService } from '../prisma/prisma.service';
 import { webhookQueue } from '../queue/queue';
 
@@ -33,6 +34,7 @@ export class WebhookDispatcherService {
     this.logger.log(`Dispatching event ${event} to ${subscriptions.length} hooks`);
 
     const eventDate = new Date().toISOString();
+    const correlationId = getCorrelationId();
 
     await forEachSequential(subscriptions, async (sub) => {
       // Deduplicate via jobId: same subscription + event + payload hash
@@ -45,6 +47,7 @@ export class WebhookDispatcherService {
           event,
           payload,
           eventDate,
+          correlationId,
         },
         {
           jobId,

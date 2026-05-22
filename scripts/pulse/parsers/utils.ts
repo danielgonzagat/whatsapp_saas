@@ -1,5 +1,4 @@
-import { safeJoin, safeResolve } from '../safe-path';
-import * as path from 'path';
+import { safeJoin } from '../safe-path';
 import type { Dirent } from 'fs';
 import { pathExists, readDir, readTextFile } from '../safe-fs';
 

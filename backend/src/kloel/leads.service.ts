@@ -1,6 +1,6 @@
-import { Injectable, Logger, Optional } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { PrismaService } from '../prisma/prisma.service';
-import { MindPolicyService } from './mind-policy.service';
 
 type LeadRow = {
   id: string;
@@ -8,6 +8,7 @@ type LeadRow = {
   name: string | null;
   email: string | null;
   status: string | null;
+  stage: string | null;
   lastIntent: string | null;
   totalMessages: number | null;
   metadata: unknown;
@@ -21,6 +22,7 @@ type LeadOutput = {
   name: string | null;
   email: string | null;
   status: string;
+  stage: string | null;
   lastIntent: string;
   totalMessages: number;
   lastInteraction: Date;
@@ -65,6 +67,7 @@ function mapLead(lead: LeadRow): LeadOutput {
     name: lead.name,
     email: lead.email,
     status: lead.status || 'new',
+    stage: lead.stage ?? null,
     lastIntent: lead.lastIntent || 'general',
     totalMessages: lead.totalMessages || 0,
     lastInteraction: lead.updatedAt || lead.createdAt,
@@ -78,12 +81,11 @@ function mapLead(lead: LeadRow): LeadOutput {
 /** Leads service with commercial scoring. */
 @Injectable()
 export class LeadsService {
-  private readonly logger = new Logger(LeadsService.name);
+  private readonly logger = StructuredLogger.from(LeadsService.name);
 
-  constructor(
-    private readonly prisma: PrismaService,
-    @Optional() private readonly mindPolicy?: MindPolicyService,
-  ) {}
+  constructor(private readonly prisma: PrismaService) {
+    this.logger.log('LeadsService initialized');
+  }
 
   /** List leads with optional commercial scoring. */
   async listLeads(
@@ -117,6 +119,7 @@ export class LeadsService {
         name: true,
         email: true,
         status: true,
+        stage: true,
         lastIntent: true,
         totalMessages: true,
         metadata: true,

@@ -1,8 +1,15 @@
 'use client';
 
 import { useAuth } from '@/components/kloel/auth/auth-provider';
+import { useToast } from '@/components/kloel/ToastProvider';
 import { useConversationHistory } from '@/hooks/useConversationHistory';
 import { affiliateApi } from '@/lib/api/affiliate';
+import { detectOperatorIntent, isUnsupportedFallback } from '@/lib/api/brain';
+import {
+  decideKloelApproval,
+  listPendingKloelApprovals,
+  type KloelApprovalDecision,
+} from '@/lib/api/kloel';
 import { productApi } from '@/lib/api/products';
 import {
   type KloelChatCapability,
@@ -35,7 +42,8 @@ import { S_RE, SLOW_HINT_DELAY_MS } from './KloelDashboard.subcomponents';
 import {
   KloelDashboardView,
   type KloelDashboardQuickAction,
-} from './KloelDashboard/__parts__/KloelDashboard.view';
+} from './KloelDashboard/KloelDashboardView';
+import { useBrainRouter } from './KloelDashboard/useBrainRouter';
 import {
   useKloelFiles,
   useKloelDragDrop,
@@ -48,8 +56,14 @@ export default function KloelDashboard() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { userName } = useAuth();
-  const { conversations, setActiveConversation, upsertConversation, refreshConversations } =
-    useConversationHistory();
+  const { showToast } = useToast();
+  const {
+    conversations,
+    setActiveConversation,
+    upsertConversation,
+    refreshConversations,
+    updateConversationTitle,
+  } = useConversationHistory();
 
   const requestedConversationId = searchParams.get('conversationId');
   const draft = searchParams.get('draft') || '';
@@ -64,6 +78,7 @@ export default function KloelDashboard() {
   const [showSlowHint, setShowSlowHint] = useState(false);
   const [linkedProduct, setLinkedProduct] = useState<KloelLinkedProduct | null>(null);
   const [activeCapability, setActiveCapability] = useState<KloelChatCapability | null>(null);
+  const [approvalActionInFlight, setApprovalActionInFlight] = useState<string | null>(null);
 
   const loadedConversationIdRef = useRef<string | null>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -88,22 +103,28 @@ export default function KloelDashboard() {
   const { isDragActive, handleDragEnter, handleDragOver, handleDragLeave, handleDropFiles } =
     useKloelDragDrop({ isReplyInFlight, queueFilesForUpload, setComposerNotice, inputRef });
 
-  const { data: selectableProductsData, isLoading: selectableProductsLoading } = useSWR(
-    'kloel:chat-selectable-products',
-    async () => {
-      const [ownedResponse, affiliateResponse] = await Promise.all([
-        productApi.list(),
-        affiliateApi.myProducts(),
-      ]);
-      return mapLinkableProducts({
-        owned: unwrapApiPayload<OwnedProductsPayload | null>(ownedResponse),
-        affiliate: unwrapApiPayload<{
-          items?: AffiliateRequestRow[] | null;
-          products?: AffiliateRequestRow[] | null;
-        } | null>(affiliateResponse),
-      });
-    },
-  );
+  const { data: selectableProductsData, isLoading: selectableProductsLoading } = useSWR<
+    KloelLinkedProduct[]
+  >('kloel:chat-selectable-products', async () => {
+    const [ownedResponse, affiliateResponse] = await Promise.all([
+      productApi.list(),
+      affiliateApi.myProducts(),
+    ]);
+    return mapLinkableProducts({
+      owned: unwrapApiPayload<OwnedProductsPayload | null>(ownedResponse),
+      affiliate: unwrapApiPayload<{
+        items?: AffiliateRequestRow[] | null;
+        products?: AffiliateRequestRow[] | null;
+      } | null>(affiliateResponse),
+    });
+  });
+  const {
+    data: pendingApprovalsData,
+    isLoading: pendingApprovalsLoading,
+    mutate: refreshPendingApprovals,
+  } = useSWR('kloel:pending-approvals', listPendingKloelApprovals, {
+    refreshInterval: 30000,
+  });
 
   const conversationTitleMap = useMemo(
     () => new Map(conversations.map((c) => [c.id, c.title])),
@@ -122,7 +143,7 @@ export default function KloelDashboard() {
 
   const loadConversation = useCallback(
     async (conversationId: string) => {
-      if (!conversationId) return;
+      if (!conversationId) {return;}
       try {
         const payload = await loadKloelThreadMessages(conversationId);
         setMessages(
@@ -172,6 +193,17 @@ export default function KloelDashboard() {
     [clearAllAttachments, router, setActiveConversation],
   );
 
+  const onTitle = useCallback(
+    (newTitle: string) => {
+      const trimmed = newTitle.trim();
+      if (!trimmed || !activeConversationId) {return;}
+      setConversationTitle(trimmed);
+      updateConversationTitle(activeConversationId, trimmed);
+      showToast('Titulo atualizado', 'success');
+    },
+    [activeConversationId, setConversationTitle, updateConversationTitle, showToast],
+  );
+
   const handleCancelActiveReply = useCallback(() => {
     activeStreamRef.current?.abort();
     activeStreamRef.current = null;
@@ -188,6 +220,24 @@ export default function KloelDashboard() {
       ),
     );
   }, [streamingMessageId]);
+
+  const handleApprovalDecision = useCallback(
+    async (approvalRequestId: string, decision: KloelApprovalDecision) => {
+      const label =
+        decision === 'approve' ? 'aprovar' : decision === 'reject' ? 'rejeitar' : 'pedir ajuste';
+      setApprovalActionInFlight(`${approvalRequestId}:${decision}`);
+      try {
+        await decideKloelApproval(approvalRequestId, decision);
+        await refreshPendingApprovals();
+        showToast(`Aprovacao atualizada: ${label}`, 'success');
+      } catch (error) {
+        showToast(error instanceof Error ? error.message : 'Erro ao atualizar aprovacao', 'error');
+      } finally {
+        setApprovalActionInFlight(null);
+      }
+    },
+    [refreshPendingApprovals, showToast],
+  );
 
   const sendMessageContext: SendMessageContext = useMemo(
     () => ({
@@ -237,13 +287,52 @@ export default function KloelDashboard() {
     [sendMessageContext],
   );
 
+  const { handleOperatorDispatch, handleUnsupportedFallback } = useBrainRouter({
+    isReplyInFlight,
+    activeConversationId,
+    requestedConversationId,
+    router,
+    setMessages,
+    setIsThinking,
+    setStreamingMessageId,
+    setActiveConversationId,
+    setConversationTitle,
+    setActiveConversation,
+    setInput,
+    clearAllAttachments,
+  });
+
   const handleSend = useCallback(() => {
     if (attachments.some((a) => a.status === 'uploading')) {
       setComposerNotice('Aguarde o envio dos anexos terminar antes de continuar.');
       return;
     }
+
+    const hasReadyAttachments = attachments.some((a) => a.status === 'ready');
+    const detected =
+      !linkedProduct && !activeCapability && !hasReadyAttachments
+        ? detectOperatorIntent(input)
+        : null;
+    if (detected) {
+      if (isUnsupportedFallback(detected)) {
+        void handleUnsupportedFallback(input);
+        return;
+      }
+      void handleOperatorDispatch(input, detected);
+      return;
+    }
+
     void handleSendMessage(input);
-  }, [attachments, handleSendMessage, input, setComposerNotice]);
+  }, [
+    activeCapability,
+    attachments,
+    handleSendMessage,
+    input,
+    linkedProduct,
+    setComposerNotice,
+    handleOperatorDispatch,
+    handleUnsupportedFallback,
+  ]);
 
   const handleQuickAction = useCallback(
     (action: KloelDashboardQuickAction) => {
@@ -267,7 +356,7 @@ export default function KloelDashboard() {
       const sourceMessage = messages.find(
         (message) => message.id === messageId && message.role === 'user',
       );
-      if (!sourceMessage) return;
+      if (!sourceMessage) {return;}
       await handleSendMessage(
         sourceMessage.text,
         sourceMessage.metadata as KloelChatRequestMetadata | undefined,
@@ -314,12 +403,12 @@ export default function KloelDashboard() {
 
   const handleAssistantRegenerate = useCallback(
     async (messageId: string) => {
-      if (!activeConversationId) return;
+      if (!activeConversationId) {return;}
       setStreamingMessageId(messageId);
       setIsThinking(true);
       setMessages((current) => {
         const targetIndex = current.findIndex((message) => message.id === messageId);
-        if (targetIndex === -1) return current;
+        if (targetIndex === -1) {return current;}
         const targetMessage = current[targetIndex];
         const preservedVersions = getAssistantResponseVersions(
           targetMessage.metadata,
@@ -342,7 +431,7 @@ export default function KloelDashboard() {
         );
         setMessages((current) => {
           const targetIndex = current.findIndex((message) => message.id === messageId);
-          if (targetIndex === -1) return current;
+          if (targetIndex === -1) {return current;}
           return [
             ...current.slice(0, targetIndex),
             {
@@ -378,11 +467,11 @@ export default function KloelDashboard() {
 
   useEffect(() => {
     if (!requestedConversationId) {
-      if (messages.length > 0 || isThinking || activeConversationId) return;
+      if (messages.length > 0 || isThinking || activeConversationId) {return;}
       resetToNewChat(false);
       return;
     }
-    if (loadedConversationIdRef.current === requestedConversationId) return;
+    if (loadedConversationIdRef.current === requestedConversationId) {return;}
     void loadConversation(requestedConversationId);
   }, [
     activeConversationId,
@@ -398,15 +487,15 @@ export default function KloelDashboard() {
   }, []);
 
   useEffect(() => {
-    if (!draft.trim()) return;
+    if (!draft.trim()) {return;}
     setInput(draft);
   }, [draft]);
 
   useEffect(() => {
     const handleShortcut = (event: KeyboardEvent) => {
-      if (!(event.metaKey || event.ctrlKey) || event.key.toLowerCase() !== 'u') return;
+      if (!(event.metaKey || event.ctrlKey) || event.key.toLowerCase() !== 'u') {return;}
       event.preventDefault();
-      if (isReplyInFlight) return;
+      if (isReplyInFlight) {return;}
       fileInputRef.current?.click();
     };
     window.addEventListener('keydown', handleShortcut);
@@ -456,6 +545,7 @@ export default function KloelDashboard() {
       hasMessages={hasMessages}
       messages={messages}
       conversationTitle={conversationTitle}
+      onTitle={onTitle}
       streamingMessageId={streamingMessageId}
       isThinking={isThinking}
       isReplyInFlight={isReplyInFlight}
@@ -469,6 +559,9 @@ export default function KloelDashboard() {
       selectableProducts={selectableProducts}
       selectableProductsLoading={selectableProductsLoading}
       composerNotice={composerNotice}
+      pendingApprovals={pendingApprovalsData || []}
+      pendingApprovalsLoading={pendingApprovalsLoading}
+      approvalActionInFlight={approvalActionInFlight}
       fileInputRef={fileInputRef}
       inputRef={inputRef}
       messagesEndRef={messagesEndRef}
@@ -490,6 +583,7 @@ export default function KloelDashboard() {
       onSelectProduct={setLinkedProduct}
       onRemoveLinkedProduct={() => setLinkedProduct(null)}
       onCapabilityChange={setActiveCapability}
+      onApprovalDecision={handleApprovalDecision}
     />
   );
 }

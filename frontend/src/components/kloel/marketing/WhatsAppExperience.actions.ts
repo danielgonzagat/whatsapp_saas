@@ -69,7 +69,7 @@ export function useWhatsAppSetupActions({
       whatsappSetup: serializeSetup(nextDraft),
       ...(extraPatch || {}),
     });
-    if (response?.error) throw new Error(String(response.error));
+    if (response?.error) {throw new Error(String(response.error));}
     await Promise.all([mutateSettings(), mutateSummary(), mutateLiveStatus(), refreshConnection()]);
   };
 
@@ -141,7 +141,7 @@ export function useWhatsAppSetupActions({
 
   const toggleProduct = (id: string) => {
     const product = productMap.get(id);
-    if (!product) return;
+    if (!product) {return;}
     setDraft((current) => ({
       ...current,
       selectedProducts: current.selectedProducts.some((item) => item.id === id)
@@ -178,7 +178,7 @@ export function useWhatsAppSetupActions({
   const handleMediaUpload = async (event: ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files || []);
     event.target.value = '';
-    if (files.length === 0) return;
+    if (files.length === 0) {return;}
     setUploadingCount((count) => count + files.length);
     setError(null);
     try {

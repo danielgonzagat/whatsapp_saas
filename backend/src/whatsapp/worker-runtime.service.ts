@@ -1,10 +1,13 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { StructuredLogger } from '../logging/structured-logger';
+
+type WorkerRuntimePayload = { status?: string | number; [key: string]: unknown };
 
 /** Worker runtime service. */
 @Injectable()
 export class WorkerRuntimeService {
-  private readonly logger = new Logger(WorkerRuntimeService.name);
+  private readonly logger = StructuredLogger.from(WorkerRuntimeService.name);
   private lastCheckAt = 0;
   private lastKnownAvailability: boolean | null = null;
 
@@ -60,7 +63,7 @@ export class WorkerRuntimeService {
     if (!payload || typeof payload !== 'object') {
       return true;
     }
-    const status = this.readText((payload as Record<string, unknown>).status)
+    const status = this.readText((payload as WorkerRuntimePayload).status)
       .trim()
       .toLowerCase();
     if (!status) {
@@ -94,7 +97,7 @@ export class WorkerRuntimeService {
       return false;
     }
 
-    const fetchFn = globalThis.fetch?.bind(globalThis);
+    const fetchFn = globalThis.fetch ? globalThis.fetch.bind(globalThis) : undefined;
     if (!fetchFn) {
       return false;
     }
@@ -107,7 +110,7 @@ export class WorkerRuntimeService {
         method: 'GET',
         headers: this.buildWorkerHealthHeaders(),
         signal: controller.signal,
-      });
+      } as RequestInit);
       return await this.readWorkerHealthResponse(response);
     } catch (error: unknown) {
       this.logWorkerHealthError(error);

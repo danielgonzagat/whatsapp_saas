@@ -49,9 +49,9 @@ export class FinancialAlertService {
   webhookProcessingFailed(
     error: Error,
     context: {
-      provider?: string;
-      externalId?: string;
-      eventType?: string;
+      provider?: string | undefined;
+      externalId?: string | undefined;
+      eventType?: string | undefined;
     },
   ) {
     this.logger.error(

@@ -1,5 +1,5 @@
 import { Logger } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt'; // PULSE_OK: reasonable expiry (30m)
+import { JwtService } from '@nestjs/jwt';
 import {
   ConnectedSocket,
   MessageBody,

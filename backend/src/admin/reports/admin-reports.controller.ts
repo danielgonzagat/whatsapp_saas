@@ -8,11 +8,13 @@ import { AdminAuthGuard } from '../auth/guards/admin-auth.guard';
 import { AdminPermissionGuard } from '../auth/guards/admin-permission.guard';
 import { ListHomeQueryDto } from '../dashboard/dto/list-home.dto';
 import { AdminReportsService } from './admin-reports.service';
+import { RouteClass } from '../../common/throttler/route-class.decorator';
 
 /** Admin reports controller. */
 @Public()
 @Controller('admin/reports')
 @UseGuards(AdminAuthGuard, AdminPermissionGuard)
+@RouteClass('read')
 export class AdminReportsController {
   constructor(private readonly reports: AdminReportsService) {}
 

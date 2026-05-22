@@ -1,6 +1,9 @@
-import MarketingView from '@/components/kloel/marketing/MarketingView';
+import { redirect } from 'next/navigation';
 
-/** Marketing page. */
+/**
+ * The Marketing module has no index surface — "Conversas" was retired
+ * (spec §15). Land users on the first channel.
+ */
 export default function MarketingPage() {
-  return <MarketingView defaultTab="conversas" />;
+  redirect('/marketing/whatsapp');
 }

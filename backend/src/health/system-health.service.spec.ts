@@ -1,5 +1,6 @@
 import { ConfigService } from '@nestjs/config';
 import { SystemHealthService } from './system-health.service';
+import { connection } from '../queue/queue';
 
 jest.mock('@sentry/node', () => ({
   captureException: jest.fn(),
@@ -25,6 +26,12 @@ jest.mock('ioredis', () => {
   }
   return { default: MockRedis, Redis: MockRedis };
 });
+
+jest.mock('../queue/queue', () => ({
+  connection: { ping: jest.fn().mockResolvedValue('PONG') },
+  queueRegistry: {},
+  queueOptions: {},
+}));
 
 jest.mock('fs', () => ({
   existsSync: jest.fn(),
@@ -87,6 +94,7 @@ describe('SystemHealthService', () => {
   };
   let stripeService: {
     healthCheck: jest.Mock;
+    retrieveBalance: jest.Mock;
   };
 
   beforeEach(() => {
@@ -99,6 +107,7 @@ describe('SystemHealthService', () => {
     redis = {
       ping: jest.fn().mockResolvedValue('PONG'),
     };
+    (connection.ping as jest.Mock).mockResolvedValue('PONG');
     config = {
       get: jest.fn((key: string) => {
         const values: Record<string, string | undefined> = {
@@ -151,6 +160,11 @@ describe('SystemHealthService', () => {
     };
     stripeService = {
       healthCheck: jest.fn().mockResolvedValue({ status: 'UP' }),
+      retrieveBalance: jest.fn().mockResolvedValue({
+        livemode: false,
+        pending: [],
+        available: [],
+      }),
     };
   });
 
@@ -365,6 +379,7 @@ describe('SystemHealthService', () => {
 
       expect(result.status).toBe('UP');
       expect(typeof result.timestamp).toBe('string');
+      expect(typeof result.uptime).toBe('number');
       // Must not have called any dependency method
       expect(prisma.$queryRaw).not.toHaveBeenCalled();
       expect(redis.ping).not.toHaveBeenCalled();

@@ -27,60 +27,50 @@ jest.mock('../auth/email.service', () => ({
   })),
 }));
 
-const makeStubGuards = (overrides?: { allowed?: boolean; guardName?: string; reason?: string }) => {
-  const guardResult = {
-    allowed: overrides?.allowed ?? true,
-    action: 'send_recovery_email:help',
-    decision: overrides?.allowed === false ? 'block' : 'allow',
-    guardName: overrides?.guardName ?? 'all_guards',
-    reason: overrides?.reason ?? 'Ação aprovada pelas guardas determinísticas.',
-    reasonTag: overrides?.allowed === false ? 'opt_out' : 'all_guards_passed',
-    context: {},
-  } as const;
-  const evaluate = jest.fn().mockResolvedValue(guardResult);
-  return { evaluate };
-};
-
-const makeStubTransport = (overrides?: {
-  sendAvailable?: boolean;
-  sendResult?: { blocked: boolean; blockedReason?: string; success: boolean };
-}) => {
-  const capability = {
-    channel: 'email' as const,
-    sendAvailable: overrides?.sendAvailable ?? true,
-    sendBlockedReason:
-      overrides?.sendAvailable === false ? 'Email outbound nao configurado.' : null,
-    requiredSetup: [],
+function makeStubGuards(result: Record<string, unknown> = { allowed: true }) {
+  return {
+    evaluate: jest.fn().mockResolvedValue(result),
   };
-  const getCapability = jest.fn().mockResolvedValue(capability);
-  const send = jest
-    .fn()
-    .mockResolvedValue(overrides?.sendResult ?? { success: true, blocked: false });
-  return { getCapability, send };
-};
+}
 
-const makeStubBandit = (overrides?: { arm?: string }) => {
-  const register = jest.fn().mockResolvedValue(undefined);
-  const choose = jest
-    .fn()
-    .mockResolvedValue(
-      overrides?.arm
-        ? { arm: overrides.arm, decisionType: 'cart_recovery', workspaceId: 'ws-1' }
-        : null,
-    );
-  return { register, choose };
-};
+function makeStubTransport(options: {
+  sendAvailable?: boolean;
+  sendResult?: Record<string, unknown>;
+} = {}) {
+  return {
+    getCapability: jest.fn().mockResolvedValue({
+      sendAvailable: options.sendAvailable ?? true,
+    }),
+    send: jest.fn().mockResolvedValue(options.sendResult ?? { success: true }),
+  };
+}
 
-const makeStubMindPolicy = (chosen = 'help') => ({
-  choose: jest.fn().mockResolvedValue({
-    chosen,
-    decision: {
-      candidates: [{ action: chosen, beliefMean: 0.7 }],
-      fallbackActive: false,
-      reasonInternal: 'test policy',
-    },
-  }),
-});
+function makeStubBandit(options: { arm?: string } = {}) {
+  return {
+    register: jest.fn().mockResolvedValue(undefined),
+    choose: jest
+      .fn()
+      .mockResolvedValue(options.arm ? { arm: options.arm } : null),
+  };
+}
+
+function makeStubMindPolicy(action: string) {
+  return {
+    choose: jest.fn().mockResolvedValue({
+      chosen: action,
+      decision: {
+        fallbackActive: false,
+        reasonInternal: `test selected ${action}`,
+        candidates: [
+          {
+            action,
+            beliefMean: 0.8,
+          },
+        ],
+      },
+    }),
+  };
+}
 
 describe('CartRecoveryService', () => {
   let prisma: MockPrisma;
@@ -173,6 +163,38 @@ describe('CartRecoveryService', () => {
           },
         }),
       );
+    });
+
+    it('uses honest no-pressure recovery copy in direct email fallback', async () => {
+      prisma.checkoutOrder.findMany.mockResolvedValue([pendingOrder()]);
+
+      await service.checkAbandonedCarts();
+
+      const payload = sendEmail.mock.calls[0][0];
+      expect(payload.subject).toContain('Seu pedido ainda esta aberto');
+      expect(payload.html).toContain('Sua compra ficou em aberto');
+      expect(payload.html).toContain('sem pressa');
+      expect(payload.html).not.toContain('Voce deixou algo');
+      expect(payload.html).not.toContain('Garanta agora');
+      expect(payload.html).not.toContain('VOLTEI10');
+      expect(payload.html).not.toContain('Centenas de clientes');
+    });
+
+    it('renders the real cart recovery template with escaped placeholders', async () => {
+      prisma.checkoutOrder.findMany.mockResolvedValue([
+        pendingOrder({
+          productName: '<Plano & Premium>',
+        }),
+      ]);
+
+      await service.checkAbandonedCarts();
+
+      const payload = sendEmail.mock.calls[0][0];
+      expect(payload.html).toContain('Pedido #1001');
+      expect(payload.html).toContain('&lt;Plano &amp; Premium&gt;');
+      expect(payload.html).not.toContain('{{productName}}');
+      expect(payload.html).not.toContain('{{orderNumber}}');
+      expect(payload.html).not.toContain('<Plano & Premium>');
     });
   });
 
@@ -295,7 +317,7 @@ describe('CartRecoveryService', () => {
         expect.objectContaining({
           channel: 'email',
           recipientId: 'cliente@kloel.test',
-          content: expect.stringContaining('Voce esqueceu algo'),
+          content: expect.stringContaining('Sua compra ficou em aberto'),
           guardContext: expect.objectContaining({
             channel: 'email',
             withinComplianceWindow: true,
@@ -364,6 +386,27 @@ describe('CartRecoveryService', () => {
       const updatePayload = prisma.checkoutOrder.updateMany.mock.calls[0][0].data.metadata;
       expect(updatePayload.banditArm).toBe('proof');
       expect(updatePayload.mindRecoveryAction).toBe('proof');
+    });
+
+    it('keeps proof and discount recovery copy non-manipulative', async () => {
+      for (const action of ['proof', 'discount', 'urgency']) {
+        sendEmail.mockClear();
+        prisma.checkoutOrder.findMany.mockResolvedValue([pendingOrder()]);
+        const stubMindPolicy = makeStubMindPolicy(action);
+        service = new CartRecoveryService(
+          prisma as never,
+          undefined,
+          stubMindPolicy as never,
+        );
+
+        await service.checkAbandonedCarts();
+
+        const payload = sendEmail.mock.calls[0][0];
+        expect(payload.html).not.toContain('Garanta agora');
+        expect(payload.html).not.toContain('antes que acabe');
+        expect(payload.html).not.toContain('VOLTEI10');
+        expect(payload.html).not.toContain('Centenas de clientes');
+      }
     });
 
     it('falls back gracefully when bandit choose returns null', async () => {

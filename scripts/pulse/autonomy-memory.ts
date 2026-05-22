@@ -5,7 +5,7 @@
  */
 import * as path from 'node:path';
 import { spawnSync } from 'node:child_process';
-import { buildArtifactRegistry } from './artifact-registry/__parts__/registry';
+import { buildArtifactRegistry } from './artifact-registry/registry';
 import { ensureDir, pathExists, readTextFile, removePath, writeTextFile } from './safe-fs';
 import type {
   PulseAgentOrchestrationState,
@@ -18,7 +18,7 @@ import {
   AUTONOMY_MEMORY_ARTIFACT,
   type PulseRollbackGuard,
 } from './autonomy-types';
-import { fingerprintStrategy } from './structural-memory/__parts__/memory-core';
+import { fingerprintStrategy } from './structural-memory/memory-core';
 
 export function compact(value: string, max: number = 400): string {
   const normalized = value.replace(/\s+/g, ' ').trim();

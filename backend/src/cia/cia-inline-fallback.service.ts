@@ -1,4 +1,4 @@
-import { Inject, Injectable, forwardRef } from '@nestjs/common';
+import { Inject, Injectable, Logger, forwardRef } from '@nestjs/common';
 import { findFirstSequential, forEachSequential } from '../common/async-sequence';
 import { UnifiedAgentService } from '../kloel/unified-agent.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -8,6 +8,9 @@ import { CiaRuntimeStateService } from './cia-runtime-state.service';
 import { CIA_SHARED_REPLY_LOCK_MS, CiaSendHelpersService } from './cia-send-helpers.service';
 
 type BacklogMode = 'reply_all_recent_first' | 'reply_only_new' | 'prioritize_hot';
+type InlineFallbackConversation = Record<string, unknown>;
+type InlineFallbackMessage = Record<string, unknown>;
+type InlineFallbackContact = Record<string, unknown>;
 
 const safeStr = (v: unknown, fb = ''): string =>
   typeof v === 'string' ? v : typeof v === 'number' || typeof v === 'boolean' ? String(v) : fb;
@@ -19,6 +22,8 @@ const safeStr = (v: unknown, fb = ''): string =>
  */
 @Injectable()
 export class CiaInlineFallbackService {
+  private readonly logger = new Logger(CiaInlineFallbackService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly agentEvents: AgentEventsService,
@@ -123,7 +128,7 @@ export class CiaInlineFallbackService {
     return {
       aggregatedMessage:
         messages.length === 1
-          ? messages[0].content
+          ? messages[0]!.content
           : messages
               .map((message, index) => `[${index + 1}] ${String(message.content || '').trim()}`)
               .join('\n'),
@@ -135,7 +140,7 @@ export class CiaInlineFallbackService {
     workspaceId: string,
     runId: string,
     mode: BacklogMode,
-    conversations: Record<string, unknown>[],
+    conversations: InlineFallbackConversation[],
   ) {
     if (!conversations.length) {
       await this.runtimeState.updateAutonomyRunStatus(workspaceId, runId, 'COMPLETED');
@@ -165,8 +170,8 @@ export class CiaInlineFallbackService {
     let skipped = 0;
 
     await forEachSequential(Array.from(conversations.entries()), async ([index, conversation]) => {
-      const messages = conversation.messages as Record<string, unknown>[] | undefined;
-      const contact = conversation.contact as Record<string, unknown> | undefined;
+      const messages = conversation.messages as InlineFallbackMessage[] | undefined;
+      const contact = conversation.contact as InlineFallbackContact | undefined;
       const lastMessage = messages?.[0];
       const pendingBatch = await this.buildPendingInboundBatch({
         workspaceId,
@@ -218,9 +223,18 @@ export class CiaInlineFallbackService {
 
       let keepReplyLock = false;
       try {
+        this.logger.log('Calling unifiedAgent.processIncomingMessage', {
+          context: 'CiaInlineFallbackService.runBacklogInlineFallback',
+          deliveryMode: this.chatFilter.isRecentRemoteBatch(pendingBatch?.messages || [])
+            ? 'reactive'
+            : 'proactive',
+          backlogIndex: index + 1,
+          backlogTotal: conversations.length,
+        });
+        const resultContactId = safeStr(conversation.contactId);
         const result = await this.unifiedAgent.processIncomingMessage({
           workspaceId,
-          contactId: safeStr(conversation.contactId) || undefined,
+          ...(resultContactId ? { contactId: resultContactId } : {}),
           phone,
           message: messageContent,
           channel: 'whatsapp',
@@ -259,7 +273,7 @@ export class CiaInlineFallbackService {
             ? shouldMirrorReplies
               ? await this.unifiedAgent.buildQuotedReplyPlan({
                   workspaceId,
-                  contactId: safeStr(conversation.contactId) || undefined,
+                  ...(resultContactId ? { contactId: resultContactId } : {}),
                   phone,
                   draftReply: reply,
                   customerMessages: pendingBatch.messages,
@@ -282,6 +296,12 @@ export class CiaInlineFallbackService {
         await findFirstSequential(
           Array.from(replyPlan.entries()),
           async ([replyIndex, replyItem]) => {
+            this.logger.log('Sending WhatsApp message via inline fallback', {
+              context: 'CiaInlineFallbackService.runBacklogInlineFallback',
+              complianceMode: shouldMirrorReplies ? 'reactive' : 'proactive',
+              replyIndex: replyIndex + 1,
+              replyTotal: replyPlan.length,
+            });
             const sendResult = await this.sendHelpers.sendCiaMessageWithDailyLimit(
               workspaceId,
               phone,
@@ -314,8 +334,15 @@ export class CiaInlineFallbackService {
 
         keepReplyLock = true;
         processed += 1;
-      } catch {
-        // PULSE:OK — Per-conversation processing failure is isolated; others still processed
+      } catch (error: unknown) {
+        this.logger.error(
+          'Inline fallback per-conversation processing failed',
+          error instanceof Error ? error.message : String(error),
+          {
+            context: 'CiaInlineFallbackService.runBacklogInlineFallback',
+            conversationId: safeStr(conversation.id) || undefined,
+          },
+        );
         skipped += 1;
       } finally {
         if (!keepReplyLock) {

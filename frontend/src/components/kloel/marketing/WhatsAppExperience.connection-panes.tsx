@@ -8,13 +8,11 @@ import { KLOEL_THEME } from '@/lib/kloel-theme';
 
 export { QRCodePane } from './WhatsAppExperience.qr-pane';
 
-const E = 'UI.accent';
+const E = UI.accent;
 const V = KLOEL_THEME.bgPrimary;
-const G = 'UI.success';
+const G = UI.success;
 const S = KLOEL_THEME.textSecondary;
-const C = KLOEL_THEME.bgCard;
 const U = KLOEL_THEME.bgSecondary;
-const B = KLOEL_THEME.borderPrimary;
 const F = "'Sora', system-ui, sans-serif";
 const M = "'JetBrains Mono', monospace";
 
@@ -60,6 +58,8 @@ export function resolveEffectiveProvider(
   sessionProvider: unknown,
   phoneNumberId: unknown,
 ): { providerToken: string; isWahaProvider: boolean; effectiveProvider: string } {
+  void phoneNumberId;
+
   const providerToken = String(
     liveProvider || connectionProvider || workspaceProvider || sessionProvider || '',
   )
@@ -75,8 +75,8 @@ export function resolveEffectiveProvider(
 
 export function buildEffectiveConnection(params: {
   sessionSnapshot: ConnectionSnapshot;
-  liveStatus?: LiveStatusShape;
-  connection?: MarketingWhatsAppConnection;
+  liveStatus?: LiveStatusShape | undefined;
+  connection?: MarketingWhatsAppConnection | undefined;
   effectiveProvider: string;
   isWahaProvider: boolean;
 }) {

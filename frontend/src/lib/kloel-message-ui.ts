@@ -17,7 +17,7 @@ export interface AssistantResponseVersion {
   /** Content property. */
   content: string;
   /** Created at property. */
-  createdAt?: string;
+  createdAt?: string | undefined;
   /** Source property. */
   source: 'initial' | 'regenerated';
 }
@@ -33,11 +33,11 @@ export interface AssistantProcessingTraceEntry {
   /** Label property. */
   label: string;
   /** Created at property. */
-  createdAt?: string;
+  createdAt?: string | undefined;
   /** Tool property. */
-  tool?: string;
+  tool?: string | undefined;
   /** Success property. */
-  success?: boolean;
+  success?: boolean | undefined;
 }
 
 /** Normalize assistant message metadata. */

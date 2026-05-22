@@ -7,8 +7,6 @@
 import { BadRequestException } from '@nestjs/common';
 import { isBlockedIpv4Range, parseIpv4Literal } from './url-ipv4-blocklist';
 
-export { isBlockedIpv4Range, parseIpv4Literal };
-
 const LOCALHOST_LITERALS = new Set<string>(['localhost', '127.0.0.1', '0.0.0.0', '[::1]']);
 
 const CLOUD_METADATA_LITERALS = new Set<string>(['169.254.169.254', 'metadata.google.internal']);

@@ -13,7 +13,6 @@ afterEach(() => {
   process.env = { ...ORIGINAL_ENV };
 });
 
-// PULSE_OK: assertions exist below
 describe('FraudEngine.addToBlacklist', () => {
   it('upserts a (type, value) pair and returns the row', async () => {
     const prisma = makePrismaStub();

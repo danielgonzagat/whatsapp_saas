@@ -1,3 +1,5 @@
+import { colors } from '@/lib/design-tokens';
+
 // Pure helpers extracted from ProdutosView.tsx to reduce the host
 // component's cyclomatic complexity. Each builder produces the exact
 // payload shape the original inline code did — the refactor is purely
@@ -253,7 +255,7 @@ export function normalizeDisplayProduct(
     students: p.studentsCount || p.students || 0,
     category: p.category || 'Digital',
     status,
-    color: '#8B5CF6', // PULSE_VISUAL_OK: default product category purple
+    color: colors.semantic.purple,
     format: p.format || '',
     active: status === 'active',
     imageUrl: p.imageUrl || p.thumbnailUrl || '',

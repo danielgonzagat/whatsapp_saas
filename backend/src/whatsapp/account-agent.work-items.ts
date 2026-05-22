@@ -2,7 +2,7 @@ import { Prisma } from '@prisma/client';
 import { toPrismaJsonValue } from '../common/prisma/prisma-json.util';
 import { PrismaService } from '../prisma/prisma.service';
 import { AgentEventsService } from './agent-events.service';
-import { materializeAccountCapabilityGapsExt } from './__companions__/account-agent.service.companion';
+import { materializeAccountCapabilityGapsExt } from './account-agent.capability-gaps';
 import { getPromptForStage } from './account-agent.parsers';
 import type { AccountApprovalPayload, AccountInputSessionPayload } from './account-agent.types';
 
@@ -82,12 +82,11 @@ export async function upsertApprovalRequest(
       title: `Criar produto ${approval.requestedProductName}`,
       prompt: approval.operatorPrompt,
       payload: toPrismaJsonValue(approval),
-      respondedAt:
-        approval.status === 'APPROVED' ||
-        approval.status === 'REJECTED' ||
-        approval.status === 'COMPLETED'
-          ? new Date(approval.lastDetectedAt)
-          : undefined,
+      ...(approval.status === 'APPROVED' ||
+      approval.status === 'REJECTED' ||
+      approval.status === 'COMPLETED'
+        ? { respondedAt: new Date(approval.lastDetectedAt) }
+        : {}),
     },
     update: {
       state: approval.status,
@@ -120,7 +119,7 @@ export async function upsertInputCollectionSession(
       prompt: getPromptForStage(session.status, session.productName),
       answers: toPrismaJsonValue(session.answers || {}),
       payload: toPrismaJsonValue(session),
-      completedAt: session.completedAt ? new Date(session.completedAt) : undefined,
+      ...(session.completedAt ? { completedAt: new Date(session.completedAt) } : {}),
     },
     update: {
       state: session.status,
@@ -182,7 +181,9 @@ function isWorkItemChanged(
   } | null,
   input: WorkItemUpsertInput,
 ): boolean {
-  if (!prev) return true;
+  if (!prev) {
+    return true;
+  }
   return (
     prev.state !== input.state ||
     prev.title !== input.title ||
@@ -200,15 +201,23 @@ export async function upsertAccountWorkItem(
   const entityKey = String(input.entityId || 'global');
   const id = `${workspaceId}:${input.kind}:${input.entityType}:${entityKey}`;
   const previous = await findPreviousWorkItem(deps, workspaceId, id);
-  const updateData = buildWorkItemUpdateData(input, Prisma.JsonNull);
+  const updateData = buildWorkItemUpdateData(
+    input,
+    Prisma.JsonNull,
+  ) as Prisma.AgentWorkItemUpdateInput;
+  const createDataBase = buildWorkItemUpdateData(input, undefined);
+  const { blockedBy: _cb, evidence: _ce, metadata: _cm, ...createDataClean } = createDataBase;
   const createData = {
     id,
     workspaceId,
     kind: input.kind,
     entityType: input.entityType,
     entityId: input.entityId || null,
-    ...buildWorkItemUpdateData(input, undefined),
-  };
+    ...createDataClean,
+    ...(_cb !== undefined ? { blockedBy: _cb } : {}),
+    ...(_ce !== undefined ? { evidence: _ce } : {}),
+    ...(_cm !== undefined ? { metadata: _cm } : {}),
+  } as Prisma.AgentWorkItemUncheckedCreateInput;
   await deps.prisma.agentWorkItem.upsert({
     where: { id, workspaceId },
     update: updateData,

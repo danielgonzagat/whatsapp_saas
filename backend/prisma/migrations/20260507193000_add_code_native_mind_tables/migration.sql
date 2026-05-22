@@ -26,7 +26,7 @@ CREATE TABLE IF NOT EXISTS "RAC_MindCase" (
     subject TEXT NOT NULL,
     "caseType" TEXT NOT NULL,
     "text" TEXT NOT NULL,
-    tokens TEXT[] NOT NULL,
+    tokens TEXT [] NOT NULL,
     features JSONB NOT NULL,
     "action" TEXT NOT NULL,
     outcome DOUBLE PRECISION,

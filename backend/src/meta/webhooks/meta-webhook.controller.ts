@@ -1,4 +1,6 @@
+import * as crypto from 'node:crypto';
 import { createHmac } from 'node:crypto';
+import { InjectRedis } from '@nestjs-modules/ioredis';
 import { safeCompareStrings } from '../../common/utils/crypto-compare.util';
 import {
   Body,
@@ -13,10 +15,13 @@ import {
   Req,
   Res,
 } from '@nestjs/common';
+import { type WebhookEvent } from '@prisma/client';
+import type { Redis } from 'ioredis';
 import { Response } from 'express';
 import { Public } from '../../auth/public.decorator';
 import { forEachSequential } from '../../common/async-sequence';
 import { RawBodyRequest } from '../../common/interfaces/authenticated-request.interface';
+import { Idempotent } from '../../common/idempotency.guard';
 import {
   sanitizeWebhookChallenge,
   sendPlainTextResponse,
@@ -24,7 +29,9 @@ import {
 import { OmnichannelService } from '../../inbox/omnichannel.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { InboundProcessorService } from '../../whatsapp/inbound-processor.service';
+import { WebhooksService } from '../../webhooks/webhooks.service';
 import { MetaWhatsAppService } from '../meta-whatsapp.service';
+import { RouteClass } from '../../common/throttler/route-class.decorator';
 
 /**
  * Structural shape of an inbound Meta webhook payload. Meta ships the same
@@ -98,10 +105,13 @@ interface MetaWhatsAppStatus {
 
 /**
  * Meta Graph API webhookEvent receiver (Instagram, Messenger, WhatsApp Cloud).
- * Deduplication: each message carries a unique externalId (msg.id/mid);
- * InboundProcessorService skips isDuplicate providerMessageId entries.
+ * Deduplication: double-layered — Redis SET NX (fast gate) + WebhookEvent
+ * @@unique([provider, externalId]) (permanent audit). Replay-safe: returns
+ * 200 on duplicate events. Signature verification via X-Hub-Signature-256
+ * (HMAC-SHA256); invalid signatures are rejected with 403.
  */
 @Controller('webhooks/meta')
+@RouteClass('webhook')
 export class MetaWebhookController {
   private readonly logger = new Logger(MetaWebhookController.name);
 
@@ -110,6 +120,8 @@ export class MetaWebhookController {
     private readonly inboundProcessor: InboundProcessorService,
     private readonly omnichannelService: OmnichannelService,
     private readonly prisma: PrismaService,
+    private readonly webhooksService: WebhooksService,
+    @InjectRedis() private readonly redis: Redis,
   ) {}
 
   /** Verify webhook. */
@@ -138,24 +150,60 @@ export class MetaWebhookController {
   /** Handle webhook. */
   @Public()
   @Post()
+  @Idempotent()
   @HttpCode(200)
   async handleWebhook(
     @Body() body: MetaWebhookBody,
     @Headers('x-hub-signature-256') signature: string,
+    @Headers('x-event-id') eventId: string | undefined,
     @Req() req?: RawBodyRequest,
   ) {
     // Validate signature
     const appSecret = process.env.META_APP_SECRET;
-    if (appSecret && signature) {
+    if (appSecret) {
+      if (!signature) {
+        this.logger.warn('Missing Meta webhook signature — rejecting');
+        throw new ForbiddenException('Missing Meta webhook signature');
+      }
       const expected = `sha256=${createHmac('sha256', appSecret)
         .update(
           Buffer.isBuffer(req?.rawBody) ? req.rawBody : Buffer.from(JSON.stringify(body || {})),
         )
         .digest('hex')}`;
       if (!safeCompareStrings(signature, expected)) {
-        this.logger.warn('Invalid Meta webhook signature');
+        this.logger.warn('Invalid Meta webhook signature — rejecting');
+        throw new ForbiddenException('Invalid Meta webhook signature');
+      }
+    }
+
+    // Double-layer idempotency: Redis SET NX + WebhookEvent unique constraint
+    const redisKey = this.buildMetaIdempotencyKey(eventId, req, body);
+    const acquired = await this.redis.set(redisKey, '1', 'EX', 300, 'NX');
+    if (!acquired) {
+      this.logger.warn(`Duplicate Meta webhook (Redis): ${redisKey}`);
+      return 'ok';
+    }
+
+    const metaExternalId =
+      eventId ||
+      `meta_${crypto.createHash('sha256').update(JSON.stringify(body)).digest('hex').slice(0, 32)}`;
+    let webhookEvent: WebhookEvent | undefined;
+    try {
+      webhookEvent = await this.webhooksService.logWebhookEvent(
+        'meta',
+        String(body.object || 'unknown'),
+        metaExternalId,
+        body,
+      );
+    } catch (err: unknown) {
+      const code = (err as { code?: string } | null)?.code;
+      if (code === 'P2002') {
+        this.logger.log(`Duplicate Meta webhook event ${metaExternalId}, returning 200`);
         return 'ok';
       }
+      this.logger.warn(
+        `Failed to log Meta webhook event: ${err instanceof Error ? err.message : 'unknown'}`,
+      );
     }
 
     const object = body.object;
@@ -175,12 +223,36 @@ export class MetaWebhookController {
             break;
         }
       } catch (err: unknown) {
-        // PULSE:OK — Per-entry webhook error must not block other entries; returns 200 to Meta
         this.logger.error(`Meta webhook processing error: ${String(err)}`);
       }
     });
 
+    if (webhookEvent?.id) {
+      await this.webhooksService.markWebhookProcessed(webhookEvent.id).catch((err: unknown) => {
+        this.logger.error(
+          `Failed to mark Meta webhook ${webhookEvent.id} as processed: ${err instanceof Error ? err.message : 'unknown'}`,
+        );
+      });
+    }
+
     return 'ok';
+  }
+
+  private buildMetaIdempotencyKey(
+    eventId: string | undefined,
+    req: RawBodyRequest | undefined,
+    body: MetaWebhookBody,
+  ): string {
+    if (eventId) {
+      return `webhook:meta:${eventId}`;
+    }
+    const raw = req?.rawBody || JSON.stringify(body || {});
+    const hash = crypto
+      .createHash('sha256')
+      .update(Buffer.isBuffer(raw) ? raw : Buffer.from(String(raw)))
+      .digest('hex')
+      .slice(0, 32);
+    return `webhook:meta:${hash}`;
   }
 
   private async handleInstagram(entry: MetaWebhookEntry) {
@@ -209,12 +281,12 @@ export class MetaWebhookController {
           channel: 'MESSENGER',
           externalId: String(msg.message?.mid || msg.sender?.id || 'unknown'),
           from: String(msg.sender?.id || 'unknown'),
-          fromName: String(msg.sender?.name || '').trim() || undefined,
+          ...(msg.sender?.name ? { fromName: String(msg.sender.name).trim() } : {}),
           content: String(msg.message?.text || '').trim(),
           metadata: {
             raw: msg,
-            recipientId: msg.recipient?.id,
-            timestamp: msg.timestamp,
+            ...(msg.recipient?.id !== undefined ? { recipientId: msg.recipient.id } : {}),
+            ...(msg.timestamp !== undefined ? { timestamp: msg.timestamp } : {}),
           },
         });
       }
@@ -256,7 +328,7 @@ export class MetaWebhookController {
       providerMessageId,
       from: senderPhone,
       to: String(change.value?.metadata?.display_phone_number || '').trim(),
-      senderName,
+      ...(senderName !== undefined ? { senderName } : {}),
       type: messageType,
       text: messageText,
       raw: msg,

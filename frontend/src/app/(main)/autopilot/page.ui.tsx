@@ -191,9 +191,9 @@ export function StatCard({
   icon: React.ElementType;
   label: string;
   value: string | number;
-  subValue?: string;
+  subValue?: string | undefined;
   trend?: 'up' | 'down' | 'neutral';
-  color?: string;
+  color?: string | undefined;
 }) {
   return (
     <div
@@ -328,7 +328,7 @@ export function statusTone(status?: string) {
   return { color: colors.brand.cyan, bg: `${colors.brand.cyan}18` };
 }
 
-export function StatusPill({ label, status }: { label: string; status?: string }) {
+export function StatusPill({ label, status }: { label: string; status?: string | undefined }) {
   const tone = statusTone(status);
   return (
     <div

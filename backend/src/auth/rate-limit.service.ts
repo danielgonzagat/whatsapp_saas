@@ -2,10 +2,10 @@ import {
   HttpException,
   HttpStatus,
   Injectable,
-  Logger,
   Optional,
   ServiceUnavailableException,
 } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { InjectRedis } from '@nestjs-modules/ioredis';
 import type { Redis } from 'ioredis';
 
@@ -18,8 +18,12 @@ import type { Redis } from 'ioredis';
  * Invariant: rate limit must enforce across all instances consistently.
  */
 @Injectable()
+/**
+ * @cluster whatsapp_saas/backend/auth
+ * L11 multi-agent TaskGraph annotation (batched by tools/auto-pr/batch-job.mjs).
+ */
 export class RateLimitService {
-  private logger = new Logger(RateLimitService.name);
+  private readonly logger = StructuredLogger.from(RateLimitService.name);
 
   constructor(@Optional() @InjectRedis() private readonly redis: Redis | null = null) {}
 

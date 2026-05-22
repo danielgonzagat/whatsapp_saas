@@ -25,7 +25,8 @@
  *   - Workspace isolation: rate buckets are keyed by `workspaceId`.
  */
 
-import { Injectable, Logger, type OnModuleInit } from '@nestjs/common';
+import { Injectable, type OnModuleInit  } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { WhatsappService } from './whatsapp.service';
 
@@ -50,7 +51,7 @@ const toPatchableProto = (value: unknown): PatchableProto => value as PatchableP
 
 @Injectable()
 export class WhatsappSendRateGuardService implements OnModuleInit {
-  private readonly logger = new Logger(WhatsappSendRateGuardService.name);
+  private readonly logger = StructuredLogger.from(WhatsappSendRateGuardService.name);
 
   constructor(private readonly planLimits: PlanLimitsService) {}
 

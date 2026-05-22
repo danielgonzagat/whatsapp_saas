@@ -1,7 +1,7 @@
 # Atomic OS Benchmark - Round 005 Verdict
 
 Date: 2026-05-16
-Coordinator workspace: `/Users/danielpenin/whatsapp_saas`
+Coordinator workspace: `<repo-root>`
 
 ## Task
 

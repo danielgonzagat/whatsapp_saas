@@ -6,17 +6,15 @@ import {
   CATEGORIES,
   FORMAT_DATA,
   type FormatItem,
-  QUICK_ACTIONS,
-  RECENT_DIMENSIONS,
-  SOCIAL_PLATFORMS,
 } from '@/lib/canvas-formats';
 import { useRouter } from 'next/navigation';
-import { useState, useId } from 'react';
+import { useState } from 'react';
 import { IC, getIcon } from './CanvasIcons';
-import { FormatCard } from './FormatCard';
+import { CustomSizePanel } from './CustomSizePanel';
+import { UploadPanel } from './UploadPanel';
+import { FormatGrid } from './FormatGrid';
 
 const S = "var(--font-sora), 'Sora', sans-serif";
-const M = "var(--font-jetbrains), 'JetBrains Mono', monospace";
 
 interface CreateModalProps {
   open: boolean;
@@ -66,7 +64,7 @@ export function CreateModal({ open, onClose }: CreateModalProps) {
     >
       <button
         type="button"
-        aria-label="Fechar modal"
+        aria-label={kloelT('Fechar modal')}
         onClick={onClose}
         style={{ position: 'absolute', inset: 0, background: 'transparent', border: 'none' }}
       />
@@ -76,7 +74,7 @@ export function CreateModal({ open, onClose }: CreateModalProps) {
         aria-modal="true"
         style={{
           background: colors.background.void,
-          border: '1px solid #1C1C1F',
+          border: `1px solid ${colors.canvas.border}`,
           borderRadius: 6,
           width: '92vw',
           maxWidth: 920,
@@ -98,7 +96,7 @@ export function CreateModal({ open, onClose }: CreateModalProps) {
             alignItems: 'center',
             justifyContent: 'space-between',
             padding: '14px 20px',
-            borderBottom: '1px solid #1C1C1F',
+            borderBottom: `1px solid ${colors.canvas.border}`,
             flexShrink: 0,
           }}
         >
@@ -114,14 +112,14 @@ export function CreateModal({ open, onClose }: CreateModalProps) {
               maxWidth: 340,
               marginLeft: 20,
               background: colors.background.surface,
-              border: '1px solid #1C1C1F',
+              border: `1px solid ${colors.canvas.border}`,
               borderRadius: 4,
               padding: '6px 10px',
             }}
           >
             {IC.search(14)}
             <input
-              aria-label="O que voce gostaria de criar"
+              aria-label={kloelT('O que voce gostaria de criar')}
               placeholder={kloelT(`O que voce gostaria de criar?`)}
               style={{
                 flex: 1,
@@ -156,7 +154,7 @@ export function CreateModal({ open, onClose }: CreateModalProps) {
             className="sb"
             style={{
               width: 190,
-              borderRight: '1px solid #1C1C1F',
+              borderRight: `1px solid ${colors.canvas.border}`,
               overflowY: 'auto',
               padding: '6px 0',
               flexShrink: 0,
@@ -173,7 +171,7 @@ export function CreateModal({ open, onClose }: CreateModalProps) {
                 onMouseEnter={(e) => {
                   if (cat !== c.id) {
                     e.currentTarget.style.background =
-                      '#151517' /* PULSE_VISUAL_OK: intermediate surface tone */;
+                      colors.canvas.surfaceAlt;
                     e.currentTarget.style.color = colors.text.silver;
                   }
                 }}
@@ -232,543 +230,3 @@ export function CreateModal({ open, onClose }: CreateModalProps) {
   );
 }
 
-/* ═══ Custom Size Panel ═══ */
-function CustomSizePanel({
-  customW,
-  customH,
-  setCustomW,
-  setCustomH,
-  openEditor,
-}: {
-  customW: string;
-  customH: string;
-  setCustomW: (v: string) => void;
-  setCustomH: (v: string) => void;
-  openEditor: (
-    fmt: FormatItem | { l: string; w: number; h: number; c: [string, string]; m: string },
-  ) => void;
-}) {
-  const fid = useId();
-  return (
-    <div>
-      <h3
-        style={{
-          fontSize: 14,
-          fontWeight: 600,
-          color: colors.text.silver,
-          fontFamily: S,
-          marginBottom: 16,
-        }}
-      >
-        {kloelT(`Tamanho personalizado`)}
-      </h3>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
-        <div style={{ flex: 1 }}>
-          <label
-            style={{
-              fontSize: 10,
-              fontWeight: 600,
-              color: colors.text.muted,
-              fontFamily: S,
-              display: 'block',
-              marginBottom: 6,
-            }}
-            htmlFor={`${fid}-largura`}
-          >
-            {kloelT(`Largura`)}
-          </label>
-          <input
-            aria-label="Largura em pixels"
-            value={customW}
-            onChange={(e) => setCustomW(e.target.value)}
-            placeholder="1080"
-            style={{
-              width: '100%',
-              background: colors.background.surface,
-              border: '1px solid #1C1C1F',
-              borderRadius: 4,
-              padding: '10px 12px',
-              color: colors.text.silver,
-              fontSize: 14,
-              fontFamily: M,
-              outline: 'none',
-            }}
-            id={`${fid}-largura`}
-          />
-        </div>
-        <span style={{ color: colors.text.dim, marginTop: 20, fontFamily: M, fontSize: 12 }}>
-          x
-        </span>
-        <div style={{ flex: 1 }}>
-          <label
-            style={{
-              fontSize: 10,
-              fontWeight: 600,
-              color: colors.text.muted,
-              fontFamily: S,
-              display: 'block',
-              marginBottom: 6,
-            }}
-            htmlFor={`${fid}-altura`}
-          >
-            {kloelT(`Altura`)}
-          </label>
-          <input
-            aria-label="Altura em pixels"
-            value={customH}
-            onChange={(e) => setCustomH(e.target.value)}
-            placeholder="1080"
-            style={{
-              width: '100%',
-              background: colors.background.surface,
-              border: '1px solid #1C1C1F',
-              borderRadius: 4,
-              padding: '10px 12px',
-              color: colors.text.silver,
-              fontSize: 14,
-              fontFamily: M,
-              outline: 'none',
-            }}
-            id={`${fid}-altura`}
-          />
-        </div>
-        <div style={{ flex: 0.6 }}>
-          <label
-            style={{
-              fontSize: 10,
-              fontWeight: 600,
-              color: colors.text.muted,
-              fontFamily: S,
-              display: 'block',
-              marginBottom: 6,
-            }}
-            htmlFor={`${fid}-unidades`}
-          >
-            {kloelT(`Unidades`)}
-          </label>
-          <select
-            style={{
-              width: '100%',
-              background: colors.background.surface,
-              border: '1px solid #1C1C1F',
-              borderRadius: 4,
-              padding: '10px',
-              color: colors.text.silver,
-              fontSize: 12,
-              fontFamily: S,
-              outline: 'none',
-            }}
-            id={`${fid}-unidades`}
-          >
-            <option>px</option>
-            <option>mm</option>
-            <option>cm</option>
-            <option>in</option>
-          </select>
-        </div>
-        <button
-          type="button"
-          onClick={() =>
-            openEditor({
-              l: 'Personalizado',
-              w: Number.parseInt(customW, 10) || 1080,
-              h: Number.parseInt(customH, 10) || 1080,
-              c: [colors.ember.primary, '#F2784B'],
-              m: 'square',
-            })
-          }
-          style={{
-            marginTop: 20,
-            padding: '10px 18px',
-            background: colors.ember.primary,
-            border: 'none',
-            borderRadius: 4,
-            color: colors.background.void,
-            fontSize: 12,
-            fontWeight: 700,
-            fontFamily: S,
-            cursor: 'pointer',
-            whiteSpace: 'nowrap',
-          }}
-        >
-          {kloelT(`Criar`)}
-        </button>
-      </div>
-      <p
-        style={{
-          fontSize: 11,
-          fontWeight: 600,
-          color: colors.text.muted,
-          fontFamily: S,
-          marginBottom: 10,
-        }}
-      >
-        {kloelT(`Dimensoes recentes`)}
-      </p>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-        {RECENT_DIMENSIONS.map((d) => (
-          <button
-            type="button"
-            key={`${d.w}x${d.h}`}
-            onClick={() =>
-              openEditor({
-                l: `${d.w}x${d.h}`,
-                w: d.w,
-                h: d.h,
-                c: [colors.text.muted, colors.text.dim],
-                m: 'square',
-              })
-            }
-            onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = 'colors.ember.glow40';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.borderColor =
-                '#1C1C1F' /* PULSE_VISUAL_OK: intermediate surface tone, near elevated */;
-            }}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 10,
-              background: colors.background.surface,
-              border: '1px solid #1C1C1F',
-              borderRadius: 4,
-              padding: '10px 14px',
-              cursor: 'pointer',
-              transition: 'all 0.15s',
-              fontFamily: S,
-            }}
-          >
-            <svg
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke={colors.text.dim}
-              strokeWidth="1.5"
-              aria-hidden="true"
-            >
-              <rect x="3" y="3" width="18" height="18" rx="2" />
-            </svg>
-            <span style={{ fontFamily: M, fontSize: 12, color: colors.text.silver }}>
-              {d.w} x {d.h} px
-            </span>
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-/* ═══ Upload Panel ═══ */
-function UploadPanel() {
-  return (
-    <div
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        height: '100%',
-        gap: 16,
-      }}
-    >
-      <div
-        style={{
-          width: '100%',
-          maxWidth: 500,
-          height: 280,
-          border: '2px dashed #1C1C1F',
-          borderRadius: 6,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: 12,
-          cursor: 'pointer',
-          transition: 'all 0.2s',
-        }}
-      >
-        <div style={{ color: colors.ember.primary, opacity: 0.5 }}>{IC.upload(40)}</div>
-        <p
-          style={{
-            fontSize: 14,
-            color: colors.text.muted,
-            fontFamily: "var(--font-sora), 'Sora', sans-serif",
-          }}
-        >
-          {kloelT(`Arraste seu conteudo para ca ou`)}
-        </p>
-        <div style={{ display: 'flex', gap: 10 }}>
-          <button
-            type="button"
-            style={{
-              padding: '8px 16px',
-              background: colors.ember.primary,
-              border: 'none',
-              borderRadius: 4,
-              color: colors.background.void,
-              fontSize: 12,
-              fontWeight: 600,
-              fontFamily: "var(--font-sora), 'Sora', sans-serif",
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 6,
-            }}
-          >
-            {IC.plus(12)} {kloelT(`Fazer upload de arquivos`)}
-          </button>
-          <button
-            type="button"
-            style={{
-              padding: '8px 16px',
-              background: colors.background.surface,
-              border: '1px solid #1C1C1F',
-              borderRadius: 4,
-              color: colors.text.silver,
-              fontSize: 12,
-              fontFamily: "var(--font-sora), 'Sora', sans-serif",
-              cursor: 'pointer',
-            }}
-          >
-            {kloelT(`Fazer upload de pasta`)}
-          </button>
-        </div>
-      </div>
-      <p
-        style={{
-          fontSize: 11,
-          color: colors.text.dim,
-          fontFamily: "var(--font-sora), 'Sora', sans-serif",
-        }}
-      >
-        {kloelT(`Aceita imagens, videos, outros arquivos e pastas`)}
-      </p>
-    </div>
-  );
-}
-
-/* ═══ Format Grid (for most categories) ═══ */
-function FormatGrid({
-  cat,
-  sf,
-  setSf,
-  fmts,
-  openEditor,
-}: {
-  cat: string;
-  sf: string;
-  setSf: (v: string) => void;
-  fmts: FormatItem[];
-  openEditor: (fmt: FormatItem) => void;
-}) {
-  return (
-    <div>
-      {cat === 'redes-sociais' && (
-        <div style={{ display: 'flex', gap: 6, marginBottom: 16, flexWrap: 'wrap' }}>
-          {SOCIAL_PLATFORMS.map((s) => (
-            <button
-              type="button"
-              key={s}
-              onClick={() => setSf(s)}
-              style={{
-                padding: '5px 12px',
-                background: sf === s ? 'colors.ember.glow10' : 'none',
-                border: `1px solid ${sf === s ? 'colors.ember.glow30' : '#1C1C1F'}`,
-                borderRadius: 4,
-                color: sf === s ? colors.ember.primary : colors.text.muted,
-                fontSize: 11,
-                fontWeight: sf === s ? 600 : 400,
-                fontFamily: "var(--font-sora), 'Sora', sans-serif",
-                cursor: 'pointer',
-              }}
-            >
-              {s}
-            </button>
-          ))}
-        </div>
-      )}
-
-      {cat === 'para-voce' && (
-        <div style={{ marginBottom: 16 }}>
-          <p
-            style={{
-              fontSize: 10,
-              fontWeight: 600,
-              color: colors.text.muted,
-              fontFamily: "var(--font-sora), 'Sora', sans-serif",
-              marginBottom: 10,
-              textTransform: 'uppercase',
-              letterSpacing: '0.06em',
-            }}
-          >
-            {kloelT(`Acoes rapidas`)}
-          </p>
-          <div style={{ display: 'flex', gap: 10 }}>
-            {QUICK_ACTIONS.map((a) => (
-              <button
-                type="button"
-                key={a.l}
-                onClick={() =>
-                  openEditor({
-                    l: a.l,
-                    w: 1080,
-                    h: 1080,
-                    c: a.c,
-                    m: 'square',
-                    s: '1080x1080',
-                  } as FormatItem)
-                }
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.borderColor = `${a.c[0]}40`;
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.borderColor =
-                    '#1C1C1F' /* PULSE_VISUAL_OK: intermediate surface tone, near elevated */;
-                }}
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  gap: 6,
-                  padding: '10px 12px',
-                  background: colors.background.surface,
-                  border: '1px solid #1C1C1F',
-                  borderRadius: 6,
-                  cursor: 'pointer',
-                  transition: 'all 0.15s',
-                  minWidth: 85,
-                }}
-              >
-                <div
-                  style={{
-                    width: 30,
-                    height: 30,
-                    borderRadius: 6,
-                    background: `linear-gradient(135deg,${a.c[0]},${a.c[1]})`,
-                    opacity: 0.8,
-                  }}
-                />
-                <span
-                  style={{
-                    fontSize: 9,
-                    fontWeight: 500,
-                    color: colors.text.muted,
-                    fontFamily: "var(--font-sora), 'Sora', sans-serif",
-                    textAlign: 'center',
-                  }}
-                >
-                  {a.l}
-                </span>
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
-      <p
-        style={{
-          fontSize: 10,
-          fontWeight: 600,
-          color: colors.text.muted,
-          fontFamily: "var(--font-sora), 'Sora', sans-serif",
-          marginBottom: 12,
-          textTransform: 'uppercase',
-          letterSpacing: '0.06em',
-        }}
-      >
-        {sf !== 'Populares'
-          ? sf
-          : cat === 'para-voce'
-            ? 'Populares'
-            : CATEGORIES.find((c) => c.id === cat)?.label}
-      </p>
-
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill,minmax(148px,1fr))',
-          gap: 10,
-        }}
-      >
-        {fmts.map((f) => (
-          <FormatCard key={`${f.l}-${f.w}-${f.h}`} item={f} onClick={openEditor} />
-        ))}
-      </div>
-
-      {fmts.length > 0 && cat !== 'redes-sociais' && (
-        <div style={{ marginTop: 20 }}>
-          <p
-            style={{
-              fontSize: 10,
-              fontWeight: 600,
-              color: colors.text.muted,
-              fontFamily: "var(--font-sora), 'Sora', sans-serif",
-              marginBottom: 10,
-              textTransform: 'uppercase',
-              letterSpacing: '0.06em',
-            }}
-          >
-            {kloelT(`Outras formas de comecar`)}
-          </p>
-          <button
-            type="button"
-            onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = 'colors.ember.glow40';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.borderColor =
-                '#1C1C1F' /* PULSE_VISUAL_OK: intermediate surface tone, near elevated */;
-            }}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 12,
-              background: colors.background.surface,
-              border: '1px solid #1C1C1F',
-              borderRadius: 6,
-              padding: '12px 16px',
-              cursor: 'pointer',
-            }}
-          >
-            <div
-              style={{
-                width: 34,
-                height: 34,
-                borderRadius: 4,
-                background: 'linear-gradient(135deg,colors.ember.glow10,colors.ember.bg)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <span style={{ color: colors.ember.primary }}>{IC.grid(15)}</span>
-            </div>
-            <div style={{ textAlign: 'left' }}>
-              <p
-                style={{
-                  fontSize: 12,
-                  fontWeight: 600,
-                  color: colors.text.silver,
-                  fontFamily: "var(--font-sora), 'Sora', sans-serif",
-                }}
-              >
-                {kloelT(`Explorar modelos`)}
-              </p>
-              <p
-                style={{
-                  fontSize: 10,
-                  color: colors.text.dim,
-                  fontFamily: "var(--font-sora), 'Sora', sans-serif",
-                }}
-              >
-                {kloelT(`Templates prontos pra usar`)}
-              </p>
-            </div>
-          </button>
-        </div>
-      )}
-    </div>
-  );
-}

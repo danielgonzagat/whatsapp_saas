@@ -1,10 +1,14 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
 /** Video service. */
 @Injectable()
 export class VideoService {
-  constructor(private prisma: PrismaService) {}
+  private readonly logger = new Logger(VideoService.name);
+
+  constructor(private prisma: PrismaService) {
+    this.logger.log('VideoService initialized');
+  }
 
   /** Create job. */
   async createJob(workspaceId: string, inputUrl: string, prompt: string) {

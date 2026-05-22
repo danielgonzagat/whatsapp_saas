@@ -14,6 +14,7 @@ import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { AuthenticatedRequest } from '../common/interfaces';
 import { PrismaService } from '../prisma/prisma.service';
 import { serializeArea } from './member-area.helpers';
+import { RouteClass } from '../common/throttler/route-class.decorator';
 
 interface ModuleTemplateLesson {
   name: string;
@@ -28,6 +29,11 @@ interface ModuleTemplate {
   lessons: ModuleTemplateLesson[];
 }
 
+/**
+ * Module templates catalog — fallback seed data for member area structure generation.
+ * Future: these should be fetched from a database-backed template service rather than
+ * hardcoded in the controller.
+ */
 const COURSE_MODULES: ModuleTemplate[] = [
   {
     name: 'Fundamentos',
@@ -79,7 +85,7 @@ const COMMUNITY_MODULES: ModuleTemplate[] = [
 
 const HYBRID_MODULES: ModuleTemplate[] = [
   ...COURSE_MODULES,
-  { ...COMMUNITY_MODULES[0], position: 3 },
+  { ...COMMUNITY_MODULES[0]!, position: 3 },
 ];
 
 const MEMBERSHIP_MODULES: ModuleTemplate[] = [
@@ -126,10 +132,18 @@ const MEMBERSHIP_MODULES: ModuleTemplate[] = [
 ];
 
 function templateForAreaType(type: string): ModuleTemplate[] {
-  if (type === 'COURSE') return COURSE_MODULES;
-  if (type === 'COMMUNITY') return COMMUNITY_MODULES;
-  if (type === 'HYBRID') return HYBRID_MODULES;
-  if (type === 'MEMBERSHIP') return MEMBERSHIP_MODULES;
+  if (type === 'COURSE') {
+    return COURSE_MODULES;
+  }
+  if (type === 'COMMUNITY') {
+    return COMMUNITY_MODULES;
+  }
+  if (type === 'HYBRID') {
+    return HYBRID_MODULES;
+  }
+  if (type === 'MEMBERSHIP') {
+    return MEMBERSHIP_MODULES;
+  }
   return [];
 }
 
@@ -144,6 +158,7 @@ function templateForAreaType(type: string): ModuleTemplate[] {
  */
 @Controller('member-areas')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
+@RouteClass('mutate')
 export class MemberStructureController {
   private readonly logger = new Logger(MemberStructureController.name);
 
@@ -191,7 +206,7 @@ export class MemberStructureController {
               position: modData.position,
             },
           });
-          totalModulesCreated++;
+          totalModulesCreated += 1;
 
           await forEachSequential(modData.lessons, async (lessonData) => {
             await tx.memberLesson.create({
@@ -202,7 +217,7 @@ export class MemberStructureController {
                 position: lessonData.position,
               },
             });
-            totalLessonsCreated++;
+            totalLessonsCreated += 1;
           });
         });
 

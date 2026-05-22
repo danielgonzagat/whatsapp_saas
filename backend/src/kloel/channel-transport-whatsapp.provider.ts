@@ -1,4 +1,5 @@
-import { Injectable, Logger, Optional } from '@nestjs/common';
+import { Injectable, Optional  } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { WhatsAppProviderRegistry } from '../whatsapp/providers/provider-registry';
 import type {
   ChannelCapability,
@@ -11,7 +12,7 @@ import type {
 @Injectable()
 export class WhatsAppChannelTransport implements ChannelTransportProvider {
   readonly channel: ChannelName = 'whatsapp';
-  private readonly logger = new Logger(WhatsAppChannelTransport.name);
+  private readonly logger = StructuredLogger.from(WhatsAppChannelTransport.name);
 
   constructor(@Optional() private readonly whatsappRegistry?: WhatsAppProviderRegistry) {}
 
@@ -52,10 +53,10 @@ export class WhatsAppChannelTransport implements ChannelTransportProvider {
         request.recipientId,
         request.content,
         {
-          mediaUrl: request.mediaUrl,
-          mediaType: request.mediaType,
-          caption: request.caption,
-          quotedMessageId: request.quotedMessageId,
+          ...(request.mediaUrl !== undefined ? { mediaUrl: request.mediaUrl } : {}),
+          ...(request.mediaType !== undefined ? { mediaType: request.mediaType } : {}),
+          ...(request.caption !== undefined ? { caption: request.caption } : {}),
+          ...(request.quotedMessageId !== undefined ? { quotedMessageId: request.quotedMessageId } : {}),
         },
       );
 
@@ -78,7 +79,7 @@ export class WhatsAppChannelTransport implements ChannelTransportProvider {
       this.logger.log(
         `WhatsApp send dispatched workspace=${workspaceId} recipient=${request.recipientId} messageId=${messageId}`,
       );
-      return { success: true, messageId, blocked: false };
+      return { success: true, ...(messageId !== undefined ? { messageId } : {}), blocked: false };
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'unknown_error';
       this.logger.error(`WhatsApp send erro workspace=${workspaceId}: ${message}`);

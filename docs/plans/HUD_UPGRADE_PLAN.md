@@ -3,7 +3,8 @@
 > **Branch**: `chore/ai-constitution-obsidian-graph-lock`
 > **Status**: Active — plan execution starting 2026-05-02
 > **Ratified by**: Daniel, 2026-05-02 (decisões 1, 2, 3)
-> **Goal**: Convert the existing Obsidian Mirror from passive code visualization into the **single source of truth for KLOEL's path-to-production**, consumed by Daniel (visual) and Claude/OpenCode (textual hub notes) without drift.
+> **Goal**: Convert the existing Obsidian Mirror from passive code visualization into the **single source of truth for
+> KLOEL's path-to-production**, consumed by Daniel (visual) and Claude/OpenCode (textual hub notes) without drift.
 
 ---
 
@@ -63,7 +64,8 @@ All sidecars sit next to mirror nodes in `_source/<repo-rel>.<kind>.json`. Non-p
 
 ## Hub notes (auto-generated, non-protected, regenerated on every refresh)
 
-Path: `<vault>/Kloel/00-HUD/`. Each hub is a `.md` with frontmatter tags + Obsidian embedded queries + a ranked table. Always overwritable (header marker `<!-- AUTO-GENERATED — do not edit -->`).
+Path: `<vault>/Kloel/00-HUD/`. Each hub is a `.md` with frontmatter tags + Obsidian embedded queries + a ranked table.
+Always overwritable (header marker `<!-- AUTO-GENERATED — do not edit -->`).
 
 | Hub                 | Purpose                                         |
 | ------------------- | ----------------------------------------------- |
@@ -80,7 +82,8 @@ A daily snapshot is dropped at `<vault>/Kloel/00-HUD/snapshots/YYYY-MM-DD.md` fo
 
 ## Blocker-rank algorithm (canonical)
 
-Implemented in `scripts/orchestration/blocker-rank.mjs`. Reads all sidecars + PULSE_REPORT.md + Codacy ratchet. Outputs `<repo>/BLOCKER_RANK.json` (gitignored).
+Implemented in `scripts/orchestration/blocker-rank.mjs`. Reads all sidecars + PULSE_REPORT.md + Codacy ratchet.
+Outputs `<repo>/BLOCKER_RANK.json` (gitignored).
 
 ```
 score(file) = tier_weight × phase_priority × user_impact × (1 / effort_estimate)

@@ -30,8 +30,10 @@ import {
 } from './helpers/common.helpers';
 
 /** Product commission controller. */
+import { RouteClass } from '../../common/throttler/route-class.decorator';
 @Controller('products/:productId/commissions')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
+@RouteClass('mutate')
 export class ProductCommissionController {
   constructor(
     private readonly prisma: PrismaService,

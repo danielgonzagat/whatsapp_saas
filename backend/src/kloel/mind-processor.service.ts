@@ -1,4 +1,5 @@
-import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
+import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { Queue, Worker } from 'bullmq';
 import { createRedisClient, isRedisConfigured } from '../common/redis/redis.util';
 import { PrismaService } from '../prisma/prisma.service';
@@ -13,7 +14,7 @@ const MIND_TICK_QUEUE = 'mind-tick';
 
 @Injectable()
 export class MindProcessorService implements OnModuleInit, OnModuleDestroy {
-  private readonly logger = new Logger(MindProcessorService.name);
+  private readonly logger = StructuredLogger.from(MindProcessorService.name);
   private schedulerQueue?: Queue;
   private tickQueue?: Queue;
   private schedulerWorker?: Worker;

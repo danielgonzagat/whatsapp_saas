@@ -104,10 +104,24 @@ export async function resolveProductOfferDecision(
   concept: string,
   priceBand: string,
   lastPurchase?: string,
+  channelConstraint?: { channel?: string; allowedProductIds?: string[] },
 ): Promise<{ offer: string; confidence: number; fallback: boolean }> {
   const baseline = resolveProductOfferBaseline(segment, concept, priceBand);
   const context: Record<string, unknown> = { segment, concept, priceBand };
   if (lastPurchase) context.lastPurchase = lastPurchase;
+  if (channelConstraint?.channel) context.channel = channelConstraint.channel;
+  // Channel-allowed product IDs feed the policy as structural context so the
+  // brain (and any downstream consumer of the decision trace) sees what the
+  // operator authorized for this channel. A future mapper layer translates
+  // the chosen strategy label into one of these IDs; until that layer ships,
+  // the strategy label is recorded alongside `allowedProductIds` so no
+  // out-of-list product can be selected without leaving an audit trail.
+  if (
+    channelConstraint?.allowedProductIds &&
+    channelConstraint.allowedProductIds.length > 0
+  ) {
+    context.allowedProductIds = channelConstraint.allowedProductIds;
+  }
 
   const result = await policy.choose({
     workspaceId,
@@ -117,7 +131,7 @@ export async function resolveProductOfferDecision(
     options: ['top_seller', 'highest_margin', 'entry_product', 'premium_product', 'upsell'].map(
       (offer) => ({
         action: offer,
-        predicate: 'P(conversion|product_offer,segment,concept,price_band)',
+        predicate: 'P(conversion|product_offer,segment,concept,price_band,channel)',
         context: { segment, concept, priceBand, offer },
       }),
     ),
@@ -161,6 +175,37 @@ export async function resolveBroadcastWindowDecision(
 
   return {
     window: result.chosen,
+    confidence: decisionConfidence(result),
+    fallback: result.decision.fallbackActive,
+  };
+}
+
+export async function resolveBestVariantDecision(
+  policy: MindPolicyChooser,
+  workspaceId: string,
+  flow: string,
+  variantIds: string[],
+  context?: Record<string, unknown>,
+): Promise<{ variant: string; confidence: number; fallback: boolean }> {
+  const baseline = variantIds[0] ?? 'followup:direct';
+  const ctx: Record<string, unknown> = { flow, ...(context ?? {}) };
+
+  const result = await policy.choose({
+    workspaceId,
+    subject: `workspace:${workspaceId}`,
+    decisionType: 'flow_variant',
+    context: ctx,
+    options: variantIds.map((variantId) => ({
+      action: variantId,
+      predicate: 'P(conversion|flow_variant,flow)',
+      context: { flow, variant_id: variantId },
+    })),
+    baseline,
+    outcomeKey: `flow_variant:${workspaceId}:${flow}:${Date.now()}`,
+  });
+
+  return {
+    variant: result.chosen,
     confidence: decisionConfidence(result),
     fallback: result.decision.fallbackActive,
   };

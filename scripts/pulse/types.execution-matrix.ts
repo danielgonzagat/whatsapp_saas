@@ -1,6 +1,6 @@
 import type { PulseConvergenceExecutionMode, PulseConvergenceRiskLevel } from './types.convergence';
 import type { PulseExecutionChainStepRole } from './types.product-graph';
-import type { PulseFlowProjectionStatus } from './__parts__/types.capabilities/01-primitives';
+import type { PulseFlowProjectionStatus } from './types.capabilities/01-primitives';
 import type { PulseTruthMode } from './types.structural';
 
 /** Status assigned to every code-discovered executable path. */

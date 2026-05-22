@@ -76,6 +76,12 @@ export interface TraceMetrics {
 export interface PreservationZone {
   kind: string;
   description: string;
+  /** Byte offset in original file (0-based) where this preserved zone starts. */
+  byteStart: number;
+  /** Byte offset in original file (0-based, exclusive) where this preserved zone ends. */
+  byteEnd: number;
+  /** Length of this zone in bytes (before === after). */
+  byteLength: number;
   beforeHash?: string;
   afterHash?: string;
   sample?: string;
@@ -83,6 +89,12 @@ export interface PreservationZone {
 
 export interface ModifiedZone {
   kind: string;
+  /** Byte offset in original file (0-based) where modified zone starts. */
+  byteStart: number;
+  /** Byte offset in original file (0-based, exclusive) where modified zone ends. */
+  byteEnd: number;
+  /** Length of new text in bytes (may differ from old length). */
+  newByteLength: number;
   oldTextHash?: string;
   newTextHash?: string;
   oldSample?: string;
@@ -94,6 +106,14 @@ export interface ModifiedZone {
 export interface MovementZone {
   kind: string;
   description: string;
+  /** Byte offset in original file (0-based) where moved content started. */
+  oldByteStart?: number;
+  /** Byte offset in original file (0-based, exclusive) where moved content ended. */
+  oldByteEnd?: number;
+  /** Byte offset in new file (0-based) where moved content now starts. */
+  newByteStart?: number;
+  /** Byte offset in new file (0-based, exclusive) where moved content now ends. */
+  newByteEnd?: number;
   from?: string;
   to?: string;
   preservedHash?: string;
@@ -116,7 +136,14 @@ export interface AtomicEditTrace {
   fallback: boolean;
   metrics: TraceMetrics;
   validation: { language: string; syntaxErrorsBefore: number; syntaxErrorsAfter: number };
+  /** True when the operator only validated a proposal and did not write the file. */
+  preview: boolean;
+  /** True when the target file was persisted with the proposed content. */
+  changed: boolean;
+  /** Hash of current on-disk content after the operation; unchanged for previews. */
   afterSha256: string;
+  /** Hash of the proposed content, even for previews that are not written. */
+  proposedSha256: string;
   rollback: { available: boolean; strategy: string };
   inlinePreview: string;
   preservedZones: PreservationZone[];
@@ -149,6 +176,8 @@ export function buildTrace(args: {
   modifiedZones?: ModifiedZone[];
   movementZones?: MovementZone[];
   semanticImpact?: string;
+  preview?: boolean;
+  changed?: boolean;
 }): AtomicEditTrace {
   const changed = args.metrics?.changedChars ?? 0;
   const surface = args.metrics?.lineRewriteSurfaceChars ?? 0;
@@ -158,6 +187,9 @@ export function buildTrace(args: {
   // span is smaller than the line-level surface a blunt editor would expose.
   // Higher expansion is better: more surrounding text was preserved.
   const derivedLineRewriteAvoided = changed === 0 ? true : surface > changed;
+  const preview = args.preview ?? false;
+  const changedFlag = args.changed ?? !preview;
+  const afterText = changedFlag ? args.newText : args.before;
   return {
     traceVersion: '1.0',
     operationId: newOperationId(),
@@ -181,15 +213,23 @@ export function buildTrace(args: {
       syntaxErrorsBefore: args.validation.before,
       syntaxErrorsAfter: args.validation.after,
     },
-    afterSha256: sha256(args.newText),
+    preview,
+    changed: changedFlag,
+    afterSha256: sha256(afterText),
+    proposedSha256: sha256(args.newText),
     rollback: {
-      available: true,
-      strategy: 'explicit pre-edit snapshot (before-text retained by caller)',
+      available: !preview,
+      strategy: preview
+        ? 'dry-run only; no target file write occurred'
+        : 'explicit pre-edit snapshot (before-text retained by caller)',
     },
     inlinePreview: args.inlinePreview,
     preservedZones: args.preservedZones ?? [
       {
         kind: 'unchanged_context',
+        byteStart: 0,
+        byteEnd: args.before.length,
+        byteLength: args.before.length,
         description:
           'Everything outside the modified zone is preserved byte-for-byte by the atomic operation.',
       },
@@ -197,9 +237,14 @@ export function buildTrace(args: {
     modifiedZones: args.modifiedZones ?? [
       {
         kind: 'changed_span',
+        byteStart: 0,
+        byteEnd: args.before.length,
+        newByteLength: args.newText.length,
         oldTextHash: sha256(args.before),
         newTextHash: sha256(args.newText),
-        description: 'The operation changed the highlighted span shown in inlinePreview.',
+        description: preview
+          ? 'Preview only: the highlighted span is proposed but was not written.'
+          : 'The operation changed the highlighted span shown in inlinePreview.',
       },
     ],
     movementZones: args.movementZones ?? [],
@@ -247,37 +292,6 @@ export function writeTrace(trace: AtomicEditTrace): {
 }
 
 /**
- * Echo cap for the inline char-level diff returned in the tool *result*.
- * The full proof is ALWAYS persisted to the trace file (writeTrace); only the
- * model-facing echo is capped. Small diffs (≤ cap) are echoed verbatim so
- * non-technical trust on a small change is preserved; large diffs collapse to
- * a compact verdict — the dominant self-inflicted context tax (A/B R18: one
- * atomic_edit_symbol result = 43,586 chars) is the redundantly echoed full
- * old+new body of a large symbol, while the complete proof already lives on
- * disk. atomic_decompose_file already applies this discipline; generalize it.
- */
-const ECHO_PREVIEW_CAP = 1200;
-
-/**
- * Pure: keep small inline proofs verbatim, collapse large ones to a single
- * verdict block (no raw old/new body). The full char-level proof is never
- * lost — it stays in parts.trace.inlinePreview and is persisted to disk.
- */
-function compactPreview(
-  inlinePreview: string,
-  t: AtomicEditTrace,
-  tracePathOrNull: string | null,
-): string {
-  if (inlinePreview.length <= ECHO_PREVIEW_CAP) return inlinePreview;
-  const where = tracePathOrNull ? ` (${tracePathOrNull})` : '';
-  return (
-    `[ large change · ${t.metrics.changedChars} chars changed · ` +
-    `net ${t.metrics.bytesNet} bytes · expansion ${t.metrics.expansionFactorAvoided}× · ` +
-    `full char-level proof persisted to trace file${where} (not echoed back, to save context) ]`
-  );
-}
-
-/**
  * Trim a full payload to the resolved verbosity level and attach the trace
  * pointer. `inlinePreview` is the char-level atomicDiff; `legacyDiff` is the
  * line-oriented previewDiff (verbose — only L2/L3).
@@ -289,9 +303,6 @@ export function shapePayload(
 ): Record<string, unknown> {
   const persisted = writeTrace(parts.trace);
   const t = parts.trace;
-  // Compute the model-facing echo ONCE, after persisted is known. Small diffs
-  // pass through verbatim; large ones collapse to a verdict (full proof on disk).
-  const previewEcho = compactPreview(parts.inlinePreview, t, persisted.tracePath ?? null);
   // Camada 2 — compact human block FIRST, so the native CLI TUI shows this
   // (not raw JSON) as the edit's visual proof. This is what replaces the
   // banned native line-diff on screen.
@@ -304,10 +315,11 @@ export function shapePayload(
   const traceLine = persisted.tracePath
     ? `Trace: ${persisted.tracePath}`
     : `Trace error: ${persisted.traceWriteError ?? 'unknown'}`;
+  const headline = t.preview ? '✅ Atomic edit preview (not written)' : '✅ Atomic edit applied';
   const summary =
-    `✅ Atomic edit applied\n\n` +
+    `${headline}\n\n` +
     `${t.file}\n` +
-    `${previewEcho}\n\n` +
+    `${parts.inlinePreview}\n\n` +
     `Validation:\n` +
     `- syntax: ${validationSummary.syntax}\n` +
     `- typecheck: ${validationSummary.typecheck}\n` +
@@ -329,26 +341,12 @@ export function shapePayload(
     validationSummary,
     ...persisted,
   };
-  // Slim in-result founder: the full audit (whatChanged / whatPreserved /
-  // howToValidate / nonTouched / trustCeilingReason) is already persisted in
-  // the trace file. Carrying all of it on EVERY op result is a per-call token
-  // tax the model re-ingests every turn (A/B loop: per-op payload must shrink).
-  // Keep only the irreducible proof keys + a pointer to the full audit.
-  out.founder = {
-    promiseClass: t.audit.promiseClass,
-    zeroCodeTrust: t.audit.zeroCodeTrust,
-    notProven: t.audit.notProven,
-    tracePath: persisted.tracePath ?? null,
-  };
+  // founder block rides at EVERY level incl. L0 — auditability-without-code
+  // is the point; it is small and must never be the thing that gets trimmed.
+  out.founder = parts.trace.audit;
   if (level === 'L0') return out;
-  // L1 (default committed path): atomicDiff mirrors the model-facing echo —
-  // the FULL inline proof for small edits, the compact verdict for large ones.
-  // The complete char-level proof always lives in the persisted trace file, so
-  // no proof is lost; this only removes the redundant context tax.
-  out.atomicDiff = previewEcho;
-  if (level === 'L1') return out;
-  // L2/L3 (preview / rich, on-demand): echo the FULL char-level inline diff.
   out.atomicDiff = parts.inlinePreview;
+  if (level === 'L1') return out;
   if (parts.legacyDiff !== undefined) out.diff = parts.legacyDiff;
   if (level === 'L2') return out;
   out.trace = parts.trace; // L3 only

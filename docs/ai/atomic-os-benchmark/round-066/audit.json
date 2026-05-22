@@ -1,5 +1,5 @@
 {
-  "roundDir": "/Users/danielpenin/whatsapp_saas/docs/ai/atomic-os-benchmark/round-066",
+  "roundDir": "<repo-root>/docs/ai/atomic-os-benchmark/round-066",
   "normal": {
     "eventsFile": "opencode-normal-events.jsonl",
     "events": {
@@ -90,9 +90,9 @@
       "uniqueCompletedCommands": 1,
       "failedCommands": [
         {
-          "command": "node /Users/danielpenin/whatsapp_saas/docs/ai/atomic-os-benchmark/tools/atomic-call.cjs extract_symbols_to_file '{\"sourceFile\":\"backend/src/kloel/unified-agent.service.ts\",\"targetFile\":\"backend/src/kloel/unified-agent-runtime.helpers.ts\",\"selectors\":[\"isAllowedTool\",\"formatPromptValue\"],\"importNames\":[\"isAllowedTool\",\"formatPromptValue\"],\"importModule\":\"./unified-agent-runtime.helpers\",\"validate\":true}'",
+          "command": "node <repo-root>/docs/ai/atomic-os-benchmark/tools/atomic-call.cjs extract_symbols_to_file '{\"sourceFile\":\"backend/src/kloel/unified-agent.service.ts\",\"targetFile\":\"backend/src/kloel/unified-agent-runtime.helpers.ts\",\"selectors\":[\"isAllowedTool\",\"formatPromptValue\"],\"importNames\":[\"isAllowedTool\",\"formatPromptValue\"],\"importModule\":\"./unified-agent-runtime.helpers\",\"validate\":true}'",
           "exitCode": 1,
-          "output": "[atomic-edit] ready — repo=/Users/danielpenin/whatsapp_saas node=v25.9.0 pid=35763\n[atomic-edit] tmpdir=/tmp\n[atomic-edit] ERROR no symbol matches \"isAllowedTool\". Available: UnknownRecord, UNIFIED_AGENT_PROVIDER_CONFIG_REQUIRED, UnifiedAgentService, UnifiedAgentService.logger, UnifiedAgentService.openai, UnifiedAgentService.primaryBrainModel, UnifiedAgentService.fallbackBrainModel, UnifiedAgentSe"
+          "output": "[atomic-edit] ready — repo=<repo-root> node=v25.9.0 pid=35763\n[atomic-edit] tmpdir=/tmp\n[atomic-edit] ERROR no symbol matches \"isAllowedTool\". Available: UnknownRecord, UNIFIED_AGENT_PROVIDER_CONFIG_REQUIRED, UnifiedAgentService, UnifiedAgentService.logger, UnifiedAgentService.openai, UnifiedAgentService.primaryBrainModel, UnifiedAgentService.fallbackBrainModel, UnifiedAgentSe"
         }
       ],
       "completedMcpCalls": 0,

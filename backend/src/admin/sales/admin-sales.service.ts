@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { OrderStatus, PaymentMethod } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AdminDashboardService } from '../dashboard/admin-dashboard.service';
@@ -7,10 +7,14 @@ import { listAdminTransactions } from '../transactions/queries/list-transactions
 /** Admin sales service. */
 @Injectable()
 export class AdminSalesService {
+  private readonly logger = new Logger(AdminSalesService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly dashboard: AdminDashboardService,
-  ) {}
+  ) {
+    this.logger.log('AdminSalesService initialized');
+  }
 
   /** Overview. */
   async overview(input: {
@@ -22,10 +26,10 @@ export class AdminSalesService {
     const [home, transactions] = await Promise.all([
       this.dashboard.getHome('30D', 'NONE'),
       listAdminTransactions(this.prisma, {
-        search: input.search,
-        status: input.status,
-        method: input.method,
-        gateway: input.gateway,
+        ...(input.search !== undefined ? { search: input.search } : {}),
+        ...(input.status !== undefined ? { status: input.status } : {}),
+        ...(input.method !== undefined ? { method: input.method } : {}),
+        ...(input.gateway !== undefined ? { gateway: input.gateway } : {}),
         take: 80,
       }),
     ]);

@@ -1,177 +1,518 @@
+import { Test, TestingModule } from '@nestjs/testing';
+import { ModuleRef } from '@nestjs/core';
 import { UnifiedAgentActionsMessagingService } from './unified-agent-actions-messaging.service';
+import { WHATSAPP_MESSAGING } from '../whatsapp/whatsapp.tokens';
+import { AudioService } from './audio.service';
+import { OpsAlertService } from '../observability/ops-alert.service';
+import { ChannelTransportRegistry } from './channel-transport.registry';
+import { DailyLimitService } from './daily-limit.service';
+import { BrainEventSpineService } from './brain-event-spine.service';
+import type { IWhatsappMessaging } from '../whatsapp/whatsapp.interfaces';
+import type { ChannelSendResult } from './channel-transport.types';
 
-type TransportRegistryMock = {
-  send: jest.Mock;
-};
-
-type OpsAlertMock = {
-  alertOnCriticalError: jest.Mock;
-};
+jest.mock('../marketing/mailbox-gmail-oauth.service', () => ({
+  MailboxGmailOAuthService: jest.fn(),
+}));
 
 describe('UnifiedAgentActionsMessagingService', () => {
-  let messaging: UnifiedAgentActionsMessagingService;
-  let transports: TransportRegistryMock;
+  let service: UnifiedAgentActionsMessagingService;
+  let whatsappService: IWhatsappMessaging;
+  let audioService: Pick<
+    AudioService,
+    'textToSpeech' | 'transcribeFromUrl' | 'transcribeFromBase64'
+  >;
+  let moduleRef: Pick<ModuleRef, 'get'>;
+  let opsAlert: Pick<OpsAlertService, 'alertOnCriticalError'>;
+  let dailyLimit: Pick<DailyLimitService, 'ensureProactiveDailyLimit' | 'isReply'>;
+  let transports: Pick<ChannelTransportRegistry, 'send'>;
+  let events: Pick<BrainEventSpineService, 'record'>;
 
-  beforeEach(() => {
-    process.env.NODE_ENV = 'test';
-    transports = {
-      send: jest.fn().mockResolvedValue({ success: true, blocked: false, messageId: 'msg-1' }),
+  const wsId = 'ws-1';
+  const phone = '5511999999999';
+
+  beforeEach(async () => {
+    whatsappService = {
+      sendMessage: jest.fn().mockResolvedValue({
+        success: true,
+        delivery: 'sent',
+        messageId: 'wamid.123',
+        direct: false,
+      }),
+      syncRemoteContactProfile: jest.fn().mockResolvedValue(undefined),
     };
-    const opsAlert: OpsAlertMock = { alertOnCriticalError: jest.fn() };
+    audioService = {
+      textToSpeech: jest.fn().mockResolvedValue(Buffer.from('fake-audio-data')),
+      transcribeFromUrl: jest.fn().mockResolvedValue({
+        text: 'Transcrição de áudio',
+        duration: 30,
+        language: 'pt',
+      }),
+      transcribeFromBase64: jest.fn().mockResolvedValue({
+        text: 'Transcrição base64',
+        duration: 15,
+        language: 'pt',
+      }),
+    };
+    moduleRef = {
+      get: jest.fn().mockReturnValue(null),
+    };
+    opsAlert = {
+      alertOnCriticalError: jest.fn(),
+    };
+    dailyLimit = {
+      ensureProactiveDailyLimit: jest
+        .fn()
+        .mockResolvedValue({ allowed: true, remaining: 24, capAtDay: 25 }),
+      isReply: jest.fn().mockResolvedValue(false),
+    };
+    // Delegate transports.send to whatsappService.sendMessage so legacy
+    // assertions on whatsappService keep firing while the new architecture
+    // (transport registry) is exercised end-to-end.
+    const delegatingSend = jest.fn(async (wid, params) => {
+      const guardContext = (params?.guardContext ?? {}) as Record<string, unknown>;
+      const fullContext = {
+        ...guardContext,
+        complianceMode: guardContext.deliveryMode === 'reactive' ? 'reactive' : 'proactive',
+        forceDirect: guardContext.forceDirect === true,
+        ...(params.mediaUrl !== undefined ? { mediaUrl: params.mediaUrl } : {}),
+        ...(params.mediaType !== undefined ? { mediaType: params.mediaType } : {}),
+      };
+      const r = await whatsappService.sendMessage(
+        wid,
+        params.recipientId,
+        params.content,
+        fullContext,
+      );
+      const result = r as Record<string, unknown>;
+      if (result.error) {
+        return {
+          success: false,
+          blocked: false,
+          error: (result.message as string) || 'send_failed',
+        };
+      }
+      const delivery = result.delivery === 'queued' ? 'queued' : 'sent';
+      return {
+        success: true,
+        blocked: false,
+        delivery,
+        ...(result.messageId !== undefined ? { messageId: result.messageId } : {}),
+        ...(result.direct !== undefined ? { direct: result.direct } : {}),
+      };
+    });
+    transports = { send: delegatingSend as never };
+    events = {
+      record: jest.fn().mockResolvedValue(undefined),
+    };
 
-    messaging = new UnifiedAgentActionsMessagingService(
-      transports as never,
-      {
-        textToSpeech: jest.fn(),
-        transcribeFromUrl: jest.fn(),
-        transcribeFromBase64: jest.fn(),
-      } as never,
-      opsAlert as never,
-    );
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        UnifiedAgentActionsMessagingService,
+        { provide: WHATSAPP_MESSAGING, useValue: whatsappService },
+        { provide: AudioService, useValue: audioService },
+        { provide: ModuleRef, useValue: moduleRef },
+        { provide: OpsAlertService, useValue: opsAlert },
+        { provide: ChannelTransportRegistry, useValue: transports },
+        { provide: DailyLimitService, useValue: dailyLimit },
+        { provide: BrainEventSpineService, useValue: events },
+      ],
+    }).compile();
+
+    service = module.get<UnifiedAgentActionsMessagingService>(UnifiedAgentActionsMessagingService);
   });
 
-  describe('sendViaTransport', () => {
-    it('passes guardContext from context param through to transport registry', async () => {
-      await messaging.sendViaTransport('ws-1', '5511999999999', 'Hello', {
-        contactOptOut: true,
-        contactMessagesToday: 5,
-        complianceMode: 'reactive',
-        contactId: 'contact-1',
-      });
-
-      expect(transports.send).toHaveBeenCalledWith(
-        'ws-1',
-        expect.objectContaining({
-          guardContext: expect.objectContaining({
-            contactOptOut: true,
-            contactMessagesToday: 5,
-            complianceMode: 'reactive',
-            contactId: 'contact-1',
-          }),
-        }),
-      );
-    });
-
-    it('passes empty guardContext when context is undefined', async () => {
-      await messaging.sendViaTransport('ws-1', '5511999999999', 'Hello', undefined);
-
-      expect(transports.send).toHaveBeenCalledWith(
-        'ws-1',
-        expect.objectContaining({
-          guardContext: expect.objectContaining({}),
-        }),
-      );
-    });
-
-    it('maps audio guard fields from extra params', async () => {
-      await messaging.sendViaTransport(
-        'ws-1',
-        '5511999999999',
-        '',
-        { contactOptOut: false },
-        { mediaUrl: 'data:audio/mpeg;base64,xxx', mediaType: 'audio' },
-      );
-
-      expect(transports.send).toHaveBeenCalledWith(
-        'ws-1',
-        expect.objectContaining({
-          channel: 'whatsapp',
-          mediaType: 'audio',
-          guardContext: expect.objectContaining({
-            contactOptOut: false,
-          }),
-        }),
-      );
-    });
-
-    it('passes guardContext for document send', async () => {
-      await messaging.sendViaTransport(
-        'ws-1',
-        '5511999999999',
-        'Docs attached',
-        { withinComplianceWindow: false, templateApproved: true },
-        { mediaUrl: 'https://docs.example.com/file.pdf', mediaType: 'document' },
-      );
-
-      expect(transports.send).toHaveBeenCalledWith(
-        'ws-1',
-        expect.objectContaining({
-          channel: 'whatsapp',
-          mediaType: 'document',
-          guardContext: expect.objectContaining({
-            withinComplianceWindow: false,
-            templateApproved: true,
-          }),
-        }),
-      );
-    });
+  afterEach(() => {
+    jest.clearAllMocks();
   });
 
   describe('actionSendMessage', () => {
-    it('returns success when transport succeeds', async () => {
-      const result = await messaging.actionSendMessage('ws-1', '5511999999999', {
-        message: 'Oi, tudo bem?',
+    it('sends message via WhatsApp service', async () => {
+      const result = await service.actionSendMessage(wsId, phone, {
+        message: 'Olá, como vai?',
       });
 
-      expect(result).toEqual({
-        success: true,
-        message: 'Oi, tudo bem?',
-        queued: false,
-        sent: false,
-        delivery: 'sent',
-        direct: false,
-        messageId: 'msg-1',
-      });
-    });
-
-    it('returns error when transport returns blocked', async () => {
-      transports.send.mockResolvedValueOnce({
-        success: false,
-        blocked: true,
-        blockedReason: 'Contato possui opt-out registrado.',
-      });
-
-      const result = await messaging.actionSendMessage('ws-1', '5511999999999', { message: 'Oi' });
-
-      expect(result).toEqual({
-        success: false,
-        error: 'Contato possui opt-out registrado.',
-      });
+      expect(result.success).toBe(true);
+      expect(result.sent).toBe(true);
+      expect(whatsappService.sendMessage).toHaveBeenCalledWith(
+        wsId,
+        phone,
+        'Olá, como vai?',
+        expect.objectContaining({
+          complianceMode: 'proactive',
+          forceDirect: false,
+        }),
+      );
     });
 
     it('returns error when message is empty', async () => {
-      const result = await messaging.actionSendMessage('ws-1', '5511999999999', { message: '' });
+      const result = await service.actionSendMessage(wsId, phone, {
+        message: '',
+      });
 
-      expect(result).toEqual({ success: false, error: 'Mensagem é obrigatória' });
+      expect(result.success).toBe(false);
+      expect(result.error).toBe('Mensagem é obrigatória');
+    });
+
+    it('handles WhatsApp send failure', async () => {
+      whatsappService.sendMessage = jest.fn().mockResolvedValue({
+        error: true,
+        message: 'invalid_phone_number',
+      });
+
+      const result = await service.actionSendMessage(wsId, phone, {
+        message: 'Test',
+      });
+
+      expect(result.success).toBe(false);
+    });
+
+    it('detects queued delivery status', async () => {
+      whatsappService.sendMessage = jest.fn().mockResolvedValue({
+        delivery: 'queued',
+        messageId: 'wamid.queued',
+      });
+
+      const result = await service.actionSendMessage(wsId, phone, {
+        message: 'Test',
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.delivery).toBe('queued');
+    });
+
+    it('detects direct delivery', async () => {
+      whatsappService.sendMessage = jest.fn().mockResolvedValue({
+        delivery: 'direct',
+        direct: true,
+        messageId: 'wamid.direct',
+      });
+
+      const result = await service.actionSendMessage(wsId, phone, {
+        message: 'Test',
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.delivery).toBe('sent');
+    });
+
+    it('handles thrown exceptions gracefully', async () => {
+      whatsappService.sendMessage = jest.fn().mockRejectedValue(new Error('network timeout'));
+
+      const result = await service.actionSendMessage(wsId, phone, {
+        message: 'Test',
+      });
+
+      expect(result.success).toBe(false);
+    });
+
+    it('uses reactive compliance mode from context', async () => {
+      await service.actionSendMessage(
+        wsId,
+        phone,
+        { message: 'Reactive test' },
+        { deliveryMode: 'reactive' },
+      );
+
+      expect(whatsappService.sendMessage).toHaveBeenCalledWith(
+        wsId,
+        phone,
+        'Reactive test',
+        expect.objectContaining({ complianceMode: 'reactive' }),
+      );
+    });
+
+    it('passes forceDirect from context', async () => {
+      await service.actionSendMessage(
+        wsId,
+        phone,
+        { message: 'Direct test' },
+        { forceDirect: true },
+      );
+
+      expect(whatsappService.sendMessage).toHaveBeenCalledWith(
+        wsId,
+        phone,
+        'Direct test',
+        expect.objectContaining({ forceDirect: true }),
+      );
     });
   });
 
-  describe('resolveChannel', () => {
-    it('defaults to whatsapp when no channel in context', async () => {
-      await messaging.sendViaTransport('ws-1', '5511', 'text', {});
+  describe('actionSendMedia', () => {
+    it('sends media via WhatsApp service', async () => {
+      const result = await service.actionSendMedia(wsId, phone, {
+        type: 'image',
+        url: 'https://example.com/photo.jpg',
+        caption: 'Check this out',
+      });
 
-      expect(transports.send).toHaveBeenCalledWith(
-        'ws-1',
-        expect.objectContaining({ channel: 'whatsapp' }),
+      expect(result.success).toBe(true);
+      expect(result.sent).toBe(true);
+      expect(whatsappService.sendMessage).toHaveBeenCalledWith(
+        wsId,
+        phone,
+        'Check this out',
+        expect.objectContaining({
+          mediaUrl: 'https://example.com/photo.jpg',
+          mediaType: 'image',
+        }),
       );
     });
 
-    it('uses explicit channel from context', async () => {
-      await messaging.sendViaTransport('ws-1', '5511', 'text', { channel: 'instagram' });
+    it('returns error when URL is missing', async () => {
+      const result = await service.actionSendMedia(wsId, phone, {
+        type: 'image',
+        url: '',
+      });
 
-      expect(transports.send).toHaveBeenCalledWith(
-        'ws-1',
-        expect.objectContaining({ channel: 'instagram' }),
+      expect(result.success).toBe(false);
+    });
+
+    it('handles media send failure', async () => {
+      whatsappService.sendMessage = jest.fn().mockResolvedValue({
+        error: true,
+        message: 'unsupported_media',
+      });
+
+      const result = await service.actionSendMedia(wsId, phone, {
+        url: 'https://bad.url',
+      });
+
+      expect(result.success).toBe(false);
+    });
+  });
+
+  describe('actionSendVoiceNote', () => {
+    it('generates audio and sends as voice note', async () => {
+      const result = await service.actionSendVoiceNote(wsId, phone, {
+        text: 'Olá, esta é uma nota de voz',
+        voice: 'nova',
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.sent).toBe(true);
+      expect(audioService.textToSpeech).toHaveBeenCalledWith(
+        'Olá, esta é uma nota de voz',
+        'nova',
+        wsId,
+      );
+      expect(whatsappService.sendMessage).toHaveBeenCalledWith(
+        wsId,
+        phone,
+        '',
+        expect.objectContaining({
+          mediaUrl: expect.stringContaining('data:audio/mp3;base64,'),
+          mediaType: 'audio',
+        }),
       );
     });
 
-    it('resolves channel from sourceChannel fallback', async () => {
-      await messaging.sendViaTransport('ws-1', '5511', 'text', { sourceChannel: 'messenger' });
+    it('returns error when text is empty', async () => {
+      const result = await service.actionSendVoiceNote(wsId, phone, {
+        text: '',
+      });
 
-      expect(transports.send).toHaveBeenCalledWith(
-        'ws-1',
-        expect.objectContaining({ channel: 'messenger' }),
+      expect(result.success).toBe(false);
+      expect(result.error).toBe('Texto é obrigatório para gerar áudio');
+    });
+
+    it('handles voice send failure', async () => {
+      whatsappService.sendMessage = jest.fn().mockResolvedValue({
+        error: true,
+        message: 'voice_failed',
+      });
+
+      const result = await service.actionSendVoiceNote(wsId, phone, {
+        text: 'Test voice',
+      });
+
+      expect(result.success).toBe(false);
+    });
+  });
+
+  describe('actionSendAudio', () => {
+    it('generates audio TTS and sends', async () => {
+      const result = await service.actionSendAudio(wsId, phone, {
+        text: 'Audio content',
+        voice: 'nova',
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.sent).toBe(true);
+      expect(result.audioSize).toBeGreaterThan(0);
+    });
+
+    it('returns error when text is empty', async () => {
+      const result = await service.actionSendAudio(wsId, phone, { text: '' });
+
+      expect(result.success).toBe(false);
+    });
+  });
+
+  describe('actionTranscribeAudio', () => {
+    it('transcribes from URL', async () => {
+      const result = await service.actionTranscribeAudio(wsId, {
+        audioUrl: 'https://example.com/audio.mp3',
+        language: 'pt',
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.text).toBe('Transcrição de áudio');
+      expect(audioService.transcribeFromUrl).toHaveBeenCalledWith(
+        'https://example.com/audio.mp3',
+        'pt',
+        wsId,
       );
+    });
+
+    it('transcribes from base64', async () => {
+      const result = await service.actionTranscribeAudio(wsId, {
+        audioBase64: 'base64data',
+        language: 'en',
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.text).toBe('Transcrição base64');
+      expect(audioService.transcribeFromBase64).toHaveBeenCalledWith('base64data', 'en', wsId);
+    });
+
+    it('returns error when no audio source provided', async () => {
+      const result = await service.actionTranscribeAudio(wsId, {});
+
+      expect(result.success).toBe(false);
+    });
+
+    it('returns error when transcription is empty', async () => {
+      audioService.transcribeFromUrl = jest.fn().mockResolvedValue({ text: '', language: 'pt' });
+
+      const result = await service.actionTranscribeAudio(wsId, {
+        audioUrl: 'https://empty.audio',
+      });
+
+      expect(result.success).toBe(false);
+    });
+  });
+
+  describe('buildWhatsAppSendOptions', () => {
+    it('resolves media options from extra', () => {
+      const options = service.buildWhatsAppSendOptions(undefined, {
+        mediaUrl: 'https://img.test',
+        mediaType: 'image',
+        caption: 'My caption',
+      });
+
+      expect(options.mediaUrl).toBe('https://img.test');
+      expect(options.mediaType).toBe('image');
+      expect(options.caption).toBe('My caption');
+    });
+
+    it('resolves quotedMessageId from context', () => {
+      const options = service.buildWhatsAppSendOptions({ providerMessageId: 'wamid.q' }, {});
+
+      expect(options.quotedMessageId).toBe('wamid.q');
+    });
+
+    it('defaults complianceMode to proactive', () => {
+      const options = service.buildWhatsAppSendOptions(undefined);
+
+      expect(options.complianceMode).toBe('proactive');
+    });
+
+    it('resolves complianceMode from context deliveryMode', () => {
+      const options = service.buildWhatsAppSendOptions({
+        deliveryMode: 'reactive',
+      });
+
+      expect(options.complianceMode).toBe('reactive');
+    });
+  });
+
+  describe('resolveComplianceMode', () => {
+    it('returns reactive when context deliveryMode is reactive', () => {
+      expect(service.resolveComplianceMode({ deliveryMode: 'reactive' })).toBe('reactive');
+    });
+
+    it('returns proactive by default', () => {
+      expect(service.resolveComplianceMode(undefined)).toBe('proactive');
+    });
+  });
+
+  describe('tenant isolation', () => {
+    it('actionSendMessage passes workspaceId to WhatsApp service', async () => {
+      await service.actionSendMessage('ws-tenant', phone, {
+        message: 'Test',
+      });
+
+      const sendArgs = whatsappService.sendMessage.mock.calls[0];
+      expect(sendArgs.slice(0, 3)).toEqual(['ws-tenant', phone, 'Test']);
+      expect(sendArgs[3]).toBeDefined();
+    });
+
+    it('actionSendMedia passes workspaceId to WhatsApp service', async () => {
+      await service.actionSendMedia('ws-tenant', phone, {
+        url: 'https://img.test',
+      });
+
+      const mediaArgs = whatsappService.sendMessage.mock.calls[0];
+      expect(mediaArgs.slice(0, 2)).toEqual(['ws-tenant', phone]);
+      expect(typeof mediaArgs[2]).toBe('string');
+      expect(mediaArgs[3]).toBeDefined();
+    });
+
+    it('actionSendVoiceNote passes workspaceId to audio service', async () => {
+      await service.actionSendVoiceNote('ws-tenant', phone, {
+        text: 'Voice',
+      });
+
+      expect(audioService.textToSpeech).toHaveBeenCalledWith('Voice', 'nova', 'ws-tenant');
+    });
+
+    it('actionTranscribeAudio passes workspaceId to audio service', async () => {
+      await service.actionTranscribeAudio('ws-tenant', {
+        audioUrl: 'https://test.audio',
+      });
+
+      expect(audioService.transcribeFromUrl).toHaveBeenCalledWith(
+        'https://test.audio',
+        'pt',
+        'ws-tenant',
+      );
+    });
+  });
+
+  describe('error handling', () => {
+    it('actionSendMessage catches and returns error', async () => {
+      whatsappService.sendMessage = jest.fn().mockRejectedValue(new Error('network failure'));
+
+      const result = await service.actionSendMessage(wsId, phone, {
+        message: 'Test',
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe('network failure');
+    });
+
+    it('actionSendMedia catches and returns error', async () => {
+      whatsappService.sendMessage = jest.fn().mockRejectedValue(new Error('timeout'));
+
+      const result = await service.actionSendMedia(wsId, phone, {
+        url: 'https://fail.test',
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe('timeout');
+    });
+
+    it('actionTranscribeAudio catches and returns error', async () => {
+      audioService.transcribeFromUrl = jest
+        .fn()
+        .mockRejectedValue(new Error('transcription failed'));
+
+      const result = await service.actionTranscribeAudio(wsId, {
+        audioUrl: 'https://fail.audio',
+      });
+
+      expect(result.success).toBe(false);
     });
   });
 });

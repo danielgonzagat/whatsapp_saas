@@ -1,13 +1,10 @@
 import { Body, Controller, Post, Request, UseGuards } from '@nestjs/common';
 import { ApiBody, ApiOperation, ApiResponse, ApiSecurity, ApiTags } from '@nestjs/swagger';
-import { Throttle } from '@nestjs/throttler';
 import { Public } from '../auth/public.decorator';
 import { InboxService } from '../inbox/inbox.service';
+import { AuthenticatedRequest } from '../common/interfaces';
 import { ApiKeyGuard } from './api-key.guard';
-
-interface ApiKeyAuthenticatedRequest {
-  user: { workspaceId: string };
-}
+import { RouteClass } from '../common/throttler/route-class.decorator';
 
 /** Public api controller. */
 @ApiTags('Public API v1')
@@ -15,7 +12,7 @@ interface ApiKeyAuthenticatedRequest {
 @Public()
 @Controller('api/v1')
 @UseGuards(ApiKeyGuard)
-@Throttle({ default: { limit: 10, ttl: 60000 } })
+@RouteClass('read')
 export class PublicApiController {
   constructor(private readonly inbox: InboxService) {}
 
@@ -41,7 +38,7 @@ export class PublicApiController {
   })
   @ApiResponse({ status: 201, description: 'Message queued for delivery' })
   async sendMessage(
-    @Request() req: ApiKeyAuthenticatedRequest,
+    @Request() req: AuthenticatedRequest,
     @Body() body: { phone: string; message: string },
   ) {
     return this.inbox.saveMessageByPhone({

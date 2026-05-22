@@ -1,319 +1,305 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { createHash } from 'node:crypto';
+import { Injectable } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { BrainEventSpineService } from './brain-event-spine.service';
 import { ChannelSetupService } from './channel-setup.service';
 import { MindConceptService } from './mind-concepts.service';
 import { MindService } from './mind.service';
-import type { PredecidedAction } from './unified-agent.types';
+import { PrismaService } from '../prisma/prisma.service';
+import { ContactIdentityResolverService } from '../contacts/contact-identity-resolver.service';
+import { RuntimeConversationTracerService } from './runtime-conversation-tracer.service';
 
-type ConceptRow = { concept: string; confidence?: number };
+import {
+  normalizeChannel,
+  primaryConcept,
+  hasConcept,
+  priceBandFor,
+  discountPercentFromCoupon,
+  type InboundOrchestrationInput,
+  type InboundDecision,
+  type ConceptRow,
+} from './commercial-decision-orchestrator/types';
+import { checkPipelineGate } from './commercial-decision-orchestrator/gating';
+import { filterArsenalFormats, intersectToneRepertoire } from './commercial-decision-orchestrator/channel-select';
+import { resolveDecisions } from './commercial-decision-orchestrator/scoring';
+import { assertCustomerSafe, composeCustomerMessage, buildReplyPlan, buildActions } from './commercial-decision-orchestrator/compose';
+import {
+  stableInboundKey,
+  traceInboxRecorded,
+  traceLegacyGate,
+  traceContactResolved,
+  traceConceptClassified,
+  traceMemoryQueried,
+  tracePolicyChose,
+  traceDeterminismGate,
+  traceComposerProduced,
+  traceTransportInvoked,
+  traceFullOutcomePipeline,
+  recordIdentityResolved,
+  recordCaseMemoryConsulted,
+  recordPredecidedActionsBuilt,
+  recordShadow,
+  handleOrchestrationFallback as doHandleFallback,
+} from './commercial-decision-orchestrator/telemetry';
+import { allowedFormatsFor, allowedTonesFor, repertoireFor } from './channel-repertoire.config';
 
-type InboundOrchestrationInput = {
-  channel: string;
-  contactId?: string;
-  conversationId?: string;
-  message: string;
-  workspaceId: string;
-};
-
-type InboundDecision = {
-  actions: PredecidedAction[];
-  concepts: string[];
-  trace: Record<string, unknown>;
-};
-
-function normalizeChannel(channel: string): string {
-  return String(channel || 'whatsapp')
-    .trim()
-    .toLowerCase();
-}
-
-function primaryConcept(rows: ConceptRow[]): string {
-  return rows[0]?.concept || 'general';
-}
-
-function hasConcept(rows: ConceptRow[], concept: string): boolean {
-  return rows.some((row) => row.concept === concept);
-}
-
-function supportedFormats(channel: string): string[] {
-  if (channel === 'email') return ['text', 'html_rich'];
-  if (channel === 'tiktok') return ['text', 'video'];
-  if (channel === 'instagram' || channel === 'messenger')
-    return ['text', 'audio', 'image', 'video'];
-  return ['text', 'audio', 'image', 'document', 'template'];
-}
-
-function priceBandFor(text: string): string {
-  const normalized = text.toLowerCase();
-  if (/\b(1000|mil|premium|alto valor)\b/.test(normalized)) return 'over_500';
-  if (/\b(300|500|caro|pre[cç]o)\b/.test(normalized)) return 'over_300';
-  return 'unknown';
-}
-
-function discountPercentFromCoupon(action?: string): number | undefined {
-  if (action === 'coupon_5') return 5;
-  if (action === 'coupon_10') return 10;
-  if (action === 'coupon_15') return 15;
-  if (action === 'coupon_20') return 20;
-  return undefined;
-}
-
-function buildReplyDraft(input: {
-  aggressiveness: string;
-  concept: string;
-  couponAction?: string;
-  productOffer?: string;
-  setup?: { arsenalCount: number; productCount: number; tone?: string | null };
-  tone: string;
-}): string {
-  const parts = [
-    `Responder com tom ${(input.setup?.tone || input.tone).toLowerCase()} e intensidade ${input.aggressiveness.toLowerCase()}.`,
-  ];
-  if (input.setup?.productCount) {
-    parts.push(
-      `Usar apenas os ${input.setup.productCount} produto(s) habilitados para este canal.`,
-    );
-  }
-  if (input.setup?.arsenalCount) {
-    parts.push(`Priorizar o arsenal aprovado do canal quando o formato permitir.`);
-  }
-  if (input.concept === 'price_objection' && input.couponAction) {
-    parts.push(`Tratar a objeção de preço com política ${input.couponAction}.`);
-  }
-  if (input.productOffer) {
-    parts.push(`Direcionar a oferta para ${input.productOffer}.`);
-  }
-  if (input.concept === 'imminent_purchase' || input.concept === 'hot_lead') {
-    parts.push('Conduzir para o próximo passo de compra.');
-  }
-  return parts.join(' ');
-}
-
-function stableInboundKey(input: InboundOrchestrationInput, subject: string, channel: string) {
-  return createHash('sha256')
-    .update(input.workspaceId)
-    .update(subject)
-    .update(channel)
-    .update(input.conversationId || '')
-    .update(input.message)
-    .digest('hex')
-    .slice(0, 24);
-}
+export { type InternalReplyPlan } from './commercial-decision-orchestrator/types';
+export { assertCustomerSafe, composeCustomerMessage } from './commercial-decision-orchestrator/compose';
 
 @Injectable()
 export class CommercialDecisionOrchestratorService {
-  private readonly logger = new Logger(CommercialDecisionOrchestratorService.name);
+  private readonly logger = StructuredLogger.from(CommercialDecisionOrchestratorService.name);
 
   constructor(
     private readonly mind: MindService,
     private readonly concepts: MindConceptService,
     private readonly events: BrainEventSpineService,
+    private readonly identity: ContactIdentityResolverService,
     private readonly setup: ChannelSetupService,
+    private readonly prisma: PrismaService,
+    private readonly tracer: RuntimeConversationTracerService,
   ) {}
 
   async orchestrateInbound(input: InboundOrchestrationInput): Promise<InboundDecision> {
     const channel = normalizeChannel(input.channel);
     const subject = input.contactId ? `contact:${input.contactId}` : `channel:${channel}`;
     const inboundKey = stableInboundKey(input, subject, channel);
+    const contactId = input.contactId ?? '';
+    const correlationId = inboundKey;
+    const workspaceId = input.workspaceId;
+
+    traceInboxRecorded({ tracer: this.tracer, workspaceId, contactId, correlationId, channel, messageLength: input.message.length });
+
+    const gateResult = await checkPipelineGate(this.prisma, workspaceId, channel);
+    if (gateResult.mode === 'legacy') {
+      traceLegacyGate({ tracer: this.tracer, workspaceId, contactId, correlationId });
+      this.logger.log(`Pipeline legacy path for ${workspaceId}:${channel} — returning empty actions`);
+      return gateResult.decision;
+    }
+
+    const resolvedIdentity = input.contactId
+      ? await this.resolveContactIdentity(input, channel)
+      : null;
+    const resolvedContactId = resolvedIdentity?.contactId ?? input.contactId;
+    const effectiveSubject = resolvedContactId ? `contact:${resolvedContactId}` : subject;
+    const effectiveContactId = resolvedContactId ?? contactId;
+
+    traceContactResolved({
+      tracer: this.tracer, workspaceId, contactId: effectiveContactId, correlationId,
+      resolvedContactId: effectiveContactId,
+      wasResolved: resolvedIdentity?.wasResolved ?? false,
+      channel,
+    });
+
+    if (resolvedIdentity?.wasResolved) {
+      await recordIdentityResolved(
+        this.events, workspaceId, effectiveSubject, inboundKey,
+        resolvedIdentity.contactId, resolvedIdentity.resolvedFromContactId,
+      );
+    }
+
+    try {
+      return await this.executeOrchestration(
+        input, channel, effectiveSubject, inboundKey,
+        gateResult.pipelineMode, effectiveContactId, correlationId,
+      );
+    } catch (error) {
+      this.logger.error(
+        `Orchestration failed for ${workspaceId}:${channel}`,
+        error instanceof Error ? error.message : String(error),
+      );
+      await doHandleFallback(this.prisma, this.events, workspaceId, channel, gateResult.pipelineMode);
+      throw error;
+    }
+  }
+
+  private async resolveContactIdentity(input: InboundOrchestrationInput, channel: string) {
+    if (!input.contactId) {
+      throw new Error('resolveContactIdentity called without contactId');
+    }
+    return this.identity
+      .resolve({
+        workspaceId: input.workspaceId,
+        channel,
+        externalId: input.contactId,
+      })
+      .catch((error) => {
+        this.logger.warn(
+          `Identity resolution failed for ${input.workspaceId}:${channel} — proceeding with inbound contactId`,
+          error instanceof Error ? error.message : String(error),
+        );
+        return {
+          contactId: input.contactId ?? `unresolved:${channel}`,
+          channelIdentifierId: '',
+          wasCreated: false,
+          wasResolved: false,
+          resolvedFromContactId: undefined,
+        };
+      });
+  }
+
+  private async executeOrchestration(
+    input: InboundOrchestrationInput,
+    channel: string,
+    subject: string,
+    inboundKey: string,
+    pipelineMode: 'shadow' | 'active',
+    effectiveContactId: string,
+    correlationId: string,
+  ): Promise<InboundDecision> {
+    const workspaceId = input.workspaceId;
+    const traceCtx = { tracer: this.tracer, workspaceId, contactId: effectiveContactId, correlationId };
+
     const detections = await this.concepts.detect({
-      workspaceId: input.workspaceId,
+      workspaceId,
       subject,
       text: input.message,
       features: { channel, source: 'omnichannel_inbound' },
     });
-    const conceptRows = detections.map((row) => ({
+    const conceptRows: ConceptRow[] = detections.map((row) => ({
       concept: String(row.concept),
       confidence: Number(row.confidence ?? 0),
     }));
     const concept = primaryConcept(conceptRows);
-    const decisionTraceId = inboundKey;
+
+    traceConceptClassified({
+      ...traceCtx,
+      concept,
+      concepts: conceptRows.map((r) => r.concept),
+      confidence: conceptRows[0]?.confidence ?? 0,
+    });
+
     const similarCases = await this.mind.retrieveSimilar({
-      workspaceId: input.workspaceId,
+      workspaceId,
       caseType: concept,
       text: input.message,
       features: { channel, concept },
       limit: 5,
     });
-    const channelSetup = await this.setup.getState(input.workspaceId, channel).catch(() => null);
-    const occurredAt = new Date();
-    await this.events.recordCommercial({
-      workspaceId: input.workspaceId,
-      subject,
-      eventType: 'case_memory.consulted',
-      occurredAt,
-      idempotencyKey: `case-memory:${inboundKey}`,
-      payload: { channel, concept, count: similarCases.length },
-    });
+
+    traceMemoryQueried({ ...traceCtx, concept, count: similarCases.length });
+
+    const channelSetup = await this.setup.getState(workspaceId, channel).catch(() => null);
+    await recordCaseMemoryConsulted(
+      this.events, workspaceId, subject, inboundKey, channel, concept, similarCases.length,
+    );
 
     const audioRatio = hasConcept(conceptRows, 'audio_preference') ? 0.25 : 0.05;
     const soldRate = hasConcept(conceptRows, 'imminent_purchase') ? 0.2 : 0.05;
     const repliedRate = 0.5;
     const priceBand = priceBandFor(input.message);
-    const [audio, tone, aggressiveness, format, channelChoice] = await Promise.all([
-      this.mind.resolveAudioVsText(input.workspaceId, channel, audioRatio),
-      this.mind.resolveTone(input.workspaceId, channel, repliedRate, soldRate, concept),
-      this.mind.resolveAggressiveness(input.workspaceId, 'inbound', soldRate, repliedRate, 0),
-      this.mind.resolveMessageFormat(
-        input.workspaceId,
-        channel,
-        concept,
-        supportedFormats(channel),
-      ),
-      this.mind.resolveChannelChoice(
-        input.workspaceId,
-        [channel],
-        concept,
-        new Date().getHours(),
-        concept,
-      ),
-    ]);
 
-    const decisions: Record<string, unknown> = {
-      audio_vs_text: audio,
-      channel_choice: channelChoice,
-      message_format: format,
-      tom: tone,
-      cia_aggressiveness: aggressiveness,
+    const allowedFormats = allowedFormatsFor(channel);
+
+    const {
+      formatCandidates,
+      decisions: arsenalDecisions,
+    } = filterArsenalFormats(channel, channelSetup?.arsenal);
+
+    let decisions: Record<string, unknown> = { ...arsenalDecisions };
+
+    const channelSupportsAudio = allowedFormats.includes('audio');
+    if (!channelSupportsAudio) {
+      decisions.audio_skipped = 'channel-no-audio';
+    }
+
+    const scored = await resolveDecisions(this.mind, {
+      workspaceId, channel, message: input.message,
+      conceptRows, concept,
+      formatCandidates: channelSupportsAudio
+        ? (formatCandidates as string[])
+        : (formatCandidates as string[]).filter((f) => f !== 'audio'),
+      audioRatio, soldRate, repliedRate, priceBand, channelSetup,
+    });
+
+    decisions = { ...decisions, ...scored.decisions };
+
+    const allowedTones = allowedTonesFor(channel);
+    const toneResult = intersectToneRepertoire(channel, scored.tone, allowedTones);
+    const tone = toneResult.tone;
+    decisions = { ...decisions, ...toneResult.decisions };
+
+    decisions.tom = {
+      ...tone,
+      hierarchyJustification: (scored.decisions.tom as Record<string, unknown>)?.hierarchyJustification,
     };
 
-    let couponAction: string | undefined;
-    let couponDecision: Record<string, unknown> | undefined;
-    if (hasConcept(conceptRows, 'price_objection')) {
-      const coupon = await this.mind.resolveCoupon(input.workspaceId, priceBand, soldRate, concept);
-      const objection = await this.mind.resolveObjectionResponse(
-        input.workspaceId,
-        channel,
-        concept,
-        priceBand,
-      );
-      decisions.coupon_offer = coupon;
-      decisions.objection_response = objection;
-      couponDecision = coupon;
-      couponAction = coupon.action;
+    const repr = repertoireFor(channel);
+    if (repr && !repr.proactiveOutboundAllowed) {
+      decisions.proactive_gate = 'channel-inbound-only';
     }
 
-    let productOffer: string | undefined;
-    let productOfferDecision: Record<string, unknown> | undefined;
-    if (hasConcept(conceptRows, 'imminent_purchase') || hasConcept(conceptRows, 'hot_lead')) {
-      const product = await this.mind.resolveProductOffer(
-        input.workspaceId,
-        'new_lead',
-        concept,
-        priceBand,
-      );
-      decisions.product_offer = product;
-      productOfferDecision = product;
-      productOffer = product.offer;
-    }
+    tracePolicyChose({ ...traceCtx, decisions, concept });
+    traceDeterminismGate({ ...traceCtx, pipelineMode, channel });
 
-    let humanTransferDecision: Record<string, unknown> | undefined;
-    if (hasConcept(conceptRows, 'trust_objection') || hasConcept(conceptRows, 'fatigue_risk')) {
-      const transferConcept = hasConcept(conceptRows, 'trust_objection')
-        ? 'trust_objection'
-        : 'fatigue_risk';
-      const transfer = await this.mind.resolveHumanTransfer(
-        input.workspaceId,
-        channel,
-        transferConcept,
-        0.7,
-      );
-      decisions.human_transfer = transfer;
-      humanTransferDecision = transfer;
-    }
-
-    const setupContext = channelSetup
-      ? {
-          arsenalCount: channelSetup.arsenal.length,
-          productCount: channelSetup.selectedProductIds.length,
-          tone: channelSetup.config?.tone,
-        }
-      : undefined;
-    const replyDraft = buildReplyDraft({
-      aggressiveness: aggressiveness.aggressiveness,
+    const plan = buildReplyPlan({
       concept,
-      couponAction,
-      productOffer,
-      setup: setupContext,
+      effectiveAggressiveness: scored.effectiveAggressiveness,
+      aggressiveness: scored.aggressiveness.aggressiveness,
+      ...(scored.couponAction !== undefined ? { couponAction: scored.couponAction } : {}),
+      ...(scored.productOffer !== undefined ? { productOffer: scored.productOffer } : {}),
+      channelSetup,
       tone: tone.tone,
     });
-    const actions: PredecidedAction[] = [];
-    const couponPercent = discountPercentFromCoupon(couponAction);
-    if (couponDecision && couponPercent) {
-      actions.push({
-        tool: 'apply_discount',
-        args: {
-          couponDecision,
-          decisionTraceId,
-          discountPercent: couponPercent,
-          expiresIn: '24h',
-          inboundCorrelationId: inboundKey,
-          priceBand,
-          productOffer: productOfferDecision,
-          reason: 'Política MIND decidida no pipeline determinístico.',
-          segment: concept,
-        },
-      });
-    } else {
-      actions.push({
-        tool: 'send_message',
-        args: {
-          decisionTraceId,
-          inboundCorrelationId: inboundKey,
-          message: replyDraft,
-        },
-      });
-    }
-    if (
-      humanTransferDecision &&
-      humanTransferDecision.action !== 'continue_ai' &&
-      humanTransferDecision.action !== 'pause_wait'
-    ) {
-      actions.push({
-        tool: 'transfer_to_human',
-        args: {
-          decisionTraceId,
-          handoffDecision: humanTransferDecision,
-          inboundCorrelationId: inboundKey,
-          priority: 'high',
-          reason: 'Pipeline determinístico detectou risco comercial.',
-        },
-      });
-    }
+    const customerMessage = composeCustomerMessage(plan);
+    assertCustomerSafe(customerMessage);
 
-    await this.events.recordCommercial({
-      workspaceId: input.workspaceId,
-      subject,
-      eventType: 'predecided_actions.built',
-      occurredAt,
-      idempotencyKey: `predecided:${inboundKey}`,
-      payload: {
-        actions: actions.map((action) => action.tool),
-        channel,
-        concept,
-        decisions,
-        setup: channelSetup
-          ? {
-              arsenalCount: channelSetup.arsenal.length,
-              selectedProductIds: channelSetup.selectedProductIds,
-              tone: channelSetup.config?.tone ?? null,
-            }
-          : null,
-      },
+    traceComposerProduced({ ...traceCtx, messageLength: customerMessage.length, concept });
+
+    const actions = buildActions({
+      ...(scored.couponDecision !== undefined ? { couponDecision: scored.couponDecision } : {}),
+      discountPercentFromCoupon,
+      ...(scored.productOfferDecision !== undefined ? { productOfferDecision: scored.productOfferDecision } : {}),
+      ...(scored.humanTransferDecision !== undefined ? { humanTransferDecision: scored.humanTransferDecision } : {}),
+      decisionTraceId: inboundKey,
+      inboundKey,
+      customerMessage,
+      internalReplyPlan: plan,
+      priceBand,
+      segment: concept,
+      decisions,
     });
 
-    this.logger.log(`Deterministic inbound actions built for ${input.workspaceId}:${channel}`);
+    traceTransportInvoked({
+      ...traceCtx,
+      actions: actions.map((a) => a.tool),
+      channel,
+    });
+
+    await recordPredecidedActionsBuilt(
+      this.events, workspaceId, subject, inboundKey,
+      actions.map((a) => a.tool), channel, concept, decisions, channelSetup,
+    );
+
+    traceFullOutcomePipeline({
+      ...traceCtx,
+      concept,
+      actions: actions.map((a) => a.tool),
+      pipelineMode,
+      channel,
+    });
+
+    this.logger.log(`Deterministic inbound actions built for ${workspaceId}:${channel}`);
+
+    if (pipelineMode === 'shadow') {
+      await recordShadow(
+        this.prisma, this.events,
+        workspaceId, channel, inboundKey, concept, decisions,
+      );
+    }
+
     return {
-      actions,
+      actions: pipelineMode === 'shadow' ? [] : actions,
       concepts: conceptRows.map((row) => row.concept),
       trace: {
         channel,
         concept,
         decisions,
+        pipelineMode,
+        shadow: pipelineMode === 'shadow',
         setup: channelSetup
           ? {
-              arsenalCount: channelSetup.arsenal.length,
-              selectedProductIds: channelSetup.selectedProductIds,
+              arsenalCount: (channelSetup.arsenal ?? []).length,
+              selectedProductIds: channelSetup.selectedProductIds ?? [],
               tone: channelSetup.config?.tone ?? null,
             }
           : null,

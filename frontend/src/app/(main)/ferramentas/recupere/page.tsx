@@ -1,4 +1,5 @@
 'use client';
+import { colors } from '@/lib/design-tokens';
 
 import { kloelT } from '@/lib/i18n/t';
 /** Dynamic. */
@@ -43,7 +44,7 @@ export default function RecuperePage() {
         }}
       >
         <span style={{ fontSize: 16 }}>{'\u21BB'}</span>
-        <span style={{ fontSize: 13, color: '#2DD4A0', fontWeight: 500 }}>
+        <span style={{ fontSize: 13, color: colors.canvas.lime, fontWeight: 500 }}>
           {counts.active} {kloelT(`operacionais agora`)}
           {counts.planned ? ` • ${counts.planned} em roadmap controlado` : ''}.
         </span>

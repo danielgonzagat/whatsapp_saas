@@ -1,6 +1,6 @@
 import { type CanActivate, type ExecutionContext, Injectable } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { JwtService } from '@nestjs/jwt'; // PULSE_OK: reasonable expiry (30m)
+import { JwtService } from '@nestjs/jwt';
 import { type AdminRole, AdminUserStatus } from '@prisma/client';
 import type { Request } from 'express';
 import { PrismaService } from '../../../prisma/prisma.service';
@@ -39,7 +39,7 @@ function extractBearerToken(header: string | undefined): string | null {
   if (parts.length !== 2) {
     return null;
   }
-  if (parts[0].toLowerCase() !== 'bearer') {
+  if (parts[0]!.toLowerCase() !== 'bearer') {
     return null;
   }
   return parts[1] || null;

@@ -1,6 +1,7 @@
 import { act } from 'react';
-import { render, screen, cleanup } from '@testing-library/react';
+import { render, screen, cleanup, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { colors } from '@/lib/design-tokens';
 import { ThemeProvider, useTheme } from './ThemeProvider';
 import { ThemeToggle } from './ThemeToggle';
 import { KLOEL_APP_THEME_STORAGE_SLOT } from '@/lib/kloel-theme';
@@ -43,7 +44,7 @@ describe('ThemeProvider', () => {
     expect(document.documentElement.style.colorScheme).toBe('light');
     expect(window.localStorage.getItem(KLOEL_APP_THEME_STORAGE_SLOT)).toBe('light');
     expect(document.head.querySelector('meta[name="theme-color"]')?.getAttribute('content')).toBe(
-      '#FFFFFF',
+      colors.text.silver,
     );
     expect(screen.getByRole('switch', { name: /alternar tema/i })).toHaveAttribute(
       'aria-checked',
@@ -60,11 +61,11 @@ describe('ThemeProvider', () => {
       </ThemeProvider>,
     );
 
-    expect(await screen.findByTestId('theme-value')).toHaveTextContent('dark');
+    await waitFor(() => expect(screen.getByTestId('theme-value')).toHaveTextContent('dark'));
     expect(document.documentElement.getAttribute('data-kloel-app-theme')).toBe('dark');
     expect(document.documentElement.style.colorScheme).toBe('dark');
     expect(document.head.querySelector('meta[name="theme-color"]')?.getAttribute('content')).toBe(
-      '#0A0A0C',
+      colors.background.void,
     );
     expect(screen.getByRole('switch', { name: /alternar tema/i })).toHaveAttribute(
       'aria-checked',
@@ -89,7 +90,7 @@ describe('ThemeProvider', () => {
     expect(document.documentElement.getAttribute('data-kloel-app-theme')).toBe('dark');
     expect(window.localStorage.getItem(KLOEL_APP_THEME_STORAGE_SLOT)).toBe('dark');
     expect(document.head.querySelector('meta[name="theme-color"]')?.getAttribute('content')).toBe(
-      '#0A0A0C',
+      colors.background.void,
     );
 
     await act(async () => {
@@ -100,7 +101,7 @@ describe('ThemeProvider', () => {
     expect(document.documentElement.getAttribute('data-kloel-app-theme')).toBe('light');
     expect(window.localStorage.getItem(KLOEL_APP_THEME_STORAGE_SLOT)).toBe('light');
     expect(document.head.querySelector('meta[name="theme-color"]')?.getAttribute('content')).toBe(
-      '#FFFFFF',
+      colors.text.silver,
     );
   });
 
@@ -126,7 +127,7 @@ describe('ThemeProvider', () => {
     expect(document.documentElement.getAttribute('data-kloel-app-theme')).toBe('dark');
     expect(document.documentElement.style.colorScheme).toBe('dark');
     expect(document.head.querySelector('meta[name="theme-color"]')?.getAttribute('content')).toBe(
-      '#0A0A0C',
+      colors.background.void,
     );
   });
 });

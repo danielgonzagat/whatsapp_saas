@@ -9,8 +9,8 @@ const shellStyle: CSSProperties = {
   alignItems: 'center',
   justifyContent: 'center',
   padding: '32px 20px',
-  background: 'colors.background.void',
-  color: 'colors.text.silver',
+  background: colors.background.void,
+  color: colors.text.silver,
   fontFamily: "var(--font-sora), 'Sora', sans-serif",
 };
 
@@ -29,7 +29,7 @@ const eyebrowStyle: CSSProperties = {
   fontSize: 11,
   letterSpacing: '0.18em',
   textTransform: 'uppercase',
-  color: '#9B9BA0',
+  color: colors.text.faint,
   marginBottom: 12,
 };
 
@@ -43,7 +43,7 @@ const titleStyle: CSSProperties = {
 const bodyStyle: CSSProperties = {
   fontSize: 14,
   lineHeight: 1.7,
-  color: '#ADADB0',
+  color: colors.text.faintLight,
   margin: '14px 0 24px',
 };
 
@@ -55,8 +55,8 @@ const ctaStyle: CSSProperties = {
   padding: '12px 18px',
   borderRadius: 8,
   border: 'none',
-  background: 'colors.ember.primary',
-  color: '#FFFFFF',
+  background: colors.ember.primary,
+  color: colors.text.silver,
   textDecoration: 'none',
   fontSize: 13,
   fontWeight: 600,

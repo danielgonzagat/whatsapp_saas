@@ -25,7 +25,6 @@ const quoteOpenAiChatActualCostCentsMock =
     typeof providerLlmBilling.quoteOpenAiChatActualCostCents
   >;
 
-// PULSE_OK: assertions exist below
 describe('agent-assist.helpers — charging', () => {
   describe('chargeAiUsageIfNeeded', () => {
     let mockWalletService: jest.Mocked<WalletService>;

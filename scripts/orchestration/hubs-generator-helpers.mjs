@@ -10,9 +10,9 @@ export function writeAtomic(path, content) {
 }
 
 export function checkAutoGen(path) {
-  if (!existsSync(path)) return 'new';
+  if (!existsSync(path)) {return 'new';}
   const content = readFileSync(path, 'utf8');
-  if (content.includes('<!-- AUTO-GENERATED')) return 'overwrite';
+  if (content.includes('<!-- AUTO-GENERATED')) {return 'overwrite';}
   return 'human';
 }
 

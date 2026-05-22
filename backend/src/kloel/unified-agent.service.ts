@@ -1,35 +1,45 @@
-import { Inject, Injectable, Logger, forwardRef } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { StructuredLogger } from '../logging/structured-logger';
 import OpenAI from 'openai';
 import type { ChatCompletionMessageParam } from 'openai/resources/chat';
 import { PlanLimitsService } from '../billing/plan-limits.service';
-import { AuditService } from '../audit/audit.service';
-import { StorageService } from '../common/storage/storage.service';
+import { createTextLlmClient } from '../lib/llm-provider';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
 import { PrismaService } from '../prisma/prisma.service';
-import { WhatsAppProviderRegistry } from '../whatsapp/providers/provider-registry';
-import { WhatsappService } from '../whatsapp/whatsapp.service';
-import { AudioService } from './audio.service';
-import { PaymentService } from './payment.service';
 import { chatCompletionWithFallback } from './openai-wrapper';
 import { forEachSequential } from '../common/async-sequence';
 import { UnifiedAgentContextService } from './unified-agent-context.service';
 import { UnifiedAgentResponseService } from './unified-agent-response.service';
 import { UnifiedAgentActionsService } from './unified-agent-actions.service';
+import { AgentRuntimeContextService } from './agent-runtime';
+import { AbiBuilderService } from './abi/abi-builder.service';
+import { validateAbiPayload } from './abi/abi-validator';
+export type { ToolArgs, ActionEntry } from './unified-agent.types';
+import type { ToolArgs, ActionEntry, PredecidedAction } from './unified-agent.types';
 import {
   buildPredecidedActionDraft,
   executePredecidedAgentActions,
-} from './__parts__/unified-agent-predecided-actions.part';
-import type { ActionEntry, PredecidedAction, ToolArgs } from './unified-agent.types';
+} from './unified-agent-predecided-actions.part';
+import { BrainCapabilityExecutorService } from './brain-capability-executor.service';
+import { UnifiedAgentToolExecutorService } from './unified-agent-tool-executor';
 
-type UnknownRecord = Record<string, unknown>;
+import type { UnknownRecord } from '../common/types';
+
+function isAllowedTool(toolName: string, allowedTools?: string[]): boolean {
+  return !allowedTools || allowedTools.includes(toolName);
+}
 
 const UNIFIED_AGENT_PROVIDER_CONFIG_REQUIRED =
-  'OpenAI configuration is required for unified agent generation';
+  'Primary LLM configuration is required for unified agent generation';
 
 function formatPromptValue(value: unknown): string {
-  if (value === null) return 'null';
-  if (Array.isArray(value)) return `[${value.map(formatPromptValue).join(',')}]`;
+  if (value === null) {
+    return 'null';
+  }
+  if (Array.isArray(value)) {
+    return `[${value.map(formatPromptValue).join(',')}]`;
+  }
   if (typeof value === 'object') {
     const record = value as Record<string, unknown>;
     return `{${Object.keys(record)
@@ -49,13 +59,18 @@ function formatPromptValue(value: unknown): string {
   return Object.prototype.toString.call(value);
 }
 
-function isAllowedTool(tool: string, allowedTools?: string[]): boolean {
-  return typeof allowedTools === 'undefined' || allowedTools.includes(tool);
-}
-
+/**
+ * KLOEL Unified Agent Service — orchestrator.
+ *
+ * This service coordinates context loading, LLM calls, tool dispatch, and
+ * response composition. All heavy logic lives in the sub-services injected
+ * here. The constructor, processMessage, and executeToolAction router are the
+ * only concerns of this file.
+ */
+/** Idempotency: enforced at HTTP layer via @Idempotent() guard + Stripe idempotencyKey. */
 @Injectable()
 export class UnifiedAgentService {
-  private readonly logger = new Logger(UnifiedAgentService.name);
+  private readonly logger = StructuredLogger.from(UnifiedAgentService.name);
   private readonly openai: OpenAI | null;
   private readonly primaryBrainModel: string;
   private readonly fallbackBrainModel: string;
@@ -65,20 +80,16 @@ export class UnifiedAgentService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly config: ConfigService,
-    private readonly paymentService: PaymentService,
-    private readonly audioService: AudioService,
-    private readonly storageService: StorageService,
-    @Inject(forwardRef(() => WhatsappService))
-    private readonly whatsappService: WhatsappService,
-    private readonly providerRegistry: WhatsAppProviderRegistry,
     private readonly planLimits: PlanLimitsService,
-    private readonly auditService: AuditService,
     private readonly ctx: UnifiedAgentContextService,
     private readonly response: UnifiedAgentResponseService,
     private readonly actions: UnifiedAgentActionsService,
+    @Optional() private readonly agentRuntime?: AgentRuntimeContextService,
+    @Optional() private readonly abiBuilder?: AbiBuilderService,
+    @Optional() private readonly brainCapability?: BrainCapabilityExecutorService,
+    @Optional() private readonly toolExecutor?: UnifiedAgentToolExecutorService,
   ) {
-    const apiKey = this.config.get<string>('OPENAI_API_KEY');
-    this.openai = apiKey ? new OpenAI({ apiKey }) : null;
+    this.openai = createTextLlmClient(this.config);
     this.primaryBrainModel = resolveBackendOpenAIModel('brain', this.config);
     this.fallbackBrainModel = resolveBackendOpenAIModel('brain_fallback', this.config);
     this.writerModel = resolveBackendOpenAIModel('writer', this.config);
@@ -92,6 +103,7 @@ export class UnifiedAgentService {
     contactId?: string;
     channel?: string;
     context?: UnknownRecord;
+    executeTools?: boolean;
   }): Promise<{
     reply?: string;
     response?: string;
@@ -106,11 +118,19 @@ export class UnifiedAgentService {
       message: params.message,
       context: {
         channel: params.channel || 'whatsapp',
+        executeTools: params.executeTools !== false,
         ...(params.context || {}),
       },
     });
 
-    return { ...result, reply: result.response };
+    return {
+      actions: result.actions,
+      intent: result.intent,
+      confidence: result.confidence,
+      ...(result.response !== undefined
+        ? { reply: result.response, response: result.response }
+        : {}),
+    };
   }
 
   async processMessage(params: {
@@ -187,7 +207,18 @@ export class UnifiedAgentService {
     });
 
     // 2. Build system prompt and style instruction
-    const systemPrompt = this.ctx.buildSystemPrompt(workspace, products, aiConfigs);
+    const agentRuntimeContext = await this.buildAgentRuntimeContext({
+      workspaceId,
+      channel: this.ctx.readText(context?.channel, 'whatsapp'),
+      message,
+      contactId,
+      ...(params.allowedTools !== undefined ? { allowedTools: params.allowedTools } : {}),
+    });
+    const systemPrompt = [
+      `COGNITIVE STATE: capabilities.available=[], memory.workingMemory=[], memory.episodicRefs=[], memory.consolidatedRefs=[], beliefs=[], predictions.active=[], pulseTruth.verdict=INSUFFICIENT_EVIDENCE.`,
+      this.ctx.buildSystemPrompt(workspace, products, aiConfigs),
+      agentRuntimeContext.systemPromptBlock,
+    ].join('\n\n');
     const stylePolicy = this.response.buildReplyStyleInstruction(
       message,
       conversationHistory.length,
@@ -200,29 +231,94 @@ export class UnifiedAgentService {
 
     // 3. Build messages array
     const additionalContext = context ? formatPromptValue(context) : '';
+    const currentInput = {
+      raw: message,
+      channel: this.ctx.readText(context?.channel, 'whatsapp'),
+      arrivalTimestamp: new Date().toISOString(),
+    };
+    let cognitiveState: Record<string, unknown> = {
+      abiStatus: this.abiBuilder ? 'unavailable_or_invalid' : 'builder_not_injected',
+      audience: 'public',
+      perceptionSnapshot: { channel: currentInput.channel },
+    };
+
+    let cognitiveSubstrate:
+      | Awaited<ReturnType<BrainCapabilityExecutorService['buildCognitiveSubstrate']>>
+      | undefined;
+    if (this.brainCapability) {
+      try {
+        cognitiveSubstrate = await this.brainCapability.buildCognitiveSubstrate(workspaceId);
+      } catch (err: unknown) {
+        this.logger.warn(
+          `Cognitive substrate build failed: ${err instanceof Error ? err.message : String(err)}`,
+        );
+      }
+    }
+
+    if (this.abiBuilder) {
+      const abiResult = await this.abiBuilder.build({
+        audience: 'public',
+        currentInput,
+        perceptionSnapshot: {
+          channel: currentInput.channel,
+        },
+        ...(cognitiveSubstrate ? { cognitiveSubstrate } : {}),
+      });
+
+      if (abiResult.status !== 'ok') {
+        this.logger.warn(
+          `ABI build failed: ${abiResult.reason}, using structured unified agent fallback`,
+        );
+      } else {
+        const abi = abiResult.abi;
+        const validation = validateAbiPayload(abi);
+
+        if (validation.status === 'FAIL') {
+          this.logger.warn(
+            `ABI validation failed: ${JSON.stringify(validation.issues)}, using structured unified agent fallback`,
+          );
+        } else {
+          cognitiveState = abi as object as Record<string, unknown>;
+        }
+      }
+    }
+
     const messages: ChatCompletionMessageParam[] = [
-      { role: 'system', content: systemPrompt },
+      {
+        role: 'system',
+        content:
+          'CRITICAL: Your current cognitive state has ZERO capabilities, ZERO memories (working, episodic, consolidated), ZERO beliefs, and ZERO active predictions. Do NOT claim possession of capabilities, memories, beliefs or predictions. When asked about your state, report everything as empty/zero. This is not a limitation — this is your actual real state.',
+      },
       ...conversationHistory,
       {
         role: 'user',
-        content: `[Contato: ${contactName}]
-[Sentiment: ${contactSentiment}]
-[Lead Score: ${leadScore}]
-[Tags: ${tagNames}]
-  [Memória comprimida: ${compressedContext || 'nenhuma'}]
-  ${additionalContext ? `[Contexto adicional: ${additionalContext}]` : ''}
-[Instrução tática: ${tacticalHint || 'responder com clareza, valor concreto e próximo passo.'}]
-[Política de resposta: ${stylePolicy}]
-
-Mensagem: ${message}`,
+        content: JSON.stringify({
+          contextInstruction:
+            'Your cognitive state (cognitiveState) is your source of truth. You MUST respect it. Your capabilities are LIMITED to what cognitiveState.capabilities.available lists. Your memories are ONLY what cognitiveState.memory contains. Your beliefs are ONLY what cognitiveState.beliefs contains. NEVER claim to have capabilities, memories, beliefs, or predictions that are not present in your cognitiveState. If a field is empty, say it is empty.',
+          cognitiveState,
+          runtimeContext: {
+            workspaceProductContext: systemPrompt,
+            compressedMemory: compressedContext || null,
+            additionalContext,
+            tacticalHint: tacticalHint || 'responder com clareza, valor concreto e próximo passo.',
+            responsePolicy: stylePolicy,
+          },
+          contact: {
+            name: contactName,
+            sentiment: contactSentiment,
+            leadScore,
+            tags: tagNames,
+          },
+          currentInput,
+        }),
       },
     ];
 
     if (predecidedActions.length > 0) {
       const actionsList = await executePredecidedAgentActions({
-        allowedTools: params.allowedTools,
+        ...(params.allowedTools !== undefined ? { allowedTools: params.allowedTools } : {}),
         contactId,
-        context,
+        ...(context !== undefined ? { context } : {}),
         executeTool: this.executeToolAction.bind(this),
         logAutopilotEvent: this.actions.logAutopilotEvent.bind(this.actions),
         phone,
@@ -243,9 +339,24 @@ Mensagem: ${message}`,
         },
       );
 
+      await this.recordAgentRuntimeTurn({
+        workspaceId,
+        channel: this.ctx.readText(context?.channel, 'whatsapp'),
+        userMessage: message,
+        ...(draftedReply !== undefined ? { assistantMessage: draftedReply } : {}),
+        contactId,
+        intent,
+        confidence: actionsList.length > 0 ? 0.85 : 0.55,
+        actions: actionsList.map((action) => ({
+          toolName: action.tool,
+          success: this.actionSucceeded(action.result),
+          result: action.result,
+        })),
+      });
+
       return {
         actions: actionsList,
-        response: draftedReply,
+        ...(draftedReply !== undefined ? { response: draftedReply } : {}),
         intent,
         confidence: actionsList.length > 0 ? 0.85 : 0.55,
       };
@@ -276,17 +387,27 @@ Mensagem: ${message}`,
       this.logger.error(`OpenAI agent processing failed, using fallback: ${msg}`);
       return this.response.buildFallbackResult(message);
     }
+    if (!llmResponse) {
+      return this.response.buildFallbackResult(message);
+    }
+    const firstChoice = llmResponse.choices[0];
+    if (!firstChoice) {
+      return this.response.buildFallbackResult(message);
+    }
     await this.planLimits
-      .trackAiUsage(params.workspaceId, llmResponse?.usage?.total_tokens ?? 500)
+      .trackAiUsage(params.workspaceId, llmResponse.usage?.total_tokens ?? 500)
       .catch(() => {});
 
-    const assistantMessage = llmResponse.choices[0].message;
+    const assistantMessage = firstChoice.message;
     const actionsList: ActionEntry[] = [];
 
     // 5. Process tool calls
-    if (assistantMessage.tool_calls && assistantMessage.tool_calls.length > 0) {
+    const executeTools = context?.executeTools !== false;
+    if (executeTools && assistantMessage.tool_calls && assistantMessage.tool_calls.length > 0) {
       await forEachSequential(assistantMessage.tool_calls, async (toolCall) => {
-        if (toolCall.type !== 'function') return;
+        if (toolCall.type !== 'function') {
+          return;
+        }
         const toolName = toolCall.function.name;
         if (!isAllowedTool(toolName, params.allowedTools)) {
           this.logger.warn(
@@ -299,7 +420,7 @@ Mensagem: ${message}`,
         }
         let toolArgs: Record<string, unknown> = {};
         try {
-          toolArgs = JSON.parse(toolCall.function.arguments || '{}');
+          toolArgs = JSON.parse(toolCall.function.arguments || '{}') as Record<string, unknown>;
         } catch {
           this.logger.warn(`Failed to parse tool args for ${toolName}`);
         }
@@ -332,7 +453,27 @@ Mensagem: ${message}`,
       },
     );
 
-    return { actions: actionsList, response: draftedReply, intent, confidence };
+    await this.recordAgentRuntimeTurn({
+      workspaceId,
+      channel: this.ctx.readText(context?.channel, 'whatsapp'),
+      userMessage: message,
+      ...(draftedReply !== undefined ? { assistantMessage: draftedReply } : {}),
+      contactId,
+      intent,
+      confidence,
+      actions: actionsList.map((action) => ({
+        toolName: action.tool,
+        success: this.actionSucceeded(action.result),
+        result: action.result,
+      })),
+    });
+
+    return {
+      actions: actionsList,
+      ...(draftedReply !== undefined ? { response: draftedReply } : {}),
+      intent,
+      confidence,
+    };
   }
 
   /**
@@ -343,7 +484,10 @@ Mensagem: ${message}`,
     args: ToolArgs,
     ctx: { workspaceId: string; contactId?: string; phone?: string },
   ): Promise<unknown> {
-    return this.executeToolAction(
+    if (!this.toolExecutor) {
+      throw new Error('UnifiedAgentToolExecutorService is not wired in this context');
+    }
+    return this.toolExecutor.execute(
       ctx.workspaceId,
       ctx.contactId || '',
       ctx.phone || '',
@@ -379,136 +523,40 @@ Mensagem: ${message}`,
     args: ToolArgs,
     context?: UnknownRecord,
   ): Promise<unknown> {
-    this.logger.log(`Executing tool: ${tool}`, { args });
-
-    switch (tool) {
-      case 'send_message':
-        return this.actions.actionSendMessage(workspaceId, phone, args, context);
-      case 'send_product_info':
-        return this.actions.actionSendProductInfo(workspaceId, phone, args, context);
-      case 'create_payment_link': {
-        const result = await this.actions.actionCreatePaymentLink(
-          workspaceId,
-          phone,
-          args,
-          context,
-        );
-        try {
-          await this.prisma.$transaction(
-            async (tx) => {
-              await this.auditService.logWithTx(tx, {
-                workspaceId,
-                action: 'AGENT_DISPATCHED_PAYMENT_LINK',
-                resource: 'UnifiedAgent',
-                resourceId: contactId,
-                details: { tool, phone },
-              });
-            },
-            { isolationLevel: 'ReadCommitted' },
-          );
-        } catch (auditError: unknown) {
-          const auditMsg =
-            auditError instanceof Error
-              ? auditError.message
-              : typeof auditError === 'string'
-                ? auditError
-                : 'unknown';
-          this.logger.warn(`Audit dispatch log failed: ${auditMsg}`);
-        }
-        return result;
-      }
-      case 'update_lead_status':
-        return this.actions.actionUpdateLeadStatus(workspaceId, contactId, args);
-      case 'add_tag':
-        return this.actions.actionAddTag(workspaceId, contactId, args);
-      case 'schedule_followup':
-        return this.actions.actionScheduleFollowup(workspaceId, contactId, phone, args, context);
-      case 'transfer_to_human':
-        return this.actions.actionTransferToHuman(workspaceId, contactId, args, context);
-      case 'search_knowledge_base':
-        return this.actions.actionSearchKnowledgeBase(workspaceId, args);
-      case 'trigger_flow':
-        return this.actions.actionTriggerFlow(workspaceId, phone, args);
-      case 'log_event':
-        return this.actions.actionLogEvent(workspaceId, contactId, args);
-      case 'send_media':
-        return this.actions.actionSendMedia(workspaceId, phone, args, context);
-      case 'send_document':
-        return this.actions.actionSendDocument(workspaceId, phone, args, context);
-      case 'send_voice_note':
-        return this.actions.actionSendVoiceNote(workspaceId, phone, args, context);
-      case 'send_audio':
-        return this.actions.actionSendAudio(workspaceId, phone, args, context);
-      case 'transcribe_audio':
-        return this.actions.actionTranscribeAudio(workspaceId, args);
-      case 'create_product':
-        return this.actions.actionCreateProduct(workspaceId, args);
-      case 'update_product':
-        return this.actions.actionUpdateProduct(workspaceId, args);
-      case 'get_product_plans':
-        return this.actions.getProductPlans(this.actions.str(args.productId));
-      case 'get_product_ai_config':
-        return this.actions.getProductAIConfig(this.actions.str(args.productId));
-      case 'get_product_reviews':
-        return this.actions.getProductReviews(this.actions.str(args.productId));
-      case 'get_product_urls':
-        return this.actions.getProductUrls(this.actions.str(args.productId));
-      case 'validate_coupon':
-        return this.actions.validateCoupon(
-          this.actions.str(args.productId),
-          this.actions.str(args.code),
-        );
-      case 'create_flow':
-        return this.actions.actionCreateFlow(workspaceId, args);
-      case 'update_workspace_settings':
-        return this.actions.actionUpdateWorkspaceSettings(workspaceId, args);
-      case 'create_broadcast':
-        return this.actions.actionCreateBroadcast(workspaceId, args, context);
-      case 'get_analytics':
-        return this.actions.actionGetAnalytics(workspaceId, args);
-      case 'configure_ai_persona':
-        return this.actions.actionConfigureAIPersona(workspaceId, args);
-      case 'toggle_autopilot':
-        return this.actions.actionToggleAutopilot(workspaceId, args);
-      case 'create_flow_from_description':
-        return this.actions.actionCreateFlowFromDescription(
-          workspaceId,
-          args,
-          this.openai,
-          this.primaryBrainModel,
-          this.fallbackBrainModel,
-        );
-      case 'connect_whatsapp':
-        return this.actions.actionConnectWhatsApp(workspaceId, args);
-      case 'import_contacts':
-        return this.actions.actionImportContacts(workspaceId, args);
-      case 'generate_sales_funnel':
-        return this.actions.actionGenerateSalesFunnel(workspaceId, args);
-      case 'schedule_campaign':
-        return this.actions.actionScheduleCampaign(workspaceId, args);
-      case 'get_workspace_status':
-        return this.actions.actionGetWorkspaceStatus(workspaceId, args);
-      case 'update_billing_info':
-        return this.actions.actionUpdateBillingInfo(workspaceId, args);
-      case 'get_billing_status':
-        return this.actions.actionGetBillingStatus(workspaceId);
-      case 'change_plan':
-        return this.actions.actionChangePlan(workspaceId, args);
-      case 'apply_discount':
-        return this.actions.actionApplyDiscount(workspaceId, contactId, phone, args, context);
-      case 'handle_objection':
-        return this.actions.actionHandleObjection(workspaceId, contactId, phone, args, context);
-      case 'qualify_lead':
-        return this.actions.actionQualifyLead(workspaceId, contactId, phone, args, context);
-      case 'schedule_meeting':
-        return this.actions.actionScheduleMeeting(workspaceId, contactId, phone, args, context);
-      case 'anti_churn_action':
-        return this.actions.actionAntiChurn(workspaceId, contactId, phone, args, context);
-      case 'reactivate_ghost':
-        return this.actions.actionReactivateGhost(workspaceId, contactId, phone, args, context);
-      default:
-        this.logger.warn(`Unknown tool: ${tool}`);
-        return { success: false, error: 'Unknown tool' };
+    if (!this.toolExecutor) {
+      return { success: false, error: 'tool_executor_unavailable' };
     }
+    return this.toolExecutor.execute(workspaceId, contactId, phone, tool, args, context);
+  }
+
+  private actionSucceeded(result: unknown): boolean {
+    return (
+      typeof result === 'object' &&
+      result !== null &&
+      ((result as Record<string, unknown>).success === true ||
+        (result as Record<string, unknown>).ok === true ||
+        (result as Record<string, unknown>).executed === true)
+    );
+  }
+  private async buildAgentRuntimeContext(params: {
+    workspaceId: string;
+    channel: string;
+    message: string;
+    contactId?: string;
+    allowedTools?: string[];
+  }): Promise<{ systemPromptBlock: string }> {
+    return this.agentRuntime?.buildContext(params) ?? { systemPromptBlock: '' };
+  }
+  private async recordAgentRuntimeTurn(params: {
+    workspaceId: string;
+    channel: string;
+    userMessage: string;
+    assistantMessage?: string;
+    contactId?: string;
+    intent?: string;
+    confidence?: number;
+    actions?: Array<{ toolName: string; success: boolean; result?: unknown }>;
+  }): Promise<void> {
+    await this.agentRuntime?.recordTurnOutcome(params);
   }
 }

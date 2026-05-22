@@ -2,9 +2,9 @@ import {
   BadRequestException,
   ForbiddenException,
   Injectable,
-  Logger,
   Optional,
 } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { Prisma } from '@prisma/client';
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
@@ -16,8 +16,12 @@ import { AutopilotOpsService } from './autopilot-ops.service';
 
 /** Autopilot orchestration service — delegates to sub-services. */
 @Injectable()
+/**
+ * @cluster whatsapp_saas/backend/autopilot
+ * L11 multi-agent TaskGraph annotation (batched by tools/auto-pr/batch-job.mjs).
+ */
 export class AutopilotService {
-  private readonly logger = new Logger(AutopilotService.name);
+  private readonly logger = StructuredLogger.from(AutopilotService.name);
 
   constructor(
     private readonly prisma: PrismaService,
@@ -316,9 +320,9 @@ export class AutopilotService {
     contactId: string,
     purchaseInfo: {
       provider: string;
-      amount?: number;
-      productName?: string;
-      orderId?: string;
+      amount?: number | undefined;
+      productName?: string | undefined;
+      orderId?: string | undefined;
     },
   ) {
     await this.ensureNotSuspended(workspaceId);
@@ -414,7 +418,7 @@ export class AutopilotService {
           intent: 'NBA',
           action: 'MANUAL_SEND',
           status: 'skipped',
-          reason: compliance.reason,
+          ...(compliance.reason !== undefined ? { reason: compliance.reason } : {}),
           meta: { compliance: true },
         },
       });

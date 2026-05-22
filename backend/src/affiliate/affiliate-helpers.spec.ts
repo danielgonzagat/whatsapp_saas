@@ -6,7 +6,7 @@ import {
   normalizePromoMaterials,
   serializeAffiliateProductForResponse,
 } from './affiliate-helpers';
-import { baseProduct, mockLookup } from './__companions__/affiliate-helpers.spec.companion';
+import { baseProduct, mockLookup } from './affiliate-helpers.spec.fixtures';
 
 function mockReq(): AuthenticatedRequest {
   return {

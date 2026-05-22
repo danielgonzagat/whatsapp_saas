@@ -13,10 +13,10 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as ts from 'typescript';
-import type { Node, CallExpression, ObjectLiteralExpression } from 'ts-morph';
 import { validate, type ValidationResult } from './engine.js';
 import { resolveSymbol } from './symbols.js';
 import { graphemeDiff } from './textunit.js';
+export { previewDiff, characterDiff } from './advanced-diff.js';
 
 export type SymbolOp = 'replace' | 'insert_after' | 'remove';
 
@@ -27,16 +27,6 @@ export interface SymbolEditResult {
   op: SymbolOp;
   startLine: number;
   endLine: number;
-  /**
-   * tooldev24 — Preservação Máxima com Mutação Mínima: for op='replace' this
-   * is the minimal sub-range actually rewritten (byte offsets into the OLD
-   * source), anchoring a byte-identical head/tail. Absent for insert_after /
-   * remove (already minimal by construction — pure insertion / deletion).
-   * `symbolLength` is the full resolved symbol size so callers can prove the
-   * applied delta is << the whole symbol (the founding §6.1/§6.2 invariant).
-   */
-  changedSpan?: { start: number; end: number; oldLen: number; newLen: number };
-  symbolLength?: number;
 }
 
 function leadingIndent(text: string, atOffset: number): string {
@@ -83,7 +73,6 @@ export async function editSymbol(
   const indent = leadingIndent(original, start);
 
   let next: string;
-  let changedSpan: SymbolEditResult['changedSpan'];
   if (op === 'remove') {
     // A selector for `const foo = ...` resolves to the declarator. Removing
     // only that node leaves invalid residue such as `const ;`, so single
@@ -112,47 +101,14 @@ export async function editSymbol(
     // Drop the node, its own line's leading indentation, and the trailing
     // newline so no blank gap is left behind.
     const lineStart = original.lastIndexOf('\n', removalStart - 1) + 1;
-    const cutStart = original.slice(lineStart, removalStart).trim() === '' ? lineStart : removalStart;
+    const cutStart =
+      original.slice(lineStart, removalStart).trim() === '' ? lineStart : removalStart;
     let cutEnd = removalEnd;
     if (original[cutEnd] === '\n') cutEnd++;
     next = original.slice(0, cutStart) + original.slice(cutEnd);
   } else if (op === 'replace') {
     if (code == null) throw new Error(`op "replace" requires code`);
-    // tooldev24 — Preservação Máxima com Mutação Mínima (§6.1 "não reescrever
-    // se basta trocar", §6.2 "a prova visual deve mostrar só o que mudou"):
-    // a localized change inside a symbol must NOT rewrite the whole node.
-    // Diff the CURRENT symbol source against the requested new body at the
-    // character level and splice ONLY the inner span that genuinely differs,
-    // keeping the common head and tail as their ORIGINAL bytes. The resulting
-    // file is byte-identical to a full-span replace (the common prefix/suffix
-    // are equal by construction, so old[0:p]+new[p:n-s]+old[L-s:] === new),
-    // but the persisted edit — hence git/trace/churn — is the true minimal
-    // delta. Degenerate case (no common prefix/suffix) reduces exactly to the
-    // previous full-span behaviour.
-    const oldSymbolText = original.slice(start, end);
-    const newSymbolText = reindent(code, indent);
-    const oldLen = oldSymbolText.length;
-    const newLen = newSymbolText.length;
-    let p = 0;
-    while (p < oldLen && p < newLen && oldSymbolText[p] === newSymbolText[p]) p++;
-    let s = 0;
-    while (
-      s < oldLen - p &&
-      s < newLen - p &&
-      oldSymbolText[oldLen - 1 - s] === newSymbolText[newLen - 1 - s]
-    ) {
-      s++;
-    }
-    const editStart = start + p;
-    const editEnd = end - s;
-    const replacement = newSymbolText.slice(p, newLen - s);
-    next = original.slice(0, editStart) + replacement + original.slice(editEnd);
-    changedSpan = {
-      start: editStart,
-      end: editEnd,
-      oldLen: editEnd - editStart,
-      newLen: replacement.length,
-    };
+    next = original.slice(0, start) + reindent(code, indent) + original.slice(end);
   } else {
     if (code == null) throw new Error(`op "insert_after" requires code`);
     next = `${original.slice(0, end)}\n\n${indent}${reindent(code, indent)}${original.slice(end)}`;
@@ -165,8 +121,6 @@ export async function editSymbol(
     op,
     startLine: info.startLine,
     endLine: info.endLine,
-    changedSpan,
-    symbolLength: end - start,
   };
 }
 
@@ -175,15 +129,6 @@ export interface CrossFileRenameResult {
   /** repo-relative path -> new content (only files that changed) */
   changes: Map<string, string>;
   totalReferences: number;
-  /** tooldev22: reference nodes actually renamed (definition + every true ref) */
-  renamedRefs: number;
-  /**
-   * tooldev22: `name`-matching member accesses the engine deliberately did
-   * NOT rename, with file:line + why. A DIFFERENT class's same-named member
-   * still resolves and is correctly preserved → NOT listed. An entry here
-   * means a true reference escaped coverage. Empty ⇒ ONE call sufficed.
-   */
-  residualUnresolved: { at: string; reason: string }[];
   validations: { file: string; ok: boolean; introduced?: string }[];
 }
 
@@ -200,7 +145,7 @@ function findNearestTsconfig(absFile: string, repoRoot: string): string | undefi
 /**
  * True cross-file, scope-correct rename via the TypeScript language service
  * (loaded from the nearest tsconfig). All-or-nothing: every touched file is
- * revalidated; if any would regress syntactically, NOTHING is written and the
+ * revalidated; if a would regress syntactically, NOTHING is written and the
  * caller is told which file failed.
  */
 export async function renameSymbolCrossFile(
@@ -218,24 +163,8 @@ export async function renameSymbolCrossFile(
   const project = tsconfig
     ? new Project({ tsConfigFilePath: tsconfig })
     : new Project({ compilerOptions: { allowJs: true, noEmit: true } });
-  // tooldev22: a tsconfig (esp. *.build.json) routinely EXCLUDES `*.spec.ts` /
-  // `*.test.ts`, yet test call sites (incl. NestJS DI `module.get(Class)`
-  // variables, statically typed as the class) are TRUE references. Build from
-  // tsconfig for resolution fidelity, then WIDEN the project to the full
-  // package source tree — tests INCLUDED — so findReferences() sees every
-  // real reference and ONE call truly renames them all. Purely additive
-  // (ts-morph dedupes already-loaded files); resolution stays type/binding-
-  // precise because it is still driven by symbol/declaration identity below,
-  // never by text.
-  const pkgRoot = tsconfig ? path.dirname(tsconfig) : path.dirname(absFile);
-  project.addSourceFilesAtPaths([
-    path.join(pkgRoot, '**/*.{ts,tsx,mts,cts,js,jsx,mjs,cjs}'),
-    `!${path.join(pkgRoot, '**/node_modules/**')}`,
-    `!${path.join(pkgRoot, '**/dist/**')}`,
-    `!${path.join(pkgRoot, '**/build/**')}`,
-    `!${path.join(pkgRoot, '**/.next/**')}`,
-    `!${path.join(pkgRoot, '**/coverage/**')}`,
-  ]);
+  if (!tsconfig)
+    project.addSourceFilesAtPaths(path.join(path.dirname(absFile), '**/*.{ts,tsx,js,jsx}'));
 
   const sf = project.getSourceFile(absFile) ?? project.addSourceFileAtPath(absFile);
   const original = new Map<string, string>();
@@ -260,567 +189,11 @@ export async function renameSymbolCrossFile(
   }
   const oldName = id.getText();
   const renameable = id.asKindOrThrow(ts.SyntaxKind.Identifier);
-  // Type/binding-precise reference set: findReferences resolves the SYMBOL of
-  // the declaration (not text), so it never touches a string literal equal to
-  // the name (e.g. an `@Get('overview')` route), a same-named member on a
-  // DIFFERENT class, or unrelated identifiers/comments. With the spec/test
-  // files now in the project, DI call sites resolve here as true references.
-  let totalReferences = renameable
+  const totalReferences = renameable
     .findReferences()
     .reduce((n, r) => n + r.getReferences().length, 0);
 
   renameable.rename(newName);
-
-  // ── tooldev29: complete the cross-file reference set with the two UNIVERSAL
-  //    Jest/CommonJS forms the TS language service cannot type-link — a
-  //    `require()` / `await import()` / `requireActual()` destructuring binding
-  //    (RHS is `any`, so the binding is NOT the export symbol) and a
-  //    `jest.mock(spec, factory)` factory's returned object-literal KEY (a
-  //    plain property, not the export symbol). STRICTLY module-specifier
-  //    scoped: a binding/key is touched ONLY when the specifier resolves to the
-  //    SAME source file that DECLARES the renamed symbol (relative + tsconfig
-  //    paths, resolved exactly like td21/22) — never an unrelated same-named
-  //    property, a string literal, or `describe('OLD')` prose. Deterministic
-  //    range edits collected from the pre-mutation tree, then applied per file
-  //    descending so offsets stay valid; ts-morph reparses so the existing
-  //    all-or-nothing validate() pipeline still gates every write byte.
-  const norm29 = (p: string): string => {
-    try {
-      return fs.realpathSync(p);
-    } catch {
-      return p;
-    }
-  };
-  const declFiles = new Set<string>();
-  for (const d of renameable.getSymbol()?.getDeclarations() ?? []) {
-    const fp = d.getSourceFile().getFilePath();
-    declFiles.add(fp);
-    declFiles.add(norm29(fp));
-  }
-  {
-    const fp = sf.getFilePath();
-    declFiles.add(fp);
-    declFiles.add(norm29(fp));
-  }
-  const compilerOptions29 = project.getCompilerOptions() as ts.CompilerOptions;
-  const modResCache29 = ts.createModuleResolutionCache(
-    repoRoot,
-    (x) => x,
-    compilerOptions29,
-  );
-  const EXT29 = ['.ts', '.tsx', '.mts', '.cts', '.d.ts', '.js', '.jsx', '.mjs', '.cjs'];
-  const resolvesToDecl = (spec: string, containingFile: string): boolean => {
-    if (!spec) return false;
-    let resolved: string | undefined;
-    try {
-      resolved = ts.resolveModuleName(
-        spec,
-        containingFile,
-        compilerOptions29,
-        ts.sys,
-        modResCache29,
-      ).resolvedModule?.resolvedFileName;
-    } catch {
-      resolved = undefined;
-    }
-    if (!resolved && spec.startsWith('.')) {
-      const base = path.resolve(path.dirname(containingFile), spec);
-      const cands = [base];
-      for (const e of EXT29) cands.push(base + e, path.join(base, `index${e}`));
-      for (const c of cands) {
-        try {
-          if (fs.statSync(c).isFile()) {
-            resolved = c;
-            break;
-          }
-        } catch {
-          /* keep looking */
-        }
-      }
-    }
-    if (!resolved) return false;
-    return declFiles.has(resolved) || declFiles.has(norm29(resolved));
-  };
-  const litText29 = (n: Node | undefined): string | undefined => {
-    if (!n) return undefined;
-    const sl =
-      n.asKind(ts.SyntaxKind.StringLiteral) ??
-      n.asKind(ts.SyntaxKind.NoSubstitutionTemplateLiteral);
-    return sl ? sl.getLiteralText() : undefined;
-  };
-  const requireLikeSpec = (call: CallExpression): string | undefined => {
-    const e = call.getExpression();
-    const k = e.getKind();
-    let reqLike = false;
-    if (
-      k === ts.SyntaxKind.Identifier &&
-      (e.getText() === 'require' || e.getText() === 'requireActual')
-    ) {
-      reqLike = true;
-    } else if (k === ts.SyntaxKind.ImportKeyword) {
-      reqLike = true;
-    } else if (k === ts.SyntaxKind.PropertyAccessExpression) {
-      const t = e.getText();
-      if (
-        t === 'jest.requireActual' ||
-        t === 'jest.requireMock' ||
-        t === 'require.requireActual'
-      ) {
-        reqLike = true;
-      }
-    }
-    if (!reqLike) return undefined;
-    return litText29(call.getArguments()[0]);
-  };
-  type Range29 = { start: number; end: number; text: string };
-  const edits29 = new Map<string, Map<number, Range29>>();
-  const addEdit29 = (file: string, start: number, end: number, t: string): boolean => {
-    let m = edits29.get(file);
-    if (!m) {
-      m = new Map();
-      edits29.set(file, m);
-    }
-    if (m.has(start)) return false;
-    m.set(start, { start, end, text: t });
-    return true;
-  };
-  let extraRenamed = 0;
-  for (const f of project.getSourceFiles()) {
-    const fpath = f.getFilePath();
-    if (!f.getFullText().includes(oldName)) continue;
-    // (1) require / dynamic import / requireActual destructuring binding
-    for (const vd of f.getDescendantsOfKind(ts.SyntaxKind.VariableDeclaration)) {
-      const nameNode = vd.getNameNode();
-      if (nameNode.getKind() !== ts.SyntaxKind.ObjectBindingPattern) continue;
-      let init = vd.getInitializer();
-      if (init && init.getKind() === ts.SyntaxKind.AwaitExpression) {
-        init = init.asKindOrThrow(ts.SyntaxKind.AwaitExpression).getExpression();
-      }
-      if (!init || init.getKind() !== ts.SyntaxKind.CallExpression) continue;
-      const spec = requireLikeSpec(init.asKindOrThrow(ts.SyntaxKind.CallExpression));
-      if (spec === undefined || !resolvesToDecl(spec, fpath)) continue;
-      for (const be of nameNode
-        .asKindOrThrow(ts.SyntaxKind.ObjectBindingPattern)
-        .getElements()) {
-        const pn = be.getPropertyNameNode();
-        if (pn) {
-          // `{ OLD: alias }` — rename ONLY the export key, keep the alias.
-          if (pn.getText() === oldName) {
-            addEdit29(fpath, pn.getStart(), pn.getEnd(), newName);
-            extraRenamed++;
-          }
-        } else {
-          // shorthand `{ OLD }` — rename the local binding AND every in-file
-          // use (incl. `jest.mocked(OLD)` / `OLD(...)`) → `{ NEW }`.
-          const nm = be.getNameNode();
-          if (
-            nm.getKind() === ts.SyntaxKind.Identifier &&
-            nm.getText() === oldName
-          ) {
-            const idn = nm.asKindOrThrow(ts.SyntaxKind.Identifier);
-            for (const rn of idn.findReferencesAsNodes()) {
-              addEdit29(
-                rn.getSourceFile().getFilePath(),
-                rn.getStart(),
-                rn.getEnd(),
-                newName,
-              );
-            }
-            addEdit29(fpath, idn.getStart(), idn.getEnd(), newName);
-            extraRenamed++;
-          }
-        }
-      }
-    }
-    // (2) jest.mock / jest.doMock factory returned object-literal key
-    for (const call of f.getDescendantsOfKind(ts.SyntaxKind.CallExpression)) {
-      const expr = call.getExpression();
-      if (expr.getKind() !== ts.SyntaxKind.PropertyAccessExpression) continue;
-      const pae = expr.asKindOrThrow(ts.SyntaxKind.PropertyAccessExpression);
-      if (pae.getExpression().getText() !== 'jest') continue;
-      const meth = pae.getNameNode().getText();
-      if (meth !== 'mock' && meth !== 'doMock') continue;
-      const args = call.getArguments();
-      if (args.length < 2) continue;
-      const spec = litText29(args[0]);
-      if (spec === undefined || !resolvesToDecl(spec, fpath)) continue;
-      const objs: ObjectLiteralExpression[] = [];
-      const collect = (n: Node | undefined): void => {
-        if (!n) return;
-        if (n.getKind() === ts.SyntaxKind.ParenthesizedExpression) {
-          collect(
-            n.asKindOrThrow(ts.SyntaxKind.ParenthesizedExpression).getExpression(),
-          );
-          return;
-        }
-        if (n.getKind() === ts.SyntaxKind.ObjectLiteralExpression) {
-          objs.push(n.asKindOrThrow(ts.SyntaxKind.ObjectLiteralExpression));
-          return;
-        }
-        if (n.getKind() === ts.SyntaxKind.ArrowFunction) {
-          collect(n.asKindOrThrow(ts.SyntaxKind.ArrowFunction).getBody());
-          return;
-        }
-        if (n.getKind() === ts.SyntaxKind.FunctionExpression) {
-          const body = n.asKindOrThrow(ts.SyntaxKind.FunctionExpression).getBody();
-          if (body) {
-            for (const ret of body.getDescendantsOfKind(
-              ts.SyntaxKind.ReturnStatement,
-            )) {
-              collect(ret.getExpression());
-            }
-          }
-          return;
-        }
-        if (n.getKind() === ts.SyntaxKind.Block) {
-          for (const ret of n.getDescendantsOfKind(ts.SyntaxKind.ReturnStatement)) {
-            collect(ret.getExpression());
-          }
-        }
-      };
-      collect(args[1]);
-      for (const ol of objs) {
-        for (const prop of ol.getProperties()) {
-          if (prop.getKind() === ts.SyntaxKind.PropertyAssignment) {
-            const nn = prop
-              .asKindOrThrow(ts.SyntaxKind.PropertyAssignment)
-              .getNameNode();
-            if (nn.getKind() === ts.SyntaxKind.Identifier && nn.getText() === oldName) {
-              addEdit29(fpath, nn.getStart(), nn.getEnd(), newName);
-              extraRenamed++;
-            } else if (
-              nn.getKind() === ts.SyntaxKind.StringLiteral &&
-              nn.asKindOrThrow(ts.SyntaxKind.StringLiteral).getLiteralText() ===
-                oldName
-            ) {
-              const q = nn.getText().trim()[0];
-              addEdit29(fpath, nn.getStart(), nn.getEnd(), `${q}${newName}${q}`);
-              extraRenamed++;
-            }
-          } else if (prop.getKind() === ts.SyntaxKind.ShorthandPropertyAssignment) {
-            const snn = prop
-              .asKindOrThrow(ts.SyntaxKind.ShorthandPropertyAssignment)
-              .getNameNode();
-            if (snn.getText() === oldName) {
-              // `{ OLD }` → `{ NEW }`
-              addEdit29(fpath, snn.getStart(), snn.getEnd(), newName);
-              extraRenamed++;
-            }
-          }
-        }
-      }
-    }
-  }
-  // ── tooldev32: complete the cross-file reference set with the UNIVERSAL
-  //    NestJS DI provider-mock form the TS language service cannot type-link.
-  //    `Test.createTestingModule({ providers: [{ provide: AuditService,
-  //    useValue: { log: jest.fn() } }] })` — the mock object's KEY is a plain
-  //    object property (NOT the class method symbol), `useFactory: () => ({
-  //    log: jest.fn() })` returns one, and `const m = { log: … }; { provide:
-  //    AuditService, useValue: m }` binds one indirectly. STRICTLY token-
-  //    scoped: a key/usage is touched ONLY when the provider's `provide:`
-  //    token resolves (ts-morph symbol, alias-followed exactly like td21/22)
-  //    to the SAME class declaration that DECLARES the renamed member — never
-  //    an unrelated same-named key on a different provider, `console.log`,
-  //    `logger.log`, a string literal, or `describe('OLD')` prose. Edits flow
-  //    through the SAME edits29 range map so the existing all-or-nothing
-  //    validate() pipeline still gates every write byte.
-  const ownerKey32 = (n: Node): string =>
-    `${n.getSourceFile().getFilePath()}|${n.getStart()}`;
-  const classDeclsOf32 = (n: Node): Node[] => {
-    const out: Node[] = [];
-    let sym;
-    try {
-      sym = n.getSymbol();
-    } catch {
-      sym = undefined;
-    }
-    if (!sym) return out;
-    const syms = [sym];
-    try {
-      const al = sym.getAliasedSymbol?.();
-      if (al) syms.push(al);
-    } catch {
-      /* not an alias */
-    }
-    for (const s of syms) {
-      for (const d of s.getDeclarations() ?? []) {
-        if (
-          d.getKind() === ts.SyntaxKind.ClassDeclaration ||
-          d.getKind() === ts.SyntaxKind.ClassExpression
-        ) {
-          out.push(d);
-        } else {
-          const c =
-            d.getFirstAncestorByKind(ts.SyntaxKind.ClassDeclaration) ??
-            d.getFirstAncestorByKind(ts.SyntaxKind.ClassExpression);
-          if (c) out.push(c);
-        }
-      }
-    }
-    return out;
-  };
-  const ownerClassKeys32 = new Set<string>();
-  for (const d of renameable.getSymbol()?.getDeclarations() ?? []) {
-    const c =
-      d.getKind() === ts.SyntaxKind.ClassDeclaration ||
-      d.getKind() === ts.SyntaxKind.ClassExpression
-        ? d
-        : d.getFirstAncestorByKind(ts.SyntaxKind.ClassDeclaration) ??
-          d.getFirstAncestorByKind(ts.SyntaxKind.ClassExpression);
-    if (c) ownerClassKeys32.add(ownerKey32(c));
-  }
-  const unwrap32 = (n: Node): Node => {
-    let v = n;
-    while (
-      v.getKind() === ts.SyntaxKind.ParenthesizedExpression ||
-      v.getKind() === ts.SyntaxKind.AsExpression
-    ) {
-      v =
-        v.getKind() === ts.SyntaxKind.ParenthesizedExpression
-          ? v.asKindOrThrow(ts.SyntaxKind.ParenthesizedExpression).getExpression()
-          : v.asKindOrThrow(ts.SyntaxKind.AsExpression).getExpression();
-    }
-    return v;
-  };
-  const tokenResolvesToOwner32 = (provideVal: Node): boolean => {
-    if (ownerClassKeys32.size === 0) return false;
-    for (const c of classDeclsOf32(unwrap32(provideVal))) {
-      if (ownerClassKeys32.has(ownerKey32(c))) return true;
-    }
-    return false;
-  };
-  const renameObjLitKey32 = (ol: ObjectLiteralExpression, fp: string): void => {
-    for (const prop of ol.getProperties()) {
-      const pk = prop.getKind();
-      if (pk === ts.SyntaxKind.PropertyAssignment) {
-        const nn = prop
-          .asKindOrThrow(ts.SyntaxKind.PropertyAssignment)
-          .getNameNode();
-        if (nn.getKind() === ts.SyntaxKind.Identifier && nn.getText() === oldName) {
-          if (addEdit29(fp, nn.getStart(), nn.getEnd(), newName)) extraRenamed++;
-        } else if (
-          nn.getKind() === ts.SyntaxKind.StringLiteral &&
-          nn.asKindOrThrow(ts.SyntaxKind.StringLiteral).getLiteralText() ===
-            oldName
-        ) {
-          const q = nn.getText().trim()[0];
-          if (addEdit29(fp, nn.getStart(), nn.getEnd(), `${q}${newName}${q}`))
-            extraRenamed++;
-        }
-      } else if (pk === ts.SyntaxKind.ShorthandPropertyAssignment) {
-        const snn = prop
-          .asKindOrThrow(ts.SyntaxKind.ShorthandPropertyAssignment)
-          .getNameNode();
-        if (snn.getText() === oldName) {
-          if (addEdit29(fp, snn.getStart(), snn.getEnd(), newName)) extraRenamed++;
-        }
-      } else if (pk === ts.SyntaxKind.MethodDeclaration) {
-        const nn = prop
-          .asKindOrThrow(ts.SyntaxKind.MethodDeclaration)
-          .getNameNode();
-        if (nn.getText() === oldName) {
-          if (addEdit29(fp, nn.getStart(), nn.getEnd(), newName)) extraRenamed++;
-        }
-      }
-    }
-  };
-  const collectObjs32 = (
-    n: Node | undefined,
-    out: ObjectLiteralExpression[],
-  ): void => {
-    if (!n) return;
-    const k = n.getKind();
-    if (k === ts.SyntaxKind.ParenthesizedExpression) {
-      collectObjs32(
-        n.asKindOrThrow(ts.SyntaxKind.ParenthesizedExpression).getExpression(),
-        out,
-      );
-      return;
-    }
-    if (k === ts.SyntaxKind.AsExpression) {
-      collectObjs32(
-        n.asKindOrThrow(ts.SyntaxKind.AsExpression).getExpression(),
-        out,
-      );
-      return;
-    }
-    if (k === ts.SyntaxKind.ObjectLiteralExpression) {
-      out.push(n.asKindOrThrow(ts.SyntaxKind.ObjectLiteralExpression));
-      return;
-    }
-    if (k === ts.SyntaxKind.ArrowFunction) {
-      collectObjs32(n.asKindOrThrow(ts.SyntaxKind.ArrowFunction).getBody(), out);
-      return;
-    }
-    if (
-      k === ts.SyntaxKind.FunctionExpression ||
-      k === ts.SyntaxKind.MethodDeclaration
-    ) {
-      const body =
-        k === ts.SyntaxKind.FunctionExpression
-          ? n.asKindOrThrow(ts.SyntaxKind.FunctionExpression).getBody()
-          : n.asKindOrThrow(ts.SyntaxKind.MethodDeclaration).getBody();
-      if (body) {
-        for (const ret of body.getDescendantsOfKind(
-          ts.SyntaxKind.ReturnStatement,
-        )) {
-          collectObjs32(ret.getExpression(), out);
-        }
-      }
-      return;
-    }
-    if (k === ts.SyntaxKind.Block) {
-      for (const ret of n.getDescendantsOfKind(ts.SyntaxKind.ReturnStatement)) {
-        collectObjs32(ret.getExpression(), out);
-      }
-    }
-  };
-  const handleUseValue32 = (val: Node, fp: string): void => {
-    const v = unwrap32(val);
-    if (v.getKind() === ts.SyntaxKind.ObjectLiteralExpression) {
-      renameObjLitKey32(
-        v.asKindOrThrow(ts.SyntaxKind.ObjectLiteralExpression),
-        fp,
-      );
-      return;
-    }
-    if (v.getKind() === ts.SyntaxKind.Identifier) {
-      const idn = v.asKindOrThrow(ts.SyntaxKind.Identifier);
-      let sym;
-      try {
-        sym = idn.getSymbol();
-      } catch {
-        sym = undefined;
-      }
-      for (const d of sym?.getDeclarations() ?? []) {
-        if (d.getKind() !== ts.SyntaxKind.VariableDeclaration) continue;
-        const rawInit = d
-          .asKindOrThrow(ts.SyntaxKind.VariableDeclaration)
-          .getInitializer();
-        const init: Node | undefined = rawInit
-          ? unwrap32(rawInit)
-          : undefined;
-        if (!init || init.getKind() !== ts.SyntaxKind.ObjectLiteralExpression)
-          continue;
-        renameObjLitKey32(
-          init.asKindOrThrow(ts.SyntaxKind.ObjectLiteralExpression),
-          d.getSourceFile().getFilePath(),
-        );
-        // also rename `m.OLD` member-access uses bound to this variable.
-        for (const rn of idn.findReferencesAsNodes()) {
-          const par = rn.getParent();
-          if (
-            par &&
-            par.getKind() === ts.SyntaxKind.PropertyAccessExpression
-          ) {
-            const pae = par.asKindOrThrow(
-              ts.SyntaxKind.PropertyAccessExpression,
-            );
-            const exp = pae.getExpression();
-            if (
-              exp.getSourceFile().getFilePath() ===
-                rn.getSourceFile().getFilePath() &&
-              exp.getStart() === rn.getStart() &&
-              pae.getNameNode().getText() === oldName
-            ) {
-              const nm = pae.getNameNode();
-              if (
-                addEdit29(
-                  rn.getSourceFile().getFilePath(),
-                  nm.getStart(),
-                  nm.getEnd(),
-                  newName,
-                )
-              )
-                extraRenamed++;
-            }
-          }
-        }
-      }
-    }
-  };
-  for (const f of project.getSourceFiles()) {
-    const fpath = f.getFilePath();
-    if (!f.getFullText().includes(oldName)) continue;
-    for (const ol of f.getDescendantsOfKind(
-      ts.SyntaxKind.ObjectLiteralExpression,
-    )) {
-      const provideProp = ol.getProperty('provide');
-      if (
-        !provideProp ||
-        provideProp.getKind() !== ts.SyntaxKind.PropertyAssignment
-      )
-        continue;
-      const provideVal = provideProp
-        .asKindOrThrow(ts.SyntaxKind.PropertyAssignment)
-        .getInitializer();
-      if (!provideVal || !tokenResolvesToOwner32(provideVal)) continue;
-      const uvProp = ol.getProperty('useValue');
-      if (uvProp && uvProp.getKind() === ts.SyntaxKind.PropertyAssignment) {
-        const uv = uvProp
-          .asKindOrThrow(ts.SyntaxKind.PropertyAssignment)
-          .getInitializer();
-        if (uv) handleUseValue32(uv, fpath);
-      }
-      const ufProp = ol.getProperty('useFactory');
-      if (ufProp) {
-        let factoryNode: Node | undefined;
-        if (ufProp.getKind() === ts.SyntaxKind.PropertyAssignment) {
-          factoryNode = ufProp
-            .asKindOrThrow(ts.SyntaxKind.PropertyAssignment)
-            .getInitializer();
-        } else if (ufProp.getKind() === ts.SyntaxKind.MethodDeclaration) {
-          factoryNode = ufProp;
-        }
-        if (factoryNode) {
-          const objs32: ObjectLiteralExpression[] = [];
-          collectObjs32(factoryNode, objs32);
-          for (const o of objs32) renameObjLitKey32(o, fpath);
-        }
-      }
-    }
-  }
-
-  for (const [fpath, m] of edits29) {
-    const tgt = project.getSourceFile(fpath);
-    if (!tgt) continue;
-    const ranges = [...m.values()].sort((a, b) => b.start - a.start);
-    for (const r of ranges) tgt.replaceText([r.start, r.end], r.text);
-  }
-  totalReferences += extraRenamed;
-
-  // tooldev22 residual proof. After the rename, scan the SAME widened project
-  // for any surviving member access `.oldName`. One that still resolves to a
-  // real declaration is a DIFFERENT same-named member (correctly preserved —
-  // NOT residual). One whose name node no longer resolves to ANY declaration
-  // is a true reference the rename failed to cover (e.g. a file that escaped
-  // project scope) and is reported with file:line + why. Empty ⇒ ONE call
-  // covered every true reference. Pre-filtered by a cheap text test so this
-  // stays O(files-mentioning-name), not O(whole package).
-  const residualUnresolved: CrossFileRenameResult['residualUnresolved'] = [];
-  for (const f of project.getSourceFiles()) {
-    if (!f.getFullText().includes(oldName)) continue;
-    for (const pae of f.getDescendantsOfKind(ts.SyntaxKind.PropertyAccessExpression)) {
-      const nn = pae.getNameNode();
-      if (nn.getText() !== oldName) continue;
-      let resolved = false;
-      try {
-        resolved = (nn.getSymbol()?.getDeclarations().length ?? 0) > 0;
-      } catch {
-        resolved = false;
-      }
-      if (resolved) continue;
-      const lc = f.getLineAndColumnAtPos(nn.getStart());
-      const rel = path.relative(repoRoot, f.getFilePath()).split(path.sep).join('/');
-      residualUnresolved.push({
-        at: `${rel}:${lc.line}`,
-        reason:
-          `unresolved member access '.${oldName}' survived the rename — ` +
-          'a true reference the engine could not AST-resolve (out of project scope?)',
-      });
-    }
-  }
 
   const changes = new Map<string, string>();
   const validations: CrossFileRenameResult['validations'] = [];
@@ -834,14 +207,7 @@ export async function renameSymbolCrossFile(
     validations.push({ file: rel, ok: v.ok, introduced: v.introduced });
     changes.set(rel, after);
   }
-  return {
-    symbol: `${oldName} -> ${newName}`,
-    changes,
-    totalReferences,
-    renamedRefs: totalReferences,
-    residualUnresolved,
-    validations,
-  };
+  return { symbol: `${oldName} -> ${newName}`, changes, totalReferences, validations };
 }
 
 // ── v3: import + object-property semantic ops (adopted from Codex's
@@ -849,6 +215,7 @@ export async function renameSymbolCrossFile(
 //        cannot persist broken code, unlike the original). ───────────────────
 
 const TS_EXT = new Set(['.ts', '.tsx', '.mts', '.cts', '.js', '.jsx', '.mjs', '.cjs']);
+const RESERVED_IDENTIFIER_KEYS = new Set('await break case catch class const continue debugger default delete do else enum export extends false finally for function if import in instanceof new null return super switch this throw true try typeof var void while with yield'.split(' '));
 
 function assertTs(file: string, op: string): void {
   const i = file.lastIndexOf('.');
@@ -863,6 +230,60 @@ async function tsmProject(file: string, text: string) {
     compilerOptions: { allowJs: true, jsx: ts.JsxEmit.Preserve, noEmit: true },
   });
   return project.createSourceFile(file, text, { overwrite: true });
+}
+
+function preferredImportQuote(original: string): string {
+  const counts: Record<string, number> = { "'": 0, '"': 0 };
+  for (const match of original.matchAll(/\bfrom\s+(['"])[^'"\n]+?\1/g)) {
+    counts[match[1] ?? "'"] = (counts[match[1] ?? "'"] ?? 0) + 1;
+  }
+  for (const match of original.matchAll(/^\s*import\s+(['"])[^'"\n]+?\1/gm)) {
+    counts[match[1] ?? "'"] = (counts[match[1] ?? "'"] ?? 0) + 1;
+  }
+  return (counts["'"] ?? 0) >= (counts['"'] ?? 0) ? "'" : '"';
+}
+
+function escapeRegExp(value: string): string {
+  const slash = String.fromCharCode(92);
+  const specialChars = new Set([
+    '^',
+    '$',
+    '.',
+    '*',
+    '+',
+    '?',
+    '(',
+    ')',
+    '[',
+    ']',
+    '{',
+    '}',
+    '|',
+    slash,
+  ]);
+  let escaped = '';
+  for (const char of value) {
+    escaped += specialChars.has(char) ? slash + char : char;
+  }
+  return escaped;
+}
+
+function normalizeModuleSpecifierQuote(
+  text: string,
+  moduleSpecifier: string,
+  quote: string,
+): string {
+  if (quote !== "'" || moduleSpecifier.includes("'")) return text;
+  const escapedModule = escapeRegExp(moduleSpecifier);
+  return text
+    .replace(
+      new RegExp('\\bfrom\\s+"' + escapedModule + '"', 'g'),
+      "from '" + moduleSpecifier + "'",
+    )
+    .replace(
+      new RegExp('\\bimport\\s+"' + escapedModule + '"', 'g'),
+      "import '" + moduleSpecifier + "'",
+    );
 }
 
 export interface SemanticEditResult {
@@ -914,6 +335,7 @@ export async function addNamedImport(
   moduleSpecifier: string,
   name: string,
   alias?: string,
+  typeOnly = false,
 ): Promise<SemanticEditResult> {
   assertTs(file, 'add_import');
   const sf = await tsmProject(file, original);
@@ -929,13 +351,16 @@ export async function addNamedImport(
     const exists = decls[0]
       .getNamedImports()
       .some(
-        (ni) => ni.getName() === name && (ni.getAliasNode()?.getText() ?? ni.getName()) === local,
+        (ni) =>
+          ni.getName() === name &&
+          (ni.getAliasNode()?.getText() ?? ni.getName()) === local &&
+          ni.isTypeOnly() === typeOnly,
       );
     if (exists) {
       return {
         newText: original,
         validation: validate(file, original, original),
-        detail: { action: 'already-present', moduleSpecifier, name },
+        detail: { action: 'already-present', moduleSpecifier, name, typeOnly },
       };
     }
   }
@@ -943,17 +368,25 @@ export async function addNamedImport(
   return guardedMutation(
     file,
     original,
-    { action, moduleSpecifier, name, alias: alias ?? null },
+    { action, moduleSpecifier, name, alias: alias ?? null, typeOnly },
     () => {
       if (decls.length === 0) {
         sf.addImportDeclaration({
           moduleSpecifier,
-          namedImports: [alias ? { name, alias } : { name }],
+          namedImports: [
+            alias ? { name, alias, isTypeOnly: typeOnly } : { name, isTypeOnly: typeOnly },
+          ],
         });
       } else {
-        decls[0].addNamedImport(alias ? { name, alias } : { name });
+        decls[0].addNamedImport(
+          alias ? { name, alias, isTypeOnly: typeOnly } : { name, isTypeOnly: typeOnly },
+        );
       }
-      return sf.getFullText();
+      return normalizeModuleSpecifierQuote(
+        sf.getFullText(),
+        moduleSpecifier,
+        preferredImportQuote(original),
+      );
     },
   );
 }
@@ -1034,96 +467,130 @@ export async function replacePropertyValue(
   });
 }
 
+/**
+ * Rename an object property key while preserving its initializer/value exactly.
+ * The operator is intentionally narrow: identifiers only for the new key,
+ * optional selector scope, and ambiguous matches are refused.
+ */
+export async function renamePropertyKey(
+  file: string,
+  original: string,
+  property: string,
+  newKey: string,
+  selector?: string,
+): Promise<SemanticEditResult> {
+  assertTs(file, 'rename_property_key');
+  if (!/^[A-Za-z_$][A-Za-z0-9_$]*$/.test(newKey) || RESERVED_IDENTIFIER_KEYS.has(newKey)) {
+    throw new Error(`invalid new key identifier: ${JSON.stringify(newKey)}`);
+  }
+  const { SyntaxKind } = await import('ts-morph');
+  const sf = await tsmProject(file, original);
+  const scopeNode = selector ? resolveSymbol(sf, selector).node : sf;
+  const hits = scopeNode.getDescendantsOfKind(SyntaxKind.PropertyAssignment).filter((pa) => {
+    const nameNode = pa.getNameNode();
+    const kind = nameNode.getKind();
+    const name =
+      kind === SyntaxKind.Identifier ||
+      kind === SyntaxKind.StringLiteral ||
+      kind === SyntaxKind.NumericLiteral
+        ? nameNode.getText().replace(/^['"]|['"]$/g, '')
+        : null;
+    return name === property;
+  });
+  if (hits.length === 0) {
+    throw new Error(`property "${property}" not found${selector ? ` in ${selector}` : ''}`);
+  }
+  if (hits.length > 1) {
+    throw new Error(
+      `property "${property}" matched ${hits.length} assignments (lines ${hits
+        .map((hit) => hit.getStartLineNumber())
+        .join(', ')}); pass a selector to disambiguate`,
+    );
+  }
+  const hit = hits[0];
+  const nameNode = hit.getNameNode();
+  const initializerText = hit.getInitializerOrThrow().getText();
+  const line = hit.getStartLineNumber();
+  return guardedMutation(
+    file,
+    original,
+    { property, newKey, selector: selector ?? null, line, preservedValue: initializerText },
+    () => {
+      nameNode.replaceWithText(newKey);
+      return sf.getFullText();
+    },
+  );
+}
+
+/**
+ * Find a CallExpression by callee name/text and optional selector scope;
+ * wrap exactly that call expression as `await <callText>`, preserving
+ * callee, arguments, and call text. Refuses missing target, ambiguity,
+ * already-awaited call, non-async context, and syntax regression.
+ */
+export async function addAwaitToCall(
+  file: string,
+  original: string,
+  callee: string,
+  selector?: string,
+): Promise<SemanticEditResult> {
+  assertTs(file, 'add_await_to_call');
+  const { SyntaxKind, Node } = await import('ts-morph');
+  const sf = await tsmProject(file, original);
+  const scopeNode = selector ? resolveSymbol(sf, selector).node : sf;
+  const calls = scopeNode.getDescendantsOfKind(SyntaxKind.CallExpression).filter((call) => {
+    const expr = call.getExpression();
+    return (
+      expr.getText() === callee ||
+      (Node.isPropertyAccessExpression(expr) && expr.getName() === callee)
+    );
+  });
+  if (calls.length === 0) {
+    throw new Error(`call "${callee}" not found${selector ? ` in ${selector}` : ''}`);
+  }
+  if (calls.length > 1) {
+    throw new Error(
+      `call "${callee}" matched ${calls.length} call expressions (lines ${calls
+        .map((c) => c.getStartLineNumber())
+        .join(', ')}); pass a selector to disambiguate`,
+    );
+  }
+  const call = calls[0];
+  if (call.getParentIfKind(SyntaxKind.AwaitExpression)) {
+    throw new Error(`call "${callee}" is already awaited`);
+  }
+  const functionScope = call.getFirstAncestor(
+    (node) =>
+      Node.isFunctionDeclaration(node) ||
+      Node.isFunctionExpression(node) ||
+      Node.isArrowFunction(node) ||
+      Node.isMethodDeclaration(node),
+  ) as
+    | import('ts-morph').FunctionDeclaration
+    | import('ts-morph').FunctionExpression
+    | import('ts-morph').ArrowFunction
+    | import('ts-morph').MethodDeclaration
+    | undefined;
+  if (
+    !functionScope
+      ?.getModifiers()
+      .some((modifier) => modifier.getKind() === SyntaxKind.AsyncKeyword)
+  ) {
+    throw new Error(`call "${callee}" is not inside an async function or method`);
+  }
+  const line = call.getStartLineNumber();
+  const callText = call.getText();
+  return guardedMutation(
+    file,
+    original,
+    { callee, selector: selector ?? null, line, callText },
+    () => {
+      call.replaceWithText(`await ${callText}`);
+      return sf.getFullText();
+    },
+  );
+}
+
 /** Minimal unified-style line diff — for PREVIEW DISPLAY only (the edit
  * itself is atomic; this is just so the agent/human can verify before
  * commit, addressing the "blind edit" failure mode). */
-export function previewDiff(before: string, after: string, label: string): string {
-  const a = before.split('\n');
-  const b = after.split('\n');
-  // simple LCS-free context diff: find first/last divergence
-  let head = 0;
-  while (head < a.length && head < b.length && a[head] === b[head]) head++;
-  let tailA = a.length - 1;
-  let tailB = b.length - 1;
-  while (tailA >= head && tailB >= head && a[tailA] === b[tailB]) {
-    tailA--;
-    tailB--;
-  }
-  const ctx = 2;
-  const from = Math.max(0, head - ctx);
-  const lines: string[] = [`--- ${label} (before)`, `+++ ${label} (after)`];
-  for (let i = from; i < head; i++) lines.push(`  ${a[i]}`);
-  for (let i = head; i <= tailA; i++) lines.push(`- ${a[i]}`);
-  for (let i = head; i <= tailB; i++) lines.push(`+ ${b[i]}`);
-  for (let i = tailA + 1; i <= Math.min(a.length - 1, tailA + ctx); i++) lines.push(`  ${a[i]}`);
-  return lines.join('\n');
-}
-
-// ─── Atomic char-level diff ──────────────────────────────────────────────
-// previewDiff above is the line-oriented +/- block the CLI harness already
-// paints (whole line red / whole line green even for a 1-char change).
-// characterDiff below is the TRUE atomic proof: preserved chars stay
-// neutral, removed chars are red inside [- -], added chars green inside
-// {+ +}. A whole line only shows as line-removed/added when the whole line
-// was genuinely born or destroyed. ANSI-colored AND bracket-marked so it
-// stays legible on no-color terminals (git --word-diff convention). This
-// is returned in every mutating tool's payload, so the operator SEES the
-// atomicity in the tool output even though the harness's own +/- block
-// (which we cannot disable) keeps rendering line-level beside it.
-
-const ESC = '[';
-const RESET = `${ESC}0m`;
-const RED = `${ESC}31m`;
-const GREEN = `${ESC}32m`;
-const DIM = `${ESC}2m`;
-
-// LCS char-diff is O(n*m); only the divergent line block is fed to it, but
-// cap it so a genuine large rewrite falls back to line markers (honest
-// there — the whole block really did change) instead of blowing memory.
-const CHAR_DIFF_CAP = 6000;
-
-/**
- * Inline [-removed-]{+added+} diff. Operates on GRAPHEME CLUSTERS via
- * textunit.graphemeDiff — never splits a surrogate pair, combining mark or
- * ZWJ sequence, so the rendered proof can't show half an emoji (the silent
- * failure a UTF-16-index diff produces). The accent/emoji smoke cases lock
- * this in.
- */
-function renderCharDiff(oldStr: string, newStr: string): string {
-  return graphemeDiff(oldStr, newStr, {
-    del: (s) => `${RED}[-${s}-]${RESET}`,
-    add: (s) => `${GREEN}{+${s}+}${RESET}`,
-  });
-}
-
-/**
- * Character-granular inline diff of `before`→`after`. Trims common leading
- * and trailing lines, char-diffs only the divergent block, and prints it
- * with 2 lines of neutral context for orientation.
- */
-export function characterDiff(before: string, after: string, label: string): string {
-  if (before === after) return `${DIM}= ${label} (no change)${RESET}`;
-  const a = before.split('\n');
-  const b = after.split('\n');
-  let head = 0;
-  while (head < a.length && head < b.length && a[head] === b[head]) head++;
-  let tailA = a.length - 1;
-  let tailB = b.length - 1;
-  while (tailA >= head && tailB >= head && a[tailA] === b[tailB]) {
-    tailA--;
-    tailB--;
-  }
-  const oldBlock = a.slice(head, tailA + 1).join('\n');
-  const newBlock = b.slice(head, tailB + 1).join('\n');
-  const ctx = 2;
-  const out: string[] = [`${DIM}--- ${label} (atomic char-level)${RESET}`];
-  for (let i = Math.max(0, head - ctx); i < head; i++) out.push(`  ${a[i]}`);
-  if (oldBlock.length + newBlock.length > CHAR_DIFF_CAP) {
-    for (let i = head; i <= tailA; i++) out.push(`${RED}- ${a[i]}${RESET}`);
-    for (let i = head; i <= tailB; i++) out.push(`${GREEN}+ ${b[i]}${RESET}`);
-  } else {
-    for (const ln of renderCharDiff(oldBlock, newBlock).split('\n')) out.push(`  ${ln}`);
-  }
-  for (let i = tailA + 1; i <= Math.min(a.length - 1, tailA + ctx); i++) out.push(`  ${a[i]}`);
-  return out.join('\n');
-}

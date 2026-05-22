@@ -1,4 +1,3 @@
-// PULSE:OK — low-level WAHA transport only. Per-workspace daily send limits are enforced upstream
 // in WhatsAppService.sendMessage() through PlanLimitsService.trackMessageSend().
 import { Injectable, Optional } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -9,24 +8,21 @@ import {
   isPlaceholderContactName as isPlaceholderContactNameValue,
   extractPhoneFromChatId as normalizePhoneFromChatId,
 } from '../whatsapp-normalization.util';
-import {
-  normalizeWahaSessionStatus,
-  mapWahaSessionStatus,
-  resolveWahaSessionState,
-} from './waha-types';
 import { WahaSessionProvider } from './waha-session.provider';
 
-export type {
-  SessionStatus,
-  QrCodeResponse,
-  WahaChatSummary,
-  WahaChatMessage,
-  WahaLidMapping,
-  WahaSessionOverview,
-  WahaRuntimeConfigDiagnostics,
-  WahaSessionConfigDiagnostics,
-} from './waha-types';
-export { normalizeWahaSessionStatus, mapWahaSessionStatus, resolveWahaSessionState };
+type WahaChatPayload = {
+  chats?: unknown[];
+  [key: string]: unknown;
+};
+
+type WahaChatEntry = {
+  id?: string;
+  chatId?: string;
+  contactId?: string;
+  phone?: string;
+  contact?: { phone?: string; [key: string]: unknown };
+  [key: string]: unknown;
+};
 
 const S_RE = /\s+/;
 
@@ -387,22 +383,22 @@ export class WahaProvider extends WahaSessionProvider {
     if (Array.isArray(payload)) {
       return payload;
     }
-    const p = payload as Record<string, unknown> | undefined;
+    const p = payload as WahaChatPayload | undefined;
     if (Array.isArray(p?.chats)) {
-      return p.chats as unknown[];
+      return p.chats;
     }
     return [];
   }
 
   private getChatDedupKey(chat: unknown): string {
-    const c = chat as Record<string, unknown>;
-    const cContact = c?.contact as Record<string, unknown> | undefined;
+    const c = chat as WahaChatEntry;
+    const cContact = c?.contact;
     const candidates = [c?.id, c?.chatId, c?.contactId, c?.phone, cContact?.phone];
     const strMatch = candidates.find((v): v is string => typeof v === 'string' && v.trim() !== '');
     if (strMatch) {
       return strMatch.trim();
     }
-    const numMatch = candidates.find((v): v is number => typeof v === 'number');
+    const numMatch = candidates.find((v) => typeof v === 'number');
     return numMatch !== undefined ? String(numMatch) : '';
   }
 

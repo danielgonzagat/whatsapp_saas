@@ -2,7 +2,6 @@
 
 import { kloelT } from '@/lib/i18n/t';
 import { colors } from '@/lib/design-tokens';
-// PULSE:OK — AI generate POST navigates to editor on success; no SWR reads to invalidate.
 
 import { IC } from '@/components/canvas/CanvasIcons';
 import { FormatCard } from '@/components/canvas/FormatCard';
@@ -10,10 +9,9 @@ import { apiFetch } from '@/lib/api';
 import {
   FORMAT_DATA,
   type FormatItem,
-  PRODUCT_TEMPLATES,
-  type ProductTemplate,
   TEMPLATE_TAGS,
 } from '@/lib/canvas-formats';
+import { useProductTemplates, type ProductTemplate } from '@/hooks/useProductTemplates';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { mutate } from 'swr';
@@ -23,6 +21,7 @@ const S = "var(--font-sora), 'Sora', sans-serif";
 /** Canvas modelos. */
 export default function CanvasModelos() {
   const router = useRouter();
+  const { templates: PRODUCT_TEMPLATES } = useProductTemplates();
 
   const [activeTag, setActiveTag] = useState<string | null>(null);
   const [aiPrompt, setAiPrompt] = useState('');
@@ -75,7 +74,7 @@ export default function CanvasModelos() {
             alignItems: 'center',
             gap: 10,
             background: 'var(--app-bg-card)',
-            border: '1px solid #1C1C1F',
+            border: `1px solid ${colors.canvas.border}`,
             borderRadius: 6,
             padding: '10px 16px',
           }}
@@ -242,9 +241,9 @@ function TemplateCard({
       onMouseLeave={() => setH(false)}
       style={{
         background: h
-          ? '#151517' /* PULSE_VISUAL_OK: intermediate surface tone */
+          ? colors.canvas.surfaceAlt
           : colors.background.surface,
-        border: `1px solid ${h ? `${c1}35` : '#1C1C1F'}`,
+        border: `1px solid ${h ? `${c1}35` : colors.canvas.border}`,
         borderRadius: 6,
         padding: 0,
         cursor: 'pointer',
@@ -263,7 +262,7 @@ function TemplateCard({
           alignItems: 'center',
           justifyContent: 'center',
           background:
-            '#0D0D0F' /* PULSE_VISUAL_OK: intermediate surface tone */ /* PULSE_VISUAL_OK: intermediate surface tone */,
+            colors.canvas.void,
           position: 'relative',
           overflow: 'hidden',
         }}
@@ -274,7 +273,7 @@ function TemplateCard({
             width: isStory ? 48 : 72,
             height: isStory ? 85 : 72,
             background: 'var(--app-bg-primary)',
-            borderRadius: 3,
+            borderRadius: 4,
             position: 'relative',
             boxShadow: `0 2px 12px ${c1}20`,
             overflow: 'hidden',
@@ -289,7 +288,7 @@ function TemplateCard({
               width: '35%',
               height: 2,
               background: c1,
-              borderRadius: 1,
+              borderRadius: 4,
             }}
           />
           {/* Text line 1 */}
@@ -301,7 +300,7 @@ function TemplateCard({
               width: '60%',
               height: 4,
               background: colors.text.silver,
-              borderRadius: 1,
+              borderRadius: 4,
               opacity: 0.8,
             }}
           />
@@ -314,7 +313,7 @@ function TemplateCard({
               width: '40%',
               height: 2,
               background: colors.text.muted,
-              borderRadius: 1,
+              borderRadius: 4,
               opacity: 0.5,
             }}
           />
@@ -327,7 +326,7 @@ function TemplateCard({
               width: '30%',
               height: 5,
               background: c1,
-              borderRadius: 1,
+              borderRadius: 4,
             }}
           />
         </div>

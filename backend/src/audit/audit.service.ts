@@ -3,14 +3,12 @@ import { Prisma } from '@prisma/client';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { PrismaService } from '../prisma/prisma.service';
 
-interface AuditLogCreateClient {
-  auditLog: {
-    create(args: Prisma.AuditLogCreateArgs): Promise<unknown>;
-  };
-}
-
 /** Audit service. */
 @Injectable()
+/**
+ * @cluster whatsapp_saas/backend/audit
+ * L11 multi-agent TaskGraph annotation (batched by tools/auto-pr/batch-job.mjs).
+ */
 export class AuditService {
   private readonly logger = new Logger(AuditService.name);
 
@@ -34,7 +32,7 @@ export class AuditService {
    * Falls back to the default prisma client when no tx is provided.
    */
   async logWithTx(
-    tx: AuditLogCreateClient,
+    tx: Prisma.TransactionClient,
     data: {
       workspaceId: string;
       action: string;
@@ -51,11 +49,11 @@ export class AuditService {
         workspaceId: data.workspaceId,
         action: data.action,
         resource: data.resource,
-        resourceId: data.resourceId,
-        agentId: data.agentId,
+        ...(data.resourceId !== undefined ? { resourceId: data.resourceId } : {}),
+        ...(data.agentId !== undefined ? { agentId: data.agentId } : {}),
         details: (data.details ?? {}) as Prisma.InputJsonValue,
-        ipAddress: data.ipAddress,
-        userAgent: data.userAgent,
+        ...(data.ipAddress !== undefined ? { ipAddress: data.ipAddress } : {}),
+        ...(data.userAgent !== undefined ? { userAgent: data.userAgent } : {}),
       },
     });
   }
@@ -77,11 +75,11 @@ export class AuditService {
           workspaceId: data.workspaceId,
           action: data.action,
           resource: data.resource,
-          resourceId: data.resourceId,
-          agentId: data.agentId,
+          ...(data.resourceId !== undefined ? { resourceId: data.resourceId } : {}),
+          ...(data.agentId !== undefined ? { agentId: data.agentId } : {}),
           details: (data.details ?? {}) as Prisma.InputJsonValue,
-          ipAddress: data.ipAddress,
-          userAgent: data.userAgent,
+          ...(data.ipAddress !== undefined ? { ipAddress: data.ipAddress } : {}),
+          ...(data.userAgent !== undefined ? { userAgent: data.userAgent } : {}),
         },
       });
     } catch (error: unknown) {
@@ -100,11 +98,11 @@ export class AuditService {
             workspaceId: data.workspaceId,
             action: data.action,
             resource: data.resource,
-            resourceId: data.resourceId,
-            agentId: data.agentId,
+            ...(data.resourceId !== undefined ? { resourceId: data.resourceId } : {}),
+            ...(data.agentId !== undefined ? { agentId: data.agentId } : {}),
             details: (data.details ?? {}) as Prisma.InputJsonValue,
-            ipAddress: data.ipAddress,
-            userAgent: data.userAgent,
+            ...(data.ipAddress !== undefined ? { ipAddress: data.ipAddress } : {}),
+            ...(data.userAgent !== undefined ? { userAgent: data.userAgent } : {}),
           },
         });
       } catch (retryError: unknown) {

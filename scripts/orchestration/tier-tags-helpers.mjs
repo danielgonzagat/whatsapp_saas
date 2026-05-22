@@ -1,4 +1,19 @@
 // Helpers extracted from tier-tags-emitter
+import { existsSync, readFileSync } from 'node:fs';
+import { resolve, join, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+// Lost in the decomposition that split this file out of tier-tags-emitter:
+// the constant stayed in the parent while the consumer moved here. Repo root
+// is scripts/orchestration/../.. — same as the parent's REPO_ROOT.
+const PULSE_MANIFEST_PATH = join(
+  resolve(join(dirname(fileURLToPath(import.meta.url)), '..', '..')),
+  'pulse.manifest.json',
+);
+
+// Also lost in the same decomposition (was a parent-module constant).
+const SHELL_SIZE_THRESHOLD = 500;
+
 export function buildFileSignalMap(breaks, repoRoot) {
   const map = new Map();
   for (const b of breaks) {
@@ -6,7 +21,7 @@ export function buildFileSignalMap(breaks, repoRoot) {
     if (file.startsWith(repoRoot + '/')) {
       file = file.slice(repoRoot.length + 1);
     }
-    if (!file) continue;
+    if (!file) {continue;}
 
     let entry = map.get(file);
     if (!entry) {
@@ -50,15 +65,15 @@ export function buildFileSignalMap(breaks, repoRoot) {
 }
 
 export function buildModuleStateMap() {
-  if (!existsSync(PULSE_MANIFEST_PATH)) return new Map();
+  if (!existsSync(PULSE_MANIFEST_PATH)) {return new Map();}
   try {
     const manifest = JSON.parse(readFileSync(PULSE_MANIFEST_PATH, 'utf8'));
     const map = new Map();
     for (const mod of manifest.modules || []) {
-      if (mod.name) map.set(mod.name.toLowerCase(), mod.state);
+      if (mod.name) {map.set(mod.name.toLowerCase(), mod.state);}
     }
     for (const mod of manifest.legacyModules || []) {
-      if (mod.name) map.set(mod.name.toLowerCase(), mod.state);
+      if (mod.name) {map.set(mod.name.toLowerCase(), mod.state);}
     }
     return map;
   } catch {
@@ -75,14 +90,14 @@ export function inferTier(relPath, signalEntry, testsExist, sourceSize, entryFie
   const hardSignals = deadHandlers + stubSignals + fakeData;
 
   const evidence = [];
-  if (deadHandlers > 0) evidence.push(`pulse:${deadHandlers} dead-handler(s)`);
-  if (stubSignals > 0) evidence.push(`pulse:${stubSignals} stub signal(s)`);
-  if (fakeData > 0) evidence.push(`pulse:${fakeData} fake-data signal(s)`);
-  if (weakSignals > 0) evidence.push(`pulse:${weakSignals} weak signal(s)`);
+  if (deadHandlers > 0) {evidence.push(`pulse:${deadHandlers} dead-handler(s)`);}
+  if (stubSignals > 0) {evidence.push(`pulse:${stubSignals} stub signal(s)`);}
+  if (fakeData > 0) {evidence.push(`pulse:${fakeData} fake-data signal(s)`);}
+  if (weakSignals > 0) {evidence.push(`pulse:${weakSignals} weak signal(s)`);}
   if (totalBreaks > 0 && evidence.length === 0) {
     evidence.push(`pulse:${totalBreaks} diagnostic break(s)`);
   }
-  if (testsExist) evidence.push('test:exists');
+  if (testsExist) {evidence.push('test:exists');}
 
   if (sourceSize < SHELL_SIZE_THRESHOLD) {
     return {

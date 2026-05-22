@@ -1,10 +1,9 @@
 import { InjectRedis } from '@nestjs-modules/ioredis';
 import { Injectable, Logger } from '@nestjs/common';
-import { Queue } from 'bullmq';
 import type { Redis } from 'ioredis';
 import { forEachSequential } from '../common/async-sequence';
 import { PrismaService } from '../prisma/prisma.service';
-import { connection, queueOptions, queueRegistry } from '../queue/queue';
+import { getDlqQueue, queueRegistry } from '../queue/queue';
 // Health service only reads queue state — no jobs added, no jobId/deduplication needed.
 
 const healthLogger = new Logger('HealthService');
@@ -30,10 +29,7 @@ export class HealthService {
 
     await forEachSequential(Object.values(queueRegistry), async (queue) => {
       const mainCounts = await queue.getJobCounts('waiting', 'active', 'delayed', 'failed');
-      const dlq = new Queue(`${queue.name}-dlq`, {
-        ...queueOptions,
-        connection,
-      });
+      const dlq = getDlqQueue(queue);
       const dlqCounts = await dlq.getJobCounts('waiting', 'active', 'delayed', 'failed');
 
       totalWaiting += mainCounts.waiting || 0;
@@ -89,7 +85,7 @@ export class HealthService {
       metricsList.forEach((e) => {
         const [ok, lat] = e.split(':');
         if (ok === '1') {
-          successCount++;
+          successCount += 1;
         }
         totalLatency += Number(lat);
       });
@@ -100,7 +96,7 @@ export class HealthService {
     // DB ping (leve)
     let dbOk = true;
     try {
-      await this.prisma.$queryRaw`SELECT 1`;
+      await this.prisma.$queryRaw<{ '?column?': 1 }[]>`SELECT 1`;
     } catch {
       dbOk = false;
     }
@@ -114,6 +110,66 @@ export class HealthService {
       lastCheck,
       db: dbOk ? 'up' : 'down',
       ...queueSnapshot,
+    };
+  }
+
+  /** Run readiness checks for critical deps. Each returns up/down with latency. */
+  async runReadinessChecks(): Promise<
+    Array<{ name: string; status: 'up' | 'down'; latencyMs?: number; error?: string }>
+  > {
+    const checks: Array<{
+      name: string;
+      status: 'up' | 'down';
+      latencyMs?: number;
+      error?: string;
+    }> = [];
+    const dbStart = Date.now();
+    try {
+      await this.prisma.$queryRaw`SELECT 1`;
+      checks.push({ name: 'database', status: 'up', latencyMs: Date.now() - dbStart });
+    } catch (err: unknown) {
+      checks.push({
+        name: 'database',
+        status: 'down',
+        latencyMs: Date.now() - dbStart,
+        error: err instanceof Error ? err.message : 'unknown',
+      });
+    }
+    const redisStart = Date.now();
+    try {
+      await this.redis.ping();
+      checks.push({ name: 'redis', status: 'up', latencyMs: Date.now() - redisStart });
+    } catch (err: unknown) {
+      checks.push({
+        name: 'redis',
+        status: 'down',
+        latencyMs: Date.now() - redisStart,
+        error: err instanceof Error ? err.message : 'unknown',
+      });
+    }
+    return checks;
+  }
+
+  /** Deep diagnostic: readiness + queue snapshot + node runtime info. */
+  async runDeepDiagnostic() {
+    const [readinessChecks, queueSnapshot] = await Promise.all([
+      this.runReadinessChecks(),
+      this.getQueueSnapshot(),
+    ]);
+    const memUsage = process.memoryUsage();
+    return {
+      timestamp: new Date().toISOString(),
+      uptimeSec: Math.round(process.uptime()),
+      readiness: readinessChecks,
+      queue: (queueSnapshot as Record<string, unknown>).queue ?? queueSnapshot,
+      runtime: {
+        nodeVersion: process.version,
+        platform: process.platform,
+        memory: {
+          heapUsedMb: Math.round(memUsage.heapUsed / 1024 / 1024),
+          rssMb: Math.round(memUsage.rss / 1024 / 1024),
+        },
+      },
     };
   }
 }

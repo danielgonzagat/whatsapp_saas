@@ -1,0 +1,45 @@
+{
+  "runId": "pr276-wave-1",
+  "concurrency": 3,
+  "timeoutSec": 5400,
+  "staggerMs": 12000,
+  "dir": "/Users/danielpenin/whatsapp_saas",
+  "skipPermissions": true,
+  "tasks": [
+    {
+      "id": "decomp-mailbox-gmail-oauth",
+      "title": "decomp mailbox-gmail-oauth 879->modules",
+      "promptFile": "/Users/danielpenin/whatsapp_saas/artifacts/opencode-fleet/pr276-w1-prompts/decomp-mailbox-gmail-oauth.md"
+    },
+    {
+      "id": "decomp-marketing-connect-controller",
+      "title": "decomp marketing-connect.controller 820->modules",
+      "promptFile": "/Users/danielpenin/whatsapp_saas/artifacts/opencode-fleet/pr276-w1-prompts/decomp-marketing-connect-controller.md"
+    },
+    {
+      "id": "decomp-official-marketing-page",
+      "title": "decomp OfficialMarketingChannelPage 992->subcomponents",
+      "promptFile": "/Users/danielpenin/whatsapp_saas/artifacts/opencode-fleet/pr276-w1-prompts/decomp-official-marketing-page.md"
+    },
+    {
+      "id": "decomp-globals-css",
+      "title": "decomp globals.css 1405->imports",
+      "promptFile": "/Users/danielpenin/whatsapp_saas/artifacts/opencode-fleet/pr276-w1-prompts/decomp-globals-css.md"
+    },
+    {
+      "id": "remove-emojis-backend",
+      "title": "remove 43 emojis in backend log/prompts",
+      "promptFile": "/Users/danielpenin/whatsapp_saas/artifacts/opencode-fleet/pr276-w1-prompts/remove-emojis-backend.md"
+    },
+    {
+      "id": "remove-suppressions-scripts-ops",
+      "title": "remove 1 biome-ignore + 12 nosemgrep in scripts/ops",
+      "promptFile": "/Users/danielpenin/whatsapp_saas/artifacts/opencode-fleet/pr276-w1-prompts/remove-suppressions-scripts-ops.md"
+    },
+    {
+      "id": "fix-hex-ferramentas",
+      "title": "replace HTML lupa entity with semantic icon",
+      "promptFile": "/Users/danielpenin/whatsapp_saas/artifacts/opencode-fleet/pr276-w1-prompts/fix-hex-ferramentas.md"
+    }
+  ]
+}

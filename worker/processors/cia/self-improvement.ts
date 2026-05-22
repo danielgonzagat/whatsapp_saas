@@ -1,5 +1,17 @@
+/**
+ * ARCHITECTURAL COHESION: This file is the Variant Reinforcement Learning
+ * Engine. It defines the variant families (followup, payment_recovery), the
+ * default message templates, the scoring algorithm (applyOutcomeScore), the
+ * epsilon-greedy selection strategy (pickVariant), and the variant outcome
+ * persistence (updateVariantOutcome). The decision log functions
+ * (recordDecisionLog, computeLearningSnapshot) are extracted to
+ * cia-decision-log.ts. What remains is the closed-loop learn→select→score
+ * system that cannot be split without breaking the feedback loop it models.
+ */
+
 import { randomUUID } from 'node:crypto';
 import type { Prisma, PrismaClient } from '@prisma/client';
+export { computeLearningSnapshot, recordDecisionLog } from './cia-decision-log';
 
 export type VariantFamily = 'followup' | 'payment_recovery';
 export type VariantOutcome = 'SENT' | 'REPLIED' | 'SOLD' | 'FAILED' | 'SKIPPED' | 'DISPATCHED';
@@ -78,6 +90,14 @@ function defaultVariantMap(family: VariantFamily): Map<string, MessageVariant> {
   );
 }
 
+function firstDefaultVariant(family: VariantFamily): MessageVariant {
+  const first = Array.from(defaultVariantMap(family).values())[0];
+  if (!first) {
+    throw new Error(`No CIA variant configured for ${family}`);
+  }
+  return first;
+}
+
 function score(alpha: number, beta: number, pulls: number, totalPulls: number): number {
   const mean = alpha / (alpha + beta);
   const uncertainty = Math.sqrt(Math.log(Math.max(2, totalPulls + 1)) / Math.max(1, pulls));
@@ -89,7 +109,9 @@ async function ensureBanditArms(
   workspaceId: string,
   family: VariantFamily,
 ): Promise<void> {
-  if (!prisma?.mindBanditArm?.upsert) return;
+  if (!prisma?.mindBanditArm?.upsert) {
+    return;
+  }
   for (const variant of DEFAULT_VARIANTS[family]) {
     await prisma.mindBanditArm.upsert({
       where: {
@@ -117,7 +139,7 @@ function variantFromArm(
   arm: { arm: string; alpha: number; beta: number; pulls: number; context: unknown },
 ): MessageVariant {
   const defaults = defaultVariantMap(family);
-  const fallback = defaults.get(arm.arm) || defaults.values().next().value;
+  const fallback = defaults.get(arm.arm) || firstDefaultVariant(family);
   const context =
     arm.context && typeof arm.context === 'object' ? (arm.context as Record<string, unknown>) : {};
   return {
@@ -129,6 +151,19 @@ function variantFromArm(
   };
 }
 
+export function resolveVariantByKey(family: VariantFamily, key: string): MessageVariant {
+  const variants = defaultVariantMap(family);
+  return variants.get(key) || firstDefaultVariant(family);
+}
+
+export function listVariantKeys(family: VariantFamily): string[] {
+  return Array.from(defaultVariantMap(family).keys());
+}
+
+/**
+ * @deprecated Decision authority migrated to MindService.resolveBestVariant via HTTP.
+ * Kept as local fallback when backend is unreachable. See ADR 0004.
+ */
 export async function pickVariant(
   prisma: PrismaClient,
   workspaceId: string,
@@ -149,62 +184,13 @@ export async function pickVariant(
       score(left.alpha, left.beta, left.pulls, totalPulls),
   )[0];
   if (!chosen) {
-    return defaultVariantMap(family).values().next().value;
+    return firstDefaultVariant(family);
   }
   await prisma.mindBanditArm.updateMany({
     where: { id: chosen.id, workspaceId, decisionType: decisionType(family) },
     data: { pulls: { increment: 1 } },
   });
   return variantFromArm(family, chosen);
-}
-
-interface DecisionLogInput {
-  workspaceId: string;
-  contactId?: string;
-  phone?: string;
-  variantKey?: string | null;
-  intent: string;
-  message?: string;
-  outcome: VariantOutcome;
-  priority?: number;
-  metadata?: Prisma.InputJsonObject;
-}
-
-export async function recordDecisionLog(prisma: PrismaClient, input: DecisionLogInput) {
-  if (!prisma?.kloelMemory?.create) return null;
-  const scope = input.contactId || input.phone || 'workspace';
-  return prisma.kloelMemory.create({
-    data: {
-      workspaceId: input.workspaceId,
-      key: `decision_log:${scope}:${Date.now()}:${randomUUID()}`,
-      value: {
-        variantKey: input.variantKey || null,
-        intent: input.intent,
-        message: input.message || null,
-        outcome: input.outcome,
-        priority: input.priority || null,
-        metadata: input.metadata || {},
-      },
-      category: 'decision_log',
-      type: input.intent,
-      content: input.message || input.intent,
-      metadata: {
-        contactId: input.contactId || null,
-        phone: input.phone || null,
-        outcome: input.outcome,
-        variantKey: input.variantKey || null,
-      },
-    },
-  });
-}
-
-function outcomeValue(outcome: VariantOutcome): 0 | 1 {
-  return outcome === 'SOLD' ||
-    outcome === 'REPLIED' ||
-    outcome === 'SENT' ||
-    outcome === 'DISPATCHED'
-    ? 1
-    : 0;
 }
 
 export async function updateVariantOutcome(
@@ -216,11 +202,14 @@ export async function updateVariantOutcome(
     outcome: VariantOutcome;
     revenue?: number;
   },
-) {
-  if (!prisma?.mindBanditArm?.upsert) return null;
-  const outcome = outcomeValue(input.outcome);
-  await ensureBanditArms(prisma, input.workspaceId, input.family);
-  return prisma.mindBanditArm.update({
+): Promise<void> {
+  if (!prisma?.mindBanditArm?.update) {
+    return;
+  }
+
+  const outcome = input.outcome === 'SOLD' || input.outcome === 'REPLIED' ? 1 : 0;
+
+  await prisma.mindBanditArm.update({
     where: {
       workspaceId_decisionType_arm: {
         workspaceId: input.workspaceId,
@@ -240,66 +229,4 @@ export async function updateVariantOutcome(
       },
     },
   });
-}
-
-type DecisionLogRow = { value: unknown; metadata?: unknown };
-
-function readOutcome(row: DecisionLogRow): { outcome: string; variantKey: string } {
-  const value =
-    row.value && typeof row.value === 'object' ? (row.value as Record<string, unknown>) : {};
-  const metadata =
-    row.metadata && typeof row.metadata === 'object'
-      ? (row.metadata as Record<string, unknown>)
-      : {};
-  return {
-    outcome: String(value.outcome || metadata.outcome || ''),
-    variantKey: String(value.variantKey || metadata.variantKey || ''),
-  };
-}
-
-function snapshotScore(outcome: string): number {
-  if (outcome === 'SOLD') return 10;
-  if (outcome === 'REPLIED') return 2;
-  if (outcome === 'SENT') return 1;
-  if (outcome === 'FAILED') return -2;
-  return 0;
-}
-
-export async function computeLearningSnapshot(
-  prisma: PrismaClient,
-  workspaceId: string,
-): Promise<LearningSnapshot> {
-  const rows = prisma?.kloelMemory?.findMany
-    ? await prisma.kloelMemory
-        .findMany({
-          where: { workspaceId, category: 'decision_log' },
-          orderBy: { createdAt: 'desc' },
-          take: 50,
-        })
-        .catch(() => [] as DecisionLogRow[])
-    : [];
-  const variantScores = new Map<string, number>();
-  let soldCount = 0;
-  let sentCount = 0;
-  let failedCount = 0;
-  for (const row of rows) {
-    const { outcome, variantKey } = readOutcome(row);
-    if (outcome === 'SOLD') soldCount += 1;
-    if (outcome === 'SENT' || outcome === 'REPLIED' || outcome === 'SOLD') sentCount += 1;
-    if (outcome === 'FAILED') failedCount += 1;
-    if (variantKey) {
-      variantScores.set(variantKey, (variantScores.get(variantKey) || 0) + snapshotScore(outcome));
-    }
-  }
-  const [topVariantKey, topVariantScore] = [...variantScores.entries()].sort(
-    (left, right) => right[1] - left[1],
-  )[0] || [null, 0];
-  return {
-    totalLogs: rows.length,
-    soldCount,
-    sentCount,
-    failedCount,
-    topVariantKey,
-    topVariantScore,
-  };
 }

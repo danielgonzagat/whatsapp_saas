@@ -5,12 +5,11 @@ import {
   HttpException,
   HttpStatus,
   Injectable,
-  Logger,
   OnModuleDestroy,
-  SetMetadata,
   UnauthorizedException,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
+import { StructuredLogger } from '../../logging/structured-logger';
 import { IS_PUBLIC_METADATA } from '../../auth/public.decorator';
 import { PrismaService } from '../../prisma/prisma.service';
 import { asProviderSettings } from '../../whatsapp/provider-settings.types';
@@ -19,20 +18,46 @@ import { asProviderSettings } from '../../whatsapp/provider-settings.types';
  * Decorator para marcar rotas como públicas do KLOEL
  */
 const KLOEL_PUBLIC_METADATA = ['kloel', 'public'].join('_');
-/** Kloel public. */
-export const KloelPublic = () => SetMetadata(KLOEL_PUBLIC_METADATA, true);
-
 /**
  * Decorator para definir rate limit customizado
  */
 const KLOEL_RATE_LIMIT_METADATA = ['kloel', 'rate', 'limit'].join('_');
-/** Kloel rate limit. */
-export const KloelRateLimit = (requests: number, windowMs: number) =>
-  SetMetadata(KLOEL_RATE_LIMIT_METADATA, { requests, windowMs });
 
 interface RateLimitEntry {
   count: number;
   resetAt: number;
+}
+
+type RequestRecord = Record<string, unknown>;
+
+interface KloelGuardRequest {
+  path?: string;
+  ip?: string;
+  headers: RequestRecord;
+  params?: RequestRecord;
+  body?: unknown;
+  user?: unknown;
+  workspace?: unknown;
+  userRole?: string;
+}
+
+function isRecord(value: unknown): value is RequestRecord {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function readStringProperty(source: unknown, key: string): string | undefined {
+  if (!isRecord(source)) {
+    return undefined;
+  }
+  const value = source[key];
+  return typeof value === 'string' && value.trim() ? value : undefined;
+}
+
+function getWorkspaceId(request: KloelGuardRequest): string | undefined {
+  return (
+    readStringProperty(request.params, 'workspaceId') ??
+    readStringProperty(request.body, 'workspaceId')
+  );
 }
 
 /**
@@ -46,10 +71,10 @@ interface RateLimitEntry {
  */
 @Injectable()
 export class KloelSecurityGuard implements CanActivate, OnModuleDestroy {
-  private readonly logger = new Logger(KloelSecurityGuard.name);
+  private readonly logger = StructuredLogger.from(KloelSecurityGuard.name);
   private rateLimitCache: Map<string, RateLimitEntry> = new Map();
 
-  private cleanupInterval?: NodeJS.Timeout;
+  private cleanupInterval?: NodeJS.Timeout | undefined;
 
   // Rate limits padrão
   private readonly DEFAULT_RATE_LIMIT = 100; // requests
@@ -78,8 +103,8 @@ export class KloelSecurityGuard implements CanActivate, OnModuleDestroy {
 
   /** Can activate. */
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const request = context.switchToHttp().getRequest();
-    const path = request.path;
+    const request = context.switchToHttp().getRequest<KloelGuardRequest>();
+    const path = request.path ?? '';
 
     // 1. Rotas públicas
     const isPublic =
@@ -101,7 +126,7 @@ export class KloelSecurityGuard implements CanActivate, OnModuleDestroy {
     }
 
     // 3. Extrair workspaceId
-    const workspaceId = request.params.workspaceId || request.body?.workspaceId;
+    const workspaceId = getWorkspaceId(request);
 
     // 4. Rate Limiting
     this.enforceRateLimit(context, request, workspaceId, path);
@@ -117,7 +142,7 @@ export class KloelSecurityGuard implements CanActivate, OnModuleDestroy {
     return true;
   }
 
-  private isInternalApiRequest(request: { headers: Record<string, unknown> }): boolean {
+  private isInternalApiRequest(request: KloelGuardRequest): boolean {
     const internalKey = request.headers['x-internal-key'];
     const expectedKey = process.env.INTERNAL_API_KEY;
     if (
@@ -133,7 +158,7 @@ export class KloelSecurityGuard implements CanActivate, OnModuleDestroy {
 
   private enforceRateLimit(
     context: ExecutionContext,
-    request: { ip?: string },
+    request: KloelGuardRequest,
     workspaceId: string | undefined,
     path: string,
   ): void {
@@ -160,7 +185,7 @@ export class KloelSecurityGuard implements CanActivate, OnModuleDestroy {
   }
 
   private async validateWorkspaceContext(
-    request: { workspace?: unknown },
+    request: KloelGuardRequest,
     workspaceId: string,
     path: string,
   ): Promise<void> {
@@ -233,7 +258,7 @@ export class KloelSecurityGuard implements CanActivate, OnModuleDestroy {
   }
 
   private enforceAuthRequirement(
-    request: { user?: unknown },
+    request: KloelGuardRequest,
     workspaceId: string | undefined,
     path: string,
   ): void {
@@ -265,7 +290,7 @@ export class KloelSecurityGuard implements CanActivate, OnModuleDestroy {
       return false;
     }
 
-    entry.count++;
+    entry.count += 1;
     return true;
   }
 
@@ -292,84 +317,5 @@ export class KloelSecurityGuard implements CanActivate, OnModuleDestroy {
     });
 
     return count;
-  }
-}
-
-/**
- * Guard para verificar acesso ao workspace específico.
- * Verifica se o usuário é membro do workspace.
- */
-@Injectable()
-export class WorkspaceAccessGuard implements CanActivate {
-  private readonly logger = new Logger(WorkspaceAccessGuard.name);
-
-  constructor(private readonly prisma: PrismaService) {}
-
-  /** Can activate. */
-  async canActivate(context: ExecutionContext): Promise<boolean> {
-    const request = context.switchToHttp().getRequest();
-    const user = request.user;
-    const workspaceId = request.params.workspaceId || request.body?.workspaceId;
-
-    if (!workspaceId) {
-      return true; // Sem workspace específico, delegar para outros guards
-    }
-
-    if (!user) {
-      // Se AUTH_OPTIONAL, permitir (útil para desenvolvimento)
-      if (process.env.AUTH_OPTIONAL === 'true' && process.env.NODE_ENV !== 'production') {
-        return true;
-      }
-      throw new UnauthorizedException('User not authenticated');
-    }
-
-    // Verificar se usuário é membro do workspace
-    const membership = await this.prisma.agent.findFirst({
-      where: {
-        id: user.sub,
-        workspaceId,
-      },
-      select: { id: true, role: true },
-    });
-
-    if (!membership) {
-      this.logger.warn('Unauthorized workspace access attempt', {
-        userId: user.sub,
-        workspaceId,
-      });
-      throw new ForbiddenException('Not a member of this workspace');
-    }
-
-    // Adicionar role ao request
-    request.userRole = membership.role;
-
-    return true;
-  }
-}
-
-/**
- * Guard para endpoints que modificam dados sensíveis.
- * Requer confirmação ou 2FA.
- */
-@Injectable()
-export class SensitiveOperationGuard implements CanActivate {
-  /** Can activate. */
-  canActivate(context: ExecutionContext): boolean {
-    const request = context.switchToHttp().getRequest();
-
-    // Verificar header de confirmação
-    const confirmationToken = request.headers['x-confirm-action'];
-
-    if (!confirmationToken) {
-      throw new ForbiddenException({
-        message: 'This operation requires confirmation',
-        code: 'CONFIRMATION_REQUIRED',
-        action: 'Please include X-Confirm-Action header',
-      });
-    }
-
-    // Em produção, validar o token de confirmação
-    // Por enquanto, aceitar qualquer valor
-    return true;
   }
 }

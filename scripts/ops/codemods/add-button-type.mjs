@@ -95,42 +95,42 @@ function collectSiblingButtonOpenings(element) {
   // that are "siblings" in the sense of being in the same nearest JsxElement
   // subtree root. We'll look at the direct parent JsxElement's children.
   const parent = element.getParent();
-  if (!parent) return [];
+  if (!parent) {return [];}
   const results = [];
   // Walk all descendants of parent and collect button openings (shallow).
   const openings = parent.getDescendantsOfKind(SyntaxKind.JsxOpeningElement);
   for (const o of openings) {
-    if (o === element) continue;
-    if (getTagName(o) === 'button') results.push(o);
+    if (o === element) {continue;}
+    if (getTagName(o) === 'button') {results.push(o);}
   }
   const selfClosings = parent.getDescendantsOfKind(SyntaxKind.JsxSelfClosingElement);
   for (const s of selfClosings) {
-    if (s === element) continue;
-    if (getTagName(s) === 'button') results.push(s);
+    if (s === element) {continue;}
+    if (getTagName(s) === 'button') {results.push(s);}
   }
   return results;
 }
 
 function buttonHasSubmitType(element) {
   for (const attr of element.getAttributes()) {
-    if (attr.getKind() !== SyntaxKind.JsxAttribute) continue;
-    if (attr.getNameNode().getText() !== 'type') continue;
+    if (attr.getKind() !== SyntaxKind.JsxAttribute) {continue;}
+    if (attr.getNameNode().getText() !== 'type') {continue;}
     const init = attr.getInitializer?.();
-    if (!init) continue;
+    if (!init) {continue;}
     const text = init.getText();
-    if (text === '"submit"' || text === "'submit'") return true;
+    if (text === '"submit"' || text === "'submit'") {return true;}
     // JSX expression: type={"submit"}
-    if (text.includes('submit')) return true;
+    if (text.includes('submit')) {return true;}
   }
   return false;
 }
 
 function getStringAttr(element, attrName) {
   for (const attr of element.getAttributes()) {
-    if (attr.getKind() !== SyntaxKind.JsxAttribute) continue;
-    if (attr.getNameNode().getText() !== attrName) continue;
+    if (attr.getKind() !== SyntaxKind.JsxAttribute) {continue;}
+    if (attr.getNameNode().getText() !== attrName) {continue;}
     const init = attr.getInitializer?.();
-    if (!init) continue;
+    if (!init) {continue;}
     // StringLiteral or JsxExpression containing a string literal
     const text = init.getText();
     // strip quotes and braces/quotes
@@ -149,7 +149,7 @@ function getButtonJsxElement(element) {
   // For self-closing we return the self-closing itself (no children to scan).
   if (element.getKind() === SyntaxKind.JsxOpeningElement) {
     const parent = element.getParent();
-    if (parent && parent.getKind() === SyntaxKind.JsxElement) return parent;
+    if (parent && parent.getKind() === SyntaxKind.JsxElement) {return parent;}
   }
   return null;
 }
@@ -157,38 +157,38 @@ function getButtonJsxElement(element) {
 function buttonLooksLikeCancelClose(element) {
   // Check aria-label / data-action
   const dataAction = getStringAttr(element, 'data-action');
-  if (dataAction && ['cancel', 'close'].includes(dataAction)) return true;
+  if (dataAction && ['cancel', 'close'].includes(dataAction)) {return true;}
   const ariaLabel = getStringAttr(element, 'aria-label');
-  if (ariaLabel && ['cancel', 'close'].includes(ariaLabel)) return true;
+  if (ariaLabel && ['cancel', 'close'].includes(ariaLabel)) {return true;}
 
   // Self-closing buttons cannot have text children
   const jsxEl = getButtonJsxElement(element);
-  if (!jsxEl) return false;
+  if (!jsxEl) {return false;}
 
   // Gather all JsxText inside and lowercase-trim it.
   const texts = jsxEl.getDescendantsOfKind(SyntaxKind.JsxText);
   for (const t of texts) {
     const raw = t.getText().trim().toLowerCase();
-    if (!raw) continue;
+    if (!raw) {continue;}
     for (const needle of CANCEL_TEXTS) {
-      if (raw === needle) return true;
+      if (raw === needle) {return true;}
     }
   }
   // Also look at plain string literals inside expressions like {"Cancelar"}
   const strings = jsxEl.getDescendantsOfKind(SyntaxKind.StringLiteral);
   for (const s of strings) {
     const raw = s.getLiteralText().trim().toLowerCase();
-    if (!raw) continue;
+    if (!raw) {continue;}
     for (const needle of CANCEL_TEXTS) {
-      if (raw === needle) return true;
+      if (raw === needle) {return true;}
     }
   }
   const noSubstStrings = jsxEl.getDescendantsOfKind(SyntaxKind.NoSubstitutionTemplateLiteral);
   for (const s of noSubstStrings) {
     const raw = s.getLiteralText().trim().toLowerCase();
-    if (!raw) continue;
+    if (!raw) {continue;}
     for (const needle of CANCEL_TEXTS) {
-      if (raw === needle) return true;
+      if (raw === needle) {return true;}
     }
   }
   return false;
@@ -278,12 +278,12 @@ for (const sourceFile of sourceFiles) {
 
   const openings = sourceFile.getDescendantsOfKind(SyntaxKind.JsxOpeningElement);
   for (const el of openings) {
-    if (processElement(el)) added += 1;
+    if (processElement(el)) {added += 1;}
   }
 
   const selfClosings = sourceFile.getDescendantsOfKind(SyntaxKind.JsxSelfClosingElement);
   for (const el of selfClosings) {
-    if (processElement(el)) added += 1;
+    if (processElement(el)) {added += 1;}
   }
 
   if (added > 0) {

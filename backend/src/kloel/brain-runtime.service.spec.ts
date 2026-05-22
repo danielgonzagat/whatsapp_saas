@@ -12,6 +12,13 @@ describe('BrainRuntimeService', () => {
     persistUserThreadMessage: jest.Mock;
     resolveThread: jest.Mock;
   };
+  let executor: {
+    listProducts: jest.Mock;
+    listConversations: jest.Mock;
+    queryRevenueSummary: jest.Mock;
+    searchContact: jest.Mock;
+    sendMessageViaChannel: jest.Mock;
+  };
   let service: BrainRuntimeService;
 
   beforeEach(() => {
@@ -79,6 +86,13 @@ describe('BrainRuntimeService', () => {
       persistAssistantThreadMessage: jest.fn().mockResolvedValue({ id: 'assistant-message-1' }),
       maybeGenerateThreadTitle: jest.fn().mockResolvedValue('Produto novo'),
     };
+    executor = {
+      listProducts: jest.fn().mockResolvedValue({ ok: true, data: [{ id: 'p1', name: 'Produto A', price: 9900, active: true }] }),
+      listConversations: jest.fn().mockResolvedValue({ ok: true, data: [] }),
+      queryRevenueSummary: jest.fn().mockResolvedValue({ ok: true, data: { totalRevenue: 50000, ticketMedio: 5000, totalCount: 10, paidCount: 8, conversao: 80, periodDays: 30 } }),
+      searchContact: jest.fn().mockResolvedValue({ ok: true, data: [{ name: 'Joao', phone: '1199999' }] }),
+      sendMessageViaChannel: jest.fn().mockResolvedValue({ ok: true, data: { phone: '1199999', messagePreview: 'Ola', channel: 'whatsapp' } }),
+    };
     service = new BrainRuntimeService(
       unifiedAgent as never,
       contextData as never,
@@ -86,6 +100,7 @@ describe('BrainRuntimeService', () => {
       events as never,
       threads as never,
       graph as never,
+      executor as never,
     );
   });
 
@@ -265,5 +280,82 @@ describe('BrainRuntimeService', () => {
     );
     expect(typeof result.requestId).toBe('string');
     expect(graph.recommendNextActions).toHaveBeenCalledWith('ws-1');
+  });
+
+  it('dispatches list_products operator intent to executor', async () => {
+    const result = await service.decide({
+      workspaceId: 'ws-1',
+      userId: 'user-1',
+      body: {
+        source: 'chat',
+        intent: 'list_products',
+        messages: [{ role: 'user', content: 'liste meus produtos' }],
+      },
+    });
+
+    expect(unifiedAgent.processMessage).not.toHaveBeenCalled();
+    expect(executor.listProducts).toHaveBeenCalledWith('ws-1', {});
+    expect(events.record).toHaveBeenCalledWith(
+      expect.objectContaining({ action: 'capability.executed', status: 'executed' }),
+    );
+    expect(events.record).toHaveBeenCalledWith(
+      expect.objectContaining({ action: 'brain.decide' }),
+    );
+    expect(result.intent).toBe('list_products');
+    expect(result.confidence).toBe(1);
+    expect(result.actions).toHaveLength(1);
+    expect(result.actions[0]).toEqual(
+      expect.objectContaining({ tool: 'list_products' }),
+    );
+  });
+
+  it('dispatches query_revenue_summary operator intent to executor', async () => {
+    await service.decide({
+      workspaceId: 'ws-1',
+      body: {
+        source: 'chat',
+        intent: 'query_revenue_summary',
+        context: { days: 7 },
+        messages: [{ role: 'user', content: 'resumo de receita' }],
+      },
+    });
+
+    expect(unifiedAgent.processMessage).not.toHaveBeenCalled();
+    expect(executor.queryRevenueSummary).toHaveBeenCalledWith('ws-1', { days: 7 });
+  });
+
+  it('records capability.failed event when operator capability fails', async () => {
+    executor.listProducts.mockResolvedValueOnce({ ok: false, error: 'db_error' });
+
+    await service.decide({
+      workspaceId: 'ws-1',
+      body: {
+        source: 'chat',
+        intent: 'list_products',
+        messages: [{ role: 'user', content: 'produtos' }],
+      },
+    });
+
+    expect(events.record).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'capability.failed',
+        status: 'error',
+      }),
+    );
+  });
+
+  it('delegates non-operator intents to unifiedAgent (not executor)', async () => {
+    const result = await service.decide({
+      workspaceId: 'ws-1',
+      body: {
+        source: 'chat',
+        intent: 'create_product',
+        messages: [{ role: 'user', content: 'cria produto X' }],
+      },
+    });
+
+    expect(executor.listProducts).not.toHaveBeenCalled();
+    expect(unifiedAgent.processMessage).toHaveBeenCalled();
+    expect(result.response).toBeDefined();
   });
 });

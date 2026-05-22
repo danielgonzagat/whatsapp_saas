@@ -49,7 +49,7 @@ for (const relPath of files) {
   content = content.replace(/=\{(colors\.\w+\.\w+)\}\s*([;,)])/g, (match, tok, end) => {
     // Check if this is in JSX context (line contains < or > around it)
     // Simple heuristic: only fix if following char is ;
-    if (end === ';') return `= ${tok}${end}`;
+    if (end === ';') {return `= ${tok}${end}`;}
     return match; // might be JSX attribute, keep
   });
 

@@ -1,21 +1,16 @@
-import { Injectable, Logger, NotFoundException, Optional } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { AuditService } from '../audit/audit.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { OpsAlertService } from '../observability/ops-alert.service';
 
 const D_RE = /\D/g;
 
-import type {
-  WaitForReplyNodeData,
-  WaitState,
-  ResumeResult,
-} from './__companions__/flows.service.companion';
+import type { WaitForReplyNodeData, WaitState, ResumeResult } from './flows.wait-for-reply';
 import {
   pauseForWaitNode as pauseForWaitNodeFn,
   resumeFromWait as resumeFromWaitFn,
   expireWaitTimeouts as expireWaitTimeoutsFn,
-} from './__companions__/flows.service.companion';
+} from './flows.wait-for-reply';
 export type { WaitForReplyNodeData, WaitState, ResumeResult };
 
 /** Flows service. */
@@ -26,7 +21,6 @@ export class FlowsService {
   constructor(
     private prisma: PrismaService,
     private audit: AuditService,
-    @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
 
   /** Save. */
@@ -48,7 +42,7 @@ export class FlowsService {
       update: {
         nodes: data.nodes as Prisma.InputJsonValue,
         edges: data.edges as Prisma.InputJsonValue,
-        name: data.name || undefined,
+        ...(data.name !== undefined ? { name: data.name } : {}),
       },
       create: {
         id: flowId,

@@ -1,4 +1,5 @@
 'use client';
+import { colors } from '@/lib/design-tokens';
 
 import { kloelT } from '@/lib/i18n/t';
 import { KLOEL_THEME } from '@/lib/kloel-theme';
@@ -37,7 +38,7 @@ export function CampaignsView() {
   const [busyId, setBusyId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    if (!workspaceId) return;
+    if (!workspaceId) {return;}
     setLoading(true);
     setError(null);
     try {
@@ -58,7 +59,7 @@ export function CampaignsView() {
   }, [workspaceId, load]);
 
   const handleCreate = async () => {
-    if (!newName.trim() || !workspaceId) return;
+    if (!newName.trim() || !workspaceId) {return;}
     setCreating(true);
     try {
       await createCampaign(workspaceId, {
@@ -78,7 +79,7 @@ export function CampaignsView() {
   };
 
   const handleLaunch = async (campaignId: string, smartTime = false) => {
-    if (!workspaceId) return;
+    if (!workspaceId) {return;}
     setBusyId(`launch-${campaignId}`);
     try {
       await launchCampaign(workspaceId, campaignId, { smartTime });
@@ -92,7 +93,7 @@ export function CampaignsView() {
   };
 
   const handlePause = async (campaignId: string) => {
-    if (!workspaceId) return;
+    if (!workspaceId) {return;}
     setBusyId(`pause-${campaignId}`);
     try {
       await pauseCampaign(workspaceId, campaignId);
@@ -145,7 +146,7 @@ export function CampaignsView() {
           onClick={() => setShowCreate(!showCreate)}
           style={{
             background: ACCENT,
-            color: '#0A0A0C',
+            color: colors.background.void,
             border: 'none',
             borderRadius: 6,
             padding: '10px 20px',
@@ -180,7 +181,7 @@ export function CampaignsView() {
             style={{
               marginTop: 12,
               background: ACCENT,
-              color: '#0A0A0C',
+              color: colors.background.void,
               border: 'none',
               borderRadius: 6,
               padding: '8px 16px',

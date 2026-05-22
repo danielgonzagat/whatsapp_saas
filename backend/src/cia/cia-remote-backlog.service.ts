@@ -1,4 +1,4 @@
-import { Inject, Injectable, forwardRef } from '@nestjs/common';
+import { Inject, Injectable, Logger, forwardRef } from '@nestjs/common';
 import { findFirstSequential, forEachSequential } from '../common/async-sequence';
 import { UnifiedAgentService } from '../kloel/unified-agent.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -9,9 +9,10 @@ import { CIA_SHARED_REPLY_LOCK_MS, CiaSendHelpersService } from './cia-send-help
 import { WhatsAppProviderRegistry } from '../whatsapp/providers/provider-registry';
 import { WahaChatSummary } from '../whatsapp/providers/whatsapp-api.provider';
 import { extractPhoneFromChatId as normalizePhoneFromChatId } from '../whatsapp/whatsapp-normalization.util';
-import { WhatsappService } from '../whatsapp/whatsapp.service';
-import type { BacklogMode } from './__parts__/cia-remote-backlog.service.companion';
-import { loadRemotePendingBatchHelper } from './__parts__/cia-remote-backlog.service.companion';
+import { WHATSAPP_MESSAGING } from '../whatsapp/whatsapp.tokens';
+import type { IWhatsappMessaging } from '../whatsapp/whatsapp.interfaces';
+import type { BacklogMode } from '../whatsapp/cia-remote-backlog.helpers';
+import { loadRemotePendingBatchHelper } from '../whatsapp/cia-remote-backlog.helpers';
 
 /**
  * Handles remote backlog fallback: reads pending chats directly from the
@@ -20,6 +21,8 @@ import { loadRemotePendingBatchHelper } from './__parts__/cia-remote-backlog.ser
  */
 @Injectable()
 export class CiaRemoteBacklogService {
+  private readonly logger = new Logger(CiaRemoteBacklogService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly providerRegistry: WhatsAppProviderRegistry,
@@ -29,15 +32,19 @@ export class CiaRemoteBacklogService {
     private readonly sendHelpers: CiaSendHelpersService,
     @Inject(forwardRef(() => UnifiedAgentService))
     private readonly unifiedAgent: UnifiedAgentService,
-    @Inject(forwardRef(() => WhatsappService))
-    private readonly whatsappService: WhatsappService,
+    @Inject(forwardRef(() => WHATSAPP_MESSAGING))
+    private readonly whatsappService: IWhatsappMessaging,
   ) {}
 
   async listRemotePendingChats(
-    workspaceId: string,
+    _workspaceId: string,
     sessionKey: string,
     limit: number,
   ): Promise<WahaChatSummary[]> {
+    this.logger.log('Calling WhatsApp provider getChats', {
+      context: 'CiaRemoteBacklogService.listRemotePendingChats',
+      provider: 'waha',
+    });
     const chats = this.chatFilter.normalizeChats(await this.providerRegistry.getChats(sessionKey));
     return this.chatFilter
       .selectRemotePendingChats(chats)
@@ -65,16 +72,23 @@ export class CiaRemoteBacklogService {
     historySummary: string;
     shouldMirrorReplies: boolean;
   } | null> {
-    return loadRemotePendingBatchHelper(
+    const result = await loadRemotePendingBatchHelper(
       {
         prisma: this.prisma,
         providerRegistry: this.providerRegistry,
         chatFilter: this.chatFilter,
         sendHelpers: this.sendHelpers,
-        whatsappService: this.whatsappService,
       },
       params,
     );
+
+    if (result) {
+      await this.whatsappService
+        .syncRemoteContactProfile(params.workspaceId, result.phone, result.contactName)
+        .catch(() => undefined);
+    }
+
+    return result;
   }
 
   async runRemoteBacklogInlineFallback(
@@ -107,7 +121,17 @@ export class CiaRemoteBacklogService {
         workspaceId,
         chat,
         sessionKey,
-      }).catch(() => null);
+      }).catch((error: unknown) => {
+        this.logger.error(
+          'Failed to load remote pending batch',
+          error instanceof Error ? error.message : String(error),
+          {
+            context: 'CiaRemoteBacklogService.runRemoteBacklogInlineFallback',
+            chatId: chat.id,
+          },
+        );
+        return null;
+      });
 
       if (!remoteBatch?.phone || !remoteBatch.customerMessages.length) {
         skipped += 1;
@@ -148,9 +172,15 @@ export class CiaRemoteBacklogService {
           },
         });
 
+        this.logger.log('Calling unifiedAgent.processIncomingMessage', {
+          context: 'CiaRemoteBacklogService.runRemoteBacklogInlineFallback',
+          deliveryMode: remoteBatch.shouldMirrorReplies ? 'reactive' : 'proactive',
+          backlogIndex: index + 1,
+          backlogTotal: chats.length,
+        });
         const result = await this.unifiedAgent.processIncomingMessage({
           workspaceId,
-          contactId: remoteBatch.contactId || undefined,
+          ...(remoteBatch.contactId ? { contactId: remoteBatch.contactId } : {}),
           phone,
           message: remoteBatch.aggregatedMessage,
           channel: 'whatsapp',
@@ -180,7 +210,7 @@ export class CiaRemoteBacklogService {
             ? remoteBatch.shouldMirrorReplies
               ? await this.unifiedAgent.buildQuotedReplyPlan({
                   workspaceId,
-                  contactId: remoteBatch.contactId || undefined,
+                  ...(remoteBatch.contactId ? { contactId: remoteBatch.contactId } : {}),
                   phone,
                   draftReply: reply,
                   customerMessages: remoteBatch.customerMessages,
@@ -204,6 +234,12 @@ export class CiaRemoteBacklogService {
         await findFirstSequential(
           Array.from(replyPlan.entries()),
           async ([replyIndex, replyItem]) => {
+            this.logger.log('Sending WhatsApp message via remote inline fallback', {
+              context: 'CiaRemoteBacklogService.runRemoteBacklogInlineFallback',
+              complianceMode: remoteBatch.shouldMirrorReplies ? 'reactive' : 'proactive',
+              replyIndex: replyIndex + 1,
+              replyTotal: replyPlan.length,
+            });
             const sendResult = await this.sendHelpers.sendCiaMessageWithDailyLimit(
               workspaceId,
               phone,

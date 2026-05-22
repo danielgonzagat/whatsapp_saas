@@ -52,7 +52,7 @@ const skipReasons = {
 function getAttrByName(element, name) {
   const attributes = element.getAttributes();
   for (const attr of attributes) {
-    if (attr.getKind() !== SyntaxKind.JsxAttribute) continue;
+    if (attr.getKind() !== SyntaxKind.JsxAttribute) {continue;}
     const nameNode = attr.getNameNode();
     if (nameNode && nameNode.getText() === name) {
       return attr;
@@ -67,9 +67,9 @@ function hasAttr(element, name) {
 
 function getRoleValue(element) {
   const attr = getAttrByName(element, 'role');
-  if (!attr) return null;
+  if (!attr) {return null;}
   const initializer = attr.getInitializer();
-  if (!initializer) return null;
+  if (!initializer) {return null;}
   // StringLiteral or JsxExpression with string literal inside
   const kind = initializer.getKind();
   if (kind === SyntaxKind.StringLiteral) {
@@ -89,7 +89,7 @@ function collectLucideNames(sourceFile) {
   const imports = sourceFile.getImportDeclarations();
   for (const imp of imports) {
     const spec = imp.getModuleSpecifierValue();
-    if (spec !== 'lucide-react') continue;
+    if (spec !== 'lucide-react') {continue;}
     const named = imp.getNamedImports();
     for (const n of named) {
       // Use the local alias (what the JSX actually references)
@@ -112,7 +112,7 @@ function isSvgElement(element) {
 
 function isLucideElement(element, lucideNames) {
   const tagNameNode = element.getTagNameNode();
-  if (!tagNameNode) return false;
+  if (!tagNameNode) {return false;}
   const name = tagNameNode.getText();
   return lucideNames.has(name);
 }
@@ -120,7 +120,7 @@ function isLucideElement(element, lucideNames) {
 function getJsxElementChildren(element) {
   // element here is JsxOpeningElement. Its parent is JsxElement which has children.
   const parent = element.getParent();
-  if (!parent || parent.getKind() !== SyntaxKind.JsxElement) return [];
+  if (!parent || parent.getKind() !== SyntaxKind.JsxElement) {return [];}
   return parent.getJsxChildren();
 }
 
@@ -131,10 +131,10 @@ function svgHasTitleChild(openingElement) {
     if (kind === SyntaxKind.JsxElement) {
       const opening = child.getOpeningElement();
       const tag = opening.getTagNameNode()?.getText();
-      if (tag === 'title') return true;
+      if (tag === 'title') {return true;}
     } else if (kind === SyntaxKind.JsxSelfClosingElement) {
       const tag = child.getTagNameNode()?.getText();
-      if (tag === 'title') return true;
+      if (tag === 'title') {return true;}
     }
   }
   return false;
@@ -150,10 +150,10 @@ function isSoleMeaningfulChildOfInteractive(openingElement) {
     return false;
   }
   const parent = jsxElement.getParent();
-  if (!parent || parent.getKind() !== SyntaxKind.JsxElement) return false;
+  if (!parent || parent.getKind() !== SyntaxKind.JsxElement) {return false;}
   const parentOpening = parent.getOpeningElement();
   const parentTag = parentOpening.getTagNameNode()?.getText();
-  if (parentTag !== 'a' && parentTag !== 'button') return false;
+  if (parentTag !== 'a' && parentTag !== 'button') {return false;}
 
   // Count meaningful siblings (ignore whitespace-only JsxText)
   const siblings = parent.getJsxChildren();
@@ -161,7 +161,7 @@ function isSoleMeaningfulChildOfInteractive(openingElement) {
   for (const sib of siblings) {
     const k = sib.getKind();
     if (k === SyntaxKind.JsxText) {
-      if (sib.getText().trim().length === 0) continue;
+      if (sib.getText().trim().length === 0) {continue;}
       meaningful += 1;
     } else {
       meaningful += 1;

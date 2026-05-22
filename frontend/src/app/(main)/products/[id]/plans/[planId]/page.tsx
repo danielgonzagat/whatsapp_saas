@@ -1,5 +1,4 @@
 'use client';
-
 import { kloelT } from '@/lib/i18n/t';
 /** Dynamic. */
 export const dynamic = 'force-dynamic';
@@ -11,36 +10,10 @@ import { PlanPaymentTab } from '@/components/plans/PlanPaymentTab';
 import { PlanShippingTab } from '@/components/plans/PlanShippingTab';
 import { PlanStoreTab } from '@/components/plans/PlanStoreTab';
 import { PlanThankYouTab } from '@/components/plans/PlanThankYouTab';
-import {
-  ArrowLeft,
-  Brain,
-  CreditCard,
-  FileText,
-  Package,
-  ScrollText,
-  ShoppingCart,
-  Store,
-  Truck,
-  Users,
-} from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { useParams, useRouter } from 'next/navigation';
 import { useState } from 'react';
-
-// ============================================
-// SUB-TABS
-// ============================================
-
-const SUB_TABS = [
-  { id: 'store', label: 'Loja', icon: Store },
-  { id: 'payment', label: 'Pagamento', icon: CreditCard },
-  { id: 'packaging', label: 'Embalagem', icon: Package },
-  { id: 'shipping', label: 'Frete', icon: Truck },
-  { id: 'affiliate', label: 'Afiliacao', icon: Users },
-  { id: 'files', label: 'Arquivos', icon: FileText },
-  { id: 'orderbump', label: 'Order Bump', icon: ShoppingCart },
-  { id: 'terms', label: 'Termos', icon: ScrollText },
-  { id: 'ai', label: 'IA', icon: Brain },
-];
+import { SUB_TABS } from './plan-detail-tabs';
 
 // ============================================
 // MAIN PAGE
@@ -154,41 +127,6 @@ export default function PlanDetailPage() {
             <PlanShippingTab planId={planId} productId={productId} />
           ) : activeTab === 'packaging' ? (
             <PlanShippingTab planId={planId} productId={productId} />
-          ) : activeTab === 'files' ? (
-            <div style={{ textAlign: 'center', padding: '48px 20px' }}>
-              <div
-                style={{
-                  fontSize: 10,
-                  fontWeight: 600,
-                  color: '#E85D30',
-                  letterSpacing: '.25em',
-                  textTransform: 'uppercase' as const,
-                  marginBottom: 12,
-                }}
-              >
-                {kloelT(`EM BREVE`)}
-              </div>
-              <div
-                style={{
-                  fontSize: 16,
-                  fontWeight: 600,
-                  color: 'var(--app-text-primary)',
-                  marginBottom: 6,
-                  fontFamily: "'Sora', sans-serif",
-                }}
-              >
-                {kloelT(`Upload de arquivos`)}
-              </div>
-              <div
-                style={{
-                  fontSize: 12,
-                  color: 'var(--app-text-tertiary)',
-                  fontFamily: "'Sora', sans-serif",
-                }}
-              >
-                {kloelT(`Anexe eBooks, PDFs e materiais digitais ao plano`)}
-              </div>
-            </div>
           ) : activeTab === 'orderbump' ? (
             <PlanOrderBumpTab planId={planId} />
           ) : activeTab === 'affiliate' ? (

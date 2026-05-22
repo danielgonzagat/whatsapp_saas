@@ -24,8 +24,8 @@
  * REQUIRES:
  * - Running backend (PULSE_BACKEND_URL)
  * - Running DB with migrations applied
- * - Valid test JWT with OWNER role (PULSE_TEST_JWT)
- * - Test workspace (PULSE_TEST_WORKSPACE_ID)
+ * - Valid OWNER-role JWT from the test runtime environment
+ * - Test workspace id from the test runtime environment
  *
  * BREAK TYPES:
  * - E2E_PRODUCT_BROKEN (critical) — every step in product→plan→checkout config
@@ -39,14 +39,12 @@ import {
   httpPostProduct,
   makeTestJwt,
   dbQuery,
-  isDeepMode,
-  getBackendUrl,
 } from './runtime-utils';
 
 type ProductRow = { id?: string; name?: string };
 
 /** Check e2e product creation. */
-export async function checkE2eProductCreation(config: PulseConfig): Promise<Break[]> {
+export async function checkE2eProductCreation(_config: PulseConfig): Promise<Break[]> {
   // DEEP mode only — requires running backend + DB
   if (!process.env.PULSE_DEEP) {
     return [];
@@ -71,7 +69,7 @@ export async function checkE2eProductCreation(config: PulseConfig): Promise<Brea
       return breaks;
     }
 
-    const agent = approvedAgents[0];
+    const agent = approvedAgents[0] as Record<string, string>;
     // Build a real JWT signed with the backend's secret for this agent
     jwt = makeTestJwt({
       sub: agent.id,
@@ -110,9 +108,11 @@ export async function checkE2eProductCreation(config: PulseConfig): Promise<Brea
       return breaks; // Can't test further without a product
     }
 
-    const body = createRes.body || {};
-    const product = body.product || body;
-    productId = product?.id || null;
+    const body = (createRes.body ?? {}) as Record<string, unknown>;
+    const product = (typeof body.product === 'object' && body.product !== null
+      ? body.product
+      : body) as Record<string, unknown>;
+    productId = (product.id as string | undefined) ?? null;
 
     if (!productId) {
       breaks.push({
@@ -138,15 +138,18 @@ export async function checkE2eProductCreation(config: PulseConfig): Promise<Brea
         detail: `Body: ${JSON.stringify(getRes.body).slice(0, 200)}`,
       });
     } else {
-      const fetchedProduct = getRes.body?.product || getRes.body;
-      if (fetchedProduct?.name !== '__pulse_test__product') {
+      const fetchedBody = (getRes.body ?? {}) as Record<string, unknown>;
+      const fetchedProduct = (typeof fetchedBody.product === 'object' && fetchedBody.product !== null
+        ? fetchedBody.product
+        : fetchedBody) as Record<string, unknown>;
+      if (fetchedProduct.name !== '__pulse_test__product') {
         breaks.push({
           type: 'E2E_PRODUCT_BROKEN',
           severity: 'critical',
           file: 'backend/src/kloel/product.controller.ts',
           line: 150,
           description: 'GET /products/:id returned product with wrong name — data mismatch',
-          detail: `Expected: __pulse_test__product, Got: ${fetchedProduct?.name}`,
+          detail: `Expected: __pulse_test__product, Got: ${String(fetchedProduct.name)}`,
         });
       }
     }

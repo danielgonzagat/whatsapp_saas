@@ -16,12 +16,16 @@
  *   topologyCoverage        share of traces proving preservation topology
  *   missingTopology         traces lacking targetUnit / semanticImpact /
  *                           preservedZones / modifiedZones proof
+ *   previewTraceCount      traces submitted with preview:true
+ *   dishonestPreviewCount  preview traces that look like committed writes
+ *   dishonestPreviews      details of each dishonest preview offender
  *
- * Zero deps. `node audit-atomicity.mjs [--json] [--strict-ratio] [--strict-topology] [--strict-current-topology] [--min-ratio=0.85] [--self-test]`.
+ * Zero deps. `node audit-atomicity.mjs [--json] [--strict-ratio] [--strict-topology] [--strict-current-topology] [--since=<ISO|epoch-ms>] [--min-ratio=0.85] [--self-test]`.
  */
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { buildSelfTestCases } from './audit-atomicity.test-cases.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.resolve(HERE, '..', '..', '..');
@@ -32,9 +36,20 @@ const asJson = args.includes('--json');
 const strictRatio = args.includes('--strict-ratio');
 const strictTopology = args.includes('--strict-topology');
 const strictCurrentTopology = args.includes('--strict-current-topology');
+const sinceRaw = args.find((a) => a.startsWith('--since='))?.slice('--since='.length) ?? null;
+const sinceMs = parseSince(sinceRaw);
 const minRatio = Number((args.find((a) => a.startsWith('--min-ratio=')) ?? '=0.85').split('=')[1]);
 const MICRO_CHANGE = 32; // chars: a literal/arg/token-sized real change
 const LINE_NOISE = 80; // chars of line surface rewritten = whole-line-ish
+
+function parseSince(raw) {
+  if (!raw) return null;
+  const numeric = Number(raw);
+  const parsed = Number.isFinite(numeric) ? numeric : Date.parse(raw);
+  if (Number.isFinite(parsed)) return parsed;
+  console.error(`invalid --since value: ${raw}`);
+  process.exit(2);
+}
 
 // Smoke/benchmark fixtures deliberately exercise coarse ops to test the
 // engine; they are not production edits and must not skew the regression
@@ -70,6 +85,11 @@ function traceHasTopology(t) {
   );
 }
 
+function traceIsDishonestPreview(t) {
+  if (!t.preview) return false;
+  return t.changed !== false || Boolean(t.rollback?.available) || Boolean(t.rollbackAvailable);
+}
+
 function evaluateTrace(t) {
   const m = t.metrics ?? {};
   const changedChars = Number(m.changedChars ?? 0);
@@ -92,6 +112,8 @@ function evaluateTrace(t) {
     lineRewriteAvoided,
     isOffender,
     hasTopology: traceHasTopology(t),
+    isPreview: Boolean(t.preview),
+    isDishonestPreview: traceIsDishonestPreview(t),
     ts: t.ts,
     tsMs: Number.isFinite(Date.parse(t.ts ?? '')) ? Date.parse(t.ts ?? '') : null,
   };
@@ -110,6 +132,16 @@ function auditTraces(traces, options = {}) {
   const expSum = traceResults.reduce((sum, t) => sum + t.expansionFactorAvoided, 0);
   const offenders = traceResults.filter((t) => t.isOffender);
   const enforcementPass = fallback === 0 && offenders.length === 0;
+  const previewTraceCount = traceResults.filter((t) => t.isPreview).length;
+  const dishonestPreviewResults = traceResults.filter((t) => t.isDishonestPreview);
+  const dishonestPreviews = dishonestPreviewResults.map((t) => ({
+    operationId: t.operationId,
+    file: t.file,
+    operator: t.operator,
+    ts: t.ts,
+  }));
+  const dishonestPreviewCount = dishonestPreviews.length;
+  const previewHonestyPass = dishonestPreviewCount === 0;
   const ratioPass = avoided / n >= minRatio;
   const topologyCount = traceResults.filter((t) => t.hasTopology).length;
   const topologyCoverage = Number((topologyCount / n).toFixed(4));
@@ -143,6 +175,7 @@ function auditTraces(traces, options = {}) {
   const currentTopologyPass = currentTraceResults.length > 0 && currentMissingTopology.length === 0;
   const pass =
     enforcementPass &&
+    previewHonestyPass &&
     (!shouldStrictRatio || ratioPass) &&
     (!shouldStrictTopology || topologyPass) &&
     (!shouldStrictCurrentTopology || currentTopologyPass);
@@ -157,9 +190,14 @@ function auditTraces(traces, options = {}) {
       fallback_rate: Number((fallback / n).toFixed(4)),
       coarse_unjustified: offenders.length,
       thresholdMinRatio: minRatio,
+      since: typeof options.sinceMs === 'number' ? new Date(options.sinceMs).toISOString() : null,
       strictRatio: shouldStrictRatio,
       strictTopology: shouldStrictTopology,
       strictCurrentTopology: shouldStrictCurrentTopology,
+      previewTraceCount,
+      dishonestPreviewCount,
+      dishonestPreviews,
+      previewHonestyPass,
       enforcementPass,
       ratioPass,
       topologyCoverage,
@@ -184,7 +222,7 @@ function auditTraces(traces, options = {}) {
   };
 }
 
-function loadTraceDirectory(tracesDir) {
+function loadTraceDirectory(tracesDir, options = {}) {
   if (!fs.existsSync(tracesDir)) return { empty: true, report: null, traceResults: [] };
 
   const traces = [];
@@ -196,86 +234,16 @@ function loadTraceDirectory(tracesDir) {
       /* skip unparseable trace - never let one bad file blind the audit */
     }
   }
-  return auditTraces(traces);
+  const windowedTraces =
+    typeof options.sinceMs === 'number'
+      ? traces.filter((t) => {
+          const tsMs = Date.parse(t.ts ?? '');
+          return Number.isFinite(tsMs) && tsMs >= options.sinceMs;
+        })
+      : traces;
+  return auditTraces(windowedTraces, options);
 }
 
-function buildSelfTestCases() {
-  return [
-    {
-      name: 'native-coarse-offender',
-      expectedPass: false,
-      expectedTopologyPass: false,
-      trace: {
-        operationId: 'self-test-native-coarse',
-        file: 'src/native-coarse.ts',
-        operator: 'native-edit',
-        fallback: false,
-        metrics: {
-          changedChars: 5,
-          lineRewriteSurfaceChars: 200,
-          expansionFactorAvoided: 0,
-          lineRewriteAvoided: false,
-        },
-      },
-    },
-    {
-      name: 'fallback-offender',
-      expectedPass: false,
-      expectedTopologyPass: false,
-      trace: {
-        operationId: 'self-test-fallback',
-        file: 'src/fallback.ts',
-        operator: 'atomic_replace_text',
-        fallback: true,
-        metrics: {
-          changedChars: 25,
-          lineRewriteSurfaceChars: 25,
-          expansionFactorAvoided: 1,
-          lineRewriteAvoided: false,
-        },
-      },
-    },
-    {
-      name: 'atomic-positive',
-      expectedPass: true,
-      expectedTopologyPass: true,
-      trace: {
-        operationId: 'self-test-atomic-positive',
-        file: 'src/atomic-positive.ts',
-        operator: 'atomic_replace_text',
-        targetUnit: 'object_property_value',
-        semanticImpact: 'contract_literal_swap',
-        preservedZones: [{ kind: 'property_key', description: 'Property key stayed unchanged.' }],
-        modifiedZones: [{ kind: 'literal_value', description: 'Only the literal value changed.' }],
-        movementZones: [],
-        fallback: false,
-        metrics: {
-          changedChars: 25,
-          lineRewriteSurfaceChars: 100,
-          expansionFactorAvoided: 4,
-          lineRewriteAvoided: false,
-        },
-      },
-    },
-    {
-      name: 'atomic-without-topology',
-      expectedPass: true,
-      expectedTopologyPass: false,
-      trace: {
-        operationId: 'self-test-atomic-no-topology',
-        file: 'src/atomic-no-topology.ts',
-        operator: 'atomic_replace_text',
-        fallback: false,
-        metrics: {
-          changedChars: 40,
-          lineRewriteSurfaceChars: 120,
-          expansionFactorAvoided: 3,
-          lineRewriteAvoided: false,
-        },
-      },
-    },
-  ];
-}
 
 async function writeJsonAndExit(value, exitCode) {
   await new Promise((resolve, reject) => {
@@ -295,9 +263,13 @@ if (args.includes('--self-test')) {
     const topologyMatches =
       selfTestCase.expectedTopologyPass === undefined ||
       audit.report.topologyPass === selfTestCase.expectedTopologyPass;
-    const passed = passMatches && topologyMatches;
+    const previewMatches =
+      selfTestCase.expectedPreviewHonestyPass === undefined ||
+      audit.report.previewHonestyPass === selfTestCase.expectedPreviewHonestyPass;
+    const passed = passMatches && topologyMatches && previewMatches;
     return {
       name: selfTestCase.name,
+      expectedPreviewHonestyPass: selfTestCase.expectedPreviewHonestyPass,
       expectedPass: selfTestCase.expectedPass,
       expectedTopologyPass: selfTestCase.expectedTopologyPass,
       passed,
@@ -319,19 +291,20 @@ if (args.includes('--self-test')) {
   }
 }
 
-const audit = loadTraceDirectory(TRACES);
+const audit = loadTraceDirectory(TRACES, { sinceMs });
 if (audit.empty) {
   console.log(fs.existsSync(TRACES) ? 'no parseable traces — nothing to audit (clean)' : 'no traces yet — nothing to audit (clean)');
   process.exit(0);
 }
 
 const { report } = audit;
-const { enforcementPass, ratioPass, topologyPass, currentTopologyPass, pass } = report;
+const { enforcementPass, ratioPass, topologyPass, currentTopologyPass, previewHonestyPass, pass } = report;
 
 if (asJson) {
   await writeJsonAndExit(report, pass ? 0 : 1);
 } else {
   console.log(`atomicity audit — ${report.traces} traces`);
+  if (report.since) console.log(`  since                  ${report.since}`);
   console.log(
     `  atomic_edit_ratio      ${report.atomic_edit_ratio}  (min ${minRatio})${strictRatio ? ' [strict]' : ''}`,
   );
@@ -339,6 +312,9 @@ if (asJson) {
   console.log(`  fallback_rate          ${report.fallback_rate}`);
   console.log(`  coarse_unjustified     ${report.coarse_unjustified}`);
   console.log(`  enforcementPass        ${enforcementPass}`);
+  console.log(`  previewTraceCount    ${report.previewTraceCount}`);
+  console.log(`  dishonestPreviewCount ${report.dishonestPreviewCount}`);
+  console.log(`  previewHonestyPass   ${previewHonestyPass}`);
   console.log(`  ratioPass              ${ratioPass}`);
   console.log(`  topologyCoverage       ${report.topologyCoverage}${strictTopology ? ' [strict]' : ''}`);
   console.log(`  topologyPass           ${topologyPass}`);
@@ -353,6 +329,12 @@ if (asJson) {
       console.log(`    ${item.file} (${item.operationId})`);
     }
   }
+  if (report.dishonestPreviews.length) {
+    console.log('  dishonest previews:');
+    for (const item of report.dishonestPreviews.slice(0, 10)) {
+      console.log(`    ${item.file} (${item.operationId})`);
+    }
+  }
   if (report.worstOffenders.length) {
     console.log('  offenders:');
     for (const o of report.worstOffenders) {
@@ -361,7 +343,9 @@ if (asJson) {
       );
     }
   }
-  if (!enforcementPass) {
+  if (!previewHonestyPass) {
+    console.log('FAIL — dishonest preview trace detected');
+  } else if (!enforcementPass) {
     console.log('FAIL — coarse-edit regression detected');
   } else if (!ratioPass) {
     if (strictRatio) {

@@ -14,7 +14,7 @@ import {
   getStaleAlertKey,
   getStaleSweepEveryMs,
   sendAlertWebhook,
-} from './__companions__/pulse-webhook-config';
+} from './pulse-webhook.helpers';
 import { PulseFrontendHeartbeatDto } from './dto/frontend-heartbeat.dto';
 import { PulseInternalHeartbeatDto } from './dto/internal-heartbeat.dto';
 import {
@@ -140,10 +140,10 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
       ttlMs,
       critical: payload.critical ?? payload.role !== 'frontend',
       env: process.env.NODE_ENV || 'development',
-      version: payload.version,
-      workspaceId: payload.workspaceId,
-      surface: payload.surface,
       signals: payload.signals || {},
+      ...(payload.version !== undefined ? { version: payload.version } : {}),
+      ...(payload.workspaceId !== undefined ? { workspaceId: payload.workspaceId } : {}),
+      ...(payload.surface !== undefined ? { surface: payload.surface } : {}),
     });
   }
   /** Capture backend heartbeat. */
@@ -154,6 +154,8 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
       const status = toOrganismStatus(String(health?.status || 'DEGRADED'));
       const nodeId = `backend:${this.getNodeSuffix()}`;
       const memory = process.memoryUsage();
+      const versionValue =
+        String(process.env.RAILWAY_GIT_COMMIT_SHA || '').slice(0, 12) || undefined;
       const summary =
         status === 'UP'
           ? 'Backend heartbeat healthy.'
@@ -171,7 +173,7 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
         ttlMs: DEFAULT_BACKEND_TTL_MS,
         critical: true,
         env: process.env.NODE_ENV || 'development',
-        version: String(process.env.RAILWAY_GIT_COMMIT_SHA || '').slice(0, 12) || undefined,
+        ...(versionValue !== undefined ? { version: versionValue } : {}),
         signals: {
           trigger,
           uptimeSec: Math.round(process.uptime()),
@@ -369,8 +371,8 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
         observedAt: record.observedAt,
         source: record.source,
         critical: record.critical,
-        workspaceId: record.workspaceId,
-        surface: record.surface,
+        ...(record.workspaceId !== undefined ? { workspaceId: record.workspaceId } : {}),
+        ...(record.surface !== undefined ? { surface: record.surface } : {}),
       });
     }
     if (record.critical && previous?.status && previous.status !== 'UP' && record.status === 'UP') {
@@ -382,8 +384,8 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
         observedAt: record.observedAt,
         source: 'pulse_recovery',
         critical: record.critical,
-        workspaceId: record.workspaceId,
-        surface: record.surface,
+        ...(record.workspaceId !== undefined ? { workspaceId: record.workspaceId } : {}),
+        ...(record.surface !== undefined ? { surface: record.surface } : {}),
       });
     }
     return {
@@ -431,7 +433,7 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
         ...base,
         status: stale ? 'STALE' : base.status,
         stale,
-        staleMs,
+        ...(staleMs !== undefined ? { staleMs } : {}),
       });
     });
     return nodes.sort((left, right) => left.nodeId.localeCompare(right.nodeId));
@@ -461,8 +463,8 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
           observedAt: new Date().toISOString(),
           source: 'stale_detector',
           critical: node.critical,
-          workspaceId: node.workspaceId,
-          surface: node.surface,
+          ...(node.workspaceId !== undefined ? { workspaceId: node.workspaceId } : {}),
+          ...(node.surface !== undefined ? { surface: node.surface } : {}),
         });
       }
     });

@@ -1,5 +1,6 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { StructuredLogger } from '../logging/structured-logger';
 import * as Sentry from '@sentry/node';
 import OpenAI from 'openai';
 import { AuditService } from '../audit/audit.service';
@@ -147,7 +148,7 @@ interface PaymentNegotiation {
 /** Smart payment service. */
 @Injectable()
 export class SmartPaymentService {
-  private readonly logger = new Logger(SmartPaymentService.name);
+  private readonly logger = StructuredLogger.from(SmartPaymentService.name);
   private openai!: OpenAI;
 
   constructor(
@@ -183,7 +184,7 @@ export class SmartPaymentService {
               role: 'system',
               content: buildSmartPaymentAiPrompt({
                 customerName,
-                productName,
+                ...(productName !== undefined ? { productName } : {}),
                 amount,
                 conversation,
               }),
@@ -192,14 +193,12 @@ export class SmartPaymentService {
           temperature: 0.7,
         });
 
-        const parsed = JSON.parse(
-          aiResponse.choices[0].message.content?.replace(JSON_N___N_RE, '') || '{}',
-        );
+        const aiContent = aiResponse.choices[0]?.message?.content ?? '';
+        const parsed = JSON.parse(aiContent.replace(JSON_N___N_RE, '') || '{}');
         suggestedMessage = parsed.message || '';
         await this.planLimits
           .trackAiUsage(workspaceId, aiResponse?.usage?.total_tokens ?? 500)
           .catch(() => {});
-        // PULSE:OK — AI message is optional enrichment; static fallback message is used when AI fails
       } catch (err: unknown) {
         this.logger.warn(
           'AI message generation failed',
@@ -228,8 +227,8 @@ export class SmartPaymentService {
       return {
         paymentId: payment.id,
         paymentUrl: payment.paymentLink || payment.invoiceUrl || '',
-        pixQrCode: payment.pixQrCodeUrl,
-        pixCopyPaste: payment.pixCopyPaste,
+        ...(payment.pixQrCodeUrl !== undefined ? { pixQrCode: payment.pixQrCodeUrl } : {}),
+        ...(payment.pixCopyPaste !== undefined ? { pixCopyPaste: payment.pixCopyPaste } : {}),
         billingType: 'PIX',
         suggestedMessage: suggestedMessage || buildPixReadyMessage(customerName, amount),
       };
@@ -313,9 +312,11 @@ export class SmartPaymentService {
           {
             role: 'system',
             content: buildNegotiationAiPrompt({
-              customerName: contact?.name,
-              leadScore: contact?.leadScore,
-              purchaseProbability: contact?.purchaseProbability,
+              ...(contact?.name != null ? { customerName: contact.name } : {}),
+              ...(contact?.leadScore != null ? { leadScore: contact.leadScore } : {}),
+              ...(contact?.purchaseProbability != null
+                ? { purchaseProbability: contact.purchaseProbability }
+                : {}),
               maxDiscount: rules.maxDiscount,
               minPurchaseForDiscount: rules.minPurchaseForDiscount,
               originalAmount,
@@ -326,9 +327,8 @@ export class SmartPaymentService {
         temperature: 0.5,
       });
 
-      const parsed = JSON.parse(
-        response.choices[0].message.content?.replace(JSON_N___N_RE, '') || '{}',
-      );
+      const responseContent = response.choices[0]?.message?.content ?? '';
+      const parsed = JSON.parse(responseContent.replace(JSON_N___N_RE, '') || '{}');
 
       await this.planLimits
         .trackAiUsage(workspaceId, response?.usage?.total_tokens ?? 500)
@@ -345,7 +345,6 @@ export class SmartPaymentService {
         installments: parsed.installments,
         approved: parsed.approved !== false,
       };
-      // PULSE:OK — AI negotiation is an optional enrichment layer; static 5% fallback discount is the safe default when AI is unavailable
     } catch (err: unknown) {
       this.logger.error('AI negotiation failed', err instanceof Error ? err.message : String(err));
       Sentry.captureException(err, {

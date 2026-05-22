@@ -19,7 +19,7 @@ export type BrainSource =
   | 'checkout'
   | 'system';
 
-export interface BrainMessage {
+interface BrainMessage {
   content: string;
   role: 'assistant' | 'system' | 'user';
 }
@@ -29,7 +29,6 @@ export class BrainMessageDto implements BrainMessage {
   role!: 'assistant' | 'system' | 'user';
 
   @IsString()
-  @MaxLength(12000)
   content!: string;
 }
 

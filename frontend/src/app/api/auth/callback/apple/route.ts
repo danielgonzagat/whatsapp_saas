@@ -42,12 +42,13 @@ async function readAppleCallbackPayload(
       return null;
     }
 
+    const user = parseAppleUser(request.nextUrl.searchParams.get('user'));
     return {
-      identityToken: identityToken || undefined,
-      authorizationCode: authorizationCode || undefined,
-      state: request.nextUrl.searchParams.get('state')?.trim() || undefined,
+      ...(identityToken !== '' ? { identityToken } : {}),
+      ...(authorizationCode !== '' ? { authorizationCode } : {}),
+      state: request.nextUrl.searchParams.get('state')?.trim() || '',
       redirectUri: new URL(request.nextUrl.pathname, request.nextUrl.origin).toString(),
-      user: parseAppleUser(request.nextUrl.searchParams.get('user')),
+      ...(user !== undefined ? { user } : {}),
     };
   }
 
@@ -58,12 +59,13 @@ async function readAppleCallbackPayload(
     return null;
   }
 
+  const formUser = parseAppleUser(formData.get('user'));
   return {
-    identityToken: identityToken || undefined,
-    authorizationCode: authorizationCode || undefined,
-    state: String(formData.get('state') || '').trim() || undefined,
+    ...(identityToken !== '' ? { identityToken } : {}),
+    ...(authorizationCode !== '' ? { authorizationCode } : {}),
+    state: String(formData.get('state') || '').trim(),
     redirectUri: new URL(request.nextUrl.pathname, request.nextUrl.origin).toString(),
-    user: parseAppleUser(formData.get('user')),
+    ...(formUser !== undefined ? { user: formUser } : {}),
   };
 }
 

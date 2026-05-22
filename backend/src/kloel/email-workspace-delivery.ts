@@ -45,10 +45,13 @@ function readWorkspaceApiKeys(
   raw: Record<string, unknown>,
 ): Pick<EmailDeliveryOverride, 'resendApiKey' | 'sendgridApiKey'> {
   const apiKey = decryptWorkspaceSecret(raw.apiKeyEncrypted);
-  return {
-    resendApiKey: provider === 'resend' ? apiKey : undefined,
-    sendgridApiKey: provider === 'sendgrid' ? apiKey : undefined,
-  };
+  if (provider === 'resend' && apiKey !== undefined) {
+    return { resendApiKey: apiKey };
+  }
+  if (provider === 'sendgrid' && apiKey !== undefined) {
+    return { sendgridApiKey: apiKey };
+  }
+  return {};
 }
 
 function readWorkspaceSmtp(
@@ -57,13 +60,16 @@ function readWorkspaceSmtp(
 ): Pick<EmailDeliveryOverride, 'smtp'> {
   const smtp = asRecord(raw.smtp);
   if (provider !== 'smtp' || !smtp) return {};
+  const port = readNumber(smtp.port);
+  const user = readString(smtp.user);
+  const pass = decryptWorkspaceSecret(smtp.passwordEncrypted);
   return {
     smtp: {
       host: readString(smtp.host) ?? '',
-      port: readNumber(smtp.port),
+      ...(port !== undefined ? { port } : {}),
       secure: smtp.secure === true,
-      user: readString(smtp.user),
-      pass: decryptWorkspaceSecret(smtp.passwordEncrypted),
+      ...(user !== undefined ? { user } : {}),
+      ...(pass !== undefined ? { pass } : {}),
     },
   };
 }
@@ -80,10 +86,12 @@ export function readWorkspaceEmailDelivery(
     return null;
   }
 
+  const fromEmail = readString(raw.fromEmail);
+  const fromName = readString(raw.fromName);
   return {
     provider,
-    fromEmail: readString(raw.fromEmail),
-    fromName: readString(raw.fromName),
+    ...(fromEmail !== undefined ? { fromEmail } : {}),
+    ...(fromName !== undefined ? { fromName } : {}),
     ...readWorkspaceApiKeys(provider, raw),
     ...readWorkspaceSmtp(provider, raw),
   };

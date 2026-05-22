@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import type { Prisma } from '@prisma/client';
 import { randomUUID } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
@@ -23,10 +24,14 @@ function toGuardReasonTag(ruleId: string | null): GuardReasonTag {
 
 @Injectable()
 export class MindGuardsService {
+  private readonly logger = StructuredLogger.from(MindGuardsService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly engine: KloelRuleEngineService,
-  ) {}
+  ) {
+    this.logger.debug?.(`MindGuardsService initialized`);
+  }
 
   async evaluate(input: {
     action: string;
@@ -36,25 +41,59 @@ export class MindGuardsService {
   }): Promise<MindGuardResult> {
     const ruleCtx: RuleContext = {
       action: input.action,
-      channel: input.context.channel,
-      contactOptOut: input.context.contactOptOut,
-      withinComplianceWindow: input.context.withinComplianceWindow,
-      templateApproved: input.context.templateApproved,
-      contactMessagesToday: input.context.contactMessagesToday,
-      campaignBudgetExhausted: input.context.campaignBudgetExhausted,
-      campaignActive: input.context.campaignActive,
-      paymentProcessed: input.context.paymentProcessed,
-      paymentAmount: input.context.paymentAmount,
-      maxPaymentAmount: input.context.maxPaymentAmount,
-      discountPercent: input.context.discountPercent,
-      maxDiscountPercent: input.context.maxDiscountPercent,
-      minMarginPercent: input.context.minMarginPercent,
-      escalationInProgress: input.context.escalationInProgress,
-      humanAvailable: input.context.humanAvailable,
-      productId: input.context.productId,
-      supportsAudio: input.context.supportsAudio,
-      supportsDocument: input.context.supportsDocument,
-      supportsNativeAudio: input.context.supportsNativeAudio,
+      ...(input.context.channel !== undefined ? { channel: input.context.channel } : {}),
+      ...(input.context.contactOptOut !== undefined
+        ? { contactOptOut: input.context.contactOptOut }
+        : {}),
+      ...(input.context.withinComplianceWindow !== undefined
+        ? { withinComplianceWindow: input.context.withinComplianceWindow }
+        : {}),
+      ...(input.context.templateApproved !== undefined
+        ? { templateApproved: input.context.templateApproved }
+        : {}),
+      ...(input.context.contactMessagesToday !== undefined
+        ? { contactMessagesToday: input.context.contactMessagesToday }
+        : {}),
+      ...(input.context.campaignBudgetExhausted !== undefined
+        ? { campaignBudgetExhausted: input.context.campaignBudgetExhausted }
+        : {}),
+      ...(input.context.campaignActive !== undefined
+        ? { campaignActive: input.context.campaignActive }
+        : {}),
+      ...(input.context.paymentProcessed !== undefined
+        ? { paymentProcessed: input.context.paymentProcessed }
+        : {}),
+      ...(input.context.paymentAmount !== undefined
+        ? { paymentAmount: input.context.paymentAmount }
+        : {}),
+      ...(input.context.maxPaymentAmount !== undefined
+        ? { maxPaymentAmount: input.context.maxPaymentAmount }
+        : {}),
+      ...(input.context.discountPercent !== undefined
+        ? { discountPercent: input.context.discountPercent }
+        : {}),
+      ...(input.context.maxDiscountPercent !== undefined
+        ? { maxDiscountPercent: input.context.maxDiscountPercent }
+        : {}),
+      ...(input.context.minMarginPercent !== undefined
+        ? { minMarginPercent: input.context.minMarginPercent }
+        : {}),
+      ...(input.context.escalationInProgress !== undefined
+        ? { escalationInProgress: input.context.escalationInProgress }
+        : {}),
+      ...(input.context.humanAvailable !== undefined
+        ? { humanAvailable: input.context.humanAvailable }
+        : {}),
+      ...(input.context.productId !== undefined ? { productId: input.context.productId } : {}),
+      ...(input.context.supportsAudio !== undefined
+        ? { supportsAudio: input.context.supportsAudio }
+        : {}),
+      ...(input.context.supportsDocument !== undefined
+        ? { supportsDocument: input.context.supportsDocument }
+        : {}),
+      ...(input.context.supportsNativeAudio !== undefined
+        ? { supportsNativeAudio: input.context.supportsNativeAudio }
+        : {}),
     };
 
     const trace = this.engine.evaluate(ruleCtx);

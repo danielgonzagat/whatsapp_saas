@@ -14,60 +14,60 @@ export interface WhatsAppConnectionStatus {
   /** Connected property. */
   connected: boolean;
   /** Status property. */
-  status?: string;
+  status?: string | undefined;
   /** Phone property. */
-  phone?: string;
+  phone?: string | undefined;
   /** Push name property. */
-  pushName?: string;
+  pushName?: string | undefined;
   /** Auth url property. */
-  authUrl?: string;
+  authUrl?: string | undefined;
   /** Phone number id property. */
-  phoneNumberId?: string;
+  phoneNumberId?: string | undefined;
   /** Whatsapp business id property. */
-  whatsappBusinessId?: string | null;
+  whatsappBusinessId?: string | null | undefined;
   /** Qr code property. */
-  qrCode?: string;
+  qrCode?: string | undefined;
   /** Message property. */
-  message?: string;
+  message?: string | undefined;
   /** Provider property. */
-  provider?: string;
+  provider?: string | undefined;
   /** Worker available property. */
-  workerAvailable?: boolean;
+  workerAvailable?: boolean | undefined;
   /** Worker healthy property. */
-  workerHealthy?: boolean;
+  workerHealthy?: boolean | undefined;
   /** Worker error property. */
-  workerError?: string | null;
+  workerError?: string | null | undefined;
   /** Degraded property. */
-  degraded?: boolean;
+  degraded?: boolean | undefined;
   /** Qr available property. */
-  qrAvailable?: boolean;
+  qrAvailable?: boolean | undefined;
   /** Browser session status property. */
-  browserSessionStatus?: string;
+  browserSessionStatus?: string | undefined;
   /** Screencast status property. */
-  screencastStatus?: string;
+  screencastStatus?: string | undefined;
   /** Viewer available property. */
-  viewerAvailable?: boolean;
+  viewerAvailable?: boolean | undefined;
   /** Takeover active property. */
-  takeoverActive?: boolean;
+  takeoverActive?: boolean | undefined;
   /** Agent paused property. */
-  agentPaused?: boolean;
+  agentPaused?: boolean | undefined;
   /** Last observation at property. */
-  lastObservationAt?: string | null;
+  lastObservationAt?: string | null | undefined;
   /** Last action at property. */
-  lastActionAt?: string | null;
+  lastActionAt?: string | null | undefined;
   /** Observation summary property. */
-  observationSummary?: string | null;
+  observationSummary?: string | null | undefined;
   /** Active provider property. */
-  activeProvider?: string | null;
+  activeProvider?: string | null | undefined;
   /** Proof count property. */
-  proofCount?: number;
+  proofCount?: number | undefined;
   /** Degraded reason property. */
-  degradedReason?: string | null;
+  degradedReason?: string | null | undefined;
   /** Viewport property. */
   viewport?: {
     width: number;
     height: number;
-  };
+  } | undefined;
 }
 
 /** Whats app proof entry shape. */
@@ -103,15 +103,15 @@ export interface WhatsAppConnectResponse {
   /** Status property. */
   status: string;
   /** Message property. */
-  message?: string;
+  message?: string | undefined;
   /** Auth url property. */
-  authUrl?: string;
+  authUrl?: string | undefined;
   /** Qr code property. */
-  qrCode?: string;
+  qrCode?: string | undefined;
   /** Qr code image property. */
-  qrCodeImage?: string;
+  qrCodeImage?: string | undefined;
   /** Error property. */
-  error?: boolean;
+  error?: boolean | undefined;
 }
 
 /** Whats app screencast token response shape. */
@@ -123,7 +123,34 @@ export interface WhatsAppScreencastTokenResponse {
   /** Workspace id property. */
   workspaceId: string;
   /** Require token property. */
-  requireToken?: boolean;
+  requireToken?: boolean | undefined;
+}
+
+export interface WhatsAppProofEntry {
+  /** Id property. */
+  id: string;
+  /** Workspace id property. */
+  workspaceId: string;
+  /** Kind property. */
+  kind: string;
+  /** Provider property. */
+  provider: string;
+  /** Summary property. */
+  summary: string;
+  /** Objective property. */
+  objective?: string | null | undefined;
+  /** Before image property. */
+  beforeImage?: string | null | undefined;
+  /** After image property. */
+  afterImage?: string | null | undefined;
+  /** Action property. */
+  action?: Record<string, unknown> | undefined;
+  /** Observation property. */
+  observation?: Record<string, unknown> | undefined;
+  /** Metadata property. */
+  metadata?: Record<string, unknown> | null | undefined;
+  /** Created at property. */
+  createdAt: string;
 }
 
 // ============================================
@@ -136,7 +163,14 @@ interface ApiResponse<T = unknown> {
   status: number;
 }
 
-function buildSuccessResponse<T>(payload: T, status: number): ApiResponse<T> {
+interface RefreshTokenResponse {
+  access_token?: string;
+  accessToken?: string;
+  refresh_token?: string;
+  refreshToken?: string;
+}
+
+function buildSuccessResponse<T>(payload: unknown, status: number): ApiResponse<T> {
   if (payload && typeof payload === 'object' && !Array.isArray(payload)) {
     return {
       ...(payload as Record<string, unknown>),
@@ -145,7 +179,7 @@ function buildSuccessResponse<T>(payload: T, status: number): ApiResponse<T> {
     } as ApiResponse<T>;
   }
 
-  return { data: payload, status };
+  return { data: payload as T, status };
 }
 
 // ============================================
@@ -190,7 +224,7 @@ async function doRefreshAccessToken(): Promise<boolean> {
       return false;
     }
 
-    const data = await res.json();
+    const data: RefreshTokenResponse = await res.json();
     const newToken = data.access_token || data.accessToken;
     const newRefresh = data.refresh_token || data.refreshToken;
     if (newToken) {
@@ -304,11 +338,11 @@ function shouldSerializeAsJson(body: unknown): body is object {
   return Boolean(body) && typeof body === 'object' && !isRawBinaryBody(body);
 }
 
-function serializeApiBody(body: unknown): BodyInit | null | undefined {
+function serializeApiBody(body: unknown): BodyInit | null {
   if (shouldSerializeAsJson(body)) {
     return JSON.stringify(body);
   }
-  return body as BodyInit | null | undefined;
+  return (body ?? null) as BodyInit | null;
 }
 
 function normalizeErrorMessage(rawMessage: unknown): string | undefined {
@@ -328,11 +362,14 @@ function buildErrorResponse<T>(
 
 async function performApiRequest<T>(url: string, init: RequestInit): Promise<ApiResponse<T>> {
   const res = await fetch(createTrustedRequest(url, init));
-  const data = await res.json().catch(() => ({}));
+  const data: unknown = await res.json().catch(() => ({} as unknown));
   if (!res.ok) {
-    return buildErrorResponse<T>(data, res.status);
+    return buildErrorResponse<T>(
+      data as { message?: unknown; error?: string },
+      res.status,
+    );
   }
-  return buildSuccessResponse(data, res.status);
+  return buildSuccessResponse<T>(data, res.status);
 }
 
 async function retryApiRequestWithRefreshedToken<T>(
@@ -362,8 +399,8 @@ export async function apiFetch<T = unknown>(
   const body = serializeApiBody(options.body);
   const baseInit: RequestInit = {
     ...options,
-    credentials: 'include', // Send httpOnly cookies
-    body,
+    credentials: 'include',
+    body: body ?? null,
     headers,
   };
 
@@ -435,7 +472,7 @@ export const api = {
         createTrustedRequest(endpoint, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: body ? JSON.stringify(body) : undefined,
+          body: body ? JSON.stringify(body) : null,
         }),
       );
       if (!res.ok) {
@@ -462,7 +499,7 @@ export const api = {
         createTrustedRequest(endpoint, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: body ? JSON.stringify(body) : undefined,
+          body: body ? JSON.stringify(body) : null,
         }),
       );
       if (!res.ok) {

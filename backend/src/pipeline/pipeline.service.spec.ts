@@ -1,6 +1,7 @@
 import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { PrismaService } from '../prisma/prisma.service';
+import { PIPELINE_STAGE_COLORS } from '../common/kloel-colors';
 import { PipelineService } from './pipeline.service';
 
 describe('PipelineService', () => {
@@ -26,11 +27,11 @@ describe('PipelineService', () => {
   const wsId = 'ws-1';
 
   const defaultStages = [
-    { name: 'Lead', color: '#E5E7EB', order: 0 },
-    { name: 'Contacted', color: '#FEF3C7', order: 1 },
-    { name: 'Proposal', color: '#DBEAFE', order: 2 },
-    { name: 'Won', color: '#D1FAE5', order: 3 },
-    { name: 'Lost', color: '#FEE2E2', order: 4 },
+    { name: 'Lead', color: PIPELINE_STAGE_COLORS.LEAD_LIGHT, order: 0 },
+    { name: 'Contacted', color: PIPELINE_STAGE_COLORS.CONTACTED_LIGHT, order: 1 },
+    { name: 'Proposal', color: PIPELINE_STAGE_COLORS.PROPOSAL_LIGHT, order: 2 },
+    { name: 'Won', color: PIPELINE_STAGE_COLORS.WON_LIGHT, order: 3 },
+    { name: 'Lost', color: PIPELINE_STAGE_COLORS.LOST_LIGHT, order: 4 },
   ];
 
   beforeEach(async () => {
@@ -233,7 +234,7 @@ describe('PipelineService', () => {
       });
     });
 
-    it('rejects a deal without contactId because the schema requires a contact relation', async () => {
+    it('throws BadRequestException when contactId is missing', async () => {
       await expect(service.createDeal(wsId, { title, value })).rejects.toThrow(BadRequestException);
       expect(prisma.deal.create).not.toHaveBeenCalled();
     });
@@ -261,8 +262,8 @@ describe('PipelineService', () => {
         data: {
           title,
           value,
-          contactId,
-          stageId: 's-1',
+          contact: { connect: { id: contactId } },
+          stage: { connect: { id: 's-1' } },
           sourceCampaignId: 'camp-99',
         },
       });
@@ -287,9 +288,26 @@ describe('PipelineService', () => {
       );
     });
 
-    it('rejects a deal with omitted title and value when contactId is also missing', async () => {
-      await expect(service.createDeal(wsId, {})).rejects.toThrow(BadRequestException);
-      expect(prisma.deal.create).not.toHaveBeenCalled();
+    it('creates a deal with empty defaults when title and value are omitted', async () => {
+      const contactId = 'c-1';
+      const createdDeal = { id: 'd-min', title: '', value: 0, contactId, stageId: 's-1' };
+      prisma.contact.findUnique.mockResolvedValue({
+        workspaceId: wsId,
+        customFields: {},
+      });
+      prisma.deal.create.mockResolvedValue(createdDeal);
+
+      const result = await service.createDeal(wsId, { contactId });
+
+      expect(result).toEqual(createdDeal);
+      expect(prisma.deal.create).toHaveBeenCalledWith({
+        data: {
+          title: '',
+          value: 0,
+          contact: { connect: { id: contactId } },
+          stage: { connect: { id: 's-1' } },
+        },
+      });
     });
 
     it('creates a deal without sourceCampaignId when contact has no lastCampaignId', async () => {
@@ -308,8 +326,8 @@ describe('PipelineService', () => {
         data: {
           title,
           value,
-          contactId,
-          stageId: 's-1',
+          contact: { connect: { id: contactId } },
+          stage: { connect: { id: 's-1' } },
         },
       });
     });

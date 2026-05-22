@@ -78,18 +78,24 @@ function computeSeverity(name, baseline, current) {
     // _min metrics: a DECREASE is worse. Percentage decrease = (baseline - current) / baseline * 100
     // _max metrics: an INCREASE is worse. Percentage increase = (current - baseline) / baseline * 100
     // But these are all _min, so decrease.
-    if (baseline === 0) return 'medium';
+    if (baseline === 0) {
+      return 'medium';
+    }
     const pctChange = ((baseline - current) / baseline) * 100;
-    if (pctChange > 5) return 'critical';
-    if (pctChange > 1) return 'high';
+    if (pctChange > 5) {
+      return 'critical';
+    }
+    if (pctChange > 1) {
+      return 'high';
+    }
     return 'medium';
   }
 
   if (HIGH_AT_20PCT_METRICS.has(name)) {
     // _max metrics: an INCREASE is worse
-    if (baseline === 0) return current > 0 ? 'high' : 'medium';
+    if (baseline === 0) {return current > 0 ? 'high' : 'medium';}
     const pctChange = ((current - baseline) / baseline) * 100;
-    if (pctChange > 20) return 'high';
+    if (pctChange > 20) {return 'high';}
     return 'medium';
   }
 
@@ -146,7 +152,7 @@ function main() {
   try {
     const parsed = JSON.parse(readFileSync(currentPath, 'utf8'));
     current = parsed?.ratchet && typeof parsed.ratchet === 'object' ? parsed.ratchet : parsed;
-    if (!current || typeof current !== 'object') throw new Error('shape: missing ratchet object');
+    if (!current || typeof current !== 'object') {throw new Error('shape: missing ratchet object');}
   } catch (err) {
     const report = buildReport('ratchet', getVersion(), [], {
       status: 'error',
@@ -171,10 +177,14 @@ function main() {
   const findings = [];
 
   for (const [name, baselineValue] of Object.entries(baseline)) {
-    if (typeof baselineValue !== 'number') continue;
+    if (typeof baselineValue !== 'number') {
+      continue;
+    }
 
     const currentValue = current[name];
-    if (typeof currentValue !== 'number') continue;
+    if (typeof currentValue !== 'number') {
+      continue;
+    }
 
     const result = compareMetric(name, baselineValue, currentValue);
 

@@ -1,12 +1,15 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { Response } from 'express';
 import OpenAI from 'openai';
 import { PlanLimitsService } from '../billing/plan-limits.service';
+import { createTextLlmClient } from '../lib/llm-provider';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
 import { PrismaService } from '../prisma/prisma.service';
 import { chatCompletionWithRetry } from './openai-wrapper';
 import { ConversationalOnboardingToolsService } from './conversational-onboarding-tools.service';
 import { ONBOARDING_TOOLS } from './conversational-onboarding-tools-schema';
+import { AbiBuilderService } from './abi/abi-builder.service';
 // @@index: optimistic lock via updatedAt — concurrent writes resolved by DB constraint
 
 const ONBOARDING_SAFE_SETUP_TOOL_NAMES = [
@@ -117,17 +120,62 @@ interface PrismaWithDynamicModels {
 /** Conversational onboarding service. */
 @Injectable()
 export class ConversationalOnboardingService {
-  private readonly logger = new Logger(ConversationalOnboardingService.name);
+  private readonly logger = StructuredLogger.from(ConversationalOnboardingService.name);
   private openai: OpenAI;
   private readonly prismaExt: PrismaWithDynamicModels;
 
   constructor(
-    private readonly prisma: PrismaService,
+    prisma: PrismaService,
     private readonly planLimits: PlanLimitsService,
     private readonly toolsService: ConversationalOnboardingToolsService,
+    @Optional() private readonly abiBuilder?: AbiBuilderService,
   ) {
     this.prismaExt = prisma as object as PrismaWithDynamicModels;
-    this.openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+    this.openai = createTextLlmClient() ?? new OpenAI({ apiKey: 'missing' });
+  }
+
+  private async buildOnboardingStateMessage(
+    workspaceId: string,
+    userMessage: string,
+  ): Promise<OnboardingMessage> {
+    if (process.env['KLOEL_ONBOARDING_USE_ABI'] !== 'on' || !this.abiBuilder) {
+      return { role: 'system', content: CONVERSATIONAL_ONBOARDING_PROMPT };
+    }
+
+    const now = new Date();
+    const result = await this.abiBuilder.build({
+      audience: 'public',
+      currentInput: {
+        raw: userMessage,
+        parsed: { intent: 'workspace_onboarding' },
+        channel: 'conversational_onboarding',
+        arrivalTimestamp: now.toISOString(),
+      },
+      perceptionSnapshot: {
+        channel: 'conversational_onboarding',
+        workspaceId,
+        activeStage: 'onboarding',
+      },
+      capabilityIds: ONBOARDING_SAFE_SETUP_TOOL_NAMES.map((name) => `onboarding.${name}`),
+      now,
+    });
+
+    return {
+      role: 'user',
+      content: JSON.stringify(
+        result.status === 'ok'
+          ? { cognitiveStateAbi: result.abi }
+          : {
+              cognitiveStateAbiStatus: result.status,
+              reason: result.reason,
+              currentInput: {
+                raw: userMessage,
+                channel: 'conversational_onboarding',
+                truthMode: 'observed',
+              },
+            },
+      ),
+    };
   }
 
   private parseToolArguments(rawArguments: string, functionName: string): Record<string, unknown> {
@@ -150,6 +198,13 @@ export class ConversationalOnboardingService {
     role: 'brain' | 'writer',
   ): Promise<OpenAI.Chat.ChatCompletion> {
     await this.planLimits.ensureTokenBudget(workspaceId);
+    this.logger.log('Calling primary LLM for onboarding', {
+      context: 'ConversationalOnboardingService.runOnboardingCompletion',
+      workspaceId,
+      role,
+      model: resolveBackendOpenAIModel(role),
+      messageCount: messages.length,
+    });
     const response = await chatCompletionWithRetry(this.openai, {
       model: resolveBackendOpenAIModel(role),
       messages: messages as OpenAI.ChatCompletionMessageParam[],
@@ -160,7 +215,13 @@ export class ConversationalOnboardingService {
     });
     await this.planLimits
       .trackAiUsage(workspaceId, response?.usage?.total_tokens ?? 500)
-      .catch(() => {});
+      .catch((err: unknown) => {
+        this.logger.warn(
+          'Failed to track AI usage for onboarding',
+          err instanceof Error ? err.message : String(err),
+          { context: 'ConversationalOnboardingService.runOnboardingCompletion', workspaceId },
+        );
+      });
     return response;
   }
 
@@ -170,7 +231,9 @@ export class ConversationalOnboardingService {
     toolCalls: OpenAI.Chat.ChatCompletionMessageToolCall[],
   ): Promise<void> {
     for (const toolCall of toolCalls) {
-      if (!('function' in toolCall)) continue;
+      if (!('function' in toolCall)) {
+        continue;
+      }
       const functionName = toolCall.function.name;
       const args = this.parseToolArguments(toolCall.function.arguments, functionName);
       this.logger.log(`Executando tool: ${functionName}`, args);
@@ -189,9 +252,13 @@ export class ConversationalOnboardingService {
     workspaceId: string,
     toolCalls: OpenAI.Chat.ChatCompletionMessageToolCall[] | null | undefined,
   ): Promise<void> {
-    if (!toolCalls) return;
+    if (!toolCalls) {
+      return;
+    }
     for (const toolCall of toolCalls) {
-      if (!('function' in toolCall)) continue;
+      if (!('function' in toolCall)) {
+        continue;
+      }
       const functionName: string = toolCall.function.name;
       const args = this.parseToolArguments(toolCall.function.arguments, functionName);
       await this.toolsService.executeToolCall(workspaceId, functionName, args);
@@ -205,8 +272,13 @@ export class ConversationalOnboardingService {
   ): Promise<string> {
     await this.executeAndAppendToolCalls(workspaceId, messages, initialToolCalls);
     const finalResponse = await this.runOnboardingCompletion(workspaceId, messages, 'writer');
-    const responseText = finalResponse.choices[0].message.content || '';
-    await this.executeFollowupToolCalls(workspaceId, finalResponse.choices[0].message.tool_calls);
+    const assistantChoice = finalResponse.choices[0];
+    if (!assistantChoice) {
+      return '';
+    }
+    const responseText = assistantChoice.message.content || '';
+    await this.executeFollowupToolCalls(workspaceId, assistantChoice.message.tool_calls);
+
     return responseText;
   }
 
@@ -222,9 +294,10 @@ export class ConversationalOnboardingService {
   /** Inicia ou continua o onboarding conversacional */
   async chat(workspaceId: string, userMessage: string, res?: Response): Promise<string | void> {
     const history = await this.toolsService.getOnboardingHistory(workspaceId);
+    const onboardingStateMessage = await this.buildOnboardingStateMessage(workspaceId, userMessage);
 
     const messages: OnboardingMessage[] = [
-      { role: 'system', content: CONVERSATIONAL_ONBOARDING_PROMPT },
+      onboardingStateMessage,
       ...history.map((h) => ({
         role: h.role as OnboardingMessage['role'],
         content: h.content,
@@ -234,7 +307,11 @@ export class ConversationalOnboardingService {
 
     try {
       const response = await this.runOnboardingCompletion(workspaceId, messages, 'brain');
-      const assistantMessage = response.choices[0].message;
+      const assistantChoice = response.choices[0];
+      if (!assistantChoice) {
+        return '';
+      }
+      const assistantMessage = assistantChoice.message;
       let responseText = assistantMessage.content || '';
 
       const initialToolCalls = assistantMessage.tool_calls;
@@ -252,7 +329,11 @@ export class ConversationalOnboardingService {
 
       return responseText;
     } catch (error: unknown) {
-      this.logger.error('Erro no onboarding conversacional:', error);
+      this.logger.error(
+        'Erro no onboarding conversacional',
+        error instanceof Error ? error.message : String(error),
+        { context: 'ConversationalOnboardingService.chat', workspaceId },
+      );
       throw error;
     }
   }
@@ -268,12 +349,13 @@ export class ConversationalOnboardingService {
   async getStatus(workspaceId: string) {
     // Wrap reads in $transaction to get a consistent snapshot — prevents
     // concurrent onboarding completion from returning stale status.
-    return this.prismaExt.$transaction(async (tx) => {
-      const state = await tx.kloelMemory.findUnique({
+    return this.prismaExt.$transaction(async (tx: PrismaWithDynamicModels) => {
+      const kloelMemory = tx.kloelMemory;
+      const state = await kloelMemory.findUnique({
         where: { workspaceId_key: { workspaceId, key: 'onboarding_completed' } },
       });
 
-      const messages = await tx.kloelMemory.findMany({
+      const messages = await kloelMemory.findMany({
         where: { workspaceId, key: { startsWith: 'onboarding_msg_' } },
         select: { id: true },
         take: 100,

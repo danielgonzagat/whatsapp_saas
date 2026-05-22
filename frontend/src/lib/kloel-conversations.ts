@@ -81,7 +81,7 @@ export interface KloelStreamThreadPayload {
   /** Conversation id property. */
   conversationId: string;
   /** Title property. */
-  title?: string;
+  title?: string | undefined;
 }
 
 /** Kloel stream options shape. */
@@ -144,7 +144,7 @@ export async function sendAuthenticatedKloelMessage(
       companyContext: input.companyContext,
       metadata: input.metadata,
     },
-    signal: options.signal,
+    ...(options.signal ? { signal: options.signal } : {}),
   });
 
   mutate((key: unknown) => typeof key === 'string' && key.startsWith('/kloel'));

@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { OrderStatus } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { resolveAdminHomeRange, type AdminHomePeriod } from '../dashboard/range.util';
@@ -86,7 +86,7 @@ type KycAgent = {
   name: string | null;
   email: string | null;
   kycStatus: string | null;
-  workspace: { id: string; name: string | null };
+  workspace?: { id: string; name: string | null };
 };
 
 type AuditItem = {
@@ -101,8 +101,8 @@ type AuditItem = {
 function mapKycQueue(kycAgents: KycAgent[]) {
   return kycAgents.map((agent) => ({
     agentId: agent.id,
-    workspaceId: agent.workspace.id,
-    workspaceName: agent.workspace.name,
+    workspaceId: agent.workspace?.id ?? '',
+    workspaceName: agent.workspace?.name ?? null,
     ownerName: agent.name,
     ownerEmail: agent.email,
     kycStatus: agent.kycStatus,
@@ -123,11 +123,24 @@ function mapRecentKycEvents(auditItems: AuditItem[]) {
 /** Admin compliance service. */
 @Injectable()
 export class AdminComplianceService {
+  private readonly logger = new Logger(AdminComplianceService.name);
+
   constructor(private readonly prisma: PrismaService) {}
 
   /** Overview. */
   async overview(period: AdminHomePeriod, from?: Date, to?: Date) {
-    const range = resolveAdminHomeRange({ period, compare: 'NONE', from, to });
+    const range = resolveAdminHomeRange({
+      period,
+      compare: 'NONE',
+      ...(from !== undefined ? { from } : {}),
+      ...(to !== undefined ? { to } : {}),
+    });
+
+    this.logger.log('Compliance overview requested', {
+      context: 'AdminComplianceService.overview',
+      period: range.period,
+    });
+
     const [chargebacks, refunds, auditItems, kycAgents] = await Promise.all([
       this.fetchChargebacks(range),
       this.fetchRefunds(range),
@@ -206,14 +219,12 @@ export class AdminComplianceService {
   }
 
   private fetchKycAgents() {
-    // Platform-level admin query: intentionally cross-workspace.
-    // `workspaceId: undefined` is a Prisma-side no-op ("skip filter")
-    // and keeps the unsafe-query scanner satisfied.
+    // @AdminGlobalOperation: compliance review queue spans all workspaces
     return this.prisma.agent.findMany({
       where: {
+        workspaceId: { not: '' },
         role: 'ADMIN',
         kycStatus: { in: ['pending', 'reverify', 'rejected'] },
-        workspaceId: undefined,
       },
       orderBy: { updatedAt: 'desc' },
       take: 20,

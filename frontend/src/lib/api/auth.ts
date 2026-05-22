@@ -113,6 +113,17 @@ export const authApi = {
     return res;
   },
 
+  signInWithFacebook: async (accessToken: string, userId?: string) => {
+    const res = await apiFetch<AuthPayload>('/auth/oauth/facebook', {
+      method: 'POST',
+      body: { accessToken, userId },
+    });
+
+    persistAuthPayload(res);
+    mutate((key) => typeof key === 'string' && key.startsWith('/workspace'));
+    return res;
+  },
+
   requestMagicLink: async (email: string, redirectTo?: string) => {
     return apiFetch<{ success?: boolean; message?: string; redirectTo?: string }>(
       '/auth/magic-link/request',

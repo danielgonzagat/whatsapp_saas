@@ -1,4 +1,5 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
+import { StructuredLogger } from '../../logging/structured-logger';
 
 import { StripeService } from '../../billing/stripe.service';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -191,7 +192,7 @@ function planProportionalReversals(
 /** Connect reversal service. */
 @Injectable()
 export class ConnectReversalService {
-  private readonly logger = new Logger(ConnectReversalService.name);
+  private readonly logger = StructuredLogger.from(ConnectReversalService.name);
 
   constructor(
     private readonly prisma: PrismaService,
@@ -201,7 +202,6 @@ export class ConnectReversalService {
   ) {}
 
   /** Process refund. */
-  // PULSE_OK: rate-limited by PaymentWebhookStripeController
   async processRefund(input: ProcessRefundReversalInput): Promise<ProcessReversalResult> {
     const snapshot = await this.loadSnapshot(input.paymentIntentId);
     if (!snapshot) {
@@ -246,7 +246,6 @@ export class ConnectReversalService {
   }
 
   /** Process dispute. */
-  // PULSE_OK: rate-limited by PaymentWebhookStripeController
   async processDispute(input: ProcessDisputeReversalInput): Promise<ProcessReversalResult> {
     const snapshot = await this.loadSnapshot(input.paymentIntentId);
     if (!snapshot) {

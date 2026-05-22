@@ -13,8 +13,8 @@ const SENTENCE_END_RE = /[.!?]/;
 
 function formatAgentPhaseLabel(value?: string | null): string {
   const raw = String(value || '').trim();
-  if (!raw) return '';
-  if (raw === 'streaming_token') return '';
+  if (!raw) {return '';}
+  if (raw === 'streaming_token') {return '';}
   return raw
     .replace(SEPARATOR_G_RE, ' ')
     .replace(WHITESPACE_G_RE, ' ')
@@ -73,7 +73,7 @@ export function ReasoningTraceBar({
               display: 'flex',
               alignItems: 'center',
               gap: 12,
-              fontSize: 11,
+              fontSize: 16,
               fontWeight: 700,
               letterSpacing: '0.18em',
               textTransform: 'uppercase',
@@ -92,7 +92,7 @@ export function ReasoningTraceBar({
           <p
             style={{
               margin: 0,
-              fontSize: 14,
+              fontSize: 16,
               lineHeight: 1.65,
               color: KLOEL_THEME.textPrimary,
               whiteSpace: 'nowrap',
@@ -113,7 +113,7 @@ export function ReasoningTraceBar({
             padding: '8px 12px',
             background: 'transparent',
             color: KLOEL_THEME.textSecondary,
-            fontSize: 12,
+            fontSize: 16,
             fontWeight: 600,
             cursor: 'pointer',
           }}
@@ -153,7 +153,7 @@ export function ReasoningTraceBar({
                       alignItems: 'center',
                       justifyContent: 'space-between',
                       gap: 12,
-                      fontSize: 11,
+                      fontSize: 16,
                       fontWeight: 700,
                       letterSpacing: '0.14em',
                       textTransform: 'uppercase',
@@ -172,7 +172,7 @@ export function ReasoningTraceBar({
                   <p
                     style={{
                       margin: 0,
-                      fontSize: 14,
+                      fontSize: 16,
                       lineHeight: 1.65,
                       color: KLOEL_THEME.textSecondary,
                     }}
@@ -182,7 +182,7 @@ export function ReasoningTraceBar({
                 </div>
               ))
             ) : (
-              <p style={{ margin: 0, fontSize: 14, color: KLOEL_THEME.textSecondary }}>
+              <p style={{ margin: 0, fontSize: 16, color: KLOEL_THEME.textSecondary }}>
                 {kloelT(`Nenhum evento do agente foi registrado hoje.`)}
               </p>
             )}

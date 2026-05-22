@@ -1,10 +1,14 @@
-import { ForbiddenException, Injectable, Logger, Optional } from '@nestjs/common';
+import { ForbiddenException, Injectable } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { buildQueueJobId } from '../queue/job-id.util';
 import { autopilotQueue, flowQueue } from '../queue/queue';
-import { OpsAlertService } from '../observability/ops-alert.service';
 
+/**
+ * @cluster whatsapp_saas/backend/autopilot
+ * L11 multi-agent TaskGraph annotation (batched by tools/auto-pr/batch-job.mjs).
+ */
 const D_RE_CONV = /\D/g;
 
 /**
@@ -13,12 +17,9 @@ const D_RE_CONV = /\D/g;
  */
 @Injectable()
 export class AutopilotOpsConversionService {
-  private readonly logger = new Logger(AutopilotOpsConversionService.name);
+  private readonly logger = StructuredLogger.from(AutopilotOpsConversionService.name);
 
-  constructor(
-    private readonly prisma: PrismaService,
-    @Optional() private readonly opsAlert?: OpsAlertService,
-  ) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   private readRecord(value: unknown): Record<string, unknown> {
     return typeof value === 'object' && value !== null ? (value as Record<string, unknown>) : {};
@@ -80,7 +81,6 @@ export class AutopilotOpsConversionService {
       });
       const cf = this.readRecord(contact?.customFields);
       const nextRetryAtValue = this.readOptionalText(cf.autopilotNextRetryAt);
-      // PULSE_OK: nextRetryAt from customFields — fallback to 0 if parse fails (NaN||0 = 0, guarded by `if(nextRetryAt)` below)
       const nextRetryAt = nextRetryAtValue ? new Date(nextRetryAtValue).getTime() : 0;
       if (nextRetryAt && nextRetryAt > now) {
         const result = {
@@ -209,10 +209,10 @@ export class AutopilotOpsConversionService {
   /** Marca conversão manual/webhook e registra evento CONVERSION. */
   async markConversion(input: {
     workspaceId: string;
-    contactId?: string;
-    phone?: string;
-    reason?: string;
-    meta?: Record<string, unknown>;
+    contactId?: string | undefined;
+    phone?: string | undefined;
+    reason?: string | undefined;
+    meta?: Record<string, unknown> | undefined;
   }) {
     const startedAt = Date.now();
     const operation = 'autopilot/conversion';
@@ -256,7 +256,7 @@ export class AutopilotOpsConversionService {
       await this.prisma.autopilotEvent.create({
         data: {
           workspaceId,
-          contactId: contactIdResolved,
+          ...(contactIdResolved !== undefined ? { contactId: contactIdResolved } : {}),
           intent: 'BUYING',
           action: 'CONVERSION',
           status: 'executed',
@@ -275,7 +275,9 @@ export class AutopilotOpsConversionService {
           where: { id: contactIdResolved, workspaceId },
           select: { phone: true },
         });
-        contactPhone = contact?.phone || contactPhone;
+        if (contact) {
+          contactPhone = contact.phone || contactPhone;
+        }
       }
 
       const ws = await this.prisma.workspace.findUnique({ where: { id: workspaceId } });

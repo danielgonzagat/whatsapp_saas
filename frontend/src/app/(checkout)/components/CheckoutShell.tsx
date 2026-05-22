@@ -1,4 +1,5 @@
 'use client';
+import { colors } from '@/lib/design-tokens';
 
 import { kloelT } from '@/lib/i18n/t';
 import { KloelBrandLockup } from '@/components/kloel/KloelBrand';
@@ -33,8 +34,10 @@ export default function CheckoutShell({ slug, mode = 'slug' }: CheckoutShellProp
         ? `${API_BASE}/checkout/public/r/${slug}`
         : `${API_BASE}/checkout/public/${slug}`;
 
-    setLoading(true);
-    setError(null);
+    queueMicrotask(() => {
+      setLoading(true);
+      setError(null);
+    });
 
     fetch(endpoint, { signal: controller.signal })
       .then((res) => {
@@ -65,7 +68,7 @@ export default function CheckoutShell({ slug, mode = 'slug' }: CheckoutShellProp
       <div
         style={{
           minHeight: '100vh',
-          background: '#0A0A0C',
+          background: colors.background.void,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -103,7 +106,7 @@ export default function CheckoutShell({ slug, mode = 'slug' }: CheckoutShellProp
       <div
         style={{
           minHeight: '100vh',
-          background: '#0A0A0C',
+          background: colors.background.void,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',

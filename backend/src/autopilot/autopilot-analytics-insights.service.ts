@@ -1,5 +1,6 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { StructuredLogger } from '../logging/structured-logger';
 import OpenAI from 'openai';
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { chatCompletionWithRetry } from '../kloel/openai-wrapper';
@@ -11,8 +12,12 @@ import { PrismaService } from '../prisma/prisma.service';
  * Extracted from AutopilotAnalyticsReportService to keep each file under 400 lines.
  */
 @Injectable()
+/**
+ * @cluster whatsapp_saas/backend/autopilot
+ * L11 multi-agent TaskGraph annotation (batched by tools/auto-pr/batch-job.mjs).
+ */
 export class AutopilotAnalyticsInsightsService {
-  private readonly logger = new Logger(AutopilotAnalyticsInsightsService.name);
+  private readonly logger = StructuredLogger.from(AutopilotAnalyticsInsightsService.name);
 
   constructor(
     private readonly prisma: PrismaService,
@@ -32,17 +37,26 @@ export class AutopilotAnalyticsInsightsService {
 
       const events = await this.prisma.autopilotEvent.findMany({
         where: { workspaceId, createdAt: { gte: since } },
-        select: { contactId: true, createdAt: true, action: true },
+        select: { contactId: true, createdAt: true, action: true, status: true },
         orderBy: { createdAt: 'desc' },
         take: 5000,
       });
 
+      const impactableEvents = events.filter((event) => {
+        const status = event.status || 'executed';
+        return status === 'executed' || event.action === 'CONVERSION';
+      });
+
       const contactActions = new Map<string, number>();
-      for (const ev of events) {
-        if (!ev.contactId) continue;
+      for (const ev of impactableEvents) {
+        if (!ev.contactId) {
+          continue;
+        }
         const ts = ev.createdAt.getTime();
         const current = contactActions.get(ev.contactId);
-        if (!current || ts > current) contactActions.set(ev.contactId, ts);
+        if (!current || ts > current) {
+          contactActions.set(ev.contactId, ts);
+        }
       }
 
       const contactIds = Array.from(contactActions.keys());
@@ -54,12 +68,12 @@ export class AutopilotAnalyticsInsightsService {
       const contactMap = new Map<string, { id: string; phone: string; name: string | null }>();
       contacts.forEach((c) => contactMap.set(c.id, c));
 
-      const conversionEvents = events.filter((e) => e.action === 'CONVERSION');
+      const conversionEvents = impactableEvents.filter((e) => e.action === 'CONVERSION');
       const conversionEventContacts = new Set(
         conversionEvents.map((e) => e.contactId).filter(Boolean),
       );
       const allContactIds = Array.from(contactActions.keys());
-      const actionsAnalyzed = events.length || contactActions.size;
+      const actionsAnalyzed = impactableEvents.length || contactActions.size;
       const minActionTs =
         allContactIds.length > 0
           ? new Date(Math.min(...Array.from(contactActions.values())))
@@ -108,7 +122,9 @@ export class AutopilotAnalyticsInsightsService {
 
       const inboundByContact = new Map<string, Date[]>();
       for (const msg of inboundMessages) {
-        if (!msg.contactId) continue;
+        if (!msg.contactId) {
+          continue;
+        }
         const list = inboundByContact.get(msg.contactId) || [];
         list.push(msg.createdAt);
         inboundByContact.set(msg.contactId, list);
@@ -130,16 +146,20 @@ export class AutopilotAnalyticsInsightsService {
           (d) => d.getTime() > actionTs,
         );
         if (replies.length > 0) {
+          const firstReply = replies[0];
+          if (!firstReply) {
+            continue;
+          }
           repliedContacts += 1;
           totalReplies += replies.length;
-          const delay = Math.round((replies[0].getTime() - actionTs) / 60000);
+          const delay = Math.round((firstReply.getTime() - actionTs) / 60000);
           replyDelays.push(delay);
           const contact = contactMap.get(contactId);
           if (samples.length < 5 && contact) {
             samples.push({
               contactId,
               contact: contact.name || contact.phone,
-              replyAt: replies[0],
+              replyAt: firstReply,
               delayMinutes: delay,
             });
           }
@@ -211,9 +231,10 @@ export class AutopilotAnalyticsInsightsService {
       const action = e.action || 'UNKNOWN';
       intents[intent] = (intents[intent] || 0) + 1;
       acts[action] = (acts[action] || 0) + 1;
-      if (e.status === 'error') {
+      if (e.status === 'error' || e.status === 'failed') {
         errors += 1;
-      } else {
+      }
+      if (e.status === 'executed') {
         executed += 1;
       }
     });
@@ -224,6 +245,55 @@ export class AutopilotAnalyticsInsightsService {
       _sum: { value: true },
       _count: { id: true },
     });
+
+    const pendingWorkItemStates = ['PENDING', 'OPEN', 'REQUIRED'];
+    const [proofSnapshot, pendingApproval, pendingInput, policyAgg, fallbackCount] =
+      await Promise.all([
+        this.prisma.accountProofSnapshot
+          .findFirst({
+            where: { workspaceId },
+            orderBy: { createdAt: 'desc' },
+            select: {
+              eligibleActionCount: true,
+              blockedActionCount: true,
+              deferredActionCount: true,
+              waitingApprovalCount: true,
+              waitingInputCount: true,
+              noLegalActions: true,
+            },
+          })
+          .catch(() => null),
+        this.prisma.agentWorkItem
+          .count({
+            where: {
+              workspaceId,
+              requiresApproval: true,
+              OR: [{ approvalState: { in: pendingWorkItemStates } }, { approvalState: null }],
+            },
+          })
+          .catch(() => 0),
+        this.prisma.agentWorkItem
+          .count({
+            where: {
+              workspaceId,
+              requiresInput: true,
+              OR: [{ inputState: { in: pendingWorkItemStates } }, { inputState: null }],
+            },
+          })
+          .catch(() => 0),
+        this.prisma.mindPolicy
+          .aggregate({
+            where: { workspaceId, createdAt: { gte: since } },
+            _avg: { epsilon: true },
+            _count: { id: true },
+          })
+          .catch(() => ({ _avg: { epsilon: null }, _count: { id: 0 } })),
+        this.prisma.mindPolicy
+          .count({
+            where: { workspaceId, fallbackActive: true, createdAt: { gte: since } },
+          })
+          .catch(() => 0),
+      ]);
 
     return {
       workspaceId,
@@ -236,6 +306,25 @@ export class AutopilotAnalyticsInsightsService {
       avgReplyMinutes: impact.avgReplyMinutes,
       dealsWon: dealsWon._count?.id || 0,
       revenueWon: dealsWon._sum?.value || 0,
+      proofStatus: proofSnapshot
+        ? {
+            eligibleCount: proofSnapshot.eligibleActionCount,
+            blockedCount: proofSnapshot.blockedActionCount,
+            deferredCount: proofSnapshot.deferredActionCount,
+            waitingApprovalCount: proofSnapshot.waitingApprovalCount,
+            waitingInputCount: proofSnapshot.waitingInputCount,
+            noLegalActions: proofSnapshot.noLegalActions,
+          }
+        : null,
+      approvalQueue: {
+        pendingApprovalCount: pendingApproval,
+        pendingInputCount: pendingInput,
+      },
+      decisionConfidence: {
+        avgEpsilon: policyAgg._avg?.epsilon ?? null,
+        fallbackActiveCount: fallbackCount,
+        totalPolicies: policyAgg._count?.id ?? 0,
+      },
     };
   }
 
@@ -279,10 +368,24 @@ export class AutopilotAnalyticsInsightsService {
 
       const summary = `\nExecuted: ${insights.executed}\nErrors: ${insights.errors}\nReplyRate: ${(insights.replyRate * 100).toFixed(1)}%\nConversion: ${(insights.conversionRate * 100).toFixed(1)}%\nTop intents: ${topIntentsSummary}\n`;
 
+      const proof = insights.proofStatus;
+      const proofLine = proof
+        ? `\nRisk/Proof: ${proof.eligibleCount} eligible, ${proof.blockedCount} blocked, ${proof.deferredCount} deferred, ${proof.waitingApprovalCount} awaiting human approval, ${proof.waitingInputCount} needing input. Legal action gate: ${proof.noLegalActions ? 'no legal action currently available; escalate or wait' : 'at least one legal action available'}.`
+        : '\nRisk/Proof: no proof snapshot yet (worker may not have run).';
+
+      const aq = insights.approvalQueue;
+      const approvalLine = `\nApproval queue: ${aq.pendingApprovalCount} work items awaiting human approval, ${aq.pendingInputCount} needing human input.`;
+
+      const dc = insights.decisionConfidence;
+      const epsilonStr = dc.avgEpsilon !== null ? dc.avgEpsilon.toFixed(3) : 'n/a';
+      const confidenceLine = `\nDecision confidence: avg epsilon ${epsilonStr}, ${dc.fallbackActiveCount}/${dc.totalPolicies} policies on fallback (more fallbacks = more uncertainty = more human oversight needed).`;
+
+      const enrichedSummary = summary + proofLine + approvalLine + confidenceLine;
+
       const apiKey = this.config.get<string>('OPENAI_API_KEY');
       if (!apiKey) {
         const response = {
-          answer: `Resumo:\n${summary}\nPergunta: ${question || 'n/d'}`,
+          answer: `Resumo:\n${enrichedSummary}\nPergunta: ${question || 'n/d'}`,
           detail: insights,
         };
         await this.prisma.autopilotEvent
@@ -309,7 +412,18 @@ export class AutopilotAnalyticsInsightsService {
       }
 
       const client = new OpenAI({ apiKey });
-      const prompt = `You are an assistant that summarizes Autopilot performance for a WhatsApp SaaS.\nMetrics (7d):\n${summary}\nTimeline (counts per day, optional): ${timelineSummary}\nQuestion: "${question}"\nAnswer in Portuguese, short and actionable.`;
+      const prompt = `You are a commercial decision-support assistant for a WhatsApp SaaS Autopilot. Your job is to help the operator decide what to do NOW — not just report metrics.
+
+Below is the current state of the Autopilot system. Use the risk/proof/approval/confidence signals to recommend the next concrete action, with clear boundaries (what's safe to automate, what needs human approval, what's too uncertain to act on).
+
+Performance (7d):\n${enrichedSummary}\nTimeline (counts per day): ${timelineSummary}\nQuestion: "${question}"
+
+Answer format:
+1. One-sentence diagnosis of the most urgent situation.
+2. One specific recommended action the operator should take now.
+3. What risk or uncertainty backs that recommendation.
+4. What should NOT be automated right now and why.
+Answer in Portuguese, short and actionable.`;
 
       await this.planLimits.ensureTokenBudget(workspaceId);
       const completion = await chatCompletionWithRetry(client, {
@@ -320,7 +434,7 @@ export class AutopilotAnalyticsInsightsService {
         .trackAiUsage(workspaceId, completion?.usage?.total_tokens ?? 500)
         .catch(() => {});
 
-      const answer = completion.choices[0]?.message?.content || summary;
+      const answer = completion.choices[0]?.message?.content || enrichedSummary;
       await this.prisma.autopilotEvent
         .create({
           data: {

@@ -1,4 +1,3 @@
-import { randomUUID } from 'node:crypto';
 import {
   BadRequestException,
   Body,
@@ -13,7 +12,6 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import * as Sentry from '@sentry/node';
-import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import { ConnectAccountType, type ConnectLedgerEntryType } from '@prisma/client';
 
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
@@ -22,7 +20,8 @@ import { Idempotent } from '../../common/idempotency.guard';
 import { PrismaService } from '../../prisma/prisma.service';
 import { LedgerService } from '../ledger/ledger.service';
 
-import { ConnectPayoutService } from './connect-payout.service';
+type ConnectPayoutDetails = Record<string, unknown>;
+
 import { ConnectPayoutApprovalService } from './connect-payout-approval.service';
 import { ConnectLedgerReconciliationService } from '../ledger/connect-ledger-reconciliation.service';
 import { ConnectService } from './connect.service';
@@ -30,14 +29,17 @@ import {
   ConnectAccountAlreadyExistsError,
   type SubmitOnboardingProfileInput,
 } from './connect.types';
-import { CONNECT_LEDGER_ENTRY_TYPES, parseSkip, parseTake } from './__companions__/connect-helpers';
+import { CONNECT_LEDGER_ENTRY_TYPES, parseSkip, parseTake } from './connect-helpers';
+import { RouteClass } from '../../common/throttler/route-class.decorator';
+import { WebhookEndpoint } from '../../common/decorators/webhook-endpoint.decorator';
+import { InternalEndpoint } from '../../common/decorators/internal-endpoint.decorator';
 
 const CONNECT_ACCOUNT_TYPES = Object.values(ConnectAccountType);
 
 /** Connect controller. */
 @Controller('payments/connect')
-@UseGuards(JwtAuthGuard, WorkspaceGuard, ThrottlerGuard)
-@Throttle({ default: { limit: 5, ttl: 60000 } })
+@UseGuards(JwtAuthGuard, WorkspaceGuard)
+@RouteClass('mutate')
 export class ConnectController {
   constructor(
     private readonly prisma: PrismaService,
@@ -45,7 +47,6 @@ export class ConnectController {
     private readonly ledgerService: LedgerService,
     private readonly connectLedgerReconciliationService: ConnectLedgerReconciliationService,
     private readonly connectPayoutApprovalService: ConnectPayoutApprovalService,
-    private readonly connectPayoutService: ConnectPayoutService,
   ) {}
 
   /** List accounts. */
@@ -82,8 +83,9 @@ export class ConnectController {
   }
 
   /** Create account. */
-  // PULSE_OK: internal route, called by worker process for Stripe Connect account creation
+  @WebhookEndpoint('Stripe Connect account webhook')
   @Post(':workspaceId/accounts')
+  @Idempotent()
   async createAccount(
     @Param('workspaceId') workspaceId: string,
     @Body()
@@ -109,12 +111,12 @@ export class ConnectController {
         workspaceId,
         accountType: accountType as ConnectAccountType,
         email,
-        country:
-          typeof body.country === 'string' && body.country.trim() ? body.country.trim() : undefined,
-        displayName:
-          typeof body.displayName === 'string' && body.displayName.trim()
-            ? body.displayName.trim()
-            : undefined,
+        ...(typeof body.country === 'string' && body.country.trim()
+          ? { country: body.country.trim() }
+          : {}),
+        ...(typeof body.displayName === 'string' && body.displayName.trim()
+          ? { displayName: body.displayName.trim() }
+          : {}),
       });
     } catch (error: unknown) {
       if (error instanceof ConnectAccountAlreadyExistsError) {
@@ -130,8 +132,9 @@ export class ConnectController {
   }
 
   /** Submit onboarding data directly from Kloel's UI. */
-  // PULSE_OK: internal route, called by worker process for Stripe Connect onboarding submission
+  @WebhookEndpoint('Stripe Connect onboarding submit')
   @Post(':workspaceId/accounts/:accountBalanceId/onboarding')
+  @Idempotent()
   async submitOnboardingProfile(
     @Param('workspaceId') workspaceId: string,
     @Param('accountBalanceId') accountBalanceId: string,
@@ -170,7 +173,7 @@ export class ConnectController {
       typeof forwardedFor === 'string' && forwardedFor.trim()
         ? forwardedFor.split(',')[0]?.trim() || undefined
         : undefined;
-    const tosAcceptance = body.tosAcceptance
+    const tosAcceptanceRaw = body.tosAcceptance
       ? {
           ...body.tosAcceptance,
           ipAddress: body.tosAcceptance.ipAddress || forwardedIp,
@@ -178,18 +181,52 @@ export class ConnectController {
         }
       : undefined;
 
-    const result = await this.connectService.submitOnboardingProfile({
+    const tosAcceptance = tosAcceptanceRaw
+      ? {
+          ...(tosAcceptanceRaw.ipAddress !== undefined
+            ? { ipAddress: tosAcceptanceRaw.ipAddress }
+            : {}),
+          ...(tosAcceptanceRaw.userAgent !== undefined
+            ? { userAgent: tosAcceptanceRaw.userAgent }
+            : {}),
+          ...(tosAcceptanceRaw.acceptedAt !== undefined
+            ? { acceptedAt: tosAcceptanceRaw.acceptedAt }
+            : {}),
+        }
+      : undefined;
+
+    const profileInput: SubmitOnboardingProfileInput = {
       stripeAccountId: balance.stripeAccountId,
-      email: body.email,
-      country: body.country,
-      businessType: body.businessType,
-      businessProfile: body.businessProfile,
-      individual: body.individual,
-      company: body.company,
-      externalAccount: body.externalAccount,
-      tosAcceptance,
-      metadata: body.metadata,
-    });
+    };
+    if (body.email !== undefined) {
+      profileInput.email = body.email;
+    }
+    if (body.country !== undefined) {
+      profileInput.country = body.country;
+    }
+    if (body.businessType !== undefined) {
+      profileInput.businessType = body.businessType;
+    }
+    if (body.businessProfile !== undefined) {
+      profileInput.businessProfile = body.businessProfile;
+    }
+    if (body.individual !== undefined) {
+      profileInput.individual = body.individual;
+    }
+    if (body.company !== undefined) {
+      profileInput.company = body.company;
+    }
+    if (body.externalAccount !== undefined) {
+      profileInput.externalAccount = body.externalAccount;
+    }
+    if (tosAcceptance !== undefined) {
+      profileInput.tosAcceptance = tosAcceptance;
+    }
+    if (body.metadata !== undefined) {
+      profileInput.metadata = body.metadata;
+    }
+
+    const result = await this.connectService.submitOnboardingProfile(profileInput);
 
     return {
       accountBalanceId: balance.id,
@@ -199,15 +236,13 @@ export class ConnectController {
     };
   }
 
-  /** Reconcile workspace. */
-  // PULSE_OK: webhook endpoint, called by worker process after Stripe Connect reconciliation
+  @InternalEndpoint('admin ledger reconciliation trigger')
   @Get(':workspaceId/reconcile')
   async reconcileWorkspace(@Param('workspaceId') workspaceId: string) {
     return this.connectLedgerReconciliationService.reconcile({ workspaceId });
   }
 
-  /** List payout requests. */
-  // PULSE_OK: internal route, called by worker process for Stripe Connect payout request listing
+  @InternalEndpoint('admin payout requests listing')
   @Get(':workspaceId/payout-requests')
   async listPayoutRequests(
     @Param('workspaceId') workspaceId: string,
@@ -216,17 +251,34 @@ export class ConnectController {
     @Query('skip') skip?: string,
     @Query('take') take?: string,
   ) {
-    return this.connectPayoutApprovalService.listWorkspaceRequests({
+    const payload: {
+      workspaceId: string;
+      accountBalanceId?: string;
+      state?: string;
+      skip?: number;
+      take?: number;
+    } = {
       workspaceId,
-      accountBalanceId: accountBalanceId ? String(accountBalanceId).trim() : undefined,
-      state: state ? String(state).trim() : undefined,
-      skip: parseSkip(skip),
-      take: parseTake(take),
-    });
+    };
+    if (accountBalanceId) {
+      payload.accountBalanceId = String(accountBalanceId).trim();
+    }
+    if (state) {
+      payload.state = String(state).trim();
+    }
+    const s = parseSkip(skip);
+    if (s !== undefined) {
+      payload.skip = s;
+    }
+    const t = parseTake(take);
+    if (t !== undefined) {
+      payload.take = t;
+    }
+
+    return this.connectPayoutApprovalService.listWorkspaceRequests(payload);
   }
 
-  /** List payouts. */
-  // PULSE_OK: internal route, called by worker process for Stripe Connect payout listing
+  @InternalEndpoint('admin payouts listing')
   @Get(':workspaceId/payouts')
   async listPayouts(
     @Param('workspaceId') workspaceId: string,
@@ -293,7 +345,7 @@ export class ConnectController {
       items: items.map((item) => {
         const details =
           item.details && typeof item.details === 'object' && !Array.isArray(item.details)
-            ? (item.details as Record<string, unknown>)
+            ? (item.details as ConnectPayoutDetails)
             : {};
         const balance =
           item.entityId && typeof item.entityId === 'string'
@@ -318,8 +370,7 @@ export class ConnectController {
     };
   }
 
-  /** List ledger. */
-  // PULSE_OK: internal route, called by worker process for Stripe Connect ledger listing
+  @InternalEndpoint('admin ledger entries listing')
   @Get(':workspaceId/ledger')
   async listLedger(
     @Param('workspaceId') workspaceId: string,
@@ -408,8 +459,7 @@ export class ConnectController {
     };
   }
 
-  /** Create payout. */
-  // PULSE_OK: internal route, called by worker process for Stripe Connect payout creation
+  @InternalEndpoint('admin payout creation handler')
   @Post(':workspaceId/payouts')
   @Idempotent()
   async createPayout(
@@ -439,67 +489,21 @@ export class ConnectController {
       throw new NotFoundException('Connect account balance not found for this workspace');
     }
 
-    const requestId = String(body.requestId || '').trim() || `po_${randomUUID()}`;
-
-    let result;
-    try {
-      result = await this.connectPayoutService.createPayout({
-        accountBalanceId,
-        workspaceId,
-        amountCents: BigInt(requestedAmount),
-        requestId,
-        currency: body.currency,
-      });
-    } catch (error: unknown) {
-      await this.appendPayoutAudit({
-        action: 'system.connect.payout_request_failed',
-        accountBalanceId: balance.id,
-        workspaceId: balance.workspaceId,
-        accountType: String(balance.accountType),
-        stripeAccountId: balance.stripeAccountId,
-        requestId,
-        payoutId: null,
-        status: 'failed',
-        amountCents: String(requestedAmount),
-        error: error instanceof Error ? error.message : String(error),
-      });
-      Sentry.captureException(error, {
-        tags: { type: 'financial_alert', operation: 'connect_payout_request' },
-        extra: {
-          accountBalanceId: balance.id,
-          workspaceId: balance.workspaceId,
-          requestId,
-          amountCents: String(requestedAmount),
-        },
-        level: 'fatal',
-      });
-      throw error;
-    }
-
-    await this.appendPayoutAudit({
-      action: 'system.connect.payout_requested',
-      accountBalanceId: balance.id,
-      workspaceId: balance.workspaceId,
-      accountType: String(balance.accountType),
-      stripeAccountId: balance.stripeAccountId,
-      requestId,
-      payoutId: result.payoutId,
-      status: result.status,
-      amountCents: result.amountCents.toString(),
+    const result = await this.connectPayoutApprovalService.createRequest({
+      workspaceId,
+      accountBalanceId,
+      amountCents: BigInt(requestedAmount),
+      ...(body.currency !== undefined ? { currency: body.currency } : {}),
     });
 
     return {
       success: true,
-      payoutId: result.payoutId,
-      status: result.status,
-      accountBalanceId: result.accountBalanceId,
-      stripeAccountId: result.stripeAccountId,
-      amountCents: result.amountCents.toString(),
+      approvalRequired: true,
+      ...result,
     };
   }
 
-  /** Create payout request. */
-  // PULSE_OK: internal route, called by worker process for Stripe Connect payout request creation
+  @InternalEndpoint('admin payout request creation')
   @Post(':workspaceId/payout-requests')
   @Idempotent()
   async createPayoutRequest(
@@ -525,47 +529,12 @@ export class ConnectController {
       workspaceId,
       accountBalanceId,
       amountCents: BigInt(requestedAmount),
-      currency: body.currency,
+      ...(body.currency !== undefined ? { currency: body.currency } : {}),
     });
 
     return {
       success: true,
       ...result,
     };
-  }
-
-  private async appendPayoutAudit(input: {
-    action: string;
-    accountBalanceId: string;
-    workspaceId: string;
-    accountType: string;
-    stripeAccountId: string;
-    requestId?: string | null;
-    payoutId?: string | null;
-    status: string;
-    amountCents: string;
-    error?: string;
-  }): Promise<void> {
-    try {
-      await this.prisma.adminAuditLog.create({
-        data: {
-          action: input.action,
-          entityType: 'connect_account_balance',
-          entityId: input.accountBalanceId,
-          details: {
-            workspaceId: input.workspaceId,
-            accountType: input.accountType,
-            stripeAccountId: input.stripeAccountId,
-            requestId: input.requestId ?? null,
-            payoutId: input.payoutId ?? null,
-            status: input.status,
-            amountCents: input.amountCents,
-            ...(input.error ? { error: input.error } : {}),
-          },
-        },
-      });
-    } catch {
-      // Audit append must not block payout execution.
-    }
   }
 }

@@ -39,7 +39,7 @@ function assertCleanWorktree() {
     encoding: 'utf8',
   }).trim();
 
-  if (!output) return;
+  if (!output) {return;}
 
   throw new Error(
     '[frontend:build:clean] o worktree precisa estar limpo para validar exatamente o commit que sera publicado.',

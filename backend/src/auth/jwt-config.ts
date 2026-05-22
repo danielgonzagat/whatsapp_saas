@@ -1,8 +1,18 @@
-import { Logger } from '@nestjs/common';
-import type { SignOptions } from 'jsonwebtoken'; // PULSE_OK: reasonable expiry (30m)
+import { StructuredLogger } from '../logging/structured-logger';
+import { randomBytes } from 'node:crypto';
 
-const logger = new Logger('JwtConfig');
-const DEV_JWT_FALLBACK = ['dev', ['se', 'cret'].join(''), 'insecure'].join('-');
+import type { SignOptions } from 'jsonwebtoken';
+
+const logger = StructuredLogger.from('JwtConfig');
+
+let devFallbackCache: string | null = null;
+
+function generateDevSecret(): string {
+  if (!devFallbackCache) {
+    devFallbackCache = `dev-${randomBytes(32).toString('hex')}`;
+  }
+  return devFallbackCache;
+}
 
 let warnedAboutDevSecret = false;
 
@@ -22,7 +32,7 @@ export function getJwtSecret(): string {
     logger.warn('JWT_SECRET not set, using weak dev-secret (dev only). Configure JWT_SECRET.');
   }
 
-  return DEV_JWT_FALLBACK;
+  return generateDevSecret();
 }
 
 /** Get jwt expires in. */
@@ -40,8 +50,14 @@ const MS_DURATION_MAP: Record<string, number> = {
 /** Get jwt cookie max age in milliseconds for httpOnly cookie alignment. */
 export function getJwtCookieMaxAgeMs(): number {
   const raw = getJwtExpiresIn();
-  if (typeof raw === 'number') return raw * 1000;
-  const match = /^(\d+)([smhd])$/.exec(raw as string);
-  if (match) return parseInt(match[1], 10) * (MS_DURATION_MAP[match[2]] ?? 60 * 1000);
+  if (typeof raw === 'number') {
+    return raw * 1000;
+  }
+  const match = /^(\d+)([smhd])$/.exec(String(raw ?? ''));
+  if (match) {
+    const value = parseInt(match[1]!, 10);
+    const unit = match[2]!;
+    return value * (MS_DURATION_MAP[unit] ?? 60 * 1000);
+  }
   return 30 * 60 * 1000; // fallback 30 min
 }

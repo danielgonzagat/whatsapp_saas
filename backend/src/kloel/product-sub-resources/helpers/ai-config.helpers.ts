@@ -13,7 +13,7 @@ import {
   flattenSalesArguments,
   flattenUpsellDownsell,
   flattenFollowUpTechnical,
-} from './__companions__/ai-config.helpers.companion';
+} from './ai-config.flatten-helpers';
 
 function normalizeAiTone(value: unknown): string | undefined {
   const normalized = safeStr(value).trim();
@@ -53,8 +53,8 @@ function normalizeAiObjections(value: unknown): LooseObject[] {
     return [];
   }
 
-  const objections: LooseObject[] = [];
-  value.forEach((entry, index) => {
+  return value
+    .map((entry, index): LooseObject | null => {
     const objection = parseObject(entry);
     const label = safeStr(
       objection.label || objection.id || objection.q || objection.question,
@@ -63,19 +63,19 @@ function normalizeAiObjections(value: unknown): LooseObject[] {
     const response = safeStr(objection.response || objection.a || objection.answer).trim();
 
     if (!label && !response) {
-      return;
+      return null;
     }
 
-    objections.push({
+    return {
       id: safeStr(objection.id, `objection-${index + 1}`),
       label,
       response,
       q: label,
       a: response,
       enabled: objection.enabled !== false,
-    });
-  });
-  return objections;
+    };
+    })
+    .filter(Boolean) as LooseObject[];
 }
 
 const CUSTOMER_PROFILE_KEYS = [

@@ -1,5 +1,4 @@
-import { Injectable, Logger, NotFoundException, OnModuleDestroy, Optional } from '@nestjs/common';
-import { AuditService } from '../audit/audit.service';
+import { Injectable, Logger, NotFoundException, OnModuleDestroy } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { AgentEventsService } from '../whatsapp/agent-events.service';
 import { CiaBacklogRunService } from './cia-backlog-run.service';
@@ -25,7 +24,6 @@ export class CiaRuntimeService implements OnModuleDestroy {
     private readonly runtimeState: CiaRuntimeStateService,
     private readonly bootstrapService: CiaBootstrapService,
     private readonly backlogRunService: CiaBacklogRunService,
-    @Optional() private readonly auditService?: AuditService,
   ) {}
 
   /** On module destroy. */
@@ -50,7 +48,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
           failCount = 0;
         })
         .catch(() => {
-          failCount++;
+          failCount += 1;
           if (failCount >= 3) {
             clearInterval(timer);
             this.presenceHeartbeats.delete(workspaceId);
@@ -184,12 +182,13 @@ export class CiaRuntimeService implements OnModuleDestroy {
       triggeredBy: 'autopilot_total',
     });
 
+    const runId = fullRun.runId;
     await this.agentEvents.publish({
       type: 'status',
       workspaceId,
       phase: 'autopilot_total',
       persistent: true,
-      runId: fullRun.runId,
+      ...(runId ? { runId } : {}),
       message:
         'Autopilot Total ativado. Vou assumir backlog, novas mensagens e ciclo contínuo do seu WhatsApp.',
       meta: { fullRun },
@@ -206,7 +205,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
     });
 
     const settings = asProviderSettings(workspace?.providerSettings);
-    const currentRunId = settings?.ciaRuntime?.currentRunId;
+    const currentRunId: string | null | undefined = settings?.ciaRuntime?.currentRunId;
 
     await this.runtimeState.updateWorkspaceAutonomy(workspaceId, {
       mode: 'OFF',
@@ -219,11 +218,9 @@ export class CiaRuntimeService implements OnModuleDestroy {
         autoBootstrapOnConnected: settings.autonomy?.autoBootstrapOnConnected ?? true,
       },
     });
-    await this.runtimeState.updateAutonomyRunStatus(
-      workspaceId,
-      currentRunId ?? undefined,
-      'PAUSED',
-    );
+    if (currentRunId) {
+      await this.runtimeState.updateAutonomyRunStatus(workspaceId, currentRunId, 'PAUSED');
+    }
     await this.stopPresenceHeartbeat(workspaceId);
 
     await this.agentEvents.publish({

@@ -31,6 +31,16 @@ const PATTERN_RE_2 = /!==/g;
 const PATTERN_RE_3 = /&&/g;
 const PATTERN_RE_4 = /\|\|/g;
 const PATTERN_RE_5 = /!(?!=)/g;
+const STRING_LITERAL_RE = String.raw`(?:"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*')`;
+const IDENTIFIER_PATH_RE = String.raw`[A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)*`;
+const LEFT_STRING_EQUALITY_RE = new RegExp(
+  String.raw`\b(${IDENTIFIER_PATH_RE})\s*(==|!=)\s*(${STRING_LITERAL_RE})`,
+  'g',
+);
+const RIGHT_STRING_EQUALITY_RE = new RegExp(
+  String.raw`(${STRING_LITERAL_RE})\s*(==|!=)\s*\b(${IDENTIFIER_PATH_RE})`,
+  'g',
+);
 
 // Cria instancia isolada do mathjs com todas funcoes built-in
 const math = create(all);
@@ -61,6 +71,7 @@ math.import(
     // -- Funcoes de array ---------------------------------------------------
     arrayLength: (arr: unknown) => (Array.isArray(arr) ? arr.length : 0),
     arrayIncludes: (arr: unknown, item: unknown) => Array.isArray(arr) && arr.includes(item),
+    equalText: (left: unknown, right: unknown) => String(left) === String(right),
   },
   { override: true },
 );
@@ -126,6 +137,7 @@ function sanitizeExpression(expr: string): string {
 
   // Converte operadores JavaScript para sintaxe mathjs
   sanitized = sanitized.replace(PATTERN_RE, '==').replace(PATTERN_RE_2, '!=');
+  sanitized = normalizeStringEqualityOperators(sanitized);
 
   // mathjs usa `and`, `or`, `not` nativamente — converter && e || tambem
   sanitized = sanitized.replace(PATTERN_RE_3, ' and ').replace(PATTERN_RE_4, ' or ');
@@ -135,6 +147,16 @@ function sanitizeExpression(expr: string): string {
   sanitized = sanitized.replace(PATTERN_RE_5, ' not ');
 
   return sanitized.trim();
+}
+
+function normalizeStringEqualityOperators(expr: string): string {
+  return expr
+    .replace(LEFT_STRING_EQUALITY_RE, (_match, left: string, operator: string, right: string) =>
+      operator === '!=' ? `not equalText(${left}, ${right})` : `equalText(${left}, ${right})`,
+    )
+    .replace(RIGHT_STRING_EQUALITY_RE, (_match, left: string, operator: string, right: string) =>
+      operator === '!=' ? `not equalText(${right}, ${left})` : `equalText(${right}, ${left})`,
+    );
 }
 
 /**
@@ -156,12 +178,13 @@ function sanitizeVariables(vars: Record<string, unknown>): Record<string, unknow
 
     // Para objetos, faz sanitizacao recursiva (apenas 1 nivel para performance)
     if (value && typeof value === 'object' && !Array.isArray(value)) {
-      safe[key] = {};
+      const nested: Record<string, unknown> = {};
       for (const [k, v] of Object.entries(value)) {
         if (typeof v !== 'function' && !['__proto__', 'prototype', 'constructor'].includes(k)) {
-          safe[key][k] = v;
+          nested[k] = v;
         }
       }
+      safe[key] = nested;
     } else {
       safe[key] = value;
     }

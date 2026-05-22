@@ -9,7 +9,6 @@ import * as path from 'node:path';
 import { createHash } from 'node:crypto';
 import { ensureDir, pathExists, readJsonFile, readTextFile, writeTextFile } from './safe-fs';
 import type { PulseScopeState } from './types.truth.scope';
-import type { PulseCodacyIssue } from './types.truth.codacy';
 import type {
   AdjudicatedFinding,
   FalsePositiveAdjudicationState,

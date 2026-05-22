@@ -21,7 +21,7 @@ export const AntiBan = {
     const jitterFloor = Math.min(min, max);
     const jitterCeiling = Math.max(min, max);
     const delay = randomInt(jitterFloor, jitterCeiling + 1);
-    console.log(`🛡️ [ANTI-BAN] Human Delay: ${delay}ms`);
+    console.log(`[ANTI-BAN] Human Delay: ${delay}ms`);
     await new Promise((r) => setTimeout(r, delay));
   },
 
@@ -58,11 +58,11 @@ export const AntiBan = {
     let limit = 40;
     if (isWarmup) {
       limit = 10; // Hard limit for warming up
-      console.log(`🔥 [ANTI-BAN] Warm-up Mode Active (Limit: ${limit}/min)`);
+      console.log(`[ANTI-BAN] Warm-up Mode Active (Limit: ${limit}/min)`);
     }
 
     if (count > limit) {
-      console.warn(`🚨 [ANTI-BAN] Burst limit exceeded (${count}/${limit}). Throttling...`);
+      console.warn(`[ANTI-BAN] Burst limit exceeded (${count}/${limit}). Throttling...`);
       // Exponential backoff based on excess
       const excess = count - limit;
       const delay = excess * 1000; // 1s per extra msg
@@ -79,7 +79,7 @@ export const AntiBan = {
 
     // entre meia-noite e 06h → penalidade leve
     if (hour >= 0 && hour <= 6) {
-      console.log('🌙 [ANTI-BAN] Night Mode Active');
+      console.log('[ANTI-BAN] Night Mode Active');
       await new Promise((r) => setTimeout(r, 2000));
     }
   },

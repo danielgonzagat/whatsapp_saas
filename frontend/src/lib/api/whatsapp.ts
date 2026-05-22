@@ -112,7 +112,7 @@ export async function initiateWhatsAppConnection(
 /** Get whats app qr. */
 export async function getWhatsAppQR(
   _workspaceId: string,
-): Promise<{ qrCode: string | null; connected: boolean; status?: string; message?: string }> {
+): Promise<{ qrCode: string | null; connected: boolean; status?: string | undefined; message?: string | undefined }> {
   const [qrResponse, statusResponse] = await Promise.all([
     getWhatsAppQrImageOnly(_workspaceId),
     apiFetch<Record<string, unknown>>(`/whatsapp-api/session/status`),
@@ -143,7 +143,7 @@ export async function getWhatsAppQR(
 /** Get whats app qr image only. */
 export async function getWhatsAppQrImageOnly(
   _workspaceId: string,
-): Promise<{ qrCode: string | null; connected: boolean; status?: string; message?: string }> {
+): Promise<{ qrCode: string | null; connected: boolean; status?: string | undefined; message?: string | undefined }> {
   const qrResponse = await apiFetch<Record<string, unknown>>(`/whatsapp-api/session/qr`);
 
   if (qrResponse.error) {

@@ -1,17 +1,18 @@
-import { Injectable, Logger, Optional } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import type { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { formatBrlAmount } from './money-format.util';
 import { UnifiedAgentActionsMessagingService } from './unified-agent-actions-messaging.service';
 import type { ToolArgs } from './unified-agent.types';
 import { OpsAlertService } from '../observability/ops-alert.service';
-import { actionHandleObjection as actionHandleObjectionFn } from './__companions__/unified-agent-actions-sales.service.companion';
-import { MindService } from './mind.service';
+import { actionHandleObjection as actionHandleObjectionFn } from './unified-agent-actions-sales.helpers';
 import { MindGuardContextBuilderService } from './mind-guard-context-builder.service';
 import { MindGuardsService } from './mind-guards.service';
 import type { MindActionContext } from './mind-code-native.types';
+import { MindService } from './mind.service';
 
-type UnknownRecord = Record<string, unknown>;
+import type { UnknownRecord } from '../common/types';
 
 function describeUnknownError(error: unknown): string {
   if (error instanceof Error && error.message.trim()) {
@@ -79,7 +80,7 @@ function discountPercentFromMind(action: string | undefined, requestedPercent: n
  */
 @Injectable()
 export class UnifiedAgentActionsSalesService {
-  private readonly logger = new Logger(UnifiedAgentActionsSalesService.name);
+  private readonly logger = StructuredLogger.from(UnifiedAgentActionsSalesService.name);
 
   constructor(
     private readonly prisma: PrismaService,
@@ -284,7 +285,7 @@ export class UnifiedAgentActionsSalesService {
       prisma: this.prisma,
       messaging: this.messaging,
       logger: this.logger,
-      opsAlert: this.opsAlert,
+      ...(this.opsAlert !== undefined ? { opsAlert: this.opsAlert } : {}),
     });
   }
 
@@ -305,7 +306,7 @@ export class UnifiedAgentActionsSalesService {
       await this.prisma.contact
         .update({
           where: { id: contactId },
-          data: { purchaseProbability: String(this.getStageScore(stage)) },
+          data: { purchaseProbability: this.getStagePurchaseProbabilityBucket(stage) },
         })
         .catch((err: unknown) => {
           const errStr = describeUnknownError(err);
@@ -343,14 +344,14 @@ export class UnifiedAgentActionsSalesService {
     }
   }
 
-  private getStageScore(stage: string): number {
-    const scores: Record<string, number> = {
-      awareness: 10,
-      interest: 30,
-      decision: 60,
-      action: 90,
+  private getStagePurchaseProbabilityBucket(stage: string): string {
+    const buckets: Record<string, string> = {
+      awareness: 'LOW',
+      interest: 'MEDIUM',
+      decision: 'HIGH',
+      action: 'VERY_HIGH',
     };
-    return scores[stage] || 20;
+    return buckets[stage] || 'LOW';
   }
 
   async actionScheduleMeeting(
@@ -392,9 +393,11 @@ export class UnifiedAgentActionsSalesService {
           err instanceof Error ? err.message : typeof err === 'string' ? err : 'unknown';
         if (!isTestEnv) {
           const code = (err as { code?: string } | null)?.code;
-          if (code === 'P2003')
+          if (code === 'P2003') {
             this.logger.debug(`Skipping meeting event log due to FK (contactId=${contactId})`);
-          else this.logger.warn(`Failed to log meeting event: ${errMsg}`);
+          } else {
+            this.logger.warn(`Failed to log meeting event: ${errMsg}`);
+          }
         }
       }
       // messageLimit: enforced via PlanLimitsService.trackMessageSend
@@ -437,6 +440,9 @@ export class UnifiedAgentActionsSalesService {
           'Você está em atendimento prioritário.\n\nVou te conectar com nosso time de suporte prioritário para resolver qualquer questão.',
       };
       const message = strategyMessages[strategy] || strategyMessages.feedback;
+      if (!message) {
+        return { success: false, error: 'No strategy message found' };
+      }
       try {
         await this.prisma.autopilotEvent.create({
           data: {
@@ -454,9 +460,11 @@ export class UnifiedAgentActionsSalesService {
           err instanceof Error ? err.message : typeof err === 'string' ? err : 'unknown';
         if (!isTestEnv) {
           const code = (err as { code?: string } | null)?.code;
-          if (code === 'P2003')
+          if (code === 'P2003') {
             this.logger.debug(`Skipping retention event log due to FK (contactId=${contactId})`);
-          else this.logger.warn(`Failed to log retention event: ${errMsg}`);
+          } else {
+            this.logger.warn(`Failed to log retention event: ${errMsg}`);
+          }
         }
       }
       // messageLimit: enforced via PlanLimitsService.trackMessageSend
@@ -497,6 +505,9 @@ export class UnifiedAgentActionsSalesService {
           'Mais de 500 pessoas já estão usando.\n\nOs resultados têm sido incríveis. Dá uma olhada no que estão falando!',
       };
       const message = reactivationMessages[strategy] || reactivationMessages.curiosity;
+      if (!message) {
+        return { success: false, error: 'No reactivation message found' };
+      }
       await this.prisma.autopilotEvent.create({
         data: {
           workspaceId,

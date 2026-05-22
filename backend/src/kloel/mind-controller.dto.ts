@@ -233,6 +233,21 @@ export class SimulateCandidateDto {
   beliefVariance!: number;
 }
 
+export class BestVariantDto {
+  @IsString()
+  @MaxLength(40)
+  @IsIn(['followup', 'payment_recovery'])
+  flow!: string;
+
+  @IsArray()
+  @IsString({ each: true })
+  variantIds!: string[];
+
+  @IsOptional()
+  @IsObject()
+  context?: Record<string, unknown>;
+}
+
 export class SimulateDecisionDto {
   @IsString()
   @MaxLength(120)

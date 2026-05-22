@@ -1,13 +1,16 @@
 import { randomUUID } from 'node:crypto';
-import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { PrismaService } from '../prisma/prisma.service';
 import { CheckoutCatalogService } from './checkout-catalog.service';
 import { CheckoutOrderService } from './checkout-order.service';
 import { CheckoutProductService } from './checkout-product.service';
 import { CheckoutPublicPayloadBuilder } from './checkout-public-payload.builder';
-import { getCheckoutByCode as companionGetCheckoutByCode } from './__companions__/checkout-code-lookup';
+import { getCheckoutByCode as companionGetCheckoutByCode } from './checkout-code-lookup.helper';
 
 export type { CheckoutOrderStatusValue } from './checkout-order-status';
+
+type CheckoutConfigRecord = Record<string, unknown>;
 
 /**
  * Checkout façade — delegates product/plan, catalog, and order concerns to
@@ -17,7 +20,7 @@ export type { CheckoutOrderStatusValue } from './checkout-order-status';
 /** Idempotency: enforced at HTTP layer via @Idempotent() guard + Stripe idempotencyKey. */
 @Injectable()
 export class CheckoutService {
-  private readonly logger = new Logger(CheckoutService.name);
+  private readonly logger = StructuredLogger.from(CheckoutService.name);
   private readonly publicPayloadBuilder: CheckoutPublicPayloadBuilder;
 
   constructor(
@@ -34,159 +37,121 @@ export class CheckoutService {
   }
 
   // ─── Product delegation ───────────────────────────────────────────────────
-  // PULSE_OK: rate-limited by CheckoutPublicController
   async createProduct(...args: Parameters<CheckoutProductService['createProduct']>) {
     return this.productService.createProduct(...args);
   }
-  // PULSE_OK: rate-limited by CheckoutPublicController
   async updateProduct(...args: Parameters<CheckoutProductService['updateProduct']>) {
     return this.productService.updateProduct(...args);
   }
-  // PULSE_OK: rate-limited by CheckoutPublicController
   async listProducts(...args: Parameters<CheckoutProductService['listProducts']>) {
     return this.productService.listProducts(...args);
   }
-  // PULSE_OK: rate-limited by CheckoutPublicController
   async getProduct(...args: Parameters<CheckoutProductService['getProduct']>) {
     return this.productService.getProduct(...args);
   }
-  // PULSE_OK: rate-limited by CheckoutPublicController
   async deleteProduct(...args: Parameters<CheckoutProductService['deleteProduct']>) {
     return this.productService.deleteProduct(...args);
   }
-  // PULSE_OK: rate-limited by CheckoutPublicController
   async createPlan(...args: Parameters<CheckoutProductService['createPlan']>) {
     return this.productService.createPlan(...args);
   }
-  // PULSE_OK: rate-limited by CheckoutPublicController
   async updatePlan(...args: Parameters<CheckoutProductService['updatePlan']>) {
     return this.productService.updatePlan(...args);
   }
-  // PULSE_OK: rate-limited by CheckoutPublicController
   async deletePlan(...args: Parameters<CheckoutProductService['deletePlan']>) {
     return this.productService.deletePlan(...args);
   }
-  // PULSE_OK: rate-limited by CheckoutPublicController
   async updateConfig(...args: Parameters<CheckoutProductService['updateConfig']>) {
     return this.productService.updateConfig(...args);
   }
-  // PULSE_OK: rate-limited by CheckoutPublicController
   async getConfig(...args: Parameters<CheckoutProductService['getConfig']>) {
     return this.productService.getConfig(...args);
   }
-  // PULSE_OK: rate-limited by CheckoutPublicController
   async createCheckout(...args: Parameters<CheckoutProductService['createCheckout']>) {
     return this.productService.createCheckout(...args);
   }
-  // PULSE_OK: rate-limited by CheckoutPublicController
   async syncCheckoutLinks(...args: Parameters<CheckoutProductService['syncCheckoutLinks']>) {
     return this.productService.syncCheckoutLinks(...args);
   }
-  // PULSE_OK: rate-limited by CheckoutPublicController
   async resetConfig(...args: Parameters<CheckoutProductService['resetConfig']>) {
     return this.productService.resetConfig(...args);
   }
 
   // ─── Catalog delegation ───────────────────────────────────────────────────
-  // PULSE_OK: rate-limited by CheckoutPublicController
   async createBump(...args: Parameters<CheckoutCatalogService['createBump']>) {
     return this.catalogService.createBump(...args);
   }
-  // PULSE_OK: rate-limited by CheckoutPublicController
   async updateBump(...args: Parameters<CheckoutCatalogService['updateBump']>) {
     return this.catalogService.updateBump(...args);
   }
-  // PULSE_OK: rate-limited by CheckoutPublicController
   async deleteBump(...args: Parameters<CheckoutCatalogService['deleteBump']>) {
     return this.catalogService.deleteBump(...args);
   }
-  // PULSE_OK: rate-limited by CheckoutPublicController
   async listBumps(...args: Parameters<CheckoutCatalogService['listBumps']>) {
     return this.catalogService.listBumps(...args);
   }
-  // PULSE_OK: rate-limited by CheckoutPublicController
   async createUpsell(...args: Parameters<CheckoutCatalogService['createUpsell']>) {
     return this.catalogService.createUpsell(...args);
   }
-  // PULSE_OK: rate-limited by CheckoutPublicController
   async updateUpsell(...args: Parameters<CheckoutCatalogService['updateUpsell']>) {
     return this.catalogService.updateUpsell(...args);
   }
-  // PULSE_OK: rate-limited by CheckoutPublicController
   async deleteUpsell(...args: Parameters<CheckoutCatalogService['deleteUpsell']>) {
     return this.catalogService.deleteUpsell(...args);
   }
-  // PULSE_OK: rate-limited by CheckoutPublicController
   async listUpsells(...args: Parameters<CheckoutCatalogService['listUpsells']>) {
     return this.catalogService.listUpsells(...args);
   }
-  // PULSE_OK: rate-limited by CheckoutPublicController
   async createCoupon(...args: Parameters<CheckoutCatalogService['createCoupon']>) {
     return this.catalogService.createCoupon(...args);
   }
-  // PULSE_OK: rate-limited by CheckoutPublicController
   async updateCoupon(...args: Parameters<CheckoutCatalogService['updateCoupon']>) {
     return this.catalogService.updateCoupon(...args);
   }
-  // PULSE_OK: rate-limited by CheckoutPublicController
   async deleteCoupon(...args: Parameters<CheckoutCatalogService['deleteCoupon']>) {
     return this.catalogService.deleteCoupon(...args);
   }
-  // PULSE_OK: rate-limited by CheckoutPublicController
   async listCoupons(...args: Parameters<CheckoutCatalogService['listCoupons']>) {
     return this.catalogService.listCoupons(...args);
   }
-  // PULSE_OK: rate-limited by CheckoutPublicController
   async validateCoupon(...args: Parameters<CheckoutCatalogService['validateCoupon']>) {
     return this.catalogService.validateCoupon(...args);
   }
-  // PULSE_OK: rate-limited by CheckoutPublicController
   async createPixel(...args: Parameters<CheckoutCatalogService['createPixel']>) {
     return this.catalogService.createPixel(...args);
   }
-  // PULSE_OK: rate-limited by CheckoutPublicController
   async updatePixel(...args: Parameters<CheckoutCatalogService['updatePixel']>) {
     return this.catalogService.updatePixel(...args);
   }
-  // PULSE_OK: rate-limited by CheckoutPublicController
   async deletePixel(...args: Parameters<CheckoutCatalogService['deletePixel']>) {
     return this.catalogService.deletePixel(...args);
   }
-  // PULSE_OK: rate-limited by CheckoutPublicController
   async calculateShipping(...args: Parameters<CheckoutCatalogService['calculateShipping']>) {
     return this.catalogService.calculateShipping(...args);
   }
 
   // ─── Order delegation ─────────────────────────────────────────────────────
-  // PULSE_OK: rate-limited by CheckoutPublicController
   async createOrder(...args: Parameters<CheckoutOrderService['createOrder']>) {
     return this.orderService.createOrder(...args);
   }
-  // PULSE_OK: rate-limited by CheckoutPublicController
   async getOrder(...args: Parameters<CheckoutOrderService['getOrder']>) {
     return this.orderService.getOrder(...args);
   }
-  // PULSE_OK: rate-limited by CheckoutPublicController
   async listOrders(...args: Parameters<CheckoutOrderService['listOrders']>) {
     return this.orderService.listOrders(...args);
   }
-  // PULSE_OK: rate-limited by CheckoutPublicController
   async updateOrderStatus(...args: Parameters<CheckoutOrderService['updateOrderStatus']>) {
     return this.orderService.updateOrderStatus(...args);
   }
-  // PULSE_OK: rate-limited by CheckoutPublicController
   async getOrderStatus(...args: Parameters<CheckoutOrderService['getOrderStatus']>) {
     return this.orderService.getOrderStatus(...args);
   }
-  // PULSE_OK: rate-limited by CheckoutPublicController
   async acceptUpsell(...args: Parameters<CheckoutOrderService['acceptUpsell']>) {
     return this.orderService.acceptUpsell(...args);
   }
-  // PULSE_OK: rate-limited by CheckoutPublicController
   async declineUpsell(...args: Parameters<CheckoutOrderService['declineUpsell']>) {
     return this.orderService.declineUpsell(...args);
   }
-  // PULSE_OK: rate-limited by CheckoutPublicController
   async getRecentPaidOrders(...args: Parameters<CheckoutOrderService['getRecentPaidOrders']>) {
     return this.orderService.getRecentPaidOrders(...args);
   }
@@ -195,7 +160,6 @@ export class CheckoutService {
   // These methods coordinate across product + plan-link + affiliate domains,
   // so they live here rather than in a single sub-service.
 
-  // PULSE_OK: rate-limited by CheckoutPublicController
   async getCheckoutBySlug(
     slug: string,
     context?: { correlationId?: string; lookupSource?: string },
@@ -311,7 +275,6 @@ export class CheckoutService {
   }
 
   /** Get checkout by code. */
-  // PULSE_OK: rate-limited by CheckoutPublicController
   async getCheckoutByCode(
     code: string,
     context?: { correlationId?: string; lookupSource?: string },
@@ -329,10 +292,9 @@ export class CheckoutService {
   }
 
   /** Duplicate checkout. */
-  // PULSE_OK: rate-limited by CheckoutPublicController
   async duplicateCheckout(checkoutId: string, workspaceId: string) {
     const checkout = await this.prisma.checkoutProductPlan.findUnique({
-      where: { id: checkoutId },
+      where: { id: checkoutId, product: { workspaceId } },
       include: {
         checkoutConfig: { include: { pixels: true } },
         checkoutLinks: { select: { planId: true } },
@@ -343,20 +305,21 @@ export class CheckoutService {
       throw new NotFoundException('Checkout nao encontrado');
     }
 
+    const createInput = {
+      name: `${checkout.name} (Copia)`,
+      priceInCents: checkout.priceInCents,
+      currency: checkout.currency,
+      maxInstallments: checkout.maxInstallments,
+      installmentsFee: checkout.installmentsFee,
+      quantity: checkout.quantity,
+      freeShipping: checkout.freeShipping,
+      brandName: checkout.checkoutConfig?.brandName ?? checkout.name,
+      ...(checkout.compareAtPrice != null ? { compareAtPrice: checkout.compareAtPrice } : {}),
+      ...(checkout.shippingPrice != null ? { shippingPrice: checkout.shippingPrice } : {}),
+    };
     const duplicated = await this.productService.createCheckout(
       checkout.productId,
-      {
-        name: `${checkout.name} (Copia)`,
-        priceInCents: checkout.priceInCents,
-        compareAtPrice: checkout.compareAtPrice ?? undefined,
-        currency: checkout.currency,
-        maxInstallments: checkout.maxInstallments,
-        installmentsFee: checkout.installmentsFee,
-        quantity: checkout.quantity,
-        freeShipping: checkout.freeShipping,
-        shippingPrice: checkout.shippingPrice ?? undefined,
-        brandName: checkout.checkoutConfig?.brandName ?? checkout.name,
-      },
+      createInput,
       workspaceId,
     );
 
@@ -373,12 +336,12 @@ export class CheckoutService {
         createdAt: _ca,
         updatedAt: _ua,
         ...configRest
-      } = checkout.checkoutConfig as Record<string, unknown>;
+      } = checkout.checkoutConfig as CheckoutConfigRecord;
       await this.productService.updateConfig(duplicatedId, configRest);
 
       if (checkout.checkoutConfig.pixels?.length) {
         const createdConfig = await this.prisma.checkoutConfig.findUnique({
-          where: { planId: duplicatedId },
+          where: { planId: duplicatedId, plan: { product: { workspaceId } } },
           select: { id: true },
         });
         if (createdConfig?.id) {
@@ -406,7 +369,7 @@ export class CheckoutService {
     }
 
     return this.prisma.checkoutProductPlan.findUnique({
-      where: { id: duplicatedId },
+      where: { id: duplicatedId, product: { workspaceId } },
       include: {
         checkoutConfig: true,
         checkoutLinks: { include: { plan: { select: { id: true, name: true } } } },

@@ -107,6 +107,14 @@ async function installKycMocks(page: Page) {
     });
   });
 
+  await page.route(`**/payments/connect/${TEST_WORKSPACE_ID}/accounts`, async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ accounts: [] }),
+    });
+  });
+
   await page.route('**/cookie-consent**', async (route) => {
     await route.fulfill({
       status: 200,
@@ -127,6 +135,7 @@ async function installKycMocks(page: Page) {
   await page.route('**/kyc/**', async (route) => {
     const method = route.request().method();
     const url = new URL(route.request().url());
+    const kycPath = url.pathname.replace(/^\/api(?=\/)/, '');
     const body = () => {
       try {
         return route.request().postDataJSON() as Record<string, unknown>;
@@ -135,7 +144,7 @@ async function installKycMocks(page: Page) {
       }
     };
 
-    if (url.pathname === '/kyc/profile') {
+    if (kycPath === '/kyc/profile') {
       if (method === 'PUT') {
         state.profile = { ...state.profile, ...body() };
       }
@@ -147,7 +156,7 @@ async function installKycMocks(page: Page) {
       return;
     }
 
-    if (url.pathname === '/kyc/fiscal') {
+    if (kycPath === '/kyc/fiscal') {
       if (method === 'PUT') {
         state.fiscal = { ...state.fiscal, ...body() };
       }
@@ -159,7 +168,7 @@ async function installKycMocks(page: Page) {
       return;
     }
 
-    if (url.pathname === '/kyc/bank') {
+    if (kycPath === '/kyc/bank') {
       if (method === 'PUT') {
         state.bank = { ...state.bank, ...body() };
       }
@@ -171,7 +180,7 @@ async function installKycMocks(page: Page) {
       return;
     }
 
-    if (url.pathname === '/kyc/documents') {
+    if (kycPath === '/kyc/documents') {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -180,7 +189,7 @@ async function installKycMocks(page: Page) {
       return;
     }
 
-    if (url.pathname === '/kyc/documents/upload' && method === 'POST') {
+    if (kycPath === '/kyc/documents/upload' && method === 'POST') {
       const document = {
         id: `doc-${Date.now()}`,
         type: 'DOCUMENT_FRONT',
@@ -197,8 +206,8 @@ async function installKycMocks(page: Page) {
       return;
     }
 
-    if (url.pathname.startsWith('/kyc/documents/') && method === 'DELETE') {
-      const docId = decodeURIComponent(url.pathname.split('/').pop() || '');
+    if (kycPath.startsWith('/kyc/documents/') && method === 'DELETE') {
+      const docId = decodeURIComponent(kycPath.split('/').pop() || '');
       state.documents = state.documents.filter((doc) => doc.id !== docId);
       await route.fulfill({
         status: 200,
@@ -208,7 +217,7 @@ async function installKycMocks(page: Page) {
       return;
     }
 
-    if (url.pathname === '/kyc/status' || url.pathname === '/kyc/completion') {
+    if (kycPath === '/kyc/status' || kycPath === '/kyc/completion') {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -250,6 +259,9 @@ async function clickSidebarSection(page: Page, name: string) {
 
 async function clickSave(page: Page) {
   await dismissCookieBanner(page);
+  const saveButton = page.getByRole('button', { name: /Salvar altera/i }).last();
+  await expect(saveButton).toBeVisible({ timeout: 10_000 });
+  await saveButton.click();
 }
 
 async function saveAndWaitForKycPut(
@@ -257,7 +269,17 @@ async function saveAndWaitForKycPut(
   endpoint: '/kyc/profile' | '/kyc/fiscal' | '/kyc/bank',
   data: Record<string, unknown> = {},
 ) {
+  const saveResponse = page
+    .waitForResponse((response) => {
+      const url = new URL(response.url());
+      const path = url.pathname.replace(/^\/api(?=\/)/, '');
+      return path === endpoint && response.request().method() === 'PUT';
+    }, { timeout: 10_000 })
+    .catch(() => null);
+
   await clickSave(page);
+  await saveResponse;
+
   const state = kycMockStateByPage.get(page);
   if (!state) {
     throw new Error('KYC mock state not installed');
@@ -497,7 +519,7 @@ test.describe('Settings / KYC', () => {
     // Reload and verify
     await revisitSettings(page, request);
     await clickSidebarSection(page, 'Dados bancarios');
-    await expect(page.getByText(/001\s+—\s+Banco do Brasil S\.A\./).first()).toBeVisible({
+    await expect(page.getByText(/001\s*[—-]\s*Banco do Brasil S\.A\./).first()).toBeVisible({
       timeout: 10000,
     });
     await expect(page.locator('input[placeholder="0000"]')).toHaveValue('1234');

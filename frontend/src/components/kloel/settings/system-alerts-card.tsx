@@ -4,7 +4,7 @@ import { kloelT } from '@/lib/i18n/t';
 import { Button } from '@/components/ui/button';
 import { AlertTriangle, CheckCircle2, Info, X, XCircle } from 'lucide-react';
 import { useState } from 'react';
-import { colors } from '@/lib/design-tokens';
+
 import {
   SettingsCard,
   SettingsHeader,
@@ -28,28 +28,28 @@ interface SystemAlertsCardProps {
 
 const ALERT_STYLES: Record<AlertType, AlertStyleTokens> = {
   success: {
-    bg: 'bg-[#10B981]/12',
-    text: 'text-[#7FE2BC]',
+    bg: 'bg-[var(--semantic-success)]/12',
+    text: 'text-[var(--semantic-success-text)]',
     icon: CheckCircle2,
-    iconColor: 'text-[#7FE2BC]',
+    iconColor: 'text-[var(--semantic-success-text)]',
   },
   warning: {
     bg: 'bg-[colors.ember.primary]/12',
-    text: 'text-[#F2B29D]',
+    text: 'text-[var(--semantic-ember-text)]',
     icon: AlertTriangle,
-    iconColor: 'text-[#F2B29D]',
+    iconColor: 'text-[var(--semantic-ember-text)]',
   },
   error: {
-    bg: 'bg-[#E05252]/12',
-    text: 'text-[#F7A8A8]',
+    bg: 'bg-[var(--semantic-error-soft)]/12',
+    text: 'text-[var(--semantic-error-text)]',
     icon: XCircle,
-    iconColor: 'text-[#F7A8A8]',
+    iconColor: 'text-[var(--semantic-error-text)]',
   },
   info: {
-    bg: 'bg-[#3B82F6]/12',
-    text: 'text-[#93C5FD]',
+    bg: 'bg-[var(--semantic-info)]/12',
+    text: 'text-[var(--semantic-info-text)]',
     icon: Info,
-    iconColor: 'text-[#93C5FD]',
+    iconColor: 'text-[var(--semantic-info-text)]',
   },
 };
 

@@ -1,9 +1,9 @@
-import { type JsonWebKey } from 'node:crypto';
+import { createSign, type JsonWebKey } from 'node:crypto';
 
 export const APPLE_ISSUER = 'https://appleid.apple.com';
 export const APPLE_JWKS_URL = 'https://appleid.apple.com/auth/keys';
 export const APPLE_TOKEN_URL = 'https://appleid.apple.com/auth/token';
-export const APPLE_CLIENT_SECRET_TTL_SECONDS = 60 * 60 * 24 * 180;
+const APPLE_CLIENT_SECRET_TTL_SECONDS = 60 * 60 * 24 * 180;
 
 export type AppleJwtHeader = {
   alg?: string;
@@ -64,6 +64,36 @@ export function decodeBase64UrlJson<T>(segment: string): T {
   return JSON.parse(decoded) as T;
 }
 
+function encodeAuthJson(value: Record<string, string | number>): string {
+  return Buffer.from(JSON.stringify(value)).toString('base64url');
+}
+
+export function buildClientSecret(input: {
+  clientId: string;
+  teamId: string;
+  keyId: string;
+  privateKey: string;
+}): string {
+  const issuedAt = Math.floor(Date.now() / 1000);
+  const header = { alg: 'ES256', kid: input.keyId };
+  const payload = {
+    iss: input.teamId,
+    iat: issuedAt,
+    exp: issuedAt + APPLE_CLIENT_SECRET_TTL_SECONDS,
+    aud: APPLE_ISSUER,
+    sub: input.clientId,
+  };
+  const signingInput = `${encodeAuthJson(header)}.${encodeAuthJson(payload)}`;
+  const signer = createSign('SHA256');
+  signer.update(signingInput);
+  signer.end();
+  const signature = signer.sign({
+    key: input.privateKey,
+    dsaEncoding: 'ieee-p1363',
+  });
+  return `${signingInput}.${signature.toString('base64url')}`;
+}
+
 export function normalizeEmailVerified(value: AppleIdentityPayload['email_verified']): boolean {
   return value === true || value === 'true';
 }
@@ -89,5 +119,5 @@ export function buildAppleName(user?: AppleUserHint | null, email?: string): str
     return joined;
   }
   const fallbackEmail = email?.trim();
-  return fallbackEmail ? fallbackEmail.split('@')[0] : 'Apple User';
+  return fallbackEmail ? fallbackEmail.split('@')[0] || 'Apple User' : 'Apple User';
 }

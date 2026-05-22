@@ -35,17 +35,7 @@ export type StripeCheckoutSession = Unwrap<
 export type StripePaymentIntent = Unwrap<
   Awaited<ReturnType<StripeClient['paymentIntents']['create']>>
 >;
-/** Stripe refund type. */
-export type StripeRefund = Unwrap<Awaited<ReturnType<StripeClient['refunds']['create']>>>;
-/** Stripe transfer type. */
-export type StripeTransfer = Unwrap<Awaited<ReturnType<StripeClient['transfers']['create']>>>;
 /** Stripe account type. */
 export type StripeAccount = Unwrap<Awaited<ReturnType<StripeClient['accounts']['create']>>>;
-/** Stripe payout type. */
-export type StripePayout = Unwrap<Awaited<ReturnType<StripeClient['payouts']['create']>>>;
 /** Stripe event type. */
 export type StripeEvent = Unwrap<ReturnType<StripeClient['webhooks']['constructEvent']>>;
-/** Stripe billing portal session type. */
-export type StripeBillingPortalSession = Unwrap<
-  Awaited<ReturnType<StripeClient['billingPortal']['sessions']['create']>>
->;

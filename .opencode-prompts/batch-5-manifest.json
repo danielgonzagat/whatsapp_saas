@@ -1,0 +1,45 @@
+{
+  "runId": "batch-5-2026-05-11",
+  "concurrency": 7,
+  "timeoutSec": 2400,
+  "dir": "/Users/danielpenin/whatsapp_saas",
+  "skipPermissions": true,
+  "_note": "Batch 5 — dispatch AFTER batch-4 returns. Heavy on Wave B closure + Wave H expansion + schema-models unblocker. After this batch: dispatch M-1 (largest hardcode reducer) + K-1 (decomp) in batch-6.",
+  "tasks": [
+    {
+      "id": "B-7-autopilot",
+      "title": "Wave B/7 — TenantSweep AutopilotService + AutopilotProcessor (17+15 entries)",
+      "promptFile": ".opencode-prompts/wave-b-tenant-sweep/07-autopilot.md"
+    },
+    {
+      "id": "B-8-checkout-plan-link",
+      "title": "Wave B/8 — TenantSweep CheckoutPlanLink + CheckoutWebhook (17+11 entries)",
+      "promptFile": ".opencode-prompts/wave-b-tenant-sweep/08-checkout-plan-link.md"
+    },
+    {
+      "id": "G-2-schema-models",
+      "title": "Wave G/2 — Schema prereq (ChatSession + GuestSession + PlanStatus enum)",
+      "promptFile": ".opencode-prompts/wave-g-localstorage/02-schema-models.md"
+    },
+    {
+      "id": "H-kloel-B-coverage",
+      "title": "Wave H/Coverage-KLOEL-B — 6 service specs (business-config-tools + chat-tools + composer + lead-brain + lead-processor + reply-engine)",
+      "promptFile": ".opencode-prompts/wave-h-coverage/07-kloel-B.md"
+    },
+    {
+      "id": "Q-5-payments-split-ledger",
+      "title": "Wave Q/5 — Strict-mode sweep payments/split + payments/ledger (~17 errors financial)",
+      "promptFile": ".opencode-prompts/wave-q-strict-mode/05-payments-split-ledger.md"
+    },
+    {
+      "id": "Q-6-pulse-common-utils",
+      "title": "Wave Q/6 — Strict-mode sweep pulse/dto + common/utils (~19 errors)",
+      "promptFile": ".opencode-prompts/wave-q-strict-mode/06-pulse-common-utils.md"
+    },
+    {
+      "id": "Q-4-payments-connect-retry",
+      "title": "Wave Q/4 — Strict-mode sweep payments/connect (15 errors, financial) — retry if batch-3 was incomplete",
+      "promptFile": ".opencode-prompts/wave-q-strict-mode/04-payments-connect.md"
+    }
+  ]
+}

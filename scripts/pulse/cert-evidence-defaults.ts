@@ -31,13 +31,14 @@ import {
   getAcceptedTargetIds,
   getActiveTemporaryAcceptances,
 } from './cert-helpers';
-import { discoverRuntimeFindingEventPatternsFromEvidence } from './dynamic-reality-kernel/__parts__/token-evidence';
+import { discoverRuntimeFindingEventPatternsFromEvidence } from './dynamic-reality-kernel/token-evidence';
 import {
   buildDefaultActorEvidence,
   buildDefaultSyntheticCoverage,
   buildDefaultWorldState,
 } from './cert-evidence-actor';
 import { getActorEvidenceKeys } from './scenario-mode-registry';
+import { collectRuntimeProbes } from './runtime-probes/executor';
 
 export {
   buildDefaultActorEvidence,
@@ -247,7 +248,7 @@ export function buildDefaultExecutionTrace(
 function buildRuntimeEvidence(
   env: PulseEnvironment,
   parserInventory: PulseParserInventory,
-  health: PulseHealth,
+  _health: PulseHealth,
   runtimeBreaks: import('./types.health').Break[],
 ) {
   if (env === 'scan') {
@@ -260,16 +261,21 @@ function buildRuntimeEvidence(
       probes: [],
     };
   }
+  const probes = collectRuntimeProbes();
+  const executedProbes = probes.filter((p) => p.executed).length;
+  const passedProbes = probes.filter((p) => p.status === 'passed').length;
+  const failedProbes = probes.filter((p) => p.status === 'failed').length;
+  const totalProbes = probes.length;
   return {
-    executed: true,
+    executed: executedProbes > 0,
     executedChecks: inferRuntimeCheckNames(parserInventory),
     blockingFindingEvents: summarizeFindingEventTypes(runtimeBreaks),
-    artifactPaths: [],
+    artifactPaths: ['PULSE_RUNTIME_EVIDENCE.json'],
     summary:
-      runtimeBreaks.length > 0
-        ? `Runtime evidence executed with ${runtimeBreaks.length} blocking runtime finding(s).`
-        : 'Runtime evidence executed without blocking runtime findings.',
-    probes: [],
+      totalProbes > 0
+        ? `Runtime evidence: ${executedProbes}/${totalProbes} probes executed, ${passedProbes} passed, ${failedProbes} failed${runtimeBreaks.length > 0 ? ` (${runtimeBreaks.length} blocking runtime finding(s))` : ''}.`
+        : 'Runtime evidence executed without probes.',
+    probes,
   };
 }
 
@@ -295,7 +301,6 @@ export function buildDefaultEvidence(
           executed: false,
           artifactPaths: [],
           summary: 'Total mode requires browser evidence, but none has been attached yet.',
-          failureCode: undefined,
         }
       : {
           attempted: false,

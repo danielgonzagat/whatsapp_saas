@@ -1,10 +1,10 @@
 import {
   BadRequestException,
   Injectable,
-  Logger,
   NotFoundException,
   Optional,
 } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { Prisma } from '@prisma/client';
 import { AuditService } from '../audit/audit.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -20,7 +20,7 @@ import {
 /** Idempotency: enforced at HTTP layer via @Idempotent() guard + Stripe idempotencyKey. */
 @Injectable()
 export class CheckoutCatalogService {
-  private readonly logger = new Logger(CheckoutCatalogService.name);
+  private readonly logger = StructuredLogger.from(CheckoutCatalogService.name);
 
   constructor(
     private readonly prisma: PrismaService,
@@ -32,7 +32,6 @@ export class CheckoutCatalogService {
   // ─── Order Bumps ──────────────────────────────────────────────────────────
 
   /** Create bump. */
-  // PULSE_OK: rate-limited by CheckoutPublicController
   async createBump(
     planId: string,
     data: {
@@ -59,7 +58,6 @@ export class CheckoutCatalogService {
   }
 
   /** Update bump. */
-  // PULSE_OK: rate-limited by CheckoutPublicController
   async updateBump(id: string, data: Prisma.OrderBumpUpdateInput) {
     try {
       return await this.prisma.orderBump.update({ where: { id }, data });
@@ -73,7 +71,6 @@ export class CheckoutCatalogService {
   }
 
   /** Delete bump. */
-  // PULSE_OK: read+delete wrapped in $transaction to prevent audit log
   // for records concurrently deleted by another request
   async deleteBump(id: string, workspaceId?: string) {
     await this.prisma.$transaction(async (tx) => {
@@ -97,7 +94,6 @@ export class CheckoutCatalogService {
   }
 
   /** List bumps. */
-  // PULSE_OK: rate-limited by CheckoutPublicController
   async listBumps(planId: string) {
     return this.prisma.orderBump.findMany({
       where: { planId },
@@ -123,7 +119,6 @@ export class CheckoutCatalogService {
   // ─── Upsells ──────────────────────────────────────────────────────────────
 
   /** Create upsell. */
-  // PULSE_OK: rate-limited by CheckoutPublicController
   async createUpsell(
     planId: string,
     data: {
@@ -159,7 +154,6 @@ export class CheckoutCatalogService {
   }
 
   /** Update upsell. */
-  // PULSE_OK: rate-limited by CheckoutPublicController
   async updateUpsell(id: string, data: Prisma.UpsellUpdateInput) {
     try {
       return await this.prisma.upsell.update({ where: { id }, data });
@@ -173,7 +167,6 @@ export class CheckoutCatalogService {
   }
 
   /** Delete upsell. */
-  // PULSE_OK: read+delete wrapped in $transaction to prevent audit log
   // for records concurrently deleted by another request
   async deleteUpsell(id: string, workspaceId?: string) {
     await this.prisma.$transaction(async (tx) => {
@@ -194,7 +187,6 @@ export class CheckoutCatalogService {
   }
 
   /** List upsells. */
-  // PULSE_OK: rate-limited by CheckoutPublicController
   async listUpsells(planId: string) {
     return this.prisma.upsell.findMany({
       where: { planId },
@@ -218,7 +210,6 @@ export class CheckoutCatalogService {
   // ─── Coupons ──────────────────────────────────────────────────────────────
 
   /** Create coupon. */
-  // PULSE_OK: existence check + create wrapped in $transaction to prevent
   // unique-constraint race on concurrent createCoupon for same code
   async createCoupon(
     workspaceId: string,
@@ -255,7 +246,6 @@ export class CheckoutCatalogService {
   }
 
   /** Update coupon. */
-  // PULSE_OK: rate-limited by CheckoutPublicController
   async updateCoupon(
     id: string,
     workspaceId: string | undefined,
@@ -279,17 +269,19 @@ export class CheckoutCatalogService {
   }
 
   /** Delete coupon. */
-  // PULSE_OK: rate-limited by CheckoutPublicController
   async deleteCoupon(id: string, workspaceId?: string) {
     return deleteCouponHelper(
-      { prisma: this.prisma, auditService: this.auditService, opsAlert: this.opsAlert },
+      {
+        prisma: this.prisma,
+        auditService: this.auditService,
+        ...(this.opsAlert !== undefined ? { opsAlert: this.opsAlert } : {}),
+      },
       id,
       workspaceId,
     );
   }
 
   /** List coupons. */
-  // PULSE_OK: rate-limited by CheckoutPublicController
   async listCoupons(workspaceId: string) {
     return this.prisma.checkoutCoupon.findMany({
       where: { workspaceId },
@@ -311,7 +303,6 @@ export class CheckoutCatalogService {
   }
 
   /** Validate coupon. */
-  // PULSE_OK: rate-limited by CheckoutPublicController
   async validateCoupon(workspaceId: string, code: string, planId: string, orderValue: number) {
     this.logger.log({ operation: 'validateCoupon', workspaceId, code, planId, orderValue });
     return validateCouponHelper(this.prisma, workspaceId, code, planId, orderValue);
@@ -320,7 +311,6 @@ export class CheckoutCatalogService {
   // ─── Pixels ───────────────────────────────────────────────────────────────
 
   /** Create pixel. */
-  // PULSE_OK: rate-limited by CheckoutPublicController
   async createPixel(
     checkoutConfigId: string,
     data: {
@@ -344,7 +334,6 @@ export class CheckoutCatalogService {
   }
 
   /** Update pixel. */
-  // PULSE_OK: rate-limited by CheckoutPublicController
   async updatePixel(id: string, data: Prisma.CheckoutPixelUpdateInput) {
     try {
       return await this.prisma.checkoutPixel.update({ where: { id }, data });
@@ -358,7 +347,6 @@ export class CheckoutCatalogService {
   }
 
   /** Delete pixel. */
-  // PULSE_OK: rate-limited by CheckoutPublicController
   async deletePixel(id: string, workspaceId?: string) {
     return deleteCheckoutPixel(
       { prisma: this.prisma, auditService: this.auditService },
@@ -368,13 +356,11 @@ export class CheckoutCatalogService {
   }
 
   /** Calculate shipping. */
-  // PULSE_OK: rate-limited by CheckoutPublicController
   async calculateShipping(slug: string, cep: string) {
     return calcShipping(this.catalogConfigService, slug, cep);
   }
 
   /** Reset config to defaults. */
-  // PULSE_OK: rate-limited by CheckoutPublicController
   async resetConfig(planId: string) {
     return resetCatalogConfig(this.catalogConfigService, planId);
   }
@@ -385,4 +371,4 @@ import {
   deleteCheckoutPixel,
   deleteCouponHelper,
   resetCatalogConfig,
-} from './__companions__/checkout-catalog.service.companion';
+} from './checkout-catalog.operations';

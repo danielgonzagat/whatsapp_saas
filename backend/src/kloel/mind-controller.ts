@@ -2,17 +2,22 @@ import {
   BadRequestException,
   Body,
   Controller,
+  ForbiddenException,
   Get,
+  Headers,
   Param,
   Post,
   Query,
+  ServiceUnavailableException,
   UseGuards,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { Public } from '../auth/public.decorator';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import {
   AggressivenessDto,
   AudioVsTextDto,
+  BestVariantDto,
   CouponDto,
   DecideDto,
   GuardEvaluateDto,
@@ -114,9 +119,9 @@ export class MindController {
   @Post(':workspaceId/cases/similar')
   similarCases(@Param('workspaceId') workspaceId: string, @Body() body: SimilarCasesDto) {
     return this.mind.retrieveSimilar({
-      caseType: body.caseType,
-      features: body.features,
-      limit: body.limit,
+      ...(body.caseType !== undefined ? { caseType: body.caseType } : {}),
+      ...(body.features !== undefined ? { features: body.features } : {}),
+      ...(body.limit !== undefined ? { limit: body.limit } : {}),
       text: body.text,
       workspaceId,
     });
@@ -206,6 +211,41 @@ export class MindController {
     return this.mind.resolveCoupon(workspaceId, body.priceBand, body.soldRate, body.segment);
   }
 
+  @Post(':workspaceId/variant-decision')
+  @Public()
+  async variantDecision(
+    @Param('workspaceId') workspaceId: string,
+    @Body() body: BestVariantDto,
+    @Headers('x-internal-key') internalKey?: string,
+  ) {
+    // Internal-only endpoint consumed by the worker (mind-client.ts). The
+    // header guard exists; the failure mode without proper config must be
+    // fail-closed, not fail-open.
+    //
+    // Rules:
+    //  - In production (NODE_ENV=production), INTERNAL_API_KEY MUST be set;
+    //    if it is not, refuse with 503 so the operator notices instead of
+    //    silently accepting any caller.
+    //  - In non-production, an unset INTERNAL_API_KEY accepts any caller for
+    //    developer ergonomics, but a set key is enforced strictly.
+    const expectedInternalKey = String(process.env.INTERNAL_API_KEY || '').trim();
+    const isProduction = String(process.env.NODE_ENV || '').toLowerCase() === 'production';
+    if (!expectedInternalKey && isProduction) {
+      throw new ServiceUnavailableException(
+        'INTERNAL_API_KEY not configured in production — variant-decision endpoint refuses to fail-open.',
+      );
+    }
+    if (expectedInternalKey && internalKey !== expectedInternalKey) {
+      throw new ForbiddenException('Invalid internal key');
+    }
+    return this.mind.resolveBestVariant(
+      workspaceId,
+      body.flow,
+      body.variantIds,
+      body.context,
+    );
+  }
+
   @Post(':workspaceId/simulate')
   simulate(@Param('workspaceId') workspaceId: string, @Body() body: SimulateDto) {
     const seed = body.seed ?? 42;
@@ -221,17 +261,20 @@ export class MindController {
           beliefMean: c.beliefMean,
           beliefVariance: c.beliefVariance,
         })),
-        baseline: d.baseline,
-        epsilon: d.epsilon,
-        utilitySuccess: d.utilitySuccess,
-        utilityFail: d.utilityFail,
+        ...(d.baseline !== undefined ? { baseline: d.baseline } : {}),
+        ...(d.epsilon !== undefined ? { epsilon: d.epsilon } : {}),
+        ...(d.utilitySuccess !== undefined ? { utilitySuccess: d.utilitySuccess } : {}),
+        ...(d.utilityFail !== undefined ? { utilityFail: d.utilityFail } : {}),
       }));
     } else if (body.actions && body.actions.length > 0) {
       const recipeKeys = body.recipeKeys ?? ['followup_timing', 'cart_recovery', 'coupon_offer'];
       const recipes = MindSyntheticGeneratorService.builtinRecipes();
       decisions = recipeKeys
-        .filter((key) => recipes[key])
-        .map((key, index) => this.synthetic.generateDecision(recipes[key], seed + index * 100));
+        .map((key, index) => {
+          const recipe = recipes[key];
+          return recipe ? this.synthetic.generateDecision(recipe, seed + index * 100) : null;
+        })
+        .filter((decision): decision is ReplayInput => decision !== null);
     } else {
       const report = this.simulator.simulateSyntheticWorkspace(workspaceId, seed);
       return {
@@ -250,7 +293,9 @@ export class MindController {
     } else {
       const allActions = decisions.flatMap((d) => d.candidates.map((c) => c.action));
       const uniqueActions = [...new Set(allActions)];
-      const syntheticActions = this.synthetic.generateActionContexts(uniqueActions, seed + 500);
+      const syntheticActions = this.synthetic.generateActionContexts(uniqueActions, seed + 500, {
+        injectViolations: false,
+      });
       actions = syntheticActions.map((sa) => ({
         action: sa.action,
         decisionType: decisions[0]?.decisionType ?? 'followup_timing',

@@ -1,6 +1,8 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { PrismaService } from '../prisma/prisma.service';
 import { includesAnyPhrase, normalizeIntentText } from '../whatsapp/whatsapp-normalization.util';
+import { DecisionOutcomeService } from './decision-outcome.service';
 import { KloelService } from './kloel.service';
 
 interface WebhookMessage {
@@ -19,56 +21,62 @@ interface IntentDetection {
   entities: Record<string, unknown>;
 }
 
-function recordValue(value: unknown): Record<string, unknown> | null {
-  return typeof value === 'object' && value !== null && !Array.isArray(value)
-    ? (value as Record<string, unknown>)
-    : null;
-}
-
-function firstRecord(value: unknown): Record<string, unknown> | null {
-  return Array.isArray(value) ? (recordValue(value[0]) ?? null) : null;
-}
-
 /** Whats app brain service. */
 @Injectable()
 export class WhatsAppBrainService {
-  private readonly logger = new Logger(WhatsAppBrainService.name);
+  private readonly logger = StructuredLogger.from(WhatsAppBrainService.name);
 
   constructor(
     private readonly prisma: PrismaService,
     private readonly kloelService: KloelService,
+    private readonly decisionOutcome: DecisionOutcomeService,
   ) {}
 
   /** Process webhook. */
   async processWebhook(payload: Record<string, unknown>, workspaceId: string): Promise<void> {
     this.logger.log('Processando webhook WhatsApp');
 
-    const entry = firstRecord(payload.entry);
-    const changes = firstRecord(entry?.changes);
-    const value = recordValue(changes?.value);
-
-    const message = firstRecord(value?.messages);
-    if (!value || !message) {
+    const entry = (payload.entry as unknown[] | undefined)?.[0];
+    if (!entry) {
+      return;
+    }
+    const changes = (entry as Record<string, unknown>).changes as unknown[] | undefined;
+    if (!changes?.[0]) {
+      return;
+    }
+    const value = changes[0] as Record<string, unknown> | undefined;
+    if (!value) {
       return;
     }
 
-    const metadata = recordValue(value.metadata);
-    const text = recordValue(message.text);
-    const messageType = typeof message.type === 'string' ? message.type : 'text';
+    const messages = value.messages as unknown[] | undefined;
+    if (!messages?.[0]) {
+      return;
+    }
+    const message = messages[0] as Record<string, unknown>;
+    const metadata =
+      value.metadata && typeof value.metadata === 'object' && !Array.isArray(value.metadata)
+        ? (value.metadata as Record<string, unknown>)
+        : {};
+    const textPayload =
+      message.text && typeof message.text === 'object' && !Array.isArray(message.text)
+        ? (message.text as Record<string, unknown>)
+        : {};
+    const messageType = this.normalizeMessageType(message.type);
+    const timestamp =
+      typeof message.timestamp === 'string' || typeof message.timestamp === 'number'
+        ? Number.parseInt(String(message.timestamp), 10)
+        : 0;
 
     const webhookMessage: WebhookMessage = {
       from: typeof message.from === 'string' ? message.from : 'unknown',
       to:
-        typeof metadata?.display_phone_number === 'string'
+        typeof metadata.display_phone_number === 'string'
           ? metadata.display_phone_number
           : 'unknown',
-      message: typeof text?.body === 'string' ? text.body : '',
-      messageType: ['text', 'image', 'audio', 'document', 'location'].includes(messageType)
-        ? (messageType as WebhookMessage['messageType'])
-        : 'text',
-      timestamp: new Date(
-        Number.parseInt(typeof message.timestamp === 'string' ? message.timestamp : '0', 10) * 1000,
-      ),
+      message: typeof textPayload.body === 'string' ? textPayload.body : '',
+      messageType,
+      timestamp: new Date((Number.isFinite(timestamp) ? timestamp : 0) * 1000),
       messageId: typeof message.id === 'string' ? message.id : 'unknown',
       workspaceId,
     };
@@ -76,9 +84,32 @@ export class WhatsAppBrainService {
     await this.handleIncomingMessage(webhookMessage);
   }
 
+  private normalizeMessageType(value: unknown): WebhookMessage['messageType'] {
+    if (
+      value === 'text' ||
+      value === 'image' ||
+      value === 'audio' ||
+      value === 'document' ||
+      value === 'location'
+    ) {
+      return value;
+    }
+    return 'text';
+  }
+
   /** Handle incoming message. */
   async handleIncomingMessage(msg: WebhookMessage): Promise<string> {
     this.logger.log(`Mensagem de ${msg.from}: ${msg.message.substring(0, 50)}...`);
+
+    void this.decisionOutcome.recordEvent({
+      workspaceId: msg.workspaceId,
+      eventType: 'inbound.received',
+      eventKey: msg.messageId,
+      correlation: {
+        contactId: msg.from,
+        channel: 'whatsapp',
+      },
+    });
 
     const lead = await this.getOrCreateLead(msg.workspaceId, msg.from);
     const intent = this.detectIntent(msg.message);

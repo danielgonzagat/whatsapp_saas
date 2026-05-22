@@ -67,9 +67,11 @@ describe('ContextualEmptyState', () => {
     expect(onSecondary).toHaveBeenCalledTimes(1);
   });
 
-  it('does not render action area when config has no actionLabel or secondaryAction', () => {
-    render(<ContextualEmptyState context="anuncios" />);
-    expect(screen.queryByRole('button')).toBeNull();
+  it('calls onFillComposer with actionPrompt for anuncios config', () => {
+    const onFillComposer = vi.fn();
+    render(<ContextualEmptyState context="anuncios" onFillComposer={onFillComposer} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Conectar conta de anuncios' }));
+    expect(onFillComposer).toHaveBeenCalledWith('Quero conectar minha conta de Meta Ads');
   });
 
   it('renders custom icon when provided', () => {
@@ -87,10 +89,10 @@ describe('ContextualEmptyState', () => {
     expect(container.querySelector('.text-xl')).toBeInTheDocument();
   });
 
-  it('never renders action area for configs without an action', () => {
+  it('renders anuncios empty state with connection CTA', () => {
     render(<ContextualEmptyState context="anuncios" />);
-    expect(screen.queryByRole('button')).toBeNull();
-    expect(screen.getByText('Anúncios — Em Breve')).toBeInTheDocument();
+    expect(screen.getByText('Conecte sua primeira conta de anuncios')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Conectar conta de anuncios' })).toBeInTheDocument();
   });
 
   it('renders no-connection variant with warning style', () => {

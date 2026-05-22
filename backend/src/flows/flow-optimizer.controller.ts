@@ -2,14 +2,16 @@ import { Controller, Param, Post, Request, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
+import { AuthenticatedRequest } from '../common/interfaces';
 import { FlowOptimizerService } from './flow-optimizer.service';
-import type { AuthenticatedRequest } from '../common/interfaces/authenticated-request.interface';
+import { RouteClass } from '../common/throttler/route-class.decorator';
 
 /** Flow optimizer controller. */
 @ApiTags('Flow AI')
 @ApiBearerAuth()
 @Controller('flows/ai')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
+@RouteClass('ai')
 export class FlowOptimizerController {
   constructor(private readonly optimizer: FlowOptimizerService) {}
 

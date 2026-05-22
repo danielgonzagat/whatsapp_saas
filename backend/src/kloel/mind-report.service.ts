@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { randomUUID } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { MIND_DECISION_CATALOG } from './mind-decision-catalog';
@@ -12,12 +13,16 @@ function startOfDay(date: Date): Date {
 
 @Injectable()
 export class MindReportService {
+  private readonly logger = StructuredLogger.from(MindReportService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly beliefs: MindBeliefService,
     private readonly policy: MindPolicyService,
     private readonly simulator: MindSimulatorService,
-  ) {}
+  ) {
+    this.logger.debug?.(`MindReportService initialized`);
+  }
 
   async generateDaily(workspaceId: string, reportDate = startOfDay(new Date())) {
     const [state, concepts] = await Promise.all([

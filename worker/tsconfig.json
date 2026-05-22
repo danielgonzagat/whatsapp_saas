@@ -4,12 +4,23 @@
     "module": "commonjs",
     "lib": ["ES2020", "dom", "dom.iterable"],
     "moduleResolution": "node",
+    "ignoreDeprecations": "5.0",
     "esModuleInterop": true,
-    "strict": false,
+    "strict": true,
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    "strictFunctionTypes": true,
+    "strictBindCallApply": true,
+    "alwaysStrict": true,
+    "noImplicitReturns": true,
+    "useUnknownInCatchVariables": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "exactOptionalPropertyTypes": true,
     "skipLibCheck": true,
     "resolveJsonModule": true,
     "outDir": "dist"
   },
   "include": ["./**/*.ts"],
-  "exclude": ["node_modules", "media-processor.ts", "__companions__/**", "**/__companions__/**"]
+  "exclude": ["node_modules", "**/*.spec.ts"]
 }

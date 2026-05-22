@@ -60,7 +60,7 @@ describe('normalizePublicCheckoutResponse', () => {
     expect(payload.product.images).toEqual(['https://cdn.kloel.com/a.png']);
   });
 
-  it('normalizes checkout urgency config for the public renderer', () => {
+  it('normalizes checkout urgency config without publishing fake stock counters', () => {
     const payload = normalizePublicCheckoutResponse({
       id: 'plan_1',
       name: 'Plano 1',
@@ -84,9 +84,9 @@ describe('normalizePublicCheckoutResponse', () => {
     expect(payload.checkoutConfig?.enableTimer).toBe(true);
     expect(payload.checkoutConfig?.timerType).toBe('EXPIRATION');
     expect(payload.checkoutConfig?.timerMinutes).toBe(12);
-    expect(payload.checkoutConfig?.showStockCounter).toBe(true);
-    expect(payload.checkoutConfig?.stockMessage).toBe('Apenas {count} unidades restantes');
-    expect(payload.checkoutConfig?.fakeStockCount).toBe(7);
+    expect(payload.checkoutConfig?.showStockCounter).toBe(false);
+    expect(payload.checkoutConfig?.stockMessage).toBeUndefined();
+    expect(payload.checkoutConfig?.fakeStockCount).toBe(0);
   });
 
   it('rejects payloads without required identifiers', () => {

@@ -1,3 +1,4 @@
+import { colors } from '@/lib/design-tokens';
 import { type Canvas, FabricImage } from 'fabric';
 
 /** Background manager. */
@@ -46,8 +47,8 @@ export class BackgroundManager {
 
   /** Remove background. */
   removeBackground(): void {
-    this.canvas.backgroundColor = '#ffffff';
-    this.canvas.backgroundImage = undefined;
+    this.canvas.backgroundColor = colors.text.silver;
+    delete this.canvas.backgroundImage;
     this.canvas.requestRenderAll();
   }
 }

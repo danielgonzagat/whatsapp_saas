@@ -1,4 +1,5 @@
 'use client';
+import { colors } from '@/lib/design-tokens';
 import { kloelT } from '@/lib/i18n/t';
 import { Component, type ReactNode } from 'react';
 
@@ -22,18 +23,18 @@ export class EditorErrorBoundary extends Component<{ children: ReactNode }, Stat
         <div
           style={{
             height: '100vh',
-            background: '#0A0A0C',
+            background: colors.background.void,
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'center',
             fontFamily: "'Sora', sans-serif",
-            color: '#E0DDD8',
+            color: colors.text.silver,
             gap: 16,
           }}
         >
           <p style={{ fontSize: 16, fontWeight: 600 }}>{kloelT(`O editor encontrou um erro`)}</p>
-          <p style={{ fontSize: 12, color: '#6E6E73', maxWidth: 400, textAlign: 'center' }}>
+          <p style={{ fontSize: 12, color: colors.text.muted, maxWidth: 400, textAlign: 'center' }}>
             {this.state.error}
           </p>
           <button
@@ -43,10 +44,10 @@ export class EditorErrorBoundary extends Component<{ children: ReactNode }, Stat
             }}
             style={{
               padding: '8px 20px',
-              background: '#E85D30',
+              background: colors.ember.primary,
               border: 'none',
               borderRadius: 4,
-              color: '#0A0A0C',
+              color: colors.background.void,
               fontSize: 12,
               fontWeight: 600,
               cursor: 'pointer',

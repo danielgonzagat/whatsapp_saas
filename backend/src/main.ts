@@ -1,6 +1,6 @@
 import './instrument';
 import { join } from 'node:path';
-import { ValidationPipe } from '@nestjs/common';
+import { ConsoleLogger, LoggerService, ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
@@ -11,6 +11,7 @@ import helmet from 'helmet';
 import { AppModule } from './app.module';
 import { PrismaService } from './prisma/prisma.service';
 import { OpsAlertService } from './observability/ops-alert.service';
+import { assertProductionStartupSecrets } from './config/production-startup-guard';
 
 const HTTPS_____KLOEL_FRONTEN_RE = /^https:\/\/kloel-frontend-.*\.vercel\.app$/;
 const HTTPS_____KLOEL_ADMIN_RE = /^https:\/\/kloel-admin-.*\.vercel\.app$/;
@@ -24,6 +25,16 @@ const DATADOG_TRACING_HEADERS = [
   'x-datadog-sampling-priority',
   'x-datadog-trace-id',
 ];
+const PRODUCTION_BOOT_LOG_CONTEXTS = new Set(['RouterExplorer', 'RoutesResolver']);
+
+class ProductionBootstrapLogger extends ConsoleLogger implements LoggerService {
+  override log(message: unknown, context?: string): void {
+    if (context && PRODUCTION_BOOT_LOG_CONTEXTS.has(context)) {
+      return;
+    }
+    super.log(message, context);
+  }
+}
 
 function matchesWildcardPattern(value: string, pattern: string): boolean {
   if (!pattern.includes('*')) {
@@ -118,7 +129,7 @@ function handleSchemaError(schemaErr: unknown): void {
 async function runStartupDbCheck(app: NestExpressApplication): Promise<void> {
   try {
     const prisma = app.get(PrismaService);
-    await prisma.$queryRaw`SELECT 1`;
+    await prisma.$queryRaw<{ '?column?': 1 }[]>`SELECT 1`;
     console.log('[STARTUP] DB conectado');
 
     try {
@@ -144,9 +155,7 @@ function setupSwagger(app: NestExpressApplication): void {
   const allowSwagger = process.env.NODE_ENV !== 'production' || (swaggerUser && swaggerPass);
 
   if (!allowSwagger) {
-    console.warn(
-      '[STARTUP] Swagger desabilitado em produção por falta de SWAGGER_BASIC_USER/PASS.',
-    );
+    console.log('[STARTUP] Swagger desabilitado em produção sem credenciais Basic Auth.');
     return;
   }
 
@@ -180,6 +189,8 @@ async function bootstrap() {
       'AUTH_OPTIONAL não pode estar habilitado em produção. Remova AUTH_OPTIONAL ou defina para false.',
     );
   }
+
+  assertProductionStartupSecrets();
 
   // ============================================================
   // STARTUP CHECK: reject placeholder secrets in production.
@@ -225,6 +236,7 @@ async function bootstrap() {
 
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     rawBody: true,
+    ...(process.env.NODE_ENV === 'production' ? { logger: new ProductionBootstrapLogger() } : {}),
   });
 
   // ============================================================
@@ -413,41 +425,46 @@ async function bootstrap() {
       res.setHeader('Access-Control-Allow-Origin', matched);
       return true;
     }
-    console.warn('[CORS] Blocked origin: %s on %s %s', rawOrigin, req.method, req.path);
-    return req.method !== 'OPTIONS';
+    if (process.env.NODE_ENV !== 'production') {
+      console.log(`[CORS] Blocked origin: ${rawOrigin} on ${req.method} ${req.path}`);
+    }
+    const isPreflight = req.method === 'OPTIONS';
+    return !isPreflight;
   };
 
   app.use((req: Request, res: Response, next: NextFunction) => {
     const allowed = applyCorsOriginHeader(req, res);
     if (!allowed) {
-      return res.status(403).end();
-    }
-    res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, PUT, PATCH, POST, DELETE, OPTIONS');
-    res.setHeader(
-      'Access-Control-Allow-Headers',
-      [
-        'Content-Type',
-        'Authorization',
-        'Accept',
-        'Origin',
-        'User-Agent',
-        'Cache-Control',
-        'Pragma',
-        'X-Session-Id',
-        'x-workspace-id',
-        'X-Requested-With',
-        ...DATADOG_TRACING_HEADERS,
-      ].join(', '),
-    );
-    res.setHeader('Access-Control-Allow-Credentials', 'true');
-    res.setHeader('Access-Control-Max-Age', '86400');
-    res.setHeader('Vary', 'Origin');
+      res.status(403).end();
+    } else {
+      res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, PUT, PATCH, POST, DELETE, OPTIONS');
+      res.setHeader(
+        'Access-Control-Allow-Headers',
+        [
+          'Content-Type',
+          'Authorization',
+          'Accept',
+          'Origin',
+          'User-Agent',
+          'Cache-Control',
+          'Pragma',
+          'X-Session-Id',
+          'x-workspace-id',
+          'X-Requested-With',
+          ...DATADOG_TRACING_HEADERS,
+        ].join(', '),
+      );
+      res.setHeader('Access-Control-Allow-Credentials', 'true');
+      res.setHeader('Access-Control-Max-Age', '86400');
+      res.setHeader('Vary', 'Origin');
 
-    // Responder imediatamente a requisições OPTIONS (preflight)
-    if (req.method === 'OPTIONS') {
-      return res.status(204).end();
+      // Responder imediatamente a requisições OPTIONS (preflight)
+      if (req.method === 'OPTIONS') {
+        res.status(204).end();
+        return;
+      }
+      next();
     }
-    return next();
   });
 
   // Serve Static Files (Audio/Images) from 'backend/public' mapped to root

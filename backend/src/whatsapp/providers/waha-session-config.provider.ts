@@ -1,4 +1,3 @@
-// PULSE:OK — session config/diagnostics layer for WAHA.
 // Session lifecycle lives in WahaSessionProvider (waha-session.provider.ts).
 // Messaging lives in WahaProvider (waha.provider.ts).
 import { Injectable } from '@nestjs/common';
@@ -20,6 +19,8 @@ import {
 } from './waha-session-config.util';
 
 type WahaSessionConfig = WahaSessionConfigShape;
+
+import type { UnknownRecord } from '../../common/types';
 
 /**
  * Session config and diagnostics layer for WAHA.
@@ -146,9 +147,9 @@ export class WahaSessionConfigProvider extends WahaTransport {
     return this.resolveSessionName(workspaceSessionId);
   }
 
-  protected readRecord(value: unknown): Record<string, unknown> {
+  protected readRecord(value: unknown): UnknownRecord {
     return typeof value === 'object' && value !== null && !Array.isArray(value)
-      ? (value as Record<string, unknown>)
+      ? (value as UnknownRecord)
       : {};
   }
 
@@ -224,7 +225,7 @@ export class WahaSessionConfigProvider extends WahaTransport {
   }
 
   protected extractSessionConfig(payload: Record<string, unknown>): WahaSessionConfig | null {
-    const payloadSession = payload?.session as Record<string, unknown> | undefined;
+    const payloadSession = payload?.session as UnknownRecord | undefined;
     const candidate = payload?.config || payloadSession?.config || null;
     if (!candidate || typeof candidate !== 'object') {
       return null;
@@ -339,10 +340,10 @@ export class WahaSessionConfigProvider extends WahaTransport {
             {
               url: webhookUrl,
               events,
-              hmac: hmacKey ? { key: hmacKey } : undefined,
-              customHeaders: webhookSecret
-                ? [{ name: 'X-Api-Key', value: webhookSecret }]
-                : undefined,
+              ...(hmacKey ? { hmac: { key: hmacKey } } : {}),
+              ...(webhookSecret
+                ? { customHeaders: [{ name: 'X-Api-Key', value: webhookSecret }] }
+                : {}),
             },
           ]
         : undefined;
@@ -362,9 +363,9 @@ export class WahaSessionConfigProvider extends WahaTransport {
     };
 
     return {
-      webhooks,
       store: storeConfig,
       noweb: { store: storeConfig },
+      ...(webhooks !== undefined ? { webhooks } : {}),
     };
   }
 

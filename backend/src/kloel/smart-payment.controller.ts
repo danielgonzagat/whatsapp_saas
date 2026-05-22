@@ -11,7 +11,6 @@ import {
 } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import * as Sentry from '@sentry/node';
-import { Throttle } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Public } from '../auth/public.decorator';
 import { resolveWorkspaceId } from '../auth/workspace-access';
@@ -19,11 +18,14 @@ import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { PrismaService } from '../prisma/prisma.service';
 import { SmartPaymentService } from './smart-payment.service';
 import { AuthenticatedRequest } from '../common/interfaces/authenticated-request.interface';
+import { RouteClass } from '../common/throttler/route-class.decorator';
+import { WebhookEndpoint } from '../common/decorators/webhook-endpoint.decorator';
+import { InternalEndpoint } from '../common/decorators/internal-endpoint.decorator';
 
 // All dates stored as UTC via Prisma DateTime (toISOString)
 @ApiTags('smart-payment')
 @Controller('kloel/payment')
-@Throttle({ default: { limit: 10, ttl: 60000 } })
+@RouteClass('mutate')
 export class SmartPaymentController {
   constructor(
     private readonly paymentService: SmartPaymentService,
@@ -33,7 +35,6 @@ export class SmartPaymentController {
   /** Get payment details. */
   @Public()
   @Get('public/:paymentId')
-  @Throttle({ default: { limit: 60, ttl: 60000 } })
   @ApiOperation({
     summary: 'Busca detalhes públicos de um pagamento',
     description: 'Endpoint público para página de pagamento fallback',
@@ -115,9 +116,9 @@ export class SmartPaymentController {
       phone: body.phone,
       customerName: body.customerName,
       amount: body.amount,
-      productName: body.productName,
-      contactId: body.contactId,
-      conversation: body.conversation,
+      ...(body.productName !== undefined ? { productName: body.productName } : {}),
+      ...(body.contactId !== undefined ? { contactId: body.contactId } : {}),
+      ...(body.conversation !== undefined ? { conversation: body.conversation } : {}),
     });
 
     return {
@@ -150,7 +151,9 @@ export class SmartPaymentController {
       contactId: body.contactId,
       originalAmount: body.originalAmount,
       customerMessage: body.customerMessage,
-      maxDiscountPercent: body.maxDiscountPercent,
+      ...(body.maxDiscountPercent !== undefined
+        ? { maxDiscountPercent: body.maxDiscountPercent }
+        : {}),
     });
 
     return {
@@ -160,7 +163,7 @@ export class SmartPaymentController {
   }
 
   /** Analyze recovery. */
-  // PULSE_TODO: verify if still needed, no caller detected
+  @InternalEndpoint('admin payment recovery analysis')
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Get(':workspaceId/recovery/:paymentId')
   @ApiOperation({
@@ -188,6 +191,7 @@ export class SmartPaymentController {
 
   /** Process confirmation. */
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
+  @WebhookEndpoint('Payment gateway webhook confirmation')
   @Post(':workspaceId/webhook/confirm')
   @ApiOperation({
     summary: 'Processa confirmação de pagamento',
@@ -210,7 +214,7 @@ export class SmartPaymentController {
       paymentId: body.paymentId,
       status: body.status,
       amount: body.amount,
-      customerId: body.customerId,
+      ...(body.customerId !== undefined ? { customerId: body.customerId } : {}),
     });
 
     return {

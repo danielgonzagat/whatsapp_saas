@@ -3,30 +3,31 @@ import {
   BadRequestException,
   ForbiddenException,
   Injectable,
-  Logger,
   NotFoundException,
-  Optional,
 } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { createRedisClient } from '../common/redis/redis.util';
 import { pollUntil } from '../common/async-sequence';
 import { PrismaService } from '../prisma/prisma.service';
 import { buildQueueJobId } from '../queue/job-id.util';
 import { autopilotQueue } from '../queue/queue';
 import { AutopilotOpsConversionService } from './autopilot-ops-conversion.service';
-import { OpsAlertService } from '../observability/ops-alert.service';
 
+/**
+ * @cluster whatsapp_saas/backend/autopilot
+ * L11 multi-agent TaskGraph annotation (batched by tools/auto-pr/batch-job.mjs).
+ */
 const D_RE_OPS = /\D/g;
 
 /** Autopilot operational methods: pipeline status, smoke test, enqueue. Retry/conversion delegated to AutopilotOpsConversionService. */
 @Injectable()
 export class AutopilotOpsService {
-  private readonly logger = new Logger(AutopilotOpsService.name);
+  private readonly logger = StructuredLogger.from(AutopilotOpsService.name);
   private readonly redisClient: ReturnType<typeof createRedisClient>;
 
   constructor(
     private readonly prisma: PrismaService,
     private readonly conversion: AutopilotOpsConversionService,
-    @Optional() private readonly opsAlert?: OpsAlertService,
   ) {
     this.redisClient = createRedisClient();
   }
@@ -41,10 +42,6 @@ export class AutopilotOpsService {
 
   private readRecord(value: unknown): Record<string, unknown> {
     return typeof value === 'object' && value !== null ? (value as Record<string, unknown>) : {};
-  }
-
-  private readOptionalText(value: unknown): string | null {
-    return typeof value === 'string' && value.trim().length > 0 ? value : null;
   }
 
   private async ensureNotSuspended(workspaceId: string) {
@@ -236,7 +233,9 @@ export class AutopilotOpsService {
         intervalMs: 500,
         read: async () => {
           const current = await this.redisClient.get(smokeKey);
-          if (!current) return null;
+          if (!current) {
+            return null;
+          }
           try {
             return this.readRecord(JSON.parse(current));
           } catch {
@@ -324,6 +323,27 @@ export class AutopilotOpsService {
           : {}),
       },
     );
+    try {
+      await this.prisma.autopilotEvent.create({
+        data: {
+          workspaceId,
+          ...(contactId !== undefined ? { contactId } : {}),
+          intent: 'AUTOPILOT_RUN',
+          action: 'ENQUEUED',
+          status: 'queued',
+          reason: 'manual_trigger',
+          meta: {
+            phone: phone ?? null,
+            message: message ?? null,
+            delayMs: delayMs ?? null,
+          },
+        },
+      });
+    } catch (err: unknown) {
+      this.logger.warn(
+        `Failed to log autopilotEvent for enqueueProcessing: ${err instanceof Error ? err.message : 'unknown error'}`,
+      );
+    }
     return { queued: true };
   }
 
@@ -335,10 +355,10 @@ export class AutopilotOpsService {
   /** Marca conversão manual/webhook — delegated to AutopilotOpsConversionService. */
   async markConversion(input: {
     workspaceId: string;
-    contactId?: string;
-    phone?: string;
-    reason?: string;
-    meta?: Record<string, unknown>;
+    contactId?: string | undefined;
+    phone?: string | undefined;
+    reason?: string | undefined;
+    meta?: Record<string, unknown> | undefined;
   }) {
     return this.conversion.markConversion(input);
   }

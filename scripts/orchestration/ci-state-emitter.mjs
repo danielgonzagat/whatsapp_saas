@@ -3,7 +3,7 @@
 import { execSync } from 'node:child_process';
 import { mkdirSync, readFileSync, renameSync, writeFileSync, existsSync } from 'node:fs';
 import { join, resolve } from 'node:path';
-import { rewriteMirrorFrontmatterTags } from '../obsidian-mirror-daemon-indexes.mjs';
+import { rewriteMirrorFrontmatterTags } from '../__parts__/obsidian-mirror-daemon-indexes.mjs';
 
 const VAULT_ROOT = resolve(
   process.env.KLOEL_VAULT_ROOT || '/Users/danielpenin/Documents/Obsidian Vault',
@@ -46,24 +46,24 @@ function fetchCiRuns(branch) {
 }
 
 function computeAggregateStatus(runs) {
-  if (!runs.length) return 'unknown';
+  if (!runs.length) {return 'unknown';}
   const conclusions = runs.map((r) => r.conclusion).filter(Boolean);
-  if (!conclusions.length) return 'unknown';
+  if (!conclusions.length) {return 'unknown';}
   const allSuccess = conclusions.every((c) => c === 'success');
   const anyFailure = conclusions.some(
     (c) => c === 'failure' || c === 'cancelled' || c === 'timed_out',
   );
-  if (allSuccess) return 'passing';
-  if (anyFailure && conclusions.every((c) => c !== 'success')) return 'failing';
+  if (allSuccess) {return 'passing';}
+  if (anyFailure && conclusions.every((c) => c !== 'success')) {return 'failing';}
   return 'mixed';
 }
 
 function readMirrorTags(mirrorAbsPath) {
-  if (!existsSync(mirrorAbsPath)) return null;
+  if (!existsSync(mirrorAbsPath)) {return null;}
   const content = readFileSync(mirrorAbsPath, 'utf8');
-  if (!content.startsWith('---\n')) return null;
+  if (!content.startsWith('---\n')) {return null;}
   const end = content.indexOf('\n---\n', 4);
-  if (end === -1) return null;
+  if (end === -1) {return null;}
   const frontmatter = content.slice(4, end).split('\n');
   const tags = [];
   let inTags = false;
@@ -84,18 +84,18 @@ function readMirrorTags(mirrorAbsPath) {
 }
 
 function tagAnchor(aggregateStatus, dry) {
-  if (!['passing', 'failing'].includes(aggregateStatus)) return false;
-  if (!existsSync(ANCHOR_ABS)) return false;
+  if (!['passing', 'failing'].includes(aggregateStatus)) {return false;}
+  if (!existsSync(ANCHOR_ABS)) {return false;}
 
   const existing = readMirrorTags(ANCHOR_ABS);
-  if (existing === null) return false;
+  if (existing === null) {return false;}
 
   const nextTag = `ci/${aggregateStatus}`;
   const merged = existing.filter((t) => !t.startsWith(CI_TAG_PREFIX));
   merged.push(nextTag);
   merged.sort();
 
-  if (JSON.stringify(merged) === JSON.stringify(existing)) return false;
+  if (JSON.stringify(merged) === JSON.stringify(existing)) {return false;}
 
   if (!dry) {
     return rewriteMirrorFrontmatterTags(ANCHOR_REL, merged);

@@ -22,28 +22,28 @@ CREATE TABLE "CheckoutPlanLink" (
 );
 
 -- CreateIndex
-CREATE UNIQUE INDEX "CheckoutPlanLink_slug_key" ON "CheckoutPlanLink"("slug");
+CREATE UNIQUE INDEX "CheckoutPlanLink_slug_key" ON "CheckoutPlanLink" ("slug");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "CheckoutPlanLink_referenceCode_key" ON "CheckoutPlanLink"("referenceCode");
+CREATE UNIQUE INDEX "CheckoutPlanLink_referenceCode_key" ON "CheckoutPlanLink" ("referenceCode");
 
 -- CreateIndex
-CREATE INDEX "CheckoutProductPlan_productId_kind_idx" ON "CheckoutProductPlan"("productId", "kind");
+CREATE INDEX "CheckoutProductPlan_productId_kind_idx" ON "CheckoutProductPlan" ("productId", "kind");
 
 -- CreateIndex
-CREATE INDEX "CheckoutPlanLink_checkoutId_idx" ON "CheckoutPlanLink"("checkoutId");
+CREATE INDEX "CheckoutPlanLink_checkoutId_idx" ON "CheckoutPlanLink" ("checkoutId");
 
 -- CreateIndex
-CREATE INDEX "CheckoutPlanLink_planId_idx" ON "CheckoutPlanLink"("planId");
+CREATE INDEX "CheckoutPlanLink_planId_idx" ON "CheckoutPlanLink" ("planId");
 
 -- CreateIndex
-CREATE INDEX "CheckoutPlanLink_referenceCode_idx" ON "CheckoutPlanLink"("referenceCode");
+CREATE INDEX "CheckoutPlanLink_referenceCode_idx" ON "CheckoutPlanLink" ("referenceCode");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "CheckoutPlanLink_checkoutId_planId_key" ON "CheckoutPlanLink"("checkoutId", "planId");
+CREATE UNIQUE INDEX "CheckoutPlanLink_checkoutId_planId_key" ON "CheckoutPlanLink" ("checkoutId", "planId");
 
 -- AddForeignKey
-ALTER TABLE "CheckoutPlanLink" ADD CONSTRAINT "CheckoutPlanLink_checkoutId_fkey" FOREIGN KEY ("checkoutId") REFERENCES "CheckoutProductPlan"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "CheckoutPlanLink" ADD CONSTRAINT "CheckoutPlanLink_checkoutId_fkey" FOREIGN KEY ("checkoutId") REFERENCES "CheckoutProductPlan" ("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "CheckoutPlanLink" ADD CONSTRAINT "CheckoutPlanLink_planId_fkey" FOREIGN KEY ("planId") REFERENCES "CheckoutProductPlan"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "CheckoutPlanLink" ADD CONSTRAINT "CheckoutPlanLink_planId_fkey" FOREIGN KEY ("planId") REFERENCES "CheckoutProductPlan" ("id") ON DELETE CASCADE ON UPDATE CASCADE;

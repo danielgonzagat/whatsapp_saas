@@ -1,3 +1,4 @@
+import type { PublicCheckoutResponse } from '@/lib/public-checkout-contract';
 import type { Metadata } from 'next';
 import CheckoutClient from './CheckoutClient';
 
@@ -31,7 +32,7 @@ export async function generateMetadata({
       return { title: 'Checkout' };
     }
 
-    const data = await res.json();
+    const data: PublicCheckoutResponse = await res.json();
     const config = data.checkoutConfig;
     const product = data.product;
 

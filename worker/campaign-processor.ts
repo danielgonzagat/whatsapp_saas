@@ -1,15 +1,19 @@
 import { randomInt } from 'node:crypto';
 import { type Job, Worker } from 'bullmq';
 import { prisma } from './db';
-import { connection, flowQueue } from './queue';
+import { buildQueueOptions, flowQueue } from './queue';
 import { isRetryableError, WorkerError } from './src/utils/error-handler';
 import { forEachSequential } from './utils/async-sequence';
+import { WorkerLogger } from './logger';
+import { checkIdempotent, endJob, logError, markCompleted, startJob } from './processor-base';
 
 /**
  * =======================================================
  * CAMPAIGN ENGINE — MASS DISPATCHER
  * =======================================================
  */
+
+const log = new WorkerLogger('campaign-worker');
 
 const CAMPAIGN_JITTER_MIN_MS = Math.max(
   0,
@@ -39,18 +43,17 @@ type CampaignAudienceWhere = {
   phone?: { in: string[] };
 };
 
-function buildAudienceWhere(
-  workspaceId: string,
+function buildAudienceFilters(
   filters: Record<string, unknown>,
-): CampaignAudienceWhere {
-  const where: CampaignAudienceWhere = { workspaceId };
+): Partial<Omit<CampaignAudienceWhere, 'workspaceId'>> {
+  const extra: Partial<Omit<CampaignAudienceWhere, 'workspaceId'>> = {};
   if (Array.isArray(filters?.tags) && filters.tags.length > 0) {
-    where.tags = { some: { name: { in: filters.tags as string[] } } };
+    extra.tags = { some: { name: { in: filters.tags as string[] } } };
   }
   if (Array.isArray(filters?.phones) && filters.phones.length > 0) {
-    where.phone = { in: filters.phones as string[] };
+    extra.phone = { in: filters.phones as string[] };
   }
-  return where;
+  return extra;
 }
 
 function isFlowTemplate(template: string): boolean {
@@ -140,18 +143,26 @@ async function attributeCampaignToContacts(
 export const campaignWorker = new Worker(
   'campaign-jobs',
   async (job: Job) => {
-    console.log(`\n🚀 [CAMPAIGN] Processing campaign ${job.data.campaignId}`);
-
-    const { campaignId, workspaceId } = job.data;
+    const meta = startJob(job, log);
+    const ctxLog = log.withContext(meta.correlationId, meta.workspaceId);
 
     try {
-      // 1. Fetch Campaign
+      const dedup = await checkIdempotent(job);
+      if (dedup) {
+        ctxLog.info('job_skipped_idempotent', { jobId: job.id });
+        endJob(meta, ctxLog, job.name, 'skipped');
+        return { ok: true, skipped: true, reason: 'idempotent' };
+      }
+
+      const { campaignId, workspaceId } = job.data;
+
+      ctxLog.info('campaign_processing', { campaignId, workspaceId });
+
       const campaign = await prisma.campaign.findFirst({
         where: { id: campaignId, workspaceId },
       });
 
       if (!campaign) {
-        console.error(`❌ Campaign ${campaignId} not found`);
         throw new WorkerError(`Campaign ${campaignId} not found`, 'CAMPAIGN_NOT_FOUND', false);
       }
 
@@ -162,19 +173,17 @@ export const campaignWorker = new Worker(
         data: { status: 'RUNNING' },
       });
 
-      // 2. Fetch Audience
       const filters = (campaign.filters || {}) as Record<string, unknown>;
-      const where = buildAudienceWhere(workspaceId, filters);
+      const audience = buildAudienceFilters(filters);
 
       const contacts = await prisma.contact.findMany({
-        where: { workspaceId, ...where },
+        where: { workspaceId, ...audience },
         select: { phone: true, name: true, id: true, customFields: true },
       });
 
       await job.updateProgress(20);
-      console.log(`👥 Audience size: ${contacts.length}`);
+      ctxLog.info('campaign_audience', { campaignId, size: contacts.length });
 
-      // 3. Dispatch
       const template = campaign.messageTemplate || '';
       let sentCount = 0;
 
@@ -194,7 +203,6 @@ export const campaignWorker = new Worker(
 
       await job.updateProgress(90);
 
-      // 4. Update Stats / Finish
       await prisma.campaign.updateMany({
         where: { id: campaignId, workspaceId },
         data: {
@@ -207,15 +215,22 @@ export const campaignWorker = new Worker(
       });
 
       await job.updateProgress(100);
-
-      console.log(`✅ Campaign ${campaignId} dispatched successfully (${sentCount} sent)`);
+      await markCompleted(job);
+      endJob(meta, ctxLog, job.name, 'completed');
+      ctxLog.info('campaign_dispatched', { campaignId, sentCount });
+      return;
     } catch (err) {
-      const safeErr = err instanceof Error ? `${err.name}: ${err.message}` : String(err);
-      console.error('Campaign %s failed: %s', campaignId, safeErr);
-      await prisma.campaign.updateMany({
-        where: { id: campaignId, workspaceId },
-        data: { status: 'CANCELLED' },
-      });
+      logError(meta, ctxLog, err, job.name);
+      const campaignId = job.data?.campaignId;
+      const workspaceId = job.data?.workspaceId;
+      if (campaignId && workspaceId) {
+        await prisma.campaign
+          .updateMany({
+            where: { id: campaignId, workspaceId },
+            data: { status: 'CANCELLED' },
+          })
+          .catch(() => {});
+      }
 
       if (!isRetryableError(err)) {
         throw new WorkerError(
@@ -228,9 +243,5 @@ export const campaignWorker = new Worker(
       throw err;
     }
   },
-  {
-    connection,
-    concurrency: 5,
-    lockDuration: 60000,
-  },
+  { ...buildQueueOptions(), concurrency: 5, lockDuration: 60000 },
 );

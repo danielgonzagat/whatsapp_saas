@@ -128,7 +128,7 @@ interface SegmentationCardProps {
   presets: SegmentationPreset[];
   selectedPreset: string;
   presetTotal: number;
-  presetContacts: Array<{ id: string; phone: string; name?: string }>;
+  presetContacts: Array<{ id: string; phone: string; name?: string | undefined }>;
   onPresetChange: (preset: string) => void;
 }
 

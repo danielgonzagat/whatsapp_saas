@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { StructuredLogger } from '../../logging/structured-logger';
 import { AdminUser, AdminUserStatus } from '@prisma/client';
 import { compare as bcryptCompare, hash as bcryptHash } from 'bcrypt';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -40,6 +41,8 @@ export interface MfaSetupPayload {
 /** Admin auth service. */
 @Injectable()
 export class AdminAuthService {
+  private readonly logger = StructuredLogger.from(AdminAuthService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly mfa: AdminMfaService,
@@ -61,6 +64,9 @@ export class AdminAuthService {
     const normalizedEmail = email.trim().toLowerCase();
 
     if (await this.attempts.isLocked(normalizedEmail, ip)) {
+      this.logger.warn('Login rate limited', {
+        context: 'AdminAuthService.login',
+      });
       await this.audit.append({
         action: 'admin.auth.login.rate_limited',
         details: { email: normalizedEmail },
@@ -74,6 +80,9 @@ export class AdminAuthService {
       where: { email: normalizedEmail },
     });
     if (!user) {
+      this.logger.warn('Login with unknown email', {
+        context: 'AdminAuthService.login',
+      });
       await this.prisma.$transaction(
         async (tx) => {
           await tx.adminLoginAttempt.create({
@@ -99,6 +108,9 @@ export class AdminAuthService {
 
     const ok = await bcryptCompare(password, user.passwordHash);
     if (!ok) {
+      this.logger.warn('Login with bad password', {
+        context: 'AdminAuthService.login',
+      });
       await this.prisma.$transaction(
         async (tx) => {
           await tx.adminLoginAttempt.create({
@@ -123,9 +135,15 @@ export class AdminAuthService {
     }
 
     if (user.status === AdminUserStatus.SUSPENDED) {
+      this.logger.warn('Suspended user login attempt', {
+        context: 'AdminAuthService.login',
+      });
       throw adminErrors.userSuspended();
     }
     if (user.status === AdminUserStatus.DEACTIVATED) {
+      this.logger.warn('Deactivated user login attempt', {
+        context: 'AdminAuthService.login',
+      });
       throw adminErrors.userDeactivated();
     }
 
@@ -141,6 +159,10 @@ export class AdminAuthService {
       },
       { isolationLevel: 'ReadCommitted' },
     );
+
+    this.logger.log('Login successful', {
+      context: 'AdminAuthService.login',
+    });
 
     return this.nextStateFor(user, ip, userAgent);
   }
@@ -232,6 +254,9 @@ export class AdminAuthService {
     }
 
     const hash = await bcryptHash(newPassword, BCRYPT_WORK_FACTOR);
+    this.logger.log('Password change initiated', {
+      context: 'AdminAuthService.changePassword',
+    });
     const user = await this.prisma.$transaction(
       async (tx) => {
         const result = await tx.adminUser.update({
@@ -263,6 +288,10 @@ export class AdminAuthService {
       throw adminErrors.invalidToken();
     }
 
+    this.logger.log('MFA setup started', {
+      context: 'AdminAuthService.setupMfa',
+    });
+
     // If the user already has a pending MFA secret (from a previous
     // setup call that they're still in the middle of), reuse it.
     // Otherwise the frontend re-mount (React Strict Mode, refresh,
@@ -273,25 +302,16 @@ export class AdminAuthService {
       select: { mfaSecret: true, mfaEnabled: true, mfaPendingSetup: true },
     });
 
-    let encryptedSecret: string;
-    let otpauthUrl: string;
-    let qrDataUrl: string;
-
     if (existing?.mfaSecret && existing.mfaPendingSetup && !existing.mfaEnabled) {
       const resumed = await this.mfa.resumeSetup(admin.email, existing.mfaSecret);
-      encryptedSecret = resumed.encryptedSecret;
-      otpauthUrl = resumed.otpauthUrl;
-      qrDataUrl = resumed.qrDataUrl;
+      return { otpauthUrl: resumed.otpauthUrl, qrDataUrl: resumed.qrDataUrl };
     } else {
       const fresh = await this.mfa.createSetup(admin.email);
-      encryptedSecret = fresh.encryptedSecret;
-      otpauthUrl = fresh.otpauthUrl;
-      qrDataUrl = fresh.qrDataUrl;
       await this.prisma.$transaction(
         async (tx) => {
           await tx.adminUser.update({
             where: { id: admin.id },
-            data: { mfaSecret: encryptedSecret, mfaEnabled: false, mfaPendingSetup: true },
+            data: { mfaSecret: fresh.encryptedSecret, mfaEnabled: false, mfaPendingSetup: true },
           });
           await tx.adminAuditLog.create({
             data: {
@@ -302,9 +322,8 @@ export class AdminAuthService {
         },
         { isolationLevel: 'ReadCommitted' },
       );
+      return { otpauthUrl: fresh.otpauthUrl, qrDataUrl: fresh.qrDataUrl };
     }
-
-    return { otpauthUrl, qrDataUrl };
   }
 
   /** Verify initial mfa. */
@@ -341,6 +360,9 @@ export class AdminAuthService {
       },
       { isolationLevel: 'ReadCommitted' },
     );
+    this.logger.log('MFA verified and enabled', {
+      context: 'AdminAuthService.verifyInitialMfa',
+    });
     return this.sessionFactory.createFullSession(updated, ip, userAgent);
   }
 
@@ -378,6 +400,9 @@ export class AdminAuthService {
       },
       { isolationLevel: 'ReadCommitted' },
     );
+    this.logger.log('MFA login verified', {
+      context: 'AdminAuthService.verifyMfa',
+    });
     return this.sessionFactory.createFullSession(updated, ip, userAgent);
   }
 
@@ -429,6 +454,10 @@ export class AdminAuthService {
       { isolationLevel: 'ReadCommitted' },
     );
 
+    this.logger.log('Session refreshed', {
+      context: 'AdminAuthService.refresh',
+    });
+
     return newSession;
   }
 
@@ -454,6 +483,9 @@ export class AdminAuthService {
       },
       { isolationLevel: 'ReadCommitted' },
     );
+    this.logger.log('Logout', {
+      context: 'AdminAuthService.logout',
+    });
   }
 
   /** Hash a password with the service's configured work factor. */

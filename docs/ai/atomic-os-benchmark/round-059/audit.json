@@ -1,5 +1,5 @@
 {
-  "roundDir": "/Users/danielpenin/whatsapp_saas/docs/ai/atomic-os-benchmark/round-059",
+  "roundDir": "<repo-root>/docs/ai/atomic-os-benchmark/round-059",
   "normal": {
     "eventsFile": "opencode-normal-events.jsonl",
     "events": {
@@ -26,7 +26,7 @@
       "nativeFileToolViolations": [
         {
           "tool": "read",
-          "inputPreview": "{\"filePath\":\"/private/tmp/kloel-ab059-normal-20260517093949/backend/src/kloel/unified-agent.service.ts\"}"
+          "inputPreview": "{\"filePath\":\"<worktree>/backend/src/kloel/unified-agent.service.ts\"}"
         },
         {
           "tool": "glob",
@@ -34,11 +34,11 @@
         },
         {
           "tool": "read",
-          "inputPreview": "{\"filePath\":\"/private/tmp/kloel-ab059-normal-20260517093949/backend/src/kloel/unified-agent-runtime.helpers.ts\"}"
+          "inputPreview": "{\"filePath\":\"<worktree>/backend/src/kloel/unified-agent-runtime.helpers.ts\"}"
         },
         {
           "tool": "read",
-          "inputPreview": "{\"filePath\":\"/private/tmp/kloel-ab059-normal-20260517093949/backend/src/kloel/agent-runtime\"}"
+          "inputPreview": "{\"filePath\":\"<worktree>/backend/src/kloel/agent-runtime\"}"
         },
         {
           "tool": "glob",
@@ -46,27 +46,27 @@
         },
         {
           "tool": "read",
-          "inputPreview": "{\"filePath\":\"/private/tmp/kloel-ab059-normal-20260517093949/backend/src/kloel/unified-agent-response.helpers.ts\",\"limit\":30}"
+          "inputPreview": "{\"filePath\":\"<worktree>/backend/src/kloel/unified-agent-response.helpers.ts\",\"limit\":30}"
         },
         {
           "tool": "write",
-          "inputPreview": "{\"filePath\":\"/private/tmp/kloel-ab059-normal-20260517093949/backend/src/kloel/unified-agent-runtime.helpers.ts\",\"content\":\"export function formatPromptValue(value: unknown): string {\\n  if (value === null) {\\n    return 'null';\\n  }\\n  if (Array.isArray(value)) {\\n    return `[${value.map(formatPromptValue).join(',')}]`;\\n  }\\n  if (typeof value === 'object') {\\n    const record = value as Record<"
+          "inputPreview": "{\"filePath\":\"<worktree>/backend/src/kloel/unified-agent-runtime.helpers.ts\",\"content\":\"export function formatPromptValue(value: unknown): string {\\n  if (value === null) {\\n    return 'null';\\n  }\\n  if (Array.isArray(value)) {\\n    return `[${value.map(formatPromptValue).join(',')}]`;\\n  }\\n  if (typeof value === 'object') {\\n    const record = value as Record<"
         },
         {
           "tool": "edit",
-          "inputPreview": "{\"filePath\":\"/private/tmp/kloel-ab059-normal-20260517093949/backend/src/kloel/unified-agent.service.ts\",\"oldString\":\"import type { ToolArgs, ActionEntry, PredecidedAction } from './unified-agent.types';\\nimport {\",\"newString\":\"import type { ToolArgs, ActionEntry, PredecidedAction } from './unified-agent.types';\\nimport { formatPromptValue } from './unified-agent-runtime.helpers';\\nimport {\"}"
+          "inputPreview": "{\"filePath\":\"<worktree>/backend/src/kloel/unified-agent.service.ts\",\"oldString\":\"import type { ToolArgs, ActionEntry, PredecidedAction } from './unified-agent.types';\\nimport {\",\"newString\":\"import type { ToolArgs, ActionEntry, PredecidedAction } from './unified-agent.types';\\nimport { formatPromptValue } from './unified-agent-runtime.helpers';\\nimport {\"}"
         },
         {
           "tool": "edit",
-          "inputPreview": "{\"filePath\":\"/private/tmp/kloel-ab059-normal-20260517093949/backend/src/kloel/unified-agent.service.ts\",\"oldString\":\"function formatPromptValue(value: unknown): string {\\n  if (value === null) {\\n    return 'null';\\n  }\\n  if (Array.isArray(value)) {\\n    return `[${value.map(formatPromptValue).join(',')}]`;\\n  }\\n  if (typeof value === 'object') {\\n    const record = value as Record<string, unkno"
+          "inputPreview": "{\"filePath\":\"<worktree>/backend/src/kloel/unified-agent.service.ts\",\"oldString\":\"function formatPromptValue(value: unknown): string {\\n  if (value === null) {\\n    return 'null';\\n  }\\n  if (Array.isArray(value)) {\\n    return `[${value.map(formatPromptValue).join(',')}]`;\\n  }\\n  if (typeof value === 'object') {\\n    const record = value as Record<string, unkno"
         },
         {
           "tool": "read",
-          "inputPreview": "{\"filePath\":\"/private/tmp/kloel-ab059-normal-20260517093949/backend/src/kloel/unified-agent.service.ts\",\"limit\":40}"
+          "inputPreview": "{\"filePath\":\"<worktree>/backend/src/kloel/unified-agent.service.ts\",\"limit\":40}"
         },
         {
           "tool": "read",
-          "inputPreview": "{\"filePath\":\"/private/tmp/kloel-ab059-normal-20260517093949/backend/src/kloel/unified-agent-runtime.helpers.ts\"}"
+          "inputPreview": "{\"filePath\":\"<worktree>/backend/src/kloel/unified-agent-runtime.helpers.ts\"}"
         }
       ],
       "nativeShellReadCommands": [],

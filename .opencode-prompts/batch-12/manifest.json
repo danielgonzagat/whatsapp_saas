@@ -1,0 +1,26 @@
+{
+  "runId": "batch-12-2026-05-12a",
+  "concurrency": 2,
+  "timeoutSec": 0,
+  "staggerMs": 60000,
+  "dir": "/Users/danielpenin/whatsapp_saas",
+  "skipPermissions": true,
+  "_note": "Batch 12 — focused prompts (single file/single expectation/5 pages). Conservative conc 2 due to RAM constraints. Background dispatch authorized per 2026-05-11.",
+  "tasks": [
+    {
+      "id": "K-decomp-top5-pages",
+      "title": "Wave K — Decompose top 5 pages (leads, followups, onboarding, area-membros, autopilot)",
+      "promptFile": ".opencode-prompts/batch-12/K-decomp-top5-pages.md"
+    },
+    {
+      "id": "M-convergence-plan",
+      "title": "Wave M — Hardcoded liquefication: convergence-plan.ts (4607 findings)",
+      "promptFile": ".opencode-prompts/batch-12/M-hardcoded-convergence-plan-only.md"
+    },
+    {
+      "id": "L-pulse-2-expectations",
+      "title": "Wave L — PULSE 2 expectations (whatsapp message + payment webhook replay)",
+      "promptFile": ".opencode-prompts/batch-12/L-pulse-2-expectations.md"
+    }
+  ]
+}

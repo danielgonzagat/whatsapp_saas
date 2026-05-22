@@ -185,7 +185,6 @@ export async function scrapeGoogleMaps(query: string, limit = 20): Promise<Scrap
             await page.waitForSelector(feedSelector, { timeout: 10000 });
           }
         } catch (err) {
-          // PULSE:OK — Per-item scraping error non-critical; other items still collected
           console.error('[MAPS] Error processing item %d: %O', i, err);
         }
       },

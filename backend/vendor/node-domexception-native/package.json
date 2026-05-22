@@ -1,0 +1,10 @@
+{
+  "name": "node-domexception",
+  "version": "1.0.1",
+  "description": "Node 22 native DOMException compatibility shim",
+  "main": "index.js",
+  "license": "MIT",
+  "engines": {
+    "node": ">=22 <23"
+  }
+}

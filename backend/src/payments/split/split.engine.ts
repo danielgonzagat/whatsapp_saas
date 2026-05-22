@@ -1,4 +1,5 @@
-import { Logger } from '@nestjs/common';
+import { StructuredLogger } from '../../logging/structured-logger';
+
 
 import type {
   CentsBigInt,
@@ -9,7 +10,7 @@ import type {
   SplitRole,
 } from './split.types';
 
-const logger = new Logger('SplitEngine');
+const logger = StructuredLogger.from('SplitEngine');
 
 /**
  * Compute the per-stakeholder split for a single sale.
@@ -51,7 +52,7 @@ function validateInput(input: SplitInput): void {
   ];
   for (const [field, value] of nonNegativeBig) {
     if (value < 0n) {
-      logger.error(`split validation: ${field} must be >= 0`, undefined, {
+      logger.error(`split validation: ${field} must be >= 0`, {
         field,
         value: value.toString(),
       });
@@ -60,7 +61,7 @@ function validateInput(input: SplitInput): void {
   }
 
   if (input.marketplaceFeeCents > input.saleValueCents) {
-    logger.error('split validation: marketplaceFeeCents exceeds saleValueCents', undefined, {
+    logger.error('split validation: marketplaceFeeCents exceeds saleValueCents', {
       marketplaceFeeCents: input.marketplaceFeeCents.toString(),
       saleValueCents: input.saleValueCents.toString(),
     });
@@ -70,7 +71,7 @@ function validateInput(input: SplitInput): void {
   }
 
   if (input.supplier && input.supplier.amountCents < 0n) {
-    logger.error('split validation: supplier amount negative', undefined, {
+    logger.error('split validation: supplier amount negative', {
       supplierAmountCents: input.supplier.amountCents.toString(),
       supplierAccountId: input.supplier.accountId,
     });
@@ -86,7 +87,7 @@ function validateInput(input: SplitInput): void {
       continue;
     }
     if (!Number.isInteger(role.percentBp) || role.percentBp < 0 || role.percentBp > 10_000) {
-      logger.error(`split validation: ${field}.percentBp out of range`, undefined, {
+      logger.error(`split validation: ${field}.percentBp out of range`, {
         field,
         percentBp: role.percentBp,
         accountId: role.accountId,
@@ -170,7 +171,7 @@ export function calculateSplit(input: SplitInput, workspaceId?: string): SplitOu
   const kloelTotal = input.marketplaceFeeCents + input.interestCents;
   let remaining = input.buyerPaidCents - kloelTotal;
   if (remaining < 0n) {
-    logger.error('split: kloel total exceeds buyer paid', undefined, {
+    logger.error('split: kloel total exceeds buyer paid', {
       buyerPaidCents: input.buyerPaidCents.toString(),
       marketplaceFeeCents: input.marketplaceFeeCents.toString(),
       interestCents: input.interestCents.toString(),

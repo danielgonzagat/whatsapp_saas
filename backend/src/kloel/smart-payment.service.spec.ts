@@ -37,7 +37,6 @@ type SmartPaymentPlanLimitsMock = {
   trackAiUsage: jest.Mock<Promise<void>, [string, number]>;
 };
 
-// PULSE_OK: assertions exist below
 describe('SmartPaymentService — Stripe-only payment kernel', () => {
   let prisma: SmartPaymentPrismaMock;
   let paymentService: SmartPaymentGatewayMock;

@@ -48,11 +48,11 @@ function parseArgs(argv) {
   const a = { dryRun: false };
   for (let i = 2; i < argv.length; i++) {
     const k = argv[i];
-    if (k === '--file') a.file = argv[++i];
-    else if (k === '--plan') a.plan = argv[++i];
-    else if (k === '--dry-run') a.dryRun = true;
+    if (k === '--file') {a.file = argv[++i];}
+    else if (k === '--plan') {a.plan = argv[++i];}
+    else if (k === '--dry-run') {a.dryRun = true;}
   }
-  if (!a.file || !a.plan) die('uso: --file <path> --plan <plan.json> [--dry-run]');
+  if (!a.file || !a.plan) {die('uso: --file <path> --plan <plan.json> [--dry-run]');}
   return a;
 }
 
@@ -76,7 +76,7 @@ const args = parseArgs(process.argv);
 const fileAbs = path.isAbsolute(args.file) ? args.file : path.join(REPO_ROOT, args.file);
 const fileRel = path.relative(REPO_ROOT, fileAbs);
 
-if (!existsSync(fileAbs)) die('arquivo não existe: ' + fileRel);
+if (!existsSync(fileAbs)) {die('arquivo não existe: ' + fileRel);}
 const original = readFileSync(fileAbs, 'utf8');
 const originalHash = sha256(original);
 const originalExports = extractExports(original);
@@ -86,20 +86,20 @@ if (originalExports.size === 0) {
 }
 
 const planAbs = path.isAbsolute(args.plan) ? args.plan : path.join(REPO_ROOT, args.plan);
-if (!existsSync(planAbs)) die('plan.json não existe: ' + args.plan);
+if (!existsSync(planAbs)) {die('plan.json não existe: ' + args.plan);}
 let plan;
 try {
   plan = JSON.parse(readFileSync(planAbs, 'utf8'));
 } catch (e) {
   die('plan.json inválido: ' + e.message);
 }
-if (!plan.parts || typeof plan.parts !== 'object') die('plan.json: faltou campo "parts"');
+if (!plan.parts || typeof plan.parts !== 'object') {die('plan.json: faltou campo "parts"');}
 
 // Valida cobertura: cada export do original presente em exatamente um part.
 const planned = new Set();
 for (const [partName, exps] of Object.entries(plan.parts)) {
   for (const e of exps) {
-    if (planned.has(e)) die('export "' + e + '" atribuído a mais de um part.');
+    if (planned.has(e)) {die('export "' + e + '" atribuído a mais de um part.');}
     planned.add(e);
   }
 }
@@ -149,7 +149,7 @@ const partFiles = [];
 if (existsSync(partsDir)) {
   const fs = await import('node:fs');
   for (const entry of fs.readdirSync(partsDir)) {
-    if (!entry.endsWith('.ts') && !entry.endsWith('.tsx')) continue;
+    if (!entry.endsWith('.ts') && !entry.endsWith('.tsx')) {continue;}
     const partPath = path.join(partsDir, entry);
     partFiles.push(partPath);
     const content = readFileSync(partPath, 'utf8');
@@ -162,10 +162,10 @@ if (existsSync(partsDir)) {
     });
     if (v.length > 0) {
       console.error('[FAIL] part', entry, 'viola gates:');
-      for (const vv of v) console.error('  - ' + vv.detail);
+      for (const vv of v) {console.error('  - ' + vv.detail);}
       allOk = false;
     }
-    for (const e of extractExports(content)) collectedExports.add(e);
+    for (const e of extractExports(content)) {collectedExports.add(e);}
   }
 } else {
   console.error('[FAIL] partsDir não existe. Decomposição manual ainda não realizada.');
@@ -175,7 +175,7 @@ if (existsSync(partsDir)) {
 // Verifica shim (= o arquivo original que vira re-export)
 const shim = readFileSync(fileAbs, 'utf8');
 const shimExports = extractExports(shim);
-for (const e of shimExports) collectedExports.add(e);
+for (const e of shimExports) {collectedExports.add(e);}
 
 // Verifica perda de exports
 const lost = [...originalExports].filter((e) => !collectedExports.has(e));

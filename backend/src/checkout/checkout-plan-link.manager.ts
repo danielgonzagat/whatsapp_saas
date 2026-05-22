@@ -283,16 +283,21 @@ export class CheckoutPlanLinkManager {
             return;
           }
 
+          const firstLink = remainingLinks[0];
+          if (!firstLink) {
+            return;
+          }
+
           const planRecord = await tx.checkoutProductPlan.findUnique({
             where: { id: planId },
             select: { slug: true },
           });
 
           await tx.checkoutPlanLink.update({
-            where: { id: remainingLinks[0].id },
+            where: { id: firstLink.id },
             data: {
               isPrimary: true,
-              slug: remainingLinks[0].slug || planRecord?.slug || null,
+              slug: firstLink.slug || planRecord?.slug || null,
             },
           });
         });

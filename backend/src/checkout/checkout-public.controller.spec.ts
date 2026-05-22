@@ -1,3 +1,4 @@
+import { expectValueOf } from '../../test/expect-value-of';
 jest.mock('@nestjs/throttler', () => {
   const actual = jest.requireActual<typeof import('@nestjs/throttler')>('@nestjs/throttler');
   return {
@@ -75,7 +76,7 @@ describe('CheckoutPublicController', () => {
     expect(checkoutService.getCheckoutByCode).toHaveBeenCalledWith(
       'MPX9Q2Z7',
       expect.objectContaining({
-        correlationId: expect.any(String),
+        correlationId: expectValueOf(String),
       }),
     );
 

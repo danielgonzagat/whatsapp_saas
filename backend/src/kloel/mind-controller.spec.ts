@@ -49,6 +49,11 @@ function mockMind(): jest.Mocked<MindService> {
     fallback: false,
     tone: 'DIRECT',
   });
+  service.resolveBestVariant = jest.fn().mockResolvedValue({
+    variant: 'followup:proof',
+    confidence: 0.72,
+    fallback: false,
+  });
   return service;
 }
 
@@ -376,5 +381,83 @@ describe('MindController', () => {
     expect(observability.runtimeEvidence).toHaveBeenNthCalledWith(1, 'ws-1');
     expect(observability.runtimeEvidence).toHaveBeenNthCalledWith(2, 'ws-2');
     expect(() => controller.runtimeEvidenceByQuery('')).toThrow('workspaceId_required');
+  });
+
+  describe('variantDecision (worker → backend internal endpoint)', () => {
+    const ORIGINAL_ENV = { ...process.env };
+    afterEach(() => {
+      process.env = { ...ORIGINAL_ENV };
+    });
+
+    it('accepts caller without header when INTERNAL_API_KEY is unset and NODE_ENV != production (dev convenience)', async () => {
+      delete process.env.INTERNAL_API_KEY;
+      process.env.NODE_ENV = 'development';
+      const mind = mockMind();
+      const controller = buildController({ mind });
+      const body = { flow: 'followup', variantIds: ['a', 'b'] } as never;
+      await expect(controller.variantDecision('ws-1', body, undefined)).resolves.toEqual({
+        variant: 'followup:proof',
+        confidence: 0.72,
+        fallback: false,
+      });
+      expect(mind.resolveBestVariant).toHaveBeenCalledWith('ws-1', 'followup', ['a', 'b'], undefined);
+    });
+
+    it('REFUSES caller (503) when INTERNAL_API_KEY is unset and NODE_ENV=production (fail-closed)', async () => {
+      delete process.env.INTERNAL_API_KEY;
+      process.env.NODE_ENV = 'production';
+      const controller = buildController();
+      const body = { flow: 'followup', variantIds: ['a', 'b'] } as never;
+      await expect(controller.variantDecision('ws-1', body, 'anything')).rejects.toThrow(
+        /INTERNAL_API_KEY not configured/,
+      );
+    });
+
+    it('accepts caller with matching internal key when key is configured', async () => {
+      process.env.INTERNAL_API_KEY = 'secret-key';
+      const mind = mockMind();
+      const controller = buildController({ mind });
+      const body = { flow: 'payment_recovery', variantIds: ['x', 'y'] } as never;
+      await expect(controller.variantDecision('ws-2', body, 'secret-key')).resolves.toMatchObject({
+        variant: 'followup:proof',
+      });
+      expect(mind.resolveBestVariant).toHaveBeenCalledWith('ws-2', 'payment_recovery', ['x', 'y'], undefined);
+    });
+
+    it('rejects caller with wrong internal key', async () => {
+      process.env.INTERNAL_API_KEY = 'secret-key';
+      const controller = buildController();
+      const body = { flow: 'followup', variantIds: ['v1'] } as never;
+      await expect(controller.variantDecision('ws-3', body, 'wrong-key')).rejects.toThrow(
+        /Invalid internal key/,
+      );
+    });
+
+    it('rejects caller with missing internal key when key is configured', async () => {
+      process.env.INTERNAL_API_KEY = 'secret-key';
+      const controller = buildController();
+      const body = { flow: 'followup', variantIds: ['v1'] } as never;
+      await expect(controller.variantDecision('ws-4', body, undefined)).rejects.toThrow(
+        /Invalid internal key/,
+      );
+    });
+
+    it('passes through context when provided', async () => {
+      delete process.env.INTERNAL_API_KEY;
+      const mind = mockMind();
+      const controller = buildController({ mind });
+      const body = {
+        flow: 'followup',
+        variantIds: ['a'],
+        context: { domain: 'fitness', intent: 'reschedule' },
+      } as never;
+      await controller.variantDecision('ws-5', body, undefined);
+      expect(mind.resolveBestVariant).toHaveBeenCalledWith(
+        'ws-5',
+        'followup',
+        ['a'],
+        { domain: 'fitness', intent: 'reschedule' },
+      );
+    });
   });
 });

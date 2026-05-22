@@ -1,18 +1,19 @@
-import { Injectable, OnModuleDestroy } from '@nestjs/common';
+import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
 import { Counter, Gauge, Histogram, Registry, collectDefaultMetrics } from 'prom-client';
 import type { QueueSummary } from './queue-health.service';
 
 /** Metrics service. */
 @Injectable()
 export class MetricsService implements OnModuleDestroy {
+  private readonly logger = new Logger(MetricsService.name);
   private registry: Registry;
   private httpCounter: Counter<string>;
   private httpDuration: Histogram<string>;
   private queueGauge: Gauge<string>;
   private billingGauge: Gauge<string>;
-  private metricsInterval?: ReturnType<typeof setInterval>;
 
   constructor() {
+    this.logger.log('MetricsService initialized');
     this.registry = new Registry();
     const enableDefaultMetrics = process.env.NODE_ENV !== 'test' && !process.env.JEST_WORKER_ID;
     if (enableDefaultMetrics) {

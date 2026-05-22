@@ -20,6 +20,7 @@ import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { AuthenticatedRequest } from '../common/interfaces';
 import { PrismaService } from '../prisma/prisma.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
+import { MEMBER_AREA_COLORS } from '../common/kloel-colors';
 import {
   A_Z0_9_RE,
   CreateMemberAreaDto,
@@ -37,8 +38,10 @@ import {
  * structure-generation and enrollment endpoints live in sibling controllers
  * under the same `/member-areas` prefix.
  */
+import { RouteClass } from '../common/throttler/route-class.decorator';
 @Controller('member-areas')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
+@RouteClass('mutate')
 export class MemberAreasController {
   private readonly logger = new Logger(MemberAreasController.name);
 
@@ -196,7 +199,7 @@ export class MemberAreasController {
           template: dto.template || 'academy',
           logoUrl: dto.logoUrl || null,
           coverUrl: dto.coverUrl || null,
-          primaryColor: dto.primaryColor || '#E85D30',
+          primaryColor: dto.primaryColor || MEMBER_AREA_COLORS.DEFAULT_PRIMARY,
           customDomain: dto.customDomain || null,
           productId: dto.productId || null,
           certificates: dto.certificates ?? true,

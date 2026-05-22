@@ -18,7 +18,7 @@
  * for code edits and the tool output is the only thing shown). It does NOT
  * "disable the renderer" — that is impossible; avoidance is the mechanism.
  */
-import { existsSync, readFileSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 
 const NATIVE_EDIT = new Set(['Edit', 'Write', 'MultiEdit', 'NotebookEdit']);
 // Code/structured files the atomic-edit engine validates. Pure prose
@@ -97,14 +97,7 @@ const STEER =
   `EXACT query "select:mcp__atomic-edit__atomic_create_file,` +
   `mcp__atomic-edit__atomic_replace_range,mcp__atomic-edit__atomic_edit_symbol,` +
   `mcp__atomic-edit__atomic_apply_edits,mcp__atomic-edit__code_outline" then ` +
-  `call them. To SPLIT / DECOMPOSE / EXTRACT symbols out of a file, use ` +
-  `mcp__atomic-edit__atomic_decompose_file ONCE — args ` +
-  `{ file, plan:[{ symbols:[...], newModule, reExport:true }] } — NOT ` +
-  `repeated atomic_create_file. Example: ` +
-  `mcp__atomic-edit__atomic_decompose_file { "file":"src/big.ts", ` +
-  `"plan":[{ "symbols":["Foo","bar"], "newModule":"src/foo.ts", ` +
-  `"reExport":true }] }. ` +
-  `NEVER fall back to a native or shell edit; that path is blocked.`;
+  `call them. NEVER fall back to a native or shell edit; that path is blocked.`;
 
 // Camada 3 (Bash leg): a shell command can edit a code file too (sed -i,
 // > redirection, tee, perl -i …) and would bypass the Edit/Write ban. Deny
@@ -113,59 +106,14 @@ const STEER =
 function bashEditsCode(cmd) {
   if (!cmd) return false;
   const source = String(cmd);
-  // Deep paths included (backend/src/a/b/c.ts). Exclude shell metachars so a
-  // redirect/pipe/paren boundary terminates the path token.
-  const codeTarget = String.raw`[^\s'"|;&<>()]*\.(?:ts|tsx|mts|cts|js|jsx|mjs|cjs|ipynb|json|py|go|rs|java|kt|c|h|cc|cpp|hpp|cs|rb|php|swift|scala|sh|bash|zsh|css|scss|less|sql|ya?ml|toml|prisma)\b`;
-  const codeRe = new RegExp(codeTarget);
-  const mentionsCodeTarget = codeRe.test(source);
-
-  // ── (1) ANY redirect whose target is a code path ──────────────────────
-  // FAIL-CLOSED. Catches `git show REF:f.ts > f.ts`, `cat … > f.ts`,
-  // `node -e … > a/b.ts`, `printf … > src/x.ts`, bare `> backend/src/x.ts`,
-  // `>>`, `>|` (noclobber override), fd-qualified `1>`/`2>`/`&>`, optional
-  // spaces/quotes/backslash. The R43 evasion was `git show HEAD:x.ts > x.ts`.
-  const redirectToCode = new RegExp(
-    String.raw`(?:\d*>>?|>\||&>>?)\s*\\?["']?\s*${codeTarget}`,
-  );
-  if (redirectToCode.test(source)) return true;
-
-  // ── (2) git working-tree mutation: rewrites tracked files OUTSIDE the
-  // atomic OS → bypass. Read-only git (diff/status/log, `show` without a
-  // redirect, `stash list`, `stash show`) carries none of these verbs.
-  const gitMutation = [
-    /\bgit\s+stash\s+(?:push|save|pop|apply)\b/, // hide/restore changes
-    /\bgit\s+stash\b(?!\s+(?:list|show)\b)/, // bare `git stash` (+ later pop)
-    /\bgit\s+restore\b/, // restore working tree
-    /\bgit\s+reset\s+(?:--hard|--merge|--keep)\b/, // hard reset = code rewrite
-    /\bgit\s+(?:apply|am)\b/, // apply a patch onto tracked code
-    /\bgit\s+checkout\b[^|;&\n]*\s--(?:\s|$)/, // git checkout [REF] -- <path>
-  ];
-  if (gitMutation.some((re) => re.test(source))) return true;
-  // checkout/reset that *names* a code path (no `--` form) = restore too.
-  if (/\bgit\s+(?:checkout|reset)\b/.test(source) && mentionsCodeTarget) return true;
-
-  // ── (3) copy / move / link / raw-write a code path into place ─────────
-  // R43 evasion: `cp /tmp/util-keep.ts <repo>.ts`. Conservative: if the
-  // command invokes one of these AND any code path appears anywhere → deny.
-  if (
-    /(?:^|[\s;&|])(?:cp|mv|install|rsync|ln|dd|truncate|shred)\s+\S/.test(source) &&
-    mentionsCodeTarget
-  )
-    return true;
-
-  // patch / ed / git-applypatch rewrite tracked code from a diff.
-  if (/\bapplypatch\b/.test(source)) return true;
-  if (/\bpatch\b\s*(?:-p\s*\d|-i\b|--input\b)/.test(source)) return true;
-  if (/\bpatch\b[^|;&\n]*<\s*[^\s|;&]/.test(source)) return true; // patch < x.diff
-  if (/\bed\s+-/.test(source) || /\bed\b[^|;&\n]*<<-?\s*['"]?\w/.test(source)) return true;
-
-  // ── (4) in-place / interpreter writers (kept + extended) ──────────────
+  const codeTarget = String.raw`[^\s'"|;&>]*\.(?:ts|tsx|mts|cts|js|jsx|mjs|cjs|ipynb|json|py|go|rs|java|kt|c|h|cc|cpp|hpp|cs|rb|php|swift|scala|sh|bash|zsh|css|scss|less|sql|ya?ml|toml|prisma)\b`;
   const directMutationPatterns = [
     new RegExp(String.raw`\bsed\b[^|]*\s-i`), // sed -i
     new RegExp(String.raw`\bperl\b[^|]*\s-i`), // perl -i
     new RegExp(String.raw`\b(?:g?awk)\b[^|]*>\s*${codeTarget}`), // awk > code
     new RegExp(String.raw`\btee\b[^|]*\s+\\?["']?\s*${codeTarget}`), // tee [quoted] code
-    new RegExp(String.raw`\bsponge\b[^|]*\s${codeTarget}`), // sponge code
+    new RegExp(String.raw`>>?\s*\\?["']?\s*${codeTarget}`), // > / >> [quoted] code
+    new RegExp(String.raw`\b(?:cp|mv|install)\b[^|]*\s${codeTarget}(?:\s|$)`), // cp/mv/install onto code
     new RegExp(String.raw`\b(?:rm|unlink|truncate|touch)\b[^|;&]*${codeTarget}`), // delete/truncate/create code
   ];
   if (directMutationPatterns.some((re) => re.test(source))) return true;
@@ -176,8 +124,8 @@ function bashEditsCode(cmd) {
   // (this closes the quoted/spacing evasions of the redirect regexes above).
   if (
     /<<-?\s*['"]?[\w.]/.test(source) &&
-    codeRe.test(source) &&
-    /\b(?:cat|tee|dd|ed|node|deno|bun|python3?|ruby|php|perl)\b|>>?/.test(source)
+    new RegExp(codeTarget).test(source) &&
+    /\b(?:cat|tee|dd|node|deno|bun|python3?|ruby|php|perl)\b|>>?/.test(source)
   )
     return true;
 
@@ -193,6 +141,7 @@ function bashEditsCode(cmd) {
   if (inlineEval.test(source) && writePrim.test(source)) return true;
   if (/\bdd\b[^|]*\bof=/.test(source)) return true;
 
+  const mentionsCodeTarget = new RegExp(codeTarget).test(source);
   if (!mentionsCodeTarget) return false;
 
   const runtimeWritePatterns = [
@@ -227,46 +176,6 @@ if (tool === 'apply_patch') {
   allow();
 }
 
-// Camada READ: a native full-file Read of a large source file is the
-// measured residual context tax (A/B R19: native Read = 52K chars = 51%
-// of atomic tool-result volume — the residual line-oriented-read
-// bottleneck the Atomic Action Principle names). Steer large code reads
-// to the OS's structured-read operators. Small / test / spec / .d.ts /
-// config / json / non-code / missing files pass through untouched. Fail
-// OPEN on any internal hook error (never block on a hook bug) — but a
-// readable large code file MUST deny.
-const READ_EXEMPT =
-  /(\.(test|spec)\.[tj]sx?$)|(\.d\.ts$)|(__tests__\/)|(\.config\.[tjm]s$)|(\.json$)/;
-if (
-  tool === 'Read' &&
-  filePath &&
-  CODE_EXT.test(String(filePath)) &&
-  !READ_EXEMPT.test(String(filePath))
-) {
-  try {
-    const fp = String(filePath);
-    if (existsSync(fp)) {
-      const lineCount = readFileSync(fp, 'utf8').split('\n').length;
-      if (lineCount > 140) {
-        const cwd = process.cwd();
-        let rel = fp;
-        if (fp.startsWith(cwd + '/')) rel = fp.slice(cwd.length + 1);
-        else if (fp.startsWith('/')) rel = fp.slice(fp.lastIndexOf('/') + 1);
-        deny(
-          `Structured-read rule: native full-file Read of a large source file ` +
-            `is the measured residual context tax (A/B R19: native Read = 52K ` +
-            `chars = 51% of atomic tool-result volume). Read structurally ` +
-            `instead. Send EXACTLY: mcp__atomic-edit__code_outline { "file": ` +
-            `"${rel}" }  then mcp__atomic-edit__code_read_symbol for ONLY the ` +
-            `symbol(s) you will edit. Do NOT native-Read this file.`,
-        );
-      }
-    }
-  } catch {
-    allow(); // fail-open on internal hook error only
-  }
-}
-
 if (!NATIVE_EDIT.has(tool)) allow();
 if (filePath && !CODE_EXT.test(String(filePath))) allow(); // prose/docs OK
 
@@ -275,13 +184,7 @@ deny(
     `renders its whole-line +/- diff. Use mcp__atomic-edit__* instead ` +
     `(atomic_replace_range / atomic_replace_text / atomic_edit_symbol / ` +
     `atomic_replace_literal / atomic_replace_property_value / atomic_wrap_range / ` +
-    `atomic_transaction / atomic_add_import …). To SPLIT / DECOMPOSE / EXTRACT ` +
-    `symbols out of a file, use mcp__atomic-edit__atomic_decompose_file ONCE — ` +
-    `args { file, plan:[{ symbols:[...], newModule, reExport:true }] } — NOT ` +
-    `repeated atomic_create_file. Example: ` +
-    `mcp__atomic-edit__atomic_decompose_file { "file":"src/big.ts", ` +
-    `"plan":[{ "symbols":["Foo","bar"], "newModule":"src/foo.ts", ` +
-    `"reExport":true }] }. The tool returns the char-level ` +
+    `atomic_transaction / atomic_add_import …). The tool returns the char-level ` +
     `atomicDiff [-removed-]{+added+} + FounderBlock — the only permitted visual ` +
     `proof. If mcp__atomic-edit__* is not in this session's tools, the server ` +
     `is not loaded: say so and start a fresh session (it is enabled in ` +

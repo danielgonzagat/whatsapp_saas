@@ -28,27 +28,27 @@
 -- the verification.
 
 CREATE TABLE IF NOT EXISTS "KloelWalletLedger" (
-  "id"            TEXT NOT NULL,
-  "workspaceId"   TEXT NOT NULL,
-  "walletId"      TEXT NOT NULL,
-  "transactionId" TEXT,
-  "direction"     TEXT NOT NULL,
-  "bucket"        TEXT NOT NULL,
-  "amountInCents" BIGINT NOT NULL,
-  "reason"        TEXT NOT NULL,
-  "metadata"      JSONB,
-  "createdAt"     TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "id" TEXT NOT NULL,
+    "workspaceId" TEXT NOT NULL,
+    "walletId" TEXT NOT NULL,
+    "transactionId" TEXT,
+    "direction" TEXT NOT NULL,
+    "bucket" TEXT NOT NULL,
+    "amountInCents" BIGINT NOT NULL,
+    "reason" TEXT NOT NULL,
+    "metadata" JSONB,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
-  CONSTRAINT "KloelWalletLedger_pkey" PRIMARY KEY ("id"),
-  CONSTRAINT "KloelWalletLedger_walletId_fkey"
+    CONSTRAINT "KloelWalletLedger_pkey" PRIMARY KEY ("id"),
+    CONSTRAINT "KloelWalletLedger_walletId_fkey"
     FOREIGN KEY ("walletId")
-    REFERENCES "KloelWallet"("id")
+    REFERENCES "KloelWallet" ("id")
     ON DELETE CASCADE
     ON UPDATE CASCADE
 );
 
 CREATE INDEX IF NOT EXISTS "KloelWalletLedger_workspaceId_walletId_createdAt_idx"
-  ON "KloelWalletLedger" ("workspaceId", "walletId", "createdAt");
+ON "KloelWalletLedger" ("workspaceId", "walletId", "createdAt");
 
 CREATE INDEX IF NOT EXISTS "KloelWalletLedger_workspaceId_transactionId_idx"
-  ON "KloelWalletLedger" ("workspaceId", "transactionId");
+ON "KloelWalletLedger" ("workspaceId", "transactionId");

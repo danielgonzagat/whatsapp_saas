@@ -1,9 +1,12 @@
 [build]
-builder = "RAILPACK"
-buildCommand = "npm ci --include=dev && npm run prisma:generate && npm run build"
+# Production deploys use Dockerfile to keep Chromium/Xvfb runtime dependencies.
+# PR314 runtime refresh marker: force Railway to rebuild after CI gate fixes.
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
+watchPatterns = ["**"]
 
 [deploy]
-startCommand = "npm run start:prod"
+startCommand = "node dist/bootstrap.js"
 healthcheckPath = "/health"
 healthcheckTimeout = 300
 restartPolicyType = "ON_FAILURE"

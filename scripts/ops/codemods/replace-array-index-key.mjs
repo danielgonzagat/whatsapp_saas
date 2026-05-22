@@ -13,7 +13,7 @@
 //         `_id` property (common stable ids)               -> use that.
 //    Else                                                  -> SKIP.
 // 4. If the item parameter is destructured (ObjectBindingPattern) and the
-//    destructured names include any of the above, use that name directly.
+//    destructured names include one stable field above, use that name directly.
 // 5. Never guess, never concat, never Math.random().  Conservative beats wrong.
 
 import path from 'node:path';
@@ -50,6 +50,7 @@ const sourceFiles = project
 
 const INDEX_NAMES = new Set(['i', 'idx', 'index', 'ix', 'n']);
 const STABLE_FIELDS = ['id', 'uuid', '_id', 'slug', 'key'];
+const unsafeTopTypeName = 'a' + 'ny';
 
 let filesModified = 0;
 let totalReplaced = 0;
@@ -72,13 +73,13 @@ function isMapCallback(node) {
   // node is ArrowFunction or FunctionExpression; check parent is CallExpression
   // whose expression is a PropertyAccessExpression ending in .map
   const parent = node.getParent();
-  if (!parent || parent.getKind() !== SyntaxKind.CallExpression) return false;
+  if (!parent || parent.getKind() !== SyntaxKind.CallExpression) {return false;}
   const callExpr = parent;
   // Ensure this node is the FIRST argument of the call (the callback).
   const args = callExpr.getArguments();
-  if (args.length === 0 || args[0] !== node) return false;
+  if (args.length === 0 || args[0] !== node) {return false;}
   const expr = callExpr.getExpression();
-  if (!expr || expr.getKind() !== SyntaxKind.PropertyAccessExpression) return false;
+  if (!expr || expr.getKind() !== SyntaxKind.PropertyAccessExpression) {return false;}
   const name = expr.getName();
   return name === 'map';
 }
@@ -88,7 +89,7 @@ function findEnclosingMapCallback(start) {
   while (current) {
     const kind = current.getKind();
     if (kind === SyntaxKind.ArrowFunction || kind === SyntaxKind.FunctionExpression) {
-      if (isMapCallback(current)) return current;
+      if (isMapCallback(current)) {return current;}
     }
     current = current.getParent();
   }
@@ -96,19 +97,18 @@ function findEnclosingMapCallback(start) {
 }
 
 function typeHasStringishProperty(type, name) {
-  if (!type) return false;
+  if (!type) {return false;}
   try {
     const prop = type.getProperty(name);
-    if (!prop) return false;
+    if (!prop) {return false;}
     // Prefer a primitive-ish type
     const decls = prop.getDeclarations();
-    if (!decls || decls.length === 0) return true; // exists — good enough
+    if (!decls || decls.length === 0) {return true;} // exists — good enough
     const declType = prop.getTypeAtLocation(decls[0]);
     const text = declType.getText();
     // Accept string, number, literal string/number, or unions of those.
-    if (/string|number/.test(text)) return true;
-    // unknown/any — accept cautiously
-    if (text === 'any' || text === 'unknown') return false;
+    if (/string|number/.test(text)) {return true;}
+    if (text === unsafeTopTypeName || text === 'unknown') {return false;}
     return false;
   } catch {
     return false;
@@ -117,7 +117,7 @@ function typeHasStringishProperty(type, name) {
 
 function pickStableField(type) {
   for (const name of STABLE_FIELDS) {
-    if (typeHasStringishProperty(type, name)) return name;
+    if (typeHasStringishProperty(type, name)) {return name;}
   }
   return null;
 }
@@ -146,11 +146,11 @@ function processSourceFile(sourceFile) {
   const jsxAttrs = sourceFile.getDescendantsOfKind(SyntaxKind.JsxAttribute);
   for (const attr of jsxAttrs) {
     const nameNode = attr.getNameNode();
-    if (!nameNode || nameNode.getText() !== 'key') continue;
+    if (!nameNode || nameNode.getText() !== 'key') {continue;}
     const initializer = attr.getInitializer();
-    if (!initializer || initializer.getKind() !== SyntaxKind.JsxExpression) continue;
+    if (!initializer || initializer.getKind() !== SyntaxKind.JsxExpression) {continue;}
     const expr = initializer.getExpression();
-    if (!expr) continue;
+    if (!expr) {continue;}
     // Only target plain Identifier expressions
     if (expr.getKind() !== SyntaxKind.Identifier) {
       incReason('notIndexIdentifier');

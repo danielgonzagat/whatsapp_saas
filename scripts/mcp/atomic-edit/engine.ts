@@ -20,7 +20,18 @@
  * module stays unit-testable.
  */
 
+
+import { validateLanguage } from './lang-bridge.js';
 import * as ts from 'typescript';
+import { structuralErrors } from './engine-structural.js';
+export type { EditZones } from './engine-zones.js';
+import type { EditZones } from './engine-zones.js';
+export { EMPTY_ZONES, computeZones } from './engine-zones.js';
+import { EMPTY_ZONES, computeZones } from './engine-zones.js';
+import * as crypto from 'crypto';
+import type { PreservationZone, ModifiedZone, MovementZone } from './trace.js';
+
+const sha256 = (s: string): string => crypto.createHash('sha256').update(s).digest('hex');
 
 export interface Position {
   /** 1-based line. */
@@ -36,7 +47,7 @@ export interface TextEditSpec {
 }
 
 export interface ValidationResult {
-  language: 'ts' | 'json' | 'structural' | 'generic';
+  language: 'ts' | 'json' | 'structural' | 'generic' | 'python' | 'go' | 'rust' | 'ruby' | 'shell' | 'java' | 'c' | 'cpp' | 'javascript';
   /** Syntactic-diagnostic count before the edit. */
   before: number;
   /** Syntactic-diagnostic count after the edit. */
@@ -55,11 +66,14 @@ export interface ApplyResult {
   lineSurfaceChars: number;
   /** lineSurfaceChars / max(changedChars,1) — the thesis Expansion Factor. */
   expansionFactor: number;
+  /** Exact byte-level zones of preservation, modification, and movement. */
+  zones: EditZones;
 }
 
 const TS_EXT = new Set(['.ts', '.tsx', '.mts', '.cts', '.js', '.jsx', '.mjs', '.cjs']);
+export { TS_EXT };
 
-function extOf(file: string): string {
+export function extOf(file: string): string {
   const i = file.lastIndexOf('.');
   return i < 0 ? '' : file.slice(i).toLowerCase();
 }
@@ -143,6 +157,26 @@ export function validate(file: string, before: string, after: string): Validatio
       introduced: !aOk && bOk ? 'edit produced invalid JSON' : undefined,
     };
   }
+  // Try real language parser before falling back to structural balance
+  const langResult = validateLanguage(file, after);
+  if (langResult.realParser || langResult.language !== 'generic') {
+    if (langResult.realParser) {
+      // Parser was available and ran — use its result
+      const extLang = extOf(file).replace('.', '');
+      // We need the BEFORE state too — parse the original
+      const beforeResult = validateLanguage(file, before);
+      const b = beforeResult.realParser ? beforeResult.errorCount : 0;
+      const a = langResult.errorCount;
+      return {
+        language: langResult.language as ValidationResult['language'],
+        before: b,
+        after: a,
+        ok: a <= b,
+        introduced: a > b ? langResult.firstError : undefined,
+      };
+    }
+    // Parser not available — fall through to structural
+  }
   if (STRUCTURAL_EXT.has(ext)) {
     const b = structuralErrors(ext, before);
     const a = structuralErrors(ext, after);
@@ -194,106 +228,10 @@ const STRUCTURAL_EXT = new Set([
   '.toml',
 ]);
 
-const PAIRS: Record<string, string> = { ')': '(', ']': '[', '}': '{' };
-const OPEN = new Set(['(', '[', '{']);
 
 /** Quote chars that start a string per family. Hash-comment langs use #;
  * C-family use // and /​* *​/. We stay conservative: only well-known forms,
  * never guessing, so valid code never trips. */
-function structuralErrors(ext: string, text: string): string[] {
-  const errors: string[] = [];
-  const stack: { ch: string; line: number }[] = [];
-  const hashComment = new Set(['.py', '.rb', '.sh', '.bash', '.zsh', '.yaml', '.yml', '.toml']).has(
-    ext,
-  );
-  const slashComment = new Set([
-    '.go',
-    '.rs',
-    '.java',
-    '.kt',
-    '.c',
-    '.h',
-    '.cc',
-    '.cpp',
-    '.hpp',
-    '.cs',
-    '.php',
-    '.swift',
-    '.scala',
-    '.css',
-    '.scss',
-    '.less',
-    '.sql',
-  ]).has(ext);
-  let line = 1;
-  let i = 0;
-  const n = text.length;
-  while (i < n) {
-    const c = text[i];
-    if (c === '\n') {
-      line++;
-      i++;
-      continue;
-    }
-    // line comment
-    if (hashComment && c === '#') {
-      const nl = text.indexOf('\n', i);
-      i = nl === -1 ? n : nl;
-      continue;
-    }
-    if (slashComment && c === '/' && text[i + 1] === '/') {
-      const nl = text.indexOf('\n', i);
-      i = nl === -1 ? n : nl;
-      continue;
-    }
-    if (slashComment && c === '/' && text[i + 1] === '*') {
-      const end = text.indexOf('*/', i + 2);
-      if (end === -1) {
-        errors.push(`unterminated block comment (from line ${line})`);
-        return errors;
-      }
-      for (let k = i; k < end; k++) if (text[k] === '\n') line++;
-      i = end + 2;
-      continue;
-    }
-    // string literal — skip content, honor backslash escapes
-    if (c === '"' || c === "'" || c === '`') {
-      const startLine = line;
-      let j = i + 1;
-      while (j < n) {
-        const d = text[j];
-        if (d === '\\') {
-          j += 2;
-          continue;
-        }
-        if (d === '\n') {
-          line++;
-          // single/double quotes don't span lines in most langs; backtick does
-          if (c !== '`') {
-            errors.push(`unterminated string (line ${startLine})`);
-            break;
-          }
-        }
-        if (d === c) break;
-        j++;
-      }
-      if (j >= n) errors.push(`unterminated string (line ${startLine})`);
-      i = j + 1;
-      continue;
-    }
-    if (OPEN.has(c)) {
-      stack.push({ ch: c, line });
-    } else if (c in PAIRS) {
-      const top = stack.pop();
-      if (!top || top.ch !== PAIRS[c]) {
-        errors.push(`unbalanced '${c}' (line ${line})`);
-      }
-    }
-    i++;
-  }
-  for (const o of stack) errors.push(`unclosed '${o.ch}' (line ${o.line})`);
-  return errors;
-}
 
 /** Convert a 1-based (line,column) to an absolute UTF-16 offset. */
 export function posToOffset(text: string, pos: Position): number {
@@ -313,7 +251,7 @@ export function posToOffset(text: string, pos: Position): number {
   const lineEnd = text.indexOf('\n', offset);
   const lineLen = (lineEnd === -1 ? text.length : lineEnd) - offset;
   // column may equal lineLen + 1 (one past the last char = end-of-line insert).
-  if (pos.column - 1 > lineLen + 1) {
+  if (pos.column - 1 > lineLen) {
     throw new Error(
       `column ${pos.column} out of range on line ${pos.line} (line has ${lineLen} char(s))`,
     );
@@ -387,6 +325,7 @@ export function applyEdits(file: string, original: string, edits: TextEditSpec[]
     changedChars,
     lineSurfaceChars,
     expansionFactor: Number((lineSurfaceChars / Math.max(changedChars, 1)).toFixed(2)),
+    zones: computeZones(original, next),
   };
 }
 
@@ -438,6 +377,7 @@ export function wrapRange(
     changedChars,
     lineSurfaceChars,
     expansionFactor: Number((lineSurfaceChars / Math.max(changedChars, 1)).toFixed(2)),
+    zones: computeZones(original, next),
   };
 }
 
@@ -446,6 +386,7 @@ export interface RenameResult {
   occurrences: number;
   symbol: string;
   validation: ValidationResult;
+  zones: EditZones;
 }
 
 /**
@@ -496,6 +437,7 @@ export async function renameSymbol(
     occurrences: refs,
     symbol: `${oldName} -> ${newName}`,
     validation: validate(file, original, next),
+    zones: computeZones(original, next),
   };
 }
 
@@ -503,6 +445,7 @@ export interface LiteralSwapResult {
   newText: string;
   matched: { line: number; column: number; old: string }[];
   validation: ValidationResult;
+  zones: EditZones;
 }
 
 /**
@@ -564,7 +507,7 @@ export async function replaceLiteral(
   ];
   target.replaceWithText(newText);
   const next = sf.getFullText();
-  return { newText: next, matched, validation: validate(file, original, next) };
+  return { newText: next, matched, validation: validate(file, original, next), zones: computeZones(original, next) };
 }
 
 /**
@@ -599,9 +542,14 @@ export function replaceText(
   let start: number;
   if (occurrence == null) {
     if (offsets.length > 1) {
+      const candidates = offsets.map((o) => {
+        const before = original.slice(0, o).split('\n');
+        return `line ${before.length}`;
+      });
       throw new Error(
-        `ambiguous: ${offsets.length} occurrences of oldText; add surrounding context to make it unique, ` +
-          `or pass occurrence (1-${offsets.length})`,
+        `ambiguous: ${offsets.length} occurrences of oldText. ` +
+          `Candidates: [${candidates.join(', ')}]. ` +
+          `Add surrounding context to make it unique, or pass occurrence (1-${offsets.length})`,
       );
     }
     start = offsets[0];
@@ -621,6 +569,7 @@ export function replaceText(
     changedChars,
     lineSurfaceChars,
     expansionFactor: Number((lineSurfaceChars / Math.max(changedChars, 1)).toFixed(2)),
+    zones: computeZones(original, next),
   };
 }
 

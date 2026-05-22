@@ -268,7 +268,7 @@ export function evaluateScenario(
     return buildScenarioResult(scenario, actorArtifact, {
       status: runtimeFailure.failureClass === 'product_failure' ? 'failed' : 'missing_evidence',
       executed: false,
-      failureClass: runtimeFailure.failureClass,
+      ...(runtimeFailure.failureClass !== undefined ? { failureClass: runtimeFailure.failureClass } : {}),
       requested,
       summary: runtimeFailure.summary,
     });
@@ -278,7 +278,7 @@ export function evaluateScenario(
     return buildScenarioResult(scenario, actorArtifact, {
       status: flowFailure.failureClass === 'product_failure' ? 'failed' : 'missing_evidence',
       executed: false,
-      failureClass: flowFailure.failureClass,
+      ...(flowFailure.failureClass !== undefined ? { failureClass: flowFailure.failureClass } : {}),
       requested,
       summary: flowFailure.summary,
     });

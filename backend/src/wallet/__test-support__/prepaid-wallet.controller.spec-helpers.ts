@@ -43,8 +43,12 @@ function lookupWallet(
   workspaceMap: Map<string, PrepaidWallet>,
   where: { id?: string; workspaceId?: string },
 ): PrepaidWallet | null {
-  if (where.id) return walletMap.get(where.id) ?? null;
-  if (where.workspaceId) return workspaceMap.get(where.workspaceId) ?? null;
+  if (where.id) {
+    return walletMap.get(where.id) ?? null;
+  }
+  if (where.workspaceId) {
+    return workspaceMap.get(where.workspaceId) ?? null;
+  }
   return null;
 }
 
@@ -82,7 +86,7 @@ export function makePrismaStub(wallets: PrepaidWallet[] = []) {
             return Promise.resolve(merged);
           }
           const row = {
-            id: `pwl_${nextWalletId++}`,
+            id: (() => { const id = `pwl_${nextWalletId}`; nextWalletId += 1; return id; })(),
             balanceCents: 0n,
             currency: 'BRL',
             autoRechargeEnabled: false,
@@ -110,7 +114,9 @@ export function makePrismaStub(wallets: PrepaidWallet[] = []) {
           data: Partial<PrepaidWallet>;
         }) => {
           const current = walletMap.get(where.id);
-          if (!current) return Promise.resolve({ count: 0 });
+          if (!current) {
+            return Promise.resolve({ count: 0 });
+          }
           const next = { ...current, ...data, updatedAt: new Date() };
           walletMap.set(where.id, next);
           workspaceMap.set(next.workspaceId, next);
@@ -138,7 +144,7 @@ export function makePrismaStub(wallets: PrepaidWallet[] = []) {
       count: jest.fn(() => Promise.resolve(transactions.length)),
       create: jest.fn(({ data }: { data: Omit<PrepaidWalletTransaction, 'id' | 'createdAt'> }) => {
         const row = {
-          id: `pwt_${nextTxId++}`,
+          id: (() => { const id = `pwt_${nextTxId}`; nextTxId += 1; return id; })(),
           createdAt: new Date(),
           ...data,
         };

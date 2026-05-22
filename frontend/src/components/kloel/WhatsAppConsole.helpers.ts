@@ -1,6 +1,4 @@
-// Pure data helpers extracted from WhatsAppConsole.tsx to reduce cyclomatic
-// complexity. No React, no JSX — these are payload-shape transforms only.
-
+import type { AgentActivity } from './AgentConsole';
 import type { Message as InboxMessage } from '@/lib/api';
 
 const D_RE = /^\d+$/;
@@ -14,7 +12,7 @@ export interface ChatPreview {
   /** Subtitle property. */
   subtitle?: string;
   /** Last message at property. */
-  lastMessageAt?: string;
+  lastMessageAt?: string | undefined;
 }
 
 const DATE_CANDIDATE_FIELDS = [
@@ -253,4 +251,21 @@ export function normalizeMessages(payload: unknown): InboxMessage[] {
     .filter((message) => Boolean(message.id));
 
   return result;
+}
+
+export function getActivityTone(activity: AgentActivity) {
+  switch (activity.type) {
+    case 'message_sent':
+      return 'bg-[colors.text.silver]/10 text-[colors.text.silver] border-[colors.text.silver]/15';
+    case 'message_received':
+      return 'bg-[colors.background.elevated] text-[colors.text.muted] border-[colors.border.space]';
+    case 'lead_qualified':
+      return 'bg-[colors.text.silver]/10 text-[colors.text.silver] border-[colors.text.silver]/15';
+    case 'follow_up_scheduled':
+      return 'bg-[colors.text.muted]/10 text-[colors.text.muted] border-[colors.text.muted]/15';
+    case 'error':
+      return 'bg-[colors.ember.primary]/10 text-[colors.ember.primary] border-[colors.ember.primary]/15';
+    default:
+      return 'bg-[colors.text.muted]/10 text-[colors.text.muted] border-[colors.text.muted]/15';
+  }
 }

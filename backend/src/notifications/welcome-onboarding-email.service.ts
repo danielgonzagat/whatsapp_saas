@@ -119,11 +119,16 @@ export class WelcomeAndOnboardingEmailService implements OnModuleInit, OnModuleD
     ];
 
     for (const { template, delayMs } of templates) {
-      await this.queue.add(
+      const jobData: OnboardingEmailJob = {
+        email,
+        agentName,
         template,
-        { email, agentName, template, workspaceId },
-        { delay: delayMs, jobId: `onboarding:${template}:${email}` },
-      );
+        ...(workspaceId !== undefined ? { workspaceId } : {}),
+      };
+      await this.queue.add(template, jobData, {
+        delay: delayMs,
+        jobId: `onboarding:${template}:${email}`,
+      });
     }
 
     this.logger.log(`Onboarding sequence scheduled for ${email}`);

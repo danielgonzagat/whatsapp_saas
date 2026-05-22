@@ -4,10 +4,10 @@
 
 `rejected_atomic_macro_method_loss`
 
-Round 069 escalou o tier para extracao de metodos privados de classe
-(`actionSucceeded` e `num`) para helper externo. A tarefa era complexa o
-suficiente para testar se o Atomic ja tinha operador macro para class-method to
-top-level helper. Nao tinha.
+Round 069 escalated the tier to extract private class methods
+(`actionSucceeded` and `num`) into an external helper. The task was complex
+enough to test whether Atomic already had a macro operator for class-method to
+top-level helper extraction. It did not.
 
 ## Functional Validation
 

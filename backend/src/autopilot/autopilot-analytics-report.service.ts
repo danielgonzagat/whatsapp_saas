@@ -1,4 +1,5 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
+import { StructuredLogger } from '../logging/structured-logger';
 import { forEachSequential } from '../common/async-sequence';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -7,8 +8,12 @@ import { PrismaService } from '../prisma/prisma.service';
  * Extracted from AutopilotAnalyticsService to keep each file under 400 lines.
  */
 @Injectable()
+/**
+ * @cluster whatsapp_saas/backend/autopilot
+ * L11 multi-agent TaskGraph annotation (batched by tools/auto-pr/batch-job.mjs).
+ */
 export class AutopilotAnalyticsReportService {
-  private readonly logger = new Logger(AutopilotAnalyticsReportService.name);
+  private readonly logger = StructuredLogger.from(AutopilotAnalyticsReportService.name);
 
   constructor(private readonly prisma: PrismaService) {}
 
@@ -78,7 +83,6 @@ export class AutopilotAnalyticsReportService {
       let revenue = 0;
       let deals = 0;
 
-      // PULSE:OK — each campaign has unique JSON path filter on customFields; cannot batch
       const taggedContacts = await this.prisma.contact.findMany({
         take: 500,
         where: {
@@ -268,11 +272,7 @@ export class AutopilotAnalyticsReportService {
       });
 
       const contactIds = Array.from(
-        new Set(
-          events
-            .map((l) => l.contactId)
-            .filter((contactId): contactId is string => Boolean(contactId)),
-        ),
+        new Set(events.map((l) => l.contactId).filter((id): id is string => Boolean(id))),
       );
       const contacts = await this.prisma.contact.findMany({
         take: 5000,

@@ -26,7 +26,6 @@ afterEach(() => {
 // ---------------------------------------------------------------------------
 // Blacklist short-circuit
 // ---------------------------------------------------------------------------
-// PULSE_OK: assertions exist below
 describe('FraudEngine.evaluate — blacklist short-circuit', () => {
   it('routes to review on CPF blacklist hit', async () => {
     const prisma = makePrismaStub([

@@ -7,9 +7,9 @@ export interface AgentCursorTarget {
   /** Y property. */
   y: number;
   /** Action type property. */
-  actionType?: string;
+  actionType?: string | undefined;
   /** Text property. */
-  text?: string;
+  text?: string | undefined;
   /** Timestamp property. */
   timestamp: number;
 }
