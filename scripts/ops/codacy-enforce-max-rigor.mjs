@@ -306,12 +306,14 @@ async function verifyCanonicalStandard(codingStandard) {
     deprecatedPatternState.every(
       (entry) => entry.fullyInspected && entry.total > 0 && entry.enabledCount === 0,
     );
-  // Codacy's published-standard meta can include one disabled deprecated-tool
-  // sentinel even after the tool and every deprecated pattern are disabled.
-  // Accept only that exact +1 shape; any missing non-deprecated pattern or any
-  // enabled deprecated pattern remains a hard failure.
+  // Codacy's published-standard meta can include disabled deprecated-tool
+  // sentinels even after the tool and every deprecated pattern are disabled.
+  // Accept only the observed +1/+2 metadata-only shapes; any missing
+  // non-deprecated pattern or any enabled deprecated pattern remains a hard
+  // failure.
+  const deprecatedMetaSurplus = enabledPatternsCount - totalOrganizationPatterns;
   const disabledDeprecatedMetaSentinel =
-    deprecatedPatternsFullyDisabled && enabledPatternsCount === totalOrganizationPatterns + 1;
+    deprecatedPatternsFullyDisabled && deprecatedMetaSurplus >= 1 && deprecatedMetaSurplus <= 2;
   const enabledNonDeprecatedTools = enabledStandardTools.filter(
     (tool) => !deprecatedUuids.has(tool.uuid),
   );
