@@ -23,7 +23,7 @@ const D_RE = /\D/g;
 /** Arbitrary JSON payload received on the generic catch-hook endpoint. */
 type WebhookJsonPayload = Record<string, unknown>;
 
-type UnknownRecord = Record<string, unknown>;
+import type { UnknownRecord } from '../common/types';
 type WebhookLogDetails = { status?: string; phone?: string; [key: string]: unknown };
 type WebhookFinanceSettings = Record<string, unknown>;
 

@@ -18,11 +18,20 @@ const backendRoot = process.cwd();
 const srcRoot = join(backendRoot, 'src');
 const jestBin = join(backendRoot, 'node_modules', 'jest', 'bin', 'jest.js');
 const passthroughArgs = process.argv.slice(2);
-const chunkSize = Math.max(1, Number(process.env.JEST_CHUNK_SIZE || 256));
+const chunkSize = Math.max(1, Number(process.env.JEST_CHUNK_SIZE || 48));
 const startChunk = Math.max(1, Number(process.env.JEST_CHUNK_START || 1));
-const maxOldSpaceSize = Math.max(3072, Number(process.env.JEST_MAX_OLD_SPACE_SIZE) || 6144);
+const maxOldSpaceSize = Math.max(2048, Number(process.env.JEST_MAX_OLD_SPACE_SIZE) || 3072);
+const workerIdleMemoryLimit = process.env.JEST_WORKER_IDLE_MEMORY_LIMIT || '512MB';
+const maxWorkers = process.env.JEST_MAX_WORKERS || '2';
 const verboseJestOutput = process.env.JEST_VERBOSE_OUTPUT === '1';
-const defaultJestArgs = verboseJestOutput ? [] : ['--silent'];
+// --maxWorkers conflicts with --runInBand. If the caller already requested
+// --runInBand (e.g. check:all backend-test passes it), skip --maxWorkers so
+// Jest doesn't error out with "only one is allowed".
+const passthroughHasRunInBand = passthroughArgs.includes('--runInBand');
+const workerArgs = passthroughHasRunInBand ? [] : [`--maxWorkers=${maxWorkers}`];
+const defaultJestArgs = verboseJestOutput
+  ? [`--workerIdleMemoryLimit=${workerIdleMemoryLimit}`, ...workerArgs]
+  : ['--silent', `--workerIdleMemoryLimit=${workerIdleMemoryLimit}`, ...workerArgs];
 const coverageEnabled = passthroughArgs.some(isCoverageArg);
 const coverageRoot = join(backendRoot, 'coverage');
 const coverageChunksRoot = join(coverageRoot, '.chunks');
@@ -48,7 +57,7 @@ function runJest(args) {
       stdio: verboseJestOutput ? 'inherit' : 'pipe',
     },
   );
-  if (!verboseJestOutput && (result.error || result.signal || result.status !== 0)) {
+  if (result.error || result.signal || result.status !== 0) {
     writeBufferedOutput(result);
   }
   if (result.error) {
@@ -83,7 +92,7 @@ function removeCoverageDirectoryArgs(args) {
 }
 
 function ensureRunInBand(args) {
-  return args.includes('--runInBand') ? args : ['--runInBand', ...args];
+  return args.includes('--runInBand') ? args : args;
 }
 
 function hasPositionalSpec(args) {

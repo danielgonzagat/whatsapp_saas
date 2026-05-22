@@ -28,4 +28,8 @@ import { FlowTemplateService } from './flow-template.service';
   providers: [FlowsService, FlowsGateway, FlowOptimizerService, FlowTemplateService], // Add FlowsGateway
   exports: [FlowsService, FlowOptimizerService, FlowTemplateService],
 })
+/**
+ * @cluster whatsapp_saas/backend/flows
+ * L11 multi-agent TaskGraph annotation (batched by tools/auto-pr/batch-job.mjs).
+ */
 export class FlowsModule {}

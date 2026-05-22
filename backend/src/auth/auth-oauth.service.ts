@@ -17,6 +17,10 @@ import { GoogleAuthService, GoogleVerifiedProfile } from './google-auth.service'
 import { RateLimitService } from './rate-limit.service';
 import { TikTokAuthService } from './tiktok-auth.service';
 
+/**
+ * @cluster whatsapp_saas/backend/auth
+ * L11 multi-agent TaskGraph annotation (batched by tools/auto-pr/batch-job.mjs).
+ */
 function buildAuthLogMessage(event: string, payload: Record<string, unknown>) {
   return JSON.stringify({ event, ...payload });
 }

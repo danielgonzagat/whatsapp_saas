@@ -99,8 +99,7 @@ interface AutopilotOverviewProps {
   handleToggle: () => void;
   onDismissError: () => void;
   onRefresh: () => void;
-  onNavigate: (href: string) => void;
-}
+  }
 
 export function AutopilotOverview({
   status,
@@ -115,8 +114,7 @@ export function AutopilotOverview({
   handleToggle,
   onDismissError,
   onRefresh,
-  onNavigate: _onNavigate,
-}: AutopilotOverviewProps) {
+  }: AutopilotOverviewProps) {
   return (
     <>
       {/* Header */}

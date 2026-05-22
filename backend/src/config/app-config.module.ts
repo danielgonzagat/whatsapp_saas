@@ -207,4 +207,8 @@ import { redisInProductionValidator } from './redis-env-validator';
     }),
   ],
 })
+/**
+ * @cluster whatsapp_saas/backend/config
+ * L11 multi-agent TaskGraph annotation (batched by tools/auto-pr/batch-job.mjs).
+ */
 export class AppConfigModule {}

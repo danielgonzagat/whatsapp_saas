@@ -13,6 +13,10 @@ import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { RouteClass } from '../common/throttler/route-class.decorator';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
 
+/**
+ * @cluster whatsapp_saas/backend/audio
+ * L11 multi-agent TaskGraph annotation (Wave 4 loop-runner).
+ */
 type AudioSynthesizeBody = {
   text?: string;
   voice?: string;

@@ -6,6 +6,10 @@ import { AutopilotAnalyticsReportService } from './autopilot-analytics-report.se
 
 /** Analytics for Autopilot: stats delegated to report/insights companion services. */
 @Injectable()
+/**
+ * @cluster whatsapp_saas/backend/autopilot
+ * L11 multi-agent TaskGraph annotation (batched by tools/auto-pr/batch-job.mjs).
+ */
 export class AutopilotAnalyticsService {
   private readonly logger = StructuredLogger.from(AutopilotAnalyticsService.name);
 

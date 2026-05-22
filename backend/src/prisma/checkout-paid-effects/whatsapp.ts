@@ -3,10 +3,15 @@ import { flowQueue } from '../../queue/queue';
 import { formatBrlAmount } from '../../kloel/money-format.util';
 import { PaidCheckoutEffectClient, readPaidCheckoutOrderScope } from './shared';
 
-const DIGITS_RE = /\D/g;
+import { digitsOnly } from '../../common/phone';
 
+/**
+ * Local checkout-effects normalizer: digitsOnly with a 10-digit floor.
+ * Returns null below the floor (avoids creating a WhatsApp conversation
+ * for malformed numbers like inferred-from-cardholder-name attempts).
+ */
 function normalizePhone(phone: string | null) {
-  const digits = String(phone || '').replace(DIGITS_RE, '');
+  const digits = digitsOnly(phone);
   return digits.length >= 10 ? digits : null;
 }
 

@@ -17,6 +17,10 @@ import { UserNameDerivationService } from './user-name-derivation.service';
  * WhatsApp OTP and password recovery are delegated to AuthWhatsappPasswordService.
  */
 @Injectable()
+/**
+ * @cluster whatsapp_saas/backend/auth
+ * L11 multi-agent TaskGraph annotation (batched by tools/auto-pr/batch-job.mjs).
+ */
 export class AuthVerificationService {
   private readonly logger = StructuredLogger.from(AuthVerificationService.name);
 

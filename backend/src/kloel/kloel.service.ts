@@ -1,4 +1,11 @@
 import { Injectable, Optional } from '@nestjs/common';
+import {
+  runListFollowups,
+  runListPersonas,
+  runCreatePersona,
+  runListIntegrations,
+  runCreateIntegration,
+} from './kloel.service.lists.helpers';
 import { StructuredLogger } from '../logging/structured-logger';
 import { Prisma } from '@prisma/client';
 import { Response } from 'express';
@@ -12,19 +19,11 @@ import { KloelThinkerService, ThinkRequest, ThinkSyncResult } from './kloel-thin
 import { KloelToolDispatcherService } from './kloel-tool-dispatcher.service';
 import { KloelWorkspaceContextService } from './kloel-workspace-context.service';
 import { AgentRuntimeContextService } from './agent-runtime';
+import { detectActionIntent } from './guest-chat.action-intent.helpers';
+import { formatToolResult } from './guest-chat.action-intent.helpers';
 
 type ComposerCapability = 'create_image' | 'create_site' | 'search_web';
-type UnknownRecord = Record<string, unknown>;
-type FollowupMetadata = {
-  phone?: string;
-  contactId?: string;
-  message?: string;
-  scheduledFor?: unknown;
-  delayMinutes?: unknown;
-  status?: string;
-  executedAt?: unknown;
-  [key: string]: unknown;
-};
+import type { UnknownRecord } from '../common/types';
 
 interface ComposerAttachmentMetadata {
   id?: string;
@@ -297,6 +296,51 @@ export class KloelService {
   async thinkSync(request: ThinkRequest): Promise<ThinkSyncResult> {
     const { message, workspaceId, mode = 'chat', metadata, companyContext } = request;
     const composerMetadata = this.extractComposerMetadata(metadata);
+    // ── DETERMINISTIC ACTION ROUTER ──
+    // When the user requests a real action, execute the tool MANDATORILY
+    // rather than relying on the LLM to probabilistically decide to use tools.
+    if (workspaceId) {
+      const action = detectActionIntent(message);
+      if (action) {
+        this.logger.log(`Deterministic: tool=${action.tool} workspace=${workspaceId}`);
+        try {
+          const result = await this.toolDispatcher.executeTool(
+            workspaceId,
+            action.tool,
+            action.args,
+            request.userId,
+          );
+          const reply = formatToolResult(action.tool, result);
+          // Persist to conversation store and spine
+          void this.conversationStore.saveMessage(workspaceId, 'user', message);
+          void this.conversationStore.saveMessage(workspaceId, 'assistant', reply);
+          // Persist to spine as autopilot event
+          void this.prisma.autopilotEvent
+            .create({
+              data: {
+                workspaceId,
+                intent: action.tool,
+                action: `kloel.${action.tool}`,
+                status: 'executed',
+                meta: {
+                  userPreview: message.slice(0, 280),
+                  replyPreview: reply.slice(0, 280),
+                  mode,
+                  deterministic: true,
+                },
+              },
+            })
+            .catch(() => {});
+          return { response: reply };
+        } catch (err: unknown) {
+          this.logger.warn(
+            `Deterministic failed: ${err instanceof Error ? err.message : 'unknown'}, falling back to LLM`,
+          );
+          // Fall through to normal LLM path
+        }
+      }
+    }
+
     const composerCapability = this.resolveComposerCapability(
       message,
       mode,
@@ -336,7 +380,7 @@ export class KloelService {
         userMessage: message,
         assistantMessage: result.response,
         ...(request.userId !== undefined ? { userId: request.userId } : {}),
-        ...(result.conversationId ?? request.conversationId
+        ...((result.conversationId ?? request.conversationId)
           ? { threadId: result.conversationId ?? request.conversationId }
           : {}),
       });
@@ -456,61 +500,13 @@ export class KloelService {
   }
 
   /** List follow-ups. */
+
   async listFollowups(workspaceId: string, contactId?: string) {
-    try {
-      const whereClause: Prisma.KloelMemoryWhereInput = { workspaceId, category: 'followups' };
-      if (contactId) {
-        whereClause.metadata = { path: ['contactId'], equals: contactId };
-      }
-      const followups = await this.prisma.kloelMemory.findMany({
-        where: { ...whereClause, workspaceId },
-        orderBy: { createdAt: 'desc' },
-        take: 100,
-        select: { id: true, key: true, value: true, metadata: true, createdAt: true },
-      });
-      return {
-        total: followups.length,
-        followups: followups.map((f): FollowupListItem => {
-          const meta = (f.metadata as FollowupMetadata) || {};
-          return {
-            id: f.id,
-            key: f.key,
-            phone: meta.phone,
-            contactId: meta.contactId,
-            message: meta.message || f.value,
-            scheduledFor: meta.scheduledFor,
-            delayMinutes: meta.delayMinutes,
-            status: meta.status || 'pending',
-            createdAt: f.createdAt,
-            executedAt: meta.executedAt,
-          };
-        }),
-      };
-    } catch (error: unknown) {
-      const msg = error instanceof Error ? error.message : 'unknown error';
-      this.logger.error(`Erro ao listar follow-ups: ${msg}`);
-      return { total: 0, followups: [] };
-    }
+    return runListFollowups(this.prisma, workspaceId, contactId);
   }
 
-  // ── Persona Management ──
-
   async listPersonas(workspaceId: string) {
-    return this.prisma.persona.findMany({
-      where: { workspaceId },
-      orderBy: { createdAt: 'desc' },
-      take: 50,
-      select: {
-        id: true,
-        name: true,
-        role: true,
-        basePrompt: true,
-        voiceId: true,
-        knowledgeBaseId: true,
-        workspaceId: true,
-        createdAt: true,
-      },
-    });
+    return runListPersonas(this.prisma, workspaceId);
   }
 
   createPersona(
@@ -524,41 +520,18 @@ export class KloelService {
       temperature?: number;
     },
   ) {
-    return this.prisma.persona.create({
-      data: {
-        workspaceId,
-        name: data.name,
-        role: data.role || 'SALES',
-        basePrompt: data.basePrompt || data.systemPrompt || '',
-      },
-    });
+    return runCreatePersona(this.prisma, workspaceId, data);
   }
 
-  // ── Integration Management ──
-
   async listIntegrations(workspaceId: string) {
-    return this.prisma.integration.findMany({
-      where: { workspaceId },
-      orderBy: { createdAt: 'desc' },
-      take: 50,
-      select: {
-        id: true,
-        type: true,
-        name: true,
-        credentials: true,
-        isActive: true,
-        workspaceId: true,
-        createdAt: true,
-        updatedAt: true,
-      },
-    });
+    return runListIntegrations(this.prisma, workspaceId);
   }
 
   async createIntegration(
     workspaceId: string,
     data: { type: string; name: string; credentials: Prisma.InputJsonValue },
   ) {
-    return this.prisma.integration.create({ data: { workspaceId, ...data } });
+    return runCreateIntegration(this.prisma, workspaceId, data);
   }
 
   private async buildAgentRuntimePromptBlock(params: {

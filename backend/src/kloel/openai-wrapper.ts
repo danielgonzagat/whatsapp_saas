@@ -236,7 +236,16 @@ export function normalizeChatCompletionParams(params: AnyChatParams): AnyChatPar
   // dynamic writes to max_completion_tokens / delete max_tokens below.
   const payload = { ...params };
 
-  // --- Clamp 1: max output tokens ----------------------------------
+  // --- Clamp 1: max output tokens ----------------------------------  // Strip reasoning_content from all messages to prevent DeepSeek v4
+  // multi-turn error: "reasoning_content must be passed back to the API"
+  if (Array.isArray(payload.messages)) {
+    for (const msg of payload.messages) {
+      if (msg && typeof msg === 'object' && 'reasoning_content' in msg) {
+        delete (msg as Record<string, unknown>).reasoning_content;
+      }
+    }
+  }
+
   const rawMaxTokens = payload.max_tokens ?? payload.max_completion_tokens;
   const clampedMaxTokens = clampMaxCompletionTokens(rawMaxTokens);
   if (isDeepSeekChatModel(payload.model)) {

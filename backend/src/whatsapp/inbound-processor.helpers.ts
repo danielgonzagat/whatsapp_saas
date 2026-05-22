@@ -9,13 +9,15 @@ import type Redis from 'ioredis';
 import type { ProviderSettings } from './provider-settings.types';
 import { extractFallbackTopic as extractFallbackTopicValue } from './whatsapp-normalization.util';
 
-const PHONE_NON_DIGIT_RE = /\D/g;
+import { whatsappDigits } from '../common/phone';
 
+/**
+ * WhatsApp-specific phone normalizer: strip JID suffixes (`@c.us`,
+ * `@s.whatsapp.net`) and non-digits. Thin wrapper around the canonical
+ * `common/phone::whatsappDigits`.
+ */
 export function normalizePhone(phone: string): string {
-  return String(phone || '')
-    .replace(PHONE_NON_DIGIT_RE, '')
-    .replace('@c.us', '')
-    .replace('@s.whatsapp.net', '');
+  return whatsappDigits(phone);
 }
 
 function expandComparablePhoneVariants(phone: string): string[] {

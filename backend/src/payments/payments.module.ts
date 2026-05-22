@@ -13,6 +13,8 @@ import { FraudModule } from './fraud/fraud.module';
 import { ConnectLedgerMaturationService } from './ledger/connect-ledger-maturation.service';
 import { ConnectLedgerReconciliationService } from './ledger/connect-ledger-reconciliation.service';
 import { LedgerService } from './ledger/ledger.service';
+import { MercadoPagoModule } from './mercadopago/mercadopago.module';
+import { PaymentProviderRouterService } from './provider-router/provider-router.service';
 import { StripeChargeService } from './stripe/stripe-charge.service';
 import { StripeWebhookProcessor } from './stripe/stripe-webhook.processor';
 
@@ -28,7 +30,7 @@ import { StripeWebhookProcessor } from './stripe/stripe-webhook.processor';
  * `payments/split/split.engine` if you need it outside this module.
  */
 @Module({
-  imports: [PrismaModule, BillingModule, FraudModule],
+  imports: [PrismaModule, BillingModule, FraudModule, MercadoPagoModule],
   controllers: [ConnectController, SplitController],
   providers: [
     LedgerService,
@@ -40,6 +42,7 @@ import { StripeWebhookProcessor } from './stripe/stripe-webhook.processor';
     ConnectReversalService,
     StripeChargeService,
     StripeWebhookProcessor,
+    PaymentProviderRouterService,
   ],
   exports: [
     LedgerService,
@@ -50,8 +53,10 @@ import { StripeWebhookProcessor } from './stripe/stripe-webhook.processor';
     ConnectPayoutService,
     ConnectReversalService,
     FraudModule,
+    MercadoPagoModule,
     StripeChargeService,
     StripeWebhookProcessor,
+    PaymentProviderRouterService,
   ],
 })
 export class PaymentsModule {}

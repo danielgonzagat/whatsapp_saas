@@ -60,7 +60,7 @@ export class AdminChatSessionService {
       details: { workspaceId: input.workspaceId, title: input.title },
     });
 
-    return session;
+    return this.getSession(session.id, input.workspaceId);
   }
 
   async listSessions(
@@ -126,6 +126,7 @@ export class AdminChatSessionService {
 
     const updated = await this.prisma.adminChatSession.findFirstOrThrow({
       where: { id: input.id, workspaceId: input.workspaceId, deletedAt: null },
+      include: { messages: { orderBy: { createdAt: 'asc' } } },
     });
 
     return updated;

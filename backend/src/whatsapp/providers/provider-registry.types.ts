@@ -1,6 +1,7 @@
 import { type ResolvedWhatsAppProvider } from './provider-env';
 
-export type UnknownRecord = Record<string, unknown>;
+import type { UnknownRecord } from '../../common/types';
+export type { UnknownRecord };
 
 export class MissingWahaProviderError extends Error {
   constructor() {

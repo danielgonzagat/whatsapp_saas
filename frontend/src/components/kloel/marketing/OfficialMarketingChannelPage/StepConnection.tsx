@@ -1,9 +1,5 @@
 import { KLOEL_THEME } from '@/lib/kloel-theme';
-import {
-  CHANNEL_META,
-  type ChannelKey,
-  type TikTokModeData,
-} from '../OfficialMarketingChannelPage.helpers';
+import { CHANNEL_META, type ChannelKey, type TikTokModeData } from '../OfficialMarketingChannelPage.helpers';
 import { TikTokModeBadge } from './TikTokModeBadge';
 
 interface Props {
@@ -70,7 +66,7 @@ export function StepConnection({ channel, tiktokMode }: Props) {
           style={{
             width: 44,
             height: 44,
-            borderRadius: 10,
+            borderRadius: 12,
             background: KLOEL_THEME.accentLight,
             color: meta.color,
             display: 'flex',
@@ -128,8 +124,8 @@ export function StepConnection({ channel, tiktokMode }: Props) {
           fontSize: 12,
         }}
       >
-        Use o botão de conexão oficial abaixo. O status volta para esta tela e o progresso fica
-        salvo no workspace.
+        Use o botão de conexão oficial abaixo. O status volta para esta tela e o
+        progresso fica salvo no workspace.
       </p>
 
       {channel === 'tiktok' && tiktokMode ? <TikTokModeBadge mode={tiktokMode} /> : null}

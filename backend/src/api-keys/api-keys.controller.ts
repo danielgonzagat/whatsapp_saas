@@ -23,6 +23,10 @@ import { RouteClass } from '../common/throttler/route-class.decorator';
 @Controller('settings/api-keys')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
 @RouteClass('mutate')
+/**
+ * @cluster whatsapp_saas/backend/api-keys
+ * L11 multi-agent TaskGraph annotation (Wave 4 loop-runner).
+ */
 export class ApiKeysController {
   constructor(private readonly apiKeysService: ApiKeysService) {}
 

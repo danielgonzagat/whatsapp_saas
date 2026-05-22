@@ -9,15 +9,8 @@ export interface ChatMessage {
 
 export const NON_DIGIT_RE = /\D/g;
 
-export function safeStr(value: unknown, fallback = ''): string {
-  if (typeof value === 'string') {
-    return value;
-  }
-  if (typeof value === 'number' || typeof value === 'boolean') {
-    return String(value);
-  }
-  return fallback;
-}
+import { safeStr } from '../common/string';
+export { safeStr };
 
 export function asUnknownRecord(value: unknown): Record<string, unknown> | null {
   return value && typeof value === 'object' && !Array.isArray(value)

@@ -14,6 +14,10 @@ import { assertAgentCanAuthenticate, buildAuthLogMessage } from './auth.helpers'
 import { DbInitErrorService } from './db-init-error.service';
 import { getJwtExpiresIn } from './jwt-config';
 
+/**
+ * @cluster whatsapp_saas/backend/auth
+ * L11 multi-agent TaskGraph annotation (batched by tools/auto-pr/batch-job.mjs).
+ */
 type TokenAgent = {
   id: string;
   email: string;

@@ -1,5 +1,5 @@
 import { KLOEL_THEME } from '@/lib/kloel-theme';
-import { sectionTitleStyle, secondaryButtonStyle } from './shared-styles';
+import { sectionTitleStyle, secondaryButtonStyle, FULL_ROUND_RADIUS } from './shared-styles';
 
 interface ProductOption {
   id: string;
@@ -51,8 +51,8 @@ export function StepProducts({
     <div>
       <h2 style={sectionTitleStyle}>Produtos liberados no canal</h2>
       <p style={{ margin: '0 0 16px', fontSize: 13, color: KLOEL_THEME.textSecondary }}>
-        Escolha quais produtos a IA pode vender neste canal. Seus produtos e afiliações aprovadas
-        aparecem aqui.
+        Escolha quais produtos a IA pode vender neste canal. Seus produtos e afiliações
+        aprovadas aparecem aqui.
       </p>
 
       {total === 0 ? (
@@ -66,7 +66,8 @@ export function StepProducts({
             fontSize: 13,
           }}
         >
-          Nenhum produto cadastrado ainda. Cadastre produtos para liberar ofertas neste canal.
+          Nenhum produto cadastrado ainda. Cadastre produtos para liberar ofertas neste
+          canal.
         </p>
       ) : (
         <>
@@ -117,7 +118,9 @@ export function StepProducts({
                     alignItems: 'center',
                     gap: 12,
                     textAlign: 'left',
-                    background: selected ? KLOEL_THEME.accentLight : KLOEL_THEME.bgSecondary,
+                    background: selected
+                      ? KLOEL_THEME.accentLight
+                      : KLOEL_THEME.bgSecondary,
                     border: `1.5px solid ${
                       selected ? KLOEL_THEME.accent : KLOEL_THEME.borderPrimary
                     }`,
@@ -141,7 +144,7 @@ export function StepProducts({
                     style={{
                       width: 22,
                       height: 22,
-                      borderRadius: '50%',
+                      borderRadius: FULL_ROUND_RADIUS,
                       flexShrink: 0,
                       border: `2px solid ${
                         selected ? KLOEL_THEME.accent : KLOEL_THEME.borderPrimary
@@ -164,7 +167,11 @@ export function StepProducts({
         </>
       )}
 
-      <button type="button" onClick={onSave} style={{ ...secondaryButtonStyle, marginTop: 18 }}>
+      <button
+        type="button"
+        onClick={onSave}
+        style={{ ...secondaryButtonStyle, marginTop: 18 }}
+      >
         {busy === 'setup' ? 'Salvando...' : 'Salvar produtos'}
       </button>
     </div>

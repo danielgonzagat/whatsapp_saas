@@ -109,7 +109,7 @@ export function synthetic100(): SpineEventRef[] {
         occurredAt: t.toISOString(),
         workspaceId: 'wks_test_001',
         entityRef: { entityType: 'conversation', entityId: `conv_${i}` },
-        valence: valences[i],
+        ...(valences[i] !== undefined ? { valence: valences[i] } : {}),
         payload: {
           body: i % 2 === 0
             ? 'Olá, o preço do produto está dentro do seu orçamento'

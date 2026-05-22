@@ -1,4 +1,6 @@
-import { attributeHierarchy, type HierarchyDecision, type HierarchyLevel } from './economic-hierarchy';
+import { attributeHierarchy } from './economic-hierarchy';
+
+type HierarchyDecision = Parameters<typeof attributeHierarchy>[0];
 
 describe('economic-hierarchy', () => {
   const h = (overrides: Partial<HierarchyDecision> = {}): HierarchyDecision => ({
@@ -11,7 +13,11 @@ describe('economic-hierarchy', () => {
   describe('R1 — human_transfer ux', () => {
     it('trust_objection → ux', () => {
       const result = attributeHierarchy(
-        h({ type: 'human_transfer', chosen: 'transfer_now', context: { concept: 'trust_objection' } }),
+        h({
+          type: 'human_transfer',
+          chosen: 'transfer_now',
+          context: { concept: 'trust_objection' },
+        }),
       );
       expect(result.level).toBe('ux');
       expect(result.reason).toMatch(/trust_objection/);
@@ -117,7 +123,11 @@ describe('economic-hierarchy', () => {
   describe('R10 — refund_request legitimacy → compliance', () => {
     it('defective_product reason → compliance', () => {
       const result = attributeHierarchy(
-        h({ type: 'refund_request', chosen: 'approve_refund', context: { concept: 'defective_product' } }),
+        h({
+          type: 'refund_request',
+          chosen: 'approve_refund',
+          context: { concept: 'defective_product' },
+        }),
       );
       expect(result.level).toBe('compliance');
       expect(result.reason).toMatch(/defective_product/);
@@ -126,7 +136,11 @@ describe('economic-hierarchy', () => {
 
     it('not_as_described reason → compliance', () => {
       const result = attributeHierarchy(
-        h({ type: 'refund_request', chosen: 'approve_refund', context: { concept: 'not_as_described' } }),
+        h({
+          type: 'refund_request',
+          chosen: 'approve_refund',
+          context: { concept: 'not_as_described' },
+        }),
       );
       expect(result.level).toBe('compliance');
       expect(result.reason).toMatch(/not_as_described/);
@@ -134,7 +148,11 @@ describe('economic-hierarchy', () => {
 
     it('never_received reason → compliance', () => {
       const result = attributeHierarchy(
-        h({ type: 'refund_request', chosen: 'approve_refund', context: { concept: 'never_received' } }),
+        h({
+          type: 'refund_request',
+          chosen: 'approve_refund',
+          context: { concept: 'never_received' },
+        }),
       );
       expect(result.level).toBe('compliance');
       expect(result.reason).toMatch(/never_received/);
@@ -142,7 +160,11 @@ describe('economic-hierarchy', () => {
 
     it('duplicate_charge reason → compliance', () => {
       const result = attributeHierarchy(
-        h({ type: 'refund_request', chosen: 'approve_refund', context: { concept: 'duplicate_charge' } }),
+        h({
+          type: 'refund_request',
+          chosen: 'approve_refund',
+          context: { concept: 'duplicate_charge' },
+        }),
       );
       expect(result.level).toBe('compliance');
       expect(result.reason).toMatch(/duplicate_charge/);
@@ -150,7 +172,11 @@ describe('economic-hierarchy', () => {
 
     it('cancelled_within_window reason → compliance', () => {
       const result = attributeHierarchy(
-        h({ type: 'refund_request', chosen: 'approve_refund', context: { concept: 'cancelled_within_window' } }),
+        h({
+          type: 'refund_request',
+          chosen: 'approve_refund',
+          context: { concept: 'cancelled_within_window' },
+        }),
       );
       expect(result.level).toBe('compliance');
       expect(result.reason).toMatch(/cancelled_within_window/);
@@ -165,7 +191,11 @@ describe('economic-hierarchy', () => {
 
     it('legitimate reason via concepts array', () => {
       const result = attributeHierarchy(
-        h({ type: 'refund_request', chosen: 'approve_refund', context: { concepts: ['defective_product', 'late_delivery'] } }),
+        h({
+          type: 'refund_request',
+          chosen: 'approve_refund',
+          context: { concepts: ['defective_product', 'late_delivery'] },
+        }),
       );
       expect(result.level).toBe('compliance');
       expect(result.reason).toMatch(/defective_product/);
@@ -205,7 +235,11 @@ describe('economic-hierarchy', () => {
 
     it('churnRisk < 0.5 and satisfaction ≥ 0.4 → falls through', () => {
       const result = attributeHierarchy(
-        h({ type: 'churn_signal', chosen: 'retention_offer', context: { churnRisk: 0.3, satisfactionScore: 0.6 } }),
+        h({
+          type: 'churn_signal',
+          chosen: 'retention_offer',
+          context: { churnRisk: 0.3, satisfactionScore: 0.6 },
+        }),
       );
       expect(result.level).toBe('conversion');
     });
@@ -231,7 +265,7 @@ describe('economic-hierarchy', () => {
         h({ type: 'buyer_remorse', chosen: 'nurture_sequence', context: { daysSincePurchase: 3 } }),
       );
       expect(result.level).toBe('retention');
-      expect(result.reason).toMatch(/anti-remorse must precede each conversion/);
+      expect(result.reason).toMatch(/anti-remorse must precede each conversion attempt/);
     });
 
     it('remorse at exactly 7 days → retention', () => {
@@ -243,7 +277,11 @@ describe('economic-hierarchy', () => {
 
     it('high remorseScore ≥ 0.6 even after 7d → retention', () => {
       const result = attributeHierarchy(
-        h({ type: 'buyer_remorse', chosen: 'nurture_sequence', context: { daysSincePurchase: 14, remorseScore: 0.8 } }),
+        h({
+          type: 'buyer_remorse',
+          chosen: 'nurture_sequence',
+          context: { daysSincePurchase: 14, remorseScore: 0.8 },
+        }),
       );
       expect(result.level).toBe('retention');
       expect(result.reason).toMatch(/score 0.8/);
@@ -251,14 +289,22 @@ describe('economic-hierarchy', () => {
 
     it('remorseScore exactly 0.6 → retention', () => {
       const result = attributeHierarchy(
-        h({ type: 'buyer_remorse', chosen: 'nurture_sequence', context: { daysSincePurchase: 10, remorseScore: 0.6 } }),
+        h({
+          type: 'buyer_remorse',
+          chosen: 'nurture_sequence',
+          context: { daysSincePurchase: 10, remorseScore: 0.6 },
+        }),
       );
       expect(result.level).toBe('retention');
     });
 
     it('days > 7 and low remorse → falls through', () => {
       const result = attributeHierarchy(
-        h({ type: 'buyer_remorse', chosen: 'nurture_sequence', context: { daysSincePurchase: 30, remorseScore: 0.2 } }),
+        h({
+          type: 'buyer_remorse',
+          chosen: 'nurture_sequence',
+          context: { daysSincePurchase: 30, remorseScore: 0.2 },
+        }),
       );
       expect(result.level).toBe('conversion');
     });
@@ -272,7 +318,11 @@ describe('economic-hierarchy', () => {
 
     it('buyer_remorse blocks conversion: top_seller with high replied_rate still yields retention when remorse present', () => {
       const result = attributeHierarchy(
-        h({ type: 'buyer_remorse', chosen: 'nurture_sequence', context: { daysSincePurchase: 1, repliedRate: 0.9 } }),
+        h({
+          type: 'buyer_remorse',
+          chosen: 'nurture_sequence',
+          context: { daysSincePurchase: 1, repliedRate: 0.9 },
+        }),
       );
       expect(result.level).toBe('retention');
     });
@@ -296,14 +346,22 @@ describe('economic-hierarchy', () => {
 
     it('low satisfaction < 0.5 → retention', () => {
       const result = attributeHierarchy(
-        h({ type: 'post_sale_offer', chosen: 'upsell_premium', context: { satisfaction: 0.3, nps: 8 } }),
+        h({
+          type: 'post_sale_offer',
+          chosen: 'upsell_premium',
+          context: { satisfaction: 0.3, nps: 8 },
+        }),
       );
       expect(result.level).toBe('retention');
     });
 
     it('unresolved_complaint concept → retention', () => {
       const result = attributeHierarchy(
-        h({ type: 'post_sale_offer', chosen: 'cross_sell', context: { nps: 9, satisfaction: 0.9, concept: 'unresolved_complaint' } }),
+        h({
+          type: 'post_sale_offer',
+          chosen: 'cross_sell',
+          context: { nps: 9, satisfaction: 0.9, concept: 'unresolved_complaint' },
+        }),
       );
       expect(result.level).toBe('retention');
       expect(result.reason).toMatch(/retention\/legitimacy gates/);
@@ -311,7 +369,11 @@ describe('economic-hierarchy', () => {
 
     it('high NPS and high satisfaction → falls through to conversion', () => {
       const result = attributeHierarchy(
-        h({ type: 'post_sale_offer', chosen: 'cross_sell_pro', context: { nps: 9, satisfaction: 0.8 } }),
+        h({
+          type: 'post_sale_offer',
+          chosen: 'cross_sell_pro',
+          context: { nps: 9, satisfaction: 0.8 },
+        }),
       );
       expect(result.level).toBe('conversion');
     });
@@ -325,8 +387,13 @@ describe('economic-hierarchy', () => {
 
     it('post_sale_offer blocked even with imminent_purchase concept when satisfaction is low', () => {
       const result = attributeHierarchy(
-        h({ type: 'post_sale_offer', chosen: 'upsell', context: { nps: 3, concept: 'imminent_purchase' } }),
+        h({
+          type: 'post_sale_offer',
+          chosen: 'upsell',
+          context: { nps: 3, concept: 'imminent_purchase' },
+        }),
       );
       expect(result.level).toBe('retention');
     });
   });
+});

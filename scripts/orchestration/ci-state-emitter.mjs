@@ -3,7 +3,7 @@
 import { execSync } from 'node:child_process';
 import { mkdirSync, readFileSync, renameSync, writeFileSync, existsSync } from 'node:fs';
 import { join, resolve } from 'node:path';
-import { rewriteMirrorFrontmatterTags } from '../obsidian-mirror-daemon-indexes.mjs';
+import { rewriteMirrorFrontmatterTags } from '../__parts__/obsidian-mirror-daemon-indexes.mjs';
 
 const VAULT_ROOT = resolve(
   process.env.KLOEL_VAULT_ROOT || '/Users/danielpenin/Documents/Obsidian Vault',

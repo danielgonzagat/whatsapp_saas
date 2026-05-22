@@ -12,10 +12,11 @@ import type { CreatorEvent } from './types';
 const NOW = Date.parse('2026-05-14T00:00:00.000Z');
 
 function ev(over: Partial<CreatorEvent> = {}): CreatorEvent {
+  const now = Date.now();
   return {
     eventId: over.eventId ?? `evt_${Math.random().toString(36).slice(2, 8)}`,
     eventName: over.eventName ?? 'commerce.lead.replied',
-    occurredAt: over.occurredAt ?? new Date(NOW).toISOString(),
+    occurredAt: over.occurredAt ?? new Date(now).toISOString(),
     ...(over.valence !== undefined ? { valence: over.valence } : {}),
     ...(over.payload !== undefined ? { payload: over.payload } : {}),
   };

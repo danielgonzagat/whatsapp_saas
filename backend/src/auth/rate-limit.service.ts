@@ -18,6 +18,10 @@ import type { Redis } from 'ioredis';
  * Invariant: rate limit must enforce across all instances consistently.
  */
 @Injectable()
+/**
+ * @cluster whatsapp_saas/backend/auth
+ * L11 multi-agent TaskGraph annotation (batched by tools/auto-pr/batch-job.mjs).
+ */
 export class RateLimitService {
   private readonly logger = StructuredLogger.from(RateLimitService.name);
 
