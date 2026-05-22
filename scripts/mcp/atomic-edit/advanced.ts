@@ -336,6 +336,48 @@ export async function renameSymbolCrossFile(
   return { symbol: `${oldName} -> ${newName}`, changes, totalReferences, validations };
 }
 
+/**
+ * Name-addressed cross-file rename: resolve a class/interface MEMBER by NAME
+ * (no line/column) and delegate to renameSymbolCrossFile. Removes the coordinate
+ * surface a weak model fumbles ("position N:M is not an identifier") and the
+ * retry fragmentation that follows — the macro/intention form of the rename
+ * operator. All coverage (test-double accesses, cast unwrap, all-or-nothing
+ * validation) is inherited unchanged from renameSymbolCrossFile.
+ */
+export async function renameMemberCrossFile(
+  absFile: string,
+  repoRoot: string,
+  className: string,
+  memberName: string,
+  newName: string,
+): Promise<CrossFileRenameResult> {
+  if (!/^[A-Za-z_$][A-Za-z0-9_$]*$/.test(newName)) {
+    throw new Error(`invalid identifier: ${JSON.stringify(newName)}`);
+  }
+  const { Project } = await import('ts-morph');
+  const probe = new Project({ compilerOptions: { allowJs: true, noEmit: true } });
+  const sf = probe.addSourceFileAtPath(absFile);
+  const owner =
+    (sf.getClass?.(className) as { getMembers?: () => unknown[] } | undefined) ??
+    (sf.getInterface?.(className) as { getMembers?: () => unknown[] } | undefined);
+  if (!owner) {
+    throw new Error(`class/interface "${className}" not found in ${path.basename(absFile)}`);
+  }
+  let nameNode: { getStart?: () => number } | undefined;
+  for (const m of owner.getMembers?.() ?? []) {
+    const mm = m as { getName?: () => string | undefined; getNameNode?: () => unknown };
+    if (mm.getName?.() === memberName) {
+      nameNode = mm.getNameNode?.() as { getStart?: () => number } | undefined;
+      break;
+    }
+  }
+  if (!nameNode?.getStart) {
+    throw new Error(`member "${memberName}" not found on ${className} in ${path.basename(absFile)}`);
+  }
+  const pos = sf.getLineAndColumnAtPos(nameNode.getStart());
+  return renameSymbolCrossFile(absFile, repoRoot, pos.line, pos.column, newName);
+}
+
 // ── v3: import + object-property semantic ops (adopted from Codex's
 //        semantic-edit, but routed through validate()+atomic write so they
 //        cannot persist broken code, unlike the original). ───────────────────
