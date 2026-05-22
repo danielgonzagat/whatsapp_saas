@@ -10,8 +10,8 @@ jest.mock('bcrypt', () => ({
   hash: jest.fn().mockResolvedValue('hashed-pw'),
 }));
 
-jest.mock('uuid', () => ({
-  v4: jest.fn().mockReturnValue('invite-id'),
+jest.mock('node:crypto', () => ({
+  randomUUID: jest.fn().mockReturnValue('invite-id'),
 }));
 
 describe('TeamService', () => {
