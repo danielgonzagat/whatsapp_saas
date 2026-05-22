@@ -12,7 +12,7 @@
  */
 
 import { Prisma } from '@prisma/client';
-import { v4 as uuid } from 'uuid';
+import { randomUUID as uuid } from 'node:crypto';
 import { executeNode } from './flow-node-executor';
 import type { FlowNodeExecutorDeps } from './flow-node-executor.types';
 import { sendMessage as sendMessageCompanion } from './flow-message-sender.helpers';
