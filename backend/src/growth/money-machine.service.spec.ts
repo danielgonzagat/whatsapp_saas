@@ -3,8 +3,8 @@ import { CampaignsService } from '../campaigns/campaigns.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { MoneyMachineService } from './money-machine.service';
 
-jest.mock('uuid', () => ({
-  v4: jest.fn().mockReturnValueOnce('flow-id-1').mockReturnValueOnce('node-id-1'),
+jest.mock('node:crypto', () => ({
+  randomUUID: jest.fn().mockReturnValueOnce('flow-id-1').mockReturnValueOnce('node-id-1'),
 }));
 
 describe('MoneyMachineService', () => {
