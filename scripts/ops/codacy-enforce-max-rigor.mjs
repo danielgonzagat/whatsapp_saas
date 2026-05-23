@@ -46,7 +46,6 @@ const TARGET_REPOSITORY_QUALITY = Object.freeze({
   fileDuplicationBlockThreshold: 0,
   fileComplexityValueThreshold: 0,
 });
-
 const TARGET_COMMIT_GATE = Object.freeze({
   issueThreshold: { threshold: 0, minimumSeverity: 'Info' },
   securityIssueThreshold: 0,
