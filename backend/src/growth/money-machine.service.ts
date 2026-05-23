@@ -1,5 +1,5 @@
+import { randomUUID } from 'node:crypto';
 import { Injectable, Logger } from '@nestjs/common';
-import { v4 as uuid } from 'uuid';
 import { CampaignsService } from '../campaigns/campaigns.service';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -37,8 +37,8 @@ export class MoneyMachineService {
         'Oi! Faz um tempo que não nos falamos. Tenho uma novidade que pode te interessar. Posso te mandar?';
 
       // Create a Flow for this campaign
-      const flowId = uuid();
-      const startNodeId = uuid();
+      const flowId = randomUUID();
+      const startNodeId = randomUUID();
 
       await this.prisma.flow.create({
         data: {
