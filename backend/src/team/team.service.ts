@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import {
   BadRequestException,
   ForbiddenException,
@@ -7,7 +8,6 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { hash as bcryptHash } from 'bcrypt';
-import { randomUUID as uuidv4 } from 'node:crypto';
 import { AuditService } from '../audit/audit.service';
 import { EmailService } from '../auth/email.service';
 import { BCRYPT_ROUNDS } from '../common/constants';
@@ -79,7 +79,7 @@ export class TeamService {
     }
 
     // 3. Create Invite
-    const token = uuidv4();
+    const token = randomUUID();
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 7); // 7 days
 
