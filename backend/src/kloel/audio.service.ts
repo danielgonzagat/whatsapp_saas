@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import * as fs from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -5,7 +6,6 @@ import { BadRequestException, Injectable, Optional } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { StructuredLogger } from '../logging/structured-logger';
 import OpenAI from 'openai';
-import { randomUUID as uuid } from 'node:crypto';
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { getTraceHeaders } from '../common/trace-headers';
 import {
@@ -78,7 +78,7 @@ export class AudioService {
     duration?: number;
     language: string;
   }> {
-    const tempFile = join(tmpdir(), `audio-${uuid()}.mp3`);
+    const tempFile = join(tmpdir(), `audio-${randomUUID()}.mp3`);
 
     try {
       // Write buffer to temp file (Whisper requires file)

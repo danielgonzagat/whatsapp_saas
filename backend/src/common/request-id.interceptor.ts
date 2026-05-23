@@ -1,7 +1,7 @@
+import { randomUUID } from 'node:crypto';
 import { CallHandler, ExecutionContext, Injectable, NestInterceptor } from '@nestjs/common';
 import { Observable } from 'rxjs';
 import { tap } from 'rxjs/operators';
-import { randomUUID as uuid } from 'node:crypto';
 
 interface RequestIdRequest {
   headers?: Record<string, unknown>;
@@ -42,7 +42,7 @@ export class RequestIdInterceptor implements NestInterceptor {
     const incomingId =
       readHeader(request.headers, 'x-request-id') ??
       readHeader(request.headers, 'x-correlation-id');
-    const requestId = incomingId || uuid();
+    const requestId = incomingId || randomUUID();
 
     request.id = requestId;
     if (!response.headersSent) {

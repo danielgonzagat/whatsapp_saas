@@ -1,6 +1,6 @@
+import { randomUUID } from 'node:crypto';
 import { Injectable, NestMiddleware } from '@nestjs/common';
 import type { NextFunction, Request, Response } from 'express';
-import { randomUUID as uuid } from 'node:crypto';
 import { correlationStore } from './correlation-store';
 
 type RequestWithId = Request & { id?: string };
@@ -13,7 +13,7 @@ export class CorrelationIdMiddleware implements NestMiddleware {
       (request.headers['x-correlation-id'] as string | undefined) ||
       (request.headers['x-request-id'] as string | undefined);
 
-    const correlationId = incoming || uuid();
+    const correlationId = incoming || randomUUID();
 
     if (!request.id) {
       request.id = correlationId;
