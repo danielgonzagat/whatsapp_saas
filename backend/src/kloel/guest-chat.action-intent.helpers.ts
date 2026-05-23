@@ -149,7 +149,7 @@ export function detectActionIntent(
   return null;
 }
 
-export function extractProductName(msg: string): string {
+function extractProductName(msg: string): string {
   const m = msg.match(
     /(?:produtos?|planos?|ofertas?|checkouts?|cupons?)\s+(?:chamad[oa]|de\s+)?["']?([A-Za-zÀ-ÿ0-9\s\-.]{2,60}?)(?:\s*(?:R\$|pre[çc]o|valor|\bcom\b|\bpor\b|\.\s+[A-ZÀ]|$)|$)/i,
   );
@@ -161,7 +161,7 @@ export function extractProductName(msg: string): string {
     .trim();
 }
 
-export function extractProductArgs(msg: string): Record<string, unknown> {
+function extractProductArgs(msg: string): Record<string, unknown> {
   const args: Record<string, unknown> = {};
   args.productName = extractProductName(msg);
   const name = extractProductName(msg);
@@ -179,7 +179,7 @@ export function extractProductArgs(msg: string): Record<string, unknown> {
   return args;
 }
 
-export function extractPlanArgs(msg: string): Record<string, unknown> {
+function extractPlanArgs(msg: string): Record<string, unknown> {
   const args: Record<string, unknown> = { productName: extractProductName(msg) };
   // Plan name: "Nome: X" or "Nome X" or "chamado X"
   const nm = msg.match(
@@ -203,7 +203,7 @@ export function extractPlanArgs(msg: string): Record<string, unknown> {
   return args;
 }
 
-export function extractPaymentArgs(msg: string): Record<string, unknown> {
+function extractPaymentArgs(msg: string): Record<string, unknown> {
   const args: Record<string, unknown> = {};
   const name = extractProductName(msg);
   if (name) {
