@@ -1,4 +1,5 @@
 import { Injectable, Optional } from '@nestjs/common';
+import { ModuleRef } from '@nestjs/core';
 import { StructuredLogger } from '../logging/structured-logger';
 import { Prisma } from '@prisma/client';
 import { AuditService } from '../audit/audit.service';
@@ -8,7 +9,6 @@ import { KloelBusinessConfigToolsService } from './kloel-business-config-tools.s
 import { KloelChatToolsService } from './kloel-chat-tools.service';
 import { KloelComposerService } from './kloel-composer.service';
 import { runToolSearchWeb } from './kloel-tool-dispatcher.search-web.helpers';
-import { KloelWhatsAppToolsService } from './kloel-whatsapp-tools.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { KloelCodeToolsService } from './kloel-code-tools.service';
 import { KloelCodeAnalysisService } from './kloel-code-analysis.service';
@@ -32,6 +32,30 @@ type ApprovedToolExecutionResult = {
   result?: unknown;
 };
 
+type ToolExecutionOutput = {
+  success: boolean;
+  message?: string;
+  error?: string;
+  [key: string]: unknown;
+};
+
+type WhatsAppToolsServicePort = {
+  toolConnectWhatsapp(workspaceId: string): Promise<ToolExecutionOutput>;
+  toolGetWhatsAppStatus(workspaceId: string): Promise<ToolExecutionOutput>;
+  toolSendWhatsAppMessage(workspaceId: string, args: unknown): Promise<ToolExecutionOutput>;
+  toolListWhatsAppContacts(workspaceId: string, args: unknown): Promise<ToolExecutionOutput>;
+  toolCreateWhatsAppContact(workspaceId: string, args: unknown): Promise<ToolExecutionOutput>;
+  toolListWhatsAppChats(workspaceId: string, args: unknown): Promise<ToolExecutionOutput>;
+  toolGetWhatsAppMessages(workspaceId: string, args: unknown): Promise<ToolExecutionOutput>;
+  toolGetWhatsAppBacklog(workspaceId: string): Promise<ToolExecutionOutput>;
+  toolSetWhatsAppPresence(workspaceId: string, args: unknown): Promise<ToolExecutionOutput>;
+  toolSyncWhatsAppHistory(workspaceId: string, args: unknown): Promise<ToolExecutionOutput>;
+  toolSendAudio(workspaceId: string, args: unknown): Promise<ToolExecutionOutput>;
+  toolSendDocument(workspaceId: string, args: unknown): Promise<ToolExecutionOutput>;
+  toolSendVoiceNote(workspaceId: string, args: unknown): Promise<ToolExecutionOutput>;
+  toolTranscribeAudio(workspaceId: string, args: unknown): Promise<ToolExecutionOutput>;
+};
+
 /**
  * Dispatcher for KloelService tool execution. Extracted from kloel.service.ts
  * to keep the orchestrator file under the size limit and to host the
@@ -41,13 +65,24 @@ type ApprovedToolExecutionResult = {
 @Injectable()
 export class KloelToolDispatcherService {
   private readonly logger = StructuredLogger.from(KloelToolDispatcherService.name);
+  private resolvedWhatsAppToolsService?: WhatsAppToolsServicePort;
+
+  private get whatsappToolsService(): WhatsAppToolsServicePort {
+    if (!this.resolvedWhatsAppToolsService) {
+      const { KloelWhatsAppToolsService: serviceType } = require('./kloel-whatsapp-tools.service') as {
+        KloelWhatsAppToolsService: new (...args: never[]) => WhatsAppToolsServicePort;
+      };
+      this.resolvedWhatsAppToolsService = this.moduleRef.get(serviceType, { strict: false });
+    }
+    return this.resolvedWhatsAppToolsService;
+  }
 
   constructor(
     private readonly prisma: PrismaService,
     private readonly planLimits: PlanLimitsService,
     private readonly chatToolsService: KloelChatToolsService,
     private readonly bizConfigToolsService: KloelBusinessConfigToolsService,
-    private readonly whatsappToolsService: KloelWhatsAppToolsService,
+    private readonly moduleRef: ModuleRef,
     private readonly composerService: KloelComposerService,
     private readonly auditService: AuditService,
     private readonly codeToolsService: KloelCodeToolsService,
