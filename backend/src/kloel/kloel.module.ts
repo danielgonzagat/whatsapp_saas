@@ -182,7 +182,6 @@ import {
 import { AbiBuilderService } from './abi/abi-builder.service';
 import { LineageModule } from './lineage/lineage.module';
 import { RiskClassModule } from './risk-class/risk-class.module';
-import { InboxModule } from '../inbox/inbox.module';
 import { KloelProductSubResourceToolsService } from './kloel-product-sub-resource-tools.service';
 import { KloelWalletSalesToolsService } from './kloel-wallet-sales-tools.service';
 
@@ -202,7 +201,7 @@ import { KloelWalletSalesToolsService } from './kloel-wallet-sales-tools.service
     MetricsModule,
     KloelAudioModule,
     KloelRulesModule,
-    forwardRef(() => InboxModule),
+    forwardRef(() => require('../inbox/inbox.module').InboxModule),
     ContactsModule,
     LineageModule,
     DriftModule,
