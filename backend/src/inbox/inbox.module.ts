@@ -2,8 +2,8 @@ import { Module, forwardRef } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import { getJwtSecret } from '../auth/jwt-config';
-import { KloelModule } from '../kloel/kloel.module';
 import { ContactsModule } from '../contacts/contacts.module';
+import { KloelModule } from '../kloel/kloel.module';
 import { OmnichannelModule } from '../omnichannel/omnichannel.module';
 import { WebhookDispatcherService } from '../webhooks/webhook-dispatcher.service';
 import { InboxEventsService } from './inbox-events.service';
@@ -17,8 +17,8 @@ import { INBOX_SERVICE } from './inbox.token';
 /** Inbox module. */
 @Module({
   imports: [
-    forwardRef(() => KloelModule),
     ContactsModule,
+    forwardRef(() => KloelModule),
     OmnichannelModule,
     JwtModule.registerAsync({
       inject: [ConfigService],

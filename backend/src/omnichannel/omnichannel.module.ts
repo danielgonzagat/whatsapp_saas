@@ -1,6 +1,6 @@
 import { Module, forwardRef } from '@nestjs/common';
-import { KloelModule } from '../kloel/kloel.module';
 import { ContactsModule } from '../contacts/contacts.module';
+import { KloelModule } from '../kloel/kloel.module';
 import { ChannelInboundHookService } from './channel-inbound-hook.service';
 import { OmnichannelContactResolutionService } from './contact-resolution.service';
 
