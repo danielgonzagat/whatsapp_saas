@@ -150,10 +150,9 @@ model Workspace {
   variables          Variable[]
   conversations      Conversation[]
   agents             Agent[]
-  messages             Message[]
-  dailyMessageCounters DailyMessageCounter[]
-  scrapingJobs         ScrapingJob[]
-  voiceJobs            VoiceJob[]
+  messages           Message[]
+  scrapingJobs       ScrapingJob[]
+  voiceJobs          VoiceJob[]
   monitoredGroups    MonitoredGroup[]
 
   // Omnichannel & Routing
@@ -4430,15 +4429,15 @@ model FraudBlacklist {
 //   * Enterprise plans (messagesPerDay = null) skip the counter entirely.
 // ============================================================================
 model DailyMessageCounter {
-  id          String    @id @default(uuid())
+  id          String   @id @default(uuid())
   workspaceId String
-  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  date        DateTime  @db.Date
-  count       Int       @default(0)
+  date        DateTime @db.Date
+  count       Int      @default(0)
 
   createdAt DateTime @default(now())
 
   @@unique([workspaceId, date])
+  @@index([workspaceId, date])
   @@map("RAC_DailyMessageCounter")
 }
 
