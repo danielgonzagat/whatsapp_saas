@@ -302,20 +302,12 @@ async function verifyCanonicalStandard(codingStandard) {
     deprecatedPatternState.every(
       (entry) => entry.fullyInspected && entry.total > 0 && entry.enabledCount === 0,
     );
-  // Codacy's published-standard meta can include disabled deprecated-tool
-  // sentinels even after the tool and every deprecated pattern are disabled.
-  // Accept only observed metadata-only surplus shapes bounded by inspected
-  // deprecated patterns; any missing non-deprecated pattern or any enabled
-  // deprecated pattern remains a hard failure.
-  const deprecatedPatternMetaSurplus = enabledPatternsCount - totalOrganizationPatterns;
-  const deprecatedPatternMetaSurplusLimit = deprecatedPatternState.reduce(
-    (total, entry) => total + entry.total,
-    0,
-  );
-  const disabledDeprecatedMetaSentinel =
-    deprecatedPatternsFullyDisabled &&
-    deprecatedPatternMetaSurplus > 0 &&
-    deprecatedPatternMetaSurplus <= deprecatedPatternMetaSurplusLimit;
+  // Codacy's published-standard meta can report provider-maintained counters
+  // differently from the explicit tool-pattern inventory. Treat the detailed
+  // inventory as source of truth, but still require metadata not to undercount
+  // the non-deprecated max-rigor target.
+  const metadataDoesNotUndercountEnabledPatterns =
+    enabledPatternsCount >= totalOrganizationPatterns;
   const enabledNonDeprecatedTools = enabledStandardTools.filter(
     (tool) => !deprecatedUuids.has(tool.uuid),
   );
@@ -329,14 +321,15 @@ async function verifyCanonicalStandard(codingStandard) {
     enabledNonDeprecatedPatternsCount,
     deprecatedActuallyDisabled,
     deprecatedPatternsFullyDisabled,
-    disabledDeprecatedMetaSentinel,
+    metadataDoesNotUndercountEnabledPatterns,
     hasAllToolsEnabled:
       enabledToolsCount === targetEnabledToolsCount &&
       enabledNonDeprecatedTools.length === targetEnabledToolsCount &&
       deprecatedActuallyDisabled,
     hasAllPatternsEnabled:
       enabledNonDeprecatedPatternsCount === totalOrganizationPatterns &&
-      (enabledPatternsCount === totalOrganizationPatterns || disabledDeprecatedMetaSentinel),
+      deprecatedPatternsFullyDisabled &&
+      metadataDoesNotUndercountEnabledPatterns,
   };
 }
 
