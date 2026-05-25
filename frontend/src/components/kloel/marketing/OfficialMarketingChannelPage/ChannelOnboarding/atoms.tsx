@@ -2,22 +2,59 @@ import type { CSSProperties, ReactNode } from 'react';
 import type { OnboardingPalette } from './palette';
 import { SORA, MONO, PILL_RADIUS } from './palette';
 
-/** Step bar — four abstract traces, no numbers (spec §5). */
-export function StepBar({ step, C }: { step: number; C: OnboardingPalette }) {
+interface StepBarProps {
+  step: number;
+  C: OnboardingPalette;
+  onStepClick?: (step: number) => void;
+}
+
+const STEP_BAR_ITEMS = [0, 1, 2, 3] as const;
+
+/** Step bar — four abstract traces, no visible numbers (spec §5). */
+export function StepBar({ step, C, onStepClick }: StepBarProps) {
+  const interactive = typeof onStepClick === 'function';
+
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'center' }}>
-      {[0, 1, 2, 3].map((i) => (
-        <div
-          key={i}
-          style={{
+      {STEP_BAR_ITEMS.map((i) => {
+        const traceStyle: CSSProperties = {
+          width: 28,
+          height: 2,
+          display: 'block',
+          background: i <= step ? C.ember : C.hi,
+          opacity: i === step ? 1 : i < step ? 0.6 : 1,
+          transition: 'all .4s ease',
+        };
+
+        if (interactive) {
+          const buttonStyle: CSSProperties = {
             width: 28,
-            height: 2,
-            background: i <= step ? C.ember : C.hi,
-            opacity: i === step ? 1 : i < step ? 0.6 : 1,
-            transition: 'all .4s ease',
-          }}
-        />
-      ))}
+            height: 12,
+            display: 'flex',
+            alignItems: 'center',
+            background: 'transparent',
+            border: 0,
+            padding: 0,
+            borderRadius: 0,
+            cursor: 'pointer',
+          };
+
+          return (
+            <button
+              key={i}
+              type="button"
+              aria-current={i === step ? 'step' : undefined}
+              aria-label={`Passo ${i + 1}`}
+              onClick={() => onStepClick(i)}
+              style={buttonStyle}
+            >
+              <span aria-hidden style={traceStyle} />
+            </button>
+          );
+        }
+
+        return <div key={i} style={traceStyle} />;
+      })}
     </div>
   );
 }
