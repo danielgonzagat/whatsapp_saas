@@ -1,9 +1,6 @@
 import type { Prisma } from '@prisma/client';
 
-const INVISIBLE_CHARS_RE = /[\u200B-\u200F\u202A-\u202E\u2060-\u206F]/g;
-const SECRET_MARKER_RE = /(api[_-]?key|secret|token|password|bearer\s+[a-z0-9._-]+)/i;
-const PROMPT_INJECTION_RE =
-  /(ignore (all )?(previous|prior) instructions|system prompt|developer message|exfiltrate|reveal hidden|jailbreak|override policy)/i;
+import { INVISIBLE_CHARS_RE, SECRET_MARKER_RE, PROMPT_INJECTION_RE } from '../../common/regex';
 
 export function sanitizeAgentRuntimeText(input: unknown, maxLength = 4000): string {
   const raw =

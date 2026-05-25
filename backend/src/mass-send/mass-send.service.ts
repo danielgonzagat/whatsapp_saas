@@ -1,8 +1,7 @@
 import { BadRequestException, Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
 import { Queue } from 'bullmq';
 import { createRedisClient } from '../common/redis/redis.util';
-
-const D_RE = /\D/g;
+import { NON_DIGIT_RE } from '../common/phone';
 
 /** Mass send service. */
 @Injectable()
@@ -35,7 +34,7 @@ export class MassSendService implements OnModuleDestroy {
 
     // Sanitiza e remove duplicados
     const sanitized = Array.from(
-      new Set(numbers.map((n) => (n || '').replace(D_RE, '')).filter((n) => n.length > 5)),
+      new Set(numbers.map((n) => (n || '').replace(NON_DIGIT_RE, '')).filter((n) => n.length > 5)),
     );
 
     if (sanitized.length === 0) {

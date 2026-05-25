@@ -1,4 +1,5 @@
 import { fail, Gate, GateEvidence, GateMode, GateVerdict, pass } from './pulse-gates.types';
+import { isObject } from '../../common/types';
 
 /**
  * UTP-ECOSYS — `ecosystem-privacy-guard` gate.
@@ -25,9 +26,6 @@ const WORKSPACE_UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9
 
 const K_ANONYMITY_MIN = 5;
 
-function isObject(v: unknown): v is Record<string, unknown> {
-  return typeof v === 'object' && v !== null && !Array.isArray(v);
-}
 
 interface EcosystemRecommendationInput {
   readonly recommendationId: string;

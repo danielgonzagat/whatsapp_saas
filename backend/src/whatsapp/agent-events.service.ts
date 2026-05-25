@@ -4,8 +4,7 @@ import { StructuredLogger } from '../logging/structured-logger';
 import type { Redis } from 'ioredis';
 import { AuditService } from '../audit/audit.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
-
-const S_RE = /\s+/g;
+import { WHITESPACE_G_RE } from '../common/regex';
 
 const PENSANDO_NA_MELHOR_RESP_RE = /^Pensando na melhor resposta para /i;
 
@@ -54,7 +53,7 @@ type NormalizableAgentEvent = Omit<AgentStreamEvent, 'ts'> & { ts?: string };
 
 function baseMessageText(event: NormalizableAgentEvent): string {
   const primary = String(event.message || '')
-    .replace(S_RE, ' ')
+    .replace(WHITESPACE_G_RE, ' ')
     .trim();
   if (primary) {
     return primary;

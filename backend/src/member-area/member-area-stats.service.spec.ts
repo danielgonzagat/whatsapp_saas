@@ -1,30 +1,28 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { PrismaService } from '../prisma/prisma.service';
 import { MemberAreaStatsService } from './member-area-stats.service';
+import { createPartialPrismaMock } from '../../test/helpers/prisma.mock';
 
 describe('MemberAreaStatsService', () => {
   let service: MemberAreaStatsService;
-  let prisma: {
-    memberEnrollment: { aggregate: jest.Mock };
-    memberModule: { count: jest.Mock };
-    memberLesson: { count: jest.Mock };
-    memberArea: { updateMany: jest.Mock };
-  };
+  let prisma: ReturnType<typeof createPartialPrismaMock>;
 
   beforeEach(async () => {
-    prisma = {
-      memberEnrollment: {
-        aggregate: jest.fn().mockResolvedValue({ _count: { _all: 0 }, _avg: { progress: null } }),
-      },
-      memberModule: { count: jest.fn().mockResolvedValue(0) },
-      memberLesson: { count: jest.fn().mockResolvedValue(0) },
-      memberArea: { updateMany: jest.fn().mockResolvedValue({ count: 1 }) },
-    };
+    prisma = createPartialPrismaMock({
+      memberEnrollment: ['aggregate'],
+      memberModule: ['count'],
+      memberLesson: ['count'],
+      memberArea: ['updateMany'],
+    });
+    prisma.memberEnrollment.aggregate.mockResolvedValue({
+      _count: { _all: 0 },
+      _avg: { progress: null },
+    });
+    prisma.memberModule.count.mockResolvedValue(0);
+    prisma.memberLesson.count.mockResolvedValue(0);
+    prisma.memberArea.updateMany.mockResolvedValue({ count: 1 });
     const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        MemberAreaStatsService,
-        { provide: PrismaService, useValue: prisma },
-      ],
+      providers: [MemberAreaStatsService, { provide: PrismaService, useValue: prisma }],
     }).compile();
     service = module.get(MemberAreaStatsService);
   });

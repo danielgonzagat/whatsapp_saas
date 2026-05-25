@@ -2,23 +2,17 @@ import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals
 import { Test, TestingModule } from '@nestjs/testing';
 import { ChatService } from './chat.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { createPartialPrismaMock } from '../../test/helpers/prisma.mock';
 
 describe('ChatService', () => {
   let service: ChatService;
-  type AsyncMock<TResult = unknown> = jest.MockedFunction<(...args: unknown[]) => Promise<TResult>>;
-
-  const mockPrisma = {
-    chatMessage: {
-      findMany: jest.fn() as AsyncMock,
-      create: jest.fn() as AsyncMock,
-    },
-    chatThread: {
-      findFirstOrThrow: jest.fn() as AsyncMock,
-      updateMany: jest.fn() as AsyncMock,
-    },
-  };
+  let mockPrisma: ReturnType<typeof createPartialPrismaMock>;
 
   beforeEach(async () => {
+    mockPrisma = createPartialPrismaMock({
+      chatMessage: ['findMany', 'create'],
+      chatThread: ['findFirstOrThrow', 'updateMany'],
+    });
     const module: TestingModule = await Test.createTestingModule({
       providers: [ChatService, { provide: PrismaService, useValue: mockPrisma }],
     }).compile();

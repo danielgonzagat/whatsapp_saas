@@ -171,6 +171,8 @@ describe('KloelThreadSummaryService', () => {
       const openai = mockOpenai;
       jest.replaceProperty(process, 'env', {
         ...process.env,
+        DEEPSEEK_API_KEY: '',
+        LLM_API_KEY: '',
         OPENAI_API_KEY: '',
         ANTHROPIC_API_KEY: '',
       });
@@ -185,6 +187,8 @@ describe('KloelThreadSummaryService', () => {
     it('generates title via OpenAI when keys exist and openai provided', async () => {
       jest.replaceProperty(process, 'env', {
         ...process.env,
+        DEEPSEEK_API_KEY: '',
+        LLM_API_KEY: '',
         OPENAI_API_KEY: 'sk-test',
         ANTHROPIC_API_KEY: '',
       });
@@ -202,7 +206,12 @@ describe('KloelThreadSummaryService', () => {
     });
 
     it('tracks AI usage after title generation', async () => {
-      jest.replaceProperty(process, 'env', { ...process.env, OPENAI_API_KEY: 'sk-test' });
+      jest.replaceProperty(process, 'env', {
+        ...process.env,
+        DEEPSEEK_API_KEY: '',
+        LLM_API_KEY: '',
+        OPENAI_API_KEY: 'sk-test',
+      });
       const openai = mockOpenai;
 
       await service.generateConversationTitle('Mensagem de teste', wsId, openai);
@@ -212,7 +221,12 @@ describe('KloelThreadSummaryService', () => {
     });
 
     it('returns fallback when OpenAI call fails', async () => {
-      jest.replaceProperty(process, 'env', { ...process.env, OPENAI_API_KEY: 'sk-test' });
+      jest.replaceProperty(process, 'env', {
+        ...process.env,
+        DEEPSEEK_API_KEY: '',
+        LLM_API_KEY: '',
+        OPENAI_API_KEY: 'sk-test',
+      });
       chatCompletionWithFallbackMock.mockRejectedValueOnce(new Error('API error'));
       const openai = mockOpenai;
 

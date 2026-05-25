@@ -1,18 +1,16 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { PrismaService } from '../prisma/prisma.service';
 import { QueueStatsService } from './queue-stats.service';
+import { createPartialPrismaMock } from '../../test/helpers/prisma.mock';
 
 describe('QueueStatsService', () => {
   let service: QueueStatsService;
-  let prisma: { queue: { findMany: jest.Mock } };
+  let prisma: ReturnType<typeof createPartialPrismaMock>;
 
   beforeEach(async () => {
-    prisma = { queue: { findMany: jest.fn() } };
+    prisma = createPartialPrismaMock({ queue: ['findMany'] });
     const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        QueueStatsService,
-        { provide: PrismaService, useValue: prisma },
-      ],
+      providers: [QueueStatsService, { provide: PrismaService, useValue: prisma }],
     }).compile();
     service = module.get(QueueStatsService);
   });

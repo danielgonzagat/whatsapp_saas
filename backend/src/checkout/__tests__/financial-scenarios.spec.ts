@@ -3,18 +3,11 @@ import { WalletService } from '../../kloel/wallet.service';
 import { WalletLedgerService } from '../../kloel/wallet-ledger.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { FinancialAlertService } from '../../common/financial-alert.service';
-
-type MockPrisma = {
-  kloelWallet: Record<string, jest.Mock>;
-  kloelWalletTransaction: Record<string, jest.Mock>;
-  auditLog: Record<string, jest.Mock>;
-  checkoutPayment: Record<string, jest.Mock>;
-  $transaction: jest.Mock;
-};
+import { createPartialPrismaMock } from '../../../test/helpers/prisma.mock';
 
 describe('Financial Scenarios', () => {
   let walletService: WalletService;
-  let prismaMock: MockPrisma;
+  let prismaMock: ReturnType<typeof createPartialPrismaMock>;
 
   const mockWallet = {
     id: 'wallet-1',
@@ -25,27 +18,20 @@ describe('Financial Scenarios', () => {
   };
 
   beforeEach(async () => {
-    prismaMock = {
-      kloelWallet: {
-        upsert: jest.fn().mockResolvedValue({ ...mockWallet }),
-        findUnique: jest.fn().mockResolvedValue({ ...mockWallet }),
-        create: jest.fn().mockResolvedValue({ ...mockWallet }),
-        update: jest.fn().mockResolvedValue({ ...mockWallet }),
-      },
-      kloelWalletTransaction: {
-        create: jest.fn().mockResolvedValue({ id: 'tx-1' }),
-        findMany: jest.fn().mockResolvedValue([]),
-        count: jest.fn().mockResolvedValue(0),
-      },
-      auditLog: {
-        create: jest.fn().mockResolvedValue({}),
-      },
-      checkoutPayment: {
-        findFirst: jest.fn(),
-        update: jest.fn(),
-      },
-      $transaction: jest.fn(),
-    };
+    prismaMock = createPartialPrismaMock({
+      kloelWallet: ['upsert', 'findUnique', 'create', 'update'],
+      kloelWalletTransaction: ['create', 'findMany', 'count'],
+      auditLog: ['create'],
+      checkoutPayment: ['findFirst', 'update'],
+    });
+    (prismaMock.kloelWallet.upsert as jest.Mock).mockResolvedValue({ ...mockWallet });
+    (prismaMock.kloelWallet.findUnique as jest.Mock).mockResolvedValue({ ...mockWallet });
+    (prismaMock.kloelWallet.create as jest.Mock).mockResolvedValue({ ...mockWallet });
+    (prismaMock.kloelWallet.update as jest.Mock).mockResolvedValue({ ...mockWallet });
+    (prismaMock.kloelWalletTransaction.create as jest.Mock).mockResolvedValue({ id: 'tx-1' });
+    (prismaMock.kloelWalletTransaction.findMany as jest.Mock).mockResolvedValue([]);
+    (prismaMock.kloelWalletTransaction.count as jest.Mock).mockResolvedValue(0);
+    (prismaMock.auditLog.create as jest.Mock).mockResolvedValue({});
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [

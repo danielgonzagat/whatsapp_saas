@@ -1,5 +1,6 @@
 import type { CapabilityRegistrySnapshot } from '../capability-registry/capability-registry.types';
 import { fail, Gate, GateMode, GateVerdict, pass } from './pulse-gates.types';
+import { isObject } from '../../common/types';
 
 export interface NoOverclaimInput {
   readonly abiPayload: unknown;
@@ -8,9 +9,6 @@ export interface NoOverclaimInput {
 
 const MEASURED_BY = 'no-overclaim.gate' as const;
 
-function isObject(v: unknown): v is Record<string, unknown> {
-  return typeof v === 'object' && v !== null && !Array.isArray(v);
-}
 
 function buildRegistryMap(
   snapshot: CapabilityRegistrySnapshot | undefined,

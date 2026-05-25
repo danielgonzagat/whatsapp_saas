@@ -40,24 +40,43 @@ const byLabel = new Map(); // label → [{ id, source_file, source_location }]
 for (const node of graph.nodes) {
   const label = node.label;
   if (typeof label !== 'string') continue;
-  // Only consider CODE nodes — graphify also indexes markdown headings as
-  // labels (e.g., "## Mission" in a runbook) which are not real dupes.
-  if (node.file_type !== 'code') continue;
-  // Skip non-source files even if file_type=code (json/sql/prisma artifacts
-  // that graphify may include).
-  const src = String(node.source_file ?? '');
+  // Graphify schema (current): node.type ∈ {file, class, interface, type,
+  // function, method, enum, ...}. Only count code symbols, not files.
+  const t = String(node.type ?? '');
+  // Skip non-symbol node kinds. Imports are library-level (react, logger,
+  // path, ioredis, ...) — duplicating an import is expected, not a real
+  // canonicalization target.
+  if (t === 'file' || t === '' || t === 'directory' || t === 'import' || t === 'export') continue;
+  // Skip non-source paths (.kilo/, .opencode/, docs/, etc.). The `file`
+  // field replaces the old `source_file`.
+  const src = String(node.file ?? node.source_file ?? '');
   if (!/\.(ts|tsx|mts|cts|js|mjs|cjs|jsx)$/.test(src)) continue;
+  // Only language=typescript|javascript (filter out python and others)
+  const lang = String(node.meta?.language ?? '');
+  if (lang && !/^(typescript|javascript|tsx?|jsx?)$/.test(lang)) continue;
   const fn = FN_RE.exec(label);
   const ty = TYPE_RE.exec(label);
-  const key = fn ? fn[1] : ty ? ty[1] : null;
+  // Bare-name fallback for symbols stored without trailing ()
+  const bareName = (!fn && !ty && /^[a-zA-Z_$][\w$]*$/.test(label)) ? label : null;
+  const key = fn ? fn[1] : ty ? ty[1] : bareName;
   if (!key) continue;
   if (key.length < 4) continue; // skip noise like a, b, x
+  // Skip obvious method names that ARE legitimately polymorphic across
+  // many classes (constructor, render, toString, execute, run, etc.)
+  if (/^(constructor|render|toString|execute|run|main|init|start|stop|onModuleInit|onModuleDestroy|dispose|destroy|reset|tick|process|handle|build|create|update|delete|fetch|get|set|find|list|count|exists|validate|parse|format|normalize|serialize|deserialize|encode|decode|hash|compare|emit|publish|subscribe|on|off|once|listen|connect|disconnect)$/.test(key)) continue;
+  // Skip well-known DI / property names that every NestJS service has
+  // (logger, prisma, config, cache, redis, mailer, eventEmitter, etc.)
+  if (/^(logger|prisma|config|cache|redis|mailer|eventEmitter|spine|bus|http|client|repo|service|module|controller|gateway|router|guard|interceptor|pipe|filter|provider|store|state|context|session|user|workspace|workspaceId|userId|id|name|type|status|metadata|payload|data|body|headers|params|query|options|input|output|result|response|request|req|res)$/.test(key)) continue;
+  // Skip method nodes — these are class-bound; same name across classes is
+  // polymorphic, not duplicated. Only retain functions, types, classes,
+  // interfaces, enums.
+  if (t === 'method') continue;
   if (!byLabel.has(key)) byLabel.set(key, []);
   byLabel.get(key).push({
     id: node.id,
     file: src,
-    line: node.source_location,
-    kind: fn ? 'function' : 'type',
+    line: node.line ?? node.source_location,
+    kind: fn ? 'function' : ty ? 'type' : (t === 'method' ? 'method' : 'symbol'),
   });
 }
 

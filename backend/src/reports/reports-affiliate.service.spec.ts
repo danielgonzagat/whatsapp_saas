@@ -2,24 +2,19 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { PrismaService } from '../prisma/prisma.service';
 import { ReportsAffiliateService } from './reports-affiliate.service';
 import type { ReportFiltersDto } from './dto/report-filters.dto';
+import { createPartialPrismaMock } from '../../test/helpers/prisma.mock';
 
 describe('ReportsAffiliateService', () => {
   let service: ReportsAffiliateService;
-  let prisma: {
-    affiliatePartner: { findMany: jest.Mock };
-    $queryRaw: jest.Mock;
-  };
+  let prisma: ReturnType<typeof createPartialPrismaMock>;
 
   beforeEach(async () => {
-    prisma = {
-      affiliatePartner: { findMany: jest.fn() },
-      $queryRaw: jest.fn(),
-    };
+    prisma = createPartialPrismaMock({
+      affiliatePartner: ['findMany'],
+    });
+    (prisma as Record<string, unknown>).$queryRaw = jest.fn();
     const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        ReportsAffiliateService,
-        { provide: PrismaService, useValue: prisma },
-      ],
+      providers: [ReportsAffiliateService, { provide: PrismaService, useValue: prisma }],
     }).compile();
     service = module.get(ReportsAffiliateService);
   });
@@ -81,10 +76,10 @@ describe('ReportsAffiliateService', () => {
   describe('getIndicadoresProduto', () => {
     it('returns empty array on $queryRaw failure', async () => {
       prisma.$queryRaw.mockRejectedValue(new Error('SQL boom'));
-      const result = await service.getIndicadoresProduto(
-        'ws-1',
-        { start: '2026-01-01', end: '2026-01-31' } as ReportFiltersDto,
-      );
+      const result = await service.getIndicadoresProduto('ws-1', {
+        start: '2026-01-01',
+        end: '2026-01-31',
+      } as ReportFiltersDto);
       expect(result).toEqual([]);
     });
   });

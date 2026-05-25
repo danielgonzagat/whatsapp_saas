@@ -193,11 +193,14 @@ describe('KloelToolDispatcherService — chat tools routing', () => {
     });
   });
 
-  it('routes search_agent_memory to chatToolsService', async () => {
+  it('routes search_agent_memory to chatToolsService memory/contact search', async () => {
     await service.executeTool(DEFAULT_WS_ID, 'search_agent_memory', { query: 'checkout' });
-    expect(chatToolsService.toolSearchAgentMemory).toHaveBeenCalledWith(DEFAULT_WS_ID, {
-      query: 'checkout',
-    });
+    expect(chatToolsService.toolSearchAgentMemoryWithContacts).toHaveBeenCalledWith(
+      DEFAULT_WS_ID,
+      {
+        query: 'checkout',
+      },
+    );
   });
 
   it('routes search_agent_sessions to chatToolsService', async () => {

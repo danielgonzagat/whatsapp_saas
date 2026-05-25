@@ -32,9 +32,10 @@ import { UpdateConfigDto } from './dto/update-config.dto';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 import { RouteClass } from '../common/throttler/route-class.decorator';
 
-const U0300__U036F_RE = /[\u0300-\u036f]/g;
+import { SLUG_EDGE_HYPHEN_RE } from '../common/regex';
+
+import { DIACRITICS_RE } from '../common/regex';
 const A_Z0_9_RE = /[^a-z0-9]+/g;
-const PATTERN_RE = /^-|-$/g;
 
 function normalizeTimerType(value: unknown): TimerType | undefined {
   if (typeof value !== 'string' && typeof value !== 'number' && typeof value !== 'boolean') {
@@ -72,9 +73,9 @@ export class CheckoutController {
     const base = String(value || 'checkout')
       .toLowerCase()
       .normalize('NFD')
-      .replace(U0300__U036F_RE, '')
+      .replace(DIACRITICS_RE, '')
       .replace(A_Z0_9_RE, '-')
-      .replace(PATTERN_RE, '')
+      .replace(SLUG_EDGE_HYPHEN_RE, '')
       .slice(0, 48);
 
     return `${base || 'checkout'}-${Date.now().toString(36)}`;
@@ -137,9 +138,9 @@ export class CheckoutController {
       dto.slug = `${(dto.name || 'product')
         .toLowerCase()
         .normalize('NFD')
-        .replace(U0300__U036F_RE, '')
+        .replace(DIACRITICS_RE, '')
         .replace(A_Z0_9_RE, '-')
-        .replace(PATTERN_RE, '')}-${Date.now().toString(36)}`;
+        .replace(SLUG_EDGE_HYPHEN_RE, '')}-${Date.now().toString(36)}`;
     }
 
     try {

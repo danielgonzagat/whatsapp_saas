@@ -1,6 +1,6 @@
 import { readText } from '../read-model/meta-read-helpers';
+import { TRAILING_SLASH_RE } from '../../common/regex';
 
-const TRAILING_SLASH_RE = /\/+$/;
 const ABSOLUTE_URL_RE = /^https?:\/\//i;
 const LOCALHOST_HOST_RE = /^(localhost|127\.0\.0\.1)(:\d+)?$/i;
 

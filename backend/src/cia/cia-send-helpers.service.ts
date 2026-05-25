@@ -4,10 +4,10 @@ import type Redis from 'ioredis';
 import { ChannelTransportRegistry } from '../kloel/channel-transport.registry';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { AgentEventsService } from '../whatsapp/agent-events.service';
+import { NON_DIGIT_RE } from '../common/phone';
+import { WHITESPACE_G_RE } from '../common/regex';
 
-const WHITESPACE_G_RE = /\s+/g;
 const PATTERN_RE = /[?!.;,]+$/g;
-const D_RE = /\D/g;
 export const WHITESPACE_RE = /\s+/;
 
 const PRE_C__O_QUANTO_VALOR_C_RE = /(pre[cç]o|quanto|valor|custa|comprar|boleto|pix|pagamento)/i;
@@ -73,7 +73,7 @@ export class CiaSendHelpersService {
     contactId?: string | null,
     phone?: string | null,
   ): string {
-    const normalizedPhone = String(phone || '').replace(D_RE, '');
+    const normalizedPhone = String(phone || '').replace(NON_DIGIT_RE, '');
     return `autopilot:reply:${workspaceId}:${contactId || normalizedPhone}`;
   }
 

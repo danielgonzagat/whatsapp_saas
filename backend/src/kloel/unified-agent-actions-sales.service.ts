@@ -14,6 +14,7 @@ import { MindService } from './mind.service';
 
 import type { UnknownRecord } from '../common/types';
 
+import { readStringOr as readString } from '../common/parse';
 function describeUnknownError(error: unknown): string {
   if (error instanceof Error && error.message.trim()) {
     return error.message.trim();
@@ -22,10 +23,6 @@ function describeUnknownError(error: unknown): string {
     return error.trim();
   }
   return 'Unknown error';
-}
-
-function readString(value: unknown, fallback = ''): string {
-  return typeof value === 'string' && value.trim() ? value.trim() : fallback;
 }
 
 function isRecord(value: unknown): value is UnknownRecord {
@@ -135,7 +132,9 @@ export class UnifiedAgentActionsSalesService {
         : this.mind
           ? await this.mind.resolveCoupon(workspaceId, priceBand, 0, segment)
           : null;
-      const couponAction = isRecord(couponDecision) ? readString(couponDecision.action) : undefined;
+      const couponAction = isRecord(couponDecision)
+        ? readString(couponDecision.action, '')
+        : undefined;
       const metaSource = predecided ? 'orchestrator_predecided' : 'legacy_action_decision';
       const couponJson = toJsonValue(couponDecision);
       const productJson = toJsonValue(productOffer);

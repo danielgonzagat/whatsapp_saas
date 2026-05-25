@@ -14,39 +14,31 @@ jest.mock('./utils/signed-request.validator', () => ({
 
 import { verifyUnsubscribeToken } from '../common/utils/unsubscribe-token.util';
 import { validateSignedRequest } from './utils/signed-request.validator';
+import { createPartialPrismaMock } from '../../test/helpers/prisma.mock';
 
 describe('ComplianceService', () => {
   let service: ComplianceService;
-  let prisma: {
-    dataDeletionRequest: { findUnique: jest.Mock; create: jest.Mock; update: jest.Mock };
-    socialAccount: { updateMany: jest.Mock; findFirst: jest.Mock };
-    agent: { findFirst: jest.Mock };
-    contact: { updateMany: jest.Mock };
-    riscEvent: { create: jest.Mock; update: jest.Mock };
-    $transaction: jest.Mock;
-  };
+  let prisma: ReturnType<typeof createPartialPrismaMock>;
 
   beforeEach(async () => {
-    prisma = {
-      dataDeletionRequest: {
-        findUnique: jest.fn(),
-        create: jest.fn().mockResolvedValue({ id: 'req-1' }),
-        update: jest.fn().mockResolvedValue({}),
-      },
-      socialAccount: {
-        updateMany: jest.fn().mockResolvedValue({ count: 1 }),
-        findFirst: jest.fn().mockResolvedValue(null),
-      },
-      agent: { findFirst: jest.fn().mockResolvedValue(null) },
-      contact: { updateMany: jest.fn().mockResolvedValue({ count: 3 }) },
-      riscEvent: {
-        create: jest.fn().mockResolvedValue({ id: 'evt-1' }),
-        update: jest.fn().mockResolvedValue({}),
-      },
-      $transaction: jest
-        .fn()
-        .mockImplementation((cb: (tx: unknown) => Promise<unknown>) => cb(prisma)),
-    };
+    prisma = createPartialPrismaMock({
+      dataDeletionRequest: ['findUnique', 'create', 'update'],
+      socialAccount: ['updateMany', 'findFirst'],
+      agent: ['findFirst'],
+      contact: ['updateMany'],
+      riscEvent: ['create', 'update'],
+    });
+    prisma.dataDeletionRequest.create.mockResolvedValue({ id: 'req-1' });
+    prisma.dataDeletionRequest.update.mockResolvedValue({});
+    prisma.socialAccount.updateMany.mockResolvedValue({ count: 1 });
+    prisma.socialAccount.findFirst.mockResolvedValue(null);
+    prisma.agent.findFirst.mockResolvedValue(null);
+    prisma.contact.updateMany.mockResolvedValue({ count: 3 });
+    prisma.riscEvent.create.mockResolvedValue({ id: 'evt-1' });
+    prisma.riscEvent.update.mockResolvedValue({});
+    prisma.$transaction = jest
+      .fn()
+      .mockImplementation((cb: (tx: unknown) => Promise<unknown>) => cb(prisma));
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         ComplianceService,

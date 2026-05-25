@@ -6,22 +6,11 @@ import { WhatsAppApiProvider } from './whatsapp-api.provider';
 import type { WhatsAppProviderType, SessionStatus, UnknownRecord } from './provider-registry.types';
 import { MissingWahaProviderError } from './provider-registry.types';
 
+import { readString, readStringArrayOr } from '../../common/parse';
 export function readRecord(value: unknown): UnknownRecord {
   return typeof value === 'object' && value !== null ? (value as UnknownRecord) : {};
 }
 
-function readString(value: unknown): string | undefined {
-  return typeof value === 'string' && value.trim() ? value : undefined;
-}
-
-function readStringArray(value: unknown): string[] | undefined {
-  if (!Array.isArray(value)) {
-    return undefined;
-  }
-
-  const items = value.filter((item): item is string => typeof item === 'string' && item.length > 0);
-  return items.length > 0 ? items : [];
-}
 
 function normalizeWahaSnapshotStatus(
   rawStatus: string | null | undefined,
@@ -60,7 +49,7 @@ function readSessionSnapshot(value: unknown): ProviderSessionSnapshot {
     rawStatus: readString(snapshot.rawStatus) ?? null,
     phoneNumber: readString(snapshot.phoneNumber) ?? null,
     pushName: readString(snapshot.pushName) ?? null,
-    selfIds: readStringArray(snapshot.selfIds) ?? [],
+    selfIds: readStringArrayOr(snapshot.selfIds) ?? [],
     qrCode: readString(snapshot.qrCode) ?? null,
     authUrl: readString(snapshot.authUrl) ?? null,
     phoneNumberId: readString(snapshot.phoneNumberId) ?? null,

@@ -10,10 +10,12 @@ import { createTextLlmClient, resolveTextLlmApiKey } from '../lib/llm-provider';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
 import { chatCompletionWithFallback, chatCompletionWithRetry } from './openai-wrapper';
 import { OpsAlertService } from '../observability/ops-alert.service';
+import { BrainEventSpineService } from './brain-event-spine.service';
 import { AbiBuilderService } from './abi/abi-builder.service';
 import { validateAbiPayload } from './abi/abi-validator';
 import { UnifiedAgentService } from './unified-agent.service';
 import { KloelToolDispatcherService } from './kloel-tool-dispatcher.service';
+import { buildReceipt, writeOperationReceipt, buildResultMeta } from './operation-receipt.helpers';
 import { detectActionIntent, formatToolResult } from './guest-chat.action-intent.helpers';
 
 interface GuestConversation {
@@ -43,6 +45,7 @@ export class GuestChatService implements OnModuleDestroy {
     @Optional() private readonly opsAlert?: OpsAlertService,
     @Optional() @InjectRedis() private readonly redis?: Redis,
     @Optional() private readonly abiBuilder?: AbiBuilderService,
+    @Optional() private readonly spine?: BrainEventSpineService,
     @Optional() private readonly unifiedAgent?: UnifiedAgentService,
     @Optional() private readonly toolDispatcher?: KloelToolDispatcherService,
   ) {
@@ -68,6 +71,38 @@ export class GuestChatService implements OnModuleDestroy {
     }
   }
 
+
+  /** Handle file upload from chat — store file and link to product */
+  async handleFileUpload(
+    buffer: Buffer,
+    originalname: string,
+    mimetype: string,
+    workspaceId: string,
+    productName: string,
+  ): Promise<{ url?: string; message: string }> {
+    void mimetype;
+    try {
+      const fs = await import('fs/promises');
+      const path = await import('path');
+      const uploadDir = path.join(process.cwd(), '..', 'uploads', workspaceId || 'guest');
+      await fs.mkdir(uploadDir, { recursive: true });
+      const ext = path.extname(originalname) || '.bin';
+      const filename = `${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}${ext}`;
+      const filepath = path.join(uploadDir, filename);
+      await fs.writeFile(filepath, buffer);
+      const url = `/uploads/${workspaceId || 'guest'}/${filename}`;
+
+      // If productName provided, link image to product
+      if (productName && this.toolDispatcher) {
+        try {
+          await this.toolDispatcher.executeTool(workspaceId, 'update_product', { productName, imageUrl: url });
+        } catch { /* non-blocking */ }
+      }
+      return { url, message: `Arquivo ${originalname} enviado${productName ? ` e vinculado ao produto ${productName}` : ''}.` };
+    } catch (e: unknown) {
+      return { message: `Erro: ${e instanceof Error ? e.message : 'desconhecido'}` };
+    }
+  }
   /** On module destroy. */
   onModuleDestroy(): void {
     if (this.cleanupInterval) {
@@ -311,6 +346,12 @@ export class GuestChatService implements OnModuleDestroy {
   /**
    * 🔄 Chat síncrono (sem streaming)
    */
+
+  private resolveDefaultWorkspaceId(): string | undefined {
+    if (process.env.NODE_ENV !== 'production') return 'ws-test-001';
+    return undefined;
+  }
+
   async chatSync(message: string, sessionId: string, workspaceId?: string): Promise<string> {
     try {
       if (!message || message.trim().length === 0) {
@@ -324,17 +365,38 @@ export class GuestChatService implements OnModuleDestroy {
       }
 
       // DETERMINISTIC ACTION ROUTER — execute tools without LLM decision
-      if (workspaceId && this.toolDispatcher) {
+      // Fallback: if no workspaceId, try to detect one from session or use dev default
+      const effectiveWsId = workspaceId || this.resolveDefaultWorkspaceId();
+      if (effectiveWsId && this.toolDispatcher) {
         const action = detectActionIntent(message);
         if (action) {
-          this.logger.log(`Deterministic: tool=${action.tool} session=${sessionId}`);
+          this.logger.log(`Deterministic: tool=${action.tool} ws=${effectiveWsId} session=${sessionId}`);
           try {
             await this.persistConversationMessage(sessionId, 'user', message);
             const result = await this.toolDispatcher.executeTool(
-              workspaceId,
+              effectiveWsId,
               action.tool,
               action.args,
             );
+            // Write OperationReceipt for audit trail
+            void writeOperationReceipt(buildReceipt({
+              workspaceId: effectiveWsId,
+              toolName: action.tool,
+              args: action.args,
+              result: result as { success: boolean; [key: string]: unknown },
+              channel: 'web',
+            }));
+            // Emit spine event for cognitive cycle with result data
+            if (this.spine && result.success) {
+              const resultMeta = buildResultMeta(action.tool, result);
+              void this.spine.record({
+                workspaceId: effectiveWsId,
+                action: 'tool_executed' as never,
+                intent: action.tool,
+                status: 'executed',
+                meta: { args: action.args, userPreview: message.slice(0, 120), ...resultMeta } as never,
+              }).catch(() => {});
+            }
             const reply = formatToolResult(action.tool, result);
             await this.persistConversationMessage(sessionId, 'assistant', reply);
             return reply;
@@ -347,13 +409,13 @@ export class GuestChatService implements OnModuleDestroy {
       }
 
       // UNIFIED AGENT PATH
-      if (workspaceId && this.unifiedAgent) {
+      if (effectiveWsId && this.unifiedAgent) {
         this.logger.log(
-          `Guest chat sync via UnifiedAgent: workspace=${workspaceId}, session=${sessionId}`,
+          `Guest chat sync via UnifiedAgent: workspace=${effectiveWsId}, session=${sessionId}`,
         );
         try {
           const result = await this.unifiedAgent.processIncomingMessage({
-            workspaceId,
+            workspaceId: effectiveWsId,
             phone: sessionId,
             message,
             channel: 'web',

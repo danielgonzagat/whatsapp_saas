@@ -3,6 +3,7 @@ import { Observable } from 'rxjs';
 import { catchError, tap } from 'rxjs/operators';
 import { sanitizePayload } from './sanitize-payload';
 
+import { readString, readNumber } from './parse';
 interface LoggedRequest {
   id?: unknown;
   method?: unknown;
@@ -15,13 +16,6 @@ interface LoggedResponse {
   statusCode?: unknown;
 }
 
-function readString(value: unknown): string | undefined {
-  return typeof value === 'string' && value.trim() ? value : undefined;
-}
-
-function readNumber(value: unknown): number | undefined {
-  return typeof value === 'number' && Number.isFinite(value) ? value : undefined;
-}
 
 function getErrorStatus(error: unknown): number {
   if (

@@ -2,29 +2,35 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AdminNotificationsService } from './admin-notifications.service';
 import { AdminAuditService } from '../audit/admin-audit.service';
+import { createPartialPrismaMock } from '../../../test/helpers/prisma.mock';
 
 describe('AdminNotificationsService', () => {
   let service: AdminNotificationsService;
 
   const adminUserId = 'admin_1';
-
-  const mockCheckoutOrderFindMany = jest.fn<Promise<unknown>, unknown[]>();
-  const mockAgentFindMany = jest.fn<Promise<unknown>, unknown[]>();
-  const mockConversationFindMany = jest.fn<Promise<unknown>, unknown[]>();
-  const mockAdminLoginAttemptCount = jest.fn<Promise<unknown>, unknown[]>();
-  const mockWorkspaceCount = jest.fn<Promise<unknown>, unknown[]>();
-  const mockAuditLogFindMany = jest.fn<Promise<unknown>, unknown[]>();
-  const mockAuditLogFindFirst = jest.fn<Promise<unknown>, unknown[]>();
-  const mockWorkspaceFindMany = jest.fn<Promise<unknown>, unknown[]>();
-
-  const prismaMock = {
-    checkoutOrder: { findMany: mockCheckoutOrderFindMany },
-    agent: { findMany: mockAgentFindMany },
-    conversation: { findMany: mockConversationFindMany },
-    adminLoginAttempt: { count: mockAdminLoginAttemptCount },
-    workspace: { count: mockWorkspaceCount, findMany: mockWorkspaceFindMany },
-    adminAuditLog: { findMany: mockAuditLogFindMany, findFirst: mockAuditLogFindFirst },
+  const prismaMock = createPartialPrismaMock({
+    checkoutOrder: ['findMany'],
+    agent: ['findMany'],
+    conversation: ['findMany'],
+    adminLoginAttempt: ['count'],
+    workspace: ['count', 'findMany'],
+    adminAuditLog: ['findMany', 'findFirst'],
+  }) as never as {
+    checkoutOrder: { findMany: jest.Mock };
+    agent: { findMany: jest.Mock };
+    conversation: { findMany: jest.Mock };
+    adminLoginAttempt: { count: jest.Mock };
+    workspace: { count: jest.Mock; findMany: jest.Mock };
+    adminAuditLog: { findMany: jest.Mock; findFirst: jest.Mock };
   };
+  const mockCheckoutOrderFindMany = prismaMock.checkoutOrder.findMany;
+  const mockAgentFindMany = prismaMock.agent.findMany;
+  const mockConversationFindMany = prismaMock.conversation.findMany;
+  const mockAdminLoginAttemptCount = prismaMock.adminLoginAttempt.count;
+  const mockWorkspaceCount = prismaMock.workspace.count;
+  const mockWorkspaceFindMany = prismaMock.workspace.findMany;
+  const mockAuditLogFindMany = prismaMock.adminAuditLog.findMany;
+  const mockAuditLogFindFirst = prismaMock.adminAuditLog.findFirst;
 
   const mockAuditAppend = jest.fn<Promise<void>, unknown[]>();
 

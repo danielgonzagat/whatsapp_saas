@@ -20,13 +20,7 @@ const CIA_RUNTIME_STALE_RUN_MS = Math.max(
 
 type WorkspaceAutonomyMode = 'OFF' | 'LIVE' | 'BACKLOG' | 'FULL' | 'HUMAN_ONLY' | 'SUSPENDED';
 
-function safeStr(v: unknown, fb = ''): string {
-  return typeof v === 'string'
-    ? v
-    : typeof v === 'number' || typeof v === 'boolean'
-      ? String(v)
-      : fb;
-}
+import { safeStr } from '../common/string';
 
 /**
  * Manages CIA runtime state persistence: workspace autonomy snapshots,

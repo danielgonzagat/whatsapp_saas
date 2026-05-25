@@ -8,7 +8,7 @@
  *
  * Stores an immutable ranked list of 5 entry market candidates and
  * declares ONE as the active market. Every declaration (including
- * initialisation) emits a `mercado_entrada.declared` spine event
+ * initialisation) emits a `commerce.onboarding.declared` spine event
  * with full provenance.
  *
  * Types are co-located here as the single source of truth for the
@@ -265,14 +265,14 @@ export class MercadoEntradaDeclaratorService implements OnModuleInit {
     if (this.spine) {
       void this.spine
         .emit({
-          eventName: 'mercado_entrada.declared',
+          eventName: 'commerce.onboarding.declared',
           truthMode: 'observed',
           provenance: PROVENANCE_SYNTHETIC,
           payload: { ...this.activeDeclaration.active },
         })
         .catch((err: unknown) => {
           this.logger.warn(
-            `Failed to emit mercado_entrada.declared on init: ${(err as Error).message}`,
+            `Failed to emit commerce.onboarding.declared on init: ${(err as Error).message}`,
           );
         });
     }
@@ -355,7 +355,7 @@ export class MercadoEntradaDeclaratorService implements OnModuleInit {
     if (this.spine) {
       void this.spine
         .emit({
-          eventName: 'mercado_entrada.declared',
+          eventName: 'commerce.onboarding.declared',
           truthMode: 'observed',
           provenance: PROVENANCE_PRODUCTION,
           payload: {
@@ -372,7 +372,7 @@ export class MercadoEntradaDeclaratorService implements OnModuleInit {
         })
         .catch((err: unknown) => {
           this.logger.warn(
-            `Failed to emit mercado_entrada.declared: ${(err as Error).message}`,
+            `Failed to emit commerce.onboarding.declared: ${(err as Error).message}`,
           );
         });
     }

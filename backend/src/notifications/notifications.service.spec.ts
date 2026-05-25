@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { AuditService } from '../audit/audit.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from './notifications.service';
+import { createPartialPrismaMock } from '../../test/helpers/prisma.mock';
 
 jest.mock('firebase-admin', () => {
   const mockSendEach = jest.fn();
@@ -22,30 +23,15 @@ jest.mock('firebase-admin', () => {
 
 describe('NotificationsService', () => {
   let service: NotificationsService;
-  let prisma: {
-    deviceToken: {
-      upsert: jest.Mock;
-      findUnique: jest.Mock;
-      findMany: jest.Mock;
-      delete: jest.Mock;
-      deleteMany: jest.Mock;
-    };
-    agent: { findMany: jest.Mock };
-  };
+  let prisma: ReturnType<typeof createPartialPrismaMock>;
   let auditService: { log: jest.Mock };
   let configService: { get: jest.Mock };
 
   beforeEach(async () => {
-    prisma = {
-      deviceToken: {
-        upsert: jest.fn(),
-        findUnique: jest.fn(),
-        findMany: jest.fn(),
-        delete: jest.fn(),
-        deleteMany: jest.fn(),
-      },
-      agent: { findMany: jest.fn() },
-    };
+    prisma = createPartialPrismaMock({
+      deviceToken: ['upsert', 'findUnique', 'findMany', 'delete', 'deleteMany'],
+      agent: ['findMany'],
+    });
     auditService = { log: jest.fn().mockResolvedValue(undefined) };
     configService = { get: jest.fn().mockReturnValue(undefined) };
 

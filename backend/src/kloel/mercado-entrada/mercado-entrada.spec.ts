@@ -14,7 +14,7 @@
  *   10. getActiveDeclaration() returns a valid declaration with eventId
  *   11. declareMarket() succeeds for valid marketId
  *   12. declareMarket() fails for unknown marketId
- *   13. declareMarket() emits mercado_entrada.declared event via spine
+ *   13. declareMarket() emits commerce.onboarding.declared event via spine
  *   14. getDeclarationHistory() tracks all declarations
  *   15. buildRanking() returns complete ranking with active market
  *   16. findCandidateById returns undefined for unknown ID
@@ -32,7 +32,7 @@ import {
   entryMarketFromCandidate,
 } from './mercado-entrada.declarator.service';
 import { SpineEmitterService } from '../spine/spine-emitter.service';
-import { ValenceTaggerService } from '../mind/valence-tagger.service';
+import { makeSpine } from '../../../test/helpers/spine-factory';
 import type { SpineEventEnvelope } from '../spine/spine-event.types';
 import type { Role } from '../role/types';
 import type { MaturityStage } from '../maturity/maturity.types';
@@ -48,10 +48,6 @@ function makeService(spine?: SpineEmitterService): MercadoEntradaDeclaratorServi
   svc.setSpine(spine);
   svc.onModuleInit();
   return svc;
-}
-
-function makeSpine(): SpineEmitterService {
-  return new SpineEmitterService(new ValenceTaggerService());
 }
 
 function spineEventsOfKind(
@@ -248,12 +244,12 @@ describe('MercadoEntradaDeclaratorService — declareMarket', () => {
 // SCENARIO 12 — spine emission
 // =========================================================================
 describe('MercadoEntradaDeclaratorService — spine emission', () => {
-  it('16. declareMarket emits mercado_entrada.declared event via spine', () => {
+  it('16. declareMarket emits commerce.onboarding.declared event via spine', () => {
     const spine = makeSpine();
     const svc = makeService(spine);
     svc.declareMarket('closer-tracao-whatsapp', 'spine-test');
 
-    const mercadoEvents = spineEventsOfKind(spine, 'mercado_entrada.declared');
+    const mercadoEvents = spineEventsOfKind(spine, 'commerce.onboarding.declared');
     expect(mercadoEvents.length).toBeGreaterThanOrEqual(2);
 
     const latest = mercadoEvents[mercadoEvents.length - 1]!;
@@ -273,7 +269,7 @@ describe('MercadoEntradaDeclaratorService — spine emission', () => {
     svc.declareMarket('closer-tracao-whatsapp', 'step-1');
     svc.declareMarket('afiliado-tracao-afiliacao', 'step-2');
 
-    const events = spineEventsOfKind(spine, 'mercado_entrada.declared');
+    const events = spineEventsOfKind(spine, 'commerce.onboarding.declared');
     expect(events.length).toBeGreaterThanOrEqual(2);
 
     const second = events[events.length - 1]!;
@@ -378,7 +374,7 @@ describe('MercadoEntradaDeclaratorService — full cycle', () => {
     expect(final.ok).toBe(true);
     expect(svc.getActiveMarket().marketId).toBe('produtor-infoproduto-validacao-checkout');
 
-    const marketEvents = spineEventsOfKind(spine, 'mercado_entrada.declared');
+    const marketEvents = spineEventsOfKind(spine, 'commerce.onboarding.declared');
     expect(marketEvents.length).toBeGreaterThanOrEqual(5);
   });
 });

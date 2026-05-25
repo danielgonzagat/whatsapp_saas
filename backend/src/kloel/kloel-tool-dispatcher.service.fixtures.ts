@@ -30,6 +30,7 @@ type DispatcherChatToolsMock = Pick<
   | 'toolListAgentJobs'
   | 'toolSetAgentJobEnabled'
   | 'toolSearchAgentMemory'
+  | 'toolSearchAgentMemoryWithContacts'
   | 'toolSearchAgentSessions'
   | 'toolGetAgentArtifact'
   | 'toolUpsertAgentSkill'
@@ -158,6 +159,11 @@ export function createChatToolsMock(): DispatcherChatToolsMock {
     toolListAgentJobs: jest.fn().mockResolvedValue({ success: true, jobs: [] }),
     toolSetAgentJobEnabled: jest.fn().mockResolvedValue({ success: true }),
     toolSearchAgentMemory: jest.fn().mockResolvedValue({ success: true, memories: [] }),
+    toolSearchAgentMemoryWithContacts: jest.fn().mockResolvedValue({
+      success: true,
+      memories: [],
+      contacts: [],
+    }),
     toolSearchAgentSessions: jest.fn().mockResolvedValue({ success: true, sessions: [] }),
     toolGetAgentArtifact: jest.fn().mockResolvedValue({ success: true, content: '{}' }),
     toolUpsertAgentSkill: jest.fn().mockResolvedValue({ success: true, skillId: 'skill_1' }),

@@ -5,6 +5,7 @@ import { ReportsOrdersService } from './reports-orders.service';
 import { ReportsAffiliateService } from './reports-affiliate.service';
 import { ReportsService } from './reports.service';
 import type { ReportFiltersDto } from './dto/report-filters.dto';
+import { createPartialPrismaMock } from '../../test/helpers/prisma.mock';
 
 jest.mock('./reports-orders.service', () => {
   const actual = jest.requireActual('./reports-orders.service');
@@ -19,22 +20,23 @@ jest.mock('./reports-orders.service', () => {
 
 describe('ReportsService', () => {
   let service: ReportsService;
-  let prisma: {
-    customerSubscription: { count: jest.Mock; findMany: jest.Mock; groupBy: jest.Mock };
-    $queryRaw: jest.Mock;
-  };
+  let prisma: ReturnType<typeof createPartialPrismaMock>;
   let ordersService: { getVendas: jest.Mock; [k: string]: jest.Mock };
-  let affiliateService: { resolveAffiliateIds: jest.Mock; getAfiliados: jest.Mock; getIndicadores: jest.Mock; getIndicadoresProduto: jest.Mock };
+  let affiliateService: {
+    resolveAffiliateIds: jest.Mock;
+    getAfiliados: jest.Mock;
+    getIndicadores: jest.Mock;
+    getIndicadoresProduto: jest.Mock;
+  };
 
   beforeEach(async () => {
-    prisma = {
-      customerSubscription: {
-        count: jest.fn().mockResolvedValue(0),
-        findMany: jest.fn().mockResolvedValue([]),
-        groupBy: jest.fn().mockResolvedValue([]),
-      },
-      $queryRaw: jest.fn().mockResolvedValue([]),
-    };
+    prisma = createPartialPrismaMock({
+      customerSubscription: ['count', 'findMany', 'groupBy'],
+    });
+    (prisma as Record<string, unknown>).$queryRaw = jest.fn().mockResolvedValue([]);
+    prisma.customerSubscription.count.mockResolvedValue(0);
+    prisma.customerSubscription.findMany.mockResolvedValue([]);
+    prisma.customerSubscription.groupBy.mockResolvedValue([]);
     ordersService = {
       getVendas: jest.fn().mockResolvedValue({ rows: [] }),
       getVendasSummary: jest.fn().mockResolvedValue({ total: 0 }),
@@ -88,10 +90,7 @@ describe('ReportsService', () => {
       ['getChargeback', 'getChargeback'],
       ['getAfterPay', 'getAfterPay'],
     ])('delegates %s to ReportsOrdersService.%s', (method, ordersMethod) => {
-      void (service as Record<string, (...args: unknown[]) => unknown>)[method]?.(
-        'ws-1',
-        {},
-      );
+      void (service as Record<string, (...args: unknown[]) => unknown>)[method]?.('ws-1', {});
       expect(ordersService[ordersMethod]).toHaveBeenCalledWith('ws-1', {});
     });
 
@@ -100,13 +99,11 @@ describe('ReportsService', () => {
       ['getIndicadores', 'getIndicadores'],
       ['getIndicadoresProduto', 'getIndicadoresProduto'],
     ])('delegates %s to ReportsAffiliateService.%s', (method, affMethod) => {
-      void (service as Record<string, (...args: unknown[]) => unknown>)[method]?.(
+      void (service as Record<string, (...args: unknown[]) => unknown>)[method]?.('ws-1', {});
+      expect((affiliateService as Record<string, jest.Mock>)[affMethod]).toHaveBeenCalledWith(
         'ws-1',
         {},
       );
-      expect(
-        (affiliateService as Record<string, jest.Mock>)[affMethod],
-      ).toHaveBeenCalledWith('ws-1', {});
     });
   });
 

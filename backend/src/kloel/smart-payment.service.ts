@@ -10,7 +10,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { PaymentService } from './payment.service';
 import { chatCompletionWithRetry } from './openai-wrapper';
 
-const JSON_N___N_RE = /```json\n?|\n?```/g;
+import { JSON_CODE_FENCE_RE } from '../common/regex';
 const BRL_DISPLAY_FORMATTER = new Intl.NumberFormat('pt-BR', {
   style: 'currency',
   currency: 'BRL',
@@ -194,7 +194,9 @@ export class SmartPaymentService {
         });
 
         const aiContent = aiResponse.choices[0]?.message?.content ?? '';
-        const parsed = JSON.parse(aiContent.replace(JSON_N___N_RE, '') || '{}');
+        const parsed = JSON.parse(aiContent.replace(JSON_CODE_FENCE_RE, '') || '{}') as {
+          message?: string;
+        };
         suggestedMessage = parsed.message || '';
         await this.planLimits
           .trackAiUsage(workspaceId, aiResponse?.usage?.total_tokens ?? 500)
@@ -328,7 +330,12 @@ export class SmartPaymentService {
       });
 
       const responseContent = response.choices[0]?.message?.content ?? '';
-      const parsed = JSON.parse(responseContent.replace(JSON_N___N_RE, '') || '{}');
+      const parsed = JSON.parse(responseContent.replace(JSON_CODE_FENCE_RE, '') || '{}') as {
+        discountPercent?: number;
+        reason?: string;
+        installments?: number;
+        approved?: boolean;
+      };
 
       await this.planLimits
         .trackAiUsage(workspaceId, response?.usage?.total_tokens ?? 500)
@@ -342,7 +349,7 @@ export class SmartPaymentService {
         negotiatedAmount,
         discountPercent,
         reason: parsed.reason || 'Análise automática',
-        installments: parsed.installments,
+        ...(parsed.installments !== undefined ? { installments: parsed.installments } : {}),
         approved: parsed.approved !== false,
       };
     } catch (err: unknown) {

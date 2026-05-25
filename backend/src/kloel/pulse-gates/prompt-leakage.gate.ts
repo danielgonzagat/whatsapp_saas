@@ -1,5 +1,6 @@
 import { validateAbiPayload } from '../abi/abi-validator';
 import { fail, Gate, GateEvidence, GateMode, GateVerdict, pass } from './pulse-gates.types';
+import { isObject } from '../../common/types';
 
 /**
  * UTP-PULSE-007 — `prompt-leakage` gate.
@@ -154,9 +155,6 @@ const SUPPLEMENTARY_PATTERNS: ReadonlyArray<{
   },
 ];
 
-function isObject(v: unknown): v is Record<string, unknown> {
-  return typeof v === 'object' && v !== null && !Array.isArray(v);
-}
 
 /**
  * Walk every string leaf in the payload and test against supplementary

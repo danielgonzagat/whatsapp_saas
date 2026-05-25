@@ -211,6 +211,25 @@ const PRODUCT_SUB_RESOURCE_TOOLS: ChatCompletionTool[] = [
       },
     },
   },
+  // === PIX ===
+  {
+    type: 'function',
+    function: {
+      name: 'generate_pix',
+      description: 'Gera um PIX (QR code + copia e cola) real para um lead/comprador',
+      parameters: {
+        type: 'object',
+        properties: {
+          productName: { type: 'string', description: 'Nome do produto' },
+          amount: { type: 'number', description: 'Valor em reais' },
+          customerName: { type: 'string', description: 'Nome completo do comprador' },
+          customerPhone: { type: 'string', description: 'Telefone do comprador' },
+          customerEmail: { type: 'string', description: 'Email do comprador (opcional)' },
+        },
+        required: ['productName', 'amount', 'customerName', 'customerPhone'],
+      },
+    },
+  },
 ];
 export const UNIFIED_AGENT_TOOLS_PRODUCT: ChatCompletionTool[] = [
   ...PRODUCT_SUB_RESOURCE_TOOLS,

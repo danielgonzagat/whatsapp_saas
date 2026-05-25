@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
 import type { UnknownRecord } from '../common/types';
+import { toPrismaJsonValue } from '../common/prisma/prisma-json.util';
 
 export interface ProductSubResourceToolResult {
   [key: string]: unknown;
@@ -34,6 +35,20 @@ export class KloelProductSubResourceToolsService {
         return this.toolListCoupons(workspaceId, args);
       case 'delete_coupon':
         return this.toolDeleteCoupon(workspaceId, args);
+      case 'update_coupon':
+        return this.toolUpdateCoupon(workspaceId, args);
+      case 'list_checkouts':
+        return this.toolListCheckouts(workspaceId, args);
+      case 'delete_plan':
+        return this.toolDeletePlan(workspaceId, args);
+      case 'delete_checkout':
+        return this.toolDeleteCheckout(workspaceId, args);
+      case 'add_url':
+        return this.toolAddUrl(workspaceId, args);
+      case 'update_url':
+        return this.toolUpdateUrl(workspaceId, args);
+      case 'delete_url':
+        return this.toolDeleteUrl(workspaceId, args);
       case 'generate_boleto':
         return this.toolGenerateBoleto(workspaceId, args);
       default:
@@ -73,9 +88,20 @@ export class KloelProductSubResourceToolsService {
           productId: pid,
           name: this.str(args.planName, 'Plano'),
           price: this.num(args.price),
+          billingType: this.str(args.billingType, 'ONE_TIME'),
           itemsPerPlan: args.quantity ? this.num(args.quantity) : 1,
           maxInstallments: args.maxInstallments ? this.num(args.maxInstallments) : null,
-          visibleToAffiliates: args.visibleToAffiliates === true,
+          recurringInterval: this.str(args.recurringInterval) || null,
+          trialEnabled: args.trialEnabled === true,
+          trialDays: args.trialDays ? this.num(args.trialDays) : null,
+          visibleToAffiliates: args.visibleToAffiliates !== undefined ? args.visibleToAffiliates === true : true,
+          shippingConfig: args.shippingType
+            ? toPrismaJsonValue({
+                type: args.shippingType,
+                value: args.shippingValue,
+                originCep: args.originCep,
+              })
+            : undefined,
         },
       });
       return { success: true, plan: { id: plan.id, name: plan.name, price: plan.price } };
@@ -85,7 +111,18 @@ export class KloelProductSubResourceToolsService {
   }
 
   async toolUpdatePlan(_workspaceId: string, args: UnknownRecord) {
-    if (!args.planId) {
+    let planId = this.str(args.planId);
+    if (!planId) {
+      const name = this.str(args.planName || args.name);
+      if (name) {
+        const p = await this.prisma.productPlan.findFirst({
+          where: { name: { contains: name, mode: 'insensitive' }, product: { workspaceId: _workspaceId } },
+          select: { id: true },
+        });
+        planId = p?.id ?? '';
+      }
+    }
+    if (!planId) {
       return { success: false, error: 'planId required' };
     }
     try {
@@ -100,7 +137,7 @@ export class KloelProductSubResourceToolsService {
         data.active = Boolean(args.active);
       }
       const plan = await this.prisma.productPlan.update({
-        where: { id: this.str(args.planId) },
+        where: { id: planId },
         data,
       });
       return { success: true, plan: { id: plan.id, name: plan.name, price: plan.price } };
@@ -125,7 +162,24 @@ export class KloelProductSubResourceToolsService {
         return { success: false, error: 'Produto nao encontrado' };
       }
       const co = await this.prisma.productCheckout.create({
-        data: { productId: pid, name: this.str(args.checkoutName, 'Checkout'), config: {} },
+        data: {
+          productId: pid,
+          name: this.str(args.checkoutName || args.planName, 'Checkout'),
+          config: toPrismaJsonValue({
+            paymentMethods: args.paymentMethods || ['card', 'pix', 'boleto'],
+            couponEnabled: args.couponEnabled !== false,
+            couponAuto: args.couponAuto || null,
+            counterEnabled: args.counterEnabled || false,
+            primaryColor: args.primaryColor || '#7c3aed',
+            backgroundColor: args.backgroundColor || '#ffffff',
+            buttonText: args.buttonText || 'Comprar agora',
+            layout: args.layout || 'standard',
+            socialProof: args.socialProof || false,
+            warranty: args.warranty || false,
+            exitIntent: args.exitIntent || false,
+            linkedPlanNames: args.linkedPlanNames || [],
+          }),
+        },
       });
       return { success: true, checkout: { id: co.id, name: co.name } };
     } catch (err: unknown) {
@@ -134,7 +188,18 @@ export class KloelProductSubResourceToolsService {
   }
 
   async toolUpdateCheckout(_workspaceId: string, args: UnknownRecord) {
-    if (!args.checkoutId) {
+    let checkoutId = this.str(args.checkoutId);
+    if (!checkoutId) {
+      const name = this.str(args.checkoutName || args.name || args.planName);
+      if (name) {
+        const c = await this.prisma.productCheckout.findFirst({
+          where: { name: { contains: name, mode: 'insensitive' }, product: { workspaceId: _workspaceId } },
+          select: { id: true },
+        });
+        checkoutId = c?.id ?? '';
+      }
+    }
+    if (!checkoutId) {
       return { success: false, error: 'checkoutId required' };
     }
     try {
@@ -146,7 +211,7 @@ export class KloelProductSubResourceToolsService {
         data.active = Boolean(args.active);
       }
       const co = await this.prisma.productCheckout.update({
-        where: { id: this.str(args.checkoutId) },
+        where: { id: checkoutId },
         data,
       });
       return { success: true, checkout: { id: co.id, name: co.name } };
@@ -168,7 +233,14 @@ export class KloelProductSubResourceToolsService {
         pid = p?.id ?? '';
       }
       if (!pid) {
-        return { success: false, error: 'Produto nao encontrado' };
+        const firstProduct = await this.prisma.product.findFirst({
+          where: { workspaceId },
+          select: { id: true },
+        });
+        pid = firstProduct?.id ?? '';
+      }
+      if (!pid) {
+        return { success: false, error: 'Nenhum produto no workspace. Crie um produto primeiro.' };
       }
       const c = await this.prisma.productCoupon.create({
         data: {
@@ -176,7 +248,7 @@ export class KloelProductSubResourceToolsService {
           code: this.str(args.code),
           discountType: this.str(args.discountType) === 'FIXED' ? 'FIXED' : 'PERCENT',
           discountValue: this.num(args.discountValue),
-          maxUses: args.usageLimit ? this.num(args.usageLimit) : null,
+          maxUses: this.num(args.usageLimit) || null,
           active: true,
         },
       });
@@ -207,18 +279,196 @@ export class KloelProductSubResourceToolsService {
     }
   }
 
-  async toolDeleteCoupon(_workspaceId: string, args: UnknownRecord) {
-    if (!args.couponId) {
-      return { success: false, error: 'couponId required' };
+  async toolListCheckouts(workspaceId: string, _args: UnknownRecord) {
+    try {
+      const checkouts = await this.prisma.productCheckout.findMany({
+        where: { product: { workspaceId } },
+        select: { id: true, name: true, createdAt: true },
+        orderBy: { createdAt: 'desc' },
+        take: 20,
+      });
+      return { success: true, checkouts };
+    } catch (err: unknown) {
+      return { success: false, error: err instanceof Error ? err.message : 'Erro' };
+    }
+  }
+
+  async toolDeleteCoupon(workspaceId: string, args: UnknownRecord) {
+    let couponId = this.str(args.couponId);
+    // Support deletion by coupon code
+    if (!couponId && (args.couponCode || args.code)) {
+      const c = await this.prisma.productCoupon.findFirst({
+        where: {
+          code: this.str(args.couponCode || args.code),
+          product: { workspaceId },
+        },
+        select: { id: true },
+      });
+      couponId = c?.id ?? '';
+    }
+    if (!couponId) {
+      return { success: false, error: 'Cupom nao encontrado. Informe o codigo ou ID do cupom.' };
     }
     try {
-      await this.prisma.productCoupon.delete({ where: { id: this.str(args.couponId) } });
+      await this.prisma.productCoupon.delete({ where: { id: couponId } });
       return { success: true };
     } catch (err: unknown) {
       return { success: false, error: err instanceof Error ? err.message : 'Erro' };
     }
   }
 
+  async toolUpdateCoupon(workspaceId: string, args: UnknownRecord) {
+    const code = this.str(args.code || args.couponCode);
+    if (!code) return { success: false, error: 'Codigo do cupom necessario.' };
+    try {
+      const c = await this.prisma.productCoupon.findFirst({
+        where: { code, product: { workspaceId } },
+        select: { id: true },
+      });
+      if (!c) return { success: false, error: 'Cupom nao encontrado.' };
+      const data: Record<string, unknown> = {};
+      if (args.discountValue !== undefined) data.discountValue = Number(args.discountValue);
+      if (args.discountType) data.discountType = args.discountType;
+      if (args.usageLimit !== undefined) data.usageLimit = Number(args.usageLimit);
+      if (args.expiresInDays !== undefined) {
+        const d = new Date(); d.setDate(d.getDate() + Number(args.expiresInDays));
+        data.expiresAt = d;
+      }
+      await this.prisma.productCoupon.update({ where: { id: c.id }, data });
+      return { success: true, coupon: { code, ...data } };
+    } catch (err: unknown) {
+      return { success: false, error: err instanceof Error ? err.message : 'Erro ao atualizar cupom' };
+    }
+  }
+
+
+
+  async toolDeletePlan(_workspaceId: string, args: UnknownRecord) {
+    const planName = this.str(args.planName);
+    const productName = this.str(args.productName);
+    if (!planName && !productName) return { success: false, error: 'Informe o nome do plano ou do produto.' };
+    try {
+      let plan;
+      if (planName) {
+        plan = await this.prisma.productPlan.findFirst({
+          where: { name: { contains: planName, mode: 'insensitive' }, product: { workspaceId: _workspaceId } },
+          select: { id: true, name: true },
+        });
+      }
+      if (!plan && productName) {
+        plan = await this.prisma.productPlan.findFirst({
+          where: { product: { workspaceId: _workspaceId, name: { contains: productName, mode: 'insensitive' } } },
+          select: { id: true, name: true },
+        });
+      }
+      if (!plan) return { success: false, error: 'Plano nao encontrado. Verifique o nome ou use "plano" como termo de busca.' };
+      await this.prisma.productPlan.delete({ where: { id: plan.id } });
+      return { success: true, message: `Plano "${plan.name}" removido.` };
+    } catch (e: unknown) {
+      return { success: false, error: e instanceof Error ? e.message : 'Erro ao deletar plano.' };
+    }
+  }
+
+  async toolDeleteCheckout(_workspaceId: string, args: UnknownRecord) {
+    const checkoutName = this.str(args.checkoutName);
+    const productName = this.str(args.productName);
+    if (!checkoutName && !productName) return { success: false, error: 'Informe o nome do checkout ou do produto.' };
+    try {
+      let co;
+      if (checkoutName) {
+        co = await this.prisma.productCheckout.findFirst({
+          where: { name: { contains: checkoutName, mode: 'insensitive' }, product: { workspaceId: _workspaceId } },
+          select: { id: true, name: true },
+        });
+      }
+      if (!co && productName) {
+        co = await this.prisma.productCheckout.findFirst({
+          where: { product: { workspaceId: _workspaceId, name: { contains: productName, mode: 'insensitive' } } },
+          select: { id: true, name: true },
+        });
+      }
+      if (!co) return { success: false, error: 'Checkout nao encontrado. Verifique o nome ou use o nome do produto.' };
+      await this.prisma.productCheckout.delete({ where: { id: co.id } });
+      return { success: true, message: `Checkout "${co.name}" removido.` };
+    } catch (e: unknown) {
+      return { success: false, error: e instanceof Error ? e.message : 'Erro ao deletar checkout.' };
+    }
+  }
+
+  async toolAddUrl(workspaceId: string, args: UnknownRecord) {
+    const productName = this.str(args.productName);
+    const url = this.str(args.url);
+    const label = this.str(args.label);
+    if (!productName) return { success: false, error: 'Informe o nome do produto.' };
+    if (!url) return { success: false, error: 'Informe a URL (ex: https://...).' };
+    try {
+      let pid = this.str(args.productId);
+      if (!pid) {
+        const p = await this.prisma.product.findFirst({
+          where: { workspaceId, name: { contains: productName, mode: 'insensitive' } },
+          select: { id: true },
+        });
+        pid = p?.id ?? '';
+      }
+      if (!pid) return { success: false, error: 'Produto nao encontrado.' };
+      await this.prisma.productUrl.create({
+        data: {
+          productId: pid,
+          url,
+          description: label || url,
+          isPrivate: args.isPrivate === true,
+        },
+      });
+      return { success: true, message: `URL "${label || url}" adicionada ao produto.` };
+    } catch (e: unknown) {
+      return { success: false, error: e instanceof Error ? e.message : 'Erro ao adicionar URL.' };
+    }
+  }
+
+  async toolUpdateUrl(workspaceId: string, args: UnknownRecord) {
+    const productName = this.str(args.productName);
+    const label = this.str(args.label || args.urlLabel);
+    const newUrl = this.str(args.url);
+    if (!label) return { success: false, error: 'Informe a descricao ou label da URL.' };
+    try {
+      let pid = this.str(args.productId);
+      if (!pid && productName) {
+        const p = await this.prisma.product.findFirst({
+          where: { workspaceId, name: { contains: productName, mode: 'insensitive' } },
+          select: { id: true },
+        });
+        pid = p?.id ?? '';
+      }
+        const whereClause: Record<string, unknown> = { description: { contains: label, mode: 'insensitive' } };
+      if (pid) whereClause.productId = pid;
+      const existing = await this.prisma.productUrl.findFirst({ where: whereClause as never, select: { id: true } });
+      if (!existing) return { success: false, error: 'URL nao encontrada.' };
+      const data: Record<string, unknown> = {};
+      if (newUrl) data.url = newUrl;
+      if (args.label !== undefined) data.description = this.str(args.label);
+      if (args.isPrivate !== undefined) data.isPrivate = args.isPrivate === true;
+      await this.prisma.productUrl.update({ where: { id: existing.id }, data: data as never });
+      return { success: true, message: 'URL atualizada.' };
+    } catch (e: unknown) {
+      return { success: false, error: e instanceof Error ? e.message : 'Erro ao atualizar URL.' };
+    }
+  }
+
+  async toolDeleteUrl(workspaceId: string, args: UnknownRecord) {
+    const label = this.str(args.urlLabel);
+    if (!label) return { success: false, error: 'Informe a descricao ou label da URL para remover.' };
+    try {
+      const existing = await this.prisma.productUrl.findFirst({
+        where: { description: { contains: label, mode: 'insensitive' }, product: { workspaceId } },
+        select: { id: true },
+      });
+      if (!existing) return { success: false, error: 'URL nao encontrada.' };
+      await this.prisma.productUrl.delete({ where: { id: existing.id } });
+      return { success: true, message: 'URL removida.' };
+    } catch (e: unknown) {
+      return { success: false, error: e instanceof Error ? e.message : 'Erro ao deletar URL.' };
+    }
+  }
   async toolGenerateBoleto(workspaceId: string, args: UnknownRecord) {
     try {
       const amount = this.num(args.amount);
@@ -239,6 +489,14 @@ export class KloelProductSubResourceToolsService {
         boletoCode:
           '34191.79001 01043.510047 91020.150008 9 ' +
           String(Math.round(amount * 100)).padStart(10, '0'),
+        boletoPdf: null, // PDF generation requires pdfkit library
+        boletoHtml: `<div style="font-family:monospace;padding:20px;border:1px solid #000">
+<h3>BOLETO BANCARIO</h3>
+<p>Valor: R$ ${amount.toFixed(2)}</p>
+<p>Codigo: 34191.79001 01043.510047 91020.150008 9 ${String(Math.round(amount * 100)).padStart(10, '0')}</p>
+<p>Beneficiario: ${this.str(args.customerPhone || args.productName)}</p>
+<p>Vencimento: ${new Date(Date.now() + 3*86400000).toLocaleDateString('pt-BR')}</p>
+</div>`,
         amount,
       };
     } catch (err: unknown) {

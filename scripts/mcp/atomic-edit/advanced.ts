@@ -165,6 +165,21 @@ export async function renameSymbolCrossFile(
     : new Project({ compilerOptions: { allowJs: true, noEmit: true } });
   if (!tsconfig)
     project.addSourceFilesAtPaths(path.join(path.dirname(absFile), '**/*.{ts,tsx,js,jsx}'));
+  // A tsconfig commonly EXCLUDES test files (e.g. "**/*spec.ts"), but a correct
+  // cross-file rename must still reach references that live INSIDE specs — test
+  // object keys ({ method: jest.fn() }), `Pick<Class,'method'>` string-literal
+  // type members, and property access on typed test doubles. Without loading
+  // them the language service silently under-collects, forcing manual fixups.
+  // Explicitly add the test/spec sources (node_modules/dist excluded).
+  {
+    const projRoot = tsconfig ? path.dirname(tsconfig) : path.dirname(absFile);
+    project.addSourceFilesAtPaths([
+      path.join(projRoot, '**/*.spec.{ts,tsx}'),
+      path.join(projRoot, '**/*.test.{ts,tsx}'),
+      `!${path.join(projRoot, '**/node_modules/**')}`,
+      `!${path.join(projRoot, '**/dist/**')}`,
+    ]);
+  }
 
   const sf = project.getSourceFile(absFile) ?? project.addSourceFileAtPath(absFile);
   const original = new Map<string, string>();
@@ -189,11 +204,122 @@ export async function renameSymbolCrossFile(
   }
   const oldName = id.getText();
   const renameable = id.asKindOrThrow(ts.SyntaxKind.Identifier);
+  // Owning class/interface of the renamed member (for binding-aware test-double
+  // key coverage after the symbol rename); undefined for free symbols.
+  let ownerTypeName: string | undefined;
+  type WalkNode = { getKind: () => number; getParent: () => unknown; getName?: () => string | undefined };
+  let cur = renameable.getParent() as WalkNode | undefined;
+  while (cur) {
+    const pk = cur.getKind();
+    if (pk === ts.SyntaxKind.ClassDeclaration || pk === ts.SyntaxKind.InterfaceDeclaration) {
+      ownerTypeName = cur.getName?.();
+      break;
+    }
+    cur = cur.getParent() as WalkNode | undefined;
+  }
   const totalReferences = renameable
     .findReferences()
     .reduce((n, r) => n + r.getReferences().length, 0);
 
   renameable.rename(newName);
+
+  // Binding-aware coverage for test-double property keys with NO symbol link to
+  // the renamed member (ts-morph's rename cannot reach them): NestJS DI provider
+  // doubles `{ provide: <OwnerType>, useValue|useFactory: { <oldName>: ... } }`
+  // and object literals typed `Partial<OwnerType>` / `Pick<OwnerType, ...>`. Only
+  // a key provably bound to OwnerType is renamed — never an unrelated same-name key.
+  if (ownerTypeName) {
+    const K = ts.SyntaxKind;
+    const renameKeyIn = (obj: unknown): void => {
+      const o = obj as { getKind?: () => number; getProperties?: () => unknown[] } | undefined;
+      if (!o || o.getKind?.() !== K.ObjectLiteralExpression) return;
+      for (const prop of o.getProperties?.() ?? []) {
+        const p = prop as { getKind?: () => number; getNameNode?: () => { getText?: () => string; replaceWithText?: (t: string) => void } | undefined };
+        const pk = p.getKind?.();
+        if (pk !== K.PropertyAssignment && pk !== K.MethodDeclaration && pk !== K.GetAccessor && pk !== K.SetAccessor) continue;
+        const nameNode = p.getNameNode?.();
+        const raw = nameNode?.getText?.() ?? '';
+        const q = raw.length > 1 && (raw[0] === "'" || raw[0] === '"' || raw[0] === '`') ? raw[0] : '';
+        const bare = q ? raw.slice(1, -1) : raw;
+        if (bare === oldName) nameNode?.replaceWithText?.(q ? q + newName + q : newName);
+      }
+    };
+    const factoryObj = (init: unknown): unknown => {
+      const f = init as { getKind?: () => number; getBody?: () => unknown } | undefined;
+      const k = f?.getKind?.();
+      if (k !== K.ArrowFunction && k !== K.FunctionExpression) return undefined;
+      const body = f?.getBody?.() as { getKind?: () => number; getExpression?: () => unknown; getStatements?: () => unknown[] } | undefined;
+      const bk = body?.getKind?.();
+      if (bk === K.ParenthesizedExpression) return body?.getExpression?.();
+      if (bk === K.ObjectLiteralExpression) return body;
+      if (bk === K.Block) {
+        for (const st of body?.getStatements?.() ?? []) {
+          const s = st as { getKind?: () => number; getExpression?: () => unknown };
+          if (s.getKind?.() === K.ReturnStatement) {
+            const e = s.getExpression?.() as { getKind?: () => number; getExpression?: () => unknown } | undefined;
+            return e?.getKind?.() === K.ParenthesizedExpression ? e.getExpression?.() : e;
+          }
+        }
+      }
+      return undefined;
+    };
+    // After renaming a test-double KEY, the bound variable's PROPERTY ACCESSES
+    // (`dbl.oldName(...)`, `expect(dbl.oldName)...`) still name the old member —
+    // ts-morph's rename cannot reach them because the double is an untyped /
+    // structurally-typed object with no symbol link to OwnerType. Rename those
+    // accesses too, but ONLY on the exact variable proven to be the double.
+    const renameAccessesOfVar = (nameNode: unknown): void => {
+      const n = nameNode as { findReferencesAsNodes?: () => unknown[] } | undefined;
+      let refs: unknown[] = [];
+      try { refs = n?.findReferencesAsNodes?.() ?? []; } catch { return; }
+      for (const ref of refs) {
+        const r = ref as { getParent?: () => unknown };
+        const parent = r.getParent?.() as { getKind?: () => number; getExpression?: () => unknown; getNameNode?: () => { getText?: () => string; replaceWithText?: (t: string) => void } | undefined } | undefined;
+        if (parent?.getKind?.() !== K.PropertyAccessExpression) continue;
+        if (parent.getExpression?.() !== ref) continue; // ref must be the object, not the member name
+        const nn = parent.getNameNode?.();
+        if (nn?.getText?.() === oldName) nn.replaceWithText?.(newName);
+      }
+    };
+    // Peel casts/parens so `useValue: dbl as never` / `(dbl)` / `dbl!` resolve to
+    // the underlying identifier or object literal. These wrappers are pervasive in
+    // strict codebases (e.g. `as never` to satisfy unsafe-cast gates) and would
+    // otherwise hide the DI double from binding-aware coverage.
+    const PEEL = new Set([K.AsExpression, K.ParenthesizedExpression, K.NonNullExpression, K.SatisfiesExpression, K.TypeAssertionExpression]);
+    const unwrap = (n: unknown): unknown => {
+      let cur = n as { getKind?: () => number; getExpression?: () => unknown } | undefined;
+      let guard = 0;
+      while (cur && cur.getKind && PEEL.has(cur.getKind()) && cur.getExpression && guard++ < 10) {
+        cur = cur.getExpression() as typeof cur;
+      }
+      return cur;
+    };
+    for (const f of project.getSourceFiles()) {
+      try {
+        for (const obj of f.getDescendantsOfKind(K.ObjectLiteralExpression)) {
+          const o = obj as unknown as { getProperty?: (n: string) => { getInitializer?: () => unknown } | undefined };
+          const provideVal = unwrap(o.getProperty?.('provide')?.getInitializer?.()) as { getText?: () => string } | undefined;
+          if (provideVal?.getText?.() !== ownerTypeName) continue;
+          const useValue = unwrap(o.getProperty?.('useValue')?.getInitializer?.()) as { getKind?: () => number; getSymbol?: () => { getValueDeclaration?: () => { getInitializer?: () => unknown } | undefined } | undefined } | undefined;
+          if (useValue?.getKind?.() === K.ObjectLiteralExpression) renameKeyIn(useValue);
+          else if (useValue?.getKind?.() === K.Identifier) {
+            const vdecl = useValue.getSymbol?.()?.getValueDeclaration?.() as { getInitializer?: () => unknown; getNameNode?: () => unknown } | undefined;
+            renameKeyIn(vdecl?.getInitializer?.());
+            renameAccessesOfVar(vdecl?.getNameNode?.());
+          }
+          renameKeyIn(factoryObj(o.getProperty?.('useFactory')?.getInitializer?.()));
+        }
+        for (const v of f.getDescendantsOfKind(K.VariableDeclaration)) {
+          const vd = v as unknown as { getTypeNode?: () => { getText?: () => string } | undefined; getInitializer?: () => unknown };
+          const tn = vd.getTypeNode?.()?.getText?.() ?? '';
+          if (tn !== ownerTypeName && !new RegExp(`\\b(?:Partial|Pick|Record|Mocked)\\s*<\\s*${ownerTypeName}\\b`).test(tn)) continue;
+          const init = vd.getInitializer?.();
+          if ((init as { getKind?: () => number } | undefined)?.getKind?.() === K.ObjectLiteralExpression) renameKeyIn(init);
+          renameAccessesOfVar((v as unknown as { getNameNode?: () => unknown }).getNameNode?.());
+        }
+      } catch { /* never let coverage break the validated rename */ }
+    }
+  }
 
   const changes = new Map<string, string>();
   const validations: CrossFileRenameResult['validations'] = [];
@@ -208,6 +334,48 @@ export async function renameSymbolCrossFile(
     changes.set(rel, after);
   }
   return { symbol: `${oldName} -> ${newName}`, changes, totalReferences, validations };
+}
+
+/**
+ * Name-addressed cross-file rename: resolve a class/interface MEMBER by NAME
+ * (no line/column) and delegate to renameSymbolCrossFile. Removes the coordinate
+ * surface a weak model fumbles ("position N:M is not an identifier") and the
+ * retry fragmentation that follows — the macro/intention form of the rename
+ * operator. All coverage (test-double accesses, cast unwrap, all-or-nothing
+ * validation) is inherited unchanged from renameSymbolCrossFile.
+ */
+export async function renameMemberCrossFile(
+  absFile: string,
+  repoRoot: string,
+  className: string,
+  memberName: string,
+  newName: string,
+): Promise<CrossFileRenameResult> {
+  if (!/^[A-Za-z_$][A-Za-z0-9_$]*$/.test(newName)) {
+    throw new Error(`invalid identifier: ${JSON.stringify(newName)}`);
+  }
+  const { Project } = await import('ts-morph');
+  const probe = new Project({ compilerOptions: { allowJs: true, noEmit: true } });
+  const sf = probe.addSourceFileAtPath(absFile);
+  const owner =
+    (sf.getClass?.(className) as { getMembers?: () => unknown[] } | undefined) ??
+    (sf.getInterface?.(className) as { getMembers?: () => unknown[] } | undefined);
+  if (!owner) {
+    throw new Error(`class/interface "${className}" not found in ${path.basename(absFile)}`);
+  }
+  let nameNode: { getStart?: () => number } | undefined;
+  for (const m of owner.getMembers?.() ?? []) {
+    const mm = m as { getName?: () => string | undefined; getNameNode?: () => unknown };
+    if (mm.getName?.() === memberName) {
+      nameNode = mm.getNameNode?.() as { getStart?: () => number } | undefined;
+      break;
+    }
+  }
+  if (!nameNode?.getStart) {
+    throw new Error(`member "${memberName}" not found on ${className} in ${path.basename(absFile)}`);
+  }
+  const pos = sf.getLineAndColumnAtPos(nameNode.getStart());
+  return renameSymbolCrossFile(absFile, repoRoot, pos.line, pos.column, newName);
 }
 
 // ── v3: import + object-property semantic ops (adopted from Codex's

@@ -7,6 +7,8 @@ const A_Z0_9_RE = /[^a-z0-9]+/g;
 const PATTERN_RE = /^-+|-+$/g;
 
 import { safeStr } from '../../../common/string';
+import { readNumberLoose } from '../../../common/parse';
+
 export { safeStr };
 
 /** Loose body type — accepts idempotencyKey and any other fields for safe retry.
@@ -44,12 +46,7 @@ export function parseObject(value: unknown): LooseObject {
 }
 
 export function parseNumber(value: unknown): number | undefined {
-  if (value === '' || value === null || value === undefined) {
-    return undefined;
-  }
-
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed : undefined;
+  return readNumberLoose(value);
 }
 
 export function normalizeOptionalEmail(value: unknown): string | null {

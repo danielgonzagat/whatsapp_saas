@@ -13,6 +13,7 @@ import { StructuredLogger } from '../logging/structured-logger';
 import { AuditService } from '../audit/audit.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { getFlowTemplate } from './conversational-onboarding-flow-templates';
+import { readNumberOr } from '../common/parse';
 
 /** Prisma extension with dynamic models not yet in generated types */
 interface PrismaWithDynamicModels {
@@ -63,7 +64,7 @@ export class ConversationalOnboardingToolsService {
   }
 
   readNumber(value: unknown, fallback = 0): number {
-    return typeof value === 'number' && Number.isFinite(value) ? value : fallback;
+    return readNumberOr(value, fallback);
   }
 
   readStringArray(value: unknown): string[] | undefined {

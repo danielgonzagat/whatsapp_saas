@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { CampaignsService } from '../campaigns/campaigns.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { MoneyMachineService } from './money-machine.service';
+import { createPartialPrismaMock } from '../../test/helpers/prisma.mock';
 
 jest.mock('uuid', () => ({
   v4: jest.fn().mockReturnValueOnce('flow-id-1').mockReturnValueOnce('node-id-1'),
@@ -9,19 +10,16 @@ jest.mock('uuid', () => ({
 
 describe('MoneyMachineService', () => {
   let service: MoneyMachineService;
-  let prisma: {
-    contact: { count: jest.Mock };
-    flow: { create: jest.Mock };
-    message: { count: jest.Mock };
-  };
+  let prisma: ReturnType<typeof createPartialPrismaMock>;
   let campaigns: { create: jest.Mock };
 
   beforeEach(async () => {
-    prisma = {
-      contact: { count: jest.fn() },
-      flow: { create: jest.fn().mockResolvedValue({ id: 'flow-1' }) },
-      message: { count: jest.fn() },
-    };
+    prisma = createPartialPrismaMock({
+      contact: ['count'],
+      flow: ['create'],
+      message: ['count'],
+    });
+    prisma.flow.create.mockResolvedValue({ id: 'flow-1' });
     campaigns = {
       create: jest.fn().mockResolvedValue({ id: 'campaign-1' }),
     };

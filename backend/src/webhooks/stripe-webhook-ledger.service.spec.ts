@@ -4,28 +4,24 @@ import { PrismaService } from '../prisma/prisma.service';
 import { MarketplaceTreasuryService } from '../marketplace-treasury/marketplace-treasury.service';
 import { AdminAuditService } from '../admin/audit/admin-audit.service';
 import { StripeWebhookLedgerService } from './stripe-webhook-ledger.service';
+import { createPartialPrismaMock } from '../../test/helpers/prisma.mock';
 
 describe('StripeWebhookLedgerService', () => {
   let service: StripeWebhookLedgerService;
-  let prisma: {
-    checkoutPayment: { findFirst: jest.Mock; updateMany: jest.Mock };
-    checkoutOrder: { findUnique: jest.Mock };
-    connectAccountBalance: { findUnique: jest.Mock };
-    connectMaturationRule: { findMany: jest.Mock };
-  };
+  let prisma: ReturnType<typeof createPartialPrismaMock>;
   let marketplaceTreasury: { append: jest.Mock; readBalance: jest.Mock };
   let adminAudit: { append: jest.Mock };
 
   beforeEach(async () => {
-    prisma = {
-      checkoutPayment: {
-        findFirst: jest.fn(),
-        updateMany: jest.fn().mockResolvedValue({ count: 1 }),
-      },
-      checkoutOrder: { findUnique: jest.fn() },
-      connectAccountBalance: { findUnique: jest.fn().mockResolvedValue(null) },
-      connectMaturationRule: { findMany: jest.fn().mockResolvedValue([]) },
-    };
+    prisma = createPartialPrismaMock({
+      checkoutPayment: ['findFirst', 'updateMany'],
+      checkoutOrder: ['findUnique'],
+      connectAccountBalance: ['findUnique'],
+      connectMaturationRule: ['findMany'],
+    });
+    prisma.checkoutPayment.updateMany.mockResolvedValue({ count: 1 });
+    prisma.connectAccountBalance.findUnique.mockResolvedValue(null);
+    prisma.connectMaturationRule.findMany.mockResolvedValue([]);
     marketplaceTreasury = {
       append: jest.fn().mockResolvedValue(undefined),
       readBalance: jest.fn().mockResolvedValue({ pendingInCents: '0' }),

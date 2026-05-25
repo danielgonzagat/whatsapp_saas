@@ -1,7 +1,8 @@
-const U0300__U036F_RE = /[\u0300-\u036f]/g;
+import { WHITESPACE_G_RE } from '../common/regex';
+
+import { DIACRITICS_RE } from '../common/regex';
 const A_Z0_9_RE = /[^a-z0-9]+/g;
 const PATTERN_RE = /<[^>]+>/g;
-const S_RE = /\s+/g;
 const SEARCH_STOPWORDS = new Set([
   'a',
   'ao',
@@ -69,7 +70,7 @@ const DOMAIN_TAGS = [
 function stripDiacritics(value: string): string {
   return String(value || '')
     .normalize('NFD')
-    .replace(U0300__U036F_RE, '');
+    .replace(DIACRITICS_RE, '');
 }
 
 function normalizeWord(value: string): string {
@@ -88,7 +89,7 @@ function tokenize(value: string): string[] {
 export function stripHtmlTags(value: string): string {
   return String(value || '')
     .replace(PATTERN_RE, ' ')
-    .replace(S_RE, ' ')
+    .replace(WHITESPACE_G_RE, ' ')
     .trim();
 }
 

@@ -1,31 +1,17 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { PrismaService } from '../prisma/prisma.service';
 import { MarketplaceService } from './marketplace.service';
+import { createPartialPrismaMock } from '../../test/helpers/prisma.mock';
 
 describe('MarketplaceService', () => {
   let service: MarketplaceService;
-  let prisma: {
-    flowTemplate: {
-      findMany: jest.Mock;
-      findUnique: jest.Mock;
-      update: jest.Mock;
-    };
-    flow: {
-      create: jest.Mock;
-    };
-  };
+  let prisma: ReturnType<typeof createPartialPrismaMock>;
 
   beforeEach(async () => {
-    prisma = {
-      flowTemplate: {
-        findMany: jest.fn(),
-        findUnique: jest.fn(),
-        update: jest.fn(),
-      },
-      flow: {
-        create: jest.fn(),
-      },
-    };
+    prisma = createPartialPrismaMock({
+      flowTemplate: ['findMany', 'findUnique', 'update'],
+      flow: ['create'],
+    });
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [MarketplaceService, { provide: PrismaService, useValue: prisma }],

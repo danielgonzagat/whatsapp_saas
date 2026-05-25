@@ -1,34 +1,16 @@
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { FollowUpService } from './followup.service';
-
-type FollowUpPrismaMock = {
-  contact: { findFirst: jest.Mock };
-  followUp: {
-    create: jest.Mock;
-    findFirst: jest.Mock;
-    updateMany: jest.Mock;
-  };
-};
-
+import { createPartialPrismaMock } from '../../test/helpers/prisma.mock';
 describe('FollowUpService', () => {
-  let prisma: PrismaService & FollowUpPrismaMock;
+  let prisma: PrismaService & ReturnType<typeof createPartialPrismaMock>;
   let service: FollowUpService;
 
   beforeEach(() => {
-    prisma = Object.create(PrismaService.prototype) as never as PrismaService & FollowUpPrismaMock;
-    Object.defineProperties(prisma, {
-      contact: {
-        value: { findFirst: jest.fn() },
-      },
-      followUp: {
-        value: {
-          create: jest.fn(),
-          findFirst: jest.fn(),
-          updateMany: jest.fn(),
-        },
-      },
-    });
+    prisma = createPartialPrismaMock({
+      contact: ['findFirst'],
+      followUp: ['create', 'findFirst', 'updateMany'],
+    }) as PrismaService & ReturnType<typeof createPartialPrismaMock>;
     service = new FollowUpService(prisma);
   });
 

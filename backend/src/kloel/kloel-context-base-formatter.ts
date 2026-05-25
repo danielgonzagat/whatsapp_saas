@@ -1,6 +1,7 @@
 import type { KloelContextFormatterLimits } from './kloel-context-formatter.types';
+import { WHITESPACE_G_RE } from '../common/regex';
 
-const S_RE = /\s+/g;
+
 
 export class KloelContextBaseFormatter {
   constructor(protected readonly limits: KloelContextFormatterLimits) {}
@@ -15,7 +16,7 @@ export class KloelContextBaseFormatter {
 
   sanitizeUserNameForAssistant(value: string | null | undefined): string {
     const normalized = String(value || '')
-      .replace(S_RE, ' ')
+      .replace(WHITESPACE_G_RE, ' ')
       .trim();
     if (!normalized) {
       return 'Usuário';
@@ -67,7 +68,7 @@ export class KloelContextBaseFormatter {
   }
 
   truncatePromptText(value: unknown, maxLength = 240): string {
-    const normalized = this.safeStr(value).replace(S_RE, ' ').trim();
+    const normalized = this.safeStr(value).replace(WHITESPACE_G_RE, ' ').trim();
     if (!normalized) {
       return '';
     }

@@ -1,26 +1,25 @@
 import { BadRequestException } from '@nestjs/common';
 import { ChannelSetupService } from './channel-setup.service';
+import { createPartialPrismaMock } from '../../../test/helpers/prisma.mock';
 
 describe('ChannelSetupService', () => {
   let service: ChannelSetupService;
-  const workspaceFindUnique = jest.fn();
-  const workspaceUpdate = jest.fn();
-  const channelSetupFindUnique = jest.fn();
-  const channelSetupUpsert = jest.fn();
-
-  const prismaMock = {
-    workspace: {
-      findUnique: workspaceFindUnique,
-      update: workspaceUpdate,
-    },
-    channelSetup: {
-      findUnique: channelSetupFindUnique,
-      upsert: channelSetupUpsert,
-    },
-  };
+  let prismaMock: ReturnType<typeof createPartialPrismaMock>;
+  let workspaceFindUnique: jest.Mock;
+  let workspaceUpdate: jest.Mock;
+  let channelSetupFindUnique: jest.Mock;
+  let channelSetupUpsert: jest.Mock;
 
   beforeEach(() => {
     jest.clearAllMocks();
+    prismaMock = createPartialPrismaMock({
+      workspace: ['findUnique', 'update'],
+      channelSetup: ['findUnique', 'upsert'],
+    });
+    workspaceFindUnique = prismaMock.workspace.findUnique;
+    workspaceUpdate = prismaMock.workspace.update;
+    channelSetupFindUnique = prismaMock.channelSetup.findUnique;
+    channelSetupUpsert = prismaMock.channelSetup.upsert;
     service = new ChannelSetupService(prismaMock as never);
   });
 

@@ -6,6 +6,7 @@ import { AdminLoginAttemptsService } from './admin-login-attempts.service';
 import { AdminAuditService } from '../audit/admin-audit.service';
 import { AdminSessionFactory } from './admin-session-factory';
 import { AdminAuthService } from './admin-auth.service';
+import { createPartialPrismaMock } from '../../../test/helpers/prisma.mock';
 
 const mockBcryptCompare = jest.fn();
 const mockBcryptHash = jest.fn();
@@ -53,25 +54,15 @@ describe('AdminAuthService', () => {
     adminSession: { update: jest.fn(), updateMany: jest.fn(), findUnique: jest.fn() },
   };
 
-  const mockUserFindUnique = jest.fn();
-  const mockUserUpdate = jest.fn();
-  const mockSessionFindUnique = jest.fn();
-
-  const prismaMock = {
-    adminUser: {
-      findUnique: mockUserFindUnique,
-      update: mockUserUpdate,
-    },
-    adminSession: {
-      findUnique: mockSessionFindUnique,
-    },
-    adminLoginAttempt: {
-      create: jest.fn(),
-      count: jest.fn(),
-    },
-    adminAuditLog: { create: jest.fn() },
-    $transaction: jest.fn(),
-  };
+  const prismaMock = createPartialPrismaMock({
+    adminUser: ['findUnique', 'update'],
+    adminSession: ['findUnique'],
+    adminLoginAttempt: ['create', 'count'],
+    adminAuditLog: ['create'],
+  });
+  const mockUserFindUnique = prismaMock.adminUser.findUnique;
+  const mockUserUpdate = prismaMock.adminUser.update;
+  const mockSessionFindUnique = prismaMock.adminSession.findUnique;
 
   const mockMfa = {
     createSetup: jest.fn(),

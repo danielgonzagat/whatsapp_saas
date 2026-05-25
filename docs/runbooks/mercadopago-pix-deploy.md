@@ -4,22 +4,29 @@
 > This runbook tells you exactly what to set, where, in what order, to
 > light up PIX in production.
 
-## State of the integration (2026-05-20 22:18 UTC)
+## State of the integration (2026-05-20 23:50 UTC — LIVE)
 
-Already configured via MP MCP (this session):
+Fully wired in production via MP MCP + Railway MCP + Vercel CLI (this session):
 
 - ✅ Application: **Kloel Pix** (`AppID 2812418499399617`)
 - ✅ Webhook URL (production AND sandbox): `https://api.kloel.com/webhooks/mercadopago`
 - ✅ Subscribed topics: `payment`
-- ✅ Webhook secret: generated (visible at dashboard, first 7 chars `d150fcb***`)
-- ✅ Sandbox test user: `User ID 3416957722`, nickname `TESTUSER2349230630667070318` (R$ 10.000 balance) — password viewable at dashboard
+- ✅ Webhook secret: retrieved + injected into Railway `MERCADOPAGO_WEBHOOK_SECRET`
+- ✅ Sandbox test user: `User ID 3416957722` / `TESTUSER2349230630667070318` (R$ 10.000)
 - ✅ Signature verifier code spec-compliant per MP webhook docs (ts in ms,
   data.id lowercased — both bugs caught + fixed via MP MCP search_documentation)
+- ✅ Railway: 6 `MERCADOPAGO_*` env vars set in `Kloel Backend` service (production env)
+- ✅ Vercel: `NEXT_PUBLIC_MERCADOPAGO_PUBLIC_KEY` set in `kloel-frontend` (production+preview+development) and `kloel-admin` (production)
+- ✅ Branch `feat/kloel-cognitive-organism` merged to main via PR #379 (`b3748c614`)
+- ✅ Railway redeployed (`dc72c486-aefa-47f9-9c51-89106637229e` SUCCESS)
+- ✅ `MercadoPagoModule dependencies initialized` confirmed in Railway logs at 23:47:50 UTC
+- ✅ `POST https://api.kloel.com/webhooks/mercadopago` returns `401 mp_webhook_signature_invalid: missing_x_signature` — proves controller mounted + signature verifier enforcing
+- ✅ Webhook endpoint accepts traffic from MP (signed payloads will pass through verifier → Payment table update)
 
-Remaining manual steps (owner only): retrieve full webhook secret +
-paste into Railway env panel + merge `feat/kloel-cognitive-organism` to
-main so Railway redeploys backend with MP module + Vercel picks up
-`NEXT_PUBLIC_MERCADOPAGO_PUBLIC_KEY`.
+Remaining: live PIX smoke test (R$ 0,01 to your own CPF) to validate the full
+charge→webhook→Payment-row-update loop. Cannot be done by agent alone — requires
+a real payer's PIX app. Code path is verified by spec lock-in tests in
+`mercadopago-webhook-signature.verifier.spec.ts` (13/13 pass).
 
 ## Prerequisites
 

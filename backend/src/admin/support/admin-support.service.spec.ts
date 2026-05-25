@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AdminSupportService } from './admin-support.service';
+import { createPartialPrismaMock } from '../../../test/helpers/prisma.mock';
 
 describe('AdminSupportService', () => {
   let service: AdminSupportService;
@@ -18,19 +19,13 @@ describe('AdminSupportService', () => {
     adminAuditLog: { create: mockTxAuditLogCreate },
   };
 
-  const mockPrismaTransaction = jest.fn<Promise<unknown>, unknown[]>();
-  const mockConversationFindMany = jest.fn<Promise<unknown>, unknown[]>();
-  const mockConversationFindFirst = jest.fn<Promise<unknown>, unknown[]>();
-  const mockConversationFindUnique = jest.fn<Promise<unknown>, unknown[]>();
-
-  const prismaMock = {
-    conversation: {
-      findMany: mockConversationFindMany,
-      findFirst: mockConversationFindFirst,
-      findUnique: mockConversationFindUnique,
-    },
-    $transaction: mockPrismaTransaction,
-  };
+  const prismaMock = createPartialPrismaMock({
+    conversation: ['findMany', 'findFirst', 'findUnique'],
+  });
+  const mockConversationFindMany = prismaMock.conversation.findMany;
+  const mockConversationFindFirst = prismaMock.conversation.findFirst;
+  const mockConversationFindUnique = prismaMock.conversation.findUnique;
+  const mockPrismaTransaction = prismaMock.$transaction;
 
   beforeEach(async () => {
     jest.clearAllMocks();

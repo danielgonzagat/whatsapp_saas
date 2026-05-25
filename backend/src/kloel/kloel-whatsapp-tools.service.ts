@@ -8,7 +8,6 @@ import { WhatsappService } from '../whatsapp/whatsapp.service';
 import { AudioService } from './audio.service';
 import { ChannelTransportRegistry } from './channel-transport.registry';
 import {
-  NON_DIGIT_RE,
   toolSendAudio as toolSendAudioFn,
   toolSendDocument as toolSendDocumentFn,
 } from './kloel-whatsapp-tools.helpers';
@@ -24,7 +23,8 @@ import type {
   ToolSendDocumentArgs,
   ToolTranscribeAudioArgs,
 } from './kloel-whatsapp-tools.helpers';
-export { NON_DIGIT_RE };
+import { digitsOnly } from '../common/phone';
+
 export type {
   ToolResult,
   ToolSendWhatsAppMessageArgs,
@@ -116,7 +116,7 @@ export class KloelWhatsAppToolsService {
     args: ToolSendWhatsAppMessageArgs,
   ): Promise<ToolResult> {
     const { phone, message } = args;
-    const normalizedPhone = phone.replace(NON_DIGIT_RE, '');
+    const normalizedPhone = digitsOnly(phone);
     const status = await this.providerRegistry.getSessionStatus(workspaceId);
     if (!status.connected) {
       return {

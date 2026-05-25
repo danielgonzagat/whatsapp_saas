@@ -14,7 +14,10 @@ export class LacunasController {
 
   @InternalEndpoint('admin lacunas suggestion')
   @Post('lacunas-suggest')
-  async suggest(@Body() body: { intent?: string; userMessage?: string }, @Req() req: AuthenticatedRequest) {
+  suggest(
+    @Body() body: { intent?: string; userMessage?: string },
+    @Req() req: AuthenticatedRequest,
+  ) {
     const entry = {
       suggestedAt: new Date().toISOString(),
       workspaceId: req.workspaceId || req.user?.workspaceId || 'unknown',
@@ -29,10 +32,12 @@ export class LacunasController {
       }
       appendFileSync(join(dir, 'lacunas-suggestions.jsonl'), JSON.stringify(entry) + '\n', 'utf-8');
     } catch (error: unknown) {
-      this.logger.warn(`Failed to persist lacuna suggestion: ${error instanceof Error ? error.message : 'unknown'}`);
+      this.logger.warn(
+        `Failed to persist lacuna suggestion: ${error instanceof Error ? error.message : 'unknown'}`,
+      );
     }
 
     this.logger.log(`Lacuna suggestion recorded: ${entry.intent} from ${entry.workspaceId}`);
-    return { ok: true };
+    return { id: `${entry.workspaceId}_${entry.suggestedAt}`, ok: true };
   }
 }

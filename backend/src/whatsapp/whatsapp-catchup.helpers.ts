@@ -1,14 +1,11 @@
 import type { WhatsAppProviderRegistry } from './providers/provider-registry';
 import type { WahaLidMapping } from './providers/whatsapp-api.provider';
+import { whatsappDigits } from '../common/phone';
 
-const D_RE = /\D/g;
 const LID_RE = /@lid$/i;
 
 export function normalizePhoneExt(phone: string): string {
-  return String(phone || '')
-    .replace(D_RE, '')
-    .replace('@c.us', '')
-    .replace('@s.whatsapp.net', '');
+  return whatsappDigits(phone);
 }
 
 export function normalizeTimestampExt(value?: Date | string | number | null): Date | null {
@@ -39,15 +36,7 @@ export function normalizeJsonObjExt(value: unknown): Record<string, unknown> {
     : {};
 }
 
-function normalizeOptionalText(value: unknown): string {
-  if (typeof value === 'string') {
-    return value.trim();
-  }
-  if (typeof value === 'number' || typeof value === 'boolean') {
-    return String(value).trim();
-  }
-  return '';
-}
+import { readText as normalizeOptionalText } from '../common/utils';
 
 export function resolveTimestampExt(value: unknown): number {
   const val = (value && typeof value === 'object' ? value : {}) as Record<string, unknown>;

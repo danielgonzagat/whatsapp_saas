@@ -1,6 +1,7 @@
 import type { PrismaService } from '../prisma/prisma.service';
 import { BadRequestException } from '@nestjs/common';
 import { MetaAuthController } from './meta-auth.controller';
+import { createPartialPrismaMock } from '../../test/helpers/prisma.mock';
 
 describe('MetaAuthController', () => {
   let controller: MetaAuthController;
@@ -10,13 +11,7 @@ describe('MetaAuthController', () => {
     getOAuthRedirectUri: jest.Mock;
     discoverWhatsAppAssets: jest.Mock;
   };
-  let mockPrisma: {
-    metaConnection: {
-      upsert: jest.Mock;
-      findMany: jest.Mock;
-      deleteMany: jest.Mock;
-    };
-  };
+  let mockPrisma: ReturnType<typeof createPartialPrismaMock>;
 
   const authReq = { user: { workspaceId: 'ws-1' } };
   const missingAuthReq = { user: { workspaceId: 'ws-none' } };
@@ -42,29 +37,28 @@ describe('MetaAuthController', () => {
       }),
     };
 
-    mockPrisma = {
-      metaConnection: {
-        upsert: jest.fn().mockResolvedValue({}),
-        findMany: jest.fn().mockResolvedValue([
-          {
-            workspaceId: 'ws-1',
-            accessToken: 'encrypted-token',
-            status: 'connected',
-            pageId: 'page-1',
-            pageName: 'Test Page',
-            instagramAccountId: null,
-            instagramUsername: null,
-            adAccountId: null,
-            pixelId: null,
-            catalogId: null,
-            tokenExpiresAt: new Date(Date.now() + 86400000),
-            connectedAt: new Date(),
-            updatedAt: new Date(),
-          },
-        ]),
-        deleteMany: jest.fn().mockResolvedValue({ count: 1 }),
+    mockPrisma = createPartialPrismaMock({
+      metaConnection: ['upsert', 'findMany', 'deleteMany'],
+    });
+
+    // Default findMany returns a connected MetaConnection
+    jest.mocked(mockPrisma.metaConnection.findMany).mockResolvedValue([
+      {
+        workspaceId: 'ws-1',
+        accessToken: 'encrypted-token',
+        status: 'connected',
+        pageId: 'page-1',
+        pageName: 'Test Page',
+        instagramAccountId: null,
+        instagramUsername: null,
+        adAccountId: null,
+        pixelId: null,
+        catalogId: null,
+        tokenExpiresAt: new Date(Date.now() + 86400000),
+        connectedAt: new Date(),
+        updatedAt: new Date(),
       },
-    };
+    ]);
 
     controller = new MetaAuthController(
       mockMetaSdk as never,

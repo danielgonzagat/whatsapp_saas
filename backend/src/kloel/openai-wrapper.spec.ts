@@ -10,6 +10,7 @@ import {
 } from './openai-wrapper';
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import OpenAI from 'openai';
+import { type FlexMock } from '../../test/helpers/prisma.mock';
 
 const LEGACY_PRIMARY_MODEL = ['gpt', '-4'].join('');
 const LEGACY_FALLBACK_MODEL = ['gpt', '-4.1'].join('');
@@ -20,15 +21,6 @@ jest.mock('openai');
 
 describe('OpenAI Wrapper', () => {
   type RetryableTestError = Error & { status: number };
-
-  type FlexMock = jest.Mock & {
-    mockResolvedValue: (v: unknown) => FlexMock;
-    mockResolvedValueOnce: (v: unknown) => FlexMock;
-    mockRejectedValue: (e: unknown) => FlexMock;
-    mockRejectedValueOnce: (e: unknown) => FlexMock;
-    mockReturnValue: (v: unknown) => FlexMock;
-    mockImplementation: (fn: (...args: unknown[]) => unknown) => FlexMock;
-  };
 
   function makeRetryableError(message: string, status = 500): RetryableTestError {
     const err = new Error(message) as RetryableTestError;

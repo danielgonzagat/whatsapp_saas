@@ -11,9 +11,17 @@ import { WhatsappSessionService } from './whatsapp-session.service';
 import { WhatsappMessageDispatcherService } from './whatsapp-message-dispatcher.service';
 
 jest.mock('../queue/queue', () => ({
-  flowQueue: { add: jest.fn().mockResolvedValue(undefined) },
+  flowQueue: { add: jest.fn<(...args: unknown[]) => Promise<unknown>>().mockResolvedValue(undefined) },
   autopilotQueue: { add: jest.fn().mockResolvedValue(undefined) },
 }));
+
+const mockFlowQueueAdd = jest.requireMock<{
+  flowQueue: { add: jest.Mock<(...args: unknown[]) => Promise<unknown>> };
+}>('../queue/queue').flowQueue.add;
+
+function getFlowQueueAddMock(): jest.Mock<(...args: unknown[]) => Promise<unknown>> {
+  return mockFlowQueueAdd;
+}
 
 describe('WhatsappMessageDispatcherService', () => {
   let service: WhatsappMessageDispatcherService;
@@ -110,9 +118,12 @@ describe('WhatsappMessageDispatcherService', () => {
     });
 
     it('queues message when worker is available', async () => {
-      const { flowQueue } = require('../queue/queue');
       const result = await service.sendMessage('ws-1', '5511999991234', 'hello');
-      expect(flowQueue.add).toHaveBeenCalledWith('send-message', expect.objectContaining({ to: '5511999991234', message: 'hello' }));
+      expect(getFlowQueueAddMock()).toHaveBeenCalledWith(
+        'send-message',
+        expect.objectContaining({ to: '5511999991234', message: 'hello' }),
+        expect.anything(),
+      );
       expect(result).toEqual({ ok: true, queued: true, delivery: 'queued' });
     });
 
@@ -142,12 +153,15 @@ describe('WhatsappMessageDispatcherService', () => {
 
   describe('sendTemplate', () => {
     it('queues template message successfully', async () => {
-      const { flowQueue } = require('../queue/queue');
       const result = await service.sendTemplate('ws-1', '5511999991234', {
         name: 'hello_world',
         language: 'pt_BR',
       });
-      expect(flowQueue.add).toHaveBeenCalledWith('send-message', expect.objectContaining({ type: 'template' }));
+      expect(getFlowQueueAddMock()).toHaveBeenCalledWith(
+        'send-message',
+        expect.objectContaining({ type: 'template' }),
+        expect.anything(),
+      );
       expect(result).toEqual({ ok: true, queued: true, delivery: 'queued' });
     });
 

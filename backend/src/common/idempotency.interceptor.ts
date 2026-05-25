@@ -4,6 +4,7 @@ import type Redis from 'ioredis';
 import { Observable, from, throwError } from 'rxjs';
 import { catchError, mergeMap } from 'rxjs/operators';
 
+import { readString } from './parse';
 interface IdempotencyInterceptorRequest {
   _idempotencyKey?: unknown;
   _idempotencyTtl?: unknown;
@@ -11,10 +12,6 @@ interface IdempotencyInterceptorRequest {
 
 interface IdempotencyInterceptorResponse {
   statusCode?: unknown;
-}
-
-function readString(value: unknown): string | undefined {
-  return typeof value === 'string' && value.trim() ? value : undefined;
 }
 
 function readTtl(value: unknown): number {

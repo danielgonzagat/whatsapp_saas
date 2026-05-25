@@ -1,6 +1,7 @@
 import { Injectable, Optional } from '@nestjs/common';
 import { PulseArtifactService } from '../../pulse/pulse-artifact.service';
 import type { AgentPulseSelfModel } from './agent-runtime.types';
+import { readStringArray } from '../../common/parse';
 
 function readRecord(value: unknown): Record<string, unknown> {
   return value && typeof value === 'object' && !Array.isArray(value)
@@ -8,9 +9,6 @@ function readRecord(value: unknown): Record<string, unknown> {
     : {};
 }
 
-function readStringArray(value: unknown): string[] {
-  return Array.isArray(value) ? value.filter((entry): entry is string => typeof entry === 'string') : [];
-}
 
 @Injectable()
 export class AgentRuntimePulseSelfModelService {

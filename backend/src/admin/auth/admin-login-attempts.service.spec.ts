@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AdminLoginAttemptsService } from './admin-login-attempts.service';
+import { createPartialPrismaMock } from '../../../test/helpers/prisma.mock';
 
 describe('AdminLoginAttemptsService', () => {
   let service: AdminLoginAttemptsService;
@@ -8,16 +9,11 @@ describe('AdminLoginAttemptsService', () => {
   const email = 'admin@test.com';
   const ip = '1.2.3.4';
 
-  const mockAttemptCount = jest.fn();
-  const mockAttemptCreate = jest.fn();
-
-  const prismaMock = {
-    adminLoginAttempt: {
-      count: mockAttemptCount,
-      create: mockAttemptCreate,
-    },
-    $transaction: jest.fn(),
-  };
+  const prismaMock = createPartialPrismaMock({
+    adminLoginAttempt: ['count', 'create'],
+  });
+  const mockAttemptCount = prismaMock.adminLoginAttempt.count;
+  const mockAttemptCreate = prismaMock.adminLoginAttempt.create;
 
   beforeEach(async () => {
     jest.clearAllMocks();

@@ -4,6 +4,7 @@ import { AuditService } from '../audit/audit.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { UnifiedAgentActionsService } from './unified-agent-actions.service';
 import { RiskGateService } from './risk-class/risk-gate.service';
+import { KloelToolDispatcherService } from './kloel-tool-dispatcher.service';
 import type { ToolArgs } from './unified-agent.types';
 
 import type { UnknownRecord } from '../common/types';
@@ -17,6 +18,7 @@ export class UnifiedAgentToolExecutorService {
     private readonly prisma: PrismaService,
     private readonly auditService: AuditService,
     @Optional() private readonly riskGate?: RiskGateService,
+    @Optional() private readonly dispatcher?: KloelToolDispatcherService,
   ) {}
 
   async execute(
@@ -198,6 +200,11 @@ export class UnifiedAgentToolExecutorService {
       case 'reactivate_ghost':
         return this.actions.actionReactivateGhost(workspaceId, contactId, phone, args, context);
       default:
+        // Fallback: delegate to KloelToolDispatcherService for tools not in this executor
+        if (this.dispatcher) {
+          this.logger.log(`Delegating tool ${tool} to dispatcher`);
+          return this.dispatcher.executeTool(workspaceId, tool, args as UnknownRecord);
+        }
         this.logger.warn(`Unknown tool: ${tool}`);
         return { success: false, error: 'Unknown tool' };
     }

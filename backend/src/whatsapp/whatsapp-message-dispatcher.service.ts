@@ -15,8 +15,7 @@ import { WorkerRuntimeService } from './worker-runtime.service';
 import { WhatsappSessionService } from './whatsapp-session.service';
 import type { ContactCustomFields } from '../contacts/contact-custom-fields.types';
 import { WhatsAppEventEmitterService } from '../kloel/whatsapp-emitter/whatsapp-event-emitter.service';
-
-const D_RE = /\D/g;
+import { NON_DIGIT_RE } from '../common/phone';
 
 @Injectable()
 export class WhatsappMessageDispatcherService {
@@ -40,7 +39,7 @@ export class WhatsappMessageDispatcherService {
   }
 
   private normalizeNumber(num: string): string {
-    return num.replace(D_RE, '');
+    return num.replace(NON_DIGIT_RE, '');
   }
 
   private sleep(ms: number): Promise<void> {
@@ -94,19 +93,23 @@ export class WhatsappMessageDispatcherService {
       }
       return dr;
     }
-    await flowQueue.add('send-message', {
-      type: 'direct',
-      workspaceId: ws,
-      workspace: ew,
-      to,
-      message,
-      user: to,
-      mediaUrl: opts?.mediaUrl,
-      mediaType: opts?.mediaType,
-      caption: opts?.caption,
-      externalId: opts?.externalId,
-      quotedMessageId: opts?.quotedMessageId,
-    });
+    await flowQueue.add(
+      'send-message',
+      {
+        type: 'direct',
+        workspaceId: ws,
+        workspace: ew,
+        to,
+        message,
+        user: to,
+        mediaUrl: opts?.mediaUrl,
+        mediaType: opts?.mediaType,
+        caption: opts?.caption,
+        externalId: opts?.externalId,
+        quotedMessageId: opts?.quotedMessageId,
+      },
+      { priority: 5 },
+    );
     await this.planLimits.trackMessageSend(ws);
     return { ok: true, queued: true, delivery: 'queued' };
   }
@@ -144,14 +147,18 @@ export class WhatsappMessageDispatcherService {
         diagnostics: r.diagnostics,
       };
     }
-    await flowQueue.add('send-message', {
-      type: 'template',
-      workspaceId: ws,
-      workspace: ew,
-      to,
-      template,
-      user: to,
-    });
+    await flowQueue.add(
+      'send-message',
+      {
+        type: 'template',
+        workspaceId: ws,
+        workspace: ew,
+        to,
+        template,
+        user: to,
+      },
+      { priority: 5 },
+    );
     await this.planLimits.trackMessageSend(ws);
     return { ok: true, queued: true, delivery: 'queued' };
   }
