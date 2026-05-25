@@ -178,7 +178,10 @@ export class KloelToolDispatcherService {
         case 'list_subscriptions':
           return await this.chatToolsService.toolListSubscriptions(workspaceId, asToolArgs(args));
         case 'update_affiliate_config':
-          return await this.bizConfigToolsService.toolUpdateAffiliateConfig(workspaceId, asToolArgs(args));
+          return await this.bizConfigToolsService.toolUpdateAffiliateConfig(
+            workspaceId,
+            asToolArgs(args),
+          );
         case 'list_affiliates':
           return await this.bizConfigToolsService.toolListAffiliates(workspaceId);
         case 'get_affiliate_config':
@@ -188,17 +191,20 @@ export class KloelToolDispatcherService {
         case 'upload_product_image':
           return await this.chatToolsService.toolUploadProductImage(workspaceId, asToolArgs(args));
         case 'update_fiscal_data':
-          return await this.bizConfigToolsService.toolSaveBusinessInfo(workspaceId, asToolArgs(args));
+          return await this.bizConfigToolsService.toolSaveBusinessInfo(
+            workspaceId,
+            asToolArgs(args),
+          );
         case 'upload_document':
           return await this.bizConfigToolsService.toolUploadDocument(workspaceId, asToolArgs(args));
         case 'configure_pixel':
-          return await this.chatToolsService.toolConfigurePixel(workspaceId, asToolArgs(args));
+          return this.chatToolsService.toolConfigurePixel(workspaceId, asToolArgs(args));
         case 'configure_shipping':
-          return await this.chatToolsService.toolConfigureShipping(workspaceId, asToolArgs(args));
+          return this.chatToolsService.toolConfigureShipping(workspaceId, asToolArgs(args));
         case 'configure_social_proof':
-          return await this.chatToolsService.toolConfigureSocialProof(workspaceId, asToolArgs(args));
+          return this.chatToolsService.toolConfigureSocialProof(workspaceId, asToolArgs(args));
         case 'configure_order_bump':
-          return await this.chatToolsService.toolConfigureOrderBump(workspaceId, asToolArgs(args));
+          return this.chatToolsService.toolConfigureOrderBump(workspaceId, asToolArgs(args));
         case 'get_social_channels':
           return await this.bizConfigToolsService.toolGetSocialChannels(workspaceId);
         case 'configure_warranty':
@@ -211,13 +217,27 @@ export class KloelToolDispatcherService {
           return await this.chatToolsService.toolBrowseMarketplace(workspaceId, asToolArgs(args));
         case 'get_nps':
         case 'get_churn':
-          if (this.walletSalesTools) return await this.walletSalesTools.executeTool(toolName, workspaceId, asToolArgs(args));
+          if (this.walletSalesTools) {
+            return await this.walletSalesTools.executeTool(toolName, workspaceId, asToolArgs(args));
+          }
           return { success: false, error: 'wallet_sales_tools_not_available' };
         case 'list_refunds':
-          if (this.walletSalesTools) return await this.walletSalesTools.executeTool('list_orders', workspaceId, asToolArgs({ status: 'refunded' }));
+          if (this.walletSalesTools) {
+            return await this.walletSalesTools.executeTool(
+              'list_orders',
+              workspaceId,
+              asToolArgs({ status: 'refunded' }),
+            );
+          }
           return { success: false, error: 'wallet_sales_tools_not_available' };
         case 'request_anticipation':
-          if (this.walletSalesTools) return await this.walletSalesTools.executeTool('request_anticipation', workspaceId, asToolArgs(args));
+          if (this.walletSalesTools) {
+            return await this.walletSalesTools.executeTool(
+              'request_anticipation',
+              workspaceId,
+              asToolArgs(args),
+            );
+          }
           return { success: false, error: 'wallet_sales_tools_not_available' };
         case 'connect_channel':
           return await this.bizConfigToolsService.toolConnectChannel(workspaceId, asToolArgs(args));
@@ -396,17 +416,29 @@ export class KloelToolDispatcherService {
         case 'codegraph_status':
           return await this.codeToolsService.toolCodeGraphStatus();
         case 'codegraph_search':
-          return await this.codeToolsService.toolCodeGraphSearch(typeof args.query === 'string' ? args.query : '');
+          return await this.codeToolsService.toolCodeGraphSearch(
+            typeof args.query === 'string' ? args.query : '',
+          );
         case 'codegraph_context':
-          return await this.codeToolsService.toolCodeGraphContext(typeof args.task === 'string' ? args.task : 'overview');
+          return await this.codeToolsService.toolCodeGraphContext(
+            typeof args.task === 'string' ? args.task : 'overview',
+          );
         case 'codegraph_callers':
-          return await this.codeToolsService.toolCodeGraphCallers(typeof args.symbol === 'string' ? args.symbol : '');
+          return await this.codeToolsService.toolCodeGraphCallers(
+            typeof args.symbol === 'string' ? args.symbol : '',
+          );
         case 'codegraph_callees':
-          return await this.codeToolsService.toolCodeGraphCallees(typeof args.symbol === 'string' ? args.symbol : '');
+          return await this.codeToolsService.toolCodeGraphCallees(
+            typeof args.symbol === 'string' ? args.symbol : '',
+          );
         case 'codegraph_impact':
-          return await this.codeToolsService.toolCodeGraphImpact(typeof args.symbol === 'string' ? args.symbol : '');
+          return await this.codeToolsService.toolCodeGraphImpact(
+            typeof args.symbol === 'string' ? args.symbol : '',
+          );
         case 'codegraph_node':
-          return await this.codeToolsService.toolCodeGraphNode(typeof args.symbol === 'string' ? args.symbol : '');
+          return await this.codeToolsService.toolCodeGraphNode(
+            typeof args.symbol === 'string' ? args.symbol : '',
+          );
         case 'codegraph_files':
           return await this.codeToolsService.toolCodeGraphFiles();
         default:

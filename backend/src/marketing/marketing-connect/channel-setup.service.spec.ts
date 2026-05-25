@@ -69,7 +69,9 @@ describe('ChannelSetupService', () => {
 
     it('throws BadRequestException for invalid channel argument', async () => {
       await expect(service.getSetup('ws-1', 'invalid')).rejects.toThrow(BadRequestException);
-      await expect(service.getSetup('ws-1', 'invalid')).rejects.toThrow('invalid_marketing_channel');
+      await expect(service.getSetup('ws-1', 'invalid')).rejects.toThrow(
+        'invalid_marketing_channel',
+      );
     });
 
     it('filters prisma queries by workspaceId in getSetup', async () => {

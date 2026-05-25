@@ -5,7 +5,6 @@ import { PrismaService } from '../prisma/prisma.service';
 import { extractThreadSearchTags, stripHtmlTags } from './thread-search.util';
 import { WHITESPACE_G_RE } from '../common/regex';
 
-
 interface ThreadSearchRow {
   id: string;
   title: string;

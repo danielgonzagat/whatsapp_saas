@@ -18,7 +18,6 @@ export { readString };
 import { asRecord } from '../common/types';
 export { asRecord };
 
-
 function readNullableString(value: unknown): string | null {
   if (value === null || value === undefined) {
     return null;

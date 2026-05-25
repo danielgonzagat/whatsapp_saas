@@ -1,4 +1,3 @@
-
 import { ConfigService } from '@nestjs/config';
 import { StructuredLogger } from '../../logging/structured-logger';
 import { getTraceHeaders } from '../../common/trace-headers';

@@ -10,9 +10,14 @@ export async function runGetAffiliateConfig(
       prisma.affiliatePartner.findMany({
         where: { workspaceId },
         select: {
-          id: true, partnerName: true, commissionRate: true,
-          commissionType: true, status: true, totalSales: true,
-          totalCommission: true, affiliateCode: true,
+          id: true,
+          partnerName: true,
+          commissionRate: true,
+          commissionType: true,
+          status: true,
+          totalSales: true,
+          totalCommission: true,
+          affiliateCode: true,
         },
         orderBy: { totalSales: 'desc' },
         take: 10,

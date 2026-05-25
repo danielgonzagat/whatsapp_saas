@@ -78,9 +78,7 @@ describe('COMMEM-001 — CommemLedgerService', () => {
   });
 
   test('aggregateMultiWindow produces sequential windows', () => {
-    const events = [
-      makeEvent('commerce.payment.approved', 'wks_a', nowMs() - 2000),
-    ];
+    const events = [makeEvent('commerce.payment.approved', 'wks_a', nowMs() - 2000)];
 
     const results = svc.aggregateMultiWindow(events, 'wks_a', 1000, 3000);
     expect(results.length).toBeGreaterThanOrEqual(2);
@@ -99,9 +97,7 @@ describe('COMMEM-002 — MemoryProjector', () => {
   });
 
   test('projects events into specified dimensions', () => {
-    const events = [
-      makeEvent('commerce.payment.approved', 'wks_a', nowMs() - 1000),
-    ];
+    const events = [makeEvent('commerce.payment.approved', 'wks_a', nowMs() - 1000)];
 
     const results = svc.project({
       events,
@@ -127,13 +123,7 @@ describe('COMMEM-002 — MemoryProjector', () => {
     });
 
     const dims = results.map((p) => p.dimension).sort();
-    expect(dims).toEqual([
-      'consolidated',
-      'episodic',
-      'procedural',
-      'semantic',
-      'working',
-    ]);
+    expect(dims).toEqual(['consolidated', 'episodic', 'procedural', 'semantic', 'working']);
   });
 
   test('projects confidence between 0 and 1', () => {

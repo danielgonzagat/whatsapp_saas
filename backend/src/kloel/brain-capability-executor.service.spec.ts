@@ -125,7 +125,10 @@ describe('BrainCapabilityExecutorService', () => {
 
   describe('queryRevenueSummary', () => {
     it('isolates checkout aggregations by workspaceId', async () => {
-      orderAggregate.mockResolvedValue({ _sum: { totalInCents: 10000 }, _avg: { totalInCents: 1000 } });
+      orderAggregate.mockResolvedValue({
+        _sum: { totalInCents: 10000 },
+        _avg: { totalInCents: 1000 },
+      });
       orderCount.mockResolvedValueOnce(10).mockResolvedValueOnce(7);
 
       const result = await service.queryRevenueSummary('ws-rev', { days: 7 });

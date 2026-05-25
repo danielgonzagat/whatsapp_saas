@@ -23,10 +23,7 @@ describe('GdprFacebookCallbackService', () => {
     });
     prisma.gdprRequest.create.mockResolvedValue({});
     const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        GdprFacebookCallbackService,
-        { provide: PrismaService, useValue: prisma },
-      ],
+      providers: [GdprFacebookCallbackService, { provide: PrismaService, useValue: prisma }],
     }).compile();
     service = module.get(GdprFacebookCallbackService);
     delete process.env.FRONTEND_URL;
@@ -42,9 +39,7 @@ describe('GdprFacebookCallbackService', () => {
 
   it('throws BadRequestException when signed_request has no user_id', async () => {
     (parseFacebookSignedRequest as jest.Mock).mockReturnValue({ user_id: '' });
-    await expect(service.handleFacebookCallback('sig')).rejects.toThrow(
-      BadRequestException,
-    );
+    await expect(service.handleFacebookCallback('sig')).rejects.toThrow(BadRequestException);
   });
 
   it('returns not_found url when agent does not exist', async () => {

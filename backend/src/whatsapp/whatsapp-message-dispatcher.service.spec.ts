@@ -11,7 +11,9 @@ import { WhatsappSessionService } from './whatsapp-session.service';
 import { WhatsappMessageDispatcherService } from './whatsapp-message-dispatcher.service';
 
 jest.mock('../queue/queue', () => ({
-  flowQueue: { add: jest.fn<(...args: unknown[]) => Promise<unknown>>().mockResolvedValue(undefined) },
+  flowQueue: {
+    add: jest.fn<(...args: unknown[]) => Promise<unknown>>().mockResolvedValue(undefined),
+  },
   autopilotQueue: { add: jest.fn().mockResolvedValue(undefined) },
 }));
 
@@ -129,7 +131,9 @@ describe('WhatsappMessageDispatcherService', () => {
 
     it('falls back to direct send when worker is not available', async () => {
       workerRuntime.isAvailable.mockResolvedValue(false);
-      const result = await service.sendMessage('ws-1', '5511999991234', 'hello', { forceDirect: false });
+      const result = await service.sendMessage('ws-1', '5511999991234', 'hello', {
+        forceDirect: false,
+      });
       expect(providerRegistry.sendMessage).toHaveBeenCalled();
       expect(result).toEqual(expect.objectContaining({ ok: true, direct: true, delivery: 'sent' }));
     });

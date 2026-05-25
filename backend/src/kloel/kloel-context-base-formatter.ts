@@ -1,8 +1,6 @@
 import type { KloelContextFormatterLimits } from './kloel-context-formatter.types';
 import { WHITESPACE_G_RE } from '../common/regex';
 
-
-
 export class KloelContextBaseFormatter {
   constructor(protected readonly limits: KloelContextFormatterLimits) {}
 

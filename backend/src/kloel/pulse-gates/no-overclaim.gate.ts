@@ -9,11 +9,12 @@ export interface NoOverclaimInput {
 
 const MEASURED_BY = 'no-overclaim.gate' as const;
 
-
 function buildRegistryMap(
   snapshot: CapabilityRegistrySnapshot | undefined,
 ): ReadonlyMap<string, { consecutiveFailures: number }> {
-  if (!snapshot) return new Map();
+  if (!snapshot) {
+    return new Map();
+  }
   const map = new Map<string, { consecutiveFailures: number }>();
   for (const rec of snapshot.records) {
     map.set(rec.id, { consecutiveFailures: rec.consecutiveFailures });
@@ -24,14 +25,22 @@ function buildRegistryMap(
 function extractAvailable(
   payload: unknown,
 ): readonly { idx: number; cap: Record<string, unknown> }[] {
-  if (!isObject(payload)) return [];
+  if (!isObject(payload)) {
+    return [];
+  }
   const caps = payload['capabilities'];
-  if (!isObject(caps)) return [];
+  if (!isObject(caps)) {
+    return [];
+  }
   const available = caps['available'];
-  if (!Array.isArray(available)) return [];
+  if (!Array.isArray(available)) {
+    return [];
+  }
   const out: { idx: number; cap: Record<string, unknown> }[] = [];
   available.forEach((cap, idx) => {
-    if (isObject(cap)) out.push({ idx, cap });
+    if (isObject(cap)) {
+      out.push({ idx, cap });
+    }
   });
   return out;
 }
@@ -55,13 +64,9 @@ export function makeNoOverclaimGate(mode: GateMode = 'hard_fail'): Gate<unknown>
       const input = normalizeInput(raw);
       const payload = input.abiPayload;
       if (!isObject(payload)) {
-        return fail(
-          'no-overclaim',
-          mode,
-          MEASURED_BY,
-          'ABI payload is not a plain object',
-          [{ detail: 'payload must be a plain object to check overclaim' }],
-        );
+        return fail('no-overclaim', mode, MEASURED_BY, 'ABI payload is not a plain object', [
+          { detail: 'payload must be a plain object to check overclaim' },
+        ]);
       }
 
       const available = extractAvailable(payload);
@@ -86,7 +91,12 @@ export function makeNoOverclaimGate(mode: GateMode = 'hard_fail'): Gate<unknown>
           }
         }
 
-        if (input.registrySnapshot && typeof id === 'string' && id !== '?' && !registryMap.has(id)) {
+        if (
+          input.registrySnapshot &&
+          typeof id === 'string' &&
+          id !== '?' &&
+          !registryMap.has(id)
+        ) {
           evidence.push({
             path: `$.capabilities.available[${idx}]`,
             detail: `capability "${id}" referenced in ABI but not found in capability-registry`,

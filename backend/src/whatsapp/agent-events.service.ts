@@ -1,5 +1,5 @@
 import { InjectRedis } from '@nestjs-modules/ioredis';
-import { Injectable, OnModuleDestroy, OnModuleInit, Optional  } from '@nestjs/common';
+import { Injectable, OnModuleDestroy, OnModuleInit, Optional } from '@nestjs/common';
 import { StructuredLogger } from '../logging/structured-logger';
 import type { Redis } from 'ioredis';
 import { AuditService } from '../audit/audit.service';

@@ -45,8 +45,12 @@ describe('BillingWebhookService', () => {
     constructEventMock.mockReset();
     config = {
       get: jest.fn((key: string) => {
-        if (key === 'STRIPE_SECRET_KEY') return 'sk_test_fake';
-        if (key === 'STRIPE_WEBHOOK_SECRET') return 'whsec_fake';
+        if (key === 'STRIPE_SECRET_KEY') {
+          return 'sk_test_fake';
+        }
+        if (key === 'STRIPE_WEBHOOK_SECRET') {
+          return 'whsec_fake';
+        }
         return undefined;
       }),
     };
@@ -89,15 +93,15 @@ describe('BillingWebhookService', () => {
 
   describe('handleWebhook', () => {
     it('throws when rawBody is missing', async () => {
-      await expect(
-        service.handleWebhook('sig', undefined as Buffer),
-      ).rejects.toThrow('Missing rawBody or signature');
+      await expect(service.handleWebhook('sig', undefined as Buffer)).rejects.toThrow(
+        'Missing rawBody or signature',
+      );
     });
 
     it('throws when signature is missing', async () => {
-      await expect(
-        service.handleWebhook(undefined as string, Buffer.from('{}')),
-      ).rejects.toThrow('Missing rawBody or signature');
+      await expect(service.handleWebhook(undefined as string, Buffer.from('{}'))).rejects.toThrow(
+        'Missing rawBody or signature',
+      );
     });
 
     it('returns stripe_not_configured when StripeRuntime is absent', async () => {

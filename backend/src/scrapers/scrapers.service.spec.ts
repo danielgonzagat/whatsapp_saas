@@ -39,7 +39,7 @@ describe('ScrapersService', () => {
       await service.createJob('ws-1', {
         type: 'google-maps',
         query: 'restaurant',
-      } as never);
+      });
       expect(prisma.scrapingJob.create).toHaveBeenCalledWith({
         data: expect.objectContaining({
           workspaceId: 'ws-1',

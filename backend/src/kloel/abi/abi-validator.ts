@@ -23,11 +23,7 @@ import { isObject } from '../../common/types';
  * pipeline that finalizes payload to LLM) decide what to do with FAIL.
  */
 
-const VALID_TRUTH_MODES: ReadonlySet<AbiTruthMode> = new Set([
-  'observed',
-  'inferred',
-  'projected',
-]);
+const VALID_TRUTH_MODES: ReadonlySet<AbiTruthMode> = new Set(['observed', 'inferred', 'projected']);
 
 const VALID_AUDIENCES: ReadonlySet<AbiAudience> = new Set([
   'public',
@@ -94,10 +90,7 @@ export interface AbiValidationVerdict {
   readonly checkedAt: string;
 }
 
-function fail(
-  issues: AbiValidationIssue[],
-  version: string,
-): AbiValidationVerdict {
+function fail(issues: AbiValidationIssue[], version: string): AbiValidationVerdict {
   return {
     status: 'FAIL',
     version,
@@ -114,7 +107,6 @@ function pass(version: string): AbiValidationVerdict {
     checkedAt: new Date().toISOString(),
   };
 }
-
 
 /**
  * Validate the structural shape — required keys, enum values, basic types.
@@ -173,10 +165,7 @@ function structuralCheck(payload: unknown): readonly AbiValidationIssue[] {
       });
     }
     const mat = idProj['currentMaturity'];
-    if (
-      typeof mat !== 'string' ||
-      !VALID_MATURITIES.has(mat as AbiCapabilityMaturity)
-    ) {
+    if (typeof mat !== 'string' || !VALID_MATURITIES.has(mat as AbiCapabilityMaturity)) {
       issues.push({
         path: '$.identityProjection.currentMaturity',
         message: `currentMaturity must be one of ${[...VALID_MATURITIES].join('|')}`,
@@ -226,14 +215,22 @@ function promptLeakageScan(
  * No-overclaim: every available capability must have runtimeEvidencePct > 0.
  */
 function noOverclaimCheck(payload: unknown): readonly AbiValidationIssue[] {
-  if (!isObject(payload)) return [];
+  if (!isObject(payload)) {
+    return [];
+  }
   const caps = (payload as Record<string, unknown>)['capabilities'];
-  if (!isObject(caps)) return [];
+  if (!isObject(caps)) {
+    return [];
+  }
   const available = caps['available'];
-  if (!Array.isArray(available)) return [];
+  if (!Array.isArray(available)) {
+    return [];
+  }
   const issues: AbiValidationIssue[] = [];
   available.forEach((cap, idx) => {
-    if (!isObject(cap)) return;
+    if (!isObject(cap)) {
+      return;
+    }
     const evidence = cap['runtimeEvidencePct'];
     const id = typeof cap['capabilityId'] === 'string' ? cap['capabilityId'] : '?';
     if (typeof evidence !== 'number' || evidence <= 0) {
@@ -252,14 +249,22 @@ function noOverclaimCheck(payload: unknown): readonly AbiValidationIssue[] {
  * impossible polarity.
  */
 function valenceSanityCheck(payload: unknown): readonly AbiValidationIssue[] {
-  if (!isObject(payload)) return [];
+  if (!isObject(payload)) {
+    return [];
+  }
   const valence = (payload as Record<string, unknown>)['valence'];
-  if (!isObject(valence)) return [];
+  if (!isObject(valence)) {
+    return [];
+  }
   const trace = valence['recentTrace'];
-  if (!Array.isArray(trace)) return [];
+  if (!Array.isArray(trace)) {
+    return [];
+  }
   const issues: AbiValidationIssue[] = [];
   trace.forEach((entry, idx) => {
-    if (!isObject(entry)) return;
+    if (!isObject(entry)) {
+      return;
+    }
     const v = entry['valence'];
     if (typeof v !== 'string' || !VALID_VALENCES.has(v as AbiValence)) {
       issues.push({
@@ -291,7 +296,9 @@ export function validateAbiPayload(payload: unknown): AbiValidationVerdict {
   const overclaim = noOverclaimCheck(payload);
   const valence = valenceSanityCheck(payload);
   const all = [...leakage, ...overclaim, ...valence];
-  if (all.length > 0) return fail(all, version);
+  if (all.length > 0) {
+    return fail(all, version);
+  }
   return pass(version);
 }
 
@@ -301,9 +308,7 @@ export function validateAbiPayload(payload: unknown): AbiValidationVerdict {
 export function assertValidAbi(payload: unknown): asserts payload is CognitiveStateAbi {
   const verdict = validateAbiPayload(payload);
   if (verdict.status === 'FAIL') {
-    const summary = verdict.issues
-      .map((i) => `${i.path}: ${i.code} — ${i.message}`)
-      .join('; ');
+    const summary = verdict.issues.map((i) => `${i.path}: ${i.code} — ${i.message}`).join('; ');
     throw new Error(`ABI validation failed: ${summary}`);
   }
 }
@@ -321,14 +326,24 @@ export function compareAbiVersions(
 ): 'compatible' | 'major-bump-required' | 'downgrade' | 'invalid' {
   const parse = (v: string): readonly [number, number, number] | null => {
     const m = /^(\d+)\.(\d+)\.(\d+)$/.exec(v);
-    if (!m || !m[1] || !m[2] || !m[3]) return null;
+    if (!m || !m[1] || !m[2] || !m[3]) {
+      return null;
+    }
     return [Number(m[1]), Number(m[2]), Number(m[3])];
   };
   const c = parse(current);
   const t = parse(target);
-  if (!c || !t) return 'invalid';
-  if (t[0] > c[0]) return 'major-bump-required';
-  if (t[0] < c[0]) return 'downgrade';
-  if (t[1] < c[1] || (t[1] === c[1] && t[2] < c[2])) return 'downgrade';
+  if (!c || !t) {
+    return 'invalid';
+  }
+  if (t[0] > c[0]) {
+    return 'major-bump-required';
+  }
+  if (t[0] < c[0]) {
+    return 'downgrade';
+  }
+  if (t[1] < c[1] || (t[1] === c[1] && t[2] < c[2])) {
+    return 'downgrade';
+  }
   return 'compatible';
 }

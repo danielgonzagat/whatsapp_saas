@@ -50,9 +50,7 @@ describe('AdminAccountsService', () => {
 
   const mockPrismaTransaction = jest.fn<Promise<unknown>, unknown[]>();
 
-  const prismaMock = createPartialPrismaMock(
-    { workspace: ['findUnique'] },
-  );
+  const prismaMock = createPartialPrismaMock({ workspace: ['findUnique'] });
   const mockPrismaWorkspaceFindUnique = prismaMock.workspace.findUnique;
   prismaMock.$transaction = mockPrismaTransaction;
 

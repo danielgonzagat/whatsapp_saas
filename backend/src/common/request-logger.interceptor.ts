@@ -16,7 +16,6 @@ interface LoggedResponse {
   statusCode?: unknown;
 }
 
-
 function getErrorStatus(error: unknown): number {
   if (
     typeof error === 'object' &&

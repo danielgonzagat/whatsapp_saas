@@ -14,10 +14,16 @@ function isSupportedEmailProvider(
 
 function decryptWorkspaceSecret(value: unknown): string | undefined {
   const encrypted = readString(value);
-  if (!encrypted) return undefined;
-  if (!isEncrypted(encrypted)) return undefined;
+  if (!encrypted) {
+    return undefined;
+  }
+  if (!isEncrypted(encrypted)) {
+    return undefined;
+  }
   const key = readString(process.env.ENCRYPTION_KEY);
-  if (!key) return undefined;
+  if (!key) {
+    return undefined;
+  }
   try {
     return decryptString(encrypted, key);
   } catch {
@@ -44,7 +50,9 @@ function readWorkspaceSmtp(
   raw: Record<string, unknown>,
 ): Pick<EmailDeliveryOverride, 'smtp'> {
   const smtp = asRecord(raw.smtp);
-  if (provider !== 'smtp' || !smtp) return {};
+  if (provider !== 'smtp' || !smtp) {
+    return {};
+  }
   const port = readNumber(smtp.port);
   const user = readString(smtp.user);
   const pass = decryptWorkspaceSecret(smtp.passwordEncrypted);
@@ -64,7 +72,9 @@ export function readWorkspaceEmailDelivery(
 ): EmailDeliveryOverride | null {
   const root = asRecord(config);
   const raw = asRecord(root?.emailDelivery);
-  if (!raw) return null;
+  if (!raw) {
+    return null;
+  }
 
   const provider = readString(raw.provider);
   if (!isSupportedEmailProvider(provider)) {
@@ -83,8 +93,14 @@ export function readWorkspaceEmailDelivery(
 }
 
 export function isWorkspaceDeliveryReady(delivery: EmailDeliveryOverride | null): boolean {
-  if (!delivery?.provider) return false;
-  if (delivery.provider === 'resend') return Boolean(delivery.resendApiKey);
-  if (delivery.provider === 'sendgrid') return Boolean(delivery.sendgridApiKey);
+  if (!delivery?.provider) {
+    return false;
+  }
+  if (delivery.provider === 'resend') {
+    return Boolean(delivery.resendApiKey);
+  }
+  if (delivery.provider === 'sendgrid') {
+    return Boolean(delivery.sendgridApiKey);
+  }
   return Boolean(delivery.smtp?.host && delivery.smtp.user && delivery.smtp.pass);
 }

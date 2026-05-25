@@ -195,12 +195,14 @@ describe('COMMEM-007 — AttributionGuard', () => {
     const ledgerSvc = new CommemLedgerService();
     const events = [makeEvent('commerce.payment.approved', 'wks_a', nowMs())];
 
-    const entries = [ledgerSvc.aggregate({
-      events,
-      workspaceId: 'wks_a',
-      windowStartMs: nowMs() - 10000,
-      windowEndMs: nowMs() + 1000,
-    })];
+    const entries = [
+      ledgerSvc.aggregate({
+        events,
+        workspaceId: 'wks_a',
+        windowStartMs: nowMs() - 10000,
+        windowEndMs: nowMs() + 1000,
+      }),
+    ];
 
     const result = svc.validateLedger(entries, 'wks_b');
     expect(result.passed).toBe(false);

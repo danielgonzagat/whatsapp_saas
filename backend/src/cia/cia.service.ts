@@ -72,14 +72,22 @@ export class CiaService {
     const activeChannels = new Set<string>();
     if (metaConnections && metaConnections.length > 0) {
       for (const mc of metaConnections) {
-        if (mc.whatsappPhoneNumberId) activeChannels.add('whatsapp');
-        if (mc.instagramAccountId) activeChannels.add('instagram');
-        if (mc.pageId) activeChannels.add('facebook');
+        if (mc.whatsappPhoneNumberId) {
+          activeChannels.add('whatsapp');
+        }
+        if (mc.instagramAccountId) {
+          activeChannels.add('instagram');
+        }
+        if (mc.pageId) {
+          activeChannels.add('facebook');
+        }
       }
     }
     for (const integration of integrations) {
       const lower = integration.type.toLowerCase();
-      if (lower === 'instagram') activeChannels.add('instagram');
+      if (lower === 'instagram') {
+        activeChannels.add('instagram');
+      }
     }
 
     const channels = [...activeChannels];

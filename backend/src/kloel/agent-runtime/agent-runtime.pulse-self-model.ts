@@ -9,7 +9,6 @@ function readRecord(value: unknown): Record<string, unknown> {
     : {};
 }
 
-
 @Injectable()
 export class AgentRuntimePulseSelfModelService {
   constructor(@Optional() private readonly pulseArtifacts?: PulseArtifactService) {}
@@ -28,7 +27,8 @@ export class AgentRuntimePulseSelfModelService {
       const directive = readRecord(directivePayload.data);
 
       const score = typeof certificate.score === 'number' ? certificate.score : null;
-      const status = snapshot.status === 'ready' || snapshot.status === 'degraded' ? snapshot.status : 'empty';
+      const status =
+        snapshot.status === 'ready' || snapshot.status === 'degraded' ? snapshot.status : 'empty';
       const authorityMode =
         typeof snapshot.authorityMode === 'string' ? snapshot.authorityMode : 'advisory';
       const readiness = readRecord(machineReadiness.readiness);

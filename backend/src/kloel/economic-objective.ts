@@ -14,11 +14,12 @@ export type EconomicObjectiveBreakdown = {
   score: number;
 };
 
-
 function readProfile(context: MindJson): EconomicObjectiveProfile {
   const candidate = context.economicProfile ?? context.profile;
   const raw = typeof candidate === 'string' ? candidate.trim() : '';
-  if (raw === 'b2b_saas' || raw === 'recurring_subscription') return raw;
+  if (raw === 'b2b_saas' || raw === 'recurring_subscription') {
+    return raw;
+  }
   return 'b2c_ecommerce';
 }
 

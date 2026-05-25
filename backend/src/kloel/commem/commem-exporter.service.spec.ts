@@ -74,9 +74,7 @@ describe('CommemExporterService', () => {
   });
 
   test('toJson produces valid parseable JSON', () => {
-    const events = [
-      makeEvent('commerce.payment.approved', 'ws_alpha', nowMs()),
-    ];
+    const events = [makeEvent('commerce.payment.approved', 'ws_alpha', nowMs())];
 
     const result = svc.exportAggregated('ws_alpha', events);
     const json = svc.toJson(result);
@@ -88,9 +86,7 @@ describe('CommemExporterService', () => {
   });
 
   test('toJson includes workspaceId in output', () => {
-    const events = [
-      makeEvent('commerce.lead.qualified', 'ws_delta', nowMs()),
-    ];
+    const events = [makeEvent('commerce.lead.qualified', 'ws_delta', nowMs())];
 
     const result = svc.exportAggregated('ws_delta', events);
     const json = svc.toJson(result);
@@ -105,9 +101,7 @@ describe('CommemExporterService', () => {
   });
 
   test('toCsv produces CSV with header row', () => {
-    const events = [
-      makeEvent('commerce.payment.approved', 'ws_alpha', nowMs()),
-    ];
+    const events = [makeEvent('commerce.payment.approved', 'ws_alpha', nowMs())];
 
     const result = svc.exportAggregated('ws_alpha', events);
     const csv = svc.toCsv(result);
@@ -183,18 +177,14 @@ describe('CommemExporterService', () => {
   });
 
   test('verifyIntegrity returns true for untouched export', () => {
-    const events = [
-      makeEvent('commerce.payment.approved', 'ws_alpha', nowMs()),
-    ];
+    const events = [makeEvent('commerce.payment.approved', 'ws_alpha', nowMs())];
 
     const result = svc.exportAggregated('ws_alpha', events);
     expect(svc.verifyIntegrity(result)).toBe(true);
   });
 
   test('verifyIntegrity detects tampering', () => {
-    const events = [
-      makeEvent('commerce.payment.approved', 'ws_alpha', nowMs()),
-    ];
+    const events = [makeEvent('commerce.payment.approved', 'ws_alpha', nowMs())];
 
     const result = svc.exportAggregated('ws_alpha', events);
     const tampered = {
@@ -215,11 +205,7 @@ describe('CommemExporterService', () => {
 
   test('toCsv on multi-event export has correct row count', () => {
     const events = Array.from({ length: 10 }, (_, i) =>
-      makeEvent(
-        'commerce.payment.approved',
-        'ws_alpha',
-        nowMs() - (10 - i) * 1000,
-      ),
+      makeEvent('commerce.payment.approved', 'ws_alpha', nowMs() - (10 - i) * 1000),
     );
 
     const result = svc.exportAggregated('ws_alpha', events);

@@ -1,13 +1,34 @@
 import { WisdomPatternExtractorService } from './wisdom-pattern-extractor.service';
-import { applyKAnonymity, applyDiffPrivacyNoise, anonymizePatterns, toWisdomPattern } from './wisdom-anonymizer';
+import {
+  applyKAnonymity,
+  applyDiffPrivacyNoise,
+  anonymizePatterns,
+  toWisdomPattern,
+} from './wisdom-anonymizer';
 import { validateByNWorkspaces, classifyByNWorkspaces } from './wisdom-validator';
-import { deriveTaxonomy, taxonomyForSignalKind, ALL_VERTICAL_HINTS, ALL_TICKET_HINTS, ALL_STAGE_HINTS, ALL_CHANNEL_HINTS } from './wisdom-taxonomy';
+import {
+  deriveTaxonomy,
+  taxonomyForSignalKind,
+  ALL_VERTICAL_HINTS,
+  ALL_TICKET_HINTS,
+  ALL_STAGE_HINTS,
+  ALL_CHANNEL_HINTS,
+} from './wisdom-taxonomy';
 import { WisdomProjectorService } from './wisdom-projector.service';
 import { relevanceScore, filterByRelevance, filterIrrelevant } from './wisdom-relevance-filter';
 import { WisdomOptService } from './wisdom-opt';
-import { validateAttribution, assertNoAttributionLeak, patternDescriptionIsClean } from './wisdom-attribution.guard';
+import {
+  validateAttribution,
+  assertNoAttributionLeak,
+  patternDescriptionIsClean,
+} from './wisdom-attribution.guard';
 import type { SpineEventRef } from '../mind/mind.types';
-import type { CandidatePattern, WorkspaceEventSet, TargetWorkspaceContext, WisdomPattern } from './wisdom.types';
+import type {
+  CandidatePattern,
+  WorkspaceEventSet,
+  TargetWorkspaceContext,
+  WisdomPattern,
+} from './wisdom.types';
 import { makeEventFactory } from '../../../test/helpers/spine-event-factory';
 
 const makeEvent = makeEventFactory();
@@ -21,12 +42,12 @@ function buildEventSet(
   const events: SpineEventRef[] = [];
   for (let i = 0; i < count; i++) {
     const t = new Date(baseDate.getTime() + i * 3600_000);
-    events.push(makeEvent(
-      overrides.eventName ?? 'commerce.lead.created',
-      workspaceId,
-      t.toISOString(),
-      { ...overrides, eventName: overrides.eventName ?? 'commerce.lead.created' },
-    ));
+    events.push(
+      makeEvent(overrides.eventName ?? 'commerce.lead.created', workspaceId, t.toISOString(), {
+        ...overrides,
+        eventName: overrides.eventName ?? 'commerce.lead.created',
+      }),
+    );
   }
   return { workspaceId, events };
 }
@@ -44,19 +65,29 @@ function multiWorkspaceSets(): WorkspaceEventSet[] {
     }
     for (let i = 0; i < 8; i++) {
       const t = new Date(base.getTime() + 50_000_000 + i * 86_400_000 + w * 86_400_000);
-      events.push(makeEvent('commerce.lead.converted', wsId, t.toISOString(), { valence: 'positive' }));
+      events.push(
+        makeEvent('commerce.lead.converted', wsId, t.toISOString(), { valence: 'positive' }),
+      );
     }
     for (let i = 0; i < 12; i++) {
       const t = new Date(base.getTime() + 30_000_000 + i * 36_000_000 + w * 86_400_000);
-      events.push(makeEvent('commerce.payment.approved', wsId, t.toISOString(), { valence: 'positive' }));
+      events.push(
+        makeEvent('commerce.payment.approved', wsId, t.toISOString(), { valence: 'positive' }),
+      );
     }
     for (let i = 0; i < 5; i++) {
       const t = new Date(base.getTime() + 40_000_000 + i * 72_000_000 + w * 86_400_000);
-      events.push(makeEvent('commerce.whatsapp.message_replied', wsId, t.toISOString(), { valence: 'positive' }));
+      events.push(
+        makeEvent('commerce.whatsapp.message_replied', wsId, t.toISOString(), {
+          valence: 'positive',
+        }),
+      );
     }
     for (let i = 0; i < 2; i++) {
       const t = new Date(base.getTime() + 45_000_000 + i * 100_000_000 + w * 86_400_000);
-      events.push(makeEvent('commerce.crm.deal_won', wsId, t.toISOString(), { valence: 'positive' }));
+      events.push(
+        makeEvent('commerce.crm.deal_won', wsId, t.toISOString(), { valence: 'positive' }),
+      );
     }
     sets.push({ workspaceId: wsId, events });
   }
@@ -111,18 +142,54 @@ describe('WISDOM-001 — Pattern Extractor', () => {
 describe('WISDOM-002 — k-Anonymity + Diff-Privacy', () => {
   test('k-anonymity drops patterns below k threshold', () => {
     const candidates: CandidatePattern[] = [
-      { patternId: 'pat_1', description: 'test', applicableConditions: [], evidenceWorkspaceIds: ['a'], evidenceWorkspacesCount: 1, confidence: 0.5, signalKind: 'conversion_rate', aggregatedValue: 0.3 },
-      { patternId: 'pat_2', description: 'test', applicableConditions: [], evidenceWorkspaceIds: ['a', 'b', 'c'], evidenceWorkspacesCount: 3, confidence: 0.7, signalKind: 'conversion_rate', aggregatedValue: 0.6 },
-      { patternId: 'pat_3', description: 'test', applicableConditions: [], evidenceWorkspaceIds: ['a', 'b', 'c', 'd'], evidenceWorkspacesCount: 4, confidence: 0.8, signalKind: 'conversion_rate', aggregatedValue: 0.8 },
+      {
+        patternId: 'pat_1',
+        description: 'test',
+        applicableConditions: [],
+        evidenceWorkspaceIds: ['a'],
+        evidenceWorkspacesCount: 1,
+        confidence: 0.5,
+        signalKind: 'conversion_rate',
+        aggregatedValue: 0.3,
+      },
+      {
+        patternId: 'pat_2',
+        description: 'test',
+        applicableConditions: [],
+        evidenceWorkspaceIds: ['a', 'b', 'c'],
+        evidenceWorkspacesCount: 3,
+        confidence: 0.7,
+        signalKind: 'conversion_rate',
+        aggregatedValue: 0.6,
+      },
+      {
+        patternId: 'pat_3',
+        description: 'test',
+        applicableConditions: [],
+        evidenceWorkspaceIds: ['a', 'b', 'c', 'd'],
+        evidenceWorkspacesCount: 4,
+        confidence: 0.8,
+        signalKind: 'conversion_rate',
+        aggregatedValue: 0.8,
+      },
     ];
     const result = applyKAnonymity(candidates, { k: 3 });
     expect(result).toHaveLength(2);
-    expect(result.map(c => c.patternId)).toEqual(['pat_2', 'pat_3']);
+    expect(result.map((c) => c.patternId)).toEqual(['pat_2', 'pat_3']);
   });
 
   test('diff-privacy noise modifies aggregated values', () => {
     const candidates: CandidatePattern[] = [
-      { patternId: 'pat_1', description: 'test', applicableConditions: [], evidenceWorkspaceIds: ['a', 'b', 'c'], evidenceWorkspacesCount: 3, confidence: 0.8, signalKind: 'conversion_rate', aggregatedValue: 0.5 },
+      {
+        patternId: 'pat_1',
+        description: 'test',
+        applicableConditions: [],
+        evidenceWorkspaceIds: ['a', 'b', 'c'],
+        evidenceWorkspacesCount: 3,
+        confidence: 0.8,
+        signalKind: 'conversion_rate',
+        aggregatedValue: 0.5,
+      },
     ];
     const result = applyDiffPrivacyNoise(candidates, { epsilon: 1.0 });
     expect(result).toHaveLength(1);
@@ -133,8 +200,26 @@ describe('WISDOM-002 — k-Anonymity + Diff-Privacy', () => {
 
   test('anonymizePatterns pipeline: k-anonymity first, then noise', () => {
     const candidates: CandidatePattern[] = [
-      { patternId: 'pat_low', description: 'low', applicableConditions: [], evidenceWorkspaceIds: ['a'], evidenceWorkspacesCount: 1, confidence: 0.4, signalKind: 'conversion_rate', aggregatedValue: 0.1 },
-      { patternId: 'pat_high', description: 'high', applicableConditions: [], evidenceWorkspaceIds: ['a', 'b', 'c', 'd'], evidenceWorkspacesCount: 4, confidence: 0.8, signalKind: 'conversion_rate', aggregatedValue: 0.7 },
+      {
+        patternId: 'pat_low',
+        description: 'low',
+        applicableConditions: [],
+        evidenceWorkspaceIds: ['a'],
+        evidenceWorkspacesCount: 1,
+        confidence: 0.4,
+        signalKind: 'conversion_rate',
+        aggregatedValue: 0.1,
+      },
+      {
+        patternId: 'pat_high',
+        description: 'high',
+        applicableConditions: [],
+        evidenceWorkspaceIds: ['a', 'b', 'c', 'd'],
+        evidenceWorkspacesCount: 4,
+        confidence: 0.8,
+        signalKind: 'conversion_rate',
+        aggregatedValue: 0.7,
+      },
     ];
     const result = anonymizePatterns(candidates, { kAnonymity: { k: 3 } });
     expect(result).toHaveLength(1);
@@ -160,10 +245,46 @@ describe('WISDOM-002 — k-Anonymity + Diff-Privacy', () => {
 
 describe('WISDOM-003 — Validation by N Workspaces', () => {
   const candidates: CandidatePattern[] = [
-    { patternId: 'pat_1', description: 't1', applicableConditions: [], evidenceWorkspaceIds: ['a'], evidenceWorkspacesCount: 1, confidence: 0.4, signalKind: 'conversion_rate', aggregatedValue: 0.1 },
-    { patternId: 'pat_2', description: 't2', applicableConditions: [], evidenceWorkspaceIds: ['a', 'b'], evidenceWorkspacesCount: 2, confidence: 0.5, signalKind: 'conversion_rate', aggregatedValue: 0.2 },
-    { patternId: 'pat_3', description: 't3', applicableConditions: [], evidenceWorkspaceIds: ['a', 'b', 'c'], evidenceWorkspacesCount: 3, confidence: 0.6, signalKind: 'conversion_rate', aggregatedValue: 0.3 },
-    { patternId: 'pat_4', description: 't4', applicableConditions: [], evidenceWorkspaceIds: ['a', 'b', 'c', 'd', 'e'], evidenceWorkspacesCount: 5, confidence: 0.9, signalKind: 'conversion_rate', aggregatedValue: 0.5 },
+    {
+      patternId: 'pat_1',
+      description: 't1',
+      applicableConditions: [],
+      evidenceWorkspaceIds: ['a'],
+      evidenceWorkspacesCount: 1,
+      confidence: 0.4,
+      signalKind: 'conversion_rate',
+      aggregatedValue: 0.1,
+    },
+    {
+      patternId: 'pat_2',
+      description: 't2',
+      applicableConditions: [],
+      evidenceWorkspaceIds: ['a', 'b'],
+      evidenceWorkspacesCount: 2,
+      confidence: 0.5,
+      signalKind: 'conversion_rate',
+      aggregatedValue: 0.2,
+    },
+    {
+      patternId: 'pat_3',
+      description: 't3',
+      applicableConditions: [],
+      evidenceWorkspaceIds: ['a', 'b', 'c'],
+      evidenceWorkspacesCount: 3,
+      confidence: 0.6,
+      signalKind: 'conversion_rate',
+      aggregatedValue: 0.3,
+    },
+    {
+      patternId: 'pat_4',
+      description: 't4',
+      applicableConditions: [],
+      evidenceWorkspaceIds: ['a', 'b', 'c', 'd', 'e'],
+      evidenceWorkspacesCount: 5,
+      confidence: 0.9,
+      signalKind: 'conversion_rate',
+      aggregatedValue: 0.5,
+    },
   ];
 
   test('validateByNWorkspaces keeps only patterns with >= N evidence', () => {
@@ -205,9 +326,16 @@ describe('WISDOM-004 — Pattern Taxonomy', () => {
 
   test('taxonomyForSignalKind works for all kinds', () => {
     const kinds: Parameters<typeof taxonomyForSignalKind>[0][] = [
-      'conversion_rate', 'reply_rate', 'refund_rate', 'handoff_rate',
-      'deal_close_rate', 'lead_volume', 'campaign_efficiency',
-      'peak_activity', 'stage_distribution', 'product_concentration',
+      'conversion_rate',
+      'reply_rate',
+      'refund_rate',
+      'handoff_rate',
+      'deal_close_rate',
+      'lead_volume',
+      'campaign_efficiency',
+      'peak_activity',
+      'stage_distribution',
+      'product_concentration',
     ];
     for (const kind of kinds) {
       const t = taxonomyForSignalKind(kind);
@@ -238,7 +366,12 @@ describe('WISDOM-005 — Projector', () => {
       evidenceWorkspacesCount: 3,
       confidence: 0.75,
       signalKind: 'conversion_rate',
-      taxonomy: { verticalHint: 'sales', tickethint: 'all', stageHint: 'tracao', channelHint: 'whatsapp' },
+      taxonomy: {
+        verticalHint: 'sales',
+        tickethint: 'all',
+        stageHint: 'tracao',
+        channelHint: 'whatsapp',
+      },
     };
     const result = projector.project([wp]);
     expect(result).toHaveLength(1);
@@ -263,9 +396,27 @@ describe('WISDOM-005 — Projector', () => {
 
   test('capByBudget limits to N highest confidence patterns', () => {
     const abi = [
-      { patternId: 'a', description: 'd', applicableConditions: [], evidenceWorkspacesCount: 3, confidence: 0.3 },
-      { patternId: 'b', description: 'd', applicableConditions: [], evidenceWorkspacesCount: 3, confidence: 0.9 },
-      { patternId: 'c', description: 'd', applicableConditions: [], evidenceWorkspacesCount: 3, confidence: 0.6 },
+      {
+        patternId: 'a',
+        description: 'd',
+        applicableConditions: [],
+        evidenceWorkspacesCount: 3,
+        confidence: 0.3,
+      },
+      {
+        patternId: 'b',
+        description: 'd',
+        applicableConditions: [],
+        evidenceWorkspacesCount: 3,
+        confidence: 0.9,
+      },
+      {
+        patternId: 'c',
+        description: 'd',
+        applicableConditions: [],
+        evidenceWorkspacesCount: 3,
+        confidence: 0.6,
+      },
     ];
     const capped = projector.capByBudget(abi, 2);
     expect(capped).toHaveLength(2);
@@ -316,8 +467,34 @@ describe('WISDOM-006 — Relevance Filter', () => {
       activeChannels: ['whatsapp'],
     };
     const patterns: WisdomPattern[] = [
-      { patternId: 'p1', description: 'd1', applicableConditions: [], evidenceWorkspacesCount: 2, confidence: 0.5, signalKind: 'conversion_rate', taxonomy: { verticalHint: 'sales', tickethint: 'high', stageHint: 'crescimento', channelHint: 'whatsapp' } },
-      { patternId: 'p2', description: 'd2', applicableConditions: [], evidenceWorkspacesCount: 2, confidence: 0.5, signalKind: 'refund_rate', taxonomy: { verticalHint: 'financial', tickethint: 'all', stageHint: 'maturidade', channelHint: 'checkout' } },
+      {
+        patternId: 'p1',
+        description: 'd1',
+        applicableConditions: [],
+        evidenceWorkspacesCount: 2,
+        confidence: 0.5,
+        signalKind: 'conversion_rate',
+        taxonomy: {
+          verticalHint: 'sales',
+          tickethint: 'high',
+          stageHint: 'crescimento',
+          channelHint: 'whatsapp',
+        },
+      },
+      {
+        patternId: 'p2',
+        description: 'd2',
+        applicableConditions: [],
+        evidenceWorkspacesCount: 2,
+        confidence: 0.5,
+        signalKind: 'refund_rate',
+        taxonomy: {
+          verticalHint: 'financial',
+          tickethint: 'all',
+          stageHint: 'maturidade',
+          channelHint: 'checkout',
+        },
+      },
     ];
     const filtered = filterByRelevance(patterns, target, 0.5);
     expect(filtered).toHaveLength(1);
@@ -331,8 +508,34 @@ describe('WISDOM-006 — Relevance Filter', () => {
       ticketRange: 'all',
     };
     const patterns: WisdomPattern[] = [
-      { patternId: 'p1', description: 'd1', applicableConditions: [], evidenceWorkspacesCount: 2, confidence: 0.5, signalKind: 'conversion_rate', taxonomy: { verticalHint: 'sales', tickethint: 'all', stageHint: 'tracao', channelHint: 'whatsapp' } },
-      { patternId: 'p2', description: 'd2', applicableConditions: [], evidenceWorkspacesCount: 2, confidence: 0.5, signalKind: 'reply_rate', taxonomy: { verticalHint: 'engagement', tickethint: 'all', stageHint: 'validacao', channelHint: 'whatsapp' } },
+      {
+        patternId: 'p1',
+        description: 'd1',
+        applicableConditions: [],
+        evidenceWorkspacesCount: 2,
+        confidence: 0.5,
+        signalKind: 'conversion_rate',
+        taxonomy: {
+          verticalHint: 'sales',
+          tickethint: 'all',
+          stageHint: 'tracao',
+          channelHint: 'whatsapp',
+        },
+      },
+      {
+        patternId: 'p2',
+        description: 'd2',
+        applicableConditions: [],
+        evidenceWorkspacesCount: 2,
+        confidence: 0.5,
+        signalKind: 'reply_rate',
+        taxonomy: {
+          verticalHint: 'engagement',
+          tickethint: 'all',
+          stageHint: 'validacao',
+          channelHint: 'whatsapp',
+        },
+      },
     ];
     const filtered = filterIrrelevant(patterns, target);
     expect(filtered).toHaveLength(2);
