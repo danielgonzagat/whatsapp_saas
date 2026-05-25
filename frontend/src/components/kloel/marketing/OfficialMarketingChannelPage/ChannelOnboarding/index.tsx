@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState, useSyncExternalStore } from 'react';
 import type { ChannelKey } from '../../OfficialMarketingChannelPage.helpers';
 import { useOfficialMarketingChannel } from '../use-official-marketing-channel';
 import { useOnboardingPalette } from './use-onboarding-palette';
@@ -28,6 +28,18 @@ interface Props {
   initialStep?: number;
 }
 
+function subscribeInteractiveReady(_onStoreChange: () => void) {
+  return () => undefined;
+}
+
+function readInteractiveReady() {
+  return true;
+}
+
+function readServerInteractiveReady() {
+  return false;
+}
+
 /**
  * The canonical channel onboarding screen (Marketing spec). One component,
  * five channels, four steps + the awakened state. Every datum is real: it
@@ -43,7 +55,11 @@ export function ChannelOnboarding({ channel, initialStep }: Props) {
   // the backend (spec §8). Any real navigation clears it.
   const [restarted, setRestarted] = useState(false);
   const [optimisticStep, setOptimisticStep] = useState<number | null>(null);
-  const [interactiveReady, setInteractiveReady] = useState(false);
+  const interactiveReady = useSyncExternalStore(
+    subscribeInteractiveReady,
+    readInteractiveReady,
+    readServerInteractiveReady,
+  );
 
   const backendStep = data.setup.currentStep;
   const effectiveStep = optimisticStep ?? backendStep;
@@ -58,10 +74,6 @@ export function ChannelOnboarding({ channel, initialStep }: Props) {
   const tone = toneIndex(data.setup.config.tone);
   const edge = edgeIndex(data.setup.config.aggressiveness);
 
-  useEffect(() => {
-    setInteractiveReady(true);
-  }, []);
-
   const goToStep = useCallback(
     (next: number) => {
       setRestarted(false);
@@ -70,12 +82,6 @@ export function ChannelOnboarding({ channel, initialStep }: Props) {
     },
     [data],
   );
-
-  useEffect(() => {
-    if (optimisticStep !== null && backendStep === optimisticStep) {
-      setOptimisticStep(null);
-    }
-  }, [backendStep, optimisticStep]);
 
   const handleConnect = useCallback(() => {
     setRestarted(false);
