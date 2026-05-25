@@ -1,12 +1,5 @@
 import { validateAbiPayload } from '../abi/abi-validator';
-import {
-  fail,
-  Gate,
-  GateEvidence,
-  GateMode,
-  GateVerdict,
-  pass,
-} from './pulse-gates.types';
+import { fail, Gate, GateEvidence, GateMode, GateVerdict, pass } from './pulse-gates.types';
 import { isObject } from '../../common/types';
 
 /**
@@ -26,18 +19,12 @@ import { isObject } from '../../common/types';
  */
 const MEASURED_BY = 'identity-projection.gate' as const;
 
-
-function hasNonEmptyString(
-  obj: Record<string, unknown>,
-  key: string,
-): boolean {
+function hasNonEmptyString(obj: Record<string, unknown>, key: string): boolean {
   const val = obj[key];
   return typeof val === 'string' && val.length > 0;
 }
 
-export function makeIdentityProjectionGate(
-  mode: GateMode = 'hard_fail',
-): Gate<unknown> {
+export function makeIdentityProjectionGate(mode: GateMode = 'hard_fail'): Gate<unknown> {
   return {
     name: 'identity-projection',
     mode,
@@ -50,8 +37,7 @@ export function makeIdentityProjectionGate(
           issue.code === 'INVALID_AUDIENCE' ||
           issue.code === 'LINEAGE_NAME_MISMATCH' ||
           issue.code === 'INVALID_TRUTH_MODE' ||
-          (issue.code === 'MISSING_REQUIRED' &&
-            issue.path === '$.identityProjection')
+          (issue.code === 'MISSING_REQUIRED' && issue.path === '$.identityProjection')
         ) {
           evidence.push({ path: issue.path, detail: issue.message });
         }
@@ -87,15 +73,13 @@ export function makeIdentityProjectionGate(
           if (hasNonEmptyString(lineage, 'etymology')) {
             evidence.push({
               path: '$.lineage.etymology',
-              detail:
-                'spiritual etymology exposed to public audience (E.10 violation)',
+              detail: 'spiritual etymology exposed to public audience (E.10 violation)',
             });
           }
           if (hasNonEmptyString(lineage, 'origin')) {
             evidence.push({
               path: '$.lineage.origin',
-              detail:
-                'spiritual origin exposed to public audience (E.10 violation)',
+              detail: 'spiritual origin exposed to public audience (E.10 violation)',
             });
           }
         }

@@ -36,13 +36,22 @@ const SUPPLEMENTARY_PATTERNS: ReadonlyArray<{
     id: 'tone-adjective',
     re: /\b(use|adopt|keep|maintain|assume)\s+a\s+(friendly|professional|formal|casual|persuasive|empathetic|enthusiastic|polite|warm|authoritative|conversational|neutral|playful|serious|urgent)\s+(tone|style|voice)\b/i,
   },
-  { id: 'tone-adjective-pt', re: /\btom\s+(amigável|profissional|formal|casual|persuasivo|empático|entusiasta|educado|neutro)\b/i },
-  { id: 'tone-be-adj', re: /\b(be|seja)\s+(friendly|professional|formal|casual|persuasive|profissional|amigável|formal)\b/i },
+  {
+    id: 'tone-adjective-pt',
+    re: /\btom\s+(amigável|profissional|formal|casual|persuasivo|empático|entusiasta|educado|neutro)\b/i,
+  },
+  {
+    id: 'tone-be-adj',
+    re: /\b(be|seja)\s+(friendly|professional|formal|casual|persuasive|profissional|amigável|formal)\b/i,
+  },
   {
     id: 'tone-sound',
     re: /\b(sound|pareça)\s+(friendly|professional|formal|casual|persuasive|amigável|profissional)\b/i,
   },
-  { id: 'tone-dont-be', re: /\b(don'?t|do not|n[ãa]o)\s+be\s+(mean|rude|aggressive|robot|sarcastic|grosseiro|r[íi]spido)\b/i },
+  {
+    id: 'tone-dont-be',
+    re: /\b(don'?t|do not|n[ãa]o)\s+be\s+(mean|rude|aggressive|robot|sarcastic|grosseiro|r[íi]spido)\b/i,
+  },
 
   // ── System role injection ──────────────────────────────────────────
   {
@@ -154,7 +163,6 @@ const SUPPLEMENTARY_PATTERNS: ReadonlyArray<{
     re: /\bsob\s+nenhuma\s+(circunst[âa]ncia|hip[óo]tese)\b/i,
   },
 ];
-
 
 /**
  * Walk every string leaf in the payload and test against supplementary

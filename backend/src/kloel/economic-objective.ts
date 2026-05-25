@@ -14,7 +14,6 @@ export type EconomicObjectiveBreakdown = {
   score: number;
 };
 
-
 function readProfile(context: MindJson): EconomicObjectiveProfile {
   const candidate = context.economicProfile ?? context.profile;
   const raw = typeof candidate === 'string' ? candidate.trim() : '';

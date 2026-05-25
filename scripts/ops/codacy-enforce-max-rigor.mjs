@@ -32,12 +32,14 @@ const CHECK_ONLY = process.argv.includes('--check');
  * Documentation contract: each entry must cite (a) the upstream deprecation
  * notice and (b) the modern replacement that already runs in this repo.
  */
-const DEPRECATED_DISABLED_TOOLS = Object.freeze([{
-  uuid: '612c22f7-663d-429c-ac02-e5cb3d1eb020',
-  name: 'TSLint',
-  upstreamStatus: 'Deprecated by Palantir 2019-12-01 (https://palantir.github.io/tslint/).',
-  replacement: 'ESLint + Biome (both already enabled in .codacy.yml).',
-}]);
+const DEPRECATED_DISABLED_TOOLS = Object.freeze([
+  {
+    uuid: '612c22f7-663d-429c-ac02-e5cb3d1eb020',
+    name: 'TSLint',
+    upstreamStatus: 'Deprecated by Palantir 2019-12-01 (https://palantir.github.io/tslint/).',
+    replacement: 'ESLint + Biome (both already enabled in .codacy.yml).',
+  },
+]);
 const TARGET_REPOSITORY_QUALITY = Object.freeze({
   maxIssuePercentage: 0,
   maxDuplicatedFilesPercentage: 0,

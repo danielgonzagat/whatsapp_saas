@@ -23,11 +23,7 @@ import { isObject } from '../../common/types';
  * pipeline that finalizes payload to LLM) decide what to do with FAIL.
  */
 
-const VALID_TRUTH_MODES: ReadonlySet<AbiTruthMode> = new Set([
-  'observed',
-  'inferred',
-  'projected',
-]);
+const VALID_TRUTH_MODES: ReadonlySet<AbiTruthMode> = new Set(['observed', 'inferred', 'projected']);
 
 const VALID_AUDIENCES: ReadonlySet<AbiAudience> = new Set([
   'public',
@@ -94,10 +90,7 @@ export interface AbiValidationVerdict {
   readonly checkedAt: string;
 }
 
-function fail(
-  issues: AbiValidationIssue[],
-  version: string,
-): AbiValidationVerdict {
+function fail(issues: AbiValidationIssue[], version: string): AbiValidationVerdict {
   return {
     status: 'FAIL',
     version,
@@ -114,7 +107,6 @@ function pass(version: string): AbiValidationVerdict {
     checkedAt: new Date().toISOString(),
   };
 }
-
 
 /**
  * Validate the structural shape — required keys, enum values, basic types.
@@ -173,10 +165,7 @@ function structuralCheck(payload: unknown): readonly AbiValidationIssue[] {
       });
     }
     const mat = idProj['currentMaturity'];
-    if (
-      typeof mat !== 'string' ||
-      !VALID_MATURITIES.has(mat as AbiCapabilityMaturity)
-    ) {
+    if (typeof mat !== 'string' || !VALID_MATURITIES.has(mat as AbiCapabilityMaturity)) {
       issues.push({
         path: '$.identityProjection.currentMaturity',
         message: `currentMaturity must be one of ${[...VALID_MATURITIES].join('|')}`,
@@ -301,9 +290,7 @@ export function validateAbiPayload(payload: unknown): AbiValidationVerdict {
 export function assertValidAbi(payload: unknown): asserts payload is CognitiveStateAbi {
   const verdict = validateAbiPayload(payload);
   if (verdict.status === 'FAIL') {
-    const summary = verdict.issues
-      .map((i) => `${i.path}: ${i.code} — ${i.message}`)
-      .join('; ');
+    const summary = verdict.issues.map((i) => `${i.path}: ${i.code} — ${i.message}`).join('; ');
     throw new Error(`ABI validation failed: ${summary}`);
   }
 }

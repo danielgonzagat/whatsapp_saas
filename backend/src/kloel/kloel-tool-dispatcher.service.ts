@@ -69,9 +69,10 @@ export class KloelToolDispatcherService {
 
   private get whatsappToolsService(): WhatsAppToolsServicePort {
     if (!this.resolvedWhatsAppToolsService) {
-      const { KloelWhatsAppToolsService: serviceType } = require('./kloel-whatsapp-tools.service') as {
-        KloelWhatsAppToolsService: new (...args: never[]) => WhatsAppToolsServicePort;
-      };
+      const { KloelWhatsAppToolsService: serviceType } =
+        require('./kloel-whatsapp-tools.service') as {
+          KloelWhatsAppToolsService: new (...args: never[]) => WhatsAppToolsServicePort;
+        };
       this.resolvedWhatsAppToolsService = this.moduleRef.get(serviceType, { strict: false });
     }
     return this.resolvedWhatsAppToolsService;

@@ -18,7 +18,6 @@ import { readStringOr as readString } from '../common/parse';
 import { WHITESPACE_G_RE } from '../common/regex';
 type MemoryValue = Record<string, unknown>;
 
-
 function isDeterministicPipeline(context?: UnknownRecord): boolean {
   return context?.deterministicPipeline === true;
 }

@@ -40,7 +40,6 @@ export interface InternalKnowledgeLeakInput {
  */
 const MEASURED_BY = 'internal-knowledge-leak-guard.gate' as const;
 
-
 function normalizeIdentifier(value: string): string {
   return value.replace(/[\s\-_.()]/g, '').toLowerCase();
 }

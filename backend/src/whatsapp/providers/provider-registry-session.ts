@@ -11,7 +11,6 @@ export function readRecord(value: unknown): UnknownRecord {
   return typeof value === 'object' && value !== null ? (value as UnknownRecord) : {};
 }
 
-
 function normalizeWahaSnapshotStatus(
   rawStatus: string | null | undefined,
 ): 'connected' | 'connecting' | 'failed' | 'disconnected' {

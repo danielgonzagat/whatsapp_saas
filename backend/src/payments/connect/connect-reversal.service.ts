@@ -74,7 +74,6 @@ const ROLE_PRIORITY: Record<SplitRole, number> = {
   seller: 5,
 };
 
-
 function parseBigIntString(value: unknown): bigint {
   if (typeof value === 'string' && /^-?\d+$/.test(value)) {
     return BigInt(value);

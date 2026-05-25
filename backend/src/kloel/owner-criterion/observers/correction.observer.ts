@@ -37,7 +37,9 @@ function isRecord(value: unknown): value is Readonly<Record<string, unknown>> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
-function hasExplicitMessageRewriteEvidence(payload: unknown): payload is Readonly<Record<string, unknown>> {
+function hasExplicitMessageRewriteEvidence(
+  payload: unknown,
+): payload is Readonly<Record<string, unknown>> {
   if (!isRecord(payload)) {
     return false;
   }
@@ -85,7 +87,8 @@ function extractClassificationFixes(events: readonly SpineEventRef[]): Correctio
 function extractActionReversals(events: readonly SpineEventRef[]): CorrectionSignal[] {
   return events
     .filter(
-      (e) => e.eventName === 'cognition.belief_updated' &&
+      (e) =>
+        e.eventName === 'cognition.belief_updated' &&
         (e.payload as Record<string, unknown> | undefined)?.['updateKind'] === 'reversal',
     )
     .map((e) => ({
@@ -97,7 +100,9 @@ function extractActionReversals(events: readonly SpineEventRef[]): CorrectionSig
     }));
 }
 
-function hasOperatorLearningFeedback(payload: unknown): payload is Readonly<Record<string, unknown>> {
+function hasOperatorLearningFeedback(
+  payload: unknown,
+): payload is Readonly<Record<string, unknown>> {
   if (!isRecord(payload)) {
     return false;
   }

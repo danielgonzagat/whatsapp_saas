@@ -8,7 +8,6 @@ import { KloelThreadSummaryService } from './kloel-thread-summary.service';
 import OpenAI from 'openai';
 import { WHITESPACE_G_RE } from '../common/regex';
 
-
 const TRAILING_DOTS_RE = /[.]+$/;
 const SEPARATOR_G_RE = /[_-]+/g;
 

@@ -22,7 +22,6 @@ type MockedLogFn = jest.Mock<(args: Record<string, unknown>) => Promise<void>>;
 describe('ApiKeysService', () => {
   let service: ApiKeysService;
 
-
   const mockPrisma = createPartialPrismaMock({
     apiKey: ['findMany', 'create', 'findFirst', 'deleteMany', 'update'],
     auditLog: ['create'],

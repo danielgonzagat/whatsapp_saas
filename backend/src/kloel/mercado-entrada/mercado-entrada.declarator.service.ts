@@ -22,7 +22,14 @@ import type { SpineEmitterService } from '../spine/spine-emitter.service';
 // =========================================================================
 // TYPES
 // =========================================================================
-export type BusinessType = 'infoproduto' | 'servico' | 'consultoria' | 'ecommerce' | 'saas' | 'agencia' | 'educacao';
+export type BusinessType =
+  | 'infoproduto'
+  | 'servico'
+  | 'consultoria'
+  | 'ecommerce'
+  | 'saas'
+  | 'agencia'
+  | 'educacao';
 export const ALL_BUSINESS_TYPES: readonly BusinessType[] = [
   'infoproduto',
   'servico',
@@ -208,16 +215,11 @@ const FIRST_CANDIDATE = ENTRY_MARKET_CANDIDATES[0];
 if (!FIRST_CANDIDATE) {
   throw new Error('Invariant: ENTRY_MARKET_CANDIDATES is non-empty');
 }
-export const ACTIVE_ENTRY_MARKET: EntryMarket =
-  entryMarketFromCandidate(FIRST_CANDIDATE);
-export function findCandidateById(
-  id: string,
-): EntryMarketCandidate | undefined {
+export const ACTIVE_ENTRY_MARKET: EntryMarket = entryMarketFromCandidate(FIRST_CANDIDATE);
+export function findCandidateById(id: string): EntryMarketCandidate | undefined {
   return ENTRY_MARKET_CANDIDATES.find((c) => c.marketId === id);
 }
-export function entryMarketFromCandidate(
-  candidate: EntryMarketCandidate,
-): EntryMarket {
+export function entryMarketFromCandidate(candidate: EntryMarketCandidate): EntryMarket {
   return {
     marketId: candidate.marketId,
     label: candidate.label,

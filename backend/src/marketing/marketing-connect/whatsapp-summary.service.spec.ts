@@ -38,11 +38,23 @@ describe('WhatsAppSummaryService', () => {
 
     expect(result.configured).toBe(true);
     expect(result.selectedProducts).toHaveLength(2);
-    expect(result.selectedProducts[0]).toMatchObject({ name: 'Produto A', salesCount: 5, revenue: 500 });
-    expect(result.selectedProducts[1]).toMatchObject({ name: 'Produto B', salesCount: 3, revenue: 600 });
+    expect(result.selectedProducts[0]).toMatchObject({
+      name: 'Produto A',
+      salesCount: 5,
+      revenue: 500,
+    });
+    expect(result.selectedProducts[1]).toMatchObject({
+      name: 'Produto B',
+      salesCount: 3,
+      revenue: 600,
+    });
     expect(kloelSaleGroupBy).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { workspaceId: 'ws-1', status: 'paid', productName: { in: ['Produto A', 'Produto B'] } },
+        where: {
+          workspaceId: 'ws-1',
+          status: 'paid',
+          productName: { in: ['Produto A', 'Produto B'] },
+        },
       }),
     );
   });
@@ -89,8 +101,16 @@ describe('WhatsAppSummaryService', () => {
     const result = await service.getSummary('ws-1');
 
     expect(result.selectedProducts).toHaveLength(2);
-    expect(result.selectedProducts[0]).toMatchObject({ name: 'Produto A', salesCount: 5, revenue: 500 });
-    expect(result.selectedProducts[1]).toMatchObject({ name: 'Produto B', salesCount: 0, revenue: 0 });
+    expect(result.selectedProducts[0]).toMatchObject({
+      name: 'Produto A',
+      salesCount: 5,
+      revenue: 500,
+    });
+    expect(result.selectedProducts[1]).toMatchObject({
+      name: 'Produto B',
+      salesCount: 0,
+      revenue: 0,
+    });
   });
 
   it('scopes findUnique and groupBy calls to the provided workspaceId', async () => {

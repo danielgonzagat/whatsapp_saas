@@ -149,9 +149,7 @@ describe('WebinarController', () => {
         headers: {},
       } as never;
 
-      await expect(controller.update(req, 'w-missing', {})).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(controller.update(req, 'w-missing', {})).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -193,9 +191,7 @@ describe('WebinarController', () => {
         headers: {},
       } as never;
 
-      await expect(controller.remove(req, 'w-missing')).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(controller.remove(req, 'w-missing')).rejects.toThrow(NotFoundException);
     });
   });
 });

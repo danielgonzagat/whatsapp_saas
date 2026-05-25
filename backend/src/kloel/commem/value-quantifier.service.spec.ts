@@ -60,9 +60,7 @@ describe('ValueQuantifierService', () => {
   });
 
   test('LTV inference from CRM deal_won events', () => {
-    const events = [
-      makeEvent('commerce.crm.deal_won', 'ws_alpha', nowMs()),
-    ];
+    const events = [makeEvent('commerce.crm.deal_won', 'ws_alpha', nowMs())];
 
     const exported = expSvc.exportAggregated('ws_alpha', events);
     const estimate = svc.quantifyFromMemory('ws_alpha', exported);
@@ -135,15 +133,11 @@ describe('ValueQuantifierService', () => {
     expect(estimate.breakdown.confirmedInsightsCents).toBeGreaterThan(0);
     expect(estimate.breakdown.discoveriesCents).toBeGreaterThan(0);
     expect(estimate.breakdown.baseCapitalCents).toBeGreaterThan(0);
-    expect(estimate.totalEstimatedCents).toBeGreaterThan(
-      estimate.breakdown.inferredLtvCents,
-    );
+    expect(estimate.totalEstimatedCents).toBeGreaterThan(estimate.breakdown.inferredLtvCents);
   });
 
   test('value scales with more payment events (monotonic)', () => {
-    const events1 = [
-      makeEvent('commerce.payment.approved', 'ws_alpha', nowMs()),
-    ];
+    const events1 = [makeEvent('commerce.payment.approved', 'ws_alpha', nowMs())];
     const events2 = [
       makeEvent('commerce.payment.approved', 'ws_alpha', nowMs()),
       makeEvent('commerce.payment.approved', 'ws_alpha', nowMs()),
@@ -172,17 +166,12 @@ describe('ValueQuantifierService', () => {
     ];
 
     const exportedNeutral = expSvc.exportAggregated('ws_alpha', neutralEvents);
-    const exportedPositive = expSvc.exportAggregated(
-      'ws_alpha',
-      positiveEvents,
-    );
+    const exportedPositive = expSvc.exportAggregated('ws_alpha', positiveEvents);
 
     const neutral = svc.quantifyFromMemory('ws_alpha', exportedNeutral);
     const positive = svc.quantifyFromMemory('ws_alpha', exportedPositive);
 
-    expect(positive.breakdown.inferredLtvCents).toBeGreaterThan(
-      neutral.breakdown.inferredLtvCents,
-    );
+    expect(positive.breakdown.inferredLtvCents).toBeGreaterThan(neutral.breakdown.inferredLtvCents);
   });
 
   test('negative-valence events reduce value', () => {
@@ -198,17 +187,12 @@ describe('ValueQuantifierService', () => {
     ];
 
     const exportedNeutral = expSvc.exportAggregated('ws_alpha', neutralEvents);
-    const exportedNegative = expSvc.exportAggregated(
-      'ws_alpha',
-      negativeEvents,
-    );
+    const exportedNegative = expSvc.exportAggregated('ws_alpha', negativeEvents);
 
     const neutral = svc.quantifyFromMemory('ws_alpha', exportedNeutral);
     const negative = svc.quantifyFromMemory('ws_alpha', exportedNegative);
 
-    expect(negative.breakdown.inferredLtvCents).toBeLessThan(
-      neutral.breakdown.inferredLtvCents,
-    );
+    expect(negative.breakdown.inferredLtvCents).toBeLessThan(neutral.breakdown.inferredLtvCents);
   });
 
   test('knowledge maturity multiplier affects total positively', () => {
@@ -226,9 +210,7 @@ describe('ValueQuantifierService', () => {
   });
 
   test('multiple workspaces produce independent values', () => {
-    const eventsA = [
-      makeEvent('commerce.payment.approved', 'ws_a', nowMs()),
-    ];
+    const eventsA = [makeEvent('commerce.payment.approved', 'ws_a', nowMs())];
     const eventsB = [
       makeEvent('commerce.payment.approved', 'ws_b', nowMs()),
       makeEvent('commerce.payment.approved', 'ws_b', nowMs()),
@@ -246,9 +228,7 @@ describe('ValueQuantifierService', () => {
   });
 
   test('valueDelta computes correct delta between snapshots', () => {
-    const beforeEvents = [
-      makeEvent('commerce.payment.approved', 'ws_alpha', nowMs()),
-    ];
+    const beforeEvents = [makeEvent('commerce.payment.approved', 'ws_alpha', nowMs())];
     const afterEvents = [
       makeEvent('commerce.payment.approved', 'ws_alpha', nowMs()),
       makeEvent('commerce.crm.deal_won', 'ws_alpha', nowMs()),

@@ -26,7 +26,6 @@ const WORKSPACE_UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9
 
 const K_ANONYMITY_MIN = 5;
 
-
 interface EcosystemRecommendationInput {
   readonly recommendationId: string;
   readonly sourceWorkspaceIds?: readonly string[];
@@ -53,14 +52,8 @@ function workspaceFieldKey(key: string): boolean {
   return lower === 'workspaceid' || lower === 'workspace_id' || lower === 'workspace-id';
 }
 
-function isForeignWorkspaceId(
-  value: string,
-  targetWorkspaceId: string,
-): boolean {
-  return (
-    value !== targetWorkspaceId &&
-    WORKSPACE_UUID_RE.test(value)
-  );
+function isForeignWorkspaceId(value: string, targetWorkspaceId: string): boolean {
+  return value !== targetWorkspaceId && WORKSPACE_UUID_RE.test(value);
 }
 
 function scanWisdomForForeignWorkspaceIds(
@@ -126,16 +119,12 @@ function scanRecommendationItemsForForeignWorkspaceIds(
   return out;
 }
 
-function hasCrossWorkspaceContent(
-  input: EcosystemPrivacyGuardInput,
-): boolean {
+function hasCrossWorkspaceContent(input: EcosystemPrivacyGuardInput): boolean {
   const r = input.recommendation;
   if (!r) return false;
   const src = r.sourceWorkspaceIds ?? [];
   const ctx = r.contextWorkspaces ?? [];
-  const allForeign = [...src, ...ctx].filter(
-    (id) => id !== input.targetWorkspaceId,
-  );
+  const allForeign = [...src, ...ctx].filter((id) => id !== input.targetWorkspaceId);
   const itemsCount = r.items?.length ?? 0;
   return allForeign.length > 0 || itemsCount > 0;
 }
@@ -151,12 +140,7 @@ export function makeEcosystemPrivacyGuard(
 
       // 1. Scan wisdomPayload for foreign workspace identifiers
       if (input.wisdomPayload !== undefined) {
-        scanWisdomForForeignWorkspaceIds(
-          input.wisdomPayload,
-          input.targetWorkspaceId,
-          '$',
-          issues,
-        );
+        scanWisdomForForeignWorkspaceIds(input.wisdomPayload, input.targetWorkspaceId, '$', issues);
       }
 
       // 2. Scan recommendation items for foreign workspace identifiers
@@ -164,11 +148,7 @@ export function makeEcosystemPrivacyGuard(
       if (rec !== undefined) {
         const items = rec.items ?? [];
         if (items.length > 0) {
-          scanRecommendationItemsForForeignWorkspaceIds(
-            items,
-            input.targetWorkspaceId,
-            issues,
-          );
+          scanRecommendationItemsForForeignWorkspaceIds(items, input.targetWorkspaceId, issues);
         }
       }
 

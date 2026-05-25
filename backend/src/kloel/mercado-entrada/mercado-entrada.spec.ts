@@ -66,11 +66,11 @@ function hasValidStage(stage: MaturityStage): boolean {
 }
 
 function hasValidBusinessType(bt: string): boolean {
-  return ALL_BUSINESS_TYPES.includes(bt as typeof ALL_BUSINESS_TYPES[number]);
+  return ALL_BUSINESS_TYPES.includes(bt as (typeof ALL_BUSINESS_TYPES)[number]);
 }
 
 function hasValidJourney(j: string): boolean {
-  return ALL_FLAGSHIP_JOURNEYS.includes(j as typeof ALL_FLAGSHIP_JOURNEYS[number]);
+  return ALL_FLAGSHIP_JOURNEYS.includes(j as (typeof ALL_FLAGSHIP_JOURNEYS)[number]);
 }
 
 // =========================================================================
@@ -78,9 +78,7 @@ function hasValidJourney(j: string): boolean {
 // =========================================================================
 describe('MercadoEntradaDeclarator — ACTIVE_ENTRY_MARKET', () => {
   it('1. is produtor + validacao + infoproduto + checkout_direto', () => {
-    expect(ACTIVE_ENTRY_MARKET.marketId).toBe(
-      'produtor-infoproduto-validacao-checkout',
-    );
+    expect(ACTIVE_ENTRY_MARKET.marketId).toBe('produtor-infoproduto-validacao-checkout');
     expect(ACTIVE_ENTRY_MARKET.role).toBe('produtor');
     expect(ACTIVE_ENTRY_MARKET.stage).toBe('validacao');
     expect(ACTIVE_ENTRY_MARKET.businessType).toBe('infoproduto');
@@ -293,9 +291,7 @@ describe('MercadoEntradaDeclaratorService — history', () => {
     const svc = makeService();
     const history = svc.getDeclarationHistory();
     expect(history.length).toBeGreaterThanOrEqual(1);
-    expect(history[0]!.active.marketId).toBe(
-      'produtor-infoproduto-validacao-checkout',
-    );
+    expect(history[0]!.active.marketId).toBe('produtor-infoproduto-validacao-checkout');
   });
 
   it('20. getDeclarationHistory grows after each unique declaration', () => {

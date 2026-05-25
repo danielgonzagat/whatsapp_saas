@@ -32,9 +32,7 @@ import {
   ensureIdempotent,
   sendOpsAlert,
 } from './payment-webhook-generic.helpers';
-import {
-  updateSaleAndPaymentHelper,
-} from './payment-webhook-generic.helpers';
+import { updateSaleAndPaymentHelper } from './payment-webhook-generic.helpers';
 import { sendGenericConfirmationViaTransport } from './payment-webhook-generic-confirmation';
 
 /**

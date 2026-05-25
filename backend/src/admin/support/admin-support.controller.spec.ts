@@ -99,9 +99,9 @@ describe('AdminSupportController', () => {
       reply.mockRejectedValue(err);
       const admin = { id: 'a-1', role: 'OWNER' } as never;
 
-      await expect(
-        controller.reply('c-nonexistent', { content: 'oi' }, admin),
-      ).rejects.toThrow(err);
+      await expect(controller.reply('c-nonexistent', { content: 'oi' }, admin)).rejects.toThrow(
+        err,
+      );
     });
   });
 });
