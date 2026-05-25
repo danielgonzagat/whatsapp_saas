@@ -229,7 +229,9 @@ async function installMarketingWhatsAppFlowMocks(page: Page) {
         body: JSON.stringify({
           setup: {
             currentStep: Number(body.currentStep ?? 0),
-            selectedProductIds: Array.isArray(body.selectedProductIds) ? body.selectedProductIds : [],
+            selectedProductIds: Array.isArray(body.selectedProductIds)
+              ? body.selectedProductIds
+              : [],
             arsenal: Array.isArray(body.arsenal) ? body.arsenal : [],
             config: asJsonRecord(body.config),
           },
@@ -405,23 +407,26 @@ test.describe('Marketing WhatsApp flow', () => {
     });
     await dismissCookieBanner(page);
 
-    await expect(page.getByText('Conectar WhatsApp')).toBeVisible({ timeout: 15_000 });
-    await expect(page.getByText(/Conex(?:ão|ao) oficial|autorizacao oficial da Meta/i)).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByRole('button', { name: /vincular n[úu]mero/i })).toBeVisible({
+      timeout: 15_000,
+    });
+    await expect(page.getByText(/LOGIN META · OAUTH OFICIAL/i)).toBeVisible({
+      timeout: 15_000,
+    });
     await expect(page.getByAltText('QR Code do WhatsApp')).toHaveCount(0);
 
-    await page.getByRole('button', { name: /(?:Pr[oó]ximo|avançar passo)/i }).click();
+    await page.getByRole('button', { name: 'Passo 2' }).click();
     await expect(page.getByText('Passo 2 de 4')).toBeVisible({ timeout: 15_000 });
-    await expect(page.getByRole('heading', { name: 'Produtos liberados no canal' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /O que ela pode oferecer/i })).toBeVisible();
 
-    await page.getByLabel('Produto Teste').check();
+    await page.getByRole('checkbox', { name: /Produto Teste/i }).click();
     await page.getByRole('button', { name: 'Salvar produtos' }).click();
     await expect(page.getByText('Produtos do canal salvos.')).toBeVisible();
-    await page.getByRole('button', { name: /avançar passo/i }).click();
     await expect(page.getByText('Passo 3 de 4')).toBeVisible();
-    await expect(page.getByRole('heading', { name: 'Arsenal do canal' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Munição para convencer/i })).toBeVisible();
 
-    await page.getByRole('button', { name: /(?:Pr[oó]ximo|avançar passo)/i }).click();
+    await page.getByRole('button', { name: /(?:Pular esta camada|Avançar)/i }).click();
     await expect(page.getByText('Passo 4 de 4')).toBeVisible();
-    await expect(page.getByRole('combobox', { name: 'Tom' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Calibre sua voz/i })).toBeVisible();
   });
 });
