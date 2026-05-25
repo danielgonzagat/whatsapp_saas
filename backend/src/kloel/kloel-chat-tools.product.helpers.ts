@@ -353,28 +353,16 @@ export async function runGetProductDetails(
     });
     pid = p?.id || '';
   }
-  if (!pid) {
-    return { success: false, error: 'product_not_found' };
-  }
+  if (!pid) return { success: false, error: 'product_not_found' };
   const product = await prisma.product.findFirst({
     where: { id: pid, workspaceId },
     select: {
-      id: true,
-      name: true,
-      description: true,
-      category: true,
-      price: true,
-      format: true,
-      active: true,
-      salesPageUrl: true,
-      slug: true,
-      tags: true,
-      supportEmail: true,
+      id: true, name: true, description: true, category: true, price: true,
+      format: true, active: true, salesPageUrl: true, slug: true,
+      tags: true, supportEmail: true,
     },
   });
-  if (!product) {
-    return { success: false, error: 'product_not_found' };
-  }
+  if (!product) return { success: false, error: 'product_not_found' };
   const plans = await prisma.productPlan.count({ where: { productId: pid } });
   return { success: true, product: { ...product, planCount: plans } };
 }
@@ -393,9 +381,7 @@ export async function runListSubscriptions(
   return {
     success: true,
     subscriptions: subs.map((s) => ({
-      id: s.id,
-      plan: s.plan,
-      status: s.status,
+      id: s.id, plan: s.plan, status: s.status,
       currentPeriodEnd: s.currentPeriodEnd?.toISOString() || null,
     })),
     count: subs.length,

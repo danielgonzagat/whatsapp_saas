@@ -17,12 +17,14 @@ import { UnifiedAgentService } from './unified-agent.service';
 import { KloelToolDispatcherService } from './kloel-tool-dispatcher.service';
 import { buildReceipt, writeOperationReceipt, buildResultMeta } from './operation-receipt.helpers';
 import { detectActionIntent, formatToolResult } from './guest-chat.action-intent.helpers';
-import {
-  GUEST_CONVERSATION_TTL_SECONDS,
-  getGuestConversationRedisKey,
-  parseGuestConversation,
-  type GuestConversation,
-} from './guest-chat.conversation.helpers';
+
+interface GuestConversation {
+  messages: { role: 'user' | 'assistant'; content: string }[];
+  createdAt: Date;
+  lastMessageAt: Date;
+}
+
+const GUEST_CONVERSATION_TTL_SECONDS = 24 * 60 * 60;
 
 // cache.invalidate — Redis is the primary guest conversation store; local Map is fallback.
 @Injectable()
@@ -69,6 +71,7 @@ export class GuestChatService implements OnModuleDestroy {
     }
   }
 
+
   /** Handle file upload from chat — store file and link to product */
   async handleFileUpload(
     buffer: Buffer,
@@ -92,18 +95,10 @@ export class GuestChatService implements OnModuleDestroy {
       // If productName provided, link image to product
       if (productName && this.toolDispatcher) {
         try {
-          await this.toolDispatcher.executeTool(workspaceId, 'update_product', {
-            productName,
-            imageUrl: url,
-          });
-        } catch {
-          /* non-blocking */
-        }
+          await this.toolDispatcher.executeTool(workspaceId, 'update_product', { productName, imageUrl: url });
+        } catch { /* non-blocking */ }
       }
-      return {
-        url,
-        message: `Arquivo ${originalname} enviado${productName ? ` e vinculado ao produto ${productName}` : ''}.`,
-      };
+      return { url, message: `Arquivo ${originalname} enviado${productName ? ` e vinculado ao produto ${productName}` : ''}.` };
     } catch (e: unknown) {
       return { message: `Erro: ${e instanceof Error ? e.message : 'desconhecido'}` };
     }
@@ -353,9 +348,7 @@ export class GuestChatService implements OnModuleDestroy {
    */
 
   private resolveDefaultWorkspaceId(): string | undefined {
-    if (process.env.NODE_ENV !== 'production') {
-      return 'ws-test-001';
-    }
+    if (process.env.NODE_ENV !== 'production') return 'ws-test-001';
     return undefined;
   }
 
@@ -377,9 +370,7 @@ export class GuestChatService implements OnModuleDestroy {
       if (effectiveWsId && this.toolDispatcher) {
         const action = detectActionIntent(message);
         if (action) {
-          this.logger.log(
-            `Deterministic: tool=${action.tool} ws=${effectiveWsId} session=${sessionId}`,
-          );
+          this.logger.log(`Deterministic: tool=${action.tool} ws=${effectiveWsId} session=${sessionId}`);
           try {
             await this.persistConversationMessage(sessionId, 'user', message);
             const result = await this.toolDispatcher.executeTool(
@@ -388,31 +379,23 @@ export class GuestChatService implements OnModuleDestroy {
               action.args,
             );
             // Write OperationReceipt for audit trail
-            void writeOperationReceipt(
-              buildReceipt({
-                workspaceId: effectiveWsId,
-                toolName: action.tool,
-                args: action.args,
-                result: result,
-                channel: 'web',
-              }),
-            );
+            void writeOperationReceipt(buildReceipt({
+              workspaceId: effectiveWsId,
+              toolName: action.tool,
+              args: action.args,
+              result: result as { success: boolean; [key: string]: unknown },
+              channel: 'web',
+            }));
             // Emit spine event for cognitive cycle with result data
             if (this.spine && result.success) {
               const resultMeta = buildResultMeta(action.tool, result);
-              void this.spine
-                .record({
-                  workspaceId: effectiveWsId,
-                  action: 'tool_executed' as never,
-                  intent: action.tool,
-                  status: 'executed',
-                  meta: {
-                    args: action.args,
-                    userPreview: message.slice(0, 120),
-                    ...resultMeta,
-                  } as never,
-                })
-                .catch(() => {});
+              void this.spine.record({
+                workspaceId: effectiveWsId,
+                action: 'tool_executed' as never,
+                intent: action.tool,
+                status: 'executed',
+                meta: { args: action.args, userPreview: message.slice(0, 120), ...resultMeta } as never,
+              }).catch(() => {});
             }
             const reply = formatToolResult(action.tool, result);
             await this.persistConversationMessage(sessionId, 'assistant', reply);
@@ -479,6 +462,35 @@ export class GuestChatService implements OnModuleDestroy {
   /**
    * 📋 Obter ou criar conversa
    */
+  private getRedisKey(sessionId: string): string {
+    return `kloel:guest-chat:${sessionId}`;
+  }
+
+  private parseConversation(raw: string | null): GuestConversation | null {
+    if (!raw) {
+      return null;
+    }
+    try {
+      const parsed = JSON.parse(raw) as {
+        messages?: GuestConversation['messages'];
+        createdAt?: string;
+        lastMessageAt?: string;
+      };
+      if (!Array.isArray(parsed.messages)) {
+        return null;
+      }
+      return {
+        messages: parsed.messages.filter(
+          (message): message is GuestConversation['messages'][number] =>
+            message.role === 'user' || message.role === 'assistant',
+        ),
+        createdAt: parsed.createdAt ? new Date(parsed.createdAt) : new Date(),
+        lastMessageAt: parsed.lastMessageAt ? new Date(parsed.lastMessageAt) : new Date(),
+      };
+    } catch {
+      return null;
+    }
+  }
 
   private async getOrCreateConversation(sessionId: string): Promise<GuestConversation> {
     const cached = this.conversations.get(sessionId);
@@ -488,9 +500,7 @@ export class GuestChatService implements OnModuleDestroy {
 
     if (this.redis) {
       try {
-        const stored = parseGuestConversation(
-          await this.redis.get(getGuestConversationRedisKey(sessionId)),
-        );
+        const stored = this.parseConversation(await this.redis.get(this.getRedisKey(sessionId)));
         if (stored) {
           this.conversations.set(sessionId, stored);
           return stored;
@@ -521,7 +531,7 @@ export class GuestChatService implements OnModuleDestroy {
     }
     try {
       await this.redis.set(
-        getGuestConversationRedisKey(sessionId),
+        this.getRedisKey(sessionId),
         JSON.stringify(conversation),
         'EX',
         GUEST_CONVERSATION_TTL_SECONDS,

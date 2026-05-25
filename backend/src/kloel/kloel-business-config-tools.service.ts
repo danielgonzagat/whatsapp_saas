@@ -6,7 +6,6 @@ import { PrismaService } from '../prisma/prisma.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
 
 import { digitsOnly } from '../common/phone';
-import { runChangePlan, type ToolChangePlanArgs } from './kloel-business-config-plan.helpers';
 
 /** Generic tool result shape. */
 interface ToolResult {
@@ -51,6 +50,11 @@ interface ToolUpdateBillingInfoArgs {
   returnUrl?: string;
 }
 
+interface ToolChangePlanArgs {
+  newPlan: string;
+  immediate?: boolean;
+}
+
 /** Handles CRM, business config, campaign, and billing AI chat tools. */
 @Injectable()
 export class KloelBusinessConfigToolsService {
@@ -71,12 +75,7 @@ export class KloelBusinessConfigToolsService {
     }
     // Search by name from query param
     if (query && typeof query === 'string') {
-      const cleanQ = query
-        .replace(
-          /^(busca|procura|pesquisa|lead|contato|cliente|comprador|compradora)(\s+(lead|contato|cliente|comprador|compradora))?\s+/i,
-          '',
-        )
-        .trim();
+      const cleanQ = query.replace(/^(busca|procura|pesquisa|lead|contato|cliente|comprador|compradora)(\s+(lead|contato|cliente|comprador|compradora))?\s+/i, '').trim();
       if (cleanQ) {
         where.name = { contains: cleanQ, mode: 'insensitive' };
       }
@@ -163,39 +162,19 @@ export class KloelBusinessConfigToolsService {
     workspaceId: string,
     args: ToolSaveBusinessInfoArgs,
   ): Promise<ToolResult> {
-    const { businessName, description, segment, cnpj, cpf, cep, bankCode, agency, account } =
-      args as ToolSaveBusinessInfoArgs & {
-        cnpj?: string;
-        cpf?: string;
-        cep?: string;
-        bankCode?: string;
-        agency?: string;
-        account?: string;
-      };
+    const { businessName, description, segment, cnpj, cpf, cep, bankCode, agency, account } = args as ToolSaveBusinessInfoArgs & { cnpj?: string; cpf?: string; cep?: string; bankCode?: string; agency?: string; account?: string };
     const updateData: Prisma.WorkspaceUpdateInput = {};
     if (businessName) {
       updateData.name = businessName;
     }
     // Build fiscal/payment settings from extracted args
     const fiscalFields: Record<string, unknown> = {};
-    if (cnpj) {
-      fiscalFields.cnpj = cnpj;
-    }
-    if (cpf) {
-      fiscalFields.cpf = cpf;
-    }
-    if (cep) {
-      fiscalFields.cep = cep;
-    }
-    if (bankCode) {
-      fiscalFields.bankCode = bankCode;
-    }
-    if (agency) {
-      fiscalFields.agency = agency;
-    }
-    if (account) {
-      fiscalFields.account = account;
-    }
+    if (cnpj) fiscalFields.cnpj = cnpj;
+    if (cpf) fiscalFields.cpf = cpf;
+    if (cep) fiscalFields.cep = cep;
+    if (bankCode) fiscalFields.bankCode = bankCode;
+    if (agency) fiscalFields.agency = agency;
+    if (account) fiscalFields.account = account;
 
     const hasFiscal = Object.keys(fiscalFields).length > 0;
     const hasBiz = !!(description || segment);
@@ -211,31 +190,19 @@ export class KloelBusinessConfigToolsService {
               ...currentSettings,
               ...(description ? { businessDescription: description } : {}),
               ...(segment ? { businessSegment: segment } : {}),
-              ...(hasFiscal
-                ? {
-                    fiscal: {
-                      ...((currentSettings?.fiscal as Record<string, unknown>) || {}),
-                      ...fiscalFields,
-                    },
-                  }
-                : {}),
+              ...(hasFiscal ? { fiscal: { ...((currentSettings as Record<string, unknown>)?.fiscal as Record<string, unknown> || {}), ...fiscalFields } } : {}),
             } as Prisma.InputJsonValue,
             ...(businessName ? { name: businessName } : {}),
           },
         });
       });
-      return {
-        success: true,
-        message: hasFiscal
-          ? `Dados ${Object.keys(fiscalFields).join(', ')} salvos com sucesso.`
-          : 'Informações do negócio salvas com sucesso.',
-      };
+      return { success: true, message: hasFiscal ? `Dados ${Object.keys(fiscalFields).join(', ')} salvos com sucesso.` : 'Informações do negócio salvas com sucesso.' };
     }
     if (businessName) {
       await this.prisma.workspace.update({ where: { id: workspaceId }, data: updateData });
     }
     return { success: true, message: 'Informações do negócio salvas com sucesso.' };
-  }
+}
 
   async toolSetBusinessHours(
     workspaceId: string,
@@ -357,12 +324,10 @@ export class KloelBusinessConfigToolsService {
     }
   }
 
+
   // ── Novos tools ──
 
-  async toolUploadDocument(
-    workspaceId: string,
-    args: Record<string, unknown>,
-  ): Promise<ToolResult> {
+  async toolUploadDocument(workspaceId: string, args: Record<string, unknown>): Promise<ToolResult> {
     const docType = typeof args.docType === 'string' ? args.docType : 'document';
     const docTypes: Record<string, string> = {
       identidade: 'Documento de identidade',
@@ -387,22 +352,14 @@ export class KloelBusinessConfigToolsService {
           data: { providerSettings: { ...settings, documents } as Prisma.InputJsonValue },
         });
       });
-      return {
-        success: true,
-        message: `${label} registrado. Envie o arquivo no chat para vinculá-lo à sua conta.`,
-      };
+      return { success: true, message: `${label} registrado. Envie o arquivo no chat para vinculá-lo à sua conta.` };
     } catch (e: unknown) {
-      return {
-        success: false,
-        error: e instanceof Error ? e.message : 'Erro ao registrar documento.',
-      };
+      return { success: false, error: e instanceof Error ? e.message : 'Erro ao registrar documento.' };
     }
   }
 
-  async toolUpdateAffiliateConfig(
-    workspaceId: string,
-    args: Record<string, unknown>,
-  ): Promise<ToolResult> {
+
+  async toolUpdateAffiliateConfig(workspaceId: string, args: Record<string, unknown>): Promise<ToolResult> {
     try {
       const productName = typeof args.productName === 'string' ? args.productName : '';
       let productId = '';
@@ -418,33 +375,15 @@ export class KloelBusinessConfigToolsService {
         const ws = await tx.workspace.findUnique({ where: { id: workspaceId } });
         const settings = (ws?.providerSettings as Record<string, unknown>) || {};
         const affiliate = (settings.affiliate as Record<string, unknown>) || {};
-        if (args.participate !== undefined) {
-          affiliate.participate = args.participate;
-        }
-        if (args.visibleInStore !== undefined) {
-          affiliate.visibleInStore = args.visibleInStore;
-        }
-        if (args.autoApproval !== undefined) {
-          affiliate.autoApproval = args.autoApproval;
-        }
-        if (args.accessData !== undefined) {
-          affiliate.accessData = args.accessData;
-        }
-        if (args.accessAbandonments !== undefined) {
-          affiliate.accessAbandonments = args.accessAbandonments;
-        }
-        if (args.commissionFirstInstallment !== undefined) {
-          affiliate.commissionFirstInstallment = args.commissionFirstInstallment;
-        }
-        if (args.attributionModel) {
-          affiliate.attributionModel = args.attributionModel;
-        }
-        if (args.cookieDays !== undefined) {
-          affiliate.cookieDays = args.cookieDays;
-        }
-        if (args.commissionPercent !== undefined) {
-          affiliate.commissionPercent = args.commissionPercent;
-        }
+        if (args.participate !== undefined) affiliate.participate = args.participate;
+        if (args.visibleInStore !== undefined) affiliate.visibleInStore = args.visibleInStore;
+        if (args.autoApproval !== undefined) affiliate.autoApproval = args.autoApproval;
+        if (args.accessData !== undefined) affiliate.accessData = args.accessData;
+        if (args.accessAbandonments !== undefined) affiliate.accessAbandonments = args.accessAbandonments;
+        if (args.commissionFirstInstallment !== undefined) affiliate.commissionFirstInstallment = args.commissionFirstInstallment;
+        if (args.attributionModel) affiliate.attributionModel = args.attributionModel;
+        if (args.cookieDays !== undefined) affiliate.cookieDays = args.cookieDays;
+        if (args.commissionPercent !== undefined) affiliate.commissionPercent = args.commissionPercent;
         await tx.workspace.update({
           where: { id: workspaceId },
           data: { providerSettings: { ...settings, affiliate } as Prisma.InputJsonValue },
@@ -453,29 +392,16 @@ export class KloelBusinessConfigToolsService {
         if (productId && args.commissionPercent !== undefined) {
           const existing = await tx.productCommission.findFirst({ where: { productId } });
           if (existing) {
-            await tx.productCommission.update({
-              where: { id: existing.id },
-              data: { percentage: Number(args.commissionPercent) },
-            });
+            await tx.productCommission.update({ where: { id: existing.id }, data: { percentage: Number(args.commissionPercent) } });
           } else {
-            await tx.productCommission.create({
-              data: { productId, percentage: Number(args.commissionPercent), role: 'AFFILIATE' },
-            });
+            await tx.productCommission.create({ data: { productId, percentage: Number(args.commissionPercent), role: 'AFFILIATE' } });
           }
         }
       });
-      const fields = Object.keys(args)
-        .filter((k) => k !== 'productName' && args[k] !== undefined)
-        .join(', ');
-      return {
-        success: true,
-        message: `Configuracao de afiliados atualizada${fields ? ': ' + fields : ''}.`,
-      };
+      const fields = Object.keys(args).filter(k => k !== 'productName' && args[k] !== undefined).join(', ');
+      return { success: true, message: `Configuracao de afiliados atualizada${fields ? ': ' + fields : ''}.` };
     } catch (e: unknown) {
-      return {
-        success: false,
-        error: e instanceof Error ? e.message : 'Erro ao atualizar afiliados.',
-      };
+      return { success: false, error: e instanceof Error ? e.message : 'Erro ao atualizar afiliados.' };
     }
   }
 
@@ -487,14 +413,11 @@ export class KloelBusinessConfigToolsService {
         take: 50,
       });
       if (commissions.length === 0) {
-        return {
-          success: true,
-          message: 'Nenhum afiliado cadastrado. Acesse Produto > Afiliados para configurar.',
-        };
+        return { success: true, message: 'Nenhum afiliado cadastrado. Acesse Produto > Afiliados para configurar.' };
       }
       return {
         success: true,
-        affiliates: commissions.map((c) => ({
+        affiliates: commissions.map(c => ({
           productName: c.product.name,
           role: c.role,
           percentage: c.percentage,
@@ -509,51 +432,33 @@ export class KloelBusinessConfigToolsService {
   }
   async toolGetSocialChannels(workspaceId: string): Promise<ToolResult> {
     try {
-      const ws = await this.prisma.workspace.findUnique({
-        where: { id: workspaceId },
-        select: {
-          providerSettings: true,
-          metaConnections: { select: { id: true, pageName: true } },
-        },
-      });
-      const settings = (ws?.providerSettings as Record<string, unknown>) || {};
-      const channels = (settings.channels as Record<string, unknown>) || {};
-      return {
-        success: true,
-        channels: {
-          whatsapp: { connected: !!settings.whatsappPhoneNumberId, label: 'WhatsApp' },
-          instagram: {
-            connected: !!(ws?.metaConnections && (ws.metaConnections as Array<unknown>).length > 0),
-            label: 'Instagram',
-          },
-          facebook: {
-            connected: !!(ws?.metaConnections && (ws.metaConnections as Array<unknown>).length > 0),
-            label: 'Facebook',
-          },
+        const ws = await this.prisma.workspace.findUnique({
+          where: { id: workspaceId },
+          select: { providerSettings: true, metaConnections: { select: { id: true, pageName: true } } },
+        });
+        const settings = (ws?.providerSettings as Record<string, unknown>) || {};
+        const channels = settings.channels as Record<string, unknown> || {};
+        return {
+          success: true,
+          channels: {
+            whatsapp: { connected: !!settings.whatsappPhoneNumberId, label: 'WhatsApp' },
+            instagram: { connected: !!(ws?.metaConnections && (ws.metaConnections as Array<unknown>).length > 0), label: 'Instagram' },
+            facebook: { connected: !!(ws?.metaConnections && (ws.metaConnections as Array<unknown>).length > 0), label: 'Facebook' },
           tiktok: { connected: !!channels.tiktok, label: 'TikTok' },
           email: { connected: !!settings.emailProvider, label: 'Email' },
         },
         message: 'Canais disponíveis. Conecte cada um em Configurações > Canais.',
       };
-    } catch {
-      return {
-        success: true,
-        message: 'Canais sociais disponíveis: WhatsApp, Instagram, Facebook, TikTok, Email.',
-      };
+    } catch (e: unknown) {
+      return { success: true, message: 'Canais sociais disponíveis: WhatsApp, Instagram, Facebook, TikTok, Email.' };
     }
   }
 
-  async toolConnectChannel(
-    workspaceId: string,
-    args: Record<string, unknown>,
-  ): Promise<ToolResult> {
+  async toolConnectChannel(workspaceId: string, args: Record<string, unknown>): Promise<ToolResult> {
     const channel = typeof args.channel === 'string' ? args.channel.toLowerCase() : '';
     const validChannels = ['instagram', 'facebook', 'tiktok', 'email'];
     if (!validChannels.includes(channel)) {
-      return {
-        success: true,
-        message: `Para conectar ${channel || 'um canal'}, acesse Configurações > Canais. Canais disponíveis: WhatsApp, Instagram, Facebook, TikTok, Email.`,
-      };
+      return { success: true, message: `Para conectar ${channel || 'um canal'}, acesse Configurações > Canais. Canais disponíveis: WhatsApp, Instagram, Facebook, TikTok, Email.` };
     }
     try {
       await this.prisma.$transaction(async (tx) => {
@@ -566,15 +471,65 @@ export class KloelBusinessConfigToolsService {
           data: { providerSettings: { ...settings, channels } as Prisma.InputJsonValue },
         });
       });
-      return {
-        success: true,
-        message: `Conexão com ${channel} iniciada. Complete a autorização em Configurações > Canais > ${channel}.`,
-      };
+      return { success: true, message: `Conexão com ${channel} iniciada. Complete a autorização em Configurações > Canais > ${channel}.` };
     } catch (e: unknown) {
       return { success: false, error: e instanceof Error ? e.message : 'Erro ao conectar canal.' };
     }
   }
   async toolChangePlan(workspaceId: string, args: ToolChangePlanArgs): Promise<ToolResult> {
-    return runChangePlan(this.prisma, this.opsAlert, this.logger, workspaceId, args);
+    const { newPlan, immediate: _immediate = true } = args;
+    if (!newPlan) {
+      return { success: false, error: 'Parâmetro obrigatório: newPlan (starter, pro, enterprise)' };
+    }
+    const validPlans = ['starter', 'pro', 'enterprise', 'free'];
+    if (!validPlans.includes(newPlan.toLowerCase())) {
+      return { success: false, error: `Plano inválido. Opções: ${validPlans.join(', ')}` };
+    }
+    try {
+      const workspace = await this.prisma.workspace.findUnique({
+        where: { id: workspaceId },
+        select: { subscription: { select: { plan: true, stripeId: true } } },
+      });
+      const currentPlan = workspace?.subscription?.plan || 'FREE';
+      const targetPlan = newPlan.toUpperCase();
+      if (workspace?.subscription?.stripeId) {
+        return {
+          success: true,
+          requiresAction: true,
+          currentPlan,
+          targetPlan,
+          message: `Para alterar de ${currentPlan} para ${targetPlan}, acesse /billing e use o portal de pagamento.`,
+        };
+      }
+      if (targetPlan !== 'FREE' && currentPlan === 'FREE') {
+        return {
+          success: true,
+          requiresCheckout: true,
+          targetPlan,
+          message: `Para assinar o plano ${targetPlan}, acesse /pricing e complete o checkout.`,
+        };
+      }
+      await this.prisma.subscription.upsert({
+        where: { workspaceId },
+        update: { plan: targetPlan },
+        create: {
+          workspaceId,
+          plan: targetPlan,
+          status: 'ACTIVE',
+          currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        },
+      });
+      return {
+        success: true,
+        previousPlan: currentPlan,
+        newPlan: targetPlan,
+        message: `Plano alterado de ${currentPlan} para ${targetPlan}`,
+      };
+    } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(error, 'KloelBusinessConfigToolsService.upsert');
+      const msg = error instanceof Error ? error.message : 'unknown error';
+      this.logger.error('Erro ao alterar plano:', error);
+      return { success: false, error: msg };
+    }
   }
 }
