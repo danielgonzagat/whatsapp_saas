@@ -79,6 +79,11 @@ export async function runGetProductUrls(
   if (!product) {
     return { success: false, error: 'product_not_found' };
   }
+  // Also query ProductUrl records
+  const productUrls = await prisma.productUrl.findMany({
+    where: { productId: pid },
+    select: { description: true, url: true, isPrivate: true, active: true },
+  });
   return {
     success: true,
     product: { id: product.id, name: product.name },
@@ -91,15 +96,24 @@ export async function runGetProductUrls(
       supportEmail: product.supportEmail,
       slug: product.slug,
     },
+    customUrls: productUrls,
   };
 }
 
 export async function runGetProductReviews(
   prisma: PrismaService,
   workspaceId: string,
-  args: { productId: string },
+  args: { productId?: string; productName?: string },
 ): Promise<ToolResult> {
-  if (!args.productId) {
+  let pid = args.productId || '';
+  if (!pid && args.productName) {
+    const p = await prisma.product.findFirst({
+      where: { workspaceId, name: { contains: args.productName, mode: 'insensitive' } },
+      select: { id: true },
+    });
+    pid = p?.id || '';
+  }
+  if (!pid) {
     return { success: false, error: 'productId_required' };
   }
   const product = await prisma.product.findFirst({
@@ -324,4 +338,52 @@ export async function runToggleTheme(
       error: err instanceof Error ? err.message : 'Erro ao alterar tema',
     };
   }
+}
+
+export async function runGetProductDetails(
+  prisma: PrismaService,
+  workspaceId: string,
+  args: { productId?: string; productName?: string },
+): Promise<ToolResult> {
+  let pid = args.productId || '';
+  if (!pid && args.productName) {
+    const p = await prisma.product.findFirst({
+      where: { workspaceId, name: { contains: args.productName, mode: 'insensitive' } },
+      select: { id: true },
+    });
+    pid = p?.id || '';
+  }
+  if (!pid) return { success: false, error: 'product_not_found' };
+  const product = await prisma.product.findFirst({
+    where: { id: pid, workspaceId },
+    select: {
+      id: true, name: true, description: true, category: true, price: true,
+      format: true, active: true, salesPageUrl: true, slug: true,
+      tags: true, supportEmail: true,
+    },
+  });
+  if (!product) return { success: false, error: 'product_not_found' };
+  const plans = await prisma.productPlan.count({ where: { productId: pid } });
+  return { success: true, product: { ...product, planCount: plans } };
+}
+
+export async function runListSubscriptions(
+  prisma: PrismaService,
+  workspaceId: string,
+  _args: Record<string, unknown>,
+): Promise<ToolResult> {
+  const subs = await prisma.subscription.findMany({
+    where: { workspaceId },
+    select: { id: true, plan: true, status: true, currentPeriodEnd: true },
+    orderBy: { createdAt: 'desc' },
+    take: 20,
+  });
+  return {
+    success: true,
+    subscriptions: subs.map((s) => ({
+      id: s.id, plan: s.plan, status: s.status,
+      currentPeriodEnd: s.currentPeriodEnd?.toISOString() || null,
+    })),
+    count: subs.length,
+  };
 }

@@ -146,10 +146,18 @@ export class KloelToolDispatcherService {
         case 'update_plan':
         case 'create_checkout':
         case 'update_checkout':
+        case 'list_checkouts':
         case 'create_coupon':
         case 'list_coupons':
+        case 'delete_plan':
+        case 'delete_checkout':
+        case 'add_url':
+        case 'update_url':
+        case 'delete_url':
         case 'delete_coupon':
+        case 'update_coupon':
         case 'generate_boleto':
+        case 'generate_pix':
           if (this.productSubTools) {
             return await this.productSubTools.executeTool(toolName, workspaceId, asToolArgs(args));
           }
@@ -165,8 +173,56 @@ export class KloelToolDispatcherService {
           return { success: false, error: 'wallet_sales_tools_not_available' };
         case 'get_analytics':
           return await this.chatToolsService.toolGetAnalytics(workspaceId, asToolArgs(args));
+        case 'get_product_details':
+          return await this.chatToolsService.toolGetProductDetails(workspaceId, asToolArgs(args));
+        case 'list_subscriptions':
+          return await this.chatToolsService.toolListSubscriptions(workspaceId, asToolArgs(args));
+        case 'update_affiliate_config':
+          return await this.bizConfigToolsService.toolUpdateAffiliateConfig(workspaceId, asToolArgs(args));
+        case 'list_affiliates':
+          return await this.bizConfigToolsService.toolListAffiliates(workspaceId);
         case 'get_affiliate_config':
           return await this.chatToolsService.toolGetAffiliateConfig(workspaceId);
+        case 'upload_plan_image':
+          return await this.chatToolsService.toolUploadPlanImage(workspaceId, asToolArgs(args));
+        case 'upload_product_image':
+          return await this.chatToolsService.toolUploadProductImage(workspaceId, asToolArgs(args));
+        case 'update_fiscal_data':
+          return await this.bizConfigToolsService.toolSaveBusinessInfo(workspaceId, asToolArgs(args));
+        case 'upload_document':
+          return await this.bizConfigToolsService.toolUploadDocument(workspaceId, asToolArgs(args));
+        case 'configure_pixel':
+          return await this.chatToolsService.toolConfigurePixel(workspaceId, asToolArgs(args));
+        case 'configure_shipping':
+          return await this.chatToolsService.toolConfigureShipping(workspaceId, asToolArgs(args));
+        case 'configure_social_proof':
+          return await this.chatToolsService.toolConfigureSocialProof(workspaceId, asToolArgs(args));
+        case 'configure_order_bump':
+          return await this.chatToolsService.toolConfigureOrderBump(workspaceId, asToolArgs(args));
+        case 'get_social_channels':
+          return await this.bizConfigToolsService.toolGetSocialChannels(workspaceId);
+        case 'configure_warranty':
+          return await this.chatToolsService.toolConfigureWarranty(workspaceId, asToolArgs(args));
+        case 'configure_exit_intent':
+          return await this.chatToolsService.toolConfigureExitIntent(workspaceId, asToolArgs(args));
+        case 'configure_after_pay':
+          return await this.chatToolsService.toolConfigureAfterPay(workspaceId, asToolArgs(args));
+        case 'browse_marketplace':
+          return await this.chatToolsService.toolBrowseMarketplace(workspaceId, asToolArgs(args));
+        case 'get_nps':
+        case 'get_churn':
+          if (this.walletSalesTools) return await this.walletSalesTools.executeTool(toolName, workspaceId, asToolArgs(args));
+          return { success: false, error: 'wallet_sales_tools_not_available' };
+        case 'list_refunds':
+          if (this.walletSalesTools) return await this.walletSalesTools.executeTool('list_orders', workspaceId, asToolArgs({ status: 'refunded' }));
+          return { success: false, error: 'wallet_sales_tools_not_available' };
+        case 'request_anticipation':
+          if (this.walletSalesTools) return await this.walletSalesTools.executeTool('request_anticipation', workspaceId, asToolArgs(args));
+          return { success: false, error: 'wallet_sales_tools_not_available' };
+        case 'connect_channel':
+          return await this.bizConfigToolsService.toolConnectChannel(workspaceId, asToolArgs(args));
+        case 'send_channel_message':
+          return await this.chatToolsService.toolSendChannelMessage(workspaceId, asToolArgs(args));
         case 'create_broadcast':
           return await this.chatToolsService.toolCreateBroadcast(workspaceId, asToolArgs(args));
         case 'configure_ai_persona':
@@ -183,7 +239,7 @@ export class KloelToolDispatcherService {
         case 'set_agent_job_enabled':
           return await this.chatToolsService.toolSetAgentJobEnabled(workspaceId, asToolArgs(args));
         case 'search_agent_memory':
-          return await this.chatToolsService.toolSearchAgentMemory(workspaceId, asToolArgs(args));
+          return await this.bizConfigToolsService.toolListLeads(workspaceId, asToolArgs(args));
         case 'search_agent_sessions':
           return await this.chatToolsService.toolSearchAgentSessions(workspaceId, asToolArgs(args));
         case 'get_agent_artifact':
@@ -208,6 +264,8 @@ export class KloelToolDispatcherService {
           return await this.chatToolsService.toolListAgentEvidence(workspaceId, asToolArgs(args));
         case 'verify_agent_evidence':
           return await this.chatToolsService.toolVerifyAgentEvidence(workspaceId);
+        case 'create_order':
+          return await this.chatToolsService.toolCreateOrder(workspaceId, asToolArgs(args));
         case 'create_payment_link':
           return await this.dispatchCreatePaymentLink(workspaceId, args, userId);
         case 'connect_whatsapp':
@@ -331,6 +389,23 @@ export class KloelToolDispatcherService {
           return await this.codeAnalysisService.toolCodeDetectIssues(
             typeof args.path === 'string' ? args.path : '',
           );
+        // ── CODEGRAPH (Meta 1 — knowledge-graph code intelligence) ──
+        case 'codegraph_status':
+          return await this.codeToolsService.toolCodeGraphStatus();
+        case 'codegraph_search':
+          return await this.codeToolsService.toolCodeGraphSearch(typeof args.query === 'string' ? args.query : '');
+        case 'codegraph_context':
+          return await this.codeToolsService.toolCodeGraphContext(typeof args.task === 'string' ? args.task : 'overview');
+        case 'codegraph_callers':
+          return await this.codeToolsService.toolCodeGraphCallers(typeof args.symbol === 'string' ? args.symbol : '');
+        case 'codegraph_callees':
+          return await this.codeToolsService.toolCodeGraphCallees(typeof args.symbol === 'string' ? args.symbol : '');
+        case 'codegraph_impact':
+          return await this.codeToolsService.toolCodeGraphImpact(typeof args.symbol === 'string' ? args.symbol : '');
+        case 'codegraph_node':
+          return await this.codeToolsService.toolCodeGraphNode(typeof args.symbol === 'string' ? args.symbol : '');
+        case 'codegraph_files':
+          return await this.codeToolsService.toolCodeGraphFiles();
         default:
           return { success: false, error: `Ferramenta desconhecida: ${toolName}` };
       }

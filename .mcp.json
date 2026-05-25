@@ -7,8 +7,9 @@
       "description": "Codacy code quality and static analysis — reads .codacy.yml, surfaces issues, enforces max-rigor lock"
     },
     "mercadopago-mcp-server": {
-      "url": "https://mcp.mercadopago.com/mcp",
-      "description": "MercadoPago payments integration — checkout, split, ledger, KYC in BRL"
+      "command": "bash",
+      "args": ["scripts/mcp/mercadopago-mcp-launcher.sh"],
+      "description": "MercadoPago payments integration - checkout, split, ledger, KYC in BRL. Auth loads from gitignored .env.pulse.local at runtime."
     },
     "stripe": {
       "command": "bash",

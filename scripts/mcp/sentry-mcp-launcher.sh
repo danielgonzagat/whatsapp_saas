@@ -24,8 +24,17 @@ set -a
 source "$ENV_FILE"
 set +a
 
+# Map from .env.pulse.local naming to @sentry/mcp-server naming
 if [[ -z "${SENTRY_TOKEN:-}" ]]; then
-  echo >&2 "sentry-mcp: SENTRY_TOKEN is not set in .env.pulse.local"
+  if [[ -n "${SENTRY_PERSONAL_TOKEN:-}" ]]; then
+    export SENTRY_TOKEN="${SENTRY_PERSONAL_TOKEN}"
+  elif [[ -n "${SENTRY_AUTH_TOKEN:-}" ]]; then
+    export SENTRY_TOKEN="${SENTRY_AUTH_TOKEN}"
+  fi
+fi
+
+if [[ -z "${SENTRY_TOKEN:-}" ]]; then
+  echo >&2 "sentry-mcp: SENTRY_TOKEN/SENTRY_PERSONAL_TOKEN is not set in .env.pulse.local"
   echo >&2 "  Get it from: Sentry → Settings → Auth Tokens → New Token"
   exit 1
 fi

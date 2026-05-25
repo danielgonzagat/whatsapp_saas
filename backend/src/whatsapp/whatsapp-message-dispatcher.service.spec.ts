@@ -9,16 +9,18 @@ import { WhatsAppProviderRegistry } from './providers/provider-registry';
 import { WorkerRuntimeService } from './worker-runtime.service';
 import { WhatsappSessionService } from './whatsapp-session.service';
 import { WhatsappMessageDispatcherService } from './whatsapp-message-dispatcher.service';
-import { flowQueue } from '../queue/queue';
 
 jest.mock('../queue/queue', () => ({
-  flowQueue: { add: jest.fn().mockResolvedValue(undefined) },
+  flowQueue: { add: jest.fn<(...args: unknown[]) => Promise<unknown>>().mockResolvedValue(undefined) },
   autopilotQueue: { add: jest.fn().mockResolvedValue(undefined) },
 }));
 
-function getFlowQueueAddMock(): jest.Mock {
-  const queueRef = flowQueue as never as { add: jest.Mock };
-  return queueRef.add;
+const mockFlowQueueAdd = jest.requireMock<{
+  flowQueue: { add: jest.Mock<(...args: unknown[]) => Promise<unknown>> };
+}>('../queue/queue').flowQueue.add;
+
+function getFlowQueueAddMock(): jest.Mock<(...args: unknown[]) => Promise<unknown>> {
+  return mockFlowQueueAdd;
 }
 
 describe('WhatsappMessageDispatcherService', () => {
