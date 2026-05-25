@@ -17,14 +17,12 @@ import { UnifiedAgentService } from './unified-agent.service';
 import { KloelToolDispatcherService } from './kloel-tool-dispatcher.service';
 import { buildReceipt, writeOperationReceipt, buildResultMeta } from './operation-receipt.helpers';
 import { detectActionIntent, formatToolResult } from './guest-chat.action-intent.helpers';
-
-interface GuestConversation {
-  messages: { role: 'user' | 'assistant'; content: string }[];
-  createdAt: Date;
-  lastMessageAt: Date;
-}
-
-const GUEST_CONVERSATION_TTL_SECONDS = 24 * 60 * 60;
+import {
+  GUEST_CONVERSATION_TTL_SECONDS,
+  getGuestConversationRedisKey,
+  parseGuestConversation,
+  type GuestConversation,
+} from './guest-chat.conversation.helpers';
 
 // cache.invalidate — Redis is the primary guest conversation store; local Map is fallback.
 @Injectable()
@@ -481,35 +479,6 @@ export class GuestChatService implements OnModuleDestroy {
   /**
    * 📋 Obter ou criar conversa
    */
-  private getRedisKey(sessionId: string): string {
-    return `kloel:guest-chat:${sessionId}`;
-  }
-
-  private parseConversation(raw: string | null): GuestConversation | null {
-    if (!raw) {
-      return null;
-    }
-    try {
-      const parsed = JSON.parse(raw) as {
-        messages?: GuestConversation['messages'];
-        createdAt?: string;
-        lastMessageAt?: string;
-      };
-      if (!Array.isArray(parsed.messages)) {
-        return null;
-      }
-      return {
-        messages: parsed.messages.filter(
-          (message): message is GuestConversation['messages'][number] =>
-            message.role === 'user' || message.role === 'assistant',
-        ),
-        createdAt: parsed.createdAt ? new Date(parsed.createdAt) : new Date(),
-        lastMessageAt: parsed.lastMessageAt ? new Date(parsed.lastMessageAt) : new Date(),
-      };
-    } catch {
-      return null;
-    }
-  }
 
   private async getOrCreateConversation(sessionId: string): Promise<GuestConversation> {
     const cached = this.conversations.get(sessionId);
@@ -519,7 +488,9 @@ export class GuestChatService implements OnModuleDestroy {
 
     if (this.redis) {
       try {
-        const stored = this.parseConversation(await this.redis.get(this.getRedisKey(sessionId)));
+        const stored = parseGuestConversation(
+          await this.redis.get(getGuestConversationRedisKey(sessionId)),
+        );
         if (stored) {
           this.conversations.set(sessionId, stored);
           return stored;
@@ -550,7 +521,7 @@ export class GuestChatService implements OnModuleDestroy {
     }
     try {
       await this.redis.set(
-        this.getRedisKey(sessionId),
+        getGuestConversationRedisKey(sessionId),
         JSON.stringify(conversation),
         'EX',
         GUEST_CONVERSATION_TTL_SECONDS,
