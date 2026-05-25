@@ -8,7 +8,7 @@ interface StepBarProps {
   onStepClick?: (step: number) => void;
 }
 
-const STEP_BAR_ITEMS = [0, 1, 2, 3] as const;
+const STEP_BAR_COUNT = 4;
 
 /** Step bar — four abstract traces, no visible numbers (spec §5). */
 export function StepBar({ step, C, onStepClick }: StepBarProps) {
@@ -16,7 +16,7 @@ export function StepBar({ step, C, onStepClick }: StepBarProps) {
 
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'center' }}>
-      {STEP_BAR_ITEMS.map((i) => {
+      {Array.from({ length: STEP_BAR_COUNT }, (_, i) => i).map((i) => {
         const traceStyle: CSSProperties = {
           width: 28,
           height: 2,
