@@ -1,8 +1,8 @@
+import { randomUUID } from 'node:crypto';
 import { extname } from 'node:path';
 import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Queue } from 'bullmq';
-import { v4 as uuid } from 'uuid';
 import { createRedisClient } from '../common/redis/redis.util';
 import { StorageService } from '../common/storage/storage.service';
 import { getTraceHeaders } from '../common/trace-headers';
@@ -89,7 +89,7 @@ export class MediaService {
     });
 
     const uploadOpts: Record<string, unknown> = {
-      filename: `${uuid()}${extname(file.originalname || '')}`,
+      filename: `${randomUUID()}${extname(file.originalname || '')}`,
       folder: 'documents',
       workspaceId,
     };
