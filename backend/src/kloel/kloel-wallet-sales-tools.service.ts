@@ -116,12 +116,8 @@ export class KloelWalletSalesToolsService {
     try {
       const limit = Math.min(typeof args.limit === 'number' ? args.limit : 20, 100);
       const status = typeof args.status === 'string' ? args.status : undefined;
-      const where: UnknownRecord = { workspaceId };
-      if (status) {
-        where.status = status;
-      }
       const orders = await this.prisma.kloelSale.findMany({
-        where,
+        where: { workspaceId, ...(status ? { status } : {}) },
         orderBy: { createdAt: 'desc' },
         take: limit,
       });
