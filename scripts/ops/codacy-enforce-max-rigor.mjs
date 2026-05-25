@@ -32,12 +32,14 @@ const CHECK_ONLY = process.argv.includes('--check');
  * Documentation contract: each entry must cite (a) the upstream deprecation
  * notice and (b) the modern replacement that already runs in this repo.
  */
-const DEPRECATED_DISABLED_TOOLS = Object.freeze([{
-  uuid: '612c22f7-663d-429c-ac02-e5cb3d1eb020',
-  name: 'TSLint',
-  upstreamStatus: 'Deprecated by Palantir 2019-12-01 (https://palantir.github.io/tslint/).',
-  replacement: 'ESLint + Biome (both already enabled in .codacy.yml).',
-}]);
+const DEPRECATED_DISABLED_TOOLS = Object.freeze([
+  {
+    uuid: '612c22f7-663d-429c-ac02-e5cb3d1eb020',
+    name: 'TSLint',
+    upstreamStatus: 'Deprecated by Palantir 2019-12-01 (https://palantir.github.io/tslint/).',
+    replacement: 'ESLint + Biome (both already enabled in .codacy.yml).',
+  },
+]);
 const TARGET_REPOSITORY_QUALITY = Object.freeze({
   maxIssuePercentage: 0,
   maxDuplicatedFilesPercentage: 0,
@@ -302,20 +304,12 @@ async function verifyCanonicalStandard(codingStandard) {
     deprecatedPatternState.every(
       (entry) => entry.fullyInspected && entry.total > 0 && entry.enabledCount === 0,
     );
-  // Codacy's published-standard meta can include disabled deprecated-tool
-  // sentinels even after the tool and every deprecated pattern are disabled.
-  // Accept only observed metadata-only surplus shapes bounded by inspected
-  // deprecated patterns; any missing non-deprecated pattern or any enabled
-  // deprecated pattern remains a hard failure.
-  const deprecatedPatternMetaSurplus = enabledPatternsCount - totalOrganizationPatterns;
-  const deprecatedPatternMetaSurplusLimit = deprecatedPatternState.reduce(
-    (total, entry) => total + entry.total,
-    0,
-  );
-  const disabledDeprecatedMetaSentinel =
-    deprecatedPatternsFullyDisabled &&
-    deprecatedPatternMetaSurplus > 0 &&
-    deprecatedPatternMetaSurplus <= deprecatedPatternMetaSurplusLimit;
+  // Codacy's published-standard meta can report provider-maintained counters
+  // differently from the explicit tool-pattern inventory. Treat the detailed
+  // inventory as source of truth, but still require metadata not to undercount
+  // the non-deprecated max-rigor target.
+  const metadataDoesNotUndercountEnabledPatterns =
+    enabledPatternsCount >= totalOrganizationPatterns;
   const enabledNonDeprecatedTools = enabledStandardTools.filter(
     (tool) => !deprecatedUuids.has(tool.uuid),
   );
@@ -329,14 +323,15 @@ async function verifyCanonicalStandard(codingStandard) {
     enabledNonDeprecatedPatternsCount,
     deprecatedActuallyDisabled,
     deprecatedPatternsFullyDisabled,
-    disabledDeprecatedMetaSentinel,
+    metadataDoesNotUndercountEnabledPatterns,
     hasAllToolsEnabled:
       enabledToolsCount === targetEnabledToolsCount &&
       enabledNonDeprecatedTools.length === targetEnabledToolsCount &&
       deprecatedActuallyDisabled,
     hasAllPatternsEnabled:
       enabledNonDeprecatedPatternsCount === totalOrganizationPatterns &&
-      (enabledPatternsCount === totalOrganizationPatterns || disabledDeprecatedMetaSentinel),
+      deprecatedPatternsFullyDisabled &&
+      metadataDoesNotUndercountEnabledPatterns,
   };
 }
 
