@@ -70,7 +70,7 @@ function makeData(overrides: ScenarioOverrides = {}) {
     updateConfig: vi.fn((patch: Partial<MutableState['config']>) => {
       setup.config = { ...setup.config, ...patch };
     }),
-    persistSetup: vi.fn((next: MutableState) => {
+    persistSetup: vi.fn((next: MutableState, _message?: string) => {
       Object.assign(setup, next);
       return Promise.resolve();
     }),
@@ -167,7 +167,7 @@ describe('handleConnect by channel', () => {
 });
 
 describe('per-step rendering + handlers', () => {
-  it('renders products step + advance triggers setCurrentStep(2)', () => {
+  it('renders products step + saves selected products before moving on', () => {
     const data = makeData({
       setup: { currentStep: 1, selectedProductIds: ['p1'] },
       productOptions: [{ id: 'p1', name: 'Alpha', price: 197 }],
@@ -178,8 +178,10 @@ describe('per-step rendering + handlers', () => {
     expect(screen.getByText(/R\$\s*197/)).toBeTruthy();
     fireEvent.click(screen.getByText('Alpha'));
     expect(data.toggleProduct).toHaveBeenCalledWith('p1');
-    fireEvent.click(screen.getByRole('button', { name: /Avançar/ }));
-    expect(data.setCurrentStep).toHaveBeenCalledWith(2);
+    fireEvent.click(screen.getByRole('button', { name: /Salvar produtos/ }));
+    const [nextSetup, message] = data.persistSetup.mock.calls[0] || [];
+    expect(nextSetup?.currentStep).toBe(2);
+    expect(message).toBe('Produtos do canal salvos.');
   });
 
   it('arsenal step persists each picked file as a JSON line', async () => {
@@ -200,13 +202,18 @@ describe('per-step rendering + handlers', () => {
   });
 
   it('arsenal back/continue wires setCurrentStep correctly', () => {
-    const data = makeData({ setup: { currentStep: 2 } });
-    hookMock.mockReturnValue(data);
+    const continueData = makeData({ setup: { currentStep: 2 } });
+    hookMock.mockReturnValue(continueData);
+    const { unmount } = render(<ChannelOnboarding channel="whatsapp" />);
+    fireEvent.click(screen.getByRole('button', { name: /Pular esta camada|Avançar/ }));
+    expect(continueData.setCurrentStep).toHaveBeenCalledWith(3);
+    unmount();
+
+    const backData = makeData({ setup: { currentStep: 2 } });
+    hookMock.mockReturnValue(backData);
     render(<ChannelOnboarding channel="whatsapp" />);
     fireEvent.click(screen.getByRole('button', { name: /Voltar/ }));
-    expect(data.setCurrentStep).toHaveBeenCalledWith(1);
-    fireEvent.click(screen.getByRole('button', { name: /Pular esta camada|Avançar/ }));
-    expect(data.setCurrentStep).toHaveBeenCalledWith(3);
+    expect(backData.setCurrentStep).toHaveBeenCalledWith(1);
   });
 
   it('voice step updates config via updateConfig and Despertar runs persist+complete', async () => {
@@ -217,9 +224,11 @@ describe('per-step rendering + handlers', () => {
     // pick the third tone trace (Caloroso, index 2) — first dial in document order.
     const dialButtons = screen
       .getAllByRole('button')
-      .filter((b) => ['Sereno', 'Equilibrado', 'Caloroso', 'Paciente', 'Firme', 'Incisivo'].includes(
-        b.getAttribute('aria-label') || '',
-      ));
+      .filter((b) =>
+        ['Sereno', 'Equilibrado', 'Caloroso', 'Paciente', 'Firme', 'Incisivo'].includes(
+          b.getAttribute('aria-label') || '',
+        ),
+      );
     expect(dialButtons.length).toBe(6);
     fireEvent.click(dialButtons[2]); // Caloroso
     expect(data.updateConfig).toHaveBeenCalledWith(expect.objectContaining({ tone: 'caloroso' }));

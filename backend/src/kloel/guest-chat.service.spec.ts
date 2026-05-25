@@ -16,6 +16,37 @@ jest.mock('./openai-wrapper', () => ({
   chatCompletionWithRetry: jest.fn(),
 }));
 
+const TEXT_LLM_KEY_NAMES = ['DEEPSEEK_API_KEY', 'LLM_API_KEY', 'OPENAI_API_KEY'] as const;
+type TextLlmKeyName = (typeof TEXT_LLM_KEY_NAMES)[number];
+const originalTextLlmEnv = new Map<TextLlmKeyName, string | undefined>(
+  TEXT_LLM_KEY_NAMES.map((key) => [key, process.env[key]]),
+);
+
+function isTextLlmKeyName(key: string): key is TextLlmKeyName {
+  return TEXT_LLM_KEY_NAMES.some((llmKey) => llmKey === key);
+}
+
+function setTextLlmEnv(value: string | undefined): void {
+  for (const key of TEXT_LLM_KEY_NAMES) {
+    if (value === undefined) {
+      delete process.env[key];
+    } else {
+      process.env[key] = value;
+    }
+  }
+}
+
+function restoreTextLlmEnv(): void {
+  for (const key of TEXT_LLM_KEY_NAMES) {
+    const value = originalTextLlmEnv.get(key);
+    if (value === undefined) {
+      delete process.env[key];
+    } else {
+      process.env[key] = value;
+    }
+  }
+}
+
 describe('GuestChatService', () => {
   let service: GuestChatService;
   let chatCompletionWithFallbackMock: jest.Mock;
@@ -25,14 +56,6 @@ describe('GuestChatService', () => {
 
   const unavailableMessage =
     'Eu continuo aqui, mas a camada de IA esta instavel agora. Tenta de novo em alguns segundos que eu retomo de onde paramos.';
-  const textLlmEnvKeys = ['DEEPSEEK_API_KEY', 'LLM_API_KEY', 'OPENAI_API_KEY'] as const;
-
-  function clearTextLlmEnv() {
-    for (const key of textLlmEnvKeys) {
-      delete process.env[key];
-    }
-  }
-
   async function createService() {
     const { chatCompletionWithFallback, chatCompletionWithRetry } =
       await import('./openai-wrapper');
@@ -60,10 +83,9 @@ describe('GuestChatService', () => {
   }
 
   beforeEach(async () => {
-    clearTextLlmEnv();
-    process.env.OPENAI_API_KEY = 'sk-test-key';
+    setTextLlmEnv('sk-test-key');
     mockConfigGet = jest.fn().mockImplementation((key: string) => {
-      if (key === 'OPENAI_API_KEY') {
+      if (isTextLlmKeyName(key)) {
         return 'sk-test-key';
       }
       return undefined;
@@ -77,7 +99,7 @@ describe('GuestChatService', () => {
 
   afterEach(() => {
     jest.clearAllMocks();
-    clearTextLlmEnv();
+    restoreTextLlmEnv();
   });
 
   describe('chatSync', () => {
@@ -144,7 +166,7 @@ describe('GuestChatService', () => {
 
     it('returns unavailable message when API key is missing', async () => {
       mockConfigGet.mockReturnValue(undefined);
-      clearTextLlmEnv();
+      setTextLlmEnv(undefined);
       await createService();
 
       const reply = await service.chatSync('Teste', 'session-no-key');
@@ -187,7 +209,7 @@ describe('GuestChatService', () => {
 
     it('returns unavailable message when API key missing via SSE', async () => {
       mockConfigGet.mockReturnValue(undefined);
-      clearTextLlmEnv();
+      setTextLlmEnv(undefined);
       await createService();
 
       const write = jest.fn();

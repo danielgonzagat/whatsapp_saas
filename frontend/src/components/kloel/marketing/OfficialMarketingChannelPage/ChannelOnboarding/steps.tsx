@@ -3,10 +3,6 @@ import type { OnboardingPalette } from './palette';
 import { SORA, MONO, PILL_RADIUS, TONE_LABELS, EDGE_LABELS } from './palette';
 import { CTA, Arrow, Back, Dial, Vinheta, NavRow } from './atoms';
 
-/** BRL currency formatter for the catalogue row prices (spec §7). */
-const BRL = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
-
-
 export interface ProductRow {
   id: string;
   name: string;
@@ -96,6 +92,8 @@ export function StepProducts({
               <button
                 type="button"
                 key={p.id}
+                role="checkbox"
+                aria-checked={on}
                 onClick={() => onToggle(p.id)}
                 style={{
                   display: 'flex',
@@ -133,7 +131,7 @@ export function StepProducts({
                       fontVariantNumeric: 'tabular-nums',
                     }}
                   >
-                    {BRL.format(Number(p.price))}
+                    R$ {p.price}
                   </span>
                 ) : null}
               </button>
@@ -150,7 +148,7 @@ export function StepProducts({
           }
           next={
             <CTA C={C} variant="ember" disabled={picked.length === 0} onClick={onContinue}>
-              Avançar <Arrow />
+              Salvar produtos <Arrow />
             </CTA>
           }
         />
@@ -308,13 +306,7 @@ export function StepVoice({
             onChange={onToneChange}
             labels={TONE_LABELS}
           />
-          <Dial
-            C={C}
-            label="Postura"
-            value={edge}
-            onChange={onEdgeChange}
-            labels={EDGE_LABELS}
-          />
+          <Dial C={C} label="Postura" value={edge} onChange={onEdgeChange} labels={EDGE_LABELS} />
         </div>
       }
       action={

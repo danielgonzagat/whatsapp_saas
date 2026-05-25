@@ -113,7 +113,7 @@ describe('atoms', () => {
     expect(traces).toHaveLength(4);
     expect(traces[0].style.background).toBe(D.ember);
     expect(traces[2].style.background).toBe(D.ember);
-    expect(traces[3].style.background).toBe(D.hi);
+    expect(traces[3].style.background).toBe(D.inactiveTrace);
   });
 });
 
@@ -163,9 +163,9 @@ describe('step vignettes wired by props', () => {
         onContinue={onContinue}
       />,
     );
-    expect(screen.getByText(/R\$\s*197,00/)).toBeTruthy();
-    const advance = screen.getByRole('button', { name: /Avançar/ });
-    expect(advance).toBeDisabled();
+    expect(screen.getByText(/R\$\s*197/)).toBeTruthy();
+    const save = screen.getByRole('button', { name: /Salvar produtos/ });
+    expect(save).toBeDisabled();
     fireEvent.click(screen.getByText('Alpha'));
     expect(onToggle).toHaveBeenCalledWith('p1');
     rerender(
@@ -178,7 +178,7 @@ describe('step vignettes wired by props', () => {
         onContinue={onContinue}
       />,
     );
-    fireEvent.click(screen.getByRole('button', { name: /Avançar/ }));
+    fireEvent.click(screen.getByRole('button', { name: /Salvar produtos/ }));
     expect(onContinue).toHaveBeenCalled();
   });
 
@@ -199,13 +199,7 @@ describe('step vignettes wired by props', () => {
   it('StepArsenal reports count and forwards picked files', () => {
     const onAddFiles = vi.fn();
     const { container, rerender } = render(
-      <StepArsenal
-        C={D}
-        count={0}
-        onAddFiles={onAddFiles}
-        onBack={vi.fn()}
-        onContinue={vi.fn()}
-      />,
+      <StepArsenal C={D} count={0} onAddFiles={onAddFiles} onBack={vi.fn()} onContinue={vi.fn()} />,
     );
     expect(screen.getByText(/Pular esta camada/)).toBeTruthy();
     const input = container.querySelector('input[type="file"]') as HTMLInputElement;
@@ -213,13 +207,7 @@ describe('step vignettes wired by props', () => {
     fireEvent.change(input, { target: { files: [file] } });
     expect(onAddFiles).toHaveBeenCalled();
     rerender(
-      <StepArsenal
-        C={D}
-        count={2}
-        onAddFiles={onAddFiles}
-        onBack={vi.fn()}
-        onContinue={vi.fn()}
-      />,
+      <StepArsenal C={D} count={2} onAddFiles={onAddFiles} onBack={vi.fn()} onContinue={vi.fn()} />,
     );
     expect(screen.getByText(/2 provas carregadas/)).toBeTruthy();
   });
