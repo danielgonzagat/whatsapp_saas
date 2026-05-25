@@ -4,10 +4,6 @@ import { PrismaService } from '../prisma/prisma.service';
 import { MoneyMachineService } from './money-machine.service';
 import { createPartialPrismaMock } from '../../test/helpers/prisma.mock';
 
-jest.mock('uuid', () => ({
-  v4: jest.fn().mockReturnValueOnce('flow-id-1').mockReturnValueOnce('node-id-1'),
-}));
-
 describe('MoneyMachineService', () => {
   let service: MoneyMachineService;
   let prisma: ReturnType<typeof createPartialPrismaMock>;

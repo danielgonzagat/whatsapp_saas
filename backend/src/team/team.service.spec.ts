@@ -10,9 +10,15 @@ jest.mock('bcrypt', () => ({
   hash: jest.fn().mockResolvedValue('hashed-pw'),
 }));
 
-jest.mock('uuid', () => ({
-  v4: jest.fn().mockReturnValue('invite-id'),
-}));
+type InvitationCreateArgs = {
+  data: {
+    workspaceId: string;
+    email: string;
+    role: string;
+    token: string;
+    expiresAt: Date;
+  };
+};
 
 describe('TeamService', () => {
   let service: TeamService;
@@ -28,7 +34,7 @@ describe('TeamService', () => {
     invitation: {
       findMany: jest.Mock;
       findUnique: jest.Mock;
-      create: jest.Mock;
+      create: jest.Mock<Promise<unknown>, [InvitationCreateArgs]>;
       delete: jest.Mock;
     };
     workspace: { findUnique: jest.Mock };
@@ -155,18 +161,27 @@ describe('TeamService', () => {
         email,
         role,
         token: 'invite-id',
-        expiresAt: expect.anything(),
+        expiresAt: new Date(),
       });
 
       const result = await service.inviteMember(wsId, email, role);
+      const createArgs = prisma.invitation.create.mock.calls[0]?.[0];
+      if (!createArgs) {
+        throw new Error('Invitation create call missing');
+      }
+      const inviteTokenPattern =
+        '[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}';
+      const inviteTokenMatcher = new RegExp(`^${inviteTokenPattern}$`, 'i');
+      const expectedInviteUrl = `http://localhost:3000/invite/accept?token=${createArgs.data.token}`;
 
       expect(result.email).toBe(email);
       expect(result.role).toBe(role);
+      expect(createArgs.data.token).toMatch(inviteTokenMatcher);
       expect(emailService.sendTeamInviteEmail).toHaveBeenCalledWith(
         email,
         'Um membro',
         'Test Workspace',
-        'http://localhost:3000/invite/accept?token=invite-id',
+        expectedInviteUrl,
       );
     });
 
