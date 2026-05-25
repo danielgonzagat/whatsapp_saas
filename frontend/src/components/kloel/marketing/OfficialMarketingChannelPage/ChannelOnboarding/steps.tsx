@@ -92,6 +92,8 @@ export function StepProducts({
               <button
                 type="button"
                 key={p.id}
+                role="checkbox"
+                aria-checked={on}
                 onClick={() => onToggle(p.id)}
                 style={{
                   display: 'flex',
@@ -146,7 +148,7 @@ export function StepProducts({
           }
           next={
             <CTA C={C} variant="ember" disabled={picked.length === 0} onClick={onContinue}>
-              Avançar <Arrow />
+              Salvar produtos <Arrow />
             </CTA>
           }
         />

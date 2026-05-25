@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { ChannelKey } from '../../OfficialMarketingChannelPage.helpers';
 import { useOfficialMarketingChannel } from '../use-official-marketing-channel';
 import { useOnboardingPalette } from './use-onboarding-palette';
@@ -12,7 +12,7 @@ import {
   toneIndex,
   edgeIndex,
 } from './palette';
-import { StepBar, Chip } from './atoms';
+import { StepBar, Chip, CTA } from './atoms';
 import { Glyph } from './Glyph';
 import {
   StepConnect,
@@ -42,24 +42,40 @@ export function ChannelOnboarding({ channel, initialStep }: Props) {
   // Recomeçar is UI-only: it sends the view back to step 0 without touching
   // the backend (spec §8). Any real navigation clears it.
   const [restarted, setRestarted] = useState(false);
+  const [optimisticStep, setOptimisticStep] = useState<number | null>(null);
+  const [interactiveReady, setInteractiveReady] = useState(false);
 
   const backendStep = data.setup.currentStep;
+  const effectiveStep = optimisticStep ?? backendStep;
   const awakened = data.completed && !restarted;
-  const viewStep = restarted ? 0 : backendStep;
+  const viewStep = restarted ? 0 : effectiveStep;
   const busy = data.busy !== null || data.isLoading;
+  const isMetaChannel = channel === 'whatsapp' || channel === 'instagram' || channel === 'facebook';
+  const canDisconnectMeta = isMetaChannel && data.connection?.connected === true;
 
   const products: ProductRow[] = data.productOptions;
   const picked = data.setup.selectedProductIds;
   const tone = toneIndex(data.setup.config.tone);
   const edge = edgeIndex(data.setup.config.aggressiveness);
 
+  useEffect(() => {
+    setInteractiveReady(true);
+  }, []);
+
   const goToStep = useCallback(
     (next: number) => {
       setRestarted(false);
+      setOptimisticStep(next);
       data.setCurrentStep(next);
     },
     [data],
   );
+
+  useEffect(() => {
+    if (optimisticStep !== null && backendStep === optimisticStep) {
+      setOptimisticStep(null);
+    }
+  }, [backendStep, optimisticStep]);
 
   const handleConnect = useCallback(() => {
     setRestarted(false);
@@ -124,7 +140,16 @@ export function ChannelOnboarding({ channel, initialStep }: Props) {
 
   const vignette = useMemo(() => {
     if (awakened) {
-      return <Done C={C} awakeName={copy.awakeName} onReset={() => setRestarted(true)} />;
+      return (
+        <Done
+          C={C}
+          awakeName={copy.awakeName}
+          onReset={() => {
+            setOptimisticStep(null);
+            setRestarted(true);
+          }}
+        />
+      );
     }
     if (viewStep <= 0) {
       return (
@@ -145,7 +170,14 @@ export function ChannelOnboarding({ channel, initialStep }: Props) {
           picked={picked}
           onToggle={data.toggleProduct}
           onBack={() => goToStep(0)}
-          onContinue={() => goToStep(2)}
+          onContinue={() => {
+            setRestarted(false);
+            setOptimisticStep(2);
+            void data.persistSetup(
+              { ...data.setup, currentStep: 2 },
+              'Produtos do canal salvos.',
+            );
+          }}
         />
       );
     }
@@ -231,7 +263,16 @@ export function ChannelOnboarding({ channel, initialStep }: Props) {
           }}
         >
           <Chip C={C}>{copy.provider}</Chip>
-          <StepBar step={Math.min(glyphStep, 3)} C={C} />
+          {awakened ? null : (
+            <>
+              <StepBar
+                step={Math.min(glyphStep, 3)}
+                C={C}
+                {...(interactiveReady ? { onStepClick: goToStep } : {})}
+              />
+              <Chip C={C} dim>{`Passo ${Math.min(glyphStep, 3) + 1} de 4`}</Chip>
+            </>
+          )}
         </div>
 
         <Glyph
@@ -244,6 +285,34 @@ export function ChannelOnboarding({ channel, initialStep }: Props) {
         <div className="kloel-vin" key={`${awakened ? 'done' : viewStep}`} style={{ width: '100%' }}>
           {vignette}
         </div>
+
+        {canDisconnectMeta ? (
+          <CTA
+            C={C}
+            variant="ghost"
+            small
+            disabled={data.busy === 'meta-disconnect'}
+            onClick={data.disconnectMeta}
+          >
+            {data.busy === 'meta-disconnect'
+              ? 'Desconectando...'
+              : data.disconnectArmed
+                ? 'Confirmar desconexão'
+                : 'Desconectar Meta'}
+          </CTA>
+        ) : null}
+
+        {data.message ? (
+          <Chip C={C} dim>
+            {data.message}
+          </Chip>
+        ) : null}
+
+        {data.completeMessage ? (
+          <Chip C={C} dim>
+            {data.completeMessage}
+          </Chip>
+        ) : null}
 
         {data.loadError ? (
           <Chip C={C} dim>
