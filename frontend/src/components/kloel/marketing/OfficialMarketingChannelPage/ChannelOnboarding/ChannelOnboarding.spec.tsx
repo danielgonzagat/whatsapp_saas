@@ -164,8 +164,8 @@ describe('step vignettes wired by props', () => {
       />,
     );
     expect(screen.getByText(/R\$\s*197,00/)).toBeTruthy();
-    const advance = screen.getByRole('button', { name: /Avançar/ });
-    expect(advance).toBeDisabled();
+    const save = screen.getByRole('button', { name: /Salvar produtos/ });
+    expect(save).toBeDisabled();
     fireEvent.click(screen.getByText('Alpha'));
     expect(onToggle).toHaveBeenCalledWith('p1');
     rerender(
@@ -178,7 +178,7 @@ describe('step vignettes wired by props', () => {
         onContinue={onContinue}
       />,
     );
-    fireEvent.click(screen.getByRole('button', { name: /Avançar/ }));
+    fireEvent.click(screen.getByRole('button', { name: /Salvar produtos/ }));
     expect(onContinue).toHaveBeenCalled();
   });
 
