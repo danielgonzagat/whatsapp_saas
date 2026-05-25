@@ -47,7 +47,8 @@ const SERVER_INFO = { name: 'graphify-plus', version: '0.1.0' };
 const tools = [
   {
     name: 'hot_clusters',
-    description: 'Composite priority ranker over the enriched graph: hot files weighted by runtime errors (Sentry) + blast radius (in-degree) + doc-freshness drift. Returns top-N candidates for the next autonomous PR wave.',
+    description:
+      'Composite priority ranker over the enriched graph: hot files weighted by runtime errors (Sentry) + blast radius (in-degree) + doc-freshness drift. Returns top-N candidates for the next autonomous PR wave.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -57,7 +58,8 @@ const tools = [
   },
   {
     name: 'blast_radius',
-    description: 'For a symbol/file, return callers+callees+inbound+outbound in one consolidated structure (saves 3 codegraph_* calls). Use before changing public API.',
+    description:
+      'For a symbol/file, return callers+callees+inbound+outbound in one consolidated structure (saves 3 codegraph_* calls). Use before changing public API.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -68,7 +70,8 @@ const tools = [
   },
   {
     name: 'metadata_for_file',
-    description: 'Returns every ADR, CLAUDE.md note, memory file, doc reference that mentions the given file path. Use to gather all institutional knowledge before refactoring.',
+    description:
+      'Returns every ADR, CLAUDE.md note, memory file, doc reference that mentions the given file path. Use to gather all institutional knowledge before refactoring.',
     inputSchema: {
       type: 'object',
       properties: { file: { type: 'string' } },
@@ -77,12 +80,14 @@ const tools = [
   },
   {
     name: 'route_gap_inventory',
-    description: 'Returns the prioritised list of route gaps (P1/P2/P3/P4). Use to pick the next Wave-11 route conversion target.',
+    description:
+      'Returns the prioritised list of route gaps (P1/P2/P3/P4). Use to pick the next Wave-11 route conversion target.',
     inputSchema: { type: 'object', properties: {} },
   },
   {
     name: 'runtime_errors',
-    description: 'Returns Sentry/Railway runtime errors mapped to source-tree nodes from the last N hours. Each error includes culprit file + symbol + count + last-seen, ready to feed into hot_clusters.',
+    description:
+      'Returns Sentry/Railway runtime errors mapped to source-tree nodes from the last N hours. Each error includes culprit file + symbol + count + last-seen, ready to feed into hot_clusters.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -92,7 +97,8 @@ const tools = [
   },
   {
     name: 'affected_specs',
-    description: 'Given a set of changed files, returns ONLY the spec/test files that exercise them (forward + reverse imports). Cross-language. Use to run minimal validation after edits.',
+    description:
+      'Given a set of changed files, returns ONLY the spec/test files that exercise them (forward + reverse imports). Cross-language. Use to run minimal validation after edits.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -103,11 +109,15 @@ const tools = [
   },
   {
     name: 'auto_pr_dispatch',
-    description: 'Emits a job into the L13 auto-PR queue (graphify-out/auto-pr-jobs/). Loop-runner daemon picks it up within 5 min, opens the PR, CI runs, auto-merger merges when green. Use to ship work without per-PR babysitting.',
+    description:
+      'Emits a job into the L13 auto-PR queue (graphify-out/auto-pr-jobs/). Loop-runner daemon picks it up within 5 min, opens the PR, CI runs, auto-merger merges when green. Use to ship work without per-PR babysitting.',
     inputSchema: {
       type: 'object',
       properties: {
-        template: { type: 'string', enum: ['cluster-tag', 'eslint-fix', 'decompose', 'route-gap-conversion'] },
+        template: {
+          type: 'string',
+          enum: ['cluster-tag', 'eslint-fix', 'decompose', 'route-gap-conversion'],
+        },
         files: { type: 'array', items: { type: 'string' } },
         meta: { type: 'object', description: 'Free-form metadata (rule name, target LOC, etc.)' },
       },
@@ -116,11 +126,15 @@ const tools = [
   },
   {
     name: 'playwright_diff',
-    description: 'Runs Playwright pixelmatch against the reference screenshot for the given surface slug. Returns ratio + diff PNG path. Use as visual fidelity gate before merging visual PRs.',
+    description:
+      'Runs Playwright pixelmatch against the reference screenshot for the given surface slug. Returns ratio + diff PNG path. Use as visual fidelity gate before merging visual PRs.',
     inputSchema: {
       type: 'object',
       properties: {
-        slug: { type: 'string', description: 'Surface slug from tools/visual-fidelity/surfaces.json' },
+        slug: {
+          type: 'string',
+          description: 'Surface slug from tools/visual-fidelity/surfaces.json',
+        },
         url: { type: 'string', description: 'Override base URL (default http://localhost:3000)' },
       },
       required: ['slug'],
@@ -128,7 +142,8 @@ const tools = [
   },
   {
     name: 'codacy_drain_jobs',
-    description: 'Runs codacy-drain.mjs in dry-run mode: returns the eslint --fix-dry-run jobs the pipeline WOULD generate for the given rules and workspaces. Use to size a real-debt drain wave before triggering it.',
+    description:
+      'Runs codacy-drain.mjs in dry-run mode: returns the eslint --fix-dry-run jobs the pipeline WOULD generate for the given rules and workspaces. Use to size a real-debt drain wave before triggering it.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -139,12 +154,14 @@ const tools = [
   },
   {
     name: 'session_state',
-    description: 'Returns the freshly-computed SESSION_STATE.md (git status, recent commits, PULSE state, protected-file dirtiness, suggested next task). Use as the first call when entering a new session.',
+    description:
+      'Returns the freshly-computed SESSION_STATE.md (git status, recent commits, PULSE state, protected-file dirtiness, suggested next task). Use as the first call when entering a new session.',
     inputSchema: { type: 'object', properties: {} },
   },
   {
     name: 'taskgraph_lock_status',
-    description: 'Returns the L11 multi-agent file-locks currently held in tools/agent-coordination/locks/. Each lock has cluster name, holder agent, last heartbeat. Use to avoid collisions before claiming a cluster.',
+    description:
+      'Returns the L11 multi-agent file-locks currently held in tools/agent-coordination/locks/. Each lock has cluster name, holder agent, last heartbeat. Use to avoid collisions before claiming a cluster.',
     inputSchema: { type: 'object', properties: {} },
   },
 ];
@@ -153,18 +170,49 @@ const tools = [
 
 async function callTool(name, args) {
   switch (name) {
-    case 'hot_clusters': return runScript(['node', join(ROOT, 'tools/graphify-plus/lib/hot.mjs'), `--top=${args?.top ?? 10}`]);
-    case 'blast_radius': return blastRadius(args.symbol);
-    case 'metadata_for_file': return metadataForFile(args.file);
-    case 'route_gap_inventory': return readJsonOr(join(ROOT, 'graphify-out/route-gaps.json'), { routeGaps: [], note: 'run the route gap detector first' });
-    case 'runtime_errors': return readJsonOr(join(ROOT, 'graphify-out/shards/runtime-sentry.json'), { errors: [], note: 'run: node tools/graphify-plus/extractors/runtime-sentry.mjs' });
-    case 'affected_specs': return runScript(['node', join(ROOT, 'tools/test-affected/run.mjs'), '--files', ...args.files]);
-    case 'auto_pr_dispatch': return autoPrDispatch(args.template, args.files, args.meta || {});
-    case 'playwright_diff': return runScript(['node', join(ROOT, 'tools/visual-fidelity/playwright-diff.mjs'), `--slug=${args.slug}`, ...(args.url ? [`--url=${args.url}`] : [])]);
-    case 'codacy_drain_jobs': return codacyDrainJobs(args?.rules, args?.workspaces);
-    case 'session_state': return runScript(['node', join(ROOT, 'tools/session-state/recover.mjs')]);
-    case 'taskgraph_lock_status': return taskgraphLockStatus();
-    default: throw new Error(`unknown tool: ${name}`);
+    case 'hot_clusters':
+      return runScript([
+        'node',
+        join(ROOT, 'tools/graphify-plus/lib/hot.mjs'),
+        `--top=${args?.top ?? 10}`,
+      ]);
+    case 'blast_radius':
+      return blastRadius(args.symbol);
+    case 'metadata_for_file':
+      return metadataForFile(args.file);
+    case 'route_gap_inventory':
+      return readJsonOr(join(ROOT, 'graphify-out/route-gaps.json'), {
+        routeGaps: [],
+        note: 'run the route gap detector first',
+      });
+    case 'runtime_errors':
+      return readJsonOr(join(ROOT, 'graphify-out/shards/runtime-sentry.json'), {
+        errors: [],
+        note: 'run: node tools/graphify-plus/extractors/runtime-sentry.mjs',
+      });
+    case 'affected_specs':
+      return runScript([
+        'node',
+        join(ROOT, 'tools/test-affected/run.mjs'),
+        `--files=${args.files.join(',')}`,
+      ]);
+    case 'auto_pr_dispatch':
+      return autoPrDispatch(args.template, args.files, args.meta || {});
+    case 'playwright_diff':
+      return runScript([
+        'node',
+        join(ROOT, 'tools/visual-fidelity/playwright-diff.mjs'),
+        `--slug=${args.slug}`,
+        ...(args.url ? [`--url=${args.url}`] : []),
+      ]);
+    case 'codacy_drain_jobs':
+      return codacyDrainJobs(args?.rules, args?.workspaces);
+    case 'session_state':
+      return runScript(['node', join(ROOT, 'tools/session-state/recover.mjs')]);
+    case 'taskgraph_lock_status':
+      return taskgraphLockStatus();
+    default:
+      throw new Error(`unknown tool: ${name}`);
   }
 }
 
@@ -194,10 +242,14 @@ async function autoPrDispatch(template, files, meta) {
   const ts = Date.now();
   const job = {
     title: meta.title || `chore(auto): ${template} on ${files.length} files`,
-    body: meta.body || `Auto-dispatched via graphify-plus MCP.\n\nTemplate: ${template}\nFiles: ${files.length}\n\n${files.map((f) => `- \`${f}\``).join('\n')}`,
+    body:
+      meta.body ||
+      `Auto-dispatched via graphify-plus MCP.\n\nTemplate: ${template}\nFiles: ${files.length}\n\n${files.map((f) => `- \`${f}\``).join('\n')}`,
     branch: meta.branch || `auto/${template}-mcp-${ts}`,
     base: 'origin/main',
-    template, files, meta,
+    template,
+    files,
+    meta,
   };
   const dir = join(ROOT, 'graphify-out/auto-pr-jobs');
   await mkdir(dir, { recursive: true });
@@ -209,7 +261,11 @@ async function autoPrDispatch(template, files, meta) {
 async function codacyDrainJobs(rules, workspaces) {
   const ruleArg = rules?.length ? `--rules=${rules.join(',')}` : '';
   const wsArg = workspaces?.length ? `--ws=${workspaces.join(',')}` : '';
-  return runScript(['node', join(ROOT, 'tools/auto-pr/codacy-drain.mjs'), '--dry-run', ruleArg, wsArg].filter(Boolean));
+  return runScript(
+    ['node', join(ROOT, 'tools/auto-pr/codacy-drain.mjs'), '--dry-run', ruleArg, wsArg].filter(
+      Boolean,
+    ),
+  );
 }
 
 async function taskgraphLockStatus() {
@@ -228,11 +284,21 @@ async function taskgraphLockStatus() {
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
 
-function safeParseJson(s) { try { return JSON.parse(s); } catch { return null; } }
+function safeParseJson(s) {
+  try {
+    return JSON.parse(s);
+  } catch {
+    return null;
+  }
+}
 
 async function readJsonOr(path, fallback) {
   if (!existsSync(path)) return fallback;
-  try { return JSON.parse(await readFile(path, 'utf8')); } catch { return fallback; }
+  try {
+    return JSON.parse(await readFile(path, 'utf8'));
+  } catch {
+    return fallback;
+  }
 }
 
 function spawnText(args) {
@@ -284,26 +350,39 @@ process.stdin.on('data', (chunk) => {
 
 async function handleLine(line) {
   let req;
-  try { req = JSON.parse(line); } catch { return; }
+  try {
+    req = JSON.parse(line);
+  } catch {
+    return;
+  }
   const { id, method, params } = req;
   try {
     const result = await dispatch(method, params || {});
     if (id !== undefined) send({ jsonrpc: '2.0', id, result });
   } catch (err) {
-    if (id !== undefined) send({ jsonrpc: '2.0', id, error: { code: -32603, message: err.message } });
+    if (id !== undefined)
+      send({ jsonrpc: '2.0', id, error: { code: -32603, message: err.message } });
   }
 }
 
 async function dispatch(method, params) {
   switch (method) {
     case 'initialize':
-      return { protocolVersion: PROTO_VERSION, capabilities: { tools: {} }, serverInfo: SERVER_INFO };
+      return {
+        protocolVersion: PROTO_VERSION,
+        capabilities: { tools: {} },
+        serverInfo: SERVER_INFO,
+      };
     case 'tools/list':
       return { tools };
     case 'tools/call': {
       const { name, arguments: args } = params;
       const out = await callTool(name, args);
-      return { content: [{ type: 'text', text: typeof out === 'string' ? out : JSON.stringify(out, null, 2) }] };
+      return {
+        content: [
+          { type: 'text', text: typeof out === 'string' ? out : JSON.stringify(out, null, 2) },
+        ],
+      };
     }
     case 'ping':
       return {};
