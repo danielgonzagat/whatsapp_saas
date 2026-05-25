@@ -306,12 +306,12 @@ async function verifyCanonicalStandard(codingStandard) {
     deprecatedPatternState.every(
       (entry) => entry.fullyInspected && entry.total > 0 && entry.enabledCount === 0,
     );
-  // Codacy's published-standard meta can include disabled deprecated-tool
-  // sentinels even after those tools and every deprecated pattern are disabled.
-  // Accept extra deprecated metadata only when all non-deprecated patterns are
-  // enabled and every deprecated pattern was explicitly verified disabled.
-  const disabledDeprecatedMetaSentinel =
-    deprecatedPatternsFullyDisabled && enabledPatternsCount > totalOrganizationPatterns;
+  // Codacy's published-standard meta can report provider-maintained counters
+  // differently from the explicit tool-pattern inventory. Treat the detailed
+  // inventory as source of truth, but still require metadata not to undercount
+  // the non-deprecated max-rigor target.
+  const metadataDoesNotUndercountEnabledPatterns =
+    enabledPatternsCount >= totalOrganizationPatterns;
   const enabledNonDeprecatedTools = enabledStandardTools.filter(
     (tool) => !deprecatedUuids.has(tool.uuid),
   );
@@ -325,14 +325,15 @@ async function verifyCanonicalStandard(codingStandard) {
     enabledNonDeprecatedPatternsCount,
     deprecatedActuallyDisabled,
     deprecatedPatternsFullyDisabled,
-    disabledDeprecatedMetaSentinel,
+    metadataDoesNotUndercountEnabledPatterns,
     hasAllToolsEnabled:
       enabledToolsCount === targetEnabledToolsCount &&
       enabledNonDeprecatedTools.length === targetEnabledToolsCount &&
       deprecatedActuallyDisabled,
     hasAllPatternsEnabled:
       enabledNonDeprecatedPatternsCount === totalOrganizationPatterns &&
-      (enabledPatternsCount === totalOrganizationPatterns || disabledDeprecatedMetaSentinel),
+      deprecatedPatternsFullyDisabled &&
+      metadataDoesNotUndercountEnabledPatterns,
   };
 }
 
