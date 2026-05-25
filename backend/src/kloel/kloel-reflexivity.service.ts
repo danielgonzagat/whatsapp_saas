@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { StructuredLogger } from '../logging/structured-logger';
 import { PrismaService } from '../prisma/prisma.service';
 import { Cron } from '@nestjs/schedule';
+import { randomUUID } from 'crypto';
 
 interface ReflexivityReport {
   generatedAt: string;
@@ -187,18 +188,32 @@ export class KloelReflexivityService {
   }
 
   private async persistReport(report: ReflexivityReport): Promise<void> {
+    const reportDate = new Date(report.generatedAt);
+    const content = JSON.stringify(report);
+    const metrics = {
+      totalDecisions: report.totalDecisions,
+      successRate: report.successRate,
+      recommendations: report.recommendations,
+    };
+
     try {
-      await this.prisma.mindDailyReport.create({
-        data: {
-          id: `reflex_${report.workspaceId}_${Date.now().toString(36)}`,
-          workspaceId: report.workspaceId,
-          reportDate: report.generatedAt,
-          content: JSON.stringify(report),
-          metrics: {
-            totalDecisions: report.totalDecisions,
-            successRate: report.successRate,
-            recommendations: report.recommendations,
+      await this.prisma.mindDailyReport.upsert({
+        where: {
+          workspaceId_reportDate: {
+            workspaceId: report.workspaceId,
+            reportDate,
           },
+        },
+        update: {
+          content,
+          metrics,
+        },
+        create: {
+          id: randomUUID(),
+          workspaceId: report.workspaceId,
+          reportDate,
+          content,
+          metrics,
         },
       });
     } catch (err: unknown) {
