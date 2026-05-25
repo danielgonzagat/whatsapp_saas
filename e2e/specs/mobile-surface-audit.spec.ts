@@ -121,9 +121,9 @@ test.describe('Mobile Surface Audit', () => {
         path: '/marketing',
         slug: 'marketing',
         assert: async () => {
-          // MarketingView default tab is "conversas"; assert the tab button is
-          // visible to prove the surface rendered (visual contract preserved).
-          await expect(page.getByRole('button', { name: /conversas/i })).toBeVisible();
+          // /marketing redirects to the official WhatsApp channel surface; assert
+          // the first Meta onboarding action is visible on mobile.
+          await expect(page.getByRole('button', { name: /vincular n[úu]mero/i })).toBeVisible();
         },
       },
       {
