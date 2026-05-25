@@ -22,7 +22,7 @@ const defaultChunkSize =
   process.env.CI === 'true' || process.env.GITHUB_ACTIONS === 'true' ? 72 : 48;
 const chunkSize = Math.max(1, Number(process.env.JEST_CHUNK_SIZE || defaultChunkSize));
 const startChunk = Math.max(1, Number(process.env.JEST_CHUNK_START || 1));
-const maxOldSpaceSize = Math.max(2048, Number(process.env.JEST_MAX_OLD_SPACE_SIZE) || 3072);
+const maxOldSpaceSize = Math.max(2048, Number(process.env.JEST_MAX_OLD_SPACE_SIZE) || 6144);
 const workerIdleMemoryLimit = process.env.JEST_WORKER_IDLE_MEMORY_LIMIT || '512MB';
 const maxWorkers = process.env.JEST_MAX_WORKERS || '2';
 const verboseJestOutput = process.env.JEST_VERBOSE_OUTPUT === '1';
