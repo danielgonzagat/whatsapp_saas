@@ -38,6 +38,13 @@ type SummaryPrismaMock = {
 };
 
 const mockOpenai: OpenAI = new OpenAI({ apiKey: 'test-key' });
+const textLlmEnv = (openaiApiKey: string, anthropicApiKey = '') => ({
+  ...process.env,
+  DEEPSEEK_API_KEY: '',
+  LLM_API_KEY: '',
+  OPENAI_API_KEY: openaiApiKey,
+  ANTHROPIC_API_KEY: anthropicApiKey,
+});
 const makeChatThreadFindFirstMock = () =>
   jest.fn<Promise<PrismaCallArg | null>, [PrismaCallArg]>().mockResolvedValue(null);
 const makeChatThreadUpdateManyMock = () =>
@@ -169,11 +176,7 @@ describe('KloelThreadSummaryService', () => {
 
     it('returns fallback when no API keys are set', async () => {
       const openai = mockOpenai;
-      jest.replaceProperty(process, 'env', {
-        ...process.env,
-        OPENAI_API_KEY: '',
-        ANTHROPIC_API_KEY: '',
-      });
+      jest.replaceProperty(process, 'env', textLlmEnv(''));
       const title = await service.generateConversationTitle(
         'Mensagem de teste sobre suporte técnico',
         wsId,
@@ -183,11 +186,7 @@ describe('KloelThreadSummaryService', () => {
     });
 
     it('generates title via OpenAI when keys exist and openai provided', async () => {
-      jest.replaceProperty(process, 'env', {
-        ...process.env,
-        OPENAI_API_KEY: 'sk-test',
-        ANTHROPIC_API_KEY: '',
-      });
+      jest.replaceProperty(process, 'env', textLlmEnv('sk-test'));
       const openai = mockOpenai;
 
       const title = await service.generateConversationTitle(
@@ -202,7 +201,7 @@ describe('KloelThreadSummaryService', () => {
     });
 
     it('tracks AI usage after title generation', async () => {
-      jest.replaceProperty(process, 'env', { ...process.env, OPENAI_API_KEY: 'sk-test' });
+      jest.replaceProperty(process, 'env', textLlmEnv('sk-test'));
       const openai = mockOpenai;
 
       await service.generateConversationTitle('Mensagem de teste', wsId, openai);
@@ -212,7 +211,7 @@ describe('KloelThreadSummaryService', () => {
     });
 
     it('returns fallback when OpenAI call fails', async () => {
-      jest.replaceProperty(process, 'env', { ...process.env, OPENAI_API_KEY: 'sk-test' });
+      jest.replaceProperty(process, 'env', textLlmEnv('sk-test'));
       chatCompletionWithFallbackMock.mockRejectedValueOnce(new Error('API error'));
       const openai = mockOpenai;
 
@@ -251,7 +250,7 @@ describe('KloelThreadSummaryService', () => {
     });
 
     it('generates and persists title for default title + substantive message', async () => {
-      jest.replaceProperty(process, 'env', { ...process.env, OPENAI_API_KEY: 'sk-test' });
+      jest.replaceProperty(process, 'env', textLlmEnv('sk-test'));
 
       const result = await service.maybeGenerateThreadTitle(
         'thread-1',
@@ -295,7 +294,7 @@ describe('KloelThreadSummaryService', () => {
     });
 
     it('refreshes summary when messages exceed limit and no existing summary', async () => {
-      jest.replaceProperty(process, 'env', { ...process.env, OPENAI_API_KEY: 'sk-test' });
+      jest.replaceProperty(process, 'env', textLlmEnv('sk-test'));
       prisma.chatThread.findFirst.mockResolvedValueOnce({
         id: 'thread-1',
         summary: null,
@@ -321,7 +320,7 @@ describe('KloelThreadSummaryService', () => {
 
   describe('tenant isolation', () => {
     it('maybeGenerateThreadTitle updates thread with correct workspaceId', async () => {
-      jest.replaceProperty(process, 'env', { ...process.env, OPENAI_API_KEY: 'sk-test' });
+      jest.replaceProperty(process, 'env', textLlmEnv('sk-test'));
 
       await service.maybeGenerateThreadTitle(
         'thread-1',
@@ -339,7 +338,7 @@ describe('KloelThreadSummaryService', () => {
     });
 
     it('maybeRefreshThreadSummary filters by workspaceId', async () => {
-      jest.replaceProperty(process, 'env', { ...process.env, OPENAI_API_KEY: 'sk-test' });
+      jest.replaceProperty(process, 'env', textLlmEnv('sk-test'));
       prisma.chatThread.findFirst.mockResolvedValueOnce({
         id: 'thread-1',
         summary: null,
@@ -360,7 +359,7 @@ describe('KloelThreadSummaryService', () => {
 
   describe('error handling', () => {
     it('generateConversationTitle falls back when OpenAI throws', async () => {
-      jest.replaceProperty(process, 'env', { ...process.env, OPENAI_API_KEY: 'sk-test' });
+      jest.replaceProperty(process, 'env', textLlmEnv('sk-test'));
       chatCompletionWithFallbackMock.mockRejectedValue(new Error('Network error'));
       const openai = mockOpenai;
 
