@@ -1,90 +1,10 @@
-import { WisdomPatternExtractorService } from './wisdom-pattern-extractor.service';
-import {
-  applyKAnonymity,
-  applyDiffPrivacyNoise,
-  anonymizePatterns,
-  toWisdomPattern,
-} from './wisdom-anonymizer';
-import { validateByNWorkspaces, classifyByNWorkspaces } from './wisdom-validator';
-import { deriveTaxonomy, ALL_STAGE_HINTS } from './wisdom-taxonomy';
-import { WisdomProjectorService } from './wisdom-projector.service';
 import { WisdomOptService } from './wisdom-opt';
 import {
   validateAttribution,
   assertNoAttributionLeak,
   patternDescriptionIsClean,
 } from './wisdom-attribution.guard';
-import type { SpineEventRef } from '../mind/mind.types';
-import type {
-  CandidatePattern,
-  WorkspaceEventSet,
-  TargetWorkspaceContext,
-  WisdomPattern,
-} from './wisdom.types';
-import { makeEventFactory } from '../../../test/helpers/spine-event-factory';
-
-const makeEvent = makeEventFactory();
-
-function buildEventSet(
-  workspaceId: string,
-  count: number,
-  baseDate: Date,
-  overrides: Partial<SpineEventRef> = {},
-): WorkspaceEventSet {
-  const events: SpineEventRef[] = [];
-  for (let i = 0; i < count; i++) {
-    const t = new Date(baseDate.getTime() + i * 3600_000);
-    events.push(
-      makeEvent(overrides.eventName ?? 'commerce.lead.created', workspaceId, t.toISOString(), {
-        ...overrides,
-        eventName: overrides.eventName ?? 'commerce.lead.created',
-      }),
-    );
-  }
-  return { workspaceId, events };
-}
-
-function multiWorkspaceSets(): WorkspaceEventSet[] {
-  const base = new Date('2026-05-01T00:00:00.000Z');
-  const sets: WorkspaceEventSet[] = [];
-
-  for (let w = 0; w < 5; w++) {
-    const wsId = `wks_${String(w + 1).padStart(3, '0')}`;
-    const events: SpineEventRef[] = [];
-    for (let i = 0; i < 30; i++) {
-      const t = new Date(base.getTime() + i * 7200_000 + w * 86_400_000);
-      events.push(makeEvent('commerce.lead.created', wsId, t.toISOString()));
-    }
-    for (let i = 0; i < 8; i++) {
-      const t = new Date(base.getTime() + 50_000_000 + i * 86_400_000 + w * 86_400_000);
-      events.push(
-        makeEvent('commerce.lead.converted', wsId, t.toISOString(), { valence: 'positive' }),
-      );
-    }
-    for (let i = 0; i < 12; i++) {
-      const t = new Date(base.getTime() + 30_000_000 + i * 36_000_000 + w * 86_400_000);
-      events.push(
-        makeEvent('commerce.payment.approved', wsId, t.toISOString(), { valence: 'positive' }),
-      );
-    }
-    for (let i = 0; i < 5; i++) {
-      const t = new Date(base.getTime() + 40_000_000 + i * 72_000_000 + w * 86_400_000);
-      events.push(
-        makeEvent('commerce.whatsapp.message_replied', wsId, t.toISOString(), {
-          valence: 'positive',
-        }),
-      );
-    }
-    for (let i = 0; i < 2; i++) {
-      const t = new Date(base.getTime() + 45_000_000 + i * 100_000_000 + w * 86_400_000);
-      events.push(
-        makeEvent('commerce.crm.deal_won', wsId, t.toISOString(), { valence: 'positive' }),
-      );
-    }
-    sets.push({ workspaceId: wsId, events });
-  }
-  return sets;
-}
+import type { WisdomPattern } from './wisdom.types';
 
 describe('WISDOM-007 — Opt-In/Out Registry', () => {
   let opt: WisdomOptService;

@@ -210,9 +210,9 @@ export class KloelToolDispatcherService {
         case 'configure_warranty':
           return await this.chatToolsService.toolConfigureWarranty(workspaceId, asToolArgs(args));
         case 'configure_exit_intent':
-          return await this.chatToolsService.toolConfigureExitIntent(workspaceId, asToolArgs(args));
+          return this.chatToolsService.toolConfigureExitIntent(workspaceId, asToolArgs(args));
         case 'configure_after_pay':
-          return await this.chatToolsService.toolConfigureAfterPay(workspaceId, asToolArgs(args));
+          return this.chatToolsService.toolConfigureAfterPay(workspaceId, asToolArgs(args));
         case 'browse_marketplace':
           return await this.chatToolsService.toolBrowseMarketplace(workspaceId, asToolArgs(args));
         case 'get_nps':
@@ -242,7 +242,7 @@ export class KloelToolDispatcherService {
         case 'connect_channel':
           return await this.bizConfigToolsService.toolConnectChannel(workspaceId, asToolArgs(args));
         case 'send_channel_message':
-          return await this.chatToolsService.toolSendChannelMessage(workspaceId, asToolArgs(args));
+          return this.chatToolsService.toolSendChannelMessage(workspaceId, asToolArgs(args));
         case 'create_broadcast':
           return await this.chatToolsService.toolCreateBroadcast(workspaceId, asToolArgs(args));
         case 'configure_ai_persona':

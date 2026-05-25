@@ -106,7 +106,7 @@ export class PipelineService {
   /** Create deal. */
   async createDeal(
     workspaceId: string,
-    data: { title?: string; value?: number; contactId?: string },
+    data: { title?: string; value?: number; contactId?: string; priority?: string },
   ) {
     // Find first stage of default pipeline
     const pipeline = await this.getPipeline(workspaceId);
@@ -136,6 +136,7 @@ export class PipelineService {
         contact: { connect: { id: data.contactId } },
         stage: { connect: { id: firstStage.id } },
         ...(sourceCampaignId !== undefined ? { sourceCampaignId } : {}),
+        ...(data.priority !== undefined ? { priority: data.priority } : {}),
       },
     });
   }

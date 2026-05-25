@@ -797,10 +797,7 @@ export class KloelChatToolsService {
     return { success: true, message: 'Garantia configurada. Selo exibido na página de vendas.' };
   }
 
-  async toolConfigureExitIntent(
-    workspaceId: string,
-    args: Record<string, unknown>,
-  ): Promise<ToolResult> {
+  toolConfigureExitIntent(workspaceId: string, args: Record<string, unknown>): ToolResult {
     void workspaceId;
     const productName = typeof args.productName === 'string' ? args.productName : '';
     return {
@@ -809,10 +806,7 @@ export class KloelChatToolsService {
     };
   }
 
-  async toolConfigureAfterPay(
-    workspaceId: string,
-    args: Record<string, unknown>,
-  ): Promise<ToolResult> {
+  toolConfigureAfterPay(workspaceId: string, args: Record<string, unknown>): ToolResult {
     void workspaceId;
     const productName = typeof args.productName === 'string' ? args.productName : '';
     return {
@@ -851,10 +845,7 @@ export class KloelChatToolsService {
     }
   }
 
-  async toolSendChannelMessage(
-    workspaceId: string,
-    args: Record<string, unknown>,
-  ): Promise<ToolResult> {
+  toolSendChannelMessage(workspaceId: string, args: Record<string, unknown>): ToolResult {
     void workspaceId;
     const channel = typeof args.channel === 'string' ? args.channel : 'whatsapp';
     return {

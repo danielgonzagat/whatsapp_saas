@@ -539,7 +539,7 @@ export class KloelBusinessConfigToolsService {
         },
         message: 'Canais disponíveis. Conecte cada um em Configurações > Canais.',
       };
-    } catch (e: unknown) {
+    } catch {
       return {
         success: true,
         message: 'Canais sociais disponíveis: WhatsApp, Instagram, Facebook, TikTok, Email.',

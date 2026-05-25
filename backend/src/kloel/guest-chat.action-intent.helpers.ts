@@ -862,7 +862,7 @@ export function extractAffiliateArgs(msg: string): Record<string, unknown> {
     args.commissionPercent = parseInt(pctMatch[1], 10);
   }
   const prodMatch = msg.match(
-    /para\s+(?:o\s+|a\s+)?(?:produto\s+)?["']?([A-Za-zÀ-ÿ0-9\s\-\.\+]{2,60}?)(?:\s*(?:,|\.|R\$|pre[çc]o|valor|\bcom\b|\bpor\b|\bpara\b|\burl\b|https?|\bcor\b|\bdescri[cç][aã]o\b|\bdescricao\b|$)|$)/i,
+    /para\s+(?:o\s+|a\s+)?(?:produto\s+)?["']?([A-Za-zÀ-ÿ0-9\s.+-]{2,60}?)(?:\s*(?:,|\.|R\$|pre[çc]o|valor|\bcom\b|\bpor\b|\bpara\b|\burl\b|https?|\bcor\b|\bdescri[cç][aã]o\b|\bdescricao\b|$)|$)/i,
   );
   if (prodMatch?.[1]) {
     args.productName = prodMatch[1].trim();

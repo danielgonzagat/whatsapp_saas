@@ -4,6 +4,7 @@ import { AgentEventsService } from '../whatsapp/agent-events.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { CiaRuntimeStateService } from './cia-runtime-state.service';
 import { createPartialPrismaMock } from '../../test/helpers/prisma.mock';
+import { autopilotQueue } from '../queue/queue';
 
 jest.mock('../queue/queue', () => {
   const mockAdd = jest.fn().mockResolvedValue(undefined);
@@ -129,12 +130,21 @@ describe('CiaRuntimeStateService', () => {
         'test_reason',
       );
 
-      expect(prisma.autonomyRun.updateMany).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: { id: 'run-stale', workspaceId: 'ws-1' },
-          data: expect.objectContaining({ status: 'FAILED' }),
-        }),
-      );
+      type UpdateAutonomyRunStatusInput = {
+        where: { id: string; workspaceId: string };
+        data: { status: string; endedAt?: Date };
+      };
+      const updateManyMock = prisma.autonomyRun.updateMany as jest.Mock<
+        Promise<unknown>,
+        [UpdateAutonomyRunStatusInput]
+      >;
+      const updateManyCall = updateManyMock.mock.calls[0]?.[0];
+      if (!updateManyCall) {
+        throw new Error('Expected autonomyRun.updateMany to be called');
+      }
+      expect(updateManyCall.where).toEqual({ id: 'run-stale', workspaceId: 'ws-1' });
+      expect(updateManyCall.data.status).toBe('FAILED');
+      expect(updateManyCall.data.endedAt).toBeInstanceOf(Date);
       expect(result).not.toBeNull();
       expect(result?.state).toBe('LIVE_READY');
       expect(result?.currentRunId).toBeNull();
@@ -144,10 +154,10 @@ describe('CiaRuntimeStateService', () => {
 
   describe('scheduleContactCatalogRefresh', () => {
     it('adds catalog-contacts-30d job to autopilot queue', async () => {
-      const { autopilotQueue } = require('../queue/queue');
+      const mockedAutopilotQueue = autopilotQueue as { add: jest.Mock };
       const result = await service.scheduleContactCatalogRefresh('ws-1', 'boot_complete');
       expect(result.scheduled).toBe(true);
-      expect(autopilotQueue.add).toHaveBeenCalledWith(
+      expect(mockedAutopilotQueue.add).toHaveBeenCalledWith(
         'catalog-contacts-30d',
         expect.objectContaining({ workspaceId: 'ws-1' }),
         expect.objectContaining({ removeOnComplete: true }),
@@ -155,8 +165,8 @@ describe('CiaRuntimeStateService', () => {
     });
 
     it('returns scheduled=false when job is already waiting', async () => {
-      const { autopilotQueue } = require('../queue/queue');
-      (autopilotQueue.add as jest.Mock).mockRejectedValueOnce(new Error('Job is already waiting'));
+      const mockedAutopilotQueue = autopilotQueue as { add: jest.Mock };
+      mockedAutopilotQueue.add.mockRejectedValueOnce(new Error('Job is already waiting'));
       const result = await service.scheduleContactCatalogRefresh('ws-1', 'boot_complete');
       expect(result.scheduled).toBe(false);
       expect(result.reason).toBe('already_waiting');

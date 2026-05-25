@@ -17,11 +17,6 @@ import {
 import { WisdomProjectorService } from './wisdom-projector.service';
 import { relevanceScore, filterByRelevance, filterIrrelevant } from './wisdom-relevance-filter';
 import { WisdomOptService } from './wisdom-opt';
-import {
-  validateAttribution,
-  assertNoAttributionLeak,
-  patternDescriptionIsClean,
-} from './wisdom-attribution.guard';
 import type { SpineEventRef } from '../mind/mind.types';
 import type {
   CandidatePattern,

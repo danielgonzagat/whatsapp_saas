@@ -283,10 +283,7 @@ export class KloelWalletSalesToolsService {
     }
   }
 
-  async requestAnticipation(
-    workspaceId: string,
-    _args: UnknownRecord,
-  ): Promise<WalletSalesToolResult> {
+  requestAnticipation(workspaceId: string, _args: UnknownRecord): WalletSalesToolResult {
     void workspaceId;
     void _args;
     try {
