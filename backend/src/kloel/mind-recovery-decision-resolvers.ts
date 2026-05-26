@@ -1,24 +1,15 @@
 import { resolveCaseMemoryAction, type CaseMemoryLookup } from './mind-case-memory-decision.helper';
-import type { MindPolicyChooser } from './mind-catalog-decision-resolvers';
+import type { MindPolicyChooser, PolicyDecisionResult } from './mind-catalog-decision-resolvers';
+import { decisionConfidence } from './mind-catalog-decision-resolvers';
 
-// Canonical lives in mind-catalog-decision-resolvers — re-export for any
-// recovery-side consumers that imported it from here.
-export type { MindPolicyChooser };
+// Canonical MindPolicyChooser + PolicyDecisionResult + decisionConfidence live
+// in mind-catalog-decision-resolvers — re-export the type for recovery-side
+// consumers; decisionConfidence is imported above.
+export type { MindPolicyChooser, PolicyDecisionResult };
 
 export interface MindBanditChooser {
   choose(workspaceId: string, decisionType: string): Promise<{ arm: string } | null>;
   register(input: { arms: string[]; decisionType: string; workspaceId: string }): Promise<unknown>;
-}
-
-type PolicyDecisionResult = Awaited<ReturnType<MindPolicyChooser['choose']>>;
-
-function decisionConfidence(result: PolicyDecisionResult): number {
-  return (
-    result.decision.candidates.find((candidate) => candidate.action === result.chosen)
-      ?.beliefMean ??
-    result.decision.candidates[0]?.beliefMean ??
-    0
-  );
 }
 
 export async function resolveFollowupTimingDecision(
