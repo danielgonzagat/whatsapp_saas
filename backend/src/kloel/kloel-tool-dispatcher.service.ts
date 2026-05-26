@@ -87,6 +87,39 @@ export class KloelToolDispatcherService {
           return await this.chatToolsService.toolListProducts(workspaceId);
         case 'update_product':
           return await this.chatToolsService.toolUpdateProduct(workspaceId, asToolArgs(args));
+        case 'self.capabilities':
+        case 'list_capabilities':
+          return {
+            success: true,
+            capabilities: [
+              'create_product', 'update_product', 'list_products', 'delete_product',
+              'create_plan', 'update_plan', 'get_product_plans',
+              'create_checkout', 'update_checkout', 'list_checkouts',
+              'create_coupon', 'update_coupon', 'delete_coupon', 'list_coupons', 'validate_coupon',
+              'generate_pix', 'generate_boleto', 'create_payment_link',
+              'list_orders', 'get_order_details', 'get_sales_summary',
+              'get_abandonments', 'list_leads', 'get_lead_details',
+              'get_wallet_balance', 'get_wallet_statement',
+              'request_withdrawal', 'request_anticipation',
+              'get_dashboard_summary', 'get_analytics',
+              'toggle_theme', 'get_settings', 'update_fiscal_data',
+              'upload_document', 'configure_shipping', 'configure_warranty',
+              'configure_pixel', 'configure_social_proof', 'configure_exit_intent',
+              'configure_order_bump', 'configure_after_pay',
+              'list_affiliates', 'get_affiliate_config', 'update_affiliate_config',
+              'browse_marketplace', 'get_product_reviews', 'get_product_urls',
+              'list_subscriptions', 'update_subscription',
+              'search_agent_memory', 'search_agent_sessions',
+              'search_web', 'search_codebase', 'read_source_file',
+              'connect_whatsapp', 'get_whatsapp_status',
+              'send_whatsapp_message', 'send_channel_message',
+              'create_broadcast', 'create_campaign', 'create_flow', 'list_flows',
+              'toggle_autopilot', 'configure_ai_persona',
+              'update_billing_info', 'get_billing_status', 'change_plan',
+              'remember_user_info', 'get_product_details',
+              'self.inspect', 'self.health',
+            ],
+          };
         case 'toggle_autopilot':
           return await this.chatToolsService.toolToggleAutopilot(workspaceId, asToolArgs(args));
         case 'set_brand_voice':

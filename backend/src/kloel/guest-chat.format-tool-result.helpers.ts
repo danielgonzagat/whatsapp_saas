@@ -62,6 +62,9 @@ export function formatToolResult(tool: string, result: unknown): string {
       }
       return `Cupons: ${coupons.map((c) => `${s(c.code)} (${s(c.discountType)})`).join(', ')}`;
     }
+    case 'self.capabilities':
+    case 'list_capabilities':
+      return 'Posso ajudar com: criar/editar produtos, planos, checkouts, cupons, PIX, boletos, vendas, CRM, carteira, relatorios, configuracoes e mais. Pergunte!';
     case 'get_product_urls':
       const urls = Array.isArray(r.customUrls) ? (r.customUrls as Array<Record<string, unknown>>) : [];
       if (urls.length === 0) {
