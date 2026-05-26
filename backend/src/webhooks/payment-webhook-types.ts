@@ -1,4 +1,4 @@
-import { MarketplaceTreasuryLedgerKind, Prisma, type ConnectAccountType } from '@prisma/client';
+import { MarketplaceTreasuryLedgerKind, type ConnectAccountType } from '@prisma/client';
 import type { SplitRole } from '../payments/split/split.types';
 import { asString } from '../common/types';
 
@@ -140,9 +140,7 @@ export const ROLE_TO_ACCOUNT_TYPE: Record<SplitRole, ConnectAccountType> = {
   seller: 'SELLER',
 };
 
-export const FINANCIAL_TRANSACTION_OPTIONS = {
-  isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
-} as const;
+export { FINANCIAL_TRANSACTION_OPTIONS } from '../payments/ledger/ledger-audit.helper';
 
 type CheckoutIntentStatus = 'APPROVED' | 'DECLINED' | 'PENDING' | 'PROCESSING' | 'CANCELED';
 

@@ -70,11 +70,7 @@ export interface DeliveryDecision {
   readonly reason?: string;
 }
 
-export interface ChannelTiming {
-  readonly channel: RecommendedChannel;
-  readonly timing: 'now' | 'weekly' | 'monthly';
-  readonly priority: number;
-}
+export type { ChannelTiming } from '../insight/insight.types';
 
 export const OFFER_EVENT_NAMES: ReadonlySet<string> = new Set([
   'commerce.lead.created',
