@@ -302,6 +302,7 @@ Fetch details: get_observations([IDs]) | Search: mem-search skill
 Stats: 50 obs (20,884t read) | 1,802,332t work | 99% savings
 
 ### May 11, 2026
+
 1349 2:51p 🔴 Visual Baseline Updated — signup-mobile.png Snapshot Regenerated from CI Artifact
 1350 2:57p ⚖️ Kloel CIA v3 Execution Contract — Full Mission Definition Issued
 1351 " 🔵 PR #266 Gap Analysis — Foundation Delivered, Production State Not Reached
@@ -345,14 +346,20 @@ Stats: 50 obs (20,884t read) | 1,802,332t work | 99% savings
 1413 " 🔵 Backend Railway Deployment Startup Sequence — Full NestJS Boot Captured
 1414 " 🔵 Working Tree State — Branch chore/purga-total-debt Has ~160 Modified Files Pre-Commit
 1415 3:31p ⚖️ Kloel CIA v3 Execution Contract Re-Issued in New Session — Full Mandate Active
+
 ### May 22, 2026
+
 1416 8:04p 🔵 User Iniciou Auditoria Operacional de MCPs Ativos
 1417 8:05p 🔵 Ecossistema MCP Completo Mapeado via ps aux no whatsapp_saas
 1418 " 🔵 check-test-integrity.mjs: Proteção Avançada de Cobertura de Testes no whatsapp_saas
 1419 " 🔵 GitHub API Inacessível em Sessão de Agente (session_id 4445)
+
 ### May 25, 2026
+
 1420 1:01p 🔴 Codex config.toml: deprecated `codex_hooks` replaced with `hooks`
+
 ### May 26, 2026
+
 1421 8:22a 🔵 PI Subagent System — How to Launch and Monitor
 1422 11:32a ✅ Git Merge Conflict Resolution Across Monorepo
 
@@ -374,3 +381,14 @@ dynamic production replacement, including accumulated Git history debt.
 
 Any required auditor change must stop the agent workflow and be performed by the
 human owner outside autonomous AI execution.
+
+## Cognitive Interface Layer
+
+Every agent (Claude / Codex / Hermes / OpenCode) gets unified access to LSP,
+DAP, CDP, OpenAPI, AsyncAPI, SARIF, SBOM, OpenTelemetry, Tree-sitter, and
+Test reports through two MCPs auto-loaded from `.mcp.json`:
+
+- **`cognitive-hub`** — 6 query tools over pre-generated protocol data files
+- **`lsp-mesh`** — 10 LSP tools over 14 language servers in 7 workspaces
+
+Full reference: [`docs/architecture/COGNITIVE_INTERFACE_LAYER.md`](docs/architecture/COGNITIVE_INTERFACE_LAYER.md).
