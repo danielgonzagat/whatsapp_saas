@@ -28,7 +28,7 @@ import { CapabilityRegistryV2Service } from '../capability-registry-v2/capabilit
   });  it('classifies product creation', () => {
     const result = router.classify('Cria um produto chamado PDRN por R$197', 'dashboard-chat', ['*']);
     expect(result.isChat).toBe(false);
-    expect(result.classification?.capabilityId).toBe('products.create');
+    expect(result.classification?.capabilityId).toBe('create_product');
     expect(result.classification?.confidence).toBeGreaterThanOrEqual(0.9);
   });  it('classifies product listing', () => {
     const result = router.classify('Lista meus produtos', 'dashboard-chat', ['*']);

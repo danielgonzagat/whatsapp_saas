@@ -1,5 +1,6 @@
 import { UnauthorizedException } from '@nestjs/common';
 import { MetricsController } from './metrics.controller';
+import { createPartialPrismaMock } from '../../test/helpers/prisma.mock';
 
 jest.mock('@sentry/node', () => ({}), { virtual: true });
 
@@ -12,13 +13,9 @@ describe('MetricsController', () => {
   const metricsUpdateQueue = jest.fn();
   const metricsUpdateBilling = jest.fn();
   const queueGetStatus = jest.fn();
-  const workspaceCount = jest.fn();
-
   let controller: MetricsController;
 
-  const prismaMock = {
-    workspace: { count: workspaceCount },
-  };
+  const prismaMock = createPartialPrismaMock({ workspace: ['count'] });
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -39,7 +36,7 @@ describe('MetricsController', () => {
   describe('GET /metrics', () => {
     it('calls queue health, updates metrics, queries workspace counts, returns prometheus text', async () => {
       queueGetStatus.mockResolvedValue([{ name: 'flow', main: { waiting: 1 }, dlq: {} }]);
-      workspaceCount.mockResolvedValueOnce(3).mockResolvedValueOnce(10);
+      (prismaMock.workspace.count as jest.Mock).mockResolvedValueOnce(3).mockResolvedValueOnce(10);
       metricsGetMetrics.mockResolvedValue('# HELP http_requests_total\n');
 
       const res = { setHeader: jest.fn(), send: jest.fn() } as never;
@@ -51,8 +48,8 @@ describe('MetricsController', () => {
       expect(metricsUpdateQueue).toHaveBeenCalledWith([
         { name: 'flow', main: { waiting: 1 }, dlq: {} },
       ]);
-      expect(workspaceCount).toHaveBeenCalledTimes(2);
-      expect(workspaceCount).toHaveBeenNthCalledWith(
+      expect(prismaMock.workspace.count as jest.Mock).toHaveBeenCalledTimes(2);
+      expect(prismaMock.workspace.count as jest.Mock).toHaveBeenNthCalledWith(
         1,
         expect.objectContaining({
           where: expect.objectContaining({
@@ -110,7 +107,7 @@ describe('MetricsController', () => {
       safeCompareStrings.mockReturnValue(true);
 
       queueGetStatus.mockResolvedValue([]);
-      workspaceCount.mockResolvedValueOnce(0).mockResolvedValueOnce(0);
+      (prismaMock.workspace.count as jest.Mock).mockResolvedValueOnce(0).mockResolvedValueOnce(0);
       metricsGetMetrics.mockResolvedValue('');
 
       const req = { headers: { authorization: 'Bearer secret-token' } } as never;

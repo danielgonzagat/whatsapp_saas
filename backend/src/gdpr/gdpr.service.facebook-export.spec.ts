@@ -6,6 +6,7 @@ import { EmailService } from '../auth/email.service';
 import { StorageService } from '../common/storage/storage.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { GdprService } from './gdpr.service';
+import { createPartialPrismaMock } from '../../test/helpers/prisma.mock';
 
 jest.mock('node:fs', () => {
   const { Writable } = jest.requireActual('node:stream');
@@ -81,52 +82,21 @@ describe('GdprService', () => {
     completedAt: null as Date | null,
   };
 
-  const prismaMock = {
-    $transaction: jest.fn((arg: unknown, _opts?: unknown) => {
-      if (typeof arg === 'function') {
-        return (arg as (tx: typeof prismaMock) => unknown)(prismaMock);
-      }
-      return Promise.all(arg as Promise<unknown>[]);
-    }),
-    gdprRequest: {
-      create: jest.fn(),
-      findUnique: jest.fn(),
-      findUniqueOrThrow: jest.fn(),
-      findFirst: jest.fn(),
-      update: jest.fn(),
-      updateMany: jest.fn(),
-    },
-    agent: {
-      findUnique: jest.fn(),
-      findFirst: jest.fn(),
-      update: jest.fn(),
-      updateMany: jest.fn(),
-    },
-    refreshToken: {
-      updateMany: jest.fn(),
-    },
-    socialAccount: {
-      updateMany: jest.fn(),
-    },
-    magicLinkToken: {
-      updateMany: jest.fn(),
-    },
-    auditLog: {
-      create: jest.fn(),
-    },
-    conversation: {
-      findMany: jest.fn(),
-      updateMany: jest.fn(),
-    },
-    message: {
-      findMany: jest.fn(),
-      updateMany: jest.fn(),
-    },
-    chatMessage: {
-      findMany: jest.fn(),
-      updateMany: jest.fn(),
-    },
-  };
+  const prismaMock = createPartialPrismaMock({
+    gdprRequest: ['create', 'findUnique', 'findUniqueOrThrow', 'findFirst', 'update', 'updateMany'],
+    agent: ['findUnique', 'findFirst', 'update', 'updateMany'],
+    refreshToken: ['updateMany'],
+    socialAccount: ['updateMany'],
+    magicLinkToken: ['updateMany'],
+    auditLog: ['create'],
+    conversation: ['findMany', 'updateMany'],
+    message: ['findMany', 'updateMany'],
+    chatMessage: ['findMany', 'updateMany'],
+  });
+  (prismaMock as any).$transaction = jest.fn((arg: unknown, _opts?: unknown) => {
+    if (typeof arg === 'function') return (arg as (tx: unknown) => unknown)(prismaMock);
+    return Promise.all(arg as Promise<unknown>[]);
+  });
 
   const jwtMock = {
     sign: jest.fn(),

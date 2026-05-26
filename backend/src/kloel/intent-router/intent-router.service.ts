@@ -52,7 +52,7 @@ export class IntentRouterService {
     // === Products ===
     {
       regex: /(?:cri[ae]r?\s.*produt|cadastra\s.*produt|nov[oa]\s.*produt)/i,
-      capabilityId: 'products.create',
+      capabilityId: 'create_product',
       extract: (match) => ({
         name: match[0].match(/produto\s+["""']?([^""""'"]+)/i)?.[1] || undefined,
         price: parseFloat(match[0].match(/r?\$?\s*(\d+(?:[.,]\d+)?)/i)?.[1]?.replace(',', '.') ?? '') || undefined,

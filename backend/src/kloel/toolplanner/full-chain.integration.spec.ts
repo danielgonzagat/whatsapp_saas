@@ -28,7 +28,7 @@ import { CAPABILITY_DEFINITIONS } from '../capability-registry-v2/capability-reg
       ['*'],
     );
     expect(result.isChat).toBe(false);
-    expect(result.classification?.capabilityId).toBe('products.create');    // Step 2: Resolve capability
+    expect(result.classification?.capabilityId).toBe('create_product');    // Step 2: Resolve capability
     const cap = registry.get(result.classification!.capabilityId!);
     expect(cap).toBeDefined();    // Step 3: ToolPlanner validates inputs
     const validation = planner.validateInputs(cap!, result.classification!.entities);

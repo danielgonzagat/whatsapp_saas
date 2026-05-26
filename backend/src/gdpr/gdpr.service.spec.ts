@@ -6,6 +6,7 @@ import { EmailService } from '../auth/email.service';
 import { StorageService } from '../common/storage/storage.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { GdprService } from './gdpr.service';
+import { createPartialPrismaMock } from '../../test/helpers/prisma.mock';
 
 jest.mock('node:fs', () => {
   const { Writable } = jest.requireActual<typeof import('node:stream')>('node:stream');
@@ -86,10 +87,6 @@ describe('GdprService', () => {
     completedAt: Date | null;
   };
 
-  type GdprFindFirstArgs = {
-    where?: { code?: string; id?: string; type?: GdprType };
-  };
-
   const agentRecord: AgentRecord = {
     id: 'agent_1',
     email: 'user@kloel.com',
@@ -110,55 +107,23 @@ describe('GdprService', () => {
     completedAt: null as Date | null,
   };
 
-  const prismaDelegates = {
-    gdprRequest: {
-      create: jest.fn<Promise<GdprRecord>, [unknown]>(),
-      findUnique: jest.fn<Promise<GdprRecord | null>, [unknown]>(),
-      findUniqueOrThrow: jest.fn<Promise<GdprRecord>, [unknown]>(),
-      findFirst: jest.fn<Promise<GdprRecord | null>, [GdprFindFirstArgs?]>(),
-      update: jest.fn<Promise<GdprRecord>, [unknown]>(),
-      updateMany: jest.fn<Promise<{ count: number }>, [unknown]>(),
-    },
-    agent: {
-      findUnique: jest.fn<Promise<AgentRecord | null>, [unknown]>(),
-      findFirst: jest.fn<Promise<AgentRecord | null>, [unknown]>(),
-      update: jest.fn<Promise<AgentRecord>, [unknown]>(),
-    },
-    refreshToken: {
-      updateMany: jest.fn<Promise<{ count: number }>, [unknown]>(),
-    },
-    socialAccount: {
-      updateMany: jest.fn<Promise<{ count: number }>, [unknown]>(),
-    },
-    magicLinkToken: {
-      updateMany: jest.fn<Promise<{ count: number }>, [unknown]>(),
-    },
-    auditLog: {
-      create: jest.fn<Promise<unknown>, [unknown]>(),
-    },
-    conversation: {
-      findMany: jest.fn<Promise<unknown[]>, [unknown]>(),
-      updateMany: jest.fn<Promise<{ count: number }>, [unknown]>(),
-    },
-    message: {
-      findMany: jest.fn<Promise<unknown[]>, [unknown]>(),
-      updateMany: jest.fn<Promise<{ count: number }>, [unknown]>(),
-    },
-    chatMessage: {
-      findMany: jest.fn<Promise<unknown[]>, [unknown]>(),
-      updateMany: jest.fn<Promise<{ count: number }>, [unknown]>(),
-    },
-  };
-
-  const prismaMock = {
-    $transaction: jest.fn((arg: unknown, _opts?: unknown) => {
-      if (typeof arg === 'function') {
-        return (arg as (tx: typeof prismaDelegates) => unknown)(prismaDelegates);
-      }
-      return Promise.all(arg as Promise<unknown>[]);
-    }),
-    ...prismaDelegates,
-  };
+  const prismaMock = createPartialPrismaMock({
+    gdprRequest: ['create', 'findUnique', 'findUniqueOrThrow', 'findFirst', 'update', 'updateMany'],
+    agent: ['findUnique', 'findFirst', 'update'],
+    refreshToken: ['updateMany'],
+    socialAccount: ['updateMany'],
+    magicLinkToken: ['updateMany'],
+    auditLog: ['create'],
+    conversation: ['findMany', 'updateMany'],
+    message: ['findMany', 'updateMany'],
+    chatMessage: ['findMany', 'updateMany'],
+  });
+  (prismaMock as any).$transaction = jest.fn((arg: unknown, _opts?: unknown) => {
+    if (typeof arg === 'function') {
+      return (arg as any)(prismaMock);
+    }
+    return Promise.all(arg as any);
+  });
 
   const jwtMock = {
     sign: jest.fn<string, [unknown, unknown?]>(),
