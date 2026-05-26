@@ -27,10 +27,20 @@ Equal insert/delete counts (1,192 each) confirm no other rule changes leaked in.
 **Zero new errors** introduced by the brace additions.
 
 ### SARIF regeneration
-Re-ran `scripts/cognitive/sarif-aggregate.mjs workspace backend`:  
-- `curly` rule **absent** from the rules list  
-- No unexpected new rule categories appeared  
-- Total findings: 8,731
+Re-ran `scripts/cognitive/sarif-aggregate.mjs` after applying the
+autofix directly in the main worktree (the PI-H patch had partial
+conflicts with Wave M5 batch 1 moves; orchestrator re-ran ESLint
+in-place to land the same effect cleanly):
+
+- `curly` rule **absent** from the rules list (0 occurrences)
+- Total backend findings: **8,592** (down from 8,651 baseline)
+- Top remaining rules (by count): `prettier/prettier` 4,386,
+  `@typescript-eslint/no-unsafe-assignment` 1,375,
+  `@typescript-eslint/no-unsafe-member-access` 1,191,
+  `@typescript-eslint/no-unused-vars` 821, others lower
+- 4 spec files (`whatsapp.service.part{7,8,9}.spec.ts` +
+  `whatsapp.service.spec.ts`) were reverted — they had non-standard
+  structure that the autofix couldn't safely transform (parse error)
 
 ## Rules disabled during fix
 
