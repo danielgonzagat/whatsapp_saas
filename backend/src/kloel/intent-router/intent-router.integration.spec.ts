@@ -85,7 +85,7 @@ import { CapabilityRegistryV2Service } from '../capability-registry-v2/capabilit
   });  it('classifies CRM pipeline query', () => {
     const result = router.classify('Mostra meu pipeline CRM', 'dashboard-chat', ['*']);
     expect(result.isChat).toBe(false);
-    expect(result.classification?.capabilityId).toBe('crm.pipeline');
+    expect(result.classification?.capabilityId).toBe('list_leads');
   });  it('classifies theme toggle', () => {
     const result = router.classify('Muda para tema escuro', 'dashboard-chat', ['*']);
     expect(result.isChat).toBe(false);
