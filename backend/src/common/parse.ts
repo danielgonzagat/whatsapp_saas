@@ -227,3 +227,12 @@ export function readDate(value: unknown): Date | undefined {
   }
   return undefined;
 }
+
+/**
+ * Type guard for "is this a non-NaN Date instance". Companion to {@link readDate};
+ * use it when you've already received a `Date | null | undefined` and want to
+ * narrow to a concrete `Date` without re-parsing.
+ */
+export function isValidDate(value: Date | null | undefined): value is Date {
+  return value instanceof Date && Number.isFinite(value.getTime());
+}
