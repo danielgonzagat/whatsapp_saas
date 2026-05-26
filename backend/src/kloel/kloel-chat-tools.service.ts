@@ -1,7 +1,5 @@
 import { Injectable, Optional } from '@nestjs/common';
 import { StructuredLogger } from '../logging/structured-logger';
-import { Prisma } from '@prisma/client';
-import { filterLegacyProducts } from '../common/products/legacy-products.util';
 import { randomIdSegment } from '../common/random-id';
 import { PrismaService } from '../prisma/prisma.service';
 import { SmartPaymentService } from './smart-payment.service';
@@ -66,27 +64,13 @@ import {
   runSetSalesPolicy,
   runRememberUserInfo,
 } from './kloel-chat-tools.settings-policy.helpers';
-interface ToolSaveProductArgs {
-  name: string;
-  price: number;
-  description?: string;
-  format?: string;
-  category?: string;
-  imageUrl?: string;
-  tags?: string[];
-  warrantyDays?: number;
-  salesPageUrl?: string;
-  thankyouUrl?: string;
-  thankyouPixUrl?: string;
-  thankyouBoletoUrl?: string;
-  supportEmail?: string;
-  affiliateEnabled?: boolean;
-  active?: boolean;
-}
-interface ToolDeleteProductArgs {
-  productId?: string;
-  productName?: string;
-}
+import {
+  type ToolSaveProductArgs,
+  type ToolDeleteProductArgs,
+  runSaveProduct,
+  runListProducts,
+  runDeleteProduct,
+} from './kloel-chat-tools.products.helpers';
 interface ToolCreateFlowArgs {
   name: string;
   trigger: string;
@@ -119,79 +103,14 @@ export class KloelChatToolsService {
     @Optional() private readonly agentSkills?: AgentRuntimeSkillRegistry,
     @Optional() private readonly agentEvidence?: AgentRuntimeEvidenceStoreService,
   ) {}
-  async toolSaveProduct(workspaceId: string, args: ToolSaveProductArgs): Promise<ToolResult> {
-    const product = await this.prisma.product.create({
-      data: {
-        workspaceId,
-        name: args.name,
-        price: args.price,
-        description: args.description || '',
-        format: args.format || 'DIGITAL',
-        category: args.category || null,
-        imageUrl: args.imageUrl || null,
-        tags: args.tags || [],
-        warrantyDays: args.warrantyDays || null,
-        salesPageUrl: args.salesPageUrl || null,
-        thankyouUrl: args.thankyouUrl || null,
-        thankyouPixUrl: args.thankyouPixUrl || null,
-        thankyouBoletoUrl: args.thankyouBoletoUrl || null,
-        supportEmail: args.supportEmail || null,
-        affiliateEnabled: args.affiliateEnabled ?? false,
-        active: true,
-      },
-    });
-    return { success: true, product, message: `Produto "${args.name}" cadastrado com sucesso!` };
+  toolSaveProduct(workspaceId: string, args: ToolSaveProductArgs): Promise<ToolResult> {
+    return runSaveProduct(this.prisma, workspaceId, args);
   }
-  async toolListProducts(workspaceId: string): Promise<ToolResult> {
-    const products = filterLegacyProducts(
-      await this.prisma.product.findMany({
-        where: { workspaceId, active: true },
-        select: { id: true, name: true, price: true, description: true, status: true },
-        orderBy: { name: 'asc' },
-        take: 100,
-      }),
-    );
-    if (products.length === 0) {
-      return { success: true, message: 'Nenhum produto cadastrado ainda.' };
-    }
-    const list = products.map((p) => `- ${p.name}: R$ ${p.price}`).join('\n');
-    return { success: true, products, message: `Aqui estão seus produtos:\n\n${list}` };
+  toolListProducts(workspaceId: string): Promise<ToolResult> {
+    return runListProducts(this.prisma, workspaceId);
   }
-  async toolDeleteProduct(workspaceId: string, args: ToolDeleteProductArgs): Promise<ToolResult> {
-    const { productId, productName } = args;
-    const where: Prisma.ProductWhereInput = { workspaceId };
-    if (productId) {
-      where.id = productId;
-    } else if (productName) {
-      where.name = { contains: productName, mode: 'insensitive' };
-    }
-    const product = await this.prisma.product.findFirst({ where: { ...where, workspaceId } });
-    if (!product) {
-      return { success: false, error: 'Produto não encontrado.' };
-    }
-    await this.prisma.$transaction(
-      [
-        this.prisma.product.updateMany({
-          where: { id: product.id, workspaceId },
-          data: { active: false },
-        }),
-        this.prisma.auditLog.create({
-          data: {
-            workspaceId,
-            action: 'USER_DATA_DELETED',
-            resource: 'Product',
-            resourceId: product.id,
-            details: {
-              source: 'kloel_tool_delete_product',
-              softDelete: true,
-              productName: product.name,
-            },
-          },
-        }),
-      ],
-      { isolationLevel: 'ReadCommitted' },
-    );
-    return { success: true, message: `Produto "${product.name}" removido com sucesso.` };
+  toolDeleteProduct(workspaceId: string, args: ToolDeleteProductArgs): Promise<ToolResult> {
+    return runDeleteProduct(this.prisma, workspaceId, args);
   }
   async toolToggleAutopilot(
     workspaceId: string,
