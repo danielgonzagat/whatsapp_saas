@@ -390,6 +390,83 @@ export class IntentRouterService {
       }),
     },
 
+    // === Orders ===
+    {
+      regex: /(?:cri[ae]r?|ger[ae]r?|nov[ao])\s+(?:um[a]?\s+)?(?:pedido|order|venda)/i,
+      capabilityId: 'create_order',
+      extract: (match) => {
+        const amount = parseFloat(match[0].match(/r?\$?\s*(\d+(?:[.,]\d+)?)/i)?.[1]?.replace(',', '.') ?? '') || undefined;
+        return { amount: amount || undefined };
+      },
+    },
+    {
+      regex: /(?:detalhes|info|status)\s+(?:do|da)\s+(?:pedido|venda|order)/i,
+      capabilityId: 'get_order_details',
+      extract: () => ({}),
+    },
+
+    // === WhatsApp ===
+    {
+      regex: /(?:lista[er]?|ver|mostr[ae]r?)\s+(?:minhas\s+)?(?:conversas|chats)\s+(?:do\s+)?whatsapp/i,
+      capabilityId: 'list_whatsapp_chats',
+      extract: () => ({}),
+    },
+    {
+      regex: /(?:lista[er]?|ver|mostr[ae]r?)\s+(?:meus\s+)?(?:contatos)\s+(?:do\s+)?whatsapp/i,
+      capabilityId: 'list_whatsapp_contacts',
+      extract: () => ({}),
+    },
+    {
+      regex: /(?:cri[ae]r?|adicion[ae]r?)\s+(?:nov[oa]?\s+)?(?:contato)\s+(?:no\s+)?whatsapp/i,
+      capabilityId: 'create_whatsapp_contact',
+      extract: () => ({}),
+    },
+
+    // === Profile / Bio ===
+    {
+      regex: /(?:atualiz[ae]r?|mud[ae]r?|alter[ae]r?)\s+(?:meus?\s+)?(?:dados\s+pessoais|perfil|nome\s+completo)/i,
+      capabilityId: 'update_personal_data',
+      extract: () => ({}),
+    },
+    {
+      regex: /(?:cri[ae]r?|cadastr[ae]r?)\s+(?:minha\s+)?(?:chave\s+|)pix/i,
+      capabilityId: 'set_pix_key',
+      extract: () => ({}),
+    },
+
+    // === Refund ===
+    {
+      regex: /(?:estorn[ae]r?|reembols[ae]r?|cancel[ae]r?\s+(?:venda|pedido))/i,
+      capabilityId: 'list_refunds',
+      extract: () => ({}),
+    },
+
+    // === Product AI ===
+    {
+      regex: /(?:config\s+(?:da\s+)?ia|ia\s+do\s+produto|persona\s+do\s+produto)/i,
+      capabilityId: 'get_product_ai_config',
+      extract: () => ({}),
+    },
+    {
+      regex: /(?:mud[ae]r?|atualiz[ae]r?)\s+(?:a\s+)?(?:persona|tom|voz)\s+(?:do|da)\s+(?:produto|marca)/i,
+      capabilityId: 'configure_ai_persona',
+      extract: () => ({}),
+    },
+
+    // === Pesquisa / Search ===
+    {
+      regex: /(?:pesquis[ae]r?|buscar?|procura[er]?)\s+(?:na\s+)?(?:web|internet|google)/i,
+      capabilityId: 'search_web',
+      extract: (match) => ({ query: match[0] }),
+    },
+
+    // === Estornos ===
+    {
+      regex: /(?:estornos?|reembolsos?|chargebacks?)/i,
+      capabilityId: 'list_refunds',
+      extract: () => ({}),
+    },
+
     // === Broadcast ===
     {
       regex: /cri[ae]r?\s+(?:uma\s+)?(?:campanha|broadcast|disparo)/i,
