@@ -6,10 +6,58 @@ import { CodeAccessService } from './code-access.service';
 // The real const is loaded at import time and is a no-op if unavailable in test.
 jest.mock('../capability-registry-v2/capability-registry-v2.const', () => ({
   CAPABILITY_DEFINITIONS: [
-    { id: 'self.health', title: 'Saúde', description: '', category: 'SELF_AWARENESS', tier: 0, requiresConfirmation: false, requiredPermissions: [], inputSchema: [], domainService: '', emits: [], surface: [] },
-    { id: 'self.gaps', title: 'Lacunas', description: '', category: 'SELF_AWARENESS', tier: 0, requiresConfirmation: false, requiredPermissions: [], inputSchema: [], domainService: '', emits: [], surface: [] },
-    { id: 'create_product', title: 'Criar Produto', description: '', category: 'MUTATION_SAFE', tier: 1, requiresConfirmation: false, requiredPermissions: [], inputSchema: [], domainService: '', emits: [], surface: [] },
-    { id: 'unwired_cap', title: 'Not Wired', description: '', category: 'QUERY', tier: 5, requiresConfirmation: false, requiredPermissions: [], inputSchema: [], domainService: '', emits: [], surface: [] },
+    {
+      id: 'self.health',
+      title: 'Saúde',
+      description: '',
+      category: 'SELF_AWARENESS',
+      tier: 0,
+      requiresConfirmation: false,
+      requiredPermissions: [],
+      inputSchema: [],
+      domainService: '',
+      emits: [],
+      surface: [],
+    },
+    {
+      id: 'self.gaps',
+      title: 'Lacunas',
+      description: '',
+      category: 'SELF_AWARENESS',
+      tier: 0,
+      requiresConfirmation: false,
+      requiredPermissions: [],
+      inputSchema: [],
+      domainService: '',
+      emits: [],
+      surface: [],
+    },
+    {
+      id: 'create_product',
+      title: 'Criar Produto',
+      description: '',
+      category: 'MUTATION_SAFE',
+      tier: 1,
+      requiresConfirmation: false,
+      requiredPermissions: [],
+      inputSchema: [],
+      domainService: '',
+      emits: [],
+      surface: [],
+    },
+    {
+      id: 'unwired_cap',
+      title: 'Not Wired',
+      description: '',
+      category: 'QUERY',
+      tier: 5,
+      requiresConfirmation: false,
+      requiredPermissions: [],
+      inputSchema: [],
+      domainService: '',
+      emits: [],
+      surface: [],
+    },
   ],
   CAPABILITY_MAP: new Map(),
   CAPABILITIES_BY_TIER: {},
@@ -22,10 +70,7 @@ describe('SelfGapsService', () => {
       search: jest.fn().mockReturnValue([]),
     };
     const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        SelfGapsService,
-        { provide: CodeAccessService, useValue: codeAccess },
-      ],
+      providers: [SelfGapsService, { provide: CodeAccessService, useValue: codeAccess }],
     }).compile();
     service = module.get<SelfGapsService>(SelfGapsService);
   });

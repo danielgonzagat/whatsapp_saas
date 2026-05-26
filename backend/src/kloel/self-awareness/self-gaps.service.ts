@@ -26,9 +26,7 @@ export class SelfGapsService {
     });
 
     const dispatcherHits = hits.filter(
-      (h) =>
-        h.file.includes('kloel-tool-dispatcher.service') &&
-        !h.file.includes('.spec.'),
+      (h) => h.file.includes('kloel-tool-dispatcher.service') && !h.file.includes('.spec.'),
     );
 
     const wiredSet = new Set<string>();
@@ -40,9 +38,7 @@ export class SelfGapsService {
       }
     }
 
-    const unwired = CAPABILITY_DEFINITIONS.filter(
-      (cap) => !wiredSet.has(cap.id),
-    );
+    const unwired = CAPABILITY_DEFINITIONS.filter((cap) => !wiredSet.has(cap.id));
 
     this.logger.log(
       `Gap scan: ${CAPABILITY_DEFINITIONS.length} registry caps, ` +

@@ -68,7 +68,9 @@ import type {
   DispatcherPlanLimitsMock,
   DispatcherCodeToolsMock,
   DispatcherCodeAnalysisMock,
-} from './kloel-tool-dispatcher.service.fixtures';type ProductSubToolsMock = { executeTool: jest.Mock };describe('KloelToolDispatcherService — dotted aliases', () => {
+} from './kloel-tool-dispatcher.service.fixtures';
+type ProductSubToolsMock = { executeTool: jest.Mock };
+describe('KloelToolDispatcherService — dotted aliases', () => {
   let service: KloelToolDispatcherService;
   let prisma: DispatcherPrismaMock;
   let planLimits: DispatcherPlanLimitsMock;
@@ -119,7 +121,8 @@ import type {
     jest.clearAllMocks();
   });
 
-  const args = { name: 'Test', price: 99 };  describe('products.* aliases', () => {
+  const args = { name: 'Test', price: 99 };
+  describe('products.* aliases', () => {
     it('products.create forwards to create_product and reaches toolSaveProduct', async () => {
       const prodResult = await service.executeTool(DEFAULT_WS_ID, 'products.create', args);
       const directResult = await service.executeTool(DEFAULT_WS_ID, 'create_product', args);
@@ -128,7 +131,9 @@ import type {
     });
 
     it('products.update forwards to update_product and reaches toolUpdateProduct', async () => {
-      chatToolsService.toolUpdateProduct = jest.fn().mockResolvedValue({ success: true, updated: true });
+      chatToolsService.toolUpdateProduct = jest
+        .fn()
+        .mockResolvedValue({ success: true, updated: true });
 
       const dotted = await service.executeTool(DEFAULT_WS_ID, 'products.update', args);
       const direct = await service.executeTool(DEFAULT_WS_ID, 'update_product', args);
@@ -137,14 +142,17 @@ import type {
     });
 
     it('products.upload_image forwards to upload_product_image', async () => {
-      chatToolsService.toolUploadProductImage = jest.fn().mockResolvedValue({ success: true, url: 'https://img.test/x.png' });
+      chatToolsService.toolUploadProductImage = jest
+        .fn()
+        .mockResolvedValue({ success: true, url: 'https://img.test/x.png' });
 
       const dotted = await service.executeTool(DEFAULT_WS_ID, 'products.upload_image', args);
       const direct = await service.executeTool(DEFAULT_WS_ID, 'upload_product_image', args);
 
       expect(dotted).toEqual(direct);
     });
-  });  describe('plans.* aliases', () => {
+  });
+  describe('plans.* aliases', () => {
     it('plans.create forwards to create_plan', async () => {
       productSubTools.executeTool.mockResolvedValue({ success: true, plan: { id: 'p1' } });
 
@@ -162,7 +170,8 @@ import type {
 
       expect(dotted).toEqual(direct);
     });
-  });  describe('checkouts.* aliases', () => {
+  });
+  describe('checkouts.* aliases', () => {
     it('checkouts.create forwards to create_checkout', async () => {
       productSubTools.executeTool.mockResolvedValue({ success: true, checkout: { id: 'chk1' } });
 
@@ -180,7 +189,8 @@ import type {
 
       expect(dotted).toEqual(direct);
     });
-  });  describe('coupons.* aliases', () => {
+  });
+  describe('coupons.* aliases', () => {
     it('coupons.create forwards to create_coupon', async () => {
       productSubTools.executeTool.mockResolvedValue({ success: true, coupon: { id: 'c1' } });
 

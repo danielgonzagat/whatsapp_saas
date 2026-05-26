@@ -30,14 +30,16 @@ jest.mock('../observability/ops-alert.service', () => ({
 
 jest.mock('./kloel-code-tools.service', () => ({
   KloelCodeToolsService: class MockKloelCodeToolsService {},
-}));import { KloelChatToolsService } from './kloel-chat-tools.service';
+}));
+import { KloelChatToolsService } from './kloel-chat-tools.service';
 import { KloelBusinessConfigToolsService } from './kloel-business-config-tools.service';
 import { KloelWhatsAppToolsService } from './kloel-whatsapp-tools.service';
 import { KloelComposerService } from './kloel-composer.service';
 import { AuditService } from '../audit/audit.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { KloelCodeToolsService } from './kloel-code-tools.service';
-import { KloelCodeAnalysisService } from './kloel-code-analysis.service';const DEFAULT_WS_ID = 'ws-1';
+import { KloelCodeAnalysisService } from './kloel-code-analysis.service';
+const DEFAULT_WS_ID = 'ws-1';
 
 const createPrismaMock = () => ({
   workspace: {
@@ -55,7 +57,9 @@ const createPlanLimitsMock = () => ({
 });
 
 const createAccountServiceMock = () => ({
-  updatePersonalData: jest.fn().mockResolvedValue({ success: true, message: 'Personal data updated' }),
+  updatePersonalData: jest
+    .fn()
+    .mockResolvedValue({ success: true, message: 'Personal data updated' }),
 });
 
 const createBizConfigMock = () => ({
@@ -63,7 +67,8 @@ const createBizConfigMock = () => ({
   toolUploadDocument: jest.fn().mockResolvedValue({ success: true, message: 'ok' }),
 });
 
-const mockClass = () => ({ alertOnCriticalError: jest.fn() });describe('KloelToolDispatcherService — account dotted-form aliases', () => {
+const mockClass = () => ({ alertOnCriticalError: jest.fn() });
+describe('KloelToolDispatcherService — account dotted-form aliases', () => {
   let service: KloelToolDispatcherService;
   let accountService: ReturnType<typeof createAccountServiceMock>;
 
@@ -95,7 +100,8 @@ const mockClass = () => ({ alertOnCriticalError: jest.fn() });describe('KloelToo
 
   afterEach(() => {
     jest.clearAllMocks();
-  });  describe('account.update_personal → update_personal_data', () => {
+  });
+  describe('account.update_personal → update_personal_data', () => {
     it('forwards account.update_personal to update_personal_data', async () => {
       await service.executeTool(DEFAULT_WS_ID, 'account.update_personal', {
         name: 'Novo Nome',
@@ -123,7 +129,8 @@ const mockClass = () => ({ alertOnCriticalError: jest.fn() });describe('KloelToo
         phone: '11999999999',
       });
     });
-  });  describe('account.update_fiscal → update_fiscal_data', () => {
+  });
+  describe('account.update_fiscal → update_fiscal_data', () => {
     it('forwards account.update_fiscal to update_fiscal_data via executeTool re-entry', async () => {
       const spy = jest.spyOn(service, 'executeTool');
 
@@ -139,7 +146,8 @@ const mockClass = () => ({ alertOnCriticalError: jest.fn() });describe('KloelToo
         undefined,
       );
     });
-  });  describe('account.upload_document → upload_document', () => {
+  });
+  describe('account.upload_document → upload_document', () => {
     it('forwards account.upload_document to upload_document via executeTool re-entry', async () => {
       const spy = jest.spyOn(service, 'executeTool');
 

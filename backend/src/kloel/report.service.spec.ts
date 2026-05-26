@@ -19,10 +19,7 @@ describe('ReportService', () => {
     prismaMock.checkoutSocialLead.findMany.mockResolvedValue([]);
 
     const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        ReportService,
-        { provide: PrismaService, useValue: prismaMock },
-      ],
+      providers: [ReportService, { provide: PrismaService, useValue: prismaMock }],
     }).compile();
 
     service = module.get(ReportService);
@@ -62,9 +59,7 @@ describe('ReportService', () => {
 
     it('returns positive counts when DB has data', async () => {
       prismaMock.checkoutOrder.count.mockResolvedValue(10);
-      prismaMock.kloelSale.count
-        .mockResolvedValueOnce(7)
-        .mockResolvedValueOnce(2);
+      prismaMock.kloelSale.count.mockResolvedValueOnce(7).mockResolvedValueOnce(2);
       prismaMock.checkoutSocialLead.count.mockResolvedValue(3);
 
       const result = await service.operations('ws-1');

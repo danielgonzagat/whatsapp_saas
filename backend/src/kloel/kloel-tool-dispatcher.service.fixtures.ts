@@ -298,6 +298,8 @@ export function createCodeAnalysisMock(): DispatcherCodeAnalysisMock {
 
 export function createAccountMock(): DispatcherAccountMock {
   return {
-    updatePersonalData: jest.fn().mockResolvedValue({ success: true, message: 'Personal data updated' }),
+    updatePersonalData: jest
+      .fn()
+      .mockResolvedValue({ success: true, message: 'Personal data updated' }),
   };
 }

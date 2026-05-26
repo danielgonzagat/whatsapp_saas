@@ -10,10 +10,7 @@ import { Injectable, Logger, Optional } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { safeJoin } from '../../common/safe-path';
 import { OpsAlertService } from '../../observability/ops-alert.service';
-import {
-  buildAwsCallContext,
-  classifyAwsError,
-} from './s3-error-classifier';
+import { buildAwsCallContext, classifyAwsError } from './s3-error-classifier';
 import type { AwsCallContext } from './s3-error-classifier';
 
 const TRAILING_SLASHES_RE = /\/+$/;
@@ -181,12 +178,15 @@ export class StorageDriversService {
       return true;
     } catch (error: unknown) {
       const region = this.getConfigString('S3_REGION') ?? 'us-east-1';
-      classifyAwsError(error, buildAwsCallContext({
-        operation: 'deleteFromS3',
-        region,
-        bucket: bucket ?? '',
-        key: relativePath,
-      }));
+      classifyAwsError(
+        error,
+        buildAwsCallContext({
+          operation: 'deleteFromS3',
+          region,
+          bucket: bucket ?? '',
+          key: relativePath,
+        }),
+      );
       return false;
     }
   }
@@ -236,12 +236,15 @@ export class StorageDriversService {
       };
     } catch (error: unknown) {
       const region = this.getConfigString('S3_REGION') ?? 'us-east-1';
-      classifyAwsError(error, buildAwsCallContext({
-        operation: 'readFromS3',
-        region,
-        bucket: bucket ?? '',
-        key: relativePath,
-      }));
+      classifyAwsError(
+        error,
+        buildAwsCallContext({
+          operation: 'readFromS3',
+          region,
+          bucket: bucket ?? '',
+          key: relativePath,
+        }),
+      );
       void this.opsAlert?.alertOnCriticalError(error, 'StorageDriversService.getMimeTypeForPath');
       this.logger.warn(`S3 remote read failed for "${relativePath}"`);
       return null;
@@ -334,11 +337,14 @@ export class StorageDriversService {
     } catch (error: unknown) {
       const region = this.getConfigString('S3_REGION') ?? 'us-east-1';
       const bucket = this.getConfigString('S3_BUCKET') ?? '';
-      classifyAwsError(error, buildAwsCallContext({
-        operation: 'checkS3Health',
-        region,
-        bucket,
-      }));
+      classifyAwsError(
+        error,
+        buildAwsCallContext({
+          operation: 'checkS3Health',
+          region,
+          bucket,
+        }),
+      );
       void this.opsAlert?.alertOnCriticalError(error, 'StorageDriversService.send');
       const errorMsg = describeUnknownError(error);
       return { status: 'DOWN', driver: 's3', details: { error: errorMsg } };

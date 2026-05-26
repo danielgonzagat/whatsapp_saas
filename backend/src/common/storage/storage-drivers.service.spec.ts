@@ -33,11 +33,7 @@ function makeAccessDeniedError() {
   return err;
 }
 
-function configureBucket(
-  config: { get: jest.Mock },
-  bucket = 'my-bucket',
-  region = 'us-east-1',
-) {
+function configureBucket(config: { get: jest.Mock }, bucket = 'my-bucket', region = 'us-east-1') {
   config.get.mockImplementation((key: string) => {
     if (key === 'S3_BUCKET') return bucket;
     if (key === 'S3_REGION') return region;
@@ -53,9 +49,7 @@ describe('StorageDriversService', () => {
     s3SendMock.mockClear();
     config = { get: jest.fn().mockReturnValue(undefined) };
 
-    service = new StorageDriversService(
-      config as ConfigService,
-    );
+    service = new StorageDriversService(config as ConfigService);
   });
 
   describe('uploadToS3', () => {

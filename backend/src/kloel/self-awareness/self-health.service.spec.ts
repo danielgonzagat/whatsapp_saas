@@ -5,7 +5,11 @@ import { PrismaService } from '../../prisma/prisma.service';
 const REDIS_TOKEN = 'default_IORedisModuleConnectionToken';
 describe('SelfHealthService', () => {
   let service: SelfHealthService;
-  let prisma: { $queryRaw: jest.Mock; workspace: { findUnique: jest.Mock }; auditLog: { findFirst: jest.Mock } };
+  let prisma: {
+    $queryRaw: jest.Mock;
+    workspace: { findUnique: jest.Mock };
+    auditLog: { findFirst: jest.Mock };
+  };
   let redis: { ping: jest.Mock };
   beforeEach(async () => {
     prisma = {

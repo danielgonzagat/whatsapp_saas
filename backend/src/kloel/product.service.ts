@@ -12,7 +12,9 @@ import { clampLimit } from '../common/pagination-clamp.pipe';
  */
 @Injectable()
 export class ProductService {
-  private readonly logger = new Logger(ProductService.name);  constructor(private readonly prisma: PrismaService) {}  async create(
+  private readonly logger = new Logger(ProductService.name);
+  constructor(private readonly prisma: PrismaService) {}
+  async create(
     workspaceId: string,
     data: {
       name: string;
@@ -51,15 +53,13 @@ export class ProductService {
         format: product.format,
       },
     };
-  }  async update(
-    workspaceId: string,
-    productId: string,
-    data: Record<string, unknown>,
-  ) {
+  }
+  async update(workspaceId: string, productId: string, data: Record<string, unknown>) {
     const existing = await this.prisma.product.findFirst({
       where: { id: productId, workspaceId },
     });
-    if (!existing) return { success: false, error: 'product_not_found' };    const updateData: Record<string, unknown> = {};
+    if (!existing) return { success: false, error: 'product_not_found' };
+    const updateData: Record<string, unknown> = {};
     if (data.name !== undefined) updateData.name = String(data.name);
     if (data.description !== undefined) updateData.description = String(data.description);
     if (data.price !== undefined) updateData.price = Number(data.price);
@@ -85,26 +85,35 @@ export class ProductService {
         active: product.active,
       },
     };
-  }  async list(workspaceId: string, opts?: { search?: string; limit?: number }) {
+  }
+  async list(workspaceId: string, opts?: { search?: string; limit?: number }) {
     const products = await this.prisma.product.findMany({
       where: {
         workspaceId,
-        ...(opts?.search
-          ? { name: { contains: opts.search, mode: 'insensitive' as const } }
-          : {}),
+        ...(opts?.search ? { name: { contains: opts.search, mode: 'insensitive' as const } } : {}),
       },
       orderBy: { createdAt: 'desc' },
       take: clampLimit(opts?.limit, { default: 50, max: 200 }),
-      select: { id: true, name: true, price: true, active: true, imageUrl: true, format: true, createdAt: true },
+      select: {
+        id: true,
+        name: true,
+        price: true,
+        active: true,
+        imageUrl: true,
+        format: true,
+        createdAt: true,
+      },
     });
     return { success: true, products };
-  }  async get(workspaceId: string, productId: string) {
+  }
+  async get(workspaceId: string, productId: string) {
     const product = await this.prisma.product.findFirst({
       where: { id: productId, workspaceId },
     });
     if (!product) return { success: false, error: 'product_not_found' };
     return { success: true, product };
-  }  async delete(workspaceId: string, productId: string) {
+  }
+  async delete(workspaceId: string, productId: string) {
     const product = await this.prisma.product.findFirst({
       where: { id: productId, workspaceId },
     });

@@ -129,7 +129,8 @@ export class KloelToolDispatcherService {
           return this.executeTool(workspaceId, 'update_product', args, userId);
         // ── SELF-AWARENESS (TIER-0 meta-cognitive capabilities) ──
         case 'self.audit_log': {
-          const limit = typeof args.limit === 'number' && args.limit > 0 ? Math.min(args.limit, 100) : 20;
+          const limit =
+            typeof args.limit === 'number' && args.limit > 0 ? Math.min(args.limit, 100) : 20;
           const entries = await this.auditService.recentForWorkspace(workspaceId, limit);
           return {
             success: true,
@@ -234,32 +235,78 @@ export class KloelToolDispatcherService {
           return {
             success: true,
             capabilities: [
-              'create_product', 'update_product', 'list_products', 'delete_product',
-              'create_plan', 'update_plan', 'get_product_plans',
-              'create_checkout', 'update_checkout', 'list_checkouts',
-              'create_coupon', 'update_coupon', 'delete_coupon', 'list_coupons', 'validate_coupon',
-              'generate_pix', 'generate_boleto', 'create_payment_link',
-              'list_orders', 'get_order_details', 'get_sales_summary',
-              'get_abandonments', 'list_leads', 'get_lead_details',
-              'get_wallet_balance', 'get_wallet_statement',
-              'request_withdrawal', 'request_anticipation',
-              'get_dashboard_summary', 'get_analytics',
-              'toggle_theme', 'get_settings', 'update_personal_data', 'update_fiscal_data',
-              'upload_document', 'configure_shipping', 'configure_warranty',
-              'configure_pixel', 'configure_social_proof', 'configure_exit_intent',
-              'configure_order_bump', 'configure_after_pay',
-              'list_affiliates', 'get_affiliate_config', 'update_affiliate_config',
-              'browse_marketplace', 'get_product_reviews', 'get_product_urls',
-              'list_subscriptions', 'update_subscription',
-              'search_agent_memory', 'search_agent_sessions',
-              'search_web', 'search_codebase', 'read_source_file',
-              'connect_whatsapp', 'get_whatsapp_status',
-              'send_whatsapp_message', 'send_channel_message',
-              'create_broadcast', 'create_campaign', 'create_flow', 'list_flows',
-              'toggle_autopilot', 'configure_ai_persona',
-              'update_billing_info', 'get_billing_status', 'change_plan',
-              'remember_user_info', 'get_product_details',
-              'self.inspect', 'self.health',
+              'create_product',
+              'update_product',
+              'list_products',
+              'delete_product',
+              'create_plan',
+              'update_plan',
+              'get_product_plans',
+              'create_checkout',
+              'update_checkout',
+              'list_checkouts',
+              'create_coupon',
+              'update_coupon',
+              'delete_coupon',
+              'list_coupons',
+              'validate_coupon',
+              'generate_pix',
+              'generate_boleto',
+              'create_payment_link',
+              'list_orders',
+              'get_order_details',
+              'get_sales_summary',
+              'get_abandonments',
+              'list_leads',
+              'get_lead_details',
+              'get_wallet_balance',
+              'get_wallet_statement',
+              'request_withdrawal',
+              'request_anticipation',
+              'get_dashboard_summary',
+              'get_analytics',
+              'toggle_theme',
+              'get_settings',
+              'update_personal_data',
+              'update_fiscal_data',
+              'upload_document',
+              'configure_shipping',
+              'configure_warranty',
+              'configure_pixel',
+              'configure_social_proof',
+              'configure_exit_intent',
+              'configure_order_bump',
+              'configure_after_pay',
+              'list_affiliates',
+              'get_affiliate_config',
+              'update_affiliate_config',
+              'browse_marketplace',
+              'get_product_reviews',
+              'get_product_urls',
+              'list_subscriptions',
+              'update_subscription',
+              'search_agent_memory',
+              'search_agent_sessions',
+              'search_web',
+              'search_codebase',
+              'read_source_file',
+              'connect_whatsapp',
+              'get_whatsapp_status',
+              'send_whatsapp_message',
+              'send_channel_message',
+              'create_broadcast',
+              'create_campaign',
+              'create_flow',
+              'list_flows',
+              'toggle_autopilot',
+              'configure_ai_persona',
+              'update_billing_info',
+              'get_billing_status',
+              'change_plan',
+              'remember_user_info',
+              'get_product_details',
+              'self.inspect',
+              'self.health',
             ],
           };
         case 'toggle_autopilot':
@@ -308,7 +355,11 @@ export class KloelToolDispatcherService {
           return { success: false, error: 'wallet_sales_tools_not_available' };
         case 'sales.list':
           if (this.walletSalesTools) {
-            return await this.walletSalesTools.executeTool('list_orders', workspaceId, asToolArgs(args));
+            return await this.walletSalesTools.executeTool(
+              'list_orders',
+              workspaceId,
+              asToolArgs(args),
+            );
           }
           return { success: false, error: 'wallet_sales_tools_not_available' };
         case 'toggle_theme':
@@ -428,9 +479,15 @@ export class KloelToolDispatcherService {
         case 'list_subscriptions':
           return await this.chatToolsService.toolListSubscriptions(workspaceId, asToolArgs(args));
         case 'update_subscription':
-          return { success: true, message: args.action === 'cancel' ? 'Assinatura cancelada.' : 'Assinatura pausada.' };
+          return {
+            success: true,
+            message: args.action === 'cancel' ? 'Assinatura cancelada.' : 'Assinatura pausada.',
+          };
         case 'update_affiliate_config':
-          return await this.bizConfigToolsService.toolUpdateAffiliateConfig(workspaceId, asToolArgs(args));
+          return await this.bizConfigToolsService.toolUpdateAffiliateConfig(
+            workspaceId,
+            asToolArgs(args),
+          );
         case 'list_affiliates':
           return await this.bizConfigToolsService.toolListAffiliates(workspaceId);
         case 'get_affiliate_config':
@@ -445,11 +502,17 @@ export class KloelToolDispatcherService {
           if (!this.accountService) {
             return { success: false, error: 'account_service_unavailable' };
           }
-          return await this.accountService.updatePersonalData(workspaceId, asToolArgs(args) as { name?: string; email?: string; phone?: string });
+          return await this.accountService.updatePersonalData(
+            workspaceId,
+            asToolArgs(args) as { name?: string; email?: string; phone?: string },
+          );
         case 'account.update_personal':
           return this.executeTool(workspaceId, 'update_personal_data', args, userId);
         case 'update_fiscal_data':
-          return await this.bizConfigToolsService.toolSaveBusinessInfo(workspaceId, asToolArgs(args));
+          return await this.bizConfigToolsService.toolSaveBusinessInfo(
+            workspaceId,
+            asToolArgs(args),
+          );
         case 'account.update_fiscal':
           return this.executeTool(workspaceId, 'update_fiscal_data', args, userId);
         case 'upload_document':
@@ -461,7 +524,10 @@ export class KloelToolDispatcherService {
         case 'configure_shipping':
           return await this.chatToolsService.toolConfigureShipping(workspaceId, asToolArgs(args));
         case 'configure_social_proof':
-          return await this.chatToolsService.toolConfigureSocialProof(workspaceId, asToolArgs(args));
+          return await this.chatToolsService.toolConfigureSocialProof(
+            workspaceId,
+            asToolArgs(args),
+          );
         case 'configure_order_bump':
           return await this.chatToolsService.toolConfigureOrderBump(workspaceId, asToolArgs(args));
         case 'get_social_channels':
@@ -476,13 +542,24 @@ export class KloelToolDispatcherService {
           return await this.chatToolsService.toolBrowseMarketplace(workspaceId, asToolArgs(args));
         case 'get_nps':
         case 'get_churn':
-          if (this.walletSalesTools) return await this.walletSalesTools.executeTool(toolName, workspaceId, asToolArgs(args));
+          if (this.walletSalesTools)
+            return await this.walletSalesTools.executeTool(toolName, workspaceId, asToolArgs(args));
           return { success: false, error: 'wallet_sales_tools_not_available' };
         case 'list_refunds':
-          if (this.walletSalesTools) return await this.walletSalesTools.executeTool('list_orders', workspaceId, asToolArgs({ status: 'refunded' }));
+          if (this.walletSalesTools)
+            return await this.walletSalesTools.executeTool(
+              'list_orders',
+              workspaceId,
+              asToolArgs({ status: 'refunded' }),
+            );
           return { success: false, error: 'wallet_sales_tools_not_available' };
         case 'request_anticipation':
-          if (this.walletSalesTools) return await this.walletSalesTools.executeTool('request_anticipation', workspaceId, asToolArgs(args));
+          if (this.walletSalesTools)
+            return await this.walletSalesTools.executeTool(
+              'request_anticipation',
+              workspaceId,
+              asToolArgs(args),
+            );
           return { success: false, error: 'wallet_sales_tools_not_available' };
         case 'connect_channel':
           return await this.bizConfigToolsService.toolConnectChannel(workspaceId, asToolArgs(args));
@@ -658,17 +735,29 @@ export class KloelToolDispatcherService {
         case 'codegraph_status':
           return await this.codeToolsService.toolCodeGraphStatus();
         case 'codegraph_search':
-          return await this.codeToolsService.toolCodeGraphSearch(typeof args.query === 'string' ? args.query : '');
+          return await this.codeToolsService.toolCodeGraphSearch(
+            typeof args.query === 'string' ? args.query : '',
+          );
         case 'codegraph_context':
-          return await this.codeToolsService.toolCodeGraphContext(typeof args.task === 'string' ? args.task : 'overview');
+          return await this.codeToolsService.toolCodeGraphContext(
+            typeof args.task === 'string' ? args.task : 'overview',
+          );
         case 'codegraph_callers':
-          return await this.codeToolsService.toolCodeGraphCallers(typeof args.symbol === 'string' ? args.symbol : '');
+          return await this.codeToolsService.toolCodeGraphCallers(
+            typeof args.symbol === 'string' ? args.symbol : '',
+          );
         case 'codegraph_callees':
-          return await this.codeToolsService.toolCodeGraphCallees(typeof args.symbol === 'string' ? args.symbol : '');
+          return await this.codeToolsService.toolCodeGraphCallees(
+            typeof args.symbol === 'string' ? args.symbol : '',
+          );
         case 'codegraph_impact':
-          return await this.codeToolsService.toolCodeGraphImpact(typeof args.symbol === 'string' ? args.symbol : '');
+          return await this.codeToolsService.toolCodeGraphImpact(
+            typeof args.symbol === 'string' ? args.symbol : '',
+          );
         case 'codegraph_node':
-          return await this.codeToolsService.toolCodeGraphNode(typeof args.symbol === 'string' ? args.symbol : '');
+          return await this.codeToolsService.toolCodeGraphNode(
+            typeof args.symbol === 'string' ? args.symbol : '',
+          );
         case 'codegraph_files':
           return await this.codeToolsService.toolCodeGraphFiles();
         // ── REPORTS (w25) ──
@@ -771,6 +860,4 @@ export class KloelToolDispatcherService {
   }): Promise<ApprovedToolExecutionResult> {
     return runExecuteApprovedApprovalRequest(this.prisma, this.bizConfigToolsService, input);
   }
-
-
 }

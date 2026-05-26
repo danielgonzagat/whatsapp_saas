@@ -1,6 +1,7 @@
 import { MarketplaceTreasuryBucket, MarketplaceTreasuryLedgerKind } from '@prisma/client';
 
-import { MarketplaceTreasuryMaturationService } from './marketplace-treasury-maturation.service';describe('MarketplaceTreasuryMaturationService.matureDueCredits', () => {
+import { MarketplaceTreasuryMaturationService } from './marketplace-treasury-maturation.service';
+describe('MarketplaceTreasuryMaturationService.matureDueCredits', () => {
   it('moves due marketplace fee credits from pending to available using append-only entries', async () => {
     const prisma = {
       marketplaceTreasuryLedger: {
@@ -16,16 +17,14 @@ import { MarketplaceTreasuryMaturationService } from './marketplace-treasury-mat
       adminAuditLog: {
         create: jest.fn().mockResolvedValue({ id: 'audit_1' }),
       },
-      $transaction: jest.fn(
-        async (cb: (tx: object) => Promise<void>) => {
-          const tx = {
-            marketplaceTreasuryLedger: {
-              findFirst: jest.fn().mockResolvedValue(null),
-            },
-          };
-          await cb(tx);
-        },
-      ),
+      $transaction: jest.fn(async (cb: (tx: object) => Promise<void>) => {
+        const tx = {
+          marketplaceTreasuryLedger: {
+            findFirst: jest.fn().mockResolvedValue(null),
+          },
+        };
+        await cb(tx);
+      }),
     };
     const wallet = {
       append: jest.fn().mockResolvedValue(undefined),
@@ -39,9 +38,7 @@ import { MarketplaceTreasuryMaturationService } from './marketplace-treasury-mat
       wallet as never,
       financialAlert as never,
     );
-    const result = await service.matureDueCredits(
-      new Date('2026-04-10T00:00:00Z'),
-    );
+    const result = await service.matureDueCredits(new Date('2026-04-10T00:00:00Z'));
 
     expect(prisma.marketplaceTreasuryLedger.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -87,7 +84,8 @@ import { MarketplaceTreasuryMaturationService } from './marketplace-treasury-mat
     expect(result).toEqual({ scanned: 1, matured: 1, skipped: 0, failed: 0 });
     expect(financialAlert.reconciliationAlert).not.toHaveBeenCalled();
     expect(prisma.adminAuditLog.create).not.toHaveBeenCalled();
-  });  it('skips credits already matured idempotently via in-transaction check', async () => {
+  });
+  it('skips credits already matured idempotently via in-transaction check', async () => {
     const txFindFirst = jest.fn().mockResolvedValue({ id: 'existing' });
     const prisma = {
       marketplaceTreasuryLedger: {
@@ -103,16 +101,14 @@ import { MarketplaceTreasuryMaturationService } from './marketplace-treasury-mat
       adminAuditLog: {
         create: jest.fn().mockResolvedValue({ id: 'audit_1' }),
       },
-      $transaction: jest.fn(
-        async (cb: (tx: object) => Promise<void>) => {
-          const tx = {
-            marketplaceTreasuryLedger: {
-              findFirst: txFindFirst,
-            },
-          };
-          await cb(tx);
-        },
-      ),
+      $transaction: jest.fn(async (cb: (tx: object) => Promise<void>) => {
+        const tx = {
+          marketplaceTreasuryLedger: {
+            findFirst: txFindFirst,
+          },
+        };
+        await cb(tx);
+      }),
     };
     const wallet = {
       append: jest.fn(),
@@ -126,9 +122,7 @@ import { MarketplaceTreasuryMaturationService } from './marketplace-treasury-mat
       wallet as never,
       financialAlert as never,
     );
-    const result = await service.matureDueCredits(
-      new Date('2026-04-10T00:00:00Z'),
-    );
+    const result = await service.matureDueCredits(new Date('2026-04-10T00:00:00Z'));
 
     // Transaction is entered but wallet.append is never called
     expect(prisma.$transaction).toHaveBeenCalled();
@@ -136,7 +130,8 @@ import { MarketplaceTreasuryMaturationService } from './marketplace-treasury-mat
     expect(result).toEqual({ scanned: 1, matured: 0, skipped: 1, failed: 0 });
     expect(financialAlert.reconciliationAlert).not.toHaveBeenCalled();
     expect(prisma.adminAuditLog.create).not.toHaveBeenCalled();
-  });  it('counts failures without aborting the whole batch', async () => {
+  });
+  it('counts failures without aborting the whole batch', async () => {
     const prisma = {
       marketplaceTreasuryLedger: {
         findMany: jest.fn().mockResolvedValue([
@@ -165,9 +160,7 @@ import { MarketplaceTreasuryMaturationService } from './marketplace-treasury-mat
       wallet as never,
       financialAlert as never,
     );
-    const result = await service.matureDueCredits(
-      new Date('2026-04-10T00:00:00Z'),
-    );
+    const result = await service.matureDueCredits(new Date('2026-04-10T00:00:00Z'));
 
     expect(result).toEqual({ scanned: 1, matured: 0, skipped: 0, failed: 1 });
     expect(financialAlert.reconciliationAlert).toHaveBeenCalledWith(
@@ -194,7 +187,8 @@ import { MarketplaceTreasuryMaturationService } from './marketplace-treasury-mat
         },
       },
     });
-  });  it('treats P2002 unique-constraint violation as idempotent skip', async () => {
+  });
+  it('treats P2002 unique-constraint violation as idempotent skip', async () => {
     const p2002Error = Object.assign(new Error('Unique constraint failed'), {
       code: 'P2002',
     });
@@ -226,19 +220,15 @@ import { MarketplaceTreasuryMaturationService } from './marketplace-treasury-mat
       wallet as never,
       financialAlert as never,
     );
-    const result = await service.matureDueCredits(
-      new Date('2026-04-10T00:00:00Z'),
-    );
+    const result = await service.matureDueCredits(new Date('2026-04-10T00:00:00Z'));
 
     // P2002 is an idempotent skip, NOT a failure
     expect(result).toEqual({ scanned: 1, matured: 0, skipped: 1, failed: 0 });
     expect(financialAlert.reconciliationAlert).not.toHaveBeenCalled();
     expect(prisma.adminAuditLog.create).not.toHaveBeenCalled();
-  });  it('treats P2025 record-not-found as skip', async () => {
-    const p2025Error = Object.assign(
-      new Error('Record to update not found'),
-      { code: 'P2025' },
-    );
+  });
+  it('treats P2025 record-not-found as skip', async () => {
+    const p2025Error = Object.assign(new Error('Record to update not found'), { code: 'P2025' });
     const prisma = {
       marketplaceTreasuryLedger: {
         findMany: jest.fn().mockResolvedValue([
@@ -267,15 +257,14 @@ import { MarketplaceTreasuryMaturationService } from './marketplace-treasury-mat
       wallet as never,
       financialAlert as never,
     );
-    const result = await service.matureDueCredits(
-      new Date('2026-04-10T00:00:00Z'),
-    );
+    const result = await service.matureDueCredits(new Date('2026-04-10T00:00:00Z'));
 
     // P2025 is a skip, NOT a failure
     expect(result).toEqual({ scanned: 1, matured: 0, skipped: 1, failed: 0 });
     expect(financialAlert.reconciliationAlert).not.toHaveBeenCalled();
     expect(prisma.adminAuditLog.create).not.toHaveBeenCalled();
-  });  it('handles mixed results across a batch', async () => {
+  });
+  it('handles mixed results across a batch', async () => {
     const p2002Error = Object.assign(new Error('Unique constraint'), {
       code: 'P2002',
     });
@@ -312,34 +301,32 @@ import { MarketplaceTreasuryMaturationService } from './marketplace-treasury-mat
       adminAuditLog: {
         create: jest.fn().mockResolvedValue({ id: 'audit_1' }),
       },
-      $transaction: jest.fn(
-        async (cb: (tx: object) => Promise<void>) => {
-          callCount += 1;
-          if (callCount === 1) {
-            // pwl_ok: success
-            const tx = {
-              marketplaceTreasuryLedger: {
-                findFirst: jest.fn().mockResolvedValue(null),
-              },
-            };
-            await cb(tx);
-          } else if (callCount === 2) {
-            // pwl_skip: already matured
-            const tx = {
-              marketplaceTreasuryLedger: {
-                findFirst: jest.fn().mockResolvedValue({ id: 'existing' }),
-              },
-            };
-            await cb(tx);
-          } else if (callCount === 3) {
-            // pwl_p2002: unique constraint
-            throw p2002Error;
-          } else {
-            // pwl_fail: generic error
-            throw new Error('connection lost');
-          }
-        },
-      ),
+      $transaction: jest.fn(async (cb: (tx: object) => Promise<void>) => {
+        callCount += 1;
+        if (callCount === 1) {
+          // pwl_ok: success
+          const tx = {
+            marketplaceTreasuryLedger: {
+              findFirst: jest.fn().mockResolvedValue(null),
+            },
+          };
+          await cb(tx);
+        } else if (callCount === 2) {
+          // pwl_skip: already matured
+          const tx = {
+            marketplaceTreasuryLedger: {
+              findFirst: jest.fn().mockResolvedValue({ id: 'existing' }),
+            },
+          };
+          await cb(tx);
+        } else if (callCount === 3) {
+          // pwl_p2002: unique constraint
+          throw p2002Error;
+        } else {
+          // pwl_fail: generic error
+          throw new Error('connection lost');
+        }
+      }),
     };
     const wallet = {
       append: jest.fn().mockResolvedValue(undefined),
@@ -353,9 +340,7 @@ import { MarketplaceTreasuryMaturationService } from './marketplace-treasury-mat
       wallet as never,
       financialAlert as never,
     );
-    const result = await service.matureDueCredits(
-      new Date('2026-04-10T00:00:00Z'),
-    );
+    const result = await service.matureDueCredits(new Date('2026-04-10T00:00:00Z'));
 
     expect(result).toEqual({
       scanned: 4,
@@ -365,7 +350,8 @@ import { MarketplaceTreasuryMaturationService } from './marketplace-treasury-mat
     });
     expect(wallet.append).toHaveBeenCalledTimes(2); // only pwl_ok
     expect(financialAlert.reconciliationAlert).toHaveBeenCalledTimes(1); // only pwl_fail
-  });  it('handles non-Error rejection strings', async () => {
+  });
+  it('handles non-Error rejection strings', async () => {
     const prisma = {
       marketplaceTreasuryLedger: {
         findMany: jest.fn().mockResolvedValue([
@@ -392,9 +378,7 @@ import { MarketplaceTreasuryMaturationService } from './marketplace-treasury-mat
       wallet as never,
       financialAlert as never,
     );
-    const result = await service.matureDueCredits(
-      new Date('2026-04-10T00:00:00Z'),
-    );
+    const result = await service.matureDueCredits(new Date('2026-04-10T00:00:00Z'));
 
     expect(result).toEqual({ scanned: 1, matured: 0, skipped: 0, failed: 1 });
     expect(financialAlert.reconciliationAlert).toHaveBeenCalledWith(
@@ -408,7 +392,8 @@ import { MarketplaceTreasuryMaturationService } from './marketplace-treasury-mat
         },
       },
     );
-  });  it('handles empty batch', async () => {
+  });
+  it('handles empty batch', async () => {
     const prisma = {
       marketplaceTreasuryLedger: {
         findMany: jest.fn().mockResolvedValue([]),
@@ -428,14 +413,13 @@ import { MarketplaceTreasuryMaturationService } from './marketplace-treasury-mat
       wallet as never,
       financialAlert as never,
     );
-    const result = await service.matureDueCredits(
-      new Date('2026-04-10T00:00:00Z'),
-    );
+    const result = await service.matureDueCredits(new Date('2026-04-10T00:00:00Z'));
 
     expect(result).toEqual({ scanned: 0, matured: 0, skipped: 0, failed: 0 });
     expect(prisma.$transaction).not.toHaveBeenCalled();
     expect(wallet.append).not.toHaveBeenCalled();
-  });  it('handles P2002 error without code property via duck-typing', async () => {
+  });
+  it('handles P2002 error without code property via duck-typing', async () => {
     // prismaErrorCode should handle errors where 'code' exists as a property
     // but the object is not a PrismaClientKnownRequestError instance
     const duckError = { code: 'P2002', message: 'duck' };
@@ -465,13 +449,12 @@ import { MarketplaceTreasuryMaturationService } from './marketplace-treasury-mat
       wallet as never,
       financialAlert as never,
     );
-    const result = await service.matureDueCredits(
-      new Date('2026-04-10T00:00:00Z'),
-    );
+    const result = await service.matureDueCredits(new Date('2026-04-10T00:00:00Z'));
 
     expect(result).toEqual({ scanned: 1, matured: 0, skipped: 1, failed: 0 });
     expect(financialAlert.reconciliationAlert).not.toHaveBeenCalled();
-  });  it('runCron delegates to matureDueCredits', async () => {
+  });
+  it('runCron delegates to matureDueCredits', async () => {
     const prisma = {
       marketplaceTreasuryLedger: {
         findMany: jest.fn().mockResolvedValue([]),
