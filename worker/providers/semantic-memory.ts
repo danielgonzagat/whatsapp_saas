@@ -14,34 +14,57 @@ export class SemanticMemory {
   }
 
   /**
-   * Extract facts from a conversation and store them as vectors
+   * Extract facts from a conversation and store them as vectors.
+   *
+   * Hardened 2026-05-26 per WAVE3_LLM_PROMPT_AUDIT critical gap #3:
+   * previously had no max_tokens cap, swallowed JSON parse failures
+   * silently, and let OpenAI failures bubble up to crash the worker job.
+   * Now caps tokens, logs parse failures, and degrades gracefully on
+   * transient OpenAI errors.
    */
   async extractAndStoreFacts(workspaceId: string, contactId: string, conversationText: string) {
     // 1. Extract Facts using LLM
-    const extraction = await this.openai.chat.completions.create({
-      model: resolveWorkerOpenAIModel('brain'),
-      messages: [
-        {
-          role: 'system',
-          content: `You are a Memory Manager. Extract key facts about the user from the conversation.
-          Focus on: Preferences, Personal Details (Name, Job, Family), Buying Intent, Constraints.
-          Return a JSON array of strings. Example: ["User likes red shoes", "User has a dog named Rex"]`,
-        },
-        { role: 'user', content: conversationText },
-      ],
-      response_format: { type: 'json_object' },
-    });
+    let extraction;
+    try {
+      extraction = await this.openai.chat.completions.create({
+        model: resolveWorkerOpenAIModel('brain'),
+        messages: [
+          {
+            role: 'system',
+            content: `You are a Memory Manager. Extract key facts about the user from the conversation.
+            Focus on: Preferences, Personal Details (Name, Job, Family), Buying Intent, Constraints.
+            Return a JSON object with shape {"facts": ["fact 1", "fact 2"]}. Example: {"facts":["User likes red shoes","User has a dog named Rex"]}`,
+          },
+          { role: 'user', content: conversationText },
+        ],
+        response_format: { type: 'json_object' },
+        max_tokens: 600,
+      });
+    } catch (err) {
+      console.warn(
+        `[semantic-memory] fact extraction LLM call failed for workspace=${workspaceId} contact=${contactId}:`,
+        err instanceof Error ? err.message : String(err),
+      );
+      return;
+    }
 
-    const content = extraction.choices[0].message.content;
+    const content = extraction.choices[0]?.message?.content;
     if (!content) {
+      console.warn(
+        `[semantic-memory] empty LLM content for workspace=${workspaceId} contact=${contactId}`,
+      );
       return;
     }
 
     let factsData: unknown = {};
     try {
       factsData = JSON.parse(content);
-    } catch {
-      /* invalid JSON from model */
+    } catch (err) {
+      console.warn(
+        `[semantic-memory] invalid JSON from model for workspace=${workspaceId} contact=${contactId}:`,
+        err instanceof Error ? err.message : String(err),
+      );
+      return;
     }
     const parsed = factsData as Record<string, unknown>;
     const facts: string[] = Array.isArray(parsed?.facts) ? (parsed.facts as string[]) : [];
