@@ -16,12 +16,7 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { Building2, Plus, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
-
-function buildDuplicateAwareKey(prefix: string, values: string[], position: number) {
-  const currentValue = values[position] ?? '';
-  const occurrence = values.slice(0, position).filter((value) => value === currentValue).length;
-  return `${prefix}-${currentValue.slice(0, 24)}-${occurrence}`;
-}
+import { buildDuplicateAwareKey } from './duplicate-aware-key.helper';
 
 interface CompanyIdentitySectionProps {
   value?: CompanyProfile;
