@@ -37,7 +37,7 @@ import { CapabilityRegistryV2Service } from '../capability-registry-v2/capabilit
   });  it('classifies PIX generation', () => {
     const result = router.classify('Emite um PIX de R$197 para João comprar PDRN', 'dashboard-chat', ['*']);
     expect(result.isChat).toBe(false);
-    expect(result.classification?.capabilityId).toBe('sales.create_pix');
+    expect(result.classification?.capabilityId).toBe('generate_pix');
     expect(result.classification?.requiresConfirmation).toBe(true);
   });  it('classifies plan creation', () => {
     const result = router.classify('Cria um plano mensal para PDRN', 'dashboard-chat', ['*']);
@@ -54,7 +54,7 @@ import { CapabilityRegistryV2Service } from '../capability-registry-v2/capabilit
   });  it('classifies Boleto generation', () => {
     const result = router.classify('Gera um boleto para João', 'dashboard-chat', ['*']);
     expect(result.isChat).toBe(false);
-    expect(result.classification?.capabilityId).toBe('sales.create_boleto');
+    expect(result.classification?.capabilityId).toBe('generate_boleto');
   });  it('classifies wallet balance query', () => {
     const result = router.classify('Qual meu saldo?', 'dashboard-chat', ['*']);
     expect(result.isChat).toBe(false);

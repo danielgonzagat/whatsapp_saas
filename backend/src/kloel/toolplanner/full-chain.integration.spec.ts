@@ -43,7 +43,7 @@ import { CAPABILITY_DEFINITIONS } from '../capability-registry-v2/capability-reg
       ['*'],
     );
     expect(result.isChat).toBe(false);
-    expect(result.classification?.capabilityId).toBe('sales.create_pix');
+    expect(result.classification?.capabilityId).toBe('generate_pix');
     expect(result.classification?.requiresConfirmation).toBe(true);    const cap = registry.get(result.classification!.capabilityId!);
     expect(cap?.category).toBe('MUTATION_SENSITIVE');    const missing = planner.validateInputs(cap!, result.classification!.entities);
     expect(missing.missing.length).toBeGreaterThan(0); // needs buyer data
@@ -55,8 +55,8 @@ import { CAPABILITY_DEFINITIONS } from '../capability-registry-v2/capability-reg
     const caps = registry.list();
     const testMessages: Record<string, string[]> = {
       'products.create': ['cria um produto', 'criar novo produto agora'],
-      'sales.create_pix': ['emite um pix', 'gera um pix de R$100'],
-      'sales.create_boleto': ['gera um boleto', 'emitir boleto agora'],
+      'generate_pix': ['emite um pix', 'gera um pix de R$100'],
+      'generate_boleto': ['gera um boleto', 'emitir boleto agora'],
       'plans.create': ['cria um plano', 'criar novo plano mensal'],
       'checkouts.create': ['cria um checkout', 'criar novo checkout'],
       'coupons.create': ['cria cupom DESCONTO10', 'criar novo cupom'],
