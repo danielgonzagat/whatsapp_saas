@@ -378,14 +378,16 @@ export class KloelChatToolsService {
     const planName = typeof args.planName === 'string' ? args.planName : '';
     const productName = typeof args.productName === 'string' ? args.productName : '';
     const imageUrl = typeof args.imageUrl === 'string' ? args.imageUrl : '';
-    if (!imageUrl)
+    if (!imageUrl) {
       return {
         success: true,
         message:
           'Envie a URL da foto do plano ou faça upload pelo chat. Ex: "foto do plano X url: https://..."',
       };
-    if (!planName && !productName)
+    }
+    if (!planName && !productName) {
       return { success: false, error: 'Informe o nome do plano ou do produto.' };
+    }
     try {
       let plan;
       if (planName) {
@@ -400,7 +402,9 @@ export class KloelChatToolsService {
           select: { id: true },
         });
       }
-      if (!plan) return { success: false, error: 'Plano nao encontrado.' };
+      if (!plan) {
+        return { success: false, error: 'Plano nao encontrado.' };
+      }
       await this.prisma.productPlan.update({
         where: { id: plan.id },
         data: { checkoutImages: { main: imageUrl } as never },
@@ -420,27 +424,28 @@ export class KloelChatToolsService {
     void workspaceId;
     const productName = typeof args.productName === 'string' ? args.productName : '';
     const imageUrl = typeof args.imageUrl === 'string' ? args.imageUrl : '';
-    if (!productName) return { success: false, error: 'Informe o nome do produto.' };
-    if (!imageUrl)
+    if (!productName) {
+      return { success: false, error: 'Informe o nome do produto.' };
+    }
+    if (!imageUrl) {
       return {
         success: true,
         message:
           'Envie a URL da imagem ou faça upload pelo chat. Ex: "imagem do produto X url: https://..."',
       };
+    }
     return runUpdateProduct(this.prisma, workspaceId, { productName, imageUrl });
   }
 
-  async toolConfigurePixel(
-    workspaceId: string,
-    args: Record<string, unknown>,
-  ): Promise<ToolResult> {
+  toolConfigurePixel(workspaceId: string, args: Record<string, unknown>): ToolResult {
     void workspaceId;
     const productName = typeof args.productName === 'string' ? args.productName : '';
-    if (!productName)
+    if (!productName) {
       return {
         success: true,
         message: 'Pixel configurado. Acesse Configurações > Pixel para inserir os códigos.',
       };
+    }
     // Store pixel intent — actual pixel IDs need to come from Meta/Google OAuth
     return {
       success: true,
@@ -448,27 +453,22 @@ export class KloelChatToolsService {
     };
   }
 
-  async toolConfigureShipping(
-    workspaceId: string,
-    args: Record<string, unknown>,
-  ): Promise<ToolResult> {
+  toolConfigureShipping(workspaceId: string, args: Record<string, unknown>): ToolResult {
     void workspaceId;
     const productName = typeof args.productName === 'string' ? args.productName : '';
-    if (!productName)
+    if (!productName) {
       return {
         success: true,
         message: 'Frete configurado. Acesse Produto > Entrega para detalhar.',
       };
+    }
     return {
       success: true,
       message: `Frete configurado para "${productName}". Acesse Produto > Entrega para definir prazos e transportadoras.`,
     };
   }
 
-  async toolConfigureSocialProof(
-    workspaceId: string,
-    args: Record<string, unknown>,
-  ): Promise<ToolResult> {
+  toolConfigureSocialProof(workspaceId: string, args: Record<string, unknown>): ToolResult {
     void workspaceId;
     const productName = typeof args.productName === 'string' ? args.productName : '';
     return {
@@ -477,10 +477,7 @@ export class KloelChatToolsService {
     };
   }
 
-  async toolConfigureOrderBump(
-    workspaceId: string,
-    args: Record<string, unknown>,
-  ): Promise<ToolResult> {
+  toolConfigureOrderBump(workspaceId: string, args: Record<string, unknown>): ToolResult {
     void workspaceId;
     const productName = typeof args.productName === 'string' ? args.productName : '';
     return {
@@ -502,10 +499,7 @@ export class KloelChatToolsService {
     return { success: true, message: 'Garantia configurada. Selo exibido na página de vendas.' };
   }
 
-  async toolConfigureExitIntent(
-    workspaceId: string,
-    args: Record<string, unknown>,
-  ): Promise<ToolResult> {
+  toolConfigureExitIntent(workspaceId: string, args: Record<string, unknown>): ToolResult {
     void workspaceId;
     const productName = typeof args.productName === 'string' ? args.productName : '';
     return {
@@ -514,10 +508,7 @@ export class KloelChatToolsService {
     };
   }
 
-  async toolConfigureAfterPay(
-    workspaceId: string,
-    args: Record<string, unknown>,
-  ): Promise<ToolResult> {
+  toolConfigureAfterPay(workspaceId: string, args: Record<string, unknown>): ToolResult {
     void workspaceId;
     const productName = typeof args.productName === 'string' ? args.productName : '';
     return {
@@ -556,10 +547,7 @@ export class KloelChatToolsService {
     }
   }
 
-  async toolSendChannelMessage(
-    workspaceId: string,
-    args: Record<string, unknown>,
-  ): Promise<ToolResult> {
+  toolSendChannelMessage(workspaceId: string, args: Record<string, unknown>): ToolResult {
     void workspaceId;
     const channel = typeof args.channel === 'string' ? args.channel : 'whatsapp';
     return {
