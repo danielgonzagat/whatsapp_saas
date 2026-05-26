@@ -21,7 +21,7 @@ import {
   buildPredecidedActionDraft,
   executePredecidedAgentActions,
 } from './unified-agent-predecided-actions.part';
-import { BrainCapabilityExecutorService } from './brain-capability-executor.service';
+import { MindCapabilityExecutor } from './mind/coordination';
 import { UnifiedAgentToolExecutorService } from './unified-agent-tool-executor';
 import { buildAgentCognitiveState } from './unified-agent.cognitive-state.helpers';
 
@@ -88,7 +88,7 @@ export class UnifiedAgentService {
     @Optional() private readonly agentRuntime?: AgentRuntimeContextService,
     @Optional() private readonly abiBuilder?: AbiBuilderService,
     @Optional() private readonly abiSnapshotCache?: AbiSnapshotCacheService,
-    @Optional() private readonly brainCapability?: BrainCapabilityExecutorService,
+    @Optional() private readonly brainCapability?: MindCapabilityExecutor,
     @Optional() private readonly toolExecutor?: UnifiedAgentToolExecutorService,
   ) {
     this.openai = createTextLlmClient(this.config);

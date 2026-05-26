@@ -21,7 +21,7 @@ import { CANONICAL_FALLBACK_SYSTEM_PROMPT } from './kloel.prompts';
 import { LLM_MAX_COMPLETION_TOKENS } from './openai-wrapper';
 import { OPERATOR_CAPABILITIES } from './brain-capabilities.const';
 import { AbiBuilderService } from './abi/abi-builder.service';
-import { BrainCapabilityExecutorService } from './brain-capability-executor.service';
+import { MindCapabilityExecutor } from './mind/coordination';
 import { validateAbiPayload } from './abi/abi-validator';
 import { computeHandoffConfidence, HANDOFF_THRESHOLD } from './handoff-confidence.helper';
 import { ChatCompletionMessageParam } from 'openai/resources/chat';
@@ -60,7 +60,7 @@ export class KloelThinkerService {
     private readonly replyEngine: KloelReplyEngineService,
     @Inject(KLOEL_LLM_E2E_GUARD) private readonly llmE2EGuard: KloelLLME2EGuard,
     @Optional() private readonly abiBuilder?: AbiBuilderService,
-    @Optional() private readonly capabilityExecutor?: BrainCapabilityExecutorService,
+    @Optional() private readonly capabilityExecutor?: MindCapabilityExecutor,
   ) {
     this.conversationStore = new KloelConversationStore(prisma, this.logger);
   }
