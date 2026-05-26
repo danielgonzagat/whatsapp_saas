@@ -36,7 +36,10 @@ function isTransient(error: unknown): boolean {
   if (e.code && /ETIMEDOUT|ECONNRESET|ENOTFOUND|ECONNREFUSED|EAI_AGAIN/.test(e.code)) {
     return true;
   }
-  if (e.message && /timeout|rate limit|temporarily|overloaded|service unavailable/i.test(e.message)) {
+  if (
+    e.message &&
+    /timeout|rate limit|temporarily|overloaded|service unavailable/i.test(e.message)
+  ) {
     return true;
   }
   return false;
