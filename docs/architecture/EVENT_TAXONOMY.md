@@ -49,3 +49,112 @@ None detected. ✅
 - `selection:created` — 0 emit / 1 listen
 - `selection:updated` — 0 emit / 1 listen
 - `unhandledRejection` — 0 emit / 2 listen
+
+## AsyncAPI declared channels (73)
+
+> Sourced from `tools/asyncapi/asyncapi-spec.json` — 73 declared channels across 7 top-level domains. AsyncAPI `operations` field is currently empty (gap to close in a follow-up wave: bind each channel to its emitter+consumer).
+
+### auth (1)
+
+- `auth.refresh_token_expired`
+
+### cognition (6)
+
+- `cognition.analysis_completed`
+- `cognition.analysis_started`
+- `cognition.belief_updated`
+- `cognition.cia_backlog_action`
+- `cognition.decision_made`
+- `cognition.valence_assigned`
+
+### commerce (54)
+
+- `commerce.affiliate.click_registered`
+- `commerce.affiliate.commission_calculated`
+- `commerce.affiliate.commission_received`
+- `commerce.affiliate.link_created`
+- `commerce.affiliate.performance_measured`
+- `commerce.campaign.audience_reached`
+- `commerce.campaign.clicked`
+- `commerce.campaign.conversion_associated`
+- `commerce.campaign.creative_swapped`
+- `commerce.campaign.performance_drop_detected`
+- `commerce.cart.abandoned`
+- `commerce.cart.checkout_initiated`
+- `commerce.cart.created`
+- `commerce.checkout.created`
+- `commerce.crm.deal_lost`
+- `commerce.crm.deal_won`
+- `commerce.crm.next_step_defined`
+- `commerce.crm.owner_assigned`
+- `commerce.crm.stage_changed`
+- `commerce.error.recovery_proof_packaged`
+- `commerce.kyc.approved`
+- `commerce.kyc.document_submitted`
+- `commerce.kyc.rejected`
+- `commerce.lead.contacted`
+- `commerce.lead.converted`
+- `commerce.lead.created`
+- `commerce.lead.lost`
+- `commerce.lead.objection_raised`
+- `commerce.lead.qualified`
+- `commerce.lead.replied`
+- `commerce.lead.went_silent`
+- `commerce.member_area.dropped_out`
+- `commerce.member_area.enrolled`
+- `commerce.member_area.progressed`
+- `commerce.onboarding.declared`
+- `commerce.payment.approved`
+- `commerce.payment.charged_back`
+- `commerce.payment.declined`
+- `commerce.payment.failed`
+- `commerce.payment.initiated`
+- `commerce.payment.refunded`
+- `commerce.post_sale.activation_started`
+- `commerce.post_sale.churn_risk_detected`
+- `commerce.post_sale.delivery_completed`
+- `commerce.post_sale.first_value_obtained`
+- `commerce.post_sale.no_regret_confirmed`
+- `commerce.post_sale.repurchase_window_opened`
+- `commerce.post_sale.satisfaction_signal_observed`
+- `commerce.post_sale.win_back_window_opened`
+- `commerce.product.created`
+- `commerce.product.updated`
+- `commerce.whatsapp.handoff_to_human`
+- `commerce.whatsapp.message_received`
+- `commerce.whatsapp.message_replied`
+
+### lineage (6)
+
+- `lineage.capability_acquired`
+- `lineage.ciclo_pulse_nao_regressivo`
+- `lineage.genesis`
+- `lineage.skill_consolidated`
+- `lineage.something_else`
+- `lineage.tampered`
+
+### pulse (3)
+
+- `pulse.capability_promoted`
+- `pulse.gate_failed`
+- `pulse.gate_passed`
+
+### test (2)
+
+- `test.low`
+- `test.unknown`
+
+### workspace (1)
+
+- `workspace.settings.updated`
+
+## Canonical Mind.* (ADR-0013 M6, 4-week alias window)
+
+| Canonical (target) | Legacy alias (publish parallel for 4 weeks) | Re-emitter |
+|---|---|---|
+| `mind.message.received` | `kloel.message.created` | MindEventSpine |
+| `mind.action.executed` | `kloel.action.executed` | MindEventSpine |
+| `mind.product.observed` | `kloel.product.created` (raw `product.created` remains) | MindEventSpine |
+| `mind.plan.observed` | `kloel.plan.created` (raw `plan.created` remains) | MindEventSpine |
+
+Raw CRUD events (`product.created`, `product.updated`, `product.published`, `product.deleted`, `plan.created`, `plan.updated`, `plan.deleted`) remain as **origin events** emitted by the canonical service. The MindEventSpine re-emits each as `mind.<origin>.observed` for the cognitive cycle. Listeners pick up either form during the alias window.
