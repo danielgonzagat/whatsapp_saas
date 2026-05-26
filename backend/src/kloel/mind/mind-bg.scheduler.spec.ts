@@ -1,5 +1,6 @@
 import { MindBackgroundScheduler } from './mind-bg.scheduler';
 import { MindBackgroundProcessor } from './mind-bg.processor';
+import { MindPredictionService } from './mind-prediction.service';
 import { SpineEmitterService } from '../spine/spine-emitter.service';
 import {
   MultiTimescaleCoordinator,
@@ -55,21 +56,54 @@ function getMocks() {
   };
 }
 
-function buildScheduler() {
+function buildScheduler(opts?: {
+  cognitiveHealth?: {
+    scanAndEscalate: jest.Mock<Promise<{ escalated: number }>>;
+  };
+}) {
   const coordinator = new MultiTimescaleCoordinator();
   const aggregator = new ValenceAggregatorService();
   const hebbian = new HebbianService({ windowMs: 60_000 });
   const consolidation = new ConsolidationService();
+  const prediction = new MindPredictionService(
+    undefined as unknown as never,
+  );
+  // Stub runCycle — the test spine returns no events, so the DB fallback
+  // would fail without a real Prisma.  The tick path uses `void` so the
+  // promise rejection from a naked undefined-prisma would crash the test
+  // runner (unhandled rejection).
+  prediction.runCycle = jest.fn().mockResolvedValue({
+    cycleAt: new Date().toISOString(),
+    predictionsGenerated: 0,
+    predictionsEvaluated: 0,
+    correctPredictions: 0,
+    meanSurprise: 0,
+    predictions: [],
+  });
   const processor = new MindBackgroundProcessor(
     coordinator,
     aggregator,
     hebbian,
     consolidation,
+    prediction,
+    undefined as unknown as never,
   );
   const spine = {
     recentEventsAsRef: jest.fn().mockReturnValue([]),
   } as SpineEmitterService;
-  return { scheduler: new MindBackgroundScheduler(processor, spine), spine };
+  const cognitiveHealth = opts?.cognitiveHealth as unknown as
+    | import('../../cia/cia-cognitive-health.service').CiaCognitiveHealthService
+    | undefined;
+  return {
+    scheduler: new MindBackgroundScheduler(
+      processor,
+      spine,
+      undefined as unknown as never,
+      cognitiveHealth,
+    ),
+    spine,
+    cognitiveHealth,
+  };
 }
 
 describe('MindBackgroundScheduler (UTP gap B)', () => {
@@ -181,5 +215,77 @@ describe('MindBackgroundScheduler (UTP gap B)', () => {
 
     expect(wClose).toHaveBeenCalledTimes(1);
     expect(qClose).toHaveBeenCalledTimes(1);
+  });
+
+  // ── Wave 15: cognitive health on-tick wiring ──────────────────────
+
+  describe('cognitive health on-tick (Wave 15)', () => {
+    const cogHealthKey = 'CIA_COGNITIVE_HEALTH_TICK_ENABLED';
+
+    afterEach(() => {
+      delete process.env[cogHealthKey];
+    });
+
+    it('calls scanAndEscalate when CIA_COGNITIVE_HEALTH_TICK_ENABLED=true', async () => {
+      process.env[cogHealthKey] = 'true';
+      const scanMock = jest.fn().mockResolvedValue({ escalated: 0 });
+      const { scheduler, cognitiveHealth } = buildScheduler({
+        cognitiveHealth: { scanAndEscalate: scanMock },
+      });
+
+      await scheduler.executeTick();
+
+      expect(scanMock).toHaveBeenCalledTimes(1);
+      expect(scanMock).toHaveBeenCalledWith('ws-test-001');
+    });
+
+    it('does NOT call scanAndEscalate when flag is absent', async () => {
+      // flag deliberately not set
+      const scanMock = jest.fn().mockResolvedValue({ escalated: 0 });
+      const { scheduler } = buildScheduler({
+        cognitiveHealth: { scanAndEscalate: scanMock },
+      });
+
+      await scheduler.executeTick();
+
+      expect(scanMock).not.toHaveBeenCalled();
+    });
+
+    it('does NOT call scanAndEscalate when CIA_COGNITIVE_HEALTH_TICK_ENABLED=false', async () => {
+      process.env[cogHealthKey] = 'false';
+      const scanMock = jest.fn().mockResolvedValue({ escalated: 0 });
+      const { scheduler } = buildScheduler({
+        cognitiveHealth: { scanAndEscalate: scanMock },
+      });
+
+      await scheduler.executeTick();
+
+      expect(scanMock).not.toHaveBeenCalled();
+    });
+
+    it('continues tick processing when scanAndEscalate throws', async () => {
+      process.env[cogHealthKey] = 'true';
+      const scanMock = jest
+        .fn()
+        .mockRejectedValue(new Error('goal-field explosion'));
+      const { scheduler } = buildScheduler({
+        cognitiveHealth: { scanAndEscalate: scanMock },
+      });
+
+      // Must not throw
+      await scheduler.executeTick();
+
+      expect(scanMock).toHaveBeenCalledTimes(1);
+    });
+
+    it('tolerates missing cognitiveHealth (undefined / not provided)', async () => {
+      process.env[cogHealthKey] = 'true';
+      // No cognitiveHealth mock passed — simulates the @Optional() not resolving
+      const { scheduler } = buildScheduler();
+
+      // Must not throw on the optional chaining
+      await scheduler.executeTick();
+      // passes if no exception
+    });
   });
 });
