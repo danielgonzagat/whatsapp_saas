@@ -461,16 +461,4 @@ export function detectActionIntent(
   return null;
 }
 
-export {
-  extractPlanArgs,
-  extractProductArgs,
-  extractProductName,
-} from './guest-chat.product-args.helpers';
-export {
-  extractAffiliateArgs,
-  extractCouponArgs,
-  extractFiscalArgs,
-  extractPaymentArgs,
-  extractUrlArgs,
-} from './guest-chat.commerce-args.helpers';
 export { formatToolResult } from './guest-chat.format-tool-result.helpers';
