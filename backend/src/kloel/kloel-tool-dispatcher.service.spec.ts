@@ -39,6 +39,7 @@ import { AuditService } from '../audit/audit.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { KloelCodeToolsService } from './kloel-code-tools.service';
 import { KloelCodeAnalysisService } from './kloel-code-analysis.service';
+import { AccountService } from './account.service';
 import {
   createPrismaMock,
   createPlanLimitsMock,
@@ -50,6 +51,7 @@ import {
   createOpsAlertMock,
   createCodeToolsMock,
   createCodeAnalysisMock,
+  createAccountMock,
   DEFAULT_WS_ID,
 } from './kloel-tool-dispatcher.service.fixtures';
 import type {
@@ -63,6 +65,7 @@ import type {
   DispatcherPlanLimitsMock,
   DispatcherCodeToolsMock,
   DispatcherCodeAnalysisMock,
+  DispatcherAccountMock,
 } from './kloel-tool-dispatcher.service.fixtures';
 
 describe('KloelToolDispatcherService', () => {
@@ -77,6 +80,7 @@ describe('KloelToolDispatcherService', () => {
   let opsAlert: DispatcherOpsAlertMock;
   let codeToolsService: DispatcherCodeToolsMock;
   let codeAnalysisService: DispatcherCodeAnalysisMock;
+  let accountService: DispatcherAccountMock;
 
   beforeEach(async () => {
     prisma = createPrismaMock();
@@ -89,6 +93,7 @@ describe('KloelToolDispatcherService', () => {
     opsAlert = createOpsAlertMock();
     codeToolsService = createCodeToolsMock();
     codeAnalysisService = createCodeAnalysisMock();
+    accountService = createAccountMock();
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -103,6 +108,7 @@ describe('KloelToolDispatcherService', () => {
         { provide: KloelCodeToolsService, useValue: codeToolsService },
         { provide: KloelCodeAnalysisService, useValue: codeAnalysisService },
         { provide: OpsAlertService, useValue: opsAlert },
+        { provide: AccountService, useValue: accountService },
       ],
     }).compile();
 

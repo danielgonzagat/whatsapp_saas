@@ -17,6 +17,7 @@ import { CheckoutService } from './checkout.service';
 import { PlanService } from './plan.service';
 import { KloelWalletSalesToolsService } from './kloel-wallet-sales-tools.service';
 import { SmartPaymentService } from './smart-payment.service';
+import { AccountService } from './account.service';
 import { sanitizeDetails } from './kloel-tool-dispatcher.high-risk.helpers';
 import {
   runRequestHighRiskApproval,
@@ -47,6 +48,7 @@ export class KloelToolDispatcherService {
     private readonly auditService: AuditService,
     private readonly codeToolsService: KloelCodeToolsService,
     private readonly codeAnalysisService: KloelCodeAnalysisService,
+    private readonly accountService: AccountService,
     @Optional() private readonly couponService?: CouponService,
     @Optional() private readonly checkoutService?: CheckoutService,
     @Optional() private readonly planService?: PlanService,
@@ -114,7 +116,7 @@ export class KloelToolDispatcherService {
               'get_wallet_balance', 'get_wallet_statement',
               'request_withdrawal', 'request_anticipation',
               'get_dashboard_summary', 'get_analytics',
-              'toggle_theme', 'get_settings', 'update_fiscal_data',
+              'toggle_theme', 'get_settings', 'update_personal_data', 'update_fiscal_data',
               'upload_document', 'configure_shipping', 'configure_warranty',
               'configure_pixel', 'configure_social_proof', 'configure_exit_intent',
               'configure_order_bump', 'configure_after_pay',
@@ -311,10 +313,18 @@ export class KloelToolDispatcherService {
           return await this.chatToolsService.toolUploadProductImage(workspaceId, asToolArgs(args));
         case 'products.upload_image':
           return this.executeTool(workspaceId, 'upload_product_image', args, userId);
+        case 'update_personal_data':
+          return await this.accountService.updatePersonalData(workspaceId, asToolArgs(args) as { name?: string; email?: string; phone?: string });
+        case 'account.update_personal':
+          return this.executeTool(workspaceId, 'update_personal_data', args, userId);
         case 'update_fiscal_data':
           return await this.bizConfigToolsService.toolSaveBusinessInfo(workspaceId, asToolArgs(args));
+        case 'account.update_fiscal':
+          return this.executeTool(workspaceId, 'update_fiscal_data', args, userId);
         case 'upload_document':
           return await this.bizConfigToolsService.toolUploadDocument(workspaceId, asToolArgs(args));
+        case 'account.upload_document':
+          return this.executeTool(workspaceId, 'upload_document', args, userId);
         case 'configure_pixel':
           return await this.chatToolsService.toolConfigurePixel(workspaceId, asToolArgs(args));
         case 'configure_shipping':

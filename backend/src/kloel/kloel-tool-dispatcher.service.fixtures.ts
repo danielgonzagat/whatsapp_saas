@@ -7,6 +7,7 @@ import { AuditService } from '../audit/audit.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { KloelCodeToolsService } from './kloel-code-tools.service';
 import { KloelCodeAnalysisService } from './kloel-code-analysis.service';
+import { AccountService } from './account.service';
 
 type DispatcherPrismaMock = {
   workspace: { findUnique: jest.Mock };
@@ -41,6 +42,8 @@ type DispatcherChatToolsMock = Pick<
   | 'toolVerifyAgentEvidence'
   | 'toolCreatePaymentLink'
 >;
+
+type DispatcherAccountMock = Pick<AccountService, 'updatePersonalData'>;
 
 type DispatcherBizConfigMock = Pick<
   KloelBusinessConfigToolsService,
@@ -98,6 +101,7 @@ export type {
   DispatcherPrismaMock,
   DispatcherChatToolsMock,
   DispatcherBizConfigMock,
+  DispatcherAccountMock,
   DispatcherWhatsappMock,
   DispatcherComposerMock,
   DispatcherCodeToolsMock,
@@ -251,5 +255,11 @@ export function createCodeAnalysisMock(): DispatcherCodeAnalysisMock {
   return {
     toolCodeLint: jest.fn().mockResolvedValue({ success: true, issues: [] }),
     toolCodeDetectIssues: jest.fn().mockResolvedValue({ success: true, issues: [] }),
+  };
+}
+
+export function createAccountMock(): DispatcherAccountMock {
+  return {
+    updatePersonalData: jest.fn().mockResolvedValue({ success: true, message: 'Personal data updated' }),
   };
 }
