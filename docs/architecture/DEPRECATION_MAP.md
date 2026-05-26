@@ -131,9 +131,57 @@ for shared contracts like `contracts/autopilot-jobs`, `resolve-redis-url`,
 intentional: each workspace is its own Node process with its own dependency
 boundary, and there is no shared package in the monorepo to host them.
 
+---
+
+## Semantic canonicalization sweep — IN PROGRESS 2026-05-26
+
+After byte-identical sweep completion, the next layer is SEMANTIC: same-name
+helpers with similar intent but divergent bodies. Discovery delegated to PI
+atomic subagent `w1-dup-hunter-semantic` (DeepSeek V4 Pro) which produced
+[`docs/audits/WAVE1_SEMANTIC_DUPS.md`](audits/WAVE1_SEMANTIC_DUPS.md) with
+18 ranked candidate groups.
+
+| Symbol | Status | Migration |
+|---|---|---|
+| `clamp` × 12 (affil + healthymoney + checkout-shipping + mind-synthetic) | ✅ migrated | → `common/math.ts::clamp` |
+| `sanitizeAppleError` / `sanitizeErrorMessage` / `sanitizeTikTokError` | ✅ migrated | → `auth/sanitize-auth-error.helper::sanitizeAuthError` |
+| `trimToUndefined` × 2 (kyc + connect.service) | ✅ migrated | → `common/parse::readTrimmedString` (alias) |
+| `sleep` × 3 (idempotency.guard + 2 whatsapp inbound-processor) | ✅ migrated | → `common/async-sequence::sleep` |
+| `safeStr` × 8 | ⏳ pending | → `common/string.ts::safeStr` (canonical already exists) |
+| `readRecord` / `asRecord` / `asUnknownRecord` × 12 (4 shapes) | ⏳ pending | needs per-shape decision |
+| `isRecord` × 6 (3 shapes) | ⏳ pending | type-of-guard shape divergence |
+| `readText` × 4 (3 shapes) | ⏳ pending | divergent return types |
+| `digitsOnly` × 2 local | ⏳ pending | `common/phone.ts::digitsOnly` exists |
+| `generateId` × 2 | ⏳ pending | replace with `crypto.randomUUID()` per Wave-2 audit |
+| `removeUndefined` / `compactObject` × 2 | ⏳ pending |  |
+| `extractErrorMessage` × 2 | ⏳ pending |  |
+| 4 NestJS orphan modules (email/post-sale/channel-survival/event-emit-audit-emitter) | ⏸ kept local | not wired into AppModule but might be planned activation; documented in `audits/WAVE2_ORPHAN_EXPORTS.md` |
+
+## Wave 2 audit outputs (PI subagent delegations)
+
+| Audit | Subagent | Report | Key takeaway |
+|---|---|---|---|
+| `prismaAny` migration | `w1-prismaAny-newcode` | [`WAVE1_PRISMAANY_AUDIT.md`](audits/WAVE1_PRISMAANY_AUDIT.md) | **Zero remaining call sites** — migration COMPLETE; CLAUDE.md's "133 usos" claim is stale |
+| Webhook security | `w1-webhook-security-audit` | [`WAVE1_WEBHOOK_SECURITY_AUDIT.md`](audits/WAVE1_WEBHOOK_SECURITY_AUDIT.md) | 20 endpoints, 15 Grade A, 5 Grade B (idempotency gaps in WhatsAppApi/Email-Marketing/EmailInbound), 0 signature gaps |
+| Tier-3 module reality | `w1-tier3-mapper` | [`WAVE1_TIER3_AUDIT.md`](audits/WAVE1_TIER3_AUDIT.md) | 4 modules CLAUDE.md calls Tier-3 are actually READY (Vendas/Canvas/Leads/Webinarios); 3 truly PARTIAL (Anuncios/Marketing/Sites); 1 SHELL_ONLY (Funnels) |
+| Semantic dups | `w1-dup-hunter-semantic` | [`WAVE1_SEMANTIC_DUPS.md`](audits/WAVE1_SEMANTIC_DUPS.md) | 18 candidate groups ranked by canon value (above) |
+| Math.random hunt | `w2-math-random-hunt` | [`WAVE2_MATH_RANDOM_AUDIT.md`](audits/WAVE2_MATH_RANDOM_AUDIT.md) | 12 prod sites; 2 CRITICAL in WISDOM differential privacy (**FIXED**); 9 predictable ID generators; 1 fake-PIX mock (already NODE_ENV-gated) |
+| File-size audit | `w2-file-size-audit` | [`WAVE2_FILE_SIZE_AUDIT.md`](audits/WAVE2_FILE_SIZE_AUDIT.md) | Only 1 file over 800-LOC cap (kloel-chat-tools.service); 74 files in 500-800 danger zone; top-5 decomposition targets ranked by LOC × 90d-churn |
+| Orphan exports | `w2-orphan-exports` | [`WAVE2_ORPHAN_EXPORTS.md`](audits/WAVE2_ORPHAN_EXPORTS.md) | 37 backend / 18 frontend / 12 worker; 4 unwired NestJS modules; ledger reconciliation types; agency/clarity interface returns |
+
+## Wave 2 actions taken from audits
+
+| Finding | Action | Commit |
+|---|---|---|
+| WISDOM Math.random for differential privacy | Replaced with crypto.randomBytes-backed secureUniform | ccedf980c |
+| clamp dups (12 files) | Re-imported from common/math | afb2378c9 |
+| sanitize*Error trio | Extracted to auth/sanitize-auth-error.helper | 75c3aa3d7 |
+| trimToUndefined dups | Re-imported from common/parse::readTrimmedString | 591412996 |
+| sleep dups | Re-imported from common/async-sequence | fe6887773 |
+
 What remains as future canonicalization work is **semantic** (same-name with
-divergent bodies) rather than byte-identical, and requires per-case judgement
-(see ⏸ kept-local rows above for the catalogue).
+divergent bodies) requiring per-case judgement (see ⏸ kept-local rows above
+for the catalogue and the table above for the pending migrations).
 
 **Status legend:**
 - ✅ migrated (re-export): local export is now a re-export from canonical; callers unchanged, structure consolidated
