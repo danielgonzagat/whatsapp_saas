@@ -133,6 +133,7 @@ import { ProductsModule } from './products/products.module';
 import { PublicApiModule } from './public-api/public-api.module';
 import { PulseModule } from './pulse/pulse.module';
 import { ReportsModule } from './reports/reports.module';
+import { SalesModule } from './sales/sales.module';
 import { TikTokAdsModule } from './tiktok-ads/tiktok-ads.module';
 import { UnsubscribeModule } from './unsubscribe/unsubscribe.module';
 import { VideoModule } from './video/video.module';
@@ -284,6 +285,7 @@ function setRedisClientListenerBudget(client: Redis): void {
     ProductsModule, // 🏷️ Canonical product domain service
     KycModule, // KYC - Know Your Customer
     ReportsModule, // Reports & Analytics (Vendas, Assinaturas, Churn, etc.)
+    SalesModule, // 💰 In-chat sales (PIX, card, boleto)
     MetaModule, // Meta Platform (OAuth, Graph API, Webhooks)
     PipelineModule, // 🧭 Sales pipeline / CRM board
     ProductCategoriesModule, // 🏷️ Workspace-scoped product categories
