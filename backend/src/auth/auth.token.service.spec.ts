@@ -345,5 +345,47 @@ describe('AuthTokenService', () => {
       const rejection = rejected[0];
       expect(rejection.reason).toBeInstanceOf(UnauthorizedException);
     });
+
+    it('should return 503 when DB lookup fails (storage error)', async () => {
+      prismaMock.refreshToken.findUnique.mockRejectedValueOnce(
+        new Error('Connection refused'),
+      );
+
+      await expect(service.refresh('rt-stub-1')).rejects.toThrow(
+        ServiceUnavailableException,
+      );
+    });
+
+    it('should return 503 when atomic claim fails (storage error)', async () => {
+      const stored = {
+        ...mockRefreshToken,
+        agent: mockAgent,
+      };
+      prismaMock.refreshToken.findUnique.mockResolvedValueOnce(stored);
+      prismaMock.refreshToken.updateMany.mockRejectedValueOnce(
+        new Error('Serialization failure'),
+      );
+
+      await expect(service.refresh('rt-stub-1')).rejects.toThrow(
+        ServiceUnavailableException,
+      );
+    });
+
+    it('should return 503 when token issuance fails after successful claim', async () => {
+      const stored = {
+        ...mockRefreshToken,
+        agent: mockAgent,
+      };
+      prismaMock.refreshToken.findUnique.mockResolvedValueOnce(stored);
+      prismaMock.refreshToken.updateMany.mockResolvedValueOnce({ count: 1 });
+      // Simulate a Prisma error during issueTokens (inside refreshToken)
+      prismaMock.workspace.findUnique.mockRejectedValueOnce(
+        new Error('Pool exhausted'),
+      );
+
+      await expect(service.refresh('rt-stub-1')).rejects.toThrow(
+        ServiceUnavailableException,
+      );
+    });
   });
 });
