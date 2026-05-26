@@ -14,7 +14,7 @@ import type {
   ChannelSendResult,
   ChannelTransportProvider,
 } from './channel-transport.types';
-import { MindGuardsService } from './mind-guards.service';
+import { MindGuardsService } from './mind/policy/mind-guards.service';
 import { MindGuardContextBuilderService } from './mind-guard-context-builder.service';
 import type { MindActionContext } from './mind-code-native.types';
 

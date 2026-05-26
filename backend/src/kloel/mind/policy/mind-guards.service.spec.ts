@@ -1,8 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { PrismaService } from '../prisma/prisma.service';
-import { KloelRuleEngineService } from './rules/kloel-rule-engine.service';
+import { PrismaService } from '../../../prisma/prisma.service';
+import { KloelRuleEngineService } from '../../rules/kloel-rule-engine.service';
 import { MindGuardsService } from './mind-guards.service';
-import type { MindActionContext } from './mind-code-native.types';
+import type { MindActionContext } from '../../mind-code-native.types';
 
 describe('MindGuardsService', () => {
   let service: MindGuardsService;

@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { StructuredLogger } from '../logging/structured-logger';
-import { MindQualityService } from './mind-quality.service';
-import type { QualityReport } from './mind-quality.service';
+import { MindQualityService } from './mind/policy/mind-quality.service';
+import type { QualityReport } from './mind/policy/mind-quality.service';
 import { MindReplayService } from './mind-replay.service';
 import type { ReplayScenarioInput, ReplayInput, ReplayReport } from './mind-replay.service';
 import type { MindActionContext } from './mind-code-native.types';

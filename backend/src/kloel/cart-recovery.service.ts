@@ -8,7 +8,7 @@ import { OpsAlertService } from '../observability/ops-alert.service';
 import { ChannelTransportRegistry } from './channel-transport.registry';
 import { MindBanditService } from './mind-bandit.service';
 import { MindCaseMemoryService } from './mind-case-memory.service';
-import { MindGuardsService } from './mind-guards.service';
+import { MindGuardsService } from './mind/policy/mind-guards.service';
 import { MindPolicyService } from './mind-policy.service';
 import { resolveCartRecoveryDecision } from './mind-recovery-decision-resolvers';
 import { renderEmailTemplate } from '../common/utils/email-template-renderer.util';

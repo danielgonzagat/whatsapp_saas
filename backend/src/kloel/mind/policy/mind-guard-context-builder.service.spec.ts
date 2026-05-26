@@ -1,8 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { PrismaService } from '../prisma/prisma.service';
+import { PrismaService } from '../../../prisma/prisma.service';
 import { MindGuardContextBuilderService } from './mind-guard-context-builder.service';
-import type { MindActionContext } from './mind-code-native.types';
-import type { ChannelSendRequest } from './channel-transport.types';
+import type { MindActionContext } from '../../mind-code-native.types';
+import type { ChannelSendRequest } from '../../channel-transport.types';
 
 describe('MindGuardContextBuilderService', () => {
   let service: MindGuardContextBuilderService;
