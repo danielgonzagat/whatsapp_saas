@@ -116,7 +116,7 @@ export const AuthCheckEmailResponseSchema = z.object({
  */
 export const AuthRefreshResponseSchema = z.object({
   access_token: z.string(),
-  refresh_token: z.string().optional(),
+  refresh_token: z.string(),
 });
 
 // ─── Billing ───────────────────────────────────────────────────────────────

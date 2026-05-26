@@ -11,6 +11,19 @@ import {
   hashOpaqueToken,
 } from './auth-service.helpers';
 
+/**
+ * Differentiated error codes for refresh token failures.
+ * Exported for frontend interceptors (PI-ν) to enable per-code recovery.
+ */
+export const REFRESH_TOKEN_ERROR_CODES = {
+  UNKNOWN: 'refresh_token_unknown',
+  AGENT_MISSING: 'refresh_token_agent_missing',
+  REPLAYED: 'refresh_token_replayed',
+  EXPIRED: 'refresh_token_expired',
+  RACE_LOST: 'refresh_token_race_lost',
+  ISSUANCE_FAILED: 'refresh_token_issuance_failed',
+} as const;
+
 interface AgentForTokens {
   id: string;
   email: string;
@@ -212,7 +225,11 @@ export async function refreshToken(
 
   if (!stored) {
     logger.warn(buildAuthLogMessage('refresh_token_not_found', { tokenHash }));
-    throw new UnauthorizedException('Refresh token inválido ou expirado');
+    throw new UnauthorizedException({
+      statusCode: 401,
+      message: 'Refresh token inválido ou expirado',
+      code: REFRESH_TOKEN_ERROR_CODES.UNKNOWN,
+    });
   }
 
   if (!stored.agent) {
@@ -222,7 +239,11 @@ export async function refreshToken(
         tokenId: stored.id,
       }),
     );
-    throw new UnauthorizedException('Refresh token inválido ou expirado');
+    throw new UnauthorizedException({
+      statusCode: 401,
+      message: 'Refresh token inválido ou expirado',
+      code: REFRESH_TOKEN_ERROR_CODES.AGENT_MISSING,
+    });
   }
 
   if (stored.revoked) {
@@ -240,7 +261,11 @@ export async function refreshToken(
         workspaceId: stored.agent.workspaceId,
       }),
     );
-    throw new UnauthorizedException('Refresh token inválido ou expirado');
+    throw new UnauthorizedException({
+      statusCode: 401,
+      message: 'Refresh token inválido ou expirado',
+      code: REFRESH_TOKEN_ERROR_CODES.REPLAYED,
+    });
   }
 
   if (stored.expiresAt.getTime() < Date.now()) {
@@ -251,57 +276,74 @@ export async function refreshToken(
         workspaceId: stored.agent.workspaceId,
       }),
     );
-    throw new UnauthorizedException('Refresh token expirado');
-  }
-
-  // Atomic claim: only one concurrent request may claim this token.
-  let claimResult: { count: number };
-  try {
-    claimResult = await prisma.refreshToken.updateMany({
-      where: { id: stored.id, revoked: false },
-      data: { revoked: true },
+    throw new UnauthorizedException({
+      statusCode: 401,
+      message: 'Refresh token expirado',
+      code: REFRESH_TOKEN_ERROR_CODES.EXPIRED,
     });
-  } catch (error) {
-    logger.error(
-      buildAuthLogMessage('refresh_token_claim_db_error', {
-        tokenHash,
-        agentId: stored.agent.id,
-        workspaceId: stored.agent.workspaceId,
-        error: error instanceof Error ? error.message : String(error),
-      }),
-    );
-    throw new ServiceUnavailableException(
-      'Serviço indisponível. Erro ao processar token de atualização.',
-    );
   }
 
-  if (claimResult.count === 0) {
-    // Another concurrent request already claimed this token.
-    logger.warn(
-      buildAuthLogMessage('refresh_token_race_lost', {
-        tokenHash,
-        agentId: stored.agent.id,
-        workspaceId: stored.agent.workspaceId,
-      }),
-    );
-    throw new UnauthorizedException('Refresh token inválido ou expirado');
-  }
-
+  // Atomic claim + issue in a single Prisma transaction.
+  // If issueTokens fails, the transaction rolls back — the inbound
+  // token stays valid so the client can retry without re-login.
   try {
-    assertAgentCanAuthenticate(stored.agent);
-  } catch (error) {
-    logger.warn(
-      buildAuthLogMessage('refresh_token_agent_invalid', {
-        tokenHash,
-        agentId: stored.agent.id,
-        workspaceId: stored.agent.workspaceId,
-      }),
-    );
-    throw error;
-  }
+    const result = await prisma.$transaction(async (tx) => {
+      let claimResult: { count: number };
+      try {
+        claimResult = await tx.refreshToken.updateMany({
+          where: { id: stored.id, revoked: false },
+          data: { revoked: true },
+        });
+      } catch (error) {
+        logger.error(
+          buildAuthLogMessage('refresh_token_claim_db_error', {
+            tokenHash,
+            agentId: stored.agent.id,
+            workspaceId: stored.agent.workspaceId,
+            error: error instanceof Error ? error.message : String(error),
+          }),
+        );
+        throw new ServiceUnavailableException(
+          'Serviço indisponível. Erro ao processar token de atualização.',
+        );
+      }
 
-  try {
-    const result = await issueTokens(prisma, jwt, logger, stored.agent);
+      if (claimResult.count === 0) {
+        // Another concurrent request already claimed this token.
+        // Transaction rolls back — token stays valid for the winner.
+        logger.warn(
+          buildAuthLogMessage('refresh_token_race_lost', {
+            tokenHash,
+            agentId: stored.agent.id,
+            workspaceId: stored.agent.workspaceId,
+          }),
+        );
+        throw new UnauthorizedException({
+          statusCode: 401,
+          message: 'Refresh token inválido ou expirado',
+          code: REFRESH_TOKEN_ERROR_CODES.RACE_LOST,
+        });
+      }
+
+      try {
+        assertAgentCanAuthenticate(stored.agent);
+      } catch (error) {
+        logger.warn(
+          buildAuthLogMessage('refresh_token_agent_invalid', {
+            tokenHash,
+            agentId: stored.agent.id,
+            workspaceId: stored.agent.workspaceId,
+          }),
+        );
+        throw error;
+      }
+
+      // Pass tx as PrismaService — TransactionClient exposes the
+      // same model delegates (workspace, refreshToken) with
+      // identical method signatures.
+      return await issueTokens(tx as unknown as PrismaService, jwt, logger, stored.agent);
+    });
+
     logger.log(
       buildAuthLogMessage('refresh_token_success', {
         agentId: stored.agent.id,
@@ -310,17 +352,26 @@ export async function refreshToken(
     );
     return result;
   } catch (error) {
-    logger.error(
-      buildAuthLogMessage('refresh_token_issue_failed', {
-        tokenHash,
-        agentId: stored.agent.id,
-        workspaceId: stored.agent.workspaceId,
-        error: error instanceof Error ? error.message : String(error),
-      }),
-    );
-    if (error instanceof UnauthorizedException || error instanceof ServiceUnavailableException) {
-      throw error;
+    // issueTokens throws inside the transaction — log the failure
+    // and wrap unknown errors as 503 with ISSUANCE_FAILED code.
+    if (
+      !(error instanceof UnauthorizedException) &&
+      !(error instanceof ServiceUnavailableException)
+    ) {
+      logger.error(
+        buildAuthLogMessage('refresh_token_issue_failed', {
+          tokenHash,
+          agentId: stored.agent.id,
+          workspaceId: stored.agent.workspaceId,
+          error: error instanceof Error ? error.message : String(error),
+        }),
+      );
+      throw new ServiceUnavailableException({
+        statusCode: 503,
+        message: 'Serviço indisponível. Erro ao emitir novos tokens.',
+        code: REFRESH_TOKEN_ERROR_CODES.ISSUANCE_FAILED,
+      });
     }
-    throw new ServiceUnavailableException('Serviço indisponível. Erro ao emitir novos tokens.');
+    throw error;
   }
 }
