@@ -1,4 +1,3 @@
-import type { MindPolicyService } from './mind-policy.service';
 import {
   resolveAdAlertActionBaseline,
   resolveBroadcastWindowBaseline,
@@ -6,8 +5,11 @@ import {
   resolveHumanTransferBaseline,
   resolveProductOfferBaseline,
 } from './mind-decision-baselines';
+import type { MindPolicyChooser } from './mind-catalog-decision-resolvers';
 
-export type MindPolicyChooser = Pick<MindPolicyService, 'choose'>;
+// Canonical lives in mind-catalog-decision-resolvers — re-export for any
+// commercial-side consumers that imported it from here.
+export type { MindPolicyChooser };
 
 type PolicyDecisionResult = Awaited<ReturnType<MindPolicyChooser['choose']>>;
 
