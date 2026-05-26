@@ -397,6 +397,76 @@ export class IntentRouterService {
       extract: () => ({}),
     },
 
+
+    // === NPS / Churn ===
+    {
+      regex: /nps|net\s+promoter/i,
+      capabilityId: 'get_nps',
+      extract: () => ({}),
+    },
+    {
+      regex: /churn|cancelamento\s+(?:total|geral)/i,
+      capabilityId: 'get_churn',
+      extract: () => ({}),
+    },
+
+    // === Marketplace ===
+    {
+      regex: /(?:marketplace|afiliar\s*(?:-se|se)|produtos\s+p[uú]blicos)/i,
+      capabilityId: 'browse_marketplace',
+      extract: () => ({}),
+    },
+
+    // === Detalhes do produto ===
+    {
+      regex: /(?:detalhes|info|mostr[ae]r?)\s+(?:do|o)\s+produto/i,
+      capabilityId: 'get_product_details',
+      extract: () => ({}),
+    },
+
+    // === Estornos ===
+    {
+      regex: /(?:estornos?|reembolsos?|devolu[cç][aã]o)/i,
+      capabilityId: 'list_refunds',
+      extract: () => ({}),
+    },
+
+    // === After Pay ===
+    {
+      regex: /after\s+pay|pagamento\s+(?:depois|posterior|faturado)/i,
+      capabilityId: 'configure_after_pay',
+      extract: (match) => ({
+        enabled: !/desativ/i.test(match[0]),
+      }),
+    },
+
+    // === Order bump ===
+    {
+      regex: /order\s+bump|upsell|downsell/i,
+      capabilityId: 'configure_order_bump',
+      extract: (match) => ({
+        enabled: !/desativ/i.test(match[0]),
+      }),
+    },
+
+    // === Afiliados config ===
+    {
+      regex: /(?:configura[cç][aã]o\s+(?:de\s+)?afiliad|programa\s+(?:de\s+)?afiliad)/i,
+      capabilityId: 'get_affiliate_config',
+      extract: () => ({}),
+    },
+    {
+      regex: /(?:atualiz[ae]r?|edit[ae]r?|mud[ae]r?)\s+(?:o\s+)?(?:programa\s+(?:de\s+)?)?afiliad/i,
+      capabilityId: 'update_affiliate_config',
+      extract: () => ({}),
+    },
+
+    // === Redes sociais / canais ===
+    {
+      regex: /(?:redes?\s+sociais|canais?\s+(?:sociais|conectados))/i,
+      capabilityId: 'get_social_channels',
+      extract: () => ({}),
+    },
     // === Autopilot ===
     {
       regex: /(?:ativ[ae]r?|desativ[ae]r?)\s+(?:o\s+)?autopilot/i,
