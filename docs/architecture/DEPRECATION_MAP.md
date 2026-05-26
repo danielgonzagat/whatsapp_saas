@@ -40,28 +40,28 @@
 
 | # | Deprecated symbol | Replacement | Deadline | Status |
 |---|---|---|---|---|
-| 12 | `BrainAutonomyService` (`backend/src/kloel/brain-autonomy.service.ts`) | `MindAutonomyCoordinator` | 4 weeks after M1 | proposed |
-| 13 | `BrainCapabilityExecutorService` (`backend/src/kloel/brain-capability-executor.service.ts`) | `MindCapabilityExecutor` | 4 weeks after M1 | proposed |
-| 14 | `BrainCapabilityRegistryService` (`backend/src/kloel/brain-capability-registry.service.ts`) | `MindCapabilityRegistry` | 4 weeks after M1 | proposed |
-| 15 | `BrainCommercialGraphService` (`backend/src/kloel/brain-commercial-graph.service.ts`) | `MindCommercialGraph` | 4 weeks after M1 | proposed |
-| 16 | `BrainEventSpineService` (`backend/src/kloel/brain-event-spine.service.ts`) | `MindEventSpine` | 4 weeks after M1 | proposed |
-| 17 | `BrainRuntimeService` (`backend/src/kloel/brain-runtime.service.ts`) | `MindRuntime` | 4 weeks after M1 | proposed |
-| 18 | `WhatsAppBrainService` (`backend/src/kloel/whatsapp-brain.service.ts`) | `WhatsAppMindCoordinator` | 4 weeks after M1 | proposed |
-| 19 | `KloelLeadBrainService` (`backend/src/kloel/kloel-lead-brain.service.ts`) | `LeadMindCoordinator` | 4 weeks after M1 | proposed |
-| 20 | `BrainSpineAuditService` (`backend/src/brain/brain-spine-audit.service.ts`) | `MindSpineAudit` in `backend/src/kloel/mind/observability/` | 4 weeks after M3 | proposed |
+| 12 | `BrainAutonomyService` (`backend/src/kloel/brain-autonomy.service.ts`) | `MindAutonomyCoordinator` | 4 weeks after M1 | aliased |
+| 13 | `BrainCapabilityExecutorService` (`backend/src/kloel/brain-capability-executor.service.ts`) | `MindCapabilityExecutor` | 4 weeks after M1 | aliased |
+| 14 | `BrainCapabilityRegistryService` (`backend/src/kloel/brain-capability-registry.service.ts`) | `MindCapabilityRegistry` | 4 weeks after M1 | aliased |
+| 15 | `BrainCommercialGraphService` (`backend/src/kloel/brain-commercial-graph.service.ts`) | `MindCommercialGraph` | 4 weeks after M1 | aliased |
+| 16 | `BrainEventSpineService` (`backend/src/kloel/brain-event-spine.service.ts`) | `MindEventSpine` | 4 weeks after M1 | aliased |
+| 17 | `BrainRuntimeService` (`backend/src/kloel/brain-runtime.service.ts`) | `MindRuntime` | 4 weeks after M1 | aliased |
+| 18 | `WhatsAppBrainService` (`backend/src/kloel/whatsapp-brain.service.ts`) | `WhatsAppMindCoordinator` | 4 weeks after M1 | aliased |
+| 19 | `KloelLeadBrainService` (`backend/src/kloel/kloel-lead-brain.service.ts`) | `LeadMindCoordinator` | 4 weeks after M1 | aliased |
+| 20 | `BrainSpineAuditService` (`backend/src/brain/brain-spine-audit.service.ts`) | `MindSpineAudit` in `backend/src/kloel/mind/observability/` | 4 weeks after M3 | aliased |
 
 ### Domain folder moves
 
 | # | Deprecated path | Replacement | Deadline | Status |
 |---|---|---|---|---|
-| 21 | `backend/src/ai-brain/` (all 9 files / 5 services) | `backend/src/kloel/mind/knowledge/` | 4 weeks after M2 | proposed |
-| 22 | `AgentAssistService` (`backend/src/ai-brain/agent-assist.service.ts`) | `MindKnowledgeAssist` | 4 weeks after M2 | proposed |
-| 23 | `KnowledgeBaseService` (`backend/src/ai-brain/knowledge-base.service.ts`) | `MindKnowledgeBase` | 4 weeks after M2 | proposed |
-| 24 | `MediaFactoryService` (`backend/src/ai-brain/media-factory.service.ts`) | `MindMediaFactory` | 4 weeks after M2 | proposed |
-| 25 | `VectorService` (`backend/src/ai-brain/vector.service.ts`) | `MindVectorStore` | 4 weeks after M2 | proposed |
-| 26 | `HiddenDataExtractorService` (`backend/src/ai-brain/hidden-data.service.ts`) | `MindHiddenDataExtractor` | 4 weeks after M2 | proposed |
-| 27 | `backend/src/brain/` (1 file) | `backend/src/kloel/mind/observability/` | 4 weeks after M3 | proposed |
-| 28 | `backend/src/cia/` (all 16 files / 11 services) | `backend/src/kloel/mind/cia/` (kept as learning adapter per ADR-0006) | 4 weeks after M4 | proposed |
+| 21 | `backend/src/ai-brain/` (all 9 files / 5 services) | `backend/src/kloel/mind/knowledge/` | 4 weeks after M2 | aliased |
+| 22 | `AgentAssistService` (`backend/src/ai-brain/agent-assist.service.ts`) | `MindKnowledgeAssist` | 4 weeks after M2 | aliased |
+| 23 | `KnowledgeBaseService` (`backend/src/ai-brain/knowledge-base.service.ts`) | `MindKnowledgeBase` | 4 weeks after M2 | aliased |
+| 24 | `MediaFactoryService` (`backend/src/ai-brain/media-factory.service.ts`) | `MindMediaFactory` | 4 weeks after M2 | aliased |
+| 25 | `VectorService` (`backend/src/ai-brain/vector.service.ts`) | `MindVectorStore` | 4 weeks after M2 | aliased |
+| 26 | `HiddenDataExtractorService` (`backend/src/ai-brain/hidden-data.service.ts`) | `MindHiddenDataExtractor` | 4 weeks after M2 | aliased |
+| 27 | `backend/src/brain/` (1 file) | `backend/src/kloel/mind/observability/` | 4 weeks after M3 | aliased |
+| 28 | `backend/src/cia/` (all 16 files / 11 services) | `backend/src/kloel/mind/cia/` (kept as learning adapter per ADR-0006) | 4 weeks after M4 | aliased |
 
 ### Event taxonomy
 
@@ -100,7 +100,7 @@ From `SEND_MESSAGE_CANONICAL.md` §5 Risk Register:
 | R2: `AuthWhatsappPasswordService` + `AuthVerificationService` not registered in `auth.module.ts` — appear dead | **Verify** dead-code status via runtime coverage; if confirmed, delete (separate PR). |
 | R5: `AdminChatService.sendMessage()` is copilot interface, NOT a channel send | **Revise** Step 3 of SEND_MESSAGE_CANONICAL.md: do NOT wrap as `InternalAdminDispatchAdapter`. |
 | R6: `BrainCapabilityExecutorService.sendMessageViaChannel` returns `queued:true` only — may not deliver | **Investigate** if brain-sourced messages reach the channel. |
-| R7: No `EmailDispatchAdapter` exists yet | **Build** as follow-up (Wave W5 of ADR-0012). |
+| R7: No `EmailDispatchAdapter` exists yet | ✅ **Built** in Wave W1 of ADR-0012 at `backend/src/marketing/channels/email/email-dispatch.adapter.ts` — resolves mailbox via @Optional injection of Gmail / Microsoft / IMAP-SMTP, tries in priority order, surfaces first non-not_connected result. |
 
 ## How to add an entry
 
