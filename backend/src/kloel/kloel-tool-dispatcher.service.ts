@@ -21,7 +21,7 @@ import { SelfHealthService } from './self-awareness/self-health.service';
 import { SelfGapsService } from './self-awareness/self-gaps.service';
 import { CapabilityRegistryV2Service } from './capability-registry-v2/capability-registry-v2.service';
 import { ReportService } from './report.service';
-import { sanitizeDetails } from './kloel-tool-dispatcher.high-risk.helpers';
+import { isRecord, sanitizeDetails } from './kloel-tool-dispatcher.high-risk.helpers';
 import {
   runRequestHighRiskApproval,
   runExecuteApprovedApprovalRequest,
@@ -38,6 +38,37 @@ function asString(value: unknown, fallback = ''): string {
 /** Coerce `unknown` to number with a fallback, without unsafe casts. */
 function asNumber(value: unknown, fallback = 0): number {
   return typeof value === 'number' && Number.isFinite(value) ? value : fallback;
+}
+
+function buildReceiptEvidenceUrl(
+  template: string | undefined,
+  outputs: UnknownRecord,
+): string | undefined {
+  if (!template) {
+    return undefined;
+  }
+  return template
+    .replace('${productId}', asString(outputs.productId))
+    .replace('${orderId}', asString(outputs.orderId))
+    .replace('${planId}', asString(outputs.planId));
+}
+
+function deriveReceiptOutputs(result: UnknownRecord): UnknownRecord {
+  const product = isRecord(result.product) ? result.product : null;
+  const productId = asString(result.productId, product ? asString(product.id) : '');
+  const orderId = asString(result.orderId, asString(result.saleId));
+  const planId = asString(result.planId);
+
+  return {
+    ...result,
+    ...(productId ? { productId } : {}),
+    ...(orderId ? { orderId } : {}),
+    ...(planId ? { planId } : {}),
+  };
+}
+
+function receiptKeyPart(value: string): string {
+  return value.replace(/[^a-zA-Z0-9._-]/g, '_');
 }
 
 /** Resolve a period label to a `Date` floor. */
@@ -125,10 +156,22 @@ export class KloelToolDispatcherService {
     try {
       switch (toolName) {
         case 'save_product':
-        case 'create_product':
-          return await this.chatToolsService.toolSaveProduct(workspaceId, asToolArgs(args));
-        case 'products.create':
-          return this.executeTool(workspaceId, 'create_product', args, userId);
+        case 'create_product': {
+          const productArgs = userId ? { ...args, actorId: userId } : args;
+          return await this.chatToolsService.toolSaveProduct(workspaceId, asToolArgs(productArgs));
+        }
+        case 'products.create': {
+          const startedAt = Date.now();
+          const result = await this.executeTool(workspaceId, 'create_product', args, userId);
+          return this.withCanonicalReceipt(
+            'products.create',
+            workspaceId,
+            args,
+            result,
+            userId,
+            startedAt,
+          );
+        }
         case 'list_products':
           return await this.chatToolsService.toolListProducts(workspaceId);
         case 'update_product':
@@ -210,7 +253,7 @@ export class KloelToolDispatcherService {
           if (!this.selfGaps) {
             return { success: false, error: 'self_gaps_service_unavailable' };
           }
-          const result = this.selfGaps.diffRegistryVsDispatcher();
+          const result = await this.selfGaps.diffRegistryVsDispatcher();
           return {
             success: true,
             capabilityId: 'self.gaps',
@@ -239,9 +282,35 @@ export class KloelToolDispatcherService {
         }
 
         case 'self.capabilities':
-        case 'list_capabilities':
+        case 'list_capabilities': {
+          const registryCapabilities = this.capRegistryV2?.list() ?? [];
+          if (registryCapabilities.length > 0) {
+            const capabilities = registryCapabilities.map((cap) => ({
+              id: cap.id,
+              title: cap.title,
+              category: cap.category,
+              tier: cap.tier,
+              requiresConfirmation: cap.requiresConfirmation,
+              requiredPermissions: cap.requiredPermissions,
+              surface: cap.surface,
+              maturity: cap.maturity ?? 'registry',
+            }));
+
+            return {
+              success: true,
+              capabilityId: 'self.capabilities',
+              capabilities: capabilities.map((cap) => cap.id),
+              outputs: {
+                total: capabilities.length,
+                capabilities,
+              },
+              message: `${capabilities.length} capacidades carregadas do registry vivo`,
+            };
+          }
+
           return {
             success: true,
+            capabilityId: 'self.capabilities',
             capabilities: [
               'create_product',
               'update_product',
@@ -317,6 +386,7 @@ export class KloelToolDispatcherService {
               'self.health',
             ],
           };
+        }
         case 'toggle_autopilot':
           return await this.chatToolsService.toolToggleAutopilot(workspaceId, asToolArgs(args));
         case 'set_brand_voice':
@@ -589,7 +659,10 @@ export class KloelToolDispatcherService {
         case 'set_agent_job_enabled':
           return await this.chatToolsService.toolSetAgentJobEnabled(workspaceId, asToolArgs(args));
         case 'search_agent_memory':
-          return await this.bizConfigToolsService.toolListLeads(workspaceId, asToolArgs(args));
+          return await this.chatToolsService.toolSearchAgentMemoryWithContacts(
+            workspaceId,
+            asToolArgs(args),
+          );
         case 'search_agent_sessions':
           return await this.chatToolsService.toolSearchAgentSessions(workspaceId, asToolArgs(args));
         case 'get_agent_artifact':
@@ -808,6 +881,70 @@ export class KloelToolDispatcherService {
       this.logger.error(`Erro ao executar ferramenta ${toolName}:`, error);
       return { success: false, error: msg };
     }
+  }
+
+  private withCanonicalReceipt(
+    capabilityId: string,
+    workspaceId: string,
+    args: UnknownRecord,
+    result: { success: boolean; message?: string; error?: string; [key: string]: unknown },
+    userId: string | undefined,
+    startedAt: number,
+  ): { success: boolean; message?: string; error?: string; [key: string]: unknown } {
+    const cap = this.capRegistryV2?.get(capabilityId);
+    if (!cap || !this.capRegistryV2) {
+      return result;
+    }
+
+    const inputs = sanitizeDetails(args);
+    const outputs = result.success ? deriveReceiptOutputs(result) : {};
+    const actorId = userId ?? 'kloel-chat';
+    const idempotencyKey = [
+      receiptKeyPart(capabilityId),
+      receiptKeyPart(workspaceId),
+      receiptKeyPart(actorId),
+      receiptKeyPart(JSON.stringify(inputs)),
+    ].join(':');
+    const requestId = idempotencyKey.slice(0, 120);
+    const auditLogId = asString(result.auditLogId, `audit_${requestId}`);
+    const evidenceUrl = result.success
+      ? buildReceiptEvidenceUrl(cap.evidenceUrlBuilder, outputs)
+      : undefined;
+    const receiptParams: Parameters<CapabilityRegistryV2Service['createReceipt']>[0] = {
+      capabilityId: cap.id,
+      title: cap.title,
+      context: {
+        workspaceId,
+        actorId,
+        source: 'dashboard-chat',
+        idempotencyKey,
+        requestId,
+      },
+      inputs,
+      outputs,
+      domainEvents: result.success ? cap.emits : [],
+      auditLogId,
+      durationMs: Date.now() - startedAt,
+      success: result.success,
+    };
+
+    if (evidenceUrl) {
+      receiptParams.evidenceUrl = evidenceUrl;
+    }
+    if (typeof result.error === 'string') {
+      receiptParams.error = result.error;
+    }
+
+    const receipt = this.capRegistryV2.createReceipt(receiptParams);
+    return {
+      ...result,
+      capabilityId: cap.id,
+      outputs,
+      domainEvents: receipt.domainEvents,
+      auditLogId: receipt.auditLogId,
+      evidenceUrl: receipt.evidenceUrl,
+      receipt,
+    };
   }
 
   /**

@@ -40,6 +40,7 @@ import { OpsAlertService } from '../observability/ops-alert.service';
 import { KloelCodeToolsService } from './kloel-code-tools.service';
 import { KloelCodeAnalysisService } from './kloel-code-analysis.service';
 import { AccountService } from './account.service';
+import { CapabilityRegistryV2Service } from './capability-registry-v2/capability-registry-v2.service';
 import {
   createPrismaMock,
   createPlanLimitsMock,
@@ -109,6 +110,7 @@ describe('KloelToolDispatcherService — chat tools routing', () => {
         { provide: KloelCodeAnalysisService, useValue: codeAnalysisService },
         { provide: OpsAlertService, useValue: opsAlert },
         { provide: AccountService, useValue: accountService },
+        CapabilityRegistryV2Service,
       ],
     }).compile();
 
@@ -125,6 +127,53 @@ describe('KloelToolDispatcherService — chat tools routing', () => {
       name: 'P',
       price: 10,
     });
+  });
+
+  it('routes canonical products.create with the requesting actor id', async () => {
+    await service.executeTool(
+      DEFAULT_WS_ID,
+      'products.create',
+      { name: 'P', price: 10 },
+      'user-42',
+    );
+    expect(chatToolsService.toolSaveProduct).toHaveBeenCalledWith(DEFAULT_WS_ID, {
+      name: 'P',
+      price: 10,
+      actorId: 'user-42',
+    });
+  });
+
+  it('returns a material receipt for canonical products.create executions', async () => {
+    jest.mocked(chatToolsService.toolSaveProduct).mockResolvedValueOnce({
+      success: true,
+      message: 'Produto criado',
+      product: { id: 'prod-123', slug: 'pdrn' },
+    });
+
+    const result = await service.executeTool(
+      DEFAULT_WS_ID,
+      'products.create',
+      { name: 'PDRN', price: 197 },
+      'user-42',
+    );
+
+    expect(result.success).toBe(true);
+    expect(result.capabilityId).toBe('products.create');
+    expect(result.outputs).toEqual(expect.objectContaining({ productId: 'prod-123' }));
+    expect(result.receipt).toEqual(
+      expect.objectContaining({
+        capabilityId: 'products.create',
+        workspaceId: DEFAULT_WS_ID,
+        actorId: 'user-42',
+        inputs: { name: 'PDRN', price: 197 },
+        outputs: expect.objectContaining({ productId: 'prod-123' }),
+        domainEvents: ['product.created'],
+        auditLogId: expect.stringMatching(/^audit_/),
+        evidenceUrl: '/produtos/prod-123',
+        idempotencyKey: expect.stringContaining('products.create'),
+        success: true,
+      }),
+    );
   });
 
   it('routes list_products to chatToolsService', async () => {

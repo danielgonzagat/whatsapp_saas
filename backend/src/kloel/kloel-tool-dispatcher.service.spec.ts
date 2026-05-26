@@ -348,6 +348,66 @@ describe('KloelToolDispatcherService', () => {
   });
 
   describe('self-awareness meta capabilities', () => {
+    describe('self.capabilities', () => {
+      it('returns the live CapabilityRegistryV2 manifest instead of a hardcoded list', async () => {
+        (capRegistryV2Service as unknown as { list: jest.Mock }).list = jest.fn().mockReturnValue([
+          {
+            id: 'self.capabilities',
+            title: 'Listar capacidades',
+            category: 'SELF_AWARENESS',
+            tier: 0,
+            requiresConfirmation: false,
+            requiredPermissions: [],
+            surface: ['dashboard-chat'],
+            maturity: 'verified',
+          },
+          {
+            id: 'products.create',
+            title: 'Criar produto',
+            category: 'MUTATION_SAFE',
+            tier: 1,
+            requiresConfirmation: true,
+            requiredPermissions: ['product:write'],
+            surface: ['dashboard-chat'],
+            maturity: 'testable',
+          },
+        ]);
+
+        const result = await service.executeTool(DEFAULT_WS_ID, 'self.capabilities', {});
+
+        expect(result.success).toBe(true);
+        expect((capRegistryV2Service as unknown as { list: jest.Mock }).list).toHaveBeenCalledTimes(
+          1,
+        );
+        expect(result.capabilities).toEqual(['self.capabilities', 'products.create']);
+        expect(result.outputs).toEqual({
+          total: 2,
+          capabilities: [
+            {
+              id: 'self.capabilities',
+              title: 'Listar capacidades',
+              category: 'SELF_AWARENESS',
+              tier: 0,
+              requiresConfirmation: false,
+              requiredPermissions: [],
+              surface: ['dashboard-chat'],
+              maturity: 'verified',
+            },
+            {
+              id: 'products.create',
+              title: 'Criar produto',
+              category: 'MUTATION_SAFE',
+              tier: 1,
+              requiresConfirmation: true,
+              requiredPermissions: ['product:write'],
+              surface: ['dashboard-chat'],
+              maturity: 'testable',
+            },
+          ],
+        });
+      });
+    });
+
     describe('self.audit_log', () => {
       it('returns recent audit entries', async () => {
         auditService.recentForWorkspace = jest.fn().mockResolvedValue([

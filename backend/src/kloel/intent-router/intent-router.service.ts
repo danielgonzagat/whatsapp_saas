@@ -24,7 +24,8 @@ export class IntentRouterService {
   }> = [
     // === Self-awareness ===
     {
-      regex: /(?:o que|quais|liste|lista|mostre|que)\s.*(?:consegue|capaci|sabe|pode)\s.*(?:fazer?|operar?)/i,
+      regex:
+        /(?:o que|quais|liste|lista|mostre|que)\s.*(?:consegue|capaci|sabe|pode)\s.*(?:fazer?|operar?)/i,
       capabilityId: 'self.capabilities',
       extract: () => ({}),
     },
@@ -52,10 +53,12 @@ export class IntentRouterService {
     // === Products ===
     {
       regex: /(?:cri[ae]r?\s.*produt|cadastra\s.*produt|nov[oa]\s.*produt)/i,
-      capabilityId: 'create_product',
+      capabilityId: 'products.create',
       extract: (match) => ({
         name: match[0].match(/produto\s+["""']?([^""""'"]+)/i)?.[1] || undefined,
-        price: parseFloat(match[0].match(/r?\$?\s*(\d+(?:[.,]\d+)?)/i)?.[1]?.replace(',', '.') ?? '') || undefined,
+        price:
+          parseFloat(match[0].match(/r?\$?\s*(\d+(?:[.,]\d+)?)/i)?.[1]?.replace(',', '.') ?? '') ||
+          undefined,
       }),
     },
     {
@@ -100,7 +103,8 @@ export class IntentRouterService {
 
     // === Theme toggle ===
     {
-      regex: /(?:tem[ae]\s+(?:clar[oa]?|escur[oa]?)|(?:clar[oa]?|escur[oa]?)\s+tem[ae]|(?:dark|light)\s+mode)/i,
+      regex:
+        /(?:tem[ae]\s+(?:clar[oa]?|escur[oa]?)|(?:clar[oa]?|escur[oa]?)\s+tem[ae]|(?:dark|light)\s+mode)/i,
       capabilityId: 'ui.theme',
       extract: (match) => ({
         theme: /escur[oa]|dark/i.test(match[0]) ? 'dark' : 'light',
@@ -175,12 +179,17 @@ export class IntentRouterService {
 
     // === Document upload ===
     {
-      regex: /(?:envi[ae]r?|upload|anex[ae]r?)\s+(?:meu\s+)?(?:documento|contrato|rg|cpf|cnpj|identidade)/i,
+      regex:
+        /(?:envi[ae]r?|upload|anex[ae]r?)\s+(?:meu\s+)?(?:documento|contrato|rg|cpf|cnpj|identidade)/i,
       capabilityId: 'upload_document',
       extract: (match) => ({
-        documentType: match[0].match(/contrato/i) ? 'contract' :
-                      match[0].match(/(?:rg|identidad)/i) ? 'identity' :
-                      match[0].match(/cnpj/i) ? 'cnpj_card' : 'document',
+        documentType: match[0].match(/contrato/i)
+          ? 'contract'
+          : match[0].match(/(?:rg|identidad)/i)
+            ? 'identity'
+            : match[0].match(/cnpj/i)
+              ? 'cnpj_card'
+              : 'document',
       }),
     },
     {
@@ -225,19 +234,22 @@ export class IntentRouterService {
     // === Sales / PIX / Boleto ===
     {
       regex: /(?:emit[ei]r?\s.*pix|ger[ae]r?\s.*pix|cri[ae]r?\s.*pix)/i,
-      capabilityId: 'generate_pix',
+      capabilityId: 'sales.create_pix',
       extract: (match) => {
-        const amount = parseFloat(match[0].match(/r?\$?\s*(\d+(?:[.,]\d+)?)/i)?.[1]?.replace(',', '.') ?? '') || undefined;
+        const amount =
+          parseFloat(match[0].match(/r?\$?\s*(\d+(?:[.,]\d+)?)/i)?.[1]?.replace(',', '.') ?? '') ||
+          undefined;
         return { amount: amount || undefined };
       },
     },
     {
       regex: /(?:emit[ei]r?\s.*bolet|ger[ae]r?\s.*bolet|cri[ae]r?\s.*bolet)/i,
-      capabilityId: 'generate_boleto',
+      capabilityId: 'sales.create_boleto',
       extract: () => ({}),
     },
     {
-      regex: /(?:consult[ae]r?\s.*vend[ae]|status\s.*vend[ae]|buscar?\s.*vend[ae]|mostr[ae]r?\s.*vend[ae])/i,
+      regex:
+        /(?:consult[ae]r?\s.*vend[ae]|status\s.*vend[ae]|buscar?\s.*vend[ae]|mostr[ae]r?\s.*vend[ae])/i,
       capabilityId: 'sales.list',
       extract: () => ({}),
     },
@@ -264,7 +276,8 @@ export class IntentRouterService {
 
     // === Social proof ===
     {
-      regex: /(?:social\s+proof|prova\s+social|depoimentos?|ativ[ae]r?\s+(?:prova\s+social|social))/i,
+      regex:
+        /(?:social\s+proof|prova\s+social|depoimentos?|ativ[ae]r?\s+(?:prova\s+social|social))/i,
       capabilityId: 'configure_social_proof',
       extract: (match) => ({
         enabled: !/desativ[ae]|remov[ae]/i.test(match[0]),
@@ -287,7 +300,8 @@ export class IntentRouterService {
 
     // === Agent memory/sessions ===
     {
-      regex: /(?:buscar?|pesquisar?|procur[ae]r?)\s+(?:minhas\s+)?(?:conversas?|mem[oó]rias?|hist[oó]ricos?)/i,
+      regex:
+        /(?:buscar?|pesquisar?|procur[ae]r?)\s+(?:minhas\s+)?(?:conversas?|mem[oó]rias?|hist[oó]ricos?)/i,
       capabilityId: 'search_agent_memory',
       extract: (match) => ({ query: match[0] }),
     },
@@ -320,7 +334,8 @@ export class IntentRouterService {
 
     // === Affiliates ===
     {
-      regex: /(?:ativ[ae]r?\s.*afil|desativ[ae]r?\s.*afil|configur[ae]r?\s.*afil|programa\s.*afil)/i,
+      regex:
+        /(?:ativ[ae]r?\s.*afil|desativ[ae]r?\s.*afil|configur[ae]r?\s.*afil|programa\s.*afil)/i,
       capabilityId: 'affiliates.configure',
       extract: () => ({}),
     },
@@ -361,7 +376,9 @@ export class IntentRouterService {
       regex: /(?:cri[ae]r?|ger[ae]r?)\s+(?:link\s+(?:de\s+)?pagamento|payment\s+link)/i,
       capabilityId: 'create_payment_link',
       extract: (match) => {
-        const amount = parseFloat(match[0].match(/r?\$?\s*(\d+(?:[.,]\d+)?)/i)?.[1]?.replace(',', '.') ?? '') || undefined;
+        const amount =
+          parseFloat(match[0].match(/r?\$?\s*(\d+(?:[.,]\d+)?)/i)?.[1]?.replace(',', '.') ?? '') ||
+          undefined;
         return { amount: amount || undefined };
       },
     },
@@ -371,7 +388,9 @@ export class IntentRouterService {
       regex: /(?:solicit[ae]r?|ped[ei]r?)\s+(?:meu\s+)?saque/i,
       capabilityId: 'request_withdrawal',
       extract: (match) => {
-        const amount = parseFloat(match[0].match(/r?\$?\s*(\d+(?:[.,]\d+)?)/i)?.[1]?.replace(',', '.') ?? '') || undefined;
+        const amount =
+          parseFloat(match[0].match(/r?\$?\s*(\d+(?:[.,]\d+)?)/i)?.[1]?.replace(',', '.') ?? '') ||
+          undefined;
         return { amount: amount || undefined };
       },
     },
@@ -395,7 +414,9 @@ export class IntentRouterService {
       regex: /(?:cri[ae]r?|ger[ae]r?|nov[ao])\s+(?:um[a]?\s+)?(?:pedido|order|venda)/i,
       capabilityId: 'create_order',
       extract: (match) => {
-        const amount = parseFloat(match[0].match(/r?\$?\s*(\d+(?:[.,]\d+)?)/i)?.[1]?.replace(',', '.') ?? '') || undefined;
+        const amount =
+          parseFloat(match[0].match(/r?\$?\s*(\d+(?:[.,]\d+)?)/i)?.[1]?.replace(',', '.') ?? '') ||
+          undefined;
         return { amount: amount || undefined };
       },
     },
@@ -407,7 +428,8 @@ export class IntentRouterService {
 
     // === WhatsApp ===
     {
-      regex: /(?:lista[er]?|ver|mostr[ae]r?)\s+(?:minhas\s+)?(?:conversas|chats)\s+(?:do\s+)?whatsapp/i,
+      regex:
+        /(?:lista[er]?|ver|mostr[ae]r?)\s+(?:minhas\s+)?(?:conversas|chats)\s+(?:do\s+)?whatsapp/i,
       capabilityId: 'list_whatsapp_chats',
       extract: () => ({}),
     },
@@ -424,7 +446,8 @@ export class IntentRouterService {
 
     // === Profile / Bio ===
     {
-      regex: /(?:atualiz[ae]r?|mud[ae]r?|alter[ae]r?)\s+(?:meus?\s+)?(?:dados\s+pessoais|perfil|nome\s+completo)/i,
+      regex:
+        /(?:atualiz[ae]r?|mud[ae]r?|alter[ae]r?)\s+(?:meus?\s+)?(?:dados\s+pessoais|perfil|nome\s+completo)/i,
       capabilityId: 'update_personal_data',
       extract: () => ({}),
     },
@@ -448,7 +471,8 @@ export class IntentRouterService {
       extract: () => ({}),
     },
     {
-      regex: /(?:mud[ae]r?|atualiz[ae]r?)\s+(?:a\s+)?(?:persona|tom|voz)\s+(?:do|da)\s+(?:produto|marca)/i,
+      regex:
+        /(?:mud[ae]r?|atualiz[ae]r?)\s+(?:a\s+)?(?:persona|tom|voz)\s+(?:do|da)\s+(?:produto|marca)/i,
       capabilityId: 'configure_ai_persona',
       extract: () => ({}),
     },
@@ -473,7 +497,6 @@ export class IntentRouterService {
       capabilityId: 'create_broadcast',
       extract: () => ({}),
     },
-
 
     // === NPS / Churn ===
     {
@@ -553,19 +576,23 @@ export class IntentRouterService {
       }),
     },
 
-
     // === AI persona ===
     {
-      regex: /(?:configur[ae]r?|defin[ei]r?|mud[ae]r?)\s+(?:a\s+|o\s+)?(?:persona|personalidade|tom|voz)\s+(?:da|do)\s+ia/i,
+      regex:
+        /(?:configur[ae]r?|defin[ei]r?|mud[ae]r?)\s+(?:a\s+|o\s+)?(?:persona|personalidade|tom|voz)\s+(?:da|do)\s+ia/i,
       capabilityId: 'configure_ai_persona',
       extract: (match) => ({
-        personality: match[0].match(/(?:formal|informal|friendly|professional|funny|amig[aá]vel|profissional|engra[cç]ad[ao])/i)?.[0] || undefined,
+        personality:
+          match[0].match(
+            /(?:formal|informal|friendly|professional|funny|amig[aá]vel|profissional|engra[cç]ad[ao])/i,
+          )?.[0] || undefined,
       }),
     },
 
     // === WhatsApp ===
     {
-      regex: /(?:status\s+(?:do\s+)?whatsapp|whatsapp\s+(?:est[aá]\s+)?(?:funcionando|conectado|online))/i,
+      regex:
+        /(?:status\s+(?:do\s+)?whatsapp|whatsapp\s+(?:est[aá]\s+)?(?:funcionando|conectado|online))/i,
       capabilityId: 'get_whatsapp_status',
       extract: () => ({}),
     },
@@ -584,7 +611,8 @@ export class IntentRouterService {
 
     // === Image upload ===
     {
-      regex: /(?:faz\s+)?(?:upload|envi[ae]r?|sob[ei]r?)\s+(?:da\s+)?(?:foto|imagem)\s+(?:do\s+)?(?:plano|produto)/i,
+      regex:
+        /(?:faz\s+)?(?:upload|envi[ae]r?|sob[ei]r?)\s+(?:da\s+)?(?:foto|imagem)\s+(?:do\s+)?(?:plano|produto)/i,
       capabilityId: 'upload_product_image',
       extract: (match) => ({
         targetType: /plano/i.test(match[0]) ? 'plan' : 'product',
@@ -641,9 +669,7 @@ export class IntentRouterService {
     },
   ];
 
-  constructor(
-    private readonly registry: CapabilityRegistryV2Service,
-  ) {}
+  constructor(private readonly registry: CapabilityRegistryV2Service) {}
 
   /**
    * Classify a user message into an intent.
@@ -670,7 +696,9 @@ export class IntentRouterService {
       const match = normalized.match(pattern.regex);
       if (match) {
         const cap = this.registry.get(pattern.capabilityId);
-        if (!cap) {continue;}
+        if (!cap) {
+          continue;
+        }
 
         const entities = pattern.extract(match);
         const missingInputs = cap.inputSchema
