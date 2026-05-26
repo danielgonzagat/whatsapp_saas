@@ -16,7 +16,7 @@ import { CreateInstagramPostDto } from './dto/create-instagram-post.dto';
 import { InstagramInsightsQueryDto, VALID_METRICS } from './dto/instagram-insights-query.dto';
 import { InstagramMarketingService } from './instagram-marketing.service';
 import { RouteClass } from '../../common/throttler/route-class.decorator';
-import { PaginationLimitPipe } from '../../common/pagination-clamp.pipe';
+import { clampLimit } from '../../common/pagination-clamp.pipe';
 
 @Controller('marketing/instagram')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
@@ -39,12 +39,15 @@ export class InstagramMarketingController {
   @Get('posts')
   async listPosts(
     @Req() req: AuthenticatedRequest,
-    @Query('limit', new PaginationLimitPipe({ default: 25 })) limit: number,
+    @Query('limit') limit: number | string | undefined,
     @Query('offset') offset?: string,
   ) {
     const workspaceId = resolveWorkspaceId(req);
-    const clampedOffset = Math.max(Number(offset) || 0, 0);
-    return this.instagramMarketingService.listPosts(workspaceId, limit, clampedOffset);
+    const parsedLimit = Number(limit);
+    const clampedLimit = Number.isFinite(parsedLimit) && parsedLimit <= 0 ? 25 : clampLimit(limit, { default: 25, max: 100 });
+    const parsedOffset = Number(offset);
+    const clampedOffset = Number.isFinite(parsedOffset) ? Math.max(Math.floor(parsedOffset), 0) : 0;
+    return this.instagramMarketingService.listPosts(workspaceId, clampedLimit, clampedOffset);
   }
 
   @Get('insights')

@@ -7,7 +7,7 @@ import { AuthenticatedRequest } from '../common/interfaces/authenticated-request
 import { AuditService } from './audit.service';
 import { InternalEndpoint } from '../common/decorators/internal-endpoint.decorator';
 import { RouteClass } from '../common/throttler/route-class.decorator';
-import { PaginationLimitPipe } from '../common/pagination-clamp.pipe';
+import { PaginationLimitPipe, clampLimit } from '../common/pagination-clamp.pipe';
 
 /** Audit controller. */
 @ApiTags('Audit')
@@ -29,11 +29,15 @@ export class AuditController {
   async getLogs(
     @Req() req: AuthenticatedRequest,
     @Query('workspaceId') workspaceId: string,
-    @Query('limit', new PaginationLimitPipe({ default: 50, max: 100 })) limit: number,
-    @Query('offset') offset: string,
+    @Query('limit', new PaginationLimitPipe({ default: 50, max: 100 })) limit: number | string | undefined,
+    @Query('offset') offset: number | string | undefined,
   ) {
     const effectiveWorkspaceId = resolveWorkspaceId(req, workspaceId);
-    const clampedOffset = Math.max(Number(offset) || 0, 0);
-    return this.auditService.getLogs(effectiveWorkspaceId, limit, clampedOffset);
+    const clampedLimit = clampLimit(limit, { default: 50, max: 100 });
+    const parsedOffset = typeof offset === 'number' ? offset : Number(offset);
+    const clampedOffset = Number.isFinite(parsedOffset)
+      ? Math.max(Math.floor(parsedOffset), 0)
+      : 0;
+    return this.auditService.getLogs(effectiveWorkspaceId, clampedLimit, clampedOffset);
   }
 }

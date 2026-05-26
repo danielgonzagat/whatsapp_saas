@@ -17,7 +17,7 @@ import { QueueHealthService } from '../metrics/queue-health.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { getDlqQueue, queueRegistry } from '../queue/queue';
 import { RouteClass } from '../common/throttler/route-class.decorator';
-import { PaginationLimitPipe } from '../common/pagination-clamp.pipe';
+import { PaginationLimitPipe, clampLimit } from '../common/pagination-clamp.pipe';
 
 /** Ops controller. */
 @Controller('ops/queues')
@@ -41,10 +41,11 @@ export class OpsController {
   @Get(':name/dlq')
   async listDlq(
     @Param('name') name: string,
-    @Query('limit', new PaginationLimitPipe()) limit: number,
+    @Query('limit', new PaginationLimitPipe()) limit: number | string | undefined,
   ) {
     const dlq = this.getDlq(name);
-    const jobs = await dlq.getJobs(['waiting', 'failed'], 0, limit - 1);
+    const clampedLimit = clampLimit(limit);
+    const jobs = await dlq.getJobs(['waiting', 'failed'], 0, clampedLimit - 1);
     return jobs.map((job) => ({
       id: job.id,
       name: job.name,

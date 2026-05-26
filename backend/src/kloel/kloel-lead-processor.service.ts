@@ -20,7 +20,6 @@ import {
   extractProductFromMessage,
   ChatMessage,
 } from './kloel-lead-processor-helpers';
-import { AUTOPILOT_ANTI_INVENTION_PROMPT } from './autopilot-system-prompt.helper';
 import OpenAI from 'openai';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { AbiBuilderService } from './abi/abi-builder.service';
@@ -171,7 +170,6 @@ export class KloelLeadProcessorService {
       }
 
       const messages: ChatMessage[] = [
-        { role: 'system', content: AUTOPILOT_ANTI_INVENTION_PROMPT },
         ...conversationHistory,
         { role: 'user', content: effectiveUserContent },
       ];
