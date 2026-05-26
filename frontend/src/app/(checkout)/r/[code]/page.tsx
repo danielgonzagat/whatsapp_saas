@@ -1,17 +1,7 @@
 import type { PublicCheckoutResponse } from '@/lib/public-checkout-contract';
 import type { Metadata } from 'next';
 import CheckoutShell from '../../components/CheckoutShell';
-
-const PATTERN_RE = /\/+$/;
-
-function getServerApiBase(): string {
-  const envUrl =
-    process.env.NEXT_PUBLIC_API_URL || process.env.BACKEND_URL || process.env.SERVICE_BASE_URL;
-  if (envUrl) {
-    return envUrl.replace(PATTERN_RE, '');
-  }
-  return 'http://localhost:3001';
-}
+import { getServerApiBase } from '../../server-api-base';
 
 /** Generate metadata. */
 export async function generateMetadata({
