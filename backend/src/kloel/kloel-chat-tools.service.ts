@@ -1,6 +1,4 @@
 import { Injectable, Optional } from '@nestjs/common';
-import { StructuredLogger } from '../logging/structured-logger';
-import { randomIdSegment } from '../common/random-id';
 import { PrismaService } from '../prisma/prisma.service';
 import { SmartPaymentService } from './smart-payment.service';
 import {
@@ -38,7 +36,6 @@ import {
   runUpsertAgentSkill,
   runVerifyAgentEvidence,
 } from './kloel-chat-tools.agent-runtime.helpers';
-import * as QRCode from 'qrcode';
 import { runUpdateProduct } from './kloel-chat-tools.update-product.helper';
 import {
   runGetProductPlans,
@@ -71,13 +68,16 @@ import {
   runListProducts,
   runDeleteProduct,
 } from './kloel-chat-tools.products.helpers';
+import {
+  type ToolDashboardSummaryArgs,
+  runGetDashboardSummary,
+  runCreatePaymentLink,
+  runCreateOrder,
+} from './kloel-chat-tools.dashboard-payments.helpers';
 interface ToolCreateFlowArgs {
   name: string;
   trigger: string;
   actions?: string[];
-}
-interface ToolDashboardSummaryArgs {
-  period?: 'today' | 'week' | 'month';
 }
 /** Coerces unknown wallet balance values (bigint | number) into integer cents.
  *  Returns 0 for non-numeric/missing values. Exported so peer kloel services
@@ -94,7 +94,6 @@ export function centsFromUnknown(value: unknown): number {
 /** Handles product, flow, dashboard, payment, and misc AI chat tools. */
 @Injectable()
 export class KloelChatToolsService {
-  private readonly logger = StructuredLogger.from(KloelChatToolsService.name);
   constructor(
     private readonly prisma: PrismaService,
     private readonly smartPaymentService: SmartPaymentService,
@@ -191,136 +190,13 @@ export class KloelChatToolsService {
     workspaceId: string,
     args: ToolDashboardSummaryArgs,
   ): Promise<ToolResult> {
-    const period = args.period || 'today';
-    let dateFilter: Date;
-    switch (period) {
-      case 'week':
-        dateFilter = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-        break;
-      case 'month':
-        dateFilter = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-        break;
-      default:
-        dateFilter = new Date();
-        dateFilter.setHours(0, 0, 0, 0);
-    }
-    const [contacts, messages, flows, paidOrders, wallet] = await Promise.all([
-      this.prisma.contact.count({ where: { workspaceId, createdAt: { gte: dateFilter } } }),
-      this.prisma.message.count({ where: { workspaceId, createdAt: { gte: dateFilter } } }),
-      this.prisma.flow.count({ where: { workspaceId, isActive: true } }),
-      this.prisma.checkoutOrder.aggregate({
-        where: { workspaceId, status: 'PAID', paidAt: { gte: dateFilter } },
-        _count: { _all: true },
-        _sum: { totalInCents: true },
-      }),
-      this.prisma.kloelWallet.findUnique({
-        where: { workspaceId },
-        select: {
-          availableBalanceInCents: true,
-          pendingBalanceInCents: true,
-          blockedBalanceInCents: true,
-        },
-      }),
-    ]);
-    const revenueInCents = paidOrders._sum.totalInCents || 0;
-    const availableInCents = centsFromUnknown(wallet?.availableBalanceInCents);
-    const pendingInCents = centsFromUnknown(wallet?.pendingBalanceInCents);
-    const blockedInCents = centsFromUnknown(wallet?.blockedBalanceInCents);
-    const totalInCents = availableInCents + pendingInCents + blockedInCents;
-    return {
-      success: true,
-      period,
-      stats: {
-        newContacts: contacts,
-        messages,
-        activeFlows: flows,
-        paidOrders: paidOrders._count._all,
-        revenueInCents,
-        revenue: revenueInCents / 100,
-        wallet: {
-          availableInCents,
-          pendingInCents,
-          blockedInCents,
-          totalInCents,
-          available: availableInCents / 100,
-          pending: pendingInCents / 100,
-          blocked: blockedInCents / 100,
-          total: totalInCents / 100,
-        },
-      },
-    };
+    return runGetDashboardSummary(this.prisma, workspaceId, args);
   }
   async toolCreatePaymentLink(
     workspaceId: string,
     args: { amount: number; description: string; customerName?: string },
   ): Promise<ToolResult> {
-    this.logger.log('Payment operation', {
-      context: 'KloelChatTools.toolCreatePaymentLink',
-      action: 'createSmartPayment',
-      amount: Number(args.amount) || 0,
-      hasDescription: !!args.description,
-    });
-    // Dev mode: skip real payment processing, return mock PIX + create sale record
-    if (process.env.NODE_ENV !== 'production') {
-      const mockAmount = Number(args.amount) || 0;
-      const mockId = `pay_dev_${Date.now().toString(36)}`;
-      const customerName = args.customerName || 'Cliente';
-      // Create contact for buyer (CRM memory)
-      if (args.customerName) {
-        try {
-          const existing = await this.prisma.contact.findFirst({
-            where: { workspaceId, name: customerName },
-          });
-          if (existing) {
-            await this.prisma.contact.update({
-              where: { id: existing.id },
-              data: { updatedAt: new Date() },
-            });
-          } else {
-            await this.prisma.contact.create({
-              data: { workspaceId, name: customerName, phone: '', leadScore: 30 },
-            });
-          }
-        } catch { /* non-blocking */ }
-      }
-      // Create sale record for reporting
-      try {
-        await this.prisma.kloelSale.create({
-          data: {
-            workspaceId,
-            externalPaymentId: mockId,
-            productName: args.description || 'Produto',
-            amount: mockAmount,
-            status: 'pending',
-            paymentMethod: 'PIX',
-            ...(args.customerName ? { leadPhone: args.customerName } : {}),
-          },
-        });
-      } catch { /* non-blocking */ }
-      // Generate real QR code as base64
-      let qrCodeBase64 = '';
-      const pixPayload = `00020126580014BR.GOV.BCB.PIX0136${mockId}520400005303986540${mockAmount.toFixed(2)}5802BR5925${customerName}6009SAO PAULO62070503***6304${randomIdSegment(4).toUpperCase()}`;
-      try {
-        qrCodeBase64 = await QRCode.toDataURL(pixPayload, { width: 300, margin: 2 });
-      } catch { /* non-blocking */ }
-      return {
-        success: true,
-        paymentId: mockId,
-        pixCopyPaste: pixPayload,
-        pixQrCode: qrCodeBase64 || undefined,
-        billingType: 'PIX',
-        customerName,
-        message: `PIX de R$ ${mockAmount.toFixed(2)} gerado para ${customerName}.`,
-      };
-    }
-    const paymentResult = await this.smartPaymentService.createSmartPayment({
-      workspaceId,
-      amount: Number(args.amount) || 0,
-      productName: args.description,
-      customerName: args.customerName || 'Cliente',
-      phone: '',
-    });
-    return { success: true, ...paymentResult };
+    return runCreatePaymentLink(this.prisma, this.smartPaymentService, workspaceId, args);
   }
   async toolCreateAgentJob(workspaceId: string, args: ToolCreateAgentJobArgs): Promise<ToolResult> {
     return runCreateAgentJob(this.agentScheduler, workspaceId, args);
@@ -578,35 +454,8 @@ export class KloelChatToolsService {
   }
 
   /** Create a manual sale order with full buyer data */
-  async toolCreateOrder(workspaceId: string, args: Record<string, unknown>): Promise<ToolResult> {
-    const amount = typeof args.amount === 'number' ? args.amount : 0;
-    const productName = typeof args.productName === 'string' ? args.productName : typeof args.description === 'string' ? args.description : 'Produto';
-    const customerName = typeof args.customerName === 'string' ? args.customerName : 'Cliente';
-    if (!amount) return { success: false, error: 'Informe o valor da venda (ex: R$ 147).' };
-    try {
-      const sale = await this.prisma.kloelSale.create({
-        data: {
-          workspaceId,
-          externalPaymentId: `ord_${Date.now().toString(36)}`,
-          productName,
-          amount,
-          status: 'pending',
-          paymentMethod: 'MANUAL',
-          leadPhone: customerName,
-        },
-      });
-      if (customerName && customerName !== 'Cliente') {
-        try {
-          const existing = await this.prisma.contact.findFirst({ where: { workspaceId, name: customerName } });
-          if (!existing) {
-            await this.prisma.contact.create({ data: { workspaceId, name: customerName, phone: '', leadScore: 50 } });
-          }
-        } catch { /* non-blocking */ }
-      }
-      return { success: true, saleId: sale.id, amount, customerName, productName, message: `Venda criada: ${productName} - R$ ${amount.toFixed(2)} para ${customerName}.` };
-    } catch (e: unknown) {
-      return { success: false, error: e instanceof Error ? e.message : 'Erro ao criar venda.' };
-    }
+  toolCreateOrder(workspaceId: string, args: Record<string, unknown>): Promise<ToolResult> {
+    return runCreateOrder(this.prisma, workspaceId, args);
   }
   toolListSubscriptions(workspaceId: string, args: Record<string, unknown>): Promise<ToolResult> {
     return runListSubscriptions(this.prisma, workspaceId, args);
