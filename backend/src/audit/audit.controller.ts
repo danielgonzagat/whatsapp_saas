@@ -7,6 +7,7 @@ import { AuthenticatedRequest } from '../common/interfaces/authenticated-request
 import { AuditService } from './audit.service';
 import { InternalEndpoint } from '../common/decorators/internal-endpoint.decorator';
 import { RouteClass } from '../common/throttler/route-class.decorator';
+import { PaginationLimitPipe } from '../common/pagination-clamp.pipe';
 
 /** Audit controller. */
 @ApiTags('Audit')
@@ -28,12 +29,11 @@ export class AuditController {
   async getLogs(
     @Req() req: AuthenticatedRequest,
     @Query('workspaceId') workspaceId: string,
-    @Query('limit') limit: string,
+    @Query('limit', new PaginationLimitPipe({ default: 50, max: 100 })) limit: number,
     @Query('offset') offset: string,
   ) {
     const effectiveWorkspaceId = resolveWorkspaceId(req, workspaceId);
-    const clampedLimit = Math.min(Math.max(Number(limit) || 50, 1), 100);
     const clampedOffset = Math.max(Number(offset) || 0, 0);
-    return this.auditService.getLogs(effectiveWorkspaceId, clampedLimit, clampedOffset);
+    return this.auditService.getLogs(effectiveWorkspaceId, limit, clampedOffset);
   }
 }
