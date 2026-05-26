@@ -57,21 +57,11 @@ function readConfiguredValue(config: ConfigService, keys: string[]): string | nu
   return null;
 }
 
-export function normalizeReturnTo(value: unknown): string {
-  const raw = typeof value === 'string' ? value.trim() : '';
-  if (!raw || !raw.startsWith('/') || raw.startsWith('//')) {
-    return '/marketing/email';
-  }
-  return raw.slice(0, 200);
-}
-
-export function expiresAtFromSeconds(seconds: unknown): Date | null {
-  const parsed = Number(seconds || 0);
-  if (!Number.isFinite(parsed) || parsed <= 0) {
-    return null;
-  }
-  return new Date(Date.now() + parsed * 1000);
-}
+import {
+  normalizeReturnTo,
+  expiresAtFromSeconds,
+} from './mailbox-gmail-oauth/oauth-state';
+export { normalizeReturnTo, expiresAtFromSeconds };
 
 export function readMicrosoftStateSecret(config: ConfigService): string {
   const explicit = readConfiguredValue(config, [
