@@ -1,3 +1,12 @@
+/**
+ * @deprecated Use {@link ../kloel/mind/knowledge/mind-knowledge-base.service.ts MindKnowledgeBase}
+ * (re-exported from `backend/src/kloel/mind/knowledge/`). This file remains
+ * during the ADR-0013 Wave M2 alias window (4 weeks).
+ *
+ * @cluster Mind/Knowledge
+ * @canonical backend/src/kloel/mind/knowledge/mind-knowledge-base.service.ts
+ * @see docs/adr/0013-kloel-mind-unification.md
+ */
 import { randomUUID } from 'node:crypto';
 import { BadRequestException, Injectable, Optional } from '@nestjs/common';
 import { StructuredLogger } from '../logging/structured-logger';

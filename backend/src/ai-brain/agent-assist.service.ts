@@ -1,3 +1,14 @@
+/**
+ * @deprecated Use {@link ../kloel/mind/knowledge/mind-knowledge-assist.service.ts MindKnowledgeAssist}
+ * (re-exported from `backend/src/kloel/mind/knowledge/`). This file remains
+ * during the ADR-0013 Wave M2 alias window (4 weeks). The class will be moved
+ * physically to `kloel/mind/knowledge/` in a follow-up PR; until then this
+ * `@Injectable()` is the live implementation referenced by `AiBrainModule`.
+ *
+ * @cluster Mind/Knowledge
+ * @canonical backend/src/kloel/mind/knowledge/mind-knowledge-assist.service.ts
+ * @see docs/adr/0013-kloel-mind-unification.md
+ */
 import { randomUUID } from 'node:crypto';
 import { Injectable, Optional } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
